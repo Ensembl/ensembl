@@ -197,7 +197,10 @@ sub dump_core {
                        species interpro interpro_description);
     
     foreach my $table ( @tables ) { 
-        $sql = "select distinct complete_table.* from $satdb.$table complete_table";
+        $sql = "
+SELECT distinct complete_table.* 
+FROM $satdb.$table complete_table
+";
         dump_data($sql, $satdb, $table);
     }
 
@@ -447,7 +450,7 @@ sub dump_lite {
     # tables that have chr_name:
     foreach my $table ( qw(gene gene_exon karyotype location snp) ) {
         $sql="
-SELECT t.*
+SELECT distinct t.*
 FROM   $litedb.$table t
 WHERE  t.chr_name = '$chr' 
 ";
@@ -458,7 +461,7 @@ WHERE  t.chr_name = '$chr'
     # tables to be linked to the gene table:
     foreach my $table ( qw(gene_disease gene_prot gene_snp gene_xref) ) {
         $sql="
-SELECT t.*
+SELECT distinct t.*
 FROM   $litedb.$table t, $litedb.gene g
 WHERE  g.chr_name = '$chr' 
   AND  t.gene = g.gene
@@ -503,7 +506,7 @@ sub dump_disease {
 # may need an ALTER TABLE gene ADD KEY(gene_symbol);
     my $sql;
     $sql = "
-SELECT dg.*
+SELECT distinct dg.*
 FROM  $satdb.gene dg, 
       $litedb.gene lg, 
       $litedb.gene_xref lgx
@@ -514,7 +517,7 @@ WHERE lg.chr_name = '$chr'
     dump_data($sql, $satdb, 'gene' );
 
     $sql = "
-SELECT dd.*
+SELECT distinct dd.*
 FROM  $satdb.gene dg, 
       $satdb.disease dd,
       $litedb.gene lg, 
@@ -542,7 +545,10 @@ WHERE lg.chr_name = '$chr'
 
     foreach my $w ( qw(doc stop vector word) ) {
         my $table = "disease_index_${w}list";
-        $sql = "select distinct * from $satdb.$table";
+        $sql = "
+SELECT distinct complete_table.* 
+FROM $satdb.$table complete_table
+";
         dump_data($sql, $satdb, $table );
     }
 }                                       # disease
@@ -562,12 +568,17 @@ sub dump_maps {
     # the simple ones having a chromosome column:
     foreach my $table ( qw(ChromosomeBands CytogeneticMap RHMaps Fpc_Contig)) {
         $sql = "
-SELECT * FROM $satdb.$table WHERE chromosome = '$chr_short'
+SELECT t.* 
+FROM $satdb.$table t
+WHERE chromosome = '$chr_short'
 ";
         dump_data($sql, $satdb, $table );
     }
 
-    $sql = "SELECT * FROM $satdb.Map";  # 4 rows
+    $sql = "
+SELECT complete_table.* 
+FROM $satdb.Map complete_table
+";  # 4 rows
     dump_data($sql, $satdb, 'Map' );
 
     # less simple ones that can both use the RHMaps table
@@ -603,7 +614,10 @@ sub dump_expression  {
     my $sql;
     # small ones:
     foreach my $table ( qw(key_word lib_key library source ) ) {
-        $sql = "select distinct * from $satdb.$table";
+        $sql = "
+SELECT distinct complete_table.* 
+FROM $satdb.$table complete_table
+";
         dump_data($sql, $satdb, $table);
     }
     # frequency                            ;
@@ -655,7 +669,10 @@ sub dump_snp  {
 
     my @small_ones = qw(Assay ContigHit Locus  Pop Resource Submitter);
     foreach my $table ( @small_ones ) { 
-        $sql = "select distinct * from $satdb.$table";
+        $sql = "
+SELECT distinct complete_table.* 
+FROM $satdb.$table complete_table
+";
         dump_data($sql, $satdb, $table);
     }
 
@@ -729,7 +746,10 @@ sub dump_embl  {
 
     my @small_ones = qw(externalDB);
     foreach my $table ( @small_ones ) { 
-        $sql = "select distinct * from $satdb.$table";
+        $sql = "
+SELECT DISTINCT complete_table.*
+FROM $satdb.$table complete_table
+";
         dump_data($sql, $satdb, $table);
     }
 
@@ -928,7 +948,10 @@ sub dump_est  {
 
     # small tables:
     foreach my $table ( qw(analysis analysisprocess) )  {
-        $sql="select * from $satdb.$table";
+        $sql="
+SELECT complete_table.* 
+FROM $satdb.$table complete_table
+";
         dump_data($sql, $satdb, $table);
     }
 
@@ -1044,7 +1067,7 @@ sub check_sql {
     # now see if the query is not empty (due to a e.g. a wrong join
     # condition):
     $cmd = "echo \"$sql limit 1\" | $mysql -N -q --batch -h $host -u $user $pass_arg $litedb ";
-    my $out=`$cmd`;
+    $out=`$cmd`;
     
     if ( !$out or length($out) < 8 or $?  ) { 
         warn "``$cmd'' exited with no or little output and exit-status $?\n";
