@@ -92,9 +92,10 @@ sub _columns {
 
   return qw( g.gene_id g.seq_region_id g.seq_region_start g.seq_region_end
 	     g.seq_region_strand g.analysis_id g.type g.display_xref_id
-	     gd.description gsi.stable_id gsi.version x.display_label
-       x.dbprimary_acc x.description x.version exdb.db_name exdb.status
-       exdb.release );
+	     gd.description gsi.stable_id gsi.version UNIX_TIMESTAMP(gsi.created_date)
+	     UNIX_TIMESTAMP(gsi.modified_date) 
+	     x.display_label x.dbprimary_acc x.description x.version 
+	     exdb.db_name exdb.status exdb.release );
 }
 
 
@@ -776,10 +777,21 @@ sub store {
      my $statement = "INSERT INTO gene_stable_id
                          SET gene_id = ?,
                              stable_id = ?,
-                             version = ?";
+                             version = ?, ";
+     if( $gene->created_date() ) {
+       $statement .= "created_date = from_unixtime( ".$gene->created_date()."),";
+     } else {
+       $statement .= "created_date = \"0000-00-00 00:00:00\",";
+     }
+
+     if( $gene->modified_date() ) {
+       $statement .= "modified_date = from_unixtime( ".$gene->modified_date().")";
+     } else {
+       $statement .= "modified_date = \"0000-00-00 00:00:00\"";
+     }
 
      $sth = $self->prepare($statement);
-     $sth->execute( $gene_dbID, $gene->stable_id(), $gene->version() );
+     $sth->execute( $gene_dbID, $gene->stable_id(), $gene->version());
      $sth->finish();
    }
 
@@ -1085,14 +1097,16 @@ sub _objs_from_sth {
 
   my ( $gene_id, $seq_region_id, $seq_region_start, $seq_region_end, 
        $seq_region_strand, $analysis_id, $type, $display_xref_id, 
-       $gene_description, $stable_id, $version, $xref_display_id,
+       $gene_description, $stable_id, $version, $created_date, 
+       $modified_date, $xref_display_id,
        $xref_primary_acc, $xref_desc, $xref_version, $external_name, 
        $external_db, $external_status, $external_release );
 
   $sth->bind_columns( \$gene_id, \$seq_region_id, \$seq_region_start,
           \$seq_region_end, \$seq_region_strand, \$analysis_id, \$type,
           \$display_xref_id, \$gene_description, \$stable_id, \$version,
-          \$xref_display_id, \$xref_primary_acc, \$xref_desc, \$xref_version,
+          \$created_date, \$modified_date, 
+	  \$xref_display_id, \$xref_primary_acc, \$xref_desc, \$xref_version,
           \$external_db, \$external_status,
           \$external_release );
 
@@ -1217,6 +1231,8 @@ sub _objs_from_sth {
         '-dbID'          =>  $gene_id,
         '-stable_id'     =>  $stable_id,
         '-version'       =>  $version,
+	'-created_date'  =>  $created_date || undef,
+	'-modified_date' =>  $modified_date || undef,
         '-description'   =>  $gene_description,
         '-external_name' =>  $external_name,
         '-external_db'   =>  $external_db,

@@ -81,13 +81,16 @@ sub new {
 
   my $self = $class->SUPER::new( @_ );
 
-  my ( $phase, $end_phase, $stable_id, $version ) = 
-    rearrange( [ "PHASE", "END_PHASE", "STABLE_ID", "VERSION" ], @_ );
+  my ( $phase, $end_phase, $stable_id, $version, $created_date, $modified_date ) = 
+    rearrange( [ "PHASE", "END_PHASE", "STABLE_ID", "VERSION",
+		 "CREATED_DATE", "MODIFIED_DATE" ], @_ );
 
   $self->{'phase'} = $phase;
   $self->{'end_phase'} = $end_phase;
   $self->{'stable_id'} = $stable_id;
   $self->{'version'} = $version;
+  $self->{'created_date'} = $created_date;
+  $self->{'modified_date'} = $modified_date;
 
   return $self;
 }
@@ -588,6 +591,21 @@ sub stable_id {
   $self->{'stable_id'} = shift if( @_ );
   return $self->{'stable_id'};
 }
+
+
+sub created_date {
+  my $self = shift;
+  $self->{'created_date'} = shift if ( @_ );
+  return $self->{'created_date'};
+}
+
+
+sub modified_date {
+  my $self = shift;
+  $self->{'modified_date'} = shift if ( @_ );
+  return $self->{'modified_date'};
+}
+
 
 
 =head2 version

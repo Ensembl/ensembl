@@ -82,7 +82,8 @@ sub _columns {
 
   return qw( e.exon_id e.seq_region_id e.seq_region_start e.seq_region_end 
 	     e.seq_region_strand e.phase e.end_phase
-	     esi.stable_id esi.version );
+	     esi.stable_id esi.version UNIX_TIMESTAMP(created_date)
+             UNIX_TIMESTAMP(modified_date) );
 }
 
 
@@ -250,12 +251,26 @@ sub store {
 
   #store any stable_id information
   if ($exon->stable_id && $exon->version()) {
-    my $sth = $self->prepare(
-      "INSERT INTO exon_stable_id " .
-      "SET version = ?, " .
-          "stable_id = ?, " .
-          "exon_id = ?");
 
+    my $statement = 
+      "INSERT INTO exon_stable_id " .
+	"SET version = ?, " .
+          "stable_id = ?, " .
+	    "exon_id = ?";
+  
+    if( $exon->created_date() ) {
+      $statement .= "created_date = from_unixtime( ".$exon->created_date()."),";
+    } else {
+      $statement .= "created_date = \"0000-00-00 00:00:00\",";
+    }
+
+    if( $exon->modified_date() ) {
+      $statement .= "modified_date = from_unixtime( ".$exon->modified_date().")";
+    } else {
+      $statement .= "modified_date = \"0000-00-00 00:00:00\"";
+    }
+
+    my $sth = $self->prepare( $statement );
     $sth->execute( $exon->version, $exon->stable_id, $exonId );
   }
 
@@ -451,12 +466,14 @@ sub _objs_from_sth {
 
   my ( $exon_id, $seq_region_id, $seq_region_start,
        $seq_region_end, $seq_region_strand, $phase,
-       $end_phase, $stable_id, $version );
+       $end_phase, $stable_id, $version, $created_date, 
+       $modified_date );
 
   $sth->bind_columns(  \$exon_id, \$seq_region_id, 
-        \$seq_region_start,
-        \$seq_region_end, \$seq_region_strand, \$phase,
-        \$end_phase, \$stable_id, \$version );
+		       \$seq_region_start,
+		       \$seq_region_end, \$seq_region_strand, \$phase,
+		       \$end_phase, \$stable_id, \$version, \$created_date,
+		       \$modified_date );
 
   my $asm_cs;
   my $cmp_cs;
@@ -574,6 +591,8 @@ sub _objs_from_sth {
 	'-dbID'          =>  $exon_id,
         '-stable_id'     =>  $stable_id,
         '-version'       =>  $version,
+	'-created_date'  =>  $created_date || undef,
+	'-modified_date' =>  $modified_date || undef,
         '-phase'         =>  $phase,
         '-end_phase'     =>  $end_phase )
 

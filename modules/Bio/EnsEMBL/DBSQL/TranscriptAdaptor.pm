@@ -99,7 +99,8 @@ sub _columns {
 
   return qw( t.transcript_id t.seq_region_id t.seq_region_start t.seq_region_end 
 	     t.seq_region_strand t.gene_id 
-             t.display_xref_id tsi.stable_id tsi.version
+             t.display_xref_id tsi.stable_id tsi.version UNIX_TIMESTAMP(created_date)
+             UNIX_TIMESTAMP(modified_date)
              x.display_label exdb.db_name exdb.status );
 }
 
@@ -653,8 +654,23 @@ sub store {
      }
 
      my $statement = 
-       "INSERT INTO transcript_stable_id(transcript_id,stable_id,version)" .
-         " VALUES(?, ?, ?)";
+       "INSERT INTO transcript_stable_id ".
+	 "SET transcript_id = ?, ".
+	   "  stable_id = ?, ".
+	     "version = ?, ";
+
+     if( $transcript->created_date() ) {
+       $statement .= "created_date = from_unixtime( ".$transcript->created_date()."),";
+     } else {
+       $statement .= "created_date = \"0000-00-00 00:00:00\",";
+     }
+
+     if( $transcript->modified_date() ) {
+       $statement .= "modified_date = from_unixtime( ".$transcript->modified_date().")";
+     } else {
+       $statement .= "modified_date = \"0000-00-00 00:00:00\"";
+     }
+
      my $sth = $self->prepare($statement);
      $sth->execute($transc_dbID, $transcript->stable_id, $transcript->version);
      $sth->finish();
@@ -929,12 +945,12 @@ sub _objs_from_sth {
 
   my ( $transcript_id, $seq_region_id, $seq_region_start, $seq_region_end, 
        $seq_region_strand, $gene_id,  
-       $display_xref_id, $stable_id, $version,
+       $display_xref_id, $stable_id, $version, $created_date, $modified_date,
        $external_name, $external_db, $external_status );
 
   $sth->bind_columns( \$transcript_id, \$seq_region_id, \$seq_region_start, 
                       \$seq_region_end, \$seq_region_strand, \$gene_id,  
-                      \$display_xref_id, \$stable_id, \$version,
+                      \$display_xref_id, \$stable_id, \$version, \$created_date, \$modified_date,
                       \$external_name, \$external_db, \$external_status );
 
 
@@ -1067,6 +1083,8 @@ sub _objs_from_sth {
         '-dbID'          =>  $transcript_id,
         '-stable_id'     =>  $stable_id,
         '-version'       =>  $version,
+	'-created_date'  =>  $created_date || undef,
+	'-modified_date' =>  $modified_date || undef,
         '-external_name' =>  $external_name,
         '-external_db'   =>  $external_db,
         '-external_status' => $external_status,

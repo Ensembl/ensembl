@@ -100,7 +100,7 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   my ( $exons, $stable_id, $version, $external_name, $external_db,
-       $external_status, $display_xref );
+       $external_status, $display_xref, $created_date, $modified_date );
 
   #catch for old style constructor calling:
   if((@_ > 0) && ref($_[0])) {
@@ -111,9 +111,10 @@ sub new {
   }
   else {
     ( $exons, $stable_id, $version, $external_name, $external_db,
-      $external_status, $display_xref ) = 
+      $external_status, $display_xref, $created_date, $modified_date ) = 
         rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
-                     'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF' ], @_ );
+                     'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
+		     'CREATED_DATE', 'MODIFIED_DATE' ], @_ );
   }
 
   if( $exons ) {
@@ -123,6 +124,8 @@ sub new {
 
   $self->stable_id( $stable_id );
   $self->version( $version );
+  $self->{'created_date'} = $created_date;
+  $self->{'modified_date'} = $modified_date;
   $self->external_name( $external_name ) if( defined $external_name );
   $self->external_db( $external_db ) if( defined $external_db );
   $self->external_status( $external_status ) if( defined $external_status );
@@ -1419,6 +1422,19 @@ sub stable_id{
   my $self = shift;
   $self->{'stable_id'} = shift if( @_ );
   return $self->{'stable_id'};
+}
+
+sub created_date {
+  my $self = shift;
+  $self->{'created_date'} = shift if ( @_ );
+  return $self->{'created_date'};
+}
+
+
+sub modified_date {
+  my $self = shift;
+  $self->{'modified_date'} = shift if ( @_ );
+  return $self->{'modified_date'};
 }
 
 

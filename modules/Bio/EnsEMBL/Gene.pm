@@ -59,10 +59,11 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   my ( $stable_id, $version, $external_name, $type, $external_db, 
-       $external_status, $display_xref, $description, $transcripts ) = 
+       $external_status, $display_xref, $description, $transcripts,
+       $created_date, $modified_date ) = 
     rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
 		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF', 'DESCRIPTION',
-                 'TRANSCRIPTS'], @_ );
+                 'TRANSCRIPTS', 'CREATED_DATE', 'MODIFIED_DATE'], @_ );
 
   if ($transcripts) {
     $self->{'_transcript_array'} = $transcripts;
@@ -71,6 +72,9 @@ sub new {
 
   $self->stable_id( $stable_id );
   $self->version( $version );
+  $self->{'created_date'} = $created_date;
+  $self->{'modified_date'} = $modified_date;
+
   $self->external_name( $external_name ) if( defined $external_name );
   $self->external_db( $external_db ) if( defined $external_db );
   $self->external_status( $external_status ) if( defined $external_status );
@@ -466,6 +470,20 @@ sub stable_id{
   my $self = shift;
   $self->{'stable_id'} = shift if(@_);
   return $self->{'stable_id'};
+}
+
+
+sub created_date {
+  my $self = shift;
+  $self->{'created_date'} = shift if ( @_ );
+  return $self->{'created_date'};
+}
+
+
+sub modified_date {
+  my $self = shift;
+  $self->{'modified_date'} = shift if ( @_ );
+  return $self->{'modified_date'};
 }
 
 

@@ -74,10 +74,11 @@ sub new {
   my $class = ref($caller) || $caller;
 
   my ( $start_exon, $end_exon, $seq_start, $seq_end,
-       $stable_id, $version, $dbID, $adaptor, $seq ) = 
+       $stable_id, $version, $dbID, $adaptor, $seq,
+       $created_date, $modified_date ) = 
     rearrange( [ "START_EXON", "END_EXON", "SEQ_START", "SEQ_END",
                  "STABLE_ID", "VERSION", "DBID", "ADAPTOR",
-                 "SEQ" ], @_ );
+                 "SEQ", "CREATED_DATE", "MODIFIED_DATE" ], @_ );
 
   my $self = bless {
 		    'start_exon' => $start_exon,
@@ -88,6 +89,8 @@ sub new {
 		    'end'        => $seq_end,
 		    'stable_id'  => $stable_id,
 		    'version'    => $version,
+		    'created_date' => $created_date,
+		    'modified_date' => $modified_date,
         'seq'        => $seq
 		   }, $class;
 
@@ -233,6 +236,19 @@ sub stable_id {
    my $self = shift;
   $self->{'stable_id'} = shift if( @_ );
   return $self->{'stable_id'};
+}
+
+sub created_date {
+  my $self = shift;
+  $self->{'created_date'} = shift if ( @_ );
+  return $self->{'created_date'};
+}
+
+
+sub modified_date {
+  my $self = shift;
+  $self->{'modified_date'} = shift if ( @_ );
+  return $self->{'modified_date'};
 }
 
 

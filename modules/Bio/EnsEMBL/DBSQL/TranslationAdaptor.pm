@@ -78,7 +78,8 @@ sub fetch_by_Transcript {
   my $sql = "
     SELECT tl.translation_id, tl.start_exon_id,
            tl.end_exon_id, tl.seq_start, tl.seq_end,
-           tlsi.stable_id, tlsi.version
+           tlsi.stable_id, tlsi.version, UNIX_TIMESTAMP(tlsi.created_date),
+           UNIX_TIMESTAMP(tlsi.modified_date)
       FROM translation tl
  LEFT JOIN translation_stable_id tlsi
         ON tlsi.translation_id = tl.translation_id
@@ -89,8 +90,9 @@ sub fetch_by_Transcript {
   $sth->execute( $transcript_id );
 
   my ( $translation_id, $start_exon_id, $end_exon_id,
-       $seq_start, $seq_end, $stable_id, $version ) = 
-  $sth->fetchrow_array();
+       $seq_start, $seq_end, $stable_id, $version, $created_date, 
+       $modified_date ) = 
+	 $sth->fetchrow_array();
   $sth->finish;
   if( ! defined $translation_id ) {
     return undef;
@@ -124,7 +126,9 @@ sub fetch_by_Transcript {
      -start_exon => $start_exon,
      -end_exon => $end_exon,
      -stable_id => $stable_id,
-     -version => $version
+     -version => $version,
+     -created_date => $created_date || undef,
+     -modified_date => $modified_date || undef
    );
 
   return $translation;
@@ -235,9 +239,25 @@ sub store {
      throw("Trying to store incomplete stable id information for translation");
     }
 
-    my $sth = $self->prepare
-      ("INSERT INTO translation_stable_id(translation_id, stable_id, version)".
-       "     VALUES (?, ?, ?)");
+     my $statement = 
+       "INSERT INTO translation_stable_id ".
+	 "SET translation_id = ?, ".
+	   "  stable_id = ?, ".
+	     "version = ?, ";
+
+    if( $translation->created_date() ) {
+      $statement .= "created_date = from_unixtime( ".$translation->created_date()."),";
+    } else {
+      $statement .= "created_date = \"0000-00-00 00:00:00\",";
+    }
+
+    if( $translation->modified_date() ) {
+      $statement .= "modified_date = from_unixtime( ".$translation->modified_date().")";
+    } else {
+      $statement .= "modified_date = \"0000-00-00 00:00:00\"";
+    }
+
+    my $sth = $self->prepare($statement);
 
     $sth->execute($transl_dbID, $translation->stable_id(), 
                   $translation->version());
@@ -463,7 +483,8 @@ sub fetch_all_by_Transcript_list {
   my $max_size = 200;
 
   my ( $tr_id,$tl_id, $start_exon_id, $end_exon_id,
-       $seq_start, $seq_end, $stable_id, $version );
+       $seq_start, $seq_end, $stable_id, $version, 
+       $created_date, $modified_date );
 
   my %ex_hash;
 
@@ -485,7 +506,8 @@ sub fetch_all_by_Transcript_list {
     my $sth = $self->prepare
       ("SELECT tl.transcript_id, tl.translation_id, tl.start_exon_id,
            tl.end_exon_id, tl.seq_start, tl.seq_end,
-           tlsi.stable_id, tlsi.version
+           tlsi.stable_id, tlsi.version, UNIX_TIMESTAMP(tlsi.created_date),
+           UNIX_TIMESTAMP(tlsi.modified_date)
       FROM translation tl
  LEFT JOIN translation_stable_id tlsi
         ON tlsi.translation_id = tl.translation_id
@@ -494,7 +516,8 @@ sub fetch_all_by_Transcript_list {
     $sth->execute();
 
     $sth->bind_columns( \$tr_id, \$tl_id, \$start_exon_id, \$end_exon_id,
-                        \$seq_start, \$seq_end, \$stable_id, \$version );
+                        \$seq_start, \$seq_end, \$stable_id, \$version,
+			\$created_date, \$modified_date );
 
     while($sth->fetch()) {
       my ($start_exon, $end_exon);
@@ -528,7 +551,9 @@ sub fetch_all_by_Transcript_list {
          -start_exon => $start_exon,
          -end_exon => $end_exon,
          -stable_id => $stable_id,
-         -version => $version);
+         -version => $version,
+	 -created_date => $created_date || undef,
+	 -modified_date => $modified_date || undef);
 
       $tr->translation($tl);
 
