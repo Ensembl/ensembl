@@ -270,26 +270,25 @@ sub fetch_RawContigs_by_chr_start_end {
    
    $self->throw("I need a golden path type") unless ($type);
    
-
    # go for new go-faster method
-   my $sth = $self->dbobj->prepare("SELECT  c.id,
-                                            c.internal_id,
-                                            c.dna,
-                                            c.clone,
-                                            cl.embl_version
-				    FROM    static_golden_path st,
-					    contig c, 
-                                            clone  cl
-				    WHERE c.internal_id = st.raw_id 
-				    AND st.chr_name = '$chr' 
-				    AND  st.type = '$type' 
-				    AND st.chr_start < $end 
-				    AND st.chr_end > $start
-                                    AND cl.id = c.clone 
-				    ORDER BY st.fpcctg_start"
-				    );
-
+   my $sth = $self->dbobj->prepare("
+        SELECT c.id
+          , c.internal_id
+          , c.dna
+          , c.clone
+          , cl.embl_version
+        FROM static_golden_path st
+          , contig c
+          , clone cl
+        WHERE cl.internal_id = c.clone
+          AND c.internal_id = st.raw_id
+          AND st.chr_name = '$chr'
+          AND st.type = '$type'
+          AND NOT (st.chr_start > $end)
+          AND NOT (st.chr_end < $start)
+        ");
    $sth->execute;
+
    my @out;
    my $cid;
    while( ( my $array = $sth->fetchrow_arrayref) ) {
@@ -329,32 +328,33 @@ sub fetch_RawContigs_by_chr_start_end {
 =cut
 
 sub fetch_VirtualContig_by_chr_start_end {
-   my ($self,$chr,$start,$end) = @_;
+    my ($self,$chr,$start,$end) = @_;
 
-   if( !defined $end ) {
-       $self->throw("must provide chr, start and end");
-   }
+    if( !defined $end ) {   # Why defined?  Is '0' a valid end?
+        $self->throw("must provide chr, start and end");
+    }
 
-   if( $start > $end ) {
-       $self->throw("start must be less than end: parameters $chr:$start:$end");
-   }
+    if( $start > $end ) {
+        $self->throw("start must be less than end: parameters $chr:$start:$end");
+    }
 
-   
-   my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end);
-  
 
-   my $vc;
+    my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end)
+        or $self->throw("Got zero rawcontigs");
 
-   eval {
-     $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start,1,$end,@rc);
-   } ;
-   if( $@ ) {
-     $self->throw("Unable to build a virtual contig at $chr, $start,$end\n\nUnderlying exception $@\n");
-   }
 
-   $vc->_chr_name($chr);
-   $vc->dbobj($self->dbobj);
-   return $vc;
+    my $vc;
+
+    eval {
+      $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start,1,$end,@rc);
+    } ;
+    if( $@ ) {
+      $self->throw("Unable to build a virtual contig at $chr, $start,$end\n\nUnderlying exception $@\n");
+    }
+
+    $vc->_chr_name($chr);
+    $vc->dbobj($self->dbobj);
+    return $vc;
 }
 
 

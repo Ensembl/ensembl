@@ -20,7 +20,11 @@ Give standard usage here
 
 =head1 DESCRIPTION
 
-Describe the object here
+This object inherits from
+Bio::EnsEMBL::Virtual::Contig, which in turn
+inherits from Bio::EnsEMBL::DB::ContigI.  See
+Bio::EnsEMBL::Virtual::Contig for examples of
+usage.
 
 =head1 AUTHOR - Ewan Birney
 
