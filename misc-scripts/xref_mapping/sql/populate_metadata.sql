@@ -20,7 +20,7 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9913, 9913,
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9615, 9615,  'canis_familaris',        'dog,doggy,cfamiliaris,canisfamiliaris');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (8364, 8364,  'xenopus_tropicalis',        'pipid,pipidfrog,xenopus,xtropicalis,xenopustropicalis');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (13616, 13616,  'monodelphis_domestica',        'opossum,monodelphis,mdomestica,monodelphisdomestica');
-INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (4932, 4932,  'yeast,saccharomyces,scerevisiae,saccharomycescerevisiae,saccharomyces_cerevisiae');
+INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (4932, 4932,  'saccharomyces_cerevisiae',  'yeast,saccharomyces,scerevisiae,saccharomycescerevisiae');
 
 ################################################################################
 # SOURCES - types of data we can read
@@ -31,6 +31,7 @@ INSERT INTO source VALUES (1, "Uniprot/SWISSPROT", 1, 'Y',1);
 INSERT INTO source VALUES (2, "Uniprot/SPTREMBL", 1, 'Y',1);
 INSERT INTO source VALUES (3, "RefSeq_peptide", 1, 'Y',1);
 INSERT INTO source VALUES (4, "RefSeq_dna", 1, 'Y',1);
+INSERT INTO source VALUES (5, "IPI", 1, 'Y',2);
 
 # Other sources - used to create dependent xrefs, but not to upload from
 
@@ -83,6 +84,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      OMIM 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1500, 9606,'ftp://ftp.ncbi.nih.gov/repository/OMIM/morbidmap', '', now(), now(), "MIMParser");
 
+##      IPI
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.HUMAN.fasta.gz', '', now(), now(), "IPIParser");
+
 ###MOUSE
 ##      uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10090, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10090.SPC', '', now(), now(), "UniProtParser");
@@ -99,6 +103,8 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      GO 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 10090,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/MOUSE/gene_association.goa_mouse.gz', '', now(), now(), "GOParser");
 
+##      IPI
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 10090,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.MOUSE.fasta.gz', '', now(), now(), "IPIParser");
 
 ###RAT
 ##      uniprot
@@ -116,6 +122,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##  RGD
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1200, 10116,'ftp://rgd.mcw.edu/pub/data_release/genbank_to_gene_ids.txt', '', now(), now(), "RGDParser");
 
+##  IPI
+##      IPI
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 10116,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.RAT.fasta.gz', '', now(), now(), "IPIParser");
 
 ###Zebrafish
 ##      uniprot
@@ -139,6 +148,8 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      ZFIN
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1400, 7955,'http://zfin.org/data_transfer/Downloads/refseq.txt http://zfin.org/data_transfer/Downloads/swissprot.txt', '', now(), now(), "ZFINParser");
 
+##      IPI
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 7955,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.BRARE.fasta.gz', '', now(), now(), "IPIParser");
 
 ###chicken
 ##      uniprot
