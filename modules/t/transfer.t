@@ -37,7 +37,8 @@ $conf{'recipient'} = 'testrecipient';
 $conf{'mysqladmin'} = 'mysqladmin';
 $conf{'mysql'} = 'mysql';
 $conf{'user'}  = 'ensembl';
-$conf{'update'} = 'scripts/update_list_chunk.pl';
+$conf{'update'} = '../scripts/update_list_chunk.pl';
+$conf{'perl'} = 'perl';
 
 if ( -e 't/transfer.conf' ) {
    print STDERR "Reading configuration from transfer.conf\n";
@@ -47,7 +48,11 @@ if ( -e 't/transfer.conf' ) {
        $conf{$key} = $value;
    }
 } else {
-    print STDERR "Using default values\n donor -> $conf{donor}\n recipient -> $conf{recipient}\n mysqladmin -> $conf{mysqladmin}\n mysql -> $conf{mysql}\n user -> $conf{user}\n\nPlease use a file t/transfer.conf to alter these values if the test fails\nFile is written <key> <value> syntax\n\n";
+    print STDERR "Using default values\n";
+    foreach $key ( keys %conf ) {
+       print STDERR " $key $conf{$key}\n";
+       }
+    print STDERR "\nPlease use a file t/transfer.conf to alter these values if the test fails\nFile is written <key> <value> syntax\n\n";
 }
 
 $nuser = $conf{user};
@@ -82,7 +87,7 @@ print "ok 5\n";
 
 #Update recipient from donor
 print STDERR "Running an update from the donor to the recipient\n";
-my $update="perl $conf{update} -thost localhost -tdbname $conf{recipient} -tdbuser $nuser";
+my $update="$conf{perl} $conf{update} -thost localhost -tdbname $conf{recipient} -tdbuser $nuser";
 system($update) == 0 or die "$0\nError running '$update' : $!";
 
 print "ok 6\n";
