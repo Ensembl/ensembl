@@ -50,7 +50,7 @@ sub repeat_consensus_adaptor {
     my( $self, $rca ) = @_;
     
     if ($rca) {
-        unless (ref($rca) and $rca->isa('Bio::EnsEMBL::DBSQL::RepeatConsenusAdpator')) {
+        unless (ref($rca) and $rca->isa('Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor')) {
             $self->throw("Not a 'Bio::EnsEMBL::DBSQL::RepeatConsenusAdpator': $rca")
         }
         $self->{'_repeat_consensus_adaptor'} = $rca;
