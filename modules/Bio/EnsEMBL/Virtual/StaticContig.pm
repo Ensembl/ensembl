@@ -84,8 +84,6 @@ sub new {
 	}
     }
 
-    my $c = $contigs[0];
-    $self->dbobj($c->dbobj);
 
     # this loop is no longer easy because it has to deal with
     # right and left truncations now <sigh>

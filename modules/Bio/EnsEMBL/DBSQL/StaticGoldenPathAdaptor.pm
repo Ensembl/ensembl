@@ -392,10 +392,12 @@ sub fetch_VirtualContig_of_clone{
        $self->throw("Clone is not on the golden path. Cannot build VC");
    }
      
-   return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
+   my $vc = $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
    							$first_start-$size,
 							$end+$size
 							);
+   $vc->dbobj($self->dbobj);
+   return $vc;
 
 }
 
@@ -693,6 +695,8 @@ sub fetch_VirtualContig_by_fpc_name{
 							-1,
 							@fpc
 						    );
+ 
+   $vc->dbobj($self->dbobj);
    $vc->id($name);
    return $vc;
 }
@@ -734,6 +738,7 @@ sub fetch_VirtualContig_by_fpc_name_slice{
 						    @finalfpc
 						    );
    $vc->id("$name-$start-$end");
+   $vc->dbobj($self->dbobj);
    return $vc;
 }
 
@@ -776,6 +781,7 @@ sub fetch_VirtualContig_list_sized{
 
 	   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
 	   $vc->id($name);
+           $vc->dbobj($self->dbobj);
 	   push(@vclist,$vc);
 	   
 	   $prev = $fpc;
@@ -791,6 +797,7 @@ sub fetch_VirtualContig_list_sized{
 
    my $start = $finalfpc[0];
    my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
+   $vc->dbobj($self->dbobj);
    push(@vclist,$vc);
 
    return @vclist;
@@ -812,10 +819,11 @@ sub fetch_VirtualContig_list_sized{
 sub fetch_VirtualContig_by_chr_name{
    my ($self,$name) = @_;
 
-   return Bio::EnsEMBL::Virtual::StaticContig->new(1,1,-1,
+   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new(1,1,-1,
 				    $self->fetch_RawContigs_by_chr_name($name));
-
-
+  
+   $vc->dbobj($self->dbobj);
+   return $vc; 
 }
 
 
@@ -872,4 +880,27 @@ sub dbobj{
     }
     return $obj->{'dbobj'};
 
+}
+
+
+# sneaky
+
+sub is_golden_static_contig {
+    my ($self,$cid) = @_;
+
+    my $sth = $self->dbobj->prepare("select c.id from contig c,static_golden_path p where c.id = '$cid' and p.raw_id = c.internal_id");
+
+    $sth->execute;
+
+    return scalar($sth->fetchrow_array);
+}
+
+sub is_golden_static_clone {
+    my ($self,$clone) = @_;
+
+    my $sth = $self->dbobj->prepare("select c.id from contig c,static_golden_path p where c.clone = '$clone' and p.raw_id = c.internal_id");
+
+    $sth->execute;
+
+    return scalar($sth->fetchrow_array);
 }
