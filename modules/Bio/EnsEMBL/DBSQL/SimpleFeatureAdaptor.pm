@@ -101,6 +101,9 @@ sub store{
 
     $sth->execute($contig->dbID(), $sf->start, $sf->end, $sf->strand,
 		  $sf->display_label, $sf->analysis->dbID, $sf->score);
+
+    $sf->dbID($sth->{'mysql_insertid'});
+    $sf->adaptor($self);
   } 
 }
 
