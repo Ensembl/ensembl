@@ -37,7 +37,7 @@ sub create_coord_systems {
             qtl_feature           => 'scaffold',
             misc_feature          => 'scaffold',
             prediction_transcript => 'contig',
-            karyotype             => 'chromosome');
+            karyotype             => 'scaffold');
 
   $self->debug("Building coord_system table");
 
