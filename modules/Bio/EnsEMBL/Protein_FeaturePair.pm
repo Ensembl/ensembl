@@ -91,4 +91,24 @@ sub to_FTHelper{
    return $fth;
 }
 
+=head2 hdbname
+
+ Title   : hdbname
+ Usage   : $obj->hdbname($newval)
+ Function: 
+ Returns : value of hdbname
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub hdbname{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'hdbname'} = $value;
+    }
+    return $obj->{'hdbname'};
+
+}
 

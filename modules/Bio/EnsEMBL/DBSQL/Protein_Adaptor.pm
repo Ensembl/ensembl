@@ -231,14 +231,17 @@ sub fetch_Protein_by_dbid{
        #print "PF: $pfam\n";
        if ($featid =~ /^PF\w+/) {
 	   $dbdesc = "Pfam";
+	   $feat->hdbname($dbdesc);
        }
 
        if ($featid =~ /^PR\w+/) {
 	   $dbdesc = "PRINTS";
+	   $feat->hdbname($dbdesc);
        }
 
        if ($featid =~ /^PS\w+/) {
 	   $dbdesc = "PROSITE";
+	   $feat->hdbname($dbdesc);
        }
 
 ###########################################################
