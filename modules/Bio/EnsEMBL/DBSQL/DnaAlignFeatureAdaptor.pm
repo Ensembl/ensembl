@@ -285,7 +285,7 @@ sub store{
 	   $self->throw("I think we should always have an analysis object which has originated from the database. No dbID, not putting in!");
        }
 
-       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->hstart,$sf->hend,$sf->hstrand,$sf->hseqname,$sf->cigar,$sf->analysis->dbID,$sf->score);
+       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->hstart,$sf->hend,$sf->hstrand,$sf->hseqname,$sf->cigar_string,$sf->analysis->dbID,$sf->score);
    }
 
 

@@ -199,18 +199,18 @@ sub store {
     my ($p,$f,$l) = caller;
     $self->warn("$f:$l FeatureAdaptor store being phased out. It is better to use the new FeatureAdaptors directly (more type safe)");
 
-    my $repeat_adaptor = $self->db->get_RepeatAdaptor();
+    my $repeat_adaptor = $self->db->get_RepeatFeatureAdaptor();
     my $dna_align_adaptor = $self->db->get_DnaAlignFeatureAdaptor();
     my $protein_align_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
     my $simple_adaptor = $self->db->get_SimpleFeatureAdaptor();
-    my $prediction_adaptor = $self->db->get_PredictionFeatureAdaptor();
+#    my $prediction_adaptor = $self->db->get_PredictionFeatureAdaptor();
 
 
 
     # Check for contig
     $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI") 
         unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
-    my $contig_internal_id = $contig->internal_id;
+    my $contig_internal_id = $contig->dbID();
 
 
     #
@@ -225,41 +225,41 @@ sub store {
 	if( ! $feature->isa('Bio::EnsEMBL::SeqFeatureI') ) {
 	    $self->throw("Feature $feature is not a feature!");
 	}
-	eval {
-	    $feature->validate();
-	};
-	if ($@) {
-	    next FEATURE;
-	}
+# 	eval {
+# 	    $feature->validate();
+# 	};
+# 	if ($@) {
+# 	    next FEATURE;
+# 	}
 
-	# Check that we have Analysis
-	my $analysisid;
-	if (!defined($feature->analysis)) {
-	    $self->throw("Feature " . $feature->seqname . " " . 
-			              $feature->source_tag . 
-			 " doesn't have analysis. Can't write to database");
-	} else {
-	    # Get AnalysisAdaptor if we haven't got one
-	    unless($feature->analysis->adaptor) {
-		$feature->analysis->adaptor($self->db->get_AnalysisAdaptor);
-	    }
-	    $analysisid = $feature->analysis->adaptor->store($feature->analysis);
-	}
+# 	# Check that we have Analysis
+# 	my $analysisid;
+# 	if (!defined($feature->analysis)) {
+# 	    $self->throw("Feature " . $feature->seqname . " " . 
+# 			              $feature->source_tag . 
+# 			 " doesn't have analysis. Can't write to database");
+# 	} else {
+# 	    # Get AnalysisAdaptor if we haven't got one
+# 	    unless($feature->analysis->adaptor) {
+# 		$feature->analysis->adaptor($self->db->get_AnalysisAdaptor);
+# 	    }
+# 	    $analysisid = $feature->analysis->adaptor->store($feature->analysis);
+# 	}
 
 	#
 	# Retarget to new adaptor scheme
 	# 
 
-	if( $feature->isa('Bio::EnsEMBL::ProteinAlignFeature') ) {
+	if( $feature->isa('Bio::EnsEMBL::DnaPepAlignFeature') ) {
 	    $protein_align_adaptor->store($contig_internal_id,$feature);
-	} elsif ( $feature->isa('Bio::EnsEMBL::DnaAlignFeature') ) {
+	} elsif ( $feature->isa('Bio::EnsEMBL::DnaDnaAlignFeature') ) {
 	    $dna_align_adaptor->store($contig_internal_id,$feature);
 	} elsif ( $feature->isa('Bio::EnsEMBL::RepeatFeature') ) {
 	    $repeat_adaptor->store($contig_internal_id,$feature);
 	} elsif ( $feature->isa('Bio::EnsEMBL::SimpleFeature') ) {
 	    $dna_align_adaptor->store($contig_internal_id,$feature);
-	} elsif ( $feature->isa('Bio::EnsEMBL::PredictionFeature') ) {
-	    $prediction_adaptor->store($contig_internal_id,$feature);
+#	} elsif ( $feature->isa('Bio::EnsEMBL::PredictionFeature') ) {
+#	    $prediction_adaptor->store($contig_internal_id,$feature);
 	} else {
 	    $self->throw("cannot store $feature - no feature adaptor that fits it!");
 	}

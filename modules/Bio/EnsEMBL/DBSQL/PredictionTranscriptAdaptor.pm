@@ -117,7 +117,7 @@ sub fetch_by_Slice {
   Function  : returns all PredicitonTranscipts on given contig
   Returntype: listref Bio::EnsEMBL::PredictionTranscript
   Exceptions: none, if there are none, the list is empty.
-  Caller    : Bio::EnsEMBL::RawContig->get_all_PredicitonTranscripts;
+  Caller    : Bio::EnsEMBL::RawContig->get_genscan_peptides();
 
 =cut
 

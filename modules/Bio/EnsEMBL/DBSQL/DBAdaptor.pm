@@ -2475,6 +2475,34 @@ sub get_ProteinAlignFeatureAdaptor {
 }
 
 
+
+=head2 get_DnaAlignFeatureAdaptor
+
+  Args      : none
+  Function  : Returns the DnaAlignFeatuire Adaptor which is connected to
+              this database. There should only be one around.
+  Returntype: Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor
+  Exceptions: none
+  Caller    : FeatureAdaptor, general
+
+=cut
+
+
+sub get_DnaAlignFeatureAdaptor {
+   my $self = shift;
+    
+    my( $sf );
+    unless ($sf = $self->{'_dna_align_feature_adaptor'}) {
+        require Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor;
+        $sf = Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor->new($self);
+        $self->{'_dna_align_feature_adaptor'} = $sf;
+    }
+    return $sf;
+}
+
+
+
+
 =head2 get_AssemblyMapperAdaptor
 
  Title   : get_AssemblyMapperAdaptor
