@@ -400,6 +400,48 @@ sub fetch_all {
 }
 
 
+=head2 fetch_all_non_redundant
+
+  Arg [1]    : none
+  Example    : @all = @{$slice_adaptor->fetch_all_non_redundant()};
+  Description: Retrieves all non-redundant slices, i.e. those which have
+               the attribute XXX set
+  Returntype : listref of Bio::EnsEMBL::Slices
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub fetch_all_non_redundant {
+
+  my $self = shift;
+  # XXX attrib name
+  my $sth = $self->prepare('SELECT s.name, s.length, c.name ' .
+			   'FROM seq_region s, coord_system c ' .
+			   'WHERE s.coord_system_id=c.coord_system_id ' .
+			   'AND at.name=\'nonredundant\' ' .
+			   'AND at.attrib_type_id=sra.attrib_type_id ' .
+			   'AND sra.seq_region_id=s.seq_region_id');
+
+  $sth->execute();
+
+  my ($name, $length, $cs);
+  $sth->bind_columns(\$name, \$length, \$cs);
+
+  my @out;
+  while($sth->fetch()) {
+    push @out, Bio::EnsEMBL::Slice->new(-START  => 1,
+                                        -END    => $length,
+                                        -STRAND => 1,
+                                        -SEQ_REGION_NAME => $name,
+                                        -COORD_SYSTEM => $cs,
+                                        -ADAPTOR => $self);
+  }
+
+  return \@out;
+
+}
+
 
 sub deleteObj {
   my $self = shift;
