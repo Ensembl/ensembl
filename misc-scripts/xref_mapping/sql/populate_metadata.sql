@@ -45,7 +45,7 @@ INSERT INTO source VALUES (1060, 'MEDLINE', 1, 'N', 2);
 INSERT INTO source VALUES (1100, 'LocusLink', 1, 'N', 2);
 INSERT INTO source VALUES (1110, 'EntrezGene', 1, 'N', 2);
 
-INSERT INTO source VALUES (1070, 'GO', 1, 'Y',2);
+INSERT INTO source VALUES (1070, 'GO', 1, 'Y',5);
 INSERT INTO source VALUES (1080, 'MarkerSymbol', 1, 'Y',2);
 INSERT INTO source VALUES (1090, 'HUGO', 1, 'Y',2);
 INSERT INTO source VALUES (1200, 'RGD', 1, 'Y',2);
@@ -54,6 +54,12 @@ INSERT INTO source VALUES (1400, 'ZFIN_ID', 1, 'Y', 2);
 INSERT INTO source VALUES (1500, 'OMIM', 1, 'Y', 3);
 
 INSERT INTO source VALUES (2000, 'CCDS', 1, 'Y', 4);
+
+INSERT INTO source VALUES (2400, 'WormBase', 1, 'Y',4);
+INSERT INTO source VALUES (2410, 'wormbase_gene', 1, 'N',4);
+INSERT INTO source VALUES (2420, 'wormbase_transcript', 1, 'N', 4);
+INSERT INTO source VALUES (2430, 'wormpep_id', 1, 'N', 4);
+INSERT INTO source VALUES (2440, 'wormbase_pseudogene', 1, 'N', 4);
 
 ################################################################################
 # Files to fetch data from
@@ -259,6 +265,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ### C elegans
 
 #        uniprot
+##### (older data, 23 less swissprots ~ 700 less trembls) INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 6239,'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/6239.SPC', '', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 6239, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
 
 #        uniprot
@@ -274,14 +281,27 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 6239,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Cel.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Cel.data.gz', '', now(), now(), "UniGeneParser");
 
 ##       refseq
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 6239,'ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_I/NC_003279.gbk ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_II/NC_003280.gbk ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_III/NC_003281.gbk ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_IV/NC_003282.gbk ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_V/NC_003283.gbk ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_X/NC_003284.gbk', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 6239,'ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_I/NC_003279.gbk', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 6239,'ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_II/NC_003280.gbk', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 6239,'ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_III/NC_003281.gbk', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 6239,'ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_IV/NC_003282.gbk', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 6239,'ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_V/NC_003283.gbk', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 6239,'ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_X/NC_003284.gbk', '', now(), now(), "RefSeqGPFFParser");
 
 ##       refseq
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate1.protein.gpff ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate2.protein.gpff.gz ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate3.protein.gpff ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate4.protein.gpff.gz ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate5.protein.gpff ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate6.protein.gpff.gz ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate7.protein.gpff ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate8.protein.gpff.gz ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate9.protein.gpff ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate10.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate1.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate2.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate3.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate4.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate5.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate6.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
 
-##       WormPep
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate7.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate8.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate10.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
 
-
+##   wormBase 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2400, 6239, 'ftp://ftp.sanger.ac.uk/pub/databases/wormpep/wormpep140/wormpep.table140', '', now(), now(), "WormPepParser");
 
 # --------------------------------------------------------------------------------
 
