@@ -301,22 +301,6 @@ sub get_all_Genes {
    $self->warn("Base class has not implemented get_all_Genes yet!");
 }
 
-=head2 get_all_ContigOverlaps 
-
- Title   : get_all_ContigOverlaps
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_ContigOverlaps {
-    my ($self) = @_;
-    $self->throw("Base class has not implemented get_all_ContigOverlaps");
-}
 
 =head2
 

@@ -272,30 +272,6 @@ sub get_rawcontig_by_position {
 }
 
 
-=head2 get_all_ContigOverlaps 
-
- Title   : get_all_ContigOverlaps
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_ContigOverlaps {
-    my ($self) = @_;
-    
-    
-    my( %overlap );
-    foreach my $contig ($self->get_all_Contigs) {
-	foreach my $lap ($contig->get_all_Overlaps) {
-            $overlap{$lap->hash_string} = $lap;
-        }
-    }
-    return values %overlap;
-}
 
 =head2 is_golden
 
