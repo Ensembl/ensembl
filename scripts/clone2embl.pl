@@ -3,19 +3,37 @@
 use strict;
 
 use Bio::EnsEMBL::AceDB::Obj;
+use Bio::EnsEMBL::DB::Obj;
 use Bio::AnnSeqIO;
 
-my $db = Bio::EnsEMBL::AceDB::Obj->new( -host => 'humsrv1', -port => '410000');
+use Getopt::Long;
 
-$db->_exon_id_start("HE00000040");
+my $dbtype = 'rdb';
+my $host   = 'croc';
+my $port   = '410000';
+
+&GetOptions( 'dbtype' => \$dbtype,
+	     'host'   => \$host,
+	     'port'   => \$port,
+	     );
+
+my $db;
+
+if( $dbtype =~ 'ace' ) {
+    $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host, -port => $port);
+} elsif ( $dbtype =~ 'rdb' ) {
+    $db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'pog' , -host => $host );
+} else {
+    fatal("$dbtype is not a good type (should be ace or rdb)");
+}
 
 
 
 my $clone_id = shift;
 
 my $clone = $db->get_Clone($clone_id);
-
 my $as = $clone->get_AnnSeq();
+
 
 
 $as->seq->desc("Reannotated Clone via EnsEMBL");
