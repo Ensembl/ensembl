@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 19;
+	plan tests => 20;
 }
 
 use MultiTestDB;
@@ -67,6 +67,11 @@ my $ta = $db->get_TranscriptAdaptor();
 my $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 
 ok( $tr );
+
+my $species = $tr->species()->binomial();
+
+debug( "Species: ".$species );
+ok( $species eq "Homo sapiens" );
 
 ok( test_getter_setter( $tr, "external_name", "ECSTR-12" ));
 ok( test_getter_setter( $tr, "external_db", "EMBL" ));
