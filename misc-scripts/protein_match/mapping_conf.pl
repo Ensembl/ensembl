@@ -28,10 +28,10 @@ package main;
 	     #The mapping to known genes is assymetrical. This is due to the fact that's our gene prediction is quite fragmented compared to the manually curated genes       	 
             
 	     #'query_idt'  => 40,
-             'query_idt'    => 40,
+             'query_idt'    => ,
 
              #'target_idt  => 10,
-             'target_idt'  => 10,
+             'target_idt'  => ,
 
              
 
@@ -100,11 +100,8 @@ package main;
 	          #'ens4'      => '/work1/mongin/mapping/primary/ens4.txt',
 	          'ens4'      => '',
 
-                  #Location of the file in .gnp format for the NCBI prediction
-                  #'refseq_pred' => '',
-                  'refseq_pred' => '',
-
                   #Location of the file for GO mapping (gene_association.goa)
+                  #ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/gene_association.goa_human.gz
                   #'go' => '',
                   'go' => '',
                   
