@@ -110,7 +110,7 @@ sub new {
     } elsif (!defined($cigar_string)) {
       $self->throw("Must have a cigar string defining the alignment");
     } 
-
+    
     $self->cigar_string($cigar_string);
     
     return $self;
@@ -341,7 +341,7 @@ sub _generic_parse_features2 {
     $self->throw("features must be an array reference not a [" . ref($features) . "]");
   }
 
-  print ::LOG "Enter new ",ref( $self ), " with ",scalar( @$features ), " features.\n";
+  #print ::LOG "Enter new ",ref( $self ), " with ",scalar( @$features ), " features.\n";
 
   my @f = sort {$a->start <=> $b->start} @$features;
 
@@ -389,7 +389,7 @@ sub _generic_parse_features2 {
       $self->throw("Array element [$f] is not a Bio::EnsEMBL::FeaturePair");
     }
 
-    print STDERR "Processing " . $f->gffstring . "\n";
+    ##print STDERR "Processing " . $f->gffstring . "\n";
     if( defined $f->hstrand() ) {
       if ($f->hstrand != $hstrand) {
         $self->throw("Inconsistent hstrands in feature array");
@@ -484,7 +484,7 @@ sub _generic_parse_features2 {
   $self->feature2($feature2);
   $self->cigar_string($string);
 
-  print ::LOG "Exit with cigar $string.\n";
+  #print ::LOG "Exit with cigar $string.\n";
 }
 
 =head2 ungapped_features
@@ -550,7 +550,7 @@ sub _generic_parse_cigar {
 
   
   my @pieces = ( $string =~ /(\d*[MDI])/g );
-  print ::LOG "cigar: ",join ( ",", @pieces ),"\n";
+  #print ::LOG "cigar: ",join ( ",", @pieces ),"\n";
 
   my @features;
   my $strand1 = $self->strand() || 1;
@@ -713,23 +713,23 @@ sub _generic_parse_features {
     $self->throw("features must be an array reference not a [" . ref($features) . "]");
   }
 
-  print ::LOG "Enter new ",ref( $self ), " with ",scalar( @$features ), " features.\n";
+  #print ::LOG "Enter new ",ref( $self ), " with ",scalar( @$features ), " features.\n";
   for my $f ( @$features ) {
-    print ::LOG join( " ", ( $f->start(), $f->end(), $f->strand(), "-", $f->hstart(), $f->hend(), $f->hstrand() )),"\n";
+    #print ::LOG join( " ", ( $f->start(), $f->end(), $f->strand(), "-", $f->hstart(), $f->hend(), $f->hstrand() )),"\n";
   } 
 
   my $strand     = $features->[0]->strand;
   my @f;
 
   if( $strand == 1 ) {
-    print STDERR "features are forward strand being sorted first to last\n";
+    #print STDERR "features are forward strand being sorted first to last\n";
     @f = sort {$a->start <=> $b->start} @$features;
-    print STDERR "first hstart = ".$f[0]->start." last hstart ".$f[$#f]->start."\n";
+    #print STDERR "first hstart = ".$f[0]->start." last hstart ".$f[$#f]->start."\n";
   } else {
-    print STDERR "features are reverse strand being sorted last to first\n";
+    #print STDERR "features are reverse strand being sorted last to first\n";
     @f = sort { $b->start <=> $a->start} @$features;
-    print STDERR "first start = ".$f[0]->start." last start ".$f[$#f]->start."\n";
-    print STDERR "first hstart = ".$f[0]->hstart." last hstart ".$f[$#f]->hstart."\n";
+    #print STDERR "first start = ".$f[0]->start." last start ".$f[$#f]->start."\n";
+    #print STDERR "first hstart = ".$f[0]->hstart." last hstart ".$f[$#f]->hstart."\n";
   }
 
   my $hstrand     = $f[0]->hstrand;
@@ -746,6 +746,10 @@ sub _generic_parse_features {
   ( defined $hstrand ) || ( $hstrand = 1 );
   my $ori = $strand * $hstrand;
 
+  #print "about to make cigar string from these features\n";
+  foreach my $feature(@f){
+    #print $feature->gffstring."\n";
+  }
 
   if (scalar(@f) == 0) {
     $self->throw("No features in the array to parse");
@@ -761,9 +765,15 @@ sub _generic_parse_features {
   my $f1end   = $f[$#f]->end;
   
   if ( $strand == 1 ) {
+    #print STDERR "strand = ".$strand."\n";
+    #print STDERR "f1start set to ".$f[0]->start." feature 0 start\n";
+    #print STDERR "f1end set to ".$f[$#f]->end." feature ".$#f." end\n";
     $f1start = $f[0]->start;
     $f1end   = $f[$#f]->end;
   } else {
+    #print STDERR "strand = ".$strand."\n";
+    #print STDERR "f1end set to ".$f[0]->end." feature 0 start\n";
+    #print STDERR "f1start set to ".$f[$#f]->start." feature ".$#f." end\n";
     $f1end   = $f[0]->end;
     $f1start = $f[$#f]->start;
   }
@@ -772,11 +782,17 @@ sub _generic_parse_features {
   my $f2end;
 
   if ( $hstrand == 1 ) {
+    #print STDERR "hstrand = ".$hstrand."\n";
+    #print STDERR "f2start set to ".$f[0]->hstart." feature 0 hstart\n";
+    #print STDERR "f2end set to ".$f[$#f]->hend."  feature ".$#f." hend\n";
     $f2start = $f[0]->hstart;
     $f2end   = $f[$#f]->hend;
   } else {
-    $f2end   = $f[0]->hend;
-    $f2start = $f[$#f]->hstart;
+    #print STDERR "hstrand = ".$hstrand."\n";
+    #print STDERR "f2start set to ".$f[0]->hstart." feature 0 hend\n";
+    #print STDERR "f2end set to ".$f[$#f]->hend." feature ".$#f." hstart\n";
+    $f2start   = $f[0]->hstart;
+    $f2end = $f[$#f]->hend;
   }
 
   foreach my $f (@f) {
@@ -784,7 +800,7 @@ sub _generic_parse_features {
       $self->throw("Array element [$f] is not a Bio::EnsEMBL::FeaturePair");
     }
 
-    print STDERR "Processing " . $f->gffstring . "\n";
+    #print STDERR "Processing " . $f->gffstring . "\n";
     if( defined $f->hstrand() ) {
       if ($f->hstrand != $hstrand) {
         $self->throw("Inconsistent hstrands in feature array");
@@ -811,7 +827,7 @@ sub _generic_parse_features {
 
     my $start1 = $f->start;
     my $start2 = $f->hstart();
-    print STDERR "hstrand = ".$hstrand." ori ".$ori." strand ".$strand."\n";
+    #print STDERR STDERR "hstrand = ".$hstrand." ori ".$ori." strand ".$strand."\n";
     if (defined($prev1)) {
       if ( $strand == 1 ) {
         if ($f->start < $prev1) {
@@ -911,7 +927,9 @@ sub _generic_parse_features {
   $feature1->p_value($pvalue);
   $feature1->phase($phase);
   $feature1->analysis($analysis);
-
+  #print STDERR "checking feature1 ".$feature1->gffstring."\n";
+  $feature1->validate;
+  
   my $feature2 = new Bio::EnsEMBL::SeqFeature();
  
   $feature2->start($f2start);
@@ -923,12 +941,14 @@ sub _generic_parse_features {
   $feature2->p_value($pvalue);
   $feature2->phase($phase);
   $feature2->analysis($analysis);
-
+  #print STDERR "checking feature2 ".$feature2->gffstring."\n";
+  $feature2->validate;
   $self->feature1($feature1);
   $self->feature2($feature2);
   $self->cigar_string($string);
 
-  print ::LOG "Exit with cigar $string.\n";
+  #print STDERR "\n\n";
+  #print ::LOG "Exit with cigar $string.\n";
 }
 
 1;

@@ -80,6 +80,7 @@ sub new {
   $self->{'_gsf_tag_hash'} = {};
   $self->{'_gsf_sub_array'} = [];
   $self->{'_parse_h'} = {};
+  $self->{'_contig_id'} = undef;
 
   bless $self,$caller;
 
@@ -87,7 +88,7 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 
   eval {
 
-  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value, $phase, $end_phase) = 
+  ($start,$end,$strand,$frame,$score,$analysis,$seqname, $percent_id, $p_value, $phase, $end_phase) = 
 
       $self->_rearrange([qw(START
 			    END
@@ -95,9 +96,9 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 			    FRAME
 			    SCORE
 			    ANALYSIS
+			    SEQNAME
 			    SOURCE_TAG
 			    PRIMARY_TAG
-			    SEQNAME
 			    PERCENT_ID
 			    P_VALUE
 			    PHASE
@@ -117,8 +118,6 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
   if ( defined ($start) && $start ne "" )       { $self->start($start)};
   if ( defined ($end )  && $end   ne "" )       { $self->end($end)}
   if ( defined $strand  && $strand ne "")       { $self->strand($strand)}
-  if ( defined $primary_tag && $primary_tag ne "")  { $self->primary_tag($primary_tag)}
-  if ( defined $source_tag && $source_tag ne ""){ $self->source_tag($source_tag)}
   if ( defined $frame  && $frame ne "")         { $self->frame($frame)}
   if ( defined $score  && $score ne "")         { $self->score($score)}
   if ( defined $seqname && $seqname ne "")      { $self->seqname($seqname)};
@@ -126,6 +125,8 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
   if ( defined $p_value && $p_value ne "")      { $self->p_value($p_value)};
   if ( defined $phase && $phase ne "")          { $self->phase($phase)};
   if ( defined $end_phase && $end_phase ne "")  { $self->end_phase($end_phase)};
+  if ( defined $primary_tag && $primary_tag ne "")  { $self->primary_tag($primary_tag)}
+  if ( defined $source_tag && $source_tag ne ""){ $self->source_tag($source_tag)}
   return $self; # success - we hope!
 
 }
@@ -157,7 +158,17 @@ sub seqname{
 
 }
 
+sub contig_id{
+   my ($self,$arg) = @_;
 
+   if( $arg) {
+      $self->{'_contig_id'} = $arg;
+ 
+   }
+
+    return $self->{'_contig_id'};
+
+}
 
 sub raw_seqname{
    my ($self,$arg) = @_;
@@ -421,8 +432,6 @@ sub validate {
     $self->vthrow("end not defined in feature")         unless defined($self->end);
     $self->vthrow("strand not defined in feature")      unless defined($self->strand);
     $self->vthrow("score not defined in feature")       unless defined($self->score);
-    $self->vthrow("source_tag not defined in feature")  unless defined($self->source_tag);
-    $self->vthrow("primary_tag not defined in feature") unless defined($self->primary_tag);
     $self->vthrow("analysis not defined in feature")    unless defined($self->analysis);
 
     if ($self->end < $self->start) {
@@ -445,11 +454,7 @@ sub vthrow {
         
     print(STDERR "   Score       : [" . $self->{_gsf_score} . "]\n");
     
-    print(STDERR "   Source_tag  : [" . 
-        ((defined ($self->{_source_tag})) ? $self->{_source_tag} : "undefined") . "]\n");
-        
-    print(STDERR "   Primary_tag : [" . 
-        ((defined ($self->{_primary_tag})) ? $self->{_primary_tag} : "undefined") . "]\n");
+    
         
     print(STDERR "   Analysis    : [" . $self->{_analysis}->dbID . "]\n");
 

@@ -118,7 +118,7 @@ sub map_coordinates_to_assembly {
         $self->throw("Expecting integer for contig end coord, but got '$end'");
     }
 
-    unless ($strand =~ /^[+-]?1$/) {
+    unless ($strand =~ /^[+-]?1$/ || $strand == 0) {
         $self->throw("Expecting +/- 1 for contig strand, but got '$strand'");
     }
 
@@ -163,7 +163,7 @@ sub map_coordinates_to_rawcontig {
         $self->throw("Expecting integer for chromosome end, but got '$end'");
     }
 
-    unless ($strand =~ /^[+-]?1$/) {
+    unless ($strand =~ /^[+-]?1$/ || $strand == 0) {
         $self->throw("Expecting +/- 1 for chromosome strand, but got '$strand'");
     }
 
@@ -191,7 +191,7 @@ sub map_coordinates_to_rawcontig {
 
 sub list_contig_ids {
    my ($self, $chr_name, $start, $end) = @_;
-
+  
    unless ($chr_name =~ /^\S+$/) {
       $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
    }
@@ -207,15 +207,16 @@ sub list_contig_ids {
    # may not have registered this region yet
 
    $self->register_region($chr_name, $start, $end);
-
-   my @pairs = $self->_mapper->list_pairs($start, $end, $chr_name, 'assembly');
-
+  
+   my @pairs = $self->_mapper->list_pairs($chr_name, $start, $end, 'assembly');
+   
    my @ids;
 
    foreach my $pair ( @pairs ) {
+    
       push(@ids,$pair->from->id);
    }
-
+   
    return @ids;
 }
 
@@ -242,7 +243,7 @@ sub list_contig_ids {
 
 sub register_region {
    my ($self, $chr_name, $start, $end) = @_;
-
+   
    unless ($chr_name =~ /^\S+$/) {
       $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
    }
@@ -255,7 +256,7 @@ sub register_region {
       $self->throw("Expecting integer for chromosome end, but got '$end'");
    }
 
-
+ 
    $self->adaptor->register_region($self, $self->_type, $chr_name, $start, $end);
 }
 
@@ -345,7 +346,7 @@ sub _have_registered_contig {
 
 sub _register_contig {
    my ($self,$id) = @_;
-
+  
    $self->{'_contig_register'}->{$id} = 1;
 
 }
