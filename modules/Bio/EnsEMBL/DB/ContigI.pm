@@ -722,4 +722,57 @@ sub find_supporting_evidence {
 }
     
 
+
+=head2 get_repeatmasked_seq
+
+ Title	 : get_repeatmasked_seq
+ Usage	 : $seq = $obj->get_repeatmasked_seq()
+ Function: Masks DNA sequence by replacing repeats with N\'s
+ Returns : Bio::PrimarySeq
+ Args	 : none
+
+
+=cut
+
+
+sub get_repeatmasked_seq {
+    my ($self) = @_;
+    my @repeats = $self->get_all_RepeatFeatures();
+    my $seq = $self->primary_seq();
+    my $dna = $seq->seq();
+    my $masked_dna = $self->mask_features($dna, @repeats);
+    my $masked_seq = Bio::PrimarySeq->new(   '-seq'        => $masked_dna,
+                                             '-display_id' => $self->id,
+                                             '-moltype' => 'dna',
+					     );
+    return $masked_seq;
+}
+
+
+sub mask_features {
+    my ($self, $dnastr,@repeats) = @_;
+    my $dnalen = length($dnastr);
+    
+  REP:foreach my $f (@repeats) {
+      
+      my $start    = $f->start;
+      my $end	   = $f->end;
+      my $length = ($end - $start) + 1;
+      
+      if ($start < 0 || $start > $dnalen || $end < 0 || $end > $dnalen) {
+	  print STDERR "Eeek! Coordinate mismatch - $start or $end not within $dnalen\n";
+	  next REP;
+      }
+      
+      $start--;
+      
+      my $padstr = 'N' x $length;
+      
+      substr ($dnastr,$start,$length) = $padstr;
+      
+  }
+    
+    return $dnastr;
+}
+
 1;
