@@ -24,9 +24,10 @@ my %nt_contig;
 my %clone;
 
 my $default_ori = 1;
-my $chr_offset = 0;    # chr coordinates may be off by 1
-                       # but depends on the assembly version...
+my $chr_offset = 0;	# chr coordinates may be off by 1
+			# but depends on the assembly version...
 my $gptype = 'NCBI_26';
+my $allow_pipe = 0;	# convert '|' to '_'
 
 
 open CHR, "< $chrom" or die "Can't open chromosome file $chrom";
@@ -98,6 +99,7 @@ while (<AGP>) {
     my $chr    = $nt_contig{$nt_ctg}->{'chr'};
     my ($chr_start, $chr_end);
     $chr =~ s!^(\d+|X|Y)!chr\1!;	# Oh, the joy of regex ...
+    $chr =~ s!\|!_! unless $allow_pipe;	# "we" don't want |'s in chr name ...
 
     if ($nt_ori == 1) {
 	# forward oriented nt contig: raw contigs forward from nt contig start
