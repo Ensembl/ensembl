@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 47;
+	plan tests => 48;
 }
 
 use TestUtils qw( debug );
@@ -332,3 +332,11 @@ ok($a == 234371
    && $gc_content == 48.59 
    && $a+$c+$t+$g+$n == $slice->length);
 
+
+$slice = $slice_adaptor->fetch_by_region('chromosome', '20', 10, 30);
+
+my $sr_slice = $slice->seq_region_Slice();
+
+ok($sr_slice->start() == 1 &&
+   $sr_slice->end()   == $slice->seq_region_length() &&
+   $sr_slice->strand() == 1);
