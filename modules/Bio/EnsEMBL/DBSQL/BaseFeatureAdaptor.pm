@@ -174,13 +174,15 @@ sub generic_fetch {
 
   #append additional clauses which may have been defined
   $sql .= "\n$final_clause";
-
-
+#  (my $sql_debug = $sql ) =~s/\n/\n$$   /gm;
+  my $START = time();
+#  print STDERR "$$    $sql_debug\n";
   my $sth = $db->prepare($sql);
-
-  $sth->execute;
-
+     $sth->execute;
+#  print STDERR "$$    ".(time()-$START)."\n";
   my $res = $self->_objs_from_sth($sth, $mapper, $slice, $keep_all);
+#  print STDERR "$$    ".(time()-$START)."\n\n";
+#  warn( $$,"    ", $self->db->dbname );
 
   return $res;
 }
