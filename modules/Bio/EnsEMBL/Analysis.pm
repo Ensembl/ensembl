@@ -158,7 +158,8 @@ sub dbID {
 
 sub id {
     my ($self,$arg) = @_;
-    $self->warn( "Analysis->id is depracated. Use dbID!" );
+    $self->warn( "Analysis->id is deprecated. Use dbID!" );
+    print STDERR caller;
     
     if (defined($arg)) {
 	$self->{_dbid} = $arg;
