@@ -57,6 +57,8 @@ use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use POSIX;
 
+use Data::Dumper;
+
 my ($species, $dry, $help);
 &GetOptions(
     "species=s" => \$species,
@@ -130,7 +132,12 @@ my %gene_types = (
     "Processed_pseudogene" => "pseudoGeneDensity",
     "Pseudogene" => "pseudoGeneDensity",
     "Unprocessed_pseudogene" => "pseudoGeneDensity",
+    "Known_in_progress" => "knownGeneDensity",
+    "Novel_CDS_in_progress" => "novelCDSDensity", 
 );
+my %density_types;
+map { $density_types{$_} = 1 } values %gene_types;
+
 print STDERR "\nAvailable gene types: ";
 print STDERR join(" ", sort keys %gene_types);
 print STDERR "\n";
@@ -188,19 +195,21 @@ foreach my $slice (@$top_slices){
             ## only count genes that don't overlap the subslice start
             ## (since these were already counted in the last bin)
             if ($gene->start >= 1) {
-                $num{$gene_types{$gene->type}}++;
-                $total{$gene->type}++;
+	        $total{$gene->type}++;
             }
+	    $num{$gene_types{$gene->type}}++;
+
         }
 
         ## create DensityFeature objects for each type
-        foreach my $type (keys %gene_types) {
+        foreach my $type (keys %density_types) {
+  
             push @density_features, Bio::EnsEMBL::DensityFeature->new
                 (-seq_region    => $slice,
                  -start         => $current_start,
                  -end           => $current_end,
-                 -density_type  => $dtcache{$gene_types{$type}},
-                 -density_value => $num{$gene_types{$type}} || 0
+                 -density_type  => $dtcache{$type},
+                 -density_value => $num{$type} ||0
             );
         }
         $current_start = $current_end + 1;
@@ -213,6 +222,7 @@ foreach my $slice (@$top_slices){
         print STDERR "Mem: " . `ps $$ -o vsz |tail -1`;
     }
 
+
     ## store DensityFeatures for the chromosome
     $dfa->store(@density_features) unless $dry;
 
@@ -221,43 +231,43 @@ foreach my $slice (@$top_slices){
     push @attribs, Bio::EnsEMBL::Attribute->new
     (-NAME => 'Known genes',
      -CODE => 'KnownGeneCount',
-     -VALUE => $total{'Known'},
+     -VALUE => $total{'Known'} || 0,
      -DESCRIPTION => 'Total Number of Known genes');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
     (-NAME => 'Novel CDS',
      -CODE => 'NovelCDSCount',
-     -VALUE => $total{'Novel_CDS'},
+     -VALUE => $total{'Novel_CDS'} || 0,
      -DESCRIPTION => 'Total Number of Novel CDSs');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
     (-NAME => 'Novel transcripts',
      -CODE => 'NovelTransCount',
-     -VALUE => $total{'Novel_Transcript'},
+     -VALUE => $total{'Novel_Transcript'} || 0,
      -DESCRIPTION => 'Total Number of Novel transcripts');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
     (-NAME => 'Putative transcripts',
      -CODE => 'PutTransCount',
-     -VALUE => $total{'Putative'},
+     -VALUE => $total{'Putative'} || 0,
      -DESCRIPTION => 'Total Number of Putative transcripts');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
     (-NAME => 'Predicted transcripts',
      -CODE => 'PredTransCount',
-     -VALUE => $total{'Predicted_Gene'},
+     -VALUE => $total{'Predicted_Gene'} || 0,
      -DESCRIPTION => 'Total Number of Predicted transcripts');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
     (-NAME => 'Ig Segments',
      -CODE => 'IgSegCount',
-     -VALUE => $total{'Ig_Segment'},
+     -VALUE => $total{'Ig_Segment'} || 0,
      -DESCRIPTION => 'Total Number of Ig Segments');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
     (-NAME => 'Ig Pseudogene Segments',
      -CODE => 'IgPsSegCount',
-     -VALUE => $total{'Ig_Pseudogene_Segment'},
+     -VALUE => $total{'Ig_Pseudogene_Segment'} || 0,
      -DESCRIPTION => 'Total Number of Ig Pseudogene Segments');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
@@ -265,28 +275,28 @@ foreach my $slice (@$top_slices){
      -CODE => 'TotPsCount',
      -VALUE => $total{'Pseudogenes'}
                + $total{'Processed_pseudogene'}
-               + $total{'Unprocessed_pseudogene'},
+               + $total{'Unprocessed_pseudogene' || 0},
      -DESCRIPTION => 'Total Number of Pseudogenes');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
     (-NAME => 'Unclassified pseudogenes',
      -CODE => 'UnclassPsCount',
-     -VALUE => $total{'Pseudogene'},
+     -VALUE => $total{'Pseudogene'} || 0,
      -DESCRIPTION => 'Number of Unclassified pseudogenes');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
     (-NAME => 'Processed pseudogenes',
      -CODE => 'ProcPsCount',
-     -VALUE => $total{'Processed_pseudogene'},
+     -VALUE => $total{'Processed_pseudogene'} || 0,
      -DESCRIPTION => 'Number of Processed pseudogenes');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
     (-NAME => 'Unprocessed pseudogenes',
      -CODE => 'UnprocPsCount',
-     -VALUE => $total{'Unprocessed_pseudogene'},
+     -VALUE => $total{'Unprocessed_pseudogene'} || 0,
      -DESCRIPTION => 'Number of Unprocessed pseudogenes');
 
-    $attrib_adaptor->store_on_Slice($slice, \@attribs) unless $dry;
+#    $attrib_adaptor->store_on_Slice($slice, \@attribs) unless $dry;
 
     print STDERR "Total for chr $chr:\n";
     print STDERR map { "\t$_ => $total{$_}\n" } sort keys %total;
