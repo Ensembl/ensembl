@@ -19,6 +19,8 @@ use vars qw(@ISA);
                The type of repeat consensus
   Arg [REPEAT_CONSENSUS]: string (optional)
                The sequence of this repeat consensus
+  Arg [REPEAT_TYPE]: string 
+               Its like class only more general
   Arg [...]: Named arguments to superclass constructor
              (see Bio::EnsEMBL::Storable)
   Example    : $rc = Bio::EnsEMBL::RepeatConsensus->new
@@ -42,13 +44,14 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ($name, $length, $repeat_class, $repeat_consensus) =
-    rearrange(['NAME', 'LENGTH', 'REPEAT_CLASS', 'REPEAT_CONSENSUS'], @_);
+  my ($name, $length, $repeat_class, $repeat_consensus, $repeat_type ) =
+    rearrange(['NAME', 'LENGTH', 'REPEAT_CLASS', 'REPEAT_CONSENSUS', 'REPEAT_TYPE'], @_);
 
   $self->{'name'} = $name;
   $self->{'length'} = $length;
   $self->{'repeat_class'} = $repeat_class;
   $self->{'repeat_consensus'} = $repeat_consensus;
+  $self->{'repeat_type'} = $repeat_type;
 
   return $self;
 }
@@ -106,6 +109,24 @@ sub repeat_class {
   my $self = shift;
   $self->{'repeat_class'} = shift if(@_);
   return $self->{'repeat_class'};
+}
+
+=head2 repeat_type
+
+  Arg [1]    : string $type (optional)
+               The type of the consensus 
+  Example    : $type = $repeat_consensus->repeat_type()
+  Description: Getter/Setter for the type of this repeat_consensus
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub repeat_type {
+  my $self = shift;
+  $self->{'repeat_type'} = shift if(@_);
+  return $self->{'repeat_type'};
 }
 
 

@@ -46,6 +46,41 @@ use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
 
+
+
+=head2 fetch_all_by_Slice_and_type
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+  Arg [2]    : String $type
+  Example    : none
+  Description: uses optional type to retrieve repeat features
+               uses BaseFeatureAdaptor fetch_all_by_Slice_constraint
+  Returntype : listref Bio::EnsEMBL::RepeatFeature
+  Exceptions : 
+  Caller     : general
+
+=cut
+
+
+sub fetch_all_by_Slice_and_type {
+  my $self = shift;
+  my $slice = shift;
+  my $type = shift;
+
+  if( ! $slice || ! $slice->isa("Bio::EnsEMBL::Slice") ) {
+    throw( "Need slice as first argument" );
+  }
+
+  if($type) {
+    my $constraint = "rc.repeat_type = \"$type\"";
+    return $self->SUPER::fetch_all_by_Slice_constraint( $slice, $constraint );
+  } else {
+    return $self->SUPER::fetch_all_by_Slice( $slice );
+  }
+
+}
+
+
 #  _tablename
 #
 #   Arg [1]    : none
@@ -89,6 +124,7 @@ sub _columns {
 	     r.score
 	     rc.repeat_name
 	     rc.repeat_class
+	     rc.repeat_type
 	     rc.repeat_consensus);
 }
 
@@ -137,14 +173,14 @@ sub _objs_from_sth {
 
   my($repeat_feature_id, $seq_region_id, $seq_region_start, $seq_region_end,
      $seq_region_strand, $repeat_consensus_id, $repeat_start, $repeat_end,
-     $analysis_id, $score, $repeat_name, $repeat_class,
+     $analysis_id, $score, $repeat_name, $repeat_class, $repeat_type,
      $repeat_consensus);
 
   $sth->bind_columns( \$repeat_feature_id, \$seq_region_id, \$seq_region_start,
                       \$seq_region_end, \$seq_region_strand,
                       \$repeat_consensus_id, \$repeat_start,\$repeat_end,
                       \$analysis_id, \$score, \$repeat_name, \$repeat_class,
-                      \$repeat_consensus );
+                      \$repeat_type, \$repeat_consensus );
 
   my $asm_cs;
   my $cmp_cs;
@@ -180,6 +216,7 @@ sub _objs_from_sth {
            -ADAPTOR          => $rca,
            -NAME             => $repeat_name,
            -REPEAT_CLASS     => $repeat_class,
+	   -REPEAT_TYPE      => $repeat_type,
            -REPEAT_CONSENSUS => $repeat_consensus,
            -LENGTH           => length($repeat_consensus));
 

@@ -168,12 +168,13 @@ sub _generic_fetch {
     my( $self, $where_clause ) = @_;
 
     my( $repeat_consensus_id, $repeat_name, $repeat_class,$repeat_length,
-        $repeat_consensus );
+        $repeat_consensus, $repeat_type );
 
     my $sth = $self->prepare(qq{
         SELECT repeat_consensus_id
           , repeat_name
           , repeat_class
+	  , repeat_type
           , LENGTH(repeat_consensus)
           , repeat_consensus
         FROM repeat_consensus
@@ -184,6 +185,7 @@ sub _generic_fetch {
         \$repeat_consensus_id,
         \$repeat_name,
         \$repeat_class,
+	\$repeat_type,
         \$repeat_length,
         \$repeat_consensus
         );
@@ -194,6 +196,7 @@ sub _generic_fetch {
           (-DBID => $repeat_consensus_id,
            -NAME => $repeat_name,
            -REPEAT_CLASS => $repeat_class,
+           -REPEAT_TYPE => $repeat_type,
            -LENGTH => $repeat_length,
            -ADAPTOR => $self,
            -REPEAT_CONSENSUS => $repeat_consensus);
@@ -220,8 +223,9 @@ sub store {
     INSERT into repeat_consensus( repeat_consensus_id
           , repeat_name
           , repeat_class
+          , repeat_type
           , repeat_consensus )
-      VALUES (NULL, ?,?,?)
+      VALUES (NULL, ?,?,?,?)
     });
 
   foreach my $rc (@consensi) {
@@ -229,10 +233,12 @@ sub store {
       or throw("name not set");
     my $class = $rc->repeat_class
       or throw("repeat_class not set");
+    my $type  = $rc->repeat_type();
+    $type = "" unless defined $type;
     my $seq   = $rc->repeat_consensus
       or throw("repeat_consensus not set");
 
-    $sth->execute($name, $class, $seq);
+    $sth->execute($name, $class, $type, $seq);
 
     my $db_id = $sth->{'mysql_insertid'}
     or throw("Didn't get an insertid from the INSERT statement");
