@@ -101,8 +101,8 @@ foreach my $v2_file (glob($v2_dir . '/*')) {
 
 	    $delta_size = (stat $delta_file)[7];
 	    if ($delta_size > $v2_size) {
-		print "\tOoops, delta file larger than new revision ";
-		if ($v2_file =~ /.gz$/) {
+		print "\tOoops, delta file larger than new file ";
+		if ($v2_file =~ /\.gz$/) {
 		    print "(copying new file)\n";
 		    $patch_command = 'ADD';
 		    copy($v2_file, $delta_file);
@@ -116,9 +116,15 @@ foreach my $v2_file (glob($v2_dir . '/*')) {
 	    }
 	}
     } else {
-	$patch_command = 'ZIP';
-	print "\tCopying (and compressing) new file\n";
-	do_compress($v2_file, $delta_file);
+	if ($v2_file =~ /\.gz$/) {
+	   $patch_command = 'ADD';
+	   print "\tCopying new file\n";
+	   copy($v2_file, $delta_file);
+	} else {
+	   $patch_command = 'ZIP';
+	   print "\tCopying (and compressing) new file\n";
+	   do_compress($v2_file, $delta_file);
+	}
     }
 
     if ($patch_command ne 'COPY') {
