@@ -24,7 +24,8 @@ Bio::EnsEMBL::DBSQL::Feature_Obj - MySQL database adapter class for EnsEMBL Feat
   
 =head1 DESCRIPTION
 
-This object deals with protein feature objects.
+This object deals with protein feature objects. It contains methods to fetch prtein features from the database, write protein feature into the database, and delete these protein features from the databases.
+A protein feature is linked to a peptide. This linked is made through the translation id stored in the translation table. For example the method fetch_by_translationID will return all of the feature for this given peptide.
 
 The Obj object represents a database that is implemented somehow (you shouldn\'t care much as long as you can get the object). 
 
@@ -47,11 +48,10 @@ package Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+# Object preamble - inheriets from Bio::EnsEMBL::DBSQL::BaseAdaptor
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 
-use DBI;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::SeqFeature;
 
@@ -67,11 +67,11 @@ sub _feature_obj {
     return $self->{'feature_obj'};
 }
 
-=head2 Fetch_protfeature_by_translation
+=head2 fetch_by_translationID
 
- Title   : Fetch_protfeature_by_translation
- Usage   :@features = $prot_feat-> Fetch_protfeature_by_translation($transl_id)
- Function:Get all of the protein feature objects of one peptide
+ Title   : fetch_by_translationID
+ Usage   :@features = $prot_feat-> fetch_by_translationID($transl_id)
+ Function:Get all of the protein feature objects of one peptide (this identifiant for this peptide is given by the transaltion id)
  Example :
  Returns : Protein feature objects
  Args    :
@@ -81,41 +81,26 @@ sub _feature_obj {
 
 
 
-sub Fetch_protfeature_by_translation {
+sub fetch_by_translationID {
     my($self,$transl) = @_;
 
     my @features;
     my $sth = $self->prepare ("select * from protein_feature where translation = '$transl'");
     my $res = $sth->execute;
 
-    while (my $rowhash = $sth->fetchrow_hashref) {
-	
-	    my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
-	
-	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -start => $rowhash->{'seq_start'},
-						       -end => $rowhash->{'seq_end'},
-						       -score => $rowhash->{'score'}, 
-						       -analysis => $analysis,
-						       -seqname => $transl);
-
-	    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $rowhash->{'hstart'},
-						      -end => $rowhash->{'hend'},
-						      -analysis => $analysis,
-						      -seqname => $rowhash->{'hid'});
-
-	    my $feature = new Bio::EnsEMBL::FeaturePair(-feature1 => $feat1,
-							-feature2 => $feat2,);
-	    
-	    push(@features,$feature);
+    while (my $rowhash = $sth->fetchrow_hashref) {   
+	my $feature = $self->_set_protein_feature($rowhash);
+ 
+	push(@features,$feature);
 	
     }
     return @features;    
 }
 
-=head2 Fetch_protfeature_by_id
+=head2 fetch_by_dbID
 
- Title   : Fetch_protfeature_by_id
- Usage   :$feature = $prot_feat-> Fetch_protfeature_by_translation($feature_id)
+ Title   : fetch_by_dbID
+ Usage   :$feature = $prot_feat->fetch_by_dbID($id)
  Function:Get a protein feature object
  Example :
  Returns :Protein feature object 
@@ -124,30 +109,21 @@ sub Fetch_protfeature_by_translation {
 
 =cut
 
-sub Fetch_protfeature_by_id{
+sub fetch_by_dbID{
    my ($self,$protfeat_id) = @_;
    
    my $features;
    my $sth = $self->prepare ("select * from protein_feature where id = '$protfeat_id'");
-   my $res = $sth->execute || die "Can't execute";
+   my $res = $sth->execute;
    
    my $rowhash = $sth->fetchrow_hashref;
-       
-   my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
+    
+   if (!defined $rowhash->{'id'}) {
+       $self->throw("This dbID: $protfeat_id, does not exist in the database");
+   }
+
+   my $feature = $self->_set_protein_feature($rowhash);
    
-   my $feat1 = new Bio::EnsEMBL::SeqFeature ( -start => $rowhash->{'seq_start'},
-					      -end => $rowhash->{'seq_end'},
-					      -score => $rowhash->{'score'}, 
-					      -analysis => $analysis,
-					      -seqname => $rowhash->{'translation'});
-   
-   my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $rowhash->{'hstart'},
-					     -end => $rowhash->{'hend'},
-					     -analysis => $analysis,
-					     -seqname => $rowhash->{'hid'});
-   
-   my $feature = new Bio::EnsEMBL::FeaturePair(-feature1 => $feat1,
-					       -feature2 => $feat2,);
    return $feature;
 }
 
@@ -169,7 +145,7 @@ sub write_Protein_feature{
     my ($self,$feature) = @_;
     my $analysis;
 
-
+   
     if( ! $feature->isa('Bio::EnsEMBL::SeqFeatureI') ) {
 	$self->throw("Feature $feature is not a feature!");
     }
@@ -207,9 +183,9 @@ sub write_Protein_feature{
     
 }
 
-=head2 write_Protein_feature_by_translation
+=head2 write_Protein_feature_by_translationID
 
- Title   : write_Protein_feature_by_translation
+ Title   : write_Protein_feature_by_translationID
  Usage   :$obj->write_Protein_feature_by_translation($pep,@features)
  Function: Write all of the protein features into the database of a particular peptide
  Example :
@@ -219,14 +195,22 @@ sub write_Protein_feature{
 
 =cut
 
-sub write_Protein_feature_by_translation {
+sub write_Protein_feature_by_translationID {
     my ($self,$pep,@features) = @_;
     
     my $analysis;
-    
+   
+#Check if the translation id exist in the database, throw an exeption if not.
+    my $sth1 = $self->prepare("select id from translation where id = '$pep'");
+    $sth1->execute;
+   
+    if ($sth1->rows == 0) {
+	$self->throw("This translation id: $pep does not exist in the database");
+    }
+
     FEATURE :
 	foreach my $features(@features) {	
-	
+	   
 	    if( ! $features->isa('Bio::EnsEMBL::SeqFeatureI') ) {
 		$self->throw("Feature $features is not a feature!");
 	    }
@@ -238,6 +222,7 @@ sub write_Protein_feature_by_translation {
 	   
 	    
 	    if ($@) {
+		print STDERR "Feature for peptide ". $features->seqname." is not a protein feature, skipped\n";
 		next FEATURE;
 	    }
 	    
@@ -270,9 +255,9 @@ sub write_Protein_feature_by_translation {
     
 
 
-=head2 delete
+=head2 delete_by_translationID
 
- Title   : delete
+ Title   : delete_by_translationID
  Usage   :
  Function: deletes all protein features for a particular peptide
  Example :
@@ -282,16 +267,16 @@ sub write_Protein_feature_by_translation {
 
 =cut
 
-sub delete {
+sub delete_by_translationID {
     my ($self,$trans) = @_;
     my $sth = $self->prepare("delete from protein_feature where translation = '$trans'");
 
-    my $res = $sth->execute;
+    $sth->execute;
 }
 
-=head2 delete_by_id
+=head2 delete_by_dbID
 
- Title   : delete_by_id
+ Title   : delete_by_dbID
  Usage   :
  Function: deletes a protein feature
  Example :
@@ -301,13 +286,47 @@ sub delete {
 
 =cut
 
-sub delete_by_id {
+sub delete_by_dbID {
     my ($self,$id) = @_;
     my $sth = $self->prepare("delete from protein_feature where id = $id");
 
-    my $res = $sth->execute;
+    $sth->execute;
 }
 
+
+=head2 _set_protein_feature
+
+ Title   : _set_protein_feature
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _set_protein_feature{
+   my ($self,$rowhash) = @_;
+
+my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
+   
+   my $feat1 = new Bio::EnsEMBL::SeqFeature ( -start => $rowhash->{'seq_start'},
+					      -end => $rowhash->{'seq_end'},
+					      -score => $rowhash->{'score'}, 
+					      -analysis => $analysis,
+					      -seqname => $rowhash->{'translation'});
+   
+   my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $rowhash->{'hstart'},
+					     -end => $rowhash->{'hend'},
+					     -analysis => $analysis,
+					     -seqname => $rowhash->{'hid'});
+   
+   my $feature = new Bio::EnsEMBL::FeaturePair(-feature1 => $feat1,
+					       -feature2 => $feat2,);
+   return $feature;
+
+}
 
 
 
