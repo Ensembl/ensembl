@@ -1192,6 +1192,85 @@ sub pep_coords {
 
 
 
+=head1
+
+  Arg  1   : integer start - relative to peptide
+  Arg  2   : integer end   - relative to peptide
+
+  Function : Provides a list of Bio::EnsEMBL::SeqFeatures which
+             is the genomic coordinates of this start/end on the peptide
+
+
+  Returns  : list of Bio::EnsEMBL::SeqFeature
+
+=cut
+
+sub convert_peptide_coordinate_to_contig {
+  my ($self,$start,$end) = @_;
+
+  if( !defined $end ) {
+    $self->throw("Must call with start/end");
+  }
+
+  # move start end into translate cDNA coordinates now.
+  # much easier!
+  $start = 3* $start;
+  $end   = 3* $end;
+
+  if( !defined $self->translation ) {
+    $self->throw("No translation, so no peptide coordinate!");
+  }
+
+  # get out exons, walk along until we hit first exon
+  # calculate remaining distance.
+
+  my $start_exon;
+  my @exons = $self->get_all_Exons;
+  while( my $exon = shift  @exons ) {
+    if( $exon = $self->translation->start_exon ) { # in memory reliance
+      my $start_exon = $exon;
+      last;
+    }
+  }
+
+  my $current_len_exon = $start_exon->length - $self->translation->start -1;
+  my $trans_len = 0;
+  my @out;
+
+  my $offset_into_exon = $self->translation->start;
+
+  my $exon;
+  while( $exon = shift @exons && $start < $trans_len + $current_len_exon ) {
+      ;
+  }
+
+  unshift(@exons,$exon);
+
+  # main loop!
+  while( my $exon = shift @exons && $end  < $trans_len + $current_len_exon ) {
+    # definitely want something in this exon. Find start position
+    my $start_in_exon;
+    my $end_in_exon;
+
+    if( $start > $trans_len ) {
+      $start_in_exon = $offset_into_exon + $start - $trans_len +1;
+    } else {
+      $start_in_exon = $offset_into_exon;
+    }
+    
+    if( $end < $trans_len + $current_len_exon ) {
+      $end_in_exon = $offset_into_exon -1 + ($end - $trans_len+1);
+    } else {
+      $end_in_exon = $exon->length;
+    }
+    
+
+    # the main reason for make this an attribute of the exon is to handle stickies
+    push(@out,$exon->contig_seqfeatures_from_relative_position($start_in_exon,$end_in_exon));
+  }
+
+  return @out;
+}
 
 sub find_coord {
   my ($self,$coord,$type) = @_;

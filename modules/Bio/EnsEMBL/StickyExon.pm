@@ -123,6 +123,103 @@ sub each_component_Exon{
 }
 
 
+
+=head1
+
+  Arg  1   : integer start - relative to the exon
+  Arg  2   : integer end   - relative to the exon
+
+  Function : Provides a list of Bio::EnsEMBL::SeqFeatures which
+             is the genomic coordinates of this start/end on the exon
+             For simple exons this is one feature  for Stickies this
+             is overridden and gives out a list of Bio::EnsEMBL::SeqFeatures
+
+  Returns  : list of Bio::EnsEMBL::SeqFeature
+
+
+=cut
+
+sub contig_seqfeatures_from_relative_position {
+  my ($self,$start,$end) = @_;
+
+  if( !defined $end ) {
+    $self->throw("Have not defined all the methods!");
+  }
+
+  # easy
+  if( $start < 1 ) {
+    $self->warn("Attempting to fetch start less than 1 ($start)");
+    $start = 1;
+  }
+
+  if( $end > $self->length ) {
+    $self->warn("Attempting to fetch end greater than end of exon ($end)");
+    $end = $self->length;
+  }
+
+  my @out;
+  my $sf;
+  my @exons = $self->each_component_Exon();
+  my $len = 0;
+  while( scalar(@exons) > 0 ) {
+    if( $exons[0]->length + $len > $start ) {
+       last;
+    } else {
+       my $discard = shift @exons;
+       $len += $discard;
+    }
+  }
+
+  # handle the first component exon
+
+  if( scalar(@exons) == 0 ) {
+     return @out;
+  }
+  
+  $sf = Bio::EnsEMBL::SeqFeature->new();
+  $sf->seqname($exons[0]->contig->id);
+  $sf->strand($exons[0]->strand);
+  $sf->start($exons[0]->start + $start - $len);
+
+  if( $end < $len + $exons[0]->length ) {
+      $sf->end($exons[0]->start + $end - $len);
+      return $sf;
+  } else {
+      $sf->end($exons[0]->end);
+      push(@out,$sf);
+  }
+
+
+  while( scalar(@exons) ) {
+     if( $exons[0]->length + $len > $end ) {
+        last;
+     }
+     $sf = Bio::EnsEMBL::SeqFeature->new();
+     $sf->seqname($exons[0]->contig->id);
+     $sf->strand($exons[0]->strand);
+     $sf->start($exons[0]->start);
+     $sf->start($exons[0]->end);
+     push(@out,$sf);
+     $len += $exons[0]->length;
+  }
+
+  if( scalar(@exons) == 0 ) {
+     return @out;
+  }
+
+  # handle the last exon
+
+  $sf = Bio::EnsEMBL::SeqFeature->new();
+  $sf->seqname($exons[0]->contig->id);
+  $sf->strand($exons[0]->strand);
+  $sf->start($exons[0]->start);
+  $sf->start($exons[0]->start + $end - $len);
+
+
+
+  return @out;
+}
+
 =head2 add_component_Exon
 
  Title   : add_component_Exon

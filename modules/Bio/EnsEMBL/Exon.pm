@@ -1224,6 +1224,48 @@ sub get_cdna {
   return $temp_seq;
 }
 
+=head1
+
+  Arg  1   : integer start - relative to the exon
+  Arg  2   : integer end   - relative to the exon
+
+  Function : Provides a list of Bio::EnsEMBL::SeqFeatures which
+             is the genomic coordinates of this start/end on the exon
+             For simple exons this is one feature - for Stickies this
+             is overridden
+
+  Returns  : list of Bio::EnsEMBL::SeqFeature
+
+
+=cut
+
+sub contig_seqfeatures_from_relative_position {
+  my ($self,$start,$end) = @_;
+
+  if( !defined $end ) {
+    $self->throw("Have not defined all the methods!");
+  }
+
+  # easy
+  if( $start < 1 ) {
+    $self->warn("Attempting to fetch start less than 1 ($start)");
+    $start = 1;
+  }
+
+  if( $end > $self->length ) {
+    $self->warn("Attempting to fetch end greater than end of exon ($end)");
+    $end = $self->length;
+  }
+
+  my $sf = Bio::EnsEMBL::SeqFeature->new();
+  $sf->start($self->start + $start -1);
+  $sf->end($self->start + $end -1 );
+  $sf->strand($self->strand);
+  $sf->seqname($self->contig->id);
+
+  return ($sf);
+}
+
 
 # Inherited methods
 # but you do have all the SeqFeature documentation: reproduced here
