@@ -265,7 +265,7 @@ SELECT distinct d.*
         $sql="
 SELECT distinct f.*
   FROM $satdb.static_golden_path sgp,
-       $satdb.feature f
+       $satdb.$table f
  WHERE sgp.chr_name = '$chr'
    AND sgp.type = '$static_golden_path_type'
    AND sgp.raw_id = f.contig
