@@ -37,6 +37,7 @@ use Bio::EnsEMBL::Root;
 
 ## Changes to new by James Smith - no longer takes statistics
 ## on creation.. these get added later.
+
 =head2 new
 
   Args [...] : List of named arguments 
