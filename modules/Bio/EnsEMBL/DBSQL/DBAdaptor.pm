@@ -67,7 +67,7 @@ use strict;
 
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::DB::ObjI;
-use Bio::EnsEMBL::FeatureFactory;
+#use Bio::EnsEMBL::FeatureFactory;
 use DBI;
 use Bio::EnsEMBL::DBSQL::SQL;
 use Bio::EnsEMBL::DBSQL::DummyStatement;
@@ -80,88 +80,77 @@ sub new {
 
   my $self = bless {}, $pkg;
 
-    my (
+  my (
         $db,
         $mapdbname,
         $litedbname,
-	    $dnadb,
+	$dnadb,
         $host,
         $driver,
         $user,
         $password,
         $debug,
-        $perl,
-        $perlonlysequences,
         $external,
         $port,
+        $mode
     ) = $self->_rearrange([qw(
         DBNAME
-	    MAPDBNAME
+	MAPDBNAME
         LITEDBNAME
-	    DNADB
-	    HOST
-	    DRIVER
-	    USER
-	    PASS
-	    DEBUG
-	    PERLONLYFEATURES
-	    PERLONLYSEQUENCES
-	    EXTERNAL
-	    PORT
-	 )],@args);
-    $db   || $self->throw("Database object must have a database name");
-    $user || $self->throw("Database object must have a user");
+	DNADB
+	HOST
+	DRIVER
+	USER
+	PASS
+	DEBUG
+	EXTERNAL
+	PORT
+	MODE
+    )],@args);
+  
+  $db   || $self->throw("Database object must have a database name");
+  $user || $self->throw("Database object must have a user");
 
-    #
-    # This needs to be rethought. We are caching sequences
-    # here to allow multiple exons to be retrieved fine
-    # And now more cache's. I think cache's might be a fact of life...
-    # 
+  if( $debug ) {
+    $self->_debug($debug);
+  } else {
+    $self->_debug(0);
+  }
+  if( ! $driver ) {
+    $driver = 'mysql';
+  }
+  if( ! $host ) {
+    $host = 'localhost';
+  }
+  if ( ! $port ) {
+    $port = 3306;
+  }
 
-    $self->{'_contig_seq_cache'} = {};
-    $self->{'_contig_seq_cnt'} = 0;
-    $self->{'_lock_table_hash'} = {};
-    $self->_analysis_cache({});
-    $self->{'_external_ff'} = [];
+  if($mode) {
+    $self->{_db_mode};
+  } else {
+    $self->{_db_mode} = 'default';
+  }
 
-    if( $debug ) {
-        $self->_debug($debug);
-    } else {
-        $self->_debug(0);
-    }
-    if( ! $driver ) {
-        $driver = 'mysql';
-    }
-    if( ! $host ) {
-        $host = 'localhost';
-    }
-    if ( ! $port ) {
-	$port = 3306;
-    }
 
-    if( ! defined $perlonlysequences ) {
-        $perlonlysequences = 0;
-    }
-
-    my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
+  my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
 	
-    if( $debug && $debug > 10 ) {
-        $self->_db_handle("dummy dbh handle in debug mode $debug");
-    } else {
+  if( $debug && $debug > 10 ) {
+    $self->_db_handle("dummy dbh handle in debug mode $debug");
+  } else {
+    my( $dbh );
+    eval{
+      $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
+    };
 
-        my( $dbh );
-        eval{
-            $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
-        };
+    $dbh || $self->throw("Could not connect to database $db user " .
+			 "$user using [$dsn] as a locator\n" . $DBI::errstr);
 
-        $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator\n"
-            . $DBI::errstr);
+    if( $self->_debug > 3 ) {
+      $self->warn("Using connection $dbh");
+    }
 
-        if( $self->_debug > 3 ) {
-	    $self->warn("Using connection $dbh");
-        }
-
-        $self->_db_handle($dbh);
+    $self->_db_handle($dbh);
     }
     $self->username( $user );
     $self->host( $host );
@@ -172,11 +161,20 @@ sub new {
     $self->mapdbname( $mapdbname );
 #    $self->litedbname( $litedbname );
 
-    if ($perl && $perl == 1) {
-        $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
-    }
-
-    $self->perl_only_sequences($perlonlysequences);
+#
+# [mcvicker] We are no longer using the FeatureFactory for feature creation.
+# C objects are no longer being implemented, and if need necessitates the
+# creation of C Objects then they will be created in a decentralized 
+# manner and be the responsibility of the individual objects.  
+# If the FeatureFactory was to be used conceptually correctly, the creation
+# of every object would have to be managed by the factory rather than
+# by the new constructors.  It is simply to much work to perform this 
+# migration right now and not necessary anyway.
+# 
+#    if ($perl && $perl == 1) {
+#        $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
+#    }
+#    $self->perl_only_sequences($perlonlysequences);
 
     if( defined $external ){
         foreach my $external_f ( @{$external} ) {
@@ -220,32 +218,6 @@ sub new {
 
     return $self; # success - we hope!
 }
-
-
-=head2 get_Update_Obj
-
- Title   : get_Update_Obj
- Usage   :
- Function:
- Example :
- Returns :
- Args    :
-
-
-=cut
-
-sub get_Update_Obj {
-    my ($self) = @_;
-
-    my( $update_obj );
-    unless ($update_obj = $self->{'_update_obj'}) {
-        require Bio::EnsEMBL::DBSQL::Update_Obj;
-        $update_obj = Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
-        $self->{'_update_obj'} = $update_obj;
-    }
-    return $update_obj;
-}
-
 
 
 
@@ -327,187 +299,6 @@ sub get_MetaContainer {
 
 
 
-=head2 get_all_chr_ids
-
- Title   : get_all_chr_ids
- Usage   : @cloneid = $obj->get_all_chr_ids
- Function: returns all the valid FPC contigs from given golden path
- Example :
- Returns : 
- Args    : static golden path type (typically, 'UCSC')
-
-
-=cut
-
-sub get_all_chr_ids {
-   my ($self, $type) = @_;
-
-   $self->throw("no static_gold_path given") unless defined $type;
-   my @out;
-
-   my $q= "SELECT DISTINCT chromosome_id 
-           FROM assembly
-           WHERE type = '$type'";
-   my $sth = $self->prepare($q) || $self->throw("can't prepare: $q");
-   my $res = $sth->execute || $self->throw("can't prepare: $q");
-
-   while( my ($id) = $sth->fetchrow_array) {
-       push(@out, $id);
-   }
-   return @out;
-}
-
-=head2 get_all_fpcctg_ids
-
- Title   : get_all_fpcctg_ids
- Usage   : @cloneid = $obj->get_all_fpcctg_ids
- Function: returns all the valid FPC contigs from given golden path
- Example :
- Returns : 
- Args    : static golden path type (typically, 'UCSC')
-
-
-=cut
-
-sub get_all_fpcctg_ids {
-   my ($self, $type) = @_;
-
-   $self->throw("no static_gold_path given") unless defined $type;
-   my @out;
-
-   my $q= "SELECT DISTINCT superctg_name 
-           FROM assembly 
-           WHERE type = '$type'";
-   my $sth = $self->prepare($q) || $self->throw("can't prepare: $q");
-   my $res = $sth->execute || $self->throw("can't prepare: $q");
-
-   while( my ($id) = $sth->fetchrow_array) {
-       push(@out, $id);
-   }
-   return @out;
-}
-
-=head2 get_object_by_wildcard
-
- Title   : get_object_by_wildcard
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_object_by_wildcard{
-   my ($self,$type,$string) = @_;
-
-   print STDERR "Got type: $type and string: $string\n";
-   my @ids;
-   my $sth = $self->prepare("select id from $type where id like \'$string\'");
-   print STDERR "mysql: select id from $type where id like \'$string\'\n";
-   my $res = $sth->execute || $self->throw("Could not get any ids!");
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@ids,$rowhash->{'id'});
-   }
-   
-   if ($type eq 'gene') {
-       return $self->gene_Obj->get_array_supporting('without',@ids);
-   }
-   if ($type eq 'transcript') {
-       my @trans;
-       foreach my $id (@ids) {
-	   push @trans, $self->gene_Obj->get_Transcript($id);
-       }
-       return @trans;
-   }
-   if ($type eq 'exon') {
-       my @exons;
-       foreach my $id (@ids) {
-	   push @exons, $self->gene_Obj->get_Exon($id);
-       }
-       return @exons;
-   }
-   if ($type eq 'clone') {
-       my @clones;
-       foreach my $id (@ids) {
-	   push @clones, $self->get_Clone($id);
-       }
-       return @clones;
-   }
-   else {
-       $self->throw("Type $type not supported, only gene, transcript, exon and clone\n");
-   }
-   return;
-}
-
-
-=head2 write_Chromosome
-
- Title   : write_Chromosome
- Usage   : $obj->write_Chromosome
- Function: writes a chromosome into the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub write_Chromosome {
-  my ($self,$chromosome,$length, $known_genes, $unknown_genes, $snps) = @_;
-
-  $self->throw("No chromosome argument input") unless defined($chromosome);
-   
-  
-  if (!$chromosome->isa("Bio::EnsEMBL::Chromosome")) {
-    $self->throw("[$chromosome] is not a Bio::EnsEMBL::Chromosome object");
-  }
-  if(!$length){
-    $length = 0;
-  }
-  if(!$known_genes){
-    $known_genes = 0;
-  }
-  if(!$unknown_genes){
-    $unknown_genes = 0;
-  }
-  if(!$snps){
-    $snps = 0;
-  }
-  
-  my $query = "select chromosome_id " .
-              "from   chromosome " .
-              "where  name       = '" . $chromosome->chrname . "' " .
-	      " and    known_genes = "  . $known_genes . 
-	      " and    unknown_genes = ".$unknown_genes .
-	      " and    snps = ".$snps.
-	      " and    length = ".$length;
-  
-    my $sth = $self->prepare($query);
-    my $res = $sth->execute;
-
-    if ($sth->rows == 1) {
-	my $rowhash       = $sth->fetchrow_hashref;
-	my $chromosome_id = $rowhash->{chromosome_id};
-	return $chromosome_id;
-    } 
-
-    $query =  "insert into chromosome(chromosome_id,name,known_genes,unknown_genes,snps,length) values(null,'" . $chromosome->chrname . "',".$known_genes.",".$unknown_genes.",".$snps.",".$length.")";
-	
-  print $query."\n";
-    $sth = $self->prepare($query);
-    $res = $sth->execute;
-
-    $sth = $self->prepare("select last_insert_id()");
-    $res = $sth->execute;
-
-    my $rowhash       = $sth->fetchrow_hashref;
-    my $chromosome_id = $rowhash->{'last_insert_id()'};
-   
-    return $chromosome_id;
-  }
-
 =head2 mapdb
 
     $obj->mapdb($mapdb);
@@ -547,11 +338,70 @@ sub mapdb {
     return $self->{'_mapdb'};
 }
 
+
+
+=head2 db_mode_web
+
+ Title   : db_mode_web
+ Usage   : $db->db_mode_web(1);
+ Function: Boolean getter/setter for database web mode 
+ Example : 
+#Place the database in web mode: 
+$db->db_mode_web(1);
+
+#Check if the database is in web mode:
+$db->db_mode_web() && print "db in web mode!\n"; 
+ Returns : true if database is in web mode, false otherwise
+ Args    : none or a true/false value
+
+=cut
+
+sub db_mode_web {
+  my ($self, $arg) = @_;
+
+  if(defined($arg)) {
+    if($arg) {
+      $self->{_db_mode} = 'web';
+    } else {
+      $self->{_db_mode} = 'default';
+    }
+  }
+
+  return ($self->{_db_mode} eq 'web');
+}
+      
+=head2 db_mode_default
+
+ Title   : db_mode_default
+ Usage   : $db->db_mode_default(1);
+ Function: Boolean getter/setter for database default mode 
+ Example : 
+#Place the database in default mode: 
+$db->db_mode_default(1);
+
+#Check if the database is in default mode:
+$db->db_mode_default() && print "db in default mode!\n"; 
+ Returns : true if this database is in default, false otherwise
+ Args    : none or a true value.  A false argument will do nothing.
+
+=cut
+
+sub db_mode_default {
+  my ($self, $arg) = @_;
+  
+  if(defined $arg && $arg) {
+    $self->{_db_mode} = 'default';
+  }
+  
+  return ($self->{_db_mode} eq 'default');	     
+}
+
+
 # was added on branch; not clear if needed:
 sub mapdbname {
   my ($self, $arg ) = @_;
   
-  if ( defined($arg))  {
+  if (defined($arg))  {
     $self->{_mapdbname} = $arg;
   }
   
@@ -691,77 +541,6 @@ sub _each_DASFeatureFactory{
 }
 
 
-=head2 _analysis_cache
-
- Title   : _analysis_cache
- Usage   : $obj->_analysis_cache()
- Function: 
- Returns : reference to a hash
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _analysis_cache{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_analysis_cache'} = $value;
-    }
-    return $obj->{'_analysis_cache'};
-
-}
-
-=head2 _contig_seq_cache
-
- Title   : _contig_seq_cache
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _contig_seq_cache{
-   my ($self,$id,$seq) = @_;
-
-   if( $seq ) {
-       
-       #
-       # Every 100 hits, flush the cache
-       #
-       if( $self->{'_contig_seq_cnt'} > 100 ) {
-	   $self->_flush_seq_cache;
-	   $self->{'_contig_seq_cnt'} = 0;
-       }
-
-       $self->{'_contig_seq_cnt'}++;
-       $self->{'_contig_seq_cache'}->{$id} = $seq;
-   }
-
-   return $self->{'_contig_seq_cache'}->{$id};
-}
-
-=head2 _flush_seq_cache
-
- Title   : _flush_seq_cache
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _flush_seq_cache{
-   my ($self,@args) = @_;
-
-   $self->{'_contig_seq_cache'} = {};
-
-}
 
 =head2 _debug
 
@@ -806,58 +585,6 @@ sub _db_handle{
 
 }
 
-=head2 _lock_tables
-
- Title   : _lock_tables
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _lock_tables{
-   my ($self,@tables) = @_;
-   
-   my $state;
-   foreach my $table ( @tables ) {
-       if( $self->{'_lock_table_hash'}->{$table} == 1 ) {
-	   $self->warn("$table already locked. Relock request ignored");
-       } else {
-	   if( $state ) { $state .= ","; } 
-	   $state .= "$table write";
-	   $self->{'_lock_table_hash'}->{$table} = 1;
-       }
-   }
-
-   my $sth = $self->prepare("lock tables $state");
-   my $rv = $sth->execute();
-   $self->throw("Failed to lock tables $state") unless $rv;
-
-}
-
-=head2 _unlock_tables
-
- Title   : _unlock_tables
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _unlock_tables{
-   my ($self,@tables) = @_;
-
-   my $sth = $self->prepare("unlock tables");
-   my $rv  = $sth->execute();
-   $self->throw("Failed to unlock tables") unless $rv;
-   %{$self->{'_lock_table_hash'}} = ();
-}
 
 
 =head2 DESTROY
@@ -885,242 +612,7 @@ sub DESTROY {
 
 
 
-=head2 get_Clone
 
- Title   : get_Clone
- Usage   :
- Function: retrieve latest version of a clone from the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Clone { 
-    my( $self, $accession ) = @_;
-
-    my $ca = $self->get_CloneAdaptor;
-
-    if ($accession =~ /(.+?)\.(\d+)/) {
-	$accession = $1;
-	my $version   = $2;
-	return $ca->fetch_by_accession_version($accession, $version);
-    }
-    else {
-	return $ca->fetch_by_accession($accession);
-    }
-
-}
-  
-=head2 list_embl_version_by_Clone
-
- Title   : list_embl_version_by_Clone
- Usage   :
- Function: retrieve list of embl_versions of a clone from the database
- Example : @versions = $dbobj->list_embl_versions_by_Clone('AB000381');
- Returns : @versions
- Args    : $accession
-
-
-=cut
-
-sub list_embl_version_by_Clone { 
-    my( $self, $accession ) = @_;
-
-    my $ca = $self->get_CloneAdaptor;
-
-    return $ca->list_embl_version_by_accession($accession);
-}
-
-=head2 get_Clone_by_version
-
- Title   : get_Clone_by_version
- Usage   :
- Function: retrieve specific version of a clone from the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Clone_by_version { 
-    my ($self,$accession,$ver) = @_;
-
-    my $ca = $self->get_CloneAdaptor;
-
-    return $ca->fetch_by_accession_version($accession,$ver);
-}
-  
-=head2 get_Contig
-
- Title   : get_Contig
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Contig {
-    my ($self,$id) = @_;
-
-    $self->warn("Obj->get_Contig is a deprecated method!"); 
-
-    return $self->get_RawContigAdaptor->fetch_by_name($id);
-}
-
-sub get_Contig_by_internal_id {
-  my ($self,$id) = @_;
-
-  if (!defined($id)) {
-    $self->throw("No id defined\n");
-  }
-  my $query = "select id from contig where internal_id = $id";
-
-  my $sth = $self->prepare($query);
-  my $res = $sth->execute;
-
-  if ($sth->rows < 1) {
-    $self->throw("No contig available with id $id\n");
-  }
-  my $ref = $sth->fetchrow_hashref;
-  my $contigid = $ref->{'id'};
-
-  return $self->get_Contig($contigid);
-}
-
-  
- 
-sub get_Contig_by_international_id{
-   my ($self,$int_id) = @_;
-   #$self->warn("Obj->get_Contig is a deprecated method! 
-#Calling Contig->fetch instead!");
-   my $sth=$self->prepare("select id from contig where international_id = '$int_id'");
-   $sth->execute;
-   my $row = $sth->fetchrow_hashref;
-   my $id  = $row->{'id'};
-
-   return $self->get_Contig($id);
-}
-
-=head2 get_Contigs_by_Chromosome
-
- Title   : get_Contig_by_Chromosome
- Usage   : @contigs = $dbobj->get_Contig_by_Chromosome( $chrObj );
- Function: retrieve contigs belonging to a certain chromosome from the
-           database 
- Example :
- Returns : A list of Contig objects. Probably an empty list.
- Args    :
-
-
-=cut
-
-sub get_Contigs_by_Chromosome {
-    my ($self,$chromosome ) = @_;
-    
-    $self->throw("Obj->get_Contigs_by_Chromosome is a deprecated method! 
-Call Contig->get_by_Chromosome instead!");
-}
-
-=head2 get_all_Clone_id
-
- Title   : get_all_Clone_id
- Usage   : @cloneid = $obj->get_all_Clone_id
- Function: returns all the valid (live) Clone ids in the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_Clone_id{
-   my ($self) = @_;
-   my @out;
-
-   my $sth = $self->prepare("select id from clone");
-   my $res = $sth->execute;
-
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'id'});
-   }
-
-   return @out;
-}
-
-=head2 get_all_Contig_id
-
- Title   : get_all_Contig_id
- Usage   : @Contigid = $obj->get_all_Contig_id
- Function: returns all the valid (live) Contig ids in the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_Contig_id{
-   my ($self) = @_;
-   my @out;
-
-   my $sth = $self->prepare("select id from contig");
-   my $res = $sth->execute;
-
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'id'});
-   }
-
-   return @out;
-}
-
-
-=head2 perl_only_sequences
-
- Title   : perl_only_sequences
- Usage   : $obj->perl_only_sequences($newval)
- Function: 
- Returns : value of perl_only_sequences
- Args    : newvalue (optional)
-
-
-=cut
-
-sub perl_only_sequences{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'perl_only_sequences'} = $value;
-    }
-    return $obj->{'perl_only_sequences'};
-
-}
-
-=head2 perl_only_contigs
-
- Title   : perl_only_contigs
- Usage   : $obj->perl_only_contigs($newval)
- Function: 
- Returns : value of perl_only_contigs
- Args    : newvalue (optional)
-
-
-=cut
-
-sub perl_only_contigs{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'perl_only_contigs'} = $value;
-    }
-    return $obj->{'perl_only_contigs'};
-
-}
 
 =head2 get_adaptor
 
@@ -1147,7 +639,7 @@ sub get_adaptor {
     eval "require $module";
     
     if($@) {
-      print STDERR "$module cannot be found.\nException $@\n";
+      $self->warn("$module cannot be found.\nException $@\n");
       return undef;
     }
       
@@ -1251,6 +743,10 @@ sub get_SequenceAdaptor {
 
 sub get_GeneAdaptor {
     my( $self ) = @_;
+
+    if($self->db_mode_web()) {
+      return $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneLiteAdaptor");
+    }
 
     return $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
 }
@@ -1679,37 +1175,6 @@ sub static_golden_path_type{
 }
 
 
-=head2 _crossdb
-
- Title   : _crossdb
- Usage   : $obj->_crossdb($newval)
- Function: 
- Returns : value of _crossdb
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _crossdb {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_crossdb'} = $value;
-    }
-    return $obj->{'_crossdb'};
-
-}
-
-
-sub create_tables { 
-  my $self = shift;
-
-  # get all adaptors ...
-  # call create_tables on them
-
-  # create some tables without adaptors
-  # (which should disappear once)
-}
 
 
 ## internal stuff for external adaptors
@@ -1832,17 +1297,20 @@ sub remove_ExternalAdaptor {
     undef;
 }
 
-
-
-
-
-
-
-
-
-
-
-
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
 ##################DEPRECATED METHODS######################
 #                                                        #
 #All the methods below are deprecated methods,           #
@@ -2688,11 +2156,11 @@ sub get_PredictionFeature_as_Transcript{
 =head2 write_Clone
 
  Title   : write_Clone
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : DEPRECATED
+ Function: DEPRECATED
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
 
 
 =cut
@@ -2907,5 +2375,691 @@ sub write_Species {
 #    return $species_id;
 }
 
+
+=head2 get_Update_Obj
+
+ Title   : get_Update_Obj
+ Usage   : DEPRECATED
+ Function: DEPRECATED
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+=cut
+
+sub get_Update_Obj {
+    my ($self) = @_;
+
+    $self->warn("get_Update_Obj is deprecated. There is no longer an " .
+		"Update_Obj object");
+
+    return undef;
+
+ #   my( $update_obj );
+#    unless ($update_obj = $self->{'_update_obj'}) {
+#        require Bio::EnsEMBL::DBSQL::Update_Obj;
+#        $update_obj = Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+#        $self->{'_update_obj'} = $update_obj;
+#    }
+#    return $update_obj;
+}
+
+
+
+=head2 get_all_chr_ids
+
+ Title   : get_all_chr_ids
+ Usage   : DEPRECATED    
+           Use $dba->get_ChromosomeAdaptor()->fetch_all() instead.
+ Function: DEPRECATED returns all the valid FPC contigs from given golden path
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED static golden path type (typically, 'UCSC')
+
+=cut
+
+sub get_all_chr_ids {
+   my ($self, $type) = @_;
+
+   $self->warn("DBAdaptor->get_all_chr_ids is deprecated\n" .
+	       "Use \$dba->get_ChromosomeAdaptor()->fetch_all() instead");
+
+   return $self->get_ChromosomeAdaptor()->fetch_all();
+
+#   $self->throw("no static_gold_path given") unless defined $type;
+#   my @out;
+
+#   my $q= "SELECT DISTINCT chromosome_id 
+#           FROM assembly
+#           WHERE type = '$type'";
+#   my $sth = $self->prepare($q) || $self->throw("can't prepare: $q");
+#   my $res = $sth->execute || $self->throw("can't prepare: $q");
+
+#   while( my ($id) = $sth->fetchrow_array) {
+#       push(@out, $id);
+#   }
+#   return @out;
+}
+
+=head2 get_all_fpcctg_ids
+
+ Title   : get_all_fpcctg_ids
+ Usage   : DEPRECATED
+           Use $dba->get_StaticGoldenPathAdaptor()->get_all_fpc_ids() instead
+ Function: DEPRECATED returns all the valid FPC contigs from given golden path
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED static golden path type (typically, 'UCSC')
+
+
+=cut
+
+sub get_all_fpcctg_ids {
+   my ($self, $type) = @_;
+
+   $self->warn("DBAdaptor->get_all_fpcctg_ids is deprecated. \n" .
+	       'Use $dba->get_StaticGoldenContigAdaptor->get_all_fpc_ids($id)'.
+	       "instead");
+
+   return $self->get_StaticGoldenPathAdaptor()->get_all_fpc_ids($type);
+
+#  $self->throw("no static_gold_path given") unless defined $type;
+#   my @out;
+
+#   my $q= "SELECT DISTINCT superctg_name 
+#           FROM assembly 
+#           WHERE type = '$type'";
+#   my $sth = $self->prepare($q) || $self->throw("can't prepare: $q");
+#   my $res = $sth->execute || $self->throw("can't prepare: $q");
+
+#   while( my ($id) = $sth->fetchrow_array) {
+#       push(@out, $id);
+#   }
+#   return @out;
+}
+
+=head2 get_object_by_wildcard
+
+ Title   : get_object_by_wildcard
+ Usage   : DEPRECATED
+ Function: DEPRECATED
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+
+=cut
+
+sub get_object_by_wildcard{
+   my ($self,$type,$string) = @_;
+
+   $self->warn("DBAdaptor->get_object_by_wildcard is deprecated. Use " . 
+	       "specific adaptor accessor functions instead");
+
+   return undef;
+
+ #  print STDERR "Got type: $type and string: $string\n";
+#   my @ids;
+#   my $sth = $self->prepare("select id from $type where id like \'$string\'");
+#   print STDERR "mysql: select id from $type where id like \'$string\'\n";
+#   my $res = $sth->execute || $self->throw("Could not get any ids!");
+#   while( my $rowhash = $sth->fetchrow_hashref) {
+#       push(@ids,$rowhash->{'id'});
+#   }
+   
+#   if ($type eq 'gene') {
+#       return $self->gene_Obj->get_array_supporting('without',@ids);
+#   }
+#   if ($type eq 'transcript') {
+#       my @trans;
+#       foreach my $id (@ids) {
+#	   push @trans, $self->gene_Obj->get_Transcript($id);
+#       }
+#       return @trans;
+#   }
+#   if ($type eq 'exon') {
+#       my @exons;
+#       foreach my $id (@ids) {
+#	   push @exons, $self->gene_Obj->get_Exon($id);
+#       }
+#       return @exons;
+#   }
+#   if ($type eq 'clone') {
+#       my @clones;
+#       foreach my $id (@ids) {
+#	   push @clones, $self->get_Clone($id);
+#       }
+#       return @clones;
+#   }
+#   else {
+#       $self->throw("Type $type not supported, only gene, transcript, exon and clone\n");
+#   }
+#   return;
+}
+
+
+=head2 write_Chromosome
+
+ Title   : write_Chromosome
+ Usage   : DEPRECATED
+ Function: DEPRECATED writes a chromosome into the database
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+
+=cut
+
+sub write_Chromosome {
+  my ($self,$chromosome,$length, $known_genes, $unknown_genes, $snps) = @_;
+
+  $self->throw("DBAdaptor->write_Chromosome() is deprecated.  " .
+	       "No replacement has been written yet. If a replacement " .
+	       "is created it will be within ChromosomeAdaptor");
+
+#  $self->throw("No chromosome argument input") unless defined($chromosome);
+   
+  
+#  if (!$chromosome->isa("Bio::EnsEMBL::Chromosome")) {
+#    $self->throw("[$chromosome] is not a Bio::EnsEMBL::Chromosome object");
+#  }
+#  if(!$length){
+#    $length = 0;
+#  }
+#  if(!$known_genes){
+#    $known_genes = 0;
+#  }
+#  if(!$unknown_genes){
+#    $unknown_genes = 0;
+#  }
+#  if(!$snps){
+#    $snps = 0;
+#  }
+  
+#  my $query = "select chromosome_id " .
+#              "from   chromosome " .
+#              "where  name       = '" . $chromosome->chrname . "' " .
+#	      " and    known_genes = "  . $known_genes . 
+#	      " and    unknown_genes = ".$unknown_genes .
+#	      " and    snps = ".$snps.
+#	      " and    length = ".$length;
+  
+#    my $sth = $self->prepare($query);
+#    my $res = $sth->execute;
+
+#    if ($sth->rows == 1) {
+#	my $rowhash       = $sth->fetchrow_hashref;
+#	my $chromosome_id = $rowhash->{chromosome_id};
+#	return $chromosome_id;
+#    } 
+
+#    $query =  "insert into chromosome(chromosome_id,name,known_genes,unknown_genes,snps,length) values(null,'" . $chromosome->chrname . "',".$known_genes.",".$unknown_genes.",".$snps.",".$length.")";
+	
+#  print $query."\n";
+#    $sth = $self->prepare($query);
+#    $res = $sth->execute;
+
+#    $sth = $self->prepare("select last_insert_id()");
+#    $res = $sth->execute;
+
+#    my $rowhash       = $sth->fetchrow_hashref;
+#    my $chromosome_id = $rowhash->{'last_insert_id()'};
+   
+#    return $chromosome_id;
+  }
+
+
+=head2 _analysis_cache
+
+ Title   : _analysis_cache
+ Usage   : DEPRECATED $obj->_analysis_cache()
+ Function: DEPRECATED
+ Returns : DEPRECATED reference to a hash
+ Args    : DEPRECATED newvalue (optional)
+
+
+=cut
+
+sub _analysis_cache{
+   my $self = shift;
+
+   $self->throw("DBAdaptor->_analysis_cache is deprecated\n");
+
+#   if( @_ ) {
+#      my $value = shift;
+#      $obj->{'_analysis_cache'} = $value;
+#    }
+#    return $obj->{'_analysis_cache'};
+}
+
+=head2 _contig_seq_cache
+
+ Title   : _contig_seq_cache
+ Usage   : DEPRECATED
+ Function: DEPRECATED
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+
+=cut
+
+sub _contig_seq_cache{
+   my ($self,$id,$seq) = @_;
+
+   $self->throw("DBAdaptor->_contig_seq_cache is deprecated\n");
+
+
+#   if( $seq ) {
+       
+#       #
+#       # Every 100 hits, flush the cache
+#       #
+#       if( $self->{'_contig_seq_cnt'} > 100 ) {
+#	   $self->_flush_seq_cache;
+#	   $self->{'_contig_seq_cnt'} = 0;
+#       }
+
+#       $self->{'_contig_seq_cnt'}++;
+#       $self->{'_contig_seq_cache'}->{$id} = $seq;
+#   }
+
+#   return $self->{'_contig_seq_cache'}->{$id};
+}
+
+=head2 _flush_seq_cache
+
+ Title   : _flush_seq_cache
+ Usage   : DEPRECATED
+ Function: DEPRECATED
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+=cut
+
+sub _flush_seq_cache{
+   my ($self,@args) = @_;
+
+   $self->throw("DBAdaptor->_flush_seq_cache is deprecated\n");
+
+
+   $self->{'_contig_seq_cache'} = {};
+}
+
+
+
+=head2 _lock_tables
+
+ Title   : _lock_tables
+ Usage   : DEPRECATED
+ Function: DEPRECATED
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+
+=cut
+
+sub _lock_tables{
+   my ($self,@tables) = @_;
+   
+   $self->warn("DBAdaptor->_lock_tables is deprecated\n");
+
+   my $state;
+   foreach my $table ( @tables ) {
+       if( $self->{'_lock_table_hash'}->{$table} == 1 ) {
+	   $self->warn("$table already locked. Relock request ignored");
+       } else {
+	   if( $state ) { $state .= ","; } 
+	   $state .= "$table write";
+	   $self->{'_lock_table_hash'}->{$table} = 1;
+       }
+   }
+
+   my $sth = $self->prepare("lock tables $state");
+   my $rv = $sth->execute();
+   $self->throw("Failed to lock tables $state") unless $rv;
+
+}
+
+=head2 _unlock_tables
+
+ Title   : _unlock_tables
+ Usage   : DEPRECATED
+ Function: DEPRECATED
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+
+=cut
+
+sub _unlock_tables{
+   my ($self,@tables) = @_;
+
+   $self->warn("DBAdaptor->_unlock_tables is deprecated\n");
+
+
+   my $sth = $self->prepare("unlock tables");
+   my $rv  = $sth->execute();
+   $self->throw("Failed to unlock tables") unless $rv;
+   %{$self->{'_lock_table_hash'}} = ();
+}
+
+
+=head2 get_Clone
+
+ Title   : get_Clone
+ Usage   : DEPRECATED 
+           Use $db->get_CloneAdaptor()->fetch_by_accession_version($acc,$ver) 
+           or $db->get_CloneAdaptor()->fetch_by_accession($acc) instead
+ Function: DEPRECATED retrieve latest version of a clone from the database
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+=cut
+
+sub get_Clone { 
+    my( $self, $accession ) = @_;
+
+    $self->warn('DBAdaptor->get_Clone() is deprecated.\n' .
+	  'Use \$db->get_CloneAdaptor()->fetch_by_accession_version(\$acc_ver)'
+	. ' or $db->get_CloneAdaptor()->fetch_by_accession(\$acc) instead');
+
+    my $ca = $self->get_CloneAdaptor;
+
+    if ($accession =~ /(.+?)\.(\d+)/) {
+	$accession = $1;
+	my $version   = $2;
+	return $ca->fetch_by_accession_version($accession, $version);
+    }
+    else {
+	return $ca->fetch_by_accession($accession);
+    }
+
+}
+  
+=head2 list_embl_version_by_Clone
+
+ Title   : list_embl_version_by_Clone
+ Usage   : DEPRECATED 
+           use $db->get_CloneAdaptor()->list_embl_version_by_accession instead
+ Function: DEPRECATED 
+           retrieve list of embl_versions of a clone from the database
+ Example : DEPRECATED
+           @versions = $dbobj->list_embl_versions_by_Clone('AB000381');
+ Returns : DEPRECATED @versions
+ Args    : DEPRECATED $accession
+
+=cut
+
+sub list_embl_version_by_Clone { 
+    my( $self, $accession ) = @_;
+
+    $self->warn('DBAdaptor->list_embl_version_by_Clone() is deprecated.\n' .
+	'Use \$db->get_CloneAdaptor()->list_embl_version_by_accession(\$acc)');
+
+    my $ca = $self->get_CloneAdaptor;
+
+    return $ca->list_embl_version_by_accession($accession);
+}
+
+=head2 get_Clone_by_version
+
+ Title   : get_Clone_by_version
+ Usage   : DEPRECATED
+ Function: DEPRECATED retrieve specific version of a clone from the database
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+
+=cut
+
+sub get_Clone_by_version { 
+    my ($self,$accession,$ver) = @_;
+
+    $self->warn('DBAdaptor->get_CLone_by_version() is deprecated.\n' .
+      'Use \$db->get_CloneAdaptor()->fetch_by_accession_version(\$acc,\$ver)');
+
+    my $ca = $self->get_CloneAdaptor;
+
+    return $ca->fetch_by_accession_version($accession,$ver);
+}
+  
+=head2 get_Contig
+
+ Title   : get_Contig
+ Usage   : DEPRECATED
+ Function: DEPRECATED
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+=cut
+
+sub get_Contig {
+    my ($self,$id) = @_;
+
+    $self->warn("DBAdaptor->get_Contig() is a deprecated.\n" .
+	       "Use \$db->get_RawContigAdaptor()->fetch_by_name(\$id)"); 
+
+    return $self->get_RawContigAdaptor->fetch_by_name($id);
+}
+
+
+sub get_Contig_by_internal_id {
+  my ($self,$id) = @_;
+
+  $self->warn("DBAdaptor get_Contig_by_internal_id is deprecated.\n" .
+	      "Use \$db->get_RawContigAdaptor()->fetch_by_dbID(\$id) "); 
+
+  return $self->get_RawContigAdaptor()->fetch_by_dbID($id);
+
+#  if (!defined($id)) {
+#    $self->throw("No id defined\n");
+#  }
+#  my $query = "select id from contig where internal_id = $id";
+
+#  my $sth = $self->prepare($query);
+#  my $res = $sth->execute;
+
+#  if ($sth->rows < 1) {
+#    $self->throw("No contig available with id $id\n");
+#  }
+#  my $ref = $sth->fetchrow_hashref;
+#  my $contigid = $ref->{'id'};
+
+#  return $self->get_Contig($contigid);
+}
+
+  
+ 
+sub get_Contig_by_international_id{
+   my ($self,$int_id) = @_;
+   $self->throw("DBADaptor->get_Contig_by_international_id() is deprecated\n" .
+		"No replacement has been implemented\n");
+
+   return undef;
+
+#   my $sth=$self->prepare("select id from contig where international_id = '$int_id'");
+#   $sth->execute;
+#   my $row = $sth->fetchrow_hashref;
+#   my $id  = $row->{'id'};
+
+#   return $self->get_Contig($id);
+}
+
+=head2 get_Contigs_by_Chromosome
+
+ Title   : get_Contig_by_Chromosome
+ Usage   : DEPRECATED @contigs = $dbobj->get_Contig_by_Chromosome( $chrObj );
+ Function: DEPRECATED
+           retrieve contigs belonging to a certain chromosome from the
+           database 
+ Example : DEPRECATED
+ Returns : DEPRECATED A list of Contig objects. Probably an empty list.
+ Args    : DEPRECATED
+
+
+=cut
+
+sub get_Contigs_by_Chromosome {
+    my ($self,$chromosome ) = @_;
+    
+    $self->throw("Obj->get_Contigs_by_Chromosome is a deprecated method! 
+Call Contig->get_by_Chromosome instead!");
+}
+
+=head2 get_all_Clone_id
+
+ Title   : get_all_Clone_id
+ Usage   : DEPRECATED @cloneid = $obj->get_all_Clone_id
+ Function: DEPRECATED returns all the valid (live) Clone ids in the database
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+
+=cut
+
+sub get_all_Clone_id{
+   my ($self) = @_;
+   my @out;
+
+   my $sth = $self->prepare("select id from clone");
+   my $res = $sth->execute;
+
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+   return @out;
+}
+
+=head2 get_all_Contig_id
+
+ Title   : get_all_Contig_id
+ Usage   : DEPRECATED @Contigid = $obj->get_all_Contig_id
+           call $db->get_RawContigAdaptor->fetch_all() and iterate through
+           returned raw contig objects instead,
+ Function: DEPRECATED returns all the valid (live) Contig ids in the database
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+
+=cut
+
+sub get_all_Contig_id{
+   my ($self) = @_;
+   my @out;
+
+   $self->warn('DBAdaptor->get_all_Contig_id is deprecated. Use:
+   \$rca = \$self->get_RawContigAdaptor();
+   foreach \$contig (\$rca->fetch_all()) {
+     push \@out, \$contig->name();
+   }
+   ');
+   
+   my $rca = $self->get_RawContigAdaptor();
+
+   foreach my $contig ($rca->fetch_all()) {
+     push @out, $contig->name();
+   }
+
+   return @out;
+}
+
+
+=head2 perl_only_sequences
+
+ Title   : perl_only_sequences
+ Usage   : DEPRECATED $obj->perl_only_sequences($newval)
+ Function: DEPRECATED
+ Returns : DEPRECATED value of perl_only_sequences
+ Args    : DEPRECATED newvalue (optional)
+
+
+=cut
+
+sub perl_only_sequences{
+   my $self = shift;
+
+   $self->warn('DBAdaptor->perl_only_sequences() is deprecated.\n' .
+	       'no replacement has been written');
+
+#   if( @_ ) {
+#      my $value = shift;
+#      $self->{'perl_only_sequences'} = $value;
+#    }
+#    return $obj->{'perl_only_sequences'};
+
+}
+
+=head2 perl_only_contigs
+
+ Title   : perl_only_contigs
+ Usage   : DEPRECATED $obj->perl_only_contigs($newval)
+ Function: DEPRECATED
+ Returns : DEPRECATED value of perl_only_contigs
+ Args    : DEPRECATED newvalue (optional)
+
+
+=cut
+
+sub perl_only_contigs{
+   my $self = shift;
+
+   $self->warn('DBAdaptor->perl_only_contigs() is deprecated.\n' .
+	       'no replacement has been written');
+
+#   if( @_ ) {
+#      my $value = shift;
+#      $obj->{'perl_only_contigs'} = $value;
+#    }
+#    return $obj->{'perl_only_contigs'};
+
+}
+
+
+=head2 _crossdb
+
+ Title   : _crossdb
+ Usage   : DEPRECATED $obj->_crossdb($newval)
+ Function: DEPRECATED
+ Returns : DEPRECATED value of _crossdb
+ Args    : DEPRECATED newvalue (optional)
+
+=cut
+
+sub _crossdb {
+   my $self = shift;
+
+   $self->throw('DBAdaptor->_crossdb is deprecated.\n' .
+		'No replacement has been written');
+
+#   if( @_ ) {
+#      my $value = shift;
+#      $obj->{'_crossdb'} = $value;
+#    }
+#    return $obj->{'_crossdb'};
+}
+
+
+sub create_tables { 
+  my $self = shift;
+
+  $self->throw('DBAdaptor->create_tables is deprecated.\n' .
+	       'No replacement has been written');
+
+  # get all adaptors ...
+  # call create_tables on them
+
+  # create some tables without adaptors
+  # (which should disappear once)
+}
 
 1;

@@ -100,7 +100,6 @@ sub get_id_by_contig_id
     }
 }
 
-#  contig_id | name                | clone_id | length | offset | corder | dna_id | chromosome_id | international_name 
 
 sub fetch_by_dbID {
   my $self = shift;
@@ -419,9 +418,6 @@ sub fetch_all_prediction_transcripts{
   return @prediction;
 
 }
-
-
-
 
 
 sub fetch_all_similarity_features{

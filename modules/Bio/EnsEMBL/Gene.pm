@@ -65,6 +65,101 @@ sub new {
   return $self; # success - we hope!
 }
 
+
+=head2 start
+  Title    : start
+  Usage    : $start = $gene->start()
+  Function : Gets/Sets the lowest start coordinate in of this genes exons 
+             in slice coordinates. No consistancy check is performed if this 
+             is used as a setter and potentially the start could be set to 
+             a value which does not correspond to the lowest  exon start.
+             Will throw an exception if called on a gene containing exons
+             in raw contig coordinates.
+  Returns  : The start of this gene in slice coordinates
+  Args     : none, or the start coordinate of this gene
+=cut
+
+sub start {
+  my($self, $start) = @_;
+
+  if($start) {
+    $self->{start} = $start;   
+  } elsif(!defined $self->{start}) {
+
+    # calculate the start of this gene
+    $self->{start} = -1;
+    foreach my $exon ($self->get_all_exons()) {
+      
+      unless(defined $self->{'contig'} && 
+             $exon->{'contig'}->isa('Bio::EnsEMBL::Slice')) {
+        $self->throw('Gene start cannot be calculated in slice coordinates' .
+                     'because exons are in raw contig coordinates');
+      }
+
+      if($self->{start} == -1 || $exon->start() < $self->{start}) {
+        $self->{start} = $exon->start();
+      }
+
+      if($self->{start} == -1) {
+        $self->throw('Gene start cannot be calculated because gene does not' .
+                     'contain exons with start coordinates');
+      }
+    }
+  }
+  return $self->{start};
+}
+
+
+=head2 end
+  Title    : end
+  Usage    : $end = $gene->end()
+  Function : Gets/Sets the highest end coordinate in of this genes exons 
+             in slice coordinates. No consistancy check is performed if this 
+             is used as a setter and potentially the end could be set to 
+             a value which does not correspond to the highest exon end.
+             Will throw an exception if called on a gene containing exons
+             in raw contig coordinates.
+  Returns  : The end of this gene in slice coordinates
+  Args     : none, or the end coordinate of this gene
+=cut
+
+sub end {
+  my($self, $end) = @_;
+
+  if($end) {
+    $self->{end} = $end;   
+  } elsif(!defined $self->{end}) {
+
+    # calculate the end of this gene
+    $self->{end} = -1;
+    foreach my $exon ($self->get_all_exons()) {
+      
+      unless(defined $self->{'contig'} && 
+             $exon->{'contig'}->isa('Bio::EnsEMBL::Slice')) {
+        $self->throw('Gene end cannot be calculated in slice coordinates' .
+                     'because exons are in raw contig coordinates');
+      }
+
+      if($self->{end} == -1 || $exon->end() > $self->{end}) {
+        $self->{end} = $exon->end();
+      }
+
+      if($self->{end} == -1) {
+        $self->throw('Gene end cannot be calculated because gene does not' .
+                     'contain exons with end coordinates');
+      }
+    }
+  }
+
+  return $self->{end};
+}
+
+
+
+
+
+
+
 =head2 is_known
 
  Title   : is_known
@@ -74,26 +169,25 @@ sub new {
  Returns : 
  Args    :
 
-
 =cut
 
 sub is_known{
-   my ($self) = @_;
-   my @array;
-   @array = $self->each_DBLink();
-   if( scalar(@array) > 0 ) {
-       return 1;
-   }
-   foreach my $trans ( $self->each_Transcript ) {
-       @array = $trans->each_DBLink();
-       if( scalar(@array) > 0 ) {
-	   return 1;
-       }
-   }
-
-
-   
-   return 0;
+  my ($self) = @_;
+  my @array;
+  @array = $self->each_DBLink();
+  if( scalar(@array) > 0 ) {
+    return 1;
+  }
+  foreach my $trans ( $self->each_Transcript ) {
+    @array = $trans->each_DBLink();
+    if( scalar(@array) > 0 ) {
+      return 1;
+    }
+  }
+  
+  
+  
+  return 0;
 }
 
 =head2 adaptor

@@ -79,6 +79,11 @@ $USE_PERL_ONLY = 0;
 
 BEGIN {
     
+  print STDERR 
+       "WARNING: FeatureFactory is deprecated and its use should be avoided." .
+       " Creation of feature objects should be done using their respective" .
+       " constructors or DBAdaptors.\n";
+
     my $load_ext = 1;
     #$ENV{'ENSEMBL_C_EXTENSION'} || 0;
     
