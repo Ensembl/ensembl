@@ -14,7 +14,7 @@ use Bio::EnsEMBL::Gene;
 
 # switch on the debug prints
 
-our $verbose = 0;
+our $verbose = 1;
 
 debug( "Startup test" );
 ok(1);
@@ -37,13 +37,12 @@ debug ("Gene->list_stable_ids");
 my $stable_ids = $ga->list_stable_ids();
 ok (@{$stable_ids});
 
-$gene = $ga->fetch_by_stable_id( "ENSG00000171456", "supercontig" );
+$gene = $ga->fetch_by_stable_id( "ENSG00000171456", "chromosome" );
 
 debug( "Gene->fetch_by_stable_id()" );
 ok( $gene );
 
 
-$gene->transform( "chromosome" );
 
 debug( "Gene dbID: ". $gene->dbID());
 ok( $gene->dbID() == 18267 );

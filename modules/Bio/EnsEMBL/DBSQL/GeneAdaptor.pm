@@ -58,7 +58,8 @@ use vars '@ISA';
 sub _tables {
   my $self = shift;
   
-  return (['gene', 'g'],[ 'gene_description', 'gd'], ['gene_stable_id', 'gsi'] );
+  return ([ 'gene', 'g' ],[ 'gene_description', 'gd' ], [ 'gene_stable_id', 'gsi' ],
+	  [ 'xref', 'x' ], [ 'external_db' , 'exdb' ]);
 }
 
 
@@ -79,13 +80,16 @@ sub _columns {
 
   return qw( g.gene_id g.seq_region_id g.seq_region_start g.seq_region_end 
 	     g.seq_region_strand g.analysis_id g.type g.display_xref_id 
-	     gd.description gsi.stable_id gsi.version  );
+	     gd.description gsi.stable_id gsi.version x.display_label 
+	     exdb.db_name exdb.status );
 }
 
 
 sub _left_join {
   return ( [ 'gene_description', "gd.gene_id = g.gene_id" ],
-	   [ 'gene_stable_id', "gsi.gene_id = g.gene_id" ] ); 
+	   [ 'gene_stable_id', "gsi.gene_id = g.gene_id" ],
+	   [ 'xref', "x.xref_id = g.display_xref_id" ],
+	   [ 'external_db', "exdb.external_db_id = x.external_db_id" ] ); 
 }
 
 
@@ -141,7 +145,7 @@ sub list_stable_ids {
 
 =cut
 
-sub fetch_by_stable_id{
+sub fetch_by_stable_id {
    my ($self,$id, $cs_name, $cs_version) = @_;
 
    my $constraint = "gsi.stable_id = \"$id\"";
@@ -237,27 +241,15 @@ sub fetch_all_by_domain {
     push @gene_ids, $gene_id;
   }
 
-  ## TODO: fetch by gene id list
-				
+  my $constraint = "g.gene_id in (".join( ",", @gene_ids ).")";
+  my $genes = $self->SUPER::generic_fetch( $constraint );
+  my @new_genes = map { $_->transform( $cs_name, $cs_version ) } @$genes;
+
+  return $new_genes;
 }
 
 
   
-=head2 fetch_all_by_Slice
-
-  Arg [1]    : Bio::EnsEMBL::Slice $slice
-               the slice to fetch genes from
-  Arg [2]
-  Example    : $genes = $gene_adaptor->fetch_all_by_Slice($slice);
-  Description: Retrieves all genes which are present on a slice
-  Returntype : listref of Bio::EnsEMBL::Genes in slice coordinates
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::Slice
-
-=cut
-
-# should be BaseFeatureAdaptor doing this now
-
 
 =head2 fetch_by_transcript_id
 
@@ -366,7 +358,7 @@ sub fetch_by_Peptide_id {
 
 =cut
 
-sub fetch_by_tranalation_stable_id {
+sub fetch_by_translation_stable_id {
     my ( $self, $translation_stable_id, $cs_name, $cs_version ) = @_;
 
     # this is a cheap SQL call
@@ -692,8 +684,6 @@ sub deleteObj {
   #call superclass destructor
   $self->SUPER::deleteObj();
 
-  #flush the cache
-  %{$self->{'_slice_gene_cache'}} = ();
 }
 
 
@@ -774,6 +764,7 @@ sub _objs_from_sth {
 
   my $sa = $self->db()->get_SliceAdaptor();
   my $aa = $self->db->get_AnalysisAdaptor();
+  my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
 
   my @genes;
   my %rc_hash;
@@ -784,12 +775,13 @@ sub _objs_from_sth {
 
   my ( $gene_id, $seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand,
        $analysis_id, $type, $display_xref_id, $gene_description, $stable_id, 
-       $version );  
+       $version, $external_name, $external_db, $external_status );  
 
 
   $sth->bind_columns( \$gene_id, \$seq_region_id, \$seq_region_start, \$seq_region_end, 
 		      \$seq_region_strand, \$analysis_id, \$type, \$display_xref_id, 
-		      \$gene_description, \$stable_id, \$version );
+		      \$gene_description, \$stable_id, \$version, \$external_name, 
+		      \$external_db, \$external_status );
 
 
 
@@ -882,6 +874,16 @@ sub _objs_from_sth {
       }
     }
 
+    my $display_xref;
+
+    if( $display_xref_id ) {
+      $display_xref = bless 
+	{ 'dbID' => $display_xref_id,
+	  'adaptor' => $dbEntryAdaptor
+	}, "Bio::EnsEMBL::DBEntry";
+    }
+				
+
     #finally, create the new repeat feature
     push @genes, Bio::EnsEMBL::Gene->new
       ( '-analysis'      =>  $analysis,
@@ -893,7 +895,11 @@ sub _objs_from_sth {
 	'-dbID'          =>  $gene_id,
         '-stable_id'     =>  $stable_id,
         '-version'       =>  $version,
-        '-description'   =>  $gene_description );
+        '-description'   =>  $gene_description,
+	'-external_name' =>  $external_name,
+        '-external_db'   =>  $external_db,
+        '-external_status' => $external_status,
+	'-display_xref' => $display_xref );
   }
 
   return \@genes;

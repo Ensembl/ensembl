@@ -58,11 +58,17 @@ sub new {
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
 
-  my ( $stable_id, $version ) = rearrange( [ 'STABLE_ID', 'VERSION' ], @_ );
+  my ( $stable_id, $version, $external_name, $external_db, 
+       $external_status, $display_xref ) = 
+    rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
+		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF' ], @_ );
   
   $self->stable_id( $stable_id );
   $self->version( $version );
-
+  $self->external_name( $external_name ) if( defined $external_name );
+  $self->external_db( $external_db ) if( defined $external_db );
+  $self->external_status( $external_status ) if( defined $external_status );
+  $self->display_xref( $display_xref ) if( defined $display_xref );
   return $self;
 }
 
@@ -221,7 +227,7 @@ sub dbID {
 =cut
 
 sub external_name {
-  my ($self, $ext_name) = @_;
+  my  $self  = shift;
 
   $self->{'external_name'} = shift if( @_ );
 
@@ -699,6 +705,7 @@ sub transform {
       push( @{$new_gene->{'_transcript_array'}}, $new_transcript );
     }
   }
+  return $new_gene;
 }
 
 
@@ -744,13 +751,12 @@ sub temporary_id {
 sub display_xref {
 
     my $self = shift;
+
     if( @_ ) {
       $self->{'display_xref'} = shift;
     } elsif( exists $self->{'display_xref'} ) {
       return $self->{'display_xref'};
-    } else {
-      return undef;
-    }
+    } 
 
     return $self->{'display_xref'};
 }

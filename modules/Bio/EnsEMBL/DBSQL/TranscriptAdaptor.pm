@@ -32,63 +32,66 @@ package Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Translation;
 
-@ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
+@ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );
 
 
 
-=head2 fetch_by_dbID
 
-  Arg [1]    : int $transid
-               The unique database id for the transcript to be retrieved.
-  Example    : $transcript = $transcript_adaptor->fetch_by_dbID(1234);
-  Description: Retreives a transcript from the database via its dbID
-  Returntype : Bio::EnsEMBL::Transcript
+=head2 _tablename
+
+  Arg [1]    : none
+  Example    : none
+  Description: PROTECTED implementation of superclass abstract method
+               returns the names, aliases of the tables to use for queries
+  Returntype : list of listrefs of strings
   Exceptions : none
-  Caller     : general
+  Caller     : internal
 
 =cut
-    
-sub fetch_by_dbID {
-    my ($self, $transid) = @_;
 
-    my $seen = 0;
-    my $trans = Bio::EnsEMBL::Transcript->new();
-    my $exonAdaptor = $self->db->get_ExonAdaptor();
-
-    my $sth = $self->prepare("SELECT exon_id 
-                              FROM   exon_transcript 
-                              WHERE  transcript_id = ?
-                              ORDER BY rank");
-    $sth->execute($transid);
-
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	my $exon = $exonAdaptor->fetch_by_dbID($rowhash->{'exon_id'});
-	$trans->add_Exon($exon);
-	$seen = 1;
-    }
-
-    if ($seen == 0 ) {
-	$self->throw("transcript $transid is not present in db");
-    }
-    $trans->dbID($transid);
-    $trans->adaptor( $self );
-
-    my $ts = $self->prepare("SELECT translation_id translation_id 
-                             FROM   transcript 
-                             WHERE  transcript_id = ?");
-    $ts->execute($transid);
-    my ($val) = $ts->fetchrow_array();
-    $trans->_translation_id($val);
-
-    return $trans;
+sub _tables {
+  my $self = shift;
+  
+  return ([ 'transcript', 't' ], [ 'transcript_stable_id', 'tsi' ],
+	  [ 'xref', 'x' ], [ 'external_db' , 'exdb' ] );
 }
+
+
+=head2 _columns
+
+  Arg [1]    : none
+  Example    : none
+  Description: PROTECTED implementation of superclass abstract method
+               returns a list of columns to use for queries
+  Returntype : list of strings
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+sub _columns {
+  my $self = shift;
+
+  return qw( t.transcript_id t.seq_region_id t.seq_region_start t.seq_region_end 
+	     t.seq_region_strand t.gene_id 
+             t.display_xref_id tsi.stable_id tsi.version
+             x.display_label exdb.db_name exdb.status );
+}
+
+
+sub _left_join {
+  return ( [ 'transcript_stable_id', "tsi.gene_id = t.transcript_id" ],
+	   [ 'xref', "x.xref_id = t.display_xref_id" ],
+	   [ 'external_db', "exdb.external_db_id = x.external_db_id" ] ); 
+}
+
 
 
 =head2 fetch_by_stable_id
@@ -103,20 +106,20 @@ sub fetch_by_dbID {
 
 =cut
 
-sub fetch_by_stable_id {
-  my ($self, $stable_id) = @_;
-  my $sth = $self->prepare( "SELECT transcript_id 
-                             FROM   transcript_stable_id 
-                             WHERE  stable_id = ?" );
-  $sth->execute( $stable_id );
+sub fetch_by_stable_id{
+   my ($self,$id, $cs_name, $cs_version) = @_;
 
-  if( my $arr = $sth->fetchrow_arrayref ) {
-    my $transcript = $self->fetch_by_dbID( $arr->[0] );
-    return $transcript;
-  } else {
-    $ self->warn( "No Transcript with this stable id found in the database." );
-    return undef;
-  }
+   my $constraint = "tsi.stable_id = \"$id\"";
+
+   # should be only one :-)
+   my $transcripts = $self->SUPER::generic_fetch( $constraint );
+
+   if( ! @$transcripts ) { return undef }
+
+   my @new_transcripts = map { $_->transform( $cs_name, $cs_version ) } @$transcripts;
+
+
+   return $new_transcripts[0];
 }
 
 
@@ -136,7 +139,7 @@ sub fetch_by_stable_id {
 =cut
 
 sub fetch_by_translation_stable_id {
-  my ($self, $transl_stable_id) = @_;
+  my ($self, $transl_stable_id, $cs_name, $cs_version ) = @_;
 
   my $sth = $self->prepare( "SELECT t.transcript_id
                              FROM   translation_stable_id tsi, transcript t
@@ -147,12 +150,46 @@ sub fetch_by_translation_stable_id {
 
   my ($id) = $sth->fetchrow_array;
   if ($id){
-  	return $self->fetch_by_dbID($id);
+  	return $self->fetch_by_dbID($id, $cs_name, $cs_version );
   } else {
   	return undef;
   }
 } 
                              
+
+=head2 fetch_by_Gene
+
+  Arg [1]    : Bio::EnsEMBL::Gene $gene
+  Example    : none
+  Description: retrieves Transcript objects for given gene. Puts Genes slice
+               in each Transcript. 
+  Returntype : listref Bio::EnsEMBL::Transcript
+  Exceptions : none
+  Caller     : Gene->get_all_Transcripts()
+
+=cut
+
+
+sub fetch_by_Gene {
+  my $self = shift;
+  my $gene = shift;
+
+  # should be on the same slice as gene 
+  my $constraint = "t.gene_id = ".$gene->dbID();
+
+  my $slice = $gene->slice();
+  my $transcripts = $self->SUPER::generic_fetch( $constraint );
+
+  if( ! @$transcripts ) { return [] }
+
+  my @new_transcripts = map { $_->transfer( $slice ) } @$transcripts;
+
+
+  return $new_transcripts;
+}
+
+
+
 =head2 fetch_all_by_DBEntry
 
   Arg [1]    : in $external_id
@@ -169,12 +206,16 @@ sub fetch_by_translation_stable_id {
 sub fetch_all_by_DBEntry {
   my $self = shift;
   my $external_id = shift;
+
+  my $cs_name = shift;
+  my $cs_version = shift;
+
   my @trans = ();
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
   my @ids = $entryAdaptor->transcriptids_by_extids($external_id);
   foreach my $trans_id ( @ids ) {
-    my $trans = $self->fetch_by_dbID( $trans_id );
+    my $trans = $self->fetch_by_dbID( $trans_id, $cs_name, $cs_version );
     if( $trans ) {
         push( @trans, $trans );
     }
@@ -196,22 +237,22 @@ sub fetch_all_by_DBEntry {
 =cut
 
 sub fetch_all_by_exon_stable_id {
-  my ($self, $stable_id) = @_;
+  my ($self, $stable_id, $cs_name, $cs_version ) = @_;
   my @trans ;
   my $sth = $self->prepare( qq(	SELECT et.transcript_id 
-  								FROM exon_transcript as et, 
-									 exon_stable_id as esi 
-								WHERE esi.exon_id = et.exon_id and 
-									  esi.stable_id = "$stable_id"  ));
+				FROM exon_transcript as et, 
+				exon_stable_id as esi 
+				WHERE esi.exon_id = et.exon_id and 
+				esi.stable_id = "$stable_id"  ));
   $sth->execute(  );
 
   while( my $id = $sth->fetchrow_array ) {    
-		my $transcript = $self->fetch_by_dbID( $id );
-    	push(@trans, $transcript) if $transcript;
-
+    my $transcript = $self->fetch_by_dbID( $id, $cs_name, $cs_version );
+    push(@trans, $transcript) if $transcript;
   } 
+
   if (!@trans) {
-    $self->warn( "No Transcript with this exon stable id found in the database." );
+    warning( "No Transcript with this exon stable id found in the database." );
     return undef;
   }
   return \@trans;
@@ -245,10 +286,9 @@ sub store {
    # then store the transcript
    # then store the exon_transcript table
 
-   my $translation = $transcript->translation();
-   my ( $exon_count, $exons );
+   my $translation = $transcript->{'translation'};
+
    $exons = $transcript->get_all_Exons();
-   $exon_count = scalar( @{$exons} );
 
    my $exonAdaptor = $self->db->get_ExonAdaptor();
    foreach my $exon ( @{$exons} ) {
@@ -359,6 +399,7 @@ sub get_stable_entry_info {
 
   return 1;
 }
+
 
 =head2 get_Interpro_by_transid
 
@@ -581,6 +622,169 @@ sub list_stable_ids {
    my ($self) = @_;
 
    return $self->_list_dbIDs("transcript_stable_id", "stable_id");
+}
+
+=head2 _obj_from_hashref
+
+  Arg [1]    : Hashreference $hashref
+  Example    : none 
+  Description: PROTECTED implementation of abstract superclass method.
+               responsible for the creation of Genes 
+  Returntype : listref of Bio::EnsEMBL::Genes in target coordinate system
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+sub _objs_from_sth {
+  my ($self, $sth, $mapper, $dest_slice) = @_;
+
+  #
+  # This code is ugly because an attempt has been made to remove as many
+  # function calls as possible for speed purposes.  Thus many caches and
+  # a fair bit of gymnastics is used.
+  #
+
+  my $sa = $self->db()->get_SliceAdaptor();
+  my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
+
+  my @genes;
+  my %rc_hash;
+  my %analysis_hash;
+  my %slice_hash;
+  my %sr_name_hash;
+  my %sr_cs_hash;
+
+
+
+  my ( $transcript_id, $seq_region_id, $seq_region_start, $seq_region_end, 
+       $seq_region_strand, $gene_id,  
+       $display_xref_id, $stable_id, $version
+       $external_name, $external_db, $external_status );
+
+  $sth->bind_columns( \$transcript_id, \$seq_region_id, \$seq_region_start, 
+                      \$seq_region_end, \$seq_region_strand, \$gene_id,  
+                      \$display_xref_id, \$stable_id, \$version
+                      \$external_name, \$external_db, \$external_status );
+
+
+
+  my $asm_cs;
+  my $cmp_cs;
+  my $asm_cs_vers;
+  my $asm_cs_name;
+  my $cmp_cs_vers;
+  my $cmp_cs_name;
+  if($mapper) {
+    $asm_cs = $mapper->assembled_CoordSystem();
+    $cmp_cs = $mapper->component_CoordSystem();
+    $asm_cs_name = $asm_cs->name();
+    $asm_cs_vers = $asm_cs->version();
+    $cmp_cs_name = $cmp_cs->name();
+    $asm_cs_vers = $cmp_cs->version();
+  }
+
+  my $dest_slice_start;
+  my $dest_slice_end;
+  my $dest_slice_strand;
+  my $dest_slice_length;
+  if($dest_slice) {
+    $dest_slice_start  = $dest_slice->start();
+    $dest_slice_end    = $dest_slice->end();
+    $dest_slice_strand = $dest_slice->strand();
+    $dest_slice_length = $dest_slice->length();
+  }
+
+  GENE: while($sth->fetch()) {
+    #get the analysis object
+    my $slice = $slice_hash{$seq_region_id};
+
+    if(!$slice) {
+      $slice = $sa->fetch_by_seq_region_id($seq_region_id);
+      $slice_hash{"ID:".$seq_region_id} = $slice;
+      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id} = $slice->coord_system();
+    }
+
+    #
+    # remap the feature coordinates to another coord system 
+    # if a mapper was provided
+    #
+    if($mapper) {
+      my $sr_name = $sr_name_hash{$seq_region_id};
+      my $sr_cs   = $sr_cs_hash{$seq_region_id};
+
+      ($sr_name,$seq_region_start,$seq_region_end,$seq_region_strand) =
+        $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
+			 $seq_region_strand, $sr_cs);
+
+      #skip features that map to gaps or coord system boundaries
+      next GENE if(!defined($sr_name));
+
+      #get a slice in the coord system we just mapped to
+      if($asm_cs == $sr_cs || ($asm_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
+        $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
+          $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
+                               $cmp_cs_vers);
+      } else {
+        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
+          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
+                               $asm_cs_vers);
+      }
+    }
+
+    #
+    # If a destination slice was provided convert the coords
+    # If the dest_slice starts at 1 and is foward strand, nothing needs doing
+    #
+    if($dest_slice && ($dest_slice_start != 1 || $dest_slice_strand != 1)) {
+      if($dest_slice_strand == 1) {
+        $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+        $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+      } else {
+        my $tmp_seq_region_start = $seq_region_start;
+        $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+        $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+        $seq_region_strand *= -1;
+      }
+
+      $slice = $dest_slice;
+
+      #throw away features off the end of the requested slice
+      if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+        next FEATURE;
+      }
+    }
+
+    my $display_xref;
+
+    if( $display_xref_id ) {
+      $display_xref = bless 
+	{ 'dbID' => $display_xref_id,
+	  'adaptor' => $dbEntryAdaptor
+	}, "Bio::EnsEMBL::DBEntry";
+    }
+				
+
+    #finally, create the new repeat feature
+    push @genes, Bio::EnsEMBL::Gene->new
+      ( '-analysis'      =>  $analysis,
+	'-start'         =>  $seq_region_start,
+	'-end'           =>  $seq_region_end,
+	'-strand'        =>  $seq_region_strand,
+	'-adaptor'       =>  $self,
+	'-slice'         =>  $slice,
+	'-dbID'          =>  $gene_id,
+        '-stable_id'     =>  $stable_id,
+        '-version'       =>  $version,
+        '-description'   =>  $gene_description,
+	'-external_name' =>  $external_name,
+        '-external_db'   =>  $external_db,
+        '-external_status' => $external_status,
+	'-display_xref' => $display_xref );
+  }
+
+  return \@genes;
 }
 
 
