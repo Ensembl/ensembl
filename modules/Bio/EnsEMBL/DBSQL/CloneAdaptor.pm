@@ -218,6 +218,45 @@ sub fetch_by_dbID {
 }
 
 
+=head2 fetch_all
+
+  Arg [1]    : none
+  Example    : @clones = $clone_adaptor->fetch_all();
+  Description: Retrieves every clone from the database.  
+  Returntype : Bio::EnsEMBL::Clone
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_all {
+  my $self = shift;
+
+  my $sth = $self->prepare("SELECT clone_id, name, embl_acc, version,
+                                   embl_version, htg_phase, created, modified
+                            FROM clone");
+  
+
+  $sth->execute();
+
+  my ($clone_id, $name, $embl_acc, $version, $embl_version, $htg_phase,
+      $created, $modified);
+
+  $sth->bind_columns(\$clone_id, \$name, \$embl_acc, \$version, \$embl_version,
+		     \$htg_phase, \$created, \$modified);
+
+  my @clones;
+
+  while($sth->fetch()) {
+    push @clones, new Bio::EnsEMBL::Clone($self, $clone_id, $name, $embl_acc,
+					  $version, $embl_version, $htg_phase,
+					  $created, $modified);
+  }
+
+  return @clones;
+}
+
+
 
 =head2 list_embl_version_by_accesssion
 

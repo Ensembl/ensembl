@@ -83,20 +83,30 @@ sub new {
     my ($class,$adaptor,$internal_id, $id, $embl_id, $version, $embl_version,
 	$htg_phase, $created, $modified) = @_;
 
-    my $self = {};
-    bless $self,$class;
-    
-    $self->adaptor($adaptor);
-    $self->dbID($internal_id);
-    $self->id($id);
-    $self->embl_id($embl_id);
-    $self->version($version);
-    $self->embl_version($embl_version);
-    $self->htg_phase($htg_phase);
-    $self->created($created);
-    $self->modified($modified);
 
-    return $self;
+    return bless { 'adaptor'   => $adaptor,
+		   'dbID'      => $internal_id,
+		   '_clone_id' => $id,
+		   'embl_id'  => $embl_id,
+		   'version'   => $version,
+		   'embl_version' => $embl_version,
+		   'htg_phase' => $htg_phase,
+		   'created'   => $created,
+		   'modified'  => $modified,
+		   '_contig_list' => ()
+		 }, $class;
+
+#    $self->adaptor($adaptor);
+#    $self->dbID($internal_id);
+#    $self->id($id);
+#    $self->embl_id($embl_id);
+#    $self->version($version);
+#    $self->embl_version($embl_version);
+#    $self->htg_phase($htg_phase);
+#    $self->created($created);
+#    $self->modified($modified);
+
+#    return $self;
 }
 
 
