@@ -1119,8 +1119,6 @@ sub write_Gene{
        my $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . $gene->id . "','". $cloneid ."',".$cloneid.")");
        $sth->execute();
    }
-
-   #$self->_unlock_tables();
 }
 
 
