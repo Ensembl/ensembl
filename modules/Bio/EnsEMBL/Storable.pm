@@ -122,7 +122,9 @@ sub adaptor {
                hostname with the provided database, this object is stored in
                that database.
   Returntype : 1 or 0
-  Exceptions : none
+  Exceptions : throw if dbID is set but adaptor is not
+               throw if adaptor is set but dbID is not
+               throw if incorrect argument is passed
   Caller     : store methods
 
 =cut
@@ -138,7 +140,17 @@ sub is_stored {
   my $adaptor = $self->{'adaptor'};
   my $dbID = $self->{'dbID'};
 
-  return 0 if (!$adaptor || !dbID);
+  if($dbID && !$adaptor) {
+    throw("Storable object has a dbID but not an adaptor.\n" .
+          'Storable objects must have neither OR both.');
+  }
+
+  if($adaptor && !$dbID) {
+    throw("Storable object has an adaptor but not a dbID.\n".
+          "Storable objects must have neither OR both.");
+  }
+
+  return 0 if (!$adaptor && !dbID);
 
   my $cur_db = $adaptor->db();
 
