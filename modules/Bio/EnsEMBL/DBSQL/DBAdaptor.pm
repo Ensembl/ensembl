@@ -53,10 +53,14 @@ sub new {
   #call superclass constructor
   my $self = $class->SUPER::new(@args);
   
-  my ( $source ) = $self->_rearrange([qw(SOURCE)],@args);  
+  my ( $source, $dnadb ) = $self->_rearrange([qw(SOURCE DNADB)],@args);  
 
   if(defined $source) {
     $self->source($source);
+  }
+
+  if(defined $dnadb) {
+    $self->dnadb($dnadb);
   }
  
   return $self; # success - we hope!
@@ -75,6 +79,7 @@ sub new {
   Caller    : Bio::EnsEMBL::GeneAdaptor  Bio::EnsEMBL::LiteGeneAdaptor EnsWeb
 
 =cut
+
 sub source {
   my ($self, $source) = @_;
 
@@ -658,6 +663,31 @@ sub assembly_type{
 }
 
 
+=head2 dnadb
+
+ Title   : dnadb
+ Usage   : my $dnadb = $db->dnadb;
+ Function: returns the database adaptor where the dna lives
+           Useful if you only want to keep one copy of the dna
+           on disk but have other databases with genes and features in
+ Returns : dna database adaptor
+  Args    : Bio::EnsEMBL::DBSQL::DBAdaptor
+
+=cut
+
+sub dnadb {
+  my ($self,$arg) = @_;
+
+
+  if (defined($arg)) {
+    if (! $arg->isa("Bio::EnsEMBL::DBSQL::DBAdaptor")) {
+      $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::DBAdaptor");
+    }
+    $self->{_dnadb} = $arg;
+  }
+  return $self->{_dnadb} || $self;
+}
+
 
 
 
@@ -867,35 +897,6 @@ sub _ext_adaptor {
     return $self->{'_ext_adaptors'}{$adtor_name};
 }
 
-
-=head2 dnadb
-
- Title   : dnadb
- Usage   : my $dnadb = $db->dnadb;
- Function: returns the database adaptor where the dna lives
-           Useful if you only want to keep one copy of the dna
-           on disk but have other databases with genes and features in
- Returns : dna database adaptor
-  Args    : Bio::EnsEMBL::DBSQL::DBAdaptor
-
-=cut
-
-sub dnadb {
-  my ($self,$arg) = @_;
-
-  $self->warn("DBAdaptor::dnadb is not currently implemented."
-	  . "It will either be implemented or deprecated in the near future");
-
-  return undef;
-
-#  if (defined($arg)) {
-#    if (! $arg->isa("Bio::EnsEMBL::DBSQL::DBAdaptor")) {
-#      $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::DBAdaptor");
-#    }
-#    $self->{_dnadb} = $arg;
-#  }
-#  return $self->{_dnadb} || $self;
-}
 
 
 
