@@ -509,18 +509,21 @@ sub _generic_parse_features {
     $self->throw("features must be an array reference not a [" . ref($features) . "]");
   }
 
-  #print ::LOG "Enter new ",ref( $self ), " with ",scalar( @$features ), " features.\n";
+  # print "Enter new ",ref( $self ), " with ",scalar( @$features ), " features.\n";
   for my $f ( @$features ) {
+    #print ::LOG join( " ", ( $f->start(), $f->end(), $f->strand(), "-", $f->hstart(), $f->hend(), $f->hstrand() )),"\n";
     #print ::LOG join( " ", ( $f->start(), $f->end(), $f->strand(), "-", $f->hstart(), $f->hend(), $f->hstrand() )),"\n";
   } 
 
+  my $feats = scalar (@$features) - 1;
   my $strand     = $features->[0]->strand;
   my @f;
 
   if( $strand == 1 ) {
     #print STDERR "features are forward strand being sorted first to last\n";
     @f = sort {$a->start <=> $b->start} @$features;
-    #print STDERR "first hstart = ".$f[0]->start." last hstart ".$f[$#f]->start."\n";
+    #print STDERR "first start = ".$f[0]->start." end " . $f[$#f]->end. "\n";
+    #print STDERR "first hstart = ".$f[0]->hstart." last hstart ".$f[$#f]->hend."\n";
   } else {
     #print STDERR "features are reverse strand being sorted last to first\n";
     @f = sort { $b->start <=> $a->start} @$features;
@@ -543,9 +546,9 @@ sub _generic_parse_features {
   my $ori = $strand * $hstrand;
 
   #print "about to make cigar string from these features\n";
-  foreach my $feature(@f){
+  #foreach my $feature(@f){
     #print $feature->gffstring."\n";
-  }
+  #}
 
   if (scalar(@f) == 0) {
     $self->throw("No features in the array to parse");
@@ -584,11 +587,11 @@ sub _generic_parse_features {
     $f2start = $f[0]->hstart;
     $f2end   = $f[$#f]->hend;
   } else {
+    $f2end = $f[0]->hend;
+    $f2start = $f[$#f]->hstart;
     #print STDERR "hstrand = ".$hstrand."\n";
-    #print STDERR "f2start set to ".$f[0]->hstart." feature 0 hend\n";
-    #print STDERR "f2end set to ".$f[$#f]->hend." feature ".$#f." hstart\n";
-    $f2start   = $f[0]->hstart;
-    $f2end = $f[$#f]->hend;
+    #print STDERR "f2start set to ".$f2start." feature 0 hend\n";
+    #print STDERR "f2end set to ".$f2end." feature ".$#f." hstart\n";
   }
 
   foreach my $f (@f) {
@@ -623,7 +626,7 @@ sub _generic_parse_features {
 
     my $start1 = $f->start;
     my $start2 = $f->hstart();
-    #print STDERR STDERR "hstrand = ".$hstrand." ori ".$ori." strand ".$strand."\n";
+#    print STDERR "hstrand = ".$hstrand." ori ".$ori." strand ".$strand."\n";
     if (defined($prev1)) {
       if ( $strand == 1 ) {
         if ($f->start < $prev1) {
@@ -719,8 +722,6 @@ sub _generic_parse_features {
   $feature1->percent_id($percent);
   $feature1->p_value($pvalue);
   $feature1->seqname($name);
-  $feature1->percent_id($percent);
-  $feature1->p_value($pvalue);
   $feature1->phase($phase);
   $feature1->analysis($analysis);
   #print STDERR "checking feature1 ".$feature1->gffstring."\n";
@@ -741,6 +742,7 @@ sub _generic_parse_features {
   $feature2->validate;
   $self->feature1($feature1);
   $self->feature2($feature2);
+
   $self->cigar_string($string);
 
   #print STDERR "\n\n";
