@@ -1428,13 +1428,18 @@ sub get_all_ExternalGenes {
 
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
        if( $extf->can('get_Ensembl_Genes_clone') ) {
-	   my @genes = $extf->get_Ensembl_Genes_clone();
-	   foreach my $exon ( @genes->all_Exon_objects ) {
+	   my @genes = $extf->get_Ensembl_Genes_clone($acc);
+	
+	   foreach my $gene (@genes){
+	   foreach my $exon ( $gene->all_Exon_objects ) {
 	       $exon->start($exon->start - $embl_offset+1);
 	       $exon->end($exon->end - $embl_offset+1);
 	   }
 	   push(@out,@genes);
-       } 
+       }
+
+
+       }
    }
 
    return @out;

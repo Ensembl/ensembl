@@ -86,6 +86,7 @@ sub new {
 sub get_Ensembl_Genes_clone{
    my ($self,$cloneid) = @_;
    my $clone;
+
    eval {
        $clone = $self->dbobj->get_Clone($cloneid);
    };
@@ -95,8 +96,58 @@ sub get_Ensembl_Genes_clone{
        return ();
    }
 
+   my @genes=$clone->get_all_Genes();
+
    return $clone->get_all_Genes();
 }
+
+
+
+=head2 get_Ensembl_SeqFeatures_contig
+
+ Title   : get_Ensembl_SeqFeatures_contig
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Ensembl_SeqFeatures_contig{
+   my ($self,$contigid) = @_;
+   return;
+}
+
+
+
+=head2 get_Ensembl_SeqFeatures_clone
+
+ Title   : get_Ensembl_SeqFeatures_clone
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+
+
+
+sub get_Ensembl_SeqFeatures_clone{
+   my ($self,$contigid) = @_;
+   return;
+}
+
+
+
+
+
+
+
 
 
 
@@ -120,3 +171,10 @@ sub dbobj{
     return $obj->{'dbobj'};
 
 }
+
+
+
+
+
+
+
