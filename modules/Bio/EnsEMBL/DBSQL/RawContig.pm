@@ -58,7 +58,7 @@ use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DB::RawContigI;
 
 use Bio::EnsEMBL::Repeat;
-use Bio::EnsEMBL::ContigOverlap;
+use Bio::EnsEMBL::ContigOverlapHelper;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
 
@@ -741,13 +741,14 @@ sub seq_date{
  Usage   : $overlap_object = $contig->get_left_overlap();
  Function: Returns the overlap object of contig to the left.
            This could be undef, indicating no overlap
- Returns : A Bio::EnsEMBL::ContigOverlap object
+ Returns : A Bio::EnsEMBL::ContigOverlapHelper object
  Args    : None
 
 =cut
 
 sub get_left_overlap{
    my ($self,@args) = @_;
+
    if( $self->_got_overlaps == 0 ) {
        $self->_load_overlaps() ;
    }
@@ -762,7 +763,7 @@ sub get_left_overlap{
  Usage   : $overlap_object = $contig->get_right_overlap();
  Function: Returns the overlap object of contig to the left.
            This could be undef, indicating no overlap
- Returns : A Bio::EnsEMBL::ContigOverlap object
+ Returns : A Bio::EnsEMBL::ContigOverlapHelper object
  Args    : None
 
 =cut
@@ -832,12 +833,30 @@ sub _got_overlaps{
 sub _load_overlaps{
    my ($self,@args) = @_;
 
-   my $id = $self->internal_id();
+   my $id      = $self->internal_id();
    my $version = $self->seq_version();
 
-   print STDERR "select contig_a,contig_b,contig_a_position,contig_b_position,overlap_type from contigoverlap where (contig_a = '$id' and contig_a_version = $version ) or (contig_b = '$id' and contig_b_version = $version )\n";
+   my $query =  "select co.contig_a_position," .
+                "       co.contig_b_position," .
+		"       co.overlap_type," .
+		"       co.dna_a_id, ".
+		"       co.dna_b_id, ".
+		"       con.dna as dna1, " .
+                "       con2.dna as dna2, " .
+		"       con.id as id1,".
+		"       con2.id as id2 " .
+                "from   contigoverlap as co, " . 
+		"       contig as con," .
+		"       contig as con2 " . 
+		"where  ((con2.dna = co.dna_b_id " . 
+		"and      con.dna = co.dna_a_id) " .
+		"or     (con2.dna = co.dna_a_id " .
+                "and      con.dna = co.dna_b_id)) " .
+		"and    con.internal_id = $id";
 
-   my $sth = $self->_dbobj->prepare("select contig_a,contig_b,contig_a_position,contig_b_position,overlap_type from contigoverlap where (contig_a = '$id' and contig_a_version = $version ) or (contig_b = '$id' and contig_b_version = $version )");
+#   print(STDERR "Query is $query");
+
+   my $sth = $self->_dbobj->prepare($query);
    
    if( !$sth->execute() ) {
        $self->throw("Unable to execute contig overlap get!");
@@ -866,32 +885,36 @@ sub _load_overlaps{
 
    while( my $rowhash = $sth->fetchrow_hashref ) {
 
-       my $contigid = $rowhash->{'id'};
+       # First condition means the query contig is contig_a
+       if ($rowhash->{dna_a_id} == $rowhash->{dna1}) {
 
-       if( $rowhash->{'contig_a'} eq $id) {
-	   my $t = $rowhash->{'overlap_type'};
+	   my $sisterid = $rowhash->{id2};
+	   my $type     = $rowhash->{overlap_type};
+
 	   my ($selflr,$sisterpol);
-	   if( $t eq 'right2left' ) {
+
+	   if( $type eq 'right2left' ) {
 	       $selflr = 'right';
 	       $sisterpol = 1;
-	   } elsif( $t eq 'right2right' ) {
+	   } elsif( $type eq 'right2right' ) {
 	       $selflr = 'right';
 	       $sisterpol = -1;
-	   } elsif( $t eq 'left2right' ) {
+	   } elsif( $type eq 'left2right' ) {
 	       $selflr = 'left';
 	       $sisterpol = 1;
-	   } elsif ( $t eq 'left2left' ) {
+	   } elsif ( $type eq 'left2left' ) {
 	       $selflr = 'left';
 	       $sisterpol = -1;
 	   } else {
-	       $self->throw("Impossible type position $t\n");
+	       $self->throw("Impossible type position $type\n");
 	   }
 
-	   my $sis = $self->_dbobj->get_Contig($contigid);
-	   my $co = Bio::EnsEMBL::ContigOverlap->new(
+	   print(STDERR "Type $type $sisterpol $selflr\n");
+	   my $sis = $self->_dbobj->get_Contig($sisterid);
+	   my $co = Bio::EnsEMBL::ContigOverlapHelper->new(
 						     -sister => $sis,
 						     -sisterposition => $rowhash->{'contig_b_position'}, 
-						     -selfposition => $rowhash->{'contig_a_position'},
+						     -selfposition   => $rowhash->{'contig_a_position'},
 						     -sisterpolarity => $sisterpol );
 	   if( $selflr eq 'left' ) {
 	       $self->_left_overlap($co);
@@ -900,29 +923,33 @@ sub _load_overlaps{
 	   }
 
        } else {
-	   my $t = $rowhash->{'overlap_type'};
+
+	   my $sisterid = $rowhash->{id2};
+	   my $type = $rowhash->{'overlap_type'};
+
 	   my ($selflr,$sisterpol);
-	   if( $t eq 'right2left' ) {
+	   if( $type eq 'right2left' ) {
 	       $selflr = 'left';
 	       $sisterpol = 1;
-	   } elsif( $t eq 'right2right' ) {
+	   } elsif( $type eq 'right2right' ) {
 	       $selflr = 'right';
 	       $sisterpol = -1;
-	   } elsif( $t eq 'left2right' ) {
+	   } elsif( $type eq 'left2right' ) {
 	       $selflr = 'right';
 	       $sisterpol = 1;
-	   } elsif ( $t eq 'left2left' ) {
+	   } elsif ( $type eq 'left2left' ) {
 	       $selflr = 'left';
 	       $sisterpol = -1;
 	   } else {
-	       $self->throw("Impossible type position $t\n");
+	       $self->throw("Impossible type position $type\n");
 	   }
-	   my $sis = $self->_dbobj->get_Contig($contigid);
+	   print(STDERR "Type $type $sisterpol $selflr\n");
+	   my $sis = $self->_dbobj->get_Contig($sisterid);
 
-	   my $co = Bio::EnsEMBL::ContigOverlap->new(
+	   my $co = Bio::EnsEMBL::ContigOverlapHelper->new(
 						     -sister => $sis,
 						     -sisterposition => $rowhash->{'contig_a_position'}, 
-						     -selfposition => $rowhash->{'contig_b_position'},
+						     -selfposition   => $rowhash->{'contig_b_position'},
 						     -sisterpolarity => $sisterpol );
 	   if( $selflr eq 'left' ) {
 	       $self->_left_overlap($co);
@@ -950,6 +977,8 @@ sub _load_overlaps{
 
 sub _right_overlap{
    my ($obj,$value) = @_;
+
+
    if( defined $value) {
       $obj->{'_right_overlap'} = $value;
     }
@@ -971,6 +1000,7 @@ sub _right_overlap{
 
 sub _left_overlap{
    my ($obj,$value) = @_;
+
    if( defined $value) {
       $obj->{'_left_overlap'} = $value;
     }

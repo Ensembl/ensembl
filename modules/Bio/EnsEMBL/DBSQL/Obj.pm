@@ -714,7 +714,7 @@ sub get_Exon{
 
 =cut
 
-sub get_Clone{
+sub get_Clone { 
    my ($self,$id) = @_;
 
    my $sth = $self->prepare("select id from contig where clone = \"$id\";");
@@ -762,7 +762,7 @@ sub get_Contig{
 
    my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
 							  -id    => $id );
-   print(STDERR "################# Contig id $id internal " . $row->[1] . "\n");
+#   print(STDERR "################# Contig id $id internal " . $row->[1] . "\n");
 
    $contig->internal_id($row->[1]);
    $contig->seq_version($row->[2]);
@@ -2435,6 +2435,86 @@ sub write_Clone{
    
 }
 
+
+=head2 write_ContigOverlap
+
+ Title   : write_ContigOverlap
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_ContigOverlap {
+    my ($self,$overlap,$type) = @_;
+
+    if (!defined($overlap)) {
+	$self->throw("No overlap object");
+    }
+
+    if (!($overlap->isa("Bio::EnsEMBL::ContigOverlap"))) {
+	$self->throw("[$overlap] is not a Bio::EnsEMBL::ContigOverlap");
+    }
+
+    my $contiga           = $overlap->contiga;
+    my $contigb           = $overlap->contigb;
+
+    my $contig_a_position = $overlap->positiona;
+    my $contig_b_position = $overlap->positionb;
+    my $overlap_type      = $overlap->overlap_type;
+
+    print("contiga "         . $contiga->id . "\t" . $contiga->internal_id . "\n");
+    print("contigb "         . $contigb->id . "\t" . $contigb->internal_id . "\n");
+
+    print("contigaposition " . $contig_a_position . "\n");
+    print("contigbposition " . $contig_b_position . "\n");
+
+    print("overlap type "    . $overlap_type . "\n");
+
+    # First of all we need to fetch the dna ids
+    my $query = "select d.id from dna as d,contig as c " .
+	        "where  d.id = c.dna ".
+  	        "and    c.id = '". $contiga->id ."'";
+
+    my $sth = $self->prepare($query);
+    my $res = $sth->execute;
+
+    $self->throw("More than one dna entry found for " . $contiga->id ) unless $sth->rows == 1;
+
+    my $rowhash = $sth->fetchrow_hashref;
+    my $dna_a_id = $rowhash->{id};
+
+    $query = "select d.id from dna as d,contig as c " .
+	        "where  d.id = c.dna ".
+  	        "and    c.id = '". $contigb->id ."'";
+
+    $sth = $self->prepare($query);
+    $res = $sth->execute;
+    
+    $self->throw("More than one dna entry found for " . $contigb->id )unless $sth->rows == 1;
+
+    $rowhash = $sth->fetchrow_hashref;
+    my $dna_b_id = $rowhash->{id};
+
+    print(STDERR "DNA ids are $dna_a_id : $dna_b_id\n");
+
+    $query = "insert into contigoverlap(dna_a_id,dna_b_id," .
+	                                "contig_a_position,contig_b_position,".
+					"type,overlap_size,overlap_type) " .
+				"values($dna_a_id,$dna_b_id," . 
+				"$contig_a_position,$contig_b_position,".
+				"'$type',1,'$overlap_type')";
+
+    print(STDERR "query is $query\n");
+
+    $sth = $self->prepare($query);
+    $res = $sth->execute;
+
+}
+    
 
 =head2 prepare
 
