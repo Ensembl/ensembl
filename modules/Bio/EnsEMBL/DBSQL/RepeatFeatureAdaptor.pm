@@ -260,9 +260,8 @@ sub store {
     
     my $contig = $rf->entire_seq();
 
-    unless(defined $contig && ref $contig && 
-	   contig->isa("Bio::EnsEMBL::RawContig")) {
-      $self->throw("RepeatFeautre cannot be stored without a Contig  " .
+    unless(defined $contig && $contig->isa("Bio::EnsEMBL::RawContig")) {
+      $self->throw("RepeatFeature cannot be stored without a contig " .
 		   "attached via the attach_seq method");
     } unless($contig->dbID()) {
       $self->throw("RepeatFeature cannot be stored because attached contig " .

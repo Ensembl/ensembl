@@ -136,8 +136,7 @@ sub store {
     }
     
     my $contig = $sf->entire_seq();
-    unless(defined $contig && ref $contig && 
-	   $contig->isa("Bio::EnsEMBL::RawContig")) {
+    unless(defined $contig && $contig->isa("Bio::EnsEMBL::RawContig")) {
       $self->throw("A contig must be attached to the features to be " .
 		   "stored via the attach seq method\n");
     }

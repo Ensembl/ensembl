@@ -91,8 +91,7 @@ sub store{
     }
     
     my $contig = $sf->entire_seq();
-    unless(defined $contig && ref $contig && 
-	   $contig->isa("Bio::EnsEMBL::RawContig")) {
+    unless(defined $contig && $contig->isa("Bio::EnsEMBL::RawContig")) {
       $self->throw("Cannot store feature without a Contig object attached via "
 		   . "attach_seq\n");
     }
