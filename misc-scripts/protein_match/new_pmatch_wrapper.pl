@@ -51,18 +51,15 @@ my $query	= $datadir . '/sptr_ano_gambiae_19_11_02_formated.fa';
 
 # Set defaults
 my %opts = (
-	'b'	=> '0',
 	'c'	=> $pmatch_cmd,
 	'k'	=> '0',
 	'p'	=> '2',
 	'q'	=> $query,
 	't'	=> $target );
 
-if (!getopts('bc:kp:q:t:', \%opts)) {
+if (!getopts('c:kp:q:t:', \%opts)) {
 	print STDERR <<EOT;
-Usage: $0 [-b] [-c path] [-k] [-p num] [-q path] [-t path]
-
--b	Display header for each column.
+Usage: $0 [-c path] [-k] [-p num] [-q path] [-t path]
 
 -c path	Use the pmatch executable located at 'path' rather than at
 	'$pmatch_cmd'.
@@ -163,16 +160,11 @@ foreach my $query (values(%hits)) {
 	}
 }
 
-if ($opts{'b'}) {	# Display header
-	printf("%8s%8s%8s%8s%8s%8s\n",
-		'QID', 'QLEN', 'QIDENT',
-		'TID', 'TLEN', 'TIDENT');
-}
-
-my %maps;
+#my %maps;
 
 foreach my $query (values(%hits)) {
 	my $best;
+	my $priority = 0;
 	foreach my $target (
 		sort { $b->{QIDENT} <=> $a->{QIDENT} } values %{ $query }) {
 
@@ -180,29 +172,45 @@ foreach my $query (values(%hits)) {
 
 		last if ($target->{QIDENT} < $best - $opts{'p'});
 
-		#printf("%8s%8d%8.3f%8s%8d%8.3f\n",
-			#$target->{QID}, $target->{QLEN},
-			#$target->{QIDENT},
-			#$target->{TID}, $target->{TLEN},
-			#$target->{TIDENT});
-
-		my $map = new Bio::EnsEMBL::Mapper('query', 'target');
+		#my $map = new Bio::EnsEMBL::Mapper('query', 'target');
 
 		foreach my $hit (@{ $target->{HITS} }) {
 
-			$map->add_map_coordinates(
-				$target->{QID},
-				$hit->{QSTART}, $hit->{QEND}, 1,
-				$target->{TID},
+			#$map->add_map_coordinates(
+				#$target->{QID},
+				#$hit->{QSTART}, $hit->{QEND}, 1,
+				#$target->{TID},
+				#$hit->{TSTART}, $hit->{TEND});
+
+			printf("%s\t%d\t%s\t%d\t%d\t%d\t%d\n", 
+				$target->{QID}, $priority, $target->{TID},
+				$hit->{QSTART}, $hit->{QEND},
 				$hit->{TSTART}, $hit->{TEND});
 		}
+		++$priority;
 
-		push(@{ $maps{$target->{QID}} }, $map);
+		# One mapping might look like this in the output:
+		#
+		# Q8WR21  0       10395   1       114     1       114
+		# Q8WR21  0       10395   116     147     116     147
+		# Q8WR21  1       10394   1       114     10      123
+		# Q8WR21  1       10394   116     146     125     155
+		#
+		#
+		# Columns are:
+		#
+		# 1. Query ID
+		# 2. Priority (lower means better query sequence identity)
+		# 3. Target ID
+		# 4/5. Query start/stop
+		# 6/7. Target start/stop
+
+		#push(@{ $maps{$target->{QID}} }, $map);
 	}
 }
 
-# Example use of map.  Map [1,1000] on 'Q27250' through whatever the
+# Example use of map.  Map [1,1000] on 'O61479' through whatever the
 # best map ('[0]') maps to:
-print Dumper(
-	$maps{Q27250}[0]->map_coordinates('Q27250', 1, 1000, 1, 'query')
-);
+#print Dumper(
+	#$maps{O61479}[0]->map_coordinates('O61479', 1, 1000, 1, 'query')
+#);
