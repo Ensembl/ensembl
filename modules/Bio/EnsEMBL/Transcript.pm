@@ -345,7 +345,6 @@ sub translation {
   } else {
     if( ! defined $self->{'translation'} &&
 	defined $self->_translation_id() ) {
-        printf STDERR "Translation id = '" . $self->_translation_id ."'\n";
       $self->{'translation'} = 
 	$self->adaptor->db->get_TranslationAdaptor->fetch_by_dbID( 
 					    $self->_translation_id(), $self );
