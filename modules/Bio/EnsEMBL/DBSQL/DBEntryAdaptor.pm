@@ -29,6 +29,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::IdentityXref;
+use Bio::EnsEMBL::GoXref;
 
 use vars qw(@ISA);
 use strict;
@@ -50,7 +51,7 @@ use strict;
 
 sub fetch_by_dbID {
   my ($self, $dbID ) = @_;
-  
+
   my $sth = $self->prepare(
    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version, xref.description,
@@ -61,7 +62,7 @@ sub fetch_by_dbID {
     AND    xref.external_db_id = exDB.external_db_id");
 
   $sth->execute($dbID);
-  
+
   my $exDB;
   my %duplicate;
 
@@ -69,10 +70,10 @@ sub fetch_by_dbID {
     my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, 
 	 $release, $synonym) = @$arrayref;
     return undef if( ! defined $refID );
-    
+
     unless ($duplicate{$refID}){
       $duplicate{$refID} = 1;
-		
+
       $exDB = Bio::EnsEMBL::DBEntry->new
 	( -adaptor => $self,
 	  -dbID => $dbID,
@@ -81,10 +82,10 @@ sub fetch_by_dbID {
 	  -version => $version,
 	  -release => $release,
 	  -dbname => $dbname );
-      
+
       $exDB->description( $desc ) if ( $desc );
     } # end duplicate
- 
+
     $exDB->add_synonym( $synonym )  if ($synonym);
   } # end while
 
@@ -120,14 +121,14 @@ sub store {
         AND release = ?");
 
   $sth->execute( $exObj->dbname(), $exObj->release() );
-    
+
   my ($dbRef) =  $sth->fetchrow_array();
 
   if(!$dbRef) {
     $self->throw("external_db [" . $exObj->db_name . "] release [" .
 		 $exObj->release . "] does not exist");
   }
-    
+
   #
   # Check for the existance of the external reference, add it if not present
   #
@@ -141,7 +142,7 @@ sub store {
   $sth->execute( $dbRef, $exObj->primary_id(),$exObj->version() );
   my ($dbX) = $sth->fetchrow_array();
   $sth->finish();
-    
+
   if(!$dbX) {
       #
       # store the new xref
@@ -157,7 +158,7 @@ sub store {
 		   $exObj->version(), $exObj->description(), $dbRef);
     $dbX = $sth->{'mysql_insertid'};
     $sth->finish();
-	
+
     #
     # store the synonyms for the new xref
     # 
@@ -177,7 +178,7 @@ sub store {
       my ($dbSyn) = $synonym_check_sth->fetchrow_array(); 
       $synonym_store_sth->execute($dbX, $syn) if(!$dbSyn);
     }
-	
+
     $synonym_check_sth->finish();
     $synonym_store_sth->finish();
   }
@@ -195,7 +196,7 @@ sub store {
   $sth->execute($dbX, $ensType, $ensObject);
   my ($tst) = $sth->fetchrow_array;
   $sth->finish();
-    
+
   if(!$tst) {
     #
     # Store the reference to the internal ensembl object
@@ -203,15 +204,16 @@ sub store {
     $sth = $self->prepare(
          "INSERT ignore INTO object_xref
           SET xref_id = ?, ensembl_object_type = ?, ensembl_id = ?");
-	
+
     $sth->execute( $dbX, $ensType, $ensObject );	
     $exObj->dbID( $dbX );
     $exObj->adaptor( $self );
-      
+
     my $Xidt = $sth->{'mysql_insertid'};
 
     #
     # If this is an IdentityXref need to store in that table too
+    # If its GoXref add the linkage type to go_xref table
     #
     if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
       $sth = $self->prepare( "
@@ -220,9 +222,15 @@ sub store {
              query_identity = ?,
              target_identity = ?" );
       $sth->execute($Xidt, $exObj->query_identity, $exObj->target_identity);
+    } elsif( $exObj->isa( 'Bio::EnsEMBL::GoXref' )) {
+      $sth = $self->prepare( "
+             INSERT ignore INTO go_xref
+                SET object_xref_id = ?,
+                    linkage_type = ? " );
+      $sth->execute( $Xidt, $exObj->linkage_type() );
     }
   } 
-  return $dbX;    
+  return $dbX;
 }
 
 
@@ -245,7 +253,7 @@ sub exists {
   unless($dbe && ref $dbe && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
     $self->throw("arg must be a Bio::EnsEMBL::DBEntry not [$dbe]");
   }
-  
+
   my $sth = $self->prepare('SELECT x.xref_id 
                             FROM   xref x, external_db xdb
                             WHERE  x.external_db_id = xdb.external_db_id
@@ -276,14 +284,14 @@ sub exists {
 
 sub fetch_all_by_Gene {
   my ( $self, $gene ) = @_;
- 
+
   my $sth = $self->prepare(
       "SELECT t.transcript_id, t.translation_id
        FROM   transcript t
        WHERE  t.gene_id = ?");
-  
+
   $sth->execute( $gene->dbID );
-  
+
   while (my($transcript_id, $translation_id) = $sth->fetchrow) {
     if($translation_id) {
       foreach my $translink (@{$self->_fetch_by_object_type($translation_id, 
@@ -341,7 +349,7 @@ sub fetch_all_by_Transcript {
                 FROM transcript t
                 WHERE t.transcript_id = ?
   ");
-  
+
   $sth->execute( $trans->dbID );
 
   # 
@@ -350,7 +358,7 @@ sub fetch_all_by_Transcript {
   # be better. Oh well. EB
   #
   # ??
-  
+
   while (my($translation_id) = $sth->fetchrow) {
 	  foreach my $translink(@{ $self->_fetch_by_object_type( $translation_id, 'Translation' )} ) {
         $trans->add_DBLink($translink);
@@ -399,7 +407,7 @@ sub fetch_all_by_Translation {
 sub _fetch_by_object_type {
   my ( $self, $ensObj, $ensType ) = @_;
   my @out;
-  
+
   if (!defined($ensObj)) {
     $self->throw("Can't fetch_by_EnsObject_type without an object");
   }
@@ -412,23 +420,25 @@ sub _fetch_by_object_type {
            exDB.db_name, exDB.release, exDB.status, 
            oxr.object_xref_id, 
            es.synonym, 
-           idt.query_identity, idt.target_identity
+           idt.query_identity, idt.target_identity,
+           gx.linkage_type
     FROM   xref xref, external_db exDB, object_xref oxr 
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
+    LEFT JOIN go_xref gx on gx.object_xref_id = oxr.object_xref_id
     WHERE  xref.xref_id = oxr.xref_id
       AND  xref.external_db_id = exDB.external_db_id 
       AND  oxr.ensembl_id = ?
       AND  oxr.ensembl_object_type = ?
   ");
-  
+
   $sth->execute($ensObj, $ensType);
   my %seen;
-  
+
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     my ( $refID, $dbprimaryId, $displayid, $version, 
 	 $desc, $dbname, $release, $exDB_status, $objid, 
-         $synonym, $queryid, $targetid ) = @$arrRef;
+         $synonym, $queryid, $targetid, $linkage_type ) = @$arrRef;
 
     my %obj_hash = ( 
 	_adaptor    => $self,
@@ -438,7 +448,7 @@ sub _fetch_by_object_type {
         _version    => $version,
         _release    => $release,
         _dbname     => $dbname);
-			    
+
     # using an outer join on the synonyms as well as on identity_xref, we
     # now have to filter out the duplicates (see v.1.18 for
     # original). Since there is at most one identity_xref row per xref,
@@ -450,13 +460,16 @@ sub _fetch_by_object_type {
         $exDB = Bio::EnsEMBL::IdentityXref->new_fast(\%obj_hash);       
 	$exDB->query_identity($queryid);
         $exDB->target_identity($targetid);
+      } elsif( defined $linkage_type ) {
+	$exDB = Bio::EnsEMBL::GoXref->new_fast( \%obj_hash );
+	$exDB->linkage_type( $linkage_type );
       } else {
         $exDB = Bio::EnsEMBL::DBEntry->new_fast(\%obj_hash);
       }
-      
+
       $exDB->description($desc)   if(defined($desc));
       $exDB->status($exDB_status) if(defined($exDB_status));
-      
+
       push( @out, $exDB );
       $seen{$refID} = $exDB;
     } 
@@ -464,7 +477,7 @@ sub _fetch_by_object_type {
     # $exDB still points to the same xref, so we can keep adding synonyms
     $seen{$refID}->add_synonym($synonym) if(defined($synonym));
   }
-  
+
   return \@out;
 }
 
@@ -606,7 +619,7 @@ sub list_translation_ids_by_extids{
 
 sub _type_by_external_id{
   my ($self,$name,$ensType,$extraType) = @_;
-   
+
   my $from_sql = '';
   my $where_sql = '';
   my $ID_sql = "oxr.ensembl_id";
@@ -633,7 +646,7 @@ sub _type_by_external_id{
 # Increase speed of query by splitting the OR in query into three separate 
 # queries. This is because the 'or' statments render the index useless 
 # because MySQL can't use any fields in the index.
-  
+
   my %hash = (); 
   foreach( @queries ) {
     my $sth = $self->prepare( $_ );
