@@ -55,6 +55,7 @@ use strict;
 use Bio::Root::Object;
 use Bio::EnsEMBL::Analysis::Analysis;
 use Bio::EnsEMBL::Analysis::MSPType;
+use FileHandle;
 
 # Inherits from the base bioperl object
 @ISA = qw(Bio::Root::Object);
@@ -76,10 +77,13 @@ sub _initialize {
   my ($mspfile,$type,$source_tag) = $self->_rearrange([qw(FILE
 							  TYPE
 							  SOURCE_TAG
+
 							  )],@args);
-  $self->mspfile($mspfile);
-  $self->type   ($type);
   $self->source_tag($source_tag);
+  $self->type      ($type);
+  $self->mspfile   ($mspfile);
+
+
 
   # Stored data
   # -----------
@@ -110,14 +114,15 @@ sub _parse {
     
     $self->_make_analysis($file);
 
-    open(IN,"<$file");
+    my $fh = new FileHandle("<$file") || $self->throw("Can't open $file");
 
-    while (defined(my $line = <IN>)) {
+    while (defined(my $line = <$fh>)) {
 	my $homol = $self->_read_Homol($line);
 	$self->add_Homol($homol);
     }
 
-    close(IN);
+    $fh->close;
+
 }
 
 =head2 _read_Homol
@@ -165,8 +170,8 @@ sub _read_Homol {
     my $sf1;
     my $sf2;
 
-    
     if ($type1 eq "PEP") {
+
 	$sf1 = new Bio::EnsEMBL::Analysis::pep_SeqFeature(-start  => $qstart,
 							  -end    => $qend,
 							  -strand => 1);
@@ -203,6 +208,13 @@ sub _read_Homol {
 
     $sf1->primary_tag('similarity');
     $sf2->primary_tag('similarity');
+
+    if ($self->source_tag eq "") {
+	print(STDERR "ERROR: No source tag in mspfile " . $self->mspfile . "\n");
+    }
+    $sf1->source_tag($self->source_tag);
+    $sf2->source_tag($self->source_tag);
+
 
 
     $sf1->homol_SeqFeature($sf2);
