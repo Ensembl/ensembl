@@ -588,6 +588,8 @@ sub sticky_rank{
   Title   : end_phase
   Usage   : $end_phase = $feat->end_phase
   Function: Returns the end phase of the exon
+            Usually, end_phase = (phase + exon_length)%3
+            but end_phase could be -1 if the exon is half-coding and its 3prime end is UTR.
   Returns : int
   Args    : none
 
