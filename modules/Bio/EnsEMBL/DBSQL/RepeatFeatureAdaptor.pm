@@ -87,6 +87,7 @@ sub fetch_all_by_Slice {
   my $result =
     $self->fetch_all_by_Slice_constraint($slice,$constraint,$logic_name);
 
+
   $self->_straight_join(0);
 
   return $result;
@@ -222,15 +223,16 @@ sub _objs_from_sth {
 
   FEATURE: while($sth->fetch()) {
     #create a repeat consensus object
+
     my $rc = $rc_hash{$repeat_consensus_id} ||=
-      Bio::EnsEMBL::RepeatConsensus->new
-          (-DBID             => $repeat_consensus_id,
-           -ADAPTOR          => $rca,
-           -NAME             => $repeat_name,
-           -REPEAT_CLASS     => $repeat_class,
-	   -REPEAT_TYPE      => $repeat_type,
-           -REPEAT_CONSENSUS => $repeat_consensus,
-           -LENGTH           => length($repeat_consensus));
+      Bio::EnsEMBL::RepeatConsensus->new_fast
+          ({'dbID'             => $repeat_consensus_id,
+            'adaptor'          => $rca,
+            'name'             => $repeat_name,
+            'repeat_class'     => $repeat_class,
+	          'repeat_type'      => $repeat_type,
+            'repeat_consensus' => $repeat_consensus,
+            'length'           => length($repeat_consensus)});
 
     #get the analysis object
     my $analysis = $analysis_hash{$analysis_id} ||=
@@ -309,6 +311,7 @@ sub _objs_from_sth {
           'adaptor'       =>  $self,
           'slice'         =>  $slice,
           'dbID'          =>  $repeat_feature_id } );
+
   }
 
   return \@features;
