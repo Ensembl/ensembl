@@ -127,19 +127,5 @@ sub get_Species {
 }
 
 
-sub get_default_assembly {
-  my $self = shift;
-
-  my $sth = $self->prepare( "select meta_value from meta where meta_key = 'assembly.default'" );
-  $sth->execute;
-
-  if( my $arrRef = $sth->fetchrow_arrayref() ) {
-    return $arrRef->[0];
-  } else {
-    return undef;
-  }
-}
-
-
 1;
 
