@@ -60,6 +60,7 @@ use Bio::EnsEMBL::DB::RawContigI;
 use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Repeat;
+use Bio::EnsEMBL::ContigOverlap;
 use Bio::PrimarySeq;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::RawContigI);
@@ -830,8 +831,9 @@ sub _load_overlaps{
 	       $self->throw("Impossible type position $t\n");
 	   }
 
+	   my $sis = $self->_dbobj->get_Contig($rowhash->{'contig_b'});
 	   my $co = Bio::EnsEMBL::ContigOverlap->new(
-						     -sisterid => $rowhash->{'contig_b'},
+						     -sister => $sis,
 						     -sisterposition => $rowhash->{'contig_b_position'}, 
 						     -selfposition => $rowhash->{'contig_a_position'},
 						     -sisterpolarity => $sisterpol );
@@ -859,9 +861,10 @@ sub _load_overlaps{
 	   } else {
 	       $self->throw("Impossible type position $t\n");
 	   }
+	   my $sis = $self->_dbobj->get_Contig($rowhash->{'contig_a'});
 
 	   my $co = Bio::EnsEMBL::ContigOverlap->new(
-						     -sisterid => $rowhash->{'contig_a'},
+						     -sister => $sis,
 						     -sisterposition => $rowhash->{'contig_a_position'}, 
 						     -selfposition => $rowhash->{'contig_b_position'},
 						     -sisterpolarity => $sisterpol );
@@ -877,6 +880,47 @@ sub _load_overlaps{
 
 }
 
+=head2 _right_overlap
+
+ Title   : _right_overlap
+ Usage   : $obj->_right_overlap($newval)
+ Function: 
+ Example : 
+ Returns : value of _right_overlap
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _right_overlap{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_right_overlap'} = $value;
+    }
+    return $obj->{'_right_overlap'};
+
+}
+
+=head2 _left_overlap
+
+ Title   : _left_overlap
+ Usage   : $obj->_left_overlap($newval)
+ Function: 
+ Example : 
+ Returns : value of _left_overlap
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _left_overlap{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_left_overlap'} = $value;
+    }
+    return $obj->{'_left_overlap'};
+
+}
 
 
 =head2 _dbobj

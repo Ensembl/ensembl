@@ -39,7 +39,7 @@ package Bio::EnsEMBL::DB::VirtualContigI;
 
 
 use strict;
-use Bio::EnsEMBL::DB:ContigI;
+use Bio::EnsEMBL::DB::ContigI;
 use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::DB::ContigI);

@@ -87,6 +87,72 @@ sub seq_date{
 
 }
 
+=head2 golden_length
+
+ Title   : golden_length
+ Usage   :
+ Function: Provides the length of the contig which is used
+           in the golden path
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub golden_length{
+   my ($self,@args) = @_;
+
+   return $self->golden_end - $self->golden_start + 1;
+   
+}
+
+=head2 golden_start
+
+ Title   : golden_start
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub golden_start{
+   my ($self,@args) = @_;
+
+   my $lo = $self->get_left_overlap;
+   if( defined $lo ) {
+       return $lo->self_position;
+   } else {
+       return 1;
+   }
+}
+
+=head2 golden_end
+
+ Title   : golden_end
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub golden_end{
+   my ($self,@args) = @_;
+
+   my $lo = $self->get_right_overlap;
+   if( defined $lo ) {
+       return $lo->self_position;
+   } else {
+       return $self->length;
+   }
+}
+
 =head2 get_left_overlap
 
  Title   : get_left_overlap
@@ -122,6 +188,10 @@ sub get_right_overlap{
    $self->throw("Object did not provide the get_left_overlap method on Contig interface!");
 }
 
-
-
 1;
+
+
+
+
+
+

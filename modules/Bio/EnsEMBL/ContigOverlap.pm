@@ -59,16 +59,16 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
-  my ($sisterid,$sisterpos,$sisterpolarity,$selfposition) = $self->_rearrange([qw( SISTERID
+  my ($sister,$sisterpos,$sisterpolarity,$selfposition) = $self->_rearrange([qw( SISTER
 										   SISTERPOSITION
 										   SISTERPOLARITY
 										   SELFPOSITION
 										   )], @args);
-  if( !defined $sisterid || !defined $sisterpos || !defined $sisterpolarity || !defined $selfposition) {
+  if( !defined $sister || !defined $sisterpos || !defined $sisterpolarity || !defined $selfposition) {
       $self->throw("You have to construct ContigOverlap objects with all four arguments, sisterid, sisterposition, sisterpolarity, and selfposition");
   }
 
-  $self->sister_id($sisterid);
+  $self->sister($sister);
   $self->sister_position($sisterpos);
   $self->sister_polarity($sisterpolarity);
   $self->self_position($selfposition);
@@ -77,24 +77,29 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
-=head2 sister_id
+=head2 sister
 
- Title   : sister_id
- Usage   : $obj->sister_id($newval)
- Function: 
- Returns : value of sister_id
+ Title   : sister
+ Usage   : $obj->sister($newval)
+ Function: Returns the RawContigI implementing object of the sister
+           contig. ie the id of the sister object is
+           $obj->sister->id();
+ Returns : value of sister
  Args    : newvalue (optional)
 
 
 =cut
 
-sub sister_id{
+sub sister{
    my $obj = shift;
    if( @_ ) {
        my $value = shift;
-       $obj->{'sister_contig_id'} = $value;
+       if( !ref $value || ! $value->isa('Bio::EnsEMBL::DB::RawContigI') ) {
+	   $obj->throw("Value [$value] is not a RawContigI. Problemo...");
+       }
+       $obj->{'sister_contig'} = $value;
    }
-   return $obj->{'sister_contig_id'};
+   return $obj->{'sister_contig'};
    
 }
 
