@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..7\n"; 
+BEGIN { $| = 1; print "1..6\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -32,20 +32,35 @@ print "ok \n";    # 1st test passed, loaded needed modules
 
 #Creating test donor and recipient databases
 
-print STDERR "Please insert read/write user (not password protected, e.g. ensembl): ";
-$nuser=<STDIN>;
-chop $nuser;
+$conf{'donor'} = 'testdonor';
+$conf{'recipient'} = 'testrecipient';
+$conf{'mysqladmin'} = 'mysqladmin';
+$conf{'mysql'} = 'mysql';
+$conf{'user'}  = 'ensembl';
 
-my $create_donor = "/mysql/current/bin/mysqladmin -u ".$nuser." create donor";
-my $create_recipient = "/mysql/current/bin/mysqladmin -u ".$nuser." create recipient";
+if ( -e 't/transfer.conf' ) {
+   print STDERR "Reading configuration from transfer.conf\n";
+   open(C,"t/transfer.conf");
+   while(<C>) {
+       my ($key,$value) = split;
+       $conf{$key} = $value;
+   }
+} else {
+    print STDERR "Using default values\n donor -> $conf{donor}\n recipient -> $conf{recipient}\n mysqladmin -> $conf{mysqladmin}\n mysql -> $conf{mysql}\n user -> $conf{user}\n\nPlease use a file t/transfer.conf to alter these values if the test fails\nFile is written <key> <value> syntax\n\n";
+}
+
+$nuser = $conf{user};
+
+my $create_donor = "$conf{mysqladmin} -u ".$nuser." create $conf{donor}";
+my $create_recipient = "$conf{mysqladmin} -u ".$nuser." create $conf{recipient}";
 system($create_donor) == 0 or die "$0\nError running '$create_donor' : $!";
 system($create_recipient) == 0 or die "$0\nError running '$create_recipient' : $!";
 
 print "ok 2\n";    #Databases created successfuly
 
 #Initialising databases
-my $init_donor = "/mysql/current/bin/mysql -u ".$nuser." donor < ../../sql/table.sql";
-my $init_recipient = "/mysql/current/bin/mysql -u ".$nuser." recipient < ../../sql/table.sql";
+my $init_donor = "$conf{mysql} -u ".$nuser." $conf{donor} < ../sql/table.sql";
+my $init_recipient = "$conf{mysql} -u ".$nuser." $conf{recipient} < ../sql/table.sql";
 system($init_donor) == 0 or die "$0\nError running '$init_donor' : $!";
 system($init_recipient) == 0 or die "$0\nError running '$init_recipient' : $!";
 
@@ -53,13 +68,13 @@ print "ok 3\n";
 
 #Suck test data into donor
 print STDERR "Inserting test data in test donor db... this will take a while...\n";
-my $suck_data = "/mysql/current/bin/mysql -u ".$nuser." donor < donor.dump";
+my $suck_data = "$conf{mysql} -u ".$nuser." $conf{donor} < t/donor.dump";
 system($suck_data) == 0 or die "$0\nError running '$suck_data' : $!";
 
 print "ok 4\n";
 
 #Insert values in meta table of recipient
-my $meta= "echo \"insert into meta (donor_database_locator) values('Bio::EnsEMBL::DBSQL::Obj/host=localhost;port=410000;dbname=donor;user=ensembl;pass=');\" | /mysql/current/bin/mysql -u $nuser recipient";
+my $meta= "echo \"insert into meta (donor_database_locator) values('Bio::EnsEMBL::DBSQL::Obj/host=localhost;port=410000;dbname=donor;user=ensembl;pass=');\" | $conf{mysql} -u $nuser $conf{recipient}";
 system($meta) == 0 or die "$0\nError running '$meta' : $!";
 
 print "ok 5\n";
@@ -71,11 +86,14 @@ my $update="perl ../../scripts/update_list_chunk.pl -thost localhost -tdbname re
 
 print "ok 6\n";
 
-my $drop_donor = "echo \"y\" | /mysql/current/bin/mysqladmin -u ".$nuser." drop donor";
-my $drop_recipient = "echo \"y\" | /mysql/current/bin/mysqladmin -u ".$nuser." drop recipient";
-system($drop_donor) == 0 or die "$0\nError running '$drop_donor' : $!";
-system($drop_recipient) == 0 or die "$0\nError running '$drop_recipient' : $!";
-print "ok 7\n";
+
+END {
+    my $drop_donor = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{donor}";
+    my $drop_recipient = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{recipient}";
+    system($drop_donor) == 0 or die "$0\nError running '$drop_donor' : $!";
+    system($drop_recipient) == 0 or die "$0\nError running '$drop_recipient' : $!";
+}
+
 
 
 
