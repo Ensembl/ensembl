@@ -51,7 +51,7 @@ $aa->store_on_MiscFeature($mf, [$attrib]);
 #
 # make sure the misc_attrib table was updated
 #
-my $count = $db->db_handle->selectall_arrayref
+my $count = $db->db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM misc_attrib " .
    "WHERE misc_feature_id = 1")->[0]->[0];
 
@@ -60,7 +60,7 @@ ok($count == 1);
 #
 # make sure the attrib_type table was updated
 #
-$count = $db->db_handle->selectall_arrayref
+$count = $db->db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM attrib_type " .
    "WHERE code = 'test_code'")->[0]->[0];
 ok($count == 1);
@@ -88,7 +88,7 @@ $aa->remove_from_MiscFeature($mf);
 #
 # make sure the misc_attrib table was updated
 #
-$count = $db->db_handle->selectall_arrayref
+$count = $db->db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM misc_attrib " .
    "WHERE misc_feature_id = 1")->[0]->[0];
 
@@ -120,7 +120,7 @@ $aa->store_on_Slice($slice, [$attrib]);
 #
 # make sure the seq_region_attrib table was updated
 #
-$count = $db->db_handle->selectall_arrayref
+$count = $db->db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM seq_region_attrib " .
    "WHERE seq_region_id = ".$slice->get_seq_region_id())->[0]->[0];
 
@@ -129,7 +129,7 @@ ok($count == 1);
 #
 # make sure the attrib_type table was updated
 #
-$count = $db->db_handle->selectall_arrayref
+$count = $db->db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM attrib_type " .
    "WHERE code = 'test_code2'")->[0]->[0];
 ok($count == 1);
@@ -157,7 +157,7 @@ $aa->remove_from_Slice($slice);
 #
 # make sure the seq_region_attrib table was updated
 #
-$count = $db->db_handle->selectall_arrayref
+$count = $db->db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM seq_region_attrib " .
    "WHERE seq_region_id = " . $slice->get_seq_region_id())->[0]->[0];
 
@@ -179,7 +179,7 @@ $aa->store_on_Slice($slice, [$attrib]);
 #
 # make sure the seq_region_attrib table was updated
 #
-$count = $db->db_handle->selectall_arrayref
+$count = $db->db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM seq_region_attrib " .
    "WHERE seq_region_id = ".$slice->get_seq_region_id())->[0]->[0];
 
@@ -188,7 +188,7 @@ ok($count == 1);
 #
 # make sure the attrib_type table was updated
 #
-$count = $db->db_handle->selectall_arrayref
+$count = $db->db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM attrib_type " .
    "WHERE code = 'test_code2'")->[0]->[0];
 ok($count == 1);

@@ -156,7 +156,7 @@ ok(!$cs->is_sequence_level);
 ok(!$cs->is_top_level);
 ok($cs->rank() == 10);
 
-my $sth = $db->prepare('SELECT attrib FROM coord_system ' .
+my $sth = $db->db->prepare('SELECT attrib FROM coord_system ' .
                        'WHERE  name = ? and version = ?');
 $sth->execute('newsystem', 'NCBI35');
 

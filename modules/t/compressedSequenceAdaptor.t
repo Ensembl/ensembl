@@ -37,7 +37,7 @@ $multi_db->save('core', 'dnac', 'seq_region');
 #we can get weird padding at the end due to the last byte being not
 #fully packed but still labelled as non-gap 
 my $sth = 
-  $db->prepare('INSERT INTO seq_region (name, length, coord_system_id) ' .
+  $db->db->prepare('INSERT INTO seq_region (name, length, coord_system_id) ' .
                'VALUES (?,?,?)');
 $sth->execute('testfrag', $len,$contig_cs->dbID);
 

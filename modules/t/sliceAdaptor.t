@@ -29,7 +29,7 @@ my $db    = $multi->get_DBAdaptor('core');
 #
 # SliceAdaptor::new
 #
-my $slice_adaptor = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($db->_obj);
+my $slice_adaptor = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($db);
 ok($slice_adaptor->isa('Bio::EnsEMBL::DBSQL::SliceAdaptor'));
 ok($slice_adaptor->db);
 

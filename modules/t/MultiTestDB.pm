@@ -380,7 +380,7 @@ sub hide {
     die("dbtype and table args must be defined\n");
   }
 
-  my $adaptor = $self->get_DBAdaptor($dbtype);
+  my $adaptor = $self->get_DBAdaptor($dbtype)->db;
 
   unless($adaptor) {
     die "adaptor for $dbtype is not available\n";
@@ -449,7 +449,7 @@ sub restore {
     return;
   }
 
-  my $adaptor = $self->get_DBAdaptor($dbtype);
+  my $adaptor = $self->get_DBAdaptor($dbtype)->db;
   unless($adaptor) {
     die "Adaptor for $dbtype is not available";
   }
@@ -510,7 +510,7 @@ sub save {
   # use the hide method to build the basic tables
   $self->hide($dbtype, @tables);
 
-  my $adaptor = $self->get_DBAdaptor($dbtype);
+  my $adaptor = $self->get_DBAdaptor($dbtype)->db;
 
   unless($adaptor) {
     die "adaptor for $dbtype is not available\n";

@@ -56,7 +56,7 @@ sub count_rows {
   my $db = shift;
   my $tablename = shift;
 
-  my $sth = $db->prepare( "select count(*) from $tablename" );
+  my $sth = $db->db->prepare( "select count(*) from $tablename" );
   $sth->execute();
   my ( $count ) = $sth->fetchrow_array();
   return $count;

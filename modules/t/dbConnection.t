@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 30;
+	plan tests => 24;
 }
 
 use MultiTestDB;
@@ -30,12 +30,12 @@ my $db    = $multi->get_DBAdaptor('core');
 #
 my $dbc;
 {
-  my $db_name = $db->dbname;
-  my $port    = $db->port;
-  my $user    = $db->username;
-  my $pass    = $db->password;
-  my $host    = $db->host;
-  my $driver  = $db->driver;
+  my $db_name = $db->db->dbname;
+  my $port    = $db->db->port;
+  my $user    = $db->db->username;
+  my $pass    = $db->db->password;
+  my $host    = $db->db->host;
+  my $driver  = $db->db->driver;
 
   $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbname => $db_name,
 						-user   => $user,
@@ -73,17 +73,17 @@ ok(test_getter_setter($dbc, 'username', 'ensembl_user'));
 ok(test_getter_setter($dbc, 'password', 'ensembl_password'));
 
 #
-# 8-9 _get_adaptor
+# 8-9 _get_adaptor NO LONGER ALLOWED MUST GO VIA DBAdaptor
 #
-my $adaptor_name = 'Bio::EnsEMBL::DBSQL::GeneAdaptor';
-my $adaptor = $dbc->_get_adaptor($adaptor_name);
-ok($adaptor->isa($adaptor_name));
-ok($adaptor == $dbc->_get_adaptor($adaptor_name)); #verify cache is used
+#my $adaptor_name = 'Bio::EnsEMBL::DBSQL::GeneAdaptor';
+#my $adaptor = $dbc->_get_adaptor($adaptor_name);
+#ok($adaptor->isa($adaptor_name));
+#ok($adaptor == $dbc->_get_adaptor($adaptor_name)); #verify cache is used
 
 #
 # 10 dbhandle
 #
-ok(test_getter_setter($dbc, 'db_handle', $db->db_handle));
+ok(test_getter_setter($dbc, 'db_handle', $dbc->db_handle));
 
 
 {
@@ -95,27 +95,29 @@ ok(test_getter_setter($dbc, 'db_handle', $db->db_handle));
   ok($sth->rows);
   $sth->finish;
 }
+
+# AGAIN NOW DONE VIA DBADAPTOR
 #
 # 12 add_db_adaptor
 #
-$dbc->add_db_adaptor('core', $db);
-
-my $db1 = $dbc->get_all_db_adaptors->{'core'};
-my $db2 = $db->_obj;
-debug("\n\ndb1=[$db1] db2=[$db2]\n\n"); 
-ok($db1 == $db2);
-
+#$dbc->add_db_adaptor('core', $db);
 #
-# 13 get_db_adaptor
+#my $db1 = $dbc->get_all_db_adaptors->{'core'};
+#my $db2 = $db->_obj;
+#debug("\n\ndb1=[$db1] db2=[$db2]\n\n"); 
+#ok($db1 == $db2);
 #
-ok($dbc->get_db_adaptor('core')->isa('Bio::EnsEMBL::DBSQL::DBConnection'));
-
+##
+## 13 get_db_adaptor
+##
+#ok($dbc->get_db_adaptor('core')->isa('Bio::EnsEMBL::DBSQL::DBConnection'));
 #
-# 14-15 remove_db_adaptor
-#
-$dbc->remove_db_adaptor('core');
-ok(!defined $dbc->get_db_adaptor('core'));
-ok(!defined $dbc->get_all_db_adaptors->{'core'});
+##
+## 14-15 remove_db_adaptor
+##
+#$dbc->remove_db_adaptor('core');
+#ok(!defined $dbc->get_db_adaptor('core'));
+#ok(!defined $dbc->get_all_db_adaptors->{'core'});
 
 
 #

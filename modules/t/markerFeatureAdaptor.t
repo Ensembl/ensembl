@@ -110,7 +110,7 @@ ok($marker_feature->dbID &&
    $marker_feature->adaptor == $mfa);
 
 
-my $sth = $db->prepare('SELECT count(*) from marker_feature');
+my $sth = $db->db->prepare('SELECT count(*) from marker_feature');
 $sth->execute;
 my ($count) = $sth->fetchrow_array;
 $sth->finish();

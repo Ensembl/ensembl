@@ -38,7 +38,7 @@ ok( $db );
 my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
 
-my $sth = $db->prepare( 'select count(*) from object_xref where ensembl_object_type = "Translation"' );
+my $sth = $db->db->prepare( 'select count(*) from object_xref where ensembl_object_type = "Translation"' );
 $sth->execute();
 
 my ( $xref_count )  = $sth->fetchrow_array();

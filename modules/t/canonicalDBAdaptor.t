@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 38;
+	plan tests => 35;
 }
 
 
@@ -37,8 +37,8 @@ $test_adaptor = $db->get_ProteinFeatureAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor"));
 #$test_adaptor = $db->get_ProteinAdaptor();
 #ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinAdaptor"));
-$test_adaptor = $db->get_MapFragAdaptor();
-ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::MapFragAdaptor"));
+#$test_adaptor = $db->get_MapFragAdaptor();
+#ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::MapFragAdaptor"));
 #$test_adaptor = $db->get_CloneAdaptor();
 #ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::CloneAdaptor"));
 $test_adaptor = $db->get_PredictionTranscriptAdaptor();
@@ -75,8 +75,8 @@ $test_adaptor = $db->get_DBEntryAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::DBEntryAdaptor"));
 $test_adaptor = $db->get_KaryotypeBandAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor"));
-$test_adaptor = $db->get_ChromosomeAdaptor();
-ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ChromosomeAdaptor"));
+#$test_adaptor = $db->get_ChromosomeAdaptor();
+#ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ChromosomeAdaptor"));
 $test_adaptor = $db->get_SupportingFeatureAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor"));
 $test_adaptor = $db->get_MarkerFeatureAdaptor();
@@ -94,19 +94,20 @@ ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor"));
 #ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProxySNPAdaptor"));
 
 # Should get an error if we ask for something non-existent
-eval { $db->get_adaptor("SomeNonExistentType") };
-ok($@);
+#eval { $db->get_adaptor("SomeNonExistentType") };
+#my $ret = $db->get_adaptor("SomeNonExistentType");
+#ok(!defined($ret));
 
 # Check setting module with good values
 ok($db->set_adaptor("ArchiveStableId", "Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor" ));
 
-# Setting an unknown data type should give an error
-eval { $db->set_adaptor("SomeNonExistentType", "Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor") };
-ok($@);
+# Setting an unknown data type should NO LONGER give an error
+my $ret = $db->set_adaptor("SomeNonExistentType", "Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor");
+ok(defined($ret));
 
-# Setting to a non-subclass of the default should give an error
-eval { $db->set_adaptor("ArchiveStableId", "Bio::EnsEMBL::DBSQL::GeneAdaptor") };
-ok($@);
+# Setting to a non-subclass of the default should NOT give an error
+$ret =  $db->set_adaptor("ArchiveStableId", "Bio::EnsEMBL::DBSQL::GeneAdaptor");
+ok(defined($ret));
 
 # Generic adaptors
 
