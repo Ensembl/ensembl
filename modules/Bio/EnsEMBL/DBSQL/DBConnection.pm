@@ -42,6 +42,7 @@ use strict;
 
 use Bio::EnsEMBL::Container;
 use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::DBSQL::SQL;
 use DBI;
 
 
@@ -118,7 +119,8 @@ sub new {
 
   my $dbh;
   eval{
-    $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
+    #$dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
+    $dbh = Bio::EnsEMBL::DBSQL::SQL->new("$dsn","$user",$password);
   };
     
   $dbh || $self->throw("Could not connect to database $db user " .
@@ -407,7 +409,7 @@ sub prepare {
       $self->throw("Database object has lost its database handle.");
    }
 
-   #print STDERR "\n\nSQL(".$self->dbname."):$string\n\n";
+   print STDERR "\n\nSQL(".$self->dbname."):$string\n\n";
 
    return $self->{_db_handle}->prepare($string);
 } 

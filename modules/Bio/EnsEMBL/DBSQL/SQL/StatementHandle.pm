@@ -18,24 +18,24 @@ use vars '@ISA';
 ### you will also have to alter DBConnection.pm
 ###
 
-#BEGIN {
-# eval {
-# require Time::HiRes;
-# Time::HiRes->import('time');
-# };
-#};
+BEGIN {
+ eval {
+ require Time::HiRes;
+ Time::HiRes->import('time');
+ };
+};
 
-#sub execute {
-#  my( $sth, @args ) = @_;
-#  my $time = time;
-#  my $result = $sth->SUPER::execute(@args);
-#  $time = time - $time;
-#  print STDERR "query time: $time\n";
-#  if ($result) {
-#    return $result;
-#  }  
-#  throw("execute failed : '$DBI::errstr'");
-#}
+sub execute {
+  my( $sth, @args ) = @_;
+  my $time = time;
+  my $result = $sth->SUPER::execute(@args);
+  $time = time - $time;
+  print STDERR "query time: $time\n";
+  if ($result) {
+    return $result;
+  }  
+  throw("execute failed : '$DBI::errstr'");
+}
 
 1;
 

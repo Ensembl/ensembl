@@ -116,8 +116,6 @@ sub new {
       'Protein'              => 'Bio::EnsEMBL::DBSQL::ProteinAdaptor',
       'ProteinAlignFeature'  =>
            'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
-      'ProxyDnaAlignFeature' =>
-          'Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor',
       'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
       'ProxyGene'            => 'Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor',
       'ProxyRepeatFeature'   =>
@@ -575,13 +573,7 @@ sub get_ProteinAlignFeatureAdaptor {
 sub get_DnaAlignFeatureAdaptor {
   my $self = shift;
 
-  my $core_adaptor =
-    $self->get_adaptor("DnaAlignFeature");
-
-  #return a proxy adaptor which can choose between the core and est DBs
-  return 
-    $self->get_adaptor("ProxyDnaAlignFeature",
-			$core_adaptor);
+  return $self->get_adaptor("DnaAlignFeature");
 }
 
 
