@@ -365,6 +365,66 @@ sub fetch_attributes {
 }
 
 
+
+=head2 store
+
+  Arg [1]    : Bio::EnsEMBL::RawContig $contig
+               The contig to store in the database.
+  Arg [2]    : Bio::EnsEMBL::Clone $clone 
+               The clone the contig is on
+  Example    : my $contig_id = $raw_contig_adaptor->store($contig, $clone);
+  Description: Stores a contig and its associated DNA sequence in the database,
+               returns the database id of the new database record.
+  Returntype : int
+  Exceptions : thrown if $contig arg is not defined, $clone arg is not a clone
+               or if the database insertion fails. 
+  Caller     : Bio::EnsEMBL::Clone::store
+
+=cut
+
+sub store {
+  my ($self, $contig, $clone) = @_;
+
+  unless($contig && $contig->isa('Bio::EnsEMBL::RawContig')) {
+    $self->throw('contig arg is not a Bio::EnsEMBL::RawContig');
+  }
+  unless($clone && $clone->isa('Bio::EnsEMBL::Clone')) {
+    $self->throw('clone arg is not a Bio::EnsEMBL::Clone');
+  } 
+
+  my $date     = $clone->created();
+  my $dna      = $contig->seq();
+  my $dna_id   = $self->db->get_SequenceAdaptor->store($dna, $date);
+  
+  my $sth = $self->prepare("INSERT INTO contig (name, 
+                                                clone_id, 
+                                                length, 
+                                                embl_offset, 
+                                                dna_id) 
+                            VALUES ( ?, ?, ?, ?, ? )");
+
+  my $rv = $sth->execute($contig->name(), 
+                         $clone->dbID(),
+                         $contig->length(),
+                         $contig->embl_offset(),
+                         $dna_id);
+
+  unless($rv) {
+    $self->throw("Failed to insert contig " . $contig->name . "into database");
+  }
+  
+  $sth->finish;
+
+  $sth = $self->prepare("SELECT last_insert_id()");
+  $sth->execute();
+  my ($contig_id) = $sth->fetchrow_array();
+
+  $sth->finish;
+
+  return $contig_id;
+}
+
+
 =head2 _contig_from_sth
 
   Arg [1]    : DBI Statementhandle $sth

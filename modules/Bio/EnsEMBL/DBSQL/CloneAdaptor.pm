@@ -370,10 +370,11 @@ sub get_all_Genes {
   Arg [1]    : Bio::EnsEMBL::Clone $clone 
                the Clone to store in the database 
   Example    : $clone_adaptor->store($clone);
-  Description: Stores a clone object in the database
-  Returntype : none
+  Description: Stores a clone object and its associated contigs
+               in the database and returns the dbID of the new db record
+  Returntype : int
   Exceptions : thrown if $clone is not defined or if $clone is not a 
-               Bio::EnsEMBL::Clone
+               Bio::EnsEMBL::Clone or if the database insertion fails
   Caller     : general
 
 =cut
@@ -404,21 +405,28 @@ sub store{
                          FROM_UNIXTIME(".$clone->created."), 
                          FROM_UNIXTIME(".$clone->modified."))";
   
-
   my $sth = $self->prepare($sql);
   my $rv = $sth->execute();
-  
-  $self->throw("Failed to insert clone $clone->id") unless $rv;			   
-  $sth = $self->prepare("select last_insert_id()");
-  my $res = $sth->execute;
-  my $row = $sth->fetchrow_hashref;
-  $sth->finish;
-  my $id  = $row->{'last_insert_id()'};
+  $self->throw("Failed to insert clone $clone->id") unless $rv;
 
+  $sth->finish();			   
+  $sth = $self->prepare("select last_insert_id()");
+  $sth->execute;
+
+  my ($id) = $sth->fetchrow();
+
+  $sth->finish();
+
+  #update this clones database identifier
+  $clone->dbID($id);
+
+  #store the contigs which were on this clone
+  my $rca = $self->db->get_RawContigAdaptor();
   foreach my $contig($clone->get_all_Contigs()){
-    my $rca = $self->db->get_RawContigAdaptor();
-    $rca->store($contig, $id);
+    $rca->store($contig, $clone);
   }
+
+  return $id;
 }
 
 

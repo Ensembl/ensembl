@@ -64,11 +64,6 @@ sub new {
   my ( $dbID, $adaptor, $name, $sequence, $length,
        $clone, $offset ) = @args;
 
-  unless (( defined $dbID && defined $adaptor ) ||
-	  ( defined $clone && defined $sequence )) {
-      $self->throw("Must have at least dbID and adaptor in new!");
-      return undef;
-  }
 
   (defined $dbID) && $self->dbID( $dbID );
   (defined $adaptor) && $self->adaptor( $adaptor );
@@ -80,58 +75,6 @@ sub new {
 
   return $self;
 }
-
-
-
-
-# things to take over from DBSQL/RawContig ?
-# fetch - done in DBSQL/RawContigAdaptor
-# get_all_Genes - should be in GeneAdaptor
-#    How to handle halve off genes?
-# get_old_Genes - dead
-# get_all_Exons - ExonAdaptor
-#   What happens with halve on/off ?
-# get_old_Exons - dead
-# get_Genes_by_Type - see get_all_Genes
-# has_Genes - Gene or ExonAdaptor ...
-# primary_seq - seq should do it now
-# db_primary_seq - Assume seq does it ?
-# perl_primary_seq - and again
-# get_all_SeqFeatures - Call the relevant Adaptors
-# get_all_SimilarityFeatures_above_score
-
-
-# Are this used from Pipeline? Web uses StaticContig
-# get_MarkerFeatures
-# get_landmark_MarkerFeatures
-
-
-# get_genscan_peptides - should work via above, so deprecated
-# get_all_ExternalFeatures - which adaptors provide them??
-# get_all_ExternalGenes - again, we need adaptors for them
-# cloneid - dead, use clone->dbID or clone->name,embl_name etc
-# old_chromosome - ?? I assume unused and dead
-# seq_version - Maybe clone->embl_version ?
-# embl_accession - Is there one for our contigs ?
-# id - should be name
-# internal_id - dbID
-# dna_id - hidden in seq
-# seq_date - hidden in seq
-
-# static_golden_path functionality 
-# All things should lie on an Assembly object.
-#  get info out by supplying the contig as parameter
-
-
-
-
-
-############################
-#                          #
-#  Attribute section       #
-#                          #
-############################
-
 
 sub adaptor {
   my $self = shift;
@@ -269,13 +212,24 @@ sub length {
 =cut
 
 sub seq {
-  my $self = shift;
+  my ($self, $arg) = @_;
 
-  my $seq_adaptor = $self->adaptor->db->get_SequenceAdaptor();
+  # Sequence can be set manually
+  if($arg) {
+    $self->{_seq} = $arg;
+  }
+  if($self->{_seq}) {
+    return $self->{_seq};
+  }
 
-  my $seq = $seq_adaptor->fetch_by_Contig_start_end_strand($self, 1, -1, 1);
-
-  return $seq;
+  #or retrieved from the database
+  if($self->adaptor()) {
+    my $sa = $self->adaptor->db->get_SequenceAdaptor(); 
+    return $sa->fetch_by_Contig_start_end_strand($self, 1, -1, 1);
+  }
+  
+  $self->warn("RawContig seq not set, and no db is available");
+  return '';
 }
 
 
@@ -306,6 +260,23 @@ sub subseq {
 
   if ( !defined $strand || ( $strand != -1 && $strand != 1 )) {
     $strand = 1;
+  }
+
+  #if the sequence of this contig has been manually set retrieve its substring
+  if(my $str = $self->{_seq}) {
+    $str = substr($str, $start -1, $end -1);
+
+    if($strand == -1) {
+      $str = reverse $str;
+      $str =~ tr/ACTGactg/TGACtgac/;
+    }
+
+    return $str;
+  }
+   
+  unless($self->adaptor) {
+    $self->warn("RawContig::subseq no sequence set and no db available");
+    return '';
   }
 
   my $seq_adaptor = $self->adaptor->db->get_SequenceAdaptor();

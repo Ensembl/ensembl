@@ -243,6 +243,45 @@ sub fetch_by_assembly_location {
 
 
 
+=head2 store
+
+  Arg [1]    : string $sequence the dna sequence to be stored in the database
+  Arg [2]    : string $date create date to be associated with the dna sequence
+               to be stored.
+  Example    : $dbID = $seq_adaptor->store('ACTGGGTACCAAACAAACACAACA', $date); 
+  Description: stores a dna sequence in the databases dna table and returns the
+               database identifier for the new record.
+  Returntype : int
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::RawContigAdaptor::store
+
+=cut
+
+sub store {
+  my ($self, $sequence, $date) = @_;
+  
+  $sequence =~ tr/atgcn/ATGCN/;
+  
+  my $statement = $self->prepare("
+        INSERT INTO dna(sequence,created) 
+        VALUES(?, FROM_UNIXTIME(?))
+        "); 
+  
+  my $rv = $statement->execute($sequence, $date);  
+  $self->throw("Failed to insert dna $sequence") unless $rv;
+  
+  $statement->finish;
+
+  $statement = $self->prepare("SELECT last_insert_id()");
+  $statement->execute();
+  my ($id) = $statement->fetchrow();
+  $statement->finish;
+  
+  return $id;
+}
+
+
+
 =head2 _reverse_comp
 
   Arg  1    : txt $dna_sequence
