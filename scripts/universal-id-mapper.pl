@@ -26,8 +26,8 @@ Usage:
    -i REGEXP: use REGEXP to regcognize IDs to be mapped (default: $dflt_i)
    -d REGEXP: use REGEXP as word delimiter (default: $dflt_d)
    -v       : verbose mode (prints un-mapped IDs to stderr)
-   -o REGEXP: only map lines matching REGEXP (amongst other for speed)
-   -n REGEXP: do not map lines matching REGEXP
+   -o REGEXP: only map lines matching REGEXP (amongst others for speed)
+   -n REGEXP: map all lines apart from those matching REGEXP
 
 The *.map files should contain pairs of whitespace delimited words. 
 
