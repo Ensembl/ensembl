@@ -556,6 +556,11 @@ sub get_all_PredictionFeatures {
    my $count;
 
    while( $sth->fetch ) {
+       
+       if (($end > $length) || ($start < 1)) {
+	    next;
+	}
+
        my $out;
        
        my $analysis;
@@ -573,6 +578,7 @@ sub get_all_PredictionFeatures {
 
 
        if( $hid eq "Initial Exon" || $hid eq "Single Exon" || $previous eq "Single Exon" || $previous eq "Terminal Exon" || $previous eq -1) {
+	   $count++;
 	   $current_fset = new Bio::EnsEMBL::SeqFeature;
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
@@ -580,7 +586,7 @@ sub get_all_PredictionFeatures {
 	   $current_fset->seqname($self->id);
 	   $current_fset->id($count);
 	   $current_fset->score(0.0);
-           $count++;
+	  
 	   $current_fset->raw_seqname($self->id);
 	   push(@array,$current_fset);
        }
@@ -605,7 +611,11 @@ sub get_all_PredictionFeatures {
    	$sth->execute();
 	my $arr_ref=$sth->fetchrow_arrayref;
 
-	$fsetid=$arr_ref->[0];
+	my $fsetid=$arr_ref->[0];
+
+      
+
+
 
        $out->id($fsetid); # to make genscan peptide work
        $out->source_tag('genscan');
