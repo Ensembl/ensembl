@@ -592,13 +592,15 @@ sub get_all_Exons{
 
 sub get_old_Exons{
 
-    my ($self) = @_;
+    my ($self,$logfile) = @_;
     
     my @exons;
 
 
-    foreach my $c ($self->_vmap->get_all_RawContigs) {push(@exons,$c->get_old_Exons);}
-    
+    foreach my $c ($self->_vmap->get_all_RawContigs) {
+	push(@exons,$c->get_old_Exons($logfile));
+    }
+	
     my @vcexons = ();
     #print STDERR "VC->get_old_Exons:\n";
     foreach my $exon ( @exons ) {
