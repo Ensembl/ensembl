@@ -11,6 +11,7 @@ my $dbpass;
 my $input;
 my $assembly;
 
+
 GetOptions(
 	   'dbname:s'    => \$dbname,
 	   'dbhost:s'    => \$dbhost,
@@ -20,7 +21,7 @@ GetOptions(
 	   'assembly:s'  => \$assembly
 	   );
 
-print STDERR "Connecting to $host, $dbname\n";
+print STDERR "Connecting to $dbhost, $dbname\n";
 
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
@@ -64,15 +65,21 @@ while( (my $seq = $in->next_seq ) ) {
     $sth->execute(
 		  $clone,
 		  $ac,
-		  'NULL',
+		  $ac,
 		  1,
 		  0,
 		  3
 		  );
 
-    use POSIX;
-    
-    my $div = POSIX::ceil($length/25000);
+#set length of chunks
+
+    my $div;
+    if ($length < 25000) {
+      $div = 1;
+    }
+    else {
+      $div = int ($length/25000);
+    }
 
     my $l = int ($length/$div);
     
@@ -83,6 +90,9 @@ while( (my $seq = $in->next_seq ) ) {
     while ($internal_count <= $div) {
 
 	my $total_length;
+
+#first chunk
+
 	if ($internal_count == 1) {
 	    
 	    my $actmp = $ac."_1";
@@ -143,7 +153,7 @@ while( (my $seq = $in->next_seq ) ) {
 	    $internal_count++;
 	}
     
-
+#chunks between first and last
 
 	if (($internal_count > 1) && ($internal_count < $div)) {
 	    my $end = $prev_end + $l;
@@ -154,13 +164,13 @@ while( (my $seq = $in->next_seq ) ) {
 
 	    $total_length = $total_length + $subseql;
 
-	    my $actmp = $ac."_".$count;
+	    my $actmp = $ac."_".$internal_count;
 	
 	    #print STDERR  "AC: $actmp\nAC_CONTIG: $count\nDIV: $count\n";
 	    #print STDERR  "$actmp\t$prev_end\t$length\n";
 
 
-	       #Load DNA table
+#Load DNA table
 		my $statement = $db->prepare("
         insert into dna(sequence,created) 
         values(?, NOW())
@@ -182,10 +192,13 @@ while( (my $seq = $in->next_seq ) ) {
 				       $count,
 				       $subseql,
 				       $clone,
-				       1,
+				       $prev_end,
 				       ); 
 	    
 	    print STDERR "SUB: $subseql\tL: $l\n";
+
+
+#Load the assembly table
 
 	    my $sth = $db->prepare("insert into assembly (chromosome_id,chr_start,chr_end,superctg_name,superctg_start,superctg_end,superctg_ori,contig_id,contig_start,contig_end,contig_ori,type) values (?,?,?,?,?,?,?,?,?,?,?,?)");
 	$sth->execute(
@@ -211,10 +224,12 @@ while( (my $seq = $in->next_seq ) ) {
 	    $count++;
 
 	}
+
+#last chunk
 	
 	if ($internal_count == $div) {
 	    
-	    my $actmp = $ac."_".$count;
+	    my $actmp = $ac."_".$internal_count;
 	    my $subseq = $seq->subseq($prev_end,$length);
 	    my $subseql = length($subseq);
 	    
@@ -222,7 +237,7 @@ while( (my $seq = $in->next_seq ) ) {
 	   
 	    $total_length = $total_length + $subseql;
 
-	       #Load DNA table
+#Load DNA table
 		my $statement = $db->prepare("
         insert into dna(sequence,created) 
         values(?, NOW())
@@ -244,8 +259,11 @@ while( (my $seq = $in->next_seq ) ) {
 				       $count,
 				       $subseql,
 				       $clone,
-				       1,
+				       $prev_end,
 				       ); 
+
+
+#Load the assembly table
 
 	    my $sth = $db->prepare("insert into assembly (chromosome_id,chr_start,chr_end,superctg_name,superctg_start,superctg_end,superctg_ori,contig_id,contig_start,contig_end,contig_ori,type) values (?,?,?,?,?,?,?,?,?,?,?,?)");
 	$sth->execute(
