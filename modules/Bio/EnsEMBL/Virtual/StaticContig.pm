@@ -180,7 +180,6 @@ sub get_all_SimilarityFeatures_above_score{
     my $idlist  = $self->_raw_contig_id_list();
     
     unless ($idlist){
-	print STDERR "NO IDS\n";
 	return ();
     }
 
@@ -280,7 +279,6 @@ sub get_all_RepeatFeatures {
     my $idlist  = $self->_raw_contig_id_list();
 
     unless ($idlist){
-	print STDERR "NO IDS\n";
 	return ();
     }
 
@@ -496,6 +494,10 @@ my $dbname     = $self->dbobj->dbname;
 my $mapsdbname = $self->dbobj->mapdbname;
 my @markers;
 
+my $idlist  = $self->_raw_contig_id_list();
+unless ($idlist){
+    return ();
+}
 
 eval {
     require Bio::EnsEMBL::Map::MarkerFeature;
@@ -515,11 +517,15 @@ eval {
                               static_golden_path sgp 
                        WHERE  f.contig = c.contig
                        AND    f.hid=c.marker  
+                       AND    f.contig in $idlist 
                        AND    sgp.raw_id=f.contig 
                        AND    sgp.chr_end >= $glob_start 
                        AND    sgp.chr_start <=$glob_end 
                        AND    sgp.chr_name='$chr_name'";
     
+        $statement =~ s/\s+/ /g;
+        #print STDERR "Doing Query ... $statement\n";
+
 	my $sth = $self->dbobj->prepare($statement);
 	$sth->execute;
 	
@@ -794,7 +800,6 @@ my $idlist  = $self->_raw_contig_id_list();
     
 
 unless ($idlist){
-    print STDERR "NO IDS\n";
     return ();
 }
 
