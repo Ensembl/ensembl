@@ -973,7 +973,81 @@ sub fetch_VirtualContig_by_contig {
                             );
 }
 
+=head2 fetch_VirtualContig_by_mapfrag
 
+ Title   : fetch_VirtualContig_by_mapfrag
+ Usage   : $vc = $stadp->fetch_VirtualContig_by_mapfrag('AC000012',40000);
+ Function: create a VirtualContig based on a Map frag, and of a
+           given length. The VC is centered around the start of the Map frag.
+ Example :
+ Returns : 
+ Args    : mapfrag_id, size
+
+=cut
+
+sub fetch_VirtualContig_by_mapfrag {
+   my ($self,$mapfrag_name,$size) = @_;
+
+   if( !defined $size ) {
+       $self->throw("Must have contig id and size to fetch VirtualContig by mapfrag");
+   }
+
+   my $type = $self->dbobj->static_golden_path_type() or $self->throw("No assembly type defined");
+   
+   my $mapfrag = $self->dbobj->get_MapFragAdaptor->fetch_by_synonym( $mapfrag_name );
+   if( !defined $mapfrag ) {
+        $self->throw( "Mapfrag $mapfrag_name is not in the database" );
+   }
+   my $start   = $mapfrag->seq_start();
+
+   my $halfsize = int($size/2);
+   return $self->fetch_VirtualContig_by_chr_start_end(
+       $mapfrag->seq,
+       $start-$halfsize,
+       $start+$size-$halfsize
+   );
+}
+
+=head2 fetch_VirtualContig_of_mapfrag
+
+ Title   : fetch_VirtualContig_of_mapfrag
+ Usage   : $vc = $stadp->fetch_VirtualContig_of_mapfrag('AC000012',100000);
+ Function: create a VirtualContig based on a Map frag, and of a
+           given length. The VC is the centred on the mapfrag and is the
+           greater of the size of the mapfrag or $size...
+ Example :
+ Returns : 
+ Args    : mapfrag_id, size
+
+=cut
+
+sub fetch_VirtualContig_of_mapfrag {
+    my ($self,$mapfrag_name,$size) = @_;
+
+    $size||=1;
+   
+    if( !defined $mapfrag_name ) {
+        $self->throw("Must have mapfrag name to fetch VirtualContig of mapfrag");
+    }
+
+    my $type = $self->dbobj->static_golden_path_type() or $self->throw("No assembly type defined");
+   
+    my $mapfrag = $self->dbobj->get_MapFragAdaptor->fetch_by_synonym( $mapfrag_name );
+    if( !defined $mapfrag ) {
+        $self->throw( "Mapfrag $mapfrag_name is not in the database" );
+    }
+    my $start   = $mapfrag->seq_start();
+    my $end     = $mapfrag->seq_end();
+
+    if($mapfrag->length < $size ) {
+       $start   = int( ( $start + $end - $size )/2 );
+       $end     = $start + $size - 1;
+    }
+   
+    return $self->fetch_VirtualContig_by_chr_start_end(
+        $mapfrag->seq, $start, $end
+    );
+}
 
 
 
