@@ -57,18 +57,19 @@ ok($seq);
 my $contig = Bio::EnsEMBL::PerlDB::Contig->new();
 
 
-
-$contig->id("dummy_contig");
+my $name =  'dummy_contig';
+$contig->id($name);
 $contig->seq($seq);
 $contig->order(1);
 $contig->embl_offset(0);
-$contig->international_name("dummy_contig");
+$contig->international_name($name);
 
 $clone->add_Contig($contig);
 
 print STDERR "CONTIG ".$contig->primary_seq()."\n";
 ok($contig);
 
+print STDERR "contig internaltional name = ".$contig->international_name."\n";
 
 $clone_ad->store($clone);
 
