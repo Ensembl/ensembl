@@ -26,15 +26,15 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -user   => 'root',
 
 my $protein_adaptor = $db->get_ProteinAdaptor();
 
-my $protein = $protein_adaptor->fetch_by_dbID(1234);
+my $protein = $protein_adaptor->fetch_by_transcript_id(1234);
 
 
 
 =head1 DESCRIPTION
 
-The main method may be fetch_Protein_by_dbid, which return a complete protein 
-object. Different methods are going to be develloped in this object to allow 
-complexe queries at the protein level in Ensembl.
+An adaptor which allows for the creation of Protein Objects from transcript
+or translation ids. There is no Protein table in the EnsEMBL core database
+and possibly this functionality should be moved into the translation object.
 
 =head1 CONTACT
 
@@ -61,11 +61,11 @@ use Bio::EnsEMBL::Protein;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
-=head2 fetch_by_Transcript_id
+=head2 fetch_by_transcript_id
 
   Arg [1]    : int $transid
                The unique internal identifier of this proteins transcript 
-  Example    : $protein = $protein_adaptor->fetch_by_Transcript_id
+  Example    : $protein = $protein_adaptor->fetch_by_transcript_id
   Description: (formerly fetch_Protein_by_transcriptId) Retrieves a protein
                object via the internal database identifier of its transcript
   Returntype : Bio::EnsEMBL::Protein
@@ -74,7 +74,7 @@ use Bio::EnsEMBL::Protein;
 
 =cut
 
-sub fetch_by_Transcript_id{
+sub fetch_by_transcript_id{
    my ($self,$transid) = @_;
    my $query = "SELECT	t.translation_id 
 		FROM    transcript as t, 
@@ -85,15 +85,15 @@ sub fetch_by_Transcript_id{
    $sth->execute();
    my @row = $sth->fetchrow;
    
-   return $self->fetch_by_Translation_id($row[0]);
+   return $self->fetch_by_translation_id($row[0]);
  }
 
 
-=head2 fetch_by_Translation_stable_id
+=head2 fetch_by_translation_stable_id
 
   Arg [1]    : int $transid
                the stable identifier of the translation of the desired protein
-  Example    : $prot = $pa->fetch_by_Translation_stable_id('ENSP00000278194');
+  Example    : $prot = $pa->fetch_by_translation_stable_id('ENSP00000278194');
   Description: Creates a protein object using the translation table of the DB
   Returntype : Bio::EnsEMBL::Protein
   Exceptions : none
@@ -101,7 +101,7 @@ sub fetch_by_Transcript_id{
 
 =cut
 
-sub fetch_by_Translation_stable_id {
+sub fetch_by_translation_stable_id {
    my ($self,$transid) = @_;
    my $query = "SELECT	translation_id 
 		FROM	translation_stable_id
@@ -109,17 +109,17 @@ sub fetch_by_Translation_stable_id {
    my $sth = $self->prepare($query);
    $sth->execute();
    my @row = $sth->fetchrow;
-   return $self->fetch_by_Translation_id($row[0]);
+   return $self->fetch_by_translation_id($row[0]);
  }
 
 
 
-=head2 fetch_by_Translation_id
+=head2 fetch_by_translation_id
 
   Arg [1]    : int $translation_id
                the unique DB identifier for the translation corresponding to 
                the desired protein
-  Example    : $prot = $prot_adaptor->fetch_by_Translation_id($id);
+  Example    : $prot = $prot_adaptor->fetch_by_translation_id($id);
   Description: Retrieves a protein object from a database 
                (formerly fetch_Protein_by_dbid)
   Returntype : Bio::EnsEMBL::Protein 
@@ -129,7 +129,7 @@ sub fetch_by_Translation_stable_id {
 
 =cut
 
-sub fetch_by_Translation_id {
+sub fetch_by_translation_id {
    my ($self, $translation_id) = @_;
 
    #Get the transcript id from the translation id 
@@ -204,360 +204,6 @@ sub fetch_by_Translation_id {
    return $protein;
 }
 
+1;
 
-#=head2 fetch_DBlinks_by_dbid
-
-# Title   : fetch_DBlinks
-# Usage   :$prot_adaptor->fetch_DBlinks_by_dbid($protein_id)
-# Function:Get all of the DBlinks for one protein given a protein object and attach them to the object
-# Example :
-# Returns :an array of dblinks
-# Args    :Protein id
-
-
-#=cut
-
-
-
-#sub fetch_DBlinks_by_dbid {
-#    my($self,$protein_id) = @_;
-#    my @links;
-
-#    my $query = "select dbl.external_db,dbl.external_id from transcriptdblink as dbl, transcript as t where dbl.transcript_id = t.id and t.translation = '$protein_id'";
-#    my $sth = $self->prepare($query);
-#    $sth ->execute();
-#    while( (my $hash = $sth->fetchrow_hashref()) ) {
-	
-#	my $dblink = Bio::Annotation::DBLink->new();
-#	$dblink->database($hash->{'external_db'});
-#	$dblink->primary_id($hash->{'external_id'});
-	
-
-#	push(@links,$dblink);
-#    }
-#    return @links;
-#}
-
-
-#=head2 fetch_Protein_features_by_dbid
-
-# Title   : fetch_Protein_features_by_dbid
-# Usage   :$prot_adaptor->fetch_Protein_features_by_dbid($protein_id)
-# Function:Get all of the protein features for a given protein object and attach it to the object
-# Example :
-# Returns :nothing
-# Args    :Protein Object
-
-
-#=cut
-
-#sub fetch_Protein_features_by_dbid{
-#   my ($self,$protein_id) = @_;
-     
-##This call a method contained in ProteinFeatureAdaptor, returns feature objects for the given protein
-#   my @features = $self->_protfeat_obj->fetch_by_translationID($protein_id);
-
-#   return @features;
-
-#}
-
-
-#=head2 fetch_by_feature
-
-# Title   : fetch_by_feature
-# Usage   :my @proteins = $obj->fetch_by_feature($feature_id)
-# Function:This method should be in theory in the ProteinFeatureAdaptor object but has been placed here for convenience (the ProteinFeatureAdaptor object may be transfered to this ProteinAdaptor object...to be discussed). The function of this method is to retrieve all of the proteins which have a given feature (retrieved by feature id)
-# Example :
-# Returns : An Array of protein objects
-# Args    : feature id (hid in the protein_feature table)
-
-
-#=cut
-
-#sub fetch_by_feature{
-#   my ($self,$feature) = @_;
-#   my @proteins;
-   
-#   my $query = 
-#     "select translation_id from protein_feature where hid = '$feature'";
-#   my $sth = $self->prepare($query);
-#   $sth ->execute();
-#   while( (my $pepid = $sth->fetchrow) ) {
-#       my $pep = $self->fetch_by_dbID($pepid);
-#       push(@proteins,$pep);
-#   }
-#   return @proteins;
-#}
-
-#=head2 fetch_by_array_feature
-
-# Title   : fetch_by_array_feature
-# Usage   :my @proteins = $obj->fetch_by_array_feature(@domaines)
-# Function:This method allow to query proteins matching different domains, this will only return the protein which have the domain queried
-# Example :
-# Returns : An array of protein objects
-# Args    :Interpro signatures
-
-
-#=cut
-
-#sub fetch_by_array_feature{
-#   my ($self,@feature) = @_;
-
-#   my $nb = scalar @feature;
-   
-#   my %seen;
-#   my @result;
-
-#   if (@feature) {
-#       foreach my $dbl(@feature) {
-
-
-#	   my @protein_linked = $self->fetch_by_feature($dbl);
-#	   foreach my $prot (@protein_linked) {
-#	       if ($seen{$prot}) {
-#		   my $count = $seen{$prot};
-#		   $count = $count++;
-#		   $seen{$prot} = $count;
-#	       }
-#	       else {
-#		   $seen{$prot} = 1;
-#	       }
-#	   }
-#       }
-#   }
-#   foreach my $key (keys (%seen)) {
-#       if ($seen{$key} == $nb) {
-#	   push (@result, $key);
-#       }
-#   }
-   
-#   return @result;
-   
-#}
-
-#=head2 get_Introns
-
-# Title   : get_Introns
-# Usage   : $protein_adaptor->get_Introns($proteinid)
-# Function: Return an array of protein features introns
-# Example :
-# Returns : 
-# Args    : Protein ac
-
-
-#=cut
-
-#sub get_Introns{
-#    my ($self,$protid) = @_;
-#    my @array_features;
-#    my $previous_ex_end=0;
-#    my $count = 1;
-
-#    my $query = "select transcript_id from transcript where translation_id = '$protid'";
-#    my $sth = $self->prepare($query);
-#    $sth ->execute();
-#    my @rowid = $sth->fetchrow;
-#    my $transid = $rowid[0];
-    
-#    if (!defined $transid) {
-#	$self->throw("No transcript can be retrieved with this translation id: $protid")
-#	}
-    
-#    my $transcript = $self->fetch_Transcript_by_dbid($transid);
-#    my ($starts,$ends) = $transcript->pep_coords;
-    
-#    my @exons = $transcript->get_all_Exons();
-#    my $nbex = scalar(@exons);
-    
-#    foreach my $ex(@exons) {
-#	my $length;
-#	my $exid = $ex->dbID();
-#	my ($ex_start, $ex_end) = $self->get_exon_global_coordinates($exid);
-#	if ($previous_ex_end != 0) {
-#	    my $intron_start = $previous_ex_end;
-#	    my $intron_end = $ex_start;
-
-##Create an analysis object
-#	    my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
-	
-#	    $anal->program        ('NULL');
-#	    $anal->program_version('NULL');
-#	    $anal->gff_source     ('Intron');
-#	    $anal->gff_feature    ('Intron');
-#	    #$anal->dbID(2);
-
-
-#	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
-#						       -start => $starts->[$count],
-#						       -end => $starts->[$count],
-#						       -score => 0, 
-#						       -percent_id => "NULL",
-#						       -analysis => $anal,
-#						       -p_value => "NULL");
-	    
-#	    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $intron_start,
-#						      -end => $intron_end,
-#						      -analysis => $anal,
-#						      -seqname => "Intron");
-	    
-#	    my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-#								-feature2 => $feat2,);
-	    
-#	    push(@array_features,$feature);
-	    
-#	    $count++;
-#	}
-#	$previous_ex_end = $ex_end;
-	
-#    }
-#     return @array_features; 
-#}
-
-
-
-#=head2 get_exon_global_coordinates
-
-# Title   : get_exon_global_coordinates
-# Usage   : $protein_adaptor->get_exon_global_coordinates($exon_id)
-# Function: Get the start and end position of the exon in globale coordinates
-# Example :
-# Returns : Start and end of the exon
-# Args    : Exon id
-
-
-#=cut
-
-#sub get_exon_global_coordinates{
-#   my ($self,$exid) = @_;
-
-##This sql satement calculate the start and end of the exon in global coordinates
-#   my $query ="SELECT
-#               IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start),
-#                 (sgp.chr_start+sgp.raw_end-e.seq_end)) as start,
-#               IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start),
-#                 (sgp.chr_start+sgp.raw_end-e.seq_start)) as end
-#               FROM       static_golden_path as sgp ,exon as e
-#               WHERE      sgp.raw_id=e.contig_id
-#               AND        e.exon_id='$exid'";
-              
-
-#   my $sth = $self->prepare($query);
-#   $sth->execute;
-  
-#   my @row = $sth->fetchrow;
-
-   
-
-#   my $start = $row[0];
-#   my $end = $row[1];
-
-#   return ($start,$end);
-#}
-
-
-#=head2 get_snps
-
-# Title   : get_snps
-# Usage   : $protein_adaptor->get_snps($protein)
-# Function:Get all of the snps for a peptide (for now return them in the format of a Protein_FeatureObject)
-# Example :
-# Returns :An array of Protein_FeaturePair object containing the snps  
-# Args    :protein object
-
-
-#=cut
-    
-#sub get_snps {
-#    my ($self,$protein,$sndb,$gbd) = @_;
-
-    
-#    my $transid = $protein->transcriptac();
-
-#    my @exons;
-#    my @snps;
-#    my $count = 0;
-#    my $ex;
-#    my $snp;
-#    my %expos;
-#    my @array_snp;
-#    my @features;
-
-#    #Get the exon information for this given transcript
-#    my $sth = $gbd->prepare("select exon,exon_chrom_start,exon_chrom_end from exon where transcript='$transid'");
-#    $sth->execute;
-    
-#    while (my @loc = $sth->fetchrow) {
-#	my $loc;
-#	$count++;
-#	$expos{$loc[0]} = $count;
-	
-#	$$loc[0]->{id} = $loc[0];
-#	$$loc[0]->{"pos"} = $count;
-#	$$loc[0]->{start} = $loc[1];
-#	$$loc[0]->{end} = $loc[2];
-#	$$loc[0]->{"length"} = ($loc[2] - $loc[1]);
-#	push (@exons,$$loc[0]);
-#    }
-	
-#    #Now, get information about the snps on this transcript    
-#    my $sth1 = $gbd->prepare("select exon,s.refsnpid,s.snp_chrom_start from exon e, gene_snp s where s.gene=e.gene and s.snp_chrom_start>e.exon_chrom_start and s.snp_chrom_start<e.exon_chrom_end and e.transcript='$transid'");
-#    $sth1->execute;
-  
-#    while (@array_snp = $sth1->fetchrow) {
-#	my $array_snp;
-#	$$array_snp[1]->{exon} = $array_snp[0];
-#	$$array_snp[1]->{id} = $array_snp[1];
-#	$$array_snp[1]->{"pos"} = $array_snp[2];
-#	push (@snps,$$array_snp[1]);
-#    }
-    
-#    foreach my $s(@snps) {
-#	my $e;
-#	my $exid = $s->{exon};
-	
-#	my $pos = $expos{$exid};
-	
-#	my $previous_exons_length = 0;
-
-#	foreach my $exs(@exons) {
-#	    if ($exs->{"pos"} < $pos) {
-#		$previous_exons_length += $exs->{"length"};
-#	    }
-#	    if ($exs->{"pos"} == $pos) {
-#		$e = $exs;
-#	    }
-#	}
-#	#Get the location of the snp in aa coordinates      
-#        my $aa_pos = int (($s->{"pos"} - $e->{start} + $previous_exons_length)/3) + 1;
-	
-#	my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
-	
-#	    $anal->program        ('NULL');
-#	    $anal->program_version('NULL');
-#	    $anal->gff_source     ('SNP');
-#	    $anal->gff_feature    ('SNP');
-#	    #$anal->dbID(2);
-
-
-#	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protein->id,
-#						       -start => $aa_pos,
-#						       -end => $aa_pos,
-#						       -score => 0, 
-#						       -percent_id => "NULL",
-#						       -analysis => $anal,
-#						       -p_value => "NULL");
-	    
-#	    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => 0,
-#						      -end => 0,
-#						      -analysis => $anal,
-#						      -seqname => "Variant");
-	    
-#	    my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-#								-feature2 => $feat2,);
-#	push(@features,$feature);
-	
-#    }
-#    return @features;
-#}
 

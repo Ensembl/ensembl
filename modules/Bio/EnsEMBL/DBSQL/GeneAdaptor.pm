@@ -333,7 +333,7 @@ sub fetch_by_Slice {
 
 
 
-=head2 fetch_by_Transcript_id
+=head2 fetch_by_transcript_id
 
   Arg [1]    : int $transid 
                unique database identifier for the transcript whose gene should
@@ -347,7 +347,7 @@ sub fetch_by_Slice {
 
 =cut
 
-sub fetch_by_Transcript_id {
+sub fetch_by_transcript_id {
     my $self = shift;
     my $transid = shift;
 

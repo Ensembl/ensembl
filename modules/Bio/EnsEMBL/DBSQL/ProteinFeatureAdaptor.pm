@@ -65,12 +65,12 @@ use Bio::EnsEMBL::SeqFeature;
 
 
 
-=head2 fetch_by_Translation_id
+=head2 fetch_by_translation_id
 
   Arg [1]    : int $transl
                the internal id of the translation corresponding to protein 
                whose features are desired 
-  Example    : @prot_feats = $prot_feat_adaptor->fetch_by_Translation_id(1234);
+  Example    : @prot_feats = $prot_feat_adaptor->fetch_by_translation_id(1234);
   Description: Get all of the protein feature objects of a peptide             
   Returntype : list of Bio::EnsEMBL::ProteinFeatures
   Exceptions : none
@@ -78,7 +78,7 @@ use Bio::EnsEMBL::SeqFeature;
 
 =cut
 
-sub fetch_by_Translation_id {
+sub fetch_by_translation_id {
     my($self,$transl) = @_;
 
     my @features;
