@@ -307,7 +307,6 @@ FROM   transcript as tr,
 WHERE  trs.stable_id = '$transid' 
 AND    trs.transcript_id = tr.transcript_id";
 
-  warn( $q );
   my $sth = $self->prepare($q);
 
   $sth->execute;
