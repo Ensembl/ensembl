@@ -43,8 +43,9 @@ $ens_test->do_sql_file("t/archive.dump");
 my $host = $ens_test->host;
 my $dbname = $ens_test->dbname;
 my $user = $ens_test->user;
+my $pass = $ens_test->pass;
 
-my $archive = Bio::EnsEMBL::DBArchive::Obj->new( -host => $host, -dbname => $dbname, -user => $user );
+my $archive = Bio::EnsEMBL::DBArchive::Obj->new( -host => $host, -dbname => $dbname, -user => $user, -pass => $pass);
 
 
 print "ok 2\n";
