@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 44;
+	plan tests => 45;
 }
 
 use MultiTestDB;
@@ -441,3 +441,10 @@ ok(($genes[0]->stable_id() eq 'ENSG00000174873') ||
 debug($gene->stable_id);
 ok($gene->stable_id() eq 'ENSG00000101367');
 
+#
+# test GeneAdaptor::get_Interpro_by_geneid
+#
+debug("Test get_Interpro_by_geneid");
+my @interpro = @{$ga->get_Interpro_by_geneid('ENSG00000174873')};
+ok(@interpro == 1);
+debug($interpro[0]);
