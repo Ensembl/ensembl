@@ -251,7 +251,6 @@ sub _find_polyA{
     $new_seq = $seq;
   }
 
-
   return $new_seq;
 }
 
@@ -286,5 +285,86 @@ sub _softmask{
 }
 
 ############################################################
+
+
+sub has_polyA_track{
+  my ($self, $seq) = @_;
+  my $new_seq;
+  my $length = length($seq);
   
+  # is it a polyA or polyT?
+  my $check_polyT = substr( $seq, 0, 6 );
+  
+  my $check_polyA = substr( $seq, -6 );
+  
+  my $t_count = $check_polyT =~ tr/Tt//;
+  my $a_count = $check_polyA =~ tr/Aa//;
+  
+  
+  my $length_to_mask = 0;
+  #### polyA ####
+  if ( $a_count >= 5 && $a_count > $t_count ){
+    
+    # we calculate the number of bases we want to chop
+    my $length_to_mask = 0;
+    
+    # we start with 3 bases
+    my ($piece, $count ) = (3,0);
+    
+    # count also the number of Ns, consider the Ns as potential As
+    my $n_count = 0;
+
+    # take 3 by 3 bases from the end
+    while( $length_to_mask < $length ){
+      my $chunk  = substr( $seq, ($length - ($length_to_mask + 3)), $piece);
+      $count   = $chunk =~ tr/Aa//;
+      $n_count = $chunk =~ tr/Nn//;
+      if ( ($count + $n_count) >= 2*( $piece )/3 ){
+	$length_to_mask += 3;
+      }
+      else{
+	last;
+      }
+    }
+  }
+  #### polyT ####
+  elsif( $t_count >=5 && $t_count > $a_count ){
+    
+    # calculate the number of bases to chop
+    my $length_to_mask = -3;
+    
+    # we start with 3 bases:
+    my ($piece, $count) = (3,3);
+    
+    # count also the number of Ns, consider the Ns as potential As
+    my $n_count = 0;
+    
+    # take 3 by 3 bases from the beginning
+    while ( $length_to_mask < $length ){
+      my $chunk = substr( $seq, $length_to_mask + 3, $piece );
+      #print STDERR "length to mask: $length_to_mask\n";
+      #print "chunk: $chunk\n";
+      $count = $chunk =~ tr/Tt//;
+       $n_count = $chunk =~ tr/Nn//;
+      if ( ($count+$n_count)  >= 2*( $piece )/3 ){
+	$length_to_mask +=3;
+      }
+      else{
+	last;
+	
+      }
+    }
+  }
+  
+  if ( $length_to_mask >= 5 ){
+    return 1;
+  }
+  else{
+    return 0;
+  }
+
+}
+
+
+################
 1;
