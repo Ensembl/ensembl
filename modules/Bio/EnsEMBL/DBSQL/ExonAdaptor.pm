@@ -272,7 +272,7 @@ sub _new_Exon_from_hashRef {
 sub fetch_evidence_by_Exon {
   my ( $self, $exon )  = @_;
  
-  my $statement = "SELECT contig_id, seq_start, seq_end, score,
+  my $statement = "SELECT seq_start, seq_end, score,
                           strand, analysis, name, hstart, hend,
                           hid, evalue, perc_id, phase, end_phase
                    FROM supporting_feature 
@@ -283,7 +283,8 @@ sub fetch_evidence_by_Exon {
 
   my @features;
   my $anaAdaptor = $self->db->get_AnalysisAdaptor;
-
+  my $contig_id = $exon->contig->internal_id;
+  
   while (my $rowhash = $sth->fetchrow_hashref) {
       my $analysis = $anaAdaptor->fetch_by_dbID( $rowhash->{analysis} );
       
@@ -294,7 +295,7 @@ sub fetch_evidence_by_Exon {
 			 $rowhash->{'score'},
 			 $rowhash->{'name'},
 			 'similarity',
-			 $rowhash->{'contig_id'},
+			 $contig_id,
 			 $rowhash->{'hstart'},
 			 $rowhash->{'hend'},
 			 1, # hstrand
