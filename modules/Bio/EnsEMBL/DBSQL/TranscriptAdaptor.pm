@@ -11,19 +11,39 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::TranscriptAdaptor - MySQL Database queries to generate and store transcripts/translations.
+Bio::EnsEMBL::DBSQL::TranscriptAdaptor - An adaptor which performs database
+interaction relating to the storage and retrieval of Transcripts
+
+=head1 DESCRIPTION
+
+This adaptor provides a means to retrieve and store information related to 
+Transcripts.  Primarily this involves the retrieval or storage of 
+Bio::EnsEMBL::Transcript objects from a database.  
+See Bio::EnsEMBL::Transcript for details of the Transcript class.
 
 =head1 SYNOPSIS
 
-Transcripts and Translations are stored and fetched in this
-object. Translations never go alone any more. The database only
-accepts them (at the moment) in a transcript.  
+  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+  $slice_adaptor = $db->get_SliceAdaptor();
+
+  $transcript_adaptor = $db->get_TranscriptAdaptor();
+
+  $transcript = $transcript_adaptor->fetch_by_dbID(1234);
+
+  $transcript = $transcript_adaptor->fetch_by_stable_id('ENST00000201961');
+  
+  $slice = $slice_adaptor->fetch_by_region('chromosome', '3', 1, 1000000);
+  @transcripts = @{$transcript_adaptor->fetch_all_by_Slice($slice)};
+
+  ($transcript) = @{$transcript_adaptor->fetch_all_by_external_name('BRCA2')};
+
 
 =head1 CONTACT
 
-  Arne Stabenau: stabenau@ebi.ac.uk
-  Elia Stupka  : elia@ebi.ac.uk
-  Ewan Birney  : 
+  Post questions/comments to the EnsEMBL development list:
+  ensembl-dev@ebi.ac.uk
+
+=head1 METHODS
 
 =cut
 
@@ -157,15 +177,18 @@ sub fetch_by_translation_stable_id {
 }
 
 
-
 =head2 fetch_by_translation_id
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : int $id
+               The internal identifier of the translation whose transcript
+               is to be retrieved.
+  Example    : $tr = $tr_adaptor->fetch_by_translation_id($transl->dbID());
+  Description: Given the internal identifier of a translation this method 
+               retrieves the transcript associated with that translation.
+               If the transcript cannot be found undef is returned instead.
+  Returntype : Bio::EnsEMBL::Transcript or undef
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -173,11 +196,13 @@ sub fetch_by_translation_id {
   my $self = shift;
   my $id   = shift;
 
+  throw("id argument is required.") if(!$id);
+
   my $sth = $self->prepare( "SELECT t.transcript_id " .
                             "FROM   translation t ".
                             "WHERE  t.translation_id = ?");
 
-  $sth->execute("$id");
+  $sth->execute($id);
 
   my ($id) = $sth->fetchrow_array;
   if ($id){

@@ -12,6 +12,15 @@
 Bio::EnsEMBL::DBSQL::TranslationAdaptor - Provides a means to fetch and store
 Translation objects from a database.
 
+=head1 DESCRIPTION
+
+This adaptor provides a means to retrieve and store Bio::EnsEMBL::Translation
+objects from/in a database.  
+
+Translation objects only truly make sense in the context of their transcripts
+so the recommended means to retrieve Translations is by retrieving the 
+Transcript object first, and then fetching the Translation. 
+
 =head1 SYNOPSIS
 
   my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
