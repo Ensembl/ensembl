@@ -292,7 +292,44 @@ sub get_all_Exons {
    return $self->{'exons'};
 }
 
+############################################################
 
+
+=head2 sort
+
+ Function: Sorts the exons by start coordinate
+           Sorts forward for forward strand and reverse for reverse strand
+           It refills $self->{'exons'} with the sorted exons
+ Returns : none
+ Args    : none
+
+=cut
+
+sub sort {
+  my $self = shift;
+
+  # Fetch all the exons
+  my @exons = @{$self->get_all_Exons()};
+
+  # Empty the exon holder
+  $self->flush_Exon();
+
+  # Now sort the exons and put back in the feature table
+  my $strand = $exons[0]->strand;
+
+  if ($strand == 1) {
+    @exons = sort { $a->start <=> $b->start } @exons;
+  } 
+  elsif ($strand == -1) {
+    @exons = sort { $b->start <=> $a->start } @exons;
+  }
+
+  foreach my $e (@exons) {
+    $self->add_Exon($e);
+  }
+}
+
+############################################################
 
 =head2 get_exon_count
 
