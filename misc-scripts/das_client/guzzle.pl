@@ -23,7 +23,7 @@ use lib qw(/opt/local/libdata/perl5/i386-openbsd/5.8.0
 use Bio::Das;
 use CGI::Pretty qw(:standard -compile);
 
-use Data::Dumper;
+#use Data::Dumper;
 
 #---------------------------------------------------------------
 # Configurable things (change these):
@@ -66,14 +66,25 @@ my $result_page_title	= 'Guzzle result page';
 # default.
 #
 my @presets = (
-    {	NAME	=> 'Sprot (using Ensembl peptide IDs) [test]',
+    {	NAME	=> 'Sprot (using Ensembl peptide IDs and ' .
+		   'simple ID mapping) [test]',
 	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
-	MAPTYPE	=> 'align',
+	MAPFILE	=> '/home/ak/ensembl-cvs/ensembl/misc-scripts/' .
+		   'das_client/ensembl_sprot.simple_map',
+	MAPTYPE	=> 'simple',
+	CHECKED	=> 1 },
+    {	NAME	=> 'Sprot1 (using Ensembl peptide IDs and ' .
+		   'alignment mapping) [test]',
+	DSN	=> 'http://uhuru/cgi-bin/das/sprot1',
 	MAPFILE	=> '/home/ak/ensembl-cvs/ensembl/misc-scripts/' .
 		   'das_client/ensembl_sprot.align_map',
+	MAPTYPE	=> 'align',
 	CHECKED	=> 1 },
     {	NAME	=> 'Sprot [test]',
 	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
+	CHECKED	=> 0 },
+    {	NAME	=> 'Pfam-A [test]',
+	DSN	=> 'http://uhuru/cgi-bin/das/pfam',
 	CHECKED	=> 0 } );
 
 # $nblanks:
@@ -139,12 +150,14 @@ my $be_nice = 1;
 #
 my $use_graphics = 1;
 
-# $use_mapping
+# $use_*_mapping
 # Whether to make available and use mappings between
 # e.g. Ensembl and Swissprot.
 #
-my $use_mapping = 1;
-if ($use_mapping) {
+my $use_simple_mapping = 1;
+my $use_align_mapping = 1;
+
+if ($use_align_mapping) {
     # Where you keep Ensembl modules (this is for
     # Bio::EnsEMBL::Mapper which is not part of Bioperl)
 
@@ -171,12 +184,14 @@ if ($use_graphics) {
     import File::Temp 'tempfile';
 }
 
-if ($use_mapping) {
+if ($use_align_mapping) {
     require Storable;
     import Storable 'dclone';
 
     require Bio::EnsEMBL::Mapper;
 }
+
+my $use_mapping = ($use_align_mapping || $use_simple_mapping);
 
 #---------------------------------------------------------------
 
@@ -201,9 +216,13 @@ sub do_query
 	$range = '';
     }
 
-    my %query;
+    my @replies;
     foreach my $source (@{ $sources }) {
-	if (! ($use_mapping && defined $source->{MAPTYPE})) {
+	my %query;
+
+	if (! ($use_mapping && exists $source->{MAPTYPE} &&
+	       ($source->{MAPTYPE} eq 'simple' ||
+	        $source->{MAPTYPE} eq 'align'))) {
 	    # Don't do mapping for this source.
 	    $query{$seqid}{SEGMENT} = $seqid . $range;
 	    push(@{ $query{$seqid}{DSN} }, $source->{DSN});
@@ -358,82 +377,87 @@ sub do_query
 	    die "Unknown mapping type: " .
 		$source->{MAPTYPE} . "\n";
 	}
-    }
 
-    my $das = new Bio::Das(15);
+	my $das = new Bio::Das(15);
 
-    my @replies;
-    foreach my $query (values %query) {
-	my $reply = $das->features(
-	    -dsn	=> $query->{DSN},
-	    -segment    => $query->{SEGMENT});
+	foreach my $query (values %query) {
+	    foreach my $dsn (@{ $query->{DSN} }) {
+		my $reply = $das->features(
+		    -dsn	    => $dsn,
+		    -segment    => $query->{SEGMENT});
 
-	next if (!$reply->is_success);
+		next if (!$reply->is_success);
 
-	if (exists $query->{MAPPER}) {
-	    # Map results using align mapper.
-	    # Scary stuff.  If this works, I deserve a beer.
+		if (exists $query->{MAPPER} ) {
+		    # Map results using align mapper.
+		    # Scary stuff.  If this works, I deserve a beer.
 
-	    my @results = $reply->results;
-	    foreach my $result (@results) {
-                # Tag the string that we later use in the tabla
-                # and graphics.
+		    my @results = $reply->results;
+		    foreach my $result (@results) {
+			# Tag the string that we later use in the tabla
+			# and graphics.
 
-                # Do the reverse mapping from the target
-                # coodinate system into the query coordinate
-                # system.  This will yield an array of "gaps"
-                # and "coordinates".  If a range is mapped as a
-                # whole (no holes) then just change the start
-                # and stop coodinates.  Tag the result with
-                # "mapped", "fragmented", and "unmappable" as
-                # neccesary.
+			# Do the reverse mapping from the target
+			# coodinate system into the query coordinate
+			# system.  This will yield an array of "gaps"
+			# and "coordinates".  If a range is mapped as a
+			# whole (no holes) then just change the start
+			# and stop coodinates.  Tag the result with
+			# "mapped", "fragmented", and "unmappable" as
+			# neccesary.
 
-		my @mapped = $query->{MAPPER}->map_coordinates(
-		    'targetID', $result->start, $result->stop, 1,
-		    'targetCOORD');
+			my @mapped = $query->{MAPPER}->map_coordinates(
+			    'targetID', $result->start, $result->stop, 1,
+			    'targetCOORD');
 
-		if (scalar @mapped > 1) {
-		    for my $i (0 .. (scalar @mapped - 1)) {
+			if (scalar @mapped > 1) {
+			    for my $i (0 .. (scalar @mapped - 1)) {
 
-			my $resultcopy = dclone($result);
+				my $resultcopy = dclone($result);
 
-			$resultcopy->start($mapped[$i]->start);
-			$resultcopy->stop($mapped[$i]->end);
+				$resultcopy->start($mapped[$i]->start);
+				$resultcopy->stop($mapped[$i]->end);
 
-			$resultcopy->group($result->group .
-			    " [fragmented in $seqid]");
+				$resultcopy->group($result->group .
+				    " [fragmented in $seqid]");
 
-                        # The following if-statment and
-                        # push-call breaks the OO badly since
-                        # it assumes that the underlying
-                        # representation of the objects are
-                        # known, but it was the only way I could
-                        # make it work.
+				# The following if-statment and
+				# push-call breaks the OO badly since
+				# it assumes that the underlying
+				# representation of the objects are
+				# known, but it was the only way I could
+				# make it work.
 
-			$resultcopy->{segment} = $result->{segment};
+				$resultcopy->{segment} = $result->{segment};
 
-			if ($mapped[$i]->isa('Bio::EnsEMBL::Mapper::Gap')) {
-			    $resultcopy->{type}{label} .= " [fragment " .
-				(1 + $i) . " (GAP)]";
+				if ($mapped[$i]->
+					isa('Bio::EnsEMBL::Mapper::Gap')) {
+				    $resultcopy->{type}{label} .=
+					" [fragment " .  (1 + $i) . " (GAP)]";
+				} else {
+				    $resultcopy->{type}{label} .=
+					" [fragment " .  (1 + $i) . "]";
+				}
+
+				push(@{ $reply->{results}[1] }, $resultcopy);
+			    }
+			    # Will take it off the display
+			    $result->group('NOSHOW');
+
+			} elsif ($mapped[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+			    $result->group($result->group .
+				" [unmappable in $seqid]");
 			} else {
-			    $resultcopy->{type}{label} .= " [fragment " .
-				(1 + $i) . "]";
+			    $result->group($result->group .
+				" [mapped to $seqid]");
+			    $result->start($mapped[0]->start);
+			    $result->stop($mapped[0]->end);
 			}
-
-			push(@{ $reply->{results}[1] }, $resultcopy);
 		    }
-		    $result->group('NOSHOW'); # Will take it off the display
-
-		} elsif ($mapped[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
-		    $result->group($result->group . " [unmappable in $seqid]");
-		} else {
-		    $result->group($result->group . " [mapped to $seqid]");
-		    $result->start($mapped[0]->start);
-		    $result->stop($mapped[0]->end);
 		}
+		push(@replies, $reply);
 	    }
 	}
-	push(@replies, $reply);
     }
 
     return @replies;
