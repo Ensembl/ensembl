@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 18;
+	plan tests => 21;
 }
 
 use MultiTestDB;
@@ -133,12 +133,26 @@ foreach my $g (@{$new_slice->get_all_Genes}) {
 ok($gene_found);
 
 
+
 #
 #  fetch_by_region (entire region)
 #
 $slice = $slice_adaptor->fetch_by_region('chromosome',$CHR);
 ok($slice->seq_region_name eq $CHR);
 ok($slice->start == 1);
+
+
+#
+# fetch_by_misc_feature_attribute
+#
+my $flanking= 1000;
+$slice = $slice_adaptor->fetch_by_misc_feature_attribute('superctg',
+                                                         'NT_030871',
+                                                         $flanking);
+
+ok($slice->seq_region_name eq '20');
+ok($slice->start == 59707812 - $flanking);
+ok($slice->end   == 60855021 + $flanking);
 
 
 
