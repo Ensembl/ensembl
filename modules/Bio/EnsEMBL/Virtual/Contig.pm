@@ -496,7 +496,7 @@ sub get_all_VirtualGenes_startend{
        foreach my $trans ( $gene->each_Transcript ) {
 	   foreach my $exon ( $trans->each_Exon ) {
 
-	       my $mc = $self->_vmap->get_MapContig($exon->contig_id);
+	       my $mc = $self->_vmap->get_MapContig_by_id($exon->contig_id);
 	       if( !defined $mc ) {
 		   next;
 	       }

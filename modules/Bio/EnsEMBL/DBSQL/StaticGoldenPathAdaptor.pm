@@ -209,7 +209,7 @@ sub fetch_VirtualContig_by_chr_start_end{
    }
 
    if( $start > $end ) {
-       $self->throw("start must be less than end");
+       $self->throw("start must be less than end: parameters $chr:$start:$end");
    }
 
    
@@ -244,7 +244,8 @@ sub fetch_VirtualContig_by_clone{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c where c.clone = '$clone' AND c.internal_id = c.clone AND c.internal_id = st.raw_id AND st.type = '$type' ORDER BY st.fpcctg_start");
+
+   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c where c.clone = '$clone' AND c.internal_id = st.raw_id AND st.type = '$type' ORDER BY st.fpcctg_start");
    $sth->execute();
    my ($contig,$start,$chr_name) = $sth->fetchrow_array;
 
