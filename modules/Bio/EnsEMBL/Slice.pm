@@ -271,12 +271,13 @@ sub coord_system {
 
   Arg [1]    : none
   Example    : print $slice->coord_system_name()
-  Description: Gets the name of the coord_system which this slice is on.
-               Returns undef if this Feature is not on a slice.
-  Function  : 
-  Returntype: 
-  Exceptions: 
-  Caller    : 
+  Description: Convenience method.  Gets the name of the coord_system which
+               this slice is on.
+               Returns undef if this Slice does not have an attached
+               CoordSystem.
+  Returntype: string or undef
+  Exceptions: none
+  Caller    : general
 
 =cut
 
