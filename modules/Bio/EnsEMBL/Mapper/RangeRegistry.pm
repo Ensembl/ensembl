@@ -189,7 +189,7 @@ sub check_and_register {
   while(( $end_idx - $start_idx ) > 1 ) {
     $mid_idx = ($start_idx+$end_idx)>>1;
     $range = $list->[$mid_idx];
-    if( $range->[1] < $start ) {
+    if( $range->[1] < $rstart ) {
       $start_idx = $mid_idx;
     } else {
       $end_idx = $mid_idx;
@@ -262,7 +262,80 @@ sub check_and_register {
   return \@gap_pairs;
 }
 
+# overlap size is just added to make RangeRegistry generally more useful
 
+=head2 overlap_size
+
+  Arg [1]    : string $id
+  Arg [2]    : int $start
+  Arg [1]    : int $end
+  Example    : my $overlap_size = $rr->( "chr1", 1, 100_000_000 )
+  Description: finds out how many bases of the given range are registered
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub overlap_size {
+  my ( $self, $id, $start, $end ) = @_;
+  my $overlap = 0;
+
+  return 0 unless $start <= $end;
+
+  my $reg  = $self->{'registry'};
+  my $list = $reg->{$id} ||= [];
+
+  my $len = scalar(@$list);
+
+  if($len == 0) {
+    #this is the first request for this id, return a gap pair for the
+    #entire range and register it as seen
+    return 0;
+  }
+
+  my $CUR;
+
+  #####
+  #loop through the list of existing ranges recording any "gaps" where the
+  #existing range does not cover part of the requested range
+  #
+  my $start_idx = 0;
+  my $end_idx = $#$list;
+  my ( $mid_idx, $range );
+
+  # binary search the relevant pairs
+  # helps if the list is big
+  while(( $end_idx - $start_idx ) > 1 ) {
+    $mid_idx = ($start_idx+$end_idx)>>1;
+    $range = $list->[$mid_idx];
+    if( $range->[1] < $start ) {
+      $start_idx = $mid_idx;
+    } else {
+      $end_idx = $mid_idx;
+    }
+  }
+
+  for($CUR=$start_idx; $CUR < $len; $CUR++) {
+    my ($pstart,$pend) = @{$list->[$CUR]};
+
+    #no work needs to be done at all if
+    #if we find a range pair that entirely overlaps the requested region
+    if($pstart <= $start && $pend >= $end) {
+      $overlap = $end-$start+1;
+      last;
+    }
+
+    my $mstart = ( $start < $pstart ? $pstart : $start );
+    my $mend = ( $end < $pend ? $end : $pend );
+
+    if( $mend - $mstart >= 0 ) {
+      $overlap += ( $mend - $mstart + 1 );
+    }
+  }
+
+  return $overlap;
+}
 
 1;
 
