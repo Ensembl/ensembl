@@ -676,7 +676,7 @@ sub get_ChromosomeAdaptor {
 sub get_SupportingFeatureAdaptor {
   my $self = shift;
 
-  return $self->_get_adaptor("Bio:EnsEMBL::DBSQL::SupportingFeatureAdaptor");
+  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor");
 }
 
 
