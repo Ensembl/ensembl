@@ -41,6 +41,7 @@ use strict;
 use Bio::Root::Object;
 @ISA = qw(Bio::Root::Object);
 use Bio::AnnSeqIO;
+use Bio::SeqIO;
 use Bio::EnsEMBL::Gene;
 use  Bio::EnsEMBL::EMBLLOAD::Clone;
 use  Bio::EnsEMBL::EMBLLOAD::Contig;
