@@ -906,6 +906,22 @@ sub get_all_DBLinks{
 }
 
 
+=head2 get_all_DASFactories
+
+  Arg [1]   : none
+  Function  : Retrieves a listref of registered DAS objects
+  Returntype: [ DAS_objects ]
+  Exceptions:
+  Caller    :
+  Example   : $dasref = $prot->get_all_DASFactories
+
+=cut
+
+sub get_all_DASFactories {
+   my $self = shift;
+   return [ $self->adaptor()->db()->_each_DASFeatureFactory ];
+}
+
 =head2 get_all_DASFeatures
 
   Arg [1]    : none
@@ -924,9 +940,9 @@ sub get_all_DBLinks{
 sub get_all_DASFeatures{
     my ($self,@args) = @_;
     my %das_features;
-    foreach my $dasfact( $self->adaptor()->db()->_each_DASFeatureFactory ){
-	my @featref = $dasfact->fetch_all_by_DBLink_Container( $self );
-	$das_features{$dasfact->_dsn} = [@featref];
+    foreach my $dasfact( @{$self->get_all_DASFactories} ){
+      my @featref = $dasfact->fetch_all_by_DBLink_Container( $self );
+      $das_features{$dasfact->_dsn} = [@featref];
     }
     return \%das_features;
 }
