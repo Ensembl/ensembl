@@ -79,7 +79,7 @@ CREATE TABLE map_density (
 
 CREATE TABLE dna (
   seq_region_id       int unsigned NOT NULL,
-  sequence  		      mediumtext NOT NULL,
+  sequence            mediumtext NOT NULL,
 
   PRIMARY KEY (seq_region_id)
 
@@ -97,7 +97,6 @@ CREATE TABLE dna (
 CREATE TABLE dnac (
   seq_region_id  int unsigned NOT NULL,
   sequence  mediumblob NOT NULL,
-  created   datetime NOT NULL,
   n_line    text,  
 
   PRIMARY KEY (seq_region_id)
@@ -137,8 +136,6 @@ CREATE TABLE exon_stable_id (
   exon_id   		      int unsigned not null,       # foreign key exon:exon_id
   stable_id                   VARCHAR(40) not null,
   version                     int(10),
-  created                     datetime NOT NULL,
-  modified                    datetime NOT NULL,
   
   PRIMARY KEY( exon_id ),
   UNIQUE( stable_id, version )
@@ -320,8 +317,6 @@ CREATE TABLE gene_stable_id (
   gene_id 		      int unsigned not null,  # foreign key gene:gene_id
   stable_id                   VARCHAR(40) not null,
   version                     int(10),
-  created                     datetime NOT NULL,
-  modified                    datetime NOT NULL,
   
   PRIMARY KEY( gene_id ),
   UNIQUE( stable_id, version )
@@ -616,6 +611,38 @@ CREATE TABLE external_db (
   PRIMARY KEY( external_db_id ) 
 
 );
+
+
+CREATE TABLE prediction_exon (
+    prediction_exon_id int unsigned not null auto_increment,
+    prediction_transcript_id int unsigned not null,
+    exon_rank smallint unsigned not null,
+    seq_region_id int unsigned not null,
+    seq_region_start int unsigned not null,
+    seq_region_end int unsigned not null,
+    seq_region_strand tinyint not null,
+    start_phase tinyint not null,
+    score double,
+    p_value double,
+
+    PRIMARY KEY( prediction_exon_id ),
+    KEY ( seq_region_id, seq_region_start )
+);
+
+
+CREATE TABLE prediction_transcript (
+    prediction_transcript_id int unsigned not null auto_increment,
+    seq_region_id int unsigned not null,
+    seq_region_start int unsigned not null,
+    seq_region_end int unsigned not null,
+    seq_region_strand tinyint not null,
+    analysis_id int,
+    
+    PRIMARY KEY( prediction_transcript_id ),
+    KEY ( seq_region_id, seq_region_start )
+);
+
+
 
 ################################################################################
 #
