@@ -184,7 +184,7 @@ sub fetch_by_logic_name {
   my $analysis;
   my $rowHash;
 
-  my $sth = $self->prepare( q{
+  my $sth = $self->prepare( "
     SELECT analysis_id, logic_name,
            program, program_version, program_file,
            db, db_version, db_file,
@@ -192,9 +192,9 @@ sub fetch_by_logic_name {
            gff_source, gff_feature,
            created, parameters
     FROM   analysis
-    WHERE  logic_name = ? } );
+    WHERE  logic_name = ?" );
   
-  $sth->execute( $logic_name );
+  $sth->execute($logic_name);
   my $rowHashRef;
   $rowHashRef = $sth->fetchrow_hashref; 
   $analysis = $self->_objFromHashref( $rowHashRef );
@@ -382,6 +382,7 @@ sub _objFromHashref {
 
   my $analysis = Bio::EnsEMBL::Analysis->new(
       -id              => $rowHash->{analysis_id},
+      -adaptor         => $self,
       -db              => $rowHash->{db},
       -db_file         => $rowHash->{db_file},
       -db_version      => $rowHash->{db_version},

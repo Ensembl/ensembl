@@ -66,9 +66,9 @@ sub new {
   
   my $self = bless {},$class;
    
-  my ($id,$adaptor,$db,$db_version,$db_file,$program,$program_version,$program_file,
-      $gff_source,$gff_feature,$module,$module_version,$parameters,$created,
-      $logic_name ) = 
+  my ($id, $adaptor, $db, $db_version, $db_file, $program, $program_version,
+      $program_file, $gff_source, $gff_feature, $module, $module_version,
+      $parameters, $created, $logic_name ) = 
 
 	  $self->_rearrange([qw(ID
 	  			ADAPTOR

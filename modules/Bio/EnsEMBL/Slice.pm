@@ -93,6 +93,11 @@ sub new {
     $self->strand('1');
   }
 
+  my $mapper = $adaptor->db->get_AssemblyMapperAdaptor->
+    fetch_by_type($type);
+  $mapper->register_region($self->chr_name(),$self->chr_start(),
+			   $self->chr_end());
+
   $self->assembly_type($type);
   $self->adaptor($adaptor);
   $self->dbID( $dbID );
@@ -122,7 +127,7 @@ are the methods to implement
 =cut
 
 sub get_all_SimilarityFeatures_above_score{
-   my ($self,$score) = @_;
+   my ($self,$logic_name, $score, $bp) = @_;
 
    my @out;
 
@@ -130,7 +135,7 @@ sub get_all_SimilarityFeatures_above_score{
      $self->throw("No defined score.");
    }
 
-   push(@out,$self->adaptor->db->get_DnaAlignFeatureAdaptor->fetch_by_Slice_and_score($self,$score));
+   push(@out,$self->adaptor->db->get_DnaAlignFeatureAdaptor->fetch_by_Slice_and_score($self,$score, $logic_name));
    
    return @out;
 }
@@ -227,7 +232,8 @@ sub get_all_RepeatFeatures{
    my ($self,@args) = @_;
 
 
-   my @repeats = $self->repeat_adaptor->fetch_by_Slice($self);
+   my @repeats = 
+     $self->adaptor->db->get_RepeatFeatureAdaptor()->fetch_by_Slice($self);
 
    foreach my $repeat ( @repeats ) {
        $repeat->transform_location($self->start);
@@ -236,28 +242,6 @@ sub get_all_RepeatFeatures{
    return @repeats;
 }
 
-=head2 repeat_adaptor
-
- Title   : repeat_adaptor
- Usage   : $obj->repeat_adaptor
- Function: For getting hold of the repeat feature adaptor within a slice obj
- Example :
- Returns : RepeatFeatureAdaptor
- Args    : none
-
-
-=cut
-
-
-sub repeat_adaptor{
-    my ($self) = @_;
-
-    my $db = $self->adaptor->{'db'};
-
-    my $rep_adaptor = $db->get_RepeatFeatureAdaptor;
-
-    return $rep_adaptor;
-}
 
 
 =head2 get_all_PredictionFeatures
@@ -432,18 +416,7 @@ sub invert{
 sub primary_seq{
    my ($self,@args) = @_;
 
-    if( $self->{'_virtual_primary_seq'} ){
-	return $self->{'_virtual_primary_seq'};
-    }
-
-   my $seq = $self->seq();
-    my $slice_seq = Bio::PrimarySeq->new( 
-					 -id    =>$self->id,
-					 -'seq' =>$seq
-					);
-
-    $self->{'_virtual_primary_seq'} = $slice_seq;
-    return $slice_seq;
+    return $self;
 }
 
 
@@ -709,8 +682,6 @@ sub get_tiling_path {
   my $mapper = $self->adaptor()->db->get_AssemblyMapperAdaptor()->
     fetch_by_type($self->assembly_type());
 
-  print STDERR "In get_tiling_path\n";
-
 
   # Get the ids of the raw_contigs in this region specified in chrmsml coords 
   $mapper->register_region( $self->chr_name, $self->chr_start(),
@@ -723,7 +694,6 @@ sub get_tiling_path {
      $self->strand()
     );
 
-  print STDERR ( join ( "\n", @mapped ));
 
 
   # Extract the IDS of the Coordinates, ommitting Gaps
@@ -733,8 +703,6 @@ sub get_tiling_path {
        push @raw_contig_ids, $map_item->id();
      }
   }
-
-  print STDERR "RawContigs: " . join( " ",@raw_contig_ids ) . "\n";
 
   #Fetch filled raw contigs (non lazy-loaded) containing filled clone objects
   my $raw_contigs = 
@@ -766,5 +734,46 @@ sub get_tiling_path {
   return @tiling_path;
 }
   
+
+sub get_landmark_MarkerFeatures {
+  my $self = shift;
+
+  $self->warn("Slice->get_landmark_MarkerFeatures not yet implemented\n");
+
+  return ();
+}
+
+sub get_all_DASFeatures {
+  my $self = shift;
+
+  $self->warn("Slice->get_all_DASFeatures not yet implemented\n");
+
+  return ();
+}
+
+sub get_all_SangerGenes_startend_lite {
+  my $self = shift;
+
+  $self->warn("Slice->get_all_SangerGenes_startend_lite deprecated use get_allGenes() instead\n");
+
+  return ();
+}
+  
+sub get_all_VirtualGenes_startend_lite {
+  my $self = shift;
+
+  $self->warn("Slice->get_all_VirtualGenes_startend_lite deprecated use get_allGenes() instead\n");
+
+  return ();
+}
+
+
+sub get_all_EMBLGenes_startend_lite {
+  my $self = shift;
+
+  $self->warn("Slice->get_all_EMBLGenes_startend_lite deprecated use get_allGenes() instead\n");
+
+  return ();
+}
 
 1;
