@@ -19,6 +19,7 @@ $feature = Bio::EnsEMBL::DensityFeature->new(-start    => 100,
                                              -slice    => $slice,
                                              -analysis => $analysis,
                                              -density_value    => 90.1,
+                                             -density_value_type => 'sum',
                                              -dbID     => 112,
                                              -adaptor  => $adaptor);
 
@@ -57,15 +58,22 @@ use vars qw(@ISA);
   Arg [DENSITY_VALUE] : The number of features which were found within the
                region of this DensityFeature.  May also be a percentage or
                coverage, etc.
+  Arg [DENSITY_VALUE_TYPE] : string - should be 'ratio' or 'sum'.  A value
+               which is a sum represents a summation values in the
+               the range of this feature. A ratio is some sort of average
+               of the values in the range of this feature.  A 'sum' could be
+               a count of the snps in the region and a 'ratio' could be a
+               percent gc contenct or repeat coverage.
   Arg [...]  : Named arguments passed to superclass
   Example    : $feature = Bio::EnsEMBL::SimpleFeature->new
                             (-start    => 1,
                              -end      => 1e6,
                              -analysis => $analysis,
-                             -density_value => 80.5);
+                             -density_value => 80.5,
+                             -density_value_type => 'ratio');
   Description: Creates a new density feature.
   Returntype : Bio::EnsEMBL::DensityFeature
-  Exceptions : none
+  Exceptions : throw if invalid density value type is provided
   Caller     : general
 
 =cut
@@ -78,11 +86,20 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my($density_value) = rearrange(['DENSITY_VALUE'], @_);
+  my($density_value,$density_value_type) =
+    rearrange(['DENSITY_VALUE', 'DENSITY_VALUE_TYPE'], @_);
 
   throw("Density value must be >= 0.") if($density_value < 0);
 
+  if($density_value) {
+    $density_value = lc($density_value);
+    if($density_value_type ne 'sum' && $density_value_type ne 'ratio') {
+      throw("Unknown density value type [$density_value_type].");
+    }
+  }
+
   $self->{'density_value'} = $density_value;
+  $self->{'density_value_type'} = $density_value_type;
   $self->{'strand'} = 0;
 
   return $self;
@@ -141,6 +158,32 @@ sub density_value {
   return $self->{'density_value'};
 }
 
+
+
+
+=head2 density_value_type
+
+  Arg [1]    : string $newval (optional) 
+               The new value to set the density_value_type attribute to
+  Example    : $density_value_type = $obj->density_value_type()
+  Description: Getter/Setter for the density_value_type attribute
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub density_value_type{
+  my $self = shift;
+  if(@_) {
+    my $density_value_type = lc(shift);
+    if($density_value_type ne 'sum' && $density_value_type ne 'ratio') {
+      throw("Unknown density value type [$density_value_type]");
+    }
+    $self->{'density_value_type'} = $density_value_type;
+  }
+  return $self->{'density_value_type'};
+}
 
 1;
 
