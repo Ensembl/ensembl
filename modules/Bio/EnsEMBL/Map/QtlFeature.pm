@@ -139,6 +139,24 @@ sub analysis {
 }
 
 
+=head2 strand
+
+  Arg [1]    : none
+	Example    : $strand = $qtl_feat->strand();
+  Description: Overrides the SeqFeature strand method to always return a 
+               value of 0 for qtl features (they are unstranded features)
+  Returntype : int (always 0)
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub strand {
+	my $self = shift;
+  
+  return 0;
+}
+
 
 1;
 
