@@ -22,7 +22,8 @@ my %conf =  %::mapping_conf; # configuration options
 
 my $refseq_gnp = $conf{'refseq_gnp'};
 my $xmap       = $conf{'x_map_out'};
-my $map        = $conf{'pmatch_out'};
+my $pm1        = $conf{'pmatch_out'};
+my $pm2        = $conf{'pred_pmatch_out'};
 my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
 my $user       = $conf{'dbuser'};
@@ -40,9 +41,15 @@ my %embl2sp;
 my %errorflag;
 my %ref_map_pred;
 
-if ((!defined $organism) || (!defined $xmap) || (!defined $map)) {
-    die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $map\ndb: $dbname\nhost: $host\n\n";
+if ((!defined $organism) || (!defined $xmap) || (!defined $pm)) {
+    die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $pm\ndb: $dbname\nhost: $host\n\n";
 }
+
+my $pm = $pm1."_tmp";
+
+#concatenate outputs coming from the known genes mapping and the predicted gene mapping
+my $cat = "cat $pm1 $pm2 > $pm";
+system($cat);
 
 print STDERR "Connecting to the database...\n";
 
@@ -172,7 +179,7 @@ if ($check eq "yes") {
     close (QUERY);
 }
 
-open (MAP,"$map") || die "Can't open $map\n";
+open (MAP,"$pm") || die "Can't open $pm\n";
 
 print STDERR "Reading pmatch output\n";
 MAPPING: while (<MAP>) {

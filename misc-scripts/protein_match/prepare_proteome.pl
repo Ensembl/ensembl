@@ -57,9 +57,8 @@ my $protfile = $conf{'pmatch_input_fa'};
 my $pmatch   = $conf{'pmatch'};
 my $organism = $conf{'organism'};
 my $refseq_pred = $conf{'refseq_pred_fa'};
+my $pred_pmatch_input = $conf{'pred_pmatch_input_fa'};
 
-$protfile = "test.fa";
-my $protfile1 = "test_pred.fa";
 
 if (($organism eq "human") || ($organism eq "mouse")) {
     &parse_refseq;
@@ -131,8 +130,8 @@ sub parse_refseq {
 
 sub parse_refseq_pred {
     
-  open (IN, "<$refseq_pred") or die "Can't open $refseq_pred\n";
-  open (OUT, ">>$protfile1") or die "Can't open $protfile\n";
+  open (IN, "<$pred_pmatch_input") or die "Can't open $refseq_pred\n";
+  open (OUT, ">>$protfile") or die "Can't open $protfile\n";
 
   while(<IN>){
     # eg >gi|4501893|ref|NP_001094.1| actinin, alpha 2 [Homo sapiens]

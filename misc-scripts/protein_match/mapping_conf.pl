@@ -28,11 +28,22 @@ package main;
              #'check'      => 'yes',
              'check'      => '',
 
-             #'query_idt'  => 50,
+
+             #The mapping to known genes is assymetrical. This is due to the fact that's our gene prediction is quite fragmented compared to the manually curated genes             
+
+             #'query_idt'  => 40,
              'query_idt'    => ,
 
-             #'target_idt  => 50,
+             #'target_idt  => 10,
              'target_idt'  => ,
+
+             #For the mapping to predicted gene, the mapping is better to be more or less symetrical (the values given are indication on what should be used)
+
+             #'query_idt'  => 40,
+             'pred_query_idt'    => ,
+
+             #'target_idt  => 50,
+             'pred_target_idt'  => ,
 
              #Location of the statistic file (only neede if you run get_stats.pl)
              #'statistic'  => '/work1/mongin/mapping/stats.txt',
