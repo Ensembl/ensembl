@@ -511,6 +511,7 @@ sub top_SeqFeatures {
 sub get_all_VirtualGenes {
     my ($self) = @_;
 
+    my @out;
     foreach my $gene ( $self->get_all_Genes()) {
 	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
 	push(@out,$vg);
