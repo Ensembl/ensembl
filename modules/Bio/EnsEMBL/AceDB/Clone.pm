@@ -153,15 +153,20 @@ sub embl_version {
 
 sub embl_id {
    my ($self) = @_;
+
    my ($contig) = $self->get_Contig($self->id());
    if (my $database = $contig->ace_seq->at('DB_info.Database[1]')) {
+
         if ($database eq "EMBL") {
             if (my $embl_id = $contig->ace_seq->at('DB_info.Database[2]')) {
+          
                 return $embl_id->name;
             }
-        }
+        }       
    }
-   return;
+
+   return $self->id;
+
 }
 
 
@@ -274,10 +279,10 @@ sub version {
    my ($self) = @_;
  
    my ($contig) = $self->get_Contig($self->id()); 
-   if (my $version = $contig->ace_seq->at('DB_info.Sequence_version[1]')) {
+   if (my $version = $contig->ace_seq->at('DB_info.Sequence_version[1]')) {   
         return $version->name;
    }
-   # If the version isn't defined just return 1.
+   # If the version isn't defined just return 1.     
    return 1;
 }
 

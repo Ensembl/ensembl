@@ -161,7 +161,7 @@ sub get_Clone {
 sub get_all_Clone_id {
    my ($self) = @_;
  
-   my @clones = map $_->name, $self->fetch(Genome_Sequence => 'F15H10');
+   my @clones = map $_->name, $self->fetch(Genome_Sequence => '*');
    return @clones;
 }
 

@@ -183,10 +183,33 @@ sub embl_accession {
 
     unless (defined $self->{'embl_accession'}) {
         my $seq = $self->ace_seq();
-        my $hit = $seq->at('DB_info.Database[1]')
-	$self->{'embl_accession'} = map($_->name(), $hit->row(2));
+        $self->{'embl_accession'} = $seq->at('DB_info.Database.EMBL[2]')->name;
     }
     return $self->{'embl_accession'};
+
+} 
+
+
+=head2 embl_id
+
+ Title   : embl_id
+ Usage   : $id = $contig->embl_id()
+ Function: Returns the embl accession
+ Example :
+ Returns : 
+ Args    : 
+
+
+=cut
+
+sub embl_id {
+   my ($self) = @_;
+
+    unless (defined $self->{'embl_id'}) {
+        my $seq = $self->ace_seq();
+        $self->{'embl_id'} = $seq->at('DB_info.Database.EMBL[1]')->name;
+    }
+    return $self->{'embl_id'};
 
 } 
 
@@ -228,12 +251,16 @@ sub get_all_RepeatFeatures {
     my ($self) = @_;
 
     # Get tandem features
+    print STDERR "About get tandems ...\n";
     my @repeat_features = $self->_get_tandems();
-    
+    print STDERR "About to get motifs...\n";
+
     # Append motif_homols with RepeatMaster, RepeatMaster_SINE, hmmfs.3 or scan
     my @methods = qw/RepeatMaster RepeatMaster_SINE hmmfs.3 scan/;
     push(@repeat_features, $self->_get_homols('Homol.Motif_homol[1]', @methods));
      
+    print STDERR "otta here!\n";
+
     # Return all the sequence features 
     return @repeat_features;
 }
@@ -299,7 +326,7 @@ sub get_all_PredictionFeatures {
                                          
 	        my ($starte, $ende) = map($_->name(), $exon->row());
  
-                my $feature = Bio::EnsEMBL::FeatureFactory->new_feature();
+                my $subFeature = Bio::EnsEMBL::FeatureFactory->new_feature();
                 
                 # We have to map acedb coordinates which are relative to the
                 # start/end in the subsequence to the exon coordinates, which
@@ -1104,9 +1131,12 @@ sub _get_homols {
     my @seq_features;
    
     # Loop through the homols of the appropriate type
+    print STDERR "calling with $type\n";
+    
     my @homols = $self->ace_seq->at($type);    
     foreach my $hid (@homols) {
-
+        print STDERR "got a homol with ",$hid->name,"\n";
+        
         # Loop through the different methods
         my @methods = $hid->col(1);        
         foreach my $meth (@methods) {
@@ -1161,6 +1191,9 @@ sub _get_homols {
 sub _get_tandems {
     my ($self) = @_;
     my @seq_features;
+
+    print STDERR "got into get_tandems\n";
+
     my @tandems = $self->ace_seq->at('Feature.Tandem[1]');
 
     my $analysis = new Bio::EnsEMBL::Analysis(					    
@@ -1172,6 +1205,8 @@ sub _get_tandems {
     
     # Create a new feature object for each of the tandems found
     foreach my $tandem (@tandems) {
+        print STDERR "Looking at a tandem...\n";
+
         my($start, $end, $score, $remark) = $tandem->row();               
         my $feature = Bio::EnsEMBL::FeatureFactory->new_repeat();
         
