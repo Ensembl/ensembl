@@ -399,6 +399,8 @@ sub store{
     $self->throw("trying to write a clone without a clone object : $!\n");
   }
 
+  my @contigs = @{$clone->get_all_Contigs};
+
   if( !$clone->isa('Bio::EnsEMBL::Clone') ) {
     $self->throw("Clone '$clone' is not a 'Bio::EnsEMBL::Clone'");
   }
@@ -417,6 +419,7 @@ sub store{
                          $clone->htg_phase.", 
                          FROM_UNIXTIME('".$clone->created."'), 
                          FROM_UNIXTIME('".$clone->modified."'))";
+
   my $sth = $self->prepare($sql);
   my $rv = $sth->execute();
   $self->throw("Failed to insert clone $clone->id") unless $rv;
@@ -435,7 +438,7 @@ sub store{
 
   #store the contigs which were on this clone
   my $rca = $self->db->get_RawContigAdaptor();
-  foreach my $contig(@{$clone->get_all_Contigs()}){
+  foreach my $contig(@contigs){
     $rca->store($contig, $clone);
   }
 
