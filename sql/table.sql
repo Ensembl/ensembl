@@ -31,7 +31,7 @@ CREATE TABLE affy_feature (
 CREATE TABLE affy_probe (
        affy_probe_id INT NOT NULL auto_increment,
        affy_array_id INT NOT NULL,
-       probeset VARCHAR(20),
+       probeset VARCHAR(40),
        name VARCHAR(20),
 
        PRIMARY KEY ( affy_probe_id, affy_array_id ),
@@ -531,7 +531,7 @@ CREATE TABLE interpro (
   interpro_ac	              varchar(40) NOT NULL,
   id		              varchar(40) NOT NULL,
 
-  KEY (interpro_ac),
+  UNIQUE (interpro_ac, id),
   KEY (id)
 
 );
