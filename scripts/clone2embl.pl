@@ -142,13 +142,16 @@ if( $dbtype =~ 'ace' ) {
 }
 
 # test report number of clones in db
-# all clones
-#my @list=$db->get_all_Clone_id();
-# clones updated from before when I first started updating
-#my @list=$db->get_updated_Clone_id('939220000');
-# clones updated from now (should be none)
-#my @list=$db->get_updated_Clone_id(time);
-#exit 0;
+my $debug_lists=0;
+if($debug_lists){
+    # all clones
+    my @list=$db->get_all_Clone_id();
+    # clones updated from before when I first started updating
+    my @list=$db->get_updated_Clone_id('939220000');
+    # clones updated from now (should be none)
+    my @list=$db->get_updated_Clone_id(time);
+    exit 0;
+}
 
 if ( $getall == 1 ) {
     @clones = $db->get_all_Clone_id();

@@ -243,7 +243,9 @@ sub get_updated_Clone_id{
    my @clones;
    my($val,$key);
    while(($key,$val)=each %{$self->{'_clone_update_dbm'}}){
-       if($val>$date){
+       my($date2,$lock)=split(',',$val);
+       # make list of updatable clones
+       if($date2>$date){
 	   push(@clones,$key);
        }
    }
@@ -270,18 +272,21 @@ sub _get_Clone_id{
    my $nc=0;
    my $nisv=0;
    my $nsid=0;
+   my $nlock=0;
    if($ralist){
+       # loop over list of clones supplied
        foreach my $key (@$ralist){
 	   my $val;
 	   if($val=$self->{'_clone_dbm'}->{$key}){
-	       &_check_clone_entry($key,$val,$fall,\@list,\$nc,\$nsid,\$nisv);
+	       &_check_clone_entry($self,$key,$val,$fall,\@list,\$nc,\$nsid,\$nisv,\$nlock);
 	   }else{
-	       $self->warn("WARN: $key not in clone DBM");
+	       $self->warn("ERROR: $key not in clone DBM");
 	   }
        }
    }else{
+       # loop over whole dbm file
        while(($key,$val)=each %{$self->{'_clone_dbm'}}){
-	   &_check_clone_entry($key,$val,$fall,\@list,\$nc,\$nsid,\$nisv);
+	   &_check_clone_entry($self,$key,$val,$fall,\@list,\$nc,\$nsid,\$nisv,\$nlock);
        }
    }
    if($ralist){
@@ -289,6 +294,7 @@ sub _get_Clone_id{
    }else{
        print STDERR "$nc clones in database\n";
    }
+   print STDERR "$nlock clones are locked for reading and are excluded\n";
    print STDERR "$nsid have cloneid rather than accession numbers\n";
    print STDERR "$nisv have invalid SV numbers";
    if($fall){
@@ -300,16 +306,30 @@ sub _get_Clone_id{
 }
 
 sub _check_clone_entry{
-    my($key,$val,$fall,$ralist,$rnc,$rnsid,$rnisv)=@_;
+    my($self,$key,$val,$fall,$ralist,$rnc,$rnsid,$rnisv,$rnlock)=@_;
     $$rnc++;
+
+    # skip locked clones
+    my $val2;
+    if($val2=$self->{'_clone_update_dbm'}->{$key}){
+	my($date2,$lock)=split(',',$val2);
+	if($lock){
+	    $$rnlock++;
+	    return;
+	}
+    }
+
     my($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$val);
+    # count cases where cloneid is not accession (for information purposes)
     if($key ne $acc){
 	$$rnsid++;
     }
-    if($sv!~/^[1234]$/){
+    # count where sv is invalid (and generally reject)
+    if($sv!~/^\d+$/){
 	$$rnisv++;
-	next unless $fall;
+	return unless $fall;
     }
+    # count where clone is locked (and reject)
     push(@$ralist,$key);
 }
 
