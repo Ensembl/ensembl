@@ -7,8 +7,8 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor - 
-MySQL Database queries to load and store PredictionExons
+Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor -
+Performs database interaction related to PredictionTranscripts
 
 =head1 SYNOPSIS
 
@@ -17,7 +17,7 @@ $pta = $database_adaptor->get_PredictionTranscriptAdaptor();
 
 #get a slice on a region of chromosome 1
 $sa = $database_adaptor->get_SliceAdaptor();
-$slice = $sa->fetch_by_chr_start_end('1', 100000, 200000);
+$slice = $sa->fetch_by_region('x', 100000, 200000);
 
 #get all the prediction transcripts from the slice region
 $prediction_transcripts = @{$pta->fetch_all_by_Slice($slice)};
@@ -34,90 +34,63 @@ use vars qw( @ISA );
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::EnsEMBL::PredictionTranscript;
+use Bio::EnsEMBL::Utils::Exception qw(deprecate throw warning);
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );
 
 
-=head2 _tables
-
-  Arg [1]    : none
-  Example    : none
-  Description: Implements abstract superclass method to define the table used
-               to retrieve prediction transcripts from the database
-  Returntype : string
-  Exceptions : none
-  Caller     : generic_fetch
-
-=cut
+# _tables
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: Implements abstract superclass method to define the table used
+#               to retrieve prediction transcripts from the database
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : generic_fetch
 
 sub _tables {
   my $self = shift;
 
-  return ['prediction_transcript', 'p'];
+  return ['prediction_transcript', 'pt'];
 }
 
 
+# _columns
 
-=head2 _columns
-
-  Arg [1]    : none
-  Example    : none
-  Description: Implements abstract superclass method to define the columns
-               retrieved in database queries used to create prediction 
-               transcripts.
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : generic_fetch
-
-=cut
+#  Arg [1]    : none
+#  Example    : none
+#  Description: Implements abstract superclass method to define the columns
+#               retrieved in database queries used to create prediction 
+#               transcripts.
+#  Returntype : list of strings
+#  Exceptions : none
+#  Caller     : generic_fetch
+#
 
 sub _columns {
   my $self = shift;
 
-  return qw( p.prediction_transcript_id
-       p.contig_id
-       p.contig_start
-       p.contig_end
-       p.contig_strand
-       p.start_phase
-       p.exon_rank
-       p.score
-       p.p_value	
-       p.analysis_id
-       p.exon_count);
+  return qw( pt.prediction_transcript_id
+             pt.seq_region_id
+             pt.seq_region_start
+             pt.seq_region_end
+             pt.seq_region_strand
+             pt.analysis_id);
 }
 
-
-
-=head2 _final_clause
-
-  Arg [1]    : none
-  Example    : none
-  Description: Overrides superclass method to provide an additional table
-               joining coinstraint before the SQL query is performed.
-  Returntype : string
-  Exceptions : none
-  Caller     : generic_fetch
-
-=cut
-
-sub _final_clause {
-  my $self = shift;
- 
-  return  'order by p.prediction_transcript_id, p.exon_rank';
-}
 
 =head2 fetch_by_stable_id
 
 Arg [1]    : string $stable_id
              The stable id of the transcript to retrieve
-Example    : $trans = $trans_adptr->fetch_by_stable_id('3.10.190');
+Example    : $trans = $trans_adptr->fetch_by_stable_id('GENSCAN00000001234');
 Description: Retrieves a prediction transcript via its stable id.  Note that
-             the stable id is not actually stored in the database and is 
-             calculated upon retrieval as the contig.start.end of the 
+             the stable id is not actually stored in the database and is
+             calculated upon retrieval as the logic_name of the transcripts
+             analysis concatted with the '0'-left-padded internal identifier.
              prediction transcript
 Returntype : Bio::EnsEMBL::PredictionTranscript
 Caller     : general
@@ -126,31 +99,17 @@ Caller     : general
 
 sub fetch_by_stable_id {
   my $self = shift;
-  my $id = shift;
+  my $stable_id = shift;
 
-  $self->throw('ID argument is required') if(!$id);
+  throw('Stable_id argument expected') if(!$stable_id);
 
-  #strip the start/end off the end of the id to get the contig name
-  my @components = split(/\./, $id);
-  pop(@components);
-  pop(@components);
+  #take the last 11 digits
+  my $dbID = substr($stable_id, -11);
 
-  my $contig_name = join('.', @components);
-  my $contig = $self->db->get_RawContigAdaptor->fetch_by_name($contig_name);
+  #cast to an integer (remove lpadded 0s):
+  $dbID += 0;
 
-  $self->throw("unknown contig [$contig_name] in identifier [$id]") 
-    if(!$contig);
-  
-  #
-  # Retrieve all the prediction transcripts on the contig it is known to be on.
-  # Return the one found with the matching 'id'
-  #
-  foreach my $pt (@{$self->fetch_all_by_RawContig($contig)}) {
-    return $pt if($id eq $pt->stable_id);
-  }
-
-  #prediction transcript does not exist
-  $self->throw("No prediction transcipt exists with stable id [$id]");
+  return $self->fetch_by_dbID($dbID);
 }
 
 
@@ -178,176 +137,142 @@ sub fetch_by_stable_id {
 =cut
 
 sub _objs_from_sth {
-  my ($self, $sth, $mapper, $slice) = @_;
-  
-  my @out = ();
-  
-  my ($prediction_transcript_id, 
-      $contig_id, $contig_start, $contig_end, $contig_strand,
-      $start_phase, $exon_rank, $score, $p_value, $analysis_id,
-      $exon_count );
+  my ($self, $sth, $mapper, $dest_slice) = @_;
 
-  $sth->bind_columns(\$prediction_transcript_id, 
-		    \$contig_id, \$contig_start, \$contig_end, \$contig_strand,
-		    \$start_phase, \$exon_rank, \$score, \$p_value, 
-		    \$analysis_id,\$exon_count);
+  #
+  # This code is ugly because an attempt has been made to remove as many
+  # function calls as possible for speed purposes.  Thus many caches and
+  # a fair bit of gymnastics is used.
+  #
 
-  my $rca = $self->db->get_RawContigAdaptor;
-  my $aa  = $self->db->get_AnalysisAdaptor;
-  
-  my ($analysis, $contig, $pre_trans, $ptid, $on_slice_flag, $last_end,
-      $chr, $start, $end, $strand, 
-      $slice_start, $slice_end, $slice_strand,
-      $exon, $exon_start, $exon_end, $exon_strand,
-      $stable_start, $stable_end, $stable_ctg,
-      $transcript_slice_start, $transcript_slice_end );
-  my (%analysis_hash, %contig_hash);
+  my $sa = $self->db()->get_SliceAdaptor();
+  my $aa = $self->db()->get_AnalysisAdaptor();
 
-  if($slice) {
-    $slice_start  = $slice->chr_start;
-    $slice_end    = $slice->chr_end;
-    $slice_strand = $slice->strand;
+  my @ptranscripts;
+  my %analysis_hash;
+  my %slice_hash;
+  my %sr_name_hash;
+  my %sr_cs_hash;
+
+  my ($prediction_transcript_id,
+      $seq_region_id,
+      $seq_region_start,
+      $seq_region_end,
+      $seq_region_strand,
+      $analysis_id );
+
+  $sth->bind_columns(\$prediction_transcript_id,
+                     \$seq_region_id,
+                     \$seq_region_start,
+                     \$seq_region_end,
+                     \$seq_region_strand,
+                     \$analysis_id );
+
+  my $asm_cs;
+  my $cmp_cs;
+  my $asm_cs_vers;
+  my $asm_cs_name;
+  my $cmp_cs_vers;
+  my $cmp_cs_name;
+  if($mapper) {
+    $asm_cs = $mapper->assembled_CoordSystem();
+    $cmp_cs = $mapper->component_CoordSystem();
+    $asm_cs_name = $asm_cs->name();
+    $asm_cs_vers = $asm_cs->version();
+    $cmp_cs_name = $cmp_cs->name();
+    $cmp_cs_vers = $cmp_cs->version();
   }
 
-  $on_slice_flag = 0;
+  my $dest_slice_start;
+  my $dest_slice_end;
+  my $dest_slice_strand;
+  my $dest_slice_length;
+  if($dest_slice) {
+    $dest_slice_start  = $dest_slice->start();
+    $dest_slice_end    = $dest_slice->end();
+    $dest_slice_strand = $dest_slice->strand();
+    $dest_slice_length = $dest_slice->length();
+  }
 
-  my $prev_exon;
-  my $already_merged;
-  
-  while($sth->fetch) {
-    #create a new transcript for each new prediction transcript id
-    unless(defined $pre_trans && $ptid == $prediction_transcript_id) {
-      $pre_trans = Bio::EnsEMBL::PredictionTranscript->new;
+ FEATURE: while($sth->fetch()) {
 
-      $ptid = $prediction_transcript_id;
-      $pre_trans->dbID($ptid);
-      
-      unless($analysis = $analysis_hash{$analysis_id}) {
-	$analysis = $aa->fetch_by_dbID($analysis_id);
-	$analysis_hash{$analysis_id} = $analysis;
-      }
-      
-      $pre_trans->analysis($analysis);
-      $pre_trans->set_exon_count($exon_count);
-  
-      $prev_exon = undef;
-      $already_merged = 0;
+    #get the analysis object
+    my $analysis = $analysis_hash{$analysis_id} ||=
+      $aa->fetch_by_dbID($analysis_id);
 
-      if(@out) {
-	#throw away last pt if no exons or introns were on the slice
-	if($slice && ( $transcript_slice_end < 1 || 
-		       $transcript_slice_start > $slice->length() )) {
-	  pop @out;
-	} else {
-	  #set the stable_id of the previous prediction
-	  $out[$#out]->stable_id("$stable_ctg.$stable_start.$stable_end");
-	}
-      }
-      
-      push( @out, $pre_trans );
+    my $slice = $slice_hash{"ID:".$seq_region_id};
 
-      #reset values used for last predtrans
-      $stable_start = -1;
-      $stable_end   = -1;
-      $stable_ctg = '';
-
-      $transcript_slice_end = undef;
-      $transcript_slice_start = undef;
+    if(!$slice) {
+      $slice = $sa->fetch_by_seq_region_id($seq_region_id);
+      $slice_hash{"ID:".$seq_region_id} = $slice;
+      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id} = $slice->coord_system();
     }
 
-    #recalculate stable id values
-    if($stable_start == -1 || $contig_start < $stable_start) {
-      $stable_start = $contig_start;
-    }
-    if($contig_end > $stable_end) {
-      $stable_end = $contig_end;
-    }
-    unless($contig = $contig_hash{$contig_id}) {
-      $contig = $rca->fetch_by_dbID($contig_id);
-      $contig_hash{$contig_id} = $contig;
-    }
-    $stable_ctg = $contig->name;
+    #
+    # remap the feature coordinates to another coord system 
+    # if a mapper was provided
+    #
+    if($mapper) {
+      my $sr_name = $sr_name_hash{$seq_region_id};
+      my $sr_cs   = $sr_cs_hash{$seq_region_id};
 
-    if($slice) {
-      #a slice was passed in so we want slice coords
+      ($sr_name,$seq_region_start,$seq_region_end,$seq_region_strand) =
+        $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
+			 $seq_region_strand, $sr_cs);
 
-      #convert contig coords to assembly coords
-      ($chr, $start, $end, $strand) = 
-	$mapper->fast_to_assembly($contig_id, $contig_start,
-				  $contig_end, $contig_strand);
-      
-      #if mapped to gap skip
-      next unless(defined $start);
+      #skip features that map to gaps or coord system boundaries
+      next FEATURE if(!defined($sr_name));
 
-      
-      #convert to slice coordinates
-      if($slice_strand == -1) {
-	$exon_start  = $slice_end - $end   + 1;
-	$exon_end    = $slice_end - $start + 1;
-	$exon_strand = $strand * -1;
-
-	#merge adjacent exons into a single exon
-	if($prev_exon && $prev_exon->start == $exon->end + 1) {
-	  $exon->end($prev_exon->end);
-	  $already_merged++;
-	}
-
+      #get a slice in the coord system we just mapped to
+      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
+        $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
+          $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
+                               $cmp_cs_vers);
       } else {
-	$exon_start  = $start - $slice_start + 1;
-	$exon_end    = $end   - $slice_start   + 1;
-	$exon_strand = $strand;
+        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
+          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
+                               $asm_cs_vers);
+      }
+    }
 
-	#merge adjacent exons into a single exon
-	if($prev_exon && $exon->start == $prev_exon->end +1) {
-	  $exon->start($prev_exon->start);
-	  $already_merged++;
+    #
+    # If a destination slice was provided convert the coords
+    # If the dest_slice starts at 1 and is foward strand, nothing needs doing
+    #
+    if($dest_slice) {
+      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
+	if($dest_slice_strand == 1) {
+	  $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+	  $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+	} else {
+	  my $tmp_seq_region_start = $seq_region_start;
+	  $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+	  $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+	  $seq_region_strand *= -1;
 	}
-      }   
+	
+	#throw away features off the end of the requested slice
+	if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+	  next FEATURE;
+	}
+      }
 
-      if( !defined $transcript_slice_start || 
-	  $transcript_slice_start > $exon_start ) {
-	$transcript_slice_start = $exon_start;
-      }
-      
-      if( ! defined $transcript_slice_end ||
-	  $transcript_slice_end < $exon_end ) {
-	$transcript_slice_end = $exon_end;
-      }
-      #use slice as the contig instead of the raw contig
-      $contig = $slice;
-    } else {
-      #we just want plain old contig coords
-      $exon_start =  $contig_start;
-      $exon_end   =  $contig_end;
-      $exon_strand = $contig_strand;
+      $slice = $dest_slice;
     }
 
-    #create an exon and add it to the prediction transcript
-    $exon = Bio::EnsEMBL::Exon->new_fast($contig, 
-					 $exon_start, 
-					 $exon_end,
-					 $exon_strand);
-    $exon->phase( $start_phase );
-    $exon->end_phase( ($exon_end - $exon_start + 1 + $start_phase) % 3 );
-    $exon->score( $score );
-    $exon->p_value( $p_value );
-
-    $prev_exon = $exon;
-    $pre_trans->add_Exon($exon, $exon_rank - $already_merged);
-  }
-  
-  #throw away last  pred_transcript if it had no exons overlapping the slice
-  if(@out) {
-    if($slice && ( $transcript_slice_end < 1 || 
-		   $transcript_slice_start > $slice->length() )) {
-      pop @out;
-    } else {
-      #set the stable id of the last prediction transcript
-      $out[$#out]->stable_id("$stable_ctg.$stable_start.$stable_end");
-    }
+    #finally, create the new repeat feature
+    push @ptranscripts, Bio::EnsEMBL::PredictionTranscript->new
+      ( '-start'         =>  $seq_region_start,
+        '-end'           =>  $seq_region_end,
+        '-strand'        =>  $seq_region_strand,
+        '-adaptor'       =>  $self,
+        '-slice'         =>  $slice,
+        '-analysis'      =>  $analysis,
+        '-dbID'          =>  $prediction_transcript_id );
   }
 
-  return \@out;
+  return \@ptranscripts;
 }
 
 
@@ -367,77 +292,61 @@ sub _objs_from_sth {
 sub store {
   my ( $self, @pre_transcripts ) = @_;
 
-  my $exon_sql = q{
-      INSERT INTO prediction_transcript ( prediction_transcript_id, exon_rank, 
-					  contig_id, contig_start, contig_end, 
-					  contig_strand, start_phase, score, 
-					  p_value, analysis_id, exon_count )
-	VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
-      };
+  my $ptstore_sth = $self->prepare
+    ("INSERT INTO prediction_transcript (seq_region_id, seq_region_start, " .
+     "                    seq_region_end, seq_region_strand, analysis_id) " .
+     "VALUES( ?, ?, ?, ?, ?)");
 
-  my $exonst = $self->prepare($exon_sql);
+  my $db = $self->db();
+  my $analysis_adaptor = $db->get_AnalysisAdaptor();
+  my $pexon_adaptor = $db->get_PredictionExonAdaptor();
 
-  foreach my $pre_trans (@pre_transcripts) {
-    if( ! $pre_trans->isa('Bio::EnsEMBL::PredictionTranscript') ) {
-      $self->throw("$pre_trans is not a EnsEMBL PredictionTranscript " 
-		   . "- not dumping!");
+  FEATURE: foreach my $pt (@pre_transcripts) {
+    if(!ref($pt) || !$pt->isa('Bio::EnsEMBL::PredictionTranscript')) {
+      throw('Expected PredictionTranscript argument not [' . ref($pt).']');
     }
-    
-    if( $pre_trans->dbID && $pre_trans->adaptor == $self ) {
-      $self->warn("Already stored");
+
+    #skip prediction transcripts that have already been stored
+    if($pt->is_stored($db)) {
+      warning('Not storing already stored prediction transcript '. $pt->dbID);
+      next FEATURE;
     }
-        
-    my $exonId = undef;    
-    my @pt_exons = @{$pre_trans->get_all_Exons()};
-    my $dbID = undef;
+
+    #get analysis and store it if it is not in the db
+    my $analysis = $pt->analysis();
+    if(!$analysis) {
+      throw('Prediction transcript must have analysis to be stored.');
+    }
+    if(!$analysis->is_stored($db)) {
+      $analysis_adaptor->store($analysis);
+    }
+
+    #ensure that the transcript coordinates are correct, they may not be,
+    #if somebody has done some exon coordinate juggling and not recalculated
+    #the transcript coords.
+    $pt->recalculate_coordinates();
+
+    my $original = $pt;
+    my $seq_region_id;
+    ($pt, $seq_region_id) = $self->_pre_store($pt);
+
+    #store the prediction transcript
+    $ptstore_sth->execute($seq_region_id,
+                          $pt->start(),
+                          $pt->end(),
+                          $pt->strand(),
+                          $analysis->dbID());
+
+    my $pt_id = $ptstore_sth->{'mysql_insertid'};
+    $original->dbID($pt_id);
+    $original->adaptor($self);
+
+    #store the exons
     my $rank = 1;
-    
-    my @exons;
-    foreach my $e (@pt_exons) {
-      if($e && (!$e->contig || $e->contig->isa('Bio::EnsEMBL::Slice'))) {
-	$self->throw('PredictionTranscript must be in contig coords to store');
-      }
-      
-      if($e && $e->isa('Bio::EnsEMBL::StickyExon')) {
-	push @exons, @{$e->get_all_component_Exons};
-      } else {
-	push @exons, $e;
-      }
+    foreach my $pexon (@{$original->get_all_Exons}) {
+      $pexon_adaptor->store($pexon, $pt_id, $rank++);
     }
-
-    for my $exon ( @exons ) {
-      if( ! defined $exon ) { $rank++; next; }
-      
-      my $contig_id = $exon->contig->dbID();
-      my $contig_start = $exon->start();
-      my $contig_end = $exon->end();
-      my $contig_strand = $exon->strand();
-      my $start_phase = $exon->phase();
-      my $end_phase = $exon->end_phase();
-      my $score = $exon->score();
-      my $p_value = $exon->p_value();
-      my $analysis = $pre_trans->analysis->dbID;
-      
-      if( $rank == 1 ) {
-	$exonst->execute( undef, 1, $contig_id, $contig_start, 
-			  $contig_end, $contig_strand,
-			  $start_phase, $score, $p_value, $analysis, 
-			  scalar( @exons ));
-	$dbID = $exonst->{'mysql_insertid'};
-      } else {
-	$exonst->execute( $dbID, $rank, $contig_id, $contig_start, 
-			  $contig_end, $contig_strand,
-			  $start_phase, $score, $p_value, $analysis, 
-			  scalar( @exons ) );
-      }
-      $rank++;
-    }
-    
-    $pre_trans->dbID( $dbID );
-    $pre_trans->adaptor( $self );
   }
-
-  $exonst->finish;
 }
 
 
@@ -456,18 +365,30 @@ sub store {
 sub remove {
   my $self = shift;
   my $pre_trans = shift;
-  
-  if ( ! defined $pre_trans->dbID() ) {
+
+  if(!ref($pre_trans)||!$pre_trans->isa('Bio::EnsEMBL::PredictionTranscript')){
+    throw('Expected PredictionTranscript argument.');
+  }
+
+  if(!$pre_trans->is_stored($self->db())) {
+    warning('PredictionTranscript is not stored in this DB - not removing.');
     return;
   }
 
-  my $sth = $self->prepare( "DELETE FROM prediction_transcript 
+  #remove all associated prediction exons
+  my $pexon_adaptor = $self->get_PredictionExonAdaptor();
+  foreach my $pexon (@{$pre_trans->get_all_Exons}) {
+    $pexon_adaptor->remove($pexon);
+  }
+
+  #remove the prediction transcript
+  my $sth = $self->prepare( "DELETE FROM prediction_transcript
                              WHERE prediction_transcript_id = ?" );
   $sth->execute( $pre_trans->dbID );
 
-  # uhh, didnt know another way of resetting to undef ...
-  $pre_trans->{dbID} = undef;
-  $pre_trans->{adaptor} = undef;
+  #unset the adaptor and internal id
+  $pre_trans->dbID(undef);
+  $pre_trans->adaptor(undef);
 }
 
 
@@ -475,7 +396,8 @@ sub remove {
 
   Arg [1]    : none
   Example    : @feature_ids = @{$prediction_transcript_adaptor->list_dbIDs()};
-  Description: Gets an array of internal ids for all prediction transcript features in the current db
+  Description: Gets an array of internal ids for all prediction transcript
+               features in the current db
   Returntype : list of ints
   Exceptions : none
   Caller     : ?

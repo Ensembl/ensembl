@@ -36,7 +36,7 @@ package Bio::EnsEMBL::Utils::SeqDumper;
 use IO::File;
 use vars qw(@ISA);
 
-@ISA = qw(Bio::EnsEMBL::Root);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 #keys must be uppercase
 my $DUMP_HANDLERS = 
@@ -112,12 +112,12 @@ sub new {
 sub enable_feature_type {
   my ($self, $type) = @_;
 
-  $type || $self->throw("type arg is required");
+  $type || throw("type arg is required");
 
   if(exists($self->{'feature_types'}->{$type})) {
     $self->{'feature_types'}->{$type} = 1;
   } else {
-    $self->warn("unknown feature type '$type'\n" .
+    warning("unknown feature type '$type'\n" .
 	  "valid types are: " . join(',', keys %{$self->{'feature_types'}})); 
   }
 }
@@ -141,10 +141,9 @@ sub enable_feature_type {
 sub attach_database {
   my ($self, $name, $db) = @_;
 
-  $name || $self->throw("name arg is required");
+  $name || throw("name arg is required");
   unless($db && ref($db) && $db->isa('Bio::EnsEMBL::DBSQL::DBConnection')) {
-    $self->throw("db arg must be a Bio::EnsEMBL::DBSQL::DBConnection not a " .
-		 "[$db]");
+    throw("db arg must be a Bio::EnsEMBL::DBSQL::DBConnection not a [$db]");
   }
 
   $self->{'attached_dbs'}->{$name} = $db;
@@ -167,7 +166,7 @@ sub attach_database {
 sub get_database {
   my ($self, $name) = @_;
 
-  $name || $self->throw("name arg is required");
+  $name || throw("name arg is required");
   
   return $self->{'attached_dbs'}->{$name};
 }
@@ -190,7 +189,7 @@ sub get_database {
 sub remove_database {
   my ($self, $name) = @_;
 
-  $name || $self->throw("name arg is required");
+  $name || throw("name arg is required");
 
   if(exists $self->{'attached_dbs'}->{$name}) {
     return delete $self->{'attached_dbs'}->{$name};
@@ -215,12 +214,12 @@ sub remove_database {
 sub disable_feature_type {
   my ($self, $type) = @_;
   
-  $type || $self->throw("type arg is required");
+  $type || throw("type arg is required");
 
   if(exists($self->{'feature_types'}->{$type})) {
     $self->{'feature_types'}->{$type} = 0;
   } else {
-    $self->warn("unknown feature type '$type'\n" .
+    warning("unknown feature type '$type'\n" .
 	    "valid types are: " . join(',', keys %{$self->{'feature_types'}}));
   }
 }
@@ -242,12 +241,12 @@ sub disable_feature_type {
 sub is_enabled {
   my ($self, $type) = @_;
 
-  $type || $self->throw("type arg is required");
+  $type || throw("type arg is required");
 
   if(exists($self->{'feature_types'}->{$type})) {
     return $self->{'feature_types'}->{$type};
   } else {
-    $self->warn("unknown feature type '$type'\n" .
+    warning("unknown feature type '$type'\n" .
 	   "valid types are: " . join(',', keys %{$self->{'feature_types'}}));
   }
 }
@@ -275,24 +274,24 @@ sub is_enabled {
 sub dump {
   my ($self, $slice, $format, $outfile) = @_;
 
-  $format || $self->throw("format arg is required");
-  $slice  || $self->throw("slice arg is required");
+  $format || throw("format arg is required");
+  $slice  || throw("slice arg is required");
 
   my $dump_handler = $DUMP_HANDLERS->{uc($format)};
 
   unless($dump_handler) {
-    $self->throw("No dump handler is defined for format $format\n");
+    throw("No dump handler is defined for format $format\n");
   }
 
 
   my $FH = IO::File->new;;
   if($outfile) {
-    $FH->open(">$outfile") or $self->throw("Could not open file $outfile");
+    $FH->open(">$outfile") or throw("Could not open file $outfile");
   } else {
     $FH = \*STDOUT;
     #mod_perl did not like the following
     #$FH->fdopen(fileno(STDOUT), "w") 
-    #  or $self->throw("Could not open currently selected output filehandle " .
+    #  or throw("Could not open currently selected output filehandle " .
     #		      "for writing");
   }
 
@@ -321,8 +320,45 @@ sub dump_embl {
   my $slice = shift;
   my $FH   = shift;
 
-  my $id = $slice->name;
   my $len = $slice->length;
+
+  my $version;
+  my $id;
+
+  my $cs = $slice->coord_system();
+  my $name_str = $cs->name() . ' ' . $slice->seq_region_name();
+  $name_str .= ' ' . $cs->version if($cs->version);
+
+  my $start = $slice->start;
+  my $end   = $slice->end;
+
+  #determine if this slice is the entire seq region
+  #if it is then we just use the name as the id
+  my $slice_adaptor = $slice->adaptor();
+  my $full_slice =
+    $slice->adaptor->fetch_by_region($cs->name,
+                                    $slice->seq_region_name,
+                                    undef,undef,undef,
+                                    $cs->version);
+
+
+  if($full_slice->name eq $slice->name) {
+    $name_str .= ' full sequence';
+    $id = $slice->seq_region_name();
+    my @acc_ver = split(/\./, $id);
+    if(@acc_ver == 2) {
+      $id = $acc_ver[0];
+      $version = $acc_ver[0] . $acc_ver[1];
+    } elsif(@acc_ver == 1 && $cs->version()) {
+      $version = $id . $cs->version();
+    } else {
+      $version = $id;
+    }
+  } else {
+    $name_str .= ' partial sequence';
+    $id = $slice->name();
+    $version = $id;
+  }
 
 
   #line breaks are allowed near the end of the line on ' ', "\t", "\n", ',' 
@@ -335,27 +371,29 @@ sub dump_embl {
   my $EMBL_HEADER = 
 '@<   ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<~
 ';
-  
+
   #ID and moltype
   my $VALUE = "$id    ENSEMBL; DNA; PLN; $len BP.";
   $self->write($FH, $EMBL_HEADER, 'ID', $VALUE);  
   print $FH "XX\n";
-  
+
   #Accession
   $self->write($FH, $EMBL_HEADER, 'AC', $id);
   print $FH "XX\n";
-  
+
   #Version
-  $self->write($FH, $EMBL_HEADER, 'SV', "$id.ENSEMBL_DB:".
-	       $slice->adaptor->db->dbname);
+  $self->write($FH, $EMBL_HEADER, 'SV', $version);
   print $FH "XX\n";
 
   #Date
   $self->write($FH, $EMBL_HEADER, 'DT', $self->_date_string);
   print $FH "XX\n";
 
+  my $species   = $slice->adaptor->db->get_MetaContainer->get_Species();
+
   #Description
-  $self->write($FH, $EMBL_HEADER, 'DE', "Reannotated sequence via EnsEMBL");
+  $self->write($FH, $EMBL_HEADER, 'DE', $species->binomial .
+               " $name_str $start..$end reannotated via EnsEMBL");
   print $FH "XX\n";
 
   #key words
@@ -363,7 +401,6 @@ sub dump_embl {
   print $FH "XX\n";
 
   #Species
-  my $species   = $slice->adaptor->db->get_MetaContainer->get_Species();
   my $species_name = $species->binomial();
   if(my $cn = $species->common_name()) {
     $species_name .= " ($cn)";
@@ -457,19 +494,46 @@ sub dump_genbank {
 '     ^<<<<<<<<<<<<<< ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<~~
 ';
 
-  my $id = $slice->name;
-  my $length = $slice->length;
+  my $version;
+  my $id;
 
-  my ($name_str, $start, $end);
-  if($slice->isa('Bio::EnsEMBL::Slice')) {
-    $name_str  = "chromosome " . $slice->chr_name;
-    $start = $slice->chr_start;
-    $end  = $slice->chr_end;
+  my $cs = $slice->coord_system();
+
+  my $name_str = $cs->name() . ' ' . $slice->seq_region_name();
+
+  $name_str .= ' ' . $cs->version if($cs->version);
+
+  #determine if this slice is the entire seq region
+  #if it is then we just use the name as the id
+  my $slice_adaptor = $slice->adaptor();
+  my $full_slice =
+    $slice->adaptor->fetch_by_region($cs->name,
+                                    $slice->seq_region_name,
+                                    undef,undef,undef,
+                                    $cs->version);
+
+
+  if($full_slice->name eq $slice->name) {
+    $name_str .= ' full sequence';
+    $id = $slice->seq_region_name();
+    my @acc_ver = split(/\./, $id);
+    if(@acc_ver == 2) {
+      $id = $acc_ver[0];
+      $version = $acc_ver[0] . $acc_ver[1];
+    } elsif(@acc_ver == 1 && $cs->version()) {
+      $version = $id . $cs->version();
+    } else {
+      $version = $id;
+    }
   } else {
-    $name_str = $slice->name;
-    $start = 1;
-    $end   = $slice->length();
+    $name_str .= ' partial sequence';
+    $id = $slice->name();
+    $version = $id;
   }
+
+  my $length = $slice->length;
+  my $start = $slice->start();
+  my $end   = $slice->end();
 
   my $date = $self->_date_string;
 
@@ -477,22 +541,20 @@ sub dump_genbank {
 
   #LOCUS
   my $tag   = 'LOCUS';
-  my $value = "ENS:$id $length bp DNA HTG $date";
+  my $value = "$id $length bp DNA HTG $date";
   $self->write($FH, $GENBANK_HEADER, $tag, $value);
-
 
   #DEFINITION
   $tag   = "DEFINITION";
-  $value = $species->binomial . ' ' . $slice->adaptor->db->assembly_type . 
-    " assembly reannotated via EnsEMBL DNA, $name_str $start..$end";
+  $value = $species->binomial . 
+    " $name_str $start..$end reannotated via EnsEMBL";
   $self->write($FH, $GENBANK_HEADER, $tag, $value);
 
   #ACCESSION
   $self->write($FH, $GENBANK_HEADER, 'ACCESSION', $id);
 
   #VERSION
-  $self->write($FH, $GENBANK_HEADER, 'VERSION', "$id.ENSEMBL_DB:".
-	       $slice->adaptor->db->dbname);
+  $self->write($FH, $GENBANK_HEADER, 'VERSION', $version);
 
   # KEYWORDS
   $self->write($FH, $GENBANK_HEADER, 'KEYWORDS', '.');
@@ -512,14 +574,12 @@ sub dump_genbank {
   foreach my $comment (@COMMENTS) {
     $self->write($FH, $GENBANK_HEADER, 'COMMENT', $comment);
   }
-  
-  
+
   ####################
   # DUMP FEATURE TABLE
   ####################
   print $FH "FEATURES             Location/Qualifiers\n";
   $self->_dump_feature_table($slice, $FH, $GENBANK_FT);
-
 
   ####################
   # DUMP SEQUENCE
@@ -594,33 +654,32 @@ sub _dump_feature_table {
     if($self->is_enabled('gene')) {
       push @gene_slices, $slice;
     }
-    
+
     # Retrieve slices of other database where we need to pull genes from
-    
+
     my $gene_dbs = {'vegagene' => 'vega',
-		    'estgene'  => 'estgene'};
-    
+                    'estgene'  => 'estgene'};
+
     foreach my $gene_type (keys %$gene_dbs) {
       if($self->is_enabled($gene_type)) {
-	my $db = $self->get_database($gene_dbs->{$gene_type});
-	if($db) {
-	  warn "adding gene slice for db $gene_dbs->{$gene_type}";
-	  push @gene_slices, $db->get_SliceAdaptor->fetch_by_chr_start_end
-	    ($slice->chr_name, $slice->chr_start, $slice->chr_end);
-	} else {
-	  $self->warn("A [". $gene_dbs->{$gene_type} ."] database must be " .
-		     "attached to this SeqDumper\n(via a call to " .
-		     "attach_database) to retrieve genes of type [$gene_type]");
-	}
+        my $db = $self->get_database($gene_dbs->{$gene_type});
+        if($db) {
+          push @gene_slices, $db->get_SliceAdaptor->fetch_by_chr_start_end
+            ($slice->chr_name, $slice->chr_start, $slice->chr_end);
+        } else {
+          warning("A [". $gene_dbs->{$gene_type} ."] database must be " .
+                  "attached to this SeqDumper\n(via a call to " .
+                  "attach_database) to retrieve genes of type [$gene_type]");
+        }
       }
     }
   }
-  
+
   foreach my $gene_slice (@gene_slices) {
     foreach my $gene (@{$gene_slice->get_all_Genes}) {
       foreach my $transcript (@{$gene->get_all_Transcripts}) {
         my $translation = $transcript->translation;
-        
+
         # normal transcripts get dumped differently than pseudogenes
         if($translation) {
           #normal transcript
@@ -638,7 +697,7 @@ sub _dump_feature_table {
           $self->write(@ff,'', '/protein_id="'.$translation->stable_id().'"');
           $self->write(@ff,''
                        ,'/note="transcript_id='.$transcript->stable_id().'"');
-          
+
           foreach my $dbl (@{$transcript->get_all_DBLinks}) {
             $value = '/db_xref="'.$dbl->dbname().':'.$dbl->display_id().'"';
             $self->write(@ff, '', $value);
@@ -661,13 +720,12 @@ sub _dump_feature_table {
         }
       }
     }
-      
+
     # exons
     foreach my $gene (@{$gene_slice->get_all_Genes}) {
       foreach my $exon (@{$gene->get_all_Exons}) {
-	$self->write(@ff,'exon', $self->features2location([$exon]));
-	$self->write(@ff,''    , '/note="exon_id='.$exon->stable_id().'"');
-	
+        $self->write(@ff,'exon', $self->features2location([$exon]));
+        $self->write(@ff,''    , '/note="exon_id='.$exon->stable_id().'"');
       }
     }
   }
@@ -682,8 +740,9 @@ sub _dump_feature_table {
       push @genscan_exons, @$exons;
       $self->write(@ff, 'mRNA', $self->features2location($exons));
       $self->write(@ff, '', '/product="'.$transcript->translate()->seq().'"');
+      $self->write(@ff, '', '/note="identifier='.$transcript->stable_id.'"');
       $self->write(@ff, '', '/note="Derived by automated computational' .
-		   ' analysis using gene prediction method:' . 
+		   ' analysis using gene prediction method:' .
 		   $transcript->analysis->logic_name . '"');
     }
   }
@@ -704,9 +763,9 @@ sub _dump_feature_table {
       $self->write(@ff, ''         , '/replace="'.$snp->alleles.'"'); 
       #$self->write(@ff, ''         , '/evidence="'.$snp->status.'"'); 
       foreach my $link ($snp->each_DBLink) {
-	my $id = $link->primary_id;
-	my $db = $link->database;
-	$self->write(@ff, '', "/db_xref=\"$db:$id\""); 
+        my $id = $link->primary_id;
+        my $db = $link->database;
+        $self->write(@ff, '', "/db_xref=\"$db:$id\""); 
       }
     }
 
@@ -715,7 +774,7 @@ sub _dump_feature_table {
 
   #
   # similarity features
-  #     
+  #
   if($self->is_enabled('similarity')) {
     foreach my $sim (@{$slice->get_all_SimilarityFeatures}) {
       $self->write(@ff, 'misc_feature', $self->features2location([$sim]));
@@ -742,16 +801,18 @@ sub _dump_feature_table {
   if($self->is_enabled('marker') && $slice->can('get_all_MarkerFeatures')) {
     foreach my $mf (@{$slice->get_all_MarkerFeatures}) {
       $self->write(@ff, 'STS', $self->features2location([$mf]));
-      $self->write(@ff, ''   , '/standard_name="' . 
-		   $mf->marker->display_MarkerSynonym->name . '"');
+      if($mf->marker->display_MarkerSynonym) {
+        $self->write(@ff, ''   , '/standard_name="' .
+                     $mf->marker->display_MarkerSynonym->name . '"');
+      }
 
 
       #grep out synonyms without a source
       my @synonyms = @{$mf->marker->get_all_MarkerSynonyms};
       @synonyms = grep {$_->source } @synonyms;
       foreach my $synonym (@synonyms) {
-	$self->write(@ff, '', '/db_xref="'.$synonym->source.
-		     ':'.$synonym->name.'"');
+        $self->write(@ff, '', '/db_xref="'.$synonym->source.
+                     ':'.$synonym->name.'"');
       }
       $self->write(@ff, '', '/note="map_weight='.$mf->map_weight.'"');
     }
@@ -760,13 +821,14 @@ sub _dump_feature_table {
   #
   # contigs
   #
-  if($self->is_enabled('contig') && $slice->can('get_tiling_path')) {
-    foreach my $tile (@{$slice->get_tiling_path}) {
-      $self->write(@ff, 'misc_feature', 
-		   $tile->assembled_start .'..'. $tile->assembled_end);
-      $self->write(@ff, '', '/note="contig '.$tile->component_Seq->name .
-		   ' ' . $tile->component_start . '..' . $tile->component_end.
-		    '(' . $tile->component_ori . ')"');
+  if($self->is_enabled('contig')) {
+    foreach my $segment (@{$slice->project('seqlevel')}) {
+      my ($start, $end, $slice) = @$segment;
+      $self->write(@ff, 'misc_feature',
+                   $start .'..'. $end);
+      $self->write(@ff, '', '/note="contig '.$slice->seq_region_name .
+		   ' ' . $slice->start . '..' . $slice->end .
+		    '(' . $slice->strand . ')"');
     }
   }
 
@@ -793,9 +855,13 @@ sub dump_fasta {
   my $slice = shift;
   my $FH   = shift;
 
-
-  my $species = 
-    $slice->adaptor->db->get_MetaContainer->get_Species->binomial();
+  my $species;
+  my $spec = $slice->adaptor->db->get_MetaContainer->get_Species();
+  if($spec) {
+    $species = $spec->binomial();
+  } else {
+    $species = '';
+  }
   
   my $name = $slice->name;
   my $start = 1;
@@ -835,75 +901,43 @@ sub dump_fasta {
 sub features2location {
   my $self = shift;
   my $features = shift;
-  
+
   my @join = ();
 
   foreach my $f (@$features) {
-    my $ctg = $f->contig;
+    my $slice = $f->slice;
+    my $start = $f->start();
+    my $end   = $f->end();
+    my $strand = $f->strand();
 
-    if($ctg->isa('Bio::EnsEMBL::Slice')) {
-      if($f->start >= 1 && $f->end <= $ctg->length) {
-	#this feature in on a slice and doesn't lie outside the boundary
+    if($start >= 1 && $end <= $slice->length) {
+      #this feature in on a slice and doesn't lie outside the boundary
 	
-	if($f->strand() == 1) {
-	  push @join, $f->start()."..".$f->end();
-	} else {
-	  push @join, "complement(".$f->start()."..".$f->end().")";
-	}
+      if($strand == 1) {
+        push @join, "$start..$end";
       } else {
-	my @fs = ();
-	#this feature is outside the boundary of the dump, 
-	#convert to clone coords
-	if($ctg->isa('Bio::EnsEMBL::Slice')) {
-	  #copy the feature, and transform to contig coords
-	my $new_f;
-	%$new_f = %$f;
-	bless $new_f, ref $f;
-	push @fs, $new_f->transform;
-      }
-	
-	if($fs[0]->isa('Bio::EnsEMBL::StickyExon')) {
-	  @fs = @{$fs[0]->get_all_component_Exons};
-	}
-	
-	#use the accession:x-y format
-	foreach my $feat (@fs) {
-	  my $contig = $feat->contig;
-	  my $clone = $contig->clone;
-	  my $acc;
-	  if($clone->embl_id) {
-	    $acc = $clone->embl_id .'.'. $clone->embl_version;
-	  } else {
-	    $acc = $clone->id;
-	  }
-	  my $start = $feat->start + $contig->embl_offset - 1;
-	  my $end   = $feat->end + $contig->embl_offset - 1;
-	  my $strand = $feat->strand;
-	  if($strand == 1) {
-	    push @join, "$acc:$start..$end";
-	  } else {
-	    push @join, "complement($acc:$start..$end)";
-	  }
-	}
+        push @join, "complement($start..$end)";
       }
     } else {
-      #handle features in contig coordinates
-
-      my $start = $f->start;
-      my $end = $f->end;
-
-      if($start < 1 || $end > $ctg->length) {
-	$self->throw("Feature off end of contig boundary");
-      }
-
-      if($f->strand == -1) {
-	push @join, "complement($start..$end)";
-      } else {
-	push @join, "($start..$end)";
+      my @fs = ();
+      #this feature is outside the boundary of the dump,
+      #XXX TBD This should probably be CLONE coords but 2 step mapping is not
+      # yet implemented and 'seqlevel' is guaranteed to be 1step
+      my $projection = $f->project('seqlevel');
+      foreach my $segment (@$projection) {
+        my $slice = $segment->[2];
+        my $slc_start = $slice->start();
+        my $slc_end   = $slice->end();
+        my $seq_reg   = $slice->seq_region_name();
+        if($slice->strand == 1) {
+          push @join, "$seq_reg:$slc_start..$slc_end";
+        } else {
+          push @join, "complement($seq_reg:$slc_start..$slc_end)";
+        }
       }
     }
   }
-    
+
   my $out = join ',', @join;
 
   if(scalar @join > 1) {

@@ -36,9 +36,10 @@ package Bio::EnsEMBL::Map::Qtl;
 use strict;
 use vars qw(@ISA);
 
-use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Storable;
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Storable);
 
 
 
@@ -62,69 +63,24 @@ use Bio::EnsEMBL::Root;
 =cut
 
 sub new {
-  my ( $class, $dbID, $adaptor, $flank_marker_1, $peak_marker, 
+  my ( $class, $dbID, $adaptor, $flank_marker_1, $peak_marker,
        $flank_marker_2, $trait, $lod_score,
        $synonyms ) = @_;
 
   $class = ref( $class ) ||$class;
   my $self = bless( {
-		     'dbID' => $dbID,
-		     'adaptor' => $adaptor,
+		     'dbID'           => $dbID,
+		     'adaptor'        => $adaptor,
 		     'flank_marker_1' => $flank_marker_1,
 		     'flank_marker_2' => $flank_marker_2,
-		     'peak_marker' => $peak_marker,
-		     'trait' => $trait,
-		     'lod_score' => $lod_score,
-		     'synonyms' => $synonyms
+		     'peak_marker'    => $peak_marker,
+		     'trait'          => $trait,
+		     'lod_score'      => $lod_score,
+		     'synonyms'       => $synonyms
 		    }, $class );
+
   return $self;
 }
-
-
-
-=head2 dbID
-
-  Arg  [1]   : int $dbID
-  Example    : none
-  Description: get/set/clear attribute dbID
-  Returntype : int
-  Exceptions : none
-  Caller     : DBSQL::QtlAdaptor
-
-=cut
-
-sub dbID {
-  my $self = shift;
-  
-  if(@_) {
-    $self->{'dbID'} = shift;
-  }
-
-  return $self->{'dbID'};
-}
-
-
-=head2 adaptor
-
-  Arg [1]    : Bio::EnsEMBL::Map::DBSQL::QtlAdaptor $adaptor
-  Example    : none
-  Description: Getter/Setter attribute adaptor
-  Returntype : Bio::EnsEMBL::Map::DBSQL::QtlAdaptor
-  Exceptions : none
-  Caller     : DBSQL::QtlAdaptor
-
-=cut
-
-sub adaptor {
-  my $self = shift;
-
-  if(@_) {
-    $self->{'adaptor'} = shift;
-  }
-
-  return $self->{'adaptor'};
-}
-
 
 
 =head2 add_synonym
@@ -145,9 +101,9 @@ sub add_synonym {
   my $self = shift;
   my $source = shift;
   my $identifier = shift;
- 
+
   unless($source && $identifier) {
-    $self->throw('Source and identifier arguments are required');
+    throw('Source and identifier arguments are required');
   }
 
   $self->{'synonyms'}->{$source} = $identifier;
@@ -157,7 +113,7 @@ sub add_synonym {
 =head2 get_synonyms
 
   Arg [1]    : none
-  Example    : 
+  Example    :
      foreach my $source ($keys %{$qtl->get_synonyms}) {
        print $source . ':'. $qtl->get_synonyms->{$source};
      }
@@ -338,14 +294,11 @@ This method is deprecated.  Use get_synonyms or add_synonym instead.
 sub source_database {
   my $self = shift;
 
-  my ($f, $p, $l) = caller;
-
-  $self->warn("$f:$l: call to deprecated method Qtl::source_database.".
-	      " Use Qtl::get_synonyms or Qtl::add_synonym instead");
+  deprecate('Use get_synonyms or add_synonym instead');
 
   my $syns = $self->get_synonyms;
   my ($source) = keys %$syns;
-  
+
   return $source || '';
 }
 
@@ -359,13 +312,11 @@ This method is deprecated. Use get_synonyms or add_synonym instead.
 sub source_primary_id {
   my $self = shift;
 
-  my ($f, $p, $l) = caller;
-  $self->warn("$f:$l: call to deprecated method Qtl::source_database.".
-	      " Use Qtl::get_synonyms or Qtl::add_synonym instead");
+  deprecate('Use get_synonyms or add_synonym instead');
 
   my $syns = $self->get_synonyms;
   my ($source) = keys %$syns;
-  
+
   if($source) {
     return $syns->{$source};
   }

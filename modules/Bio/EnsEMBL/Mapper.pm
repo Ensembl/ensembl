@@ -50,18 +50,15 @@ Internal methods are usually preceded with a _
 =cut
 
 package Bio::EnsEMBL::Mapper;
-use vars qw(@ISA);
 use strict;
+use integer;
 
-
-use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Mapper::Pair;
 use Bio::EnsEMBL::Mapper::Unit;
 use Bio::EnsEMBL::Mapper::Coordinate;
 use Bio::EnsEMBL::Mapper::Gap;
 
-
-@ISA = qw(Bio::EnsEMBL::Root);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 
 sub new {
@@ -74,7 +71,7 @@ sub new {
   bless $self,$class;
 
   if( !defined $to ) {
-      $self->throw("Must supply from and to tags");
+    throw("Must supply from and to tags");
   }
 
   $self->{"_pair_$from"} = {};
@@ -83,9 +80,35 @@ sub new {
   $self->to($to);
   $self->from($from);
 
+  $self->{'pair_count'} = 0;
 # set stuff in self from @args
   return $self;
 }
+
+
+
+=head2 flush
+
+  Args       : none
+  Example    : none
+  Description: removes all cached information out of this mapper
+  Returntype : none
+  Exceptions : none
+  Caller     : AssemblyMapper, ChainedAssemblyMapper
+
+=cut
+
+sub flush {
+  my $self = shift;
+  my $from = $self->from();
+  my $to = $self->to();
+
+  $self->{"_pair_$from"} = {};
+  $self->{"_pair_$to"} = {};
+
+  $self->{'pair_count'} = 0;
+}
+
 
 
 =head2 map_coordinates
@@ -116,9 +139,11 @@ sub map_coordinates{
 
    unless(defined($id) && defined($start) && defined($end) && 
 	  defined($strand) && defined($type) ) {
-       $self->throw("Must start,end,strand,id,type as coordinates");
+       throw("Must start,end,strand,id,type as coordinates");
    }
 
+
+   if( ! $self->{'_is_sorted'} ) { $self->_sort() }
 
    my $hash = $self->{"_pair_$type"};
 
@@ -133,11 +158,7 @@ sub map_coordinates{
    }
 
    unless(defined $hash) {
-       $self->throw("Type $type is neither to or from coordinate systems");
-   }
-
-   if( $self->{'_is_sorted'} == 0 ) {
-       $self->_sort();
+       throw("Type $type is neither to or from coordinate systems");
    }
 
    if( !defined $hash->{uc($id)} ) {
@@ -149,70 +170,90 @@ sub map_coordinates{
    my $last_used_pair;
    my @result;
 
-   foreach my $pair ( @{$hash->{uc($id)}} ) {
-       my $self_coord   = $pair->{$from};
-       my $target_coord = $pair->{$to};
+   my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
+   my $lr = $hash->{uc($id)};
+   
+   $start_idx = 0;
+   $end_idx = $#$lr;
+   
+   # binary search the relevant pairs
+   # helps if the list is big
+   while(( $end_idx - $start_idx ) > 1 ) {
+     $mid_idx = ($start_idx+$end_idx)>>1;
+     $pair = $lr->[$mid_idx];
+     $self_coord   = $pair->{$from};
+     if( $self_coord->{'end'} < $start ) {
+       $start_idx = $mid_idx;
+     } else {
+       $end_idx = $mid_idx;
+     }
+   }
 
-       # if we haven't even reached the start, move on
-       if( $self_coord->{'end'} < $start ) {
-	   next;
-       }
-
-       # if we have over run, break
-       if( $self_coord->{'start'} > $end ) {
-	   last;
-       }
-
-       if( $start < $self_coord->{'start'} ) {
-	   # gap detected
-	   my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, 
-						    $self_coord->{'start'}-1);
-	
-	   push(@result,$gap);
-           $start = $gap->{'end'}+1;
-       }
-
-       my ($target_start,$target_end,$target_ori);
-
-       # start is somewhere inside the region
-       if( $pair->{'ori'} == 1 ) {
-	 $target_start = 
+   for( my $i = $start_idx; $i<=$#$lr; $i++ ) {
+     $pair = $lr->[$i];
+     my $self_coord   = $pair->{$from};
+     my $target_coord = $pair->{$to};
+     
+     # if we haven't even reached the start, move on
+     if( $self_coord->{'end'} < $start ) {
+       next;
+     }
+     
+     # if we have over run, break
+     if( $self_coord->{'start'} > $end ) {
+       last;
+     }
+     
+     if( $start < $self_coord->{'start'} ) {
+       # gap detected
+       my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, 
+                                                $self_coord->{'start'}-1);
+       
+       push(@result,$gap);
+       $start = $gap->{'end'}+1;
+     }
+     
+     my ($target_start,$target_end,$target_ori);
+     
+     # start is somewhere inside the region
+     if( $pair->{'ori'} == 1 ) {
+       $target_start = 
 	   $target_coord->{'start'} + ($start - $self_coord->{'start'});
-       } else {
-	 $target_end = 
+     } else {
+       $target_end = 
 	   $target_coord->{'end'} - ($start - $self_coord->{'start'});
-       }
+     }
 
-       # either we are enveloping this map or not. If yes, then end
-       # point (self perspective) is determined solely by target. If not
-       # we need to adjust
-
-       if( $end > $self_coord->{'end'} ) {
-	   # enveloped
-	   if( $pair->{'ori'} == 1 ) {
-	       $target_end = $target_coord->{'end'};
-	   } else {
-	       $target_start = $target_coord->{'start'};
-	   }
+     # either we are enveloping this map or not. If yes, then end
+     # point (self perspective) is determined solely by target. If not
+     # we need to adjust
+     
+     if( $end > $self_coord->{'end'} ) {
+       # enveloped
+       if( $pair->{'ori'} == 1 ) {
+         $target_end = $target_coord->{'end'};
        } else {
-	   # need to adjust end
-	   if( $pair->{'ori'} == 1 ) {
-	     $target_end = 
-	       $target_coord->{'start'} + ($end - $self_coord->{'start'});
-	   } else {
-	     $target_start = 
-	       $target_coord->{'end'} - ($end - $self_coord->{'start'});
-	   }
+         $target_start = $target_coord->{'start'};
        }
+     } else {
+       # need to adjust end
+       if( $pair->{'ori'} == 1 ) {
+         $target_end = 
+             $target_coord->{'start'} + ($end - $self_coord->{'start'});
+       } else {
+         $target_start = 
+             $target_coord->{'end'} - ($end - $self_coord->{'start'});
+       }
+     }
 
-       my $res = Bio::EnsEMBL::Mapper::Coordinate->new($target_coord->{'id'},
+     my $res = Bio::EnsEMBL::Mapper::Coordinate->new($target_coord->{'id'},
 						     $target_start,
 						     $target_end,
 						     $pair->{'ori'} * $strand);
-       push(@result,$res);
-
-       $last_used_pair = $pair;
-       $start = $self_coord->{'end'}+1;
+     push(@result,$res);
+     
+     $last_used_pair = $pair;
+     $start = $self_coord->{'end'}+1;
    }
 
    if( !defined $last_used_pair ) {
@@ -262,6 +303,8 @@ sub fastmap {
 
    my ($from, $to);
 
+   if( ! $self->{'_is_sorted'} ) { $self->_sort() }
+
    if($type eq $self->{'to'}) {
      $from = 'to';
      $to = 'from';
@@ -271,11 +314,8 @@ sub fastmap {
    }
 
    my $hash = $self->{"_pair_$type"} or
-       $self->throw("Type $type is neither to or from coordinate systems");
+       throw("Type $type is neither to or from coordinate systems");
 
-   if( $self->{'_is_sorted'} == 0 ) {
-       $self->_sort();
-   }
 
    my $pairs = $hash->{uc($id)};
 
@@ -325,56 +365,58 @@ sub fastmap {
     Arg  7      int $end
                 end coordinate of 'targe' sequence
     Function    stores details of mapping between two regions:
-                'source' and 'target'
-    Returntype  none
+                'source' and 'target'. Returns 1 if the pair was added, 0 if it
+                was already in.
+    Returntype  int 0,1
     Exceptions  none
     Caller      Bio::EnsEMBL::Mapper
 
 =cut
 
 sub add_map_coordinates{
-   my ($self, $contig_id, $contig_start, $contig_end, 
-       $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
+  my ($self, $contig_id, $contig_start, $contig_end, 
+      $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
+  
+  unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
+	 && defined($contig_ori) && defined($chr_name) && defined($chr_start)
+	 && defined($chr_end)) {
+    throw("7 arguments expected");
+  }
 
-   unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
-          && defined($contig_ori) && defined($chr_name) && defined($chr_start)
-          && defined($chr_end)) {
-       $self->throw("7 arguments expected");
-   }
+  if( ($contig_end - $contig_start)  != ($chr_end - $chr_start) ) {
+    throw("Cannot deal with mis-lengthed mappings so far");
+  }
 
-   if( ($contig_end - $contig_start)  != ($chr_end - $chr_start) ) {
-       $self->throw("Cannot deal with mis-lengthed mappings so far");
-   }
+  my $pair = Bio::EnsEMBL::Mapper::Pair->new();
+  
+  my $from = Bio::EnsEMBL::Mapper::Unit->new();
+  $from->start($contig_start);
+  $from->end($contig_end);
+  $from->id($contig_id);
 
-   my $pair = Bio::EnsEMBL::Mapper::Pair->new();
+  my $to = Bio::EnsEMBL::Mapper::Unit->new();
+  $to->start($chr_start);
+  $to->end($chr_end);
+  $to->id($chr_name);
 
-   my $from = Bio::EnsEMBL::Mapper::Unit->new();
-   $from->start($contig_start);
-   $from->end($contig_end);
-   $from->id($contig_id);
+  $pair->to($to);
+  $pair->from($from);
 
-   my $to = Bio::EnsEMBL::Mapper::Unit->new();
-   $to->start($chr_start);
-   $to->end($chr_end);
-   $to->id($chr_name);
+  $pair->ori($contig_ori);
 
-   $pair->to($to);
-   $pair->from($from);
+  # place into hash on both ids
+  my $map_to = $self->{'to'};
+  my $map_from = $self->{'from'};
+ 
+  push( @{$self->{"_pair_$map_to"}->{uc($chr_name)}}, $pair );
+  push( @{$self->{"_pair_$map_from"}->{uc($contig_id)}}, $pair );
+  
+  $self->{'pair_count'}++;
 
-   $pair->ori($contig_ori);
-
-   # place into hash on both ids
-   my $map_to = $self->{'to'};
-   my $map_from = $self->{'from'};
-
-   $self->{"_pair_$map_to"}->{uc($chr_name)} ||= [];
-   push(@{$self->{"_pair_$map_to"}->{uc($chr_name)}},$pair);
-
-   $self->{"_pair_$map_from"}->{uc($contig_id)} ||= [];
-   push(@{$self->{"_pair_$map_from"}->{uc($contig_id)}},$pair);
-
-   $self->_is_sorted(0);
+  $self->{'_is_sorted'} = 0;
+  return 1;
 }
+
 
 
 =head2 list_pairs
@@ -399,19 +441,15 @@ sub list_pairs{
    my ($self, $id, $start, $end, $type) = @_;
 
 
+   if( ! $self->{'_is_sorted'} ) { $self->_sort() }
+
    if( !defined $type ) {
-       $self->throw("Must start,end,id,type as coordinates");
+       throw("Must start,end,id,type as coordinates");
    }
 
    if( $start > $end ) {
-     $self->throw("Start is greater than end for id $id, start $start, end $end\n");
+     throw("Start is greater than end for id $id, start $start, end $end\n");
    }
-
-   # perhaps a little paranoid/excessive
-   if( $self->_is_sorted == 0 ) {
-       $self->_sort();
-   }
-
 
    my $hash = $self->{"_pair_$type"};
 
@@ -426,7 +464,7 @@ sub list_pairs{
    }
      
    unless(defined $hash) {
-       $self->throw("Type $type is neither to or from coordinate systems");
+     throw("Type $type is neither to or from coordinate systems");
    }
 
    my @list;
@@ -541,9 +579,81 @@ sub _sort{
        @{$self->{"_pair_$to"}->{$id}} = sort { $a->{'to'}->{'start'} <=> $b->{'to'}->{'start'} } @{$self->{"_pair_$to"}->{$id}};
    }
 
+   $self->_merge_pairs();
+
    $self->_is_sorted(1);
 
 }
+
+
+# this function merges pairs that are adjacent into one
+sub _merge_pairs {
+  my $self = shift;
+
+  my ( $lr, $lr_from, $del_pair, $next_pair, $current_pair );
+
+  my $map_to = $self->{'to'};
+  my $map_from = $self->{'from'};
+  $self->{'pair_count'} = 0;
+
+  for my $key ( keys %{$self->{"_pair_$map_to"}} ) {
+    $lr = $self->{"_pair_$map_to"}->{$key}; 
+    
+    my $i = 0;
+    my $next = 1;
+    my $length = $#$lr;
+    while( $next <= $length ) {
+      $current_pair = $lr->[$i];
+      $next_pair = $lr->[$next];
+      $del_pair = undef;
+
+      # duplicate filter
+      if( $current_pair->{'to'}->{'start'} == $next_pair->{'to'}->{'start'} ) {
+        $del_pair = $next_pair;
+      } elsif(( $current_pair->{'from'}->{'id'} eq $next_pair->{'from'}->{'id'} ) &&
+              ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
+              ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
+
+        if( $current_pair->{'ori'} == 1 ) {
+          # check forward strand merge
+          if( $next_pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
+            # normal merge with previous element
+            $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
+            $current_pair->{'from'}->{'end'} = $next_pair->{'from'}->{'end'};
+            $del_pair = $next_pair;
+          }
+        } else {
+          # check backward strand merge
+          if( $next_pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
+            # yes its a merge
+            $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
+            $current_pair->{'from'}->{'start'} = $next_pair->{'from'}->{'start'};
+            $del_pair = $next_pair;
+          }
+        }
+      }
+      
+      if( defined $del_pair ) {
+        splice( @$lr, $next, 1 );
+        $lr_from = $self->{"_pair_$map_from"}->{uc($del_pair->{'from'}->{'id'})};
+        for( my $j=0; $j <= $#$lr_from; $j++ ) {
+          if( $lr_from->[$j] == $del_pair ) {
+            splice( @$lr_from, $j, 1 );
+            last;
+          }
+        }
+        $length--;
+        if( $length < $next ) { last; }
+      } else {
+        $next++;
+        $i++;
+      }
+    }
+    $self->{'pair_count'} += scalar( @$lr );
+  }
+}
+ 
+
 
 
 =head2 _is_sorted
@@ -559,14 +669,8 @@ sub _sort{
 
 sub _is_sorted{
    my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'_is_sorted'} = $value;
-    }
-    if (! defined $self->{'_is_sorted'}) {
-      $self->{'_is_sorted'} = 0;
-    }
-    return $self->{'_is_sorted'};
-
+   $self->{'_is_sorted'} = shift if(@_);
+   return $self->{'_is_sorted'};
 }
 
 

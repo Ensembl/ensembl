@@ -13,42 +13,33 @@
 
 Bio::EnsEMBL::SeqFeature - Ensembl specific sequence feature.
 
-=head1 SYNOPSIS
-
-    my $feat = new Bio::EnsEMBL::SeqFeature(-seqname => 'pog',
-                                            -start   => 100,
-                                            -end     => 220,
-                                            -strand  => -1,
-                                            -frame   => 1,
-                                            -source_tag  => 'tblastn_vert',
-                                            -primary_tag => 'similarity',
-                                            -analysis => $analysis
-                                            );
-
-    # $analysis is a Bio::EnsEMBL::Analysis object
-
-    # SeqFeatureI methods can be used
-    my $start = $feat->start;
-    my $end   = $feat->end;
-
-    # Bio::EnsEMBL::SeqFeature specific methods can be used
-    my $analysis = $feat->analysis;
-
-    # Validate all the data in the object
-    $feat->validate  || $feat->throw("Invalid data in $feat");
-
 =head1 DESCRIPTION
 
-This is an implementation of the ensembl Bio::EnsEMBL::SeqFeatureI interface.
-Extra
-methods are to store details of the analysis program/database/version used
-to create this data and also a method to validate all data in the object is
-present and of the right type.  This is useful before writing into
-a relational database for example.
+Do not use this module if you can avoid it. It has been replaced by 
+Bio::EnsEMBL::Feature.  This module has a long history of usage but has
+become very bloated, and quite unweildy.  It was decided to replace it 
+completely with a smaller, light-weight feature class rather than attempting
+to refactor this class, and maintain strict backwards compatibility.
+
+Part of the complexity of this class was in its extensive inheritance. As an 
+example the following is a simplified inheritance heirarchy that was present
+for Bio::EnsEMBL::DnaAlignFeature:
+
+Bio::EnsEMBL::DnaAlignFeature
+Bio::EnsEMBL::BaseAlignFeature
+Bio::EnsEMBL::FeaturePair
+Bio::EnsEMBL::SeqFeature
+Bio::EnsEMBL::SeqFeatureI
+Bio::SeqFeatureI
+Bio::RangeI
+Bio::Root::RootI
+
+The new Bio::EnsEMBL::Feature class is much shorter, and hopefully much easier
+to understand and maintain.
 
 =head1 CONTACT
 
-Describe contact details here
+Post questions to the ensembl development list: ensembl-dev@ebi.ac.uk
 
 =head1 APPENDIX
 

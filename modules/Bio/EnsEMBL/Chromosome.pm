@@ -15,78 +15,70 @@ Bio::EnsEMBL::Chromosome
 
 =head1 DESCRIPTION
 
-Contains very basic information of a chromosome and access methods
-for global features of a chromosome. It does not have the sequence or
-more detailed information - check out SliceAdaptor for that (you will
-want to make a slice of the chromosome)
-    
-=head1 CONTACT 
+The chromosome object is deprecated.  Use Bio::EnsEMBL::Slice instead.
+
+=head1 CONTACT
 
 Post questions to the EnsEMBL developer mailing list: <ensembl-dev@ebi.ac.uk>
 
 =cut
 
-# Let the code begin...
 
 package Bio::EnsEMBL::Chromosome;
 use vars qw(@ISA);
 use strict;
-use Bio::EnsEMBL::Root;
 
-@ISA = qw( Bio::EnsEMBL::Root );
+use Bio::EnsEMBL::Utils::Exception qw(deprecate);
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
-## Changes to new by James Smith - no longer takes statistics
-## on creation.. these get added later.
+use Bio::EnsEMBL::Slice;
+
+@ISA = qw( Bio::EnsEMBL::Slice );
+
 
 =head2 new
 
-  Args [...] : List of named arguments 
-  Example    : $chr = new Chromosome(-chr_name      => $name,
-                                     -dbID          => $dbID,
-                                     -adaptor       => $adaptor,
-                                     -length        => $length);
-  Description: Creates a new chromosome object
-  Returntype : Bio::EnsEMBL::Chromosome
-  Exceptions : thrown if the adaptor or chr_name argument is not supplied
-  Caller     : Bio::EnsEMBL::DBSQL::ChromosomeAdaptor
+  Description: The chromosome class is deprecated. Bio::EnsEMBL::Slice class
+               should be used instead.
 
 =cut
 
 sub new {
-  my ($class,@args) = @_;
-  my $self = {};
-  bless($self, $class);
-   
-  my ( $chr_name, $chromosome_id, $adaptor, $length ) =
-    $self->_rearrange([qw(CHR_NAME DBID ADAPTOR LENGTH)], @args);
+  my $caller = shift;
 
-  $self->throw("Badly formed chromosome")
-    unless defined $chr_name && defined $adaptor;
+  deprecate("The Bio::EnsEMBL::Chromosome class is deprecated." .
+            "The Bio::EnsEMBL::Slice class should be used instead");
 
-  $self->adaptor(  $adaptor       );
-  $self->chr_name( $chr_name      );
-  $self->dbID(     $chromosome_id );
-  $self->length(   $length        );
-  $self->{'stats'} ={};
+  my ($adaptor, $chr_name) = rearrange(['ADAPTOR', 'CHR_NAME'], @_);
+
+  if($chr_name) {
+    if($adaptor) {
+      my $chr = $adaptor->fetch_by_region('toplevel',$chr_name);
+      bless $chr, 'Bio::EnsEMBL::Chromosome';
+      return $chr;
+    } else {
+      return $caller->SUPER::new(@_,
+                                 -ADAPTOR => $adaptor,
+                                 -SEQ_REGION_NAME => $chr_name);
+    }
+  }
+
+  my $self = $caller->SUPER::new(@_);
+  if($self->adaptor) {
+    $self->adaptor($self->adaptor->db->get_ChromosomeAdaptor);
+  }
+
   return $self;
 }
 
-=head2 chr_name
 
-  Arg [1]    : string $chr_name
-  Example    : none
-  Description: get/set for attribute chromosome name
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub chr_name{
-  my( $self,$value ) = @_;
-         $self->{'chr_name'} = $value if  defined $value;
-  return $self->{'chr_name'};
+#by name actually mean seq_region_name
+sub name {
+  my $self = shift;
+  return $self->seq_region_name(@_);
 }
+
+
 
 =head2 stats
 
@@ -101,7 +93,7 @@ sub chr_name{
 
 sub stats {
    my $self = shift;
-   return %{$self->{'stats'}};
+   return %{$self->{'stats'} || {}};
 }
 
 =head2 stat
@@ -122,59 +114,6 @@ sub stat {
   return $self->{'stats'}{$key};
 }
 
-=head2 adaptor
-
-  Arg [1]    : Bio::EnsEMBL::DBSQL::ChromosomeAdaptor $adaptor
-  Example    : none
-  Description: get/set for this objects Adaptor
-  Returntype : Bio::EnsEMBL::DBSQL::ChromsomeAdaptor
-  Exceptions : none
-  Caller     : general, set from adaptor on store
-
-=cut
-
-sub adaptor {
-  my( $self,$value ) = @_;
-         $self->{'adaptor'} = $value if defined $value;
-  return $self->{'adaptor'};
-}
-
-=head2 dbID
-
-  Arg [1]    : int $dbID
-  Example    : none
-  Description: get/set for the database internal id
-  Returntype : int
-  Exceptions : none
-  Caller     : general, set from adaptor on store
-
-=cut
-
-sub dbID {
-  my ($self, $value) = @_;
-         $self->{'_dbID'} = $value if defined $value;
-  return $self->{'_dbID'};
-}
-
-
-
-=head2 length
-
-  Arg [1]    : int $length
-  Example    : none
-  Description: get/set for the attribute length, the Chromosomes length in 
-               basepairs
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub length {
-  my ($self, $length) = @_;
-         $self->{'length'} = $length if defined $length;
-  return $self->{'length'};
-}
 
 ## Deprecated calls - these should now use "stat"
 sub xref_genes    { return $_[0]->stat('xref_genes'); }

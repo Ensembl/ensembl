@@ -48,6 +48,7 @@ package Bio::EnsEMBL::DBSQL::ProxyAdaptor;
 use strict;
 use vars qw($AUTOLOAD @ISA);
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -74,7 +75,7 @@ sub new {
   my $self = $class->SUPER::new($db);
 
   unless($primary_adaptor) {
-    $self->throw("The primary_adaptor argument is required\n");
+    throw("The primary_adaptor argument is required\n");
     return undef;
   }
   
@@ -148,8 +149,8 @@ sub AUTOLOAD {
   }
 
   #none of the attached adaptors could fulfill the request either
-  $self->throw("The requested method $method could not be found in the " 
-               . $self->{'_proxy_type'} . " of the attached databases:" .
+  throw("The requested method $method could not be found in the " 
+        . $self->{'_proxy_type'} . " of the attached databases:" .
 	       @databases);
   return undef;
 }

@@ -33,17 +33,20 @@ methods are usually preceded with a _
 =cut
 
 
-# Let the code begin...
-
 
 package Bio::EnsEMBL::DBEntry;
 
+use Bio::EnsEMBL::Storable;
 use Bio::Annotation::DBLink;
+
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Exception qw(deprecate);
+
 use vars qw(@ISA $AUTOLOAD);
 use strict;
 
 
-@ISA = qw( Bio::EnsEMBL::Root Bio::Annotation::DBLink );
+@ISA = qw( Bio::EnsEMBL::Storable Bio::Annotation::DBLink );
 
 
 =head2 new_fast
@@ -93,19 +96,13 @@ sub new {
   my $self = bless {},$class;
 
   my ( $adaptor, $dbID, $primary_id, $version,
-       $dbname, $release, $display_id, $description ) = $self->_rearrange
-	 ( [ qw { ADAPTOR
-		DBID
-		PRIMARY_ID
-		VERSION
-		DBNAME
-		RELEASE
-		DISPLAY_ID
-        DESCRIPTION
-	      }], @args );
+       $dbname, $release, $display_id, $description ) =
+    rearrange ( ['ADAPTOR','DBID','PRIMARY_ID','VERSION',
+                 'DBNAME','RELEASE','DISPLAY_ID','DESCRIPTION'], @args );
 
-  if( defined $adaptor ) { $self->adaptor( $adaptor )}
-  if( defined $dbID ) { $self->dbID( $dbID ) }
+  $self->{'adaptor'} = $adaptor;
+  $self->{'dbID'}    = $dbID;
+
   if( defined $primary_id ) { $self->primary_id( $primary_id ) }
   if( defined $version ) { $self->version( $version ) } else
     { $self->version( "" ); }
@@ -113,7 +110,7 @@ sub new {
   if( defined $release) { $self->release( $release ) }
   if( defined $display_id) { $self->display_id( $display_id ) }
   if( defined $description) { $self->description($description) }
-  $self->{_synonyms} = [];;
+  $self->{synonyms} = [];;
 
   return $self;
 }
@@ -135,9 +132,9 @@ sub new {
 sub primary_id {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    $self->{_primary_id} = $arg;
+    $self->{primary_id} = $arg;
   } 
-  return $self->{_primary_id};
+  return $self->{primary_id};
 }
 
 
@@ -158,9 +155,9 @@ sub primary_id {
 sub display_id{
    my ( $self, $arg ) = @_;
    if( defined $arg ) {
-       $self->{_display_id} = $arg;
+       $self->{display_id} = $arg;
    } 
-   return $self->{_display_id};
+   return $self->{display_id};
 
 }
 
@@ -180,9 +177,9 @@ sub display_id{
 sub dbname {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    $self->{_dbname} = $arg;
+    $self->{dbname} = $arg;
   } 
-  return $self->{_dbname};
+  return $self->{dbname};
 }
 
 
@@ -239,57 +236,10 @@ sub optional_id {
 sub release {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    $self->{_release} = $arg;
+    $self->{release} = $arg;
   } 
-  return $self->{_release};
+  return $self->{release};
 }
-
-
-
-=head2 adaptor
-
-  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBEntryAdaptor $arg
-  Example    : $adaptor = $dbentry->adaptor;
-  Description: Getter/Setter for the adaptor used by this object for database 
-               interaction. This attribute is set by the adaptor when this
-               object is stored in the database or retrieved from the database.
-  Returntype : Bio::EnsEMBL::DBSQL::DBEntryAdaptor
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub adaptor {
-  my ( $self, $arg ) = @_;
-  if( defined $arg ) {
-    $self->{_adaptor} = $arg;
-  } 
-  return $self->{_adaptor};
-}
-
-
-
-=head2 dbID
-
-  Arg [1]    : (optional) int 
-  Example    : $dbID = $dbentry->dbID;
-  Description: Getter/Setter for this objects unique database identifier. This
-               attribute is set the adaptor when this object is store in the
-               database or retrieved from the database.
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub dbID {
-  my ( $self, $arg ) = @_;
-  if( defined $arg ) {
-    $self->{_dbID} = $arg;
-  } 
-  return $self->{_dbID};
-}
-
 
 
 =head2 version
@@ -306,9 +256,9 @@ sub dbID {
 sub version {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    $self->{_version} = $arg;
+    $self->{version} = $arg;
   } 
-  return $self->{_version};
+  return $self->{version};
 }
 
 
@@ -328,9 +278,9 @@ sub version {
 sub description {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    $self->{_description} = $arg;
+    $self->{description} = $arg;
   } 
-  return $self->{_description};
+  return $self->{description};
 }
 
 
@@ -350,7 +300,7 @@ sub description {
 sub add_synonym {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    push( @{$self->{_synonyms}}, $arg );
+    push( @{$self->{synonyms}}, $arg );
   }
 }
 
@@ -368,7 +318,7 @@ sub add_synonym {
 
 sub get_all_synonyms {
   my $self = shift;
-  return $self->{_synonyms};
+  return $self->{synonyms};
 }
 
 
@@ -385,7 +335,7 @@ sub get_all_synonyms {
 
 sub flush_synonyms {
   my $self = shift;
-  $self->{_synonyms} = [];
+  $self->{synonyms} = [];
 }
 
 
@@ -404,9 +354,9 @@ sub flush_synonyms {
 sub status{
  my ( $self, $arg ) = @_;
    if( defined $arg ) {
-       $self->{_status} = $arg;
+       $self->{status} = $arg;
    } 
-   return $self->{_status};
+   return $self->{status};
 }
 
 
@@ -434,19 +384,14 @@ sub comment {
 
 =head2 get_synonyms
 
-  Arg [1]    : none
-  Example    : none
   Description: DEPRECATED use get_all_synonyms instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
 
 =cut
 
 sub get_synonyms {
   my $self = shift;
 
-  $self->warn("get_synonyms has been rename get_all_synonyms\n" . caller);
+  deprecate("get_synonyms has been renamed get_all_synonyms.");
   return $self->get_all_synonyms;
 }
 

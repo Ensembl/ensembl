@@ -15,7 +15,7 @@ This document gives a high-level description of the tables that make up the EnsE
 ||4a||Analyze genes - populate protein_feature, xref tables, interpro||
 ||4b||ID mapping||
 
-This document refers to version ''15'' of the EnsEMBL core schema. You are looking at revision ''1.21''of this document.
+This document refers to version ''15'' of the EnsEMBL core schema. You are looking at revision ''$Revision$''of this document.
 
 
 '''Diagrams:'''
@@ -30,10 +30,11 @@ This document refers to version ''15'' of the EnsEMBL core schema. You are looki
 '''Fundamental tables'''
 
  * assembly
- * chromosome
- * clone
- * contig
+ * assembly_exception
+ * attrib_type
+ * coord_system
  * dna
+ * dnac
  * exon
  * exon_stable_id
  * exon_transcript
@@ -42,6 +43,11 @@ This document refers to version ''15'' of the EnsEMBL core schema. You are looki
  * gene_stable_id
  * karyotype
  * meta
+ * meta_coord
+ * prediction_exon
+ * prediction_transcript
+ * seq_region
+ * seq_region_attrib
  * supporting_feature
  * transcript
  * transcript_stable_id
@@ -52,10 +58,15 @@ This document refers to version ''15'' of the EnsEMBL core schema. You are looki
 
  * analysis
  * dna_align_feature
+ * map
  * marker
  * marker_feature
  * marker_map_location
  * marker_synonym
+ * misc_attrib
+ * misc_feature
+ * misc_feature_misc_set
+ * misc_set
  * prediction_transcript
  * protein_align_feature
  * protein_feature
@@ -98,14 +109,52 @@ This document refers to version ''15'' of the EnsEMBL core schema. You are looki
     
 
     
-===clone===
-Contains information about BAC clones inside the EnsEMBL database. As this was the way that DNA came into EnsEMBL for the human genome, all DNA has to be specified in terms of BAC clones, even if they don't exist. Also, some of the BAC clones in early versions of the EnsEMBL database haven't been submitted to EMBL but were Sanger Institute internal BAC names. This is why clone has two different possible identifiers (and versions for each of them). Note that although there are many dates inside this table, they are not well maintained. The htg_phase column describes whether High Throughput Genomic sequencing is finished or unfinished: draft is 123, finished is 4. 
+===seq_region===
+Stores information about sequence regions. The primary key is used as a pointer into the dna table so that actual sequence can be obtained, and the coord_system_id allows sequence regions of multiple types to be stored. Clones, contigs and chromosomes are all now stored in the seq_region table. Contigs are stored with the co-ordinate system 'contig'. The relationship between contigs and clones is stored in the assembly table. The relationships between contigs and chromosomes, and between contigs and supercontigs, are stored in the assembly table. 
+'''See also:'''
+
+
+Tables:
+
+ * dna - 1:1 relationship to the dna table.
+ * coord_system - Describes which co-ordinates a particular feature is stored in.
 
     
 
     
-===contig===
-A contig is a piece of DNA inside a clone that is contiguous i.e. not interupted by sequencing gaps. One or more contigs made up the BAC clone sequence. Due to this historical importance, they are currently the reference coordinate system for all features inside EnsEMBL, although not all species come in clones/contigs. Contigs directly link to dna table entries which contain the actual sequence information. Currently, fake clone and contig entries must be faked for genomes that don't have these things. The sequence is that of the contig, not that of the golden path, i.e. to construct the golden path from the dna entries, the sequence of contigs with an orientation of -1 must be reversed and bases complemented. The assembly table has the contig orientation (raw_ori).  Note the length of the dna.sequence field is always equal to the appropriate length field in the contig table.
+===coord_system===
+Stores information about the available co-ordinate systems for this species. Note that there must be one co-ordinate system that has the attribute "top_level" and one that has the attribute "sequence_level".
+'''See also:'''
+
+
+Tables:
+
+ * seq_region - Has coord_system_id foreign key to allow joins with the coord_system table.
+   
+    
+
+    
+===seq_region_attrib===
+Allows "attributes" to be defined for certain seq_regions. Provides a way of storing extra information about particular seq_regions without adding extra columns to the seq_region table. e.g. 
+'''See also:'''
+
+
+Tables:
+
+ * seq_region - 
+ * attrib_type - Provides codes, names and desctriptions of attribute types.
+
+    
+
+    
+===attrib_type===
+Provides codes, names and desctriptions of attribute types.
+'''See also:'''
+
+
+Tables:
+
+ * seq_region_attrib - Associates seq_regions with attributes.
 
     
 
@@ -117,8 +166,14 @@ Contains DNA sequence. This table has a 1:1 relationship with the contig table.
 
 Tables:
 
- * contig - 1:1 relationship to the dna table.
+ * seq_region - Relates sequence to features.
  * external_synonym - Allows xrefs to have more than one name
+
+    
+
+    
+===dnac===
+Stores compressed DNA sequence.
     
     
 
@@ -130,20 +185,25 @@ Describes how contig sequences make up the chromosomal sequence. The data in thi
 
 Tables:
 
- * contig - 
+ * seq_region - Stores extra information about both the assembled object and its component parts
 
 Concepts:
 
- * co-ordinates  - Chromosome start and end positions are stored in chromosomal co-ordinates whereas the contig start and end positions are stored in contig co-ordinates.
  * supercontigs  - The mapping between contigs and supercontigs is also stored in the assembly table.
 
     
 
     
-===chromosome===
-Describes chromosomes. Currently contains the name and length of each chromosome for the species. Currently also contains additional rows to allow genes to be stored even if the chromosome on which the gene appears is not positively identified.
+===assembly_exception===
+Allows multiple sequence regions to point to the same sequence, analogous to a symbolic link in a filesystem pointing to the actual file. This mechanism has been implemented specifically to support haplotypes and PARs, but may be useful for other similar structures in the future.
+'''See also:'''
 
- 
+
+Tables:
+
+ * assembly - 
+
+    
 
     
 ===karyotype===
@@ -153,17 +213,13 @@ Describes bands that can be stained on the chromosome.
 
     
 ===exon===
-Stores data about exons. Associated with transcripts via exon_transcript. Allows access to contigs via the contig_* columns. The sticky_rank differentiates between fragments of the same exon; i.e for exons that span multiple contigs, all the fragments are in this table with the same id, but different sticky_rank values.
+Stores data about exons. Associated with transcripts via exon_transcript. Allows access to contigsseq_regions.
 '''See also:'''
 
 
 Tables:
 
  * exon_transcript - Used to associate exons with transcripts.
-
-Concepts:
-
- * sticky_rank  - Differentiates between exons that span multiple contigs.
 
     
 
@@ -182,7 +238,7 @@ Concepts:
 
     
 ===transcript===
-TBC Note that a transcript is usually associated with a translation, but may not be, e.g. in the case of pseudogenes and RNA genes (those that code for RNA molecules).
+Stores information about transcripts. Has seq_region_start, seq_region_end and seq_region_strand for faster retrieval and to allow storage independently of genes and exons. Note that a transcript is usually associated with a translation, but may not be, e.g. in the case of pseudogenes and RNA genes (those that code for RNA molecules).
 
     
 
@@ -247,7 +303,7 @@ Tables:
 
     
 ===translation===
-Describes which parts of which exons are used in translation. The seq_start and seq_end columns are 1-based offsets into the *relative* coordinate system of start_exon_id and end_exon_id. i.e, if the translation starts at the first base of the exon, seq_start would be 1.
+Describes which parts of which exons are used in translation. The seq_start and seq_end columns are 1-based offsets into the *relative* coordinate system of start_exon_id and end_exon_id. i.e, if the translation starts at the first base of the exon, seq_start would be 1. Transcripts are related to translations by the transcript_id key in this table.
 
     
 
@@ -272,14 +328,39 @@ Describes the exon prediction process by linking exons to DNA or protein alignme
     
 
     
+===prediction_transcript===
+Stores transcripts that are predicted by ab initio gene finder programs (e.g. genscan, SNAP). Unlike EnsEMBL transcripts they are not supported by any evidence.
+
+    
+
+    
+===prediction_exon===
+Stores exons that are predicted by ab initio gene finder programs. Unlike EnsEMBL exons they are not supported by any evidence.
+
+    
+
+    
 ===meta===
-Stores data about the data in the current schema. Taxonomy information, version information and the default value for the type column in the assembly table are stored here. Unlike other tables, data in the meta table is stored as key/value pairs.
+Stores data about the data in the current schema. Taxonomy information, version information and the default value for the type column in the assembly table are stored here. Unlike other tables, data in the meta table is stored as key/value pairs. Also stores (via assembly.mapping keys) the relationships between co-ordinate systms in the assembly table.
 '''See also:'''
 
 
 Tables:
 
  * assembly - The default value for assembly.type is stored in the meta table.
+
+
+    
+
+    
+===meta_coord===
+Describes which co-ordinate systems the different feature tables use.
+'''See also:'''
+
+
+Tables:
+
+ * coord_system - 
 
   
   ----
@@ -412,13 +493,14 @@ Tables:
 
     
 ===marker_map_location===
-Allows storage of information about the postion of a marker.
+Allows storage of information about the postion of a marker - these are positions on genetic or radiation hybrid maps (as opposed to positions on the assembly, which EnsEMBL has determined and which are stored in marker_feature).
 '''See also:'''
 
 
 Tables:
 
  * marker - Stores marker data.
+ * marker_feature - Stores marker positions on the assembly.
 
     
 
@@ -435,8 +517,70 @@ Tables:
     
 
     
+===map===
+Stores the names of different genetic or radiation hybrid maps, for which there is marker map information.
+'''See also:'''
+
+
+Tables:
+
+ * marker - Stores the original marker.
+
+    
+
+    
 ===repeat_consensus===
 Stores consenus sequences obtained from analysing repeat features.
+
+    
+
+    
+===misc_feature===
+Alllows for storage of arbitrary features.
+'''See also:'''
+
+
+Tables:
+
+ * misc_attrib - Allows storage of arbitrary attributes for the misc_features.
+
+    
+
+    
+===misc_attrib===
+Stores arbitrary attributes about the features in the misc_feature table.
+'''See also:'''
+
+
+Tables:
+
+ * misc_feature - 
+
+    
+
+    
+===misc_set===
+Defines "sets" that the features held in the misc_feature table can be grouped into.
+'''See also:'''
+
+
+Tables:
+
+ * misc_feature_misc_set - Defines which features are in which set
+
+    
+
+    
+===misc_feature_misc_set===
+Defines which of the features in misc_feature are in which of the sets defined in misc_set
+'''See also:'''
+
+
+Tables:
+
+ * misc_feature - 
+ * misc_set - 
+
 
   
   ----
@@ -588,7 +732,7 @@ Links:
 ==Concepts==
 
 ''co-ordinates ''
-: There are several different co-ordinate systems used in the EnsEMBL database and API. For every co-ordinate system, the fundamental unit is one base. The differences between co-ordinate systems lie in where a particular numbered base lies, and the start position it is relative to. CONTIG co-ordinates, also called 'raw contig' co-ordinates or 'clone fragments' are relative to the first base of the first contig of a clone. Note that the numbering is from 1, i.e. the very first base of the first contig of a clone is numbered 1, not 0. In CHROMOSOMAL co-ordinates, the co-ordinates are relative to the first base of the chromosome. Again, numbering is from 1.
+: There are several different co-ordinate systems used in the EnsEMBL database and API. For every co-ordinate system, the fundamental unit is one base. The differences between co-ordinate systems lie in where a particular numbered base lies, and the start position it is relative to. CONTIG co-ordinates, also called 'raw contig' co-ordinates or 'clone fragments' are relative to the first base of the first contig of a clone. Note that the numbering is from 1, i.e. the very first base of the first contig of a clone is numbered 1, not 0. In CHROMOSOMAL co-ordinates, the co-ordinates are relative to the first base of the chromosome. Again, numbering is from 1. The seq_region table can store sequence regions in any of the co-ordinate systems defined in the coord_system table.
 ''supercontigs ''
 : A supercontig is made up of a group of adjacent or overlapping contigs.
 ''sticky_rank ''

@@ -16,29 +16,79 @@ ProteinFeature.pm - DESCRIPTION of Object
 
 =head1 SYNOPSIS
 
-my $feature = new Bio::EnsEMBL::ProteinFeature(-feature1 => $feat1,
-					       -feature2 => $feat2,);
+
+  my $feature = Bio::EnsEMBL::ProteinFeature->new
+    (-start   => $start,
+     -end     => $end,
+     -hstart  => $hit_start,
+     -hend    => $hit_end,
+     -hname   => $hit_name);
 
 =head1 DESCRIPTION
 
-This object inherits from Bio::EnsEMBL::FeaturePair. This extension has been implemented to work with the Protein object. Each Protein Feature should be stored in a Protein_FeaturePair object.
-
-This object was formerly named Protein_FeaturePair.
+ProteinFeature objects represent domains or other features of interest 
+on a peptide sequence.
 
 =head1 CONTACT
 
-mongin@ebi.ac.uk
+  Post questions to the EnsEMBL development list ensembl-dev@sanger.ac.uk
 
 =cut
 
 package Bio::EnsEMBL::ProteinFeature;
-use vars qw(@ISA);
-use strict;
-use Bio::EnsEMBL::FeaturePair;
 
+use strict;
+
+use Bio::EnsEMBL::FeaturePair;
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+
+use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::FeaturePair);
 
-=head2 idesc
+
+
+=head2 new
+
+  Arg [IDESC]       : (optional) string An interpro description
+  Arg [INTERPRO_AC] : (optional) string An interpro accession
+  Arg [...]         : named arguments to FeaturePair superclass
+  Example    : $pf = Bio::EnsEMBL::ProteinFeature->new(-IDESC => $idesc,
+                                                       -INTERPRO_AC => $iac,
+                                                       @fp_args);
+  Description: Instantiates a Bio::EnsEMBL::ProteinFeature
+  Returntype : Bio::EnsEMBL::FeaturePair
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub new {
+  my $caller = shift;
+
+  my $class = ref($caller) || $caller;
+
+  my ($idesc, $interpro_ac) = rearrange(['IDESC', 'INTERPRO_AC'], @_);
+
+  my $self = $class->SUPER::new(@_);
+
+  #the strand of protein features is always 0
+  $self->{'strand'}      = 0;
+  $self->{'idesc'}       = $idesc;
+  $self->{'interpro_ac'} = $interpro_ac;
+
+  return $self;
+}
+
+
+
+#do not allow the strand to be set
+sub strand {
+  my $self = shift;
+  return $self->{'strand'};
+}
+
+
+=Head2 idesc
 
  Title   : idesc
  Usage   : $obj->idesc($newval)
@@ -50,14 +100,11 @@ use Bio::EnsEMBL::FeaturePair;
 =cut
 
 sub idesc{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'idesc'} = $value;
-    }
-    return $obj->{'idesc'};
-
+  my $self = shift;
+  $self->{'idesc'} = shift if(@_);
+  return $self->{'idesc'};
 }
+
 
 =head2 interpro_ac
 
@@ -71,13 +118,9 @@ sub idesc{
 =cut
 
 sub interpro_ac{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'interpro_ac'} = $value;
-    }
-    return $obj->{'interpro_ac'};
-
+  my $self = shift;
+  $self->{'interpro_ac'} = shift if(@_);
+  return $self->{'interpro_ac'};
 }
 
 

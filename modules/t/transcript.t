@@ -3,9 +3,9 @@ use strict;
 use warnings;
 use vars qw( $verbose );
 
-BEGIN { $| = 1;  
+BEGIN { $| = 1;
 	use Test;
-	plan tests => 31;
+	plan tests => 38;
 }
 
 use MultiTestDB;
@@ -24,7 +24,7 @@ my $db = $multi->get_DBAdaptor('core' );
 
 my $sa = $db->get_SliceAdaptor();
 
-my $slice = $sa->fetch_by_chr_start_end("20", 30_249_935, 31_254_640 );
+my $slice = $sa->fetch_by_region('chromosome', "20", 30_249_935, 31_254_640 );
 
 my $genes = $slice->get_all_Genes();
 
@@ -46,8 +46,8 @@ for my $gene ( @$genes ) {
     }
   }
 
-  $gene->transform();
-
+  $gene = $gene->transform( "contig" );
+  next if( ! $gene );	
   for my $trans ( @{$gene->get_all_Transcripts()} ) {
     if( $trans->translate()->seq() =~ /\*./ ) {
       $translates = 0;
@@ -60,6 +60,30 @@ for my $gene ( @$genes ) {
 debug( "utr Transcript is $utr_trans" );
 
 ok( $translates );
+
+#
+# Try pulling off genes from an NTContig and making sure they still translate.
+# This is a fairly good test of the chained coordinate mapping since the
+# transcripts are stored in chromosomal coordinates and there is no direct
+# mapping path to the supercontig coordinate system.
+#
+my $supercontig = $sa->fetch_by_region('supercontig', "NT_028392");
+
+my $transcripts = $supercontig->get_all_Transcripts();
+
+debug( "Checking if all transcripts on NTContig NT_028392 translate and transform" );
+
+$translates = 1;
+for my $trans ( @$transcripts ) {
+  if( $trans->translate()->seq() =~ /\*./ ) {
+    $translates = 0;
+    debug( $trans->stable_id()." does not translate." );
+    last;
+  }
+  debug($trans->stable_id() .  ":" . $trans->translate()->seq() . "\n");
+}
+
+ok($translates);
 
 
 my $ta = $db->get_TranscriptAdaptor();
@@ -74,10 +98,12 @@ ok (@{$stable_ids});
 
 my $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 
+$tr = $tr->transform('contig');
+
 ok( $tr );
 
 debug ( "External transcript name: " . $tr->external_name );
-ok ( $tr->external_name eq "MAPRE1"); 
+ok ( $tr->external_name eq "MAPRE1");
 
 debug ( "External transcript dbname: " . $tr->external_db );
 ok ( $tr->external_db eq 'HUGO' );
@@ -173,6 +199,8 @@ ok( scalar( @{$tr->get_all_Exons()} ) == 0 );
 # get a fresh tr to check the update method
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 
+$multi->save('core', 'transcript');
+
 # the first update should have no effect
 $ta->update($tr);
 
@@ -187,4 +215,45 @@ $ta->update($tr);
 $up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 ok ( $up_tr->display_xref->dbID() == 614 );
 
+$multi->restore('core', 'transcript');
+
+
+
+my $interpro = $ta->get_Interpro_by_transid("ENST00000252021");
+foreach my $i (@$interpro) {
+  debug($i);
+}
+###currently no interpro info in the test db
+ok(@$interpro == 1);
+
+#
+# test fetch_all_by_external_name
+#
+
+($tr) = @{$ta->fetch_all_by_external_name('BAB15482')};
+ok($tr && $tr->stable_id eq 'ENST00000262651');
+
+#
+# test fetch_by_translation_id
+#
+
+$tr = $ta->fetch_by_translation_id(21734);
+
+ok($tr && $tr->stable_id eq 'ENST00000201961');
+
+ok($tr->display_id() eq $tr->stable_id());
+
+#
+# regression test:  five_prime_utr and three_prime_utr were failing
+# for transcripts that had no UTR. undef should have been returned instead
+#
+$tr = $ta->fetch_by_stable_id('ENST00000246203');
+
+my $three_prime = $tr->three_prime_utr();
+
+ok(!defined($three_prime));
+
+my $five_prime = $tr->five_prime_utr();
+
+ok(!defined($five_prime));
 

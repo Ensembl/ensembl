@@ -48,7 +48,7 @@
             </tr>
          </table>
       </p>
-      <p>This document refers to version <strong>15</strong> of the EnsEMBL core schema. You are looking at revision <strong>1.21</strong> of this document.
+      <p>This document refers to version <strong>15</strong> of the EnsEMBL core schema. You are looking at revision <strong>$Revision$</strong> of this document.
       </p>
       <p><b>Diagrams:</b></p>
       <ul>
@@ -62,10 +62,11 @@
       <p><b>Fundamental tables</b></p>
       <ul>
          <li><a href="#assembly">assembly</a></li>
-         <li><a href="#chromosome">chromosome</a></li>
-         <li><a href="#clone">clone</a></li>
-         <li><a href="#contig">contig</a></li>
+         <li><a href="#assembly_exception">assembly_exception</a></li>
+         <li><a href="#attrib_type">attrib_type</a></li>
+         <li><a href="#coord_system">coord_system</a></li>
          <li><a href="#dna">dna</a></li>
+         <li><a href="#dnac">dnac</a></li>
          <li><a href="#exon">exon</a></li>
          <li><a href="#exon_stable_id">exon_stable_id</a></li>
          <li><a href="#exon_transcript">exon_transcript</a></li>
@@ -74,6 +75,11 @@
          <li><a href="#gene_stable_id">gene_stable_id</a></li>
          <li><a href="#karyotype">karyotype</a></li>
          <li><a href="#meta">meta</a></li>
+         <li><a href="#meta_coord">meta_coord</a></li>
+         <li><a href="#prediction_exon">prediction_exon</a></li>
+         <li><a href="#prediction_transcript">prediction_transcript</a></li>
+         <li><a href="#seq_region">seq_region</a></li>
+         <li><a href="#seq_region_attrib">seq_region_attrib</a></li>
          <li><a href="#supporting_feature">supporting_feature</a></li>
          <li><a href="#transcript">transcript</a></li>
          <li><a href="#transcript_stable_id">transcript_stable_id</a></li>
@@ -84,10 +90,15 @@
       <ul>
          <li><a href="#analysis">analysis</a></li>
          <li><a href="#dna_align_feature">dna_align_feature</a></li>
+         <li><a href="#map">map</a></li>
          <li><a href="#marker">marker</a></li>
          <li><a href="#marker_feature">marker_feature</a></li>
          <li><a href="#marker_map_location">marker_map_location</a></li>
          <li><a href="#marker_synonym">marker_synonym</a></li>
+         <li><a href="#misc_attrib">misc_attrib</a></li>
+         <li><a href="#misc_feature">misc_feature</a></li>
+         <li><a href="#misc_feature_misc_set">misc_feature_misc_set</a></li>
+         <li><a href="#misc_set">misc_set</a></li>
          <li><a href="#prediction_transcript">prediction_transcript</a></li>
          <li><a href="#protein_align_feature">protein_align_feature</a></li>
          <li><a href="#protein_feature">protein_feature</a></li>
@@ -134,28 +145,63 @@
       
       
       
-      <h3><a name="clone">clone</a></h3>
-      <p>Contains information about BAC clones inside the EnsEMBL database. As this was the way that DNA came into EnsEMBL for the
-         human genome, all DNA has to be specified in terms of BAC clones, even if they don't exist. Also, some of the BAC clones in
-         early versions of the EnsEMBL database haven't been submitted to EMBL but were Sanger Institute internal BAC names. This is
-         why clone has two different possible identifiers (and versions for each of them). Note that although there are many dates
-         inside this table, they are not well maintained. The htg_phase column describes whether High Throughput Genomic sequencing
-         is finished or unfinished: draft is 123, finished is 4. 
+      <h3><a name="seq_region">seq_region</a></h3>
+      <p>Stores information about sequence regions. The primary key is used as a pointer into the dna table so that actual sequence
+         can be obtained, and the coord_system_id allows sequence regions of multiple types to be stored. Clones, contigs and chromosomes
+         are all now stored in the seq_region table. Contigs are stored with the co-ordinate system 'contig'. The relationship between
+         contigs and clones is stored in the assembly table. The relationships between contigs and chromosomes, and between contigs
+         and supercontigs, are stored in the assembly table. 
       </p>
+      <p><b>See also:</b></p>
+      <p>Tables:</p>
+      <ul>
+         <li><a href="#dna">dna</a> - 1:1 relationship to the dna table.
+         </li>
+         <li><a href="#coord_system">coord_system</a> - Describes which co-ordinates a particular feature is stored in.
+         </li>
+      </ul>
       
       
       
       
-      <h3><a name="contig">contig</a></h3>
-      <p>A contig is a piece of DNA inside a clone that is contiguous i.e. not interupted by sequencing gaps. One or more contigs made
-         up the BAC clone sequence. Due to this historical importance, they are currently the reference coordinate system for all features
-         inside EnsEMBL, although not all species come in clones/contigs. Contigs directly link to dna table entries which contain
-         the actual sequence information. Currently, fake clone and contig entries must be faked for genomes that don't have these
-         things. The sequence is that of the contig, not that of the golden path, i.e. to construct the golden path from the dna entries,
-         the sequence of contigs with an orientation of -1 must be reversed and bases complemented. The assembly table has the contig
-         orientation (raw_ori).  Note the length of the dna.sequence field is always equal to the appropriate length field in the contig
-         table.
+      <h3><a name="coord_system">coord_system</a></h3>
+      <p>Stores information about the available co-ordinate systems for this species. Note that there must be one co-ordinate system
+         that has the attribute "top_level" and one that has the attribute "sequence_level".
       </p>
+      <p><b>See also:</b></p>
+      <p>Tables:</p>
+      <ul>
+         <li><a href="#seq_region">seq_region</a> - Has coord_system_id foreign key to allow joins with the coord_system table.
+         </li>
+      </ul>
+      
+      
+      
+      
+      <h3><a name="seq_region_attrib">seq_region_attrib</a></h3>
+      <p>Allows "attributes" to be defined for certain seq_regions. Provides a way of storing extra information about particular seq_regions
+         without adding extra columns to the seq_region table. e.g. 
+      </p>
+      <p><b>See also:</b></p>
+      <p>Tables:</p>
+      <ul>
+         <li><a href="#seq_region">seq_region</a> - 
+         </li>
+         <li><a href="#attrib_type">attrib_type</a> - Provides codes, names and desctriptions of attribute types.
+         </li>
+      </ul>
+      
+      
+      
+      
+      <h3><a name="attrib_type">attrib_type</a></h3>
+      <p>Provides codes, names and desctriptions of attribute types.</p>
+      <p><b>See also:</b></p>
+      <p>Tables:</p>
+      <ul>
+         <li><a href="#seq_region_attrib">seq_region_attrib</a> - Associates seq_regions with attributes.
+         </li>
+      </ul>
       
       
       
@@ -165,11 +211,17 @@
       <p><b>See also:</b></p>
       <p>Tables:</p>
       <ul>
-         <li><a href="#contig">contig</a> - 1:1 relationship to the dna table.
+         <li><a href="#seq_region">seq_region</a> - Relates sequence to features.
          </li>
          <li><a href="#external_synonym">external_synonym</a> - Allows xrefs to have more than one name
          </li>
       </ul>
+      
+      
+      
+      
+      <h3><a name="dnac">dnac</a></h3>
+      <p>Stores compressed DNA sequence.</p>
       
       
       
@@ -186,14 +238,11 @@
       <p><b>See also:</b></p>
       <p>Tables:</p>
       <ul>
-         <li><a href="#contig">contig</a> - 
+         <li><a href="#seq_region">seq_region</a> - Stores extra information about both the assembled object and its component parts
          </li>
       </ul>
       <p>Concepts:</p>
       <ul>
-         <li><a href="#co-ordinates">co-ordinates</a> - Chromosome start and end positions are stored in chromosomal co-ordinates whereas the contig start and end positions are stored
-            in contig co-ordinates.
-         </li>
          <li><a href="#supercontigs">supercontigs</a> - The mapping between contigs and supercontigs is also stored in the assembly table.
          </li>
       </ul>
@@ -201,10 +250,17 @@
       
       
       
-      <h3><a name="chromosome">chromosome</a></h3>
-      <p>Describes chromosomes. Currently contains the name and length of each chromosome for the species. Currently also contains
-         additional rows to allow genes to be stored even if the chromosome on which the gene appears is not positively identified.
+      <h3><a name="assembly_exception">assembly_exception</a></h3>
+      <p>Allows multiple sequence regions to point to the same sequence, analogous to a symbolic link in a filesystem pointing to the
+         actual file. This mechanism has been implemented specifically to support haplotypes and PARs, but may be useful for other
+         similar structures in the future.
       </p>
+      <p><b>See also:</b></p>
+      <p>Tables:</p>
+      <ul>
+         <li><a href="#assembly">assembly</a> - 
+         </li>
+      </ul>
       
       
       
@@ -216,19 +272,11 @@
       
       
       <h3><a name="exon">exon</a></h3>
-      <p>Stores data about exons. Associated with transcripts via exon_transcript. Allows access to contigs via the contig_* columns.
-         The sticky_rank differentiates between fragments of the same exon; i.e for exons that span multiple contigs, all the fragments
-         are in this table with the same id, but different sticky_rank values.
-      </p>
+      <p>Stores data about exons. Associated with transcripts via exon_transcript. Allows access to contigsseq_regions.</p>
       <p><b>See also:</b></p>
       <p>Tables:</p>
       <ul>
          <li><a href="#exon_transcript">exon_transcript</a> - Used to associate exons with transcripts.
-         </li>
-      </ul>
-      <p>Concepts:</p>
-      <ul>
-         <li><a href="#sticky_rank">sticky_rank</a> - Differentiates between exons that span multiple contigs.
          </li>
       </ul>
       
@@ -249,8 +297,9 @@
       
       
       <h3><a name="transcript">transcript</a></h3>
-      <p>TBC Note that a transcript is usually associated with a translation, but may not be, e.g. in the case of pseudogenes and RNA
-         genes (those that code for RNA molecules).
+      <p>Stores information about transcripts. Has seq_region_start, seq_region_end and seq_region_strand for faster retrieval and
+         to allow storage independently of genes and exons. Note that a transcript is usually associated with a translation, but may
+         not be, e.g. in the case of pseudogenes and RNA genes (those that code for RNA molecules).
       </p>
       
       
@@ -321,7 +370,7 @@
       <h3><a name="translation">translation</a></h3>
       <p>Describes which parts of which exons are used in translation. The seq_start and seq_end columns are 1-based offsets into the
          *relative* coordinate system of start_exon_id and end_exon_id. i.e, if the translation starts at the first base of the exon,
-         seq_start would be 1.
+         seq_start would be 1. Transcripts are related to translations by the transcript_id key in this table.
       </p>
       
       
@@ -349,14 +398,42 @@
       
       
       
+      <h3><a name="prediction_transcript">prediction_transcript</a></h3>
+      <p>Stores transcripts that are predicted by ab initio gene finder programs (e.g. genscan, SNAP). Unlike EnsEMBL transcripts they
+         are not supported by any evidence.
+      </p>
+      
+      
+      
+      
+      <h3><a name="prediction_exon">prediction_exon</a></h3>
+      <p>Stores exons that are predicted by ab initio gene finder programs. Unlike EnsEMBL exons they are not supported by any evidence.</p>
+      
+      
+      
+      
       <h3><a name="meta">meta</a></h3>
       <p>Stores data about the data in the current schema. Taxonomy information, version information and the default value for the
          type column in the assembly table are stored here. Unlike other tables, data in the meta table is stored as key/value pairs.
+         Also stores (via assembly.mapping keys) the relationships between co-ordinate systms in the assembly table.
       </p>
       <p><b>See also:</b></p>
       <p>Tables:</p>
       <ul>
          <li><a href="#assembly">assembly</a> - The default value for assembly.type is stored in the meta table.
+         </li>
+      </ul>
+      
+      
+      
+      
+      
+      <h3><a name="meta_coord">meta_coord</a></h3>
+      <p>Describes which co-ordinate systems the different feature tables use.</p>
+      <p><b>See also:</b></p>
+      <p>Tables:</p>
+      <ul>
+         <li><a href="#coord_system">coord_system</a> - 
          </li>
       </ul>
       
@@ -507,11 +584,15 @@
       
       
       <h3><a name="marker_map_location">marker_map_location</a></h3>
-      <p>Allows storage of information about the postion of a marker.</p>
+      <p>Allows storage of information about the postion of a marker - these are positions on genetic or radiation hybrid maps (as
+         opposed to positions on the assembly, which EnsEMBL has determined and which are stored in marker_feature).
+      </p>
       <p><b>See also:</b></p>
       <p>Tables:</p>
       <ul>
          <li><a href="#marker">marker</a> - Stores marker data.
+         </li>
+         <li><a href="#marker_feature">marker_feature</a> - Stores marker positions on the assembly.
          </li>
       </ul>
       
@@ -530,8 +611,71 @@
       
       
       
+      <h3><a name="map">map</a></h3>
+      <p>Stores the names of different genetic or radiation hybrid maps, for which there is marker map information.</p>
+      <p><b>See also:</b></p>
+      <p>Tables:</p>
+      <ul>
+         <li><a href="#marker">marker</a> - Stores the original marker.
+         </li>
+      </ul>
+      
+      
+      
+      
       <h3><a name="repeat_consensus">repeat_consensus</a></h3>
       <p>Stores consenus sequences obtained from analysing repeat features.</p>
+      
+      
+      
+      
+      <h3><a name="misc_feature">misc_feature</a></h3>
+      <p>Alllows for storage of arbitrary features.</p>
+      <p><b>See also:</b></p>
+      <p>Tables:</p>
+      <ul>
+         <li><a href="#misc_attrib">misc_attrib</a> - Allows storage of arbitrary attributes for the misc_features.
+         </li>
+      </ul>
+      
+      
+      
+      
+      <h3><a name="misc_attrib">misc_attrib</a></h3>
+      <p>Stores arbitrary attributes about the features in the misc_feature table.</p>
+      <p><b>See also:</b></p>
+      <p>Tables:</p>
+      <ul>
+         <li><a href="#misc_feature">misc_feature</a> - 
+         </li>
+      </ul>
+      
+      
+      
+      
+      <h3><a name="misc_set">misc_set</a></h3>
+      <p>Defines "sets" that the features held in the misc_feature table can be grouped into.</p>
+      <p><b>See also:</b></p>
+      <p>Tables:</p>
+      <ul>
+         <li><a href="#misc_feature_misc_set">misc_feature_misc_set</a> - Defines which features are in which set
+         </li>
+      </ul>
+      
+      
+      
+      
+      <h3><a name="misc_feature_misc_set">misc_feature_misc_set</a></h3>
+      <p>Defines which of the features in misc_feature are in which of the sets defined in misc_set</p>
+      <p><b>See also:</b></p>
+      <p>Tables:</p>
+      <ul>
+         <li><a href="#misc_feature">misc_feature</a> - 
+         </li>
+         <li><a href="#misc_set">misc_set</a> - 
+         </li>
+      </ul>
+      
       
       
       <hr>
@@ -712,7 +856,8 @@
                position it is relative to. CONTIG co-ordinates, also called 'raw contig' co-ordinates or 'clone fragments' are relative to
                the first base of the first contig of a clone. Note that the numbering is from 1, i.e. the very first base of the first contig
                of a clone is numbered 1, not 0. In CHROMOSOMAL co-ordinates, the co-ordinates are relative to the first base of the chromosome.
-               Again, numbering is from 1.
+               Again, numbering is from 1. The seq_region table can store sequence regions in any of the co-ordinate systems defined in the
+               coord_system table.
             </p>
          </dd>
          <dt>

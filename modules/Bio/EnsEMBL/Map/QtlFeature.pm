@@ -28,8 +28,6 @@ Represents a QtlFeature in the EnsEMBL database. QtlFeatures are generally very
 long and its not clear wether a representation in Contig coordinates
 actually makes sense. In the database they will have chromosomal coordinates.
 
-
- 
 =cut
 
 package Bio::EnsEMBL::Map::QtlFeature;
@@ -37,11 +35,9 @@ package Bio::EnsEMBL::Map::QtlFeature;
 use strict;
 use vars qw(@ISA);
 
-use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::Feature;
 
-@ISA = qw(Bio::EnsEMBL::SeqFeature);
-
+@ISA = qw(Bio::EnsEMBL::Feature);
 
 
 =head2 new
@@ -56,42 +52,20 @@ use Bio::EnsEMBL::SeqFeature;
 =cut
 
 sub new {
-  my ( $class, $adaptor, $contig, $start, $end, $qtl, $analysis ) = @_;
+  my ( $class, $adaptor, $slice, $start, $end, $qtl, $analysis ) = @_;
 
   $class = ref( $class ) ||$class;
   my $self = bless( {
-		     'adaptor' => $adaptor,
-		     '_gsf_seq' => $contig,
-		     '_gsf_start' => $start,
-		     '_gsf_end' => $end,
-		     'qtl' => $qtl,
-		     'analysis' => $analysis
+		     'adaptor'  => $adaptor,
+		     'slice'    => $slice,
+		     'start'    => $start,
+		     'end'      => $end,
+		     'qtl'      => $qtl,
+		     'analysis' => $analysis,
+         'strand'   => 0
 		    }, $class );
-  $self->is_splittable( 1 );
+
   return $self;
-}
-
-
-
-=head2 adaptor
-
-  Arg [1]    : Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor $adaptor
-  Example    : none
-  Description: Getter/Setter attribute adaptor
-  Returntype : Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor
-  Exceptions : none
-  Caller     : DBSQL::QtlFeatureAdaptor
-
-=cut
-
-sub adaptor {
-  my $self = shift;
-
-  if(@_) {
-    $self->{'adaptor'} = shift;
-  }
-
-  return $self->{'adaptor'};
 }
 
 
@@ -117,33 +91,13 @@ sub qtl {
   return $self->{'qtl'};
 }
 
-=head2 analysis
-
-  Arg [1]    : Bio::EnsEMBL::Analysis $analysis
-  Example    : none
-  Description: getter/setter for attribute analysis
-  Returntype : Bio::EnsEMBL::Analysis
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub analysis {
-  my $self = shift;
-
-  if(@_) {
-    $self->{'analysis'} = shift;
-  }
-
-  return $self->{'analysis'};
-}
 
 
 =head2 strand
 
   Arg [1]    : none
 	Example    : $strand = $qtl_feat->strand();
-  Description: Overrides the SeqFeature strand method to always return a 
+  Description: Overrides the Feature strand method to always return a
                value of 0 for qtl features (they are unstranded features)
   Returntype : int (always 0)
   Exceptions : none
@@ -153,9 +107,32 @@ sub analysis {
 
 sub strand {
 	my $self = shift;
-  
   return 0;
 }
+
+
+
+=head2 move
+
+  Arg [1]    : $start - The new end of this qtl feature
+  Arg [2]    : $end - The new start of this qtl feature
+  Arg [3]    : $strand - ignored always set to 0
+  Example    : $qtl_feat->move(1, 10_000);
+  Description: Overrides superclass move() method to ensure strand is always 0.
+               See Bio::EnsEMBL::Feature::move
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub move {
+  my ($self, $start, $end, $strand) = @_;
+
+  #maintain a strandedness of 0
+  return $self->SUPER::move($start,$end,0);
+}
+
 
 
 1;

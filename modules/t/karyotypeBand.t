@@ -3,34 +3,56 @@ use warnings;
 
 use lib 't';
 
-BEGIN { $| = 1;  
+BEGIN { $| = 1;
 	use Test;
-	plan tests => 7;
+	plan tests => 10;
 }
 
 
 use TestUtils qw(debug test_getter_setter);
 use Bio::EnsEMBL::KaryotypeBand;
-
-
-#
-#1 TEST - KaryotypeBand compiles
-#
-ok(1); 
+use Bio::EnsEMBL::Slice;
+use Bio::EnsEMBL::CoordSystem;
 
 #
-# 2 test constructor
+# Test constructor
 #
-my $kb = Bio::EnsEMBL::KaryotypeBand->new;
-ok($kb->isa('Bio::EnsEMBL::KaryotypeBand'));
+
+my $coord_system = Bio::EnsEMBL::CoordSystem->new
+  (-NAME    => 'chromosome',
+   -VERSION => 'NCBI34',
+   -DBID    => 123,
+   -TOP_LEVEL => 1);
 
 
+my $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
+                                     -SEQ_REGION_NAME => 'X',
+                                     -START           => 1,
+                                     -END             => 2e6);
+
+my $start  = 1;
+my $end    = 1e6;
+my $name   = 'q.11';
+my $stain  = 'gpos50';
+my $kb = Bio::EnsEMBL::KaryotypeBand->new(-START => $start,
+                                          -END   => $end,
+                                          -STAIN => $stain,
+                                          -NAME  => $name,
+                                          -SLICE => $slice);
+
+
+ok($kb->start() == $start);
+ok($kb->end()   == $end);
+ok($kb->stain() eq $stain);
+ok($kb->name() eq $name);
+ok($kb->slice == $slice);
+ok($kb->display_id eq $name);
+
 #
-# 3-7 test getter/setters
+# test getter/setters
 #
 ok(test_getter_setter($kb, 'name', 'p.31'));
-ok(test_getter_setter($kb, 'chr_name', 'X'));
 ok(test_getter_setter($kb, 'start', 12_200_000));
 ok(test_getter_setter($kb, 'end',   13_000_000));
-ok(test_getter_setter($kb, 'stain', 'gpos50'));
+ok(test_getter_setter($kb, 'stain', 'gpos60'));
 

@@ -30,17 +30,20 @@ package Bio::EnsEMBL::Gene;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::TranscriptI;
-use Bio::Annotation::DBLink;
-use Bio::EnsEMBL::DBEntry;
+use Bio::EnsEMBL::Feature;
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 
-@ISA = qw(Bio::EnsEMBL::Root);
+
+@ISA = qw(Bio::EnsEMBL::Feature);
 
 
 =head2 new
 
-  Arg [1]    : none
+  Arg [start]  : int $start
+  Arg [end]    : int $end
+  Arg [strand] : 1,-1 $strand
+  Arg [slice]  : Bio::EnsEMBL::Slice $slice
   Example    : $gene = Bio::EnsEMBL::Gene->new();
   Description: Creates a new gene object
   Returntype : Bio::EnsEMBL::Gene
@@ -50,198 +53,26 @@ use Bio::EnsEMBL::DBEntry;
 =cut
 
 sub new {
-  my($class,@args) = @_;
+  my $caller = shift;
 
-  my $self = bless {}, $class;
-  $self->{'_transcript_array'} = [];
+  my $class = ref($caller) || $caller;
+  my $self = $class->SUPER::new(@_);
+
+  my ( $stable_id, $version, $external_name, $type, $external_db, 
+       $external_status, $display_xref, $description ) = 
+    rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
+		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF', 'DESCRIPTION' ], @_ );
+
+  $self->stable_id( $stable_id );
+  $self->version( $version );
+  $self->external_name( $external_name ) if( defined $external_name );
+  $self->external_db( $external_db ) if( defined $external_db );
+  $self->external_status( $external_status ) if( defined $external_status );
+  $self->display_xref( $display_xref ) if( defined $display_xref );
+  $self->type( $type ) if( defined $type );
+  $self->description($description);
 
   return $self;
-}
-
-
-
-=head2 start
-
-  Arg [1]    : (optional) int $start
-  Example    : $start = $gene->start;
-  Description: This is a convenience method.  It may be better to calculate
-               your own start by looking at the exons yourself.
-               Gets/sets the lowest start coordinate of this genes exons.
-               No consistancy check is performed and if this is used as a
-               setter potentially the start could be set to a value which
-               does not correspond to the lowest exon start.  If this
-               gene is in RawContig coordinates and its exons span multiple
-               contigs the lowest value is still returned and a warning is
-               issued.
-  Returntype : int
-  Exceptions : warning if gene spans multiple contigs
-  Caller     : general, contigview
-
-=cut
-
-sub start {
-  my($self, $start) = @_;
-
-  my $multi_flag = 0;
-
-  if($start) {
-    $self->{start} = $start;   
-  } elsif(!defined $self->{start}) {
-    my $last_contig;
-    foreach my $exon (@{$self->get_all_Exons}) {
-      if(!defined($self->{start}) || $exon->start() < $self->{start}) {
-        $self->{start} = $exon->start();
-      }
-      $multi_flag = 1 if($last_contig && $last_contig ne $exon->contig->name);
-      $last_contig = $exon->contig->name;
-    }
-  }
-
-  if($multi_flag) {
-    use Carp 'cluck';
-    cluck("Bio::EnsEMBL::Gene::start - Gene spans multiple contigs.");
-    $self->warn("Bio::EnsEMBL::Gene::start - Gene spans multiple contigs." .
-		"The return value from start may not be what you want");
-  }    
-  
-  return $self->{start};
-}
-
-
-
-=head2 end
-
-  Arg [1]    : (optional) int $end
-  Example    : $end = $gene->end;
-  Description: This is a convenience method.  It may be better to calculate
-               your own end by looking at the exons yourself.
-               Gets/sets the highest end coordinate of this genes exons.
-               No consistancy check is performed and if this is used as a
-               setter potentially the end could be set to a value which
-               does not correspond to the highest exon end.  If this
-               gene is in RawContig coordinates and its exons span multiple
-               contigs the highest value is still returned and a warning is
-               issued.
-  Returntype : int
-  Exceptions : warning if gene spans multiple contigs
-  Caller     : general, contigview
-
-=cut
-
-sub end {
-  my($self, $end) = @_;
-
-  my $multi_flag = 0;
-
-  if($end) {
-    $self->{end} = $end;   
-  } elsif(!defined $self->{end}) {
-    my $last_contig;
-    foreach my $exon (@{$self->get_all_Exons()}) {
-      if(!defined($self->{end}) || $exon->end() > $self->{end}) {
-        $self->{end} = $exon->end();
-      }
-      $multi_flag = 1 if($last_contig && $last_contig ne $exon->contig->name);
-      $last_contig = $exon->contig->name;
-    }
-  }
-
-  if($multi_flag) {
-    cluck("Bio::EnsEMBL::Gene::start - Gene spans multiple contigs.");
-    $self->warn("Bio::EnsEMBL::Gene::end - Gene spans multiple contigs." .
-		"The return value from end may not be what you want");
-  }
-
-  return $self->{end};
-}
-
-
-
-=head2 strand
-
-  Arg [1]    : (optional) int strand 
-  Example    : $strand = $gene->strand;
-  Description: This is a convenience method. It may be better just to
-               get the strand from this genes exons yourself.  
-               Gets/Sets the strand of this gene. No consistancy check is
-               performed and if used as a setter the strand can be set 
-               incorrectly.  If this gene is in RawContig coords and spans 
-               multiple contigs it is not possible to calculate the strand
-               correctly, and a warning is returned.  
-  Returntype : int
-  Exceptions : Warning if strand is not defined and Gene is in RawContig coords
-               so strand cannot be calculated
-  Caller     : general
-
-=cut
-
-sub strand {
-  my $self = shift;
-  my $arg = shift;
-
-  if( defined $arg ) {
-    $self->{'strand'} = $arg;
-  } elsif( ! defined $self->{strand} ) {
-    my $exons = $self->get_all_Exons();
-    if(@$exons) {
-      if($exons->[0]->contig && 
-	 $exons->[0]->contig->isa("Bio::EnsEMBL::RawContig")) {
-	my $last_contig;
-	foreach my $exon (@$exons) {
-	  if($last_contig && $last_contig ne $exon->contig->name) {
-	    $self->warn("Bio::EnsEMBL::Gene::strand - strand can not be " .
-			"calculated for a Gene in RawContig coordinates that "
-			. "spans multiple contigs");
-	    return 0;
-	  }
-	  $last_contig = $exon->contig->name;
-	}
-      }
-      $self->{'strand'} = $exons->[0]->strand();
-    }
-  }
-  return $self->{'strand'};
-
-}
-
-
-=head2 chr_name
-
-  Arg [1]    : (optional) string $chr_name
-  Example    : $chr_name = $gene->chr_name
-  Description: Getter/Setter for the name of the chromosome that this
-               Gene is on.  This is really just a shortcut to the slice
-               attached this genes exons, but the value can also be set, which 
-               is useful for use with the lite database and web code.
-               This function will return undef if this gene is not attached
-               to a slice and the chr_name attribute has not already been set. 
-  Returntype : string
-  Exceptions : warning if chr_name is not defined and Gene is in RawContig 
-               coordinates
-  Caller     : Lite GeneAdaptor, domainview
-
-=cut
-
-sub chr_name {
-  my ($self, $chr_name) = @_;
-
-  if(defined $chr_name) { 
-    $self->{'_chr_name'} = $chr_name;
-  } elsif(!defined $self->{'_chr_name'}) {
-    #attempt to get the chr_name from the contig attached to the exons
-    my ($exon, $contig);
-    ($exon) = @{$self->get_all_Exons()};
-    if($exon && ($contig = $exon->contig())) {
-      if(ref $contig && $contig->isa('Bio::EnsEMBL::Slice')) {
-        $self->{'_chr_name'} = $contig->chr_name();
-      } else {
-	$self->warn('Gene::chr_name - Gene is in RawContig coords, and must '
-                  . 'be in Slice coords to have a valid chr_name');
-      }
-    }
-  } 
-
-  return $self->{'_chr_name'};
 }
 
 
@@ -250,8 +81,7 @@ sub chr_name {
 
   Args       : none
   Example    : none
-  Description: returns true if the Gene or one of its Transcripts have
-               DBLinks
+  Description: returns true if this gene has a display_xref
   Returntype : 0,1
   Exceptions : none
   Caller     : general
@@ -260,92 +90,9 @@ sub chr_name {
 
 
 sub is_known{
-  my ($self) = @_;
-
-  for my $entry ( @{$self->get_all_DBLinks()} ) {
-    return 1 if uc($entry->status) eq "KNOWN";
-  }
-
-  foreach my $trans ( @{$self->get_all_Transcripts} ) {
-    for my $entry ( @{$trans->get_all_DBLinks()} ) {
-      return 1 if uc($entry->status) eq "KNOWN";
-    }
-  }
-  
-  return 0;
+  my $self = shift;
+  return ($self->{'display_xref'}) ? 1 : 0;
 }
-
-
-=head2 adaptor
-
-  Arg [1]    : Bio::EnsEMBL::DBSQL::GeneAdaptor $adaptor
-  Example    : $gene->adaptor($gene_adaptor);
-               $gene->adaptor(undef);   # to drop adaptor
-  Description: get/set for attribute adaptor
-  Returntype : Bio::EnsEMBL::DBSQL::GeneAdaptor
-  Exceptions : none
-  Caller     : set only used by adaptor on store or retrieve
-
-=cut
-
-
-sub adaptor {
-    my $self = shift;
-    
-    if (@_) {
-        # Testing for any arguments allows undef to be
-        # passed as an argument to unset the adaptor
-        $self->{'_adaptor'} = shift;
-    }
-    return $self->{'_adaptor'};
-}
-
-
-
-=head2 analysis
-
-  Arg [1]    : Bio::EnsEMBL::Analysis $analysis
-  Example    : none
-  Description: get/set for attribute analysis
-  Returntype : Bio::EnsEMBL::Analysis
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub analysis {
-  my ($self,$value) = @_;
-  if( defined $value ) {
-    $self->{'analysis'} = $value;
-  }
-  return $self->{'analysis'};
-}
-
-
-
-
-=head2 dbID
-
-  Arg [1]    : int $dbID
-  Example    : none
-  Description: get/set for attribute dbID
-  Returntype : int
-  Exceptions : none
-  Caller     : set only by adaptor on store or retrieve
-
-=cut
-
-
-sub dbID {
-   my ($self, $arg) = @_;
-
-   if ( defined $arg ) {
-      $self->{'_dbID'} = $arg ;
-   }
-   return $self->{'_dbID'};
-}
-
 
 
 =head2 external_name
@@ -360,14 +107,12 @@ sub dbID {
 =cut
 
 sub external_name {
-  my ($self, $ext_name) = @_;
+  my  $self  = shift;
 
-  if(defined $ext_name) { 
-    return ( $self->{'_ext_name'} = $ext_name );
-  } 
+  $self->{'external_name'} = shift if( @_ );
 
-  if( exists $self->{'_ext_name'} ) {
-    return $self->{'_ext_name'};
+  if( exists $self->{'external_name'} ) {
+    return $self->{'external_name'};
   }
 
   my $display_xref = $self->display_xref();
@@ -393,14 +138,12 @@ sub external_name {
 =cut
 
 sub external_db {
-  my ( $self, $ext_dbname ) = @_;
+  my $self = shift;
 
-  if(defined $ext_dbname) { 
-    return ( $self->{'_ext_dbname'} = $ext_dbname );
-  } 
+  $self->{'external_db'} = shift if( @_ );
 
-  if( exists $self->{'_ext_dbname'} ) {
-    return $self->{'_ext_dbname'};
+  if( exists $self->{'external_db'} ) {
+    return $self->{'external_db'};
   }
 
   my $display_xref = $self->display_xref();
@@ -445,30 +188,17 @@ sub external_status {
 
   Arg [1]    : (optional) string $description
   Example    : none
-  Description: you can set get this argument. If not set its lazy loaded
-               from attached adaptor.
+  Description: getter setter for gene description
   Returntype : string
-  Exceptions : if no GeneAdaptor is set and no description is there
+  Exceptions : none
   Caller     : general
 
 =cut
 
-
 sub description {
-    my ($self, $arg) = @_;
-    
-    if( defined $arg ) {
-      $self->{'_description'} = $arg;
-      return $arg;
-    }
-
-    if( exists $self->{'_description'} ) {
-      return $self->{'_description'};
-    }
-    elsif (my $aptr = $self->adaptor) {
-        $self->{'_description'} = $aptr->get_description($self->dbID);
-    }
-    return $self->{'_description'};
+    my $self = shift;
+    $self->{'description'} = shift if( @_ );
+    return $self->{'description'};
 }
 
 
@@ -492,7 +222,7 @@ sub add_DBEntry {
   my $dbe = shift;
 
   unless($dbe && ref($dbe) && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
-    $self->throw('Expected DBEntry argument');
+    throw('Expected DBEntry argument');
   }
 
   $self->{'dbentries'} ||= [];
@@ -585,8 +315,8 @@ sub get_all_Exons {
    my @out = ();
 
    foreach my $trans ( @{$self->get_all_Transcripts} ) {
-       foreach my $exon ( @{$trans->get_all_Exons} ) {
-	   $h{"$exon"} = $exon;
+       foreach my $e ( @{$trans->get_all_Exons} ) {
+	   $h{$e->start()."-".$e->end()."-".$e->strand()."-".$e->phase()} = $e;
        }
    }
 
@@ -610,12 +340,11 @@ sub get_all_Exons {
 
 
 sub type {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'type'} = $value;
-    }
-    return $obj->{'type'};
+   my $self = shift;
+
+   $self->{'type'} = shift if( @_ );
+
+   return $self->{'type'};
 }
 
 
@@ -637,16 +366,31 @@ sub type {
 sub add_Transcript{
    my ($self,$trans) = @_;
 
-   if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::TranscriptI") ) {
-       $self->throw("$trans is not a Bio::EnsEMBL::TranscriptI!");
+   if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::Transcript") ) {
+       throw("$trans is not a Bio::EnsEMBL::Transcript!");
    }
 
-   #invalidate the start and end since they may need to be recalculated
-   $self->{start} = undef;
-   $self->{end} = undef;
-   $self->{strand} = undef;
+   if( defined $self->{'start'} ) {
+     if( $self->{'start'} > $trans->start() ) {
+       $self->start( $trans->start() );
+     }
+   } else {
+     $self->start( $trans->start() );
+   }
 
+   if( defined $self->{'end'} ) {
+     if( $self->{'end'} < $trans->end() ) {
+       $self->end( $trans->end() );
+     }
+   } else {
+     $self->end( $trans->end() );
+   }
+
+   $self->{strand} = $trans->strand();;
+
+   $self->{'_transcript_array'} ||= [];
    push(@{$self->{'_transcript_array'}},$trans);
+   $self->recalculate_coordinates();
 }
 
 
@@ -666,73 +410,35 @@ sub add_Transcript{
 sub get_all_Transcripts {
   my ($self) = @_;
 
+  if( ! exists $self->{'_transcript_array'} ) {
+    if( defined $self->adaptor() ) {
+      my $ta = $self->adaptor()->db()->get_TranscriptAdaptor();
+      my $transcripts = $ta->fetch_all_by_Gene( $self );
+      $self->{'_transcript_array'} = $transcripts;
+    }
+  }
   return $self->{'_transcript_array'};
 }
 
 
 
-=head2 created
+=head2 get_all_alt_alleles
 
-  Arg [1]    : string $created
-               The time the stable id for this gene was created. Not very well
-               maintained data (at release 9)
-  Example    : none
-  Description: get/set/lazy_load for the created timestamp
-  Returntype : string
+  Arg [1]    : none
+  Example    :  ( optional )
+  Description: Return a listref of Gene objects that represent this Gene on
+               an alternative haplotype. Empty list if there is no such
+               Gene. (eg there is no overlapping haplotype)
+  Returntype : listref of Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : general
 
 =cut
 
-
-sub created{
-    my ($self,$value) = @_;
-
-    if(defined $value ) {
-      $self->{'_created'} = $value;
-    }
-
-
-    if( exists $self->{'_created'} ) {
-      return $self->{'_created'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_created'};
-
-}
-
-
-=head2 modified
-
-  Arg [1]    : string $modified
-               The time the gene with this stable_id was last modified.
-               Not well maintained data (release 9)
-  Example    : none
-  Description: get/set/lazy_load of modified timestamp
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub modified{
-    my ($self,$value) = @_;
-    
-
-    if( defined $value ) {
-      $self->{'_modified'} = $value;
-    }
-
-    if( exists $self->{'_modified'} ) {
-      return $self->{'_modified'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_modified'};
+sub get_all_alt_alleles {
+  my $self = shift;
+  my $result = $self->adaptor()->fetch_all_alt_alleles( $self );
+  return $result;
 }
 
 
@@ -742,40 +448,25 @@ sub modified{
   Arg [1]    : int $version
                A version number for the stable_id
   Example    : nonen
-  Description: get/set/lazy_load for the version number
+  Description: getter/setter for version number
   Returntype : int
   Exceptions : none
   Caller     : general
 
 =cut
 
-
 sub version{
-
-    my ($self,$value) = @_;
-    
-
-    if( defined $value ) {
-      $self->{'_version'} = $value;
-    }
-
-    if( exists $self->{'_version'} ) {
-      return $self->{'_version'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_version'};
-
+  my $self = shift;
+  $self->{'version'} = shift if(@_);
+  return $self->{'version'};
 }
-
 
 
 =head2 stable_id
 
   Arg [1]    : string $stable_id
   Example    : ("ENSG0000000001")
-  Description: get/set/lazy_loaded stable id for this gene
+  Description: getter/setter for stable id for this gene
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -783,151 +474,87 @@ sub version{
 =cut
 
 sub stable_id{
-
-    my ($self,$value) = @_;
-    
-
-    if( defined $value ) {
-      $self->{'_stable_id'} = $value;
-      return;
-    }
-
-    if( exists $self->{'_stable_id'} ) {
-      return $self->{'_stable_id'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_stable_id'};
-
-}
-
-
-
-=head2 _get_stable_entry_info
-
-  Args       : none
-  Example    : none
-  Description: does the lazy loading for all stable id related information
-  Returntype : none
-  Exceptions : none
-  Caller     : internal
-
-=cut
-
-
-sub _get_stable_entry_info {
-   my $self = shift;
-
-   if( !defined $self->adaptor ) {
-     return undef;
-   }
-
-   $self->adaptor->get_stable_entry_info($self);
-
-}
-
-
-
-sub _dump{
-   my ($self,$fh) = @_;
-
-   if( ! $fh ) {
-       $fh = \*STDOUT;
-   }
-
-   print $fh "Gene ", $self->dbID(), "\n";
-   foreach my $t ( @{$self->get_all_Transcripts()} ) {
-       print $fh "  Trans ", $t->dbID(), " :";
-       foreach my $e ( @{$t->get_all_Exons} ) {
-	   print $fh " ",$e->dbID(),",";
-       }
-       print "\n";
-   }
-
+  my $self = shift;
+  $self->{'stable_id'} = shift if(@_);
+  return $self->{'stable_id'};
 }
 
 
 =head2 transform
 
-  Arg  1     : (optional) Bio::EnsEMBL::Slice $slice
-  Description: when passed a Slice as argument,
-               it will transform this Gene to the Slice coordinate system.
-               Without an argument it  transforms the Gene (which should be
-               in a slice) to a RawContig
-               coordinate system.
-               The method changes the Gene in place and returns itself.
+  Arg  1     : String $coordinate_system_name
+  Arg [2]    : String $coordinate_system_version
+  Description: moves this gene to the given coordinate system. If this gene has Transcripts
+               attached, they move as well.
   Returntype : Bio::EnsEMBL::Gene
-  Exceptions : none
-  Caller     : object::methodname or just methodname
+  Exceptions : wrong parameters
+  Caller     : general
 
 =cut
 
 
 sub transform {
   my $self = shift;
-  my $slice = shift;
 
-  # hash arrray to store the refs of transformed exons
-  my %exon_transforms;
 
-  # transform Exons
-  for my $exon ( @{$self->get_all_Exons()} ) {
-    my $newExon = $exon->transform( $slice );
-    $exon_transforms{ $exon } = $newExon;
+  # catch for old style transform calls
+  if( !@_  || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
+    deprecate('Calling transform without a coord system name is deprecated.');
+    return $self->_deprecated_transform(@_);
   }
 
-  # now need to re-jiggle the transcripts and their
-  # translations to account for the re-mapping process
+  my $new_gene = $self->SUPER::transform( @_ );
+  return undef unless $new_gene;
 
-  foreach my $transcript ( @{$self->get_all_Transcripts()} ) {
-
-    # need to grab the translation before starting to 
-    # re-jiggle the exons
-
-    $transcript->transform( \%exon_transforms );
+  if( exists $self->{'_transcript_array'} ) {
+    my @new_transcripts;
+    for my $old_transcript ( @{$self->{'_transcript_array'}} ) {
+      my $new_transcript = $old_transcript->transform( @_ );
+      push( @new_transcripts, $new_transcript );
+    }
+    $new_gene->{'_transcript_array'} = \@new_transcripts;
   }
-
-  #unset the start, end, and strand - they need to be recalculated
-  $self->{start} = undef;
-  $self->{end} = undef;
-  $self->{strand} = undef;
-  $self->{_chr_name} = undef;
-
-  return $self;
+  return $new_gene;
 }
 
 
 
-=head2 temporary_id
+=head2 transfer
 
- Title   : temporary_id
- Usage   : $obj->temporary_id($newval)
- Function: Temporary ids are used for Genscan predictions - which should probably
-           be moved over to being stored inside the gene tables anyway. Bio::EnsEMBL::TranscriptFactory use this.
-           MC Over my dead body they will.  Unless you can speed up the database by a couple of orders of magnitude.
- Example : 
- Returns : value of temporary_id
- Args    : newvalue (optional)
-
+  Arg [1]    : Bio::EnsEMBL::Slice $destination_slice
+  Example    : none
+  Description: MOves this Gene to given target slice coordinates. If Transcripts
+               are attached they are moved as well. Returns a new gene.
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub temporary_id {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'temporary_id'} = $value;
-    }
-    return $obj->{'temporary_id'};
+sub transfer {
+  my $self  = shift;
+  
+  my $new_gene = $self->SUPER::transfer( @_ );
+  return undef unless $new_gene;
 
+  if( exists $self->{'_transcript_array'} ) {
+    my @new_transcripts;
+    for my $old_transcript ( @{$self->{'_transcript_array'}} ) {
+      my $new_transcript = $old_transcript->transfer( @_ );
+      push( @new_transcripts, $new_transcript );
+    }
+    $new_gene->{'_transcript_array'} = \@new_transcripts;
+  }
+  return $new_gene;
 }
+
 
 
 =head2 display_xref
 
   Arg [1]    : Bio::EnsEMBL::DBEntry $display_xref
   Example    : $gene->display_xref($db_entry);
-  Description: get/set/lazy_loaded display_xref for this gene
+  Description: get/set display_xref for this gene
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
@@ -935,33 +562,97 @@ sub temporary_id {
 =cut
 
 sub display_xref {
+  my $self = shift;
+  $self->{'display_xref'} = shift if(@_);
+  return $self->{'display_xref'};
+}
 
-    my $self = shift;
-    if( @_ ) {
-      $self->{'display_xref'} = shift;
-    } elsif( exists $self->{'display_xref'} ) {
-      return $self->{'display_xref'};
-    } elsif ( defined $self->adaptor() ) {
-      $self->{'display_xref'} = $self->adaptor->get_display_xref( $self );
+
+=head2 recalculate_coordinates
+
+  Args       : none
+  Example    : none
+  Description: called when transcript added to the gene
+               tries to set coords for the gene.
+  Returntype : none
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+sub recalculate_coordinates {
+  my $self = shift;
+
+  my $transcripts = $self->get_all_Transcripts();
+
+  return if(!$transcripts || !@$transcripts);
+
+  my ( $slice, $start, $end, $strand );
+  $slice = $transcripts->[0]->slice();
+  $strand = $transcripts->[0]->strand();
+  $start = $transcripts->[0]->start();
+  $end = $transcripts->[0]->end();
+
+  my $transsplicing = 0;
+
+  for my $t ( @$transcripts ) {
+    if( $t->start() < $start ) {
+      $start = $t->start();
     }
 
-    return $self->{'display_xref'};
+    if( $t->end() < $end ) {
+      $end = $t->end();
+    }
+
+    if( $t->slice()->name() ne $slice->name() ) {
+      throw( "Transcripts with different slices not allowed on one Gene" );
+    }
+
+    if( $t->strand() != $strand ) {
+      $transsplicing = 1;
+    }
+  }
+  if( $transsplicing ) {
+    warning( "Gene contained trans splicing event" );
+  }
+
+  $self->start( $start );
+  $self->end( $end );
+  $self->strand( $strand );
+  $self->slice( $slice );
 }
 
 
 
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $gene->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For genes this is the stable id if
+               it is available otherwise it is an empty string.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->{'stable_id'} || '';
+}
+
+
+
+###########################
+# DEPRECATED METHODS FOLLOW
+###########################
+
 =head2 DEPRECATED add_DBLink
 
-  Arg [1]    : DEPRECATED Bio::Annotation::DBLink $link
-               a link is a database entry somewhere else.
-               Usually this is a Bio::EnsEMBL::DBEntry.
-  Example    : DEPRECATED 
-  Description: This method has been deprecated in favor of the add_DBEntry
-               method.  Objects are responible for holding only xrefs directly
-               associated with themselves now.
-  Returntype : none
-  Exceptions : none
-  Caller     : general
+  Description: DEPRECATED This method has been deprecated in favor of the
+               add_DBEntry method.  Objects are responible for holding only
+               xrefs directly associated with themselves now.
 
 =cut
 
@@ -969,11 +660,11 @@ sub display_xref {
 sub add_DBLink{
   my ($self,$value) = @_;
 
-  $self->throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
+  throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
 
 #  unless(defined $value && ref $value 
 #	 && $value->isa('Bio::Annotation::DBLink') ) {
-#    $self->throw("This [$value] is not a DBLink");
+#    throw("This [$value] is not a DBLink");
 #  }
   
 #  if( !defined $self->{'_db_link'} ) {
@@ -981,6 +672,89 @@ sub add_DBLink{
 #  }
 
 #  push(@{$self->{'_db_link'}},$value);
+}
+
+
+
+
+=head2 temporary_id
+
+ Function: DEPRECATED:  Use dbID or stable_id or something else instead
+
+=cut
+
+sub temporary_id {
+   my ($obj,$value) = @_;
+   deprecate( "I cant see what a temporary_id is good for, please use " .
+               "dbID or stableID or\n try without an id." );
+   if( defined $value) {
+      $obj->{'temporary_id'} = $value;
+    }
+    return $obj->{'temporary_id'};
+}
+
+=head2 created
+
+  Description: DEPRECATED - Transcripts no longer have a created attribute
+
+=cut
+
+sub created{
+    my ($self,$value) = @_;
+    deprecate( "The created attribute isnt available any more" );
+    if(defined $value ) {
+      $self->{'created'} = $value;
+    }
+    return $self->{'created'};
+}
+
+=head2 modified
+
+  Description: DEPRECATED - Transcripts no longer have a modified attribute
+
+=cut
+
+sub modified {
+    my ($self,$value) = @_;
+    deprecate( "The modified item isnt available any more" );
+    if( defined $value ) {
+      $self->{'modified'} = $value;
+    }
+    return $self->{'modified'};
+}
+
+=head2 chr_name
+
+  Description: DEPRECATED.  Use project, tranform, or transfer to obtain this
+               gene in another coord system.  Use $gene->slice->seq_region_name
+               to get the name of the underlying coord system. Or
+               $gene->slice->name().
+
+=cut
+
+sub chr_name {
+  my $self = shift;
+
+  deprecate( "Use project() to obtain other coordinate systems" );
+
+  my $gene_slice = $self->slice();
+  if( $gene_slice->coord_system()->name eq "chromosome" ) {
+    return $gene_slice->seq_region_name();
+  }
+
+  my $sa = $self->slice->adaptor();
+  throw( "need db connection for chr_name call" ) unless $sa;
+
+  my $ca = $sa->db()->get_CoordSystemAdaptor();
+  my $coord_system = $ca->fetch_by_name( "chromosome" );
+  if( ! $coord_system ) {
+    throw( "Chromosome coordinate system not available" );
+  }
+  my $coords = $self->project( $coord_system );
+
+  if( @$coords ) {
+    return $coords->[0]->[2]->seq_region_name();
+  }
 }
 
 1;

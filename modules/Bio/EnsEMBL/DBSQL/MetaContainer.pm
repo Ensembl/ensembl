@@ -24,15 +24,11 @@
 
 =head1 CONTACT
 
-=head1 APPENDIX
+  Post questions to the EnsEMBL development list: ensembl-dev@ebi.ac.uk
 
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-
-# Let the code begin...
 
 package Bio::EnsEMBL::DBSQL::MetaContainer;
 
@@ -40,13 +36,14 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::Utils::Exception qw(deprecate);
+
 use Bio::Species;
 
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 # new() is inherited from Bio::EnsEMBL::DBSQL::BaseAdaptor
-
 
 
 =head2 list_value_by_key
@@ -64,7 +61,7 @@ use Bio::Species;
 sub list_value_by_key {
   my ($self,$key) = @_;
   my @result;
-  
+
   $self->{'cache'} ||= {};
   if( exists $self->{'cache'}->{$key} ) {
     return $self->{'cache'}->{$key};
@@ -112,28 +109,32 @@ sub store_key_value {
   return;
 }
 
-=head2 update_key_value
+
+=head2 delete_key
 
   Arg [1]    : string $key
-               a key under which $value should be updated
-  Arg [2]    : string $value
-               the value to update in the meta table
-  Example    : $meta_container->update_key_value($key, $value);
-  Description: update a value in the meta container, accessable by a key
+               The key which should be removed from the database.
+  Example    : $meta_container->delete_key('sequence.compression');
+  Description: Removes all rows from the meta table which have a meta_key
+               equal to $key.
   Returntype : none
   Exceptions : none
-  Caller     : ?
+  Caller     : dna_compress script, general
 
 =cut
 
-sub update_key_value {
-  my ( $self, $key, $value ) = @_;
+sub delete_key {
+  my ($self, $key) = @_;
 
-  my $sth = $self->prepare( "UPDATE meta SET meta_value = ? WHERE meta_key = ?" );
+  my $sth = $self->prepare("DELETE FROM meta WHERE meta_key = ?");
+  $sth->execute($key);
+  $sth->finish();
 
-  my $res = $sth->execute( $value, $key );
+  delete $self->{'cache'}->{$key};
+
   return;
 }
+
 
 # add well known meta info get-functions below
 
@@ -197,82 +198,32 @@ sub get_taxonomy_id {
 }
 
 
-=head2 get_default_assembly_name
-
-  Arg [1]    : none
-  Example    : $assembly = $meta_container->get_default_assembly_name();
-  Description: Retrieves the default assembly name for this database from the 
-               meta container
-  Returntype : string
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-sub get_default_assembly_name {
-  my $self = shift;
-
-  my $arrRef = $self->list_value_by_key('assembly.name' );
- 
-  if( @$arrRef ) {
-    return $arrRef->[0];
-  } else {
-    return undef;
-  }
-}
-
-=head2 get_default_assembly_version
-
-  Arg [1]    : none
-  Example    : $assembly = $meta_container->get_default_assembly_version();
-  Description: Retrieves the default assembly version for this database from the 
-               meta container
-  Returntype : string
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-sub get_default_assembly_version {
-  my $self = shift;
-
-  my $arrRef = $self->list_value_by_key('assembly.version' );
- 
-  if( @$arrRef ) {
-    return $arrRef->[0];
-  } else {
-    return undef;
-  }
-}
-
 
 =head2 get_default_assembly
 
-  Arg [1]    : none
-  Example    : $assembly = $meta_container->get_default_assembly();
-  Description: Retrieves the default assembly for this database from the
-               meta container
-  Returntype : string
-  Exceptions : none
-  Caller     : ?
+Description: DEPRECATED. Use CoordSystemAdaptor::fetch_top_level instead to
+             obtain the assembly version.
 
 =cut
 
 sub get_default_assembly {
   my $self = shift;
 
-  my $arrRef = $self->list_value_by_key('assembly.default' );
+  deprecate('Use CoordSystemAdaptor::fetch_top_level instead');
 
-  if( @$arrRef ) {
-    return $arrRef->[0];
-  } else {
-    return undef;
-  }
+  my $cs = $self->db->get_CoordSystemAdaptor->fetch_top_level();
+
+  return $cs->version();
 }
 
 
+#
+# TBD This method should be removed/deprecated
+#
 sub get_max_assembly_contig {
   my $self = shift;
+
+  deprecate('This method should either be fixed or removed');
 
   my $value_list = $self->list_value_by_key( "assembly.maxcontig" );
   if( @$value_list ) {
@@ -281,6 +232,7 @@ sub get_max_assembly_contig {
     return undef;
   }
 }
+
 
 
 1;

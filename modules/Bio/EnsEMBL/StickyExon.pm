@@ -13,49 +13,28 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::StickyExon - A Confirmed Exon which spans two or more contigs 
-                           internally
-
-=head1 SYNOPSIS
-
-    $sticky = new Bio::EnsEMBL::Exon;
-
-    # is a normal exon
-    $sticky->start();
-    $sticky->end();
-
-    # has component_Exons
-    foreach $sub ( @{$sticky->get_all_component_Exons} ) {
-       # $sub is an exon that ends on a contig
-    }
+Bio::EnsEMBL::StickyExon - This is a deprecated class that will be entirely
+removed from the system. Do not use this class, use Bio::EnsEMBL::Exon instead
 
 =head1 DESCRIPTION
 
-Sticky Exons represent Exons which internally span contigs. 
-They are made during the write back on slices, which writes the exons that 
-span joins into the database.
+StickyExons are deprecated. They should not be necessary and should not be
+used. This module will be entirely removed from EnsEMBL in the near future.
 
 
 =head1 CONTACT
 
 The EnsEMBL developer mailing list for questions : <ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
-
 =cut
-
-
-# Let the code begin...
 
 
 package Bio::EnsEMBL::StickyExon;
 
 use Bio::Seq;
+use Bio::EnsEMBL::Utils::Exception qw(deprecate);
 
-use vars qw(@ISA $AUTOLOAD);
+use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::SeqFeature::Generic
@@ -65,7 +44,6 @@ use Bio::EnsEMBL::Exon;
 
 @ISA = qw(Bio::EnsEMBL::Exon);
 
-# _initialize is where the heavy stuff will happen when new is called
 
 sub new {
   my($class,@args) = @_;
@@ -78,6 +56,9 @@ sub new {
   # Array to store exon tags
   $self->{_component_exons} = [];
   
+  deprecate("StickyExon is a deprecated class.  It should not be needed." .
+             "Use normal Exons instead.");
+
   return $self;
 }
 
@@ -400,11 +381,7 @@ sub peptide {
   #the peptide of this sticky is the region spanned by the component exons
   my $pep_str = '';
   if($pep_start && $pep_end) {
-    #stop codon is trimmed off end so end may be past end of sequence
-    my $pep = $tr->translate();
-    my $len = $pep->length();
-    $pep_end = $len if($len < $pep_end);
-    $pep_str = $pep->subseq($pep_start, $pep_end);
+    $pep_str = $tr->translate->subseq($pep_start, $pep_end);
   }
 
   return Bio::Seq->new(-seq => $pep_str, 

@@ -1,16 +1,18 @@
+use strict;
+
 use lib 't';
-use TestUtils qw(test_getter_setter);
+use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 10;
+	plan tests => 34;
 }
 
 use MultiTestDB;
 use Bio::EnsEMBL::SimpleFeature;
-use Bio::EnsEMBL::RawContig;
-use Bio::Seq;
 
+
+our $verbose = 0;
 
 my $multi = MultiTestDB->new;
  
@@ -22,7 +24,7 @@ my $sfa = $dba->get_SimpleFeatureAdaptor;
 #
 # 1 create a new Simplefeature
 #
-$sf = new Bio::EnsEMBL::SimpleFeature;
+my $sf = new Bio::EnsEMBL::SimpleFeature;
 ok($sf);
 
 
@@ -49,27 +51,6 @@ ok(test_getter_setter($sf,'display_label','dummy_label'));
 ok(test_getter_setter($sf,'dbID',42));
 
 
-#
-# 8 attach a contig
-#
-# create a dummy seq and contig
-#
-my $seq  = Bio::Seq->new(-seq => 'ATGCAGCTAGCATCGATGACATCG',
-                         -id => 'dummy_contig',
-                         -accession => 'dummy_contig');
-  
-my $contig = Bio::EnsEMBL::RawContig->new();
- 
-my $name =  'dummy_contig';
-$contig->id($name);
-$contig->embl_offset(0);
-$contig->seq($seq);
-
-# now attach the contig
-
-$sf->contig($contig);
-ok($sf);
-
 
 #
 # 9 check adaptor attaching
@@ -77,6 +58,102 @@ ok($sf);
 $sf->adaptor($sfa);
 ok($sf->adaptor->isa('Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor'));
 
-# list_dbIDs
+
+my $chr_slice = $dba->get_SliceAdaptor->fetch_by_region('chromosome', '20');
+my $features = $sfa->fetch_all_by_Slice($chr_slice);
+debug('--- chr 20 simple features ---');
+debug("Got " . scalar(@$features));
+ok(@$features == 136);
+print_features($features);
+
+
+my $cln_slice = $dba->get_SliceAdaptor->fetch_by_region('clone','AL031658.11');
+$features = $sfa->fetch_all_by_Slice($cln_slice);
+debug('-- cln AL031658.11 simple features ---');
+debug("Got " . scalar(@$features));
+ok(@$features == 20);
+print_features($features);
+
+my $sprctg_slice = $dba->get_SliceAdaptor->fetch_by_region('supercontig',
+                                                         'NT_028392');
+$features = $sfa->fetch_all_by_Slice($sprctg_slice);
+debug('-- sprctg NT_028392 simple features ---');
+debug("Got " . scalar(@$features));
+ok(@$features == 136);
+print_features($features);
+
+my $ctg_slice = $dba->get_SliceAdaptor->fetch_by_region('contig',
+                                                       'AL031658.11.1.162976');
+$features = $sfa->fetch_all_by_Slice($ctg_slice);
+debug('--- contig AL031658.11.1.162976 simple features ---');
+debug("Got " . scalar(@$features));
+ok(@$features == 20);
+print_features($features);
+
+
+
+#retrieve a feature via dbID
+
+debug('---- fetch_by_dbID (default coords) ----');
+my $feat = $sfa->fetch_by_dbID(14564);
+ok($feat->dbID == 14564);
+ok($feat->slice->seq_region_name() eq 'AL031658.11.1.162976');
+ok($feat->start == 64109);
+ok($feat->end == 64112);
+ok($feat->strand == 1);
+
+print_features([$feat]);
+
+#transform to chromosome coords
+debug('---- tranform to chromosomal ----');
+$feat = $feat->transform('chromosome');
+ok($feat->dbID == 14564);
+ok($feat->slice->seq_region_name() eq '20');
+ok($feat->start == 30327623);
+ok($feat->end == 30327626);
+ok($feat->strand == 1);
+print_features([$feat]);
+
+# transform to supercontig
+debug('---- tranform to supercontig ----');
+$feat = $feat->transform('contig')->transform('supercontig');
+ok($feat->dbID == 14564);
+ok($feat->slice->seq_region_name() eq 'NT_028392');
+ok($feat->start == 735658);
+ok($feat->end == 735661);
+ok($feat->strand == 1);
+print_features([$feat]);
+
+debug('---- transform to clone ----');
+$feat = $feat->transform('contig')->transform('clone');
+ok($feat->dbID == 14564);
+ok($feat->slice->seq_region_name() eq 'AL031658.11');
+ok($feat->start == 64109);
+ok($feat->end == 64112);
+ok($feat->strand == 1);
+print_features([$feat]);
+
+
+# List_dbidx
 my $ids = $sfa->list_dbIDs();
 ok (@{$ids});
+
+
+ok($feat->display_id eq $feat->display_label);
+
+
+
+sub print_features {
+  my $features = shift;
+  foreach my $f (@$features) {
+    if(defined($f)) {
+      my $seqname = $f->slice->seq_region_name();
+      my $analysis = $f->analysis->logic_name();
+      debug($seqname . ' ' . $f->start().'-'.$f->end().'('.$f->strand().
+            ') ['. $f->dbID.'] '. $f->display_label.' '.$f->score() .
+            " ($analysis)");
+    } else {
+      debug('UNDEF');
+    }
+  }
+}

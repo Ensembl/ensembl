@@ -29,10 +29,9 @@ use strict;
 
 package Bio::EnsEMBL::Container;
 
-use vars ('@ISA', '$AUTOLOAD');
-use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
-@ISA = qw(Bio::EnsEMBL::Root);
+use vars ('$AUTOLOAD');
 
 
 =head2 new
@@ -42,7 +41,7 @@ use Bio::EnsEMBL::Root;
   Example    : $dba_holder = new Bio::EnsEMBL::DBSQL::DBAdaptorHolder($dba);
   Description: Creates a new DBAdaptor holder object that forwards calls to 
                $dba and breaks circular references to $dba upon destruction. 
-  Returntype : Bio::EnsEMBL::DBAdaptorHolder
+  Returntype : Bio::EnsEMBL::Container
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBAdaptor
 
@@ -51,15 +50,11 @@ use Bio::EnsEMBL::Root;
 sub new {
   my ($class, $object) = @_;
 
-  my $self = $class->SUPER::new();
-
   unless($object) {
-    $self->throw("object argument is required");
+    throw("object argument is required");
   }
 
-  $self->_obj($object);
-
-  return $self;
+  return bless {'_obj' => $object}, $class;
 }
 
 
@@ -166,7 +161,7 @@ sub AUTOLOAD {
     return $self->_obj->$method(@args);
   } else {
     # Method does not exist
-    $self->throw("method '$method' does not exist in '". ref($self->_obj) ."'");
+    throw("method '$method' does not exist in '". ref($self->_obj) ."'");
   }
 }
 
@@ -190,12 +185,12 @@ sub AUTOLOAD {
 sub DESTROY {
   my $self = shift;
 
- # print STDERR "Container::DESTROY : Breaking circular references:\n";
+  #print STDERR "Container::DESTROY : Breaking circular references:\n";
 
   my $obj = $self->_obj;
 
   if(!$obj) {
-    warn("Bio::EnsEMBL::Container: potential memory leak, contained"
+    warning("Bio::EnsEMBL::Container: potential memory leak, contained"
 	 . " object is not defined during garbage collection.");
   } elsif($obj->can('deleteObj')) {
     $obj->deleteObj();

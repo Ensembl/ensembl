@@ -1,7 +1,6 @@
 #
 # Ensembl module for Bio::EnsEMBL::DBSQL::KaryotypeBand
 #
-# Cared for by James Stalker <jws@sanger.ac.uk>
 #
 # Copyright James Stalker
 #
@@ -15,19 +14,33 @@ Bio::EnsEMBL::DBSQL::KaryotypeBand
 
 use Bio::EnsEMBL::KaryotypeBand;
 
-# create and populate a karyotype band
-$kb = Bio::EnsEMBL::KaryotyeBand;
-$kb->name('q31');
-$kb->chr_name('1');
-$kb->start(1);
-$kb->end(1_000_000);
-$kb->stain('gpos50');
+# create and populate a karyotype band (normally done by adaptor)
+$kb = Bio::EnsEMBL::KaryotyeBand(-START   => 1,
+                                 -END     => 1_000_000,
+                                 -SLICE   => $chrX_slice,
+                                 -NAME    => 'q31',
+                                 -STAIN   => 'gpos50',
+                                 -ADAPTOR => $db->get_KaryotypeBandAdaptor,
+                                 -DBID    => 10);
+
+#can tranform this band into other coord systems, just like other features
+$kb = $kb->transform('supercontig');
+
+$start      = $kb->start();
+$end        = $kb->end();
+$seq_region = $kb->slice->seq_region_name();
+
+#karyotypes have internal ids as well
+$kary_id = $kb->dbID();
 
 
 =head1 DESCRIPTION
 
 KaryotypeBand objects encapsulate data pertaining to a single karyotype band.
-Access these objects through a Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor
+Access these objects through a Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor.
+
+KarytoypeBand inherits from Bio::EnsEMBL::Feature and can be used just as
+any other feature can be.
 
 =head1 AUTHOR
 
@@ -37,7 +50,7 @@ This modules is part of the Ensembl project http://www.ensembl.org
 
 =head1 CONTACT
 
-Post questions to the EnsEMBL developer mailing list <ensembl-dev@ebi.ac.uk>  
+Post questions to the EnsEMBL developer mailing list <ensembl-dev@ebi.ac.uk>
 
 =cut
 
@@ -45,16 +58,30 @@ package Bio::EnsEMBL::KaryotypeBand;
 
 use strict;
 use vars qw(@ISA);
-use Bio::EnsEMBL::Root;
-@ISA = qw(Bio::EnsEMBL::Root);
 
+use Bio::EnsEMBL::Feature;
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Exception qw(deprecate warning);
+
+@ISA = qw(Bio::EnsEMBL::Feature);
 
 
 =head2 new
 
-  Arg [1]    : none
-  Example    : $kb = Bio::EnsEMBL::KaryotypeBand->new;
-  Description: Constructor.  Creates a new KaryotypeBand object
+  Arg [NAME] : string (optional)
+               The name of this band
+  Arg [STAIN]: string (optional)
+               The stain of this band
+  Arg [...]  : Arguments passed to superclass constructor.
+               See Bio::EnsEMBL::Feature
+  Example    : $kb = Bio::EnsEMBL::KaryotypeBand->new(-START => $start,
+                                                      -END   => $end,
+                                                      -SLICE => $slice,
+                                                      -NAME  => 'q11.21',
+                                                      -STAIN => 'gneg');
+  Description: Constructor.  Creates a new KaryotypeBand object, which can be
+               treated as any other feature object. Note that karyotypes
+               bands always have strand = 0.
   Returntype : Bio::EnsEMBL::KarytotypeBand
   Exceptions : none
   Caller     : Bio::EnsEMBL::KaryotypeBandAdaptor
@@ -62,14 +89,17 @@ use Bio::EnsEMBL::Root;
 =cut
 
 sub new {
-    my ($class) = @_;
+  my $class = shift;
 
-    my $self = {};
-    bless $self,$class;
+  my $self = $class->SUPER::new(@_);
 
-    return $self;
+  my ($name, $stain) = rearrange(['NAME','STAIN'],@_);
+  $self->{'name'} = $name;
+  $self->{'stain'} = $stain;
+  $self->{'strand'} = 0;
+
+  return $self;
 }
-
 
 
 =head2 name
@@ -84,79 +114,9 @@ sub new {
 =cut
 
 sub name{
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'name'} = $value;
-    }
-    return $self->{'name'};
-}
-
-
-
-=head2 chr_name
-
-  Arg [1]    : (optional) string $chr_name
-               Name of the chromosome this Karyotype band is on 
-  Example    : $chr_name = $band->chr_name; 
-  Description: Getter/Setter for the name of the chromosome this band is on 
-  Returntype : string
-               Name of the chromosom this band is on
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub chr_name {
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'_chr_name'} = $value;
-    }
-    return $self->{'_chr_name'};
-}
-
-
-=head2 start
-
-  Arg [1]    : (optional) int $newvalue
-  Example    : my $band_start = $band->start(); 
-  Description: get/set for the band start (e.g. 10000) in absolute basepairs  
-  Returntype : int 
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub start{
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'start'} = $value;
-    }
-    return $self->{'start'};
-}
-
-
-
-=head2 end
-
-  Arg [1]    : (optional) int $value
-  Example    : $band_end = $band->end;
-  Description: get/set for the band end (e.g. 10000) in absolute basepairs  
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub end{
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'end'} = $value;
-    }
-    return $self->{'end'};
+  my $self = shift;
+  $self->{'name'} = shift if(@_);
+  return $self->{'name'};
 }
 
 
@@ -164,21 +124,97 @@ sub end{
 =head2 stain
 
   Arg [1]    : (optional) string $value
-  Example    : my $band_stain = $band->stain(); 
-  Description: get/set for the band stain (e.g. 'gpos50') 
-  Returntype : string 
+  Example    : my $band_stain = $band->stain();
+  Description: get/set for the band stain (e.g. 'gpos50')
+  Returntype : string
   Exceptions : none
   Caller     : general
 
 =cut
 
 sub stain{
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'stain'} = $value;
-    }
-    return $self->{'stain'};
+  my $self = shift;
+  $self->{'stain'} = shift if(@_);
+  return $self->{'stain'};
+}
+
+
+
+=head2 strand
+
+  Arg [1]    : none
+	Example    : $strand = $qtl_feat->strand();
+  Description: Overrides the Feature strand method to always return a
+               value of 0 for qtl features (they are unstranded features)
+  Returntype : int (always 0)
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub strand {
+	my $self = shift;
+  return 0;
+}
+
+
+=head2 move
+
+  Arg [1]    : $start - The new end of this band
+  Arg [2]    : $end - The new start of this band
+  Arg [3]    : $strand - ignored always set to 0
+  Example    : $kb->move(1, 10_000);
+  Description: Overrides superclass move() method to ensure strand is always 0.
+               See Bio::EnsEMBL::Feature::move
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub move {
+  my ($self, $start, $end, $strand) = @_;
+
+  #maintain a strandedness of 0
+  return $self->SUPER::move($start,$end,0);
+}
+
+
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $kb->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For karyotype bands this is the
+               name of the karyotype band or '' if no name is defined.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->{'name'} || '';
+}
+
+
+=head2 chr_name
+
+  Description: DEPRECATED - use $kary_band->slice()->seq_region_name() instead
+
+=cut
+
+sub chr_name {
+  my $self = shift;
+
+  deprecate('Use $kary_band->slice()->seq_region_name() instead.');
+  if(!$self->slice) {
+    warning('KaryotypeBand does not have Slice - cannot get seq_region_name.');
+    return '';
+  }
+
+  return $self->slice->seq_region_name();
 }
 
 

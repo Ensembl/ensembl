@@ -84,9 +84,6 @@ sub fetch_all_by_Slice {
     }
 
     #create a snp object through a fast (hacky) constructor
-    my $STATUS = $arrayref->[6];
-    $STATUS =~s/-/ /;
-    $STATUS = $STATUS eq 'no info' ? 'suspected' : "proven $STATUS";
     my $snp = Bio::EnsEMBL::SNP->new_fast(
 		  { 'dbID'       => $arrayref->[0], 
 		   '_gsf_start'  => $arrayref->[1] - $slice_start + 1,
@@ -96,12 +93,10 @@ sub fetch_all_by_Slice {
 		    '_type'       => $arrayref->[4],
                     '_range_type' => $arrayref->[5],
                     '_validated'  => $arrayref->[6],
-                    'status'     => $STATUS,
                     'alleles'    => $arrayref->[7],
                     '_ambiguity_code' => $arrayref->[10],
                     '_snpclass'   => $arrayref->[8],
                     '_mapweight'  => $arrayref->[9],
-		    '_source' => $arrayref->[11],
 		    '_source_tag' => $arrayref->[11],
 		    'link'        => \@links });
     push @snps, $snp;

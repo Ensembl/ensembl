@@ -5,11 +5,12 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 27;
+	plan tests => 50;
 }
 
 use MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
+use Bio::EnsEMBL::Slice;
 use TestUtils qw(test_getter_setter debug);
 
 our $verbose = 0;
@@ -17,7 +18,7 @@ our $verbose = 0;
 my ($CHR, $START, $END, $FLANKING) = ("20", 30_252_000, 31_252_001, 1000);
 
 #
-#1 slice adaptor compiles
+# slice adaptor compiles
 #
 ok(1);
 
@@ -26,64 +27,58 @@ my $db    = $multi->get_DBAdaptor('core');
 
 
 #
-# 2-3 SliceAdaptor::new
+# SliceAdaptor::new
 #
 my $slice_adaptor = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($db->_obj);
 ok($slice_adaptor->isa('Bio::EnsEMBL::DBSQL::SliceAdaptor'));
 ok($slice_adaptor->db);
 
 #
-# 4-6 fetch_by_chr_start_end 
+# fetch_by_region
 #
-my $slice = $slice_adaptor->fetch_by_chr_start_end($CHR, $START, $END);
-ok($slice->chr_name eq $CHR);
-ok($slice->chr_start == $START);
-ok($slice->chr_end   == $END);
+my $slice = $slice_adaptor->fetch_by_region('toplevel',$CHR, $START, $END);
+ok($slice->seq_region_name eq $CHR);
+ok($slice->start == $START);
+ok($slice->end   == $END);
 
 #
-# 7-11 fetch_by_contig_name
+# fetch_by_contig_name
 #
 
-my $tiling_path = $slice->get_tiling_path;
+my $projection = $slice->project('seqlevel');
 
 #it is important to get a contig not cut off by slice start or end
-unless(@$tiling_path > 2) {
+unless(@$projection > 2) {
   warn("There aren't enough tiles in this path for this test to work");
 }
-my $tile = $tiling_path->[1]; 
-my $contig = $tile->component_Seq;
-my $ctg_start  = $tile->component_start;
-my $ctg_end    = $tile->component_end;
-$slice = $slice_adaptor->fetch_by_contig_name($contig->name);
+my ($chr_start,$chr_end,$contig) = @{$projection->[1]};
 
-ok($slice->length == ($ctg_end - $ctg_start + 1));
-ok($slice->seq() eq $contig->subseq($ctg_start, $ctg_end));
-ok($slice->chr_name eq $CHR);
+ok($contig->length == ($chr_end - $chr_start + 1));
 
-#verify flanking specifier works
-my $new_slice = $slice_adaptor->fetch_by_contig_name($contig->name, $FLANKING);
-ok($new_slice->chr_start == $slice->chr_start - $FLANKING);
-ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
+my $seq1 = $slice->subseq($chr_start, $chr_end);
+my $seq2 = $contig->seq();
+
+ok($seq1 eq $seq2);
 
 
 #
 # 12-13 fetch_by_fpc_name
 #
-my $fpc_name = 'NT_011387';
-$slice = $slice_adaptor->fetch_by_supercontig_name($fpc_name);
-ok($new_slice->chr_start);
-ok($new_slice->chr_end);
+#my $fpc_name = 'NT_011387';
+#$slice = $slice_adaptor->fetch_by_supercontig_name($fpc_name);
+#ok($new_slice->chr_start);
+#ok($new_slice->chr_end);
 
 
 
 #
 # 14 - 15 fetch_by_clone_accession
 #
-my $clone_acc = 'AL031658';
-$slice = $slice_adaptor->fetch_by_clone_accession($clone_acc);
-$new_slice = $slice_adaptor->fetch_by_clone_accession($clone_acc, $FLANKING);
-ok($new_slice->chr_start == $slice->chr_start - $FLANKING);
-ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
+#my $clone_acc = 'AL031658';
+#$slice = $slice_adaptor->fetch_by_clone_accession($clone_acc);
+#$new_slice = $slice_adaptor->fetch_by_clone_accession($clone_acc, $FLANKING);
+#ok($new_slice->chr_start == $slice->chr_start - $FLANKING);
+#ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
 
 
 #
@@ -91,11 +86,11 @@ ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
 #
 my $t_stable_id = 'ENST00000217315';
 $slice = $slice_adaptor->fetch_by_transcript_stable_id($t_stable_id);
-$new_slice = $slice_adaptor->fetch_by_transcript_stable_id($t_stable_id,
-							   $FLANKING);
+my $new_slice = $slice_adaptor->fetch_by_transcript_stable_id($t_stable_id,
+                                                           $FLANKING);
 
-ok($new_slice->chr_start == $slice->chr_start - $FLANKING);
-ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
+ok($new_slice->start == $slice->start - $FLANKING);
+ok($new_slice->end   == $slice->end   + $FLANKING);
 
 
 #
@@ -105,8 +100,8 @@ my $transcript = $db->get_TranscriptAdaptor->fetch_by_stable_id($t_stable_id);
 my $tid = $transcript->dbID;
 $slice = $slice_adaptor->fetch_by_transcript_id($tid);
 $new_slice = $slice_adaptor->fetch_by_transcript_id($tid, $FLANKING);
-ok($new_slice->chr_start == $slice->chr_start - $FLANKING);
-ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
+ok($new_slice->start == $slice->start - $FLANKING);
+ok($new_slice->end   == $slice->end   + $FLANKING);
 
 
 #
@@ -115,8 +110,8 @@ ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
 my $g_stable_id = 'ENSG00000125964';
 $slice = $slice_adaptor->fetch_by_gene_stable_id($g_stable_id);
 $new_slice = $slice_adaptor->fetch_by_gene_stable_id($g_stable_id, $FLANKING);
-ok($new_slice->chr_start == $slice->chr_start - $FLANKING);
-ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
+ok($new_slice->start == $slice->start - $FLANKING);
+ok($new_slice->end   == $slice->end   + $FLANKING);
 
 #verify we can retrieve the gene from this slice
 my $gene_found = 0;
@@ -139,22 +134,231 @@ foreach my $g (@{$new_slice->get_all_Genes}) {
 ok($gene_found);
 
 
+
 #
-# 24-26 fetch_by_chr_name
+#  fetch_by_region (entire region)
 #
-$slice = $slice_adaptor->fetch_by_chr_name($CHR);
-ok($slice->chr_name eq $CHR);
-ok($slice->chr_start == 1);
-my $chromo = $db->get_ChromosomeAdaptor->fetch_by_chr_name($CHR);
-ok($chromo->length eq $slice->chr_end);
+$slice = $slice_adaptor->fetch_by_region('chromosome',$CHR);
+ok($slice->seq_region_name eq $CHR);
+ok($slice->start == 1);
 
 
-$slice = $slice_adaptor->fetch_by_chr_start_end("20", 29_252_000, 31_252_001 );
-my $name_list = $slice_adaptor->list_overlapping_supercontigs( $slice );
+#
+# fetch_by_misc_feature_attribute
+#
+my $flanking= 1000;
+$slice = $slice_adaptor->fetch_by_misc_feature_attribute('superctg',
+                                                         'NT_030871',
+                                                         $flanking);
 
-for my $name ( @$name_list ) {
-  debug( "Overlapping supercontig ".$name );
+ok($slice->seq_region_name eq '20');
+ok($slice->start == 59707812 - $flanking);
+ok($slice->end   == 60855021 + $flanking);
+
+
+#
+# normalized projected slice
+#
+
+#
+# a slice with a PAR region
+# 24,25
+#
+$slice = $slice_adaptor->fetch_by_region( "chromosome", "Y", 9_000_000, 11_000_000, 1 );
+
+my $results = $slice_adaptor->fetch_normalized_slice_projection( $slice );
+
+debug( "Pseudo autosomal region results" );
+for my $projection ( @$results ) {
+  debug( "Start: ".$projection->[0] );
+  debug( "End: ".$projection->[1] );
+  debug( "Slice ".$projection->[2] );
+  debug( "-----------" );
 }
 
-ok( grep { $_ eq "NT_028392" } @$name_list);
+ok( @$results == 3 );
+ok( $results->[1]->[2]->seq_region_name() eq "20" );
 
+#
+# a slice with a haplotype 
+# 26,27
+#
+
+$slice =  $slice_adaptor->fetch_by_region( "chromosome", "20_HAP1", 30_000_000, 31_000_000, 1 );
+$results = $slice_adaptor->fetch_normalized_slice_projection( $slice );
+
+debug( "Haplotype projection results" ); 
+for my $projection ( @$results ) {
+  debug( "Start: ".$projection->[0] );
+  debug( "End: ".$projection->[1] );
+  debug( "Slice ".$projection->[2] );
+  debug( "-----------" );
+}
+
+ok( @$results == 3 );
+ok( $results->[0]->[2]->seq_region_name() eq "20" );
+ok( $results->[1]->[2]->seq_region_name() eq "20_HAP1" );
+ok( $results->[2]->[2]->seq_region_name() eq "20" );
+
+
+#try a projection from chromosome 20 to supercontigs
+$slice = $slice_adaptor->fetch_by_region('chromosome', "20", 29_252_000, 
+                                         31_252_001 );
+
+debug("Projection from chromosome 20 to supercontig");
+my @projection = @{$slice->project('supercontig')};
+ok(@projection == 1);
+ok($projection[0]->[2]->seq_region_name eq 'NT_028392');
+foreach my $seg (@projection) {
+  my ($start, $end, $slice) = @$seg;
+  debug("$start-$end " . $slice->seq_region_name);
+}
+
+#try a projection from clone to supercontig
+$slice = $slice_adaptor->fetch_by_region('clone', 'AL121583.25');
+
+debug("Projection from clone AL121583.25 to supercontig");
+
+@projection = @{$slice->project('supercontig')};
+ok(@projection == 1);
+ok($projection[0]->[2]->seq_region_name eq 'NT_028392');
+foreach my $seg (@projection) {
+  my ($start, $end, $slice) = @$seg;
+  debug("$start-$end -> " . $slice->start . '-'. $slice->end . ' ' . $slice->seq_region_name);
+}
+
+#
+# test storing a couple of different slices
+#
+my $csa = $db->get_CoordSystemAdaptor();
+my $cs  = $csa->fetch_by_name('contig');
+
+$multi->save('core', 'seq_region', 'dna', 'dnac');
+
+my $len = 50;
+my $name = 'testregion';
+
+#
+# Store a slice with sequence
+#
+
+$slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
+                                  -SEQ_REGION_NAME => $name,
+                                  -START           => 1,
+                                  -END             => $len,
+                                  -STRAND          => 1); 
+
+
+my $seq   = 'A' x $len;
+
+
+
+$slice_adaptor->store($slice, \$seq);
+
+$slice = $slice_adaptor->fetch_by_region('contig', $name);
+
+ok($slice->length == $len);
+ok($slice->seq eq $seq);
+ok($slice->seq_region_name eq $name);
+
+#
+# Store a slice without sequence
+#
+
+$cs  = $csa->fetch_by_name('chromosome');
+
+$len = 50e6;
+$name = 'testregion2';
+$slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
+                                  -SEQ_REGION_NAME => $name,
+                                  -START           => 1,
+                                  -END             => $len,
+                                  -STRAND          => 1); 
+
+$slice_adaptor->store($slice);
+
+$slice = $slice_adaptor->fetch_by_region('chromosome', $name);
+ok($slice->length eq $len);
+ok($slice->seq_region_name eq $name);
+
+$multi->restore('core', 'seq_region', 'dna', 'dnac');
+
+
+#
+# There was a bug such that features were not being retrieved
+# from slices that had a start < 1.  This is a test for that case.
+#
+$slice = $slice_adaptor->fetch_by_region('chromosome', '20', 1,35_000_000);
+debug("slice start = " . $slice->start);
+debug("slice end   = " . $slice->end);
+
+my $sfs1 = $slice->get_all_SimpleFeatures();
+print_features($sfs1);
+
+$slice = $slice_adaptor->fetch_by_region('chromosome', '20', -10, 35_000_000);
+
+debug("slice start = " . $slice->start);
+debug("slice end   = " . $slice->end);
+
+my $sfs2 = $slice->get_all_SimpleFeatures();
+print_features($sfs2);
+
+ok(@$sfs1 == @$sfs2);
+
+
+#
+# test fetch_by_name
+#
+$slice = $slice_adaptor->fetch_by_name($slice->name());
+
+ok($slice->coord_system->name eq 'chromosome');
+ok($slice->seq_region_name eq '20');
+ok($slice->start == -10);
+ok($slice->strand == 1);
+ok($slice->end == 35e6);
+
+$slice = $slice_adaptor->fetch_by_name('clone::AL121583.25:1:10000:-1');
+
+ok($slice->coord_system->name eq 'clone');
+ok($slice->seq_region_name eq 'AL121583.25');
+ok($slice->start == 1);
+ok($slice->end == 10000);
+ok($slice->strand == -1);
+
+
+#
+# test fetch_all
+#
+my $slices = $slice_adaptor->fetch_all('chromosome');
+ok(@$slices == 62);
+
+$slices = $slice_adaptor->fetch_all('chromosome', undef,1e6, 1e4);
+
+print_slices($slices);
+ok(@$slices == 3185);
+
+
+$slices = $slice_adaptor->fetch_all('contig', undef, 50000);
+
+ok(@$slices == 26);
+
+print_slices($slices);
+
+
+sub print_slices {
+  my $slices = shift;
+  foreach my $slice (@$slices) {
+    debug($slice->name());
+  } 
+  debug( "Got ". scalar(@$slices));
+}
+
+sub print_features {
+  my $fs = shift;
+  foreach my $f (@$fs) {
+    my $start  = $f->start();
+    my $end    = $f->end();
+    my $strand = $f->strand();
+    debug("  $start-$end($strand)");
+  }
+}

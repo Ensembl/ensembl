@@ -10,16 +10,10 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Tile - container objects for assembly style information
+Bio::EnsEMBL::Tile - DEPRECATED - You should not have to use this class.
+                     The Bio::EnsEMBL::Slice::project method should be able
+                     to construct any tiling path that you need.
 
-=head1 SYNOPSIS
-
-   $tile_list = $slice->get_tiling_path()
-       
-
-=head1 DESCRIPTION
- 
-  Each tile contains information about an ungapped sequence mapping from one sequence containing object to another.
 
 =head1 AUTHOR - Arne Stabenau
 
@@ -30,31 +24,28 @@ This modules is part of the Ensembl project http://www.ensembl.org
 Questions can be posted to the ensembl-dev mailing list:
 ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
-
 =cut
-
-
-# Let the code begin...
 
 
 package Bio::EnsEMBL::Tile;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Utils::Exception qw(deprecate);
 
 @ISA = qw(Bio::EnsEMBL::Root);
+
 
 
 ### Only new_fast() is used by the EnsEMBL API
 ### Otter uses new()
 sub new {
     my $class = shift;
+
+    deprecate("Bio::EnsEMBL::Tile is a deprecated class.\nIf you want a " .
+              'tiling path it is best to use Bio::EnsEMBL::Slice::project');
 
     my $self = bless {}, $class;
     if (@_) {
@@ -85,6 +76,9 @@ sub new {
 =cut
 
 sub new_fast {
+  deprecate("Bio::EnsEMBL::Tile is a deprecated class.\nIf you want a " .
+            'tiling path it is best to use Bio::EnsEMBL::Slice::project');
+
   # make it really fast
   return bless {
      'assembled_Seq'    => $_[1],

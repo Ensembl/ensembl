@@ -2,18 +2,21 @@ use lib 't';
 use strict;
 use warnings;
 
-BEGIN { $| = 1;  
+BEGIN { $| = 1;
 	use Test;
-	plan tests => 39;
+	plan tests => 49;
 }
 
 use MultiTestDB;
 use TestUtils qw ( debug test_getter_setter );
-
+use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::FeaturePair;
+use Bio::EnsEMBL::Transcript;
+use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Gene;
+use Bio::EnsEMBL::DnaDnaAlignFeature;
 
 # switch on the debug prints
-
 our $verbose = 0;
 
 debug( "Startup test" );
@@ -42,12 +45,7 @@ $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 debug( "Gene->fetch_by_stable_id()" );
 ok( $gene );
 
-my $e_slice = Bio::EnsEMBL::Slice->new
-  ( -empty => 1,
-    -adaptor => $db->get_SliceAdaptor() 
-  );
 
-$gene->transform( $e_slice );
 
 debug( "Gene dbID: ". $gene->dbID());
 ok( $gene->dbID() == 18267 );
@@ -84,7 +82,7 @@ ok( scalar @$links == 6 );
 
 my $sa = $db->get_SliceAdaptor();
 
-my $slice = $sa->fetch_by_chr_start_end( "20", 30_249_935, 31_254_640 );
+my $slice = $sa->fetch_by_region( "chromosome", "20", 30_249_935, 31_254_640 );
 
 debug( "Slice from SliceAdaptor" );
 ok($slice);
@@ -114,7 +112,7 @@ $ex1->start( 13586 );
 $ex1->end( 13735 );
 $ex1->phase(0);
 $ex1->end_phase( 0 );
-$ex1->contig( $slice );
+$ex1->slice( $slice );
 $ex1->strand(1);
 $ex1->analysis($analysis);
 
@@ -125,7 +123,7 @@ $fp->start(13586);
 $fp->end  (13705);
 $fp->strand(1);
 $fp->score(10);
-$fp->contig($slice);
+$fp->slice($slice);
 $fp->hstart(100);
 $fp->hend    (219);
 $fp->hstrand (1);
@@ -139,8 +137,7 @@ $fp->start(13707);
 $fp->end  (13735);
 $fp->strand(1);
 $fp->score(10);
-$fp->contig($slice);
-$fp->seqname(1);
+$fp->slice($slice);
 
 $fp->hstart  (220);
 $fp->hend    (248);
@@ -163,7 +160,7 @@ $ex2->start(201372);
 $ex2->end(201571);
 $ex2->phase(0);
 $ex2->end_phase( -1 );
-$ex2->contig( $slice );
+$ex2->slice( $slice );
 $ex2->strand(1);
 $ex2->analysis($analysis);
 
@@ -174,7 +171,7 @@ $fp->start(201372);
 $fp->end  (201471);
 $fp->strand(1);
 $fp->score(10);
-$fp->contig($slice);
+$fp->slice( $slice );
 $fp->hstart(100);
 $fp->hend    (199);
 $fp->hstrand (1);
@@ -188,8 +185,8 @@ $fp->start(201472);
 $fp->end  (201571);
 $fp->strand(1);
 $fp->score(10);
-$fp->contig($slice);
-$fp->seqname(1);
+$fp->slice( $slice );
+
 
 $fp->hstart  (201);
 $fp->hend    (300);
@@ -210,7 +207,7 @@ $ex3->start(210600);
 $ex3->end(210800);
 $ex3->phase(-1);
 $ex3->end_phase( -1 );
-$ex3->contig( $slice );
+$ex3->slice( $slice );
 $ex3->strand(1);
 $ex3->analysis($analysis);
 
@@ -249,9 +246,9 @@ my $translates  = 1;
 foreach my $tr( @{$gene->get_all_Transcripts()} ) {
   if( $tr->translate()->seq() =~ /\*./ ) {
     $translates = 0;
-    debug( "Translate failed.".$tr->translate()->seq() );
+    debug( "Translate failed." );
   }
-
+  debug( "Translation: ".$tr->translate()->seq() );
   foreach my $exon ( @{$tr->get_all_Exons()} ) {
     debug( "  Exon start: ". $exon->start());
     debug( "  Exon end:   ". $exon->end() );
@@ -265,14 +262,17 @@ ok( $translates );
 
 ok( scalar(@{$gene->get_all_Exons()} ) == 3);
 
-$gene->transform();
-$multi->hide( "core", "gene", "transcript", "exon", "exon_transcript", "gene_description", "translation", "gene_stable_id", "transcript_stable_id", "exon_stable_id", "translation_stable_id", "supporting_feature", "dna_align_feature" );
+$gene = $gene->transform( "chromosome" );
+
+my $desc = 'test description for a gene';
+my $stable_id = 'ENSG00000171456';
+$gene->description($desc);
+$gene->stable_id($stable_id);
+
+$multi->hide( "core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "gene_description", "translation", "gene_stable_id", "transcript_stable_id", "exon_stable_id", "translation_stable_id", "supporting_feature", "dna_align_feature" );
 
 my $gene_ad = $db->get_GeneAdaptor();
-my $desc = 'test description';
-$gene->description($desc);
 debug( "Storing the gene" );
-
 $gene_ad->store($gene);
 
 ok(1);
@@ -280,10 +280,15 @@ ok(1);
 my $genes = $slice->get_all_Genes();
 
 
-
 ok(scalar( @$genes) == 1 );
 
 my $gene_out = $genes->[0];
+
+#make sure the stable_id was stored
+ok($gene_out->stable_id eq $stable_id);
+
+#make sure the description was stored
+ok($gene_out->description eq $desc);
 
 ok(scalar(@{$gene_out->get_all_Exons()}) == 3);
 
@@ -303,7 +308,6 @@ ok( $exons->[0]->start == 13586 );
 ok( $exons->[1]->strand == 1 );
 ok( $exons->[1]->phase == 0 );
 
-ok($gene_out->description eq $desc);
 
 
 my $pep;
@@ -317,7 +321,7 @@ foreach my $trans( @{$gene_out->get_all_Transcripts()} ){
     $translate = 1;
   } else {
     $translate = 0;
-  }  	    
+  }
 }
 
 ok($translate == 1);
@@ -328,13 +332,12 @@ my $e = $t->get_all_Exons()->[0];
 my $se = $e->get_all_supporting_features();
 
 debug( "Got ".scalar( @$se )." supporting features." );
-ok( scalar( @$se ) == 2 );
+ok( scalar( @$se ) == 1 );
 
-my $se_start = $se->[0]->start() < $se->[1]->start() ? 
-  $se->[0]->start() : $se->[1]->start();
+my $se_start = $se->[0]->start(); 
 
-my $se_end = $se->[0]->end() > $se->[1]->end() ? 
-  $se->[0]->end() : $se->[1]->end();
+
+my $se_end = $se->[0]->end();
 
 
 debug( "Supporting start $se_start, end $se_end" );
@@ -357,7 +360,8 @@ debug( "checking external references" );
 
 $multi->restore();
 
-$slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end("20", 30_252_000, 31_252_001 );
+$slice = $db->get_SliceAdaptor()->fetch_by_region
+  ( "toplevel", "20", 30_252_000, 31_252_001 );
 
 my $known = 0;
 my $unknown = 0;
@@ -385,6 +389,9 @@ ok( $known==17 );
 #}
 
 
+#save contents of gene table
+$multi->save('core', 'gene');
+
 # tests for update method
 # go get a fresh gene again
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
@@ -403,6 +410,87 @@ $gene->display_xref( $dbEntryAdaptor->fetch_by_dbID( 614 ));
 $gene->type('dummy');
 $ga->update($gene);
 
-$newgene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
+$newgene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 ok ( $newgene->display_xref->dbID() == 614 );
 ok ( $newgene->type eq 'dummy' );
+
+$multi->restore('core', 'gene');
+
+
+#
+# test GeneAdaptor::fetch_all_by_domain
+#
+my @genes = @{$ga->fetch_all_by_domain('IPR000010')};
+
+debug("Fetch by domain 'IPR000010'");
+
+ok(@genes == 2);
+debug("Got " . scalar(@genes) . " genes");
+ok(($genes[0]->stable_id() eq 'ENSG00000131044') ||
+   ($genes[1]->stable_id() eq 'ENSG00000131044'));
+ok(($genes[0]->stable_id() eq 'ENSG00000174873') ||
+   ($genes[1]->stable_id() eq 'ENSG00000174873'));
+
+
+#
+# test GeneAdaptor::fetch_all_by_external_name
+#
+
+#Q15691
+($gene) = @{$ga->fetch_all_by_external_name('MAE1_HUMAN')};
+debug($gene->stable_id);
+ok($gene->stable_id() eq 'ENSG00000101367');
+
+#
+# test GeneAdaptor::get_Interpro_by_geneid
+#
+debug("Test get_Interpro_by_geneid");
+my @interpro = @{$ga->get_Interpro_by_geneid('ENSG00000174873')};
+ok(@interpro == 1);
+debug($interpro[0]);
+
+
+ok($gene->display_id eq $gene->stable_id);
+
+#
+# test Gene: get_all_alt_alleles
+#
+
+$gene = $ga->fetch_by_dbID( 18256 );
+my $alt_genes = $gene->get_all_alt_alleles();
+
+ok( scalar( @$alt_genes ) == 3 );
+
+# expect the following alleles
+my %gene_ids = ( 18257 => 1, 18258 => 1, 18259 => 1);
+my $ok = 1;
+for my $gene ( @$alt_genes ) {
+  $ok = $ok && $gene_ids{$gene->dbID()};
+}
+ok( $ok );
+
+#
+# test storing a new allele group
+#
+
+$multi->hide( 'core', 'alt_allele' );
+
+my @alt_genes;
+push( @alt_genes, $ga->fetch_by_dbID(18270) );
+push( @alt_genes, $ga->fetch_by_dbID(18271) );
+push( @alt_genes, $ga->fetch_by_dbID(18272) );
+$ga->store_alt_alleles( \@alt_genes ); 
+
+$gene = $ga->fetch_by_dbID( 18270 );
+$alt_genes = $gene->get_all_alt_alleles();
+%gene_ids = ( 18271=>1, 18272=>1 );
+
+$ok = 1;
+for my $gene ( @$alt_genes ) {
+  $ok = $ok && $gene_ids{$gene->dbID()};
+}
+ok( $ok );
+
+
+$multi->restore('core');
+

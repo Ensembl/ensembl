@@ -12,33 +12,16 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::SeqFeatureI - Ensembl specific sequence feature interface.
-
-=head1 SYNOPSIS
-
-    my $feat = get_feature_from_somewhere;
-
-    # Bio::SeqFeatureI methods can be used
-    my $start = $feat->start;
-    my $end   = $feat->end;
-
-    # New Bio::EnsEMBL::SeqFeatureI specific methods are :
-    my $analysis = $feat->analysis;
-
-    # Validate all the data in the object
-    $feat->validate  || $feat->throw("Invalid data in $feat");
+Bio::EnsEMBL::SeqFeatureI
 
 =head1 DESCRIPTION
 
-This is an extension of the bioperl Bio::SeqFeatureI interface.  Extra
-methods are to store details of the analysis program/database/version used
-to create this data and also a method to validate all data in the object is
-present and of the right type.  This is useful before writing into
-a relational database for example.
+Do not use this class. It is deprecated and has been replaced by 
+Bio::EnsEMBL::Feature.
 
 =head1 CONTACT
 
-Describe contact details here
+Post questions to the ensembl development mailing list: ensembl-dev@ebi.ac.uk
 
 =head1 APPENDIX
 

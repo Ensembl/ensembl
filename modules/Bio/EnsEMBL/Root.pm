@@ -2,28 +2,29 @@
 
 Bio::EnsEMBL::Root
 
-=head1 SYNOPSIS
-
-  # any bioperl or bioperl compliant object is a RootI 
-  # compliant object
-
-  $obj->throw("This is an exception");
-
-  eval {
-      $obj->throw("This is catching an exception");
-  };
-
-  if( $@ ) {
-      print "Caught exception";
-  } else {
-      print "no exception";
-  }
-
 =head1 DESCRIPTION
 
-This package provides a bare-bones root class for Ensembl objects to
-inherit from.
-Shamelessly stolen from BioPerl to avoid problems with moving to BioPerl 1
+Do not use Bio::EnsEMBL::Root anymore. It is included for backwards 
+compatibility (every object in EnsEMBL used to inherit from this class) but 
+will eventually be phased out. The replacement for the _rearrage method is the 
+rearrange method which can be imported in the following way:
+
+   use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+
+   #can now call rearrange as a class method (instead as object method)
+   my ($start, $end) = rearrange(['START','END'], \@args);
+
+If you want to use the throw or warn methods the replacement are the class
+methods throw and warning from the Bio::EnsEMBL::Utils::Exception class:
+
+   use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+
+   #can now call throw or warning even without bless reference
+   warning('This is a warning');
+   throw('This is an exception');
+
+
+This module was stolen from BioPerl to avoid problems with moving to BioPerl 1
 from 0.7
 
 =head1 CONTACT

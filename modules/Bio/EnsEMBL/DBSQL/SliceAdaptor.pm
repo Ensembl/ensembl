@@ -12,35 +12,45 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::SliceAdaptor - Adaptors for slices
+Bio::EnsEMBL::DBSQL::SliceAdaptor - A database aware adaptor responsible for
+the creation of Slice objects.
 
 =head1 SYNOPSIS
-  
 
+  my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+
+  my $slice_adaptor = $db->get_SliceAdaptor();
+
+  #get a slice on the entire chromosome X
+  my $chr_slice = $slice_adaptor->fetch_by_region('chromosome','X');
+
+  #get a slice for each clone in the database
+  foreach my $cln_slice (@{$slice_adaptor->fetch_all('clone')}) {
+    #do something with clone
+  }
+
+  #get a slice which is part of NT_004321
+  my $spctg_slice = $slice_adaptor->fetch_by_region('supercontig','NT_004321',
+                                                    200_000, 600_000);
 
 
 =head1 DESCRIPTION
 
-Factory for getting out slices of assemblies. WebSlice is the highly
-accelerated version for the web site.
+This module is responsible for fetching Slices representing genomic regions
+from a database.  Details on how slices can be used are in the
+Bio::EnsEMBL::Slice module.
 
 =head1 AUTHOR - Ewan Birney
 
 This modules is part of the Ensembl project http://www.ensembl.org
 
+=head1 CONTACT
+
 Email ensembl-dev@ebi.ac.uk
 
-Describe contact details here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object
-methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-
-# Let the code begin...
 
 
 package Bio::EnsEMBL::DBSQL::SliceAdaptor;
@@ -48,30 +58,57 @@ use vars qw(@ISA);
 use strict;
 
 
-# Object preamble - inherits from Bio::EnsEMBL::Root
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Mapper;
 
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
+my $SEQ_REGION_CACHE_SIZE = 100;
 
-# new is inherited from BaseAdaptor
+sub new {
+  my $caller = shift;
+
+  my $class = ref($caller) || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  my %name_cache;
+  my %id_cache;
+
+  tie(%name_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_REGION_CACHE_SIZE);
+  tie(%id_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_REGION_CACHE_SIZE);
+
+  $self->{'_name_cache'} = \%name_cache;
+  $self->{'_id_cache'} = \%id_cache;
+
+  return $self;
+}
 
 
+=head2 fetch_by_region
 
-=head2 fetch_by_chr_start_end
-
-  Arg [1]    : string $chr
-               the name of the chromosome to obtain a slice for
-  Arg [2]    : int $start
-               the start basepair of the slice to obtain in chromosomal 
-               coordinates
-  Arg [3]    : int $end 
-               the end basepair of the slice to obtain in chromosomal 
-               coordinates
-  Example    : $slice = $slice_adaptor->fetch_by_chr_start_end();
+  Arg [1]    : string $coord_system_name
+               The name of the coordinate system of the slice to be created
+               This may be a name of an acutal coordinate system or an alias
+               to a coordinate system.  Valid aliases are 'seqlevel' or
+               'toplevel'.
+  Arg [2]    : string $seq_region_name
+               The name of the sequence region that the slice will be
+               created on
+  Arg [3]    : int $start (optional, default = 1)
+               The start of the slice on the sequence region
+  Arg [4]    : int $end (optional, default = seq_region length)
+               The end of the slice on the sequence region
+  Arg [5]    : int $strand (optional, default = 1)
+               The orientation of the slice on the sequence region
+  Arg [6]    : string $version (optional, default = default version)
+               The version of the coordinate system to use (e.g. NCBI33)
+  Example    : $slice = $slice_adaptor->fetch_by_region('chromosome');
   Description: Creates a slice object on the given chromosome and coordinates.
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
@@ -79,156 +116,497 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 =cut
 
-sub fetch_by_chr_start_end {
-    my ($self,$chr,$start,$end) = @_;
+sub fetch_by_region {
+  my ($self, $coord_system_name, $seq_region_name,
+      $start, $end, $strand, $version) = @_;
 
-    unless($chr) {
-      $self->throw("chromosome name argument must be defined and not ''");
+  throw('seq_region_name argument is required') if(!$seq_region_name);
+
+  my $csa = $self->db()->get_CoordSystemAdaptor();
+  my $coord_system = $csa->fetch_by_name($coord_system_name,$version);
+
+  #check the cache so we only go to the db if necessary
+  my $name_cache = $self->{'_name_cache'};
+  my $key = lc(join(':',$seq_region_name,
+                    $coord_system->name(),
+                    $coord_system->version));
+
+  my $length;
+
+  if(exists($name_cache->{$key})) {
+    $length = $name_cache->{$key}->[1];
+  } else {
+    my $sth = $self->prepare("SELECT seq_region_id, length " .
+                             "FROM seq_region " .
+                             "WHERE name = ? AND coord_system_id = ?");
+
+    #force seq_region_name cast to string so mysql cannot treat as int
+    $sth->execute("$seq_region_name", $coord_system->dbID());
+
+    if($sth->rows() != 1) {
+      $version ||= '';
+      $seq_region_name ||= '';
+      $coord_system_name ||= '';
+      throw("Cannot create slice on non-existant or ambigous seq_region:\n" .
+            "  coord_system=[$coord_system_name],\n" .
+            "  name=[$seq_region_name],\n" .
+            "  version=[$version]");
     }
 
-    unless(defined $end) {   # Why defined?  Is '0' a valid end?
-      $self->throw("end argument must be defined\n");
-    }
+    my $id;
+    ($id, $length) = $sth->fetchrow_array();
+    $sth->finish();
 
-    unless(defined $start) {
-      $self->throw("start argument must be defined\n");
-    }
+    #cache results to speed up future queries
+    $name_cache->{$key} = [$id,$length];
+    $self->{'_id_cache'}->{$id} = [$seq_region_name, $length, $coord_system];
+  }
 
-    if($start > $end) {
-      $self->throw("start must be less than end: parameters $chr:$start:$end");
-    }
-    
-    my $slice;
-    my $type = $self->db->assembly_type();
+  $start = 1 if(!defined($start));
+  $strand = 1 if(!defined($strand));
+  $end = $length if(!defined($end));
 
-    $slice = Bio::EnsEMBL::Slice->new(
-          -chr_name      => $chr,
-          -chr_start     => $start,
-          -chr_end       => $end,
-          -assembly_type => $type,
-          -adaptor       => $self
-	 );
+  if($end < $start) {
+    throw('start [$start] must be less than or equal to end [$end]');
+  }
 
-    return $slice;
+  return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
+                                  -SEQ_REGION_NAME => $seq_region_name,
+                                  -START           => $start,
+                                  -END             => $end,
+                                  -STRAND          => $strand,
+                                  -ADAPTOR         => $self);
 }
 
 
 
-=head2 fetch_by_contig_name
+=head2 fetch_by_name
 
   Arg [1]    : string $name
-               the name of the contig to obtain a slice for
-  Arg [2]    : (optional) int $size
-               the size of the flanking regions to obtain (aka context size)
-  Example    : $slc = $slc_adaptor->fetch_by_contig_name('AB000878.1.1.33983');
-  Description: Creates a slice object around the specified contig.  
-               If a context size is given, the slice is extended by that 
-               number of basepairs on either side of the contig.
+  Example    : $name  = 'chromosome:NCBI34:X:1000000:2000000:1';
+               $slice = $slice_adaptor->fetch_by_name($name);
+               $slice2 = $slice_adaptor->fetch_by_name($slice3->name());
+  Description: Fetches a slice using a slice name (i.e. the value returned by
+               the Slice::name method).  This is useful if you wish to 
+               store a unique identifier for a slice in a file or database or
+               pass a slice over a network.
+               Slice::name allows you to serialise/marshall a slice and this
+               method allows you to deserialise/unmarshal it.
   Returntype : Bio::EnsEMBL::Slice
-  Exceptions : none
-  Caller     : general
+  Exceptions : throw if incorrent arg provided
+  Caller     : Pipeline
 
 =cut
 
-sub fetch_by_contig_name {
-  my ($self,$name, $size) = @_;
-  
-  if( !defined $size ) {$size=0;}
+sub fetch_by_name {
+  my $self = shift;
+  my $name = shift;
 
-  my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_contig($name);
-  
-  $start -= $size;
-  $end += $size;
-  
-  if($start < 1) {
-    $start  = 1;
+  if(!$name) {
+    throw("name argument is required");
   }
-  
-  return $self->fetch_by_chr_start_end($chr_name, $start, $end);
+
+  my @array = split(/:/,$name);
+
+  if(@array != 6) {
+    throw("Malformed slice name [$name].  Format is " .
+        "coord_system:version:start:end:strand");
+  }
+
+  my ($cs_name, $cs_version, $seq_region, $start, $end, $strand) = @array;
+
+
+  return $self->fetch_by_region($cs_name,$seq_region, $start,
+                               $end, $strand, $cs_version);
 }
 
 
-=head2 fetch_by_supercontig_name
 
-  Arg [1]    : string $supercontig_name
-  Example    : $slice = $slice_adaptor->fetch_by_supercontig_name('NT_004321');
-  Description: Creates a Slice on the region of the assembly where 
-               the specified super contig lies.  Note that this slice will
-               have the same orientation as the supercontig. If the supercontig
-               has a negative assembly orientation, the slice will also have
-               a negative orientation relative to the assembly.
+=head2 fetch_by_seq_region_id
+
+  Arg [1]    : string $seq_region_id
+               The internal identifier of the seq_region to create this slice
+               on
+  Example    : $slice = $slice_adaptor->fetch_by_seq_region_id(34413);
+  Description: Creates a slice object of an entire seq_region using the
+               seq_region internal identifier to resolve the seq_region.
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub fetch_by_supercontig_name {
-  my ($self,$supercontig_name) = @_;
-  
-  my $assembly_type = $self->db->assembly_type();
-  
-  my $sth = $self->db->prepare(
-    "SELECT chr.name, a.superctg_ori, MIN(a.chr_start), MAX(a.chr_end)
-       FROM assembly a, chromosome chr
-      WHERE superctg_name = ? AND type = ? AND chr.chromosome_id = a.chromosome_id
-      GROUP BY superctg_name"
-  );
+sub fetch_by_seq_region_id {
+  my ($self, $seq_region_id) = @_;
 
-  $sth->execute( $supercontig_name, $assembly_type );
-  
-  my ($chr, $strand, $slice_start, $slice_end) = $sth->fetchrow_array;
-    
-  my $slice;
-  
-  $slice = new Bio::EnsEMBL::Slice
-    (
-     -chr_name => $chr,
-     -chr_start =>$slice_start,
-     -chr_end => $slice_end,
-     -strand => $strand,
-     -assembly_type => $assembly_type,
-     -adaptor => $self
-    );
-  
-  return $slice;
+  my $id_cache = $self->{'_id_cache'};
+
+  my ($name, $length, $cs);
+
+  if(exists $id_cache->{$seq_region_id}) {
+    ($name, $length, $cs) = @{$id_cache->{$seq_region_id}};
+  } else {
+    my $sth = $self->prepare("SELECT name, length, coord_system_id " .
+                             "FROM seq_region " .
+                             "WHERE seq_region_id = ?");
+
+    $sth->execute($seq_region_id);
+
+    if($sth->rows() != 1) {
+      throw("Cannot create slice on non-existant or ambigous seq_region:" .
+            "  seq_region_id=[$seq_region_id],\n");
+    }
+
+    my $cs_id;
+    ($name, $length, $cs_id) = $sth->fetchrow_array();
+    $sth->finish();
+
+    $cs = $self->db->get_CoordSystemAdaptor->fetch_by_dbID($cs_id);
+
+    #cache results to speed up repeated queries
+    $id_cache->{$seq_region_id} = [$name, $length, $cs];
+    my $key = lc(join(':', $name, $cs->name, $cs->version));
+    $self->{'_name_cache'}->{$key} = [$seq_region_id, $length];
+  }
+
+  return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
+                                  -SEQ_REGION_NAME => $name,
+                                  -START           => 1,
+                                  -END             => $length,
+                                  -STRAND          => 1,
+                                  -ADAPTOR         => $self);
 }
 
 
-=head2 list_overlapping_supercontigs
+
+=head2 get_seq_region_id
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
-               overlapping given Sice
-  Example    : 
-  Description: return the names of the supercontigs that overlap given Slice.  
-  Returntype : listref string
+               The slice to fetch a seq_region_id for
+  Example    : $srid = $slice_adaptor->get_seq_region_id($slice);
+  Description: Retrieves the seq_region id (in this database) given a slice
+               Seq region ids are not stored on the slices themselves
+               because they are intended to be somewhat database independant
+               and seq_region_ids vary accross databases.
+  Returntype : int
+  Exceptions : throw if the seq_region of the slice is not in the db
+               throw if incorrect arg provided
+  Caller     : BaseFeatureAdaptor
+
+=cut
+
+sub get_seq_region_id {
+  my $self = shift;
+  my $slice = shift;
+
+  if(!$slice || !ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Slice argument is required');
+  }
+
+  my $cs_name = $slice->coord_system->name();
+  my $cs_version = $slice->coord_system->version();
+  my $seq_region_name = $slice->seq_region_name();
+
+  my $key = lc(join(':', $seq_region_name,$cs_name,$cs_version));
+
+  my $name_cache = $self->{'_name_cache'};
+
+  if(exists($name_cache->{$key})) {
+    return $name_cache->{$key}->[0];
+  }
+
+  my $csa = $self->db()->get_CoordSystemAdaptor();
+  my $coord_system = $csa->fetch_by_name($cs_name,$cs_version);
+
+  my $sth = $self->prepare("SELECT seq_region_id, length " .
+                           "FROM seq_region " .
+                           "WHERE name = ? AND coord_system_id = ?");
+
+  #force seq_region_name cast to string so mysql cannot treat as int
+  $sth->execute("$seq_region_name", $coord_system->dbID());
+
+  if($sth->rows() != 1) {
+    throw("Non existant or ambigous seq_region:\n" .
+          "  coord_system=[$cs_name],\n" .
+          "  name=[$seq_region_name],\n" .
+          "  version=[$cs_version]");
+  }
+
+  my($seq_region_id, $length) = $sth->fetchrow_array();
+  $sth->finish();
+
+  #cache information for future requests
+  $name_cache->{$key} = [$seq_region_id, $length];
+  $self->{'_id_cache'}->{$seq_region_id} =
+    [$seq_region_name, $length, $coord_system];
+
+  return $seq_region_id;
+}
+
+
+=head2 get_seq_region_attribs
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice to fetch attributes for
+  Example    : %attribs = %{$slice_adaptor->get_seq_region_attribs($slice)};
+               ($htg_phase) = @{$attribs->{'htg_phase'} || []};
+               @synonyms    = @{$attribs->{'synonym'} || []};
+  Description: Retrieves a reference to a hash containing attrib code values
+               and listref value keys.
+  Returntype : hashref
+  Exceptions : throw if the seq_region of the slice is not in the db
+               throw if incorrect arg provided
+  Caller     : Bio::EnsEMBL::Slice
+
+=cut
+
+sub get_seq_region_attribs {
+  my $self = shift;
+  my $slice = shift;
+
+  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Slice argument is required');
+  }
+
+  my $srid = $self->get_seq_region_id($slice);
+
+  if(!$srid) {
+    throw('Slice is not on a seq_region stored in this database.');
+  }
+
+  $self->{'_attribs_cache'} ||= {};
+  if($self->{'_attribs_cache'}->{$srid}) {
+    return $self->{'_attribs_cache'}->{$srid};
+  }
+
+  my $sth = $self->prepare('SELECT at.code, sra.value ' .
+                           'FROM   seq_region_attrib sra, attrib_type at ' .
+                           'WHERE  sra.seq_region_id = ? ' .
+                           'AND    at.attrib_type_id = sra.attrib_type_id');
+
+  $sth->execute($srid);
+
+  my($code, $attrib);
+  $sth->bind_columns(\$code, \$attrib);
+
+  my %attrib_hash;
+  while($sth->fetch()) {
+    $attrib_hash{$code} ||= [];
+    push @{$attrib_hash{$code}}, $attrib;
+  }
+
+  $sth->finish();
+  $self->{'_attribs_cache'} = \%attrib_hash;
+  return \%attrib_hash;
+}
+
+
+=head2 fetch_all
+
+  Arg [1]    : string $coord_system_name
+               The name of the coordinate system to retrieve slices of.
+               This may be a name of an acutal coordinate system or an alias
+               to a coordinate system.  Valid aliases are 'seqlevel' or
+               'toplevel'.
+  Arg [2]    : string $coord_system_version (optional)
+               The version of the coordinate system to retrieve slices of
+  Arg [3]    : int $max_length (optional)
+               The maximum length of slices to be returned.  Seq_regions which
+               are larger than $max_length will be split into multiple slices.
+               If this argument is not provided then slices will not be 
+               split.  If this argument is less than 1 a warning will occur and
+               the slices will not be split.
+  Arg [4]    : int $overlap (optional)
+               The amount that the returned slices should overlap. By default
+               this value is 0.  If no max_length value is provided but an 
+               overlap which is not zero is provided this argument will be
+               ignored and a warning will occur. 
+  Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
+               @contigs = @{$slice_adaptor->fetch_all('contig')};
+
+               #create chunks of size 100k with 10k overlap
+               @fixed_chunks = @{$slice_adaptor->fetch_all('chromosome', undef,
+                                                           1e5, 1e4);
+
+  Description: Retrieves slices of all seq_regions for a given coordinate
+               system.  This is analagous to the methods fetch_all which were
+               formerly on the ChromosomeAdaptor, RawContigAdaptor and
+               CloneAdaptor classes.  Slices fetched span the entire
+               seq_regions and are on the forward strand.
+  Returntype : listref of Bio::EnsEMBL::Slices
+  Exceptions : throw if invalid coord system is provided
+               throw if max_length < 1 is provided
+               throw if overlap < 0 is provided
+               throw if overlap is provided but max_length is not 
+               throw if overlap is greater than max_length
+  Caller     : general
+
+=cut
+
+sub fetch_all {
+  my $self = shift;
+  my $cs_name = shift;
+  my $cs_version = shift || '';
+
+  my ($max_length, $overlap) = @_;
+
+  #
+  # sanity checking of the overlap / maxlength arguments
+  #
+  if(defined($max_length) && $max_length < 1) {
+    throw("Invalid max length [$max_length] provided.");
+  }
+
+  $overlap ||= 0;
+  if($overlap != 0) {
+    if(!defined($max_length)) {
+      throw("Cannot define overlap without defining valid max_length.");
+    }
+    if($overlap < 0) {
+      throw("Cannot define overlap that is less than 0.");
+    }
+    if($max_length <= $overlap) {
+      throw("Overlap must be less than max_length.");
+    } 
+  }
+
+  #
+  # verify existance of requested coord system and get its id
+  #
+  my $csa = $self->db->get_CoordSystemAdaptor();
+  my $cs = $csa->fetch_by_name($cs_name, $cs_version);
+
+  
+  #
+  # Retrieve the seq_region from the database
+  #
+  my $sth = $self->prepare('SELECT seq_region_id, name, length ' .
+                           'FROM   seq_region ' .
+                           'WHERE  coord_system_id =?');
+
+  $sth->execute($cs->dbID);
+
+  my ($seq_region_id, $name, $length);
+  $sth->bind_columns(\$seq_region_id, \$name, \$length);
+
+  my $name_cache = $self->{'_name_cache'};
+  my $id_cache   = $self->{'_id_cache'};
+
+  my $cs_key = lc($cs->name().':'.$cs_version);
+
+  my @out;
+  while($sth->fetch()) {
+    #cache values for future reference
+    my $key = lc($name) . ':'. $cs_key;
+    $name_cache->{$key} = [$seq_region_id, $length];
+    $id_cache->{$seq_region_id} = [$name, $length, $cs];
+
+    #
+    # split the seq regions into appropriately sized chunks
+    #
+    my $start = 1;
+    my $end;
+    my $multiple;
+    my $number;
+
+    if($max_length && ($length > $overlap)) {
+      #No seq region may be longer than max_length but we want to make
+      #them all similar size so that the last one isn't much shorter.
+      #Divide the seq_region into the largest equal pieces that are shorter
+      #than max_length
+
+      #calculate number of slices to create
+      $number = ($length-$overlap) / ($max_length-$overlap);
+      $number = int($number + 1.0); #round up to int (ceiling) 
+
+      #calculate length of created slices
+      $multiple = $length / $number;
+      $multiple   = int($multiple); #round down to int (floor)
+    } else {
+      #just one slice of the whole seq_region
+      $number = 1;
+      $multiple = $length;
+    }
+
+    my $i;
+    for(my $i=0; $i < $number; $i++) {
+      $end = $start + $multiple + $overlap;
+
+      #any remainder gets added to the last slice of the seq_region
+      $end = $length if($i == $number-1);
+
+      push @out, Bio::EnsEMBL::Slice->new(-START           => $start,
+                                          -END             => $end,
+                                          -STRAND          => 1,
+                                          -SEQ_REGION_NAME => $name,
+                                          -COORD_SYSTEM    => $cs,
+                                          -ADAPTOR         => $self);
+      $start += $multiple;
+    }
+  }
+
+  return \@out;
+}
+
+
+=head2 fetch_all_non_redundant
+
+  Arg [1]    : none
+  Example    : @all = @{$slice_adaptor->fetch_all_non_redundant()};
+  Description: Retrieves all non-redundant slices, i.e. those which have
+               the attribute 'nonredundant' set
+  Returntype : listref of Bio::EnsEMBL::Slices
   Exceptions : none
   Caller     : general
 
 =cut
 
+sub fetch_all_non_redundant {
 
-sub list_overlapping_supercontigs {
-   my ($self,$slice) = @_;
-   my $sth = $self->db->prepare( "
-      SELECT DISTINCT superctg_name
-        FROM assembly a, chromosome c
-       WHERE c.chromosome_id = a.chromosome_id 
-         AND c.name = ?
-         AND a.type = ?
-         AND a.chr_end >= ?
-         AND a.chr_start <= ?
-       " );
-   $sth->execute( $slice->chr_name(), $slice->assembly_type(),
-		  $slice->chr_start(), $slice->chr_end() );
+  my $self = shift;
 
-   my $result = [];
-   while( my $aref = $sth->fetchrow_arrayref() ) {
-     push( @$result, $aref->[0] );
-   }
+  my $sth = $self->prepare("SELECT s.name, s.length, c.coord_system_id " .
+			   "FROM seq_region s, coord_system c, seq_region_attrib sra, attrib_type at " .
+			   "WHERE s.coord_system_id=c.coord_system_id " .
+			   "AND at.code='nonredundant' " .
+			   "AND at.attrib_type_id=sra.attrib_type_id " .
+			   "AND sra.seq_region_id=s.seq_region_id");
 
-   return $result;
+  $sth->execute();
+
+  my ($name, $length, $cs_id);
+  $sth->bind_columns(\$name, \$length, \$cs_id);
+
+  # Slice expects a CoordSystem object
+  my $cs_adaptor = $self->db->get_CoordSystemAdaptor();
+
+
+  my @out;
+  while($sth->fetch()) {
+    my $cs = $cs_adaptor->fetch_by_dbID($cs_id);
+    push @out, Bio::EnsEMBL::Slice->new(-START  => 1,
+                                        -END    => $length,
+                                        -STRAND => 1,
+                                        -SEQ_REGION_NAME => $name,
+                                        -COORD_SYSTEM => $cs,
+                                        -ADAPTOR => $self);
+  }
+
+  return \@out;
+
 }
+
+
+sub deleteObj {
+  my $self = shift;
+
+  $self->SUPER::deleteObj;
+
+  $self->{'_id_cache'} = {};
+  $self->{'_name_cache'} = {};
+  $self->{'_exc_cache'} = {};
+}
+
 
 
 =head2 fetch_by_chr_band
@@ -240,114 +618,28 @@ sub list_overlapping_supercontigs {
  Returns :
  Args    : the band name
 
-
 =cut
 
 sub fetch_by_chr_band {
-    my ($self,$chr,$band) = @_;
+  my ($self,$chr,$band) = @_;
 
-    my $type = $self->db->assembly_type();
+  my $chr_slice = $self->fetch_by_region('chromosome', $chr);
 
-    warn( "XX>" ,$chr, "--", $band );
-    my $sth = $self->db->prepare("
-        select min(k.chr_start), max(k.chr_end)
-          from chromosome as c, karyotype as k
-         where c.chromosome_id = k.chromosome_id and c.name=? and k.band like ?
-    ");
-    $sth->execute( $chr, "$band%" );
-    my ( $slice_start, $slice_end) = $sth->fetchrow_array;
+  my $seq_region_id = $self->get_seq_region_id($chr_slice);
 
-    warn( $chr, "--", $band );
-    unless( defined($slice_start) ) {
-       my $sth = $self->db->prepare("
-           select min(k.chr_start), max(k.chr_end)
-             from chromosome as c, karyotype as k
-            where c.chromosome_id = k.chromosome_id and k.band like ?
-       ");
-       $sth->execute( "$band%" );
-       ( $slice_start, $slice_end) = $sth->fetchrow_array;
-    }
+  my $sth = $self->db->prepare
+        ("select min(k.chr_start), max(k.chr_end) " .
+         "from karyotype as k " .
+         "where k.seq_region_id = ? and k.band like ?");
 
-   if(defined $slice_start) {
-        return new Bio::EnsEMBL::Slice(
-           -chr_name  => $chr,
-           -chr_start => $slice_start,
-           -chr_end   => $slice_end,
-           -strand    => 1,
-           -assembly_type => $type
-        );
-    }
+  $sth->execute( $seq_region_id, "$band%" );
+  my ( $slice_start, $slice_end) = $sth->fetchrow_array;
 
-    $self->throw("Band not recognised in database");
-}
+  if(defined $slice_start) {
+    return $self->fetch_by_region('chromosome',$chr,$slice_start,$slice_end);
+  }
 
-
-=head2 fetch_by_clone_accession
-
-  Arg [1]    : string $clone 
-               the embl accession of the clone object to retrieve
-  Arg [2]    : (optional) int $size
-               the size of the flanking regions to obtain around the clone 
-  Example    : $slc = $slc_adaptor->fetch_by_clone_accession('AC000012',1000);
-  Description: Creates a Slice around the specified clone.  If a context size 
-               is given, the Slice is extended by that number of basepairs on 
-               either side of the clone.  Throws if the clone is not golden.
-  Returntype : Bio::EnsEMBL::Slice
-  Exceptions : thrown if the clone is not in the assembly 
-  Caller     : general
-
-=cut
-
-sub fetch_by_clone_accession{
-   my ($self,$clone,$size) = @_;
-
-   if( !defined $clone ) {
-     $self->throw("Must have clone to fetch Slice of clone");
-   }
-   if( !defined $size ) {$size=0;}
-
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
-
-   my $sth = $self->db->prepare("SELECT  c.name,
-                        a.chr_start,
-                        a.chr_end,
-                        chr.name 
-                    FROM    assembly a, 
-                        contig c, 
-                        clone  cl,
-                        chromosome chr
-                    WHERE c.clone_id = cl.clone_id
-                    AND cl.name = '$clone'  
-                    AND c.contig_id = a.contig_id 
-                    AND a.type = '$type' 
-                    AND chr.chromosome_id = a.chromosome_id
-                    ORDER BY a.chr_start"
-                    );
-   $sth->execute();
- 
-   my ($contig,$start,$end,$chr_name); 
-   my $counter; 
-   my $first_start;
-   while ( my @row=$sth->fetchrow_array){
-       $counter++;
-       ($contig,$start,$end,$chr_name)=@row;
-       if ($counter==1){$first_start=$start;}      
-   }
-
-   if( !defined $contig ) {
-       $self->throw("Clone is not on the golden path. Cannot build Slice");
-   }
-     
-   $first_start -= $size;
-   $end += $size;
-
-   if($first_start < 1) {
-     $first_start = 1;
-   }
-
-   my $slice = $self->fetch_by_chr_start_end($chr_name, $first_start, $end);
-   return $slice;
+  throw("Band not recognised in database");
 }
 
 
@@ -363,10 +655,10 @@ sub fetch_by_clone_accession{
   Example    : $slc = $sa->fetch_by_transcript_stable_id('ENST00000302930',10);
   Description: Creates a slice around the region of the specified transcript. 
                If a context size is given, the slice is extended by that 
-               number of basepairs on either side of the 
-               transcript.  Throws if the transcript is not golden.
+               number of basepairs on either side of the
+               transcript.
   Returntype : Bio::EnsEMBL::Slice
-  Exceptions : none
+  Exceptions : Thrown if the transcript is not in the database.
   Caller     : general
 
 =cut
@@ -374,14 +666,15 @@ sub fetch_by_clone_accession{
 sub fetch_by_transcript_stable_id{
   my ($self,$transcriptid,$size) = @_;
 
-  # Just get the dbID, then fetch slice by that
-  my $ta = $self->db->get_TranscriptAdaptor;
-  my $transcript_obj = $ta->fetch_by_stable_id($transcriptid);
-  my $dbID = $transcript_obj->dbID;
-  
-  return $self->fetch_by_transcript_id($dbID, $size);
-}
+  throw('Transcript argument is required.') if(!$transcriptid);
 
+  my $ta = $self->db->get_TranscriptAdaptor;
+  my $transcript = $ta->fetch_by_stable_id($transcriptid);
+
+  throw("Transcript [$transcriptid] does not exist in DB.") if(!$transcript);
+
+  return $self->fetch_by_Feature($transcript, $size);
+}
 
 
 
@@ -394,12 +687,13 @@ sub fetch_by_transcript_stable_id{
                The length of the flanking regions the slice should encompass 
                on either side of the transcript (0 by default)
   Example    : $slc = $sa->fetch_by_transcript_id(24, 1000);
-  Description: Creates a slice around the region of the specified transcript. 
-               If a context size is given, the slice is extended by that 
-               number of basepairs on either side of the 
-               transcript. 
+  Description: Creates a slice around the region of the specified transcript.
+               If a context size is given, the slice is extended by that
+               number of basepairs on either side of the
+               transcript.
   Returntype : Bio::EnsEMBL::Slice
-  Exceptions : thrown on incorrect args
+  Exceptions : throw on incorrect args
+               throw if transcript is not in database
   Caller     : general
 
 =cut
@@ -407,39 +701,14 @@ sub fetch_by_transcript_stable_id{
 sub fetch_by_transcript_id {
   my ($self,$transcriptid,$size) = @_;
 
-  unless( defined $transcriptid ) {
-    $self->throw("Must have transcriptid id to fetch Slice of transcript");
-  }
+  throw('Transcript id argument is required.') if(!$transcriptid);
 
-  $size = 0 unless(defined $size);
-   
-  my $ta = $self->db->get_TranscriptAdaptor;
-  my $transcript_obj = $ta->fetch_by_dbID($transcriptid);
-  
-  my %exon_transforms;
-  
-  my $emptyslice;
-  for my $exon ( @{$transcript_obj->get_all_Exons()} ) {
-    $emptyslice = Bio::EnsEMBL::Slice->new( '-empty'   => 1,
-					    '-adaptor' => $self,
-					    '-ASSEMBLY_TYPE' =>
-					    $self->db->assembly_type);     
-    my $newExon = $exon->transform( $emptyslice );
-    $exon_transforms{ $exon } = $newExon;
-  }
-  
-  $transcript_obj->transform( \%exon_transforms );
-  
-  my $start = $transcript_obj->start() - $size;
-  my $end = $transcript_obj->end() + $size;
-  
-  if($start < 1) {
-    $start = 1;
-  }
-  
-  my $slice = $self->fetch_by_chr_start_end($emptyslice->chr_name,
-					    $start, $end);
-  return $slice;
+  my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
+  my $transcript = $transcript_adaptor->fetch_by_dbID($transcriptid);
+
+  throw("Transcript [$transcriptid] does not exist in DB.") if(!$transcript);
+
+  return $self->fetch_by_Feature($transcript, $size);
 }
 
 
@@ -447,7 +716,7 @@ sub fetch_by_transcript_id {
 =head2 fetch_by_gene_stable_id
 
   Arg [1]    : string $geneid
-               The stable id of the gene around which the slice is 
+               The stable id of the gene around which the slice is
                desired
   Arg [2]    : (optional) int $size
                The length of the flanking regions the slice should encompass
@@ -456,243 +725,620 @@ sub fetch_by_transcript_id {
   Description: Creates a slice around the region of the specified gene.
                If a context size is given, the slice is extended by that
                number of basepairs on either side of the gene.
+               The slice will be created in the genes native coordinate system.
   Returntype : Bio::EnsEMBL::Slice
-  Exceptions : none
+  Exceptions : throw on incorrect args
+               throw if transcript does not exist
   Caller     : general
 
 =cut
 
-sub fetch_by_gene_stable_id{
-   my ($self,$geneid,$size) = @_;
+sub fetch_by_gene_stable_id {
+  my ($self,$geneid,$size) = @_;
 
-   if( !defined $geneid ) {
-       $self->throw("Must have gene id to fetch Slice of gene");
-   }
-   my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_gene($geneid);
+  throw('Gene argument is required.') if(!$geneid);
 
-   if( $size =~/([\d+\.]+)%/ ) {
-     $size = int($1/100 * ($end-$start+1));
-   }
-   if( !defined $size ) {$size=0;}
+  my $gene_adaptor = $self->db->get_GeneAdaptor();
+  my $gene = $gene_adaptor->fetch_by_stable_id($geneid);
 
-   if( !defined $start ) {
-     my $type = $self->db->assembly_type()
-       or $self->throw("No assembly type defined");
-     $self->throw("Gene [$geneid] is not on the golden path '$type'. " .
-		  "Cannot build Slice.");
-   }
-     
-   $start -= $size;
-   $end += $size;
-   
-   if($start < 1) {
-     $start = 1;
+  throw("Gene [$geneid] does not exist in DB.") if(!$gene);
+
+  return $self->fetch_by_Feature($gene, $size);
+}
+
+
+
+=head2 fetch_by_Feature
+
+  Arg [1]    : Bio::EnsEMBL::Feature $feat
+               The feature to fetch the slice around
+  Arg [2]    : int size (optional)
+               The desired number of flanking basepairs around the feature.
+  Example    : $slice = $slice_adaptor->fetch_by_Feature($feat, 100);
+  Description: Retrieves a slice around a specific feature.  All this really
+               does is return a resized version of the slice that the feature
+               is already on. Note that slices returned from this method
+               are always on the forward strand of the seq_region regardless of
+               the strandedness of the feature passed in.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : throw if the feature does not have an attached slice
+               throw if feature argument is not provided
+  Caller     : fetch_by_gene_stable_id, fetch_by_transcript_stable_id,
+               fetch_by_gene_id, fetch_by_transcript_id
+
+=cut
+
+sub fetch_by_Feature{
+  my ($self, $feature, $size) = @_;
+
+  $size ||= 0;
+
+  if(!ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')) {
+    throw('Feature argument expected.');
+  }
+
+  my $slice = $feature->slice();
+  if(!$slice || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Feature must be attached to a valid slice.');
+  }
+
+  my $fstart = $feature->start();
+  my $fend   = $feature->end();
+  if(!defined($fstart) || !defined($fend)) {
+    throw('Feature must have defined start and end.');
+  }
+
+  #convert the feature slice coordinates to seq_region coordinates
+  my $slice_start  = $slice->start();
+  my $slice_end    = $slice->end();
+  my $slice_strand = $slice->strand();
+  if($slice_start != 1 || $slice_strand != 1) {
+    if($slice_strand == 1) {
+      $fstart = $fstart + $slice_start - 1;
+      $fend   = $fend   + $slice_start - 1;
+    } else {
+      my $tmp_start = $fstart;
+      $fstart = $slice_end - $fend      + 1;
+      $fend   = $slice_end - $tmp_start + 1;
+    }
+  }
+
+  #return a new slice covering the region of the feature
+  return Bio::EnsEMBL::Slice->new(-seq_region_name => $slice->seq_region_name,
+                                  -coord_system    => $slice->coord_system,
+                                  -start           => $fstart - $size,
+                                  -end             => $fend + $size,
+                                  -strand          => 1,
+                                  -adaptor         => $self);
+}
+
+
+
+=head2 fetch_by_misc_feature_attribute
+
+  Arg [1]    : string $attribute_type
+               The code of the attribute type
+  Arg [2]    : (optional) string $attribute_value
+               The value of the attribute to fetch by
+  Arg [3]    : (optional) int $size
+               The amount of flanking region around the misc feature desired.
+  Example    : $slice = $sa->fetch_by_misc_feature_attribute('superctg',
+                                                             'NT_030871');
+               $slice = $sa->fetch_by_misc_feature_attribute('synonym',
+                                                             'AL00012311',
+                                                             $flanking);
+  Description: Fetches a slice around a MiscFeature with a particular
+               attribute type and value. If no value is specified then
+               the feature with the particular attribute is used.
+               If no size is specified then 0 is used.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : Throw if no feature with the specified attribute type and value
+               exists in the database
+               Warning if multiple features with the specified attribute type
+               and value exist in the database.
+  Caller     : webcode
+
+=cut
+
+sub fetch_by_misc_feature_attribute {
+  my ($self, $attrib_type_code, $attrib_value, $size) = @_;
+
+  my $mfa = $self->db()->get_MiscFeatureAdaptor();
+
+  my $feats = $mfa->fetch_all_by_attribute_type_value($attrib_type_code,
+                                                   $attrib_value);
+
+  if(@$feats == 0) {
+    throw("MiscFeature with $attrib_type_code=$attrib_value does " .
+          "not exist in DB.");
+  }
+
+  if(@$feats > 1) {
+    warning("MiscFeature with $attrib_type_code=$attrib_value is " .
+            "ambiguous - using first one found.");
+  }
+
+  my ($feat) = @$feats;
+
+  return $self->fetch_by_Feature($feat, $size);
+}
+
+
+=head2 fetch_normalized_slice_projection
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+  Example    :  ( optional )
+  Description: gives back a project style result. The returned slices 
+               represent the areas to which there are symlinks for the 
+               given slice. start, end show which area on given slice is 
+               symlinked
+  Returntype : [[start,end,$slice][]]
+  Exceptions : none
+  Caller     : BaseFeatureAdaptor
+
+=cut
+
+
+sub fetch_normalized_slice_projection {
+  my $self = shift;
+  my $slice = shift;
+
+  my $slice_seq_region_id = $self->get_seq_region_id( $slice );
+
+  my $result = $self->{'asm_exc_cache'}->{$slice_seq_region_id};
+
+  if(!defined($result)) {
+    my $sql = "
+      SELECT seq_region_id, seq_region_start, seq_region_end,
+             exc_type, exc_seq_region_id, exc_seq_region_start,
+             exc_seq_region_end
+        FROM assembly_exception
+       WHERE seq_region_id = ?";
+
+    my $sth = $self->prepare( $sql );
+    $sth->execute( $slice_seq_region_id );
+    $result = $sth->fetchall_arrayref();
+    $self->{'asm_exc_cache'}->{$slice_seq_region_id} = $result;
+  }
+
+  my (@haps, @pars);
+
+  foreach my $row (@$result) {
+    my ( $seq_region_id, $seq_region_start, $seq_region_end,
+         $exc_type, $exc_seq_region_id, $exc_seq_region_start,
+         $exc_seq_region_end ) = @$row;
+
+    # need overlapping PAR and all HAPs if any
+    if( $exc_type eq "PAR" ) {
+      if( $seq_region_start <= $slice->end() && 
+          $seq_region_end >= $slice->start() ) {
+        push( @pars, [ $seq_region_start, $seq_region_end, $exc_seq_region_id,
+                       $exc_seq_region_start, $exc_seq_region_end ] );
+      }
+    } else {
+      push( @haps, [ $seq_region_start, $seq_region_end, $exc_seq_region_id,
+                     $exc_seq_region_start, $exc_seq_region_end ] );
+    }
+  }
+
+  if(!@pars && !@haps) {
+    #just return this slice, there were no haps or pars
+    return  [[1,$slice->length, $slice]];
+  }
+
+  my @syms;
+  if( @haps > 1 ) {
+    my @sort_haps = sort { $a->[1] <=> $b->[1] } @haps;
+    throw( "More than one HAP region not supported yet" );
+  } elsif( @haps == 1 ) {
+    my $hap = $haps[0];
+
+    my $seq_reg_slice = $self->fetch_by_seq_region_id($slice_seq_region_id);
+    my $exc_slice = $self->fetch_by_seq_region_id( $hap->[2] );
+
+    #
+    # lengths of haplotype and reference in db may be different
+    # we want to use the maximum possible length for the mapping
+    # between the two systems
+    #
+    my $len1 = $seq_reg_slice->length();
+    my $len2 = $exc_slice->length();
+    my $max_len = ($len1 > $len2) ? $len1 : $len2;
+
+    #the inserted region can differ in length, but mapped sections
+    #need to be same lengths
+    my $diff = $hap->[4] - $hap->[1];
+
+    # we want the region of the haplotype INVERTED
+    push( @syms, [ 1, $hap->[0]-1, $hap->[2], 1, $hap->[3] - 1 ] );
+    push( @syms, [ $hap->[1]+1, $max_len - $diff, 
+                   $hap->[2], $hap->[4] + 1, $max_len ] );   
+  }
+
+  # for now haps and pars should not be both there, but in theory we 
+  # could handle it here by cleverly merging the pars into the existing syms,
+  # for now just:
+  push( @syms, @pars );
+
+  my $mapper = Bio::EnsEMBL::Mapper->new( "sym", "org" );
+  for my $sym ( @syms ) {
+    $mapper->add_map_coordinates( $slice_seq_region_id, $sym->[0], $sym->[1],
+                                  1, $sym->[2], $sym->[3], $sym->[4] );
+  }
+
+  my @linked = $mapper->map_coordinates( $slice_seq_region_id,
+                                         $slice->start(), $slice->end(),
+                                         $slice->strand(), "sym" );
+
+  # gaps are regions where there is no mapping to another region
+  my $rel_start = 1;
+
+  #if there was only one coord and it is a gap, we know it is just the
+  #same slice with no overlapping symlinks
+  if(@linked == 1 && $linked[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+    return [[1,$slice->length, $slice]];
+  }
+
+  my @out;
+  for my $coord ( @linked ) {
+    if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
+      my $exc_slice = Bio::EnsEMBL::Slice->new
+        (-START        => $coord->start(),
+         -END          => $coord->end(),
+         -STRAND       => $slice->strand(),
+         -COORD_SYSTEM => $slice->coord_system(),
+         -ADAPTOR      => $self,
+         -SEQ_REGION_NAME => $slice->seq_region_name);
+      push( @out, [ $rel_start, $coord->length()+$rel_start-1,
+                        $exc_slice ] );
+    } else {
+      my $exc_slice = $self->fetch_by_seq_region_id( $coord->id() );
+      my $exc2_slice = Bio::EnsEMBL::Slice->new
+        (
+         -START  => $coord->start(),
+         -END    => $coord->end(),
+         -STRAND => $coord->strand(),
+         -SEQ_REGION_NAME => $exc_slice->seq_region_name(),
+         -COORD_SYSTEM => $exc_slice->coord_system(),
+         -ADAPTOR => $self
+        );
+	
+      push( @out, [ $rel_start, $coord->length() + $rel_start - 1,
+                    $exc2_slice ] );
+    }
+    $rel_start += $coord->length();
+  }
+
+  return \@out;
+}
+
+
+
+
+=head2 store
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+  Arg [2]    : (optional) $seqref reference to a string
+               The sequence associated with the slice to be stored.
+  Example    : $slice = Bio::EnsEMBL::Slice->new(...);
+               $seq_region_id = $slice_adaptor->store($slice, \$sequence);
+  Description: This stores a slice as a sequence region in the database
+               and returns the seq region id. The passed in slice must
+               start at 1, and must have a valid seq_region name and coordinate
+               system. The attached coordinate system must already be stored in
+               the database.  The sequence region is assumed to start at 1 and
+               to have a length equalling the length of the slice.
+               If the slice coordinate system is the sequence level coordinate
+               system then the seqref argument must also be passed.  If the
+               slice coordinate system is NOT a sequence level coordinate
+               system then the sequence argument cannot be passed.
+  Returntype : int 
+  Exceptions : throw if slice has no coord system.
+               throw if slice coord system is not already stored.
+               throw if slice coord system is seqlevel and no sequence is 
+                     provided.
+               throw if slice coord system is not seqlevel and sequence is
+                     provided.
+               throw if slice does not start at 1
+               throw if sequence is provided and the sequence length does not
+                     match the slice length.
+               throw if the SQL insert fails (e.g. on duplicate seq region)
+               throw if slice argument is not passed
+  Caller     : database loading scripts
+
+=cut
+
+
+
+sub store {
+  my $self = shift;
+  my $slice = shift;
+  my $seqref = shift;
+
+  #
+  # Get all of the sanity checks out of the way before storing anything
+  #
+
+  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Slice argument is required');
+  }
+
+  my $cs = $slice->coord_system();
+  throw("Slice must have attached CoordSystem.") if(!$cs);
+
+  my $db = $self->db();
+  if(!$cs->is_stored($db)) {
+    throw("Slice CoordSystem must already be stored in DB.") 
+  }
+
+  if($slice->start != 1 || $slice->strand != 1) {
+    throw("Slice must have start==1 and strand==1.");
+  }
+
+  my $sr_len = $slice->length();
+  my $sr_name  = $slice->seq_region_name();
+
+  if(!$sr_name) {
+    throw("Slice must have valid seq region name.");
+  }
+
+  if($cs->is_sequence_level()) {
+    if(!$seqref) {
+      throw("Must provide sequence for sequence level coord system.");
+    }
+    if(ref($seqref) ne 'SCALAR') {
+      throw("Sequence must be a scalar reference.");
+    }
+    my $seq_len = length($$seqref);
+
+    if($seq_len != $sr_len) {
+      throw("Sequence length ($seq_len) must match slice length ($sr_len).");
+    }
+  } else {
+    if($seqref) {
+      throw("Cannot provide sequence for non-sequence level seq regions.");
+    }
+  }
+
+  #store the seq_region
+
+  my $sth = $db->prepare("INSERT INTO seq_region " .
+                         "SET    name = ?, " .
+                         "       length = ?, " .
+                         "       coord_system_id = ?" );
+
+  $sth->execute($sr_name, $sr_len, $cs->dbID());
+
+  my $seq_region_id = $sth->{'mysql_insertid'};
+
+  if(!$seq_region_id) {
+    throw("Database seq_region insertion failed.");
+  }
+
+  if($cs->is_sequence_level()) {
+    #store sequence if it was provided
+    my $seq_adaptor = $db->get_SequenceAdaptor();
+    $seq_adaptor->store($seq_region_id, $$seqref);
+  }
+
+  return $seq_region_id;
+}
+
+
+
+#####################################
+# sub DEPRECATED METHODs
+#####################################
+
+=head2 fetch_by_mapfrag
+
+ Function: DEPRECATED use fetch_by_misc_feature_attribute('synonym',$mapfrag)
+
+=cut
+
+sub fetch_by_mapfrag{
+   my ($self,$mymapfrag,$flag,$size) = @_;
+   deprecate('Use fetch_by_misc_feature_attribute instead');
+   $flag ||= 'fixed-width'; # alt.. 'context'
+   $size ||= $flag eq 'fixed-width' ? 100000 : 0;
+   return $self->fetch_by_misc_feature_attribute('synonym',$mymapfrag,$size);
+}
+
+
+
+=head2 fetch_by_chr_start_end
+
+  Description: DEPRECATED use fetch_by_region instead
+
+=cut
+
+sub fetch_by_chr_start_end {
+  my ($self,$chr,$start,$end) = @_;
+  deprecate('Use fetch_by_region() instead');
+
+  #assume that by chromosome the user actually meant top-level coord
+  #system since this is the old behaviour of this deprecated method
+  my $csa = $self->db->get_CoordSystemAdaptor();
+  my $cs = $csa->fetch_top_level();
+
+  return $self->fetch_by_region($cs->name,$chr,$start,$end,1,$cs->version);
+}
+
+
+
+=head2 fetch_by_contig_name
+
+  Description: Deprecated. Use fetch_by_region(), Slice::project(),
+               Slice::expand() instead
+
+=cut
+
+sub fetch_by_contig_name {
+  my ($self, $name, $size) = @_;
+
+  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+
+  #previously wanted chromosomal slice on a given contig.  Assume this means
+  #a top-level slice on a given seq_region in the seq_level coord system
+  my $csa = $self->db()->get_CoordSystemAdaptor();
+  my $top_level = $csa->fetch_top_level();
+  my $seq_level = $csa->fetch_sequence_level();
+
+  my $seq_lvl_slice = $self->fetch_by_region($seq_level->name(), $name);
+
+  my @projection = @{$seq_lvl_slice->project($top_level->name(),
+                                             $top_level->version())};
+  if(@projection == 0) {
+    warning("contig $name is not used in ".$top_level->name().' assembly.');
+    return undef;
+  }
+
+  if(@projection > 1) {
+    warning("$name is mapped to multiple locations in " . $top_level->name());
+  }
+
+  return $projection[0]->[2]->expand($size, $size);
+}
+
+
+=head2 fetch_by_clone_accession
+
+  Description: DEPRECATED.  Use fetch_by_region, Slice::project, Slice::expand
+               instead.
+
+=cut
+
+sub fetch_by_clone_accession{
+  my ($self,$name,$size) = @_;
+
+  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+
+  my $csa = $self->db()->get_CoordSystemAdaptor();
+  my $top_level = $csa->fetch_top_level();
+  my $clone_cs = $csa->fetch_by_name('clone');
+
+  if(!$clone_cs) {
+    warning('Clone coordinate system does not exist for this species');
+    return undef;
+  }
+
+  #this unfortunately needs a version on the end to work
+  if(! ($name =~ /\./)) {
+    my $sth = $self->prepare("SELECT sr.name " .
+                             "FROM   seq_region sr, coord_system cs " .
+                             "WHERE  cs.name = 'clone' " .
+                             "AND    cs.coord_system_id = sr.coord_system_id ".
+                             "AND    sr.name LIKE '$name.%'");
+    $sth->execute();
+    if(!$sth->rows()) {
+      $sth->finish();
+      throw("Clone $name not found in database");
+    }
+
+    ($name) = $sth->fetchrow_array();
+
+    $sth->finish();
+  }
+
+  my $clone = $self->fetch_by_region($clone_cs->name(), $name);
+  my @projection = @{$clone->project($top_level->name(),
+                                     $top_level->version())};
+  if(@projection == 0) {
+    warning("clone $name is not used in " . $top_level->name() . ' assembly.');
+    return undef;
+  }
+
+  if(@projection > 1) {
+    warning("$name is mapped to multiple locations in " . $top_level->name());
+  }
+
+  return $projection[0]->[2]->expand($size, $size);
+}
+
+
+=head2 fetch_by_supercontig_name
+
+  Description: DEPRECATED. Use fetch_by_region(), Slice::project() and
+               Slice::expand() instead
+
+=cut
+
+sub fetch_by_supercontig_name {
+  my ($self,$name, $size) = @_;
+
+  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+
+  my $csa = $self->db()->get_CoordSystemAdaptor();
+  my $top_level = $csa->fetch_top_level();
+  my $sc_level = $csa->fetch_by_name('supercontig');
+
+  if(!$sc_level) {
+    warning('No supercontig coordinate system exists for this species.');
+    return undef;
+  }
+
+  my $sc_slice = $self->fetch_by_region($sc_level->name(),$name);
+
+  my @projection = @{$sc_slice->project($top_level->name(),
+                                        $top_level->version())};
+  if(@projection == 0) {
+    warning("Supercontig $name is not used in " . $top_level->name() .
+         ' assembly.');
+    return undef;
+  }
+
+  if(@projection > 1) {
+    warning("$name is mapped to multiple locations in " . $top_level->name());
+  }
+
+  return $projection[0]->[2]->expand($size, $size);
+}
+
+
+
+
+=head2 list_overlapping_supercontigs
+
+  Description: DEPRECATED use Slice::project instead
+
+=cut
+
+sub list_overlapping_supercontigs {
+   my ($self,$slice) = @_;
+
+   deprecate('Use Slice::project() instead.');
+
+   my $csa = $self->db()->get_CoordSystemAdaptor();
+   my $top_level = $csa->fetch_top_level();
+   my $sc_level = $csa->fetch_by_name('supercontig');
+
+   if(!$sc_level) {
+     warning('No supercontig coordinate system exists for this species.');
+     return undef;
    }
 
-   return $self->fetch_by_chr_start_end($chr_name, $start, $end);
+   my @out;
+   foreach my $seg (@{$slice->project($sc_level->name(), $sc_level->version)}){
+     push @out, $seg->[2]->seq_region_name();
+   }
+
+   return \@out;
 }
 
 
 
 =head2 fetch_by_chr_name
 
-  Arg [1]    : string $chr_name
-  Example    : $slice = $slice_adaptor->fetch_by_chr_name('20'); 
-  Description: Retrieves a slice on the region of an entire chromosome
-  Returntype : Bio::EnsEMBL::Slice
-  Exceptions : thrown if $chr_name arg is not supplied
-  Caller     : general
+  Description: DEPRECATED. Use fetch by region instead
 
 =cut
 
 sub fetch_by_chr_name{
    my ($self,$chr_name) = @_;
+   deprecate('Use fetch_by_region() instead.');
 
-   unless( $chr_name ) {
-       $self->throw("Chromosome name argument required");
-   }
-
-   my $chr_start = 1;
-   
-   #set the end of the slice to the end of the chromosome
-   my $ca = $self->db()->get_ChromosomeAdaptor();
-   my $chromosome = $ca->fetch_by_chr_name($chr_name);
-
-   $self->throw("Unknown chromosome $chr_name") unless $chromosome;
-
-   my $chr_end = $chromosome->length();
-
-   my $type = $self->db->assembly_type();
-
-   my $slice = Bio::EnsEMBL::Slice->new
-     (
-      -chr_name      => $chr_name,
-      -chr_start     => 1,
-      -chr_end       => $chr_end,
-      -assembly_type => $type,
-      -adaptor       => $self
-     );
-
-   return $slice;
+   return $self->fetch_by_region('toplevel',$chr_name);
 }
 
-
-
-=head2 fetch_by_mapfrag
-
- Title   : fetch_by_mapfrag
- Usage   : $slice = $slice_adaptor->fetch_by_mapfrag('20');
- Function: Creates a slice of a "mapfrag"
- Returns : Slice object
- Args    : chromosome name
-
-
-=cut
-
-sub fetch_by_mapfrag{
-   my ($self,$mymapfrag,$flag,$size) = @_;
-
-   $flag ||= 'fixed-width'; # alt.. 'context'
-   $size ||= $flag eq 'fixed-width' ? 200000 : 0;
-   unless( $mymapfrag ) {
-       $self->throw("Mapfrag name argument required");
-   }
-
-   my( $chr_start,$chr_end);
-  
-   #set the end of the slice to the end of the chromosome
-   my $ca = $self->db()->get_MapFragAdaptor();
-   my $mapfrag = $ca->fetch_by_synonym($mymapfrag);
-   return undef unless defined $mapfrag;
-
-   if( $flag eq 'fixed-width' ) {
-       my $halfsize = int( $size/2 );
-       $chr_start = $mapfrag->seq_start - $halfsize;
-       $chr_end   = $mapfrag->seq_start + $size - $halfsize;
-   } else {
-       $chr_start     = $mapfrag->seq_start - $size;
-       $chr_end       = $mapfrag->seq_end   + $size;
-   }
-   my $type = $self->db->assembly_type();
-
-   my $slice = Bio::EnsEMBL::Slice->new
-     (
-      -chr_name      => $mapfrag->seq,
-      -chr_start     => $chr_start,
-      -chr_end       => $chr_end,
-      -assembly_type => $type,
-      -adaptor       => $self
-     );
-
-   return $slice;
-}
-
-
-
-
-
-=head2 _get_chr_start_end_of_contig
-
- Title   : _get_chr_start_end_of_contig
- Usage   :
- Function: returns the chromosome name, absolute start and absolute end of the 
-           specified contig
- Returns : returns chr,start,end
- Args    : contig id
-
-=cut
-
-sub _get_chr_start_end_of_contig {
-    my ($self,$contigid) = @_;
-
-   if( !defined $contigid ) {
-       $self->throw("Must have contig id to fetch Slice of contig");
-   }
-   
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
-
-   my $sth = $self->db->prepare("SELECT  c.name,
-                        a.chr_start,
-                        a.chr_end,
-                        chr.name 
-                    FROM assembly a, contig c, chromosome chr 
-                    WHERE c.name = '$contigid' 
-                    AND c.contig_id = a.contig_id 
-                    AND a.type = '$type'
-                    AND chr.chromosome_id = a.chromosome_id"
-                    );
-   $sth->execute();
-   my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
-
-   if( !defined $contig ) {
-     $self->throw("Contig $contigid is not on the golden path of type $type");
-   }
-
-   return ($chr_name,$start,$end);
-}
-
-=head2 _get_chr_start_end_of_gene
-
- Title   : get_Gene_chr_bp
- Usage   : 
- Function: 
- Returns :  
- Args    :
-
-
-=cut
-
-
-sub _get_chr_start_end_of_gene {
-  my ($self,$geneid) =  @_;
-  
-  my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
-  
-  my $sth = $self->db->prepare("SELECT  
-   if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.contig_end)),
-   if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.contig_start)),
-     chr.name
-  
-                    FROM    exon e,
-                        transcript tr,
-                        exon_transcript et,
-                        assembly a,
-                        gene_stable_id gsi,
-                        chromosome chr
-                    WHERE e.exon_id=et.exon_id 
-                    AND et.transcript_id =tr.transcript_id 
-                    AND a.contig_id=e.contig_id 
-                    AND a.type = '$type' 
-                    AND tr.gene_id = gsi.gene_id
-                    AND gsi.stable_id = '$geneid'
-                    AND a.chromosome_id = chr.chromosome_id" 
-                    );
-   $sth->execute();
-
-   my ($start,$end,$chr);
-   my @start;
-   while ( my @row=$sth->fetchrow_array){
-      ($start,$end,$chr)=@row;
-       push @start,$start;
-       push @start,$end;
-   }   
-   
-   my @start_sorted=sort { $a <=> $b } @start;
-
-   $start=shift @start_sorted;
-   $end=pop @start_sorted;
-
-   return ($chr,$start,$end);      
-}
 
 1;
-
-
-
-
-
-

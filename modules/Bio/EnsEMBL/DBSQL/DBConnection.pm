@@ -1,5 +1,4 @@
-
-=head1 NAME - Bio::EnsEMBL::DBSQL::DBConnection
+#=Head1 NAME - Bio::EnsEMBL::DBSQL::DBConnection
 
 =head1 SYNOPSIS
 
@@ -45,6 +44,7 @@ use Bio::EnsEMBL::Container;
 use Bio::EnsEMBL::Root;
 use DBI;
 
+use Bio::EnsEMBL::Utils::Exception qw(throw info warning);
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
@@ -102,8 +102,8 @@ sub new {
 			      )],@_);
     
 
-  $db   || $self->throw("Database object must have a database name");
-  $user || $self->throw("Database object must have a user");
+  $db   || throw("Database object must have a database name");
+  $user || throw("Database object must have a user");
 
   if( ! $driver ) {
     $driver = 'mysql';
@@ -122,7 +122,7 @@ sub new {
     $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
   };
     
-  $dbh || $self->throw("Could not connect to database $db user " .
+  $dbh || throw("Could not connect to database $db user " .
 		       "$user using [$dsn] as a locator\n" . $DBI::errstr);
 
   $self->db_handle($dbh);
@@ -331,9 +331,9 @@ sub locator {
 sub _get_adaptor {
   my( $self, $module, @args) = @_;
 
-    if ($self->isa('Bio::EnsEMBL::Container')) {
-        $self = $self->_obj;
-    }
+  if ($self->isa('Bio::EnsEMBL::Container')) {
+    $self = $self->_obj;
+  }
 
   my( $adaptor, $internal_name );
   
@@ -348,7 +348,7 @@ sub _get_adaptor {
     eval "require $module";
     
     if($@) {
-      $self->warn("$module cannot be found.\nException $@\n");
+      warning("$module cannot be found.\nException $@\n");
       return undef;
     }
       
@@ -402,13 +402,13 @@ sub prepare {
    my ($self,$string) = @_;
 
    if( ! $string ) {
-       $self->throw("Attempting to prepare an empty SQL query.");
+       throw("Attempting to prepare an empty SQL query.");
    }
    if( !defined $self->{_db_handle} ) {
-      $self->throw("Database object has lost its database handle.");
+      throw("Database object has lost its database handle.");
    }
 
-   #print STDERR "\n\nSQL(".$self->dbname."):$string\n\n";
+   info("SQL(".$self->dbname."):$string");
 
    return $self->{_db_handle}->prepare($string);
 } 
@@ -433,7 +433,7 @@ sub add_db_adaptor {
   my ($self, $name, $adaptor) = @_;
 
   unless($name && $adaptor && ref $adaptor) {
-    $self->throw('adaptor and name arguments are required');
+    throw('adaptor and name arguments are required');
   } 
 				   
   #avoid circular references and memory leaks
@@ -576,7 +576,6 @@ sub DESTROY {
      #don't disconnect if the InactiveDestroy flag has been set
      #this can really screw up forked processes
      if(!$dbh->{'InactiveDestroy'}) {
-       #print STDERR "Disconnecting db\n";
        $dbh->disconnect;
      } 
 

@@ -1,7 +1,6 @@
 #
 # EnsEMBL module for Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
 #
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright EMBL/EBI
 #
@@ -11,31 +10,22 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor 
+Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
 
 =head1 SYNOPSIS
 
 my $simple_feature_adaptor = $database_adaptor->get_SimpleFeatureAdaptor();
-@simple_features = $simple_feature_adaptor->fetch_by_Slice($slice);
+@simple_features = @{$simple_feature_adaptor->fetch_all_by_Slice($slice)};
 
 =head1 DESCRIPTION
 
-Simple Feature Adaptor - database access for simple features 
+Simple Feature Adaptor - database access for simple features
 
 =head1 AUTHOR - Ewan Birney
 
-Email birney@ebi.ac.uk
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-
-# Let the code begin...
-
 
 package Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor;
 use vars qw(@ISA);
@@ -43,6 +33,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::SimpleFeature;
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
@@ -55,7 +46,7 @@ use Bio::EnsEMBL::SimpleFeature;
   Description: Stores a list of simple feature objects in the database
   Returntype : none
   Exceptions : thrown if @sf is not defined, if any of the features do not
-               have an attached contig object, 
+               have an attached slice.
                or if any elements of @sf are not Bio::EnsEMBL::SeqFeatures 
   Caller     : general
 
@@ -63,45 +54,52 @@ use Bio::EnsEMBL::SimpleFeature;
 
 sub store{
   my ($self,@sf) = @_;
-  
+
   if( scalar(@sf) == 0 ) {
-    $self->throw("Must call store with list of sequence features");
+    throw("Must call store with list of SimpleFeatures");
   }
-  
-  my $sth = 
-    $self->prepare("INSERT INTO simple_feature (contig_id, contig_start,
-                                                contig_end, contig_strand,
-                                                display_label, analysis_id,
-                                                score) 
-                    VALUES (?,?,?,?,?,?,?)");
 
-  foreach my $sf ( @sf ) {
+  my $sth = $self->prepare
+    ("INSERT INTO simple_feature (seq_region_id, seq_region_start, " .
+                                 "seq_region_end, seq_region_strand, " .
+                                 "display_label, analysis_id, score) " .
+     "VALUES (?,?,?,?,?,?,?)");
+
+  my $db = $self->db();
+  my $analysis_adaptor = $db->get_AnalysisAdaptor();
+
+ FEATURE: foreach my $sf ( @sf ) {
+
     if( !ref $sf || !$sf->isa("Bio::EnsEMBL::SimpleFeature") ) {
-      $self->throw("Simple feature must be an Ensembl SimpleFeature, " .
-		   "not a [$sf]");
-    }
-    
-    if( !defined $sf->analysis ) {
-      $self->throw("Cannot store sequence features without analysis");
-    }
-    if( !defined $sf->analysis->dbID ) {
-      $self->throw("I think we should always have an analysis object " .
-		   "which has originated from the database. No dbID, " .
-		   "not putting in!");
-    }
-    
-    my $contig = $sf->entire_seq();
-    unless(defined $contig && $contig->isa("Bio::EnsEMBL::RawContig")) {
-      $self->throw("Cannot store feature without a Contig object attached via "
-		   . "attach_seq\n");
+      throw("SimpleFeature must be an Ensembl SimpleFeature, " .
+            "not a [".ref($sf)."]");
     }
 
-    # store analysis if not there already
-    $self->db->get_AnalysisAdaptor->store($sf->analysis);
+    if($sf->is_stored($db)) {
+      warning("SimpleFeature [".$sf->dbID."] is already stored" .
+              " in this database.");
+      next FEATURE;
+    }
 
-    $sth->execute($contig->dbID(), $sf->start, $sf->end, $sf->strand,
-		  $sf->display_label, $sf->analysis->dbID, $sf->score);
-  } 
+    if(!defined($sf->analysis)) {
+      throw("An analysis must be attached to the features to be stored.");
+    }
+
+    #store the analysis if it has not been stored yet
+    if(!$sf->analysis->is_stored($db)) {
+      $analysis_adaptor->store($sf->analysis());
+    }
+
+    my $original = $sf;
+    my $seq_region_id;
+    ($sf, $seq_region_id) = $self->_pre_store($sf);
+
+    $sth->execute($seq_region_id, $sf->start, $sf->end, $sf->strand,
+                  $sf->display_label, $sf->analysis->dbID, $sf->score);
+
+    $original->dbID($sth->{'mysql_insertid'});
+    $original->adaptor($self);
+  }
 }
 
 
@@ -139,9 +137,9 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  return qw( sf.simple_feature_id 
-	     sf.contig_id sf.contig_start sf.contig_end sf.contig_strand
-	     sf.display_label sf.analysis_id score );
+  return qw( sf.simple_feature_id
+             sf.seq_region_id sf.seq_region_start sf.seq_region_end
+             sf.seq_region_strand sf.display_label sf.analysis_id sf.score );
 }
 
 
@@ -158,33 +156,133 @@ sub _columns {
 =cut
 
 sub _objs_from_sth {
-  my ($self, $sth) = @_;
+  my ($self, $sth, $mapper, $dest_slice) = @_;
 
-  my $aa = $self->db()->get_AnalysisAdaptor();  
-  my $rca = $self->db()->get_RawContigAdaptor();
+  #
+  # This code is ugly because an attempt has been made to remove as many
+  # function calls as possible for speed purposes.  Thus many caches and
+  # a fair bit of gymnastics is used.
+  #
 
-  my @features = ();
-  
-  my $hashref;
-  while($hashref = $sth->fetchrow_hashref()) {
-    my $contig = $rca->fetch_by_dbID($hashref->{'contig_id'});
-    my $analysis = $aa->fetch_by_dbID($hashref->{'analysis_id'});
+  my $sa = $self->db()->get_SliceAdaptor();
+  my $aa = $self->db->get_AnalysisAdaptor();
 
-    my $out = Bio::EnsEMBL::SimpleFeature->new();
-    $out->start($hashref->{'contig_start'});
-    $out->end($hashref->{'contig_end'});
-    $out->strand($hashref->{'contig_strand'});
-    $out->analysis($analysis);
-    $out->display_label($hashref->{'display_label'});
-    $out->attach_seq($contig); 
+  my @features;
+  my %analysis_hash;
+  my %slice_hash;
+  my %sr_name_hash;
+  my %sr_cs_hash;
 
-    if($hashref->{'score'}) {
-      $out->score($hashref->{'score'});
+
+  my($simple_feature_id,$seq_region_id, $seq_region_start, $seq_region_end,
+     $seq_region_strand, $display_label, $analysis_id, $score);
+
+  $sth->bind_columns(\$simple_feature_id,\$seq_region_id, \$seq_region_start,
+                     \$seq_region_end, \$seq_region_strand, \$display_label,
+                     \$analysis_id, \$score);
+
+  my $asm_cs;
+  my $cmp_cs;
+  my $asm_cs_vers;
+  my $asm_cs_name;
+  my $cmp_cs_vers;
+  my $cmp_cs_name;
+  if($mapper) {
+    $asm_cs = $mapper->assembled_CoordSystem();
+    $cmp_cs = $mapper->component_CoordSystem();
+    $asm_cs_name = $asm_cs->name();
+    $asm_cs_vers = $asm_cs->version();
+    $cmp_cs_name = $cmp_cs->name();
+    $cmp_cs_vers = $cmp_cs->version();
+  }
+
+  my $dest_slice_start;
+  my $dest_slice_end;
+  my $dest_slice_strand;
+  my $dest_slice_length;
+  if($dest_slice) {
+    $dest_slice_start  = $dest_slice->start();
+    $dest_slice_end    = $dest_slice->end();
+    $dest_slice_strand = $dest_slice->strand();
+    $dest_slice_length = $dest_slice->length();
+  }
+
+  FEATURE: while($sth->fetch()) {
+    #get the analysis object
+    my $analysis = $analysis_hash{$analysis_id} ||=
+      $aa->fetch_by_dbID($analysis_id);
+
+    #get the slice object
+    my $slice = $slice_hash{"ID:".$seq_region_id};
+
+    if(!$slice) {
+      $slice = $sa->fetch_by_seq_region_id($seq_region_id);
+      $slice_hash{"ID:".$seq_region_id} = $slice;
+      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id} = $slice->coord_system();
     }
-    
-    $out->dbID($hashref->{'simple_feature_id'});
 
-    push @features, $out;
+    #
+    # remap the feature coordinates to another coord system
+    # if a mapper was provided
+    #
+    if($mapper) {
+      my $sr_name = $sr_name_hash{$seq_region_id};
+      my $sr_cs   = $sr_cs_hash{$seq_region_id};
+
+      ($sr_name,$seq_region_start,$seq_region_end,$seq_region_strand) =
+        $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
+                          $seq_region_strand, $sr_cs);
+
+      #skip features that map to gaps or coord system boundaries
+      next FEATURE if(!defined($sr_name));
+
+      #get a slice in the coord system we just mapped to
+      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
+        $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
+          $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
+                               $cmp_cs_vers);
+      } else {
+        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
+          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
+                               $asm_cs_vers);
+      }
+    }
+
+    #
+    # If a destination slice was provided convert the coords
+    # If the dest_slice starts at 1 and is foward strand, nothing needs doing
+    #
+    if($dest_slice) {
+      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
+        if($dest_slice_strand == 1) {
+          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+          $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+        } else {
+          my $tmp_seq_region_start = $seq_region_start;
+          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+          $seq_region_strand *= -1;
+        }
+
+        #throw away features off the end of the requested slice
+        if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+          next FEATURE;
+        }
+      }
+      $slice = $dest_slice;
+    }
+
+    push @features, Bio::EnsEMBL::SimpleFeature->new_fast(
+      {'start'    => $seq_region_start,
+       'end'      => $seq_region_end,
+       'strand'   => $seq_region_strand,
+       'slice'    => $slice,
+       'analysis' => $analysis,
+       'adaptor'  => $self,
+       'dbID'     => $simple_feature_id,
+       'display_label' => $display_label,
+       'score'    => $score});
   }
 
   return \@features;

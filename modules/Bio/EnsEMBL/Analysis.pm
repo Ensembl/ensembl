@@ -49,16 +49,17 @@ Internal methods are usually preceded with a _
 
 =cut
 
-# Let the code begin...
-
 package Bio::EnsEMBL::Analysis;
 
 use vars qw(@ISA);
 use strict;
-use Bio::EnsEMBL::Root;
 
-# Inherits from the base bioperl object
-@ISA = qw(Bio::EnsEMBL::Root);
+use Bio::EnsEMBL::Storable;
+
+use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+
+@ISA = qw(Bio::EnsEMBL::Storable);
 
 
 =head2 new
@@ -95,7 +96,7 @@ sub new {
       $program_file, $gff_source, $gff_feature, $module, $module_version,
       $parameters, $created, $logic_name ) = 
 
-	  $self->_rearrange([qw(ID
+	  rearrange([qw(ID
 	  			ADAPTOR
 				DB
 				DB_VERSION
@@ -129,50 +130,6 @@ sub new {
   $self->logic_name ( $logic_name );
 
   return $self; # success - we hope!
-}
-
-
-=head2 adaptor
-
-  Arg [1]    : Bio::EnsEMBL::DBSQL::AnalysisAdaptor $analysis_adaptor
-  Example    : none
-  Description: get/set for thus objects Adaptor
-  Returntype : Bio::EnsEMBL::DBSQL::AnalysisAdaptor
-  Exceptions : none
-  Caller     : general, set from adaptor on store
-
-=cut
-
-sub adaptor {
-    my ($self,$arg) = @_;
-
-    $self->{_adaptor} ||= undef;
-
-    if (defined($arg)) {
-	$self->{_adaptor} = $arg;
-    }
-    return $self->{_adaptor};
-}
-
-
-=head2 dbID
-
-  Arg [1]    : int $dbID
-  Example    : none
-  Description: get/set for the database internal id
-  Returntype : int
-  Exceptions : none
-  Caller     : general, set from adaptor on store
-
-=cut
-
-sub dbID {
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	$self->{_dbid} = $arg;
-    }
-    return $self->{_dbid};
 }
 
 
@@ -500,7 +457,7 @@ sub has_database{
 sub compare {
   my ($self, $ana ) = @_;
   
-  $self->throw("Object is not a Bio::EnsEMBL::Analysis") 
+  throw("Object is not a Bio::EnsEMBL::Analysis") 
     unless $ana->isa("Bio::EnsEMBL::Analysis");
   
   my $detail = 0;
@@ -515,7 +472,7 @@ sub compare {
       $detail = 1;
     } 
     # if given anal is different from this, defined or not, then its different
-    if( defined $ana->$methodName() && defined $self->$methodName &&
+    if( defined $ana->$methodName() &&
           ( $self->$methodName() ne $ana->$methodName() )) {
       return -1;
     }

@@ -12,9 +12,10 @@ DensityAdaptor
 =head1 SYNOPSIS
 
 my $obj= Bio::EnsEMBL::DBSQL::Obj->new(-dbname=>'ens08',-user=>'ensadmin',-host=>'ensrv5');
+
 my $da= Bio::EnsEMBL::DBSQL::DensityAdaptor->new($obj);
+
 my $binvalueset = $da->get_density_per_chromosome_type('1','gene');
-my $max_density = $da->get_max_density_per_chromosome('1');
 
 =head1 DESCRIPTION
 
@@ -48,10 +49,14 @@ use Bio::EnsEMBL::DensityPlot::BinValueSet;
 
 =cut
 
-sub get_density_per_chromosome_type {
-    my ($self,$chromosome,$type) = @_;
+sub get_density_per_chromosome_type
+{
+
+    my ($self,$chromosome,$type)=@_;
+
     $self->throw("I need a chromosome") unless defined $chromosome;
     $self->throw("I need a type") unless defined $type;
+
     my $chr_adaptor = $self->db->get_ChromosomeAdaptor();
     my $chr_id = $chr_adaptor->fetch_by_chr_name($chromosome)->dbID();
 
@@ -67,6 +72,7 @@ sub get_density_per_chromosome_type {
     my $res = $sth->execute();
 
     my ($chr_start,$chr_end,$value);
+
     $sth->bind_columns(undef,\$chr_start,\$chr_end,\$value);
 
     my $valueset = new Bio::EnsEMBL::DensityPlot::BinValueSet;
@@ -81,45 +87,4 @@ sub get_density_per_chromosome_type {
     return $valueset;
 }
 
-=head2 get_max_density_per_chromosome
-
-  Arg [1]    : string $chr
-               the chromomsome to get the max. density from
-  Arg [2]    : arrayref $ignore_types
-               types in map_density to ignore in max. count
-  Example    : my $max_density = $densityAdaptor->get_max_density_per_chromosome('1');
-  Description: Get the max. density from a chromosome
-  Returntype : int
-  Exceptions : thrown if no chromosome is passed or if no density data is
-               returned from db
-  Caller     : general
-
-=cut
-
-sub get_max_density_per_chromosome {
-    my ($self, $chr, $ignore_types) = @_;
-    $self->throw("I need a chromosome") unless defined $chr;
-    unless (defined($self->{'_max_density'})) {
-        $self->{'_max_density'} = {};
-    }
-    unless ($self->{'_max_density'}->{$chr}) {
-        my $chr_adaptor = $self->db->get_ChromosomeAdaptor();
-        my $chr_id = $chr_adaptor->fetch_by_chr_name($chr)->dbID();
-
-        my $query = "SELECT MAX(value)
-                            FROM map_density 
-                            WHERE chromosome_id = '$chr_id'";
-        if ($ignore_types) {
-            my $ignore_str = join("', '", @{$ignore_types});
-            $query .= " AND type NOT IN ('" . $ignore_str . "')";
-        }
-        my $sth = $self->db->prepare($query);
-        $sth->execute();
-        ($self->{'_max_density'}->{$chr}) = $sth->fetchrow_array()
-            or $self->throw("No density data available for chromosome $chr");
-    }
-    return $self->{'_max_density'}->{$chr};
-}
-
 1;
-

@@ -1,7 +1,6 @@
 #
-# BioPerl module for Exon
+# EnsEMBL module for Bio::EnsEMBL::Exon
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -11,40 +10,35 @@
 
 =pod 
 
-=head1 NAME
-
-Bio::EnsEMBL::Exon - Confirmed Exon 
+=head1 NAME Bio::EnsEMBL::Exon - A class representing an Exon
 
 =head1 SYNOPSIS
 
-    $ex = new Bio::EnsEMBL::Exon;
+    $ex = new Bio::EnsEMBL::Exon(-START     => 100,
+                                 -END       => 200,
+                                 -STRAND    => 1,
+                                 -SLICE     => $slice,
+                                 -DBID      => $dbID,
+                                 -ANALYSIS  => $analysis,
+                                 -STABLE_ID => 'ENSE000000123',
+                                 -VERSION   => 2
+                                 );
 
-    $ex->start(10);
-    $ex->end(100);
+   #seq returns a Bio::Seq
+   my $seq = $exon->seq->seq();
 
-Examples of creating an exon
+   #peptide only makes sense within transcript context
+   my $pep = $exon->peptide($transcript)->seq();
 
-    # start = 1208, end = 1506, forward strand
-    $ex = new Bio::EnsEMBL::Exon(1208,1506,1) 
-    
-    Start and end coordinates are always stored with start < end. If they are 
-    input in the reverse order they will be swapped over.  The value for the 
-    strand will be kept as its input value;
-
-    Strand values:  + or  1 = forward strand
-                    - or -1 = reverse strand
-                    . or  0 = unknown strand
-
-    $ex->contig($dna);     # $dna is a Bio::Seq
-    $ex->phase(0);         # Sets the phase of the exon
-    $ex->end_phase(1);      # sets the end_phase of the exon
-
-    Phase values  are 0,1,2
-
+   #normal feature operations can be performed:
+   $exon = $exon->transform('clone');
+   $exon->move($new_start, $new_end, $new_strand);
+   print $exon->slice->seq_region_name();
 
 =head1 DESCRIPTION
 
-Exon object.  
+This is a class which represents an exon which is part of a transcript.
+See Bio::EnsEMBL:Transcript
 
 =head1 CONTACT
 
@@ -52,27 +46,24 @@ Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal 
+The rest of the documentation details each of the object methods. Internal
 methods are usually preceded with a_
 
 =cut
 
-
-# Let the code begin...
-
-
 package Bio::EnsEMBL::Exon;
-use vars qw(@ISA $AUTOLOAD);
+use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::SeqFeature::Generic
 
-use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::Feature;
 use Bio::Seq; # exons have to have sequences...
-use Bio::EnsEMBL::StickyExon;
 
-@ISA = qw(Bio::EnsEMBL::SeqFeature);
+use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
+use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
+
+@ISA = qw(Bio::EnsEMBL::Feature);
 
 
 =head2 new
@@ -87,22 +78,28 @@ use Bio::EnsEMBL::StickyExon;
 =cut
 
 sub new {
-  my($class,@args) = @_;
+  my $class = shift;
 
-  my $self = $class->SUPER::new(@args);
-  
-  # set exon rank to be 1 be default
-  $self->sticky_rank(1);
+  $class = ref $class || $class;
 
-  # set stuff in self from @args
-  return $self; # success - we hope!
+  my $self = $class->SUPER::new( @_ );
+
+  my ( $phase, $end_phase, $stable_id, $version ) = 
+    rearrange( [ "PHASE", "END_PHASE", "STABLE_ID", "VERSION" ], @_ );
+
+  $self->{'phase'} = $phase;
+  $self->{'end_phase'} = $end_phase;
+  $self->{'stable_id'} = $stable_id;
+  $self->{'version'} = $version;
+
+  return $self;
 }
 
 
 
 =head2 new_fast
 
-  Arg [1]    : Bio::EnsEMBL::RawContig/Bio::EnsEMBL::Slice $contig
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
   Arg [2]    : int $start
   Arg [3]    : int $end
   Arg [4]    : int $strand (1 or -1)
@@ -115,7 +112,7 @@ sub new {
 =cut
 
 sub new_fast {
-  my ($class,$contig,$start,$end,$strand) = @_;
+  my ($class,$slice,$start,$end,$strand) = @_;
 
   my $self = bless {}, $class;
 
@@ -123,463 +120,17 @@ sub new_fast {
   # We assume that the strand is correct and keep the input value.
 
   if ($start > $end) {
-    my $tmp = $end;
-    $end    = $start;
-    $start  = $tmp;
+    throw( "End smaller than start not allowed" );
   }
-  
+
   $self->start ($start);
   $self->end   ($end);
   $self->strand($strand);
-  $self->contig($contig);
-  
+  $self->slice($slice);
+
   return $self;
 }
 
-
-
-=head2 dbID
-
-  Arg [1]    : int $dbID
-  Example    : none
-  Description: get/set for the database internal id
-  Returntype : int
-  Exceptions : none
-  Caller     : general, set from adaptor on store
-
-=cut
-
-sub dbID {
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'dbID'} = $value;
-    }
-    return $self->{'dbID'};
-
-}
-
-
-
-=head2 temporary_id
-
-  Arg [1]    : string $temporary_id
-  Example    : none
-  Description: get/set for attribute temporary_id
-               was invented from genebuild and shouldnt be necessary   
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub temporary_id {
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'tempID'} = $value;
-    }
-    return $self->{'tempID'};
-
-}
-
-
-=head2 adaptor
-
-  Arg [1]    : Bio::EnsEMBL::DBSQL::ExonAdaptor $adaptor
-  Example    : none
-  Description: get/set for this objects Adaptor
-  Returntype : Bio::EnsEMBL::DBSQL::ExonAdaptor
-  Exceptions : none
-  Caller     : general, set from adaptor on store
-
-=cut
-
-sub adaptor {
-   my $self = shift;
-   if( @_ ) {
-      $self->{'adaptor'} = shift;
-    }
-    return $self->{'adaptor'};
-
-}
-
-
-
-=head2 _transform_between_Slices
-
-  Arg [1]    : Bio::EnsEMBL::Slice $new_slice
-  Example    : none
-  Description: Transforms the exons from one Slice to the given Slice, 
-               that needs to be on the same Chromosome. The method overwrites 
-               the same method in Bio::EnsEMBL::SeqFeature
-  Returntype : Bio::EnsEMBL::Exon
-  Exceptions : Checks if Slice is attached and argument is Slice on same 
-               chromosome.
-  Caller     : transform
-
-=cut
-
-sub _transform_between_Slices {
-  my ($self, $to_slice) = @_;
-
-  my $from_slice = $self->contig();
-
-  #sanity check - make sure we have something to transform from
-  unless(defined $from_slice) {
-    $self->throw("Exon's contig is not defined - cannot transform between "
-		 . "slices\n");
-  }
-  #sanity check - make sure the from slice's chromosome is defined
-  unless(defined $from_slice->chr_name()) {
-    $self->throw("Exon's chromosome is not defined - cannot transform between "
-		 . "slices\n");
-  }
-
-  unless(defined $to_slice->chr_name()) {
-    #sanity check - we need an adaptor from a slice
-    my $slice_adaptor = $to_slice->adaptor || $from_slice->adaptor;
-    unless($slice_adaptor) {
-      $self->throw("Exon cannot be transformed to empty slice without an " .
-		   "an attached adaptor on the From slice or To slice");
-    }
-    #from slice is an empty slice, create a entire chromosome slice
-    %$to_slice = %{$slice_adaptor->fetch_by_chr_name($from_slice->chr_name())};
-  }
-
-  #sanity check - make sure we are transforming to the same chromosome
-  if($to_slice->chr_name() ne $from_slice->chr_name()) {
-    $self->throw("Cannot transform exon on chr " . $from_slice->chr_name() .
-		 "to chr " . $to_slice->chr_name());
-  }
-  
-  #create a copy of the old exon
-  my $new_exon = new Bio::EnsEMBL::Exon;
-  %$new_exon = %$self;
-
-  #unset the new exons supporting features
-  delete $new_exon->{'_supporting_evidence'};
-
-  #calculate the exons position in the assembly
-  my ($exon_chr_start, $exon_chr_end, $exon_chr_strand);
-  if($from_slice->strand == 1) {
-    $exon_chr_start  = $self->start + $from_slice->chr_start - 1;
-    $exon_chr_end    = $self->end   + $from_slice->chr_start - 1;
-    $exon_chr_strand = $self->strand;
-  } else {
-    $exon_chr_start  = $from_slice->chr_end - $self->end   + 1;
-    $exon_chr_end    = $from_slice->chr_end - $self->start + 1;
-    $exon_chr_strand = $self->strand * -1;
-  } 
-
-  #now calculate the exons position on the new slice
-  if($to_slice->strand == 1) {
-    $new_exon->start($exon_chr_start - $to_slice->chr_start + 1);
-    $new_exon->end  ($exon_chr_end   - $to_slice->chr_start + 1);
-    $new_exon->strand($exon_chr_strand);
-  } else {
-    $new_exon->start($to_slice->chr_end - $exon_chr_end   + 1);
-    $new_exon->end  ($to_slice->chr_end - $exon_chr_start + 1);
-    $new_exon->strand($exon_chr_strand * -1);
-  }
-
-  $new_exon->contig($to_slice);
-
-  #copy the attached supporting features and transform them
-  my @feats;
-  if( exists $self->{_supporting_evidence} ) {
-    foreach my $sf (@{$self->get_all_supporting_features()}) {
-      #my $f = $sf->new();
-      #%$f = %$sf;
-      ###(mcvicker) this would be better if the feature was copied
-      push @feats, $sf->transform($to_slice);
-    }
-    $new_exon->add_supporting_features(@feats);
-  }
-
-  return $new_exon;
-}
-
-
-
-=head2 _transform_to_Slice
-
-  Arg [1]    : Bio::EnsEMBL::Slice $slice
-  Example    : none
-  Description: Transforms this Exon from RawContig coord to given Slice coord. 
-               The method overrides the same method in Bio::EnsEMBL::SeqFeature
-  Returntype : Bio::EnsEMBL::Exon
-  Exceptions : If the RawContig coords dont map
-  Caller     : transform
-
-=cut
-
-sub _transform_to_Slice {
-  my ($self,$slice) = @_;
-
-  unless($self->contig) {
-    $self->throw("Exon's contig must be defined to transform to Slice coords");
-  }
-  #print STDERR "transforming ".$self." from raw contig to slice coords\n";
-  #print STDERR "exon ".$self->stable_id." ".$self->gffstring."\n";
-  my $adaptor = $slice->adaptor || $self->contig->adaptor;
-
-  unless($adaptor) {
-    $self->throw("Cannot transform to exon slice unless either the " .
-		 "exon->contig->adaptor or slice->adaptor is defined");
-  }
-
-  my $mapper = $adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
-    ( $slice->assembly_type() );
-  
-  my @mapped = $mapper->map_coordinates_to_assembly
-    (
-     $self->contig()->dbID,
-     $self->start(),
-     $self->end(),
-     $self->strand()
-    );
-
-  # exons should always transform so in theory no error check necessary
-  # actually we could have exons inside and outside the Slice 
-  # because of db design and the query that produces them
-  if( ! @mapped ) {
-    $self->throw( "Exon couldnt map" );
-  }
-  # should get a gap object returned if an exon lies outside of 
-  # the current slice.  Simply return the exon as is - i.e. untransformed.
-  # this untransformed exon will be distinguishable as it will still have
-  # contig attached to it and not a slice.
-  if( $mapped[0]->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
-    return $self;
-  }
-
-  # the slice is an empty slice, create an enitre chromosome slice and
-  # replace the empty slice with it
-  if( ! defined $slice->chr_name() ) {
-    my $slice_adaptor = $adaptor->db->get_SliceAdaptor;
-    %$slice = %{$slice_adaptor->fetch_by_chr_name( $mapped[0]->id() )};
-  } 
-
-  my $newexon = new Bio::EnsEMBL::Exon();
-  %$newexon = %$self;
-
-  #unset supporting features of new exon
-  delete $newexon->{'_supporting_evidence'};
-  
-  if ($slice->strand == 1) {
-    $newexon->start( $mapped[0]->start() - $slice->chr_start() + 1);
-    $newexon->end( $mapped[0]->end() - $slice->chr_start() + 1);
-  } else {
-    $newexon->start( $slice->chr_end() - $mapped[0]->end() + 1);
-    $newexon->end( $slice->chr_end() - $mapped[0]->start() + 1);
-  }
-
-  $newexon->strand( $mapped[0]->strand() * $slice->strand() );
-  $newexon->contig( $slice );
-  #copy the attached supporting features and transform them
-  my @feats;
-  if( exists $self->{_supporting_evidence} ) {
-    foreach my $sf (@{$self->get_all_supporting_features()}) {
-      #my $f = $sf->new();
-      #%$f = %$sf;
-      #(mcvicker) this would be better if the feature was copied
-      push @feats, $sf->transform($slice);
-    }
-    $newexon->add_supporting_features(@feats);
-  }
-  #print STDERR "transformed exon ".$newexon->stable_id." ".$newexon->gffstring."\n";
-  return $newexon;
-}
-
-
-
-=head2 _transform_to_RawContig
-
-  Args       : none
-  Example    : none
-  Description: Transform this Exon from Slice to RawContig coords
-  Returntype : Bio::EnsEMBL::Exon
-  Exceptions : Exon cant lie on Gap
-  Caller     : transform
-
-=cut
-
-sub _transform_to_RawContig {
-  my $self = shift;
-
-  my $slice_adaptor = $self->contig->adaptor;
-
-  unless($slice_adaptor) {
-    $self->throw("Cannot transform exon to raw contig unless attached slice" .
-		 " has adaptor defined. (i.e. exon->contig->adaptor)");
-  }
-
-  my $asma = $slice_adaptor->db->get_AssemblyMapperAdaptor();
-
-  my $mapper = $asma->fetch_by_type( $self->contig()->assembly_type() );
-  my $rcAdaptor       = $slice_adaptor->db->get_RawContigAdaptor();
-  my $slice_chr_start = $self->contig->chr_start();
-  my $slice_chr_end   = $self->contig->chr_end();
-
-  my ($exon_chr_start,$exon_chr_end);
-
-  if ($self->contig()->strand() == 1) {
-    $exon_chr_start = $self->start() + $slice_chr_start - 1;
-    $exon_chr_end   = $self->end()   + $slice_chr_start - 1;
-  } 
-  else {
-    $exon_chr_end   = $slice_chr_end - $self->start() + 1;
-    $exon_chr_start = $slice_chr_end - $self->end()   + 1;
-  }
-
-  my @mapped = $mapper->map_coordinates_to_rawcontig
-    (
-     $self->contig()->chr_name(),
-     $exon_chr_start,
-     $exon_chr_end,
-     $self->strand()*$self->contig()->strand()
-    );
-
-  if( ! @mapped ) {
-    $self->throw( "Exon couldnt map" );
-    return $self;
-  }
-
-  #transform the supporting features to raw contig coords (hashed on contig)
-  my %sf_hash;
-  
-  if( exists $self->{_supporting_evidence} ) {
-    my $sfs = $self->get_all_supporting_features();
-  SUPPORTING:foreach my $sf (@$sfs) {
-      my @mapped_feats;
-      eval{
-	@mapped_feats = $sf->transform;
-      };
-      if($@){
-	$self->warn("Supporting feature didn't mapped ignoring $@");
-	next SUPPORTING;
-      }
-      foreach my $mapped_feat (@mapped_feats) {
-	unless(exists $sf_hash{$mapped_feat->contig->name}) {
-	  $sf_hash{$mapped_feat->contig->name} = [];
-	}
-	push @{$sf_hash{$mapped_feat->contig->name}}, $mapped_feat;
-      }
-    }
-  }
-      
-  if( scalar( @mapped ) > 1 ) {
-    # sticky exons
-    # bjeacchh
-
-    my $stickyExon = Bio::EnsEMBL::StickyExon->new();
-    $stickyExon->phase( $self->phase() );
-    $stickyExon->end_phase($self->end_phase());
-    $stickyExon->adaptor( $self->adaptor() );
-    $stickyExon->start( 1 );
-    if( defined $self->dbID() ) { 
-      $stickyExon->dbID( $self->dbID() ); 
-    }
-
-    my $sticky_length =0;
-    # and then all the component exons ...
-    for( my $i=0; $i <= $#mapped; $i++ ) {
-      if($mapped[$i]->isa("Bio::EnsEMBL::Mapper::Gap")){
-	$self->throw(" exon lies on a gap cannot be mapped\n");
-      }
-      my $componentExon = Bio::EnsEMBL::Exon->new();
-      $componentExon->start( $mapped[$i]->start() );
-      $componentExon->end( $mapped[$i]->end() );
-      $componentExon->strand( $mapped[$i]->strand() );
-      my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[$i]->id() );
-      $componentExon->contig( $rawContig );
-      $componentExon->sticky_rank( $i + 1 );
-      $componentExon->phase( $self->phase );
-      $componentExon->end_phase($self->end_phase);
-      $componentExon->dbID( $self->dbID() );
-      $componentExon->adaptor( $self->adaptor() );
-
-      #add the supporting features on this contig to the component exon
-      if(exists $sf_hash{$rawContig->name}) {	
-        $componentExon->add_supporting_features(@{$sf_hash{$rawContig->name}});
-      }
-      
-      $stickyExon->add_component_Exon( $componentExon );
-      $sticky_length += ( $mapped[$i]->end() - $mapped[$i]->start() + 1 );
-    }
-    $stickyExon->end( $sticky_length );
-    $stickyExon->strand( 1 );
-    if (defined($self->stable_id)) {
-      $stickyExon->stable_id($self->stable_id); 
-    }
-    if (defined($self->version)) {
-      $stickyExon->version($self->version);
-    }
-    if (defined($self->created)) {
-      $stickyExon->created($self->created);
-    }
-    if (defined($self->modified)) {
-      $stickyExon->modified($self->modified);
-    }
-    return $stickyExon;
-    
-  } else {
-    # thats a simple exon
-    if($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
-      
-      $self->throw(" exon lies on a gap cannot be mapped\n");
-    }
-    my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[0]->id() );
-    my $new_exon = new Bio::EnsEMBL::Exon();
-    
-    #copy this exon
-    %$new_exon = %$self;
-
-    #unset supporting evidence of new exon
-    delete $new_exon->{'_supporting_evidence'};
-
-    $new_exon->start( $mapped[0]->start() );
-    $new_exon->end( $mapped[0]->end() );
-    $new_exon->strand( $mapped[0]->strand() );
-    # attach raw contig
-    $new_exon->contig( $rawContig );
-    
-    #replace old supporting feats with transformed supporting feats
-    $new_exon->add_supporting_features(@{$sf_hash{$rawContig->name}});
-    #print STDERR "transformed exon ".$new_exon->gffstring."\n";
-    return $new_exon;
-   
-  }
-}
-
-
-
-=head2 sticky_rank
-
-  Arg [1]    : (optional) int $value
-  Example    : $sticky_rank = $exon->sticky_rank
-  Description: Returns the position of a component exon in its assembled sticky
-               exon.  Normal exons all have sticky_rank = 1 as do exons in
-               slice coordinates. Exons in RawContig coordinates which span 
-               multiple contigs are 'sticky' and are made of component exons
-               whose order are denoted by this attribute.
-  Returntype : int
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::StickyExon
-
-=cut
-
-sub sticky_rank{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'sticky_rank'} = $value;
-    }
-    return $obj->{'sticky_rank'};
-
-}
 
 
 
@@ -601,16 +152,17 @@ sub sticky_rank{
 =cut
 
 sub end_phase {
-  my ($self,$endphase) = @_;
-  if ( defined($endphase) ){
-    $self->{_end_phase} = $endphase;
+  my $self = shift;
+  if( @_ ) { 
+    $self->{'end_phase'} = shift;
+  } else {
+    if( ! defined ( $self->{'end_phase'} )) {
+      warning( "No end phase set in Exon. You must set it explicitly." );
+    }
   }
-  if ( !defined( $self->{_end_phase} ) ){
-    $self->throw("No end phase set in Exon. You must set it explicitly. $!" .
-	      "Caller: ".caller);
-  }
-  return $self->{_end_phase};
+  return $self->{'end_phase'};
 }
+
 
 
 
@@ -659,8 +211,8 @@ sub phase {
       #print STDERR "Setting phase to $value\n";
       $self->{'phase'} = $value;
     } else {
-      $self->throw("Bad value ($value) for exon phase. Should only be" .
-		   " -1,0,1,2\n");
+      throw("Bad value ($value) for exon phase. Should only be" .
+            " -1,0,1,2\n");
     }
   }
   return $self->{'phase'};
@@ -684,7 +236,7 @@ sub frame {
   my ($self,$value) = @_;
 
   if( defined $value ) {
-    $self->throw("Cannot set frame. Deduced from seq_start and phase");
+    throw("Cannot set frame. Deduced from seq_start and phase");
   }
 
   # frame is mod 3 of the translation point
@@ -704,7 +256,7 @@ sub frame {
     return ($self->start+1)%3;
   }
 
-  $self->throw("bad phase in exon ".$self->phase);
+  throw("bad phase in exon ".$self->phase);
 
 }
 
@@ -723,142 +275,12 @@ sub frame {
 
 sub type {
   my ($self,$value) = @_;
-  
+
   if (defined($value)) {
     $self->{'type'} = $value;
   }
   return $self->{'type'};
 }
-
-
-
-
-
-
-=head2 add_supporting_features
-
-  Arg [1]    : Bio::EnsEMBL::SeqFeatureI $feature
-  Example    : $exon->add_supporting_features(@features);
-  Description: Adds a list of supporting features to this exon. 
-               Duplicate features are not added.  
-               If supporting features are added manually in this
-               way, prior to calling get_all_supporting_features then the
-               get_all_supporting_features call will not retrieve supporting
-               features from the database.
-  Returntype : none
-  Exceptions : throw if any of the features are not SeqFeatureIs
-               throw if any of the features are not in the same coordinate
-               system as the exon
-  Caller     : general
-
-=cut
-
-sub add_supporting_features {
-  my ($self,@features) = @_;
-  #print STDERR "calling add supporting features\n\n";
-  return unless @features;
-
-  $self->{_supporting_evidence} = [] 
-    unless defined($self->{_supporting_evidence});
-  
-  # check whether this feature object has been added already
- FEATURE: foreach my $feature (@features) {
-    #print STDERR "have ".$feature." to add to exon\n\n";
-    unless($feature && $feature->isa("Bio::EnsEMBL::SeqFeatureI")) {
-      $self->throw("Supporting feat [$feature] not a " . 
-		   "Bio::EnsEMBL::SeqFeatureI");
-    } 
-    
-    if ((defined $self->contig() && defined $feature->contig())&&
-	    ( $self->contig()->name() ne $feature->contig()->name())){
-      $self->throw("Supporting feat not in same coord system as exon\n" .
-		   "exon is attached to [".$self->contig->name()."]\n" .
-		   "feat is attached to [".$feature->contig->name()."]");
-    }
-
-    foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
-      # compare objects
-      if ( $feature == $added_feature ){
-	#this feature has already been added
-	next FEATURE;
-      }
-    }
-    
-    #no duplicate was found, add the feature
-    push(@{$self->{_supporting_evidence}},$feature);
-  }
-}
-
-
-=head2 get_all_supporting_features
-
-  Arg [1]    : none
-  Example    : @evidence = @{$exon->get_all_supporting_features()};
-  Description: Retreives any supporting features added manually by 
-               calls to add_supporting_features. If no features have been
-               added manually and this exon is in a database (i.e. it h
-  Returntype : listreference of Bio::EnsEMBL::BaseAlignFeature objects 
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_all_supporting_features {
-  my $self = shift;
-  
-  if( !exists  $self->{_supporting_evidence} )  {
-    if($self->adaptor) {
-      my $sfa = $self->adaptor->db->get_SupportingFeatureAdaptor();
-      $self->{_supporting_evidence} = $sfa->fetch_all_by_Exon($self);
-    } 
-  }
-  
-  return $self->{_supporting_evidence} || [];
-}
-
-
-=head2 find_supporting_evidence
-
-  Arg [1]    : Bio::EnsEMBL::SeqFeatureI $features
-               The list of features to search for supporting (i.e. overlapping)
-               evidence.
-  Arg [2]    : (optional) boolean $sorted
-               Used to speed up the calculation of overlapping features.  
-               Should be set to true if the list of features is sorted in 
-               ascending order on their start coordinates.
-  Example    : $exon->find_supporting_evidence(\@features);
-  Description: Looks through all the similarity features and
-               stores as supporting features any feature
-               that overlaps with an exon.  
-  Returntype : none
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub find_supporting_evidence {
-  my ($self,$features,$sorted) = @_;
-  
-  foreach my $f (@$features) {
-    # return if we have a sorted feature array
-    if ($sorted == 1 && $f->start > $self->end) {
-      return;
-    }
-    if ($f->sub_SeqFeature) {
-      my @subf = $f->sub_SeqFeature;
-      
-      $self->find_supporting_evidence(\@subf);
-    } 
-    else {
-      if ($f->entire_seq()->name eq $self->contig()->name) {
-	if ($f->end >= $self->start && $f->start <= $self->end && $f->strand == $self->strand) {
-	  $self->add_supporting_features($f);
-	}
-      }
-    }
-  }
-}
-
 
 
 
@@ -924,14 +346,15 @@ sub strand {
   return $self->SUPER::strand(@_);
 }
 
-=head2 contig
 
-  Arg [1]    : Bio::EnsEMBL::Slice or Bio::EnsEMBL::RawContig (optional)
-  Example    : $slice = $exon->contig();
-  Description: Getter/Setter for the contig of this exon.  The superclass
+=head2 slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice
+  Example    : $slice = $exon->slice();
+  Description: Getter/Setter for the slice this exon is on.  The superclass
                implmentation is overridden to flush the internal sequence
                cache if this value is altered
-  Returntype : int
+  Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
   Caller     : general
 
@@ -941,139 +364,271 @@ sub contig {
   my $self = shift;
   #if an arg was provided, flush the internal sequence cache
   delete $self->{'_seq_cache'} if(@_);
-  return $self->SUPER::contig(@_);
+  return $self->SUPER::slice(@_);
 }
 
 
 
+=head2 move
 
-=head2 created
-
- Title   : created
- Usage   : $obj->created()
- Function: 
- Returns : value of created
- Args    :
-
+  Arg [1]    : int start
+  Arg [2]    : int end
+  Arg [3]    : (optional) int strand
+  Example    : None
+  Description: Sets the start, end and strand in one call rather than in 
+               3 seperate calls to the start(), end() and strand() methods.
+               This is for convenience and for speed when this needs to be
+               done within a tight loop.  This overrides the superclass
+               move() method so that the internal sequence cache can be
+               flushed if the exon if moved.
+  Returntype : none
+  Exceptions : Thrown is invalid arguments are provided
+  Caller     : general
 
 =cut
 
-sub created{
-    my ($self,$value) = @_;
-
-    if(defined $value ) {
-      $self->{'_created'} = $value;
-    }
-
-
-    if( exists $self->{'_created'} ) {
-      return $self->{'_created'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_created'};
-
+sub move {
+  my $self = shift;
+  #flush the internal sequence cache
+  delete $self->{'_seq_cache'};
+  return $self->SUPER::move(@_);
 }
 
-=head2 modified
 
- Title   : modified
- Usage   : $obj->modified()
- Function: 
- Returns : value of modified
- Args    : 
 
+=head2 transform
+
+  Arg  1     : String $coordinate_system_name
+  Arg [2]    : String $coordinate_system_version
+  Description: moves this exon to the given coordinate system. If this exon has
+               attached supporting evidence, they move as well.
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : wrong parameters
+  Caller     : general
 
 =cut
 
-sub modified{
-    my ($self,$value) = @_;
+
+sub transform {
+  my $self = shift;
+
+  # catch for old style transform calls
+  if( !@_  || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
+    deprecate('Calling transform without a coord system name is deprecated.');
+    return $self->_deprecated_transform(@_);
+  }
+
+  my $new_exon = $self->SUPER::transform( @_ );
+  return undef unless $new_exon;
+
+  if( exists $self->{'_supporting_evidence'} ) {
+    my @new_features;
+    for my $old_feature ( @{$self->{'_supporting_evidence'}} ) {
+      my $new_feature = $old_feature->transform( @_ );
+      push( @new_features, $new_feature );
+    }
+    $new_exon->{'_supporting_evidence'} = \@new_features;
+  }
+
+  #dont want to share the same sequence cache
+  delete $new_exon->{'_seq_cache'};
+
+  return $new_exon;
+}
+
+
+
+=head2 transfer
+
+  Arg [1]    : Bio::EnsEMBL::Slice $destination_slice
+  Example    : none
+  Description: Moves this Exon to given target slice coordinates. If Features
+               are attached they are moved as well. Returns a new exon.
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub transfer {
+  my $self  = shift;
+
+  my $new_exon = $self->SUPER::transfer( @_ );
+  return undef unless $new_exon;
+
+  if( exists $self->{'_supporting_evidence'} ) {
+    my @new_features;
+    for my $old_feature ( @{$self->{'_supporting_evidence'}} ) {
+      my $new_feature = $old_feature->transfer( @_ );
+      push( @new_features, $new_feature );
+    }
+    $new_exon->{'_supporting_evidence'} = \@new_features;
+  }
+
+  #dont want to share the same sequence cache
+  delete $new_exon->{'_seq_cache'};
+
+  return $new_exon;
+}
+
+
+
+=head2 add_supporting_features
+
+  Arg [1]    : Bio::EnsEMBL::SeqFeatureI $feature
+  Example    : $exon->add_supporting_features(@features);
+  Description: Adds a list of supporting features to this exon. 
+               Duplicate features are not added.  
+               If supporting features are added manually in this
+               way, prior to calling get_all_supporting_features then the
+               get_all_supporting_features call will not retrieve supporting
+               features from the database.
+  Returntype : none
+  Exceptions : throw if any of the features are not SeqFeatureIs
+               throw if any of the features are not in the same coordinate
+               system as the exon
+  Caller     : general
+
+=cut
+
+sub add_supporting_features {
+  my ($self,@features) = @_;
+  #print STDERR "calling add supporting features\n\n";
+  return unless @features;
+
+  $self->{_supporting_evidence} ||= []; 
+  
+  # check whether this feature object has been added already
+ FEATURE: foreach my $feature (@features) {
+    #print STDERR "have ".$feature." to add to exon\n\n";
+    unless($feature && $feature->isa("Bio::EnsEMBL::Feature")) {
+      throw("Supporting feat [$feature] not a " .
+            "Bio::EnsEMBL::Feature");
+    } 
     
-
-    if( defined $value ) {
-      $self->{'_modified'} = $value;
+    if ((defined $self->slice() && defined $feature->slice())&&
+	    ( $self->slice()->name() ne $feature->slice()->name())){
+      throw("Supporting feat not in same coord system as exon\n" .
+            "exon is attached to [".$self->slice()->name()."]\n" .
+            "feat is attached to [".$feature->slice()->name()."]");
     }
 
-    if( exists $self->{'_modified'} ) {
-      return $self->{'_modified'};
+    foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
+      # compare objects
+      if ( $feature == $added_feature ){
+	#this feature has already been added
+	next FEATURE;
+      }
     }
+    
+    #no duplicate was found, add the feature
+    push(@{$self->{_supporting_evidence}},$feature);
+  }
+}
 
-    $self->_get_stable_entry_info();
 
-    return $self->{'_modified'};
+=head2 get_all_supporting_features
+
+  Arg [1]    : none
+  Example    : @evidence = @{$exon->get_all_supporting_features()};
+  Description: Retreives any supporting features added manually by 
+               calls to add_supporting_features. If no features have been
+               added manually and this exon is in a database (i.e. it h
+  Returntype : listreference of Bio::EnsEMBL::BaseAlignFeature objects 
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_supporting_features {
+  my $self = shift;
+  
+  if( !exists  $self->{_supporting_evidence} )  {
+    if($self->adaptor) {
+      my $sfa = $self->adaptor->db->get_SupportingFeatureAdaptor();
+      $self->{_supporting_evidence} = $sfa->fetch_all_by_Exon($self);
+    } 
+  }
+  
+  return $self->{_supporting_evidence} || [];
+}
+
+
+=head2 find_supporting_evidence
+
+  Arg [1]    : Bio::EnsEMBL::SeqFeatureI $features
+               The list of features to search for supporting (i.e. overlapping)
+               evidence.
+  Arg [2]    : (optional) boolean $sorted
+               Used to speed up the calculation of overlapping features.  
+               Should be set to true if the list of features is sorted in 
+               ascending order on their start coordinates.
+  Example    : $exon->find_supporting_evidence(\@features);
+  Description: Looks through all the similarity features and
+               stores as supporting features any feature
+               that overlaps with an exon.  
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub find_supporting_evidence {
+  my ($self,$features,$sorted) = @_;
+
+  foreach my $f (@$features) {
+    # return if we have a sorted feature array
+    if ($sorted == 1 && $f->start > $self->end) {
+      return;
+    }
+    if ($f->sub_SeqFeature) {
+      my @subf = $f->sub_SeqFeature;
+      
+      $self->find_supporting_evidence(\@subf);
+    } 
+    else {
+      if ($f->entire_seq()->name eq $self->contig()->name) {
+	if ($f->end >= $self->start && $f->start <= $self->end && $f->strand == $self->strand) {
+	  $self->add_supporting_features($f);
+	}
+      }
+    }
+  }
+}
+
+=head2 stable_id
+
+  Arg [1]    : string $stable_id
+  Example    : none
+  Description: get/set for attribute stable_id
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub stable_id {
+   my $self = shift;
+  $self->{'stable_id'} = shift if( @_ );
+  return $self->{'stable_id'};
 }
 
 
 =head2 version
 
- Title   : version
- Usage   : $obj->version()
- Function: 
- Returns : value of version
- Args    : 
+  Arg [1]    : string $version
+  Example    : none
+  Description: get/set for attribute version
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub version{
-
-    my ($self,$value) = @_;
-    
-
-    if( defined $value ) {
-      $self->{'_version'} = $value; 
-    }
-
-    if( exists $self->{'_version'} ) {
-      return $self->{'_version'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_version'};
-
-}
-
-
-=head2 stable_id
-
- Title   : stable_id
- Usage   : $obj->stable_id
- Function: 
- Returns : value of stable_id
- Args    : 
-
-
-=cut
-
-sub stable_id{
-
-    my ($self,$value) = @_;
-    
-
-    if( defined $value ) {
-      $self->{'_stable_id'} = $value;
-    }
-
-    if( exists $self->{'_stable_id'} ) {
-      return $self->{'_stable_id'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_stable_id'};
-
-}
-
-sub _get_stable_entry_info {
+sub version {
    my $self = shift;
-
-   if( !defined $self->adaptor ) {
-     return undef;
-   }
-
-   $self->adaptor->get_stable_entry_info($self);
-
+  $self->{'version'} = shift if( @_ );
+  return $self->{'version'};
 }
 
 
@@ -1102,7 +657,7 @@ sub load_genomic_mapper {
   my ( $self, $mapper, $id, $start ) = @_;
 
   $mapper->add_map_coordinates( $id, $start, $start+$self->length()-1,
-				$self->strand(), $self->contig,
+				$self->strand(), $self->slice(),
 				$self->start(), $self->end() );
 }
 
@@ -1167,12 +722,17 @@ sub peptide {
   my $tr = shift;
 
   unless($tr && ref($tr) && $tr->isa('Bio::EnsEMBL::Transcript')) {
-    $self->throw("transcript arg must be Bio::EnsEMBL:::Transcript not [$tr]");
+    throw("transcript arg must be Bio::EnsEMBL:::Transcript not [$tr]");
   }
 
   #convert exons coordinates to peptide coordinates
+  my $tmp_exon = $self->transfer($tr->slice);
+  if (!$tmp_exon) {
+    throw("Couldn't transfer exon to transcript's slice");
+  }
+
   my @coords = 
-    $tr->genomic2pep($self->start, $self->end, $self->strand, $self->contig);
+    $tr->genomic2pep($tmp_exon->start, $tmp_exon->end, $tmp_exon->strand);
   
   #filter out gaps
   @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
@@ -1181,7 +741,7 @@ sub peptide {
   my $pep_str = '';
 
   if(scalar(@coords) > 1) {
-    $self->throw("Error. Exon maps to multiple locations in peptide." .
+    throw("Error. Exon maps to multiple locations in peptide." .
 		 " Is this exon [$self] a member of this transcript [$tr]?");
   } elsif(scalar(@coords) == 1) {
     my $c = $coords[0];
@@ -1192,7 +752,7 @@ sub peptide {
     my ($start, $end);
     $end = ($c->end > $pep->length) ? $pep->length : $c->end; 
     $start = ($c->start < $end) ? $c->start : $end;
-    $pep_str = $pep->subseq($start, $end);
+    $pep_str = $tr->translate->subseq($start, $end);
   }
     
   return Bio::Seq->new(-seq => $pep_str, 
@@ -1221,7 +781,7 @@ sub seq {
   my $arg = shift;
 
   if( defined $arg ) {
-    $self->warn( "seq setting on Exon not supported currently" );
+    warning( "seq setting on Exon not supported currently" );
     $self->{'_seq_cache'} = $arg->seq();
   }
 
@@ -1231,13 +791,13 @@ sub seq {
 
   my $seq;
 
-  if ( ! defined $self->contig ) {
-    $self->warn(" this exon doesn't have a contig you won't get a seq \n");
+  if ( ! defined $self->slice ) {
+    warning(" this exon doesn't have a slice you won't get a seq \n");
     return undef;
   }
   else {
       
-    $seq = $self->contig()->subseq($self->start, $self->end);
+    $seq = $self->slice()->subseq($self->start, $self->end);
 
     if($self->strand == -1){
       $seq =~ tr/ATGCatgc/TACGtacg/;
@@ -1255,168 +815,137 @@ sub seq {
 
 
 
-# Inherited methods
-# but you do have all the SeqFeature documentation: reproduced here
-# for convenience...
+=head2 hashkey
 
-=pod
-
-=head1 Methods inherited from SeqFeature
-
-=head2 start
-
- Title   : start
- Usage   : $start = $feat->start
- Function: Returns the start coordinate of the feature
- Returns : integer
- Args    : none
-
-=head2 end
-
- Title   : end
- Usage   : $end = $feat->end
- Function: Returns the end coordinate of the feature
- Returns : integer
- Args    : none
-
-=head2 strand
-
- Title   : strand
- Usage   : $strand = $feat->strand()
-           $feat->strand($strand)
- Function: get/set on strand information, being 1,-1 or 0
- Returns : -1,1 or 0
- Args    : none
-
+  Arg [1]    : none
+  Example    : if(exists $hash{$exon->hashkey}) { do_something(); }
+  Description: Returns a unique hashkey that can be used to uniquely identify
+               this exon.  Exons are considered to be identical if they share
+               the same seq_region, start, end, strand, phase, end_phase.
+               Note that this will consider two exons on different slices
+               to be different, even if they actually are not. 
+  Returntype : string formatted as slice_name-start-end-strand-phase-end_phase
+  Exceptions : thrown if not all the necessary attributes needed to generate
+               a unique hash value are set
+               set
+  Caller     : general
 
 =cut
 
-=head2 length
+sub hashkey {
+  my $self = shift;
 
- Title   : length
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+  my $slice      = $self->{'slice'}; 
+  my $slice_name = ($slice) ? $slice->name() : undef;
+  my $start      = $self->{'start'};
+  my $end        = $self->{'end'};
+  my $strand     = $self->{'strand'};
+  my $phase      = $self->{'phase'};
+  my $end_phase  = $self->{'end_phase'};
 
+  if(!defined($slice_name)) {
+    throw('Slice must be set to generate correct hashkey.');
+  }
 
-=head2 sub_SeqFeature
+  if(!defined($start)) {
+    warning("start attribute must be defined to generate correct hashkey.");
+  }
 
- Title   : sub_SeqFeature
- Usage   : @feats = $feat->sub_SeqFeature();
- Function: Returns an array of sub Sequence Features
- Returns : An array
- Args    : none
+  if(!defined($end)) {
+    throw("end attribute must be defined to generate correct hashkey.");
+  }
 
-=head2 primary_tag
+  if(!defined($strand)) {
+    throw("strand attribute must be defined to generate correct hashkey.");
+  }
 
- Title   : primary_tag
- Usage   : $tag = $feat->primary_tag()
- Function: Returns the primary tag for a feature,
-           eg 'exon'
- Returns : a string 
- Args    : none
+  if(!defined($phase)) {
+    throw("phase attribute must be defined to generate correct hashkey.");
+  }
 
-=head2 source_tag
+  if(!defined($end_phase)) {
+    throw("end_phase attribute must be defined to generate correct hashkey.");
+  }
 
- Title   : source_tag
- Usage   : $tag = $feat->source_tag()
- Function: Returns the source tag for a feature,
-           eg, 'genscan' 
- Returns : a string 
- Args    : none
-
-=head2 has_tag
-
- Title   : has_tag
- Usage   : $value = $self->has_tag('some_tag')
- Function: Returns the value of the tag (undef if 
-           none)
- Returns : 
- Args    :
-
-=head2 all_tags
-
- Title   : all_tags
- Usage   : @tags = $feat->all_tags()
- Function: gives all tags for this feature
- Returns : an array of strings
- Args    : none
-
-=head2 gff_string
-
- Title   : gff_string
- Usage   : $str = $feat->gff_string
- Function: provides the feature information in GFF
-           version 2 format.
- Returns : A string
- Args    : None
+  return "$slice_name-$start-$end-$strand-$phase-$end_phase";
+}
 
 
+=head2 display_id
 
-=head1 RangeI methods
-
-These methods are inherited from RangeI and can be used
-directly from a SeqFeatureI interface. Remember that a 
-SeqFeature is-a RangeI, and so wherever you see RangeI you
-can use a feature ($r in the below documentation).
-
-=head2 overlaps
-
-  Title   : overlaps
-  Usage   : if($feat->overlaps($r)) { do stuff }
-            if($feat->overlaps(200)) { do stuff }
-  Function: tests if $feat overlaps $r
-  Args    : a RangeI to test for overlap with, or a point
-  Returns : true if the Range overlaps with the feature, false otherwise
-
-
-=head2 contains
-
-  Title   : contains
-  Usage   : if($feat->contains($r) { do stuff }
-  Function: tests whether $feat totally contains $r
-  Args    : a RangeI to test for being contained
-  Returns : true if the argument is totaly contained within this range
-
-
-=head2 equals
-
-  Title   : equals
-  Usage   : if($feat->equals($r))
-  Function: test whether $feat has the same start, end, strand as $r
-  Args    : a RangeI to test for equality
-  Returns : true if they are describing the same range
-
-
-=head1 Geometrical methods
-
-These methods do things to the geometry of ranges, and return
-triplets (start, stop, strand) from which new ranges could be built.
+  Arg [1]    : none
+  Example    : print $exons->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For exons this is the stable id if
+               it is available otherwise it is an empty string.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
 
 =cut
 
-=head2 intersection
+sub display_id {
+  my $self = shift;
+  return $self->{'stable_id'} || '';
+}
 
-  Title   : intersection
-  Usage   : ($start, $stop, $strand) = $feat->intersection($r)
-  Function: gives the range that is contained by both ranges
-  Args    : a RangeI to compare this one to
-  Returns : nothing if they don''t overlap, or 
-            a new exon based on the range that they do overlap
+#####################
+# DEPRECATED METHODS
+#####################
 
 
-=head2 union
+sub _get_stable_entry_info {
+   my $self = shift;
+   deprecate( "This function shouldnt be called any more" );
+   if( !defined $self->adaptor ) {
+     return undef;
+   }
+   $self->adaptor->get_stable_entry_info($self);
+}
 
-  Title   : union
-  Usage   : ($start, $stop, $strand) = $feat->union($r);
-          : ($start, $stop, $strand) = Bio::RangeI->union(@ranges);
-  Function: finds the minimal range that contains all of the ranges
-  Args    : a range or list of ranges to find the union of
-  Returns : the range containing all of the ranges
+
+=head2 temporary_id
+
+  Description: DEPRECATED.  This should not be necessary
 
 =cut
+
+sub temporary_id {
+  my $self = shift;
+  deprecate('It should not be necessary to use this method.');
+  $self->{'tempID'} = shift if(@_);
+  return $self->{'tempID'};
+}
+
+=head2 created
+
+  Description: DEPRECATED.  Do not use.
+
+=cut
+
+sub created{
+    my ($self,$value) = @_;
+    deprecate( "Created attribute not supported any more" );
+    if(defined $value ) {
+      $self->{'_created'} = $value;
+    }
+    return $self->{'_created'};
+}
+
+=head2 modified
+
+  Description: DEPRECATED.  Do not use.
+
+=cut
+
+sub modified{
+    my ($self,$value) = @_;
+    deprecate( "Modified attribute not supported any more" );
+    if( defined $value ) {
+      $self->{'_modified'} = $value;
+    }
+    return $self->{'_modified'};
+}
 
 
 

@@ -15,21 +15,30 @@ MySQL Database queries to load and store external object references.
 =head1 SYNOPSIS
 
 $db_entry_adaptor = $db_adaptor->get_DBEntryAdaptor();
-$dbEntry = $db_entry_adaptor->fetch_by_dbID($id);
+$db_entry = $db_entry_adaptor->fetch_by_dbID($id);
+
+my $gene = $db_adaptor->get_GeneAdaptor->fetch_by_stable_id('ENSG00000101367');
+@db_entries = @{$db_entry_adaptor->fetch_all_by_Gene($gene)};
+@gene_ids = $db_entry_adaptor->list_gene_ids_by_extids('BAB15482');
+
 
 =head1 CONTACT
 
 Post questions to the EnsEMBL developer list <ensembl-dev@ebi.ac.uk>
+
+=head1 METHODS
 
 =cut
 
 package Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
+
 use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::IdentityXref;
 use Bio::EnsEMBL::GoXref;
+
+use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
 
 use vars qw(@ISA);
 use strict;
@@ -95,14 +104,21 @@ sub fetch_by_dbID {
 
 =head2 store
 
-  Arg [1]    : ?? $exObj
-  Arg [2]    : ?? $ensObject
-  Arg [3]    : ?? $ensType
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : Bio::EnsEMBL::DBEntry $exObj
+               The DBEntry (xref) to be stored
+  Arg [2]    : Bio::EnsEMBL::Transcript, Bio::EnsEMBL::Gene or 
+               Bio::EnsEMBL::Translation $ensObject
+               An EnsEMBL object to associate with this external database entry
+  Arg [3]    : string $ensType ('Transcript', 'Translation', 'Gene');
+               The type of EnsEMBL object that this external database entry is
+               being associated with.
+  Example    : $dbea->store($db_entry, $transcript, 'Transcript');
+  Description: Stores a reference to an external database (if it is not stored
+               already) and associates an EnsEMBL object of a specified type
+               with the external identifier.
+  Returntype : int  - the identifier of the newly created external refernce
+  Exceptions : none
+  Caller     : scripts which load Xrefs and ObjectXrefs, etc. into EnsEMBL.
 
 =cut
 
@@ -125,7 +141,7 @@ sub store {
   my ($dbRef) =  $sth->fetchrow_array();
 
   if(!$dbRef) {
-    $self->throw("external_db [" . $exObj->dbname . "] release [" .
+    throw("external_db [" . $exObj->dbname . "] release [" .
 		 $exObj->release . "] does not exist");
   }
 
@@ -216,34 +232,12 @@ sub store {
     # If its GoXref add the linkage type to go_xref table
     #
     if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
-      
-      my $analysis_id;
-      if( $exObj->analysis() ) {
-	$analysis_id = $self->db()->get_AnalysisAdaptor()->
-	  store( $exObj->analysis() );
-      } else {
-	$analysis_id = undef;
-      }
-      
       $sth = $self->prepare( "
              INSERT ignore INTO identity_xref
              SET object_xref_id = ?,
              query_identity = ?,
-             target_identity = ?,
-             query_start = ?,
-             query_end = ?,
-             translation_start = ?,
-             translation_end = ?,
-             cigar_line = ?,
-             score = ?,
-             evalue = ?,
-             analysis_id = ?" );
-
-      $sth->execute($Xidt, $exObj->query_identity, $exObj->target_identity,
-		   $exObj->query_start(), $exObj->query_end(), 
-		   $exObj->translation_start(), $exObj->translation_end(),
-		   $exObj->cigar_line(), $exObj->score(), $exObj->evalue(),
-		   $analysis_id);
+             target_identity = ?" );
+      $sth->execute($Xidt, $exObj->query_identity, $exObj->target_identity);
     } elsif( $exObj->isa( 'Bio::EnsEMBL::GoXref' )) {
       $sth = $self->prepare( "
              INSERT ignore INTO go_xref
@@ -275,7 +269,7 @@ sub exists {
   my ($self, $dbe) = @_ ;
 
   unless($dbe && ref $dbe && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
-    $self->throw("arg must be a Bio::EnsEMBL::DBEntry not [$dbe]");
+    throw("arg must be a Bio::EnsEMBL::DBEntry not [$dbe]");
   }
 
   my $sth = $self->prepare('SELECT x.xref_id 
@@ -402,10 +396,10 @@ sub _fetch_by_object_type {
   my @out;
 
   if (!defined($ensObj)) {
-    $self->throw("Can't _fetch_by_object_type without an object ID");
+    throw("Can't fetch_by_EnsObject_type without an object");
   }
   if (!defined($ensType)) {
-    $self->throw("Can't _fetch_by_object_type without a type");
+    throw("Can't fetch_by_EnsObject_type without a type");
   }
   my $sth = $self->prepare("
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
@@ -413,9 +407,7 @@ sub _fetch_by_object_type {
            exDB.db_name, exDB.release, exDB.status, 
            oxr.object_xref_id, 
            es.synonym, 
-           idt.query_identity, idt.target_identity, idt.query_start, idt.query_end,
-           idt.translation_start, idt.translation_end, idt.cigar_line,
-           idt.score, idt.evalue, idt.analysis_id,
+           idt.query_identity, idt.target_identity,
            gx.linkage_type
     FROM   xref xref, external_db exDB, object_xref oxr 
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
@@ -434,18 +426,16 @@ sub _fetch_by_object_type {
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     my ( $refID, $dbprimaryId, $displayid, $version, 
          $desc, $dbname, $release, $exDB_status, $objid, 
-         $synonym, $queryid, $targetid, $query_start, $query_end,
-	 $translation_start, $translation_end, $cigar_line,
-	 $score, $evalue, $analysis_id, $linkage_type ) = @$arrRef;
+         $synonym, $queryid, $targetid, $linkage_type ) = @$arrRef;
 
     my %obj_hash = ( 
-		    _adaptor    => $self,
-		    _dbID       => $refID,
-		    _primary_id => $dbprimaryId,
-		    _display_id => $displayid,
-		    _version    => $version,
-		    _release    => $release,
-		    _dbname     => $dbname);
+		    'adaptor'    => $self,
+		    'dbID'       => $refID,
+		    'primary_id' => $dbprimaryId,
+		    'display_id' => $displayid,
+		    'version'    => $version,
+		    'release'    => $release,
+		    'dbname'     => $dbname );
 
 
     # using an outer join on the synonyms as well as on identity_xref, we
@@ -459,20 +449,6 @@ sub _fetch_by_object_type {
         $exDB = Bio::EnsEMBL::IdentityXref->new_fast(\%obj_hash);       
         $exDB->query_identity($queryid);
         $exDB->target_identity($targetid);
-	if( $analysis_id ) {
-	  my $analysis = $self->db()->get_AnalysisAdaptor()->
-	    fetch_by_dbID( $analysis_id );
-	  if( $analysis ) {
-	    $exDB->analysis( $analysis );
-	  }
-	}
-	$exDB->cigar_line( $cigar_line );
-	$exDB->query_start( $query_start );
-	$exDB->query_end( $query_end );
-	$exDB->translation_start( $translation_start );
-	$exDB->translation_end( $translation_end );
-	$exDB->score( $score );
-	$exDB->evalue( $evalue );
       } elsif( defined $linkage_type ) {
         $exDB = Bio::EnsEMBL::GoXref->new_fast( \%obj_hash );
         $exDB->add_linkage_type( $linkage_type );
@@ -509,10 +485,11 @@ sub _fetch_by_object_type {
 =head2 list_gene_ids_by_extids
 
   Arg [1]    : string $external_id
-  Example    : none
-  Description: Retrieve a list of geneid by an external identifier that is linked to 
-               any of the genes transcripts, translations or the gene itself 
-  Returntype : listref of strings
+  Example    : @gene_ids = $dbea->list_gene_ids_by_extids('ARSE');
+  Description: Retrieve a list of geneid by an external identifier that is 
+               linked to  any of the genes transcripts, translations or the 
+               gene itself 
+  Returntype : list of ints
   Exceptions : none
   Caller     : unknown
 
@@ -528,32 +505,16 @@ sub list_gene_ids_by_extids{
    return keys %T;
 }
 
-=head2 geneids_by_extids
 
-  Arg [1]    : string $external_id
-  Example    : none
-  Description: Retrieve a list of geneid by an external identifier that is linked to 
-               any of the genes transcripts, translations or the gene itself 
-			   (please not that this call is deprecated)
-  Returntype : listref of strings
-  Exceptions : none
-  Caller     : unknown
-
-=cut
-
-sub geneids_by_extids{
-   my ($self,$name) = @_;
-   warn ("This method is deprecated please use 'list_gene_ids_by_extids");
-   return $self->list_gene_ids_by_extids( $name );
-}
 
 =head2 list_transcript_ids_by_extids
 
   Arg [1]    : string $external_id
-  Example    : none
-  Description: Retrieve a list transcriptid by an external identifier that is linked to 
-               any of the genes transcripts, translations or the gene itself 
-  Returntype : listref of strings
+  Example    : @tr_ids = $dbea->list_gene_ids_by_extids('BCRA2');
+  Description: Retrieve a list transcript ids by an external identifier that 
+               is linked to any of the genes transcripts, translations or the 
+               gene itself 
+  Returntype : list of ints
   Exceptions : none
   Caller     : unknown
 
@@ -570,48 +531,10 @@ sub list_transcript_ids_by_extids{
 }
 
 
-=head2 transcriptids_by_extids
-
-  Arg [1]    : string $external_id
-  Example    : none
-  Description: Retrieve a list transcriptid by an external identifier that is linked to 
-               any of the genes transcripts, translations or the gene itself 
-  Returntype : listref of strings
-  Exceptions : none
-  Caller     : unknown
-
-=cut
-
-sub transcriptids_by_extids{
-   my ($self,$name) = @_;
-   warn ("This method is deprecated please use 'list_transcript_ids_by_extids");
-   return $self->list_transcript_ids_by_extids( $name );
-}
-
-
-=head2 translationids_by_extids
-
-  Arg [1]    :  string $name 
-  Example    :  none
-  Description:  Gets a list of translation IDs by external display IDs 
-  				(please note that this call is deprecated)
-  Returntype :  list of Ints
-  Exceptions :  none
-  Caller     :  unknown
-
-=cut
-
-sub translationids_by_extids{
-  my ($self,$name) = @_;
-  warn ("This method is deprecated please use 'list_translation_ids_by_extids");
-  return $self->list_translation_ids_by_extids( $name );
-}
-
-
 =head2 list_translation_ids_by_extids
 
   Arg [1]    :  string $name 
-  Example    :  none
+  Example    :  @tr_ids = $dbea->list_gene_ids_by_extids('GO:0004835');
   Description:  Gets a list of translation IDs by external display IDs
   Returntype :  list of Ints
   Exceptions :  none
@@ -649,9 +572,20 @@ sub _type_by_external_id{
   my $where_sql = '';
   my $ID_sql = "oxr.ensembl_id";
   if(defined $extraType) {
-    $ID_sql = "t.${extraType}_id";
-    $from_sql = 'transcript as t, ';
-    $where_sql = 't.'.lc($ensType).'_id = oxr.ensembl_id and ';
+    if(lc($extraType) eq 'translation') {
+      $ID_sql = "tl.translation_id";
+    } else {
+      $ID_sql = "t.${extraType}_id";
+    }
+
+    if(lc($ensType) eq 'translation') {
+      $from_sql = 'transcript as t, translation as tl, ';
+      $where_sql = 't.transcript_id = tl.transcript_id and ' .
+                'tl.translation_id = oxr.ensembl_id and ';
+    } else {
+      $from_sql = 'transcript as t, ';
+      $where_sql = 't.'.lc($ensType).'_id = oxr.ensembl_id and ';
+    }
   }
   my @queries = (
     "select $ID_sql
@@ -681,6 +615,47 @@ sub _type_by_external_id{
     }
   }
   return keys %hash;
+}
+
+
+
+
+=head2 geneids_by_extids
+
+  Description: DEPRECATED use list_gene_ids_by_extids instead
+
+=cut
+
+sub geneids_by_extids{
+   my ($self,$name) = @_;
+   deprecate(" use 'list_gene_ids_by_extids instead");
+   return $self->list_gene_ids_by_extids( $name );
+}
+
+
+=head2 translationids_by_extids
+
+  Description:  DEPRECATED use list_translation_ids_by_extids instead
+
+=cut
+
+sub translationids_by_extids{
+  my ($self,$name) = @_;
+  deprecate("Use list_translation_ids_by_extids instead");
+  return $self->list_translation_ids_by_extids( $name );
+}
+
+
+=head2 transcriptids_by_extids
+
+  Description: DEPRECATED use transcriptids_by_extids instead
+
+=cut
+
+sub transcriptids_by_extids{
+   my ($self,$name) = @_;
+   deprecate("Use list_transcript_ids_by_extids instead.");
+   return $self->list_transcript_ids_by_extids( $name );
 }
 
 

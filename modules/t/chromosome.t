@@ -5,14 +5,26 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 8;
+	plan tests => 5;
 }
 
 
 use MultiTestDB;
 use TestUtils qw(debug test_getter_setter);
+
+use Bio::EnsEMBL::Utils::Exception qw(verbose);
 use Bio::EnsEMBL::Chromosome;
 
+
+######################################################################
+# 
+# Chromosome is a deprecated class but needed for backwards 
+# compatibility.  These tests ensure that it actually works,
+# but verbosity is turned off to avoid all of the deprecated warnings
+#
+#######################################################################
+
+verbose(-1);
 
 #
 #1 TEST - Chromosome Compiles
@@ -30,7 +42,7 @@ my $db = $multi_db->get_DBAdaptor('core');
 my $ca = $db->get_ChromosomeAdaptor;
 
 #
-#2-8 Chromosome constructor
+# Chromosome constructor
 #
 my $chromosome = Bio::EnsEMBL::Chromosome->new
   (-chr_name => $CHR,
@@ -39,15 +51,9 @@ my $chromosome = Bio::EnsEMBL::Chromosome->new
    -length   => $LENGTH);
 
 ok($chromosome->isa('Bio::EnsEMBL::Chromosome'));
-ok($chromosome->length == $LENGTH);
-ok($chromosome->dbID  == $DBID);
 ok($chromosome->adaptor == $ca);
-
-#
-# 9-14 getter /setters
-#
-ok(test_getter_setter($chromosome, 'chr_name', 'Y'));
-ok(test_getter_setter($chromosome, 'dbID', 321));
-ok(test_getter_setter($chromosome, 'length', 123_000_000));
+ok($chromosome->length());
+ok($chromosome->name());
 
 
+verbose(0);

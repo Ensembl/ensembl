@@ -1,7 +1,5 @@
 #
-# BioPerl module for Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor
-#
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
+# Ensembl module for Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor
 #
 # Copyright Ewan Birney
 #
@@ -16,107 +14,130 @@ Adaptor for ProteinAlignFeatures
 
 =head1 SYNOPSIS
 
-    $pfadp = $dbadaptor->get_ProteinAlignFeatureAdaptor();
+    $pafa = $dbadaptor->get_ProteinAlignFeatureAdaptor();
 
-    my @features = $pfadp->fetch_by_Contig($contig);
+    my @features = @{$pafa->fetch_all_by_Slice($slice)};
 
-    my @features = $pfadp->fetch_by_assembly_location($start,$end,$chr,'UCSC');
- 
-    $pfadp->store(@features);
+    $pafa->store(@features);
 
 
 =head1 DESCRIPTION
 
 
-This is an adaptor for protein features on DNA sequence. Like other
-feature getting adaptors it has a number of fetch_ functions and a
-store function.
+=head1 CONTACT
 
+Post questions to the Ensembl development list: ensembl-dev@ebia.ac.uk
 
-=head1 AUTHOR - Ewan Birney
-
-Email birney@ebi.ac.uk
-
-Describe contact details here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-
-# Let the code begin...
 
 
 package Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::EnsEMBL::Root
-
 use Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor;
 use Bio::EnsEMBL::DnaPepAlignFeature;
-use Bio::EnsEMBL::SeqFeature;
+
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor);
 
 
 =head2 store
 
-  Arg [1]    : list of Bio::EnsEMBL::DnaPepAlignFeature @sf
-  Example    : $protein_align_feature_adaptor->store(@sf);
-  Description: stores a list of features in the database
+  Arg [1]    : list of Bio::EnsEMBL::DnaPepAlignFeature @feats
+  Example    : $protein_align_feature_adaptor->store(@feats);
+  Description: stores a list of ProteinAlignFeatures in the database
   Returntype : none
-  Exceptions : thrown if there is no attached sequence on any of the features,
-               if the features are not defined
-  Caller     : 
+  Exceptions : throw if any of the provided features cannot be stored
+               which may occur if:
+                 * The feature does not have an associated Slice
+                 * The feature does not have an associated analysis
+                 * The Slice the feature is associated with is on a seq_region
+                   unknown to this database
+              A warning is given if:
+                 * The feature has already been stored in this db
+  Caller     : Pipeline
 
 =cut
 
 
 sub store{
-   my ($self ,@sf) = @_;
+ my ($self, @feats) = @_;
 
-   if( scalar(@sf) == 0 ) {
-       $self->throw("Must call store with list of sequence features");
+  throw("Must call store with features") if( scalar(@feats) == 0 );
+
+  my @tabs = $self->_tables;
+  my ($tablename) = @{$tabs[0]};
+
+  my $db = $self->db();
+  my $slice_adaptor = $db->get_SliceAdaptor();
+  my $analysis_adaptor = $db->get_AnalysisAdaptor();
+
+  my $sth = $self->prepare(
+     "INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end,
+                             seq_region_strand, hit_start, hit_end,
+                             hit_name, cigar_line,
+                             analysis_id, score, evalue, perc_ident)
+     VALUES (?,?,?,?,?,?,?,?,?,?, ?, ?)");
+
+ FEATURE: foreach my $feat ( @feats ) {
+   if( !ref $feat || !$feat->isa("Bio::EnsEMBL::DnaPepAlignFeature") ) {
+     throw("feature must be a Bio::EnsEMBL::DnaPepAlignFeature,"
+           . " not a [".ref($feat)."].");
    }
 
-   my $sth = $self->prepare(
-	"INSERT INTO protein_align_feature(contig_id, contig_start, contig_end,
-                                           contig_strand, hit_start, hit_end,
-                                           hit_name, cigar_line, analysis_id,
-                                           score, evalue, perc_ident) 
-         VALUES (?,?,?,?,?,?,?,?,?,?, ?, ?)");
-
-   foreach my $sf ( @sf ) {
-     if( !ref $sf || !$sf->isa("Bio::EnsEMBL::DnaPepAlignFeature") ) {
-       $self->throw("Feature must be a Bio::EnsEMBL::DnaPepAlignFeature, " .
-		    "not a [$sf]");
-     }
-     
-     if( !defined $sf->analysis ) {
-       $self->throw("Cannot store sequence features without analysis");
-     }
-
-     # will only store if object is not already stored in this database
-     $self->db()->get_AnalysisAdaptor()->store( $sf->analysis() );
-
-     my $contig = $sf->entire_seq();
-     #print STDERR $contig."\n";
-     unless(defined $contig && $contig->isa("Bio::EnsEMBL::RawContig")) { 
-       $self->throw("Cannot store feature without Contig attached via " .
-		    "attach_seq\n");
-     }   
-     
-     $sth->execute($contig->dbID(), $sf->start, $sf->end,
-		   $sf->strand, $sf->hstart, $sf->hend,
-		   $sf->hseqname, $sf->cigar_string, $sf->analysis->dbID,
-		   $sf->score, $sf->p_value, $sf->percent_id);
-     
-     $sf->dbID($sth->{'mysql_insertid'});
+   if($feat->is_stored($db)) {
+     warning("PepDnaAlignFeature [".$feat->dbID."] is already stored" .
+             " in this database.");
+     next FEATURE;
    }
+
+   #sanity check the hstart and hend
+   my $hstart  = $feat->hstart();
+   my $hend    = $feat->hend();
+   $self->_check_start_end_strand($hstart,$hend,1);
+
+   my $cigar_string = $feat->cigar_string();
+   if(!$cigar_string) {
+     $cigar_string = $feat->length() . 'M';
+     warning("DnaPepAlignFeature does not define a cigar_string.\n" .
+             "Assuming ungapped block with cigar_string=$cigar_string\n");
+   }
+
+   my $hseqname = $feat->hseqname();
+   if(!$hseqname) {
+     throw("DnaPepAlignFeature must define an hseqname.");
+   }
+
+   if(!defined($feat->analysis)) {
+     throw("An analysis must be attached to the features to be stored.");
+   }
+
+   #store the analysis if it has not been stored yet
+   if(!$feat->analysis->is_stored($db)) {
+     $analysis_adaptor->store($feat->analysis());
+   }
+
+   my $slice = $feat->slice();
+   if(!defined($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
+     throw("A slice must be attached to the features to be stored.");
+   }
+
+   my $original = $feat;
+   my $seq_region_id;
+   ($feat, $seq_region_id) = $self->_pre_store($feat);
+
+   $sth->execute( $seq_region_id, $feat->start, $feat->end, $feat->strand,
+                  $feat->hstart, $feat->hend, $feat->hseqname,
+                  $feat->cigar_string, $feat->analysis->dbID, $feat->score,
+                  $feat->p_value, $feat->percent_id);
+   $original->dbID($sth->{'mysql_insertid'});
+   $original->adaptor($self);
  }
+
+ $sth->finish();
+}
 
 
 =head2 _objs_from_sth
@@ -135,122 +156,146 @@ sub store{
 =cut
 
 sub _objs_from_sth {
-  my ($self, $sth, $mapper, $slice) = @_;
+  my ($self, $sth, $mapper, $dest_slice) = @_;
 
-  my ($protein_align_feature_id, $contig_id, $contig_start, $contig_end,
-      $analysis_id, $contig_strand, $hit_start, $hit_end, $hit_name, 
-      $cigar_line, $evalue, $perc_ident, $score);
-  
-  my $rca = $self->db()->get_RawContigAdaptor();
-  my $aa = $self->db()->get_AnalysisAdaptor();
+  #
+  # This code is ugly because an attempt has been made to remove as many
+  # function calls as possible for speed purposes.  Thus many caches and
+  # a fair bit of gymnastics is used.
+  #
+
+  my $sa = $self->db()->get_SliceAdaptor();
+  my $aa = $self->db->get_AnalysisAdaptor();
+
   my @features;
+  my %analysis_hash;
+  my %slice_hash;
+  my %sr_name_hash;
+  my %sr_cs_hash;
 
-  my($analysis, $contig);
+  my ($protein_align_feature_id, $seq_region_id, $seq_region_start,
+      $seq_region_end, $analysis_id, $seq_region_strand, $hit_start,
+      $hit_end, $hit_name, $cigar_line, $evalue, $perc_ident, $score);
 
-  my %a_hash;
-  my %c_hash;
+  $sth->bind_columns(\$protein_align_feature_id, \$seq_region_id,
+           \$seq_region_start,\$seq_region_end, \$analysis_id,
+           \$seq_region_strand, \$hit_start,\$hit_end, \$hit_name,
+           \$cigar_line, \$evalue, \$perc_ident, \$score);
 
-  my($row_cache, $row);
-
-  $row_cache = $sth->fetchall_arrayref();
-
-  if($slice) {
-    my ($chr, $start, $end, $strand);
-    my $slice_start   = $slice->chr_start();
-    my $slice_end     = $slice->chr_end();
-    my $slice_name    = $slice->name();
-    my $slice_strand = $slice->strand();
-
-    my($feat_start, $feat_end, $feat_strand);
-
-    while($row = shift @$row_cache) {
-      ($protein_align_feature_id, $contig_id, $contig_start, $contig_end,
-      $analysis_id, $contig_strand, $hit_start, $hit_end, $hit_name, 
-      $cigar_line, $evalue, $perc_ident, $score) = @$row;
-
-      $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
-      ($chr, $start, $end, $strand) = 
-	$mapper->fast_to_assembly($contig_id, $contig_start, 
-				  $contig_end, $contig_strand);
-      
-      #skip if feature maps to gap
-      next unless(defined $start);
-
-      #skip if feature outside of slice area
-      next if ($start > $slice_end) || ($end < $slice_start);
-
-      #convert assembly coordinates to slice coordinates
-      if($slice_strand == -1) {
-	$feat_start  = $slice_end - $end + 1;
-	$feat_end    = $slice_end - $start + 1;
-	$feat_strand = $strand * -1;
-      } else {
-	$feat_start  = $start - $slice_start + 1;
-	$feat_end    = $end   - $slice_start + 1;
-	$feat_strand = $strand;
-      }
-
-      #use a very fast (hack) constructor - normal object construction is too
-      #slow for the number of features we are potentially dealing with
-      push @features, Bio::EnsEMBL::DnaPepAlignFeature->new_fast(
-                {'_gsf_tag_hash'  =>  {},
-		 '_gsf_sub_array' =>  [],
-		 '_parse_h'       =>  {},
-		 '_analysis'      =>  $analysis,
-		 '_gsf_start'     =>  $feat_start,
-		 '_gsf_end'       =>  $feat_end,
-		 '_gsf_strand'    =>  $feat_strand,
-		 '_gsf_score'     =>  $score,
-		 '_seqname'       =>  $slice_name,
-		 '_percent_id'    =>  $perc_ident,
-		 '_p_value'       =>  $evalue,
-                 '_hstart'        =>  $hit_start,
-                 '_hend'          =>  $hit_end,
-		 '_hstrand'       =>  1, #strand is always one for pep hits
-                 '_hseqname'      =>  $hit_name,
-		 '_gsf_seq'       =>  $slice,
-		 '_cigar_string'  =>  $cigar_line,
-		 '_id'            =>  $hit_name,
-                 '_database_id'   =>  $protein_align_feature_id});
-    }    
-
-  } else {
-    while($row = shift @$row_cache) {
-      ($protein_align_feature_id, $contig_id, $contig_start, $contig_end,
-      $analysis_id, $contig_strand, $hit_start, $hit_end, $hit_name, 
-      $cigar_line, $evalue, $perc_ident, $score) = @$row;
-
-      $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
-      $contig   = $c_hash{$contig_id}   ||= $rca->fetch_by_dbID($contig_id);
-      
-      #use a very fast (hack) constructor - normal object construction is too
-      #slow for the number of features we are potentially dealing with
-      push @features, Bio::EnsEMBL::DnaPepAlignFeature->new_fast(
-                {'_gsf_tag_hash'  =>  {},
-		 '_gsf_sub_array' =>  [],
-		 '_parse_h'       =>  {},
-		 '_analysis'      =>  $analysis,
-		 '_gsf_start'     =>  $contig_start,
-		 '_gsf_end'       =>  $contig_end,
-		 '_gsf_strand'    =>  $contig_strand,
-		 '_gsf_score'     =>  $score,
-		 '_seqname'       =>  $contig->name,
-		 '_percent_id'    =>  $perc_ident,
-		 '_p_value'       =>  $evalue,
-                 '_hstart'        =>  $hit_start,
-                 '_hend'          =>  $hit_end,
-		 '_hstrand'       =>  1,  #strand is always 1 for pep hits
-                 '_hseqname'      =>  $hit_name,
-		 '_gsf_seq'       =>  $contig,
-		 '_cigar_string'  =>  $cigar_line,
-		 '_id'            =>  $hit_name,
-                 '_database_id'   =>  $protein_align_feature_id});
-    }
+  my $asm_cs;
+  my $cmp_cs;
+  my $asm_cs_vers;
+  my $asm_cs_name;
+  my $cmp_cs_vers;
+  my $cmp_cs_name;
+  if($mapper) {
+    $asm_cs = $mapper->assembled_CoordSystem();
+    $cmp_cs = $mapper->component_CoordSystem();
+    $asm_cs_name = $asm_cs->name();
+    $asm_cs_vers = $asm_cs->version();
+    $cmp_cs_name = $cmp_cs->name();
+    $cmp_cs_vers = $cmp_cs->version();
   }
 
+  my $dest_slice_start;
+  my $dest_slice_end;
+  my $dest_slice_strand;
+  my $dest_slice_length;
+  if($dest_slice) {
+    $dest_slice_start  = $dest_slice->start();
+    $dest_slice_end    = $dest_slice->end();
+    $dest_slice_strand = $dest_slice->strand();
+    $dest_slice_length = $dest_slice->length();
+  }
+
+  FEATURE: while($sth->fetch()) {
+    #get the analysis object
+    my $analysis = $analysis_hash{$analysis_id} ||=
+      $aa->fetch_by_dbID($analysis_id);
+
+    #get the slice object
+    my $slice = $slice_hash{"ID:".$seq_region_id};
+
+    if(!$slice) {
+      $slice = $sa->fetch_by_seq_region_id($seq_region_id);
+      $slice_hash{"ID:".$seq_region_id} = $slice;
+      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id} = $slice->coord_system();
+    }
+
+    #
+    # remap the feature coordinates to another coord system
+    # if a mapper was provided
+    #
+    if($mapper) {
+      my $sr_name = $sr_name_hash{$seq_region_id};
+      my $sr_cs   = $sr_cs_hash{$seq_region_id};
+
+      ($sr_name,$seq_region_start,$seq_region_end,$seq_region_strand) =
+        $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
+                          $seq_region_strand, $sr_cs);
+
+      #skip features that map to gaps or coord system boundaries
+      next FEATURE if(!defined($sr_name));
+
+      #get a slice in the coord system we just mapped to
+      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
+        $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
+          $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
+                               $cmp_cs_vers);
+      } else {
+        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
+          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
+                               $asm_cs_vers);
+      }
+    }
+
+    #
+    # If a destination slice was provided convert the coords
+    # If the dest_slice starts at 1 and is foward strand, nothing needs doing
+    #
+    if($dest_slice) {
+      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
+        if($dest_slice_strand == 1) {
+          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+          $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+        } else {
+          my $tmp_seq_region_start = $seq_region_start;
+          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+          $seq_region_strand *= -1;
+        }
+	
+        #throw away features off the end of the requested slice
+        if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+          next FEATURE;
+        }
+      }
+      $slice = $dest_slice;
+    }
+
+    #finally, create the new dna align feature
+    push @features, Bio::EnsEMBL::DnaPepAlignFeature->new_fast
+      ( { 'slice'         =>  $slice,
+          'start'         =>  $seq_region_start,
+          'end'           =>  $seq_region_end,
+          'strand'        =>  $seq_region_strand,
+          'hseqname'      =>  $hit_name,
+          'hstart'        =>  $hit_start,
+          'hend'          =>  $hit_end,
+          'hstrand'       =>  1, #dna_pep_align features are always hstrand 1
+          'score'         =>  $score,
+          'p_value'       =>  $evalue,
+          'percent_id'    =>  $perc_ident,
+          'cigar_string'  =>  $cigar_line,
+          'analysis'      =>  $analysis,
+          'adaptor'       =>  $self,
+          'dbID'          =>  $protein_align_feature_id } );
+  }
 
   return \@features;
 }
+
 
 
 sub _tables {
@@ -264,27 +309,28 @@ sub _columns {
   my $self = shift;
 
   #warning _objs_from_hashref method depends on ordering of this list 
-  return qw( paf.protein_align_feature_id 
-	     paf.contig_id 
-	     paf.contig_start 
-	     paf.contig_end
-	     paf.analysis_id 
-	     paf.contig_strand 
-	     paf.hit_start 
-	     paf.hit_end 
-	     paf.hit_name 
-	     paf.cigar_line
-	     paf.evalue 
-	     paf.perc_ident 
-	     paf.score );
+  return qw( paf.protein_align_feature_id
+             paf.seq_region_id
+             paf.seq_region_start
+             paf.seq_region_end
+             paf.analysis_id
+             paf.seq_region_strand
+             paf.hit_start
+             paf.hit_end
+             paf.hit_name
+             paf.cigar_line
+             paf.evalue
+             paf.perc_ident
+             paf.score );
 }
 
 =head2 list_dbIDs
 
   Arg [1]    : none
   Example    : @feature_ids = @{$protein_align_feature_adaptor->list_dbIDs()};
-  Description: Gets an array of internal ids for all protein align features in the current db
-  Returntype : list of ints
+  Description: Gets an array of internal ids for all protein align 
+               features in the current db
+  Returntype : listref of ints
   Exceptions : none
   Caller     : ?
 

@@ -27,9 +27,9 @@ package Bio::EnsEMBL::Map::MarkerFeature;
 use strict;
 use vars qw(@ISA);
 
-use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::Feature;
 
-@ISA = qw(Bio::EnsEMBL::SeqFeature);
+@ISA = qw(Bio::EnsEMBL::Feature);
 
 
 
@@ -37,9 +37,9 @@ use Bio::EnsEMBL::SeqFeature;
 
   Arg [1]    : (optional) int $dbID
   Arg [2]    : (optional) Bio::EnsEMBL::Adaptor $adaptor
-  Arg [3]    : (optional) int $start 
+  Arg [3]    : (optional) int $start
   Arg [4]    : (optional) int $end
-  Arg [5]    : (optional) Bio::EnsEMBL ::RawContig or ::Slice $contig
+  Arg [5]    : (optional) Bio::EnsEMBL::Slice $slice
   Arg [6]    : (optional) Bio::EnsEMBL::Analysis
   Arg [7]    : (optional) int $marker_id
   Arg [8]    : (optional) int $map_weight
@@ -55,70 +55,22 @@ use Bio::EnsEMBL::SeqFeature;
 =cut
 
 sub new {
-  my ($caller, $dbID, $adaptor, $start, $end, $contig, $analysis,
+  my ($caller, $dbID, $adaptor, $start, $end, $slice, $analysis,
       $marker_id, $map_weight, $marker) = @_;
-  
+
   my $class = ref($caller) || $caller;
 
   return bless( {
 		 'dbID'        => $dbID,
 		 'adaptor'     => $adaptor,
-		 '_gsf_start'  => $start,
-		 '_gsf_end'    => $end,
-		 '_gsf_strand' => 0,
-		 '_gsf_seq'    => $contig,
-		 '_analysis'    => $analysis,
+		 'start'       => $start,
+		 'end'         => $end,
+		 'strand'      => 0,
+		 'slice'       => $slice,
+		 'analysis'    => $analysis,
 		 'marker_id'   => $marker_id,
 		 'marker'      => $marker,
-                 'map_weight'  => $map_weight }, $class);
-}
-
-
-
-
-=head2 dbID
-
-  Arg [1]    : (optional) int $dbID
-  Example    : $dbID = $marker_feature->dbID;
-  Description: Getter/Setter for the dbID of this MarkerFeature
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub dbID {
-  my $self = shift;
-
-  if(@_) {
-    $self->{'dbID'} = shift;
-  }
-
-  return $self->{'dbID'};
-}
-
-
-
-=head2 adaptor
-
-  Arg [1]    : (optional) Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor $adp
-  Example    : $adaptor = $marker_feature->adaptor;
-  Description: Getter/Setter for the adaptor which provides database
-               database interaction for this MarkerFeature
-  Returntype : Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub adaptor {
-  my $self = shift;
-  
-  if(@_) {
-    $self->{'adaptor'} = shift;
-  }
-  
-  return $self->{'adaptor'};
+     'map_weight'  => $map_weight }, $class);
 }
 
 
@@ -162,7 +114,7 @@ sub _marker_id {
 
 sub marker {
   my $self = shift;
-  
+
   if(@_) {
     $self->{'marker'} = shift;
   } elsif(!$self->{'marker'} && $self->{'adaptor'} && $self->{'marker_id'}) {
@@ -170,7 +122,7 @@ sub marker {
     my $ma = $self->{'adaptor'}->db->get_MarkerAdaptor;
     $self->{'marker'} = $ma->fetch_by_dbID($self->{'marker_id'});
   }
-      
+
   return $self->{'marker'};
 }
 
@@ -199,5 +151,31 @@ sub map_weight {
 
   return $self->{'map_weight'};
 }
+
+
+
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $mf->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For marker features this is the
+               name of the display synonym or '' if it is not defined.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  my $marker = $self->{'marker'};
+
+  return '' if(!$marker);
+  my $ms = $marker->display_MarkerSynonym();
+  return '' if(!$ms);
+  return $ms->name() || '';
+}
+
 
 1;

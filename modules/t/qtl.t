@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test ;
-	plan tests => 7;
+	plan tests => 6;
 }
 
 use MultiTestDB;
@@ -25,7 +25,7 @@ my $sa = $db->get_SliceAdaptor();
 
 
 
-my $slice = $sa->fetch_by_chr_name( "20" );
+my $slice = $sa->fetch_by_region( 'chromosome', "20" );
 
 my $qtl_features = $slice->get_all_QtlFeatures();
 
@@ -56,8 +56,4 @@ my $synonyms = $qtl->get_synonyms;
 
 ok($synonyms->{'rat genome database'} eq 'rqtl2');
 
-my @result = $qf->transform();
-
-debug( join("\n", @result ));
-ok( scalar( @result ) == 9 );
 
