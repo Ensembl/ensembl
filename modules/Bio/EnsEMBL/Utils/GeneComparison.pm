@@ -45,7 +45,7 @@ eae@sanger.ac.uk
 
 # Let the code begin ...
 
-package GeneComparison;
+package Bio::EnsEMBL::Utils::GeneComparison;
 
 use strict;
 use GeneCluster;

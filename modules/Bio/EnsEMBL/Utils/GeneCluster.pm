@@ -22,7 +22,7 @@ eae@sanger.ac.uk
 
 # Let the code begin ...
 
-package GeneCluster;
+package Bio::EnsEMBL::Utils::GeneCluster;
 use Bio::EnsEMBL::Gene;
 use strict;
 

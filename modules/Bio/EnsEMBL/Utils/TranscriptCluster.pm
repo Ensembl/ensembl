@@ -22,7 +22,7 @@ eae@sanger.ac.uk
 
 # Let the code begin ...
 
-package TranscriptCluster;
+package Bio::EnsEMBL::Utils::TranscriptCluster;
 use Bio::EnsEMBL::Transcript;
 use strict;
 
