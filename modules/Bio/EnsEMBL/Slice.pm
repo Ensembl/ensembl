@@ -64,12 +64,12 @@ use Bio::EnsEMBL::Root; #included for backwards compatibility
 use Bio::EnsEMBL::Tile; #included for backwards compatibility
 use Bio::EnsEMBL::Chromosome; #included for backwards compatibility
 use Bio::EnsEMBL::RawContig; #included for backwards compatibility
-#use Bio::PrimarySeqI;# included only for backwards compatibility
+use Bio::PrimarySeqI;# included only for backwards compatibility
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
-use Bio::PrimarySeqI;
+use Bio::EnsEMBL::RepeatMaskedSlice;
 
 #inheritance to Bio::EnsEMBL::Root will eventually be removed
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
@@ -1175,15 +1175,15 @@ sub get_all_KaryotypeBands {
 
   Arg [1]    : listref of strings $logic_names (optional)
   Arg [2]    : int $soft_masking_enable (optional)
-  Example    : $slice->get_repeatmasked_seq 
-               or $slice->get_repeatmasked_seq(['RepeatMask'],1)
-  Description: Returns Bio::PrimarySeq containing the masked (repeat replaced 
-               by N) 
-               or soft-masked (when Arg[2]=1, repeat in lower case while non
-               repeat in upper case) sequence corresponding to the Slice 
-               object.
+  Example    : $rm_slice = $slice->get_repeatmasked_seq()
+               $softrm_slice->get_repeatmasked_seq(['RepeatMask'],1)
+  Description: Returns Bio::EnsEMBL::Slice that can be used to create repeat
+               masked sequence instead of the regular sequence.
+               Sequence returned by this new slice will have repeat regions
+               hardmasked by default (sequence replaced by N) or
+               or soft-masked when arg[2] = 1 (sequence in lowercase)
                Will only work with database connection to get repeat features.
-  Returntype : Bio::PrimarySeq
+  Returntype : Bio::EnsEMBL::RepeatMaskedSlice
   Exceptions : none
   Caller     : general
 
@@ -1192,35 +1192,23 @@ sub get_all_KaryotypeBands {
 sub get_repeatmasked_seq {
     my ($self,$logic_names,$soft_mask) = @_;
 
-    unless($logic_names && @$logic_names) {
-      $logic_names = [ '' ];
-    }
-
-    unless(defined $soft_mask) {
-      $soft_mask = 0;
-    }
-
-    my $repeats = [];
-
-    foreach my $l (@$logic_names) {
-      push @{$repeats}, @{$self->get_all_RepeatFeatures($l)};
-    }
-
-    my $dna = $self->seq();
-    my $masked_dna = $self->_mask_features($dna,$repeats,$soft_mask);
-    my $masked_seq = Bio::PrimarySeq->new('-seq'        => $masked_dna,
-					  '-display_id' => $self->name,
-					  '-primary_id' => $self->name,
-					  '-moltype'    => 'dna'
-					 );
-    return $masked_seq;
+    #creat a slice that 
+    return Bio::EnsEMBL::RepeatMaskedSlice->new
+      (-START   => $self->{'start'},
+       -END     => $self->{'end'},
+       -STRAND  => $self->{'strand'},
+       -ADAPTOR => $self->{'adaptor'},
+       -SEQ_REGION_NAME => $self->{'seq_region_name'},
+       -COORD_SYSTEM    => $self->{'coord_system'},
+       -REPEAT_MASK     => $logic_names,
+       -SOFT_MASK       => $soft_mask);
 }
 
 
 
 =head2 _mask_features
 
-  Arg [1]    : string $dna_string
+  Arg [1]    : reference to a string $dnaref
   Arg [2]    : array_ref $repeats
                reference to a list Bio::EnsEMBL::RepeatFeature
                give the list of coordinates to replace with N or with 
@@ -1229,19 +1217,20 @@ sub get_repeatmasked_seq {
   Example    : none
   Description: replaces string positions described in the RepeatFeatures
                with Ns (default setting), or with the lower case equivalent 
-               (soft masking)
-  Returntype : string 
+               (soft masking).  The reference to a dna string which is passed
+               is changed in place.
+  Returntype : none
   Exceptions : none
-  Caller     : get_repeatmasked_seq
+  Caller     : seq
 
 =cut
 
 sub _mask_features {
-  my ($self,$dnastr,$repeats,$soft_mask) = @_;
+  my ($self,$dnaref,$repeats,$soft_mask) = @_;
 
   # explicit CORE::length call, to avoid any confusion with the Slice
   # length method
-  my $dnalen = CORE::length($dnastr);
+  my $dnalen = CORE::length($$dnaref);
 
  REP:foreach my $f (@{$repeats}) {
     my $start  = $f->start;
@@ -1250,9 +1239,7 @@ sub _mask_features {
 
     # check if we get repeat completely outside of expected slice range
     if ($end < 1 || $start > $dnalen) {
-      warning("Repeat completely outside slice coordinates! " .
-	"That should not happen! repeat_start $start or repeat_end $end not" .
-	"within [1-$dnalen] slice range coordinates\n");
+      warning("Unexpected: Repeat completely outside slice coordinates.");
       next REP;
     }
 
@@ -1275,14 +1262,12 @@ sub _mask_features {
     my $padstr;
 
     if ($soft_mask) {
-      $padstr = lc substr ($dnastr,$start,$length);
+      $padstr = lc substr ($$dnaref,$start,$length);
     } else {
       $padstr = 'N' x $length;
     }
-    substr ($dnastr,$start,$length) = $padstr;
-
+    substr ($$dnaref,$start,$length) = $padstr;
   }
-  return $dnastr;
 }
 
 
