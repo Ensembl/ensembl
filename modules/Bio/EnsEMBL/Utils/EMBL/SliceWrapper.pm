@@ -388,9 +388,11 @@ sub top_SeqFeatures {
 
   #filter out features overlapping slice boundary
   my @out = ();
-  my $slice_end   = $self->slice->chr_end;
+  my $slice_length   = $self->slice->length;
   while(my $f = shift @sfs) {
-    push(@out, $f) unless($f->start < 1 || $f->end > $slice_end);    
+    if($f->start > 1 && $f->end < $slice_length) {
+      push(@out, $f);
+    }
   }
 
   #transcripts and genes are allowed to overlap boundary
