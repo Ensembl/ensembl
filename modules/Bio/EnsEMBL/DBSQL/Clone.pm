@@ -103,12 +103,13 @@ sub get_all_Genes{
    #
 
    my $sth = $self->_dbobj->prepare("select gene from geneclone_neighbourhood where clone = '$id'");
+
    $sth->execute();
+
    while( (my $hash = $sth->fetchrow_hashref()) ) {
        push(@genes,$hash->{'gene'});
    }
-
-
+   
    #
    # A Gene/Clone Neighbourhood positive does not guarentee that a gene is
    # actually on this clone. The SQL statement needs to double check this
@@ -128,50 +129,63 @@ sub get_all_Genes{
        $sth = $self->_dbobj->prepare("select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,p2.created,p2.modified,p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id from contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
    
        $sth->execute();
-       my $current_gene_id = '';
+
+       my $current_gene_id       = '';
        my $current_transcript_id = '';
+
        my ($gene,$trans);
+
        while( (my $arr = $sth->fetchrow_arrayref()) ) {
 	   my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exoncreated,$exonmodified,$strand,$phase,$trans_start,$trans_exon_start,$trans_end,$trans_exon_end,$translationid) = @{$arr};
+
 	   print STDERR "Got exon $exonid\n";
+
 	   if( ! defined $phase ) {
 	       $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
 	   }
 
 	   if( $geneid ne $current_gene_id ) {
+
 	       if( $transcriptid eq $current_transcript_id ) {
 		   $self->throw("Bad internal error. Switching genes without switching transcripts");
 	       } 
+
 	       $gene = Bio::EnsEMBL::Gene->new();
 	       $gene->id($geneid);
+	       $gene->add_cloneid_neighbourhood($id);
+
 	       $current_gene_id = $geneid;
 	       push(@out,$gene);
 	       print STDERR "Made new gene\n";
 	   }
+
 	   if( $transcriptid ne $current_transcript_id ) {
 	       $trans = Bio::EnsEMBL::Transcript->new();
 	       $trans->id($transcriptid);
 	       $current_transcript_id = $transcriptid;
+
 	       my $translation = Bio::EnsEMBL::Translation->new();
-	       $translation->start($trans_start);
-	       $translation->end($trans_end);
+	       $translation->start        ($trans_start);
+	       $translation->end          ($trans_end);
 	       $translation->start_exon_id($trans_exon_start);
-	       $translation->end_exon_id($trans_exon_end);
-	       $translation->id($translationid);
-	       $trans->translation($translation);
-	       $gene->add_Transcript($trans);
+	       $translation->end_exon_id  ($trans_exon_end);
+	       $translation->id           ($translationid);
+
+	       $trans->translation        ($translation);
+	       $gene ->add_Transcript     ($trans);
 	   }
 	   
 	   my $exon = Bio::EnsEMBL::Exon->new();
-	   $exon->clone_id($id);
+
+	   $exon->clone_id ($id);
 	   $exon->contig_id($contigid);
-	   $exon->id($exonid);
-	   $exon->created($exoncreated);
-	   $exon->modified($exonmodified);
-	   $exon->start($start);
-	   $exon->end($end);
-	   $exon->strand($strand);
-	   $exon->phase($phase);
+	   $exon->id       ($exonid);
+	   $exon->created  ($exoncreated);
+	   $exon->modified ($exonmodified);
+	   $exon->start    ($start);
+	   $exon->end      ($end);
+	   $exon->strand   ($strand);
+	   $exon->phase    ($phase);
 	   
 	   #
 	   # Attach the sequence, cached if necessary...
@@ -187,7 +201,7 @@ sub get_all_Genes{
 	       $self->_dbobj->_contig_seq_cache($exon->contig_id,$seq);
 	   }
 	   
-	   $exon->attach_seq($seq);
+	   $exon ->attach_seq($seq);
 	   $trans->add_Exon($exon);
        }
    }

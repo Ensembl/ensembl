@@ -161,7 +161,7 @@ sub get_Gene{
 
    while( my $rowhash = $sth1->fetchrow_hashref) {
        # get a contig object, which checks that this exists. 
-       #print("Contig is " . $rowhash->{contig} . "\n");
+
        my $contig = $self->get_Contig($rowhash->{'contig'});
        # if there is no exception then it is there. Get rid of it
        $contig = 0;
@@ -170,25 +170,33 @@ sub get_Gene{
 
    # go over each Transcript
    my $sth = $self->prepare("select id,translation from transcript where gene = '$geneid'");
-
    my $res = $sth->execute();
    my $seen =0;
-
+   
    while( my $rowhash = $sth->fetchrow_hashref) {
-
-#       print("Transcript   " . $rowhash->{id} . "\n");
-#       print("Translation  " . $rowhash->{translation} . "\n");
 
        my $trans       = $self->get_Transcript($rowhash->{'id'});
        my $translation = $self->get_Translation($rowhash->{'translation'});
 
        $trans->translation($translation);
-       $gene->add_Transcript($trans);
+       $gene ->add_Transcript($trans);
+
        $seen = 1;
    }
    
    if( $seen == 0 ) {
        $self->throw("No gene with $geneid as a name! - Sorry!");
+   }
+
+   # Fetch the geneclone_neighbourhood
+
+   $sth = $self->prepare("select clone from geneclone_neighbourhood where gene = '$geneid'");
+   $res = $sth->execute();
+
+   while (my $rowhash = $sth->fetchrow_hashref) {
+
+       my $clone = $rowhash->{clone};
+       $gene->add_cloneid_neighbourhood($clone);
    }
 
    $gene->id($geneid);
@@ -660,13 +668,11 @@ sub get_updated_Objects{
     my @out;
     my @clones;
     while( my $rowhash = $sth->fetchrow_hashref) {
-	print("Updated clone " . $rowhash->{id} . "\n");
 	push(@clones,$rowhash->{'id'});
     }
     
     #Get all clone objects for the ids contained in @clones, and push them in @out
     foreach my $cloneid (@clones) {
-	print("Getting clone $cloneid\n");
 	push @out, $self->get_Clone ($cloneid);
     }	
     
@@ -676,16 +682,13 @@ sub get_updated_Objects{
 
     my @genes;
     while( $rowhash = $sth->fetchrow_hashref) {
-	print("updated gene " . $rowhash->{id} . "\n");
 	push(@genes,$rowhash->{'id'});
     }
     
     #Get all gene objects for the ids contained in @clones, and push them in @out
     foreach my $geneid (@genes) {
-	print("Getting gene $geneid\n");
 	push @out, $self->get_Gene ($geneid);
     }	
-    print ("Done get_updated_objects\n");
     return @out;
 }
 
@@ -997,7 +1000,10 @@ sub delete_Gene{
 sub geneid_to_cloneid{
    my ($self,$geneid) = @_;
 
-   my $sth = $self->prepare("select p1.id from contig as p1, transcript as p2, exon_transcript as p3 where p2.gene = '$geneid' and p2.id = p3.transcript and p3 ");
+   my $sth = $self->prepare("select count(*),cl.id, cont.clone ,ex.contig, tran.gene from clone as cl,contig as cont, transcript as tran, exon_transcript as et, exon as ex where ex.id = et.exon and tran.id = et.transcript and ex.contig = cont.id and cont.clone = cl.id and tran.gene = '$geneid' group by cl.id");
+
+#   my $sth = $self->prepare("select p1.id from contig as p1, transcript as p2, exon_transcript as p3 where p2.gene = '$geneid' and p2.id = p3.transcript and p3 ");
+
    my @out;
 
    $sth->execute;
@@ -1022,12 +1028,13 @@ sub geneid_to_cloneid{
 sub cloneid_to_geneid{
    my ($self,$cloneid) = @_;
 
-   my $sth = $self->prepare("select p2.gene from contig as p1, transcript as p2, exon_transcript as p3 where p2.rtranscript =  and p2.id = p3.transcript and p3 ");
+   my $sth = $self->prepare("select count(*),cont.clone ,ex.contig,tran.gene  from contig as cont, transcript as tran, exon_transcript as et, exon as ex where ex.id = et.exon and tran.id = et.transcript and cont.clone = '$cloneid'  and cont.id = ex.contig group by tran.gene");
+
    my @out;
 
    $sth->execute;
    while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'id'});
+       push(@out,$rowhash->{'clone'});
    }
 
    return @out;
@@ -1093,7 +1100,6 @@ sub write_Gene{
    if( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("$gene is not a EnsEMBL gene - not writing!");
    }
-
    # get out unique contig ids from gene to check against
    # database.
 

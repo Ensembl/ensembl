@@ -40,7 +40,7 @@ package Bio::EnsEMBL::DBSQL::Contig;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+# Object preamble - inherits from Bio::Root::Object
 
 use Bio::Root::Object;
 
