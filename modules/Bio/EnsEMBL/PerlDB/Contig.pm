@@ -66,6 +66,9 @@ sub new {
       _internal_id   => '',
       _seq_date      => '',
       _embl_offset   => 0,
+      _offset        => 0,
+      _orientation   => '',
+      _order         => 1,
       _embl_order    => 1,
   }, $class;
 
@@ -326,6 +329,60 @@ sub seq_date{
 	$self->{'_seq_date'} = $value;
     }
     return $self->{'_seq_date'};
+}
+
+=head2 offset
+
+ Title   : $obj->offset($newval)
+ Usage   : 
+ Returns : 
+ Args    : value of offset
+
+
+=cut
+
+sub offset{
+   my ($self,$value) = @_;
+    if( defined $value && $value ne '' ) {
+	$self->{'_offset'} = $value;
+    }
+    return $self->{'_offset'};
+}
+
+=head2 order
+
+ Title   : $obj->order($newval)
+ Usage   : 
+ Returns : 
+ Args    : value of order
+
+
+=cut
+
+sub order{
+   my ($self,$value) = @_;
+    if( defined $value && $value ne '' ) {
+	$self->{'_order'} = $value;
+    }
+    return $self->{'_order'};
+}
+
+=head2 orientation
+
+ Title   : $obj->orientation($newval)
+ Usage   : 
+ Returns : 
+ Args    : value of orientation
+
+
+=cut
+
+sub orientation{
+   my ($self,$value) = @_;
+    if( defined $value && $value ne '' ) {
+	$self->{'_orientation'} = $value;
+    }
+    return $self->{'_orientation'};
 }
 
 =head2 embl_offset
