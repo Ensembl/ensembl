@@ -254,6 +254,99 @@ sub raw_contig_position {
     return $rc,$rc_pos;
 }
 
+=head2 raw_contig_interval
+
+ Title   : raw_contig_interval
+ Usage   : my ($map_contig,$rc_position,$rc_strand) = $vmap->raw_contig_position($vc_pos,$vc_strand)
+ Function: Maps a VirtualContig position to a RawContig + RawContig position
+
+ Returns : The underlying RawContig and a position on it (in RC coords),
+           and optionally the RC strandedness
+ Args   : position on VirtualContig (in VC coords), and optionally
+          VirtualContig strand.
+=cut
+
+sub raw_contig_interval {
+
+    my ($self, $vc_start, $vc_end, $vc_strand)=@_;
+ 
+    if( ! defined $vc_strand ) {
+      $self->throw( "Wrong number of arguments. " );
+    }
+
+    my $rc;
+    my $rc_pos;
+    my $rc_strand;
+    
+
+    my @result;
+    my $last_mc;
+
+    foreach my $mc ($self->each_MapContig) {
+	
+      my ( $raw_id, $raw_start, $raw_end, $raw_strand  );
+	#If we are still on a RawContig which finished vcpos, 
+        #move to next contig
+	if ($mc->end < $vc_start) {
+	    next;
+	}
+	
+      if ( $mc->start > $vc_end ) {
+	last;
+      }
+
+      if ( $vc_start < $mc->start ) {
+	# ups, gap detected
+	push( @result, { "gap_start" => $vc_start,
+			 "gap_end" => $mc->start-1 } );
+	$vc_start = $mc->start;
+      }
+      # VC start is somewhere in mapcontig region
+      if ($mc->orientation == 1) {
+	# 
+	$raw_start = $mc->rawcontig_start + ($vc_start - $mc->start);
+      } else {
+	$raw_end = $mc->rawcontig_end - ( $vc_start - $mc->start );
+      }
+
+      if( $vc_end > $mc->end ) {
+	if( $mc->orientation == 1 ) {
+	  $raw_end = $mc->rawcontig_end;
+	} else {
+	  $raw_start = $mc->rawcontig_start;
+	}
+      } else {
+	if ($mc->orientation == 1) {
+	  $raw_end = $mc->rawcontig_start + ($vc_end - $mc->start);
+	} else {
+	  $raw_start = $mc->rawcontig_end - ( $vc_end - $mc->start );
+	}
+      }
+      push( @result, { "raw_contig_id" => $mc->contig->internal_id, 
+		      "raw_start" => $raw_start, 
+		       "raw_end" => $raw_end, 
+		       "raw_strand" => $mc->orientation * $vc_strand } );
+	$last_mc = $mc;
+       	$vc_start = $mc->end+1;
+    }
+
+    if( !defined($last_mc) ) {
+      push( @result, { "gap_start" => $vc_start,
+		       "gap_end" => $vc_end } ); 
+    } elsif( $last_mc->end < $vc_end ) {
+      # there was a gap at the end
+      push( @result, { "gap_start" => $last_mc->end+1,
+		       "gap_end" => $vc_end } );
+    }
+    
+    if( $vc_strand == -1 ) {
+      @result = reverse( @result );
+    }
+
+    return @result;
+}
+
+
 sub vcpos_to_rcpos {
 #PL: belongs in Contig.pm ? 
     my ($self, $vcpos, $vcstrand)=@_;

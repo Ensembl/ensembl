@@ -22,7 +22,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..33\n"; 
+BEGIN { $| = 1; print "1..35\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -156,7 +156,7 @@ $gene->version(1);
 $gene->type('test');
 $trans = Bio::EnsEMBL::Transcript->new();
 $trans->temporary_id('trans-id-1');
-$trans->version(1);
+
 
 my $analysis = Bio::EnsEMBL::Analysis->new( 
       -program => 'genebuild',
@@ -198,7 +198,6 @@ $exon->temporary_id('exon-1');
 $exon->start(201);
 $exon->end(206);
 $exon->strand(1);
-$exon->version(1);
 $exon->phase(0);
 $exon->contig_id($vc2->id);
 $trans->add_Exon($exon);
@@ -238,7 +237,6 @@ $trl->start_exon($exon);
 $trl->start(3);
 $trl->end(4);
 $trl->temporary_id('trl-id');
-$trl->version(1);
 
 $exon = Bio::EnsEMBL::Exon->new();
 $exon->temporary_id('exon-2');
@@ -258,10 +256,32 @@ $exon->temporary_id('exon-3');
 $exon->start(373);
 $exon->end(380);
 $exon->strand(1);
-$exon->version(1);
 $exon->phase(0);
 $exon->contig_id($vc2->id);
 $trans->add_Exon($exon);
+
+$sf = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+
+$sf->start(373);
+$sf->end(380);
+$sf->hstart(100);
+$sf->hend(107);
+$sf->strand(1);
+$sf->seqname($vc2->id);
+$sf->hseqname('other');
+$sf->score(100);
+$sf->primary_tag('similarity');
+$sf->source_tag('someone');
+$sf->feature2->primary_tag('similarity');
+$sf->feature2->source_tag('someone');
+
+$sf->analysis($analysis);
+$sf->feature2->analysis($analysis);
+$sf->hstrand(1);
+$sf->hscore(100);
+
+$exon->add_Supporting_Feature($sf);
+
 
 
 $newgene = $vc2->convert_Gene_to_raw_contig($gene);
@@ -455,17 +475,25 @@ $chadp->fetch_by_chrname('chr2');
 
 print "ok 33\n";
 
-#my @m = $chr->get_landmark_MarkerFeatures();
-#
-#if( scalar(@m) > 0 ) {
-#   print "ok 34\n";
-#}
+$test_chr = $stadaptor->fetch_VirtualContig_by_chr_start_end('chr2',1,500);
 
 
-#my @features = $chr->get_SimpleFeatures_by_analysis_id(100);
+my @res = $test_chr->_vmap->raw_contig_interval(336,336,-1);
 
-#if( scalar(@features) != 2 ) {
-#   print "not ok 34\n";
-#} else {
-#   print "ok 34\n";
-#}
+if( scalar(@res) != 1 || $res[0]->{'raw_start'} != 39 ) {
+   print "not ok 34\n";
+} else {
+   print "ok 34\n";
+}
+
+@res = $test_chr->_vmap->raw_contig_interval(50,400,-1);
+
+
+if( scalar(@res) != 6 || $res[0]->{'gap_start'} != 395 ) {
+   print "not ok 35\n";
+} else {
+   print "ok 35\n";
+}
+
+
+

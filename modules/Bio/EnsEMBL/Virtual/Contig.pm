@@ -1704,6 +1704,8 @@ sub _reverse_map_Exon {
    if ($scontig eq 'gapcontig' || $econtig eq 'gapcontig') {
        $self->throw("gap contigs not allowed: exon " . $exon->id );
    }
+
+   my $exon_to_return;
   
    if( $scontig->id eq $econtig->id ) {
        if( $sstrand != $estrand ) {
@@ -1720,30 +1722,6 @@ sub _reverse_map_Exon {
        $rmexon->phase($exon->phase);
        $rmexon->sticky_rank(1);
 
-       foreach my $se ( $exon->each_Supporting_Feature ) {
-
-	   my ($secontig,$sestart,$sestrand) = $self->_vmap->raw_contig_position($se->start,$se->strand);
-	   my ($sncontig,$seend,$snstrand) = $self->_vmap->raw_contig_position($se->end,$se->strand);
-
-	   if( !ref $secontig || !ref $sncontig || $secontig->id ne $sncontig->id ) {
-	       $self->warn("supporting evidence spanning contigs. Cannot write");
-	       next;
-	   }
-	   if( $sestart < $seend ) {
-	       $se->start($sestart);
-	       $se->end($seend);
-	   } else {
-	       $se->start($seend);
-	       $se->end($sestart);
-	   }
-	   $se->strand($sestrand);
-	   $se->seqname($secontig->id);
-	   if( $se->can('attach_seq') ) {
-	       $se->attach_seq($secontig->primary_seq);
-	   }
-
-	 $rmexon->add_Supporting_Feature($se);
-       }
 
        # we could test on strand changes. This just assummes everything works
        # as it says on the tin ;)
@@ -1758,7 +1736,7 @@ sub _reverse_map_Exon {
        $rmexon->contig_id($scontig->internal_id);
        $rmexon->seqname($scontig->id);
        $rmexon->attach_seq($scontig->primary_seq);
-       return ($rmexon);
+       $exon_to_return = $rmexon;
    } else {
        # we are in the world of sticky-ness....
 #       print STDERR "Into sticky exon\n";
@@ -1856,10 +1834,63 @@ sub _reverse_map_Exon {
        }
        
        # give it back
-       return $sticky_exon;
+       $exon_to_return = $sticky_exon;
    }
+
+   #
+   # here we handle supporting features
+   #
+
+   foreach my $se ( $exon->each_Supporting_Feature ) {
+     # we only map featurepairs
+     if( ! $se->isa('Bio::EnsEMBL::FeaturePairI') ) {
+       $self->warn("In reverse map exon, cannot map supporting feature $se");
+       next;
+     }
+
+     my @res = $self->_vmap->raw_contig_interval($se->start,$se->end,$se->strand);
+
+     my $hstart = $se->hstart;
+     foreach my $res ( @res ) {
+       if( $res->{'gap_start'} ) {
+	 $hstart = $hstart + $res->{'gap_end'} - $res->{'gap_start'} +1;
+	 next; # no features in gaps
+       }
+
+       $se->validate();
+       print STDERR "SE validation done!";
+
+       my $new_feature = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+       $new_feature->start($res->{'raw_start'});
+       $new_feature->end($res->{'raw_end'});
+       print STDERR "Setting strand to ",$res->{'raw_strand'},"\n";
+       $new_feature->strand($res->{'raw_strand'});
+       $new_feature->seqname($res->{'raw_contig_id'});
+
+       $new_feature->hstart($hstart);
+       $new_feature->hend($hstart + $res->{'raw_end'} - $res->{'raw_start'});
+       $hstart =$hstart + $res->{'raw_end'} - $res->{'raw_start'}+1;
+       $new_feature->hstrand($se->hstrand);
+       $new_feature->score($se->score);
+       $new_feature->hscore($se->score);
+       $new_feature->hseqname($se->hseqname);
        
-   $self->throw("Internal error. Should not reach here!");
+       $new_feature->analysis($se->analysis);
+       $new_feature->source_tag($se->source_tag);
+       $new_feature->primary_tag($se->primary_tag);
+
+       $new_feature->hsource_tag($se->hsource_tag);
+       $new_feature->hprimary_tag($se->hprimary_tag);
+
+       print STDERR "Adding feature to exon ",$exon_to_return->dbID,"\n";
+       $new_feature->validate();
+
+       $exon_to_return->add_Supporting_Feature($new_feature);
+     }
+   }
+
+   return $exon_to_return;
+
 }
 
 # internal function used by _sanity_check; returns undef if all OK, error

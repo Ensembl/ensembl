@@ -124,6 +124,7 @@ $ok=0;
 $ok=0;
 foreach my $exon ($gene->get_all_Exons) {
     if ($exon->stable_id =~ /exon-1|exon-2/) {
+	print STDERR $exon->contig_id(),"\n",$exon->clone_id(),"\n";
 	$ok++;
     }
 }
