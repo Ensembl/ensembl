@@ -358,7 +358,7 @@ sub coding_start {
   my $strand;
   my $start;
   if( defined $arg ) {
-    $self->{'_coding_start'} = $arg;
+    $self->{'coding_start'} = $arg;
   } elsif( defined $self->translation() ) {
     $strand = $self->translation()->start_exon->strand();
     if( $strand == 1 ) {
@@ -393,6 +393,7 @@ sub coding_end {
       $end = $self->translation()->start_exon->end();
       $end -= ( $self->translation()->start() - 1 );
     }
+    $self->{'coding_end'} = $end;
   }
   
   return $self->{'coding_end'};
