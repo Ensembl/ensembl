@@ -1318,10 +1318,22 @@ sub get_all_ExternalFeatures {
 
 =cut
 
-sub display_id{
-  my $self = shift;
 
-  return $self->id();
+sub display_id {
+   my ($self, $value) = @_;
+
+   if(!$self->{'_display_id'}){
+     $self->{'_display_id'} = undef;
+   } 
+   if( defined $value ) {
+      $self->{'_display_id'} = $value;
+   }
+   my $id = $self->{'_display_id'};
+   if(!$id){
+      $id = $self->id;
+   }
+
+   return $id;
 }
 
 =head2 desc
