@@ -124,17 +124,7 @@ sub mask{
 
 ############################################################
 
-# $seq is a string and $length is the length we want to clip from both ends
 
-sub clip_ends{
-  my ($self,$seq,$length) = @_;
-  
-  my $seq_length = length( $seq );
-  my $subseq = substr( $seq, $length, $seq_length - 2*$length );
-
-  return $subseq;
-}
-  
 
 
 ############################################################
