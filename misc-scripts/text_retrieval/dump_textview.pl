@@ -8,7 +8,7 @@ The aim of this script is to produce a flat file containing text information abo
 
 =head2 Synopsis
 
-get_textview_dump.pl -db ens075 -host ecs1c.sanger.ac.uk -dbuser ensro
+dump_textview_dump.pl -db ens075 -host ecs1c.sanger.ac.uk -dbuser ensro
 
 =head2 Format of the file dumped
 
@@ -33,9 +33,13 @@ use Getopt::Long;
 
 my $dbpass = undef;
 my $dbuser = 'ensro';
-my $ensdbname = 'ens075';
-my $host = 'ecs1c.sanger.ac.uk';
+my $ensdbname = 'ensembl080';
+my $host = 'hcs2g.sanger.ac.uk';
 my $output;
+my $interpro;
+my $omim;
+my $sp;
+
 
 &GetOptions(
 	    'db:s' => \$ensdbname,
@@ -54,7 +58,7 @@ my $ensdb =  Bio::EnsEMBL::DBLoader->new($enslocator);
 my %omim;
 my %sp;
 
-open (OUT, ">$output");
+open (OUT, ">$output") || die "Can't open output\n";
 
 ####################
 #READ INTERPRO FILE#
@@ -73,24 +77,28 @@ my $interpro;
 my %hash;
 
 #Get the Interpro ID
- if (/\<interpro id\=\"(\S+)\"/) {
-     $interpro->{id}=$1;
- }
+
 
 #For each entry get the abstract,publist and memberlist.
 #Each fiels beginns by <fieldname> and ends by <\fieldname>
 
+my $interpro_id;
+my $interpro_abstract;
+my $interpro_pub;
+my $interpro_member;
+
 ENTRY: while (<INTERPRO>) {
-
+    if (/\<interpro id\=\"(\S+)\"/) {
+	$interpro->{id}=$1;
+	#print "$1\n";
+    }
     my $abstract;
-
+    
     if (/\<abstract/) {
 	my $string=$_;
 	while (<INTERPRO>) {
 
 	    $string .= $_;
-
-#If end of the field, get red out all of the junk and last
 	    if (/\<\/abstract/) {
 		
 		$string =~ s/\<abstract\>//gm;
@@ -105,7 +113,6 @@ ENTRY: while (<INTERPRO>) {
 		last;
 	    }
 	}
-#Each field is referenced by using the name of the field
 	$interpro->{abstract}=$string;
     }
 
@@ -113,7 +120,7 @@ ENTRY: while (<INTERPRO>) {
 	my $string = $_;
 	while (<INTERPRO>) {
 	    $string .= $_;
-	    if (/\<\/publist/) {
+	    if (/\<\/publist|\<memberlist/) {
 		$string =~ s/\<publist\>//gm;
 		$string =~ s/\<\/publist\>//gm;
 		$string =~ s/\<authorlist\>//gm;
@@ -135,8 +142,8 @@ ENTRY: while (<INTERPRO>) {
 	}
 	$interpro->{pub}=$string;
     }
-
-
+    
+    
     if (/\<memberlist/) {
 	my $string;
 	while (<INTERPRO>) {
@@ -150,20 +157,28 @@ ENTRY: while (<INTERPRO>) {
 	    if (/\<\/memberlist/) {
 		
 		last;
-	    }
+	 }
 	}
 	$interpro->{member} = $string;
     }
-
-    
-#End of the entry    
-    if (/\<interpro id\=\"(\S+)\"/) {
+		 
+    if (/\<\/interpro\>/) {
+	
 	my $inter_id = $interpro->{id};
 	my $total =  $interpro->{abstract}." ". $interpro->{pub}." ". $interpro->{member},"\n";
 	$hash{$inter_id} = $total;
-	
-	$interpro->{id}=$1;
-		
+	#print "$inter_id\t$total\n\n";
+	#$interpro->{id}=$1;
+	#$count++;
+	my $check = $total;
+	my $in;
+	#while ($check =~ s/interpro id\=//) {
+	 #   $in++;
+	#}
+	#if ($in > 1 ) {
+	 #   print "Found $in in $total\n";
+	#}
+     
 	next ENTRY;
     }
 }
@@ -209,7 +224,7 @@ $/ = "\n";
 
 #Use bioperl to read SP
 #my $in  = Bio::SeqIO->new(-file => 'sp_sptrembl_10_00.txt', '-format' =>'swiss');
-my $in  = Bio::SeqIO->new(-file => '$sp', '-format' =>'swiss');
+my $in  = Bio::SeqIO->new(-file => $sp, '-format' =>'swiss');
 
 while ( my $seq = $in->next_seq() ) {
     my @refs;
@@ -228,7 +243,7 @@ while ( my $seq = $in->next_seq() ) {
     }
 
     foreach my $comment ( $seq->annotation->each_Comment ) {
-	push (@comments,$comment->text)
+	push (@comments,$comment->text);
 	}
 
     my $tot_sp = "$ke|$desc|@refs|@comments";
@@ -251,6 +266,8 @@ $sth2->execute;
 
 while (my @row2 = $sth2->fetchrow) {
     if ($row2[0]) {
+	#print STDERR "$row2[0]\n";
+#	print STDERR "Dump for MIM\n";
 
 	my $sth3 = $ensdb->prepare ("select external_id from genedblink where gene_id = '$row2[0]' and external_db = 'MIM'");
 	$sth3->execute;
@@ -260,35 +277,53 @@ while (my @row2 = $sth2->fetchrow) {
 
 	    #If this gene ac has a link to an OMIM ac dump the text corresponding to this OMIM ac
 	    if ($omim{$row3[0]}) {
-		print OUT "$row2[0]\|OMIM\|$row3[0]\|$omim{$row3[0]}\n";
+		print OUT "$row2[0]\|MIM\|$row3[0]\|$omim{$row3[0]}\n";
 	    }
 	}
 		
+	#print STDERR "Dump for MIM\n";
 
-	my $sth4 = $ensdb->prepare ("select external_id from genedblink where gene_id = '$row2[0]' and external_db = 'SPTREMBL'");
+	my $sth4 = $ensdb->prepare ("select external_id from genedblink where gene_id = '$row2[0]' and (external_db = 'SPTREMBL' or external_db = 'SWISS')");
 	$sth4->execute;
 
 	my $seen4=0;
 	while (my @row4 = $sth4->fetchrow) {
 	    $seen4 = 1;
 #Same for SP
-	    print OUT "$row2[0]\|SP\|$row4[0]\|$sp{$row4[0]}\n";
+	    print OUT "$row2[0]\|SPTR\|$row4[0]\|$sp{$row4[0]}\n";
 	}
     }
 }	    
 	
+
+
+print STDERR "Dump for Interpro\n";
+
 #Select all of the gene ac having an intepro domain
-my $sth5 = $ensdb->prepare ("select t.gene,i.interpro_ac from protein_feature as pf, transcript as t,interpro as i,interpro_description as id where pf.translation = t.translation and pf.hid = i.id and i.interpro_ac = id.interpro_ac");
+my $sth5 = $ensdb->prepare ("select t.gene,i.interpro_ac from protein_feature as pf, transcript as t,interpro as i where pf.translation = t.translation and pf.hid = i.id");
 
 $sth5->execute;
 
+my %saw;
 while (my @row5 = $sth5->fetchrow) {
 #If the gene has an interpro domain, dump the text describing this domain
+  
+    #if ($row5[1] eq "IPR002348") {
+	#print STDERR "Got IPR002348\t$hash{IPR00248}\n";
+
+#}
+    my $ke = "$row5[1]:$hash{$row5[1]}";
     if ($hash{$row5[1]}) {
-	print OUT "$row5[0]\|INTERPRO\|$row5[1]|$hash{$row5[1]}\n";
+	if (!defined $saw{$ke}){
+	    print OUT "$row5[0]\|INTERPRO\|$row5[1]|$hash{$row5[1]}\n";
+	    $saw{$ke}=1;
+	}
     }
-    
-}
+    else {
+	print "$row5[1]\n";
+    }
+}    
+	
 
 	
 
