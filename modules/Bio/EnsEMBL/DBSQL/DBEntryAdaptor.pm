@@ -211,7 +211,7 @@ sub store {
 	$exObj->dbID( $dbX );
 	$exObj->adaptor( $self );
 	
-	if ($exObj->isa('Bio::EnsEMBL::Identityxref')) {
+	if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
 	    $sth = $self->prepare( "
       SELECT LAST_INSERT_ID()
     " );
@@ -254,7 +254,7 @@ sub store {
 	    $exObj->adaptor( $self );
 
 
-	    if ($exObj->isa('Bio::EnsEMBL::Identityxref')) {
+	    if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
 		$sth = $self->prepare( "
       SELECT LAST_INSERT_ID()
     " );
@@ -375,11 +375,11 @@ sub _fetch_by_EnsObject_type {
       $seen{$refID}++;
       
       if ((defined $queryid)) {         # an xref with similarity scores
-        $exDB = Bio::EnsEMBL::Identityxref->new
+        $exDB = Bio::EnsEMBL::IdentityXref->new
           ( -adaptor => $self,
             -dbID => $refID,
             -primary_id => $dbprimaryId,
-            -display_label => $displayid,
+            -display_id => $displayid,
             -version => $version,
             -release => $release,
             -dbname => $dbname);
@@ -392,7 +392,7 @@ sub _fetch_by_EnsObject_type {
           ( -adaptor => $self,
             -dbID => $refID,
             -primary_id => $dbprimaryId,
-            -display_label => $displayid,
+            -display_id => $displayid,
             -version => $version,
             -release => $release,
             -dbname => $dbname );
