@@ -375,30 +375,26 @@ sub translateable_seq {
   my $mrna = "";
   my $prev = undef;
   my $lastphase = 0;
-
   foreach my $exon (@{$self->get_all_translateable_Exons()}) {
 
     my $phase = 0;
     if (defined($exon->phase)) {
       $phase = $exon->phase;
     }
-    if( $phase != $lastphase && $ENV{'MONKEY_EXONS'} == 1 ) {
 
+    if( $phase != $lastphase && $ENV{'MONKEY_EXONS'} == 1 ) {
       # endpadding for the last exon
       if( $lastphase == 1 ) {
 	$mrna .= 'NN';
       } elsif( $lastphase == 2 ) {
 	$mrna .= 'N';
       }
-
       #startpadding for this exon
       $mrna .= 'N' x $phase;
     }
-    
     $mrna .= $exon->seq->seq();
     $lastphase = $exon->end_phase();
   }
-
   return $mrna;
 }
 
@@ -837,14 +833,21 @@ sub translate {
     $display_id = $self->translation->dbID;
   }
 	
+  $mrna =~ s/TAG$|TGA$|TAA$//i;
+  # the above line will remove the final stop codon from the mrna
+  # sequence produced if it is present, this is so any peptide produced
+  # won't have a terminal stop codon
+  # if you want to have a terminal stop codon either comment this line out
+  # or call translatable seq directly and produce a translation from it
+  
   my $peptide = Bio::Seq->new( -seq => $mrna,
 			       -moltype => "dna",
 			       -id => $display_id );
-
-  # does this change the peptide or not??
-  return $peptide->translate();
   
-#  return $peptide;
+ 
+  
+  
+  return $peptide->translate;
 }
 
 =head2 seq
