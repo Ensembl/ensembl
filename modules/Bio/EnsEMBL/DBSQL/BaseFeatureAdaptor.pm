@@ -175,7 +175,7 @@ sub generic_fetch {
   #append additional clauses which may have been defined
   $sql .= "\n$final_clause";
 
-  print STDERR "\n\n$sql\n\n";
+  ##print STDERR "\n\n$sql\n\n";
 
   my $sth = $db->prepare($sql);
 
