@@ -871,12 +871,24 @@ sub deleteObj {
   #clean up external feature adaptor references
   if(exists $self->{'_xf_adaptors'}) {
     foreach my $key (keys %{$self->{'_xf_adaptors'}}) {
-      $self->{'_xf_adaptors'}->{$key} = undef;
+      delete $self->{'_xf_adaptors'}->{$key};
     }
   }
 
-  $self->{'_meta_container'} = undef;
-  $self->{'dnadb'} = undef;
+  if(exists $self->{'current_objects'}) {
+    foreach my $adaptor_name (keys %{$self->{'current_objects'}}) {
+      my $adaptor = $self->{'current_objects'}->{$adaptor_name};
+
+      if($adaptor && $adaptor->can('deleteObj')) {
+        $adaptor->deleteObj();
+      }
+
+      delete $self->{'current_objects'}->{$adaptor_name};
+    }
+  }
+
+  delete $self->{'_meta_container'};
+  delete $self->{'dnadb'};
 
   #call the superclass deleteObj method
   $self->SUPER::deleteObj;
