@@ -380,7 +380,6 @@ sub _build_gene{
     }else{
 	$self->throw("unknown location type");
     }
-    print scalar(@exon_features)." exons\n";
 
     # in case of transcripts, create any new exons. In case of CDSs,
     # only create exons if cannot found exact fit of CDS inside
@@ -486,7 +485,6 @@ sub _build_gene{
 	# transcript (i.e. no mRNA record, or reading turned off)
 	if(!$first){
 	    my @exons = $trans->each_Exon;
-	    print scalar(@exons)." exons found\n";
 	    $first = shift @exons;
 	    if( $#exons == -1 ) {
 		$last = $first;

@@ -30,7 +30,7 @@ my $list;
 my $delete;
 my $clone_id;
 my $processed_clone_list='extract_curated.processed.lis';
-my $log='extract_curated.log';
+my $log='extract_curated.log.err';
 my $max_clone;
 my $nodb;
 my $help;
