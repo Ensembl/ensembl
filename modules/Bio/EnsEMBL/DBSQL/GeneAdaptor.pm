@@ -285,7 +285,28 @@ sub fetch_by_Transcript_id {
     #my $sth = $self->prepare("select gene_id from transcript where transcript_id = '$transid'");
     my $sth = $self->prepare("	SELECT	tr.gene_id 
 				FROM	transcript as tr 
-				WHERE	tr.transcript_id = $transid");
+				WHERE	tr.transcript_id = '$transid'");
+    $sth->execute;
+
+    my ($geneid) = $sth->fetchrow_array();
+    if( !defined $geneid ) {
+        return undef;
+    }
+    my $gene = $self->fetch_by_dbID( $geneid );
+    return $gene;
+}
+
+
+sub fetch_by_transcript_stable_id {
+    my $self = shift;
+    my $stable_id = shift;
+
+    # this is a cheap SQL call
+    #my $sth = $self->prepare("select gene_id from transcript where transcript_id = '$transid'");
+    my $sth = $self->prepare("	SELECT	tr.gene_id 
+				FROM	transcript as tr, transcript_stable_id tsi
+				WHERE	tsi.stable_id = '$stable_id'
+                                    AND tsi.transcript_id = tr.transcript_id");
     $sth->execute;
 
     my ($geneid) = $sth->fetchrow_array();
