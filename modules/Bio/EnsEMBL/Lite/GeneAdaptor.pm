@@ -112,7 +112,7 @@ sub fetch_all_by_gene_id_list {
       $gene->start($chr_start);
       $gene->end($chr_end);
       $gene->strand($chr_strand);
-      $gene->chr_name($chr_name);
+  #    $gene->seq_region_name($chr_name);
       $gene->adaptor($core_gene_adaptor);
       $gene->dbID($gene_id);
       push @genes, $gene;
@@ -353,7 +353,7 @@ sub _objects_from_sth {
 	Bio::EnsEMBL::Analysis->new(-logic_name => $hr->{'analysis'}); 
       $gene->analysis($analysis_cache{$hr->{'analysis'}});
 
-      $gene->chr_name( $hr->{'chr_name'} );
+      $gene->slice( $slice );
       $gene->start( $hr->{'gene_start'} );
       $gene->end( $hr->{'gene_end'} );
       $gene->strand( $hr->{'chr_strand'} );
@@ -560,7 +560,7 @@ sub _get_empty_Genes {
 
   my $chr_start = $slice->chr_start();
   my $chr_end = $slice->chr_end();
-  my $chr_name = $slice->chr_name();
+  my $chr_name = $slice->seq_region_name();
 
 
   my $where = "WHERE  g.chr_name = ? AND g.chr_start <= ? AND 
@@ -711,7 +711,7 @@ sub _get_empty_Genes_by_external_name {
 
   while($hashref = $sth->fetchrow_hashref()) {
     my $gene = new Bio::EnsEMBL::Gene();
-    $gene->chr_name($hashref->{'chr_name'});
+    # $gene->seq_region_name($hashref->{'chr_name'});
     $gene->start($hashref->{'chr_start'});
     $gene->end($hashref->{'chr_end'});
     $gene->stable_id( $hashref->{'gene_name'} );
@@ -739,7 +739,7 @@ sub _get_empty_Genes_by_external_name {
     Additional description lines
     list, listref, hashref
   Example    :  ( optional )
-  Description: testable description
+  Description: waste of space as you don't create lite genes like this....
   Returntype : none, txt, int, float, Bio::EnsEMBL::Example
   Exceptions : none
   Caller     : object::methodname or just methodname
@@ -776,7 +776,7 @@ sub store {
 
   $sth->execute( $gene->source, $gene->analysis->logic_name(),
 		 $gene->type(), $gene->dbID(), $gene->stable_id(),
-		 $gene->chr_name(), $gene->start(), $gene->end(),
+		 $gene->slice->seq_region_name(), $gene->start(), $gene->end(),
 		 $gene->strand(), $gene->description(), $gene->external_db(),
                  $gene->external_status(), 
 		 $gene->external_name() );
