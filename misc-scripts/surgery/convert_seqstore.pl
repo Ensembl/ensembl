@@ -240,7 +240,47 @@ while(my $row = $sth->fetchrow_hashref()) {
 
 }
 
+# ----------------------------------------------------------------------
+# These tables now have seq_region_* instead of chromosome_*
 
+debug("Translating karyotype");
+$sth = $dbi->prepare("SELECT * FROM $source.karyotype");
+$sth->execute or die "Error when reading karyotype";
+while(my $row = $sth->fetchrow_hashref()) {
+  my $seq_region_id = $chromosome_id_old_new{$row->{"chromosome_id"}};
+  execute($dbi, "INSERT INTO $target.karyotype VALUES (" . $seq_region_id . ", " .
+	         $row->{"chr_start"} . ", " .
+	         $row->{"chr_end"} . ", " .
+	         "'" . $row->{"band"} . "', " .
+	         "'" . $row->{"stain"} . "')");
+}
+
+debug("Translating marker_map_location");
+$sth = $dbi->prepare("SELECT * FROM $source.marker_map_location");
+$sth->execute or die "Error when reading marker_map_location";
+while(my $row = $sth->fetchrow_hashref()) {
+  my $seq_region_id = $chromosome_id_old_new{$row->{"chromosome_id"}};
+  execute($dbi, "INSERT INTO $target.marker_map_location VALUES (" .
+	         $row->{"marker_id"} . ", " .
+	         $row->{"map_id"} . ", " .
+	         $seq_region_id . ", " .
+	         $row->{"marker_synonym_id"} . ", " .
+	         "'" . $row->{"position"} . "', " .
+	         $row->{"lod_score"} . ")");
+}
+
+debug("Translating map_density");
+$sth = $dbi->prepare("SELECT * FROM $source.map_density");
+$sth->execute or die "Error when reading map_density";
+while(my $row = $sth->fetchrow_hashref()) {
+  my $seq_region_id = $chromosome_id_old_new{$row->{"chromosome_id"}};
+  execute($dbi, "INSERT INTO $target.map_density VALUES (" .
+	         $seq_region_id . ", " .
+	         $row->{"chr_start"} . ", " .
+	         $row->{"chr_end"} . ", " .
+	         "'" . $row->{"type"} . "', " .
+	         $row->{"value"} . ")");
+}
 
 # ----------------------------------------------------------------------
 # These tables are copied as-is
@@ -257,7 +297,6 @@ copy_table($dbi, "gene_stable_id");
 copy_table($dbi, "go_xref");
 copy_table($dbi, "identity_xref");
 copy_table($dbi, "interpro");
-copy_table($dbi, "karyotype"); # change chromosome_id etc?
 copy_table($dbi, "map");
 copy_table($dbi, "map_density");
 copy_table($dbi, "mapannotation");
