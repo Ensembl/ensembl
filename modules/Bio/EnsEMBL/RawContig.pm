@@ -149,7 +149,7 @@ sub adaptor {
   
   ( defined $arg ) &&
     ( $self->{_adaptor} = $arg );
-  
+
   return $self->{_adaptor};
 }
 
@@ -434,8 +434,9 @@ sub _mask_features {
 
 sub get_all_RepeatFeatures {
    my $self = shift;
+
    if( ! defined $self->adaptor() ) {
-     $self->warn( "Need db connection for get_genscan_peptides()" );
+     $self->warn( "Need db connection for get_all_RepeatFeatures()" );
      return ();
    }
 
@@ -443,6 +444,31 @@ sub get_all_RepeatFeatures {
      fetch_by_RawContig( $self );
    return @repeats;
 }
+
+=head2 get_all_SimilarityFeatures
+
+  Args      : none
+  Function  : connect to database through set adaptor and retrieve the 
+              SimilarityFeatures for this contig.
+  Returntype: list Bio::EnsEMBL::FeaturePair
+  Exceptions: none
+  Caller    : general
+
+=cut
+
+sub get_all_SimilarityFeatures {
+    my $self = shift;
+
+   if( ! defined $self->adaptor() ) {
+     $self->warn( "Need db connection for get_all_SimilarityFeatures()" );
+     return ();
+   }
+
+    my @sim_feat = $self->adaptor->fetch_all_similarity_features($self);
+
+    return @sim_feat;
+}
+
 
 
 =head2 get_genscan_peptides
@@ -505,7 +531,7 @@ sub get_all_ExternalFeatures {
 
      if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
        my @tmp = $extf->get_Ensembl_SeqFeatures_contig($self->dbID,
-							   $self->clone->embl_version,
+						       $self->clone->embl_version,
 							   1,
 							   $self->length,
 							   $self->id);
