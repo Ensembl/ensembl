@@ -191,6 +191,58 @@ sub _sort_by_sticky_rank {
     return 1;
 }
 
+=head1 cdna_coord_2_features
 
+  Arg  1   : integer start - relative to the exon
+  Arg  2   : integer end   - relative to the exon
+
+  Function : Provides a list of Bio::EnsEMBL::SeqFeatures which
+             is the genomic coordinates of this start/end on the exon
+             For simple exons this is one feature - for Stickies this
+             is overridden
+
+  Returns  : list of Bio::EnsEMBL::SeqFeature
+
+
+=cut
+
+sub cdna_coord_2_features {
+  my ($self,$start,$end) = @_;
+
+  my ( @features, @result );
+  # ec start end are cdna relative positions for the current exons cdna
+  my ( $ec_start, $ec_end, $offset );
+
+  # which area of the exon overlaps with requested start,end
+  # usually either the last bit, the first bit or all.
+  my ( $ov_start, $ov_end );
+
+  $ec_start = 0; $ec_end = 0;
+
+  my @exons = $self->each_component_Exon();
+
+  while( my $exon = shift  @exons ) {
+
+    if( $ec_start > 0 ) {
+      $ec_start = $ec_end + 1;
+      $ec_end = $exon->length() + $ec_start - 1;
+    } else {
+      $ec_start = 1;
+      $ec_end = $exon->length()
+    }
+    
+    # now exon covers ec_start - ec_end in cdna
+    $ov_start = ( $start >= $ec_start ) ? $start : $ec_start;
+    $ov_end = ( $end <= $ec_end ) ? $end : $ec_end;
+    
+    if( $ov_end >= $ov_start ) {
+      @features = $exon->cdna_coord_2_features
+	( $ov_start-$ec_start + 1, 
+	  $ov_end-$ec_start + 1 );
+      push( @result, @features );
+    }
+  }
+  return @result;
+}
 
 1;
