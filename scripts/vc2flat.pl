@@ -210,10 +210,9 @@ foreach my $vc_list_ref ( @vcs ) {
 	       				       -left => $vc_list_ref->[3], 
 	       				       -right => $vc_list_ref->[4] 
 						       );
-	# try to load genes
-	#$vc->get_all_Genes;
-		
-	# debug tests by contig
+	$vc->version(1);
+	$vc->sv(1);
+        # debug tests by contig
 	print(STDERR "Format is $format\n");
 	if( $format =~ /gff/ ) {
 	    my @seqfeatures = $vc->top_SeqFeatures();
