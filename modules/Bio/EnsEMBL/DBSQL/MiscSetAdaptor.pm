@@ -67,30 +67,14 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  #cache the entire contents of the misc set table
-  #the table is small and it removes the need to repeatedly query the
-  #table or join to the table
-
   $self->{'_id_cache'} = {};
   $self->{'_code_cache'} = {};
 
-  my $sth = $self->prepare
-    ('SELECT misc_set_id, code, name, description, max_length FROM misc_set');
+  # cache the entire contents of the misc set table
+  # the table is small and it removes the need to repeatedly query the
+  # table or join to the table
 
-  $sth->execute();
-
-  my ($dbID, $code, $name, $desc, $max_len);
-  $sth->bind_columns(\$dbID, \$code, \$name, \$desc, \$max_len);
-
-  while($sth->fetch()) {
-    my $ms =
-      Bio::EnsEMBL::MiscSet->new($dbID, $self, $code, $name, $desc, $max_len);
-
-    $self->{'_id_cache'}->{$dbID} = $ms;
-    $self->{'_code_cache'}->{lc($code)} = $ms;
-  }
-
-  $sth->finish();
+  $self->fetch_all();
 
   return $self;
 }
@@ -114,7 +98,30 @@ sub new {
 sub fetch_all {
   my $self = shift;
 
-  my @all = values(%{$self->{'_id_cache'}});
+  my $sth = $self->prepare
+    ('SELECT misc_set_id, code, name, description, max_length FROM misc_set');
+
+  $sth->execute();
+
+  my ($dbID, $code, $name, $desc, $max_len);
+  $sth->bind_columns(\$dbID, \$code, \$name, \$desc, \$max_len);
+
+  my @all;
+
+  while($sth->fetch()) {
+    my $ms = Bio::EnsEMBL::MiscSet->new
+      (-DBID     => $dbID,
+       -ADAPTOR  => $self,
+       -CODE     => $code,
+       -DESCRIPTION => $desc,
+       -LONGEST_FEATURE => $max_len);
+
+    $self->{'_id_cache'}->{$dbID} = $ms;
+    $self->{'_code_cache'}->{lc($code)} = $ms;
+    push @all, $ms;
+  }
+
+  $sth->finish();
 
   return \@all;
 }
@@ -137,6 +144,11 @@ sub fetch_by_dbID {
   my $self = shift;
   my $dbID = shift;
 
+  if(!$self->{'_id_cache'}->{$dbID}) {
+    # on a cache miss reread the whole table and reload the cache
+    $self->fetch_all();
+  }
+
   return $self->{'_id_cache'}->{$dbID};
 }
 
@@ -158,9 +170,84 @@ sub fetch_by_code {
   my $self = shift;
   my $code = shift;
 
+  if(!$self->{'_code_cache'}->{lc($code)}) {
+    # on cache miss, reread whole table and reload cache
+    $self->fetch_all();
+  }
+
   return $self->{'_code_cache'}->{lc($code)};
 }
 
+
+
+=head2 store
+
+  Arg [1]    : list of MiscSets @mist_sets
+  Example    : $misc_set_adaptor->store(@misc_sets);
+  Description: Stores a list of MiscSets in the database, and sets the
+               dbID and adaptor attributes of the stored sets.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               warning if a feature is already stored in this database
+  Caller     : MiscFeatureAdaptor::store
+
+=cut
+
+sub store {
+  my $self = shift;
+  my @misc_sets = @_;
+
+  # we use 'insert ignore' so that inserts can occur safely on the farm
+  # otherwise 2 processes could try to insert at the same time and one
+  # would fail
+
+  my $sth = $self->prepare
+    ("INSERT IGNORE INTO misc_set " .
+     "SET code = ?, " .
+     "    name = ?, " .
+     "    description = ?, " .
+     "    max_length  = ?");
+
+  my $db = $self->db();
+
+ SET:
+  foreach my $ms (@misc_sets) {
+    if(!ref($ms) || !$ms->isa('Bio::EnsEMBL::DBSQL::MiscSet')) {
+      throw("List of MiscSets arguments expected.");
+    }
+
+    if($ms->is_stored($db)) {
+      warning("MiscSet [".$ms->dbID."] is already stored in this database.");
+      next SET;
+    }
+
+    my $num_inserted = $sth->execute($ms->code(), $ms->name(),
+                                   $ms->description(), $ms->longest_feature());
+
+    my $dbID;
+
+    if($num_inserted == 0) {
+      # insert failed because set with this code already exists
+      my $sth2 = $self->prepare("SELECT misc_set_id from misc_set " .
+                                "WHERE code = ?");
+      $sth2->execute();
+
+      if(!$sth2->rows() == 1) {
+        throw("Could not retrieve or store MiscSet, code=[".$ms->code."]\n".
+              "Wrong database user/permissions?");
+      }
+
+      ($dbID) = @{$sth->fetchrow_array()};
+    } else {
+      $dbID = $sth->{'mysql_insertid'};
+    }
+
+    $ms->dbID($dbID);
+    $ms->adaptor($self);
+  }
+
+  return;
+}
 
 
 #

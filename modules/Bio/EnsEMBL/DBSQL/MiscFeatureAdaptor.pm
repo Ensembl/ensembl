@@ -491,6 +491,79 @@ sub list_dbIDs {
 }
 
 
+=head2 store
+
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
+sub store {
+  my $self = shift;
+  my @misc_features = @_;
+
+  my $db = $self->db();
+
+  my $feature_sth = $self->prepare
+    ("INSERT INTO misc_feature SET " .
+     " seq_region_id    = ?, " .
+     " seq_region_start = ?, " .
+     " seq_region_end   = ?, " .
+     " seq_region_strand = ?");
+
+  my $feature_set_sth = $self->prepare
+    ("INSERT IGNORE misc_feature_misc_set SET " .
+     " misc_feature_id = ? " .
+     " misc_set_id = ?");
+
+  my $msa = $db->get_MiscSetAdaptor();
+  my $aa  = $db->get_AttributeAdaptor();
+
+ FEATURE:
+  foreach my $mf (@misc_features) {
+    if(!ref($mf) || !$mf->isa('Bio::EnsEMBL::MiscFeature')) {
+      throw("List of MiscFeature arguments expeceted");
+    }
+
+    if($mf->is_stored($db)) {
+      warning("MiscFeature [" .$mf->dbID."] is already stored in database.");
+      next FEATURE;
+    }
+
+    # do some checking of the start/end and convert to seq_region coords
+    my $original = $mf;
+    my $seq_region_id;
+    ($mf, $seq_region_id) = $self->pre_store($mf);
+
+    # store the actual MiscFeature
+    $feature_sth->execute($seq_region_id, $mf->start(),
+                          $mf->end(), $mf->strand());
+
+    my $dbID = $feature_sth->{'mysql_insertid'};
+
+    $mf->dbID($dbID);
+    $mf->adaptor($self);
+
+    # store all the attributes
+    my $attribs = $mf->get_all_Attributes();
+    $aa->store_on_MiscFeature($mf, $attribs);
+
+    # store all the sets that have not been stored yet
+    my $sets = $mf->get_all_MiscSets();
+    foreach my $set (@$sets) {
+      $msa->store($set) if(!$set->is_stored($db));
+
+      # update the misc_feat_misc_set table to store the set relationship
+      $feature_set_sth->execute($dbID, $set->dbID());
+    }
+  }
+
+  return;
+}
 
 1;
 
