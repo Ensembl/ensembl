@@ -88,10 +88,10 @@ sub new {
 
   if ( $@ ) {
     $self->throw("*** get_MetaContainer->get_default_assembly failed:\n$@\n"
-            ."assembly type must be set with static_golden_path_type() first");
+            ."assembly type must be set with assembly_type() first");
   } elsif (! $ass) {
     $self->throw("No default assembly defined"
-                 . " - must set with static_golden_path_type() first");
+                 . " - must set with assembly_type() first");
   } else {
     $self->db->assembly_type($ass);
   }
@@ -116,7 +116,7 @@ sub get_Gene_chr_MB {
 sub get_Gene_chr_bp {
     my ($self,$geneid) =  @_;
    
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("SELECT  
@@ -176,7 +176,7 @@ sub get_chr_start_end_of_contig {
        $self->throw("Must have contig id to fetch VirtualContig of contig");
    }
    
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("SELECT  c.id,
@@ -215,7 +215,7 @@ sub get_chr_start_end_of_contig {
 sub fetch_RawContigs_by_fpc_name {
    my ($self,$fpc) = @_;
    
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
    # very annoying. DB obj wont make contigs by internalid. doh!
@@ -254,7 +254,7 @@ sub fetch_RawContigs_by_fpc_name {
 sub convert_chromosome_to_fpc {
     my ($self,$chr,$start,$end) = @_;
  
-    my $type = $self->db->static_golden_path_type()
+    my $type = $self->db->assembly_type()
      or $self->throw("No assembly type defined");
  
     my $sth = $self->db->prepare("
@@ -286,7 +286,7 @@ sub convert_chromosome_to_fpc {
 sub convert_fpc_to_chromosome {
     my ($self,$fpc,$start,$end) = @_;
  
-    my $type = $self->db->static_golden_path_type()
+    my $type = $self->db->assembly_type()
      or $self->throw("No assembly type defined");
  
     my $sth = $self->db->prepare("
@@ -321,8 +321,7 @@ sub convert_fpc_to_chromosome {
 sub convert_rawcontig_to_fpc{
     my ($self,$rc,$start,$end,$strand) = @_;
 
-
-    my $type = $self->db->static_golden_path_type()
+    my $type = $self->db->assembly_type()
      or $self->throw("No assembly type defined");
  
     my $sth = $self->db->prepare("
@@ -365,7 +364,7 @@ sub convert_rawcontig_to_fpc{
 sub fetch_RawContigs_by_chr_name{
    my ($self,$chr) = @_;
 
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("
@@ -439,7 +438,7 @@ sub fetch_RawContigs_by_chr_name{
 sub fetch_RawContigs_by_chr_start_end {
    my ($self,$chr,$start,$end) = @_;
 
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
    
    # go for new go-faster method 
@@ -546,7 +545,7 @@ sub fetch_VirtualContig_by_chr_start_end {
 
     &eprof_start('Slice: staticcontig build');
 
-    my $type = $self->db->static_golden_path_type();
+    my $type = $self->db->assembly_type();
 
     eval {
       $slice = Bio::EnsEMBL::Slice->new(
@@ -585,7 +584,7 @@ sub fetch_VirtualContig_of_clone{
    }
    if( !defined $size ) {$size=0;}
 
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("SELECT  c.id,
@@ -677,7 +676,7 @@ sub fetch_VirtualContig_of_gene{
    my ($chr_name,$start,$end) = $self->get_Gene_chr_bp($geneid);
 
    if( !defined $start ) {
-       my $type = $self->db->static_golden_path_type()
+       my $type = $self->db->assembly_type()
         or $self->throw("No assembly type defined");
        $self->throw("Gene is not on the golden path '$type'. Cannot build VC");
    }
@@ -703,7 +702,6 @@ sub fetch_VirtualContig_of_gene{
 
 sub fetch_VirtualContig_of_exon{
    my ($self,$exonid,$size) = @_;
-
 
    $self->warn("Use of StaticGoldenPathAdaptor.fetch_VirtualContig_of_exon is deprecated.");
 
@@ -747,7 +745,7 @@ sub get_location_of_feature {
        $self->throw("Must have feature details to get location of it");
    }
 
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("SELECT  
@@ -799,7 +797,7 @@ sub fetch_VirtualContig_of_transcript{
    if( !defined $size ) {$size=0;}
 
 
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("SELECT  
@@ -867,7 +865,7 @@ sub fetch_VirtualContig_by_clone {
        $self->throw("Must have clone and size to fetch VirtualContig by clone");
    }
 
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
 
@@ -919,7 +917,7 @@ sub fetch_VirtualContig_by_contig {
        $self->throw("Must have contig id and size to fetch VirtualContig by contig");
    }
 
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("SELECT  c.id,
@@ -997,7 +995,7 @@ sub fetch_VirtualContig_by_gene{
 sub fetch_VirtualContig_by_fpc_name{
     my ($self,$fpc_name) = @_;
 
-    my $type = $self->db->static_golden_path_type();
+    my $type = $self->db->assembly_type();
 
     my $sth = $self->db->prepare("
         SELECT chromosome_id, superctg_ori, MIN(chr_start), MAX(chr_end)
@@ -1092,7 +1090,7 @@ sub fetch_VirtualContig_by_chr_name{
 sub get_all_fpc_ids {
    my ($self,@args) = @_;
 
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
    my $sth = $self->db->prepare("SELECT DISTINCT(superctg_name) 
                     FROM assembly 
@@ -1115,7 +1113,7 @@ sub get_chromosome_length {
 
     $self->throw("No chromosome name entered") unless defined($chrname);
 
-    my $type = $self->db->static_golden_path_type()
+    my $type = $self->db->assembly_type()
      or $self->throw("No assembly type defined");
     
     my $sth = $self->db->prepare("
@@ -1147,6 +1145,7 @@ sub get_chromosome_length {
 
 sub db{
    my ($obj,$value) = @_;
+
    if( defined $value) {
       $obj->{'db'} = $value;
     }
@@ -1159,7 +1158,8 @@ sub db{
 
 sub is_golden_static_contig {
     my ($self,$c_name,$pos) = @_;
-    my $type = $self->db->static_golden_path_type()
+
+    my $type = $self->db->assembly_type()
      or $self->throw("No assembly type defined");
 
     my $query = "
@@ -1189,7 +1189,8 @@ sub is_golden_static_contig {
 
 sub is_golden_static_clone {
     my ($self,$clone) = @_;
-    my $type = $self->db->static_golden_path_type()
+
+    my $type = $self->db->assembly_type()
      or $self->throw("No assembly type defined");
 
     my $query = "   SELECT co.id 
