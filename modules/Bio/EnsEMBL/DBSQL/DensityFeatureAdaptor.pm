@@ -42,6 +42,7 @@ use strict;
 use POSIX;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::DensityFeature;
+use Bio::EnsEMBL::DensityFeatureSet;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
@@ -498,6 +499,14 @@ sub store{
   }
 }
 
+
+sub fetch_Featureset_by_Slice {
+  my $self = shift;  
+  my $dfeats = $self->fetch_all_by_Slice(@_);
+  my $dfeatSet = new Bio::EnsEMBL::DensityFeatureSet($dfeats);
+  
+  return ($dfeatSet);
+}
 
 
 1;

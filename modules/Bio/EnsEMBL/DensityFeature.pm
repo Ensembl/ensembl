@@ -100,8 +100,9 @@ sub new {
   $self->{'density_value'} = $dv;
 
   $self->{'slice'}    = $seq_region;
-  $self->{'seq_region_start'} = $start;
-  $self->{'seq_region_end'}   = $end;
+  $self->{'start'} = $start;
+  $self->{'end'}   = $end;
+  
 
   return $self;
 }
@@ -216,6 +217,97 @@ sub density_type{
   }
   return $self->{'density_type'};
 }
+
+
+###BG########
+
+=head2 start
+
+ Title   : start
+ Usage   : $obj->start($newval)
+ Function: 
+ Returns : value of start
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub start{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'start'} = $value;
+    }
+    return $obj->{'start'};
+
+}
+
+=head2 end
+
+ Title   : end
+ Usage   : $obj->end($newval)
+ Function: 
+ Returns : value of end
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub end{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'end'} = $value;
+    }
+    return $obj->{'end'};
+
+}
+
+
+=head2 scaledvalue
+
+ Title   : scaledvalue
+ Usage   : $obj->scaledvalue($newval)
+ Function: 
+ Returns : this object's scaled value
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub scaledvalue{
+   my $obj = shift;
+   if( @_ ) {
+      my $scaledvalue = shift;
+      $obj->{'scaledvalue'} = $scaledvalue;
+    }
+    return $obj->{'scaledvalue'};
+
+}
+
+
+
+=head2 url
+
+ Title   : url
+ Usage   : $obj->url($newval)
+ Function: 
+ Returns : this object's url
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub url{
+   my $obj = shift;
+   if( @_ ) {
+      my $url = shift;
+      $obj->{'url'} = $url;
+    }
+    return $obj->{'url'};
+
+}
+
 
 1;
 
