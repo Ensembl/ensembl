@@ -11,7 +11,7 @@ use IPC::Open3;
 my $queryfile = "xref_dna.fasta";
 my $targetfile = "ensembl_transcripts.fasta";
 
-#run_mapping($queryfile, $targetfile, ".");
+run_mapping($queryfile, $targetfile, ".");
 store($targetfile);
 
 sub run_mapping {
@@ -143,7 +143,7 @@ sub store {
   my $object_xref_id = $max_object_xref_id + 1;
 
   # keep a (unique) list of xref IDs that need to be written out to file as well
-  my %xref_ids;
+  my %primary_xref_ids;
 
   foreach my $file (glob("*.map")) {
 
@@ -165,7 +165,7 @@ sub store {
       # TODO - evalue?
       $object_xref_id++;
 
-      $xref_ids{$query_id} = $query_id;
+      $primary_xref_ids{$query_id} = $query_id;
 
       # Store in database
       # create entry in object_xref and get its object_xref_id
@@ -184,10 +184,10 @@ sub store {
   close(IDENTITY_XREF);
   close(OBJECT_XREF);
 
-  # write relevant xrefs to file
-  dump_xrefs(\%xref_ids);
-
   print "Read $total_lines lines from $total_files exonerate output files\n";
+
+  # write relevant xrefs to file
+  dump_xrefs(\%primary_xref_ids);
 
 }
 
@@ -321,20 +321,35 @@ sub dump_xrefs {
 
 
     my $sql = "SELECT * FROM xref WHERE xref_id $id_str";
-
-    my $sth = $xref_dbi->prepare($sql);
-    $sth->execute();
+    my $xref_sth = $xref_dbi->prepare($sql);
+    $xref_sth->execute();
 
     my ($xref_id, $accession, $label, $description, $source_id, $species_id);
-    $sth->bind_columns(\$xref_id, \$accession, \$label, \$description, \$source_id, \$species_id);
+    $xref_sth->bind_columns(\$xref_id, \$accession, \$label, \$description, \$source_id, \$species_id);
 
-    # note the xref_id we write to the file is NOT the one we've just read 
+    # note the xref_id we write to the file is NOT the one we've just read
     # from the internal xref database as the ID may already exist in the core database
-    while (my @row = $sth->fetchrow_array()) {
+    while (my @row = $xref_sth->fetchrow_array()) {
       print XREF "$core_xref_id\t$accession\t$label\t$description\n";
       $source_ids{$source_id} = $source_id;
       $core_xref_id++;
+      if ($source_id == 1001) {
+	print "xref $xref_id has source_id 1001\n";
+      }
     }
+
+    # Now get the dependent xrefs for each of these xrefs and write them as well
+    $sql = "SELECT x.accession, x.label, x.description, x.source_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.master_xref_id AND master_xref_id $id_str";
+    my $dep_sth = $xref_dbi->prepare($sql);
+    $dep_sth->execute();
+
+    $dep_sth->bind_columns(\$accession, \$label, \$description, \$source_id);
+    while (my @row = $dep_sth->fetchrow_array()) {
+      print XREF "$core_xref_id\t$accession\t$label\t$description\tDEPENDENT\n";
+      $source_ids{$source_id} = $source_id;
+      $core_xref_id++;
+    }
+    #print "source_ids: " . join(" ", keys(%source_ids)) . "\n";
 
   } # while @xref_ids
 
@@ -379,6 +394,6 @@ sub dump_xrefs {
 
   close(EXTERNAL_DB);
 
-  # TODO - dependent xrefs
+
 
 }
