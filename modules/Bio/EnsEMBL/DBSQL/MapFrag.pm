@@ -90,11 +90,10 @@ sub destroy { return 1; }
 ## Returns a textual description of what the bacflags variable means
 sub bacinfo {
     my $self = shift;
-    return ('',
-            'Interpolated',
-            'Both ends located',
+    return ('Interpolated',
             'Start located',
-            'End located')
+            'End located',
+            'Both ends located')
         [$self->{'_annotations'}{'BACend_flag'}];
 }
 

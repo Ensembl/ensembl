@@ -11,7 +11,7 @@ use Bio::EnsEMBL::DBSQL::MapSet;
 sub new {
     my $class = shift;
     my $self = $class->SUPER::new( @_ );
-    $self->max_feature_length( 1e8 );
+    $self->max_feature_length( 1e9 );
     $self->{'_cache'} = {};
     return $self;
 }
@@ -44,8 +44,10 @@ sub fetch_mapset_chr_start_end {
 
     my( $dnafrag_id, $mapset_id );
     
-    unless(  ( $dnafrag_id = $self->_get_dnafrag_id( $chr_name ) ) &&
-             ( $mapset_id  = $self->_get_mapset_id( $mapset_code ) )  ) {
+    unless( 
+        ( $dnafrag_id = $self->_get_dnafrag_id( $chr_name ) ) &&
+        ( $mapset_id  = $self->_get_mapset_id( $mapset_code ) )
+    ) {
         $self->{'_cache'}{$key} = [];
         return ();
     }
@@ -143,7 +145,7 @@ sub fetch_by_internal_id {
     }
 
     $sth = $self->prepare(
-        qq(select ms.id, ms.code, ms.name, ms.description
+        qq(select ms.mapset_id, ms.code, ms.name, ms.description
              from mapset as ms, mapfrag_mapset as mm
             where ms.mapset_id = mm.mapset_id and mm.mapfrag_id = ?
         )
