@@ -11,6 +11,7 @@ use MultiTestDB;
 
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DensityType;
+use TestUtils qw(count_rows);
 
 our $verbose = 0;
 
@@ -87,6 +88,23 @@ ok($dt->value_type eq 'sum');
 
 # make sure analysis was stored too
 ok($dt->analysis->dbID && $dt->analysis->adaptor);
+
+my $dbID = $dt->dbID();
+my $rows = count_rows($db, 'density_type');
+
+# try to store the same density type a second time
+# should not be entered in the db twice
+$dt = Bio::EnsEMBL::DensityType->new
+  (-analysis => $analysis,
+   -block_size => 600,
+   -value_type => 'sum');
+
+
+$dta->store($dt);
+
+ok($dt->dbID == $dbID);
+ok(count_rows($db, 'density_type') == $rows);
+
 
 $multi->restore('core', 'density_type', 'analysis');
 
