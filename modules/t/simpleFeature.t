@@ -5,7 +5,7 @@ use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 38;
+	plan tests => 33;
 }
 
 use MultiTestDB;
@@ -94,8 +94,8 @@ print_features($features);
 
 #retrieve a feature via dbID
 
-debug('---- fetch_by_dbID (contig coords) ----');
-my $feat = $sfa->fetch_by_dbID(14564, 'contig');
+debug('---- fetch_by_dbID (default coords) ----');
+my $feat = $sfa->fetch_by_dbID(14564);
 ok($feat->dbID == 14564);
 ok($feat->slice->seq_region_name() eq 'AL031658.11.1.162976');
 ok($feat->start == 64109);
@@ -104,8 +104,9 @@ ok($feat->strand == 1);
 
 print_features([$feat]);
 
-debug('---- fetch_by_dbID (chromosome coords) ----');
-$feat = $sfa->fetch_by_dbID(14564, 'chromosome');
+#transform to chromosome coords
+debug('---- tranform to chromosomal ----');
+$feat = $feat->transform('chromosome');
 ok($feat->dbID == 14564);
 ok($feat->slice->seq_region_name() eq '20');
 ok($feat->start == 30327623);
@@ -113,8 +114,9 @@ ok($feat->end == 30327626);
 ok($feat->strand == 1);
 print_features([$feat]);
 
-debug('---- fetch_by_dbID (supercontig coords) ----');
-$feat = $sfa->fetch_by_dbID(14564, 'supercontig');
+# transform to supercontig
+debug('---- tranform to supercontig ----');
+$feat = $feat->transform('contig')->transform('supercontig');
 ok($feat->dbID == 14564);
 ok($feat->slice->seq_region_name() eq 'NT_028392');
 ok($feat->start == 735658);
@@ -122,24 +124,14 @@ ok($feat->end == 735661);
 ok($feat->strand == 1);
 print_features([$feat]);
 
-debug('---- fetch_by_dbID (clone coords) ----');
-$feat = $sfa->fetch_by_dbID(14564, 'clone');
+debug('---- transform to clone ----');
+$feat = $feat->transform('contig')->transform('clone');
 ok($feat->dbID == 14564);
 ok($feat->slice->seq_region_name() eq 'AL031658.11');
 ok($feat->start == 64109);
 ok($feat->end == 64112);
 ok($feat->strand == 1);
 print_features([$feat]);
-
-debug('---- fetch_by_dbID (default coords) ----');
-$feat = $sfa->fetch_by_dbID(14564);
-ok($feat->dbID == 14564);
-ok($feat->slice->seq_region_name() eq 'AL031658.11.1.162976');
-ok($feat->start == 64109);
-ok($feat->end == 64112);
-ok($feat->strand == 1);
-print_features([$feat]);
-
 
 
 # List_dbidx

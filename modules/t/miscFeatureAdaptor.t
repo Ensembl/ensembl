@@ -5,7 +5,7 @@ use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 38;
+	plan tests => 8;
 }
 
 use MultiTestDB;
@@ -37,6 +37,27 @@ debug('--- chr 20 misc_features ---');
 debug("Got " . scalar(@$features));
 ok(@$features == 7);
 print_features($features);
+
+
+$features = $mfa->fetch_all_by_Slice_and_set_code($chr_slice,'ntctgs');
+debug('--- chr 20 ntcontigs set---');
+debug("Got " . scalar(@$features));
+ok(@$features == 7);
+print_features($features);
+
+$features = $mfa->fetch_all_by_Slice_and_set_code($chr_slice,'cloneset');
+debug('--- chr 20 cloneset set---');
+debug("Got " . scalar(@$features));
+ok(@$features == 0);
+print_features($features);
+
+my $feature = $mfa->fetch_by_dbID(741);
+debug('--- fetch_by_dbID ---');
+ok($feature->dbID() == 741);
+ok($feature->start() == 29307627);
+ok($feature->end() == 29541965);
+ok($feature->strand() == 1);
+print_features([$feature]);
 
 
 
