@@ -591,10 +591,11 @@ sub remove {
     if($type eq 'protein_align_feature'){
       my $f = $prot_adp->fetch_by_dbID($feature_id);
       $prot_adp->remove($f);
-      print "have removed ".$f->dbID."\n";
-    }elsif($type eq 'dna_align_feature'){
+      #print "have removed ".$f->dbID."\n";
+    }
+    elsif($type eq 'dna_align_feature'){
       my $f = $dna_adp->fetch_by_dbID($feature_id);
-      print "have removed ".$f->dbID."\n";
+      #print "have removed ".$f->dbID."\n";
       $dna_adp->remove($f);
     }
   }
