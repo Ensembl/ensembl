@@ -71,16 +71,18 @@ sub print_coord_stats {
 
 sub igi_stats {
     my ($igi_hash) = @_;
+    my $huge = 1e308; 
+
     my ( @igis) = keys %$igi_hash;
-    my $min = 1000000000000000000000;
-    my $max = -1;
+    my $min = $huge;
+    my $max = -$huge;
     my $sum = 0;
-    my $minfeats = 1000000000000000000000;
-    my $maxfeats = -1;
+    my $minfeats = $huge;
+    my $maxfeats = -$huge;
     my $sumfeats = 0;
 
-    my $minexons = 1000000000000000000000;
-    my $maxexons = -1;
+    my $minexons = $huge;
+    my $maxexons = -$huge;
     my $sumexons = 0;
 
     my $n =0; 
@@ -115,10 +117,14 @@ sub igi_stats {
                  $minexons, $maxexons, $avgexons);
 }
 
-my %igis_of_source;
-my %native_ids_of_igi;
-
 my @argv_copy = @ARGV; # may get gobbled up by the <> construct. 
+
+my %igis_of_source; # $igis_of_source_{$source}{$igi} = [nfeats, start,
+                    # end, nexons ]
+my %natives_of_source; # $natives_of_source_{$source}{$native_id} =
+                       # [ nfeats, start, end, nexons ]
+my %natives_of_igi; # $natives_of_igi{$source}{$igi}{$native_id} => 1
+
 
 ### just read the complete file into the relevant hashes
 GTF_LINE:
@@ -156,32 +162,23 @@ while (<>) {
     # as fictional source 'ALL':
     foreach my $s ($source, 'ALL') {
         #get previous record of this igi, if any:
-        my ($nfeats, $min, $max, $nexons);
-        if (defined $igis_of_source{$s}{$igi}) {
-            ($nfeats, $min, $max, $nexons) = 
-                @{$igis_of_source{$s}{$igi}};
-        } else { 
-            ($nfeats, $min, $max, $nexons)= (0, $start, $end, 0);
-        }
 
-        # keep track of the native gene_ids of a given igi in a given
-        # source. As always, use a hash for faster collating (i.e. keys
-        # %($native_ids_of_igi{$s}{$igi}) gives them all; the value is
-        # irrelevant 
-        $native_ids_of_igi{$s}{$igi}{$native_id}++;
+        track_extents(\%igis_of_source, $s, $igi,
+                      $seq_name, $start, $end, $strand, $exon_num);
+        track_extents(\%natives_of_source, $s, $native_id,
+                      $seq_name, $start, $end, $strand, $exon_num);
 
-        $min = $start if $start < $min;
-        $max = $end if $end > $max;
-        $nfeats++;
-        $nexons = $exon_num if $exon_num > $nexons;
+    # keep track of the native gene_ids of a given igi in a given
+    # source. As always, use a hash for faster collating (i.e. keys
+    # %($natives_of_igi{$s}{$igi}) gives them all; the value is
+    # irrelevant 
+    $natives_of_igi{$s}{$igi}{$native_id}++;
 
-        # add record back in:
-        $igis_of_source{$s}{$igi} = [$nfeats, $min, $max, $nexons];
-        
+
         # pointless to keep track of exon statistics; call exon-lengths.awk
         # for that.
-    }
-}
+    }                                   # foreach $s
+}                                       # while(<>)
 ### done reading files
 
 # get rid of 'ALL' (which was added for convenience when gathering stats
@@ -201,10 +198,12 @@ if ($all_stats) {
 }
 
 if ($chaining) {
+    print "igi's and native ids of igi's that chain together >= $chaining native ids\n";
     # print out native_id's clumped together in clusters of more than n
-    foreach my $source ( 'ALL', @all_sources ) {
+    foreach my $source ( @all_sources ) {
         print_chaining($source, $chaining);
     }
+    print "----\n";
 }
 
 sub blurp {
@@ -217,6 +216,33 @@ sub blurp {
     
     print "Sources: " , join( ' ', @all_sources), "\n";
 }
+
+### keep track of start,end of a gene, by looking at the lowest start and
+### higest end of any of the features. This is used both for igi's and
+### native id's
+sub track_extents {
+    my ($extents, $source, $igi, 
+        $seq_name, $start, $end, $strand, $exon_num) = @_;
+    my ($nfeats, $min, $max, $nexons);
+    
+    # keep track of number of features, exons, start and end of this igi:
+    if (defined $ {$extents}{$source}{$igi}) {
+        ($nfeats, $min, $max, $nexons) = 
+          @{$ {$extents}{$source}{$igi}}[0,1,2,3];
+    } else { 
+        ($nfeats, $min, $max, $nexons)= (0, $start, $end, 0);
+    }
+        
+    $min = $start if $start < $min;
+    $max = $end if $end > $max;
+    $nfeats++;
+    $nexons = $exon_num if $exon_num > $nexons;
+    
+    # add record back in:
+    $ {$extents}{$source}{$igi} = [$nfeats, $min, $max, $nexons, 
+                                 $seq_name, $strand ];
+}
+
 
 sub find_overlaps { 
     my @all_igis = keys %{$igis_of_source{'ALL'}};
@@ -250,7 +276,7 @@ sub find_chaining {
     
     foreach my $source ('ALL', @all_sources) { 
         foreach my $igi ( keys % {$igis_of_source{$source}}  ) {
-            my @native_ids = keys %{$native_ids_of_igi{$source}{$igi}};
+            my @native_ids = keys %{$natives_of_igi{$source}{$igi}};
             # these are all distinct native id's of this igi in this source;
             # collate them in a histogram
             my $n = int(@native_ids);
@@ -340,7 +366,6 @@ SOURCE1:
     print "igi stats per cluster group:\n";
     for(my $i = 1; $i<=$n_sources; $i++) {
         print "those in $i sources:\n";
-        #     my ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats) = 
         igi_stats($igis_of_n_sources[$i]) ;
     }
     print "----\n";
@@ -358,6 +383,7 @@ SOURCE1:
             }
         }
     }
+    print "----\n";
 }                                       # all_stats
 
 # print out native_id's clumped together in clusters of more than n
@@ -365,15 +391,65 @@ sub print_chaining {
     my ($source, $n)=@_;
     
     print "source $source:\n";
-    for (my $i=$n; $i<int(@native_ids_per_igi_histo); $i++) {
-        if ( $native_ids_per_igi_histo[ $i ]{$source}  ) { 
-            print "    chaining together $i native ids:\n";
+    for (my $i=$n; $i< int(@native_ids_per_igi_histo); $i++) {
+        my $num = $native_ids_per_igi_histo[ $i ]{$source};
+        if ( $num ) { 
+            print "    chaining together $i native ids ( $num cases) :\n";
             my $igi_hash = $ {igis_per_chaining_group[ $i ]}{$source};
             foreach my $igi ( keys %$igi_hash) {
-                print "      $igi: ";
-                my @native_ids = keys %{$native_ids_of_igi{$source}{$igi}};
-                print join(' ',@native_ids), "\n";
+                my ($start,$end, $seq, $strand) 
+                  = @{$igis_of_source{$source}{$igi}}[1,2,4,5];
+                print "      $igi [ $seq\t$start\t$end\t$strand ]:\n";  
+                print_natives($source, $igi);
+                print "        linked by:\n";
+                foreach my $s ( @all_sources ) {
+                    next if $s eq $source;
+                    print_natives($s, $igi, "  ");
+                }
             }
         }
     }
+}                                       # print_chaining
+
+# print out the native id's of this igi, with coordinates, and sorted by
+# coordinate
+sub print_natives {
+    my ($source, $igi, $indent) = @_;
+
+    my (@native_coords);
+    foreach my $nat ( keys %{$natives_of_igi{$source}{$igi}} ) {
+        my ($start,$end) = @{$natives_of_source{$source}{$nat}}[1,2];
+        push @native_coords, [$nat, $start, $end];
+    }
+
+#     foreach my $nat (sort sort_native @native_coords) { 
+    foreach my $nat ( @native_coords ) { 
+        my ($id, $start, $end) = @{$nat};
+        print "        $indent$source $id [ $start\t$end ]\n";
+    }
+}                                       # print natives
+
+# for sorting id's by start/stop coords. This is a bit hairy, to get the
+# start exon's first, and end exons last ... 
+sub sort_native {
+    my ($a,$b) = @_;
+
+    my ($starta, $enda) = @{$a}[1,2];
+    my ($startb, $endb) = @{$b}[1,2];
+
+    my $n;
+    $n = $starta <=> $startb;
+    return $n if $n;
+    $n = $enda <=> $endb;
+    return $n if $n;
+    return $$a[0] cmp $$b[0];           # i.e., alphabetically
+}
+
+
+
+
+sub start_end_of_igi  { 
+    my ($igi)= @_;
+
+    
 }
