@@ -3,15 +3,16 @@ use strict;
 
 BEGIN { $| = 1;  
 	use Test ;
-	plan tests => 9;
+	plan tests => 12;
 }
 
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}
 
 use MultiTestDB;
+use TestUtils qw(debug);
 
-my $verbose = 1;
+our $verbose = 0;
 
 $loaded = 1;
 my $multi = MultiTestDB->new();
@@ -66,11 +67,23 @@ ok($newexon);
 $multi->restore();
 
 
-sub debug {
-  my $txt = shift;
-  if( $verbose ) {
-    print STDERR $txt,"\n";
-  }
-}
+my $tr = $db->get_TranscriptAdaptor->fetch_by_stable_id("ENST00000262652");
+
+my $exons = $tr->get_all_Exons;
+
+
+debug("first exon peptide = " . $exons->[0]->peptide($tr)->seq);
+ok($exons->[0]->peptide($tr)->seq eq ''); #all UTR
+
+debug("second exon peptide = " . $exons->[1]->peptide($tr)->seq);
+ok($exons->[1]->peptide($tr)->seq eq 'MSKLKSSESVRVVVRCRPMNGKEKAASYDKVVDVDVKLGQVSVKNPKGTAHEMPKTFTFDAVYDWNAKQFELYDETFRPLVDSVLQGFNGTIFAYGQTGTGKTYTMEGIRGDPEKRGVIPNSFDHIFTHISRSQNQQYLVRASYLEIYQEEIRDLLSKDQTKRLELKERPDTGVYVKDLSSFVTKSVKEIEHVMNVGNQNRSVGATNMNEHSSRSHAIFVITIECSEVGLDGENHIRVGKLNLVDLAGSERQAKTGAQGERLKEATKINLSLSALGNVISALVDGKSTHIPYRDSKLTRLLQDSLGGNAKTVMVANVGPASYNVEETLTTLRYANRAKNIKNKPRVNEDPKDALLREFQEEIARLKAQLEKRSIGRRKRREKRREGGGSGGGGEEEEEEGEEGEEEGDDKDDYWREQQEKLEIEKRAIVEDHSLVAEEKMRLLKEKEKKMEDLRREKDAAEMLGAKIK');
+
+
+#sticky with utr:
+debug("last exon peptide = " . $exons->[-1]->peptide($tr)->seq);
+ok($exons->[-1]->peptide($tr)->seq eq "RPKSGRKSGSSSSSSGTPASQLYPQSRGLVPK");
+
+
+
 
 

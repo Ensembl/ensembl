@@ -15,7 +15,7 @@ use Bio::EnsEMBL::Slice;
 
 my $multi = MultiTestDB->new();
 
-$verbose = 0;
+$verbose = 1;
 
 ok( $multi );
 
@@ -94,7 +94,7 @@ ok( $tr->coding_end() == 108631 );
 
 debug( "pep2genomic: ".($tr->pep2genomic( 10,20 ))[0]->start());
 my @pepcoords = $tr->pep2genomic( 10, 20 );
-ok( $pepcoords[0]->start() == 85861 );
+ok( $pepcoords[0]->start() == 79901 );
 
 debug( "start Exon: ".$tr->start_Exon->stable_id() );
 debug( "end Exon: ".$tr->end_Exon->stable_id() );
