@@ -60,13 +60,11 @@ sub run {
       }
     }
     if($xref){
-      print "OKAY $gene_names  ->  $xref \n";
-      XrefParser::BaseParser->add_to_xrefs($xref,$mim_number,'',$mim_number,$desc,'',$source_id,$species_id);  
+       XrefParser::BaseParser->add_to_xrefs($xref,$mim_number,'',$mim_number,$desc,'',$source_id,$species_id);  
       $count++;
     }
     else{
-      print "FAILED $gene_names\n";
-      $mismatch++;
+       $mismatch++;
     }
   }
   print "$count succesfull xrefs loaded\n";
