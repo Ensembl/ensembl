@@ -73,6 +73,9 @@ use Bio::EnsEMBL::RepeatMaskedSlice;
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 
 use Bio::EnsEMBL::ProjectionSegment;
+use Bio::EnsEMBL::Registry;
+
+my $reg = "Bio::EnsEMBL::Registry";
 
 # inheritance to Bio::EnsEMBL::Root will eventually be removed
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
@@ -1274,27 +1277,31 @@ sub get_all_SNPs_transcripts {
 =cut
 
 sub get_all_Genes{
-   my ($self, $logic_name, $dbtype, $load_transcripts) = @_;
+  my ($self, $logic_name, $dbtype, $load_transcripts) = @_;
 
   if(!$self->adaptor()) {
     warning('Cannot get Genes without attached adaptor');
     return [];
   }
-
-   my $db;
-   if($dbtype) {
-     $db = $self->adaptor->db->get_db_adaptor($dbtype);
-     if(!$db) {
-       warning("Don't have db $dbtype returning empty list\n");
-       return [];
-     }
-   } else {
-     $db = $self->adaptor->db;
-   }
-
-   my $ga = $db->get_GeneAdaptor();
-
-   return $ga->fetch_all_by_Slice( $self, $logic_name, $load_transcripts);
+  
+  my $ga;
+  if($dbtype) {
+    $ga = $reg->get_adaptor( $self->adaptor()->db()->species(), $dbtype, "Gene" );
+    if( ! defined $ga ) {
+      warning( "$dbtype genes not available" );
+      return [];
+    }
+  } 
+  else {
+    $ga =  $self->adaptor->db->get_GeneAdaptor();
+  }
+  
+  if(!defined($ga)){
+    print STDERR "ERROR: ".$self->adaptor->db."\n";
+    print STDERR "ERROR: ".$self->adaptor()->db()->species()."\n";
+    print STDERR "ERROR: ".$dbtype."\n";
+  }
+  return $ga->fetch_all_by_Slice( $self, $logic_name, $load_transcripts);
 }
 
 =head2 get_all_Genes_by_type
