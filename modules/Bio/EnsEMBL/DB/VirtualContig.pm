@@ -180,7 +180,7 @@ sub extend {
     my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $current_focuscontig,
 					        -focusposition   => $current_focusposition,
 					        -ori             => $current_ori,
-					        -left            => $current_left + $left,
+					        -left            => $current_left - $left,
 					        -right           => $current_right + $right,
 					        );
 
