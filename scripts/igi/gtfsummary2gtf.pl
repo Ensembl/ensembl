@@ -2,8 +2,9 @@
 
 # $Id$ 
 
-# This script takes a gtf summary file and a merged gft file, and  from this,
-# filters out the features that don't appear in the summary file.
+# This script takes a gtf summary file and a merged gft file, and from
+# this, filters out the features that don't appear in the summary
+# file. This is what's called the final gtf file.
 
 # Written by Philip lijnzaad@ebi.ac.uk
 # Copyright EnsEMBL http://www.ensembl.org
@@ -54,13 +55,27 @@ while (<>) {
     }
 
     # Extract the extra information from the final field of the GTF line.
-    my ($igi, $gene_name, $native_id, $transcript_id, $exon_num, $exon_id) =
+    my ($igi, $gene_name, $native_ids, $transcript_id, $exon_num, $exon_id) =
       Bio::EnsEMBL::Utils::igi_utils::parse_group_field($group_field);
-    if ( $all_igis->{$igi} ) {
-        # rearrange things a bit so the order is more consistent:
+    if ( $all_igis->{$igi} ) {          
+        # this is a feature we want; rearrange things a bit so the order is
+        # more consistent:
         my @fields = ($seq_name, $source, $feature,
                       $start,  $end,    $score,
                       $strand, $phase);
+
+        my $native_id; 
+        unless ($native_ids) {         
+            die("line has no gene_id: '$_'\n");
+        }
+        
+        if (int(@$native_ids) > 1 ) {   # this would be bizarre, but never
+                                        # mind
+            warn("Line with several gene_ids (taking first one): '$_'\n");
+            next GTF_LINE;
+        }
+        $native_id =  ${$native_ids}[0];
+        
         my $rest =  "igi_id \"$igi\"; gene_id \"$native_id\"; ";
         $rest .= "gene_name \"$gene_name\"; " if $gene_name;
         $rest .= "transcript_id \"$transcript_id\"; " if $transcript_id;
