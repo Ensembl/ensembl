@@ -15,9 +15,10 @@ use warnings;
 
 # Whereever you keep non-standard modules
 use lib qw(/opt/local/libdata/perl5/i386-openbsd/5.8.0
-	   /opt/local/libdata/perl5
+	   /opt/local/libdata/perl5/i386-openbsd
 	   /opt/local/libdata/perl5/site_perl/i386-openbsd
-	   /opt/local/libdata/perl5/site_perl);
+	   /opt/local/libdata/perl5/site_perl
+	   /opt/local/libdata/perl5);
 
 use Bio::Das;
 use CGI::Pretty qw(:standard -compile);
@@ -30,7 +31,7 @@ use CGI::Pretty qw(:standard -compile);
 # $contact:
 # Who's responsible for this thing (webmaster or similar).
 #
-my $contact = 'Yours Truly<br>yt@some.place';
+my $contact = 'Yours Truly<br>yt@example.com';
 
 # $htdocs:
 # Where the web server looks when someone requests the web
@@ -179,6 +180,9 @@ sub page_start_and_head
 sub page_foot_and_end
 {
     my $cgi = shift;
+
+    print $cgi->p({ style => 'text-align:right' }, 
+	$cgi->small($cgi->tt('$Revision$')));
 
     print $cgi->hr, $cgi->address($contact), $cgi->end_html;
 }
