@@ -16,7 +16,8 @@ INSERT INTO species (taxonomy_id, name, aliases) VALUES (7955,  'danio_rerio',  
 INSERT INTO species (taxonomy_id, name, aliases) VALUES (9598,  'pan_troglodytes',         'chimp,chimpanzee,ptroglodytes,pantroglodytes');
 INSERT INTO species (taxonomy_id, name, aliases) VALUES (9031,  'gallus_gallus',           'chicken,chick,ggallus,gallusgallus' );
 INSERT INTO species (taxonomy_id, name, aliases) VALUES (99883, 'tetraodon_nigroviridis',  'tetraodon,tnigroviridis,tetraodonnigroviridis');
-INSERT INTO species (taxonomy_id, name, aliases) VALUES (170,   'apis_mellifera',          'honeybee,honey_bee,apis,amellifera,apismellifera');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (9913,   'bos_taurus',             'cow,btaurus,bostaurus');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (9615,   'canis_familaris',        'dog,doggy,cfamiliaris,canisfamiliaris');
 
 ################################################################################
 # SOURCES - types of data we can read
