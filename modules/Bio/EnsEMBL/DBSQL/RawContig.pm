@@ -1426,7 +1426,8 @@ sub _got_overlaps {
                     $source,
                     ) = @$row;
                 
-                next unless $source eq 'ucsc';
+                # Must have a way to choose right overlap types
+                #next unless $source eq 'ucsc';
                 
                 # Make the sister contig object
                 my $sis = Bio::EnsEMBL::DBSQL::RawContig->new(
