@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::TimDB::Obj - Tim
+Bio::EnsEMBL::TimDB::Obj - Object representing Tim's directory structure
 
 =head1 SYNOPSIS
 
