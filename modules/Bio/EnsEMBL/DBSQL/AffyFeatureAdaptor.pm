@@ -279,7 +279,7 @@ sub _objs_from_sth {
     $dest_slice_length = $dest_slice->length();
   }
 
-  my $last_feature_id;
+  my $last_feature_id = -1;
   FEATURE: while($sth->fetch()) {
     #get the analysis object
     next if( $last_feature_id == $affy_feature_id );
