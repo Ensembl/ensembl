@@ -116,9 +116,10 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   my ($hstart,$hend,$hstrand,$percent_id,$score, $species, $hspecies,
-      $p_value, $hseqname, $f1,$f2) =
+      $p_value, $hseqname, $f1,$f2,$group_id,$level_id) =
     rearrange(['HSTART','HEND','HSTRAND','PERCENT_ID','SCORE','SPECIES',
-               'HSPECIES', 'P_VALUE', 'HSEQNAME', 'FEATURE1','FEATURE2'], @_);
+               'HSPECIES', 'P_VALUE', 'HSEQNAME', 'FEATURE1','FEATURE2',
+               'GROUP_ID','LEVEL_ID'], @_);
 
   if(defined($hstart) && defined($hend) && ($hend < $hstart)) {
     throw('HSTART must be less than or equal to HEND');
@@ -137,7 +138,8 @@ sub new {
   $self->{'hspecies'}   = $hspecies;
   $self->{'hseqname'}   = $hseqname;
   $self->{'p_value'}    = $p_value;
-
+  $self->{'group_id'}   = $group_id;
+  $self->{'level_id'}   = $level_id;
   #
   # Feature1 and Feature2 arg handling for backwards compatibility
   #
