@@ -92,6 +92,7 @@ sub new {
 	$self->_obj->{'default_module'} =
     { 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
       'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
+      'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
       'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
       'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
       'Chromosome'           => 'Bio::EnsEMBL::DBSQL::ChromosomeAdaptor',
@@ -100,6 +101,7 @@ sub new {
       'CompressedSequence' => 'Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor',
       'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
       'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
+      'DensityFeature'       => 'Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor',
       'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
       'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
       'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
@@ -133,7 +135,7 @@ sub new {
           'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
       'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
       'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor',
-      'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor'
+
     };
 
 
@@ -620,7 +622,7 @@ sub get_AssemblyMapperAdaptor {
 
 =head2 get_DBEntryAdaptor
 
-  Args       : none 
+  Args       : none
   Example    : $dbentry_adaptor = $db_adaptor->get_DBEntryAdaptor();
   Description: Gets a DBEntryAdaptor for this database
   Returntype : Bio::EnsEMBL::DBSQL::DBEntryAdaptor
@@ -633,6 +635,25 @@ sub get_DBEntryAdaptor {
     my( $self ) = @_;
 
     return $self->get_adaptor("DBEntry");
+}
+
+
+
+
+=head2 get_DensityFeatureAdaptor
+
+  Arg [1]    : none
+  Example    : $density_feature_adaptor = $db_adaptor->get_DBEntryAdaptor();
+  Description: Gets a DensityFeatureAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_DensityFeatureAdaptor {
+  my $self = shift;
+  return $self->get_adaptor('DensityFeature');
 }
 
 
