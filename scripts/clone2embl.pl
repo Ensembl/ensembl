@@ -42,6 +42,8 @@
 
 =cut
 
+# to find more things in TimDB use:
+#~humpub/scripts.devel/set_dbm.pl -f ~/th/unfinished_ana/unfinished_clone -l 10
 
 use strict;
 
@@ -127,9 +129,18 @@ if( $format =~ /gff/ ) {
     my $comment = Bio::Annotation::Comment->new();
 
     $comment->text("This clone was reannotated via the EnsEMBL system. Please visit the EnsEMBL web site, http://ensembl.ebi.ac.uk for more information");
-
     $as->annotation->add_Comment($comment);
 
+    $comment = Bio::Annotation::Comment->new();
+    $comment->text("The /gene_id indicates a unique id for a gene, /transcript_id a unique id for a transcript and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://ensembl.ebi.ac.uk/docs/embl.html");
+    $as->annotation->add_Comment($comment);
+
+    my $sf = Bio::SeqFeature::Generic->new();
+    $sf->start(1);
+    $sf->end($as->seq->seq_len());
+    $sf->primary_tag('source');
+    $sf->add_tag_value('organism','homo sapiens');
+    $as->add_SeqFeature($sf);
     my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
     $emblout->_post_sort(\&sort_FTHelper_EnsEMBL);
 
@@ -204,6 +215,13 @@ sub sort_FTHelper_EnsEMBL {
 
     if( $a->key eq $b->key ) {
 	return ($a->loc cmp $b->loc);
+    }
+
+    if( $a->key eq 'source' ) {
+	return -1;
+    }
+    if( $b->key eq 'source' ) {
+	return 1;
     }
 
     if( $a->key eq 'CDS' ) {

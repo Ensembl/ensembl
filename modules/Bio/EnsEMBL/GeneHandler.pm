@@ -112,10 +112,12 @@ sub to_FTHelper{
    my $exh = {};
    
    foreach my $trans ( $self->gene()->each_Transcript() ) {
-       foreach my $ptrans ( $trans->split_Transcript_to_Partial ) {
-	   push(@out,$self->_process_Transcript($ptrans,$exh));
-       }
+       push(@out,$self->_process_Transcript($trans,$exh));
    }
+    #   foreach my $ptrans ( $trans->split_Transcript_to_Partial ) {
+    #	   push(@out,$self->_process_Transcript($ptrans,$exh));
+    #   }
+
 
 
    push(@out,values %{$exh});
@@ -215,6 +217,7 @@ sub _process_Transcript{
 
    # we want to know whether the last exon is forward or backward first.
    my $loc_comp; 
+   my $prev;
    foreach my $exon ( $trans->each_Exon() ) {
        # get out the clone
        if( $exon->clone_id() ne $self->clone->id() ) {
@@ -249,6 +252,16 @@ sub _process_Transcript{
 	   $exon_hash_ref->{$exon->id()} = $ft;
        }
 
+       # check to see whether we are jumping contigs or not
+
+       if( $prev && $prev->contig_id ne $exon->contig_id ) {
+	   my $loc_exon = $self->_generate_missing_exon($self->clone->get_Contig($prev->contig_id),
+						 $self->clone->get_Contig($exon->contig_id),
+						 (3-$prev->phase) + (3-(3-$exon->phase)%3),$exon->strand); 
+	   # generate missing exon now, in CDS line
+       }
+
+
        # add the information to the Transcript object whatever.
 
        if( $loc_comp == 1 ) {
@@ -265,8 +278,8 @@ sub _process_Transcript{
 	   }
        }
 
-       
-   }
+       $prev = $exon;
+   } # end of loop over all exons
 
    # the last *f^%$%ing* location needs to have a '>' (would you
    # believe it). So annoying. This is ..HORRIBLE..
@@ -280,7 +293,9 @@ sub _process_Transcript{
    } else {
        $trans_loc =~ s/\.\.(\d+)(\)?)$/..>$1$2/;
    }
- 
+
+   # use first exon to find appropiate start point
+
 
    my $t_fth = new Bio::AnnSeqIO::FTHelper->new();
    $t_fth->key("CDS");
@@ -288,6 +303,10 @@ sub _process_Transcript{
    $t_fth->add_field('translation',$pseq->str);
    $t_fth->add_field('transcript_id',$trans->id());
    $t_fth->add_field('gene_id',$self->gene->id());
+
+   # map phase1 -> 2, phase 2 -> 1, phase 0 -> 0 and then add 1. Easy huh?
+   $t_fth->add_field('codon_start',((3 -$firstexon->phase) %3)+1);
+
    if( $trans->is_partial() == 1 ) {
        $t_fth->add_field('note',"transcript is a partial transcript");
    }
@@ -300,6 +319,57 @@ sub _process_Transcript{
 
    push(@fth,$t_fth);
    return @fth;
+}
+
+=head2 _generate_missing_exon
+
+ Title   : _generate_missing_exon
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _generate_missing_exon{
+   my ($self,$contiga,$contigb,$number,$strand) = @_;
+
+   if( ! $strand || !$contiga->isa('Bio::EnsEMBL::DB::ContigI') || !$contigb->isa('Bio::EnsEMBL::DB::ContigI') ){
+       $self->throw("bad arguments, $contiga $contigb");
+   }
+
+   # yuk yuk yuk.
+  
+   # issue a warning if contiga is not next door to contigb.
+
+   if( abs($contiga->order - $contigb->order) != 1 ) {
+       $self->warn("exons spanning more than one gap - ie a contig.");
+   }
+
+   # take contigb's offset - take mid point of joining segment to contigb
+
+   my $start;
+   my $end;
+   my $isc;
+
+   if( ($strand == 1 && $contigb->orientation == 1) || ($strand == -1 && $contigb->orientation == -1) ) {
+       $start = $contigb->offset - ($Bio::EnsEMBL::DB::Clone::CONTIG_SPACING)/2;
+       $end = $start + $number -1;
+       $isc = 0;
+   } else {
+       $start = $contigb->offset + $contigb->length + ($Bio::EnsEMBL::DB::Clone::CONTIG_SPACING)/2;
+       $end = $start + $number -1;
+       $isc = 1;
+   }
+   
+   if( $isc == 0 ) {
+       return "$start..$end";
+   } else {
+       return "complement($start..$end)";
+   }
+
 }
 
 =head2 _deduce_exon_location

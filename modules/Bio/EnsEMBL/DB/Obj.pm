@@ -519,6 +519,38 @@ sub write_Contig {
    return 1;
 }
 
+=head2 write_Clone
+
+ Title   : write_Clone
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_Clone{
+   my ($self,$clone) = @_;
+
+   if( !$clone->isa('Bio::EnsEMBL::DB::CloneI') ) {
+       $self->throw("Clone must be a CloneI type, not a $clone");
+   }
+
+
+   my $clone_id = $clone->id();
+   my $sv = $clone->sv();
+   my $embl_id = $clone->embl_id();
+
+   #push(@sql,"lock tables contig write,dna write");
+   #push(@sql,"insert into dna(contig,sequence,created) values('$contigid','$seqstr','$date')");
+   #push(@sql,"replace into contig(id,dna,length,clone) values('$contigid',LAST_INSERT_ID(),$len,'$clone')");
+   #push(@sql,"unlock tables");   
+
+
+}
+
 
 =head2 prepare
 
