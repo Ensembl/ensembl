@@ -2059,7 +2059,7 @@ sub get_Contig {
 
     #$self->warn("Obj->get_Contig is a deprecated method! 
 #Calling Contig->fetch instead!");
-    
+#   print STDERR "Asking for $id\n"; 
     require Bio::EnsEMBL::DBSQL::RawContig;
     my $contig = Bio::EnsEMBL::DBSQL::RawContig->new(
         -dbobj              => $self,
@@ -2881,6 +2881,107 @@ sub remove_ExternalAdaptor {
     $self->_ext_adaptor($adtor_name, 'DELETE');
     undef;
 }
+
+
+#021101 added this so that can put crossmatch into the pipeline
+=head2 get_CrossMatchDBAdaptor
+
+ Title   : get_CrossMatchDBAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns :
+ Args    :
+
+
+=cut
+
+sub get_CrossMatchDBAdaptor{
+    my( $self) = @_;
+
+    my( $cma);
+    unless ($cma= $self->{'_CrossMatchDbAdaptor'}) {
+        require Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor;
+
+        my $cmname      = $::pipeConf{'cmname'} || undef;
+        my $cmuser      = $::pipeConf{'cmuser'} || undef;
+        my $dbhost      = $::pipeConf{'dbhost'} || undef;
+
+
+        $cma = Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new(-dbname => $cmname,
+                                                             -user =>$cmuser,
+                                                             -host =>$dbhost,
+                                                              );
+
+    }
+    return $cma;
+
+
+}
+
+#061101 added this so that can use dbadaptor from Ens adaptor
+=head2 get_ComparaDBAdaptor_
+
+ Title   : get_ComparaDBAdaptor_
+ Usage   :
+ Function:
+ Example :
+ Returns :
+ Args    :
+
+
+=cut
+
+sub get_ComparaDBAdaptor{
+   my ($self) = @_;
+
+   if( !defined $self->{'_compara_dbadaptor'} ) {
+       require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor;
+
+        my $cpname      = $::pipeConf{'cpname'} || undef;
+        my $cpuser      = $::pipeConf{'cpuser'} || undef;
+        my $dbhost      = $::pipeConf{'dbhost'} || undef;
+
+       $self->{'_compara_dbadaptor'}  = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
+                                                                                  -dbname =>$cpname,
+                                                                                  -user   =>$cpuser,
+                                                                                  -host   =>$dbhost
+                                                                                  );
+   }
+   return $self->{'_compara_dbadaptor'};
+}
+
+=head2 get_SyntenyAdaptor
+
+ Title   : get_SyntenyAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : Bio::EnsEMBL::DBSQL::SyntenyAdaptor()
+ Args    :
+
+=cut
+
+sub get_SyntenyAdaptor{
+    my( $self ) = @_;
+
+    if( !defined $self->{'_synteny_adaptor'} ) {
+       require Bio::EnsEMBL::Compara::DBSQL::SyntenyAdaptor;
+
+        my $saname      = $::pipeConf{'saname'} || undef;
+        my $sauser      = $::pipeConf{'sauser'} || undef;
+        my $dbhost      = $::pipeConf{'dbhost'} || undef;
+
+       $self->{'_compara_dbadaptor'}  = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
+                                                                                  -dbname =>$saname,
+                                                                                  -user   =>$sauser,
+                                                                                  -host   =>$dbhost
+                                                                                  );
+   }
+   return $self->{'_synteny_adaptor'};
+
+}
+
 
 
 1;
