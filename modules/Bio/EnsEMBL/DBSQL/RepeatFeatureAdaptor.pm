@@ -258,7 +258,14 @@ sub store {
 
     if ($cons->repeat_class eq 'trf') {
 
-      $rca->store($cons);
+      # Look for matches already stored
+      my @match = $rca->fetch_by_class_seq('trf', $cons->repeat_consensus); 
+      if (@match) {
+	  $cons->dbID($match[0]->dbID());
+      }
+      else {
+	  $rca->store($cons);
+      }
 
     } elsif ($cons->repeat_class eq 'Simple_repeat') {
 
