@@ -825,7 +825,7 @@ sub find_supporting_evidence {
 	  $self->find_supporting_evidence(\@subf);
 	} else {
 	  if ($f->seqname eq $self->contig_id) {
-	    if (!($f->end < $self->start || $f->start > $self->end)) {
+	    if (!($f->end < $self->start || $f->start > $self->end || $f->strand != $self->strand)) {
 	      $self->add_Supporting_Feature($f);
 	    }
 	  }
