@@ -112,7 +112,7 @@ sub fetch_all {
     my $analysis = $self->_objFromHashref( $rowHashRef  );
 
     $self->{_cache}->{$analysis->dbID}                    = $analysis;
-    $self->{_logic_name_cache}->{$analysis->logic_name()} = $analysis;
+    $self->{_logic_name_cache}->{lc($analysis->logic_name())} = $analysis;
   }
 
   my @ana = values %{$self->{_cache}};
@@ -162,7 +162,7 @@ sub fetch_by_dbID {
 
   my $anal = $self->_objFromHashref( $rowHashRef );
   $self->{_cache}->{$anal->dbID} = $anal;
-  $self->{_logic_name_cache}->{$anal->logic_name()} = $anal;
+  $self->{_logic_name_cache}->{lc($anal->logic_name())} = $anal;
   return $anal;
 }
 
@@ -186,8 +186,8 @@ sub fetch_by_logic_name {
   my $rowHash;
 
   #check the cache for the logic name
-  if(defined $self->{_logic_name_cache}{$logic_name}) {
-    return $self->{_logic_name_cache}{$logic_name};
+  if(defined $self->{_logic_name_cache}{lc($logic_name)}) {
+    return $self->{_logic_name_cache}{lc($logic_name)};
   }
 
   my $sth = $self->prepare( "
@@ -212,7 +212,7 @@ sub fetch_by_logic_name {
   
   #place the analysis in the caches, cross referenced by dbID and logic_name
   $self->{_cache}{$analysis->dbID()} = $analysis;
-  $self->{_logic_name_cache}{$logic_name} = $analysis;
+  $self->{_logic_name_cache}{lc($logic_name)} = $analysis;
 
   return $analysis;
 }
@@ -335,11 +335,10 @@ sub store {
     }
   }
   $self->{_cache}->{$dbID} = $analysis;
+  $self->{_logic_name_cache}{lc($analysis->logic_name)} = $analysis;
 
-  if( $analysis->can( "adaptor" )) {
-    $analysis->adaptor( $self );
-    $analysis->dbID( $dbID );
-  }
+  $analysis->adaptor( $self );
+  $analysis->dbID( $dbID );
   
   return $dbID;
 }
