@@ -28,7 +28,7 @@ INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, na
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2,3,2,12,356,-1,'2','ePCR',122,123,'RH0000012',0.0,0);
 
 
-INSERT INTO contig_landmarkMarker (contig,marker,name,start,end,chr_name) VALUES (3,'RH0000012','DS12000012',100,120,'chr2');
+#INSERT INTO contig_landmarkMarker (contig,marker,name,start,end,chr_name) VALUES (3,'RH0000012','DS12000012',100,120,'chr2');
 
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('texon-1',1,2,4,1,0,1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('texon-1',2,2,4,2,0,1);
@@ -41,10 +41,7 @@ INSERT INTO transcript (id,gene,translation) VALUES ('ttranscript-1','tgene-id-1
 INSERT INTO gene (id) VALUES ('tgene-id-1');
 INSERT INTO genetype (gene_id,type) VALUES ('tgene-id-1','type');
 
-INSERT INTO translation (id,start_exon,seq_start,end_exon,seq_end) VALUES ('ttrl-1','texon-1',2,'texon-2',6);
-
-INSERT INTO genedblink (gene_id,external_db,external_id) VALUES ('tgene-id-1','swissprot','P000123');
-INSERT INTO transcriptdblink (transcript_id,external_db,external_id) VALUES ('ttranscript-1','embl','AC000012');
+INSERT INTO translation (id,start_exon,seq_start,end_exon,seq_end) VALUES ('trl-1','texon-1',2,'texon-2',1);
 
 
 INSERT INTO genetype (gene_id, type) VALUES ('tgene-id-1','ensembl');
