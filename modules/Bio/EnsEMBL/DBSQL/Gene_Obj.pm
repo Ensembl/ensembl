@@ -978,6 +978,8 @@ sub get_Virtual_Contig{
       }
     }
     print STDERR "Length of virtual contig for transcript ".$transcript->id." is ".$vc->length()."\n";
+
+    print STDERR "MY VC FROM GENE ",$vc,"\n";
     
     return $vc;
 }
