@@ -516,7 +516,7 @@ sub get_RepeatFeatureAdaptor {
   my( $self ) = @_;
   
   my $core_adaptor = 
-    $self->_get_adaptor("Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor");
+    $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor");
   
   #create a proxy adaptor, using a core RepeatFeatureAdaptor as constructor arg
   return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor",
