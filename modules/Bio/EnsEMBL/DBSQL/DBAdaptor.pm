@@ -486,6 +486,15 @@ sub get_Protein_Adaptor {
     return $self->get_adaptor("Bio::EnsEMBL::DBSQL::Protein_Adaptor");
 }
 
+
+sub get_MapFragAdaptor {
+  my $self = shift;
+
+  return $self->get_adaptor( "Bio::EnsEMBL::DBSQL::MapFragAdaptor" );
+}
+
+
+
 =head2 get_CloneAdaptor
 
     my $ca = $dba->get_CloneAdaptor;

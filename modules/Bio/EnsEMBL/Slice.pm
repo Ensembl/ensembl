@@ -690,6 +690,20 @@ sub length {
 }
 
 
+sub get_all_MapFrags {
+    my $self = shift;
+    my $mapset = shift;
+    return $self->adaptor->db->get_MapFragAdaptor->fetch_mapset_chr_start_end( 
+        $mapset, $self->chr_name, $self->chr_start, $self->chr_end
+    );
+}    
+
+sub has_MapSet {
+    my( $self, $mapset_name ) = @_;
+    return $self->dbobj->get_MapFragAdaptor->has_mapset( $mapset_name );
+}
+
+
 sub get_tiling_path {
   my ($self) = @_;
 
