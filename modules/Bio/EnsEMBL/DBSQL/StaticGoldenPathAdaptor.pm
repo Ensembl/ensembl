@@ -98,25 +98,46 @@ sub get_Gene_chr_MB {
     return ($chr,$round);
 }
 
+
+
 sub get_Gene_chr_bp {
-    my ($self,$gene) =  @_;
+    my ($self,$geneid) =  @_;
+   
+   my $type = $self->dbobj->static_golden_path_type();
 
-    my $query = "
-     SELECT STRAIGHT_JOIN p.chr_name, p.chr_start 
-     FROM transcript tr, translation tl, exon e, static_golden_path p 
-     WHERE tr.gene = '$gene' 
-       AND tl.id = tr.translation 
-       AND tl.start_exon = e.id 
-       AND e.contig = p.raw_id";
+   my $sth = $self->dbobj->prepare("SELECT  
+   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
+                    (sgp.chr_start+sgp.raw_end-e.seq_end)),
+   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),
+                    (sgp.chr_start+sgp.raw_end-e.seq_start)),
+     sgp.chr_name
+  
+				    FROM    exon e,
+					    transcript tr,
+					    exon_transcript et,
+					    static_golden_path sgp 
+				    WHERE e.id=et.exon 
+				    AND et.transcript=tr.id 
+				    AND sgp.raw_id=e.contig 
+				    AND sgp.type = '$type' 
+				    AND tr.gene = '$geneid';" 
+		   		    );
+   $sth->execute();
 
-    my $sth = $self->dbobj->prepare($query);
+   my ($start,$end,$chr);
+   my @start;
+   while ( my @row=$sth->fetchrow_array){
+      ($start,$end,$chr)=@row;
+       push @start,$start;
+       push @start,$end;
+   }   
+   
+   my @start_sorted=sort { $a <=> $b } @start;
 
-    $sth->execute();
+   $start=shift @start_sorted;
+   $end=pop @start_sorted;
 
-    my ($chr,$mbase) = $sth->fetchrow_array;
-
-
-    return ($chr,$mbase); 
+   return ($chr,$start,$end); 
         
 }
 
@@ -609,41 +630,7 @@ sub fetch_VirtualContig_of_gene{
    }
    if( !defined $size ) {$size=0;}
 
-
-   my $type = $self->dbobj->static_golden_path_type();
-
-   my $sth = $self->dbobj->prepare("SELECT  
-   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
-                    (sgp.chr_start+sgp.raw_end-e.seq_end)),
-   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),
-                    (sgp.chr_start+sgp.raw_end-e.seq_start)),
-     sgp.chr_name
-  
-				    FROM    exon e,
-					    transcript tr,
-					    exon_transcript et,
-					    static_golden_path sgp 
-				    WHERE e.id=et.exon 
-				    AND et.transcript=tr.id 
-				    AND sgp.raw_id=e.contig 
-				    AND sgp.type = '$type' 
-				    AND tr.gene = '$geneid';" 
-		   		    );
-   $sth->execute();
-
-   my ($start,$end,$chr_name);
-   my @start;
-   while ( my @row=$sth->fetchrow_array){
-      ($start,$end,$chr_name)=@row;
-       #print STDERR "Got $start-$end \n";
-       push @start,$start;
-       push @start,$end;
-   }   
-   
-   my @start_sorted=sort { $a <=> $b } @start;
-
-   $start=shift @start_sorted;
-   $end=pop @start_sorted;
+   my ($chr_name,$start,$end) = $self->get_Gene_chr_bp($geneid);
 
    if( !defined $start ) {
        $self->throw("Gene is not on the golden path. Cannot build VC");
@@ -653,7 +640,6 @@ sub fetch_VirtualContig_of_gene{
 							$start-$size,
 							$end+$size
 							);
-   
 }
 
 
@@ -892,38 +878,7 @@ sub fetch_VirtualContig_by_gene{
    }
    if( !defined $size ) {$size=0;}
 
-
-   my $type = $self->dbobj->static_golden_path_type();
-
-   my $sth = $self->dbobj->prepare("SELECT  
-   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
-                    (sgp.chr_start+sgp.raw_end-e.seq_end)),
-     sgp.chr_name
-  
-				    FROM    exon e,
-					    transcript tr,
-					    exon_transcript et,
-					    static_golden_path sgp 
-				    WHERE e.id=et.exon 
-				    AND et.transcript=tr.id 
-				    AND sgp.raw_id=e.contig 
-				    AND sgp.type = '$type' 
-				    AND tr.gene = '$geneid';" 
-		   		    );
-   $sth->execute();
-
-
-   my ($start,$chr_name); 
-   my @start;
-   while ( my @row=$sth->fetchrow_array){
-       ($start,$chr_name)=@row;
-
-       push @start,$start;
-   }
-   
-   my @start_sorted=sort { $a <=> $b } @start;
-
-   $start = shift @start_sorted;
+   my ($chr_name,$start) = $self->get_Gene_chr_bp($geneid);
 
    if( !defined $start ) {
        $self->throw("Gene is not on the golden path. Cannot build VC");
