@@ -48,8 +48,8 @@ my ($unused_fh, $pmatch_out) = tempfile("pmatch_XXXXX",
 my $datadir	= '/acari/work4/mongin/final_build/release_mapping/Primary';
 my $target	= $datadir . '/final.fa';
 my $query	= $datadir . '/sptr_ano_gambiae_19_11_02_formated.fa';
-my $q_idt;
-my $t_idt;
+my $q_thr;
+my $t_thr;
 my $output;
 
 # Set defaults
@@ -237,7 +237,7 @@ foreach my $query (values(%hits)) {
 }
 
 if ($opts{'d'} == 1) {
-    if ((! defined $q_idt) || (!defined $t_idt) || (! defined $output)) {
+    if ((! defined $q_thr) || (!defined $t_thr) || (! defined $output)) {
 	die "You need to define:\nquery pert idt: $q_idt\ntargett perc idt: $t_idt\nOutput file: $output\n";
     }
 
