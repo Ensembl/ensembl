@@ -818,7 +818,7 @@ sub _get_dblinks{
     }
     
     my $query1 = "select t.translation from transcript t where t.gene = '$gene_id';";
-    my $sth1 = $self->dbobj->prepare($query1);
+    my $sth1 = $self->_dbobj->prepare($query1);
     $sth1->execute;
     
     while (my $transid = $sth1->fetchrow) {
