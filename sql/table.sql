@@ -680,7 +680,7 @@ CREATE TABLE marker_feature (
     map_weight                int(10) unsigned,
 
     PRIMARY KEY (marker_feature_id),
-    KEY contig_idx (contig_id )
+    KEY contig_idx (contig_id,contig_start)
 );
     
 CREATE TABLE marker_map_location (
