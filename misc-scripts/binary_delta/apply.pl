@@ -60,7 +60,7 @@ if (-d $v2_dir) {
 }
 
 printf STDERR "Creating the directory '%s'\n", $v2_dir;
-mkdir($v2_dir) or dir $!;
+mkdir($v2_dir) or die $!;
 
 my $v1_all_size = 0;
 my $v2_all_size = 0;
