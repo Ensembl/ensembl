@@ -174,7 +174,9 @@ sub fetch_snp_features {
  #lists of variations to be returned
     my @variations;
     my %hash;
-    my $string;
+    my $string; 
+
+    my $_db_name = $self->{'_lite_db_name'};
    
 
     my $query = qq{
@@ -182,7 +184,7 @@ sub fetch_snp_features {
         SELECT   snp_chrom_start,strand,chrom_strand,
                  refsnpid,
                  tcsid, hgbaseid,clone 
-        FROM   	 snp
+        FROM   	 $_db_name.snp
         WHERE  	 chr_name='$chr' 
         AND      snp_chrom_start>$vc_start
 	AND      snp_chrom_start<$vc_end
