@@ -413,13 +413,13 @@ sub _fetch_by_object_type {
          $synonym, $queryid, $targetid, $linkage_type ) = @$arrRef;
 
     my %obj_hash = ( 
-	      _adaptor    => $self,
-        _dbID       => $refID,
-        _primary_id => $dbprimaryId,
-        _display_id => $displayid,
-        _version    => $version,
-        _release    => $release,
-        _dbname     => $dbname);
+		    'adaptor'    => $self,
+		    'dbID'       => $refID,
+		    'primary_id' => $dbprimaryId,
+		    'display_id' => $displayid,
+		    'version'    => $version,
+		    'release'    => $release,
+		    'dbname'     => $dbname );
 
 
     # using an outer join on the synonyms as well as on identity_xref, we

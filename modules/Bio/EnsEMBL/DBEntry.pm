@@ -113,7 +113,7 @@ sub new {
   if( defined $release) { $self->release( $release ) }
   if( defined $display_id) { $self->display_id( $display_id ) }
   if( defined $description) { $self->description($description) }
-  $self->{_synonyms} = [];;
+  $self->{synonyms} = [];;
 
   return $self;
 }
@@ -135,9 +135,9 @@ sub new {
 sub primary_id {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    $self->{_primary_id} = $arg;
+    $self->{primary_id} = $arg;
   } 
-  return $self->{_primary_id};
+  return $self->{primary_id};
 }
 
 
@@ -158,9 +158,9 @@ sub primary_id {
 sub display_id{
    my ( $self, $arg ) = @_;
    if( defined $arg ) {
-       $self->{_display_id} = $arg;
+       $self->{display_id} = $arg;
    } 
-   return $self->{_display_id};
+   return $self->{display_id};
 
 }
 
@@ -180,9 +180,9 @@ sub display_id{
 sub dbname {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    $self->{_dbname} = $arg;
+    $self->{dbname} = $arg;
   } 
-  return $self->{_dbname};
+  return $self->{dbname};
 }
 
 
@@ -239,9 +239,9 @@ sub optional_id {
 sub release {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    $self->{_release} = $arg;
+    $self->{release} = $arg;
   } 
-  return $self->{_release};
+  return $self->{release};
 }
 
 
@@ -302,9 +302,9 @@ sub dbID {
 sub version {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    $self->{_version} = $arg;
+    $self->{version} = $arg;
   } 
-  return $self->{_version};
+  return $self->{version};
 }
 
 
@@ -324,9 +324,9 @@ sub version {
 sub description {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    $self->{_description} = $arg;
+    $self->{description} = $arg;
   } 
-  return $self->{_description};
+  return $self->{description};
 }
 
 
@@ -346,7 +346,7 @@ sub description {
 sub add_synonym {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
-    push( @{$self->{_synonyms}}, $arg );
+    push( @{$self->{synonyms}}, $arg );
   }
 }
 
@@ -364,7 +364,7 @@ sub add_synonym {
 
 sub get_all_synonyms {
   my $self = shift;
-  return $self->{_synonyms};
+  return $self->{synonyms};
 }
 
 
@@ -381,7 +381,7 @@ sub get_all_synonyms {
 
 sub flush_synonyms {
   my $self = shift;
-  $self->{_synonyms} = [];
+  $self->{synonyms} = [];
 }
 
 
@@ -400,9 +400,9 @@ sub flush_synonyms {
 sub status{
  my ( $self, $arg ) = @_;
    if( defined $arg ) {
-       $self->{_status} = $arg;
+       $self->{status} = $arg;
    } 
-   return $self->{_status};
+   return $self->{status};
 }
 
 
