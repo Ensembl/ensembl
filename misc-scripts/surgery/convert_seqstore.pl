@@ -74,7 +74,9 @@ my %cs = (gene               	=> 'chromosome',
 	  simple_feature        => 'contig',
 	  repeat_feature        => 'contig',
 	  qtl_feature           => 'chromosome',
-	  misc_feature          => 'chromosome' );
+	  misc_feature          => 'chromosome',
+	  prediction_transcript => 'contig',
+	 );
 
 foreach my $val (keys %cs) {
   $sth->execute($val, $coord_system_ids{$cs{$val}});
@@ -449,9 +451,9 @@ execute( $dbi, "INSERT INTO prediction_exon ".
 	 "FROM $source.prediction_transcript" );
 
 execute( $dbi, "INSERT INTO prediction_transcript ".
-	 "( seq_region_id, seq_region_start, seq_region_end, " .
+	 "( prediction_transcript_id, seq_region_id, seq_region_start, seq_region_end, " .
 	 "  seq_region_strand, analysis_id ) " .
-	 "SELECT contig_id, MIN( contig_start ), MAX( contig_end ), contig_strand, " .
+	 "SELECT prediction_transcript_id, contig_id, MIN( contig_start ), MAX( contig_end ), contig_strand, " .
 	 "       analysis_id ".
 	 "FROM $source.prediction_transcript " .
 	 "GROUP BY prediction_transcript_id ");
@@ -464,13 +466,13 @@ execute( $dbi, "INSERT INTO prediction_transcript ".
 execute( $dbi, "INSERT INTO exon_stable_id " .
 	 " (exon_id, stable_id, version) " .
 	 "SELECT exon_id, stable_id, version " .
-	 "FROM exon_stable_id" );
+	 "FROM $source.exon_stable_id" );
 
 
 execute( $dbi, "INSERT INTO gene_stable_id " .
 	 " (gene_id, stable_id, version) " .
 	 "SELECT gene_id, stable_id, version " .
-	 "FROM gene_stable_id" );
+	 "FROM $source.gene_stable_id" );
 
 
 # ----------------------------------------------------------------------
