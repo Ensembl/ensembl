@@ -11,8 +11,8 @@ use UniProtParser;
 use RefSeqParser;
 use RefSeqGPFFParser;
 
-my $host = "ecs1g";
-my $port = 3306;
+my $host = "ecs4";
+my $port = 3350;
 my $database = "glenn_test_xref";
 my $user = "ensadmin";
 my $password = "ensembl";
@@ -171,6 +171,7 @@ sub upload_xrefs {
     delete_by_source(\@xrefs);
 
     # upload new ones
+    print "Uploading xrefs\n";
     my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
     my $pri_insert_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
     my $pri_update_sth = $dbi->prepare("UPDATE primary_xref SET sequence=? WHERE xref_id=?");
@@ -441,8 +442,15 @@ sub delete_by_source {
   my $xrefs = shift;
 
   # SQL for deleting stuff
-  # TODO - warning about MySQL 4
-  # TODO - SQL
+  # Note this SQL only works on MySQL version 4 and above
+
+  # Remove dependent_xrefs and synonyms based on source of *xref*
+  my $syn_sth = $dbi->prepare("DELETE FROM synonym USING xref, synonym WHERE xref.xref_id=synonym.xref_id AND xref.source_id=?");
+  my $dep_sth = $dbi->prepare("DELETE FROM dependent_xref USING xref, dependent_xref WHERE xref.xref_id=dependent_xref.master_xref_id AND xref.source_id=?");
+
+  # xrefs and primary_xrefs are straightforward deletes
+  my $xref_sth = $dbi->prepare("DELETE FROM xref WHERE source_id=?");
+  my $p_xref_sth = $dbi->prepare("DELETE FROM primary_xref WHERE source_id=?");
 
   # xrefs may come from more than one source (e.g. UniProt/SP/SPtr)
   # so find all sources first
@@ -454,11 +462,20 @@ sub delete_by_source {
 
   # now delete them
   foreach my $source (keys %source_ids) {
-    #$del_sth->execute($source);
-    #print "Deleting xrefs with source ID $source \n";
+    print "Deleting synonyms of xrefs with source ID $source \n";
+    $syn_sth->execute($source);
+    print "Deleting dependent xrefs of xrefs with source ID $source \n";
+    $dep_sth->execute($source);
+    print "Deleting primary xrefs with source ID $source \n";
+    $p_xref_sth->execute($source);
+    print "Deleting xrefs with source ID $source \n";
+    $xref_sth->execute($source);
   }
 
-  #$del_xref_sth->finish() if defined $del_sth;
+  $syn_sth->finish() if defined $syn_sth;
+  $dep_sth->finish() if defined $dep_sth;
+  $xref_sth->finish() if defined $xref_sth;
+  $p_xref_sth->finish() if defined $p_xref_sth;
 
 }
 
