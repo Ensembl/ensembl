@@ -529,7 +529,7 @@ sub fetch_top_level {
                of the top-level system. For example the top level of a
                homo_sapiens database could be 'chromosome' but this
                might have 'NCBI33', 'NCBI31', and 'NCBI34' versions.
-  Returntype : listref of [id, name, version] triplets
+  Returntype : listref of Bio::EnsEMBL::CoordSystem objects
   Exceptions : none
   Caller     : general
 
