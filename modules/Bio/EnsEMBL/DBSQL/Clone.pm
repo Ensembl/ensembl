@@ -252,9 +252,12 @@ sub get_all_clone_Genes{
    # can be written into)
 
    foreach my $gene ( @genes) {
-       push(@exons,$gene->each_unique_Exon);
-   }
 
+foreach my $trans ( $gene->each_Transcript ) {
+
+       push(@exons,$trans->each_Exon);
+   }
+}
    foreach my $exon ( @exons ) {
 
 
