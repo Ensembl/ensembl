@@ -118,13 +118,12 @@ sub parse_common_options {
             "Unable to open configuration file $conffile for reading: $!");
         while (<CONF>) {
             # remove comments
-            s/\s+[;].*$//;
-            s/^[#;].*$//;
+			s/\s+[;].*$//;
+			s/^[#;].*$//;
 
             # read options into internal parameter datastructure
-            /(\w\S*)\s*=\s*(.*)/;
-            $self->param($1, $2);
-        }
+           	$self->param($1, $2) if (/(\w\S*)\s*=\s*(.*)/);
+		}
     } else {
         warning("Unable to open configuration file $conffile for reading: $!");
     }
