@@ -1,7 +1,8 @@
 #!/usr/local/ensembl/bin/perl -w
 
 use strict;
-use constant CHUNK_SIZE => 40;	# number of transcripts per farm job
+use constant QUEUENAME => "acarilong";	# queue name for bsub
+use constant CHUNK_SIZE => 40;		# transcripts per farm job
 use Bio::SeqIO;
 use Bio::EnsEMBL::Pipeline::GeneComparison::CdnaComparison;
 
@@ -13,7 +14,7 @@ use Bio::EnsEMBL::Pipeline::GeneComparison::CdnaComparison;
 # Usage: mapper.pl <ensembl_transcript_file_name.fa>
 
 # Implementation details. This same script is used to control the
-# analysis on the head node and perform the analyses on the farm. It
+# analysis on the head node and perform sub-analyses on the farm. It
 # decides which to do according to the first command-line argument.
 # The master image creates a temporary, fairly small transcript file
 # for each slave, and launches the slaves through LSF. Each slave
@@ -82,13 +83,15 @@ if ($ARGV[0] eq "SLAVE") {	# slave: do some work
     $seq_no = $upper;			# write this one on next iteration
     close MAPPER_PL_OUT_FH or die 'file close error';
 
-    # LSF launch
-    my $command = "bsub -C0 \"-f $chunk_fnam > /tmp/$chunk_fnam\" "
+    # LSF launch: first 500 all at once, then with 1 sec delay
+    my $command = "bsub -q " . QUEUENAME . " -C0 "
+      . \"-f $chunk_fnam > /tmp/$chunk_fnam\" "
       . "-o ./$chunk_fnam" . "_mapping -e /dev/null "
       . "$0 SLAVE /tmp/$chunk_fnam";
     print STDERR "$0 master: about to launch: $command\n";
     my $bsub_output=`$command`;
-    sleep 1;
+    sleep 1
+      unless $seq_no < 500;
     
   }
 
