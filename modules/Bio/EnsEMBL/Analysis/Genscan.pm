@@ -255,7 +255,7 @@ sub _parse {
       $translation->start_exon_id($exons[0]->id);
       $translation->end_exon_id  ($exons[$#exons]->id);
 
-#      print("Translation start end " . $translation->start . "\t" . $translation->end . "\n");
+#      PRINT("Translation start end " . $translation->start . "\t" . $translation->end . "\n");
       $transcript->translation($translation);
 
 
@@ -359,7 +359,7 @@ sub _set_exon_phases {
 	# probably wrong.
 	if (defined($phase)) {
 	    
-
+#	    print("Genscan exon " . $exon->start . " " . $exon->end . " " . $exon->phase . "\n");
 	    $exon->phase($phase);
 	    if ($count == 0) {
 
@@ -367,18 +367,18 @@ sub _set_exon_phases {
 		# we need to jiggle the exon start/end points
 		# to make the phase 0.
 
-		my $phase = $exon->phase;
-		
-		if ($exon->phase != 0) {
-		    
-		    if ($exon->strand == 1) {
-			$exon->start($exon->start + 3 - $phase);
-		    } else {
-			$exon->end($exon->end - 3 + $phase);
-		    }
-		    
-		    $exon->phase(0);
-		}
+#		my $phase = $exon->phase;
+#		
+#		if ($exon->phase != 0) {
+#		    
+#		    if ($exon->strand == 1) {
+#			$exon->start($exon->start + 3 - $phase);
+#		    } else {
+#			$exon->end($exon->end - 3 + $phase);
+#		    }
+#		    
+#		    $exon->phase(0);
+#		}
 	    }
 	} else {
 	    my $pep0 = $trans[0]->seq;
