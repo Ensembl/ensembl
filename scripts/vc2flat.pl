@@ -57,7 +57,7 @@ use Bio::EnsEMBL::Utils::GTF_handler;
 use Getopt::Long;
 
 # global defaults
-my $module    = 'Bio::EnsEMBL::DBSQL::Obj';
+my $module    = 'Bio::EnsEMBL::DBSQL::DBAdaptor';
 my $dbtype    = 'rdb';
 my $format    = 'embl';
 my $nodna     = 0;
@@ -79,14 +79,14 @@ my $nosecure=0;
 my $genetype = undef;
 
 # defaults for msql (rdb) access
-my $host     = 'ensrv4.sanger.ac.uk';
-my $dbname    = 'ensembl_freeze17_michele';
-my $dbuser    = 'ensro';
+my $host     = 'ensrv3';
+my $dbname    = 'ensembl100';
+my $dbuser    = 'ensadmin';
 my $dbpass = undef;
 
 # defaults for acedb (humace)
 my $host2     = 'humsrv1';
-my $port      = '410000';
+my $port      = '';
 
 my $focuscontig;
 my $focusposition;
@@ -193,6 +193,7 @@ foreach my $vcstring ( @vcstrings ) {
 	    $vc = $stadp->fetch_VirtualContig_by_fpc_name($ctg);
 	}
 	$vc->id($vcstring);
+
 	if( $format =~ /gff/ ) {
 	    my @seqfeatures = $vc->top_SeqFeatures();
 	    foreach my $sf (@seqfeatures ) {
