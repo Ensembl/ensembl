@@ -38,6 +38,10 @@ use strict;
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
 sub fetch_by_dbID {
+  ## this function may need revamping in the same way as
+  ##  _fetch_by_EnsObject_type, using double outer join to get all stuff in
+  ##  one go. PL)
+
   my ($self, $dbID ) = @_;
   
   my $sth = $self->prepare( "
@@ -70,7 +74,6 @@ sub fetch_by_dbID {
     $exDB->description( $desc );
   }
 
-  
   my $get_synonym = $self->prepare( "
     SELECT synonym 
       FROM externalSynonym
@@ -298,88 +301,80 @@ sub fetch_by_translation {
 sub _fetch_by_EnsObject_type {
   my ( $self, $ensObj, $ensType ) = @_;
   my @out;
-
-  my $sth = $self->prepare( "
+  
+  my $sth = $self->prepare("
     SELECT Xref.xrefId, Xref.dbprimary_id, Xref.display_id,
-           Xref.version, Xref.description,
-           exDB.db_name, exDB.release, oxr.objectxrefId
-      FROM Xref, externalDB exDB, objectXref oxr 
-     WHERE Xref.xrefId = oxr.xrefId
-       AND Xref.externalDBId = exDB.externalDBId 
-       AND oxr.ensembl_id = '$ensObj'
-       AND oxr.ensembl_object_type = '$ensType'
-   " );
-
+          Xref.version, Xref.description,
+          exDB.db_name, exDB.release, oxr.objectxrefId, es.synonym, idt.query_identity, idt.target_identity
+    FROM Xref, externalDB exDB, objectXref oxr LEFT JOIN externalSynonym es on es.xrefId = Xref.xrefId 
+                                               LEFT JOIN identityXref idt on idt.objectxrefId = oxr.objectxrefId
+    WHERE Xref.xrefId = oxr.xrefId
+      AND Xref.externalDBId = exDB.externalDBId 
+      AND oxr.ensembl_id = '$ensObj'
+      AND oxr.ensembl_object_type = '$ensType'
+  ");
+  
   $sth->execute();
-
- 
+  
+  
+  my %seen;
+  
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
-    my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release, $objid ) =
-      @$arrRef;;
+    my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release, $objid, 
+         $synonym, $queryid, $targetid ) =
+      @$arrRef;
     
     my $exDB;
-
-    #my $sth1 = $self->prepare( "
-    #  SELECT idt.query_identity , idt.target_identity
-    #  FROM   identityXref idt, objectXref oxr
-    #  WHERE  idt.objectxrefId = '$objid'
-    #");
- 
-    #$sth1->execute();
-    #my ($queryid, $targetid) = $sth1->fetchrow_array();
-
-    my ($queryid,$targetid) = (undef,undef);
-
-    if ((defined $queryid) || (defined $targetid)) {
-	$exDB = Bio::EnsEMBL::IdentityXref->new
-	    ( -adaptor => $self,
-	      -dbID => $refID,
-	      -primary_id => $dbprimaryId,
-	      -display_id => $displayid,
-	      -version => $version,
-	      -release => $release,
-	      -dbname => $dbname);
-	      
-	$exDB->query_identity($queryid);
-	$exDB->target_identity($targetid);
-
-    }
     
-    else {
-	$exDB = Bio::EnsEMBL::DBEntry->new
-	    ( -adaptor => $self,
-	      -dbID => $refID,
-	      -primary_id => $dbprimaryId,
-	      -display_id => $displayid,
-	      -version => $version,
-	      -release => $release,
-	      -dbname => $dbname );
-    }
-    
-    if( $desc ) {
-	$exDB->description( $desc );
-    }
+    # using an outer join on the synonyms as well as on identityXref, we
+    # now have to filter out the duplicates (see v.1.18 for
+    # original). Since there is at most one identityXref row per Xref,
+    # this is easy enough; all the 'extra' bits are synonyms
+    if ( !$seen{$refID} )  {
+      $seen{$refID}++;
+      
+      if ((defined $queryid)) {         # an Xref with similarity scores
+        $exDB = Bio::EnsEMBL::IdentityXref->new
+          ( -adaptor => $self,
+            -dbID => $refID,
+            -primary_id => $dbprimaryId,
+            -display_id => $displayid,
+            -version => $version,
+            -release => $release,
+            -dbname => $dbname);
+        
+        $exDB->query_identity($queryid);
+        $exDB->target_identity($targetid);
+        
+      } else {
+        $exDB = Bio::EnsEMBL::DBEntry->new
+          ( -adaptor => $self,
+            -dbID => $refID,
+            -primary_id => $dbprimaryId,
+            -display_id => $displayid,
+            -version => $version,
+            -release => $release,
+            -dbname => $dbname );
+      }
+      
+      if( $desc ) {
+        $exDB->description( $desc );
+      }
+      push( @out, $exDB );
+    }                                   # if (!$seen{$refID})
 
-    
-    my $sth = $self->prepare( "
-      SELECT synonym 
-        FROM externalSynonym
-       WHERE xrefId = $refID
-    " );
-    $sth->execute();
-  
-    while( my ($synonym) = $sth->fetchrow_array() ) {
+    # $exDB still points to the same Xref, so we can keep adding synonyms
+    if ($synonym) {
       $exDB->add_synonym( $synonym );
     }
-    push( @out, $exDB );
-  }
-
+  }                                     # while <a row from database>
+  
   return @out;
 }
 
 =head2 geneids_by_extids
 
- Title   : geneids_by_extids
+  Title   : geneids_by_extids
  Usage   :
  Function:
  Example :
