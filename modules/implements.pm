@@ -1,4 +1,4 @@
-# EnsEMBL Gene reading writing adaptor for mySQL
+# implements pragma
 #
 # Copyright EMBL-EBI 2001
 #
@@ -47,6 +47,12 @@ sub import {
 
   my $caller = caller(0);
 
+  #make sure that the caller has declared a package
+  if($caller eq 'main') {
+    croak "Error: An interface cannot be implemented by main. " .
+      "Package definition must preceed 'use implements' declaration.\n";
+  }
+
   #put interfaces this caller is implementing into a hash, keyed by caller
   @{$__INTERFACES{$caller}} = @interfaces;
 }
@@ -89,7 +95,8 @@ CHECK {
       #its superclass interfaces
       eval "require $package";
       if($@) {
-	croak "$implementor implements unknown interface $package";
+	croak "Error: '$implementor' implements unknown interface " .
+	  "'$package'.\n";
       }
 
       push @checked_packages, $package;
@@ -126,7 +133,7 @@ CHECK {
 	}
 	unless(defined &a) {
 	  push @errors, "Error: $implementor implements interface " . 
-                        "'$interface' but does not define method '$method'\n";
+                        "'$interface' but does not define method '$method'.\n";
 	}
 	
 	#print STDERR "implementor contains symbol $method\n";
