@@ -279,9 +279,9 @@ else {
 }
 
 my $species = $protein->species;
-my @class = $species->classification;
+my $common = $species->common_name();
 
-if ($class[1] eq "Homo") {
+if ($common eq "Human") {
     print "ok 30\n";
 }
 else {
