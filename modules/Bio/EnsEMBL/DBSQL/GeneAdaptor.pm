@@ -142,6 +142,27 @@ sub list_stable_ids {
 }
 
 
+=head2 fetch_by_display_label
+
+  Arg [1]    : string $label
+  Example    : my $gene = $geneAdaptor->fetch_by_display_label( "BRCA2" );
+  Description: returns the gene which has the given display label or undef if
+               there is none. If there are more than 1, only the first is reported.
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub fetch_by_display_label {
+  my $self = shift;
+  my $label = shift;
+
+  my ( $gene ) = @{$self->generic_fetch( "x.display_label = \"$label\"" )};
+  return $gene;
+}
+
+
 
 =head2 fetch_by_stable_id
 

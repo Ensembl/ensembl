@@ -415,6 +415,27 @@ sub fetch_all_by_external_name {
 }
 
 
+=head2 fetch_by_display_label
+
+  Arg [1]    : string $label
+  Example    : my $transcript = $transcriptAdaptor->fetch_by_display_label( "BRCA2" );
+  Description: returns the transcript which has the given display label or undef if
+               there is none. If there are more than 1, only the first is reported.
+  Returntype : Bio::EnsEMBL::Transcript
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub fetch_by_display_label {
+  my $self = shift;
+  my $label = shift;
+
+  my ( $transcript ) = @{$self->generic_fetch( "x.display_label = \"$label\"" )};
+  return $transcript;
+}
+
+
 =head2 fetch_all_by_exon_stable_id
 
   Arg [1]    : string $stable_id 
