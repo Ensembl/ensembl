@@ -319,14 +319,16 @@ sub _fetch_by_EnsObject_type {
     
     my $exDB;
 
-    my $sth1 = $self->prepare( "
-      SELECT idt.query_identity , idt.target_identity
-      FROM   identityXref idt, objectXref oxr
-      WHERE  idt.objectxrefId = '$objid'
-    ");
+    #my $sth1 = $self->prepare( "
+    #  SELECT idt.query_identity , idt.target_identity
+    #  FROM   identityXref idt, objectXref oxr
+    #  WHERE  idt.objectxrefId = '$objid'
+    #");
  
-    $sth1->execute();
-    my ($queryid, $targetid) = $sth1->fetchrow_array();
+    #$sth1->execute();
+    #my ($queryid, $targetid) = $sth1->fetchrow_array();
+
+    my ($queryid,$targetid) = (undef,undef);
 
     if ((defined $queryid) || (defined $targetid)) {
 	$exDB = Bio::EnsEMBL::IdentityXref->new
