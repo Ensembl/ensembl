@@ -69,9 +69,9 @@ sub _initialize {
 
   # DEBUG
   # second parameter is for debugging to avoid reading entire list of objects
-  if($raclones){
-      $self->warn("DEBUG: only exon/transcript/gene objects associated with clone list are read");
-  }
+  #if($raclones){
+  #    $self->warn("DEBUG: only exon/transcript/gene objects associated with clone list are read");
+  #}
 
   my $make = $self->SUPER::_initialize;
 
@@ -148,7 +148,8 @@ sub _initialize {
       $self->warn("Using -part: to take g/t/co files from test_gtc/ [development option]");
       $file_root="$unfinished_root/test_gtc";
   }elsif($live){
-      $self->warn("Using -live to access live version: may be data inconsistencies");
+      # this is now default behaviour - warning turned off
+      #$self->warn("Using -live to access live version: may be data inconsistencies");
       $file_root="$unfinished_root";
   }else{
       $self->warn("Using current stable release version of e/t/g/co files");
@@ -183,6 +184,8 @@ sub _initialize {
 
   # need a full list if $raclones not set,
   # but also need to check clones in list provided to see if they are valid
+  # list needs to include ones with invalid SV's as might be called
+  # for dumping before having accession numbers
   my @clones=$self->get_all_Clone_id(1);
   if(!$raclones){
       $raclones=\@clones;
@@ -190,18 +193,30 @@ sub _initialize {
       my %clones=map {$_,1} @clones;
       my @okclones;
       foreach my $clone (@$raclones){
+	  next unless $clone;
+	  my $fok;
 	  if($clones{$clone}){
+	      # see if maps directly
 	      push(@okclones,$clone);
+	      $fok=1;
 	  }else{
-	      my $disk_id;
-	      ($clone)=$self->get_id_acc($clone);
-	      if($clones{$clone}){
-		  push(@okclones,$clone);
+	      # see if maps via a translation
+	      my($clone2)=$self->get_id_acc($clone);
+	      next if $clone2==-1;
+	      if($clones{$clone2}){
+		  push(@okclones,$clone2);
+		  $fok=1;
 	      }
+	  }
+	  if(!$fok){
+	      $self->warn("Clone $clone is not recognised");
 	  }
       }
       $raclones=\@okclones;
   }
+
+  # keep a record of which clones have been loaded
+  %{$self->{'_active_clones'}}=map{$_,1} @$raclones;
 
   $self->warn("DEBUG: initialising map of TimDB for ".scalar(@$raclones)." clones");
 
@@ -251,6 +266,9 @@ sub get_Clone {
     # translate incoming id to ensembl_id, taking into account nacc flag
     my($disk_id,$cgp,$sv,$emblid,$htgsp);
     ($id,$disk_id,$cgp,$sv,$emblid,$htgsp)=$self->get_id_acc($id);
+    if($id==-1){
+	$self->throw("Cannot get accession for $disk_id");
+    }
 
     # if its already been created, get it from the hash
     if($self->{'_clone_array'}->{$id}){
@@ -259,7 +277,14 @@ sub get_Clone {
 
     # else, have to build it
 
+    # can only build it, if it was 'loaded' in the initial call to timdb
+    # (i.e. that it is in the active list)
+    unless($self->{'_active_clones'}->{$id}){
+	$self->throw("$id cannot be fetched as not loaded in original object call ");
+    }
+
     # test if clone is not locked (for safety); don't check for valid SV's
+    # (probably overkill, as locking at Obj.pm level)
     my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id);
     if($flock){
 	$self->throw("$id is locked by TimDB");
@@ -305,6 +330,8 @@ sub get_all_Clone_id{
 }
 
 
+# Following is not currently coded
+
 =head2 get_updated_Objects
 
  Title   : get_updated_Objects
@@ -317,6 +344,23 @@ sub get_all_Clone_id{
 =cut
 
 sub get_updated_Objects{
+    my($self)=@_;
+    $self->throw("call not supported - use get_updated_Clone_id instead");
+}
+
+
+=head2 get_updated_Clone_id
+
+ Title   : get_updated_Clone_id
+ Usage   : @cloneid = $obj->get_updated_Clone_id($last,$now_offset,flag)
+ Function: returns all the valid (live) Clone ids in the database
+ Example :
+ Returns : 
+ Args    : if $flag set, returns all clones regardless of invalid SV
+
+=cut
+
+sub get_updated_Clone_id{
     my ($self,$last,$now_offset,$fall) = @_;
     my @objs;
 
@@ -335,17 +379,8 @@ sub get_updated_Objects{
 	}
     }
 
-    # if we have a list of clones, write a lock file
-    $self->_write_lockfile(@clones);
-
     # check validity of clones selected, then fetch
-    foreach my $id (&_get_Clone_id($self,$fall,\@clones)){
-	push(@objs,$self->get_Clone($id));
-    }
-
-    # FIXME only updated clones are added to list at present
-
-    return @objs;
+    return &_get_Clone_id($self,$fall,\@clones);
 }
 
 
@@ -372,13 +407,17 @@ sub _get_Clone_id{
        # loop over list of clones supplied [unknown]
        foreach my $id (@$ralist){
 
-	   # translate incoming id to ensembl_id, taking into account nacc flag
+	   # translate incoming id to ensembl_id, disk_id, taking into account nacc flag
 	   my $disk_id;
 	   ($id,$disk_id)=$self->get_id_acc($id);
 
-	   my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id,\$nc,\$nsid,\$nisv,\$nlock);
-	   if(!$flock && ($fall || !$fsv) && !$facc){
+	   # in cases where nacc flag set to return ensembl_id and emsembl_id missing
+	   # return $id=-1;
+	   next if $id==-1;
 
+	   my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id,\$nc,\$nsid,
+							   \$nisv,\$nlock);
+	   if(!$flock && ($fall || !$fsv) && !$facc){
 	       push(@list,$id);
 	   }
        }
@@ -387,31 +426,36 @@ sub _get_Clone_id{
        my($id,$val,$disk_id);
        while(($disk_id,$val)=each %{$self->{'_clone_dbm'}}){
 
-	   my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id,\$nc,\$nsid,\$nisv,\$nlock);
+	   my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id,\$nc,\$nsid,
+							   \$nisv,\$nlock);
 	   if(!$flock && ($fall || !$fsv) && !$facc){
 
-	       # translate incoming id to ensembl_id, taking into account nacc flag
+	       # translate incoming disk_id to ensembl_id, taking into account nacc flag
+	       # at this stage know there is an ensembl_id set, so translation is possible
 	       ($id)=$self->get_id_acc($disk_id);
-
+	       if($id==-1){
+		   $self->throw("Unexpected failure of get_id_acc");
+	       }
 	       push(@list,$id);
 	   }
        }
    }
+   print STDERR "TimDB status:\n";
    if($ralist){
-       print STDERR "$nc clones have been updated\n";
+       print STDERR "  $nc clones have been updated\n";
    }else{
-       print STDERR "$nc clones in database\n";
+       print STDERR "  $nc clones in database\n";
    }
-   print STDERR "$nsid have cloneid rather than accession numbers\n\n";
+   print STDERR "    $nsid have cloneid rather than accession numbers [Sanger]\n";
 
-   print STDERR "$nlock clones are locked for reading and are excluded\n";
-   print STDERR "$nisv have invalid SV numbers";
+   print STDERR "    $nlock clones are locked for reading and are excluded\n";
+   print STDERR "    $nisv have invalid SV numbers";
    if($fall){
        print STDERR " and are included\n";
    }else{
        print STDERR " and are excluded\n";
    }
-   print STDERR "Total of ".scalar(@list)." clones are in list\n";
+   print STDERR "  Total of ".scalar(@list)." clones are in final list\n";
 
    # !! no idea why sorting is necessary !!
    return sort @list;
@@ -426,16 +470,16 @@ sub _get_Clone_id{
 # returns lock and sv state to allow external decision about accepting clone
 # can increment counters
 sub _check_clone_entry{
-    my($self,$id,$rnc,$rnsid,$rnisv,$rnlock)=@_;
+    my($self,$disk_id,$rnc,$rnsid,$rnisv,$rnlock)=@_;
     my $val;
-    unless($val=$self->{'_clone_dbm'}->{$id}){
-	$self->throw("ERROR: $id not in clone DBM");
+    unless($val=$self->{'_clone_dbm'}->{$disk_id}){
+	$self->throw("ERROR: $disk_id not in clone DBM");
     }
     $$rnc++;
 
     my($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$val);
     # count cases where cloneid is not accession (for information purposes)
-    if($id ne $acc){
+    if($disk_id ne $acc){
 	$$rnsid++;
     }
 
@@ -455,7 +499,7 @@ sub _check_clone_entry{
     # skip locked clones
     my $val2;
     my $flock=0;
-    if($val2=$self->{'_clone_update_dbm'}->{$id}){
+    if($val2=$self->{'_clone_update_dbm'}->{$disk_id}){
 	my($date2,$lock)=split(',',$val2);
 	if($lock){
 	    $$rnlock++;
@@ -489,7 +533,9 @@ sub get_id_acc{
 	if($self->{'_byacc'}){
 	    $id2=$id;
 	    if(!$acc){
-		$self->throw("Accession number is unknown for $id");
+		# if can't return an ensembl_id when requested to, fail
+		# gracefully
+		return -1,$id;
 	    }
 	    $id=$acc;
 	}else{
@@ -600,17 +646,14 @@ sub DESTROY{
     my ($obj) = @_;
     if( $obj->{'_clone_dbm'} ) {
 	untie %{$obj->{'_clone_dbm'}};
-	#dbmclose(%{$obj->{'_clone_dbm'}});
 	$obj->{'_clone_dbm'} = undef;
     }
     if( $obj->{'_accession_dbm'} ) {
 	untie %{$obj->{'_accession_dbm'}};
-	#dbmclose(%{$obj->{'_accession_dbm'}});
 	$obj->{'_accession_dbm'} = undef;
     }
     if( $obj->{'_clone_update_dbm'} ) {
 	untie %{$obj->{'_clone_update_dbm'}};
-	#dbmclose(%{$obj->{'_clone_update_dbm'}});
 	$obj->{'_clone_update_dbm'} = undef;
     }
     # remove lock file
