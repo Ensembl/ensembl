@@ -11,8 +11,8 @@ for c in $chroms; do
     sort -k1,1 -k7,7 -k4,4n  $c/all > $c/all.sorted
 done
 
-allsorted=./all.affy.sorted
-sort -m -k1,1 -k7,7 -k4,4n `find . -name 'all.sorted' -print` > $allsorted
+all=./all.gtf
 
-# throw everything that's not an exon or start/stop codon:
-nawk -F\t '$3=="exon" || $3 ~ "_codon" '  $allsorted >  $allsorted.essentials
+# sort it and throw everything that's not an exon or start/stop codon:
+sort -m -k1,1 -k7,7 -k4,4n `find . -name 'all.sorted' -print`  | nawk -F\t '$3=="exon" || $3 ~ "_codon" '  > $all
+
