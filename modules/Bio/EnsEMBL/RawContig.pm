@@ -387,7 +387,7 @@ sub get_all_PredictionTranscripts {
 sub get_all_RepeatFeatures {
    my $self = shift;
    my $logic_name = shift;
-
+  
    if( ! defined $self->adaptor() ) {
      $self->warn( "Need db connection for get_all_RepeatFeatures()" );
      return ();
@@ -395,7 +395,7 @@ sub get_all_RepeatFeatures {
 
    my $rfa = $self->adaptor()->db->get_RepeatFeatureAdaptor();
 
-   return $rfa->fetch_by_RawContig( $self , $logic_name);
+   return $rfa->fetch_all_by_Contig( $self, $logic_name);
 }
 
 
