@@ -720,8 +720,6 @@ sub store {
 
    my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
 
-   print "Stable id " . $gene->stable_id . "\n";
-
    foreach my $dbl ( @{$gene->get_all_DBLinks} ) {
      $dbEntryAdaptor->store( $dbl, $gene->dbID, "Gene" );
    }
