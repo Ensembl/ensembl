@@ -913,11 +913,11 @@ sub _transform_feature_to_rawcontig{
 	my $tmp =  ($query_length/$self->_query_unit);
 	#print STDERR "tmp = ".$tmp."\n";
 	#$hit_length = int($tmp);
-	$hit_length = s#printf "%.0f", $tmp;
+	$hit_length = sprintf "%.0f", $tmp;
       }elsif($self->_hit_unit > $self->_query_unit){
 	my $tmp = ($query_length*$self->_hit_unit);
 	#print STDERR "tmp = ".$tmp."\n";
-	$hit_length = s#printf "%.0f", $tmp;
+	$hit_length = sprintf "%.0f", $tmp;
       }
       #print STDERR "hit length ".$hit_length."\n";
      
