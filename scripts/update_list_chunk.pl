@@ -94,7 +94,7 @@ my $from_locator     = $tdb->get_donor_locator;
 my $arc_locator      = "Bio::EnsEMBL::DBArchive::Obj//host=$thost;port=$tport;dbname=$adbname;user=$tdbuser;pass=$tpass";
 
 my $last_offset      = $tdb->get_last_update_offset;
-my $now_offset       = time - 30*60;    # This should be something different
+my $now_offset       = $tdb->get_now_offset;    # This should be something different
 
 print STDERR "From/to times $last_offset $now_offset\n";
 

@@ -343,11 +343,15 @@ sub totime {
 
 sub get_updated_objects {
     my ($self,$fromdb) = @_;
+    my @clones;
 
     $self->throw("Can't connect to donor database") unless $fromdb;
-
-    my @clones = $fromdb->get_updated_Clone_id($self->fromtime,$self->totime);
- 
+    eval {
+	@clones = $fromdb->get_updated_Clone_id($self->fromtime,$self->totime);
+    };
+    if ($@) {
+	print "Could not call get_updated_Clone_id from TimDB:\n$@!";
+    }
 #    my $file = "/nfs/disk89/michele/pogdir/updates/update_110200/clones.080200.list";
 #    open(IN,"<$file");
 #    my @clones;
@@ -443,7 +447,6 @@ sub update {
 
 	   # must exit child. Big trouble otherwise
 	   exit($@);
-	   #exit(0);
        } else {
 	   $self->throw("Couldn't fork a new process");
        }

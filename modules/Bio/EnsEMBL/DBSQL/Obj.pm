@@ -396,10 +396,10 @@ sub get_last_update{
     my ($self) = @_;
     
     #Get the last update time
-    my $sth     = $self->prepare("select max(time_finished) from db_update where status = 'COMPLETE'");
+    my $sth     = $self->prepare("select max(time_started) from db_update where status = 'COMPLETE'");
     my $res     = $sth ->execute();
     my $rowhash = $sth->fetchrow_hashref;
-    my $last    = $rowhash->{'max(time_finished)'};
+    my $last    = $rowhash->{'max(time_started)'};
 
     $sth     = $self->prepare("select UNIX_TIMESTAMP('". $last ."')");
     $res     = $sth->execute();
