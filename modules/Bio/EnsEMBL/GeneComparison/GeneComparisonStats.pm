@@ -247,7 +247,7 @@ sub _genePredictions {
     }
     
     # If there are no true positives we don't need to calculate the false positives
-    if ($truePositive == 0) {
+    if ($truePositive == 0) {     
         $self->{'_geneSpecificity'} = 0;  
         $self->{'_geneSensitivity'} = 0;
         return;
@@ -261,9 +261,8 @@ sub _genePredictions {
         unless ($comparer->isExactlyMatched()) {
             $falsePositive++;
         } 
-        $falsePositive += $comparer->isMissed();
     }  
-                
+               
     $self->{'_geneSpecificity'} = $truePositive / ($truePositive + $falsePositive);  
     $self->{'_geneSensitivity'} = $truePositive / ($truePositive + $falseNegative);       
 }
