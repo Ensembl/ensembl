@@ -621,7 +621,7 @@ sub store {
                "seq_region_id = ?, " .
                "seq_region_start = ?, " .
                "seq_region_end = ?, " .
-               "seq_region_strand = ? ";
+               "seq_region_strand = ?";
 
   my $sth = $self->prepare( $store_gene_sql );
    $sth->execute(
@@ -636,9 +636,7 @@ sub store {
 
    my $gene_dbID = $sth->{'mysql_insertid'};
 
-   #
    # store stable ids if they are available
-   #
    if (defined($gene->stable_id)) {
 
      my $statement = "INSERT INTO gene_stable_id
@@ -652,9 +650,8 @@ sub store {
    }
 
 
-  #
-  # store the gene description associated with this gene if there is one
-  #
+  # store the gene description associated with this gene if there is
+  # one
   my $desc = $gene->description();
   if(defined($desc)) {
     $sth = $self->prepare("INSERT INTO gene_description " .
@@ -664,9 +661,7 @@ sub store {
     $sth->finish();
   }
 
-   #
    # store the dbentries associated with this gene
-   #
    my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
    foreach my $dbe ( @{$gene->get_all_DBEntries} ) {
@@ -697,10 +692,29 @@ sub store {
     $transcript_adaptor->store($t,$gene_dbID );
   }
 
-   #set the adaptor and dbID on the original passed in gene not the transfered
-   #copy
-   $original->adaptor( $self );
-   $original->dbID( $gene_dbID );
+
+  # if a display_xref is defined store it as well.  This requires an
+  # update to the gene table and could not have been done at the time
+  # the gene was stored because the gene needed to be stored to store
+  # the xrefs and get the display xref id. A bit of a catch22.
+  my $display_xref = $gene->display_xref;
+  if($display_xref) {
+    if(!$display_xref->is_stored($db)) {
+      # This should be stored already b/c it should at least
+      # be associated with one of the transcripts or translations.
+      # We'll allow this though because it could be desired behaviour.
+      $dbEntryAdaptor->store($display_xref, $gene_dbID, "Gene");
+    }
+    $sth = $self->prepare
+      ("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
+    $sth->execute($display_xref->dbID(), $gene_dbID);
+    $sth->finish();
+  }
+
+  # set the adaptor and dbID on the original passed in gene not the
+  # transfered copy
+  $original->adaptor( $self );
+  $original->dbID( $gene_dbID );
 
    return $gene_dbID;
 }
