@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 8;
+	plan tests => 3;
 }
 
 use TestUtils qw( debug );
@@ -13,7 +13,7 @@ use TestUtils qw( debug );
 use MultiTestDB;
 use Bio::EnsEMBL::Slice;
 
-our $verbose= 1;
+our $verbose= 0;
 
 my $multi_db = MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
