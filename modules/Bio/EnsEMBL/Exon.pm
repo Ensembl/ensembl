@@ -268,7 +268,7 @@ sub contig_id{
   if( defined $self->{'contigid'} ) {
     return $self->{'contigid'};
   } elsif( defined $self->contig() ) {
-    return $self->contig->id();
+    return $self->contig->internal_id();
   } else {
     return undef;
   }
