@@ -92,6 +92,7 @@ use strict;
 # Object preamble - inherits from Bio::SeqFeature::Generic
 
 use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::Virtual::StaticContig;
 use Bio::Seq; # exons have to have sequences...
 
 @ISA = qw(Bio::EnsEMBL::SeqFeature Exporter);
@@ -269,9 +270,11 @@ sub contig_id{
   }
   if( defined $self->{'contigid'} ) {
     return $self->{'contigid'};
-  } elsif( defined $self->contig() ) {
-    return $self->contig->internal_id();
-  } else {
+  } 
+  elsif( defined $self->contig() ) {
+    return $self->contig->internal_id;
+  } 
+  else {
     return undef;
   }
 }
@@ -296,9 +299,11 @@ sub clone_id{
 
    if( defined $self->{'clone_id'} ) {
      return $self->{'clone_id'};
-   } elsif( defined $self->contig() ) {
+   }
+   elsif( defined $self->contig() && $self->contig()->can('clone_id') ) {
      return $self->contig->cloneid();
-   } else {
+   }
+   else {
      return undef;
    }
 }
@@ -379,27 +384,35 @@ sub sticky_rank{
 
 sub end_phase {
   my ($self,$endphase) = @_;
-  
-  if ( $endphase ){
+  if ( defined($endphase) ){
+    #print STDERR "Exon.end_phase() setting to $endphase\n";   
     $self->{_end_phase} = $endphase;
+    return $self->{_end_phase};
+  }
+  elsif ( !defined($endphase) && defined($self->{_end_phase}) ){
+    #print STDERR "Exon.end_phase() already defined\n";
+    #print STDERR "Exon: ".$self->start."-".$self->end." phase: ".$self->phase." end_phase: ".$self->{_end_phase}."\n";
+    return $self->{_end_phase};
   }
   else{
-    defined($self->phase()) || $self->throw("Can't return end_phase if phase is not set");
-    defined($self->start()) || $self->throw("Can't return end_phase if start coordinate is not set");
-    defined($self->end())   || $self->throw("Can't return end_phase if end coordinate is not set");
-    
-    my $len   = $self->end() - $self->start() + 1;
-    my $phase = $self->phase();
-    my( $end_phase );
-    if ($phase == -1) {
-      $end_phase = -1;
-    } 
-    else {
-      $end_phase = ($len + $phase) % 3;
-    }
-    print STDERR "Exon: setting end phase to $end_phase\n";
-    $self->{_end_phase} = $end_phase;
+    $self->warn("You need to provide an end_phase as this exon has none, possible sticky?");
   }
+  #else{
+  #  defined($self->phase()) || $self->throw("Can't return end_phase if phase is not set");
+  #  defined($self->start()) || $self->throw("Can't return end_phase if start coordinate is not set");
+  #  defined($self->end())   || $self->throw("Can't return end_phase if end coordinate is not set");
+    
+ #   my $len   = $self->end() - $self->start() + 1;
+ #   my $phase = $self->phase();
+ #   my( $end_phase );
+ #   #if ($phase == -1) {
+ #   #  $end_phase = -1;
+ #   #} 
+ #   #else 
+ #   $end_phase = ($len + $phase) % 3;
+ #   $self->{_end_phase} = $end_phase;
+ # }
+  #print STDERR "Exon: ".$self->start."-".$self->end." phase: ".$self->phase." end_phase: ".$self->{_end_phase}."\n";
   return $self->{_end_phase};
 }
 
@@ -794,7 +807,9 @@ sub each_Supporting_Feature {
 
     if ( !defined ( $self->{_supporting_evidence} )) {
       $self->{_supporting_evidence} = [];  
-      $self->adaptor->fetch_evidence_by_Exon( $self );
+      if ( $self->adaptor ){
+	$self->adaptor->fetch_evidence_by_Exon( $self );
+      }
     }
 
     return @{$self->{_supporting_evidence}};
@@ -806,7 +821,7 @@ sub each_Supporting_Feature {
  Title   : each_oiverlapping_Feature
  Usage   : my \@f = $obj->each_overlapping_Feature
  Function: All features from Feature table which overlap the exon 
- Returns : \@Bio::EnsEMBL::Feature
+ Returns : Bio::EnsEMBL::Feature
  Args    : none
 
 
@@ -837,25 +852,25 @@ sub each_overlapping_Feature {
 
 
 sub find_supporting_evidence {
-    my ($self,$features,$sorted) = @_;
-
-    FEAT : foreach my $f (@$features) {
-	# return if we have a sorted feature array
-	if ($sorted == 1 && $f->start > $self->end) {
-	    return;
-	}
-	if ($f->sub_SeqFeature) {
-	  my @subf = $f->sub_SeqFeature;
-
-	  $self->find_supporting_evidence(\@subf);
-	} else {
-	  if ($f->seqname eq $self->contig_id) {
-	    if (!($f->end < $self->start || $f->start > $self->end || $f->strand != $self->strand)) {
-	      $self->add_Supporting_Feature($f);
-	    }
-	  }
+  my ($self,$features,$sorted) = @_;
+  
+  FEAT : foreach my $f (@$features) {
+    # return if we have a sorted feature array
+    if ($sorted == 1 && $f->start > $self->end) {
+      return;
+    }
+    if ($f->sub_SeqFeature) {
+      my @subf = $f->sub_SeqFeature;
+      
+      $self->find_supporting_evidence(\@subf);
+    } else {
+      if ($f->seqname eq $self->contig_id) {
+	if (!($f->end < $self->start || $f->start > $self->end || $f->strand != $self->strand)) {
+	  $self->add_Supporting_Feature($f);
 	}
       }
+    }
+  }
 }
 
 
