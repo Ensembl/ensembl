@@ -594,8 +594,8 @@ sub get_all_ProteinAlignFeatures {
 sub get_all_SimilarityFeatures {
   my $self = shift;
 
-  my @out =  @{$self->get_all_ProteinAlignFeatures( @_ ) },
-             @{$self->get_all_DnaAlignFeatures(     @_ ) };
+  my @out = (@{$self->get_all_ProteinAlignFeatures( @_ ) },
+             @{$self->get_all_DnaAlignFeatures(     @_ ) });
   return \@out;
 }
 
