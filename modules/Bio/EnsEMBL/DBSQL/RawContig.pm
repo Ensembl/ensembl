@@ -361,6 +361,8 @@ sub get_all_Exons {
 sub get_old_Exons {
     my ($self,$logfile,$maphref) = @_;
 
+    my @unmapped;
+
     #This method requires a connection to a crossmatch database
     if (!$self->_crossdb) { $self->throw("You need a crossmatch database to call get_old_exons!");}
     my $crossdb = $self->_crossdb;
@@ -460,9 +462,11 @@ sub get_old_Exons {
 	    }
 	}
 	if ($mapped == 0) {
+	    push (@unmapped,$exon);
 	    print $logfile "LOST EXON: ".$exon->id." (In get_old_Exons)\n"; 
 	}
     }
+    $self->unmapped_exons(@unmapped);
     return @mapped_exons;		
 }
 
@@ -2318,6 +2322,28 @@ sub is_golden {
        return 1;
    } 
    return 0;
+}
+
+
+=head2 unmapped_exons
+
+ Title   : unmapped_exons
+ Usage   : $obj->unmapped_exons($newval)
+ Function: Getset for unmapped_exons value
+ Returns : value of unmapped_exons
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub unmapped_exons{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'unmapped_exons'} = $value;
+    }
+    return $obj->{'unmapped_exons'};
+
 }
 
 

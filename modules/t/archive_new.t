@@ -53,9 +53,9 @@ my $seq = Bio::EnsEMBL::Archive::Seq->new(
 my $vseq = Bio::EnsEMBL::Archive::VersionedSeq->new(
 						    -archive_seq => $seq,
 						    -version => 1,
-						    -start_clone => 'test_clone',
+						    -start_contig => 'test_contig',
 						    -start => 1,
-						    -end_clone => 'test_clone',
+						    -end_contig => 'test_contig',
 						    -end => 9,
 						    -sequence => 'ATGCGTGTG',
 						    -modified => '2001-06-28 13:45:00',
@@ -72,9 +72,9 @@ my $seq2 = Bio::EnsEMBL::Archive::Seq->new(
 my $vseq2 = Bio::EnsEMBL::Archive::VersionedSeq->new(
 						    -archive_seq => $seq2,
 						    -version => 1,
-						    -start_clone => 'test_clone',
+						    -start_contig => 'test_contig',
 						    -start => 1,
-						    -end_clone => 'test_clone',
+						    -end_contig => 'test_contig',
 						    -end => 4,
 						    -sequence => 'ATGC',
 						    -modified => '2001-06-28 13:45:00',
@@ -89,9 +89,9 @@ $vseq->add_relative($vseq2);
 my $vseq3 = Bio::EnsEMBL::Archive::VersionedSeq->new(
 						    -archive_seq => $seq,
 						    -version => 2,
-						    -start_clone => 'test_clone',
+						    -start_contig => 'test_contig',
 						    -start => 1,
-						    -end_clone => 'test_clone',
+						    -end_contig => 'test_contig',
 						    -end => 11,
 						    -sequence => 'ATGCGTGTGTG',
 						    -modified => '2001-06-28 13:45:00',
@@ -137,7 +137,7 @@ else {
     print "not ok 8\n";
 }
 
-if ($vs->start_clone eq 'test_clone') {
+if ($vs->start_contig eq 'test_contig') {
     print "ok 9\n";
 }
 else {
@@ -151,7 +151,7 @@ else {
     print "not ok 10\n";
 }
 
-if ($vs->end_clone eq 'test_clone') {
+if ($vs->end_contig eq 'test_contig') {
     print "ok 11\n";
 }
 else {

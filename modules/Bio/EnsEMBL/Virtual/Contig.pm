@@ -160,8 +160,8 @@ sub new {
     my $self = {};
     bless $self,$class;
     $self->_make_datastructures();
-
-
+    $self->{'_unmapped_exons'}=[];
+    $self->_old_exon_call(0);
     $self->throw("Bare new now useless. Should be static or something similar");
 
     return $self;
@@ -825,9 +825,12 @@ sub get_all_ExternalGenes {
 sub get_old_Exons{
     my ($self,$logfile,$mapref) = @_;
     
+    $self->_old_exon_call(1);
+    
     my @exons;
     foreach my $c ($self->_vmap->get_all_RawContigs) {
 	push(@exons,$c->get_old_Exons($logfile,$mapref));
+	push(@{$self->{'_unmapped_exons'}},$c->unmapped_exons);
     }
     print "fetched ".scalar(@exons)."\n";
     
@@ -886,6 +889,30 @@ sub get_old_Genes {
     #return $self->_gene_query(%gene);
     return @genes;
 }
+
+=head2 unmapped_exons
+
+ Title   : unmapped_exons
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub unmapped_exons{
+   my ($self,@args) = @_;
+
+   if (! $self->old_exon_call) {
+       $self->throw("Cannot ask for unmapped exons if get_old_Exons is not called first");
+   }
+   else {
+       return @{$self->{'_unmapped_exons'}};
+   }
+}
+
 
 =head2 get_all_Exons
 
@@ -2256,6 +2283,27 @@ sub annotation{
     }
 
     return $self->{'annotation'};
+}
+
+=head2 _old_exon_call
+
+ Title   : _old_exon_call
+ Usage   : $obj->_old_exon_call($newval)
+ Function: Getset for _old_exon_call value
+ Returns : value of _old_exon_call
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _old_exon_call{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_old_exon_call'} = $value;
+    }
+    return $obj->{'_old_exon_call'};
+
 }
 
 

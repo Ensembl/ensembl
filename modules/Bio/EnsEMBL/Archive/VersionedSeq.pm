@@ -24,9 +24,9 @@ Bio::EnsEMBL::Archive::VersionedSeq - Simple archive VersionedSeq object
 				     -seq => $seq,
 				     -version => 1,
 				     -sequence => 'ATCGTAGAT',
-				     -start_clone => 'AC000234',
+				     -start_contig => 'AC000234',
                                      -seq_start => 23423,
-				     -end_clone => 'AC123132',
+				     -end_contig => 'AC123132',
 				     -seq_end => 1243,
 				     -release_number => 100,
 				     );
@@ -69,16 +69,16 @@ sub new {
   $self->{'_future_vseqs'} = [];
   $self->{'_relatives'} = [];
   
-  my ($dbid,$archive_seq,$version,$start_clone,
-      $seq_start,$end_clone,$seq_end,$sequence,
+  my ($dbid,$archive_seq,$version,$start_contig,
+      $seq_start,$end_contig,$seq_end,$sequence,
       $release,$modified,$adaptor) = 
       $self->_rearrange([qw(
 			    DBID
 			    ARCHIVE_SEQ
 			    VERSION
-			    START_CLONE
+			    START_CONTIG
 			    START
-			    END_CLONE
+			    END_CONTIG
 			    END
 			    SEQUENCE
 			    RELEASE_NUMBER			           
@@ -88,9 +88,9 @@ sub new {
 
   ($archive_seq && $archive_seq->isa('Bio::EnsEMBL::Archive::Seq')) || $self->throw("An Archive VersionedSeq object must have an attached Bio::EnsEMBL::Archive::Seq [got $archive_seq]");
   $version || $self->throw("An Archive VersionedSeq object must have a version");
-  $start_clone || $self->throw("An Archive VersionedSeq object must have a start_clone");
+  $start_contig || $self->throw("An Archive VersionedSeq object must have a start_contig");
   $seq_start || $self->throw("An Archive VersionedSeq object must have a seq_start");
-  $end_clone || $self->throw("An Archive VersionedSeq object must have an end_clone");
+  $end_contig || $self->throw("An Archive VersionedSeq object must have an end_contig");
   $seq_end || $self->throw("An Archive VersionedSeq object must have a seq_end");
   $release || $self->throw("An Archive VersionedSeq object must have a release number");
 
@@ -105,8 +105,8 @@ sub new {
   }
   $self->archive_seq($archive_seq);
   $self->version($version);
-  $self->start_clone($start_clone);
-  $self->end_clone($end_clone);
+  $self->start_contig($start_contig);
+  $self->end_contig($end_contig);
   $self->start($seq_start);
   $self->end($seq_end);
   $self->release_number($release);
@@ -345,24 +345,24 @@ sub version{
 
 }
 
-=head2 start_clone
+=head2 start_contig
 
- Title   : start_clone
- Usage   : $obj->start_clone($newval)
- Function: Getset for start_clone value
- Returns : value of start_clone
+ Title   : start_contig
+ Usage   : $obj->start_contig($newval)
+ Function: Getset for start_contig value
+ Returns : value of start_contig
  Args    : newvalue (optional)
 
 
 =cut
 
-sub start_clone{
+sub start_contig{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'start_clone'} = $value;
+      $obj->{'start_contig'} = $value;
     }
-    return $obj->{'start_clone'};
+    return $obj->{'start_contig'};
 
 }
 
@@ -387,24 +387,24 @@ sub start{
 
 }
 
-=head2 end_clone
+=head2 end_contig
 
- Title   : end_clone
- Usage   : $obj->end_clone($newval)
- Function: Getset for end_clone value
- Returns : value of end_clone
+ Title   : end_contig
+ Usage   : $obj->end_contig($newval)
+ Function: Getset for end_contig value
+ Returns : value of end_contig
  Args    : newvalue (optional)
 
 
 =cut
 
-sub end_clone{
+sub end_contig{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'end_clone'} = $value;
+      $obj->{'end_contig'} = $value;
     }
-    return $obj->{'end_clone'};
+    return $obj->{'end_contig'};
 
 }
 

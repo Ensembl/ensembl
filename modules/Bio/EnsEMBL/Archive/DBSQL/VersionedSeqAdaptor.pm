@@ -62,7 +62,7 @@ sub fetch_by_dbID {
     my ($self,$id) = @_;
 
     $self->throw("I need a dbID") unless $id;
-    my $statement = "SELECT seq_id,version,start_clone,start_coord,end_clone,end_coord,modified,release_number from versioned_seq where versioned_seq_id = $id";
+    my $statement = "SELECT seq_id,version,start_contig,start_coord,end_contig,end_coord,modified,release_number from versioned_seq where versioned_seq_id = $id";
     my $sth = $self->db->execute($statement);
     my($seq_id,$v,$start_c,$start,$end_c,$end,$mod,$rel) = $sth->fetchrow_array;
     my $sad = $self->db->get_SeqAdaptor;
@@ -71,9 +71,9 @@ sub fetch_by_dbID {
 					      -dbid => $id,
 					      -archive_seq => $seq,
 					      -version => $v,
-					      -start_clone => $start_c,
+					      -start_contig => $start_c,
 					      -start => $start,
-					      -end_clone => $end_c,
+					      -end_contig => $end_c,
 					      -end => $end,
 					      -modified => $mod,
 					      -release_number => $rel,
@@ -125,10 +125,10 @@ sub store {
        if ($vseq->archive_seq->type ne 'gene') {
 	   (! defined $vseq->seq) && $self->warn("Trying to store a versioned seq without sequence for a ".$vseq->archive_seq->type." sequence");
 	   
-	   $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_clone,start_coord,end_clone,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",'".$vseq->seq."','".$vseq->start_clone."',".$vseq->start.",'".$vseq->end_clone."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
+	   $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_contig,start_coord,end_contig,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",'".$vseq->seq."','".$vseq->start_contig."',".$vseq->start.",'".$vseq->end_contig."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
        }
        else {
-	   $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_clone,start_coord,end_clone,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",NULL,'".$vseq->start_clone."',".$vseq->start.",'".$vseq->end_clone."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
+	   $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_contig,start_coord,end_contig,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",NULL,'".$vseq->start_contig."',".$vseq->start.",'".$vseq->end_contig."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
        }
        my $sth = $self->db->execute($statement);
        my $id = $sth->{'mysql_insertid'};
