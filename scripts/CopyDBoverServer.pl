@@ -68,7 +68,7 @@ my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/current/var",
 			       'ecs2:3366' => "/mysql/data_3366/databases",
 			       'ecs3d:3307' => "/mysqld/current/var",
 			       'ecs3:3307' => "/mysqld/current/var",
-			       'ecs3:3304' => "/mysqld/current/var",
+			       'ecs3:3304' => "/mysql_archive/current/var",
 			       'ecs4:3350' => "/mysql-3350/databases",
 			       'ecs4:3351' => "/mysql-3351/databases",
 			       'ecs4:3352' => "/mysql-3352/databases",
@@ -155,7 +155,6 @@ foreach my $db_to_copy (@dbs_to_copy) {
   my $source_port = $db_to_copy->{src_port};
 
   my $source_db = $mysql_directory_per_svr{$source_srv . ":" . $source_port} . "/" . $db_to_copy->{src_db};
-  
 
   my $destination_srv = $db_to_copy->{dest_srv};
   $destination_srv =~ s/(ecs[1234][a-h]?)\.*.*/$1/;
