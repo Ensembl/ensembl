@@ -1557,6 +1557,9 @@ sub adjust_start_end {
   my $new_exon = Bio::EnsEMBL::Exon->new();
   %{$new_exon} = %{$self};
 
+  #invalidate the sequence cache
+  delete $new_exon->{'_seq_cache'};
+
   if( $self->strand() == 1 ) {
     $new_exon->start( $self->start() + $start_adjust );
     $new_exon->end( $self->end() + $end_adjust )
