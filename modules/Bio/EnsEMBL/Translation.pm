@@ -290,7 +290,14 @@ sub get_all_DBEntries {
   my $self = shift;
 
   #if not cached, retrieve all of the xrefs for this gene
-  if(!defined $self->{'dbentries'} && $self->adaptor()) {
+  if(!defined $self->{'dbentries'}) {
+    my $adaptor = $self->adaptor();
+    my $dbID    = $self->dbID();
+    if(!$adaptor || !$dbID) {
+      warning("Cannot retrieve DBEntries from translation without " .
+              "an attached adaptor and a dbID. Returning empty list.");
+      return [];
+    }
     $self->{'dbentries'} = 
       $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self);
   }
@@ -342,7 +349,6 @@ sub add_DBEntry {
 
 sub get_all_DBLinks {
   my $self = shift;
-
   return $self->get_all_DBEntries(@_);
 }
 

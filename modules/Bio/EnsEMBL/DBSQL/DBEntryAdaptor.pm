@@ -38,7 +38,7 @@ use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::IdentityXref;
 use Bio::EnsEMBL::GoXref;
 
-use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
+use Bio::EnsEMBL::Utils::Exception qw(deprecate throw warning);
 
 use vars qw(@ISA);
 use strict;
@@ -460,7 +460,10 @@ sub fetch_all_by_Translation {
   if(!ref($trans) || !$trans->isa('Bio::EnsEMBL::Translation')) {
     throw('Bio::EnsEMBL::Translation argument expected.');
   }
-
+  if( ! $trans->dbID ){ 
+    warning( "Cannot fetch_all_by_Translation without a dbID" );
+    return [];
+  }
   return $self->_fetch_by_object_type( $trans->dbID(), 'Translation' );
 }
 
