@@ -209,9 +209,8 @@ sub get_all_transcript_archive_ids {
 
   Args       : none
   Example    : none
-  Description: Given a Transcripts ArchiveStableId retrieves the
-   Translations ArchiveStableId. If not found or this is not a trnascripts id
-   return undef 
+  Description: Retrieves the Translation ArchiveStableId for this transcript stable id. 
+    If not found or this is not a transcripts id return undef
   Returntype : Bio::EnsEMBL::ArchiveStableId
   Exceptions : undef if not in db or not a Transcript
   Caller     : general
