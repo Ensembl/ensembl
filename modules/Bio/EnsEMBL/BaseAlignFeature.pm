@@ -1,4 +1,3 @@
-
 # EnsEMBL module for storing dna-protein pairwise alignments
 #
 # Cared for by Michele Clamp <michele@sanger.ac.uk>
@@ -13,13 +12,13 @@
 =head1 SYNOPSIS
 
   my $feat = new Bio::EnsEMBL::DnaPepAlignFeature(-seqname => 'myseq',
-						  -start   => 100,
-						  -end     => 120,
-						  -strand  => 1,
-						  -hstart  => 200,
-						  -hend    => 220,
-						  -analysis    => $analysis,
-						  -cigar_string => '100,200,3:109,203,12');
+                                                  -start   => 100,
+                                                  -end     => 120,
+                                                  -strand  => 1,
+                                                  -hstart  => 200,
+                                                  -hend    => 220,
+                                                  -analysis    => $analysis,
+                                                  -cigar_string => '100,200,3:109,203,12');
 
   # Alternatively if you have an array of ungapped features
 
@@ -102,20 +101,18 @@ sub new {
     my $self = $class->SUPER::new(@args);
     
     my ($cigar_string,$features) = $self->_rearrange([qw(CIGAR_STRING FEATURES)],
-						     @args);
-
+                                                     @args);
+    #print STDERR "@args\n";
     if (defined($cigar_string) && defined($features)) {
       $self->throw("Can't input cigar_string and an array of features.");
     } elsif (defined($features)) {
       $self->_parse_features($features);
     } elsif (!defined($cigar_string)) {
       $self->throw("Must have a cigar string defining the alignment");
-    } else {
-      $self->throw("Wrong arguments in constructor");
-    }
+    } 
 
     $self->cigar_string($cigar_string);
-
+    
     return $self;
 }
 
@@ -160,9 +157,9 @@ sub new {
 
 sub cigar_string {
   my ($self,$arg) = @_;
-
+  
   if (defined($arg)) {
-
+    
     # Do some checks to see whether this is valid
     my $tmp = $arg;
     
@@ -172,7 +169,7 @@ sub cigar_string {
   if (!defined($self->{_cigar_string})) {
     $self->throw("No cigar string defined - can't return one");
   }
-
+  
   return $self->{_cigar_string};
 }
 
@@ -286,7 +283,7 @@ sub _generic_parse_cigar2 {
     $feature2->percent_id($self->percent_id);
     
     my $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $feature1,
-					   -feature2 => $feature2);
+                                           -feature2 => $feature2);
 
  
     $fp->analysis($self->analysis);
@@ -395,12 +392,12 @@ sub _generic_parse_features2 {
     print STDERR "Processing " . $f->gffstring . "\n";
     if( defined $f->hstrand() ) {
       if ($f->hstrand != $hstrand) {
-	$self->throw("Inconsistent hstrands in feature array");
+        $self->throw("Inconsistent hstrands in feature array");
       }
     }
     if( defined $f->strand() ) {
       if ($f->strand != $strand) {
-	$self->throw("Inconsistent strands in feature array");
+        $self->throw("Inconsistent strands in feature array");
       }
     }
 
@@ -544,9 +541,9 @@ sub ungapped_features {
 
 sub _generic_parse_cigar {
   my ( $self, $query_unit, $hit_unit ) = @_;
-
+  
   my $string = $self->cigar_string;
-
+ 
   if (!defined($string)) {
     $self->throw("No cigar string defined in object.  This should be caught by the cigar_string method and never happen");
   }
@@ -601,13 +598,13 @@ sub _generic_parse_cigar {
       
       my ( $a, $b );
       if( $strand1 == 1 ) {
-	$a = $start1;
-	$b = $start1 + $length - 1;
-	$start1 = $b + 1;
+        $a = $start1;
+        $b = $start1 + $length - 1;
+        $start1 = $b + 1;
       } else {
-	$b = $start1;
-	$a = $start1 - $length + 1;
-	$start1 = $a - 1;
+        $b = $start1;
+        $a = $start1 - $length + 1;
+        $start1 = $a - 1;
       }
       
       $feature1->start($a);
@@ -621,13 +618,13 @@ sub _generic_parse_cigar {
 
       my $feature2 = new Bio::EnsEMBL::SeqFeature();
       if( $strand2 == 1 ) {
-	$a = $start2;
-	$b = $start2 + $mapped_length - 1;
-	$start2 = $b + 1;
+        $a = $start2;
+        $b = $start2 + $mapped_length - 1;
+        $start2 = $b + 1;
       } else {
-	$b = $start2;
-	$a = $start2 - $mapped_length + 1;
-	$start2 = $a - 1;
+        $b = $start2;
+        $a = $start2 - $mapped_length + 1;
+        $start2 = $a - 1;
       }
 
       $feature2->start($a);
@@ -640,7 +637,7 @@ sub _generic_parse_cigar {
       $feature2->percent_id($self->percent_id);
     
       my $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $feature1,
-					     -feature2 => $feature2);
+                                             -feature2 => $feature2);
 
  
       $fp->analysis($self->analysis);
@@ -649,15 +646,15 @@ sub _generic_parse_cigar {
       # end M cigar bits 
     } elsif( $piece =~ /I$/ ) {
       if( $strand1 == 1 ) {
-	$start1 += $length;
+        $start1 += $length;
       } else {
-	$start1 -= $length;
+        $start1 -= $length;
       }
     } elsif( $piece =~ /D$/ ) {
       if( $strand2 == 1 ) {
-	$start2 += $mapped_length;
+        $start2 += $mapped_length;
       } else {
-	$start2 -= $mapped_length;
+        $start2 -= $mapped_length;
       }
     } else {
       $self->throw( "Illegal cigar line $string!" );
@@ -725,9 +722,14 @@ sub _generic_parse_features {
   my @f;
 
   if( $strand == 1 ) {
+    print STDERR "features are forward strand being sorted first to last\n";
     @f = sort {$a->start <=> $b->start} @$features;
+    print STDERR "first hstart = ".$f[0]->start." last hstart ".$f[$#f]->start."\n";
   } else {
+    print STDERR "features are reverse strand being sorted last to first\n";
     @f = sort { $b->start <=> $a->start} @$features;
+    print STDERR "first start = ".$f[0]->start." last start ".$f[$#f]->start."\n";
+    print STDERR "first hstart = ".$f[0]->hstart." last hstart ".$f[$#f]->hstart."\n";
   }
 
   my $hstrand     = $f[0]->hstrand;
@@ -785,12 +787,12 @@ sub _generic_parse_features {
     print STDERR "Processing " . $f->gffstring . "\n";
     if( defined $f->hstrand() ) {
       if ($f->hstrand != $hstrand) {
-	$self->throw("Inconsistent hstrands in feature array");
+        $self->throw("Inconsistent hstrands in feature array");
       }
     }
     if( defined $f->strand() ) {
       if ($f->strand != $strand) {
-	$self->throw("Inconsistent strands in feature array");
+        $self->throw("Inconsistent strands in feature array");
       }
     }
 
@@ -809,15 +811,15 @@ sub _generic_parse_features {
 
     my $start1 = $f->start;
     my $start2 = $f->hstart();
-    
-    if (defined($prev2)) {
-      if ( $hstrand == 1 ) {
-        if ($f->hstart < $prev2) {
-          $self->throw("Inconsistent coordinates in feature array " . $f->hstart . " < $prev2");
+    print STDERR "hstrand = ".$hstrand." ori ".$ori." strand ".$strand."\n";
+    if (defined($prev1)) {
+      if ( $strand == 1 ) {
+        if ($f->start < $prev1) {
+          $self->throw("Inconsistent coordinates feature is forward strand hstart in current feature should be greater than hend in previous feature " . $f->start . " < ".$prev1."\n");
         }
       } else {
-        if ($f->hend > $prev2) {
-          $self->throw("Inconsistent coordinates in feature array " . $f->hend . " > $prev2");
+        if ($f->end > $prev1) {
+          $self->throw("Inconsistent coordinates in feature array feature is reverse strand hend should be less than previous hstart " . $f->end . " > $prev1");
         }
       }
 
@@ -843,48 +845,48 @@ sub _generic_parse_features {
     # find out the type of gap
     if( $strand == 1 ) {
       if( ( defined $prev1 ) && ( $f->start > $prev1 + 1  )) {
-	# I type gap
-	my $gap = $f->start - $prev1 - 1;
-	if( $gap == 1 ) {
-	  $gap = "";
-	}
-	$string .= "$gap"."I";
+        # I type gap
+        my $gap = $f->start - $prev1 - 1;
+        if( $gap == 1 ) {
+          $gap = "";
+        }
+        $string .= "$gap"."I";
       }
       $prev1 = $f->end();
     } else {
       if(( defined $prev1 ) && ($f->end + 1 < $prev1 )) {
-	# I type gap
-	my $gap = $prev1 - $f->end() - 1;
-	if( $gap == 1 ) {
-	  $gap = "";
-	}
-	$string .= "$gap"."I";
+        # I type gap
+        my $gap = $prev1 - $f->end() - 1;
+        if( $gap == 1 ) {
+          $gap = "";
+        }
+        $string .= "$gap"."I";
       }
       $prev1 = $f->start();
     }
       
     if( $hstrand == 1 ) {
       if((  defined $prev2 ) && ( $f->hstart() > $prev2 + 1 )) {
-	# D type gap
-	my $gap = $f->hstart - $prev2 - 1;
-	my $gap2 = int( $gap * $hlengthfactor + 0.05 );
+        # D type gap
+        my $gap = $f->hstart - $prev2 - 1;
+        my $gap2 = int( $gap * $hlengthfactor + 0.05 );
 
-	if( $gap2 == 1 ) {
-	  $gap2 = "";
-	}
-	$string .= "$gap2"."D";
+        if( $gap2 == 1 ) {
+          $gap2 = "";
+        }
+        $string .= "$gap2"."D";
       } 
       $prev2 = $f->hend();
     } else {
       if( ( defined $prev2 ) && ( $f->hend() + 1 < $prev2 )) {
-	# D type gap 
-	my $gap = $prev2 - $f->hend - 1;
-	my $gap2 = int( $gap * $hlengthfactor + 0.05 );
+        # D type gap 
+        my $gap = $prev2 - $f->hend - 1;
+        my $gap2 = int( $gap * $hlengthfactor + 0.05 );
 
-	if( $gap2 == 1 ) {
-	  $gap2 = "";
-	}
-	$string .= "$gap2"."D";
+        if( $gap2 == 1 ) {
+          $gap2 = "";
+        }
+        $string .= "$gap2"."D";
       }
       $prev2 = $f->hstart();
     }
