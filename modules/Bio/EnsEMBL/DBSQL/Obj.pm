@@ -144,12 +144,16 @@ sub new {
     if( ! $host ) {
         $host = 'localhost';
     }
+    
+    if ( ! $port ) {
+        $port = 3306;
+    }
 
     if( ! defined $perlonlysequences ) {
         $perlonlysequences = 0;
     }
 
-    my $dsn = "DBI:$driver:database=$db;host=$host";
+    my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
 
     if( $debug && $debug > 10 ) {
         $self->_db_handle("dummy dbh handle in debug mode $debug");
