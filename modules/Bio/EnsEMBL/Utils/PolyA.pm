@@ -78,14 +78,20 @@ sub new{
 sub clip{
   my ($self, $bioseq) = @_;
 
-  print STDERR "past a $bioseq\n";
-my $seq = $bioseq->seq;
+#  print STDERR "past a $bioseq\n";
+  my $seq = $bioseq->seq;
   $self->_clip(1);
   $self->_mask(0);
   $self->_softmask(0);
   my $new_seq = $self->_find_polyA($seq);
   my $cdna = Bio::Seq->new();
-  $cdna->seq($new_seq);
+  if ($new_seq.length > 0){
+    $cdna->seq($new_seq);
+  } else {
+    print "While clipping the the polyA tail the EST sequence totally disappeared.\n";
+    print "Returning unclipped sequence.\n";
+    $cdna->seq($seq);
+  }
   $cdna->display_id( $bioseq->display_id );
   $cdna->desc( $bioseq->desc );
 
