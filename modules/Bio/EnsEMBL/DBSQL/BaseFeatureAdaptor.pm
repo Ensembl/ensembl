@@ -531,6 +531,9 @@ sub _pre_store {
     throw('Expected Feature argument.');
   }
 
+  $self->_check_start_end_strand($feature->start(),$feature->end(),
+                                 $feature->strand());
+
   my $slice_adaptor = $self->db->get_SliceAdaptor();
   my $slice = $feature->slice();
 
@@ -576,6 +579,37 @@ sub _pre_store {
   }
 
   return ($feature, $seq_region_id);
+}
+
+
+#
+# helper function used to validate start/end/strand and 
+# hstart/hend/hstrand etc.
+#
+sub _check_start_end_strand {
+  my $self = shift;
+  my $start = shift;
+  my $end   = shift;
+  my $strand = shift;
+
+  #
+  # Make sure that the start, end, strand are valid
+  #
+  if(int($start) != $start) {
+    throw("Invalid Feature start [$start].  Must be integer.");
+  }
+  if(int($end) != $end) {
+    throw("Invalid Feature end [$end]. Must be integer.");
+  }
+  if(int($strand) != $strand || $strand < -1 || $strand > 1) {
+    throw("Invalid Feature strand [$strand]. Must be -1, 0 or 1.");
+  }
+  if($end < $start) {
+    throw("Invalid Feature start/end [$start/$end]. Start must be less " .
+          "than or equal to end.");
+  }
+
+  return 1;
 }
 
 
