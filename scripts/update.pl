@@ -103,8 +103,6 @@ if ($last_offset > $now_offset) {
     print STDERR "Time of last_offset update more recent than now-offset, exiting!\n";
     exit;
 }
-$verbose && print STDERR "\nTransferring updated and new objects from donor to recipient...\n";
-
 
 $verbose && print STDERR "\nTransferring new ghosts from donor to recipient...\n";
 
@@ -147,7 +145,7 @@ foreach my $ghost (@object_array) {
     #Nothing needs to be done if the ghost is already present
 }
 
-
+$verbose && print STDERR "\nTransferring updated and new objects from donor to recipient...\n";
 #Get updated and new objects (clones and genes)
 my @object_array = $don_db->get_updated_Objects($last_offset, $now_offset);
 #Should sort with clones first! Not implemented yet!
@@ -261,9 +259,9 @@ sub _place_gene {
     my $rec_gene;
 
     #Check if the gene is present in the recipient
-    eval {
+    #eval {
 	$rec_gene = $rec_db->get_Gene($don_gene->id);
-    };
+    #};
     
     #If gene not present in recipient, write it in
     if ( $@ ) {

@@ -248,6 +248,34 @@ sub get_last_update_offset{
     return $last_offset;
 }
 
+=head2 get_last_update
+
+ Title   : get_last_update
+ Usage   : $obj->get_last_update; 
+ Function: Reads the meta table of the database to get the last_update time
+ Example : get_last_update
+ Returns : UNIX TIME of last update
+ Args    : none
+
+=cut
+
+sub get_last_update{
+    my ($self) = @_;
+    
+    #Get the last update time
+    my $sth = $self->prepare("select last_update from meta");
+    my $res = $sth->execute();
+    my $rowhash = $sth->fetchrow_hashref;
+    my $last = $rowhash->{'last_update'};
+
+    $sth = $self->prepare("select UNIX_TIMESTAMP('".$last."')");
+    $sth->execute();
+    $rowhash = $sth->fetchrow_arrayref();
+    my $last = $rowhash->[0];
+    ($last eq "") && $self->throw ("No value stored for last_update in meta table!");
+    return $last;
+}
+
 =head2 get_now_offset
 
  Title   : get_now_offset
@@ -271,10 +299,7 @@ sub get_now_offset{
     my $now = $rowhash->{'now()'};
     
     #Now get the offset time from the meta table, which is in time format
-    $sth = $self->prepare("select offset_time from meta");
-    $sth->execute();
-    $rowhash = $sth->fetchrow_hashref();
-    my $offset = $rowhash->{'offset_time'};
+    my $offset = $self->get_offset;
 
     #Perform the subtraction in mysql
     $sth = $self->prepare("select DATE_SUB(\"$now\", INTERVAL \"$offset\" HOUR_SECOND)");
@@ -289,7 +314,33 @@ sub get_now_offset{
     return $rowhash->[0];
 }
     
-    
+=head2 get_offset
+
+ Title   : get_offset
+ Usage   : $obj->get_offset; 
+ Function: Gets the offset time found in the meta table
+ Example : get_offset
+ Returns : UNIX TIME of offset_time
+ Args    : none
+
+
+=cut
+
+sub get_offset{
+    my ($self) = @_;
+
+     #Now get the offset time from the meta table, which is in time format
+    my $sth = $self->prepare("select offset_time from meta");
+    $sth->execute();
+    my $rowhash = $sth->fetchrow_hashref();
+    my $offset = $rowhash->{'offset_time'};
+
+    #Trasform the result into unix time and return it
+    $sth = $self->prepare("select UNIX_TIMESTAMP('".$offset."')");
+    $sth->execute();
+    $rowhash = $sth->fetchrow_arrayref();
+    return $rowhash->[0];
+}  
 
 =head2 get_Protein_annseq
 
@@ -983,22 +1034,25 @@ sub replace_last_update {
     $now_offset || $self->throw("Trying to replace last update without a now-offset time\n");
     
     my $last_offset= $self->get_last_update;
+    
     my $sth = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
     $sth->execute();
     my $rowhash = $sth->fetchrow_arrayref();
     $now_offset = $rowhash->[0];
-    
-    $sth = $self->prepare("insert into meta (last_update,donor_database_locator) values ('".$now_offset."','".$self->get_donor_locator."')");
-    $sth->execute;
     
     $sth = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
     $sth->execute();
     $rowhash = $sth->fetchrow_arrayref();
     $last_offset = $rowhash->[0];
     
+    my $donor=$self->get_donor_locator;
+    my $offset=$self->get_offset;
+    
     $sth = $self->prepare("delete from meta where last_update = '".$last_offset."'");  
     $sth->execute;
-
+ 
+    $sth = $self->prepare("insert into meta (last_update,donor_database_locator,offset_time) values ('".$now_offset."','".$donor."','".$offset."')");
+    $sth->execute;
 }
 
 =head2 write_Gene
@@ -1522,7 +1576,7 @@ sub write_Contig {
              $clone       || $self->throw("No clone entered.");
 
    my $contigid  = $dna->id;
-   my $date      = $contig->created;
+   my $date      = $contig->seq_date;
    my $len       = $dna->seq_len;
    my $seqstr    = $dna->seq;
    my $offset    = $contig->offset();

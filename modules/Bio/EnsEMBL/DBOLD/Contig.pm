@@ -175,6 +175,35 @@ sub _seq_cache{
 
 }
 
+=head2 seq_date
+
+ Title   : seq_date
+ Usage   : $contig->seq_date()
+ Function: Gives the unix time value of the dna table created datetime field, which indicates
+           the original time of the dna sequence data
+ Example : $contig->seq_date()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub seq_date{
+   my ($self) = @_;
+
+   my $id = $self->id();
+
+   my $sth = $self->_dbobj->prepare("select created from dna where contig = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref(); 
+   my $datetime = $rowhash->{'created'};
+   $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP('".$datetime."')");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_arrayref();
+   return $rowhash->[0];
+}
+
+
 =head2 get_all_SeqFeatures
 
  Title   : get_all_SeqFeatures
