@@ -609,7 +609,9 @@ CREATE TABLE marker_synonym (
     name              varchar(30),    
 
     PRIMARY KEY (marker_synonym_id),
-    KEY marker_synonym_idx (marker_synonym_id, name)
+    KEY marker_synonym_idx (marker_synonym_id, name),
+    KEY marker_idx (marker_id)
+
 );
 
 CREATE TABLE marker (
