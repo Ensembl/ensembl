@@ -564,13 +564,16 @@ sub project {
 
 =head2 expand
 
-  Arg [1]    : (optional) int $left
-               The number of basepairs to shift this slices start
-               coordinate left.  Zero and negative values are permitted.
+  Arg [1]    : (optional) int $five_prime_expand
+               The number of basepairs to shift this slices five_prime
+               coordinate by.  Positive values make the slice larger,
+               negative make the slice smaller.
+               coordinate left.
                Default = 0.
-  Arg [2]    : (optional) int $right
-               The number of basepairs to shift this slices end
-               coordinate right. Zero and negative values are permitted.
+  Arg [2]    : (optional) int $three_prime_expand
+               The number of basepairs to shift this slices three_prime
+               coordinate by. Positive values make the slice larger,
+               negative make the slice smaller.
                Default = 0.
   Example    : my $expanded_slice      = $slice->expand( 1000, 1000);
                my $contracted_slice    = $slice->expand(-1000,-1000);
@@ -590,17 +593,22 @@ sub project {
 
 sub expand {
   my $self = shift;
-  my $left = shift || 0;
-  my $right = shift || 0;
+  my $five_prime_shift = shift || 0;
+  my $three_prime_shift = shift || 0;
 
-  my $new_start = $self->{'start'} - $left;
-  my $new_end   = $self->{'end'} + $right;
+  my $new_start;
+  my $new_end;
+
+  if($self->{'strand'} == 1) {
+    $new_start = $self->{'start'} - $five_prime_shift;
+    $new_end   = $self->{'end'} + $three_prime_shift;
+  } else {
+    $new_end = $self->{'end'} + $five_prime_shift;
+    $new_start = $self->{'start'} - $three_prime_shift;
+  }
 
   if($new_start > $new_end) {
-    #make a slice of size 1 and warn if they have contracted slice too much
-    warning('Slice start cannot be greater than slice end');
-    my $middle = int(($new_start - $new_end)/2);
-    $new_start = $new_end = $middle;
+    throw('Slice start cannot be greater than slice end');
   }
 
   #fastest way to copy a slice is to do a shallow hash copy
