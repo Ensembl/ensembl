@@ -114,6 +114,25 @@ sub description {
     $self->{description};    
 }
 
+=head2 each_DBLink
+
+ Title   : each_DBLink
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_DBLink {
+   my ($self,@args) = @_;
+
+   return @{$self->{'_db_link'}}
+}
+
+
 =head2 add_DBLink
 
  Title   : add_DBLink
