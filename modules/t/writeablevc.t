@@ -102,6 +102,8 @@ my $wvc     = new Bio::EnsEMBL::DB::WriteableVirtualContig(-focuscontig   => $co
 
 die ("$0\nCan't create virtual contig :$!") unless defined ($wvc);
 
+$wvc->_dump_map(\*STDERR);
+
 print "ok 7\n";
 
 $gene = Bio::EnsEMBL::Gene->new();
@@ -181,7 +183,7 @@ if( $error == 1 ) {
 
 END {
    my $drop_overlap        = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{overlap}";
-  #system($drop_overlap)     == 0 or die "$0\nError running '$drop_overlap' : $!";
+  system($drop_overlap)     == 0 or die "$0\nError running '$drop_overlap' : $!";
 }
 
 
