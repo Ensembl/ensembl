@@ -1184,7 +1184,7 @@ sub get_all_DASFeatures{
 sub _convert_chrfeature_to_vc_coords{
     my ($self, $f, $chr_start) = @_;
     
-    my $chr_start = $self->_global_start();
+    $chr_start = $self->_global_start();
     
     $f->start($f->start() - $chr_start);
     $f->end($f->end() - $chr_start);
@@ -2291,7 +2291,7 @@ sub get_all_Genes {
    while ($sth->fetch){
        push(@gene_ids,$gene_id);
    }
-
+    print "@gene_ids\n";
    if( scalar(@gene_ids) == 0 ) {
        &eprof_end("total-static-gene-get");
        return ();
@@ -2308,14 +2308,17 @@ sub get_all_Genes {
 
    my %gene;
 
+    my @temp = keys(%gene);
+    
    foreach my $gene ( @genes ) {
-       $gene{$gene->temporary_id()}= $gene;
+       $gene{$gene->dbID()}= $gene;
    }
 
    &eprof_end("full-gene-get");
 
    &eprof_start("gene-convert");
-   
+    my @temp = keys(%gene);
+    
    # this delegates off to Virtual::Contig
    my @newgenes=$self->_gene_query(%gene);
 
@@ -3000,4 +3003,21 @@ sub _sgp_select {
 
 
 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
