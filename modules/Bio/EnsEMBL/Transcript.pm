@@ -379,14 +379,18 @@ sub translateable_exons{
 	   if( $exon->strand == 1 ) {
 	       # paranoid...
 	       if( $self->translation->start < $exon->start || $self->translation->start > $exon->end ) {
-		   $self->throw("For start exon " . $exon->id . 
+		   $self->warn("For start exon " . $exon->id . 
 				" translation start not within exon bounds. Start " 
 				. $self->translation->start . 
 				"Exon "  . $exon->start . ":" . 
 				           $exon->end."\n");
-	       }
 
-	       $stexon->start($self->translation->start());
+		   ### GENEWISE BUG. DO NOT PROPAGATE
+		   $stexon->start($exon->start);
+		   
+	       } else {
+		   $stexon->start($self->translation->start());
+	       }
 	       $stexon->phase(0);             # MC translation is always phase 0.
 	       $stexon->end($exon->end);
 
@@ -394,10 +398,14 @@ sub translateable_exons{
 	       #print (STDERR "Exon sequence is "    . $stexon->seq->seq . "\n");	       
 	   } else {
 	       if( $self->translation->start < $exon->start || $self->translation->start > $exon->end ) {
-		   $self->throw("For start exon ".$exon->id." translation start not within exon bounds. Start ". 
+		   $self->warn("For start exon ".$exon->id." translation start not within exon bounds. Start ". 
                         $self->translation->start . " Exon " .$exon->start." : ".$exon->end."\n");
+		   ### GENEWISE BUG. DO NOT PROPAGATE
+		   $stexon->end($exon->end);
+	       } else {
+		   $stexon->end($self->translation->start());
 	       }
-	       $stexon->end($self->translation->start());
+
 	       $stexon->start($exon->start);
 	       $stexon->phase(0);             # MC translation is always phase 0.
 	   }
@@ -421,17 +429,26 @@ sub translateable_exons{
 
 	    if( $exon->strand == 1 ) {
 		if( $self->translation->end() > $exon->end ) {
-		    $self->throw("Bad news. Attempting to say that this translation is inside this exon, but outside".$exon->id." ".$exon->end()." ".$self->translation->end()."\n");
+		    $self->warn("Bad news. Attempting to say that this translation is inside this exon, but outside".$exon->id." ".$exon->end()." ".$self->translation->end()."\n");
+		    ### GENEWISE BUG. DO NOT PROPAGATE
+		    $endexon->end($exon->end);
+		} else {
+		    $endexon->start($exon->start());
 		}
 
-		$endexon->start($exon->start());
 		$endexon->end  ($self->translation->end());
 
 	    } else {
 		if( $self->translation->end() < $exon->start ) {
-		    $self->throw("Bad news. Attempting to say that this translation is inside this exon (reversed), but outside".$exon->id." ".$exon->start()." ".$self->translation->end()."\n");
+		    $self->warn("Bad news. Attempting to say that this translation is inside this exon (reversed), but outside".$exon->id." ".$exon->start()." ".$self->translation->end()."\n");
+		    ### GENEWISE BUG. DO NOT PROPAGATE
+		    $endexon->start($exon->start);
+
+		} else {
+		    $endexon->start($self->translation->end());
 		}
-		$endexon->start($self->translation->end());
+
+
 		$endexon->end($exon->end);
 	    }
 	    push(@out,$endexon);
