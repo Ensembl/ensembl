@@ -61,6 +61,8 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Protein;
 use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
 use Bio::Species;
+use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
+
 #use Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
@@ -97,6 +99,14 @@ sub _familyAdaptor {
     return $self->{'familyAdaptor'};
 }
  
+sub _dbEntryAdaptor {
+     my($self) = @_;
+     if( !defined $self->{'dbEntryAdaptor'}) {
+	 my $dbentryadaptor = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($self);
+	 $self->{'dbEntryAdaptor'} = $dbentryadaptor;
+    }
+     return $self->{'dbEntryAdaptor'};
+}
    
 =head2 snp_obj
 
@@ -171,9 +181,8 @@ sub fetch_Protein_by_dbid{
 #Get the transcript object (this will allow us to get the aa sequence of the protein
    my $transcript = $self->fetch_Transcript_by_dbid($transid);
 
-
 #Get all of the Dblink for the given Peptide id
-   my @dblinks = $self->fetch_DBlinks_by_dbid($id);
+   my @dbentry = $self->fetchDBentry_by_dbID($id);
 
 #Get all of the Protein Features for the given Protein
    my @prot_feat = $self->fetch_Protein_features_by_dbid($id);
@@ -242,7 +251,7 @@ sub fetch_Protein_by_dbid{
 #$ann->gene_name($geneid); 
 
 #Add the DBlinks to the annotation object
-   foreach my $link (@dblinks) {
+   foreach my $link (@dbentry) {
        if ($link){
 	   $protein->annotation->add_DBLink($link);
        }
@@ -264,13 +273,13 @@ sub fetch_Protein_by_dbid{
 
 #If protein feature is an Interpro signature and has not been already put into DBlink, add it.       
        if ((! defined ($seen1{$featid})) && (($dbdesc eq "Pfam") || ($dbdesc eq "PRINTS") || ($dbdesc eq "PROSITE"))) {
-	   my $newdblink = Bio::Annotation::DBLink->new();
-	   $newdblink->database($dbdesc);
-	   $newdblink->primary_id($featid);
+	   my $newdbentry = Bio::EnsEMBL::DBEntry->new();
+	   $newdbentry->database($dbdesc);
+	   $newdbentry->primary_id($featid);
 
 #To work with SP dump the signature id has to be given, because we don't store it, an X is given instead
-	   $newdblink->optional_id("X");
-	   $protein->annotation->add_DBLink($newdblink);
+	   $newdbentry->optional_id("X");
+	   $protein->annotation->add_DBLink($newdbentry);
 	   $seen1{$featid} = 1;
        }
 
@@ -286,7 +295,7 @@ sub fetch_Protein_by_dbid{
 
 #If the Interpro accession number has not already been put into DBlink, add it 
        if (! defined ($seen2{$interpro}) && defined $interpro) {
-	   my $dblink = Bio::Annotation::DBLink->new();
+	   my $dblink = Bio::EnsEMBL::DBEntry->new();
 	   $dblink->database('InterPro');
 	   $dblink->primary_id($interpro);
 	   $protein->annotation->add_DBLink($dblink);
@@ -298,7 +307,7 @@ sub fetch_Protein_by_dbid{
 
 
 #Add the Ensembl gene id (ENSG) as a DBlink to the object
-   my $dblink = Bio::Annotation::DBLink->new();
+   my $dblink = Bio::EnsEMBL::DBEntry->new();
    $dblink->database('EnsEMBL');
    $dblink->primary_id($geneid);
    $protein->annotation->add_DBLink($dblink);
@@ -332,6 +341,24 @@ sub fetch_Transcript_by_dbid{
          
    return $transcript;
 
+}
+
+=head2 fetchDBentry_by_dbid
+
+ Title   : fetchDBentry_by_dbid
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetchDBentry_by_dbID{
+   my ($self,$protein_id) = @_;
+   my @entries = $self->_dbEntryAdaptor->fetch_by_translation($protein_id);
+   return @entries;
 }
 
 

@@ -248,7 +248,7 @@ sub _fetch_by_EnsObject_type {
     }
 
     if( $url ) {
-      $exDB->urlPattern( $url );
+      $exDB->url_pattern( $url );
     }
 
     my $sth = $self->prepare( "
