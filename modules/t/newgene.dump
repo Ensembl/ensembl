@@ -145,3 +145,9 @@ INSERT INTO transcript VALUES ('test_transcript_2',1,'test_gene','test_translati
 INSERT INTO translation VALUES ('test_translation_1',1,8,'test_exon_1',23,'test_exon_2');
 INSERT INTO translation VALUES ('test_translation_2',1,8,'test_exon_1',28,'test_exon_3');
 
+
+#
+# Dumping data for table 'genetype'
+#
+
+INSERT INTO genetype VALUES ('ENSG00000003941','ensembl');
