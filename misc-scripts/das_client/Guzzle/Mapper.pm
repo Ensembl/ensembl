@@ -68,7 +68,7 @@ sub new {
   bless $self,$class;
 
   if( !defined $to ) {
-      $self->throw("Must supply from and to tags");
+      die("Must supply from and to tags");
   }
 
   $self->{"_pair_$from"} = {};
@@ -110,7 +110,7 @@ sub map_coordinates{
 
    unless(defined($id) && defined($start) && defined($end) && 
 	  defined($strand) && defined($type) ) {
-       $self->throw("Must start,end,strand,id,type as coordinates");
+       die("Must start,end,strand,id,type as coordinates");
    }
 
 
@@ -127,7 +127,7 @@ sub map_coordinates{
    }
 
    unless(defined $hash) {
-       $self->throw("Type $type is neither to or from coordinate systems");
+       die("Type $type is neither to or from coordinate systems");
    }
 
    if( $self->{'_is_sorted'} == 0 ) {
@@ -265,7 +265,7 @@ sub fastmap {
    }
 
    my $hash = $self->{"_pair_$type"} or
-       $self->throw("Type $type is neither to or from coordinate systems");
+       die("Type $type is neither to or from coordinate systems");
 
    if( $self->{'_is_sorted'} == 0 ) {
        $self->_sort();
@@ -333,11 +333,11 @@ sub add_map_coordinates{
    unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
           && defined($contig_ori) && defined($chr_name) && defined($chr_start)
           && defined($chr_end)) {
-       $self->throw("7 arguments expected");
+       die("7 arguments expected");
    }
 
    if( ($contig_end - $contig_start)  != ($chr_end - $chr_start) ) {
-       $self->throw("Cannot deal with mis-lengthed mappings so far");
+       die("Cannot deal with mis-lengthed mappings so far");
    }
 
    my $pair = Guzzle::Mapper::Pair->new();
@@ -394,11 +394,11 @@ sub list_pairs{
 
 
    if( !defined $type ) {
-       $self->throw("Must start,end,id,type as coordinates");
+       die("Must start,end,id,type as coordinates");
    }
 
    if( $start > $end ) {
-     $self->throw("Start is greater than end for id $id, start $start, end $end\n");
+     die("Start is greater than end for id $id, start $start, end $end\n");
    }
 
    # perhaps a little paranoid/excessive
@@ -420,7 +420,7 @@ sub list_pairs{
    }
      
    unless(defined $hash) {
-       $self->throw("Type $type is neither to or from coordinate systems");
+       die("Type $type is neither to or from coordinate systems");
    }
 
    my @list;
