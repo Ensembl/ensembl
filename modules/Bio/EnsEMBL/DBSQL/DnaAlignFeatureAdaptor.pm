@@ -103,11 +103,12 @@ sub _columns {
   Returntype : none
   Exceptions : throw if any of the provided features cannot be stored
                which may occur if:
-               * The feature does not have an associate Slice
-               * The feature has already been stored in this db
-               * The feature does not have an associated analysis
-               * The Slice the feature is associated with is on a seq_region
-                 unknown to this database
+                 * The feature does not have an associate Slice
+                 * The feature does not have an associated analysis
+                 * The Slice the feature is associated with is on a seq_region
+                   unknown to this database
+               A warning is given if:
+                 * The feature has already been stored in this db
   Caller     : Pipeline
 
 =cut
@@ -131,19 +132,16 @@ sub store {
                              analysis_id, score, evalue, perc_ident)
      VALUES (?,?,?,?,?,?,?,?,?,?,?, ?, ?)");
 
-  foreach my $feat ( @feats ) {
+ FEATURE: foreach my $feat ( @feats ) {
     if( !ref $feat || !$feat->isa("Bio::EnsEMBL::DnaDnaAlignFeature") ) {
       throw("feature must be a Bio::EnsEMBL::DnaDnaAlignFeature,"
             . " not a [".ref($feat)."].");
     }
 
     if($feat->is_stored($db)) {
-      throw('Feature is already stored in this database.');
-    }
-
-    my $slice = $feat->slice();
-    if(!defined($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
-      throw("A slice must be attached to the features to be stored.");
+      warning("DnaDnaAlignFeature [".$feat->dbID."] is already stored" .
+              " in this database.");
+      next FEATURE;
     }
 
     if(!defined($feat->analysis)) {
@@ -153,6 +151,31 @@ sub store {
     #store the analysis if it has not been stored yet
     if(!$feat->analysis->is_stored($db)) {
       $analysis_adaptor->store($feat->analysis());
+    }
+
+
+    my $slice = $feat->slice();
+    if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
+      throw("A slice must be attached to the features to be stored.");
+    }
+
+    # make sure that the feature coordinates are relative to
+    # the start of the seq_region that the prediction transcript is on
+    if($slice->start != 1 || $slice->strand != 1) {
+      #move the feature onto a slice of the entire seq_region
+      $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
+                                               $slice->seq_region_name(),
+                                               undef, #start
+                                               undef, #end
+                                               undef, #strand
+                                              $slice->coord_system->version());
+
+      $feat = $feat->transfer($slice);
+
+      if(!$feat) {
+        throw('Could not transfer DnaDnaAlignFeature to slice of ' .
+              'entire seq_region prior to storing');
+      }
     }
 
     my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);

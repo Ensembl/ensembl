@@ -39,6 +39,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::SimpleFeature;
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
@@ -51,7 +52,7 @@ use Bio::EnsEMBL::SimpleFeature;
   Description: Stores a list of simple feature objects in the database
   Returntype : none
   Exceptions : thrown if @sf is not defined, if any of the features do not
-               have an attached contig object, 
+               have an attached slice.
                or if any elements of @sf are not Bio::EnsEMBL::SeqFeatures 
   Caller     : general
 
@@ -59,42 +60,75 @@ use Bio::EnsEMBL::SimpleFeature;
 
 sub store{
   my ($self,@sf) = @_;
-  
+
   if( scalar(@sf) == 0 ) {
-    $self->throw("Must call store with list of sequence features");
+    throw("Must call store with list of SimpleFeatures");
   }
-  
-  my $sth = 
-    $self->prepare("INSERT INTO simple_feature (contig_id, contig_start,
-                                                contig_end, contig_strand,
-                                                display_label, analysis_id,
-                                                score) 
-                    VALUES (?,?,?,?,?,?,?)");
 
-  foreach my $sf ( @sf ) {
+  my $sth = $self->prepare
+    ("INSERT INTO simple_feature (seq_region_id, seq_region_start, " .
+                                 "seq_region_end, seq_region_strand, " .
+                                 "display_label, analysis_id, score) " .
+     "VALUES (?,?,?,?,?,?,?)");
+
+  my $db = $self->db();
+  my $slice_adaptor = $db->get_SliceAdaptor();
+  my $analysis_adaptor = $db->get_AnalysisAdaptor();
+
+ FEATURE: foreach my $sf ( @sf ) {
+
     if( !ref $sf || !$sf->isa("Bio::EnsEMBL::SimpleFeature") ) {
-      $self->throw("Simple feature must be an Ensembl SimpleFeature, " .
-		   "not a [$sf]");
-    }
-    
-    if( !defined $sf->analysis ) {
-      $self->throw("Cannot store sequence features without analysis");
-    }
-    if( !defined $sf->analysis->dbID ) {
-      $self->throw("I think we should always have an analysis object " .
-		   "which has originated from the database. No dbID, " .
-		   "not putting in!");
-    }
-    
-    my $contig = $sf->entire_seq();
-    unless(defined $contig && $contig->isa("Bio::EnsEMBL::RawContig")) {
-      $self->throw("Cannot store feature without a Contig object attached via "
-		   . "attach_seq\n");
+      throw("SimpleFeature must be an Ensembl SimpleFeature, " .
+            "not a [".ref($sf)."]");
     }
 
-    $sth->execute($contig->dbID(), $sf->start, $sf->end, $sf->strand,
-		  $sf->display_label, $sf->analysis->dbID, $sf->score);
-  } 
+    if($sf->is_stored($db)) {
+      warning("SimpleFeature [".$sf->dbID."] is already stored" .
+              " in this database.");
+      next FEATURE;
+    }
+
+    if(!defined($sf->analysis)) {
+      throw("An analysis must be attached to the features to be stored.");
+    }
+
+    #store the analysis if it has not been stored yet
+    if(!$sf->analysis->is_stored($db)) {
+      $analysis_adaptor->store($sf->analysis());
+    }
+
+    my $slice = $sf->slice();
+    if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
+      throw("A slice must be attached to the features to be stored.");
+    }
+
+    # make sure that the feature coordinates are relative to
+    # the start of the seq_region that the prediction transcript is on
+    if($slice->start != 1 || $slice->strand != 1) {
+      #move the feature onto a slice of the entire seq_region
+      $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
+                                               $slice->seq_region_name(),
+                                               undef, #start
+                                               undef, #end
+                                               undef, #strand
+                                              $slice->coord_system->version());
+
+      $sf = $sf->transfer($slice);
+
+      if(!$sf) {
+        throw('Could not transfer SimpleFeature to slice of ' .
+              'entire seq_region prior to storing');
+      }
+    }
+
+    my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
+
+    $sth->execute($seq_region_id, $sf->start, $sf->end, $sf->strand,
+                  $sf->display_label, $sf->analysis->dbID, $sf->score);
+
+    $sf->dbID($sth->{'mysql_insertid'});
+    $sf->adaptor($self);
+  }
 }
 
 

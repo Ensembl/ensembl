@@ -45,7 +45,7 @@ use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 
 
 
-# _tablename
+# _tables
 #
 #  Arg [1]    : none
 #  Example    : none
@@ -562,12 +562,9 @@ sub _objs_from_sth {
 
   my @transcripts;
   my %rc_hash;
-  my %analysis_hash;
   my %slice_hash;
   my %sr_name_hash;
   my %sr_cs_hash;
-
-
 
   my ( $transcript_id, $seq_region_id, $seq_region_start, $seq_region_end, 
        $seq_region_strand, $gene_id,  
@@ -608,7 +605,7 @@ sub _objs_from_sth {
   }
 
   FEATURE: while($sth->fetch()) {
-    #get the analysis object
+
     my $slice = $slice_hash{"ID:".$seq_region_id};
 
     if(!$slice) {
@@ -678,7 +675,7 @@ sub _objs_from_sth {
     }
 				
 
-    #finally, create the new repeat feature
+    #finally, create the new transcript
     push @transcripts, Bio::EnsEMBL::Transcript->new
       ( '-start'         =>  $seq_region_start,
 	'-end'           =>  $seq_region_end,

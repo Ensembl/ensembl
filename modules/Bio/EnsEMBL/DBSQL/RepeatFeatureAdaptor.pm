@@ -44,6 +44,7 @@ package Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor;
 use strict;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::RepeatFeature;
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 use vars qw(@ISA);
 
@@ -281,7 +282,7 @@ sub _objs_from_sth {
 
   return \@features;
 }
-  
+
 
 =head2 store
 
@@ -299,7 +300,9 @@ sub _objs_from_sth {
 sub store {
   my( $self, @repeats ) = @_;
 
-  my $rca = $self->db->get_RepeatConsensusAdaptor;
+  my $db = $self->db();
+  my $rca = $db->get_RepeatConsensusAdaptor();
+  my $sa  = $db->get_SliceAdaptor();
   my ($cons, $db_id);
 
   my $sth = $self->prepare(qq{
@@ -316,7 +319,16 @@ sub store {
       VALUES(NULL, ?,?,?,?,?,?,?,?,?)
     });
 
-  foreach my $rf (@repeats) {
+ FEATURE: foreach my $rf (@repeats) {
+    if(!ref($rf) || !$rf->isa('Bio::EnsEMBL::RepeatFeature')) {
+      throw('Expected RepeatFeature argument not [' . ref($rf) .'].');
+    }
+
+    if($rf->is_stored($db)) {
+      warning("RepeatFeature [".$rf->dbID."] is already stored in this DB.");
+      next FEATURE;
+    }
+
     my $cons = $rf->repeat_consensus();
     throw("Must have a RepeatConsensus attached") if(!defined($cons));
 
@@ -376,21 +388,37 @@ sub store {
     }
 
     my $slice = $rf->slice();
-
-    if(!defined($slice) && $slice->isa("Bio::EnsEMBL::Slice")) {
+    if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
       throw("RepeatFeature cannot be stored without an associated slice.");
     }
 
-    my $seq_region_id = 
-      $self->db->get_SliceAdaptor()->get_seq_region_id($slice);
+    #move the feature so that its coords are relative to the start
+    #of the seq_region prior to storing.
+    if($slice->start != 1 || $slice->strand != 1) {
+      #get a slice of the entire seq_region
+      $slice = $sa->fetch_by_region($slice->coord_system->name(),
+                                    $slice->seq_region_name(),
+                                    undef, #start
+                                    undef, #end
+                                    undef, #strand
+                                    $slice->coord_system->version());
+
+      $rf = $rf->transfer($slice);
+
+      if(!$rf) {
+        throw('Could not transfer RepeatFeature to slice of ' .
+              'entire seq_region prior to storing');
+      }
+    }
+
+    my $seq_region_id = $sa->get_seq_region_id($slice);
 
     if(!$seq_region_id) {
       throw("RepeatFeature cannot be stored because attached slice is on a " .
             "seq_region not present in this database");
     }
 
-    $sth->execute(
-                  $seq_region_id,
+    $sth->execute($seq_region_id,
                   $rf->start,
                   $rf->end,
                   $rf->strand,
@@ -402,6 +430,7 @@ sub store {
 
     my $db_id = $sth->{'mysql_insertid'}
       or throw("Didn't get an insertid from the INSERT statement");
+
     $rf->dbID($db_id);
     $rf->adaptor($self);
   }
