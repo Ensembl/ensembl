@@ -158,6 +158,8 @@ ok(count_rows($db, 'protein_feature') == $pfeat_count - $pfeat_minus);
 
 my $tr = $tra->fetch_by_stable_id( "ENST00000217347" );
 
+$tr->edits_enabled(1);
+
 my $sc = Bio::EnsEMBL::SeqEdit->new(-START   => 2,
                                     -END     => 2,
                                     -ALT_SEQ => 'U',
@@ -193,6 +195,8 @@ my $attrAdaptor = $db->get_AttributeAdaptor();
 $attrAdaptor->store_on_Translation( $tl, $tl->get_all_Attributes() );
 
 $tr = $tra->fetch_by_stable_id( "ENST00000217347" );
+
+$tr->edits_enabled(1);
 
 $tlseq = $tr->translate->seq();
 ok( $tlseq =~ /^.UUU/ );
