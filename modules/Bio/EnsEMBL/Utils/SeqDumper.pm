@@ -417,8 +417,8 @@ sub dump_genbank {
   my $c_count = $SEQ =~ tr/cC/cC/;
   my $t_count = $SEQ =~ tr/tT/tT/;
   my $g_count = $SEQ =~ tr/gG/gG/;
-  my $length = length($SEQ);
-  my $other_count = $length - $a_count - $c_count - $t_count - $g_count;
+  my $bp_length = length($SEQ);
+  my $other_count = $bp_length - $a_count - $c_count - $t_count - $g_count;
 
   $tag   = 'BASE COUNT';
   $value = "$a_count a $c_count c $g_count g $t_count t";
