@@ -89,7 +89,7 @@ foreach my $slice (@$top_slices) {
 	    $num_pred_Ig_pseudogenes++;
 	} elsif ($type eq 'Ig_Segment') {
 	    $num_Ig_segments++;
-	} elsif ($type = 'Pseudogene') {
+	} elsif ($type eq 'Pseudogene') {
 	    $num_unclass_pseudo_genes++;
 	} elsif ($type eq 'Processed_pseudogene') {
 	    $num_proc_pseudo_genes++;
