@@ -27,11 +27,6 @@ ENSG....|ExternalDB|ExternalAC|Text
 
 =cut
 
-#nohup perl /work1/birney/mongin/src/ensembl-live/misc-scripts/text_retrieval/dump_textview.pl -interpro /work1/birney/mongin/textsearch/data/interpro_07_02.xml -omim /work1/birney/mongin/textsearch/data/omim.txt -sp /work1/birney/mongin/mapping_dev/current_data/primary/hum_sp_sptrembl.pep -extout outputs/ext1.txt > err1.log & 
-
-# bsub -q acari -o out.out -e out.err perl /work1/birney/mongin/src/ensembl-live/misc-scripts/text_retrieval/dump_textview.pl -interpro /work1/birney/mongin/textsearch/data/interpro_07_02.xml -omim /work1/birney/mongin/textsearch/data/omim.txt -sp /work1/birney/mongin/mapping_dev/current_data/primary/hum_sp_sptrembl.pep -extout /work1/birney/mongin/textsearch/data/outputs/outputs/ext3.txt 
-
-# perl /work1/birney/mongin/src/ensembl-live/misc-scripts/text_retrieval/dump_textview.pl -host ensrv3 -dbuser ensro -db homo_sapiens_core_110 -interpro /work1/birney/mongin/textsearch/data/interpro_07_02.xml -omim /work1/birney/mongin/textsearch/data/omim.txt -sp /work1/mongin/mapping/primary/HS.SPTR -domainout domain_4index.txt -extout extout_4index.txt
 
 use Bio::SeqIO;
 use Bio::EnsEMBL::DBSQL::Obj;
@@ -40,8 +35,8 @@ use Getopt::Long;
 
 my $dbpass = undef;
 my $dbuser = 'ensro';
-my $ensdbname = 'homo_sapiens_core_110';
-my $host = 'ensrv3.sanger.ac.uk';
+my $ensdbname = 'mus_musculus_core_5_3';
+my $host = 'ecs1d';
 my $output;
 my $interpro;
 my $omim;
@@ -55,7 +50,7 @@ my $domainout;
 	    'interpro:s'=>\$interpro,
 	    'omim:s'=>\$omim,
 	    'sp:s'=>\$sp,
-	    'domainout'=>\$domainout,
+	    'domainout:s'=>\$domainout,
 	    'extout:s' => \$output
 	    );
 
@@ -68,7 +63,7 @@ my %sp;
 
 
 #In this file will be printed out the results of the parsing of Interpro flat file (domains)
-open (DOMAINOUT, ">/work1/birney/mongin/textsearch/data/outputs/domains3.txt") || die "Can't open $domainout\n";
+open (DOMAINOUT, ">$domainout") || die "Can't open $domainout\n";
 
 #In this file will be printed out the results of the parsing of the external DB (eg: Swiss-Prot, OMIM, ...)
 open (OUT, ">$output") || die "Can't open $output\n";
