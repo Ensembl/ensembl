@@ -366,7 +366,7 @@ sub get_all_Exons {
    my ($self,@args) = @_;
    my %h;
 
-   foreach my $trans ( $self->each_Transcript ) {
+   foreach my $trans ( $self->get_all_Transcripts ) {
        foreach my $exon ( $trans->get_all_Exons ) {
 	   $h{"$exon"} = $exon;
        }
@@ -654,7 +654,7 @@ sub _dump{
    }
 
    print $fh "Gene ", $self->dbID(), "\n";
-   foreach my $t ( $self->each_Transcript ) {
+   foreach my $t ( $self->get_all_Transcripts() ) {
        print $fh "  Trans ", $t->dbID(), " :";
        foreach my $e ( $t->get_all_Exons ) {
 	   print $fh " ",$e->dbID(),",";
@@ -781,10 +781,12 @@ sub temporary_id {
 sub each_Transcript {
    my ($self) = @_;
 
-   $self->warn("Gene->get_all_Transcripts is deprecated.  " .
-	       "Use get_all_Transcripts().\n");
+   $self->warn("Gene->each_Transcript is deprecated.  " .
+	       "Use get_all_Transcripts()." . $self->stack_trace_dump() ."\n");
    
-   return @$self->get_all_Transcripts;   
+   
+
+   return $self->get_all_Transcripts();   
 }
 
 =head2 id

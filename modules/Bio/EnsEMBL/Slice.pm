@@ -386,7 +386,7 @@ sub get_Genes_by_type{
 
    foreach my $gene (@genes) {
      if($gene->type() eq $type) {
-       push @out, $type;
+       push @out, $gene;
      }
    }
 
@@ -722,14 +722,12 @@ sub get_tiling_path {
      $self->strand()
     );
 
-
-
   # Extract the IDS of the Coordinates, ommitting Gaps
   my @raw_contig_ids = ();
   foreach my $map_item (@mapped) {
     if($map_item->isa("Bio::EnsEMBL::Mapper::Coordinate" )) {
        push @raw_contig_ids, $map_item->id();
-     }
+     } 
   }
 
   #Fetch filled raw contigs (non lazy-loaded) containing filled clone objects

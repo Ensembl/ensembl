@@ -189,6 +189,9 @@ sub fetch_filled_by_dbIDs {
                              WHERE co.contig_id IN ( " .
 			           join( ", ", @contig_ids ) . ")  
                              AND co.clone_id = cl.clone_id"  );
+
+
+
   $sth->execute();
   
   while( my $aref = $sth->fetchrow_arrayref() ) {
