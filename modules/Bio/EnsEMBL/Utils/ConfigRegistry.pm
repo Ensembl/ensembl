@@ -37,7 +37,6 @@ use warnings;
 
 package Bio::EnsEMBL::Utils::ConfigRegistry;
 
-#use Exporter;
 use Bio::EnsEMBL::Registry;
 my $reg = "Bio::EnsEMBL::Registry";
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
@@ -45,12 +44,6 @@ use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump);
-#use vars qw(@ISA @EXPORT_OK);
-#@ISA = qw(Exporter);
-
-#@EXPORT_OK = qw(&load_core &load_estgene);
-
-
 
 =head2 load_core, load_estgene, load_vega, load_compara, load_pipeline, load_SNP, load_lite
   Arg [1]    : DBAdaptor with DBConnection alredy attached
@@ -108,6 +101,9 @@ sub gen_load{
     }
     $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_haplotype;    
   }
+  elsif($dba->isa('Bio::EnsEMBL::Variation::DBSQL::DBAdaptor')){
+    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_variation;
+  }
   elsif($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
     #vega uses the core DBAdaptor so test if vega is in the dbname
     if(!defined($dba->group())){
@@ -127,7 +123,9 @@ sub gen_load{
     }
   }
   else{
-    throw("Unknown DBAdaptor type $dba\n");
+    # none standard DBA adaptor 
+    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_and_attach_dnadb_to_core;
+    #    throw("Unknown DBAdaptor type $dba\n");
   }
 
 
@@ -187,64 +185,86 @@ sub find_unique_species{
   return ($species);
 }
 
-sub load_core{
+
+
+sub load_adaptors{
   my ($dba) = @_;
 
-
   my %pairs = %{$dba->get_available_adaptors()};
-
+  
   foreach my $key (keys %pairs){
     Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
 
-
 }
 
+sub load_and_attach_dnadb_to_core{
+  my ($dba) = @_;
+
+  load_adaptors($dba);
+  
+  $reg->add_DNAAdaptor($dba->species,$dba->group,"core"); 
+}
+
+# those that do not need to attach to core:-#
+
+sub load_core{
+  load_adaptors(@_);
+}
+
+sub load_compara{
+  load_adaptors(@_);
+}
+
+sub load_hive{
+  load_adaptors(@_);
+}
+
+sub load_pipeline{
+  load_adaptors(@_);
+}
 
 sub load_lite{
-    my ($dba) = @_;
-  
-  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species, $dba->group, $dba);
-    
-  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, "SNP", "Bio::EnsEMBL::Lite::SNPAdaptor" );
+  load_adaptors(@_);
 }
 
 sub load_SNP{
-  my ($dba) = @_;
-  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species, $dba->group, $dba);
-    
-  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, "SNP", 
-				      "Bio::EnsEMBL::ExternalData::SNPSQL::SNPAdaptor" );
+  load_adaptors(@_);
 }
 
-sub attach_database{
-  my ($class, $species, $core, $name1) = @_;
-
-
-  my $first =  Bio::EnsEMBL::Registry->get_DBAdaptor($species,$name1);
-  my $coredb = Bio::EnsEMBL::Registry->get_DBAdaptor($species,$core);
-
-  Bio::EnsEMBL::Registry->add_db($coredb,$name1, $first);
-
+sub load_variation{
+  load_adaptors(@_);
 }
 
-sub attach_dna{
-  my ($class, $species, $main, $attach) = @_; 
 
-  my $no_seq =  Bio::EnsEMBL::Registry->get_DBAdaptor($species,$main);
-  my $seq = Bio::EnsEMBL::Registry->get_DBAdaptor($species,$attach);
-
-  Bio::EnsEMBL::Registry->add_DNAAdaptor($species,$no_seq->group,$seq);
+sub load_haplotype{
+  load_adaptors(@_);
 }
+
+
+# these that need to attach to the core to get the sequense data
+
+sub load_estgene{
+  load_and_attach_dnadb_to_core(@_);
+}
+
+sub load_est{
+  load_and_attach_dnadb_to_core(@_);
+}
+
+sub load_vega{
+  load_and_attach_dnadb_to_core(@_);
+}
+
+
+
+#special cases;-
+
+
 
 
 sub load_blast{
     my ($dba) = @_;
-
-# use the old style methods
-#  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species, $dba->group, $dba);
-#  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, 'Blast', 
-#				      "Bio::EnsEMBL::External::BlastAdaptor");
 }
 
 
@@ -252,6 +272,7 @@ sub add_blast_link{
   my ($class, $species, $group) = @_;
   my $dba =undef;
   my $blast = undef;
+  print STDERR " add_blast_link called\n";
 
   if($dba = Bio::EnsEMBL::Registry->get_DBAdaptor($species, $group)){
   }
@@ -268,137 +289,12 @@ sub add_blast_link{
 }
 
 
-
-sub load_estgene{
-  my ($dba) = @_;
-
-  my %pairs = %{$dba->get_available_adaptors()};  #calls SUPER class so same as core adaptors
-
-
-  foreach my $key (keys %pairs){
-    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
-  }
-
-  
-
-#  #if dnadb has been set then for the follwing use it.
-#  foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
-#    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
-#  }
-
-  $reg->add_DNAAdaptor($dba->species,$dba->group,"core"); 
-}
-
-
-sub load_est{
-  my ($dba) = @_;
-
-  my %pairs = %{$dba->get_available_adaptors()};  #calls SUPER class so same as core adaptors
-
-  foreach my $key (keys %pairs){
-    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
-  }
-
-  #if dnadb has been set then for the follwing use it.
-#  foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
-#    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
-#  }
-#  my $core = $reg->get_DBAdaptor($dba->species,"core");
-#  if(defined($core)){
-    $reg->add_DNAAdaptor($dba->species,$dba->group,"core"); 
-#  }
-}
-
-
-sub load_vega{
-  my ($dba) = @_;
-
-  my %pairs = %{$dba->get_available_adaptors()};  #calls SUPER class so same as core adaptors
-
-  foreach my $key (keys %pairs){
-    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
-  }
-#  my $core = $reg->get_DBAdaptor($dba->species,"core");
-#  if(defined($core)){
-    $reg->add_DNAAdaptor($dba->species,$dba->group,"core"); 
-#  }
-}
-
-
-sub load_compara{
-  my ($dba) = @_;
-
-  my %pairs = %{$dba->get_available_adaptors()};
-
-  foreach my $key (keys %pairs){
-
-    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
-  }
-
-}
-
-sub load_hive{
-  my ($dba) = @_;
-
-  my %pairs = %{$dba->get_available_adaptors()};
-
-  foreach my $key (keys %pairs){
-
-    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
-  }
-
-}
-
 sub load_go{
 
  my ($class, $dba) = @_;
 
  # shouldnt go into the registry ... sorry
 }
-
-
-sub load_haplotype{
-  my ($dba) = @_;
-
-  require Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor;
-
-  my %pairs = ('Haplotype' => 'Bio::EnsEMBL::ExternalData::Haplotype::HaplotypeAdaptor');
-
-  foreach my $key (keys %pairs){
-    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
-  }
-
-}
-
-
-sub load_pipeline{
-  my ($dba) = @_;
-
-  my %pairs = %{$dba->get_available_adaptors()};  #calls pipeline DBAdaptor (NOT implementred yet)
-# core + these ones:-
-#		 'Analysis'           => 'Bio::EnsEMBL::Pipeline::DBSQL::AnalysisAdaptor',
-#		 'Job'                => 'Bio::EnsEMBL::Pipeline::DBSQL::JobAdaptor',
-#		 'PmatchFeature'      => 'Bio::EnsEMBL::Pipeline::DBSQL::PmatchFeatureAdaptor',
-#		 'Rule'               => 'Bio::EnsEMBL::Pipeline::DBSQL::RuleAdaptor',
-#		 'StateInfoContainer' => 'Bio::EnsEMBL::Pipeline::DBSQL::StateInfoContainer');
-
-  foreach my $key (keys %pairs){
-    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
-  }
-
-}
-
-
-sub dnadb_add{
-  my $class = shift;
-  my ($dnaspecies, $dnagroup, $species, $group) = @_;
-
-  my $dnadb =  Bio::EnsEMBL::Registry->get_DBAdaptor($dnaspecies, $dnagroup);
-  my $featdb = Bio::EnsEMBL::Registry->get_DBAdaptor($species, $group);
-
-  $featdb->dnadb($dnadb);
-}
-
 
 sub add_alias{
   my ($class, @args) = @_;
@@ -413,12 +309,6 @@ sub add_alias{
     }
   }
 
-}
-
-
-sub get_alias{
-  my ($class, $key) = @_;
-  return Bio::EnsEMBL::Registry->get_alias($key);
 }
 
 
