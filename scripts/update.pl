@@ -92,13 +92,13 @@ if( $usefile == 1 ) {
     }
 }
 
-my $arcname = 'archive';
+my $arcname = 'ens_archive';
 my $arctype = 'rdb';
 my $archost = 'localhost';
 my $arcport = '410000';
 my $arcuser = 'root';
 my $arcmodule = 'Bio::EnsEMBL::DBArchive::Obj';
-$arcpass || die "You forgot to give the password for the archive database! Sorry, no access!\n";
+#$arcpass || die "You forgot to give the password for the archive database! Sorry, no access!\n";
 
 $verbose && print "\nConnecting to archive database...\n";
 my $arclocator = "$arcmodule/host=$archost;port=$arcport;dbname=$arcname;user=$arcuser;pass=$arcpass";

@@ -41,10 +41,10 @@ use vars qw(@ISA);
 @ISA = qw(Bio::Root::Object);
 
 my $tdbtype = 'rdb';
-my $thost   = 'localhost';
+my $thost   = 'obi-wan.sanger.ac.uk';
 my $tport   = '410000';
 my $tdbname = 'ensembl';
-my $tdbuser = 'ensro';
+my $tdbuser = 'root';
 my $tpass = undef;
 my $adbname = 'ens_archive';
 my $module = "Bio::EnsEMBL::DBSQL::Obj";
@@ -53,6 +53,7 @@ my $help;
 my $nowrite;
 my $verbose = 1;
 my $slice;
+my $usefile = 0;
 
 my $from;
 
@@ -65,15 +66,13 @@ my $from;
 	     'tpass:s'    => \$tpass,
              'adbname:s'  => \$adbname,
 	     'module=s'  => \$module,
+	     'usefile=s' => \$usefile,
 	     'h|help'    => \$help,
 	     'nowrite'   => \$nowrite,
 	     'slice:s'   => \$slice,
 	     'v|verbose' => \$verbose,
 	     'from:n'    => \$from,
 	     );
-
-
-$module = "Bio::EnsEMBL::DBSQL::Obj";
 
 if ($help) {
     exec('perldoc', $0);
@@ -112,6 +111,7 @@ my $update_manager   = new Bio::EnsEMBL::Analysis::UpdateManager(-fromlocator =>
 
 $update_manager->nowrite  ($nowrite);
 $update_manager->verbose  ($verbose);
+$update_manager->usefile ($usefile);
 $update_manager->chunksize(20);
 $update_manager->update;
 

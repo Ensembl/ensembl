@@ -271,6 +271,26 @@ sub nowrite {
     return $self->{_nowrite};
 }
 
+=head2 usefile
+
+  Title   : usefile
+  Usage   : $self->usefile(clone.list);
+  Function: Uses a list of clones, rather than get_update_Objects
+  Returns : Nothing
+  Args    : filename
+
+=cut
+
+sub usefile {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_usefile} = $arg;
+    }
+
+    return $self->{_usefile};
+}
+
 =head2 verbose
 
   Title   : verbose
@@ -346,19 +366,24 @@ sub get_updated_objects {
     my @clones;
 
     $self->throw("Can't connect to donor database") unless $fromdb;
-    eval {
-	@clones = $fromdb->get_updated_Clone_id($self->fromtime,$self->totime);
-    };
-    if ($@) {
-	print "Could not call get_updated_Clone_id from TimDB:\n$@!";
+    
+    if ($self->usefile) {
+	my $file = $self->usefile();
+	open(IN,"<$file");
+	my @clones;
+	while (<IN>) {
+	    chomp;
+	    push(@clones,$_);
+	}
     }
-#    my $file = "/nfs/disk89/michele/pogdir/updates/update_110200/clones.080200.list";
-#    open(IN,"<$file");
-#    my @clones;
-#    while (<IN>) {
-#	chomp;
-#	push(@clones,$_);
-#    }
+    else {
+	eval {
+	    @clones = $fromdb->get_updated_Clone_id($self->fromtime,$self->totime);
+	};
+	if ($@) {
+	    print "Could not call get_updated_Clone_id from TimDB:\n$@!";
+	}
+    }
     return @clones;
 }
 
