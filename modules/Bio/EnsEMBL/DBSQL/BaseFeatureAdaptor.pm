@@ -370,20 +370,22 @@ sub fetch_all_by_Slice_constraint {
 
   #retrieve normalized 'non-symlinked' slices
   #this allows us to support haplotypes and PARs
-  my @projection=@{$slice_adaptor->fetch_normalized_slice_projection($orig_slice)};
+  my @projection =
+    @{$slice_adaptor->fetch_normalized_slice_projection($orig_slice)};
 
   if(@projection == 0) {
     throw('Could not retrieve normalized Slices. Database contains ' .
           'incorrect assembly_exception information.');
   }
 
-  #we want to retrieve all features calculated on the FULL original slice as well as
-  #any symlinked slices.  
+  #we want to retrieve all features calculated on the FULL original slice 
+  #as well as any symlinked slices.  
 
-  #Filter out any partial slices from the normalized projection that are on the same seq region
-  #as the original slice
+  #Filter out any partial slices from the normalized projection that are on 
+  #the same seq region as the original slice
   my @new_projection = 
-    grep { $_->[2]->seq_region_name() ne $orig_slice->seq_region_name() } @projection;
+    grep { $_->[2]->seq_region_name() ne $orig_slice->seq_region_name() } 
+    @projection;
 
   push( @new_projection, [ 1, $orig_slice->length(), $orig_slice ] );
 
