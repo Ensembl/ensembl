@@ -53,6 +53,7 @@ use Bio::EnsEMBL::Virtual::Contig;
 use Bio::Annotation;
 use Bio::Annotation::DBLink;
 use Bio::EnsEMBL::VirtualGene;
+use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
 
 @ISA = qw(Bio::EnsEMBL::Virtual::Contig);
 
@@ -505,9 +506,12 @@ sub get_all_ExternalFeatures{
    }
 
    if( $self->_external_feature_cache == 1 ) {
+#       print STDERR "Returning cache'd copy!\n";
        return @{$self->{'_external_feature_cache_array'}};
    }
-
+#   print STDERR "Getting external features!\n";
+   
+   &eprof_start("External-feature-get");
    
    my @web;
    my @std;
@@ -598,6 +602,7 @@ sub get_all_ExternalFeatures{
        }
    }
 		    
+   &eprof_end("External-feature-get");
 
    # ok. Now @contig_features are in contig coordinates. Map up.
    
@@ -948,29 +953,29 @@ return $markers[0];
 
 sub get_all_VirtualGenes_startend
 {
-my ($self)=shift;
-
-my $gene;
-my @genes;
-
-my $glob_start=$self->_global_start;
-my $glob_end=$self->_global_end;
-my $chr_name=$self->_chr_name;
-my $idlist  = $self->_raw_contig_id_list();
+    my ($self)=shift;
     
+    my $gene;
+    my @genes;
+    
+    my $glob_start=$self->_global_start;
+    my $glob_end=$self->_global_end;
+    my $chr_name=$self->_chr_name;
+    my $idlist  = $self->_raw_contig_id_list();
+				# 
 
-unless ($idlist){
-    return ();
-}
-
-$self->throw ("I need a chromosome name") unless defined $chr_name;
-$self->throw ("I need a chromosome end") unless defined $glob_end;
-$self->throw ("I need a chromosome start") unless defined $glob_start;
-
-my $query ="SELECT     STRAIGHT_JOIN t.gene,
+    unless ($idlist){
+	return ();
+    }
+    
+    $self->throw ("I need a chromosome name") unless defined $chr_name;
+    $self->throw ("I need a chromosome end") unless defined $glob_end;
+    $self->throw ("I need a chromosome start") unless defined $glob_start;
+    
+    my $query ="SELECT     STRAIGHT_JOIN t.gene,
                        MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                   (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
-                       MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                       MAX(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                   (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end 
             FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t 
             WHERE      sgp.raw_id=e.contig
@@ -980,17 +985,27 @@ my $query ="SELECT     STRAIGHT_JOIN t.gene,
             AND        sgp.chr_end >= $glob_start   
             AND        sgp.chr_start <=$glob_end 
             AND        sgp.chr_name='$chr_name' 
-            GROUP BY   t.gene;";
-
-
+            GROUP BY   t.gene;"; # 
+    
+    
     my $sth = $self->dbobj->prepare($query);
     $sth->execute;
-    
-    my ($gene_id,$start,$end);
+				# 
+    my ($gene_id,$start,$end);	# 
     $sth->bind_columns(undef,\$gene_id,\$start,\$end);
 
     while ($sth->fetch){
+	if( $end < 1 ) { 
+	    # clip this gene to the left
+	    next;
+	}
 
+        if( $start > $self->length ) {
+	    # clip this gene to the right
+	    next;
+	}
+
+ 
 	if (($end > $self->length)) {$end=$self->length;}
 	if (($start < 1)) {$start=1;}
 
@@ -1014,6 +1029,9 @@ my $query ="SELECT     STRAIGHT_JOIN t.gene,
 						-end => $end, 
 						-strand => $genestr
 						);
+
+#        print STDERR "Giving back $start - $end $genestr for $gene_id\n";
+ 
 	push @genes,$vg;
     }
 
