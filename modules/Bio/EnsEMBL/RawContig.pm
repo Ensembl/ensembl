@@ -307,6 +307,7 @@ sub primary_seq {
 sub get_repeatmasked_seq {
     my ($self) = @_;
     my @repeats = $self->get_all_RepeatFeatures();
+
     my $seq = $self->primary_seq();
     my $dna = $seq->seq();
     my $masked_dna = $self->_mask_features($dna, @repeats);
@@ -377,9 +378,9 @@ sub get_all_RepeatFeatures {
      return ();
    }
 
-   my $repeats = $self->adaptor()->db()->get_RepeatFeatureAdaptor()->
+   my @repeats = $self->adaptor()->db()->get_RepeatFeatureAdaptor()->
      fetch_by_RawContig( $self );
-   return @$repeats;
+   return @repeats;
 }
 
 
