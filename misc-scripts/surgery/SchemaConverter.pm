@@ -32,6 +32,9 @@
 #  ( you have to know the order of columns which come in have to go out db )
 
 # set_row_modifier( "tablename", function_reference ) 
+#
+# potentially large (target) tables should be declared with
+# big_table( "newtablename" );
 
 package SchemaConverter;
 
@@ -208,7 +211,16 @@ sub standard_table_transfer {
     $select = "SELECT $select from $sourcetable";
   }    
 		   
-  my $sth = $self->source_dbh()->prepare( $select );
+  # MySQL specific ...
+  # DBD doesn't use cursors; loads whole table during execute()
+  # problem for large tables - "mysql_use_result" gets around this
+  my $sth;
+  if (defined $self->{targetdb}{tables}{$targettable}{its_a_big_un}) {
+    $sth = $self->source_dbh()->prepare( $select , { mysql_use_result => 1 } );
+  }
+  else {
+    $sth = $self->source_dbh()->prepare( $select );
+  }
   $sth->execute();
   
   my $row;
@@ -297,6 +309,12 @@ sub clear_target {
   for my $tablename ( keys %{$self->{targetdb}{tables}} ) {
     $self->target_dbh()->do( "delete from $tablename" );
   }
+}
+
+sub big_table {
+  my ( $self, $table ) = @_;
+
+  $self->{targetdb}{tables}{$table}{its_a_big_un} = 1;
 }
 
 
