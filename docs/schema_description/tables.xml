@@ -521,12 +521,13 @@
       
       <name>marker_map_location</name>
 
-      <description>Allows storage of information about the postion of a marker.</description>
+      <description>Allows storage of information about the postion of a marker - these are positions on genetic or radiation hybrid maps (as opposed to positions on the assembly, which EnsEMBL has determined and which are stored in marker_feature).</description>
       
       <used></used>
       
       <see>
 	<tableref name="marker" reason="Stores marker data."/>
+	<tableref name="marker_feature" reason="Stores marker positions on the assembly."/>
       </see>
 
     </table>
@@ -538,6 +539,22 @@
       <name>marker_synonym</name>
 
       <description>Stores alternative names for markers, as well as their sources.</description>
+      
+      <used></used>
+      
+      <see>
+	<tableref name="marker" reason="Stores the original marker."/>
+      </see>
+
+    </table>
+
+    <!-- ============================================================ -->
+
+    <table>
+      
+      <name>map</name>
+
+      <description>Stores the names of different genetic or radiation hybrid maps, for which there is marker map information.</description>
       
       <used></used>
       
