@@ -267,8 +267,8 @@ foreach my $clone_id ( @clones ) {
                             print STDERR "* found in sequence of $gene->id()";
                         }  
                         print $OUT "Gene ID: ", $gene->id, "\n";
-                        print $OUT "First Exon: ", $transcript->first_exon()->id, "\n";
-                        print $OUT "Last Exon: ", $transcript->last_exon()->id, "\n";
+                        print $OUT "First Exon: ", $transcript->start_exon()->id, "\n";
+                        print $OUT "Last Exon: ", $transcript->end_exon()->id, "\n";
                         print $OUT "Start Exon: ", $transcript->start_exon()->id, "\n";
                         print $OUT "End Exon: ", $transcript->end_exon()->id, "\n";                                                 
                         print $OUT "Translation: ", $translation->seq(), "\n";

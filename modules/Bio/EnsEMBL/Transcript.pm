@@ -272,42 +272,26 @@ sub flush_Exon{
    $self->{'_trans_exon_array'} = [];
 }
 
-=head2 first_exon
-
- Title   : first_exon
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub first_exon{
-   my ($self,@args) = @_;
-   my @temp = @{$self->{'_trans_exon_array'}};
-
-   return shift @temp;
+sub first_exon {
+    my ($self) = @_;
+    {
+        my($pkg, $file, $line) = caller(0);
+        $self->warn("In file '$file', package '$pkg' line $line\n".
+             "please switch your code to call 'start_exon'\n".
+             "'first_exon' is now deprecated\n");
+    }
+    return $self->start_exon;
 }
 
-=head2 last_exon
-
- Title   : last_exon
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub last_exon{
-   my ($self) = @_;
-   my @temp = @{$self->{'_trans_exon_array'}};
-
-   return pop @temp;
+sub last_exon {
+    my ($self) = @_;
+    {
+        my($pkg, $file, $line) = caller(0);
+        $self->warn("In file '$file', package '$pkg' line $line\n".
+             "please switch your code to call 'end_exon'\n".
+             "'last_exon' is now deprecated\n");
+    }
+    return $self->end_exon;
 }
 
 =head2 translatable_exons
@@ -589,8 +573,8 @@ sub translate {
       # that there is some filler.
       
       if( defined $prevtrans ) {
-	  my $last_exon  = $prevtrans->last_exon();
-	  my $first_exon = $ptrans   ->first_exon();
+	  my $last_exon  = $prevtrans->end_exon();
+	  my $first_exon = $ptrans   ->start_exon();
 	  my $filler;
 
 	  # last exon
@@ -1002,11 +986,9 @@ sub is_partial{
 =head2 start_exon
 
  Title   : start_exon
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : $start_exon = $transcript->start_exon;
+ Returns : The first exon in the transcript.
+ Args    : NONE
 
 
 =cut
@@ -1021,11 +1003,9 @@ sub start_exon{
 =head2 end_exon
 
  Title   : end_exon
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : $end_exon = $transcript->end_exon;
+ Returns : The last exon in the transcript.
+ Args    : NONE
 
 
 =cut

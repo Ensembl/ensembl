@@ -87,8 +87,8 @@ foreach my $trans_id (@trans) {
     print STDERR "\nDumping transcript $trans_id\n";
     my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
     my $trans = $gene_obj->get_Transcript($trans_id);
-    print STDERR "First Exon: ".$trans->first_exon->id."\n";
-    print STDERR "Last Exon: ".$trans->last_exon->id."\n\n";
+    print STDERR "First Exon: ".$trans->start_exon->id."\n";
+    print STDERR "Last Exon: ".$trans->end_exon->id."\n\n";
     print STDERR "This trasncript contains the following exons:\n";
     foreach my $exon ($trans->each_Exon) {
 	print STDERR "      id: ".$exon->id."\n";
@@ -100,8 +100,8 @@ foreach my $trans_id (@trans) {
     print STDERR "Now redumping in vc coordinates\n";
     my $trans=$db->get_Transcript_in_VC_coordinates($trans_id);
     print STDERR "\nDumping transcript ".$trans->id."\n";
-    print STDERR "First Exon: ".$trans->first_exon->id."\n";
-    print STDERR "Last Exon: ".$trans->last_exon->id."\n\n";
+    print STDERR "First Exon: ".$trans->start_exon->id."\n";
+    print STDERR "Last Exon: ".$trans->end_exon->id."\n\n";
     print STDERR "This trasncript contains the following exons:\n";
     foreach my $exon ($trans->each_Exon) {
 	print STDERR "      id: ".$exon->id."\n";

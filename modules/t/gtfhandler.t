@@ -46,7 +46,7 @@ sub parse_genes {
     
     #Use new parser module, to empty gene array
     my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
-    open (PARSE, $file)#
+    open (PARSE, $file)
         or die("Can't read '$file' : $!");
     
     @genes=$gtfh->parse_file(\*PARSE);

@@ -797,8 +797,8 @@ sub _build_genes{
 		# This puts in the Translation information
 		#
 		
-		my $fe = $transcript->first_exon();
-		my $le = $transcript->last_exon();
+		my $fe = $transcript->start_exon();
+		my $le = $transcript->end_exon();
 		
 		if( !defined $fe ) {
 		    $self->throw("Atempting to build a transcript with no Exons. problem!");

@@ -511,7 +511,7 @@ sub dump_genes {
 		print $fh "$end_seqname\tensembl\tstop_codon\t$end\t$end_start\t0\t$end_strand\t0\tgene_id \"".$gene->id."\"\;\ttranscript_id \"".$trans->id."\"\;\n";
 	    }
 	    else {
-		$self->warn("Could not find start and/or end exon for transcript ".$trans->id.", skipping!");
+		$self->warn("Could not find start and/or end exon for transcript ".$trans->id.", skipping!\n[$exon_string]");
 	    }
 	}
     }

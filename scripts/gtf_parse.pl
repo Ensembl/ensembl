@@ -231,9 +231,9 @@ elsif ($longest) {
 		$longest=$pep_length;
 		$trans_id=$trans->id;
 	    }
-	    $start=$trans->first_exon->start;
-	    $end=$trans->last_exon->end;
-	    $fpc=$trans->first_exon->contig_id;
+	    $start=$trans->start_exon->start;
+	    $end=$trans->end_exon->end;
+	    $fpc=$trans->start_exon->contig_id;
 	}
 	print STDERR "Longest transcript is $trans_id, and is $longest long\n";
 

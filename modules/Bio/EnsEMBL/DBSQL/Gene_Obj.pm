@@ -1030,7 +1030,7 @@ sub get_Virtual_Contig{
     #First of all, get out first exon, and create a 10000 bp Virtual Contig
     #starting from the contig on which the first exon is lying
 
-    my $first_exon=$transcript->first_exon();
+    my $first_exon=$transcript->start_exon();
     my $first_contig=$self->_db_obj->get_Contig($first_exon->contig_id());
     my $first_ori=$first_exon->strand();
     my $vc=Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $first_contig,
@@ -1043,7 +1043,7 @@ sub get_Virtual_Contig{
     #Now get the last exon, and extend the virtual contig until the last exon is also
     #contained in the vc
 
-    my $last_exon=$transcript->last_exon();
+    my $last_exon=$transcript->end_exon();
     my $last_contig=$self->_db_obj->get_Contig($last_exon->contig_id());
     my $last_ori=$last_exon->strand();
     my $not_finished=1;
