@@ -18,16 +18,18 @@ Bio::EnsEMBL::EvidenceAlignment.pm
  my $ea = Bio::EnsEMBL::EvidenceAlignment->new(
                           -DBADAPTOR    => $dba,
                           -TRANSCRIPTID => $tr_stable_id);
- my $seqs_arr_ref = $ea->fetch_alignment;
+ my $alignment_arr_ref = $ea->fetch_alignment;
  $ea->transcriptid($other_tr_stable_id);
- my $other_seqs_arr_ref = $ea->fetch_alignment;
+ my $other_alignment_arr_ref = $ea->fetch_alignment;
+ $ea->contigid($contig_stable_id);
+ my $contig_based_alignment_arr_ref = $ea->fetch_alignment;
 
 =head1 DESCRIPTION
 
-Gives a transcript and its evidence as an alignment, with padding with
-'-' as required. Proteins are given before DNA. Coordinates in the
-database are used to recreate the alignment, and must be correct or some
-data may not be displayed.
+Gives an alignement of either a transcript and its evidence or a raw
+contig and its similarity features. Coordinates in the database are
+used to recreate the alignment, and must be correct or some data may
+not be displayed or may be displayed incorrectly.
 
 =head1 CONTACT
 
@@ -45,9 +47,9 @@ package Bio::EnsEMBL::EvidenceAlignment;
 # pfetch binary - just pick it up from PATH
 use constant PFETCH => 'pfetch';
 
-# modify placement by adding the following to the genomic start/end
-use constant MINUS_STRAND_HACK_BP => -1;
-use constant PLUS_STRAND_HACK_BP  => +1;
+# modify placement on VC by adding the following to genomic start/end
+use constant VC_MINUS_STRAND_HACK_BP => -1;
+use constant VC_PLUS_STRAND_HACK_BP  => +1;
 
 use vars qw(@ISA);
 use strict;
@@ -61,13 +63,16 @@ use Bio::Root::RootI;
 =head2 new
 
     Title   :   new
-    Usage   :   my $ea = Bio::EnsEMBL::EvidenceAlignment->new(
-                                         -DBADAPTOR    => $dba,
-                                         -TRANSCRIPTID => $tr_stable_id);
-
+    Usage   :   my $transcript_ea = Bio::EnsEMBL::EvidenceAlignment->new(
+                                      -DBADAPTOR    => $dba,
+                                      -TRANSCRIPTID => $transcript_stable_id);
+		my $contig_ea     = Bio::EnsEMBL::EvidenceAlignment->new(
+                                      -DBADAPTOR    => $dba,
+                                      -CONTIGID     => $contig_stable_id);
     Function:   Initialises EvidenceAlignment object
     Returns :   An EvidenceAlignment object
-    Args    :   Database adaptor object and transcript stable ID string
+    Args    :   Database adaptor object and a stable ID string (transcript
+                or contig)
 
 =cut
 
@@ -75,10 +80,20 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($transcriptid, $dbadaptor) = $self->_rearrange(['TRANSCRIPTID',
-                                                      'DBADAPTOR'],
-						      @args);
-  $self->transcriptid($transcriptid);
+  my ($transcriptid, $contigid, $dbadaptor) = $self->_rearrange(
+                                                ['TRANSCRIPTID',
+						 'CONTIGID',
+                                                 'DBADAPTOR'],
+						@args);
+  if (defined $transcriptid and defined $contigid) {
+    $self->throw("may have a transcript ID or a contig ID but not both");
+  }
+  if ($transcriptid) {
+    $self->transcriptid($transcriptid);
+  }
+  if ($contigid) {
+    $self->contigid($contigid);
+  }
   $self->dbadaptor($dbadaptor);
 
   return $self; # success - we hope!
@@ -96,16 +111,17 @@ sub dbadaptor {
   my $obj = shift;
   if( @_ ) {
     my $value = shift;
-    $obj->{db_adaptor} = $value;
+    $obj->{evidencealignment_db_adaptor} = $value;
   }
-  return $obj->{db_adaptor};
+  return $obj->{evidencealignment_db_adaptor};
 }
 
 =head2 transcriptid
 
     Title   :   transcriptid
     Usage   :   $ea->transcriptid($transcript_stable_id);
-    Function:   get/set for transcript stable id string
+    Function:   get/set for transcript stable id string (also unsets
+                contig id)
 
 =cut
 
@@ -113,15 +129,35 @@ sub transcriptid {
   my $obj = shift;
   if( @_ ) {
     my $value = shift;
-    $obj->{transcript_id} = $value;
+    $obj->{evidencealignment_transcript_id} = $value;
+    undef $obj->{evidencealignment_contig_id};
   }
-  return $obj->{transcript_id};
+  return $obj->{evidencealignment_transcript_id};
 }
 
-=head2 get_features
+=head2 contigid
 
-    Title   :   get_features
-    Usage   :   $ea->get_features($transcript_obj, $vc);
+    Title   :   contigid
+    Usage   :   $ea->contigid($contig_stable_id);
+    Function:   get/set for contig stable id string (also unsets
+                transcript id)
+
+=cut
+
+sub contigid {
+  my $obj = shift;
+  if( @_ ) {
+    my $value = shift;
+    $obj->{evidencealignment_contig_id} = $value;
+    undef $obj->{evidencealignment_transcript_id};
+  }
+  return $obj->{evidencealignment_contig_id};
+}
+
+=head2 get_features_from_transcript
+
+    Title   :   get_features_from_transcript
+    Usage   :   $ea->get_features_from_transcript($transcript_obj, $vc);
     Function:   use SGP adaptor supplied to get evidence off a VC
 		of the transcript supplied; return an array
 		of featurepairs; features not falling witin exons
@@ -129,7 +165,7 @@ sub transcriptid {
 
 =cut
 
-sub get_features {
+sub get_features_from_transcript {
   my ($self, $transcript_obj, $vc) = @_;
   $self->throw('interface fault') if (@_ != 3);
     
@@ -145,6 +181,33 @@ sub get_features {
 	  push @features, $feature;
 	  next FEATURE_LOOP;
 	}
+      }
+    }
+  }
+  return @features;
+}
+
+=head2 get_features_from_rawcontig
+
+    Title   :   get_features_from_rawcontig
+    Usage   :   $ea->get_features_from_rawcontig($rawcontig_obj, $strand);
+    Function:   Get features off specified strand of the given raw contig
+
+=cut
+
+sub get_features_from_rawcontig {
+  my ($self, $rawcontig_obj, $strand) = @_;
+  $self->throw('interface fault') if (@_ != 3);
+
+  my @all_features = $rawcontig_obj->get_all_SimilarityFeatures;
+  my @features = ();
+  foreach my $feature (@all_features) {
+    if ($feature->strand == $strand) {
+      eval {
+        my $tmp = feature->hseqname;
+      };
+      if (! $@) {
+        push @features, $feature;
       }
     }
   }
@@ -178,7 +241,7 @@ sub pad_pep_str {
 
     Title   :   fetch_alignment
     Usage   :   my $seq_arr_ref = $ea->fetch_alignment;
-    Function:   gets aligned transcript and evidence
+    Function:   gets aligned evidence and transcript or raw contig
     Returns :   reference to array of Bio::PrimarySeq
 
 =cut
@@ -186,9 +249,22 @@ sub pad_pep_str {
 sub fetch_alignment {
   my ($self) = @_;
   $self->throw('interface fault') if (@_ != 1);
-  $self->throw('must have a transcript stable ID and a DB adaptor object')
-    unless ($self->transcriptid && $self->dbadaptor);
-  return $self->_get_aligned_evidence($self->transcriptid, $self->dbadaptor);
+  $self->throw('must have a stable ID and a DB adaptor object')
+    unless (($self->transcriptid || $self->contigid) && $self->dbadaptor);
+  if ($self->transcriptid) {
+    return $self->_get_aligned_evidence_for_transcript($self->transcriptid,
+                                                       $self->dbadaptor);
+  } elsif ($self->contigid) {
+    my $plus_strand_alignment  = $self->_get_aligned_features_for_contig(
+                                 $self->contigid, $self->dbadaptor, 1);
+    my $minus_strand_alignment = $self->_get_aligned_features_for_contig(
+                                 $self->contigid, $self->dbadaptor, -1);
+    my $all_alignments = $plus_strand_alignment;
+    foreach my $line (@$minus_strand_alignment) {
+      push @$all_alignments, $line;
+    }
+    return $all_alignments;
+  }
 }
 
 # sort an evidence array
@@ -228,6 +304,9 @@ sub _get_hits {
   my %hits_hash = ();
   my @hseqnames = ();
   for (my $i = 0; $i < @$features_arr_ref; $i++) {
+  print STDERR "XXX XXX cntr: $i, features: ", scalar(@$features_arr_ref), "\n";
+    print STDERR "XXX feature struct: ", $$features_arr_ref[$i], "\n";
+    print STDERR "XXX feature hseqname: ", $$features_arr_ref[$i]->hseqname, "\n";
     my $hseqname = $$features_arr_ref[$i]->hseqname;
     if (! exists $hits_hash{$hseqname})
     {
@@ -274,10 +353,235 @@ sub _get_hits {
   return \%hits_hash;
 }
 
-# _get_aligned_evidence: takes a transcript ID and a DB adaptor
+# _get_aligned_features_for_contig: takes a contig ID, a DB adaptor
+# and strand
 # returns ref to an array of Bio::PrimarySeq
 
-sub _get_aligned_evidence {
+sub _get_aligned_features_for_contig {
+  my ($self, $contig_id, $db, $strand) = @_;
+  $self->throw('interface fault') if (@_ != 4);
+
+  my @evidence_arr;	# a reference to this is returned
+  my $evidence_obj;
+
+  # get contig
+  my $contig_obj = $db->get_Contig($contig_id);
+
+  my @features = $self->get_features_from_rawcontig($contig_obj, $strand);
+  my $hits_hash_ref = $self->_get_hits(\@features);
+  my $nucseq_obj = $contig_obj->primary_seq;
+  if ($strand < 0) {
+    $nucseq_obj = $nucseq_obj->revcom;
+  }
+  my $nucseq_str = $nucseq_obj->seq;
+  my $dna_len_bp = length $nucseq_str;
+  my @translations = ();
+  for (my $i = 0; $i < 3; $i++) {
+    push @translations, $nucseq_obj->translate(undef, undef, $i);
+  }
+
+  # protein evidence
+
+  # translation itself forms our first three rows of 'evidence'
+  for (my $i = 0; $i < 3; $i++) {
+    my $evidence_line = $translations[$i]->seq;
+    $evidence_line = $self->pad_pep_str($evidence_line);
+    $evidence_line = ('-' x $i) . $evidence_line;
+    $evidence_obj = Bio::PrimarySeq->new(
+                      -seq              => $evidence_line,
+                      -id               => 0,
+                      -accession_number => $contig_obj->id,
+                      -moltype          => 'protein'
+		    );
+    push @evidence_arr, $evidence_obj;
+  }
+
+  my @seqcache = ();
+  my @pep_evidence_arr = ();
+  my $last_feat = undef;
+
+  PEP_FEATURE_LOOP:
+  foreach my $feature (@features) {
+    next PEP_FEATURE_LOOP	# unless feature falls within this contig
+      unless (($feature->start >= 1) && ($feature->end <= $dna_len_bp));
+    next PEP_FEATURE_LOOP	# if feature is a duplicate of the last
+      if ($last_feat
+      && ($last_feat->start  == $feature->start)
+      && ($last_feat->end    == $feature->end)
+      && ($last_feat->hstart == $feature->hstart)
+      && ($last_feat->hseqname eq $feature->hseqname));
+    my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
+    next PEP_FEATURE_LOOP 
+      unless ($hit_seq_obj && ($hit_seq_obj->moltype eq 'protein'));
+    my $hlen = $feature->hend - $feature->hstart + 1;
+    my $flen = $feature->end - $feature->start + 1;
+    next PEP_FEATURE_LOOP unless ($flen == 3 * $hlen);
+    if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
+      > length $hit_seq_obj->seq))
+    {
+      next PEP_FEATURE_LOOP;
+    }
+    my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
+    $hseq = $self->pad_pep_str($hseq);
+    my $hindent_bp;
+    if ($strand > 0) {
+      $hindent_bp = $feature->start - 1;
+    } else {
+      $hindent_bp = $dna_len_bp - $feature->end;
+    }
+    if ($hindent_bp < 0) {
+      $hindent_bp = 0;	# disaster recovery
+    }
+    my %hit_details = ( 'moltype'  => $hit_seq_obj->moltype,
+                        'hseqname' => $feature->hseqname,
+                        'hseq'     => $hseq,
+                        'hindent'  => $hindent_bp,
+                      );
+    push @pep_evidence_arr, \%hit_details;
+    $last_feat = $feature;
+  }
+
+  my @sorted_pep_evidence_arr = @{$self->_evidence_sort(\@pep_evidence_arr)};
+
+  my $evidence_line = '';
+  my $prev_hseqname = '-' x 1000;	# fake initial ID
+  for (my $i = 0; $i < @sorted_pep_evidence_arr; $i++) {
+    my $hit = $sorted_pep_evidence_arr[$i];
+    if ($$hit{hseqname} ne $prev_hseqname) {	# make new evidence line
+      $evidence_line = '-' x $dna_len_bp;
+    }
+
+    # splice in the evidence fragment
+    my $hseqlen = length $$hit{hseq};
+    next if (($$hit{hindent} < 0) || ($$hit{hindent} + $hseqlen > $dna_len_bp));
+    substr $evidence_line, $$hit{hindent}, $hseqlen, $$hit{hseq};
+
+    # store if end of evidence line
+    if (($i == $#sorted_pep_evidence_arr)
+     || ($sorted_pep_evidence_arr[$i+1]{hseqname} ne $$hit{hseqname}))
+    {
+      $evidence_obj = Bio::PrimarySeq->new(
+                      -seq              => $evidence_line,
+                      -id               => 0,
+                      -accession_number => $$hit{hseqname},
+		      -moltype          => $$hit{moltype}
+	              );
+      push @evidence_arr, $evidence_obj;
+    }
+    $prev_hseqname = $$hit{hseqname};
+  }
+
+  # nucleic acid evidence
+
+  # DNA itself forms first row of nucleic acid evidence
+  $evidence_obj = Bio::PrimarySeq->new(
+                    -seq              => $nucseq_str,
+                    -id               => 0,
+     		    -accession_number => $contig_obj->id,
+		    -moltype          => 'dna'
+		  );
+  push @evidence_arr, $evidence_obj;
+
+  my @nuc_evidence_arr = ();
+  $last_feat = undef;
+  NUC_FEATURE_LOOP:
+  foreach my $feature(@features) {
+    next NUC_FEATURE_LOOP	# unless feature falls within this contig
+      unless (($feature->start >= 1) && ($feature->end <= $dna_len_bp));
+    next NUC_FEATURE_LOOP	# if feature is a duplicate of the last
+      if ($last_feat
+      && ($last_feat->start  == $feature->start)
+      && ($last_feat->end    == $feature->end)
+      && ($last_feat->hstart == $feature->hstart)
+      && ($last_feat->hseqname eq $feature->hseqname));
+    my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
+    next NUC_FEATURE_LOOP 
+      unless ($hit_seq_obj && ($hit_seq_obj->moltype ne 'protein'));
+    my $hlen = $feature->hend - $feature->hstart + 1;
+    my $flen = $feature->end - $feature->start + 1;
+    next NUC_FEATURE_LOOP unless ($flen == $hlen);
+    if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
+         > length $hit_seq_obj->seq))
+    {
+      next NUC_FEATURE_LOOP;
+    }
+    my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
+    my $strand_wrt_dna = $strand * $feature->strand;
+    if ($strand_wrt_dna < 0) {	# reverse-compliment the hit
+      my $hseq_obj_tmp = Bio::PrimarySeq->new(
+                                          -seq => $hseq,
+                                          -id => 'fake_id',
+                                          -accession_number => '0',
+                                          -moltype => $hit_seq_obj->moltype
+                                         );
+      $hseq = $hseq_obj_tmp->revcom->seq;
+    }
+    my $hindent_bp;
+    if ($strand > 0) {
+      $hindent_bp = $feature->start - 1;
+    } else{
+      $hindent_bp = $dna_len_bp - $feature->end;
+    }
+    if ($hindent_bp < 0) {
+      $hindent_bp = 0;	# disaster recovery
+    }
+    my %hit_details = ( 'moltype'     => $hit_seq_obj->moltype,
+                        'hseqname'    => $feature->hseqname,
+                        'hseq'        => $hseq,
+		        'hindent'     => $hindent_bp,
+		      );
+    push @nuc_evidence_arr, \%hit_details;
+    $last_feat = $feature;
+  }
+
+  my @sorted_nuc_evidence_arr = @{$self->_evidence_sort(\@nuc_evidence_arr)};
+
+  $evidence_line = '';
+  my $hit = $sorted_nuc_evidence_arr[0];
+  $prev_hseqname = '-' x 1000;	# fake initial ID
+  for (my $i = 0; $i < @sorted_nuc_evidence_arr; $i++) {
+    my $hit = $sorted_nuc_evidence_arr[$i];
+    my $hseq_str = $$hit{hseq};
+    if ($$hit{hseqname} ne $prev_hseqname) {	# make new evidence line
+      $evidence_line = '-' x $dna_len_bp;
+    }
+
+    # splice in the evidence fragment
+    my $hseqlen = length $$hit{hseq};
+    next unless ($$hit{hindent} + $hseqlen <= $dna_len_bp);
+    substr $evidence_line, $$hit{hindent}, $hseqlen, $hseq_str;
+
+    # store if end of evidence line
+    if (($i == $#sorted_nuc_evidence_arr)
+     || ($sorted_nuc_evidence_arr[$i+1]{hseqname} ne $$hit{hseqname}))
+    {
+      $evidence_obj = Bio::PrimarySeq->new(
+                      -seq              => $evidence_line,
+                      -id               => 0,
+  		      -accession_number => $$hit{hseqname},
+		      -moltype          => $$hit{moltype}
+		    );
+      push @evidence_arr, $evidence_obj;
+    }
+    $prev_hseqname = $$hit{hseqname};
+  }
+
+  # remove blank evidence lines
+
+  my @filtered_evidence_arr = ();
+  foreach my $evidence_line (@evidence_arr) {
+    push @filtered_evidence_arr, $evidence_line
+      if ($$evidence_line{seq} =~ /[^-]/);
+  }
+
+  return \@filtered_evidence_arr;
+}
+
+# _get_aligned_evidence_for_transcript: takes a transcript ID and
+# a DB adaptor
+# returns ref to an array of Bio::PrimarySeq
+
+sub _get_aligned_evidence_for_transcript {
   my ($self, $transcript_id, $db) = @_;
   $self->throw('interface fault') if (@_ != 3);
 
@@ -309,11 +613,11 @@ sub _get_aligned_evidence {
   }
 
   my @all_exons = $transcript_obj->get_all_Exons;
-  my @features = $self->get_features($transcript_obj, $vc);
+  my @features = $self->get_features_from_transcript($transcript_obj, $vc);
   my $hits_hash_ref = $self->_get_hits(\@features);
   my $translation = $transcript_obj->translate->seq;
-  my $nucseq = $self->_get_transcript_nuc(\@all_exons);
-  my $cdna_len_bp = length $nucseq;
+  my $nucseq_str = $self->_get_transcript_nuc(\@all_exons);
+  my $cdna_len_bp = length $nucseq_str;
 
   # protein evidence
 
@@ -419,10 +723,10 @@ sub _get_aligned_evidence {
       my $hindent_bp;
       if ($exon->strand > 0) {
         $hindent_bp =   $total_exon_len + $feature->start - $exon->start
-	              + PLUS_STRAND_HACK_BP;
+	              + VC_PLUS_STRAND_HACK_BP;
       } else {
         $hindent_bp =   $total_exon_len + $exon->end - $feature->end
-	              + MINUS_STRAND_HACK_BP;
+	              + VC_MINUS_STRAND_HACK_BP;
       }
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
@@ -442,7 +746,7 @@ sub _get_aligned_evidence {
   my @sorted_pep_evidence_arr = @{$self->_evidence_sort(\@pep_evidence_arr)};
 
   $evidence_line = '';
-  my $prev_hseqname = '?' x 1000;	# fake initial ID
+  my $prev_hseqname = '-' x 1000;	# fake initial ID
   for (my $i = 0; $i < @sorted_pep_evidence_arr; $i++) {
     my $hit = $sorted_pep_evidence_arr[$i];
     if ($$hit{hseqname} ne $prev_hseqname) {	# make new evidence line
@@ -475,7 +779,7 @@ sub _get_aligned_evidence {
 
   # cDNA itself forms first row of nucleic acid evidence
   $evidence_obj = Bio::PrimarySeq->new(
-                    -seq              => $nucseq,
+                    -seq              => $nucseq_str,
                     -id               => 0,
      		    -accession_number => $transcript_obj->stable_id,
 		    -moltype          => 'dna'
@@ -522,10 +826,10 @@ sub _get_aligned_evidence {
       my $hindent_bp;
       if ($exon->strand > 0) {
         $hindent_bp =   $total_exon_len + $feature->start - $exon->start
-	              + PLUS_STRAND_HACK_BP;
+	              + VC_PLUS_STRAND_HACK_BP;
       } else{
         $hindent_bp =   $total_exon_len + $exon->end - $feature->end
-	              + MINUS_STRAND_HACK_BP;
+	              + VC_MINUS_STRAND_HACK_BP;
       }
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
@@ -608,7 +912,6 @@ sub _get_aligned_evidence {
   }
 
   return \@filtered_evidence_arr;
-
 }
 
 1;
