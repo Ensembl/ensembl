@@ -1035,6 +1035,8 @@ sub get_supporting_evidence_direct {
 	&eprof_start('object');
 	my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
 	$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,$hstart,$hend,1,$f_score,$name,'similarity',$hid);
+	$out->analysis($analysis);
+
 	#$out->validate();
 	$exhash{$exonid}->add_Supporting_Feature($out);
 	&eprof_end('object');  
