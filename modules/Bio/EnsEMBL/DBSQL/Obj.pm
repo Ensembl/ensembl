@@ -231,27 +231,6 @@ sub get_last_update{
     return $rowhash->[0];
 }
 
-=head2 get_offset_time
-
- Title   : get_offset_time
- Usage   : $obj->get_offset_time; 
- Function: Reads the meta table of the database to get the offset_time
- Example : get_offset_time
- Returns : UNIX TIME of offset_time
- Args    : none
-
-
-=cut
-
-sub get_offset_time {
-    my ($self) = @_;
-
-    my $sth = $self->prepare("select offset_time from meta");
-    my $res = $sth->execute();
-    my $rowhash = $sth->fetchrow_hashref;
-    return $rowhash->{'offset_time'};
-}
-
 =head2 get_now_offset
 
  Title   : get_now_offset
@@ -626,14 +605,14 @@ sub get_updated_Objects{
     return @out;
 }
 
-=head2 get_Ghosts
+=head2 get_Ghosts_by_deleted
     
- Title   : get_Ghosts
- Usage   : $obj->get_Ghosts ($recipient_last_update, $recipient_now_offset)
+ Title   : get_Ghosts_by_deleted
+ Usage   : $obj->get_Ghosts_by_deleted ($recipient_last_update, $recipient_now_offset)
  Function: Gets all the ghosts for objects that have been deleted (i.e.permanently from 
 	   the donor db) between the current time - offset time given by
            the recipient database and the last update time stored in its meta table 
- Example : $obj->get_Ghosts (973036800,973090800)
+ Example : $obj->get_Ghosts_by_deleted (973036800,973090800)
  Returns : ghost objects
  Args    : $recipient_last_update, $recipient_now_offset
 
@@ -943,11 +922,11 @@ sub cloneid_to_geneid{
    return @out;
 }
 
-=head2 write_last_update
+=head2 replace_last_update
     
- Title   : write_last_update
- Usage   : $obj->write_last_update
- Function: Writes the current time in the last update field of the meta table
+ Title   : replace_last_update
+ Usage   : $obj->replace_last_update
+ Function: Replaces the time in the last update field of the meta table with the current time
  Example : 
  Returns : nothing
  Args    : 
@@ -971,6 +950,7 @@ sub replace_last_update {
      $sth->execute;
 
 }
+
 =head2 write_Gene
 
  Title   : write_Gene

@@ -113,6 +113,8 @@ sub get_all_Clone_id{
    
 }
 
+
+
 =head2 write_Gene
 
  Title   : write_Gene
@@ -205,5 +207,114 @@ sub get_now_offset{
     
     $self->throw("Not implemented in the object!");
 } 
+
+=head2 donor_locator
+
+ Title   : get_donor_locator
+ Usage   : $obj->get_donor_locator; 
+ Function: Reads the meta table of the database to get the donor_database_locator
+ Example : get_donor_locator
+ Returns : locator string
+ Args    : none
+
+
+=cut
+
+sub get_donor_locator{
+    my ($self) = @_;
+    
+    $self->throw("Not implemented in the object!");
+}
+=head2 get_Ghosts_by_deleted
+    
+ Title   : get_Ghosts_by_deleted
+ Usage   : $obj->get_Ghosts_by_deleted ($recipient_last_update, $recipient_now_offset)
+ Function: Gets all the ghosts for objects that have been deleted (i.e.permanently from 
+	   the donor db) between the current time - offset time given by
+           the recipient database and the last update time stored in its meta table 
+ Example : $obj->get_Ghosts_by_deleted (973036800,973090800)
+ Returns : ghost objects
+ Args    : $recipient_last_update, $recipient_now_offset
+
+=cut
+
+sub get_Ghosts_by_deleted{
+    my ($self) = @_;
+    
+    $self->throw("Not implemented in the object!");
+}
+
+=head2 get_Ghost
+    
+ Title   : get_Ghost
+ Usage   : $obj->get_Ghost ($ghost_id,$ghost_version,$ghost_obj_type)
+ Function: Gets a ghost by id, version,obj_type  
+ Example : $obj->get_Ghost ('test','1','transcript')
+ Returns : ghost objects
+ Args    : ghost id, version and object type
+
+=cut
+
+sub get_Ghost{
+    my ($self) = @_;
+    
+    $self->throw("Not implemented in the object!");
+}
+
+=head2 write_Ghost
+    
+ Title   : write_Ghost
+ Usage   : $obj->write_Ghost ($ghost)
+ Function: Writes a ghost to the database  
+ Example : $obj->write_Ghost ($ghost)
+ Returns : 
+ Args    : ghost object
+
+=cut
+
+sub write_Ghost{
+    my ($self) = @_;
+    
+    $self->throw("Not implemented in the object!");
+}
+
+=head2 archive_Gene
+    
+ Title   : archive_Gene
+ Usage   : $obj->archive_gene($gene,$clone,$arcdb)
+ Function: Deletes a gene and all its transcripts and exons, 
+           and archives partial info in the archive db passed on.
+ Example : 
+ Returns : nothing
+ Args    : $gene, $arcdb (archive database object)
+
+
+=cut
+
+sub archive_Gene {
+    my ($self) = @_;
+ 
+    $self->throw("Not implemented in the object!");
+}
+
+
+
+=head2 replace_last_update
+    
+ Title   : replace_last_update
+ Usage   : $obj->replace_last_update
+ Function: Replaces the time in the last update field of the meta table with the current time
+ Example : 
+ Returns : nothing
+ Args    : 
+
+=cut
+
+sub replace_last_update {
+    my ($self) = @_;
+ 
+    $self->throw("Not implemented in the object!");
+}
+ 
 
 1;
