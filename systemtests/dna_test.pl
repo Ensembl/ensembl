@@ -73,6 +73,6 @@ foreach my $clone_id ( @clone_id ) {
 }
 
 if ($errcount>0) {
-	print STDERR "\nFound $errcount transcript(s) not containing DNA\n";
+	print STDERR "\nFound $errcount contig(s) not containing DNA\n";
     }
 

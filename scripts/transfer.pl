@@ -79,14 +79,14 @@ my $fdbtype = 'rdb';
 my $fhost   = 'localhost';
 my $fport   = '410000';
 my $fdbname = 'ensdev';
-my $fdbuser = 'ensembl';
+my $fdbuser = 'root';
 my $fdbpass = undef;
 
 my $tdbtype = 'rdb';
 my $thost   = 'localhost';
 my $tport   = '410000';
-my $tdbname = 'ensdev';
-my $tdbuser = 'ensembl';
+my $tdbname = 'eliatest1';
+my $tdbuser = 'root';
 my $tdbpass = undef;
 
 my $usefile = 0;
@@ -97,8 +97,8 @@ my $getall = 0;
 my $update = 0;
 my $arcpass = undef;
 my $help;
-my $fmodule = 'Bio::EnsEMBL::DBSQL::Obj';
-my $tmodule = 'Bio::EnsEMBL::DBOLD::Obj';
+my $fmodule = 'Bio::EnsEMBL::DBOLD::Obj';
+my $tmodule = 'Bio::EnsEMBL::DBSQL::Obj';
 
 &GetOptions( 
 	     'fdbtype:s' => \$fdbtype,

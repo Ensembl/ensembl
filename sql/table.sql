@@ -92,6 +92,7 @@ CREATE TABLE exon (
   version int(10) DEFAULT '1' NOT NULL,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL, 
   seq_start int(10) DEFAULT '0' NOT NULL,
   seq_end int(10) DEFAULT '0' NOT NULL,
   strand int (2) DEFAULT '1' NOT NULL,

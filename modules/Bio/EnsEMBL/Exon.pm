@@ -265,6 +265,27 @@ sub modified{
 
 }
 
+=head2 _stored
+
+ Title   : _stored
+ Usage   : $obj->_stored($newval)
+ Function: 
+ Returns : value of stored
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _stored{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'stored'} = $value;
+    }
+    return $self->{'stored'};
+
+}
+
 =head2 pep_seq
 
   Title   : pep_seq

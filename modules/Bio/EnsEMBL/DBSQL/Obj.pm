@@ -1,6 +1,6 @@
 
 #
-# BioPerl module for DB::Obj
+# BioPerl module for DBSQL::Obj
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
@@ -203,32 +203,49 @@ sub get_donor_locator{
     my $sth = $self->prepare("select donor_database_locator from meta");
     my $res = $sth->execute();
     my $rowhash = $sth->fetchrow_hashref;
+    my $donor = $rowhash->{'donor_database_locator'};
+    ($donor eq "") && $self->throw ("No value stored for database locator in meta table!");
     return $rowhash->{'donor_database_locator'};
 }
 
-=head2 get_last_update
+=head2 get_last_update_offset
 
- Title   : get_last_update
- Usage   : $obj->get_last_update; 
- Function: Reads the meta table of the database to get the last_update time
- Example : get_last_update
- Returns : UNIX TIME of last update
+ Title   : get_last_update_offset
+ Usage   : $obj->get_last_update_offset; 
+ Function: Reads the meta table of the database to get the last_update time - offset time
+ Example : get_last_update_offset
+ Returns : UNIX TIME of last update - offset time
  Args    : none
-
 
 =cut
 
-sub get_last_update{
+sub get_last_update_offset{
     my ($self) = @_;
     
+    #Get the last update time
     my $sth = $self->prepare("select last_update from meta");
     my $res = $sth->execute();
     my $rowhash = $sth->fetchrow_hashref;
-    my $datetime = $rowhash->{'last_update'};
+    my $last = $rowhash->{'last_update'};
+
+    #Now get the offset time from the meta table, which is in time format
+    $sth = $self->prepare("select offset_time from meta");
+    $sth->execute();
+    $rowhash = $sth->fetchrow_hashref();
+    my $offset = $rowhash->{'offset_time'};
+
+    #Perform the subtraction in mysql
+    $sth = $self->prepare("select DATE_SUB(\"$last\", INTERVAL \"$offset\" HOUR_SECOND)");
+    $sth->execute();
+    $rowhash = $sth->fetchrow_arrayref();
+    my $datetime = $rowhash->[0];
+
     $sth = $self->prepare("select UNIX_TIMESTAMP('".$datetime."')");
     $sth->execute();
     $rowhash = $sth->fetchrow_arrayref();
-    return $rowhash->[0];
+    my $last_offset = $rowhash->[0];
+    ($last_offset eq "") && $self->throw ("No value stored for last_update in meta table!");
+    return $last_offset;
 }
 
 =head2 get_now_offset
@@ -557,25 +574,25 @@ sub get_all_Gene_id{
 =cut
 
 sub get_updated_Objects{
-    my ($self, $last, $now_offset) = @_;
+    my ($self, $last_offset, $now_offset) = @_;
     
-    $last || $self->throw("Attempting to get updated objects without the recipient db last update time");
+    $last_offset || $self->throw("Attempting to get updated objects without the recipient db last update time");
     $now_offset  || $self->throw("Attempting to get updated objects without the recipient db current time");
+    ($last_offset>$now_offset) && $self->throw("Last update more recent than now-offset time, serious trouble");
 
     #First, let us convert the unix times now_offset and last into mysql times
-    my $sth = $self->prepare("select FROM_UNIXTIME(".$last.")");
+    my $sth = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
     $sth->execute();
     my $rowhash = $sth->fetchrow_arrayref();
-    $last = $rowhash->[0];
+    $last_offset = $rowhash->[0];
 
     $sth = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
     $sth->execute();
     $rowhash = $sth->fetchrow_arrayref();
     $now_offset = $rowhash->[0];
-    
 
     #First, get all clone ids that have been updated between last and now-offset
-    my $sth = $self->prepare("select id from clone where stored > '".$last." - 00:30:00' and stored <= '".$now_offset."'");
+    my $sth = $self->prepare("select id from clone where stored > '".$last_offset." - 00:30:00' and stored <= '".$now_offset."'");
    
     $sth->execute;
     my @out;
@@ -590,7 +607,7 @@ sub get_updated_Objects{
     }	
     
     #Get all gene ids that have been updated between last and now-offset
-    $sth = $self->prepare("select id from gene where stored > '".$last."' and stored <= '".$now_offset."'");
+    $sth = $self->prepare("select id from gene where stored > '".$last_offset."' and stored <= '".$now_offset."'");
     $sth->execute;
 
     my @genes;
@@ -598,7 +615,7 @@ sub get_updated_Objects{
 	push(@genes,$rowhash->{'id'});
     }
     
-    #Get all clone objects for the ids contained in @clones, and push them in @out
+    #Get all gene objects for the ids contained in @clones, and push them in @out
     foreach my $geneid (@genes) {
 	push @out, $self->get_Gene ($geneid);
     }	
@@ -619,17 +636,18 @@ sub get_updated_Objects{
 =cut
 
 sub get_updated_Ghosts{
-    my ($self, $last, $now_offset) = @_;
+    my ($self, $last_offset, $now_offset) = @_;
     my @out;
     
-    $last || $self->throw("Attempting to get updated objects without the recipient db last update time");
+    $last_offset || $self->throw("Attempting to get updated objects without the recipient db last update time");
     $now_offset  || $self->throw("Attempting to get updated objects without the recipient db current time");
+    ($last_offset>$now_offset) && $self->throw("Last update more recent than now-offset time, serious trouble");
     
     #First, let us convert the unix times now_offset and last into mysql times
-    my $sth = $self->prepare("select FROM_UNIXTIME(".$last.")");
+    my $sth = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
     $sth->execute();
     my $rowhash = $sth->fetchrow_arrayref();
-    $last = $rowhash->[0];
+    $last_offset = $rowhash->[0];
     
     $sth = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
     $sth->execute();
@@ -637,7 +655,7 @@ sub get_updated_Ghosts{
     $now_offset = $rowhash->[0];
     
     #Get all ghosts that have deleted times between last and now-offset
-    $sth = $self->prepare("select id,version,seq_type,deleted,stored from ghost where stored > '".$last."' and stored <= '".$now_offset."'");
+    $sth = $self->prepare("select id,version,obj_type,deleted,stored from ghost where stored > '".$last_offset."' and stored <= '".$now_offset."'");
     $sth->execute();
     while(my $rowhash = $sth->fetchrow_hashref()) {
 	my $ghost = Bio::EnsEMBL::Ghost->new();
@@ -645,7 +663,7 @@ sub get_updated_Ghosts{
 	$ghost->version($rowhash->{'version'});
 	$ghost->obj_type($rowhash->{'obj_type'});
 	$ghost->deleted($rowhash->{'deleted'});
-	$ghost->stored($rowhash->{'stored'});
+	$ghost->_stored($rowhash->{'stored'});
 	push @out, $ghost;
     }
     return @out;
@@ -663,14 +681,13 @@ sub get_updated_Ghosts{
 =cut
 
 sub get_Ghost{
-    my ($self, $g_id, $g_version, $g_obj_type) = @_;
+    my ($self, $g_id, $g_obj_type) = @_;
     my @out;
     
     $g_id || $self->throw("Attempting to get a ghost object without an id");
-    $g_version || $self->throw("Attempting to get a ghost object without a version");
     $g_obj_type || $self->throw("Attempting to get a ghost object without an object type");
 
-    my $sth = $self->prepare("select id, version, seq_type,deleted,stored from ghost where id='".$g_id."' and version = '".$g_version."' and obj_type = '".$g_obj_type."'");
+    my $sth = $self->prepare("select id,version,obj_type,deleted,stored from ghost where id='".$g_id."' and obj_type = '".$g_obj_type."'");
     $sth->execute();
     my  $rv = $sth->rows;
     ! $rv && $self->throw("Ghost not found in database!");
@@ -680,6 +697,7 @@ sub get_Ghost{
     $ghost->version($rowhash->{'version'});
     $ghost->obj_type($rowhash->{'obj_type'});
     $ghost->deleted($rowhash->{'deleted'});
+    $ghost->_stored($rowhash->{'stored'});
     return $ghost;
 }
 
@@ -751,20 +769,23 @@ sub archive_Gene {
        $sth= $self->prepare("delete from transcript where id = '".$transcript->id."'");
        $sth->execute;
        
-       #Get out exons for this transcript
-       foreach my $exon ($transcript->each_Exon) {
-	   
+       #First get all exons of the gene using $gene->each_unique_Exon method, to write them
+       foreach my $exon ($gene->each_unique_Exon) {
 	   #Get out info needed to write into archive db
 	   $seq = $exon->seq;
 	   $seq->id($exon->id);
-	   print STDERR "The exon sequence id is ".$exon->id."\n";
+	   
 	   #Temporary, since versions not stored yet...
 	   !$exon->version && $exon->version(1);
 	   
 	   #Write into archive db
 	   $arc_db->write_seq($seq, $exon->version, 'exon', $gene->id, $gene->version);
+       }
+
+       #Then use the each_Exon method from transcript to delete exons
+       foreach my $exon ($transcript->each_Exon) {
 	   
-           #Delete exon_transcript rows
+	   #Delete exon_transcript rows
 	   $sth= $self->prepare("delete from exon_transcript where transcript = '".$transcript->id."'");
 	   $sth->execute;
 	   #Delete exon rows
@@ -777,6 +798,30 @@ sub archive_Gene {
    $sth = $self->prepare("delete from gene where id = '".$gene->id."'");
    $sth->execute;
 }   
+
+=head2 delete_Exon
+
+ Title   : delete_Clone
+ Usage   : $obj->delete_Exon($exon_id)
+ Function: Deletes exon, including exon_transcript rows
+ Example : $obj->delete_Exon(ENSE000034)
+ Returns : nothing
+ Args    : $exon_id
+
+
+=cut
+
+sub delete_Exon{
+    my ($self,$exon_id) = @_;
+    $exon_id || $self->throw ("Trying to delete an exon without an exon_id\n");
+    
+    #Delete exon_transcript rows
+    my $sth= $self->prepare("delete from exon_transcript where transcript = '".$exon_id."'");
+    $sth->execute;
+    #Delete exon rows
+    $sth = $self->prepare("delete from exon where id = '".$exon_id."'");
+    $sth->execute;
+}
 
 =head2 delete_Clone
 
@@ -836,8 +881,6 @@ sub delete_Gene{
    my %exon;
 
    # get out exons, transcripts for gene. 
-
-   $self->warn("Using delete gene - perhaps you should be archiving. Consider removing this method sometime");
 
    my $sth = $self->prepare("select id from transcript where gene = '$geneid'");
    $sth->execute;
@@ -939,7 +982,7 @@ sub replace_last_update {
     
     $now_offset || $self->throw("Trying to replace last update without a now-offset time\n");
     
-    my $last= $self->get_last_update;
+    my $last_offset= $self->get_last_update;
     my $sth = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
     $sth->execute();
     my $rowhash = $sth->fetchrow_arrayref();
@@ -948,12 +991,12 @@ sub replace_last_update {
     $sth = $self->prepare("insert into meta (last_update,donor_database_locator) values ('".$now_offset."','".$self->get_donor_locator."')");
     $sth->execute;
     
-    $sth = $self->prepare("select FROM_UNIXTIME(".$last.")");
+    $sth = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
     $sth->execute();
     $rowhash = $sth->fetchrow_arrayref();
-    $last = $rowhash->[0];
+    $last_offset = $rowhash->[0];
     
-    $sth = $self->prepare("delete from meta where last_update = '".$last."'");  
+    $sth = $self->prepare("delete from meta where last_update = '".$last_offset."'");  
     $sth->execute;
 
 }
@@ -1327,7 +1370,6 @@ sub write_Homol_Feature {
     return 1 if $id;
 
     my $rv = $self->write_Feature($feature,$analysisid,$contig);
-
 
     $self->throw("Writing homol feature to the database failed for contig " . $contigid . "\n") unless $rv;
 
