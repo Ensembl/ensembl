@@ -235,9 +235,7 @@ sub get_all_RepeatFeatures{
    my @repeats = 
      $self->adaptor->db->get_RepeatFeatureAdaptor()->fetch_by_Slice($self);
 
-   foreach my $repeat ( @repeats ) {
-       $repeat->transform_location($self->start);
-   }
+   
 
    return @repeats;
 }
@@ -681,6 +679,44 @@ sub get_Chromosome {
 
   return $ca->fetch_by_chrname($self->chr_name());
 }
+
+sub get_repeatmasked_seq {
+    my ($self) = @_;
+    my @repeats = $self->get_all_RepeatFeatures();
+    my $dna = $self->seq();
+    my $masked_dna = $self->mask_features($dna, @repeats);
+    my $masked_seq = Bio::PrimarySeq->new(   '-seq'        => $masked_dna,
+                                             '-display_id' => $self->id,
+                                             '-primary_id' => $self->id,
+                                             '-moltype' => 'dna',
+					     );
+    return $masked_seq;
+}
+
+
+sub mask_features {
+    my ($self, $dnastr,@repeats) = @_;
+    my $dnalen = length($dnastr);
+    #print "there are ".@repeats."\n";
+  REP:foreach my $f (@repeats) {
+      #print $f->start." ".$f->end." ".$f->repeat_id."\n";
+      my $start    = $f->start;
+      my $end	   = $f->end;
+      my $length = ($end - $start) + 1;
+      
+      if ($start < 0 || $start > $dnalen || $end < 0 || $end > $dnalen) {
+	  print STDERR "Eeek! Coordinate mismatch - start $start or  end $end not within $dnalen\n";
+	  next REP;
+      }
+      
+      $start--;
+      
+      my $padstr = 'N' x $length;
+      
+      substr ($dnastr,$start,$length) = $padstr;
+  }
+    return $dnastr;
+} 
 
 
 sub length {
