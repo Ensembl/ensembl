@@ -39,10 +39,10 @@ package Bio::EnsEMBL::DB::VirtualContigI;
 
 
 use strict;
-use Bio::EnsEMBL::DB::ContigI;
+use Bio::EnsEMBL::DB::RawContigI;
 use vars qw(@ISA);
 
-@ISA = qw(Bio::EnsEMBL::DB::ContigI);
+@ISA = qw(Bio::EnsEMBL::DB::RawContigI);
 
 =head2 extend_Contig
 
