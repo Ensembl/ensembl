@@ -440,7 +440,9 @@ sub fetch_all_by_Slice {
  }
 
   #place the results in an LRU cache
-  return $self->{'_slice_gene_cache'}{$slice->name} = \@out;
+  $self->{'_slice_gene_cache'}{$slice->name} = \@out;
+
+  return \@out;
 }
 
 
