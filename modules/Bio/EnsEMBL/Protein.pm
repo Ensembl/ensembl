@@ -1127,7 +1127,7 @@ sub get_all_DBLinks{
  my ($self) = @_;
  my @dbl = $self->annotation->each_DBLink();
 
- if (defined (@dbl)) {
+ if (@dbl) {
      return(@dbl);
    }
 
