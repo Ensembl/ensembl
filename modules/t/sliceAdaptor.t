@@ -5,11 +5,12 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 31;
+	plan tests => 36;
 }
 
 use MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
+use Bio::EnsEMBL::Slice;
 use TestUtils qw(test_getter_setter debug);
 
 our $verbose = 0;
@@ -226,4 +227,58 @@ foreach my $seg (@projection) {
   debug("$start-$end -> " . $slice->start . '-'. $slice->end . ' ' . $slice->seq_region_name);
 }
 
+#
+# test storing a couple of different slices
+#
+my $csa = $db->get_CoordSystemAdaptor();
+my $cs  = $csa->fetch_by_name('contig');
 
+$multi->save('core', 'seq_region', 'dna');
+
+my $len = 50;
+my $name = 'testregion';
+
+#
+# Store a slice with sequence
+#
+
+$slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
+                                  -SEQ_REGION_NAME => $name,
+                                  -START           => 1,
+                                  -END             => $len,
+                                  -STRAND          => 1); 
+
+
+my $seq   = 'A' x $len;
+
+
+
+$slice_adaptor->store($slice, \$seq);
+
+$slice = $slice_adaptor->fetch_by_region('contig', $name);
+
+ok($slice->length == $len);
+ok($slice->seq eq $seq);
+ok($slice->seq_region_name eq $name);
+
+#
+# Store a slice without sequence
+#
+
+$cs  = $csa->fetch_by_name('chromosome');
+
+$len = 50e6;
+$name = 'testregion2';
+$slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
+                                  -SEQ_REGION_NAME => $name,
+                                  -START           => 1,
+                                  -END             => $len,
+                                  -STRAND          => 1); 
+
+$slice_adaptor->store($slice);
+
+$slice = $slice_adaptor->fetch_by_region('chromosome', $name);
+ok($slice->length eq $len);
+ok($slice->seq_region_name eq $name);
+
+$multi->restore('core', 'seq_region', 'dna');
