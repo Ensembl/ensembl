@@ -20,7 +20,7 @@
 #-----------------------------------------------------------------------
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..12\n"; 
+BEGIN { $| = 1; print "1..14\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -133,8 +133,27 @@ else {
     print "not ok 12\n";
 }
 
+my @introns = $protein->each_Intron_feature();
+
+if ($introns[0]->feature1->start == 18) {
+    print "ok 13\n";
+}
+else {
+    print "not ok 13\n";
+}
 
 
+$protein->add_Protein_feature($introns[0]);
+
+my @features2 = $protein->each_Protein_feature();
+
+
+if (scalar @features2 == 3) {
+    print "ok 14\n";
+}
+else {
+    print "not ok 14\n";
+}
 
 my $rm = "rm seq_temp.swiss";
 
