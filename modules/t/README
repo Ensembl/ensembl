@@ -1,3 +1,24 @@
+This directory contains a set of tests for the EnsEMBL API
+modules. The test_genome.zip file contains the set of data 
+that is used by the tests.
 
-This is the EnsEMBL::* testing directory for a Perl test
-system
+In order to run the tests you must update the MultiTestDB.conf
+file with the information (username, host, etc.) for a mysql
+instance where you have write permission. Running test case(s)
+which require a database will automatically create and remove 
+a temporary database during the test(s) execution.
+
+To run multiple tests at once use the runtests.pl script in
+the modules directory.  To run a single test simply execute
+the .t file:
+
+Examples:
+
+#run all tests in the t directory
+perl runtests.pl t
+
+#run 3 tests
+perl runtests.pl t/gene.t t/exon.t t/densityFeature.t
+
+#run a single test
+perl t/gene.t
