@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 75;
+	plan tests => 87;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -364,3 +364,40 @@ foreach my $segment (@projection) {
 }
 
 ok($feature->display_id eq '');
+
+
+
+
+
+my $slice_adaptor = $db->get_SliceAdaptor();
+$slice = $slice_adaptor->fetch_by_region('chromosome', '20', 1e6, 10e6);
+
+$feature->slice($slice);
+
+###
+# test seq_region functions with forward strand slice
+#
+ok($feature->seq_region_start   == $feature->start + $slice->start - 1);
+ok($feature->seq_region_end     == $feature->end   + $slice->start - 1);
+ok($feature->seq_region_strand  == $feature->strand);
+ok($feature->seq_region_name    eq $slice->seq_region_name());
+
+
+#####
+# test seq_region functions with reverse strand slice
+#
+$slice = $slice->invert();
+$feature->slice($slice);
+ok($feature->seq_region_start   == $slice->end() - $feature->end() + 1);
+ok($feature->seq_region_end     == $slice->end() - $feature->start() + 1);
+ok($feature->seq_region_strand  == $feature->strand() * -1);
+ok($feature->seq_region_name    eq $slice->seq_region_name());
+
+##### 
+# test seq_region functions with no slice
+#
+$feature->slice(undef);
+ok(!defined($feature->seq_region_start));
+ok(!defined($feature->seq_region_end));
+ok(!defined($feature->seq_region_strand));
+ok(!defined($feature->seq_region_name));
