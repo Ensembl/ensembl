@@ -257,6 +257,137 @@ sub get_all_SimilarityFeatures_above_score{
     return @features;
 }
 
+
+
+=head2 get_all_SimilarityFeatures_above_pid
+
+ Title   : get_all_SimilarityFeatures_above_pid
+ Usage   : foreach my $sf ( $contig->get_all_SimilarityFeatures_above_pid(analysis_type, pid) ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_SimilarityFeatures_above_pid{
+    my ($self, $pid) = @_;
+    
+    $self->throw("Must supply pid parameter") unless $pid;
+    
+    my $glob_start=$self->_global_start;
+    my $glob_end=$self->_global_end;
+    my $chr_name=$self->_chr_name;
+    
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
+    
+
+    # this needs to be rewritten properely EB
+       
+
+    my $statement = "SELECT ".
+      "f.id,
+   if(s.raw_ori=1,(f.seq_start-s.raw_start+s.chr_start),(s.chr_start+s.raw_end-f.seq_start)),
+   if(s.raw_ori=1,(f.seq_end  -s.raw_start+s.chr_start),(s.chr_start+s.raw_end-f.seq_end)),
+   f.strand*s.raw_ori,
+   f.score,f.analysis, f.name, f.hstart, f.hend, f.hid
+               FROM feature f, static_golden_path s 
+               WHERE f.perc_id > $pid 
+               AND   s.raw_id  = f.contig
+               AND NOT (s.chr_start > $glob_end) 
+               AND NOT (s.chr_end < $glob_start) 
+               AND   f.seq_start > s.raw_start 
+               AND   f.seq_end   < s.raw_end
+               AND   s.chr_name  = '$chr_name'";
+
+
+    #my    $statement = "SELECT f.id, f.seq_start+s.chr_start,f.seq_end+s.chr_start, 
+    #                           f.strand, f.score,f.analysis, f.name, f.hstart, f.hend, f.hid,
+    #                           s.chr_start,s.chr_end,s.raw_ori
+#		        FROM   feature f, static_golden_path s
+#                        WHERE  f.perc_id > $pid  
+#                        AND    s.raw_id = f.contig
+#                        AND    s.chr_end >= $glob_start 
+#		        AND    s.chr_start <=$glob_end 
+#		        AND    s.chr_name='$chr_name'";
+    
+    my  $sth = $self->dbobj->prepare($statement);    
+    $sth->execute(); 
+
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,
+		       \$name,\$hstart,\$hend,\$hid);
+
+
+    my @array;
+    my %analhash;
+    my $out;
+    
+  FEATURE: while($sth->fetch) {
+      my $out;
+      my $analysis;
+
+#      if( $hid eq 'YU20_HUMAN' ) {
+#	print "PID get... Got feature with $start $end and $strand\n";
+#      }
+
+      # clip and map to vc coordinates
+
+      if ($start>=$glob_start && $end<=$glob_end){
+
+    	$start=$start-$glob_start;
+    	$end=$end-$glob_start;
+
+	# create features
+
+	  if (!$analhash{$analysisid}) 
+	  {
+	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	      $analysis = $feature_obj->get_Analysis($analysisid);
+	      $analhash{$analysisid} = $analysis;	   
+	  } 
+	  else {$analysis = $analhash{$analysisid};}
+	  
+	  if( !defined $name ) {
+	      $name = 'no_source';
+	  }
+	  $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+	  $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
+	  $out->analysis    ($analysis);
+	  $out->id          ($hid);              
+	   
+#	  $out = new Bio::EnsEMBL::SeqFeature;
+	  $out->seqname   ($self->id);
+	  $out->start     ($start);
+	  $out->end       ($end);
+	  $out->strand    ($strand);
+	  $out->source_tag($name);
+	  $out->primary_tag('similarity');
+	  $out->id         ($hid);
+	  
+	  if( defined $f_score ) {
+	      $out->score($f_score);
+	  }
+	  $out->analysis($analysis);
+	  
+	  $out->validate();
+
+      #if( $hid eq 'YU20_HUMAN' ) {
+#	print "PID get... pushing feature with $start $end and $strand\n";
+#      }
+
+
+	  push(@array,$out);       
+      }
+  }
+
+    return @array;
+}
+
+
+
 =head2 get_all_RepeatFeatures
 
  Title   : get_all_RepeatFeatures
