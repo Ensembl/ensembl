@@ -582,9 +582,15 @@ if ($organism eq "drosophila") {
 	}
 
 	#Here we get CG accession numbers ($cg) corresponding to gene_stable_id in Ensembl, get all of the translation internal ids for the given entry
+	my $query = qq{
+                       SELECT  tl.translation_id
+                       FROM transcript ts, translation tl, gene_stable_id gsi
+                       WHERE gsi.gene_id = ts.gene_id
+                       AND   ts.transcript_id = tl.transcript_id
+                       AND   gsi.stable_id = '$cg'
+                      };
 
-	my $query = "select t.translation_id from transcript t, gene_stable_id g where g.gene_id = t.gene_id and g.stable_id = '$cg'";
-	my $sth = $db->prepare($query);
+	my $sth = $db->dbc()->prepare($query);
 	$sth->execute();
 
 	while (my $trans_id = $sth->fetchrow) {
