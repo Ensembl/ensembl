@@ -11,6 +11,10 @@ use StatMsg;
 use Deletion;
 use Insertion;
 use Transcript;
+use StatLogger;
+use StatMsg;
+
+use Utils qw(print_exon print_coords print_translation);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
 
@@ -20,7 +24,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
   my ($hhost, $hdbname, $huser, $hpass, $hport, $hassembly, #human vars
       $hchromosome, $hstart, $hend,
       $chost, $cdbname, $cuser, $cpass, $cport, $cassembly, #chimp vars
-      $help, $verbose);
+      $help, $verbose, $logfile);
 
   GetOptions('hhost=s'   => \$hhost,
              'hdbname=s' => \$hdbname,
@@ -37,6 +41,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
              'cpass=s'   => \$cpass,
              'cport=i'   => \$cport,
              'cassembly=s' => \$cassembly,
+             'logfile=s' => \$logfile,
              'help'      => \$help,
              'verbose'   => \$verbose);
 
@@ -74,6 +79,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
      -port    => $cport);
 
 
+  StatMsg::set_logger(StatLogger->new($logfile));
+
   $human_db->dnadb($chimp_db);
 
   my $slice_adaptor   = $human_db->get_SliceAdaptor();
@@ -109,6 +116,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
   my $mapper = $asmap_adaptor->fetch_by_CoordSystems($chimp_cs, $human_cs);
 
 
+  my $total_transcripts = 0;
+
   foreach my $slice (@$slices) {
 
     info("Chromosome: " . $slice->seq_region_name());
@@ -123,23 +132,71 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
       foreach my $transcript (@$transcripts) {
         next if(!$transcript->translation); #skip pseudo genes
 
+        print ++$total_transcripts, "\n";
+
         my $interim_transcript = transfer_transcript($transcript, $mapper,
                                                      $human_cs);
         my $finished_transcripts =
           create_transcripts($interim_transcript, $slice_adaptor);
 
+        my $transcript_count = @$finished_transcripts;
+        my $translation_count = 0;
+        my $stop_codons_count = 0;
+
+        if($transcript_count > 1) {
+          StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::SPLIT);
+        }
+        elsif($transcript_count== 0) {
+          StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::NO_SEQUENCE_LEFT);
+        }
+
         foreach my $ftrans (@$finished_transcripts) {
           if($ftrans->translation()) {
+            $translation_count++;
             my $pep = $ftrans->translate->seq();
+
             print STDERR "\n\n$pep\n\n";
+
+            if($pep =~ /\*/) {
+              $stop_codons_count++;
+            }
 
             # sanity check, if translation is defined we expect a peptide
             if(!$pep) {
-              dump_translation($ftrans->translation());
+              print_translation($ftrans->translation());
               throw("Unexpected Translation but no peptide");
             }
           } else {
             print STDERR "NO TRANSLATION LEFT\n";
+          }
+        }
+
+        # If there were stop codons in one of the split transcripts
+        # report it. Report it as 'entire' if all split transcripts had
+        # stops.
+        if($stop_codons_count) {
+          my $code = StatMsg::TRANSCRIPT | StatMsg::DOESNT_TRANSLATE;
+          if($stop_codons_count == $translation_count) {
+            $code |= StatMsg::ENTIRE;
+          } else {
+            $code |= StatMsg::PARTIAL;
+          }
+          StatMsg->new($code);
+        }
+
+        if(!$translation_count) {
+          StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::NO_CDS_LEFT);
+        }
+
+        if($translation_count) {
+          if($stop_codons_count) {
+            if($translation_count > $stop_codons_count) {
+              StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::TRANSLATES |
+                          StatMsg::PARTIAL);
+            }
+          } else {
+            StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::TRANSLATES |
+                         StatMsg::ENTIRE);
           }
         }
       }
@@ -147,43 +204,6 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
   }
 }
 
-sub dump_translation {
-  my $tl = shift;
-
-  print STDERR "TRANSLATION\n";
-
-  if(!$tl) {
-    print STDERR "  undef\n";
-    return;
-  }
-
-  if($tl->start_Exon()) {
-    print STDERR "  start exon = ", $tl->start_Exon->stable_id, "\n";
-  } else {
-    print STDERR "  start exon = undef\n";
-  }
-
-  if($tl->end_Exon()) {
-    print STDERR "  end exon = ", $tl->end_Exon->stable_id, "\n";
-  } else {
-    print STDERR "  end exon = undef\n";
-  }
-
-  if(defined($tl->start())) {
-    print STDERR "  start = ", $tl->start(), "\n";
-  } else {
-    print STDERR "  start = undef\n";
-  }
-
-  if(defined($tl->end())) {
-    print STDERR "  end = ", $tl->end(), "\n";
-  } else {
-    print STDERR "  end = undef\n";
-  }
-
-
-  return;
-}
 
 
 ###############################################################################
@@ -372,6 +392,8 @@ sub get_coords_extent {
 
   my $stat_code = StatMsg::EXON;
 
+  #print_coords($coords);
+
   foreach my $c (@$coords) {
     next if($c->isa('Bio::EnsEMBL::Mapper::Gap'));
 
@@ -520,5 +542,7 @@ EOF
 
   exit;
 }
+
+
 
 

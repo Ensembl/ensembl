@@ -12,23 +12,24 @@ package Transcript;
 
 use StatMsg;
 use InterimTranscript;
+use Utils qw(print_exon);
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Exon;
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw info);
 
 #
 # Sets the phases of the interim exons in an interim transcript
 # failed exons are skipped completely.
 #
 # Note that the phases of the original exon are ignored, so there is a
-# possibility of bad translations when the original start exon had a non-zero 
+# possibility of bad translations when the original start exon had a non-zero
 # start phase.
 #
 
 sub set_iexon_phases {
   my $itranscript = shift;
 
-  debug("setting exon phases for : " . $itranscript->stable_id());
+  info("setting exon phases for : " . $itranscript->stable_id());
 
   my @iexons = @{$itranscript->get_all_Exons()};
 
@@ -119,7 +120,7 @@ sub check_iexons {
   my $transcript_seq_region = undef;
   my $transcript_strand     = undef;
 
-  debug("checking exons for : " . $itranscript->stable_id());
+  info("checking exons for : " . $itranscript->stable_id());
 
   my $first = 1;
 
@@ -133,7 +134,7 @@ sub check_iexons {
     # when one of them is fatal?
     #
     if ($iexon->fail() || $iexon->is_fatal()) {
-      debug("  failed/fatal exon, splitting transcript");
+      info("  failed/fatal exon, splitting transcript");
 
       # split this transcript in two, and restart the processing
       # at the beginning of the second transcript
@@ -170,7 +171,7 @@ sub check_iexons {
       $transcript_seq_region = $iexon->seq_region();
     } elsif ($transcript_seq_region ne $iexon->seq_region()) {
 
-      debug("  scaffold span, splitting transcript");
+      info("  scaffold span, splitting transcript");
 
       my $stat_msg = StatMsg->new(StatMsg::TRANSCRIPT|StatMsg::SCAFFOLD_SPAN);
       $itranscript->add_StatMsg($stat_msg);
@@ -193,7 +194,7 @@ sub check_iexons {
        (defined($prev_start) && $iexon->strand() == -1 &&
         $prev_start < $iexon->end())) {
 
-      debug("  inversion, splitting transcript");
+      info("  inversion, splitting transcript");
 
       my $stat_msg = StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::INVERT);
       $itranscript->add_StatMsg($stat_msg);
@@ -214,7 +215,7 @@ sub check_iexons {
     if (!defined($transcript_strand)) {
       $transcript_strand = $iexon->strand();
     } elsif ($transcript_strand != $iexon->strand()) {
-      debug("  strand flip, splitting transcript");
+      info("  strand flip, splitting transcript");
       my $stat_msg = StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::STRAND_FLIP);
       $itranscript->add_StatMsg($stat_msg);
 
@@ -239,7 +240,7 @@ sub check_iexons {
   if ($total_exons > 0) {
     push @$itranscript_array, $itranscript;
   } else {
-    debug("  no exons left in transcript");
+    info("  no exons left in transcript");
   }
 
   return $itranscript_array;
@@ -272,9 +273,9 @@ sub split_itrans {
 
   # all the exons until the 'bad exon' are loaded into the first transcript
 
-   debug("==FIRST TRANSCRIPT:\n");
+  info("==FIRST TRANSCRIPT:\n");
   while($cur_exon && $cur_exon != $bad_exon) {
-     print_exon($cur_exon);
+    print_exon($cur_exon);
     push @first_exons, $cur_exon;
     $first_trans->add_Exon($cur_exon);
     $cur_exon = shift(@remaining_exons);
@@ -284,8 +285,8 @@ sub split_itrans {
     throw("unexpected: could not find bad exon in transcript");
   }
 
-   debug("==BAD EXON: ". (($keep_exon) ? 'keeping' : 'discarding'));
-   print_exon($bad_exon);
+  info("==BAD EXON: ". (($keep_exon) ? 'keeping' : 'discarding'));
+  print_exon($bad_exon);
 
   # keep the 'bad exon' if the flag was set
   if($keep_exon) {
@@ -294,9 +295,9 @@ sub split_itrans {
 
   # the remaining exons are reloaded into the second (original) transcript
   $itrans->flush_Exons();
-   debug("==SECOND TRANSCRIPT:\n");
+  info("==SECOND TRANSCRIPT:\n");
   foreach my $exon (@remaining_exons) {
-     print_exon($exon);
+    print_exon($exon);
     $itrans->add_Exon($exon);
   }
 
@@ -337,7 +338,7 @@ sub split_itrans {
     my $cdna_shift = 0;
     foreach my $ex (@first_exons) {
       $cdna_shift += $ex->length();
-      # debug("cdna_shift = $cdna_shift\n");
+      info("cdna_shift = $cdna_shift\n");
     }
 
     # if we threw away the 'bad' exon we want to take into account
@@ -348,8 +349,7 @@ sub split_itrans {
       $cdna_shift += $bad_exon->length();
     }
 
-    # debug("Shifting CDNA of second transcript by $cdna_shift\n");
-    # debug("First exon (2nd trans) cdna_start = ".$remaining_exons[0]->cdna_start()."\n");
+    info("Shifting CDNA of second transcript by $cdna_shift\n");
 
     if($cdna_shift) {
       foreach my $ex (@remaining_exons) {
@@ -386,7 +386,7 @@ sub make_Transcript {
   my $transcript = Bio::EnsEMBL::Transcript->new();
   $transcript->stable_id($itrans->stable_id);
 
-  # debug("making final transcript for ". $itrans->stable_id);
+  info("making final transcript for ". $itrans->stable_id);
 
   my $translation;
 
@@ -412,13 +412,9 @@ sub make_Transcript {
        -STABLE_ID => $iexon->stable_id(),
        -SLICE     => $slice);
 
-    #print STDERR "Adding exon " . $exon->stable_id . " to final transcript\n";
     $transcript->add_Exon($exon);
 
-    #
     # see if this exon is the start or end exon of the translation
-    #
-
     if ($translation) {
       if ($iexon->cdna_start() <= $itrans->cdna_coding_start() &&
           $iexon->cdna_end()   >= $itrans->cdna_coding_start()) {
@@ -430,13 +426,6 @@ sub make_Transcript {
 
       if ($iexon->cdna_start() <= $itrans->cdna_coding_end() &&
           $iexon->cdna_end()   >= $itrans->cdna_coding_end()) {
-        #debug("end exon=".$exon->stable_id()."\n".
-        #      "  ex_coding_start=".$iexon->cdna_start()."\n".
-        #      "  ex_coding_end=".$iexon->cdna_end()."\n".
-        #      "  start=".$iexon->start()."\n".
-        #      "  end=".$iexon->end()."\n".
-        #      "  transl_end = ".$itrans->cdna_coding_end());
-
         my $translation_end =
           $itrans->cdna_coding_end() - $iexon->cdna_start() + 1;
         $translation->end_Exon($exon);
@@ -465,49 +454,6 @@ sub make_Transcript {
   return $transcript;
 }
 
-sub print_exon {
-  my $exon = shift;
-  my $tr = shift;
-
-  if (!$exon) {
-    throw("Exon undefined");
-  }
-
-  print STDERR " ",$exon->stable_id, "\n";
-
-  print STDERR "  cdna_start = ",$exon->cdna_start(),"\n"
-    if(defined($exon->cdna_start()));
-
-  print STDERR "  cdna_end   = ", $exon->cdna_end(), "\n"
-    if(defined($exon->cdna_end()));
-
-  print STDERR "  start             = ". $exon->start() . "\n"
-    if(defined($exon->start()));
-
-  print STDERR "  end               = ". $exon->end() . "\n"
-    if(defined($exon->end()));
-
-  print STDERR "  strand            = ". $exon->strand() . "\n"
-    if(defined($exon->strand()));
-
-  if($exon->fail) {
-    print STDERR "  FAILED\n";
-  }
-
-  if($tr) {
-    print STDERR " TRANSCRIPT:\n";
-    print STDERR "  cdna_coding_start = ". $tr->cdna_coding_start() . "\n";
-    print STDERR "  cdna_coding_end   = ". $tr->cdna_coding_end(). "\n\n";
-  }
-
-  return;
-}
-
-
-sub debug {
-  my $msg = shift;
-  print STDERR $msg, "\n";
-}
 
 
 1;

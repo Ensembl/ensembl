@@ -37,11 +37,11 @@ sub is_fatal {
   foreach my $msg (@{$self->get_all_StatMsgs}) {
     foreach my $code (@FATAL) {
       if(($msg->code() & $code) == $code) {
-        info("Code is Fatal: ". StatMsg::code2str($msg->code()));
+        #info("Code is Fatal: ". StatMsg::code2str($msg->code()));
         return 1;
       }
     }
-    info("Code is NON fatal=". StatMsg::code2str($msg->code()));
+    #info("Code is NON fatal=". StatMsg::code2str($msg->code()));
   }
 
   return 0;
@@ -146,7 +146,7 @@ sub fail {
 
   if(@_) {
     my $fail = shift;
-    warning("Setting ".$self->stable_id." to failed.\n") if($fail);
+    #warning("Setting ".$self->stable_id." to failed.\n") if($fail);
     $self->{'fail'} = $fail;
   }
 

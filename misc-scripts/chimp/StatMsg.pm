@@ -42,12 +42,20 @@ use constant MIDDLE                 => 0x00040000;
 
 use constant CONFUSED               => 0x00080000;
 use constant ALL_INTRON             => 0x00100000;
+use constant TRANSLATES             => 0x00200000;
+use constant SPLIT                  => 0x00400000;
+use constant NO_SEQUENCE_LEFT       => 0x00800000;
+use constant PARTIAL                => 0x01000000;
 
 use vars qw(@EXPORT_OK @ISA);
 
 @ISA = qw(Exporter);
 
 @EXPORT_OK = qw(&push_err &pop_err &ec2str);
+
+
+our $CUR_ID = 0;
+our $LOGGER = undef;
 
 
 sub new {
@@ -58,19 +66,52 @@ sub new {
     die("Status Code Argument is required.\n");
   }
 
-  return bless {'code' => $code}, $class;
+  my $sm = bless {'code' => $code, 'id' => $CUR_ID++}, $class;
+
+  if($LOGGER) {
+    $LOGGER->add_StatMsg($sm);
+  }
+
+  return $sm;
 }
 
+
+#
+# Sets a logger for stat msg logging
+# If set, every created StatMsg will be logged to a file
+# if undef, nothing will be logged.
+#
+sub set_logger {
+  my $logger = shift;
+  $LOGGER = $logger;
+}
+
+
+#
+# Unique id is given to each statmsg so that they can be distinguished.
+# Sometimes the same statmsg will be given to multiple exons and it is handy
+# to be able to tell the messages apart, for example.
+#
+sub id {
+  my $self = shift;
+  return $self->{'id'};
+}
+
+#
+# The code is a bitvector - a combination of bitwise or'd constants.
+#
 sub code {
   my $self = shift;
   return $self->{'code'};
 }
 
+#
+# Returns a human readible version of what the code of this statmsg means.
+#
 sub code_str {
   my $self = shift;
   return code2str($self->{'code'});
 }
-
 
 #
 # converts a code to a string
@@ -85,6 +126,9 @@ sub code2str {
   }
   if($code & ENTIRE) {
     $str .= ' entire';
+  }
+  if($code & PARTIAL) {
+    $str .= ' partial';
   }
   if($code & LONG) {
     $str .= ' long';
@@ -146,6 +190,16 @@ sub code2str {
   if($code & ALL_INTRON) {
     $str .= " consumed by frameshift intron";
   }
+  if($code & TRANSLATES) {
+    $str .= " translates";
+  }
+  if($code & SPLIT) {
+    $str .= " split";
+  }
+  if($code & NO_SEQUENCE_LEFT) {
+    $str .= " no sequence left";
+  }
+
 
   return "$str\n";
 }
