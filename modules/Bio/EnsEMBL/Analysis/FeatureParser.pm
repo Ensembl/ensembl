@@ -113,6 +113,7 @@ sub read_Similarities {
 	
 	MSP: foreach my $msp (@$msptype) {
 
+	    # This is not the way to filter which mspfiles are read :-)
 	    next MSP if ($msp->[0] eq "ce_p" || $msp->[0] eq "sh_p");
 
 	    my $mspfile        = "$clone_dir/$disk_id.$count".$msp->[4];

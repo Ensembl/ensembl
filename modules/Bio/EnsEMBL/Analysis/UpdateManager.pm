@@ -328,15 +328,7 @@ sub totime {
 	$self->{_totime} = $arg;
     } 
 
-<<<<<<< UpdateManager.pm
-    if (!defined($self->{_totime})) {
-	$self->{_totime} = time;
-    }
-
-    return $self->{_totime};
-=======
     return $self->{_totime} || time;
->>>>>>> 1.3
 }
 
 =head2 get_updated_objects
@@ -355,7 +347,7 @@ sub get_updated_objects {
     $self->throw("Can't connect to donor database") unless $fromdb;
 
     my @clones = $fromdb->get_updated_Clone_id($self->fromtime,$self->totime);
-    
+ 
     return @clones;
 }
 
@@ -410,7 +402,7 @@ sub update {
 
 
     my ($fdb,$tdb) = $self->check_update_status;
-    my $id         = $tdb ->start_update unless $self->nowrite;
+    my $id         = $tdb ->start_update($self->fromtime,$self->totime) unless $self->nowrite;
     my @clone_id   = $self->get_updated_objects($fdb);
 
     my $num_clones = scalar(@clone_id);
@@ -471,9 +463,9 @@ sub transfer_chunk {
     my ($self,$fromdb,$todb,$arcdb,@clones) = @_;
 
     foreach my $id (@clones) {
-	
+        my $object;
 	eval {
-	    my $object=$fromdb->get_Clone($id);
+	    $object=$fromdb->get_Clone($id);
 	    
 	    # Check if it is a clone object
 	    if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
