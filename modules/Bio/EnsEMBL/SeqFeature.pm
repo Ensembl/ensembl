@@ -585,7 +585,7 @@ sub seqname{
      if(defined $self->{_seqname}) {
        return $self->{_seqname};
      } elsif($seq && ref $seq && $seq->can('name')) {
-       $self->{_seqname} = $seq->name();
+       return $seq->name();
      }
    }
 
