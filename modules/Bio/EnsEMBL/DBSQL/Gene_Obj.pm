@@ -1040,61 +1040,63 @@ sub get_supporting_evidence {
     
     $instring = substr($instring,0,-2);
 
-    foreach my $exon (@exons) {
-
-	$exhash{$exon->id} = $exon;
-
    
-	my $statement = "select * from feature where contig in (" . $instring . ") and seq_start = " . $exon->start . " and seq_end = " . $exon->end;
+    my $statement = "select * from feature f,contig c where c.id in (" . $instring . ")";
+
     #my $statement = "select * from supporting_feature where exon in (" . $instring . ")";
-	print STDERR "going to execute... [$statement]\n";
+    print STDERR "going to execute... [$statement]\n";
+    
+    my $sth = $self->_db_obj->prepare($statement);
+    $sth->execute || $self->throw("execute failed for supporting evidence get!");
+    
+    my @features;
+    
+    while (my $rowhash = $sth->fetchrow_hashref) {
+	my $f1 = new Bio::EnsEMBL::SeqFeature;
+	my $f2 = new Bio::EnsEMBL::SeqFeature;
 	
-	my $sth = $self->_db_obj->prepare($statement);
-	$sth->execute || $self->throw("execute failed for supporting evidence get!");
+	my $f = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
+					      -feature2 => $f2);
 	
+#	    my $exon = $rowhash->{exon};
 	
-	
-	while (my $rowhash = $sth->fetchrow_hashref) {
-	    my $f1 = new Bio::EnsEMBL::SeqFeature;
-	    my $f2 = new Bio::EnsEMBL::SeqFeature;
-	    
-	    my $f = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
-						  -feature2 => $f2);
-	    
-	    my $exon = $rowhash->{exon};
-	    
 #	$f1->seqname($rowhash->{contig});
-	    $f1->seqname("Supporting_feature");
-	    $f1->start  ($rowhash->{seq_start});
-	    $f1->end    ($rowhash->{seq_end});
-	    $f1->strand ($rowhash->{strand});
-	    $f1->source_tag($rowhash->{name});
-	    $f1->primary_tag('similarity');
-	    $f1->score  ($rowhash->{score});
+	$f1->seqname("Supporting_feature");
+	$f1->start  ($rowhash->{seq_start});
+	$f1->end    ($rowhash->{seq_end});
+	$f1->strand ($rowhash->{strand});
+	$f1->source_tag($rowhash->{name});
+	$f1->primary_tag('similarity');
+	$f1->score  ($rowhash->{score});
+	
+	$f2->seqname($rowhash->{hid});
+	$f2->start  ($rowhash->{hstart});
+	$f2->end    ($rowhash->{hend});
+	$f2->strand ($rowhash->{strand});
+	$f2->source_tag($rowhash->{name});
+	$f2->primary_tag('similarity');
+	$f2->score  ($rowhash->{score});
+	
+	my $analysisid = $rowhash->{analysis};
+	
+	if ($anahash{$analysisid}) {
+	    $f->analysis($anahash{$analysisid});
 	    
-	    $f2->seqname($rowhash->{hid});
-	    $f2->start  ($rowhash->{hstart});
-	    $f2->end    ($rowhash->{hend});
-	    $f2->strand ($rowhash->{strand});
-	    $f2->source_tag($rowhash->{name});
-	    $f2->primary_tag('similarity');
-	    $f2->score  ($rowhash->{score});
-	    
-	    my $analysisid = $rowhash->{analysis};
-	    
-	    if ($anahash{$analysisid}) {
-		$f->analysis($anahash{$analysisid});
+	} else {
+	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+	    $f->analysis($feature_obj->get_Analysis($analysisid));
 		
-	    } else {
-		my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
-		$f->analysis($feature_obj->get_Analysis($analysisid));
-		
-		$anahash{$analysisid} = $f->analysis;
+	    $anahash{$analysisid} = $f->analysis;
+	}
+	
+	$f->validate;
+	push(@features,$f);
+    }
+    foreach my $exon (@exons) {
+	foreach my $f (@features) {
+	    if ($f->start == $exon->start && $f->end == $exon->end) {
+		$exon->add_Supporting_Feature($f);
 	    }
-	    
-	    $f->validate;
-	    
-	    $exon->add_Supporting_Feature($f);
 	}
     }
 
@@ -1138,8 +1140,8 @@ sub get_supporting_evidence_direct {
             AND f.contig = e.contig 
            AND e.id in ($list) 
            AND !(f.seq_end < e.seq_start OR f.seq_start > e.seq_end) 
-           AND f.strand = e.strand AND
-           f.analysis < 5}; # PL: why < 5 ? 
+	       AND f.strand = e.strand};
+#           f.analysis < 5}; # PL: why < 5 ? 
  # PL: query not checked thoroughly
     my $sth2=$self->_db_obj->prepare($query);
     $sth2->execute;
