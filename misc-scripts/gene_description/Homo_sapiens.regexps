@@ -1,8 +1,11 @@
 # regexp used for filter out useless description for Homo sapiens
 # add more as appropriate, line begining with # are supposed to be comments
 
+
+^MGC\d+\s+.*
 ^BA\S+\s+\(NOVEL PROTEIN\)\.?
 ^DJ\S+\s+\(NOVEL PROTEIN\)\.?
+^LOC\d+\s+.* 
 ^LOC\d+\s*(PROTEIN)?\.?
 ^ORF.*
 ^PROTEIN C\d+ORF\d+\.*
@@ -12,15 +15,19 @@
 [0-9A-Z]{10}RIK PROTEIN[ \.]
 R\d{5}_\d[ \.,].*
 PROTEIN KIAA\d+[ \.].*
+^SIMILAR TO RIKEN.*
 RIKEN CDNA [0-9A-Z]{10}[ \.]
 ^\(*HYPOTHETICAL\s+.*
 ^UNKNOWN\s+.*
 ^DKFZP[A-Z0-9]+\s+PROTEIN[\.;]?.*
+^FAMILY WITH SEQUENCE SIMILARITY.*
+^CHROMOSOME\s+.*\s+OPEN\s+READING\s+FRAME\s+.*
 ^CHROMOSOME\s+\d+\s+OPEN\s+READING\s+FRAME\s+\d+\.?.*
 ^FKSG\d+\.?.*
 ^HSPC\d+\s+PROTEIN\.?.*
 ^KIAA\d+\s+PROTEIN\.?.*
 ^KIAA\d+\s+GENE\s+PRODUCT\.?.*
+^KIAA\d+.*
 ^HSPC\d+.*
 ^PRO\d+\s+PROTEIN\.?.*
 ^PRO\d+\.?.*
@@ -28,6 +35,7 @@ RIKEN CDNA [0-9A-Z]{10}[ \.]
 ^PRED\d+\s+PROTEIN.*
 ^WUGSC:.*\s+PROTEIN\.?.*
 ^SIMILAR TO GENE.*
+^SIMILAR TO MOUSE.*
 ^SIMILAR TO PUTATIVE[ \.]
 ^SIMILAR TO HYPOTHETICAL.*
 ^SIMILAR TO (KIAA|LOC).*
