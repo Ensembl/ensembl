@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 42;
+	plan tests => 40;
 }
 
 use MultiTestDB;
@@ -118,28 +118,7 @@ ok($first_contig->clone->dbID == 26799);
 
 
 #
-# methods which may well become deprecated
-#
-# 26 get_internal_id_by_id
-#
-
-my $internal_name = 'AL390298.13.1.49208'; 
-my $internal_id = $raw_adaptor->get_internal_id_by_id($internal_name);
-ok($internal_id == 376992);
-
-
-#
-# 27 get_id_by_contig_id
-#
-
-my $contig_id = 317101;
-my $get_name = $raw_adaptor->get_id_by_contig_id($contig_id);
-ok($get_name eq 'AL031658.11.1.162976');
-
-
-
-#
-# 28-34 check out the store
+# 26-32 check out the store
 #
 
 # save the original state of the contig table
@@ -188,7 +167,7 @@ $multi->restore("core","contig","dna");
 
 
 #
-# 35-42 remove
+# 33-40 remove
 #
 
 # save the original state of the contig table
