@@ -1,17 +1,14 @@
 #
 # EnsEMBL module for Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor
 #
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
-#
-# Copyright Ewan Birney
+# Copyright (c) 2003 EnsEMBL
 #
 # You may distribute this module under the same terms as perl itself
 
-# POD documentation - main docs before the code
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor - Abstract Base class for 
+Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor - An Abstract Base class for all
                                           FeatureAdaptors
 
 =head1 SYNOPSIS
@@ -22,7 +19,7 @@ abstract methods must be performed by subclasses.
 =head1 DESCRIPTION
 
 This is a base adaptor for feature adaptors. This base class is simply a way
-of eliminating code duplication through the implementation of methods 
+of eliminating code duplication through the implementation of methods
 common to all feature adaptors.
 
 =head1 CONTACT
@@ -32,15 +29,17 @@ Contact EnsEMBL development list for info: <ensembl-dev@ebi.ac.uk>
 =cut
 
 package Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
-use vars qw(@ISA $SLICE_FEATURE_CACHE_SIZE);
+use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Cache;
+use Bio::EnsEMBL::Utils::Exception qw(warning throw);
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-$SLICE_FEATURE_CACHE_SIZE = 4;
+my $SLICE_FEATURE_CACHE_SIZE = 4;
 
 
 =head2 new
@@ -56,19 +55,20 @@ $SLICE_FEATURE_CACHE_SIZE = 4;
 =cut
 
 sub new {
-  my ($class, @args) = @_;
+  my $caller = shift;
 
-  my $self = $class->SUPER::new(@args);
+  my $class = ref($caller) || $caller;
 
-  #initialize caching data structures
-  $self->{'_slice_feature_cache'} = {};
+  my $self = $class->SUPER::new(@_);
 
-  tie(%{$self->{'_slice_feature_cache'}}, 
-      'Bio::EnsEMBL::Utils::Cache',
-      $SLICE_FEATURE_CACHE_SIZE);
+  #initialize an LRU cache
+  my %cache;
+  tie(%cache, 'Bio::EnsEMBL::Utils::Cache', $SLICE_FEATURE_CACHE_SIZE);
+  $self->{'_slice_feature_cache'} = \%cache;
 
   return $self;
 }
+
 
 =head2 generic_fetch
 
@@ -84,23 +84,25 @@ sub new {
   Caller     : BaseFeatureAdaptor, ProxyDnaAlignFeatureAdaptor::generic_fetch
 
 =cut
-  
+
 sub generic_fetch {
   my ($self, $constraint, $logic_name, $mapper, $slice) = @_;
-  
+
   my @tabs = $self->_tables;
   my $columns = join(', ', $self->_columns());
-  
+
+  my $db = $self->db();
+
   if($logic_name) {
     #determine the analysis id via the logic_name
-    my $analysis = 
-      $self->db->get_AnalysisAdaptor()->fetch_by_logic_name($logic_name);
-    unless(defined $analysis && $analysis->dbID() ) {
-      $self->warn("No analysis for logic name $logic_name exists\n");
+    my $an = $db->get_AnalysisAdaptor()->fetch_by_logic_name($logic_name);
+
+    if(!defined($an) || !$an->dbID()) {
+      warning("No analysis for logic name [$logic_name] exists\n");
       return [];
     }
-    
-    my $analysis_id = $analysis->dbID();
+
+    my $analysis_id = $an->dbID();
 
     #get the synonym for the primary table
     my $syn = $tabs[0]->[1];
@@ -110,7 +112,7 @@ sub generic_fetch {
     } else {
       $constraint = " ${syn}.analysis_id = $analysis_id";
     }
-  } 
+  }
 
   #
   # Construct a left join statement if one was defined, and remove the
@@ -122,18 +124,18 @@ sub generic_fetch {
   if($tablename && $condition) {
     while(my $t = shift @tabs) {
       if($tablename eq $t->[0]) {
-	my $syn = $t->[1]; 
-	$left_join =  "LEFT JOIN $tablename $syn $condition";
-	push @tables, @tabs;
-	last;
+        my $syn = $t->[1];
+        $left_join =  "LEFT JOIN $tablename $syn $condition";
+        push @tables, @tabs;
+        last;
       } else {
-	push @tables, $t;
+        push @tables, $t;
       }
     }
   } else {
     @tables = @tabs;
   }
-      
+
   #construct a nice table string like 'table1 t1, table2 t2'
   my $tablenames = join(', ', map({ join(' ', @$_) } @tables));
 
@@ -143,7 +145,7 @@ sub generic_fetch {
   my $final_clause = $self->_final_clause;
 
   #append a where clause if it was defined
-  if($constraint) { 
+  if($constraint) {
     $sql .= " where $constraint ";
     if($default_where) {
       $sql .= " and $default_where ";
@@ -155,9 +157,9 @@ sub generic_fetch {
   #append additional clauses which may have been defined
   $sql .= " $final_clause";
 
-  my $sth = $self->prepare($sql);
-  
-  $sth->execute;  
+  my $sth = $db->prepare($sql);
+
+  $sth->execute;
 
   return $self->_objs_from_sth($sth, $mapper, $slice);
 }
@@ -196,109 +198,7 @@ sub fetch_by_dbID{
 }
 
 
-=head2 fetch_all_by_RawContig_constraint
 
-  Arg [1]    : Bio::EnsEMBL::RawContig $contig
-               The contig object from which features are to be obtained
-  Arg [2]    : (optional) string $constraint
-               An SQL query constraint (i.e. part of the WHERE clause)
-  Arg [3]    : (optional) string $logic_name
-               the logic name of the type of features to obtain
-  Example    : $fs = $a->fetch_all_by_Contig_constraint($ctg,'perc_ident>5.0');
-  Description: Returns a listref of features created from the database which 
-               are on the contig defined by $cid and fulfill the SQL constraint
-               defined by $constraint. If logic name is defined, only features
-               with an analysis of type $logic_name will be returned. 
-  Returntype : listref of Bio::EnsEMBL::SeqFeature in contig coordinates
-  Exceptions : thrown if $cid is not defined
-  Caller     : general
-
-=cut
-
-sub fetch_all_by_RawContig_constraint {
-  my ($self, $contig, $constraint, $logic_name) = @_;
-  
-  unless( defined $contig ) {
-    $self->throw("fetch_by_Contig_constraint must have an contig");
-  }
-
-  unless( ref $contig && $contig->isa('Bio::EnsEMBL::RawContig')) {
-    $self->throw("contig argument is not a Bio::EnsEMBL::RawContig object\n");
-  }
-
-  my $cid = $contig->dbID();
-
-  #get the synonym of the primary_table
-  my @tabs = $self->_tables;
-  my $syn = $tabs[0]->[1];
-
-  if($constraint) {
-    $constraint .= " AND ${syn}.contig_id = $cid";
-  } else {
-    $constraint = "${syn}.contig_id = $cid";
-  }
-
-  return $self->generic_fetch($constraint, $logic_name);
-}
-
-
-=head2 fetch_all_by_RawContig
-
-  Arg [1]    : Bio::EnsEMBL::RawContig $contig 
-               the contig from which features should be obtained
-  Arg [2]    : (optional) string $logic_name
-               the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_all_by_RawContig($contig, 'wall');
-  Description: Returns a list of features created from the database which are 
-               are on the contig defined by $cid If logic name is defined, 
-               only features with an analysis of type $logic_name will be 
-               returned. 
-  Returntype : listref of Bio::EnsEMBL::*Feature in contig coordinates
-  Exceptions : none
-  Caller     : general
-
-=cut
-   
-sub fetch_all_by_RawContig {
-  my ( $self, $contig, $logic_name ) = @_;
-
-  return $self->fetch_all_by_RawContig_constraint($contig, '',$logic_name);
-}
-
-
-=head2 fetch_all_by_RawContig_and_score
-  Arg [1]    : Bio::EnsEMBL::RawContig $contig 
-               the contig from which features should be obtained
-  Arg [2]    : (optional) float $score
-               the lower bound of the score of the features to obtain
-  Arg [3]    : (optional) string $logic_name
-               the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_RawContig_and_score(1, 50.0, 'Swall');
-  Description: Returns a list of features created from the database which are 
-               are on the contig defined by $cid and which have score greater  
-               than score.  If logic name is defined, only features with an 
-               analysis of type $logic_name will be returned. 
-  Returntype : listref of Bio::EnsEMBL::*Feature in contig coordinates
-  Exceptions : thrown if $score is not defined
-  Caller     : general
-
-=cut
-
-sub fetch_all_by_RawContig_and_score{
-  my($self, $contig, $score, $logic_name) = @_;
-
-  my $constraint;
-
-  if(defined $score){
-    #get the synonym of the primary_table
-    my @tabs = $self->_tables;
-    my $syn = $tabs[0]->[1];
-    $constraint = "${syn}.score > $score";
-  }
-    
-  return $self->fetch_all_by_RawContig_constraint($contig, $constraint, 
-					       $logic_name);
-}
 
 
 =head2 fetch_all_by_Slice
@@ -385,89 +285,167 @@ sub fetch_all_by_Slice_and_score {
 sub fetch_all_by_Slice_constraint {
   my($self, $slice, $constraint, $logic_name) = @_;
 
-  unless(defined $slice && ref $slice && $slice->isa("Bio::EnsEMBL::Slice")) {
-    $self->throw("Slice arg must be a Bio::EnsEMBL::Slice not a [$slice]\n");
+  if(!defined($slice) || !ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
+    throw("Slice arg must be a Bio::EnsEMBL::Slice not a [$slice]\n");
   }
 
-  $logic_name = '' unless $logic_name;
-  $constraint = '' unless $constraint;
+  $logic_name ||= '';
+  $constraint ||= '';
 
   #check the cache and return if we have already done this query
-  my $key = uc(join($slice->name, $constraint, $logic_name));
-  return $self->{'_slice_feature_cache'}{$key} 
-    if $self->{'_slice_feature_cache'}{$key};
-    
-  my $slice_start  = $slice->chr_start();
-  my $slice_end    = $slice->chr_end();
-  my $slice_strand = $slice->strand();
-		 
-  my $mapper = 
-    $self->db->get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
+  my $key = uc(join(':', $slice->name, $constraint, $logic_name));
 
-  #get the list of contigs this slice is on
-  my @cids = 
-    $mapper->list_contig_ids( $slice->chr_name, $slice_start ,$slice_end );
-  
-  return [] unless scalar(@cids);
-
-  my $cid_list = join(',',@cids);
-
-  #get the synonym of the primary_table
-  my @tabs = $self->_tables;
-  my $syn = $tabs[0]->[1];
-
-  #construct the SQL constraint for the contig ids 
-  if($constraint) {
-    $constraint .= " AND ${syn}.contig_id IN ($cid_list)";
-  } else {
-    $constraint = "${syn}.contig_id IN ($cid_list)";
+  if(exists($self->{'_slice_feature_cache'}->{$key})) {
+    return $self->{'_slice_feature_cache'}->{$key};
   }
 
-  #for speed the remapping to slice may be done at the time of object creation
-  my $features = 
-    $self->generic_fetch($constraint, $logic_name, $mapper, $slice); 
-  
-  if(@$features && (!$features->[0]->can('contig') || 
-		    $features->[0]->contig == $slice)) {
-    #features have been converted to slice coords already, cache and return
-    return $self->{'_slice_feature_cache'}{$key} = $features;
+  my $slice_start  = $slice->start();
+  my $slice_end    = $slice->end();
+  my $slice_strand = $slice->strand();
+  my $slice_cs     = $slice->coord_system();
+  my $slice_seq_region = $slice->seq_region_name();
+
+  #get the synonym and name of the primary_table
+  my @tabs = $self->_tables;
+  my ($tab_name, $tab_syn) = @{$tabs[0]};
+
+  #find out what coordinate systems the features are in
+  my $csa = $self->db->get_CoordSystemAdaptor();
+  my @feat_css = @{$csa->fetch_all_by_feature_table($tab_name)};
+
+  my $asma = $self->db->get_AssemblyMapperAdaptor();
+  my @features;
+
+  # fetch the features from each coordinate system they are stored in
+  COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
+    my $mapper;
+    my @coords;
+    my @ids;
+
+    if($feat_cs->equals($slice_cs)) {
+      #no mapping is required if this is the same coord system
+
+      ### obtain seq_region_id of this slice from db somehow
+
+    } else {
+      my $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
+
+      # Get a list of coordinates and corresponding internal ids for the
+      # regions we are interested in
+      @coords = $mapper->map($slice_seq_region, $slice_start, $slice_end,
+                                $slice_strand, $slice_cs);
+
+      @coords = grep {!$_->isa('Bio::EnsEMBL::Mapper::Gap')} @coords;
+
+      next COORD_SYSTEM if(!@coords);
+
+      @ids = map {$_->id()} @coords;
+      @ids = @{$asma->seq_regions_to_ids(\@ids, $feat_cs)};
+
+    }
+
+    #if the regions are large and only partially spanned
+    #it is faster to to limit the query with start and end constraints
+    #however, it is difficult to tell if a region is large and only partially
+    #wanted. The easy approach is just to limit the queries if there are less
+    #than a certain number of regions. As well seperate queries are needed
+    #otherwise the indices will not be useful
+    if(@coords > 3) {
+      #do one query, and do not limit with start / end constraints
+      my $id_str = join(',', @ids);
+      $constraint .= " AND " if($constraint);
+      $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
+
+      my $fs = $self->generic_fetch($constraint, $logic_name, $mapper, $slice);
+
+      $fs = $self->_remap($fs, $mapper, $slice);
+
+      push @features, @$fs;
+
+    } else {
+      #do multiple queries using start / end constraints
+      my $len = @coords;
+      for(my $i = 0; $i < $len; $i++) {
+        $constraint .= " AND " if($constraint);
+        $constraint .= "${tab_syn}.seq_region_id = " . $ids[$i] ." AND " .
+                    "${tab_syn}.seq_region_start <= " . $coords[$i]->end() .
+                    "AND ${tab_syn}.seq_region_end >= " . $coords[$i]->start();
+        my $fs = $self->generic_fetch($constraint,$logic_name,$mapper,$slice);
+
+        $fs = $self->_remap($fs, $mapper, $slice);
+
+        push @features, @$fs;
+      }
+    }
+  }
+
+  $self->{'_slice_feature_cache'}->{$key} = \@features;
+
+  return \@features;
+}
+
+
+#
+# Given a list of features checks if they are in the correct coord system
+# by looking at the first feature slice.  If they 
+#
+sub _remap {
+  my ($self, $features, $mapper, $slice) = @_;
+
+  #check if any remapping is actually needed
+  if(@$features && (!$features->[0]->isa('Bio::EnsEMBL::Feature') ||
+                    $features->[0]->slice == $slice)) {
+    return $features;
   }
 
   #remapping has not been done, we have to do our own conversion from
-  # raw contig coords to slice coords
+  #to slice coords
 
-  my @out = ();
-  
-  my ($feat_start, $feat_end, $feat_strand); 
+  my @out;
+
+  my $slice_start = $slice->start();
+  my $slice_end   = $slice->end();
+  my $slice_strand = $slice->strand();
+  my $slice_cs    = $slice->coord_system();
+
+  my ($seq_region, $start, $end, $strand);
 
   foreach my $f (@$features) {
     #since feats were obtained in contig coords, attached seq is a contig
-    my $contig_id = $f->contig->dbID();
+    my $fslice = $f->slice();
+    my $fseq_region = $fslice->seq_region_name();
+    my $fcs = $fslice->coord_system();
 
-    my ($chr_name, $start, $end, $strand) = 
-      $mapper->fast_to_assembly($contig_id, $f->start(), 
-				$f->end(),$f->strand(),"rawcontig");
+    if(!$slice_cs->equals($fcs)) {
+      #slice of feature in different coord system, mapping required
 
-    # undefined start means gap
-    next unless defined $start;     
+      ($seq_region, $start, $end, $strand) =
+        $mapper->fastmap($fseq_region,$f->start(),$f->end(),$f->strand(),$fcs);
 
-    # maps to region outside desired area 
-    next if ($start > $slice_end) || ($end < $slice_start);  
-    
+      # undefined start means gap
+      next if(!defined $start);
+    } else {
+      $start  = $f->start();
+      $end    = $f->end();
+      $strand = $f->strand();
+    }
+
+    # maps to region outside desired area
+    next if ($start > $slice_end) || ($end < $slice_start);
+
     #shift the feature start, end and strand in one call
     if($slice_strand == -1) {
       $f->move( $slice_end - $end + 1, $slice_end - $start + 1, $strand * -1 );
     } else {
       $f->move( $start - $slice_start + 1, $end - $slice_start + 1, $strand );
     }
-    
-    $f->contig($slice);
-    
+
+    $f->slice($slice);
+
     push @out,$f;
   }
-  
-  #update the cache
-  return $self->{'_slice_feature_cache'}{$key} = \@out;
+
+  return \@out;
 }
 
 
@@ -514,12 +492,12 @@ sub remove {
   my ($self, $feature) = @_;
 
   unless($feature->can('dbID')) {
-    $self->throw("Feature [$feature] does not implement method dbID");
+    throw("Feature [$feature] does not implement method dbID");
   }
 
   unless($feature->dbID) {
-    $self->warn("BaseFeatureAdaptor::remove - dbID not defined - " .
-                "feature could not be removed");
+    warning("BaseFeatureAdaptor::remove - dbID not defined - " .
+            "feature could not be removed");
   }
 
   my @tabs = $self->_tables;
@@ -528,9 +506,10 @@ sub remove {
   my $sth = $self->prepare("DELETE FROM $table WHERE ${table}_id = ?");
   $sth->execute($feature->dbID());
 
-  #unset the feature dbID
-  $feature->dbID('');
-  
+  #unset the feature dbID ad adaptor
+  $feature->dbID(undef);
+  $feature->adaptor(undef);
+
   return;
 }
 
@@ -739,6 +718,48 @@ sub deleteObj {
   #flush feature cache
   %{$self->{'_slice_feature_cache'}} = ();
 }
+
+
+
+
+=head2 fetch_all_by_RawContig_constraint
+
+  Description: DEPRECATED use fetch_all_by_RawContig_constraint instead
+
+=cut
+
+sub fetch_all_by_RawContig_constraint {
+  my $self = shift;
+  deprecate('Use fetch_all_by_Slice_constraint() instead.');
+  return $self->fetch_all_by_slice_constraint(@_);
+}
+
+
+=head2 fetch_all_by_RawContig
+
+  Description: DEPRECATED use fetch_all_by_Slice instead
+
+=cut
+
+sub fetch_all_by_RawContig {
+  my $self = shift;
+  deprecate('Use fetch_all_by_Slice() instead.');
+  return $self->fetch_all_by_Slice(@_);
+}
+
+
+=head2 fetch_all_by_RawContig_and_score
+
+  Description: DEPRECATED use fetch_all_by_Slice_and_score instead
+
+=cut
+
+sub fetch_all_by_RawContig_and_score{
+  my $self = shift;
+  deprecate('Use fetch_all_by_Slice_and_score() instead.');
+  return $self->fetch_all_by_Slice_and_score(@_);
+}
+
 
 1;
 

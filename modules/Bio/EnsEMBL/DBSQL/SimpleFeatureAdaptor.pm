@@ -33,10 +33,6 @@ Internal methods are usually preceded with a _
 
 =cut
 
-
-# Let the code begin...
-
-
 package Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor;
 use vars qw(@ISA);
 use strict;
@@ -136,9 +132,9 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  return qw( sf.simple_feature_id 
-	     sf.contig_id sf.contig_start sf.contig_end sf.contig_strand
-	     sf.display_label sf.analysis_id score );
+  return qw( sf.simple_feature_id
+             sf.seq_region_id sf.seq_region_start sf.seq_region_end
+             sf.seq_region_strand sf.display_label sf.analysis_id sf.score );
 }
 
 
@@ -157,31 +153,38 @@ sub _columns {
 sub _objs_from_sth {
   my ($self, $sth) = @_;
 
-  my $aa = $self->db()->get_AnalysisAdaptor();  
-  my $rca = $self->db()->get_RawContigAdaptor();
+  my $db = $self->db();
+  my $aa = $db->get_AnalysisAdaptor();
+  my $slice_adaptor = $db->get_SliceAdaptor();
 
-  my @features = ();
-  
-  my $hashref;
-  while($hashref = $sth->fetchrow_hashref()) {
-    my $contig = $rca->fetch_by_dbID($hashref->{'contig_id'});
-    my $analysis = $aa->fetch_by_dbID($hashref->{'analysis_id'});
+  my @features;
+  my %slice_cache;
+  my %analysis_cache;
 
-    my $out = Bio::EnsEMBL::SimpleFeature->new();
-    $out->start($hashref->{'contig_start'});
-    $out->end($hashref->{'contig_end'});
-    $out->strand($hashref->{'contig_strand'});
-    $out->analysis($analysis);
-    $out->display_label($hashref->{'display_label'});
-    $out->attach_seq($contig); 
+  my($simple_feature_id,$seq_region_id, $seq_region_start, $seq_region_end,
+     $seq_region_strand, $display_label, $analysis_id, $score);
 
-    if($hashref->{'score'}) {
-      $out->score($hashref->{'score'});
-    }
-    
-    $out->dbID($hashref->{'simple_feature_id'});
+  $sth->bind_columns(\$simple_feature_id,\$seq_region_id, \$seq_region_start,
+                     \$seq_region_end, \$seq_region_strand, \$display_label,
+                     \$analysis_id, \$score);
 
-    push @features, $out;
+  while($sth->fetch()) {
+    my $slice = $slice_cache{$seq_region_id} ||=
+      $slice_adaptor->fetch_by_dbID($seq_region_id);
+
+    my $analysis = $analysis_cache{$analysis_id} ||=
+      $aa->fetch_by_dbID($analysis_id);
+
+    push @features, Bio::EnsEMBL::SimpleFeature->new
+      (-START => $seq_region_start,
+       -END   => $seq_region_end,
+       -STRAND => $seq_region_strand,
+       -SLICE => $slice,
+       -ANALYSIS => $analysis,
+       -ADAPTOR => $self,
+       -DBID => $simple_feature_id,
+       -DISPLAY_LABEL => $display_label,
+       -SCORE => $score);
   }
 
   return \@features;
