@@ -60,7 +60,7 @@ if [ ! -d databases/$p1 -a ! -f databases/$p1.done ]; then
   scp -c none -r ecs3:/mysqla/current/var/$p1 databases/
 fi
 if [ ! -f deltas/$d.txt ]; then
-  /usr/bin/time ./build.pl -c ./xdelta.osf -s databases -d deltas \\
+  /usr/bin/time perl ./build.pl -c ./xdelta.osf -s databases -d deltas \\
     $pair[0][0] $pair[0][1] $pair[1][1] 2>&1 | \\
     tee deltas/$d.txt
   rm -rf databases/$p0
