@@ -1506,11 +1506,11 @@ sub get_generic_features() {
   my %features = ();   # this will hold the results
 
   # get the adaptors for each feature
-  my %adaptors = %{$db->get_GenericFeatureAdaptors(@names)};
+  my $adaptors = $db->get_GenericFeatureAdaptors(@names);
 
-  foreach my $adaptor_name (keys(%adaptors)) {
+  foreach my $adaptor_name (keys(%$adaptors)) {
 		
-    my $adaptor_obj = %adaptors->{$adaptor_name};
+    my $adaptor_obj = $adaptors->{$adaptor_name};
     # get the features and add them to the hash
     my $features_ref = $adaptor_obj->fetch_all_by_Slice($self);
     # add each feature to the hash to be returned
