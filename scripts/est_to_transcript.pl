@@ -41,15 +41,17 @@ print STDERR "Using $locator for todb\n";
 my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 
 foreach my $est_id (@est) {
-    my $trans;
+    my @out;
     eval {
-	$trans=$db->gene_Obj->get_Transcript_by_est($est_id);
+	@out=$db->gene_Obj->get_Transcript_by_est($est_id);
     };
     if ($@) {
 	print STDERR "Could not get transcript for est $est_id\n Exception: $@";
     }
     else {
-	print STDERR "Got transcript ".$trans->id."\n";
+	foreach my $trans (@out) {
+	    print STDERR "Got transcript ".$trans->id." for est $est_id\n";
+	}
     }
 }
     

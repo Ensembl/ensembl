@@ -973,17 +973,18 @@ sub get_Transcript{
     
 sub get_Transcript_by_est{
     my ($self,$est_id) = @_;
-
+    my @out;
     my $seen=0;
     $est_id || $self->throw("You need to provide the accession number of the est to get a transcript!\n");
 
-    my $est = "gb|$est_id|$est_id";
+    my $est = "gb|$est_id%";
 
-    my $sth = $self->_db_obj->prepare("select distinct e_t.transcript from feature as f, exon as e,exon_transcript as e_t where f.hid='".$est."' and e.seq_start<=f.seq_start and e.seq_end >= f.seq_end and e.contig = f.contig and e_t.exon = e.id;");
+    my $sth = $self->_db_obj->prepare("select distinct e_t.transcript from feature as f, exon as e,exon_transcript as e_t where f.hid like '".$est."' and e.seq_start<=f.seq_start and e.seq_end >= f.seq_end and e.contig = f.contig and e_t.exon = e.id;");
     my $res = $sth->execute();
     my $transcript;
     while( my $rowhash = $sth->fetchrow_hashref) {
 	$transcript = $self->get_Transcript($rowhash->{'transcript'});
+	push @out, $transcript;
 	$seen = 1;
     }
     
@@ -991,7 +992,7 @@ sub get_Transcript_by_est{
 	$self->throw("Could not get transcript for est $est!");
     }
 
-    return $transcript;
+    return @out;
 }
 
 

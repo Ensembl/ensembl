@@ -43,16 +43,22 @@ my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 
 foreach my $clone_id ( @clone) {
     print STDERR "Deleting $clone_id\n";
-    my $clone = $db->get_Clone($clone_id);
-
+    my $clone;
+    eval {
+	$clone = $db->get_Clone($clone_id);
+    };
+    if ($@) {
+	print STDERR "Skipping clone $clone_id, not present in db!\n";
+	next;
+    }
     if( $do_gene == 1 ) {
 	my @genes = $clone->get_all_Genes();
 
 	foreach my $gene ( @genes ) {
+	    print STDERR "Deleting gene ".$gene->id."\n";
 	    $db->delete_Gene($gene->id());
 	}
     }
-
     $db->delete_Clone($clone_id);
     
 }
