@@ -848,7 +848,7 @@ sub get_all_SNPs {
   my $sa = $self->adaptor->db->get_SliceAdaptor;
 
   #retrieve a slice in the region of the transcript
-  my $slice = $sa->fetch_by_transcript_id($self->dbID, "coord system name?" );
+  my $slice = $sa->fetch_by_transcript_id($self->dbID, $flanking );
 
   #copy this transcript, so we can work in coord system we are interested in
   my $transcript = $self->transfer( $slice );
@@ -960,16 +960,7 @@ sub get_all_cdna_SNPs {
   my $slice = $sa->fetch_by_transcript_id($self->dbID);
 
   #copy this transcript, so we can work in coord system we are interested in
-  my $transcript = Bio::EnsEMBL::Transcript->new;
-  %$transcript = %$self;
-
-  #transform transcript to same coord system we will get snps in
-  my %exon_transforms;
-  foreach my $exon (@{$transcript->get_all_Exons}) {
-    my $new_exon = $exon->transform($slice);
-    $exon_transforms{$exon} = $new_exon;
-  }
-  $transcript->transform(\%exon_transforms);
+  my $transcript = $self->transfer($slice);
 
   foreach my $type (@cdna_types) {
     $snp_hash{$type} = [];
