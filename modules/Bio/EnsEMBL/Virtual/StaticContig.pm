@@ -2572,14 +2572,14 @@ sub _fill_cext_SimilarityFeature_cache{
 =cut
 
 sub get_all_coding_Snps{
-   my ($self) = @;
+   my ($self) = @_;
    my @snps;
    
    my $glob_start=$self->_global_start;
    my $glob_end=$self->_global_end;
    my $chr_name=$self->_chr_name;
    
-   my $query = "select e.exon, s.refsnpid, s.snp_chrom_start from ensembl_lite100.gene_exon as e, ensembl_lite100.gene_snp as s where e.gene_chrom_start >= $blob_start and e.gene_chrom_end <= $glob_end and e.chr_name = '$chr_name' and e.gene = s.gene and s.snp_chrom_start>e.exon_chrom_start and s.snp_chrom_start<e.exon_chrom_end";
+   my $query = "select e.exon, s.refsnpid, s.snp_chrom_start from ensembl_lite100.gene_exon as e, ensembl_lite100.gene_snp as s where e.gene_chrom_start >= $glob_start and e.gene_chrom_end <= $glob_end and e.chr_name = '$chr_name' and e.gene = s.gene and s.snp_chrom_start>e.exon_chrom_start and s.snp_chrom_start<e.exon_chrom_end";
 
    my $sth = $self->dbobj->prepare($query);
    $sth->execute;
