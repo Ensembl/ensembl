@@ -2799,7 +2799,7 @@ sub _crossdb {
 
 }
 
-## support for external adaptors
+## internal stuff for external adaptors
 =head2 _ext_adaptor
 
  Title   : _ext_adaptor
@@ -2807,6 +2807,7 @@ sub _crossdb {
  Function: 
  Returns : an adaptor or undef
  Args    : a name and a adaptor object. 
+
 =cut
 
 sub _ext_adaptor {
@@ -2822,19 +2823,28 @@ sub _ext_adaptor {
 }
 
 ## support for external adaptors
+=head2 list_ExternalAdaptors
+
+ Title   : list_ExternalAdaptors
+ Usage   : $obj->list_ExternalAdaptors
+ Function: returns all the names of installed external adaptors
+ Returns : a (possibly empty) list of name of external adaptors
+ Args    : none
+
+=cut
 
 sub list_ExternalAdaptors {
     my ($self) = @_;
     return keys % {$self->{_ext_adaptors}};
 }
 
-
 =head2 add_ExternalAdaptor
 
  Title   : add_ExternalAdaptor
  Usage   : $obj->add_ExternalAdaptor('family', $famAdaptorObj);
  Function: adds the external adaptor the internal hash of known 
-           external adaptors 
+           external adaptors. If an adaptor of the same name is installed, 
+           it will be overwritten.
  Returns : undef
  Args    : a name and a adaptor object. 
 
@@ -2843,16 +2853,42 @@ sub list_ExternalAdaptors {
 sub add_ExternalAdaptor {
     my ($self, $adtor_name, $adtor_obj) = @_;
     $self->_ext_adaptor($adtor_name, $adtor_obj);
+    undef;
 }
 
-sub remove_ExternalAdaptor {
-    my ($self, $adtor_name) = @_;
-    $self->_ext_adaptor($adtor_name, 'DELETE');
-}
+=head2 get_ExternalAdaptor
+
+ Title   : get_ExternalAdaptor
+ Usage   : $obj->get_ExternalAdaptor('family');
+ Function: retrieve external adaptor by name
+ Returns : an adaptor (sub-type of BaseAdaptor) or undef
+ Args    : the name 
+
+=cut
 
 sub get_ExternalAdaptor {
     my ($self, $adtor_name) = @_;
     $self->_ext_adaptor($adtor_name);
 }
+
+
+=head2 remove_ExternalAdaptor
+
+ Title   : remove_ExternalAdaptor
+ Usage   : $obj->remove_ExternalAdaptor('family')
+ Function: removes the named external adaptor from the internal hash of known 
+           external adaptors. If the adaptor name is not known, nothing 
+           happens. 
+ Returns : undef
+ Args    : a name
+
+=cut
+
+sub remove_ExternalAdaptor {
+    my ($self, $adtor_name) = @_;
+    $self->_ext_adaptor($adtor_name, 'DELETE');
+    undef;
+}
+
 
 1;
