@@ -966,7 +966,8 @@ sub add_supporting_features {
 		   "Bio::EnsEMBL::SeqFeatureI");
     } 
     
-    unless($self->contig()->name() eq $feature->contig->name()) {
+    unless($self->contig() && $feature->contig() && 
+	   $self->contig()->name() eq $feature->contig->name()) {
       $self->throw("Supporting feat not in same coord system as exon\n" .
 		   "exon is attached to [".$self->contig->name()."]\n" .
 		   "feat is attached to [".$feature->contig->name()."]");
