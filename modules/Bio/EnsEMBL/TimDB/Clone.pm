@@ -203,7 +203,7 @@ sub build_contigs {
 
 #	print(STDERR "[$key][$val]\n");
 
-	if($key=~/^$disk_id/){
+	if($key=~/^$disk_id\./){
 	    
 	    my($len,$checksum,$embl_offset,$embl_order,$international_id) = split(/,/,$val);
 	  
