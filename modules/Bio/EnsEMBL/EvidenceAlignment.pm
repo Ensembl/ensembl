@@ -53,6 +53,7 @@ use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::SeqIO;
+use Bio::Seq;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Root;
 
