@@ -21,76 +21,31 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..13\n"; 
+BEGIN { $| = 1; print "1..11\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBLoader;
-$loaded=1;
-print "ok \n";    # 1st test passed, loaded needed modules
-
-#Creating test overlap database
-
-$conf{'overlap'}      = 'testoverlap';
-$conf{'mysqladmin'} = '/mysql/current/bin/mysqladmin';
-$conf{'mysql'}      = '/mysql/current/bin/mysql';
-$conf{'user'}       = 'root';
-$conf{'perl'}       = 'perl';
-
-if ( -e 't/overlap.conf' ) {
-  print STDERR "Reading configuration from overlap.conf\n";
-  open(C,"t/overlap.conf");
-  while(<C>) {
-    my ($key,$value) = split;
-    $conf{$key} = $value;
-  }
-} else {
-  print STDERR "Using default values\n";
-  foreach $key ( keys %conf ) {
-    print STDERR " $key $conf{$key}\n";
-  }
-  print STDERR "\nPlease use a file t/overlap.conf to alter these values if the test fails\nFile is written <key> <value> syntax\n\n";
-}
-
-$nuser = $conf{user};
-
-my $create_overlap        = "$conf{mysqladmin} -u ".$nuser." create $conf{overlap}";
-
-system($create_overlap)   == 0 or die "$0\nError running '$create_overlap' : $!";
-
-print "ok 2\n";    #Databases created successfuly
-
-#Initialising databases
-my $init_overlap        = "$conf{mysql} -u ".$nuser." $conf{overlap} < ../sql/table.sql";
-
-system($init_overlap)     == 0 or die "$0\nError running '$init_overlap' : $!";
-
-print "ok 3\n";
-
-#Suck test data into db
-print STDERR "Inserting test data in test overlap db...\n";
-my $suck_data      = "$conf{mysql} -u ".$nuser." $conf{overlap} < t/overlap.dump";
-system($suck_data) == 0 or die "$0\nError running '$suck_data' : $!";
-
-print "ok 4\n";
-
-# Connect to test db
-
-my $db             = new Bio::EnsEMBL::DBSQL::Obj(-host   => 'localhost',
-						  -user   => $conf{user},
-						  -dbname => $conf{overlap}
-						 );
-
-die "$0\nError connecting to database : $!" unless defined($db);
-
-print "ok 5\n";
+use lib 't';
+use EnsTestDB;
+$loaded = 1;
+print "ok 1\n";    # 1st test passes.
+    
+my $ens_test = EnsTestDB->new();
+    
+# Load some data into the db
+$ens_test->do_sql_file("t/overlap.dump");
+    
+# Get an EnsEMBL db object for the test db
+my $db = $ens_test->get_DBSQL_Obj;
+print "ok 2\n";    
 
 my $contig = $db->get_Contig('contig1');
 
 die "$0\nError fetching contig1 : $!" unless defined ($contig);
 
-print "ok 6\n";
+print "ok 3\n";
 
 my $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
 						 -focusposition => 1,
@@ -100,22 +55,22 @@ my $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
 
 die ("$0\nCan't create virtual contig :$!") unless defined ($vc);
 
-print "ok 7\n";
+print "ok 4\n";
 
-$vc->_dump_map(\*STDERR);
+#$vc->_dump_map(\*STDERR);
 
 my $seq      = $vc->primary_seq;
 print STDERR "Sequence is [" .$seq->seq ."] Should be AAAACCCCTTGGGAAA\n";
 
 die "$0\nVirtual contig sequence " . $seq->seq . "does not equal AAAACCCCTTGGGAAA : $!" if ($seq->seq ne "AAAACCCCTTGGGAAA");
   
-print "ok 8\n";
+print "ok 5\n";
 
 
 if( $vc->length != $vc->primary_seq->length ) {
-   print "not ok 9\n";
+   print "not ok 6\n";
 } else {
-   print "ok 9\n";
+   print "ok 6\n";
 }
 
 $vc =  new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
@@ -125,13 +80,13 @@ $vc =  new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
 						 -right         => 2);
 
 if( $vc->length != $vc->primary_seq->length ) {
-   print "not ok 10\n";
+   print "not ok 7\n";
 } else {
-   print "ok 10\n";
+   print "ok 7\n";
 }
 
 
-my $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
+ $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
 						 -focusposition => 1,
 						 -ori           => 1,
 						 -left          => 20,
@@ -140,56 +95,54 @@ my $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
 
 @sf = $vc->get_all_SimilarityFeatures();
 if( $#sf == -1 ) {
-     print "not ok 11\n";
+     print "not ok 8\n";
 } else {
-  print "ok 11\n";
+  print "ok 8\n";
 }
 
 @sf = $vc->get_all_PredictionFeatures();
 if( $#sf == -1 ) {
-     print "not ok 12\n";
+     print "not ok 9\n";
 } else {
-  print "ok 12\n";
+  print "ok 9\n";
 }
 
 
 @sf = $contig->get_all_PredictionFeatures();
 if( $#sf == -1 ) {
-     print "not ok 13\n";
+     print "not ok 10\n";
 } else {
-  print "ok 13\n";
+  print "ok 10\n";
 }
 
-my $contig = $db->get_Contig('contig6');
-my $contig2 = $db->get_Contig('contig7');
+$contig = $db->get_Contig('contig6');
+$contig2 = $db->get_Contig('contig7');
 
 
 
-my $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
+$vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
 						 -focusposition => 4,
 						 -ori           => 1,
 						 -left          => 30,
 						 -right         => 30);
 
-$vc->_dump_map(\*STDOUT);
+
 
 @sf = $vc->get_all_SimilarityFeatures();
 $sf = shift @sf;
 @sf = $sf->sub_SeqFeature();
 $sf = shift @sf;
 
-print "On vc, sequence is ",$sf->seq->seq,"\n";
+;print "On vc, sequence is ",$sf->seq->seq,"\n";
 
 @sf = $contig2->get_all_SimilarityFeatures();
 $sf = shift @sf;
 @sf = $sf->sub_SeqFeature();
 $sf = shift @sf;
-print "On contig, sequence is ",$sf->seq->seq,"\n";
+#print "On contig, sequence is ",$sf->seq->seq,"\n";
 
-END {
-    my $drop_overlap        = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{overlap}";
-   system($drop_overlap)     == 0 or die "$0\nError running '$drop_overlap' : $!";
-}
+print "ok 11\n";
+
 
 
 

@@ -143,6 +143,11 @@ if ($ok == 28) {
 }
 else {
     print "not ok 7\n";
+    print STDERR "got $ok lines\n";
 }
+
+$db = 0;
+
+unlink("t/diff.sql");
 
 

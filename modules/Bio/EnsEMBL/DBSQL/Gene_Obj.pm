@@ -1374,7 +1374,7 @@ sub write_Transcript{
         $trans->version   
         );
 
-   print STDERR "Going to look at gene links\n";
+   #print STDERR "Going to look at gene links\n";
 
    foreach my $dbl ( $trans->each_DBLink ) {
        print STDERR "Going to insert for",$trans->id," ",$dbl->primary_id," ",$dbl->database,"\n";
@@ -1442,7 +1442,7 @@ sub get_NewId {
 
     #print(STDERR "max id is $id\n");
     
-    if ($id eq "") {
+    if (!defined $id || $id eq "") {
 	$id = $stub . "00000000000";
     }
     
