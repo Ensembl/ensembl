@@ -58,11 +58,12 @@ package Bio::EnsEMBL::Slice;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Root; #included for backwards compatibility
-use Bio::EnsEMBL::Tile; #included for backwards compatibility
-use Bio::EnsEMBL::Chromosome; #included for backwards compatibility
-use Bio::EnsEMBL::RawContig; #included for backwards compatibility
-use Bio::PrimarySeqI;# included only for backwards compatibility
+use Bio::EnsEMBL::Root; # included for backwards compatibility
+use Bio::EnsEMBL::Tile; # included for backwards compatibility
+use Bio::EnsEMBL::Chromosome; # included for backwards compatibility
+use Bio::EnsEMBL::RawContig; # included for backwards compatibility
+
+use Bio::PrimarySeqI;
 
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
@@ -73,8 +74,7 @@ use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 
 use Bio::EnsEMBL::ProjectionSegment;
 
-use Data::Dumper;
-#inheritance to Bio::EnsEMBL::Root will eventually be removed
+# inheritance to Bio::EnsEMBL::Root will eventually be removed
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
 
 
@@ -1702,6 +1702,73 @@ sub get_generic_features {
 }
 
 
+#
+# Bioperl Bio::PrimarySeqI methods:
+#
+
+=head2 id
+
+  Description: Included for Bio::PrimarySeqI interface compliance (0.7)
+
+=cut
+
+sub id { name(@_); }
+
+
+=head2 display_id
+
+  Description: Included for Bio::PrimarySeqI interface compliance (1.2)
+
+=cut
+
+sub display_id { name(@_); }
+
+
+=head2 primary_id
+
+  Description: Included for Bio::PrimarySeqI interface compliance (1.2)
+
+=cut
+
+sub primary_id { name(@_); }
+
+
+=head2 desc
+
+Description: Included for Bio::PrimarySeqI interface compliance (1.2)
+
+=cut
+
+sub desc{ return $_[0]->coord_system->name().' '.$_[0]->seq_region_name(); }
+
+
+=head2 moltype
+
+Description: Included for Bio::PrimarySeqI interface compliance (0.7)
+
+=cut
+
+sub moltype { return 'dna'; }
+
+=head2 alphabet
+
+  Description: Included for Bio::PrimarySeqI interface compliance (1.2)
+
+=cut
+
+sub alphabet { return 'dna'; }
+
+
+=head2 accession_number
+
+  Description: Included for Bio::PrimarySeqI interface compliance (1.2)
+
+=cut
+
+sub accession_number { name(@_); }
+
+
+
 
 # sub DEPRECATED METHODS #
 ###############################################################################
@@ -1709,8 +1776,6 @@ sub get_generic_features {
 =head1 DEPRECATED METHODS
 
 =cut
-
-
 
 =head2 get_all_supercontig_Slices
 
@@ -1756,74 +1821,7 @@ sub get_all_Genes_by_source {
 }
 
 
-=head2 id
 
-  Description: DEPRECATED use name() instead
-
-=cut
-
-sub id {
-  deprecate("Use name() instead");
-  name(@_);
-}
-
-
-
-=head2 display_id
-
-  Description: DEPRECATED use name() instead
-
-=cut
-
-
-sub display_id {
-  deprecate("Use name() instead");
-  name(@_);
-}
-
-
-=head2 desc
-
-  Description: DEPRECATED use name() instead
-
-=cut
-
-sub desc{
-  deprecate("Use name() instead");
-}
-
-=head2 moltype
-
-  Description: DEPRECATED do not use
-
-=cut
-
-sub moltype {
-  deprecate("Do not use this method");
-  return 'dna';
-}
-
-=head2 alphabet
-
-  Description: DEPRECATED do not use
-
-=cut
-
-sub alphabet {
-  deprecate("Do not use this method");
-  return 'dna';
-}
-
-=head2 accession_number
-
-  Description: DEPRECATED use name() instead
-
-=cut
-
-sub accession_number {
-  deprecate("Use name() instead");
-  name(@_);
-}
 
 =head2 get_Chromosome
 
