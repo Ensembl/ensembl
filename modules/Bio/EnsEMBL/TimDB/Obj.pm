@@ -650,10 +650,24 @@ sub get_id_acc{
     if(!$fok){
 	$self->throw("$id is not a valid sequence in this database");
     }
-    # in case chr is set to unk, set to unknown
-    if(!$chr || $chr eq 'unk'){$chr='unknown';}
+
+    # various chr data fixes
+    # data fix for chr (some data is stored in chr dbmfile as 05 instead of 5)
+    $chr=~s/^0+//;
+    # data fix for anything else
+    if($chr=~/^\d+$/){
+	if($chr<1 || $chr>22){
+	    # if doesn't fit allowed numerical ranges
+	    $chr='unknown';
+	}
+    }elsif($chr ne 'X' && $chr ne 'Y'){
+	# if doesn't fit allowed character values
+	$chr='unknown';
+    }
+
     # in case species is not defined, set to human
     if(!$species){$species='human';}
+
     # return $id = name in ensembl (determined by _byacc); $id2 = name on disk
     return $id,$id2,$cgp,$sv,$emblid,$htgsp,$chr,$species;
 }
