@@ -2,9 +2,9 @@ use lib 't';
 use strict;
 use warnings;
 
-BEGIN { $| = 1;  
+BEGIN { $| = 1;
 	use Test;
-	plan tests => 12;
+	plan tests => 31;
 }
 
 use MultiTestDB;
@@ -221,10 +221,70 @@ if($xref && $xref->isa('Bio::EnsEMBL::GoXref')) {
 }
 
 
-#
-# Need more tests here ...
-#
+#test the idxref mapping code a bit
+my $id_xref = Bio::EnsEMBL::IdentityXref->new
+  (-QUERY_IDENTITY    => 80.4,
+   -TARGET_IDENTITY   => 90.1,
+   -SCORE             => 100,
+   -EVALUE            => 1,
+   -CIGAR_LINE        => '10M5D10M5I10M',
+   -QUERY_START       => 1,
+   -QUERY_END         => 35,
+   -TRANSLATION_START => 10,
+   -TRANSLATION_END   => 45,
+   -ADAPTOR           => $dbEntryAdaptor);
+
+
+my $mapper = $id_xref->get_mapper();
+
+ok($mapper && ref($mapper) && $mapper->isa('Bio::EnsEMBL::Mapper'));
+
+my @coords = $mapper->map_coordinates('external_id', 10, 100, 1, 'external');
+
+ok(@coords == 5);
+
+ok($coords[0]->isa('Bio::EnsEMBL::Mapper::Coordinate'));
+ok($coords[0]->start() == 19);
+ok($coords[0]->end()   == 19);
+
+ok($coords[1]->isa('Bio::EnsEMBL::Mapper::Coordinate'));
+ok($coords[1]->start == 25);
+ok($coords[1]->end   == 34);
+
+ok($coords[2]->isa('Bio::EnsEMBL::Mapper::Gap'));
+ok($coords[2]->length == 5);
+
+ok($coords[3]->isa('Bio::EnsEMBL::Mapper::Coordinate'));
+ok($coords[3]->start == 35);
+ok($coords[3]->end == 44);
+
+ok($coords[4]->isa('Bio::EnsEMBL::Mapper::Gap'));
+ok($coords[4]->length == 65);
 
 
 
- 
+my $feature = Bio::EnsEMBL::Feature->new
+  (-START => 10,
+   -END   => 100,
+   -STRAND => 1,
+   -SEQNAME => 'SwisProtSeq');
+
+@coords = $id_xref->map_feature($feature);
+
+ok(@coords == 5);
+ok($coords[0]->isa('Bio::EnsEMBL::Mapper::Coordinate') &&
+   $coords[0]->start() == 19 &&
+   $coords[0]->end()   == 19);
+
+
+my $features = $id_xref->transform_feature($feature);
+
+ok(@$features == 3);
+
+ok($features->[0]->start == 19 &&
+   $features->[0]->end   == 19 &&
+   $features->[1]->start == 25 &&
+   $features->[1]->end   == 34 &&
+   $features->[2]->start == 35 &&
+   $features->[2]->end   == 44);
+
