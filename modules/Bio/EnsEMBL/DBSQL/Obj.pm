@@ -1165,7 +1165,8 @@ sub delete_Clone{
    my ($self,$clone_id) = @_;
    
    $clone_id || $self->throw ("Trying to delete clone without a clone_id\n");
-   
+   (ref($clone_id)) && $self->throw ("Passing an object reference instead of a variable\n");
+
    my @contigs;
    my @dnas;
    # get a list of contigs to zap
