@@ -135,9 +135,11 @@ sub AUTOLOAD {
   #update the symbol table so AUTOLOAD is not needed the next time
   #this method is called (faster this way)
   no strict 'refs';
+
+  
   *{$AUTOLOAD} = 
     sub {
-      my $self = shift;    
+      my ($self, @args) = @_;  
       return $self->_obj->$method(@args);
     };
   use strict 'refs';
