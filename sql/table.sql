@@ -413,12 +413,15 @@ CREATE TABLE symmetric_contig_pair_hit (
 CREATE TABLE symmetric_contig_feature (
   symcfid       int(10) unsigned NOT NULL auto_increment,
   symchid       int(10) NOT NULL,
-  rawcontigid   int(10) NOT NULL,
+  rawcontigid   varchar(40) NOT NULL,
+  rawversion    int(10) NOT NULL,
+  clone         varchar(40) NOT NULL,
   seq_start     int(10),
   seq_end       int(10),
   strand        int(2),
   PRIMARY KEY(symcfid),
-  KEY(rawcontigid,symchid),
+  KEY(clone,rawcontigid),
+  KEY(rawcontigid,rawversion,symchid),
   KEY(symchid)
 );
 
