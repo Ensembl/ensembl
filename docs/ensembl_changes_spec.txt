@@ -12,12 +12,6 @@ Many of the proposed alterations may need to be phased in over time or may
 never occur at all.
 
 
-REVISION HISTORY
-----------------
-
-Graham Mcvicker - July  9, 2003 - Created
-Graham McVicker - July 22, 2003 - Added Haplotype Spec.
-
 GOALS
 -----
 -A cleaner, more intuitive API
@@ -181,28 +175,25 @@ meta table.
 
 Meta information includes the following:
 
-  * The seq_region coordinate system of every type of feature stored in the
-    database.  Initially we will only allow for a single coordinate system
-    per table (e.g. all genes will have to be stored in the same coordinate 
-    system).  Eventually we may extend this to be allowed to store differing
-    coordinate systems in a single table. This information will be present in 
-    the meta table.
+  * The coordinate system that features of a given type are stored in.  This
+    information is stored in the meta_coord table and is used when constructing
+    queries for a particular feature table.
 
   * The top-level seq_region type (coordinate system). For human
     this would be 'chromosome'.  For briggsae this may be something like
     'scaffold' or 'super contig'.  This information would be used to construct
     the web display and would possibly be the default coordinate system when 
     a coordinate system is unspecified by a user. This is stored as a flag
-    in the coordinate system table.
+    in the coord_system table.
 
   * The default version of each coordinate system.  This is stored as a flag
-    in the coordinate system table.
+    in the coord_system table.
 
-  * The coordinate system where sequence is stored.  This will be stored as a
-    flag in the coordinate system table.  Initially it will only be possible
-    to have a single coordinate system in which sequence is stored.  This 
+  * The coord_system where sequence is stored.  This will be stored as a
+    flag in the coord_system table.  Initially it will only be possible
+    to have a single coord_system in which sequence is stored.  This 
     may be extended in the future to allow sequence to be stored for multiple
-    coordinate systems.
+    coord_systems.
 
   * The assembly relationships between coordinate systems.  For example  
     the clone, chromosome and nt_contig coordinate systems may all be 
@@ -219,7 +210,7 @@ Meta information includes the following:
    * The names of the allowable coordinate systems.  This would allow for 
      quick validation of API requests and provide a list that could be used
      by the website for coordinate system selection.  This information will be
-     stored in the coordinate system table.
+     stored in the coord_system table.
 
 
 API CHANGES
@@ -254,28 +245,35 @@ Slice
 
   The concept of an 'empty' slice will no longer exist.
 
-  The get_tiling_path method will have to be implemented differently for the
-  new system.  It will take a coord_system string as an argument and rather 
+  The get_tiling_path method will be deprecated in favour of a more general
+  method project().  Whereas get_tiling_path() implies a relationship between 
+  an assembly and the coordinate system which makes up the assembly the
+  project method will allow conversion accross any two coordinate systems.
+  It will take a coord_system string as an argument and rather 
   than returning a list of Tile objects it will return a listref of triplets 
   containing a start int, and end int, and a 'to' slice object.  The following 
   is an example of how this method would be used ($clone is a reference to a 
   slice object in the clone coordinate system):
 
-    my $clone_path = $slice->get_tiling_path('clone');
+    my $clone_path = $slice->project('clone');
 
-    foreach my $tile (@$clone_path) {
-      my ($start, $end, $clone) = @$tile;
+    foreach my $segment (@$clone_path) {
+      my ($start, $end, $clone) = @$segment;
       print $slice->seq_region_name, ':', $start, '-', $end , ' -> ',
             $clone->seq_region_name, ':', $clone->start, '-', $clone->end, 
             $clone->strand, "\n";
     }
 
-    An optional second argument to the get_tiling_path will be the version.
+    An optional second argument to project() will be the coordinate
+    system version.  E.g.:
+     $ncbi34_path = $slice->project('chromosome','NCBI34').
 
 
 Tile
 ----
-  The tile object will no longer be necessary.
+  The tile object will no longer be necessary.  However for backwards
+  compatibility it will remain in the system for some time before being phased
+  out along with the get_tiling_path method.
 
 
 SliceAdaptor
@@ -426,6 +424,9 @@ Root
     return bless {'start' => $start, 'end' => $end}, $class;
   }
 
+  The calls to $self->warn and $self->throw will be replaced by class method
+  calls to warning() and throw() inside the core API.  However for backwards
+  compatibility the existance inheritance to Bio::EnsEMBL::Root will remain.
 
 
 Storable Base Class
@@ -452,7 +453,7 @@ Features
     slice (formerly named contig/entire_seq/etc.)
     transform
     transfer
-    map
+    project
     
   The feature class would likely inherit from the Storable base class and
   thereby inherit the following methods:
@@ -494,7 +495,7 @@ Features
     NOT transform features in place but will rather return the newly 
     transformed feature as a new object:
     
-    transform(coord_system)
+    transform(coord_system, [version])
     -----------------------
       Takes a single string specifying the new coord system. If the coord
       system is not valid an exception is thrown. If the coord system is the
@@ -525,13 +526,18 @@ Features
       In place change of the coordinates of the feature. It will stay on the 
       same slice.
 
-    map(coord_system)
+    project(coord_system, [version])
     -----------------
-      Performs the mapping of a feature from one coordinate system to another
-      but rather than returning a feature a list of coordinate/gap objects is
-      returned. This enables people to construct their own mappings even if
-      the feature is split accross boundaries in a lower level coordinate
-      system.
+      This method is analagous to the project method on Bio::EnsEMBL::Slice.
+      It 'projects' a feature onto another coordinate system and returns the
+      results formatted as a listref of [$start, $end, $feature] triplets.
+      The $features returned are copies of the feature on which the method was
+      called, but with coordinates in the coordinate system that was projected
+      to.  If the feature maps entirely to a gap then an empty list ref [] will
+      be returned.  If the feature is mapped to multiple locations a listref
+      containing split features will be returned.
+
+      Note that in order to split some more complicated features this method         will have to be overridden (e.g. Genes, Transcripts, AlignFeatures).
  
 
 StickyExon
