@@ -81,7 +81,7 @@ sub fetch_by_dbID{
        $self->throw("fetch_by_dbID must have an id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id, p.score from dna_align_feature p where p.dna_align_feature_id = $id");
+   my $sth = $self->prepare("select d.contig_id,d.contig_start,d.contig_end,d.contig_strand,d.hit_start,d.hit_end,d.hit_strand,d.hit_name,d.cigar_line,d.analysis_id, d.score from dna_align_feature d where d.dna_align_feature_id = $id");
    $sth->execute();
 
    my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id, $score) = $sth->fetchrow_array();
@@ -98,7 +98,7 @@ sub fetch_by_dbID{
 
 }
 
-=head2 fetch_by_contig_id
+=head2 fetch_by_contig_id_and_constraint
 
  Title   : fetch_by_contig_id
  Usage   :
@@ -110,14 +110,19 @@ sub fetch_by_dbID{
 
 =cut
 
-sub fetch_by_contig_id{
-   my ($self,$cid) = @_;
+sub fetch_by_contig_id_and_constraint{
+   my ($self,$cid, $constraint) = @_;
 
    if( !defined $cid ) {
        $self->throw("fetch_by_contig_id must have an contig id");
    }
-
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id, p.score,p.perc_ident,p.evalue from dna_align_feature p where p.contig_id = $cid");
+   
+   my $sql = "select d.contig_id,d.contig_start,d.contig_end,d.contig_strand,d.hit_start,d.hit_end,d.hit_strand,d.hit_name,d.cigar_line,d.analysis_id, d.score,d.perc_ident,d.evalue from dna_align_feature d where d.contig_id = $cid";
+   if($constraint){
+     $sql .= " AND $constraint";
+   }
+   #print $sql."\n";
+   my $sth = $self->prepare($sql);
    $sth->execute();
 
    my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id, $score,$perc_ident,$evalue);
@@ -141,12 +146,188 @@ sub fetch_by_contig_id{
    return @f;
 }
 
+sub fetch_by_contig_id{
+  my ($self, $cid, $logic_name) = @_;
+  
+  my $analysis;
+  my $constraint = undef;
+ 
+  if($logic_name){
+    #print "fetching analysis obj as logic_name = ".$logic_name."\n";
+    my $aa = $self->db->get_AnalysisAdaptor($logic_name);
+    $analysis = $aa->fetch_by_logic_name($logic_name);
+    $constraint = " d.analysis_id = ".$analysis->dbID();
+  }
+  my @features = $self->fetch_by_contig_id_and_constraint($cid, $constraint);
 
+  return @features;
+}
+
+sub fetch_by_contig_id_and_score{
+  my($self, $cid, $score, $logic_name) = @_;
+
+  my $analysis;
+  my $constraint;
+  if(!$cid){
+    $self->throw("need a contig id or this won't work\n");
+  }  
+  if(!$score){
+    $self->throw("need a score even if its 0\n");
+  }else{
+    $constraint = "d.score > $score";
+  }
+  if($logic_name){
+   my $aa = $self->db->get_AnalysisAdaptor();
+   $analysis = $aa->fetch_by_logic_name($logic_name);
+   $constraint .= " and d.analysis_id = ".$analysis->dbID(); 
+  }
+
+  
+  my @features = $self->fetch_by_contig_id_and_constraint($cid, $constraint);
+  
+  return @features;
+
+}
+
+
+sub fetch_by_contig_id_and_pid{
+  my($self, $cid, $pid, $logic_name) = @_;
+
+  my $analysis;
+  my $constraint;
+  if(!$cid){
+    $self->throw("need a contig id or this won't work\n");
+  }  
+  if(!$pid){
+    $self->throw("need a pid even if its 0\n");
+  }else{
+    $constraint = "d.perc_ident > $pid";
+  }
+  if($logic_name){
+   my $aa = $self->db->get_AnalysisAdaptor();
+   $analysis = $aa->fetch_by_logic_name($logic_name);
+   $constraint .= " and d.analysis_id = ".$analysis->dbID(); 
+  }
+
+  
+  my @features = $self->fetch_by_contig_id_and_constraint($cid, $constraint);
+  
+  return @features;
+
+}
+
+
+sub fetch_by_Slice{
+  my($self, $slice, $logic_name) = @_;
+  my $constraint;
+  my $analysis;
+  if(!$slice){
+    $self->throw("need a slice to work\n");
+  }
+  unless ($slice->isa("Bio::EnsEMBL::Slice")) 
+        {
+            $self->throw("$slice isn't a slice");
+        }
+  if($logic_name){
+   my $aa = $self->db->get_AnalysisAdaptor();
+   $analysis = $aa->fetch_by_logic_name($logic_name);
+   $constraint .= " d.analysis_id = ".$analysis->dbID(); 
+  }
+  #print "fetching feature for chr ".$slice->chr_name." start ".$slice->chr_start." end ".$slice->chr_end." type ".$slice->assembly_type."\n"; 
+  my @features = $self->fetch_by_assembly_location_constraint($slice->chr_start,$slice->chr_end,$slice->chr_name,$slice->assembly_type, $constraint);
+  
+  my @out_f;
+  #print STDERR "started converting coordinates\n";
+  foreach my $f(@features){
+    #print STDERR "chr start = ".$f->start."\n";
+    #print STDERR "chr end = ".$f->end."\n"; 
+    my $start = ($f->start - ($slice->chr_start - 1));
+    my $end = ($f->end - ($slice->chr_start - 1));
+    #print STDERR "slice start = ".$start."\n";
+    #print STDERR "slice end = ".$end."\n";
+    my $out = $self->_new_feature($start,$end,$f->strand,$f->score,$f->hstart,$f->hend,$f->hstrand,$f->hseqname,$f->cigar_string,$f->analysis,$f->percent_id,$f->p_value,$f->seqname,undef);
+
+    push(@out_f, $out);
+  }
+ # print STDERR "finished converting cooridinate\n";
+  return @out_f;
+}
 
 sub fetch_by_Slice_and_score {
-  my ($self,$slice,$score) = @_;
+  my ($self,$slice,$score, $logic_name) = @_;
+  my $constraint;
+  my $analysis;
+  if(!$slice){
+    $self->throw("need a slice to work\n");
+  }
+  unless ($slice->isa("Bio::EnsEMBL::Slice")) 
+        {
+            $self->throw("$slice isn't a slice");
+        }
+  if(!$score){
+    $self->throw("need a score even if its 0\n");
+  }else{
+    $constraint .= "d.score > $score";
+  }
+  if($logic_name){
+   my $aa = $self->db->get_AnalysisAdaptor();
+   $analysis = $aa->fetch_by_logic_name($logic_name);
+   $constraint .= " and d.analysis_id = ".$analysis->dbID(); 
+  }
+  #print "constraint ".$constraint."\n";
+  my @features = $self->fetch_by_assembly_location_constraint($slice->chr_start,$slice->chr_end,$slice->chr_name,$slice->assembly_type, $constraint);
 
-  return $self->fetch_by_assembly_location_constraint($slice->chr_start,$slice->chr_end,$slice->chr_name,$slice->assembly_type," p.score > $score");
+  my @out_f;
+
+  foreach my $f(@features){
+    my $start = ($f->start - ($slice->chr_start - 1));
+    my $end = ($f->end - ($slice->chr_start - 1));
+
+    my $out = $self->_new_feature($start,$end,$f->strand,$f->score,$f->hstart,$f->hend,$f->hstrand,$f->hseqname,$f->cigar_string,$f->analysis,$f->percent_id,$f->p_value,$f->seqname,undef);
+
+    push(@out_f, $out);
+  }
+
+  return @out_f;
+
+}  
+
+sub fetch_by_Slice_and_pid {
+  my ($self,$slice,$pid, $logic_name) = @_;
+  my $constraint;
+  my $analysis;
+  if(!$slice){
+    $self->throw("need a slice to work\n");
+  }
+  unless ($slice->isa("Bio::EnsEMBL::Slice")) 
+        {
+            $self->throw("$slice isn't a slice");
+        }
+  if(!$pid){
+    $self->throw("need a pid even if its 0\n");
+  }else{
+    $constraint .= "d.perc_ident > $pid";
+  }
+  if($logic_name){
+   my $aa = $self->db->get_AnalysisAdaptor();
+   $analysis = $aa->fetch_by_logic_name($logic_name);
+   $constraint .= " and d.analysis_id = ".$analysis->dbID(); 
+  }
+  my @features = $self->fetch_by_assembly_location_constraint($slice->chr_start,$slice->chr_end,$slice->chr_name,$slice->assembly_type, $constraint);
+
+  my @out_f;
+
+  foreach my $f(@features){
+    my $start = ($f->start - ($slice->chr_start - 1));
+    my $end = ($f->end - ($slice->chr_start - 1));
+
+    my $out = $self->_new_feature($start,$end,$f->strand,$f->score,$f->hstart,$f->hend,$f->hstrand,$f->hseqname,$f->cigar_string,$f->analysis,$f->percent_id,$f->p_value,$f->seqname,undef);
+
+    push(@out_f, $out);
+  }
+
+  return @out_f;
+
 }  
 
 
@@ -163,15 +344,66 @@ sub fetch_by_Slice_and_score {
 =cut
 
 sub fetch_by_assembly_location{
-  my ($self,$start,$end,$chr,$type) = @_;
+  my ($self,$start,$end,$chr,$type, $logic_name) = @_;
   
   if( !defined $type ) {
     $self->throw("Assembly location must be start,end,chr,type");
   }
+  my $constraint = undef;
+  my $analysis;
+  if($logic_name){
+    my $aa = $self->db->get_AnalysisAdaptor();
+    $analysis = $aa->fetch_by_logic_name($logic_name);
+    $constraint = " d.analysis_id = ".$analysis->dbID();  
+  }
+  return $self->fetch_by_assembly_location_constraint($start,$end,$chr,$type,$constraint);
 
-  return $self->fetch_by_assembly_location_constraint($start,$end,$chr,$type,undef);
 }
 
+sub fetch_by_assembly_location_and_score{
+  my ($self,$start,$end,$chr,$type, $score, $logic_name) = @_;
+  my $constraint;
+  if( !defined $type ) {
+    $self->throw("Assembly location must be start,end,chr,type");
+  }
+  if(!$score){
+    $self->throw("need a score even if its 0\n");
+  }else{
+    $constraint .= "d.score > $score";
+  }
+
+  my $analysis;
+  if($logic_name){
+    my $aa = $self->db->get_AnalysisAdaptor();
+    $analysis = $aa->fetch_by_logic_name($logic_name);
+    $constraint .= " and d.analysis_id = ".$analysis->dbID();  
+  }
+  return $self->fetch_by_assembly_location_constraint($start,$end,$chr,$type,$constraint);
+
+}
+
+
+sub fetch_by_assembly_location_and_pid{
+  my ($self,$start,$end,$chr,$type, $pid, $logic_name) = @_;
+  my $constraint;
+  if( !defined $type ) {
+    $self->throw("Assembly location must be start,end,chr,type");
+  }
+  if(!$pid){
+    $self->throw("need a pid even if its 0\n");
+  }else{
+    $constraint .= "d.perc_ident > $pid";
+  }
+
+  my $analysis;
+  if($logic_name){
+    my $aa = $self->db->get_AnalysisAdaptor();
+    $analysis = $aa->fetch_by_logic_name($logic_name);
+    $constraint .= " and d.analysis_id = ".$analysis->dbID();  
+  }
+  return $self->fetch_by_assembly_location_constraint($start,$end,$chr,$type,$constraint);
+
+}
 
 =head2 fetch_by_assembly_location_constraint
 
@@ -186,21 +418,21 @@ sub fetch_by_assembly_location{
 =cut
 
 sub fetch_by_assembly_location_constraint{
-  my ($self,$start,$end,$chr,$type,$constraint) = @_;
-  
+  my ($self,$chr_start,$chr_end,$chr,$type,$constraint) = @_;
+  #print STDERR "started fetch_by assembly location\n";
   if( !defined $type ) {
     $self->throw("Assembly location must be start,end,chr,type");
   }
 
-  if( $start !~ /^\d/ || $end !~ /^\d/ ) {
-    $self->throw("start/end must be numbers not $start,$end (have you typed the location in the right way around - start,end,chromosome,type)?");
+  if( $chr_start !~ /^\d/ || $chr_end !~ /^\d/ ) {
+    $self->throw("start/end must be numbers not $chr_start,$chr_end (have you typed the location in the right way around - start,end,chromosome,type)?");
   }
   
   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
   
-  $mapper->register_region($chr,$start,$end);
+  $mapper->register_region($chr,$chr_start,$chr_end);
 
-  my @cids = $mapper->list_contig_ids($chr, $start ,$end);
+  my @cids = $mapper->list_contig_ids($chr, $chr_start ,$chr_end);
   
   # build the SQL
   
@@ -213,12 +445,12 @@ sub fetch_by_assembly_location_constraint{
 
   my $cid_list = join(',',@cids);
 
-  my $sql = "select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id,p.score,p.perc_ident,p.evalue from dna_align_feature p where p.contig_id in ($cid_list)";
+  my $sql = "select d.contig_id,d.contig_start,d.contig_end,d.contig_strand,d.hit_start,d.hit_end,d.hit_strand,d.hit_name,d.cigar_line,d.analysis_id,d.score,d.perc_ident,d.evalue from dna_align_feature d where d.contig_id in ($cid_list)";
   
   if($constraint) {
     $sql .=  " AND $constraint";
   }
-  #print STDERR "SQL $sql\n";
+  print STDERR "SQL $sql\n";
 
   my $sth = $self->prepare($sql);
 
@@ -238,13 +470,18 @@ sub fetch_by_assembly_location_constraint{
     
     my @coord_list = $mapper->map_coordinates_to_assembly($contig_id, $start,$end,$strand,"rawcontig");
        
-    # coord list > 1 - means does not cleanly map. At the moment, skip
+    # coord list > 1 - means does not cleanly map At the moment, skip
     if( scalar(@coord_list) > 1 ) {
-      $self->warn("this feature doesn't cleanly map skipping\n");
+      #$self->warn("maps to ".scalar(@coord_list)." coordinate objs not all of feature will be on golden path skipping\n");
+      next;
+      }
+     
+    if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+      #$self->warn("this feature is on a part of $contig_id which isn't on the golden path skipping");
       next;
     }
-    if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
-      $self->warn("this feature is on a part of $contig_id which isn't on the golden path skipping");
+    if(!($coord_list[0]->start >= $chr_start) ||
+       !($coord_list[0]->end <= $chr_end)) {
       next;
     }
     if( !defined $ana{$analysis_id} ) {
@@ -259,6 +496,7 @@ sub fetch_by_assembly_location_constraint{
     push(@f,$out);
   }
   #print STDERR "have ".$counter." gaps\n";
+  #print STDERR "finished fetch by assembly location\n";
   return @f;
 
 }
@@ -290,7 +528,7 @@ sub store{
 
    foreach my $sf ( @sf ) {
        if( !ref $sf || !$sf->isa("Bio::EnsEMBL::DnaDnaAlignFeature") ) {
-	   $self->throw("Simple feature must be an Ensembl DnaDnaAlignFeature, not a [$sf]");
+	   $self->throw("feature must be an Ensembl DnaDnaAlignFeature, not a [$sf]");
        }
 
        if( !defined $sf->analysis ) {
@@ -320,7 +558,11 @@ sub _new_feature {
   if( !defined $seqname ) {
     $self->throw("Internal error - wrong number of arguments to new_feature");
   }
-
+  #print STDERR "start = ".$start."\n";
+  #print STDERR "end = ".$end."\n";
+  #print STDERR "hstart = ".$hstart."\n";
+  #print STDERR "hend = ".$hend."\n";
+  #print STDERR "cigar ".$cigar."\n";
   my $f1 = Bio::EnsEMBL::SeqFeature->new();
   my $f2 = Bio::EnsEMBL::SeqFeature->new();
 
@@ -348,6 +590,7 @@ sub _new_feature {
 
   my $out = Bio::EnsEMBL::DnaDnaAlignFeature->new( -cigar_string => $cigar, -feature1 => $f1, -feature2 => $f2);
 
+  #print "outputting feature with cigar ".$out->cigar_string."\n";
   return $out;
 }
     
