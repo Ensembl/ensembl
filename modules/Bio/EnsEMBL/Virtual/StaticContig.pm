@@ -1402,11 +1402,11 @@ sub _fetch_SimpleFeatures_SQL_clause {
     # retrieval of results.
     my ($fid,
         $start, $end, $strand,
-        $f_score, $analysis_id, $name, $hid);
+        $f_score, $analysis_id, $name, $hid, $f_perc_id, $f_evalue );
     $sth->bind_columns(undef,
         \$fid,
         \$start, \$end, \$strand,
-        \$f_score, \$analysis_id, \$name, \$hid
+        \$f_score, \$analysis_id, \$name, \$hid, 
         \$f_perc_id, \$f_evalue);
         
     my $length = $self->length;
@@ -1440,7 +1440,7 @@ sub _fetch_SimpleFeatures_SQL_clause {
         $feat->score    ($f_score);
         $feat->analysis ($analysis);
         $feat->percent_id ($f_perc_id) if ( defined $f_perc_id );
-        $feat->evalue ($f_evalue) if ( defined $f_evalue ); 
+        $feat->p_value ($f_evalue) if ( defined $f_evalue ); 
         
         push(@features, $feat);
     }
