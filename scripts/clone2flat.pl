@@ -26,9 +26,18 @@
 
     -usetimdb  Overrides Module name for using Flat file Sanger system
     
+    -oldtimdb  Test of old way of calling TimDB object
+    
+    -species   Species other than human (e.g. 'mouse' - if not set, only loads human)
+
+    -freeze    Loads only clones in current frozen set (number)
+
+    -nogene    Allows clones to be read if dna has been updated successfully
+               and searches completed, but before genes have been built and clone unlocked
+
     -dbtype    Database type (valid types are timdb, ace)
 
-    -host    host name for database (gets put as host= in locator)
+    -host      host name for database (gets put as host= in locator)
 			      
     -dbname    For RDBs, what name to connect to (dbname= in locator)
 
@@ -112,9 +121,8 @@ my $aceseq;
 my $fromfile  = 0;
 my $getall    = 0;
 my $pepformat = 'Fasta';
-my $test;
-my $part;
-my $live;
+my $test=0;
+my $part=0;
 my $verbose   = 0;
 my $cstart    = 0;
 my $cend      = undef;
@@ -122,6 +130,11 @@ my $outfile;
 my $oldstyle = 0;
 my $usetimdb = 0;
 my $checkdna;
+# test
+my $oldtimdb=0;
+my $species='';
+my $freeze=0;
+my $nogene=0;
 
 # defaults for msql (rdb) access
 # msql was 'croc'
@@ -161,13 +174,16 @@ my $port      = '410000';
 	     'getall'    => \$getall,
 	     'test'      => \$test,
 	     'part'      => \$part,
-	     'live'      => \$live,
 	     'checkdna:s'=> \$checkdna,
 	     'verbose'   => \$verbose,
 	     'start:i'   => \$cstart,
 	     'end:i'     => \$cend,
 	     'outfile:s' => \$outfile,
 	     'oldstyle'  => \$oldstyle,
+	     'species:s' => \$species,
+	     'oldtimdb'  => \$oldtimdb,
+	     'freeze:n'  => \$freeze,
+	     'nogene'    => \$nogene,
 	     ) or exec('perldoc', $0);
 
 if ($help){
@@ -220,7 +236,18 @@ if ( $usetimdb == 1 ) {
     }
 
     # clones required are passed to speed things up - cuts down on parsing of flat files
-    $db = Bio::EnsEMBL::TimDB::Obj->new($raclones,$noacc,$test,$part,$live);
+    if(!$oldtimdb){
+	$db = Bio::EnsEMBL::TimDB::Obj->new(-clones => $raclones,
+					    -noacc => $noacc,
+					    -test => $test,
+					    -part => $part,
+					    -species => $species,
+					    -freeze => $freeze,
+					    -nogene => $nogene,
+					    );
+    }else{
+	$db = Bio::EnsEMBL::TimDB::Obj->new($raclones,$noacc,$test,$part);
+    }
 } else {
     
     my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
@@ -297,6 +324,9 @@ foreach my $clone_id ( @clones ) {
 	    print "create date [$id]: ".$clone->created."\n";
 	    print "modify date [$id]: ".$clone->modified."\n";
 	    print "version [$id]: ".$clone->version."\n";
+
+	    # try to load genes
+	    $clone->get_all_Genes;
 
 	    # debug tests by contig
 	    foreach my $contig ($clone->get_all_Contigs){

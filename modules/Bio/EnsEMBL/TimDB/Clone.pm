@@ -106,8 +106,8 @@ sub fetch {
     my $id=$self->id;
     
     # translate incoming id to ensembl_id, taking into account nacc flag
-    my($disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species);
-    ($id,$disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species)=
+    my($disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species,$freeze);
+    ($id,$disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species,$freeze)=
 	$self->_dbobj->get_id_acc($id);
     if($id eq 'unk'){
 	$self->throw("Cannot get accession for $disk_id");
@@ -146,6 +146,7 @@ sub fetch {
     $self->species     ($species);
     $self->htg_phase   ($htgsp);
     $self->byacc       ($byacc);
+    $self->freeze      ($freeze);
 
     # construct and test the directory of the clone
     # fast (direct)
@@ -190,13 +191,18 @@ sub build_contigs {
 
 	if($key=~/^$disk_id/){
 	    
-	    my($len,$checksum,$embl_offset,$embl_order) = split(/,/,$val);
+	    my($len,$checksum,$embl_offset,$embl_order,$international_id) = split(/,/,$val);
 	  
 	    # all of these values should be positive, non zero
 	    $self->throw("Error: invalid length [$len] for contig $key") 		if !$len         || $len<1;
 	    $self->throw("Error: invalid checksum [$checksum] for contig $key") 	if !$checksum    || $checksum<1;
 	    $self->throw("Error: invalid embl_order [$embl_order] for contig $key")	if !$embl_order  || $embl_order<1;
 	    $self->throw("Error: invalid embl_order [$embl_offset] for contig $key")	if !$embl_offset  || $embl_offset<1;
+
+	    # expect international_id to be set ONLY if frozen flag is set to a value
+	    if($self->freeze){
+		$self->throw("Error: missing international_id for contig $key")	if !$international_id;
+	    }
 	    
 	    my $disk_key = $key;
 	    $key =~ s/^$disk_id/$id/;
@@ -213,6 +219,7 @@ sub build_contigs {
 	    $tmpcontig->checksum   ($checksum);
 	    $tmpcontig->embl_order($embl_order);
 	    $tmpcontig->embl_offset($embl_offset);
+	    $tmpcontig->international_id($international_id);
 
 	    push(@contigs,$tmpcontig);
 
@@ -1047,6 +1054,16 @@ sub species {
     }
 
     return $self->{_species};
+}
+
+sub freeze {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_freeze} = $arg;
+    }
+
+    return $self->{_freeze};
 }
 
 sub clone_dir {

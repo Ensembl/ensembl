@@ -59,32 +59,47 @@ use Fcntl qw( O_RDONLY );
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,$raclones,$noacc,$test,$part,$live,@args) = @_;
+    my($self,@args)=@_;
 
-  # DEFAULT IS NOW LIVE
-  $live=1;
+    # attempt to use _rearrange - if can't use old method and warn
+    my($raclones,$noacc,$test,$part,$species,$freeze,$nogene);
+    if(grep{/^\-/}@args){
+	($raclones,$noacc,$test,$part,$species,$freeze,$nogene)=
+	    $self->_rearrange([qw(CLONES
+				  NOACC
+				  TEST
+				  PART
+				  SPECIES
+				  FREEZE
+				  NOGENE
+				  )],@args);
+    }else{
+	$self->warn("old parameter style deprecated - update to use \'-clones\' etc");
+	($raclones,$noacc,$test,$part,@args)=@args;
+    }
 
-  # if we have a list of clones and live not test, write a lock file
-  if($live && !$test && $raclones){
-      $self->_write_lockfile($raclones);
-  }
+    if(!$species){$species='human';}
+    $self->{'_species'}=$species;
+    if(!$freeze){$freeze=0;}
+    $self->{'_freeze'}=$freeze;
+    if(!$nogene){$nogene=0;}
+    $self->{'_nogene'}=$nogene;
 
-  # DEBUG
-  # second parameter is for debugging to avoid reading entire list of objects
-  #if($raclones){
-  #    $self->warn("DEBUG: only exon/transcript/gene objects associated with clone list are read");
-  #}
+    # if we have a list of clones and not test, write a lock file
+    if(!$test && $raclones){
+	$self->_write_lockfile($raclones);
+    }
 
-  my $make = $self->SUPER::_initialize;
+    my $make = $self->SUPER::_initialize;
+    
+    $self->{'_gene_hash'} = {};
+    $self->{'_contig_hash'} = {};
+    
+    # clone->acc translation for all timdb operations, unless $noacc
+    $self->{'_byacc'}=1 unless $noacc;
 
-  $self->{'_gene_hash'} = {};
-  $self->{'_contig_hash'} = {};
-
-  # clone->acc translation for all timdb operations, unless $noacc
-  $self->{'_byacc'}=1 unless $noacc;
-
-  # set stuff in self from @args
-  # (nothing)
+    # set stuff in self from @args
+    # (nothing)
 
   # in order to access the flat file db, check that we can see the master dbm file
   # that will tell us where the relevant directory is
@@ -151,14 +166,8 @@ sub _initialize {
   }elsif($part){
       $self->warn("Using -part: to take g/t/co files from test_gtc/ [development option]");
       $file_root="$unfinished_root/test_gtc";
-  }elsif($live){
-      # this is now default behaviour - warning turned off
-      #$self->warn("Using -live to access live version: may be data inconsistencies");
-      $file_root="$unfinished_root";
   }else{
-      $self->warn("Using current stable release version of e/t/g/co files");
-      $file_root="$unfinished_root/release/current";
-      $exon_file="$unfinished_root/release/current/confirmed_exon";
+      $file_root="$unfinished_root";
   }
 
   my $transcript_file="$file_root/unfinished_ana.transcript.lis";
@@ -383,6 +392,9 @@ sub _get_Clone_id{
    my $nisv=0;
    my $nsid=0;
    my $nlock=0;
+   my $ndlock=0;
+   my $nwspecies=0;
+   my $nwfreeze=0;
    if($ralist){
        # loop over list of clones supplied [unknown]
        foreach my $id (@$ralist){
@@ -394,9 +406,21 @@ sub _get_Clone_id{
 	   # in cases where nacc flag set to return ensembl_id and emsembl_id missing
 	   next if $id eq 'unk';
 
-	   my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id,\$nc,\$nsid,
-							   \$nisv,\$nlock);
-	   if(!$flock && ($fall || !$fsv) && !$facc){
+	   my($flock,$fsv,$facc,$species1,$freeze1,$fdlock)=
+	       $self->_check_clone_entry($disk_id,\$nc,\$nsid,
+					 \$nisv,\$nlock,\$ndlock);
+	   # freeze check (1=ok, 0=reject)
+	   unless($self->_check_freeze($freeze1)){
+	       $nwfreeze++;
+	       next;
+	   }
+	   # species check (1=ok, 0=reject)
+	   unless($self->_check_species($species1)){
+	       $nwspecies++;
+	       next;
+	   }
+	   if((!$flock || ($self->{'_nogene'} && !$fdlock)) && 
+	      ($fall || !$fsv) && !$facc){
 	       push(@list,$id);
 	   }
        }
@@ -405,9 +429,22 @@ sub _get_Clone_id{
        my($id,$val,$disk_id);
        while(($disk_id,$val)=each %{$self->{'_clone_dbm'}}){
 
-	   my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id,\$nc,\$nsid,
-							   \$nisv,\$nlock);
-	   if(!$flock && ($fall || !$fsv) && !$facc){
+	   my($flock,$fsv,$facc,$species1,$freeze1,$fdlock)=
+	       $self->_check_clone_entry($disk_id,\$nc,\$nsid,
+					 \$nisv,\$nlock,\$ndlock);
+	   # freeze check (1=ok, 0=reject)
+	   unless($self->_check_freeze($freeze1)){
+	       $nwfreeze++;
+	       next;
+	   }
+	   # species check (1=ok, 0=reject)
+	   unless($self->_check_species($species1)){
+	       $nwspecies++;
+	       next;
+	   }
+	   # either unlocked or if nogene set and dna not locked
+	   if((!$flock || ($self->{'_nogene'} && !$fdlock)) && 
+	      ($fall || !$fsv) && !$facc){
 
 	       # translate incoming disk_id to ensembl_id, taking into account nacc flag
 	       # at this stage know there is an ensembl_id set, so translation is possible
@@ -427,7 +464,18 @@ sub _get_Clone_id{
    }
    print STDERR "    $nsid have cloneid rather than accession numbers [Sanger]\n";
 
-   print STDERR "    $nlock clones are locked for reading and are excluded\n";
+   my $freeze;
+   if($freeze=$self->{'_freeze'}){
+       print STDERR "    $nwfreeze clones do not belong to frozen set $freeze - excluded\n";
+   }else{
+       print STDERR "    $nwfreeze clones ONLY belong of frozen sets - excluded\n";
+   }
+   print STDERR "    $nwspecies clones have wrong species - excluded\n";
+   if($self->{'_nogene'}){
+       print STDERR "    $ndlock clones are locked for reading DNA and are excluded\n";
+   }else{
+       print STDERR "    $nlock clones are locked for reading and are excluded\n";
+   }
    print STDERR "    $nisv have invalid SV numbers";
    if($fall){
        print STDERR " and are included\n";
@@ -435,9 +483,41 @@ sub _get_Clone_id{
        print STDERR " and are excluded\n";
    }
    print STDERR "  Total of ".scalar(@list)." clones are in final list\n";
+   if(scalar(@list)<10){
+       print STDERR "  ".join(',',@list)."\n";
+   }
 
    # !! no idea why sorting is necessary !!
    return sort @list;
+}
+
+# select frozen subset, allowing some clones to be ONLY frozen
+# if ensembl clone, valid for freeze, freeze1 = int [if freeze=0, still loaded]
+# if clone ONLY loaded for freeze, freeze1 = -int [if freeze=0, not loaded]
+sub _check_freeze{
+    my($self,$freeze1)=@_;
+    my $freeze=$self->{'_freeze'};
+    if(!$freeze1){$freeze1=0;}
+    if((!$freeze && $freeze1>=0) ||
+       ($freeze==abs($freeze1))){
+	return 1;
+    }else{
+	return 0;
+    }
+}
+
+# compares species of clone, with backwards compatibility
+sub _check_species{
+    my($self,$species1)=@_;
+    my $species=$self->{'_species'};
+    if(!$species1){$species1='human';}
+    if($species eq $species1){
+	# accept if correct species, allowing for missing human data
+	return 1;
+    }else{
+	# mismatch species - escape;
+	return 0;
+    }
 }
 
 # checks a clone entry in TimDB
@@ -449,14 +529,14 @@ sub _get_Clone_id{
 # returns lock and sv state to allow external decision about accepting clone
 # can increment counters
 sub _check_clone_entry{
-    my($self,$disk_id,$rnc,$rnsid,$rnisv,$rnlock)=@_;
+    my($self,$disk_id,$rnc,$rnsid,$rnisv,$rnlock,$rndlock)=@_;
     my $val;
     unless($val=$self->{'_clone_dbm'}->{$disk_id}){
 	$self->throw("ERROR: $disk_id not in clone DBM");
     }
     $$rnc++;
 
-    my($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$val);
+    my($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp,$chr,$species,$freeze)=split(/,/,$val);
     # count cases where cloneid is not accession (for information purposes)
     if($disk_id ne $acc){
 	$$rnsid++;
@@ -478,14 +558,20 @@ sub _check_clone_entry{
     # skip locked clones
     my $val2;
     my $flock=0;
+    my $fdlock=0;
     if($val2=$self->{'_clone_update_dbm'}->{$disk_id}){
-	my($date2,$lock)=split(',',$val2);
+	my($date2,$lock,$state)=split(',',$val2);
 	if($lock){
 	    $$rnlock++;
 	    $flock=1;
+	    # clone is 'visible' without genes if its in state 5 or 4
+	    if($state!=5 && $state!=4){
+		$$rndlock++;
+		$fdlock=1;
+	    }
 	}
     }
-    return($flock,$fsv,$facc);
+    return($flock,$fsv,$facc,$species,$freeze,$fdlock);
 }
 
 
@@ -628,6 +714,11 @@ sub _write_lockfile{
 # build the exon/transcript/gene map
 sub map_etg{
     my($self)=shift;
+
+    # this cannot be called if object created with -nogene, since data might be invalid
+    $self->throw("Tried to load genes when TimDB object created with -nogene option") 
+	if($self->{'_nogene'});
+
     my $p=$self->{'_parser_object'};
     my @clones=(keys %{$self->{'_active_clones'}});
     $self->warn("DEBUG: initialising map of TimDB for ".scalar(@clones)." clones");

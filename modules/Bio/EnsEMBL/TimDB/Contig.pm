@@ -61,37 +61,35 @@ sub _initialize {
     my($self,@args) = @_;
   
     my $make = $self->SUPER::_initialize;
-    my ($dbobj,$id,$disk_id,$clone_dir,$order,$offset,$orientation,$length,
-	$chr,$species,$embl_offset,$embl_order)=
+    my ($dbobj,$id,$disk_id,$clone_dir,$orientation,$length,
+	$chr,$species,$embl_offset,$embl_order,$international_id)=
 	$self->_rearrange([qw(DBOBJ
 			      ID
 			      DISK_ID
 			      CLONE_DIR
-			      ORDER
-			      OFFSET
 			      ORIENTATION
 			      LENGTH
 			      CHR
 			      SPECIES
 			      EMBL_OFFSET
 			      EMBL_ORDER
+			      INTERNATIONAL_ID
 			      )],@args);
     
     $id          || $self->throw("Cannot make contig object without id");
     $dbobj       || $self->throw("Cannot make contig object without db object");
-    $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') ||   $self->throw("Cannot make contig object with a $dbobj object");
+    $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') || $self->throw("Cannot make contig object with a $dbobj object");
     
     $self->id         ($id);
     $self->disk_id    ($disk_id);
     $self->_dbobj     ($dbobj);
     $self->_clone_dir ($clone_dir);
-    $self->order      ($order);
-    $self->offset     ($offset);
     $self->orientation($orientation);
     $self->length     ($length);
     $self->chromosome ($chr,$species);
     $self->embl_offset($embl_offset);
     $self->embl_order ($embl_order);
+    $self->international_id ($international_id);
     
     # declared here as an array, but data is parsed in
     # method call to get features
@@ -116,8 +114,9 @@ sub validate {
     $self->length      || $self->throw("Cannot make contig object without length");
     $self->chromosome  || $self->throw("Cannot make contig object without chromosome");
     $self->_clone_dir   || $self->throw("Cannot make contig object without clone_dir");
-    $self->embl_offset || $self->throw("Cannot make contig object without embl offset");
-    $self->embl_order  || $self->throw("Cannot make contig object without embl order");
+    $self->embl_offset || $self->throw("Cannot make contig object without embl_offset");
+    $self->embl_order  || $self->throw("Cannot make contig object without embl_order");
+#    $self->international_id  || $self->throw("Cannot make contig object without international_id");
 
     $self->_dbobj->isa('Bio::EnsEMBL::TimDB::Obj') ||   $self->throw("Cannot make contig object with a [" . $self->_dbobj ."] object");
 }
@@ -371,7 +370,7 @@ sub length {
 }
 
 
-=head2 order
+=head2 embl_order
 
  Title   : embl_order
  Usage   : $obj->embl_order($newval)
@@ -400,10 +399,10 @@ sub order {
     return $self->embl_order($arg);
 }
 
-=head2 offset
+=head2 embl_offset
 
- Title   : offset
- Usage   : $self->offset($newval)
+ Title   : embl_offset
+ Usage   : $self->embl_offset($newval)
  Function: 
  Returns : value of offset
  Args    : newvalue (optional)
@@ -426,6 +425,29 @@ sub offset {
 
     return $self->embl_offset(@_);
 }
+
+
+=head2 international_id
+
+ Title   : international_id
+ Usage   : $obj->international_id($newval)
+ Function: 
+ Returns : value of order
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub international_id{
+    my ($self,$arg) = @_;
+
+    if( defined($arg) ) {
+	$self->{'_international_id'} = $arg;
+    }
+
+    return $self->{'_international_id'};
+}
+
 
 =head2 orientation
 
