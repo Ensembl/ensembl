@@ -850,7 +850,7 @@ CREATE TABLE attrib_type (
 CREATE TABLE misc_set (
 
   misc_set_id                 smallint(5) unsigned NOT NULL auto_increment,
-  code                        varchar(15) NOT NULL default '',
+  code                        varchar(25) NOT NULL default '',
   name                        varchar(255) NOT NULL default '',
   description                 text NOT NULL,
   max_length                  int unsigned not null,
