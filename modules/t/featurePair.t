@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 23;
+	plan tests => 34;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -96,3 +96,23 @@ ok(test_getter_setter($fp, 'hspecies', 'Danio_rerio'));
 
 
 ok($fp->display_id eq $fp->hseqname());
+
+#
+# Test invert
+#
+
+$fp->invert();
+
+ok($fp->start   == $hstart);
+ok($fp->end     == $hend);
+ok($fp->strand  == $hstrand);
+ok($fp->hstart  == $start);
+ok($fp->hend    == $end);
+ok($fp->hstrand == $strand);
+
+ok($fp->seqname eq $hseqname);
+ok($fp->hseqname eq $slice->name());
+ok(!defined($fp->slice()));
+
+ok($fp->species eq $hspecies);
+ok($fp->hspecies eq $species);
