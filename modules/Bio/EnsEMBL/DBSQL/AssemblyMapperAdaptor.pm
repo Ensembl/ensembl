@@ -584,6 +584,8 @@ sub register_chained {
   my $mid_cs_id = $mid_cs->dbID();
 
   my @mid_ranges;
+  my @start_ranges;
+  my $newly_added;
 
   #need to perform the query for each unregistered range
   foreach my $range (@$ranges) {
@@ -601,24 +603,30 @@ sub register_chained {
 		       \$start_end);
 
     while($sth->fetch()) {
-      $start_mid_mapper->add_map_coordinates(
-		   $seq_region_name,$start_start, $start_end, $ori,
-		   $mid_seq_region, $mid_start, $mid_end);
+      $newly_added = 
+	$start_mid_mapper->add_map_coordinates
+	  (
+	   $seq_region_name,$start_start, $start_end, $ori,
+	   $mid_seq_region, $mid_start, $mid_end
+	  );
 
+      next if( ! $newly_added );
       #update sr_name cache
       $self->{'_sr_id_cache'}->{"$mid_seq_region:$mid_cs_id"} =
         $mid_seq_region_id;
 
       push @mid_ranges,[$mid_seq_region_id,$mid_seq_region,
                         $mid_start,$mid_end];
+      push @start_ranges, [ $start_start, $start_end ];
 
       #the region that we actually register may actually be larger or smaller
       #than the region that we wanted to register.
       #register the intersection of the region so we do not end up doing 
       #extra work later
-      my $rstart = ($start_start < $start) ? $start_start : $start;
-      my $rend   = ($start_end   > $end  ) ? $start_end   : $end;
-      $start_registry->check_and_register($seq_region_name,$rstart,$rend);
+
+      if($start_start < $start || $start_end > $end) {
+	$start_registry->check_and_register($seq_region_name,$start_start,$start_end);
+      }
     }
   }
 
@@ -662,20 +670,20 @@ sub register_chained {
       #print STDERR "Adding to end<->mid mapper:\n" .
       #      "$end_seq_region:$end_start-$end_end<->$mid_seq_region:" .
       #      "$mid_start-$mid_end($ori)\n";
-      $end_mid_mapper->add_map_coordinates(
-			       $end_seq_region, $end_start, $end_end, $ori,
-             $mid_seq_region, $mid_start, $mid_end);
+      $newly_added = $end_mid_mapper->add_map_coordinates
+	(
+	 $end_seq_region, $end_start, $end_end, $ori,
+	 $mid_seq_region, $mid_start, $mid_end
+	);
+
+      next if( ! $newly_added );
 
       #update sr_name cache
       $self->{'_sr_id_cache'}->{"$end_seq_region:$end_cs_id"} =
         $end_seq_region_id;
 
       #register this region on the end coord system
-      #note that the region retrieved may be smaller or larger than the
-      #actual requested region (but register largest possible)
-      my $rstart = ($end_start < $start) ? $end_start : $start;
-      my $rend   = ($end_end   > $end  ) ? $end_end   : $end;
-      $end_registry->check_and_register($end_seq_region, $rstart, $rend);
+      $end_registry->check_and_register($end_seq_region, $end_start, $end_end);
     }
   }
 
@@ -685,7 +693,7 @@ sub register_chained {
   # the final start <-> end mapper
   #
 
-  foreach my $range (@$ranges) {
+  foreach my $range (@start_ranges) {
     my ($start, $end) = @$range;
 
     my $sum = 0;
