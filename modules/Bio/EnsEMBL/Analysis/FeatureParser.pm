@@ -52,8 +52,8 @@ use Bio::Tools::HMMER::Results;
 
 use Bio::EnsEMBL::Analysis::GenscanPeptide;
 use Bio::EnsEMBL::Analysis::MSPcrunch;
-use Bio::EnsEMBL::Analysis::GFF;
 use Bio::EnsEMBL::Analysis::Repeat;
+use Bio::EnsEMBL::Analysis::GFF;
 
 use FileHandle;
 
@@ -157,10 +157,10 @@ sub read_Repeats {
     my $gfffile    = "$clone_dir/$disk_id".$msp->[4];    
 
     if (! -e $gfffile) {
-	print("   - No repeat file $gfffile  exists - Skipping repeats\n");
+	print(STDERR "   - No repeat file $gfffile  exists - Skipping repeats\n");
 	return;
     } else {
-	print("   - Reading RepeatMasker file $gfffile\n");
+	print(STDERR "   - Reading RepeatMasker file $gfffile\n");
     }
 
     my $GFF        = new Bio::EnsEMBL::Analysis::GFF(-file => $gfffile,
@@ -171,25 +171,27 @@ sub read_Repeats {
     }
 }
 
+
+
+
 sub read_Pfam {
     my ($self,$genscan_peptide,$clone_dir,$disk_id,$count,$pfam) = @_;
 
     my $pfamfile  = "$clone_dir/$disk_id.$count". $pfam->[4];    
 
     if (! -e $pfamfile) {
-	print("   - No pfam file $pfamfile exists - Skipping pfam\n");
+	print(STDERR "   - No pfam file $pfamfile exists - Skipping pfam\n");
 	return;
     } else {
-	print("   - Reading pfam file $pfamfile\n");
-	open(IN,"<$pfamfile");
+	print(STDERR "   - Reading pfam file $pfamfile\n");
     }
     
-    my $pfam = new Bio::Tools::HMMER::Results(-file => $pfamfile,
-					      -type => 'hmmpfam');
+    my $pfamobj = new Bio::Tools::HMMER::Results(-file => $pfamfile,
+						 -type => 'hmmpfam');
 
     my @homols;
 
-    foreach my $dom ($pfam->each_Domain) {
+    foreach my $dom ($pfamobj->each_Domain) {
 	my $align     = new Bio::EnsEMBL::Analysis::PairAlign;
 	
 	$dom->source_tag ('hmmpfam');
@@ -283,12 +285,13 @@ sub read_MSP {
     my $type = $msp->[6];
 
     if (! -e $mspfile) {
-	print("   - MSPcrunch file $mspfile doesn't exist. Skipping\n");
+	print(STDERR "   - MSPcrunch file $mspfile doesn't exist. Skipping\n");
 	return;
     } else {
-	print("   - Reading MSPcrunch file $mspfile\n");
+	print(STDERR "   - Reading MSPcrunch file $mspfile\n");
     }
     
+    print(STDERR "Setting source tag to " . $msp->[1] . " for $mspfile\n");
     my $mspobj  = new Bio::EnsEMBL::Analysis::MSPcrunch(-file => $mspfile,
 							-type => $type,
 							-source_tag => $msp->[1]);
@@ -302,19 +305,25 @@ sub read_MSP {
 	    } elsif ($type2 eq "PEP") {
 		$genpep->add_pepHit($homol);
 	    } else {
-		print("      - unrecognised homol type $type2\n");
+		print(STDERR "      - unrecognised homol type $type2\n");
 	    }
 	} elsif ($type1 eq "DNA") {
 	    $self->add_Feature($homol);
 	    
 	}else {
-	    print("      - unrecognised query type $type1\n");
+	    print(STDERR "      - unrecognised query type $type1\n");
 	}
     }
 
     my @homols = $genpep->each_Homol;      # Converts the hits from peptide into genomic coordinates
 
     foreach my $h (@homols) {
+	if ($mspobj->source_tag eq "") {
+	    print(STDERR "ERROR: Empty string for source tag for $mspfile\n");
+	}
+	#if ($h->homol_SeqFeature->seqname eq "TR:Q14839") {
+	#    print(STDERR "Setting source tag for " . $h->homol_SeqFeature->seqname . " to " . $mspobj->source_tag . "\n");
+	#}
 	$h->source_tag($mspobj->source_tag);
 	$self->add_Feature($h);
     }
