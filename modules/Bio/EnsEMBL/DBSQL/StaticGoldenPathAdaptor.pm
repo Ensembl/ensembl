@@ -27,12 +27,9 @@ Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor - Database adaptor for static golde
 
     #Create Virtual Contigs for fpc contigs or chromosomes
 
-    $vc = $adaptor->VirtualContig_by_fpc_name('ctg123');
+    $vc = $adaptor->fetch_VirtualContig_by_fpc_name('ctg123');
 
-    $vc = $adaptor->VirtualContig_by_chr('chr2');
-
-    # can throw an exception: Not on Same Chromosome
-    @rawcontigs = $adaptor->fetch_RawContigs_between_RawContigs($start_rc,$end_rc);
+    $vc = $adaptor->fetch_VirtualContig_by_chr_name('chr2');
 
 
 =head1 DESCRIPTION
