@@ -57,18 +57,17 @@ my $protfile = $conf{'pmatch_input_fa'};
 my $pmatch   = $conf{'pmatch'};
 my $organism = $conf{'organism'};
 my $refseq_pred = $conf{'refseq_pred_fa'};
-my $pred_pmatch_input = $conf{'pred_pmatch_input_fa'};
 
 
 if (($organism eq "human") || ($organism eq "mouse")) {
     &parse_refseq;
 }
 
-if ($organism eq "human") {
-    &parse_refseq_pred;
-}
+#if ($organism eq "human") {
+#    &parse_refseq_pred;
+#}
 
-#&parse_sptr;
+&parse_sptr;
 &test_protfile;
 
 
@@ -130,7 +129,7 @@ sub parse_refseq {
 
 sub parse_refseq_pred {
     
-  open (IN, "<$pred_pmatch_input") or die "Can't open $refseq_pred\n";
+  open (IN, "<$refseq_pred") or die "Can't open $refseq_pred\n";
   open (OUT, ">>$protfile") or die "Can't open $protfile\n";
 
   while(<IN>){

@@ -22,8 +22,7 @@ my %conf =  %::mapping_conf; # configuration options
 
 my $refseq_gnp = $conf{'refseq_gnp'};
 my $xmap       = $conf{'x_map_out'};
-my $pm1        = $conf{'pmatch_out'};
-my $pm2        = $conf{'pred_pmatch_out'};
+my $map        = $conf{'pmatch_out'};
 my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
 my $user       = $conf{'dbuser'};
@@ -41,15 +40,9 @@ my %embl2sp;
 my %errorflag;
 my %ref_map_pred;
 
-if ((!defined $organism) || (!defined $xmap) || (!defined $pm)) {
-    die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $pm\ndb: $dbname\nhost: $host\n\n";
+if ((!defined $organism) || (!defined $xmap) || (!defined $map)) {
+    die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $map\ndb: $dbname\nhost: $host\n\n";
 }
-
-my $pm = $pm1."_tmp";
-
-#concatenate outputs coming from the known genes mapping and the predicted gene mapping
-my $cat = "cat $pm1 $pm2 > $pm";
-system($cat);
 
 print STDERR "Connecting to the database...\n";
 
@@ -66,44 +59,26 @@ my $adaptor = $db->get_DBEntryAdaptor();
 
 if (($organism eq "human") || ($organism eq "mouse")) {
     print STDERR "Reading Refseq file\n";
-    open (REFSEQ,"$refseq_gnp") || die "Can't open $refseq_gnp\n";
+    open (REFSEQ,"$refseq_gnp") || die "Can't open REFSEQ $refseq_gnp\n";
 #Read the file by genbank entries (separated by //) 
     $/ = "\/\/\n";
     while (<REFSEQ>) {
 #This subroutine store for each NP (refseq protein accession number) its corresponding NM (DNA accession number)
-	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
-	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
-
-	$ref_map{$prot_ac} = $dna_ac;
+      my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
+      my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
+      
+      $ref_map{$prot_ac} = $dna_ac;
     }
-#Put back the default (new line) for reading file
+    #Put back the default (new line) for reading file
     $/ = "\n"; 
 }
 close(REFSEQ);
 
-if ($organism = "human") {
-    open (REFSEQPRED,"$refseq_pred") || die "Can't open $refseq_pred\n";
-    #Read the file by genbank entries (separated by //) 
-    $/ = "\/\/\n";
-    while (<REFSEQPRED>) {
-#This subroutine store for each NP (refseq protein accession number) its corresponding NM (DNA accession number)
-	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
-	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
-	#print STDERR "PROT: $prot_ac\t$dna_ac\n";
-	$ref_map_pred{$prot_ac} = $dna_ac;
-    }
-#Put back the default (new line) for reading file
-    $/ = "\n"; 
-}
-close(REFSEQPRED);
-
-
-open (XMAP,"$xmap") || die "Can't open $xmap\n";
+open (XMAP,"$xmap") || die "Can't open XMAP $xmap\n";
 
 print STDERR "Reading X_map ($xmap)\n";
 
 while (<XMAP>) {
-    
     chomp;
     my ($targetid,$targetdb,$xac,$xdb,$xid,$xsyn,$status) = split (/\t/,$_);
 
@@ -168,7 +143,7 @@ while (<XMAP>) {
 close (XMAP);
 
 if ($check eq "yes") {
-    open (QUERY,"$query_pep");
+    open (QUERY,"$query_pep") || die "Can't open QUERY PEP $query_pep\n";
     while (<QUERY>) {
 	if ($_ =~ /^>\S+\s*\S+\s* Clone:\S+/) {
 	    my ($pepac,$cloneac) = $_ =~ /^>(\S+)\s*\S+\s* Clone:(\S+)/; 
@@ -179,14 +154,15 @@ if ($check eq "yes") {
     close (QUERY);
 }
 
-open (MAP,"$pm") || die "Can't open $pm\n";
+open (MAP,"$map") || die "Can't open MAP $map\n";
 
 print STDERR "Reading pmatch output\n";
 MAPPING: while (<MAP>) {
     my $target;
     chomp;
-    my ($queryid,$tid,$tag,$queryperc,$targetperc) = split (/\t/,$_);
-    
+#    my ($queryid,$tid,$tag,$queryperc,$targetperc) = split (/\t/,$_);
+    my ($tid,$queryid,$tag,$targetperc,$queryperc) = split (/\t/,$_);
+
     my $m = $tid; 
     
     #print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";

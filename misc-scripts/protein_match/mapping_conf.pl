@@ -26,16 +26,16 @@ package main;
              #################
 
              #'check'      => 'yes',
-             'check'      => '',
+             'check'      => 'no',
 
 
              #The mapping to known genes is assymetrical. This is due to the fact that's our gene prediction is quite fragmented compared to the manually curated genes             
 
              #'query_idt'  => 40,
-             'query_idt'    => ,
+             'query_idt'    => 40,
 
              #'target_idt  => 10,
-             'target_idt'  => ,
+             'target_idt'  => 40,
 
              #For the mapping to predicted gene, the mapping is better to be more or less symetrical (the values given are indication on what should be used)
 
@@ -57,7 +57,7 @@ package main;
 
              #Location of the query peptide file (eg: Ensembl predicted protein) 
              #'query'        => '/work1/mongin/mapping/primary/ensembl110.pep',
-             'query'       => '',   
+             'query'       => '/acari/work4/mongin/final_build/release_mapping/Primary/final.fa',   
              
              #Location of the sptr file, this file will be used as an input to grep the specific sp entries to the organism using grep_sp_entries.pl. This file is supposed to be in SP format
              #'total_sptr'  => '/work1/mongin/mapping/primary/sptr.txl',
@@ -65,25 +65,23 @@ package main;
 
              #Location of the sptr file in fasta format containing the entries specific to the organism
 	     #'sptr_fa'      => '/work1/mongin/mapping/primary/HS.f',
-	     'sptr_fa'      => '',
+	     'sptr_fa'      => '/acari/work4/mongin/final_build/release_mapping/Primary/sptr_ano_gambiae_19_11_02_formated.fa',
 	     
              #Location of the sptr file in Swiss-Prot format containing the entries specific to the organism
 	     #'sptr_swiss'      => '/work1/mongin/mapping/primary/HS.SPTR',
-	     'sptr_swiss'      => '',
-	     
-             
-	     
+	     'sptr_swiss'      => '/acari/work4/mongin/final_build/release_mapping/Primary/sptr_ano_gambiae_19_11_02.swiss',
+	     	     
              #Location of the file containing all refseq and all SP in fasta format (This file will be produced by runni             ng prepare_proteome.pl)
              #'human_fa'    => '/work1/mongin/mapping/kate/refseq_p.fa',
-	     'pmatch_input_fa'    => '',
+	     'pmatch_input_fa'    => '/acari/work4/mongin/final_build/release_mapping/Primary/sptr_ano_gambiae_19_11_02_formated.fa',
 
              #Output file containing the mapping of SP and refseq sequences to external databases
              #'x_map'  => '/work1/mongin/mapping/outputs/xmap_out1.txt',
-             'x_map_out'  => '',
+             'x_map_out'  => '/acari/work4/mongin/final_build/release_mapping/Output/x_map.out',
 
              #Output file from pmatch.pl and input file for maps2db.pl
              #'human_map'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
-             'pmatch_out'  => '',
+             'pmatch_out'  => '/acari/work4/mongin/final_build/release_mapping/Output/scanwise.out',
 
 
              #Location of the Refseq (proteins) file in fasta format
@@ -140,17 +138,17 @@ package main;
 
              #DB name
              #'db' => 'proteintest',
-             'db' => '',
+             'db' => 'anopheles_arne_core_9_2',
 
              #Host name
              #'host' => 'ecs1d',
-             'host' => '',
+             'host' => 'ecs1b',
 
              #User
-             'dbuser' => '',
+             'dbuser' => 'ensadmin',
 
              #Password
-             'password' => '',
+             'password' => 'ensembl',
              
              #####################
              #Executable location#
@@ -160,6 +158,8 @@ package main;
              #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
              'pmatch' => '/nfs/disk65/ms2/bin/pmatch',
 
+             
+
              ##############################
              #Organism related information#
              ##############################
@@ -167,7 +167,7 @@ package main;
              #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse
              #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
              #'organism' => 'human'
-             'organism' => 'human',
+             'organism' => 'anopheles',
              
 
              #OX (Organism taxonomy cross-reference) number

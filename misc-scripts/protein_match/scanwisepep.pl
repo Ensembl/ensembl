@@ -19,9 +19,9 @@ my $sptr_fa   = $conf{'sptr_fa'};
 my $refseq_fa = $conf{'refseq_fa'};
 
 my $organism = $conf{'organism'};
-my $query = $conf{'query'};
+my $target = $conf{'query'};
 
-my $target = $conf{'pmatch_input_fa'};
+my $query = $conf{'pmatch_input_fa'};
 my $t_thr = $conf{'target_idt'};
 my $q_thr = $conf{'query_idt'};
 my $opt_o = $conf{'pmatch_out'};
@@ -45,9 +45,8 @@ system "$scanwise";
 
 open (PMATCH , "/tmp/$$.pmatch") || die "cannot read /tmp/$$.pmatch\n";
 
-open (OUT,"$opt_o") || die "cannot open $opt_o\n";
+open (OUT,">$opt_o") || die "cannot open $opt_o\n";
 
-#open (PMATCH , "/acari/work4/mongin/final_build/release_mapping/Primary/t.pmatch") || die "cannot read $$.pmatch\n";
 
 #open (PMATCH , "/tmp/4367756.pmatch");
 
@@ -95,9 +94,10 @@ while (<PMATCH>) {
     if (! defined $match2desc{$match}->{'tlength'}){
 
 	my $seq = $tfetcher->get_Seq_by_acc($tid);
-	
 	my $length = length($seq->seq);
+	
 	$match2desc{$match}->{'tlength'} = $length;
+
     }
     
     if (! defined $match2desc{$match}->{'qlength'}){
@@ -122,12 +122,11 @@ foreach my $key(keys %match2desc) {
     my $queryperc =  $match2desc{$key}->{'qmatchlength'} * 100 / $match2desc{$key}->{'qlength'}; 
     my $status = $match2desc{$key}->{'status'};
     if (($targetperc >= $t_thr)&&($queryperc >= $q_thr)) {
-	
-	print OUT "$query\t$queryperc\t$target\t$targetperc\t$status\n";
-	
+	print OUT "$query\t$target\t$status\t$queryperc\t$targetperc\n";
     }
 }
-
+close(OUT);
+print STDERR "The scanwise output $opt_o\nQuery: $query\tThr: $q_thr\nTarget: $target\tThr: $t_thr\n";
 
 
 

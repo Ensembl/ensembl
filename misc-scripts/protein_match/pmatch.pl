@@ -422,11 +422,12 @@ sub process_matches {
 #The Ensembl match to the known protein is labelled as PRIMARY and will be used later for the mapping 
 	my $top = shift @array;
 	
-	print  OUT $top->name."\t$know\tcandidate\t".$top->qperc."\t".$top->tperc."\n";
-
+	#print  OUT $top->name."\t$know\tcandidate\t".$top->qperc."\t".$top->tperc."\n";
+	print OUT "$known\t".$top->name."\tcandidate\t".$top->tperc."\t".$top->qperc."\n";
 	foreach my $repeat (@array) {
 	    if( $repeat->tperc+1 >= $top->tperc ) {
-		print  OUT $repeat->name."\t$know\tduplicate\t".$repeat->qperc."\t".$repeat->tperc."\n";
+		#print  OUT $repeat->name."\t$know\tduplicate\t".$repeat->qperc."\t".$repeat->tperc."\n";
+		print OUT "$known\t".$repeat->name."\tduplicate\t".$repeat->tperc."\t".$repeat->qperc."\n";
 	    }
 	}
     }
