@@ -52,8 +52,7 @@ while( my $line = <FILE> ) {
 
 #  print $line."\n";
   my ($key, $value) = split("=",$line);
- 
-  if($key eq "species"){
+   if($key eq "species"){
     $type = "species";
     if(defined($species)){
       push @all_species, $species;
