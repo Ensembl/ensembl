@@ -648,7 +648,7 @@ sub get_all_HSPs {
    $use_date ||= '';
 
    my $SQL = qq(
-SELECT object
+SELECT object, hsp_id
 FROM   blast_hsp%s
 WHERE  ticket = ? );
 
@@ -676,9 +676,15 @@ AND    chr_end   >= ? );
    my $sth = $self->db->db_handle->prepare($q);
    my $rv = $sth->execute( @binded ) || $self->throw( $sth->errstr );
 
-   my @hsps = map{ thaw( $_->[0] ) } @{$sth->fetchall_arrayref()};
+   my @hsps = ();
+   foreach my $row( @{$sth->fetchall_arrayref()} ){
+     # Retrieve HSP and reset token
+     my $hsp = thaw( $row->[0] );
+     my $hsp_id = $row->[1];
+     $hsp->token( join( '!!', $hsp_id, $use_date  ) );
+     push @hsps, $hsp;
+   }
    $sth->finish;
-
    return [@hsps];
 }
 
@@ -700,8 +706,19 @@ AND    chr_end   >= ? );
 sub get_all_SearchFeatures {
   my $self = shift;
   my $hsps = $self->get_all_HSPs(@_);
+  my $ticket = shift;
+
   $self->dynamic_use( ref($hsps->[0] ) );
-  my @feats = grep{ $_ } map{ $_->ens_genomic_align } @$hsps;
+  my @feats = ();
+  foreach my $hsp( @$hsps ){
+    my $base_align = $hsp->ens_genomic_align || next;
+
+    ( $ticket ) = split( "!!", $ticket );
+    my $hsp_id = join( "!!", $ticket, $hsp->token );
+    
+    $base_align->hseqname( join( ":", $base_align->hseqname, $hsp_id ) );
+    push @feats, $base_align;
+  }
   return [ @feats ];
 }
 
