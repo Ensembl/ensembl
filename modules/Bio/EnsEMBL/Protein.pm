@@ -343,9 +343,67 @@ sub get_all_DomainFeatures{
        
        push(@f,$self->get_all_SuperfamilyFeatures());
 
+       push(@f,$self->get_all_ProfileFeatures());
+
        return @f;
     }
 }
+
+
+=head2 get_all_ProfileFeatures
+
+ Title   : get_all_ProfileFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ProfileFeatures{
+    my ($self) = @_;
+
+    if (defined ($self->{'_profile'})) {
+	return @{$self->{'_profile'}};
+    }
+   else {
+       my $proteinid = $self->id();
+       my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('PROFILE',$proteinid);
+       foreach my $in (@array_features) {
+	   $self->add_Profile($in);
+       }
+       return @array_features;
+
+
+   }
+
+}
+
+=head2 add_Profile
+
+ Title   : add_Profile
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_Profile{
+    my ($self,$value) = @_;
+        
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
+    }
+
+   push(@{$self->{'_profile'}},$value); 
+
+}
+
 
 
 =head2 get_all_PrintsFeatures
