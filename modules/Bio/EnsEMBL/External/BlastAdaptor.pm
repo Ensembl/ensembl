@@ -75,7 +75,7 @@ AND    chr_end   <= ? );
 
      if( $chr_start && $chr_end ){
        $q .= $RANGE_SQL;
-       push @binded, $chr_start && $chr_end;
+       push @binded, $chr_start, $chr_end;
      }
    }
    my $sth = $self->db->db_handle->prepare($q);
