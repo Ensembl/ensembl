@@ -8,7 +8,7 @@ cd $ENSEMBL_SERVERROOT
 echo
 echo "Installing ensembl-api"
 echo
-cat << _HERE_ | cvs -d :pserver:cvsuser@cvs.sanger.ac.uk:/cvsroot/CVSmaster co -r $ENSEMBL_DB_BRANCH ensembl-api
+cat << _HERE_ | cvs -d :pserver:cvsuser@cvs.sanger.ac.uk:/cvsroot/ensembl co -r $ENSEMBL_DB_BRANCH ensembl-api
 CVSUSER
 _HERE_
 
@@ -16,7 +16,7 @@ _HERE_
 echo
 echo "Installing ensembl-web"
 echo
-cat << _HERE_ | cvs -d :pserver:cvsuser@cvs.sanger.ac.uk:/cvsroot/CVSmaster co -r $ENSEMBL_WEB_BRANCH ensembl-web
+cat << _HERE_ | cvs -d :pserver:cvsuser@cvs.sanger.ac.uk:/cvsroot/ensembl co -r $ENSEMBL_WEB_BRANCH ensembl-web
 CVSUSER
 _HERE_
 
