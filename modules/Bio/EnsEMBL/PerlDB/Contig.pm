@@ -409,6 +409,24 @@ sub embl_offset{
     return $self->{'_embl_offset'};
 }
 
+=head2 embl_version
+
+ Title   : embl_version
+ Usage   : 
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub embl_version {
+   my ($self,$value) = @_;
+    if( defined $value && $value ne '' ) {
+	$self->{'_embl_version'} = $value;
+    }
+    return $self->{'_embl_version'};
+}
+
 =head2 embl_order
 
  Title   : embl_order

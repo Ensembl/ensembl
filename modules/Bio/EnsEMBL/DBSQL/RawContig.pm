@@ -1228,7 +1228,7 @@ sub get_all_PredictionFeatures {
        
        my $analysis;
 	   
-       #print STDERR  "ID $fid, START $start, END $end, STRAND $strand, SCORE $score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid, FSET $fsetid\n";
+       print STDERR  "ID $fid, START $start, END $end, STRAND $strand, SCORE $score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid, FSET $fsetid\n";
        
        if (!$analhash{$analysisid}) {
 
