@@ -561,6 +561,7 @@ CREATE TABLE external_db(
          db_name ENUM ('gene_name','Celera_Pep','Celera_Trans','Celera_Gene','HumanGenscans','protein_id','SCOP','HUGO','GO','SPTREMBL','EMBL','MarkerSymbol','SWISSPROT','PDB','MIM','RefSeq','LocusLink','Interpro','Superfamily') not null,
 	 release VARCHAR(40) DEFAULT '' NOT NULL,
 	 status  ENUM ('KNOWN','XREF','PRED') not null,
+         priority smallint unsigned not null,
          PRIMARY KEY( external_db_id ) 
 );
 
@@ -672,6 +673,7 @@ CREATE TABLE mapset (
   code varchar(15) NOT NULL default '',
   name varchar(255) NOT NULL default '',
   description text NOT NULL,
+  max_length int unsigned not null,
   PRIMARY KEY (mapset_id),
   UNIQUE KEY c(code)
 ) TYPE=MyISAM;
