@@ -36,95 +36,6 @@ use vars '@ISA';
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
 
-=head2 list_geneIds
-
- Title   : list_geneIds
- Usage   : $geneAdaptor->list_geneIds
- Function: Gets an array of internal ids for all genes in the current db
- Example : 
- Returns : array of ids
- Args    : none
-
-=cut
-
-sub list_geneIds {
-   my ($self) = @_;
-   $self->warn( "Use the GeneAdaptor for this query" );
-   return ();
-}
-
-=head2 list_stable_geneIds
-
- Title   : list_stable_geneIds
- Usage   : $geneAdaptor->list_stable_geneIds
- Function: Gets an array of stable ids for all genes in the current db
- Example : 
- Returns : array of ids
- Args    : none
-
-=cut
-
-sub list_stable_geneIds {
-   my ($self) = @_;
-   $self->warn( "Use the GeneAdaptor for this query" );
-   return @out;
-}
-
-
-=head2 fetch_by_dbID
-
- Title   : fetch_by_dbID
- Usage   : $geneobj->fetch_by_dbID( $geneid)
- Function: gets one gene out of the db
- Example : $obj->get($dbID)
- Returns : gene object (with transcripts, exons and supp.evidence if wanted)
- Args    : gene id and supporting tag
-
-=cut
-
-
-sub fetch_by_dbID {
-  my ( $self, $geneId ) = @_;
-   $self->warn( "Use the GeneAdaptor for this query" );
-  return undef;
-}
-
-
-=head2 fetch_by_stable_id
-
- Title   : fetch_by_stable_id
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub fetch_by_stable_id{
-  my ($self,$id) = @_;
-  $self->warn( "Use the GeneAdaptor for this query" );
-  return undef;
-}
-
-=head2 fetch_by_contig_list
-
- Title   : fetch_by_contig_list
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub fetch_by_contig_list{
-  my ($self,@list) = @_;
-  $self->warn( "Use the GeneAdaptor for this query" );
-  return undef;
-}
 
 
 =head2 fetch_by_Slice
@@ -252,6 +163,95 @@ sub fetch_by_Slice {
 }
 
 
+=head2 list_geneIds
+
+ Title   : list_geneIds
+ Usage   : $geneAdaptor->list_geneIds
+ Function: Gets an array of internal ids for all genes in the current db
+ Example : 
+ Returns : array of ids
+ Args    : none
+
+=cut
+
+sub list_geneIds {
+   my ($self) = @_;
+   $self->warn( "Use the GeneAdaptor for this query" );
+   return ();
+}
+
+=head2 list_stable_geneIds
+
+ Title   : list_stable_geneIds
+ Usage   : $geneAdaptor->list_stable_geneIds
+ Function: Gets an array of stable ids for all genes in the current db
+ Example : 
+ Returns : array of ids
+ Args    : none
+
+=cut
+
+sub list_stable_geneIds {
+   my ($self) = @_;
+   $self->warn( "Use the GeneAdaptor for this query" );
+   return @out;
+}
+
+
+=head2 fetch_by_dbID
+
+ Title   : fetch_by_dbID
+ Usage   : $geneobj->fetch_by_dbID( $geneid)
+ Function: gets one gene out of the db
+ Example : $obj->get($dbID)
+ Returns : gene object (with transcripts, exons and supp.evidence if wanted)
+ Args    : gene id and supporting tag
+
+=cut
+
+
+sub fetch_by_dbID {
+  my ( $self, $geneId ) = @_;
+   $self->warn( "Use the GeneAdaptor for this query" );
+  return undef;
+}
+
+
+=head2 fetch_by_stable_id
+
+ Title   : fetch_by_stable_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_by_stable_id{
+  my ($self,$id) = @_;
+  $self->warn( "Use the GeneAdaptor for this query" );
+  return undef;
+}
+
+=head2 fetch_by_contig_list
+
+ Title   : fetch_by_contig_list
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_by_contig_list{
+  my ($self,@list) = @_;
+  $self->warn( "Use the GeneAdaptor for this query" );
+  return undef;
+}
 
 
 sub fetch_by_Transcript_id {
@@ -401,9 +401,6 @@ sub get_Interpro_by_geneid {
     $self->warn( "get_Interpro_by_geneid not supported by this adaptor" );
     return undef;
 }
-
-
-
 
 
 sub create_tables {
