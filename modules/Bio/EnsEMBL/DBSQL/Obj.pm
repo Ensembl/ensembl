@@ -325,6 +325,49 @@ sub get_Gene_array_supporting {
 }
 
 
+
+=head2 get_clone_Gene
+
+  Title : get_clone_Gene
+  Function: gets a Gene in clone coordinates  
+
+=cut
+
+sub get_clone_Gene {
+    my $self = shift;
+    my $id   = shift;
+
+    my $gene = $self->get_Gene($id);
+    
+    my %contig;
+    
+    foreach my $exon ( $gene->each_unique_Exon ) {
+
+
+       if( !exists $contig{$exon->contig_id} ) {
+	   
+	   $contig{$exon->contig_id} = $self->get_Contig($exon->contig_id);
+       }
+       my ($s,$e,$str) = $contig{$exon->contig_id}->_convert_coords_contig_clone($exon->start,$exon->end,$exon->strand);
+       
+       $exon->start($s);
+       $exon->end($e);
+       $exon->strand($str);
+   }
+    
+    return $gene;
+}
+    
+    
+
+
+
+
+
+
+
+
+
 =head2 donor_locator
     
  Title   : get_donor_locator
