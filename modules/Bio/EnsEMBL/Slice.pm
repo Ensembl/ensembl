@@ -967,10 +967,18 @@ sub get_all_compara_DnaAlignFeatures {
 						$self->chr_start,
 					        $self->chr_end);
 
-  #all compara features are returned on positive chr strand
-  if($self->strand == -1) {
-    my $slice_end   = $self->chr_end;
-    my $slice_start = $self->chr_start;
+  my $slice_start = $self->chr_start;
+  my $slice_end   = $self->chr_end;
+
+  if($self->strand == 1) {
+    foreach my $f (@$features) {
+      my $start  = $f->start - $slice_start + 1;
+      my $end    = $f->end   - $slice_start + 1;
+      $f->start($start);
+      $f->end($end);
+      $f->contig($self);
+    }
+  } else {
     foreach my $f (@$features) {
       my $start  = $slice_end - $f->start + 1;
       my $end    = $slice_end - $f->end   + 1;
@@ -978,6 +986,7 @@ sub get_all_compara_DnaAlignFeatures {
       $f->start($start);
       $f->end($end);
       $f->strand($strand);
+      $f->contig($self);
     }
   }
 
