@@ -316,9 +316,9 @@ sub register_assembled {
       next if($asm_mapper->have_registered_component($cmp_seq_region));
       $asm_mapper->register_component($cmp_seq_region);
       $asm_mapper->mapper->add_map_coordinates(
-                 $cmp_seq_region, $cmp_start, $cmp_end,
+                 $asm_seq_region, $asm_start, $asm_end,
                  $ori,
-                 $asm_seq_region, $asm_start, $asm_end);
+                 $cmp_seq_region, $cmp_start, $cmp_end);
       $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"} =
         $cmp_seq_region_id;
     }

@@ -27,10 +27,10 @@ the assembly table
     $asm_mapper = $map_adaptor->fetch_by_CoordSystems($cs1, $cs2);
 
     #map to contig coordinate system from chromosomal
-    @ctg_coords = $asm_mapper->map('X', 1_000_000, 2_000_000, 1, $ctg_cs);
+    @ctg_coords = $asm_mapper->map('X', 1_000_000, 2_000_000, 1, $chr_cs);
 
     #map to chromosome coordinate system from contig
-    @chr_coords = $asm_mapper->map('AL30421.1.200.92341',100,10000,-1,$chr_cs);
+    @chr_coords = $asm_mapper->map('AL30421.1.200.92341',100,10000,-1,$ctg_cs);
 
     #list contig names for a region of chromsome
     @ctg_ids = $asm_mapper->list_ids('13', 1_000_000, 1, $chr_cs);
@@ -103,6 +103,8 @@ sub new {
   $self->{'asm_cs'} = $coord_systems[0];
   $self->{'cmp_cs'} = $coord_systems[1];
 
+  #we load the mapper calling the 'ASSEMBLED' the 'from' coord system
+  #and the 'COMPONENT' the 'to' coord system
   $self->{'mapper'} = Bio::EnsEMBL::Mapper->new($ASSEMBLED, $COMPONENT);
 
   return $self;
@@ -120,9 +122,9 @@ sub new {
   Arg [4]    : int $strand
                The strand of the region to transform FROM
   Arg [5]    : Bio::EnsEMBL::CoordSystem
-               The coordinate system to transform TO
+               The coordinate system to transform FROM
   Example    : @coords = $asm_mapper->map('X', 1_000_000, 2_000_000,
-                                            1, $ctg_cs);
+                                            1, $chr_cs);
   Description: Transforms coordinates from one coordinate system
                to another.
   Returntype : List of Bio::EnsEMBL::Mapper::Coordinate and/or
@@ -134,41 +136,44 @@ sub new {
 =cut
 
 sub map {
-  my ($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $to_cs) = @_;
+  throw('Incorrect number of arguments.') if(@_ != 6);
+
+  my ($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $frm_cs) = @_;
 
   my $mapper  = $self->{'mapper'};
   my $asm_cs  = $self->{'asm_cs'};
   my $cmp_cs  = $self->{'cmp_cs'};
   my $adaptor = $self->{'adaptor'};
-  my $to;
+  my $frm;
 
   #speed critical section:
   #try to do simple pointer equality comparisons of the coord system objects
   #first since this is likely to work most of the time and is much faster
   #than a function call
 
-  if($to_cs == $cmp_cs || ($to_cs != $asm_cs && $to_cs->equals($cmp_cs))) {
+  if($frm_cs == $cmp_cs || ($frm_cs != $asm_cs && $frm_cs->equals($cmp_cs))) {
 
     if(!$self->{'cmp_register'}->{$frm_seq_region}) {
       $adaptor->register_component($self,$frm_seq_region);
     }
-    $to = $ASSEMBLED;
+    $frm = $COMPONENT;
 
-  } elsif($to_cs == $asm_cs || $to_cs->equals($asm_cs)) {
+  } elsif($frm_cs == $asm_cs || $frm_cs->equals($asm_cs)) {
 
     # This can be probably be sped up some by only calling registered
     # assembled if needed
     $adaptor->register_assembled($self,$frm_seq_region,$frm_start,$frm_end);
-    $to = $COMPONENT;
+    $frm = $ASSEMBLED;
 
   } else {
 
-    throw("Coordinate system " . $to_cs->name . " " . $to_cs->version .
+    throw("Coordinate system " . $frm_cs->name . " " . $frm_cs->version .
           " is neither the assembled nor the component coordinate system " .
           " of this AssemblyMapper");
   }
 
-  return $mapper->map($frm_seq_region, $frm_start, $frm_end, $frm_strand, $to);
+  return $mapper->map_coordinates($frm_seq_region, $frm_start, $frm_end,
+                                  $frm_strand, $frm);
 }
 
 
@@ -183,7 +188,7 @@ sub map {
                The start of the region of interest
   Arg [3]    : int $frm_end
                The end of the region to transform of interest
-  Arg [5]    : Bio::EnsEMBL::CoordSystem
+  Arg [5]    : Bio::EnsEMBL::CoordSystem $frm_cs
                The coordinate system to obtain overlapping ids of
   Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$ctg_cs)) {...}
   Description: Retrieves a list of overlapping seq_region internal identifiers
@@ -197,30 +202,38 @@ sub map {
 
 
 sub list_seq_regions {
-  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $to_cs) = @_;
+  throw('Incorrect number of arguments.') if(@_ != 5);
+  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_cs) = @_;
 
-  my $to;
-
-  if($to_cs->equals($self->assembled_CoordSystem())) {
+  if($frm_cs->equals($self->component_CoordSystem())) {
 
     if(!$self->have_registered_component($frm_seq_region)) {
       $self->adaptor->register_component($frm_seq_region);
     }
-    $to = $ASSEMBLED;
 
-  } elsif($to_cs->equals($self->component_CoordSystem())) {
+    #pull out the 'from' identifiers of the mapper pairs.  The
+    #we loaded the assembled side as the 'from' side in the constructor
+    return
+      map {$_->from()->id()}
+      $self->mapper()->list_pairs($frm_seq_region, $frm_start,
+                                  $frm_end, $COMPONENT);
 
-    $self->adaptor->register_assembled($frm_seq_region,$frm_start,$frm_end);
-    $to = $COMPONENT;
+  } elsif($frm_cs->equals($self->assembled_CoordSystem())) {
 
+    $self->adaptor->register_assembled($self,
+                                       $frm_seq_region,$frm_start,$frm_end);
+
+    #pull out the 'to' identifiers of the mapper pairs
+    #we loaded the component side as the 'to' coord system in the constructor
+    return
+      map {$_->to->id()}
+        $self->mapper()->list_pairs($frm_seq_region, $frm_start,
+                                    $frm_end, $ASSEMBLED);
   } else {
-    throw("Coordinate system " . $to_cs->name . " " . $to_cs->version .
+    throw("Coordinate system " . $frm_cs->name . " " . $frm_cs->version .
           " is neither the assembled nor the component coordinate system " .
           " of this AssemblyMapper");
   }
-
-  return $self->mapper()->list_ids($frm_seq_region, $frm_start, $frm_end,
-                                   $frm_strand, $to);
 }
 
 
@@ -232,9 +245,9 @@ sub list_seq_regions {
                The start of the region of interest
   Arg [3]    : int $frm_end
                The end of the region to transform of interest
-  Arg [5]    : Bio::EnsEMBL::CoordSystem
+  Arg [5]    : Bio::EnsEMBL::CoordSystem $frm_cs
                The coordinate system to obtain overlapping ids of
-  Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$ctg_cs)) {...}
+  Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$chr_cs)) {...}
   Description: Retrieves a list of overlapping seq_region internal identifiers
                of another coordinate system.  This is the same as the
                list_seq_regions method but uses internal identfiers rather 
@@ -246,11 +259,21 @@ sub list_seq_regions {
 =cut
 
 sub list_ids {
-  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $to_cs) = @_;
+  throw('Incorrect number of arguments.') if(@_ != 5);
+  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_cs) = @_;
 
   #retrieve the seq_region names
-  my @seq_regs = $self->list_seq_regions($frm_seq_region, $frm_start, $frm_end,
-                                    $frm_strand, $to_cs);
+  my @seq_regs =
+    $self->list_seq_regions($frm_seq_region,$frm_start,$frm_end,$frm_cs);
+
+  #The seq_regions are from the 'to' coordinate system not the
+  #from coordinate system we used to obtain them
+  my $to_cs;
+  if($frm_cs->equals($self->assembled_CoordSystem())) {
+    $to_cs = $self->component_CoordSystem();
+  } else {
+    $to_cs = $self->assembled_CoordSystem();
+  }
 
   #convert them to ids
   return @{$self->adaptor()->seq_regions_to_ids($to_cs, \@seq_regs)};
@@ -523,7 +546,6 @@ sub map_coordinates_to_rawcontig {
 }
 
 =head2 list_contig_ids
-
   Description: DEPRECATED Use list_ids instead
 
 =cut
