@@ -51,15 +51,24 @@ sub new {
   return $self;
 }
 
-
-
 sub get_GeneAdaptor {
   my $self = shift;
 
     return 
-      $self->get_adaptor("Bio::EnsEMBL::Lite::GeneAdaptor");
+      $self->_get_adaptor("Bio::EnsEMBL::Lite::GeneAdaptor");
 }
 
+=head2 core_DBAdaptor
+
+  Arg  [1]  : Bio::EnsEMBL::DBSQL::DBAdaptor $db
+              The link to the core db
+  Function  : Makes the link to coredb available. Objects can attach
+              with this to the core db Adaptors for lazy loading
+  Returntype: Bio::EnsEMBL::DBSQL::DBAdaptor
+  Exceptions: none
+  Caller    : GeneAdaptor->fetch_by_Slice()
+
+=cut
 
 sub core_DBAdaptor {
   my($self, $arg ) = @_;
@@ -71,16 +80,18 @@ sub core_DBAdaptor {
 
 
 
-=head2 get_adaptor
+=head2 _get_adaptor
 
-  Title   : get_adaptor
-  Usage   : $obj->get_adaptor("full::module::name")
-  Returns : An already existing, or a new instance of the specified DB adaptor 
-  Args : the fully qualified name of the adaptor module to retrieve
+  Arg   1   : string $full_module_name
+             "Bio::EnsEMBL::Lite::GeneAdaptor"
+  Function  : Requires and creates Modules. Makes singletons of these,
+              so it keeps a cache for each different module.
+  Returntype: $full_module_name
+  Caller    : intern
 
 =cut
 
-sub get_adaptor {
+sub _get_adaptor {
   my( $self, $module) = @_;
 
   my( $adaptor, $internal_name );
