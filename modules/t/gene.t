@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 46;
+	plan tests => 49;
 }
 
 use MultiTestDB;
@@ -473,7 +473,7 @@ ok( $ok );
 # test storing a new allele group
 #
 
-$multi->hide( 'alt_allele' );
+$multi->hide( 'core', 'alt_allele' );
 
 my @alt_genes;
 push( @alt_genes, $ga->fetch_by_dbID(18270) );
@@ -492,4 +492,5 @@ for my $gene ( @$alt_genes ) {
 ok( $ok );
 
 
+$multi->restore('core');
 
