@@ -1,110 +1,148 @@
+use strict;
+use warnings;
 
- use lib 't';
+use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 4;
+	plan tests => 27;
 }
 
-my $loaded = 0;
-END {print "not ok 1\n" unless $loaded;}
 
-use EnsTestDB;
+use MultiTestDB;
 use Bio::EnsEMBL::DBLoader;
+use Bio::EnsEMBL::Slice;
 
 
-$loaded = 1;
-
-ok(1);
-
-# Database will be dropped when this
-# object goes out of scope
-my $ens_test = EnsTestDB->new;
-
-$ens_test->do_sql_file("t/minidatabase.dump");
-
-ok($ens_test);
+#
+#1 TEST - Slice Compiles
+#
+ok(1); 
 
 
-my $db = $ens_test->get_DBSQL_Obj;
+my $CHR           = '20';
+my $START         = 31_000_000;
+my $END           = 31_200_000;
+my $STRAND        = 1;
+my $ASSEMBLY_TYPE = 'NCBI_30';
+my $DBID          = 123;
 
-$sla= $db->get_SliceAdaptor();
+my $multi_db = MultiTestDB->new;
+my $db = $multi_db->get_DBAdaptor('core');
 
-$slice = $sla->new_slice('1',4,400,'NCBI_28');
 
+#
+#2-5 TEST - Slice creation from adaptor
+#
+my $slice_adaptor = $db->get_SliceAdaptor;
+my $slice = $slice_adaptor->fetch_by_chr_start_end($CHR, $START, $END);
+ok($slice->chr_name eq $CHR);
+ok($slice->chr_start == $START); 
+ok($slice->chr_end == $END);
+ok($slice->adaptor);
+  
+
+#
+#6 TEST - Slice::new (empty)
+#
+$slice = new Bio::EnsEMBL::Slice(-empty => 1);
 ok($slice);
 
-&write_feature();
 
-ok(1);
-
-
-($outf) = $slice->get_all_SimilarityFeatures_above_score(5);
-
-#ok($outf);
-
-
-
-sub write_feature {
-
-$dna_f_ad = $db->get_DnaAlignFeatureAdaptor();
+#
+#7-12 TEST - Slice::new
+#
+$slice = new Bio::EnsEMBL::Slice(-chr_name  => $CHR,
+		   -chr_start => $START,
+		   -chr_end   => $END,
+		   -strand    => $STRAND,
+		   -assembly_type => $ASSEMBLY_TYPE,
+		   -dbid     => $DBID);
 
 
 
+ok($slice->chr_name eq $CHR);
+ok($slice->chr_start == $START);
+ok($slice->chr_end == $END);
+ok($slice->strand == $STRAND);
+ok($slice->assembly_type eq $ASSEMBLY_TYPE);
+ok($slice->dbID == $DBID);
 
-$feature1 = new Bio::EnsEMBL::SeqFeature();
-$feature1->start(5);
-$feature1->end  (7);
-$feature1->strand(1);
-$feature1->score(10);
-$feature1->seqname(1);
-#$feature1->analysis($self->analysis);
+#
+#13 Test - Slice::adaptor
+#
+$slice->adaptor($slice_adaptor);
+ok($slice->adaptor == $slice_adaptor);
 
-$feature2 = new Bio::EnsEMBL::SeqFeature();
-$feature2->start  (105);
-$feature2->end    (107);
-$feature2->strand (1);
-$feature2->score  (10);
-$feature2->seqname("dummy-hid");
+#
+#14 Test - Slice::dbID
+#
+$slice->dbID(10);
+ok($slice->dbID==10);
 
-$fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $feature1,
-				    -feature2 => $feature2);
-
-push(@feats,$fp);
-
-
-$feature1 = new Bio::EnsEMBL::SeqFeature();
-$feature1->start(10);
-$feature1->end  (14);
-$feature1->strand(1);
-$feature1->score(10);
-$feature1->seqname(1);
-
-#$feature1->analysis($self->analysis);
-
-$feature2 = new Bio::EnsEMBL::SeqFeature();
-$feature2->start  (106);
-$feature2->end    (110);
-$feature2->strand (1);
-$feature2->score  (10);
-$feature2->seqname('dummy-hid');
-
-$fp2 = new Bio::EnsEMBL::FeaturePair(-feature1 => $feature1,
-				    -feature2 => $feature2);
+#
+#15-17 Test Slice::name
+#
+#verify that chr_name start and end are contained in the name
+my $name = $slice->name;
+ok($name =~/$CHR/);
+ok($name =~/$START/);
+ok($name =~/$END/);
 
 
-push(@feats,$fp2);
+#
+#18 Test Slice::id
+#
+ok($slice->id eq $slice->name);
 
 
-$dnaf = Bio::EnsEMBL::DnaDnaAlignFeature->new( -features => \@feats );
+#
+#19 Test Slice::length
+#
+ok($slice->length == ($END-$START + 1));
 
 
-$dnaf->seqname(1);
-$dnaf->hseqname('dummy-hid');
+#
+#20-22 Test Slice::invert
+#
+my $inverted_slice = $slice->invert;
+ok($slice != $inverted_slice); #slice is not same object as inverted slice
+#inverted slice on opposite strand
+ok($slice->strand == ($inverted_slice->strand * -1)); 
+#slice still on same strand
+ok($slice->strand == $STRAND);
 
-$dnaf->analysis($db->get_AnalysisAdaptor->fetch_by_logic_name("dummy-blast"));
+
+#
+# 23-24 Test Slice::seq
+#
+my $seq = $slice->seq;
+my $invert_seq = $slice->invert->seq;
+
+print STDERR "SEQ=[$seq]\n";
+
+ok(length($seq) == $slice->length); #sequence is correct length
+print STDERR "[".length($seq)."] != [".$slice->length."]\n"; 
+$seq = uc reverse $seq;  #reverse complement seq
+$seq =~ s/ACTG/TGAC/g; 
+ok($seq eq $invert_seq); #revcom same as seq on inverted slice
+
+#
+# 25-26 Test Slice::subseq
+#
+my $SPAN = 10;
+my $sub_seq = $slice->subseq(-$SPAN,$SPAN);
+my $invert_sub_seq = $slice->invert->subseq($slice->length + $SPAN, 
+					    $slice->length - $SPAN);
+ok(length $sub_seq == (2*$SPAN) + 1 ); 
+$seq = uc reverse $seq;
+$seq =~ s/ACTG/TGAC/g;
+ok($seq eq $invert_seq);
 
 
-$dna_f_ad->store(1,$dnaf);
 
-}
+
+
+
+
+

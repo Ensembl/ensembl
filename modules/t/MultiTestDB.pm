@@ -184,7 +184,8 @@ sub load_databases {
   my $db = DBI->connect($locator, $user, $pass, {RaiseError => 1});
 
   unless($db) {
-    $self->throw("Can't connect to database $locator");
+    $self->warn("Can't connect to database $locator");
+    return;
   }
 
   #create a database for each database specified
@@ -195,7 +196,8 @@ sub load_databases {
     print STDERR "\nCreating db $dbname";
 
     unless($db->do("CREATE DATABASE $dbname")) {
-      $self->throw("Could not create database [$dbname]");
+      $self->warn("Could not create database [$dbname]");
+      return;
     }
 
     #copy the general config into a dbtype specific config 
@@ -217,7 +219,10 @@ sub load_databases {
     my $dir = $self->curr_dir . "$DUMP_DIR/".$self->species."/$dbtype";
     local *DIR;
 
-    opendir(DIR, $dir) or die "could not open dump directory '$dir'";
+    unless(opendir(DIR, $dir)) {
+      $self->warn("could not open dump directory '$dir'");
+      return;
+    }
 
     my @files = readdir DIR;
 
@@ -286,7 +291,8 @@ sub unzip_test_dbs {
   }
 
   unless(-f $zipfile) {
-    $self->throw("zipfile could not be found\n");
+    $self->warn("zipfile could not be found\n");
+    return;
   }
 
   # unzip the zip file quietly

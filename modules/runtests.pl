@@ -27,19 +27,29 @@ if($opt_l) {
   exit;
 }
 
-#run all of the specified tests  
 
+#set environment var
 $ENV{'RUNTESTS_HARNESS'} = 1;
 
+#make sure proper cleanup is done if the user interrupts the tests
+$SIG{HUP} = $SIG{KILL} = $SIG{INT} = 
+  sub {warn "\n\nINTERRUPT SIGNAL RECEIEVED\n\n"; &clean;};
+
+#create a multitest db, its destruction will clean up after scripts
 my $clean_up = new MultiTestDB;
 
+#run all specified tests
 eval {
   runtests(@{&get_all_tests('.', \@ARGV)});
 };
 
-# do some clean up by creating a MultiTestDB object
+&clean;
 
-delete $ENV{"RUNTESTS_HARNESS"};
+sub clean {
+  #unset env var indicating final cleanup should be performed
+  delete $ENV{"RUNTESTS_HARNESS"};
+  exit;
+}
 
 =head2 get_all_tests
 
