@@ -311,7 +311,7 @@ sub _new_Exon_from_hashRef {
 sub fetch_evidence_by_Exon {
   my ( $self, $exon )  = @_;
 
-  my $statement = "SELECT exon_id, seq_start, seq_end, score
+  my $statement = "SELECT exon_id, seq_start, seq_end, score,
                           strand, analysis, name, hstart, hend, hstrand,
                           hid, evalue, perc_id, phase, end_phase
                    FROM supporting_feature 
@@ -334,7 +334,6 @@ sub fetch_evidence_by_Exon {
 			 $rowhash->{'exon_id'},
 			 $rowhash->{'hstart'},
 			 $rowhash->{'hend'},
-			 $rowhash->{'hstart'},
 			 $rowhash->{'hstrand'},
 			 $rowhash->{'score'},
 			 $rowhash->{'name'},
