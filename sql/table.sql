@@ -416,3 +416,28 @@ CREATE TABLE static_golden_path (
     KEY(fpcctg_name),
     KEY(chr_name) 
 );
+
+create TABLE gene_external (
+       internal_id            int(10) unsigned NOT NULL auto_increment,
+       external_id	     varchar(40) NOT NULL,
+       PRIMARY KEY(internal_id)
+);
+
+create TABLE exon_external (
+       internal_id            int(10) unsigned NOT NULL auto_increment,
+       external_id	     varchar(40) NOT NULL,
+       PRIMARY KEY(internal_id)
+);
+
+create TABLE transcript_external (
+       internal_id            int(10) unsigned NOT NULL auto_increment,
+       external_id	     varchar(40) NOT NULL,
+       PRIMARY KEY(internal_id)
+);
+
+create TABLE translation_external (
+       internal_id            int(10) unsigned NOT NULL auto_increment,
+       external_id	     varchar(40) NOT NULL,
+       PRIMARY KEY(internal_id)
+);
+
