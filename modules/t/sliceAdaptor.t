@@ -399,7 +399,11 @@ ok($gene_count_attrib->value() == 23322);
 #
 # try to store another attrib of the same name
 #
-$slice_adaptor->set_seq_region_attrib($slice, "GeneCount", 199);
+$attrib = Bio::EnsEMBL::Attribute->new( '-code' => "GeneCount",	
+					'-name' => "GeneCount",
+					'-value' => 199 );
+
+$attribute_adaptor->store_on_Slice( $slice, [$attrib] );
 
 ## make sure the attrib type is only stored once
 my $count =
