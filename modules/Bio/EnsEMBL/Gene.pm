@@ -94,23 +94,24 @@ sub is_known{
    return 0;
 }
 
+=head2 description
 
-=head2 each_DBLink
-
- Title   : each_DBLink
- Usage   :
- Function:
+ Title   : description
+ Usage   : $gene->description
+ Function: get/set description
  Example :
- Returns : 
- Args    :
-
+ Returns : a string
+ Args    : none
 
 =cut
 
-sub each_DBLink {
-   my ($self,@args) = @_;
+sub description {
+    my ($self, $value) = @_;
 
-   return @{$self->{'_db_link'}}
+    if (defined $value) {
+        $self->{description} = $value;
+    }
+    $self->{description};    
 }
 
 =head2 add_DBLink
@@ -197,7 +198,7 @@ sub get_Exon_by_id {
 
 =cut
 
-sub type{
+sub type {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
