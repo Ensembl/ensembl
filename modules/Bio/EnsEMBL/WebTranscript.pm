@@ -88,7 +88,7 @@ use Bio::EnsEMBL::Transcript;
 =cut
 
 sub is_start_exon_in_context{
-   my ($obj,$value) = @_;
+   my ($obj,$dummy,$value) = @_;
    if( defined $value) {
       $obj->{'is_start_exon_in_context'} = $value;
     }
@@ -96,7 +96,7 @@ sub is_start_exon_in_context{
 
 }
 
-
+       
 =head2 is_end_exon_in_context
 
  Title   : is_end_exon_in_context
@@ -110,7 +110,7 @@ sub is_start_exon_in_context{
 =cut
 
 sub is_end_exon_in_context{
-   my ($obj,$value) = @_;
+   my ($obj,$dummy,$value) = @_;
    if( defined $value) {
       $obj->{'is_end_exon_in_context'} = $value;
     }

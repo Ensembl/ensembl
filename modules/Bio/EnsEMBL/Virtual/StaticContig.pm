@@ -511,7 +511,10 @@ sub get_all_PredictionFeatures {
 #   my $id     = $self->internal_id();
    my $length = $self->length();
 
-
+	
+   if( exists $self->{'_genscan_cache'} ) {
+       return @{$self->{'_genscan_cache'}};
+   }
 
 
   my $glob_start=$self->_global_start;
@@ -640,6 +643,9 @@ sub get_all_PredictionFeatures {
        $previous = $hid;
   }
  
+
+   $self->{'_genscan_cache'} = \@array;
+
    return @array;
 }
 
@@ -1128,7 +1134,10 @@ sub get_all_Genes_exononly{
    unless ($idlist){
        return ();
    }
-   
+
+   if( exists $self->{'_all_Genes_exononly'} ) {
+       return @{$self->{'_all_Genes_exononly'}};
+   }
 
    my $query = "SELECT e.id,e.sticky_rank,et.rank,et.transcript,t.gene, 
                         IF     (sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -1181,9 +1190,9 @@ sub get_all_Genes_exononly{
 	   $current_gene->add_Transcript($current_transcript);
 	   push(@trans,$current_transcript);
 	   if( $rank == 1 ) {
-	       $current_transcript->is_start_exon_in_context(1);
+	       $current_transcript->is_start_exon_in_context('dummy',1);
 	   } else {
-	       $current_transcript->is_start_exon_in_context(0);
+	       $current_transcript->is_start_exon_in_context('dummy',0);
 	   }
 
 	   $current_transcript_id = $transcriptid;
@@ -1207,6 +1216,7 @@ sub get_all_Genes_exononly{
        $exon->end($end);
        $exon->strand($strand);
        $exon->id($exonid);
+       $exon->seqname($self->id);
        $previous_exon = $exon;
        $current_transcript->add_Exon($exon);
        $current_transcript->end_exon_rank($rank);
@@ -1223,10 +1233,11 @@ sub get_all_Genes_exononly{
        $sth2->execute;
        my ($rank) = $sth2->fetchrow_array();
        if( $rank == $trans->end_exon_rank) {
-	   $trans->is_end_exon_in_context(1);
+	   $trans->is_end_exon_in_context('dummy',1);
        } else {
-	   $trans->is_end_exon_in_context(0);
+	   $trans->is_end_exon_in_context('dummy',0);
        }
+                                                              
    }
 
 
@@ -1242,6 +1253,7 @@ sub get_all_Genes_exononly{
        $gene_obj->_get_description($g);
    }
 
+   $self->{'_all_Genes_exononly'} = \@out;
 
    return @out;
 
@@ -1579,7 +1591,70 @@ sub get_all_Genes{
    return @newgenes;
 }
 
+=head2 fetch_chromosome_length
 
+ Title   : fetch_chromosome_length
+ Usage   : $length_in_bp = $self->fetch_chromosome_length
+ Function:
+ Example :
+ Returns : SV 
+ Args    :
+
+
+=cut
+
+sub fetch_chromosome_length {
+   my ($self,$chr) = @_;
+
+   unless (defined $chr){
+      $chr = $self->_chr_name();
+   }
+   my $kba = $self->dbobj->get_KaryotypeBandAdaptor();
+   my $len = $kba->fetch_chromosome_length($chr);
+	return($len);
+}
+
+
+=head2 fetch_karyotype_adaptor
+
+ Title   : fetch_karyotype_adaptor
+ Usage   : $band_obj = $self->fetch_karyotype_adaptor
+ Function:
+ Example :
+ Returns : karyotype band adaptor 
+ Args    :
+
+
+=cut
+
+sub fetch_karyotype_adaptor {
+   my ($self,@args) = @_;
+
+   return ($self->dbobj->get_KaryotypeBandAdaptor());
+
+}
+
+
+=head2 fetch_karyotype_band_byname
+
+ Title   : fetch_karyotype_band_byname
+ Usage   : $band_obj = $self->fetch_karyotype_band_byname
+ Function:
+ Example :
+ Returns : karyotype band object 
+ Args    :
+
+
+=cut
+
+sub fetch_karyotype_band_by_name {
+   my ($self,$chr, $band) = @_;
+
+   my $kadp = $self->dbobj->get_KaryotypeBandAdaptor();
+   my $band = $kadp->fetch_by_chromosome_name($chr, $band);
+
+   return $band; 
+}
 
 
 
