@@ -195,12 +195,12 @@ sub upload_xrefs {
 	my %dep = %$depref;
 
 	$xref_sth->execute($dep{ACCESSION},
-			   $xref->{LABEL},
-			   $xref->{DESCRIPTION},
-			   $xref->{SOURCE_ID},
-			   $xref->{SPECIES_ID}) || die $dbi->errstr;
+			   "",
+			   "",
+			   $dep{SOURCE_ID},
+			   $xref->{SPECIES_ID});
 
-	my $dep_xref_id = $xref_sth->{'mysql_insertid'};
+	my $dep_xref_id = insert_or_select($xref_sth, $dbi->err, $dep{ACCESSION}, $dep{SOURCE_ID});
 			
 	$dep_sth->execute($xref_id, $dep_xref_id, '', $dep{SOURCE_ID} ) || die $dbi->errstr;
 	# TODO linkage anntation?
@@ -229,7 +229,7 @@ sub get_dependent_xref_sources {
   if (!defined %dependent_sources) {
 
     my $dbi = dbi();
-    my $sth = $dbi->prepare("SELECT name,source_id FROM source WHERE download='Y'");
+    my $sth = $dbi->prepare("SELECT name,source_id FROM source WHERE download='N'");
     $sth->execute() || die $dbi->errstr;
     while(my @row = $sth->fetchrow_array()) {
       my $source_name = $row[0];
