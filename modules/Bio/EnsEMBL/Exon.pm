@@ -791,22 +791,14 @@ sub seq {
   if ( ! defined $self->slice ) {
     warning(" this exon doesn't have a slice you won't get a seq \n");
     return undef;
+  } else {
+    $seq = $self->slice()->subseq($self->start, $self->end, $self->strand);
   }
-  else {
-      
-    $seq = $self->slice()->subseq($self->start, $self->end);
-
-    if($self->strand == -1){
-      $seq =~ tr/ATGCatgc/TACGtacg/;
-      $seq = reverse($seq);
-    }
-      
-   }
   $self->{'_seq_cache'} = $seq;
 
   return Bio::Seq->new(-seq     => $self->{'_seq_cache'},
-		       -id      => $self->stable_id,
-		       -moltype => 'dna');
+                       -id      => $self->stable_id,
+                       -moltype => 'dna');
 }
 
 
