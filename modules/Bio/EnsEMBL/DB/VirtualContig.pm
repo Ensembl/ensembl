@@ -964,7 +964,7 @@ sub _convert_seqfeature_to_vc_coords {
 		next;
 	    }
 	    $seen =1;
-	    $strand = $sbu->strand;
+	    $strand = $sub->strand;
 	    $new->add_sub_SeqFeature($sub,'EXPAND');
 	}
 	if( $seen == 1 ) {       
