@@ -40,6 +40,7 @@ use Bio::EnsEMBL::Utils::Converter::bio_ens;
 use Bio::EnsEMBL::DnaDnaAlignFeature;
 use Bio::EnsEMBL::DnaPepAlignFeature;
 use Bio::EnsEMBL::PepDnaAlignFeature;
+use Bio::EnsEMBL::ProteinFeature;
 
 @ISA = qw(Bio::EnsEMBL::Utils::Converter::bio_ens);
 
