@@ -92,6 +92,7 @@ sub new {
 	$self->_obj->{'default_module'} =
     { 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
       'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
+      'Attribute'            => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
       'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
       'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
       'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
@@ -579,15 +580,14 @@ sub get_RepeatFeatureAdaptor {
 
 sub get_ProteinAlignFeatureAdaptor {
   my( $self ) = @_;
-    
-  return 
-    $self->get_adaptor("ProteinAlignFeature");
+
+  return $self->get_adaptor("ProteinAlignFeature");
 }
 
-  
+
 =head2 get_DnaAlignFeatureAdaptor
 
-  Args       : none 
+  Args       : none
   Example    : $dafa = $db_adaptor->get_DnaAlignFeatureAdaptor();
   Description: Gets a DnaAlignFeatureAdaptor for this database
   Returntype : Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor
@@ -812,7 +812,7 @@ sub get_MiscFeatureAdaptor {
 =head2 get_AssemblyExceptionFeatureAdaptor
 
   Arg [1]    : none
-  Example    : $aefa = $db_adaptor->get_AssebmyExceptionFeatureAdaptor();
+  Example    : $aefa = $db_adaptor->get_AssemblyExceptionFeatureAdaptor();
   Description: Gets a AssemblyExceptionFeature adaptor for this database
   Returntype : Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor
   Exceptions : none
@@ -824,6 +824,24 @@ sub get_AssemblyExceptionFeatureAdaptor {
   my $self = shift;
 
   return $self->get_adaptor('AssemblyExceptionFeature');
+}
+
+
+
+=head2 get_AttributeAdaptor
+
+  Arg [1]    : none
+  Example    : $aa = $db_adaptor->get_AttributeAdaptor()
+  Description: Gets an AttributeAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::AttributeAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_AttributeAdaptor {
+  my $self = shift;
+  return $self->get_adaptor('Attribute');
 }
 
 
