@@ -90,6 +90,7 @@ my $expressiondb;
 my $snpdb;
 my $embldb;
 my $estdb;
+my $mousedb;
 # end of satellites
 
 &GetOptions( 
@@ -109,6 +110,7 @@ my $estdb;
             'snp:s' => \$snpdb,
             'embl:s' => \$embldb,
             'est:s' => \$estdb,
+            'mouse:s' => \$mousedb,
             'mega:s' => \$template,  #dump all known ones, using $template
            );
 
@@ -133,6 +135,7 @@ if ($template) {                        #
     &dump_snp( template_fill($template, 'snp'));
     &dump_embl( template_fill($template, 'embl'));
     &dump_est( template_fill($template, 'est'));
+    &dump_mouse( template_fill($template, 'mouse'));
 
 } else { 
 
@@ -144,6 +147,7 @@ if ($template) {                        #
     &dump_snp($snpdb);
     &dump_embl($embldb);
     &dump_est($estdb);
+    &dump_mouse($mousedb);
     
 }
 
@@ -672,6 +676,12 @@ WHERE  g.chr_name = '$chr'
     dump_data($sql, $satdb, 'feature');
     return undef;
 }                                       # est
+
+sub dump_mouse  {
+    my ($satdb)=@_;
+    return unless $satdb;
+    &dump_est($satdb);
+}
 
 sub dump_schema {
     my ($satdb) = @_;
