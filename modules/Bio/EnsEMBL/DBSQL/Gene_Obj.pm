@@ -719,7 +719,7 @@ sub _make_sticky_exon{
    foreach my $exon ( @exons ) {
        #print STDERR "Exon ",$exon->start," ",$exon->end," ",$exon->seqname,"\n";
        $seqstr .= $exon->seq->seq();
-       print STDERR "Sticking in ",$exon->id,":",$exon->sticky_rank," $seqstr\n";
+       #print STDERR "Sticking in ",$exon->id,":",$exon->sticky_rank," $seqstr\n";
 
        $sticky->add_component_Exon($exon);
    }

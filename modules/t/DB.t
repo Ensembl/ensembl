@@ -55,6 +55,7 @@ $discard = $clone->embl_id();
 $discard = $clone->version();
 $discard = $clone->embl_version();
 $vc = $clone->virtualcontig();
+$vc = undef;
 print "ok 3\n";
 
 
