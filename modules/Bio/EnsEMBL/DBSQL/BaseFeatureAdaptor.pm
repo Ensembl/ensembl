@@ -492,7 +492,7 @@ sub _slice_fetch {
     if($feat_cs->equals($slice_cs)) {
       # no mapping is required if this is the same coord system
 
-      my $max_len =
+      my $max_len = $self->_max_feature_length() ||
         $mcc->fetch_max_length_by_CoordSystem_feature_type($feat_cs,$tab_name);
 
       my $constraint = $orig_constraint;
@@ -552,7 +552,7 @@ sub _slice_fetch {
       } else {
         # do multiple split queries using start / end constraints
 
-        my $max_len =
+        my $max_len = $self->_max_feature_length() ||
           $mcc->fetch_max_length_by_CoordSystem_feature_type($feat_cs,
                                                              $tab_name);
         my $len = @coords;
@@ -1042,6 +1042,21 @@ sub _objs_from_sth {
   throw("abstract method _obj_from_sth not defined by implementing"
              . " subclass of BaseFeatureAdaptor");
 }
+
+
+
+#
+# Internal function. Allows the max feature length which is normally
+# retrieved from the meta_coord table to be overridden.  This allows
+# for some significant optimizations to be put in when it is known
+# that requested features will not be over a certain size.
+#
+sub _max_feature_length {
+  my $self = shift;
+  return $self->{'_max_feature_length'} = shift if(@_);
+  return $self->{'_max_feature_length'};
+}
+
 
 
 =head1 DEPRECATED METHODS

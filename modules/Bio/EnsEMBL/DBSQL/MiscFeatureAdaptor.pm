@@ -87,8 +87,10 @@ sub fetch_all_by_Slice_and_set_code {
 
   my $msa = $self->db->get_MiscSetAdaptor();
   my @sets = ();
+  my $max_len = 0;
   foreach my $set_code (@_) {
     my $set = $msa->fetch_by_code($set_code);
+    $max_len = $set->longest_feature() if($set->longest_feature > $max_len);
     if(!$set) { warning("No misc_set with code [$set_code] exists") }
     else { push @sets, $set->dbID; }
   }
@@ -100,7 +102,14 @@ sub fetch_all_by_Slice_and_set_code {
   } else {
     return [];
   }
-  return $self->fetch_all_by_Slice_constraint($slice, $constraint);
+
+  $self->_max_feature_length($max_len);
+
+  my $results = $self->fetch_all_by_Slice_constraint($slice, $constraint);
+
+  $self->_max_feature_length(undef);
+
+  return $results;
 }
 
 
