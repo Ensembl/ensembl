@@ -667,7 +667,7 @@ sub submit_depend_job {
   # rest of command
   push @depend_bsub, ('-q', 'small', '-o', "$root_dir/depend.out", '-e', "$root_dir/depend.err", '/bin/true');
 
-  #print "depend bsub:\n" . join (" ", @depend_bsub) . "\n";
+  #print "##depend bsub:\n" . join (" ", @depend_bsub) . "\n";
 
   my ($depend_wtr, $depend_rtr, $depend_etr, $depend_pid);
   $depend_pid = open3($depend_wtr, $depend_rtr, $depend_etr, @depend_bsub);
@@ -1309,6 +1309,8 @@ sub build_gene_display_xrefs {
       print GENE_DX "UPDATE gene SET display_xref_id=" . $best_xref . " WHERE gene_id=" . $gene_id . ";\n";
       print GENE_DX_TXT $best_xref . "\t" . $gene_id ."\n";
       $hit++;
+    } else {
+      $miss++;
     }
 
   }
