@@ -133,6 +133,7 @@ sub get_all_Genes{
        my ($gene,$trans);
        while( (my $arr = $sth->fetchrow_arrayref()) ) {
 	   my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exoncreated,$exonmodified,$strand,$phase,$trans_start,$trans_exon_start,$trans_end,$trans_exon_end,$translationid) = @{$arr};
+	   print STDERR "Got exon $exonid\n";
 	   if( ! defined $phase ) {
 	       $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
 	   }
@@ -143,17 +144,21 @@ sub get_all_Genes{
 	       } 
 	       $gene = Bio::EnsEMBL::Gene->new();
 	       $gene->id($geneid);
+	       $current_gene_id = $geneid;
 	       push(@out,$gene);
+	       print STDERR "Made new gene\n";
 	   }
-	   if( $transcriptid != $current_transcript_id ) {
+	   if( $transcriptid ne $current_transcript_id ) {
 	       $trans = Bio::EnsEMBL::Transcript->new();
 	       $trans->id($transcriptid);
+	       $current_transcript_id = $transcriptid;
 	       my $translation = Bio::EnsEMBL::Translation->new();
 	       $translation->start($trans_start);
 	       $translation->end($trans_end);
 	       $translation->start_exon_id($trans_exon_start);
 	       $translation->end_exon_id($trans_exon_end);
 	       $translation->id($translationid);
+	       $trans->translation($translation);
 	       $gene->add_Transcript($trans);
 	   }
 	   
