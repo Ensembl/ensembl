@@ -562,6 +562,23 @@ sub accession_number{
 
 }
 
+=head2 moltype
+
+ Title   : moltype
+ Usage   : print "Molecule type: ", $obj->moltype, "\n";
+ Function:
+ Returns :
+ Args    :
+
+
+=cut
+
+sub moltype{
+  my $obj = shift;
+  return $obj->alphabet(@_);
+
+}
+
 =head2 alphabet
 
  Title   : alphabet
