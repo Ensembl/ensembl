@@ -424,7 +424,7 @@ sub validate {
     if ($self->end < $self->start) {
       $self->vthrow("End coordinate < start coordinate");
     }
-    
+    return 1;
 }
 
 

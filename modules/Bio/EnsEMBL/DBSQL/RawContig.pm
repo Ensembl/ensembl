@@ -1603,7 +1603,7 @@ sub get_genscan_peptides {
 
 sub get_all_ExternalFeatures{
    my ($self) = @_;
-   
+
    my @out;
    my $acc;
    

@@ -124,7 +124,7 @@ sub get_Gene_chr_bp {
                     AND sgp.raw_id=e.contig_id 
                     AND sgp.type = '$type' 
                     AND tr.gene_id = gsi.gene_id
-                    AND gsi.stable_id = '$geneid';" 
+                    AND gsi.stable_id = '$geneid'" 
                     );
    $sth->execute();
 
@@ -140,7 +140,6 @@ sub get_Gene_chr_bp {
 
    $start=shift @start_sorted;
    $end=pop @start_sorted;
-
    return ($chr,$start,$end); 
         
 }
