@@ -57,12 +57,12 @@ use Bio::EnsEMBL::TranscriptFactory;
 
  Title   : delete_by_RawContig_id
  Usage   : $fa->delete_by_RawContig($contig)
- Function: deletes features and repeatfeatures by Bio::EnsEMBL::DB::RawContigI.
+ Function: deletes features and repeatfeatures by Bio::EnsEMBL::RawContig
            Gets out the internal_id from RawContig_obj and passes it to
            delete_by_RawContig_internal_id, which does the business
  Example : $fa->delete_by_RawContig($RawContig_obj)
  Returns : nothing
- Args    : Bio::EnsEMBL::DB::RawContigI
+ Args    : Bio::EnsEMBL::RawContig
 
 =cut
 
@@ -70,8 +70,8 @@ use Bio::EnsEMBL::TranscriptFactory;
 sub delete_by_RawContig {
     my ($self,$contig) = @_;
     my $contig_internal_id;
-    $self->throw("$contig is not a Bio::EnsEMBL::DB::RawContigI")
-        unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::RawContigI"));
+    $self->throw("$contig is not a Bio::EnsEMBL::RawContig")
+        unless (defined($contig) && $contig->isa("Bio::EnsEMBL::RawContig"));
     $contig_internal_id = $contig->internal_id;
     $self->delete_by_RawContig_internal_id($contig_internal_id);
 }
@@ -81,10 +81,10 @@ sub delete_by_RawContig {
 
  Title   : delete_by_RawContig_id
  Usage   : $fa->delete_by_RawContig($contig)
- Function: deletes features and repeatfeatures by Bio::EnsEMBL::DB::RawContigI
+ Function: deletes features and repeatfeatures by Bio::EnsEMBL::RawContig
  Example : $fa->delete_by_RawContig($internal_id)
  Returns : nothing
- Args    : Bio::EnsEMBL::DB::RawContigI
+ Args    : Bio::EnsEMBL::RawContig
 
 =cut
 
@@ -161,7 +161,7 @@ sub write {
            and analysis_id.
  Example :
  Returns : nothing
- Args    : Bio::EnsEMBL::DB::ContigI, Bio::EnsEMBL::SeqFeatureI
+ Args    : Bio::EnsEMBL::RawContig, Bio::EnsEMBL::SeqFeatureI
 
 =cut
 
@@ -178,13 +178,6 @@ sub store {
     my $protein_align_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
     my $simple_adaptor = $self->db->get_SimpleFeatureAdaptor();
 #    my $prediction_adaptor = $self->db->get_PredictionFeatureAdaptor();
-
-
-
-    # Check for contig
-    #$self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")
-    #   unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
-    #my $contig_internal_id = $contig->dbID();
 
 
     #
@@ -686,12 +679,12 @@ sub delete {
  Title   : fetch_RepeatFeatures_by_RawContig
  Usage   : foreach my $rf ($fa->fetch_all_RepeatFeatures($contig))
  Function: Gets all the repeat features on a contig.
-           If the thingy passed in is Bio::EnsEMBL::DB::ContigI, gets the internal_id from
+           If the thingy passed in is Bio::EnsEMBL::RawContig, gets the internal_id from
            there. Otherwise assumes that the thingy is contig id, which is used to get
            contig internal_id via RawContigAdaptor.
  Example :
  Returns : Array of Bio::EnsEMBL::Repeat
- Args    : Bio::EnsEMBL::DB::ContigI or contig id as a string
+ Args    : Bio::EnsEMBL::RawContig or contig id as a string
 
 
 =cut
@@ -700,8 +693,9 @@ sub delete {
 sub fetch_RepeatFeatures_by_RawContig {
    my ($self, $contig) = @_;
    my $contig_internal_id;
-   if (ref($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI")) {
-       # we have ContigI object
+
+   if (ref($contig) && $contig->isa("Bio::EnsEMBL::RawContig")) {
+       # we have RawContig object
        $contig_internal_id = $contig->internal_id;
    } elsif (defined($contig)) {
        # assume that the thing passed in is Contig id

@@ -51,10 +51,7 @@ sub fset2transcript {
   
     unless ($genscan->isa ("Bio::EnsEMBL::SeqFeatureI"))
     {print "$genscan must be Bio::EnsEMBL::SeqFeatureI\n";}
-    unless ($contig->isa ("Bio::EnsEMBL::DB::ContigI"))
-    {print "$contig must be Bio::EnsEMBL::DB::ContigI\n";}
-
-    
+     
     my $transcript = new Bio::EnsEMBL::Transcript;
     $transcript->temporary_id($contig->id . "." . $genscan->raw_seqname);
         

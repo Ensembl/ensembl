@@ -49,12 +49,11 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::PerlDB::Contig;
 use vars qw($AUTOLOAD @ISA);
 use strict;
-use Bio::EnsEMBL::DB::ContigI;
 
 # Object preamble - inheriets from Bio::Root::Root
 use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::DB::ContigI);
+@ISA = qw(Bio::EnsEMBL::Root);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -467,7 +466,7 @@ sub embl_order {
  Usage   : This is a slightly sneaky method, it returns the seq length 
            there is a seq attached, and otherwise works as a set/get.
            This is in order to have "artificial" contigs which have no seq,
-           but still comply to ContigI
+           but still comply to the Contig interface
  Returns : length if defined in seq or if set
  Args    : optional length
 

@@ -88,7 +88,7 @@ sub new {
 
  Title   : sister
  Usage   : $obj->sister($newval)
- Function: Returns the RawContigI implementing object of the sister
+ Function: Returns the RawContig object of the sister
            contig. ie the id of the sister object is
            $obj->sister->id();
  Returns : value of sister
@@ -101,9 +101,7 @@ sub sister{
    my $obj = shift;
    if( @_ ) {
        my $value = shift;
-       if( !ref $value || ! $value->isa('Bio::EnsEMBL::DB::RawContigI') ) {
-	   $obj->throw("Value [$value] is not a RawContigI. Problemo...");
-       }
+
        $obj->{'sister_contig'} = $value;
    }
    return $obj->{'sister_contig'};

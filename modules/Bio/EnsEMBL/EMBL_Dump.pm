@@ -103,10 +103,6 @@ sub add_ensembl_comments {
        confess "Ok. No aseq passed into EMBL_Dump and I can't even throw a nice exception!";
    }
 
-   if( !$aseq->isa('Bio::EnsEMBL::DB::ContigI') ) {
-       $aseq->throw("not got a EnsEMBL annseq but a $aseq. Not going to add comments");
-   }
-
    $aseq->desc("Reannotated sequence via Ensembl");
    my $comment = Bio::Annotation::Comment->new();
    

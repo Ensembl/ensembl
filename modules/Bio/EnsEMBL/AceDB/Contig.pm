@@ -48,14 +48,13 @@ use Bio::EnsEMBL::ContigOverlapHelper;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Repeat;
-use Bio::EnsEMBL::DB::RawContigI;
 use Bio::SeqFeature::Generic;
 
 # Object preamble - inheriets from Bio::Root::Object
 
 
 
-@ISA = qw(Bio::EnsEMBL::DB::RawContigI  Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Root);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called

@@ -55,7 +55,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-use Bio::EnsEMBL::DB::CloneI;
+
 use Bio::EnsEMBL::AceDB::Contig;
 use Bio::EnsEMBL::AceDB::Clone;
 use Bio::EnsEMBL::AceDB::Update_Obj;

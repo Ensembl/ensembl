@@ -1,6 +1,6 @@
 
 #
-# BioPerl module for DB::Clone
+# EnsEMBL module for Bio::EnsEMBL::Clone
 #
 # Cared for by EnsEMBL (www.ensembl.org)
 #
@@ -15,8 +15,6 @@
 Bio::EnsEMBL::Clone - Object representing one clone
 
 =head1 SYNOPSIS
-
-    # $db is Bio::EnsEMBL::DB::Obj 
 
     @contig = $db->get_all_Contigs();
 

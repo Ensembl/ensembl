@@ -51,21 +51,15 @@ package Bio::EnsEMBL::AceDB::Update_Obj;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object and Bio::EnsEMBL::DB::Update_ObjI
-
 use Bio::Root::Object;
 use Bio::EnsEMBL::AceDB::Obj;
-use Bio::EnsEMBL::DB::Update_ObjI;
-use Bio::EnsEMBL::Ghost;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 
 use DBI;
 
-use Bio::EnsEMBL::DBSQL::DummyStatement;
-
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::Update_ObjI);
+@ISA = qw(Bio::Root::Object);
 
 # new() is inherited from Bio::Root::Object
 # _initialize is where the heavy stuff will happen when new is called

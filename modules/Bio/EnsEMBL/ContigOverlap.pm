@@ -218,7 +218,7 @@ sub hash_string{
  Title   : contiga
  Usage   : $obj->contiga($contig)
  Function: Get/Set for the 1st contig in the overlap
- Returns : Bio::EnsEMBL::DB::RawContigI
+ Returns : Bio::EnsEMBL::RawContig
  Args    : newvalue (optional)
 
 
@@ -229,9 +229,7 @@ sub contiga {
 
    if( @_ ) {
        my $value = shift;
-       if( !ref $value || ! $value->isa('Bio::EnsEMBL::DB::ContigI') ) {
-	   $obj->throw("Value [$value] is not a RawContigI. Problemo...");
-       }
+
        $obj->{'contiga'} = $value;
    }
    return $obj->{'contiga'};
@@ -244,7 +242,7 @@ sub contiga {
  Title   : contigb
  Usage   : $obj->contigb($contig)
  Function: Get/Set for the 2nd contig in the overlap
- Returns : Bio::EnsEMBL::DB::RawContigI
+ Returns : Bio::EnsEMBL::RawContig
  Args    : newvalue (optional)
 
 
@@ -255,9 +253,7 @@ sub contigb {
 
    if( @_ ) {
        my $value = shift;
-       if( !ref $value || ! $value->isa('Bio::EnsEMBL::DB::ContigI') ) {
-	   $obj->throw("Value [$value] is not a RawContigI. Problemo...");
-       }
+
        $obj->{'contigb'} = $value;
    }
    return $obj->{'contigb'};

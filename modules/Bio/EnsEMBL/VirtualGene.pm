@@ -299,10 +299,6 @@ sub dbobj{
 sub _calculate_coordinates{
    my ($self,$gene,$contig) = @_;
 
-   if( !defined $contig || ! ref $contig || ! $contig->isa('Bio::EnsEMBL::DB::ContigI') ) {
-       $self->throw("_calculate_coordinates(gene,contig)");
-   }
-
    if( ! ref $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("_calculate_coordinates(gene,contig)");
    }

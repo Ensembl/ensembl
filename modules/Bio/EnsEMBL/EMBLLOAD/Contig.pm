@@ -1,6 +1,6 @@
 
 #
-# BioPerl module for DB/ContigI.pm
+# EnsEMBL module for Bio::EnsEMBL::EMBLLOAD::Contig.pm
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DB::ContigI.pm - Abstract Interface for Contig
+Bio::EnsEMBL::EMBLLOAD::Contig.pm - Abstract Interface for Contig
 
 =head1 SYNOPSIS
 
@@ -41,7 +41,7 @@ use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::DB::ContigI);
+@ISA = qw(Bio::EnsEMBL::Root);
 use Bio::EnsEMBL::EMBLLOAD::Obj;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::DBEntry;

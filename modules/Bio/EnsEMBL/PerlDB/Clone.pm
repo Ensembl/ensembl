@@ -42,14 +42,13 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::PerlDB::Clone;
 use vars qw($AUTOLOAD @ISA);
 use strict;
-use Bio::EnsEMBL::DB::CloneI;
 
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::EnsEMBL::Root;
 
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::DB::CloneI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 sub new {
   my($class,@args) = @_;
@@ -120,11 +119,6 @@ sub get_all_Contigs{
 
 sub add_Contig{
    my ($self,$contig) = @_;
-
-
-   if( ! $contig->isa('Bio::EnsEMBL::DB::ContigI') ) {
-       $self->warn("$contig is not a contigI object...");
-   }
 
    $self->{'_contig_hash'}->{$contig->id()} = $contig;
 }

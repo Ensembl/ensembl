@@ -49,9 +49,8 @@ use Bio::EnsEMBL::Root;
 use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::EMBLLOAD::Contig;
-use Bio::EnsEMBL::DB::CloneI;
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::DB::CloneI);
+@ISA = qw(Bio::EnsEMBL::Root);
 use Bio::EnsEMBL::Translation;
 
 # Object preamble - inheriets from Bio::Root::Object

@@ -789,7 +789,7 @@ sub dnadb {
 
 =head2 add_DASFeatureFactory
 
-  Arg [1]    : Bio::EnsEMBL::DB::ExternalFeatureFactoryI $value 
+  Arg [1]    : Bio::EnsEMBL::ExternalFeatureFactory $value 
   Example    : none
   Description: Attaches a DAS Feature Factory to this method.  
                ExternalFeatureFactory objects are not really used right now.
@@ -804,12 +804,6 @@ sub dnadb {
 sub add_DASFeatureFactory{
   my ($self,$value) = @_;
   
-  unless( ref $value && 
-	  $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
-    $self->throw("[$value] is not a Bio::EnsEMBL::DB::ExternalFeatureFactoryI"
-		 . " but it should be!");
-  }
-  
   push(@{$self->{'_das_ff'}},$value);
 }
 
@@ -821,7 +815,7 @@ sub add_DASFeatureFactory{
   Example    : none
   Description: Not sure if this is used, or if it should be removed.  It 
                does not seem to be used at the moment
-  Returntype : Bio::EnsEMBL::DB::ExternalFeatureFactoryI
+  Returntype : Bio::EnsEMBL::ExternalFeatureFactory
   Exceptions : none
   Caller     : ??
 
