@@ -319,48 +319,6 @@ sub password {
 }
 
 
-=head2 get_Feature_Obj
-
- Title   : get_Feature_Obj
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub get_Feature_Obj {
-    my( $self ) = @_;
-    
-    my( $feature_obj );
-    unless ($feature_obj = $self->{'_feature_obj'}) {
-        require Bio::EnsEMBL::DBSQL::Feature_Obj;
-        $feature_obj = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
-        $self->{'_feature_obj'} = $feature_obj;
-    }
- 
-    return $feature_obj;
-}
-
-=head2 feature_Obj
-    
- Title   : feature_Obj
- Usage   : my $featureobj = $db->feature_Obj
- Function: Returns the feature object database handle
- Example : 
- Returns : Bio::EnsEMBL::DB::Feature_ObjI
- Args    : 
-
-=cut
-
-sub feature_Obj {
-    my $self = shift;
-
-    #$self->warn("feature_Obj is deprecated: using get_Feature_Obj instead!");
-    return $self->get_Feature_Obj(@_);
-}
-
 
 =head2 get_MetaContainer
 
@@ -2987,6 +2945,49 @@ sub remove_ExternalAdaptor {
     $self->_ext_adaptor($adtor_name, 'DELETE');
     undef;
 }
+
+
+=head1 Old Functions 
+
+Functions which are completely deprecated 
+
+=cut
+
+
+=head2 get_Feature_Obj
+
+ Title   : get_Feature_Obj
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub get_Feature_Obj {
+    my( $self ) = @_;
+    
+    $self->throw("No more Feature Objs!");
+}
+
+=head2 feature_Obj
+    
+ Title   : feature_Obj
+ Usage   : my $featureobj = $db->feature_Obj
+ Function: Returns the feature object database handle
+ Example : 
+ Returns : Bio::EnsEMBL::DB::Feature_ObjI
+ Args    : 
+
+=cut
+
+sub feature_Obj {
+    my $self = shift;
+    $self->throw("No more Feature Objs!");
+
+}
+
 
 
 1;

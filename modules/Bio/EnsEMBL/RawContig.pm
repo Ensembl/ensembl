@@ -78,6 +78,9 @@ sub new {
     ( $international_name );
 }
 
+
+
+
 # things to take over from DBSQL/RawContig ?
 # fetch - done in DBSQL/RawContigAdaptor
 # get_all_Genes - should be in GeneAdaptor
