@@ -1,5 +1,6 @@
 #!/usr/local/bin/perl
 
+
 =head1 NAME
 
  gene_comparison_script.pl
@@ -14,6 +15,8 @@
 
   Notice that GeneComparison can be used with any sets of genes, not necessarily obtained in the way
   coded in this script. For more information, see the documentation of this class.
+
+  WARNING: the default databases are in the old schema, so use branch code
 
 =head1 SYNOPSIS
 
@@ -41,14 +44,18 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Utils::GeneComparison;
 use Getopt::Long;
 
+
 my $host1  = 'ensrv3';
-my $host2  = 'ensrv3';
+my $host2  = 'ecs1b';
 my $user   = 'ensro';
 my $host;
 my $dbname;
 my $path;
 
+# WARNING: these databases are in the old schema, so use branch code
+
 # the default behaviour is to compare ensembl built genes with human-annotated genes in chr20
+
 my $dbname1 = 'homo_sapiens_core_110';
 my $dbname2 = 'chr20';
 my $path1  = 'UCSC';
@@ -58,12 +65,17 @@ my $type2  = ['HUMACE-Novel_CDS','HUMACE-Known'];
 my (@type1,@type2);
 
 # if one only provides $chr of these variables, the whole chromosome is taken #
+
 my ($chrstart,$chrend);
 my $chr;
 my (@opt_type1,@opt_type2);
 
+
+
 #change it so that using -type does not add up on top of the definitions above but
+
 # actually substitute them
+
 &GetOptions( 'host:s'    => \$host,
 	     'host1:s'   => \$host1,
 	     'host2:s'   => \$host2,
@@ -81,7 +93,7 @@ my (@opt_type1,@opt_type2);
 	     'chrend:n'  => \$chrend,
 	     
 	   );     
-	     
+            
 if ($host)  {
   $host1=$host;
   $host2=$host;
@@ -98,24 +110,18 @@ if ($path)  {
 }
 
 if (@opt_type1){
-  $type1 =  \@opt_type1;
-  @type1 = @{ $type1 };
+  $type1 = \@opt_type1;
 }
-else{
-  @type1 = @{ $type1 };
-}
+
 if (@opt_type2){
   $type2 = \@opt_type2;
-  @type2 = @{ $type2 };
 }
-else{
-  @type2 = @{ $type2 };
-}
+
 
 # connect to the database
 my $db1= new Bio::EnsEMBL::DBSQL::DBAdaptor(-host  => $host1,
-					     -user  => $user,
-					     -dbname=> $dbname1);
+					    -user  => $user,
+					    -dbname=> $dbname1);
 
 print STDERR "Connected to database $dbname1\n";
 
@@ -147,21 +153,28 @@ else{
 
 # get the genes of type @type1 and @type2 from $vcontig1 and $vcontig2, respectively #
 # the default in type1 is ensembl genes and in type2 HUMACE-Novel_CDS and HUMACE-Known #
+
 my (@genes1,@genes2);
-foreach my $type (@type1){
-print STDERR "Fetching genes of type $type\n";
-push ( @genes1, $vcontig1->get_Genes_by_Type($type) ); 
+
+foreach my $type ( @{ $type1 } ){
+  print STDERR "Fetching genes of type $type\n";
+  my @more_genes = $vcontig1->get_Genes_by_Type($type);
+  push ( @genes1, @more_genes ); 
+  print STDERR scalar(@more_genes)." genes found\n";
 }
-foreach my $type (@type2){
-print STDERR "Fetching genes of type $type\n";
-push ( @genes2, $vcontig2->get_Genes_by_Type($type) ); 
+
+foreach my $type ( @{ $type2 } ){
+  print STDERR "Fetching genes of type $type\n";
+  my @more_genes = $vcontig2->get_Genes_by_Type($type);
+  push ( @genes2, @more_genes ); 
+  print STDERR scalar(@more_genes)." genes found\n";
 }
 
 # get a GeneComparison object 
 my $gene_comparison = Bio::EnsEMBL::Utils::GeneComparison->new(\@genes1,\@genes2);
 
-# As an example, we get the number of exons per percentage overlap using coding exons only
-my %coding_statistics =  $gene_comparison->get_Coding_Exon_Statistics;
+## As an example, we get the number of exons per percentage overlap using coding exons only
+#my %coding_statistics =  $gene_comparison->get_Coding_Exon_Statistics;
 
 ## You could also do it for all exons, coding and non-conding
 #
@@ -173,28 +186,28 @@ my %coding_statistics =  $gene_comparison->get_Coding_Exon_Statistics;
 
 # We can produce a histogram
 
-my @values = values ( %coding_statistics );
-@values = sort {$b <=> $a} @values;
+#my @values = values ( %coding_statistics );
+#@values = sort {$b <=> $a} @values;
 
-print "Percentage overlap : Number of overlapping coding exons\n";
-for (my $i=1; $i<= 100; $i++){
-  if ( $coding_statistics{$i} ){
-    print $i." :\t".$coding_statistics{$i}."\t".print_row ($coding_statistics{$i})."\n";
-  }
-  else{
-    print $i." :\n";
-  }
-}
+#print "Percentage overlap : Number of overlapping coding exons\n";
+#for (my $i=1; $i<= 100; $i++){
+#  if ( $coding_statistics{$i} ){
+#    print $i." :\t".$coding_statistics{$i}."\t".print_row ($coding_statistics{$i})."\n";
+#  }
+#  else{
+#    print $i." :\n";
+#  }
+#}
 
-sub print_row {
-  my $size = int( shift @_ );
-  $size = int( log( 1000*$size/($values[0]) ) ); # tweak this to re-scale it as you wish
-  my $row='';
-  for (my $i=0; $i<$size; $i++){
-    $row .='*';
-  }
-  return $row;
-}
+#sub print_row {
+#  my $size = int( shift @_ );
+#  $size = int( log( 1000*$size/($values[0]) ) ); # tweak this to re-scale it as you wish
+#  my $row='';
+#  for (my $i=0; $i<$size; $i++){
+#    $row .='*';
+#  }
+#  return $row;
+#}
 
 #########################################################
 #
@@ -203,21 +216,33 @@ sub print_row {
 #########################################################
 
 ## cluster the genes we have passed to $gene_comparison
-#
-# my @clusters = $gene_comparison->cluster_Genes;
-#
 
-## print the clusters 
-#
-# my $count=1;
-# foreach my $cluster (@clusters){
-#   print "Cluster $count:\n";
-#   print $cluster->string."\n";
-#   foreach my $gene ($cluster->get_Genes){
-#     print $gene->type."\n";
-#   }
-#   $count++;
-# }
+my @clusters    = $gene_comparison->cluster_Genes;
+
+my @unclustered = $gene_comparison->unclustered_Genes;
+
+
+# print the clusters 
+
+ my $count=1;
+ foreach my $cluster (@clusters){
+   print "Cluster $count:\n";
+   print $cluster->string."\n";
+   $count++;
+ }
+
+$count=1;
+print "Unmatched genes: ".scalar( @unclustered )."\n";
+foreach my $cluster (@unclustered){
+print "Unclustered $count:\n";
+print $cluster->string."\n";
+$count++;
+}
+
+# get the missing exons
+
+# $gene_comparison->find_missing_Exons(\@clusters);
+
 
 
 
