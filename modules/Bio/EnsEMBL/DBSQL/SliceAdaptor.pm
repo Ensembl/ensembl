@@ -417,6 +417,57 @@ sub fetch_by_chr_name{
    return $slice;
 }
 
+=head2 fetch_by_mapfrag
+
+ Title   : fetch_by_mapfrag
+ Usage   : $slice = $slice_adaptor->fetch_by_mapfrag('20');
+ Function: Creates a slice of a "mapfrag"
+ Returns : Slice object
+ Args    : chromosome name
+
+
+=cut
+
+sub fetch_by_mapfrag{
+   my ($self,$mapfrag,$flag,$size) = @_;
+
+   $flag ||= 'fixed-width'; # alt.. 'context'
+   $size ||= $flag eq 'fixed-width' ? 200000 : 0;
+   unless( $mapfrag ) {
+       $self->throw("Mapfrag name argument required");
+   }
+
+   my( $chr_start,$chr_end);
+  
+   #set the end of the slice to the end of the chromosome
+   my $ca = $self->db()->get_MapFragAdaptor();
+   my $mapfrag = $ca->fetch_by_synonym($mapfrag);
+   return undef unless defined $mapfrag;
+
+   if( $flag eq 'fixed-width' ) {
+       my $halfsize = int( $size/2 );
+       $chr_start = $mapfrag->seq_start - $halfsize;
+       $chr_end   = $mapfrag->seq_start + $size - $halfsize;
+   } else {
+       $chr_start     = $mapfrag->seq_start - $size;
+       $chr_end       = $mapfrag->seq_end   + $size;
+   }
+   my $type = $self->db->assembly_type();
+
+   my $slice = Bio::EnsEMBL::Slice->new
+     (
+      -chr_name      => $mapfrag->seq,
+      -chr_start     => $chr_start,
+      -chr_end       => $chr_end,
+      -assembly_type => $type,
+      -adaptor       => $self
+     );
+
+   return $slice;
+}
+
+
+
 
 
 =head2 _get_chr_start_end_of_contig
