@@ -188,17 +188,17 @@ sub fetch_snp_features {
 	AND      snp_chrom_start<$vc_end
               };
 
-    &eprof_start('snp-sql-query');
+    #&eprof_start('snp-sql-query');
 
     my $sth = $self->prepare($query);
     my $res = $sth->execute();
 
-    &eprof_end('snp-sql-query');
+    #&eprof_end('snp-sql-query');
 
     my $snp;
     my $cl;
 
-    &eprof_start('snp-sql-object');
+    #&eprof_start('snp-sql-object');
 
   SNP:
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
@@ -257,7 +257,7 @@ sub fetch_snp_features {
         }                               # if ! $seen{$key}
       }                                    # while a row from select statement
 
-    &eprof_end('snp-sql-object');
+    #&eprof_end('snp-sql-object');
     
     return @variations;
 
