@@ -1,9 +1,11 @@
+use strict;
+
 use lib 't';
 use TestUtils qw(test_getter_setter);
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 10;
+	plan tests => 13;
 }
 
 use MultiTestDB;
@@ -22,7 +24,7 @@ my $sfa = $dba->get_SimpleFeatureAdaptor;
 #
 # 1 create a new Simplefeature
 #
-$sf = new Bio::EnsEMBL::SimpleFeature;
+my $sf = new Bio::EnsEMBL::SimpleFeature;
 ok($sf);
 
 
@@ -80,3 +82,40 @@ ok($sf->adaptor->isa('Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor'));
 # list_dbIDs
 my $ids = $sfa->list_dbIDs();
 ok (@{$ids});
+
+
+#
+# 10 test store method
+#
+$multi->hide('core', 'simple_feature');
+
+
+my $analysis_adaptor = $dba->get_AnalysisAdaptor();
+my $analysis = $analysis_adaptor->fetch_by_logic_name('cpg');
+
+my $contig_adaptor = $dba->get_RawContigAdaptor();
+$contig = $contig_adaptor->fetch_by_name('AL031658.11.1.162976');
+
+my $simple_feature = Bio::EnsEMBL::SimpleFeature->new
+	(-start => 10,
+         -end => 20,
+         -strand => 1,
+         -score  => 20,
+         -analysis => $analysis);
+
+$simple_feature->contig($contig);
+$simple_feature->display_label('test');
+
+
+$sfa->store($simple_feature);
+
+my $sth = $dba->prepare('SELECT simple_feature_id from simple_feature');
+$sth->execute();
+ok($sth->rows() == 1);
+my ($id) = $sth->fetchrow_array();
+
+ok($id == $simple_feature->dbID());
+ok($simple_feature->adaptor == $sfa);
+
+$multi->restore();
+
