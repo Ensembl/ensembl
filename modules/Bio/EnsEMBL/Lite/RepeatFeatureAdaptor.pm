@@ -84,8 +84,11 @@ sub fetch_all_by_Slice_and_type {
 =cut
 
 sub fetch_all_by_Slice {
-    my ( $self, $slice ) = @_;
+    my ( $self, $slice, $logic_name ) = @_;
     
+    if(defined($logic_name)) {
+         return $self->fetch_all_by_Slice_and_type( $slice, $logic_name );
+    }
     my $sth = $self->prepare(
 	"SELECT r.id, r.hid,  r.chr_name, r.chr_start, r.chr_end, r.chr_strand
          FROM   repeat r
