@@ -270,7 +270,6 @@ sub parse_group_field {
     return($gene_name, $gene_id, $transcript_id, $exon_num, $exon_id);
 }
 
-
 sub _make_gene_from_gtf_hash {
     my( $self, $gene_id, $source, $gene_gtf ) = @_;
     
@@ -634,7 +633,7 @@ sub dump_genes {
                 my $exon_id    = $exon->id;
                 my $exon_start = $exon->start;
                 my $exon_end   = $exon->end;
-                my $seq_name   = $exon->contig_id;
+                my $seq_name   = $exon->seqname;
                 my $phase      = $exon->phase;
                 my $score      = $exon->score || 0;
                 my $strand    = ($exon->strand == 1) ? '+' : '-';
@@ -652,7 +651,7 @@ sub dump_genes {
                     if ($strand eq '+') {
                         ($x, $y) = ($translation_start, $translation_start + 2);
                     } else {
-                        ($x, $y) = ($translation_start - 2, $translation_start);
+                        ($x, $y) = ($translation_start, $translation_start-2);
                     }
                     $transcript_string .= join("\t",
                         $seq_name, $type, 'start_codon',
@@ -679,9 +678,9 @@ sub dump_genes {
                     $seen_end = 1;
                     my( $x, $y );
                     if ($strand eq '+') {
-                        ($x, $y) = ($translation_end + 1, $translation_end + 3);
+                        ($x, $y) = ($translation_end -2, $translation_end);
                     } else {
-                        ($x, $y) = ($translation_end - 3, $translation_end - 1);
+                        ($x, $y) = ($translation_end + 2, $translation_end);
                     }
                     $transcript_string .= join("\t",
                         $seq_name, $type, 'stop_codon',
