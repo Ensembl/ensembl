@@ -177,9 +177,11 @@ sub _dump{
 =cut
 
 sub _parse_exon{
-    my ($self,$clone) = @_;
-    
-    $self->warn("Have not calculated phases yet!");
+    my ($self,$clone,$disk_id,$obj) = @_;
+
+    # have now!
+    #$self->warn("Have not calculated phases yet!");
+
     my $fh = new FileHandle;
     $fh->open($self->exon_file) || $self->throw("Could not open exon file [", $self->exon_file, "]");
     
@@ -197,7 +199,7 @@ sub _parse_exon{
 	    my $pep = $8;
 
 	    # skip if not from $clone (if defined)
-	    next if($clone && $contigid!~/^$clone/);
+	    next if($disk_id && $contigid!~/^$disk_id/);
 
 	    #print STDOUT "Exon $eid - $pep\n";
 	    # ok. Get out the Dna sequence object
@@ -206,9 +208,17 @@ sub _parse_exon{
 
 	    my $exon = Bio::EnsEMBL::Exon->new();
 	    $exon->id($eid);
-	    $exon->contig_id($contigid);
+
+	    # at this point, $contigid could be the disk_id where acc_id is required
 	    my $cloneid=$contigid;
 	    $cloneid=~s/\.\d+$//;
+	    if($obj->{'_byacc'}){
+		my($cloneid2)=$obj->get_id_acc($cloneid);
+		$contigid=~s/^$cloneid/$cloneid2/;
+		$cloneid=$cloneid2;
+	    }
+
+	    $exon->contig_id($contigid);
 	    $exon->clone_id($cloneid);
 	    
 	    if( $end < $start ) {
@@ -362,8 +372,8 @@ sub list_exons{
 =cut
 
 sub map_all{
-    my($self,$obj,$clone) = @_;
-    $self->_parse_exon($clone);
+    my($self,$obj,$clone,$disk_id) = @_;
+    $self->_parse_exon($clone,$disk_id,$obj);
     $self->_parse_trans;
     $self->_parse_gene;
 
@@ -402,7 +412,7 @@ sub map_all{
 	    $transcript->sort();
 	}
     }
-    # report missing exons
+    # report missing exons, provided $clone not specified for speed.
     if($n_missed_exons && !$clone){
 	$self->warn("$n_missed_exons exons missing: $missed_exons");
     }

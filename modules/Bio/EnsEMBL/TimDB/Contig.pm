@@ -57,11 +57,13 @@ sub _initialize {
   my($self,@args) = @_;
   
   my $make = $self->SUPER::_initialize;
-  my ($dbobj,$id,$cloneobj)=$self->_rearrange([qw(DBOBJ
-						  ID
-						  CLONEOBJ
-						  )],@args);
+  my ($dbobj,$id,$disk_id,$cloneobj)=$self->_rearrange([qw(DBOBJ
+							   ID
+							   DISK_ID
+							   CLONEOBJ
+							   )],@args);
   $id || $self->throw("Cannot make contig object without id");
+  $disk_id || $self->throw("Cannot make contig object without disk_id");
   $dbobj || $self->throw("Cannot make contig object without db object");
   $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') || 
       $self->throw("Cannot make contig object with a $dbobj object");
@@ -69,6 +71,7 @@ sub _initialize {
       $self->throw("Cannot make clone object with a $cloneobj object");
   # id of contig
   $self->id($id);
+  $self->disk_id($disk_id);
   # db object
   $self->_dbobj($dbobj);
   # clone object
@@ -101,6 +104,8 @@ sub _initialize {
       }
   }
 
+  # FIXME
+  # not implemented here or elsewhere
   $self->{'_sf_array'} = [];
  
   # set stuff in self from @args
@@ -241,18 +246,19 @@ sub seq{
     }
 
     my $id=$self->id;
+    my $disk_id=$self->disk_id;
 
     # read from sequence file
     my $cloneobj=$self->_cloneobj();
-    my $cloneid=$cloneobj->id;
-    my $file=$cloneobj->{'_clone_dir'}."/$cloneid.seq";
+    my $clonediskid=$cloneobj->disk_id;
+    my $file=$cloneobj->{'_clone_dir'}."/$clonediskid.seq";
     my $fh = new FileHandle;
     $fh->open($file) || 
 	$self->throw("Could not open sequence file [", $file, "]");
     my $is = $fh->input_record_separator('>');
     my $flag;
     while(<$fh>){
-	if(/^$id\s[^\n]+\n(.*)/s){
+	if(/^$disk_id\s[^\n]+\n(.*)/s){
 	    my $dna=$1;
 	    $dna=~s/\n//g;
 	    $dna=~s/\s//g;
@@ -263,7 +269,7 @@ sub seq{
 	}
     }
     unless($flag){
-	$self->throw("Could not find contig $id in sequence file");
+	$self->throw("Could not find contig $id ($disk_id) in sequence file");
     }
     $fh->input_record_separator($is);
     return $self->{'seq'};
@@ -287,6 +293,15 @@ sub id{
 	$self->{'id'} = $value;
     }
     return $self->{'id'};
+}
+
+sub disk_id{
+    my $self = shift;
+    if( @_ ) {
+	my $value = shift;
+	$self->{'disk_id'} = $value;
+    }
+    return $self->{'disk_id'};
 }
 
 

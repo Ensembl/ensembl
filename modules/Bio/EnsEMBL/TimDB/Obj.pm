@@ -52,7 +52,7 @@ use Bio::EnsEMBL::Analysis::LegacyParser;
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,$clone,@args) = @_;
+  my($self,$clone,$byacc,@args) = @_;
 
   # DEBUG
   # second parameter is for debugging to avoid reading entire list of objects
@@ -65,6 +65,9 @@ sub _initialize {
   $self->{'_gene_hash'} = {};
   $self->{'_contig_hash'} = {};
 
+  # byacc specifies an clone->acc translation for all timdb operations
+  $self->{'_byacc'}=$byacc;
+
   # set stuff in self from @args
   # (nothing)
 
@@ -76,6 +79,9 @@ sub _initialize {
   
   # in order to access the flat file db, check that we can see the master dbm file
   # that will tell us where the relevant directory is
+  # NOTE FIXME it is not very clever to have this open DBM file hanging, even if 
+  # it is only for reading (cannot open readonly) since to certainly of locking
+  # or dataconsistency
   my $unfinished_root="$HUMPUB_ROOT/th/unfinished_ana";
   $self->{'_unfinished_root'}=$unfinished_root;
   my $clone_dbm_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_clone.dbm";
@@ -84,6 +90,16 @@ sub _initialize {
       $self->throw("Error opening clone dbm file");
   }
   $self->{'_clone_dbm'}=\%unfin_clone;
+
+  # if going to do things $byacc then need to open this dbm file too
+  if($byacc){
+      my $accession_dbm_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_accession.dbm";
+      my %unfin_accession;
+      unless(dbmopen(%unfin_accession,$accession_dbm_file,0666)){
+	  $self->throw("Error opening accession dbm file");
+      }
+      $self->{'_accession_dbm'}=\%unfin_accession;
+  }
 
   # define a few other important files
   my $exon_file="$HUMPUB_ROOT/blast/confirmed_exon";
@@ -106,7 +122,13 @@ sub _initialize {
   # FIXME - should this be moved to the pipeline so that this information
   # is stored in DBM files - currently in legacy parser
   my $p=Bio::EnsEMBL::Analysis::LegacyParser->new($gene_file,$transcript_file,$exon_file);
-  $p->map_all($self,$clone);
+
+  # doing conversion acc->id->acc or id->acc, need it here too
+  my($disk_id,$id);
+  if($clone){
+      ($id,$disk_id)=$self->get_id_acc($clone);
+  }
+  $p->map_all($self,$id,$disk_id);
 
   return $make; # success - we hope!
 }
@@ -146,22 +168,50 @@ sub get_Gene{
 sub get_Clone{
     my ($self,$id) = @_;
 
-    # check to see if clone exists, and extract relevant items from dbm record
-    # cgp is the clone category (SU, SF, EU, EF)
-    my($line,$cdate,$type,$cgp,$acc,$sv);
-    if($line=$self->{'_clone_dbm'}->{$id}){
-	($cdate,$type,$cgp,$acc,$sv)=split(/,/,$line);
-    }else{
-	$self->throw("$id is not a valid sequence in this database");
-    }
-    
+    my($disk_id,$cgp);
+    ($id,$disk_id,$cgp)=$self->get_id_acc($id);
+
     # create clone object
     my $clone = new Bio::EnsEMBL::TimDB::Clone(-id => $id,
+					       -disk_id => $disk_id,
 					       -dbobj => $self,
 					       -cgp => $cgp);
     return $clone;
 }
 
+sub get_id_acc{
+    my($self,$id)=@_;
+    # check to see if clone exists, and extract relevant items from dbm record
+    # cgp is the clone category (SU, SF, EU, EF)
+    my($line,$cdate,$type,$cgp,$acc,$sv,$id2,$fok);
+    if($line=$self->{'_clone_dbm'}->{$id}){
+	# first straight forward lookup
+	($cdate,$type,$cgp,$acc,$sv)=split(/,/,$line);
+	# translate to $acc if output requires this
+	if($self->{'_byacc'}){
+	    $id2=$id;
+	    $id=$acc;
+	}else{
+	    $id2=$id;
+	}
+	$fok=1;
+    }elsif(($self->{'_byacc'}) && ($id2=$self->{'_accession_dbm'}->{$id})){
+	# lookup by accession number, if valid
+	if($line=$self->{'_clone_dbm'}->{$id2}){
+	    ($cdate,$type,$cgp,$acc,$sv)=split(/,/,$line);
+	    if($acc ne $id){
+		$self->throw("$id maps to $id2 but does not map back correctly ($acc)");
+	    }else{
+		$fok=1;
+	    }
+	}
+    }
+    if(!$fok){
+	$self->throw("$id is not a valid sequence in this database");
+    }
+    return $id,$id2,$cgp;
+}
+    
 
 =head2 get_Contig
 
@@ -226,6 +276,10 @@ sub DESTROY{
     if( $obj->{'_clone_dbm'} ) {
 	dbmclose(%{$obj->{'_clone_dbm'}});
 	$obj->{'_clone_dbm'} = undef;
+    }
+    if( $obj->{'_accession_dbm'} ) {
+	dbmclose(%{$obj->{'_accession_dbm'}});
+	$obj->{'_accession_dbm'} = undef;
     }
 }
 

@@ -14,6 +14,9 @@
 
     clone2embl -dbtype rdb -host mysql.server.somewhere dJ271M21
 
+    clone2embl -dbtype timdb -byacc dJ718J7
+    clone2embl -dbtype timdb -byacc AL035541
+
 =head1 OPTIONS
 
     -dbtype    database type (rdb, ace, timdb)
@@ -21,6 +24,9 @@
     -nodna     don't write dna part of embl file (for testing)
 
     -gff       dump in gff format instead of EMBL
+
+    -byacc     can specify an accession for a sanger clone and dump as accession
+               or specify sanger clone and will still dump as accession
 
 =head1 EXAMPLE CLONES
 
@@ -48,6 +54,7 @@ my $port   = '410000';
 my $gff;
 my $nodna = 0;
 my $help;
+my $byacc;
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
@@ -62,6 +69,7 @@ my $clone  = 'dJ271M21';
 	     'gff'      => \$gff,
 	     'nodna'    => \$nodna,
 	     'h|help'   => \$help,
+	     'byacc'    => \$byacc,
 	     );
 
 if($help){
@@ -80,7 +88,8 @@ if( $dbtype =~ 'ace' ) {
     $host=$host1 unless $host;
     $db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'pog' , -host => $host );
 } elsif ( $dbtype =~ 'timdb' ) {
-    $db = Bio::EnsEMBL::TimDB::Obj->new($clone_id);
+    # clone_id is passed to speed things up - cuts down on parsing of flag files
+    $db = Bio::EnsEMBL::TimDB::Obj->new($clone_id,$byacc);
 } else {
     die("$dbtype is not a good type (should be ace, rdb or timdb)");
 }

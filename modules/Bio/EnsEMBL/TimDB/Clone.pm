@@ -54,11 +54,13 @@ sub _initialize {
   my $make = $self->SUPER::_initialize(@args);
 
   # set stuff in self from @args
-  my ($dbobj,$id,$cgp)=$self->_rearrange([qw(DBOBJ
-					     ID
-					     CGP
-					     )],@args);
+  my ($dbobj,$id,$cgp,$disk_id)=$self->_rearrange([qw(DBOBJ
+						      ID
+						      CGP
+						      DISK_ID
+						      )],@args);
   $id || $self->throw("Cannot make contig db object without id");
+  $disk_id || $self->throw("Cannot make contig db object without disk_id");
   $dbobj || $self->throw("Cannot make contig db object without db object");
   $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') || 
       $self->throw("Cannot make contig db object with a $dbobj object");
@@ -66,19 +68,20 @@ sub _initialize {
 
   # id of clone
   $self->id($id);
+  $self->disk_id($disk_id);
   # db object
   $self->_dbobj($dbobj);
 
   # construct and test the directory of the clone
-  my $clone_dir=$dbobj->{'_unfinished_root'}."/$cgp/data/$id";
+  my $clone_dir=$dbobj->{'_unfinished_root'}."/$cgp/data/$disk_id";
   unless(-d $clone_dir){
-      $self->throw("Cannot find directory for $id");
+      $self->throw("Cannot find directory for $disk_id");
   }
   $self->{'_clone_dir'}=$clone_dir;
 
   # check for sequence file
-  if(!-e "$clone_dir/$id.seq"){
-      $self->throw("Error: no sequence file for clone $id");
+  if(!-e "$clone_dir/$disk_id.seq"){
+      $self->throw("Error: no sequence file for entry $id ($disk_id)");
   }
 
   # build list of contigs for clone
@@ -100,7 +103,7 @@ sub _initialize {
   my($key,$val);
   my @contig_id;
   while(($key,$val)=each %unfin_contig){
-      if($key=~/^$id/){
+      if($key=~/^$disk_id/){
 	  push(@contig_id,$key);
 	  # check for gs file
 	  if(!-e "$clone_dir/$key.gs"){
@@ -110,9 +113,15 @@ sub _initialize {
   }
   my @res;
   foreach my $contig_id (@contig_id){
+      my $disk_contig_id=$contig_id;
+      if($dbobj->{'_byacc'}){
+	  $contig_id=~s/^$disk_id/$id/;
+      }
       my $contig = new Bio::EnsEMBL::TimDB::Contig ( -dbobj => $self->_dbobj,
 						     -cloneobj => $self,
-						     -id => $contig_id );
+						     -id => $contig_id,
+						     -disk_id => $disk_contig_id,
+						     );
       push(@res,$contig);
   }
   $self->{'_contig_array'}=\@res;
@@ -234,6 +243,15 @@ sub id {
 	$obj->{'_clone_id'} = $value;
     }
     return $obj->{'_clone_id'};
+}
+
+
+sub disk_id {
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_clone_disk_id'} = $value;
+    }
+    return $obj->{'_clone_disk_id'};
 }
 
 
