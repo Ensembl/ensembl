@@ -43,12 +43,15 @@ function do_delta
     typeset path1=$4
     typeset path2=$5
 
-    if [[ ! -d deltas ]]; then
-	mkdir deltas
+    typeset vdir=deltas/to_${v2}
+    vdir=${vdir%_*[0-9]}
+
+    if [[ ! -d ${vdir} ]]; then
+	mkdir -p ${vdir}
     fi
 
-    typeset build_out=deltas/${db}_${v1}_delta_${v2}_build.out
-    typeset apply_out=deltas/${db}_${v1}_delta_${v2}_apply.out
+    typeset build_out=${vdir}/${db}_${v1}_delta_${v2}_build.out
+    typeset apply_out=${vdir}/${db}_${v1}_delta_${v2}_apply.out
 
     if [[ ! -f $build_out ]]; then
 	getdb $path1 $db $v1
@@ -57,14 +60,14 @@ function do_delta
 	trap "rm $build_out; exit 1" INT
 
 	/usr/bin/time perl -w ./build.pl -c ./xdelta.osf \
-	    -s databases -d deltas \
+	    -s databases -d ${vdir} \
 	    $db $v1 $v2 2>&1 | tee $build_out
 	trap - INT
     fi
     if [[ ! -f $apply_out ]]; then
 	trap "rm $apply_out; exit 1" INT
 	/usr/bin/time perl -w ./apply.pl -c ./xdelta.osf \
-	    -d databases -s deltas \
+	    -d databases -s ${vdir} \
 	    $db $v1 $v2 2>&1 | tee $apply_out
 	trap - INT
     fi
