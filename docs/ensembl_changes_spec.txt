@@ -44,7 +44,7 @@ Proposed New/Modified Tables:
   coord_system_id   int
   name              varchar
   version           varchar
-  attrib            set ('top_level', 'default_version', 'sequence')          
+  attrib            set ('top_level', 'default_version', 'sequence_level')          
 
 
   seq_region_annotation
