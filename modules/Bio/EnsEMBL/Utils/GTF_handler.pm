@@ -103,7 +103,7 @@ sub parse_file {
 	my ($gene_name, $gene_id,$transcript_id,$exon_num,$exon_id);
 
 	#First we have to be able to parse the basic feature information
-	if (/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)/){
+	if (/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)\s+(.)/){
 	    $contig=$1;
 	    $type=$2;
 	    $feature=$3;
@@ -114,7 +114,7 @@ sub parse_file {
 	    $frame=$8;
 	}
 	#This allows us to parse gtf entries starting with a rawcontig id
-	elsif (/^(\w+\.\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)/){
+	elsif (/^(\w+\.\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)\s+(.)/){
 	    $contig=$1;
 	    $type=$2;
 	    $feature=$3;
@@ -151,23 +151,49 @@ sub parse_file {
 	else {
 	    $self->warn("Could not parse line:\n$_");
 	}
+
+	if ($strand eq '-') {
+	    $strand = -1;
+	}
+	elsif ($strand eq '+') {
+	    $strand =1;
+	}
+	else {
+	    die("Parsing error! Exon with strand $strand");
+	}
+	   
+
 	if (/gene_name \"(\w+)\"/) { 
 	    $gene_name=$1; 
+	}
+
+	if (/transcript_id \"(.+)\"/) { 
+	    $transcript_id = $1;
+	}
+	
+        #this variant is for NCBI files...
+	elsif (/transcript_id\s+(.+)\; exon/) {
+	    $transcript_id = $1;
+	} 
+	elsif (/transcript_id\s+(.+)\;/) { 
+	    $transcript_id = $1;
+	}
+        else { 
+	    $self->warn("Cannot parse line without transcript id, skipping!\nLine:$_");
+	    next;
 	}
 	if (/gene_id \"(.+)\".+transcript/) { 
 	    $gene_id = $1;
 	}
-	else { 
-	    $self->warn("Cannot parse line without gene id, skipping!");
-	    next;
+	elsif (/gene_id (\d+)\;/) {
+	    $gene_id=$1;
 	}
-
-	if (/transcript_id \"(.+)\"/) { $transcript_id = $1;}
 	else { 
-	    $self->warn("Cannot parse line without transcript id, skipping!");
-	    next;
+	    #NCBI files don't have a gene id
+	    $gene_id= $transcript_id;
+	    #$self->warn("Cannot parse line without gene id, skipping!");
+	    #next;
 	}
-
 	if (/exon_number (\d+)/) { $exon_num = $1;}
 	if (/Exon_id (.+)\;/) { $exon_id = $1;}
 	
@@ -191,15 +217,6 @@ sub parse_file {
 	}
 	
 	if ($feature eq 'exon') {
-	    if ($strand eq '-') {
-		$strand = -1;
-	    }
-	    elsif ($strand eq '+') {
-		$strand =1;
-	    }
-	    else {
-		die("Parsing error! Exon with strand $strand");
-	    }
 	   
 	    my $exon = Bio::EnsEMBL::Exon->new($start,$end,$strand);
 	    if ($exon_id) {
@@ -229,7 +246,7 @@ sub parse_file {
 	}
 	$oldgene=$gene_id;
 	$oldtrans=$transcript_id;
-	#print STDERR "Contig: $contig\nSource: $source\nFeature: $feature\nStart: $start\nEnd: $end\nScore: $score\nStrand: $strand\nGene name: $gene_name\nGene id: $gene_id\nExon number: $exon_num\n\n";
+	print STDERR "Contig: $contig\nSource: $type\nFeature: $feature\nStart: $start\nEnd: $end\nScore: $score\nStrand: $strand\nFrame: $frame\nGene name: $gene_name\nGene id: $gene_id\nTranscript id: $transcript_id\nExon number: $exon_num\n\n";
     }
     $self->_build_transcript($trans_start,$trans_end,$oldtrans,%exons);
     my $gene = $self->_build_gene($oldgene);
