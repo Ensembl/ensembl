@@ -240,6 +240,7 @@ sub ensembl_locator {
     return "$module/$locator";
 }
 
+# return the database handle:
 sub get_DBSQL_Obj {
     my( $self ) = @_;
     
