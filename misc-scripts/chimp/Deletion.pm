@@ -230,7 +230,7 @@ sub process_cds_delete {
 
       # move up CDS end to put reading frame back (shrink CDS)
       info("shifting cds end to restore reading frame");
-      $transcript->move_cdna_coding_end(3 - $frameshift);
+      $transcript->move_cdna_coding_end($frameshift-3);
     }
   }
 
@@ -247,7 +247,7 @@ sub process_cds_delete {
     $transcript->move_cdna_coding_end(-$del_len);
 
     if($frameshift && !$entire_delete) {
-      print STDERR "BEFORE CDS INSERT:\n";
+      print STDERR "BEFORE CDS DELETE:\n";
       print_exon($exon, $transcript);
 
       $code |= StatMsg::FRAMESHIFT if($frameshift);
