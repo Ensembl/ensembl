@@ -88,7 +88,7 @@ sub run {
   }
 
   my $sql =
-    "SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser " .
+    "SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser su.species_id" .
       "FROM source s, source_url su " .
 	"WHERE s.download='Y' AND su.source_id=s.source_id " .
 	  $source_sql . $species_sql .
@@ -97,8 +97,8 @@ print $sql . "\n";
 
   my $sth = $dbi->prepare($sql);
   $sth->execute();
-  my ($source_id, $source_url_id, $name, $url, $checksum, $parser);
-  $sth->bind_columns(\$source_id, \$source_url_id, \$name, \$url, \$checksum, \$parser);
+  my ($source_id, $source_url_id, $name, $url, $checksum, $parser, $species_id);
+  $sth->bind_columns(\$source_id, \$source_url_id, \$name, \$url, \$checksum, \$parser, \$species_id);
   my $last_type = "";
   my $dir;
   while (my @row = $sth->fetchrow_array()) {
@@ -141,7 +141,7 @@ print $sql . "\n";
 	$parser = 'UniProtParser' if ($parser =~ /UniProt/i);
 
 	print "Parsing $file with $parser\n";
-	$parser->run("$dir/$file", $source_id);
+	$parser->run("$dir/$file", $source_id, $species_id);
 
       } else {
 
