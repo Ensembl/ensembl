@@ -1334,7 +1334,6 @@ sub cloneid_to_geneid{
  Returns : nothing
  Args    : 
 
-=cut
 
 sub replace_last_update {
     my ($self, $now_offset) = @_;
@@ -1383,7 +1382,7 @@ sub current_update {
     my $id = 0;
 
     my $rowhash = $sth->fetchrow_hashref;
-    my $id      = $rowhash->{'id'};
+       $id      = $rowhash->{'id'};
 
     return $id;
 }
