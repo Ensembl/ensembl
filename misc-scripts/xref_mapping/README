@@ -22,11 +22,14 @@ PDB		      UniProtParser.pm
 EMBL		      UniProtParser.pm
 Protein_id            UniProtParser.pm
 LocusLink	      RefSeqGPFFParser.pm
-GO		      UniProtParser.pm + GOParser.pm
+GO		      GOParser.pm
 Interpro	      InterproParser.pm (no link to primary_xref, special case)
 *pubmed               UniProtParser.pm + RefSeqGPFFParser.pm
 *medline              UniProtParser.pm + RefSeqGPFFParser.pm
 *mim2                 MIMParser.pm
+
+
+* are new data sources.
 
 Species specific data:-
 
@@ -53,10 +56,14 @@ Now create the tables needed:-
 Now populate the tables with the initial data on what species and sources
 are available:-
 
-   mysql -hhost1 -P3350 -uadmin -ppassword -Dxref_store < sql/populate_metadata.sql
+   mysql -hhost1 -P3350 -uadmin -ppassword -Dxref_store 
+	  < sql/populate_metadata.sql
 
 
-To populate the database with the xref data you will need to run the xref_parser.pl with the appropriate arguments. The script will create a directory for each source you specify (or all) and download the data (unless -skipdownload specified) before parsing them. 
+To populate the database with the xref data you will need to run the 
+xref_parser.pl with the appropriate arguments. The script will create a 
+directory for each source you specify (or all) and download the data (unless
+ -skipdownload specified) before parsing them. 
 
   xref_parser --help produces:-
 
@@ -74,10 +81,9 @@ So to load/parse all the xrefs for the human the command would be:-
                  -dbname xref_store -species human
 
 
-So we now have a set of xrefs that are dependent on the uniprot and refseq entries loaded. These can then be mapped to the ENSEMBL entitys with the xref_mapper.pl script.
-
-
-
+So we now have a set of xrefs that are dependent on the uniprot and refseq 
+entries loaded. 
+These can then be mapped to the ENSEMBL entitys with the xref_mapper.pl script.
 
 
 The parsers.
@@ -89,11 +95,11 @@ Each record is stored as an xref and a primary_xref.
 The accession is the main key and is taken from the AC line.
 Any DR line that matches a valid source name (in the database) will
 be processed and stored as xrefs and dependent xrefs. Currently these 
-are MIM, PDB, EMBL, GO In addition protein_id is taken from the EMBL line.
-NOTE: InterPro is not loaded here as Interpro does not match InterPro (note 
-capital P here). This is loaded seperately via the interpro parser.
-New entries are now added for the medline and pubmed lines by parsing RX lines
-with MEDLINE or PUBMED xrefs.
+are MIM, PDB, EMBL In addition protein_id is taken from the EMBL line.
+NOTE: InterPro is not loaded here as Interpro does not match InterPro 
+(note capital P here). This is loaded seperately via the interpro parser.
+New entries are now added for the medline and pubmed lines by parsing RX 
+lines with MEDLINE or PUBMED xrefs.
 Species specific files are parsed here so all records are stored.
 
 
@@ -110,44 +116,53 @@ GOParser.pm
 
 Will only add entries if uniprot or refseq entry has been loaded already.
 ENSEMBL entries are also ignored as these will only map onto themselves.
-Most GO entries will already exist in the xref table (from Uniprot parsing) but
-most will not have the description, so this is added if there is none. Dependent xrefs are created if they do not exist already.
+Most GO entries will already exist in the xref table (from Uniprot parsing) 
+but most will not have the description, so this is added if there is none. 
+Dependent xrefs are created if they do not exist already.
 
 
 InterproParser.pm
 
 The xrefs are stored for each Interpro but NO dependent xrefs are stored. 
-Instead a seperate table is populated (interpro) with the interpro/pfam mappings.
+Instead a seperate table is populated (interpro) with the interpro/pfam 
+mappings. Uniprot/Refseq accesions are NOT checked to see if they are already 
+in the database, therefore is species non-specific, but the xref is stored 
+with the species specified in the run. 
 
 
 MIMParser.pm
 
 Uses the Gene names to map the mim numbers to the protein accessions via the
 HUGO numbers. So HUGO has to be parsed already aswell as Uniprot and Refseq.
-These are stored as MIM2 at present and are expected to replace the desease
+These are stored as MIM2 at present and are expected to replace the disease
 database.
 
 
-HUGOParser.pm
+HUGOParser.pm, MGDParser.pm, RGDParser.pm, ZFINParser.pm
 
-Creates xrefs for all the hugo identifiers and creates dependent xrefs to the
-uniprot and refseq accessions. 
-
-
-MGDParser.pm
-
-Uniprot and Refseq must be already be parsed. Marker Symbols are added to the
-xref table and the dependent xref linked to the proteins (if they have been loaded). 
+Uniprot and Refseq must be already be parsed. Entries are added to the
+xref table and the dependent xref linked to the proteins (if they have been 
+loaded). So Entries are added if the accession is valid for uniprot or refseq
+for that particular species.
 
 
-RGDParser.pm
-
-Uniprot and Refseq must be already be parsed.  Xrefs are stored and dependent_xrefs linked to the genbank/refseq accession code if found.
 
 
-ZFINParser.pm
+NOTE: RefSeqParser.pm also exists and can be used to parse the fasta type
+files for the Refseq's.  At the moment The genbank style files are passed for 
+both protein and rna files. But the xrefs are on a whole are just duplicated
+as they contain bascially the same xref data. A decision will have to be made
+as to the benefits/disadvantages of this. The alternative is to pass the rna 
+as a fasta. (which i think is what the old system used to do, judging by the
+numbers of xrefs).
 
-Uniprot and Refseq must be already be parsed.  Xrefs are stored and dependent_xrefs linked to the uniprot/refseq accession code if found.
+
+ 
+
+
+
+
+
 
 
 
