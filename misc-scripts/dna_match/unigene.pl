@@ -43,7 +43,11 @@ if ($ARGV[0] eq "SLAVE") {	# slave: do some work
 
   # output to stdout
   foreach my $transcript_id (keys %name_map) {
-    print "$transcript_id\t", $name_map{$transcript_id}, "\n";
+    print "$transcript_id";
+    foreach my $mapped_name (@{$name_map{$transcript_id}}) {
+      print "\t$mapped_name";
+    }
+    print "\n";
   }
 
 } else {			# master: prepare for others to do the work
