@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 12
+	plan tests => 21
 }
 
 use MultiTestDB;
@@ -55,3 +55,54 @@ ok($ms->code() eq 'cloneset');
 ok($ms->name() eq '1Mb cloneset');
 ok($ms->description eq '');
 ok($ms->longest_feature == 6e6);
+
+
+#
+# Test store method
+#
+
+$multi_db->hide('core', 'misc_set');
+
+my $misc_set = Bio::EnsEMBL::MiscSet->new
+  (-CODE => 'code',
+   -NAME => 'name',
+   -DESCRIPTION => 'description',
+   -LONGEST_FEATURE => 1000);
+
+
+$msa->store($misc_set);
+
+ok($misc_set->dbID());
+ok($misc_set->adaptor() == $msa);
+
+my $count = $db->db_handle->selectall_arrayref
+  ("SELECT COUNT(*) FROM misc_set WHERE code = 'code'")->[0]->[0];
+
+ok($count == 1);
+
+# flush and reload cache...
+$msa->fetch_all();
+
+$misc_set = $msa->fetch_by_code('code');
+ok($misc_set->code() eq 'code');
+ok($misc_set->name() eq 'name');
+ok($misc_set->description eq 'description');
+ok($misc_set->longest_feature == 1000);
+
+
+# try to store a misc_set with the same code
+my $misc_set = Bio::EnsEMBL::MiscSet->new
+  (-code => 'code',
+   -name => 'name',
+   -description => 'description',
+   -longest_feature => 'longest_feature');
+
+$msa->store($misc_set);
+
+ok($misc_set->dbID && $misc_set->adaptor);
+
+$count = $db->db_handle->selectall_arrayref
+  ("SELECT COUNT(*) FROM misc_set WHERE code = 'code'")->[0]->[0];
+ok($count == 1);
+
+$multi_db->restore('core', 'misc_set');
