@@ -2,7 +2,6 @@
 #
 # Ensembl module for Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
 #
-# Written by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright EnsEMBL
 #
@@ -66,6 +65,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::AssemblyMapper;
+use Bio::EnsEMBL::ChainedAssemblyMapper;
 
 use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
 
@@ -150,19 +150,39 @@ sub fetch_by_CoordSystems {
 
   return $asm_mapper if($asm_mapper);
 
-  if(@mapping_path > 2) {
-    throw("Only explicit (1 step) coordinate system mapping is currently\n" .
-          "supported.  Mapping between " .
+  if(@mapping_path == 1) {
+    throw("Incorrect mapping path defined in meta table. " .
+	  "0 step mapping encountered between:\n" .
+	  $cs1->name() . " " . $cs1->version() . " and " . $cs2->name . " " .
+	  $cs2->version());
+  }
+
+  if(@mapping_path == 2) {
+    #1 step regular mapping
+    $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
+    $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
+    return $asm_mapper;
+  }
+
+  if(@mapping_path == 3) {
+   #two step chained mapping
+   $asm_mapper = Bio::EnsEMBL::ChainedAssemblyMapper->new($self,@mapping_path);
+    #in multi-step mapping it is possible get requests with the
+    #coordinate system ordering reversed since both mappings directions
+    #cache on both orderings just in case
+    #e.g.   chr <-> contig <-> clone   and   clone <-> contig <-> chr
+
+    $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
+    $key = join(':', map({$_->dbID()} reverse(@mapping_path)));
+    $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
+    return $asm_mapper;
+  }
+
+  throw("Only 1 and 2 step coordinate system mapping is currently\n" .
+	"supported.  Mapping between " .
           $cs1->name() . " " . $cs1->version() . " and " .
           $cs2->name() . " " . $cs2->version() .
           " requires ". (scalar(@mapping_path)-1) . " steps.");
-  }
-
-  $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
-
-  $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
-
-  return $asm_mapper;
 }
 
 
@@ -201,7 +221,6 @@ sub register_assembled {
   my $asm_start      = shift;
   my $asm_end        = shift;
 
-
   my $asm_cs_id = $asm_mapper->assembled_CoordSystem->dbID();
   my $cmp_cs_id = $asm_mapper->component_CoordSystem->dbID();
 
@@ -225,7 +244,7 @@ sub register_assembled {
       if($asm_mapper->have_registered_assembled($asm_seq_region, $i)) {
         if(defined($begin_chunk_region)) {
           #this is the end of an unregistered region.
-          my $region = [$begin_chunk_region   << $CHUNKFACTOR,
+          my $region = [($begin_chunk_region   << $CHUNKFACTOR) + 1,
                         $end_chunk_region     << $CHUNKFACTOR];
           push @chunk_regions, $region;
           $begin_chunk_region = $end_chunk_region = undef;
@@ -239,7 +258,7 @@ sub register_assembled {
 
     #the last part may have been an unregistered region too
     if(defined($begin_chunk_region)) {
-      my $region = [$begin_chunk_region << $CHUNKFACTOR,
+      my $region = [($begin_chunk_region << $CHUNKFACTOR) + 1,
                     $end_chunk_region   << $CHUNKFACTOR];
       push @chunk_regions, $region;
     }
@@ -248,30 +267,7 @@ sub register_assembled {
   return if(!@chunk_regions);
 
   my $asm_seq_region_id =
-    $self->{'_sr_id_cache'}->{"$asm_seq_region:$asm_cs_id"};
-
-  if(!$asm_seq_region_id) {
-    # Get the seq_region_id via the name.  This would be quicker if we just
-    # used internal ids instead but stored but then we lose the ability
-    # the transform accross databases with different internal ids
-
-    my $sth = $self->prepare("SELECT seq_region_id " .
-                             "FROM   seq_region " .
-                             "WHERE  name = ? AND coord_system_id = ?");
-
-    $sth->execute($asm_seq_region, $asm_cs_id);
-
-    if(!$sth->rows() == 1) {
-      throw("Ambiguous or non-existant seq_region [$asm_seq_region] " .
-            "in coord system $asm_cs_id");
-    }
-
-    ($asm_seq_region_id) = $sth->fetchrow_array();
-    $self->{'_sr_id_cache'}->{"$asm_seq_region:$asm_cs_id"} =
-      $asm_seq_region_id;
-
-    $sth->finish();
-  }
+    $self->_seq_region_name_to_id($asm_seq_region,$asm_cs_id);
 
   # Retrieve the description of how the assembled region is made from
   # component regions for each of the continuous blocks of unregistered,
@@ -328,6 +324,43 @@ sub register_assembled {
 }
 
 
+
+sub _seq_region_name_to_id {
+  my $self    = shift;
+  my $sr_name = shift;
+  my $cs_id   = shift;
+
+  ($sr_name && $cs_id) || throw('seq_region_name and coord_system_id args ' .
+				'are required');
+
+  my $sr_id = $self->{'_sr_id_cache'}->{"$sr_name:$cs_id"};
+
+  return $sr_id if($sr_id);
+
+  # Get the seq_region_id via the name.  This would be quicker if we just
+  # used internal ids instead but stored but then we lose the ability
+  # the transform accross databases with different internal ids
+
+  my $sth = $self->prepare("SELECT seq_region_id " .
+			   "FROM   seq_region " .
+			   "WHERE  name = ? AND coord_system_id = ?");
+
+  $sth->execute($sr_name, $cs_id);
+
+  if(!$sth->rows() == 1) {
+    throw("Ambiguous or non-existant seq_region [$sr_name] " .
+	  "in coord system $cs_id");
+  }
+
+  ($sr_id) = $sth->fetchrow_array();
+  $sth->finish();
+
+  $self->{'_sr_id_cache'}->{"$sr_name:$cs_id"} = $sr_id;
+
+  return $sr_id;
+}
+
+
 =head2 register_component
 
   Arg [1]    : Bio::EnsEMBL::AssemblyMapper $asm_mapper
@@ -360,29 +393,8 @@ sub register_component {
   #do nothing if this region is already registered
   return if($asm_mapper->have_registered_component($cmp_seq_region));
 
-
-  my $cmp_seq_region_id = 
-    $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"};
-
-
-  if(!$cmp_seq_region_id) {
-    my $sth = $self->prepare("SELECT seq_region_id " .
-                             "FROM   seq_region " .
-                             "WHERE  name = ? AND coord_system_id = ?");
-
-    $sth->execute($cmp_seq_region, $cmp_cs_id);
-
-    if(!$sth->rows() == 1) {
-      throw("Ambiguous or non-existant seq_region [$cmp_seq_region] " .
-            "in coord system $cmp_cs_id");
-    }
-
-    ($cmp_seq_region_id) = $sth->fetchrow_array();
-    $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"} =
-      $cmp_seq_region_id;
-
-    $sth->finish();
-  }
+  my $cmp_seq_region_id =
+    $self->_seq_region_name_to_id($cmp_seq_region, $cmp_cs_id);
 
   # Determine what part of the assembled region this component region makes up
 
@@ -431,6 +443,307 @@ sub register_component {
   $self->register_assembled($asm_mapper,$asm_seq_region,$asm_start,$asm_end);
 }
 
+
+
+=head register_chained
+
+  Arg [1]    : Bio::EnsEMBL::ChainedAssemblyMapper $casm_mapper
+               The chained assembly mapper to register regions on
+  Arg [2]    : string $from ('first' or 'last')
+               The direction we are registering from, and the name of the
+               internal mapper.
+  Arg [3]    : string $seq_region_name
+               The name of the seqregion we are registering on
+  Arg [4]    : listref $ranges
+               A list  of ranges to register (in [$start,$end] tuples).
+  Description: Registers a set of ranges on a chained assembly mapper.
+               This function is at the heart of the chained mapping process.
+               It retrieves information from the assembly table and
+               dynamically constructs the mappings between two coordinate
+               systems which are 2 mapping steps apart. It does this by using
+               two internal mappers to load up a third mapper which is
+               actually used by the ChainedAssemblyMapper to perform the
+               mapping.
+
+               This method must be called before any mapping is
+               attempted on regions of interest, otherwise only gaps will
+               be returned.  Note that the ChainedAssemblyMapper automatically
+               calls this method when the need arises.
+  Returntype : none
+  Exceptions : throw if the seq_region to be registered does not exist
+               or if it associated with multiple assembled pieces (bad data
+               in assembly table)
+
+               throw if the mapping between the coordinate systems cannot
+               be performed in two steps, which means there is an internal
+               error in the data in the meta table or in the code that creates
+               the mapping paths.
+  Caller     : Bio::EnsEMBL::AssemblyMapper
+
+
+=cut
+
+sub register_chained {
+  my $self = shift;
+  my $casm_mapper = shift;
+  my $from = shift;
+  my $seq_region_name = shift;
+  my $ranges = shift;
+
+  my ($start_name, $start_mid_mapper, $start_cs, $start_registry,
+      $end_name, $end_mid_mapper, $end_cs, $end_registry);
+
+  if($from eq 'first') {
+    $start_name       = 'first';
+    $start_mid_mapper = $casm_mapper->first_middle_mapper();
+    $start_cs         = $casm_mapper->first_CoordSystem();
+    $start_registry   = $casm_mapper->first_registry();
+    $end_mid_mapper   = $casm_mapper->last_middle_mapper();
+    $end_cs           = $casm_mapper->last_CoordSystem();
+    $end_registry     = $casm_mapper->last_registry();
+    $end_name         = 'last';
+  } elsif($from eq 'last') {
+    $start_name       = 'last';
+    $start_mid_mapper = $casm_mapper->last_middle_mapper();
+    $start_cs         = $casm_mapper->last_CoordSystem();
+    $start_registry   = $casm_mapper->last_registry();
+    $end_mid_mapper   = $casm_mapper->first_middle_mapper();
+    $end_cs           = $casm_mapper->first_CoordSystem();
+    $end_registry     = $casm_mapper->first_registry();
+    $end_name         = 'first';
+  } else {
+    throw("Invalid from argument: [$from], must be 'first' or 'last'");
+  }
+
+  my $combined_mapper = $casm_mapper->first_last_mapper();
+  my $mid_cs     = $casm_mapper->middle_CoordSystem();
+  my $mid_name   = 'middle';
+  my $csa = $self->db->get_CoordSystemAdaptor();
+
+
+  #the SQL varies depending on whether we are coming from assembled or
+  #component coordinate system
+  #print STDERR "ASM SQL:";
+  my $asm2cmp_sth = $self->prepare(
+     'SELECT
+         asm.cmp_start,
+         asm.cmp_end,
+         asm.cmp_seq_region_id,
+         sr.name,
+         asm.ori,
+         asm.asm_start,
+         asm.asm_end
+      FROM
+         assembly asm, seq_region sr
+      WHERE
+         asm.asm_seq_region_id = ? AND
+         ? <= asm.asm_end AND
+         ? >= asm.asm_start AND
+         asm.cmp_seq_region_id = sr.seq_region_id AND
+	 sr.coord_system_id = ?');
+
+  #print STDERR "CMP SQL:";
+  my $cmp2asm_sth = $self->prepare(
+      'SELECT
+         asm.asm_start,
+         asm.asm_end,
+         asm.asm_seq_region_id,
+         sr.name,
+         asm.ori,
+         asm.cmp_start,
+         asm.cmp_end
+      FROM
+         assembly asm, seq_region sr
+      WHERE
+         asm.cmp_seq_region_id = ? AND
+         ? <= asm.cmp_end AND
+         ? >= asm.cmp_start AND
+         asm.asm_seq_region_id = sr.seq_region_id AND
+	 sr.coord_system_id = ?');
+
+  ##############
+  # obtain the first half of the mappings and load them into the start mapper
+  #
+
+  #ascertain which is component and which is actually assembled coord system
+  my @path = @{$csa->get_mapping_path($start_cs, $mid_cs)};
+  if(@path != 2) {
+    my $path = join(',', map({$_->name .' '. $_->version} @path));
+    throw("Unexpected mapping path between start and intermediate " .
+	  "coord systems (". $start_cs->name . " " . $start_cs->version .
+	  " and " . $mid_cs->name . " " . $mid_cs->version . ")." .
+	  "\nExpected path length 1, got " . (scalar(@path)-1)) .
+	  "(path=$path)";
+  }
+
+  my $sth;
+  my ($asm_cs,$cmp_cs) = @path;
+  $sth = ($asm_cs->equals($start_cs)) ? $asm2cmp_sth : $cmp2asm_sth;
+
+  my $seq_region_id = $self->_seq_region_name_to_id($seq_region_name,
+						    $start_cs->dbID());
+  my $mid_cs_id = $mid_cs->dbID();
+
+  my @mid_ranges;
+
+  #need to perform the query for each unregistered range
+  foreach my $range (@$ranges) {
+    my ($start, $end) = @$range;
+    $sth->execute($seq_region_id, $start, $end, $mid_cs_id);
+
+    #load the start <-> mid mapper with the results and record the mid cs
+    #ranges we just added to the mapper
+
+    my ($mid_start, $mid_end, $mid_seq_region_id, $mid_seq_region,
+	$ori, $start_start, $start_end);
+
+    $sth->bind_columns(\$mid_start, \$mid_end, \$mid_seq_region_id,
+		       \$mid_seq_region, \$ori, \$start_start,
+		       \$start_end);
+
+    while($sth->fetch()) {
+      $start_mid_mapper->add_map_coordinates(
+		   $seq_region_name,$start_start, $start_end, $ori,
+		   $mid_seq_region, $mid_start, $mid_end);
+
+      #update sr_name cache
+      $self->{'_sr_id_cache'}->{"$mid_seq_region:$mid_cs_id"} =
+        $mid_seq_region_id;
+
+      push @mid_ranges,[$mid_seq_region_id,$mid_seq_region,
+			$mid_start,$mid_end];
+
+      #the region that we actually register may actually be larger or smaller
+      #than the region that we wanted to register.
+      #register the intersection of the region so we do not end up doing 
+      #extra work later
+      my $rstart = ($start_start < $start) ? $start_start : $start;
+      my $rend   = ($start_end   > $end  ) ? $start_end   : $end;
+      $start_registry->check_and_register($seq_region_name,$rstart,$rend);
+    }
+  }
+
+  ###########
+  # now the second half of the mapping
+  # perform another query and load the mid <-> end mapper using the mid cs
+  # ranges
+  #
+
+  #ascertain which is component and which is actually assembled coord system
+  @path = @{$csa->get_mapping_path($mid_cs, $end_cs)};
+  if(@path != 2) {
+    my $path = join(',', map({$_->name .' '. $_->version} @path));
+    throw("Unexpected mapping path between intermediate and last" .
+	  "coord systems (". $mid_cs->name . " " . $mid_cs->version .
+	  " and " . $end_cs->name . " " . $end_cs->version . ")." .
+	  "\nExpected path length 1, got " . (scalar(@path)-1)) .
+	  "(path=$path)";
+  }
+
+  ($asm_cs,$cmp_cs) = @path;
+  $sth = ($asm_cs->equals($mid_cs)) ? $asm2cmp_sth : $cmp2asm_sth;
+
+  my $end_cs_id = $end_cs->dbID();
+  foreach my $mid_range (@mid_ranges) {
+    my ($mid_seq_region_id, $mid_seq_region,$start, $end) = @$mid_range;
+    $sth->execute($mid_seq_region_id, $start, $end, $end_cs_id);
+   #print STDERR "bind vals =($mid_seq_region_id, $start, $end, $mid_cs_id)\n";
+
+    #load the end <-> mid mapper with the results and record the mid cs
+    #ranges we just added to the mapper
+
+    my ($end_start, $end_end, $end_seq_region_id, $end_seq_region,
+	$ori, $mid_start, $mid_end);
+
+    $sth->bind_columns(\$end_start, \$end_end, \$end_seq_region_id,
+		       \$end_seq_region, \$ori, \$mid_start,
+		       \$mid_end);
+
+    while($sth->fetch()) {
+      print STDERR "Adding to end<->mid mapper:\n" .
+            "$end_seq_region:$end_start-$end_end<->$mid_seq_region:" .
+            "$mid_start-$mid_end($ori)\n";
+
+      $end_mid_mapper->add_map_coordinates(
+			       $end_seq_region, $end_start, $end_end, $ori,
+				$mid_seq_region, $mid_start, $mid_end);
+
+      #update sr_name cache
+      $self->{'_sr_id_cache'}->{"$end_seq_region:$end_cs_id"} =
+        $end_seq_region_id;
+
+      #register this region on the end coord system
+      #note that the region retrieved may be smaller or larger than the
+      #actual requested region (but register largest possible)
+      my $rstart = ($end_start < $start) ? $end_start : $start;
+      my $rend   = ($end_end   > $end  ) ? $end_end   : $end;
+      $end_registry->check_and_register($end_seq_region, $rstart, $rend);
+    }
+  }
+
+  #########
+  # Now that both halves are loaded
+  # Do stepwise mapping using both of the loaded mappers to load
+  # the final start <-> end mapper
+  #
+
+  foreach my $range (@$ranges) {
+    my ($start, $end) = @$range;
+
+    my $sum = 0;
+
+    my @initial_coords = $start_mid_mapper->map_coordinates($seq_region_name,
+							    $start,$end,1,
+							    $start_name);
+
+    foreach my $icoord (@initial_coords) {
+      #skip gaps
+      if($icoord->isa('Bio::EnsEMBL::Mapper::Gap')) {
+	$sum += $icoord->length();
+	next;
+      }
+
+      print STDERR "icoord: id=".$icoord->id." start=".$icoord->start." end=".
+                   $icoord->end."\n";
+
+      #feed the results of the first mapping into the second mapper
+      my @final_coords =
+	$end_mid_mapper->map_coordinates($icoord->id, $icoord->start,
+					 $icoord->end,
+					 $icoord->strand, $mid_name);
+
+      my $istrand = $icoord->strand();
+      foreach my $fcoord (@final_coords) {
+	#load up the final mapper
+	if($fcoord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+	  my $total_start = $start + $sum;
+	  my $total_end   = $total_start + $fcoord->length - 1;
+	  my $ori = $fcoord->strand();
+
+	  if($from eq 'first') { #the ordering we add coords must be consistant
+	    $combined_mapper->add_map_coordinates(
+                             $seq_region_name, $total_start, $total_end, $ori,
+			     $fcoord->id(), $fcoord->start(), $fcoord->end());
+	  } else {
+	    $combined_mapper->add_map_coordinates(
+			  $fcoord->id(), $fcoord->start(), $fcoord->end(),$ori,
+			  $seq_region_name, $total_start, $total_end);
+	  }
+
+	  print STDERR "  fcoord: id=".$fcoord->id." start=".
+	    $fcoord->start." end=".$fcoord->end."\n";
+	  print STDERR "Loading combined mapper with : " ,
+	    "$seq_region_name:$total_start-$total_end, ($ori) <-> "
+	     .$fcoord->id.":".$fcoord->start."-".$fcoord->end."\n";
+	} else {
+	  print STDERR "  fcoord is gap\n";
+	}
+	$sum += $fcoord->length();
+      }
+    }
+  }
+  #all done!
+}
 
 
 =head2 seq_regions_to_ids
