@@ -2,46 +2,13 @@
 use strict;
 use warnings;
 
-use SeqStoreConverter::BasicConverter;
+use SeqStoreConverter::HomoSapiens;
 
 package SeqStoreConverter::vega::HomoSapiens;
 
 use vars qw(@ISA);
 
-@ISA = qw(SeqStoreConverter::BasicConverter);
-
-
-sub create_attribs {
-  my $self = shift;
-
-  #
-  # Human clones need their htg phase information copied
-  #
-
-  my $source = $self->source();
-  my $target = $self->target();
-  my $dbh    = $self->dbh();
-
-  $self->SUPER::create_attribs();
-  
-  $self->debug("HomoSapiens specific: Creating HTG Phase seq_region attribs");
-
-  $dbh->do
-    ("INSERT INTO $target.attrib_type( code, name, description ) " .
-     "VALUES ('htg_phase', 'HTG Phase', 'High Throughput Genome Phase')");
-
-
-  $dbh->do
-    ("INSERT INTO $target.seq_region_attrib( seq_region_id, attrib_type_id, " .
-                                            "value) " .
-     "SELECT tmp_cln.new_id, attrib_type.attrib_type_id, cln.htg_phase " .
-     "FROM   $target.tmp_cln_map tmp_cln, $target.attrib_type attrib_type, " .
-     "       $source.clone cln " .
-     "WHERE  cln.clone_id = tmp_cln.old_id " .
-     "AND    attrib_type.code = 'htg_phase'");
-
-  return;
-}
+@ISA = qw(SeqStoreConverter::HomoSapiens);
 
 sub copy_other_tables {
   my $self = shift;
@@ -87,6 +54,11 @@ sub copy_other_tables {
 		     "job",
 		     "job_status",
 		     "input_id_analysis");
+}
+
+sub update_clone_info {
+  my $self = shift;
+  return;
 }
 
 1;
