@@ -1450,7 +1450,7 @@ sub _convert_seqfeature_to_vc_coords {
        if ( $self->ori_in_vc($cid) == 1) {
 	   
            # If end is less than startincontig or start is > start in contig - a no-go
-	   if ($sf->end < $self->{'startincontig'}->{$cid}) || ($sf->start > $self->{'startincontig'}->{$cid}) {  
+	   if (($sf->end < $self->{'startincontig'}->{$cid}) || ($sf->start > $self->{'startincontig'}->{$cid})) {  
                return undef;              
 	   }
        }
