@@ -32,9 +32,9 @@ CREATE TABLE analysisprocess (
 CREATE TABLE analysis (
   id                int(10) unsigned NOT NULL auto_increment,
   db                varchar(40),
-  db_version        varchar(5),
+  db_version        varchar(40),
   program           varchar(40) NOT NULL,
-  program_version   varchar(5),
+  program_version   varchar(40),
   gff_source        varchar(40),
   gff_feature       varchar(40),
   
