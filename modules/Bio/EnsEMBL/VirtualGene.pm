@@ -580,12 +580,12 @@ sub to_FTHelper {
 	    $ft->key('CDS');
 	    #print STDERR "Translation is [",$translated_seq->seq,"]\n";
 
-	    $ft->add_field('translatation',$translated_seq->seq);
+	    $ft->add_field('translation',$translated_seq->seq);
 	    $ft->add_field('cds',$trans->translation->id);
 	    $ft->add_field('gene',$self->gene->id);
 	    $ft->add_field('transcript',$trans->id);
 	    foreach my $dbl ( @dblinks ) {
-		$ft->add_field('dbxref',$dbl->database.":".$dbl->primary_id);
+		$ft->add_field('db_xref',$dbl->database.":".$dbl->primary_id);
 	    }
 	    if( $ptrans->is_partial == 1 ) {
 		$ft->add_field('note',"transcript split due to inability to predict a single translateable transcript");
