@@ -1193,8 +1193,10 @@ sub translate {
   } else {
     $display_id = $self->translation->dbID;
   }
-	
-  $mrna =~ s/TAG$|TGA$|TAA$//i;
+
+  if( length( $mrna ) % 3 == 0 ) {
+    $mrna =~ s/TAG$|TGA$|TAA$//i;
+  }
   # the above line will remove the final stop codon from the mrna
   # sequence produced if it is present, this is so any peptide produced
   # won't have a terminal stop codon
