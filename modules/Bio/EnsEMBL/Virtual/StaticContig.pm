@@ -2162,7 +2162,7 @@ sub get_all_VirtualTranscripts_startend {
                 AND        sgp.chr_start <=$glob_end 
                 AND        sgp.chr_name='$chr_name'
                 AND        sgp.type = '$type'
-                GROUP BY   ts.stable_id;";
+                GROUP BY   t.transcript_id;";
 
 
     my $sth = $self->dbobj->prepare($query);
