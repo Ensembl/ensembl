@@ -295,79 +295,38 @@ sub list_embl_version_by_accession {
 }
 
 
-=head2 delete_by_dbID
+=head2 remove
 
-  Arg [1]    : string $clone_id 
-               the EMBL accession of the clone to delete
-  Example    : $clone_adaptor->delete($clone_id);
+  Arg [1]    : Bio::Ensembl::Clone $clone 
+  Example    : $clone_adaptor->remove($clone);
   Description: Deletes clone (itself), including contigs and features, 
                but not its genes 
   Returntype : none
-  Exceptions : thrown if any portion of deletion fails
+  Exceptions : thrown if the clone deletion fails
+               throw if attached to the wrong database
   Caller     : ?
 
 =cut
 
-sub delete_by_dbID {
-  my ($self, $clone_id) = @_;
+sub remove {
+  my ($self, $clone) = @_;
   
-  # a list of feature adaptors to be looped over
-  my @adaptor_list = qw( SimpleFeature RepeatFeature PredictionTranscript 
-			 ProteinAlignFeature DnaAlignFeature);
-
-  # Make a list of all contig and dna entries to delete
-  my $sth = $self->prepare(qq{
-        SELECT contig_id, dna_id
-        FROM contig
-        WHERE clone_id = $clone_id
-        });
-  $sth->execute;
-  
-  my( @contigs, @dnas );
-  while( my ($c, $d) = $sth->fetchrow_array) {
-    push(@contigs, $c);
-    push(@dnas,    $d);
+  if ($clone->adaptor ne $self) {
+    $self->throw("Trying to delete a clone attached to a different database.");
   }
 
-  # Delete features for each contig, and each contig
-  foreach my $contig_id ( @contigs ) {
-
-    # grab each feature adaptor in turn
-    # admittedly not the most efficient way..
-    foreach my $adaptor ( @adaptor_list ) {
-
-      my $adaptor_type = "get_" . $adaptor . "Adaptor";
-      my $fa = $self->db->$adaptor_type;
-
-      if ( ! $fa ) {
-	$self->throw("Couldn't get a '$adaptor'Adaptor");
-      }
-      $fa->delete_by_RawContig_id($contig_id);
-    }
-
-    my $sth = 
-      $self->prepare("DELETE FROM contig WHERE contig_id = $contig_id");
-    $sth->execute;
-    $self->throw("Failed to delete contigs for contig_id '$contig_id'")
-      unless $sth->rows;
-  }
-
-  # Delete DNA as long as we aren't using a remote DNA database.
-  if ($self->db ne $self->db->dnadb) {
-    $self->warn("Using a remote dna database - not deleting dna\n");
-  } else {
-    foreach my $dna_id (@dnas) {
-      $sth = $self->prepare("DELETE FROM dna WHERE dna_id = $dna_id");
-      $sth->execute;
-      $self->throw("Failed to delete dna for dna_id '$dna_id'")
-	unless $sth->rows;
-    }
+  # Delete all contigs and  related features
+  my $contigs = $clone->get_all_Contigs;
+  my $rca = $self->db->get_RawContigAdaptor;
+  
+  foreach my $contig ( @$contigs ) {
+    $rca->remove($contig);
   }
 
   # Delete the row for the clone
-  $sth = $self->prepare("DELETE FROM clone WHERE clone_id = $clone_id");
-  $sth->execute;
-  $self->throw("Failed to delete clone for clone_id '$clone_id'")
+  my $sth = $self->prepare("DELETE FROM clone WHERE clone_id = ?");
+  $sth->execute($clone->dbID);
+  $self->throw("Failed to delete clone for clone_id '$clone->dbID'")
     unless $sth->rows;
 }
 
