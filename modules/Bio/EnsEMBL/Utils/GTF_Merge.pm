@@ -107,8 +107,14 @@ sub gtf_merge {
 
     while( <$sort> ) {
 	push(@lines,$_);
-	/transcript_id\s+"(\S+)"/ || next;
+	my ($ctg,$source,$tag,$start,$end,$score,$strand) = split;
+	if( $tag ne 'exon' ) { next; }
+
+	/transcript_id\s+(\S+)/ || next;
 	my $trans = $1;
+	$trans =~ s/\"//g;
+	$trans =~ s/;$//g;
+	
 	
 	if( !defined $thash{$trans} ) {
 	    my $new_igi = "temp_" . $unique_number;
@@ -118,7 +124,6 @@ sub gtf_merge {
 	    push(@{$ghash{$new_igi}},$trans);
 	}
 
-	my ($ctg,$source,$tag,$start,$end,$score,$strand) = split;
 	if( !defined $prevctg || $ctg ne $prevctg || $strand ne $prevstrand) {
 	    # new contig/strand/file
 	    if( $strand eq $prevstrand && $seenctg{$ctg} ) {
@@ -143,17 +148,23 @@ sub gtf_merge {
 	if( $start <= $prevend ) {
 	    # merge $trans into $prevtrans
 
-
 	    my $combined_igi  =  $thash{$prevtrans};
 	    my $dead_igi      = $thash{$trans};
-	    foreach my $t ( @{$ghash{$dead_igi}} ) {
-		# move it across to the prevtrans igi
-		push(@{$ghash{$combined_igi}},$t);
-		# reset this guys thash
-		$thash{$t} = $combined_igi;
-	    } 
-            # delete igi from $trans
-	    delete $ghash{$dead_igi};
+
+	    # of course, this could be the second time we
+	    # see this merge ;)
+	    if( $combined_igi ne $dead_igi ) {
+		
+		foreach my $t ( @{$ghash{$dead_igi}} ) {
+	
+		    # move it across to the prevtrans igi
+		    push(@{$ghash{$combined_igi}},$t);
+		    # reset this guys thash
+		    $thash{$t} = $combined_igi;
+		} 
+		# delete igi from $trans
+		delete $ghash{$dead_igi};
+	    }
 	}
 
 	if( $prevend <= $end ) {
@@ -195,16 +206,20 @@ sub gtf_merge {
 	/^#/ && do { print $out $_; next; };
 	
 	my ($trans,$gene);
-	/transcript_id\s+"(\S+)"/ && do { $trans = $1; };
+	/transcript_id\s+(\S+)/ && do { $trans = $1; };
+
 
 	if( !defined $trans ) {
-	    print STDERR "Line has no transcript id. Cannot provide IGI ";
+	    print STDERR "Line starting [",substr($_,0,50),"] has no transcript id. Cannot provide IGI\n";
 	    print $out $_;
 	    next;
 	}
 
+	$trans =~ s/\"//g;
+	$trans =~ s/;$//g;
+
 	my $igi = $thash{$trans};
-	s/transcript_id/igi_id "$igi" transcript_id/;
+	s/transcript_id/igi_id "$igi"; transcript_id/;
 
 	print $out $_;
     }
