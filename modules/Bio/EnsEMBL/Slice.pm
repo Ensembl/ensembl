@@ -71,6 +71,7 @@ use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 
 use Bio::EnsEMBL::ProjectionSegment;
 use Bio::EnsEMBL::Registry;
+
 my $reg = "Bio::EnsEMBL::Registry";
 
 # inheritance to Bio::EnsEMBL::Root will eventually be removed
@@ -1346,34 +1347,29 @@ sub get_all_genotyped_VariationFeatures{
   }
 }
 
+
+
+
+
 =head2 get_all_SNPs
 
-  Args      : none
-  Function  : returns all SNPs on this slice. This function will only work
-              correctly if the SNP database or the lite database has been
-              attached to the core database.  This can been done through
-              a call to DBAdaptor::add_db_adaptor.
-  Returntype: listref of Bio::EnsEMBL::External::Variation
-  Exceptions: none
-  Caller    : contigview, snpview
+ Description: DEPRECATED. Use get_all_VariationFeatures insted
 
 =cut
 
 sub get_all_SNPs {
   my $self = shift;
 
-  my $snpa;
-  if(!$self->adaptor()) {
-    warning('Cannot get SNPs without attached adaptor');
-    return [];
-  }
+  deprecate('Use get_all_VariationFeatures() instead.');
 
-  my $db = $self->adaptor()->db();
-  if(defined($db)){
-      $snpa = $reg->get_adaptor( $db->species(), $db->group(), "SNP" );
-  }
-  if( $snpa ) {
-    return $snpa->fetch_all_by_Slice($self);
+  my $snps;
+  my $vf = $self->get_all_genotyped_VariationFeatures();
+  if( $vf->[0] ) {
+      #necessary to convert the VariationFeatures into SNP objects
+      foreach my $variation_feature (@{$vf}){
+	  push @{$snps},$variation_feature->convert_to_SNP();
+      }
+      return $snps;
   } else {
     return [];
   }
@@ -1381,42 +1377,33 @@ sub get_all_SNPs {
 
 =head2 get_all_genotyped_SNPs
 
-  Args      : none
-  Function  : returns all genotyped SNPs on this slice. This function will 
-              only work correctly if the SNP database or the lite database has
-              been attached to the core database.  This can been done through
-              a call to DBAdaptor::add_db_adaptor.
-  Returntype: listref of Bio::EnsEMBL::External::Variation
-  Exceptions: none
-  Caller    : contigview, snpview, ldview
+  Description   : DEPRECATED. Use get_all_genotyped_VariationFeatures insted
 
 =cut
 
 sub get_all_genotyped_SNPs {
   my $self = shift;
 
-  my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
-  if( $snpa ) {
-    return $snpa->fetch_genotyped_by_Slice($self);
+  deprecate("Use get_all_genotyped_VariationFeatures instead");
+  my $vf = $self->get_all_genotyped_VariationFeatures;
+  my $snps;
+  if ($vf->[0]){
+      foreach my $variation_feature (@{$vf}){
+	  push @{$snps},$variation_feature->convert_to_SNP();
+      }
+      return $snps;
   } else {
-    return [];
+      return [];
   }
 }
 
 sub get_all_SNPs_transcripts {
   my $self = shift;
 
-  if(!$self->adaptor()) {
-    warning('Cannot get SNPs without attached adaptor');
-    return [];
-  }
+  deprecate("DEPRECATED");
 
-  my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
-  if( $snpa ) {
-    return $snpa->fetch_all_by_Slice_transcript_ids($self, @_ );
-  } else {
-    return [];
-  }
+  return [];
+
 }
 
 
