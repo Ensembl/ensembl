@@ -1207,7 +1207,8 @@ sub translate {
 
   my $codon_table;
   if($self->slice()) {
-    ($codon_table) = @{$self->slice()->get_all_Attributes('codon_table')};
+    my ($attrib) = @{$self->slice()->get_all_Attributes('codon_table')};
+    $codon_table = $attrib->value() if($attrib);
   }
 
   $codon_table ||= 1; # default vertebrate codon table
