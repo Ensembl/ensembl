@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/local/bin/perl
 
 # Author: Marc Sohrmann (ms2@sanger.ac.uk)
 # Copyright (c) Marc Sohrmann, 2001
@@ -23,7 +23,6 @@ BEGIN {
 
 
 
-
 my %conf =  %::mapping_conf;
 
 my $sptr_fa   = $conf{'sptr_fa'};
@@ -34,34 +33,36 @@ my $refseq_fa = $conf{'refseq_fa'};
 #$opt_p = 66;
 
 my $organism = $conf{'organism'};
-my $query = $conf{'query'};
 
-my $target;
-my $t_thr;
-my $q_thr;
+my $opt_q = $conf{'query'};
+my $opt_t = $conf{'pmatch_input_fa'};
+my $opt_o = $conf{'pmatch_out'};
 
-if ($ARG[0] = "known") {
-    my $target = $conf{'pmatch_input_fa'};
-    my $t_thr = $conf{'target_idt'};
-    my $q_thr = $conf{'query_idt'};
-    my $opt_o = $conf{'pmatch_out'};
-}
-
-if ($ARG[0] = "pred") {
-    my $target = $conf{'pred_pmatch_input_fa'};
-    my $t_thr = $conf{'pred_target_idt'};
-    my $q_thr = $conf{'pred_query_idt'};
-    my $opt_o = $conf{'pred_pmatch_out'};
-}
+my $t_thr = $conf{'target_idt'};
+my $q_thr = $conf{'query_idt'};
 
 my ($opt_w,$opt_l,$opt_d);
 
+$t_thr = 40;
+$q_thr = 40;
 
 #################################
 
+my $query = $opt_q;
+my $target = $opt_t;
 my %hash2;
 
+#################################
+# make worm-specific protein set from SWALL if ($opt_w)
 
+if ($organism eq "worm") {
+    if ($opt_w) {
+	print STDERR "extract worm sequences from SWALL...\n";
+	my $getz = "getz -f seq -sf fasta \'[swall-org:Caenorhabditis elegans]\' > $$.swall";
+	system "$getz";
+	$target = "$$.swall";
+    }
+}
 
 #################################
 # run pmatch (Richard Durbin's fast protein matcher, rd@sanger.ac.uk)
@@ -422,12 +423,13 @@ sub process_matches {
 #The Ensembl match to the known protein is labelled as PRIMARY and will be used later for the mapping 
 	my $top = shift @array;
 	
-	#print  OUT $top->name."\t$know\tcandidate\t".$top->qperc."\t".$top->tperc."\n";
-	print OUT "$known\t".$top->name."\tcandidate\t".$top->tperc."\t".$top->qperc."\n";
+#	print  OUT $top->name."\t$know\tcandidate\t".$top->qperc."\t".$top->tperc."\n";
+	print OUT "$know\t".$top->name."\tcandidate\t".$top->tperc."\t".$top->qperc."\n";
+
 	foreach my $repeat (@array) {
 	    if( $repeat->tperc+1 >= $top->tperc ) {
-		#print  OUT $repeat->name."\t$know\tduplicate\t".$repeat->qperc."\t".$repeat->tperc."\n";
-		print OUT "$known\t".$repeat->name."\tduplicate\t".$repeat->tperc."\t".$repeat->qperc."\n";
+#		print  OUT $repeat->name."\t$know\tduplicate\t".$repeat->qperc."\t".$repeat->tperc."\n";
+		print OUT "$know\t".$repeat->name."\tduplicate\t".$repeat->tperc."\t".$repeat->qperc."\n";
 	    }
 	}
     }
