@@ -45,37 +45,34 @@ use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 
 
 
-=head2 _tablename
+# _tablename
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED implementation of superclass abstract method
+#               returns the names, aliases of the tables to use for queries
+#  Returntype : list of listrefs of strings
+#  Exceptions : none
+#  Caller     : internal
 
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns the names, aliases of the tables to use for queries
-  Returntype : list of listrefs of strings
-  Exceptions : none
-  Caller     : internal
-
-=cut
 
 sub _tables {
   my $self = shift;
-  
+
   return ([ 'transcript', 't' ], [ 'transcript_stable_id', 'tsi' ],
 	  [ 'xref', 'x' ], [ 'external_db' , 'exdb' ] );
 }
 
 
-=head2 _columns
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns a list of columns to use for queries
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : internal
-
-=cut
+#_columns
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED implementation of superclass abstract method
+#               returns a list of columns to use for queries
+#  Returntype : list of strings
+#  Exceptions : none
+#  Caller     : internal
 
 sub _columns {
   my $self = shift;
@@ -108,7 +105,7 @@ sub _left_join {
 =cut
 
 sub fetch_by_stable_id{
-   my ($self,$id, $cs_name, $cs_version) = @_;
+   my ($self,$id) = @_;
 
    my $constraint = "tsi.stable_id = \"$id\"";
 
@@ -117,10 +114,7 @@ sub fetch_by_stable_id{
 
    if( ! @$transcripts ) { return undef }
 
-   my @new_transcripts = map { $_->transform( $cs_name, $cs_version ) } @$transcripts;
-
-
-   return $new_transcripts[0];
+   return $transcripts->[0];
 }
 
 
@@ -140,23 +134,24 @@ sub fetch_by_stable_id{
 =cut
 
 sub fetch_by_translation_stable_id {
-  my ($self, $transl_stable_id, $cs_name, $cs_version ) = @_;
+  my ($self, $transl_stable_id ) = @_;
 
-  my $sth = $self->prepare( "SELECT t.transcript_id
-                             FROM   translation_stable_id tsi, transcript t
-                             WHERE  tsi.stable_id = ? 
-                             AND    t.translation_id = tsi.translation_id");
+  my $sth = $self->prepare( "SELECT t.transcript_id " .
+                            "FROM   translation_stable_id tsi, transcript t " .
+                            "WHERE  tsi.stable_id = ? " .
+                            "AND    t.translation_id = tsi.translation_id");
 
-  $sth->execute($transl_stable_id);
+  $sth->execute("$transl_stable_id");
 
   my ($id) = $sth->fetchrow_array;
   if ($id){
-  	return $self->fetch_by_dbID($id, $cs_name, $cs_version );
+  	return $self->fetch_by_dbID($id);
   } else {
   	return undef;
   }
-} 
-                             
+}
+
+
 
 =head2 fetch_all_by_Gene
 
@@ -175,7 +170,7 @@ sub fetch_all_by_Gene {
   my $self = shift;
   my $gene = shift;
 
-  # should be on the same slice as gene 
+  # should be on the same slice as gene
   my $constraint = "t.gene_id = ".$gene->dbID();
 
   my $slice = $gene->slice();
@@ -208,15 +203,12 @@ sub fetch_all_by_DBEntry {
   my $self = shift;
   my $external_id = shift;
 
-  my $cs_name = shift;
-  my $cs_version = shift;
-
   my @trans = ();
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
   my @ids = $entryAdaptor->transcriptids_by_extids($external_id);
   foreach my $trans_id ( @ids ) {
-    my $trans = $self->fetch_by_dbID( $trans_id, $cs_name, $cs_version );
+    my $trans = $self->fetch_by_dbID( $trans_id );
     if( $trans ) {
         push( @trans, $trans );
     }
@@ -238,24 +230,24 @@ sub fetch_all_by_DBEntry {
 =cut
 
 sub fetch_all_by_exon_stable_id {
-  my ($self, $stable_id, $cs_name, $cs_version ) = @_;
+  my ($self, $stable_id ) = @_;
   my @trans ;
   my $sth = $self->prepare( qq(	SELECT et.transcript_id 
 				FROM exon_transcript as et, 
 				exon_stable_id as esi 
 				WHERE esi.exon_id = et.exon_id and 
-				esi.stable_id = "$stable_id"  ));
-  $sth->execute(  );
+				esi.stable_id = ?  ));
+  $sth->execute("$stable_id");
 
-  while( my $id = $sth->fetchrow_array ) {    
-    my $transcript = $self->fetch_by_dbID( $id, $cs_name, $cs_version );
+  while( my $id = $sth->fetchrow_array ) {
+    my $transcript = $self->fetch_by_dbID( $id  );
     push(@trans, $transcript) if $transcript;
-  } 
+  }
 
   if (!@trans) {
-    warning( "No Transcript with this exon stable id found in the database." );
     return undef;
   }
+
   return \@trans;
 }
 
@@ -280,7 +272,7 @@ sub store {
    my ($self,$transcript,$gene_dbID) = @_;
 
    if( ! ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
-       $self->throw("$transcript is not a EnsEMBL transcript - not dumping!");
+       throw("$transcript is not a EnsEMBL transcript - not dumping!");
    }
 
    # store translation
@@ -353,7 +345,7 @@ sub store {
 
    if (defined($transcript->stable_id)) {
      if (!defined($transcript->version)) {
-       $self->throw("Trying to store incomplete stable id information for " ..
+       throw("Trying to store incomplete stable id information for " ..
                     "transcript");
      }
 
@@ -371,39 +363,7 @@ sub store {
 
 
 
-=head2 get_stable_entry_info
 
- Title   : get_stable_entry_info
- Usage   : $transcriptAdptor->get_stable_entry_info($transcript)
- Function: gets stable info for gene and places it into the hash
- Returns : 
- Args    : 
-
-
-=cut
-
-sub get_stable_entry_info {
-  my ($self,$transcript) = @_;
-
-  deprecate( "Stable ids should be loaded directly now" );
-  
-  unless( defined $transcript && ref $transcript && 
-	  $transcript->isa('Bio::EnsEMBL::Transcript') ) {
-    $self->throw("Needs a Transcript object, not a $transcript");
-  }
-
-  my $sth = $self->prepare("SELECT stable_id, version 
-                            FROM   transcript_stable_id 
-                            WHERE  transcript_id = ?");
-  $sth->execute($transcript->dbID());
-
-  my @array = $sth->fetchrow_array();
-  $transcript->{'_stable_id'} = $array[0];
-  $transcript->{'_version'}   = $array[1];
-  
-
-  return 1;
-}
 
 
 =head2 get_Interpro_by_transid
@@ -490,16 +450,15 @@ sub remove {
     if($count == 0){ 
       $exonAdaptor->remove( $exon );
     } else{
-      $self->warn("exon " . $exon->dbID . " is not exclusive to transcript " . 
+      warning("exon " . $exon->dbID . " is not exclusive to transcript " . 
 		  $transcript->dbID . "\n");
     }
 
   }
-  
-  $transcript->{'dbID'} = undef;
+
+  $transcript->dbID(undef);
+  $transcript->adaptor(undef);
 }
-
-
 
 
 
@@ -523,7 +482,7 @@ sub update {
    my $update = 0;
 
    if( !defined $transcript || !ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
-       $self->throw("Must update a transcript object, not a $transcript");
+       throw("Must update a transcript object, not a $transcript");
    }
 
    my $update_transcript_sql = "
@@ -578,17 +537,16 @@ sub list_stable_ids {
    return $self->_list_dbIDs("transcript_stable_id", "stable_id");
 }
 
-=head2 _obj_from_hashref
 
-  Arg [1]    : Hashreference $hashref
-  Example    : none 
-  Description: PROTECTED implementation of abstract superclass method.
-               responsible for the creation of Genes 
-  Returntype : listref of Bio::EnsEMBL::Genes in target coordinate system
-  Exceptions : none
-  Caller     : internal
+#_objs_from_sth
 
-=cut
+#  Arg [1]    : StatementHandle $sth
+#  Example    : none 
+#  Description: PROTECTED implementation of abstract superclass method.
+#               responsible for the creation of Transcripts
+#  Returntype : listref of Bio::EnsEMBL::Transcripts in target coord system
+#  Exceptions : none
+#  Caller     : internal
 
 sub _objs_from_sth {
   my ($self, $sth, $mapper, $dest_slice) = @_;
@@ -743,14 +701,7 @@ sub _objs_from_sth {
 
 =head2 get_display_xref
 
-  Arg [1]    : int $dbID
-               the database identifier of the transcript for which the name 
-               of external db from which its external name is derived.
-  Example    : $external_dbname = $transcript_adaptor->get_display_xref_id(42);
-  Description: Retrieves the display_xref_id for a transcript.
-  Returntype : int
-  Exceptions : thrown if $dbId arg is not defined
-  Caller     : general
+  Description: DEPRECATED use $transcript->display_xref()
 
 =cut
 
@@ -760,7 +711,7 @@ sub get_display_xref {
   deprecate( "display_xref should be retreived from Transcript object directly." );
   
   if( !defined $transcript ) {
-      $self->throw("Must call with a Transcript object");
+      throw("Must call with a Transcript object");
   }
 
   my $sth = $self->prepare("SELECT e.db_name,
@@ -790,6 +741,38 @@ sub get_display_xref {
     );
 
   return $db_entry;
+}
+
+
+
+
+=head2 get_stable_entry_info
+
+  Description: DEPRECATED Use $transcript->stable_id()
+
+=cut
+
+sub get_stable_entry_info {
+  my ($self,$transcript) = @_;
+
+  deprecate( "Stable ids should be loaded directly now" );
+
+  unless( defined $transcript && ref $transcript && 
+	  $transcript->isa('Bio::EnsEMBL::Transcript') ) {
+    throw("Needs a Transcript object, not a $transcript");
+  }
+
+  my $sth = $self->prepare("SELECT stable_id, version 
+                            FROM   transcript_stable_id 
+                            WHERE  transcript_id = ?");
+  $sth->execute($transcript->dbID());
+
+  my @array = $sth->fetchrow_array();
+  $transcript->{'_stable_id'} = $array[0];
+  $transcript->{'_version'}   = $array[1];
+
+
+  return 1;
 }
 
 

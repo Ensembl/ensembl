@@ -151,8 +151,6 @@ sub new_fast {
 
 =cut
 
-
-
 sub end_phase {
   my $self = shift;
   if( @_ ) { 
@@ -277,7 +275,7 @@ sub frame {
 
 sub type {
   my ($self,$value) = @_;
-  
+
   if (defined($value)) {
     $self->{'type'} = $value;
   }
@@ -402,7 +400,7 @@ sub move {
 
   Arg  1     : String $coordinate_system_name
   Arg [2]    : String $coordinate_system_version
-  Description: moves this exon to the given coordinate system. If this exon has 
+  Description: moves this exon to the given coordinate system. If this exon has
                attached supporting evidence, they move as well.
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : wrong parameters
@@ -454,7 +452,7 @@ sub transform {
 
 sub transfer {
   my $self  = shift;
-  
+
   my $new_exon = $self->SUPER::transfer( @_ );
   return undef unless $new_exon;
 
@@ -472,9 +470,6 @@ sub transfer {
 
   return $new_exon;
 }
-
-
-
 
 
 
@@ -823,14 +818,11 @@ sub seq {
 
 sub _get_stable_entry_info {
    my $self = shift;
-
    deprecated( "This function shouldnt be called any more" );
    if( !defined $self->adaptor ) {
      return undef;
    }
-
    $self->adaptor->get_stable_entry_info($self);
-
 }
 
 
@@ -855,12 +847,10 @@ sub temporary_id {
 
 sub created{
     my ($self,$value) = @_;
-
     deprecated( "Created attribute not supported any more" );
     if(defined $value ) {
       $self->{'_created'} = $value;
     }
-
     return $self->{'_created'};
 }
 
@@ -872,12 +862,10 @@ sub created{
 
 sub modified{
     my ($self,$value) = @_;
-
     deprecated( "Created attribute not supported any more" );
     if( defined $value ) {
       $self->{'_modified'} = $value;
     }
-
     return $self->{'_modified'};
 }
 

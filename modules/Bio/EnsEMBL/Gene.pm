@@ -75,50 +75,6 @@ sub new {
 
 
 
-=head2 chr_name
-
-  Arg [1]    : (optional) string $chr_name
-  Example    : $chr_name = $gene->chr_name
-  Description: Getter/Setter for the name of the chromosome that this
-               Gene is on.  This is really just a shortcut to the slice
-               attached this genes exons, but the value can also be set, which 
-               is useful for use with the lite database and web code.
-               This function will return undef if this gene is not attached
-               to a slice and the chr_name attribute has not already been set. 
-  Returntype : string
-  Exceptions : warning if chr_name is not defined and Gene is in RawContig 
-               coordinates
-  Caller     : Lite GeneAdaptor, domainview
-
-=cut
-
-sub chr_name {
-  my $self = shift;
-
-  deprecate( "Use project() to obtain other coordinate systems" );
-
-  my $gene_slice = $self->slice();
-  if( $gene_slice->coord_system()->name eq "chromosome" ) {
-    return $gene_slice->seq_region_name();
-  }
-
-  my $sa = $self->slice->adaptor();
-  throw( "need db connection for chr_name call" ) unless $sa;
-
-  my $ca = $sa->db()->get_CoordSystemAdaptor();
-  my $coord_system = $ca->fetch_by_name( "chromosome" );
-  if( ! $coord_system ) {
-    throw( "Chromosome coordinate system not available" );
-  }
-  my $coords = $self->project( $coord_system );
-
-  if( @$coords ) {
-    return $coords->[0]->[2]->seq_region_name();
-  }
-}
-
-
-
 =head2 is_known
 
   Args       : none
@@ -144,76 +100,9 @@ sub is_known{
       return 1 if $entry->status =~ /KNOWN/;
     }
   }
-  
+
   return 0;
 }
-
-
-=head2 adaptor
-
-  Arg [1]    : Bio::EnsEMBL::DBSQL::GeneAdaptor $adaptor
-  Example    : none
-  Description: get/set for attribute adaptor
-  Returntype : Bio::EnsEMBL::DBSQL::GeneAdaptor
-  Exceptions : none
-  Caller     : set only used by adaptor on store or retrieve
-
-=cut
-
-
-sub adaptor {
-   my $self = shift;
-
-   $self->{'adaptor'} = shift if( @_ );
-
-   return $self->{'adaptor'};
-}
-
-
-
-
-=head2 analysis
-
-  Arg [1]    : Bio::EnsEMBL::Analysis $analysis
-  Example    : none
-  Description: get/set for attribute analysis
-  Returntype : Bio::EnsEMBL::Analysis
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub analysis {
-  my $self = shift;
-
-  $self->{'analysis'} = shift if(@_);
-
-  return $self->{'analysis'};
-}
-
-
-
-
-=head2 dbID
-
-  Arg [1]    : int $dbID
-  Example    : none
-  Description: get/set for attribute dbID
-  Returntype : int
-  Exceptions : none
-  Caller     : set only by adaptor on store or retrieve
-
-=cut
-
-
-sub dbID {
-   my $self = shift;
-
-   $self->{'dbID'} = shift if( @_ );
-   return $self->{'dbID'};
-}
-
 
 
 =head2 external_name
@@ -316,11 +205,9 @@ sub external_status {
 
 =cut
 
-
 sub description {
-    my ( $self ) = shift;
+    my $self = shift;
     $self->{'description'} = shift if( @_ );
-  
     return $self->{'description'};
 }
 
@@ -345,7 +232,7 @@ sub add_DBEntry {
   my $dbe = shift;
 
   unless($dbe && ref($dbe) && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
-    $self->throw('Expected DBEntry argument');
+    throw('Expected DBEntry argument');
   }
 
   $self->{'dbentries'} ||= [];
@@ -490,7 +377,7 @@ sub add_Transcript{
    my ($self,$trans) = @_;
 
    if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::Transcript") ) {
-       $self->throw("$trans is not a Bio::EnsEMBL::Transcript!");
+       throw("$trans is not a Bio::EnsEMBL::Transcript!");
    }
 
    if( defined $self->{'start'} ) {
@@ -545,62 +432,6 @@ sub get_all_Transcripts {
 
 
 
-=head2 created
-
-  Arg [1]    : string $created
-               The time the stable id for this gene was created. Not very well
-               maintained data (at release 9)
-  Example    : none
-  Description: DEPRECATED
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub created{
-    my ($self,$value) = @_;
-
-    deprecated( "The created attribute isnt available any more" );
-
-    if(defined $value ) {
-      $self->{'created'} = $value;
-    }
-
-    return $self->{'created'};
-
-}
-
-
-=head2 modified
-
-  Arg [1]    : string $modified
-               The time the gene with this stable_id was last modified.
-               Not well maintained data (release 9)
-  Example    : none
-  Description: DEPRECATED
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub modified {
-    my ($self,$value) = @_;
-
-    deprecate( "The modified item isnt available any more" );
-
-    if( defined $value ) {
-      $self->{'modified'} = $value;
-    }
-
-
-    return $self->{'modified'};
-}
-
-
 
 =head2 version
 
@@ -614,19 +445,11 @@ sub modified {
 
 =cut
 
-
 sub version{
-
-    my ($self,$value) = @_;
-    
-
-    if( defined $value ) {
-      $self->{'version'} = $value;
-    }
-
-    return $self->{'version'};
+  my $self = shift;
+  $self->{'version'} = shift if(@_);
+  return $self->{'version'};
 }
-
 
 
 =head2 stable_id
@@ -641,39 +464,9 @@ sub version{
 =cut
 
 sub stable_id{
-
-    my ($self,$value) = @_;
-    
-
-    if( defined $value ) {
-      $self->{'stable_id'} = $value;
-      return;
-    }
-
-    return $self->{'stable_id'};
-
-}
-
-
-
-
-
-sub _dump{
-   my ($self,$fh) = @_;
-
-   if( ! $fh ) {
-       $fh = \*STDOUT;
-   }
-
-   print $fh "Gene ", $self->dbID(), "\n";
-   foreach my $t ( @{$self->get_all_Transcripts()} ) {
-       print $fh "  Trans ", $t->dbID(), " :";
-       foreach my $e ( @{$t->get_all_Exons} ) {
-	   print $fh " ",$e->dbID(),",";
-       }
-       print "\n";
-   }
-
+  my $self = shift;
+  $self->{'stable_id'} = shift if(@_);
+  return $self->{'stable_id'};
 }
 
 
@@ -743,33 +536,6 @@ sub transfer {
   return $new_gene;
 }
 
-
-
-=head2 temporary_id
-
- Title   : temporary_id
- Usage   : $obj->temporary_id($newval)
- Function: Temporary ids are used for Genscan predictions - which should probably
-           be moved over to being stored inside the gene tables anyway. Bio::EnsEMBL::TranscriptFactory use this.
-           MC Over my dead body they will.  Unless you can speed up the database by a couple of orders of magnitude.
- Example : 
- Returns : value of temporary_id
- Args    : newvalue (optional)
-
-
-=cut
-
-sub temporary_id {
-   my ($obj,$value) = @_;
-   deprecated( "I cant see what a temporary_id is good for, please use dbID or stableID or\n"
-	       ."try without an id." );
-
-   if( defined $value) {
-      $obj->{'temporary_id'} = $value;
-    }
-    return $obj->{'temporary_id'};
-
-}
 
 
 =head2 display_xref
@@ -857,19 +623,33 @@ sub _recalculate_cordinates {
 }
 
 
+sub _dump{
+   my ($self,$fh) = @_;
+
+   if( ! $fh ) {
+       $fh = \*STDOUT;
+   }
+
+   print $fh "Gene ", $self->dbID(), "\n";
+   foreach my $t ( @{$self->get_all_Transcripts()} ) {
+       print $fh "  Trans ", $t->dbID(), " :";
+       foreach my $e ( @{$t->get_all_Exons} ) {
+	   print $fh " ",$e->dbID(),",";
+       }
+       print "\n";
+   }
+}
+
+
+###########################
+# DEPRECATED METHODS FOLLOW
+###########################
 
 =head2 DEPRECATED add_DBLink
 
-  Arg [1]    : DEPRECATED Bio::Annotation::DBLink $link
-               a link is a database entry somewhere else.
-               Usually this is a Bio::EnsEMBL::DBEntry.
-  Example    : DEPRECATED 
-  Description: This method has been deprecated in favor of the add_DBEntry
-               method.  Objects are responible for holding only xrefs directly
-               associated with themselves now.
-  Returntype : none
-  Exceptions : none
-  Caller     : general
+  Description: DEPRECATED This method has been deprecated in favor of the
+               add_DBEntry method.  Objects are responible for holding only
+               xrefs directly associated with themselves now.
 
 =cut
 
@@ -877,11 +657,11 @@ sub _recalculate_cordinates {
 sub add_DBLink{
   my ($self,$value) = @_;
 
-  $self->throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
+  throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
 
 #  unless(defined $value && ref $value 
 #	 && $value->isa('Bio::Annotation::DBLink') ) {
-#    $self->throw("This [$value] is not a DBLink");
+#    throw("This [$value] is not a DBLink");
 #  }
   
 #  if( !defined $self->{'_db_link'} ) {
@@ -889,6 +669,89 @@ sub add_DBLink{
 #  }
 
 #  push(@{$self->{'_db_link'}},$value);
+}
+
+
+
+
+=head2 temporary_id
+
+ Function: DEPRECATED:  Use dbID or stable_id or something else instead
+
+=cut
+
+sub temporary_id {
+   my ($obj,$value) = @_;
+   deprecated( "I cant see what a temporary_id is good for, please use " .
+               "dbID or stableID or\n try without an id." );
+   if( defined $value) {
+      $obj->{'temporary_id'} = $value;
+    }
+    return $obj->{'temporary_id'};
+}
+
+=head2 created
+
+  Description: DEPRECATED - Transcripts no longer have a created attribute
+
+=cut
+
+sub created{
+    my ($self,$value) = @_;
+    deprecated( "The created attribute isnt available any more" );
+    if(defined $value ) {
+      $self->{'created'} = $value;
+    }
+    return $self->{'created'};
+}
+
+=head2 modified
+
+  Description: DEPRECATED - Transcripts no longer have a modified attribute
+
+=cut
+
+sub modified {
+    my ($self,$value) = @_;
+    deprecate( "The modified item isnt available any more" );
+    if( defined $value ) {
+      $self->{'modified'} = $value;
+    }
+    return $self->{'modified'};
+}
+
+=head2 chr_name
+
+  Description: DEPRECATED.  Use project, tranform, or transfer to obtain this
+               gene in another coord system.  Use $gene->slice->seq_region_name
+               to get the name of the underlying coord system. Or
+               $gene->slice->name().
+
+=cut
+
+sub chr_name {
+  my $self = shift;
+
+  deprecate( "Use project() to obtain other coordinate systems" );
+
+  my $gene_slice = $self->slice();
+  if( $gene_slice->coord_system()->name eq "chromosome" ) {
+    return $gene_slice->seq_region_name();
+  }
+
+  my $sa = $self->slice->adaptor();
+  throw( "need db connection for chr_name call" ) unless $sa;
+
+  my $ca = $sa->db()->get_CoordSystemAdaptor();
+  my $coord_system = $ca->fetch_by_name( "chromosome" );
+  if( ! $coord_system ) {
+    throw( "Chromosome coordinate system not available" );
+  }
+  my $coords = $self->project( $coord_system );
+
+  if( @$coords ) {
+    return $coords->[0]->[2]->seq_region_name();
+  }
 }
 
 1;

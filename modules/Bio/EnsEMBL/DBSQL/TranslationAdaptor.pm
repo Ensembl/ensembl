@@ -263,7 +263,8 @@ sub remove {
   $sth = $self->prepare("DELETE FROM translation_stable_id 
                          WHERE translation_id = ?" );
   $sth->execute( $translation->dbID );
-  $translation->dbID( undef ); #don't think this line works
+  $translation->dbID( undef );
+  $translation->adaptor(undef);
 }
 
 =head2 list_dbIDs

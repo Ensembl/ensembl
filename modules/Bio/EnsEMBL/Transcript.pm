@@ -54,7 +54,6 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
 
 
-
 @ISA = qw(Bio::EnsEMBL::Feature Bio::EnsEMBL::TranscriptI);
 
 sub new {
@@ -169,36 +168,11 @@ sub add_DBEntry {
   my $dbe = shift;
 
   unless($dbe && ref($dbe) && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
-    $self->throw('Expected DBEntry argument');
+    throw('Expected DBEntry argument');
   }
 
   $self->{'dbentries'} ||= [];
   push @{$self->{'dbentries'}}, $dbe;
-}
-
-
-
-=head2 dbID
-
-  Arg [1]    : (optional) int $dbID
-               A new value for the internal identifier of this transcript
-  Example    : $id = $transcript->dbID();
-  Description: Getter/Setter for the internal identifier of this transcript
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub dbID {
-   my $self = shift;
-   
-   if( @_ ) {
-      my $value = shift;
-      $self->{'dbID'} = $value;
-    }
-    return $self->{'dbID'};
-
 }
 
 
@@ -316,16 +290,6 @@ sub type {
   return $self->{'type'};
 }
 
-sub adaptor {
-   my $self = shift;
-   
-   if( @_ ) {
-      my $value = shift;
-      $self->{'adaptor'} = $value;
-    }
-    return $self->{'adaptor'};
-
-}
 
 
 =head2 display_xref
@@ -370,7 +334,7 @@ sub translation {
   if( @_ ) {
     my $value = shift;
     if( ! ref $value || !$value->isa('Bio::EnsEMBL::Translation') ) {
-      $self->throw("This [$value] is not a translation");
+      throw("This [$value] is not a translation");
     }
     $self->{'translation'} = $value;
   } elsif( !exists $self->{'translation'} and defined $self->adaptor() ) {
@@ -645,7 +609,7 @@ sub add_Exon{
 
    #yup - we are going to be picky here...
    unless(defined $exon && ref $exon && $exon->isa("Bio::EnsEMBL::Exon") ) {
-     $self->throw("[$exon] is not a Bio::EnsEMBL::Exon!");
+     throw("[$exon] is not a Bio::EnsEMBL::Exon!");
    }
 
    push(@{$self->{'_trans_exon_array'}},$exon);
@@ -917,7 +881,7 @@ sub get_all_SNPs {
     }
 
     unless($key) {
-      #$self->warn('SNP could not be mapped. In/Dels not supported yet...');
+      #warning('SNP could not be mapped. In/Dels not supported yet...');
       next;
     }
 
@@ -987,14 +951,14 @@ sub get_all_cdna_SNPs {
 
       #skip snps that don't map cleanly (possibly an indel...)
       if(scalar(@coords) != 1) {
-	#$self->warn("snp of type $type does not map cleanly\n");
-	next;
+        #warning("snp of type $type does not map cleanly\n");
+        next;
       }
 
       my ($coord) = @coords;
 
       unless($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-	#$self->warn("snp of type $type maps to gap\n");
+	#warning("snp of type $type maps to gap\n");
 	next;
       }
 
@@ -1099,7 +1063,7 @@ sub get_all_translateable_Exons {
   my ( $self ) = @_;
 
   my $translation = $self->translation
-    or $self->throw("No translation attached to transcript object");
+    or throw("No translation attached to transcript object");
   my $start_exon      = $translation->start_Exon;
   my $end_exon        = $translation->end_Exon;
   my $t_start         = $translation->start;
@@ -1120,7 +1084,7 @@ sub get_all_translateable_Exons {
     # Adjust to translation start if this is the start exon
     if ($ex == $start_exon ) {
       if ($t_start < 1 or $t_start > $length) {
-	$self->throw("Translation start '$t_start' is outside exon $ex length=$length");
+        throw("Translation start '$t_start' is outside exon $ex length=$length");
       }
       $adjust_start = $t_start - 1;
     }
@@ -1128,7 +1092,7 @@ sub get_all_translateable_Exons {
     # Adjust to translation end if this is the end exon
     if ($ex == $end_exon) {
       if ($t_end < 1 or $t_end > $length) {
-	$self->throw("Translation end '$t_end' is outside exon $ex length=$length");
+        throw("Translation end '$t_end' is outside exon $ex length=$length");
       }
       $adjust_end = $t_end - $length;
     }
@@ -1278,7 +1242,7 @@ sub pep2genomic {
   my ($self,$start,$end) = @_;
 
   if( !defined $end ) {
-    $self->throw("Must call with start/end");
+    throw("Must call with start/end");
   }
 
   # move start end into translate cDNA coordinates now.
@@ -1321,7 +1285,7 @@ sub genomic2pep {
   my ($self, $start, $end, $strand, $contig) = @_;
 
   unless(defined $start && defined $end && defined $strand) {
-    $self->throw("start, end and strand arguments are required");
+    throw("start, end and strand arguments are required");
   }
  
   my @coords = $self->genomic2cdna($start, $end, $strand, $contig);
@@ -1424,7 +1388,7 @@ sub cdna2genomic {
   my ($self,$start,$end) = @_;
 
   if( !defined $end ) {
-    $self->throw("Must call with start/end");
+    throw("Must call with start/end");
   }
 
   my $mapper = $self->_get_cdna_coord_mapper();
@@ -1467,7 +1431,7 @@ sub genomic2cdna {
   my ($self, $start, $end, $strand, $slice) = @_;
 
   unless(defined $start && defined $end && defined $strand) {
-    $self->throw("start, end and strand arguments are required\n");
+    throw("start, end and strand arguments are required\n");
   }
 
   #"ids" in mapper are contigs of exons, so use the same contig that should
@@ -1597,11 +1561,10 @@ sub description{
 
 sub version{
     my $self = shift;
-    
+
     $self->{'version'} = shift if( @_ );
 
     return $self->{'version'};
-  
 }
 
 
@@ -1618,35 +1581,10 @@ sub version{
 
 sub stable_id{
     my $self = shift;
-    
 
     $self->{'stable_id'} = shift if( @_ );
 
     return $self->{'stable_id'};
-
-}
-
-
-=head2 temporary_id
-
- Title   : temporary_id
- Usage   : $obj->temporary_id($newval)
- Function: Temporary ids are used for Genscan predictions - which should probably
-           be moved over to being stored inside the gene tables anyway. Bio::EnsEMBL::TranscriptFactory use this
- Example : 
- Returns : value of temporary_id
- Args    : newvalue (optional)
-
-
-=cut
-
-sub temporary_id{
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'temporary_id'} = $value;
-    }
-    return $obj->{'temporary_id'};
-
 }
 
 
@@ -1688,7 +1626,7 @@ sub swap_exons {
       $self->translation()->end_Exon( $new_exon );
     }
   }
-}      
+}
 
 =head2 transform
 
@@ -1781,7 +1719,6 @@ sub transfer {
       }
       push( @new_exons, $new_exon );
     }
-      
 
     $new_transcript->{'_trans_exon_array'} = \@new_exons;
   }
@@ -1790,89 +1727,17 @@ sub transfer {
 }
 
 
-=head2 _translation_id
-
- Title   : _translation_id
- Usage   : $obj->_translation_id($newval)
- Function: 
- Returns : translation objects dbID
- Args    : newvalue (optional)
 
 
-=cut
-
-sub _translation_id {
-   my $self = shift;
-   deprecated( "This method shouldnt be necessary any more" );
-
-   if( @_ ) {
-      my $value = shift;
-      $self->{'_translation_id'} = $value;
-    }
-    return $self->{'_translation_id'};
-
-}
-
-=head2 created
-
- Title   : created
- Usage   : $obj->created($newval)
- Function: 
- Returns : value of created
- Args    : newvalue (optional)
-
-
-=cut
-
-sub created{
-   my $obj = shift;
-   deprecate( "This attribute is no longer supported" );
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'created'} = $value;
-    }
-    return $obj->{'created'};
-
-}
-
-
-=head2 modified
-
- Title   : modified
- Usage   : $obj->modified($newval)
- Function: 
- Returns : value of modified
- Args    : newvalue (optional)
-
-
-=cut
-
-sub modified{
-   my $obj = shift;
-   deprecated( "This attribute is no longer supported" );
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'modified'} = $value;
-    }
-    return $obj->{'modified'};
-
-}
-
-
-
-=head2 _recalculate_cordinates
-
-  Args       : none
-  Example    : none
-  Description: called when exon coordinate change happened to recalculate the
-               coords of the transcript.
-  Returntype : none
-  Exceptions : none
-  Caller     : internal
-
-=cut
-
-
+#_recalculate_cordinates
+#
+#  Args       : none
+#  Example    : none
+#  Description: called when exon coordinate change happened to recalculate the
+#               coords of the transcript.
+#  Returntype : none
+#  Exceptions : none
+#  Caller     : internal
 
 sub _recalculate_cordinates {
   my $self = shift;
@@ -1918,6 +1783,75 @@ sub _recalculate_cordinates {
   $self->strand( $strand );
   $self->slice( $slice );
 }
+
+
+###########################
+# DEPRECATED METHODS FOLLOW
+###########################
+
+# _translation_id
+# Usage   : DEPRECATED - not needed anymore
+
+sub _translation_id {
+   my $self = shift;
+   deprecated( "This method shouldnt be necessary any more" );
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_translation_id'} = $value;
+    }
+    return $self->{'_translation_id'};
+
+}
+
+=head2 created
+
+ Description: DEPRECATED - this attribute is not part of transcript anymore
+
+=cut
+
+sub created{
+   my $obj = shift;
+   deprecate( "This attribute is no longer supported" );
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'created'} = $value;
+    }
+    return $obj->{'created'};
+}
+
+
+=head2 modified
+
+  Description: DEPRECATED - this attribute is not part of transcript anymore
+
+=cut
+
+sub modified{
+   my $obj = shift;
+   deprecated( "This attribute is no longer supported" );
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'modified'} = $value;
+    }
+    return $obj->{'modified'};
+}
+
+=head2 temporary_id
+
+ Function: DEPRECATED: Use dbID or stable_id or something else instead
+
+=cut
+
+sub temporary_id{
+   my ($obj,$value) = @_;
+   deprecate( "I cant see what a temporary_id is good for, please use dbID" .
+               "or stableID or\ntry without an id." );
+   if( defined $value) {
+      $obj->{'temporary_id'} = $value;
+    }
+    return $obj->{'temporary_id'};
+}
+
 
 
 1;

@@ -46,37 +46,33 @@ use vars '@ISA';
 
 
 
-=head2 _tablename
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns the names, aliases of the tables to use for queries
-  Returntype : list of listrefs of strings
-  Exceptions : none
-  Caller     : internal
-
-=cut
+# _tables
+#  Arg [1]    : none
+#  Description: PROTECTED implementation of superclass abstract method
+#               returns the names, aliases of the tables to use for queries
+#  Returntype : list of listrefs of strings
+#  Exceptions : none
+#  Caller     : internal
 
 sub _tables {
   my $self = shift;
-  
-  return ([ 'gene', 'g' ],[ 'gene_description', 'gd' ], [ 'gene_stable_id', 'gsi' ],
-	  [ 'xref', 'x' ], [ 'external_db' , 'exdb' ]);
+
+  return ([ 'gene', 'g' ],
+          [ 'gene_description', 'gd' ],
+          [ 'gene_stable_id', 'gsi' ],
+          [ 'xref', 'x' ],
+          [ 'external_db' , 'exdb' ]);
 }
 
 
-=head2 _columns
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns a list of columns to use for queries
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : internal
-
-=cut
+# _columns
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED implementation of superclass abstract method
+#               returns a list of columns to use for queries
+#  Returntype : list of strings
+#  Exceptions : none
+#  Caller     : internal
 
 sub _columns {
   my $self = shift;
@@ -92,7 +88,7 @@ sub _left_join {
   return ( [ 'gene_description', "gd.gene_id = g.gene_id" ],
 	   [ 'gene_stable_id', "gsi.gene_id = g.gene_id" ],
 	   [ 'xref', "x.xref_id = g.display_xref_id" ],
-	   [ 'external_db', "exdb.external_db_id = x.external_db_id" ] ); 
+	   [ 'external_db', "exdb.external_db_id = x.external_db_id" ] );
 }
 
 
@@ -118,8 +114,8 @@ sub list_dbIDs {
 
   Arg [1]    : none
   Example    : @stable_gene_ids = @{$gene_adaptor->list_stable_dbIDs()};
-  Description: Gets an array of stable ids for all genes in the current db
-  Returntype : list of ints
+  Description: Gets an listref of stable ids for all genes in the current db
+  Returntype : reference to a list of strings
   Exceptions : none
   Caller     : ?
 
@@ -137,11 +133,13 @@ sub list_stable_ids {
 
   Arg  1     : string $id 
                The stable id of the gene to retrieve
-  Arg [2]    : string $coordinate_system_name
-  Arg [3]    : string $coordinate_system_version
-
-  Example    : $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000148944', 'chromosome');
-  Description: Retrieves a gene object from the database via its stable id
+  Example    : $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000148944');
+  Description: Retrieves a gene object from the database via its stable id.
+               The gene will be retrieved in its native coordinate system (i.e.
+               in the coordinate system it is stored in the database).  It may
+               be converted to a different coordinate system through a call to
+               transform() or transfer().  If the gene or exon is not found
+               undef is returned instead.
   Returntype : Bio::EnsEMBL::Gene in given coordinate system
   Exceptions : if we cant get the gene in given coord system
   Caller     : general
@@ -149,12 +147,8 @@ sub list_stable_ids {
 =cut
 
 sub fetch_by_stable_id {
-   my ($self,$id, $cs_name, $cs_version) = @_;
+   my ($self,$id) = @_;
 
-   if( ! $cs_name ) {
-     deprecate( "Please call this method with coordinate system name argument" );
-     $cs_name = "toplevel";
-   }
    my $constraint = "gsi.stable_id = \"$id\"";
 
    # should be only one :-)
@@ -162,27 +156,29 @@ sub fetch_by_stable_id {
 
    if( !$gene ) { return undef }
 
-   
-   return $gene->transform( $cs_name, $cs_version );
+   return $gene;
  }
 
 
 =head2 fetch_by_exon_stable_id
 
   Arg [1]    : string $id
-               The stable id of the gene to retrieve
-  Arg [2]    : (optional) string $coordinate_system_name
-  Arg [3]    : (optional) string $coordinate_system_version
-  Example    : $gene = $gene_adaptor->fetch_by_exon_stable_id('ENSE00000148944', "chromosome", "NCBI_33" );
-  Description: Retrieves a gene object from the database via an exon stable id
-  Returntype : Bio::EnsEMBL::Gene in given coordinate system
-  Exceptions : throw ?
+               The stable id of an exon of the gene to retrieve
+  Example    : $gene = $gene_adptr->fetch_by_exon_stable_id('ENSE00000148944');
+  Description: Retrieves a gene object from the database via an exon stable id.
+               The gene will be retrieved in its native coordinate system (i.e.
+               in the coordinate system it is stored in the database).  It may
+               be converted to a different coordinate system through a call to
+               transform() or transfer().  If the gene or exon is not found
+               undef is returned instead.
+  Returntype : Bio::EnsEMBL::Gene (or undef)
+  Exceptions : none
   Caller     : general
 
 =cut
 
 sub fetch_by_exon_stable_id{
-   my ( $self, $id, $cs_name, $cs_version ) = @_;
+   my ( $self, $id ) = @_;
 
    my $sth = $self->prepare(
      "SELECT t.gene_id
@@ -191,19 +187,17 @@ sub fetch_by_exon_stable_id{
              exon_stable_id as esi
        WHERE t.transcript_id = et.transcript_id 
          AND et.exon_id = esi.exon_id 
-         AND esi.stable_id = '$id'");
-   $sth->execute;
+         AND esi.stable_id = ?");
+   $sth->execute("$id");
 
    my ($dbID) = $sth->fetchrow_array();
 
-   if( !defined $dbID ) {
-       $self->throw("No stable id with $id, cannot fetch");
-   }
+   return undef if(!defined($dbID));
 
-   my $gene = $self->fetch_by_dbID( $dbID, $cs_name, $cs_version);
-  
+   my $gene = $self->fetch_by_dbID( $dbID );
+
    return $gene;
- }
+}
 
 
 
@@ -214,7 +208,10 @@ sub fetch_by_exon_stable_id{
                the domain to fetch genes from
   Example    : my @genes = $gene_adaptor->fetch_all_by_domain($domain);
   Description: retrieves a listref of genes whose translation contain interpro
-               domain $domain.
+               domain $domain.  The genes are returned in their native coord
+               system (i.e. the coord_system they are stored in). If the coord
+               system needs to be changed, then tranform
+               or transfer should be called on the individual objects returned.
   Returntype : list of Bio::EnsEMBL::Genes
   Exceptions : none
   Caller     : domainview
@@ -222,10 +219,10 @@ sub fetch_by_exon_stable_id{
 =cut
 
 sub fetch_all_by_domain {
-  my ($self, $domain, $cs_name, $cs_version) = @_;
+  my ($self, $domain) = @_;
 
   unless($domain) {
-    $self->throw("domain argument is required");
+    throw("domain argument is required");
   }
 
   my $sth = $self->prepare("SELECT tr.gene_id
@@ -236,7 +233,7 @@ sub fetch_all_by_domain {
                             AND   i.id = pf.hit_id
                             AND   pf.translation_id = tr.translation_id
                             GROUP BY tr.gene_id");
- 
+
   $sth->execute($domain);
   my @gene_ids = ();
   my $gene_id;
@@ -247,25 +244,23 @@ sub fetch_all_by_domain {
   }
 
   my $constraint = "g.gene_id in (".join( ",", @gene_ids ).")";
-  my $genes = $self->SUPER::generic_fetch( $constraint );
-  my @new_genes = map { $_->transform( $cs_name, $cs_version ) } @$genes;
-
-  return \@new_genes;
+  return $self->SUPER::generic_fetch( $constraint );
 }
 
 
-  
 
 =head2 fetch_by_transcript_id
 
-  Arg [1]    : int $transid 
+  Arg [1]    : int $transid
                unique database identifier for the transcript whose gene should
-               be retrieved.
-  Arg [2]    : string $coordinate_system_name
-  Arg [3]    : string $coordinate_system_version
-  Example    : $gene = $gene_adaptor->fetch_by_transcript_id( $transcript, "chromosome" );
+               be retrieved. The gene is returned in its native coord
+               system (i.e. the coord_system it is stored in). If the coord
+               system needs to be changed, then tranform or transfer should
+               be called on the returned object.  undef is returned if the
+               gene or transcript is not found in the database.
+  Example    : $gene = $gene_adaptor->fetch_by_transcript_id( 1241 );
   Description: Retrieves a gene from the database via the database identifier
-               of one of its transcripts
+               of one of its transcripts.
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : ?
@@ -273,30 +268,30 @@ sub fetch_all_by_domain {
 =cut
 
 sub fetch_by_transcript_id {
-    my ( $self, $trans_id, $cs_name, $cs_version ) = @_;
+    my ( $self, $trans_id ) = @_;
 
-    
     # this is a cheap SQL call
-     my $sth = $self->prepare("	SELECT	tr.gene_id 
-				FROM	transcript as tr 
-				WHERE	tr.transcript_id = $trans_id");
-    $sth->execute;
+     my $sth = $self->prepare("SELECT	tr.gene_id " .
+				"FROM	transcript as tr " .
+				"WHERE	tr.transcript_id = ?");
+    $sth->execute($trans_id);
 
     my ($geneid) = $sth->fetchrow_array();
-    if( !defined $geneid ) {
-        return undef;
-    }
-    my $gene = $self->fetch_by_dbID( $geneid, $cs_name, $cs_version );
+
+    $sth->finish();
+
+    return undef if( !defined $geneid );
+
+    my $gene = $self->fetch_by_dbID( $geneid );
     return $gene;
 }
 
+
 =head2 fetch_by_transcript_stable_id
 
-  Arg [1]    : string $transid 
+  Arg [1]    : string $transid
                unique database identifier for the transcript whose gene should
                be retrieved.
-  Arg [2]    : string $coordinate_system_name
-  Arg [3]    : string $coordinate_system_version
   Example    : none
   Description: Retrieves a gene from the database via the database identifier
                of one of its transcripts
@@ -307,46 +302,26 @@ sub fetch_by_transcript_id {
 =cut
 
 sub fetch_by_transcript_stable_id {
-    my ( $self, $trans_stable_id, $cs_name, $cs_version ) = @_;
+    my ( $self, $trans_stable_id) = @_;
 
     # this is a cheap SQL call
-     my $sth = $self->prepare("	SELECT	tr.gene_id 
-				FROM	transcript as tr, transcript_stable_id tcl 
-				WHERE	tcl.stable_id = \"$trans_stable_id\"
-                                  AND   tr.transcript_id = tcl.transcript_id");
-    $sth->execute;
+    my $sth = $self->prepare(
+        "SELECT	tr.gene_id " .
+				"FROM	  transcript as tr, transcript_stable_id tcl " .
+        "WHERE	tcl.stable_id = ? " .
+        "AND    tr.transcript_id = tcl.transcript_id");
+    $sth->execute("$trans_stable_id");
 
     my ($geneid) = $sth->fetchrow_array();
     if( !defined $geneid ) {
         return undef;
     }
-    my $gene = $self->fetch_by_dbID( $geneid, $cs_name, $cs_version );
+    my $gene = $self->fetch_by_dbID( $geneid );
     return $gene;
 }
 
 
 
-=head2 fetch_by_Peptide_id
-
-  Arg [1]    : 
-  Example    : 
-  Description: DEPRECATED, see below 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
-
-=cut
-
-sub fetch_by_Peptide_id {
-    my ( $self, $translation_stable_id, $cs_name, $cs_version ) = @_;
-
-    deprecate( "Please use better named fetch_by_translation_stable_id" );
-
-    $self->fetch_by_translation_stable_id
-      ( $translation_stable_id, 
-	$cs_name, $cs_version 
-      );
-}
 
 
 =head2 fetch_by_translation_stable_id
@@ -355,7 +330,7 @@ sub fetch_by_Peptide_id {
                the stable id of a translation of the gene that should
                be obtained
   Example    : $gene = $gene_adaptor->fetch_by_translation_stable_id
-                 ( 'ENSP00000278194', "toplevel" );
+                 ( 'ENSP00000278194' );
   Description: retrieves a gene via the stable id of one of its translations.
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
@@ -364,64 +339,25 @@ sub fetch_by_Peptide_id {
 =cut
 
 sub fetch_by_translation_stable_id {
-    my ( $self, $translation_stable_id, $cs_name, $cs_version ) = @_;
+    my ( $self, $translation_stable_id ) = @_;
 
     # this is a cheap SQL call
-    my $sth = $self->prepare("	SELECT	tr.gene_id 
-				FROM	transcript as tr, 
-					translation_stable_id as trs 
-			    	WHERE	trs.stable_id = '$translation_stable_id' 
-				AND	trs.translation_id = tr.translation_id
-			    ");
-    $sth->execute;
+    my $sth = $self->prepare
+      ("SELECT	tr.gene_id " .
+			 "FROM	transcript as tr, " .
+			 "		  translation_stable_id as trs " .
+			 "WHERE	trs.stable_id = ? " .
+			 "AND	  trs.translation_id = tr.translation_id");
+
+    $sth->execute("$translation_stable_id");
 
     my ($geneid) = $sth->fetchrow_array();
     if( !defined $geneid ) {
         return undef;
     }
     return $self->fetch_by_dbID($geneid);
-}  
-
-
-
-=head2 get_stable_entry_info
-
-  Arg [1]    : Bio::EnsEMBL::Gene $gene
-  Example    : $gene_adaptor->get_stable_entry_info($gene);
-  Description: DEPRECATED
-               gets stable info for a gene. this is not usually done at
-               creation time for speed purposes, and can be lazy-loaded later
-               if it is needed..
-  Returntype : none
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::Gene
-
-=cut
-
-sub get_stable_entry_info {
-  my ($self,$gene) = @_;
-
-  deprecated( "stable id info is loaded on default, no lazy loading necessary" );
-
-  if( !defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
-     $self->throw("Needs a gene object, not a $gene");
-  }
-
-  my $sth = $self->prepare("SELECT stable_id, UNIX_TIMESTAMP(created),
-                                   UNIX_TIMESTAMP(modified), version 
-                            FROM gene_stable_id 
-                            WHERE gene_id = ".$gene->dbID);
-  $sth->execute();
-
-  my @array = $sth->fetchrow_array();
-  $gene->{'stable_id'} = $array[0];
-  $gene->{'created'}   = $array[1];
-  $gene->{'modified'}  = $array[2];
-  $gene->{'version'}   = $array[3];
-  
-
-  return 1;
 }
+
 
 
 =head2 fetch_all_by_DBEntry
@@ -438,7 +374,7 @@ sub get_stable_entry_info {
 =cut
 
 sub fetch_all_by_DBEntry {
-  my ( $self, $external_id, $cs_name, $cs_version ) = @_;
+  my ( $self, $external_id) = @_;
 
   my @genes = ();
 
@@ -447,7 +383,7 @@ sub fetch_all_by_DBEntry {
 
   my @ids = $entryAdaptor->list_gene_ids_by_extids( $external_id );
   foreach my $gene_id ( @ids ) {
-    my $gene = $self->fetch_by_dbID( $gene_id, $cs_name, $cs_version );
+    my $gene = $self->fetch_by_dbID( $gene_id );
     if( $gene ) {
       push( @genes, $gene );
     }
@@ -475,10 +411,10 @@ sub store {
    my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
 
    if( !defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
-       $self->throw("Must store a gene object, not a $gene");
+       throw("Must store a gene object, not a $gene");
    }
    if( !defined $gene->analysis ) {
-       $self->throw("Genes must have an analysis object!");
+       throw("Genes must have an analysis object!");
    }
 
    my $aA = $self->db->get_AnalysisAdaptor();
@@ -491,7 +427,7 @@ sub store {
    }
 
    if ( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
-       $self->throw("$gene is not a EnsEMBL gene - not writing!");
+       throw("$gene is not a EnsEMBL gene - not writing!");
    }
  
    my $type = "";
@@ -576,9 +512,9 @@ sub store {
    $gene->dbID( $gene_dbID );
 
    # should we store gene description? Not strictly necessary, as its later 
-   # added to the database. But maybe just for completeness and it should definatly 
-   # go into update.
-   
+   # added to the database. But maybe just for completeness and it should 
+   # definatly go into update.
+
    return $gene->dbID;
 }
 
@@ -618,6 +554,7 @@ sub remove {
   }
 
   $gene->dbID(undef);
+  $gene->adaptor(undef);
 }
 
 
@@ -672,23 +609,20 @@ sub get_Interpro_by_geneid {
 
 
 
-=head2 deleteObj
-
-  Arg [1]    : none
-  Example    : none 
-  Description: Responsible for cleaning up this objects references to other
-               objects so that proper garbage collection can occur. 
-  Returntype : none
-  Exceptions : none
-  Caller     : DBConnection::DeleteObj
-
-=cut
+# deleteObj
+#  Arg [1]    : none
+#  Example    : none
+#  Description: Responsible for cleaning up this objects references to other
+#               objects so that proper garbage collection can occur. 
+#  Returntype : none
+#  Exceptions : none
+#  Caller     : DBConnection::DeleteObj
 
 sub deleteObj {
   my $self = shift;
 
   #print STDERR "\t\tGeneAdaptor::deleteObj\n";
-  
+
   #call superclass destructor
   $self->SUPER::deleteObj();
 
@@ -702,13 +636,10 @@ sub deleteObj {
 
   Arg [1]    : Bio::EnsEMBL::Gene
   Example    : $gene_adaptor->update($gene);
-  Description: Updates  a gene in the database
+  Description: Updates the type, analysis and display_xref of a gene in the
+               database.
   Returntype : None
   Exceptions : thrown if the $gene is not a Bio::EnsEMBL::Gene
-               warn if trying to update the number of attached transcripts.  This
-               is a far more complex process and is not yet implemented.
-               warn if the method is called on a gene that does not exist in the
-               database.
   Caller     : general
 
 =cut
@@ -718,7 +649,7 @@ sub update {
    my $update = 0;
 
    if( !defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
-     $self->throw("Must update a gene object, not a $gene");
+     throw("Must update a gene object, not a $gene");
    }
 
    my $update_gene_sql = "
@@ -730,7 +661,7 @@ sub update {
 
    my $display_xref = $gene->display_xref();
    my $display_xref_id;
- 
+
    if( defined $display_xref && $display_xref->dbID() ) {
      $display_xref_id = $display_xref->dbID();
    } else {
@@ -743,22 +674,20 @@ sub update {
 		 $display_xref_id,
 		 $gene->dbID()
 		);
-   
+
    # maybe should update stable id or gene description ???
 }
 
 
-=head2 _obj_from_hashref
+# _objs_from_sth
 
-  Arg [1]    : Hashreference $hashref
-  Example    : none 
-  Description: PROTECTED implementation of abstract superclass method.
-               responsible for the creation of Genes 
-  Returntype : listref of Bio::EnsEMBL::Genes in target coordinate system
-  Exceptions : none
-  Caller     : internal
-
-=cut
+#  Arg [1]    : StatementHandle $sth
+#  Example    : none 
+#  Description: PROTECTED implementation of abstract superclass method.
+#               responsible for the creation of Genes
+#  Returntype : listref of Bio::EnsEMBL::Genes in target coordinate system
+#  Exceptions : none
+#  Caller     : internal
 
 sub _objs_from_sth {
   my ($self, $sth, $mapper, $dest_slice) = @_;
@@ -891,7 +820,7 @@ sub _objs_from_sth {
     }
 				
 
-    #finally, create the new repeat feature
+    #finally, create the new gene
     push @genes, Bio::EnsEMBL::Gene->new
       ( '-analysis'      =>  $analysis,
 	'-type'          =>  $type,
@@ -925,9 +854,9 @@ sub _objs_from_sth {
 =cut
 
 sub fetch_by_maximum_DBLink {
-  my ( $self, $external_id, $cs_name, $cs_version ) = @_;
+  my ( $self, $external_id ) = @_;
   
-  my $genes=$self->fetch_all_by_DBEntry( $external_id, $cs_name, $cs_version );
+  my $genes=$self->fetch_all_by_DBEntry( $external_id);
   
   my $biggest;
   my $max=0;
@@ -949,14 +878,7 @@ sub fetch_by_maximum_DBLink {
 
 =head2 get_display_xref
 
-  Arg [1]    : Bio::EnsEMBL::Gene $gene
-               retrieve display_xref for this gene
-  Example    : none
-  Description: DEPRECATED
-               Retrieves the display_xref for a gene.
-  Returntype : Bio::EnsEMBL::DBEntry
-  Exceptions : thrown if $dbId arg is not defined
-  Caller     : general
+  Description: DEPRECATED use $gene->display_xref
 
 =cut
 
@@ -966,7 +888,7 @@ sub get_display_xref {
   deprecate( "display xref should retrieved from Gene object directly" );
 
   if( !defined $gene ) {
-      $self->throw("Must call with a Gene object");
+      throw("Must call with a Gene object");
   }
 
   my $sth = $self->prepare("SELECT e.db_name,
@@ -997,21 +919,10 @@ sub get_display_xref {
   return $db_entry;
 }
 
+
 =head2 get_description
 
-  Arg [1]    : int $dbID
-               the database identifier of the gene whose description should be
-               obtained
-  Example    : $description = $gene_adaptor->get_description(1234);
   Description: DEPRECATED, use gene->get_description
-               Retrieves a description for a gene which is created during
-               the gene build and stored in the the gene_description table.
-               In the future this method should check the family database
-               for a description if one does not exist in the core, however,
-               this has not been implemented yet.  
-  Returntype : string
-  Exceptions : thrown if $dbId arg is not defined
-  Caller     : geneview
 
 =cut
 
@@ -1021,7 +932,7 @@ sub get_description {
   deprecate( "Gene description should be loaded on gene retrieval. Use gene->get_description()" );
 
   if( !defined $dbID ) {
-      $self->throw("must call with dbID");
+      throw("must call with dbID");
   }
 
   my $sth = $self->prepare("SELECT description 
@@ -1033,6 +944,52 @@ sub get_description {
 }
 
 
+
+
+=head2 fetch_by_Peptide_id
+
+  Description: DEPRECATED, use fetch_by_translation_stable_id()
+
+=cut
+
+sub fetch_by_Peptide_id {
+    my ( $self, $translation_stable_id) = @_;
+
+    deprecate( "Please use better named fetch_by_translation_stable_id" );
+
+    $self->fetch_by_translation_stable_id($translation_stable_id);
+}
+
+
+=head2 get_stable_entry_info
+
+  Description: DEPRECATED use $gene->stable_id instead
+
+=cut
+
+sub get_stable_entry_info {
+  my ($self,$gene) = @_;
+
+  deprecated( "stable id info is loaded on default, no lazy loading necessary" );
+
+  if( !defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
+     throw("Needs a gene object, not a $gene");
+  }
+
+  my $sth = $self->prepare("SELECT stable_id, UNIX_TIMESTAMP(created),
+                                   UNIX_TIMESTAMP(modified), version 
+                            FROM gene_stable_id 
+                            WHERE gene_id = ".$gene->dbID);
+  $sth->execute();
+
+  my @array = $sth->fetchrow_array();
+  $gene->{'stable_id'} = $array[0];
+  $gene->{'created'}   = $array[1];
+  $gene->{'modified'}  = $array[2];
+  $gene->{'version'}   = $array[3];
+
+  return 1;
+}
 
 
 1;

@@ -44,21 +44,19 @@ use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
 
 
 
-=head2 _tablename
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns the names, aliases of the tables to use for queries
-  Returntype : list of listrefs of strings
-  Exceptions : none
-  Caller     : internal
-
-=cut
+#_tables
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED implementation of superclass abstract method
+#               returns the names, aliases of the tables to use for queries
+#  Returntype : list of listrefs of strings
+#  Exceptions : none
+#  Caller     : internal
 
 sub _tables {
   my $self = shift;
-  
+
   return ([ 'exon_transcript', 'et' ],[ 'exon', 'e' ], 
 	  [ 'exon_stable_id', 'esi' ] );
 
@@ -66,34 +64,30 @@ sub _tables {
 
 
 
-=head2 _default_where_clause
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               Makes join between et and e table
-  Returntype : string
-  Exceptions : none
-  Caller     : generic_fetch
-
-=cut
+#_default_where_clause
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED implementation of superclass abstract method
+#               Makes join between et and e table
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : generic_fetch
 
 sub _default_where_clause {
   return "et.exon_id = e.exon_id";
 }
 
 
-=head2 _columns
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns a list of columns to use for queries
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : internal
-
-=cut
+#=head2 _columns
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED implementation of superclass abstract method
+#               returns a list of columns to use for queries
+#  Returntype : list of strings
+#  Exceptions : none
+#  Caller     : internal
 
 sub _columns {
   my $self = shift;
@@ -110,17 +104,15 @@ sub _left_join {
 
 
 
-=head2 _final_clause
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns a default end for the SQL-query (ORDER BY)
-  Returntype : string
-  Exceptions : none
-  Caller     : internal
-
-=cut
+# _final_clause
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED implementation of superclass abstract method
+#               returns a default end for the SQL-query (ORDER BY)
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : internal
 
 sub _final_clause {
   return "ORDER BY et.transcript_id, et.rank";
@@ -365,8 +357,8 @@ sub remove {
   $sth = $self->prepare( "delete from supporting_feature where exon_id = ?" );
   $sth->execute( $exon->dbID );
 
-  # uhh, didnt know another way of resetting to undef ...
-  $exon->{dbID} = undef;
+  $exon->dbID(undef);
+  $exon->adaptor(undef);
 }
 
 =head2 list_dbIDs
@@ -403,17 +395,15 @@ sub list_stable_ids {
    return $self->_list_dbIDs("exon_stable_id", "stable_id");
 }
 
-=head2 _obj_from_hashref
-
-  Arg [1]    : Hashreference $hashref
-  Example    : none 
-  Description: PROTECTED implementation of abstract superclass method.
-               responsible for the creation of Genes 
-  Returntype : listref of Bio::EnsEMBL::Genes in target coordinate system
-  Exceptions : none
-  Caller     : internal
-
-=cut
+#_objs_from_sth
+#
+#  Arg [1]    : StatementHandle $sth
+#  Example    : none 
+#  Description: PROTECTED implementation of abstract superclass method.
+#               responsible for the creation of Exons
+#  Returntype : listref of Bio::EnsEMBL::Exons in target coordinate system
+#  Exceptions : none
+#  Caller     : internal
 
 sub _objs_from_sth {
   my ($self, $sth, $mapper, $dest_slice) = @_;
