@@ -18,7 +18,7 @@ Bio::EnsEMBL::EvidenceAlignment.pm
  my $ea = Bio::EnsEMBL::EvidenceAlignment->new(
                           -DBADAPTOR    => $dba,
                           -TRANSCRIPTID => $tr_stable_id,
-			  -SEQFETCHER   => $seqfetcher);
+			  -PFETCH       => '/path/to/pfetch');
  my $alignment_arr_ref = $ea->fetch_alignment;
  $ea->transcriptid($other_tr_stable_id);
  my $other_alignment_arr_ref = $ea->fetch_alignment;
@@ -55,7 +55,6 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::SeqIO;
 use Bio::EnsEMBL::Gene;
 use Bio::Root::RootI;
-use Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch;
 
 @ISA = qw(Bio::Root::RootI);
 
@@ -64,7 +63,8 @@ use Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch;
     Title   :   new
     Usage   :   my $tr_ea   = Bio::EnsEMBL::EvidenceAlignment->new(
                                 -DBADAPTOR    => $dba,
-                                -TRANSCRIPTID => $transcript_stable_id);
+                                -TRANSCRIPTID => $transcript_stable_id,
+				-PFETCH       => '/path/to/pfetch');
 		my $cont_ea = Bio::EnsEMBL::EvidenceAlignment->new(
                                 -DBADAPTOR => $dba,
                                 -CONTIGID  => $contig_stable_id);
@@ -72,9 +72,9 @@ use Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch;
     Returns :   An EvidenceAlignment object
     Args    :   Database adaptor object and an ID string (-CONTIGID
                 with contig ID or -TRANSCRIPTID with transcript
-		stable ID); optional seqfetcher (-SEQFETCHER), which
-		must have a get_Seqs_by_accs method (by default,
-		Pfetch is used).
+		stable ID); optional full path of pfetch binary
+		(-PFETCH), defaulting to whatever is in the user's
+		search path.
 
 =cut
 
@@ -82,11 +82,11 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($transcriptid, $contigid, $dbadaptor, $seqfetcher) = $self->_rearrange(
+  my ($transcriptid, $contigid, $dbadaptor, $pfetch) = $self->_rearrange(
                                                          ['TRANSCRIPTID',
 						          'CONTIGID',
                                                           'DBADAPTOR',
-						          'SEQFETCHER'],
+						          'PFETCH'],
 						         @args);
   if (defined $transcriptid and defined $contigid) {
     $self->throw("may have a transcript ID or a contig ID but not both");
@@ -97,10 +97,10 @@ sub new {
   if ($contigid) {
     $self->contigid($contigid);
   }
-  if (! $seqfetcher) {
-    $seqfetcher = Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch->new();
+  if (! $pfetch) {
+    $pfetch = 'pfetch';
   }
-  $self->seqfetcher($seqfetcher);
+  $self->pfetch($pfetch);
   $self->dbadaptor($dbadaptor);
 
   return $self; # success - we hope!
@@ -123,22 +123,22 @@ sub dbadaptor {
   return $obj->{evidencealignment_db_adaptor};
 }
 
-=head2 seqfetcher
+=head2 pfetch
 
-    Title   :   seqfetcher
-    Usage   :   $ea->seqfetcher($seqfetcher_obj);
-    Function:   get/set for seqfetcher, which must have a
-                get_Seqs_by_accs method
+    Title   :   pfetch
+    Usage   :   $ea->pfetch('/path/to/pfetch');
+    Function:   get/set for pfetch, the location of the pfetch
+                binary.
 
 =cut
 
-sub seqfetcher {
+sub pfetch {
   my $obj = shift;
   if( @_ ) {
     my $value = shift;
-    $obj->{evidencealignment_seqfetcher} = $value;
+    $obj->{evidencealignment_pfetch} = $value;
   }
-  return $obj->{evidencealignment_seqfetcher};
+  return $obj->{evidencealignment_pfetch};
 }
 
 =head2 transcriptid
@@ -292,6 +292,67 @@ sub _get_features_from_rawcontig {
   return @features;
 }
 
+=head2 _get_Seqs_by_accs
+
+    Title   :   _get_Seqs_by_accs
+    Usage   :   $seqs = $self->_get_Seqs_by_accs(@hid_arr);
+    Function:   Does the sequence retrieval for an array of
+                accesions in one pfetch call. This is closely
+		based on
+		Bio/EnsEMBL::Pipeline::SeqFetcher::Pfetch in
+		ensembl-pipeline. Having it here allows
+		the current module to work for both pipeline
+		and Web users.
+    Returns :   Array of Bio::Seq
+
+=cut
+
+sub _get_Seqs_by_accs {
+  my ($self, @acc) = @_;
+
+  if (!defined(@acc) || scalar(@acc < 1)) {
+    $self->throw("No accession input");
+  }
+
+  my @seq;
+  my $newseq;
+  my $tracker = 0;
+  my $pfetch = $self->pfetch;
+
+  my $command = "$pfetch -q ";
+  $command .= join " ", @acc;
+
+  open(EVIDENCEALIGNMENT_IN_FH,"$command |")
+    or $self->throw("Error opening pipe to pfetch for $pfetch");
+  while(<EVIDENCEALIGNMENT_IN_FH>){
+
+    chomp;
+    eval{
+      if(defined $_ && $_ ne "no match") {
+        $newseq = new Bio::Seq('-seq'               => $_,
+                               '-accession_number'  => $acc[$tracker],
+                               '-display_id'        => $acc[$tracker]);
+      }
+    };
+
+    if($@){
+      print STDERR "$@\n";
+    }
+
+    if (defined $newseq){
+      push (@seq, $newseq);
+    }
+    else{
+      $self->warn("Could not even pfetch sequence for [" . $acc[$tracker] . "]\n");
+    }
+    $tracker++;
+  }
+
+  close EVIDENCEALIGNMENT_IN_FH
+    or $self->throw("Error running pfetch for $pfetch");
+  return @seq;
+}
+
 =head2 _pad_pep_str
 
     Title   :   _pad_pep_str
@@ -382,7 +443,7 @@ sub _get_transcript_nuc {
   return $retval;
 }
 
-# get all hit sequences by aggregated use of seqfetcher
+# get all hit sequences by aggregated use of pfetch
 sub _get_hits {
   my ($self, $features_arr_ref) = @_;
   $self->throw('interface fault') if (@_ != 2);
@@ -411,7 +472,7 @@ sub _get_hits {
 	}
         my @seqs;
 	if (@tofetch) {
-	  @seqs = $self->seqfetcher->get_Seqs_by_accs(@tofetch);
+	  @seqs = $self->_get_Seqs_by_accs(@tofetch);
 	}
 	foreach my $seq_obj (@seqs) {
           $hits_hash{$seq_obj->accession_number} = $seq_obj;
@@ -442,7 +503,7 @@ sub _get_hits {
     }
     my @seqs;
     if (@tofetch) {
-      @seqs = $self->seqfetcher->get_Seqs_by_accs(@tofetch);
+      @seqs = $self->_get_Seqs_by_accs(@tofetch);
     }
     foreach my $seq_obj (@seqs) {
       $hits_hash{$seq_obj->accession_number} = $seq_obj;
