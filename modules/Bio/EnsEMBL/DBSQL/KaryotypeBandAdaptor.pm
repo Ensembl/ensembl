@@ -169,7 +169,7 @@ sub fetch_all_by_chromosome{
 
     $sth->execute;
     my ($chr_start,$chr_end,$band,$stain);
-    $sth->bind_columns($chr_start,$chr_end,$band,$stain);
+    $sth->bind_columns(undef,\$chr_start,\$chr_end,\$band,\$stain);
     
     my @bands;
 
