@@ -37,10 +37,10 @@ run() if (!defined(caller()));
 sub run {
 
   my $dbi = dbi();
-  my $sth = $dbi->prepare("SELECT * FROM source WHERE url IS NOT NULL ORDER BY name");
+  my $sth = $dbi->prepare("SELECT * FROM source s, source_url su WHERE s.download='Y' AND su.source_id=s.source_id ORDER BY s.name");
   $sth->execute();
-  my ($source_id, $name, $url, $checksum, $modified_date, $upload_date, $release);
-  $sth->bind_columns(\$source_id, \$name, \$url, \$checksum, \$modified_date, \$upload_date, \$release);
+  my ($source_id, $source_url_id, $name, $url, $checksum);
+  $sth->bind_columns(\$source_id, \$source_url_id, \$name, \$url, \$checksum);
   my $last_type = "";
   my $dir;
   while (my @row = $sth->fetchrow_array()) {
@@ -119,7 +119,7 @@ sub get_source_id_for_filename {
 
   my ($self, $file) = @_;
 
-  my $sql = "SELECT source_id FROM source WHERE url LIKE '%/" . $file . "%'"; 
+  my $sql = "SELECT s.source_id FROM source s, source_url su WHERE su.source_id=s.source_id AND su.url LIKE  '%/" . $file . "%'"; 
   #print $sql . "\n";
   my $sth = dbi()->prepare($sql);
   $sth->execute();
@@ -231,7 +231,7 @@ sub get_dependent_xref_sources {
   if (!defined %dependent_sources) {
 
     my $dbi = dbi();
-    my $sth = $dbi->prepare("SELECT name,source_id FROM source WHERE url IS NULL");
+    my $sth = $dbi->prepare("SELECT name,source_id FROM source WHERE download='Y'");
     $sth->execute() || die $dbi->errstr;
     while(my @row = $sth->fetchrow_array()) {
       my $source_name = $row[0];
