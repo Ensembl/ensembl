@@ -168,22 +168,15 @@ sub extend {
    if (! defined $left || ! defined $right ){
        $self->throw("Must supply a left and right value when extending a VirtualContig");
    }
+   
+   print STDERR "Extending raw contig ".$self->_focus_contig->id." (ori = $self->_focus_orientation)\n";
 
-
-    my $current_left          = $self->_left_size;
-    my $current_right         = $self->_right_size;
-    my $current_ori           = $self->_focus_orientation;
-    my $current_focuscontig   = $self->_focus_contig;
-    my $current_focusposition = $self->_focus_position;
-    
-    print STDERR "Extending raw contig ".$current_focuscontig->id." (ori = $current_ori)\n";
-
-    my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $current_focuscontig,
-					        -focusposition   => $current_focusposition,
-					        -ori             => $current_ori,
-					        -left            => $current_left - $left,
-					        -right           => $current_right + $right,
-					        );
+   my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $self->_focus_contig,
+					       -focusposition   => $self->_focus_position,
+					       -ori             => $self->_focus_orientation,
+					       -left            => $self->_left_size - $left,
+					       -right           => $self->_right_size + $right,
+					       );
 
    return $nvc;
 }
