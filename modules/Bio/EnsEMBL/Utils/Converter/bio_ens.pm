@@ -80,6 +80,14 @@ sub _initialize {
     my ($analysis, $contig) =
         $self->_rearrange([qw(analysis contig)], @args);
 
+    if(defined($analysis) && $analysis->isa('Bio::Pipeline::Analysis')){
+        my $converter_for_analysis = new Bio::EnsEMBL::Utils::Converter(
+            -in => 'Bio::Pipeline::Analysis',
+            -out => 'Bio::EnsEMBL::Analysis'
+        );
+        ($analysis) = @{$converter_for_analysis->convert([$analysis])};
+    }
+
     $self->analysis($analysis);
     $self->contig($contig);
 }
@@ -94,6 +102,8 @@ sub _guess_module {
         $tail = 'bio_ens_seqFeature';
     }elsif($in eq 'Bio::SeqFeature::FeaturePair'){
         $tail = 'bio_ens_featurePair';
+    }elsif($in eq 'Bio::Pipeline::Analysis'){
+        $tail = 'bio_ens_analysis';
     }else{
         $self->throw("[$in] to [$out], not supported");
     }

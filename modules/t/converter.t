@@ -4,7 +4,7 @@ use strict;
 BEGIN {
     $| = 1;
     use Test;
-    plan tests => 36;
+    plan tests => 37;
 }
 
 END {
@@ -56,10 +56,20 @@ use Bio::EnsEMBL::Utils::Converter;
 # Test for SeqFeature, 10 OKs
 sub test_SeqFeature{
     # bio to ens
+    #
+    # testing the analysis conversion firsti
+    my $analysis = $ens_analysis;
+    eval { require Bio::Pipeline::Analysis;};
+
+    unless($@){
+        $analysis = new Bio::Pipeline::Analysis(
+            -logic_name => 'analysis to test converter'
+        ); 
+    }
     my $converter = new Bio::EnsEMBL::Utils::Converter(
         -in => 'Bio::SeqFeature::Generic',
         -out => 'Bio::EnsEMBL::SeqFeature',
-        -analysis => $ens_analysis,
+        -analysis => $analysis,
         -contig => $ens_contig
     );
 
@@ -68,6 +78,8 @@ sub test_SeqFeature{
 
     ok ref($ens_seqFeature1), 'Bio::EnsEMBL::SeqFeature';
     ok ref($ens_seqFeature2), 'Bio::EnsEMBL::SeqFeature';
+    
+    ok ref($ens_seqFeature1->analysis), 'Bio::EnsEMBL::Analysis';
     
     ok $seqFeature1->start, $ens_seqFeature1->start;
     ok $seqFeature1->end, $ens_seqFeature1->end;
@@ -87,6 +99,7 @@ sub test_SeqFeature{
     ok ref($bio_seqFeature1), 'Bio::SeqFeature::Generic';
     ok ref($bio_seqFeature2), 'Bio::SeqFeature::Generic';
 
+    
     ok $seqFeature1->start, $bio_seqFeature1->start;
     ok $seqFeature1->end, $bio_seqFeature1->end;
     ok $seqFeature1->strand, $bio_seqFeature1->strand;
