@@ -71,9 +71,7 @@ sub new {
   $self->create_adaptors;
 
   return $self;
-}
- 
-
+} 
 
 
 #
@@ -385,7 +383,7 @@ sub hide {
 
     close SCHEMA_FILE;
 
-    #presumably create the table
+    #presumably create the **empty** table
     $sth = $adaptor->prepare($sql);
     $sth->execute;
 
@@ -456,12 +454,55 @@ sub restore {
   
 }
 
+=head2 save
+
+  Arg [1]    : string $dbtype
+               The type of the database containing the hidden/saved table
+  Arg [2]    : string $table
+               The name of the table to save
+  Example    : $multi_test_db->save('core', 'gene', 'transcript', 'exon');
+  Description: Saves the contents of specific table(s) in the specified db.
+               The table(s) are first renamed and an empty table are created 
+               in their place by reading the table schema file.  The contents
+               of the renamed table(s) are then copied back into the newly
+               created tables.  The method piggy-backs on the hide method
+               and simply adds in the copying/insertion call.
+  Returntype : none
+  Exceptions : thrown if the adaptor for dbtype is not available
+               warning if a table cannot be copied if the hidden table does not 
+               exist
+  Caller     : general
+
+=cut
 
 sub save {
-  my ($self, $dbtype, $table) = @_;
+  my ($self, $dbtype, @tables) = @_;
 
-  $self->warn("save method not yet implemented\n");
+  # use the hide method to build the basic tables
+  $self->hide($dbtype, @tables);
 
+  my $adaptor = $self->get_DBAdaptor($dbtype);
+
+  unless($adaptor) {
+    die "adaptor for $dbtype is not available\n";
+  }
+
+  my $hidden_name = '';
+  foreach my $table (@tables) {
+
+    # only do if the hidden table exists
+    if($self->{'conf'}->{$dbtype}->{'hidden'}->{$table}) {
+
+      $hidden_name = "_hidden_$table";
+
+      #copy the data from the hidden table into the new table
+      my $sth = $adaptor->prepare("insert into $table select * from $hidden_name"); 
+      $sth->execute;
+    }
+    else {
+      $self->warn("hidden table '$hidden_name' does not exist so saving is not possible\n");
+    }
+  }
 }
 
 sub compare {
