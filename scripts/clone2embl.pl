@@ -104,13 +104,12 @@ my $as = $clone->get_AnnSeq();
 
 if( $format =~ /gff/ ) {
     
-    # only works with one contig for now
-    if(scalar($clone->get_all_Contigs)!=1){
-	$clone->throw("More than one contig in clone ".$clone->id()."\n");
+    foreach my $contig ( $clone->get_all_Contigs )  {
+	my @seqfeatures = $contig->as_seqfeatures();
+	foreach my $sf ( @seqfeatures ) {
+	    print $sf->gff_string, "\n";
+	}
     }
-    my ($contig)=$clone->get_all_Contigs;
-    my $gff=$contig->gff;
-    $gff->dump;
 
 } elsif ( $format =~ /embl/ ) {
 

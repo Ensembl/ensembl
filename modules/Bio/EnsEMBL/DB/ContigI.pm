@@ -238,45 +238,48 @@ sub write_acedb{
 
 
 
-=head2 gff
+=head2 as_seqfeatures
 
- Title   : gff
- Usage   : $gff=$contig->gff();
- Function: Dumps exon, transcript and gene objects to a gff object
- Returns : 
+ Title   : as_seqfeatures
+ Usage   : @seqfeatures = $contig->as_seqfeatures();
+           foreach $sf ( @seqfeatures ) { 
+	       print $sf->gff_string(), "\n";
+           }
+ Function: Makes ensembl exons as an array of seqfeature::generic
+           objects that can be dumped with the correct additional tags
+           about transcripts/genes etc added to them
+ Returns : An array of SeqFeature::Generic objects
  Args    :
 
 =cut
 
-sub gff{
+sub as_seqfeatures {
     my ($self) = @_;
     my $contig_id=$self->id();
-    
-  #  use GFF;
-    my $gff=new GFF::GeneFeatureSet;
+    my @sf;
+
     foreach my $gene ($self->get_all_Genes()){
 	my $gene_id=$gene->id;
 	foreach my $trans ( $gene->each_Transcript ) {
 	    my $transcript_id=$trans->id;
 	    foreach my $exon ( $trans->each_Exon ) {
-		my $gf=new GFF::GeneFeature;
-		$gf->seqname($contig_id);
-		$gf->source('ensembl');
-		$gf->feature('exon');
-		$gf->start($exon->start);
-		$gf->end($exon->end);
-		#$gf->score();
-		$gf->strand($exon->strand);
-		$gf->frame($exon->frame);
-		$gf->group_value_list('ensembl_exon_id',[$exon->id]);
-		$gf->group_value_list('ensembl_transcript_id',[$transcript_id]);
-		$gf->group_value_list('ensembl_gene_id',[$gene_id]);
-		$gff->addGeneFeature($gf);
+		my $sf= Bio::SeqFeature::Generic->new();
+		$sf->seqname($contig_id);
+		$sf->source_tag('ensembl');
+		$sf->primary_tag('exon');
+		$sf->start($exon->start);
+		$sf->end($exon->end);
+		$sf->strand($exon->strand);
+		#$sf->frame($exon->frame);
+		$sf->add_tag_value('ensembl_exon_id',$exon->id);
+		$sf->add_tag_value('ensembl_transcript_id',$transcript_id);
+		$sf->add_tag_value('ensembl_gene_id',$gene_id);
+		push(@sf,$sf);
 	    }
 	}
 
     }
-    return $gff;
+    return @sf;
 }
 
 
