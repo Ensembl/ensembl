@@ -122,9 +122,9 @@ sub new {
 
 =head2 fetch_by_region
 
-  Arg [1]    : string $coord_system_name
+  Arg [1]    : string $coord_system_name (optional)
                The name of the coordinate system of the slice to be created
-               This may be a name of an acutal coordinate system or an alias
+               This may be a name of an actual coordinate system or an alias
                to a coordinate system.  Valid aliases are 'seqlevel' or
                'toplevel'.
   Arg [2]    : string $seq_region_name
@@ -141,8 +141,17 @@ sub new {
   Example    : $slice = $slice_adaptor->fetch_by_region('chromosome', 'X');
                $slice = $slice_adaptor->fetch_by_region('clone', 'AC008066.4');
   Description: Retrieves a slice on the requested region.  At a minimum the
-               name of the coordinate system and the name of the seq_region to
-               fetch must be provided.
+               name the name of the seq_region to fetch must be provided.
+
+               If no coordinate system name is provided than a slice on the
+               highest ranked coordinate system with a matching
+               seq_region_name will be returned.  If a version but no
+               coordinate system name is provided, the same behaviour will
+               apply, but only coordinate systems of the appropriate version
+               are considered.  The same applies if the 'toplevel' coordinate
+               system is specified, however in this case the version is
+               ignored.  The coordinate system should always be specified if
+               it is known, since this is unambiguous and faster.
 
                Some fuzzy matching is performed if no exact match for
                the provided name is found.  This allows clones to be
@@ -170,88 +179,127 @@ sub fetch_by_region {
 
   throw('seq_region_name argument is required') if(!defined($seq_region_name));
 
-  my $csa = $self->db()->get_CoordSystemAdaptor();
-  my $coord_system = $csa->fetch_by_name($coord_system_name,$version);
+  my $cs;
+  my $csa = $self->db->get_CoordSystemAdaptor();
 
-  if(!$coord_system) {
-    throw("Unknown coordinate system:\n name='$coord_system_name' " .
-          "version='$version'\n");
+  if($coord_system_name) {
+    $cs = $csa->fetch_by_name($coord_system_name,$version);
+
+    if(!$cs) {
+      throw("Unknown coordinate system:\n name='$coord_system_name' " .
+            "version='$version'\n");
+    }
+
+    # fetching by toplevel is same as fetching w/o name or version
+    if($cs->is_top_level()) {
+      $cs = undef;
+      $version = undef;
+    }
   }
-  if($coord_system->is_top_level()) {
-    throw("Cannot fetch_by_region using the 'toplevel' pseudo coordinate " .
-          "system.\n");
+
+  my $constraint;
+  my $sql;
+  my @bind_vals;
+  my $key;
+
+  if($cs) {
+    push @bind_vals, $cs->dbID();
+    $sql = "SELECT sr.name,sr.seq_region_id, sr.length, " .
+           $cs->dbID() ." FROM seq_region sr ";
+
+    $constraint = "sr.coord_system_id = ?";
+
+    $key = lc(join(':',$seq_region_name,$cs->name(), $cs->version));
+  } else {
+    $sql = "SELECT sr.name, sr.seq_region_id, sr.length, " .
+           "       cs.coord_system_id " .
+           "FROM   seq_region sr, coord_system cs ";
+
+    $constraint = "sr.coord_system_id = cs.coord_system_id ";
+    if($version) {
+      $constraint .= "AND cs.version = ? ";
+      push @bind_vals, $version;
+    }
+    $constraint .= "ORDER BY cs.rank DESC";
   }
 
   #check the cache so we only go to the db if necessary
-  my $name_cache = $self->{'_name_cache'};
-  my $key = lc(join(':',$seq_region_name,
-                    $coord_system->name(),
-                    $coord_system->version));
-
   my $length;
+  my $name_cache = $self->{'_name_cache'};
 
-  if(exists($name_cache->{$key})) {
+  if($key && exists($name_cache->{$key})) {
     $length = $name_cache->{$key}->[1];
   } else {
-    my $sth = $self->prepare("SELECT seq_region_id, length " .
-                             "FROM seq_region " .
-                             "WHERE name = ? AND coord_system_id = ?");
+    my $sth = $self->prepare($sql . " WHERE sr.name = ? AND " .
+                             $constraint);
 
-    #force seq_region_name cast to string so mysql cannot treat as int
-    $sth->execute("$seq_region_name", $coord_system->dbID());
+    # Quotes around "$seq_region_name" are needed so that mysql does not
+    # treat chromosomes like '6' as an int.  This was doing horrible
+    # inexact matches like '6DR51', '6_UN', etc.
+    $sth->execute("$seq_region_name", @bind_vals);
 
     if($sth->rows() == 0) {
       $sth->finish();
 
-      #do fuzzy matching, assuming that we are just missing a version on 
+      #do fuzzy matching, assuming that we are just missing a version on
       #the end of the seq_region name
 
-      $sth = $self->prepare("SELECT name, seq_region_id, length " .
-                            "FROM   seq_region " .
-                            "WHERE  name LIKE ?" .
-                            "AND    coord_system_id = ?");
-
-      $sth->execute("$seq_region_name.%", $coord_system->dbID());
+      $sth = $self->prepare($sql . " WHERE sr.name LIKE ? AND " . $constraint);
+      $sth->execute("$seq_region_name.%", @bind_vals);
 
       my $prefix_len = length($seq_region_name) + 1;
-      my $highest_version = undef;
+      my $high_ver = undef;
+      my $high_cs = $cs;
 
       # find the fuzzy-matched seq_region with the highest postfix (which ought
       # to be a version)
 
-      my ($tmp_name, $id, $tmp_length);
+      my ($tmp_name, $id, $tmp_length, $cs_id);
+      $sth->bind_columns(\$tmp_name, \$id, \$tmp_length, \$cs_id);
 
-      while(($tmp_name, $id, $tmp_length) = $sth->fetchrow_array()) {
-        $key = lc(join(':',$tmp_name,
-                       $coord_system->name(),
-                       $coord_system->version));
+      while($sth->fetch) {
+        my $tmp_cs = ($cs) ? $cs : $csa->fetch_by_dbID($cs_id);
+
+        # cache values for future reference
+        $key = lc(join(':',$tmp_name,$tmp_cs->name(),$tmp_cs->version));
         $name_cache->{$key}         = [$id,$tmp_length];
-        $self->{'_id_cache'}->{$id} = [$tmp_name,$tmp_length,$coord_system];
+        $self->{'_id_cache'}->{$id} = [$tmp_name,$tmp_length,$high_cs];
 
-        my $version = substr($tmp_name, $prefix_len);
+        my $tmp_ver = substr($tmp_name, $prefix_len);
 
-        #skip versions which are non-numeric and apparently not versions
-        next if($version !~ /^\d+$/);
+        # skip versions which are non-numeric and apparently not versions
+        next if($tmp_ver !~ /^\d+$/);
 
-        if(!defined($highest_version) || ($version <=> $highest_version) > 0) {
-          $seq_region_name = $tmp_name;
-          $length          = $tmp_length;
-          $highest_version = $version;
+        # take version with highest num, if two versions match take one with
+        # highest ranked coord system (lowest num)
+        if(!defined($high_ver) || $tmp_ver > $high_ver ||
+           ($tmp_ver == $high_ver && $tmp_cs->rank < $high_cs->rank)) {
+            $seq_region_name = $tmp_name;
+            $length          = $tmp_length;
+            $high_ver        = $tmp_ver;
+            $high_cs         = $tmp_cs;
         }
       }
       $sth->finish();
 
+      $cs = $high_cs;
+
       #return if we did not find any appropriate match:
-      return undef if(!defined($highest_version));
+      return undef if(!defined($high_ver));
     } else {
 
-      my $id;
-      ($id, $length) = $sth->fetchrow_array();
+      my ($id, $cs_id);
+      ($seq_region_name, $id, $length, $cs_id) = $sth->fetchrow_array();
       $sth->finish();
+
+      if(!$cs) {
+        $cs = $csa->fetch_by_dbID($cs_id);
+        $key = lc(join(':',$seq_region_name,$cs->name(), $cs->version));
+      }
 
       #cache results to speed up future queries
       $name_cache->{$key}         = [$id,$length];
-      $self->{'_id_cache'}->{$id} = [$seq_region_name, $length, $coord_system];
+      $self->{'_id_cache'}->{$id} = [$seq_region_name, $length, $cs];
     }
   }
 
@@ -261,7 +309,7 @@ sub fetch_by_region {
     throw('start [$start] must be less than or equal to end [$end]');
   }
 
-  return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM      => $coord_system,
+  return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM      => $cs,
                                   -SEQ_REGION_NAME   => $seq_region_name,
                                   -SEQ_REGION_LENGTH => $length,
                                   -START             => $start,
@@ -269,6 +317,7 @@ sub fetch_by_region {
                                   -STRAND            => $strand,
                                   -ADAPTOR           => $self);
 }
+
 
 
 
