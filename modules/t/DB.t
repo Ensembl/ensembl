@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..7\n"; 
+BEGIN { $| = 1; print "1..9\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -94,4 +94,39 @@ foreach $gene ( $clone->get_all_Genes() ) {
 }
 
 print "ok 7\n";
+
+@feat = $contig->get_all_SeqFeatures();
+
+$ft = $feat[0];
+
+if( ! defined $ft->analysis ) { print "not ok 8\n"; }
+print "ok 8\n";
+
+$ft = undef;
+foreach $ft2 ( @feat ) {
+	if( $ft2->primary_tag eq 'similarity' && $ft2->source_tag ne 'repeat' ) {
+	    $ft = $ft2;
+	    }
+}
+
+if( !defined $ft ) {
+    print STDERR "No non repeat features with similarity in database. Failing tests 9,10\n";
+    print "not ok 9\n";
+    print "not ok 10\n";
+} else {
+    if( ! defined $ft->analysis ) { 
+	print "not ok 9\n"; 
+    } else{
+	print "ok 9\n";	
+    }
+	  
+    if( ! defined $ft->analysis->db) { 
+	print "not ok 10\n"; 
+    } else {
+	print "ok 10\n";		
+    } 
+
+    print STDERR "DB is".$ft->analysis->db.":".$ft->primary_tag."\n" ;
+}
+
 
