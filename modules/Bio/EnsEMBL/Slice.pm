@@ -527,13 +527,14 @@ sub project {
   my $csa = $db->get_CoordSystemAdaptor();
   my $cs = $csa->fetch_by_name($cs_name, $cs_version);
   my $slice_cs = $self->coord_system();
-  my $asma = $db->get_AssemblyMapperAdaptor();
-  my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
 
   #no mapping is needed if the requested coord system is the one we are in
   if($slice_cs->equals($cs)) {
     return [[1, $self->length(), $self]];
   }
+
+  my $asma = $db->get_AssemblyMapperAdaptor();
+  my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
 
   # perform the mapping between this slice and the requested system
   my @coords =
