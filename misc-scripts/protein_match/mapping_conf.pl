@@ -21,6 +21,13 @@ package main;
 
 %mapping_conf = ( 
 
+             #################
+             #General options#
+             #################
+
+             #'check'      => 'yes',
+             'check'      => '',
+
              ################################ 
 	     # Files location (Input/Output)#
              ################################
@@ -55,6 +62,15 @@ package main;
              #Output file from pmatch.pl and input file for maps2db.pl
              #'human_map'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
              'pmatch_out'  => '',
+
+
+             #Location of the Refseq (proteins) file in fasta format
+	     #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
+	     'refseq'    => '',
+	     
+             #Location of the Refseq (proteins) file in Genbank format
+	     #'refseq_gnp'    => '/work1/mongin/mapping/primary/refseq.gnp',
+	     'refseq_gnp'    => '',
 
              ############################################
              #Organism specific files for the X_mapping #
@@ -94,6 +110,8 @@ package main;
                    #'mgi_locus'  => '',
                    'mgi_locus'  => '',
 
+                   
+
 
              ###################
              #Database handling#
@@ -101,17 +119,17 @@ package main;
 
              #DB name
              #'db' => 'proteintest',
-             'db' => '',
+             'db' => 'mouse_protannot',
 
              #Host name
              #'host' => 'ecs1d',
-             'host' => '',
+             'host' => 'ecs1d',
 
              #User
-             'dbuser' => '',
+             'dbuser' => 'ensadmin',
 
              #Password
-             'password' => '',
+             'password' => 'ensembl',
              
              #####################
              #Executable location#
@@ -119,7 +137,7 @@ package main;
 
              #Location for pmatch binaries
              #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
-             'pmatch' => '',
+             'pmatch' => '/nfs/disk65/ms2/bin/pmatch',
 
              ##############################
              #Organism related information#
@@ -128,12 +146,12 @@ package main;
              #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse
              #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
              #'organism' => 'human'
-             'organism' => '',
+             'organism' => 'mouse',
              
 
              #OX (Organism taxonomy cross-reference) number
-             'ox' => '9606'
-             #'ox' => ''
+             #'ox' => '9606'
+             'ox' => '10090'
 
  );
 
