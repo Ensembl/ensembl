@@ -486,8 +486,11 @@ sub get_all_SNPs {
   my $self = shift;
 
   my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
-
-  return $snpa->fetch_all_by_Slice($self);
+  if( $snpa ) {
+    return $snpa->fetch_all_by_Slice($self);
+  } else {
+    return [];
+  }
 }
 
 

@@ -425,7 +425,6 @@ sub transform {
       }
 
       # concatenate the raw sequence together
-      $dna_seq .= $c_exon->seq();
 
       # add the supporting features from the exons
       # each exon has the pieces of the supporting features that fall in the corresponding contig

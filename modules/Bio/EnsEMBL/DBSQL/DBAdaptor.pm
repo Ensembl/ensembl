@@ -201,7 +201,7 @@ sub get_SNPAdaptor {
   if($lite) {
     $primary_adaptor = $lite->get_SNPAdaptor();
   } else {
-    my $snp = $self->get_db_adaptor('snp');
+    my $snp = $self->get_db_adaptor('SNP');
     
     unless($snp) {
       warn("No lite or SNP database, cannot get snp adaptor\n");
@@ -209,6 +209,7 @@ sub get_SNPAdaptor {
     }
 
     $primary_adaptor = $snp->get_SNPAdaptor();
+    $primary_adaptor->ensembl_db( $self );
   }
   
   #return a proxy adaptor which can use the lite or the core database
