@@ -472,6 +472,147 @@ sub get_base_count {
 
 
 
+=head2 project
+
+  Arg [1]    : string $name
+               The name of the coordinate system to project this slice onto
+  Arg [2]    : string $version
+               The version of the coordinate system (such as 'NCBI34') to
+               project this slice onto
+  Example    :
+    my $clone_projection = $slice->project('clone');
+
+    foreach my $segment (@$clone_projection) {
+      my ($start, $end, $clone) = @$segment;
+      print $slice->seq_region_name, ':', $start, '-', $end , ' -> ',
+            $clone->seq_region_name, ':', $clone->start, '-', $clone->end,
+            $clone->strand, "\n";
+    }
+  Description: Returns the results of 'projecting' this slice onto another
+               coordinate system.  Projecting to a coordinate system that
+               the slice is assembled from is analagous to retrieving a tiling
+               path.  This method may also be used to 'project up' to a higher
+               level coordinate system however.
+
+               This method returns a listref of triplets [start,end,slice]
+               which represents the projection.  The start and end defined the
+               region of this slice which is made up of the third value of
+               the triplet: a slice in the requested coordinate system.
+  Returntype : list reference of [$start,$end,$slice] triplets
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub project {
+  my $self = shift;
+  my $cs_name = shift;
+  my $cs_version = shift;
+
+  throw('Coord_system name argument is required') if(!$cs_name);
+
+  #obtain a mapper between this coordinate system and the requested one
+
+  my $db = $self->adaptor()->db();
+  my $csa = $db->get_CoordSystemAdaptor();
+  my $cs = $csa->fetch_by_name($cs_name, $cs_version);
+  my $slice_cs = $self->coord_system();
+  my $asma = $db->get_AssemblyMapperAdaptor();
+  my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
+
+  # perform the mapping between this slice and the requested system
+
+  my @coords =
+    $asm_mapper->map($self->seq_region_name(), $self->start(),
+                     $self->end(), $self->strand(), $slice_cs);
+
+
+  #construct a projection from the mapping results and return it
+
+  my @projection;
+
+  my $current_start = 1;
+
+  foreach my $coord (@coords) {
+    my $coord_start  = $coord->start();
+    my $coord_end    = $coord->end();
+    my $length = $coord_end - $coord_start;
+
+    #skip gaps
+    if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+      #create slices for the mapped-to coord system
+      my $slice = Bio::EnsEMBL::Slice->new
+        (-COORD_SYSTEM    => $cs,
+         -START           => $coord_start,
+         -END             => $coord_end,
+         -STRAND          => $coord->strand(),
+         -SEQ_REGION_NAME => $coord->id(),
+         -ADAPTOR         => $self->adaptor());
+
+      my $current_end = $current_start + $length - 1;
+
+      push @projection, [$current_start, $current_end, $slice];
+    }
+
+    $current_start += $length;
+  }
+
+  return \@projection;
+}
+
+
+
+=head2 expand
+
+  Arg [1]    : (optional) int $left
+               The number of basepairs to shift this slices start
+               coordinate left.  Zero and negative values are permitted.
+               Default = 0.
+  Arg [2]    : (optional) int $right
+               The number of basepairs to shift this slices end
+               coordinate right. Zero and negative values are permitted.
+               Default = 0.
+  Example    : my $expanded_slice      = $slice->expand( 1000, 1000);
+               my $contracted_slice    = $slice->expand(-1000,-1000);
+               my $shifted_right_slice = $slice->expand(-1000, 1000);
+               my $shifted_left_slice  = $slice->expand( 1000,-1000);
+  Description: Returns a slice which is a resized copy of this slice.  The
+               start and end are moved outwards from the center of the slice
+               if positive values are provided and moved inwards if negative
+               values are provided. This slice remains unchanged.  A slice
+               may not be contracted below 1bp but may grow to be arbitrarily
+               large.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : warning if an attempt is made to contract the slice below 1bp
+  Caller     : general
+
+=cut
+
+sub expand {
+  my $self = shift;
+  my $left = shift || 0;
+  my $right = shift || 0;
+
+  my $new_start = $self->{'start'} - $left;
+  my $new_end   = $self->{'end'} + $right;
+
+  if($new_start > $new_end) {
+    #make a slice of size 1 and warn if they have contracted slice too much
+    warning('Slice start cannot be greater than slice end');
+    my $middle = int(($new_start - $new_end)/2);
+    $new_start = $new_end = $middle;
+  }
+
+  return Slice->new(-COORD_SYSTEM    => $self->{'coord_system'},
+                    -START           => $new_start,
+                    -END             => $new_end,
+                    -STRAND          => $self->{'strand'},
+                    -SEQ_REGION_NAME => $self->{'seq_region_name'},
+                    -ADAPTOR         => $self->{'adaptor'});
+}
+
+
+
 =head2 get_all_PredictionTranscripts
 
   Arg [1]    : (optional) string $logic_name
@@ -969,100 +1110,6 @@ sub has_MapSet {
 
   return $mfa->has_mapset($mapset_name);
 }
-
-
-
-
-
-=head2 project
-
-  Arg [1]    : string $name
-               The name of the coordinate system to project this slice onto
-  Arg [2]    : string $version
-               The version of the coordinate system (such as 'NCBI34') to
-               project this slice onto
-  Example    :
-    my $clone_projection = $slice->project('clone');
-
-    foreach my $segment (@$clone_projection) {
-      my ($start, $end, $clone) = @$segment;
-      print $slice->seq_region_name, ':', $start, '-', $end , ' -> ',
-            $clone->seq_region_name, ':', $clone->start, '-', $clone->end,
-            $clone->strand, "\n";
-    }
-  Description: Returns the results of 'projecting' this slice onto another
-               coordinate system.  Projecting to a coordinate system that
-               the slice is assembled from is analagous to retrieving a tiling
-               path.  This method may also be used to 'project up' to a higher
-               level coordinate system however.
-
-               This method returns a listref of triplets [start,end,slice]
-               which represents the projection.  The start and end defined the
-               region of this slice which is made up of the third value of
-               the triplet: a slice in the requested coordinate system.
-  Returntype : list reference of [$start,$end,$slice] triplets
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub project {
-  my $self = shift;
-  my $cs_name = shift;
-  my $cs_version = shift;
-
-  throw('Coord_system name argument is required') if(!$cs_name);
-
-  #obtain a mapper between this coordinate system and the requested one
-
-  my $db = $self->adaptor()->db();
-  my $csa = $db->get_CoordSystemAdaptor();
-  my $cs = $csa->fetch_by_name($cs_name, $cs_version);
-  my $slice_cs = $self->coord_system();
-  my $asma = $db->get_AssemblyMapperAdaptor();
-  my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
-
-  # perform the mapping between this slice and the requested system
-
-  my @coords =
-    $asm_mapper->map($self->seq_region_name(), $self->start(),
-                     $self->end(), $self->strand(), $slice_cs);
-
-
-  #construct a projection from the mapping results and return it
-
-  my @projection;
-
-  my $current_start = 1;
-
-  foreach my $coord (@coords) {
-    my $coord_start  = $coord->start();
-    my $coord_end    = $coord->end();
-    my $length = $coord_end - $coord_start;
-
-    #skip gaps
-    if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-      #create slices for the mapped-to coord system
-      my $slice = Bio::EnsEMBL::Slice->new
-        (-COORD_SYSTEM    => $cs,
-         -START           => $coord_start,
-         -END             => $coord_end,
-         -STRAND          => $coord->strand(),
-         -SEQ_REGION_NAME => $coord->id(),
-         -ADAPTOR         => $self->adaptor());
-
-      my $current_end = $current_start + $length - 1;
-
-      push @projection, [$current_start, $current_end, $slice];
-    }
-
-    $current_start += $length;
-  }
-
-  return \@projection;
-}
-
-
 
 
 
