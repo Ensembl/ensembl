@@ -69,8 +69,10 @@ use Bio::EnsEMBL::RawContig; #included for backwards compatibility
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
+use Bio::PrimarySeqI;
+
 #inheritance to Bio::EnsEMBL::Root will eventually be removed
-@ISA = qw(Bio::EnsEMBL::Root);# Bio::PrimarySeqI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
 
 
 =head2 new
