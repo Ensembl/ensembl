@@ -8,9 +8,9 @@
 use DBI;
 use Getopt::Long;
 
-my $host   = "kaka.sanger.ac.uk";
-my $dbname = "homo_sapiens_lite_4_28";
-my $dbuser = "anonymous";
+my $host   = "ecs1d.sanger.ac.uk";
+my $dbname = "mus_musculus_lite_5_3";
+my $dbuser = "ensro";
 my $dbpass = undef;
 
 &GetOptions( 
@@ -125,8 +125,17 @@ sub print_genes {
     foreach $t ( @transcripts ) {
       my @exons = values %{$t->{exon}};
       @exons = sort { $a->{rank} <=> $b->{rank} } @exons;
-	
+      my $coding = 0;	
+      my $frame = 0;
+      
       foreach $e ( @exons ) {
+	my $gtfLineTail = 
+	  "gene_id \"".$g->{name}."\"; ".
+	  "transcript_id \"". $t->{name}. "\"; ".
+	  "exon_number \"". $e->{rank}."\"; ".
+	  "exon_id \"". $e->{name}."\"".
+	  "\n";
+
 	if( exists $e->{startcodon} ) {
 	  my ( $start, $end );
 	  if( $e->{strand} == 1 ) {
@@ -141,25 +150,17 @@ sub print_genes {
 	  "ENSEMBL\tstart_codon\t", 
 	  $start,"\t",
 	  $end,"\t",
-	  "0\t",
+	  ".\t",
 	  ($e->{strand}==1?"+":"-"),"\t.\t",
-	  "gene_id \"",$g->{name},"\"; ",
-	  "transcript_id \"", $t->{name}, "\"; ",
-	  "exon_number ", $e->{rank},"; ",
-	  "exon_id \"", $e->{name},"\"",
-	  "\n";
+	  $gtfLineTail;
 	}
 	print FH $g->{chrom},"\t",
 	"ENSEMBL\texon\t", 
 	$e->{seqstart},"\t",
 	$e->{seqend},"\t",
-	"0\t",
+	".\t",
 	($e->{strand}==1?"+":"-"),"\t.\t",
-	"gene_id \"",$g->{name},"\"; ",
-	"transcript_id \"", $t->{name}, "\"; ",
-	"exon_number ", $e->{rank},"; ",
-	"exon_id \"", $e->{name},"\"",
-	"\n";
+	$gtfLineTail;
 
 	if( exists $e->{stopcodon} ) {
 	  my ( $start, $end );
@@ -174,14 +175,85 @@ sub print_genes {
 	  "ENSEMBL\tstop_codon\t", 
 	  $start,"\t",
 	  $end,"\t",
-	  "0\t",
+	  ".\t",
 	  ($e->{strand}==1?"+":"-"),"\t.\t",
-	  "gene_id \"",$g->{name},"\"; ",
-	  "transcript_id \"", $t->{name}, "\"; ",
-	  "exon_number ", $e->{rank},"; ",
-	  "exon_id \"", $e->{name},"\"",
-	  "\n";
+	  $gtfLineTail;
 	}
+
+        # 0 not coding, 1 contains just startcodon
+	# 2 contains only coding
+	# 3 just stopcodon, 4 start and stopcodon
+	
+	if( $coding == 0 ) {
+	  if( exists $e->{startcodon} ) {
+	    if( exists $e->{stopcodon} ) {
+	      $coding = 4;
+	    } else {
+	      $coding = 1;
+	    }
+	  }
+	} elsif( $coding == 1 ) {
+	  if( exists $e->{stopcodon} ) {
+	    $coding = 4;
+	  } else {
+	    $coding = 2;
+	  }
+	} elsif( $coding == 2 ) {
+          if( exists $e->{stopcodon} ) {
+	    $coding = 3;
+	  }
+	} elsif( $coding == 3 ) {
+	  $coding = 0;
+	} elsif( $coding == 4 ) {
+	  $coding = 0;
+	}
+	
+	# construct CDS line
+	my ( $cdsstart, $cdsend );
+	
+	if( $coding == 0 ) {
+	  next;
+	  # no CDS line
+	} elsif( $coding == 1 ) {
+	  if( $e->{strand} == 1 ) {
+	    $cdsstart = $e->{startcodon} + $e->{seqstart} - 1;
+	    $cdsend = $e->{seqend};
+	  } else {
+	    $cdsstart = $e->{seqstart};
+	    $cdsend = $e->{seqend} - $e->{startcodon} + 1 ;
+	  }
+	} elsif( $coding == 2 ) {
+	  $cdsstart = $e->{seqstart};
+	  $cdsend = $e->{seqend};
+	} elsif( $coding == 3 ) {
+	  if( $e->{strand} == 1 ) {
+	    $cdsstart = $e->{seqstart};
+	    $cdsend = $e->{seqstart}+$e->{stopcodon} - 4;
+	  } else {
+	    $cdsstart = $e->{seqend} - $e->{stopcodon} + 4;
+	    $cdsend = $e->{seqend};
+	  }
+	} elsif( $coding == 4 ) {
+	  if( $e->{strand} == 1 ) {
+	    $cdsstart = $e->{startcodon} + $e->{seqstart} - 1;
+	    $cdsend = $e->{seqstart}+$e->{stopcodon} - 4;
+	  } else {
+	    $cdsstart = $e->{seqend} - $e->{stopcodon} + 4;
+	    $cdsend = $e->{seqend} - $e->{startcodon} + 1 ;
+	  }  
+	}
+	
+	if( $cdsend >= $cdsstart ) {
+	  print FH $g->{chrom},"\t",
+	  "ENSEMBL\tCDS\t", 
+	  $cdsstart,"\t",
+	  $cdsend,"\t",
+	  ".\t",
+	  ($e->{strand}==1?"+":"-"),"\t",$frame,"\t",
+	  $gtfLineTail;
+
+	  $frame = ( $cdsend - $cdsstart + 1 - $frame ) % 3;
+	} 
       }
     }
     # print "GENE:",$g->{name}, " ", $g->{fpc},"\n";
