@@ -659,7 +659,7 @@ sub write_Contig {
     
     # write sequence features. We write all of them together as it
     # is more efficient
-    $self->get_Feature_Obj->write($contig, @features);
+    $self->get_FeatureAdaptor->store($contig, @features);
     
     return 1;
 }
