@@ -210,7 +210,7 @@
       
       <name>transcript</name>
 
-      <description>TBC Note that a transcript is usually associated with a translation, but may not be, e.g. in the case of pseudogenes and RNA genes (those that code for RNA molecules).</description>
+      <description>Stores information about transcripts. Has seq_region_start, seq_region_end and seq_region_strand for faster retrieval and to allow storage independently of genes and exons. Note that a transcript is usually associated with a translation, but may not be, e.g. in the case of pseudogenes and RNA genes (those that code for RNA molecules).</description>
       
       <used></used>
       
@@ -309,7 +309,7 @@
       
       <name>translation</name>
 
-      <description>Describes which parts of which exons are used in translation. The seq_start and seq_end columns are 1-based offsets into the *relative* coordinate system of start_exon_id and end_exon_id. i.e, if the translation starts at the first base of the exon, seq_start would be 1.</description>
+      <description>Describes which parts of which exons are used in translation. The seq_start and seq_end columns are 1-based offsets into the *relative* coordinate system of start_exon_id and end_exon_id. i.e, if the translation starts at the first base of the exon, seq_start would be 1. Transcripts are related to translations by the transcript_id key in this table.</description>
       
       <used></used>
       
@@ -357,7 +357,7 @@
       
       <name>prediction_transcript</name>
 
-      <description>TBC</description>
+      <description>Stores transcripts that are predicted by ab initio gene finder programs. Unlike EnsEMBL transcripts they are not supported by any evidence.</description>
       
       <used></used>
       
@@ -372,7 +372,7 @@
       
       <name>prediction_exon</name>
 
-      <description>TBC</description>
+      <description>Stores exons that are predicted by ab initio gene finder programs. Unlike EnsEMBL exons they are not supported by any evidence.</description>
       
       <used></used>
       
@@ -947,7 +947,7 @@
   
   <concepts>
 
-    <concept name="co-ordinates" description="XXX TBC There are several different co-ordinate systems used in the EnsEMBL database and API. For every co-ordinate system, the fundamental unit is one base. The differences between co-ordinate systems lie in where a particular numbered base lies, and the start position it is relative to. CONTIG co-ordinates, also called 'raw contig' co-ordinates or 'clone fragments' are relative to the first base of the first contig of a clone. Note that the numbering is from 1, i.e. the very first base of the first contig of a clone is numbered 1, not 0. In CHROMOSOMAL co-ordinates, the co-ordinates are relative to the first base of the chromosome. Again, numbering is from 1."/>
+    <concept name="co-ordinates" description="There are several different co-ordinate systems used in the EnsEMBL database and API. For every co-ordinate system, the fundamental unit is one base. The differences between co-ordinate systems lie in where a particular numbered base lies, and the start position it is relative to. CONTIG co-ordinates, also called 'raw contig' co-ordinates or 'clone fragments' are relative to the first base of the first contig of a clone. Note that the numbering is from 1, i.e. the very first base of the first contig of a clone is numbered 1, not 0. In CHROMOSOMAL co-ordinates, the co-ordinates are relative to the first base of the chromosome. Again, numbering is from 1. The seq_region table can store sequence regions in any of the co-ordinate systems defined in the coord_system table."/>
     <!-- TODO a diagram for all this -->
 
     <concept name="supercontigs" description="A supercontig is made up of a group of adjacent or overlapping contigs."/>
