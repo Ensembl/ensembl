@@ -408,6 +408,165 @@ sub fetch_all_by_external_name {
 
 
 
+=head2 fetch_all_alt_alleles
+
+  Arg [1]    : Bio::EnsEMBL::Gene $gene
+  Example    : my @alt_genes = @{$gene_adaptor->fetch_all_alt_alleles($gene);}
+               foreach my $alt_gene (@alt_genes) {
+                 print "Alternate allele: " . $alt_gene->stable_id() . "\n";
+               }
+  Description: Retrieves genes which are alternate alleles to a provided gene.
+               Alternate alleles in Ensembl are genes which are similar and are
+               on an alternative haplotype of the same region.  There are not 
+               currently very many of these.  This method will return a 
+               reference to an empty list if no alternative alleles are found.
+  Returntype : reference to a list of genes
+  Exceptions : throw if incorrect arg provided
+               warning if gene arg does not have dbID
+  Caller     : Gene::get_all_alt_alleles
+
+=cut
+
+sub fetch_all_alt_alleles {
+  my $self = shift;
+  my $gene = shift;
+
+  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+    throw('Bio::EnsEMBL::Gene argument is required');
+  }
+
+  my $gene_id = $gene->dbID();
+
+  if(!$gene_id) {
+    warning('Cannot retrieve alternate alleles for gene without dbID');
+    return [];
+  }
+
+  my $sth = $self->prepare("SELECT aa1.gene_id " .
+                           "FROM   alt_allele aa1, alt_allele aa2 " .
+                           "WHERE  aa1.alt_allele_id = aa2.alt_allele_id " .
+                           "AND    aa2.gene_id = ? " .
+                           "AND    aa1.gene_id <> ?");
+
+  $sth->execute($gene_id, $gene_id);
+
+  my @alt_ids;
+  my $row;
+  while($row = $sth->fetchrow_arrayref()) {
+    push @alt_ids, $row->[0];
+  } 
+  $sth->finish();
+  
+  if(@alt_ids) {
+    return $self->fetch_all_by_dbID_list(\@alt_ids);
+  }
+  
+  return [];
+  
+}
+
+
+
+=head2 store_alt_alleles
+
+  Arg [1]    : reference to list of Bio::EnsEMBL::Genes $genes
+  Example    : $gene_adaptor->store_alt_allele([$gene1, $gene2, $gene3]);
+  Description: This method creates a group of alternative aleles (i.e. locus)
+               from a set of genes.  The genes should be genes from alternate
+               haplotypes which are similar.  The genes must already be stored
+               in this database. At least 2 genes must be in the list reference
+               provided.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               throw on sql error (e.g. duplicate unique id)
+  Caller     : ?
+
+=cut
+
+sub store_alt_alleles {
+  my $self = shift;
+  my $genes = shift;
+
+  if(!ref($genes) eq 'ARRAY') {
+    throw('List reference of Bio::EnsEMBL::Gene argument expected.');
+  }
+
+  my $num_genes = scalar(@$genes);
+
+  if($num_genes < 2) {
+    throw("At least 2 genes must be provided to construct alternate alleles.");
+  }
+
+  return if(!@$genes);
+  
+  #
+  #insert the first gene seperately in order to get a unique identifier for
+  #the set of alleles
+  #
+  my $gene = $genes->[0];
+
+  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+    throw('List reference of Bio::EnsEMBL::Gene argument expected.');
+  }
+
+  my $gene_id = $gene->dbID();
+
+  if(!$gene_id) {
+    throw("Genes must have dbIDs in order to construct alternate alleles.");
+  }
+
+  my $sth = $self->prepare("INSERT INTO alt_allele (gene_id) VALUES (?)");
+  $sth->execute($gene->dbID());
+  
+  my $alt_allele_id = $sth->{'mysql_insertid'};
+  $sth->finish();
+
+  #
+  # Insert all subsequent alt alleles using the alt_allele identifier
+  # from the first insert
+  #
+
+  $sth = $self->prepare("INSERT INTO alt_allele (alt_allele_id, gene_id) " .
+                        "VALUES (?,?)");
+  
+  for(my $i = 1; $i < $num_genes; $i++) {
+    my $gene = $genes->[$i];
+
+    if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+      throw("List reference of Bio::EnsEMBL::Gene argument expected"); 
+    }
+    
+    $gene_id = $gene->dbID();
+    
+    if(!$gene_id) {
+      #This is an error but we have already inserted into the database
+      #delete the already inserted entries to restore the state of the
+      #database
+      $sth->finish();
+      $sth->prepare("DELETE FROM alt_allele WHERE alt_allele_id = ?");
+      $sth->execute($alt_allele_id);
+      $sth->finish();
+      throw('Genes must have dbIDs in order to construct alternate alleles.');
+    }
+
+    eval {
+      $sth->execute($alt_allele_id, $gene_id);
+    };
+
+    if($@) {
+      #an error occured, revert the db to the previous state
+      $sth = $self->prepare("DELETE FROM alt_allele WHERE alt_allele_id = ?");
+      $sth->execute($alt_allele_id);
+      $sth->finish();
+      throw("An SQL error occured inserting alternate alleles:\n$@");
+    }
+  }
+  
+  $sth->finish();
+
+  return;
+}
+
 
 =head2 store
 
