@@ -1,3 +1,5 @@
+#!/usr/local/bin/perl
+
 use strict;
 use Bio::EnsEMBL::Pipeline::RunnableDB::CrossCloneMap;
 use Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor;

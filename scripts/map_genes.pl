@@ -1,44 +1,41 @@
+#!/usr/local/bin/perl
+
 use strict;
 use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBArchive::Obj;
 use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
 use Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor;
 use Bio::EnsEMBL::Pipeline::GeneComp;
 
 my $chr=shift(@ARGV);
 my $logfile=shift(@ARGV);
+my $mapfile=shift(@ARGV);
 open (LOG,">$logfile");
-my $cross=Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new(-dbname=>'crossmatch',-host=>'ecs1c',-user=>'ensadmin');
+open (MAP,">$mapfile");
+my $cross=Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new(-dbname=>'cross_oct07',-host=>'ecs1a',-user=>'ensadmin');
 my $db=$cross->new_dbobj();
 my $olddb=$cross->old_dbobj();
 
 $db->static_golden_path_type('UCSC');
-print STDERR "db= $db\n";
-
+print STDERR "New db= $db\n";
+print STDERR "Old db= $olddb\n";
 
 my $st=$db->get_StaticGoldenPathAdaptor;
 
-print STDERR "st= $st\n";
-
-print STDERR "Building Virtual Contig...\n";
+print STDERR "Building Virtual Contig for chromosome $chr...\n";
+print LOG "Building Virtual Contig for $chr...\n";
 my $vc=$st->fetch_VirtualContig_by_chr_name($chr);
+#print $vc->primary_seq->seq;
 
-my (%temp_old,$mapped,$new,$untransf) = Bio::EnsEMBL::Pipeline::GeneComp::map_temp_Exons_to_real_Exons($vc,\*LOG);
-my @keys = keys (%temp_old);
-my $size = scalar @keys;
+my $arcdb = Bio::EnsEMBL::DBArchive::Obj->new(-dbname=>'archive',-host=>'ecs1c',-user=>'ensadmin');
+#No final db writing, only logging
+#my $finaldb = Bio::EnsEMBL::DBSQL::Obj->new(-dbname=>'freeze05_final',-host=>'ecs1c',-user=>'ensadmin');
 
-print STDERR "Got $size exons mapped in GeneComp\n";
+my $gc =  Bio::EnsEMBL::Pipeline::GeneComp->new(-vc => $vc,
+						-archive => $arcdb,
+						-log => \*LOG,
+						-map => \*MAP);
 
-my ($deadgeneid,$deadtranscriptid) = Bio::EnsEMBL::Pipeline::GeneComp::map_temp_Genes_to_real_Genes($vc,\*LOG,%temp_old);
-my @d_genes=@$deadgeneid;
-my @d_trans=@$deadtranscriptid;
-print STDERR "Dead genes:\n";
-foreach my $dg (@d_genes) {
-    print STDERR "$dg\n";
-}
-print STDERR "Dead transcripts:\n";
-foreach my $dt (@d_trans) {
-    print "$dt\n";
-}
-			   
+$gc->map();
     
 
