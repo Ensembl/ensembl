@@ -437,10 +437,6 @@ sub fetch_virtualsnps {
                 'id'        => $row->{'refsnpid'},
                 'tscid'     => $row->{'tcsid'},
                 'hgbaseid'  => $row->{'hgbaseid'},
-                'strand'    => $row->{'chr_strand'},
-                'id'        => $row->{'refsnpid'},
-                'tscid'     => $row->{'tcsid'},
-                'hgbaseid'  => $row->{'hgbaseid'},
                 'type'      => $row->{'type'},
             };
     	  	$old_start = $start;
