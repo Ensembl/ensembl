@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Bio::EnsEMBL::FeaturePair
 #
@@ -6,72 +5,60 @@
 #
 # Copyright Ewan Birney
 #
-# You may distribute this module under the same terms as perl itself
-
-# POD documentation - main docs before the code
+# You may distribute this module under the same terms as perl
 
 =head1 NAME
 
-Bio::EnsEMBL::FeaturePair - Stores sequence features which are
-                            themselves hits to other sequence features.
+Bio::EnsEMBL::FeaturePair - Stores sequence Features which are
+themselves hits to other sequence features.
 
 =head1 SYNOPSIS
 
-    my $feat  = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
-					      -feature2 => $f2,
-					      );
+    my $feat = Bio::EnsEMBL::FeaturePair->new(-start    => 132_231,
+                                              -end      => 132_321,
+                                              -strand   => -1,
+                                              -slice    => $slice,
+                                              -hstart   => 10,
+                                              -hend     => 100,
+                                              -hstrand  => 1,
+                                              -score    => 100,
+                                              -percent_id => 92.0,
+                                              -hseqname => 'ALUSX10.1',
+                                              -analysis => $analysis);
 
-    # Bio::SeqFeatureI methods can be used
-    my $start = $feat->start;
-    my $end   = $feat->end;
-
-    # Bio::EnsEMBL::SeqFeatureI methods can be used
-    my $analysis = $feat->analysis;
-    
-    $feat->validate  || $feat->throw("Invalid data in $feat");
-
-    # Bio::FeaturePair methods can be used
-    my $hstart = $feat->hstart;
-    my $hend   = $feat->hend;
+    my $hit_start  = $feat->hstart();
+    my $hit_end    = $feat->hend();
+    my $hit_strand = $feat->hstrand();
+    my $analysis   = $feat->analysis();
 
 =head1 DESCRIPTION
 
 A sequence feature object where the feature is itself a feature on another 
 sequence - e.g. a blast hit where residues 1-40 of a  protein sequence 
 SW:HBA_HUMAN has hit to bases 100 - 220 on a genomic sequence HS120G22.  
-The genomic sequence coordinates are used to create one sequence feature 
-$f1 and the protein coordinates are used to create feature $f2.  
-A FeaturePair object can then be made
+The genomic sequence coordinates are represented by the start, end, strand
+attributes while the protein (hit) coordinates are represented by the hstart,
+hend, hstrand attributes.
 
-    my $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,   # genomic
-					   -feature2 => $f2,   # protein
-					   );
+    $clone = $slice_adpator->fetch_by_region('clone', 'HS120G22');
 
-This object can be used as a standard Bio::SeqFeatureI in which case
-
-    my $gstart = $fp->start  # returns start coord on feature1 - genomic seq.
-    my $gend   = $fp->end    # returns end coord on feature1.
-
-In general standard Bio::SeqFeatureI method calls return information
-in feature1.
-
-Data in the feature 2 object are generally obtained using the standard
-methods prefixed by h (for hit!)
-
-    my $pstart = $fp->hstart # returns start coord on feature2 = protein seq.
-    my $pend   = $fp->hend   # returns end coord on feature2.
-
-
-If you wish to swap feature1 and feature2 around :
-
-    $feat->invert
-
-    $feat->start # etc. returns data in $feature2 object
+    $fp = Bio::EnsEMBL::FeaturePair(-start    => 100,
+                                    -end      => 220,
+                                    -strand   => 1,
+                                    -slice    => $clone,
+                                    -hstart   => 1,
+                                    -hend     => 40,
+                                    -hstrand  => 1,
+                                    -percent_id => 92.0,
+                                    -score    => 100,
+                                    -hseqname => 'SW:HBA_HUMAN',
+                                    -species  => 'Homo sapiens',
+                                    -hspecies => 'Homo sapiens');
 
 
 =head1 CONTACT
 
-Describe contact details here
+Post comments/questions to the EnsEMBL developer list: ensembl-dev@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -80,325 +67,421 @@ Internal methods are usually preceded with a _
 
 =cut
 
-
-# Let the code begin...
-
-
 package Bio::EnsEMBL::FeaturePair;
 
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::Feature;
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
-@ISA = qw(Bio::EnsEMBL::SeqFeature);
-
-
-sub new {
-  my($class,@args) = @_;
-  my $self = {};
-
-  if( ref( $class) ) {
-    $class = ref( $class );
-  }
-
-  bless ($self,$class);
-
-  my ($feature1,$feature2) = 
-      $self->_rearrange([qw(FEATURE1
-			    FEATURE2
-			    )],@args);
-
-  if($feature1) {
-    $self = $self->SUPER::new(-ANALYSIS => $feature1->analysis(),
-		      -SEQNAME  => $feature1->seqname(),
-		      -START    => $feature1->start(),
-		      -END      => $feature1->end(),
-		      -STRAND   => $feature1->strand(),
-		      -FRAME    => $feature1->frame(),
-		      -SCORE    => $feature1->score(),
-		      -PERCENT_ID => $feature1->percent_id(),
-		      -P_VALUE => $feature1->p_value(),
-		      -PHASE => $feature1->phase(),
-		      -END_PHASE => $feature1->end_phase());
-
-    if($feature1->contig) {
-      $self->contig($feature1->contig);
-    }
-  } else {
-    $self->SUPER::new();
-  }
-
-  $feature2 && $self->feature2($feature2);
-
-  # set stuff in self from @args
-  return $self; # success - we hope!
-}
+@ISA = qw(Bio::EnsEMBL::Feature);
 
 
-=head2 feature1
 
- Title   : feature1
- Usage   : $f = $featpair->feature1
-           $featpair->feature1($feature)
- Function: Get/set for the query feature
- Returns : Bio::SeqFeatureI
- Args    : none
+=head2 new
+
+  Arg [HSTART]    : int - The start of the hit region (optional)
+  Arg [HEND]      : int - The end of the hit region (optional)
+  Arg [HSTRAND]   : (0,1,-1) - The strand of the hit region (optional)
+  Arg [PERCENT_ID]: float -  The precentage identity of the hit (optional)
+  Arg [SCORE]     : float -  The score of the hit (optional)
+  Arg [HSEQNAME]  : string - The name of the hit sequence (optional)
+  Arg [P_VALUE]   : float -  The pvalue or evalue (optional)
+  Arg [SPECIES]   : string - The species the query sequence is from (optional)
+  Arg [HSPECIES]  : string - The species the hit sequence is from (optional)
+  Arg [...]       : Named superclass constructor args (Bio::EnsEMBL::Feature)
+  Example    : $feat = Bio::EnsEMBL::FeaturePair->new(-start    => 132_231,
+                                              -end      => 132_321,
+                                              -strand   => -1,
+                                              -slice    => $slice,
+                                              -hstart   => 10,
+                                              -hend     => 100,
+                                              -hstrand  => 1,
+                                              -score    => 100,
+                                              -percent_id => 92.0,
+                                              -hseqname => 'ALUSX10.1',
+                                              -analysis => $analysis);
+Description: Creates a new Bio::EnsEMBL::FeaturePair object
+  Returntype : Bio::EnsEMBL::FeaturePair
+  Exceptions : throw if start > end
+               throw if invalid strand is provided
+  Caller     : general
 
 =cut
 
+sub new {
+  my $caller = shift;
+
+  my $class = ref($caller) || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  my ($hstart,$hend,$hstrand,$percent_id,$score, $species, $hspecies,
+      $p_value, $hseqname, $f1,$f2) =
+    rearrange(['HSTART','HEND','HSTRAND','PERCENT_ID','SCORE','SPECIES',
+               'HSPECIES', 'P_VALUE', 'HSEQNAME', 'FEATURE1','FEATURE2'], @_);
+
+  if(defined($hstart) && defined($hend) && ($hend < $hstart)) {
+    throw('HSTART must be less than or equal to HEND');
+  }
+
+  if(defined($hstrand) && $hstrand != 1 && $hstrand != -1 && $hstrand != 0) {
+    throw('HSTRAND must be one of (0,1,-1)');
+  }
+
+  $self->{'hstart'}     = $hstart;
+  $self->{'hend'}       = $hend;
+  $self->{'hstrand'}    = $hstrand;
+  $self->{'score'}      = $score;
+  $self->{'percent_id'} = $percent_id;
+  $self->{'species'}    = $species;
+  $self->{'hspecies'}   = $hspecies;
+  $self->{'hseqname'}   = $hseqname;
+  $self->{'p_value'}    = $p_value;
+
+  #
+  # Feature1 and Feature2 arg handling for backwards compatibility
+  #
+  if($f1) {
+    deprecate("Using FEATURE1 arg to construct FeaturePairs" .
+              " is deprecated.\nUse the args START,END,STRAND,SLICE instead");
+
+    #eval because we are not exactly sure what f1 arg will look like
+    eval {
+      $self->{'start'} = $f1->start();
+      $self->{'end'}   = $f1->end();
+      $self->{'strand'} = $f1->strand();
+      $self->{'slice'}  = $f1->contig();
+    };
+  }
+
+  if($f2) {
+    deprecate("Using FEATURE2 arg to construct FeaturePairs is deprecated" .
+              "\nUse the args HSTART,HEND,HSTRAND,HSEQNAME instead");
+
+    #eval because we are not exactly sure what f2 arg will look like
+    eval {
+      $self->{'hseqname'} = $f2->seqname();
+      $self->{'hstart'}   = $f2->start();
+      $self->{'hend'}     = $f2->end();
+      $self->{'hstrand'}  = $f2->strand();
+    };
+  }
+
+  return $self;
+}
+
+
+
+=head2 hseqname
+
+  Arg [1]    : string $hseqname (optional)
+  Example    : $hseqname = $fp->hseqname();
+  Description: Getter/Setter for the name of the hit sequence
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub hseqname {
+  my $self = shift;
+  $self->{'hseqname'} = shift if(@_);
+  return $self->{hseqname};
+}
+
+
+
+=head2 hstart
+
+  Arg [1]    : string $hstart (optional)
+  Example    : $hstart = $fp->hstart();
+  Description: Getter/Setter for the start coordinate on the hit sequence
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub hstart{
+  my $self = shift;
+  $self->{'hstart'} = shift if(@_);
+  return $self->{'hstart'};
+}
+
+
+=head2 hend
+
+  Arg [1]    : string $hend (optional)
+  Example    : $hend = $fp->hend();
+  Description: Getter/Setter for the end coordinate on the hit sequence
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub hend{
+  my $self = shift;
+  $self->{'hend'} = shift if(@_);
+  return $self->{'hend'};
+}
+
+
+
+=head2 hstrand
+
+  Arg [1]    : int $hstrand (optional)
+  Example    : $hstrand = $fp->hstrand
+  Description: Getter/Setter for the orientation of the hit on the hit sequence
+  Returntype : 0,1,-1
+  Exceptions : thrown 
+  Caller     : general
+
+=cut
+
+sub hstrand{
+  my $self = shift;
+
+  if(@_) {
+    my $hstrand = shift;
+    if(defined($hstrand) && $hstrand != 1 && $hstrand != 0 && $hstrand != -1) {
+      throw('hstrand must be one of (-1,0,1)');
+    }
+    $self->{'hstrand'} = $hstrand;
+  }
+
+  return $self->{'hstrand'};
+}
+
+
+=head2 score
+
+  Arg [1]    : float $score (optional)
+  Example    : $score = $fp->score();
+  Description: Getter/Setter for the score of this feature pair
+  Returntype : float
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub score{
+  my $self = shift;
+  $self->{'score'} = shift if(@_);
+  return $self->{'score'};
+}
+
+
+
+=head2 percent_id
+
+  Arg [1]    : float $percent_id (optional)
+  Example    : $percent_id = $fp->percent_id();
+  Description: Getter/Setter for the percentage identity of this feature pair
+  Returntype : float
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub percent_id {
+  my $self = shift;
+  $self->{'percent_id'} = shift if(@_);
+  return $self->{'percent_id'};
+}
+
+
+
+=head2 species
+
+ Arg [1]    : string $genus_species_name (optional)
+              e.g. Homo_sapiens or Mus_musculus
+ Example    : $species = $fp->species();
+ Description: get/set on the species of feature1
+ Returntype : string
+ Execeptions: none
+ Caller     : general
+
+=cut
+
+sub species{
+  my $self = shift;
+  $self->{'species'} = shift if(@_);
+  return $self->{'species'};
+}
+
+
+=head2 hspecies
+
+ Arg [1]    : string $genus_species_name (optional)
+              e.g. Homo_sapiens or Mus_musculus
+ Example    : $hspecies = $fp->hspecies
+ Description: get/set on the species of feature2
+ Returntype : string
+ Execeptions: none
+ Caller     : general
+
+=cut
+
+sub hspecies{
+  my $self = shift;
+  $self->{'hspecies'} = shift if(@_);
+  return $self->{'hspecies'};
+}
+
+
+
+=head2 p_value
+
+  Arg [1]    : float $p_value (optional)
+  Example    : $eval = $fp->p_value
+  Description: Getter Setter for the evalue / pvalue of this feature
+  Returntype : float
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub p_value{
+  my $self = shift;
+  $self->{'p_value'} = shift if(@_);
+  return $self->{'p_value'};
+}
+
+
+
+
+
+
+###########################
+# DEPRECATED METHODS FOLLOW
+###########################
+
+=head2 feature1
+
+  Description: DEPRECATED use start(), end(), strand(), slice(), etc.
+               methods instead
+
+=cut
 
 sub feature1 {
   my ($self,$arg) = @_;
 
+  deprecate('Use start(), end(), strand(), slice(), etc. methods instead.');
+
   if($arg) {
-    #print STDERR "have ".$arg." for feature1 and it has ".$arg->entire_seq."\n";
-      $self->start($arg->start());
-      $self->end($arg->end());
-      $self->strand($arg->strand());
-      $self->frame($arg->frame());
-      $self->score($arg->score());
-      $self->seqname($arg->seqname());
-      $self->percent_id($arg->percent_id());
-      $self->p_value($arg->p_value());
-      $self->phase($arg->phase());
-      $self->end_phase($arg->end_phase());
-      $self->analysis($arg->analysis);
-      if($arg->entire_seq){
-	$self->attach_seq($arg->entire_seq);
-      }
+    $self->start($arg->start());
+    $self->end($arg->end());
+    $self->strand($arg->strand());
+    $self->score($arg->score());
+    $self->percent_id($arg->percent_id());
+    $self->analysis($arg->analysis);
+    if($arg->contig){
+      $self->slice($arg->contig);
     }
+  }
 
   return $self;
 }
 
 =head2 feature2
 
- Title   : feature2
- Usage   : $f = $featpair->feature2
-           $featpair->feature2($feature)
- Function: Get/set for the hit feature
- Returns : Bio::SeqFeatureI
- Args    : none
-
+  Description: DEPRECATED use hstart(), hend(), hstrand() etc.
+               methods instead
 
 =cut
 
 sub feature2 {
-    my ($self,$arg) = @_;
-    #print "passing ".$arg." into feature2\n";
-    if (defined($arg)) {
-      unless(ref($arg) ne "" && $arg->isa("Bio::SeqFeatureI")) {
-	$self->throw("Argument [$arg] must be a Bio::SeqFeatureI");
-      }
+  my ($self,$arg) = @_;
 
-      $self->hstart($arg->start());
-      $self->hend($arg->end());
-      $self->hstrand($arg->strand());
-      $self->hseqname($arg->seqname());
-      $self->hphase($arg->phase());
-      $self->hend_phase($arg->end_phase());
-     
-      return $arg;
-    } 
-    
-    my $seq = new Bio::EnsEMBL::SeqFeature(
-		    -SEQNAME    => $self->{_hseqname},
-		    -START      => $self->{_hstart},
-		    -END        => $self->{_hend},
-                    -STRAND     => $self->{_hstrand},
+  deprecate('Use hstart(),hend(),hstrand(),hseqname() methods instead.');
+
+  if (defined($arg)) {
+    $self->hstart($arg->start());
+    $self->hend($arg->end());
+    $self->hstrand($arg->strand());
+    $self->hseqname($arg->seqname());
+    return $arg;
+  }
+
+  return new Bio::EnsEMBL::Feature(
+		    -START      => $self->hstart(),
+		    -END        => $self->hend(),
+        -STRAND     => $self->hstrand(),
 		    -SCORE      => $self->score(),
 		    -PERCENT_ID => $self->percent_id(),
-		    -P_VALUE    => $self->p_value(),
-		    -PHASE      => $self->hphase,
-		    -END_PHASE  => $self->hend_phase,
 		    -ANALYSIS   => $self->analysis);
-
-   
-    return $seq;
-}
-
-
-=head2 hseqname
-
- Title   : hseqname
- Usage   : $featpair->hseqname($newval)
- Function: Get/set method for the name of
-           feature2.
- Returns : value of $feature2->seqname
- Args    : newvalue (optional)
-
-
-=cut
-
-sub hseqname {
-    my ($self,$arg) = @_;
-    
-    if (defined($arg)) {
-     # print STDERR "hseqname being set ".$arg."\n";
-      $self->{_hseqname} = $arg;
-    }
-
-    return $self->{_hseqname};
-}
-
-
-=head2 hstart
-
- Title   : hstart
- Usage   : $start = $featpair->hstart
-           $featpair->hstart(20)
- Function: Get/set on the start coordinate of feature2
- Returns : integer
- Args    : none
-
-=cut
-
-sub hstart {
-  my ($self,$value) = @_;
-  
-  if (defined($value)) {
-    #print STDERR "htart being set to ".$value,"\n";
-    $self->{_hstart} = $value;
-  }
-  
-  return $self->{_hstart};
-}
-
-=head2 hend
-
- Title   : hend
- Usage   : $end = $featpair->hend
-           $featpair->hend($end)
- Function: get/set on the end coordinate of feature2
- Returns : integer
- Args    : none
-
-=cut
-
-sub hend{
-    my ($self,$value) = @_;
-
-    if (defined($value)) {
-      #print STDERR "hend being set to ".$value."\n"; 
-      $self->{_hend} = $value;
-    }
-
-    return $self->{_hend};
-}
-
-=head2 hstrand
-
- Title   : hstrand
- Usage   : $strand = $feat->strand()
-           $feat->strand($strand)
- Function: get/set on strand information, being 1,-1 or 0
- Returns : -1,1 or 0
- Args    : none
-
-=cut
-
-sub hstrand{
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-      #print "hstrand = ".$arg."\n";
-      $self->{_hstrand} = $arg;
-    } 
-    
-    return $self->{_hstrand};
 }
 
 
 
 =head2 invert
 
- Title   : invert
- Usage   : $tag = $feat->invert
- Function: Swaps feature1 and feature2 around
- Returns : Nothing
- Args    : none
-
+  Description: DEPRECATED do not use
 
 =cut
 
 sub invert {
     my ($self) = @_;
 
-    my $tmp = $self->feature2;
+    deprecated('Do not use this method - it should not be needed');
 
+    my $hstart   = $self->{'hstart'};
+    my $hend     = $self->{'hend'};
+    my $hstrand  = $self->{'hstrand'};
+    my $hspecies = $self->{'hspecies'};
 
-    $self->feature2($self->feature1);
-    $self->feature1($tmp);
+    my $start   = $self->{'start'};
+    my $end     = $self->{'end'};
+    my $strand  = $self->{'strand'};
+    my $slice   = $self->{'slice'};
+    my $species = $self->{'species'};
+
+    $self->{'start'} = $hstart;
+    $self->{'end'}   = $hend;
+    $self->{'strand'} = $hstrand;
+    $self->{'species'} = $hspecies;
+
+    $self->{'hstart'} = $hstart;
+    $self->{'hend'}   = $hend;
+    $self->{'hstrand'} = $hstrand;
+    $self->{'hseqname'} = ($slice) ? $slice->seq_region_name : '';
+    $self->{'hspecies'} = $species;
 }
+
+
 
 =head2 validate
 
- Title   : validate
- Usage   : $sf->validate
- Function: Checks whether all data fields are filled
-           in in the object and whether it is of
-           the correct type.
-           Throws an exception if it finds problems
- Example : $sf->validate
- Returns : nothing
- Args    : none
-
+  Description: DEPRECATED do not use
 
 =cut
 
 sub validate {
   my ($self) = @_;
-  
-  $self->SUPER::validate();
-  $self->feature2->validate;
-  #$f2->validate();
-  
-  # Now the analysis object
-  if (defined($self->analysis)) {
-    unless($self->analysis->isa("Bio::EnsEMBL::Analysis")) {
-      $self->throw("Wrong type of analysis object");
-    }
-  } else {
-    $self->throw("No analysis object defined");
-  }
+
+  deprecate('This method does nothing and should not be used.');
 }
 
 =head2 validate_prot_feature
 
- Title   : validate_prot_feature
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+  Description: DEPRECATED do not use
 
 =cut
 
 sub validate_prot_feature{
-   my ($self) = @_;
+  my ($self) = @_;
 
-   $self->SUPER::validate_prot_feature(1);
-   $self->feature2->validate_prot_feature(2);
+  deprecate('This method does nothing and should not be used.');
+}
 
-   if (defined($self->analysis)) {
-     unless($self->analysis->isa("Bio::EnsEMBL::Analysis")) {
-       $self->throw("Wrong type of analysis object");
-     }
-   } else {
-     $self->throw("No analysis object defined");
-   }
- }
 
 =head2 set_featurepair_fields
 
- Title   : set_featurepair_fields
- Usage   : $fp->set_featurepair_fields($start, $end, $strand,
-           $score, $seqname, $hstart, $hend, $hstrand,
-	   $hseqname, $analysis);
- Returns : nothing
- Args    : listed above, followed by optional $e_value, $perc_id, 
-           $phase, $end_phase
+  Description: DEPRECATED do not use
 
 =cut
 
@@ -406,8 +489,11 @@ sub set_featurepair_fields {
    my ($self, $start, $end, $strand, $score, $seqname, $hstart, $hend,
         $hstrand, $hseqname, $analysis, $e_value, $perc_id, 
         $phase, $end_phase) = @_;
-   
-   $self->throw('interface fault') if (@_ < 12 or @_ > 15);
+
+   deprecate("Use individual Getter/Setters or Constructor arguments " .
+             " instead.\nThere is no advantage to using this method.");
+
+   throw('interface fault') if (@_ < 12 or @_ > 15);
 
    $self->start($start);
    $self->end($end);
@@ -426,14 +512,29 @@ sub set_featurepair_fields {
 }
 
 
+=head2 gffstring
+
+  Description: DEPRECATED do not use
+
+=cut
 
 sub gffstring {
     my ($self) = @_;
 
-    my $str = $self->SUPER::gffstring();
+    deprecate('Do not use');
+
+    my $str .= (defined $self->slice) ?  $self->slice->name()."\t":  "\t";
+    $str .=  "\t"; #source tag
+    $str .=  "\t"; #primary tag
+    $str .= (defined $self->start)    ?  $self->start."\t"        :  "\t";
+    $str .= (defined $self->end)      ?  $self->end."\t"          :  "\t";
+    $str .= (defined $self->score)    ?  $self->score."\t"        :  "\t";
+    $str .= (defined $self->strand)   ?  $self->strand."\t"       :  ".\t";
+    $str .=  ".\t"; #phase
+    $str .=  ".\t"; #end phase
 
     my $hstrand = "+";
-   
+
     if (($self->hstrand)&&($self->hstrand == -1)) {
       $hstrand = "-";
     }
@@ -444,7 +545,7 @@ sub gffstring {
     $str .= (defined $self->hend)       ?   $self->hend."\t"        :  "\t";
     $str .= (defined $self->hstrand)    ?   $hstrand."\t"           :  "\t";
     $str .= (defined $self->hphase)     ?   $self->hphase."\t"      :  ".\t";
-    
+
     return $str;
 }
 
@@ -453,89 +554,41 @@ sub gffstring {
 
 =head2 hphase
 
- Title   : hphase
- Usage   : $hphase = $fp->hphase()
-           $fp->hphase($hphase)
- Function: get/set on start hphase of predicted feature2
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
+  Description: DEPRECATED do not use
 
 =cut
 
 sub hphase {
   my ($self, $value) = @_;
-  
+
+  deprecate('This method does nothing useful.');
+
   if (defined($value)) {
     $self->{_hphase} = $value;
   }
-  
+
   return $self->{_hphase};
 }
 
 
 =head2 hend_phase
 
- Title   : hend_phase
- Usage   : $hend_phase = $feat->hend_phase()
-           $feat->hend_phase($hend_phase)
- Function: get/set on end phase of predicted feature2
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
+  Description: DEPRECATED do not use
 
 =cut
 
 sub hend_phase {
   my ($self, $value) = @_;
-    
+
+  deprecate('This method does nothing useful.');
+
   if (defined($value)) {
     $self->{_hend_phase} = $value;
   }
-  
   return $self->{_hend_phase};
 }
 
 
 
-=head2 species
-
- Arg [1]    : string $genus_species_name (optional)
-              e.g. Homo_sapiens or Mus_musculus
- Example    : 
- Description: get/set on the species of feature1
- Returntype : string
- Execeptions: none
- Caller     : general
-
-=cut
-
-sub species{
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-        return $self->{'_species'} = $arg;
-    }
-    return $self->{'_species'};
-}
-
-=head2 hspecies
-
- Arg [1]    : string $genus_species_name (optional)
-              e.g. Homo_sapiens or Mus_musculus
- Example    : 
- Description: get/set on the species of feature2
- Returntype : string
- Execeptions: none
- Caller     : general
-
-=cut
-
-sub hspecies{
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-        return $self->{'_hspecies'} = $arg;
-    } 
-    return $self->{'_hspecies'};
-}
 
 1;
