@@ -162,10 +162,8 @@ sub analysis{
    my ($self,$value) = @_;
 
    if( defined $value ) {
-       if( ! ref $value || !$value->isa('Bio::EnsEMBL::Analysis::Analysis') ) {
-	   $self->throw("Trying to add a non analysis object!");
-       }
-
+       $self->throw("Trying to add a non analysis object!") unless ref($value) eq 'Bio::EnsEMBL::Analysis::Analysis';
+       
        $self->{_analysis} = $value;
    }
 
@@ -197,7 +195,7 @@ sub validate {
 
     # Now the analysis object
     if (defined($self->analysis)) {
-	$self->throw("Wrong type of analysis object") unless $self->analysis->isa("Bio::EnsEMBL::Analysis::Analysis");
+	$self->throw("Wrong type of analysis object") unless ref($self->analysis) eq "Bio::EnsEMBL::Analysis::Analysis";
     } else {
 	$self->throw("No analysis object defined");
     }

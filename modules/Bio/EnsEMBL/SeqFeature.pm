@@ -352,7 +352,7 @@ sub analysis {
 
    if (defined($value)) {
        $self->throw("Analysis is not a Bio::EnsEMBL::Analysis::Analysis object") unless 
-	   $value->isa("Bio::EnsEMBL::Analysis::Analysis");
+	   ref($value) eq"Bio::EnsEMBL::Analysis::Analysis";
        $self->{_analysis} = $value;
    }
    return $self->{_analysis};
