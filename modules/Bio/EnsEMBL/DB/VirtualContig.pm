@@ -1356,6 +1356,23 @@ sub _convert_seqfeature_to_vc_coords {
    }
 
 
+   # might be clipped left/right
+
+   if( $self->{'leftmostcontig_id'} eq $cid ){
+       if( $self->ori_in_vc($cid) == 1) {
+	   # if end is less than startincontig - a no-go
+	   if( $sf->end < $self->{'startincontig'}->{$cid} ) {
+	       return 0;
+	   }
+       } else {
+	   # if start is > start in contig
+	   if( $sf->start > $self->{'startincontig'}->{$cid} ) {
+	       return 0;
+	   }
+       }
+   }
+
+
    my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
    
    $sf->start ($rstart);
