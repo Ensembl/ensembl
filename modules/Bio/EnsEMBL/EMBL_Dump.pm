@@ -200,7 +200,7 @@ sub id_EnsEMBL {
     my $id = $annseq->id();
 
     # yuk. Don't look
-    my @dates = $self->each_date();
+    my @dates = $annseq->each_date();
     my $date = shift @dates;
     $date =~ s/\(.*\)//g;
 
