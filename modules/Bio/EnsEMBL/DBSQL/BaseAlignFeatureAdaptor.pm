@@ -27,10 +27,7 @@ streamline by creating this superclass.
 
 Post questions/comments to the ensembl developer list: ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal 
-methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
