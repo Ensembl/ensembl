@@ -1228,6 +1228,42 @@ sub get_all_RepeatFeatures {
   return $rpfa->fetch_all_by_Slice($self, $logic_name, $repeat_type);
 }
 
+=head2 get_all_LD_values
+
+    Args        : none
+    Description : returns all LD values on this slice. This fucntion will only work correctly if the variation
+                  database has been attached to the core database
+    ReturnType  : Bio::EnsEMBL::Variation::LDFeatureContainer
+    Exceptions  : none
+    Caller      : contigview, snpview
+
+=cut
+
+sub get_all_LD_values{
+    my $self = shift;
+    
+    if(!$self->adaptor()) {
+	warning('Cannot get LDFeatureContainer without attached adaptor');
+	return [];
+    }
+
+  my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+
+  unless($variation_db) {
+    warning("Variation database must be attached to core database to " .
+		"retrieve variation information" );
+    return [];
+  }
+
+    my $ld_adaptor = $variation_db->get_LDFeatureContainerAdaptor;
+
+  if( $ld_adaptor ) {
+    return $ld_adaptor->fetch_by_Slice($self);
+} else {
+    return [];
+}
+}
+
 =head2 get_all_VariationFeatures
 
     Args       : none
