@@ -144,7 +144,7 @@ sub create_xrefs {
       my @medline = $entry =~ /\s+MEDLINE\s+(\d+)/g;
       my @pubmed = $entry =~ /\s+PUBMED\s+(\d+)/g;
       my @LocusIDline = $entry =~ /db_xref=.LocusID:(\d+)/g;
-      my @GeneIDline = $entry =~ /db_xref=.GeneID:(\d+)/g;
+      my @EntrezGeneIDline = $entry =~ /db_xref=.GeneID:(\d+)/g;
       my @mimline = $entry =~ /db_xref=.MIM:(\d+)/g;
 
       foreach my $ll (@LocusIDline) {
@@ -156,7 +156,7 @@ sub create_xrefs {
       }
       foreach my $ll (@GeneIDline) {
 	my %dep;
-	$dep{SOURCE_ID} = $dependent_sources{GeneLink};
+	$dep{SOURCE_ID} = $dependent_sources{EntrezGene};
 	$dep{LINKAGE_SOURCE_ID} = $source_id;
 	$dep{ACCESSION} = $ll;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
