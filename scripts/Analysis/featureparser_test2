@@ -1,0 +1,199 @@
+#!/usr/local/bin/perl
+
+BEGIN {
+    unshift (@INC,"/nfs/disk89/michele/pogdir/bioperl-live");
+    unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
+}
+
+# Let the code begin...
+
+
+use Bio::EnsEMBL::Analysis::GenscanMC;
+use Bio::EnsEMBL::Analysis::GenscanPeptide;
+use Bio::EnsEMBL::Analysis::MSPcrunch;
+use Bio::EnsEMBL::Analysis::MSPType;
+use Bio::EnsEMBL::Analysis::Analysis;
+
+use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBSQL::Contig;
+
+use Getopt::Long;
+use strict;
+
+my ($clone,
+    $contig,
+    $accession,
+    $write,
+);
+
+
+GetOptions("clone=s"     => \$clone,                # Clone name      e.g. dJ998N21
+	   "contig=s"    => \$contig,               # Contig number   e.g. 00577
+	   "accession=s" => \$accession,            # Accession no. of clone e.g. AL109948
+	   "write"       => \$write,                # Do we write features to the database?
+
+	   ) or usage();
+
+# This is really a test script for GenscanPeptide and its cousins although
+# there is code in here also to write features and analysis entries.
+
+# Initialize directories and clone/contig names
+
+my $root_dir  = "/nfs/disk100/humpub/th/unfinished_ana/data/$clone/";
+
+my $gsfile    = $root_dir . "/" . $clone . "." . $contig . ".gs";
+my $dnafile   = $root_dir . "/" . $clone . ".seq";
+
+
+open(POG,">$clone.$contig.gff");                # This is for gff output
+
+my $fh        = \*POG;
+my $dna       = find_seq($dnafile,$clone,$contig)      or die "Couldn't find dna for $clone.$contig";
+my $gs        = new Bio::EnsEMBL::Analysis::GenscanMC($gsfile,$dna);
+
+# Connect to the database
+
+my $db        = Bio::EnsEMBL::DBSQL::Obj->new(-dbname => 'ensdev',
+					      -host   => 'obi-wan',
+					      -user   => 'ensdev',
+					      )  or die "Can't connect to database";
+
+my $contigobj = $db->get_Contig("$accession.$contig");
+
+
+# For each gene there are a set of msptmp files containing
+# blast hits.  These have to be read and the coordinates
+# Converted into genomic coords
+
+
+my $count     = 0;
+
+TRANS: foreach my $g ($gs->each_Transcript) {
+
+    $count++;
+
+    print_gene($fh,$g);                    # Just for debugging purposes
+
+    my $mspfile    = fetch_msp_file($root_dir,$clone,$contig,$count);
+
+    my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
+    my $msp        = new Bio::EnsEMBL::Analysis::MSPcrunch     ($mspfile);
+
+
+    foreach my $homol ($msp->each_Homol) { # Adds each hit to the GenscanPeptide object
+	$genpep->add_dnaHit($homol);
+    }
+    
+    my @homols = $genpep->each_Homol;      # Converts the hits from peptide into genomic coordinates
+
+
+    homol2gff($fh,\@homols);               # Prints out gff.
+
+    next TRANS unless $write;
+
+    foreach my $h (@homols) {              # Writes the feature to the database
+	$h->primary_tag($h->homol_SeqFeature->primary_tag);
+	my $rv = $db->write_Feature($h,$contigobj);
+    }
+
+    my $analysis   = make_analysis($mspfile);
+
+    $db->write_Analysis($analysis);        # Writes the analysis object to the database
+
+
+}
+
+close($fh);
+
+
+############################################################
+#
+# Subroutines.
+# 
+# This are inserted mostly just for tidiness
+#
+############################################################
+
+sub usage {
+    print("\nUsage: featureparser_test2 <clone> <contig_number> <accession>\n");
+    exit(0);
+}
+
+# This isn't finished.  I've stolen Tim's double array from FeatureParser and hacked
+# it a little into something resembling an object.
+
+sub make_analysis {
+    my ($mspfile,$program) = @_;
+
+    (my $ext  = $mspfile) =~ s/.*(\..*.msptmp)/$1/;
+
+    my $test    = Bio::EnsEMBL::Analysis::MSPType->each_MSPType;
+    my $MSPType = Bio::EnsEMBL::Analysis::MSPType->extension2MSPType($ext);
+    
+    my $anal = new Bio::EnsEMBL::Analysis::Analysis;
+    
+    $anal->db             ($MSPType->[2]);
+    $anal->db_version     ($MSPType->[6]);
+    $anal->program        ($MSPType->[1]);
+    $anal->program_version($MSPType->[7]);
+    $anal->gff_source     ($MSPType->[1]);
+    $anal->gff_feature    ($MSPType->[8]);
+    
+    return $anal;
+		       }
+    
+sub find_seq {
+    my ($dnafile,$clone,$contig) = @_;
+
+    my $seqio     = new Bio::SeqIO(-file   => $dnafile,
+				   -format => 'Fasta');
+    
+    my $dna;
+    
+    while (my $d = $seqio->next_seq) {
+	if ($d->id eq "$clone.$contig") {
+	    $dna = $d;
+	}
+    }
+    return $dna;
+}
+
+sub homol2gff {
+    my ($fh,$homols) = @_;
+
+    my $source = "tblastn_dbest";
+
+    foreach my $h1 (@$homols) {
+	my $h2 = $h1->homol_SeqFeature;
+	my $strand = "+";
+
+	if ($h2->strand == -1) {
+	    $strand = "-";
+	}
+
+	print($fh $h1->primary_tag . "\t$source\tsimilarity\t" . $h1->start . "\t" . $h1->end . "\t" . $h1->score ."\t" . $strand . 
+	      "\t0\tSequence:" . 
+	      $h2->primary_tag . "\t" . $h2->start . "\t" . $h2->end ."\n");
+    }
+}
+
+sub fetch_msp_file {
+    my ($root_dir,$clone,$contig,$count) = @_;
+    my $ext = ".tblastn_dbest.msptmp";
+
+    return $root_dir . "/" . $clone . "." . $contig  . "." . $count . $ext;
+}
+
+sub print_gene {
+    my ($fh,$g) = @_;
+
+    foreach my $ex ($g->each_Exon) {
+	print($fh  "Gene\tGENSCAN\texon\t" . $ex->start . "\t" . $ex->end . "\t0\t" . $ex->strand . "\t0\n");
+    }
+
+    print("\nTranslation " . $g->translate()->seq . "\n");
+}
+
+
+
+
