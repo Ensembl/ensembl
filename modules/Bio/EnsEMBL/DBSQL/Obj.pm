@@ -68,7 +68,7 @@ use Bio::EnsEMBL::DBSQL::Feature_Obj;
 use Bio::EnsEMBL::DBSQL::RawContig;
 use Bio::EnsEMBL::DBSQL::GapContig;
 
-use Bio::EnsEMBL::DBSQL::Clone;
+use Bio::EnsEMBL::Clone;
 use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
 use Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor;
 use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;

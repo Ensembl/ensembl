@@ -95,9 +95,9 @@ sub fetch_by_accession {
 
 sub fetch
 {
-    my ($self)=shift;
-    $self->warn->("fetch is now deprecated, use fetch_by_accession instead");
-    $self->fetch_by_accession;
+    my ($self,$id)=@_;
+    $self->warn("fetch is now deprecated, use fetch_by_accession instead");
+    $self->fetch_by_accession($id);
 }
 
 
