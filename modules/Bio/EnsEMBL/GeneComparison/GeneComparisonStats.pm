@@ -95,29 +95,35 @@ sub new {
     ($standard) || $self->throw("GeneComparisonStats requires a standard object");
     ($predictor) || $self->throw("GeneComparisonStats requires a predictor object");
 
-    if ($standard->isa('Bio::EnsEMBL::DB::CloneI') || $standard->isa('Bio::EnsEMBL::DB::ContigI')) {
-        @{$self->{'_standardGenes'}} = $standard->get_all_Genes();
+    # Check if $standard is a reference to an object (which will contain :: in package name) 
+    if (ref($standard) =~ /::/) {
+        if ($standard->isa('Bio::EnsEMBL::DB::CloneI') || $standard->isa('Bio::EnsEMBL::DB::ContigI')) {
+            @{$self->{'_standardGenes'}} = $standard->get_all_Genes();
+        }
     }
     elsif (ref($standard) eq "ARRAY") {
         $self->{'_standardGenes'} = $standard;
     }
     else {
-        $self->throw("The standard parameter must be CloneI, ContigI or an array of genes");
+        $self->throw("The standard parameter must a reference to CloneI, ContigI or an array of genes");
     }
-    
-    if ($predictor->isa('Bio::EnsEMBL::DB::CloneI') || $predictor->isa('Bio::EnsEMBL::DB::ContigI')) {
-        @{$self->{'_predictorGenes'}} = $predictor->get_all_Genes();
+
+    # Check if $predictor is a reference to an object (which will contain :: in package name) 
+    if (ref($predictor) =~ /::/) {    
+        if ($predictor->isa('Bio::EnsEMBL::DB::CloneI') || $predictor->isa('Bio::EnsEMBL::DB::ContigI')) {
+            @{$self->{'_predictorGenes'}} = $predictor->get_all_Genes();
+        }
     }
     elsif (ref($predictor) eq "ARRAY") {
         $self->{'_predictorGenes'} = $predictor;
     }
     else {
-        $self->throw("The predictor parameter must be CloneI, ContigI or an array of genes");
+        $self->throw("The predictor parameter must be a reference to CloneI, ContigI or an array of genes");
     }
     
     # Compare the sequence if both the standard and predictor realise ContigI
     if ($standard->isa('Bio::EnsEMBL::DB::ContigI') || $predictor->isa('Bio::EnsEMBL::DB::ContigI')) {
-             $self->throw("Standard and predictor have different DNA") unless ($standard->seq() eq $predictor->seq());
+        $self->throw("Standard and predictor have different DNA") unless ($standard->seq() eq $predictor->seq());
     }
         
     return $self;
