@@ -78,9 +78,6 @@ use integer; #do proper arithmetic bitshifts
 
 
 my $CHUNKFACTOR = 20;  # 2^20 = approx. 10^6
-# if the mapper is bigger than that its flushed before registering new stuff:
-my $MAX_PAIR_COUNT = 1000; 
-
 
 =head2 new
 
@@ -109,6 +106,9 @@ sub new {
 
   return $self;
 }
+
+
+
 
 
 =head2 fetch_by_CoordSystems
@@ -300,7 +300,7 @@ sub register_assembled {
   return if(!@chunk_regions);
 
   # keep the Mapper to a reasonable size
-  if( $asm_mapper->size() > $MAX_PAIR_COUNT ) {
+  if( $asm_mapper->size() > $asm_mapper->max_pair_count() ) {
     $asm_mapper->flush();
     #we now have to go and register the entire requested region since we 
     #just flushed everything

@@ -68,6 +68,10 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 my $ASSEMBLED = 'assembled';
 my $COMPONENT = 'component';
 
+my $DEFAULT_MAX_PAIR_COUNT = 1000;
+
+
+
 =head2 new
 
   Arg [1]    : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
@@ -106,8 +110,36 @@ sub new {
                                                $coord_systems[0],
                                                $coord_systems[1]);
 
+
+  $self->{'max_pair_count'} = $DEFAULT_MAX_PAIR_COUNT;
+
   return $self;
 }
+
+
+
+
+
+=head2 max_pair_count
+
+  Arg [1]    : (optional) int $max_pair_count
+  Example    : $mapper->max_pair_count(100000)
+  Description: Getter/Setter for the number of mapping pairs allowed in the
+               internal cache. This can be used to override the default value
+               (1000) to tune the performance and memory usage for certain
+               scenarios. Higher value = bigger cache, more memory used
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub max_pair_count {
+  my $self = shift;
+  $self->{'max_pair_count'} = shift if(@_);
+  return $self->{'max_pair_count'};
+}
+
 
 
 =head2 map

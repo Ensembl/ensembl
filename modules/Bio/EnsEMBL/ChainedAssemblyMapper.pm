@@ -79,7 +79,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 my $CHUNKFACTOR = 20; 
 
 # max size of the pair cache in the mappers
-my $MAX_PAIR_COUNT = 6000; 
+my $DEFAULT_MAX_PAIR_COUNT = 6000;
 
 =head2 new
 
@@ -132,8 +132,33 @@ sub new {
   $self->{'first_registry'} = Bio::EnsEMBL::Mapper::RangeRegistry->new();
   $self->{'last_registry'} = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
+  $self->{'max_pair_count'} = $DEFAULT_MAX_PAIR_COUNT;
+
   return $self;
 }
+
+
+
+=head2 max_pair_count
+
+  Arg [1]    : (optional) int $max_pair_count
+  Example    : $mapper->max_pair_count(100000)
+  Description: Getter/Setter for the number of mapping pairs allowed in the
+               internal cache. This can be used to override the default value
+               (6000) to tune the performance and memory usage for certain
+               scenarios. Higher value = bigger cache, more memory used
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub max_pair_count {
+  my $self = shift;
+  $self->{'max_pair_count'} = shift if(@_);
+  return $self->{'max_pair_count'};
+}
+
 
 
 sub flush {
@@ -244,7 +269,7 @@ sub map {
   }
 
   if(defined($ranges)) {
-    if( $self->size() > $MAX_PAIR_COUNT ) {
+    if( $self->size() > $self->{'max_pair_count'} ) {
       $self->flush();
 
       if($is_insert) {
