@@ -51,6 +51,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 use Bio::Root::RootI;
 use Bio::PrimarySeqI;
+use Bio::PrimarySeq;
 
 @ISA = qw(Bio::Root::RootI Bio::PrimarySeqI);
 # new() is inherited from Bio::Root::Object
@@ -246,10 +247,17 @@ sub subseq{
    if( $start > $end ){
        $self->throw("in subseq, start [$start] cannot be greater than end [$end]");
    }
-   
-   if( $start <= 0 || $end > $self->length ) {
-       $self->throw("You have to have start positive and length less than the total length of sequence - calling $start:$end vs".$self->length);
+
+   my $add = 0;
+   if( $end > $self->length ) {
+       print STDERR ("TROUBLE - $end greater than length ".$self->length);
+       $add = $end-$self->length;
+       $end = $self->length;
    }
+
+   #if( $start <= 0 || $end > $self->length ) {
+   #    $self->throw("You have to have start positive and length less than the total length of sequence - calling $start:$end vs".$self->length);
+   #}
    
    my $id=$self->dna_id;
    my $length= $end-$start+1;
@@ -260,6 +268,7 @@ sub subseq{
    my($subseq) = $sth->fetchrow
        or $self->throw("Could not fetch substr of dna " .$id);
    
+   $subseq .= 'N' x $add;
    return $subseq;
 }
 

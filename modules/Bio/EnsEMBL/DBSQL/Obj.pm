@@ -83,7 +83,7 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  my ($db,$mapdbname,$host,$driver,$user,$password,$debug,$perl,$external) = 
+  my ($db,$mapdbname,$host,$driver,$user,$password,$debug,$perl,$external,$port) = 
       $self->_rearrange([qw(DBNAME
 			    MAPDBNAME
 			    HOST
@@ -93,6 +93,7 @@ sub _initialize {
 			    DEBUG
 			    PERLONLYFEATURES
 			    EXTERNAL
+			    PORT
 			    )],@args);
   $db   || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
@@ -124,7 +125,8 @@ sub _initialize {
   }
 
   my $dsn = "DBI:$driver:database=$db;host=$host";
-
+  
+  print ("$dsn\n");
   if( $debug && $debug > 10 ) {
       $self->_db_handle("dummy dbh handle in debug mode $debug");
   } else {

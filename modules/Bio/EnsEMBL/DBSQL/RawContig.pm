@@ -119,6 +119,7 @@ sub fetch {
         SELECT contig.internal_id
           , contig.dna
           , clone.embl_version
+          , contig.clone
         FROM dna
           , contig
           , clone
@@ -133,6 +134,7 @@ sub fetch {
         $self->internal_id($row->[0]);
         $self->dna_id($row->[1]);
         $self->seq_version($row->[2]);
+	$self->cloneid    ($row->[3]);
     } else {
          $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
     }
@@ -586,6 +588,7 @@ sub get_all_SimilarityFeatures{
    my ($self) = @_;
 
    my @array;
+   my @fps;
 
    my $id     = $self->internal_id();
    my $length = $self->length();
@@ -756,10 +759,16 @@ sub get_all_SimilarityFeatures{
 	   $out->attach_seq($self->primary_seq);
        }
 
-      push(@array,$out);
+      push(@fps,$out);
       
    }
    
+   my @extras = $self->get_extra_features;
+   my @newfeatures = $self->filter_features(\@fps,\@extras);
+
+#   print ("Size " . @array . " " . @newfeatures . "\n");
+   push(@array,@newfeatures);
+
    return @array;
 }
 
@@ -1057,6 +1066,16 @@ sub length{
    }
 
    return $self->{_length};
+}
+
+sub cloneid {
+    my ($self,$arg) = @_;
+    
+    if (defined($arg)) {
+	$self->{_cloneid} = $arg;
+    }
+
+    return $self->{_cloneid};
 }
 
 =head2 chromosome
@@ -1534,6 +1553,124 @@ sub _left_overlap {
     }
     return $obj->{'_left_overlap'};
 
+}
+
+
+sub feature_file {
+    my ($self) = @_;
+    
+    return;
+
+    if (!(defined($self->{_feature_file}))) {
+
+	my $cloneid = $self->cloneid;
+	
+	if (defined($cloneid)) {
+	    print STDERR "Fetching job for $cloneid\n";
+	    my @job = $self->dbobj->get_JobsByInputId($cloneid);
+	    print STDERR "Job is $job[0]\n";
+	    
+	    if (defined($job[0])) {
+		$self->{_feature_file} = $job[0]->output_file;
+	    }
+	}
+    }
+    return $self->{_feature_file};
+
+}
+
+sub get_extra_features{
+    my ($self) = @_;
+    my @out;
+
+    if (!defined($self->{_extras})) {
+	$self->{_extras} = [];
+
+#	print (STDERR "Output file " . $self->feature_file ."\n");
+	if (defined($self->feature_file) && (-e $self->feature_file)) {
+	    
+	    my $object;
+	    open (IN,"<" . $self->feature_file) || do {print STDERR ("Could not open output file\n")};
+	    
+	    while (<IN>) {
+		$_ =~ s/\[//;
+		$_ =~ s/\]//;
+		$object .= $_;
+	    }
+	    close(IN);
+	    
+	    if (defined($object)) {
+		my (@obj) = FreezeThaw::thaw($object);
+		foreach my $array (@obj) {
+#		    print STDERR "$array\n";
+		    foreach my $f (@$array) {
+			#    print STDERR "$f\n";
+			if ($f->isa("Bio::EnsEMBL::FeaturePair")) {
+			    $f->source_tag("vert_est2genome");
+			    $f->primary_tag("similarity"); 
+			    $f->analysis($self->analysis);
+			    push(@out,$f);
+#			print STDERR "Adding " . $f->hseqname . "\n";
+			}
+		    }
+		}
+	    }
+	    
+	}
+	push(@{$self->{_extras}},@out);
+    }
+    return @{$self->{_extras}};
+}
+
+sub analysis {
+    my ($self,$arg) = @_;
+
+    if (!(defined($self->{_analysis}))) {
+	my $ana = new Bio::EnsEMBL::Analysis(-db => 'vert',
+					     -dbversion => 1,
+					     -program => 'vert_est2genome',
+					     -program_version => 1,
+					     -gff_source => 'vert_est2genome',
+					     -gff_features => 'similarity',
+					     );
+	$self->{_analysis} = $ana;
+    }
+    return $self->{_analysis};
+}
+
+
+sub filter_features {
+    my ($self,$old,$new) = @_;
+
+    my %newids;
+    my %oldids;
+    my %newfeatures;
+    my %oldfeatures;
+    my @out;
+
+    foreach my $f (@$new) {
+	$newids{$f->hseqname}++;
+	push(@{$newfeatures{$f->hseqname}},$f);
+    }
+
+    foreach my $f (@$old) {
+	$oldids{$f->hseqname}++;
+	push(@{$oldfeatures{$f->hseqname}},$f);
+	if (! (exists $newfeatures{$f->hseqname})) {
+	    push(@out,$f);
+	}
+    }
+
+    foreach my $newid (keys %newids) {
+	if ($newids{$newid} > $oldids{$newid}) {
+	    print(STDERR "Using new features for $newid\n");
+	    push(@out,@{$newfeatures{$newid}});
+	} else {
+	    print(STDERR "Using old features for $newid\n");
+	    push(@out,@{$oldfeatures{$newid}});
+	}
+    }
+    return @out;
 }
 
 

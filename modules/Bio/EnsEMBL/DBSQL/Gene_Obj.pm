@@ -445,13 +445,14 @@ sub get_array_supporting {
 	if( $transcriptid ne $current_transcript_id ) {
 
 	    # put away old exons
-             if( defined $trans ) {       
+             if( defined $trans ) {
+		 print "Storing\n";
 	        $self->_store_exons_in_transcript($trans,@transcript_exons);
             }
 	    # put in new exons
-            
+	     print "sog\n";
 	    $trans = Bio::EnsEMBL::Transcript->new();
-            
+	     print "pog\n";
 	    $trans->id     ($transcriptid);
 	    $trans->version($transcriptversion);
 	    
@@ -467,12 +468,13 @@ sub get_array_supporting {
 	    $translation->version      ($translationversion);
 	    $trans->translation        ($translation);
 	    $gene ->add_Transcript     ($trans);
+	     print "wog\n";
 	}
 	
 	
 	my $exon = Bio::EnsEMBL::Exon->new();
 
-	#print(STDERR "Creating exon - contig id $contigid\n");
+	print(STDERR "Creating exon - contig id $contigid\n");
 
 	$exon->clone_id ($cloneid);
 	$exon->contig_id($contigid);
@@ -553,6 +555,7 @@ sub _store_exons_in_transcript{
    my $exon;
    while ( ($exon = shift @exons)) {
        print STDERR "Handling exon",$exon->id,":",$exon->sticky_rank,"\n";
+
        if( $#exons >= 0 && $exons[0]->id eq $exon->id ) {
         
 	   # sticky exons.
@@ -578,7 +581,7 @@ sub _store_exons_in_transcript{
 	   $trans->add_Exon($exon);
        }
    }
-
+   print "done\n";
 }
 
 =head2 _make_sticky_exon
@@ -1393,6 +1396,49 @@ sub write_Translation{
 
 
 
+
+sub get_NewId {
+    my ($self,$table,$stub) = @_;
+
+
+    my $query = "select max(id) as id from $table";
+
+    my $sth   = $self->_db_obj->prepare($query);
+    my $res   = $sth->execute;
+    my $row   = $sth->fetchrow_hashref;
+    my $id    = $row->{id};
+
+    print(STDERR "max id is $id\n");
+
+    if ($id eq "") {
+	$id = $stub . "00000000000";
+    }
+    
+    print(STDERR "max id is $id\n");
+
+    if ($id =~ /$stub(\d+)$/) {
+	my $newid  = $1;
+	$newid++;
+	
+	if (length($newid) > 11) {
+	    if ($newid =~ /^0/) {
+		$newid =~ s/^0//;
+	    } else {
+		$self->throw("Can't truncation number string to generate new id [$newid]");
+	    }
+	}
+	$newid = $stub . $newid;
+	print ("New id is $newid\n");
+	return $newid;
+    } else {
+	$self->throw("[$id] does not look like an object id (e.g. ENST00000019784)");
+    }
+    
+
+}
+
+
+
 =head2 get_new_GeneID
 
  Title   : get_new_GeneID
@@ -1406,34 +1452,11 @@ sub write_Translation{
 =cut
 
 sub get_new_GeneID {
-    my ($self) = @_;
+    my ($self,$stub) = @_;
 
-    my $query = "select max(id) as id from gene";
+    $stub = "ENSG" unless defined($stub);
 
-    my $sth   = $self->_db_obj->prepare($query);
-    my $res   = $sth->execute;
-    my $row   = $sth->fetchrow_hashref;
-    my $id    = $row->{id};
-
-    print(STDERR "max id is $id\n");
-
-    if ($id =~ /ENSG(\d+)$/) {
-	my $newid  = $1;
-	$newid++;
-
-	
-	if (length($newid) > 11) {
-	    if ($newid =~ /^0/) {
-		$newid =~ s/^0//;
-	    } else {
-		$self->throw("Can't truncation number string to generate new gene id [$newid]");
-	    }
-	}
-	$newid = "ENSG" . $newid;
-	return $newid;
-    } else {
-	$self->throw("[$id] does not look like a gene id (e.g. ENSG00000019784)");
-    }
+    return $self->get_NewId("gene",$stub);
     
 }
 
@@ -1450,36 +1473,11 @@ sub get_new_GeneID {
 =cut
 
 sub get_new_TranscriptID {
-    my ($self) = @_;
+    my ($self,$stub) = @_;
 
-    my $query = "select max(id) as id from transcript";
+    $stub = "ENST" unless defined($stub);
 
-    my $sth   = $self->_db_obj->prepare($query);
-    my $res   = $sth->execute;
-    my $row   = $sth->fetchrow_hashref;
-    my $id    = $row->{id};
-
-    print(STDERR "max id is $id\n");
-
-    if ($id =~ /ENST(\d+)$/) {
-	my $newid  = $1;
-	$newid++;
-
-	
-	if (length($newid) > 11) {
-	    if ($newid =~ /^0/) {
-		$newid =~ s/^0//;
-	    } else {
-		$self->throw("Can't truncation number string to generate new transcript id [$newid]");
-	    }
-	}
-	$newid = "ENST" . $newid;
-
-	return $newid;
-    } else {
-	$self->throw("[$id] does not look like a transcript id (e.g. ENST00000019784)");
-    }
-
+    return $self->get_NewId("transcript",$stub);
 
 }
 
@@ -1496,39 +1494,22 @@ sub get_new_TranscriptID {
 =cut
 
 sub get_new_ExonID {
-    my ($self) = @_;
+    my ($self,$stub) = @_;
 
-    my $query = "select max(id) as id from exon";
+    $stub = "ENSE" unless defined($stub);
 
-    my $sth   = $self->_db_obj->prepare($query);
-    my $res   = $sth->execute;
-    my $row   = $sth->fetchrow_hashref;
-    my $id    = $row->{id};
-
-    print(STDERR "max id is $id\n");
-
-    if ($id =~ /ENSE(\d+)$/) {
-	my $newid  = $1;
-	$newid++;
-
-	
-	if (length($newid) > 11) {
-	    if ($newid =~ /^0/) {
-		$newid =~ s/^0//;
-	    } else {
-		$self->throw("Can't truncation number string to generate new exon id [$newid]");
-	    }
-	}
-	$newid = "ENSE" . $newid;
-
-	return $newid;
-    } else {
-	$self->throw("[$id] does not look like an exon id (e.g. ENSE00000019784)");
-    }
-
-
+    return $self->get_NewId("exon",$stub);
 }
 
+
+sub get_new_TranslationID {
+    my ($self,$stub) = @_;
+
+    $stub  = "ENSP" unless defined($stub);
+
+    return $self->get_NewId("translation",$stub);
+
+}
 
 =head2 _db_obj
 
