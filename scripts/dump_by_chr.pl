@@ -423,6 +423,7 @@ SELECT trlsi.*
 ";
     dump_data($sql, $satdb, 'translation_stable_id');
 
+### bug here: joining  int(10) to varchar(40), works bht looses index : slow
     $sql="
 SELECT distinct pf.*
   FROM $litedb.gene lg,
