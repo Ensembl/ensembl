@@ -1570,7 +1570,7 @@ sub convert_Gene_to_raw_contig {
 
 =cut
 
-sub _reverse_map_Exon{
+sub _reverse_map_Exon {
    my ($self,$exon) = @_;
 
    if( !ref $exon || !$exon->isa('Bio::EnsEMBL::Exon') ) {
@@ -1604,8 +1604,11 @@ sub _reverse_map_Exon{
    my ($econtig,$end,$estrand)   = 
      $self->_vmap->raw_contig_position($exon->end  ,$exon->strand);
 
-#   print STDERR "Got $scontig ",$start," to $econtig ",$end,"\n";
+   # print STDERR "Got $scontig ",$start," to $econtig ",$end,"\n";
 
+   if ($scontig eq 'gapcontig' || $econtig eq 'gapcontig') {
+       $self->throw("gap contigs not allowed: exon " . $exon->id );
+   }
   
    if( $scontig->id eq $econtig->id ) {
        if( $sstrand != $estrand ) {
@@ -1667,27 +1670,20 @@ sub _reverse_map_Exon{
 
        my @mapcontigs = $self->_vmap->each_MapContig();
 
-       my $found;
-       # walk to find scontig. If it is a gap, simply move on
-       if( $scontig eq 'gapcontig' ) {
-	   $scontig = $self->dbobj->get_Contig('gapcontig');
-       } 
-       else {
-	   $found = 0;
-	   my $mc;
-	   while ( $mc = shift @mapcontigs ) { 
-	       if( $mc->contig->id eq $scontig->id ) {
-#		   print STDERR "Unshifting ",$mc->contig->id,"\n";
-		   unshift(@mapcontigs,$mc);
-		   $found = 1;
-		   last;
-	       }
-	   }
-       }
-       if( $found == 0 ) {
-	   $self->throw("Internal error - unable to find map contig with this id");
+       my $found=0;
+       my $mc;
+       while ( $mc = shift @mapcontigs ) { 
+           if( $mc->contig->id eq $scontig->id ) {
+# print STDERR "Unshifting ",$mc->contig->id,"\n";
+               unshift(@mapcontigs,$mc);
+               $found = 1;
+               last;
+           }
        }
 
+       if ( $found == 0 ) {
+	   $self->throw("Internal error - unable to find map contig with this id");
+       }
 
        my $vcstart = $exon->start;
        #print STDERR "Looking from exon-wise",$exon->start,":",$exon->end,"\n";
