@@ -360,21 +360,24 @@ CREATE TABLE genetype (
    PRIMARY KEY(gene_id,type)
 );
 
+# this is a denormalised golden path
 
 CREATE TABLE static_golden_path (
-    ctg_id      varchar(20) NOT NULL,
-    chr_id      varchar(5)  NOT NULL,
-    raw_id      int(10) NOT NULL,
-    global_start   int(10) NOT NULL,
-    global_end     int(10) NOT NULL,
-    raw_start   int(10) NOT NULL,
-    raw_end     int(10) NOT NULL,
-    raw_ori     int(2)  NOT NULL, 
-    type        varchar(20) NOT NULL,
+    fpcctg_name    varchar(20) NOT NULL,
+    chr_name       varchar(5)  NOT NULL,
+    raw_id         int(10) NOT NULL,
+    chr_start      int(10) NOT NULL,
+    chr_end        int(10) NOT NULL,
+    fpcctg_start   int(10) NOT NULL,
+    fpcctg_end     int(10) NOT NULL,
+    raw_start      int(10) NOT NULL,
+    raw_end        int(10) NOT NULL,
+    raw_ori        int(2)  NOT NULL, 
+    type           varchar(20) NOT NULL,
     
     PRIMARY KEY(raw_id,type),
-    KEY(ctg_id),
-    KEY(chr_id) 
+    KEY(fpcctg_name),
+    KEY(chr_name) 
 );
 
 

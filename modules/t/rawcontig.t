@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..26\n"; 
+BEGIN { $| = 1; print "1..28\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -199,46 +199,58 @@ if( $c->is_static_golden != 1 ) {
    print "ok 19\n";
 }
 
-if( $c->fpc_contig ne 'ctg123' ) {
+if( $c->fpc_contig_name ne 'ctg123' ) {
    print "not ok 20\n";
 } else {
    print "ok 20\n";
 }
 
-if( $c->global_start != 3000 ) {
+if( $c->fpc_contig_start != 3000 ) {
    print "not ok 21\n";
 } else {
    print "ok 21\n";
 }
 
-if( $c->global_end != 3040 ) {
+if( $c->fpc_contig_end != 3040 ) {
    print "not ok 22\n";
 } else {
    print "ok 22\n";
 }
 
-if( $c->static_golden_start != 2  ) {
+if( $c->chr_start != 122300 ) {
    print "not ok 23\n";
 } else {
    print "ok 23\n";
 }
 
-if( $c->static_golden_end != 40  ) {
+if( $c->chr_end != 122338 ) {
    print "not ok 24\n";
 } else {
    print "ok 24\n";
 }
 
-if( $c->static_golden_ori != 1  ) {
+if( $c->static_golden_start != 2  ) {
    print "not ok 25\n";
 } else {
    print "ok 25\n";
 }
 
-if( $c->static_golden_type ne 'UCSC'  ) {
+if( $c->static_golden_end != 40  ) {
    print "not ok 26\n";
 } else {
    print "ok 26\n";
+}
+
+if( $c->static_golden_ori != 1  ) {
+   print "not ok 27\n";
+} else {
+   print "ok 27\n";
+}
+
+if( $c->static_golden_type ne 'UCSC'  ) {
+   print "not ok 28\n";
+} else {
+   print "ok 28\n";
 }
 
   

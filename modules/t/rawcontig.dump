@@ -7,7 +7,7 @@ VALUES (1, 'contig1', 1, 40, 1, 500, 2, 'chromosome1', 'international-a');
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
 VALUES (2, 'contig2', 1, 40, 2, 0, NULL, 'chromosome1', 'international-b');
 
-INSERT INTO static_golden_path (ctg_id,chr_id,raw_id,global_start,global_end,raw_start,raw_end,raw_ori,type) VALUES ('ctg123','chr2',1,3000,3040,2,40,1,'UCSC');
+INSERT INTO static_golden_path (fpcctg_name,chr_name,raw_id,fpcctg_start,fpcctg_end,chr_start,chr_end,raw_start,raw_end,raw_ori,type) VALUES ('ctg123','chr2',1,3000,3040,122300,122338,2,40,1,'UCSC');
 
 INSERT INTO contigoverlap (dna_a_id, dna_b_id, overlap_type, contig_a_position, contig_b_position, overlap_source, overlap_size)
 VALUES (1, 2, 'right2left', 19, 1, 'TEST', 0);

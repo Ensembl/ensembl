@@ -1781,7 +1781,7 @@ sub chromosome{
 
     my $id  = $self->internal_id;
     my $type = $self->dbobj->static_golden_path_type();
-    my $sth = $self->dbobj->prepare("select chr_id from static_golden_path where raw_id = $id and type = '$type'");
+    my $sth = $self->dbobj->prepare("select chr_name from static_golden_path where raw_id = $id and type = '$type'");
     $sth->execute;
     my ($value) = $sth->fetchrow_array();
     if( !defined $value) { return undef; }
@@ -1811,10 +1811,10 @@ sub _chromosome{
 
 }
 
-=head2 fpc_contig
+=head2 fpc_contig_name
 
- Title   : fpc_contig
- Usage   : $self->fpc_contig($newval)
+ Title   : fpc_contig_name
+ Usage   : $self->fpc_contig_name()
  Function: 
  Returns : value of fpc_contig
  Args    :
@@ -1822,14 +1822,14 @@ sub _chromosome{
 
 =cut
 
-sub fpc_contig{
+sub fpc_contig_name {
     my $self = shift;
 
     if( defined $self->_fpc_contig) { return $self->_fpc_contig;}
 
     my $id  = $self->internal_id;
     my $type = $self->dbobj->static_golden_path_type();
-    my $sth = $self->dbobj->prepare("select ctg_id from static_golden_path where raw_id = $id and type = '$type'");
+    my $sth = $self->dbobj->prepare("select fpcctg_name from static_golden_path where raw_id = $id and type = '$type'");
     $sth->execute;
     my ($value) = $sth->fetchrow_array();
     if( !defined $value) { return undef; }
@@ -1860,25 +1860,25 @@ sub _fpc_contig{
 
 }
 
-=head2 global_start
+=head2 chr_start
 
- Title   : global_start
- Usage   : $self->global_start($newval)
+ Title   : chr_start
+ Usage   : $self->chr_start($newval)
  Function: 
- Returns : value of global_start
+ Returns : value of chr_start
  Args    :
 
 
 =cut
 
-sub global_start{
+sub chr_start{
     my $self = shift;
 
-    if( defined $self->_global_start) { return $self->_global_start;}
+    if( defined $self->_chr_start) { return $self->_chr_start;}
 
     my $id  = $self->internal_id;
     my $type = $self->dbobj->static_golden_path_type();
-    my $sth = $self->dbobj->prepare("select global_start from static_golden_path where raw_id = $id and type = '$type'");
+    my $sth = $self->dbobj->prepare("select chr_start from static_golden_path where raw_id = $id and type = '$type'");
     $sth->execute;
     my ($value) = $sth->fetchrow_array();
     if( !defined $value) { return undef; }
@@ -1888,74 +1888,174 @@ sub global_start{
 
 }
 
-=head2 _global_start
+=head2 _chr_start
 
- Title   : global_start
- Usage   : $self->_global_start($newval)
+ Title   : chr_start
+ Usage   : $self->_chr_start($newval)
  Function: 
- Returns : value of _global_start
+ Returns : value of _chr_start
  Args    : newvalue (optional)
 
 
 =cut
 
-sub _global_start{
+sub _chr_start{
    my $self = shift;
    if( @_ ) {
       my $value = shift;
-      $self->{'_global_start'} = $value;
+      $self->{'_chr_start'} = $value;
     }
-    return $self->{'_global_start'};
+    return $self->{'_chr_start'};
 
 }
 
-=head2 global_end
+=head2 chr_end
 
- Title   : global_end
- Usage   : $self->global_end($newval)
+ Title   : chr_end
+ Usage   : $self->chr_end($newval)
  Function: 
- Returns : value of global_end
+ Returns : value of chr_end
  Args    :
 
 
 =cut
 
-sub global_end{
+sub chr_end{
     my $self = shift;
 
-    if( defined $self->_global_end) { return $self->_global_end;}
+    if( defined $self->_chr_end) { return $self->_chr_end;}
 
     my $id  = $self->internal_id;
     my $type = $self->dbobj->static_golden_path_type();
-    my $sth = $self->dbobj->prepare("select global_end from static_golden_path where raw_id = $id and type = '$type'");
+    my $sth = $self->dbobj->prepare("select chr_end from static_golden_path where raw_id = $id and type = '$type'");
     $sth->execute;
     my ($value) = $sth->fetchrow_array();
     if( !defined $value) { return undef; }
-    $self->_global_end($value);
+    $self->_chr_end($value);
     return $value;
 
 }
 
-=head2 _global_end
+=head2 _chr_end
 
- Title   : global_end
- Usage   : $self->_global_end($newval)
+ Title   : chr_end
+ Usage   : $self->_chr_end($newval)
  Function: 
- Returns : value of _global_end
+ Returns : value of _chr_end
  Args    : newvalue (optional)
 
 
 =cut
 
-sub _global_end{
+sub _chr_end{
    my $self = shift;
    if( @_ ) {
       my $value = shift;
-      $self->{'_global_end'} = $value;
+      $self->{'_chr_end'} = $value;
     }
-    return $self->{'_global_end'};
+    return $self->{'_chr_end'};
 
 }
+
+
+=head2 fpc_contig_start
+
+ Title   : fpc_contig_start
+ Usage   : $self->fpc_contig_start($newval)
+ Function: 
+ Returns : value of fpc_contig_start
+ Args    :
+
+
+=cut
+
+sub fpc_contig_start{
+    my $self = shift;
+
+    if( defined $self->_fpc_contig_start) { return $self->_fpc_contig_start;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select fpcctg_start from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_chromosome($value);
+    return $value;
+
+
+}
+
+=head2 _fpc_contig_start
+
+ Title   : fpc_contig_start
+ Usage   : $self->_fpc_contig_start($newval)
+ Function: 
+ Returns : value of _fpc_contig_start
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _fpc_contig_start{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_fpc_contig_start'} = $value;
+    }
+    return $self->{'_fpc_contig_start'};
+
+}
+
+=head2 fpc_contig_end
+
+ Title   : fpc_contig_end
+ Usage   : $self->fpc_contig_end($newval)
+ Function: 
+ Returns : value of fpc_contig_end
+ Args    :
+
+
+=cut
+
+sub fpc_contig_end{
+    my $self = shift;
+
+    if( defined $self->_fpc_contig_end) { return $self->_fpc_contig_end;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select fpcctg_end from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_fpc_contig_end($value);
+    return $value;
+
+}
+
+=head2 _fpc_contig_end
+
+ Title   : fpc_contig_end
+ Usage   : $self->_fpc_contig_end($newval)
+ Function: 
+ Returns : value of _fpc_contig_end
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _fpc_contig_end{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_fpc_contig_end'} = $value;
+    }
+    return $self->{'_fpc_contig_end'};
+
+}
+
+
 
 =head2 static_golden_start
 
@@ -2135,7 +2235,7 @@ sub static_golden_type{
 sub is_static_golden{
    my ($self,@args) = @_;
 
-   if( defined $self->fpc_contig ) {
+   if( defined $self->fpc_contig_name ) {
        return 1;
    }
 
