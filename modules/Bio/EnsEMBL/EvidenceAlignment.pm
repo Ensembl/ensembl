@@ -314,7 +314,7 @@ sub _get_features_from_rawcontig {
 sub _get_Seqs_by_accs {
   my ($self, @acc) = @_;
 
-  if (!defined(@acc) || scalar(@acc < 1)) {
+  if (!@acc || scalar(@acc < 1)) {
     $self->throw("No accession input");
   }
 
@@ -849,22 +849,31 @@ sub _get_aligned_evidence_for_transcript {
   my $ea = $db->get_ExonAdaptor;
   my $transcript_name_to_display = $transcript_id;
 
-  # get all exons in VC coordinates
-  my $transcript_obj;
+  # get all exons off a VC
+  my $transcript_obj_nonvc;
   my $transcript_dbID;
   if ($transcript_id =~ /^ENS/i) {	# stable ID
-    $transcript_obj = $ta->fetch_by_stable_id($transcript_id);
-    $transcript_dbID = $transcript_obj->dbID;
+    $transcript_obj_nonvc = $ta->fetch_by_stable_id($transcript_id);
+    $transcript_dbID = $transcript_obj_nonvc->dbID;
   } else {	# internal (db) ID
     $transcript_dbID = $transcript_id;
-    $transcript_obj = $ta->fetch_by_dbID($transcript_dbID);
+    $transcript_obj_nonvc = $ta->fetch_by_dbID($transcript_dbID);
   }
   my $vc = $sgp->fetch_VirtualContig_of_transcript_by_dbID($transcript_dbID,
                                                           1000);
-  my @all_exons = $transcript_obj->get_all_Exons;
-  foreach my $exon (@all_exons) {
-    $vc->_convert_seqfeature_to_vc_coords($exon);
+  my $transcript_obj;	# VC version
+  my @genes = $vc->get_all_Genes;
+  GENE_LOOP:
+  foreach my $gene (@genes) {
+    my @transcripts = $gene->each_Transcript;
+    foreach my $transcript (@transcripts) {
+      if ($transcript->dbID eq $transcript_dbID) {
+        $transcript_obj = $transcript;
+	last GENE_LOOP;
+      }
+    }
   }
+  my @all_exons = $transcript_obj->get_all_Exons;
 
   my @features = $self->_get_features_from_transcript($transcript_obj, $vc, @_);
   my $per_hid_effective_scores_hash_ref =
