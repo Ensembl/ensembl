@@ -62,10 +62,10 @@ use Bio::EnsEMBL::RawContig;
 # Global variables:
 
 my $DBNAME = 'dan_human_apr04_ref';
-my $HOST   = 'ecs4';
-my $USER   = 'ensadmin';
-my $PORT   = '3352';
-my $PASS   = 'ensembl';
+my $HOST   = 'xxxxx';
+my $USER   = 'xxxxxx';
+my $PORT   = 'xxxx';
+my $PASS   = 'xxxxxxx';
 
 my $INFILE = 'allcontig.agp.hs.build34.altered290104';
 
