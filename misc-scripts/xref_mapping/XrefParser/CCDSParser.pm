@@ -2,6 +2,8 @@ package XrefParser::CCDSParser;
 
 use strict;
 
+use DBI;
+
 use XrefParser::BaseParser;
 
 use vars qw(@ISA);
@@ -9,6 +11,8 @@ use vars qw(@ISA);
 
 # Parse file of CCDS records and assign direct xrefs
 # All assumed to be linked to transcripts
+# The same CCDS may be linked to more than one transcript, but need to only
+# add the xref once, so check if it already exists before adding it.
 
 sub run {
 
@@ -16,19 +20,31 @@ sub run {
 
   open(CCDS,"<".$file) || die "Could not open $file\n";
 
-  my $count = 0;
+  my $line_count = 0;
+  my $xref_count = 0;
+
+  my $xref_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND version=? AND source_id=$source_id AND species_id=$species_id");
 
   while (<CCDS>) {
 
     my ($stable_id, $ccds) = split;
 
-    my $xref_id = $self->add_xref($ccds, 1, $ccds, "", $source_id, $species_id);
+    my ($acc, $version) = split (/\./, $ccds);
+    $line_count++;
+
+    # check if an xref already exists
+    $xref_sth->execute($acc, $version);
+    my $xref_id = ($xref_sth->fetchrow_array())[0];
+    if (!$xref_id) {
+      $xref_id = $self->add_xref($acc, $version, $ccds, "", $source_id, $species_id);
+      $xref_count++;
+    }
+
     $self->add_direct_xref($xref_id, $stable_id, "transcript", "");
-    $count++;
 
   }
 
-  print "Parsed $count CCDS identifiers from $file\n";
+  print "Parsed $line_count CCDS identifiers from $file, added $xref_count xrefs and $line_count direct_xrefs\n";
 
   close(CCDS);
 
