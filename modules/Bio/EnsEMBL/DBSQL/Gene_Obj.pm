@@ -245,7 +245,7 @@ sub get_all_Transcript_id{
    my ($self) = @_;
 
    my @out;
-   my $sth = $self->_db_obj->prepare("select id from transcript");
+   my $sth = $self->_db_obj->prepare("select transcript_id from transcript");
    my $res = $sth->execute || $self->throw("Could not get any transcript ids!");
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@out,$rowhash->{'id'});
@@ -273,7 +273,7 @@ sub get_Gene_by_Transcript_id {
     my $supporting = shift;
 
     # this is a cheap SQL call
-    my $sth = $self->_db_obj->prepare("select gene from transcript where id = '$transid'");
+    my $sth = $self->_db_obj->prepare("select gene from transcript where transcript_id = '$transid'");
     $sth->execute;
 
     my ($geneid) = $sth->fetchrow_array();
