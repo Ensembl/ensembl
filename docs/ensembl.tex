@@ -1,0 +1,141 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{
+  fancyheadings,lscape,
+  rotating,float,longtable,epsfig
+}
+
+\newcommand{\sdp}{\setlength{\baselineskip}{16truept}} %double spacing
+
+\begin{document}
+
+\title{Ensembl. Open Genome Annotation}
+\author{Ewan Birney, Michele Clamp, Tim Hubbard and others\\www.ensembl.org}
+
+
+\maketitle
+ 
+\newpage
+
+\section{In 10 lines or less...}
+
+Ensembl is a software system which supports automatic annotation of
+genome projects, optimised for large, eukaryotic genomes. The best
+example of this is the annotation of the human genome, which Ensembl
+is one the leading groups. In particular Ensembl can annotate rapidly
+updating fragmentary genomes with large introns. For most other systems
+this is a challenge.
+
+Ensembl is an entirely open software project: you can use its data
+without restriction and the code with very few restrictions. This
+document is aimed at getting bioinformatics developers over the
+learning curve in understanding Ensembl.
+
+\section{Before you start}
+
+This document is going to assumme you understand the basics of
+bioinformatics; if the words ``BLAST'', ``STS Marker'' or ``reverse
+strand'' confuse you then the rest of this document probably will be
+indecipherable. As well as being a reasonably complex (but only where
+it has to be), Ensembl is a large software project. The code for
+example is split up across 9 and counting cvs modules and has been
+developed over 2 years (in the case of bioperl, more like 6 years)
+with currently 18 active developers on the project. There are more
+than 100 different objects in Ensembl that get combined in different
+ways.  This is not a project you will get to know within one or two
+days of playing around. That said, the next section - first steps with
+Ensembl - will get you over the first speed bump. However before we
+jump into the first steps, a quick answer of some often asked
+questions:
+
+\begin{description}
+\item[Why Perl? Why not Python or Java?] We have a love-hate relationship
+with Perl, but the basic answer is threefold: (a) we knew it would work
+as we had experience in writing systems that scaled to this level in Perl
+(b) We had Bioperl as a basic starting point (Biojava was not mature when we
+started and is still someway from what we need) (c) we knew we could hire people
+with Perl and molecular biology knowledge. More about this later (section \ref{future})
+\item[Why MySQL? Why not Oracle? or AceDB?] We have been very happy with MySQL.
+For us it was an easy RDB to learn (light on the DBA aspects) and has scaled well
+to very large loads and tables. We have not found the lack of transactions or views
+showstoppers for our work. With AceDB we did not have confidence in to scale to the
+sort of problems we expected to have.
+\item[Does it really have to be this complex?] Mainly yes. There are a number of places
+where we don't help ourselves because the code is old and in light of a better
+understanding, sometimes somewhat off the mark. This is what you expect in large
+projects
+\item[Are you sure? I have run BLAST and Genscan myself...] Honestly, if we can make it
+simpler, we will! Running BLAST and Genscan yourself and doing small
+stuff is pretty easy. Alot of what Ensembl does at the basic end is
+this easy, but there are one or two areas where things get much more complex and
+the scale of the problem makes even doing simple things hard.
+\end{description}
+
+Enough waffle! Let's get to the code
+
+\section{First steps with Ensembl}
+
+Before you can code with Ensembl you need to download and install the
+following packages (the order listed is the best order to download them in).
+
+\begin{description}
+\item[MySQL] Fetch from www.mysql.com. Unpack and do the standard ``./configure'',
+``make'' (become root) ``make install''. Use --prefix on the configure script
+to install somewhere other than the ``standard'' places. Start the mysql daemon by
+going ``mysql\_install\_db'' (you only do this once to initalise the mysql installation) followed
+by ``safe\_mysqld'' to start the mysql daemon. Read more in the Mysql docs to get an
+understand of what this means.
+\item[DBI] DBI is the perl bindings to relational databases. The easiest way to install
+this is using the in-build installation system in Perl, called
+CPAN. Become root, go ``perl -MCPAN -e shell'', at the cpan prompt go ``install DBI''.
+Alternative download the DBI package from CPAN and install by going ``perl Makefile.PL'',
+``make'', (become root), ``make install''.
+\item[MySQL DBI drivers] DBI only provides the framework to use a relational database:
+you need the MySQL drivers. Again, using CPAN (``perl -MCPAN -e shell'') go ``install DBD::Mysql''.
+\item[Bioperl] Ensembl sits ontop of Bioperl as a basic bioinformatics library (many of the
+Ensembl developers also contribute to Bioperl). Unlike the previous
+packages in which ``the latest version'' is likely to work, there is
+more of a coupling between Ensembl and bioperl. Currently Ensembl
+0.8.0 has a dependency on Bioperl 0.6.2 (in fact the head of the 0.6
+stable branch for bioperl - but you would have to be using Ensembl in
+mind numbing detail to notice the difference).  At the moment, most
+but certainly not all, of Ensembl will work with the forthcoming 0.7
+series of bioperl, and it will throw alot of warnings. To download, again you can
+use cpan with ``install bioperl-0.6.2.tar.gz''. If you are reading this document past Ensembl0.8
+you'll have to root around on our web pages to see which bioperl to use with the Ensembl you aim
+to download.
+\end{description}
+
+Apologies for the number of external packages to install. This is I'm afraid to say 
+par for the course for this sort of project.
+
+You are now ready to download Ensembl. You have two basic options of what to download.
+(a) Download a tar file of the code which is synchronised with an Ensembl data release.
+You will find this in ftp://ftp.ensembl.org/pub/current/software/ (b) Download the leading edge
+version using anonymous cvs. The cvs repository is cvs.sanger.ac.uk, username cvs, password
+CVSUSER (case important). You want to check out the ensembl module 
+
+If anonymous cvs makes no sense to you, go for the tar ball.
+
+Poke your nose into the ensembl directory. You should have a number of directories there, being
+modules, scripts, docs and other stuff. You want to cd into modules. This is a top level 
+perl modules directory. Go ``perl Makefile.PL'' followed by ``make test''. This will run the
+Ensembl test system.
+
+The Ensembl test systems fails for 3 main reasons.
+
+\begin{description}
+\item[No Bioperl] Phenotype: Could not find Bio::Root::RootI in @ISA. You have not installed Bioperl
+(see above!). Alternatively make sure Bioperl is in your PERL5LIB.
+\item[No DBI/MySQL DBD] Phenotype: Could not find DBI in @ISA. You have not installed DBI or the
+MySQL DBD drivers. See above 
+
+\item[No permissions on local MySQL]
+Phenotype DBI connect failed: Unknown MySQL Server Host localhost not
+found.  
+
+\end{description} 
+
+The first two is just your error. The third is more understandable. Ensembl needs to 
+
+\end{document}
