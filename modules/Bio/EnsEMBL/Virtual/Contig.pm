@@ -589,7 +589,7 @@ sub get_all_SimilarityFeatures_above_score{
     my  $sth = $self->dbobj->prepare($statement);    
     $sth->execute(); 
 
-$sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$chr_start,\$chr_end,\$raw_ori);
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$chr_start,\$chr_end,\$raw_ori);
 
 
     my @array;
@@ -600,43 +600,28 @@ $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$n
   FEATURE: while($sth->fetch) {
       my $out;
       my $analysis;
-
-    
+   
       foreach my $arrayref(@distinct_features){
-	  if ($start>=$arrayref->[0] && $end<=$arrayref->[1]){ next FEATURE;}
+	  if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
       }
-      my @list=($start,$end);
+      my @list=($start,$end,$analysisid);
       push @distinct_features,\@list;
-      
-      
+
+	if ($raw_ori == -1){    
+		my $length=$end-$start;
+        	my $medium=$chr_end+$chr_start-$start-0.5*$length;
+ 		$start=$medium-0.5*$length;
+        	$end=$medium+0.5*$length;
+        	$strand=-1*$strand;
+	}
+
+     
       if ($start>=$glob_start && $end<=$glob_end){
 
+    	$start=$start-$glob_start;
+    	$end=$end-$glob_start;
 
-
-#print STDERR "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  $start  $end before\n";
-
-print STDERR "raw ori = ",$raw_ori," LATEST ",$chr_end, " chr start ",$chr_start," start ",$start,"\n"; 
-
-if ($raw_ori == -1){
-	$start=$chr_end+$chr_start-$start;
-	$end=$chr_end+$chr_start-$end; 
-	$strand=-1*$strand;
-}
-
-   
-#print STDERR "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  $start  $end before\n";
-      
-    $start=$start-$chr_start;
-    $end=$end-$chr_start;
-      
-#print STDERR "???????????????????????????????????????/  $start  $end done\n";
-          
- 
-
-
-
-
-
+#	print STDERR "feature ",$start," end ",$end," analysis id ",$analysisid," raw ori ",$raw_ori,"\n";
 
 	  if (!$analhash{$analysisid}) 
 	  {
@@ -674,8 +659,6 @@ if ($raw_ori == -1){
 	  push(@array,$out);       
       }
   }
-
-print STDERR "size ",$#array,"\n";
 
     return @array;
 }
