@@ -619,23 +619,46 @@ sub _dump_feature_table {
   foreach my $gene_slice (@gene_slices) {
     foreach my $gene (@{$gene_slice->get_all_Genes}) {
       foreach my $transcript (@{$gene->get_all_Transcripts}) {
-	my $translation = $transcript->translation;
-	$value = $self->features2location($transcript->get_all_Exons);
-	$self->write(@ff,'CDS', $value);
-	$self->write(@ff,''   , '/gene="'.$gene->stable_id().'"');
-	$translation && 
-	  $self->write(@ff,'', '/protein_id="'.$translation->stable_id().'"');
-	$self->write(@ff,''
-		     ,'/note="transcript_id='.$transcript->stable_id().'"');
+        my $translation = $transcript->translation;
+        
+        # normal transcripts get dumped differently than pseudogenes
+        if($translation) {
+          #normal transcript
+          $value = $self->features2location($transcript->get_all_Exons);
+          $self->write(@ff, 'mRNA', $value);
+          $self->write(@ff,''   , '/gene="'.$gene->stable_id().'"');
+          $self->write(@ff,''
+                       ,'/note="transcript_id='.$transcript->stable_id().'"');
 
-	foreach my $dbl (@{$transcript->get_all_DBLinks}) {
-	  $value = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
-	  $self->write(@ff, '', $value);
-	}
-	if($translation) { 
-	  $value = '/translation="'.$transcript->translate()->seq().'"';
-	  $self->write(@ff, '', $value);
-	}
+          # ...and a CDS section
+          $value = 
+            $self->features2location($transcript->get_all_translateable_Exons);
+          $self->write(@ff,'CDS', $value);
+          $self->write(@ff,''   , '/gene="'.$gene->stable_id().'"'); 
+          $self->write(@ff,'', '/protein_id="'.$translation->stable_id().'"');
+          $self->write(@ff,''
+                       ,'/note="transcript_id='.$transcript->stable_id().'"');
+          
+          foreach my $dbl (@{$transcript->get_all_DBLinks}) {
+            $value = '/db_xref="'.$dbl->dbname().':'.$dbl->display_id().'"';
+            $self->write(@ff, '', $value);
+          }
+
+          $value = '/translation="'.$transcript->translate()->seq().'"';
+          $self->write(@ff, '', $value);
+        } else {
+          #pseudogene
+          $value = $self->features2location($transcript->get_all_Exons);
+          $self->write(@ff, 'misc_RNA', $value);
+          $self->write(@ff,''   , '/gene="'.$gene->stable_id().'"');
+          foreach my $dbl (@{$transcript->get_all_DBLinks}) {
+            $value = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
+            $self->write(@ff, '', $value);
+          }
+          $self->write(@ff,''   , '/note="pseudogene"');
+          $self->write(@ff,''
+                       ,'/note="transcript_id='.$transcript->stable_id().'"');
+        }
       }
     }
       
@@ -660,7 +683,7 @@ sub _dump_feature_table {
       $self->write(@ff, 'mRNA', $self->features2location($exons));
       $self->write(@ff, '', '/product="'.$transcript->translate()->seq().'"');
       $self->write(@ff, '', '/note="Derived by automated computational' .
-		   'analysis using gene prediction method:' . 
+		   ' analysis using gene prediction method:' . 
 		   $transcript->analysis->logic_name . '"');
     }
   }
