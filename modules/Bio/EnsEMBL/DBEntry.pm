@@ -74,6 +74,19 @@ sub new {
 }
 
 
+=head2 primary_id
+
+  Arg [1]    : string $primary_id
+  Example    : none
+  Description: get/set for attribute primary_id
+               its this objects primary id in the external database
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
 sub primary_id {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
@@ -82,16 +95,21 @@ sub primary_id {
   return $self->{_primary_id};
 }
 
+
 =head2 display_id
 
- Title   : display_id
- Usage   : $obj->display_id($newval)
- Function: 
- Returns : value of display_id
- Args    : newvalue (optional)
-
+  Arg [1]    : string $display_id
+  Example    : none
+  Description: get/set for attribute display_id
+               This objects preferred display string. That can be the same
+               as primary id or ensembl specific.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
+
 
 sub display_id{
    my ( $self, $arg ) = @_;
@@ -103,6 +121,18 @@ sub display_id{
 }
 
 
+=head2 dbname
+
+  Arg [1]    : string $dbname
+  Example    : none
+  Description: get/set for attribute dbname
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
 sub dbname {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
@@ -112,15 +142,56 @@ sub dbname {
 }
 
 
+=head2 database
+
+  Args       : none
+  Example    : none
+  Description: additional get for the dbname to make it compliant to
+               some interface
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
 sub database {
   my $self = shift;
   return $self->dbname();
 }
 
+
+=head2 optional_id
+
+  Args       : none
+  Example    : none
+  Description: additional get for the display_id to make it compliant to
+               some interface
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+
 sub optional_id {
   my $self = shift;
   return $self->display_id;
 }
+
+
+=head2 release
+
+  Arg [1]    : string $release
+  Example    : none
+  Description: get/set for attribute release
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 
 
 sub release {
@@ -150,6 +221,18 @@ sub dbID {
 }
 
 
+
+=head2 version
+
+  Arg [1]    : string $version
+  Example    : none
+  Description: get/set for attribute version
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub version {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
@@ -160,6 +243,18 @@ sub version {
 
 
 
+
+=head2 description
+
+  Arg [1]    : string $description
+  Example    : none
+  Description: get/set for attribute description
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub description {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
@@ -169,6 +264,19 @@ sub description {
 }
 
 
+=head2 add_synonym
+
+  Arg  1     : string $synonym
+  Example    : none
+  Description: adding a synonynm for the external object under which it is 
+               also known
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
 sub add_synonym {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
@@ -176,36 +284,52 @@ sub add_synonym {
   }
 }
 
-# get a list of synonym for this db reference
+
+=head2 get_synonyms
+
+  Args       : none
+  Example    : none
+  Description: get a list of synonym added to this object
+  Returntype : list of string 
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub get_synonyms {
   my $self = shift;
   return @{$self->{_synonyms}};
 }
+
+
+=head2 flush_synonyms
+
+  Args       : none
+  Example    : none
+  Description: remove all synonyms from this object
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub flush_synonyms {
   my $self = shift;
   $self->{_synonyms} = [];
 }
 
-sub dump {
-  my $self = shift;
-  my ($k,$v);
-
-  while( ($k,$v) = each %$self ) {
-    print $k," ",$v,"\n";
-  }
-}
 
 =head2 status
 
- Title   : status
- Usage   : $obj->status($newval)
- Function: 
- Returns : value of status
- Args    : newvalue (optional)
-
+  Arg [1]    : string $status
+  Example    : none
+  Description: get/set for attribute status
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub status{
  my ( $self, $arg ) = @_;
@@ -215,6 +339,18 @@ sub status{
    return $self->{_status};
 }
 
+
+
+=head2 comment
+
+  Args       : none
+  Example    : none
+  Description: additional get for description to comply with bioperl
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 #Cheat to comply with bioperl
 sub comment {
