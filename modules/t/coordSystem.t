@@ -10,7 +10,7 @@ our $verbose = 0;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 7;
+	plan tests => 8;
 }
 
 

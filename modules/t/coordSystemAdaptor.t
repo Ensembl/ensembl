@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 16;
+	plan tests => 25;
 }
 
 use MultiTestDB;
