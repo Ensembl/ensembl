@@ -182,7 +182,86 @@ sub cDNA2genomic {
 	  $self->throw("ERROR: Wrong strand value in homol (" . $sf1->strand . "/" . $sf1->hstrand . "\n");
       }
   }
-    
+}
+
+sub find_Pair {
+    my ($self,$coord) = @_;
+
+    foreach my $p ($self->eachFeaturePair) {
+	if ($coord >= $p->hstart && $coord <= $p->hend) {
+	    return $p;
+	}
+    }
+}
+
+=head2 convert_cDNA_feature
+
+ Title   : convert_cDNA_feature
+ Usage   : my @newfeatures = $self->convert_cDNA_feature($f);
+ Function: Converts a feature on the cDNA into an array of 
+           features on the genomic (for features that span across introns);
+ Example : 
+ Returns : @Bio::EnsEMBL::FeaturePair
+ Args    : Bio::EnsEMBL::FeaturePair
+
+=cut
+
+sub convert_cDNA_feature {
+    ############### This hasn't been tested AT ALL ##################
+    my ($self,$feature) = @_;
+
+    $self->throw("Feature is not a Bio::EnsEMBL::FeaturePair") unless
+	$feature->isa("Bio::EnsEMBL::FeaturePair");
+
+    my $foundstart = 0;
+    my $foundend   = 0;
+
+    my @pairs = $self->eachFeaturePair;
+    my @newfeatures;
+
+    # First of all do the start exon
+  HOMOL: while (my $sf1 = shift(@pairs)) {
+
+      next HOMOL unless ($feature->start >= $sf1->hstart && $feature->start <= $sf1->hend);
+
+      if ($feature->end >= $sf1->hstart && $feature->end <= $sf1->hend) {
+	  $foundend = 1;
+      }
+
+      my $startcoord = $self->cDNA2genomic($feature->start);
+      my $endcoord   = $sf1->end;
+
+      if ($foundend) {
+	  $endcoord = $self->cDNA2genomic($feature->end);
+      }
+      my $tmpf = new Bio::EnsEMBL::SeqFeature(-seqname => $feature->seqname,
+					      -start   => $startcoord,
+					      -end     => $endcoord,
+					      -strand  => $feature->strand);
+      push(@newfeatures,$tmpf);
+  }
+
+    # Now the rest of the pairs until we find the endcoord
+
+    while (my $sf1 = shift(@pairs) && $foundend == 0) {
+      
+	if ($feature->end >= $sf1->hstart && $feature->end <= $sf1->hend) {
+	    $foundend = 1;
+	}
+
+	my $startcoord = $self->cDNA2genomic($sf1->start);
+	my $endcoord   = $sf1->end;
+
+	if ($foundend) {
+	    $endcoord = $self->cDNA2genomic($feature->end);
+	}
+	my $tmpf = new Bio::EnsEMBL::SeqFeature(-seqname => $feature->seqname,
+						-start   => $startcoord,
+						-end     => $endcoord,
+						-strand  => $feature->strand);
+	push(@newfeatures,$tmpf);
+    }
+    return @newfeatures;
 }
 
 1;
