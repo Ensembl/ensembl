@@ -138,9 +138,6 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
            sequence. This is an attribute such that you can store 
            the seqname.
 
-           This attribute should *not* be used in GFF dumping, as
-           that should come from the collection in which the seq
-           feature was found.
  Returns : value of seqname
  Args    : newvalue (optional)
 
@@ -471,6 +468,7 @@ sub vthrow {
 
 =cut
 
+# Shouldn't this go as "validate" into Pro_SeqFeature?
 sub validate_prot_feature{
     my ($self,$num) = @_;
     $self->throw("Seqname not defined in feature")     unless defined($self->seqname);
