@@ -247,6 +247,9 @@ sub _new_Exon_from_hashRef {
    $exon->attach_seq($self->{rchash}{$hashRef->{'contig_id'}}->primary_seq);
    $exon->contig( $self->{rchash}{$hashRef->{'contig_id'}} );
    $exon->seqname($hashRef->{'cid'});
+   $exon->ori_start( $exon->start );
+   $exon->ori_end( $exon->end );
+   $exon->ori_strand( $exon->strand );
 
    # maybe we should cache this.
    

@@ -197,13 +197,13 @@ sub get_Ensembl_Genes_contig_list{
        }
 
        foreach my $gene (@genes) {
-	 if (my $contig = $gc{$gene->id}) {
+	 if (my $contig = $gc{$gene->dbID}) {
 	   push(@{$cg{$contig}},$gene);
 	 }
        }
        $self->cg(\%cg);
        
-       print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
+       # print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
        return @genes;
    }
 }
