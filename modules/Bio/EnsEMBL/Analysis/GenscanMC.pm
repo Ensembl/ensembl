@@ -312,7 +312,7 @@ sub _set_exon_phases {
 	    $seq =~ tr/ATCGatcg/TAGCtagc/;
 	    $seq = reverse($seq);
 	}
-	my $exseq = new Bio::Seq::(-seq => $seq);
+	my $exseq = new Bio::Seq(-seq => $seq);
 	my @trans;
 
 	$trans[0] = $exseq->translate();

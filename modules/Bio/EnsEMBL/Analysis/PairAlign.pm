@@ -168,6 +168,7 @@ sub cDNA2genomic {
     my @homols = $self->eachHomol;
 
   HOMOL: while (my $sf1 = shift(@homols)) {
+
       my $sf2 = $sf1->homol_SeqFeature();
       next HOMOL unless ($coord >= $sf2->start && $coord <= $sf2->end);
 

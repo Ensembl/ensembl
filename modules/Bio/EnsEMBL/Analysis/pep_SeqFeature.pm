@@ -18,7 +18,7 @@ Bio::EnsEMBL::Analysis::pep_SeqFeature
 
 =head1 DESCRIPTION
 
-Extends the bioperl Bio::SeqFeature::Generic to cope with 
+Extends the bioperl Bio::SeqFeature::Homol to cope with 
 fractional start/end points in peptides.
 
 Creation:
@@ -51,12 +51,12 @@ package Bio::EnsEMBL::Analysis::pep_SeqFeature;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 
-# Object preamble - inherits from Bio::SeqFeature::Generic
+# Object preamble - inherits from Bio::SeqFeature::Homol
 
-use Bio::SeqFeature::Generic;
+use Bio::SeqFeature::Homol;
 
 
-@ISA = qw(Bio::SeqFeature::Generic);
+@ISA = qw(Bio::SeqFeature::Homol);
 
 # new() is inherited from Bio::SeqFeature::Generic
 

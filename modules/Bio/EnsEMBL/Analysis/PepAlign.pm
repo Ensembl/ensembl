@@ -110,7 +110,7 @@ sub _initialize {
 sub addHomol {
     my ($self,$homol) = @_;
 
-    $self->throw("Not a Bio::SeqFeature::Homol object") unless (ref($homol) eq "Bio::SeqFeature::Homol");
+    $self->throw("Not a Bio::SeqFeature::Homol object") unless ($homol->isa( "Bio::SeqFeature::Homol"));
 
     push(@{$self->{'_homol'}},$homol);
     
@@ -160,7 +160,7 @@ sub cDNA2pep {
     # is contained therein
 
   HOMOL: while (my $sf1 = shift(@homols)) {
-#      print("Homol is " . $sf1->start . " " . $sf1->end . "\n");
+
       next HOMOL unless ($coord >= $sf1->start && $coord <= $sf1->end);
       
 
@@ -170,10 +170,6 @@ sub cDNA2pep {
       # This is the peptide homol
       my $sf2 = $sf1->homol_SeqFeature();
 
-#      print("sf2 "  . $sf2->start_frac . "\n");
-
-#      print("Exon start/end " . $sf1->start . " " . $sf1->end . "\n");
-#      print("pep  start/end " . $sf2->start . " " . $sf2->end . "\n");
 
       # We now have four different combinations of strands
       # to cope with
@@ -204,8 +200,6 @@ sub cDNA2pep {
 	      $pep_end--;
 	  }
 
-#	  print("Codon start/end $codon_start $codon_end\n");
-#	  print("Pep   start/end $pep_start $pep_end\n");
 
 	  # We have to deal with cDNA coordinates that lie
 	  # outside codon_start/codon_end differently
@@ -216,7 +210,6 @@ sub cDNA2pep {
 	      return ($sf2->end, $coord-$codon_end);
 	  }
 
-#	  print("$coord " . $sf2->start_frac . " " . $sf1->start . "\n");
 
 	  my $chop = (4 - $sf2->start_frac)%3;
 
@@ -226,8 +219,6 @@ sub cDNA2pep {
 
 	  $ncodons++ if ($sf2->start_frac != 1);
 	  $frac++;
-
-#	  print("ncodons = $ncodons  : frac $frac\n");
 
 	  my $pep = $sf2->start + $ncodons;
 
@@ -258,9 +249,6 @@ sub cDNA2pep {
 	      $pep_end--;
 	  }
 
-#	  print("Codon start/end $codon_start $codon_end\n");
-#	  print("Pep   start/end $pep_start $pep_end\n");
-
 	  # We have to deal with cDNA coordinates that lie
 	  # outside codon_start/codon_end differently
 	  
@@ -278,7 +266,6 @@ sub cDNA2pep {
 	  $ncodons++ if ($sf2->start_frac != 1);
 	  $frac++;
 
-#	  print("ncodons = $ncodons  : frac $frac\n");
 
 	  my $pep = $sf2->start  + $ncodons;
 	  
@@ -317,19 +304,18 @@ sub pep2cDNA {
 
     $frac = 1 unless $frac;
 
+
   HOMOL: while (my $sf1 = shift(@homols)) {
       # This is the peptide homol
       my $sf2 = $sf1->homol_SeqFeature();
+      
       next HOMOL unless ($coord >= $sf2->start && $coord <= $sf2->end);
-
+      next HOMOL if     ($coord == $sf2->start && $frac  < $sf2->start_frac);
+      next HOMOL if     ($coord == $sf2->end   && $frac  > $sf2->end_frac);
 
       # We have found the homol our coordinate is in - we need
       # to now find the cDNA coord corresponding to our peptide coord
 
-      print("sf2 "  . $sf2->start_frac . "\n");
-
-      print("Exon start/end " . $sf1->start . " " . $sf1->end . "\n");
-      print("pep  start/end " . $sf2->start . " " . $sf2->end . "\n");
 
       # We now have four different combinations of strands
       # to cope with
@@ -360,8 +346,6 @@ sub pep2cDNA {
 	      $pep_end--;
 	  }
 
-	  print("Codon start/end $codon_start $codon_end\n");
-	  print("Pep   start/end $pep_start $pep_end\n");
 
 	  # We have to deal with cDNA coordinates that lie
 	  # outside codon_start/codon_end differently
@@ -377,13 +361,13 @@ sub pep2cDNA {
 
 	  my $nbases = ($coord - $pep_start)* 3 + $chop;
 
-	  print("nbases = $nbases \n");
 
 	  my $cdna = $sf1->start + $nbases;
 
 	  if ($frac == 2) { $cdna += 1;}
 	  if ($frac == 3) { $cdna += 2;}
 
+#	  print("Found cdna $cdna\n");
 	  return ($cdna);
 
 
@@ -413,8 +397,6 @@ sub pep2cDNA {
 	      $pep_end--;
 	  }
 
-	  print("Codon start/end $codon_start $codon_end\n");
-	  print("Pep   start/end $pep_start $pep_end\n");
 
 	  # We have to deal with cDNA coordinates that lie
 	  # outside codon_start/codon_end differently
@@ -431,13 +413,13 @@ sub pep2cDNA {
 
 	  my $nbases = ($coord - $pep_start)* 3 + $chop;
 
-	  print("nbases = $nbases \n");
 
 	  my $cdna = $sf1->end - $nbases;
 
 	  if ($frac == 2) { $cdna -= 1;}
 	  if ($frac == 3) { $cdna -= 2;}
 
+#	  print("Found cdna $cdna\n");
 	  return ($cdna);
 
 
