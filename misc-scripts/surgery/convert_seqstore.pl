@@ -333,7 +333,7 @@ execute($dbi, "INSERT INTO $target.dna SELECT dna_id, sequence FROM $source.dna"
 
 # simple_feature
 debug("Translating simple_feature");
-execute($dbi, "INSERT INTO $target.simple_feature (simple_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, display_label, analysis_id, score) SELECT simple_feature_id, contig_id, contig_start, contig_end, contig_strand, 'display_label', analysis_id, score FROM $source.simple_feature");
+execute($dbi, "INSERT INTO $target.simple_feature (simple_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, display_label, analysis_id, score) SELECT simple_feature_id, contig_id, contig_start, contig_end, contig_strand, display_label, analysis_id, score FROM $source.simple_feature");
 
 # repeat_feature
 debug("Translating repeat_feature");
