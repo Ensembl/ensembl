@@ -79,6 +79,9 @@ sub new {
                as they are retrieved from the database
   Arg [3]    : (optional) Bio::EnsEMBL::Slice $slice
                A slice that features should be remapped to
+  Arg [4]    : (optional) boolean $keep_all
+               Set to 1 if all features, even ones entirely off slice,
+               should be kept
   Example    : $fts = $a->generic_fetch('contig_id in (1234, 1235)', 'Swall');
   Description: Performs a database fetch and returns feature objects in
                contig coordinates.
@@ -89,7 +92,7 @@ sub new {
 =cut
 
 sub generic_fetch {
-  my ($self, $constraint, $mapper, $slice) = @_;
+  my ($self, $constraint, $mapper, $slice, $keep_all) = @_;
 
   my @tabs = $self->_tables;
   my $columns = join(', ', $self->_columns());
@@ -145,7 +148,9 @@ sub generic_fetch {
 
   $sth->execute;
 
-  return $self->_objs_from_sth($sth, $mapper, $slice);
+  my $res = $self->_objs_from_sth($sth, $mapper, $slice, $keep_all);
+
+  return $res;
 }
 
 

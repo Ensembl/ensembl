@@ -174,14 +174,8 @@ sub fetch_all_by_Gene {
   my $constraint = "t.gene_id = ".$gene->dbID();
 
   my $slice = $gene->slice();
-  my $transcripts = $self->SUPER::generic_fetch( $constraint );
-
-  if( ! @$transcripts ) { return [] }
-
-  my @new_transcripts = map { $_->transfer( $slice ) } @$transcripts;
-
-
-  return \@new_transcripts;
+  my $keep_all = 1; #keep transcripts that fall off end of slice
+  return $self->generic_fetch( $constraint, undef, $slice, $keep_all );
 }
 
 
@@ -579,7 +573,7 @@ sub list_stable_ids {
 #  Caller     : internal
 
 sub _objs_from_sth {
-  my ($self, $sth, $mapper, $dest_slice) = @_;
+  my ($self, $sth, $mapper, $dest_slice, $keep_all) = @_;
 
   #
   # This code is ugly because an attempt has been made to remove as many
@@ -626,16 +620,21 @@ sub _objs_from_sth {
   my $dest_slice_end;
   my $dest_slice_strand;
   my $dest_slice_length;
+  my $dest_slice_cs;
+  my $asma;
   if($dest_slice) {
     $dest_slice_start  = $dest_slice->start();
     $dest_slice_end    = $dest_slice->end();
     $dest_slice_strand = $dest_slice->strand();
     $dest_slice_length = $dest_slice->length();
+    $dest_slice_cs     = $dest_slice->coord_system();
+    $asma              = $self->db->get_AssemblyMapperAdaptor();
   }
 
   FEATURE: while($sth->fetch()) {
 
     my $slice = $slice_hash{"ID:".$seq_region_id};
+    my $dest_mapper = $mapper;
 
     if(!$slice) {
       $slice = $sa->fetch_by_seq_region_id($seq_region_id);
@@ -644,16 +643,29 @@ sub _objs_from_sth {
       $sr_cs_hash{$seq_region_id} = $slice->coord_system();
     }
 
+    #obtain a mapper if none was defined, but a dest_seq_region was
+    if(!$dest_mapper && $dest_slice && 
+       !$dest_slice_cs->equals($slice->coord_system)) {
+      $dest_mapper = $asma->fetch_by_CoordSystems($dest_slice_cs,
+                                                 $slice->coord_system);
+      $asm_cs = $dest_mapper->assembled_CoordSystem();
+      $cmp_cs = $dest_mapper->component_CoordSystem();
+      $asm_cs_name = $asm_cs->name();
+      $asm_cs_vers = $asm_cs->version();
+      $cmp_cs_name = $cmp_cs->name();
+      $cmp_cs_vers = $cmp_cs->version();
+    }
+
     #
     # remap the feature coordinates to another coord system 
     # if a mapper was provided
     #
-    if($mapper) {
+    if($dest_mapper) {
       my $sr_name = $sr_name_hash{$seq_region_id};
       my $sr_cs   = $sr_cs_hash{$seq_region_id};
 
       ($sr_name,$seq_region_start,$seq_region_end,$seq_region_strand) =
-        $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
+        $dest_mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
 			 $seq_region_strand, $sr_cs);
 
       #skip features that map to gaps or coord system boundaries
@@ -690,7 +702,7 @@ sub _objs_from_sth {
 
       #throw away features off the end of the requested slice
       if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-        next FEATURE;
+        next FEATURE if(!$keep_all);
       }
     }
 
