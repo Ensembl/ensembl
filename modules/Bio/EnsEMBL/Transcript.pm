@@ -1063,6 +1063,8 @@ sub flush_Exons{
    $self->{'_exon_coord_mapper'} = undef;
    $self->{'coding_region_start'} = undef;
    $self->{'coding_region_end'} = undef;
+   $self->{'cdna_coding_start'} = undef;
+   $self->{'cdna_coding_end'} = undef;
    $self->{'_start'} = undef;
    $self->{'_end'} = undef;
    $self->{'_strand'} = undef;
@@ -1210,7 +1212,7 @@ sub translate {
   }
 
   if( CORE::length( $mrna ) % 3 == 0 ) {
-    $mrna =~ s/TAG$|TGA$|TAA$//i;
+#    $mrna =~ s/TAG$|TGA$|TAA$//i;
   }
   # the above line will remove the final stop codon from the mrna
   # sequence produced if it is present, this is so any peptide produced
