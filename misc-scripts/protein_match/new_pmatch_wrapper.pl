@@ -180,11 +180,11 @@ foreach my $query (values(%hits)) {
 
 		last if ($target->{QIDENT} < $best - $opts{'p'});
 
-		printf("%8s%8d%8.3f%8s%8d%8.3f\n",
-			$target->{QID}, $target->{QLEN},
-			$target->{QIDENT},
-			$target->{TID}, $target->{TLEN},
-			$target->{TIDENT});
+		#printf("%8s%8d%8.3f%8s%8d%8.3f\n",
+			#$target->{QID}, $target->{QLEN},
+			#$target->{QIDENT},
+			#$target->{TID}, $target->{TLEN},
+			#$target->{TIDENT});
 
 		my $map = new Bio::EnsEMBL::Mapper('query', 'target');
 
@@ -201,5 +201,8 @@ foreach my $query (values(%hits)) {
 	}
 }
 
-print Dumper($maps{Q27250}[0]->map_coordinates('703', 1, 1000, 1, 'target'));
-#print Dumper(\%maps);
+# Example use of map.  Map [1,1000] on 'Q27250' through whatever the
+# best map ('[0]') maps to:
+print Dumper(
+	$maps{Q27250}[0]->map_coordinates('Q27250', 1, 1000, 1, 'query')
+);
