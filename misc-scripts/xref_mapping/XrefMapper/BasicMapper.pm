@@ -2,6 +2,7 @@ package XrefMapper::BasicMapper;
 
 use strict;
 use DBI;
+use IPC::Open3;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Translation;
 use  XrefMapper::db;
@@ -83,7 +84,7 @@ sub run_matching{
     push @list, \@pep;
     $i++;
   }
-  
+
   $self->run_mapping(\@list);
 
 }
@@ -141,11 +142,14 @@ sub get_species_id_from_species_name{
 =cut
 
 sub get_set_lists{
-  my ($self) = @_;  
+  my ($self) = @_;
 
-  return [["method1",["homo_sapiens","RefSeq"],["homo_sapiens","UniProtSwissProt"]],
-	  ["method2",[$self->species,"*"]],
-	  ["method3",["*","*"]]];
+#  return [["method1",["homo_sapiens","RefSeq"],["homo_sapiens","UniProtSwissProt"]],
+#	  ["method2",[$self->species,"*"]],
+#	  ["method3",["*","*"]]];
+
+  return [["ExonerateBest1",["homo_sapiens","RefSeq"]]];
+
 }
 
 =head2 get_source_id_from_source_name
@@ -535,11 +539,18 @@ sub method{
   return $self->{_method};
 }
 
-# --------------------------------------------------------------------------------
-# GLENN
 
+=head2 run_mapping
 
-# Use exonerate (or other program) to find xref-ensembl obejct mappings
+  Arg[1]     : List of lists of (method, query, target)
+  Arg[2]     :
+  Example    : none
+  Description: Create and submit mapping jobs to LSF, and wait for them to finish.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub run_mapping {
 
@@ -552,7 +563,7 @@ sub run_mapping {
 
     my ($method, $queryfile ,$targetfile)  =  @$list;
 
-    print "###$method $queryfile $targetfile\n";
+    print "Method:$method Query:$queryfile Target:$targetfile\n";
 
     my $obj_name = "XrefMapper::Methods::$method";
     # check that the appropriate object exists
@@ -564,9 +575,9 @@ sub run_mapping {
     } else {
 
       my $obj = $obj_name->new();
-      my $job_name = $obj->run($queryfile, $targetfile);
+      my $job_name = $obj->run($queryfile, $targetfile, $self->dir());
       push @job_names, $job_name;
-      print "Submitted LSF job $job_name to list\n";
+      print "Added LSF job $job_name to list\n";
       sleep 1; # make sure unique names really are unique
 
     }
@@ -579,6 +590,18 @@ sub run_mapping {
 
 } # run_exonerate
 
+
+=head2 submit_depend_job
+
+  Arg[1]     : List of job names.
+  Arg[2]     :
+  Example    : none
+  Description: Submit an LSF job that waits for other jobs to finish.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub submit_depend_job {
 
@@ -621,7 +644,7 @@ sub submit_depend_job {
 =head2 store
 
   Arg[1]     : The target file used in the exonerate run. Used to work out the Ensembl object type.
-  Arg[2]     : 
+  Arg[2]     :
   Example    : none
   Description: Parse exonerate output files and build files for loading into target db tables.
   Returntype : List of strings
@@ -632,7 +655,7 @@ sub submit_depend_job {
 
 sub store {
 
-  my ($target_file_name) = @_;
+  my ($self, $target_file_name) = @_;
 
   my $type = get_ensembl_object_type($target_file_name);
 
@@ -645,7 +668,7 @@ sub store {
 			 "ensembl",
 			 {'RaiseError' => 1}) || die "Can't connect to database";
 
- # get current max object_xref_id
+  # get current max object_xref_id
   my $max_object_xref_id = 0;
   my $sth = $dbi->prepare("SELECT MAX(object_xref_id) FROM object_xref");
   $sth->execute();
@@ -673,7 +696,8 @@ sub store {
   # keep a (unique) list of xref IDs that need to be written out to file as well
   my %primary_xref_ids;
 
-  foreach my $file (glob("*.map")) {
+  my $dir = $self->dir();
+  foreach my $file (glob("$dir/*.map")) {
 
     print "Parsing results from $file \n";
     open(FILE, $file);
