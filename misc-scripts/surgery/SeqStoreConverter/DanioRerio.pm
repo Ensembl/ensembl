@@ -9,32 +9,35 @@ use vars qw(@ISA);
 
 @ISA = qw(SeqStoreConverter::BasicConverter);
 
-
 sub create_coord_systems {
   my $self = shift;
 
-  $self->debug("DanioRerio Specific: creating scaffold coord system");
+  $self->debug("DanioRerio Specific: creating chromosome, supercontig, clone "
+               . " and chunk coordinate systems");
 
   my $target = $self->target();
   my $dbh    = $self->dbh();
 
   my $ass_def = $self->get_default_assembly();
 
-  my @coords = 
-    (["scaffold" , $ass_def, "top_level,default_version,sequence_level"]);
+  my @coords =
+    (["chromosome" , $ass_def, "top_level,default_version"],
+     ["supercontig", undef, "default_version"],
+     ["clone"      , undef, "default_version"],
+     ["chunk"      , undef, "default_version,sequence_level"]);
 
-  my %cs = (gene                  => 'scaffold',
-            transcript            => 'scaffold',
-            exon                  => 'scaffold',
-            dna_align_feature     => 'scaffold',
-            protein_align_feature => 'scaffold',
-            marker_feature        => 'scaffold',
-            simple_feature        => 'scaffold',
-            repeat_feature        => 'scaffold',
-            qtl_feature           => 'scaffold',
-            misc_feature          => 'scaffold',
-            prediction_transcript => 'scaffold',
-            karyotype             => 'scaffold');
+  my %cs = (gene                   => ['supercontig','chromosome'],
+             transcript             => ['supercontig','chromosome'],
+             exon                   => ['supercontig','chromosome'],
+             dna_align_feature      => ['chunk'],
+             protein_align_feature  => ['chunk'],
+             marker_feature         => ['chunk'],
+             simple_feature         => ['chunk'],
+             repeat_feature         => ['chunk'],
+             qtl_feature            => ['chunk'],
+             misc_feature           => ['chunk'],
+             prediction_transcript  => ['chunk'],
+             karyotype              => ['chromosome']);
 
   $self->debug("Building coord_system table");
 
@@ -51,32 +54,16 @@ sub create_coord_systems {
 
   $self->debug("Building meta_coord table");
   $sth = $dbh->prepare("INSERT INTO $target.meta_coord VALUES (?, ?)");
-  foreach my $val (keys %cs) {
-    $sth->execute($val, $coord_system_ids{$cs{$val}});
+  foreach my $feature_type (keys %cs) {
+    foreach my $coord_sys (@{$cs{$feature_type}}) {
+      $sth->execute($feature_type, $coord_system_ids{$coord_sys});
+    }
   }
   $sth->finish();
 
   return;
 }
 
-
-
-#
-# getter/setter needed by danio rerio to perform coord transforms
-# of features after conversion of fake contigs in scaffolds
-#
-sub contig_mappings {
-  my $self = shift;
-  $self->{'contig_mappings'} = shift if(@_);
-  return $self->{'contig_mappings'};
-}
-
-
-sub dna_mappings {
-  my $self = shift;
-  $self->{'dna_mappings'} = shift if(@_);
-  return $self->{'dna_mappings'};
-}
 
 sub create_seq_regions {
   my $self = shift;
@@ -85,205 +72,133 @@ sub create_seq_regions {
   my $target = $self->target();
   my $dbh    = $self->dbh();
 
-  $self->debug("DanioRerio Specific: creating scaffold seq_regions");
 
   #
-  # retrieve fake contigs and group them into scaffolds
+  # Turn all of the contents of the contig table into 'chunks' and 
+  # give them arbitrary names like chunk1, chunk2. Keep old internal
+  # ids for conveneience.
   #
+
+  $self->debug("DanioRerio Specific: creating chunk seq_regions");
 
   my $sth = $dbh->prepare
-    ("SELECT c.contig_id, c.name, " .
-     "a.contig_end - a.contig_start+1, dna_id "  .
-     "FROM $source.contig c, $source.assembly a " .
-     "WHERE c.contig_id = a.contig_id");
+    ("INSERT INTO $target.seq_region (seq_region_id, name, coord_system_id, " .
+     "                                length) ".
+     "SELECT ctg.contig_id, concat('chunk', ctg.contig_id), " .
+     "       cs.coord_system_id, ctg.length " .
+     "FROM   $source.contig ctg, $target.coord_system cs " .
+     "WHERE  cs.name = 'chunk'");
+
   $sth->execute();
 
-  my %contig_lists;
-
-  my($contig_id, $name, $length, $dna_id);
-  $sth->bind_columns(\$contig_id, \$name, \$length, \$dna_id);
-
-  while($sth->fetch()) {
-    my $position;
-    ($name, $position) = split(/\./, $name);
-    $contig_lists{$name} ||= [];
-    $contig_lists{$name}->[$position-1] = [$contig_id,$length,$dna_id];
-  }
-  
-  $sth->finish();
-
-  #
-  # calculate the offsets of the fake contigs, and the lengths of the
-  # scaffolds
-  #
-
-  my %old_new_mappings;
-  my %dna_mappings;
-
-  my %scaffolds;
-  foreach my $ctgname (keys %contig_lists) {
-    my $ctg_list = $contig_lists{$ctgname};
-    $length = 0;
-    my $new_id  = $ctg_list->[0]->[0];
-    $dna_mappings{$new_id} = [];
-    foreach my $contig (@$ctg_list) {
-      my $old_id = $contig->[0];
-      $old_new_mappings{$old_id} = [$new_id,$length+1];
-      $length += $contig->[1];
-      push(@{$dna_mappings{$new_id}}, [$contig->[2], $contig->[1]]); 
-    }
-
-    $scaffolds{$ctgname} = [$new_id, $length];
-  }
-
-  
-  #
-  # load the scaffold seq regions
-  #
-  $self->debug("DanioRerio Specific: loading scaffold seq regions");
-
-  my $cs_id = $self->get_coord_system_id('scaffold');
-
-  $sth = $dbh->prepare("INSERT INTO $target.seq_region (seq_region_id, " .
-                          "name, length, coord_system_id) " .
-                          "VALUES (?,?,?,?)");
-
-  foreach my $scaf_name (keys %scaffolds) {
-    my ($seq_reg_id, $len) = @{$scaffolds{$scaf_name}};
-    $sth->execute($seq_reg_id, $scaf_name, $len, $cs_id);
-  }
   $sth->finish();
 
 
+  my $insert_sth = $dbh->prepare
+    ("INSERT INTO $target.seq_region (name, coord_system_id, length) " .
+     "VALUES (?,?,?)");
+
+  my $tmp_chr_insert_sth = $dbh->prepare
+    ("INSERT INTO $target.tmp_chr_map (old_id, new_id) VALUES (?, ?)");
+
+  my $tmp_supercontig_insert_sth = $dbh->prepare
+    ("INSERT INTO $target.tmp_superctg_map (name, new_id) VALUES (?,?)");
+
+  my $tmp_clone_insert_sth = $dbh->prepare
+    ("INSERT INTO $target.tmp_cln_map (old_id, new_id) VALUES (?,?)");
+
+
   #
-  # load temporary mapping of chromosomes to new seq_region ids.  Even though
-  # there are not actually any chromosomes this info is used when transfering
-  # genes to scaffold coords.
+  # Turn real clones into clones
   #
-  my $chr_select_sth = $dbh->prepare
-    ("SELECT chromosome_id, name FROM $source.chromosome");
-  $chr_select_sth->execute();
+  $self->debug("DanioRerio Specific: creating clone seq_regions");
 
-  my $tmp_insert_sth = $dbh->prepare
-    ("INSERT INTO $target.tmp_chr_map (old_id, new_id) VALUES (?,?)");
+  my $select_sth = $dbh->prepare
+    ("SELECT ctg.contig_id, ctg.name, ctg.length " .
+     "FROM   $source.contig ctg " .
+     "WHERE  ctg.name not like 'ctg%' and ctg.name not like 'NA%'");
 
-  while(my $row = $chr_select_sth->fetchrow_arrayref) {
-    my ($chr_id, $chr_name) = @$row;
-    $tmp_insert_sth->execute($chr_id, $scaffolds{$chr_name}->[0]);
+  my $cs_id = $self->get_coord_system_id('clone');
+
+  $select_sth->execute();
+
+  my ($old_id, $name, $length);
+  $select_sth->bind_columns(\$old_id, \$name, \$length);
+
+  while ($select_sth->fetch()) {
+    #insert into seq_region table
+    $insert_sth->execute($name, $cs_id, $length);
+    #copy old/new mapping into temporary table
+    $tmp_clone_insert_sth->execute($old_id, $insert_sth->{'mysql_insertid'});
   }
-  
-  #keep this mapping info for later processing of features & dna
-  $self->dna_mappings(\%dna_mappings);
-  $self->contig_mappings(\%old_new_mappings);
 
-}
+  $select_sth->finish();
 
+  #
+  # Turn real chromosomes into chromosomes
+  #
+  $self->debug("DanioRerio Specific: creating chromosome seq_regions");
 
+  $select_sth = $dbh->prepare
+    ("SELECT chr.chromosome_id, chr.name, chr.length " .
+     "FROM   $source.chromosome chr " .
+     "WHERE  length(chr.name) <= 2");
 
-sub transfer_dna {
-  my $self = shift;
-  
-  my $source = $self->source();
-  my $target = $self->target();
-  my $dbh    = $self->dbh();
+  $cs_id = $self->get_coord_system_id('chromosome');
 
-  $self->debug("DanioRerio Specific: building dna table");
+  $select_sth->execute();
 
-  #in danio rerio est/estgene databases there is no dna so we may want to 
-  #skip this function
-  
-  my $count_sth = $dbh->prepare("SELECT count(*) from $source.dna");
-  $count_sth->execute();
-  my ($count) = $count_sth->fetchrow_array();
-  return if(!$count);
+  $select_sth->bind_columns(\$old_id, \$name, \$length);
 
-  my $dna_mappings = $self->dna_mappings();
+  my %chr_id_added;
 
-  my $get_seq_sth = $dbh->prepare
-    ("SELECT substring(sequence,1,?) from $source.dna " .
-     "WHERE dna_id = ?");
+  while ($select_sth->fetch()) {
+    #insert into seq_region table
+    $insert_sth->execute($name, $cs_id, $length);
+    #copy old/new mapping into temporary table
+    $tmp_chr_insert_sth->execute($old_id, $insert_sth->{'mysql_insertid'});
+    $chr_id_added{$old_id} = 1;
+  }
 
-  my $store_seq_sth = $dbh->prepare
-    ("INSERT INTO $target.dna (seq_region_id, sequence) " .
-     "VALUES (?,?)");
+  $select_sth->finish();
 
-  my $update_seq_sth = $dbh->prepare
-    ("UPDATE $target.dna " .
-     "SET sequence = concat(sequence, ?) " .
-     "WHERE seq_region_id = ?"); 
+  #
+  # Turn supercontigs into supercontigs
+  #
+  $self->debug("DanioRerio Specific: creating supercontig seq_regions");
 
-  foreach my $new_id (keys %$dna_mappings) {
-    my $first = 1;
-    foreach my $row (@{$dna_mappings->{$new_id}}) {
-      my ($old_id, $length) = @$row;
-      $get_seq_sth->execute($length, $old_id);
+  $select_sth = $dbh->prepare
+    ("SELECT a.chromosome_id, a.superctg_name, " .
+     "       MAX(a.chr_end) - MIN(a.chr_start) + 1 " .
+     "FROM   $source.assembly a, $target.coord_system cs " .
+     "GROUP BY a.superctg_name");
 
-      if(!$get_seq_sth->rows() == 1) {
-        warn("Missing dna sequence for dna id $old_id");
-        next;
-      }
-      my $seq = $get_seq_sth->fetchrow_arrayref->[0];
+  $select_sth->execute();
+  $select_sth->bind_columns(\$old_id, \$name, \$length);
 
-      if($first) {
-        #$self->debug("storing sequence of length " . length($seq) . 
-        #             "for seq_region $new_id");
-        $store_seq_sth->execute($new_id, $seq);
-        $first = 0;
-      } else {
-        $update_seq_sth->execute($seq, $new_id);
-        #$self->debug("concatting sequence to length " . length($seq));
-      }
+  $cs_id = $self->get_coord_system_id('supercontig');
+
+  while ($select_sth->fetch()) {
+    #insert into seq_region table
+    $insert_sth->execute($name, $cs_id, $length);
+    #copy old/new mapping into temporary table
+
+    #avoid trying to add the same chromosome id twice into the mappings
+    #not all supercontigs make up 'supercontigs' in the chromosome table,
+    #some were used to construct chromosomes, and we don't want these ids.
+    if(!$chr_id_added{$old_id}) {
+      $tmp_chr_insert_sth->execute($old_id, $insert_sth->{'mysql_insertid'});
+      $chr_id_added{$old_id} = 1;
     }
+   $tmp_supercontig_insert_sth->execute($name,$insert_sth->{'mysql_insertid'});
   }
 
-  $get_seq_sth->finish();
-  $store_seq_sth->finish();
-  $update_seq_sth->finish();
-  return;
-}
+  $select_sth->finish();
+  $tmp_chr_insert_sth->finish();
+  $tmp_supercontig_insert_sth->finish();
+  $tmp_clone_insert_sth->finish();
+  $insert_sth->finish();
 
-
-#
-# override the transfer features so that features which are on fake contigs
-# that were merged into scaffolds can have their coordinates adjusted
-#
-
-sub transfer_features {
-  my $self = shift;
-
-  my $source = $self->source();
-  my $target = $self->target();
-  my $dbh    = $self->dbh();
-
-  $self->SUPER::transfer_features();
-
-  my $contig_mappings = $self->contig_mappings();
-
-  my @tables = qw(simple_feature
-                  repeat_feature
-                  protein_align_feature
-                  dna_align_feature
-                  marker_feature
-                  prediction_transcript);
-                  
-  foreach my $table (@tables) {
-
-    $self->debug("DanioRerio Specific: updating $table coordinates");
-
-    my $sth = $dbh->prepare
-      ("UPDATE $target.$table " .
-       "SET    seq_region_id    = ?, " .
-       "       seq_region_start = seq_region_start + ?, " .
-       "       seq_region_end   = seq_region_end   + ? " . 
-       "WHERE  seq_region_id = ?");
-
-    foreach my $old_id (keys %$contig_mappings) {
-      my ($new_id, $offset) = @{$contig_mappings->{$old_id}};
-      if($offset > 1) {
-        $sth->execute($new_id, $offset, $offset, $old_id)
-      }
-    }
-  }
 }
 
 
@@ -291,43 +206,36 @@ sub transfer_features {
 sub create_assembly {
   my $self = shift;
 
-  $self->debug("DanioRerio Specific: no assembly data");
+  #chromosomes are made of chunks
+  $self->assembly_contig_supercontig();
+
+  #supercontigs are made of chunks
+  $self->assembly_contig_supercontig();
+
+  #clones are made of chunks
+  $self->assembly_contig_clone();
 
   return;
 }
 
 
-
-#
-# override the contig_to_seqregion method so that contigs are given clone
-# names instead
-#
-sub contig_to_seq_region {
+sub assembly_contig_clone {
   my $self = shift;
-  my $target_cs_name = shift;
 
-  my $target = $self->target();
+
+  $self->debug("DanioRerio Specific: building assembly table - chunk/clone");
+  #this is easy, there is simply one entire chunk for a given clone
+
   my $source = $self->source();
-  my $dbh     = $self->dbh();
+  my $target = $self->target();
+  my $dbh    = $self->dbh();
 
-  $target_cs_name ||= 'contig';
-
-  $self->debug("DanioRerio Specific: Transforming contigs " .
-               "into $target_cs_name seq_regions");
-
-  my $cs_id = $self->get_coord_system_id($target_cs_name);
-
-  my $sth = $dbh->prepare
-    ("INSERT INTO $target.seq_region " .
-     "SELECT ctg.contig_id, CONCAT(cln.embl_acc, '.', cln.embl_version), " .
-     "       $cs_id, ctg.length " .
-     "FROM   $source.contig ctg, $source.clone cln " .
-     "WHERE  ctg.clone_id = cln.clone_id");
-
-  $sth->execute();
-  $sth->finish();
-
-  return;
+  $dbh->do
+    ("INSERT INTO $target.assembly (asm_seq_region_id, cmp_seq_region_id, " .
+     "                         asm_start, asm_end, cmp_start, cmp_end, ori) " .
+     "SELECT tcm.new_id, tcm.old_id, 1, sr.length, 1, sr.length, 1 " .
+     "FROM $target.tmp_cln_map tcm, $target.seq_region sr " .
+     "WHERE sr.seq_region_id = tcm.new_id");
 }
 
 
