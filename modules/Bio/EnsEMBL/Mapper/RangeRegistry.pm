@@ -168,10 +168,20 @@ sub check_and_register {
     }
   }
 
+  #if we went right to the very end set the 'current' range to the
+  #last existing range
+  $CUR-- if($CUR == $len);
+
   #now check if another gap range pair needs to be added to the end of the list
   #whice will occur if the requested range extends past the last range in the
   if($list->[$CUR]->[$END] < $rend) {
-    push @gap_pairs, [$list->[$CUR]->[$END]+1, $rend];
+    if($rstart < $list->[$CUR]->[$END]) {
+      #this range overlaps with last seen exising range
+      push @gap_pairs, [$list->[$CUR]->[$END]+1, $rend];
+    } else {
+      #this range is fully outside of the last see exising range
+      push @gap_pairs, [$rstart, $rend];
+    }
   }
 
   my $last_range = $list->[$CUR];
