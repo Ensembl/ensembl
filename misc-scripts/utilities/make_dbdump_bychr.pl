@@ -24,6 +24,8 @@ a particular chromosome. Useful to create a small but fully functional
 EnsEMBL db (e.g. laptop mini-mirror)
 =cut
 
+use strict;
+
 use Bio::EnsEMBL::DBLoader;
 use Getopt::Long;
 
@@ -64,7 +66,7 @@ if ($lim) {
 }
 
 my $locator = "$module/host=$host;port=;dbname=$dbname;user=$dbuser;pass=$dbpass";
-$db =  Bio::EnsEMBL::DBLoader->new($locator);
+my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 $db->{RaiseError}++;                    # carp as soon as something wrong
 
 unless (-d $workdir) {
@@ -78,10 +80,10 @@ print STDERR "Dumping data from small tables needed full:\n";
 my @small_tables =  qw(analysis analysisprocess chromosome externalDB meta
                        species interpro interpro_description);
 $"=' ';
-$command = "$mysqldump -u $dbuser $pass_arg -T $workdir $dbname @small_tables";
+my $command = "$mysqldump -u $dbuser $pass_arg -T $workdir $dbname @small_tables";
 system ($command) && die "``$command'' exited with exit status $?";
 
-my $command = "rm $workdir/*.sql";
+$command = "rm $workdir/*.sql";
 system ($command) && die "``$command'' exited with exit status $?";
 
 #Dump schema
@@ -99,6 +101,18 @@ my ($chrom) = $sth->fetchrow_array;
 # my $sth = $db->prepare("select * from map_density where chromosome_id = $chrom into outfile '$workdir/map_density.txt'");
 $sth = $db->prepare("select * from map_density where chrname = '$chr' into outfile '$workdir/map_density.txt'");
 $sth->execute;
+
+warn "Finding markers for chromosome $chr\n";
+my $q = "select * from contig_landmarkMarker where chr_name = '$chr'";
+$sth= $db->prepare($q);
+$sth->execute;
+open (FILE,">$workdir/contig_landmarkMarker.txt") || die "";
+while( (my $arr = $sth->fetchrow_arrayref()) ) {
+    my @array = @$arr;
+    print FILE join("\t",@array)."\n";
+}
+close (FILE);
+
 
 print STDERR "Finding golden path contigs for chromosome $chr\n";
 my $golden_path_q = "select * from static_golden_path where chr_name = '$chr' $limit";
@@ -118,7 +132,6 @@ close (FILE);
 die "no contigs found for ``$golden_path_q''" unless @contig_ids;
 
 my $contig_list = &get_inlist(0,@contig_ids);
-$contig_list = &get_inlist(0,@contig_ids) if @contigs;
 
 $sth = $db->prepare("select * from contig where internal_id in $contig_list");
 $sth->execute;
@@ -135,6 +148,7 @@ while( (my $arr = $sth->fetchrow_arrayref()) ) {
     print FILE join("\t",@array)."\n";
 }
 close (FILE);
+
 my $dna_list = &get_inlist(0,@dna_ids);
 @clone_ids = &unique(@clone_ids);
 my $clone_list = &get_inlist(0,@clone_ids);
