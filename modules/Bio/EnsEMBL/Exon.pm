@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Exon
 #
@@ -9,6 +8,8 @@
 # You may distribute this module under the same terms as perl itself
 
 # POD documentation - main docs before the code
+
+=pod 
 
 =head1 NAME
 
@@ -21,11 +22,46 @@ Bio::EnsEMBL::Exon - Confirmed Exon
     $ex->start(10);
     $ex->end(100);
 
+Examples of creating an exon
+
+    $ex = new Bio::EnsEMBL::Exon(1208,1506,1) # start = 1208, end = 1506, forward strand
+    
+    Start and end coordinates are always stored with start < end.  If they are input
+    in the reverse order they will be swapped over.  The value for the strand will
+    be kept as its input value;
+
+    Strand values:  + or  1 = forward strand
+                    - or -1 = reverse strand
+                    . or  0 = unknown strand
+
+    $ex->dna_seq($dna);                       # $dna is a Bio::Seq
+    $ex->phase(0);                            # Sets the phase of the exon
+    $ex->end_phase();                         # Calculates the end_phase of the exon from the
+                                              # Length of the dna and the starting phase
+
+    Phase values  are 0,1,2
+
+    $trans = $ex->translate();                # Translates the exon. Returns a Bio::Seq
+
+Frameshifts - these haven't been coded yet :-)
+
+    Frameshifts in the exon are stored as an array of positions and an array of lengths
+
+    my @pos =  $ex->frameshift_position()   # Array of start coordinates of frameshifts
+    my @len =  $ex->frameshift_length()     # Array of lengths of frameshifts
+
+    Setting frameshifts
+    
+    $ex->add_frameshift(1208,1)             # Adds a frameshift at position 1208 and it
+                                            # is an insertion of 1 base
+    $ex->add_frameshift(6509,-2)            # Adds a frameshift at position 6509 and it
+                                            # is a deletion of 2 bases
+
+    $ex->translate()  translates the dna sequence in the correct phase taking the frameshifts into account.
 
 =head1 DESCRIPTION
 
-Confirmed exon object. Not clear at the moment precisely what we are going
-to store in this...
+Exon object.  
 
 =head1 CONTACT
 
@@ -45,10 +81,9 @@ package Bio::EnsEMBL::Exon;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::SeqFeature::Generic
+# Object preamble - inherits from Bio::SeqFeature::Generic
 
 use Bio::SeqFeature::Generic;
-
 
 @ISA = qw(Bio::SeqFeature::Generic);
 # new() is inherited from Bio::Root::Object
@@ -65,15 +100,247 @@ sub _initialize {
   $self->primary_tag('exon');
   $self->source_tag('EnsEMBL');
 
+  # Parse the input paramters (start,end,strand)
+  if ($#args == 2) {
+    $self->_parse(@args);
+  }
+
   # set stuff in self from @args
   return $make; # success - we hope!
 }
 
-# rest is left until we know what is going on...
+# Parse routine called from the constructor to
+# set the basic variables start,end and strand
+
+sub _parse {
+
+  my ($self,$start,$end,$strand) = @_;
+
+  # Swap start and end if they're in the wrong order
+  # We assume that the strand is correct and keep the input value.
+
+  if ($start > $end) {
+    my $tmp = $end;
+    $end    = $start;
+    $start  = $tmp;
+  }
+
+  
+  $self->start ($start);
+  $self->end   ($end);
+  $self->strand($strand);
+
+}
+
+=pod 
+
+=head1 Methods unique to exon
+
+=head2 dna_seq
+
+  Title   : dna_seq
+  Usage   : $dna = $feat->dna_seq
+  Function: Returns the dna sequence of the exon
+  Returns : Bio::Seq
+  Args    : none
+
+=cut
+
+sub dna_seq {
+  my ($self,$seq) = @_;
+
+  # Bit more fussy on the input here.  Don't know if
+  # we have to be so conscientious.
+  if (defined($seq) && $seq->isa("Bio::Seq")) {
+    $self->{'dna_seq'} = $seq;
+  } elsif (defined($seq)) {
+    $self->throw("Input to dna_seq is not a Bio::Seq");
+  } 
+  return $self->{'dna_seq'};
+
+}
+
+=pod 
+
+=head2 pep_seq
+
+  Title   : pep_seq
+  Usage   : @pep = $feat->pep_seq
+  Function: Returns the 3 frame peptide translations of the exon
+  Returns : @Bio::Seq
+  Args    : none
+
+=cut
+
+sub pep_seq {
+  my ($self) = @_;
+
+  my @pep = $self->_translate();
+
+  return @pep;
+}
+
+=pod 
+
+=head2 end_phase
+
+  Title   : end_phase
+  Usage   : $end_phase = $feat->end_phase
+  Function: Returns the end phase of the exon
+  Returns : int
+  Args    : none
+
+=cut
+
+sub end_phase {
+  my ($self) = @_;
+  
+  defined($self->phase()) || $self->throw("Can't return end_phase if phase is not set");
+  defined($self->start()) || $self->throw("Can't return end_phase if start coordinate is not set");
+  defined($self->end())   || $self->throw("Can't return end_phase if end coordinate is not set");
+  
+  my $len   = $self->end() - $self->start() + 1;
+  my $phase = $self->phase();
+
+  my $end = ($len - $phase) % 3;        # Jiggery pokery to find end phase
+  $self->{'end_phase'} = (3 - $end)%3;  # Make sure only 0,1,2
+  
+  return $self->{'end_phase'};
+}
+
+=pod
+
+=head2 phase
+
+  Title   : phase
+  Usage   : $phase = $feat->phase
+  Function: Returns the phase of the exon
+  Returns : int
+  Args    : none
+
+=cut
+
+sub phase {
+  my ($self,$value) = @_;
+  
+  if (defined($value)) {
+    # Value must be 0,1,2,
+    if ($value < 0 || $value > 2) {
+      $self->throw("Bad value ($value) for exon phase. Should only be 0,1,2\n");
+    } else {
+      $self->{'phase'} = $value;
+    }
+  }
+  return $self->{'phase'};
+}
+
+=pod
+
+=head2 type
+
+  Title   : type
+  Usage   : $type = $feat->type
+  Function: Returns the type of the exon (Init,Intr,Term)
+  Returns : String
+  Args    : none
+
+=cut
+
+sub type {
+  my ($self,$value) = @_;
+  
+  if (defined($value)) {
+    $self->{'typ'} = $value;
+  }
+  return $self->{'type'};
+}
+
+
+=pod
+
+=head2 _translate
+
+  Title   : _translate
+  Usage   : @pep = $feat->_translate()
+  Function: Returns the 3 frame translations of the exon
+  Returns : @Bio::Seq
+  Args    : none
+
+=cut
+
+sub _translate {
+  my($self) = @_;
+  my @pep;
+  my $i;
+  
+  # Get the DNA sequence and create the sequence string
+  $self->dna_seq() || $self->throw("No DNA in object. Can't translate\n");
+
+  my $dna = $self->dna_seq()->seq();
+  
+  # Translate in all frames - have to chop
+  # off bases from the beginning of the dna sequence 
+  # for frames 1 and 2 as the translate() method
+  # only translates in one frame. Pah!
+  
+  for ($i = 0; $i < 3; $i++) {
+    my $tmp = new Bio::Seq(-seq => substr($dna,$i));
+    $pep[$i] = $tmp->translate();
+  }
+  
+  return @pep;
+}
+
+=pod
+
+=head2 translate
+
+  Title   : translate
+  Usage   : $pep = $feat->translate()
+  Function: Returns the translation of the exon in the defined phase
+  Returns : Bio::Seq
+  Args    : none
+
+=cut
+
+sub translate {
+  my($self) = @_;
+
+  my @pep = $self->_translate() || throw ("Can't translate DNA\n");
+  return $pep[$self->phase()];
+}
+
+=head2 strand
+
+ Title   : strand
+ Usage   : $strand = $feat->strand()
+ Function: Returns strand information, being 1,-1 or 0
+ Returns : -1,1 or 0
+ Args    : + or 1, - or -1, . or 0
+
+=cut
+
+sub strand {
+  my ($self,$value) = @_;
+
+  
+   if( defined $value)  {
+      if ($value eq "+") {$value =  1;}
+      if ($value eq "-") {$value = -1;}
+      if ($value eq ".") {$value =  0;}
+
+      $self->{'strand'} = $value;
+    }
+    return $self->{'strand'};
+}
+
+# Inherited methods
 # but you do have all the SeqFeature documentation: reproduced here
 # for convience...
 
-=head1 Methods inherieted from SeqFeature
+=pod
+
+=head1 Methods inherited from SeqFeature
 
 =head2 start
 
@@ -83,7 +350,6 @@ sub _initialize {
  Returns : integer
  Args    : none
 
-
 =head2 end
 
  Title   : end
@@ -92,16 +358,6 @@ sub _initialize {
  Returns : integer
  Args    : none
 
-
-=head2 strand
-
- Title   : strand
- Usage   : $strand = $feat->strand()
- Function: Returns strand information, being 1,-1 or 0
- Returns : -1,1 or 0
- Args    : none
-
-
 =head2 sub_SeqFeature
 
  Title   : sub_SeqFeature
@@ -109,7 +365,6 @@ sub _initialize {
  Function: Returns an array of sub Sequence Features
  Returns : An array
  Args    : none
-
 
 =head2 primary_tag
 
@@ -120,7 +375,6 @@ sub _initialize {
  Returns : a string 
  Args    : none
 
-
 =head2 source_tag
 
  Title   : source_tag
@@ -129,7 +383,6 @@ sub _initialize {
            eg, 'genscan' 
  Returns : a string 
  Args    : none
-
 
 =head2 has_tag
 
@@ -140,7 +393,6 @@ sub _initialize {
  Returns : 
  Args    :
 
-
 =head2 all_tags
 
  Title   : all_tags
@@ -148,8 +400,6 @@ sub _initialize {
  Function: gives all tags for this feature
  Returns : an array of strings
  Args    : none
-
-
 
 =head2 gff_string
 
