@@ -699,7 +699,9 @@ sub _objs_from_sth {
     if( $display_xref_id ) {
       $display_xref = bless 
 	{ 'dbID' => $display_xref_id,
-	  'adaptor' => $dbEntryAdaptor
+	  'adaptor' => $dbEntryAdaptor,
+	   'display_id' => $external_name,
+	   'dbname' => $external_db
 	}, "Bio::EnsEMBL::DBEntry";
     }
 				
