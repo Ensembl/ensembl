@@ -60,6 +60,9 @@ use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Translation;
 
+use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+use Bio::EnsEMBL::Utils::Argument qw( rearrange );
+
 @ISA = qw(Bio::EnsEMBL::Transcript);
 
 
@@ -370,6 +373,27 @@ sub transfer {
   return $new_transcript;
 }
 
+=head2 get_all_Exons
+
+  Arg [1]    : none
+  Example    : my @exons = @{$transcript->get_all_Exons()};
+  Description: Returns an listref of the exons in this transcipr in order.
+               i.e. the first exon in the listref is the 5prime most exon in 
+               the transcript.
+  Returntype : a list reference to Bio::EnsEMBL::Exon objects
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_Exons {
+   my ($self) = @_;
+   if( ! defined $self->{'_trans_exon_array'} && defined $self->adaptor() ) {
+     $self->{'_trans_exon_array'} = $self->adaptor()->db()->
+       get_PredictionExonAdaptor()->fetch_all_by_PredictionTranscript( $self );
+   }
+   return $self->{'_trans_exon_array'};
+}
 
 
 =head2 get_exon_count
