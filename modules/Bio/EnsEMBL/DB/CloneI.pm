@@ -53,7 +53,7 @@ use vars qw($AUTOLOAD @ISA $CONTIG_SPACING);
 use strict;
 use POSIX;
 #use Bio::EnsEMBL::DB::EmblVirtualContig;
-use Bio::EnsEMBL::Virtual::EmblClone;
+#use Bio::EnsEMBL::Virtual::EmblClone;
 
 
 # Object preamble - inheriets from Bio::Root::Object
@@ -323,16 +323,18 @@ Decorating functions. You do not need to implement these functions
 sub virtualcontig {
    my ($self) = @_;
    
-   my $vc = Bio::EnsEMBL::Virtual::EmblClone->new($self);
-   $vc->id($self->id);
-   $vc->sv($self->embl_version);
+#   my $vc = Bio::EnsEMBL::Virtual::EmblClone->new($self);
+#   $vc->id($self->id);
+#   $vc->sv($self->embl_version);
    
-   my $created = $self->_set_embl_date_format($self->created)." (CREATION DATE)";
-   my $modified= $self->_set_embl_date_format($self->modified)." (LAST MODIFICATION DATE)";
+#   my $created = $self->_set_embl_date_format($self->created)." (CREATION DATE)";
+#   my $modified= $self->_set_embl_date_format($self->modified)." (LAST MODIFICATION DATE)";
    
-   $vc->add_date($created);
-   $vc->add_date($modified);
-   return $vc;
+#   $vc->add_date($created);
+#   $vc->add_date($modified);
+#   return $vc;
+
+   return undef;
 }
 
 
