@@ -257,30 +257,31 @@ foreach my $object (@object_array) {
 $rec_db->replace_last_update($now_offset);
 
 sub _place_gene {
-    my ($gene,$clone_level) = @_;
+    my ($don_gene,$clone_level) = @_;
+    my $rec_gene
 
     #Check if the gene is present in the recipient
     eval {
-	my $rec_gene = $rec_db->get_Gene($gene->id);
+	$rec_gene = $rec_db->get_Gene($don_gene->id);
     };
     
     #If gene not present in recipient, write it in
     if ( $@ ) {
 	$verbose && print STDERR "New Gene, writing it in the database\n";
-	$rec_db->write_Gene($gene);
+	$rec_db->write_Gene($don_gene);
     }
     #If gene present in recipient, check donor and recipient version
     else {
 	#If donor gene version greater than recipient gene version, update
-	if ($gene->version > $rec_gene->version) {
+	if ($don_gene->version > $rec_gene->version) {
 	    $verbose && print STDERR "Gene with new version, updating the database, and archiving old version\n";
 	    $rec_db->archive_Gene($rec_gene,$arc_db);
-	    $rec_db->write_Gene($gene);
+	    $rec_db->write_Gene($don_gene);
 	}
 	
 	#If donor gene version is less than the recipient gene version, error 
 	#NOTE: Better catching to be implemented
-	elsif ($rec_gene->version > $object->version) {
+	elsif ($rec_gene->version > $don_gene->version) {
 	    print STDERR "Something is seriously wrong, found a gene in the recipient database with version number higher than that of the donor database!!!\n";
 	}
 	#If versions equal, nothing needs to be done
@@ -288,7 +289,7 @@ sub _place_gene {
 	    if ($clone_level) {
 		$verbose && print STDERR "Genes with the same version, deleting recipient gene and writing one from donor without archiving\n";  
 		$rec_db->delete_Gene($rec_gene->id);
-		$rec_db->write_gene($gene);
+		$rec_db->write_gene($don_gene);
 	    }
 	}
     }
