@@ -20,7 +20,7 @@
 #-----------------------------------------------------------------------
 
 use strict;
-use Bio::EnsEMBL::Pipeline::GeneComparisonStats;
+use Bio::EnsEMBL::GeneComparison::GeneComparisonStats;
 use Bio::EnsEMBL::DB::Clone;
 use Bio::EnsEMBL::DBSQL::Obj;
 use lib 't';
@@ -56,7 +56,7 @@ die "$0\nError fetching clones : $!" unless defined
 
 
 #Test 1 compares two identical clones 
-my $comparer = new Bio::EnsEMBL::Pipeline::GeneComparisonStats($standard1, $standard1);
+my $comparer = new Bio::EnsEMBL::GeneComparison::GeneComparisonStats($standard1, $standard1);
 print STDERR "Testing identical clones\n"; 
                                         
 if ($comparer->getGeneSpecificity == 1) { 
@@ -157,7 +157,7 @@ else {
 
 
 #Test 2 compares two clones that have no genes in common
-$comparer = new Bio::EnsEMBL::Pipeline::GeneComparisonStats($standard1, $predictor1);
+$comparer = new Bio::EnsEMBL::GeneComparison::GeneComparisonStats($standard1, $predictor1);
 print STDERR  "Testing clones with no genes in common\n";
                                         
 if ($comparer->getGeneSpecificity == 0) { 
@@ -265,7 +265,7 @@ else {
 
 
 #Test 3 compares two clones that have 1 gene in common and 1 unique gene each
-$comparer = new Bio::EnsEMBL::Pipeline::GeneComparisonStats($standard1, $predictor2);
+$comparer = new Bio::EnsEMBL::GeneComparison::GeneComparisonStats($standard1, $predictor2);
 print STDERR "Testing clones with 1 gene in common and 1 unique gene each\n";
 
 if ($comparer->getGeneSpecificity == 0.5) { 
@@ -367,7 +367,7 @@ else {
 
 #Test 4 compares two clones that have have one joined and one split gene
 #Compare the clones 
-$comparer = new Bio::EnsEMBL::Pipeline::GeneComparisonStats($standard2, $predictor3);
+$comparer = new Bio::EnsEMBL::GeneComparison::GeneComparisonStats($standard2, $predictor3);
 print STDERR "Testing clones that have 1 joined and 1 split gene\n";
                                            
 if ($comparer->getGeneSpecificity == 0.75) { 
