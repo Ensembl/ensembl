@@ -26,18 +26,33 @@ my $module = 'Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor';
 	       'dbpass:s' => \$dbpass,
 	       'module:s' => \$module,
 	       );
+my $clone=shift @ARGV;
+
 my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 
 print STDERR "Using $locator for crossmatch db\n";
 my $crossdb =  Bio::EnsEMBL::DBLoader->new($locator);
-my @clones=$crossdb->get_clonelist();
 
-foreach my $clone (@clones) {
-    print STDERR "Sending crossclonemap job for clone $clone to LSF queue\n";
-    my $command = "bsub -o $clone.out -e $clone.err -E /work2/elia/src/scripts/echeck.pl /work2/elia/src/ensembl/scripts/clonemap.pl $clone";
-    print STDERR "Command: $command\n";
-    system($command);
-}
+my $crossmap = Bio::EnsEMBL::Pipeline::RunnableDB::CrossCloneMap->new(-crossdb=>$crossdb, -score =>1000);
+print STDERR "Fetching input for clone $clone\n";
+$crossmap->fetch_input($clone);
+print STDERR "Running mapping for clone $clone\n";
+#$SIG{ALRM} = sub { die "timeout"};
+#eval {
+#    alarm(3600);
+$crossmap->run;
+#    alarm (0);
+#};
+#if ($@) {
+#    if ($@ =~ /timeout/) {
+#	die("EXCEPTION: Crossmatch for clone $clone timed out! Exiting");
+#    }
+#    else {
+#	die("Died because of $@");
+#    }
+#}
+print STDERR "Writing output for clone $clone\n";
+$crossmap->write_output;
 
 
 
