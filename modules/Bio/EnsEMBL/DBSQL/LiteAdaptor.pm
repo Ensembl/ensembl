@@ -95,6 +95,39 @@ sub fetch_virtualtranscripts_start_end {
     return \@transcripts
 }
 
+sub fetch_virtualfgenesh_start_end {
+    my ( $self, $chr, $vc_start, $vc_end ) =@_;
+    my $_db_name = $self->{'_lite_db_name'};
+    my $cache_name = "_virtualfgeneshs_cache_$chr"."_$vc_start"."_$vc_end";
+    
+    return $self->{$cache_name} if( $self->{$cache_name} );
+    my $sth = $self->prepare(
+        "select *
+           from $_db_name.fgenesh
+          where chr_name = ? and chr_start <= ? and chr_start >= ? and
+                chr_end >= ?"
+    );
+    eval {
+        $sth->execute( "$chr", $vc_end, $vc_start-2000000, $vc_start );
+    };
+    return [] if($@);
+    my @transcripts;
+    while( my $row = $sth->fetchrow_hashref() ) {
+        push @transcripts, {
+            'fgenesh'   => $row->{'name'},
+            'chr_name'  => $row->{'chr_name'},
+            'chr_start' => $row->{'chr_start'},
+            'chr_end'   => $row->{'chr_end'},
+            'start'     => $row->{'chr_start'} - $vc_start + 1,
+            'end'       => $row->{'chr_end'}   - $vc_start + 1,
+            'strand'    => $row->{'chr_strand'},
+            'exon_structure' => [ split ':', $row->{'exon_structure'} ]
+        };
+    }
+    return $self->{$cache_name} = \@transcripts;
+    return \@transcripts
+}
+
 sub fetch_virtualgenscans_start_end {
     my ( $self, $chr, $vc_start, $vc_end ) =@_;
     my $_db_name = $self->{'_lite_db_name'};
