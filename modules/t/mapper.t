@@ -31,7 +31,7 @@ use lib 't';
 
 $loaded = 1;
 $n_test = 0;  # global test counter
-ok();
+printok();
 
 use Bio::EnsEMBL::Mapper;    
 
@@ -41,7 +41,7 @@ $mapper = Bio::EnsEMBL::Mapper->new( "rawcontig", "virtualcontig" );
 load_sgp_dump( $mapper, undef );
 
 # loading done successfully
-ok();
+printok();
 
 # transform a segment entirely within the first rawcontig
 test_transform ($mapper,
@@ -68,7 +68,7 @@ test_transform ($mapper,
 
 sub test_transform {
     my ($mapper, $src, @dest) = @_;
-    if (@$src != 5) { warn "Bad source coords: (@$src)\n"; notok(); return }
+    if (@$src != 5) { warn "Bad source coords: (@$src)\n"; printnotprintok(); return }
     my ($srcid, $srcstart, $srcend, $srcstrand, $srctype) = @$src;
     my @coord = $mapper->map_coordinates ($srcid, $srcstart, $srcend, $srcstrand, $srctype);
     @coord = map ([isgap($_) ? $srcid : $_->id,  # Gap object should do this, but currently doesn't.
@@ -81,23 +81,25 @@ sub test_transform {
 	warn "Dest:\n", map ("(".join(",",@$_).")\n", @coord);
 	warn "Expected:\n", map ("(".join(",",@$_).")\n", @dest);
 	warn "Wrong number of segments\n";
-	notok();
+	printnotprintok();
 	return;
     }
-    ok();
+    printok();
     for (my $i = 0; $i < @coord; ++$i) {
 	for (my $n = 0; $n < 4; ++$n) {
-	    if ($coord[$i]->[$n] != $dest[$i]->[$n]) {
+	    if ($n == 0
+		? ($coord[$i]->[$n] ne $dest[$i]->[$n])
+		: ($coord[$i]->[$n] != $dest[$i]->[$n])) {
 		warn "Source:\n(", join(",",@$src), ")\n";
 		warn "Dest:\n", map ("(".join(",",@$_).")\n", @coord);
 		warn "Expected:\n", map ("(".join(",",@$_).")\n", @dest);
 		warn "Error in segment ", $i+1, " field ", $n+1, "\n";
-		notok();
+		printnotprintok();
 		return;
 	    }
 	}
     }
-    ok();
+    printok();
     return;
 }
 
@@ -236,6 +238,6 @@ chr1	625359	1214016	1216330	1	2315	1
 sub isgap { my ($obj) = @_; return !$obj->can ('strand') }
 
 # ok & notok subroutines
-sub ok() { print "ok ", ++$n_test, "\n" }
-sub notok() { print "not ok ", ++$n_test, "\n" }
+sub printok { print "ok ", ++$n_test, "\n" }
+sub printnotprintok { print "not ok ", ++$n_test, "\n" }
 
