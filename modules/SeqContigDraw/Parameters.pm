@@ -1,7 +1,59 @@
+
+#
+# Config file for SeqContigDraw.pm
+#
+
+
+=head1 NAME
+
+Parameters
+
+=head1 SYNOPSIS
+
+Contains parameters for SeqContigDraw
+
+=head1 DESCRIPTION
+
+Needs more description.
+
+=head1 CONTACT
+
+Describe contact details here
+
+=head1 APPENDIX
+
+=cut
+
+
+
+
+
+
+
 package Parameters;
 
 use strict;
 use GD;
+
+
+
+
+
+=head2 contig_image_components
+
+ Title   : contig_image_components
+ Usage   : $hashref=&Parameters::contig_image_components
+ Function: hashref with image components
+ Example :
+ Returns : hashref  with image components
+ Args    :
+
+
+=cut
+
+
+
+
 
 
 sub contig_image_components
@@ -26,6 +78,21 @@ sub contig_image_components
 }
 
 
+=head2 gene_image_components
+
+ Title   : gene_image_components
+ Usage   : $hashref=&Parameters::gene_image_components
+ Function: hashref with image components
+ Example :
+ Returns : hashref  with image components
+ Args    :
+
+
+=cut
+
+
+
+
 sub gene_image_components
     
 {
@@ -37,6 +104,22 @@ sub gene_image_components
     
     return $components;    
 }
+
+
+
+
+=head2 contig_image_par
+
+ Title   : contig_image_par
+ Usage   : $hashref=&Parameters::contig_image_par
+ Function: hashref with image parameters
+ Example :
+ Returns : hashref  with image parameters
+ Args    :
+
+
+=cut
+
 
 
 
@@ -60,6 +143,22 @@ sub contig_image_par
 
 
 
+=head2 gene_image_par
+
+ Title   : contig_image_par
+ Usage   : $hashref=&Parameters::contig_image_par
+ Function: hashref with image parameters
+ Example :
+ Returns : hashref  with image parameters
+ Args    :
+
+
+=cut
+
+
+
+
+
 sub gene_image_par
 {
         
@@ -77,6 +176,20 @@ sub gene_image_par
 
     return $image_param_ref;
 }
+
+
+
+=head2 colors
+
+ Title   : colors
+ Usage   : $hashref=&Parameters::colors($im)
+ Function: hashref with GD colors
+ Example :
+ Returns : hashref  with GD colors
+ Args    :
+
+
+=cut
 
 
 

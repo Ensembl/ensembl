@@ -31,6 +31,9 @@ use strict;
 use GD;
 use Parameters;
 
+
+
+
 =head2 draw_contig_image
 
  Title   : draw_contig_image
@@ -90,8 +93,8 @@ sub draw_contig_image
 =head2 print_legend
 
  Title   : print_legend
- Usage   : &SeqContigDraw::print_legend($im,$contig)
- Function: draws an image of a contig with all sequence features
+ Usage   : &SeqContigDraw::print_legend($im,$type)
+ Function: prints a legend for a contig image
  Example :
  Returns : 
  Args    :
@@ -126,6 +129,21 @@ sub print_legend
 
 
 
+=head2 draw_seq
+
+ Title   : draw_seq
+ Usage   : &SeqContigDraw::draw_seq($im)
+ Function: draws a sequence
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+
+
+
 sub draw_seq
 {
     my ($im)=@_;
@@ -144,6 +162,21 @@ sub draw_seq
     
     $im->filledRectangle($x_start,$y_start,$x_end,$y_end,$color);        
 }
+
+
+
+
+=head2 draw_gene
+
+ Title   : draws_gene
+ Usage   : &SeqContigDraw::draw_gene($im,$gene,$seq_len,$contig_id)
+ Function: draws a gene 
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
 
 
 
@@ -208,8 +241,7 @@ sub draw_gene
 	if (!defined $seq_len || $exon->contig_id eq $contig_id){	
 	    $new_gene_status=0;
 	    $keep_coord=$exon->end;  
-	}	
-    
+	}	    
     }
     # draw a scale bar for a gene image
     if (! defined $seq_len){ &draw_scale_bar($im,$len);}    
@@ -217,6 +249,19 @@ sub draw_gene
 }
 
 
+
+
+=head2 draw_feature
+
+ Title   : draws_feature
+ Usage   : &SeqContigDraw::draw_feature($im,$ft,$seq_len,$type,$color)
+ Function: draws a sequence feature
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
 
 
 sub draw_feature
@@ -251,6 +296,21 @@ sub draw_feature
 
 }
 
+
+
+
+
+=head2 draw_scale
+
+ Title   : draw_scale
+ Usage   : &SeqContigDraw::draw_scale($im,$contig)
+ Function: draws an image scale
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
 
 
 
@@ -320,6 +380,21 @@ sub draw_scale
 
 
 
+=head2 draw_scale-bar
+
+ Title   : draws_scale_bar
+ Usage   : &SeqContigDraw::draw_scale_bar($im,$len)
+ Function: draws a scale bar on a gene image
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+
+
+
 sub draw_scale_bar
 {
 
@@ -340,6 +415,19 @@ sub draw_scale_bar
 }
 
 
+=head2 gene_length
+
+ Title   : gene_length
+ Usage   : &SeqContigDraw::gene_length($gene)
+ Function: returns gene length
+ Example :
+ Returns : gene length
+ Args    :
+
+
+=cut
+
+
 
 sub gene_length
 {
@@ -355,6 +443,20 @@ sub gene_length
     
     return $gene_len;    
 }
+
+
+=head2 calc_x_coord
+
+ Title   : calc_x_coord
+ Usage   : &SeqContigDraw::calc_x_coord($seq_len,$start,$end,$length,$fixed)
+ Function: calculates x coordinates
+ Example :
+ Returns : start and end coordinates
+ Args    :
+
+
+=cut
+
 
 
 
@@ -376,6 +478,20 @@ sub calc_x_coord
 
     return my @x_coord=($x_start,$x_end);
 }
+
+
+
+=head2 calc_y_coord
+
+ Title   : calc_y_coord
+ Usage   : &SeqContigDraw::calc_y_coord($type,$width,$strand,$image_param_ref)
+ Function: calculates y coordinates
+ Example :
+ Returns : start and end coordinates
+ Args    :
+
+
+=cut
 
 
 
@@ -406,6 +522,20 @@ sub calc_y_coord
 
 
  
+=head2 print_map
+
+ Title   : print map
+ Usage   : &SeqContigDraw::print_map($type,$width,$strand,$image_param_ref)
+ Function: prints image map
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+
+
 sub print_map
 {
     my ($x_start,$y_start,$x_end,$y_end,$name,$url,$alt_text)=@_;
