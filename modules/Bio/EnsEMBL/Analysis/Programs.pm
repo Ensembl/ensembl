@@ -144,7 +144,7 @@ can be just the program name, or an absolute or
 relative path to the program.  Tildes are expanded
 correctly (I<not> using "glob").  Failure to find any
 one program is fatal, and a list of all failures is
-printed, along with the host's name.
+printed, along with the host''s name.
 
 If you want to check for a program during run time,
 the import funtion can be called directly, as shown above.
@@ -155,7 +155,7 @@ arguments passed.
 
 =head1 BUGS
 
-If the executable is in the root directory, then it's found
+If the executable is in the root directory, then it''s found
 path will appear as "//prog" in %Program_Paths, not "/prog".
 
 =head1 AUTHOR
