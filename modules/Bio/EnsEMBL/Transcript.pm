@@ -1231,7 +1231,7 @@ sub translate {
     $display_id = $self->translation->dbID;
   }
 
-  if( length( $mrna ) % 3 == 0 ) {
+  if( CORE::length( $mrna ) % 3 == 0 ) {
     $mrna =~ s/TAG$|TGA$|TAA$//i;
   }
   # the above line will remove the final stop codon from the mrna

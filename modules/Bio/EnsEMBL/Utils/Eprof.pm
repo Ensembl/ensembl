@@ -85,11 +85,7 @@ sub new {
 
 sub eprof_start{
    my ($tag) = @_;
-
-   if( !defined $global ) {
-       $global = Bio::EnsEMBL::Utils::Eprof->new();
-   }
-
+   $global = Bio::EnsEMBL::Utils::Eprof->new() unless defined $global;
    $global->start($tag);
 }
 
@@ -107,11 +103,7 @@ sub eprof_start{
 
 sub eprof_end {
    my ($tag) = @_;
-
-   if( !defined $global ) {
-       $global = Bio::EnsEMBL::Utils::Eprof->new();
-   }
-
+   $global = Bio::EnsEMBL::Utils::Eprof->new() unless defined $global;
    $global->end($tag);
 }
 
@@ -139,18 +131,20 @@ sub eprof_dump {
 =cut
 
 sub dump{
-   my ($self,$fh) = @_;
+  my ($self,$fh) = @_;
 
-   my @tags = sort {  $self->_tags->{$a}->total_time <=> $self->_tags->{$b}->total_time } keys %{$self->_tags};
+  my @tags = sort {  $self->_tags->{$a}->total_time <=> $self->_tags->{$b}->total_time } keys %{$self->_tags};
    
-   foreach my $tag ( @tags ) {
-       my $st = $self->_tags->{$tag};
-       if( $st->number == 0 ) {
-	   next;
-       }
-       print $fh sprintf("%14s  %6f  %6f  %d\n",$st->tag,$st->total_time,$st->total_time/$st->number,$st->number);
-   }
-
+  foreach my $tag ( @tags ) {
+    my $st = $self->_tags->{$tag};
+    next if $st->number == 0;
+    my $STD = '---';
+    if($st->number>1) {
+      my $SS = $st->total_time_time - $st->total_time*$st->total_time/$st->number;
+      $STD = sprintf "%6f", sqrt( $SS/$st->number/($st->number-1) ) if $SS>0;
+    }
+    print $fh sprintf("Eprof: %20s  %6f  %6f  %d  %s  [%6f,%6f]\n",$st->tag,$st->total_time,$st->total_time/$st->number,$st->number,$STD,$st->min_time,$st->max_time);
+  }
 }
 
 
@@ -167,17 +161,10 @@ sub dump{
 =cut
 
 sub start{
-   my ($self,$tag) = @_;
-
-   if( !defined $tag ) {
-       $self->throw("Must start on tag");
-   }
-
-   if( !defined $self->_tags->{$tag} ) {
-       $self->_tags->{$tag} = Bio::EnsEMBL::Utils::EprofStack->new($tag);
-   }
-
-   $self->_tags->{$tag}->push_stack();
+  my ($self,$tag) = @_;
+  $self->throw("Must start on tag")                                 unless defined $tag;
+  $self->_tags->{$tag} = Bio::EnsEMBL::Utils::EprofStack->new($tag) unless defined $self->_tags->{$tag};
+  $self->_tags->{$tag}->push_stack();
 }
 
 =head2 end
@@ -193,17 +180,10 @@ sub start{
 =cut
 
 sub end{
-   my ($self,$tag) = @_;
-
-   if( !defined $tag ) {
-       $self->throw("Must end on tag");
-   }
-
-   if( !defined $self->_tags->{$tag} ) {
-       $self->throw("Ending with a nonexistant tag");
-   }
-
-   $self->_tags->{$tag}->pop_stack();
+  my ($self,$tag) = @_;
+  $self->throw("Must end on tag")               unless defined $tag;
+  $self->throw("Ending with a nonexistant tag") unless defined $self->_tags->{$tag};
+  $self->_tags->{$tag}->pop_stack();
 }
 
 
@@ -219,9 +199,8 @@ sub end{
 =cut
 
 sub _tags{
-   my $obj = shift;
-
-    return $obj->{'_tags'};
+  my $obj = shift;
+  return $obj->{'_tags'};
 }
 
 1;

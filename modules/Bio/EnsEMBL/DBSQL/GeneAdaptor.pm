@@ -291,6 +291,55 @@ sub fetch_by_stable_id{
  }
 
 
+=head2 fetch_by_exon_stable_id
+
+  Arg [1]    : string $id
+               The stable id of the gene to retrieve
+  Arg [2]    : (optional) boolean $chr_coords
+               flag indicating genes should be returned in chromosomal
+               coords instead of contig coords.
+  Example    : $gene = $gene_adaptor->fetch_by_exon_stable_id('ENSE00000148944');
+  Description: Retrieves a gene object from the database via an exon stable id
+  Returntype : Bio::EnsEMBL::Gene in contig coordinates by default or in
+               chromosomal coords if the $chr_coords arg is set to 1.
+  Exceptions : thrown if no gene of stable_id $id exists in the database
+  Caller     : general
+
+=cut
+
+sub fetch_by_exon_stable_id{
+   my ($self,$id, $chr_coords) = @_;
+
+   my $sth = $self->prepare(
+     "SELECT t.gene_id
+        FROM transcript as t,
+             exon_transcript as et,
+             exon_stable_id as esi
+       WHERE t.transcript_id = et.transcript_id and et.exon_id = esi.exon_id and esi.stable_id = '$id'");
+   $sth->execute;
+
+   my ($dbID) = $sth->fetchrow_array();
+
+   warn( "GENE: $dbID\n" );
+   if( !defined $dbID ) {
+       $self->throw("No stable id with $id, cannot fetch");
+   }
+
+   my $gene = $self->fetch_by_dbID($dbID);
+
+   if($chr_coords) {
+     #transform gene to chromosomal coords
+     my $slice_adaptor = $self->db->get_SliceAdaptor;
+     my $slice = new Bio::EnsEMBL::Slice(-empty => 1,
+                                         -adaptor => $slice_adaptor);
+     $gene->transform($slice);
+   }
+  
+   return $gene;
+ }
+
+
+
 
 =head2 fetch_all_by_domain
 
