@@ -18,9 +18,8 @@ PredictionTranscript
 
 =head1 DESCRIPTION
 
-Container for single transcript ab initio gene prediction ala GenScan.
+Container for single transcript ab initio gene prediction ala GenScan or SNAP.
 Is directly storable/retrievable in EnsEMBL using PredictionTranscript Adaptor.
-
 
 Creation:
 
@@ -54,288 +53,61 @@ contact EnsEMBL dev <ensembl-dev@ebi.ac.uk> for information
 
 =cut
 
-
-# Let the code begin...
-
 package Bio::EnsEMBL::PredictionTranscript;
 use vars qw(@ISA);
 use strict;
 
-
-use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
-use Bio::Seq;
+use Bio::EnsEMBL::Translation;
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::TranscriptI);
-
-=head2 new
-
-  Arg [1-]  : Bio::EnsEMBL::Exon $exon
-              Exons which make up this transcript in the right order.
-              Optional, can be added as well with add_Exon.
-  Function  : Creates a new PredictionTranscript
-  Returntype: Bio::EnsEMBL::PredictionTranscript
-  Exceptions: none
-  Caller    : Adaptor, Genscan Runnable
-
-=cut
-
-sub new {
-  my($class,@optional_exons) = @_;
-
-  if( ref $class ) { 
-      $class = ref $class;
-  }
-
-  my $self = {};
-  bless $self,$class;
-
-  # set stuff in self from @args
-  foreach my $exon (@optional_exons) {
-    if( ! defined $self->{'exons'} ) {
-      $self->{'exons'} = [];
-    }
-
-    $self->add_Exon($exon);
-  }
-
-  return $self;
-}
-
-
-
-=head2 stable_id
-
-  Arg [1]    : (optional) $stable_id 
-  Example    : my $pt_id = $prediction_transcript->stable_id;
-  Description: Retrieves the stable id fro this prediction transcript.  
-               Prediction transcripts do not maintain stable ids as real 
-               transcripts do - the id is constructed from the name of the
-               contig the prediction transcript was pulled off of, and the
-               start and end of the transcript on the contig.
-               i.e. the stable id is:  "$contig_name.$contig_start.$contig_end"
-  Returntype : string
-  Exceptions : none
-  Caller     : general, PredictionTranscriptAdaptor
-
-=cut
-
-sub stable_id {
-  my ($self, $value) = @_;
-
-  if($value) {
-    $self->{'_stable_id'} = $value;
-  }
-
-  return $self->{'_stable_id'};
-}
-
+@ISA = qw(Bio::EnsEMBL::Transcript);
 
 
 =head2 coding_region_start
 
-  Arg [1]  :  The new coding start of this prediction transcript in slice 
-              coords.
-  Function  : Getter/Setter for the coding start of this transcript.
-              Implemented to satisfy requirements of TranscriptI interface
-              and so that it can be drawn as a Transcript. Since prediction
-              transcripts do not currently have UTRs the coding start should
-              return the same value as the start method.
-              By convention, the coding_region_start is always lower than the 
-              value returned by the coding_region_end method.  The value 
-              returned by this function is NOT the biological coding start 
-              since on the reverse strand the biological coding start would 
-              be the higher genomic value. 
-  Returntype: scalar int
-  Exceptions: none
-  Caller    : GlyphSet_transcript
+  Arg [1]    : none
+  Example    : $coding_region_start = $pt->coding_region_start
+  Description: Retrieves the start of the coding region of this transcript in
+               slice coordinates.  For prediction transcripts this
+               is always the start of the transcript (i.e. there is no UTR).
+               By convention, the coding_region_start is always lower than
+               the value returned by the coding_end method.
+               The value returned by this function is NOT the biological
+               coding start since on the reverse strand the biological coding
+               start would be the higher genomic value.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub coding_region_start {
-  my ($self, $arg) = @_;
-
-  if(defined $arg) {
-    $self->{'coding_region_start'} = $arg;
-  } elsif(!defined $self->{'coding_region_start'}) {
-    #if the coding start is not defined, use the start of the transcript
-    return $self->start();
-  }
-
-  return $self->{'coding_region_start'};
+  my $self = shift;
+  return $self->start();
 }
 
 
 =head2 coding_region_end
 
-  Arg [1]  :  (optional) The new coding end of this prediction transcript 
-              in slice coords.
-  Function  : Getter/Setter for the coding end of this transcript.
-              Implemented to satisfy requirements of TranscriptI interface
-              and so that it can be drawn as a Transcript. Since prediction
-              transcripts do not currently have UTRs the coding end should
-              be the same as the end of the transcript.
-              By convention, the coding_region_start is always lower than the 
-              value returned by the coding_region_end method.  The value 
-              returned by this function is NOT the biological coding start 
-              since on the reverse strand the biological coding start would 
-              be the higher genomic value. 
-  Returntype: scalar int
-  Exceptions: none
-  Caller    : GlyphSet_transcript
+  Arg [1]    : none
+  Example    : $coding_region_end = $transcript->coding_region_end
+  Description: Retrieves the start of the coding region of this prediction
+               transcript. For prediction transcripts this is always the same
+               as the end since no UTRs are stored.
+               By convention, the coding_region_end is always higher than the
+               value returned by the coding_region_start method.
+               The value returned by this function is NOT the biological
+               coding start since on the reverse strand the biological coding
+               end would be the lower genomic value.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub coding_region_end {
-  my ($self, $arg) = @_;
-
-  if(defined $arg) {
-    $self->{'coding_region_end'} = $arg;
-  } elsif(!defined $self->{'coding_region_end'}) {
-    #if the coding end is not defined, use the end of the transcript
-    return $self->end();
-  }
-  return $self->{'coding_region_end'};
-}
-
-
-=head2 start
-
-  Arg [1]  :  The new start of this prediction transcript in slice 
-              coords.
-  Function  : Getter/Setter for the start of this transcript.
-              Implemented to satisfy requirements of TranscriptI interface
-              and so that it can be drawn as a Transcript.
-  Returntype: scalar int
-  Exceptions: none
-  Caller    : GlyphSet_transcript
-
-=cut
-
-sub start {
-  my ($self, $arg) = @_;
-
-  if(defined $arg) {
-    $self->{'start'} = $arg;
-  }
-
-  return $self->{'start'};
-}
-
-=head2 end
-
-  Arg [1]  :  The new end of this prediction transcript in slice coords.
-  Function  : Getter/Setter for the end of this transcript.
-              Implemented to satisfy requirements of TranscriptI interface
-              and so that it can be drawn as a Transcript.
-  Returntype: scalar int
-  Exceptions: none
-  Caller    : GlyphSet_transcript
-
-=cut
-
-sub end {
-  my ($self, $arg) = @_;
-
-  if(defined $arg) {
-    $self->{'end'} = $arg;
-  }
-
-  return $self->{'end'};
-}
-
-
-## Attribute section ##
-
-sub analysis {
-  my ( $self, $value ) = @_;
-  ( defined $value ) && 
-    ( $self->{'analysis'} = $value );
-  return $self->{'analysis'};
-}
-
-
-sub dbID {
-   my $self = shift;
-
-   if( @_ ) {
-      my $value = shift;
-      $self->{'dbID'} = $value;
-    }
-    return $self->{'dbID'};
-
-}
-
-sub adaptor {
-   my $self = shift;
-
-   if( @_ ) {
-      my $value = shift;
-      $self->{'adaptor'} = $value;
-    }
-    return $self->{'adaptor'};
-}
-
-## end attribute section ##
-
-=head2 add_Exon
-
-  Arg  1    : Bio::EnsEMBL::Exon $exon
-  Arg [2]   : int $exon_position
-              Use it when you know you dont have exons in the
-              beginning. Useful for the Adaptor when retrieving 
-              partial PT..
-  Function  : Adds given Exon to this prediction transcript. 
-              It can be at arbitrary position in the array. Not filled lower
-              positions in the exon list are set undef then. Counting starts at 1.
-  Returntype: none
-  Exceptions: if argument is not Bio::EnsEMBL::Exon
-  Caller    : Pipeline runnable Genscan
-
-=cut
-
-
-sub add_Exon {
-  my ($self, $exon, $position) = @_;
-  if( defined $position ) {
-    $self->{'exons'}[$position-1] = $exon;
-  } else {
-    push( @{$self->{'exons'}}, $exon );
-  }
-
-  if(defined $exon && (!defined $self->{'start'} ||
-		       $exon->start() < $self->{'start'})) {
-    $self->start($exon->start());
-  }
-  if(defined $exon && (!defined $self->{'end'} ||
-		       $exon->end() > $self->{'end'})) {
-    $self->end($exon->end());
-  }
-}
-
-
-
-=head2 get_all_Exons
-
-  Arg [1]   : optional 1 $wish_undefined_exons 
-  Function  : Returns all Exons currently in the PredictionTranscript
-              in the order 5' to 3'. If this is a partial PredictionTranscript,
-              elements of the list will be undef.
-  Returntype: listref Bio::EnsEMBL::Exon
-  Exceptions: none
-  Caller    : self->get_cdna(),Web for display.
-
-=cut
-
-sub get_all_Exons {
-   my ($self, $wish_undefined_exon ) = @_;
-   
-   if( $wish_undefined_exon ) {
-     return $self->{'exons'};
-   } else {
-     return [ grep{ ref( $_ ) eq 'Bio::EnsEMBL::Exon' } @{$self->{'exons'}} ];
-   }
+  my $self = shift;
+  return $self->end();
 }
 
 
@@ -344,12 +116,10 @@ sub get_all_Exons {
 
   Arg [1]    : none
   Example    : $exons = $self->get_all_translateable_Exons
-  Description: Retreives the same value of get_all_Exons for this prediction
-               transcript with the exception that undefined exons (only when
-               transcript is in slice coords and exon maps to gap) are not
-               returned.  In a prediction transcript there is no UTR and
-               thus all exons are entirely translateable.
-  Returntype : listref of Bio::EnsEMBL::Exon
+  Description: Retrieves the translateable portion of all exons in this
+               transcript.  For prediction transcripts this means all exons
+               since no UTRs are stored for them.
+  Returntype : listref of Bio::EnsEMBL::PredictionExons
   Exceptions : none
   Caller     : general
 
@@ -357,144 +127,53 @@ sub get_all_Exons {
 
 sub get_all_translateable_Exons {
   my $self = shift;
-
-  return [ grep{ ref( $_ ) eq 'Bio::EnsEMBL::Exon' } @{$self->get_all_Exons(1)} ];
+  return $self->get_all_Exons();
 }
 
 
+sub get_all_DBEntries { return []; }
 
-=head2 sort
+sub get_all_DBLinks { return []; }
 
- Function: Sorts the exons by start coordinate
-           Sorts forward for forward strand and reverse for reverse strand
-           It refills $self->{'exons'} with the sorted exons
- Returns : none
- Args    : none
+sub add_DBEntry {}
 
-=cut
+sub external_db { return undef; }
 
-sub sort {
+sub external_status { return undef; }
+
+sub external_name { return undef; }
+
+sub is_known { return 0;}
+
+
+sub translation {
   my $self = shift;
 
-  # dont sort if there are undefined exons
-  if( grep { ! defined $_ } @{$self->{'exons'}} ) {
-    return;
-  }
-  # Fetch all the exons
-  my @exons = @{$self->get_all_Exons()};
+  #calculate translation on the fly
+  my $strand = $self->strand();
 
-  # Empty the exon holder
-  $self->flush_Exons();
+  my $start_exon;
+  my $end_exon;
 
-  # Now sort the exons and put back in the feature table
-  my $strand = $exons[0]->strand;
+  my @exons = $self->get_all_Exons();
 
-  if ($strand == 1) {
-    @exons = sort { $a->start <=> $b->start } @exons;
-  } 
-  elsif ($strand == -1) {
-    @exons = sort { $b->start <=> $a->start } @exons;
+  return undef if(!@$exons);
+
+  if($strand == 1) {
+    $start_exon = $exons[0];
+    $end_exon = $exons[-1];
+  } else {
+    $start_exon = $exons[-1];
+    $end_exon = $exons[0];
   }
 
-  foreach my $e (@exons) {
-    $self->add_Exon($e);
-  }
+  return
+    Bio::EnsEMBL::Translation->new(-START_EXON => $start_exon,
+                                   -END_EXON   => $end_exon,
+                                   -SEQ_START  => 1,
+                                   -SEQ_END    => $end_exon->length());
 }
 
-
-
-=head2 get_exon_count
-
-  Args      : none
-  Function  : How many exons are in this PTranscript. Some might 
-              not be in this object, depending on how it was retrieved.
-	      (non golden exons missing on Slice->get_predicitonTranscripts()) 
-  Returntype: int
-  Exceptions: none
-  Caller    : general
-
-=cut
-
-
-sub get_exon_count {
-   my $self = shift;
-   return scalar( @{$self->{'exons'}} );
-}
-
-
-
-=head2 set_exon_count
-
-  Arg 1     : int $number_of_exons
-              If the number of exons you put in with add_exon is not the 
-              real number of exons in the Transcript, you can set it here.
-              Might be necessary in db gets, where you dont get all.
-  Function  : sets number of exons, so get_all_Exons returns more undef exons
-              at the end. After this, you have to use position argument when you
-	      want to insert Exons.
-  Returntype: none
-  Exceptions: If you set less then already in, you loose what you have :)
-  Caller    : $self->adaptor()
-
-=cut
-
-sub set_exon_count {
-  my $self = shift;
-  my $number_of_exons = shift;
-
-  if( ! defined $self->{'exons'} ) {
-    $self->{'exons'} = [];
-  }
-
-  $#{$self->{'exons'}} = $number_of_exons-1;
-}
-
-
-
-=head2 length
-
-  Args      : none
-  Function  : length of DNA of all Exons in the PT together. No phase padding 
-              is done.
-  Returntype: int
-  Exceptions: differs from length in get_cdna() as that might be padded.
-  Caller    : unknown
-
-=cut
-
-
-sub length {
-    my( $self ) = @_;
-    
-    my $length = 0;
-    foreach my $ex (@{$self->get_all_Exons}) {
-      if( defined $ex ) { $length += $ex->length };
-    }
-    return $length;
-}
-
-
-
-
-=head2 flush_Exons
-
-  Args      : none
-  Function  : Removes all Exons from this PT. Resets count to zero.
-  Returntype: none
-  Exceptions: none
-  Caller    : for completeness, use not likely.
-
-=cut
-
-sub flush_Exons {
-   my ($self,@args) = @_;
-
-   $self->{'exons'} = [];
-   $self->{'start'} = undef;
-   $self->{'end'} = undef;
-   $self->{'coding_start'} = undef;
-   $self->{'coding_end'}   = undef;
-}
 
 
 =head2 translate
@@ -522,7 +201,7 @@ sub translate {
   # or call translatable seq directly and produce a translation from it
 
   my $bioseq = new Bio::Seq( -seq => $dna, -moltype => 'dna' );
-  
+
   return $bioseq->translate();
 }
 	 
@@ -836,6 +515,32 @@ sub transform {
 
   # attach the new list of exons to the transcript
   $self->{'exons'} = \@exons;
+}
+
+
+
+
+=head2 get_exon_count
+
+  Description: DEPRECATED - use get_all_Exons instead
+
+=cut
+
+sub get_exon_count {
+   my $self = shift;
+   deprecate("Use scalar(@{get_all_Exons}) instead");
+   return scalar( @{$self->get_all_Exons} );
+}
+
+
+=head2 set_exon_count
+
+  Description: DEPRECATED - this method does nothing now
+
+=cut
+
+sub set_exon_count {
+  deprecate('This method no longer does anything.');
 }
 
 
