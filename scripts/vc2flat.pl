@@ -134,6 +134,7 @@ if ($help){
 my $db;
 my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 $db = Bio::EnsEMBL::DBLoader->new($locator);
+$db->static_golden_path_type('UCSC');
 my $stadp = $db->get_StaticGoldenPathAdaptor();
 
 #get input strings
@@ -185,9 +186,9 @@ foreach my $vcstring ( @vcstrings ) {
 	    $vc = $stadp->fetch_VirtualContig_by_chr_name($chr);
 	} elsif ( $vcstring =~ /^(ctg\S+)$/ ) {
 	    my $ctg   = $1;
-	    $vc = $stadp->fetch_VirtualContig_by_fpcctg_name($ctg);
+	    $vc = $stadp->fetch_VirtualContig_by_fpc_name($ctg);
 	}
-
+	$vc->id($vcstring);
 	if( $format =~ /gff/ ) {
 	    my @seqfeatures = $vc->top_SeqFeatures();
 	    foreach my $sf (@seqfeatures ) {

@@ -55,6 +55,8 @@ use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::TimDB::Obj;
 use Bio::SeqIO;
 
+use Bio::EnsEMBL::Utils::Eprof('eprof_start','eprof_end','eprof_dump');
+
 use Getopt::Long;
 
 my $dbtype = 'rdb';
@@ -101,6 +103,8 @@ if ($help) {
     exec('perldoc', $0);
 }
 
+&eprof_start('init');
+
 if ( $dbtype =~ 'timdb' ) {
     $db = Bio::EnsEMBL::TimDB::Obj->new('',$noacc,$test);
 } else {
@@ -141,6 +145,10 @@ if ($format eq 'webdump') {
 $db->DESTROY;
 $db=undef;
 
+&eprof_end('init');
+
+&eprof_start('gene_loop');
+
 while ( @gene_id > 0 ) {
     my @chunk_list = splice(@gene_id,0,$chunk);
 
@@ -155,7 +163,11 @@ while ( @gene_id > 0 ) {
 	    my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 	    $db =  Bio::EnsEMBL::DBLoader->new($locator);
 	}
+
+	&eprof_start('gene_get');
 	my @genes = $db->gene_Obj->get_array_supporting('none',@chunk_list);
+	&eprof_end('gene_get');
+
 	foreach my $gene ( @genes ) {
 	    my $gene_id = $gene->id();
 	    if( $format eq 'pep' ) {
@@ -240,6 +252,9 @@ while ( @gene_id > 0 ) {
     $db=undef;
 }
 
+&eprof_end('gene_loop');
+
+&eprof_dump(\*STDERR);
 
 
 
