@@ -76,8 +76,6 @@
 
 19	fish	FISH location 
 
-20	state	Clone state 
-
 21	org	Sequencing centre 
 
 22	method	Method 
@@ -122,3 +120,11 @@
 
 # Acknowledgements for manual annotation of this seq_region
 47	ack	Acknowledgement		Acknowledgement
+
+# old clone attribute
+
+48	htg_phase	High throughput phase	high throughput genomic sequencing phase
+49	description	Description	A general descriptive text attribute
+50	chromosome	Chromosome	chromosomal location for supercontigs that are not assembled
+51	nonsense	Nonsense Mutation	Strain specific nonesense mutation
+
