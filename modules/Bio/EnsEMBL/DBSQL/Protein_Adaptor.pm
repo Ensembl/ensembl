@@ -114,7 +114,7 @@ sub fetch_Protein_by_dbid{
    my ($self,$id) = @_;
 
 #Get the transcript id from the translation id 
-   my $query = "select id,gene from transcript where translation = '$id'";
+   my $query = "select transcript_id,gene_id from transcript where translation_id = '$id'";
    my $sth = $self->prepare($query);
    $sth ->execute();
    my @rowid = $sth->fetchrow;
@@ -129,22 +129,6 @@ sub fetch_Protein_by_dbid{
    if (!defined $geneid) {
        $self->throw("$id does not have a gene id");
    }
-
-#Get the different dates (created and modified) for the corresponding gene   
-   my $query1 = "select g.created,g.modified from gene as g, transcript as t where t.gene = g.id and t.translation = '$id'";
-   my $sth1 = $self->prepare($query1);
-   $sth1 ->execute();
-     
-   my @date = $sth1->fetchrow;
-   my $created = $date[0];
-   my $modified = $date[1];
-
-#Add created and modified tag to the date
-   ($created) = $created =~ /(\d+-\d+-\d+)/;
-   $created = $created." (Created)";
-
-   ($modified) = $modified =~ /(\d+-\d+-\d+)/;
-   $modified = $modified." (Modified)";
 
 #Get the transcript object (this will allow us to get the aa sequence of the protein
    my $transcript = $self->fetch_Transcript_by_dbid($transid);
@@ -173,6 +157,8 @@ sub fetch_Protein_by_dbid{
    my $meta_obj = $self->db->get_MetaContainer();
    my $species = $meta_obj->get_Species();
    
+   print STDERR "Got a species $species\n";
+
    #This has to be changed, the description may be take from the protein family description line
    my $desc = "Protein predicted by Ensembl";
   
@@ -202,8 +188,8 @@ sub fetch_Protein_by_dbid{
    my $ann  = Bio::Annotation->new;
       
    $protein ->annotation($ann);
-   $protein->add_date($created);
-   $protein->add_date($modified);
+   #$protein->add_date($created);
+   #$protein->add_date($modified);
 
    return $protein;
 }
@@ -224,7 +210,7 @@ sub fetch_Transcript_by_dbid{
    my ($self,$transcript_id) = @_;
 
 #Call the method get_Transcript on Gene_Obj.om   
-   my $transcript = $self->_gene_obj->get_Transcript($transcript_id);
+   my $transcript = $self->db->get_TranscriptAdaptor->fetch_by_dbID($transcript_id);
          
    return $transcript;
 
@@ -378,7 +364,7 @@ sub get_Introns{
     my $previous_ex_end=0;
     my $count = 1;
 
-    my $query = "select id from transcript where translation = '$protid'";
+    my $query = "select transcript_id from transcript where translation_id = '$protid'";
     my $sth = $self->prepare($query);
     $sth ->execute();
     my @rowid = $sth->fetchrow;
@@ -462,8 +448,8 @@ sub get_exon_global_coordinates{
                IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start),
                  (sgp.chr_start+sgp.raw_end-e.seq_start)) as end
                FROM       static_golden_path as sgp ,exon as e
-               WHERE      sgp.raw_id=e.contig
-               AND        e.id='$exid'";
+               WHERE      sgp.raw_id=e.contig_id
+               AND        e.exon_id='$exid'";
               
 
    my $sth = $self->prepare($query);

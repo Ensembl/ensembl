@@ -553,7 +553,7 @@ sub has_genes{
    my $contig_id = $self->internal_id();   
 
    my $seen =0;
-   my $sth = $self->dbobj->prepare("select id from exon where contig = '$contig_id' limit 1");
+   my $sth = $self->dbobj->prepare("select exon_id from exon where contig_id = '$contig_id' limit 1");
    $sth->execute();
 
    my $rowhash;

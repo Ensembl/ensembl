@@ -1937,15 +1937,15 @@ sub _sanity_check{
        # have worked:
        # start exon:
        my $t = $transc->translation;
-       my $e = $gene->get_Exon_by_id($t->start_exon_id);
-       my $m =_check_exon_start_end($t, $e, 'start');
+       if( $t->start > $t->start_exon->length ) {
+	   $message .= "Translation start ".$t->start." is greater than start exon length ".$t->start_exon->length;
+	   $error = 1;
+       }
+       if( $t->end > $t->end_exon->length ) {
+	   $message .= "Translation end ".$t->end." is greater than end exon length ".$t->end_exon->length;
+	   $error = 1;
+       }
 
-       if ($m) { $error++;  $message .= $m;}
-
-       # same for end exon:
-       $e = $gene->get_Exon_by_id($t->end_exon_id);
-       $m  = _check_exon_start_end($t, $e, 'end');
-       if ($m) { $error++;  $message .= $m;}
    }                                    # each_Transcript
 
    if( $error ) {

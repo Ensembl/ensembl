@@ -87,7 +87,7 @@ sub fetch_by_dbID {
 
     my $ts = $self->prepare("select translation_id from transcript where transcript_id = $transid");
     $ts->execute;
-    my ($val) = $sth->fetchrow_array();
+    my ($val) = $ts->fetchrow_array();
     $trans->_translation_id($val);
 
     return $trans;

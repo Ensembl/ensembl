@@ -439,6 +439,10 @@ sub _translate {
     my $pep;
     my $i;
   
+    if( $self->length < 3 ) {
+	$self->throw("Perfectly valid sub length 2 exon. Impossible to translate. Doh!".$self->length." ".$self->dbID);
+    }
+
     # changed this to work with the new SeqFeature stuff. I am still not
     # 100% happy about this. EB.
   

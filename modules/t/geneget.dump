@@ -2,9 +2,9 @@ INSERT INTO clone (id, internal_id,embl_id, version, embl_version, htg_phase, cr
 VALUES ('pog', 1,'pog', 1, 1, 3, '0000-00-00 00:00:00', '0000-00-00 00:00:00', '0000-00-00 00:00:00');
 
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
-VALUES (1, 'contig1', 1, 5, 1, 0, NULL, 'chromosome1', 'international-a');
+VALUES (1, 'contig1', 1, 5, 1, 1, NULL, 'chromosome1', 'international-a');
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
-VALUES (2, 'contig2', 1, 6, 2, 0, NULL, 'chromosome1', 'international-b');
+VALUES (2, 'contig2', 1, 8, 2, 0, NULL, 'chromosome1', 'international-b');
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
 VALUES (3, 'contig3', 1, 5, 3, 0, NULL, 'chromosome1', 'international-c');
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
@@ -12,10 +12,13 @@ VALUES (4, 'contig4', 1, 6, 4, 0, NULL, 'chromosome1', 'international-d');
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
 VALUES (5, 'contig5', 1, 5, 5, 0, NULL, 'chromosome1', 'international-e');
 
+# this is for testing inside rawcontig.t
+INSERT INTO static_golden_path (fpcctg_name,chr_name,raw_id,fpcctg_start,fpcctg_end,chr_start,chr_end,raw_start,raw_end,raw_ori,type) VALUES ('ctg123','chr2',1,1,5,3001,3005,1,5,1,'UCSC');
+
  
 INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (1,1,2,4,1,0,1);
 INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (1,2,2,4,2,0,1);
-INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (2,2,5,6,1,0,1);
+INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (2,2,5,8,1,0,1);
 
 INSERT INTO exon_stable_id (exon_id,stable_id) VALUES (1,'exon-1');
 INSERT INTO exon_stable_id (exon_id,stable_id) VALUES (2,'exon-2');
@@ -32,8 +35,9 @@ INSERT INTO gene_stable_id (gene_id,stable_id) VALUES (1,'ENSG1');
 
 INSERT INTO gene_description (gene_id,description) VALUES (1,"some description");
 
-INSERT INTO translation (translation_id,start_exon_id,seq_start,end_exon_id,seq_end) VALUES (1,1,2,2,6);
+INSERT INTO translation (translation_id,start_exon_id,seq_start,end_exon_id,seq_end) VALUES (1,1,2,2,4);
 INSERT INTO translation_stable_id (translation_id,stable_id) VALUES (1,'trl-1');
+
 
 
 
@@ -41,7 +45,7 @@ INSERT INTO translation_stable_id (translation_id,stable_id) VALUES (1,'trl-1');
 INSERT INTO dna (id, sequence, created) 
 VALUES (1, 'AAAAA', '2000-04-27 08:31:59');
 INSERT INTO dna (id, sequence, created) 
-VALUES (2, 'CCCCCC', '2000-04-27 08:31:59');
+VALUES (2, 'CCCCCCCC', '2000-04-27 08:31:59');
 INSERT INTO dna (id, sequence, created) 
 VALUES (3, 'TTTTT', '2000-04-27 08:31:59');
 INSERT INTO dna (id, sequence, created) 
@@ -50,9 +54,13 @@ INSERT INTO dna (id, sequence, created)
 VALUES (5, 'AAAAA', '2000-04-27 08:31:59');
 
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id)
-VALUES (1, 1, 2, 3, 10, 1, 1, 'silly', 100, 120, 'P30002', 0.0, 0);
+VALUES (1, 1, 2, 3, 90, 1, 1, 'silly', 100, 120, 'P30002', 0.0, 0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id)
-VALUES (2, 1, 2, 3, 10, 1, 2, 'genscan', 0, 0, 'genscan', 0.0, 0);
+VALUES (2, 1, 2, 3, 10, 1, 2, 'genscan', 0, 0, 'Single Exon', 0.0, 0);
+
+
+INSERT INTO repeat_feature (id, contig, seq_start, seq_end, score, strand, analysis, hstart, hend, hid)
+VALUES (1, 1, 2, 4, 100, 1, 3, 100, 120, 'P40000');
 
 INSERT INTO fset (id, score)
 VALUES (1, 100);
@@ -64,6 +72,12 @@ INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, 
 VALUES (1, 'swissprot', 12, 'blast', 12,  'blast', 'similarity');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
 VALUES (2, 'genscan', 12, 'blast', 12, 'blast', 'similarity');
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
+VALUES (3, 'repeat', 12, 'repeatmasker', 12, 'repeatmasker', 'repeat');
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (6,'Pfam',3,'hmm','1','Fasta','domain');
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (7,'PRINTS',3,'hmm','1','Fasta','domain');
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,'transmembrane',3,'hmm','1','trans','trans');
+
 
 #
 # Dumping data for table 'objectXref'
@@ -71,9 +85,15 @@ VALUES (2, 'genscan', 12, 'blast', 12, 'blast', 'similarity');
 
 INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 1,'Gene', 1);
 INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 1,'Gene', 2);
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 1,'Transcript', 1);
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 1,'Transcript', 2);
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 1,'Translation', 2);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (3, 1,'Transcript', 1);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (4, 1,'Transcript', 2);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (5, 1,'Translation', 2);
+
+#
+#Dumping data for identityXref
+#
+
+INSERT INTO identityXref (objectxrefId, query_identity, target_identity) VALUES (5,98,99);
 
 #
 # Dumping data for table 'Xref'
@@ -97,3 +117,38 @@ INSERT INTO externalDB (externalDBId, db_name, release) VALUES (1, 'swissprot', 
 INSERT INTO externalDB (externalDBId, db_name, release) VALUES (2, 'embl', 2);
 
 
+
+#
+# Dumping data for table 'protein_feature'
+#
+
+INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (1,1,2,6,6,6,12,'PF00098',23,435,23);
+INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (2,1,7,14,7,14,21,'PR00012',21,4,56);
+INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (3,1,3,11,8,0,0,'transmembrane',21,4,56);
+
+
+INSERT INTO interpro (interpro_ac,id) VALUES ('IPR000001','PF00098');
+INSERT INTO interpro (interpro_ac,id) VALUES ('IPR000002','PR00012');
+
+#
+# Dumping data for table 'interpro_description'
+#
+
+INSERT INTO interpro_description (interpro_ac,description,short_description) VALUES ('IPR000001','Zn-finger CCHC type','Zn-finger');
+INSERT INTO interpro_description (interpro_ac,description,short_description) VALUES ('IPR000002','petit_domain','petit');
+
+#
+# Dumping data for table 'meta'
+#
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (1,'species.classification','sapiens');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (2,'species.classification','Homo');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (3,'species.classification','Homonidae');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (4,'species.classification','Catarrhini');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (5,'species.classification','Primates');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (6,'species.classification','Eutheria');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (7,'species.classification','Mammalia');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (8,'species.classification','Vertebrata');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (9,'species.classification','Chordata');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (10,'species.classification','Metazoa');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (11,'species.classification','Eukaryota');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (12,'species.common_name','Human');

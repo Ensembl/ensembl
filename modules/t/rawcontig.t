@@ -36,7 +36,7 @@ print "ok 1\n";    # 1st test passes.
 my $ens_test = EnsTestDB->new();
     
 # Load some data into the db
-$ens_test->do_sql_file("t/rawcontig.dump");
+$ens_test->do_sql_file("t/geneget.dump");
 
     
 # Get an EnsEMBL db object for the test db
@@ -60,7 +60,7 @@ if( scalar(@genes) != 1 )  {
 
 $gene = shift @genes;
 
-if( $gene->id ne 'gene-id-1' ) {
+if( $gene->stable_id ne 'ENSG1' ) {
      print STDERR "Wrong gene id\n";
      print "not ok 5\n"
 } else {
@@ -69,9 +69,9 @@ if( $gene->id ne 'gene-id-1' ) {
 
 @trans = $gene->each_Transcript();
 $trans = shift @trans;
-@exons = $trans->each_Exon();
+@exons = $trans->get_all_Exons();
 
-if( $trans->id ne 'transcript-1' || $trans->translation->id ne 'trl-1' ||
+if( $trans->stable_id ne 'ENST1' || $trans->translation->stable_id ne 'trl-1' ||
     scalar(@exons) != 2 ) {
     print STDERR "Something is wrong with the gene get!",$trans->id,":",$trans->translation->id,":",scalar(@exons),"\n";
     print "not ok 6\n";
@@ -108,7 +108,7 @@ if( !$dbseq->isa('Bio::PrimarySeqI') || !$pseq->isa('Bio::PrimarySeqI') ||
 
 @features = $c->get_all_SeqFeatures();
 
-if( scalar(@features) != 3 ) {
+if( scalar(@features) != 2 ) {
 
     print STDERR "Did not get the expected 3 features out from all_SeqFeatures\n";
     print "not ok 10\n";
@@ -119,7 +119,7 @@ if( scalar(@features) != 3 ) {
 @features = $c->get_all_SimilarityFeatures_above_score('swissprot',80);
 
 $f = shift @features;
-if( $f->start != 5 || $f->end != 8 ) {
+if( $f->start != 2 || $f->end != 3 ) {
     print STDERR "Did not get the right sequence feature in get_all_SimilarityFeatures_by_score\n";
     print "not ok 11\n";
 } else {
@@ -128,7 +128,7 @@ if( $f->start != 5 || $f->end != 8 ) {
 
 @features = $c->get_all_SimilarityFeatures();
 
-if( scalar(@features) != 2 ) {
+if( scalar(@features) != 1 ) {
 
     print STDERR "Did not get the expected 2 features out from all_SimilarityFeatures\n";
     print "not ok 12\n";
@@ -139,7 +139,7 @@ if( scalar(@features) != 2 ) {
 
 @features = $c->get_all_RepeatFeatures();
 $f = $features[0];
-if( scalar(@features) != 1 || $f->start != 5 || $f->end != 8 ) {
+if( scalar(@features) != 1 || $f->start != 2 || $f->end != 4 ) {
     print STDERR "Did not get the expected 1 features out from all_RepeatFeatures",$f->start,":",$f->end,":",scalar(@features),"\n";
     print "not ok 13\n";
 } else {
@@ -151,7 +151,7 @@ if( scalar(@features) != 1 || $f->start != 5 || $f->end != 8 ) {
 
 @features = $c->get_all_PredictionFeatures();
 $f = $features[0];
-if( scalar(@features) != 1 || $f->start != 2 || $f->end != 8 ) {
+if( scalar(@features) != 1 || $f->start != 2 || $f->end != 3 ) {
     print STDERR "Did not get the expected 1 features out from all_PredictionFeatures\n";
     print "not ok 14\n";
 } else {
@@ -169,7 +169,7 @@ if( $c->cloneid ne 'pog' ) {
 
 # chromosome should not be tested here.
 
-if( $c->seq_version != 3 ) {
+if( $c->seq_version != 1 ) {
     print STDERR "contig does not have seq version 3 for test contig\n";
     print "not ok 16\n";
 } else {
@@ -177,8 +177,8 @@ if( $c->seq_version != 3 ) {
 }
 
 
-if( $c->embl_offset != 500 ) {
-    print STDERR "contig does not have embl offset of 500 for test contig\n";
+if( $c->embl_offset != 1 ) {
+    print STDERR "contig does not have embl offset of 1 for test contig\n";
     print "not ok 17\n";
 } else {
     print "ok 17\n";
@@ -205,37 +205,37 @@ if( $c->fpc_contig_name ne 'ctg123' ) {
    print "ok 20\n";
 }
 
-if( $c->fpc_contig_start != 3000 ) {
+if( $c->fpc_contig_start != 1 ) {
    print "not ok 21\n";
 } else {
    print "ok 21\n";
 }
 
-if( $c->fpc_contig_end != 3040 ) {
+if( $c->fpc_contig_end != 5 ) {
    print "not ok 22\n";
 } else {
    print "ok 22\n";
 }
 
-if( $c->chr_start != 122300 ) {
+if( $c->chr_start != 3001 ) {
    print "not ok 23\n";
 } else {
    print "ok 23\n";
 }
 
-if( $c->chr_end != 122338 ) {
+if( $c->chr_end != 3005 ) {
    print "not ok 24\n";
 } else {
    print "ok 24\n";
 }
 
-if( $c->static_golden_start != 2  ) {
+if( $c->static_golden_start != 1  ) {
    print "not ok 25\n";
 } else {
    print "ok 25\n";
 }
 
-if( $c->static_golden_end != 40  ) {
+if( $c->static_golden_end != 5 ) {
    print "not ok 26\n";
 } else {
    print "ok 26\n";

@@ -130,25 +130,21 @@ if ($seq eq $expected) {
 }
 
 $trl = Bio::EnsEMBL::Translation->new();
-$trl->start_exon_id('exon-1s');
+$trl->start_exon($exon1);
 $trl->start(4); # second aa residue of exon1
-$trl->end_exon_id('exon-3s');
-$trl->end(18);  # second last residue of exon2
-$trl->id('trl-id-1s');
-$trl->version(1);
+$trl->end_exon($exon3);
+print STDERR "Seen length of exon3 ",$exon3->length,"\n";
+
+$trl->end(18);  # second last residue of exon3
+
 
 $transc = Bio::EnsEMBL::Transcript->new();
-$transc->id('trans-id-1s');
-$transc->version(1);
 
 $transc->add_Exon($exon1);
 $transc->add_Exon($exon2);
 $transc->add_Exon($exon3);
 
 $transc->translation($trl);
-$transc->created(1);
-$transc->modified(1);
-
 
 $seq = $transc->dna_seq->seq;
 $expected = 'GGC' x 2 . 'CCA' x 3 . 'GCC' x 2 . 'GTA' x 5 . 'GGC' x 2;
@@ -203,6 +199,16 @@ if ($pep eq $expected) {
 #  $geneObj->write($gene);
 
 # can we convert the coords:
+my $analysis = Bio::EnsEMBL::Analysis->new( 
+      -program => 'genebuild',
+      -gff_source => 'genebuild',
+      -gff_feature => 'gene',
+      -logic_name => 'genebuild'
+    );
+
+$gene->analysis($analysis);
+
+
 $newgene = $vc->convert_Gene_to_raw_contig($gene);
 print "ok 12\n";
 
@@ -226,8 +232,8 @@ if ($pep eq $expected) {
 }
 
 # try to store it; this will create Sticky Exons:
-$geneObj = $db->gene_Obj;
-$geneObj->write($newgene);
+$gad = $db->get_GeneAdaptor;
+$dbid = $gad->store($newgene);
 print "ok 15\n";
 
 # $ens_test->pause;
@@ -276,7 +282,7 @@ if (      @virtualgenes == @genes       # equal list length
 }
 
 # try read it back in
-$gene2 = $db->gene_Obj->get('gene-id-1s');
+$gene2 = $gad->fetch_by_dbID($dbid);
 print "ok 22\n";
 
 # is all still OK with gene and  transcripts? 

@@ -1465,7 +1465,10 @@ sub write{
    my ($self,$gene) = @_;
    my %done;
    my $analysisAdaptor = $self->_db_obj->get_AnalysisAdaptor;
-      
+
+
+   $self->throw("Should not be using this - use GeneAdaptor!");
+
    if ( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("$gene is not a EnsEMBL gene - not writing!");
    }

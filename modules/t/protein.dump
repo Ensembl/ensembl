@@ -218,13 +218,6 @@ INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (10,'species.classificatio
 INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (11,'species.classification','Eukaryota');
 INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (12,'species.common_name','Human');
 
-#
-# Dumping data for table 'protein_feature'
-#
-
-INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (1,'ENSP00000216167',2,6,6,6,12,'PF00098',23,435,23);
-INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (2,'ENSP00000216167',7,14,7,14,21,'PR00012',21,4,56);
-INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (3,'ENSP00000216167',3,11,8,0,0,'transmembrane',21,4,56);
 
 #
 # Dumping data for table 'repeat_feature'

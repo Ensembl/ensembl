@@ -548,8 +548,8 @@ sub translateable_exons {
     
     my $translation = $self->translation
         or $self->throw("No translation attached to transcript object");
-    my $start_exon_id   = $translation->start_exon->dbID;
-    my $end_exon_id     = $translation->end_exon->dbID;
+    my $start_exon      = $translation->start_exon;
+    my $end_exon        = $translation->end_exon;
     my $t_start         = $translation->start;
     my $t_end           = $translation->end;
     
@@ -557,7 +557,7 @@ sub translateable_exons {
     foreach my $ex ($self->get_all_Exons) {
         my $ex_id   = $ex->dbID;
         
-        if ($ex_id ne $start_exon_id and ! @translateable) {
+        if ($ex ne $start_exon and ! @translateable) {
             next;   # Not yet in translated region
         }
         
@@ -570,9 +570,9 @@ sub translateable_exons {
         my $trunc_end   = $end;
         
         # Adjust to translation start if this is the start exon
-        if ($ex_id eq $start_exon_id) {
+        if ($ex eq $start_exon ) {
             if ($t_start < 1 or $t_start > $length) {
-                $self->throw("Translation start '$t_start' is outside exon '$ex_id' length=$length");
+                $self->throw("Translation start '$t_start' is outside exon $ex length=$length");
             }
             if ($strand == 1) {
                 $trunc_start = $start + $t_start - 1;
@@ -582,9 +582,9 @@ sub translateable_exons {
         }
         
         # Adjust to translation end if this is the end exon
-        if ($ex_id eq $end_exon_id) {
+        if ($ex eq $end_exon) {
             if ($t_end < 1 or $t_end > $length) {
-                $self->throw("Translation end '$t_end' is outside exon '$ex_id' length=$length");
+                $self->throw("Translation end '$t_end' is outside exon $ex length=$length");
             }
             if ($strand == 1) {
                 $trunc_end   = $end   - $length + $t_end;
@@ -615,7 +615,7 @@ sub translateable_exons {
         }
         
         # Exit the loop when we've found the last exon
-        last if $ex_id eq $end_exon_id;
+        last if $ex_id eq $end_exon;
     }
     
     return @translateable;
@@ -650,6 +650,9 @@ sub split_Transcript_to_Partial {
    } else {
        @exons = $self->each_Exon;
    }
+
+   print STDERR "Got ",scalar(@exons)," from translateable exons\n";
+
 
    # one exon genes - easy to handle. (unless of course they have UTRs ...)
    if (@exons == 1) {
