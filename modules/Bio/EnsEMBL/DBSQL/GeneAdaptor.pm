@@ -172,6 +172,7 @@ sub fetch_by_stable_id {
    $sth->execute($id);
 
    my ($dbID) = $sth->fetchrow_array();
+   $sth->finish;
 
    return undef if(!$dbID);
 
