@@ -68,7 +68,7 @@ test_transform ($mapper,
 
 sub test_transform {
     my ($mapper, $src, @dest) = @_;
-    if (@$src != 5) { warn "Bad source coords: (@$src)\n"; printnotprintok(); return }
+    if (@$src != 5) { warn "Bad source coords: (@$src)\n"; printnotok(); return }
     my ($srcid, $srcstart, $srcend, $srcstrand, $srctype) = @$src;
     my @coord = $mapper->map_coordinates ($srcid, $srcstart, $srcend, $srcstrand, $srctype);
     @coord = map ([isgap($_) ? $srcid : $_->id,  # Gap object should do this, but currently doesn't.
@@ -81,7 +81,7 @@ sub test_transform {
 	warn "Dest:\n", map ("(".join(",",@$_).")\n", @coord);
 	warn "Expected:\n", map ("(".join(",",@$_).")\n", @dest);
 	warn "Wrong number of segments\n";
-	printnotprintok();
+	printnotok();
 	return;
     }
     printok();
@@ -94,7 +94,7 @@ sub test_transform {
 		warn "Dest:\n", map ("(".join(",",@$_).")\n", @coord);
 		warn "Expected:\n", map ("(".join(",",@$_).")\n", @dest);
 		warn "Error in segment ", $i+1, " field ", $n+1, "\n";
-		printnotprintok();
+		printnotok();
 		return;
 	    }
 	}
@@ -239,5 +239,5 @@ sub isgap { my ($obj) = @_; return !$obj->can ('strand') }
 
 # ok & notok subroutines
 sub printok { print "ok ", ++$n_test, "\n" }
-sub printnotprintok { print "not ok ", ++$n_test, "\n" }
+sub printnotok { print "not ok ", ++$n_test, "\n" }
 
