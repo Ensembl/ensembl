@@ -339,25 +339,12 @@ sub upload_xref_object_graphs {
 				 $xref->{STATUS}) || die $dbi->errstr;
       }
 
-      # if there are synonyms, create xrefs for them and entries in the synonym table
+      # if there are synonyms, add entries in the synonym table
       foreach my $syn (@{$xref->{SYNONYMS}}) {
 
-	my $syn_xref_id = get_xref($syn,$xref->{SOURCE_ID});
-	if(!defined($syn_xref_id)){
-	  $xref_sth->execute($syn,
-			     "",
-			     "",
-			     "",
-			     $xref->{SOURCE_ID},
-			     $xref->{SPECIES_ID});
-	  $syn_xref_id = get_xref($syn,$xref->{SOURCE_ID});
-	}
-	if(!defined($syn_xref_id)){
-	  print STDERR $xref->{ACCESSION}."\n$syn\n";
-	}
-	$syn_sth->execute($xref_id, $syn_xref_id ) || die "$dbi->errstr \n $xref_id\n $syn_xref_id\n";
+	$syn_sth->execute($xref_id, $syn) || die "$dbi->errstr \n $xref_id\n $syn\n";
 
-      }				# foreach syn
+      }	# foreach syn
 
       # if there are dependent xrefs, add xrefs and dependent xrefs for them
       foreach my $depref (@{$xref->{DEPENDENT_XREFS}}) {
