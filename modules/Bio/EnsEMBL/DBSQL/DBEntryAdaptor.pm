@@ -174,7 +174,7 @@ sub store {
     my $synonyms = $exObj->get_all_synonyms();
     foreach my $syn ( @$synonyms ) {	    
       $synonym_check_sth->execute($dbX, $syn);
-      my ($dbSyn) = $sth->fetchrow_array();
+      my ($dbSyn) = $synonym_check_sth->fetchrow_array(); 
       $synonym_store_sth->execute($dbX, $syn) if(!$dbSyn);
     }
 	
