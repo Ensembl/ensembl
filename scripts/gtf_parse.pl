@@ -77,7 +77,9 @@ my $help;
 
 my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
 
-my @genes=$gtfh->parse_file($parsefile);
+open (PARSE,"$parsefile") || die("Could not open $parsefile for gtf reading$!");
+    
+my @genes=$gtfh->parse_file(\*PARSE);
 
 if ($print) {
     $gtfh->print_genes;
@@ -88,15 +90,16 @@ if ($print) {
 
 else {
     my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
-print STDERR "Using $locator for db\n";
-    
+        
     my $db =  Bio::EnsEMBL::DBLoader->new($locator);
     my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
     foreach my $gene (@genes) {
 	my @exons=$gene->each_unique_Exon;
 	my $fpc=$exons[0]->contig_id;
 	print STDERR "Got seqname $fpc\n";
-	
+	$db->static_golden_path_type('UCSC');
+	my $sgp_adaptor = $db->get_StaticGoldenPathAdaptor();
+	my $vc = $sgp_adaptor->VirtualContig_by_fpc_name('ctg123');
 
 	print STDERR "Writing gene $gene\n";
 	#$gene_obj->write($gene);
