@@ -274,10 +274,10 @@ sub adaptor {
 
 =head2 display_xref
 
-  Arg [1]    : int $display_xref_id
-  Example    : $transcript->display_xref(42);
-  Description: get/set/lazy_loaded display_xref_id for this transcript
-  Returntype : int
+  Arg [1]    : Bio::EnsEMBL::DBEntry $display_xref
+  Example    : $transcript->display_xref(Bio::EnsEMBL::DBEntry->new(...));
+  Description: get/set/lazy_loaded display_xref for this transcript
+  Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
 
@@ -1798,40 +1798,6 @@ sub transform {
   $self->{'coding_start'} = undef;
   $self->{'coding_end'} = undef;
 }
-
-
-
-=head2 species
-
-  Arg [1]    : optional Bio::Species $species
-  Example    : none
-  Description: You can set the species for this gene if you want to use species 
-               specific behaviour. Otherwise species is retrieved from attached 
-               database.
-  Returntype : Bio::Species
-  Exceptions : none
-  Caller     : external_name, external_db, general for setting
-
-=cut
-
-
-sub species {
-  my ( $self, $species ) = @_;
-
-  if( defined $species ) {
-    $self->{species} = $species;
-  } else {
-    if( ! exists $self->{species} ) {
-      if( defined $self->adaptor() ) {
-	$self->{species} = $self->adaptor()->db->get_MetaContainer()
-	  ->get_Species();
-      }
-    }
-  }
-  
-  return $self->{species};
-}
-
 
 
 =head2 coding_start

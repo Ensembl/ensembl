@@ -810,10 +810,10 @@ sub _dump{
 =head2 transform
 
   Arg  1     : (optional) Bio::EnsEMBL::Slice $slice
-              
   Description: when passed a Slice as argument,
                it will transform this Gene to the Slice coordinate system.
-               Without an argument it  transforms the Gene (which should be in a slice) to a RawContig 
+               Without an argument it  transforms the Gene (which should be
+               in a slice) to a RawContig
                coordinate system.
                The method changes the Gene in place and returns itself.
   Returntype : Bio::EnsEMBL::Gene
@@ -845,7 +845,6 @@ sub transform {
     # re-jiggle the exons
 
     $transcript->transform( \%exon_transforms );
-    
   }
 
   #unset the start, end, and strand - they need to be recalculated
@@ -883,46 +882,12 @@ sub temporary_id {
 }
 
 
-
-
-=head2 species
-
-  Arg [1]    : optional Bio::Species $species
-  Example    : none
-  Description: You can set the species for this gene if you want to use species 
-               specific behaviour. Otherwise species is retrieved from attached 
-               database.
-  Returntype : Bio::Species
-  Exceptions : none
-  Caller     : external_name, external_db, general for setting
-
-=cut
-
-
-sub species {
-  my ( $self, $species ) = @_;
-
-  if( defined $species ) {
-    $self->{species} = $species;
-  } else {
-    if( ! exists $self->{species} ) {
-      if( defined $self->adaptor() ) {
-	$self->{species} = $self->adaptor()->db->get_MetaContainer()
-	  ->get_Species();
-      }
-    }
-  }
-  
-  return $self->{species};
-}
-
-
 =head2 display_xref
 
-  Arg [1]    : int $display_xref_id
-  Example    : $gene->display_xref(42);
-  Description: get/set/lazy_loaded display_xref_id for this gene
-  Returntype : int
+  Arg [1]    : Bio::EnsEMBL::DBEntry $display_xref
+  Example    : $gene->display_xref($db_entry);
+  Description: get/set/lazy_loaded display_xref for this gene
+  Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
 
@@ -937,7 +902,7 @@ sub display_xref {
       return $self->{'display_xref'};
     } elsif ( defined $self->adaptor() ) {
       $self->{'display_xref'} = $self->adaptor->get_display_xref( $self );
-    } 
+    }
 
     return $self->{'display_xref'};
 }
