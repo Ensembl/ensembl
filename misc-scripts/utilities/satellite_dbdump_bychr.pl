@@ -43,6 +43,10 @@
      types, and all will be dumped. Is the theory.
 
      Known types are: (see source code)
+  
+   (5) When changing something in this script or dumping from a different
+       database, run first with the -check option, to see if all indices
+       are defined. Without it, the dump might take very long!
 
 =head1 DESCRIPTION
 
