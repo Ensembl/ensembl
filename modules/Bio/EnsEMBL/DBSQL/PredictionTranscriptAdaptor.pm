@@ -171,6 +171,7 @@ sub _objs_from_sth {
     #create a new transcript for each new prediction transcript id
     unless(defined $pre_trans && $ptid == $prediction_transcript_id) {
       $pre_trans = Bio::EnsEMBL::PredictionTranscript->new;
+
       $ptid = $prediction_transcript_id;
       $pre_trans->dbID($ptid);
       
@@ -183,7 +184,7 @@ sub _objs_from_sth {
       $pre_trans->set_exon_count($exon_count);
   
       #throw away last pred_transcript if none of the exons were on the slice
-      if(@out && $on_slice_flag == 0) {
+      if(@out && $slice && $on_slice_flag == 0) {
 	pop @out;
       }
       
@@ -251,7 +252,7 @@ sub _objs_from_sth {
   }
 
   #throw away last  pred_transcript if it had no exons overlapping the slice
-  if(@out && $on_slice_flag == 0) {
+  if(@out && $slice && $on_slice_flag == 0) {
     pop @out;
   }
 
