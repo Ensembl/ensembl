@@ -37,6 +37,16 @@ Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 my %method_query_threshold;
 my %method_target_threshold;
 
+# Various useful variables.
+my %translation_to_transcript;
+my %transcript_to_translation;
+my %genes_to_transcripts;
+my %xref_to_source;
+my %object_xref_mappings;
+my %object_xref_identities;
+my %xref_descriptions;
+my %xref_accessions;
+
 =head2 dump_seqs
 
   Arg[1]: xref object which holds info needed for the dump of xref
@@ -155,7 +165,12 @@ sub get_set_lists{
   my ($self) = @_;
 
   #  return [["ExonerateGappedBest1", ["homo_sapiens","Uniprot/SWISSPROT"]]];
-  return [["ExonerateGappedBest1", ["homo_sapiens","*"]]];
+
+#  return [["method1",["homo_sapiens","RefSeq"],["homo_sapiens","UniProtSwissProt"]],
+#	  ["method2",[$self->species,"*"]],
+#	  ["method3",["*","*"]]];
+
+  return [["ExonerateGappedBest1", ["homo_sapiens","*"], ["mus_musculus", "*"]]];
 
 }
 
@@ -752,7 +767,7 @@ sub parse_mappings {
   # format:
   #   key: ensembl object type:ensembl object id
   #   value: list of xref_id (with offset)
-  my %object_xref_mappings;
+  # Note %object_xref_mappings is global
 
 
   foreach my $file (glob("$dir/*.map")) {
@@ -782,8 +797,6 @@ sub parse_mappings {
       my $query_identity = int (100 * $identity / $query_length);
       my $target_identity = int (100 * $identity / $target_length);
 
-      # TODO make sure query & target are the right way around
-
       # only take mappings where there is a good match on one or both sequences
       next if ($query_identity  < $method_query_threshold{$method} &&
 	       $target_identity < $method_target_threshold{$method});
@@ -802,6 +815,11 @@ sub parse_mappings {
       my $xref_id = $query_id;
       push @{$object_xref_mappings{$key}}, $xref_id;
 
+      # store query & target identities
+      # Note this is a hash (object id) of hashes (xref id) of hashes ("query_identity" or "target_identity")
+      $object_xref_identities{$target_id}->{$xref_id}->{"query_identity"} = $query_identity;
+      $object_xref_identities{$target_id}->{$xref_id}->{"target_identity"} = $target_identity;
+
       # note the NON-OFFSET xref_id is stored here as the values are used in
       # a query against the original xref database
       $primary_xref_ids{$query_id}{$target_id} = $target_id;
@@ -819,8 +837,7 @@ sub parse_mappings {
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
   # write relevant xrefs to file
-  print "passing object_xref_mappings to dump_core_xrefs with " . scalar (keys %object_xref_mappings) . "\n";
-  $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, \%ensembl_object_types, \%object_xref_mappings);
+  $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, \%ensembl_object_types);
 
   # write comparison info. Can be removed after development
   $self->dump_comparison();
@@ -901,7 +918,7 @@ sub get_analysis_id {
 
 sub dump_core_xrefs {
 
-  my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset, $ensembl_object_types_hashref, $object_xref_mappings) = @_;
+  my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset, $ensembl_object_types_hashref) = @_;
 
   my @xref_ids = keys %$xref_ids_hashref;
   my %xref_to_objects = %$xref_ids_hashref;
@@ -1007,7 +1024,7 @@ sub dump_core_xrefs {
 	    $object_xref_id++;
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
 	    my $key = $type . "|" . $object_id;
-	    push @{$object_xref_mappings->{$key}}, $xref_id;
+	    push @{$object_xref_mappings{$key}}, $xref_id;
 	    $object_xrefs_written{$full_key} = 1;
 	  }
 	}
@@ -1035,12 +1052,12 @@ sub dump_core_xrefs {
   close(OBJECT_XREF);
   close(EXTERNAL_SYNONYM);
 
-  print "Before calling display_xref, object_xref_mappings size " . scalar (keys %{$object_xref_mappings}) . "\n";
+  print "Before calling display_xref, object_xref_mappings size " . scalar (keys %object_xref_mappings) . "\n";
 
   # calculate display_xref_ids for transcripts and genes
-  my $transcript_display_xrefs = $self->build_transcript_display_xrefs($object_xref_mappings, $xref_id_offset);
+  my $transcript_display_xrefs = $self->build_transcript_display_xrefs($xref_id_offset);
 
-  $self->build_gene_display_xrefs($transcript_display_xrefs);
+  $self->build_gene_display_xrefs_and_descriptions($transcript_display_xrefs);
 
 }
 
@@ -1083,7 +1100,7 @@ sub dump_comparison {
 
 sub build_transcript_display_xrefs {
 
-  my ($self, $object_xref_mappings, $xref_id_offset) = @_;
+  my ($self, $xref_id_offset) = @_;
 
   my $dir = $self->dir();
 
@@ -1091,8 +1108,8 @@ sub build_transcript_display_xrefs {
   # key: xref_id value: source_name
   # lots of these; if memory is a problem, just get the source ID (not the name)
   # and look it up elsewhere
+  # note %xref_to_source is global
   print "Building xref->source mapping table\n";
-  my %xref_to_source;
   my $sql = "SELECT x.xref_id, s.name FROM source s, xref x WHERE x.source_id=s.source_id";
   my $sth = $self->xref->dbi()->prepare($sql);
   $sth->execute();
@@ -1107,9 +1124,8 @@ sub build_transcript_display_xrefs {
   print "Got " . scalar(keys %xref_to_source) . " xref-source mappings\n";
 
   # Cache the list of translation->transcript mappings & vice versa
+  # Nte variables are global
   print "Building translation to transcript mappings\n";
-  my %translation_to_transcript;
-  my %transcript_to_translation;
   my $sth = $self->dbi()->prepare("SELECT translation_id, transcript_id FROM translation");
   $sth->execute();
 
@@ -1129,7 +1145,7 @@ sub build_transcript_display_xrefs {
   # go through each object/xref mapping and store the best ones as we go along
   my %obj_to_best_xref;
 
-  foreach my $key (keys %{$object_xref_mappings}) {
+  foreach my $key (keys %object_xref_mappings) {
 
     my ($type, $object_id) = split /\|/, $key;
 
@@ -1137,7 +1153,7 @@ sub build_transcript_display_xrefs {
 
     # if a transcript has more than one associated xref,
     # use the one with the highest priority, i.e. lower list position in @priorities
-    my @xrefs = @{$object_xref_mappings->{$key}};
+    my @xrefs = @{$object_xref_mappings{$key}};
     my ($best_xref, $best_xref_priority_idx);
     $best_xref_priority_idx = 99999;
     foreach my $xref (@xrefs) {
@@ -1228,7 +1244,7 @@ sub build_transcript_display_xrefs {
 # Gene gets the display xref of the highest priority of all of its transcripts
 # If more than one transcript with the same priority, longer transcript is used
 
-sub build_gene_display_xrefs {
+sub build_gene_display_xrefs_and_descriptions {
 
   my ($self, $transcript_display_xrefs) = @_;
 
@@ -1253,7 +1269,7 @@ sub build_gene_display_xrefs {
   my ($gene_id, $transcript_id);
   $sth->bind_columns(\$gene_id, \$transcript_id);
 
-  my %genes_to_transcripts;
+  # Note %genes_to_transcripts is global
   while ($sth->fetch()) {
     push @{$genes_to_transcripts{$gene_id}}, $transcript_id;
   }
@@ -1322,6 +1338,9 @@ sub build_gene_display_xrefs {
   print "Couldn't find display_xrefs for $miss genes\n" if ($miss > 0);
   print "Found display_xrefs for all genes\n" if ($miss eq 0);
 
+  # now build gene descriptions
+  $self->build_gene_descriptions(\%genes_to_transcripts);
+
 }
 
 # Display xref sources to be used for transcripts *in order of priority*
@@ -1334,6 +1353,7 @@ sub transcript_display_xref_sources {
 	  'wormbase_transcript',
 	  'flybase_symbol',
 	  'Anopheles_symbol',
+	  'Genoscope_annotated_gene',
 	  'Genoscope_predicted_transcript',
 	  'Genoscope_predicted_gene',
 	  'Uniprot/SWISSPROT',
@@ -1344,7 +1364,7 @@ sub transcript_display_xref_sources {
 }
 
 
-# Find the index of an item in a list(ref), or 999999 if it's not in the list.
+# Find the index of an item in a list(ref), or -1 if it's not in the list.
 # Only look for exact matches (case insensitive)
 
 sub find_in_list {
@@ -1357,7 +1377,29 @@ sub find_in_list {
     }
   }
 
-  return 999999;
+  return -1;
+
+}
+
+# Take a string and a list of regular expressions
+# Find the index of the highest matching regular expression
+# Return the index, or -1 if not found.
+
+sub find_match {
+
+ my ($str, @list) = @_;
+
+ my $str2 = $str;
+ my $highest_index = -1;
+
+  for (my $i = 0; $i < scalar(@list); $i++) {
+    my $re = $list[$i];
+    if ($str2 =~ /$re/i) {
+      $highest_index = $i;
+    }
+  }
+
+  return $highest_index;
 
 }
 
@@ -1460,4 +1502,218 @@ sub do_upload {
   }
 
 }
+
+# Assign gene descriptions
+# Algorithm:
+# foreach gene
+#   get all transcripts & translations
+#   get all associated xrefs
+#   filter by regexp, discard blank ones
+#   order by source & keyword
+#   assign description of best xref to gene
+# }
+#
+# One gene may have several associated peptides; the one to use is decided as follows.
+# In decreasing order of precedence:
+#
+# - Consortium xref, e.g. ZFIN for zebrafish
+#
+# - UniProt/SWISSPROT
+#     If there are several, the one with the best %query_id then %target_id is used
+#
+# - RefSeq
+#    If there are several, the one with the best %query_id then %target_id is used
+#
+# - UniProt/SPTREMBL
+#    If there are several, precedence is established on the basis of the occurrence of 
+#    regular expression patterns in the description.
+
+sub build_gene_descriptions {
+
+  my ($self, $genes_to_transcripts) = @_;
+
+  # TODO - don't call this from, but after, gene_display_xref
+
+  # Get all xref descriptions, filtered by regexp.
+  # Discard any that are blank (i.e. regexp has removed everything)
+
+  print "Getting & filtering xref descriptions\n";
+ # Note %xref_descriptions & %xref_accessions are global
+
+  my $sth = $self->xref->dbi()->prepare("SELECT xref_id, accession, description FROM xref");
+  $sth->execute();
+  my ($xref_id, $accession, $description);
+  $sth->bind_columns(\$xref_id, \$accession, \$description);
+
+  my $removed = 0;
+  my @regexps = $self->gene_description_filter_regexps();
+  while ($sth->fetch()) {
+    if ($description) {
+      $description = filter_by_regexp($description, \@regexps);
+      if ($description ne "") {
+	$xref_descriptions{$xref_id} = $description;
+	$xref_accessions{$xref_id} = $accession;
+      } else {
+	$removed++;
+      }
+    }
+  }
+
+  print "Regexp filtering (" . scalar(@regexps) . " regexps) removed $removed descriptions, left with " . scalar(keys %xref_descriptions) . "\n";
+
+  my $dir = $self->dir();
+  open(GENE_DESCRIPTIONS,">$dir/gene_description.txt") || die "Could not open $dir/gene_description.txt";
+
+  # Foreach gene, get any xrefs associated with its transcripts or translations
+
+  print "Assigning gene descriptions\n";
+
+
+  foreach my $gene_id (keys %genes_to_transcripts) {
+
+    my @gene_xrefs;
+
+    my %local_xref_to_object;
+
+    my @transcripts = @{$genes_to_transcripts{$gene_id}};
+    foreach my $transcript (@transcripts) {
+
+      my @xref_ids;
+
+      my $key = "Transcript|$transcript";
+      if ($object_xref_mappings{$key}) {
+
+	@xref_ids = @{$object_xref_mappings{$key}};
+	push @gene_xrefs, @xref_ids;
+	foreach my $xref (@xref_ids) {
+	  $local_xref_to_object{$xref} = $key;
+	}
+	
+      }
+
+      my $translation = $transcript_to_translation{$transcript};
+      $key = "Translation|$translation";
+      if ($object_xref_mappings{$key}) {
+
+	push @gene_xrefs, @{$object_xref_mappings{$key}} ;
+	foreach my $xref (@xref_ids) {
+	  $local_xref_to_object{$xref} = $key;
+	}
+      }
+
+    }
+
+    # Now sort through these and find the "best" description and write it
+
+    if (@gene_xrefs) {
+
+      @gene_xrefs = sort {compare_xref_descriptions($self->consortium(), $gene_id, \%local_xref_to_object)} @gene_xrefs;
+
+      my $best_xref = $gene_xrefs[-1];
+      my $description = $xref_descriptions{$best_xref};
+      my $source = $xref_to_source{$best_xref};
+      my $acc = $xref_accessions{$best_xref};
+
+      print GENE_DESCRIPTIONS "$gene_id\t$description" . " [Source:$source;Acc:$acc]\n" if ($description);
+
+    }
+
+  } # foreach gene
+
+  close(GENE_DESCRIPTIONS);
+
+}
+
+# remove a list of patterns from a string
+sub filter_by_regexp {
+
+  my ($str, $regexps) = @_;
+
+  foreach my $regexp (@$regexps) {
+    $str =~ s/$regexp//ig;
+  }
+
+  return $str;
+
+}
+
+# Regexp used for filter out useless text from gene descriptions
+# Method can be overridden in species-specific modules
+sub gene_description_filter_regexps {
+
+  return ();
+
+}
+
+
+# The "consortium" source for this species, should be the same as in
+# source table
+
+sub consortium {
+
+  return "xxx"; # Default to something that won't be matched as a source
+
+}
+
+# Sort a list of xrefs by the priority of their sources
+# Assumed this function is called by Perl sort, passed with parameter
+# See comment for build_gene_descriptions for how precedence is decided.
+
+sub compare_xref_descriptions {
+
+  my ($consortium, $gene_id, $xref_to_object) = @_;
+
+  my @sources = ("Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/SWISSPROT", $consortium);
+  my @words = qw(unknown hypothetical putative novel probable [0-9]{3} kDa fragment cdna protein);
+
+  my $src_a = $xref_to_source{$a};
+  my $src_b = $xref_to_source{$b};
+  my $pos_a = find_in_list($src_a, @sources);
+  my $pos_b = find_in_list($src_b, @sources);
+
+  # If same source, need to do more work
+  if ($pos_a == $pos_b) {
+
+   if ($src_a eq "Uniprot/SWISSPROT" || $src_a =~ /RefSeq/) {
+
+     # Compare on query identities, then target identities if queries are the same
+     my $key_a = $xref_to_object->{$a}; # e.g. "Translation|1234"
+     my $key_b = $xref_to_object->{$b};
+     my ($type_a, $object_a) = split(/\|/, $key_a);
+     my ($type_b, $object_b) = split(/\|/, $key_b);
+
+     return 0 if ($type_a != $type_b); # only compare like with like
+
+     my $query_identity_a = $object_xref_identities{$object_a}->{$a}->{"query_identity"};
+     my $query_identity_b = $object_xref_identities{$object_b}->{$b}->{"query_identity"};
+
+     return ($query_identity_a <=> $query_identity_b) if ($query_identity_a != $query_identity_b);
+
+     my $target_identity_a = $object_xref_identities{$object_a}->{$a}->{"target_identity"};
+     my $target_identity_b = $object_xref_identities{$object_b}->{$b}->{"target_identity"};
+
+     return ($target_identity_a <=> $target_identity_b);
+
+   } elsif ($src_a eq "Uniprot/SPTREMBL") {
+
+     # Compare on words
+     my $wrd_idx_a = find_match($xref_descriptions{$a}, @words);
+     my $wrd_idx_b = find_match($xref_descriptions{$b}, @words);
+     return $wrd_idx_a <=> $wrd_idx_b;
+
+   } else {
+
+     return 0;
+
+   }
+    return 0;
+
+  } else {
+
+    return $pos_a <=> $pos_b;
+
+  }
+}
+
+
 1;
