@@ -8,8 +8,8 @@
 use DBI;
 use Getopt::Long;
 
-my $host   = "ecs1f.sanger.ac.uk";
-my $dbname = "mouse_5_3_estgene_build";
+my $host   = "ecs2d";
+my $dbname = "homo_sapiens_core_6_29";
 my $dbuser = "ensro";
 my $dbpass = undef;
 

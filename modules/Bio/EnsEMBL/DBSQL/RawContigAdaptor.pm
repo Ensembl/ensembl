@@ -160,6 +160,57 @@ sub fetch_by_name {
   return $contig;
 }
 
+=head2 fetch_filled_by_dbIDs
+
+  Args      : list $contig_ids
+  Function  : retrieves given RawContigs with clone information set inside
+              Result hash has key dbID value RawContig
+  Returntype: hashref
+  Exceptions: none
+  Caller    : Bio::EnsEMBL::Slice->get_tiling_path()
+
+=cut
+
+sub fetch_filled_by_dbIDs {
+  my $self = shift;
+  my @contig_ids = @_;
+  my %result = ();
+
+  my $sth = $self->prepare( "SELECT co.contig_id, co.name, co.clone_id, 
+                                    co.length, co.offset, co.corder, 
+                                    co.dna_id, co.international_name,
+                                    cl.embl_acc, cl.embl_version,
+                                    cl.name, cl.version, cl.htg_phase,
+                                    cl.created, cl.modified
+                             FROM contig co, clone cl
+                             WHERE co.contig_id in ( " .
+			           join( ", ", @contig_ids ) . ")  
+                             AND co.clone_id = cl.clone_id"  );
+  $sth->execute();
+  
+  while( my $aref = $sth->fetchrow_arrayref() ) {
+    my $contig = Bio::EnsEMBL::RawContig->new( $aref->[0], $self );
+    $self->_fill_contig_from_arrayref( $contig, $aref );
+    my $clone = Bio::EnsEMBL::Clone->new
+      (
+       $self->db->get_CloneAdaptor(),
+       $aref->[2],
+       $aref->[10], $aref->[8],
+       $aref->[11], $aref->[9],
+       $aref->[12], $aref->[13],
+       $aref->[14]
+      );
+    $contig->clone( $clone );
+
+    $result{ $contig->dbID() } = $contig;
+
+    $self->{_raw_contig_cache}->{$contig->dbID()} = $contig;
+  }
+
+  return \%result;
+}
+
+
 
 sub fetch_by_clone {
   my $self = shift;

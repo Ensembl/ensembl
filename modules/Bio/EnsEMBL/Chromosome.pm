@@ -75,6 +75,7 @@ sub new {
     $self->adaptor($adaptor);
     $self->chrname($chrname);
     $self->chromosome_id($chromosome_id);
+    $self->unknown_genes($unknown_genes);
     $self->length($length);
     $self->known_genes($known_genes);
     $self->snps($snps);
@@ -136,7 +137,7 @@ sub chrname{
 
 =cut
 
-sub adaptor{
+sub adaptor {
    my ($obj,$value) = @_;
    if( defined $value) {
       $obj->{'adaptor'} = $value;
@@ -145,7 +146,7 @@ sub adaptor{
 }
 
 
-sub chromosome_id() {
+sub chromosome_id {
   my ($self, $id ) = @_;
 
   if(defined $id) {
@@ -155,17 +156,17 @@ sub chromosome_id() {
   return $self->{'chromosome_id'};
 }
 
-sub length() {
+sub length {
   my ($self, $length) = @_;
 
   if(defined $length) {
     $self->{'length'} = $length;
   }
 
-  return $self->{'length'} = $length;
+  return $self->{'length'};
 }
 
-sub known_genes() {
+sub known_genes {
   my ($self, $known_genes) = @_;
 
   if(defined $known_genes) {
@@ -175,7 +176,7 @@ sub known_genes() {
   return $self->{'known_genes'};
 }
 
-sub unknown_genes() {
+sub unknown_genes {
   my ($self, $unknown_genes) = @_;
   
   if(defined $unknown_genes) {
@@ -185,7 +186,7 @@ sub unknown_genes() {
   return $self->{'unknown_genes'};
 }
 			    
-sub snps() {
+sub snps {
   my($self, $snps) = @_;
 
   if(defined $snps) {

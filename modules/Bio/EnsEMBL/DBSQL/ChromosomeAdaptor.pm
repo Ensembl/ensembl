@@ -133,6 +133,39 @@ sub fetch_by_chrname{
    return $self->fetch_by_dbID($dbID);
 }
 
+sub fetch_all {
+  my($self) = @_;
+  
+  my @chrs = (); 
+
+
+    my $sth = $self->prepare( "SELECT chromosome_id, name, known_genes, 
+                                      unknown_genes, snps, length
+                               FROM chromosome" );
+    $sth->execute();
+    
+    my($chromosome_id, $name, $known_genes, $unknown_genes, $snps, $length);
+    $sth->bind_columns(\$chromosome_id,\$name,\$known_genes,
+                       \$unknown_genes,\$snps,\$length); 
+
+    while($sth->fetch()) {
+   
+    my $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
+					 -chrname => $name,
+					 -chromosome_id => $chromosome_id,
+					 -known_genes => $known_genes,
+					 -unknown_genes => $unknown_genes,
+					 -snps => $snps,
+					 -length => $length );
+
+    $self->{'_chr_cache'}->{$chromosome_id} = $chr;
+    push @chrs, $chr;
+  }
+
+  return @chrs;
+}
+
+
 
 =head2 get_landmark_MarkerFeatures_old
 

@@ -531,12 +531,11 @@ sub chr_name{
 =cut
 
 sub chr_start{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'chr_start'} = $value;
-    }
-    return $self->{'chr_start'};
-
+  my ($self,$value) = @_;
+  if( defined $value) {
+    $self->{'chr_start'} = $value;
+  }
+  return $self->{'chr_start'};
 }
 
 =head2 chr_end
@@ -552,12 +551,11 @@ sub chr_start{
 =cut
 
 sub chr_end{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'chr_end'} = $value;
-    }
-    return $self->{'chr_end'};
-
+  my ($self,$value) = @_;
+  if( defined $value) {
+    $self->{'chr_end'} = $value;
+  }
+  return $self->{'chr_end'};
 }
 
 =head2 strand
@@ -657,24 +655,116 @@ sub id {
 
 
 sub fetch_chromosome_length {
-  my ($self ) = @_;
+  my ($self) = @_;
 
-  my $ca = $self->adaptor->db->get_ChromosomeAdaptor();
+  $self->warn( "Call to deprecated method fetch_chromosome_length\n" .
+	       "use \$slice->get_Chromosome()->length(); instead.\n" );
 
-  return $ca->fetch_by_chrname($self->chr_name())->length();
+  return $self->get_Chromosome()->length();
 }
+
 
         
 sub fetch_karyotype_band_start_end {
    my ($self,@args) = @_;
 
-   my $kadp = $self->adaptor->db->get_KaryotypeBandAdaptor();
-   my @bands = $kadp->fetch_by_chromosome_start_end($self->chr_name(),
-						    $self->chr_start(),
-						    $self->chr_end());
+   $self->warn( "Call to deprecated method fetch_karyotype_band_start_end\n" .
+		"use \$slice->get_KaryotypeBands(); instead.\n" );
 
-   return @bands; 
+   return $self->get_KaryotypeBands();
 }
 
+
+sub get_KaryotypeBands() {
+  my ($self) = @_;
+  
+  my $kadp = $self->adaptor->db->get_KaryotypeBandAdaptor();
+  my @bands = $kadp->fetch_by_chromosome_start_end($self->chr_name(),
+						   $self->chr_start(),
+						   $self->chr_end());
+  return @bands; 
+}
+
+
+sub get_Chromosome {
+  my $self = shift @_;
+
+  my $ca =  $self->adaptor->db->get_ChromosomeAdaptor();
+
+
+  return $ca->fetch_by_chrname($self->chr_name());
+}
+
+
+sub length {
+  my ($self) = @_;
+
+  return $self->chr_end() - $self->chr_start() + 1;
+}
+
+
+sub get_tiling_path {
+  my ($self) = @_;
+
+  my $mapper = $self->adaptor()->db->get_AssemblyMapperAdaptor()->
+    fetch_by_type($self->assembly_type());
+
+  print STDERR "In get_tiling_path\n";
+
+
+  # Get the ids of the raw_contigs in this region specified in chrmsml coords 
+  $mapper->register_region( $self->chr_name, $self->chr_start(),
+			     $self->chr_end() );
+  my @mapped = $mapper->map_coordinates_to_rawcontig
+    (
+     $self->chr_name(),
+     $self->chr_start(),
+     $self->chr_end(),
+     $self->strand()
+    );
+
+  print STDERR ( join ( "\n", @mapped ));
+
+
+  # Extract the IDS of the Coordinates, ommitting Gaps
+  my @raw_contig_ids = ();
+  foreach my $map_item (@mapped) {
+    if($map_item->isa("Bio::EnsEMBL::Mapper::Coordinate" )) {
+       push @raw_contig_ids, $map_item->id();
+     }
+  }
+
+  print STDERR "RawContigs: " . join( " ",@raw_contig_ids ) . "\n";
+
+  #Fetch filled raw contigs (non lazy-loaded) containing filled clone objects
+  my $raw_contigs = 
+    $self->adaptor->db->get_RawContigAdaptor()->
+      fetch_filled_by_dbIDs(@raw_contig_ids);
+
+  my @tiling_path;
+  my $current_start = 1;
+
+  foreach my $coord ( @mapped ) {
+    my $length = $coord->end() - $coord->start() + 1; 
+
+    if ( $coord->isa("Bio::EnsEMBL::Mapper::Coordinate" ) ) {
+      # this is a contig, create a tiling path piece from it
+      my $tile = {};
+      $tile->{'start'} = $current_start;
+      $tile->{'end'} = ($current_start + $length-1);
+      $tile->{'contig'} = $raw_contigs->{ $coord->id() };
+      $tile->{'strand'} = $coord->strand();
+      
+      $current_start += $length;
+
+      push(@tiling_path, $tile);
+    } else {
+      # this is a gap, just add the length and discard it
+      $current_start += $length;
+    }
+  }
+  return @tiling_path;
+}
+  
 
 1;
