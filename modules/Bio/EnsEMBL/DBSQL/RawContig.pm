@@ -611,7 +611,7 @@ sub get_all_SimilarityFeatures{
     my $statement = "SELECT feature.id, seq_start, seq_end, strand, feature.score, analysis, name, " .
 		             "hstart, hend, hid, fset, rank, fset.score " .
 		     "FROM   feature, fset_feature, fset " .
-		     "WHERE  feature.contig ='$id' " .
+		     "WHERE  feature.contig =$id " .
 		     "AND    fset_feature.feature = feature.id " .
 		     "AND    fset.id = fset " .
                      "ORDER BY fset";
@@ -693,10 +693,10 @@ sub get_all_SimilarityFeatures{
 
    if ($fset_id_str) {
        $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " .
-				     "from feature where id not in (" . $fset_id_str . ") and contig = \"$id\"");
+				     "from feature where id not in (" . $fset_id_str . ") and contig = $id");
    } else {
        $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid ".
-				     "from feature where contig = \"$id\"");
+				     "from feature where contig = $id");
    }
 
    $sth->execute();
