@@ -63,8 +63,9 @@ sub new_fast {
   my $class = shift;
   my $hashref = shift;
   bless $hashref, $class;
+  $hashref->{_synonyms} = [];
   
-  return $hashref ;
+  return $hashref;
 }
 
 
