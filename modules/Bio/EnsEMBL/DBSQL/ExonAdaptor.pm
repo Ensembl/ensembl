@@ -73,87 +73,16 @@ sub fetch_by_dbID {
 
   $sth->execute();
 
-  #
-  # copy and paste with function below. Bad
-  #
 
   my $hashRef;
   my $exon;
-  my %rchash;
-      
-  while(   $hashRef = $sth->fetchrow_hashref() ) {
-      my $sticky_length = 0;
-      my $sticky_str = "";
-      if( $hashRef->{'sticky_rank'} >1 ) {	
-	  # sticky exon
-	  my $sticky = Bio::EnsEMBL::StickyExon->new();
-	  $sticky->dbID($hashRef->{'exon_id'});
-	  # make first component exon
-	  my $component = $self->_new_Exon_from_hashRef($hashRef);
 
-	  if( !exists $rchash{$component->contig_id} ) {
-	      $rchash{$component->contig_id} = $self->db->get_Contig($hashRef->{'cid'});
-	  }
-	  
-	  $component->attach_seq($rchash{$component->contig_id}->primary_seq);
-	  $component->seqname($hashRef->{'cid'});
-	  
-	  
-	  
-	  $sticky->add_component_Exon($component);
-	  $sticky_length += $component->length;
-	  $sticky_str    .= $component->seq->seq;
-	  $sticky->phase($component->phase);
-	  $sticky->dbID($component->dbID);
-	  $sticky->adaptor($self);
-	  # continue while loop until we hit sticky_rank 1
-	  while( $hashRef = $sth->fetchrow_hashref() ) {
-	      my $component = $self->_new_Exon_from_hashRef($hashRef);
-	      
-	      if( !exists $rchash{$component->contig_id} ) {
-		  $rchash{$component->contig_id} = $self->db->get_Contig($hashRef->{'cid'});
-	      }
-	      
-	      $component->attach_seq($rchash{$component->contig_id}->primary_seq);
-	      $component->seqname($hashRef->{'cid'});
-	      $sticky->add_component_Exon($component);
-	      $sticky_length += $component->length;
-	      $sticky_str    .= $component->seq->seq;
-	      
-	      if( $component->sticky_rank == 1 ) {
-		  last;
-	      }
-	  }
-	  
-	  $sticky->_sort_by_sticky_rank();
-	  $sticky->start(1);
-	  $sticky->end($sticky_length);
-	  
-	  my $rev = reverse(split(//,$sticky_str));
-	  
-	  my $tempseq = Bio::PrimarySeq->new( -display_id => 'artificial.sticky.exon'.$sticky->dbID , '-seq' => $rev);
-	  
-	  $sticky->attach_seq($tempseq);
-	  
-	  # set start = 1 and end = length of sticky exon
-	  
-	  # build a minature sequence representing the sticky region and
-	  # attach
-	  $exon = $sticky;
-      } else {
-	  $exon = $self->_new_Exon_from_hashRef($hashRef);
-	  if( !exists $rchash{$exon->contig_id} ) {
-	      $rchash{$exon->contig_id} = $self->db->get_Contig($hashRef->{'cid'});
-	  }
-	  $exon->attach_seq($rchash{$exon->contig_id}->primary_seq);
-	  $exon->seqname($hashRef->{'cid'});
-	  
-	  
-      } # end of else
-  } # end of while
+  if( $hashRef = $sth->fetchrow_hashref() ) {
+    $exon = $self->_exon_from_sth( $sth, $hashRef );
+  }
 
+  delete $self->{rchash};
   return $exon;
-
 }
 
 =head2 fetch_by_stable_id
@@ -185,6 +114,7 @@ sub fetch_by_stable_id {
 
 
 # returns list of exons or maybe empty list (gene not known)
+
 sub fetch_by_geneId {
   my ( $self, $geneId ) = @_;
   my $hashRef;
@@ -220,88 +150,81 @@ sub fetch_by_geneId {
   my $sth = $self->prepare( $query );
   $sth->execute();
 
-  my %rchash;
+  my %exons;
 
+  while( $hashRef = $sth->fetchrow_hashref() ) {
+    if( ! exists $exons{ $hashRef->{exon_id} } ) {
 
-  
-  my( $exon );
-  while(   $hashRef = $sth->fetchrow_hashref() ) {
-      my( $loading );
-      if( ! exists $exons{ $hashRef->{exon_id} } ) {
-	  my $sticky_length = 0;
-	  my $sticky_str = "";
-	  if( $hashRef->{'sticky_rank'} >1 ) {	
-	      # sticky exon
-	      my $sticky = Bio::EnsEMBL::StickyExon->new();
-	      $sticky->dbID($hashRef->{'exon_id'});
-	      # make first component exon
-	      my $component = $self->_new_Exon_from_hashRef($hashRef);
-
-	      if( !exists $rchash{$component->contig_id} ) {
-		  $rchash{$component->contig_id} = $self->db->get_Contig($hashRef->{'cid'});
-	      }
-
-	      $component->attach_seq($rchash{$component->contig_id}->primary_seq);
-	      $component->seqname($hashRef->{'cid'});
-
-
-
-	      $sticky->add_component_Exon($component);
-	      $sticky_length += $component->length;
-	      $sticky_str    .= $component->seq->seq;
-	      $sticky->phase($component->phase);
-	      $sticky->dbID($component->dbID);
-	      $sticky->adaptor($self);
-	      # continue while loop until we hit sticky_rank 1
-	      while( $hashRef = $sth->fetchrow_hashref() ) {
-		  my $component = $self->_new_Exon_from_hashRef($hashRef);
-
-		  if( !exists $rchash{$component->contig_id} ) {
-		      $rchash{$component->contig_id} = $self->db->get_Contig($hashRef->{'cid'});
-		  }
-
-		  $component->attach_seq($rchash{$component->contig_id}->primary_seq);
-		  $component->seqname($hashRef->{'cid'});
-		  $sticky->add_component_Exon($component);
-		  $sticky_length += $component->length;
-		  $sticky_str    .= $component->seq->seq;
-
-		  if( $component->sticky_rank == 1 ) {
-		      last;
-		  }
-	      }
-	      
-	      $sticky->_sort_by_sticky_rank();
-	      $sticky->start(1);
-	      $sticky->end($sticky_length);
-
-	      my $rev = reverse(split(//,$sticky_str));
-
-	      my $tempseq = Bio::PrimarySeq->new( -display_id => 'artificial.sticky.exon'.$sticky->dbID , '-seq' => $rev);
-	      
-	      $sticky->attach_seq($tempseq);
-
-	      # set start = 1 and end = length of sticky exon
-	      
-	      # build a minature sequence representing the sticky region and
-	      # attach
-	      
-	      $exons{$sticky->dbID} = $sticky;
-	  } else {
-	      $exon = $self->_new_Exon_from_hashRef($hashRef);
-	      if( !exists $rchash{$exon->contig_id} ) {
-		  $rchash{$exon->contig_id} = $self->db->get_Contig($hashRef->{'cid'});
-	      }
-	      $exon->attach_seq($rchash{$exon->contig_id}->primary_seq);
-	      $exon->seqname($hashRef->{'cid'});
-	      $exons{$exon->dbID} = $exon;
-	      
-	  }
-      } # end of if we haven't seen this exon
-  } # end of while
-  
+      my $exon = $self->_exon_from_sth( $sth, $hashRef );
+      $exons{$exon->dbID} = $exon;
+    }
+  }
+  delete $self->{rchash};
   return values %exons;
 }
+
+
+
+# build an exon (possibly sticky exon) from given statement handle and
+# retrieved row in hashref. return it. uses $self->{rchash} to store contig
+# information. This should be cleared after leaving ExonAdaptor
+
+sub _exon_from_sth {
+
+  my ( $self, $sth, $hashRef ) = @_;
+  my $sticky_length = 0;
+  my $sticky_str = "";
+  my $exon;
+
+  if( $hashRef->{'sticky_rank'} >1 ) {	
+    # sticky exon
+    $exon = Bio::EnsEMBL::StickyExon->new();
+    $exon->dbID($hashRef->{'exon_id'});
+    # make first component exon
+    my $component = $self->_new_Exon_from_hashRef($hashRef);
+
+    $exon->add_component_Exon($component);
+    $sticky_length += $component->length;
+    $sticky_str    .= $component->seq->seq;
+
+    $exon->phase($component->phase);
+    $exon->adaptor($self);
+
+    # continue while loop until we hit sticky_rank 1
+    while( $hashRef = $sth->fetchrow_hashref() ) {
+      my $component = $self->_new_Exon_from_hashRef($hashRef);
+
+      $exon->add_component_Exon($component);
+      $sticky_length += $component->length;
+      $sticky_str    .= $component->seq->seq;
+
+      if( $component->sticky_rank == 1 ) {
+	$exon->contig( $component->contig );
+	last;
+      }
+    }
+
+    $exon->_sort_by_sticky_rank();
+
+    # set start = 1 and end = length of sticky exon
+    # build a minature sequence representing the sticky region and
+    # attach
+
+    $exon->start(1);
+    $exon->end($sticky_length);
+
+    my $rev = reverse(split(//,$sticky_str));
+    my $tempseq = Bio::PrimarySeq->new( -display_id => 'artificial.sticky.exon'.$exon->dbID , '-seq' => $rev);
+    $exon->attach_seq($tempseq);
+
+  } else {
+    $exon = $self->_new_Exon_from_hashRef($hashRef);
+    
+  }
+
+  return $exon;
+}
+
 
 sub _new_Exon_from_hashRef {
    my $self = shift;
@@ -311,13 +234,19 @@ sub _new_Exon_from_hashRef {
    $exon->start( $hashRef->{'seq_start'} );
    $exon->end( $hashRef->{'seq_end'} );
    $exon->strand( $hashRef->{'strand'} );
-   $exon->contig_id( $hashRef->{'cid'} );
    $exon->phase( $hashRef->{phase} );
 #    $exon->end_phase( $hashRef->{end_phase} );
    $exon->dbID($hashRef->{'exon_id'});
    $exon->sticky_rank($hashRef->{'sticky_rank'});
-   $exon->contig_id( $hashRef->{'contig_id'} );
    $exon->adaptor($self);
+
+   if( !exists $self->{rchash}{$hashRef->{'contig_id'}} ) {
+     $self->{rchash}{$hashRef->{contig_id}} = $self->db->get_Contig($hashRef->{'cid'});
+   }
+
+   $exon->attach_seq($self->{rchash}{$hashRef->{'contig_id'}}->primary_seq);
+   $exon->contig( $self->{rchash}{$hashRef->{'contig_id'}} );
+   $exon->seqname($hashRef->{'cid'});
 
    # maybe we should cache this.
    

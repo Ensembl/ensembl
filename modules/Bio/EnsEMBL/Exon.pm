@@ -252,13 +252,18 @@ sub adaptor {
 =cut
 
 sub contig_id{
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'contigid'} = $value;
-    }
+  my $self = shift;
+  if( @_ ) {
+    my $value = shift;
+    $self->{'contigid'} = $value;
+  }
+  if( defined $self->{'contigid'} ) {
     return $self->{'contigid'};
-
+  } elsif( defined $self->contig() ) {
+    return $self->contig->id();
+  } else {
+    return undef;
+  }
 }
 
 =head2 clone_id
@@ -273,12 +278,39 @@ sub contig_id{
 =cut
 
 sub clone_id{
-   my $obj = shift;
+   my $self = shift;
+   if( @_ ) {
+     my $value = shift;
+     $self->{'clone_id'} = $value;
+   }
+
+   if( defined $self->{'clone_id'} ) {
+     return $self->{'clone_id'};
+   } elsif( defined $self->contig() ) {
+     return $self->contig->cloneid();
+   } else {
+     return undef;
+   }
+}
+
+=head2 contig
+
+ Title   : contig
+ Usage   : 
+ Function: stores a RawContig
+ Returns : 
+ Args    : 
+
+
+=cut
+
+sub contig {
+   my $self = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'clone_id'} = $value;
+      $self->{'contig'} = $value;
     }
-    return $obj->{'clone_id'};
+    return $self->{'contig'};
 
 }
 
