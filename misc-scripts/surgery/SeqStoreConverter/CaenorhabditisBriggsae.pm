@@ -104,9 +104,16 @@ sub chromosome_to_seq_region {
   $self->debug("CaenorhabditisBriggsae Specific: Transforming " .
                "chromosomes into $target_cs_name seq_regions");
 
-  #strip off the leading 'cb25.' from the chromosome name
+
+  ## For consistancy with mart and v19 we need to keep chr name the same for
+  ## now, so the following section is commented out and replaced:
+  ##strip off the leading 'cb25.' from the chromosome name
+  #my $select_sth = $dbh->prepare
+  #  ("SELECT chromosome_id,substring(name,6),length FROM $source.chromosome");
+
   my $select_sth = $dbh->prepare
-    ("SELECT chromosome_id,substring(name,6),length FROM $source.chromosome");
+    ("SELECT chromosome_id,name,length FROM $source.chromosome");
+
 
   my $insert_sth = $dbh->prepare
     ("INSERT INTO $target.seq_region (name, coord_system_id, length) " .
