@@ -15,10 +15,10 @@ use Bio::EnsEMBL::Utils::Eprof qw( eprof_start eprof_end eprof_dump);
 
 
 my $dbuser = 'ensro';
-my $dbname = 'ens075';
+my $dbname = 'ensembl080';
 #my $host = 'obi-wan';
 #my $host = 'cgisrv4';
-my $host = 'ecs1c';
+my $host = 'ensrv5';
 my $dbpass = undef;
 
 sub get_locator {
