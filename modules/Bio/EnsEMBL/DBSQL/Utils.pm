@@ -97,7 +97,7 @@ sub fset2transcript {
 	@exons = sort {$b->start <=> $a->start} @exons;
     }
     
-
+    print STDERR "Using this module\n";
     if( $exons[0]->phase == 0 ) {
 	$translation->start(1);
     } elsif ( $exons[0]->phase == 1 ) {
@@ -107,10 +107,11 @@ sub fset2transcript {
     } else {
 	$genscan->throw("Nasty exon phase".$exons[0]->phase);
     }
+    print STDERR "Translation start set to ".$translation->start."\n";
     
     # this doesn't really 
-    $translation->end($exons[scalar(@exons)-1]->end);
-    
+    $translation->end($exons[scalar(@exons)-1]->length);
+    print STDERR "Translation end set to ".$translation->end."\n"; 
     
     $translation->start_exon_id($exons[0]->id);
     $translation->end_exon_id  ($exons[$#exons]->id);
