@@ -555,19 +555,20 @@ sub get_old_Exons {
     #therefore we just return the old exons...
     if ($oldclone->embl_version == $newclone->embl_version) {
 	print STDERR "Clones have the same version, returning old exons as they are...\n";
+	my @exons=$oldclone->get_Contig($self->id)->get_all_Exons();
+	my $size=scalar (@exons);
+	print STDERR "Returning $size old exons for contig ".$self->id." on clone ".$oldclone->id."\n"; 
 	return $oldclone->get_Contig($self->id)->get_all_Exons(); 
     }
     #We get out a SymmetricContigFeatureContainer from the crossdb and use it     #to retrieve feature pairs for this contig, then sort them
     my $sfpc = $crossdb->get_SymmetricContigFeatureContainer;
     $self->id =~ /(\S+)\.0+(\d+)/;
     my $id = "$1.".$newclone->version.".$2";
-    print "Getting feature pairs with id $id\n";
     my @fp=$sfpc->get_FeaturePair_list_by_rawcontig_id($id);
     my @sorted_fp= sort { $a->start <=> $b->start} @fp;
 
     my %validoldcontigs;
     my %fphash;
-    print STDERR "Gets lower....\n\n";
     my @old_exons;
     foreach my $fp ( @sorted_fp ) {
 	print STDERR "Going through $fp\n";
@@ -598,9 +599,11 @@ sub get_old_Exons {
 	    if( $fp->hstart < $exon->start && $fp->hend > $exon->start ) {
 		if( $fp->strand == $fp->hstrand ) {
 		    # straightforward mapping
+		    print STDERR $exon->id."is on a == strands feature pair\n";
 		    $exon->start($fp->start + $exon->start - $fp->hstart);
 		    $exon->end($fp->start + $exon->end - $fp->hstart);
 		} else {
+		    print STDERR $exon->id." is in opposite strands feature pair!\n";
 		    # Grrr strand hell.
 		    my $oldstart = $exon->start;
 		    my $oldend   = $exon->end;

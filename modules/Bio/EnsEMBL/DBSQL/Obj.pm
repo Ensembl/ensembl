@@ -2393,7 +2393,7 @@ sub get_Feature_Obj {
            VirtualContigs.  If the distance in a contig overlap
            is greater than the cutoff, then the overlap will
            not be returned.
- Returns : value of overlap_distance_cutoff, or -1 if it isn't set
+ Returns : value of overlap_distance_cutoff, or -1 if it is not set
  Args    : positive integer
 
 
