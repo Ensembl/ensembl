@@ -204,6 +204,21 @@ sub get_Ensembl_SeqFeatures_clone{
 
 }
 
+=head2 get_Ensembl_Genes_clone
+
+ Title   : get_Ensembl_Genes_clone
+ Function: returns Gene objects in clone coordinates from a gene id
+ Returns : An array of Gene objects
+ Args    : clone id
+
+=cut
+
+sub get_Ensembl_Genes_clone {
+    my $self = @_;
+
+    # silently fail if gets here.
+}
+
 =head2 get_SeqFeature_by_id
 
  Title   : get_SeqFeature_by_id (Abstract)

@@ -692,6 +692,32 @@ sub get_all_Genes {
 
 }
 
+=head2 get_all_ExternalGenes
+
+ Title   : get_all_ExternalGenes
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ExternalGenes {
+   my ($self) = @_;
+    my (%gene);
+    
+    foreach my $contig ($self->_vmap->get_all_RawContigs) {
+	foreach my $gene ( $contig->get_all_ExternalGenes() ) {
+	    $gene{$gene->id()} = $gene;
+	}
+    }
+
+    return $self->_gene_query(%gene);
+}
+
+
 
 =head2 get_old_Exons
 

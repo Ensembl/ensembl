@@ -1372,9 +1372,9 @@ sub get_all_ExternalFeatures{
    my @out;
    my $acc;
    
-   # this is not pretty.
-   $acc = $self->id();
-   $acc =~ s/\.\d+$//g;
+
+   $acc = $self->cloneid();
+
    my $embl_offset = $self->embl_offset();
 
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
@@ -1400,6 +1400,45 @@ sub get_all_ExternalFeatures{
    return @out;
 
 }                                       # get_all_ExternalFeatures
+
+
+=head2 get_all_ExternalGenes
+
+ Title   : get_all_ExternalGenes 
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ExternalGenes {
+   my ($self) = @_;
+
+   
+   my @out;
+   my $acc;
+   
+
+   $acc = $self->cloneid();
+
+   my $embl_offset = $self->embl_offset();
+
+   foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
+       if( $extf->can('get_Ensembl_Genes_clone') ) {
+	   my @genes = $extf->get_Ensembl_Genes_clone();
+	   foreach $exon ( @genes->all_Exon_objects ) {
+	       $exon->start($exon->start - $embl_offset+1);
+	       $exon->end($exon->end - $embl_offset+1);
+	   }
+	   push(@out,@genes);
+       } 
+   }
+
+   return @genes;
+}
 
 
 =head2 length
