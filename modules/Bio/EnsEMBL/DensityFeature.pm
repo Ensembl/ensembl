@@ -221,49 +221,6 @@ sub density_type{
 
 ###BG########
 
-=head2 start
-
- Title   : start
- Usage   : $obj->start($newval)
- Function: 
- Returns : value of start
- Args    : newvalue (optional)
-
-
-=cut
-
-sub start{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'start'} = $value;
-    }
-    return $obj->{'start'};
-
-}
-
-=head2 end
-
- Title   : end
- Usage   : $obj->end($newval)
- Function: 
- Returns : value of end
- Args    : newvalue (optional)
-
-
-=cut
-
-sub end{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'end'} = $value;
-    }
-    return $obj->{'end'};
-
-}
-
-
 =head2 scaledvalue
 
  Title   : scaledvalue
