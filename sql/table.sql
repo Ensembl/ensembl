@@ -398,7 +398,7 @@ CREATE TABLE objectXref(
 
        UNIQUE ( ensembl_object_type, ensembl_id, xrefId ),
        KEY xref_index( objectxrefId, xrefId, ensembl_object_type, ensembl_id )
-   	);			
+   	);
 
 #
 #Table structure for identityXref
