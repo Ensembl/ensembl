@@ -76,7 +76,7 @@ foreach my $slice (@$top_slices) {
     my @genes = @{$slice->get_all_Genes()};
 
     foreach my $gene (@genes) {
-      if(uc($gene->type()) eq uc('pseudogene')) {
+      if($gene->type() =~ /pseudogene/i) {
         $num_pseudo_genes++;
       } else {
         $num_genes++;
