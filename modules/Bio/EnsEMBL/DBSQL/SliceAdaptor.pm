@@ -68,7 +68,7 @@ use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
-my $SEQ_REGION_CACHE_SIZE = 100;
+my $SEQ_REGION_CACHE_SIZE = 1000;
 
 sub new {
   my $caller = shift;
@@ -493,15 +493,21 @@ sub fetch_all {
 
   my $name_cache = $self->{'_name_cache'};
   my $id_cache   = $self->{'_id_cache'};
+  my $cache_count = 0;
 
   my $cs_key = lc($cs->name().':'.$cs_version);
 
   my @out;
   while($sth->fetch()) {
-    #cache values for future reference
-    my $key = lc($name) . ':'. $cs_key;
-    $name_cache->{$key} = [$seq_region_id, $length];
-    $id_cache->{$seq_region_id} = [$name, $length, $cs];
+
+    #cache values for future reference, but stop adding to the cache once we
+    #we know we have filled it up
+    if($cache_count < $SEQ_REGION_CACHE_SIZE) {
+      my $key = lc($name) . ':'. $cs_key;
+      $name_cache->{$key} = [$seq_region_id, $length];
+      $id_cache->{$seq_region_id} = [$name, $length, $cs];
+      $cache_count++;
+    }
 
     #
     # split the seq regions into appropriately sized chunks
