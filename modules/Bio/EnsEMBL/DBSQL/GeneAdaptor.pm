@@ -744,8 +744,7 @@ sub store {
    my $sth2 = $self->prepare("INSERT INTO gene(type, analysis_id, 
                                                transcript_count, 
                                                display_xref_id) 
-                              VALUES(?,?,?,?)
-                                     $trans_count, $xref_id)" );
+                              VALUES(?,?,?,?)");
    $sth2->execute("$type", $analysisId, $trans_count, $xref_id);
 
    my $gene_dbID = $sth2->{'mysql_insertid'};
