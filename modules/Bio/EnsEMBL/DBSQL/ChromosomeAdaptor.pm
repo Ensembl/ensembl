@@ -420,7 +420,7 @@ sub store{
   if(!$snps){
     $snps = 0;
   } 
-  my $sql = "INSERT into CHROMOSOME(name,
+  my $sql = "insert into chromosome(name,
                                     known_genes,
                                     unknown_genes,
                                     snps,
