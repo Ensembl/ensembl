@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Bio::EnsEMBL::CoordSystem;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::AffyFeature;
 use Bio::EnsEMBL::AffyProbe;
@@ -15,7 +16,6 @@ BEGIN { $| = 1;
 
 
 our $verbose = 0;
-verbose('WARNING');
 
 
 #
@@ -46,7 +46,6 @@ ok( test_getter_setter( $affy_array, "setsize", 11 ));
 
 # possibly do the following with database connection
 my $probes = $affy_array->get_all_AffyProbes();
-ok( 
 
 #
 # Create an AffyProbe
@@ -55,14 +54,14 @@ ok(
 my $affy_probe = Bio::EnsEMBL::AffyProbe->new
 (
   -arrayname => "AFFY-1",
-  -probename => "123-145",
+  -name => "123-145",
   -probeset => "affy_probeset"
 );
 
-my $affy_probe = Bio::EnsEMBL::AffyProbe->new
+$affy_probe = Bio::EnsEMBL::AffyProbe->new
 (
   -array => $affy_array,
-  -probename => "123-145",
+  -name => "123-145",
   -probeset => "affy_probeset"
 );
 
@@ -71,9 +70,9 @@ ok( ref( $affy_probe ) && $affy_probe->isa( "Bio::EnsEMBL::AffyProbe" ));
 my $merge_probe = Bio::EnsEMBL::AffyProbe->new
 (
   -arraynames => [ "Affy-1", "Affy-2", "Affy-3" ],
-  -probenames => [ "123-145", "23,24,56", "someplace" ],
+  -names => [ "123-145", "23,24,56", "someplace" ],
   -probeset => "affy_probeset"
-)
+);
 
 ok( ref( $merge_probe ) && $merge_probe->isa( "Bio::EnsEMBL::AffyProbe" ));
 
@@ -85,7 +84,7 @@ ok( ref( $merge_probe ) && $merge_probe->isa( "Bio::EnsEMBL::AffyProbe" ));
 #
 
 ok( test_getter_setter( $merge_probe, "dbID", 1 ));
-ok( test_getter_setter( $merge_probe, "adaptor", {} ));
+ok( test_getter_setter( $merge_probe, "adaptor", bless( {}, "Bio::EnsEMBL::DBSQL::BaseAdaptor" )));
 ok( test_getter_setter( $merge_probe, "probeset", "Affy_probeset" ));
 
 
@@ -101,22 +100,23 @@ ok( $arrays->[0] && $arrays->[0]->isa( "Bio::EnsEMBL::AffyArray" ));
 
 
 # expected to construct full probenames from Chipname, setname and probename
-my $full_probenames = $merge_probe->get_complete_names();
+my $full_probenames = $merge_probe->get_all_complete_names();
 ok( ref( $full_probenames ) eq 'ARRAY' );
 ok( $full_probenames->[0] && ( $full_probenames->[0] =~ /affy_probeset/ ));
  
-my $full_probename = $merge_probe->get_complete_name( $affy_array );
-ok( $full_probename =~ /affy_probeset/ && $full_probename =~ /$affy_array->name()/ );
 
-my $probenames = $merge_probe->get_probenames();
-my $probename = $merge_probe->get_probename( $affy_array );
+my $full_probename = $merge_probe->get_complete_name( "Affy-1" );
+ok( $full_probename =~ /affy_probeset/ && $full_probename =~ /Affy-1/ );
+
+my $probenames = $merge_probe->get_all_probenames();
+my $probename = $merge_probe->get_probename( $affy_array->name() );
 
 
 #
 # When we implement storing this should be implemented as well
 # for starters we are not creating these objects, but load the database with probes ...
 
-$affy_probe->add_array_name( $affy_array, $probename );
+# $affy_probe->add_array_name( $affy_array, $probename );
 
 
 #
@@ -125,7 +125,8 @@ $affy_probe->add_array_name( $affy_array, $probename );
 
 my $coord_system = Bio::EnsEMBL::CoordSystem->new
    ( -name => "chromosome",
-     -version => '' );
+     -version => '',
+     -rank => 1 );
 
 my $slice = Bio::EnsEMBL::Slice->new
    ( 
@@ -137,8 +138,9 @@ my $slice = Bio::EnsEMBL::Slice->new
 );
      
 my $affy_feature = Bio::EnsEMBL::AffyFeature->new
-   (
+    (
      -probe => $affy_probe,
+     -mismatch_count => 1,
      -slice => $slice,
      -start => 1,
      -end => 10,
