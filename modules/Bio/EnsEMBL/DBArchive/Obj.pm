@@ -101,7 +101,7 @@ sub _initialize {
       $self->_db_handle("dummy dbh handle in debug mode $debug");
   } else {
       
-      my $dbh = DBI->connect("$dsn",$user,$password,{RaiseError => 1});
+      my $dbh = DBI->connect("$dsn","$user","$password",{RaiseError => 1});
       $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
       
       if( $self->_debug > 3 ) {
@@ -272,6 +272,26 @@ sub get_seq_by_gene_version{
     return @out;
 }
 
+=head2 write_dead_geneid
+
+ Title   : write_dead_geneid
+ Usage   : $arcdb->write_dead_geneid($geneid)
+ Function: write the id of a dead gene to the db 
+ Example : $arcdb->write_dead_geneid('ENSG0000003456')
+ Returns : nothing
+ Args    : gene id string
+
+
+=cut
+
+sub write_dead_geneid{
+    my ($self,$geneid) = @_;
+    
+    my $sth = $self->prepare("insert into dead_genes (id) values ('$geneid')");
+    $sth->execute();
+}
+
+
 =head2 write_seq
 
  Title   : write_seq
@@ -287,18 +307,18 @@ sub get_seq_by_gene_version{
 =cut
 
 sub write_seq{
-   my ($self,$seq, $version, $type, $gene_id,$gene_version) = @_;
+   my ($self, $seq, $version, $type, $gene_id,$gene_version,$cid,$cv) = @_;
    
    $seq || $self->throw("Attempting to write a sequence without a sequence object!");
-   $seq->id || $self->throw("Attempting to write a sequence without a sequence id!");
    $type || $self->throw("Attempting to write a sequence without a sequence type!");
    $version || $self->throw("Attempting to write a sequence without a sequence version number!");
+   $seq ||  $self->throw("Attempting to write a sequence without a sequence!");
    $gene_id || $self->throw("Attempting to write a sequence without a gene id!");
    $gene_version || $self->throw("Attempting to write a sequence without a gene version number!");
-   #$clone_id || $self->throw("Attempting to write a sequence without a clone id!");
-   #$clone_version || $self->throw("Attempting to write a sequence without a clone version number!");
+   $cid || $self->throw("Attempting to write a sequence without a clone id!");
+   $cv || $self->throw("Attempting to write a sequence without a clone version number!");
 
-   my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence) values ('".$seq->id()."','".$version."','".$type."','".$gene_id."','".$gene_version."','".$seq->seq."')");
+   my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence,clone_id,clone_version) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."','".$cid."','".$cv."')");
    $sth->execute();
 }
 =head2 delete_seq
@@ -429,8 +449,7 @@ sub _create_seq_obj{
 	my $id = $rowhash->{'id'};
 	$id .= ".";
 	$id .= $rowhash->{'version'};
-	if (defined($rowhash->{'seq_type'}) && 
-	    $rowhash->{'seq_type'} eq 'protein') {
+	if ($rowhash->{'seq_type'} eq 'protein') {
 	    $type = 'amino';
 	}
 	else {
@@ -449,6 +468,106 @@ sub _create_seq_obj{
     @out = sort { my $aa = $a->id; $aa =~ s/^[^.]*.//g; my $bb = $b->id; $bb =~ s/^[^.]*.//g; return $aa <=> $bb } @out;
     return @out;
 }
+
+
+=head2
+
+ Title   : get_new_stable_ids
+ Usage   : @ids = $obj->get_new_stable_ids('exon',6);
+ Function: 
+ Example : 
+ Returns : new id, ENS-style, as an array
+ Args    : id type, one of 'exon','transcript','gene','translation'
+
+
+=cut
+
+my %stubhash = ( 'exon' => 'ENSE', 'transcript' => 'ENST','gene' => 'ENSG','translation' => 'ENSP' );
+
+sub get_new_stable_ids {
+    my ($self,$table,$number) = @_;
+
+    if( !defined $number ) {
+	$self->throw("Must call as table,number");
+    }
+
+    if( !defined $stubhash{$table} ) {
+	$self->throw("Does not have $table as a valid stable id table");
+    }
+    
+    my $stub= $stubhash{$table};
+    $table .= "_stable";
+    my @out;
+
+
+    my $lsth   = $self->prepare("lock table $table write");
+    $lsth->execute;
+
+    # wrap critical region in an eval so we can catch errors and release table
+
+    eval {
+
+	my $query = "select max(external_id) as id from $table where 1";
+	
+	my $sth   = $self->prepare($query);
+	my $res   = $sth->execute;
+	my $row   = $sth->fetchrow_hashref;
+	my $id    = $row->{id};
+	
+	if (!defined($id) || $id eq "") {
+	    $id = $stub . "00000000000";
+	}
+	
+	if ($id =~ /\D+(\d+)$/) {
+	    
+	    my $newid  = $1;
+	    my $i;
+	    
+	    foreach $i ( 1..$number ) {
+
+		$newid++;
+		
+		
+		if (length($newid) > 11) {
+		    if ($newid =~ /^0/) {
+			$newid =~ s/^0//;
+		    } else {
+			$self->throw("Can't truncate number string to generate new id [$newid]");
+		    }
+		}
+		my $c = $stub . $newid;
+		my $query = "insert into $table (internal_id,external_id,created) values (NULL,'$c',NOW())";
+		my $sth   = $self->prepare($query);
+		my $res   = $sth->execute;
+		
+		push(@out,$c);
+	    }
+	    
+	    
+	} else {
+	    $self->throw("[$id] does not look like an object id (e.g. ENST00000019784)");
+	}
+    };
+
+    my $error = undef;
+
+    if( $@ ) {
+	$error = $@;
+    }
+
+
+    my $usth   = $self->prepare("unlock tables");
+    $usth->execute;
+
+
+    if( defined $error ) {
+	$self->throw("Problem in making IDs. Unlocked tables. \n\n Error $@");
+    }
+
+    return @out;
+    
+}
+
 
 =head2 DESTROY
 

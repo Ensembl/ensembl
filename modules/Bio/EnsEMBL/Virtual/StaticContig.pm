@@ -512,7 +512,6 @@ sub get_all_ExternalFeatures{
    if( scalar($self->_vmap->get_all_RawContigs) == 0) {
        return();
    }
-
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
        if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
 	   push(@web,$extf);
@@ -538,7 +537,6 @@ sub get_all_ExternalFeatures{
        # get them out, push into array by clone
        foreach my $extf ( @web ) {
 	   foreach my $feature ( $extf->get_Ensembl_SeqFeatures_clone_web($glob,@clones) ) {
-	      
 	       my $clone = $feature->seqname;
 	       $clone =~ s/\.\d+$//g;
 	       push(@{$featureh{$clone}},$feature);
