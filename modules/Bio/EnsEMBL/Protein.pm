@@ -584,7 +584,7 @@ sub get_all_SigpFeatures{
     }
     else {
 	my $proteinid = $self->id();
-	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('sigp',$proteinid);
+	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('Signalp',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Sigp($in);
 	}
@@ -635,7 +635,7 @@ sub get_all_TransmembraneFeatures{
     }
     else {
        my $proteinid = $self->id();
-	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('transmembrane',$proteinid);
+	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('Tmhmm',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Transmembrane($in);
 	}
@@ -686,7 +686,7 @@ sub get_all_CoilsFeatures{
     }
     else {
        my $proteinid = $self->id();
-	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('coils',$proteinid);
+	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('ncoils',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Coils($in);
 	}
@@ -736,7 +736,7 @@ sub get_all_LowcomplFeatures{
     }
     else {
        my $proteinid = $self->id();
-	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('low_complexity',$proteinid);
+	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('Seg',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Lowcompl($in);
 	}
