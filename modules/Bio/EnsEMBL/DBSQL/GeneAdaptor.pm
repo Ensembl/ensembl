@@ -403,7 +403,7 @@ sub fetch_by_maximum_DBLink {
     my $size=scalar(@genes);
     if ($size > 0) {
 	foreach my $gene (@genes) {
-	    my $size = (scalar($gene->each_unique_Exon));
+	    my $size = (scalar($gene->get_all_Exons));
 	    if ($size > $max) {
 		$biggest = $gene;
 		$max=$size;
