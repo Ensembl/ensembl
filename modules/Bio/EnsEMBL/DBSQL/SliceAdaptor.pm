@@ -608,7 +608,7 @@ sub fetch_all {
 
       #cache values for future reference, but stop adding to the cache once we
       #we know we have filled it up
-      if($cache_count < $Bio::EnsEMBL::Utils::SEQ_REGION_CACHE_SIZE) {
+      if($cache_count < $Bio::EnsEMBL::Utils::SeqRegionCache::SEQ_REGION_CACHE_SIZE) {
         my $arr = [ $seq_region_id, $name, $cs_id, $length ];
         
         $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$name:$cs_id"} =
