@@ -143,27 +143,6 @@ sub AUTOLOAD {
 }
 
 
-=head2 deleteObj
-
-  Args       : none
-  Example    : none
-  Description: breaks circular references and is recursivley called during 
-               memory cleanup (hopefully)
-  Returntype : none
-  Exceptions : none
-  Caller     : DBConnection->deleteObj()
-
-=cut
-
-sub deleteObj {
-  my $self = shift;
-  delete $self->{'_primary_adaptor'};
-  $self->SUPER::deleteObj();
-}
- 
-
-
-
 =head2 DESTROY
 
   Arg [1]    : none

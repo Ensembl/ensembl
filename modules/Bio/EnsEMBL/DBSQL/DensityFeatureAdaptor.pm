@@ -570,22 +570,5 @@ sub fetch_Featureset_by_Slice {
   return $self->{'_density_feature_cache'}->{$key};
 }
 
-# deleteObj
-#
-#  Arg [1]    : none
-#  Example    : none
-#  Description: Cleans up internal caches and references to other objects so
-#               that correct garbage collection may occur.
-#  Returntype : none
-#  Exceptions : none
-#  Caller     : Bio::EnsEMBL::DBConnection::deleteObj
-
-sub deleteObj {
-  my $self = shift;
-
-  #flush feature cache
-  %{$self->{'_density_feature_cache'}} = ();
-}
-
 
 1;

@@ -24,9 +24,6 @@ Bio::EnsEMBL::DBSQL::BaseAdaptor - Base Adaptor for DBSQL adaptors
     # get of root DBAdaptor object
     $adaptor->db();
 
-    # delete memory cycles, called automatically
-    $adaptor->deleteObj();
-
     # constructor, ok for inheritence
     $adaptor = Bio::EnsEMBL::DBSQL::SubClassOfBaseAdaptor->new($dbobj)
 
@@ -183,28 +180,6 @@ sub dbc{
   $self->{'dbc'} = shift if(@_);
 
   return $self->{'dbc'};
-}
-
-
-=head2 deleteObj
-
-  Arg [1]    : none
-  Example    : none
-  Description: Cleans up this objects references to other objects so that
-               proper garbage collection can occur
-  Returntype : none
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::DBConnection
-
-=cut
-
-sub deleteObj {
-  my $self = shift;
-
-  #print STDERR "\t\tBaseAdaptor::deleteObj\n";
-
-  #remove reference to the database adaptor
-  $self->{'db'} = undef;
 }
 
 

@@ -117,22 +117,6 @@ sub fetch_all {
   return \@features;
 }
 
-#
-# cleans up internal caches during garbage collection
-#
-sub deleteObj {
-  my $self = shift;
-
-  $self->SUPER::deleteObj(@_);
-
-  delete $self->{'aexc_cache'};
-  delete $self->{'aexc_slice_cache'};
-  delete $self->{'aexc_dbID_cache'};
-
-  return;
-}
-
-
 
 =head2 fetch_by_dbID
 

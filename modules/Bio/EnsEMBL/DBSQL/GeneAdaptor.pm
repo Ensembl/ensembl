@@ -986,29 +986,6 @@ sub get_Interpro_by_geneid {
 
 
 
-# deleteObj
-#  Arg [1]    : none
-#  Example    : none
-#  Description: Responsible for cleaning up this objects references to other
-#               objects so that proper garbage collection can occur. 
-#  Returntype : none
-#  Exceptions : none
-#  Caller     : DBConnection::DeleteObj
-
-sub deleteObj {
-  my $self = shift;
-
-  #print STDERR "\t\tGeneAdaptor::deleteObj\n";
-
-  #call superclass destructor
-  $self->SUPER::deleteObj();
-
-}
-
-
-							
-
-
 =head2 update
 
   Arg [1]    : Bio::EnsEMBL::Gene

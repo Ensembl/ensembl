@@ -699,24 +699,6 @@ sub _fetch_all_by_attrib {
 }
 
 
-#
-# Called during db destruction to clean up internal cache structures etc.
-#
-sub deleteObj {
-  my $self = shift;
-
-  #break circular adaptor <-> db references
-  $self->SUPER::deleteObj();
-
-  #breack circular object <-> adaptor references
-  delete $self->{'_feature_cache'};
-  delete $self->{'_name_cache'};
-  delete $self->{'_dbID_cache'};
-  delete $self->{'_mapping_paths'};
-  delete $self->{'_top_level'};
-}
-
-
 =head2 store
 
   Arg [1]    : Bio::EnsEMBL::CoordSystem

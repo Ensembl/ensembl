@@ -257,20 +257,5 @@ sub store {
 }
 
 
-#
-# Called during db destruction to clean up internal cache structures
-# that result in circular references
-#
-sub deleteObj {
-  my $self = shift;
-
-  #break circular db <-> adaptor references
-  $self->SUPER::deleteObj();
-
-  #break circular object <-> adaptor references
-  delete $self->{'_id_cache'};
-  delete $self->{'_code_cache'};
-}
-
 
 1;

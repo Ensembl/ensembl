@@ -201,18 +201,6 @@ sub fetch_all_by_logic_name {
 }
 
 
-#
-# garbage collection method, automatically called when DBAdaptor is cleaned up
-#
-sub deleteObj {
-  my $self = shift;
-
-  delete $self->{'dbID_cache'};
-
-  $self->SUPER::deleteObj;
-}
-
-
 =head2 store
 
   Arg [1]    : list of Bio::EnsEMBL::DensityType @dt
