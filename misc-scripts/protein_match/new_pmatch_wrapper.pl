@@ -123,9 +123,6 @@ foreach my $query (values(%hits)) {
 			my $overlap = 0;	# Total query overlap length
 			my $totlen = 0;		# Total hit length
 
-			my $gaps = 0;	# Number of gaps in the query
-					# Are these interesting?
-
 			my @pair;
 			foreach my $hit (
 				sort { $a->{$c . 'START'} <=>
@@ -144,31 +141,28 @@ foreach my $query (values(%hits)) {
 						[$pair[1]{$c . 'START'},
 						 $pair[1]{$c . 'END'}]);
 				$overlap += $o;
-
-				++$gaps if ($o == 0); # ($o <= 1  ???)
 			}
 
 			# Calculate the query and target identities
 			$target->{$c . 'IDENT'} =
 				100*($totlen - $overlap)/$target->{$c . 'LEN'};
-			$target->{$c . 'GAPS'}  = $gaps;
 		}
 	}
 }
 
 if ($opts{'b'}) {
-	printf("%8s%8s%8s%8s%8s%8s%8s%8s\n",
-		'QID', 'QLEN', 'QIDENT', 'QGAPS',
-		'TID', 'TLEN', 'TIDENT', 'TGAPS');
+	printf("%8s%8s%8s%8s%8s%8s\n",
+		'QID', 'QLEN', 'QIDENT',
+		'TID', 'TLEN', 'TIDENT');
 }
 
 while (my ($qid, $query) = each %hits) {
 	while (my ($tid, $target)  = each %{ $query }) {
-		printf("%8s%8d%8.3f%8d%8s%8d%8.3f%8d\n",
+		printf("%8s%8d%8.3f%8s%8d%8.3f\n",
 			$qid, $target->{QLEN},
-			$target->{QIDENT}, $target->{QGAPS},
+			$target->{QIDENT},
 			$tid, $target->{TLEN},
-			$target->{TIDENT}, $target->{TGAPS});
+			$target->{TIDENT});
 	}
 }
 
