@@ -1224,7 +1224,7 @@ sub store {
 
   #store the seq_region
 
-  my $sth = $db->prepare("INSERT INTO seq_region " .
+  my $sth = $db->db->prepare("INSERT INTO seq_region " .
                          "SET    name = ?, " .
                          "       length = ?, " .
                          "       coord_system_id = ?" );
