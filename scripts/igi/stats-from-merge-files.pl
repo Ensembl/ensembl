@@ -191,27 +191,32 @@ foreach my $source ('ALL', @all_sources) {
 print "----\n";
 
 # compare igi's per source
-print "pairwise overlaps:\n";
+print "number of igis shared with other source; sharing multiplicity\n";
 my %h = undef;
-print '  ', map (do {sprintf "%12s  ", substr($_,0,6) }, 
-                       (@all_sources, 'unshared', 'total')) ,"\n";
+# headers:
+print '  '
+# overlaps with named groups
+  , map(do {sprintf "%12s  ", substr($_,0,6) }, (@all_sources))
+# multiplicity of groups membership:
+  , map(do {sprintf "        >=%2d  ", $_ }, reverse ( 0 .. (int(@all_sources)-1)))
+  , "       total\n";
 
 SOURCE1:
-  foreach my $source1 (@all_sources) {
+  foreach my $source1 (@all_sources, 'ALL') {
       my @igis_of_source1 = keys %{$igis_of_source{$source1}};
       my $source2;
       
       printf "%6s  ", $source1;
       SOURCE2:
-      my ($shared, $tot, $unshared);
-      $unshared = int(@igis_of_source1);
+      my ($shared, $tot);
+      my %is_shared=undef;
       foreach $source2 (@all_sources) {
-          my @igis_of_source2 = keys %{$igis_of_source{$source2}};
           ($shared, $tot) = (0,0);
-          foreach my $elt (@igis_of_source1) {
-              if (defined $igis_of_source{$source2}{$elt}) {
+          foreach my $igi1 (@igis_of_source1) {
+              if (defined $igis_of_source{$source2}{$igi1}) {
                   $shared++;
-                  $unshared-- if $source1 ne $source2;
+                  # keep track of how many sources have this particular igi:
+                  $is_shared{$igi1}++ if $source1 ne $source2;
               }
               $tot++;
           }
@@ -221,8 +226,18 @@ SOURCE1:
               printf "%6d (%2d%%)  ", $shared, 100.0*$shared/$tot;
           }
       }
+      # print out the sharing multiplicity
+      my ($from, $to) = (int(@all_sources)-1, 1);
+      if ($source1 eq 'ALL') { ($from,$to) = ($from+1, 1)}; # something
+                                                            # fishy here ..
+      for(my $i =$from; $i>= $to; $i--) {
+          my $num = int(grep( $_ >= $i, values %is_shared));
+          printf "%6d (%2d%%)  ", $num;
+      }
+      my $unshared =   int(@igis_of_source1) - int(keys %is_shared);
       printf "%6d (%2d%%)  %6d\n", $unshared, 100.0*$unshared/$tot, $tot; 
-  }
+  }                                     # for source1
+
 print "----\n";
 ### sizes:
 foreach my $source ('ALL', @all_sources) {
@@ -266,6 +281,8 @@ foreach my $igi (@all_igis) {
     }
 }
 
+
+### following can go: 
 # warn @igis_of_n_sources;
 print "overlap totals (histogram)\n" ;
 for(my $i = 1; $i<=$n_sources; $i++) {
