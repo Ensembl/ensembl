@@ -2574,7 +2574,8 @@ sub _fill_cext_SimilarityFeature_cache{
 sub get_all_coding_Snps{
    my ($self) = @_;
    my @snps;
-   
+   my %hash;
+
    my $glob_start=$self->_global_start;
    my $glob_end=$self->_global_end;
    my $chr_name=$self->_chr_name;
@@ -2589,12 +2590,12 @@ sub get_all_coding_Snps{
        my $start = $rowhash->{'snp_chrom_start'};
        my $sn_id = $rowhash->{'refsnpid'};
        
-       $$sn_id->{pos} = $start;
-       $$sn_id->{exon} = $ex_id;
-       
-       push(@snps,$$ex_id);
+       #push(@{$hash{$sn_id}},$sn_id);
+       push(@{$hash{$sn_id}},$start);
+       push(@{$hash{$sn_id}},$ex_id);
+              
    } 
-
+   return %hash;
 }
 
 
