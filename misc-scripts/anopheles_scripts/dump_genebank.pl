@@ -1,15 +1,15 @@
 use strict;
+use Getopt::Long;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::SeqIO;
 use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 use Bio::EnsEMBL::Exon;
-use Bio::EnsEMBL::Utils::Eprof('eprof_start','eprof_end','eprof_dump');
 
-my $host      = 'ecs1e';
+
+my $host      = 'ecs2d';
 my $dbuser    = 'ensro';
-my $dbname    = 'anopheles_gambiae_ncbi_12_2';
+my $dbname    = 'anopheles_gambiae_core_17_2a';
 my $dbpass    = '';
-my $path      = 'MOZ2';
 
 my %scafmap;
 my %utr;
@@ -17,6 +17,14 @@ my %utr_tmp;
 my %ebimap;
 
 my %map;
+
+
+GetOptions(
+	   'dbname:s'    => \$dbname,
+	   'dbhost:s'    => \$host,
+	   'dbuser:s'    => \$dbuser,
+	   'dbpass:s'    => \$dbpass,
+	   );
 
 print STDERR "Connecting to $host, $dbname\n";
 
@@ -33,10 +41,10 @@ my $gene_adapt = $db->get_GeneAdaptor();
 my $slice_adapt = $db->get_SliceAdaptor();
 
 
-open (MAP,"/acari/work1/mongin/test_dump/AAAB01.output.p2g") || die;
+open (MAP,"/acari/work1/mongin/anopheles_17_2a_ncbisub/input/AAAB01.output.p2g") || die;
 
-open (SCAFMAP,"/acari/work1/mongin/test_dump/accessions") || die;
-open (EBIMAP,"/acari/work1/mongin/test_dump/ebi_id_mapping.txt") || die;
+open (SCAFMAP,"/acari/work1/mongin/anopheles_17_2a_ncbisub/input/accessions") || die;
+open (EBIMAP,"/acari/work1/mongin/anopheles_17_2a_ncbisub/input/ebi_id_mapping.txt") || die;
 
 while(<EBIMAP>) {
     chomp;
@@ -58,15 +66,17 @@ while(<MAP>) {
 
 close(MAP);
 
-my $query1 = "select distinct(c.name), a.superctg_ori from clone c, assembly a where a.superctg_name = c.name and c.name = 'AAAB01008849'";
+
+#Get all of the distinct scaffolds
+my $query1 = "select distinct(c.name), a.superctg_ori from clone c, assembly a where a.superctg_name = c.name";
 
 my $sth1 = $db->prepare($query1);
 $sth1->execute();
 
 while (my ($clone_name,$ori) = $sth1->fetchrow_array) {
 
-    open (OUT,">/acari/work1/mongin/test_dump/tmp2/$clone_name.tbl") || die;
-    open (SEQ,">/acari/work1/mongin/test_dump/tmp2/$clone_name.fsa") || die;
+    open (OUT,">/acari/work1/mongin/anopheles_17_2a_ncbisub/output/$clone_name.tbl") || die;
+    open (SEQ,">/acari/work1/mongin/anopheles_17_2a_ncbisub/output/$clone_name.fsa") || die;
 
     my $slice = $slice_adapt->fetch_by_clone_accession($clone_name);
     
@@ -74,7 +84,7 @@ while (my ($clone_name,$ori) = $sth1->fetchrow_array) {
 	$slice = $slice->invert();
     }
     
-    print STDERR "$clone_name\n";
+    print STDERR "CLONE: $clone_name\n";
 
     my $chr_name = $slice->chr_name;
     
@@ -88,6 +98,7 @@ while (my ($clone_name,$ori) = $sth1->fetchrow_array) {
 	print SEQ ">gnl|WGS:AAAB|$old_clone_name|gb|$clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs] [chromosome=$chr_name]\n$clone_seq\n";
     }
     else {
+	print STDERR "HERE\n";
 	print SEQ ">gnl|WGS:AAAB|$old_clone_name|gb|$clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs]\n$clone_seq\n";
     }
     print OUT ">Feature gnl|WGS:AAAB|$old_clone_name|gb|$clone_name\n";
