@@ -347,6 +347,8 @@ sub get_array_supporting {
           , tscript.id
           , e_t.rank
           , exon.rank
+
+       LIMIT 2000
         };
 
     #print STDERR "query [$query]\n"; 
@@ -404,7 +406,7 @@ sub get_array_supporting {
     my @transcript_exons;
     
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
-	print STDERR "Getting into this row now....\n";
+	#print STDERR "Getting into this row now....\n";
 
 	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
 	    $exoncreated,$exonmodified,$strand,$phase,$exon_rank,$trans_start,
@@ -448,6 +450,8 @@ sub get_array_supporting {
              if( defined $trans ) {
 		 $self->_store_exons_in_transcript($trans,@transcript_exons);
             }
+	     @transcript_exons = ();
+
 	    # put in new exons
 	    
 	    $trans = Bio::EnsEMBL::Transcript->new();
@@ -473,7 +477,7 @@ sub get_array_supporting {
 	
 	my $exon = Bio::EnsEMBL::Exon->new();
 
-	print(STDERR "Creating exon - contig id $contigid\n");
+	#print(STDERR "Creating exon - contig id $contigid\n");
 
 	$exon->clone_id ($cloneid);
 	$exon->contig_id($contigid);
@@ -551,7 +555,7 @@ sub _store_exons_in_transcript{
 
    my $exon;
    while ( ($exon = shift @exons)) {
-       print STDERR "Handling exon",$exon->id,":",$exon->sticky_rank,"\n";
+       #print STDERR "Handling exon",$exon->id,":",$exon->sticky_rank,"\n";
 
        if( $#exons >= 0 && $exons[0]->id eq $exon->id ) {
         
