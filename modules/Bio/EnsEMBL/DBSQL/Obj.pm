@@ -1227,7 +1227,7 @@ sub replace_last_update {
 
 
 sub write_Gene{
-   my ($self,$gene,$supporting) = @_;
+   my ($self,$gene) = @_;
    my $old_gene;
 
    my %done;
@@ -1285,12 +1285,6 @@ sub write_Gene{
        print "Got this gene with this version already, no need to write in db\n";
    }
 
-   if ($supporting && $supporting eq 'evidence') {
-       foreach my $exon ($gene->each_unique_Exon) {
-	   $self->write_supporting_evidence($exon);
-       }
-   }
-   
    foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
 
        my $sth = $self->prepare("select gene,clone from geneclone_neighbourhood where gene='".$gene->id."' && clone='$cloneid'");
@@ -1999,6 +1993,7 @@ sub write_Exon{
        $sth->execute();
 
        # Now the supporting evidence
+       print "Writing supporting evidence from write_Exon\n";
        $self->write_supporting_evidence($exon);
    }
    else {

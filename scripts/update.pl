@@ -295,7 +295,7 @@ sub _place_gene {
     #If gene not present in recipient, write it in
     if ( $@ ) {
 	$verbose && print "New Gene, writing it in the database\n";
-	$nowrite || $rec_db->write_Gene($don_gene,'evidence');
+	$nowrite || $rec_db->write_Gene($don_gene);
     }
     #If gene present in recipient, check donor and recipient version
     else {
@@ -303,7 +303,7 @@ sub _place_gene {
 	if ($don_gene->version > $rec_gene->version) {
 	    $verbose && print "Gene with new version, updating the database, and archiving old version\n";
 	    $nowrite || $rec_db->archive_Gene($rec_gene,$arc_db);
-	    $nowrite || $rec_db->write_Gene($don_gene,'evidence');
+	    $nowrite || $rec_db->write_Gene($don_gene);
 	}
 	
 	#If donor gene version is less than the recipient gene version, error 
@@ -316,7 +316,7 @@ sub _place_gene {
 	    if ($clone_level) {
 		$verbose && print "Genes with the same version, deleting recipient gene and writing one from donor without archiving\n";  
 		$nowrite || $rec_db->delete_Gene($rec_gene->id);
-		$nowrite || $rec_db->write_Gene($don_gene,'evidence');
+		$nowrite || $rec_db->write_Gene($don_gene);
 	    }
 	    else {
 		$verbose && print "Genes with the same version, nothing needs to be done\n"; 
