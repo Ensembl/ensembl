@@ -1135,6 +1135,31 @@ sub rna_pos {
     #return $mrna;
 }
 
+=head2 dn_length
+
+  Title   : dna_length
+  Usage   : $loc = $feat->dna_length;
+  Function: return the length of the transcript''s DNA
+  Returns : integer
+  Args    : nn
+
+=cut
+
+sub dna_length {
+     my ($self) = @_;
+
+     # # not setting:
+     # if( defined $value ) {
+     #      $self->{'_dna_length'} = $value;
+     # }
+
+     if (! defined $self->{'_dna_length'}) { 
+         # get from dna_seq;
+         $self->{'_dna_length'} = $self->dna_seq->length;         
+     }
+     return $self->{'_dna_length'};
+}
+
 sub gene_name {
      my ($self,$value) = @_;
      
