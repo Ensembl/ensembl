@@ -683,7 +683,9 @@ sub pep2genomic {
 =cut
 
 sub cdna2genomic {
-  my ($self,$start,$end) = @_;
+  my $self = shift;
+  my $start = shift || 1;
+  my $end = shift || $self->length;
 
   if( !defined $end ) {
     $self->throw("Must call with start/end");
