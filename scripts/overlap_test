@@ -5,7 +5,8 @@ use Bio::EnsEMBL::DB::VirtualContig;
 
 my $db = new Bio::EnsEMBL::DBSQL::Obj(-host   => 'obi-wan',
 				      -port   => 410000,
-				      -dbname => 'ens500a',
+#				      -dbname => 'pogoverlap',
+				      -dbname => 'ens500b',
 				      -user => 'ensro',
 				      );
 
@@ -22,12 +23,39 @@ my $seq      = $vc->primary_seq;
 my @features = $vc->_get_all_SeqFeatures_type('prediction');
 
 foreach my $f (@features) {
-    print ($f->source_tag . "\t" . $f->start . "\t" . $f->end . "\n");
+#    print ($f->source_tag . "\t" . $f->start . "\t" . $f->end . "\n");
+}
+print("Sequence is        " . $seq->seq . "\n");
+print("Sequence is        " . $seq->length . "\n");
+print("Contig length is   " . $vc->length . "\n");
+
+print("sequence should be AAAACCCCTTGGGAAA\n");
+
+my @ids = keys %{$vc->{'contighash'}};
+@ids = reverse sort { $vc->{'start'}->{$b} <=> $vc->{'start'}->{$a} } @ids;
+
+foreach my $id (@ids) {
+  print($id . "\t" .
+	$vc->{start}        ->{$id} . "\t" .
+	$vc->{contighash}   ->{$id}->golden_start . "\t" .
+	$vc->{contighash}   ->{$id}->golden_end   . "\t" .
+	$vc->{contighash}   ->{$id}->golden_length . "\t" .
+	$vc->{startincontig}->{$id} . "\t" . 
+	$vc->{contigori}->{$id} . "\n");
+
 }
 
-print("Sequence is        " . $seq->length . "\n");
-
-#print("sequence should be AAAACCCCTTGGGAAA\n");
+# The tiling pattern for the test virtual contig is as follows
+#    1              3          5  
+#  -------->   <-------- -------->
+#  A A A A A   A A A A A A A A A A
+#        |       |   |     |
+#      G G G G G G G G G G G G
+#      <---------- ---------->
+#       2                   4 
+#
+# Forward sequence is AAAACCCCTTGGGAAA
+# Reverse sequence is TTTTCCCAAGGGGTTT
 #use overlap;
 #
 #insert into dna(sequence,created,id) values('AAAAA',now(),null);
@@ -55,3 +83,4 @@ print("Sequence is        " . $seq->length . "\n");
 #    values(4,5,5,2,'TEST',1,'right2left');
 
 #insert into clone(id,embl_id,version,embl_version) values('pog','pog',1,1);
+
