@@ -141,6 +141,9 @@ sub delete{
 
    $sth = $self->_db_obj->prepare("delete from gene where id = '$geneid'");
    $sth->execute;
+
+   $sth = $self->_db_obj->prepare("delete from genetype where gene_id = '$geneid'");
+   $sth->execute;
 }   
 
 
@@ -631,7 +634,7 @@ sub _store_exons_in_transcript{
 	   }
            
 	   my $sticky = $self->_make_sticky_exon(@sticky_exons);
-	   print STDERR "Added sticky exon... $sticky\n";
+	   #print STDERR "Added sticky exon... $sticky\n";
 	   $trans->add_Exon($sticky);
            
        } else {
@@ -675,7 +678,7 @@ sub _make_sticky_exon{
 
    foreach my $exon ( @exons ) {
        $seqstr .= $exon->seq->seq();
-       print STDERR "Sticking in ",$exon->id,":",$exon->sticky_rank," $seqstr\n";
+       #print STDERR "Sticking in ",$exon->id,":",$exon->sticky_rank," $seqstr\n";
 
        $sticky->add_component_Exon($exon);
    }
@@ -895,7 +898,6 @@ sub get_supporting_evidence {
     }
 
     foreach my $exon (@exons) {
-
 	$exhash{$exon->id} = $exon;
 
 	$instring = $instring . $exon->id . "','";
@@ -916,7 +918,7 @@ sub get_supporting_evidence {
 					      -feature2 => $f2);
 
 	my $exon = $rowhash->{exon};
-
+	
 #	$f1->seqname($rowhash->{contig});
 	$f1->seqname("Supporting_feature");
 	$f1->start  ($rowhash->{seq_start});
@@ -925,7 +927,6 @@ sub get_supporting_evidence {
 	$f1->source_tag($rowhash->{name});
 	$f1->primary_tag('similarity');
 	$f1->score  ($rowhash->{score});
-	
 	$f2->seqname($rowhash->{hid});
 	$f2->start  ($rowhash->{hstart});
 	$f2->end    ($rowhash->{hend});
@@ -972,18 +973,24 @@ sub get_Transcript{
     my $trans = Bio::EnsEMBL::Transcript->new();
 
     my $sth = $self->_db_obj->prepare("select exon from exon_transcript where transcript = '$transid'");
-    my $res = $sth->execute();
+    $sth->execute();
 
     while( my $rowhash = $sth->fetchrow_hashref) {
 	my $exon = $self->get_Exon($rowhash->{'exon'});
 	$trans->add_Exon($exon);
 	$seen = 1;
     }
+    $sth = $self->_db_obj->prepare("select version,translation from transcript where id = '$transid'");
+    $sth->execute();
 
+    while( my $rowhash = $sth->fetchrow_hashref) {
+	my $translation = $self->get_Translation($rowhash->{'translation'});
+	$trans->translation($translation);
+	$trans->version($rowhash->{'version'});
+    }
     if ($seen == 0 ) {
 	$self->throw("transcript $transid is not present in db");
     }
-    
     $trans->id($transid);
 
     return $trans;
@@ -1100,7 +1107,7 @@ sub get_Virtual_Contig{
 
     foreach my $exon ($transcript->each_Exon) {
 
-	print STDERR "EXON ",$exon->id," transcript ",$transcript->id,"\n";
+	#print STDERR "EXON ",$exon->id," transcript ",$transcript->id,"\n";
 	my $contig_id=$exon->contig_id();
 	if ($contig_id ne $old_e_cont) {
 	    foreach my $vcraw ($vc->rawcontig_ids) {
@@ -1205,9 +1212,7 @@ sub get_Transcript_in_VC_coordinates
 
 sub write{
    my ($self,$gene) = @_;
-   my $old_gene;
    my %done;
-   
    if ( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("$gene is not a EnsEMBL gene - not writing!");
    }
@@ -1220,7 +1225,7 @@ sub write{
 
    foreach my $contig_id ( $gene->unique_contig_ids() ) {
        eval {
-	   print STDERR "Getting out contig for $contig_id\n";
+	   #print STDERR "Getting out contig for $contig_id\n";
 	   my $contig      = $self->_db_obj->get_Contig($contig_id);
 	   $contig->fetch();
 	   
@@ -1322,17 +1327,17 @@ sub write_Exon {
     
     my $contig = $self->_db_obj->get_Contig($exon->contig_id);
 
-    print STDERR $exon->id . " " . 
-	$exon->version . " " .
-	$contig->internal_id . " " . 
-	$exon->created . " " . 
-	$exon->modified . " " . 
-	$exon->start . " " . 
-	$exon->end . " " . 
-	$exon->strand . " " . 
-	$exon->phase . " " . 
-	$exon->end_phase . " " . 
-	$exon->sticky_rank . "\n";
+    #print STDERR $exon->id . " " . 
+	#$exon->version . " " .
+	#$contig->internal_id . " " . 
+	#$exon->created . " " . 
+	#$exon->modified . " " . 
+	#$exon->start . " " . 
+	#$exon->end . " " . 
+	#$exon->strand . " " . 
+	#$exon->phase . " " . 
+	#$exon->end_phase . " " . 
+	#$exon->sticky_rank . "\n";
 
     my $sth = $self->_db_obj->prepare($exonst);
     $sth->execute(
@@ -1404,12 +1409,11 @@ sub write_supporting_evidence {
     my ($self,$exon) = @_;
 
     $self->throw("Argument must be Bio::EnsEMBL::Exon. You entered [$exon]\n") unless $exon->isa("Bio::EnsEMBL::Exon");
-
-    my $sth  = $self->_db_obj->prepare("insert DELAYED into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
+    #print STDERR "Writing supporting evidence for exon ".$exon->id."\n";
+    my $sth  = $self->_db_obj->prepare("insert into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
     
-
-    FEATURE: foreach my $f ($exon->each_Supporting_Feature) {
-
+  FEATURE: foreach my $f ($exon->each_Supporting_Feature) {
+	#print STDERR "Writing supporting feature ".$f->source_tag."\n";
 	eval {
 	    $f->validate();
 	};
@@ -1478,10 +1482,10 @@ sub write_Transcript{
         $trans->version   
         );
 
-   print STDERR "Going to look at gene links\n";
+   #print STDERR "Going to look at gene links\n";
 
    foreach my $dbl ( $trans->each_DBLink ) {
-       print STDERR "Going to insert for",$trans->id," ",$dbl->primary_id," ",$dbl->database,"\n";
+       #print STDERR "Going to insert for",$trans->id," ",$dbl->primary_id," ",$dbl->database,"\n";
        my $sth3 = $self->_db_obj->prepare("insert into transcriptdblink (transcript_id,external_id,external_db) values ('". 
 					  $trans->id        . "','".
 					  $dbl->primary_id . "','".

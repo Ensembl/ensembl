@@ -294,9 +294,15 @@ sub get_all_Genes{
         if( ! exists $got{$rowhash->{'gene'}}) {  
             
            my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->dbobj);             
-	   my $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
-           if ($gene) {
-	        push(@out, $gene);
+	   my $gene;
+	   eval {
+	       $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
+	   };
+	   if ($@) {
+	       $self->warn("In RawContig, tried to get gene ".$rowhash->{'gene'}." but couldn't (data bug?)\n");
+	   }
+           else {
+	       push(@out, $gene);
            }
 	   $got{$rowhash->{'gene'}} = 1;
         }       
@@ -599,7 +605,7 @@ sub get_old_Exons {
 	    $oldcontig = $oldclone->get_Contig($self->id);
 	};
 	if ($@) {
-	    print STDERR "Clones with id ".$oldclone->id." have the same version in old and new db, but contig ".$self->id." is not there! (CLONE VERSION BUG)\n";
+	    print STDERR "CLONE VERSION BUG: ".$oldclone->id."\n";
 	    return ();
 	}
 	my @exons=$oldcontig->get_all_Exons();
