@@ -59,9 +59,15 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   my ( $stable_id, $version, $external_name, $type, $external_db, 
-       $external_status, $display_xref, $description ) = 
+       $external_status, $display_xref, $description, $transcripts ) = 
     rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
-		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF', 'DESCRIPTION' ], @_ );
+		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF', 'DESCRIPTION',
+                 'TRANSCRIPTS'], @_ );
+
+  if ($transcripts) {
+    $self->{'_transcript_array'} = $transcripts;
+    $self->recalculate_coordinates();
+  }
 
   $self->stable_id( $stable_id );
   $self->version( $version );
@@ -363,7 +369,7 @@ sub type {
 =cut
 
 
-sub add_Transcript{
+sub add_Transcript {
    my ($self,$trans) = @_;
 
    if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::Transcript") ) {
