@@ -167,7 +167,7 @@ sub new {
 =cut
 
 sub get_all_SimilarityFeatures_above_score{
-    my ($self, $analysis_type, $score) = @_;
+    my ($self, $analysis_type, $score,$bp) = @_;
     
     $self->throw("Must supply analysis_type parameter") unless $analysis_type;
     $self->throw("Must supply score parameter") unless $score;
@@ -180,7 +180,7 @@ sub get_all_SimilarityFeatures_above_score{
     my    $statement = "SELECT f.id, 
                       IF     (sgp.raw_ori=1,
                                  (f.seq_start+sgp.chr_start-sgp.raw_start),
-                                 (sgp.chr_start+sgp.raw_end-f.seq_end)),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_end)) as start,
   
                       IF     (sgp.raw_ori=1,
                                  (f.seq_end+sgp.chr_start-sgp.raw_start),
@@ -196,48 +196,63 @@ sub get_all_SimilarityFeatures_above_score{
 		    AND    a.db = '$analysis_type'  
                     AND    sgp.chr_end >= $glob_start 
 		    AND    sgp.chr_start <=$glob_end 
-		    AND    sgp.chr_name='$chr_name'";
+		    AND    sgp.chr_name='$chr_name' ORDER by start";
     
 
-my  $sth = $self->dbobj->prepare($statement);    
-$sth->execute(); 
-
-
-my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
-    $hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
+    my  $sth = $self->dbobj->prepare($statement);    
+    $sth->execute(); 
     
-$sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
+    
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
+    
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
                        \$analysisid,\$name,\$hstart,\$hend,\$hid);
-
-
-my @features;
-my @distinct_features;
-
- FEATURE: while($sth->fetch) {
     
-     my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
     
-     # exclude overlaping features (for the web)
-     foreach my $arrayref(@distinct_features){
-	 if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
-     }
-     my @list=($start,$end,$analysisid);
-     push @distinct_features,\@list;
+    my @features;
+    my @global_features;
+    
+    my $out;
+    
+    
+  FEATURE: 
 
+    while($sth->fetch) {
+	
+	my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
+	
+	# exclude overlaping features (for the web)
+	
+	if ( defined $bp && defined $out && $out->end+$bp >= $start ) {
+	    if( $end <= $self->_global_end ) {
+		# reset previous guys end to end
+		$out->end($end);
+		next;
+	    }
+	}
+	
+	# create features
+	$out=$self->_create_similarity_features(@args);
+	
+	
+	push(@global_features,$out);
+    }
 
-     # create features
-     my $out=$self->_create_similarity_features(@args);
-
-     if (defined $out){
-	 if ($self->_clip_2_vc($out)){
-	     push @features,$self->_convert_2_vc($out);
-	 }
-     }
- }
-
-return @features;
-
+    foreach $out ( @global_features ) {
+	if ($self->_clip_2_vc($out)){
+	    push @features,$self->_convert_2_vc($out);
+	}
+    }
+  
+    
+    return @features;
+    
 }                                       # get_all_SimilarityFeatures_above_score
+
+
+#static analysis hash ...
+my %analhash;
 
 
 sub _create_similarity_features {
@@ -245,7 +260,6 @@ sub _create_similarity_features {
     
     my $out;
     my $analysis;
-    my %analhash;
     my $contig;
     
     my ($fid,$start,$end,$strand,$f_score,$analysisid,
