@@ -83,4 +83,89 @@ sub get_id_by_internal_id
     }
 }
 
+#  contig_id | name                | clone_id | length | offset | corder | dna_id | chromosome_id | international_name 
+
+sub fetch_by_dbID {
+  my $self = shift;
+  my $dbID = shift;
+
+  my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
+                          offset, corder, dna_id, chromosome_id, 
+                          international_name
+                   FROM contig
+                   WHERE contig_id = $dbID" );
+  $sth->execute();
+  
+  my ( $contig_id, $name, $clone_id, $length, $offset, $corder, $dna_id,
+       $chromosome_id, $international_id ) = $sth->fetchrow_array();
+
+  if( ! defined $contig_id ) {
+    # no contig found
+    return undef;
+  }
+
+  # the contig object, how should it work ?
+
+  # clone, sequence, chromosome should be lightweight objects attached
+  # possibly either just dbID or I have a join
+
+  my $dbPrimarySeq = Bio::EnsEMBL::DBPrimary(); # ?
+
+  my $chromosome = Bio::EnsEMBL::Chromosome->new( -dbID => $chromosome_id );
+  my $clone = Bio::EnsEMBL::Clone->new( -dbID => $clone_id );
+  my $contig = Bio::EnsEMBL::RawContig->new( );
+}
+
+
+sub fetch_by_clone {
+  my $self = shift;
+  my $clone = shift;
+
+  my $clone_id = $clone->dbID;
+  
+  my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
+                          offset, corder, dna_id, chromosome_id, 
+                          international_name
+                   FROM contig
+                   WHERE clone_id = $clone_id" );
+
+  my @res = _contig_from_sth( $sth );
+  return \@res;
+}
+
+
+
+
+
+sub _contig_from_sth {
+  my $self = shift;
+  my $sth = shift;
+
+  my @res = ();
+
+  $sth->execute();
+  while( my $aref = $sth->fetchrow_arrayref() ) {
+    
+
+    my ( $contig_id, $name, $clone_id, $length, $offset, $corder, $dna_id,
+	 $chromosome_id, $international_id ) = @$aref;
+
+    
+    # the contig object, how should it work ?
+    
+    # clone, sequence, chromosome should be lightweight objects attached
+    # possibly either just dbID or I have a join
+
+    my $dbPrimarySeq = Bio::EnsEMBL::DBPrimary(); # ?
+    
+    my $clone = Bio::EnsEMBL::Clone->new( -dbID => $clone_id );
+    my $contig = Bio::EnsEMBL::RawContig->new( );
+    push( @res, $contig );
+  }
+
+  return @res;
+}
+
+
+
 1;
