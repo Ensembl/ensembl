@@ -184,7 +184,7 @@ sub get_all_HSPs {
    my $SQL = qq(
 SELECT object
 FROM   blast_hsp
-WHERE  ticket = ? );
+WHERE  \(ticket = ? OR ticket = ?\) );
 
    my $CHR_SQL = qq(
 AND    chr_name = ? );
@@ -194,7 +194,7 @@ AND    chr_start <= ?
 AND    chr_end   >= ? );
 
    my $q = $SQL;
-   my @binded = ( $ticket );
+   my @binded = ( $ticket, substr($ticket,6) );
 
    if( $chr_name ){
      $q .= $CHR_SQL;
