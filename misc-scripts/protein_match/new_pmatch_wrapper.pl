@@ -12,13 +12,7 @@ use warnings;
 
 use Data::Dumper;	# For debugging output
 
-my $pmatch_cmd	= '/nfs/disk5/ms2/bin/pmatch';
-my $pmatch_opt	= '-T 14';
-my $pmatch_out	= '/tmp/pmatch_out.' . $$;	# Will be unlinked
-
-my $datadir	= '/acari/work4/mongin/final_build/release_mapping/Primary';
-my $target	= $datadir . '/final.fa';
-my $query	= $datadir . '/sptr_ano_gambiae_19_11_02_formated.fa';
+use Getopt::Std;
 
 sub overlap
 {
@@ -43,8 +37,43 @@ sub overlap
 	return ($first->[1] - $first->[0] + 1);
 }
 
-if (system("$pmatch_cmd $pmatch_opt $target $query >$pmatch_out") == -1) {
-	# Failed to run pmatch
+my $pmatch_cmd	= '/nfs/disk5/ms2/bin/pmatch';
+my $pmatch_opt	= '-T 14';
+my $pmatch_out	= '/tmp/pmatch_out.' . $$;	# Will be unlinked
+
+my $datadir	= '/acari/work4/mongin/final_build/release_mapping/Primary';
+my $target	= $datadir . '/final.fa';
+my $query	= $datadir . '/sptr_ano_gambiae_19_11_02_formated.fa';
+
+# Set defaults
+my %opts = (
+	'b'	=> '0',
+	'c'	=> $pmatch_cmd,
+	'q'	=> $query,
+	't'	=> $target );
+
+if (!getopts('bc:q:t:', \%opts)) {
+	print(STDERR "Usage: $0 [-b] [-c path] [-q path] [-t path]\n\n");
+	print(STDERR "-b\tDisplay header\n\n");
+	print(STDERR "-c path\tUse the pmatch executable located " .
+		"at 'path' rather than at\n");
+	print(STDERR "\t$pmatch_cmd\n\n");
+	print(STDERR "-q path\tTake query FastA file from 'path' rather " .
+		"than from\n");
+	print(STDERR "\t$query\n\n");
+	print(STDERR "-t path\tTake target FastA file from 'path' rather " .
+		"than from\n");
+	print(STDERR "\t$target\n\n");
+	die;
+}
+
+# Override defaults
+$pmatch_cmd	= $opts{'c'};
+$query		= $opts{'q'};
+$target		= $opts{'t'};
+
+if (system("$pmatch_cmd $pmatch_opt $target $query >$pmatch_out") != 0) {
+	# Failed to run pmatch command
 	die($!);
 }
 
@@ -118,9 +147,11 @@ foreach my $query (values(%hits)) {
 	}
 }
 
-printf("%8s%8s%8s%8s%8s%8s%8s%8s\n",
-	'QID', 'QLEN', 'QIDENT', 'QGAPS',
-	'TID', 'TLEN', 'TIDENT', 'TGAPS');
+if ($opts{'b'}) {
+	printf("%8s%8s%8s%8s%8s%8s%8s%8s\n",
+		'QID', 'QLEN', 'QIDENT', 'QGAPS',
+		'TID', 'TLEN', 'TIDENT', 'TGAPS');
+}
 
 while (my ($qid, $query) = each %hits) {
 	while (my ($tid, $target)  = each %{ $query }) {
