@@ -91,7 +91,6 @@ BEGIN {
 	};
 	if( $@ ) {
 	    $ENSEMBL_EXT_LOADED = 0;
-	    print STDERR "Loaded Ensembl Feature C Extensions.\n";
 	} else {
 	    $ENSEMBL_EXT_LOADED = 1;
 	    print STDERR "Loaded Ensembl Feature C Extensions.\n";
