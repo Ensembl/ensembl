@@ -60,13 +60,13 @@ sub run {
     }
     elsif($array[0] =~ /RefSeq/){
       if($refseq{$array[1]}){
-	 XrefParser::BaseParser->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],$array[6],$source_id,$species_id);
+	 XrefParser::BaseParser->add_to_xrefs($refseq{$array[1]},$array[4],'','',$array[4],$array[6],$source_id,$species_id);
 #	print "$array[1]\tSPTR\t$array[4]\tGO\t$array[6]\t$array[9]\tXREF\n";
       }
     }
     elsif($array[0] =~ /UniProt/){
       if($swiss{$array[1]}){
-	XrefParser::BaseParser->add_to_xrefs($swiss{$array[1]},$array[4],'',$array[4],$array[6],$source_id,$species_id);
+	XrefParser::BaseParser->add_to_xrefs($swiss{$array[1]},$array[4],'','',$array[4],$array[6],$source_id,$species_id);
       }
     }
     else{

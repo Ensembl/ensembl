@@ -47,7 +47,7 @@ sub run {
   my (%swiss) = XrefParser::BaseParser->get_valid_codes("uniprot",$species_id);
   my (%refseq) = XrefParser::BaseParser->get_valid_codes("refseq",$species_id);
 
-  my $taxonomy_id =  XrefParser::BaseParser->get_taxonomy_from_species_id($species_id);
+#  my $taxonomy_id =  XrefParser::BaseParser->get_taxonomy_from_species_id($species_id);
 
   open(SWISSPROT,"<".$dir."/swissprot.txt") || die "Could not open $dir/swissprot.txt\n";
 #e.g.
@@ -87,6 +87,7 @@ sub run {
   close REFSEQ;
   print "$count xrefs succesfully loaded\n";
   print "$mismatch xrefs ignored\n";
+  die "Do not store loaded bit\n";
 }
 
 sub new {

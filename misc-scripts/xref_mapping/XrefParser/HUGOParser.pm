@@ -88,7 +88,7 @@ sub run {
 	$mismatch++;
       }
       else{
-	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,'',$hugo{hgnc},"",$source_id,$species_id,$count);
+	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,'',$hugo{$hgnc},"","",$source_id,$species_id,$count);
 	$count++;
       }
       #	print "$array[1]\tSPTR\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\tXREF\n";
@@ -101,7 +101,7 @@ sub run {
 	$mismatch++;
       }
       else{
-	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,'',$hugo{hgnc},"",$source_id,$species_id);
+	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,'',$hugo{hgnc},"","",$source_id,$species_id);
 	$count++;
       }
     }

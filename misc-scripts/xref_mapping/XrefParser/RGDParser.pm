@@ -65,7 +65,7 @@ sub run {
     $xref=$refseq{$array[0]} if defined($refseq{$array[0]});
     $xref=$genbank{$array[0]}  if defined($genbank{$array[0]});
     if(defined($xref)){
-      XrefParser::BaseParser->add_to_xrefs($xref,"RGD:".$array[2],"",$array[1],"",$source_id,$species_id);
+      XrefParser::BaseParser->add_to_xrefs($xref,"RGD:".$array[2],"",$array[1],"","",$source_id,$species_id);
       $count++;
     }
     else{
