@@ -661,7 +661,7 @@ sub display_id{
   if( defined $value ) {
     $self->{'display_id'} = $value;
   }
-  return $self->{'display_id'};
+  return $self->{'display_id'} || $self->{'id'};
 }
 
 sub desc{
