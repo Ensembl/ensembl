@@ -867,8 +867,6 @@ eval {
                        AND    sgp.chr_name='$chr_name' 
                        GROUP BY f.hid";
     
-        $statement =~ s/\s+/ /g;
-        #print STDERR "Doing Query ... $statement\n";
 
 	my $sth = $self->dbobj->prepare($statement);
 	$sth->execute;
@@ -1507,6 +1505,42 @@ my $query ="SELECT     STRAIGHT_JOIN t.id,
 
 }
 
+=head2 get_Genes
+
+ Title   : get_Genes
+ Usage   : @genes = $vc->get_Genes(@geneids)
+ Function: gets only the named genes in @geneids
+           Used in geneview to speed up getting
+           a gene in VC coords
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Genes {
+  my ($self,@gene_ids) = @_;
+
+  my $gene_obj = $self->dbobj->gene_Obj();
+
+  my @newgenes;
+  my @genes = $gene_obj->get_array_supporting('without',@gene_ids);
+  
+  my %gene;
+  
+  foreach my $gene ( @genes ) {
+    $gene{$gene->id()}= $gene;
+  }
+  
+   # this delegates off to Virtual::Contig
+   my @newgenes=$self->_gene_query(%gene);
+
+  $self->{'_static_vc_gene_get'} = \@newgenes;
+
+  return @newgenes;
+}
+  
 
 =head2 get_all_Genes
 
@@ -1568,7 +1602,12 @@ sub get_all_Genes{
 
    my $gene_obj = $self->dbobj->gene_Obj();
 
+   print STDERR "Before gene query " . time . "\n";
+
    my @genes = $gene_obj->get_array_supporting('without',@gene_ids);
+
+   print STDERR "After gene query " . time . "\n";
+
    my %gene;
 
    foreach my $gene ( @genes ) {
@@ -1580,8 +1619,9 @@ sub get_all_Genes{
    &eprof_start("gene-convert");
    
    # this delegates off to Virtual::Contig
+   print STDERR "BEfore convert " . time . "\n";
    my @newgenes=$self->_gene_query(%gene);
-
+   print STDERR "After convert " . time . "\n";
 
    &eprof_end("gene-convert");
 
