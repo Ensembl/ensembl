@@ -3,7 +3,7 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 63;
+	plan tests => 39;
 }
 
 use MultiTestDB;
@@ -11,6 +11,11 @@ use Bio::EnsEMBL::DnaPepAlignFeature;
 use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::RawContig;
 
+use TestUtils qw ( debug test_getter_setter );
+
+# switch on the debug prints
+
+our $verbose = 0;
 
 my($CHR, $START, $END) =  ('20', 30_363_615, 30_475_000);
 my $CTG_BOUNDARY       =  62877;
@@ -143,12 +148,12 @@ ok($f);
 #
 @feats = ();
 $fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY - 2);
-$fp->end  ($CTG_BOUNDARY);
+$fp->start($CTG_BOUNDARY - 5);
+$fp->end  ($CTG_BOUNDARY );
 $fp->strand(1);
 $fp->score(10);
 $fp->contig($slice);
-$fp->hstart(105);
+$fp->hstart(104);
 $fp->hend  (105);
 $fp->hstrand (1);
 $fp->hseqname('dummy-hid');
@@ -180,7 +185,7 @@ push(@feats,$fp);
 
 $dnaf = Bio::EnsEMBL::DnaPepAlignFeature->new( -features => \@feats );
 ok($dnaf);
-ok($dnaf->cigar_string eq '3M3I6M6D3M');
+ok($dnaf->cigar_string eq '6M3I6M6D3M');
 ok($dnaf->validate || 1); #validate doesn't return true but throws on fail
 
 @dnafs = $dnaf->transform;
@@ -189,63 +194,10 @@ ok($dnafs[0]->validate || 1);
 ok($dnafs[1]->validate || 1);
 
 
+
+
 #
 # 22-27 create a dnaalign feature on a slice across a contig boundary
-#       and convert to raw contig coordinates
-#       (+ve strand, -ve hitstrand)
-#
-@feats = ();
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY - 2);
-$fp->end  ($CTG_BOUNDARY);
-$fp->strand(1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->hstart  (108);
-$fp->hend    (108);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY + 4);
-$fp->end  ($CTG_BOUNDARY + 9);
-$fp->strand(1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->seqname(1);
-$fp->hstart(106);
-$fp->hend    (107);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY + 10);
-$fp->end  ($CTG_BOUNDARY + 12);
-$fp->strand(1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->hstart  (103);
-$fp->hend    (103);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-$dnaf = Bio::EnsEMBL::DnaPepAlignFeature->new( -features => \@feats );
-ok($dnaf);
-ok($dnaf->cigar_string eq '3M3I6M6D3M');
-ok($dnaf->validate || 1); #validate doesn't return true but throws on fail
-
-my @dnafs = $dnaf->transform;
-ok(scalar(@dnafs) == 2);
-ok($dnafs[0]->validate || 1); 
-ok($dnafs[1]->validate || 1);
-
-
-#
-# 28-33 create a dnaalign feature on a slice across a contig boundary
 #       and convert to raw contig coordinates
 #       (-ve strand, +ve hitstrand)
 #
@@ -296,65 +248,21 @@ ok($dnaf->validate || 1); #validate doesn't return true but throws on fail
 
 @dnafs = $dnaf->transform;
 ok(scalar(@dnafs) == 2);
+
+debug( "Feature 0 dump" );
+while( my ($k, $v) = each %{$dnafs[0]} ) {
+  debug( "  ->".$k." = ".$v );
+}
+
 ok($dnafs[0]->validate || 1); 
+
+debug( "Feature 1 dump" );
+while( my ($k, $v) = each %{$dnafs[1]} ) {
+  debug( "  ->".$k." = ".$v );
+}
 ok($dnafs[1]->validate || 1);
 
 
-
-#
-# 34-39 create a dnaalign feature on a slice across a contig boundary
-#       and convert to raw contig coordinates
-#       (-ve strand, -ve hitstrand)
-#
-@feats = ();
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY + 3);
-$fp->end  ($CTG_BOUNDARY + 5);
-$fp->strand(-1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->hstart  (108);
-$fp->hend    (108);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY - 6);
-$fp->end  ($CTG_BOUNDARY - 1);
-$fp->strand(-1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->seqname(1);
-$fp->hstart(106);
-$fp->hend  (107);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY - 9);
-$fp->end  ($CTG_BOUNDARY - 7);
-$fp->strand(-1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->seqname(1);
-$fp->hstart(103);
-$fp->hend(103);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-$dnaf = Bio::EnsEMBL::DnaPepAlignFeature->new( -features => \@feats );
-ok($dnaf);
-ok($dnaf->cigar_string eq '3M3I6M6D3M');
-ok($dnaf->validate || 1); #validate doesn't return true but throws on fail
-
-@dnafs = $dnaf->transform;
-ok(scalar(@dnafs) == 2);
-ok($dnafs[0]->validate || 1); 
-ok($dnafs[1]->validate || 1);
 
 
 #
@@ -368,7 +276,7 @@ $slice = $slice->invert;
 
 
 #
-# 40-45 create a dnaalign feature on a slice across a contig boundary
+# 28-33 create a dnaalign feature on a slice across a contig boundary
 #       and convert to raw contig coordinates
 #       (+ve strand, +ve hitstrand)
 #
@@ -420,63 +328,9 @@ ok($dnafs[0]->validate || 1);
 ok($dnafs[1]->validate || 1);
 
 
-#
-# 46-51 create a dnaalign feature on a slice across a contig boundary
-#       and convert to raw contig coordinates
-#       (+ve strand, -ve hitstrand)
-#
-@feats = ();
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY - 2);
-$fp->end  ($CTG_BOUNDARY);
-$fp->strand(1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->hstart  (108);
-$fp->hend    (108);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY + 4);
-$fp->end  ($CTG_BOUNDARY + 9);
-$fp->strand(1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->seqname(1);
-$fp->hstart(106);
-$fp->hend    (107);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY + 10);
-$fp->end  ($CTG_BOUNDARY + 12);
-$fp->strand(1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->hstart  (103);
-$fp->hend    (103);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-$dnaf = Bio::EnsEMBL::DnaPepAlignFeature->new( -features => \@feats );
-ok($dnaf);
-ok($dnaf->cigar_string eq '3M3I6M6D3M');
-ok($dnaf->validate || 1); #validate doesn't return true but throws on fail
-
-@dnafs = $dnaf->transform;
-ok(scalar(@dnafs) == 2);
-ok($dnafs[0]->validate || 1); 
-ok($dnafs[1]->validate || 1);
-
 
 #
-# 52-57 create a dnaalign feature on a slice across a contig boundary
+# 34-39 create a dnaalign feature on a slice across a contig boundary
 #       and convert to raw contig coordinates
 #       (-ve strand, +ve hitstrand)
 #
@@ -532,57 +386,3 @@ ok($dnafs[1]->validate || 1);
 
 
 
-#
-# 58-63 create a dnaalign feature on a slice across a contig boundary
-#       and convert to raw contig coordinates
-#       (-ve strand, -ve hitstrand)
-#
-@feats = ();
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY + 3);
-$fp->end  ($CTG_BOUNDARY + 5);
-$fp->strand(-1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->hstart  (108);
-$fp->hend    (108);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY - 6);
-$fp->end  ($CTG_BOUNDARY - 1);
-$fp->strand(-1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->seqname(1);
-$fp->hstart(106);
-$fp->hend  (107);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-
-$fp = new Bio::EnsEMBL::FeaturePair;
-$fp->start($CTG_BOUNDARY - 9);
-$fp->end  ($CTG_BOUNDARY - 7);
-$fp->strand(-1);
-$fp->score(10);
-$fp->contig($slice);
-$fp->seqname(1);
-$fp->hstart(103);
-$fp->hend(103);
-$fp->hstrand (-1);
-$fp->hseqname('dummy-hid');
-push(@feats,$fp);
-
-$dnaf = Bio::EnsEMBL::DnaPepAlignFeature->new( -features => \@feats );
-ok($dnaf);
-ok($dnaf->cigar_string eq '3M3I6M6D3M');
-ok($dnaf->validate || 1); #validate doesn't return true but throws on fail
-
-@dnafs = $dnaf->transform;
-ok(scalar(@dnafs) == 2);
-ok($dnafs[0]->validate || 1); 
-ok($dnafs[1]->validate || 1);

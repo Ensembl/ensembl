@@ -95,6 +95,8 @@ sub warn{
     my ($self,$string) = @_;
 
     my $verbose = $self->verbose;
+    $verbose = 0 unless defined $verbose;
+
 
     if( $verbose == 2 ) {
 	$self->throw($string);

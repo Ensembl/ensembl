@@ -911,6 +911,7 @@ sub _transform_feature_to_RawContig{
 
   my @out;
   my ( $hit_start, $hit_end );
+  my $codon_unused_bases = 0;
 
   if( scalar( @mapped ) > 1 ) {
     #The feature needs to be mapped accross multiple contigs
@@ -931,14 +932,58 @@ sub _transform_feature_to_RawContig{
       #caculate query and hit length for each portion of the split feature
       #may need to round hit length to avoid 'partial' peptide
 
+      # decision of Michele to not cover split codons
+
       my $query_length = ($mapped[$i]->end - $mapped[$i]->start + 1);
+      my $query_start = $mapped[$i]->start();
+      my $query_end = $mapped[$i]->end();
+
       my $hit_length;
+
       if($self->_query_unit == $self->_hit_unit){
+
+	# DnaDna and PepPep case 
 	$hit_length = $query_length;
-      }elsif($self->_query_unit > $self->_hit_unit){
-	my $tmp =  ($query_length/$self->_query_unit);
-	$hit_length = sprintf "%.0f", $tmp; #round value up or down
-      }elsif($self->_hit_unit > $self->_query_unit){
+
+      } elsif( $self->_query_unit > $self->_hit_unit ){
+
+	# DnaPepAlign case
+	# my $tmp =  ($query_length/$self->_query_unit);
+	# $hit_length = sprintf "%.0f", $tmp; #round value up or down
+	
+	$hit_length = int(( $query_length - $codon_unused_bases ) / 
+			  $self->_query_unit() );
+	
+	if( $codon_unused_bases ) {
+	  if( $feature->hstrand() == 1 ) {
+	    $hit_start++;
+	  } else {
+	    $hit_end--;
+	  }
+	}
+	    
+	my $used_bases = $query_length - $codon_unused_bases - 
+	  $hit_length*$self->_query_unit();
+
+	if( $mapped[$i]->strand() == -1 ) {
+	  $query_end -= $codon_unused_bases;
+	  $query_start += $used_bases;
+	} else {
+	  $query_start += $codon_unused_bases;
+	  $query_end -= $used_bases;
+	}
+
+	
+	# new rest at the end ...
+	if( $used_bases ) {
+	  $codon_unused_bases = 3 - $used_bases;
+	} else {
+	  $codon_unused_bases = 0;
+	}
+
+      } elsif($self->_hit_unit > $self->_query_unit){
+
+	#  PepDnaAlign case (rare)
 	my $tmp = ($query_length*$self->_hit_unit);
 	$hit_length = sprintf "%.0f", $tmp; #round value up or down
       }
@@ -946,6 +991,7 @@ sub _transform_feature_to_RawContig{
       if($hit_length == 0){
 	next SPLIT;
       }
+
       if( $feature->hstrand() == 1 ) {
 	$hit_end = ($hit_start + $hit_length) - 1;
       } else {
@@ -957,8 +1003,8 @@ sub _transform_feature_to_RawContig{
 
       #create the new feature
       my $new_feature = Bio::EnsEMBL::FeaturePair->new;
-      $new_feature->start($mapped[$i]->start);
-      $new_feature->end($mapped[$i]->end);
+      $new_feature->start($query_start);
+      $new_feature->end($query_end);
       $new_feature->strand($mapped[$i]->strand);
       $new_feature->score($feature->score);
       $new_feature->percent_id($feature->percent_id);
