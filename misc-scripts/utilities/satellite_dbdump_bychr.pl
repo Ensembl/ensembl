@@ -30,44 +30,49 @@
   
        satellite_dbdump_bychr  -disease homo_sapiens_disease_110
 
-     Known types are: family disease maps expression est # snp 
+     Known types are: (see source code)
 
 =head1 DESCRIPTION
 
-This script generates a full dump of one or several EnsEMBL sattelite
+This script generates a full dump of one or several EnsEMBL satellite
 database for a particular chromosome. Useful to create a small but fully
 functional EnsEMBL db (e.g. laptop mini-mirror) 
 
-Based on make_dbdumpk_bychr (which should be used for the core, embl and
-EST database. embl is a problem still, however.
+Based on make_dbdumpk_bychr (which should be used for the core database)
 
 =cut
 
 ;
 
+use strict;
 use Bio::EnsEMBL::DBLoader;
 use Getopt::Long;
 
 my $workdir = `pwd`; chomp($workdir);
 my $host = "localhost";
 my $port   = '';
-my $litedb = ''; # 'homo_sapiens_lite_110'; # force user to provide it
+
 my $dbuser = 'ensadmin';
 my $dbpass = undef;
-my $module = 'Bio::EnsEMBL::DBSQL::DBAdaptor';
+# my $module = 'Bio::EnsEMBL::DBSQL::DBAdaptor';
+
+my $litedb = ''; # 'homo_sapiens_lite_110'; # force user to provide it
+my $dumplite = 0;
+
 my $chr = 'chr21';                      # smaller than chr22
-# my $lim;
+
+my $lim;
+
 my $mysql = 'mysql'; 
 # my $mysqldump = 'mysqldump'; # in $PATH we trust.
-
 # No we don't; the above is version 8.10, which is too strict. Use an
 # older version:
 my $mysqldump = '/nfs/croc/michele/mysql/bin/mysqldump';
 #                  /mysql/current/bin/mysqldump
 
-# satellites:
+# the satellite db's that have been implemented:
 my $famdb;
-my $diseaseb;
+my $diseasedb;
 my $mapsdb;
 my $expressiondb;
 my $snpdb;
@@ -77,10 +82,11 @@ my $estdb;
 
 &GetOptions( 
             'port:n'     => \$port,
-            'litedb:s'   => \$litedb,
+            'litedb:s'   => \$litedb, # for referencing only
+            'dumplite'  ,  => \$dumplite,  # specify if lite should dumped
             'dbuser:s'   => \$dbuser,
             'dbpass:s'   => \$dbpass,
-            'module:s'   => \$module,
+#            'module:s'   => \$module,
             'chr:s'      => \$chr,
             'workdir:s'  => \$workdir,
             'limit:n'    => \$lim,
@@ -102,14 +108,13 @@ if ($lim) {
     $limit = "limit $lim";
 }
 
-&dump_lite($litedb);
+&dump_lite($litedb) if $dumplite;
 &dump_family($famdb);
 &dump_disease($diseasedb);
 &dump_maps($mapsdb);
 &dump_expression($expressiondb);
 &dump_snp($snpdb);
 &dump_embl($embldb);
-
 &dump_est($estdb);
 
 sub dump_lite {
@@ -125,7 +130,7 @@ sub dump_lite {
     foreach my $table ( qw(gene gene_exon karyotype location snp) ) {
         $sql="
 SELECT t.*
-FROM   $table t
+FROM   $litedb.$table t
 WHERE  t.chr_name = '$chr' 
 ";
         dump_data($sql, $satdb, $table );
@@ -136,7 +141,7 @@ WHERE  t.chr_name = '$chr'
     foreach my $table ( qw(gene_disease gene_prot gene_snp gene_xref) ) {
         $sql="
 SELECT t.*
-FROM   $table t, gene g
+FROM   $litedb.$table t, $litedb.gene g
 WHERE  g.chr_name = '$chr' 
   AND  t.gene = g.gene
 ";
@@ -245,7 +250,7 @@ SELECT * FROM $satdb.$table WHERE chromosome = '$chr_short'
     }
 
     $sql = "SELECT * FROM $satdb.Map";  # 4 rows
-    dump_data($sql, $satdb, $table );
+    dump_data($sql, $satdb, 'Map' );
 
     # less simple ones that can both use the RHMaps table
     foreach my $table ( qw(Marker MarkerSynonym) ) {              
@@ -278,8 +283,9 @@ sub dump_expression  {
     my $dumpdir = "$workdir/$satdb";
     dump_schema($satdb);
 
+    my $sql;
     # small ones:
-    foreach $table ( qw(key_word lib_key library source ) ) {
+    foreach my $table ( qw(key_word lib_key library source ) ) {
         $sql = "select distinct * from $satdb.$table";
         dump_data($sql, $satdb, $table);
     }
@@ -328,6 +334,8 @@ sub dump_snp  {
     warn "ignoring any non-ENSG aliases";
     my $dumpdir = "$workdir/$satdb";
     dump_schema($satdb);
+
+    my $sql;
 
     my @small_ones = qw(Assay ContigHit Locus  Pop Resource Submitter);
     foreach my $table ( @small_ones ) { 
@@ -401,13 +409,13 @@ sub dump_embl  {
     dump_schema($satdb);
     warn "This may take a while...\n";
 
+    my $sql;
+
     my @small_ones = qw(externalDB);
     foreach my $table ( @small_ones ) { 
         $sql = "select distinct * from $satdb.$table";
         dump_data($sql, $satdb, $table);
     }
-
-    my $sql;
 
     $sql="
 SELECT distinct cl.*
@@ -598,7 +606,33 @@ SELECT distinct x.*
 sub dump_est  {
     my ($satdb) = @_;
     return unless $satdb;
-    warn "no written, doing nohting";
+    dump_schema($satdb);
+    my $sql;
+
+    # small tables:
+    foreach my $table ( qw(analysis analysisprocess) )  {
+        $sql="select * from $satdb.$table";
+        dump_data($sql, $satdb, $table);
+    }
+
+    $sql="
+SELECT distinct c.*
+FROM   $satdb.contig  c, $litedb.gene g
+WHERE  g.chr_name = '$chr' 
+  AND  g.contig = c.id
+";
+    dump_data($sql, $satdb, 'contig');
+
+    $sql="
+SELECT distinct f.*
+FROM   $satdb.contig  c, 
+       $satdb.feature f,
+       $litedb.gene g
+WHERE  g.chr_name = '$chr' 
+  AND  g.contig = c.id
+  AND  f.contig = c.internal_id
+";    
+    dump_data($sql, $satdb, 'feature');
     return undef;
 }                                       # est
 
@@ -616,7 +650,7 @@ sub dump_schema {
 
     warn "Dumping database schema of $satdb to $d\n";
     die "$d exists" if -s $d ;
-    $command = "$mysqldump -u $dbuser $pass_arg -d $satdb > $d ";
+    my $command = "$mysqldump -u $dbuser $pass_arg -d $satdb > $d ";
     if ( system($command) ) {
         die "Error: ``$command'' ended with exit status $?";
     }
