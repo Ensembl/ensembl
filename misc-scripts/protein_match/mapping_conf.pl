@@ -83,13 +83,6 @@ package main;
 	     #'refseq_gnp'    => '/work1/mongin/mouse/mapping/primary/mouse.gnp',
 	     'refseq_gnp'  => '',
 
-
-             
-             #Location of the SCOP file
-	     # http://astral.stanford.edu/scopseq-1.55.html 
-             #'scop_fa'   => '',
-             'scop_fa'   => '',
-
              ############################################
              #Organism specific files for the X_mapping #
              ############################################
@@ -105,6 +98,9 @@ package main;
 	          #'ens4'      => '/work1/mongin/mapping/primary/ens4.txt',
 	          'ens4'      => '',
 
+                  #Location of the file in .gnp format for the NCBI prediction
+                  #'refseq_pred' => '',
+                  'refseq_pred' => '',
                   
                   #######
                   #Mouse#
