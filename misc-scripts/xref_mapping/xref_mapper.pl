@@ -63,8 +63,7 @@ while( my $line = <FILE> ) {
     eval "require XrefMapper::$value";
     my $module;
     if($@) {
-      warn("Could not require mapper module XrefMapper::$value\n" .
-	   "Using XrefMapper::BasicMapper instead\n");
+      warn("Did not find a specific mapping module XrefMapper::$value - using XrefMapper::BasicMapper instead\n");
       require XrefMapper::BasicMapper;
       $module = "BasicMapper";
     } else{
@@ -104,24 +103,43 @@ if(defined($species)){
 
 for my $species ( @all_species ) {
 
+  my $sp = (split(/::/, ref($species)))[1];
+
+  my $i = 1;
+
+  print "\nDumping xrefs for $sp " . info($i, @all_species) . "\n";
   $species->xref($xref); # attach xref object to species object
 
+  print "\nDumping Ensembl sequences for $sp " . info($i, @all_species) . "\n";
   $species->dump_seqs();
 
+  print "\nRunning mapping for $sp of " . info($i, @all_species) . "\n";
   $species->build_list_and_map();
 
+  print "\nParsing mapping output for $sp of " . info($i, @all_species) . "\n";
   $species->parse_mappings();
 
-  $species->do_upload($deleteexisting) if (defined($upload));
+  print "\nUploading $sp of " . info($i, @all_species) . "\n";
+  $species->do_upload($deleteexisting);
+
+  $i++;
 
 }
 
- 
 print STDERR "*** All finished ***\n";
- 
+
+sub info {
+
+  my ($i, @all_species) = @_;
+
+  return "($i of " . scalar(@all_species) . ")";
+
+}
+
+
 sub usage {
   my $msg = shift;
- 
+
   print STDERR "$msg\n\n" if($msg);
   print STDERR <<EOF;
 usage: perl xref_mapper <options>
