@@ -429,7 +429,8 @@ sub _create_seq_obj{
 	my $id = $rowhash->{'id'};
 	$id .= ".";
 	$id .= $rowhash->{'version'};
-	if ($rowhash->{'seq_type'} eq 'protein') {
+	if (defined($rowhash->{'seq_type'}) && 
+	    $rowhash->{'seq_type'} eq 'protein') {
 	    $type = 'amino';
 	}
 	else {
