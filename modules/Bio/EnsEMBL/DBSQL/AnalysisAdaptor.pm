@@ -44,6 +44,7 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 
 use Bio::EnsEMBL::Analysis;
+use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Time::Local;
 
 use vars qw(@ISA);
