@@ -155,7 +155,7 @@ sub get_all_Genes{
 	       
 	       $sth = $self->_dbobj->prepare("select version from gene where id='".$gene->id."'");
 	       $sth->execute();
-	       my $rowhash = $sth->fetchrow_arrayref();
+	       my $rowhash = $sth->fetchrow_hashref();
 	       $gene->version($rowhash->{'version'});
 	       
 	       $gene->add_cloneid_neighbourhood($id);
