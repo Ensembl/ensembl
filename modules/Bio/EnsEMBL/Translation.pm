@@ -521,6 +521,23 @@ sub temporary_id {
 }
 
 
+=head2 get_all_DASFactories
+
+  Arg [1]   : none
+  Function  : Retrieves a listref of registered DAS objects
+  Returntype: [ DAS_objects ]
+  Exceptions:
+  Caller    :
+  Example   : $dasref = $prot->get_all_DASFactories
+
+=cut
+
+sub get_all_DASFactories {
+   my $self = shift;
+   return [ $self->adaptor()->db()->_each_DASFeatureFactory ];
+}
+
+
 =head2 get_all_DASFeatures
 
   Arg [1]    : none
@@ -537,14 +554,24 @@ sub temporary_id {
 =cut
 
 sub get_all_DASFeatures{
-    my ($self,@args) = @_;
-    my %das_features;
-    foreach my $dasfact( $self->adaptor()->db()->_each_DASFeatureFactory ){
-	my @featref = $dasfact->fetch_all_by_DBLink_Container( $self );
-	$das_features{$dasfact->_dsn} = [@featref];
+  my ($self,@args) = @_;
+  $self->{_das_features} ||= {}; # Cache
+  my %das_features;
+  foreach my $dasfact( @{$self->get_all_DASFactories} ){
+    my $dsn = $dasfact->_dsn;
+    if( $self->{_das_features}->{$dsn} ){ # Use cached
+      $das_features{$dsn} = $self->{_das_features}->{$dsn};
+      next;
     }
-    return \%das_features;
+    else{ # Get fresh data
+      my @featref = $dasfact->fetch_all_by_DBLink_Container( $self );
+      $self->{_das_features}->{$dsn} = [@featref];
+      $das_features{$dsn} = [@featref];
+    }
+  }
+  return \%das_features;
 }
+
 
 
 1;
