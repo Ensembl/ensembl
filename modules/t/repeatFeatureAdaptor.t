@@ -11,7 +11,7 @@ BEGIN { $| = 1;
 use MultiTestDB;
 use TestUtils qw(test_getter_setter debug);
 
-our $verbose = 1;
+our $verbose = 0;
 
 
 my $multi = MultiTestDB->new();
