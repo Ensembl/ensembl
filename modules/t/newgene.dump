@@ -188,5 +188,5 @@ INSERT INTO externalSynonym (xrefId, synonym) VALUES (1, 'SPTREMBL_SYNONYME1');
 # Dumping data for table 'externalDB'
 #
 
-INSERT INTO externalDB (externalDBId, db_name, release, url_pattern) VALUES (1, 'sptrembl', 23, 'http//');
+INSERT INTO externalDB (externalDBId, db_name, release) VALUES (1, 'sptrembl', 23);
 
