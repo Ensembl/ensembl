@@ -140,9 +140,10 @@ sub fetch_by_dbID {
   $sth->finish;
 
   unless($marker_id) {
-    $self->throw("marker with dbID=[$dbID] not present in database");
+    $self->warn("marker with dbID=[$dbID] not present in database");
+    return undef;
   }
-    
+
   #now create the marker
   return new Bio::EnsEMBL::Map::Marker->new(
      $marker_id, $self, $left_primer, $right_primer,$min_pdist, $max_pdist,
@@ -194,7 +195,9 @@ sub fetch_all_by_synonym {
   while(($marker_id) = $sth->fetchrow_array) {
     next if $seen{$marker_id};
 
-    push @out, $self->fetch_by_dbID($marker_id);
+    # some synonyms point to markers that don't exist, so only add genuine ones
+    my $marker = $self->fetch_by_dbID($marker_id);
+    push @out, $marker if ($marker);
     $seen{$marker_id} = 1;
   }
   

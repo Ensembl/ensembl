@@ -18,7 +18,7 @@ BEGIN {
     unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/bioperl-live");
 }
 
-use SiteDefs;
+#use SiteDefs;
 use EnsWeb;
 use EnsEMBL::DB::Core;
 use Getopt::Long;
@@ -48,27 +48,14 @@ if($help || !$species){
 
 $ENV{'ENSEMBL_SPECIES'} = $species;
 
+#get the adaptors needed
+my $slice_adaptor = Bio::EnsEMBL::Registry->get_adaptor($species,"vega","Slice") or die "can't load slice adaptor - is the species name correct?";
+my $dfa =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","DensityFeature") or die;
+my $dta =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","DensityType") or die;
+my $aa  =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","Analysis") or die;
+
 ## set db user/pass to allow write access
-my $db_ref = $EnsWeb::species_defs->databases;
-$db_ref->{'ENSEMBL_DB'}{'USER'} = $EnsWeb::species_defs->ENSEMBL_WRITE_USER;
-$db_ref->{'ENSEMBL_DB'}{'PASS'} = $EnsWeb::species_defs->ENSEMBL_WRITE_PASS;
-
-## connect to databases
-my $databases = &EnsEMBL::DB::Core::get_databases(qw(core));
-my $db = $databases->{'core'};
-
-die "Problem connecting to databases: $databases->{'error'}\n"
-    if  $databases->{'error'} ;
-warn "Database error: $databases->{'non_fatal_error'}\n"
-    if $databases->{'non_fatal_error'};
-
-#
-# Get the adaptors needed;
-#
-my $slice_adaptor = $db->get_SliceAdaptor();
-my $dfa = $db->get_DensityFeatureAdaptor();
-my $dta = $db->get_DensityTypeAdaptor();
-my $aa  = $db->get_AnalysisAdaptor();
+$EnsWeb::species_defs->set_write_access('ENSEMBL_DB',$species);
 
 my $top_slices = $slice_adaptor->fetch_all( "toplevel" );
 
