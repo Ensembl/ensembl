@@ -116,12 +116,14 @@ sub get_Gene_chr_bp {
                     FROM    exon e,
                         transcript tr,
                         exon_transcript et,
-                        static_golden_path sgp 
-                    WHERE e.id=et.exon 
-                    AND et.transcript=tr.id 
-                    AND sgp.raw_id=e.contig 
+                        static_golden_path sgp,
+                        gene_stable_id gsi
+                    WHERE e.exon_id=et.exon_id 
+                    AND et.transcript_id =tr.transcript_id 
+                    AND sgp.raw_id=e.contig_id 
                     AND sgp.type = '$type' 
-                    AND tr.gene = '$geneid';" 
+                    AND tr.gene_id = gsi.gene_id
+                    AND gsi.stable_id = '$geneid';" 
                     );
    $sth->execute();
 
