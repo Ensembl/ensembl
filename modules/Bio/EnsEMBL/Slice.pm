@@ -1074,9 +1074,6 @@ sub get_all_compara_DnaAlignFeatures {
     $self->throw("Query species argument is required");
   }
 
-  #this function will be cleaned up once compara is cleaned up 
-  #most likely a fetch by slice method will be present in compara
-
   my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
 
   unless($compara_db) {
@@ -1085,44 +1082,9 @@ sub get_all_compara_DnaAlignFeatures {
     return [];
   }
 
-  #we will probably use a taxon object instead of a string eventually
-  my $species = $self->adaptor->db->get_MetaContainer->get_Species;
-  my $sb_species = $species->binomial;
-  $sb_species =~ s/ /_/; #replace spaces with underscores
-
   my $gaa = $compara_db->get_GenomicAlignAdaptor;
 
-  my $features = $gaa->fetch_DnaDnaAlignFeature_by_species_chr_start_end(
-						$sb_species,
-						$qy_species,
-						$self->chr_name,
-						$self->chr_start,
-					        $self->chr_end);
-
-  my $slice_start = $self->chr_start;
-  my $slice_end   = $self->chr_end;
-
-  if($self->strand == 1) {
-    foreach my $f (@$features) {
-      my $start  = $f->start - $slice_start + 1;
-      my $end    = $f->end   - $slice_start + 1;
-      $f->start($start);
-      $f->end($end);
-      $f->contig($self);
-    }
-  } else {
-    foreach my $f (@$features) {
-      my $start  = $slice_end - $f->start + 1;
-      my $end    = $slice_end - $f->end   + 1;
-      my $strand = $f->strand * -1;
-      $f->start($start);
-      $f->end($end);
-      $f->strand($strand);
-      $f->contig($self);
-    }
-  }
-
-  return $features;
+  return $gaa->fetch_DnaDnaAlignFeatures_by_Slice($self, $qy_species);
 }
 
 
