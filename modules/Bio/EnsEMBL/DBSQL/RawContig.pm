@@ -1428,7 +1428,7 @@ sub _got_overlaps {
           , o.contig_a_position self_pos
           , o.overlap_type
           , o.overlap_size
-          , o.source
+          , o.overlap_source
         FROM contigoverlap o
           , contig c
         WHERE c.dna = o.dna_b_id
@@ -1439,7 +1439,7 @@ sub _got_overlaps {
           , o.contig_b_position self_pos
           , o.overlap_type
           , o.overlap_size
-          , o.source
+          , o.overlap_source
         FROM contigoverlap o
           , contig c
         WHERE c.dna = o.dna_a_id

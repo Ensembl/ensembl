@@ -576,7 +576,7 @@ sub write_ContigOverlap {
         INSERT contigoverlap(
             dna_a_id, dna_b_id
           , contig_a_position, contig_b_position
-          , source
+          , overlap_source
           , overlap_size, overlap_type)
         VALUES(?,?,?,?,?,?,?)
         });
