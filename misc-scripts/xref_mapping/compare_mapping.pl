@@ -23,88 +23,72 @@ if( !($old && $new) ) {
 # read files into xref/object hashes
 # TODO - more than one mapping?
 
-my %new_mappings = read_mappings($new);
-my %ensembl_mappings = read_mappings($old);
+my ($new_x2e_r, $new_e2x_r) = read_mappings($new);
+my ($old_x2e_r, $old_e2x_r)  = read_mappings($old);
 
-compare_mappings(\%new_mappings, \%ensembl_mappings);
+my %new_x2e = %$new_x2e_r;
+my %old_x2e = %$old_x2e_r;
+my %new_e2x = %$new_e2x_r;
+my %old_e2x = %$old_e2x_r;
 
-sub read_mappings {
+# ----------------------------------------
+# Compare mappings keyed on xref
 
-  my $filename = shift;
-  my $i = 0;
+my ($matched, $mismatched, $new_only, $old_only, $total);
 
-  my %mappings;
+foreach my $xref_id (keys %new_x2e) {
 
-  open (FILE, $filename) || die "Can't read $filename\n";
-  my $dummy = <FILE>; # skip first line
-
-  while(<FILE>) {
-
-    my ($xref_id, $type, $ensembl_id) = split;
-    # TODO - better way of handling type?
-    $mappings{$xref_id} = $type . "." . $ensembl_id;
-    $i++;
-
-  }
-
-  close(FILE);
-
-  print "Read $i mappings from $filename\n";
-
-  return %mappings;
-
-}
-
-sub compare_mappings {
-
-  my ($new_hashref, $ensembl_hashref) = @_;
-
-  my %new_mappings = %$new_hashref;
-  my %ensembl_mappings = %$ensembl_hashref;
-
-  my ($matched, $mismatched, $new_only, $ensembl_only, $total);
-
-  foreach my $xref_id (keys %new_mappings) {
-
-    if (exists $ensembl_mappings{$xref_id}) {
-      if ($ensembl_mappings{$xref_id} eq $new_mappings{$xref_id}) {
-	$matched++;
-      } else {
-	$mismatched++;
+  # if a mapping exists, look for any matches
+  my $found = 0;
+  if (exists $old_x2e{$xref_id}) {
+    foreach my $old_value (@{$old_x2e{$xref_id}}) {
+      foreach my $new_value (@{$new_x2e{$xref_id}}) {
+	if ($old_value eq $new_value) {
+	  $found = 1;
+	}
       }
-    } else {
-      $new_only++;
     }
+    $found ? $matched++ : $mismatched++;
 
-    $total++;
-
+  } else {
+    $new_only++;
   }
 
- foreach my $xref_id (keys %ensembl_mappings) {
-
-    if (!exists $new_mappings{$xref_id}) {
-      $ensembl_only++;
-    }
-
-  }
-
-  print "Compared " . scalar(keys %new_mappings) . " new xref mappings with " . scalar(keys %ensembl_mappings) . " existing ensembl mappings\n\n";
-
-  my $fmt = "%-30s\t%6d\t%3.2f%%\n";
-  printf $fmt, "Mapped with same result:", $matched, pc($matched, $total);
-  printf $fmt, "Mapped with different result:", $mismatched, pc($mismatched, $total);
-  printf $fmt, "Mapped by new method only:", $new_only, pc($new_only, $total);
-  printf $fmt, "Total of new xrefs compared", $total, pc($total, $total);
-
-  print "\nNumber mapped by old method only: $ensembl_only\n";
-
+  $total++;
 
 }
+
+foreach my $xref_id (keys %old_x2e) {
+
+  if (!exists $new_x2e{$xref_id}) {
+    $old_only++;
+  }
+
+}
+
+print "Compared " . scalar(keys %new_x2e) . " new xref mappings with " . scalar(keys %old_x2e) . " existing ensembl mappings\n";
+
+print "\nComparing by xref:\n\n";
+
+my $fmt = "%-30s\t%6d\t%5s%%\n";
+printf $fmt, "Mapped with same result:", $matched, pc($matched, $total);
+printf $fmt, "Mapped with different result:", $mismatched, pc($mismatched, $total);
+printf $fmt, "Mapped by new method only:", $new_only, pc($new_only, $total);
+printf $fmt, "Total of new xrefs compared:", $total, pc($total, $total);
+
+print "\nNumber mapped by old method only: $old_only\n";
+
+# ----------------------------------------------------------------------
 
 sub pc {
 
   my ($a, $total) = @_;
-  return 100 * $a / $total;
+  my $number = 100 * $a / $total;
+  my $pad = "";
+  $pad .= " " if ($number < 100);
+  $pad .= " " if ($number < 10);
+
+  return $pad . sprintf "%3.2f", $number;
 
 }
 
@@ -119,5 +103,37 @@ Mapping files should be in the following format:
 xref_accession ensembl_type ensembl_id
 
 EOF
+
+}
+
+
+sub read_mappings {
+
+  my $filename = shift;
+  my $i = 0;
+
+  my %xref_to_ensembl;
+  my %ensembl_to_xref;
+
+  open (FILE, $filename) || die "Can't read $filename\n";
+  my $dummy = <FILE>; # skip first line
+
+  while(<FILE>) {
+
+    my ($xref_id, $type, $ensembl_id) = split;
+    # TODO - better way of handling type?
+    my $value = $ensembl_id . "." . $type;
+    push @{$xref_to_ensembl{$xref_id}}, $value;
+
+    $ensembl_to_xref{$value} = $xref_id; # TODO map of lists
+    $i++;
+
+  }
+
+  close(FILE);
+
+  print "Read $i mappings from $filename\n";
+
+  return (\%xref_to_ensembl, \%ensembl_to_xref);
 
 }
