@@ -276,6 +276,46 @@ sub get_Feature_Obj {
     return $update_obj;
 }
 
+=head2 get_Gene_Obj
+
+ Title   : get_Gene_Obj
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Gene_Obj {
+    my ($self) = @_;
+    
+    my $update_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+ 
+    return $update_obj;
+}
+
+=head2 get_Protfeat_Adaptor
+
+ Title   : get_Protfeat_Adaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Protfeat_Adaptor {
+    my ($self) = @_;
+    
+    my $update_obj = Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor->new($self);
+ 
+    return $update_obj;
+}
+
 
 =head2 get_object_by_wildcard
 

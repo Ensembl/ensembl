@@ -52,7 +52,7 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 
-use Bio::EnsEMBL::FeaturePair;
+use Bio::EnsEMBL::Protein_FeaturePair;
 use Bio::EnsEMBL::SeqFeature;
 
 
@@ -165,7 +165,7 @@ sub write_Protein_feature{
     my $analysisid = $self->_feature_obj->write_Analysis($analysis);
   
     my $homol = $feature->feature2;
-    
+      
     my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
 			       "values ('NULL',"
 			       ."'".$feature->seqname    ."',"
@@ -339,6 +339,8 @@ sub _set_protein_feature{
    my ($self,$rowhash) = @_;
 
 my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
+
+
    
    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $rowhash->{'translation'},
 					      -start => $rowhash->{'seq_start'},
@@ -353,7 +355,7 @@ my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
 					     -analysis => $analysis,
 					     -seqname => $rowhash->{'hid'});
    
-   my $feature = new Bio::EnsEMBL::FeaturePair(-feature1 => $feat1,
+   my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
 					       -feature2 => $feat2,);
    return $feature;
 
