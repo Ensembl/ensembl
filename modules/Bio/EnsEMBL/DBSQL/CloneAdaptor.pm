@@ -443,7 +443,6 @@ sub store{
                          $clone->htg_phase.", 
                          FROM_UNIXTIME(".$clone->created."), 
                          FROM_UNIXTIME(".$clone->modified."))";
-  
   my $sth = $self->prepare($sql);
   my $rv = $sth->execute();
   $self->throw("Failed to insert clone $clone->id") unless $rv;

@@ -286,11 +286,11 @@ sub store {
 
       # for other repeats - need to see if a consensus is stored already
       unless ($cons->dbID) {
-	my @match = ($rca->fetch_by_name($cons->name));
+	my $match = ($rca->fetch_by_name($cons->name));
 	
-	if(@match) {
+	if($match) {
 	  #set the consensus dbID to be the same as the database one
-	  $cons->dbID($match[0]->dbID());
+	  $cons->dbID($match->dbID());
 	} else {
 	  # if we don't match a consensus already stored create a fake one 
 	  # and set consensus to 'N' as null seq not allowed
@@ -300,10 +300,10 @@ sub store {
 	  $rca->store($cons);
 	}
 	
-	if (@match > 1) {
+	#if (@match > 1) {
 	  #multiple consensi were matched
-	  $self->warn(@match . " consensi for " . $cons->name . "\n");
-	}
+	#  $self->warn(@match . " consensi for " . $cons->name . "\n");
+	#}
       }
     }
     
