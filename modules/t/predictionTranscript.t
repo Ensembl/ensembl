@@ -5,13 +5,15 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 32;
+	plan tests => 33;
 }
 
 use MultiTestDB;
-use TestUtils;
+use TestUtils qw(debug test_getter_setter);
 use Bio::EnsEMBL::PredictionTranscript;
 use Bio::EnsEMBL::Exon;
+
+our $verbose = 0;
 
 #
 # 1 PredictionTranscript compiles
@@ -33,6 +35,12 @@ my $p_transs = $slice->get_all_PredictionTranscripts();
 #
 ok( scalar( @$p_transs ) );
 
+
+if($verbose) {
+  foreach my $pt (@$p_transs) {
+    print $pt->stable_id , "\n";
+  }
+}
 
 my ($pt) = @$p_transs;
 
@@ -209,3 +217,11 @@ ok($defined_exons_count == $pt->cdna2genomic($cstart, $cend));
 #
 ok(&TestUtils::test_getter_setter($pt, 'type', 'test'));
 
+#
+# 33 test fetch_by_stable_id
+#
+
+my $stable_id = 'AL031658.11.1.162976.122801.143660';
+
+$pt = $pta->fetch_by_stable_id($stable_id);
+ok($pt->stable_id eq $stable_id);
