@@ -59,7 +59,7 @@ use FileHandle;
 sub _initialize {
   my($self,@args) = @_;
   
-  my $make = $self->SUPER::_initialize;
+  #my $make = $self->SUPER::_initialize;
 
   my ($file,$type) = $self->_rearrange([qw(FILE
 					   TYPE)],@args);
@@ -69,6 +69,8 @@ sub _initialize {
   $self->type($type);
   $self->GFFFile($file);
 
+  # Parse the GFF File
+  $self->_parse();
 
   return $self; # success - we hope!
 }
@@ -157,18 +159,15 @@ sub _parse {
     
     $self->_make_analysis;
     
-    my $fh = new FileHandle;
-
-    $fh->open("<$file") || $self->throw("Can't open $file");
-
-    while (my $line = <$fh>) {
+    open(IN,"<$file") || $self->throw("Can't open $file");
+    while (defined( my $line = <IN>)) {
 	if ($line !~ /^\#/) {
 	    my $feature = $self->_parse_line($line);
 	    $self->add_Feature($feature);
 	}
     }
     
-    $fh->close;
+    close(IN);
 }
 
 
@@ -302,7 +301,6 @@ sub GFFFile {
 
     if (defined($arg)) {
 	$self->{_GFFFile} = $arg;
-	$self->_parse;
     }
 
     return $self->{_GFFFile};

@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Bio::SeqFeature::Homol
 #
@@ -80,10 +79,14 @@ sub _initialize {
 
 =head2 to_FTHelper
 
-Called by C<Bio::AnnSeqIO::FTHelper::from_SeqFeature>, which
-is called by C<Bio::AnnSeqIO::EMBL::write_annseq>.
+Called by
+C<Bio::AnnSeqIO::FTHelper::from_SeqFeature>,
+which is called by
+C<Bio::AnnSeqIO::EMBL::write_annseq>.
 
-Returns a C<Bio::AnnSeqIO::FTHelper> object.
+Returns a C<Bio::AnnSeqIO::FTHelper> object which
+will print the repeat in the Sanger Centre
+format.
 
 =cut
 
@@ -104,7 +107,8 @@ sub to_FTHelper {
     $fth->loc($loc);
     
     # Add note describing repeat
-    my $type    = $rep->homol_SeqFeature->seqname;;
+    my $type    = $rep->homol_SeqFeature->seqname;
+    $type =~ s/^Motif://;
     my $r_start = $rep->homol_SeqFeature->start;
     my $r_end   = $rep->homol_SeqFeature->end;
     $fth->add_field('note', "$type: matches $r_start to $r_end of consensus");

@@ -262,6 +262,7 @@ sub _process_Transcript {
             $ft->key("exon");
             # add other stuff to Exon?
             if ($self->strict_EMBL_dumping) {
+                $ft->add_field('db_xref',"");
                 $ft->add_field('note', 'exon_id: '. $exon->id());
             } else {
 	        $ft->add_field('created',     $exon->created());
@@ -359,8 +360,11 @@ sub _process_Transcript {
    $t_fth->key("CDS");
    
     if ($self->strict_EMBL_dumping) {
-        my $cds_id = $trans->translation->id();
-        $t_fth->add_field('product', $cds_id);
+        # FIXME
+        ### NB: THIS WILL BREAK WITH MULTIPLE SPECIES ###
+        my $cds_id = "HUMAN-Gene-" . $trans->translation->id();
+        $t_fth->add_field('product', "_$cds_id");
+        $t_fth->add_field('db_xref', "ENSEMBL:$cds_id");
     } else {
         my $pseq = $trans->translate();
         $t_fth->add_field('translation',$pseq->str);

@@ -389,14 +389,10 @@ sub get_AnnSeq {
 
     # Add features to annseq object
     foreach my $contig ($self->get_all_Contigs) {
+    
         # Coordinates retrieved are in Clone coordinate space
         # from the get_all_clone_SeqFeatures method
         foreach my $homol ($contig->get_all_clone_SeqFeatures) {
-        
-            my $source = $homol->source_tag || '';
-            if ($source =~ /repeat/i) {
-                bless $homol, 'Bio::EnsEMBL::Analysis::Repeat';
-            }
         
             next unless $homol->isa('Bio::EnsEMBL::Analysis::Repeat');
             $as->add_SeqFeature( $homol );

@@ -67,7 +67,7 @@ use FileHandle;
 sub _initialize {
   my($self,@args) = @_;
   
-  my $make = $self->SUPER::_initialize;
+  #my $make = $self->SUPER::_initialize;
 
   # Input variables
   # ---------------
@@ -78,7 +78,6 @@ sub _initialize {
 							  TYPE
 							  SOURCE_TAG
 							  )],@args);
-
   # Stored data
   # -----------
   # These are the homols parsed from the mspfile
@@ -134,9 +133,14 @@ sub _parse {
 sub _read_Homol {
     my ($self,$line) = @_;
 
-    chomp($line);
+    #chomp($line);  # Unnecessary because of split
 
-    my ($score,$pid,$qstart,$qend,$id1,$hstart,$hend,$id2,$desc) = split(' ',$line.9);
+    
+
+    my ($score, $pid,
+        $qstart, $qend, $id1,
+        $hstart, $hend, $id2,
+        $desc) = split(' ', $line, 9);
 
     my $strand1 = 1;
     my $strand2 = 1;
@@ -148,8 +152,8 @@ sub _read_Homol {
   	   $qend   = $qstart;
 	   $qstart = $tmp;
 
-	$strand1 = -1;}
-
+	$strand1 = -1;
+    }
     if ($hstart > $hend ) {
 
 	my $tmp    = $hend;
@@ -278,7 +282,6 @@ sub mspfile {
 	$self->throw("MSPcrunch output file $file doesn't exist") unless -e $file;
 	
 	$self->{_mspfile} = $file;
-	$self->_parse;
     }
     
     return $self->{_mspfile};
@@ -321,27 +324,24 @@ sub source_tag {
 
 BEGIN {
 
-    my @types = ('DNA-DNA', 'DNA-PEP', 'PEP-DNA', 'PEP-PEP');
+    my %allowed_type = map {$_, 1} qw(DNA-DNA DNA-PEP PEP-DNA PEP-PEP);
 
     sub type {
-        my ($self,$arg) = @_;
+        my ($self, $type) = @_;
 
-        my $type;
+        if (defined($type)) {
 
-        if (defined($arg)) {
-	    foreach my $t (@types) {
-	        if ($t eq $arg) {
-		    $type = $t;
-		    last;
-	        }
+	    unless ($allowed_type{$type}) {
+	        $self->throw("Wrong type '$type' for MSPcrunch entered : allowed values are "
+                             . join(' ', sort keys %allowed_type));
 	    }
-
-	    unless (defined $type) {
-	        $self->throw("Wrong type for MSPcrunch entered - $arg : allowed values are @types");
-	    }
-
 	    $self->{_type} = $type;
         }
+        
+        use Carp;
+        use Data::Dumper;
+        confess("No type", Dumper($self)) unless defined $self->{_type};
+        
         return $self->{_type};
     }
 }

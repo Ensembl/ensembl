@@ -504,7 +504,7 @@ sub compare_dna{
     my $self = shift;
     my $file = shift;
     print "Comparing with $file\n";
-    my $seqio=Bio::SeqIO->new( -format => 'Fasta', -file => $file);
+    my $seqio=Bio::SeqIO->new( '-format' => 'Fasta', -file => $file);
     my $fseq;
     my %contigs;
     my $checksum2;

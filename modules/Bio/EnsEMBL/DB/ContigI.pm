@@ -39,7 +39,6 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::EnsEMBL::DB::ContigI;
 
-use vars qw(@ISA);
 use strict;
 use Bio::AnnSeq;
 
@@ -153,7 +152,7 @@ sub _convert_coords_contig_clone {
     my ($out_start,$out_end,$out_strand);
 
     if( !defined $strand ) {
-	$self->throw("_conver_coords_contig_clone(start,end,strand)");
+	$self->throw("_convert_coords_contig_clone(start,end,strand)");
     }
 
     my $offset = $self->offset;
@@ -310,7 +309,7 @@ sub length {
 
 =cut
 
-sub annseq{
+sub annseq {
    my ($self) = @_;
 
    my $seq = $self->seq();
@@ -337,7 +336,7 @@ sub annseq{
 
 =cut
 
-sub write_acedb{
+sub write_acedb {
     my ($self,$fh,$seqname) = @_;
 
     my $contig_id=$self->id();
