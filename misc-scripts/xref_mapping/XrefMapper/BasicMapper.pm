@@ -680,7 +680,7 @@ sub submit_depend_job {
 
 }
 
-=head2 generate_core_xrefs
+=head2 parse_mappings
 
   Arg[1]     : The target file used in the exonerate run. Used to work out the Ensembl object type.
   Arg[2]     :
@@ -692,7 +692,7 @@ sub submit_depend_job {
 
 =cut
 
-sub generate_core_xrefs {
+sub parse_mappings {
 
   my ($self, $xref) = @_;
 
