@@ -508,6 +508,12 @@ sub get_all_VirtualGenes_startend{
        my $genestr;
        foreach my $trans ( $gene->each_Transcript ) {
 	   foreach my $exon ( $trans->each_Exon ) {
+
+	       my $mc = $self->_vmap->get_MapContig_by_id($exon->contig_id);
+	       if( !defined $mc ) {
+		   next;
+	       }
+	       
 	       
 	       my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
 	       if( $st < $genestart ) {
@@ -734,6 +740,7 @@ sub get_all_SimilarityFeatures_above_score{
     
     my $sf = [];
     
+    print STDERR "Contigs are " . $self->_vmap->get_all_RawContigs . "\n";
     foreach my $c ($self->_vmap->get_all_RawContigs) {
 	
 	print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
@@ -890,7 +897,6 @@ sub get_all_Genes {
  Returns : 
  Args    :
 
-
 =cut
 
 sub get_old_Genes {
@@ -941,6 +947,7 @@ sub _gene_query{
     foreach my $gene ( values %gene ) {
 
 	my $internalExon = 0;
+
 
 
 	foreach my $exon ( $gene->all_Exon_objects() ) {
@@ -1014,11 +1021,6 @@ sub _gene_query{
             delete $gene{$gene->id};
         } 
     }
- 
-
-   
-
-   
     # get out unique set of translation objects
     foreach my $gene ( values %gene ) {
 	foreach my $transcript ( $gene->each_Transcript ) {
@@ -1026,16 +1028,48 @@ sub _gene_query{
 	    $trans{"$translation"} = $translation;	    
 	}
     } 
+
+
     
     foreach my $t ( values %trans ) {
 
 	if( exists $exonconverted{$t->start_exon_id} ) {
-	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->start_exon_id}->contig_id,$t->start,$t->start,1);
+	    my $contigid;
+
+	    if( $exon{$t->start_exon_id}->isa('Bio::EnsEMBL::StickyExon') ) {
+		# we screwed up here sooooooo badly.
+                
+		foreach my $c ( $exon{$t->start_exon_id}->each_component_Exon() ) {
+		    $contigid = $c->contig_id;
+		    if( $t->start >= $c->start && $t->start <= $c->end ) {
+			last;
+		    }
+		}
+	    } else {
+		$contigid = $exon{$t->start_exon_id}->contig_id;
+	    }
+
+	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($contigid,$t->start,$t->start,1);
 	    $t->start($start);
 	}
 
 	if( exists $exonconverted{$t->end_exon_id}  ) {
-	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->end_exon_id}->contig_id,$t->end,$t->end,1);
+
+	    my $contigid;
+
+	    if( $exon{$t->end_exon_id}->isa('Bio::EnsEMBL::StickyExon') ) {
+		# we screwed up here sooooooo badly.
+		foreach my $c ( $exon{$t->end_exon_id}->each_component_Exon() ) {
+		    $contigid = $c->contig_id;
+		    if( $t->end >= $c->start && $t->end <= $c->end ) {
+			last;
+		    }
+		}
+	    } else {
+		$contigid = $exon{$t->end_exon_id}->contig_id;
+	    }
+
+	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($contigid,$t->end,$t->end,1);
 	    $t->end($start);
 	}
     }
@@ -1078,7 +1112,7 @@ sub _get_all_SeqFeatures_type {
    }
    
    foreach my $c ($self->_vmap->get_all_RawContigs) {
-       #print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
+       print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
        if( $type eq 'repeat' ) {
 	   push(@$sf,$c->get_all_RepeatFeatures());
        } elsif ( $type eq 'similarity' ) {
@@ -1260,12 +1294,8 @@ sub _convert_start_end_strand_vc {
     eval {
 	$mc=$self->_vmap->get_MapContig_by_id($contig);
     };
-   # if($@) {
-#	$self->throw("Attempting to map a sequence feature with [$contig] on a virtual contig with no $contig\n$@\n");
-#    }
-
-    if ($@ || !ref $mc) { 
-	return undef;
+    if($@ || !ref $mc ) {
+	$self->throw("Attempting to map a sequence feature with [$contig] on a virtual contig with no $contig or unable to retrieve it [$mc]\n$@\n");
     }
 
 

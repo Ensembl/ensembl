@@ -249,13 +249,14 @@ sub get_all_SimilarityFeatures_above_score{
 	  if( !defined $name ) {
 	      $name = 'no_source';
 	  }
+
 	  $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
 	  $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
 				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
 	  $out->analysis    ($analysis);
 	  $out->id          ($hid);              
 	   
-	  $out = new Bio::EnsEMBL::SeqFeature;
+#	  $out = new Bio::EnsEMBL::SeqFeature;
 	  $out->seqname   ($self->id);
 	  $out->start     ($start);
 	  $out->end       ($end);
