@@ -60,7 +60,7 @@ use Getopt::Long;
 my $dbtype = 'rdb';
 my $host   = 'localhost';
 my $port   = '410000';
-my $dbname = 'ensdev';
+my $dbname = 'ensembl';
 my $dbuser = 'ensembl';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
@@ -71,6 +71,7 @@ my $getall  = 0;
 my $verbose = 0;
 my $noacc   = 0;
 my $test    = 0;
+my $webdir = undef;
 my $logerror = undef;
 my $help;
 my $chunk   = 1;
@@ -88,6 +89,7 @@ my $chunk   = 1;
 	     'format:s'   => \$format,
 	     'getall'     => \$getall,
 	     'verbose'    => \$verbose,
+	     'webdir:s'     => \$webdir,
 	     'test'       => \$test,
 	     'noacc'      => \$noacc,
 	     'logerror:s' => \$logerror,
@@ -121,7 +123,7 @@ if( $usefile ) {
 
 my $seqio;
 
-if( $format eq 'pep' || $format eq 'transcript' ) {
+if( $format eq 'pep' || $format eq 'transcript') {
     $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*STDOUT ) ;
 }
 
@@ -177,6 +179,35 @@ while ( @gene_id > 0 ) {
 		    my $fe = $exon[0];
 		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id);
 		    $seqio->write_seq($seq);
+		}
+	    }
+	    elsif ($format eq 'webdump') {
+		mkdir($webdir, 0777) or die "Can't create '$webdir' : $!";
+		my $trans_file = $webdir.$gene->id.".trans";
+		open (TRANS,">$trans_file");
+		foreach my $trans ( $gene->each_Transcript ) {
+		    my $seq = $trans->dna_seq();
+		    $seq->id($trans->id);
+		    my @exon = $trans->each_Exon;
+		    my $fe = $exon[0];
+		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*TRANS ) ;
+		    $seqio->write_seq($seq);
+		}
+		my $pep_file =  $webdir.$gene->id.".pep";
+		open (PEP,">$pep_file");
+		foreach my $trans ( $gene->each_Transcript ) {
+		    # get out first exon. Tag it to clone and gene on this basis
+		    my @exon = $trans->each_Exon;
+		    my $fe = $exon[0];
+		    my $tseq = $trans->translate();
+		    if ( $tseq->seq =~ /\*/ ) {
+			print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
+			next;
+		    }
+		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*PEP) ;
+		    $seqio->write_seq($tseq);
 		}
 	    }
 	    else {
