@@ -200,6 +200,9 @@ sub dump_core {
 ### replacement for make_dump. First commit on branch-ensembl-110, cause
 ### that's stable. 
 
+    warn "dump_core note: this requires a gene_exon table in the lite database,
+         which 'officially' should not be there ...\n";
+
     my ($satdb) = @_;
     return unless $satdb;
 
