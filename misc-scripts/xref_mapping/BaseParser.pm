@@ -9,6 +9,7 @@ use POSIX qw(strftime);
 
 use SwissProtParser;
 use RefSeqParser;
+use RefSeqGPFFParser;
 
 my $host = "ecs1g";
 my $port = 3306;
@@ -178,8 +179,8 @@ sub upload_xrefs {
       foreach my $syn (@{$xref->{SYNONYMS}}) {
 
 	$xref_sth->execute($syn,
-			   $xref->{LABEL},
-			   $xref->{DESCRIPTION},
+			   "",
+			   "",
 			   $xref->{SOURCE_ID},
 			   $xref->{SPECIES_ID});
 
