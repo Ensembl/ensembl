@@ -172,6 +172,43 @@ sub strand {
 
 }
 
+
+=head2 chr_name
+
+  Arg [1]    : (optional) string $chr_name
+  Example    : $chr_name = $gene->chr_name
+  Description: Getter/Setter for the name of the chromosome that this
+               Gene is on.  This is really just a shortcut to the slice
+               attached this genes exons, but the value can also be set, which 
+               is useful for use with the lite database and web code.
+               This function will return undef if this gene is not attached
+               to a slice and the chr_name attribute has not already been set. 
+  Returntype : string
+  Exceptions : none
+  Caller     : Lite GeneAdaptor, domainview
+
+=cut
+
+sub chr_name {
+  my ($self, $chr_name) = @_;
+
+  if(defined $chr_name) { 
+    $self->{'_chr_name'} = $chr_name;
+  } elsif(!defined $self->{'_chr_name'}) {
+    #attempt to get the chr_name from the contig attached to the exons
+    my ($exon, $contig);
+    ($exon) = $self->get_all_Exons();
+    if($exon && ($contig = $exon->contig())) {
+      if(ref $contig && $contig->isa('Bio::EnsEMBL::Slice')) {
+        $self->{'_chr_name'} = $contig->chr_name();
+      }
+    }
+  } 
+
+  return $self->{'_chr_name'};
+}
+
+
 sub source {
   my ($self, $source) = @_;
 
@@ -409,31 +446,7 @@ sub get_all_Exons {
    return values %h;
 }
 
-=head2 refresh
 
- Title   : refresh
- Usage   :
- Function: This function is for cacheing of external genes. It
-           refreshs the coordinate system of the underlying exons
-           to be what they were retrieved with
-
-           This function may be obselete with new exons. EB and Elia
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub refresh {
-   my ($self) = @_;
-
-   foreach my $e ($self->get_all_Exons) {
-       $e->start($e->ori_start);
-       $e->end($e->ori_end);
-       $e->strand($e->ori_strand);
-   }
-}
 
 
 =head2 get_Exon_by_id
@@ -743,31 +756,6 @@ sub transform {
 }
 
 
-=head2 _set_adaptors
-
-  Arg  1    : Bio::EnsEMBL::DBSQL::DBAdaptor $dba
-  Function  : Set adaptors for Genes and Exons, so they can transform
-
-  Returntype: Bio::EnsEMBL::Gene
-  Exceptions: none
-  Caller    : object::methodname or just methodname
-
-=cut
-
-sub _set_adaptors {
-  my $self = shift;
-  my $dba = shift;
-
-  if( defined $self->adaptor() ) {
-    return;
-  }
-
-  # set geneadaptor and exonadaptors,
-  # this is to get mappers otherwise where should they come from
-  # ? maybe we could get them from the slice
-
-}
-
 
 =head2 temporary_id
 
@@ -878,5 +866,29 @@ sub all_Exon_objects{
    return $self->get_all_Exons;
 }
 
+
+=head2 refresh
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED no longer needed, do not call
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub refresh {
+   my ($self) = @_;
+
+   $self->warn("call to deprecated method refresh.  This method is not needed "
+	       . "anymore and should not be called\n" );
+
+#   foreach my $e ($self->get_all_Exons) {
+#       $e->start($e->ori_start);
+#       $e->end($e->ori_end);
+#       $e->strand($e->ori_strand);
+#   }
+}
 
 1;

@@ -110,6 +110,7 @@ sub fetch_by_gene_id_list {
       $gene->start($chr_start);
       $gene->end($chr_end);
       $gene->strand($chr_strand);
+      $gene->chr_name($chr_name);
       $gene->adaptor($self);
       $gene->dbID($gene_id);
       push @genes, $gene;
