@@ -53,10 +53,10 @@ use Bio::EnsEMBL::GeneComparison::GeneComparisonStats;
 
 #Database options
 my $dbtype = 'rdb';
-my $host   = 'ensrv4.sanger.ac.uk';
+my $host   = 'localhost';
 my $port   = '410000';
 my $dbname = 'ensembl_freeze17_michele';
-my $dbuser = 'ensro';
+my $dbuser = 'root';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 
@@ -64,6 +64,7 @@ my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 my $parse;
 my $parse2;
 my $print;
+my $display;
 my $help;
 my $check;
 my $compare;
@@ -80,6 +81,7 @@ my $longest;
        	     'parse:s'    => \$parse,
 	     'parse2:s'   => \$parse2,
 	     'print'      => \$print,
+	     'display'    => \$display,
 	     'check'      => \$check,
 	     'compare'    => \$compare,
 	     'longest'    => \$longest,
@@ -92,28 +94,17 @@ my @gtf_genes=$gtfh->parse_file(\*PARSE);
 my $g_n=scalar @gtf_genes;
 print STDERR "Got $g_n genes from file $parse\n";
 if ($print) {
-     foreach my $gene (@gtf_genes) {
-	print STDOUT "Gene ".$gene->id."\n";
-	foreach my $trans ($gene->each_Transcript) {
-	    print STDOUT "  Transcript ".$trans->id."\n";
-	    foreach my $exon ($gene->each_unique_Exon) {
-		print STDOUT "   exon ".$exon->id."\n";
-	    }
-	    print STDOUT "   translation start ".$trans->translation->start."\n";
-	    print STDOUT "   translation end ".$trans->translation->end."\n";
-	}
-    }
- }
+    $gtfh->print_genes;
+}
 
 #DB writing option not yet implemented
 #Mapping of coordinates still needs to be done
 elsif ($check) {
     my $inputstream = Bio::SeqIO->new(-file => "ctg12382.fa",-format => 'Fasta');
     my $seq = $inputstream->next_seq();
-
+    
     foreach my $gene (@gtf_genes) {
 	foreach my $trans ($gene->each_Transcript) {
-	    
 	    print STDERR "Translation start is ".$trans->translation->start." in exon ".$trans->translation->start_exon_id."\n";
 	    print STDERR "Translation end is ".$trans->translation->end." in exon ".$trans->translation->end_exon_id."\n";
 		
@@ -242,9 +233,9 @@ elsif ($longest) {
 		$longest=$pep_length;
 		$trans_id=$trans->id;
 	    }
-	    $start=$trans->first_exon->start;
-	    $end=$trans->last_exon->end;
-	    $fpc=$trans->first_exon->contig_id;
+	    $start=$trans->start_exon->start;
+	    $end=$trans->end_exon->end;
+	    $fpc=$trans->start_exon->contig_id;
 	}
 	print STDERR "Longest transcript is $trans_id, and is $longest long\n";
 
@@ -296,6 +287,39 @@ elsif ($longest) {
 	}
     }
 }
+
+elsif ($display) {
+    use Bio::Tk::SeqCanvas;
+    use Bio::EnsEMBL::PerlDB::Contig;
+    use Tk;
+
+    my $MW = MainWindow->new ();
+
+    my $Frame = $MW->Frame()->pack(-side => 'top');
+    my $lblSysMess = $MW->Label()->pack(-side => 'bottom', -fill => 'both');
+    my ($axis_length) = 500;
+    my @exons=$gtf_genes[0]->each_unique_Exon;
+    my $fpc=$exons[0]->contig_id;
+    
+    my $contig = Bio::EnsEMBL::PerlDB::Contig->new();
+    $contig->id($fpc);
+    $contig->length(1600000);
+    foreach my $gene (@gtf_genes) {
+	print STDERR "Adding gene ".$gene->id."\n";
+	$contig->add_Gene($gene);
+    }
+    #my $vc = Bio::EnsEMBL::Virtual::Contig->new_from_one($contig);
+    
+    my $MapObj = Bio::Tk::SeqCanvas->new(
+					 $axis_length,
+					 $Frame,
+					 $lblSysMess,
+					 $contig,
+					 -orientation => 'horizontal',
+					 -label => 'primary_id');
+    $MW->update;
+    MainLoop;
+}
     
 else {
     my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
@@ -312,20 +336,10 @@ else {
 	my $vc = $sgp_adaptor->fetch_VirtualContig_by_fpc_name($fpc);
 	foreach my $exon ($gene->each_unique_Exon) {
 	    $exon->contig_id($vc->id);
-	    $exon->attach_seq($vc->primary_seq);
-	    print STDERR "Got exon seq: ".$exon->seq."\n";
 	}
 	my $newgene = $vc->convert_Gene_to_raw_contig($gene);
-	
-	print STDERR "Dumping gene ".$gene->id."\n";
-	foreach my $trans ($gene->each_Transcript) {
-	    my $out = Bio::SeqIO->new(-fh => \*STDOUT, -format => 'Fasta');
-	    my $seq= $trans->dna_seq;
-	    my $desc="FPC: $fpc ";
-	    $seq->desc($desc);
-	    $out->write_seq($seq);
-	    }
+	print STDERR "Writing gene ".$gene->id."\n";
+	$gene_obj->write($newgene);
     }
-    #$gene_obj->write($newgene);
 }
 
