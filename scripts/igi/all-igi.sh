@@ -26,8 +26,10 @@ pep-collate.sh 2> pep-collate.log
 # proudced by all-stats.sh.
 summary=out/summary/ens_affy_fgenesh.summary
 peptidefiles="ensembl/ensembl.pep affymetrix/affymetrix.pep fgenesh/fgenesh.pep"
-outdir=pep
-gtfsummary2pep.pl $summary $peptidefiles > $outdir/pep.out 2> $outdir/pep.log
-gzip -c $outdir/pep.out > $outdir/pep.out.gz
+outdir=out/pep
+outfile=$outdir/igi3.pep
+logfile=$outdir/igi3.log
+gtfsummary2pep.pl $summary $peptidefiles > $outfile 2> $logfile
+gzip -c $outfile > $outfile.gz
 # ftp stuff, and we're done.
 
