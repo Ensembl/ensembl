@@ -153,6 +153,12 @@ package main;
                 
                    'zeb_dblink' => '',
 
+                   ############
+                   #drosophila#
+                   ############
+
+                   'dros_ext_annot' => '',
+
              ###################
              #Database handling#
              ###################
