@@ -854,7 +854,7 @@ sub update {
    my $display_xref = $transcript->display_xref();
    my $display_xref_id;
 
-   if( defined $display_xref && $display_xref->dbID() ) {
+   if( $display_xref && $display_xref->dbID() ) {
      $display_xref_id = $display_xref->dbID();
    } else {
      $display_xref_id = undef;
