@@ -168,7 +168,7 @@ foreach my $query (values(%hits)) {
 				$r2->start($pair[1]{$c . 'START'});
 				$r2->end($pair[1]{$c . 'END'});
 
-				my $overlap += $r1->intersection($r2);
+				$overlap += $r1->intersection($r2);
 			}
 
 			# Calculate the query and target identities
