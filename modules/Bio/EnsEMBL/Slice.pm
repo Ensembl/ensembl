@@ -1,7 +1,6 @@
 #
-# Ensembl module for Bio::EnsEMBL::Assembly::Slice
+# Ensembl module for Bio::EnsEMBL::Slice
 #
-# Cared for by Ewan Birney <ensembl-dev@ebi.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -25,7 +24,8 @@ Bio::EnsEMBL::Slice - Arbitary Slice of a genome
 
 =head1 DESCRIPTION
 
-
+A slice object represents a region of a genome.  It can be used to retrieve
+sequence or features from an area of interest.
 
 =head1 AUTHOR - Ewan Birney
 
@@ -42,8 +42,10 @@ package Bio::EnsEMBL::Slice;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::Tile;
+use Bio::EnsEMBL::Root; #included for backwards compatibility
+use Bio::EnsEMBL::Tile; #included for backwards compatibility
+use Bio::EnsEMBL::Chromosome; #included for backwards compatibility
+
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
@@ -454,7 +456,7 @@ sub get_base_count {
 
     $end = $len if($end > $len);
 
-    $seq = ${$self->subseq($start, $end)};
+    $seq = $self->subseq($start, $end);
 
     $a += $seq =~ tr/Aa/Aa/;
     $c += $seq =~ tr/Cc/Cc/;
@@ -626,6 +628,62 @@ sub expand {
   return bless \%new_slice, ref($self);
 }
 
+
+
+=head2 get_all_attribute_types
+
+  Arg [1]    : none
+  Example    : my @attribute_types = $slice->get_attribute_types();
+  Description: Gets a list of the types of attributes associated with the
+               seq_region this slice is on.
+  Returntype : list of strings
+  Exceptions : warning if slice does not have attached adaptor
+  Caller     : general
+
+=cut
+
+sub get_attribute_types {
+  my $self = shift;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get attributes without an adaptor.');
+    return ();
+  }
+  my %attrib_hash = %{$self->adaptor->get_seq_region_attribs($self)};
+  return keys %attrib_hash;
+}
+
+
+=head2 get_attribute
+
+  Arg [1]    : string $attrib_type
+               The code of the attribute type to retrieve values for.
+  Example    : ($htg_phase) = $slice->get_attribute('htg_phase');
+               @synonyms    = $slice->get_attribute('synonyms');
+  Description: Gets a list of values for a given attribute of this
+               slice''s seq_region.
+  Returntype : list of strings
+  Exceptions : warning is slice does not have attached adaptor
+               throw if argument is not provided
+  Caller     : general
+
+=cut
+
+sub get_attribute {
+  my $self = shift;
+  my $attrib_code = shift;
+
+  throw('Attrib code argument is required.') if(!$attrib_code);
+
+  if(!$self->adaptor()) {
+    warning('Cannot get attributes without an adaptor.');
+    return ();
+  }
+
+  my %attribs = %{$self->adaptor->get_seq_region_attribs($self)};
+
+  return @{$attribs{$attrib_code} || []};
+}
 
 
 =head2 get_all_PredictionTranscripts
@@ -977,8 +1035,8 @@ sub get_repeatmasked_seq {
     my $dna = $self->seq();
     my $masked_dna = $self->_mask_features($dna,$repeats,$soft_mask);
     my $masked_seq = Bio::PrimarySeq->new('-seq'        => $masked_dna,
-					  '-display_id' => $self->id,
-					  '-primary_id' => $self->id,
+					  '-display_id' => $self->name,
+					  '-primary_id' => $self->name,
 					  '-moltype'    => 'dna'
 					 );
     return $masked_seq;
@@ -1089,42 +1147,40 @@ sub get_all_SearchFeatures {
 }
 
 
-=head2 get_all_MapFrags
 
-  Arg [1]    : string $mapset
-  Example    : $slice->get_all_MapFrags('cloneset');
-  Description: Retreives all mapfrags of mapset $mapset that overlap this slice
-  Returntype : listref of Bio::EnsEMBL::MapFrags
+=head2 get_all_MiscFeatures
+
+  Arg [1]    : string $set (optional)
+  Example    : $slice->get_all_MiscFeatures('cloneset');
+  Description: Retreives all misc features which overlap this slice. If
+               a set code is provided only features which are members of
+               the requested set are returned.
+  Returntype : listref of Bio::EnsEMBL::MiscFeatures
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub get_all_MapFrags {
-    my $self = shift;
-    my $mapset = shift;
+sub get_all_MiscFeatures {
+  my $self = shift;
+  my $misc_set = shift;
 
-    unless($mapset) {
-      throw("mapset argument is required");
-    }
+  my $adaptor = $self->adaptor();
 
-    my $mfa = $self->adaptor()->db()->get_MapFragAdaptor();
+  if(!$adaptor) {
+    warning('Cannot retrieve features without attached adaptor.');
+    return [];
+  }
 
-    return $mfa->fetch_all_by_mapset_chr_start_end($mapset,
-					       $self->chr_name,
-					       $self->chr_start,
-					       $self->chr_end);
+  my $mfa = $adaptor->db->get_MiscFeatureAdaptor();
+
+  if($misc_set) {
+    return $mfa->fetch_all_by_Slice_and_set_code($self,$misc_set);
+  }
+
+  return $mfa->fetch_all_by_Slice($self);
 }
 
-
-
-sub has_MapSet {
-  my( $self, $mapset_name ) = @_;
-
-  my $mfa = $self->adaptor()->db()->get_MapFragAdaptor();
-
-  return $mfa->has_mapset($mapset_name);
-}
 
 
 
@@ -1496,6 +1552,7 @@ sub accession_number {
   Description: DEPRECATED use this instead:
                $slice_adp->fetch_by_region('chromosome',
                                            $slice->seq_region_name)
+
 =cut
 
 sub get_Chromosome {
@@ -1504,8 +1561,10 @@ sub get_Chromosome {
   deprecate("Use SliceAdaptor::fetch_by_region('chromosome'," .
             '$slice->seq_region_name) instead');
 
-  return
-    $self->adaptor->fetch_by_region('chromosome', $self->seq_region_name());
+  my $chr = $self->adaptor->fetch_by_region('chromosome',
+                                            $self->seq_region_name());
+
+  return bless($chr, 'Bio::EnsEMBL::Chromosome');
 }
 
 
@@ -1559,7 +1618,7 @@ sub chr_end{
 
 sub assembly_type{
   my $self = shift;
-  deprecate('Use coord_system()->version() instead');
+  deprecate('Use $slice->coord_system()->version() instead.');
   return $self->coord_system->version();
 }
 
@@ -1573,15 +1632,13 @@ sub assembly_type{
 sub get_tiling_path {
   my $self = shift;
 
-  deprecate('Use project() instead.');
+  deprecate('Use $slice->project("seqlevel") instead.');
 
   my $csa = $self->adaptor()->db()->get_CoordSystemAdaptor();
 
   #assume that they want the tiling path to the sequence coord system
   #this might not work well if this isn't a chromosomal slice
-  my $cs = $csa->fetch_sequence_level();
-
-  my $projection = $self->project($cs->name(), $cs->version());
+  my $projection = $self->project('seqlevel');
 
   my @tiling_path;
 
@@ -1594,7 +1651,7 @@ sub get_tiling_path {
 
     #the old get_tiling_path always gave back entire contigs in the forward
     #strand
-    $contig = $contig->adaptor->fetch_by_region($cs->name(),
+    $contig = $contig->adaptor->fetch_by_region('seqlevel',
                                                 $contig->seq_region_name(),
                                                 $contig->start(),
                                                 $contig->end());
@@ -1612,16 +1669,47 @@ sub get_tiling_path {
 }
 
 
-=head2 get_tiling_path
+=head2 dbID
 
-  Description: DEPRECATED use project instead
+  Description: DEPRECATED use SliceAdaptor::get_seq_region_id instead
 
 =cut
 
 sub dbID {
   my $self = shift;
   deprecate('Use SliceAdaptor::get_seq_region_id instead.');
+  if(!$self->adaptor) {
+    warning('Cannot retrieve seq_region_id without attached adaptor.');
+    return 0;
+  }
   return $self->adaptor->get_seq_region_id($self);
+}
+
+
+=head2 get_all_MapFrags
+
+  Description: DEPRECATED use get_all_MiscFeatures instead
+
+=cut
+
+sub get_all_MapFrags {
+  my $self = shift;
+  deprecate('Use get_all_MiscFeatures instead');
+  return $self->get_all_MiscFeatures(@_);
+}
+
+=head2 has_MapSet
+
+  Description: Not sure how this function is used, but it probably
+               is not necessary.
+
+=cut
+
+sub has_MapSet {
+  my( $self, $mapset_name ) = @_;
+  deprecate('Not sure what this function was meant to do.');
+  my $mfs = $self->get_all_MiscFeatures($mapset_name);
+  return (@$mfs > 0);
 }
 
 
