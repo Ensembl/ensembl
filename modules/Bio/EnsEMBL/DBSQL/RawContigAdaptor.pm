@@ -255,7 +255,10 @@ sub store{
 
 
   $self->_insertSequence($dna->seq, $contig->seq_date);
-  
+  my $international_name = $contig->international_name;
+  if(!$international_name){
+    $international_name = 'NULL';
+  } 
   my $sql = "insert into contig(name,
                                 dna_id,
                                 length,
@@ -269,7 +272,7 @@ sub store{
                     ".$clone_id." ,
                     ".$contig->embl_offset." ,
                     ".$contig->order." , 
-                    ".$contig->international_name.")";
+                    '".$international_name."')";
   
   my $sth = $self->prepare($sql);
   my $rv = $sth->execute();
