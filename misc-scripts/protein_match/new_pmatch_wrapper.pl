@@ -145,7 +145,7 @@ foreach my $query (values(%hits)) {
 
 	my @new;
         for (my $i = 0; $i < scalar @stitched; ++$i) {
-	  if (defined ($stitched[$i]) && $range->overlaps($stitched[$i])) {
+	  if ($range->overlaps($stitched[$i])) {
 	    $range = $stitched[$i]->union($range);
 	  } else {
 	    push(@new, $stitched[$i]);
@@ -155,6 +155,8 @@ foreach my $query (values(%hits)) {
 	@stitched = @new;
 
       }
+      $target->{$c . 'STITCH'} = \@stitched;
+
     }
   }
 }
@@ -178,14 +180,12 @@ foreach my $query (values(%hits)) {
 			my $totlen = 0;		# Total hit length
 
 			foreach my $range (@{ $target->{$c . 'STITCH'} }) {
-				next unless defined $range;
 				$totlen += $range->length;
 			}
 
 			# Calculate the query and target identities
 			$target->{$c . 'IDENT'} =
 				100 * $totlen / $target->{$c . 'LEN'};
-
 		}
 	}
 }
