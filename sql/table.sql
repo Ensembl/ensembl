@@ -247,14 +247,16 @@ CREATE TABLE repeat_consensus (
 
   repeat_consensus_id  	      int unsigned NOT NULL auto_increment,
   repeat_name                 varchar(255) NOT NULL,
-  repeat_class                varchar(40) NOT NULL,   # eg:  SINE, LINE, DNA Transposon,
+  repeat_class                varchar(100) NOT NULL,   # eg:  SINE, LINE, DNA Transposon,
                                                       # Retroviral LTR, Satellite,Tandem
+  repeat_type                 varchar(40) NOT NULL,
   repeat_consensus            text,
   
   PRIMARY KEY( repeat_consensus_id ),
   KEY name (repeat_name),
   KEY class (repeat_class),
-  KEY consensus(repeat_consensus(10))
+  KEY consensus(repeat_consensus(10)),
+  KEY type( repeat_type )
 
 );
 
