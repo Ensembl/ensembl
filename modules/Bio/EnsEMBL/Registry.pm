@@ -605,7 +605,7 @@ sub alias_exists{
 
 sub set_disconnect_when_inactive{
 
-  foreach my $dba ( @{get_all_DBAdaptors()}){
+  foreach my $dba ( @{$registry_register{'_DBA'}}){
     my $dbc = $dba->dbc;
     #disconnect if connected
     if($dbc->connected()){
@@ -641,7 +641,7 @@ sub set_disconnect_when_inactive{
 sub change_access{
   my ($host,$port,$user,$dbname,$new_user,$new_pass) = @_;
 
-  foreach my $dba ( @{get_all_DBAdaptors()}){
+  foreach my $dba ( @{$registry_register{'_DBA'}}){
     my $dbc = $dba->dbc;
     if((!defined($host) or $host eq $dbc->host) and
       (!defined($port) or $port eq $dbc->port) and
