@@ -623,7 +623,7 @@ sub write_Contig {
 #    my  $international_name = $contig->international_name();
 
     # Insert the sequence into the dna table
-    $self->_insertSequence($seqstr, $contig->seq_date);
+    #$self->_insertSequence($seqstr, $contig->seq_date);
     
  #   my @sql;
     
