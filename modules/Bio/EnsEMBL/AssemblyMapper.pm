@@ -422,4 +422,50 @@ sub adaptor {
 }
 
 
+
+
+=head2 in_assembly
+
+  Args      : either a Clone object, or RawContig object 
+  Function  : returns true if the Clone/Contig object is in the assembly
+  Returntype: 1 if object is in assembly, 0 if not in assembly
+  Exceptions: thrown if object is not of type Clone or RawContig
+  Caller    : general
+
+=cut
+
+sub in_assembly {
+  my ($self, $object) = @_;
+
+  my @contigs;
+
+  unless(ref $object) {
+    $self->throw("$object is not an object reference");
+  }
+
+  if($object->isa("Bio::EnsEMBL::Clone")) {
+    #get contigs from this clone
+    @contigs = $object->get_all_Contigs(); 
+  } elsif ($object->isa("Bio::EnsEMBL::RawContig")) {
+    #we already have the contig we need
+    @contigs = ($object);
+  } else {
+    #object is not a clone or a raw contig
+    $self->throw("$object is not a RawContig or Clone object");
+  }
+
+  #verify at least one of these contigs is mapped to the assembly
+  foreach my $contig (@contigs) {
+    if($self->adaptor()->register_region_around_contig($self, $self->_type(),
+						       $contig->dbID(),
+						       0, 0)) {
+      return 1;
+    }
+  }
+
+  #none of the contigs was in the assembly (golden path)
+  return 0;
+}
+
+
 1;

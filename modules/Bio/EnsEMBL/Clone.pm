@@ -135,9 +135,14 @@ sub get_all_Genes
 sub get_Contig {
    my ($self,$contigid) = @_;
 
-   my $contig = $self->adaptor->get_Contig($contigid);
+   $self->throw("Clone::get_Contig is deprecated, " . 
+                "use \$contig_adaptor->fetch_by_dbID(\$contig_id) instead\n");
+
+   return undef;
+
+#   my $contig = $self->adaptor->get_Contig($contigid);
    
-   return $contig->fetch();
+#   return $contig->fetch();
 }
 
 =head2 get_all_geneid
@@ -245,7 +250,7 @@ sub get_rawcontig_by_position {
 
     my ($self, $pos) = @_;
 
-    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::CloneI') ) {
+    if( !ref $self || ! $self->isa('Bio::EnsEMBL::Clone') ) {
         $self->throw("Must supply a clone to get_all_RawContigs: Bailing out...");
     }
 
