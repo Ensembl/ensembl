@@ -13,7 +13,7 @@ Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor - Facilitates DB storage and retr
 =head1 SYNOPSIS
 
 $seq_adptr = $database_adaptor->get_SequenceAdaptor();
-$dna = ${$seq_adptr->fetch_by_Slice($slice, 1, 1000, -1);}
+$dna = ${$seq_adptr->fetch_by_Slice_start_end_strand($slice, 1, 1000, -1);}
 
 =head1 DESCRIPTION
 
