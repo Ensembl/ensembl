@@ -290,3 +290,4 @@ sub version {
   return $self->{'version'};
 }
 
+1;
