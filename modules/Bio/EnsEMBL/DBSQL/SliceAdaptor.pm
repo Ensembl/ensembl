@@ -12,13 +12,11 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Assembly::SliceFactory - Factory for building slices
+Bio::EnsEMBL::DBSQL::SliceAdaptor - Adaptors for slices
 
 =head1 SYNOPSIS
   
-   $slice = Bio::EnsEMBL::Assembly::SliceFactory->new_slice($chr,$start,$end,$type);
 
-   $webslice = Bio::EnsEMBL::Assembly::SliceFactory->new_web_slice($chr,$start,$end,$type);
 
 
 =head1 DESCRIPTION
@@ -45,7 +43,7 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 
-package Bio::EnsEMBL::Assembly::SliceFactory;
+package Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use vars qw(@ISA);
 use strict;
 

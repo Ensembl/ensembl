@@ -12,11 +12,10 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Assembly::Slice - Arbitary Slice of a genome
+Bio::EnsEMBL::Slice - Arbitary Slice of a genome
 
 =head1 SYNOPSIS
 
-   $slice = Bio::EnsEMBL::Assembly::SliceFactory->new_slice($chr,$start,$end,$type);
 
    foreach $gene ( $slice->get_all_Genes ) {
       # do something with a gene
@@ -45,7 +44,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::Assembly::Slice;
+package Bio::EnsEMBL::Slice;
 use vars qw(@ISA);
 use strict;
 
@@ -130,7 +129,14 @@ sub get_all_SimilarityFeatures_above_pid{
 sub get_all_RepeatFeatures{
    my ($self,@args) = @_;
 
-   $self->throw("Ewan has not implemented this function! Complain!!!!");
+
+   @repeats = $self->repeat_adaptor->fetch_by_Slice($self);
+
+   foreach $repeat ( @repeats ) {
+       $repeat->transform_location($self->start);
+   }
+
+   return @repeats;
 }
 
 
