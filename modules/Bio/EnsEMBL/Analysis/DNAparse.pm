@@ -31,7 +31,7 @@ Creation:
 Manipulation:
 
      my $sql    = $dna->sql;                # Returns sql needed for entering into the database
-     my ($contig,@sql)  = $dna->sql_next            # Returns the sql one sequence at a time
+     my @sql    = $dna->sql_next            # Returns the sql one sequence at a time
      my $result = $dna->insert($dbh)        # Inserts sql into the database whose handle is $dbh
      my $result = $dna->insert_next($dbh)   # Inserts sql into the database whose handle is $dbh
                                             # a sequence at a time
@@ -56,6 +56,7 @@ use     strict;
 
 # Object preamble - inherits from Bio::Root::Object
 
+use Bio::EnsEMBL::DB::Obj;
 use Bio::Root::Object;
 use Bio::SeqIO;
 
@@ -147,7 +148,7 @@ sub sql {
   
   my @outstr;
 
-  while (my ($contig,@sql) = $self->sql_next) {
+  while (my @sql = $self->sql_next) {
     push(@outstr,@sql);
   }
   return @outstr;
@@ -166,21 +167,31 @@ sub sql {
 =cut
 
 sub sql_next {
-  my ($self) = @_;
-
-  my $seq = $self->get_seq;
+  my ($self,$seq,$contig) = @_;
 
   if ($seq) {
 
-    my $contig =  $seq->id;
-    
-    my $seqstr = $seq->seq;
-    my $date   = `date '+%Y-%m-%d'`; chomp $date;
+    my $contig_id =  $seq->id;
+
+    my $clone     = $contig->{clone};
+
+    if (!$clone) {
+      $clone = $contig_id;
+      $clone =~ s/^(.*)\..*/$1/;
+    }
+
+    my $mapbin    = $contig->{mapbin};
+
+    my $seqstr    = $seq->seq;
+    my $length    = length($seqstr);
+
+    my $date      = `date '+%Y-%m-%d'`; chomp $date;
     my @str; 
-    push(@str, "insert into dna(contig,sequence,created) values('$contig','$seqstr','$date')");
-    push(@str, "replace into contig(id,dna) values('$contig',LAST_INSERT_ID())");
-    
-    return ($contig,@str);
+
+    push(@str, "insert into dna(contig,sequence,created) values('$contig_id','$seqstr','$date')");
+    push(@str, "replace into contig(id,dna,length,clone,mapbin) values('$contig_id',LAST_INSERT_ID(),$length,'$clone','$mapbin')");
+
+    return (@str);
   } else {
     return;
   }
@@ -257,19 +268,24 @@ sub insert {
 sub insert_next {
   my ($self,$dbh) = @_;
 
-  my ($contig,@sql) = $self->sql_next;
+  my $seq    = $self->get_seq;
 
-  if (!$self->locked) {
-    $self->lock($dbh);
-  }
-
-  if ($#sql >= 0) {
-    my $rv = 0;
-    foreach my $line (@sql) {
-      my $sth = $dbh->prepare($line);
-         $rv  = $sth->execute;
+  if ($seq) {
+    my $contig = $self->get_contig($dbh,$seq->id);
+    my (@sql)  = $self->sql_next  ($seq,$contig);
+    
+    if (!$self->locked) {
+      $self->lock($dbh);
     }
-    return $contig if $rv;
+    
+    if ($#sql >= 0) {
+      my $rv = 0;
+      foreach my $line (@sql) {
+	my $sth = $dbh->prepare($line);
+  	   $rv  = $sth->execute;
+      }
+      return $seq->id if $rv;
+    }
   }
 }
 
@@ -289,7 +305,6 @@ sub locked {
   if (!defined($self->{_LOCKED})) {
      $self->{_LOCKED} = 0;
   }
-  print("Tables are " . $self->{_LOCKED} . "\n");
   return $self->{_LOCKED};
 
 }
@@ -335,7 +350,37 @@ sub unlock {
   my $rv  = $sth->execute;
 
   return $rv;
+}                     
+
+
+=head2  get_contig
+
+  Title   : get_contig
+  Usage   : $dna->get_contig($dbh,$id);
+  Function: Gets contig
+  Returns : hashref
+  Args    : $dbh = DBI->connect('DBI:mysql:pog','root','') , String
+                                                           
+=cut                                                       
+    
+sub get_contig {
+  my ($self,$dbh,$id) = @_;
+                       
+  my $sth = $dbh->prepare('select * from contig where id=\'$id\'');
+  my $rv  = $sth->execute;
+
+  my $contig = {};
+
+  while(my $rowhash = $sth->fetchrow_hashref) {
+    $contig->{id}     = $rowhash->{id};
+    $contig->{clone}  = $rowhash->{clone};
+    $contig->{mapbin} = $rowhash->{mapbin};
+    $contig->{length} = $rowhash->{length};
+    $contig->{dna}    = $rowhash->{dna};
+  }
+  return $contig;
 }                         
+    
    
 
 
