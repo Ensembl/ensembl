@@ -145,39 +145,21 @@ sub get_RawContig_by_position {
 
 =head2 htg_phase
 
-  Arg [1]    : string $htg_phase
-               0,1,2,3 representing how finished the clone is
-  Example    : none
-  Description: get/set for attribute htg_phase
-               ( high throughput genome project phase ) 
-  Returntype : string
-  Exceptions : none
-  Caller     : general
+  Description: DEPRECATED - use $slice->get_attribute('htg_phase') instead
 
 =cut
 
 sub htg_phase {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'htg_phase'} = $value;
-    }
-    return $obj->{'htg_phase'};
+   my $self = shift;
+   my ($htg_phase) = $self->get_attribute('htg_phase');
+   return $htg_phase;
 }
 
 
 
 =head2 created
 
-  Arg [1]    : string $created
-  Example    : none
-  Description: get/set for attribute created.
-               Gives the unix time value of the created 
-               datetime field, which indicates
-               the first time this clone was put in ensembl
-  Returntype : string
-  Exceptions : none
-  Caller     : general
+  Description: DEPRECATED - Created information no longer stored
 
 =cut
 
@@ -194,15 +176,7 @@ sub created {
 
 =head2 modified
 
-  Arg [1]    : string $modified
-  Example    : none
-  Description: get/set for attribute modified
-               Gives the unix time value of the modified 
-               datetime field, which indicates
-               the last time this clone was modified in ensembl
-  Returntype : string
-  Exceptions : none
-  Caller     : general
+  Description: DEPRECATE - Modified information no longer stored
 
 =cut
 
@@ -219,94 +193,56 @@ sub modified {
 
 =head2 version
 
-  Arg [1]    : string $version
-  Example    : none
-  Description: get/set for attribute version
-               this could contain an ensembl version for the clone.
-               Usually we just use the EMBL one though. EnsEMBL version
-               are currently not generated or maintained for clones.
-  Returntype : string
-  Exceptions : none
-  Caller     : general
+  Description: DEPRECATED - use Slice::seq_region_name
 
 =cut
 
-sub version{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'version'} = $value;
-    }
-    return $obj->{'version'};
-
-}
+sub version{ embl_version(@_) }
 
 
 
 =head2 embl_version
 
-  Arg [1]    : string $embl_version
-  Example    : none
-  Description: get/set for attribute embl_version
-  Returntype : string
-  Exceptions : none
-  Caller     : general
+  Description: DEPRECATED - use Slice::seq_region_name
 
 =cut
 
 sub embl_version {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'embl_version'} = $value;
-    }
-    return $obj->{'embl_version'};
+  my $self = shift;
+  my $acc_ver = $self->seq_region_name();
+
+  #strip version off end of accession
+  my $ver;
+  (undef, $ver) = split(/\./, $acc_ver);
+  return $ver;
 }
 
 
 
 =head2 embl_id
 
-  Arg [1]    : string $embl_id
-  Example    : none
-  Description: get/set for attribute embl_id
-  Returntype : string
-  Exceptions : none
-  Caller     : general
+  description: DEPRECATED - use Slice::seq_region_name
 
 =cut
 
 sub embl_id {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'embl_id'} = $value;
-    }
-    return $obj->{'embl_id'};
+  my $self = shift;
+  my $acc = $self->seq_region_name();
 
+  #strip off version
+  ($acc) = split(/\./, $acc);
+  return $acc;
 }
 
 
 
 =head2 id
 
-  Args       : string $value (optional)
-               The new name of this clone
-  Example    : $name = $clone->id();
-  Description: The name of hte clone.
-  Returntype : string
-  Exceptions : none
-  Caller     : general
+Description: DEPRECATED - use Slice::seq_region_name
 
 =cut
 
-sub id {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_clone_id'} = $value;
-    }
-    return $obj->{'_clone_id'};
-
-}
+sub id { embl_id(@_);}
 
 
 
