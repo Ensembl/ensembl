@@ -779,7 +779,6 @@ sub _get_aligned_evidence_for_transcript {
   my $per_hid_effective_scores_hash_ref =
     $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
-  my $translation = $transcript_obj->translate->seq;
   my $nucseq_str = $self->_get_transcript_nuc(\@all_exons);
   my $cdna_len_bp = length $nucseq_str;
 
@@ -837,16 +836,33 @@ sub _get_aligned_evidence_for_transcript {
   }
   $total_5prime_utr_len += $fiveprime_utr_in_first_exon;
 
-  # translation itself forms our first row of 'evidence'
-  my $evidence_line = $translation;
-  $evidence_line = $self->_pad_pep_str($evidence_line);
-  # get 3' UTR length and adjust evidence line for 5' and 3' UTRs
-  $evidence_line = ('-' x $total_5prime_utr_len) . $evidence_line;
-  my $total_3prime_utr_len = $cdna_len_bp - length($evidence_line);
+  # get 3' UTR length
+  my $total_3prime_utr_len =   $cdna_len_bp
+                             - length($transcript_obj->translate->seq) * 3
+			     - $total_5prime_utr_len;
   if ($total_3prime_utr_len < 0) {
     $total_3prime_utr_len = 0;	# disaster recovery
   }
+
+  # get translation, avoiding transcript's translate method due to rare problem
+  my $seq_to_translate = substr $nucseq_str, $total_5prime_utr_len;
+  my $cdna_obj = Bio::PrimarySeq->new(
+                    -seq              => $seq_to_translate,
+                    -id               => 0,
+                    -accession_number => $transcript_obj->stable_id,
+		    -moltype          => 'dna'
+		  );
+  my $translation_including_3prime_utr = $cdna_obj->translate->seq;
+  
+  # translation itself forms our first row of 'evidence'
+  my $evidence_line = $translation_including_3prime_utr;
+  $evidence_line = $self->_pad_pep_str($evidence_line);
+  # adjust evidence line for UTRs
+  $evidence_line = ('-' x $total_5prime_utr_len) . $evidence_line;
+  $evidence_line = substr $evidence_line, 0,   $cdna_len_bp
+                                             - $total_3prime_utr_len;
   $evidence_line .= '-' x $total_3prime_utr_len;
+  # store
   $evidence_obj = Bio::PrimarySeq->new(
                     -seq              => $evidence_line,
                     -id               => 0,
