@@ -34,14 +34,15 @@ sub run {
   my $source_id = shift;
   my $species_id = shift;
 
-  if (!defined($source_id) or $source_id < 1) {
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename(basename($file));
-  }
+  my $peptide_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_peptide');
+  my $dna_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_dna');
+  print "RefSeq_peptide source ID = $peptide_source_id; RefSeq_dna source ID = $dna_source_id\n";
+
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
-  XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($source_id, $file, $species_id));
+  XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($peptide_source_id, $dna_source_id, $file, $species_id));
 
 }
 
@@ -54,7 +55,7 @@ sub run {
 
 sub create_xrefs {
 
-  my ($source_id, $file, $species_id) = @_;
+  my ($peptide_source_id, $dna_source_id, $file, $species_id) = @_;
 
   my %name2species_id = XrefParser::BaseParser->name2species_id();
 
@@ -83,12 +84,14 @@ sub create_xrefs {
       ($mrna, $description, $species) = $description =~ /(\S*)\s+(.*)\s+\[(.*)\]$/;
       $xref->{SEQUENCE_TYPE} = 'peptide';
       $xref->{STATUS} = 'experimental';
+      $xref->{SOURCE_ID} = $peptide_source_id;
 
     } elsif ($file =~ /\.fna$/) {
 
       ($species, $description) = $description =~ /\s*(\w+\s+\w+)\s+(.*)$/;
       $xref->{SEQUENCE_TYPE} = 'dna';
       $xref->{STATUS} = 'experimental';
+      $xref->{SOURCE_ID} = $dna_source_id;
 
     }
 
@@ -105,7 +108,6 @@ sub create_xrefs {
       $xref->{VERSION} = $ver;
       $xref->{LABEL} = $acc;
       $xref->{DESCRIPTION} = $description;
-      $xref->{SOURCE_ID} = $source_id;
       $xref->{SEQUENCE} = $sequence;
       $xref->{SPECIES_ID} = $species_id;
 
