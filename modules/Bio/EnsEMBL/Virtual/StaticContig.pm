@@ -450,7 +450,8 @@ sub get_all_unigene_features {
 		        FROM   unigene_feature f, static_golden_path sgp
                         WHERE  sgp.raw_id = f.contig
                         AND    f.contig in $idlist
-		        AND    sgp.chr_name = '$chr_name' 
+		        AND    sgp.chr_name = '$chr_name'
+                        AND    f.score > 300
                         ORDER  by start";
     
     my  $sth = $self->dbobj->prepare($statement);    
