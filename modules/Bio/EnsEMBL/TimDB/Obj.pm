@@ -173,7 +173,7 @@ sub _initialize {
 
   # need a full list if $raclones not set,
   # but also need to check clones in list provided to see if they are valid
-  my @clones=$self->get_all_Clone_id();
+  my @clones=$self->get_all_Clone_id(1);
   if(!$raclones){
       $raclones=\@clones;
   }else{
