@@ -95,6 +95,7 @@ open (PARSE,"$parse") || die("Could not open $parse for gtf reading$!");
 my @gtf_genes=$gtfh->parse_file(\*PARSE);
 my $g_n=scalar @gtf_genes;
 print STDERR "Got $g_n genes from file $parse\n";
+
 if ($print) {
     $gtfh->print_genes;
 }
@@ -266,6 +267,7 @@ else {
         
     my $db =  Bio::EnsEMBL::DBLoader->new($locator);
     my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
+
     foreach my $gene (@gtf_genes) {
 	print STDERR "Gene id: ".$gene->id."\n";
 	my @exons=$gene->each_unique_Exon;
@@ -277,9 +279,17 @@ else {
 	foreach my $exon ($gene->each_unique_Exon) {
 	    $exon->contig_id($vc->id);
 	}
-	my $newgene = $vc->convert_Gene_to_raw_contig($gene);
-	print STDERR "Writing gene ".$gene->id."\n";
-	$gene_obj->write($newgene);
+        my $newgene;
+        eval {
+             $newgene = $vc->convert_Gene_to_raw_contig($gene);
+        };
+        if ($@) {
+            print "cannot convert gene: ".$gene->id
+              . " to raw contig:\n$@\nignored\n";
+        } else {
+            print STDERR "Writing gene ".$gene->id."\n";
+            $gene_obj->write($newgene);
+        }
     }
 }
 
