@@ -410,3 +410,20 @@ CREATE TABLE symmetric_contig_feature (
   KEY(symchid)
 );
 
+#
+# Table structure for table 'protein_feature'
+#
+
+CREATE TABLE protein_feature (
+  id            int(10) unsigned NOT NULL auto_increment,
+  seq_start     int(10) NOT NULL,
+  seq_end       int(10) NOT NULL,
+  score         double(16,4) NOT NULL,
+  analysis      int(10) unsigned NOT NULL,
+  translation   varchar(40) NOT NULL,
+  hstart        int(10) NOT NULL,
+  hend          int(10) NOT NULL,
+  hid           varchar(40) NOT NULL,
+
+  PRIMARY KEY   (id)
+);
