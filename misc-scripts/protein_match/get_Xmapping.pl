@@ -535,15 +535,16 @@ sub process_parsed_sp{
     my $db;
     $ac =~ s/\;//;
     my @lines = @{$swiss{$entry}};
-    #print STDERR "Entry ".$entry." has ".@lines." lines ".$ac.":".$id."\n";
+#    print STDERR "Entry ".$entry." has ".@lines." lines ".$ac.":".$id."\n";
   SP_ENTRY:foreach my $line(@lines){
+
       if(!$line){
 	next SP_ENTRY;
       } 
       if($line =~ /^ID/){
 	#print STDERR $line."\n";
 	my @values = split /\s+/, $line;
-	#print STDERR "have ".@values." values\n";
+#	print STDERR "have ".@values." values\n";
 	if($values[1] ne $id){
 	  push(@id_syns, $id);
 	}
@@ -561,7 +562,19 @@ sub process_parsed_sp{
 	    push(@ac_syns, $v);
 	  }
 	}
+    }
+      
+     
+      if($line =~ /^GN/){
+	  my @values = split /\s+/, $line;
+	  my $v = $values[1];
+	  $v =~ s/\.//;
+	  if (($v =~ /EBIG/) || ($v =~ /AGCG/) || ($v =~ /ENSANGG/)) {
+	      $tag = "Prediction-SPTREMBL";
+	  }
       }
+      
+
       if($line =~ /^DR/){
 	if($line =~ /EMBL/){
 	  #DR   EMBL; M96144; AAA28056.1; -. 
@@ -608,7 +621,9 @@ sub process_parsed_sp{
       $db = 'SWISSPROT';
     }elsif($tag =~ /PRELIMINARY/){
       $db = 'SPTREMBL';
-    }else{
+    }elsif ($tag =~ /Prediction-SPTREMBL/){
+	$db = 'prediction-SPTREMBL';
+    }else {
       die("can't deal with tag ".$tag."\n");
     }
     my $ac_syns = join(';',@ac_syns);
