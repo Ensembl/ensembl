@@ -54,9 +54,9 @@ use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::SeqIO;
 use Bio::EnsEMBL::Gene;
-use Bio::Root::RootI;
+use Bio::Root::Root;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::Root::Root);
 
 =head2 new
 
@@ -596,14 +596,7 @@ sub _get_aligned_features_for_contig {
     = $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
 
-  # hack to get a translateable object with Ensembl HEAD and Bioperl
-  # 0.7.2
-  my $nucseq_obj = Bio::PrimarySeq->new(
-                     -seq              => $contig_obj->seq,
-                     -id               => 0,
-	             -accession_number => $contig_obj->name,
-	             -moltype          => 'dna'
-                   );
+  my $nucseq_obj = $contig_obj;
 
   if ($strand < 0) {
     $nucseq_obj = $nucseq_obj->revcom;
@@ -636,7 +629,7 @@ sub _get_aligned_features_for_contig {
                       -seq              => $evidence_line,
                       -id               => 0,
                       -accession_number => $contig_obj->name,
-                      -moltype          => 'protein'
+                      -alphabet         => 'protein'
 		    );
     push @evidence_arr, $evidence_obj;
   }
@@ -657,7 +650,7 @@ sub _get_aligned_features_for_contig {
       next PEP_FEATURE_LOOP;	# already warned in _get_hits()
     }
     next PEP_FEATURE_LOOP	# not an error, DNA and protein are mixed
-      unless ($hit_seq_obj->moltype eq 'protein');
+      unless ($hit_seq_obj->alphabet eq 'protein');
     my $hlen = $feature->hend - $feature->hstart + 1;
     my $flen = $feature->end - $feature->start + 1;
     if ($flen != 3 * $hlen) {
@@ -683,7 +676,7 @@ sub _get_aligned_features_for_contig {
     if ($hindent_bp < 0) {
       $hindent_bp = 0;	# disaster recovery
     }
-    my %hit_details = ( 'moltype'  => $hit_seq_obj->moltype,
+    my %hit_details = ( 'alphabet' => $hit_seq_obj->alphabet,
                         'hseqname' => $feature->hseqname,
                         'hseq'     => $hseq,
                         'hindent'  => $hindent_bp,
@@ -717,7 +710,7 @@ sub _get_aligned_features_for_contig {
                       -seq              => $evidence_line,
                       -id               => 0,
                       -accession_number => $$hit{hseqname},
-		      -moltype          => $$hit{moltype}
+		      -alphabet         => $$hit{alphabet}
 	              );
       push @tmp_pep_evidence_arr, $evidence_obj;
     }
@@ -736,7 +729,7 @@ sub _get_aligned_features_for_contig {
                     -seq              => $nucseq_str,
                     -id               => 0,
      		    -accession_number => $contig_obj->name,
-		    -moltype          => 'dna'
+		    -alphabet         => 'dna'
 		  );
   push @evidence_arr, $evidence_obj;
 
@@ -754,7 +747,7 @@ sub _get_aligned_features_for_contig {
       next NUC_FEATURE_LOOP;	# already warned in _get_hits()
     }
     next NUC_FEATURE_LOOP	# not an error, DNA and protein are mixed
-      unless ($hit_seq_obj->moltype ne 'protein');
+      unless ($hit_seq_obj->alphabet ne 'protein');
     my $hlen = $feature->hend - $feature->hstart + 1;
     my $flen = $feature->end - $feature->start + 1;
     if ($hlen != $flen) {
@@ -776,7 +769,7 @@ sub _get_aligned_features_for_contig {
                                           -seq => $hseq,
                                           -id => 'fake_id',
                                           -accession_number => '0',
-                                          -moltype => $hit_seq_obj->moltype
+                                          -alphabet => $hit_seq_obj->alphabet
                                          );
       $hseq = $hseq_obj_tmp->revcom->seq;
     }
@@ -789,7 +782,7 @@ sub _get_aligned_features_for_contig {
     if ($hindent_bp < 0) {
       $hindent_bp = 0;	# disaster recovery
     }
-    my %hit_details = ( 'moltype'     => $hit_seq_obj->moltype,
+    my %hit_details = ( 'alphabet'    => $hit_seq_obj->alphabet,
                         'hseqname'    => $feature->hseqname,
                         'hseq'        => $hseq,
 		        'hindent'     => $hindent_bp,
@@ -824,7 +817,7 @@ sub _get_aligned_features_for_contig {
                       -seq              => $evidence_line,
                       -id               => 0,
   		      -accession_number => $$hit{hseqname},
-		      -moltype          => $$hit{moltype}
+		      -alphabet         => $$hit{alphabet}
 		    );
       push @tmp_nuc_evidence_arr, $evidence_obj;
     }
@@ -964,7 +957,7 @@ sub _get_aligned_evidence_for_transcript {
                     -seq              => $seq_to_translate,
                     -id               => 0,
                     -accession_number => $transcript_obj->stable_id,
-		    -moltype          => 'dna'
+		    -alphabet         => 'dna'
 		  );
   my $translation_including_3prime_utr = $cdna_obj->translate->seq;
   
@@ -981,7 +974,7 @@ sub _get_aligned_evidence_for_transcript {
                     -seq              => $evidence_line,
                     -id               => 0,
                     -accession_number => $transcript_obj->stable_id,
-		    -moltype          => 'protein'
+		    -alphabet         => 'protein'
 		  );
   push @evidence_arr, $evidence_obj;
 
@@ -999,7 +992,7 @@ sub _get_aligned_evidence_for_transcript {
         next PEP_FEATURE_LOOP;	# already warned in _get_hits()
       }
       next PEP_FEATURE_LOOP	# not an error, DNA and protein are mixed
-        unless ($hit_seq_obj->moltype eq 'protein');
+        unless ($hit_seq_obj->alphabet eq 'protein');
       my $hlen = $feature->hend - $feature->hstart + 1;
       my $flen = $feature->end - $feature->start + 1;
       if ($flen != 3 * $hlen) {
@@ -1045,7 +1038,7 @@ sub _get_aligned_evidence_for_transcript {
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
       }
-      my %hit_details = ( 'moltype'  => $hit_seq_obj->moltype,
+      my %hit_details = ( 'alphabet' => $hit_seq_obj->alphabet,
                           'hseqname' => $feature->hseqname,
 			  'hseq'     => $hseq,
 			  'hindent'  => $hindent_bp,
@@ -1085,7 +1078,7 @@ sub _get_aligned_evidence_for_transcript {
                       -seq              => $evidence_line,
                       -id               => 0,
   		      -accession_number => $$hit{hseqname},
-		      -moltype          => $$hit{moltype}
+		      -alphabet         => $$hit{alphabet}
 		    );
       push @tmp_pep_evidence_arr, $evidence_obj;
     }
@@ -1104,7 +1097,7 @@ sub _get_aligned_evidence_for_transcript {
                     -seq              => $nucseq_str,
                     -id               => 0,
      		    -accession_number => $transcript_obj->stable_id,
-		    -moltype          => 'dna'
+		    -alphabet         => 'dna'
 		  );
   push @evidence_arr, $evidence_obj;
 
@@ -1121,7 +1114,7 @@ sub _get_aligned_evidence_for_transcript {
 	next NUC_FEATURE_LOOP;	# already warned in _get_hits()
       }
       next NUC_FEATURE_LOOP	# not an error, DNA and protein are mixed
-        unless ($hit_seq_obj->moltype ne 'protein');
+        unless ($hit_seq_obj->alphabet ne 'protein');
       my $hlen = $feature->hend - $feature->hstart + 1;
       my $flen = $feature->end - $feature->start + 1;
       if ($hlen != $flen) {
@@ -1165,7 +1158,7 @@ sub _get_aligned_evidence_for_transcript {
 	                                    -seq => $hseq,
                                             -id => 'fake_id',
                                             -accession_number => '0',
-                                            -moltype => $hit_seq_obj->moltype
+                                            -alphabet => $hit_seq_obj->alphabet
                                            );
         $hseq = $hseq_obj_tmp->revcom->seq;
       }
@@ -1178,7 +1171,7 @@ sub _get_aligned_evidence_for_transcript {
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
       }
-      my %hit_details = ( 'moltype'     => $hit_seq_obj->moltype,
+      my %hit_details = ( 'alphabet'    => $hit_seq_obj->alphabet,
                           'hseqname'    => $feature->hseqname,
 			  'hseq'        => $hseq,
 			  'hindent'     => $hindent_bp,
@@ -1217,7 +1210,7 @@ sub _get_aligned_evidence_for_transcript {
                       -seq              => $evidence_line,
                       -id               => 0,
   		      -accession_number => $$hit{hseqname},
-		      -moltype          => $$hit{moltype}
+		      -alphabet         => $$hit{alphabet}
 		    );
       push @tmp_nuc_evidence_arr, $evidence_obj;
     }
@@ -1247,7 +1240,7 @@ sub _get_aligned_evidence_for_transcript {
     my $prot_lines = 0;
     my $nuc_lines = 0;
     foreach my $evidence_line (@filtered_evidence_arr) {
-      if ($evidence_line->moltype eq 'protein') {
+      if ($evidence_line->alphabet eq 'protein') {
         $prot_lines++;
       } else {
         $nuc_lines++;
