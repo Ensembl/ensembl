@@ -20,13 +20,14 @@ my %taxonomy2species_id;
 my %name2species_id;
 
 my ($host, $port, $dbname, $user, $pass);
+my $skipdownload;
 
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
 
 sub run {
 
-  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr) = @_;
+  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload) = @_;
 
   my @species = @$speciesr;
   my @sources = @$sourcesr;
@@ -41,7 +42,6 @@ sub run {
 
   # build SQL
   my $species_sql = "";
-  # pending Ian adding species_id to source_url
   if (@species_ids) {
     $species_sql .= " AND su.species_id IN (";
     for (my $i = 0; $i < @species_ids; $i++ ) {
@@ -77,26 +77,31 @@ sub run {
   my $dir;
   while (my @row = $sth->fetchrow_array()) {
 
+
     # Download each source into the appropriate directory for parsing later
     # Also delete previous working directory if we're starting a new source type
-    my $type = $name;
-
-    $dir = $base_dir . "/" . $type;
-    rmtree $dir if ($type ne $last_type);
-    $last_type = $type;
-    mkdir $dir if (!-e $dir);
 
     my ($file) = $url =~ /.*\/(.*)/;
+    my $type = $name;
+    $dir = $base_dir . "/" . $type;
+    $last_type = $type;
 
-    print "Downloading $url to $dir/$file\n";
-    my $result = system("wget", "--quiet","--directory-prefix=$dir", $url);
+    if (!$skipdownload) {
 
-    # if the file is compressed, the FTP server may or may not have automatically uncompressed it
-    # TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
-    if ($file =~ /(.*)\.gz$/) {
-      print "Uncompressing $dir/$file\n";
-      system("gunzip", "$dir/$file");
-      $file = $1;
+      rmtree $dir if ($type ne $last_type);
+      mkdir $dir if (!-e $dir);
+
+      print "Downloading $url to $dir/$file\n";
+      my $result = system("wget", "--quiet","--directory-prefix=$dir", $url);
+
+      # if the file is compressed, the FTP server may or may not have automatically uncompressed it
+      # TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
+      if ($file =~ /(.*)\.gz$/) {
+	print "Uncompressing $dir/$file\n";
+	system("gunzip", "$dir/$file");
+	$file = $1;
+      }
+
     }
 
     # compare checksums and parse/upload if necessary
@@ -108,7 +113,6 @@ sub run {
 
 	print "Checksum for $file does not match, parsing\n";
 
-
 	# Files from sources "UniProtSwissProt" and "UniProtSpTREMBL" are
 	# all parsed with the same parser
 	$parser = 'UniProtParser' if ($parser =~ /UniProt/i);
@@ -118,7 +122,7 @@ sub run {
 	my $new = "XrefParser::$parser"->new();
 	$new->run("$dir/$file", $source_id, $species_id);
 
-	# update AFTER processing incase of crash.
+	# update AFTER processing in case of crash.
 	update_source($dbi, $source_url_id, $file_cs, $file);
 
       } else {
