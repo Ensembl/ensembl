@@ -50,10 +50,51 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::MiscFeature;
 use Bio::EnsEMBL::MiscSet;
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
+
+
+
+=head2 fetch_all_by_Slice_and_set_code
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               A slice representing the region to fetch from
+  Arg [2]    : string $set_code
+               The code of the set to retrieve features from
+  Example    : @feats = @{$mfa->fetch_all_by_Slice_and_set_code('cloneset')};
+  Description: Retrieves a set of MiscFeatures which have a particular set code
+               and which lie in a particular region.  All features with the
+               provide set code and which overlap the given slice are returned.
+  Returntype : listref of Bio::EnsEMBL::MiscFeatures
+  Exceptions : throw if set_code is not provided
+               warning if no set for provided set code exists
+  Caller     : general
+
+=cut
+
+sub fetch_all_by_Slice_and_set_code {
+  my $self = shift;
+  my $slice = shift;
+  my $set_code = shift;
+
+  throw('Set code argument is required') if(!$set_code);
+
+  my $msa = $self->db->get_MiscSetAdaptor();
+  my $set = $msa->fetch_by_code($set_code);
+
+  if(!$set) {
+    warning("No misc_set with code [$set_code] exists.\n" .
+            "Returning empty list.");
+    return [];
+  }
+
+  my $constraint = " mfms.misc_set_id = " . $set->dbID();
+  return $self->fetch_all_by_Slice_constraint($slice, $constraint);
+}
+
 
 
 =head2 _tablename
@@ -220,7 +261,7 @@ sub _objs_from_sth {
     if($current == $misc_feature_id) {
       #still working on building up attributes and sets for current feature
 
-      #if there is a misc_set, add it
+      #if there is a misc_set, add it to the current feature
       if($misc_set_id) {
         my $misc_set = $ms_hash{$misc_set_id} ||=
           $msa->fetch_by_dbID($misc_set_id);
@@ -228,7 +269,7 @@ sub _objs_from_sth {
         $feat_misc_sets->{$misc_set->{'code'}} = $misc_set;
       }
 
-      #if there is a new attribute add it
+      #if there is a new attribute add it to the current feature
       if($attrib_value && $attrib_type_code &&
          !$seen_attribs->{"$attrib_type_code:$attrib_value"}) {
         $feat_attribs->{$attrib_type_code} ||= [];
@@ -238,14 +279,11 @@ sub _objs_from_sth {
 
     } else {
       if($feat) {
-        #bless the previous feature before starting new one
-        push @features, Bio::EnsEMBL::MiscFeature->new_fast($feat);
-
-        #and clear associated hashes
-        $feat = ();
-        $feat_attribs = ();
-        $feat_misc_sets = ();
-        $seen_attribs = ();
+        #start working on a new feature, discard references to last one
+        $feat = {};
+        $feat_attribs = {};
+        $feat_misc_sets = {};
+        $seen_attribs = {};
       }
 
       $current = $misc_feature_id;
@@ -323,22 +361,17 @@ sub _objs_from_sth {
         $seen_attribs->{"$attrib_type_code:$attrib_value"} = 1;
       }
 
-      # just create a hash representing this feature.
-      # bless only once all of its attributes are filled to save method calls
-      $feat = {'start'   => $seq_region_start,
-               'end'     => $seq_region_end,
-               'strand'  => $seq_region_strand,
-               'slice'   => $slice,
-               'adaptor' => $self,
-               'dbID'    => $misc_feature_id,
-               'attributes' => $feat_attribs,
-               'sets'    => $feat_misc_sets};
+      $feat =  Bio::EnsEMBL::MiscFeature->new_fast
+        ({'start'   => $seq_region_start,
+          'end'     => $seq_region_end,
+          'strand'  => $seq_region_strand,
+          'slice'   => $slice,
+          'adaptor' => $self,
+          'dbID'    => $misc_feature_id,
+          'attributes' => $feat_attribs,
+          'sets'    => $feat_misc_sets});
+      push @features, $feat;
     }
-  }
-
-  if($feat) {
-    #do not forget to bless the last feature
-    push @features, Bio::EnsEMBL::MiscFeature->new_fast($feat);
   }
 
   return \@features;
