@@ -1025,6 +1025,63 @@ sub get_display_xref_id {
 
 
 
+=head2 update
+
+  Arg [1]    : Bio::EnsEMBL::Gene
+  Example    : $gene_adaptor->update($gene);
+  Description: Updates  a gene in the database
+  Returntype : None
+  Exceptions : thrown if the $gene is not a Bio::EnsEMBL::Gene
+               warn if trying to update the number of attached transcripts.  This
+               is a far more complex process and is not yet implemented.
+               warn if the method is called on a gene that does not exist in the
+               database.
+  Caller     : general
+
+=cut
+
+sub update {
+   my ($self,$gene) = @_;
+   my $update = 0;
+
+   if( !defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
+       $self->throw("Must update a gene object, not a $gene");
+   }
+
+   my $sth = $self->prepare("SELECT type, analysis_id, transcript_count, display_xref_id 
+                             FROM   gene 
+                             WHERE  gene_id = ?
+                           ");
+
+   $sth->execute($gene->dbID);
+
+   if ( my ($type, $analysis, $transcripts, $dxref_id) = $sth->fetchrow_array() ){
+
+     if ( $dxref_id != $gene->display_xref ) { $update = 1; }
+     elsif ( $type ne $gene->type ) { $update = 1; }
+     elsif ( $analysis != $gene->analysis->dbID ) { $update = 1; }
+     elsif ( $transcripts != scalar(@{$gene->get_all_Transcripts})) {
+       $self->warn("Trying to update the number of transcripts on a stored gene. Not yet implemented.");
+     }
+
+     if ( $update ) {
+
+       $sth = $self->prepare("UPDATE gene
+                              SET    type = '$type',
+                                     analysis_id = $analysis,
+                                     display_xref_id = $dxref_id
+                              WHERE  gene_id = ?
+                            ");
+
+       $sth->execute($gene->dbID);
+     }
+   }
+   else {
+     $self->warn("Trying to update a gene that is not in the database.  Try store\'ing first.");
+   }
+}
+
+
 1;
 __END__
 
