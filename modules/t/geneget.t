@@ -46,7 +46,7 @@ print "ok 2\n";
 $gene_obj = $db->gene_Obj();
 
 eval {
-    $gene = $gene_obj->get('gene-id-1');
+    $gene = $gene_obj->get('ENSG1');
 };
 
 if ($@) {
@@ -67,8 +67,10 @@ if( !defined $dbl || $dbl->database ne 'swissprot' ) {
   print "ok 4\n";
 }
 
-@trans = $gene->each_Transcript();
-$trans = shift @trans;
+print STDERR $gene->is_known,"\n";
+
+#@trans = $gene->each_Transcript();
+#$trans = shift @trans;
 
 
 
