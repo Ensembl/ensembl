@@ -36,6 +36,7 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::StickyExon;
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
