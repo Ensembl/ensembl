@@ -48,10 +48,11 @@ use strict;
 use Bio::SeqFeature::Generic;
 use Bio::SeqFeature::Homol;
 
+use Bio::Tools::HMMER::Results;
+
 use Bio::EnsEMBL::Analysis::GenscanPeptide;
 use Bio::EnsEMBL::Analysis::MSPcrunch;
-
-use Bio::Tools::HMMER::Results;
+use Bio::EnsEMBL::Analysis::Repeat;
 
 use FileHandle;
 
@@ -109,18 +110,6 @@ sub _initialize {
     #        3. We're only reading repeats at the moment.
 
     $self->read_Genscan($gs);
-    $self->read_Repeats($clone_dir,$disk_id,$msptype->[6]);
-
-    my $count = 0;
-    foreach my $g ($gs->each_Transcript) {
-	$count++;
-	my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
-	print_gene_details($g,$count) if $self->_debug;
-
-	$self->read_Pfam   ($genpep,$clone_dir,$disk_id,$count,$msptype->[5]);
-    }
-
-    return $self;
 
     # loop over transcripts
     my $count = 1;
@@ -131,24 +120,19 @@ sub _initialize {
     
 	foreach my $msp (@$msptype) {
       
-	    my $mspfile        = "$clone_dir/$disk_id.$count".$$msp[4];
+	    my $mspfile        = "$clone_dir/$disk_id.$count".$msp->[4];
 	    my $pid            = "$id.$count";
-	    my @homols;
 
 	    if ($msp->[5]     eq 'msp'){
-		@homols        = $self->_read_MSP($mspfile,$genpep,$msp);
+		$self->read_MSP($mspfile,$genpep,$msp);
 	    } elsif ($msp->[5] eq 'pfam'){
-		@homols        = $self->_read_pfam($mspfile,$genpep,$msp);
+		$self->read_Pfam($genpep,$clone_dir,$disk_id,$count,$msp);
+	    } elsif ($msp->[5] eq 'gff'){
+		$self->read_Repeats($clone_dir,$disk_id,$msptype->[6]);
 	    } else {
 		$self->throw("no parser for $$msp[5] defined");
 	    }
-
 	    
-	    foreach my $f (@homols) {
-		$self->add_Feature($f);
-	    }
-	    
-
 	}
 
 	$count++;    
@@ -177,9 +161,23 @@ sub read_Repeats {
     } else {
 	print("   - Reading RepeatMasker file $gfffile\n");
     }
+
     my $GFF        = new Bio::EnsEMBL::Analysis::GFF(-file => $gfffile);
 	    
     foreach my $f ($GFF->each_Feature) {
+	my $repeat = new Bio::EnsEMBL::Analysis::Repeat(-start  => $f->start,
+							-end    => $f->end,
+							-strand => $f->strand,
+							-score  => $f->score,
+							-source => $f->source_tag,
+							-primary=> $f->primary_tag);
+	$repeat->seqname($f->seqname);
+
+#	my $h = $f->homol_SeqFeature;
+
+	
+#	$repeat->homol_SeqFeature;
+	
 	$self->add_Feature($f);
     }
 }
@@ -209,27 +207,11 @@ sub read_Pfam {
 	$dom->primary_tag('similarity');
 	$dom->strand    (1);
 
-#	print("DEBUG: Pfam domain homol1 " . $dom->seqname . "\t:" . 
-#	      $dom->start       . "\t:" .
-#	      $dom->end         . "\t:" .
-#	      $dom->source_tag  . "\t:" . 
-#	      $dom->primary_tag . "\t:" . 
-#	      $dom->score       . "\t:" . 
-#	      $dom->strand      . "\n");
-
 	my $dom2 = $dom->homol_SeqFeature;
 
 	$dom2->source_tag('hmmpfam');
 	$dom2->primary_tag('similarity');
 	$dom2->strand(1);
-
-#	print("DEBUG: Pfam domain homol2 " . $dom2->seqname . "\t:" . 
-#	      $dom2->start       . "\t:" .
-#	      $dom2->end         . "\t:" .
-#	      $dom2->source_tag  . "\t:" . 
-#	      $dom2->primary_tag . "\t:" . 
-#	      $dom2->score       . "\t:" . 
-#	      $dom2->strand      . "\n");
 
 	$genscan_peptide->add_pepHit($dom);
 
@@ -240,11 +222,6 @@ sub read_Pfam {
 	$self->add_Feature($h);
     }
 
-#	print("DEBUG : " . $h->seqname . " : " . $h->start . " : " . $h->end . " : " . $h->source_tag . " : " . $h->primary_tag . " : " . $h->score . "\n");	
-#	my $h2 = $h->homol_SeqFeature;
-#	print("DEBUG : " . $h2->seqname . " : " . $h2->start . " : " . $h2->end . " : " . $h2->source_tag . " : " . $h2->primary_tag . " : " . $h2->score . "\n");
-#    }
-    return @newh;
 }
 sub read_Genscan {
     my ($self,$genscan) = @_;
@@ -309,370 +286,51 @@ sub print_gene_details {
     print STDERR "\n";
 }
 
-sub map_coords {
-    my ($self,$gene,$homol,$start,$end,$realseq) = @_;
-  
-    my @homols;
-  
-    my $foundstart = 0;
-    my $foundend   = 0;
 
-    my @exons = $gene->each_Exon ; 
-    my $strand = $exons[0]->strand;
-    my $count = 0;
+sub read_MSP {
+
+    my($self,$mspfile, $genpep, $msp) = @_;
+
+    my $type = $msp->[6];
+
+    if (! -e $mspfile) {
+	print("   - MSPcrunch file $mspfile doesn't exist. Skipping\n");
+	return;
+    } else {
+	print("   - Reading MSPcrunch file $mspfile\n");
+    }
     
-    my ($starts,$ends) = $gene->pep_coords;
+    my $mspobj  = new Bio::EnsEMBL::Analysis::MSPcrunch(-file => $mspfile,
+							-type => $type,
+							-source_tag => $msp->[1]);
 
-    my $hoffset;
+    my ($type1,$type2) = $mspobj->get_types;
 
-    # We have the start and end points for the peptide on the DNA
-    # We now have to return exon sized chunks that make up
-    # the peptide homology
-
-    if ($strand == 1) {
-	foreach my $ex ($gene->each_Exon) {
-	    my $tmpstart;
-	    my $tmpend;
+    foreach my $homol ($mspobj->each_Homol) { 
+	if ($type1 eq "PEP") {
+	    if ($type2 eq "DNA") {
+		$genpep->add_dnaHit($homol);
+	    } elsif ($type2 eq "PEP") {
+		$genpep->add_pepHit($homol);
+	    } else {
+		print("      - unrecognised homol type $type2\n");
+	    }
+	} elsif ($type1 eq "DNA") {
+	    $self->add_Feature($homol);
 	    
-	    # look for start if not found
-	    if ($foundstart == 0 ) {
-		if ($start >= $ex->start && $start <= $ex->end) {
-		    $foundstart = 1;
-		    $tmpstart = $start;
-		}
-	    }
-	    
-	    # look for end if found start
-	    if (!$foundend && $foundstart) {
-	
-		# Adjust to be in the right frame
-		$tmpstart +=  (3 - ($start - $ex->phase - $ex->start)%3 ) % 3;
-	
-		$tmpend   = $ex->end;
-	
-		# Before making a new exon check we haven't also
-		# Got the end point in the same exon
-	
-		if ($end <= $ex->end) {
-		    $tmpend = $end;
-		    $foundend = 1;
-		}
-	
-		# Make sure the end coordinate is in the right frame.
-		$tmpend -= ($tmpend - $ex->phase - 2 - $ex->start)%3;
-	    }
-      
-	    if (defined($tmpstart) && defined($tmpend)) {
-	
-		# Find the peptide coord
-		my $pstart = int(($tmpstart - $ex->start - $ex->phase)/3 + $starts->[$count]);
-		my $pend   = int(($tmpend   - $ex->start - $ex->phase)/3 + $starts->[$count]);
-	
-		$hoffset = $pstart unless $hoffset;
-	
-		print STDERR "hoffset = $hoffset\n" if $self->_debug;
-		print STDERR "pstart $pstart : $start " . $ex->start . " " . $ex->phase . " " . 
-		    $starts->[$count] . " " . $ends->[$count] . "\n" if $self->_debug;
-	
-		my $h=Bio::SeqFeature::Homol->new(-start=>$tmpstart,
-						  -end=>$tmpend,
-						  -strand=>1,
-						  );
-		# hsf object contains matched sequence, title
-		my $homolsf=$homol->homol_SeqFeature;
-		my $hsf;
-		$hsf=Bio::SeqFeature::Generic->new(-start=>
-						   ($homolsf->start - $hoffset + $pstart),
-						   -end=>
-						   ($homolsf->end,  + $pend    - $pstart),
-						   -strand=>$homolsf->strand,
-						   );
-
-		# standard values (this time 'dna' not 'pep')
-		$h->add_tag_value('seqtype','dna');
-		$h->source_tag('ensembl');
-		$h->primary_tag('similarity');
-
-		# copy standard tags
-		$h->seqname($homol->seqname);
-		$h->score($homol->score);
-		$h->add_tag_value('percentid',
-				  join(',',
-				       $homol->each_tag_value('percentid')
-				       )
-				  );
-		$h->add_tag_value('sim_label',
-				  join(',',
-				       $homol->each_tag_value('sim_label')
-				       )
-				  );
-		$h->add_tag_value('method',
-				  join(',',
-				       $homol->each_tag_value('method')
-				       )
-				  );
-		$h->attach_seq($homol->entire_seq);
-
-		# copy standard tags
-		$hsf->add_tag_value('title',
-				    join(',',
-					 $homolsf->each_tag_value('title')
-					 )
-				    );
-		$hsf->add_tag_value('db',
-				    join(',',
-					 $homolsf->each_tag_value('db')
-					 )
-				    );
-		$hsf->add_tag_value('seqtype',
-				    join(',',
-					 $homolsf->each_tag_value('seqtype')
-					 )
-				    );
-
-		# link features
-		$h->homol_SeqFeature($hsf);
-
-		# add to array
-		push(@homols,$h);
-	
-	    }
-	    $count++;
-	}
-	return @homols;
-    } else {
-
-    foreach my $ex ($gene->each_Exon) {
-      my $tmpstart;
-      my $tmpend;
-      
-      if ($foundstart == 0 ) {
-	if ($end <=  $ex->end && $end >= $ex->start) {
-	  $foundstart = 1;
-	  $tmpstart   = $end;
-	  
-	}
-      }
-      
-      if (!$foundend && $foundstart) {
-	$tmpstart = $ex->end unless $tmpstart;
-	$tmpend   = $ex->start;
-	
-	# Adjust tmpstart to be in the right frame
-	$tmpstart -=  (3 - ($ex->end - $end - $ex->phase)%3 ) % 3;
-
-	# Before making a new exon check we haven't also
-	# Got the end point in the same exon
-      
-	if ($start >= $ex->start) {
-	  $tmpend = $start;
-	  $foundend = 1;
-	} elsif ($count < $#exons && $start >= $exons[$count+1]->end) {
-	  $tmpend = $ex->start;
-	  $foundend = 1;
-	}
-	# Make sure the end coordinate is in the right frame.
-	$tmpend += ($tmpend - $ex->phase - 2 - $ex->end)%3;
-      }
-      
-
-      if (defined($tmpstart) && defined($tmpend)) {
-#	print("Exon $count : " . $ex->start . "\t" . $ex->end . "\t" . $tmpstart . "\t" . $tmpend . "\n");
-	# Find the peptide coord
-
-	my $pstart = int(($ex->end - $tmpstart  - $ex->phase)/3 + $starts->[$count]);
-	my $pend   = int(($ex->end - $tmpend    - $ex->phase)/3 + $starts->[$count]);
-	
-	$hoffset = $pstart unless $hoffset;
-	
-#	print "hoffset = $hoffset\n";
-#	print("pstart $pstart : $tmpstart " . $ex->end . " " . $ex->phase . " " . $starts->[$count] . " " . $ends->[$count] . "\n");
-	
-	# Now make new homol and add to the array
-	my $h = Spangle::Homol->new();
-	
-	$h->id    ($homol->id);
-	$h->score ($homol->score);
-	
-	$h->start ($tmpend);
-	$h->end   ($tmpstart);
-	
-	$h->hend  ($homol->hstart - $hoffset + $pstart);
-	$h->hstart($h->hend     + $pend    - $pstart);
-	
-	$h->strand($homol->strand);
-	
-	push(@homols,$h);
-	
-      }
-      $count++;
-    }
-    return @homols;
-  }
-}
-
-sub map_homols {
-    my($self,$h,$g,$offset,$seq,$fh) = @_;
-
-    # The start and end coords we have in the homol objects
-    # are genscan peptide start and end points
-  
-    # First convert them using $offset into transcript peptide
-    # coordinates
-
-    my @exon   = $g->each_Exon;
-    my $strand = $exon[0]->strand;
-
-    my $wholeseq = $g->translate->seq;
-
-    $h->start ($h->start  - $offset);
-    $h->end   ($h->end    - $offset);
-    my $hsf=$h->homol_SeqFeature;
-  
-    # Adjust the strand
-    # (two strand: one for h object, one for hsf object)
-    if ($strand == -1) {
-	print STDERR "Strand is -1 " . $hsf->strand . "\n" if $self->_debug;
-	$h->strand($strand);
-	if($hsf->strand==1){
-	    $hsf->strand(-1);
-	}elsif($hsf->strand==-1){
-	    $hsf->strand(1);
+	}else {
+	    print("      - unrecognised query type $type1\n");
 	}
     }
-    print STDERR "New strand is " . $hsf->strand . "\n" if $self->_debug;
-
-    # Now we need to convert the 'true' peptide coords into 
-    # genomic dna coords.
-
-    my $startdna;
-    my $enddna;
-
-
-    print STDERR "Finding dna coords for ". $h->start . "\t" . $h->end . "\n"
-	if $self->_debug;
-    if ($strand == 1) {
-	$startdna = $g->find_coord($h->start,"start");
-	$enddna   = $g->find_coord($h->end,"end");
-    } else {
-	$enddna   = $g->find_coord($h->start,"start");
-	$startdna = $g->find_coord($h->end  ,"end");
-    }
-    print STDERR "Translating region $startdna $enddna\n"
-	if $self->_debug;
-
-    #my $wholetr = $g->translate_region($startdna,$enddna);
-    #for (my $i = 0; $i < 1; $i++) {
-	#print("Whole peptide is " . $wholetr->[$i]->seq . "\n");
-    #}
-    
-#  print("Real seq is      " . $realseq   . "\n");
-#  print("Real start end   " . $realstart . " " . $realend .  "\n");  
-
-    # Translate this match into a peptide for each exon
-    my @newh = $self->map_coords($g,$h,$startdna,$enddna,$seq);
-    return @newh;
-}
-
-
-sub _get_offset {
-    my ($self,$gs,$g,$count) = @_;
-
-    # translation of transcript (
-    my $pep    = $g->translate()->seq;
-    # peptide that was actually searched (genscan) [may be longer due to initial X]
-    my $peps   = $gs->{_peptides}[$count-1]->seq;
-    my $offset = index($peps,$pep);
-
-    # error if does not match
-    $self->throw("$pep not found in $peps") if $offset==-1;
-    
-#   print("PEP " . $peps . " " . (length($peps)) . "\n\n");
-  
-    return $offset;
-}  
-
-sub _read_MSP {
-
-    my($self,$mspfile, $genpep, $msp,$type) = @_;
-
-    
-    my $mspobj  = new Bio::EnsEMBL::Analysis::MSPcrunch($mspfile,$type);
-    print("Parsing $mspfile\n");
-    if ($msp->[3] eq "dna") {
-	foreach my $homol ($mspobj->each_Homol) { # Adds each hit to the GenscanPeptide object
-	    $genpep->add_dnaHit($homol);
-	}
-    } elsif ($msp->[3] eq "pep") {
-	$self->warn("Reading peptide hits not implemented yet in FeatureParser.pm");
-#	foreach my $homol ($mspobj->each_Homol) { # Adds each hit to the GenscanPeptide object
-#	    $genpep->add_pepHit($homol);
-#	}
-    } else {
-	$self->throw("Unrecognised feature type " . $msp->[3] . "\n");
-    }
-
 
     my @homols = $genpep->each_Homol;      # Converts the hits from peptide into genomic coordinates
 
-    return @homols;
-}
-
-sub _read_pfam {
-
-    my($self,$mspfile, $seq, $id, $msp) = @_;
-    my($sim_label,$method,$db,$seqtype,$ext)=@$msp;
-    my @homols;
-    return @homols;
-
-    open(MSP,$mspfile) || $self->throw("Couldn't open $mspfile");
-
-    while (defined(my $line = <MSP>)) {
-	unless ($line =~ /^\#/) {
-	    my ($score,$pid,$start,$end,$id,$hstart,$hend,$hid,$title) = split(' ',$line,9);
-
-	    # using Bioperl objects to represent homology
-	    # homol object contains feature on peptide, score, pid
-	    # and is attached to underlying sequence
-	    # strand is always 1 since sequence was peptide
-	    my $homol=Bio::SeqFeature::Homol->new(-start=>$start,
-						  -end=>$end,
-						  -strand=>1,
-						  );
-	    $homol->seqname($id);
-	    $homol->add_tag_value('seqtype','pep');
-
-	    $homol->source_tag('ensembl');
-	    $homol->primary_tag('similarity');
-	    $homol->score($score);
-	    $homol->add_tag_value('percentid',$pid);
-	    $homol->add_tag_value('sim_label',$sim_label);
-	    $homol->add_tag_value('method',$method);
-	    $homol->attach_seq($seq);
-
-	    # hsf object contains matched sequence, title
-	    my $hsf;
-	    if($hstart>$hend){
-		$hsf=Bio::SeqFeature::Generic->new(-start=>$hend,
-						   -end=>$hstart,
-						   -strand=>-1,
-						   );
-	    }else{
-		$hsf=Bio::SeqFeature::Generic->new(-start=>$hstart,
-						   -end=>$hend,
-						   -strand=>1,
-						   );
-	    }
-	    $hsf->add_tag_value('title',$title);
-	    $hsf->add_tag_value('db',$db);
-	    $hsf->add_tag_value('seqtype',$seqtype);
-	    $homol->homol_SeqFeature($hsf);
-	    
-	    push(@homols,$homol);
-	}
+    foreach my $h (@homols) {
+	$h->source_tag($mspobj->source_tag);
+	$self->add_Feature($h);
     }
-    return @homols;
 }
+
 
 sub print_genes {
     my ($gs,$seq) = @_;

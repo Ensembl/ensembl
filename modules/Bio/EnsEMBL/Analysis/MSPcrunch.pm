@@ -19,6 +19,7 @@ Bio::EnsEMBL::Analysis::MSPcrunch - reads and stores output from MSPcrunch
 
     my $msp    = new Bio::EnsEMBL::Analysis::MSPcrunch(-file => $myfile,
                                                        -type => $homol_type,
+						       -source_tag => $source,
 						       )
 
 Extracting data
@@ -72,11 +73,13 @@ sub _initialize {
   # Filename.
   # Type of msp file
 
-  my ($mspfile,$type) = $self->_rearrange([qw(FILE
-					      TYPE
-					      )],@args);
+  my ($mspfile,$type,$source_tag) = $self->_rearrange([qw(FILE
+							  TYPE
+							  SOURCE_TAG
+							  )],@args);
   $self->mspfile($mspfile);
   $self->type   ($type);
+  $self->source_tag($source_tag);
 
   # Stored data
   # -----------
@@ -200,8 +203,8 @@ sub _read_Homol {
     $sf2->primary_tag('similarity');
 
 
-    print("DEBUG : in MSPCrunch : " . $sf1->seqname . " " . $sf1->start . " " . $sf1->end . "\n");
-    print("DEBUG : in MSPCrunch : " . $sf2->seqname . " " . $sf2->start . " " . $sf2->end . "\n");
+#    print("DEBUG : in MSPCrunch : " . $sf1->seqname . " " . $sf1->start . " " . $sf1->end . "\n");
+#    print("DEBUG : in MSPCrunch : " . $sf2->seqname . " " . $sf2->start . " " . $sf2->end . "\n");
 
     $sf1->homol_SeqFeature($sf2);
 
@@ -268,6 +271,28 @@ sub mspfile {
     }
 
     return $self->{_mspfile};
+}
+
+
+=head2 source_tag
+
+  Title   : source_tag
+  Usage   : $self->source_tag
+  Function: Get/set method for the source_tag
+  Returns : String
+  Args    : String
+
+=cut
+
+sub source_tag {
+    my ($self,$arg) = @_;
+
+
+    if (defined($arg)) {
+	$self->{_source_tag} = $arg;
+    }
+
+    return $self->{_source_tag};
 }
 
 
@@ -391,7 +416,7 @@ sub swaphomols {
     $newh2->seqname    ($h2->seqname);
     $newh2->score      ($h2->score);
 
-    print("Setting seqnames to " . $newh1->seqname . "\t" . $newh2->seqname  . "\n");
+#    print("Setting seqnames to " . $newh1->seqname . "\t" . $newh2->seqname  . "\n");
     $newh2->homol_SeqFeature($newh1);
 
     return $newh2;

@@ -221,7 +221,7 @@ sub _find_coord {
        $exlen -= (4-$pep_startphase)%3;
     
     my $nopep = int($exlen/3);
-    $pep_endphase = $exlen%3 + 1;
+    my $pep_endphase = $exlen%3 + 1;
     
     $pepend    = $nopep + $pepstart -1;
     
@@ -509,7 +509,7 @@ sub _make_dna_homol {
 
 sub _dnaHit2homol {
     my ($self,$dnahit) = @_;
-    my $debug =1;
+    my $debug = 0;
 
     my $pepaln  = $self->{_pepaln};
     my $pairaln = new Bio::EnsEMBL::Analysis::PepAlign;
@@ -527,10 +527,10 @@ sub _dnaHit2homol {
     # so we swap these as well
    
 
-    print("in dnahit2 Homol is " . $dnahit->homol_SeqFeature->start . " " . 
-	  $dnahit->homol_SeqFeature->end . " " . 
-	  $dnahit->homol_SeqFeature->seqname . "\n");
-    print("in dnahit2 Pep   is " . $dnahit->start . " " . $dnahit->end . " " . $dnahit->seqname ."\n");
+#    print("in dnahit2 Homol is " . $dnahit->homol_SeqFeature->start . " " . 
+#	  $dnahit->homol_SeqFeature->end . " " . 
+#	  $dnahit->homol_SeqFeature->seqname . "\n");
+#    print("in dnahit2 Pep   is " . $dnahit->start . " " . $dnahit->end . " " . $dnahit->seqname ."\n");
 
     $dnahit = Bio::EnsEMBL::Analysis::MSPcrunch->swaphomols($dnahit);
     $pairaln->addHomol($dnahit);
@@ -610,7 +610,7 @@ sub _dnaHit2homol {
 	    if ($pep_homol->end <= $pep_exon->end) {
 		$pend     = $pep_homol->end;
 		if( $pep_homol->end == $pep_exon->end ) {
-		    $end_frac = $pep_exon->end;
+		    $end_frac = $pep_exon->end_frac;
 		} else {
 		    $end_frac = 3;
 		}
@@ -629,6 +629,7 @@ sub _dnaHit2homol {
 	    # We need to convert these coords into genomic coords and 
 	    # also homol coords.
 	    # /yuskety yuckety.
+
 	    if( $debug == 1 ) {
 		print STDOUT "Debug: Calling make_dna_homol with $pstart, $pend:$end_frac. Exon end is ",$pep_exon->end,":",$pep_exon->end_frac,"\n";
 	    }
@@ -664,7 +665,6 @@ sub _dnaHit2homol {
 sub add_pepHit {
     my ($self,$pephit) = @_;
 
-    print(ref($pephit) . "\n");
     $self->throw("Argument to GenscanPeptide->add_pepHit must be Bio::SeqFeature::Homol") 
 	unless $pephit->isa("Bio::SeqFeature::Homol");
 
