@@ -35,6 +35,14 @@ my $mgi_locus  = $conf{'mgi_locus'};
 #Get specific options for anopheles
 my $sub_genes  = $conf{'submitted_genes'};
 
+#Get specific options for Briggsae
+my $eleg_nom   = $conf{'eleg_nom'};
+
+#Get specific options for zebrafish
+my $zeb_gene    = $conf{'zeb_gene'};
+my $zeb_dblink  = $conf{'zeb_dblink'};
+
+
 if ((!defined $organism) || (!defined $sptr_swiss) || (!defined $out)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nsptr_swiss: $sptr_swiss\nx_map: $out\n";
 }
@@ -293,6 +301,48 @@ if($organism eq "anopheles") {
     }
 }
 
+#Get specific xmapping for elegans
+if($organism eq "elegans") {
+    print STDERR "Getting Xref specifically for briggsae\n";
+    open (ELEGNOM,"$eleg_nom") || die "Can't open $eleg_nom";
+    
+    while (<ELEGNOM>) {
+	chomp;
+	my ($name,$ac,$a,$b,$sp) = split;
+	print OUT "$sp\tSPTR\t$ac\tWORMBASE\t$name\t\tXREF\n";
+    }
+    close(ELEGNOM);
+}
+
+#Get specific xmapping for zebrafishq
+if($organism eq "zebrafish") {
+    print STDERR "Getting Xref specifically for zebrafish";
+    open (ZEBGENE,"$zeb_gene") || die "Can't open $zeb_gene";
+    open (ZEBLINK,"$zeb_dblink") || die "Can't open $zeb_dblink";
+    
+    %map;
+    
+     while (<ZEBLINK>) {
+	chomp;
+	my ($ac,$db,$ext_ac) = split;
+	if (($db eq "SWISS-PROT") || ($db eq "RefSeq")) {
+	    $map{$ac} = "$db:$ext_ac";
+	}
+    }
+    
+    while (<ZEBGENE>) {
+	chomp;
+	my ($ac,$a,$b,$id) = split;
+	my $pri = $map{$ac};
+	my ($displ_id,$tag) = split(/:/,$pri);
+	if ($tag eq "SWISS-PROT") {
+	    $tag = "SPTR";
+	}
+	print OUT "$displ_id\tSPTR\t$ac\tZFIN_ID\t$id\t\tXREF\n";
+	print OUT "$displ_id\tSPTR\t$ac\tZFIN_AC\t$ac\t\tXREF\n";
+    }
+    close (ZEBGENE);
+}
 print STDERR "The output has been written there: $out\n";
 
 
