@@ -541,21 +541,21 @@ sub db_handle {
 =cut
 
 sub prepare {
-   my ($self,$string) = @_;
+   my ($self,@args) = @_;
 
-   if( ! $string ) {
+   if( ! $args[0] ) {
      throw("Attempting to prepare an empty SQL query.");
    }
 
   # print STDERR  "SQL(".$self->dbname."):$string\n";
 
-   my $sth = $self->db_handle->prepare($string);
+   my $sth = $self->db_handle->prepare(@args);
 
    # return an overridden statement handle that provides us with
    # the means to disconnect inactive statement handles automatically
    bless $sth, "Bio::EnsEMBL::DBSQL::StatementHandle";
    $sth->dbc($self);
-   $sth->sql($string);
+   $sth->sql($args[0]);
 
    $self->query_count($self->query_count()+1);
    return $sth;
