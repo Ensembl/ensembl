@@ -41,6 +41,7 @@ INSERT INTO source VALUES (1100, 'LocusLink', 1, 'N', 2);
 INSERT INTO source VALUES (1070, 'GO', 1, 'Y',2);
 INSERT INTO source VALUES (1080, 'MarkerSymbol', 1, 'Y',2);
 INSERT INTO source VALUES (1090, 'HUGO', 1, 'Y',2);
+INSERT INTO source VALUES (1200, 'RGD', 1, 'Y',2);
 
 
 ################################################################################
@@ -87,6 +88,24 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##      GO 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 2,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/MOUSE/gene_association.goa_mouse.gz', '', now(), now(), "GOParser");
+
+
+###RAT
+##      uniprot
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 3, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10116.SPC', '', now(), now(), "UniProtParser");
+
+##      refseq
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 3,'ftp://ftp.ncbi.nih.gov/refseq/R_norvegicus/mRNA_Prot/rat.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+
+##      refseq
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 3,'ftp://ftp.ncbi.nih.gov/refseq/R_norvegicus/mRNA_Prot/rat.rna.fna.gz', '', now(), now(), "RefSeqParser");
+
+##      GO 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 3,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/RAT/gene_association.goa_rat.gz', '', now(), now(), "GOParser");
+
+##  RGD
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1200, 3,'ftp://rgd.mcw.edu/pub/data_release/genbank_to_gene_ids.txt', '', now(), now(), "RGDParser");
+
 
 ################################################################################
 
