@@ -812,6 +812,7 @@ SELECT distinct et.*
    AND ctg.clone = cl.internal_id
    AND ctg.internal_id = e.contig
    AND e.id = et.exon
+   AND e.sticky_rank = 1
 ";
     dump_data($sql, $satdb, 'exon_transcript');
 
@@ -828,6 +829,7 @@ SELECT distinct tsc.*
    AND ctg.clone = cl.internal_id
    AND ctg.internal_id = e.contig
    AND e.id = et.exon
+   AND e.sticky_rank = 1
    AND et.transcript=tsc.id
 ";
     dump_data($sql, $satdb, 'transcript');
@@ -846,6 +848,7 @@ SELECT distinct g.*
    AND ctg.clone = cl.internal_id
    AND ctg.internal_id = e.contig
    AND e.id = et.exon
+   AND e.sticky_rank = 1
    AND et.transcript=tsc.id
    AND tsc.gene=g.id
 ";
@@ -866,6 +869,7 @@ SELECT distinct gt.*
    AND ctg.clone = cl.internal_id
    AND ctg.internal_id = e.contig
    AND e.id = et.exon
+   AND e.sticky_rank = 1
    AND et.transcript=tsc.id
    AND tsc.gene=g.id
    AND g.id = gt.gene_id
@@ -886,6 +890,7 @@ SELECT distinct tl.*
    AND ctg.clone = cl.internal_id
    AND ctg.internal_id = e.contig
    AND e.id = et.exon
+   AND e.sticky_rank = 1
    AND et.transcript=tsc.id
    AND tsc.translation = tl.id
 ";
@@ -906,6 +911,7 @@ SELECT distinct ox.*
    AND ctg.clone = cl.internal_id
    AND ctg.internal_id = e.contig
    AND e.id = et.exon
+   AND e.sticky_rank = 1
    AND et.transcript=tsc.id
    AND tsc.translation = tl.id
    AND tl.id = ox.ensembl_id
@@ -929,12 +935,12 @@ SELECT distinct x.*
    AND ctg.clone = cl.internal_id
    AND ctg.internal_id = e.contig
    AND e.id = et.exon
+   AND e.sticky_rank = 1
    AND et.transcript=tsc.id
    AND tsc.translation = tl.id
    AND tl.id = ox.ensembl_id
    AND ox.ensembl_object_type = 'Translation'
    AND ox.xrefId = x.xrefId
-   AND x.xrefId = 7036
 ";
     dump_data($sql, $satdb, 'Xref');
     return;
