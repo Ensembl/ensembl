@@ -60,9 +60,6 @@ use Bio::SeqIO;
 
 @ISA = qw(Bio::PrimarySeq Bio::SeqI);
 
-
-
-
 =head2 annotation
 
  Title   : annotation
@@ -218,6 +215,7 @@ sub each_Protein_feature{
 
 }
 
+
 =head2 each_Intron_feature
 
  Title   : each_Intron_feature
@@ -233,7 +231,7 @@ sub each_Protein_feature{
 sub each_Intron_feature{
    my ($self) = @_;
    my $proteinid = $self->id();
-   my @array_introns = $self->adaptor->get_Intron_Position($proteinid);
+   my @array_introns = $self->adaptor->get_Introns($proteinid);
    return @array_introns;
 }
 
@@ -251,9 +249,7 @@ sub each_Intron_feature{
 
 sub each_snps_feature{
    my ($self) = @_;
-     
    my @snps_array = $self->adaptor->get_snps($self);
-   
    return @snps_array;
 
 }
@@ -484,9 +480,6 @@ sub adaptor{
     return $obj->{'adaptor'};
 
 }
-
-
-
 1;
 
 

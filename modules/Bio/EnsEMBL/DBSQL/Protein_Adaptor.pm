@@ -384,7 +384,6 @@ sub fetch_DBlinks_by_dbid {
 
 sub fetch_Protein_features_by_dbid{
    my ($self,$protein_id) = @_;
-
      
 #This call a method contained in Protein_Feature_Adaptor, returns feature objects for the given protein
    my @features = $self->_protfeat_obj->fetch_by_translationID($protein_id);
@@ -518,26 +517,24 @@ sub fetch_by_array_feature{
    
 }
 
-=head2 get_Intron_Position
+=head2 get_Introns
 
- Title   : get_Intron_Position
- Usage   :
- Function:
+ Title   : get_Introns
+ Usage   : $protein_adaptor->get_Introns($proteinid)
+ Function: Return an array of protein features introns
  Example :
  Returns : 
- Args    :
+ Args    : Protein ac
 
 
 =cut
 
-sub get_Intron_Position{
+sub get_Introns{
     my ($self,$protid) = @_;
     my @array_features;
     my $previous_ex_end=0;
     my $count = 1;
-    
-    
-    #my $protid = $protein->id;
+
     my $query = "select id from transcript where translation = '$protid'";
     my $sth = $self->prepare($query);
     $sth ->execute();
@@ -588,27 +585,28 @@ sub get_Intron_Position{
 
 
 
-=head2 get_introns_length_by_exonID
+=head2 get_exon_global_coordinates
 
- Title   : get_introns_length_by_exonID
- Usage   :
- Function:
+ Title   : get_exon_global_coordinates
+ Usage   : $protein_adaptor->get_exon_global_coordinates($exon_id)
+ Function: Get the start and end position of the exon in globale coordinates
  Example :
- Returns :
- Args    :
+ Returns : Start and end of the exon
+ Args    : Exon id
 
 
 =cut
 
 sub get_exon_global_coordinates{
    my ($self,$exid) = @_;
-   
+
+#This sql satement calculate the start and end of the exon in global coordinates
    my $query ="SELECT
                IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start),
                  (sgp.chr_start+sgp.raw_end-e.seq_end)) as start,
                IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start),
                  (sgp.chr_start+sgp.raw_end-e.seq_start)) as end
-               FROM       static_golden_path as sgp ,exon as e,exon_transcript as et
+               FROM       static_golden_path as sgp ,exon as e
                WHERE      sgp.raw_id=e.contig
                AND        e.id='$exid'";
               
@@ -626,11 +624,11 @@ sub get_exon_global_coordinates{
 =head2 get_snps
 
  Title   : get_snps
- Usage   :
- Function:
+ Usage   : $protein_adaptor->get_snps($protein)
+ Function:Get all of the snps for a peptide (for now return them in the format of a Protein_FeatureObject)
  Example :
- Returns : 
- Args    :
+ Returns :An array of Protein_FeaturePair object containing the snps  
+ Args    :protein object
 
 
 =cut
@@ -644,20 +642,23 @@ sub get_snps {
    my $count = 0;
    my @array_features;
    
-
+#Get the transcript, gene accession numbers for the given peptide
    my $transid = $protein->transcriptac();
    my $geneid = $protein->geneac();
    my $protid = $protein->id();
 
+#For now a static golden path is built (this is not the fastest solution but the easiest one). Should be changed to direct sql statements.
    $db->add_ExternalFeatureFactory($self->snp_obj()); 
    $db->static_golden_path_type('UCSC');
 
    my $virtual = $db->get_StaticGoldenPathAdaptor();
-   
+
+#Fetch a virtual contig for the given transcript. All of the external are retrieved for this virtual contig as well as all genes.   
    my $vc = $virtual->fetch_VirtualContig_of_transcript($transid,0);
    my @snips = $vc->get_all_ExternalFeatures();
    my @genes = $vc->get_all_Genes();
-   
+
+#Get which virtual transcript holds the transcript we want to study   
    foreach my $gen (@genes) {
        if ($gen->id eq $geneid) {
 	   $gene = $gen;
@@ -672,17 +673,17 @@ sub get_snps {
        }
    }
 
+#Get all of the exons out of the virtual transcript
    my @exons = $transcript->each_Exon;
 
+#This loop checks which exons are localised on the transcript
    foreach my $sn (@snips) {
        my $sn_pos = $sn->start;
-
-
-
        foreach my $ex(@exons) {
 	   if (($sn_pos >= $ex->start) && ($sn_pos <= $ex->end)) {
 	       my $uni;
 	       $uni->{snp} = $sn;
+#This store the position of the exon where the snp is located
 	       $uni->{pos} = $count;
 	       push (@ex_snps, $uni);
 	   }
@@ -691,17 +692,20 @@ sub get_snps {
        $count = 0;
    }
 
+#Loop over all of the snps which are located on exons
    foreach my $rt (@ex_snps) {
+#to check
       	my @array = (0..$rt->{pos});
-
 	my $previous_exons_length = 0;
 
 	foreach my $po (@array) {
 	    $previous_exons_length =+ $exons[$po]->length;
 	}
-	    
+
+#Get the location of the snp in aa coordinates	    
 	my $aa_pos = int (($rt->{snp}->start - @exons[$rt->{pos}]->start + $previous_exons_length)/3) + 1;
 	
+#Create a Protein_FeaturePair object
 	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
 						   -start => $aa_pos,
 						   -end => $aa_pos,
