@@ -268,7 +268,7 @@ sub get_Interpro_by_geneid{
    my ($self,$gene) = @_;
 
 
-   my $sth = $self->_db_obj->prepare("select i.interpro_acc from interpro i,transcript t,protein_feature pf where t.gene = '$gene' and t.translation = pf.translation and i.id = pf.hid");
+   my $sth = $self->_db_obj->prepare("select i.interpro_ac from transcript t, protein_feature pf, interpro i where t.gene = '$gene' and t.translation = pf.translation and i.id = pf.hid");
    $sth->execute;
 
    my @out;
