@@ -30,7 +30,7 @@ Bio::DBLinkContainerI - Abstract interface for any object wanting to use
 =head1 DESCRIPTION
 
 This interface defines the functions one can expect for any object wanting
-to use database cross-references. This class doesn't actually provide
+to use database cross-references. This class does not actually provide
 any implemention, it just provides the definitions of what methods one
 can call.
 
