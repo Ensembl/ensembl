@@ -104,7 +104,7 @@ sub to_FTHelper {
     $fth->loc($loc);
     
     # Add note describing repeat
-    my $type = $rep->seqname;
+    my $type    = $rep->homol_SeqFeature->seqname;;
     my $r_start = $rep->homol_SeqFeature->start;
     my $r_end   = $rep->homol_SeqFeature->end;
     $fth->add_field('note', "$type: matches $r_start to $r_end of consensus");
