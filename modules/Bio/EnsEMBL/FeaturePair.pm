@@ -435,38 +435,49 @@ sub feature2 {
 
 
 
+
 =head2 invert
 
-  Description: DEPRECATED do not use
+  Arg [1]    : (optional) Bio::EnsEMBL::Slice $newslice
+  Example    : $feature->invert();
+  Description: This method is used to swap the hit and query sides of this
+               feature in place.  A new slice may optionally provided which
+               this feature will be placed on.  If no slice is provided the
+               feature slice will be set to undef.
+  Returntype : none
+  Exceptions : none
+  Caller     : pipeline (BlastMiniGenewise)
 
 =cut
 
 sub invert {
-    my ($self) = @_;
-
-    deprecated('Do not use this method - it should not be needed');
+    my ($self,$slice) = @_;
 
     my $hstart   = $self->{'hstart'};
     my $hend     = $self->{'hend'};
     my $hstrand  = $self->{'hstrand'};
     my $hspecies = $self->{'hspecies'};
+    my $hseqname = $self->{'hseqname'};
 
     my $start   = $self->{'start'};
     my $end     = $self->{'end'};
     my $strand  = $self->{'strand'};
-    my $slice   = $self->{'slice'};
     my $species = $self->{'species'};
+    my $seqname = $self->seqname();
 
     $self->{'start'} = $hstart;
     $self->{'end'}   = $hend;
     $self->{'strand'} = $hstrand;
     $self->{'species'} = $hspecies;
+    $self->{'seqname'} = $hseqname if(defined($hseqname));
 
-    $self->{'hstart'} = $hstart;
-    $self->{'hend'}   = $hend;
-    $self->{'hstrand'} = $hstrand;
-    $self->{'hseqname'} = ($slice) ? $slice->seq_region_name : '';
+    $self->{'hstart'}   = $start;
+    $self->{'hend'}     = $end;
+    $self->{'hstrand'}  = $strand;
+    $self->{'hseqname'} = $seqname;
     $self->{'hspecies'} = $species;
+
+    $self->{'slice'} = $slice;
 }
 
 
