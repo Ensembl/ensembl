@@ -458,4 +458,38 @@ CREATE TABLE externalDB(
          PRIMARY KEY( externalDBId ) 
    	);
 
+#
+#Table structure for table contig_landmarkMarker
+#
+
+CREATE TABLE contig_landmarkMarker(
+        contig int(10) NOT NULL,
+        start  int(10) NOT NULL,
+        end    int(10) NOT NULL,
+        strand int(1)  NOT NULL,
+        marker varchar(40) NOT NULL,
+        name   varchar(40) NOT NULL,
+        chr_name varchar(40) NOT NULL,
+        KEY (contig,marker),
+        KEY (marker)
+        );
+
+
+CREATE TABLE meta (
+        meta_id INT not null auto_increment,
+        meta_key varchar( 40 ) not null,
+        meta_value varchar( 255 ) not null,
+
+        PRIMARY KEY( meta_id ),
+        KEY meta_key_index ( meta_key ),
+        KEY meta_value_index ( meta_value )
+	);
+
+
+
+
+
+
+
+
 
