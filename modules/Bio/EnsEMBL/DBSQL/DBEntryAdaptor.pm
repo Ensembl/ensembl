@@ -183,7 +183,7 @@ sub store {
            description = ?,
            external_db_id = $dbRef
      " );
-	$sth->execute( $exObj->primary_id(), $exObj->display_label(), $exObj->version(),
+	$sth->execute( $exObj->primary_id(), $exObj->display_id(), $exObj->version(),
 		       $exObj->description());
 	
 	$sth = $self->prepare( "
