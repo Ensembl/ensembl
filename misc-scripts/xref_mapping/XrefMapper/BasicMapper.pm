@@ -694,8 +694,11 @@ sub store {
   my $object_xref_id = $max_object_xref_id + 1;
 
   # keep a (unique) list of xref IDs that need to be written out to file as well
-  # this is a hash of lists, keyed on xref id that relates xrefs to e! objects (may be 1-many)
+  # this is a hash of hashes, keyed on xref id that relates xrefs to e! objects (may be 1-many)
   my %primary_xref_ids = ();
+
+  # also keep track of types of ensembl objects
+  my %ensembl_object_types;
 
   my $dir = $self->dir();
   foreach my $file (glob("$dir/*.map")) {
@@ -726,6 +729,8 @@ sub store {
       # TODO - evalue?
       $object_xref_id++;
 
+      $ensembl_object_types{$target_id} = $type;
+
       #push @{$primary_xref_ids{$query_id}}, $target_id;
       $primary_xref_ids{$query_id}{$target_id} = $target_id;
 
@@ -749,7 +754,7 @@ sub store {
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
   # write relevant xrefs to file
-  $self->dump_xrefs(\%primary_xref_ids, $object_xref_id+1);
+  $self->dump_xrefs(\%primary_xref_ids, $object_xref_id+1, \%ensembl_object_types);
 
 }
 
@@ -816,9 +821,10 @@ sub get_analysis_id {
 
 sub dump_xrefs {
 
-  my ($self, $xref_ids_hashref, $start_object_xref_id) = @_;
+  my ($self, $xref_ids_hashref, $start_object_xref_id, $ensembl_object_types_hashref) = @_;
   my @xref_ids = keys %$xref_ids_hashref;
   my %xref_to_objects = %$xref_ids_hashref;
+  my %ensembl_object_types = %$ensembl_object_types_hashref;
 
   open (XREF, ">xref.txt");
   open (OBJECT_XREF, ">>object_xref.txt");
@@ -894,9 +900,8 @@ sub dump_xrefs {
       if (defined $xref_to_objects{$xref_id}) {
 	my @objects = keys( %{$xref_to_objects{$xref_id}} );
 	print "xref $accession has " . scalar(@objects) . " associated ensembl objects\n";
-	# TODO type - keep hash in store method?
-	my $type = "xxx";
 	foreach my $object_id (@objects) {
+	  my $type = $ensembl_object_types{$object_id};
 	  print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t$core_xref_id DEPENDENT\n";
 	  $object_xref_id++;
 	}
