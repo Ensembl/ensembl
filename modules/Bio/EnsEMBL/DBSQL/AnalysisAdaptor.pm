@@ -4,15 +4,14 @@
 # Date of creation: 25.01.2001
 # Last modified : 25.01.2001 by Arne Stabenau
 #
-# Copyright EMBL-EBI 2000
+# Copyright Ensembl 2000-2004
 #
 # You may distribute this module under the same terms as perl itself
-
 # POD documentation - main docs before the code
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::AnalysisAdaptor 
+Bio::EnsEMBL::DBSQL::AnalysisAdaptor
 
 =head1 SYNOPSIS
 
@@ -26,10 +25,9 @@ Bio::EnsEMBL::DBSQL::AnalysisAdaptor
 
 
 =head1 DESCRIPTION
-  
+
   Module to encapsulate all db access for persistent class Analysis.
   There should be just one per application and database connection.
-     
 
 =head1 CONTACT
 
@@ -69,7 +67,7 @@ sub new {
   my ($class, $db) = @_;
 
   my $self = $class->SUPER::new($db);
-  
+
   #load and cache all of the Analysis objects
   $self->fetch_all;
 
@@ -96,7 +94,7 @@ sub fetch_all {
 
   $self->{_cache} = {};
   $self->{_logic_name_cache} = {};
-  
+
   my $sth = $self->prepare( q {
     SELECT analysis_id, logic_name,
            program, program_version, program_file,
@@ -141,7 +139,6 @@ sub fetch_by_dbID {
     return $self->{_cache}->{$id};
   }
 
-
   my $query = q{
     SELECT analysis_id, logic_name,
            program, program_version, program_file,
@@ -152,7 +149,7 @@ sub fetch_by_dbID {
     FROM   analysis
     WHERE  analysis_id = ? };
 
-  my $sth = $self->prepare($query);  
+  my $sth = $self->prepare($query);
   $sth->execute( $id );
   my $rowHashRef = $sth->fetchrow_hashref;
   if( ! defined $rowHashRef ) {
@@ -168,7 +165,7 @@ sub fetch_by_dbID {
 
 sub deleteObj {
     my( $self ) = @_;
-    
+
     $self->{_cache} = undef;
     $self->{_logic_name_cache} = undef;
     $self->SUPER::deleteObj;
@@ -207,17 +204,17 @@ sub fetch_by_logic_name {
            created, parameters
     FROM   analysis
     WHERE  logic_name = ?" );
-  
+
   $sth->execute($logic_name);
   my $rowHashRef;
-  $rowHashRef = $sth->fetchrow_hashref; 
+  $rowHashRef = $sth->fetchrow_hashref;
 
   unless(defined $rowHashRef) {
     return undef;
   }
 
   $analysis = $self->_objFromHashref( $rowHashRef );
-  
+
   #place the analysis in the caches, cross referenced by dbID and logic_name
   $self->{_cache}->{$analysis->dbID()} = $analysis;
   $self->{_logic_name_cache}->{lc($logic_name)} = $analysis;
@@ -226,118 +223,132 @@ sub fetch_by_logic_name {
 }
 
 
-
 =head2 store
 
-  Arg [1]    : Bio:EnsEMBL::Analysis $analysis 
+  Arg [1]    : Bio:EnsEMBL::Analysis $analysis
   Example    : $analysis_adaptor->store($analysis);
-  Description: stores $analysis in db. Does not if already equiped with dbID.
+  Description: Stores $analysis in db.  If the analysis is already stored in
+               the database its dbID and adaptor are updated, but the analysis
+               is not stored a second time.
                Sets created date if not already set. Sets dbID and adaptor
                inside $analysis. Returns dbID.
-  Returntype : int dbID of stored analysis
-  Exceptions : thrown if analysis argument does not have a logic name
-  Caller     : ?
+  Returntype : int - dbID of stored analysis
+  Exceptions : throw on incorrect argument
+               throw if analysis argument does not have a logic name
+  Caller     : general
 
 =cut
 
 sub store {
-
   my $self = shift;
   my $analysis = shift;
 
-  if( !defined $analysis || !ref $analysis) {
-    throw("called store on AnalysisAdaptor with a [$analysis]");
+  if(!ref($analysis) || !$analysis->isa('Bio::EnsEMBL::Analysis')) {
+    throw("Bio::EnsEMBL::Analysis argument expected.");
   }
 
-  #if this analysis has already been stored in this db, just update the adaptor
-  #and dbID of the object and return the dbID
-  my $dbID;
-  if( $dbID = $self->exists( $analysis )) {
-    $analysis->adaptor( $self );
-    $analysis->dbID( $dbID );
-    return $dbID;
+  if($analysis->is_stored($self->db())) {
+    return $analysis->dbID();
   }
 
-  if( !defined $analysis->logic_name ) {
-    throw("Must have a logic name on the analysis object");
+  if(!$analysis->logic_name()) {
+    throw("Analysis cannot be stored without a valid logic_name");
   }
+
+
+  my $rows_inserted = 0;
+  my $sth;
 
   if($analysis->created ) {
-    my $sth = $self->prepare( q{
-      INSERT INTO analysis
+
+    # we use insert IGNORE so that this method can be used in a multi-process
+    # environment.  If another process has already written this record
+    # then there will not be a problem
+
+    $sth = $self->prepare( q{
+      INSERT IGNORE INTO analysis
       SET created = ?,
           logic_name = ?,
-	  db = ?,
-	  db_version = ?,
+	        db = ?,
+	        db_version = ?,
           db_file = ?,
           program = ?,
           program_version = ?,
           program_file = ?,
-	  parameters = ?,
+	        parameters = ?,
           module = ?,
           module_version = ?,
           gff_source = ?,
           gff_feature = ? } );
-    $sth->execute
+    $rows_inserted = $sth->execute
       ( $analysis->created,
-	$analysis->logic_name,
-	$analysis->db,
-	$analysis->db_version,
-	$analysis->db_file,
-	$analysis->program,
-	$analysis->program_version,
-	$analysis->program_file,
-	$analysis->parameters,
-	$analysis->module,
-	$analysis->module_version,
-	$analysis->gff_source,
-	$analysis->gff_feature
+        $analysis->logic_name,
+        $analysis->db,
+        $analysis->db_version,
+        $analysis->db_file,
+        $analysis->program,
+        $analysis->program_version,
+        $analysis->program_file,
+        $analysis->parameters,
+        $analysis->module,
+        $analysis->module_version,
+        $analysis->gff_source,
+        $analysis->gff_feature
       );
-    $dbID = $sth->{'mysql_insertid'};
-  } else {
-    my $sth = $self->prepare( q{
 
-      INSERT INTO analysis
+  } else {
+    $sth = $self->prepare( q{
+      INSERT IGNORE INTO analysis
       SET created = now(),
           logic_name = ?,
-	  db = ?,
-	  db_version = ?,
+          db = ?,
+          db_version = ?,
           db_file = ?,
           program = ?,
           program_version = ?,
           program_file = ?,
-	  parameters = ?,
+	        parameters = ?,
           module = ?,
           module_version = ?,
           gff_source = ?,
           gff_feature = ? } );
 
-    $sth->execute
+    my $rows_inserted = $sth->execute
       ( $analysis->logic_name,
-	$analysis->db,
-	$analysis->db_version,
-	$analysis->db_file,
-	$analysis->program,
-	$analysis->program_version,
-	$analysis->program_file,
-	$analysis->parameters,
-	$analysis->module,
-	$analysis->module_version,
-	$analysis->gff_source,
-	$analysis->gff_feature
+        $analysis->db,
+        $analysis->db_version,
+        $analysis->db_file,
+        $analysis->program,
+        $analysis->program_version,
+        $analysis->program_file,
+        $analysis->parameters,
+        $analysis->module,
+        $analysis->module_version,
+        $analysis->gff_source,
+        $analysis->gff_feature
       );
-
-    $dbID = $sth->{'mysql_insertid'};
-
-    if( $dbID ) {
-      $sth = $self->prepare( q{
-	SELECT created 
-	FROM   analysis
-	WHERE  analysis_id = ? } );
-      $sth->execute( $dbID );
-      $analysis->created( ($sth->fetchrow_array)[0] );
-    }
   }
+
+  my $dbID;
+
+  # if we need to fetch the timestamp, or the insert failed due to existance
+  # of an existing entry, we need to retrieve the entry from the db
+  if(!$analysis->created() || !$rows_inserted) {
+    my $new_analysis = $self->fetch_by_logic_name($analysis->logic_name);
+
+    if(!$new_analysis) {
+      throw("Could not retrieve just stored analysis from database.\n" .
+            "Possibly incorrect db permissions or missing analysis table\n");
+    }
+
+    $dbID = $new_analysis->dbID();
+    $analysis->created($new_analysis->created());
+  } else {
+    $dbID = $sth->{'mysql_insertid'};
+  }
+
+  $sth->finish();
+
   $self->{_cache}->{$dbID} = $analysis;
   $self->{_logic_name_cache}{lc($analysis->logic_name)} = $analysis;
 
@@ -354,42 +365,44 @@ sub store {
   Arg [1]    : Bio::EnsEMBL::Analysis $anal
   Example    : $adaptor->update($anal)
   Description: Updates this analysis in the database
-  Returntype :
-  Exceptions : thrown if $anal arg is not an analysis object
+  Returntype : int 1 if update is performed, undef if it is not
+  Exceptions : throw if arg is not an analysis object
   Caller     : ?
 
 =cut
 
 sub update {
-  my ($self, $analysis) = @_;
-  
-  if (!defined $analysis || !ref $analysis) {
-    throw("called update on AnalysisAdaptor with a [$analysis]");
+  my $self = shift;
+  my $a    = shift;
+
+  if (!ref($a) || !$a->isa('Bio::EnsEMBL::Analysis')) {
+    throw("Expected Bio::EnsEMBL::Analysis argument.");
   }
 
-  $analysis->dbID && ($analysis->adaptor() == $self) or
-    return undef;
-
-  my $dbID;
-
-  unless ($dbID = $self->exists($analysis)) {
+  if(!$a->is_stored($self->db())) {
     return undef;
   }
 
-  my $query = "UPDATE analysis SET ";
+  my $sth = $self->prepare
+    ("UPDATE analysis " .
+     "SET created = ?, logic_name = ?, db = ?, db_version = ?, db_file = ?, ".
+     "    program = ?, program_version = ?, program_file = ?,  ".
+     "    parameters = ?, module = ?, module_version = ?, ".
+     "    gff_source = ?, gff_feature = ? " .
+     "WHERE analysis_id = ?");
 
-  foreach my $m (qw/
-    created         logic_name
-    db              db_version      db_file
-    program         program_version program_file
-    parameters      module          module_version
-    gff_source      gff_feature/) {
-    $query .= " $m = '" . $analysis->$m . "'," if defined $analysis->$m;
-  };
-  chop $query;
-  $query .= " WHERE analysis_id = $dbID";
+  $sth->execute
+    ($a->created, $a->logic_name, $a->db, $a->db_version, $a->db_file,
+     $a->program, $a->program_version, $a->program_file,
+     $a->parameters, $a->module, $a->module_version,
+     $a->gff_source, $a->gff_feature,
+     $a->dbID);
 
-  my $sth = $self->db->db_handle->do($query);
+  $sth->finish();
+
+  # the logic_name cache needs to be re-updated now, since we may have just
+  # changed the logic_name
+  $self->fetch_all();
 
   return 1;
 }
@@ -400,8 +413,10 @@ sub update {
 
   Arg [1]    : Bio::EnsEMBL::Analysis $anal
   Example    : $adaptor->remove($anal)
-  Description: Removes this analysis from the database
-  Returntype :
+  Description: Removes this analysis from the database.  This is not really
+               safe to execute in a multi process environment, so programs
+               should not remove analysis while out on the farm.
+  Returntype : none
   Exceptions : thrown if $anal arg is not an analysis object
   Caller     : ?
 
@@ -409,20 +424,28 @@ sub update {
 
 sub remove {
   my ($self, $analysis) = @_;
-  my $dbID;
-  
+
   if (!defined $analysis || !ref $analysis) {
     throw("called remove on AnalysisAdaptor with a [$analysis]");
   }
 
-  unless ($dbID = $self->exists($analysis)) {
+  if(!$analysis->is_stored($self->db())) {
     return undef;
   }
 
-  my $res = $self->db->db_handle->do(qq{
-    DELETE from analysis
-    WHERE  analysis_id = $dbID
-  });
+  my $sth = $self->prepare("DELETE FROM analysis WHERE analysis_id = ?");
+  $sth->execute($analysis->dbID());
+
+  # remove this analysis from the cache
+  delete $self->{'_cache'}->{$analysis->dbID()};
+  delete $self->{'_logic_name_cache'}->{lc($analysis->logic_name)};
+
+
+  # unset the adaptor and dbID
+  $analysis->dbID(undef);
+  $analysis->adaptor(undef);
+
+  return;
 }
 
 
@@ -431,11 +454,17 @@ sub remove {
 
   Arg [1]    : Bio::EnsEMBL::Analysis $anal
   Example    : if($adaptor->exists($anal)) #do something
-  Description: Tests whether this Analysis already exists in the database.
-               Returns the dbID, if it does, undef if it doesnt.
-  Returntype : int or undef
+  Description: Tests whether this Analysis already exists in the database
+               by checking first if the adaptor and dbID are set and
+               secondly by whether it is in this adaptors internal cache.
+               Note that this will not actually check the database and will
+               not find and analysis which were recently added by other
+               processes.  You are better off simply trying to store an
+               analysis which will reliably ensure that it is not stored twice
+               in the database.
+  Returntype : int dbID if analysis is found, otherwise returns undef
   Exceptions : thrown if $anal arg is not an analysis object
-  Caller     : ?
+  Caller     : store
 
 =cut
 
