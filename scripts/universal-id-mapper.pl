@@ -91,4 +91,4 @@ while (<STDIN>) {
 }
 my $total=$remapped+$notmapped;
 warn "Mapped $remapped out of $total identifiers\n";
-
+exit ($remapped != $total);             # i.e, 0 if OK, 1 otherwise
