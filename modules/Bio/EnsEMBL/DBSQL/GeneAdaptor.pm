@@ -723,6 +723,7 @@ sub store {
   my $type = $gene->type || "";
 
   my $original = $gene;
+  my $original_transcripts = $gene->get_all_Transcripts();
   my $seq_region_id;
   ($gene, $seq_region_id) = $self->_pre_store($gene);
 
@@ -800,8 +801,22 @@ sub store {
 
   my $transcript_adaptor = $db->get_TranscriptAdaptor();
 
-  foreach my $t ( @{$gene->get_all_Transcripts()} ) {
-    $transcript_adaptor->store($t,$gene_dbID );
+  my $transcripts = $gene->get_all_Transcripts();
+
+  for(my $i = 0; $i < @$transcripts; $i++) {
+    my $new = $transcripts->[$i];
+    my $old = $original_transcripts->[$i];
+
+    $transcript_adaptor->store($new, $gene_dbID );
+
+    # update the original transcripts since we may have made copies of
+    # them by transforming the gene
+    $old->dbID($new->dbID());
+    $old->adaptor($new->adaptor());
+    if($new->translation) {
+      $old->translation->dbID($new->translation()->dbID);
+      $old->translation->adaptor($new->translation()->adaptor);
+    }
   }
 
   # update gene to point to display xref if it is set
