@@ -1,0 +1,2 @@
+# $species, $host, $port, $dbname, $user, $password ,$dir
+homo_sapiens	ecs2	3365	homo_sapiens_core_24_34e	ensro		./test
