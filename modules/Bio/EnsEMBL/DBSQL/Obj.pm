@@ -1600,6 +1600,11 @@ sub get_supporting_evidence {
 
     my $instring = "'";
     my %exhash;
+
+    if (@exons == 0) {
+	$self->throw("No exon objects were passed on!");
+    }
+
     foreach my $exon (@exons) {
 
 	$exhash{$exon->id} = $exon;
@@ -1608,8 +1613,7 @@ sub get_supporting_evidence {
     }
     
     $instring = substr($instring,0,-2);
-
-
+   
     my $sth = $self->prepare("select * from supporting_feature where exon in (" . $instring . ")");
     $sth->execute;
 
