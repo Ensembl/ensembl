@@ -103,7 +103,7 @@ sub add_ensembl_comments {
    $aseq->annotation->add_Comment($comment); 
 
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("In unfinished, rough draft DNA sequence, gene structures can cross fragments and, in these cases, the order and orientation of the fragments is likely to be different from the order in the the nucleotide data library.");
+   $comment->text("In unfinished, rough draft DNA sequence gene structures can cross fragments and, in these cases, the order and orientation of the fragments is likely to be different from the order in the the nucleotide data library.");
 
 #   $comment->text("In unfinished, rough draft DNA sequence, the ordering of the fragments is likely to be different from the order in EMBL/Genbank/DDBJ. In addition, gene structures can cross fragments and, in these cases, maybe in different orientations relative to the ordering of the fragments.");
    $aseq->annotation->add_Comment($comment); 
@@ -139,7 +139,7 @@ sub ensembl_annseq_output {
    }
 
    if( !$aseqstream->isa('Bio::AnnSeqIO::EMBL') ) {
-       $aseqstream->throw("not got EMBL IO but a $aseqstream. Not going to add comments");
+       $aseqstream->throw("not got EMBL IO but a $aseqstream. Not going to add output functions");
    }
 
    $aseqstream->_post_sort(\&sort_FTHelper_EnsEMBL);

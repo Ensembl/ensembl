@@ -36,6 +36,7 @@ methods. Internal methods are usually preceded with a _
 =cut
 
 # Let's begin the code:
+
 package Bio::EnsEMBL::TimDB::Clone;
 use vars qw($AUTOLOAD @ISA);
 use strict;

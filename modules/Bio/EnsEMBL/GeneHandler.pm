@@ -40,12 +40,14 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the
+object methods. Internal methods are usually
+preceded with an "_"
 
 =cut
 
 
-# Let the code begin...
+# Let's begin the code...
 
 
 package Bio::EnsEMBL::GeneHandler;
@@ -63,31 +65,34 @@ use Bio::Root::Object;
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,@args) = @_;
+    my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
-  my ($clone,$gene) = $self->_rearrange([qw(
-					    CLONE
-					    GENE )],@args);
+    my $make = $self->SUPER::_initialize;
+    my ($clone, $gene, $strict_embl) = $self->_rearrange([qw(
+					                     CLONE
+					                     GENE
+                                                             STRICT_EMBL
+                                                             )],@args);
 
-  # ok
+    # ok
 
-  $clone || $self->throw("Cannot make a gene handler without a clone");
-  $gene  || $self->throw("Cannot make a gene handler without a gene");
+    $clone || $self->throw("Cannot make a gene handler without a clone");
+    $gene  || $self->throw("Cannot make a gene handler without a gene");
 
 
-  $clone->isa("Bio::EnsEMBL::DB::CloneI") || $self->throw("You haven't given me a valid clone object for this gene!");
-  $gene->isa("Bio::EnsEMBL::Gene") || $self->throw("You haven't given me a valid gene object for this gene!");
+    $clone->isa("Bio::EnsEMBL::DB::CloneI") || $self->throw("You haven't given me a valid clone object for this gene!");
+    $gene->isa("Bio::EnsEMBL::Gene") || $self->throw("You haven't given me a valid gene object for this gene!");
 
-  
-  # this could be a bad way to do this... ;)
 
-  # print STDERR "Dumping in GeneHandler!\n";
-  # $gene->_dump(\*STDERR);
+    # this could be a bad way to do this... ;)
 
-  $self->clone($clone);
-  $self->gene($gene);
-  return $make; # success - we hope!
+    # print STDERR "Dumping in GeneHandler!\n";
+    # $gene->_dump(\*STDERR);
+
+    $self->clone($clone);
+    $self->gene($gene);
+    $self->strict_EMBL_dumping(1) if $strict_embl;
+    return $make; # success - hope!
 }
 
 =head2 to_FTHelper
@@ -104,27 +109,24 @@ sub _initialize {
 
 =cut
 
-sub to_FTHelper{
-   my ($self) = @_;
-   my (@out);
-   my (@exons);
+sub to_FTHelper {
+    my ($self) = @_;
+    my (@out);
+    my (@exons);
 
-   my $exh = {};
-   
-   foreach my $trans ( $self->gene()->each_Transcript() ) {
-       # oldstyle is set to one if the object wants to dump as transcript_id
-       # not cds_id
-       push(@out,$self->_process_Transcript($trans,$exh,$self->_oldstyle));
-   }
+    my $exh = {};
+
+    foreach my $trans ( $self->gene()->each_Transcript() ) {
+        # oldstyle is set to one if the object wants to dump
+        # as transcript_id, not cds_id
+        push(@out,$self->_process_Transcript($trans,$exh,$self->_oldstyle));
+    }
     #   foreach my $ptrans ( $trans->split_Transcript_to_Partial ) {
     #	   push(@out,$self->_process_Transcript($ptrans,$exh));
     #   }
 
-
-
-   push(@out,values %{$exh});
-   return @out;
-
+    push(@out,values %{$exh});
+    return @out;
 }
 
 
@@ -139,7 +141,7 @@ sub to_FTHelper{
 
 =cut
 
-sub clone{
+sub clone {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -160,7 +162,7 @@ sub clone{
 
 =cut
 
-sub gene{
+sub gene {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -168,6 +170,29 @@ sub gene{
     }
     return $obj->{'gene'};
 
+}
+
+
+
+=head2 strict_EMBL_dumping
+
+ Title   : strict_EMBL_dumping
+ Usage   : $obj->strict_EMBL_dumping($newvalue)
+ Function: Flags wether the data is destined for the main
+           EMBL database.  If true, then features generated
+           will be EMBL submit-able.
+ Returns : value of strict_EMBL_dumping
+ Args    : newvalue (optional)
+
+=cut
+
+sub strict_EMBL_dumping {
+    my $obj = shift;
+    if (@_) {
+        my $val = shift;
+        $obj->{'_strict_EMBL_dumping'} = $val;
+    }
+    return $obj->{'_strict_EMBL_dumping'};
 }
 
 
@@ -183,7 +208,7 @@ sub gene{
 
 =cut
 
-sub _process_Transcript{
+sub _process_Transcript {
    my ($self,$trans,$exon_hash_ref,$oldstyle) = @_;
    $oldstyle ||= 0;
    
@@ -224,32 +249,36 @@ sub _process_Transcript{
    print STDERR "Looking at this transcript ",$trans->id(),"\n";
 
 
-   foreach my $exon ( $trans->each_Exon ) {
+    foreach my $exon ( $trans->each_Exon ) {
 
-       if( ! $exon_hash_ref->{$exon->id()}  ) {
-	   $contig = $self->clone()->get_Contig($exon->contig_id());
-	   my ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
-       
-	   # add this exon
-	   # make an Exon FTHelper and add them
-	   
-	   my $ft = new Bio::AnnSeqIO::FTHelper->new();
-	   $ft->key("exon");
-	   # add other stuff to Exon?
-	   $ft->add_field('created',$exon->created());
-	   $ft->add_field('modified',$exon->modified());
-	   $ft->add_field('exon_id',$exon->id());
-	   $ft->add_field('start_phase',$exon->phase());
-	   $ft->add_field('end_phase',$exon->end_phase());
-	   
-	   if( $loc_comp == -1 ) {
-	       $ft->loc("complement($locstart..$locend)");
-	   } else {
-	       $ft->loc("$locstart..$locend");
-	   }
-	   $exon_hash_ref->{$exon->id()} = $ft;
-       }
-   }
+        unless ( $exon_hash_ref->{$exon->id()} ) {
+            $contig = $self->clone()->get_Contig($exon->contig_id());
+            my ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
+
+            # add this exon
+            # make an Exon FTHelper and add them
+
+            my $ft = new Bio::AnnSeqIO::FTHelper->new();
+            $ft->key("exon");
+            # add other stuff to Exon?
+            if ($self->strict_EMBL_dumping) {
+                $ft->add_field('note', 'exon_id: '. $exon->id());
+            } else {
+	        $ft->add_field('created',     $exon->created());
+	        $ft->add_field('modified',    $exon->modified());
+	        $ft->add_field('exon_id',     $exon->id());
+	        $ft->add_field('start_phase', $exon->phase());
+	        $ft->add_field('end_phase',   $exon->end_phase());
+            }
+
+            if( $loc_comp == -1 ) {
+	        $ft->loc("complement($locstart..$locend)");
+            } else {
+	        $ft->loc("$locstart..$locend");
+            }
+            $exon_hash_ref->{$exon->id()} = $ft;
+        }
+    }
 
    
    my @exons;
@@ -268,7 +297,7 @@ sub _process_Transcript{
        }
 
        $contig = $self->clone()->get_Contig($exon->contig_id());
-       $contig->isa("Bio::EnsEMBL::DB::ContigI") || $self->throw("Expecting to get a conting. Instead got a $contig. Not ideal!");
+       $contig->isa("Bio::EnsEMBL::DB::ContigI") || $self->throw("Expecting to get a contig. Instead got a '$contig'. Not ideal!");
 
        my ($locstart,$locend);
        ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
@@ -328,20 +357,30 @@ sub _process_Transcript{
    my $t_fth = new Bio::AnnSeqIO::FTHelper->new();
   
    $t_fth->key("CDS");
-   my $pseq = $trans->translate();
-   $t_fth->add_field('translation',$pseq->str);
-   if( $oldstyle == 1 ) {
-       $t_fth->add_field('transcript_id',$trans->id());
-   } else {
-       $t_fth->add_field('cds_id',$trans->translation->id());
-   }
+   
+    if ($self->strict_EMBL_dumping) {
+        my $cds_id = $trans->translation->id();
+        $t_fth->add_field('product', $cds_id);
+    } else {
+        my $pseq = $trans->translate();
+        $t_fth->add_field('translation',$pseq->str);
+    
+        if( $oldstyle == 1 ) {
+            $t_fth->add_field('transcript_id',$trans->id());
+        } else {
+            $t_fth->add_field('cds_id',$trans->translation->id());
+        }
+        
+        $t_fth->add_field('gene_id',$self->gene->id());
+    }
+    
 
-   $t_fth->add_field('gene_id',$self->gene->id());
 
    # map phase1 -> 2, phase 2 -> 1, phase 0 -> 0 and then add 1. Easy huh?
    #$t_fth->add_field('codon_start',((3 -$firstexon->phase) %3)+1);
 
    if( $trans->is_partial() == 1 ) {
+       ### There is acutally a /partial qualifier ###
        $t_fth->add_field('note',"transcript is a partial transcript");
    }
 
@@ -475,14 +514,13 @@ sub _deduce_exon_location{
 
 =cut
 
-sub _oldstyle{
+sub _oldstyle {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
       $obj->{'_oldstyle'} = $value;
     }
     return $obj->{'_oldstyle'};
-
 }
 
 1;

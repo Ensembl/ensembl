@@ -171,7 +171,7 @@ sub htg_phase {
 
 =cut
 
-sub get_Contig{
+sub get_Contig {
    my ($self,@args) = @_;
 
    $self->warn("Base class has not implemented this yet!");
@@ -191,7 +191,7 @@ sub get_Contig{
 
 =cut
 
-sub get_all_Contigs{
+sub get_all_Contigs {
    my ($self) = @_;
 
    $self->warn("Base class has not implemented this yet!");
@@ -210,7 +210,7 @@ sub get_all_Contigs{
 
 =cut
 
-sub get_all_Genes{
+sub get_all_Genes {
    my ($self) = @_;
 
    $self->warn("Base class has not implemented this yet!");
@@ -230,7 +230,7 @@ sub get_all_Genes{
 
 =cut
 
-sub seq{
+sub seq {
    my ($self,$spacer) = @_;
    my $out;
    my $seqstr = "";
@@ -278,38 +278,44 @@ sub seq{
 =head2 get_AnnSeq
 
  Title   : get_AnnSeq
- Usage   : $annseq = $clone->get_AnnSeq()
+ Usage   : $annseq = $clone->get_AnnSeq($strict_EMBL)
  Function: Gets a Bio::AnnSeq which can be used as standard
  Example :
  Returns : 
- Args    :
+ Args    : $strict_EMBL - causes EMBL dumping with only EMBL-
+           allowed feature qualfiers if true.  Set when
+           generating files for submission to the EMBL database.
 
 
 =cut
 
-sub get_AnnSeq{
-   my ($self) = @_;
+sub get_AnnSeq {
+    my ($self, $strict_EMBL) = @_;
 
-   my (@contigs,@genes,$as,$seq);
+    my (@contigs,@genes,$as,$seq);
 
-   @contigs = $self->get_all_Contigs();
-   @genes   = $self->get_all_Genes();
+     ### @contigs doesn't get used? ###
+    @contigs = $self->get_all_Contigs();
+    @genes   = $self->get_all_Genes();
 
-   $seq = $self->seq();
-   
-   $as = Bio::EnsEMBL::AnnSeq->new();
-   
-   $as->embl_id($self->embl_id());
-   $as->sv($self->sv());
-   $as->htg_phase($self->htg_phase());
-      
-   $as->seq($seq);
-   foreach my $gene ( @genes ) {
-       my $gh = new Bio::EnsEMBL::GeneHandler( -clone => $self, -gene => $gene );
-       $as->add_SeqFeature($gh);
-   }
+    $seq = $self->seq();
 
-   return $as;
+    $as = Bio::EnsEMBL::AnnSeq->new();
+
+    $as->embl_id($self->embl_id());
+    $as->sv($self->sv());
+    $as->htg_phase($self->htg_phase());
+
+    $as->seq($seq);
+    foreach my $gene ( @genes ) {
+        my $gh = new Bio::EnsEMBL::GeneHandler( -clone => $self,
+                                                -gene => $gene,
+                                                -strict_embl => $strict_EMBL,
+                                                );
+        $as->add_SeqFeature($gh);
+    }
+
+    return $as;
 }
 
 1;
