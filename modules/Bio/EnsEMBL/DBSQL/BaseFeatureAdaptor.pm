@@ -202,6 +202,8 @@ sub fetch_by_dbID{
   #get first element of _generic_fetch list
   my ($feat) = @{$self->generic_fetch($constraint)};
 
+  throw('Feature with dbID [$id] does not exist') if(!$feat);
+
   $feat = $feat->transform($cs_name, $cs_version) if(defined($cs_name));
 
   return $feat;
@@ -514,13 +516,12 @@ sub store{
 sub remove {
   my ($self, $feature) = @_;
 
-  unless($feature->can('dbID')) {
-    throw("Feature [$feature] does not implement method dbID");
+  if(!$feature || !ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')) {
+    throw('Feature argument is required');
   }
 
-  unless($feature->dbID) {
-    warning("BaseFeatureAdaptor::remove - dbID not defined - " .
-            "feature could not be removed");
+  if(!$feature->is_stored($self->db)) {
+    throw("This feature is not stored in this database");
   }
 
   my @tabs = $self->_tables;
@@ -537,40 +538,49 @@ sub remove {
 }
 
 
+=head2 remove_by_Slice
 
-=head2 remove_by_RawContig
-
-  Arg [1]    : Bio::Ensembl::RawContig $contig 
-  Example    : $feature_adaptor->remove_by_RawContig($contig);
-  Description: This removes features from the database which lie on a removed
-               contig.  The table the features are removed from is defined by 
-               the abstract method_tablename, and the primary key of the table
-               is assumed to be contig_id.
+  Arg [1]    : Bio::Ensembl::Slice $slice
+  Example    : $feature_adaptor->remove_by_RawContig($slice);
+  Description: This removes features from the database which lie on a region
+               represented by the passed in slice.  Only features which are
+               fully contained by the slice are deleted; features which overlap
+               the edge of the slice are not removed.
+               The table the features are removed from is defined by
+               the abstract method_tablename.
   Returntype : none
-  Exceptions : thrown if no contig is supplied
+  Exceptions : thrown if no slice is supplied
   Caller     : general
 
 =cut
 
-sub remove_by_RawContig {
-  my ($self, $contig) = @_;
+sub remove_by_Slice {
+  my ($self, $slice) = @_;
 
-  unless($contig) {
-    throw("BaseFeatureAdaptor::remove - no contig supplied: ".
-		 "Deletion of features failed.");
+  if(!$slice || !ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw("Slice argument is required");
   }
 
   my @tabs = $self->_tables;
-
   my ($table_name) = @{$tabs[0]};
 
-  my $sth = $self->prepare("DELETE FROM $table_name
-                            WHERE contig_id = ?");
+  my $seq_region_id = $self->db->get_SliceAdaptor->get_seq_region_id($slice);
+  my $start = $slice->start();
+  my $end   = $slice->end();
 
-  $sth->execute($contig->dbID);
+  #
+  # Delete only features fully on the slice, not overlapping ones
+  #
+  my $sth = $self->prepare("DELETE FROM $table_name " .
+                           "WHERE seq_region_id = ? " .
+                           "AND   seq_region_start >= ? " .
+                           "AND   seq_region_end <= ?");
 
-  return;
+  $sth->execute($seq_region_id, $start, $end);
+  $sth->finish();
 }
+
+
 
 
 
@@ -764,6 +774,18 @@ sub fetch_all_by_RawContig_and_score{
   my $self = shift;
   deprecate('Use fetch_all_by_Slice_and_score() instead.');
   return $self->fetch_all_by_Slice_and_score(@_);
+}
+
+=head2 remove_by_RawContig
+
+  Description: DEPRECATED use remove_by_Slice instead
+
+=cut
+
+sub remove_by_RawContig {
+  my $self = shift;
+  deprecate("Use remove_by_Slice instead");
+  return $self->remove_by_Slice(@_);
 }
 
 
