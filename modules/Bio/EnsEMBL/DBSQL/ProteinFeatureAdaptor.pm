@@ -19,7 +19,7 @@ Feature Objects
   use Bio::EnsEMBL::DBSQL::DBAdaptor;
   use Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor;
 
-  $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
+  $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -user => 'root', -dbname => 'pog' , -host => 'caldy' , -driver => 'mysql' );
   my $feature_obj=Bio::EnsEMBL::ProteinFeatureAdaptor->new($obj);
 
   
@@ -376,8 +376,8 @@ sub store {
     my $analysis;
 
    
-    if( ! $feature->isa('Bio::EnsEMBL::SeqFeatureI') ) {
-	$self->throw("Feature $feature is not a feature!");
+    if( ! $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
+	$self->throw("A FeaturePair object required!");
     }
 	
     
