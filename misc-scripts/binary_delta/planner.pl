@@ -7,7 +7,14 @@
 #
 # Use like this:
 #
-#   planner.pl <databases.txt >do_it_all.sh
+#   planner.pl [options] <databases.txt >do_it_all.sh
+#   sh -x ./do_it_all.sh
+#
+# [options] are
+#   -a	Generate code that only runs apply.pl (for verification of
+#	generated deltas).
+#   -b	Generate code that only runs build.pl
+#
 #
 # Please take a look at the whole of "do_it_all.sh" before
 # running it!  It assumes that the current directory contains
@@ -21,6 +28,18 @@
 
 use strict;
 use warnings;
+
+use Getopt::Std;
+
+my %opts;
+if (!getopts('ab')) {
+    die "Options are -a and -b.  See head of script.\n";
+}
+if (!$opts{'a'} && !$opts{'b'}) {
+    # If neither -a nor -b is specified, do both.
+    $opts{'a'} = 1;
+    $opts{'b'} = 1;
+}
 
 my %thing;
 
@@ -36,6 +55,17 @@ while (defined(my $line = <>)) {
     my $v  = $2;
 
     push @{ $thing{$db} }, $v;
+}
+
+if ($opts{'a'}) {
+    print "APPLY=YES\n";
+} else {
+    print "APPLY=NO\n";
+}
+if ($opts{'b'}) {
+    print "BUILD=YES\n";
+} else {
+    print "BUILD=NO\n";
 }
 
 foreach my $db (keys %thing) {
@@ -60,20 +90,20 @@ if [ \\( ! -f deltas/${d}_build.txt -o \\
   scp -c none -r ecs3:/mysqla/current/var/$db0 databases/
 fi
 
-if [ ! -f deltas/${d}_build.txt -a \\
+if [ "x\$BUILD" = "xYES" -a ! -f deltas/${d}_build.txt -a \\
      ! -d databases/$db1 ]; then
   # Get newer revision (only needed for build)
   scp -c none -r ecs3:/mysqla/current/var/$db1 databases/
 fi
 
-if [ ! -f deltas/${d}_build.txt ]; then
+if [ "x\$BUILD" = "xYES" -a ! -f deltas/${d}_build.txt ]; then
   # Compute delta
   /usr/bin/time perl -w ./build.pl -c ./xdelta.osf -s databases -d deltas \\
     $db $v0 $v1 2>&1 | \\
     tee deltas/${d}_build.txt
 fi
 
-if [ ! -f deltas/${d}_apply.txt ]; then
+if [ "x\$APPLY" = "xYES" -a ! -f deltas/${d}_apply.txt ]; then
   # Apply the delta as a test
   /usr/bin/time perl -w ./apply.pl -c ./xdelta.osf -s deltas -d databases \\
     $db $v0 $v1 2>&1 | \\
@@ -82,7 +112,9 @@ fi
 
 # Remove older revision and new revision built by apply.pl
 rm -rf databases/$db0
-rm -rf databases/${db1}.????
+if [ "x\$APPLY" = "xYES" ]; then
+  rm -rf databases/${db1}.????
+fi
 
 EOT
     }
