@@ -2,13 +2,13 @@ use strict;
 use warnings;
 
 use lib 't';
-use TestUtils qw(debug test_getter_setter);
+use TestUtils qw(debug test_getter_setter count_rows);
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Exon;
 
-BEGIN { $| = 1;  
+BEGIN { $| = 1;
 	use Test;
-	plan tests => 21;
+	plan tests => 26;
 }
 
 my $loaded = 0;
@@ -127,3 +127,31 @@ ok($seq);
 debug("Lenth = " . $translation->length());
 ok(length($seq) == $translation->length());
 
+
+#
+# test remove method
+#
+
+$multi->save('core', 'translation', 'translation_stable_id',
+             'protein_feature', 'object_xref', 'identity_xref',
+             'go_xref');
+
+my $tl_count = count_rows($db, 'translation');
+my $tlstable_count = count_rows($db, 'translation_stable_id');
+my $pfeat_count = count_rows($db, 'protein_feature');
+
+
+my $pfeat_minus = @{$translation->get_all_ProteinFeatures()};
+
+$ta->remove($translation);
+
+ok(!defined($translation->dbID));
+ok(!defined($translation->adaptor()));
+
+ok(count_rows($db, 'translation') == $tl_count - 1);
+ok(count_rows($db, 'translation_stable_id') == $tlstable_count - 1);
+ok(count_rows($db, 'protein_feature') == $pfeat_count - $pfeat_minus);
+
+
+
+$multi->restore();

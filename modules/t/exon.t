@@ -3,14 +3,14 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 24;
+	plan tests => 27;
 }
 
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}
 
 use MultiTestDB;
-use TestUtils qw(debug test_getter_setter);
+use TestUtils qw(debug test_getter_setter count_rows);
 
 our $verbose = 0; #set to 1 to turn on debug printouts
 
@@ -178,3 +178,24 @@ ok($first_seq->seq() && $first_seq->seq() eq $second_seq->seq());
 ok($first_seq->display_id()  && $first_seq->display_id() eq $second_seq->display_id());
 
 
+
+#
+# test the remove method works
+#
+$multi->save("core", "exon", "exon_stable_id", "supporting_feature");
+
+my $ex_count = count_rows($db, 'exon');
+my $exstable_count = count_rows($db, 'exon_stable_id');
+my $supfeat_count = count_rows($db, 'supporting_feature');
+
+$exon = $exonad->fetch_by_stable_id('ENSE00000859937');
+my $supfeat_minus = @{$exon->get_all_supporting_features()};
+
+$exonad->remove($exon);
+
+ok(count_rows($db, 'exon') == $ex_count - 1);
+ok(count_rows($db, 'exon_stable_id') == $exstable_count - 1);
+ok(count_rows($db, 'supporting_feature') == $supfeat_count - $supfeat_minus);
+
+
+$multi->restore();

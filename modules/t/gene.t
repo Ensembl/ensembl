@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 54;
+	plan tests => 58;
 }
 
 use MultiTestDB;
@@ -495,10 +495,10 @@ ok( $ok );
 # Gene remove test
 #
 
-$multi->save( "core", "gene", "gene_stable_id", "gene_description", 
-	      "transcript", "transcript_stable_id", 
-	      "translation", "translation_stable_id", 
-	      "exon", "exon_stable_id", "exon_transcript",
+$multi->save( "core", "gene", "gene_stable_id", "gene_description",
+	      "transcript", "transcript_stable_id",
+	      "translation", "translation_stable_id", "protein_feature",
+	      "exon", "exon_stable_id", "exon_transcript", "supporting_feature",
 	      "object_xref", "go_xref", "identity_xref" );
 
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
@@ -507,6 +507,8 @@ my $gene_count = count_rows( $db, "gene" );
 my $exon_count = count_rows( $db, "exon" );
 my $trans_count = count_rows( $db, "transcript" );
 my $tl_count = count_rows( $db, "translation" );
+my $gdesc_count = count_rows($db, "gene_description");
+my $gstable_count = count_rows($db, "gene_stable_id");
 
 my $tminus = scalar( @{$gene->get_all_Transcripts() } );
 my $eminus = scalar( @{$gene->get_all_Exons() } );
@@ -523,8 +525,11 @@ $ga->remove( $gene );
 ok( count_rows( $db, "gene" ) == ( $gene_count - 1 ));
 ok( count_rows( $db, "transcript" ) == ($trans_count-$tminus));
 ok( count_rows( $db, "exon" ) == ( $exon_count - $eminus ));
+ok( count_rows( $db, "gene_description" ) == ( $gdesc_count -1 ));
+ok( count_rows( $db, "gene_stable_id" ) == ($gstable_count -1));
 
-
+ok(!defined($gene->dbID()));
+ok(!defined($gene->adaptor()));
 
 $multi->restore('core');
 

@@ -5,11 +5,11 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 40;
+	plan tests => 46;
 }
 
 use MultiTestDB;
-use TestUtils qw( debug test_getter_setter );
+use TestUtils qw( debug test_getter_setter count_rows);
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Intron;
@@ -257,8 +257,8 @@ foreach my $stable_id (qw(ENST00000201961 ENST00000217347)){ #test both strands
     $transcript_adaptor->fetch_by_stable_id($stable_id);
 
 
-  my @exons = (@{$transcript->get_all_Exons()});  
-  my @introns = (@{$transcript->get_all_Introns()});  
+  my @exons = (@{$transcript->get_all_Exons()});
+  my @introns = (@{$transcript->get_all_Introns()});
 
   my $orig_seq = $transcript->slice->subseq(
 					    $transcript->start(),
@@ -268,13 +268,12 @@ foreach my $stable_id (qw(ENST00000201961 ENST00000217347)){ #test both strands
   my $idl=0;
   my $new_seq = $exons[0]->seq()->seq();
   foreach my $intron (@introns){
-    
     $new_seq .= $intron->seq;
     $new_seq .= $exons[$idl+1]->seq->seq();
     $idl++;
-    
+
   }
-  
+
   ok($orig_seq eq $new_seq);
 
 }
@@ -294,3 +293,32 @@ my $five_prime = $tr->five_prime_utr();
 
 ok(!defined($five_prime));
 
+
+
+#
+# test removal of transcript
+#
+my $tl_count = count_rows($db, "translation");
+my $ex_tr_count = count_rows($db, "exon_transcript");
+my $tr_count = count_rows($db, "transcript");
+my $trstable_count = count_rows($db, "transcript_stable_id");
+
+my $ex_tr_minus = @{$tr->get_all_Exons()};
+
+$multi->save("core", "transcript", "transcript_stable_id", "translation",
+             "translation_stable_id", "protein_feature", "exon",
+             "exon_stable_id", "exon_transcript", "object_xref",
+             "supporting_feature",
+             "go_xref", "identity_xref");
+
+$ta->remove($tr);
+
+ok(!defined($tr->dbID()));
+ok(!defined($tr->adaptor()));
+
+ok( count_rows( $db, "transcript") == ($tr_count - 1));
+ok( count_rows( $db, "translation") == ($tl_count - 1));
+ok( count_rows( $db, "exon_transcript") == ($ex_tr_count - $ex_tr_minus));
+ok( count_rows( $db, "transcript_stable_id") == ($trstable_count - 1));
+
+$multi->restore();
