@@ -52,6 +52,19 @@ use Bio::Root::RootI;
 
 @ISA = qw(Bio::Root::RootI);
 
+=head2 new
+
+    Title   :   new
+    Usage   :   my $ea = Bio::EnsEMBL::EvidenceAlignment->new(
+                                         -DBADAPTOR    => $dba,
+                                         -TRANSCRIPTID => $tr_stable_id);
+
+    Function:   Initialises EvidenceAlignment object
+    Returns :   An EvidenceAlignment object
+    Args    :   Database adaptor object and transcript stable ID string
+
+=cut
+
 sub new {
   my($class,@args) = @_;
 
@@ -65,6 +78,14 @@ sub new {
   return $self; # success - we hope!
 }
 
+=head2 dbadaptor
+
+    Title   :   dbadaptor
+    Usage   :   $ea->dbadaptor($dba);
+    Function:   get/set for database adaptor object
+
+=cut
+
 sub dbadaptor {
   my $obj = shift;
   if( @_ ) {
@@ -74,6 +95,14 @@ sub dbadaptor {
   return $obj->{'db_adaptor'};
 }
 
+=head2 transcriptid
+
+    Title   :   transcriptid
+    Usage   :   $ea->transcriptid($transcript_stable_id);
+    Function:   get/set for transcript stable id string
+
+=cut
+
 sub transcriptid {
   my $obj = shift;
   if( @_ ) {
@@ -82,6 +111,15 @@ sub transcriptid {
   }
   return $obj->{'transcript_id'};
 }
+
+=head2 fetch_alignment
+
+    Title   :   fetch_alignment
+    Usage   :   my $seq_arr_ref = $ea->fetch_alignment;
+    Function:   gets aligned transcript and evidence
+    Returns :   reference to array of Bio::PrimarySeq
+
+=cut
 
 sub fetch_alignment {
   my ($self) = @_;
@@ -143,7 +181,7 @@ sub _get_transcript_pep {
   return $retval;
 }
 
-# takes a transcript ID and a DB adaptor
+# _get_aligned_evidence: takes a transcript ID and a DB adaptor
 # returns ref to an array of Bio::PrimarySeq
 
 sub _get_aligned_evidence {
@@ -252,6 +290,7 @@ sub _get_aligned_evidence {
 		    -moltype          => 'protein'
 		  );
   push @evidence_arr, $evidence_obj;
+  my $prot_tran_len = length($evidence_obj->seq);
 
   my @seqcache = ();
 
@@ -259,10 +298,6 @@ sub _get_aligned_evidence {
   my $total_exon_len = 0;
   my @pep_evidence_arr = ();
   for (my $i = 0; $i <= $#exons_to_display; $i++) {
-    eval {
-      print STDERR "exon start end = " .$exons_to_display[$i]->start
-      ." ". $exons_to_display[$i]->end . "\n";
-    };
     my $start = $exons_to_display[$i]->start;
     my @features = $exons_to_display[$i]->each_Supporting_Feature;
 
@@ -282,27 +317,19 @@ sub _get_aligned_evidence {
         my $hlength = $feature->hend - $feature->hstart + 1;
         my $length = $feature->end - $feature->start + 1;
         next PEP_FEATURE_LOOP unless ($length == (3 * $hlength));
-        printf STDERR "XXX feature length = $length\n";
         my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlength;
         my $hindent;
         if ($exons_to_display[$i]->strand > 0) {
-          print STDERR "XXX hindent = ($total_exon_len + " . $fstart
- 	               . " - " . $start .") / 3";
           $hindent = ($total_exon_len + $fstart - $start) / 3;
-  	  print STDERR " = $hindent ( before trunc)\n";
         } else {
-          print STDERR "XXX hindent = ($total_exon_len + "
-	  . $exons_to_display[$i]->end . " - ". $feature->end . ") /3";
           $hindent = ($total_exon_len + $exons_to_display[$i]->end
 	             - $feature->end) / 3;
-	  print STDERR " = $hindent (before trunc) \n";
         }
         $hindent = int $hindent;
         if ($i == 0) {
           $hindent -= $utr_region_in_first_exon;
         }
 	if ($hindent < 0) {
-	  print STDERR "changing hindent $hindent to 0\n";
 	  $hindent = 0;
 	}
         my %hit_details = ( 'hseqname'    => $feature->hseqname,
@@ -346,10 +373,11 @@ sub _get_aligned_evidence {
     } else {
       $seq_str = "\L$seq_str";
     }
-    print STDERR "XXX ". $$hit{'hseqname'}. " $seq_str\n";
     if ($$hit{'hseqname'} ne $prev_hseqname) {	# not same source as previous
       if ($evidence_line ne "") {
-        print STDERR "$evidence_line\n";
+	while (length($evidence_line) < $prot_tran_len) {
+	  $evidence_line .= "-";
+        }
 	$evidence_obj = Bio::PrimarySeq->new(
 	                  -seq              => $evidence_line,
 	                  -id               => 0,
@@ -358,30 +386,23 @@ sub _get_aligned_evidence {
 			);
 	push @evidence_arr, $evidence_obj;
       }
-      printf STDERR "%-23s", $$hit{'hseqname'}, $$hit{'score'} . "\n";
       $evidence_line = "-" x $$hit{'hindent'};
-      print STDERR "XXX evidence_line |$evidence_line|\n";
-      print STDERR "XXX adding |$seq_str| to |$evidence_line|\n";
       $evidence_line .= $seq_str;
-      print STDERR "XXX evidence_line |$evidence_line|\n";
     } else {	# same source as previous
       while (length($evidence_line) > ($$hit{'hindent'})) {
         chop $evidence_line;
-        print STDERR "XXX evidence_line |$evidence_line|\n";
       }
       while (length($evidence_line) < ($$hit{'hindent'})) {
         $evidence_line .= "-";
-        print STDERR "XXX evidence_line |$evidence_line|\n";
       }
-      print STDERR "XXX adding |$seq_str| to |$evidence_line|\n";
       $evidence_line .= $seq_str;
-      print STDERR "XXX evidence_line |$evidence_line|\n";
     }
     $prev_hseqname = $$hit{'hseqname'};
   }
-  print STDERR "$evidence_line\n";
-  print STDERR "\n";
   if (length($evidence_line) > 0) {
+    while (length($evidence_line) < $prot_tran_len) {
+      $evidence_line .= "-";
+    }
     $evidence_obj = Bio::PrimarySeq->new(
                       -seq              => $evidence_line,
                       -id               => 0,
@@ -401,14 +422,11 @@ sub _get_aligned_evidence {
 		    -moltype          => 'dna'
 		  );
   push @evidence_arr, $evidence_obj;
+  my $nuc_tran_len = length($evidence_obj->seq);
 
   $total_exon_len = 0;
   my @nuc_evidence_arr = ();
   for (my $i = 0; $i <= $#all_exons; $i++) {
-    eval {
-      print STDERR "exon start end = " .$all_exons[$i]->start
-      ." ". $all_exons[$i]->end . "\n";
-    };
     my $start = $all_exons[$i]->start;
     my @features = $all_exons[$i]->each_Supporting_Feature;
 
@@ -431,8 +449,6 @@ sub _get_aligned_evidence {
       if ($hit_seq_obj->moltype ne "protein") {
         my $hlength = $feature->hend - $feature->hstart + 1;
         my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlength;
-        #my $feature_start_overhang = $start - $fstart;
-        #my $feature_end_overhang = $feature->end - $all_exons[$i]->end;
         my $strand_wrt_exon = $all_exons[$i]->strand * $feature->strand;
         if ($strand_wrt_exon < 0) {
           my $hseq_obj = Bio::PrimarySeq->new( -seq => $hseq,
@@ -443,16 +459,11 @@ sub _get_aligned_evidence {
           $hseq = $hseq_obj->revcom->seq;
         }
         if ($all_exons[$i]->strand > 0) {
-          #$hindent = $total_exon_len - $feature_start_overhang;
           $hindent = $total_exon_len + $fstart - $start;
         } else{
           $hindent = $total_exon_len + $all_exons[$i]->end - $feature->end;
         }
-        #if ($total_exon_len > 0) {
-        #  $hindent -= 1;
-        #}
 	if ($hindent < 0) {
-	  print STDERR "changing hindent $hindent to 0\n";
 	  $hindent = 0;
 	}
         my %hit_details = ( 'moltype'     => $hit_seq_obj->moltype,
@@ -475,9 +486,7 @@ sub _get_aligned_evidence {
       }
       $last_feat = $feature;
     }
-    print STDERR "XXX total_exon_len was $total_exon_len\n";
     $total_exon_len += $all_exons[$i]->end - $start + 1;
-    print STDERR "XXXXXXX total_exon_len now is " . $total_exon_len . "\n";
   }
 
   my @sorted_nuc_evidence_arr = sort {    $$a{'score'}    <=> $$b{'score'}
@@ -502,7 +511,9 @@ sub _get_aligned_evidence {
     }
     if ($$hit{'hseqname'} ne $prev_hseqname) {	# not same source as previous
       if ($evidence_line ne "") {
-        print STDERR "$evidence_line\n";
+        while (length($evidence_line) < $nuc_tran_len) {
+          $evidence_line .= "-";
+        }
 	$evidence_obj = Bio::PrimarySeq->new(
 	                  -seq              => $evidence_line,
 	                  -id               => 0,
@@ -511,7 +522,6 @@ sub _get_aligned_evidence {
 			);
 	push @evidence_arr, $evidence_obj;
       }
-      printf STDERR "%-23s", $$hit{'hseqname'};
       $evidence_line = "-" x $$hit{'hindent'};
       $evidence_line .= $seq_str;
     } else {	# same source as previous
@@ -525,9 +535,10 @@ sub _get_aligned_evidence {
     }
     $prev_hseqname = $$hit{'hseqname'};
   }
-  print STDERR "$evidence_line\n";
-  print STDERR "\n";
   if (length($evidence_line) > 0) {
+    while (length($evidence_line) < $nuc_tran_len) {
+      $evidence_line .= "-";
+    }
     $evidence_obj = Bio::PrimarySeq->new(
                       -seq              => $evidence_line,
                       -id               => 0,
