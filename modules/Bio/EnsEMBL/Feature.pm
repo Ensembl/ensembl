@@ -54,13 +54,11 @@ Internal methods are usually preceded with a _
 
 package Bio::EnsEMBL::Feature;
 
-use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
-#This only inherits from root for backwards compatibility.
-#In the future this inheritence will be removed
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Storable);
 
 
 =head2 new
@@ -95,7 +93,8 @@ sub new {
   my $class = ref($caller) || $caller;
 
   my($start, $end, $strand, $slice, $analysis) =
-    rearrange(['START','END','STRAND','SLICE','ANALYSIS'], @_);
+    rearrange(['START','END','STRAND','SLICE','ANALYSIS',
+               'DBID', 'ADAPTOR'], @_);
 
   if(defined($slice)) {
     if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
@@ -125,7 +124,9 @@ sub new {
                 'end'      => $end,
                 'strand'   => $strand,
                 'slice'    => $slice,
-                'analysis' => $analysis}, $class);
+                'analysis' => $analysis,
+                'adaptor'  => $adaptor,
+                'dbID'     => $dbID}, $class);
 }
 
 
