@@ -842,11 +842,11 @@ sub get_all_peptide_variations {
       next if $allele eq '-';       #skip deletions
       next if CORE::length($allele) != 1; #skip insertions
       
-      if($strand == -1) {
+#      if($strand == -1) {
 	#complement the allele if the snp is on the reverse strand
-	$allele =~ 
-	 tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
-      }
+#	$allele =~ 
+#	 tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+#      }
 
       #create a data structure of variant alleles sorted by both their
       #peptide position and their position within the peptides codon
@@ -1087,20 +1087,18 @@ sub get_all_cdna_SNPs {
 
 	# change allele and ambicode if strand of coordinate system is different to snp strand
 		
-	my $exon_strand = $new_exon->{'_gsf_strand'};
-	
-	if ($snp->strand ne $exon_strand ){
+	if ($coord->strand() == -1){
 		$snp->{'alleles'} =~ tr/acgthvmrdbkynwsACGTDBKYHVMRNWS\//tgcadbkyhvmrnwsTGCAHVMRDBKYNWS\//;
 		$snp->{'_ambiguity_code'} =~ tr/acgthvmrdbkynwsACGTDBKYHVMRNWS\//tgcadbkyhvmrnwsTGCAHVMRDBKYNWS\//;					
 	}
 
-      #copy the snp and convert to cdna coords...
+      #copy the snp and convert to cdna coords, we arbitrarily move snps to +ve strand
       my $new_snp;
       %$new_snp = %$snp;
       bless $new_snp, ref $snp;
       $new_snp->start($coord->start);
       $new_snp->end($coord->end);
-      $new_snp->strand($coord->strand);
+      $new_snp->strand(1);
       push @{$snp_hash{$type}}, $new_snp;
     }
   }
