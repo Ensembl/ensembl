@@ -189,6 +189,51 @@ sub fetch_by_fpc_name {
     return $slice;
 }
 
+=head2 fetch_by_chr_band
+
+ Title   : fetch_by_chr_band
+ Usage   :
+ Function: create a Slice representing a complete FPC contig
+ Example :
+ Returns :
+ Args    : the FPC contig id.
+
+
+=cut
+
+sub fetch_by_chr_band {
+    my ($self,$chr,$band) = @_;
+
+    my $type = $self->db->assembly_type();
+
+    my $sth = $self->db->prepare("
+        select min(k.chr_start), max(k.chr_end)
+          from chromosome as c, karyotype as k
+         where c.chromosome_id = k.chromosome_id and c.name=? and k.band like ?
+    ");
+    $sth->execute( $chr, "$band%" );
+    my ( $slice_start, $slice_end) = $sth->fetchrow_array;
+
+    unless( defined($slice_start) ) {
+       my $sth = $self->db->prepare("
+           select min(k.chr_start), max(k.chr_end)
+             from chromosome as c, karyotype as k
+            where c.chromosome_id = k.chromosome_id and k.band like ?
+       ");
+       $sth->execute( "$band%" );
+       ( $slice_start, $slice_end) = $sth->fetchrow_array;
+    }
+
+    return new Bio::EnsEMBL::Slice
+      (
+       -chr_name  => $chr,
+       -chr_start => $slice_start,
+       -chr_end   => $slice_end,
+       -strand    => 1,
+       -assembly_type => $type
+      );
+}
+
 
 
 =head2 fetch_by_clone_accession

@@ -188,19 +188,18 @@ sub dbID {
    return $self->{'dbID'};
 }
 
-
-
 =head2 name
 
-  Arg [1]    : none
+  Arg [1]    : optional string $name
   Example    : $name = $slice->name();
-  Description: Returns the name of this slice. The name is formatted as a 
-               the following string: "$chr_name.$chr_start-$chr_end". 
+  Description: Returns the name of this slice. The name is formatted as a
+               the following string: "$chr_name.$chr_start-$chr_end".
                (e.g. 'X.10000-20000')
-               This essentially allows slices to be easily compared and 
-               can also act as a hash value. This is similar to the name 
-               method in RawContig so for exons which can have either type 
+               This essentially allows slices to be easily compared and
+               can also act as a hash value. This is similar to the name
+               method in RawContig so for exons which can have either type
                of sequence attached it provides a more common interface.
+               You can as well set the slicename to something like "NT_110023"
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -208,20 +207,25 @@ sub dbID {
 =cut
 
 sub name {
-  my $self = shift;
+  my ( $self, $arg )  = @_;
 
-  my $string = join '', $self->chr_name, '.', 
-                        $self->chr_start, '-', $self->chr_end();
+  if( defined $arg ) {
+    $self->{name} = $arg;
+  } elsif(!defined $self->{name}) {
 
-  if($self->strand == -1) {
-    return "reverse($string)";
+    my $string = join '', $self->chr_name, '.',
+    $self->chr_start, '-', $self->chr_end();
+
+
+    if($self->strand == -1) {
+      $self->{name} = "reverse($string)";
+    } else {
+      $self->{name} = $string;
+    }
   }
 
-  return $string;
+  return $self->{name};
 }
-
-
-
 
 =head2 id
 
