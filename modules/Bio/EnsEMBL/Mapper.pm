@@ -134,7 +134,7 @@ sub map_coordinates{
      $from = 'from';
      $to = 'to';
    }
-     
+
    unless(defined $hash) {
        $self->throw("Type $type is neither to or from coordinate systems");
    }

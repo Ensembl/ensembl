@@ -331,6 +331,7 @@ sub fetch_by_Gene {
       $gene->add_DBLink($translink);
     }
   }
+
   my $genelinks = $self->_fetch_by_object_type( $gene->stable_id, 'Gene' );
   foreach my $genelink ( @$genelinks ) {
     $gene->add_DBLink( $genelink );
@@ -352,7 +353,7 @@ sub fetch_by_Gene {
 
 sub fetch_by_RawContig {
   my ( $self, $contig ) = @_;
-  return $self->_fetch_by_object_type( $rawContigId, 'RawContig' );
+  return $self->_fetch_by_object_type($contig->dbID, 'RawContig' );
 }
 
 
@@ -427,6 +428,12 @@ sub _fetch_by_object_type {
   my ( $self, $ensObj, $ensType ) = @_;
   my @out;
   
+  if (!defined($ensObj)) {
+    $self->throw("Can't fetch_by_EnsObject_type without an object");
+  }
+  if (!defined($ensType)) {
+    $self->throw("Can't fetch_by_EnsObject_type without a type");
+  }
   my $sth = $self->prepare("
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
            xref.description,
@@ -499,7 +506,7 @@ sub _fetch_by_object_type {
     #}
   }                                     # while <a row from database>
   
-  return \out;
+  return \@out;
 }
 
 
@@ -762,9 +769,9 @@ sub fetch_by_rawContig {
   my ( $self, $rawContigId ) = @_;
   
   $self->warn("fetch_by_rawContig has been renamed fetch_by_RawContig");
-  my $contig = 
-    $self->db->get_RawContigAdaptor->fetch_by_dbID($rawContigID);
 
+  my $contig =  $self->db->get_RawContigAdaptor->fetch_by_dbID($rawContigId);
+  
   return $self->fetch_by_RawContig( $contig );
 }
 

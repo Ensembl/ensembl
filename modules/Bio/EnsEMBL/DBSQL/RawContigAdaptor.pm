@@ -210,6 +210,20 @@ sub fetch_all {
   return $self->_contig_from_sth( $sth );
 }
 
+sub fetch_all_names {
+  my $self  = shift;
+  my @res;
+ 
+  my @contigs; 
+  my $sth = $self->prepare( "SELECT name FROM contig " );
+  $sth->execute(); 
+
+  while (my $ar = $sth->fetchrow_arrayref) {
+      push(@contigs,$ar->[0]);
+  }
+  return @contigs;
+}
+
 
 =head2 fetch_by_name
 
@@ -408,7 +422,6 @@ sub store {
                                                 embl_offset, 
                                                 dna_id) 
                             VALUES ( ?, ?, ?, ?, ? )");
-
   my $rv = $sth->execute($contig->name(), 
                          $clone->dbID(),
                          $contig->length(),

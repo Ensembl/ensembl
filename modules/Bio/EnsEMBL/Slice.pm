@@ -816,8 +816,8 @@ sub get_tiling_path {
   my $mapper = $self->adaptor()->db->get_AssemblyMapperAdaptor()->
     fetch_by_type($self->assembly_type());
 
-
   # Get the ids of the raw_contigs in this region specified in chrmsml coords 
+
   my @mapped = $mapper->map_coordinates_to_rawcontig
     (
      $self->chr_name(),

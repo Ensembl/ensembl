@@ -65,7 +65,7 @@ sub fetch_by_Exon {
   }
 
   unless($exon->dbID) {
-    $self->warn("exon has no dbID can't fetch evidence from db" .
+    $self->warn("exon has no dbID can't fetch evidence from db " .
 		"no relationship exists\n");
     return [];
   }

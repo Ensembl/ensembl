@@ -163,7 +163,7 @@ sub store {
    if( defined $translation ) {
      $self->db->get_TranslationAdaptor()->store( $translation );
    }
-   $exon_count = scalar($transcript->get_all_Exons());
+   $exon_count = scalar(@{$transcript->get_all_Exons()});
    # ok - now load this line in
    my $tst = $self->prepare("
         insert into transcript ( gene_id, translation_id, exon_count )
@@ -182,13 +182,13 @@ sub store {
    #print STDERR "Going to look at gene links\n";
    my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
 
-   foreach my $dbl ( $transcript->each_DBLink ) {
+   foreach my $dbl ( @{$transcript->get_all_DBLinks} ) {
      $dbEntryAdaptor->store( $dbl, $transcript->dbID, "Transcript" );
    }
 
    my $etst = $self->prepare("insert into exon_transcript (exon_id,transcript_id,rank) values (?,?,?)");
    my $rank = 1;
-   foreach my $exon ( $transcript->get_all_Exons ) {
+   foreach my $exon ( @{$transcript->get_all_Exons} ) {
      $etst->execute($exon->dbID,$transcript->dbID,$rank);
      $rank++;
    }
@@ -272,7 +272,7 @@ sub remove {
                           WHERE transcript_id = ?" );
   $sth->execute( $transcript->dbID );
   
-  foreach my $exon ( $transcript->get_all_Exons() ) {  
+  foreach my $exon ( @{$transcript->get_all_Exons()} ) {  
     my $sth = $self->prepare( "SELECT count(*) 
                                FROM   exon_transcript 
                                WHERE  exon_id = ?" );

@@ -462,7 +462,7 @@ sub store{
 
   #store the contigs which were on this clone
   my $rca = $self->db->get_RawContigAdaptor();
-  foreach my $contig($clone->get_all_Contigs()){
+  foreach my $contig(@{$clone->get_all_Contigs()}){
     $rca->store($contig, $clone);
   }
 

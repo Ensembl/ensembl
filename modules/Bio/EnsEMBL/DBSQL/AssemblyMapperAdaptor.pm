@@ -150,7 +150,6 @@ sub register_region{
          ass.type = '$type'
    };
 
-  #print STDERR "Going to select $select\n";
   my $sth = $self->prepare($select);
    
   $sth->execute();

@@ -87,12 +87,12 @@ sub new {
     return bless { 'adaptor'   => $adaptor,
 		   'dbID'      => $internal_id,
 		   '_clone_id' => $id,
-		   'embl_id'  => $embl_id,
+		   'embl_id'   => $embl_id,
 		   'version'   => $version,
 		   'embl_version' => $embl_version,
 		   'htg_phase' => $htg_phase,
 		   'created'   => $created,
-		   'modified'  => $modified
+		   'modified'  => $modified,
 		 }, $class;
 
 #    $self->adaptor($adaptor);

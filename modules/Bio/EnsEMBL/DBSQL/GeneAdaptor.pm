@@ -391,23 +391,26 @@ sub fetch_by_Slice {
   
   my $str = "(".join( ",",@cids ).")";
   
-  my $sth = $self->prepare("
-    SELECT distinct(t.gene_id) 
+  my $sql = "
+    SELECT distinct(t.gene_id)
     FROM   transcript t,exon_transcript et,exon e 
     WHERE  e.contig_id in $str 
     AND    et.exon_id = e.exon_id 
-    AND    et.transcript_id = t.transcript_id");
+    AND    et.transcript_id = t.transcript_id";
+    
+  my @out;
 
+  my $sth = $self->db->prepare($sql);
   $sth->execute;
   
   while( my ($geneid) = $sth->fetchrow ) {
     my $gene = $self->fetch_by_dbID( $geneid );
-    my $newgene = $gene->transform( $slice );    
+    my $newgene = $gene->transform( $slice );
     push( @out, $newgene );
-  }
+ }
 
   #place the results in an LRU cache
-  $self->{'_slice_gene_cache'}{$slice->name} = \@out;
+  #$self->{'_slice_gene_cache'}{$slice->name} = \@out;
 
   return \@out;
 }
@@ -519,7 +522,7 @@ sub fetch_by_maximum_DBLink {
     my $size=scalar(@genes);
     if ($size > 0) {
 	foreach my $gene (@genes) {
-	    my $size = (scalar($gene->get_all_Exons));
+	    my $size = (scalar(@{$gene->get_all_Exons}));
 	    if ($size > $max) {
 		$biggest = $gene;
 		$max=$size;
@@ -638,8 +641,13 @@ sub store {
        $self->throw("$gene is not a EnsEMBL gene - not writing!");
    }
  
-   my $trans_count = scalar($gene->get_all_Transcripts);
-   my $type = $gene->type;
+   my $trans_count = scalar(@{$gene->get_all_Transcripts});
+   my $type = "";
+
+   if (defined($gene->type)) {
+       $type = $gene->type;
+   }
+
    my $sth2 = $self->prepare("INSERT INTO gene(type, analysis_id, 
                                                transcript_count) 
                               VALUES('$type', $analysisId, $trans_count)" );
@@ -651,7 +659,9 @@ sub store {
 
    my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
 
-   foreach my $dbl ( $gene->each_DBLink ) {
+   print "Stable id " . $gene->stable_id . "\n";
+
+   foreach my $dbl ( @{$gene->get_all_DBLinks} ) {
      $dbEntryAdaptor->store( $dbl, $gene->dbID, "Gene" );
    }
 
@@ -675,15 +685,15 @@ sub store {
 
    # write exons at this level to avoid duplicates
    my $exonAdaptor = $self->db->get_ExonAdaptor();
-   my @ex = $gene->get_all_Exons;
+   my @ex = @{$gene->get_all_Exons};
 
-   foreach my $exon($gene->get_all_Exons){
+   foreach my $exon (@ex){
      $exonAdaptor->store( $exon );
    }
 
    # write exons transcripts and exon_transcript table
-   foreach my $trans ( $gene->get_all_Transcripts() ) {
-     $transcriptAdaptor->store($trans,$gene);
+   foreach my $trans ( @{$gene->get_all_Transcripts()} ) {
+       $transcriptAdaptor->store($trans,$gene);
    }
    
    return $gene->dbID;
@@ -715,7 +725,7 @@ sub remove {
   $sth= $self->prepare( "delete from gene_stable_id where gene_id = ? " );
   $sth->execute( $gene->dbID );
   my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
-  foreach my $trans ( $gene->get_all_Transcripts() ) {
+  foreach my $trans ( @{$gene->get_all_Transcripts()} ) {
     $transcriptAdaptor->remove($trans,$gene);
   }
 

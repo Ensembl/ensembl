@@ -143,7 +143,6 @@ sub fetch_by_gene_id {
       $self->throw("Gene dbID not defined");
   }
   $self->{rchash} = {};
-
   my $query = qq {
     SELECT  e.exon_id
       , e.contig_id
@@ -352,7 +351,7 @@ sub store {
     $self->throw("$exon is not a EnsEMBL exon - not dumping!");
   }
 
-  if( $exon->dbID && $exon->adaptor == $self ) {
+  if( $exon->dbID && $exon->adaptor && $exon->adaptor == $self ) {
     $self->warn("Exon with dbID " . $exon->dbID . " has already got a dbID" .
 		"and is attached to this adaptor. No need therefore to store");
     return $exon->dbID();
@@ -432,12 +431,14 @@ sub store {
 
         
     my $statement = "INSERT INTO exon_stable_id(exon_id," .
-                                   "version, stable_id, created, modified)".
+	"version, stable_id, created, modified)".
                     " VALUES(" . $exon->dbID . "," .
                                $exon->version . "," .
                                "'" . $exon->stable_id . "'," .
                                "FROM_UNIXTIME(".$exon->created."),".
-                               "FROM_UNIXTIME(".$exon->modified."))";
+                               "FROM_UNIXTIME(". $exon->modified . "))";
+    #print $statement . "\n";
+
      my $sth = $self->prepare($statement);
      $sth->execute();
    }
@@ -454,7 +455,7 @@ sub store {
   my $dna_adaptor = $self->db->get_DnaAlignFeatureAdaptor();
   my $pep_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
   my $type;
- FEATURE: foreach my $sf ($exon->each_Supporting_Feature) {
+ FEATURE: foreach my $sf (@{$exon->get_all_supporting_features}) {
     #print STDERR "have supporting feature ".$sf." ".$sf->gffstring."\n";
     if(!$sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
       $self->throw("$sf must be an align feature" .

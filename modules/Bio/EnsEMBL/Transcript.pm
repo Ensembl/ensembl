@@ -105,7 +105,7 @@ sub get_all_DBLinks {
    if( !defined $self->{'_db_link'} ) {
        $self->{'_db_link'} = [];
        if( defined $self->adaptor ) {
-	 $self->adaptor->db->get_DBEntryAdaptor->fetch_by_transcript($self);
+	 $self->adaptor->db->get_DBEntryAdaptor->fetch_by_Transcript($self);
        }
    } 
 
