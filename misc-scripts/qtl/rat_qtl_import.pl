@@ -32,7 +32,6 @@ my $dsn = "DBI:mysql:host=$host;dbname=$dbname";
 if( $port ) {
   $dsn .= ";port=$port";
 }
-
 my $db = DBI->connect( $dsn, $user, $pass );
 
 
@@ -68,13 +67,19 @@ my $qtl_syn_id = 0;
 
 QTL:
 for my $qtl ( @all_qtl ) {
-  my ($qtl_rgd_id, $qtl_symbol,$qtl_name,
+  my ($qtl_rgd_id, $species, $qtl_symbol,$qtl_name,
       $peak_offset, $chromosome, $lod_score, $p_value, $variance,
       $fmark1_rgd_id, $fmark1_symbol, $fmark2_rgd_id, $fmark2_symbol,
       $pmark_rgd_id, $pmark_symbol, $trait_name, $subtrait_name,
       $trait_desc, $curated_ref_rgd_id, $curated_ref_pubmed_id,
       $uncurated_ref_pubmed_id, $ratmap_id, $locus_link_id, @other) =
         @$qtl;
+
+  if(!$qtl_name) {
+    debug("QTL $qtl_rgd_id has no name, discarding");
+    next QTL;
+  }
+
 
   my $fmark1_id = $rgd_ens_map{$fmark1_rgd_id};
   my $fmark2_id = $rgd_ens_map{$fmark2_rgd_id};
