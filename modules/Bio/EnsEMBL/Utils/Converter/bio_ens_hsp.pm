@@ -96,10 +96,10 @@ sub _convert_single_to_alignFeature {
     my $align_feature;
     if($program =~ /blastn/i){
         $align_feature = new Bio::EnsEMBL::DnaDnaAlignFeature(@args);
-        $align_feature->attach_seq($contig);
+#        $align_feature->attach_seq($contig);
     }elsif($program =~ /blastx/i){
         $align_feature = new Bio::EnsEMBL::DnaPepAlignFeature(@args);
-        $align_feature->attach_seq($contig);
+#        $align_feature->attach_seq($contig);
     }else{
         $self->throw("\[$program\] is not supported yet");
     }
