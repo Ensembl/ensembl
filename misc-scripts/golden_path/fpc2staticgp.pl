@@ -68,6 +68,9 @@ foreach my $f ( @ARGV ) {
 		    } else {
 			$orit = 1;
 		    }
+		    $rstart = $rstart - $start{$iid} +1;
+		    $rend   = $rend   - $start{$iid} +1;
+
 
 		    print "$fpc\t$chr\t$iid\t$start\t$end\t$fstart\t$fend\t$rstart\t$rend\t$orit\tUCSC\n";
 		    last;
