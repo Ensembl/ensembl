@@ -3,7 +3,7 @@
 # see doc there
 
 
-use SchemaConvert;
+use SchemaConverter;
 use DBI;
 
 my $sourcedbh = DBI->connect("dbi:mysql:host=ensrv3.sanger.ac.uk;database=homo_sapiens_core_120", "ensro");
@@ -16,7 +16,7 @@ $sc->tmp_dir( "/work1/stabenau/db" );
 $sc->custom_select( "assembly", "select s.fpcctg_name, c.chromosome_id, s.raw_id, s.chr_start, s.chr_end, s.fpcctg_start, s.fpcctg_end, s.raw_start, s.raw_end, s.raw_ori, s.type from chromosome c, static_golden_path s where s.chr_name = c.name" ); 
 
 $sc->table_rename( "analysisprocess", "analysis" );
-$sc->column_rename( $targetDB, "analysis", "analysisId", "analysis_id" );
+$sc->column_rename( "analysis", "analysisId", "analysis_id" );
 
 $sc->column_rename(  "contig", "internal_id", "contig_id" );
 $sc->column_rename(  "contig", "id", "name" );
@@ -77,7 +77,7 @@ $sc->column_rename(  "exon", "strand", "contig_strand" );
 
 $sc->column_rename(  "gene", "analysisId", "analysis_id" );
 
-$sc->table_rename(  "repeat_feature", "r_feature" );
+$sc->table_rename(  "repeat_feature", "repeat_feature" );
 
 $sc->column_rename(  "supporting_feature", "hid", "hit_id" );
 $sc->column_rename(  "supporting_feature", "hstart", "hit_start" );
