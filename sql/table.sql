@@ -14,7 +14,7 @@
 # 
 
 CREATE TABLE analysis (
-  analysis_id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
+  analysis_id int(10) unsigned NOT NULL auto_increment,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   logic_name varchar(40) not null,
   db varchar(120),
@@ -463,7 +463,8 @@ CREATE TABLE assembly (
     
     PRIMARY KEY(contig_id,type),
     KEY(superctg_name, superctg_start),
-    KEY(chromosome_id,chr_start) 
+    KEY(chromosome_id,chr_start),
+    KEY(type)	 
 );
 
 
