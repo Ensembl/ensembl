@@ -32,6 +32,9 @@ my $go           = $conf{'go'};
 my $mgi_sp     = $conf{'mgi_sp'};
 my $mgi_locus  = $conf{'mgi_locus'};
 
+#Get specific options for anopheles
+my $celera_map = $conf{'celera_map'};
+
 if ((!defined $organism) || (!defined $sptr_swiss) || (!defined $out)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nsptr_swiss: $sptr_swiss\nx_map: $out\n";
 }
@@ -106,6 +109,13 @@ while ( my $seq = $in->next_seq() ) {
 
     }
 
+    if ($organism eq "anopheles") {
+	#Get the gene name, especially useful to replace Hugo name when these don't exist.
+	my @gene_names = $seq->annotation->each_gene_name;
+	foreach my $g(@gene_names) {
+	    print OUT "$ac\tSPTR\t".$g."\tgene_name\t".$g."\t\tXREF\n";
+	}
+    }    
 
 
 #Get Xref mapping specifically for drosophila
@@ -252,6 +262,7 @@ if ($organism eq "mouse") {
 	
 	foreach my $s(@sp) {
 	    print OUT "$s\tSPTR\t$mgi\tMGI\t$mgi\t\tXREF\n";
+	    print OUT "$s\tSPTR\t$rik\tMGI\t$rik\t\tXREF\n";
 	}
     }
     open (MGILOC, "$mgi_locus") || die "Can't open $mgi_locus\n";
@@ -272,6 +283,21 @@ if ($organism eq "mouse") {
 	}
     }
 }
+
+
+#Get Xref mapping specifically for anopheles
+
+    if ($organism eq "anopheles") {
+	open (CEL,"$celera_map") || die "Can't open celera map: $celera_map\n";
+	
+	while (<CEL>) {
+	    chomp;
+	    my ($ensid,$pep,$trans,$gene) = split;
+	    print OUT "$ensid\tENSEMBL\t$pep\tCelera_Pep\t$pep\t\tXREF\n";
+	    print OUT "$ensid\tENSEMBL\t$trans\tCelera_Trans\t$trans\t\tXREF\n";
+	    print OUT "$ensid\tENSEMBL\t$gene\tCelera_Gene\t$gene\t\tXREF\n";
+	}
+    }
 
 
 print STDERR "The output has been written there: $out\n";
