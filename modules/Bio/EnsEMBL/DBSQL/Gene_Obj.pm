@@ -66,7 +66,6 @@ use Bio::EnsEMBL::StickyExon;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 use Bio::EnsEMBL::DB::Gene_ObjI;
-use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 @ISA = qw(Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::Object);
 
@@ -1008,13 +1007,9 @@ sub get_supporting_evidence_direct {
     }
     $list =~ s/\,$//;
 
-    &eprof_start('query');
     my $sth2=$self->_db_obj->prepare("select f.seq_start,f.seq_end,f.score,f.strand,f.analysis,f.name,f.hstart,f.hend,f.hid,f.evalue,f.perc_id,e.id,c.id from feature f,exon e,contig c where c.internal_id = f.contig and f.contig = e.contig and e.id in ($list) and !(f.seq_end < e.seq_start or f.seq_start > e.seq_end) and f.strand = e.strand and f.analysis < 5");
     $sth2->execute;
-    &eprof_end('query');
-	
 
-    &eprof_start('build');
     while (my $arrayref = $sth2->fetchrow_arrayref) {
 	my ($start,$end,$f_score,$strand,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$exonid,$contig) = @{$arrayref};
 	my $analysis;
@@ -1032,17 +1027,13 @@ sub get_supporting_evidence_direct {
 	    $name = 'no_source';
 	}
 	
-	&eprof_start('object');
 	my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
 	$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,$hstart,$hend,1,$f_score,$name,'similarity',$hid);
 	$out->analysis($analysis);
 
 	#$out->validate();
 	$exhash{$exonid}->add_Supporting_Feature($out);
-	&eprof_end('object');  
     }
-    &eprof_end('build');
-    
 }
 
 =head2 get_Transcript
