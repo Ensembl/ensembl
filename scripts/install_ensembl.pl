@@ -102,6 +102,13 @@ if( $user =~ /^\s*$/ ) {
     $user = 'root';
 }
 
+print STDERR "What password shall I try to connect to the MySQL db []?\n";
+my $pass = <STDIN>;
+chomp $pass;
+if( $pass =~ /^\s*$/ ) {
+    $pass = '';
+}
+
 print STDERR "What host shall I try to connect to the MySQL db [localhost]?\n";
 my $host = <STDIN>;
 chomp $host;
@@ -112,9 +119,9 @@ if( $host =~ /^\s*$/ ) {
 my $dsn;
 my $dbh;
 eval {
-    $dsn = "DBI:mysql:database=$db;host=$host";
+    $dsn = "DBI:mysql:database=$db;host=$host;";
 
-    $dbh = DBI->connect("$dsn","$user",'');
+    $dbh = DBI->connect("$dsn","$user",$pass);
 
 };
 
