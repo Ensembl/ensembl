@@ -201,7 +201,7 @@ sub fetch {
 	$self->cloneid    ($row->[3]);
 	$self->embl_offset    ($row->[4]);
     } else {
-         $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
+         $self->throw("Contig $id does not exist in database ".$self->dbobj->dbname ."or does not have DNA sequence");
     }
 
     return $self;
@@ -382,7 +382,7 @@ sub get_old_Exons {
 	    $oldcontig = $oldclone->get_Contig($self->id);
 	};
 	if ($@) {
-	    print STDERR "Clones with id ".$oldclone->id." have the same version in old and new db, but contig ".$self->id." is not there! (CLONE VERSION BUG)\n";
+	    print STDERR "Clones with id ".$oldclone->id." have the same version in old and new db, but contig ".$self->id." is not there! (CLONE VERSION BUG) [$@]\n";
 	    return ();
 	}
 	my @exons=$oldcontig->get_all_Exons();

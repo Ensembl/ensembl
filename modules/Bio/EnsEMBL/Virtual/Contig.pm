@@ -772,8 +772,6 @@ sub get_old_Exons{
     my ($self,$logfile) = @_;
     
     my @exons;
-
-
     foreach my $c ($self->_vmap->get_all_RawContigs) {
 	push(@exons,$c->get_old_Exons($logfile));
     }
