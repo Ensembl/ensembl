@@ -584,7 +584,7 @@ sub remove {
 
   my $dbeAdaptor = $self->db->get_DBEntryAdaptor();
   foreach my $dbe (@{$transcript->get_all_DBEntries}) {
-    $dbeAdaptor->remove($dbe, $transcript, 'Transcript');
+    $dbeAdaptor->remove_from_object($dbe, $transcript, 'Transcript');
   }
 
   my $exonAdaptor = $self->db->get_ExonAdaptor();
