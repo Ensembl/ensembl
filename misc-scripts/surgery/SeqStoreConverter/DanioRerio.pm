@@ -26,6 +26,10 @@ sub create_coord_systems {
      ["clone"      , undef, "default_version"],
      ["chunk"      , undef, "default_version,sequence_level"]);
 
+  my @assembly_mappings =  ("chromosome:$ass_def|chunk",
+                            "clone|chunk",
+                            "supercontig|chunk");
+
   my %cs = (gene                   => ['supercontig','chromosome'],
              transcript             => ['supercontig','chromosome'],
              exon                   => ['supercontig','chromosome'],
@@ -60,6 +64,20 @@ sub create_coord_systems {
     }
   }
   $sth->finish();
+
+
+
+  $self->debug("Adding assembly.mapping entries to meta table");
+
+  $sth = $dbh->prepare("INSERT INTO $target.meta(meta_key, meta_value) " .
+                       "VALUES ('assembly.mapping', ?)");
+
+  foreach my $mapping (@assembly_mappings) {
+    $sth->execute($mapping);
+  }
+
+  $sth->finish();
+
 
   return;
 }
@@ -207,7 +225,7 @@ sub create_assembly {
   my $self = shift;
 
   #chromosomes are made of chunks
-  $self->assembly_contig_supercontig();
+  $self->assembly_contig_chromosome();
 
   #supercontigs are made of chunks
   $self->assembly_contig_supercontig();
