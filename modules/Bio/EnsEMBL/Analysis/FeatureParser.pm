@@ -87,6 +87,7 @@ sub _initialize {
 
     $self->id($id);
 
+
     # read 2 types of features
     # 1. features aligned against contigs (no remapping required)
     # 2. features aligned against transcripts (remapping required)
@@ -117,8 +118,7 @@ sub _initialize {
 
     foreach my $g ($gs->each_Transcript) {
 	my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
-	print_gene_details($g,$count) if $self->_debug;
-    
+	
 	foreach my $msp (@$msptype) {
       
 	    my $mspfile        = "$clone_dir/$disk_id.$count".$msp->[4];
@@ -126,14 +126,23 @@ sub _initialize {
 
 	    if ($msp->[5]     eq 'msp'){
 		$self->read_MSP($mspfile,$genpep,$msp);
+
 	    } elsif ($msp->[5] eq 'pfam'){
 		$self->read_Pfam($genpep,$clone_dir,$disk_id,$count,$msp);
+
 	    } elsif ($msp->[5] eq 'gff'){
 		$self->read_Repeats($clone_dir,$disk_id,$msptype->[6]);
+
 	    } else {
 		$self->throw("no parser for $$msp[5] defined");
 	    }
 	    
+	}
+
+	my @homols = $genpep->each_Homol;      # Converts the hits from peptide into genomic coordinates
+    
+	foreach my $h (@homols) {
+	    $self->add_Feature($h);
 	}
 
 	$count++;    
@@ -207,6 +216,7 @@ sub read_Pfam {
 	$genscan_peptide->add_pepHit($dom);
 
     }
+
     my @newh = $genscan_peptide->each_Homol;
 
     foreach my $h (@newh) {
@@ -223,7 +233,7 @@ sub read_Genscan {
 					       -end    => $ex->end,
 					       -strand => $ex->strand);
 
-	    $f->source_tag($ex->source_tag);
+	    $f->source_tag ($ex->source_tag);
 	    $f->primary_tag($ex->primary_tag);
 	    $f->seqname($ex->seqname);
 
@@ -241,10 +251,15 @@ sub add_Feature {
 
     $self->throw("Feature must be Bio::SeqFeature::Generic in add_Feature") unless $f->isa("Bio::SeqFeature::Generic");
 
+    if ($f->source_tag eq "") {
+	print(STDERR "ERROR: No source tag in add_Feature for " . $f->homol_SeqFeature->seqname . "\n");
+    }
+
     if (!defined($self->{_features})) {
 	$self->{_features} = [];
 	$self->warn("The feature array does not exist!! Creating an empty one");
     }
+
     my @f = @{$self->{_features}};
 
     push(@{$self->{_features}},$f);
@@ -281,7 +296,7 @@ sub print_gene_details {
 sub read_MSP {
 
     my($self,$mspfile, $genpep, $msp) = @_;
-
+    
     my $type = $msp->[6];
 
     if (! -e $mspfile) {
@@ -291,7 +306,6 @@ sub read_MSP {
 	print(STDERR "   - Reading MSPcrunch file $mspfile\n");
     }
     
-    print(STDERR "Setting source tag to " . $msp->[1] . " for $mspfile\n");
     my $mspobj  = new Bio::EnsEMBL::Analysis::MSPcrunch(-file => $mspfile,
 							-type => $type,
 							-source_tag => $msp->[1]);
@@ -299,7 +313,13 @@ sub read_MSP {
     my ($type1,$type2) = $mspobj->get_types;
 
     foreach my $homol ($mspobj->each_Homol) { 
+#	print("HOMOL : " . $homol->seqname ." " . 
+	      $homol->homol_SeqFeature->seqname . " " .
+	      $homol->homol_SeqFeature->start . " " . 
+	      $homol->homol_SeqFeature->end . "\n");
+
 	if ($type1 eq "PEP") {
+
 	    if ($type2 eq "DNA") {
 		$genpep->add_dnaHit($homol);
 	    } elsif ($type2 eq "PEP") {
@@ -307,26 +327,16 @@ sub read_MSP {
 	    } else {
 		print(STDERR "      - unrecognised homol type $type2\n");
 	    }
+
 	} elsif ($type1 eq "DNA") {
+	    $homol->source_tag($mspobj->source_tag);
 	    $self->add_Feature($homol);
 	    
-	}else {
+	} else {
 	    print(STDERR "      - unrecognised query type $type1\n");
 	}
     }
 
-    my @homols = $genpep->each_Homol;      # Converts the hits from peptide into genomic coordinates
-
-    foreach my $h (@homols) {
-	if ($mspobj->source_tag eq "") {
-	    print(STDERR "ERROR: Empty string for source tag for $mspfile\n");
-	}
-	#if ($h->homol_SeqFeature->seqname eq "TR:Q14839") {
-	#    print(STDERR "Setting source tag for " . $h->homol_SeqFeature->seqname . " to " . $mspobj->source_tag . "\n");
-	#}
-	$h->source_tag($mspobj->source_tag);
-	$self->add_Feature($h);
-    }
 }
 
 
