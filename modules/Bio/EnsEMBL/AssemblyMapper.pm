@@ -125,25 +125,6 @@ sub new {
 sub map_coordinates_to_assembly {
     my ($self, $contig_id, $start, $end, $strand) = @_;
 
-# Speed critical section, REGEXPs slow things down...
-#    unless ($contig_id =~ /^\d+$/) {
-#        $self->throw("Expecting numeric contig_id, but got '$contig_id'");
-#    }
-
-#    unless ($start =~ /^\d+$/) {
-#      unless($start =~ /^-\d+$/){
-#        $self->throw("Expecting integer for contig start coord, but got '$start'");
-#      }
-#    }
-
-#    unless ($end =~ /^\d+$/) {
-#        $self->throw("Expecting integer for contig end coord, but got '$end'");
-#    }
-
-#    unless ($strand =~ /^[+-]?1$/ || $strand == 0) {
-#        $self->throw("Expecting +/- 1 for contig strand, but got '$strand'");
-#    }  
-
     if( ! exists $self->{'_contig_register'}->{$contig_id} ) {
       $self->register_region_around_contig( $contig_id, 0, 0 );
     }
@@ -209,25 +190,6 @@ sub fast_to_assembly {
 sub map_coordinates_to_rawcontig {
   my ($self, $chr_name, $start, $end, $strand) = @_;
   
-  unless ($chr_name =~ /^\S+$/) {
-    $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
-  }
-  
-  unless ($start =~ /^\d+$/) {
-    unless($start =~ /^-\d+$/){
-      $self->throw("Expecting integer for contig start coord, " .
-		   "but got '$start'");
-    }
-  }
-  
-  unless ($end =~ /^\d+$/) {
-    $self->throw("Expecting integer for chromosome end, but got '$end'");
-  }
-  
-  unless ($strand =~ /^[+-]?1$/ || $strand == 0) {
-    $self->throw("Expecting +/- 1 for chromosome strand, but got '$strand'");
-  }
-
   $self->register_region($chr_name, $start, $end);
   
   return $self->_mapper->map_coordinates($chr_name, $start, $end, 
@@ -254,20 +216,6 @@ sub map_coordinates_to_rawcontig {
 sub list_contig_ids {
   my ($self, $chr_name, $start, $end) = @_;
   
-  unless ($chr_name =~ /^\S+$/) {
-    $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
-  }
-  
-  unless ($start =~ /^\d+$/) {
-    unless ($start =~ /^-\d+$/) {
-      $self->throw("Expecting integer for chromosome start, but got '$start'");
-    }
-  }
-  
-  unless ($end =~ /^\d+$/) {
-    $self->throw("Expecting integer for chromosome end, but got '$end'");
-  }
-
   # may not have registered this region yet
   
   $self->register_region($chr_name, $start, $end);
@@ -307,20 +255,6 @@ sub list_contig_ids {
 sub register_region {
   my ($self, $chr_name, $start, $end) = @_;
   
-  unless ($chr_name =~ /^\S+$/) {
-    $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
-  }
-  
-  unless ($start =~ /^\d+$/) {
-    unless ($start =~ /^-\d+$/) {
-      $self->throw("Expecting integer for chromosome start, but got '$start'");
-    }
-  }
-  
-  unless ($end =~ /^\d+$/) {
-    $self->throw("Expecting integer for chromosome end, but got '$end'");
-  }
-  
   my $first_chunk = int( $start / $self->_chunksize() );
   my $last_chunk = int( $end / $self->_chunksize() );
   
@@ -351,19 +285,6 @@ sub register_region {
 sub register_region_around_contig {
    my ($self, $contig_id, $left, $right) = @_;
 
-#   unless ($contig_id =~ /^\d+$/) {
-#      $self->throw("Expecting integer for RawContig id, but got '$contig_id'");
-#   }
-
-#   unless ($left =~ /^\d+$/) {
-#      $self->throw("Expecting integer for 5 prime extension, but got '$left'");
-#   }
-
-#   unless ($right =~ /^\d+$/) {
-#      $self->throw("Expecting integer for 3 prime extension, but got '$right'");
-#   }
-
-   
    if( $self->_have_registered_contig( $contig_id ) 
        && $left == 0 && $right==0 ) {
      if( $self->_mapper->list_pairs( $contig_id, -1, -1, "rawcontig" )) {
