@@ -1,7 +1,6 @@
 #
 # EnsEMBL module for Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
 #
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright EMBL/EBI
 #
@@ -11,25 +10,20 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor 
+Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
 
 =head1 SYNOPSIS
 
 my $simple_feature_adaptor = $database_adaptor->get_SimpleFeatureAdaptor();
-@simple_features = $simple_feature_adaptor->fetch_by_Slice($slice);
+@simple_features = @{$simple_feature_adaptor->fetch_all_by_Slice($slice)};
 
 =head1 DESCRIPTION
 
-Simple Feature Adaptor - database access for simple features 
+Simple Feature Adaptor - database access for simple features
 
 =head1 AUTHOR - Ewan Birney
 
-Email birney@ebi.ac.uk
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 

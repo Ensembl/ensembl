@@ -1,8 +1,6 @@
 #
 # Ensembl module for Bio::EnsEMBL::SimpleFeature
 #
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
-#
 # Copyright Ewan Birney
 #
 # You may distribute this module under the same terms as perl itself
@@ -22,27 +20,25 @@ $feature = Bio::EnsEMBL::SimpleFeature->new(-start    => 100,
                                             -strand   => -1,
                                             -slice    => $slice,
                                             -analysis => $analysis,
+                                            -score    => 58,
                                             -display_label => 'EponineTSS',
                                             -dbID     => 1230,
                                             -adaptor  => $adaptor);
 
 =head1 DESCRIPTION
 
-This is a simple feature which extends the Feature class to add a display_label
-attribute
+This is a simple feature which extends the Feature class to add display_label
+and score attributes.
 
 =head1 AUTHOR - Ewan Birney
 
 This modules is part of the Ensembl project http://www.ensembl.org
 
-Email birney@ebi.ac.uk
+=head1 CONTACT
 
-Describe contact details here
+Post comments/questions to the ensembl development list: ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal
-methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 

@@ -26,16 +26,11 @@ superclass BaseFeatureAdaptor.
 
 =head1 AUTHOR - James Gilbert
 
-Email jgrg@ebi.ac.uk
-
 =head1 CONTACT
 
 Post questions to the EnsEMBL developer list: ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -51,17 +46,16 @@ use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
 
-=head2 _tablename
+#  _tablename
+#
+#   Arg [1]    : none
+#   Example    : none
+#   Description: PROTECTED Implementation of abstract superclass method to 
+#                provide the name of the tables to query 
+#   Returntype : string
+#   Exceptions : none
+#   Caller     : internal
 
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED Implementation of abstract superclass method to 
-               provide the name of the tables to query 
-  Returntype : string
-  Exceptions : none
-  Caller     : internal
-
-=cut
 
 sub _tables {
   my $self = shift;
@@ -70,17 +64,15 @@ sub _tables {
 }
 
 
-=head2 _columns
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED Implementation of abstract superclass method to 
-               provide the name of the columns to query 
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : internal
-
-=cut
+# _columns
+#
+#   Arg [1]    : none
+#   Example    : none
+#   Description: PROTECTED Implementation of abstract superclass method to 
+#                provide the name of the columns to query 
+#   Returntype : list of strings
+#   Exceptions : none
+#   Caller     : internal
 
 sub _columns {
   my $self = shift;
@@ -101,18 +93,15 @@ sub _columns {
 }
 
 
-
-=head2 _default_where_clause
-
-  Arg [1]    : none
-  Example    : none
-  Description: Overrides superclass method to provide an additional 
-               table joining constraint before the SQL query is performed. 
-  Returntype : string
-  Exceptions : none
-  Caller     : generic_fetch
-
-=cut
+# _default_where_clause
+#  Arg [1]    : none
+#  Example    : none
+#  Description: Overrides superclass method to provide an additional 
+#               table joining constraint before the SQL query is performed.
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : generic_fetch
+#
 
 sub _default_where_clause {
   my $self = shift;
@@ -121,18 +110,10 @@ sub _default_where_clause {
 }
 
 
-=head2 _obj_from_hashref
 
-  Arg [1]    : Hashreference $hashref
-  Example    : none 
-  Description: PROTECTED implementation of abstract superclass method.
-               responsible for the creation of RepeatFeatures from a
-               hashref generated from an SQL query
-  Returntype : listref of Bio::EnsEMBL::RepeatFeatures in contig coordinates
-  Exceptions : none
-  Caller     : internal
-
-=cut
+#  Description: PROTECTED implementation of abstract superclass method.
+#               responsible for the creation of RepeatFeatures from a
+#               hashref generated from an SQL query
 
 sub _objs_from_sth {
   my ($self, $sth, $mapper, $dest_slice) = @_;
