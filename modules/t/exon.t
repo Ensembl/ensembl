@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;  
 	use Test ;
-	plan tests => 18;
+	plan tests => 20;
 }
 
 my $loaded = 0;
@@ -125,5 +125,18 @@ ok($exon->contig->name eq $exon->contig->name);
 #regression test, supporting evidence was lost post transform before...
 ok(scalar(@{$exon->get_all_supporting_features} == $count));
 
+# list_ functions
+debug ("Exon->list_dbIDs");
+my $ids = $exonad->list_dbIDs();
+ok (@{$ids});
+foreach my $id (@$ids) {
+  print "$id\n";
+}
+debug ("Exon->list_stable_dbIDs");
+my $stable_ids = $exonad->list_stable_dbIDs();
+ok (@{$stable_ids});
+foreach my $sid (@$stable_ids) {
+  print "$sid\n";
+}
 $multi->restore();
 
