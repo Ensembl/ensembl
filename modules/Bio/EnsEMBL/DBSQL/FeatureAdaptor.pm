@@ -111,13 +111,15 @@ sub delete_by_RawContig_internal_id {
     while (my $rowhash = $sth->fetchrow_hashref) {
 	$fsstr .= $rowhash->{fset} . ",";
     }
-    $fsstr || $self->warn("Could not find features for contig with internal_id '$contig_internal_id'") && return;
-    chop($fsstr);
-    $sth = $self->db->prepare("delete from fset where id in ($fsstr)");
-    $res = $sth->execute;
+
+    if ($fsstr) {
+	chop($fsstr);
+	$sth = $self->db->prepare("delete from fset where id in ($fsstr)");
+	$res = $sth->execute;
 	
-    $sth = $self->db->prepare("delete from fset_feature where fset in ($fsstr)");
-    $res = $sth->execute;
+	$sth = $self->db->prepare("delete from fset_feature where fset in ($fsstr)");
+	$res = $sth->execute;
+    }
     
     #print(STDERR "Deleting features for contig $contig\n");
     $sth = $self->db->prepare("delete from feature where contig = '$contig_internal_id'");
