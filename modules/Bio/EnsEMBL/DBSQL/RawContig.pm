@@ -243,26 +243,6 @@ sub _gene_query{
  return;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 =head2 has_genes
 
  Title   : has_genes
@@ -462,7 +442,7 @@ sub get_all_SimilarityFeatures_above_score{
    #First of all, get all features that are part of a feature set with high enough score and have the right type
 
     my $statement = "SELECT feature.id, seq_start, seq_end, strand, feature.score, analysis, name, " .
-		             "hstart, hend, hid, fset, rank, fset.score " .
+		             "hstart, hend, hid, evalue, perc_id, phase, end_phase, fset, rank, fset.score " .
 		     "FROM   feature, fset_feature, fset, analysis " .
 		     "WHERE  feature.contig ='$id' " .
 		     "AND    fset_feature.feature = feature.id " .
@@ -475,11 +455,12 @@ sub get_all_SimilarityFeatures_above_score{
    my $sth = $self->dbobj->prepare($statement);                                                                       
    $sth->execute();
    
-   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score);
+   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$phase,$end_phase,$fset,$rank,$fset_score);
    my $seen = 0;
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank,\$fset_score);
+  
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,\$end_phase,\$fset,\$rank,\$fset_score);
    
    my $out;
    
@@ -520,13 +501,17 @@ sub get_all_SimilarityFeatures_above_score{
        $fset_id_str = $fset_id_str . $fid . ",";       
        #Build Feature Object
        my $feature = new Bio::EnsEMBL::SeqFeature;
-       $feature->seqname   ($self->id);
-       $feature->start     ($start);
-       $feature->end       ($end);
-       $feature->strand    ($strand);
-       $feature->source_tag($name);
+       $feature->seqname    ($self->id);
+       $feature->start      ($start);
+       $feature->end        ($end);
+       $feature->strand     ($strand);
+       $feature->source_tag ($name);
        $feature->primary_tag('similarity');
        $feature->id         ($fid);
+       $feature->p_value    ($evalue)       if (defined $evalue);
+       $feature->percent_id ($perc_id)      if (defined $perc_id);
+       $feature->phase      ($phase)        if (defined $phase);
+       $feature->end_phase  ($end_phase)    if (defined $end_phase);
        
        if( defined $f_score ) {
 	   $feature->score($f_score);
@@ -546,7 +531,7 @@ sub get_all_SimilarityFeatures_above_score{
    $fset_id_str =~ s/\,$//;
 
    if ($fset_id_str) {
-        $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid " .
+        $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase " .
 		     "FROM   feature, analysis " .
                      "WHERE  id not in (" . $fset_id_str . ") " .
                      "AND    feature.score > '$score' " . 
@@ -557,7 +542,7 @@ sub get_all_SimilarityFeatures_above_score{
        $sth = $self->dbobj->prepare($statement);
        
    } else {
-        $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid " .
+        $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase " .
 		     "FROM   feature, analysis " .
                      "WHERE  feature.score > '$score' " . 
                      "AND    feature.analysis = analysis.id " .
@@ -572,7 +557,7 @@ sub get_all_SimilarityFeatures_above_score{
    $sth->execute();
 
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,\$end_phase);
    
    while($sth->fetch) {
        my $out;
@@ -603,23 +588,21 @@ sub get_all_SimilarityFeatures_above_score{
 				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
 
 	   $out->analysis    ($analysis);
-	   
-	   # Ewan - this is messing up the C extensions
-	   # This has to be commented out. Arek will have to get this
-	   # from somewhere else, like ->hseqname. Maybe we should have
-	   # a $featurepair->web_id helper function in the SeqFeature
-	   # FeaturePair interface
-	   #$out->id          ($hid);              # MC This is for Arek - but I don't
+	   $out->id          ($hid);              # MC This is for Arek - but I don't
 	                                          #    really know where this method has come from.
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;
-	   $out->seqname   ($self->id);
-	   $out->start     ($start);
-	   $out->end       ($end);
-	   $out->strand    ($strand);
-	   $out->source_tag($name);
+	   $out->seqname    ($self->id);
+	   $out->start      ($start);
+	   $out->end        ($end);
+	   $out->strand     ($strand);
+	   $out->source_tag ($name);
 	   $out->primary_tag('similarity');
 	   $out->id         ($fid);
+       $out->p_value    ($evalue)    if (defined $evalue);
+       $out->percent_id ($perc_id)   if (defined $perc_id); 
+       $out->phase      ($phase)     if (defined $phase);    
+       $out->end_phase  ($end_phase) if (defined $end_phase);
 
 	   if( defined $f_score ) {
 	       $out->score($f_score);
@@ -678,7 +661,7 @@ sub get_all_SimilarityFeatures{
    #                 "order by p2.fset");
 
     my $statement = "SELECT feature.id, seq_start, seq_end, strand, feature.score, analysis, name, " .
-		             "hstart, hend, hid, fset, rank, fset.score " .
+		             "hstart, hend, hid, evalue, perc_id, phase, end_phase, fset, rank, fset.score " .
 		     "FROM   feature, fset_feature, fset " .
 		     "WHERE  feature.contig =$id " .
 		     "AND    fset_feature.feature = feature.id " .
@@ -690,11 +673,11 @@ sub get_all_SimilarityFeatures{
                                     
    $sth->execute();
    
-   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score);
+   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$phase,$end_phase,$fset,$rank,$fset_score);
    my $seen = 0;
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank,\$fset_score);
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,\$end_phase,\$fset,\$rank,\$fset_score);
    
    my $out;
    
@@ -742,6 +725,10 @@ sub get_all_SimilarityFeatures{
        $feature->source_tag($name);
        $feature->primary_tag('similarity');
        $feature->id         ($fid);
+       $feature->p_value     ($evalue)       if (defined $evalue);
+       $feature->percent_id    ($perc_id)      if (defined $perc_id);
+       $feature->phase      ($phase)        if (defined $phase);
+       $feature->end_phase  ($end_phase)    if (defined $end_phase);
        
        if( defined $f_score ) {
 	   $feature->score($f_score);
@@ -761,17 +748,17 @@ sub get_all_SimilarityFeatures{
    $fset_id_str =~ s/\,$//;
 
    if ($fset_id_str) {
-       $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " .
+       $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid, evalue, perc_id, phase, end_phase " . 
 				     "from feature where id not in (" . $fset_id_str . ") and contig = $id");
    } else {
-       $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid ".
+       $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid, evalue, perc_id, phase, end_phase ".
 				     "from feature where contig = $id");
    }
 
    $sth->execute();
 
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,\$end_phase);
    
    while($sth->fetch) {
        my $out;
@@ -815,7 +802,11 @@ sub get_all_SimilarityFeatures{
 	   $out->source_tag($name);
 	   $out->primary_tag('similarity');
 	   $out->id         ($fid);
-
+       $out->p_value    ($evalue)    if (defined $evalue);
+       $out->percent_id   ($perc_id)   if (defined $perc_id); 
+       $out->phase     ($phase)     if (defined $phase);    
+       $out->end_phase ($end_phase) if (defined $end_phase); 
+        
 	   if( defined $f_score ) {
 	       $out->score($f_score);
 	   }
@@ -1011,18 +1002,18 @@ sub get_all_PredictionFeatures {
    my %analhash;
 
    # make the SQL query
-   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,fset.id " . 
+   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,fset.id ". 
        "from feature f, fset fset,fset_feature ff where ff.feature = f.id and fset.id = ff.fset and contig = $id and name = 'genscan'";
-    
+
    my $sth = $self->dbobj->prepare($query);
    
    $sth->execute();
    
-   my ($fid,$start,$end,$strand,$score,$analysisid);
+   my ($fid,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid);
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid);
-   
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$fsetid);
+  
    $previous = -1;
    my $current_fset;
    while( $sth->fetch ) {
@@ -1030,6 +1021,8 @@ sub get_all_PredictionFeatures {
        
        my $analysis;
 	   
+       #print STDERR  "ID $fid, START $start, END $end, STRAND $strand, SCORE $score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid, FSET $fsetid\n";
+       
        if (!$analhash{$analysisid}) {
 
 	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
@@ -1054,11 +1047,15 @@ sub get_all_PredictionFeatures {
 
        $out = new Bio::EnsEMBL::SeqFeature;
        
-       $out->seqname   ($self->id);
+       $out->seqname   ($fsetid);
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);
-
+       $out->p_value   ($evalue)    if (defined $evalue);
+       $out->percent_id($perc_id)   if (defined $perc_id); 
+       $out->phase     ($phase)     if (defined $phase);    
+       $out->end_phase ($end_phase) if (defined $end_phase);
+        
        $out->source_tag('genscan');
        $out->primary_tag('prediction');
        
@@ -1077,6 +1074,83 @@ sub get_all_PredictionFeatures {
   }
  
    return @array;
+}
+
+
+=head2 get_genscan_peptides
+
+ Title   : get_genscan_peptides
+ Usage   : 
+ Function: Returns genscan predictions as peptides
+ Example :
+ Returns : 
+ Args    : 
+
+
+=cut
+
+#have written this to use the new phase and end_phase tag in SeqFeature
+#Therefore this won't work with the older features, after all the old system was pretty ropey.
+sub get_genscan_peptides {
+    my ($self) = @_;
+    my @transcripts;
+    
+    foreach my $gene ($self->get_all_PredictionFeatures)
+    {
+        print STDERR "Processing genscan gene: ".$gene->id."\n";
+        my $transcript  = Bio::EnsEMBL::Transcript->new();
+        my $translation = Bio::EnsEMBL::Translation->new();
+        $transcript->id($self->id.".".$gene->id);
+        
+        my @predictions = $gene->sub_SeqFeature;
+        
+        my $count = 1;
+        my (@exons);        
+        foreach my $feature (@predictions)
+        {
+            print STDERR "Processing predicted exon $count\n";
+            print STDERR "START ".$feature->start." \tEND ".$feature->end."\tPHASE ".$feature->phase."\n";
+            my $exon = Bio::EnsEMBL::Exon->new();
+            $exon->id       ($transcript->id.".$count");
+            $exon->start    ($feature->start);
+            $exon->end      ($feature->end);
+            $exon->strand   ($feature->strand);
+            $exon->phase    ($feature->phase);
+            $exon->contig_id($self->id);
+            #$exon->end_phase($feat->end_phase);
+            $exon->attach_seq($self->primary_seq);
+            push (@exons, $exon);    
+            $count ++;
+        }
+        
+        if ($exons[0]->strand == 1)
+        {
+            @exons = sort {$a->start <=> $b->start} @exons;
+            $translation->start($exons[0]->start);
+            $translation->end($exons[scalar(@exons)-1]->end);
+        }
+        else
+        {
+            @exons = sort {$b->start <=> $a->start} @exons;
+            $translation->start($exons[0]->end);
+            $translation->end($exons[$#exons]->start);
+        }
+        
+        $translation->start_exon_id($exons[0]->id);
+        $translation->end_exon_id($exons[scalar(@exons)-1]->id);
+        
+        foreach my $exon (@exons)
+        {
+            $transcript->add_Exon($exon);
+        }
+           
+        print STDERR "gene ".$gene->id." \tstart_exon ".$translation->start_exon_id." \tstart ".$translation->start.
+                     " \tend_exon ".$translation->end_exon_id." \tend ".$translation->end."\n";
+        
+        $transcript->translation($translation);
+        push (@transcripts, $transcript);
+    }
+    return (@transcripts)
 }
 
 =head2 get_all_ExternalFeatures
