@@ -541,7 +541,7 @@ sub project {
     #skip gaps
     if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
       #create slices for the mapped-to coord system
-      my $slice = Bio::EnsEMBL::Slice->new
+      my $slice = $self->new
         (-COORD_SYSTEM    => $cs,
          -START           => $coord_start,
          -END             => $coord_end,
@@ -603,7 +603,7 @@ sub expand {
     $new_start = $new_end = $middle;
   }
 
-  return Slice->new(-COORD_SYSTEM    => $self->{'coord_system'},
+  return $self->new(-COORD_SYSTEM    => $self->{'coord_system'},
                     -START           => $new_start,
                     -END             => $new_end,
                     -STRAND          => $self->{'strand'},
