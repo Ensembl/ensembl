@@ -169,6 +169,8 @@ if ($opts{'b'}) {	# Display header
 		'TID', 'TLEN', 'TIDENT');
 }
 
+my %maps;
+
 foreach my $query (values(%hits)) {
 	my $best;
 	foreach my $target (
@@ -178,13 +180,26 @@ foreach my $query (values(%hits)) {
 
 		last if ($target->{QIDENT} < $best - $opts{'p'});
 
-
 		printf("%8s%8d%8.3f%8s%8d%8.3f\n",
 			$target->{QID}, $target->{QLEN},
 			$target->{QIDENT},
 			$target->{TID}, $target->{TLEN},
 			$target->{TIDENT});
+
+		my $map = new Bio::EnsEMBL::Mapper('query', 'target');
+
+		foreach my $hit (@{ $target->{HITS} }) {
+
+			$map->add_map_coordinates(
+				$target->{QID},
+				$hit->{QSTART}, $hit->{QEND}, 1,
+				$target->{TID},
+				$hit->{TSTART}, $hit->{TEND});
+		}
+
+		push(@{ $maps{$target->{QID}} }, $map);
 	}
 }
 
-#print Dumper(\%hits);	# Produce debugging output
+print Dumper($maps{Q27250}[0]->map_coordinates('703', 1, 1000, 1, 'target'));
+#print Dumper(\%maps);
