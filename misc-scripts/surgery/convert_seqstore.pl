@@ -6,10 +6,6 @@ use warnings;
 use DBI;
 use Getopt::Long;
 
-my $sourceDB = "glenn_old_schema";
-my $targetDB = "glenn_new_schema";
-
-
 my ($host, $port, $user, $password, $source, $target, $verbose);
 $host = "127.0.0.1";
 $port = 5000;
@@ -29,7 +25,7 @@ die "Host must be specified"           unless $host;
 die "Source schema be specifed"        unless $source;
 die "Target schema must be specified"  unless $target;
 
-my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$targetDB", "$user", "$password") || die "Can't connect to target DB";
+my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$target", "$user", "$password") || die "Can't connect to target DB";
 my $sth;
 
 # ----------------------------------------------------------------------
@@ -76,7 +72,7 @@ foreach my $val (@cs) {
 
 debug("Copying source contig table to seq_region");
 my $cs_id = $coord_system_ids{"contig"};
-execute($dbi, "INSERT INTO seq_region SELECT contig_id, name, $cs_id, length from $sourceDB.contig");
+execute($dbi, "INSERT INTO seq_region SELECT contig_id, name, $cs_id, length from $source.contig");
 
 # Similarly for the clone table - can use autonumber for the IDs as they're not referenced anywhere
 $cs_id = $coord_system_ids{"clone"};
@@ -86,7 +82,7 @@ execute($dbi, "INSERT INTO seq_region (name, coord_system_id, length) SELECT CON
 # Note old/new ID mapping is stored in %chromosme_id_old_new 
 my %chromosome_id_old_new;
 $cs_id = $coord_system_ids{"chromosome"};
-$sth = $dbi->prepare("SELECT chromosome_id, name, length from $sourceDB.chromosome");
+$sth = $dbi->prepare("SELECT chromosome_id, name, length FROM $source.chromosome");
 $sth->execute or die "Error when caching coord-system IDs";
 while(my $row = $sth->fetchrow_hashref()) {
   my $old_id = $row->{"chromosome_id"};
@@ -145,7 +141,7 @@ $sql =
   "AND    g.gene_id = t.gene_id " .
   "GROUP BY t.transcript_id";
 #print $sql . "\n";
-execute($dbi, $sql);
+#execute($dbi, $sql);
 
 # ----------------------------------------------------------------------
 # Exon
@@ -190,7 +186,22 @@ execute($dbi, $sql);
 
 debug("Building assembly table");
 
-# TBC
+# Need to do this row-by-row to get chromosome ID mapping
+$sth = $dbi->prepare("SELECT * FROM $source.assembly");
+$sth->execute or die "Error when reading assembly info from source DB";
+while(my $row = $sth->fetchrow_hashref()) {
+
+  $sql = "INSERT INTO $target.assembly VALUES (" . 
+         $chromosome_id_old_new{$row->{"chromosome_id"}} . ", " .
+	 $row->{"contig_id"} . ", " .
+	 $row->{"chr_start"} . ", " .
+	 $row->{"chr_end"} . ", " .
+	 $row->{"contig_start"} . ", " .
+	 $row->{"contig_end"} . ", " .
+	 $row->{"contig_ori"} . ")";
+  execute($dbi, $sql);
+
+}
 
 # ----------------------------------------------------------------------
 # Feature tables
