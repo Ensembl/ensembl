@@ -45,6 +45,16 @@ sub parse_group_field {
     return($igi, $gene_name, $gene_id, $transcript_id, $exon_num, $exon_id);
 }                                       # parse_group_field
 
+sub print_stats {
+    my ($min, $max, $avg, 
+        $minfeats, $maxfeats, $avgfeats, 
+        $minexons, $maxexons, $avgexons)  = @_;
+
+    print "\tminl=$min, maxl=$max, avgl=$avg\n";
+    print "\tminfeats=$minfeats, maxfeats=$maxfeats, avgfeats=$avgfeats\n";
+    print "\tminexons=$minexons, maxexons=$maxexons, avgexons=$avgexons\n";
+}
+
 sub gene_stats {
     my ($igi_hash) = @_;
     my ( @igis) = keys %$igi_hash;
@@ -54,9 +64,15 @@ sub gene_stats {
     my $minfeats = 1000000000000000000000;
     my $maxfeats = -1;
     my $sumfeats = 0;
+
+    my $minexons = 1000000000000000000000;
+    my $maxexons = -1;
+    my $sumexons = 0;
+
     my $n =0; 
     foreach my $igi (@igis) {
-        my ($nfeats, $start, $end) = @{$igi_hash->{$igi}};
+        my ($nfeats, $start, $end, $nexons) = @{$igi_hash->{$igi}};
+        die unless defined($nexons);
         my $len = ($end - $start);
         $min = $len if $len <  $min ;
         $max = $len if $len >  $max ;
@@ -66,19 +82,30 @@ sub gene_stats {
         $maxfeats = $nfeats if $nfeats >  $maxfeats ;
         $sumfeats += $nfeats;
 
-        $n++;
+        $minexons = $nexons if $nexons <  $minexons ;
+        $maxexons = $nexons if $nexons >  $maxexons ;
+        $sumexons += $nexons;
 
+        $n++;
     }
-    my ($avg, $avgfeats) = ('none', 'none');
+
+    my ($avg, $avgfeats, $avgexons) = ('none', 'none', 'none');
     if ($n>0) {
         $avg = int($sum/$n);
         $avgfeats= int($sumfeats/$n);
+        $avgexons = int($sumexons/$n)
     } 
-    return ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats);
+
+#     return ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats);
+    print_stats( $min, $max, $avg, 
+                 $minfeats, $maxfeats, $avgfeats, 
+                 $minexons, $maxexons, $avgexons);
 }
 
 my %igis_of_source;
 my %gene_ids_of_igi;
+
+my @argv_copy = @ARGV; # may get gobbled up by the <> construct. 
 
 GTF_LINE:
 while (<>) {
@@ -111,44 +138,57 @@ while (<>) {
         next GTF_LINE;
     }
 
-    # keep track of marginals by looping over current one and fictional
-    # source 'all' at same time:
-    foreach my $s ('ALL', $source) {
+    # keep track of marginals by looping over current one as well
+    # as fictional source 'ALL':
+    foreach my $s ($source, 'ALL') {
         #get previous record of this igi, if any:
-        my ($nfeats, $min, $max);
+        my ($nfeats, $min, $max, $nexons);
         if (defined $igis_of_source{$s}{$igi}) {
-            ($nfeats, $min, $max) = 
+            ($nfeats, $min, $max, $nexons) = 
                 @{$igis_of_source{$s}{$igi}};
         } else { 
-            ($nfeats, $min, $max)= (0, $start, $end);
+            ($nfeats, $min, $max, $nexons)= (0, $start, $end, 0);
         }
 
         $gene_ids_of_igi{$s}{$igi}{$gene_id}++;
 
-# print "WAS: $start, $end, $min, $max\n";    
         $min = $start if $start < $min;
         $max = $end if $end > $max;
         $nfeats++;
-# print "IS: $start, $end, $min, $max\n";    
+        $nexons = $exon_num if $exon_num > $nexons;
 
         # add record back in:
-        $igis_of_source{$s}{$igi} = [$nfeats, $min, $max];
+        $igis_of_source{$s}{$igi} = [$nfeats, $min, $max, $nexons];
+        
+        # pointless to keep track of exon statistics; call exon-lengths.awk
+        # for that.
     }
 }
 
 my @all_sources = sort keys %igis_of_source;
-print "Found following sources:" , join( ' ', @all_sources), "\n";
+
+# OK, time to print stuff. Start with some fluff:
+print '### $Id$  $Revision$ ',  "\n";
+my (@stuff)  = ("on", `date`, "by", `whoami`, "@",  `hostname`);
+foreach (@stuff) {chomp};
+print "### run ", join(' ',@stuff), "\n";
+print "### argument(s): ", join(' ', @argv_copy), "\n";
+foreach (@argv_copy) {   print "### ", `ls -l $_`; }
+
+# get rid of 'ALL' (was added for convenience when gathering stats on marginals)
+@all_sources = (grep $_ ne 'ALL', sort keys %igis_of_source);
+
+
+print "Sources: " , join( ' ', @all_sources), "\n";
 
 print "number of igi's per source:\n";
-foreach my $source (@all_sources) {
+foreach my $source ('ALL', @all_sources) {
     my $igi_of_source = $igis_of_source{$source};
     my $num = int(keys %{$igi_of_source});
     print "$source: $num\n";
 #    print "XXX ", join(':', keys %{$igi_of_source}), "\n";;
 }
 print "----\n";
-# get rid of 'ALL':
-@all_sources = (grep $_ ne 'ALL', sort keys %igis_of_source);
 
 # compare igi's per source
 print "pairwise overlaps:\n";
@@ -183,14 +223,15 @@ foreach my $source1 (@all_sources) {
 print "----\n";
 ### sizes:
 foreach my $source ('ALL', @all_sources) {
-    my ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats) = 
-     gene_stats($igis_of_source{$source});
+    print "gene stats on $source:\n";
 
-    print "gene stats on $source: ";
-    print "minl=$min, maxl=$max, avgl=$avg, ";
-    print "minf=$minfeats, maxf=$maxfeats, avgf=$avgfeats\n";
+#    my ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats, 
+#        $minexons, $maxexons, $avgexons) = 
+     gene_stats($igis_of_source{$source});
 }
+
 print "----\n";
+
 ## do overlaps
 my @all_igis = keys %{$igis_of_source{'ALL'}};
 my $n_igis = int(@all_igis);
@@ -233,12 +274,9 @@ for(my $i = 1; $i<=$n_sources; $i++) {
 print "----\n";
 print "gene stats per cluster group:\n";
 for(my $i = 1; $i<=$n_sources; $i++) {
-    my ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats) = 
-        gene_stats($igis_of_n_sources[$i]) ;
-
-    print "those in $i sources: ";
-    print "minl=$min, maxl=$max, avgl=$avg, ";
-    print "minf=$minfeats, maxf=$maxfeats, avgf=$avgfeats\n";
+    print "those in $i sources:\n";
+#     my ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats) = 
+    gene_stats($igis_of_n_sources[$i]) ;
 }
 
 ### see to what extent native gene_ids get lumped together by the igi clustering
