@@ -1,17 +1,14 @@
 use lib 't';
+use strict;
+use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
 	plan tests => 22;
 }
 
-my $loaded = 0;
-END {print "not ok 1\n" unless $loaded;}
-
 use MultiTestDB;
 use Bio::EnsEMBL::Gene;
-
-$loaded = 1;
 
 # switch on the debug prints
 my $verbose = 0;
@@ -26,7 +23,7 @@ my $db = $multi->get_DBAdaptor( "core" );
 ok( $db );
 
 my $gene;
-$ga = $db->get_GeneAdaptor();
+my $ga = $db->get_GeneAdaptor();
 
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
@@ -49,14 +46,14 @@ ok( $gene->end() == 30815178 );
 
 
 
-$links = $gene->get_all_DBLinks();
+my $links = $gene->get_all_DBLinks();
 debug( "Links: ".scalar( @$links ));
 
 ok( scalar @$links == 6 );
 
 # now create a new gene ...
 
-$slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end( "20",30264615, 30265615 );
+my $slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end( "20",30264615, 30265615 );
 
 my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name("ensembl");
 
@@ -224,3 +221,13 @@ sub debug {
     print STDERR $txt,"\n";
   }
 }
+
+
+
+
+
+
+
+
+
+
