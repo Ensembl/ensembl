@@ -1085,7 +1085,7 @@ sub get_supporting_evidence {
 	
 	$f->validate;
 
-	$exhash{$exon}->add_Supporting_Feature($f);
+	$exhash{$exon->id}->add_Supporting_Feature($f);
     }
     }
 
