@@ -504,7 +504,7 @@ sub remove {
   }
 
   #remove all associated prediction exons
-  my $pexon_adaptor = $self->get_PredictionExonAdaptor();
+  my $pexon_adaptor = $self->db()->get_PredictionExonAdaptor();
   foreach my $pexon (@{$pre_trans->get_all_Exons}) {
     $pexon_adaptor->remove($pexon);
   }
