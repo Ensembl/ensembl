@@ -24,6 +24,7 @@ be used to get the adaptors needed.
 The registry can be loaded from a configuration file. If the enviroment
 variable ENSEMBL_REGISTRY is set then the file pointed to by it is executed.
 If not set then if the file ~/.ensembl_init exists then this will be executed.
+For the Web server ENSEMBL_REGISTRY should be set in SiteDefs.pm.
 
 The four types of registrys are for db adaptors, dba adaptors, dna adaptors
 and the standard type.
@@ -48,8 +49,7 @@ OR preferably if the blast adaptor was set up in configure
 
 =head2 DBA
 
-These are the old DBAdaptors but since the DBAdaptor module will be deleted in a
-future version these are here only to aid backwards compatibility.
+These are the stores for the DBAdaptors
 
 The Registry will create all the DBConnections needed now if you set up the
 configuration correctly. So instead of the old commands like
@@ -64,13 +64,12 @@ my  $exon_adaptor = Bio::EnsEMBL::Registry->get_adaptor("Human","core","Exon");
 
 =head2 DNA
 
-This is an internal Registry and allows the configuration of a dnadb. An example here is to
-set the est database to get it's dna data from the core database.
+This is an internal Registry and allows the configuration of a dnadb. 
+An example here is to set the est database to get it's dna data from the core database.
 
 ## set the est db to use the core for getting dna data.
-#Bio::EnsEMBL::Utils::ConfigRegistry->dnadb_add("Homo Sapiens","core","Homo Sapiens","est");
-
-A better way though is to use the Merged adaptors to get the features on the core for all databases.
+#Bio::EnsEMBL::Utils::ConfigRegistry->
+#                         dnadb_add("Homo Sapiens","core","Homo Sapiens","est");
 
 
 =head2 adaptors
@@ -106,20 +105,22 @@ $registry_register{'_WARN'} = 0;
 
 
 
-sub load_registy_with_web_adaptors{
-  my $class = shift;
+=head2 load_all
+ Will load the registry with the configuration file which is obtained from
+ the first in the following and in that order.
+
+  1) if an argument is passed to this method this is used as the conf file.
+  2) If the enviroment variable ENSEMBL_REGISTRY is set this is used.
+  3) If the file .ensembl_init exist in the home directory it is used
+
+  Arg [1]    : (optional) string $arg file to load the registry from
+  Example    : Bio::EnsEMBL::Registry->load_all();
+  Returntype : none
+  Exceptions : none
 
 
-  eval{ require SiteDefs };
-  if ($@){ die "Can't use SiteDefs.pm - $@\n"; }
-    SiteDefs->import(qw(:ALL));
-
-  eval{ require SpeciesDefs };
-  if ($@){ die "Can't use SpeciesDefs.pm - $@\n"; }
-  my $conf = new SpeciesDefs();
-
-}
-
+=cut
+ 
 sub load_all{
   my $class = shift;
   my $web_reg = shift;
@@ -132,7 +133,8 @@ sub load_all{
       unless (my $return = do $web_reg ){
 	throw "Error in Configuration\n $!\n";
       }
-      delete $INC{$web_reg}; # other wise it gets done again by the web initialisation stuff
+      # other wise it gets done again by the web initialisation stuff
+      delete $INC{$web_reg}; 
     }
     elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
       print STDERR  "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
@@ -154,25 +156,25 @@ sub load_all{
   }
 }
 
+=head2 check_if_already_there
 
-#=head2 warn_on_duplicates
-#
-#  Arg [1]    : (optional) string $arg
-#  Example    : Bio::EnsEMBL::Registry->warn_on_duplicates(1);
-#  Description: Getter / Setter for the production of error 
-#               messages on overwriting values.
-#  Returntype : string
-#  Exceptions : none
-#
-#=cut
+  Arg [DBNAME] : string
+                 The name of the database to check for.
+  Arg [HOST] : (optional) string
+               The domain name of the database host to check for
+  Arg [PORT] : int
+               The port to check for when connecting to the database
+  Arg [DRIVER] : (optional) string
+                 The type of database driver to check for
 
-#sub warn_on_duplicates{
-#  my ($class) = shift;
-#
-#  $registry_register{'_WARN'} = shift if(@_);
-#  return $registry_register{'_WARN'};
-#}
+  Description: Check to see if the database is already stored.
+  Returntype : 0 if not found else the species and group.
+  Exceptions : none
+  
 
+=cut
+
+  
 sub check_if_already_there{
   my ($class) = shift;
 
@@ -188,22 +190,6 @@ sub check_if_already_there{
       }
     }
   }
-  return 0;
-}
-
-sub set_default_track{
-  my ($class, $species, $group) = @_;  
-
-  $registry_register{'def_track'}{$species}{$group} = 1;
-}
-
-sub default_track{
-  my ($class, $species, $group) = @_;  
-
-  if(defined($registry_register{'def_track'}{$species}{$group})){
-    return 1;
-  }
-  
   return 0;
 }
 
@@ -415,9 +401,11 @@ sub get_DNAAdaptor{
   Arg [2]    : name of the group to add the adaptor to in the registry.
   Arg [3]    : name of the type to add the adaptor to in the registry.
   Arg [4]    : The DBAaptor to be added to the registry.
+  Arg [5]    : (optional) if set okay to overwrite.
   Example    : Bio::EnsEMBL::Registry->add_adaptor("Human", "core", "Gene", $adap);
   Returntype : none
   Exceptions : none
+
 
 =cut
 
@@ -426,11 +414,19 @@ sub add_adaptor{
 
   $species = $class->get_alias($species);
 
+#
+# Becouse the adaptors are not stored initially only there class paths when
+# the adaptors are obtained we need to store these instead.
+# It is not necessarily an error if the registry is overwritten without
+# the reset set but it is an indication that we are overwriting a database
+# which should be a warning for now
+#
+
   if(defined($reset)){ # JUST REST THE HASH VLAUE NO MORE PROCESSING NEEDED
     $registry_register{$species}{$group}{$type} = $adap;
     return;
   }
-  if(defined($registry_register{$species}{$group}{$type})){ #&& warn_on_duplicates()){
+  if(defined($registry_register{$species}{$group}{$type})){ 
     print STDERR ("Overwriting Adaptor in Registry for $species $group $type\n");
     $registry_register{$species}{$group}{$type} = $adap;
    return;
@@ -460,6 +456,22 @@ sub add_adaptor{
 
 }
 
+
+=head2 set_get_via_dnadb_if_set
+
+  set the flag so that for this type of adaptor the data is obtained
+  from the dna source and not centrally i.e. estgenes where the sequence
+  data is held in the core.
+
+  Arg [1]    : name of the species to set flag for.
+  Arg [2]    : name of the type to set flag for. (i.e. Sequence)
+  Example    : Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set("Human","Sequence");
+  Returntype : none
+  Exceptions : none
+  
+  
+
+=cut
 
 sub set_get_via_dnadb_if_set{
   my ($class,$species,$type) = @_;
@@ -548,11 +560,33 @@ sub get_MergedAdaptor{
   return $ret;
 }
 
+=head2 add_alias
+
+  Arg [1]    : name of the species to add alias for
+  Arg [2]    : name of the alias
+  Example    : Bio::EnsEMBL::Registry->add_alias("Homo Sapiens","Human");
+  Description: add alternative name for the species.
+  Returntype : none
+  Exceptions : none
+
+=cut
+
 sub add_alias{
   my ($class, $species,$key) = @_;
 
   $registry_register{'_ALIAS'}{$key} = $species;
 }
+
+=head2 get_alias
+
+  Arg [1]    : name of the possible alias to get species for
+  Arg [2]    : if set will not throw if not found.
+  Example    : Bio::EnsEMBL::Registry->get_alias("Human");
+  Description: get proper species name.
+  Returntype : species name
+  Exceptions : if not found and second argument
+
+=cut
 
 sub get_alias{
   my ($class, $key, $no_throw) = @_;
@@ -568,6 +602,86 @@ sub get_alias{
   return $registry_register{'_ALIAS'}{$key};
 }
 
+#
+# Web specific routines
+#
+
+
+=head2 load_registry_with_web_adaptors
+  Will load the registry with all the Adaptors used in the Web server.
+  Providing Sitedefs and SpeciesDefs can be found on PERL5LIB path.
+
+  Example    : Bio::EnsEMBL::Registry->load_registry_with_web_adaptors();
+  Returntype : none
+  Exceptions : Will die if Sitedefs or SpeciesDefs is not found on the
+               PERL5LIB path.
+
+=cut
+
+sub load_registy_with_web_adaptors{
+  my $class = shift;
+
+
+  eval{ require SiteDefs };
+  if ($@){ die "Can't use SiteDefs.pm - $@\n"; }
+    SiteDefs->import(qw(:ALL));
+
+  eval{ require SpeciesDefs };
+  if ($@){ die "Can't use SpeciesDefs.pm - $@\n"; }
+  my $conf = new SpeciesDefs();
+
+}
+
+=head2 set_default_track
+  Sets a flag to say that that this species/group are a default track and do not
+  need to be added as another web track.
+
+  Arg [1]    : name of the species to get the adaptors for in the registry.
+  Arg [2]    : name of the type to get the adaptors for in the registry.
+  Example    : $merged = Bio::EnsEMBL::Registry->set_default_track("Human","core");
+  Returntype : none
+  Exceptions : none
+
+=cut
+
+sub set_default_track{
+  my ($class, $species, $group) = @_;  
+
+  $registry_register{'def_track'}{$species}{$group} = 1;
+}
+
+=head2 default_track
+  Check flag to see if this is a default track
+
+  Arg [1]    : name of the species to get the adaptors for in the registry.
+  Arg [2]    : name of the type to get the adaptors for in the registry.
+  Example    : $merged = Bio::EnsEMBL::Registry->set_default_track("Human","core");
+  Returntype : int 
+  Exceptions : none
+
+=cut
+
+sub default_track{
+  my ($class, $species, $group) = @_;  
+
+  if(defined($registry_register{'def_track'}{$species}{$group})){
+    return 1;
+  }
+  
+  return 0;
+}
+
+
+=head2 add_new_tracks
+  Will add new gene tracks to the configuration of the WEB server if they are
+  not of the type default and the configuration already has genes in the display.
+
+  Arg [1]    : hash of the default configuration of the web page
+  Returntype : none
+  Exceptions : none
+  Called by  : UserConfig.pm
+  
+=cut
 
 sub add_new_tracks{
   my($class, $conf) = @_;
@@ -611,6 +725,18 @@ sub add_new_tracks{
   }
 }
 
+
+=head2 _add_new_track
+ 
+  Arg [1]    : hash of the configuration  
+  Arg [2]    : dbadaptor to use to get track info from
+  Arg [3]    : start index to place track in the right place
+  Returntype : none
+  Exceptions : none
+  Called by  : add_new_tracks
+
+=cut
+
 sub _add_new_track{
   my ($class, $config, $dba, $start ) = @_;
 
@@ -637,8 +763,5 @@ sub _add_new_track{
   return;
 }
 
-sub turn_web_tracks_off{
-
-}
 
 1;
