@@ -58,6 +58,7 @@ use Bio::Root::Object;
 use Bio::EnsEMBL::DB::CloneI;
 use Bio::EnsEMBL::AceDB::Contig;
 use Bio::EnsEMBL::AceDB::Clone;
+use Bio::EnsEMBL::AceDB::Update_Obj;
 use Ace;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
@@ -137,11 +138,11 @@ sub get_Gene{
 
 sub get_Clone {
    my ($self,$id) = @_;
- 
+
    $self->fetch(Sequence => $id) || $self->throw("$id is not a valid sequence in this database");
-   my $clone = new Bio::EnsEMBL::AceDB::Clone( -id => $id,
-					-dbobj => $self );
-   return $clone;
+   my $clone = new Bio::EnsEMBL::AceDB::Clone( -id => $id, -dbobj => $self);
+
+    return $clone;
 }
 
 
@@ -160,7 +161,7 @@ sub get_Clone {
 sub get_all_Clone_id {
    my ($self) = @_;
  
-   my @clones = map $_->name, $self->fetch(Genome_Sequence => 'AC3');
+   my @clones = map $_->name, $self->fetch(Genome_Sequence => '*');
    return @clones;
 }
 
@@ -186,6 +187,26 @@ sub get_Contig {
 
    return $contig;
 }
+
+
+=head2 get_Update_Obj
+
+ Title   : get_Update_Obj
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Update_Obj {
+    my ($self) = @_;
+ 
+    return Bio::EnsEMBL::AceDB::Update_Obj->new($self);
+}
+
 
 =head2 fetch
 

@@ -210,7 +210,6 @@ foreach my $clone_id ( @clones ) {
 	    exit 0;
 	}
         
-        print(STDERR "Format is $format\n");
         
 	if( $format =~ /gff/ ) {
 	    foreach my $contig ( $clone->get_all_Contigs )  {
@@ -221,47 +220,65 @@ foreach my $clone_id ( @clones ) {
 	    }
 	} 
         
+        elsif ( $format =~ /test/ ) {
+	    foreach my $contig ( $clone->get_all_Contigs() ) {
+            
+                my  $vc = Bio::EnsEMBL::DB::VirtualContig->new( 
+                                                -focuscontig => $contig,
+                                                  -focusposition => 10000,
+                                                  -ori => 1,
+                                                  -left => 80000,
+                                                  -right => 70000
+                                                  );            
+                print STDERR "Created Contig, lenght = ", $vc->length(), "\n";
+                my $seq = $vc->primary_seq();
+                print STDERR "primary sequence lenght = ", $seq->length(), "\n";
+            }
+        }
+            
+            
         elsif ( $format =~ /fasta/ ) {
 	    my $seqout = Bio::SeqIO->new( '-format' => 'Fasta' , -fh => $OUT);
 	    
 	    foreach my $contig ( $clone->get_all_Contigs() ) {
-            
-                # Loop through all the genes on the contig
-                for my $gene ($contig->get_all_Genes()) {
+                
+                # Create a virtual contig around the contig
+                my  $vc = Bio::EnsEMBL::DB::VirtualContig->new( 
+                                                -focuscontig => $contig,
+                                                  -focusposition => 1,
+                                                  -ori => 1,
+                                                  -left => 100000,
+                                                  -right => 100000
+                                                  );            
+                print STDERR "Created Virtual Contig, lenght = ", $vc->length(), "\n";
+                my $seq = $vc->primary_seq();
+                print STDERR "primary sequence lenght = ", $seq->length(), "\n";
+                
+                # Loop through all the genes on the virtual contig
+                for my $gene ($vc->get_all_Genes()) {
           
                     # Loop through all the transcripts of each gene
                     for my $transcript ($gene->each_Transcript()) {
-                    
-                        # Get all the exons
-                        for my $exon ($transcript->each_Exon()) {
-                            print "\n\n", "Contig ID: ", $exon->contig_id, "\n";
-                            print "Clone ID: ", $exon->clone_id, "\n";
-                            print "Exon ID: ", $exon->id, "\n";
-                            print "Start Translation: ", $exon->start_translation, "\n";
-                            print "End Translation: ", $exon->end_translation, "\n";
-                            
-                            for my $seq ($exon->pep_seq()) {
-                                print "Peptide sequence: ", $seq->seq(), "\n";   
-                            }
-                                
-                        }
-                        
-                        
-                        # Get the translation sequence
-#                        my $translation = $transcript->translate()->seq();
-                        
-                        
+
+                        # Get the translation 
+                        my $translation = $transcript->translate();                        
                         # Check that the translation does not contain '*'s                        
- #                       if ($translation =~ m/\*/) {
- #                           print(STDERR "* found in sequence of $contig");
- #                       }  
- #                       print $OUT $gene->id, "\n";   
- #                       print $OUT $translation, "\n";
+                        if ($translation =~ m/\*/) {
+                            print STDERR "* found in sequence of $gene->id()";
+                        }  
+                        print $OUT "Gene ID: ", $gene->id, "\n";
+                        print $OUT "First Exon: ", $transcript->first_exon()->id, "\n";
+                        print $OUT "Last Exon: ", $transcript->last_exon()->id, "\n";
+                        print $OUT "Start Exon: ", $transcript->start_exon()->id, "\n";
+                        print $OUT "End Exon: ", $transcript->end_exon()->id, "\n";                                                 
+                        print $OUT "Translation: ", $translation->seq(), "\n";
+                        print STDERR "Written translation of ", $gene->id, "\n";
                     }
                 }
 	    }
 	} 
         
+    
         elsif ( $format =~ /embl/ ) {
 	    print(STDERR "Dumping embl\n");
 	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);

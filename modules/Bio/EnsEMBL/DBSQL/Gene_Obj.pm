@@ -55,7 +55,7 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::EnsEMBL::DBSQL::Obj;
-
+use Bio::EnsEMBL::DB::Gene_ObjI;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
@@ -668,7 +668,6 @@ sub get_Translation{
 sub write{
    my ($self,$gene) = @_;
    my $old_gene;
-
    my %done;
 
    if ( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
@@ -703,7 +702,6 @@ sub write{
 
    
    foreach my $trans ( $gene->each_Transcript() ) {
-
        $self->write_Transcript($trans,$gene);
        my $c = 1;
        foreach my $exon ( $trans->each_Exon() ) {
@@ -871,8 +869,18 @@ sub write_Transcript{
    }
 
    # ok - now load this line in
-   my $tst = $self->_db_obj->prepare("insert into transcript (id,gene,translation,version) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "',".$trans->version.")");
-   $tst->execute();
+   my $tst = $self->_db_obj->prepare("
+        insert into transcript (id, gene, translation, version) 
+        values (?, ?, ?, ?)
+        ");
+                
+   $tst->execute(
+        $trans->id,
+        $gene->id, 
+        $trans->translation->id,
+        $trans->version   
+        );
+   
    $self->write_Translation($trans->translation());
    return 1;
 }

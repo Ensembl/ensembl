@@ -43,6 +43,7 @@ use strict;
 use Bio::Seq;
 use Bio::Root::Object;
 use Bio::EnsEMBL::AceDB::Obj;
+use Bio::EnsEMBL::ContigOverlapHelper;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Repeat;
@@ -62,20 +63,42 @@ sub _initialize {
   my($self,@args) = @_;
 
   my $make = $self->SUPER::_initialize(@args);
-
   my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
 					  ID
 					  )],@args);
 
   $id || $self->throw("Cannot make contig db object without id");
   $dbobj || $self->throw("Cannot make contig db object without db object");
-  $dbobj->isa('Bio::EnsEMBL::AceDB::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
-
-  $self->id($id);
+  $dbobj->isa('Bio::EnsEMBL::AceDB::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");  
+    # set stuff in self from @args
+  $self->id($id); 
   $self->dbobj($dbobj);
-
-# set stuff in self from @args
   return $make; # success - we hope!
+}
+
+
+=head2 chromosome
+
+ Title   : chromosome
+ Usage   : $obj->chromosome()
+ Function: 
+ Example : 
+ Returns : The chromosome object
+ Args    : 
+
+
+=cut
+
+sub chromosome {
+   my ($self) = @_;
+   
+    ## Get the sequence object
+    #my $seq = $self->ace_seq();
+    #my $chromosome_name = $seq->at('Origin.Chromosome[1]');  
+     
+    # Create a new human Species object
+    my $species = new Bio::EnsEMBL::Species("human");
+    return $species->chromosome_by_name("human", "unknown");
 }
 
 
@@ -233,19 +256,24 @@ sub get_all_SeqFeatures {
 
 sub get_all_Genes {
     my ($self) = @_;
-    # here we don't look at Locus objects to determine whether
-    # things are transcripts or not
     
     my @genes;
     my $id = $self->id();        
-    # Create hash of methods we're interested in
+    # Create a hash of methods we're interested in
     my %methods = map{$_, 1} ('supported_CDS', 'curated');
     # Get the sequence object
     my $seq = $self->ace_seq();
+   
+    my $phase = $seq->at('Properties.Coding.CDS[1]');
+    # If the phase is defined set it to phase - 1 
+    if ($phase) {
+        $phase = $phase->name() - 1;
+    } 
+    # Otherwise it's 0
+    else {
+        $phase = 0;
+    }
 
-    # Start the phase at whatever it's defined as -1 or 0 if it's not defined
-    my $phase = $seq->at('Properties.Coding.CDS[1]') || 1;
-    $phase--;
     
     # Loop through the subsequences
     foreach my $sub ($seq->at('Structure.Subsequence')) {
@@ -254,10 +282,8 @@ sub get_all_Genes {
         if ($methods{$sub->fetch->at("Method[1]")}) {
              
             my $genename = "$sub";                                  
-            my ($start,$end) = $sub->row(1);
 
-	    $start = "$start";
-	    $end   = "$end";
+            my ($start, $end) = map($_->name(), $sub->row(1));
 
             my $strand = 1;
             if ( $start > $end ) {
@@ -270,13 +296,14 @@ sub get_all_Genes {
             # Fetch all the exons            
             foreach my $hit ($subseq->at('Structure.From.Source_Exons[1]')) {  
                                          
-	        my ($starte, $ende) = map("$_", $hit->row());                              	                        
+	        my ($starte, $ende) = map($_->name(), $hit->row());                              	                        
                 my $exon = $self->_create_exon($id, $strand, $start, 
-		    $starte, $end, $ende, $genename, $index, $phase);
+                    $starte, $end, $ende, $genename, $index, $phase); 
                 
                 # Set index and phase for the next exon
                 $index++;                
-	        $phase = $exon->end_phase();                	                        
+	        $phase = $exon->end_phase(); 
+                               	                        
                 push(@exons, $exon);
             }            
             
@@ -294,21 +321,18 @@ sub get_all_Genes {
             else {            
                 $translation->start_exon_id($exons[$#exons]->id());
 	        $translation->end_exon_id($exons[0]->id());
-            }  
-
-#	    print "Trans start: ", $translation->start(), "\n";  
-#	    print "Trans end: ", $translation->end(), "\n"; 
-#	    print "Trans start id: ", $translation->start_exon_id(), "\n"; 
-#	    print "Trans end id: ", $translation->end_exon_id(), "\n";        
-
+            } 
+           
 	    # Create a new Transcript object from the exons and the Translation
-            my $transcript = new Bio::EnsEMBL::Transcript(@exons);    
+            my $transcript = new Bio::EnsEMBL::Transcript(@exons);
+            $transcript->id($genename);    
 	    $transcript->translation($translation);
 
 #	    print STDERR "Translation is " . $transcript->translate->seq . "\n";
             # Create a new Gene object and add the Transcript 
             my $gene = new Bio::EnsEMBL::Gene();
-            $gene->id($genename); 
+            $gene->id($genename);
+            $gene->version(1); 
             $gene->add_Transcript($transcript);
             
             # Add the gene to the genes array
@@ -351,37 +375,45 @@ sub get_all_SimilarityFeatures {
 
  Title   : get_left_overlap
  Usage   : $overlap = $contig->get_left_overlap()
- Function: just returns undef for now
+ Function: Checks whether left_overlap has already been defined.
+            If it hasn't it calls _get_overlap with the parameter "left"
  Example :
- Returns : undef
+ Returns : Bio::EnsEMBL::ContigOverlapHelper
  Args    : none
 
 
 =cut
 
 sub get_left_overlap {
-   my ($self,@args) = @_;
-   # Just return undef for now as it's not important to know this overlap
-   return undef;
+    my ($self) = @_;
+    
+    unless (defined $self->{'left_overlap'}) {
+	$self->{'left_overlap'} = $self->_create_overlap("left");
+    }
+    return $self->{'left_overlap'};
 }
 
 
 =head2 get_right_overlap
 
  Title   : get_right_overlap
- Usage   :  $overlap = $contig->get_right_overlap()
- Function: just returns undef for now
+ Usage   : $overlap = $contig->get_right_overlap()
+ Function: Checks whether right_overlap has already been defined.
+            If it hasn't it calls _get_overlap with the parameter "right"
  Example :
- Returns : undef
+ Returns : Bio::EnsEMBL::ContigOverlapHelper
  Args    : none
 
 
 =cut
 
-sub get_right_overlap {
-   my ($self,@args) = @_;
-   # Just return undef for now as it's not important to know this overlap
-   return undef;
+sub get_right_overlap {   
+    my ($self) = @_;
+    
+    unless (defined $self->{'right_overlap'}) {
+	$self->{'right_overlap'} = $self->_create_overlap("right");
+    }
+    return $self->{'right_overlap'};
 }
 
 
@@ -405,6 +437,25 @@ sub id {
     return $self->{'id'};
 }
 
+ 
+=head2 internal_id
+
+ Title   : internal_id
+ Usage   : $obj->internal_id($newval)
+ Function: 
+ Example : 
+ Returns : value of internal_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub internal_id {
+    my ($self,$value) = @_;
+
+    return $self->id($value);
+}
+ 
   
 =head2 length
 
@@ -468,6 +519,7 @@ sub primary_seq {
        $dna =~ tr/[a-z]/[A-Z]/;
        $self->{'_primary_seq'} = Bio::PrimarySeq->new ( -seq => $dna , '-id' => $id, -type => 'DNA' ) ;
     }
+   
    return $self->{'_primary_seq'};
 }
 
@@ -562,7 +614,7 @@ sub _create_exon {
 	     $exonid = "dummy_exon_id.$genename.$index";
     }
     $exon->id($exonid);
-    
+   
     return $exon;
 }
 
@@ -611,10 +663,84 @@ sub _create_feature_pair {
                             $meth,        # hprimary,
                             $hid);        # hseqname
                             
-    my $analysis = new Bio::EnsEMBL::Analysis();
+    my $analysis = new Bio::EnsEMBL::Analysis(					    
+					    -program         => "RepeatMasker",
+					    -program_version => 1,
+					    -gff_source      => "RepeatMasker",
+					    -gff_feature     => "repeat"
+                                            );
     $repeat->analysis($analysis);                            
     $repeat->validate();
     return $repeat;
+}
+
+
+=head2 _create_overlap
+
+ Title   : _create_overlap
+ Usage   :  $overlap = $contig->_create_overlap("left" or "right")
+ Function: Called by get_left_overlap or get_right_overlap to search
+            through the link the contig is part of and find the appropriate
+            overlap which is returned as a ContigOverlapHelper
+ Example :
+ Returns : Bio::EnsEMBL::ContigOverlapHelper
+ Args    : "left" or "right"
+
+
+=cut
+
+sub _create_overlap {   
+    my ($self, $side) = @_;
+
+    # Get the sequence object
+    my $seq = $self->ace_seq();
+    # Get the link object (chromosome) it's part of
+    my $link = $seq->at('Structure.From.Source[1]');
+    # If Structure.From.Source hasn't been defined return nothing
+    return unless ($link);
+    $link = $link->fetch;
+    
+    # Get an array of sequnces to be tested for overlaps
+    my @testSequences = $link->at('Structure.Subsequence');    
+    # Get a tag to this contig from the link
+    my $seq_tag = $link->fetch->at("Structure.Subsequence.\Q$seq")
+        or $self->throw("$seq is not in the link object $link");           
+    # Find the start and end of this contig from this tag    
+    my ($seq_start, $seq_end) = map $_->name, $seq_tag->row(1);
+    unless (defined $seq_end) {
+        $self->throw("End is not defined for contig $seq");
+    }
+    
+    # Find the sequence polarity from the start and end
+    my $seqPolarity = ($seq_start < $seq_end) ? 1 : -1;
+    
+    # Define the overlap point and the selfPosition depending on the side choosen 
+    my $overlapPoint;
+    my $selfPosition = 1;
+    if ($side eq "left") {
+        $overlapPoint = $seq_start;
+    }
+    elsif ($side eq "right") {
+        $overlapPoint = $seq_end;
+        $selfPosition += ($seq_end - $seq_start);
+    }
+    
+    # Find the largest overlap of the overlapPoint from the testSequences    
+    my ($overlapID, $overlapSize, $overlapPosition, $overlapPolarity) = 
+        $self->_get_largest_overlap($seqPolarity, $overlapPoint, @testSequences);
+    
+    # If no overlap was found return undef to indicate there is no overlap
+    unless (defined $overlapID) {
+        return undef;
+    }
+    # Create a new Contig and return the ContigOverlapHelper
+    my $overlapContig = new Bio::EnsEMBL::AceDB::Contig($self->dbobj(), $overlapID);     
+    return new Bio::EnsEMBL::ContigOverlapHelper(-sister => $overlapContig, 
+                                                -sisterposition => $overlapPosition, 
+                                                -sisterpolarity => $overlapPolarity, 
+                                                -source => $self, 
+                                                -distance => 1,        # There is no distance between them
+                                                -selfposition => $selfPosition);   
 }
 
 
@@ -634,7 +760,7 @@ sub _from_ace_seqfeature {
     my ($score,$start,$end,$tstart,$tend) = @_;
     my $strand;
 
-    if( $start !~ /^\d+$/ || $end !~ /^\d+$/ || $score !~ /^\d+\.?\d*$/ ) {
+    if ( $start !~ /^\d+$/ || $end !~ /^\d+$/ || $score !~ /^\d+\.?\d*$/ ) {
 	&Bio::Root::Object::throw("start $start, end $end and score $score look dodgy");
     }
 
@@ -654,6 +780,48 @@ sub _from_ace_seqfeature {
     $out->score($score);
     
     return $out;
+}
+
+
+=head2 _get_largest_overlap
+
+ Title   : _get_largest_overlap
+ Usage   :  $overlap = $contig->_get_largest_overlap()
+ Function: Called by _create_overlap
+ Example :
+ Returns : ($overlapID, $overlapSize, $overlapPolarity)
+ Args    : $seqPolarity, $overlapPoint, @testSequences
+
+
+=cut
+
+sub _get_largest_overlap {   
+    my ($self, $seqPolarity, $overlapPoint, @testSequences) = @_;
+       
+    my $overlapSize = 0;   
+    my $overlapPolarity;
+    my $overlapPosition;
+    my $overlapID;
+    # Loop through the test sequences and find any that overlap the overlap point. 
+    # If they do check that they are the largest one so far and if so keep.    
+    foreach my $testSeq (@testSequences) {
+    
+        my ($start, $end) = map($_->name(), $testSeq->row(1));
+        my $testPolarity = ($start < $end) ? 1 : -1;     
+        # Test if the overlapPoint is between start and end for either polarity 
+        if ((($testPolarity) && ($start < $overlapPoint) && ($overlapPoint < $end)) 
+            || ((! $testPolarity) && ($end < $overlapPoint) && ($overlapPoint < $start))) {
+        
+            if ($end - $start > $overlapSize) {
+                $overlapSize = $end - $start;
+                $overlapPolarity = ($testPolarity == $seqPolarity) ? 1 : -1;
+                $overlapID = $testSeq->name();
+                $overlapPosition = ($testPolarity) ? $overlapPoint - $start : $end - $overlapPoint;
+            }
+        }
+    }
+    
+    return ($overlapID, $overlapSize, $overlapPosition, $overlapPolarity); 
 }
 
 
@@ -724,15 +892,32 @@ sub _get_tandems {
     my ($self) = @_;
     my @seq_features;
     my @tandems = $self->ace_seq->at('Feature.Tandem[1]');
+
+    my $analysis = new Bio::EnsEMBL::Analysis(					    
+					    -program         => "tandem",
+					    -program_version => 1,
+					    -gff_source      => "tandem",
+					    -gff_feature     => "repeat"
+                                            );
     
     # Create a new feature object for each of the tandems found
     foreach my $tandem (@tandems) {
-        my($end, $score, $remark) = $tandem->row(1);        
+        my($start, $end, $score, $remark) = $tandem->row();        
         my $feature = Bio::EnsEMBL::FeatureFactory->new_feature();
-        $feature->start($tandem);
+        $feature->start($start);
         $feature->end($end);
         $feature->score($score);
         $feature->seqname($self->id);
+        $feature->source_tag("repeat");
+        $feature->primary_tag("tandem");
+        if ($start < $end) {
+            $feature->strand(1);
+        }
+        else {
+            $feature->strand(-1);
+        }
+        $feature->analysis($analysis);
+        $feature->validate();
         push(@seq_features, $feature);
     }
     

@@ -830,7 +830,6 @@ sub _build_clone_map {
        }
        
        if( $seen == 0 ) {
-	   print(STDERR "Contig is $contig\n");
 	   $self->dbobj($contig->dbobj);
 	   $seen = 1;
        }
@@ -891,7 +890,7 @@ sub _build_contig_map {
   GOING_LEFT :
     
     while( $current_left_size < $left ) {
-      print(STDERR "Current left = $current_left_size\n");
+      print(STDERR "Current left = $current_left_size Left = $left\n");
       print STDERR "Looking at ",$current_contig->id," with $current_left_size\n";
 
       if( $current_orientation == 1 ) {
@@ -911,8 +910,9 @@ sub _build_contig_map {
 	}
 	
 	if( $overlap->distance == 1 ) {
-	  $current_left_size += $overlap->sister->golden_length -1;
-	} else {
+      
+	  $current_left_size += $overlap->sister->golden_length -1;          
+	} else {      
 	  $current_left_size += $overlap->distance;
 	  if( $current_left_size > $left ) {
 	    # set the left overhang!

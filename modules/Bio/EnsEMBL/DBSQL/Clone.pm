@@ -94,19 +94,17 @@ sub _initialize {
 
 sub fetch { 
     my ($self) = @_;
-    
-    my $id=$self->id();
-    
-    my $sth = $self->_db_obj->prepare("select id from contig where clone = \"$id\";");
-    my $res = $sth ->execute();
-    my $rv  = $sth ->rows;
-    
+ 
+    my $id=$self->id();   
+    my $sth = $self->_db_obj->prepare("select id from clone where id = \"$id\";");    
+    my $res = $sth ->execute();   
+    my $rv  = $sth ->rows;    
     if( ! $rv ) {
 	# make sure we deallocate sth - keeps DBI happy!
 	$sth = 0;
+        print STDERR "Clone $id does not seem to occur in the database!\n";     
 	$self->throw("Clone $id does not seem to occur in the database!");
-    }
-    
+    }   
     return $self;
 }
 
@@ -175,7 +173,7 @@ sub delete{
        my $res = $sth->execute;
 
        my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
-       $feature_obj->delete_Features($contig);
+       $feature_obj->delete($contig);
    }
 
 

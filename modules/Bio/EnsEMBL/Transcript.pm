@@ -531,6 +531,7 @@ sub translate {
   my $seen_start =0;
 
   foreach my $ptrans ( @trans ) {
+      
       my $tseq = $ptrans->_translate_coherent($debug);
      
       # to be consistent with our EMBL dumping, we need to make the actual join

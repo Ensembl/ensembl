@@ -55,7 +55,7 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::EnsEMBL::DBSQL::Obj;
-
+use Bio::EnsEMBL::DB::Update_ObjI;
 use Bio::EnsEMBL::Ghost;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
@@ -65,7 +65,7 @@ use DBI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::Update_ObjI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -166,10 +166,13 @@ sub get_now_offset{
     my $offset = $rowhash->{'offset_time'};
 
     #Perform the subtraction in mysql
-    $sth         = $self->_db_obj->prepare("select UNIX_TIMESTAMP(DATE_SUB(now(), INTERVAL \"$offset\" HOUR_SECOND))");
+    $sth         = $self->_db_obj->prepare("select UNIX_TIMESTAMP(DATE_SUB(now(), INTERVAL '$offset' HOUR_SECOND))");
     $res         = $sth->execute();
     $rowhash     = $sth->fetchrow_hashref();
-    return $rowhash->{'UNIX_TIMESTAMP(DATE_SUB(now(), INTERVAL \"$offset\" HOUR_SECOND))'};;
+
+    my $now_offset = $rowhash->{"UNIX_TIMESTAMP(DATE_SUB(now(), INTERVAL '$offset' HOUR_SECOND))"};
+     
+    return $now_offset;
 }
 
 =head2 replace_last_update

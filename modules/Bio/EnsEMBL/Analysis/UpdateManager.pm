@@ -194,13 +194,14 @@ sub arclocator {
 
 sub connect {
     my ($self,$locator,@args) = @_;
-    
+   
     my $db;
     if ($locator eq "Bio::EnsEMBL::TimDB::Obj") {
 	$db = "$locator"->new(\@args);
-    } else {
+    } else { 
 	$db = new Bio::EnsEMBL::DBLoader($locator);
     }
+    
     return $db;
 }
 
@@ -422,6 +423,7 @@ sub check_update_status {
 	    $self->warn("Update running in donor database, watch out!");
 	}
     } 
+    
     return ($fdb,$tdb);
 }
 	    
@@ -472,17 +474,14 @@ sub update {
 	    # child here
 
 	   my @clones = $self->getchunk($current,@clone_id);           
-
-	   print STDERR  "In child. Transferring @clones\n";
-	   print STDERR "Connecting to donor database...\n"      if $self->verbose;
-
+           print(STDERR  "In child. Transferring @clones\n");
+	   $self->verbose() && print STDERR "Connecting to donor database...\n"; 
 	   my $fromdb = $self->connect ($self->fromlocator,@clones);   
-
-	   print STDERR  "Connected to donor database\n";
-	   print STDERR "Connecting to recipient database...\n"  if $self->verbose;
-
+           print(STDERR  "Connected to donor database\n");
+	    $self->verbose() && print STDERR "Connecting to recipient database...\n"; 
 	   my $todb   = $self->connect ($self->tolocator); 	        
-	   print(STDERR  "Connected to recipient database\n");
+           print(STDERR  "Connected to recipient database\n");
+
 	   my $arcdb;
 
 	   if ($self->arclocator eq "none") {
@@ -498,11 +497,21 @@ sub update {
 	   };
 
 	   # must exit child. Big trouble otherwise
-	   exit($@);
+	   if ($@) {
+	        warn($@);
+                exit(1);
+	    }
+            exit(0);
+           
        } else {
 	   $self->throw("Couldn't fork a new process");
        }
     }
+    
+    # Now that all the new Contigs have been added we can update their contigOverlaps
+    $self->_write_Contig_overlaps() unless $self->nowrite;
+
+        
     
     if (!$self->nowrite) {
 	my $todb = $self->connect($self->tolocator);  print(STDERR  "Replacing last update time with current time\n");
@@ -532,33 +541,33 @@ sub transfer_chunk {
 	};
 	
 	if ($@) {
-	    warn("Could not fetch clone from TimDB, probably locked, skipping clone\n");
+	    warn("Could not fetch clone: $@ Skipping clone\n");
 	    next;
 	}
 	
-	eval {
-	    # Check if it is a clone object
-	    if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
-		$self->write_clone($todb,$arcdb,$object);
-	    }
-	    
-	    # These won't happen - updated clones only are returned from TimDB
-	    
-	    # Check if it is a gene
-	    elsif ($object->isa("Bio::EnsEMBL::Gene")) {
-		$self->write_gene($todb,$arcdb,$object);
-	    }
-	    
-	    # Check if it is an exon
-	    elsif ($object->isa("Bio::EnsEMBL::Exon")) {
-		$self->write_exon($todb,$object);
-	    }
+#    eval {
+        # Check if it is a clone object
+        if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
+            $self->write_clone($todb,$arcdb,$object);
+        }
+        
+        # These won't happen - updated clones only are returned from TimDB
+        
+        # Check if it is a gene
+        elsif ($object->isa("Bio::EnsEMBL::Gene")) {
+            $self->write_gene($todb,$arcdb,$object);
+        }
+        
+        # Check if it is an exon
+        elsif ($object->isa("Bio::EnsEMBL::Exon")) {
+            $self->write_exon($todb,$object);
+        }
 
-	};
+#    };
 	if ($@) {
 	    warn($@);
 	    warn("ERROR: problems in updating clone $id, will be deleted from recipient database to preserve data integrity\n");
-	    $todb->delete_Clone($object->id);
+	    $object->delete();
 	}
     }
 }
@@ -628,49 +637,63 @@ sub write_clone {
     my %old_genes;
     my $rec_clone;
 
-    $self->verbose && print STDERR "Got clone with id ".$object->id."\n";
-    
-    eval {
-	$rec_clone = $db->get_Clone($object->id);
+    $self->verbose && print STDERR "Got clone with id " . $object->id . "\n";
+   
+    # Trys calling $clone->fetch to see if the clone is present in recipient DB
+    eval {        
+        my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $object->id,
+						-dbobj => $db );                                                
+        $rec_clone = $clone->fetch();        
     };
 
+    # If the clone isn't in the recipient DB ask the DB object to write it there
     if (! defined($rec_clone) ) { 
-	$self->verbose &&  print STDERR "New Clone, writing it in the database\n";
-	$db  ->write_Clone($object)  unless $self->nowrite;
+        $self->verbose &&  print STDERR "New Clone, writing it in the database\n";
+        unless ($self->nowrite) {
+            $db  ->write_Clone($object);
+            # Store each clone added to the new DB so their ContigOverlaps 
+            # can be wriiten after all the clones have been added
+            $self->_add_Clone($object);
+        }
 
-	foreach my $gene ($object->get_all_Genes('evidence')) {
-	    $self->verbose &&  print STDERR "Getting all genes via clone get_all_Genes method\n";
-	    
-	    $self->write_gene($db,$arcdb,$gene,'1');
-	}
+        foreach my $gene ($object->get_all_Genes('evidence')) {
+            $self->verbose &&  print STDERR "Getting all genes via clone get_all_Genes method\n";        
+            $self->write_gene($db,$arcdb,$gene,'1');
+        }
 
-    } else {
-	print("Object 1 [$object] [$rec_clone]\n");
-	if ($object->version > $rec_clone->version) {
-	    $self->verbose && print STDERR "Clone with new version, updating the database, and deleting the old version\n";
-	    
-	    print STDERR "Getting all genes from donor clone\n";
-	    my @new_genes=$object->get_all_Genes('evidence');
-
-	    print STDERR "Getting all genes from recipient clone\n";    
-	    foreach my $old_gene ($rec_clone->get_all_Genes('evidence')) {
-		$old_genes{$old_gene->id} = $old_gene;
-	    }
-
-	    unless ($self->nowrite) {
-		$db->delete_Clone($rec_clone->id);
-		$db->write_Clone ($object);
-	    }
-	    
-	    foreach my $gene (@new_genes) {
-		$self->write_gene($db,$arcdb,$gene,%old_genes,'1');
-	    }
-	} elsif ($rec_clone->version > $object->version) {
-	    print STDERR "ERROR: Something is seriously wrong, found a clone in the recipient database with version number higher than that of the donor database!!!\n";
-	    exit;
-	}  else {
-	    $self->verbose && print STDERR "Clone versions equal, not modifying database\n";
-	}
+    } 
+    
+    else {
+        print("Object 1 [$object] [$rec_clone]\n");
+        $self->throw("Can't write clone as version is not known") unless $object->version;
+         
+        if ($object->version > $rec_clone->version) {
+            $self->verbose && print STDERR "Clone with new version, updating the database, and deleting the old version\n";
+            print STDERR "Getting all genes from donor clone\n";
+            my @new_genes=$object->get_all_Genes('evidence');
+            print STDERR "Getting all genes from recipient clone\n";    
+            foreach my $old_gene ($rec_clone->get_all_Genes('evidence')) {
+                $old_genes{$old_gene->id} = $old_gene;
+            }
+            unless ($self->nowrite) {
+                $rec_clone->delete();
+                $db->write_Clone ($object);
+                # Store each clone changed in the new DB so their ContigOverlaps 
+                # can be wriiten after all the clones have been added
+            $self->_add_Clone($object);
+            }
+            foreach my $gene (@new_genes) {
+                $self->write_gene($db,$arcdb,$gene,%old_genes,'1');
+            }
+        }       
+        elsif ($rec_clone->version > $object->version) {
+            print STDERR "ERROR: Something is seriously wrong, found a clone in the recipient database with version number higher than that of the donor database!!!\n";
+            exit;
+        }  
+        
+        else {
+            $self->verbose && print STDERR "Clone versions equal, not modifying database\n";
+        }
     }
 }
 
@@ -687,11 +710,12 @@ sub write_clone {
 
 
 sub write_gene {
-    my ($self,$db,$arc_db,$don_gene,%old_genes,$clone_level) = @_;
+    my ($self, $db, $arc_db, $don_gene, %old_genes, $clone_level) = @_;
 
     my $rec_gene;
 
-    $self->verbose && print STDERR "Got gene with id ".$don_gene->id.", and version ".$don_gene->version."\n";    
+    $self->verbose && print STDERR "Got gene with id " . $don_gene->id . 
+        ", and version " . ($don_gene->version ? $don_gene->version : "undefined") . "\n";    
     
     if(!$old_genes{$don_gene->id} ) {
 	$self->verbose && print STDERR "New Gene, writing it in the database\n";
@@ -708,7 +732,7 @@ sub write_gene {
 		    $self->verbose && print STDERR "Gene with new version, updating the database, and deleting old version\n";
 		    $db->delete_Gene($old_genes{$don_gene->id}->id);
 		}
-		$db->write_Gene  ($don_gene);
+		$db->gene_Obj->write($don_gene);
 	    }
 	    
 	}  elsif ($old_genes{$don_gene->id}->version > $don_gene->version) {
@@ -728,4 +752,33 @@ sub write_gene {
     }
 }   
 
+sub _add_Clone {
+    my ($self, $clone) = @_;
 
+    if ($clone) {
+        $self->{_clones} ||= [];
+        push @{$self->{_clones}}, $clone;
+    }
+}
+
+sub _list_Clones {
+    my ($self) = @_;
+    
+    return ($self->{_clones}) ? @{$self->{_clones}} : ();
+}
+
+sub _write_ContigOverlaps {
+    my ($self) = @_;
+    
+    $self->verbose && print STDERR "Writting ContigOverlaps for new inserted Clone\n";
+    my $db   = $self->connect ($self->tolocator);    
+    my @newClones = $self->list_Clones;
+    
+    foreach my $clone (@newClones) {
+        foreach my $contig ($clone->get_all_Contigs) {
+            foreach my $overlap ($clone->get_all_ContigOverlaps) {     
+                $db->write_ContigOverlap($overlap, $clone);
+            }
+        }
+    }
+}

@@ -123,7 +123,7 @@ sub _initialize {
       $self->_db_handle("dummy dbh handle in debug mode $debug");
   } else {
 
-      my $dbh = DBI->connect("$dsn","$user",$password);
+      my $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
 
       $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
       
@@ -134,7 +134,7 @@ sub _initialize {
       $self->_db_handle($dbh);
   }
 
-  if( $perl == 1 ) {
+  if ($perl && $perl == 1) {
       $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
   }
 
@@ -193,30 +193,42 @@ sub write_Clone {
     
     my @sql;
     
-    push(@sql,"lock tables clone write");
-    push(@sql,"insert into clone(id,version,embl_id,embl_version,htg_phase,created,modified,stored) values('$clone_id','".$clone->version."','".$clone->embl_id."','".$clone->embl_version."','".$clone->htg_phase."',FROM_UNIXTIME(".$clone->created."),FROM_UNIXTIME(".$clone->modified."),now())");
-    push(@sql,"unlock tables");   
+    my $sth = $self->prepare('
+        insert into clone (id, version, embl_id, embl_version, htg_phase, created, modified, stored) 
+        values(?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), NOW())
+        '); 
+               
+    my $rv = $sth->execute(
+        $clone_id,
+        $clone->version || "NULL",
+        $clone->embl_id || "NULL",
+        $clone->embl_version || "NULL",
+        $clone->htg_phase,
+        $clone->created,
+        $clone->modified
+        );
+        
+    $self->throw("Failed to insert clone $clone_id") unless $rv;
+
     
-    foreach my $sql (@sql) {
-	my $sth =  $self->prepare($sql);
-	my $rv  =  $sth->execute();
-	$self->throw("Failed to insert clone $clone_id") unless $rv;
+    foreach my $contig ( $clone->get_all_Contigs() ) {        
+        $self->write_Contig($contig,$clone_id);
     }
     
-    foreach my $contig ( $clone->get_all_Contigs() ) {
-	$self->write_Contig($contig,$clone_id);
-    }
-    
-    foreach my $overlap ($clone->get_all_ContigOverlaps) {
-	$self->write_ContigOverlap($overlap);
-    }
+    # Note: During an update ContigOverlaps should only be written
+    # after all the Contigs have been written because the overlaping Contig
+    # may itself be a new Contig yet to be written to the DB.  
+#    foreach my $overlap ($clone->get_all_ContigOverlaps) {     
+#        $self->write_ContigOverlap($overlap, $clone);
+#    }
+   
 }
 
 =head2 write_Contig
 
  Title   : write_Contig
  Usage   : $obj->write_Contig($contig,$clone)
- Function: writes a contig and its dna into the database
+ Function: Writes a contig and its dna into the database
  Example :
  Returns : 
  Args    :
@@ -225,50 +237,59 @@ sub write_Clone {
 =cut
 
 sub write_Contig {
-    my($self,$contig,$clone)  = @_;
-    
-    if( ! $contig->isa('Bio::EnsEMBL::DB::ContigI') ) {
-	$self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI  - can't insert contig for clone $clone");
-    }
-    
-    my $dna = $contig->primary_seq || $self->throw("No sequence in contig object");
-    $dna->id                       || $self->throw("No contig id entered.");
-    $clone                         || $self->throw("No clone entered.");
+    my($self, $contig, $clone)  = @_;
+       
+     
+    $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI - cannot insert contig for clone $clone")
+        unless $contig->isa('Bio::EnsEMBL::DB::ContigI');   
+    my $dna = $contig->primary_seq  || $self->throw("No sequence in contig object");
+    $dna->id                        || $self->throw("No contig id entered.");
+    $clone                          || $self->throw("No clone entered.");
     
 #   (defined($contig->species)    && $contig->species   ->isa("Bio::EnsEMBL::Species"))    || $self->throw("No species object defined");
-    (defined($contig->chromosome) && $contig->chromosome->isa("Bio::EnsEMBL::Chromosome")) || $self->throw("No chromosomeobject defined");
-    
+    (defined($contig->chromosome) && $contig->chromosome->isa("Bio::EnsEMBL::Chromosome")) 
+                                    || $self->throw("No chromosomeobject defined");
+                                    
+#   my $species_id    = $self->write_Species   ($contig->species);
+#   my $chromosome_id = $self->write_Chromosome($contig->chromosome,$species_id);    
     my $contigid      = $contig->id;
     my $date          = $contig->seq_date;
     my $len           = $dna   ->length;
     my $seqstr        = $dna   ->seq;
     my $offset        = $contig->embl_offset();
     my $order         = $contig->embl_order();
+    my $chromosome_id = $contig->chromosome->get_db_id;
     
-#   my $species_id    = $self->write_Species   ($contig->species);
-#   my $chromosome_id = $self->write_Chromosome($contig->chromosome,$species_id); 
-
-    my $chromosome_id  = $contig->chromosome->get_db_id;
-    
-    $seqstr =~ tr/atgcn/ATGCN/;
+    # Insert the sequence into the dna table
+    $self->_insertSequence($seqstr, $date);
     
     my @sql;
     
-    push(@sql,"lock tables contig write,dna write");
-    push(@sql,"insert into dna(sequence,created) values('$seqstr',FROM_UNIXTIME($date))");
-    push(@sql,"insert into contig(id,internal_id,dna,length,clone,offset,corder,chromosomeId ) " .
-	 "values('$contigid',null,LAST_INSERT_ID(),$len,'$clone',$offset,$order,$chromosome_id)");
+    my $sth = $self->prepare("
+        insert into contig(id, internal_id, dna, length, clone, offset, corder, chromosomeId ) 
+        values(?, ?, LAST_INSERT_ID(), ?, ?, ?, ?, ?)
+        "); 
+        
+    my $rv = $sth->execute(
+        $contigid,
+        'null',
+        $len,
+        $clone,
+        $offset,
+        $order,
+        $chromosome_id    
+        );  
+          
+    $self->throw("Failed to insert contig $contigid") unless $rv;
+       
+    #foreach my $sql (@sql) {
+    #
+    #my $sth =  $self->prepare($sql);
+    #my $rv  =  $sth->execute();
+    #$self->throw("Failed to insert contig $contigid") unless $rv;
+    #}
     
-    push(@sql,"unlock tables");   
-    
-    foreach my $sql (@sql) {
-	
-	my $sth =  $self->prepare($sql);
-	my $rv  =  $sth->execute();
-	$self->throw("Failed to insert contig $contigid") unless $rv;
-    }
-    
-    my $sth = $self->prepare("select last_insert_id()");
+    $sth = $self->prepare("select last_insert_id()");
     my $res = $sth->execute;
     my $row = $sth->fetchrow_hashref;
     
@@ -280,12 +301,40 @@ sub write_Contig {
     
     # write sequence features. We write all of them together as it
     # is more efficient
-
+    my @features = $contig->get_all_SeqFeatures;
     my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
-    $feature_obj->write($contig,$contig->get_all_SeqFeatures);
+    $feature_obj->write($contig, @features);
     
     return 1;
 }
+
+=head2 _insertSequence
+
+ Title   : _insertSequence
+ Usage   : $obj->_insertSequence
+ Function: Insert the dna sequence and date into the dna table.
+ Example :
+ Returns : 
+ Args    : $sequence, $date
+
+
+=cut
+
+sub _insertSequence {
+    my ($self, $sequence, $date) = @_;
+    
+    $sequence =~ tr/atgcn/ATGCN/;
+    
+    my $statement = $self->prepare("
+        insert into dna(sequence,created) 
+        values(?, FROM_UNIXTIME(?))
+        "); 
+        
+    my $rv = $statement->execute($sequence, $date); 
+    
+    $self->throw("Failed to insert dna $sequence") unless $rv;    
+}
+
 
 =head2 write_Chromosome
 
@@ -406,7 +455,7 @@ sub write_Species {
 =cut
 
 sub write_ContigOverlap {
-    my ($self,$overlap) = @_;
+    my ($self, $overlap, $clone) = @_;
 
     if (!defined($overlap)) {
 	$self->throw("No overlap object");
@@ -418,17 +467,14 @@ sub write_ContigOverlap {
 
     my $contiga           = $overlap->contiga;
     my $contigb           = $overlap->contigb;
-
     my $contig_a_position = $overlap->positiona;
     my $contig_b_position = $overlap->positionb;
     my $overlap_type      = $overlap->overlap_type;
 
     print(STDERR "contiga "         . $contiga->id . "\t" . $contiga->internal_id . "\n");
     print(STDERR "contigb "         . $contigb->id . "\t" . $contigb->internal_id . "\n");
-
     print(STDERR "contigaposition " . $contig_a_position . "\n");
     print(STDERR "contigbposition " . $contig_b_position . "\n");
-
     print(STDERR "overlap type "    . $overlap_type . "\n");
 
     # First of all we need to fetch the dna ids
@@ -438,11 +484,20 @@ sub write_ContigOverlap {
 
     my $sth = $self->prepare($query);
     my $res = $sth->execute;
-
-    $self->throw("More than one dna entry found for " . $contiga->id ) unless $sth->rows == 1;
-
-    my $rowhash = $sth->fetchrow_hashref;
-    my $dna_a_id = $rowhash->{id};
+    my $rowhash;
+    my $dna_a_id;
+    
+    if ($sth->rows == 0) {
+        # Contig a has not been entered into the DB yet so write it now
+        $self->write_Contig($contiga, $clone);
+    }
+    elsif ($sth->rows > 1) {
+        $self->throw("More than one dna entry found for " . $contiga->id ) unless $sth->rows == 1;
+    }
+    else {
+        $rowhash = $sth->fetchrow_hashref;
+        $dna_a_id = $rowhash->{id};
+    }    
 
     $query = "select d.id from dna as d,contig as c " .
 	        "where  d.id = c.dna ".

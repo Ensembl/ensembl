@@ -270,11 +270,13 @@ sub sv {
 
 sub version {
    my ($self) = @_;
-   my ($contig) = $self->get_Contig($self->id());
+ 
+   my ($contig) = $self->get_Contig($self->id()); 
    if (my $version = $contig->ace_seq->at('DB_info.Sequence_version[1]')) {
         return $version->name;
    }
-   return;
+   # If the version isn't defined just return 1.
+   return 1;
 }
 
 
@@ -291,15 +293,88 @@ sub version {
 
 sub get_all_Contigs {
    my ($self) = @_;
-   my $sth;
-   my @res;
-   my $name = $self->id();
-
    my $contig = new Bio::EnsEMBL::AceDB::Contig ( -dbobj => $self->_dbobj,
-						   '-id' => $self->id() );
-   push(@res,$contig);
+					   '-id' => $self->id() );
+                                           
+   my @contigs;
+   push(@contigs, $contig);
+   return @contigs;   
+}
 
-   return @res;   
+
+=head2 get_all_ContigOverlaps 
+
+ Title   : get_all_ContigOverlaps
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ContigOverlaps {
+    my ($self) = @_;
+    
+    my @overlaps;
+
+    foreach my $contig ($self->get_all_Contigs) {
+	if (defined($contig->get_left_overlap)) {
+	    
+	    my $overlap    = $contig->get_left_overlap;
+	    my $type;
+	    
+	    if ($overlap->sister_polarity == 1) {
+		$type = 'left2right';
+	    } 
+            elsif ($overlap->sister_polarity == -1) {
+		$type = 'left2left';
+	    } 
+            else {
+		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
+	    }
+	    
+	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga => $contig,
+							     -contigb => $overlap->sister,
+							     -positiona => $overlap->self_position,
+							     -positionb => $overlap->sister_position,
+							     -source    => $overlap->source,
+							     -distance  => $overlap->distance,
+							     -overlap_type => $type);
+	    
+	    push(@overlaps,$tmpoverlap);
+	}
+
+	if (defined($contig->get_right_overlap)) {
+	    
+	    my $overlap    = $contig->get_right_overlap;
+	    my $type;
+	    
+	    if ($overlap->sister_polarity == 1) {
+		$type = 'right2left';
+	    } 
+            elsif ($overlap->sister_polarity == -1) {
+		$type = 'right2right';
+	    } 
+            else {
+		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
+	    }
+	    
+	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga => $contig,
+							     -contigb => $overlap->sister,
+							     -positiona => $overlap->self_position,
+							     -positionb => $overlap->sister_position,
+							     -source    => $overlap->source,
+							     -distance  => $overlap->distance,
+							     -overlap_type => $type);
+	    
+	    push(@overlaps,$tmpoverlap);
+	    
+	}
+    }
+
+    return (@overlaps);
 }
 
 

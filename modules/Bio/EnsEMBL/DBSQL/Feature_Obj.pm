@@ -163,7 +163,8 @@ sub write {
     # database. This is a little obtuse and clunky now
     #
 
-    $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")          unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
+    $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI") 
+        unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
     
     my $contigid = $contig->id;
     my $analysis;
@@ -176,8 +177,7 @@ sub write {
     my @fset;
 
     FEATURE :
-    foreach my $feature ( @features ) {
-	
+    foreach my $feature ( @features ) {	
 	if( ! $feature->isa('Bio::EnsEMBL::SeqFeatureI') ) {
 	    $self->throw("Feature $feature is not a feature!");
 	}
@@ -516,7 +516,7 @@ sub get_Analysis {
 
 =head2 exists_Analysis
 
- Title   : get_Analysis
+ Title   : exists_Analysis
  Usage   : $obj->exists_Analysis($anal)
  Function: Tests whether this feature already exists in the database
  Example :
@@ -528,13 +528,18 @@ sub get_Analysis {
 
 sub exists_Analysis {
     my ($self,$anal) = @_;
-
+    
     $self->throw("Object is not a Bio::EnsEMBL::AnalysisI") unless $anal->isa("Bio::EnsEMBL::AnalysisI");
-
+    # If all the attributes of the analysis object are not set it's existence can't be tested 
+    $self->throw("program property of analysis object not defined") unless ($anal->program); 
+    $self->throw("program_version property of analysis object not defined") unless ($anal->program_version);    
+    $self->throw("gff_source property of analysis object not defined") unless ($anal->gff_source); 
+    $self->throw("gff_feature property of analysis object not defined") unless ($anal->gff_feature);   
+        
     my $query;
 
-    if ($anal->db ne "" && $anal->db_version ne "") {
-        $query = "select id from analysis where db = \""      . $anal->db              . "\" and" .
+    if ($anal->db and $anal->db_version) {
+            $query = "select id from analysis where db = \""      . $anal->db              . "\" and" .
                 " db_version = \""      . $anal->db_version      . "\" and " .
                 " program =    \""      . $anal->program         . "\" and " .
                 " program_version = \"" . $anal->program_version . "\" and " .
@@ -553,10 +558,7 @@ sub exists_Analysis {
     }
 
     my $sth = $self->_db_obj->prepare($query);
-    
-
     my $rv = $sth->execute();
-
 
     if ($rv && $sth->rows > 0) {
 	my $rowhash = $sth->fetchrow_hashref;
@@ -584,15 +586,23 @@ sub write_Analysis {
     my ($self,$anal) = @_;
 
     $self->throw("Argument is not a Bio::EnsEMBL::AnalysisI") unless $anal->isa("Bio::EnsEMBL::AnalysisI");
-
-
+    # If all the attributes of the analysis object are not set it shouldn't be written
+    $self->throw("program property of analysis object not defined") unless ($anal->program); 
+    $self->throw("program_version property of analysis object not defined") unless ($anal->program_version);    
+    $self->throw("gff_source property of analysis object not defined") unless ($anal->gff_source); 
+    $self->throw("gff_feature property of analysis object not defined") unless ($anal->gff_feature); 
+        
+        
     # First check whether this entry already exists.
     my $query;
     my $analysisid = $self->exists_Analysis($anal);
-
     return $analysisid if $analysisid;
 
-    if ($anal->db ne "" && $anal->db_version ne "") {
+    
+        
+
+    if ($anal->db and $anal->db_version) {
+        local $^W = 0;
 	$query = "insert into analysis(id,db,db_version,program,program_version,gff_source,gff_feature) values (NULL,\"" .
                 $anal->db               . "\","   .
                 $anal->db_version       . ",\""   .

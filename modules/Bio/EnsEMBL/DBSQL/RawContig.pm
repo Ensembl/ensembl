@@ -1052,8 +1052,8 @@ sub _load_overlaps{
 
 #	   print(STDERR "Type $type $sisterpol $selflr " . $rowhash->{overlap_size} . "\n");
 
-	   my $sis      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->dbobj,
-								  -id    => $sisterid );
+	   my $sis      = new Bio::EnsEMBL::DBSQL::RawContig ( '-dbobj' => $self->dbobj,
+								  '-id'    => $sisterid );
 	   
 	   $sis->fetch();
 
@@ -1094,8 +1094,8 @@ sub _load_overlaps{
 	   }
 #	   print(STDERR "Type $type $sisterpol $selflr " . $rowhash->{overlap_size} . "\n");
 	   
-	   my $sis      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->dbobj,
-								  -id    => $sisterid );
+	   my $sis      = new Bio::EnsEMBL::DBSQL::RawContig ( '-dbobj' => $self->dbobj,
+								  '-id'    => $sisterid );
 	   
 	   $sis->fetch();
 	   

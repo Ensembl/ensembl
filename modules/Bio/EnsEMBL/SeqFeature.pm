@@ -411,15 +411,22 @@ sub validate {
 
 sub vthrow {
     my ($self,$message) = @_;
-    
+
     print(STDERR "Error validating feature [$message]\n");
     print(STDERR "   Seqname     : [" . $self->{_gsf_seqname} . "]\n");
     print(STDERR "   Start       : [" . $self->{_gsf_start} . "]\n");
     print(STDERR "   End         : [" . $self->{_gsf_end} . "]\n");
-    print(STDERR "   Strand      : [" . $self->{_gsf_strand} . "]\n");
+    print(STDERR "   Strand      : [" . 
+        ((defined ($self->{_gsf_strand})) ? $self->{_gsf_strand} : "undefined") . "]\n");
+        
     print(STDERR "   Score       : [" . $self->{_gsf_score} . "]\n");
-    print(STDERR "   Source_tag  : [" . $self->{_source_tag} . "]\n");
-    print(STDERR "   Primary_tag : [" . $self->{_primary_tag} . "]\n");
+    
+    print(STDERR "   Source_tag  : [" . 
+        ((defined ($self->{_source_tag})) ? $self->{_source_tag} : "undefined") . "]\n");
+        
+    print(STDERR "   Primary_tag : [" . 
+        ((defined ($self->{_primary_tag})) ? $self->{_primary_tag} : "undefined") . "]\n");
+        
     print(STDERR "   Analysis    : [" . $self->{_analysis}->id . "]\n");
 
     $self->throw("Invalid feature - see dump on STDERR");
