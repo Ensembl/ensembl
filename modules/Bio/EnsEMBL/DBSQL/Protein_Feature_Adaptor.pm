@@ -238,16 +238,18 @@ sub write_Protein_feature_by_translationID {
 	    if ( $features->isa('Bio::EnsEMBL::FeaturePair') ) {
 		my $homol = $features->feature2;
 		
-		my $sth = $self->prepare(  "insert into protein_feature(id,seq_start,seq_end,score,analysis,translation,hstart,hend,hid) ".
+		my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) ".
 					   "values ('NULL',"
+					   ."'".$pep                 ."',"
 					   .$features->start          .","
 					   .$features->end            .","
-					   .$features->score          .","
 					   .$analysisid              .","
-					   ."'".$pep                 ."',"
 					   .$homol->start            .","
 					   .$homol->end              .","
-					   ."'".$homol->seqname      ."')");
+					   ."'".$homol->seqname      ."',"
+					   .$features->score         .","
+					   .$features->percent_id    .","
+					   .$features->p_value       .")");
 		$sth->execute();
 	    }
 	}
@@ -293,6 +295,34 @@ sub delete_by_dbID {
     $sth->execute;
 }
 
+=head2 get_interproac_by_signature_id
+
+ Title   : get_interproac_by_signature_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_interproac_by_signature_id{
+   my ($self,$sign_id) = @_;
+   my $sth = $self->prepare("select interpro_ac from interpro where id = '$sign_id'");
+   
+   $sth->execute;
+   
+   my $interpro_ac = $sth->fetchrow;
+   
+   my $feat = new Bio::EnsEMBL::SeqFeature;
+   
+   $feat->external_db($interpro_ac);
+   
+   return $feat;
+
+}
+
 
 =head2 _set_protein_feature
 
@@ -311,11 +341,13 @@ sub _set_protein_feature{
 
 my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
    
-   my $feat1 = new Bio::EnsEMBL::SeqFeature ( -start => $rowhash->{'seq_start'},
+   my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $rowhash->{'translation'},
+					      -start => $rowhash->{'seq_start'},
 					      -end => $rowhash->{'seq_end'},
 					      -score => $rowhash->{'score'}, 
 					      -analysis => $analysis,
-					      -seqname => $rowhash->{'translation'});
+					      -percent_id => $rowhash->{'perc_id'},
+					      -p_value => $rowhash->{'evalue'});
    
    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $rowhash->{'hstart'},
 					     -end => $rowhash->{'hend'},
@@ -327,6 +359,9 @@ my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
    return $feature;
 
 }
+
+
+
 
 
 
