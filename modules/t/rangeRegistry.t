@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 21;
+	plan tests => 25;
 }
 
 use Bio::EnsEMBL::Test::TestUtils;
@@ -98,6 +98,26 @@ print_ranges($range);
 $range = $rr->check_and_register("ID2", 100,500, 1, 600);
 ok($range && @$range==1 && $range->[0]->[0] == 1 && $range->[0]->[1] == 600);
 print_ranges($range);
+
+
+# I suspect there is a small bug in respect to handling the 
+# second argument extended range
+
+# setup some ranges
+$range = $rr->check_and_register( "rr_bug", 2,10 );
+$range = $rr->check_and_register( "rr_bug", 15,20 );
+$range = $rr->check_and_register( "rr_bug", 25,30 );
+
+my $overlap = $rr->overlap_size(  "rr_bug", 3, 40 );
+ok( $overlap == 20 );
+
+$range = $rr->check_and_register( "rr_bug", 28, 35, 3, 40 );
+debug( "*** extended bug test ***" );
+print_ranges( $range );
+# this should result in 2,40 to be covered in the range registry
+ok(@$range==3 && $range->[0]->[0] == 11 && $range->[0]->[1] == 14);
+ok(@$range==3 && $range->[1]->[0] == 21 && $range->[1]->[1] == 24);
+ok(@$range==3 && $range->[2]->[0] == 31 && $range->[2]->[1] == 40);
 
 
 
