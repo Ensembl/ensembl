@@ -74,7 +74,7 @@ sub fetch_by_dbID{
    $sth->execute;
    my $a = $sth->fetchrow_arrayref();
    if( !defined $a ) {
-       $self->throw("No chromosome of $a");
+       $self->throw("No chromosome of $id");
    }
 
 
@@ -215,7 +215,6 @@ sub get_landmark_MarkerFeatures{
    my $prev;
    while( $sth->fetch ) {
        if( defined $prev && $prev->end + $glob > $start  && $prev->id eq $name ) {
-           
            next;
        }
 
