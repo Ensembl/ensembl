@@ -299,6 +299,10 @@ sub fetch_evidence_by_Exon {
   while (my $rowhash = $sth->fetchrow_hashref) {
       my $analysis = $anaAdaptor->fetch_by_dbID( $rowhash->{analysis} );
 
+      unless($analysis) {
+	warn("Unknown analsysis ".$exon->stable_id()." = $rowhash->{analysis}");
+        next;
+      }
       if( 
 	 $analysis->logic_name ne "Swall" &&
 	 $analysis->logic_name ne "Vertrna" &&
