@@ -785,6 +785,67 @@ sub seq {
 }
 
 
+
+=head2 overlaps
+
+  Arg  1     : Bio::EnsEMBL::Feature $feature
+  Example    : if( $this_feature->overlaps( $otherfeature ) ...
+  Description: Test if two features overlap. Strandedness is ignored. Both features have
+               to have slices. If they are not on the same coordinate system they need
+               as well database connection.
+  Returntype : boolean 0,1
+  Exceptions : on no slices, wrong argument type, more if not on same coord_system
+  Caller     : general
+
+=cut
+
+sub overlaps {
+  my $self = shift;
+  my $feature = shift;
+
+  if( ! $feature->isa( "Bio::EnsEMBL::Feature" )) {
+    throw( "Need a Bio::EnsEMBL::Feature as argument" );
+  }
+
+  if( ! defined $self->slice() || ! defined $feature->slice() ) {
+    throw( "Features need to contain slices to support overlaps" );
+  }
+
+
+  if( $self->slice()->coord_system()->equals
+      ( $feature->slice()->coord_system())) {
+    if( $self->seq_region_name() eq $feature->seq_region_name() ) {
+      if( $feature->seq_region_start() <= $self->seq_region_end() &&
+	  $self->seq_region_start() <= $feature->seq_region_end() ) {
+	return 1;
+      } else {
+	return 0;
+      }
+    } else {
+      return 0;
+    }
+  }
+
+  # not same coord system
+  # have to project
+  my $projection = $self->project( $feature->slice()->coord_system()->name(),
+				   $feature->slice()->coord_system()->version());
+  for my $proj ( @$projection ) {
+    my $slice=$proj->[2];
+    if( $slice->seq_region_name() eq $feature->seq_region_name() &&
+	$slice->start() <= $feature->seq_region_end() &&
+	$feature->seq_region_start() <= $slice->end() ) {
+      return 1;
+    }
+
+    return 0;
+  }
+}
+
+
+
+
+
 ##############################################
 # Methods included for backwards compatibility
 ##############################################
