@@ -1548,6 +1548,45 @@ sub get_all_RawContigs {
 
 
 
+=head2 get_all_RawContigs
+
+ Title   : get_rawcontig_by_position
+ Usage   : $obj->get_rawcontig_by_position($position)
+ Function: 
+ Example : 
+ Returns : returns a raw contig object or undef on error
+ Args    : 
+
+
+=cut
+
+sub get_rawcontig_by_position {
+
+    my ($self, $pos) = @_;
+
+    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+        $self->throw("Must supply a VirtualContig to get_all_RawContigs: Bailing out...");
+    }
+
+    if ($pos < 1 || $pos > $self->length){
+        $self->throw("get_rawcontig_by_position error: Position must be > 0 and < vc->length");
+    }
+    
+    my @ids =  $self->get_all_RawContigs();
+
+    foreach my $cid ( @ids ) {
+        if ($pos > $self->end_in_vc($cid)) {
+            next;
+        } else {
+            return $self->{'contighash'}->{$cid};
+        }
+    }
+    
+    return (undef);
+}
+
+
+
 =head2 _focus_contig
 
  Title   : _focus_contig
