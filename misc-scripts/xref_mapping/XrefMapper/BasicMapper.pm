@@ -149,11 +149,11 @@ sub get_species_id_from_species_name{
 sub get_set_lists{
   my ($self) = @_;
 
-#  return [["method1",["homo_sapiens","RefSeq"],["homo_sapiens","UniProtSwissProt"]],
+#  return [["method1",["homo_sapiens","RefSeq"],["homo_sapiens","Uniprot/SWISSPROT"]],
 #	  ["method2",[$self->species,"*"]],
 #	  ["method3",["*","*"]]];
 
-  #return [["ExonerateGappedBest1", ["homo_sapiens","UniProtSwissProt"]]];
+  #return [["ExonerateGappedBest1", ["homo_sapiens","Uniprot/SWISSPROT"]]];
 return [["ExonerateGappedBest1", ["homo_sapiens","RefSeq"]]];
 #  return [["ExonerateBest1",["*","*"]]];
 
@@ -952,7 +952,7 @@ sub dump_xrefs {
     $dep_sth->bind_columns(\$xref_id, \$accession, \$label, \$description, \$source_id);
     while (my @row = $dep_sth->fetchrow_array()) {
 
-      print XREF ($xref_id+$xref_id_offset) . "\t" . $accession . "\t" . $label . "\t" . $description . "DEPENDENT\n";
+      print XREF ($xref_id+$xref_id_offset) . "\t" . $accession . "\t" . $label . "\t" . $description . "\tDEPENDENT\n";
       $source_ids{$source_id} = $source_id;
 
       # create an object_xref linking this (dependent) xref with any objects it maps to
@@ -962,7 +962,7 @@ sub dump_xrefs {
 	print "xref $accession has " . scalar(@objects) . " associated ensembl objects\n";
 	foreach my $object_id (@objects) {
 	  my $type = $ensembl_object_types{$object_id};
-	  print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "DEPENDENT\n";
+	  print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tDEPENDENT\n";
 	  $object_xref_id++;
 	  # Add this mapping to the list - note NON-OFFSET xref_id is used
 	  my $key = $type . ":" . $object_id;
@@ -1155,9 +1155,9 @@ sub transcript_display_xref_sources {
 	  'Genoscope_annotated_gene',
 	  'Genoscope_predicted_transcript',
 	  'Genoscope_predicted_gene',
-	  'UniProtSwissProt',
+	  'Uniprot/SWISSPROT',
 	  'RefSeq',
-	  'UniProtSPTrEMBL',
+	  'Uniprot/SPTREMBL',
 	  'LocusLink');
 
 }

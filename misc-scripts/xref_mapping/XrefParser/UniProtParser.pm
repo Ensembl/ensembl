@@ -42,8 +42,8 @@ sub run {
 
   my ($species_id, $species_name) = get_species($file);
 
-  $sp_source_id = XrefParser::BaseParser->get_source_id_for_source_name('UniProtSwissProt');
-  $sptr_source_id = XrefParser::BaseParser->get_source_id_for_source_name('UniProtSPTrEMBL');
+  $sp_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SWISSPROT');
+  $sptr_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SPTREMBL');
   print "SwissProt source id for $file: $sp_source_id\n";
   print "SpTREMBL source id for $file: $sptr_source_id\n";
 
