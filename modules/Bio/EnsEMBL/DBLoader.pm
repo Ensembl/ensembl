@@ -56,7 +56,7 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::DBLoader;
 
 use Bio::EnsEMBL::DBSQL::Obj;
-# use Bio::EnsEMBL::DBOLD::Obj;
+use Bio::EnsEMBL::DBOLD::Obj;
 # use Bio::EnsEMBL::TimDB::Obj;
 use strict;
 
