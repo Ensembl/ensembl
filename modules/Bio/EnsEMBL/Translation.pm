@@ -661,12 +661,6 @@ sub modify_translation {
 }
 
 
-
-=head1 DEPRECATED METHODS
-
-=cut
-
-
 =head2 temporary_id
 
   Description: DEPRECATED This method should not be needed. Use dbID,
