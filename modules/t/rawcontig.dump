@@ -68,7 +68,7 @@ INSERT INTO gene (id) VALUES ('gene-id-1');
 # Dumping data for table 'genetype'
 #
 
-INSERT INTO genetype VALUES ('gene-id-1','ensembl');
+INSERT INTO genetype (gene_id, type) VALUES ('gene-id-1','ensembl');
 
 
 INSERT INTO translation (id,start_exon,seq_start,end_exon,seq_end) VALUES ('trl-1','exon-1',2,'exon-2',6);

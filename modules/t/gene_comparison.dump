@@ -19,7 +19,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('ex2-s1', 1, 108, 145, 2, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('ex3-s1', 1, 159, 200, 1, 0, 1);
-INSERT INTO genetype VALUES ('clone1-gene1','ensembl');
+INSERT INTO genetype (gene_id, type) VALUES ('clone1-gene1','ensembl');
 
 
 
@@ -33,7 +33,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('ex4-s1', 1, 330, 400, 2, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('ex5-s1', 1, 408, 445, 1, 0, 1);
-INSERT INTO genetype VALUES ('clone1-gene2','ensembl');
+INSERT INTO genetype (gene_id, type) VALUES ('clone1-gene2','ensembl');
 
 
 # Clone 2
@@ -57,7 +57,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('clone2-ex2', 2, 108, 145, 2, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('clone2-ex3', 2, 159, 200, 1, 0, 1);
-INSERT INTO genetype VALUES ('clone2-gene1','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone2-gene1','ensembl');
 
 # Gene 2
 INSERT INTO gene (id) VALUES ('clone2-gene2');
@@ -69,7 +69,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('clone2-ex4', 2, 330, 400, 2, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('clone2-ex5', 2, 408, 445, 1, 0, 1);
-INSERT INTO genetype VALUES ('clone2-gene2','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone2-gene2','ensembl');
 
 # Gene 3
 INSERT INTO gene (id) VALUES ('clone2-gene3');
@@ -87,7 +87,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('clone2-ex8', 2, 1159, 1200, 1, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('clone2-ex9', 2, 1203, 1250, 2, 0, 1);
-INSERT INTO genetype VALUES ('clone2-gene3','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone2-gene3','ensembl');
 
 # Gene 4
 INSERT INTO gene (id) VALUES ('clone2-gene4');
@@ -99,7 +99,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('ex10', 2, 1330, 1400, 1, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('ex11', 2, 1408, 1445, 2, 0, 1);
-INSERT INTO genetype VALUES ('clone2-gene4','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone2-gene4','ensembl');
 
 
 
@@ -127,7 +127,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('clone3-ex3', 3, 1159, 1200, 1, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('clone3-ex4', 3, 1203, 1250, 2, 0, 1);
-INSERT INTO genetype VALUES ('clone3-gene1','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone3-gene1','ensembl');
 
 
 
@@ -141,7 +141,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('clone3-ex5', 3, 1330, 1400, 1, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('clone3-ex6', 3, 1408, 1445, 2, 0, 1);
-INSERT INTO genetype VALUES ('clone3-gene2','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone3-gene2','ensembl');
 
 
 
@@ -163,7 +163,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('clone4-ex1', 4, 330, 400, 2, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('clone4-ex2', 4, 408, 445, 1, 0, 1);
-INSERT INTO genetype VALUES ('clone4-gene1','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone4-gene1','ensembl');
 
 
 # Gene 2
@@ -182,7 +182,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('clone4-ex8', 4, 1159, 1200, 1, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('clone4-ex9', 4, 1203, 1250, 2, 0, 1);
-INSERT INTO genetype VALUES ('clone4-gene2','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone4-gene2','ensembl');
 
 
 
@@ -214,7 +214,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('clone5-ex4', 5, 330, 400, 2, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('clone5-ex5', 5, 408, 445, 1, 0, 1);
-INSERT INTO genetype VALUES ('clone5-gene1','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone5-gene1','ensembl');
 
 
 # Gene 2
@@ -227,7 +227,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('clone5-ex6', 5, 1013, 1045, 1, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('clone5-ex7', 5, 1108, 1145, 2, 0, 1);
-INSERT INTO genetype VALUES ('clone5-gene2','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone5-gene2','ensembl');
 
 
 # Gene 3
@@ -240,7 +240,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('clone5-ex8', 5, 1159, 1200, 1, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('clone5-ex9', 5, 1203, 1250, 2, 0, 1);
-INSERT INTO genetype VALUES ('clone5-gene3','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone5-gene3','ensembl');
 
 
 
@@ -254,7 +254,7 @@ INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand)
 VALUES ('clone5-ex10', 5, 1330, 1400, 1, 0, 1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) 
 VALUES ('clone5-ex11', 5, 1408, 1445, 2, 0, 1);
-INSERT INTO genetype VALUES ('clone5-gene4','ensembl');
+INSERT INTO genetype (gene_id, type)  VALUES ('clone5-gene4','ensembl');
 
 
 INSERT INTO dna (id, sequence, created) 

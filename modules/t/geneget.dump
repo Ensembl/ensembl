@@ -40,7 +40,7 @@ INSERT INTO transcriptdblink (transcript_id,external_db,external_id) VALUES ('tr
 # Dumping data for table 'genetype'
 #
 
-INSERT INTO genetype VALUES ('gene-id-1','ensembl');
+INSERT INTO genetype (gene_id, type) VALUES ('gene-id-1','ensembl');
 
 
 INSERT INTO dna (id, sequence, created) 
