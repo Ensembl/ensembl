@@ -742,15 +742,7 @@ sub chr_name {
     return $gene_slice->seq_region_name();
   }
 
-  my $sa = $self->slice->adaptor();
-  throw( "need db connection for chr_name call" ) unless $sa;
-
-  my $ca = $sa->db()->get_CoordSystemAdaptor();
-  my $coord_system = $ca->fetch_by_name( "chromosome" );
-  if( ! $coord_system ) {
-    throw( "Chromosome coordinate system not available" );
-  }
-  my $coords = $self->project( $coord_system );
+  my $coords = $self->project( "toplevel" );
 
   if( @$coords ) {
     return $coords->[0]->[2]->seq_region_name();
