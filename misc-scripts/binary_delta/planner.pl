@@ -39,29 +39,40 @@ while (defined(my $line = <>)) {
 }
 
 foreach my $db (keys %thing) {
+    my @pair;
+    print <<EOT;
+# DATABASE: $db
+EOT
     foreach my $v (@{ $thing{$db} }) {
+	shift(@pair) if (scalar @pair == 2);
+	push(@pair, [ $db, $v ]);
+	next if (scalar @pair != 2);
+
+	my $p0 = $pair[0][0] . '_' . $pair[0][1];
+	my $p1 = $pair[1][0] . '_' . $pair[1][1];
+	my $d  = $p0 . '_delta_' . $pair[1][1];
 	print <<EOT;
-if [ ! -f databases/${db}_$v.done ]; then
-  scp -c none -r ecs3:/mysqla/current/var/${db}_$v databases/
+# DELTA: $pair[0][1] -> $pair[1][1]
+if [ ! -d databases/$p0 -a ! -f databases/$p0.done ]; then
+  scp -c none -r ecs3:/mysqla/current/var/$p0 databases/
+fi
+if [ ! -d databases/$p1 -a ! -f databases/$p1.done ]; then
+  scp -c none -r ecs3:/mysqla/current/var/$p1 databases/
+fi
+if [ ! -f deltas/$d.txt ]; then
+  /usr/bin/time ./build.pl -c ./xdelta.osf -s databases -d deltas \\
+    $pair[0][0] $pair[0][1] $pair[1][1] 2>&1 | \\
+    tee deltas/$d.txt
+  rm -rf databases/$p0
+  touch databases/$p0.done
 fi
 EOT
     }
-
-    for (my $i = 0; $i < scalar @{ $thing{$db} } - 1; ++$i) {
+    if (defined $pair[1]) {
 	print <<EOT;
-if [ ! -f deltas/${db}_$thing{$db}[$i]_delta_$thing{$db}[$i + 1].txt ]; then
-  /usr/bin/time perl ./build.pl -c ./xdelta.osf -s databases -d deltas \\
-    $db $thing{$db}[$i] $thing{$db}[$i + 1] 2>&1 | \\
-    tee deltas/${db}_$thing{$db}[$i]_delta_$thing{$db}[$i + 1].txt
-fi
-EOT
-    }
-
-    foreach my $v (@{ $thing{$db} }) {
-	print <<EOT;
-if [ ! -f databases/${db}_$v.done ]; then
-  rm -rf databases/${db}_$v
-  touch databases/${db}_$v.done
+if [ -d databases/$pair[1][0]_$pair[1][1] ]; then
+  rm -rf databases/$pair[1][0]_$pair[1][1]
+  touch  databases/$pair[1][0]_$pair[1][1].done
 fi
 EOT
     }
