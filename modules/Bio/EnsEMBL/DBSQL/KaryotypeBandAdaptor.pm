@@ -325,34 +325,34 @@ sub fetch_by_name_virtual {
 
  Title   : fetch_chromosome_length
  Usage   : 
- Function: Returns length of a chromosome ('chrN' notation)
+ Function: Returns length of a chromosome
  Example :
  Returns : SV
- Args    : Chromosome id (chrN notation) 
+ Args    : Chromosome id
 
 =cut
 
 sub fetch_chromosome_length {
-    my ($self,$chr) = @_;
+  my ($self,$chr) = @_;
 
-    $self->throw("Need a chromosome") unless defined $chr;
+  $self->throw("Need a chromosome") unless defined $chr;
 
-	# return a cached copy of the chromosome bands
-	if (exists $self->{"_karyotype_band_cache_$chr"}){
-		my @tmp = @{$self->{"_karyotype_band_cache_$chr"}};
-		return $tmp[-1]->end();
-	}
+  # return a cached copy of the chromosome bands
+  if (exists $self->{"_karyotype_band_cache_$chr"}){
+    my @tmp = @{$self->{"_karyotype_band_cache_$chr"}};
+    return $tmp[-1]->end();
+  }
+  
+  my $q = qq(
+SELECT max(chr_end)
+FROM   karyotype
+WHERE  chr_name = ? );
 
-    my $sth = $self->prepare("	SELECT
-											max(chr_end)
-								FROM		karyotype 
-								WHERE		chr_name = '$chr' 
-			     			");
-
-    $sth->execute;
-    my ($chr_end) = $sth->fetchrow_array();
-	return($chr_end);
-
+  my $sth = $self->prepare($q);
+  $sth->execute( $chr ) or die( $sth->errstr() );
+  my ($chr_end) = $sth->fetchrow_array();
+  return($chr_end);
+  
 }
 
 
