@@ -4,7 +4,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 131;
+	plan tests => 132;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -405,8 +405,6 @@ ok( $tr->spliced_seq() =~ /^GATTACA/ );
 
 $multi->restore();
 
-
-
 #
 # test that the transcript mapper handles edits
 #
@@ -420,6 +418,21 @@ $tr = $ta->fetch_by_translation_id(21734);
 $slice->invert();
 $tr = $tr->transfer($slice);
 test_trans_mapper_edits($tr);
+
+
+
+# test that mitochondrial transcripts can be corrected translated with
+# an alternate codon table
+
+$tr = $ta->fetch_by_stable_id('ENST00000355555');
+
+debug($tr->translate->seq());
+
+ok($tr->translate->seq() eq 'MNFALILMINTLLALLLMIITFWLPQLNGYMEKSTPYECGFDPMSPARVPFSMKFFLVAITFLLFDLEIALLLPLPWALQTTNLPLMVMSSLLLIIILALSLAYEWLQKGLDWAE');
+
+
+
+
 
 sub test_trans_mapper_edits {
   $tr->edits_enabled(1);
@@ -534,6 +547,9 @@ sub test_trans_mapper_edits {
 
   print_coords(\@coords);
 }
+
+
+
 
 
 sub print_coords {
