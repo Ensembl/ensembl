@@ -431,11 +431,15 @@ sub fetch_all_by_Slice {
   while( my ($geneid) = $sth->fetchrow ) {
     my $gene = $self->fetch_by_dbID( $geneid );
     my $newgene = $gene->transform( $slice );
-    push( @out, $newgene );
+
+    if( $newgene->start() <= $slice->chr_end() &&
+	$newgene->end() >= $slice->chr_start() ) {
+      # only take the gene if its really overlapping the Slice
+      push( @out, $newgene );
+    }
  }
 
   #place the results in an LRU cache
-  return $self->{'_slice_gene_cache'}{$slice->name} = \@out;
   return $self->{'_slice_gene_cache'}{$slice->name} = \@out;
 }
 
