@@ -4,18 +4,15 @@
 package Bio::EnsEMBL::RepeatFeature;
 
 use strict;
-use Bio::EnsEMBL::SeqFeatureI;
+use Bio::EnsEMBL::SeqFeature;
 
 use vars '@ISA';
 
 @ISA = qw{ Bio::EnsEMBL::SeqFeature Bio::LocationI };
 
-sub new {
-    my $pkg = shift;
-    
-    my $self = bless {}, $pkg;
-    return $self;
-}
+
+# new() comes from SeqFeature::new()
+
 
 # Unique to RepeatFeature
 
