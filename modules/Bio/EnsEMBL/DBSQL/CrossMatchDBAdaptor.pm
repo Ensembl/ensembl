@@ -41,7 +41,7 @@ use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheriets from Bio::Root::RootI
-
+use DBI;
 use Bio::Root::RootI;
 use Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer;
 
@@ -101,10 +101,11 @@ sub new_dbobj{
 
    # yank it out ;)
 
-   my $sth = $self->prepare("select newdatabase from location;");
+   my $sth = $self->prepare("select newdatabase from dblocation");
    $sth->execute;
    my ($loc) = $sth->fetchrow_array;
    
+   #print STDERR "New database locator: $loc\n";
    my $db = Bio::EnsEMBL::DBLoader->new($loc);
 
    $self->_new_dbobj($db);
@@ -135,10 +136,10 @@ sub old_dbobj{
 
    # yank it out ;)
 
-   my $sth = $self->prepare("select olddatabase from location;");
+   my $sth = $self->prepare("select olddatabase from dblocation");
    $sth->execute;
    my ($loc) = $sth->fetchrow_array;
-   
+   #print STDERR "Old database locator: $loc\n";
    my $db = Bio::EnsEMBL::DBLoader->new($loc);
 
    $self->_old_dbobj($db);

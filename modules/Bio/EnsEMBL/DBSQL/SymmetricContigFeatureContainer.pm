@@ -71,7 +71,7 @@ sub get_FeaturePair_list_by_rawcontig_id{
        $self->throw("Must have a raw contig id");
    }
 
-   my $sth = $self->prepare("select a.seq_start,a.seq_end,a.strand,b.seq_start,b.seq_end,b.strand,b.rawcontigid,p.score  from symmetric_contig_feature a, symmetric_contig_pair_hit p,symmetric_contig_feature b where a.symchid = p.symchid and p.symchid = b.symchid and a.symcfid != b.symcfid and a.rawcontigid = $id");
+   my $sth = $self->prepare("select a.seq_start,a.seq_end,a.strand,b.seq_start,b.seq_end,b.strand,b.rawcontigid,p.score  from symmetric_contig_feature a, symmetric_contig_pair_hit p,symmetric_contig_feature b where a.symchid = p.symchid and p.symchid = b.symchid and a.symcfid != b.symcfid and a.rawcontigid = '$id'");
    
    $sth->execute;
    my @out;
@@ -117,17 +117,16 @@ sub write_FeaturePair_List{
        $seqname =~ /(\S+)\.(\d+).(\S+)/ || $self->throw("Feature pair name does not conform to acc.version.number sequence");
        my $version = $2;
        my $contigid = "$1.$3";
-
-       $sth = $self->prepare("INSERT INTO symmetric_contig_feature (symcfid,symchid,rawcontigid,version,seq_start,seq_end,strand) VALUES (NULL,$hitid,".$contigid.",".$version.",".$fp->feature1->start.",".$fp->feature1->end.",".$fp->feature1->strand.")");
+       my $clone=$1;
+       $sth = $self->prepare("INSERT INTO symmetric_contig_feature (symcfid,symchid,rawcontigid,rawversion,clone,seq_start,seq_end,strand) VALUES (NULL,$hitid,'".$contigid."',".$version.",'".$clone."',".$fp->feature1->start.",".$fp->feature1->end.",".$fp->feature1->strand.")");
        $sth->execute;
 
        $seqname = $fp->feature2->seqname;
        $seqname =~ /(\S+)\.(\d+).(\S+)/ || $self->throw("Feature pair name does not conform to acc.version.number sequence");
        $version = $2;
        $contigid = "$1.$3";
-
-       $sth = $self->prepare("INSERT INTO symmetric_contig_feature (symcfid,symchid,rawcontigid,version,seq_start,seq_end,strand) VALUES (NULL,$hitid,".$contigid.",".$version.",".$fp->feature2->start.",".$fp->feature2->end.",".$fp->feature2->strand.")");
-
+       $clone=$1;
+       $sth = $self->prepare("INSERT INTO symmetric_contig_feature (symcfid,symchid,rawcontigid,rawversion,clone,seq_start,seq_end,strand) VALUES (NULL,$hitid,'".$contigid."',".$version.",'".$clone."',".$fp->feature2->start.",".$fp->feature2->end.",".$fp->feature2->strand.")");
        $sth->execute;
    }
 
