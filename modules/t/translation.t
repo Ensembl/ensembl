@@ -52,6 +52,6 @@ my $ta = $db->get_TranslationAdaptor();
 my $ids = $ta->list_dbIDs();
 ok (@{$ids});
 
-my $stable_ids = $ta->list_stable_dbIDs();
+my $stable_ids = $ta->list_stable_ids();
 ok (@{$stable_ids});
 

@@ -130,8 +130,8 @@ debug ("Exon->list_dbIDs");
 my $ids = $exonad->list_dbIDs();
 ok (@{$ids});
 
-debug ("Exon->list_stable_dbIDs");
-my $stable_ids = $exonad->list_stable_dbIDs();
+debug ("Exon->list_stable_ids");
+my $stable_ids = $exonad->list_stable_ids();
 ok (@{$stable_ids});
 
 $multi->restore();
