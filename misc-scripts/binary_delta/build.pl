@@ -85,7 +85,6 @@ The options may be any of these:
 
 EOT
 }
-
 # Compress a file.
 sub do_compress
 {
@@ -108,6 +107,21 @@ sub do_compress
 
     $gz->gzclose();
     close IN;
+}
+
+# Gets the size of the uncompressed file (uses gzip since
+# Compress::Zlib doesn't do this).
+sub compress_size
+{
+    my $zfile_path = shift;
+
+    open(IN, "gzip --list $zfile_path|") or die $!;
+
+    my $dummy = <IN>;
+    my $zsize = ( split(/\s+/, <IN>) )[1];
+
+    close IN;
+    return $zsize;
 }
 
 my %opts;
@@ -178,10 +192,16 @@ foreach my $v2_file (glob($v2_dir . '/*')) {
 	if ($v1_sum eq $v2_sum && $v1_size == $v2_size) {
 	    $patch_command = 'COPY';
 	    print "\tThe files are identical\n";
-	} elsif ($v1_size >= $too_big || $v2_size >= $too_big) {
+	} elsif ($v2_file !~ /\.gz$/ &&
+	    ($v1_size >= $too_big || $v2_size >= $too_big)) {
 	    $patch_command = 'ZIP';
 	    print "\tFiles are huge, compressing new file\n";
 	    do_compress($v2_file, $delta_file);
+	} elsif (($v2_file =~ /\.gz$/ && compress_size($v2_file) >= $too_big) ||
+	    ($v1_file =~ /\.gz$/ && compress_size($v1_file) >= $too_big)) {
+	    $patch_command = 'ADD';
+	    print "\tFiles are huge, adding compressed new file\n";
+	    copy($v2_file, $delta_file);
 	} else {
 	    print "\tCreating delta file\n";
 	    system($xdelta_cmd, 'delta', '-9', $v1_file, $v2_file, $delta_file);

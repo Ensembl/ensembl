@@ -42,6 +42,8 @@ Requirements / Configuration
        * File::Basename
        * Getopt::Std
 
+    3. The GNU zip (gzip) program.
+
     Check your  distribution CDs  before downloading and  installing these
     prerequisits from the web.
 
