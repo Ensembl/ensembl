@@ -225,30 +225,43 @@ sub _get_hits {
   my $pfetch = '/usr/local/pubseq/bin/pfetch';	# executable
   my $clump_size = 1000;	# number of sequences to fetch at once
   my %hits_hash = ();
-  my $command = "$pfetch -q";
   my @hseqnames = ();
   for (my $i = 0; $i < @$features_arr_ref; $i++) {
     push @hseqnames, $$features_arr_ref[$i]->hseqname;
     if (($i % $clump_size) == 0) {
-      open (PFETCH_IN, "$pfetch @hseqnames |")
-        or $self->throw("error running $command");
+      open (PFETCH_IN, "$pfetch -q @hseqnames |")
+        or $self->throw("error running pfetch");
       my $seq_no = 0;
-      my $stream = Bio::SeqIO->new(-fh => \*PFETCH_IN, -format => 'Fasta');
-      while (my $seq_obj = $stream->next_seq) {
-	$hits_hash{$hseqnames[$seq_no]} = $seq_obj;
+      while (<PFETCH_IN>) {
+        chomp;
+	my $seq_obj;
+	if ($_ ne "no match") {
+	   my $seq_obj = Bio::Seq->new( -seq => $_,
+	                                -id  => 'fake_id',
+				        -accession_number =>$hseqnames[$seq_no]
+				      );
+ 	  $hits_hash{$hseqnames[$seq_no]} = $seq_obj;
+	}
 	$seq_no++;
       }
       @hseqnames = ();
     }
   }
 
-  # fetch the non-clump-sized list remaining
-  open (PFETCH_IN, "$pfetch @hseqnames |")
-    or $self->throw("error running $command");
+  # fetch the non-clump-sized remainder
+  open (PFETCH_IN, "$pfetch -q @hseqnames |")
+    or $self->throw("error running pfetch");
   my $seq_no = 0;
-  my $stream = Bio::SeqIO->new(-fh => \*PFETCH_IN, -format => 'Fasta');
-  while (my $seq_obj = $stream->next_seq) {
-    $hits_hash{$hseqnames[$seq_no]} = $seq_obj;
+  while (<PFETCH_IN>) {
+    chomp;
+    my $seq_obj;
+    if ($_ ne "no match") {
+      my $seq_obj = Bio::Seq->new( -seq => $_,
+                                   -id  => 'fake_id',
+				   -accession_number =>$hseqnames[$seq_no]
+				 );
+      $hits_hash{$hseqnames[$seq_no]} = $seq_obj;
+    }
     $seq_no++;
   }
 
