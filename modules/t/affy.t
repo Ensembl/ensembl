@@ -70,7 +70,7 @@ ok( ref( $affy_probe ) && $affy_probe->isa( "Bio::EnsEMBL::AffyProbe" ));
 my $merge_probe = Bio::EnsEMBL::AffyProbe->new
 (
   -arraynames => [ "Affy-1", "Affy-2", "Affy-3" ],
-  -names => [ "123-145", "23,24,56", "someplace" ],
+  -probenames => [ "123-145", "23,24,56", "someplace" ],
   -probeset => "affy_probeset"
 );
 

@@ -71,7 +71,7 @@ ok( $array2->dbID() );
 
 # probe creation and storing
 my $probe = Bio::EnsEMBL::AffyProbe->new
-    ( -names => [ '125:130', '222:242' ],
+    ( -probenames => [ '125:130', '222:242' ],
       -arrays => [ $array1, $array2 ],
       -probeset => 'arnes_12112'
     );
