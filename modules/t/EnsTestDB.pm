@@ -45,7 +45,6 @@ use Bio::EnsEMBL::DBLoader;
 use DBI;
 use Carp;
 
-
 #Package variable for unique database name
 my $counter=0;
 
@@ -252,7 +251,8 @@ sub get_DBSQL_Obj {
     my( $self ) = @_;
     
     my $locator = $self->ensembl_locator();
-    return Bio::EnsEMBL::DBLoader->new($locator);
+    my $db =  Bio::EnsEMBL::DBLoader->new($locator);
+    $db->dnadb($self->dnadb);
 }
 
 sub do_sql_file {
@@ -310,6 +310,16 @@ sub validate_sql {
             unless ($statement =~ /insert.+into.*\(.+\).+values.*\(.+\)/i);
     }
 }
+
+sub dnadb {
+  my ($self,$dnadb) = @_;
+
+  if (defined($dnadb)) {
+     $self->{_dnadb} = $dnadb;
+  }
+  return $self->{_dnadb};
+}
+
 
 sub DESTROY {
     my( $self ) = @_;

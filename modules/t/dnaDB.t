@@ -41,7 +41,7 @@ $ens_dna ->do_sql_file("t/staticgoldenpath.dump");
 
 print "ok 2\n";    
 
-$ens_test->dnadb($ens_dna);
+$ens_test->dnadb($ens_dna->get_DBSQL_Obj);
     
 print "ok 3\n";    
 
