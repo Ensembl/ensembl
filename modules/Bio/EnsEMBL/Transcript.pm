@@ -1925,7 +1925,7 @@ sub transform {
   # attach the new list of exons to the transcript
   push @{$self->{'_trans_exon_array'}},@mapped_list_of_exons;
 
-  if( defined $self->translation() ) {
+  if( defined $self->{'translation'} ) {
     $self->translation->transform( $href_exons );
   }
 }
