@@ -813,7 +813,7 @@ sub write_Protein_feature {
 =cut
 
 sub write_Feature {
-    my ($self,$feature,$contig) = @_;
+    my ($self,$feature,$analysisid,$contig) = @_;
 
     $self->throw("Feature is not a Bio::SeqFeature::Generic")        unless $feature->isa("Bio::SeqFeature::Generic");
     $self->throw("$contig is not a Bio::EnsEMBL::DBSQL::Contig")     unless $contig ->isa("Bio::EnsEMBL::DBSQL::Contig");
@@ -821,13 +821,14 @@ sub write_Feature {
     my $contigid = $contig->id;
 
     
-    my $sth = $self->prepare("insert into feature(id,contig,start,end,score,strand,name) values (NULL,\"" . 
+    my $sth = $self->prepare("insert into feature(id,contig,start,end,score,strand,name,analysis) values (NULL,\"" . 
 			     $contig ->id          . "\"," .
 			     $feature->start       . "," . 
 			     $feature->end         . "," . 
 			     $feature->score       . "," . 
 			     $feature->strand      . ",\"" . 
-			     $feature->primary_tag . "\")");
+			     $feature->source_tag . "\"," .
+			     $analysisid           . ")");
     my $rv = $sth->execute();
 
     return $rv;
@@ -853,38 +854,111 @@ sub write_Analysis {
 
 
     # First check whether this entry already exists.
-    my $query = "select * from analysis where db = \""      . $anal->db              . "\" and" . 
-         	                    " db_version = \""      . $anal->db_version      . "\" and " . 
-                           	    " program =    \""      . $anal->program         . "\" and " .
-                          	    " program_version = \"" . $anal->program_version . "\" and " .
-               		            " gff_source = \""      . $anal->gff_source      . "\" and" .
-			            " gff_feature = \""     . $anal->gff_feature     . "\"";
+    my $query;
+    if ($anal->db ne "" && $anal->db_version ne "") {
+        $query = "select id from analysis where db = \""      . $anal->db              . "\" and" .
+                " db_version = \""      . $anal->db_version      . "\" and " .
+                " program =    \""      . $anal->program         . "\" and " .
+                " program_version = \"" . $anal->program_version . "\" and " .
+                " gff_source = \""      . $anal->gff_source      . "\" and" .
+                " gff_feature = \""     . $anal->gff_feature     . "\"";
+    } else {
+        $query = "select id from analysis where " .
+                " program =    \""      . $anal->program         . "\" and " .
+                " program_version = \"" . $anal->program_version . "\" and " .
+                " gff_source = \""      . $anal->gff_source      . "\" and" .
+                " gff_feature = \""     . $anal->gff_feature     . "\"";
+    }
     my $sth = $self->prepare($query);
 
     my $rv = $sth->execute();
-    
+
     # Ony write if we have no result
 
     # temporary id here
-    my $id = $anal->program . "." .$anal->db . "." . $anal->db_version;
 
     if ($sth->rows == 0) {
-	$query = "insert into analysis(id,db,db_version,program,program_version,gff_source,gff_feature) values (\"$id\",\"" . 
-			      $anal->db               . "\","   . 
-			      $anal->db_version       . ",\""   . 
-			      $anal->program          . "\",\"" .
-			      $anal->program_version  . "\",\"" .
-			      $anal->gff_source       . "\",\"" . 
-			      $anal->gff_feature      . "\")";
+        if ($anal->db ne "" && $anal->db_version ne "") {
+            $query = "insert into analysis(id,db,db_version,program,program_version,gff_source,gff_feature) values (NULL,\"" .
+                $anal->db               . "\","   .
+                $anal->db_version       . ",\""   .
+                $anal->program          . "\",\"" .
+                $anal->program_version  . "\",\"" .
+                $anal->gff_source       . "\",\"" .
+                $anal->gff_feature      . "\")";
+        } else {
+            $query = "insert into analysis(id,program,program_version,gff_source,gff_feature) values (NULL,\"" .
+                $anal->program          . "\",\"" .
+                $anal->program_version  . "\",\"" .
+                $anal->gff_source       . "\",\"" .
+                $anal->gff_feature      . "\")";
+        }
+        print("Query is $query\n");
 
-	print("Query is $query\n");
+        my $sth2 = $self->prepare($query);
+        my $rv   = $sth2->execute;
 
-	my $sth2 = $self->prepare($query);
-	my $rv   = $sth2->execute;
+
+        $sth = $self->prepare("select last_insert_id()");
+        $rv  = $sth->execute;
+
+        $sth = $self->prepare("select last_insert_id()");
+        $rv  = $sth->execute;
+
+        if ($sth->rows == 1) {
+            my $rowhash = $sth->fetchrow_hashref;
+            return $rowhash->{'last_insert_id()'};
+        } else {
+            $self->throw("Wrong number of rows returned : " . $sth->rows . " : should be 1");
+        }
+    } else {
+        my $rowhash = $sth->fetchrow_hashref;
+        return $rowhash->{'id'};
     }
-			      
+
+}
+
+
+=head2 write_Homol_Feature
+
+ Title   : write_Homol_Feature
+ Usage   : $obj->write_Homol_Feature($feature)
+ Function: Writes a homol feature on the genomic sequence of a contig into the database
+ Example :
+ Returns : nothing
+ Args    : Bio::SeqFeature::Homol
+
+
+=cut
+
+sub write_Homol_Feature {
+    my ($self,$feature,$analysisid,$contig) = @_;
+
+    $self->throw("Wrong number of arguments to write_Homol_Feature") unless $contig;
+    $self->throw("Feature is not a Bio::SeqFeature::Homol")          unless $feature->isa("Bio::SeqFeature::Homol");
+    $self->throw("$contig is not a Bio::EnsEMBL::DBSQL::Contig")     unless $contig ->isa("Bio::EnsEMBL::DBSQL::Contig");
+    $self->throw("No analysis id input")                             unless $analysisid;
+
+    my $contigid = $contig->id;
+    my $homol    = $feature->homol_SeqFeature;
+
+    my $rv = $self->write_Feature($feature,$analysisid,$contig);
+
+    $self->throw("Writing homol feature to the database failed for contig " . $contigid . "\n") unless $rv;
+
+    # Now write into the homol table - reading the manual last_insert_id should
+    # work on a per client basis so I shouldn't have to lock the tables.
+
+    my $sth    = $self->prepare("insert into homol_feature(feature,hstart,hend,hid) values (last_insert_id()," .
+                                $homol->start        . "," .
+                                $homol->end          . ",\"" .
+                                $homol->seqname      . "\")");
+
+    my $rv  = $sth->execute;
+
     return $rv;
 }
+
 
 =head2 write_Transcript
 
