@@ -82,6 +82,8 @@ if ($help) {
     exec('perldoc', $0);
 }
 
+$|=1;
+
 my $to_locator       = make_locator_string($tdbtype,$module,$thost,$tport,$tdbname,$tdbuser,$tpass);
 my $tdb              = new Bio::EnsEMBL::DBLoader($to_locator);
 my $from_locator     = $tdb->get_donor_locator;
