@@ -79,6 +79,9 @@ foreach $tr ( $gene->each_Transcript() ) {
 		}
 	}
 
+$x =0; # stop it whining...
+
+
 if( $count != 2 ) {
     print "not ok 7\n";
 } else {
