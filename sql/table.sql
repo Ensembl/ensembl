@@ -503,12 +503,3 @@ CREATE TABLE meta (
         KEY meta_key_index ( meta_key ),
         KEY meta_value_index ( meta_value )
 	);
-
-
-
-
-
-
-
-
-
