@@ -306,11 +306,11 @@ sub strand{
   Arg [1]    : none
   Example    : my $results = $cache{$slice->name()};
   Description: Returns the name of this slice. The name is formatted as a colon
-               delimited string with the following attributs:
-               coord_system:seq_region_name:version:start:end:strand
+               delimited string with the following attributes:
+               coord_system:version:seq_region_name:start:end:strand
 
                Slices with the same name are equivalent and thus the name can
-               act as a hash value.
+               act as a hash key.
   Returntype : string
   Exceptions : none
   Caller     : general
