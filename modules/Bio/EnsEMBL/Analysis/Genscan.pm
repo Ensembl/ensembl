@@ -156,8 +156,8 @@ sub _parse {
 	   
 	   # Is it an exon line?
 	   if ( $l[1] =~ /^(Sngl|Init|Intr|Term)/ ) {
-	     # Pass type,strand, start, stop, phase to exons()
-	     $self->_exons($gene, @l[1,2,3,4,7] );
+	     # Pass type,strand, start, stop, frame,phase to exons()
+	     $self->_exons($gene, @l[1,2,3,4,6,7] );
 	   }
 	   
 	   # or a Promoter?
@@ -245,8 +245,11 @@ sub _set_exon_phases {
   my ($self,$gene,$pep) = @_;
 
   foreach my $exon ($gene->each_Exon) {
-    my $seq = $exon->dna_seq->seq();
+    my $seq   = $exon->dna_seq->seq();
     my @trans = $exon->pep_seq;
+
+#    print("Genscan phase is " . $exon->phase . "\n");
+#    print("Genscan frame is " . $exon->frame . "\n");
 
     my $i = 0;
     my $phase;
@@ -272,6 +275,7 @@ sub _set_exon_phases {
     # Seet phase if poss.  If no phase is found the input DNA is
     # probably wrong.
     if (defined($phase)) {
+#      print("new phase is $phase\n");
       $exon->phase($phase);
     } else {
       $self->warn("Can not find frame for exon. Sequences do not match\n");
@@ -322,7 +326,7 @@ sub _gene {
 # to the parent gene exon array ref.
 
 sub _exons {
-  my ($self,$gene,$type,$strand,$start,$stop,$phase) = @_;
+  my ($self,$gene,$type,$strand,$start,$stop,$frame,$phase) = @_;
 
   # Create the exon object
   my $exon = new Bio::EnsEMBL::Exon($start,$stop,$strand);
@@ -343,6 +347,7 @@ sub _exons {
   # Set the other variables
   $exon->type     ($type);
   $exon->phase    ($phase);  # This will get overwritten if the dna seq. is input
+  $exon->frame    ($frame);
   $exon->end_phase();		
 
   # Finally add the exon to the gene
