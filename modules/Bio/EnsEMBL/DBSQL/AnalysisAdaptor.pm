@@ -313,7 +313,7 @@ sub store {
           gff_source = ?,
           gff_feature = ? } );
 
-    my $rows_inserted = $sth->execute
+    $rows_inserted = $sth->execute
       ( $analysis->logic_name,
         $analysis->db,
         $analysis->db_version,
