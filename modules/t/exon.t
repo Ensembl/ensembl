@@ -103,7 +103,7 @@ ok($exon->start == 30_961_059 && $exon->end == 30_961_259 && $exon->strand==1);
 #
 # Test transform to another slice
 #
-my $slice = $db->get_SliceAdaptor->fetch_by_chr_start_end($slice->chr_name, 
+$slice = $db->get_SliceAdaptor->fetch_by_chr_start_end($slice->chr_name,
 						   $exon->start - 10,
 						   $exon->end + 10);
 $exon = $exon->transform($slice);

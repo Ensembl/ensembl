@@ -12,10 +12,7 @@ use TestUtils qw(test_getter_setter debug);
 our $verbose = 0;
 
 
-
 my $multi = MultiTestDB->new();
-
-$loaded = 1;
 
 ok(1);
 

@@ -11,8 +11,6 @@ use TestUtils qw(debug);
 
 our $verbose = 0; #set to 1 for debug printing
 
-$loaded = 1;
-
 ok(1);
 
 my $multi = MultiTestDB->new();
@@ -96,6 +94,7 @@ my $a = $base_count->{'a'};
 my $c = $base_count->{'c'};
 my $t = $base_count->{'t'};
 my $g = $base_count->{'g'};
+my $n = $base_count->{'n'};
 my $gc_content = $base_count->{'%gc'};
 ok( $a == 6395 &&
     $c == 6070 &&

@@ -37,7 +37,8 @@ sub test_getter_setter {
     $object->$method($test_val);
     
     #verify value was set
-    $ret_val = ($object->$method eq $test_val);
+    $ret_val = (!defined($test_val) && !defined($object->$method)) || 
+	       ($object->$method eq $test_val);
 
     #restore the old value
     $object->$method($old_val);

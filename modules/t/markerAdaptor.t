@@ -47,7 +47,7 @@ ok($marker->dbID == 1 &&
 my $markers = $marker_adaptor->fetch_all_by_synonym('D1S243');
 ok(scalar(@$markers) == 1 && 
    $markers->[0]->dbID == 1 &&
-   $markers->[0]->left_primer == $marker->left_primer);
+   $markers->[0]->left_primer eq $marker->left_primer);
 
 $markers = $marker_adaptor->fetch_all_by_synonym('Z16979', 'genbank');
 ok(scalar(@$markers == 1));
