@@ -126,7 +126,7 @@ sub new {
                 'start'           => $start,
                 'end'             => $end,
                 'strand'          => $strand,
-                'adaptor'         => $adaptor};
+                'adaptor'         => $adaptor}, $class;
 }
 
 
@@ -1547,8 +1547,9 @@ sub chr_end{
 =cut
 
 sub assembly_type{
-  deprecated('Use version() instead');
-  version(@_);
+  my $self = shift;
+  deprecate('Use coord_system()->version() instead');
+  return $self->coord_system->version();
 }
 
 

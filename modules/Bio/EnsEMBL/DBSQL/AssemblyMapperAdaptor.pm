@@ -262,7 +262,7 @@ sub register_assembled {
     $sth->execute($asm_seq_region, $asm_cs_id);
 
     if(!$sth->rows() == 1) {
-      throw("Ambiguous or non-existant seq_region [$asm_seq_region]" .
+      throw("Ambiguous or non-existant seq_region [$asm_seq_region] " .
             "in coord system $asm_cs_id");
     }
 
@@ -520,7 +520,7 @@ sub fetch_by_type{
   my $cs1 = $csa->fetch_top_level($type);
   my $cs2 = $csa->fetch_sequence_level();
 
-  return $self->fetch_by_coord_systems($cs1,$cs2);
+  return $self->fetch_by_CoordSystems($cs1,$cs2);
 }
 
 

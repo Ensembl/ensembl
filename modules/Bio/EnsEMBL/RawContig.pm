@@ -20,6 +20,7 @@ use vars qw( @ISA );
 use strict;
 
 use Bio::EnsEMBL::Slice;
+use Bio::EnsEMBL::Clone;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 
 @ISA = qw( Bio::EnsEMBL::Slice );
@@ -33,20 +34,10 @@ Description: DEPRECATED use Bio::EnsEMBL::Slice instead
 sub new {
   my ( $class, @args ) = @_;
 
-  deprecate('Use Bio::EnsEMBL::Slice::new instead.');
+  deprecate("Bio::EnsEMBL::RawContig is a deprecated class.\n" .
+            "Use Bio::EnsEMBL::Slice instead");
 
-  my ( $dbID, $adaptor, $name, $sequence, $length,
-       $clone, $offset ) = @args;
-
-  my $self;
-
-  if($dbID) {
-    $self = $adaptor->db()->get_SliceAdaptor->fetch_by_seq_region_id($dbID);
-  } elsif($name) {
-    $self = $adaptor->db()->get_SliceAdaptor->fetch_by_seq_region_id($dbID);
-  }
-
-  return bless $self, $class;
+  return $class->SUPER::new(@args);
 }
 
 
@@ -93,12 +84,16 @@ sub clone {
   my $clone = $projection[0]->[2];
 
   #get full clone instead of potentially partial clone
-  return $self->adaptor->fetch_by_region('clone', $clone->seq_region_name(),
+  $clone = $self->adaptor->fetch_by_region('clone', $clone->seq_region_name(),
                                          $clone->coord_system->name(),
                                          undef,
                                          undef,
                                          undef,
                                          $clone->coord_system->version());
+
+
+  #rebless the slice as a Bio::EnsEMBL::Clone so old method calls still work
+  return bless $clone, 'Bio::EnsEMBL::Clone';
 }
 
 
@@ -133,6 +128,16 @@ sub ctg2genomic{
                                            $self->coord_system);
 }
 
+
+
+#
+# The name that is wanted is actually the seq_region name
+#
+sub name {
+  my $self = shift;
+
+  return $self->seq_region_name();
+}
 
 
 

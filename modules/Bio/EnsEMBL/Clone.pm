@@ -11,236 +11,137 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Clone - Object representing one clone
-
-=head1 SYNOPSIS
-
-    @contig = $db->get_all_Contigs();
-
-    $clone = $db->get_Clone();
-
-    @genes    = $clone->get_all_Genes();
+Bio::EnsEMBL::Clone - DEPRECATED use Bio::EnsEMBL::Slice instead
 
 =head1 DESCRIPTION
 
-Represents information on one Clone
+DEPRECATED - Create Slices on clone regions instead
 
 =head1 CONTACT
 
 Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk> 
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal 
-methods are usually preceded with a _
-
 =cut
-
-
-# Let the code begin...
-
 
 package Bio::EnsEMBL::Clone;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::EnsEMBL::Root
+use Bio::EnsEMBL::Slice;
+use Bio::EnsEMBL::RawContig;
 
-use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
-@ISA = qw( Bio::EnsEMBL::Root );
+@ISA = qw( Bio::EnsEMBL::Slice );
 
 
 =head2 new
 
-  Arg [1]    : Bio::EnsEMBL::DBSQL::BaseAdaptor $adaptor (optional)
-               The database adaptor for this clone object
-  Arg [2]    : int $internal_id (optional)
-               The database identifier for this clone
-  Arg [3]    : string $id (optional)
-               The name of this clone
-  Arg [4]    : string $embl_id (optional)
-               The EMBL accession number of this clone
-  Arg [5]    : int $version (optional)
-               The version of this clone
-  Arg [6]    : int $embl_version (optional)
-               The EMBL version of this clone
-  Arg [7]    : int htg_phase (optional)
-               the htg phase of this clone
-  Arg [8]    : date $created 
-               The date this clone was first entered into the database.
-  Arg [9]    : date $modified
-               The date this clone was last modified in the database 
-  Example    : $clone = new Bio::EnsEMBL::Clone(); 
-  Description: Creates a new Clone object from a set of optional parameters.
-  Returntype : Bio::EnsEMBL::Clone
-  Exceptions : none
-  Caller     : general
+  Description: DEPRECATED.  Use Bio::EnsEMBL::Slice instead
 
 =cut
 
 sub new {
-    my ($class,$adaptor,$internal_id, $id, $embl_id, $version, $embl_version,
-	$htg_phase, $created, $modified) = @_;
+  my $class = shift;
 
+  deprecate("Bio::EnsEMBL::Clone is a deprecated class\n" .
+            "Use Bio::EnsEMBL::Slice instead");
 
-    return bless { 'adaptor'   => $adaptor,
-		   'dbID'      => $internal_id,
-		   '_clone_id' => $id,
-		   'embl_id'   => $embl_id,
-		   'version'   => $version,
-		   'embl_version' => $embl_version,
-		   'htg_phase' => $htg_phase,
-		   'created'   => $created,
-		   'modified'  => $modified,
-		 }, $class;
-
-#    $self->adaptor($adaptor);
-#    $self->dbID($internal_id);
-#    $self->id($id);
-#    $self->embl_id($embl_id);
-#    $self->version($version);
-#    $self->embl_version($embl_version);
-#    $self->htg_phase($htg_phase);
-#    $self->created($created);
-#    $self->modified($modified);
-
-#    return $self;
+  return $class->SUPER::new(@_);
 }
 
-
-
-=head2 get_all_Genes
-
-  Args       : none
-  Example    : none
-  Description: gets all Genes that have coordinates on this Clone. They
-               come in RawContig coords, but not all coords need to be on this 
-               Clone 
-  Returntype : list of Bio::EnsEMBL::Gene
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_all_Genes {
-    my $self=shift;
-
-    return $self->adaptor->get_all_Genes( $self->dbID );
-}
 
 
 
 =head2 get_all_Contigs
 
-  Args       : none
-  Example    : none
-  Description: get RawContig objects from this Clone (either manually added
-               or from the database).
-  Returntype : listref of Bio::EnsEMBL::RawContig
-  Exceptions : none
-  Caller     : general
+  Description: DEPRECATED. Use Slice::project instead
 
 =cut
 
 
 sub get_all_Contigs {
   my( $self ) = @_;
-  
-  my( $c_list );
 
-  #If the contig list is not defined then an attempt is made to retrieve it
-  #from the database
-  unless ($c_list = $self->{'_contig_list'}) {
-    my $ra = $self->adaptor->db->get_RawContigAdaptor;
-    $c_list = $ra->fetch_all_by_Clone($self);
-    $self->{'_contig_list'} = $c_list;
+  deprecate('Use Slice::project instead');
+
+  # Assume that we actually want to project to sequence level
+  my $csa = $self->adaptor->db->get_CoordSystemAdaptor;
+  my $cs  = $csa->fetch_sequence_level();
+
+  my $projection = $self->project($cs->name, $cs->version);
+
+  my @out;
+  foreach my $segment (@$projection) {
+    my $contig = $segment->[2];
+    #bless slices into RawContigs for backwards compatibility
+    bless $contig, "Bio::EnsEMBL::RawContig";
+    push @out, $contig;
   }
 
-  return $c_list;
+  return \@out;
 }
 
 
 
 =head2 add_Contig
 
-  Arg [1]    : Bio::EnsEMBL::RawContig $contig
-  Example    : $clone->add_Contig($contig);
-  Description: Manually adds a contig to this clone object.  This is generally
-               for database loading purposes only.  I.e. contigs are added
-               to clones and then the clones, attached contigs and dna 
-               sequences are loaded into the database.  If contigs are added
-               in this fashion then get_all_Contigs will only return contigs
-               manually added, not contigs which may be residing in the 
-               database.
-  Returntype : none
-  Exceptions : none
-  Caller     : database loading scripts
+  Description: DEPRECATED.  There is currently no replacement for this method
+               Possibly one should be added?
 
 =cut
 
 sub add_Contig {
   my ($self, $contig) = @_;
 
-  unless(defined $self->{'_contig_list'})  {
-    $self->{'_contig_list'} = [];
-  }
+  ### XXX Should there be a replacement for this?
+  deprecate('There is currently no replacement for this method');
 
-  push @{$self->{'_contig_list'}}, $contig;
+  return 0;
 }
 
 
 
 =head2 delete_by_dbID
 
-  Args       : none
-  Example    : none
-  Description: Deletes the clone, contig, dna and features for this,
-               Genes are not deleted
-  Returntype : none
-  Exceptions : none
-  Caller     : general
+  Description: DEPRECATED. There is currently no replacement for this method
+               Possibly there should be one?
 
 =cut
 
 sub delete_by_dbID {
-    my ($self)=shift;
-    return $self->adaptor->delete_by_dbID($self->dbID);
+  my ($self)=shift;
+
+  ### XXX Should there be a replacement for this?
+  deprecate('There is currently no replacement for this method');
+
+  return 0;
 }
 
 
 
 =head2 get_RawContig_by_position
 
-  Arg   1    : int $base_pair
-  Example    : none
-  Description: returns the RawContig that contains that clone basepair
-  Returntype : Bio:EnsEMBL::RawContig
-  Exceptions : base_pair > 0, returns the last Contig if base_pair is outside
-  Caller     : general
+  Description: DEPRECATED. Use Slice::project instead
 
 =cut
 
 sub get_RawContig_by_position {
+  my ($self, $pos) = @_;
 
-    my ($self, $pos) = @_;
+  deprecate('Use Slice::project instead');
 
+  throw("get_rawcontig_by_position error: Position must be > 0") if($pos < 1);
 
-    if ($pos < 1 ){
-        $self->throw("get_rawcontig_by_position error: Position must be > 0");
+  my $projection = $self->project();
+  foreach my $segment (@$projection) {
+    my($start,$end,$contig) = @$segment;
+    if($start <= $pos) {
+      return bless($contig, 'Bio::EnsEMBL::RawContig');
     }
-    
-    my $contigs =  $self->get_all_Contigs();
-    my @sorted_contigs = 
-      sort { $b->embl_offset <=> $a->embl_offset } @$contigs;
-    
-    foreach my $c ( @sorted_contigs ) {
-        if ($pos > $c->embl_offset) {
-             return $c;
-        } 
-    }
-    
-    return (undef);
+  }
+
+  return undef;
 }
 
 
@@ -414,46 +315,19 @@ sub id {
 
 =head2 dbID
 
-  Arg [1]    : int $dbID
-  Example    : none
-  Description: get/set for the database internal id
-  Returntype : int
-  Exceptions : none
-  Caller     : general, set from adaptor on store
+  Description: Deprecated. Use SliceAdaptor::get_seq_region_id instead
 
 =cut
 
 sub dbID{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'dbID'} = $value;
-    }
-    return $obj->{'dbID'};
+  my $self = shift;
+  deprecate('Use SliceAdaptor::get_seq_region_id instead');
 
+  return $self->adaptor->get_seq_region_id($self);
 }
 
 
 
-=head2 adaptor
-
-  Arg [1]    : Bio::EnsEMBL::DBSQL::CloneAdaptor $adaptor
-  Example    : none
-  Description: get/set for this objects Adaptor
-  Returntype : Bio::EnsEMBL::DBSQL::CloneAdaptor
-  Exceptions : none
-  Caller     : general, set from adaptor on store
-
-=cut
-
-sub adaptor {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'adaptor'} = $value;
-    }
-    return $obj->{'adaptor'};
-
-}
 
 1;
 

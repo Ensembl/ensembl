@@ -101,9 +101,9 @@ sub fetch_by_region {
 
   #check the cache so we only go to the db if necessary
   my $name_cache = $self->{'_name_cache'};
-  my $key = join(':',$seq_region_name,
-                 $coord_system->name(),
-                 $coord_system->version);
+  my $key = lc(join(':',$seq_region_name,
+                    $coord_system->name(),
+                    $coord_system->version));
 
   my $length;
 
@@ -195,7 +195,7 @@ sub fetch_by_seq_region_id {
 
     #cache results to speed up repeated queries
     $id_cache->{$seq_region_id} = [$name, $length, $cs];
-    my $key = join(':', $name, $cs->name, $cs->version);
+    my $key = lc(join(':', $name, $cs->name, $cs->version));
     $self->{'_name_cache'}->{$key} = [$seq_region_id, $length];
   }
 
@@ -239,7 +239,7 @@ sub get_seq_region_id {
   my $cs_version = $slice->coord_system->version();
   my $seq_region_name = $slice->seq_region_name();
 
-  my $key = join(':', $seq_region_name,$cs_name,$cs_version);
+  my $key = lc(join(':', $seq_region_name,$cs_name,$cs_version));
 
   my $name_cache = $self->{'_name_cache'};
 
@@ -273,6 +273,66 @@ sub get_seq_region_id {
     [$seq_region_name, $length, $coord_system];
 
   return $seq_region_id;
+}
+
+
+
+=head2 fetch_all
+
+  Arg [1]    : string $coord_system_name
+               The name of the coordinate system to retrieve slices of
+  Arg [2]    : string $coord_system_version (optional)
+               The version of the coordinate system to retrieve slices of
+  Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
+               @contigs = @{$slice_adaptor->fetch_all('contig');
+  Description: Retrieves slices of all seq_regions for a given coordinate
+               system.  This is analagous to the methods fetch_all which were
+               formerly on the ChromosomeAdaptor, RawContigAdaptor and
+               CloneAdaptor classes.  Slices fetched span the entire
+               seq_regions and are on the forward strand.
+  Returntype : listref of Bio::EnsEMBL::Slices
+  Exceptions : thrown if invalid coord system is provided
+  Caller     : general
+
+=cut
+
+sub fetch_all {
+  my $self = shift;
+  my $cs_name = shift;
+  my $cs_version = shift;
+
+  my $csa = $self->db->get_CoordSystemAdaptor();
+  my $cs = $csa->fetch_by_name($cs_name, $cs_version);
+
+  my $sth = $self->prepare('SELECT seq_region_id, name, length ' .
+                        'FROM   seq_region ' .
+                        'WHERE  coord_system_id =?');
+
+  $sth->execute($cs->dbID);
+
+  my ($seq_region_id, $name, $length);
+  $sth->bind_columns(\$seq_region_id, \$name, \$length);
+
+  my $name_cache = $self->{'_name_cache'};
+  my $id_cache   = $self->{'_id_cache'};
+
+  my $cs_key = lc($cs->name().':'.$cs_version);
+
+  my @out;
+  while($sth->execute()) {
+    #cache values for future reference
+    my $key = lc($name) . ':'. $cs_key;
+    $name_cache->{$key} = [$seq_region_id, $length];
+    $id_cache->{$seq_region_id} = [$name, $length, $cs];
+    push @out, Bio::EnsEMBL::Slice->new(-START  => 1,
+                                        -END    => $length,
+                                        -STRAND => 1,
+                                        -SEQ_REGION_NAME => $name,
+                                        -COORD_SYSTEM => $cs,
+                                        -ADAPTOR => $self);
+  }
+
+  return \@out;
 }
 
 
