@@ -790,10 +790,31 @@ sub _constrain_to_region {
                coordinate by. Positive values make the slice larger,
                negative make the slice smaller.
                Default = 0.
+  Arg [3]    : (optional) bool $force_expand
+               if set to 1, then the slice will be contracted even in the case 
+               when shifts $five_prime_expand and $three_prime_expand overlap. 
+               In that case $five_prime_expand and $three_prime_expand will be set 
+               to a maximum possible number and that will result in the slice 
+               which would have only 2pbs.
+               Default = 0.
+  Arg [4]    : (optional) int* $fpref
+               The reference to a number of basepairs to shift this slices five_prime
+               coordinate by. Normally it would be set to $five_prime_expand. 
+               But in case when $five_prime_expand shift can not be applied and 
+               $force_expand is set to 1, then $$fpref will contain the maximum possible
+               shift
+  Arg [5]    : (optional) int* $tpref
+               The reference to a number of basepairs to shift this slices three_prime
+               coordinate by. Normally it would be set to $three_prime_expand. 
+               But in case when $five_prime_expand shift can not be applied and 
+               $force_expand is set to 1, then $$tpref will contain the maximum possible
+               shift
   Example    : my $expanded_slice      = $slice->expand( 1000, 1000);
                my $contracted_slice    = $slice->expand(-1000,-1000);
                my $shifted_right_slice = $slice->expand(-1000, 1000);
                my $shifted_left_slice  = $slice->expand( 1000,-1000);
+               my $forced_contracted_slice    = $slice->expand(-1000,-1000, 1, \$five_prime_shift, \$three_prime_shift);
+
   Description: Returns a slice which is a resized copy of this slice.  The
                start and end are moved outwards from the center of the slice
                if positive values are provided and moved inwards if negative
@@ -810,7 +831,10 @@ sub expand {
   my $self = shift;
   my $five_prime_shift = shift || 0;
   my $three_prime_shift = shift || 0;
-
+  my $force_expand = shift || 0;
+  my $fpref = shift;
+  my $tpref = shift;
+  
   if($self->{'seq'}){
     warning("Cannot expand a slice which has a manually attached sequence ");
     return undef;
@@ -818,19 +842,38 @@ sub expand {
 
   my $new_start;
   my $new_end;
+  my $sshift = $five_prime_shift;
+  my $eshift = $three_prime_shift;
 
-  if($self->{'strand'} == 1) {
-    $new_start = $self->{'start'} - $five_prime_shift;
-    $new_end   = $self->{'end'} + $three_prime_shift;
-  } else {
-    $new_end = $self->{'end'} + $five_prime_shift;
-    $new_start = $self->{'start'} - $three_prime_shift;
+  if($self->{'strand'} != 1) {
+      $eshift = $five_prime_shift;
+      $sshift = $three_prime_shift;
   }
+
+  $new_start = $self->{'start'} - $sshift;
+  $new_end   = $self->{'end'} + $eshift;
 
   if($new_start > $new_end) {
-    throw('Slice start cannot be greater than slice end');
-  }
+      if ($force_expand) { # Apply max possible shift, if force_expand is set
+	  if ($sshift < 0) { # if we are contracting the slice from the start - move the start just before the end
+	      $new_start = $new_end - 1;
+	      $sshift = $self->{start} - $new_start;
+	  }
 
+	  if($new_start > $new_end) { # if the slice still has a negative length - try to move the end
+	      if ($eshift < 0) {
+		  $new_end = $new_start + 1;
+		  $eshift = $new_end - $self->{end};
+	      }
+	  }
+	  # return the values by which the primes were actually shifted
+	  $$tpref = $self->{strand} == 1 ? $eshift : $sshift;
+	  $$fpref = $self->{strand} == 1 ? $sshift : $eshift;
+      }
+      if($new_start > $new_end) {
+	  throw('Slice start cannot be greater than slice end');
+      }
+  }
   #fastest way to copy a slice is to do a shallow hash copy
   my %new_slice = %$self;
   $new_slice{'start'} = int($new_start);
