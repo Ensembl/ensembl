@@ -28,7 +28,6 @@ END {print "not ok 1\n" unless $loaded;}
 
 use lib 't';
 use EnsTestDB;
-use Bio::EnsEMBL::DBSQL::Clone;
 
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
