@@ -1078,7 +1078,6 @@ sub _fetch_SimpleFeatures_SQL_clause {
 sub get_all_DASFeatures{
    my ($self,@args) = @_;
 
-
    if( defined $self->{'_das_cached_features'} ) {
        return @{$self->{'_das_cached_features'}};
    }
@@ -1090,43 +1089,57 @@ sub get_all_DASFeatures{
    @rawcontigs = map { $_->id() } @rawcontigs;
     
     # need a call here to get a list of FPC contigs that overlap my VC
-    # I also need to have their VC start end in the FPV coordinates.
+    # I also need to have their VC start end in the FPC coordinates.
     # and somehow pass all this stuff down to the DAS fetcher...eek!
+   my @fpccontigs = (undef);
     
    my @clones  = $self->get_all_Clones();
    #foreach (@clones){
    #    print STDERR "Clone: ", $_, "\n";
    #}
-   
+       
    foreach my $extf ( $self->dbobj->_each_DASFeatureFactory ) {
        
-       if( $extf->can('get_Ensembl_SeqFeatures_DAS') ) {	# optimized fetch that can handle a list of contigs
-	       foreach my $sf ($extf->get_Ensembl_SeqFeatures_DAS($self->_chr_name,$self->_global_start,$self->_global_end, \@clones,\@rawcontigs)) {
-	           if( $sf->seqname =~ /\./ ) {
-		            # raw contig feature
-		            push(@contig_features,$sf);
+       if( $extf->can('get_Ensembl_SeqFeatures_DAS') ) {
+	       foreach my $sf ($extf->get_Ensembl_SeqFeatures_DAS($self->_chr_name,$self->_global_start,$self->_global_end, \@fpccontigs, \@clones,\@rawcontigs)) {
+
+	           if( $sf->seqname() =~ /\w+\.\d+\.\d+.\d+/ ) {
+		            #Ensembl raw contig feature
+ 		            push(@contig_features,$sf);
+               } elsif( $sf->seqname() eq '__ERROR__') { 
+                    #Always push errors even if they aren't wholly within the VC
+	                push(@genomic_features, $sf);
 	           } else {
-		            push(@genomic_features,$sf);
+		            #push(@genomic_features,$sf);
 	           }
 	       }
 	   
-       } else { # can't do list style contig fetches
+       } else {
+	        warn "StaticContig: Got a DAS feature factory that can't do get_Ensembl_SeqFeatures_DAS\n";
 	        #$self->throw("Got a DAS feature factory that can't do get_Ensembl_SeqFeatures_DAS");
-	        print STDERR "StaticContig: Got a DAS feature factory that can't do get_Ensembl_SeqFeatures_DAS\n";
        }
    }
    
-
-   foreach my $f ( @contig_features ) {
-       if( defined $self->_convert_seqfeature_to_vc_coords($f) ) {
-	        push(@genomic_features, $f);
-       } elsif( $f->id eq '__ERROR__') { #Always push errors even if they aren't wholly within the VC
-	        push(@genomic_features, $f);
+   #my $xx = 1;
+   foreach my $sf ( @contig_features ) {
+       #print STDERR "BEFORE: ", $sf->seqname() , "\t";
+       #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
+       #print STDERR $sf->start() , "\t";
+       #print STDERR $sf->end() , "\t";
+       #print STDERR $sf->strand() , "\n";
+       if( defined $self->_convert_seqfeature_to_vc_coords($sf) ) {
+            print STDERR "SEG ID: ",         $sf->seqname(), "\t";
+            print STDERR "DSN: ",            $sf->das_dsn(), "\t";
+            print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
+            print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
+            print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
+            print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
+	        push(@genomic_features, $sf);
        }
+       #$xx++;
    }
    
    $self->{'_das_cached_features'} = \@genomic_features;
-
    return @genomic_features;
 }
 
@@ -1890,6 +1903,15 @@ sub get_all_Genes_exononly{
  Args    :
 
 =cut
+
+sub get_all_VirtualGenes_startend_lite {
+	my  $self = shift;
+	return $self->dbobj->get_LiteAdaptor->fetch_virtualgenes_start_end(
+        $self->_chr_name, 
+        $self->_global_start, 
+        $self->_global_end
+    ); 
+}
 
 sub get_all_VirtualGenes_startend
 {
