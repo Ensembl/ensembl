@@ -236,6 +236,14 @@ sub transform {
 	my %mapped;
 
 	# mapping from slice to raw contigs
+	# Basic logic -
+	#    - get ungapped features
+	#    - map each one
+	#    - throw if there is a gap
+	#    - if not form an ungapped feature on the raw contig
+	#    - after all ungapped features are mapped, making new featurepairs
+        #      from the mapped ungapped features keyed by raw contig id
+
 	$slice = $self->entire_seq();
 	my $global_start = $slice->global_start;
 	my $global_end   = $slice->global_end;
@@ -254,22 +262,50 @@ sub transform {
 	    if( ! @mapped ) {
 		$self->throw( "feature could not map" );
 	    }
+	    my $hstart = $f->hstart;
 
 	    foreach my $co ( @mapped ) {
-		if( !defined $mapped{$co->id} ) {
-		    $mapped{$co->id} = [];
-		}
-		
-		# have to handle other side of mapping. Bollocks.
+	      if( $co->isa("Bio::EnsEMBL::Mapper::Gap") ) {
+		$self->throw("Feature transform mapped to gap - currently throwing an exception here");
+	      }
 
+	      
+	      my $f1 = Bio::EnsEMBL::SeqFeature->new();
+	      $f1->start($co->start - $global_start +1 );
+	      $f1->end($co->end - $global_start +1);
+	      $f1->strand($co->strand * $slice->strand());
+	      $f1->seqname("slice");
+
+	      my $f2 = Bio::EnsEMBL::SeqFeature->new();
+	      $f2->start($hstart );
+	      $f2->end($hstart+$co->end-$co->start+1);
+	      $f2->strand($f->hstrand);
+	      $f2->seqname($f->hseqname);
+
+	      $f1->score($f->score);
+	      $f2->score($f->score);
+
+	      my $sf = Bio::EnsEMBL::FeaturePair->new(-feature1 => $f1,
+						      -feature2 => $f2);
+	      $hstart = $f2->end+1;
+	      if( !defined $mapped{$co->id} ) {
+		$mapped{$co->id} = [];
+	      }
+
+	      push(@{$mapped{$co->id}},$sf);
 	    }
 
-
-
-	    # map to exon
+	  }
+	my @outputf;
+	foreach my $rawc ( keys %mapped ) {
+	  my $outputf = $self->new( -features => \@{$mapped{$rawc}} );
+	  push(@outputf,$outputf);
 	}
+	
+	return @outputf;
+	
     } else {
-	$self->throw("mapping to raw contigs not implemented yet. Ewan's fault!");
+	$self->throw("mapping to slice from raw contigs not implemented yet. Ewan's fault!");
     }
 }
 
