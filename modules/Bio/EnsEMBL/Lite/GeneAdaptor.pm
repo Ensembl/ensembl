@@ -86,6 +86,7 @@ sub fetch_by_Slice {
       $gene->stable_id( $hr->{'gene_name'} );
       $gene->dbID( $hr->{'gene_id'} );
       $gene->adaptor( $core_DBAdaptor->get_GeneAdaptor() );
+      $gene_cache{ $hr->{gene_id} } = $gene;
     } else {
       $gene = $gene_cache{ $hr->{gene_id} };
     }

@@ -78,26 +78,17 @@ sub new {
   #call superclass constructor
   my $self = $class->SUPER::new(@args);
   
-  print STDERR "Core DBADAPTOR INSTANTIATED: " . $self->stack_trace_dump();
-
   my (
       $mapdbname,
       $litedbname,
       $dnadb,
-      $external,
-      $mode
+      $external
     ) = $self->_rearrange([qw(
       MAPDBNAME
       LITEDBNAME
       DNADB
-      MODE 
     )],@args);  
   
-  if($mode) {
-    $self->{_db_mode};
-  } else {
-    $self->{_db_mode} = 'default';
-  }
 
   $self->dnadb($dnadb);
 
@@ -258,68 +249,6 @@ sub mapdb {
     return $self->{'_mapdb'};
 }
 
-
-
-=head2 db_mode_web
-
- Title   : db_mode_web
- Usage   : $db->db_mode_web(1);
- Function: Boolean getter/setter for database web mode 
- Example : 
-#Place the database in web mode: 
-$db->db_mode_web(1);
-
-#Check if the database is in web mode:
-$db->db_mode_web() && print "db in web mode!\n"; 
- Returns : true if database is in web mode, false otherwise
- Args    : none or a true/false value
-
-=cut
-
-sub db_mode_web {
-  my ($self, $arg) = @_;
-
-  if(defined($arg)) {
-    if($arg) {
-      $self->{_db_mode} = 'web';
-    } else {
-      $self->{_db_mode} = 'default';
-    }
-  }
-
-  print STDERR "db_mode is " . $self->{_db_mode} . "\n";
-
-  return ($self->{_db_mode} eq 'web');
-}
-      
-
-=head2 db_mode_default
-
-#Place the database in default mode: 
-$db->db_mode_default(1);
-#Check if the database is in default mode:
-$db->db_mode_default() && print "db in default mode!\n"; 
-
- Title   : db_mode_default
- Usage   : $db->db_mode_default(1);
- Function: Boolean getter/setter for database default mode 
- Example : $db->db_mode_default(1);
- Returns : true if this database is in default, false otherwise
- Args    : none or a true value.  A false argument will do nothing.
-
-=cut
-
-sub db_mode_default {
-  my ($self, $arg) = @_;
-  
-  if(defined $arg && $arg) {
-    $self->{_db_mode} = 'default';
-  }
-  
-  return ($self->{_db_mode} eq 'default');	     
-}
-
-
 # was added on branch; not clear if needed:
 sub mapdbname {
   my ($self, $arg ) = @_;
@@ -423,14 +352,15 @@ sub _each_DASFeatureFactory{
 =head2 get_adaptor
 
   Title   : get_adaptor
-  Usage   : $obj->get_adaptor("full::module::name")
+  Usage   : $obj->get_adaptor("full::module::name", )
   Returns : An already existing, or a new instance of the specified DB adaptor 
   Args : the fully qualified name of the adaptor module to retrieve
+         (optional) special additional args for the adaptors constructor
 
 =cut
 
 sub get_adaptor {
-  my( $self, $module) = @_;
+  my( $self, $module, @args) = @_;
 
   my( $adaptor, $internal_name );
   
@@ -449,7 +379,7 @@ sub get_adaptor {
       return undef;
     }
       
-    $adaptor = "$module"->new($self);
+    $adaptor = "$module"->new($self, @args);
     $self->{'_int_adaptors'}{$internal_name} = $adaptor;
   }
 
@@ -580,16 +510,12 @@ sub lite_DBAdaptor {
 sub get_GeneAdaptor {
     my( $self ) = @_;
 
-    print STDERR "Getting GeneAdaptor\n";
+    print STDERR "**Getting GeneAdaptor: \n";
 
-    if( $self->db_mode_web() && defined $self->lite_DBAdaptor() ) {
-      print STDERR "Got LITE GeneAdaptor\n";
-      return $self->lite_DBAdaptor()->get_GeneAdaptor();
-    } else {
-      print STDERR "GOT CORE GeneAdaptor\n";
-      return $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
-    }
-}
+    #use a proxy gene adaptor, capable of making decisions with regards to the
+    #database that it uses
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor");
+  }
 
 =head2 get_LiteAdaptor
     
