@@ -139,7 +139,6 @@ sub _objs_from_sth {
   my $aa = $self->db()->get_AnalysisAdaptor();
 
   my @ptranscripts;
-  my %rc_hash;
   my %analysis_hash;
   my %slice_hash;
   my %sr_name_hash;
@@ -311,6 +310,8 @@ sub store {
       $analysis_adaptor->store($analysis);
     }
 
+    my $original = $pt;
+
     # make sure that the prediction transcript coordinates are relative to
     # the start of the seq_region that the prediction transcript is on
     my $slice = $pt->slice();
@@ -353,12 +354,13 @@ sub store {
                           $analysis->dbID());
 
     my $pt_id = $ptstore_sth->{'mysql_insertid'};
-    $pt->dbID($pt_id);
-    $pt->adaptor($self);
+    $original->dbID($pt_id);
+    $original->adaptor($self);
 
     #store the exons
-    foreach my $pexon (@{$pt->get_all_Exons}) {
-      $pexon_adaptor->store($pexon, $pt_id);
+    my $rank = 1;
+    foreach my $pexon (@{$original->get_all_Exons}) {
+      $pexon_adaptor->store($pexon, $pt_id, $rank++);
     }
   }
 }

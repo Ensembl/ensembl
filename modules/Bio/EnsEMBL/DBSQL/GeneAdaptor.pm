@@ -703,7 +703,6 @@ sub _objs_from_sth {
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
 
   my @genes;
-  my %rc_hash;
   my %analysis_hash;
   my %slice_hash;
   my %sr_name_hash;

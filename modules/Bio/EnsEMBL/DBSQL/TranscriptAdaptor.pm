@@ -561,7 +561,6 @@ sub _objs_from_sth {
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
 
   my @transcripts;
-  my %rc_hash;
   my %slice_hash;
   my %sr_name_hash;
   my %sr_cs_hash;

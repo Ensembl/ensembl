@@ -417,17 +417,13 @@ sub _objs_from_sth {
   my $sa = $self->db()->get_SliceAdaptor();
 
   my @exons;
-  my %rc_hash;
-  my %analysis_hash;
   my %slice_hash;
   my %sr_name_hash;
   my %sr_cs_hash;
 
-
   my ( $exon_id, $seq_region_id, $seq_region_start,
        $seq_region_end, $seq_region_strand, $phase,
        $end_phase, $stable_id, $version );
-
 
   $sth->bind_columns(  \$exon_id, \$seq_region_id, 
         \$seq_region_start,

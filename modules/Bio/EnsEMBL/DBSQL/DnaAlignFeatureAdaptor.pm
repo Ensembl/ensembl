@@ -159,6 +159,8 @@ sub store {
       throw("A slice must be attached to the features to be stored.");
     }
 
+    my $original = $feat;
+
     # make sure that the feature coordinates are relative to
     # the start of the seq_region that the prediction transcript is on
     if($slice->start != 1 || $slice->strand != 1) {
@@ -189,8 +191,9 @@ sub store {
 		   $feat->hstart, $feat->hend, $feat->hstrand, $feat->hseqname,
 		   $feat->cigar_string, $feat->analysis->dbID, $feat->score,
 		   $feat->p_value, $feat->percent_id);
-    $feat->dbID($sth->{'mysql_insertid'});
-    $feat->adaptor($self);
+
+    $original->dbID($sth->{'mysql_insertid'});
+    $original->adaptor($self);
   }
 
   $sth->finish();

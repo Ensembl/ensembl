@@ -392,6 +392,8 @@ sub store {
       throw("RepeatFeature cannot be stored without an associated slice.");
     }
 
+    my $original = $rf;
+
     #move the feature so that its coords are relative to the start
     #of the seq_region prior to storing.
     if($slice->start != 1 || $slice->strand != 1) {
@@ -431,8 +433,8 @@ sub store {
     my $db_id = $sth->{'mysql_insertid'}
       or throw("Didn't get an insertid from the INSERT statement");
 
-    $rf->dbID($db_id);
-    $rf->adaptor($self);
+    $original->dbID($db_id);
+    $original->adaptor($self);
   }
 }
 

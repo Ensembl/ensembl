@@ -1,6 +1,6 @@
 #EnsEMBL PredictionExon reading writing adaptor for mySQL
 #
-# Copyright EMBL-EBI 2001
+# Copyright EMBL-EBI 2003
 #
 # Author: Arne Stabenau
 # 
@@ -8,22 +8,28 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::PredictionExonAdaptor - MySQL Database queries to generate and store prediction exons
+Bio::EnsEMBL::DBSQL::PredictionExonAdaptor - Performs database interaction for
+PredictionExons.
 
 =head1 SYNOPSIS
 
-$p_exon_adaptor = $database_adaptor->get_PredictionExonAdaptor();
-$exon = $exon_adaptor->fetch_by_dbID
+$pea = $database_adaptor->get_PredictionExonAdaptor();
+$pexon = $pea->fetch_by_dbID();
+
+my $slice = $database_adaptor->get_SliceAdaptor->fetch_by_region('X',1,1e6);
+
+my @pexons = @{$pea->fetch_all_by_Slice($slice)};
+
 
 =head1 CONTACT
 
-  Arne Stabenau: stabenau@ebi.ac.uk
-  Graham McVicker: mcvicker@ebi.ac.uk
+  Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 
 =head1 APPENDIX
 
-=cut
+  The rest of the documentation describes object methods.
 
+=cut
 
 
 package Bio::EnsEMBL::DBSQL::PredictionExonAdaptor;
@@ -33,24 +39,22 @@ use strict;
 
 
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
-use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::PredictionExon;
 use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
- 
+
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );
 
 
-
-=head2 _tablename
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns the names, aliases of the tables to use for queries
-  Returntype : list of listrefs of strings
-  Exceptions : none
-  Caller     : internal
-
-=cut
+#_tables
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED implementation of superclass abstract method
+#               returns the names, aliases of the tables to use for queries
+#  Returntype : list of listrefs of strings
+#  Exceptions : none
+#  Caller     : internal
+#
 
 sub _tables {
   return ([ 'prediction_exon', 'pe' ] );
@@ -58,38 +62,39 @@ sub _tables {
 
 
 
-=head2 _columns
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns a list of columns to use for queries
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : internal
-
-=cut
+#_columns
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED implementation of superclass abstract method
+#               returns a list of columns to use for queries
+#  Returntype : list of strings
+#  Exceptions : none
+#  Caller     : internal
 
 sub _columns {
   my $self = shift;
 
-  return qw( pe.prediction_exon_id pe.prediction_transcript_id pe.seq_region_id 
-	     pe.seq_region_start pe.seq_region_end pe.exon_rank
-	     pe.seq_region_strand pe.phase pe.score, pe.p_value );
+  return qw( pe.prediction_exon_id
+             pe.seq_region_id
+             pe.seq_region_start
+             pe.seq_region_end
+             pe.seq_region_strand
+             pe.start_phase
+             pe.score
+             pe.p_value );
 }
 
 
-=head2 _final_clause
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns a default end for the SQL-query (ORDER BY)
-  Returntype : string
-  Exceptions : none
-  Caller     : internal
-
-=cut
+# _final_clause
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED implementation of superclass abstract method
+#               returns a default end for the SQL-query (ORDER BY)
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : internal
 
 sub _final_clause {
   return "ORDER BY pe.prediction_transcript_id, pe.exon_rank";
@@ -123,14 +128,17 @@ sub fetch_all_by_PredictionTranscript {
 
 
 
-
-
 =head2 store
 
   Arg [1]    : Bio::EnsEMBL::PredictionExon $exon
-               the exon to store in this database
-  Example    : $exon_adaptor->store($exon);
-  Description: Stores an exon in the database
+               The exon to store in this database
+  Arg [2]    : int $prediction_transcript_id
+               The internal identifier of the prediction exon that that this
+               exon is associated with.
+  Arg [3]    : int $rank
+               The rank of the exon in the transcript (starting at 1)
+  Example    : $pexon_adaptor->store($pexon, 1211, 2);
+  Description: Stores a PredictionExon in the database
   Returntype : none
   Exceptions : thrown if exon (or component exons) do not have a contig_id
                or if $exon->start, $exon->end, $exon->strand, or $exon->phase 
@@ -140,121 +148,90 @@ sub fetch_all_by_PredictionTranscript {
 =cut
 
 sub store {
-  my ( $self, $exon ) = @_;
+  my ( $self, $pexon, $pt_id, $rank ) = @_;
 
-  if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
-    $self->throw("$exon is not a EnsEMBL exon - not dumping!");
+  if(!ref($pexon) || !$pexon->isa('Bio::EnsEMBL::PredictionExon') ) {
+    throw("Expected PredictionExon argument");
   }
 
-  if( $exon->dbID && $exon->adaptor && $exon->adaptor == $self ) {
-    return $exon->dbID();
+  throw("Expected PredictionTranscript id argument.") if(!$pt_id);
+  throw("Expected rank argument.") if(!$rank);
+
+  my $db = $self->db();
+
+  if($pexon->is_stored($db)) {
+    warning('PredictionExon is already stored in this DB.');
+    return $pexon->dbID();
   }
 
-  if( ! $exon->start || ! $exon->end ||
-      ! $exon->strand || ! defined $exon->phase ) {
-    $self->throw("Exon does not have all attributes to store");
+  if( ! $pexon->start || ! $pexon->end ||
+      ! $pexon->strand || ! defined $pexon->phase ) {
+    throw("PredictionExon does not have all attributes to store");
   }
 
-  # trap contig_id separately as it is likely to be a common mistake
-  
-  my $exon_sql = q{
-    INSERT into exon ( seq_region_id, seq_region_start, 
-		       seq_region_end, seq_region_strand, phase, 
-		       end_phase )
-    VALUES ( ?, ?, ?, ?, ?, ? ) 
-  };
-  my $exonst = $self->prepare($exon_sql);
+  my $slice_adaptor = $db->get_SliceAdaptor();
 
-  my $exonId = undef;
-  # normal storing
-
-  my $slice = $exon->slice();
-
-  unless( $slice && ref $slice ) {
-    $self->throw("Exon does not have an attached slice with a valid " . 
-		 "database id.  Needs to have one set");
+  my $slice = $pexon->slice();
+  if( !ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice') ) {
+    throw("PredictionExon must have slice to be stored");
   }
 
-  my $seq_region_id = $self->db()->get_SliceAdaptor()->
-    get_seq_region_id( $exon->slice() );
+  #maintain reference to original passed-in prediction exon
+  my $original = $pexon;
+
+  # make sure that the feature coordinates are relative to
+  # the start of the seq_region that the prediction transcript is on
+  if($slice->start != 1 || $slice->strand != 1) {
+    #move the feature onto a slice of the entire seq_region
+    $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
+                                             $slice->seq_region_name(),
+                                             undef,undef, undef,
+                                             $slice->coord_system->version());
+
+    $pexon = $pexon->transfer($slice);
+
+    if(!$pexon) {
+      throw('Could not transfer PredictionExon to slice of ' .
+            'entire seq_region prior to storing');
+    }
+  }
+
+  my $seq_region_id = $slice_adaptor->get_seq_region_id( $slice );
 
   if( ! $seq_region_id ) {
     throw( "Attached slice is not valid in database" );
   }
 
-  $exonst->execute( $seq_region_id,
-		    $exon->start(),
-		    $exon->end(),
-		    $exon->strand(),
-		    $exon->phase(),
-		    $exon->end_phase());
-  $exonId = $exonst->{'mysql_insertid'};
+  my $sth = $db->prepare
+    ("INSERT into exon (prediction_transcript_id, exon_rank, " .
+                       "seq_region_id, seq_region_start, seq_region_end, " .
+                       "seq_region_strand, start_phase, score, p_value)" .
+      "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ? )");
 
-  
-  if ($exon->stable_id && $exon->version()) {
+  $sth->execute( $pt_id,
+                 $rank,
+                 $seq_region_id,
+                 $pexon->start(),
+                 $pexon->end(),
+                 $pexon->strand(),
+                 $pexon->phase(),
+                 $pexon->score(),
+                 $pexon->p_value());
 
-    my $statement = "
-      INSERT INTO exon_stable_id
-      SET version = ?,
-          stable_id = ?,
-          exon_id = ? ";
-    
-    my $sth = $self->prepare($statement);
-    $sth->execute( $exon->version, $exon->stable_id, $exonId );
-  }
+  my $dbID = $sth->{'mysql_insertid'};
 
+  #set the adaptor and dbID of the object they passed in
+  $original->dbID($dbID);
+  $original->adaptor($self);
 
-  # Now the supporting evidence
-  # should be stored from featureAdaptor
-  my $sql = "insert into supporting_feature (exon_id, feature_id, feature_type)
-             values(?, ?, ?)";  
-  
-  my $sf_sth = $self->db->prepare($sql);
-  
-  my $anaAdaptor = $self->db->get_AnalysisAdaptor();
-  my $dna_adaptor = $self->db->get_DnaAlignFeatureAdaptor();
-  my $pep_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
-  my $type;
-
-  foreach my $sf (@{$exon->get_all_supporting_features}) {
-    unless($sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
-      $self->throw("$sf must be an align feature otherwise" .
-		   "it can't be stored");
-    }
-
-    #sanity check
-    
-    $sf->slice($exon->slice());
-
-    if($sf->isa("Bio::EnsEMBL::DnaDnaAlignFeature")){
-      $dna_adaptor->store($sf);
-      $type = 'dna_align_feature';
-    }elsif($sf->isa("Bio::EnsEMBL::DnaPepAlignFeature")){
-      $pep_adaptor->store($sf);
-      $type = 'protein_align_feature';
-    } else {
-      $self->warn("Supporting feature of unknown type. Skipping : [$sf]\n");
-      next;
-    }
-
-    $sf_sth->execute($exonId, $sf->dbID, $type);
-  }
-
-  #
-  # Finally, update the dbID and adaptor of the exon (and any component exons)
-  # to point to the new database
-  #
-
-  $exon->adaptor($self);
-  $exon->dbID($exonId);
+  return $dbID;
 }
-
 
 
 
 =head2 remove
 
-  Arg [1]    : Bio::EnsEMBL::Exon $exon
+  Arg [1]    : Bio::EnsEMBL::PredictionExon $exon
                the exon to remove from the database 
   Example    : $exon_adaptor->remove($exon);
   Description: Removes an exon from the database
@@ -266,48 +243,23 @@ sub store {
 
 sub remove {
   my $self = shift;
-  my $exon = shift;
-  
-  if ( ! $exon->dbID() ) {
-    return;
+  my $pexon = shift;
+
+  my $db = $self->db();
+
+  if(!$pexon->is_stored($db)) {
+    warning('PredictionExon is not in this DB - not removing');
+    return undef;
   }
-  #print "have ".$self->db."\n";
+
   my $sth = $self->prepare( "delete from exon where exon_id = ?" );
-  $sth->execute( $exon->dbID );
-  #print "have deleted ".$exon->dbID."\n";
-  $sth = $self->prepare( "delete from exon_stable_id where exon_id = ?" );
-  $sth->execute( $exon->dbID );
-  
-  my $sql = "select feature_type, feature_id from supporting_feature where exon_id = ".$exon->dbID." ";
+  $sth->execute( $pexon->dbID );
 
-  #    print STDERR "sql = ".$sql."\n";
-  $sth = $self->prepare($sql);
-  
-  $sth->execute;
-  
-  my $prot_adp = $self->db->get_ProteinAlignFeatureAdaptor;
-  my $dna_adp = $self->db->get_DnaAlignFeatureAdaptor;
-  
-  while(my ($type, $feature_id) = $sth->fetchrow){
-    
-    if($type eq 'protein_align_feature'){
-      my $f = $prot_adp->fetch_by_dbID($feature_id);
-      $prot_adp->remove($f);
-      #print "have removed ".$f->dbID."\n";
-    }
-    elsif($type eq 'dna_align_feature'){
-      my $f = $dna_adp->fetch_by_dbID($feature_id);
-      #print "have removed ".$f->dbID."\n";
-      $dna_adp->remove($f);
-    }
-  }
-
-  $sth = $self->prepare( "delete from supporting_feature where exon_id = ?" );
-  $sth->execute( $exon->dbID );
-
-  # uhh, didnt know another way of resetting to undef ...
-  $exon->{dbID} = undef;
+  $pexon->dbID(undef);
+  $pexon->adaptor(undef);
 }
+
+
 
 =head2 list_dbIDs
 
@@ -323,37 +275,21 @@ sub remove {
 sub list_dbIDs {
    my ($self) = @_;
 
-   return $self->_list_dbIDs("exon");
+   return $self->_list_dbIDs("prediction_exon");
 }
 
-=head2 list_stable_ids
 
-  Arg [1]    : none
-  Example    : @stable_exon_ids = @{$exon_adaptor->list_stable_dbIDs()};
-  Description: Gets an array of stable ids for all exons in the current db
-  Returntype : list of ints
-  Exceptions : none
-  Caller     : ?
 
-=cut
+#_objs_from_sth
 
-sub list_stable_ids {
-   my ($self) = @_;
-
-   return $self->_list_dbIDs("exon_stable_id", "stable_id");
-}
-
-=head2 _obj_from_hashref
-
-  Arg [1]    : Hashreference $hashref
-  Example    : none 
-  Description: PROTECTED implementation of abstract superclass method.
-               responsible for the creation of Genes 
-  Returntype : listref of Bio::EnsEMBL::Genes in target coordinate system
-  Exceptions : none
-  Caller     : internal
-
-=cut
+#  Arg [1]    : Hashreference $hashref
+#  Example    : none 
+#  Description: PROTECTED implementation of abstract superclass method.
+#               responsible for the creation of Genes 
+#  Returntype : listref of Bio::EnsEMBL::Genes in target coordinate system
+#  Exceptions : none
+#  Caller     : internal
+#
 
 sub _objs_from_sth {
   my ($self, $sth, $mapper, $dest_slice) = @_;
@@ -367,22 +303,17 @@ sub _objs_from_sth {
   my $sa = $self->db()->get_SliceAdaptor();
 
   my @exons;
-  my %rc_hash;
-  my %analysis_hash;
   my %slice_hash;
   my %sr_name_hash;
   my %sr_cs_hash;
 
+  my($prediction_exon_id,$seq_region_id,
+     $seq_region_start, $seq_region_end, $seq_region_strand,
+     $start_phase, $score, $p_value);
 
-  my ( $exon_id, $seq_region_id, $seq_region_start,
-       $seq_region_end, $seq_region_strand, $phase,
-       $end_phase, $stable_id, $version );
-
-
-  $sth->bind_columns(  \$exon_id, \$seq_region_id, 
-        \$seq_region_start,
-        \$seq_region_end, \$seq_region_strand, \$phase,
-        \$end_phase, \$stable_id, \$version );
+  $sth->bind_columns(\$prediction_exon_id,\$seq_region_id,
+     \$seq_region_start, \$seq_region_end, \$seq_region_strand,
+     \$start_phase, \$score, \$p_value);
 
   my $asm_cs;
   my $cmp_cs;
@@ -470,135 +401,20 @@ sub _objs_from_sth {
       }
     }
 
-
-    #finally, create the new repeat feature
-    push @exons, Bio::EnsEMBL::Exon->new
+    #finally, create the new PredictionExon
+    push @exons, Bio::EnsEMBL::PredictionExon->new
       ( '-start'         =>  $seq_region_start,
-	'-end'           =>  $seq_region_end,
-	'-strand'        =>  $seq_region_strand,
-	'-adaptor'       =>  $self,
-	'-slice'         =>  $slice,
-	'-dbID'          =>  $exon_id,
-        '-stable_id'     =>  $stable_id,
-        '-version'       =>  $version,
-        '-phase'         =>  $phase,
-        '-end_phase'     =>  $end_phase )
-
+        '-end'           =>  $seq_region_end,
+        '-strand'        =>  $seq_region_strand,
+        '-adaptor'       =>  $self,
+        '-slice'         =>  $slice,
+        '-dbID'          =>  $prediction_exon_id,
+        '-phase'         =>  $start_phase,
+        '-score'         =>  $score,
+        '-p_value'       =>  $p_value);
   }
 
   return \@exons;
-}
-
-
-
-
-
-=head2 get_stable_entry_info
-
-  Arg [1]    : Bio::EnsEMBL::Exon $exon
-  Example    : $exon_adaptor->get_stable_entry_info($exon);
-  Description: gets stable info for an exon. this is not usually done at
-               creation time for speed purposes, and can be lazy-loaded later
-               if it is needed..
-  Returntype : none
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::Exon
-
-=cut
-
-sub get_stable_entry_info {
-  my ($self,$exon) = @_;
-
-  deprecated( "This method call shouldnt be necessary" );
-
-  if( !$exon || !ref $exon || !$exon->isa('Bio::EnsEMBL::Exon') ) {
-     $self->throw("Needs a exon object, not a $exon");
-  }
-  if(!$exon->dbID){
-    #$self->throw("can't fetch stable info with no dbID");
-    return;
-  }
-  my $sth = $self->prepare("SELECT stable_id, UNIX_TIMESTAMP(created),
-                                   UNIX_TIMESTAMP(modified), version 
-                            FROM   exon_stable_id 
-                            WHERE  exon_id = " . $exon->dbID);
-
-  $sth->execute();
-
-  # my @array = $sth->fetchrow_array();
-  if( my $aref = $sth->fetchrow_arrayref() ) {
-    $exon->{'_stable_id'} = $aref->[0];
-    $exon->{'_created'}   = $aref->[1];
-    $exon->{'_modified'}  = $aref->[2];
-    $exon->{'_version'}   = $aref->[3];
-  }
-
-  return 1;
-}
-
-=head2 fetch_all_by_gene_id
-
-  Arg [1]    : int $id
-               The identifier of the gene whose exons will be retrieved 
-  Example    : @exons = $exon_adaptor->fetch_all_by_gene_id(1234); 
-  Description: Retrieves all exons from the gene specified by $geneId
-  Returntype : listref of Bio::EnsEMBL::Exon in contig coordinates
-  Exceptions : thrown if $geneId is not defined  
-  Caller     : general
-
-=cut
-
-sub fetch_all_by_gene_id {
-  my ( $self, $gene_id ) = @_;
-  my %exons;
-  my $hashRef;
-  my ( $currentId, $currentTranscript );
-
-  deprecated( "Hopefully this method is not needed any more. Exons should be fetched by Transcript" );
-
-  if( !$gene_id ) {
-      $self->throw("Gene dbID not defined");
-  }
-  $self->{rchash} = {};
-  my $query = qq {
-    SELECT 
-      STRAIGHT_JOIN 
-	e.exon_id
-      , e.contig_id
-      , e.contig_start
-      , e.contig_end
-      , e.contig_strand
-      , e.phase
-      , e.end_phase
-      , e.sticky_rank
-    FROM transcript t
-      , exon_transcript et
-      , exon e
-    WHERE t.gene_id = ?
-      AND et.transcript_id = t.transcript_id
-      AND e.exon_id = et.exon_id
-    ORDER BY t.transcript_id,e.exon_id
-      , e.sticky_rank DESC
-  };
-
-  my $sth = $self->prepare( $query );
-  $sth->execute($gene_id);
-
-  while( $hashRef = $sth->fetchrow_hashref() ) {
-    if( ! exists $exons{ $hashRef->{exon_id} } ) {
-
-      my $exon = $self->_exon_from_sth( $sth, $hashRef );
-
-      $exons{$exon->dbID} = $exon;
-    }
-  }
-  delete $self->{rchash};
-  
-  my @out = ();
-
-  push @out, values %exons;
-
-  return \@out;
 }
 
 
