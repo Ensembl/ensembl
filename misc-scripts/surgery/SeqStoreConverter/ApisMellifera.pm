@@ -25,7 +25,7 @@ sub create_coord_systems {
     (["scaffold" , $ass_def, "default_version", 1     ],
      ["contig",      undef   , "default_version,sequence_level", 2]);
 
-  my @assembly_mappings =  ("chromosome:$ass_def|chunk");
+  my @assembly_mappings =  ("scaffold:$ass_def|contig");
 
   my %cs = (gene                  => 'scaffold',
             transcript            => 'scaffold',
@@ -91,7 +91,7 @@ sub create_seq_regions {
 sub create_assembly {
   my $self = shift;
 
-  $self->debug("DrosophilaMelanogaster Specific: loading assembly data");
+  $self->debug("ApisMellifera Specific: loading assembly data");
 
   $self->assembly_contig_chromosome();
 }
