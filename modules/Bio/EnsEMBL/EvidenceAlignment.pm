@@ -217,23 +217,32 @@ sub _get_aligned_evidence {
     }
   }
 
-  # protein evidence
-
-  my @utr_free_exons = $transcript_obj->translateable_exons;
-  my @exon_peps = ();
-  foreach my $exon (@utr_free_exons) {
-    if (($exon->end - $exon->start + 1) >= 3) {
-      push @exon_peps, $exon->translate()->seq;
+  # get transcript start and end on VC
+  my @all_exons = $transcript_obj->get_all_Exons;
+  my $transcript_start = 100000000;	# v. large value
+  my $transcript_end = 0;
+  foreach my $exon (@all_exons) {
+    if ($exon->start < $transcript_start) {
+      $transcript_start = $exon->start;
+    }
+    if ($exon->end > $transcript_end) {
+      $transcript_end = $exon->end;
     }
   }
 
-  my @all_exons = $transcript_obj->get_all_Exons;
+  # protein evidence
+
+  my @utr_free_exons = $transcript_obj->translateable_exons;
+  my $translation = $transcript_obj->translate->seq;
+  print STDERR "XXX translation length ".length($translation),"\n";
+  my $nucseq = $self->_get_transcript_nuc(\@all_exons);
+  my $nuc_tran_len = length $nucseq;
 
   # record whether each exon is totally UTR, simply a frameshift (hence
-  # not to be translated), or at least partly translating; if
-  # translating, store the pep sequence string
+  # not to be translated), or at least partly translating
   my @exon_status = ();
   for (my $i = 0; $i <= $#all_exons; $i++) {
+    print STDERR "XXX exon $i len ".($all_exons[$i]->end - $all_exons[$i]->start + 1) . "\n";
     $exon_status[$i] = 'utr';
   }
   for (my $i = 0; $i <= $#all_exons; $i++) {
@@ -251,6 +260,8 @@ sub _get_aligned_evidence {
 
   # get length of the UTR witin the first exon (excludes length of any
   # exons that fall entirely within the 5' UTR)
+  # and also get the total 5' UTR length
+  my $total_utr_len = 0;
   my $utr_region_in_first_exon = 0;
   UTR_OUTER:
   for (my $i = 0; $i <= $#all_exons; $i++) {
@@ -272,26 +283,48 @@ sub _get_aligned_evidence {
 	  }
         }
       }
+    } else {
+      $total_utr_len += $all_exons[$i]->end - $all_exons[$i]->start + 1;
     }
   }
+  $total_utr_len += $utr_region_in_first_exon;
+  print STDERR "XXX total_utr_len $total_utr_len\n";
+  print STDERR "XXX utr_region_in_first_exon $utr_region_in_first_exon\n";
 
   # create an array of all exons that at least partly translate
+  print STDERR "XXX exon cnt ".($#all_exons+1)."\n";
   my @exons_to_display = ();
   for (my $i = 0; $i <= $#all_exons; $i++) {
     if ($exon_status[$i] eq 'translating') {
       push @exons_to_display, $all_exons[$i];
+    } else {
+      print STDERR "XXX exon $i not translating\n";
     }
   }
 
+  my $evidence_line = $translation;
+  my $prot_tran_len = length $translation;
+  # pad between residues, for comparability with codons
+  my $space_free_length = length $evidence_line;
+    my $padded_evidence_line = "";
+    for (my $i = 0; $i < $space_free_length; $i++) {
+      $padded_evidence_line .= substr $evidence_line, $i, 1;
+      $padded_evidence_line .= "--";
+    }
+    # adjust for 3' and 5' UTRs
+    $evidence_line = ('-' x $total_utr_len) . $padded_evidence_line;
+    while (length($evidence_line) < $nuc_tran_len) {
+      $evidence_line .= '-';
+    }
+
   $evidence_obj = Bio::PrimarySeq->new(
-                    -seq              =>
-		                      $self->_get_transcript_pep(\@exon_peps),
+                    -seq              => $evidence_line,
                     -id               => 0,
      		    -accession_number => $transcript_obj->stable_id,
 		    -moltype          => 'protein'
 		  );
+
   push @evidence_arr, $evidence_obj;
-  my $prot_tran_len = length($evidence_obj->seq);
 
   my @seqcache = ();
 
@@ -316,7 +349,9 @@ sub _get_aligned_evidence {
       next PEP_FEATURE_LOOP if (! $hit_seq_obj);
       if ($hit_seq_obj->moltype eq "protein") {
         my $hlength = $feature->hend - $feature->hstart + 1;
+	print "protein hit length (aa residues): $hlength\n";
         my $length = $feature->end - $feature->start + 1;
+	print "protein feature len (bases)     : $length\n";
         next PEP_FEATURE_LOOP unless ($length == (3 * $hlength));
 	my $hseq;
 	eval {
@@ -355,7 +390,8 @@ sub _get_aligned_evidence {
       }
       $last_feat = $feature;
     }
-    $total_exon_len += 3 * length($exon_peps[$i]);
+    $total_exon_len += $exons_to_display[$i]->end
+    - $exons_to_display[$i]->start + 1; # 3 * length($exon_peps[$i]);
   }
 
   my @sorted_pep_evidence_arr = sort {   ( $$a{'hseqname'} =~ /^ENST/
@@ -366,7 +402,7 @@ sub _get_aligned_evidence {
 				      || ( $$a{'hindent'} <=> $$b{'hindent'} )
  			        } @pep_evidence_arr;
 
-  my $evidence_line = "";
+  $evidence_line = "";
   my $uppercase = 1;	# case of sequence for output
   my $hit = $sorted_pep_evidence_arr[0];
   my $prev_exon = $$hit{'exon'};
@@ -380,7 +416,8 @@ sub _get_aligned_evidence {
     if ($uppercase) {
       $seq_str = "\U$seq_str";
     } else {
-      $seq_str = "\L$seq_str";
+      $seq_str = "\U$seq_str";
+      # $seq_str = "\L$seq_str";
     }
     
     if ($$hit{'hseqname'} ne $prev_hseqname) {	# make new evidence line
@@ -391,10 +428,25 @@ sub _get_aligned_evidence {
     substr $evidence_line, $$hit{hindent}, length $seq_str, $seq_str;
 
     # store if end of evidence line
+
     if (($i == $#sorted_pep_evidence_arr) ||
         ($sorted_pep_evidence_arr[$i+1]{'hseqname'} ne $$hit{'hseqname'}))
     {
       $evidence_line = substr $evidence_line, 0, $prot_tran_len;
+
+      # pad between residues, for comparability with codons
+      my $space_free_length = length $evidence_line;
+      my $padded_evidence_line = "";
+      for (my $i = 0; $i < $space_free_length; $i++) {
+        $padded_evidence_line .= substr $evidence_line, $i, 1;
+	$padded_evidence_line .= "--";
+      }
+
+      # adjust for 3' and 5' UTRs
+      $evidence_line = ('-' x $total_utr_len) . $padded_evidence_line;
+      while (length($evidence_line) < $nuc_tran_len) {
+        $evidence_line .= '-';
+      }
       $evidence_obj = Bio::PrimarySeq->new(
                       -seq              => $evidence_line,
                       -id               => 0,
@@ -411,14 +463,12 @@ sub _get_aligned_evidence {
   # nucleic acid evidence
 
   $evidence_obj = Bio::PrimarySeq->new(
-                    -seq              =>
-		                      $self->_get_transcript_nuc(\@all_exons),
+                    -seq              => $nucseq,
                     -id               => 0,
      		    -accession_number => $transcript_obj->stable_id,
 		    -moltype          => 'dna'
 		  );
   push @evidence_arr, $evidence_obj;
-  my $nuc_tran_len = length($evidence_obj->seq);
 
   $total_exon_len = 0;
   my @nuc_evidence_arr = ();
