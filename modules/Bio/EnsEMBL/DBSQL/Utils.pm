@@ -67,7 +67,7 @@ sub fset2transcript {
     foreach my $f ($genscan->sub_SeqFeature) {
 	
 	my $exon  = new Bio::EnsEMBL::Exon;
-	$exon->contig_id($contig->internal_id);
+	$exon->contig($contig);
 	$exon->stable_id($f->id);
 	$exon->start    ($f->start);
 	$exon->start    ($f->start);
