@@ -47,6 +47,7 @@ use Getopt::Long;
 
 my $host1  = 'ecs1b';
 my $host2  = 'ensrv3';
+#my $host2  = 'ecs1d';
 my $user   = 'ensro';
 my $host;
 my $dbname;
@@ -56,13 +57,17 @@ my $path;
 
 # the default behaviour is to compare ensembl built genes with human-annotated genes in chr20
 
-my $dbname1 = 'chr20';
-my $dbname2 = 'homo_sapiens_core_110';
-my $path1  = 'Sanger_02';
-my $path2  = 'UCSC';
-my $type1  = ['HUMACE-Novel_CDS','HUMACE-Known'];
-my $type2  = ['ensembl'];
-my (@type1,@type2);
+my $dbname1 = 'chr20_120';
+#my $dbname2 = 'homo_sapiens_core_120';
+#my $dbname2 = 'ens_UCSC_0801';
+my $dbname2 = 'ensembl110_new_schema_2';
+my $path1   = 'Sanger_01';
+my $path2   = 'UCSC';
+my $type1   = ['HUMACE-Novel_CDS','HUMACE-Known'];
+my $type2   = ['1'];
+#it should be something like
+#my $type2   = ['ensembl'];
+#my (@type1,@type2);
 
 # if one only provides $chr of these variables, the whole chromosome is taken #
 
@@ -125,8 +130,8 @@ my $db1= new Bio::EnsEMBL::DBSQL::DBAdaptor(-host  => $host1,
 print STDERR "Connected to database $dbname1\n";
 
 my $db2= new Bio::EnsEMBL::DBSQL::DBAdaptor(-host  => $host2,
-					     -user  => $user,
-					     -dbname=> $dbname2);
+					    -user  => $user,
+					    -dbname=> $dbname2);
 
 print STDERR "Connected to database $dbname2\n";
 
