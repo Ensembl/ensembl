@@ -217,6 +217,35 @@ sub get_all_Genes{
 }
 
 
+=head2 has_genes
+
+ Title   : has_genes
+ Usage   :
+ Function: returns 1 if there are genes, 0 otherwise.
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub has_genes{
+   my ($self,@args) = @_;
+   my $contig_id = $self->internal_id();   
+
+   my $seen =0;
+   my $sth = $self->_dbobj->prepare("select id from exon where contig = '$contig_id' limit 1");
+   $sth->execute();
+
+   my $rowhash;
+   while ( ($rowhash = $sth->fetchrow_hashref()) ) {
+       $seen = 1;
+       last;
+   }
+   return $seen;
+}
+
+
 =head2 primary_seq
 
  Title   : seq

@@ -54,6 +54,25 @@ documentation
 
 =cut
 
+=head2 has_genes
+
+ Title   : has_genes
+ Usage   : 1 if there are genes on this rawcontig, 0 otherwise
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub has_genes{
+   my ($self,@args) = @_;
+
+   $self->throw("Class [$self] has not implemented the has_genes method");
+}
+
+
 =head2 created
 
  Title   : created
