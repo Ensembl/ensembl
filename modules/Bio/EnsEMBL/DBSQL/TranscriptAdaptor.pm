@@ -60,8 +60,6 @@ use Bio::EnsEMBL::Translation;
 
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 
-use Time::HiRes qw(time);
-
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );
 
 
@@ -372,6 +370,11 @@ sub fetch_all_by_Slice {
       $tr->add_Exon($ex, $rank);
     }
   }
+
+  my $tla = $self->db()->get_TranslationAdaptor();
+
+  # load all of the translations at once
+  $tla->fetch_all_by_Transcript_list($transcripts);
 
   return $transcripts;
 }

@@ -49,10 +49,8 @@ package Bio::EnsEMBL::DBSQL::TranslationAdaptor;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
-
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
@@ -131,7 +129,6 @@ sub fetch_by_Transcript {
 
   return $translation;
 }
-
 
 
 
@@ -424,6 +421,115 @@ sub fetch_by_stable_id {
    return $self->fetch_by_Transcript($transcript);
 }
 
+
+=head2 fetch_all_by_Transcript_list
+
+  Arg [1]    : reference to list of Bio::EnsEMBL::Transcripts $transcripts
+               The list of $transcripts to obtain Translation object for.
+  Example    : @translations = @{$tla->fetch_all_by_Transcript_list([$t1,$t2]);
+  Description: Fetches all translations associated with the list of transcripts
+               passed to this method.  The passed transcripts will also have
+               their translation set by this method.
+  Returntype : Reference to list of Bio::EnsEMBL::Translations
+  Exceptions : None
+  Caller     : general
+
+=cut
+
+sub fetch_all_by_Transcript_list {
+  my ($self,$transcripts) = @_;
+
+  if(!defined($transcripts) || ref($transcripts) ne 'ARRAY') {
+    throw("reference to list of Transcripts argument is required");
+  }
+
+  return [] if(!@$transcripts);
+
+  my %trans_hash = map {$_->dbID() => $_} @$transcripts;
+  my @id_list = keys %trans_hash;
+
+  my @out;
+
+  # mysql is faster and we ensure that we do not exceed the max query size by
+  # splitting large queries into smaller queries of 200 ids
+  my $max_size = 200;
+
+  my ( $tr_id,$tl_id, $start_exon_id, $end_exon_id,
+       $seq_start, $seq_end, $stable_id, $version );
+
+  my %ex_hash;
+
+  while(@id_list) {
+    my @ids;
+    if(@id_list > $max_size) {
+      @ids = splice(@id_list, 0, $max_size);
+    } else {
+      @ids = splice(@id_list, 0);
+    }
+
+    my $id_str;
+    if(@ids > 1)  {
+      $id_str = " IN (" . join(',', @ids). ")";
+    } else {
+      $id_str = " = " . $ids[0];
+    }
+
+    my $sth = $self->prepare
+      ("SELECT tl.transcript_id, tl.translation_id, tl.start_exon_id,
+           tl.end_exon_id, tl.seq_start, tl.seq_end,
+           tlsi.stable_id, tlsi.version
+      FROM translation tl
+ LEFT JOIN translation_stable_id tlsi
+        ON tlsi.translation_id = tl.translation_id
+     WHERE tl.transcript_id $id_str");
+
+    $sth->execute();
+
+    $sth->bind_columns( \$tr_id, \$tl_id, \$start_exon_id, \$end_exon_id,
+                        \$seq_start, \$seq_end, \$stable_id, \$version );
+
+    while($sth->fetch()) {
+      my ($start_exon, $end_exon);
+
+      # this will load all the exons whenever we load the translation
+      # but I guess thats ok ....
+
+      my $tr = $trans_hash{$tr_id};
+
+      foreach my $exon (@{$tr->get_all_Exons()}) {
+        if(!$start_exon && $exon->dbID() == $start_exon_id ) {
+          $start_exon = $exon;
+          last if($end_exon);
+        }
+
+        if(!$end_exon && $exon->dbID() == $end_exon_id ) {
+          $end_exon = $exon;
+          last if($start_exon);
+        }
+      }
+
+      unless($start_exon && $end_exon) {
+        throw("Could not find start or end exon in transcript\n");
+      }
+
+      my $tl =  Bio::EnsEMBL::Translation->new
+        (-dbID => $tl_id,
+         -adaptor => $self,
+         -seq_start => $seq_start,
+         -seq_end => $seq_end,
+         -start_exon => $start_exon,
+         -end_exon => $end_exon,
+         -stable_id => $stable_id,
+         -version => $version);
+
+      $tr->translation($tl);
+
+      push @out, $tl;
+    }
+  }
+
+  return \@out;
+}
 
 
 
