@@ -147,17 +147,33 @@ sub seq{
        my $tseq = $c->seq();
 
        my $trunc;
-
-       if( $self->{'contigori'}->{$c} == 1 ) {
-	   $trunc = $tseq->subseq($self->{'start'}->{$cid},$c->golden_right);
+       my $end;
+       if( $self->{'rightmostcontig_id'} eq $cid ) {
+	   print STDERR "Rightmost end is ",$self->{'rightmostend'},"\n";
+       
+	   $end = $self->{'rightmostend'};
        } else {
-	   $trunc = $tseq->trunc($c->golden_left,$self->{'start'}->{$cid})->revcom->seq;
+	   if( $self->{'contigori'}->{$cid} == 1 ) {
+	       $end = $c->golden_end;
+	   } else {
+	       $end = $c->golden_start;
+	   }
        }
 
+       
+       print STDERR "got $cid, from ",$self->{'startincontig'}->{$cid}," to ",$c->golden_end,"\n";
+
+       if( $self->{'contigori'}->{$cid} == 1 ) {
+
+	   $trunc = $tseq->subseq($self->{'startincontig'}->{$cid},$end);
+       } else {
+	   $trunc = $tseq->trunc($end,$self->{'startincontig'}->{$cid})->revcom->seq;
+       }
+       print STDERR "Got $trunc\n";
        $seq_string .= $trunc;
    }
 
-   $seq = Bio::PrimarySeq->new( -id => "virtual_contig_".$self->_unqiue_number,
+   $seq = Bio::PrimarySeq->new( -id => "virtual_contig_".$self->_unique_number,
 				-seq => $seq_string,
 				-moltype => 'dna'
 				);
@@ -345,7 +361,10 @@ sub _build_contig_map{
 	   }
 	   # add to total, move on the contigs
 	   $self->warn("Not coping with non-overlapping, sized gaps");
-	   $current_left_size += $overlap->sister->golden_length;
+
+	   # The mystic -1 here is because otherwise we double count the
+	   # switch point base
+	   $current_left_size += $overlap->sister->golden_length -1; 
 	   $current_contig = $overlap->sister();
 
 	   if( $overlap->sister_polarity == 1) {
@@ -365,7 +384,10 @@ sub _build_contig_map{
 
 	   # add to total, move on the contigs
 	   $self->warn("Not coping with non-overlapping, sized gaps");
-	   $current_left_size += $overlap->sister->golden_length;
+
+	   # The mystic -1 here is because otherwise we double count the
+	   # switch point base
+	   $current_left_size += $overlap->sister->golden_length-1;
 	   $current_contig = $overlap->sister();
 
 	   if( $overlap->sister_polarity == 1) {
@@ -383,7 +405,7 @@ sub _build_contig_map{
 
    my $total = $left + $right;
 
-   print STDERR "leftmost contig is ",$current_contig->id,"with $total to account for\n";
+   print STDERR "leftmost contig is ",$current_contig->id,"with $total to account for, gone $current_left_size of $left\n";
    $self->{'leftmostcontig_id'} = $current_contig->id;
 
    # the first contig will need to be trimmed at a certain point
@@ -405,9 +427,11 @@ sub _build_contig_map{
    my $current_length;
 
    if( $current_orientation == 1 ) {
-       $current_length = $current_contig->golden_end - $startpos;
+       # mystic +1 due to biological counting scheme
+       $current_length = $current_contig->golden_end - $startpos +1;
    } else {
-       $current_length = $startpos - $current_contig->golden_start;
+       # mystic +1 due to biological counting scheme
+       $current_length = $startpos - $current_contig->golden_start+1;
    }
    print STDERR "current length before we get into this is $current_length\n";
 
@@ -444,17 +468,20 @@ sub _build_contig_map{
 	       $current_orientation = -1;
 	   }
 
-	   $self->{'start'}->{$current_contig->id} = $current_length; # maybe +1 (?)
+	   # The +1's here are to handle the fact we want to produce abutting
+	   # coordinate systems from overlapping switch points.
+
+	   $self->{'start'}->{$current_contig->id} = $current_length +1;
 	   if( $current_orientation == 1 ) {
-	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start;
+	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start+1;
 	   } else {
-	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end;
+	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end-1;
 	   }
 
 	   $self->{'contigori'}->{$current_contig->id} = $current_orientation;
 
 	   # up the length
-	   $current_length += $overlap->sister->golden_length;
+	   $current_length += $overlap->sister->golden_length -1;
        } else {
 	   # go left wrt to the contig
 	   print STDERR "Going left\n";
@@ -480,17 +507,20 @@ sub _build_contig_map{
 	       $current_orientation = 1;
 	   }
 
-	   $self->{'start'}->{$current_contig->id} = $current_length; # maybe +1 (?)
+	   # The +1's here are to handle the fact we want to produce abutting
+	   # coordinate systems from overlapping switch points.
+
+	   $self->{'start'}->{$current_contig->id} = $current_length +1; 
 	   if( $current_orientation == 1 ) {
-	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start;
+	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start +1;
 	   } else {
-	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end;
+	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end -1;
 	   }
 
 	   $self->{'contigori'}->{$current_contig->id} = $current_orientation;
 
 	   # up the length
-	   $current_length += $overlap->sister->golden_length;
+	   $current_length += $overlap->sister->golden_length -1;
        }
    }
 
@@ -499,12 +529,13 @@ sub _build_contig_map{
    $total = $left + $right;
 
    # need to store end point for last contig
+   print STDERR "Looking at setting rightmost end with $total and $current_length ",$current_contig->golden_end,"\n";
 
    $self->{'rightmostcontig_id'} = $current_contig->id();
    if( $current_orientation == 1 ) {
-       $self->{'rightmostend'}    = $current_contig->golden_end - ($total - $current_length);
+       $self->{'rightmostend'}    = $current_contig->golden_end - ($current_length - $total);
    } else {
-       $self->{'rightmostend'}    = $current_contig->golden_start + ($total - $current_length);
+       $self->{'rightmostend'}    = $current_contig->golden_start + ($current_length - $total);
    }
    
    # put away the focus/size info etc
