@@ -664,7 +664,7 @@ sub split_Transcript_to_Partial {
        @exons = $self->get_all_Exons;
    }
 
-   print STDERR "Got ",scalar(@exons)," from translateable exons\n";
+   #print STDERR "Got ",scalar(@exons)," from translateable exons\n";
 
    # one exon genes - easy to handle. (unless of course they have UTRs ...)
    if (@exons == 1) {
