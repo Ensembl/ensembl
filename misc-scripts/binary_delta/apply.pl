@@ -96,6 +96,7 @@ foreach my $info_file (glob($delta_dir . '/*.info')) {
     } elsif ($v1_sum ne '(none)' && $v1_size != (stat $v1_file)[7]) {
 	print "\tSize mismatch for old file\n";
 	print "\tCan not continue\n";
+	die;
     } else {
 	print "\tChecksum and size ok for old file\n";
     }
@@ -107,6 +108,7 @@ foreach my $info_file (glob($delta_dir . '/*.info')) {
     } elsif ($delta_sum ne '(none)' && $delta_size != (stat $delta_file)[7]) {
 	print "\tSize mismatch for delta file\n";
 	print "\tCan not continue\n";
+	die;
     } else {
 	print "\tChecksum and size ok for delta file\n";
     }
@@ -131,6 +133,7 @@ foreach my $info_file (glob($delta_dir . '/*.info')) {
     } elsif ($v2_sum ne '(none)' && $v2_size != (stat $v2_file)[7]) {
 	print "\tSize mismatch for new file\n";
 	print "\tCan not continue\n";
+	die;
     } else {
 	print "\tChecksum and size ok for new file\n";
     }
