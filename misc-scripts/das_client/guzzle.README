@@ -1,11 +1,11 @@
-				     Guzzle
+                                     Guzzle
 
-		    A STAND-ALONE PERL-BASED WEB DAS-CLIENT
+                    A STAND-ALONE PERL-BASED WEB DAS-CLIENT
 
 
     Author:
-	Andreas Kähäri (EMBL-EBI/ensembl),
-	andreas.kahari@ebi.ac.uk
+        Andreas Kähäri (EMBL-EBI/ensembl),
+        andreas.kahari@ebi.ac.uk
 
 
 
@@ -67,22 +67,27 @@
     The client does have dependencies  on non-standard Perl modules.  This
     is a list of all modules that it depends on:
 
-	Bio::Das		    required
-	CGI			    required
+        Bio::Das                    required
+        CGI                         required
 
-	Bio::Graphics		    required for graphics (optional)
-	Bio::SeqFeature::Generic    required for graphics (optional)
-	File::Temp		    required for graphics (optional)
+        Bio::Graphics               required for graphics (optional)
+        Bio::SeqFeature::Generic    required for graphics (optional)
+        File::Temp                  required for graphics (optional)
 
-	LWP::UserAgent		    required for faking
-				    stylesheets (optional)
+        LWP::UserAgent              required for faking
+                                    stylesheets (optional)
 
-	Data::Serializer	    required for being nice
-				    to DAS servers (optional)
+        Data::Serializer            required for being nice
+                                    to DAS servers (optional)
+
+        Bio::EnsEMBL::Mapper        required for alignment mapping
+                                    (optional, and not currently
+                                    implemented)
 
     Most of these Perl modules  have additional dependencies in themselves
     (e.g. the  Bio::Graphics module depends  on the Perl GD  module etc.),
-    but they are all available through CPAN.
+    but  they  are all  available  through  CPAN,  with the  exception  of
+    Bio::EnsEMBL::Mapper which is part of the Ensembl code base (sorry).
 
 
     INSTALLATION
