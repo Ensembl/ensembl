@@ -1,5 +1,3 @@
-
-
 #
 # BioPerl module for Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor
 #
@@ -13,17 +11,18 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor - Adaptor for ProteinAlignFeatures
+Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor - 
+Adaptor for ProteinAlignFeatures
 
 =head1 SYNOPSIS
 
     $pfadp = $dbadaptor->get_ProteinAlignFeatureAdaptor();
 
-    my @feature_array = $pfadp->fetch_by_contig_id($contig_numeric_id);
+    my @features = $pfadp->fetch_by_contig_id($contig_numeric_id);
 
-    my @feature_array = $pfadp->fetch_by_assembly_location($start,$end,$chr,'UCSC');
+    my @features = $pfadp->fetch_by_assembly_location($start,$end,$chr,'UCSC');
  
-    $pfadp->store($contig_numeric_id,@feature_array);
+    $pfadp->store($contig_numeric_id, @features);
 
 
 =head1 DESCRIPTION
@@ -42,7 +41,8 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. 
+Internal methods are usually preceded with a _
 
 =cut
 

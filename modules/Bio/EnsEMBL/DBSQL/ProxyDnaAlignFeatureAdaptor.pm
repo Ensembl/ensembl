@@ -30,6 +30,9 @@ if it is available).
 
 use strict;
 
+use Bio::EnsEMBL::DBSQL::ProxyAdaptor;
+use Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor;
+
 package Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor;
 
 use vars qw(@ISA);
@@ -41,13 +44,28 @@ use vars qw(@ISA);
 #for this proxy to correctly function.  We don't want the proxy decision
 #to be made too early anotherwards...
 @ISA = qw(Bio::EnsEMBL::DBSQL::ProxyAdaptor 
-	  Bio::EnsEMBL::DBSQL::DNAAlignFeatureAdaptor);
+	  Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor);
 
 #override generic_fetch_method to call appropriate db
+
+=head2 generic_fetch
+
+  Arg [1]    : string $constraint
+  Arg [2]    : string $logic_name
+  Example    : 
+  Description: Overrides the Bio::EnsEMBL::DNAAlignFeatureAdaptor generic_fetch
+               method.  Normally requests will still be forwarded to the 
+               core (primary) database with the exception of requests that
+               have a logic_name 'ex_e2g_feat' which will use the external
+               EST database if it is available.
+  Returntype : Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub generic_fetch {
   my($self, $constraint, $logic_name) = @_;
-
-
 
   if($logic_name eq 'ex_e2g_feat') {
     my $est_db = $self->db()->get_db_adaptor('est');

@@ -19,9 +19,6 @@ doesn''t even exist yet and probably never will since SNPs are taken from
 external databases. In the future some sort of DBRegistry may remove the
 need for this class.  
 
-It would be nicer if this class and the other SNPAdaptors implemented
-a common interface. 
-
 =head1 CONTACT
 
   Arne Stabenau: stabenau@ebi.ac.uk

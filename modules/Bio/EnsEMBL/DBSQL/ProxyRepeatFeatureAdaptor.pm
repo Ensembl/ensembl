@@ -14,10 +14,10 @@ Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor
 =head1 SYNOPSIS
 
 Designed as an abstraction over the database specific RepeatFeatureAdaptors.  
-The proxy gene adaptor normally behaves just as a normal core 
+The proxy repeat feature adaptor normally behaves just as a normal core 
 RepeatFeatureAdaptor, however, for certain requests it may decide to 
-instead forward the request to another
-database (such as the lite database if it is available).
+instead forward the request to another database (such as the lite database 
+if it is available).
 
 =head1 CONTACT
 
@@ -32,13 +32,26 @@ database (such as the lite database if it is available).
 use strict;
 
 
-
 package Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor;
 
 use Bio::EnsEMBL::DBSQL::ProxyAdaptor;
 use vars '@ISA';
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::ProxyAdaptor);
+
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : arbitrary list of args @args 
+  Example    : none
+  Description: Forwards requests for fetch_by_Slice to the lite database if
+               is available.  This is done for improved performance.
+  Returntype : list of Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub fetch_by_Slice {
   my ($self, @args) = @_;

@@ -1,6 +1,6 @@
 
 #
-# BioPerl module for Protein_FeaturePair
+# BioPerl module for ProteinFeature
 #
 # Cared for by Emmanuel Mongin <mongin@ebi.ac.uk>
 #

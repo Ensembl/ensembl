@@ -11,7 +11,8 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::Feature_Obj - MySQL database adapter class for EnsEMBL Feature Objects
+Bio::EnsEMBL::DBSQL::Feature_Obj - MySQL database adapter class for EnsEMBL 
+Feature Objects
 
 =head1 SYNOPSIS
 
@@ -24,10 +25,16 @@ Bio::EnsEMBL::DBSQL::Feature_Obj - MySQL database adapter class for EnsEMBL Feat
   
 =head1 DESCRIPTION
 
-This object deals with protein feature objects. It contains methods to fetch prtein features from the database, write protein feature into the database, and delete these protein features from the databases.
-A protein feature is linked to a peptide. This linked is made through the translation id stored in the translation table. For example the method fetch_by_translationID will return all of the feature for this given peptide.
+This object deals with protein feature objects. It contains methods to fetch 
+prtein features from the database, write protein feature into the database, 
+and delete these protein features from the databases.
 
-The Obj object represents a database that is implemented somehow (you shouldn\'t care much as long as you can get the object). 
+A protein feature is linked to a peptide. This linked is made through the 
+translation id stored in the translation table. For example the method 
+fetch_by_translationID will return all of the feature for this given peptide.
+
+The Obj object represents a database that is implemented somehow 
+(you shouldn\'t care much as long as you can get the object). 
 
 =head1 CONTACT
 
@@ -35,8 +42,8 @@ Emmanuel Mongin: mongin@ebi.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are 
-usually preceded with a _
+The rest of the documentation details each of the object methods. Internal 
+methods are usually preceded with a _
 
 =cut
 
@@ -56,17 +63,20 @@ use Bio::EnsEMBL::SeqFeature;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
+
+
 =head2 fetch_by_Translation_id
 
- Title   : fetch_by_Translation_id (formerly fetch_by_translationID)
- Usage   : @features = $protfeat_adaptor->fetch_by_Translation_id($transl_id)
- Function: Get all of the protein feature objects of a peptide            
- Example : @feats  = $protfeat_adaptor->fetch_by_Translation_id($transl_id)
- Returns : @Bio::EnsEMBL::ProteinFeature
- Args    : dbID of the translation corresponding to the peptide
+  Arg [1]    : int $transl
+               the internal id of the translation corresponding to protein 
+               whose features are desired 
+  Example    : @prot_feats = $prot_feat_adaptor->fetch_by_Translation_id(1234);
+  Description: Get all of the protein feature objects of a peptide             
+  Returntype : list of Bio::EnsEMBL::ProteinFeatures
+  Exceptions : none
+  Caller     : ?
 
 =cut
-
 
 sub fetch_by_Translation_id {
     my($self,$transl) = @_;
@@ -162,13 +172,13 @@ sub fetch_by_Translation_id {
 
 =head2 fetch_by_dbID
 
- Title   : fetch_by_dbID
- Usage   : $feature = $prot_feat->fetch_by_dbID($id)
- Function: Get a protein feature object
- Example :
- Returns : Protein feature object 
- Args    :
-
+  Arg [1]    : int $protfeat_id
+               the unique database identifier of the protein feature to obtain
+  Example    : my $feature = $prot_feat_adaptor->fetch_by_dbID();
+  Description: Obtains a protein feature object via its unique id
+  Returntype : Bio::EnsEMBL::ProteinFeauture
+  Exceptions : none
+  Caller     : ?
 
 =cut
 
@@ -192,15 +202,20 @@ sub fetch_by_dbID{
 }
 
 
+
 =head2 fetch_by_feature_and_dbID
 
- Title   : fetch_by_feature_and_dbID
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : string $feature
+               analysis gff_source
+  Arg [2]    : int $transl
+               unique translation identifier
+  Example    : none
+  Description: Retrieves protein features of a protein using the dbID of the
+               corresponding translation, and the analysis gff_source for 
+               the feature
+  Returntype : Bio::EnsEMBL::ProteinFeature
+  Exceptions : none
+  Caller     : ?
 
 =cut
 
@@ -357,15 +372,15 @@ sub fetch_by_feature_and_dbID{
   }
 
 
+
 =head2 store
 
- Title   : store
- Usage   : $obj->store($feature)
- Function: writes a protein feature object to the database           
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : Bio::EnsEMBL::ProteinFeature $feature
+  Example    : $protein_feature_adaptor->store($protein_feature);
+  Description: Stores a protein feature in the database
+  Returntype : none
+  Exceptions : thrown if arg is not a Bio::EnsEMBL::SeqFeatureI
+  Caller     : none
 
 =cut
 
@@ -384,7 +399,8 @@ sub store {
     };
 
     if (!defined($feature->analysis)) {
-	$self->throw("Feature " . $feature->seqname . "doesn't have analysis. Can't write to database");
+	$self->throw("Feature " . $feature->seqname . 
+		     "doesn't have analysis. Can't write to database");
     } else {
 	$analysis = $feature->analysis;
     }
@@ -395,8 +411,12 @@ sub store {
 
     my $homol = $feature->feature2;
       
-    my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
-			       "values ('NULL',"
+    my $sth = 
+      $self->prepare("INSERT INTO protein_feature(id, translation, seq_start,
+                                                  seq_end, analysis,
+                                                  hstart, hend, hid, score,
+                                                  perc_id, evalue) ".
+			       "VALUES ('NULL',"
 			       ."'".$feature->seqname    ."',"
 			       .$feature->start          .","
 			       .$feature->end            .","
@@ -504,14 +524,17 @@ sub store {
 #    $sth->execute;
 #}
 
+
+
 =head2 remove
 
- Title   : remove (formerly delete_by_dbID)
- Usage   :
- Function: deletes a protein feature
- Example :
- Returns : 
- Args    :
+  Arg [1]    : int $id 
+               the database id of the protein feature to remove
+  Example    : $protein_feature_adaptor->remove($prot_feat->dbID());
+  Description: deletes a protein feature from the database
+  Returntype : none
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -555,13 +578,12 @@ sub remove {
 
 =head2 _set_protein_feature
 
- Title   : _set_protein_feature
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : DBI row hash $rowhash
+  Example    : $prot_feat = $self->_set_protein_feature($row_hash);
+  Description: PRIVATE creates a ProteinFeature object from a SQL hashref
+  Returntype : Bio::EnsEMBL::ProteinFeature
+  Exceptions : none
+  Caller     : internal
 
 =cut
 
@@ -585,8 +607,8 @@ sub _set_protein_feature {
 					     -analysis => $analysis,
 					     -seqname => $rowhash->{'hid'});
    
-   my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-						       -feature2 => $feat2,);
+   my $feature = new Bio::EnsEMBL::ProteinFeature(-feature1 => $feat1,
+						  -feature2 => $feat2,);
    return $feature;
 }
 

@@ -15,20 +15,26 @@
 ProteinAdaptor - DESCRIPTION of Object
 
 =head1 SYNOPSIS
+
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 
-$db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
-my $protein_adaptor=Bio::EnsEMBL::ProteinAdaptor->new($obj);
 
-my $protein = $protein_adaptor->fetch_Protein_by_dbid;
+my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -user   => 'root', 
+                                             -db     => 'pog' , 
+                                             -host   => 'caldy' , 
+                                             -driver => 'mysql' );
+
+my $protein_adaptor = $db->get_ProteinAdaptor();
+
+my $protein = $protein_adaptor->fetch_by_dbID(1234);
 
 
 
 =head1 DESCRIPTION
 
-This Object inherit from BaseAdaptor following the new adaptor rules. It also has pointers to 3 different objects: Obj.pm, Gene_Obj.pm and FamilyAdaptor.pm (which is not currently used). This pointers allow the object to use the methods contained in these objects. SNPs db adaptor may also be added in these pointers.
-The main method may be fetch_Protein_by_dbid, which return a complete protein object. Different methods are going to be develloped in this object to allow complexe queries at the protein level in Ensembl.
+The main method may be fetch_Protein_by_dbid, which return a complete protein 
+object. Different methods are going to be develloped in this object to allow 
+complexe queries at the protein level in Ensembl.
 
 =head1 CONTACT
 
@@ -36,43 +42,35 @@ mongin@ebi.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. Internal 
+methods are usually preceded with a _
 
 =cut
 
 
 # Let the code begin...
-
-
 package Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 use vars qw(@ISA);
 use strict;
 
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 use Bio::EnsEMBL::Protein;
-
-
-
-use Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor;
-use Bio::Species;
-use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
-use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
-
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
-=head2 fetch_Protein_by_transcriptId
+=head2 fetch_by_Transcript_id
 
- Title   : fetch_by_Transcript_stable_id (formerly fetch_Protein_by_transcriptId)
- Usage   :
- Function:
- Example :
- Returns : 
- Args    : transcript id (ENSTxxxx)
+  Arg [1]    : int $transid
+               The unique internal identifier of this proteins transcript 
+  Example    : $protein = $protein_adaptor->fetch_by_Transcript_id
+  Description: (formerly fetch_Protein_by_transcriptId) Retrieves a protein
+               object via the internal database identifier of its transcript
+  Returntype : Bio::EnsEMBL::Protein
+  Exceptions : none
+  Caller     : protview?
 
 =cut
 
@@ -93,12 +91,13 @@ sub fetch_by_Transcript_id{
 
 =head2 fetch_by_Translation_stable_id
 
- Title   : fetch_by_Translation_id (formerly fetch_Protein_by_translationId)
- Usage   :
- Function:
- Example :
- Returns : 
- Args    : protein id (ENSPxxxx)
+  Arg [1]    : int $transid
+               the stable identifier of the translation of the desired protein
+  Example    : $prot = $pa->fetch_by_Translation_stable_id('ENSP00000278194');
+  Description: Creates a protein object using the translation table of the DB
+  Returntype : Bio::EnsEMBL::Protein
+  Exceptions : none
+  Caller     : protview?
 
 =cut
 
@@ -114,19 +113,23 @@ sub fetch_by_Translation_stable_id {
  }
 
 
+
 =head2 fetch_by_Translation_id
 
- Title   : fetch_by_Translation_id (formerly fetch_Protein_by_dbid)
- Usage   : $obj->fetch_by_Translation_id($transl_dbID)
- Function: Retrieves a protein object from a database
- Example : $prot = $prot_adaptor->fetch_by_Translation($id);
- Returns : Bio::EnsEMBL::Protein
- Args    : Translation dbID (internal id; e.g. 256674)
-
+  Arg [1]    : int $translation_id
+               the unique DB identifier for the translation corresponding to 
+               the desired protein
+  Example    : $prot = $prot_adaptor->fetch_by_Translation_id($id);
+  Description: Retrieves a protein object from a database 
+               (formerly fetch_Protein_by_dbid)
+  Returntype : Bio::EnsEMBL::Protein 
+  Exceptions : thrown if transcript or gene cannot be retrieved from database,
+               or if the amino acid sequence cannot be obtained 
+  Caller     : protview?
 
 =cut
 
-sub fetch_by_Translation_id{
+sub fetch_by_Translation_id {
    my ($self, $translation_id) = @_;
 
    #Get the transcript id from the translation id 

@@ -44,7 +44,6 @@ use strict;
 
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::TranscriptFactory;
 
 
@@ -494,7 +493,8 @@ sub fetch_by_hid {
     while($sth->fetch) {
 	my $out;
 	$name = defined($name) ? $name : 'no_source';
-	$out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+	$out = new Bio::EnsEMBL::FeaturePair();
+
 	$out->set_all_fields($start,$end,$strand,$score,$name,'similarity',$contig,
 			     $hstart,$hend,1,$score,$name,'similarity',$hid,$evalue,
 			     $perc_id,$phase,$end_phase);
@@ -732,7 +732,8 @@ sub fetch_RepeatFeatures_by_RawContig {
 	   # is a paired feature
 	   # build EnsEMBL features and make the FeaturePair
 
-	   $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
+	   $out = new Bio::EnsEMBL::Repeat;
+	   #$out = Bio::EnsEMBL::FeatureFactory->new_repeat();
 	   $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$fid,
 				$hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
 

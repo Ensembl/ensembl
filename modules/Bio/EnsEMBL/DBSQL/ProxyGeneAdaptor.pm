@@ -40,6 +40,24 @@ use vars '@ISA';
 
 #new inherited from ProxyAdaptor
 
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : generic list @args
+  Example    : @genes = $gene_adaptor->fetch_by_Slice($slice);
+  Description: Overrides the fetch_by_Slice method and makes a decision
+               about what database to use for the request.  If the Lite
+               database is available then the lite database will be
+               used for this request - it is faster and will also
+               fill the transcript and exon objects contained by the gene.
+               If the lite database is not available then the primary database
+               will be used.
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub fetch_by_Slice {
   my ($self, @args) = @_;
 
@@ -83,21 +101,29 @@ sub fetch_by_transcript_stable_id {
 }
 
 
+=head2 fetch_by_stable_id
+
+  Arg [1]    : list of arbitrary args @args
+  Example    : none
+  Description: The proxy overrides this method and automatically calls
+               the lite GeneAdaptor if it is available for greater speed.
+                If it is not available than the core adaptor is used
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub fetch_by_stable_id{
   my ($self, @args) = @_;
-  print STDERR ( "ProxyGeneAdaptor is called.\n" );
 
   my $lite_db = $self->db()->get_db_adaptor('lite');
   
   if(defined $lite_db) {
     #use the Lite database if it is available
-    print STDERR "Lite Database used for fetch_by_stable_id.\n" ; 
     return $lite_db->get_GeneAdaptor()->fetch_by_stable_id(@args);
   }
   
   #otherwise use the core database
   return $self->{'_primary_adaptor'}->fetch_by_stable_id(@args);
 }
-
-
-
