@@ -72,7 +72,7 @@ CREATE TABLE contigoverlap (
   contig_b_position int(10) unsigned,
   type varchar(40) DEFAULT '' NOT NULL,
   overlap_size int(10) unsigned,
-  overlap_type set('right2left','left2right','left2left','right2right'),
+  overlap_type enum('right2left','left2right','left2left','right2right'),
   PRIMARY KEY (dna_a_id,dna_b_id,type)
 );
 
@@ -217,7 +217,7 @@ CREATE TABLE geneclone_neighbourhood (
 CREATE TABLE ghost (
   id varchar(40) DEFAULT '' NOT NULL,
   version varchar(5) DEFAULT '' NOT NULL,
-  obj_type set('transcript','protein','exon') DEFAULT '' NOT NULL,
+  obj_type enum('transcript','protein','exon') DEFAULT '' NOT NULL,
   deleted datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   PRIMARY KEY (id,version,obj_type)
