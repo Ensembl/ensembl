@@ -9,5 +9,5 @@ Just a little documentation on how this is supposed to work:
 - run all-merges.sh. This will (or should) run all the pairwise, triple, (and
   higher) merges on all the single-source gtf files, and dump the resulting
   merged files into sub-directory merges/
-- run all-stats.sh. This will run all the statistics on each of the
-  merges. The output goes into sub-directory stats/
+- run all-stats.sh. This will (or should) run all the statistics on each of
+  the merged files. The output goes into sub-directory stats/
