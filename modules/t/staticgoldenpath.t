@@ -153,6 +153,7 @@ if( $rc->id ne 'contig2' || $rc_pos != 5 || $rc_strand != 1 ) {
 $gene = Bio::EnsEMBL::Gene->new();
 $gene->id('gene-id-1');
 $gene->version(1);
+$gene->type('test');
 $trans = Bio::EnsEMBL::Transcript->new();
 $trans->id('trans-id-1');
 $trans->version(1);
@@ -442,7 +443,7 @@ if( scalar(@genes) == 2 ) {
 
 $chadp = $db->get_ChromosomeAdaptor();
 
-$chr = $chadp->fetch_by_chrname('chr2');
+$chadp->fetch_by_chrname('chr2');
 
 print "ok 33\n";
 

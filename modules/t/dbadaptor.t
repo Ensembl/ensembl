@@ -3,7 +3,7 @@
 BEGIN {
     $| = 1;
     $^W = 1;
-    print "1..18\n"; 
+    print "1..17\n"; 
     use vars qw($loaded);
 }
 
@@ -40,7 +40,6 @@ my $t = 2;
 # All these methods contain a "require" statement.
 # Check that they all work.
 foreach my $dba_get_method (qw{
-    get_Update_Obj
     get_Feature_Obj
     get_MetaContainer
     gene_Obj

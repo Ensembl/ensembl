@@ -107,7 +107,7 @@ sub new {
       $host = 'localhost';
   }
   my $dsn = "DBI:$driver:database=$db;host=$host";
-
+  $password ||= '';
   if( $debug && $debug > 10 ) {
       $self->_db_handle("dummy dbh handle in debug mode $debug");
   } else {
@@ -480,15 +480,12 @@ sub _create_seq_obj{
     my @out;
     
     while( my $rowhash = $sth->fetchrow_hashref) {
-	my $type;
 	my $id = $rowhash->{'id'};
 	$id .= ".";
 	$id .= $rowhash->{'version'};
-	if ($rowhash->{'seq_type'} eq 'protein') {
+        my $type = $rowhash->{'seq_type'} || 'dna';
+	if ($type eq 'protein') {
 	    $type = 'amino';
-	}
-	else {
-	    $type = 'dna';
 	}
 	$seq = Bio::Seq->new(
 			     -seq=>$rowhash->{'sequence'},
@@ -617,10 +614,15 @@ sub _execute{
    my ($self,$query) = @_;
 
    if($self->_readonly){
-       #print "READONLY: $query\n";
+       print "READONLY: $query\n";
    }else{
        my $usth   = $self->prepare($query);
-       $usth->execute;
+       eval {
+	   $usth->execute;
+       };
+       if ($@) {
+	   print STDERR "archive exception: $@\n";
+       }
    }
 }
 

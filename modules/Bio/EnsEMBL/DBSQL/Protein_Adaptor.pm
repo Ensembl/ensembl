@@ -517,10 +517,10 @@ sub get_snps {
 	$expos{$loc[0]} = $count;
 	
 	$$loc[0]->{id} = $loc[0];
-	$$loc[0]->{pos} = $count;
+	$$loc[0]->{"pos"} = $count;
 	$$loc[0]->{start} = $loc[1];
 	$$loc[0]->{end} = $loc[2];
-	$$loc[0]->{length} = ($loc[2] - $loc[1]);
+	$$loc[0]->{"length"} = ($loc[2] - $loc[1]);
 	push (@exons,$$loc[0]);
     }
 	
@@ -532,7 +532,7 @@ sub get_snps {
 	my $array_snp;
 	$$array_snp[1]->{exon} = $array_snp[0];
 	$$array_snp[1]->{id} = $array_snp[1];
-	$$array_snp[1]->{pos} = $array_snp[2];
+	$$array_snp[1]->{"pos"} = $array_snp[2];
 	push (@snps,$$array_snp[1]);
     }
     
@@ -545,15 +545,15 @@ sub get_snps {
 	my $previous_exons_length = 0;
 
 	foreach my $exs(@exons) {
-	    if ($exs->{pos} < $pos) {
-		$previous_exons_length =+ $exs->{length};
+	    if ($exs->{"pos"} < $pos) {
+		$previous_exons_length += $exs->{"length"};
 	    }
-	    if ($exs->{pos} == $pos) {
+	    if ($exs->{"pos"} == $pos) {
 		$e = $exs;
 	    }
 	}
 	#Get the location of the snp in aa coordinates      
-        my $aa_pos = int (($s->{pos} - $e->{start} + $previous_exons_length)/3) + 1;
+        my $aa_pos = int (($s->{"pos"} - $e->{start} + $previous_exons_length)/3) + 1;
 	
 	my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
 	

@@ -791,13 +791,11 @@ sub get_all_ExternalGenes {
 =cut
 
 sub get_old_Exons{
-
-    my ($self,$logfile) = @_;
+    my ($self,$logfile,$mapref) = @_;
     
     my @exons;
-
     foreach my $c ($self->_vmap->get_all_RawContigs) {
-	push(@exons,$c->get_old_Exons($logfile));
+	push(@exons,$c->get_old_Exons($logfile,$mapref));
     }
     print "fetched ".scalar(@exons)."\n";
     
@@ -843,15 +841,18 @@ sub get_old_Exons{
 =cut
 
 sub get_old_Genes {
-    my ($self) = @_;
+    my ($self,$mapref) = @_;
     my (%gene,%trans,%exon,%exonconverted);
-    
+    my @genes;
     foreach my $contig ($self->_vmap->get_all_RawContigs) {
-	foreach my $gene ( $contig->get_old_Genes() ) {      
-	    $gene{$gene->id()} = $gene;
-	}
+	push (@genes,$contig->get_old_Genes($mapref));
     }
-    return $self->_gene_query(%gene);
+	#foreach my $gene ( $contig->get_old_Genes($mapref) ) {      
+	#    $gene{$gene->id()} = $gene;
+	#}
+    #}
+    #return $self->_gene_query(%gene);
+    return @genes;
 }
 
 =head2 get_all_Exons
@@ -977,7 +978,7 @@ sub _gene_query{
                             $vc_strand = $sticky->strand;
                         } else {
                             if( $vc_strand != $sticky->strand ) {
-                                $self->warn("sticky exon mappable but strand switching");
+                                #$self->warn("sticky exon mappable but strand switching");
                                 $mapped_sticky = 0;
                                 last; # end of foreach my $sticky
                             }

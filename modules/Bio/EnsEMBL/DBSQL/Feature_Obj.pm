@@ -55,8 +55,6 @@ use strict;
 
 use Bio::Root::RootI;
 #use Bio::EnsEMBL::DBSQL::Obj;
-
-use Bio::EnsEMBL::Ghost;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;

@@ -213,7 +213,7 @@ sub get_all_Genes {
 
     foreach my $ft ( $self->_get_Seq->top_SeqFeatures ) {
 	if( $ft->primary_tag eq 'CDS_span' ) {
-	    print STDERR "multi exon gene!\n";
+	    #print STDERR "multi exon gene!\n";
 
 	    my $gene       = Bio::EnsEMBL::Gene->new();
 	    my $trans      = Bio::EnsEMBL::Transcript->new();
@@ -268,7 +268,7 @@ sub get_all_Genes {
 	    $genecounter++;
 	    push(@genes,$gene);
 	} elsif ( $ft->primary_tag eq 'CDS' ) {
-	    print STDERR "Single exon gene!\n";
+	    #print STDERR "Single exon gene!\n";
 
 	    
 	    my $gene       = Bio::EnsEMBL::Gene->new();

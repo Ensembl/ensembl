@@ -38,10 +38,8 @@ my $ens_test = EnsTestDB->new();
 # Load some data into the db
 $ens_test->do_sql_file("t/rawcontig.dump");
 
-print STDERR "** This is not testing get_MarkerFeature or get_all_ExternalFeatures\n";
-print STDERR "** This is not testing overlap gets\n";
-print STDERR "** This test assummes that prediction features are returned in\n";
-print STDERR "** get_all_SimilarityFeature call (to be fixed sometime)\n";
+#print STDERR "** This is not testing get_MarkerFeature or get_all_ExternalFeatures\n";
+#print STDERR "** This is not testing overlap gets\n";
     
 # Get an EnsEMBL db object for the test db
 my $db = $ens_test->get_DBSQL_Obj;

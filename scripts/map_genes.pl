@@ -12,6 +12,14 @@ my $logfile=shift(@ARGV);
 my $mapfile=shift(@ARGV);
 open (LOG,">$logfile");
 open (MAP,">$mapfile");
+open (FILE,"</work2/elia/contigmap");
+my %map;
+while (<FILE>) {
+    chomp;
+    $_ =~ /(\S+)\s(\S+)/;
+    $map{$1}=$2;
+}
+close (FILE);
 my $cross=Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new(-dbname=>'cross110',
 							-host=>'ecs1c',
 							-user=>'ensadmin');
@@ -29,15 +37,17 @@ print STDERR "Building Virtual Contig for ctg $fpc...\n";
 print LOG "Building Virtual Contig for ctg $fpc...\n";
 my $vc=$st->fetch_VirtualContig_by_fpc_name($fpc);
 
-my $arcdb = Bio::EnsEMBL::DBArchive::Obj->new(-dbname=>'archive_test',
+my $arcdb = Bio::EnsEMBL::DBArchive::Obj->new(-dbname=>'archive',
 					      -host=>'ecs1c',
 					      -user=>'ensadmin',
-					      -readonly => 1);
+					      -readonly => 0);
 
 my $gc =  Bio::EnsEMBL::Pipeline::GeneComp->new(-vc => $vc,
 						-archive => $arcdb,
 						-log => \*LOG,
-						-map => \*MAP);
+						-map => \*MAP,
+						-hashref => \%map
+						);
 
 $gc->map();
     

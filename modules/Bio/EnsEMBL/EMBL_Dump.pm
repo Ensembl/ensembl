@@ -187,7 +187,7 @@ sub id_EnsEMBL {
     my @dates = $annseq->each_date();
     my $date = shift @dates;
     $date =~ s/\(.*\)//g;
-
+    $type ||='';		
     if( $type eq 'genbank' ) {
 	return sprintf("%-9s  %d bp  DNA   %s   %s",$id,$length,$division,$date);
     }

@@ -37,7 +37,7 @@ if( !defined $vc ) {
 
 &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($vc); 
     
-$seqout = Bio::SeqIO->new(-format => 'embl', -file => ">t/emblclone.out" );
+$seqout = Bio::SeqIO->new(-"format" => 'embl', -file =>">t/emblclone.out" );
 
 # adds standard dumping information to the aseqstream to drive off the
 # the annseq objects

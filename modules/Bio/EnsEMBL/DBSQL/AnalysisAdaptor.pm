@@ -231,7 +231,7 @@ sub store {
 	$analysis->gff_source,
 	$analysis->gff_feature
       );
-    $dbID = $sth->{'insertid'};
+    $dbID = $sth->{'mysql_insertid'};
   } else {
     my $sth = $self->prepare( q{
 
@@ -265,7 +265,7 @@ sub store {
 	$analysis->gff_feature
       );
 
-    $dbID = $sth->{'insertid'};
+    $dbID = $sth->{'mysql_insertid'};
 
     if( defined $dbID ) {
       $sth = $self->prepare( q{

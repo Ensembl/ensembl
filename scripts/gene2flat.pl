@@ -53,8 +53,8 @@ use Getopt::Long;
 my $dbtype = 'rdb';
 my $host   = 'ecs1c';
 my $port   = '3360';
-my $dbname = 'ensembl080';
-my $dbuser = 'root';
+my $dbname = 'idmap_apr01';
+my $dbuser = 'ensadmin';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::DBAdaptor';
 
@@ -89,10 +89,7 @@ my $db;
 if ($help) {
     exec('perldoc', $0);
 }
-
-&eprof_start('init');
-
-
+open (ERR,">/work2/elia/apr01_dumps/log");
 my $locator = "$module/host=$host;port=;dbname=$dbname;user=$dbuser;pass=$dbpass";
 $db =  Bio::EnsEMBL::DBLoader->new($locator);
 
@@ -131,15 +128,11 @@ if ($format eq 'webdump') {
 $db->DESTROY;
 $db=undef;
 
-&eprof_end('init');
-
-&eprof_start('gene_loop');
-
 while ( @gene_id > 0 ) {
     my @chunk_list = splice(@gene_id,0,$chunk);
 
     if( $verbose ) {
-	print STDERR "Fetching @chunk_list\n";
+	print ERR "Fetching @chunk_list\n";
     }
 
     eval {
@@ -148,10 +141,7 @@ while ( @gene_id > 0 ) {
             $db->static_golden_path_type('UCSC');
             my $sa = $db->get_StaticGoldenPathAdaptor();
 
-	&eprof_start('gene_get');
 	my @genes = $db->gene_Obj->get_array_supporting('none',@chunk_list);
-	&eprof_end('gene_get');
-
 	foreach my $gene ( @genes ) {
 	    my $gene_id = $gene->id();
 	    if( $format eq 'pep' ) {
@@ -164,8 +154,8 @@ while ( @gene_id > 0 ) {
 
 		    my $tseq = $trans->translate();
 		    if ( $tseq->seq =~ /\*/ ) {
-			print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
-			#next;
+			print ERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
+			next;
 		    }
                     my $gene_version = $gene->version;
 
@@ -190,7 +180,7 @@ while ( @gene_id > 0 ) {
 		    my $seq = $trans->dna_seq();
 		    $seq->id($trans->id);
 		    my @exon = $trans->each_Exon;
-		    print STDERR "Translation start".$trans->translation->start."\n";
+		    print ERR "Translation start".$trans->translation->start."\n";
 		    my $fe = $exon[0];
                     my $gene_version = $gene->version;
 		    $seq->desc("Gene:$gene_id.$gene_version Clone:".$fe->clone_id . " Contig:" . $fe->contig_id . " Chr: " . $chr . " Pos: " . $cdna_start);
@@ -203,7 +193,7 @@ while ( @gene_id > 0 ) {
 		  my $pep_file =  $webdir.$trans->id.".pep";
 
 		  if (-e $pep_file) {
-		    print STDERR "Peptide file exists - skipping\n";
+		    print ERR "Peptide file exists - skipping\n";
 		    next TRAN;
 		  }
 
@@ -211,7 +201,7 @@ while ( @gene_id > 0 ) {
 		    open (TRANS,">$trans_file");
 		    my $seqiot = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*TRANS );
 		    my $seq = $trans->dna_seq();
-		    print STDERR "dumping transcript",$trans->id,"\n";
+		    print ERR "dumping transcript",$trans->id,"\n";
 		    $seq->display_id($trans->id);
 		    my @exon = $trans->each_Exon;
 		    my $fe = $exon[0];
@@ -228,7 +218,7 @@ while ( @gene_id > 0 ) {
 		    my $seqiop = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*PEP) ;
 		    my $tseq = $trans->translate();
 		    if ( $tseq->seq =~ /\*/ ) {
-			print STDERR "Skipping peptide dumping of ".$gene->id.", translation has stop codons. (in clone ". $fe->clone_id .")\n\n";
+			print ERR "Skipping peptide dumping of ".$gene->id.", translation has stop codons. (in clone ". $fe->clone_id .")\n\n";
 			next;
 		    }
 		    $tseq->desc("Gene:$gene_id.$gene_version Clone:".$fe->clone_id . " Contig:" . $fe->contig_id . " Chr: " . $chr . " Pos: " . $gene_start);
@@ -246,20 +236,13 @@ while ( @gene_id > 0 ) {
     if( $@ ) {
 	my $gene_id = "@chunk_list";
 	#foreach my $clone ( $db->geneid_to_cloneid($gene_id)) {
-	#    print STDERR "Error in clone $clone:\n";
+	#    print ERR "Error in clone $clone:\n";
 	#}
-	print STDERR "unable to process @chunk_list, due to \n$@\n";
+	print ERR "unable to process @chunk_list, due to \n$@\n";
     }
     $db->DESTROY;
     $db=undef;
 }
-
-&eprof_end('gene_loop');
-
-&eprof_dump(\*STDERR);
-
-
-
 
 sub  find_trans_start {
  my ($trans) = @_;
@@ -281,7 +264,7 @@ sub  find_trans_start {
     }
  }
  if (!defined($start_pos)) {
-    print STDERR "Couldn't find start exon for " . $trans->id . "\n";
+    print ERR "Couldn't find start exon for " . $trans->id . "\n";
     die;
  }
  my $query = "select chr_name,chr_start,chr_end,raw_start,raw_end,raw_ori from static_golden_path,contig where raw_id = internal_id and contig.id = \'" . $contig . "\'";

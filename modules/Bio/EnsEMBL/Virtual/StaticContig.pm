@@ -1624,8 +1624,8 @@ sub get_all_Genes_exononly{
   
    my $current_transcript;
    my $current_gene;
-   my $current_transcript_id;
-   my $current_gene_id;
+   my $current_transcript_id='';
+   my $current_gene_id='';
    my $previous_exon;
 
    my @out;

@@ -174,7 +174,7 @@ if ($pep eq $expected) {
 $gene = Bio::EnsEMBL::Gene->new();
 $gene->id('gene-id-1s');
 $gene->version(1);
-
+$gene->type('test');
 $gene->add_Transcript($transc);
 $gene->created(1);
 $gene->modified(1);

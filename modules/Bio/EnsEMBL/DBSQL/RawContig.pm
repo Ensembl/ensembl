@@ -253,13 +253,13 @@ my $query="
 =cut
 
 sub get_old_Genes {
-    my ($self) = @_;
+    my ($self,$mapref) = @_;
 
+    my %map = %$mapref;
     #This method requires a connection to a crossmatch database
     if (!$self->_crossdb) { $self->throw("You need a crossmatch database to call get_old_Genes!");}
     my $crossdb = $self->_crossdb;
 
-    
     #The crossdb should be holding onto old and new dbs, we need the old one here...
     my $old_db;
     eval {
@@ -269,19 +269,20 @@ sub get_old_Genes {
 	$self->throw("The crossmatch database has to hold the old dna database to be able to call get_old_Genes! $@");
     }
     my $oldcontig;
+    my $oldid = $map{$self->id};
     eval {
-	$oldcontig = $old_db->get_Contig($self->id);
+	$oldcontig = $old_db->get_Contig($oldid);
     };
 
     #If the clone does not exist, these are really new Genes
     if ($@) {
-	#print STDERR "Contig ".$self->id." doesn't exist in old db, returning empty array...\n";
+	#print STDERR "Contig ".$oldid." doesn't exist in old db ".$old_db->dbname.", returning empty array...\n";
 	return ();
     }
    
     my @genes=$oldcontig->get_all_Genes();
     my $size=scalar (@genes);
-    #print STDERR "Returning $size old Genes as they are for contig ".$self->id."\n"; 
+    #print STDERR "Returning $size old Genes as they are for contig ".$oldid."\n"; 
     return @genes;
 }
 
@@ -347,17 +348,17 @@ sub get_all_Exons {
 =cut
 
 sub get_old_Exons {
-    my ($self,$logfile) = @_;
+    my ($self,$logfile,$maphref) = @_;
 
     #This method requires a connection to a crossmatch database
     if (!$self->_crossdb) { $self->throw("You need a crossmatch database to call get_old_exons!");}
     my $crossdb = $self->_crossdb;
 
-    
+    my %map = %$maphref;
     #The crossdb should be holding onto old and new dbs, we need the old one here...
     my $old_db;
     eval {
-	$old_db=$self->_crossdb->old_dbobj;
+	$old_db=$crossdb->old_dbobj;
     }; 
     if ($@) {
 	$self->throw("The crossmatch database has to hold the old dna database to be able to call get_old_exons! $@");
@@ -370,8 +371,6 @@ sub get_old_Exons {
 
     #If the clone does not exist, these are really new exons
     if ($@) {
-	print $@."\n";
-	print "No clone ".$self->cloneid." in cross100\n";
 	return ();
     }
    
@@ -384,16 +383,21 @@ sub get_old_Exons {
 
     if ($oldclone->embl_version == $newclone->embl_version) {
 	my $oldcontig;
+	my $oldid = $map{$self->id};
 	eval {
-	    $oldcontig = $oldclone->get_Contig($self->id);
+	    $oldcontig = $oldclone->get_Contig($oldid);
 	};
 	if ($@) {
 	    print STDERR "Clones with id ".$oldclone->id." have the same version in old and new db, but contig ".$self->id." is not there! (CLONE VERSION BUG)\n";
 	    return ();
 	}
 	my @exons=$oldcontig->get_all_Exons();
+	foreach my $exon (@exons) {
+	    $exon->seqname($self->id);
+	    $exon->contig_id($self->id);
+	}
 	my $size=scalar (@exons);
-	#print STDERR "Returning $size old exons as they are for contig ".$self->id." on clone ".$oldclone->id."\n"; 
+	#print STDERR "Returning $size old exons as they are for contig ".$oldid." on clone ".$oldclone->id."\n"; 
 	return @exons; 
     }
     #We get out a SymmetricContigFeatureContainer from the crossdb and use it     #to retrieve feature pairs for this contig, then sort them
@@ -425,16 +429,16 @@ sub get_old_Exons {
 	    if( $fp->hstart < $exon->start && $fp->hend > $exon->start ) {
 		if( $fp->strand == $fp->hstrand ) {
 		    # straightforward mapping
-		    $exon->seqname($fp->seqname);
-		    $exon->contig_id($fp->seqname);
+		    $exon->seqname($self->id);
+		    $exon->contig_id($self->id);
 		    $exon->start($fp->start + $exon->start - $fp->hstart);
 		    $exon->end($fp->start + $exon->end - $fp->hstart);
 		} else {
 		    # Grrr strand hell.
 		    my $oldstart = $exon->start;
 		    my $oldend   = $exon->end;
-		    $exon->seqname($fp->seqname);
-		    $exon->contig_id($fp->seqname);
+		    $exon->seqname($self->id);
+		    $exon->contig_id($self->id);
 		    $exon->start($fp->hend - ($oldstart - $fp->hend));  
 		    $exon->end  ($fp->hend - ($oldend   - $fp->hend));
 		    $exon->strand( -1 * $exon->strand);

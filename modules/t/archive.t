@@ -25,7 +25,7 @@ BEGIN { $| = 1; print "1..5\n";
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
-
+use strict;
 use lib 't';
 use EnsTestDB;
 use Bio::EnsEMBL::DBArchive::Obj;
@@ -40,22 +40,22 @@ $ens_test->do_sql_file("../sql/archive.sql");
 $ens_test->do_sql_file("t/archive.dump");
 
 
-$host = $ens_test->host;
-$dbname = $ens_test->dbname;
-$user = $ens_test->user;
+my $host = $ens_test->host;
+my $dbname = $ens_test->dbname;
+my $user = $ens_test->user;
 
-$archive = Bio::EnsEMBL::DBArchive::Obj->new( -host => $host, -dbname => $dbname, -user => $user );
+my $archive = Bio::EnsEMBL::DBArchive::Obj->new( -host => $host, -dbname => $dbname, -user => $user );
 
 
 print "ok 2\n";
 
-$seq = Bio::Seq->new( -id => 'silly',-seq => 'ATTCGTTGGGTGGCCCGTGGGTG');
+my $seq = Bio::Seq->new( -id => 'silly',-seq => 'ATTCGTTGGGTGGCCCGTGGGTG');
 
 $archive->write_seq($seq,1,'exon','ENSG000000012',1,'AC00012',2);
 
 print "ok 3\n";
 
-($seq2) = $archive->get_seq_by_gene_version('ENSG000000012',1,'exon');
+my ($seq2) = $archive->get_seq_by_gene_version('ENSG000000012',1,'exon');
 
 
 if( !defined $seq2 || $seq2->id ne "silly.1" || $seq2->seq ne $seq->seq ) {
@@ -65,7 +65,7 @@ if( !defined $seq2 || $seq2->id ne "silly.1" || $seq2->seq ne $seq->seq ) {
   print "ok 4\n";
 }
 
-$new_id = $archive->get_new_id_from_old_id('gene','ENSG0000018');
+my $new_id = $archive->get_new_id_from_old_id('gene','ENSG0000018');
 
 if( $new_id ne 'ENSG0000019' ) {
     print "not ok 5\n";

@@ -304,15 +304,15 @@ sub get_all_Exons {
     my $contig_id=$self->id;
 
 
-    my $query="SELECT e.id, e.seq_start,e.seq_end,e.strand,e.phase,e.created,e.modified 
+    my $query="SELECT e.id, e.seq_start,e.seq_end,e.strand,e.phase,e.created,e.modified,e.version
                FROM   exon e,contig c 
                WHERE  c.internal_id=e.contig and c.id ='$contig_id'";
 
     my $sth = $self->dbobj->prepare ($query);
     $sth->execute;
 
-    my ($id,$start,$end,$strand,$phase,$created,$modified);
-    $sth->bind_columns (undef,\$id,\$start,\$end,\$strand,\$phase,\$created,\$modified);
+    my ($id,$start,$end,$strand,$phase,$created,$modified,$version);
+    $sth->bind_columns (undef,\$id,\$start,\$end,\$strand,\$phase,\$created,\$modified,\$version);
     
     my @exons;
     while ($sth->fetch){
@@ -328,6 +328,7 @@ sub get_all_Exons {
 	$exon->created($created);
 	$exon->modified($modified);
 	$exon->sticky_rank(1);
+	$exon->version($version);
 
 	push @exons,$exon;
     }

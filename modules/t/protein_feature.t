@@ -84,7 +84,7 @@ else {
     print "not ok 6\n";
 }
 
-if ($transl[0]->feature1->analysis->id == 1) {
+if ($transl[0]->feature1->analysis->dbID == 1) {
     print "ok 7\n";
 }
 else {
