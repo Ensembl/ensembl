@@ -148,8 +148,7 @@ sub fetch_by_name {
   my $name = shift;
 
   my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
-                             offset, corder, dna_id, 
-                             international_name
+                             offset, dna_id
                              FROM contig
                              WHERE name = '$name'" );
   $sth->execute();
@@ -180,8 +179,7 @@ sub fetch_filled_by_dbIDs {
   }
 
   my $sth = $self->prepare( "SELECT co.contig_id, co.name, co.clone_id, 
-                                    co.length, co.offset, co.corder, 
-                                    co.dna_id, co.international_name,
+                                    co.length, co.offset, co.dna_id,
                                     cl.embl_acc, cl.embl_version,
                                     cl.name, cl.version, cl.htg_phase,
                                     cl.created, cl.modified
@@ -200,11 +198,10 @@ sub fetch_filled_by_dbIDs {
     my $clone = Bio::EnsEMBL::Clone->new
       (
        $self->db->get_CloneAdaptor(),
-       $aref->[2],
-       $aref->[10], $aref->[8],
-       $aref->[11], $aref->[9],
-       $aref->[12], $aref->[13],
-       $aref->[14]
+       $aref->[2], $aref->[8],
+       $aref->[9], $aref->[7],
+       $aref->[10], $aref->[11],
+       $aref->[12]
       );
     $contig->clone( $clone );
 
@@ -225,8 +222,7 @@ sub fetch_by_clone {
   my $clone_id = $clone->dbID;
   
   my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
-                             offset, corder, dna_id, 
-                             international_name
+                             offset, dna_id
                              FROM contig
                              WHERE clone_id = $clone_id" );
 
@@ -245,7 +241,7 @@ sub fetch_attributes {
   my $dbID = $contig->dbID();
 
   my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
-                             offset, corder, dna_id, international_name
+                             offset, dna_id
                              FROM contig
                              WHERE contig_id = $dbID" );
   $sth->execute();
@@ -292,15 +288,12 @@ sub _fill_contig_from_arrayref {
       $self->throw("Bad internal error - no array ref");
   }
 
-  my ( $contig_id, $name, $clone_id, $length, $offset, $corder, $dna_id,
-       $international_name ) = @$aref;
+  my ( $contig_id, $name, $clone_id, $length, $offset, $dna_id) = @$aref;
 
     
   (defined $length) && $contig->length( $length );
   (defined $name) && $contig->name( $name );
   (defined $offset) && $contig->offset( $offset );
-  (defined $corder) && $contig->corder( $corder );
-  (defined $international_name) && $contig->international_name( $international_name );
 
   # maybe these should be lazy fetched...
   $contig->_clone_id($clone_id);
@@ -324,24 +317,16 @@ sub store{
 
 
   $self->_insertSequence($dna->seq, $contig->seq_date);
-  my $international_name = $contig->international_name;
-  if(!$international_name){
-    $international_name = 'NULL';
-  } 
   my $sql = "insert into contig(name,
                                 dna_id,
                                 length,
                                 clone_id,
-                                offset,
-                                corder,
-                                international_name)
+                                offset)
               values('".$contig->id."', 
                     LAST_INSERT_ID(), 
 		    ".$contig->primary_seq->length." ,
                     ".$clone_id." ,
-                    ".$contig->embl_offset." ,
-                    ".$contig->order." , 
-                    '".$international_name."')";
+                    ".$contig->embl_offset.")";
   
   my $sth = $self->prepare($sql);
   my $rv = $sth->execute();

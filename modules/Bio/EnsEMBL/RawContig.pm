@@ -47,7 +47,6 @@ use Bio::PrimarySeqI;
   Arg  6    : Bio::EnsEMBL::Clone clone
   Arg  7    : int emblCloneContigNumber
   Arg  8    : int emblCloneBaseOffset
-  Arg [9]   : txt internationalName
   Function  : creates RawContig. Neds either dbID and Adaptor or clone and sequence.
               With dbID its connected to DB, with the other it may be stored. 
   Returntype: Bio::EnsEMBL::RawContig
@@ -64,7 +63,7 @@ sub new {
   bless $self, $class;
   
   my ( $dbID, $adaptor, $name, $sequence, $length,
-       $clone, $corder, $offset, $international_name ) = @args;
+       $clone, $offset ) = @args;
 
   unless (( defined $dbID && defined $adaptor ) ||
 	  ( defined $clone && defined $sequence )) {
@@ -79,10 +78,7 @@ sub new {
   (defined $sequence) && $self->sequence( $sequence );
   (defined $name) && $self->name( $name );
   (defined $length) && $self->length( $length );
-  (defined $corder) && $self->corder( $corder );
   (defined $offset) && $self->offset( $offset );
-  (defined $international_name) && $self->international_name
-    ( $international_name );
 
   return $self;
 }
@@ -192,23 +188,6 @@ sub id {
   return $self->name || $self->dbID;
 }
 
-
-sub international_name {
-  my $self = shift;
-  my $arg = shift;
-  
-  if( defined $arg ) {
-    $self->{_international_name} = $arg ;
-  } else {
-    if( ! defined $self->{_international_name} &&
-      defined $self->adaptor() ) {
-      $self->adaptor->fetch_attributes( $self );
-    }
-  }
-  
-  return $self->{_international_name};
-}
-
 sub offset {
   my $self = shift;
   my $arg = shift;
@@ -223,22 +202,6 @@ sub offset {
   }
   
   return $self->{_offset};
-}
-
-sub corder {
-  my $self = shift;
-  my $arg = shift;
-  
-  if( defined $arg ) {
-    $self->{_corder} = $arg ;
-  } else {
-    if( ! defined $self->{_corder} &&
-      defined $self->adaptor() ) {
-      $self->adaptor->fetch_attributes( $self );
-    }
-  }
-  
-  return $self->{_corder};
 }
 
 sub clone {
