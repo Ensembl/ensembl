@@ -233,7 +233,7 @@ sub get_all_Genes{
  Title   : get_all_clone_Genes
  Usage   :
  Function: gets all the genes in clone
-           coordinates. Don't watch this ;)
+           coordinates. Dont watch this ;)
  Example :
  Returns : 
  Args    :
@@ -255,11 +255,9 @@ sub get_all_clone_Genes{
        push(@exons,$gene->each_unique_Exon);
    }
 
-   foreach my $exon ( @genes ) {
+   foreach my $exon ( @exons ) {
 
-# it seems that your exons somehow have become genes
 
-       if ($exon->isa('Bio::EnsEMBL::Gene')){print STDERR 'I am a gene not an exon\n';}
        if( !exists $contig{$exon->contig_id} ) {
 
 
