@@ -198,7 +198,6 @@ sub connect {
 
   return if($self->connected);
   $self->connected(1);
-  warn "$$ - Connecting to ",$self->dbname(),"\n";
 
   if(defined($self->db_handle()) and $self->db_handle()->ping()) {
     warning("unconnected db_handle is still pingable, reseting connected boolean\n");
