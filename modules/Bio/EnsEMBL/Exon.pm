@@ -539,7 +539,7 @@ sub _transform_to_RawContig {
     %$new_exon = %$self;
 
     #unset supporting evidence of new exon
-    $new_exon->{'_supporting_evidence'} = undef;
+    delete $new_exon->{'_supporting_evidence'};
 
     $new_exon->start( $mapped[0]->start() );
     $new_exon->end( $mapped[0]->end() );
