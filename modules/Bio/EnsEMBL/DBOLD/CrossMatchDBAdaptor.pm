@@ -1,6 +1,6 @@
 
 #
-# Ensembl module for Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor
+# Ensembl module for Bio::EnsEMBL::DBOLD::CrossMatchDBAdaptor
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -12,13 +12,13 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor - DESCRIPTION of Object
+Bio::EnsEMBL::DBOLD::CrossMatchDBAdaptor - DESCRIPTION of Object
 
 =head1 SYNOPSIS
 
-my $db=Bio::EnsEMBL::DBSQL::Obj->new(-dbname=>'july_dna',-host=>'ecs1c',-user=>'ensadmin');
+my $db=Bio::EnsEMBL::DBOLD::Obj->new(-dbname=>'july_dna',-host=>'ecs1c',-user=>'ensadmin');
 
-my $cross=Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new(-dbname=>'crossmatch',-host=>'ecs1c',-user=>'ensadmin');
+my $cross=Bio::EnsEMBL::DBOLD::CrossMatchDBAdaptor->new(-dbname=>'crossmatch',-host=>'ecs1c',-user=>'ensadmin');
 
 $db->_crossdb($cross);
 
@@ -42,14 +42,14 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor;
+package Bio::EnsEMBL::DBOLD::CrossMatchDBAdaptor;
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheriets from Bio::Root::RootI
 use DBI;
 use Bio::Root::RootI;
-use Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer;
+use Bio::EnsEMBL::DBOLD::SymmetricContigFeatureContainer;
 use Bio::EnsEMBL::DBLoader;
 
 @ISA = qw(Bio::Root::RootI);
@@ -93,7 +93,7 @@ sub new {
  Usage   : $crossdb->new_dbobj
  Function: reads the dblocation table to load the new db
  Example : $crossdb->new_dbobj()
- Returns : Bio::EnsEMBL::DBSQL::Obj
+ Returns : Bio::EnsEMBL::DBOLD::Obj
  Args    : none
 
 
@@ -126,7 +126,7 @@ sub new_dbobj{
  Usage   : $crossdb->old_dbobj
  Function: reads the dblocation table to load the old db
  Example : $crossdb->old_dbobj()
- Returns : Bio::EnsEMBL::DBSQL::Obj
+ Returns : Bio::EnsEMBL::DBOLD::Obj
  Args    : none
 
 
@@ -154,9 +154,9 @@ sub old_dbobj{
 
  Title   : get_SymmetricContigFeatureContainer
  Usage   : $crossdb->get_SymmetricContigFeatureContainer
- Function: Gets a Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer
+ Function: Gets a Bio::EnsEMBL::DBOLD::SymmetricContigFeatureContainer
  Example : $crossdb->get_SymmetricContigFeatureContainer
- Returns : Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer
+ Returns : Bio::EnsEMBL::DBOLD::SymmetricContigFeatureContainer
  Args    : none
 
 
@@ -165,7 +165,7 @@ sub old_dbobj{
 sub get_SymmetricContigFeatureContainer{
    my ($self) = @_;
 
-   return Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer->new($self);
+   return Bio::EnsEMBL::DBOLD::SymmetricContigFeatureContainer->new($self);
 }
 
 =head2 get_clonelist

@@ -1,6 +1,6 @@
 
 #
-# Ensembl module for Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor
+# Ensembl module for Bio::EnsEMBL::DBOLD::StaticGoldenPathAdaptor
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor - Database adaptor for static golden path
+Bio::EnsEMBL::DBOLD::StaticGoldenPathAdaptor - Database adaptor for static golden path
 
 =head1 SYNOPSIS
 
@@ -56,7 +56,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
+package Bio::EnsEMBL::DBOLD::StaticGoldenPathAdaptor;
 use vars qw(@ISA);
 use strict;
 
@@ -337,7 +337,7 @@ sub fetch_RawContigs_by_chr_start_end{
    while( ( my $array = $sth->fetchrow_arrayref) ) {
 
        my ($id,$internalid,$dna,$clone,$seq_version) = @{$array};
-       my $rc = Bio::EnsEMBL::DBSQL::RawContig->direct_new
+       my $rc = Bio::EnsEMBL::DBOLD::RawContig->direct_new
 	   ( 
 	     -dbobj => $self->dbobj,
 	     -id    => $id,

@@ -1,5 +1,5 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::Feature_Obj
+# EnsEMBL module for Bio::EnsEMBL::DBOLD::Feature_Obj
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
 #
@@ -11,14 +11,14 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::Feature_Obj - MySQL database adapter class for EnsEMBL Feature Objects
+Bio::EnsEMBL::DBOLD::Feature_Obj - MySQL database adapter class for EnsEMBL Feature Objects
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::DBSQL::Obj;
-  use Bio::EnsEMBL::DBSQL::Feature_Obj;
+  use Bio::EnsEMBL::DBOLD::Obj;
+  use Bio::EnsEMBL::DBOLD::Feature_Obj;
 
-  $db = new Bio::EnsEMBL::DBSQL::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
+  $db = new Bio::EnsEMBL::DBOLD::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
   my $feature_obj=Bio::EnsEMBL::Feature_Obj->new($obj);
 
   #Check if a feature exists
@@ -26,7 +26,7 @@ Bio::EnsEMBL::DBSQL::Feature_Obj - MySQL database adapter class for EnsEMBL Feat
 
 =head1 DESCRIPTION
 
-This is one of the objects contained in Bio:EnsEMBL::DBSQL::Obj, dealing with
+This is one of the objects contained in Bio:EnsEMBL::DBOLD::Obj, dealing with
 feature objects.
 
 The Obj object represents a database that is implemented somehow (you shouldn\'t
@@ -46,7 +46,7 @@ usually preceded with a _
 
 # Let the code begin...
 
-package Bio::EnsEMBL::DBSQL::Feature_Obj;
+package Bio::EnsEMBL::DBOLD::Feature_Obj;
 
 use vars qw(@ISA);
 use strict;
@@ -54,7 +54,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-#use Bio::EnsEMBL::DBSQL::Obj;
+#use Bio::EnsEMBL::DBOLD::Obj;
 
 use Bio::EnsEMBL::Ghost;
 use Bio::EnsEMBL::Gene;
@@ -62,8 +62,8 @@ use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::FeatureFactory;
 use DBI;
-use Bio::EnsEMBL::DBSQL::Utils;
-use Bio::EnsEMBL::DBSQL::DummyStatement;
+use Bio::EnsEMBL::DBOLD::Utils;
+use Bio::EnsEMBL::DBOLD::DummyStatement;
 
 
 
@@ -402,7 +402,7 @@ sub get_Protein_annseq{
     my $res     = $sth->execute();
     my $rowhash = $sth->fetchrow_hashref;
     
-    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->_db_obj);
+    my $gene_obj=Bio::EnsEMBL::DBOLD::Gene_Obj->new($self->_db_obj);
     my $transcript = $gene_obj->get_Transcript($rowhash->{'id'});
     my $translation = $gene_obj->get_Translation($ENSP);
 
@@ -850,7 +850,7 @@ sub get_PredictionFeature_as_Transcript{
     my $ft=$self->get_PredictionFeature_by_id($genscan_id);
     my $contig=$self->_db_obj->get_Contig($ft->seqname);
  
-    &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
+    &Bio::EnsEMBL::DBOLD::Utils::fset2transcript($ft,$contig);
 
 
 }

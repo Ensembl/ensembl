@@ -1,5 +1,5 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::Feature_Obj
+# EnsEMBL module for Bio::EnsEMBL::DBOLD::Feature_Obj
 #
 # Cared for by Emmanuel Mongin <mongin@ebi.ac.uk>
 #
@@ -11,14 +11,14 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::Feature_Obj - MySQL database adapter class for EnsEMBL Feature Objects
+Bio::EnsEMBL::DBOLD::Feature_Obj - MySQL database adapter class for EnsEMBL Feature Objects
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::DBSQL::Obj;
-  use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
+  use Bio::EnsEMBL::DBOLD::Obj;
+  use Bio::EnsEMBL::DBOLD::Protein_Feature_Adaptor;
 
-  $db = new Bio::EnsEMBL::DBSQL::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
+  $db = new Bio::EnsEMBL::DBOLD::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
   my $feature_obj=Bio::EnsEMBL::Protein_Feature_Adaptor->new($obj);
 
   
@@ -43,20 +43,20 @@ usually preceded with a _
 
 # Let the code begin...
 
-package Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
+package Bio::EnsEMBL::DBOLD::Protein_Feature_Adaptor;
 
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::EnsEMBL::DBSQL::BaseAdaptor
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+# Object preamble - inheriets from Bio::EnsEMBL::DBOLD::BaseAdaptor
+use Bio::EnsEMBL::DBOLD::BaseAdaptor;
 
 
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::SeqFeature;
 
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::DBOLD::BaseAdaptor);
 
 sub _feature_obj {
     my($self,$dbobj) = @_;

@@ -1,5 +1,5 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::Update_Obj
+# EnsEMBL module for Bio::EnsEMBL::DBOLD::Update_Obj
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
 #
@@ -11,14 +11,14 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::Update_Obj - MySQL database adapter class for EnsEMBL update system
+Bio::EnsEMBL::DBOLD::Update_Obj - MySQL database adapter class for EnsEMBL update system
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::DBSQL::Obj;
-  use Bio::EnsEMBL::DBSQL::Update_Obj;
+  use Bio::EnsEMBL::DBOLD::Obj;
+  use Bio::EnsEMBL::DBOLD::Update_Obj;
 
-  $db = new Bio::EnsEMBL::DBSQL::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
+  $db = new Bio::EnsEMBL::DBOLD::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
   my $update_obj=Bio::EnsEMBL::Update_Obj->new($obj);
 
   # Get the last update time - offset
@@ -26,7 +26,7 @@ Bio::EnsEMBL::DBSQL::Update_Obj - MySQL database adapter class for EnsEMBL updat
 
 =head1 DESCRIPTION
 
-This is one of the objects contained in Bio:EnsEMBL::DBSQL::Obj, dealing with
+This is one of the objects contained in Bio:EnsEMBL::DBOLD::Obj, dealing with
 the update system, such identifying last update, getting updated objects, ghosts, etc.
 
 The Obj object represents a database that is implemented somehow (you shouldn\'t
@@ -46,7 +46,7 @@ usually preceded with a _
 
 # Let the code begin...
 
-package Bio::EnsEMBL::DBSQL::Update_Obj;
+package Bio::EnsEMBL::DBOLD::Update_Obj;
 
 use vars qw(@ISA);
 use strict;
@@ -54,7 +54,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBOLD::Obj;
 use Bio::EnsEMBL::DB::Update_ObjI;
 use Bio::EnsEMBL::Ghost;
 use Bio::EnsEMBL::Gene;
@@ -63,7 +63,7 @@ use Bio::EnsEMBL::Transcript;
 
 use DBI;
 
-use Bio::EnsEMBL::DBSQL::DummyStatement;
+use Bio::EnsEMBL::DBOLD::DummyStatement;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::Update_ObjI);
 # new() is inherited from Bio::Root::Object
@@ -386,7 +386,7 @@ sub get_updated_Objects{
     }
     
     foreach my $cloneid (@clones) {
-	my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $cloneid,
+	my $clone = new Bio::EnsEMBL::DBOLD::Clone( -id    => $cloneid,
 						    -dbobj => $self->_db_obj );
    
 	$clone->fetch();
@@ -404,7 +404,7 @@ sub get_updated_Objects{
     
     #Get all gene objects for the ids contained in @clones, and push them in @out
     foreach my $geneid (@genes) {
-	my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->_db_obj);
+	my $gene_obj=Bio::EnsEMBL::DBOLD::Gene_Obj->new($self->_db_obj);
 	my $gene = $gene_obj->get($geneid);
 	push @out, $gene;
     }	

@@ -1,6 +1,6 @@
 
 #
-# Ensembl module for Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer
+# Ensembl module for Bio::EnsEMBL::DBOLD::SymmetricContigFeatureContainer
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer - Binds to SymmetricContigFeature table
+Bio::EnsEMBL::DBOLD::SymmetricContigFeatureContainer - Binds to SymmetricContigFeature table
 
 =head1 SYNOPSIS
 
@@ -42,17 +42,17 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer;
+package Bio::EnsEMBL::DBOLD::SymmetricContigFeatureContainer;
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::RootI
 
 
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::DBOLD::BaseAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::DBOLD::BaseAdaptor);
 
 =head2 get_FeaturePair_list_by_rawcontig_id
 

@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::DummyStatement - Dummy statement object for debugging
+Bio::EnsEMBL::DBOLD::DummyStatement - Dummy statement object for debugging
 
 =head1 SYNOPSIS
 
@@ -37,7 +37,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBSQL::DummyStatement;
+package Bio::EnsEMBL::DBOLD::DummyStatement;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 

@@ -42,16 +42,16 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBSQL::Clone;
+package Bio::EnsEMBL::DBOLD::Clone;
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-use Bio::EnsEMBL::DBSQL::RawContig;
-use Bio::EnsEMBL::DBSQL::Feature_Obj;
-use Bio::EnsEMBL::DBSQL::Gene_Obj;
+use Bio::EnsEMBL::DBOLD::RawContig;
+use Bio::EnsEMBL::DBOLD::Feature_Obj;
+use Bio::EnsEMBL::DBOLD::Gene_Obj;
 use Bio::EnsEMBL::DB::CloneI;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
@@ -71,7 +71,7 @@ sub _initialize {
 
   $id    || $self->throw("Cannot make clone db object without id");
   $dbobj || $self->throw("Cannot make clone db object without db object");
-  $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make clone db object with a $dbobj object");
+  $dbobj->isa('Bio::EnsEMBL::DBOLD::Obj') || $self->throw("Cannot make clone db object with a $dbobj object");
 
   $self->id($id);
   $self->_db_obj($dbobj);
@@ -172,7 +172,7 @@ sub delete {
        my $sth = $self->_db_obj->prepare("delete from contig where internal_id = '$contig'");
        my $res = $sth->execute;
 
-       my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+       my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->_db_obj);
        $feature_obj->delete($contig);
    }
 
@@ -229,7 +229,7 @@ sub get_all_Genes {
             
         if( ! exists $got{$rowhash->{'gene'}}) {  
             
-           my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->_db_obj);             
+           my $gene_obj = Bio::EnsEMBL::DBOLD::Gene_Obj->new($self->_db_obj);             
 	   my $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
            if ($gene) {
 	        push(@out, $gene);

@@ -1,6 +1,6 @@
 
 #
-# Ensembl module for Bio::EnsEMBL::DBSQL::GapContig
+# Ensembl module for Bio::EnsEMBL::DBOLD::GapContig
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::GapContig - DESCRIPTION of Object
+Bio::EnsEMBL::DBOLD::GapContig - DESCRIPTION of Object
 
 =head1 SYNOPSIS
 
@@ -40,7 +40,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBSQL::GapContig;
+package Bio::EnsEMBL::DBOLD::GapContig;
 use vars qw(@ISA);
 use strict;
 
