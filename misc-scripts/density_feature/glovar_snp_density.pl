@@ -160,7 +160,7 @@ if ($avdump) {
         mkdir "$dumpdir/$species", 0777 or die
             "Could not creat directory $dumpdir/$species: $!\n";
     }
-    open (AV, ">$dumpdir/$species/SNP.txt") or die
+    open (AV, ">>$dumpdir/$species/SNP.txt") or die
         "Could not open $dumpdir/$species/SNP.txt for writing: $!\n";
     print STDERR "Done.\n";
 }
