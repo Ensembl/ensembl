@@ -68,5 +68,19 @@ sub get_internal_id_by_id
     }
 }
 
+sub get_id_by_internal_id
+{
+    my ($self, $internal_id) = @_;
+    my $sth = $self->db->prepare
+    (
+         "select id from contig where internal_id = '$internal_id'"
+    );
+    my $res = $sth->execute;
+    if(my $rowhash = $sth->fetchrow_hashref) {
+	return $rowhash->{id};
+    } else {
+	$self->warn("Could not find contig with internal_id $internal_id");
+    }
+}
 
 1;
