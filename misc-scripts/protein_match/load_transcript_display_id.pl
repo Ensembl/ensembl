@@ -47,7 +47,7 @@ if (!defined $organism) {    die "\nSome basic options have not been set up, hav
 }
 
 print STDERR "Connecting to the database...\n";
-
+print STDERR "dealing with organism ".$organism."\n";
 #my $multi = MultiTestDB->new();
 
 my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
@@ -84,9 +84,7 @@ while(my $id = $sth->fetchrow) {
     }
 
     $trans->display_xref($display);
-    #print STDERR "updateing transcript ".$trans->stable_id." with xref ".$trans->display_xref."\n";
     $transadaptor->update($trans);
-#    print STDERR "ID: $id\tDISPLAY: $display\tTEST: ".$transadaptor->get_display_xref_id($id)."\n";
 }
 
 if ($organism ne "elegans") {
@@ -94,27 +92,25 @@ if ($organism ne "elegans") {
     my $query1 = "select gene_id from gene";
     my $sth1 = $db->prepare($query1);
     $sth1->execute();
-    
     while(my $gene_id = $sth1->fetchrow) {
 	my $gene = $geneadaptor->fetch_by_dbID($gene_id);
 	my $transcripts = $gene->get_all_Transcripts();
 	my $display;
 	my $current;
-	foreach my $trans(@$transcripts) {
-	    my $id = $trans->dbID();
-	    my $xrefid = $transadaptor->get_display_xref_id($id);
-	    
-	    eval {
-		my $xref = $xrefadaptor->fetch_by_dbID($xrefid);
-		if ($priority{$xref->database} > $current) {
-		    $display = $xref->dbID;
-		    $current = $priority{$xref->database};
-		}
-	    };
+	TRANS:foreach my $trans(@$transcripts) {
+	    my $xref = $transadaptor->get_display_xref($trans);
+	    if(!$xref){
+	      next TRANS;
+	    }
+	    if ($priority{$xref->database} > $current) {
+	      $display = $xref;
+	      $current = $priority{$xref->database};
+	    }
 	}
+      
 	$gene->display_xref($display);
 	$geneadaptor->update($gene);
-#    print STDERR "GENE_ID: $gene_id\tDISPLAY: $display\tTEST: ".$geneadaptor->get_display_xref_id($gene_id)."\n";
+       
     }
 }
 elsif ($organism eq "elegans") {

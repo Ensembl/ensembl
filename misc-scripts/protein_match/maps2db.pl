@@ -29,6 +29,7 @@ my $user       = $conf{'dbuser'};
 my $pass       = $conf{'password'};
 my $port       = $conf{'port'};
 my $organism   = $conf{'organism'};
+my $type = $conf{'elegans_pseudo'};
 my $check      = $conf{'check'};
 my $query_pep  = $conf{'query'};
 my $refseq_pred = $conf{'refseq_pred_gnp'};
@@ -48,8 +49,8 @@ if ((!defined $organism) || (!defined $xmap) || (!defined $map)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $map\ndb: $dbname\nhost: $host\n\n";
 }
 
-print STDERR "Connecting to the database...\n";
-
+print STDERR "Connecting to the database... $dbname:$host\n";
+print STDERR "dealing with organism ".$organism."\n";
 
 my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -user   => $user,
@@ -84,9 +85,10 @@ open (XMAP,"$xmap") || die "Can't open XMAP $xmap\n";
 print STDERR "Reading X_map ($xmap)\n";
 
 while (<XMAP>) {
+    #print STDERR;
     chomp;
     my ($targetid,$targetdb,$xac,$xdb,$xid,$xsyn,$status) = split (/\t/,$_);
-
+    #print STDERR "tag ".$xac."\n";
     if ($check eq "yes") {
 #Get the all of the EMBL accessions for a given SP
 	if (($targetdb eq "SPTR") && ($xdb eq "EMBL")) {
@@ -241,7 +243,10 @@ MAPPING: while (<MAP>) {
 			$dbentry->add_synonym($syn);
 		    }
 			}
-
+		if($queryid == 0){
+		  die "have no translation_id $!";
+		}
+		#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$queryid."\n";
 		$adaptor->store($dbentry,$queryid,"Translation");
 	    }
 	    
@@ -265,6 +270,10 @@ MAPPING: while (<MAP>) {
 			$dbentry->add_synonym($syn);
 		    }
 		}
+		if($queryid == 0){
+		  die "have no translation_id $!";
+		}
+		#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$queryid."\n";
 		$adaptor->store($dbentry,$queryid,"Translation");
 		    
 	    }
@@ -319,7 +328,9 @@ if ($organism eq "drosophila") {
 		      -release => 1,
 		      -dbname => $extdb );
 		$dbentry->status("XREF");
-	    
+		if($trans_id == 0){
+		  die "have no translation_id $!";
+		}
 		$adaptor->store($dbentry,$trans_id,"Translation");
 	    }
 	}
@@ -329,19 +340,26 @@ if ($organism eq "drosophila") {
 }
 
 if ($organism eq "elegans") {
- 
-    open (IN,"$cefile") || die "can't open file\n";
-
-    while (<CEIN>) {
-	chomp;
-	my @array = split;
-	$cemap{$array[0]} = $array[1];
-    }
-    close (CEIN);
-
-    my $adaptor = $db->get_DBEntryAdaptor();
-
-    my $query = "select t.translation_id, ts.stable_id, gs.stable_id from transcript t, gene_stable_id gs, transcript_stable_id ts where t.gene_id = gs.gene_id and t.transcript_id = ts.transcript_id";
+  #print STDERR " parsing wormbase information\n";
+  open (IN,"$cefile") || die "can't open file\n";
+  #print STDERR "have opened ".$cefile."\n";
+  while (<IN>) {
+    #print STDERR "have open file\n";
+    #print STDERR;
+    chomp;
+    my @array = split;
+    #print STDERR "mapping ".$array[0]." to ".$array[1]."\n";
+    $cemap{$array[0]} = $array[1];
+  }
+  close (IN);
+  
+  my $adaptor = $db->get_DBEntryAdaptor();
+  
+  
+  my $query = "select t.translation_id, ts.stable_id, gs.stable_id, g.type from transcript t, gene_stable_id gs, transcript_stable_id ts, gene g where t.gene_id = gs.gene_id and t.transcript_id = ts.transcript_id and t.gene_id = g.gene_id";
+  if($type){
+   $query .= "and g.type != '$type'";
+  }
     my $sth = $db->prepare($query);
     $sth->execute();
     while (my @res = $sth->fetchrow) {
@@ -360,8 +378,11 @@ if ($organism eq "elegans") {
 	      -version => 1,
 	      -release => 1,
 	      -dbname => $db1);
-	$dbentry->status("XREF");
-	
+	$dbentry->status("KNOWNXREF");
+	if($transl_dbid == 0){
+	  die "have no translation_id $!";
+	}
+	#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$transl_dbid."\n";
 	$adaptor->store($dbentry,$transl_dbid,"Translation");
 	
 	my $transdbentry = Bio::EnsEMBL::DBEntry->new
@@ -371,25 +392,33 @@ if ($organism eq "elegans") {
 	      -version => 1,
 	      -release => 1,
 	      -dbname => $db2);
-	$transdbentry->status("XREF");
-    
+	$transdbentry->status("KNOWNXREF");
+	if($transl_dbid == 0){
+	  die "have no translation_id $!";
+	}
+	#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$transl_dbid."\n";	
 	$adaptor->store($transdbentry,$transl_dbid,"Translation");
 
 	my $ce = $cemap{$transc_stable_id};
 	
 	if ($ce) {
-	    my $ceentry = Bio::EnsEMBL::DBEntry->new
-		( -adaptor => $adaptor,
-		  -primary_id => $ce,
-		  -display_id => $ce,
-		  -version => 1,
-		  -release => 1,
-		  -dbname => $db3);
-	    $ceentry->status("XREF");
-	    $adaptor->store($ceentry,$transl_dbid,"Translation");
+	  #print STDERR "$db3\t$ce\n";
+	  my $ceentry = Bio::EnsEMBL::DBEntry->new
+	    ( -adaptor => $adaptor,
+	      -primary_id => $ce,
+	      -display_id => $ce,
+	      -version => 1,
+	      -release => 1,
+	      -dbname => $db3);
+	  $ceentry->status("KNOWNXREF");
+	  if($transl_dbid == 0){
+	    die "have no translation_id $!";
+	  }
+	  #print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$transl_dbid."\n";
+	  $adaptor->store($ceentry,$transl_dbid,"Translation");
 	}
-    }
-}
+      }
+  }
 ###############
 #Some OO stuff#
 ###############

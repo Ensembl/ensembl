@@ -59,12 +59,7 @@ open (OUT,">$out") || die "Can't open OUTFILE $out\n";
 #First read the SPTR file in swiss format
 print STDERR "Reading SPTR file\n";
 
-
-
-
-print STDERR "parseing sp file\n";
 my ($swiss, $ac, $id) = &parse_sp_file($sptr_swiss);
-print STDERR "processing sp lines\n";
 &process_parsed_sp($swiss, $ac, $id, \*OUT);
 
 
@@ -168,7 +163,6 @@ if ($organism eq "human") {
 #Get Xref mapping specifically for mouse.
 if ($organism eq "mouse") {
     my %mgi2sp;
-    print STDERR "Getting Xrefs specifically for mouse\n";
     open (MGISP, "$mgi_sp") || die "Can't open $mgi_sp\n";
     while (<MGISP>) {
 	chomp;
@@ -176,29 +170,47 @@ if ($organism eq "mouse") {
       	
 	my @sp = split(/\s/,$sps);
 	
-#put in hash all of the SP entries which correspond to an MGI (this will be used later)
+	#put in hash all of the SP entries which correspond to an MGI (this will be used later)
 	$mgi2sp{$mgi} = $sps;
 	
-	foreach my $s(@sp) {
-	    print OUT "$s\tSPTR\t$mgi\tMGI\t$mgi\t\tXREF\n";
-	}
     }
     open (MGILOC, "$mgi_locus") || die "Can't open $mgi_locus\n";
-    
+    my %mgi_got;
+    my %mgi_syns;
     while (<MGILOC>) {
-#The input file gives us MGI to LOCUS, we want SP to LOCUS, thus we use the hash %mgi2sp
+      #The input file gives us MGI to LOCUS, we want SP to LOCUS, thus we use the hash %mgi2sp
+      chomp;
+      my ($mgi,$locus) = split (/\t/,$_);
+      if($mgi_got{$mgi}){
+	if(!$mgi_syns{$mgi}){
+	  $mgi_syns{$mgi} = [];
+	  push(@{$mgi_syns{$mgi}}, $locus);
+	}else{
+	  push(@{$mgi_syns{$mgi}}, $locus);
+	}	    
+      }else{
+	$mgi_got{$mgi} = $locus;
+      }
+      
+    }
 	
-	chomp;
-	my ($mgi,$locus) = split (/\t/,$_);
+    my @mgi_ids = keys(%mgi_got);
+    foreach my $mgi(@mgi_ids){
+      my @syns;
+      my $syns;
+      if($mgi_syns{$mgi}){
+	@syns = @{$mgi_syns{$mgi}};
+	$syns = join(';',@syns);
+      }
+      my $locus = $mgi_got{$mgi};
+      if ($mgi2sp{$mgi}) {
+	#There can be many SPs for one MGI
+	my @swiss = split (/\s/,$mgi2sp{$mgi}); 
 	
-	if ($mgi2sp{$mgi}) {
-#There can be many SPs for one MGI
-	    my @swiss = split (/\s/,$mgi2sp{$mgi}); 
-	    
-	    foreach my $sw(@swiss) {
-		print OUT "$sw\tSPTR\t$locus\tLOCUS\t$locus\t\tXREF\n";
-	    }
+	foreach my $sw(@swiss) {
+	  print OUT "$sw\tSPTR\t$mgi\tMarkerSymbol\t$locus\t$syns\tXREF\n";
 	}
+      }
     }
 }
 
