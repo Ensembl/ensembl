@@ -15,7 +15,7 @@ This document gives a high-level description of the tables that make up the EnsE
 ||4a||Analyze genes - populate protein_feature, xref tables, interpro||
 ||4b||ID mapping||
 
-This document refers to version ''15'' of the EnsEMBL core schema. You are looking at revision ''$Revision$''of this document.
+This document refers to version ''20'' of the EnsEMBL core schema. You are looking at revision ''1.4''of this document.
 
 
 '''Diagrams:'''
@@ -57,8 +57,11 @@ This document refers to version ''15'' of the EnsEMBL core schema. You are looki
 '''Features and analyses'''
 
  * analysis
+ * density_feature
+ * density_type
  * dna_align_feature
  * map
+ * map_density
  * marker
  * marker_feature
  * marker_map_location
@@ -457,6 +460,42 @@ Tables:
 Concepts:
 
  * co-ordinates  - 
+
+  
+
+    
+===density_feature===
+.
+'''See also:'''
+
+
+Tables:
+
+ * density_type - 
+
+ 
+
+    
+===density_type===
+.
+'''See also:'''
+
+
+Tables:
+
+ * density_feature - 
+
+ 
+
+    
+===map_density===
+.
+'''See also:'''
+
+
+Tables:
+
+ * density_feature - 
 
     
 

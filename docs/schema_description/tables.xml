@@ -565,6 +565,54 @@
 
     </table>
 
+  <!-- ============================================================ -->
+
+    <table>
+      
+      <name>density_feature</name>
+
+      <description>.</description>
+      
+      <used></used>
+      
+      <see>
+	<tableref name="density_type" reason=""/>
+      </see>
+
+    </table>
+
+ <!-- ============================================================ -->
+
+    <table>
+      
+      <name>density_type</name>
+
+      <description>.</description>
+      
+      <used></used>
+      
+      <see>
+	<tableref name="density_feature" reason=""/>
+      </see>
+
+    </table>
+
+ <!-- ============================================================ -->
+
+    <table>
+      
+      <name>map_density</name>
+
+      <description>.</description>
+      
+      <used></used>
+      
+      <see>
+	<tableref name="density_feature" reason=""/>
+      </see>
+
+    </table>
+
     <!-- ============================================================ -->
 
     <table>
