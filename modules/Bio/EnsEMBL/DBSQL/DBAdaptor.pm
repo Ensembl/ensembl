@@ -51,11 +51,9 @@ use Bio::EnsEMBL::DBSQL::DBConnection;
 
 =head2 new
 
-  Arg [1]    : string SOURCE 
-               The source name of the database.  This may be removed soon.
-  Arg [2]    : Bio::EnsEMBL::DBSQL::DBAdaptor DNADB 
-               The dna database to be attached to this database.  This may also
-               be changed.
+  Arg [-DNADB]: (optional) Bio::EnsEMBL::DBSQL::DBAdaptor DNADB 
+               All sequence, assembly, contig information etc, will be
+                retrieved from this database instead.              
   Arg [..]   : Other args are passed to superclass 
                Bio::EnsEMBL::DBSQL::DBConnection
   Example    : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
@@ -76,42 +74,13 @@ sub new {
   #call superclass constructor
   my $self = $class->SUPER::new(@args);
   
-  my ( $source, $dnadb ) = $self->_rearrange([qw(SOURCE DNADB)],@args);  
-
-  if(defined $source) {
-    $self->source($source);
-  }
+  my ( $dnadb ) = $self->_rearrange([qw(DNADB)],@args);  
 
   if(defined $dnadb) {
     $self->dnadb($dnadb);
   }
 
   return $self;
-}
-
-
-=head2 source
-
-  Arg [1]    : (optional) string $source
-               The source of info in the database connected to (e.g. 'embl') 
-  Example    : $db_adaptor->source('sanger');
-  Description: Sets/Gets the source or human readable name of the genes in 
-               the connected database. For example for the sanger db the source
-               would be 'sanger'. 
-  Returntype : string
-  Exceptions : none 
-  Caller     : Bio::EnsEMBL::GeneAdaptor  Bio::EnsEMBL::LiteGeneAdaptor EnsWeb 
-
-=cut
-
-sub source {
-  my ($self, $source) = @_;
-
-  if(defined $source) {
-    $self->{'_source'} = $source;
-  }
-
-  return $self->{'_source'};
 }
 
 
@@ -950,5 +919,21 @@ sub add_ExternalFeatureFactory{
    $self->add_ExternalFeatureAdaptor($value);
 }
 
+
+
+
+
+#
+# sub DEPRECATED METHODS
+#
+#
+
+sub source {
+  my $self = shift;
+
+  $self->warn("DBAdaptor::source method is deprecated - do not use" .
+	     $self->stack_trace_dump);
+  
+}
 
 1;

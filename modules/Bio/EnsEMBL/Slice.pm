@@ -34,10 +34,6 @@ This modules is part of the Ensembl project http://www.ensembl.org
 Questions can be posted to the ensembl-dev mailing list:
 ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
-
 =cut
 
 
@@ -56,7 +52,6 @@ use Bio::PrimarySeqI;
 use Bio::EnsEMBL::Tile;
 
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
-
 
 
 =head2 new
@@ -593,7 +588,9 @@ sub get_all_SNPs {
 
 =head2 get_all_Genes
 
-  Arg [1]    : (optional) boolean $empty_flag 
+  Arg [1]    : (optional) string $logic_name
+               The name of the analysis used to generate the genes to retrieve 
+  Arg [2]    : (optional) boolean $empty_flag 
   Example    : @genes = $slice->get_all_Genes;
   Description: Retrieves all genes that overlap this slice.  The empty flag is 
                used by the web code and is used to retrieve light weight genes
@@ -608,40 +605,18 @@ sub get_all_SNPs {
 =cut
 
 sub get_all_Genes{
-   my ($self, $empty_flag) = @_;
+   my ($self, $logic_name, $empty_flag) = @_;
 
    #caching is performed on a per slice basis in the GeneAdaptor
-   return $self->adaptor->db->get_GeneAdaptor->fetch_all_by_Slice($self, 
+   return $self->adaptor->db->get_GeneAdaptor->fetch_all_by_Slice($self,
+								  $logic_name,
 								  $empty_flag);
 }
 
 
 
-=head2 get_all_Genes_by_source
 
-  Arg [1]    : string $source 
-  Arg [2]    : (optional) boolean $empty_flag
-  Example    : @genes = @{$slice->get_all_Genes_by_souce('core')};
-  Description: Retrieves genes that overlap this slice from database $source.  
-               This is primarily used by web code to retrieve subsets of genes
-               from the lite database (which contains an sets of genes from 
-               several databases).   The empty flag indicates light weight 
-               genes that only have a start, end and strand should be used
-               (only works if lite db is available). If the lite database has 
-               been attached to the core database this method will use the 
-               lite database (and genes will not be as full featured).
-  Returntype : listref of Bio::EnsEMBL::Genes
-  Exceptions : none
-  Caller     : contigview
 
-=cut
-
-sub get_all_Genes_by_source{
-   my ($self, $source, $empty_flag) = @_;
-   my @out = 
-     grep { $_->source eq $source } @{$self->get_all_Genes($empty_flag)};
-   return \@out;
-}
 
 
 
@@ -1352,5 +1327,26 @@ sub accession_number {
 
 # sub DEPRECATED METHODS #
 ###############################################################################
+
+
+=head2 get_all_Genes_by_source
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_Genes instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_all_Genes_by_source {
+  my ($self, @args) = @_;
+
+  $self->warn("call to deprecated method get_all_Genes_by_source.  " .
+              "Use get_all_Genes instead\n " . join(':', caller));
+
+  return $self->get_all_Genes;
+}
 
 1;

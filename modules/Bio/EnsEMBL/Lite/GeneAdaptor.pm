@@ -30,6 +30,7 @@ package Bio::EnsEMBL::Lite::GeneAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Transcript;
+use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Utils::Cache; #CPAN LRU Cache
 
@@ -166,12 +167,14 @@ sub fetch_by_gene_id_list {
 =cut
 
 sub fetch_all_by_Slice {
-    my ( $self, $slice, $empty_flag ) = @_;
+    my ( $self, $slice, $logic_name, $empty_flag ) = @_;
+
+    my $key = $slice->name . ":$logic_name";
 
     if($empty_flag) {
     # return from cache or the _get_empty_Genes fn while caching results....
-        return $self->{'_slice_empty_gene_cache'}{$slice->name()} ||= 
-                   $self->_get_empty_Genes($slice);
+        return $self->{'_slice_empty_gene_cache'}{$key} ||= 
+                   $self->_get_empty_Genes($slice, $logic_name);
     }
 
   #check the cache which uses the slice name as it key
@@ -179,51 +182,41 @@ sub fetch_all_by_Slice {
         return $self->{'_slice_gene_cache'}{$slice->name()};
     }
 
-    my $sth = $self->prepare( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
+    my $where = 'WHERE t.chr_name = ? and t.chr_start <= ? and 
+                       t.chr_start >= ? and t.chr_end >= ? 
+                 AND g.gene_id = t.gene_id
+                 AND g.db = t.db';
+
+    my @bind_vals = ( $slice->chr_name, 
+		      $slice->chr_end, 
+		      $slice->chr_start - $MAX_TRANSCRIPT_LENGTH, 
+		      $slice->chr_start);
+
+    if($logic_name) {
+      $where .= " and g.analysis = ?";
+      push @bind_vals, $logic_name;
+    }
+
+    my $sth = $self->prepare(       
+      "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
               t.chr_strand, t.transcript_name, t.translation_id, 
               t.translation_name, t.gene_id, t.type, t.gene_name, t.db, 
-              t.exon_structure, t.external_name, t.external_status, t.exon_ids, t.external_db, 
-              t.coding_start, t.coding_end, 
+              t.exon_structure, t.external_name, t.external_status, 
+              t.exon_ids, t.external_db, t.coding_start, t.coding_end, 
               g.external_name as gene_external_name, 
               g.external_db as gene_external_db, 
               g.external_status as gene_external_status, 
-              g.type as gene_type 
-        FROM  transcript t 
-    LEFT JOIN gene g 
-           ON g.gene_id = t.gene_id
-          AND g.db = t.db 
-        WHERE t.chr_name = ? and t.chr_start <= ? and t.chr_start >= ? and
-              t.chr_end >= ?"
-    );
+              g.type as gene_type,
+              g.analysis as analysis
+        FROM  transcript t, gene g 
+        $where");
 
-    $sth->execute( $slice->chr_name, $slice->chr_end, 
-		   $slice->chr_start - $MAX_TRANSCRIPT_LENGTH, 
-		   $slice->chr_start );
+    $sth->execute( @bind_vals );
  
-    return $self->{'_slice_gene_cache'}{$slice->name} =
+    return $self->{'_slice_gene_cache'}{$key} =
                 $self->_objects_from_sth( $sth, $slice );
-
 }
 
-
-=head2 fetch_by_Slice
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_Slice instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_Slice {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
-
-  return $self->fetch_all_by_Slice(@args);
-}
 
 
 sub fetch_by_DBEntry {
@@ -262,7 +255,8 @@ sub fetch_by_stable_id {
               t.external_db, t.coding_start, t.coding_end, 
               g.external_name as gene_external_name, 
               g.external_status as gene_external_status, 
-              g.external_db as gene_external_db, g.type as gene_type 
+              g.external_db as gene_external_db, g.type as gene_type
+              g.analysis as analysis 
         FROM  transcript t 
     LEFT JOIN gene g 
            ON g.gene_id = t.gene_id
@@ -298,7 +292,8 @@ sub fetch_by_transcript_stable_id {
               t.external_db, t.coding_start, t.coding_end, 
               g.external_name as gene_external_name, 
               g.external_status as gene_external_status, 
-              g.external_db as gene_external_db, g.type as gene_type 
+              g.external_db as gene_external_db, g.type as gene_type
+              g.analysis as analysis 
         FROM  transcript t 
     LEFT JOIN gene g 
            ON g.gene_id = t.gene_id
@@ -328,7 +323,9 @@ sub _objects_from_sth {
 
   my %exon_cache;
   my %gene_cache;
+  my %analysis_cache;
   my $core_db_adaptor = $self->db->get_db_adaptor('core');
+
 
   my ( $gene, $transcript, $translation ); 
   my ( $exon_id );
@@ -347,8 +344,13 @@ sub _objects_from_sth {
       $gene->stable_id( $hr->{'gene_name'} );
       $gene->dbID( $hr->{'gene_id'} );
       $gene->adaptor( $core_db_adaptor->get_GeneAdaptor() );
-      $gene->source( $hr->{'db'} );
+      #$gene->source( $hr->{'db'} );
       $gene->strand( $hr->{'chr_strand'} );
+
+      #set the gene's analysis
+      $analysis_cache{$hr->{'analysis'}} ||= 
+	Bio::EnsEMBL::Analysis->new(-logic_name => $hr->{'analysis'}); 
+      $gene->analysis($analysis_cache{$hr->{'analysis'}});
 
       if( defined $hr->{'gene_type' } ) {
         $gene->external_name( $hr->{'gene_external_status'} );
@@ -549,28 +551,45 @@ sub _objects_from_sth {
 =cut
 
 sub _get_empty_Genes {
-  my ($self, $slice) = @_;
+  my ($self, $slice, $logic_name) = @_;
 
   my $chr_start = $slice->chr_start();
   my $chr_end = $slice->chr_end();
   my $chr_name = $slice->chr_name();
+
+
+  my $where = "WHERE  g.chr_name = ? AND g.chr_start <= ? AND 
+              g.chr_start >= ? AND g.chr_end >= ?";
+
   
+  my @bind_vals = ( $chr_name, 
+		    $chr_end,
+		    $chr_start - $MAX_TRANSCRIPT_LENGTH,
+		    $chr_start );
+
+
+  if($logic_name) {
+    $where .= " and g.analysis_id = ?";
+    push @bind_vals, $logic_name;
+  } 
+
   my $sth = $self->prepare
     ( "SELECT g.db, g.gene_id, g.gene_name, g.chr_name, g.chr_start, 
-              g.chr_end, g.chr_strand, g.type, g.external_name, g.external_db, g.external_status
+              g.chr_end, g.chr_strand, g.type, g.external_name, g.external_db,
+              g.external_status, g.analysis
        FROM   gene g
-       WHERE  g.chr_name = ? AND g.chr_start <= ? AND 
-              g.chr_start >= ? AND g.chr_end >= ?" );
+      $where"
+    );
 
-  $sth->execute( $chr_name, $chr_end,
-		 $chr_start - $MAX_TRANSCRIPT_LENGTH,
-		 $chr_start );
+  $sth->execute(@bind_vals);
   
   my @out = ();
 
   my $core_gene_adaptor = $self->db->get_db_adaptor('core')->get_GeneAdaptor;
 
   my $hashref;
+
+  my %analysis_cache;
 
   while($hashref = $sth->fetchrow_hashref()) {
     my $gene = new Bio::EnsEMBL::Gene();
@@ -579,9 +598,14 @@ sub _get_empty_Genes {
     $gene->stable_id( $hashref->{'gene_name'} );
     $gene->dbID( $hashref->{'gene_id'} );
     $gene->adaptor( $core_gene_adaptor );
-    $gene->source( $hashref->{'db'} );
+    #$gene->source( $hashref->{'db'} );
     $gene->strand( $hashref->{'chr_strand'} );
 
+    my $analysis = $analysis_cache{$hashref->{'analysis'}} ||= 
+      Bio::EnsEMBL::Analysis->new(-logic_name => $hashref->{'analysis'});
+
+    $gene->analysis($analysis);
+				  
     if( defined $hashref->{'type' } ) {
       $gene->external_status( $hashref->{'external_status'} );
       $gene->external_name( $hashref->{'external_name'} );
@@ -641,7 +665,8 @@ sub fetch_all_by_external_name {
               t.coding_start, t.coding_end,
               g.external_name as gene_external_name,
               g.external_db as gene_external_db, g.external_status as gene_external_status,
-              g.type as gene_type
+              g.type as gene_type,
+              g.analysis as analysis
          FROM transcript t, gene_xref as gx, gene as g
         where g.gene_id = t.gene_id AND g.db = t.db and t.db = ? and gx.external_name = ? and gx.gene_id = g.gene_id
         order by g.gene_name, t.gene_name"
@@ -683,7 +708,7 @@ sub _get_empty_Genes_by_external_name {
     $gene->stable_id( $hashref->{'gene_name'} );
     $gene->dbID( $hashref->{'gene_id'} );
     $gene->adaptor( $core_gene_adaptor );
-    $gene->source( $hashref->{'db'} );
+    #$gene->source( $hashref->{'db'} );
     $gene->strand( $hashref->{'chr_strand'} );
 
     if( defined $hashref->{'type' } ) {

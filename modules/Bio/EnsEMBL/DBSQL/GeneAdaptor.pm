@@ -194,7 +194,6 @@ sub fetch_by_dbID {
       $ana = $self->db->get_AnalysisAdaptor->fetch_by_dbID($arr[4]);
       $gene->analysis($ana);
       $gene->type($arr[5]);
-      $gene->source($self->db->source());
       $first = 0;
     }
 
@@ -435,6 +434,7 @@ sub fetch_all_by_contig_list{
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                the slice to fetch genes from
+  Arg [2]
   Example    : $genes = $gene_adaptor->fetch_all_by_Slice($slice);
   Description: Retrieves all genes which are present on a slice
   Returntype : listref of Bio::EnsEMBL::Genes in slice coordinates
@@ -444,21 +444,21 @@ sub fetch_all_by_contig_list{
 =cut
 
 sub fetch_all_by_Slice {
-  my ( $self, $slice, $type ) = @_;
+  my ( $self, $slice, $logic_name ) = @_;
 
   my @out = ();
 
+  $logic_name ||= '';
+
+  my $key = $slice->name .":" . $logic_name;
+
   #check the cache which uses the slice name as it key
-  if($self->{'_slice_gene_cache'}{$slice->name()}) {
-    return $self->{'_slice_gene_cache'}{$slice->name()};
+  if($self->{'_slice_gene_cache'}{$key}) {
+    return $self->{'_slice_gene_cache'}{$key};
   }
 
   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type
     ( $slice->assembly_type() );
-  
-  $mapper->register_region( $slice->chr_name(),
-			    $slice->chr_start(),
-			    $slice->chr_end());
   
   my @cids = $mapper->list_contig_ids( $slice->chr_name(),
 				       $slice->chr_start(),
@@ -468,15 +468,31 @@ sub fetch_all_by_Slice {
   if ( scalar (@cids) == 0 ) {
     return [];
   }
-  
+
   my $str = "(".join( ",",@cids ).")";
-  
+
+  my $where = "WHERE e.contig_id in $str 
+               AND   et.exon_id = e.exon_id 
+               AND   et.transcript_id = t.transcript_id
+               AND   g.gene_id = t.gene_id";
+
+  if($logic_name) {
+    #determine analysis id via logic_name
+    my $analysis = 
+      $self->db->get_AnalysisAdaptor()->fetch_by_logic_name($logic_name);
+    unless(defined($analysis) && $analysis->dbID()) {
+      $self->warn("No analysis for logic name $logic_name exists");
+      return [];
+    }
+    
+    my $analysis_id = $analysis->dbID;
+    $where .= " AND g.analysis_id = $analysis_id";
+  }
+    
   my $sql = "
     SELECT distinct(t.gene_id)
-    FROM   transcript t,exon_transcript et,exon e 
-    WHERE  e.contig_id in $str 
-    AND    et.exon_id = e.exon_id 
-    AND    et.transcript_id = t.transcript_id";
+    FROM   transcript t,exon_transcript et,exon e, gene g 
+    $where";
     
   my $sth = $self->db->prepare($sql);
   $sth->execute;
@@ -493,7 +509,7 @@ sub fetch_all_by_Slice {
  }
 
   #place the results in an LRU cache
-  $self->{'_slice_gene_cache'}{$slice->name} = \@out;
+  $self->{'_slice_gene_cache'}{$key} = \@out;
 
   return \@out;
 }
@@ -1071,7 +1087,7 @@ sub update {
    $sth->execute($gene->type, 
 		 $gene->analysis->dbID, 
 		 $xref_id, 
-		 $tcout, 
+		 $tcount, 
 		 $gene->dbID);
 }
 

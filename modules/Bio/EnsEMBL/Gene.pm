@@ -1,8 +1,5 @@
-
 #
 # BioPerl module for Gene
-#
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -20,48 +17,45 @@ Confirmed genes. Basically has a set of transcripts
 
 =head1 DESCRIPTION
 
-Needs more description.
+A representation of a Gene within the ensembl system. A gene is basically a 
+set of one or more alternative transcripts.
 
 =head1 CONTACT
 
-Describe contact details here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+Contact the EnsEMBL development mailing list for info <ensembl-dev@ebi.ac.uk>
 
 =cut
-
-
-# Let the code begin...
-
 
 package Bio::EnsEMBL::Gene;
 use vars qw(@ISA);
 use strict;
-
-# Object preamble - inheriets from Bio::SeqFeature::Generic
 
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::TranscriptI;
 use Bio::Annotation::DBLink;
 use Bio::EnsEMBL::DBEntry;
 
-
 @ISA = qw(Bio::EnsEMBL::Root);
-# new() is inherited from Bio::Root::Object
 
-# _initialize is where the heavy stuff will happen when new is called
+
+=head2 new
+
+  Arg [1]    : none
+  Example    : $gene = Bio::EnsEMBL::Gene->new();
+  Description: Creates a new gene object
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub new {
   my($class,@args) = @_;
 
   my $self = bless {}, $class;
-
   $self->{'_transcript_array'} = [];
-#  $self->{'_db_link'} = [];
-# set stuff in self from @args
-  return $self; # success - we hope!
+
+  return $self;
 }
 
 
@@ -245,29 +239,6 @@ sub chr_name {
   } 
 
   return $self->{'_chr_name'};
-}
-
-
-=head2 source
-
-  Arg [1]    : string $source
-  Example    : none
-  Description: get/set for attribute source
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub source {
-  my ($self, $source) = @_;
-
-  if(defined $source) {
-    $self->{'_source'} = $source;
-  }
-
-  return $self->{'_source'};
 }
 
 
