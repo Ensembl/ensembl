@@ -166,7 +166,7 @@ sub seq {
        $seq_string = 'N' x $self->_vmap->left_overhang();
    }
    
-   #Go through each MapContig
+   #Goes through each MapContig
    foreach my $mc ( @map_contigs ) {
        my $tseq = $mc->contig->primary_seq();
        
