@@ -93,7 +93,7 @@ open F, $input_file ||
 
 while (my $line = <F>) {
   next if ($line =~ /^\#.*$/);
-  if ($line =~ /^(\S+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+)$/) {
+  if ($line =~ /^(\S+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+)\s*$/) {
     my ($src_srv,$src_port,$src_db,$dest_srv,$dest_port,$dest_db) = ($1,$2,$3,$4,$5,$6);
     unless ($dest_srv =~ /^$generic_working_host.*$/) {
       my $generic_destination_server = $dest_srv;
