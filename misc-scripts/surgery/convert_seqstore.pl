@@ -172,6 +172,27 @@ $sql =
 execute($dbi, $sql);
 
 # ----------------------------------------------------------------------
+# Translation
+# Now includes transcript_id
+
+debug("Building translation table");
+
+$sql = 
+  "INSERT INTO $target.translation " .
+  "SELECT tl.translation_id, ts.transcript_id, tl.seq_start, tl.start_exon_id, tl.seq_end, tl.end_exon_id " .
+  "FROM $source.transcript ts, $source.translation tl " .
+  "WHERE ts.translation_id = tl.translation_id";
+#print $sql . "\n";
+execute($dbi, $sql);
+
+# ----------------------------------------------------------------------
+# Assembly
+
+debug("Building assembly table");
+
+# TBC
+
+# ----------------------------------------------------------------------
 # Feature tables
 # Note that we can just rename contig_* to set_region_* since the
 # contig IDs were copied verbatim into seq_region
