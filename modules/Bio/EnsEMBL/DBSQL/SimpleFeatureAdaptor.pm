@@ -121,7 +121,15 @@ sub fetch_by_contig_id_constraint{
 	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
        }
 
-       my $out = $self->_new_feature($start, $end, $strand, $display, $ana{$analysis_id}, $contig->dbID, $contig->seq);
+       my $seq = $contig->seq;
+       unless ($seq->isa("Bio::PrimarySeq")){
+	   $seq =~ s/[\n\s]//g;
+	   $seq = Bio::PrimarySeq->new(-seq     => $seq,
+				       -moltype => 'dna'
+				       );
+       }
+
+       my $out = $self->_new_feature($start, $end, $strand, $display, $ana{$analysis_id}, $contig->dbID, $seq);
       
        push(@f,$out);
    }
