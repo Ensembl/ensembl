@@ -321,6 +321,28 @@ sub get_Protfeat_Adaptor {
     return $update_obj;
 }
 
+=head2 get_MetaContainer
+
+ Title   : get_Meta_Container
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_MetaContainer {
+    my ($self) = @_;
+    if( !exists $self->{_metacontainer} ) {
+      $self->{_metacontainer} = 
+	Bio::EnsEMBL::DBSQL::MetaContainer->new($self);
+    } 
+ 
+    return $self->{_metacontainer};
+}
+
 =head2 get_all_fpcctg_ids
 
  Title   : get_all_fpcctg_ids
