@@ -4,19 +4,19 @@
 ################################################################################
 # SPECIES
 
-INSERT INTO species (taxonomy_id, name) VALUES (9606,  'homo_sapiens');
-INSERT INTO species (taxonomy_id, name) VALUES (10090, 'mus_musculus');
-INSERT INTO species (taxonomy_id, name) VALUES (10116, 'rattus_norvegicus');
-INSERT INTO species (taxonomy_id, name) VALUES (31033, 'fugu_rubripes');
-INSERT INTO species (taxonomy_id, name) VALUES (7165,  'anopheles_gambiae');
-INSERT INTO species (taxonomy_id, name) VALUES (7227,  'drosophila_melanogaster');
-INSERT INTO species (taxonomy_id, name) VALUES (6239,  'caenorhabditis_elegans');
-INSERT INTO species (taxonomy_id, name) VALUES (6238,  'caenorhabditis_briggsae');
-INSERT INTO species (taxonomy_id, name) VALUES (7955,  'danio_rerio');
-INSERT INTO species (taxonomy_id, name) VALUES (9598,  'pan_troglodytes');
-INSERT INTO species (taxonomy_id, name) VALUES (9031,  'gallus_gallus');
-INSERT INTO species (taxonomy_id, name) VALUES (99883, 'tetraodon_nigroviridis');
-INSERT INTO species (taxonomy_id, name) VALUES (170,   'apis_mellifera');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (9606,  'homo_sapiens',            'human,hsapiens,homosapiens');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (10090, 'mus_musculus',            'mouse,mmusculus,musmusculus');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (10116, 'rattus_norvegicus',       'rat,rnovegicus,rattusnorvegicus');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (31033, 'fugu_rubripes',           'pufferfish,fugu,frubripes,fugurubripes');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (7165,  'anopheles_gambiae',       'mosquito,anopheles,agambiae,anophelesgambiae');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (7227,  'drosophila_melanogaster', 'drosophila,dmelongaster,drosophilamelanogaster' );
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (6239,  'caenorhabditis_elegans',  'elegans,celegans,caenorhabditiselegans');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (6238,  'caenorhabditis_briggsae', 'briggsae,cbriggsae,caenorhabditisbriggsae');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (7955,  'danio_rerio',             'zebrafish,danio,drerio,daniorerio' );
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (9598,  'pan_troglodytes',         'chimp,chimpanzee,ptroglodytes,pantroglodytes');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (9031,  'gallus_gallus',           'chicken,chick,ggallus,gallusgallus' );
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (99883, 'tetraodon_nigroviridis',  'tetraodon,tnigroviridis,tetraodonnigroviridis');
+INSERT INTO species (taxonomy_id, name, aliases) VALUES (170,   'apis_mellifera',          'honeybee,honey_bee,apis,amellifera,apismellifera');
 
 ################################################################################
 # SOURCES - types of data we can read
