@@ -562,64 +562,6 @@ sub _create_db_name {
 
 
 
-sub do_sql_file {
-  my( $self, @files ) = @_;
-  local *SQL;
-  my $i = 0;
-  my $dbh = $self->db_handle;
-  
-  my $comment_strip_warned=0;
-
-  foreach my $file (@files) {
-    my $sql = '';
-    open SQL, $file or die "Can't read SQL file '$file' : $!";
-    while (<SQL>) {
-      # careful with stripping out comments; quoted text
-      # (e.g. aligments) may contain them. Just warn (once) and ignore
-      if (    /'[^']*#[^']*'/ 
-	|| /'[^']*--[^']*'/ ) {
-	  if ( $comment_strip_warned++ ) { 
-	    # already warned
-	  } else {
-	    $self->warn("#################################\n");
-	    $self->warn("# found comment strings inside quoted string;" .
-	         "not stripping, too complicated: $_\n");
-	    $self->warn("# (continuing, assuming all these they are simply " .
-	      "valid quoted strings)\n");
-	    $self->warn("#################################\n");
-	  }
-	} else {
-	  s/(#|--).*//;       # Remove comments
-	}
-        next unless /\S/;   # Skip lines which are all space
-        $sql .= $_;
-        $sql .= ' ';
-      }
-  close SQL;
-        
-    #Modified split statement, only semicolumns before end of line,
-    #so we can have them inside a string in the statement
-    #\s*\n, takes in account the case when there is space before the new line
-    foreach my $s (grep /\S/, split /;[ \t]*\n/, $sql) {
-      $s =~ s/\;\s*$//g;
-      $self->_validate_sql($s);
-      $dbh->do($s);
-      $i++
-    }
-  }
-  return $i;
-}                                       # do_sql_file
-
-sub _validate_sql {
-  my ($self, $statement) = @_;
-  if ($statement =~ /insert/i) {
-    $statement =~ s/\n/ /g; #remove newlines
-    die ("INSERT should use explicit column names " .
-	 "(-c switch in mysqldump)\n$statement\n")
-      unless ($statement =~ /insert.+into.*\(.+\).+values.*\(.+\)/i);
-  }
-}
-
 
 sub cleanup {
   my $self = shift;
