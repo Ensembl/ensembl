@@ -102,17 +102,24 @@ use Bio::EnsEMBL::Virtual::Map;
 
 @ISA = qw(Bio::EnsEMBL::DB::ContigI);
 
+sub _make_datastructures {
+    my $self = shift;
+
+    # data structures for caching and coordinating
+    # top_SeqFeature call with EMBL dumping (ie, repressing BLAST hits in EMBL)
+    $self->{'_sf_cache'} = {};
+    $self->{'_skip_feature'} = {};
+    my $vmap=Bio::EnsEMBL::Virtual::Map->new();
+    $self->_vmap($vmap);
+    return $self;
+}
 
 sub new {
     my ($class,@args) = @_;
     
     my $self = {};
     bless $self,$class;
-
-    # data structures for caching and coordinating
-    # top_SeqFeature call with EMBL dumping (ie, repressing BLAST hits in EMBL)
-    $self->{'_sf_cache'} = {};
-    $self->{'_skip_feature'} = {};
+    $self->_make_datastructures();
 
     my ($focuscontig,$focusposition,$ori,$leftsize,$rightsize,$clone) = 
 	$self->_rearrange([qw( 
@@ -158,6 +165,8 @@ sub new {
     return $self;
 }
 
+			 
+		    
 =head1 New Virtual::Contig functions.
 
 =head2 extend

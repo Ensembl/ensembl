@@ -67,6 +67,7 @@ use Bio::EnsEMBL::DBSQL::Update_Obj;
 use Bio::EnsEMBL::DBSQL::Feature_Obj;
 use Bio::EnsEMBL::DBSQL::RawContig;
 use Bio::EnsEMBL::DBSQL::Clone;
+use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
 use DBI;
@@ -2169,6 +2170,24 @@ sub feature_Obj {
 
     return $self->{_feature_obj};
 
+}
+
+=head2 get_StaticGoldenPathAdaptor
+
+ Title   : get_StaticGoldenPathAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_StaticGoldenPathAdaptor{
+   my ($self,@args) = @_;
+
+   return Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor->new(-dbobj => $self);
 }
 
 

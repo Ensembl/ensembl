@@ -94,7 +94,7 @@ sub new {
     $self->rawcontig_start($rawcontig_start);
 
     if( $self->rawcontig_end > $self->contig->length ) {
-	$self->throw("Attempting to build a mapcontig $start:$end starting at $rawcontig_start which is greater than the length of the contig ".$self->contig->length);
+	$self->throw("Attempting to build a mapcontig $start:$end starting at $rawcontig_start which is greater than the length of the contig ".$self->contig->length." on ".$self->contig->id);
     }
 
     return $self;
