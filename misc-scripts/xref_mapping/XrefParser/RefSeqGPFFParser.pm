@@ -86,7 +86,7 @@ sub create_xrefs {
       
       my ($acc) = $entry =~ /ACCESSION\s+(\S+)/;
       my ($ver) = $entry =~ /VERSION\s+(\S+)/;
-      my ($description) = $entry =~ /DEFINITION\s+([^[]*)/s;
+      my ($description) = $entry =~ /DEFINITION\s+([^[]+)/s;
       print $entry if (length($description) == 0);
       $description =~ s/\nACCESSION.*//s;
       $description =~ s/\n//g;
