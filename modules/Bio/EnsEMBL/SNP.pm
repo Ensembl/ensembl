@@ -147,10 +147,10 @@ sub source_version {
 }
 
 
-=head2 display_id
+=head2 display_name
 
   Arg [1]    : none
-  Example    : print $snp->id();
+  Example    : print $snp->display_name();
   Description: This method returns a string that is considered to be
                the 'display' identifier.  For snps this is the
                returns the same thing as the id method.
@@ -160,7 +160,7 @@ sub source_version {
 
 =cut
 
-sub display_id {
+sub display_name {
   my $self = shift;
   return $self->id();
 }
