@@ -906,6 +906,49 @@ sub _each_ExternalFeatureFactory{
 }
 
 
+
+
+=head2 add_DASFeatureFactory
+
+ Title   : add_DASFeatureFactory
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_DASFeatureFactory{
+   my ($self,$value) = @_;
+
+   unless( ref $value && $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
+       $self->throw("[$value] is not a Bio::EnsEMBL::DB::ExternalFeatureFactoryI but it should be!");
+   }
+
+   push(@{$self->{'_das_ff'}},$value);
+}
+
+=head2 _each_DASFeatureFactory
+
+ Title   : _each_DASFeatureFactory
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _each_DASFeatureFactory{
+   my ($self) = @_;
+
+   return @{$self->{'_das_ff'}}
+}
+
+
 =head2 _analysis_cache
 
  Title   : _analysis_cache

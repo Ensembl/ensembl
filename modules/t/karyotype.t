@@ -4,7 +4,6 @@ BEGIN { $| = 1; print "1..15\n";
 
 END {print "not ok 1\n" unless $loaded;}
 
-use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor;
 

@@ -38,6 +38,7 @@ print "ok 1\n";    # 1st test passes.
 my $hash = {
     'schema_sql'    => ['../sql/archive_new.sql'],
     'module'        => 'Bio::EnsEMBL::Archive::DBSQL::DBAdaptor'
+
     };
 
 my $ens_test = EnsTestDB->new($hash);

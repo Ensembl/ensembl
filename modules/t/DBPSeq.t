@@ -25,7 +25,6 @@ BEGIN { $| = 1; print "1..9\n";
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
-use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBLoader;
 
 use lib 't';

@@ -57,13 +57,17 @@ use Bio::EnsEMBL::DBSQL::SQL;
 use Bio::EnsEMBL::Archive::DBSQL::VersionedSeqAdaptor;
 use Bio::EnsEMBL::Archive::DBSQL::SeqAdaptor;
 
+BEGIN {
+    print STDERR "\n\n**** Loading Archive ******\n\n";
+};
 
 @ISA = qw(Bio::Root::RootI);
 
 sub new {
   my($class, @args) = @_;
   
-  my $self = $class->SUPER::new(@args);
+  my $self = {};
+  bless $self,$class;
   
   my ($db,$host,$driver,$user,
       $password,$port,

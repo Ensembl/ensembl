@@ -27,7 +27,7 @@ END {print "not ok 1\n" unless $loaded;}
 
 use lib 't';
 use EnsTestDB;
-use Bio::EnsEMBL::DBSQL::Obj;
+
 use Bio::EnsEMBL::DBSQL::Protein_Adaptor;
 use Bio::EnsEMBL::Protein;
 

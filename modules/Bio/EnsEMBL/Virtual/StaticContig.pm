@@ -1062,6 +1062,64 @@ sub _fetch_SimpleFeatures_SQL_clause {
 }
 
 
+=head2 get_all_DASFeatures
+
+ Title   : get_all_DASFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_DASFeatures{
+   my ($self,@args) = @_;
+
+
+   if( defined $self->{'_das_cached_features'} ) {
+       return @{$self->{'_das_cached_features'}};
+   }
+
+   my @contig_features;
+   my @genomic_features;
+
+   my @rawcontigs = $self->_vmap->get_all_RawContigs();
+
+   foreach my $extf ( $self->dbobj->_each_DASFeatureFactory ) {
+       
+       if( $extf->can('get_Ensembl_SeqFeatures_DAS') ) {	# optimized fetch that can handle a list of contigs
+	   foreach my $sf ($extf->get_Ensembl_SeqFeatures_DAS($self->_chr_name,$self->_global_start,$self->_global_end,\@rawcontigs)) {
+	       if( $sf->seqname =~ /\./ ) {
+		   # raw contig feature
+		   push(@contig_features,$sf);
+	       } else {
+		   push(@genomic_features,$sf);
+	       }
+	   }
+	   
+       } else { # can't do list style contig fetches
+	   $self->throw("Got a DAS feature factory that can't do get_Ensembl_SeqFeatures_DAS");
+       }
+   }
+   
+
+   foreach my $f ( @contig_features ) {
+       if( defined $self->_convert_seqfeature_to_vc_coords($f) ) {
+	   push(@genomic_features, $f);
+       } elsif( $f->id eq '__ERROR__') { #Always push errors even if they aren't wholly within the VC
+	   push(@genomic_features, $f);
+       }
+   }
+   
+   $self->{'_das_cached_features'} = \@genomic_features;
+
+   return @genomic_features;
+}
+
+
+
 =head2 get_all_ExternalFeatures
 
  Title   : get_all_ExternalFeatures
@@ -1108,7 +1166,7 @@ sub get_all_ExternalFeatures{
        if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
 	   push(@web,$extf);
        } elsif( $extf->isa('Bio::EnsEMBL::ExternalData::DAS::DAS') ) {
-	   push(@das,$extf);
+	   $self->throw("Should add DAS feature factories to add_DASFeatureFactory");
        } else {
 	   push(@std,$extf);
        }
@@ -1191,54 +1249,6 @@ sub get_all_ExternalFeatures{
 
    &eprof_end("External-feature-std");
 
-   ## The DAS external feature factory is based on coordinates on contigs (at the moment)
-   ## The standara EFF system has been moved to use contig/clone internal IDs so we have to
-   ## make a special case for DAS (and possibly other) EFFs that know nothing about Ensembl
-   ## internal IDs.There are probably more efficient ways to do this....
-   ## what about DAS caching?
-
-   &eprof_start("External-feature-das");
-
-   if( scalar(@das) > 0 ) {
-
-	 foreach my $extf ( @das ) {
-	   if( $extf->can('get_Ensembl_SeqFeatures_contig_list') ) {	# optimized fetch that can handle a list of contigs
-		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig_list(\@rawcontigs)) {
-		       #$sf->seqname($contig->id); # check this
-		       push(@contig_features,$sf);
-		   }
-
-	   } else { # can't do list style contig fetches
-			foreach my $contig (@rawcontigs) {       
-				   &eprof_start("external_get_das".$extf);
-
-					if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
-					   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->id,$contig->seq_version,1,$contig->length,$contig->id)) {
-		    			   $sf->seqname($contig->id);
-		    			   push(@contig_features,$sf);
-					   }
-				   }
-				   if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
-					   foreach my $sf (
-
-							$extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$contig->embl_offset,$contig->embl_offset+$contig->length(),$contig->cloneid) ) {
-
-							my $start = $sf->start - $contig->embl_offset+1;
-							my $end   = $sf->end   - $contig->embl_offset+1;
-							$sf->start($start);
-							$sf->end($end);
-							$sf->seqname($contig->id);
-							push(@contig_features,$sf);
-					   }
-				   }
-
-				   &eprof_end("external_get_das".$extf);
-			   }
-		}
-	  }
-   }	    
-
-   &eprof_end("External-feature-das");
 
    &eprof_end("External-feature-get");
 

@@ -1016,7 +1016,7 @@ sub _translate_coherent{
        my $seq = $exon->seq();
        my $str = $seq->seq();
        
-       print STDERR "Exon has length ",$exon->length," and sequence length ",length($str),"\n";
+       #print STDERR "Exon has length ",$exon->length," and sequence length ",length($str),"\n";
 
        if( CORE::length( $str ) == 0 ) {
 	   $self->throw("Bad internal error - got a 0 length rstring...");

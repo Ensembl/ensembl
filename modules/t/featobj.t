@@ -31,7 +31,6 @@ END {print "not ok 1\n" unless $loaded;}
 
 use lib 't';
 use EnsTestDB;
-use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBSQL::Feature_Obj;
 
 $loaded = 1;
