@@ -520,6 +520,51 @@ sub get_all_VirtualGenes_startend{
    return @ret;
 }
 
+
+
+
+
+=head2 get_old_exons
+
+ Title   : get_old_exons
+ Usage   : foreach my $exon ( $contig->get_old_exons ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_old_exons{
+
+    my ($self) = @_;
+    
+    my @exons;
+    
+    foreach my $c ($self->_vmap->get_all_RawContigs) {push(@exons,$c->get_old_exons);}
+	
+	my @vcexons = ();
+	my $count = 0;
+	foreach my $exon ( @exons ) {
+	    
+	    my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
+	       
+	    $exon->start($st);
+	    $exon->end($en);
+	    $exon->($str);   
+	
+	    push @vcexons;
+	}
+		
+  return @vcexons;	  
+}
+
+
+
+
+
+
 =head2 get_all_SeqFeatures
 
  Title   : get_all_SeqFeatures
