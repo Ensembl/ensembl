@@ -755,26 +755,28 @@ sub _dump_feature_table {
   #
   # snps
   #
-  if($self->is_enabled('variation') && $slice->can('get_all_SNPs')) {
-    $slice->adaptor->db->add_db_adaptor('lite', $lite) if $lite;
+  if($self->is_enabled('variation') && $slice->can('get_all_VariationFeatures')) {
+#    $slice->adaptor->db->add_db_adaptor('lite', $lite) if $lite;
 
-    foreach my $snp (@{$slice->get_all_SNPs}) {
+    foreach my $snp (@{$slice->get_all_VariationFeatures}) {
       my $ss = $snp->start;
       my $se = $snp->end;
       #skip snps that hang off edge of slice
       next if($ss < 1 || $se > $slice->length); 
 
       $self->write(@ff, 'variation', "$ss..$se");
-      $self->write(@ff, ''         , '/replace="'.$snp->alleles.'"'); 
+      $self->write(@ff, ''         , '/replace="'.$snp->allele_string.'"'); 
       #$self->write(@ff, ''         , '/evidence="'.$snp->status.'"'); 
-      foreach my $link ($snp->each_DBLink) {
-        my $id = $link->primary_id;
-        my $db = $link->database;
-        $self->write(@ff, '', "/db_xref=\"$db:$id\""); 
-      }
+      my $rs_id = $snp->variation_name();
+      my $db = $snp->source();
+#      foreach my $link ($snp->each_DBLink) {
+#        my $id = $link->primary_id;
+#        my $db = $link->database;
+        $self->write(@ff, '', "/db_xref=\"$db:$rs_id\""); 
+#      }
     }
 
-    $slice->adaptor->db->remove_db_adaptor('lite') if $lite;
+#    $slice->adaptor->db->remove_db_adaptor('lite') if $lite;
   }
 
   #
