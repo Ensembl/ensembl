@@ -98,39 +98,40 @@ sub new {
 
 =head2 get_all_Genes
 
- Title   : get_all_Genes
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Args       : none
+  Example    : none
+  Description: gets all Genes that have coordinates on this Clone. They
+               come in RawContig coords, but not all coords need to be on this 
+               Clone 
+  Returntype : list of Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 
-
 sub get_all_Genes
 {
-    my ($self,$supporting)=@_;
+    my $self=shift;
 
-    return $self->adaptor->get_all_Genes($self->dbID,$supporting);
+    return $self->adaptor->get_all_Genes( $self->dbID );
 }
+
 
 
 
 
 =head2 get_Contig
 
- Title   : get_Contig
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Args       : none
+  Example    : none
+  Description: deprecated, use ContigAdaptor to get Contig
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
+
 
 sub get_Contig {
    my ($self,$contigid) = @_;
@@ -145,45 +146,19 @@ sub get_Contig {
 #   return $contig->fetch();
 }
 
-=head2 get_all_geneid
-
- Title   : get_all_geneid
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-
-
-sub get_all_my_geneid
-{
-    my ($self)=shift;
-
-    return $self->adaptor->get_all_my_geneid($self->dbID);
-}
-
-
-
 
 
 
 =head2 get_all_Contigs
 
- Title   : get_Contigs
- Usage   : foreach $contig ( $clone->get_all_Contigs ) 
- Function:
- Example :
- Returns : 
- Args    :
-
+  Args       : none
+  Example    : none
+  Description: get RawContig objects from this Clone
+  Returntype : list of Bio::EnsEMBL::RawContig
+  Exceptions : none
+  Caller     : general
 
 =cut
-
-
 
 
 sub get_all_Contigs {
@@ -199,6 +174,18 @@ sub get_all_Contigs {
 }
 
 
+=head2 delete
+
+  Args       : none
+  Example    : none
+  Description: deprecated, use object adaptor for deletion
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+
 
 sub delete
 {
@@ -210,19 +197,19 @@ sub delete
 
 
 
-
-
 =head2 delete_by_dbID
 
- Title   : delete_by_dbID
- Usage   : $clone->delete_by_dbID()
- Function: Deletes clone (itself), including contigs and features, but not its genes
- Example : 
- Returns : nothing
- Args    : none
-
+  Args       : none
+  Example    : none
+  Description: Deletes the clone, contig, dna and features for this,
+               Genes are not deleted
+  Returntype : none
+  Exceptions : none
+  Caller     : general
 
 =cut
+
+
 
 sub delete_by_dbID {
     my ($self)=shift;
@@ -232,43 +219,35 @@ sub delete_by_dbID {
 
 
 
-
-
 =head2 get_all_rawcontigs_by_position
 
- Title   : get_rawcontig_by_position
- Usage   : $obj->get_rawcontig_by_position($position)
- Function: 
- Example : 
- Returns : returns a raw contig object or undef on error
- Args    : a position (basepair) in clone
-
+  Arg   1    : int $base_pair
+  Example    : none
+  Description: returns the RawContig that contains that clone basepair
+  Returntype : Bio:EnsEMBL::RawContig
+  Exceptions : base_pair > 0, returns the last Contig if base_pair is outside
+  Caller     : general
 
 =cut
+
+
 
 sub get_rawcontig_by_position {
 
     my ($self, $pos) = @_;
 
-    if( !ref $self || ! $self->isa('Bio::EnsEMBL::Clone') ) {
-        $self->throw("Must supply a clone to get_all_RawContigs: Bailing out...");
-    }
 
     if ($pos < 1 ){
         $self->throw("get_rawcontig_by_position error: Position must be > 0");
     }
     
     my @contigs =  $self->get_all_Contigs();
-    @contigs = sort { $a->embl_offset <=> $b->embl_offset } @contigs;
+    @contigs = sort { $b->embl_offset <=> $a->embl_offset } @contigs;
     
-    foreach my $c (reverse @contigs ) {
+    foreach my $c ( @contigs ) {
         if ($pos > $c->embl_offset) {
-            my $size = $c->embl_offset + $c->length;
-            return $c;
-        } else {
-            my $size = $c->embl_offset + $c->length;
-            next;
-        }
+             return $c;
+        } 
     }
     
     return (undef);
@@ -278,15 +257,15 @@ sub get_rawcontig_by_position {
 
 =head2 is_golden
 
- Title   : is_golden
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Args       : none
+  Example    : none
+  Description: deprecated, use assembly_mapper->in_assembly( $clone )
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
+
 
 sub is_golden{
    my ($self,@args) = @_;
@@ -309,20 +288,20 @@ sub is_golden{
 
 
 
-
 =head2 seq_date
 
- Title   : seq_date
- Usage   : $clone->seq_date()
- Function: loops over all $contig->seq_date, throws a warning if they are different and 
-           returns the first unix time value of the dna created datetime field, which indicates
-           the original time of the dna sequence data
- Example : $clone->seq_date()
- Returns : unix time
- Args    : none
-
+  Args       : none
+  Example    : none
+  Description: loops over all $contig->seq_date, throws a warning 
+               if they are different and returns the first unix 
+               time value of the dna created datetime field, which indicates
+               the original time of the dna sequence data
+  Returntype : a unix time ??
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub seq_date {
    my ($self) = @_;
@@ -346,17 +325,20 @@ sub seq_date {
 }
 
 
+
 =head2 htg_phase
 
- Title   : htg_phase
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : string $htg_phase
+               0,1,2,3 representing how finished the clone is
+  Example    : none
+  Description: get/set for attribute htg_phase
+               ( high throughput genome project phase ) 
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub htg_phase {
    my $obj = shift;
@@ -367,18 +349,22 @@ sub htg_phase {
     return $obj->{'htg_phase'};
 }
 
+
+
 =head2 created
 
- Title   : created
- Usage   : $clone->created()
- Function: Gives the unix time value of the created datetime field, which indicates
-           the first time this clone was put in ensembl
- Example : $clone->created()
- Returns : unix time
- Args    : none
-
+  Arg [1]    : string $created
+  Example    : none
+  Description: get/set for attribute created.
+               Gives the unix time value of the created 
+               datetime field, which indicates
+               the first time this clone was put in ensembl
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub created {
    my $obj = shift;
@@ -389,18 +375,22 @@ sub created {
     return $obj->{'created'};
 }
 
+
+
 =head2 modified
 
- Title   : modified
- Usage   : $clone->modified()
- Function: Gives the unix time value of the modified datetime field, which indicates
-           the last time this clone was modified in ensembl
- Example : $clone->modified()
- Returns : unix time
- Args    : none
-
+  Arg [1]    : string $modified
+  Example    : none
+  Description: get/set for attribute modified
+               Gives the unix time value of the modified 
+               datetime field, which indicates
+               the last time this clone was modified in ensembl
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 
 sub modified {
@@ -412,16 +402,19 @@ sub modified {
     return $obj->{'modified'};
 }
 
+
+
 =head2 version
 
- Title   : version
- Usage   : $clone->version()
- Function: Gives the value of version
-           (Please note: replaces old sv method!!!)
- Example : $clone->version()
- Returns : version number
- Args    : none
-
+  Arg [1]    : string $version
+  Example    : none
+  Description: get/set for attribute version
+               this could contain an ensembl version for the clone.
+               Usually we just use the EMBL one though. EnsEMBL version
+               are currently not generated or maintained for clones.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -437,17 +430,18 @@ sub version{
 
 }
 
+
 =head2 embl_version
 
- Title   : embl_version
- Usage   : $clone->embl_version()
- Function: Gives the value of the EMBL version, i.e. the data version
- Example : $clone->embl_version()
- Returns : version number
- Args    : none
-
+  Arg [1]    : string $embl_version
+  Example    : none
+  Description: get/set for attribute embl_version
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub embl_version {
    my $obj = shift;
@@ -460,15 +454,15 @@ sub embl_version {
 
 
 
+
 =head2 embl_id
 
- Title   : embl_id
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : string $embl_id
+  Example    : none
+  Description: get/set for attribute embl_id
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -488,15 +482,17 @@ sub embl_id {
 
 =head2 id
 
- Title   : id
- Usage   : $obj->id($newval)
- Function: 
- Example : 
- Returns : value of id
- Args    : newvalue (optional)
-
+  Args       : none
+  Example    : none
+  Description: should be deprecated, gives an optional ensembl name
+               for the clone. Was used for non submitted clones and is
+               probably useless now.
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
+
 
 sub id {
    my ($obj,$value) = @_;
@@ -509,14 +505,15 @@ sub id {
 
 =head2 dbID
 
- Title   : dbID
- Usage   : $obj->dbID($newval)
- Function: 
- Returns : value of dbID
- Args    : newvalue (optional)
-
+  Arg [1]    : int $dbID
+  Example    : none
+  Description: get/set for the database internal id
+  Returntype : int
+  Exceptions : none
+  Caller     : general, set from adaptor on store
 
 =cut
+
 
 sub dbID{
    my $obj = shift;
@@ -531,15 +528,15 @@ sub dbID{
 
 =head2 adaptor
 
- Title   : adaptor
- Usage   : $obj->adaptor($newval)
- Function: 
- Example : 
- Returns : value of adaptor
- Args    : newvalue (optional)
-
+  Arg [1]    : Bio::EnsEMBL::DBSQL::CloneAdaptor $adaptor
+  Example    : none
+  Description: get/set for this objects Adaptor
+  Returntype : Bio::EnsEMBL::DBSQL::CloneAdaptor
+  Exceptions : none
+  Caller     : general, set from adaptor on store
 
 =cut
+
 
 sub adaptor {
    my ($obj,$value) = @_;
