@@ -58,6 +58,8 @@ package Bio::EnsEMBL::CoordSystem;
 
 use Bio::EnsEMBL::Storable;
 
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+
 use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::Storable);
@@ -96,7 +98,7 @@ sub new {
 
   my ($name,$version, $top_level, $sequence_level) =
     rearrange(['NAME','VERSION','TOP_LEVEL', 'SEQUENCE_LEVEL'], @_);
-  
+
   throw('The NAME argument is required') if(!$name);
 
   $version = '' if(!defined($version));
@@ -211,7 +213,7 @@ sub is_top_level {
 
 sub is_sequence_level {
   my $self = shift;
-  return $self->{'top_level'};
+  return $self->{'sequence_level'};
 }
 
 
