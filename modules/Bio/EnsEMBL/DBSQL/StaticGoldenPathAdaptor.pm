@@ -82,6 +82,20 @@ sub new {
 
   $self->db($db);
 
+  eval {
+    $sgp = $self->get_MetaContainer->get_default_assembly
+  };
+
+  if ( $@ ) {
+    $self->throw("*** get_MetaContainer->get_default_assembly failed:\n$@\n"
+            ."assembly type must be set with static_golden_path_type() first");
+  } elsif (! $sgp) {
+    $self->throw("No default assembly defined"
+                 . " - must set with static_golden_path_type() first");
+  } else {
+    $self->static_golden_path_type($sgp);
+  }
+
 # set stuff in self from @args
   return $self;
 }
