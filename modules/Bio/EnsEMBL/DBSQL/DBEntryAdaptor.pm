@@ -314,7 +314,7 @@ sub store {
 
 =cut
 
-sub fetch_by_gene {
+sub fetch_by_Gene {
   my ( $self, $gene ) = @_;
   my $query1 = "SELECT t.translation_id 
                 FROM transcript t

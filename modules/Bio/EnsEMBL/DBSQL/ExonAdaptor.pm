@@ -323,63 +323,6 @@ sub _new_Exon_from_hashRef {
 
 
 
-=head2 fetch_evidence_by_Exon
-
-  Arg [1]    : Bio::EnsEMBL::Exon - the exon to fetch evidence for
-  Example    : $exon_adaptor->fetch_evidence_by_Exon($exon);
-  Description: Currently appears to be broken, and supporting features are
-               being reworked as I write this.  Not sure what the fate of
-               this method will be.  Should retrieves supporting evidence 
-               for an exon.
-  Returntype : none
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::Exon
-
-=cut
-
-sub fetch_evidence_by_Exon {
-  my ( $self, $exon )  = @_;
-  # if exon is sticky, get supporting from components
-  if( $exon->isa( 'Bio::EnsEMBL::StickyExon' )) {
-    # sticky storing. Sticky exons contain normal exons ...
-    
-    my @componentExons = $exon->each_component_Exon();
-    for my $componentExon ( @componentExons ) {
-      $self->fetch_evidence_by_Exon( $componentExon );
-    }
-    return;
-  }
-
-  if($exon->dbID){
-  #
-  # This looks broken...
-    
-#    print STDERR "trying to store ".$exon->dbID."\n";
-    my $sql = "select feature_type, feature_id from supporting_feature where exon_id = ".$exon->dbID." ";
-
-#    print STDERR "sql = ".$sql."\n";
-    my $sth = $self->db->prepare($sql);
- 
-    $sth->execute;
-
-    my $prot_adp = $self->db->get_ProteinAlignFeatureAdaptor;
-    my $dna_adp = $self->db->get_DnaAlignFeatureAdaptor;
-    
-    while(my ($type, $feature_id) = $sth->fetchrow){
-      
-      if($type eq 'protein_align_feature'){
-	my $f = $prot_adp->fetch_by_dbID($feature_id);
-	$exon->add_Supporting_Feature($f);
-      }elsif($type eq 'dna_align_feature'){
-	my $f = $dna_adp->fetch_by_dbID($feature_id);
-	$exon->add_Supporting_Feature($f);
-      }
-    }
-  }else{
-    print STDERR "exon has no dbID can't fetch evidence from db no relationship exists\n";
-  }
-    return 1;
-}
 
 
 

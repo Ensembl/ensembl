@@ -662,6 +662,25 @@ sub get_ChromosomeAdaptor {
 
 
 
+=head2 get_SupportingFeatureAdaptor
+
+  Arg [1]    : none
+  Example    : $sfa = $db_adaptor->get_SupportingFeatureAdaptor();
+  Description: Gets a SupportingFeatreAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Exon
+
+=cut
+
+sub get_SupportingFeatureAdaptor {
+  my $self = shift;
+
+  return $self->_get_adaptor("Bio:EnsEMBL::DBSQL::SupportingFeatureAdaptor");
+}
+
+
+
 =head2 list_supported_assemblies
 
   Args       : none
