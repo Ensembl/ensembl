@@ -45,31 +45,13 @@ ZFIN                 	Zebrafish  	ZFINParser.pm
 
 General Tutorial
 
-First we need to create a database to store all the data in:- 
-
-   mysql -hhost1 -P3350 -uadmin -ppassword -e"create database xref_store"
-
-Now create the tables needed:-
-
-   mysql -hhost1 -P3350 -uadmin -ppassword -Dxref_store < sql/table.sql
-
-Now populate the tables with the initial data on what species and sources
-are available:-
-
-   mysql -hhost1 -P3350 -uadmin -ppassword -Dxref_store 
-	  < sql/populate_metadata.sql
-
-
-To populate the database with the xref data you will need to run the 
-xref_parser.pl with the appropriate arguments. The script will create a 
-directory for each source you specify (or all) and download the data (unless
- -skipdownload specified) before parsing them. 
+The perl script to create and populate the database is xref_parser.pl
 
   xref_parser --help produces:-
 
-xref_parser.pm -user {user} -pass {password} -host {host} -port {port} 
+xref_parser.pl -user {user} -pass {password} -host {host} -port {port} 
 	-dbname {database} -species {species1,species2} 
-	-source {source1,source2} -skipdownload
+	-source {source1,source2} -skipdownload -create
 
 If no source is specified then then all source are loaded. The same is done for
 species so it is best to specify this one or the script may take a while.
@@ -78,12 +60,13 @@ species so it is best to specify this one or the script may take a while.
 So to load/parse all the xrefs for the human the command would be:-
 
   xref_parser.pm -host host1 -port 3350 -user admin -pass password 
-                 -dbname xref_store -species human
+                 -dbname xref_store -species human -create
+
 
 
 So we now have a set of xrefs that are dependent on the uniprot and refseq 
-entries loaded. 
-These can then be mapped to the ENSEMBL entitys with the xref_mapper.pl script.
+entries loaded. These can then be mapped to the ENSEMBL entitys with the 
+xref_mapper.pl script.
 
 
 The parsers.
