@@ -70,14 +70,14 @@ my $xref_dbi;
 
 sub dump_seqs{
 
-  my ($self) = @_;
+  my ($self, $location) = @_;
 
   # initialise DB connections
   $core_dbi = $self->dbi();
   $xref_dbi = $self->xref()->dbi();
 
   $self->dump_xref();
-  $self->dump_ensembl();
+  $self->dump_ensembl($location);
 
 }
 
@@ -399,9 +399,9 @@ sub dump_subset{
 =cut
 
 sub dump_ensembl{
-  my ($self) = @_;
+  my ($self, $location) = @_;
 
-  $self->fetch_and_dump_seq();
+  $self->fetch_and_dump_seq($location);
 
 }
 
@@ -416,7 +416,7 @@ sub dump_ensembl{
 =cut
 
 sub fetch_and_dump_seq{
-  my ($self) = @_;
+  my ($self, $location) = @_;
 
   my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-species => $self->species(),
 					      -dbname  => $self->dbname(),
@@ -449,15 +449,29 @@ sub fetch_and_dump_seq{
   open(PEP,">".$self->ensembl_protein_file()) 
     || die("Could not open protein file for writing: ".$self->ensembl_protein_file."\n");
 
-  my $gene_adap = $db->get_GeneAdaptor();
-  my @gene_ids = @{$gene_adap->list_dbIDs()};
+  my $gene_adaptor = $db->get_GeneAdaptor();
+
+
+  # fetch by location, or everything if not defined
+  my @genes;
+  if ($location) {
+
+    my $slice_adaptor = $db->get_SliceAdaptor();
+    my $slice = $slice_adaptor->fetch_by_name($location);
+    @genes = @{$gene_adaptor->fetch_all_by_Slice($slice)};
+
+  } else {
+
+    @genes = @{$gene_adaptor->fetch_all()};
+
+  }
+
   my $max = undef;
   if(defined($self->maxdump())){
     $max = $self->maxdump();
   }
   my $i =0;
-  foreach my $gene_id (@gene_ids){
-    my $gene = $gene_adap->fetch_by_dbID($gene_id);
+  foreach my $gene (@genes){
     foreach my $transcript (@{$gene->get_all_Transcripts()}) {
       $i++;
       my $seq = $transcript->spliced_seq(); 
