@@ -113,14 +113,15 @@ sub fetch_Protein_by_transcriptId{
 sub fetch_Protein_by_dbid{
    my ($self,$id) = @_;
 
-#Get the transcript id from the translation id 
-   my $query = "select transcript_id,gene_id from transcript where translation_id = '$id'";
+   #Get the transcript id from the translation id 
+   my $query = "select t.transcript_id, t.gene_id, s.stable_id from transcript as t, translation_stable_id as s where t.translation_id = '$id' and t.translation_id = s.translation_id";
    my $sth = $self->prepare($query);
    $sth ->execute();
    my @rowid = $sth->fetchrow;
 
    my $transid = $rowid[0];
    my $geneid = $rowid[1];
+   my $stableid = $rowid[2];
 
    if (!defined $transid) {
        $self->throw("$id does not have a transcript id");
@@ -133,7 +134,7 @@ sub fetch_Protein_by_dbid{
 #Get the transcript object (this will allow us to get the aa sequence of the protein
    my $transcript = $self->fetch_Transcript_by_dbid($transid);
 
-
+   
 #Get all of the family (at the Transcript level), not implemented yet
    #my $family = $self->fetch_Family_by_dbid($id);
 
@@ -177,6 +178,8 @@ sub fetch_Protein_by_dbid{
 
    $protein->transcriptac($transid);                                              
    $protein->geneac($geneid);
+   $protein->stable_id($stableid);
+
    
 #Cache the different adaptors which will be used by the protein Object
    $protein->adaptor($self);

@@ -423,6 +423,7 @@ sub get_all_PfamFeatures{
    else {
        my $proteinid = $self->id();
        my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('Pfam',$proteinid);
+       
        foreach my $in (@array_features) {
 	   $self->add_Pfam($in);
        }
@@ -721,7 +722,6 @@ if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
 
 sub get_all_SuperfamilyFeatures{
  my ($self) = @_;
-
     if (defined ($self->{'_superfamily'})) {
 	return @{$self->{'_superfamily'}};
     }
@@ -731,6 +731,8 @@ sub get_all_SuperfamilyFeatures{
 	foreach my $in (@array_features) {
 	    $self->add_Superfamily($in);
 	}
+
+       
 	return @array_features;
     }
 }
@@ -1053,6 +1055,28 @@ sub checksum{
     return $crc64;
 
 }
+
+=head2 stable_id
+
+ Title   : stable_id
+ Usage   : $obj->stable_id($newval)
+ Function: 
+ Returns : value of stable_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub stable_id{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'stable_id'} = $value;
+    }
+    return $obj->{'stable_id'};
+
+}
+
 
 =head2 get_Family
 
