@@ -708,12 +708,12 @@ sub seq_region_start {
   my $slice = $self->{'slice'};
 
   return undef if(!$slice);
-  return undef if(!defined($self->{'start'}));
-  return undef if(!defined($self->{'end'}));
 
   if($slice->strand == 1) {
+    return undef if(!defined($self->{'start'}));
     return $slice->start() + $self->{'start'} - 1;
   } else {
+    return undef if(!defined($self->{'end'}));
     return $slice->end() - $self->{'end'} + 1;
   }
 }
@@ -724,7 +724,7 @@ sub seq_region_start {
   Arg [1]    : none
   Example    : print $feature->seq_region_end();
   Description: Convenience method which returns the absolute end of this
-               feature on the seq_region, as opposed to the relative (slice) 
+               feature on the seq_region, as opposed to the relative (slice)
                position.
 
                Returns undef if this feature is not on a slice.
@@ -739,12 +739,12 @@ sub seq_region_end {
   my $slice = $self->{'slice'};
 
   return undef if(!$slice);
-  return undef if(!defined($self->{'start'}));
-  return undef if(!defined($self->{'end'}));
 
   if($slice->strand == 1) {
+    return undef if(!defined($self->{'end'}));
     return $slice->start() + $self->{'end'} - 1;
   } else {
+    return undef if(!defined($self->{'start'}));
     return $slice->end() - $self->{'start'} + 1;
   }
 }
