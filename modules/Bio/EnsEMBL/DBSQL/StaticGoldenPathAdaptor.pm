@@ -38,15 +38,13 @@ Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor - Database adaptor for static golde
 
 =head1 DESCRIPTION
 
-Describe the object here
+Database adaptor for static golden path.  Affords access methods for retrieving virtual contigs.
 
 =head1 AUTHOR - Ewan Birney
 
 This modules is part of the Ensembl project http://www.ensembl.org
 
 Email birney@ebi.ac.uk
-
-Describe contact details here
 
 =head1 APPENDIX
 
@@ -94,7 +92,6 @@ sub new {
  Title   : fetch_RawContigs_by_fpc_name
  Usage   :
  Function:
- Example :
  Returns : 
  Args    :
 
@@ -127,7 +124,6 @@ sub fetch_RawContigs_by_fpc_name{
   Title   : convert_chromosome_to_fpc
   Usage   : ($fpcname,$start,$end) = $stadp->convert_chromosome_to_fpc('chr1',10000,10020)
   Function:
-  Example :
   Returns : 
   Args    :
  
@@ -151,7 +147,6 @@ sub convert_chromosome_to_fpc{
   Title   : convert_chromosome_to_fpc
   Usage   : ($chrname,$start,$end) = $stadp->convert_fpc_to_chromosome('ctg1234',10000,10020)
   Function:
-  Example :
   Returns : 
   Args    :
  
@@ -179,7 +174,6 @@ sub convert_fpc_to_chromosome {
  Title   : fetch_RawContigs_by_chr_name
  Usage   :
  Function:
- Example :
  Returns : 
  Args    :
 
@@ -213,7 +207,6 @@ sub fetch_RawContigs_by_chr_name{
  Title   : fetch_RawContigs_by_chr_start_end
  Usage   :
  Function:
- Example :
  Returns : 
  Args    :
 
@@ -248,7 +241,6 @@ sub fetch_RawContigs_by_chr_start_end{
  Title   : fetch_VirtualContig_by_chr_start_end
  Usage   :
  Function:
- Example :
  Returns : 
  Args    :
 
@@ -284,36 +276,38 @@ sub fetch_VirtualContig_by_chr_start_end{
 }
 
 
-=head2 fetch_VirtualContig_by_clone
+=head2 fetch_VirtualContig_of_clone
 
- Title   : fetch_VirtualContig_by_clone
- Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('AC000012',40000);
- Function:
- Example :
- Returns : 
- Args    :
+ Title   : fetch_VirtualContig_of_clone
+ Usage   : $vc = $stadp->fetch_VirtualContig_of_clone('AC000012',1000);
+ Function: Creates a virtual contig of the specified object.  If a context size is given, the vc is extended by that number of basepairs on either side of the clone.  Throws if the clone is not golden.
+ Returns : Virtual Contig object 
+ Args    : clone id, [context size in bp]
 
 
 =cut
 
-sub fetch_VirtualContig_by_clone{
+sub fetch_VirtualContig_of_clone{
    my ($self,$clone,$size) = @_;
 
    if( !defined $clone ) {
-       $self->throw("Must have clone to fetch VirtualContig by clone");
+       $self->throw("Must have clone to fetch VirtualContig of clone");
    }
    if( !defined $size ) {$size=0;}
 
    my $type = $self->dbobj->static_golden_path_type();
 
-
-   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_end,st.chr_name 
-                                    from static_golden_path st,contig c where c.clone = '$clone' 
-                                    AND c.internal_id = st.raw_id AND st.type = '$type' 
+   my $sth = $self->dbobj->prepare("SELECT 	c.id,
+   											st.chr_start,
+											st.chr_end,
+											st.chr_name 
+                                    FROM static_golden_path st, contig c 
+									WHERE c.clone = '$clone' 
+                                    AND c.internal_id = st.raw_id 
+									AND st.type = '$type' 
                                     ORDER BY st.fpcctg_start"
-				   );
+				   					);
    $sth->execute();
-
  
    my ($contig,$start,$end,$chr_name); 
    my $counter; 
@@ -324,43 +318,50 @@ sub fetch_VirtualContig_by_clone{
        if ($counter==1){$first_start=$start;}      
    }
 
-
-    
    if( !defined $contig ) {
        $self->throw("Clone is not on the golden path. Cannot build VC");
    }
      
-       return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$first_start-$size,$end+$size);
+   return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
+   														$first_start-$size,
+														$end+$size
+														);
 
 }
 
-=head2 fetch_VirtualContig_by_contig
 
- Title   : fetch_VirtualContig_by_contig
- Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('AC000012.00001',40000);
- Function:
- Example :
- Returns : 
- Args    :
+
+=head2 fetch_VirtualContig_of_contig
+
+ Title   : fetch_VirtualContig_of_contig
+ Usage   : $vc = $stadp->fetch_VirtualContig_of_contig('AC000012.00001',1000);
+ Function: Creates a virtual contig of the specified object.  If a context size is given, the vc is extended by that number of basepairs on either side of the contig.  Throws if the contig is not golden.
+ Returns : Virtual Contig object 
+ Args    : contig id, [context size in bp]
 
 
 =cut
 
-sub fetch_VirtualContig_by_contig{
+sub fetch_VirtualContig_of_contig{
    my ($self,$contigid,$size) = @_;
 
    if( !defined $contigid ) {
-       $self->throw("Must have contig id to fetch VirtualContig by contig");
+       $self->throw("Must have contig id to fetch VirtualContig of contig");
    }
    
    if( !defined $size ) {$size=0;}
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_end,st.chr_name 
-                                    from static_golden_path st,contig c where c.id = '$contigid' 
-                                    AND c.internal_id = st.raw_id AND st.type = '$type'"
-				   );
+   my $sth = $self->dbobj->prepare("SELECT 	c.id,
+   											st.chr_start,
+											st.chr_end,
+											st.chr_name 
+                                    FROM static_golden_path st,contig c 
+									WHERE c.id = '$contigid' 
+                                    AND c.internal_id = st.raw_id 
+									AND st.type = '$type'"
+				   					);
    $sth->execute();
    my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
 
@@ -368,40 +369,50 @@ sub fetch_VirtualContig_by_contig{
      $self->throw("Contig $contigid is not on the golden path of type $type");
    }
    
-   return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$size,$end+$size);
+   return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
+   														$start-$size,
+														$end+$size
+													);
   
 }
 
 
 
 
-=head2 fetch_VirtualContig_by_gene
+=head2 fetch_VirtualContig_of_gene
 
- Title   : fetch_VirtualContig_by_gene
- Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('ENSG00000012123',40000);
- Function:
- Example :
- Returns : 
- Args    :
+ Title   : fetch_VirtualContig_of_gene
+ Usage   : $vc = $stadp->fetch_VirtualContig_of_gene('ENSG00000012123',1000);
+ Function: Creates a virtual contig of the specified object.  If a context size is given, the vc is extended by that number of basepairs on either side of the gene.  Throws if the gene is not golden.
+ Returns : Virtual Contig object 
+ Args    : gene id, [context size in bp]
 
 
 =cut
 
-sub fetch_VirtualContig_by_gene{
+sub fetch_VirtualContig_of_gene{
    my ($self,$geneid,$size) = @_;
 
    if( !defined $geneid ) {
-       $self->throw("Must have gene id to fetch VirtualContig by gene");
+       $self->throw("Must have gene id to fetch VirtualContig of gene");
    }
    if( !defined $size ) {$size=0;}
 
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("select (e.seq_start+sgp.chr_start),(e.seq_end+sgp.chr_end),sgp.chr_name from exon e,
-                                    transcript tr,exon_transcript et,static_golden_path sgp where e.id=et.exon 
-                                    and et.transcript=tr.id and sgp.raw_id=e.contig and tr.gene = '$geneid';" 
-				   );
+   my $sth = $self->dbobj->prepare("SELECT 	(e.seq_start+sgp.chr_start),
+   											(e.seq_end+sgp.chr_end),
+											sgp.chr_name 
+									FROM 	exon e,
+                                    		transcript tr,
+											exon_transcript et,
+											static_golden_path sgp 
+									WHERE e.id=et.exon 
+                                    AND et.transcript=tr.id 
+									AND sgp.raw_id=e.contig 
+									AND tr.gene = '$geneid';" 
+				   					);
    $sth->execute();
 
 
@@ -425,15 +436,179 @@ sub fetch_VirtualContig_by_gene{
        $self->throw("Gene is not on the golden path. Cannot build VC");
    }
      
-   return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$size,$end+$size);
+   return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
+   														$start-$size,
+														$end+$size
+													);
   
 }
 
 
 
 
+=head2 fetch_VirtualContig_by_clone
+
+ Title   : fetch_VirtualContig_by_clone
+ Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('AC000012',40000);
+ Function: Creates a virtual contig of the specified size, centred around the given clone.
+ Returns : Virtual Contig object 
+ Args    : clone id, VC size in bp
 
 
+=cut
+
+sub fetch_VirtualContig_by_clone{
+   my ($self,$clone,$size) = @_;
+
+   if( !defined $size ) {
+       $self->throw("Must have clone and size to fetch VirtualContig by clone");
+   }
+
+   my $type = $self->dbobj->static_golden_path_type();
+
+
+   my $sth = $self->dbobj->prepare("SELECT 	c.id,
+   											st.chr_start,
+											st.chr_name 
+									FROM static_golden_path st,contig c 
+									WHERE c.clone = '$clone' 
+									AND c.internal_id = st.raw_id 
+									AND st.type = '$type' 
+									ORDER BY st.fpcctg_start");
+   $sth->execute();
+   my ($contig,$start,$chr_name) = $sth->fetchrow_array;
+
+   if( !defined $contig ) {
+       $self->throw("Clone is not on the golden path. Cannot build VC");
+   }
+
+
+   my $halfsize = int($size/2);
+   #if( $start > $size/2 ) {    
+       return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
+	   													$start-$halfsize,
+														$start+$size-$halfsize
+														);
+   #} else {
+   #    return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
+   #}
+}
+
+
+
+
+=head2 fetch_VirtualContig_by_contig
+
+ Title   : fetch_VirtualContig_by_contig
+ Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('AC000012.00001',40000);
+ Function: Creates a virtual contig of the specified size, centred around the given contig.
+ Returns : Virtual Contig object 
+ Args    : contig id, VC size in bp
+
+
+=cut
+
+sub fetch_VirtualContig_by_contig{
+   my ($self,$contigid,$size) = @_;
+
+   if( !defined $size ) {
+       $self->throw("Must have contig and size to fetch VirtualContig by contig");
+   }
+
+   my $type = $self->dbobj->static_golden_path_type();
+
+   my $sth = $self->dbobj->prepare("SELECT 	c.id,
+   											st.chr_start,
+											st.chr_name 
+									FROM static_golden_path st,contig c 
+									WHERE c.id = '$contigid' 
+									AND c.internal_id = st.raw_id 
+									AND st.type = '$type'"
+									);
+   $sth->execute();
+   my ($contig,$start,$chr_name) = $sth->fetchrow_array;
+
+   if( !defined $contig ) {
+     $self->throw("Contig $contigid is not on the golden path of type $type");
+   }
+
+   my $halfsize = int($size/2);
+   #if( $start > $size/2 ) {       
+       return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
+	   													$start-$halfsize,
+														$start+$size-$halfsize
+														);
+   #} else {
+   #    return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
+   #}
+}
+
+
+
+
+
+=head2 fetch_VirtualContig_by_gene
+
+ Title   : fetch_VirtualContig_by_gene
+ Usage   : $vc = $stadp->fetch_VirtualContig_by_gene('ENSG00000012123',40000);
+ Function: Creates a virtual contig of the specified size, centred around the given gene.
+ Returns : Virtual Contig object 
+ Args    : ensemblgene id, VC size in bp
+
+
+=cut
+
+sub fetch_VirtualContig_by_gene{
+   my ($self,$geneid,$size) = @_;
+
+   if( !defined $geneid ) {
+       $self->throw("Must have gene id to fetch VirtualContig of gene");
+   }
+   if( !defined $size ) {$size=0;}
+
+
+   my $type = $self->dbobj->static_golden_path_type();
+
+   my $sth = $self->dbobj->prepare("SELECT 	(e.seq_start+sgp.chr_start),
+											sgp.chr_name 
+									FROM 	exon e,
+                                    		transcript tr,
+											exon_transcript et,
+											static_golden_path sgp 
+									WHERE e.id=et.exon 
+                                    AND et.transcript=tr.id 
+									AND sgp.raw_id=e.contig 
+									AND tr.gene = '$geneid';" 
+				   					);
+   $sth->execute();
+
+
+   my ($start,$chr_name); 
+   my @start;
+   while ( my @row=$sth->fetchrow_array){
+       ($start,$chr_name)=@row;
+
+       push @start,$start;
+   }   
+   
+   my @start_sorted=sort @start;
+
+   my $start=pop @start_sorted;
+
+   if( !defined $start ) {
+       $self->throw("Gene is not on the golden path. Cannot build VC");
+   }
+     
+   my $halfsize = int($size/2);
+   #if( $start > $size/2 ) {       
+  	return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
+   														$start-$halfsize,
+														$start+$size-$halfsize
+														);
+   #} else {
+   #    return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
+   #}
+}
 
 
 =head2 fetch_VirtualContig_by_fpc_name
@@ -441,7 +616,6 @@ sub fetch_VirtualContig_by_gene{
  Title   : fetch_VirtualContig_by_fpc_name
  Usage   :
  Function:
- Example :
  Returns : 
  Args    :
 
@@ -463,7 +637,6 @@ sub fetch_VirtualContig_by_fpc_name{
  Title   : fetch_VirtualContig_by_fpc_name_slice
  Usage   :
  Function:
- Example :
  Returns : 
  Args    :
 
@@ -505,7 +678,6 @@ sub fetch_VirtualContig_by_fpc_name_slice{
               after this, split at the first gap length given
               If no gaps of this length are around, when the next length threshold is hit
               split at that gap.
- Example :
  Returns : A list of VirtualContigs
  Args    : name,first lenght threshold, first gap size, second length threshold, second gap size
 
@@ -564,7 +736,6 @@ sub fetch_VirtualContig_list_sized{
  Title   : fetch_VirtualContig_by_chr_name
  Usage   :
  Function:
- Example :
  Returns : 
  Args    :
 
@@ -586,7 +757,6 @@ sub fetch_VirtualContig_by_chr_name{
  Title   : get_all_fpc_ids
  Usage   :
  Function:
- Example :
  Returns : 
  Args    :
 
