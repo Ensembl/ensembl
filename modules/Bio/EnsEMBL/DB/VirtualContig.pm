@@ -189,7 +189,11 @@ sub extend {
     return $nvc;
 }
 
-
+# Hack to make Areks code display - AS
+sub get_MarkerFeatures {
+    return my @empty_list;
+}
+ 
 =head2 extend_maximally
 
  Title   : extend_maximally
