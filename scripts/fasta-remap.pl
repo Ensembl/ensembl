@@ -18,7 +18,7 @@ foreach my $f (@ARGV) {
 }
 
 my $word_delim = '[-> \t:.\n;,_]';
-my $ensid_regexp = '^([A-Z]{3})([PG])(0\d{10})$'; # '; # fool emacs
+my $ensid_regexp = '^[A-Z]{3})([PG])(0\d{10}$'; # '; # fool emacs
 
 my $remapped=0;
 my @notmapped=();
