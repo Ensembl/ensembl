@@ -82,7 +82,7 @@ sub _guess_module {
     my $tail;
     if($in eq 'Bio::EnsEMBL::SeqFeature'){
         $tail = 'ens_bio_seqFeature';
-    }elsif($in eq 'Bio::Ens::EMBL::FeaturePair'){
+    }elsif($in eq 'Bio::EnsEMBL::FeaturePair'){
         $tail = 'ens_bio_featurePair';
     }else{
         $self->throw("[$in] to [$out], not supported");

@@ -317,7 +317,7 @@ sub store {
   my ( $self, $exon ) = @_;
 
   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
-    $self->throw("$exon is not a EnsEMBL exon - not dumping!");
+    $self->throw("$exon is not a EnsEMBL exon - not storing!");
   }
 
   if( $exon->dbID && $exon->adaptor && $exon->adaptor == $self ) {

@@ -60,7 +60,7 @@ B<Bio::EnsEMBL::DBSQL::SQL::StatementHandle>
 class.
 
 Database handles created in
-B<Bio::Ensembl::DBSQL::Obj> are blessed into one
+B<Bio::EnsEMBL::DBSQL::Obj> are blessed into one
 of the database driver specific classes (eg:
 B<Bio::EnsEMBL::DBSQL::SQL::mysql>) which inherit
 from this class.

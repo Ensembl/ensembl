@@ -297,7 +297,7 @@ sub list_embl_version_by_accession {
 
 =head2 remove
 
-  Arg [1]    : Bio::Ensembl::Clone $clone 
+  Arg [1]    : Bio::EnsEMBL::Clone $clone 
   Example    : $clone_adaptor->remove($clone);
   Description: Deletes clone (itself), including contigs and features, 
                but not its genes 

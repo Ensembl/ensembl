@@ -11,7 +11,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::::ChromosomeAdaptor - DB Connectivity for Chromosome Object
+Bio::EnsEMBL::Lite::ChromosomeAdaptor - DB Connectivity for Chromosome Object
 
 =head1 SYNOPSIS
 

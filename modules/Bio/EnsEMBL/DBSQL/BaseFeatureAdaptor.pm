@@ -538,7 +538,7 @@ sub remove {
 
 =head2 remove_by_RawContig
 
-  Arg [1]    : Bio::Ensembl::RawContig $contig 
+  Arg [1]    : Bio::EnsEMBL::RawContig $contig 
   Example    : $feature_adaptor->remove_by_RawContig($contig);
   Description: This removes features from the database which lie on a removed
                contig.  The table the features are removed from is defined by 
