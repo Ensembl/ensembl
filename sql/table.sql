@@ -426,7 +426,7 @@ CREATE TABLE translation_stable_id (
  
 
 CREATE TABLE assembly (
-    chromosome_id  tinyint unsigned  NOT NULL,
+    chromosome_id  int unsigned  NOT NULL,
     chr_start      int(10) NOT NULL,
     chr_end        int(10) NOT NULL,
     superctg_name    varchar(20) NOT NULL,
