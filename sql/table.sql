@@ -495,3 +495,12 @@ CREATE TABLE gene_description (
   description varchar(255),
   PRIMARY KEY (gene_id)
 );
+
+CREATE TABLE karyotype (
+   chr_name  varchar(40) NOT NULL,
+   chr_start int(10)     NOT NULL,
+   chr_end   int(10)     NOT NULL,
+   band      varchar(40) NOT NULL,
+   stain     varchar(40) NOT NULL,
+   PRIMARY KEY (chr_name,band)
+);
