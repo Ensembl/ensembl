@@ -7,7 +7,9 @@
 # complete replacement for the old table.  The script assumes that the family
 # and ensembl-core database live in the same server (so you can do joins).
 
-usage="Usage: $0 core_database family_database MUSG -h host -u user"
+# The new gene_description table is created inside the family  database!
+
+usage="Usage: $0 core_database family_database DBNAME -h host -u user -ppass"
 if [ $# -lt 4 ] ; then
     echo $usage
     exit 1
@@ -32,14 +34,16 @@ fi
 
 # inside the family database, which database to read additional descriptions
 # from (e.g, ENSG, ENSMUSG etc.; it's the prefix of the IDs)
-prefix=$1; shift;
+echo "warning: hard coded stuff ahead ... ! " >&2
+db_name=$1; shift;
+# db_name='ENSEMBLGENE';
 
-# check if the prefix makes sense
-should_match='^ENS([A-Z]{3})?G$' # egrep pattern
-if echo "$prefix" | egrep $should_match > /dev/null 2>&1 ; then
+# check if the db_name makes sense:
+should_match='^ENS.*GENE$' # egrep pattern
+if echo "$db_name" | egrep $should_match > /dev/null 2>&1 ; then
     : # OK
 else
-    echo "arg 2: database name to use: '$prefix' does not match $should_match" >&2
+    echo "arg 2: database name to use: '$db_name' does not match $should_match" >&2
     exit 2
 fi
 
@@ -47,8 +51,9 @@ fi
 # schema does, really, but also useful during testing/debugging)
 core_gene_desc_table='gene_description'
 
-# the table with new descriptions to be created (in the current database):
+# the table with new descriptions to be created (in the family database):
 merged_gene_desc_table='gene_description'
+# merged_gene_desc_table='merged_gene_description'
 
 # now produce the SQL (with the $variables  being replaced with their values)
 # and pipe this as input into mysql:
@@ -66,7 +71,7 @@ WHERE gd.gene_id IS NULL;
 
 ALTER TABLE $merged_gene_desc_table ADD PRIMARY KEY(gene_id);
 
-# insert existing desc's (from swissprot)
+# insert existing desc's (ie. the ones coming from swissprot/sptrembl)
 INSERT INTO $merged_gene_desc_table 
   SELECT *
   FROM $core_db.$core_gene_desc_table;
@@ -79,12 +84,13 @@ DELETE FROM $merged_gene_desc_table WHERE description = 'UNKNOWN';
 DELETE FROM $merged_gene_desc_table WHERE description REGEXP '^[ \t]*$';
 DELETE FROM $merged_gene_desc_table WHERE description REGEXP '^.$';
 
-# selecting all genes from gene, this time properly as 'unknown':
+# selecting all genes from gene, this time properly as 'unknown'
+# This will fail on the knowns, as they should; only the 'unknowns' do get
+# in. This is so that all the unknowns are recognizable by the string 'unknown'
+#
 INSERT INTO $merged_gene_desc_table
-  SELECT id, 'unknown'
+  SELECT gene_id, 'unknown'
   FROM $core_db.gene;
-# this will fail on the knowns, as they should; only the 'unknowns' do get
-# in. This is so that all the unknowns are recognizable by the string 'unknown'.
 
 # give stats:
 SELECT COUNT(*) AS unknown_old_descriptions
@@ -98,10 +104,10 @@ CREATE TEMPORARY TABLE tmp_new_descriptions
   SELECT gd.gene_id, f.description
   FROM family f, family_members fm, $merged_gene_desc_table gd
   WHERE gd.description ='unknown'
-    AND fm.db_name ='$prefix'
+    AND fm.db_name ='$db_name'
     AND fm.db_id = gd.gene_id
     AND fm.family = f.internal_id
-    AND f.description <> 'UNKNOWN';
+    AND f.description not in ('',  'unknown', 'UNKNOWN');
 
 # get rid of the unknowns:
 DELETE FROM $merged_gene_desc_table where description = 'unknown';
