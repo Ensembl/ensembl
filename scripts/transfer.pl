@@ -199,7 +199,7 @@ foreach my $clone_id ( @clone ) {
 	my @features;
 	
 	foreach my $contig ($clone->get_all_Contigs) {
-	    push(@features,$contig->get_all_SimilarityFeatures);
+	    push(@features,$contig->get_all_SeqFeatures);
 
 	}
 
