@@ -96,13 +96,17 @@ use strict;
 
   Arg [..]   : List of named arguments. (-cigar_string , -features) defined
                in this constructor, others defined in FeaturePair and 
-               SeqFeature superclasses.  
-  Example    : 
+               SeqFeature superclasses.  Either cigar_string or a list
+               of ungapped features should be provided - not both.
+  Example    : $baf = new BaseAlignFeatureSubclass(-cigar_string => '3M3I12M');
   Description: Creates a new BaseAlignFeature using either a cigarstring or
-               a list of ungapped features.
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+               a list of ungapped features.  BaseAlignFeature is an abstract
+               baseclass and should not actually be instantiated - rather its
+               subclasses should be.
+  Returntype : Bio::EnsEMBL::BaseAlignFeature
+  Exceptions : thrown if both feature and cigar string args are provided
+               thrown if neither feature nor cigar string args are provided
+  Caller     : general
 
 =cut
 
@@ -128,6 +132,7 @@ sub new {
 }
 
 
+
 =head2 cigar_string
 
   Arg [1]    : string $cigar_string
@@ -135,15 +140,13 @@ sub new {
   Description: get/set for attribute cigar_string
                cigar_string describes the alignment. "xM" stands for 
                x matches (mismatches), "xI" for inserts into query sequence 
-               (thats the ensembl sequence), "xD" for deletions (inserts in the 
-               subject). an "x" that is 1 can be omitted.
+               (thats the ensembl sequence), "xD" for deletions 
+               (inserts in the subject). an "x" that is 1 can be omitted.
   Returntype : string
   Exceptions : throws on a get without previous set
   Caller     : general
 
 =cut
-
-
 
 sub cigar_string {
   my ($self,$arg) = @_;
@@ -164,10 +167,11 @@ sub cigar_string {
 }
 
 
+
 =head2 ungapped_features
 
   Args       : none
-  Example    : none
+  Example    : @ungapped_features = $align_feature->get_feature
   Description: converts the internal cigar_string into an array of
                ungapped feature pairs
   Returntype : list of Bio::EnsEMBL::FeaturePair
@@ -175,8 +179,6 @@ sub cigar_string {
   Caller     : general
 
 =cut
-
-
 
 sub ungapped_features {
   my ($self) = @_;
@@ -199,10 +201,9 @@ sub ungapped_features {
   Description: get/set for the database internal id
   Returntype : int
   Exceptions : none
-  Caller     : general, set from adaptor on store
+  Caller     : general, set from adaptor on store or retrieval
 
 =cut
-
 
 sub dbID{
   my ($self, $arg) = @_;
@@ -214,6 +215,8 @@ sub dbID{
   return $self->{_database_id}; 
 
 }
+
+
 
 =head2 adaptor
 
@@ -235,6 +238,8 @@ sub adaptor {
     return $self->{'adaptor'};
 
 }
+
+
 
 =head2 reverse_complement
 
@@ -267,11 +272,14 @@ sub reverse_complement {
   $self->cigar_string($cigar_string);
 }
 
+
+
 =head2 _parse_cigar
 
   Args       : none
   Example    : none
-  Description: creates ungapped features from internally stored cigar line
+  Description: PRIVATE (internal) method - creates ungapped features from 
+               internally stored cigar line
   Returntype : list of Bio::EnsEMBL::FeaturePair
   Exceptions : none
   Caller     : ungapped_features
@@ -413,7 +421,8 @@ sub _parse_cigar {
   Description: creates internal cigarstring and start,end hstart,hend
                entries.
   Returntype : none, fills in values of self
-  Exceptions : argument list is sanity checked
+  Exceptions : argument list undergoes many sanity checks - throws under many
+               invalid conditions  
   Caller     : new
 
 =cut
@@ -720,8 +729,17 @@ sub _parse_features {
 
 
 
+=head2 _transform_to_RawContig
 
+  Arg [1]    : none
+  Example    : none
+  Description: PRIVATE method. Transforms this feature from slice coordinates
+               to rawcontig coodinates.  
+  Returntype : list of BaseAlignFeatures
+  Exceptions : none
+  Caller     : transform
 
+=cut
 
 sub _transform_to_RawContig{
   my ($self) = @_;
@@ -799,6 +817,8 @@ sub _hit_unit {
   $self->throw( "Abstract method call!" );
 }
 
+
+
 =head2 _query_unit
 
   Args       : none
@@ -816,6 +836,20 @@ sub _query_unit {
   $self->throw( "Abstract method call!" );
 }
 
+
+
+=head2 _transform_feature_to_RawContig
+
+  Arg [1]    : Bio::EnsEMBL::FeaturePair
+  Example    : none
+  Description: Transforms a component ungapped feature from slice coordinates 
+               to RawContig coordinates.
+  Returntype : list of Bio::EnsEMBL::FeaturePairs
+  Exceptions : thrown if feature is not attached to a contig (slice)
+               thrown if attached slice does not have an adaptor
+  Caller     : internal
+
+=cut
 
 sub _transform_feature_to_RawContig{
   my($self, $feature) =  @_;

@@ -40,7 +40,7 @@ Object to store details of an analysis run
 
 =head1 CONTACT
 
-Describe contact details here
+Post questions to the EnsEMBL dev mailing list: <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
