@@ -94,6 +94,24 @@ sub get_Contig{
    $self->throw("Not implemented in the object!");
 }
 
+=head2 get_all_Clone_id
+
+ Title   : get_all_Clone_id
+ Usage   : @cloneid = $obj->get_all_Clone_id
+ Function: returns all the valid (live) Clone ids in the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Clone_id{
+   my ($self) = @_;
+   
+   $self->throw("Not implemented in the object!");
+   
+}
 
 =head2 write_Gene
 

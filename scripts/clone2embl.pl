@@ -56,7 +56,7 @@
 
 use strict;
 
-use Bio::EnsEMBL::AceDB::Obj;
+#use Bio::EnsEMBL::AceDB::Obj;
 use Bio::EnsEMBL::DB::Obj;
 use Bio::EnsEMBL::TimDB::Obj;
 use Bio::AnnSeqIO;
@@ -75,6 +75,7 @@ my $help;
 my $noacc  = 0;
 my $aceseq;
 my $fromfile = 0;
+my $getall =0;
 my $pepformat = 'Fasta';
 my $test;
 
@@ -95,6 +96,7 @@ my $test;
 	     'aceseq:s'  => \$aceseq,
 	     'pepform:s' => \$pepformat,
 	     'fromfile'  => \$fromfile,
+	     'getall'    => \$getall,
 	     'test'      => \$test,
 	     );
 
@@ -132,6 +134,8 @@ if( $fromfile == 1 ) {
 	my ($cloneid) = split;
 	push(@clones,$cloneid);
     }
+} elsif ( $getall == 1 ) {
+    @clones = $db->get_all_Clone_id();
 } else {
     @clones = @ARGV;
 }
@@ -139,73 +143,77 @@ if( $fromfile == 1 ) {
 
 foreach my $clone_id ( @clones ) {
 
-    my $clone = $db->get_Clone($clone_id);
-    my $as = $clone->get_AnnSeq();
-    # choose output mode
-
-
-    if( $format =~ /gff/ ) {
-	foreach my $contig ( $clone->get_all_Contigs )  {
-	    my @seqfeatures = $contig->as_seqfeatures();
-	    foreach my $sf ( @seqfeatures ) {
-		print $sf->gff_string, "\n";
+    eval {
+	my $clone = $db->get_Clone($clone_id);
+	my $as = $clone->get_AnnSeq();
+	# choose output mode
+	
+	
+	if( $format =~ /gff/ ) {
+	    foreach my $contig ( $clone->get_all_Contigs )  {
+		my @seqfeatures = $contig->as_seqfeatures();
+		foreach my $sf ( @seqfeatures ) {
+		    print $sf->gff_string, "\n";
+		}
+	    }
+	} elsif ( $format =~ /fastac/ ) {
+	    my $seqout = Bio::SeqIO->new( -format => 'Fasta' , -fh => \*STDOUT);
+	    
+	    foreach my $contig ( $clone->get_all_Contigs ) {
+		$seqout->write_seq($contig->seq());
+	    }
+	} elsif ( $format =~ /embl/ ) {
+	    
+	    $as->seq->desc("Reannotated sequence via EnsEMBL");
+	    my $comment = Bio::Annotation::Comment->new();
+	    
+	    $comment->text("This sequence was reannotated via the EnsEMBL system. Please visit the EnsEMBL web site, http://ensembl.ebi.ac.uk for more information");
+	    $as->annotation->add_Comment($comment);
+	    
+	    $comment = Bio::Annotation::Comment->new();
+	    $comment->text("The /gene_id indicates a unique id for a gene, /transcript_id a unique id for a transcript and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://ensembl.ebi.ac.uk/docs/embl.html");
+	    $as->annotation->add_Comment($comment);
+	    
+	    my $sf = Bio::SeqFeature::Generic->new();
+	    $sf->start(1);
+	    $sf->end($as->seq->seq_len());
+	    $sf->primary_tag('source');
+	    $sf->add_tag_value('organism','Homo sapiens');
+	    $as->add_SeqFeature($sf);
+	    my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
+	    $emblout->_post_sort(\&sort_FTHelper_EnsEMBL);
+	    
+	    # attach ensembl specific dumping functions
+	    $emblout->_id_generation_func(\&id_EnsEMBL);
+	    $emblout->_kw_generation_func(\&kw_EnsEMBL);
+	    $emblout->_sv_generation_func(\&sv_EnsEMBL);
+	    $emblout->_ac_generation_func(\&ac_EnsEMBL);
+	    
+	    if( $nodna == 1 ) {
+		$emblout->_show_dna(0);
+	    }
+	    
+	    $emblout->write_annseq($as);
+	} elsif ( $format =~ /pep/ ) {
+	    my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => \*STDOUT ) ;
+	    
+	    foreach my $gene ( $clone->get_all_Genes() ) {
+		foreach my $trans ( $gene->each_Transcript ) {
+		    my $tseq = $trans->translate();
+		    $seqout->write_seq($tseq);
+		}
+	    }
+	} elsif ( $format =~ /ace/ ) {
+	    foreach my $contig ( $clone->get_all_Contigs() ) {
+		$contig->write_acedb(\*STDOUT,$aceseq);
 	    }
 	}
-    } elsif ( $format =~ /fastac/ ) {
-	my $seqout = Bio::SeqIO->new( -format => 'Fasta' , -fh => \*STDOUT);
-	
-	foreach my $contig ( $clone->get_all_Contigs ) {
-	    $seqout->write_seq($contig->seq());
-	}
-    } elsif ( $format =~ /embl/ ) {
-	
-	$as->seq->desc("Reannotated sequence via EnsEMBL");
-	my $comment = Bio::Annotation::Comment->new();
-	
-	$comment->text("This sequence was reannotated via the EnsEMBL system. Please visit the EnsEMBL web site, http://ensembl.ebi.ac.uk for more information");
-	$as->annotation->add_Comment($comment);
-	
-	$comment = Bio::Annotation::Comment->new();
-	$comment->text("The /gene_id indicates a unique id for a gene, /transcript_id a unique id for a transcript and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://ensembl.ebi.ac.uk/docs/embl.html");
-	$as->annotation->add_Comment($comment);
-	
-	my $sf = Bio::SeqFeature::Generic->new();
-	$sf->start(1);
-	$sf->end($as->seq->seq_len());
-	$sf->primary_tag('source');
-	$sf->add_tag_value('organism','Homo sapiens');
-	$as->add_SeqFeature($sf);
-	my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
-	$emblout->_post_sort(\&sort_FTHelper_EnsEMBL);
-	
-	# attach ensembl specific dumping functions
-	$emblout->_id_generation_func(\&id_EnsEMBL);
-	$emblout->_kw_generation_func(\&kw_EnsEMBL);
-	$emblout->_sv_generation_func(\&sv_EnsEMBL);
-	$emblout->_ac_generation_func(\&ac_EnsEMBL);
-	
-	if( $nodna == 1 ) {
-	    $emblout->_show_dna(0);
-	}
-	
-	$emblout->write_annseq($as);
-    } elsif ( $format =~ /pep/ ) {
-	my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => \*STDOUT ) ;
-	
-	foreach my $gene ( $clone->get_all_Genes() ) {
-	    foreach my $trans ( $gene->each_Transcript ) {
-		my $tseq = $trans->translate();
-		$seqout->write_seq($tseq);
-	    }
-	}
-    } elsif ( $format =~ /ace/ ) {
-	foreach my $contig ( $clone->get_all_Contigs() ) {
-	    $contig->write_acedb(\*STDOUT,$aceseq);
-	}
+    };
+    if( $@ ) {
+	print STDERR "Dumping Error! Cannot dump $clone_id\n$@\n";
     }
-    
 }
-
+    
 #########################
 # sub routines
 #########################

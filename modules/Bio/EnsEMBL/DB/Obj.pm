@@ -324,6 +324,30 @@ sub get_Contig{
 					       -id => $id );
    return $contig;
 }
+=head2 get_all_Clone_id
+
+ Title   : get_all_Clone_id
+ Usage   : @cloneid = $obj->get_all_Clone_id
+ Function: returns all the valid (live) Clone ids in the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Clone_id{
+   my ($self) = @_;
+   my $sth = $self->prepare("select id from clone");
+   my @out;
+
+   $sth->execute;
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+   return @out;
+}
 
 =head2 write_Gene
 

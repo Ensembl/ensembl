@@ -2,7 +2,7 @@
 
 use strict;
 
-use Bio::EnsEMBL::AceDB::Obj;
+#use Bio::EnsEMBL::AceDB::Obj;
 use Bio::EnsEMBL::DB::Obj;
 use Bio::EnsEMBL::TimDB::Obj;
 use Bio::AnnSeqIO;
@@ -18,7 +18,9 @@ my $thost   = 'croc';
 my $tport   = '410000';
 
 my $usefile = 0;
+my $use_embl = 0;
 &GetOptions( 
+	     'fembl'     => \$use_embl, 
 	     'fdbtype:s' => \$fdbtype,
 	     'fhost:s'   => \$fhost,
 	     'fport:n'   => \$fport,
