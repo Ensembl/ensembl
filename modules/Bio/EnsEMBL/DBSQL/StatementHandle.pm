@@ -27,6 +27,8 @@ package Bio::EnsEMBL::DBSQL::StatementHandle;
 use vars qw(@ISA);
 use strict;
 
+use Bio::EnsEMBL::Utils::Exception qw(warning);
+
 use DBD::mysql;
 
 @ISA = qw(DBI::st);
@@ -48,15 +50,17 @@ sub dbc {
 sub DESTROY {
   my ($obj) = @_;
 
+  my $dbc = $obj->dbc;
+  $obj->dbc(undef);
+
   DBI::st::DESTROY($obj);
 
-  my $dbc = $obj->dbc;
-  # print STDERR "StatementHandle destroy $obj $dbc\n";
-
-  if( $dbc  && $dbc->disconnect_when_inactive) {
-    $dbc->disconnect_if_idle;
+  # The count for the number of kids is decremented only after this
+  # function is complete. Disconnect if there is 1 kid (this one) remaining.
+  if($dbc  && $dbc->disconnect_when_inactive() &&
+     $dbc->db_handle->{Kids} == 1) {
+    $dbc->db_handle->disconnect();
   }
-  $obj->dbc(undef);
 }
 
 1;
