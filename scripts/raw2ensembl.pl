@@ -63,7 +63,7 @@ use Bio::EnsEMBL::PerlDB::Contig;
 
 my($id, $acc, $ver, $phase, $contigs);
 my($fasta, $single, $seqio, $seq);
-my($dbname, $dbhost, $dbuser);
+my($dbname, $dbhost, $dbuser, $dbpass);
 my($help, $info, $write, $replace, $verbose, $idcheck);
 
 
@@ -79,6 +79,7 @@ my $ok = &GetOptions(
     "dbname=s"  => \$dbname,
     "dbhost=s"  => \$dbhost,
     "dbuser=s"  => \$dbuser,
+    "dbpass=s"  => \$dbpass,
     "help"      => \$help,
     "info"      => \$info,
     "write"     => \$write,
@@ -128,7 +129,8 @@ if ($phase == 4 and defined $contigs) {
 my $dbobj = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
     '-host'   => $dbhost,
     '-user'   => $dbuser,
-    '-dbname' => $dbname
+    '-dbname' => $dbname,
+    '-pass'   => $dbpass
 ) or die "Can't connect to DB $dbname on $dbhost as $dbuser";
 
 
@@ -138,7 +140,8 @@ $seqio = new Bio::SeqIO(
     -format => 'fasta'
 );
 while ($seq = $seqio->next_seq) {
-    last if $single or $seq->display_id =~ /$id/;
+    my ($id2) = $seq->desc =~ /(\S+)/;
+    last if $single || $seq->display_id =~ /$id/ || $id2 eq $id;
     undef $seq;
 }
 close DNA;
@@ -191,7 +194,7 @@ if ($phase == 4) {
 else {
     my @split;
     if (defined $contigs) {
-	@split = &getContigs($contigs);
+	@split = &getContigs($contigs, $id);
     }
     else {
         @split = &scanClone($seq->seq);
@@ -284,7 +287,7 @@ sub scanClone {
   my $pos = 0;
   while ($pos < length $seq) {
     my $unused = substr $seq, $pos;
-    ($gap) = $unused =~ /(n{50,})/;
+    ($gap) = $unused =~ /(n{50,})/i;
     last unless $gap;
     $start = 1 + index $seq, $gap, $pos;
     push @gaps, [ $start, $start + length($gap) - 1 ];
@@ -327,13 +330,14 @@ sub scanClone {
 =cut
 
 sub getContigs {
-    my($file) = @_;
-    my($start, $end, @contigs);
+    my($file, $sv) = @_;
+    my(@contigs);
 
     open CONTIG, "< $file" or die "Can't open contigs file $file";
     while (<CONTIG>) {
 	chomp;
-	($start, $end) = split;
+	my ($clone, $start, $end) = split;
+	next unless $clone eq $sv;
 	unless ($start && $end && $start < $end) {
 	    die "Illegal line in contig file: $_\n";
 	}
