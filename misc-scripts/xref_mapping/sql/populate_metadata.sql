@@ -89,7 +89,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.HUMAN.fasta.gz', '', now(), now(), "IPIParser");
 
 ##      CCDS
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2000, 9606,'CCDS.txt', '', now(), now(), "CCDSParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2000, 9606,'/dummy/CCDS.txt', '', now(), now(), "CCDSParser");
 
 
 ###MOUSE
