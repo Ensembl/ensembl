@@ -776,6 +776,36 @@ sub dnadb {
 }
 
 
+
+=head2 deleteObj
+
+  Arg [1]    : none
+  Example    : none
+  Description: Cleans up circular reference loops so proper garbage collection
+               can occur.
+  Returntype : none
+  Exceptions : none
+  Caller     : DBAdaptorContainer::DESTROY
+
+=cut
+
+sub deleteObj {
+  my $self = shift;
+
+  #print "called deleteObj on DBAdaptor\n";
+
+  #clean up external feature adaptor references
+  if(exists $self->{'_xf_adaptors'}) {
+    foreach my $key (keys %{$self->{'_xf_adaptors'}}) {
+      $self->{'_xf_adaptors'}->{$key} = undef;
+    }
+  }
+
+  #call the superclass deleteObj method
+  $self->SUPER::deleteObj;
+}
+
+
 ###########################################################
 #
 # Support for DAS
@@ -881,9 +911,9 @@ sub add_ExternalFeatureAdaptor {
   }
 
   #if the track name exists add numbers to the end until a free name is found
-  if(exists $self->{'_xf_adaptor'}->{"$track_name"}) {
+  if(exists $self->{'_xf_adaptors'}->{"$track_name"}) {
     my $num = 2;
-    $num++ while(exists $self->{'_xf_adaptor'}->{"$track_name$num"});
+    $num++ while(exists $self->{'_xf_adaptors'}->{"$track_name$num"});
     $self->{'_xf_adaptors'}->{"$track_name$num"} = $adaptor;
   } else {
     $self->{'_xf_adaptors'}->{"$track_name"} = $adaptor;
@@ -1539,7 +1569,6 @@ sub get_all_Transcript_id{
 
    return undef;
 }
-
 
 
 =head2 delete_Exon

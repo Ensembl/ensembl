@@ -18,7 +18,7 @@ Bio::EnsEMBL::External::ExternalFeatureAdaptor - Allows features created externa
 
   $xf_adaptor = new ExternalFeatureAdaptorSubClass;
 
-  #explicitly add db, (can be done automatically by add_ExternalFeatureAdaptor)
+  #Connect the EnsEMBL core database:
   $xf_adaptor->db($database_adaptor);
 
   #get some features in RawContig coords
@@ -40,14 +40,13 @@ Bio::EnsEMBL::External::ExternalFeatureAdaptor - Allows features created externa
   $clone = $clone_adaptor->fetch_by_accession('AC000087');
   @feats = ${$xf_adaptor->fetch_all_by_Clone($clone);
 
+  #Add the adaptor to the ensembl core dbadaptor (implicitly sets db attribute)
+  $database_adaptor->add_ExternalFeatureAdaptor($xf_adaptor);
+
   #get some features in Slice coords
   $slice_adaptor = $database_adaptor->get_SliceAdaptor;
   $slice = $slice_adaptor->fetch_by_chr_start_end(1,100000,200000);
   @feats = @{$xf_adaptor->fetch_all_by_Slice($slice)};
-
-  #Add the external adaptor to the EnsEMBL system
-  #this also implicitly adds the dbadaptor so you don't have to call 'db'
-  $database_adaptor->add_ExternalFeatureAdaptor($xf_adaptor);
 
   #now features can be retrieved directly from slice or RawContig
   @feats = @{$slice->get_all_ExternalFeatures};
@@ -93,10 +92,10 @@ ExternalFeature adaptor will be altered by the functions called.
 Before the non-overridden ExternalFeatureAdaptor fetch methods may be called
 an EnsEMBL core database adaptor must be attached to the ExternalFeatureAdaptor
 .  This database adaptor is required to perform the remappings between various
-coordinate system.  This may be done explicitly through a call to the db 
-accessor method, or implicitly by adding the ExternalFeatureAdaptor to the 
-database adaptor through a call to the DBAdaptor add_ExternalFeatureAdaptor 
-method. 
+coordinate system.  This may be done implicitly by adding the 
+ExternalFeatureAdaptor to the database adaptor through a call to the 
+DBAdaptor add_ExternalFeatureAdaptor method or explicitly by calling the 
+ExternalFeatureAdaptor db method.
 
 
 =head1 CONTACT
@@ -164,7 +163,10 @@ sub db {
   my ($self, $value) = @_;
 
   if($value) {
-    $self->{'db'} = $value;
+    #avoid potentially nasty memory leaks
+    if(ref $value && $value->isa("Bio::EnsEMBL::Container")) {
+      $self->{'db'} = $value->_obj;
+    }
   }     
 
   return $self->{'db'};

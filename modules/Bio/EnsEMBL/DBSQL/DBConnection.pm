@@ -479,7 +479,7 @@ sub deleteObj {
   foreach my $adaptor_name (keys %{$self->{'_adaptors'}}) {
     #print STDERR "\tcleaning [$adaptor_name]\n";
 
-    my $adaptor = $self->{'_adaptors'}{$adaptor_name};
+    my $adaptor = $self->{'_adaptors'}->{$adaptor_name};
 
     #call each of the adaptor deleteObj methods
     if($adaptor && $adaptor->can('deleteObj')) {
@@ -488,7 +488,7 @@ sub deleteObj {
     }
 
     #break dbadaptor -> object adaptor references
-    $self->{'_adaptors'}{$adaptor_name} = undef;
+    $self->{'_adaptors'}->{$adaptor_name} = undef;
   }
 
   #print STDERR "Cleaning up attached databases\n";

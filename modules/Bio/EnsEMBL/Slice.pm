@@ -913,7 +913,8 @@ sub get_landmark_MarkerFeatures {
 
   my $lma = $self->adaptor()->db()->get_LandmarkMarkerAdaptor();
   if( ! defined $lma ) {
-    return [];
+   $self->warn("Lite database must be available to retrieve landmark markers");
+   return [];
   } else {
     return $lma->fetch_all_by_Slice( $self );
   }
