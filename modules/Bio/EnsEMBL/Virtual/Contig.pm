@@ -722,7 +722,7 @@ sub get_all_Genes {
     my @genes=$self->_gene_query(%gene);
 
     $self->{'_all_genes'}=\@genes;
-    return $self->{'_all_genes'};
+    return @{$self->{'_all_genes'}};
 
 
 
