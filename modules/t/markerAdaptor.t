@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;  
 	use Test ;
-	plan tests => 6;
+	plan tests => 7;
 }
 
 use MultiTestDB;
@@ -62,3 +62,14 @@ ok(scalar(@$markers == 0));
 $marker_adaptor->fetch_attributes($marker);
 ok(scalar(@{$marker->get_all_MarkerSynonyms}) == 9 &&
    scalar(@{$marker->get_all_MapLocations}) == 2);
+
+#####
+# 7 #
+#####
+
+#test fetch_all
+
+$markers = $marker_adaptor->fetch_all;
+
+debug('expecting 100 markers, got ' . scalar(@$markers));
+ok(scalar(@$markers) == 100);
