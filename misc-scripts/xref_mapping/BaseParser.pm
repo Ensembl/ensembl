@@ -21,7 +21,7 @@ my %name2species_id;
 
 my $host = "ecs4";
 my $port = 3350;
-my $dbname = "glenn_test_xref";
+my $dbname = "ianl_xref_test";
 my $user = "ensadmin";
 my $pass = "ensembl";
 my @species;
@@ -187,10 +187,16 @@ sub get_source_id_for_filename {
   my $source_id;
   if (@row) {
     $source_id = $row[0];
-  } else {
-    warn("Couldn't get source ID for file $file\n");
-    $source_id = -1;
+  } 
+  else {
+    if($file =~ /rna.fna/ or $file =~ /gpff/){
+      $source_id = 3;
+    }else{ 
+      warn("Couldn't get source ID for file $file\n");
+      $source_id = -1;
+    }
   }
+  
 
   return $source_id;
 
@@ -239,6 +245,29 @@ sub get_source_id_for_source_name {
   return $source_id;
 
 }
+sub get_valid_codes{
+  my ($self,$source_name,$species_id) =@_;
+  my %valid_codes;
+  my @sources;
+
+  my $sql = "select source_id from source where name like '%".$source_name."%'";
+  my $sth = dbi()->prepare($sql);
+  $sth->execute();
+  while(my @row = $sth->fetchrow_array()){
+    push @sources,$row[0];
+  }
+  $sth->finish;
+  
+  foreach my $source (@sources){
+    $sql = "select accession, xref_id from xref where species_id = $species_id and source_id = $source";
+    my $sth = dbi()->prepare($sql);
+    $sth->execute();
+    while(my @row = $sth->fetchrow_array()){
+      $valid_codes{$row[0]} =$row[1];
+    }
+  }
+  return %valid_codes;
+}
 
 # --------------------------------------------------------------------------------
 # Upload xrefs to the database
@@ -280,6 +309,9 @@ sub upload_xrefs {
 
       # create entry in primary_xref table with sequence; if this is a "cumulative"
       # entry it may already exist, and require an UPDATE rather than an INSERT
+      if(!(defined($xref_id) and $xref_id)){
+	print STDERR "xref_id is not set \n$xref->{ACCESSION}\n  $xref->{LABEL}\n $xref->{DESCRIPTION}\n $xref->{SOURCE_ID}\n";
+      }
       if (primary_xref_id_exists($xref_id)) {
 	
 	$pri_update_sth->execute($xref->{SEQUENCE}, $xref_id) || die $dbi->errstr;
@@ -321,6 +353,12 @@ sub upload_xrefs {
 
 	my $dep_xref_id = insert_or_select($xref_sth, $dbi->err, $dep{ACCESSION}, $dep{SOURCE_ID});
 			
+	if($dbi->err){
+	  print STDERR "dbi\t$dbi->err \n$dep{ACCESSION} \n $dep{SOURCE_ID} \n";
+	}
+	if(!defined($dep_xref_id)){
+	  print STDERR "$dep{ACCESSION} \n $dep{SOURCE_ID} \n".$dbi->err."\n";
+	}
 	$dep_sth->execute($xref_id, $dep_xref_id, $dep{LINKAGE_ANNOTATION}, $dep{SOURCE_ID} ) || die $dbi->errstr;
 	# TODO linkage anntation?
 
@@ -486,7 +524,7 @@ sub insert_or_select {
   if ($error) {
 
     $id = get_xref_id_by_accession_and_source($acc, $source);
-    #print "Got existing xref id " . $id . " for " . $acc . " " . $source . "\n";
+#    print STDERR "Got existing xref id " . $id . " for " . $acc . " " . $source . "\n";
 
   } else {
 	
