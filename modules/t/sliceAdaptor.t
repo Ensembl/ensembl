@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 57;
+	plan tests => 56;
 }
 
 use MultiTestDB;
@@ -336,18 +336,22 @@ ok($slice->strand == -1);
 #
 # test fetch_all
 #
-my $slices = $slice_adaptor->fetch_all('chromosome');
-ok(@$slices == 62);
 
-$slices = $slice_adaptor->fetch_all('chromosome', undef,1e6, 1e4);
+#default no duplicates and reference only
+my $slices = $slice_adaptor->fetch_all('chromosome',undef);
+print_slices($slices);
+ok(@$slices == 63);
+
+# include duplicates
+$slices = $slice_adaptor->fetch_all('chromosome', undef,0, 1);
 
 print_slices($slices);
-ok(@$slices == 3185);
+ok(@$slices == 62);
 
 
-$slices = $slice_adaptor->fetch_all('contig', undef, 50000);
+$slices = $slice_adaptor->fetch_all('contig', undef);
 
-ok(@$slices == 26);
+ok(@$slices == 12);
 
 print_slices($slices);
 
@@ -356,11 +360,6 @@ $slices = $slice_adaptor->fetch_all('toplevel');
 
 ok(@$slices == 1 && $slices->[0]->seq_region_name() eq '20');
 print_slices($slices);
-
-$slices = $slice_adaptor->fetch_all('toplevel', undef, 1e6, 1e4);
-ok(@$slices == 64);
-print_slices($slices);
-
 
 #
 # test the fuzzy matching of clone accessions
