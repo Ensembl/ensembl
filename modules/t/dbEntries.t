@@ -4,13 +4,14 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 12;
+	plan tests => 14;
 }
 
 use MultiTestDB;
 use TestUtils qw ( debug test_getter_setter );
 
 use Bio::EnsEMBL::DBEntry;
+use Bio::EnsEMBL::ProteinFeature;
 
 # switch on the debug prints
 
@@ -101,24 +102,40 @@ my $goref = Bio::EnsEMBL::GoXref->new
    );
 $goref->add_linkage_type( "IC" );
 
+my $analysis = Bio::EnsEMBL::Analysis->new
+  ( -logic_name => 'protmap',
+    -program => 'pmatch',
+    -database => 'pmatch' );
+
+
 my $ident_xref = Bio::EnsEMBL::IdentityXref->new
   (
    -primary_id => "1",
    -dbname => "SPTREMBL",
    -release => "1",
-   -display_id => "Ens related Ident"
+   -display_id => "Ens related Ident",
+   -cigar_line => "10MDI2M3D2M3I5M",
+   -translation_start => 1,
+   -translation_end => 23,
+   -hit_start => 1,
+   -hit_end => 23,
+   -score => 20.0,
+   -evalue => 123,
+   -analysis => $analysis
    );
 
 $ident_xref->query_identity( 100 );
 $ident_xref->target_identity( 95 );
 
 
-$multi->hide( "core", "object_xref", "xref", "identity_xref", "go_xref" );
+$multi->hide( "core", "object_xref", "xref", "identity_xref", "go_xref", "analysis" );
 
 
 my $gene = $ga->fetch_by_dbID( $all_gene_ids->[0] );
 my $tr = $gene->get_all_Transcripts()->[0];
 my $tl = $tr->translation();
+
+
 
 
 
@@ -183,11 +200,44 @@ debug( "Number of identity_xrefs = $ident_count" );
 ok( $ident_count == 2 );
 
 
+my $protein_feature = Bio::EnsEMBL::ProteinFeature->new
+  (
+   -start => 1,
+   -end => 23,
+   -seqname => 'SP0001'
+  );
+
+my $mapper = $ident_xref->get_mapper();
+
+debug( "Mapper ".ref( $mapper ) );
+
+my $copy_features = $ident_xref->transform_feature( $protein_feature );
+
+for my $feat ( @$copy_features ) {
+  debug(join("\n", map({$_ ."->" . $feat->{$_} } keys %$feat) ));
+  debug( "------------");
+}
+
+# 4 M-sections in the xref make 4 mapped sections
+
+#
+# 10 mapping features via alignment
+#
+ok( scalar( @$copy_features ) == 4 );
+
+# 10M is the first matching section
+
+#
+# 11 mapping first section to 1-10
+#
+ok( $copy_features->[0]->start() == 1 &&
+    $copy_features->[0]->end() == 10 );
+
 $multi->restore();
 
 
 #
-# 10-12 Test that external synonyms and go evidence tags are retrieved
+# 12-14 Test that external synonyms and go evidence tags are retrieved
 #
 my $ta = $db->get_TranscriptAdaptor();
 my $translation = $ta->fetch_by_dbID(21737)->translation;
