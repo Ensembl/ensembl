@@ -1,0 +1,57 @@
+use strict;
+use DBI;
+
+# Munge tab-delimited files from two databases where columns
+# in different order. Takes two database locations and a table
+# name; returns an awk script to do the conversion
+
+my (%from_col, %to_col);
+
+my $db1 = shift or die;   # DB1: name@host
+my $db2 = shift or die;   # DB2: name@host
+my $table = shift or die;
+
+my ($db, $host) = $db1 =~ /(\w+)@(\w+)/;
+my $dsn = "DBI:mysql:database=$db;host=$host";
+my $dbh1 = DBI->connect($dsn, "ensro");
+
+($db, $host) = $db2 =~ /(\w+)@(\w+)/;
+$dsn = "DBI:mysql:database=$db;host=$host";
+my $dbh2 = DBI->connect($dsn, "ensro");
+
+my $sth = $dbh1->prepare(qq{desc $table});
+$sth->execute;
+my $i = 0;
+while (my @row = $sth->fetchrow_array) {
+    $from_col{$row[0]} = $i;
+    $i++;
+}
+
+$sth = $dbh2->prepare(qq{desc $table});
+$sth->execute;
+
+$i = 0;
+while (my @row = $sth->fetchrow_array) {
+    $to_col{$row[0]} = $i;
+    $i++;
+}
+
+foreach my $c (keys %from_col) {
+    print "Error - no $c in new table\n" unless defined $to_col{$c};
+}
+
+my @out;
+foreach my $c (keys %to_col) {
+    print "Error - no $c in old table\n" unless defined $from_col{$c};
+    $out[$to_col{$c}] = $c;
+}
+
+my $awk = q(awk '{OFS = "\t"; print );
+foreach my $c (0 .. $#out) {
+    $awk .= '$' . (1 + $from_col{$out[$c]}) . ',';
+}
+chop $awk;
+$awk .= q(}');
+print "$awk\n";
+
+$sth->finish;
