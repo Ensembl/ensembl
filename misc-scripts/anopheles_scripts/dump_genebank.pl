@@ -14,6 +14,7 @@ my $path      = 'MOZ2';
 my %scafmap;
 my %utr;
 my %utr_tmp;
+my %ebimap;
 
 my %map;
 
@@ -41,6 +42,13 @@ open (MAP,"/Users/emmanuelmongin/work/ncbi_dump/AAAB01.output.p2g") || die;
 open (OUT,">/Users/emmanuelmongin/work/ncbi_dump/AAAB01008846.tbl") || die;
 open (SEQ,">/Users/emmanuelmongin/work/ncbi_dump/AAAB01008846.fsa") || die;
 open (SCAFMAP,"/Users/emmanuelmongin/work/ncbi_dump/accessions") || die;
+open (EBIMAP,"/Users/emmanuelmongin/work/ncbi_dump/ebi_id_mapping.txt") || die;
+
+while(<EBIMAP>) {
+    chomp;
+    my ($tr,$ac) = split;
+    $ebimap{$tr} = $ac;
+}
 
 while(<SCAFMAP>) {
     chomp;
@@ -60,116 +68,114 @@ close(MAP);
 #my $query1 = "select clone_id,name from clone where name = 'AAAB01008961'";
 #my $query1 = "select c.clone_id, c.name, a.superctg_ori from clone c, assembly a where name = 'AAAB01008846' and a.superctg_name = c.name";
 
-my $query1 = "select c.clone_id, c.name, a.superctg_ori from clone c, assembly a where name = 'AAAB01008961' and a.superctg_name = c.name";
+my $query1 = "select c.clone_id, c.name, a.superctg_ori from clone c, assembly a where name = 'AAAB01008846' and a.superctg_name = c.name limit 1";
 
 my $sth1 = $db->prepare($query1);
 $sth1->execute();
 
-my ($id,$clone_name,$ori) = $sth1->fetchrow_array;
+while (my ($id,$clone_name,$ori) = $sth1->fetchrow_array) {
 
-
-
-my $slice = $slice_adapt->fetch_by_clone_accession($clone_name);
-
-if ($ori == -1) {
-    $slice = $slice->invert();
-}
-
-
-my $chr_name = $slice->chr_name;
-
-my $clone_seq = $slice->seq;
-
-my $old_clone_name = $scafmap{$clone_name};
-
-print SEQ ">gnl|WGS:AAAB|$old_clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs] [chromosome=$chr_name]\n$clone_seq\n";
-
-
-print OUT ">Feature gnl|WGS:AAAB|$old_clone_name\n";
-
-my @genes = @{$slice->get_all_Genes};
-
-foreach my $gene(@genes) {
+    my $slice = $slice_adapt->fetch_by_clone_accession($clone_name);
     
-    my $gene_id = $gene->dbID;
+    if ($ori == -1) {
+	$slice = $slice->invert();
+    }
     
-    my @transcripts = @{$gene->get_all_Transcripts};
+    my $chr_name = $slice->chr_name;
     
-    my $tr_start = $transcripts[0]->start;
+    my $clone_seq = $slice->seq;
+
+    my $length_clone = length($clone_seq);
+
+    my $old_clone_name = $scafmap{$clone_name};
     
-    foreach my $tr(@transcripts) {
+    print SEQ ">gnl|WGS:AAAB|$old_clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs] [chromosome=$chr_name]\n$clone_seq\n";
+    
+    print OUT ">Feature gnl|WGS:AAAB|$old_clone_name\n";
+    
+    my @genes = @{$slice->get_all_Genes};
+    
+    foreach my $gene(@genes) {
+	if (($gene->strand == 1 && $gene->start >0 && $gene->end <= $length_clone) || ($gene->strand == -1 && $gene->start <= $length_clone && $gene->end > 0)) {
 	
-	$tr_start = $tr->start;
-    }
-    
-    my $new_gene = &checks($gene);
-    
-    my @new_transcripts = @{$new_gene->get_all_Transcripts};
-    
+	    my $gene_id = $gene->dbID;
+	    
+	    my @transcripts = @{$gene->get_all_Transcripts};
+	
+	    my $tr_start = $transcripts[0]->start;
+	    
+	    foreach my $tr(@transcripts) {
+		$tr_start = $tr->start;
+	    }
+	    
+	    my $new_gene = &checks($gene);
+	    
+	    my @new_transcripts = @{$new_gene->get_all_Transcripts};
+	    
 #print the gene coordinates
-
-    my $new_gene_dbID = $new_gene->dbID;
-    
-    my $start = $gene->start;
-    my $end = $gene->end;
-    my $name = $gene->stable_id;
-
-    my $ebi;
-    my $cel_gene;
-    my $cel_transcript;
-    my $cel_translation;
-    
-    my $cdna_start;
-    my $cdna_end;
-    my $coding_start;
-    my $coding_end;
-    
+	    
+	    my $new_gene_dbID = $new_gene->dbID;
+	    
+	    my $start = $gene->start;
+	    my $end = $gene->end;
+	    my $name = $gene->stable_id;
+	    
+	    my $ebi;
+	    my $cel_gene;
+	    my $cel_transcript;
+	    my $cel_translation;
+	    
+	    my $cdna_start;
+	    my $cdna_end;
+	    my $coding_start;
+	    my $coding_end;
+	    
 #Check for the gene the presence of UTRs\
-    
-
-    if (($utr{$new_gene_dbID}->{'up'}==1)&&($utr{$new_gene_dbID}->{'down'}==1)) {
-	if ($gene->strand == 1) {
-	    print OUT "$start\t$end\tgene\n";
-	}
-	else {
-	    print OUT "$end\t$start\tgene\n";
-	}
-    }
-    
-    elsif (($utr{$new_gene_dbID}->{'up'} == 1)&&($utr{$new_gene_dbID}->{'down'}!=1)) {
-	if ($gene->strand == 1) {
-	    print OUT "$start\t>$end\tgene\n";
-	}
-	else {
-	    print OUT "$end\t>$start\tgene\n";
-	}
-    }
-    
-	elsif (($utr{$new_gene_dbID}->{'up'} != 1)&&($utr{$new_gene_dbID}->{'down'}==1)) {
-	    if ($gene->strand == 1) {
-		print OUT "<$start\t$end\tgene\n";
+    	    
+	    if (($utr{$new_gene_dbID}->{'up'}==1)&&($utr{$new_gene_dbID}->{'down'}==1)) {
+		if ($gene->strand == 1) {
+		    print OUT "$start\t$end\tgene\n";
+		}
+		else {
+		    print OUT "$end\t$start\tgene\n";
+		}
 	    }
-	    else {
-		print OUT "<$end\t$start\tgene\n";
+	    
+	    elsif (($utr{$new_gene_dbID}->{'up'} == 1)&&($utr{$new_gene_dbID}->{'down'}!=1)) {
+		if ($gene->strand == 1) {
+		    print OUT "$start\t>$end\tgene\n";
+		}
+		else {
+		    print OUT "$end\t>$start\tgene\n";
+		}
+	    }
+	    
+	    elsif (($utr{$new_gene_dbID}->{'up'} != 1)&&($utr{$new_gene_dbID}->{'down'}==1)) {
+		if ($gene->strand == 1) {
+		    print OUT "<$start\t$end\tgene\n";
+		}
+		else {
+		    print OUT "<$end\t$start\tgene\n";
+		}
+	    }
+	    
+	    elsif (($utr{$new_gene_dbID}->{'up'} != 1)&&($utr{$new_gene_dbID}->{'down'}!=1)) {
+		if ($gene->strand == 1) {
+		    print OUT "<$start\t>$end\tgene\n";
+		}
+		else {
+		    print OUT "<$end\t>$start\tgene\n";
+		}
+	    }
+	    print OUT "\t\t\tlocus_tag\t$name\n";
+	    
+	    foreach my $new_tr(@new_transcripts) {
+		&print_transcript_coordinates($new_tr);
+		&print_translation_coordinates($new_tr,$db);
 	    }
 	}
-    
-    elsif (($utr{$new_gene_dbID}->{'up'} != 1)&&($utr{$new_gene_dbID}->{'down'}!=1)) {
-	if ($gene->strand == 1) {
-	    print OUT "<$start\t>$end\tgene\n";
-	}
-	else {
-	    print OUT "<$end\t>$start\tgene\n";
-	    }
-    }
-    print OUT "\t\t\tlocus_tag\t$name\n";
-    
-    foreach my $new_tr(@new_transcripts) {
-	&print_transcript_coordinates($new_tr);
-	&print_translation_coordinates($new_tr,$db);
     }
 }
-#}
 
 sub checks {
     my ($gene) = @_;
@@ -609,25 +615,28 @@ sub fetch_2update {
     my $cel_id = $sth->fetchrow;
     my $old_cel_id = "gnl|WGS:AAAB|".$cel_id;
 
+#    my $query1 = "select ts.stable_id from transcript_stable_id ts, xref x, external_db e, object_xref o, transcript t where o.ensembl_id = t.translation_id and t.transcript_id = ts.transcript_id and o.xref_id = x.xref_id and x.external_db_id = e.external_db_id and e.db_name = 'anopheles_paper' and o.ensembl_id = $tr_dbID";
 
-    my $query1 = "select ts.stable_id from transcript_stable_id ts, xref x, external_db e, object_xref o, transcript t where o.ensembl_id = t.translation_id and t.transcript_id = ts.transcript_id and o.xref_id = x.xref_id and x.external_db_id = e.external_db_id and e.db_name = 'anopheles_paper' and o.ensembl_id = $tr_dbID";
+    my $query1 = "select tr.stable_id from transcript_stable_id tr, transcript t, translation_stable_id ts where ts.stable_id = '$tr_dbID' and ts.translation_id = t.translation_id and t.transcript_id = tr.transcript_id";
 
     my $sth1 = $db->prepare($query1);
     $sth1->execute();
 
-    my $ebi_id = $sth1->fetchrow;
+    my $transcript_id = $sth1->fetchrow;
     
-    my $new_ebi_id;
+    
 
-    if($ebi_id) {
-	my ($nid) = $ebi_id =~ /(\d+)$/;
-	$new_ebi_id = "ebiP".int($nid);
-    }
+    my $new_ebi_id = $ebimap{$transcript_id};;
+
+    #if($ebi_id) {
+#	my ($nid) = $ebi_id =~ /(\d+)$/;
+#	$new_ebi_id = "ebiP".int($nid);
+#    }
     
 
 #    print STDERR "EBI: $ebi_id\n";
 
-    my $old_ebi_id = "gnl|WGS:AAAB|".$ebi_id;
+    my $old_ebi_id = "gnl|WGS:AAAB|".$new_ebi_id;
     
      my $query2 = "select x.display_label from xref x, external_db e, object_xref o where o.ensembl_id = $tr_dbID and o.xref_id = x.xref_id and x.external_db_id = e.external_db_id and e.db_name = 'anophele_symbol'";
     
