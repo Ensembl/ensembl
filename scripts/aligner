@@ -1,0 +1,43 @@
+#!/usr/local/ensembl/bin/perl -w
+
+# Output a transcript and its supporting evidence in Fasta format, to
+# stdout.
+# Can also output more than one such alignment.
+#
+# usage: aligner <transid> [<transid> ...]
+#
+# For example:
+# aligner ENST00000286945
+# aligner ENST00000279043 ENST00000217176
+
+use strict;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::EvidenceAlignment;
+
+# database details
+my $host = 'ecs1h';
+my $user = 'ensro';
+my $dbname = 'homo_sapiens_core_4_28';
+
+# main program
+
+my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   => $host,
+                                            -user   => $user,
+                                            -dbname => $dbname);
+
+my $ea = Bio::EnsEMBL::EvidenceAlignment->new(-DBADAPTOR => $db);
+
+foreach my $transcript_id (@ARGV) {
+  $ea->transcriptid($transcript_id);
+  my $evidence_seq_arr_ref;
+  eval {
+    $evidence_seq_arr_ref = $ea->fetch_alignment;
+  };
+  if ($@) {
+    die "error: can't fetch alignment for $transcript_id\n";
+  }
+  foreach my $evidence_obj (@$evidence_seq_arr_ref) {
+    print $evidence_obj->accession_number , "\n" , $evidence_obj->seq , "\n";
+  }
+  print "\n";
+}
