@@ -92,7 +92,7 @@ sub new {
   #new can be called as a class or object method
   my $class = ref($caller) || $caller;
 
-  my ($coord_system, $seq_region_name
+  my ($coord_system, $seq_region_name,
       $start, $end, $strand, $adaptor) =
         rearrange([qw(COORD_SYSTEM SEQ_REGION_NAME
                       START END STRAND ADAPTOR)], @_);
