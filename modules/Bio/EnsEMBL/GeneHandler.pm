@@ -262,8 +262,7 @@ sub _process_Transcript {
             $ft->key("exon");
             # add other stuff to Exon?
             if ($self->strict_EMBL_dumping) {
-                $ft->add_field('db_xref',"");
-                $ft->add_field('note', 'exon_id: '. $exon->id());
+                $ft->add_field('db_xref', 'ENSEMBL:HUMAN-Exon-'. $exon->id);
             } else {
 	        $ft->add_field('created',     $exon->created());
 	        $ft->add_field('modified',    $exon->modified());
@@ -362,11 +361,12 @@ sub _process_Transcript {
     if ($self->strict_EMBL_dumping) {
         # FIXME
         ### NB: 'HUMAN' hard coded - will break with multiple species ###
-        $t_fth->add_field('gene', 'HUMAN-Gene-'. $self->gene->id);
-        my $cds_id = "HUMAN-CDS-" . $trans->translation->id();
+        $t_fth->add_field('db_xref', 'ENSEMBL:HUMAN-Gene-'. $self->gene->id);
+        my $trans_id = $trans->translation->id;
+        my $cds_id = 'ENSEMBL:HUMAN-CDS-'. $trans_id;
         $t_fth->add_field('product', $cds_id);
-        $t_fth->add_field('product', "_$cds_id");
-        $t_fth->add_field('db_xref', "ENSEMBL:$cds_id");
+        $t_fth->add_field('db_xref', $cds_id);
+        $t_fth->add_field('protein_id', "_HUMAN-$trans_id");
     } else {
         my $pseq = $trans->translate();
         $t_fth->add_field('translation',$pseq->str);

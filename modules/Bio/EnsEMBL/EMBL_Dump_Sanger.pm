@@ -70,6 +70,7 @@ use vars qw( @ISA @EXPORT_OK );
 use Exporter;
 use Carp;
 use Bio::Annotation::Reference;
+use Bio::Annotation::DBLink;
 
 # We inherit a number of functions from Bio::EnsEMBL::EMBL_Dump
 use Bio::EnsEMBL::EMBL_Dump qw(
@@ -86,6 +87,8 @@ use Bio::EnsEMBL::EMBL_Dump qw(
                 add_reference
                 ensembl_annseq_output
                 add_phase_keywords
+                add_phase_info
+                add_db_link
                 );
 
 =head2 add_ensembl_comments
@@ -158,8 +161,8 @@ sub add_source_feature {
     $sf->add_tag_value('organism',   'Homo sapiens');
     $sf->add_tag_value('chromosome', $chr ) if $chr;
     $sf->add_tag_value('map',        $map ) if $map;
-    $sf->add_tag_value('library',    $lib ) if $lib;
     $sf->add_tag_value('clone',      $cln ) if $cln;
+    $sf->add_tag_value('clone_lib',  $lib ) if $lib;
     
     $aseq->add_SeqFeature($sf);
 }
@@ -226,6 +229,27 @@ sub add_accession_info {
     $aseq->seq->id($acc);
     $aseq->embl_id($id);
     $aseq->project_name($project);
+}
+
+sub add_phase_info {
+    my( $aseq, $is_finished ) = @_;
+    
+    if ($is_finished) {
+        $aseq->htg_phase(4);
+    } else {
+        $aseq->htg_phase(1);
+    }
+}
+
+sub add_db_link {
+    my( $aseq, $db, $clone_id ) = @_;
+    
+    my $dbl = Bio::Annotation::DBLink->new;
+    $dbl->database($db);
+    # FIXME - HUMAN is hard coded
+    $dbl->primary_id("HUMAN-Clone-$clone_id");
+    
+    $aseq->annotation->add_DBLink($dbl);
 }
 
 sub add_reference {
@@ -296,7 +320,7 @@ sub add_phase_keywords {
     my @kw = ('HTG');
 
     unless ($annseq->htg_phase == 4) {
-        push(@kw, 'HTG_PHASE ' . $annseq->htg_phase);
+        push(@kw, 'HTGS_PHASE' . $annseq->htg_phase);
         push(@kw, $draft) if $draft;
     }
     

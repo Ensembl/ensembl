@@ -193,7 +193,7 @@ sub kw_EnsEMBL {
        return "HTG.";
    }
 
-   return "HTG; HTG_PHASE " . $annseq->htg_phase() . ".";
+   return "HTG; HTGS_PHASE" . $annseq->htg_phase() . ".";
 }
 
 sub sv_EnsEMBL {

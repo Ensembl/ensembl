@@ -130,7 +130,7 @@ sub sv {
 
 =cut
 
-sub embl_version{
+sub embl_version {
     my ($self,@args) = @_;
 
     $self->warn("Base class has not implemented embl_version yet!");
@@ -151,7 +151,7 @@ sub embl_version{
 
 =cut
 
-sub seq_date{
+sub seq_date {
     my ($self,@args) = @_;
 
     $self->warn("Base class has not implemented seq_date yet!");
@@ -210,7 +210,7 @@ sub htg_phase {
 
 =cut
 
-sub created{
+sub created {
     my ($self,@args) = @_;
     
     $self->warn("Base class has not implemented created  yet!");
@@ -247,7 +247,7 @@ sub modified{
 
 =cut
 
-sub stored{
+sub stored {
     my ($self,@args) = @_;
 
     $self->warn("Base class has not implemented stored yet!");
