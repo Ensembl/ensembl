@@ -412,24 +412,23 @@ sub store {
 
 sub get_Interpro_by_transid {
    my ($self,$transid) = @_;
-   my $sql="
-	SELECT	i.interpro_ac, 
-		x.description 
-        FROM	transcript t, 
-                translation tl, 
-		protein_feature pf, 
-		interpro i, 
-                xref x,
-		transcript_stable_id tsi
-	WHERE	tsi.stable_id = '$transid' 
-	    AND	t.transcript_id = tsi.transcript_id
-	    AND	tl.translation_id = pf.translation_id 
-            AND tl.transcript_id = t.transcript_id 
-	    AND	i.id = pf.hit_id 
-	    AND	i.interpro_ac = x.dbprimary_acc";
-   
-   my $sth = $self->prepare($sql);
-   $sth->execute;
+
+   my $sth = $self->prepare
+     ("SELECT  STRAIGHT_JOIN i.interpro_ac, x.description " .
+      "FROM    transcript_stable_id tsi, ".
+              "transcript t, " .
+              "translation tl, ".
+              "protein_feature pf, ".
+		          "interpro i, " .
+              "xref x " .
+	    "WHERE tsi.stable_id = ? " .
+	    "AND   t.transcript_id = tsi.transcript_id " .
+	    "AND	 tl.translation_id = pf.translation_id  " .
+      "AND   tl.transcript_id = t.transcript_id " .
+	    "AND   i.id = pf.hit_id " .
+	    "AND   i.interpro_ac = x.dbprimary_acc");
+
+   $sth->execute($transid);
 
    my @out;
    my %h;
@@ -439,7 +438,6 @@ sub get_Interpro_by_transid {
        my $string = $arr->[0] .":".$arr->[1];
        push(@out,$string);
    }
-
 
    return \@out;
 }
