@@ -807,7 +807,7 @@ sub get_all_SimilarityFeatures_above_score{
    if ($fset_id_str) {
         $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase " .
 		     "FROM   feature, analysis " .
-                     "WHERE  id not in (" . $fset_id_str . ") " .
+                     "WHERE  feature.id not in (" . $fset_id_str . ") " .
                      "AND    feature.score > '$score' " . 
                      "AND    feature.analysis = analysis.id " .
                      "AND    analysis.db = '$analysis_type' " .
