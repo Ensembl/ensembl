@@ -186,7 +186,8 @@ CREATE TABLE homol_feature (
   feature varchar(40) DEFAULT '' NOT NULL,
   hstart int(11) DEFAULT '0' NOT NULL,
   hend int(11) DEFAULT '0' NOT NULL,
-  hid varchar(40) DEFAULT '' NOT NULL
+  hid varchar(40) DEFAULT '' NOT NULL,
+  PRIMARY KEY (feature)
 );
 
 #
