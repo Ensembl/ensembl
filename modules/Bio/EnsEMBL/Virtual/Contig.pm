@@ -1075,12 +1075,13 @@ sub _convert_seqfeature_to_vc_coords {
 
  Title   : _convert_start_end_strand_vc
  Usage   : Essentially an internal for _convert_seqfeature,
-           but sometimes we have coordiates  not on seq features
- Function:
- Example : ($start,$end,$strand) = $self->_convert_start_end_strand_vc($contigid,$start,$end,$strand)
- Returns : 
- Args    :
+           but sometimes we have coordinates not on seq features
 
+ Function: convert RawContig coordinates of a given RawContig to
+           the coords of the VC.
+ Example : ($start,$end,$strand) = $self->_convert_start_end_strand_vc($contigid,$start,$end,$strand)
+ Returns : A list of start,end,strand in  VC coords.
+ Args    : RawContig display_id, start, end, strand in RC coords
 
 =cut
 
@@ -1121,15 +1122,13 @@ sub _convert_start_end_strand_vc {
 =head1 Helper functions for Virtual::Contig
 
 =head2 raw_contig_position 
-
- Title   : raw_contig_position 
- Usage   : my ($map_contig,$rc_position,$rc_strand) = $vmap->raw_contig_position ($vc_pos,$vc_strand)
- Function: Maps a VirtualContig position to the RawContig Position
- Returns : Bio::EnsEMBL::DB::MapContig object, 
-           position (int), strand (int)
- Args    : position (int), strand (int)
-
-
+ Title   : raw_contig_position
+ Usage   : my ($map_contig,$rc_position,$rc_strand) = $vmap->raw_contig_position($vc_pos,$vc_strand)
+ Function: Maps a VirtualContig position to a RawContig + RawContig position
+ Returns : The underlying RawContig and a position on it (in RC coords),
+           and optionally the RC strandedness
+ Args   : position on VirtualContig (in VC coords), and optionally
+          VirtualContig strand.
 =cut
 
 sub raw_contig_position {
