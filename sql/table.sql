@@ -421,7 +421,7 @@ CREATE TABLE static_golden_path (
     
     PRIMARY KEY(raw_id,type),
     KEY(fpcctg_name),
-    KEY(chr_name) 
+    KEY(chr_name,chr_start) 
 );
 
 
