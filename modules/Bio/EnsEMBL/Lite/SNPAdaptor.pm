@@ -54,7 +54,6 @@ sub fetch_all_by_Slice {
   my $slice_start = $slice->chr_start();
   my $slice_end   = $slice->chr_end();
   
-  warn "FETCH_ALL_LITE_SNPS";
   my %SNPS = qw( 12 dbSNP 13 WI 14 HGBASE 15 TSC-CSHL 16 ANO );
   my $QUERY = "select internal_id, chr_start, chr_end, chr_strand, type, range_type,
 		      validated, alleles, snpclass, mapweight, ambiguity, source,
