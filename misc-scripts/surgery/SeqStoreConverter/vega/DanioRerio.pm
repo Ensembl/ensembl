@@ -48,12 +48,25 @@ sub copy_other_tables {
 		     "clone_info",
 		     "clone_info_keyword",
 		     "clone_lock",
-		     "current_clone_info",
+#		     "current_clone_info",
 		     "keyword",
 		     "job",
 		     "job_status",
 		     "input_id_analysis");
+$self->copy_current_clone_info;
 }
+
+sub copy_current_clone_info {
+    my $self=shift;
+    my $source = $self->source();
+    my $target = $self->target();
+    my $sth = $self->dbh()->prepare
+        ("INSERT INTO $target.current_clone_info(clone_id,clone_info_id) SELECT * FROM $source.current_clone_info");
+    $sth->execute();
+    $sth->finish();    
+}
+
+
 
 
 sub update_clone_info {
