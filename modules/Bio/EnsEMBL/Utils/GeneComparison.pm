@@ -255,6 +255,8 @@ sub cluster_Genes {
 
   # create a new cluster 
   my $cluster=Bio::EnsEMBL::Utils::GeneCluster->new();
+  my $cluster_count = 1;
+  my @clusters;
 
   # pass in the types we're using
   my ($types1,$types2) = $self->gene_Types;
@@ -262,7 +264,7 @@ sub cluster_Genes {
 
   # put the first gene into these cluster
   $cluster->put_Genes( $sorted_genes[0] );
-
+  push (@clusters, $cluster);
   $self->gene_Clusters($cluster);
   
   # loop over the rest of the genes
@@ -277,29 +279,48 @@ sub cluster_Genes {
 	next LOOP1;
       }
     }
+    # if not in this cluster compare to the ($limit) previous clusters
+    my $limit = 6;
+    if ( $found == 0 && $cluster_count > 1 ){
+      my $lookup = 1;
+      while ( !($cluster_count <= $lookup ) && !($lookup > $limit) ){ 
+	#print STDERR "cluster_count: $cluster_count, looking at ".($cluster_count - $lookup)."\n";
+	my $previous_cluster = $clusters[ $cluster_count - 1 - $lookup ];
+	foreach my $gene_in_cluster ( $previous_cluster->get_Genes ){
+	  if ( _compare_Genes( $sorted_genes[$c], $gene_in_cluster ) ){	
+	    $previous_cluster->put_Genes( $sorted_genes[$c] );                       
+	    $found=1;
+	    next LOOP1;
+	  }
+	}
+	$lookup++;
+      }
+    }
     if ($found==0){  # if not-clustered create a new GeneCluser
       $cluster = new Bio::EnsEMBL::Utils::GeneCluster; 
       $cluster->gene_Types($types1,$types2);
       $cluster->put_Genes( $sorted_genes[$c] );
+      $cluster_count++;
+      push( @clusters, $cluster );
       $self->gene_Clusters( $cluster );
     }
   }
   # put all unclustered genes (annotated and predicted) into one separate array
   my $time2 = time();
   print STDERR "time for clustering: ".($time2-$time1)."\n";
-  my @clusters;  
+  my @new_clusters;  
   foreach my $cl ($self->gene_Clusters){
     if ( $cl->get_Gene_Count == 1 ){
       $self->unclustered_Genes($cl); # this push the cluster into array @{ $self->{'_unclustered_genes'} }
     }
     else{
-      push( @clusters, $cl );
+      push( @new_clusters, $cl );
     }
   }
   $self->flush_gene_Clusters;
-  $self->gene_Clusters(@clusters);
+  $self->gene_Clusters(@new_clusters);
   my @unclustered = $self->unclustered_Genes;
-  return @clusters;
+  return @new_clusters;
 }
  
 ######################################################################################
@@ -476,7 +497,6 @@ sub cluster_Transcripts {
   my ($self,@transcripts) = @_;
  
   if ( !defined(@transcripts) ){                        
-    my @transcripts = ();
     my @genes = ( @{ $self->{'_gene_array1'} }, @{ $self->{'_gene_array2'} } );
     foreach my $gene (@genes){
       my @more_transcripts = $gene->each_Transcript;
@@ -489,18 +509,51 @@ sub cluster_Transcripts {
   my %start_table;
   my $i=0;
   foreach my $transcript (@transcripts){
-    $start_table{$i} = $transcript->start_exon->start;
+    my $start;
+    my $seqname;
+    my @exons = $transcript->get_all_Exons;
+    @exons = sort { $a->start <=> $b->start } @exons;
+    if ( $exons[0]->start > $exons[0]->end){
+      $start = $exons[0]->end;
+    }
+    else{
+      $start = $exons[0]->start;
+    }
+    $start = $transcript->start_exon->start;
+    $start_table{$i} = $start;
     $i++;
+    
+    # if some exons in the transcript fall outside the vc, they will not be converted to vc coordinates
+    foreach my $exon (@exons){
+      unless ( $seqname ){
+	$seqname = $exon->seqname;
+      }
+      unless ($seqname eq $exon->seqname){
+	$self->warn("transcript ".$transcript->stable_id." (".$transcript->dbID.") is partly".
+		    " outside the contig");
+	last;
+      }
+    }
   }
   my @sorted_transcripts=();
   foreach my $pos ( sort { $start_table{$a} <=> $start_table{$b} } keys %start_table ){
     push (@sorted_transcripts, $transcripts[$pos]);
   }
   @transcripts = @sorted_transcripts;
+  # test
+  foreach my $tran (@transcripts){
+    print STDERR "\ntranscript: ".$tran->stable_id."internal_id: ".$tran->dbID."\n";
+    foreach my $exon ($tran->get_all_Exons){
+      print STDERR $exon->seqname." ".$exon->start.":".$exon->end."\n";
+    }
+    print STDERR "\n";
+  }
+  my $time1 = time();
   my @clusters;
 
   # create a new cluster 
   my $cluster=Bio::EnsEMBL::Utils::TranscriptCluster->new();
+  my $cluster_count = 1;
 
   # put the first transcript into these cluster
   $cluster->put_Transcripts( $sorted_transcripts[0] );
@@ -519,13 +572,35 @@ sub cluster_Transcripts {
 	next LOOP1;
       }
     }
-    if ($found==0){  # if not-clustered create a new TranscriptCluser
+   # if not in this cluster compare to the ($limit) previous clusters
+    my $limit = 6;
+    if ( $found == 0 && $cluster_count > 1 ){
+      my $lookup = 1;
+      while ( !($cluster_count <= $lookup ) && !($lookup > $limit) ){ 
+	print STDERR "cluster_count: $cluster_count, looking at ".($cluster_count - $lookup)."\n";
+	my $previous_cluster = $clusters[ $cluster_count - 1 - $lookup ];
+	foreach my $t_in_cluster ( $previous_cluster->get_Transcripts ){
+	  if ( _compare_Transcripts( $sorted_transcripts[$c], $t_in_cluster ) ){	
+	    $previous_cluster->put_Transcripts( $sorted_transcripts[$c] );                       
+	    $found=1;
+	    next LOOP1;
+	  }
+	}
+	$lookup++;
+      }
+    }
+    # if not-clustered create a new TranscriptCluser
+    if ($found==0){  
       $cluster = new Bio::EnsEMBL::Utils::TranscriptCluster; 
-      $cluster->put_Transcript( $sorted_transcripts[$c] );
+      $cluster->put_Transcripts( $sorted_transcripts[$c] );
+      $cluster_count++;
       push( @clusters, $cluster );
       # $self->transcript_Clusters( $cluster );
     }
   }
+  my $time2 = time();
+  my $time = $time2-$time1;
+  print STDERR "clustering time: ".$time."\n";
   return @clusters;
 }
 
@@ -914,11 +989,11 @@ sub find_missing_coding_Exons{
   }
   print STDERR scalar( @unpaired )." transcripts unpaired\n";
   foreach my $tran ( @unpaired ){
-    print STDERR $tran->stable_id."\n";
+    print STDERR "stable_id: ".$tran->stable_id." internal_id: ".$tran->dbID."\n";
   }
   print STDERR scalar( @doubled )." transcripts repeated\n";
   foreach my $tran ( @doubled ){
-    print STDERR $tran->stable_id."\n";
+    print STDERR "stable_id: ".$tran->stable_id." internal_id: ".$tran->dbID."\n";
   }
 
   # we return the hash with the arrays of transcript pairs as values, and 
