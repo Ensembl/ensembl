@@ -1295,24 +1295,10 @@ Exon phases like B<dna_seq> does.
 
 sub seq {
   my( $self ) = @_;
-
-  my $transcript_seq_string = '';
-  foreach my $ex (@{$self->get_all_Exons}) {
-    my $seq = $ex->seq;
-    if(!$seq) {
-      warning("Could not get exon seq.  Transcript seq may not be correct.");
-      $transcript_seq_string .= 'N' x $ex->length();
-    } else {
-      $transcript_seq_string .= $seq->seq;
-    }
-  }
-
-  my $seq = Bio::Seq->new
+  return Bio::Seq->new
     (-DISPLAY_ID => $self->stable_id,
      -MOLTYPE    => 'dna',
-     -SEQ        => $transcript_seq_string);
-
-  return $seq;
+     -SEQ        => $self->spliced_seq);
 }
 
 

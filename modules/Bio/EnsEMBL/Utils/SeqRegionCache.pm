@@ -56,7 +56,7 @@ use Bio::EnsEMBL::Utils::Cache;
 
 package Bio::EnsEMBL::Utils::SeqRegionCache;
 
-our $SEQ_REGION_CACHE_SIZE = 4000;
+our $SEQ_REGION_CACHE_SIZE = 40000;
 
 
 
