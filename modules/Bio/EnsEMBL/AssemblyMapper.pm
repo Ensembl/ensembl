@@ -133,7 +133,9 @@ sub map_coordinates_to_assembly {
     if( ! exists $self->{'_contig_register'}->{$contig_id} ) {
       $self->register_region_around_contig( $contig_id, 0, 0 );
     }
-    return $self->{'_mapper'}->map_coordinates($contig_id, $start, $end, $strand, 'rawcontig');
+
+    return $self->{'_mapper'}->map_coordinates($contig_id, $start, 
+					       $end, $strand, 'rawcontig');
 }
 
 

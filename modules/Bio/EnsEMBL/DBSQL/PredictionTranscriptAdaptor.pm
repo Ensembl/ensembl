@@ -373,7 +373,6 @@ sub fetch_by_assembly_location_constraint{
     $sql .= " and $constraint";
   }
 
-  warn( "PFA: $sql\n\n" );
   my $sth = $self->prepare($sql);
   $sth->execute;
 

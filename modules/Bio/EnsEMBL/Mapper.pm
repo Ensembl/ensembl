@@ -63,6 +63,8 @@ use Bio::EnsEMBL::Mapper::Unit;
 use Bio::EnsEMBL::Mapper::Coordinate;
 use Bio::EnsEMBL::Mapper::Gap;
 
+#use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
+
 @ISA = qw(Bio::EnsEMBL::Root);
 
 
@@ -113,6 +115,8 @@ sub new {
 
 sub map_coordinates{
    my ($self, $id, $start, $end, $strand, $type) = @_;
+
+   #&eprof_start('map_coordinates');
 
    if( !defined $type ) {
        $self->throw("Must start,end,strand,id,type as coordinates");
@@ -229,6 +233,8 @@ sub map_coordinates{
    if ( $strand == -1 ) {
        @result = reverse ( @result);
    }
+
+   #&eprof_end('map_coordinates');
 
    return @result;
 }

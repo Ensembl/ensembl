@@ -254,6 +254,27 @@ sub move {
   }
 }
 
+=head2 slide
+
+  Arg [1]    : int $slide 
+               the new feature start position
+  Example    : $feature->move(100);
+  Description: Shifts a features location.  This is faster
+               then calling seperate accesors in a large loop.
+  Returntype : none
+  Exceptions : none
+  Caller     : BaseFeatureAdaptor
+
+=cut
+
+sub slide {
+  my $self = shift;
+  my $slide = shift;
+
+  $self->{'_gsf_start'} += $slide;
+  $self->{'_gsf_end'} += $slide;
+}
+
 =head2 score
 
  Title   : score

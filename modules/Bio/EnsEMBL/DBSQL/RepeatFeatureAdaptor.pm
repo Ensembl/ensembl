@@ -95,7 +95,6 @@ sub _columns {
 	     r.repeat_end
 	     r.analysis_id
 	     r.score
-	     rc.repeat_consensus_id
 	     rc.repeat_name
 	     rc.repeat_class
 	     rc.repeat_consensus);
@@ -158,13 +157,13 @@ sub _objs_from_sth {
 
   my($repeat_feature_id, $contig_id, $contig_start, $contig_end, 
      $contig_strand, $repeat_consensus_id, $repeat_start, $repeat_end,
-     $analysis_id, $score, $repeat_consensus_id, $repeat_name, $repeat_class,
+     $analysis_id, $score, $repeat_name, $repeat_class,
      $repeat_consensus);
   
   $sth->bind_columns( \$repeat_feature_id, \$contig_id, \$contig_start, 
                       \$contig_end, \$contig_strand, \$repeat_consensus_id, 
                       \$repeat_start,\$repeat_end, \$analysis_id, \$score, 
-                      \$repeat_consensus_id, \$repeat_name, \$repeat_class,
+                      \$repeat_name, \$repeat_class,
                       \$repeat_consensus );
 
   my $rc;

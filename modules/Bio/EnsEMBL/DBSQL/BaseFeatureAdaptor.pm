@@ -314,14 +314,12 @@ sub fetch_by_Slice_constraint {
 						 $logic_name);
 
   #convert from chromosomal coordinates to slice coordinates
-  my $chr_start = $slice->chr_start - 1;
+  my $slide = -($slice->chr_start - 1);
+
   foreach my $f (@$features){
     #shift the feature start and end
-    # $f->move($f->start() - $chr_start,  $f->end() - $chr_start);
-    Bio::EnsEMBL::SeqFeature::move
-      ( $f, Bio::EnsEMBL::SeqFeature::start( $f ) - $chr_start, 
-	Bio::EnsEMBL::SeqFeature::end( $f ) - $chr_start ); 
-    Bio::EnsEMBL::SeqFeature::contig( $f, $slice);
+    $f->slide($slide);
+    $f->contig($slice);
   }
 
   #update the cache
@@ -386,7 +384,9 @@ sub fetch_by_Slice_and_score {
     $constraint = "score > $score";
   }
 
-  return $self->fetch_by_Slice_constraint($slice, $constraint, $logic_name);
+  my @res = $self->fetch_by_Slice_constraint($slice, $constraint, $logic_name);
+  #&eprof_end('transform');
+  return @res;
 }  
 
 
@@ -531,7 +531,7 @@ sub fetch_by_assembly_location_constraint {
   my @out;
   
   #convert the features to assembly coordinates from raw contig coordinates
-  #&eprof_start('rawcontig2assembly transform');
+  #&eprof_start('transform');
   my ($start, $end, $strand);
   while(my $f = shift @$features) {
     #since feats were obtained in contig coords, attached seq is a contig
@@ -555,9 +555,9 @@ sub fetch_by_assembly_location_constraint {
       next;
     }
 
-    $start = $coord->start();
-    $end = $coord->end();
-    $strand = $coord->strand();
+    $start = $coord->{'start'};
+    $end = $coord->{'end'};
+    $strand = $coord->{'strand'};
 
     #maps to region outside desired area
     if(($start < $chr_start) || ($end > $chr_end)) {
@@ -566,10 +566,6 @@ sub fetch_by_assembly_location_constraint {
     
     #shift the feature start, end and strand in one call
     $f->move($start, $end, $strand);
-    #$f->start($start);
-    #$f->end($end);
-    #$f->strand($strand);
-    #$f->seqname($coord->id());
     
     push(@out,$f);
   }
