@@ -233,3 +233,9 @@ CREATE TABLE translation (
   end_exon varchar(40) DEFAULT '' NOT NULL,
   PRIMARY KEY(id)
 ); 
+
+CREATE TABLE geneclone_neighbourhood ( 
+       clone varchar(40) NOT NULL, 
+       gene varchar(40) NOT NULL, 
+       primary key (clone,gene)
+);

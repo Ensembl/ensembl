@@ -976,8 +976,8 @@ sub write_Gene{
 
    my %done;
 
-   if( ! $gene->isa('Bio::EnsEMBL::Gene') ) {
-       $self->throw("$gene is not a EnsEMBL gene - not dumping!");
+   if( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
+       $self->throw("$gene is not a EnsEMBL gene - not writing!");
    }
 
    # get out unique contig ids from gene to check against
@@ -996,13 +996,11 @@ sub write_Gene{
        
    }
 
-
-
   # $self->_lock_tables('gene','exon','transcript','exon_transcript');
 
    # gene is big daddy object
 
-
+   
    foreach my $trans ( $gene->each_Transcript() ) {
        $self->write_Transcript($trans,$gene);
        my $c = 1;
@@ -1019,8 +1017,12 @@ sub write_Gene{
    my $sth2 = $self->prepare("insert into gene (id,version,created,modified) values ('". $gene->id()."','".$gene->version."','".$gene->created."','".$gene->modified."')");
    $sth2->execute();
 
-   #$self->_unlock_tables();
+   foreach my $cloneid ( $gene->each_cloneid_neighbourhood ) {
+       my $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . $gene->id . "','". $cloneid ."',".$c.")");
+       $sth->execute();
+   }
 
+   #$self->_unlock_tables();
 }
 
 

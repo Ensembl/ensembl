@@ -57,6 +57,7 @@ sub _initialize {
   my $make = $self->SUPER::_initialize;
 
   $self->{'_transcript_array'} = [];
+  $self->{'_clone_neighbourhood'} = [];
 # set stuff in self from @args
   return $make; # success - we hope!
 }
@@ -179,6 +180,47 @@ sub id{
     return $obj->{'id'};
 
 }
+
+=head2 each_cloneid_neighbourhood
+
+ Title   : each_cloneid_neighbourhood
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_cloneid_neighbourhood{
+   my ($self) = @_;
+   
+   return @{$self->{'_clone_neighbourhood'}};
+}
+
+=head2 add_cloneid_neighbourhood
+
+ Title   : add_cloneid_neighbourhood
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_cloneid_neighbourhood{
+   my ($self,$value) = @_;
+
+   if( !defined $value || ref $value ) {
+       $self->throw("Value [$value] does not look good for clone neighbourhood id!");
+   }
+
+   push(@{$self->{'_clone_neighbourhood'}},$value);
+}
+
 
 =head2 version
 
