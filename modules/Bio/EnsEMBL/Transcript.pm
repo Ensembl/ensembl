@@ -133,7 +133,7 @@ sub version{
 
 =cut
 
-sub translation{
+sub translation {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -350,7 +350,8 @@ sub translateable_exons{
 	       }
 
 	       $endexon->start($exon->start());
-	       $endexon->end($self->translation->end());
+	       $endexon->end  ($self->translation->end());
+
 	   } else {
 	       if( $self->translation->end() < $exon->start ) {
 		   $self->throw("Bad news. Attempting to say that this translation is inside this exon (reversed), but outside".$exon->id." ".$exon->start()." ".$self->translation->end()."\n");
