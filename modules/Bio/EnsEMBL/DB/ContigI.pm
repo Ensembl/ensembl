@@ -953,8 +953,8 @@ sub get_gc_content {
 
    my $seq_length = $self->primary_seq->length;
 
-   #mmy $perc_gc = ((($num_g+$num_c)/($seq_length-$num_n))*100);
-   $perc_gc = ((($num_g+$num_c)/($seq_length))*100);
+   #my $perc_gc = ((($num_g+$num_c)/($seq_length-$num_n))*100);
+   my $perc_gc = ((($num_g+$num_c)/($seq_length))*100);
    
 
    $perc_gc = int($perc_gc+0.5);
