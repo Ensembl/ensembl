@@ -15,7 +15,7 @@ Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor
 
 =head1 SYNOPSIS
 
-my $kary_adaptor = $db_adaptor->get_KaryotypeBandAdaptor();
+$kary_adaptor = $db_adaptor->get_KaryotypeBandAdaptor();
 foreach $band ( $kary_adaptor->fetch_by_Slice($slice) ) {
   #do something with band
 }
@@ -59,15 +59,17 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 # inherit new from BaseAdaptor
 
+
 =head2 fetch_by_Slice
 
-  Arg  1    : Bio::EnsEMBL::Slice $slice
-              The slice object covering the region to retrieve bands from
-  Function  : Fetches karyotype band object from the database for the
-              region given by the slice.
-  Returntype: list of Bio::EnsEMBL::KaryotypeBand objects in Slice coordinates
-  Exceptions: none
-  Caller    : Bio::EnsEMBL::Slice::get_KarytypeBands
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice object covering the region to retrieve bands from 
+  Example    : @bands = $karyotype_band_adaptor->fetch_by_Slice($slice);
+  Description: Fetches karyotype band object from the database for the
+               region given by the slice.
+  Returntype : list of Bio::EnsEMBL::KaryotypeBand objects in Slice coordinates
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Slice::get_KarytypeBands 
 
 =cut
 
@@ -115,14 +117,15 @@ sub fetch_by_Slice {
 
 =head2 fetch_by_chr_name
 
-  Arg  1    : string $chr_name
-              Name of the chromosome from which to retrieve band objects
-  Function  : Fetches all the karyotype band objects from the database for the
-              given chromosome.
-  Returntype: list of Bio::EnsEMBL::KaryotypeBand in chromosomal (assembly) 
-              coordinates
-  Exceptions: none
-  Caller    : general
+  Arg [1]    : string $chr_name
+               Name of the chromosome from which to retrieve band objects 
+  Example    : @bands = $karyotype_band_adaptor->fetch_by_chr_name('X'); 
+  Description: Fetches all the karyotype band objects from the database for the
+               given chromosome. 
+  Returntype : list of Bio::EnsEMBL::KaryotypeBand in chromosomal (assembly) 
+               coordinates 
+  Exceptions : none 
+  Caller     : general 
 
 =cut
 
@@ -161,15 +164,17 @@ sub fetch_by_chr_name {
 
 =head2 fetch_by_chr_band
 
-  Arg  1    : string $chr_name
-              Name of the chromosome from which to retrieve the band
-  Arg  2    : string $band
-              The name of the band to retrieve from the specified chromosome
-  Function  : Fetches all the karyotype band objects from the database for the
-              given chromosome.
-  Returntype: Bio::EnsEMBL::KaryotypeBand in chromosomal (assembly) coordinates
-  Exceptions: none
-  Caller    : general
+  Arg  [1]   : string $chr_name
+               Name of the chromosome from which to retrieve the band
+  Arg  [2]   : string $band
+               The name of the band to retrieve from the specified chromosome
+  Example    : $band = $karyotype_band_adaptor->fetch_by_chr_band('4', 'q23'); 
+  Description: Fetches the karyotype band object from the database 
+               for the given chromosome and band name.
+  Returntype : Bio::EnsEMBL::KaryotypeBand in 
+               chromosomal (assembly) coordinates
+  Exceptions : none
+  Caller     : general
 
 =cut
 
