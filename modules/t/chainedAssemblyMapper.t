@@ -9,7 +9,7 @@ BEGIN { $| = 1;
 use MultiTestDB;
 use TestUtils qw(debug test_getter_setter);
 
-our $verbose = 1; #set to 1 to turn on debug printouts
+our $verbose = 0; #set to 1 to turn on debug printouts
 
 my $multi = MultiTestDB->new();
 my $db = $multi->get_DBAdaptor( 'core' );
