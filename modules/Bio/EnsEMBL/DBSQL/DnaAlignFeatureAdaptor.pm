@@ -17,9 +17,9 @@ Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor - Adaptor for DnaAlignFeatures
 
     $dafa = $dbadaptor->get_DnaAlignFeatureAdaptor();
 
-    @feature_array = $dafa->fetch_by_Contig($contig);
+    @features = @{$dafa->fetch_by_RawContig($contig)};
 
-    $dafa->store(@feature_array);
+    $dafa->store(@features);
 
 =head1 DESCRIPTION
 
