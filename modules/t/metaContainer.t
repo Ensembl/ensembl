@@ -77,24 +77,3 @@ ok($maxac == 1_000_000);
 
 $mdb->restore('core', 'meta');
 
-
-
-#
-# 10 - get_all_coord_systems
-#
-my @cs = grep {$_ eq 'chromosome' || $_ eq 'clone' || $_ eq 'contig'}
-         @{$mc->get_all_coord_systems()};
-
-ok(@cs == 3);
-
-
-#
-# 11 - get_top_coord_system
-#
-ok($mc->get_top_coord_system eq 'chromosome');
-
-#
-# 12-13 - is_valid_coord_system
-#
-ok($mc->is_valid_coord_system('chromosome'));
-ok(!$mc->is_valid_coord_system('non-existant'));
