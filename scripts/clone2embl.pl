@@ -80,6 +80,7 @@ my $getall =0;
 my $pepformat = 'Fasta';
 my $test;
 my $part;
+my $dbname;
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
@@ -91,6 +92,7 @@ my $part;
 &GetOptions( 'dbtype:s'  => \$dbtype,
 	     'host:s'    => \$host,
 	     'port:n'    => \$port,
+	     'dbname:s'  => \$dbname,
 	     'format:s'  => \$format,
 	     'nodna'     => \$nodna,
 	     'h|help'    => \$help,
@@ -109,27 +111,6 @@ if($help){
 
 my $db;
 
-
-
-if( $dbtype =~ 'ace' ) {
-    $host=$host2 unless $host;
-    $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host, -port => $port);
-} elsif ( $dbtype =~ 'rdb' ) {
-    $host=$host1 unless $host;
-    $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => 'root', -db => 'ensdev' , -host => $host );
-} elsif ( $dbtype =~ 'timdb' ) {
-
-    # EWAN: no more - you should be able to load as many clones as you like!
-    if( $#ARGV == -1 ) {
-	push(@ARGV,'dJ271M21');
-    }
-
-    # clones required are passed to speed things up - cuts down on parsing of flat files
-    $db = Bio::EnsEMBL::TimDB::Obj->new(\@ARGV,$noacc,$test,$part);
-} else {
-    die("$dbtype is not a good type (should be ace, rdb or timdb)");
-}
-
 my @clones;
 
 if( $fromfile == 1 ) {
@@ -137,10 +118,32 @@ if( $fromfile == 1 ) {
 	my ($cloneid) = split;
 	push(@clones,$cloneid);
     }
-} elsif ( $getall == 1 ) {
-    @clones = $db->get_all_Clone_id();
 } else {
     @clones = @ARGV;
+}
+
+
+if( $dbtype =~ 'ace' ) {
+    $host=$host2 unless $host;
+    $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host, -port => $port);
+} elsif ( $dbtype =~ 'rdb' ) {
+    $host=$host1 unless $host;
+    $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => 'root', -db => $dbname , -host => $host );
+} elsif ( $dbtype =~ 'timdb' ) {
+
+    # EWAN: no more - you should be able to load as many clones as you like!
+    if( $#ARGV == -1 ) {
+	push(@clones,'dJ271M21');
+    }
+
+    # clones required are passed to speed things up - cuts down on parsing of flat files
+    $db = Bio::EnsEMBL::TimDB::Obj->new(\@clones,$noacc,$test,$part);
+} else {
+    die("$dbtype is not a good type (should be ace, rdb or timdb)");
+}
+
+if ( $getall == 1 ) {
+    @clones = $db->get_all_Clone_id();
 }
 
 
@@ -150,6 +153,7 @@ foreach my $clone_id ( @clones ) {
 	my $clone = $db->get_Clone($clone_id);
 	my $as = $clone->get_AnnSeq();
 	# choose output mode
+	
 	
 	
 	if( $format =~ /gff/ ) {

@@ -3,7 +3,7 @@
 use strict;
 
 #use Bio::EnsEMBL::AceDB::Obj;
-use Bio::EnsEMBL::DB::Obj;
+use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::TimDB::Obj;
 use Bio::AnnSeqIO;
 
@@ -12,10 +12,12 @@ use Getopt::Long;
 my $fdbtype = 'timdb';
 my $fhost   = 'croc';
 my $fport   = '410000';
+my $fdbname = 'ensdev';
 
 my $tdbtype = 'rdb';
 my $thost   = 'croc';
 my $tport   = '410000';
+my $tdbname = 'ensdev';
 
 my $usefile = 0;
 my $use_embl = 0;
@@ -25,8 +27,10 @@ my $use_embl = 0;
 	     'fhost:s'   => \$fhost,
 	     'fport:n'   => \$fport,
 	     'tdbtype:s' => \$tdbtype,
+	     'fdbname:s' => \$fdbname,
 	     'thost:s'   => \$thost,
 	     'tport:n'   => \$tport,
+	     'tdbname:s' => \$tdbname,
 	     'usefile'   => \$usefile,
 	     );
 
@@ -49,9 +53,9 @@ open(ERROR,">transfer.error\n");
 if( $fdbtype =~ 'ace' ) {
     $from_db = Bio::EnsEMBL::AceDB::Obj->new( -host => $fhost, -port => $fport);
 } elsif ( $fdbtype =~ 'rdb' ) {
-    $from_db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'ensdev' , -host => $fhost );
+    $from_db = Bio::EnsEMBL::DBSQL::Obj->new( -user => 'root', -db => $fdbname , -host => $fhost );
 } elsif ( $fdbtype =~ 'timdb' ) {
-    $from_db = Bio::EnsEMBL::TimDB::Obj->new(1);
+    $from_db = Bio::EnsEMBL::TimDB::Obj->new(\@clone,0,0,1);
 } else {
     die("$fdbtype is not a good type (should be ace, rdb or timdb)");
 }
@@ -59,7 +63,7 @@ if( $fdbtype =~ 'ace' ) {
 if( $tdbtype =~ 'ace' ) {
     $to_db = Bio::EnsEMBL::AceDB::Obj->new( -host => $thost, -port => $tport);
 } elsif ( $tdbtype =~ 'rdb' ) {
-    $to_db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'ensdev' , -host => $thost );
+    $to_db = Bio::EnsEMBL::DBSQL::Obj->new( -user => 'root', -db => $tdbname , -host => $thost );
 } else {
     die("$tdbtype is not a good type (should be ace, rdb)");
 }
