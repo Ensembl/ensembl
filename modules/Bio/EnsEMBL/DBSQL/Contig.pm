@@ -373,7 +373,7 @@ sub get_all_SimilarityFeatures{
 
 
        # Final check that everything is ok.
-       
+       print STDERR "Validating in Contig.pm\n";
        $out->validate();
 
       push(@array,$out);

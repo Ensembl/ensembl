@@ -1167,12 +1167,14 @@ sub delete_Clone{
    $clone_id || $self->throw ("Trying to delete clone without a clone_id\n");
    
    my @contigs;
+   my @dnas;
    # get a list of contigs to zap
-   my $sth = $self->prepare("select internal_id from contig where clone = '$clone_id'");
+   my $sth = $self->prepare("select internal_id,dna from contig where clone = '$clone_id'");
    my $res = $sth->execute;
 
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@contigs,$rowhash->{'internal_id'});
+       push(@dnas,$rowhash->{'dna'});
    }
    
    # Delete from DNA table, Contig table, Clone table
@@ -1180,16 +1182,14 @@ sub delete_Clone{
    foreach my $contig ( @contigs ) {
        my $sth = $self->prepare("delete from contig where internal_id = '$contig'");
        my $res = $sth->execute;
-          $sth = $self->prepare("delete from dna where contig = '$contig'");
-          $res = $sth->execute;
-
-       $self->delete_Features($contig);
-
+       $self->delete_Features($contig); 
    }
-   
+   foreach my $dna (@dnas) {
+       $sth = $self->prepare("delete from dna where id = '$dna'");
+       $res = $sth->execute;
+   }
    $sth = $self->prepare("delete from clone where id = '$clone_id'");
    $res = $sth->execute;
-
 }
 
 
@@ -2376,7 +2376,6 @@ sub write_Clone{
 
    foreach my $sql (@sql) {
      my $sth =  $self->prepare($sql);
-     #print STDERR "Executing $sql\n";
      my $rv  =  $sth->execute();
      $self->throw("Failed to insert clone $clone_id") unless $rv;
    }
