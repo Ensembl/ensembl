@@ -57,6 +57,7 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
   Arg [-DNADB]: (optional) Bio::EnsEMBL::DBSQL::DBAdaptor DNADB 
                All sequence, assembly, contig information etc, will be
                 retrieved from this database instead.              
+  Arg [-TYPE]: (optional) An assembly_type
   Arg [..]   : Other args are passed to superclass 
                Bio::EnsEMBL::DBSQL::DBConnection
   Example    : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
@@ -77,11 +78,14 @@ sub new {
   #call superclass constructor
   my $self = $class->SUPER::new(@args);
   
-  my ( $dnadb ) = $self->_rearrange([qw(DNADB)],@args);  
+  my ( $dnadb, $assembly_type ) = $self->_rearrange([qw(DNADB TYPE)],@args);  
 
   if(defined $dnadb) {
     $self->dnadb($dnadb);
   }
+    if ($assembly_type) {
+      $self->assembly_type($assembly_type);
+    }
 
 	# $self here is actually a Container object
 	# so need to call _obj to get the DBAdaptor
