@@ -13,7 +13,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Pipeline::Analysis.pm - Stores details of an analysis run
+Bio::EnsEMBL::Analysis.pm - Stores details of an analysis run
 
 =head1 SYNOPSIS
 

@@ -810,7 +810,7 @@ sub dna_seq {
 		    $mrna .= 2 x "N";
 		}
 	    } else {
-		$self->warn("Impossible phases in calculating fixing stuff");
+		$self->warn("Impossible phases in calculating fixing stuff "  . $prev->end_phase . " " . $exon->phase);
 	    }
 	}
     } # end of if previous is there
