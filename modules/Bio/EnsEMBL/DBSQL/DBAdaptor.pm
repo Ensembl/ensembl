@@ -345,6 +345,26 @@ sub get_Protfeat_Adaptor {
     return $update_obj;
 }
 
+=head2 get_Protfeat_Adaptor
+
+ Title   : get_Protfeat_Adaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Protfeat_Adaptor2 {
+    my ($self) = @_;
+    
+    my $update_obj = Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor2->new($self);
+ 
+    return $update_obj;
+}
+
 =head2 get_all_fpcctg_ids
 
  Title   : get_all_fpcctg_ids
