@@ -561,7 +561,7 @@ sub remove {
   foreach my $adaptor ( @adaptor_list ) {
 
     my $adaptor_type = "get_" . $adaptor . "Adaptor";
-    my $fa = $self->db->($adaptor_type);
+    my $fa = $self->db->$adaptor_type;
 
     if ( ! $fa ) {
       $self->throw("Couldn't get a '$adaptor'Adaptor");
