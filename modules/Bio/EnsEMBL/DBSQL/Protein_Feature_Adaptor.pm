@@ -50,7 +50,7 @@ use strict;
 
 # Object preamble - inheriets from Bio::EnsEMBL::DBSQL::BaseAdaptor
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 use Bio::EnsEMBL::Protein_FeaturePair;
 use Bio::EnsEMBL::SeqFeature;

@@ -50,7 +50,12 @@ use strict;
 
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+
 use Bio::EnsEMBL::Protein;
+
+
+
 use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
 use Bio::Species;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
@@ -62,18 +67,6 @@ use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
 #use Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
-
-#The pointer are defined bellow.
-
-sub _gene_obj {
-    my($self) = @_;
-    if( !defined $self->{'gene_obj'}) {
-	my $feat_obj = $self->db->gene_Obj;
-	$self->{'gene_obj'} = $feat_obj;
-    }
-    
-    return $self->{'gene_obj'};
-}
 
 
 =head2 fetch_Protein_by_transcriptId
@@ -112,6 +105,7 @@ sub fetch_Protein_by_transcriptId{
 
 sub fetch_Protein_by_dbid{
    my ($self,$id) = @_;
+
 
    #Get the transcript id from the translation id 
    my $query = "select t.transcript_id, t.gene_id, s.stable_id from transcript as t, translation_stable_id as s where t.translation_id = '$id' and t.translation_id = s.translation_id";
@@ -173,19 +167,16 @@ sub fetch_Protein_by_dbid{
 
 					      );
 
+   #Set up the adaptor handler for the protein object
+   $protein->db($self->db);
+
    #Add the species object to protein object
    $protein->species($species);
 
    $protein->transcriptac($transid);                                              
    $protein->geneac($geneid);
    $protein->stable_id($stableid);
-
    
-#Cache the different adaptors which will be used by the protein Object
-   $protein->adaptor($self);
-   $protein->protfeat_adaptor($self->db->get_Protfeat_Adaptor);
-   $protein->dbEntry_adaptor(Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($self));
-   #$protein->family_adaptor($self->db->get_FamilyAdaptor);
 
 #Add the date of creation of the protein to the annotation object
    my $ann  = Bio::Annotation->new;
@@ -573,3 +564,4 @@ sub get_snps {
     }
     return @features;
 }
+

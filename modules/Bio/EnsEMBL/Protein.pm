@@ -368,7 +368,7 @@ sub get_all_PrintsFeatures{
     }
    else {
        my $proteinid = $self->id();
-       my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('PRINTS',$proteinid);
+       my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('PRINTS',$proteinid);
        foreach my $in (@array_features) {
 	   $self->add_Prints($in);
        }
@@ -422,7 +422,7 @@ sub get_all_PfamFeatures{
     }
    else {
        my $proteinid = $self->id();
-       my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('Pfam',$proteinid);
+       my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('Pfam',$proteinid);
        
        foreach my $in (@array_features) {
 	   $self->add_Pfam($in);
@@ -475,7 +475,7 @@ sub get_all_PrositeFeatures{
     }
    else {
        my $proteinid = $self->id();
-       my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('PROSITE',$proteinid);
+       my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('PROSITE',$proteinid);
        foreach my $in (@array_features) {
 	   $self->add_Prosite($in);
        }
@@ -525,7 +525,7 @@ sub get_all_SigpFeatures{
     }
     else {
 	my $proteinid = $self->id();
-	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('sigp',$proteinid);
+	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('sigp',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Sigp($in);
 	}
@@ -576,7 +576,7 @@ sub get_all_TransmembraneFeatures{
     }
     else {
        my $proteinid = $self->id();
-	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('transmembrane',$proteinid);
+	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('transmembrane',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Transmembrane($in);
 	}
@@ -627,7 +627,7 @@ sub get_all_CoilsFeatures{
     }
     else {
        my $proteinid = $self->id();
-	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('coils',$proteinid);
+	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('coils',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Coils($in);
 	}
@@ -677,7 +677,7 @@ sub get_all_LowcomplFeatures{
     }
     else {
        my $proteinid = $self->id();
-	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('low_complexity',$proteinid);
+	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('low_complexity',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Lowcompl($in);
 	}
@@ -727,7 +727,7 @@ sub get_all_SuperfamilyFeatures{
     }
     else {
        my $proteinid = $self->id();
-	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('superfamily',$proteinid);
+	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('superfamily',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Superfamily($in);
 	}
@@ -843,7 +843,7 @@ sub get_all_IntronFeatures{
    }
    else {
        my $proteinid = $self->id();
-       my @array_introns = $self->adaptor->get_Introns($proteinid);
+       my @array_introns = $self->db->get_Protein_Adaptor->get_Introns($proteinid);
        foreach my $in (@array_introns) {
 	   $self->add_intron($in);
        }
@@ -971,7 +971,7 @@ sub get_all_DBLinks{
 
    else {
        my $protein_id = $self->id();
-       my @snps_array = $self->dbEntry_adaptor->fetch_by_translation($protein_id);
+       my @snps_array = $self->db->get_DBEntryAdaptor->fetch_by_translation($protein_id);
        foreach my $sn (@snps_array) {
 	   $self->annotation->add_DBLink($sn);
        }
@@ -1078,120 +1078,6 @@ sub stable_id{
 }
 
 
-=head2 get_Family
-
- Title   : get_Family
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Family{
-   my ($self) = @_;
-   my $proteinid = $self->id();
-
-   my $family = $self->family_adaptor->get_Family_of_Ensembl_pep_id($proteinid);
-
-   if( !$family->isa('Bio::EnsEMBL::ExternalData::Family::Family') ) {
-       $self->throw(" $family is not a family object");
-   }
-
-   return $family;
-}
-
-
-=head2 adaptor
-
- Title   : adaptor
- Usage   : $obj->adaptor($newval)
- Function: 
- Returns : value of adaptor
- Args    : newvalue (optional)
-
-
-=cut
-
-sub adaptor{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-
-      $obj->{'adaptor'} = $value;
-    }
-   return $obj->{'adaptor'};
-
-}
-
-=head2 protfeat_adaptor
-
- Title   : protfeat_adaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub protfeat_adaptor{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-
-      $obj->{'protfeat_adaptor'} = $value;
-    }
-    return $obj->{'protfeat_adaptor'};
-}
-
-=head2 DBEntry_adaptor
-
- Title   : DBEntry_adaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub dbEntry_adaptor{
-    my $obj = shift;
-    if( @_ ) {
-	my $value = shift;
-	
-	$obj->{'dbentry_adaptor'} = $value;
-    }
-    return $obj->{'dbentry_adaptor'};
-}
-
-=head2 family_adaptor
-
- Title   : family_adaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub family_adaptor{
- my $obj = shift;
-    if( @_ ) {
-	my $value = shift;
-	
-	$obj->{'family_adaptor'} = $value;
-    }
-    return $obj->{'family_adaptor'};
-}
-
 =head2 gbrowser_adaptor
 
  Title   : gbrowser_adaptor
@@ -1232,6 +1118,27 @@ sub snp_adaptor{
       $obj->{'snp_adaptor'} = $value;
     }
     return $obj->{'snp_adaptor'};
+
+}
+
+=head2 db
+
+ Title   : db
+ Usage   : $obj->db($newval)
+ Function: 
+ Returns : value of db
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub db{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'db'} = $value;
+    }
+    return $obj->{'db'};
 
 }
 
