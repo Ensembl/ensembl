@@ -259,7 +259,7 @@ sub get_seq_by_gene_version{
 =cut
 
 sub write_seq{
-   my ($self,$seq, $version, $type, $gene_id,$gene_version,$clone_id,$clone_version) = @_;
+   my ($self,$seq, $version, $type, $gene_id,$gene_version) = @_;
    
    $seq || $self->throw("Attempting to write a sequence without a sequence object!");
    $seq->id || $self->throw("Attempting to write a sequence without a sequence id!");
@@ -267,10 +267,10 @@ sub write_seq{
    $version || $self->throw("Attempting to write a sequence without a sequence version number!");
    $gene_id || $self->throw("Attempting to write a sequence without a gene id!");
    $gene_version || $self->throw("Attempting to write a sequence without a gene version number!");
-   $clone_id || $self->throw("Attempting to write a sequence without a clone id!");
-   $clone_version || $self->throw("Attempting to write a sequence without a clone version number!");
+   #$clone_id || $self->throw("Attempting to write a sequence without a clone id!");
+   #$clone_version || $self->throw("Attempting to write a sequence without a clone version number!");
 
-   my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,clone_id,clone_version,sequence) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','$clone_id','$clone_version','".$seq->seq."')");
+   my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."')");
    $sth->execute();
 }
 =head2 delete_seq

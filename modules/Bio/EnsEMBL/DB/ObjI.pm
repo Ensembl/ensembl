@@ -163,7 +163,7 @@ sub write_Contig {
 
 =cut
 
-sub get_updated_objects{
+sub get_updated_Objects{
     my ($self) = @_;
     
    $self->throw("Not implemented in the object!");

@@ -184,6 +184,27 @@ sub get_Gene{
    return $gene;
 }
 
+=head2 donor_locator
+
+ Title   : get_donor_locator
+ Usage   : $obj->get_donor_locator; 
+ Function: Reads the meta table of the database to get the donor_database_locator
+ Example : get_donor_locator
+ Returns : locator string
+ Args    : none
+
+
+=cut
+
+sub get_donor_locator{
+    my ($self) = @_;
+    
+    my $sth = $self->prepare("select donor_database_locator from meta");
+    my $res = $sth->execute();
+    my $rowhash = $sth->fetchrow_hashref;
+    return $rowhash->{'donor_database_locator'};
+}
+
 =head2 get_last_update
 
  Title   : get_last_update
@@ -542,20 +563,20 @@ sub get_all_Gene_id{
    return @out;
 }
 
-=head2 get_updated_objects
+=head2 get_updated_Objects
     
- Title   : get_updated_objects
- Usage   : $obj->get_updated_objects ($recipient_last_update, $recipient_now, $recipient_offset)
+ Title   : get_updated_Objects
+ Usage   : $obj->get_updated_Objects ($recipient_last_update, $recipient_now, $recipient_offset)
  Function: Gets all the objects that have been updated (i.e.change in 
 	   version number) between the current time - offset time given by
            the recipient database and the last update time stored in its meta table 
- Example : $obj->get_updated_objects (973036800,973090800)
+ Example : $obj->get_updated_Objects (973036800,973090800)
  Returns : all the objects updated within that timespan
  Args    : $recipient_last_update, $recipient_now
 
 =cut
 
-sub get_updated_objects{
+sub get_updated_Objects{
     my ($self, $last, $now_offset) = @_;
     
     $last || $self->throw("Attempting to get updated objects without the recipient db last update time");
@@ -737,6 +758,8 @@ sub delete_Gene{
    my %exon;
 
    # get out exons, transcripts for gene. 
+
+   $self->warn("Using delete gene - perhaps you should be archiving. Consider removing this method sometime");
 
    my $sth = $self->prepare("select id from transcript where gene = '$geneid'");
    $sth->execute;
@@ -1289,7 +1312,7 @@ sub write_Clone{
    my @sql;
 
    push(@sql,"lock tables clone write");
-   push(@sql,"insert into clone(id,version,embl_id,htg_phase) values('$clone_id','$version','$embl_id','$htg_phase')");
+   push(@sql,"insert into clone(id,version,embl_id,htg_phase,modified) values('$clone_id','$version','$embl_id','$htg_phase',CURRENT_TIMESTAMP)");
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {
