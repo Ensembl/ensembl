@@ -384,7 +384,6 @@ sub get_description {
   }
 
   my $sth = $self->prepare("select description from gene_description where gene_id = $dbID");
-
   $sth->execute;
   my @array = $sth->fetchrow_array();
   return $array[0];
@@ -549,18 +548,21 @@ sub remove {
 
 sub get_Interpro_by_geneid {
    my ($self,$gene) = @_;
-
-   my $sth = $self->prepare("
-      SELECT i.interpro_ac,idesc.description 
-        FROM transcript t, protein_feature pf, interpro i, 
-             interpro_description idesc, gene_stable_id gsi,
-             translation_stable_id tlsi
-       WHERE gsi.stable_id = '$gene' 
-         AND t.gene_id = gsi.gene_id
-         AND t.translation_id = tlsi.translation_id
-         AND tlsi.stable_id = pf.translation 
-         AND i.id = pf.hid 
-         AND i.interpro_ac = idesc.interpro_ac");
+    my $sql="
+	SELECT	i.interpro_ac, 
+		idesc.description 
+        FROM	transcript t, 
+		protein_feature pf, 
+		interpro i, 
+		interpro_description idesc, 
+		gene_stable_id gsi
+	WHERE	gsi.stable_id = '$gene' 
+	    AND	t.gene_id = gsi.gene_id
+	    AND	t.translation_id = pf.translation 
+	    AND	i.id = pf.hid 
+	    AND	i.interpro_ac = idesc.interpro_ac";
+   
+   my $sth = $self->prepare($sql);
    $sth->execute;
 
    my @out;
