@@ -341,7 +341,7 @@ sub get_updated_Clone_id{
     $self->warn("Obj->get_updated_Clone_id is a deprecated method! 
 Calling Update_Obj->get_updated_Clone_id instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::TimDB::Update_Obj->new($self);
     return $update_obj->get_updated_Clone_id($last, $now_offset,$fall);
 }
 
