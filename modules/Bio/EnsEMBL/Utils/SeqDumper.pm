@@ -320,8 +320,45 @@ sub dump_embl {
   my $slice = shift;
   my $FH   = shift;
 
-  my $id = $slice->name;
   my $len = $slice->length;
+
+  my $version;
+  my $id;
+
+  my $cs = $slice->coord_system();
+  my $name_str = $cs->name() . ' ' . $slice->seq_region_name();
+  $name_str .= ' ' . $cs->version if($cs->version);
+
+  my $start = $slice->start;
+  my $end   = $slice->end;
+
+  #determine if this slice is the entire seq region
+  #if it is then we just use the name as the id
+  my $slice_adaptor = $slice->adaptor();
+  my $full_slice =
+    $slice->adaptor->fetch_by_region($cs->name,
+                                    $slice->seq_region_name,
+                                    undef,undef,undef,
+                                    $cs->version);
+
+
+  if($full_slice->name eq $slice->name) {
+    $name_str .= ' full sequence';
+    $id = $slice->seq_region_name();
+    my @acc_ver = split(/\./, $id);
+    if(@acc_ver == 2) {
+      $id = $acc_ver[0];
+      $version = $acc_ver[0] . $acc_ver[1];
+    } elsif(@acc_ver == 1 && $cs->version()) {
+      $version = $id . $cs->version();
+    } else {
+      $version = $id;
+    }
+  } else {
+    $name_str .= ' partial sequence';
+    $id = $slice->name();
+    $version = $id;
+  }
 
 
   #line breaks are allowed near the end of the line on ' ', "\t", "\n", ',' 
@@ -334,27 +371,29 @@ sub dump_embl {
   my $EMBL_HEADER = 
 '@<   ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<~
 ';
-  
+
   #ID and moltype
   my $VALUE = "$id    ENSEMBL; DNA; PLN; $len BP.";
   $self->write($FH, $EMBL_HEADER, 'ID', $VALUE);  
   print $FH "XX\n";
-  
+
   #Accession
   $self->write($FH, $EMBL_HEADER, 'AC', $id);
   print $FH "XX\n";
-  
+
   #Version
-  $self->write($FH, $EMBL_HEADER, 'SV', "$id.ENSEMBL_DB:".
-	       $slice->adaptor->db->dbname);
+  $self->write($FH, $EMBL_HEADER, 'SV', $version);
   print $FH "XX\n";
 
   #Date
   $self->write($FH, $EMBL_HEADER, 'DT', $self->_date_string);
   print $FH "XX\n";
 
+  my $species   = $slice->adaptor->db->get_MetaContainer->get_Species();
+
   #Description
-  $self->write($FH, $EMBL_HEADER, 'DE', "Reannotated sequence via EnsEMBL");
+  $self->write($FH, $EMBL_HEADER, 'DE', $species->binomial .
+               " $name_str $start..$end reannotated via EnsEMBL");
   print $FH "XX\n";
 
   #key words
@@ -362,7 +401,6 @@ sub dump_embl {
   print $FH "XX\n";
 
   #Species
-  my $species   = $slice->adaptor->db->get_MetaContainer->get_Species();
   my $species_name = $species->binomial();
   if(my $cn = $species->common_name()) {
     $species_name .= " ($cn)";
@@ -536,14 +574,12 @@ sub dump_genbank {
   foreach my $comment (@COMMENTS) {
     $self->write($FH, $GENBANK_HEADER, 'COMMENT', $comment);
   }
-  
-  
+
   ####################
   # DUMP FEATURE TABLE
   ####################
   print $FH "FEATURES             Location/Qualifiers\n";
   $self->_dump_feature_table($slice, $FH, $GENBANK_FT);
-
 
   ####################
   # DUMP SEQUENCE
@@ -704,8 +740,9 @@ sub _dump_feature_table {
       push @genscan_exons, @$exons;
       $self->write(@ff, 'mRNA', $self->features2location($exons));
       $self->write(@ff, '', '/product="'.$transcript->translate()->seq().'"');
+      $self->write(@ff, '', '/note="identifier='.$transcript->stable_id.'"');
       $self->write(@ff, '', '/note="Derived by automated computational' .
-		   ' analysis using gene prediction method:' . 
+		   ' analysis using gene prediction method:' .
 		   $transcript->analysis->logic_name . '"');
     }
   }
@@ -764,8 +801,10 @@ sub _dump_feature_table {
   if($self->is_enabled('marker') && $slice->can('get_all_MarkerFeatures')) {
     foreach my $mf (@{$slice->get_all_MarkerFeatures}) {
       $self->write(@ff, 'STS', $self->features2location([$mf]));
-      $self->write(@ff, ''   , '/standard_name="' . 
-		   $mf->marker->display_MarkerSynonym->name . '"');
+      if($mf->marker->display_MarkerSynonym) {
+        $self->write(@ff, ''   , '/standard_name="' .
+                     $mf->marker->display_MarkerSynonym->name . '"');
+      }
 
 
       #grep out synonyms without a source
@@ -782,13 +821,14 @@ sub _dump_feature_table {
   #
   # contigs
   #
-  if($self->is_enabled('contig') && $slice->can('get_tiling_path')) {
-    foreach my $tile (@{$slice->get_tiling_path}) {
-      $self->write(@ff, 'misc_feature', 
-		   $tile->assembled_start .'..'. $tile->assembled_end);
-      $self->write(@ff, '', '/note="contig '.$tile->component_Seq->name .
-		   ' ' . $tile->component_start . '..' . $tile->component_end.
-		    '(' . $tile->component_ori . ')"');
+  if($self->is_enabled('contig')) {
+    foreach my $segment (@{$slice->project('seqlevel')}) {
+      my ($start, $end, $slice) = @$segment;
+      $self->write(@ff, 'misc_feature',
+                   $start .'..'. $end);
+      $self->write(@ff, '', '/note="contig '.$slice->seq_region_name .
+		   ' ' . $slice->start . '..' . $slice->end .
+		    '(' . $slice->strand . ')"');
     }
   }
 
@@ -877,9 +917,8 @@ sub features2location {
     } else {
       my @fs = ();
       #this feature is outside the boundary of the dump,
-      #convert to clone coords
-
-      warning('TO BE DONE - CLONE COORDS');
+      #XXX TBD This should probably be CLONE coords but 2 step mapping is not
+      # yet implemented and 'seqlevel' is guaranteed to be 1step
       my $projection = $f->project('seqlevel');
       foreach my $segment (@$projection) {
         my $slice = $segment->[2];
