@@ -59,7 +59,7 @@ sub _initialize {
   my $make = $self->SUPER::_initialize(@args);
 
   # set stuff in self from @args
-  my ($dbobj,$id,$cgp,$disk_id,$sv,$emblid,$htgsp,$byacc)=
+  my ($dbobj,$id,$cgp,$disk_id,$sv,$emblid,$htgsp,$byacc,$chr,$species)=
       $self->_rearrange([qw(DBOBJ
 			    ID
 			    CGP
@@ -68,6 +68,8 @@ sub _initialize {
 			    EMBLID
 			    HTGSP
 			    BYACC
+			    CHR
+			    SPECIES
 			    )],@args);
   $id || $self->throw("Cannot make contig db object without id");
   $disk_id || $self->throw("Cannot make contig db object without disk_id");
@@ -86,6 +88,10 @@ sub _initialize {
   $self->byacc($byacc);
   # db object
   $self->_dbobj($dbobj);
+
+  # chr, species is only provided at contig level, so just save it in hash so it can be passed
+  $self->{'_chr'}=$chr;
+  $self->{'_species'}=$species;
 
   # construct and test the directory of the clone
   # slow (depricated - goes via links)
@@ -124,14 +130,40 @@ sub _initialize {
   }
   my($key,$val);
   my %contig_len;
+  my %contig_embl_offset;
+  my %contig_embl_order;
   my %id2disk;
+  my $t_offset=1;
+  my $t_order=1;
   while(($key,$val)=each %unfin_contig){
       if($key=~/^$disk_id/){
-	  my($len,$checksum)=split(/,/,$val);
+	  my($len,$checksum,$acc,$embl_offset,$embl_order)=split(/,/,$val);
+
+	  # FIXME FIXME - give tmp values while real ones being added
+	  $embl_offset=$t_offset;
+	  $embl_order=$t_order;
+	  $t_offset+=$len+100;
+	  $t_order++;
+
+	  # FIXME - currently field 3 is accession - will remove this
+	  if($acc=~/^\d+$/){$embl_order=$embl_offset;$embl_offset=$acc;}
+	  
+	  # all of these values should be positive, non zero
+	  $self->throw("Error: invalid length [$len] for contig $key") 
+	      if !$len || $len<1;
+	  $self->throw("Error: invalid checksum [$checksum] for contig $key") 
+	      if !$checksum || $checksum<1;
+	  $self->throw("Error: invalid embl_offset [$embl_offset] for contig $key") 
+	      if !$embl_offset || $embl_offset<1;
+	  $self->throw("Error: invalid embl_order [$embl_order] for contig $key")
+	      if !$embl_order || $embl_order<1;
+
 	  my $disk_key=$key;
 	  $key=~s/^$disk_id/$id/;
 	  # save by id rather than disk_id, but keep mapping
 	  $contig_len{$key}=$len;
+	  $contig_embl_offset{$key}=$embl_offset;
+	  $contig_embl_order{$key}=$embl_order;
 	  $self->{'_contig_dna_checksum'}->{$key}=$checksum;
 	  $id2disk{$key}=$disk_key;
 	  # check for gs file
@@ -209,6 +241,10 @@ sub _initialize {
 						     -offset => $offset{$contig_id},
 						     -orientation => $orientation{$contig_id},
 						     '-length' => $contig_len{$contig_id},
+						     '-chr' => $self->{'_chr'},
+						     '-species' => $self->{'_species'},
+						     '-embl_offset' => $contig_embl_offset{$contig_id},
+						     '-embl_order' => $contig_embl_order{$contig_id},
 						     );
       push(@res,$contig);
   }

@@ -275,8 +275,9 @@ sub get_Clone {
     my ($self,$id) = @_;
 
     # translate incoming id to ensembl_id, taking into account nacc flag
-    my($disk_id,$cgp,$sv,$emblid,$htgsp);
-    ($id,$disk_id,$cgp,$sv,$emblid,$htgsp)=$self->get_id_acc($id);
+    my($disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species);
+    ($id,$disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species)=
+	$self->get_id_acc($id);
     if($id eq 'unk'){
 	$self->throw("Cannot get accession for $disk_id");
     }
@@ -313,6 +314,8 @@ sub get_Clone {
 					       -emblid=>$emblid,
 					       -htgsp=>$htgsp,
 					       -byacc => $self->{'_byacc'},
+					       '-chr' => $chr,
+					       '-species' => $species,
 					       );
     # save it to hash
     $self->{'_clone_array'}->{$id}=$clone;
@@ -540,11 +543,11 @@ sub get_id_acc{
     my($self,$id,$t)=@_;
     # check to see if clone exists, and extract relevant items from dbm record
     # cgp is the clone category (SU, SF, EU, EF)
-    my($line,$cdate,$type,$cgp,$acc,$sv,$id2,$fok,$emblid,$htgsp);
+    my($line,$cdate,$type,$cgp,$acc,$sv,$id2,$fok,$emblid,$htgsp,$chr,$species);
 
     if($line=$self->{'_clone_dbm'}->{$id}){
 	# first straight forward lookup
-	($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$line);
+	($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp,$chr,$species)=split(/,/,$line);
 	# translate to $acc if output requires this
 	if($self->{'_byacc'}){
 	    $id2=$id;
@@ -561,7 +564,7 @@ sub get_id_acc{
     }elsif(($self->{'_byacc'}) && ($id2=$self->{'_accession_dbm'}->{$id})){
 	# lookup by accession number, if valid
 	if($line=$self->{'_clone_dbm'}->{$id2}){
-	    ($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$line);
+	    ($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp,$chr,$species)=split(/,/,$line);
 	    if($acc ne $id){
 		$self->throw("$id maps to $id2 but does not map back correctly ($acc)");
 	    }else{
@@ -572,8 +575,12 @@ sub get_id_acc{
     if(!$fok){
 	$self->throw("$id is not a valid sequence in this database");
     }
+    # in case chr is set to unk, set to unknown
+    if(!$chr || $chr eq 'unk'){$chr='unknown';}
+    # in case species is not defined, set to human
+    if(!$species){$species='human';}
     # return $id = name in ensembl (determined by _byacc); $id2 = name on disk
-    return $id,$id2,$cgp,$sv,$emblid,$htgsp;
+    return $id,$id2,$cgp,$sv,$emblid,$htgsp,$chr,$species;
 }
     
 

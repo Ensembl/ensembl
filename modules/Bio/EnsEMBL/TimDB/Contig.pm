@@ -61,7 +61,8 @@ sub _initialize {
     my($self,@args) = @_;
   
     my $make = $self->SUPER::_initialize;
-    my ($dbobj,$id,$disk_id,$clone_dir,$order,$offset,$orientation,$length)=
+    my ($dbobj,$id,$disk_id,$clone_dir,$order,$offset,$orientation,$length,
+	$chr,$species,$embl_offset,$embl_order)=
 	$self->_rearrange([qw(DBOBJ
 			      ID
 			      DISK_ID
@@ -70,6 +71,10 @@ sub _initialize {
 			      OFFSET
 			      ORIENTATION
 			      LENGTH
+			      CHR
+			      SPECIES
+			      EMBL_OFFSET
+			      EMBL_ORDER
 			      )],@args);
     
     $id          || $self->throw("Cannot make contig object without id");
@@ -89,6 +94,9 @@ sub _initialize {
     $self->offset     ($offset);
     $self->orientation($orientation);
     $self->length     ($length);
+    $self->chromosome ($chr,$species);
+    $self->embl_offset($embl_offset);
+    $self->embl_order ($embl_order);
     
     # declared here as an array, but data is parsed in
     # method call to get features
@@ -496,11 +504,11 @@ sub id{
 
 sub chromosome {
     my $self = shift;
-    my $chr = shift;
-    $chr && ( $self->{_chromosome} = $chr );
-    if( !defined( $self->{_chromosome} )) {
+    if( @_ ){
+	my $chr = shift;
+	my $species = shift;
 	$self->{_chromosome} = Bio::EnsEMBL::Chromosome->new
-	    ( 'human','unknown' );
+	    ($species,$chr);
     }
     $self->{_chromosome};
 }
