@@ -515,7 +515,7 @@ sub compare {
       $detail = 1;
     } 
     # if given anal is different from this, defined or not, then its different
-    if( defined $ana->$methodName() &&
+    if( defined $ana->$methodName() && defined $self->$methodName() &&
           ( $self->$methodName() ne $ana->$methodName() )) {
       return -1;
     }
