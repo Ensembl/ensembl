@@ -234,7 +234,7 @@ sub has_genes{
    my $contig_id = $self->internal_id();   
 
    my $seen =0;
-   my $sth = $self->_dbobj->prepare("select id from exon where contig = '$contig_id' limit 1");
+   my $sth = $self->dbobj->prepare("select id from exon where contig = '$contig_id' limit 1");
    $sth->execute();
 
    my $rowhash;
@@ -956,7 +956,13 @@ sub get_right_overlap{
 
 sub _db_obj{
    my ($self,@args) = @_;
+   $self->warn("Someone is using a deprecated _db_obj call!");
+   return $self->dbobj(@args);
+}
 
+sub _dbobj{
+   my ($self,@args) = @_;
+   $self->warn("Someone is using a deprecated _dbobj call!");
    return $self->dbobj(@args);
 }
 
