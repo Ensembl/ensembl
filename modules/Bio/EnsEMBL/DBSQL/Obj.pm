@@ -457,6 +457,7 @@ sub get_last_update{
     my $res     = $sth ->execute();
     my $rowhash = $sth->fetchrow_hashref;
     my $last    = $rowhash->{'max(time_started)'};
+    print STDERR "\n***********LAST UPDATE TIME= $last!!!\n\n";
 
     $sth     = $self->prepare("select UNIX_TIMESTAMP('". $last ."')");
     $res     = $sth->execute();
@@ -465,6 +466,7 @@ sub get_last_update{
 
     ($last eq "") && $self->throw ("No value stored for last_update in db_update table!");
 
+    print STDERR "\n************Converted to $last\n\n";
     return $last;
 }
 
