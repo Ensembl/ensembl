@@ -273,6 +273,14 @@ sub get_Feature_Obj {
     return $update_obj;
 }
 
+sub get_DBEntryAdaptor {
+    my ($self) = @_;
+    
+    my $update_obj = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($self);
+ 
+    return $update_obj;
+}
+
 =head2 get_Gene_Obj
 
  Title   : get_Gene_Obj

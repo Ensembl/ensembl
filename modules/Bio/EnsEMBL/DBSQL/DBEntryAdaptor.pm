@@ -181,11 +181,11 @@ sub store {
     " );
 	    $sth->execute;
 	    
-	    my @dbSyn = $sth->fetchrow_array();
+	    my ($dbSyn) = $sth->fetchrow_array();
 	    
 	    #print STDERR $dbSyn[0],"\n";
 	    
-	    if( ! @dbSyn ) {
+	    if( ! $dbSyn ) {
 		$sth = $self->prepare( "
         INSERT INTO externalSynonym
          SET xrefId = $dbX,
@@ -225,17 +225,30 @@ sub store {
 	    
 	}
     } else {
+	$sth = $self->prepare ( "
+              SELECT xrefId
+              FROM objectXref
+              WHERE xrefId = $dbX,
+              AND   ensembl_object_type = $ensType,
+              AND   ensembl_id = $ensObject ");
+	
+	$sth->execute;
+	my ($tst) = $sth->fetchrow_array;
+
+
+	if (! defined $sth) {
 	# line is already in Xref table. Need to add to objectXref
-	$sth = $self->prepare( "
+	    $sth = $self->prepare( "
              INSERT INTO objectXref
                SET xrefId = $dbX,
                ensembl_object_type = ?,
                ensembl_id = ?");
 	
-	$sth->execute( $ensType, $ensObject );
+	    $sth->execute( $ensType, $ensObject );
 	
-	$exObj->dbID( $dbX );
-	$exObj->adaptor( $self );
+	    $exObj->dbID( $dbX );
+	    $exObj->adaptor( $self );
+	}
     }
         
     return $dbX;
