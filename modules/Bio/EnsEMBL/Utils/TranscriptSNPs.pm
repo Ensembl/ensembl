@@ -249,8 +249,12 @@ sub get_all_SNPs {
   my $snps;
   if ($source eq 'glovar') {
     $snps = $slice->get_all_ExternalFeatures('GlovarSNP');
-  } else {
-    $snps = $slice->get_all_SNPs;
+  }
+  elsif ($source eq 'variation') {
+    $snps = $slice->get_all_VariationFeatures;
+  }
+  else {
+    $snps = $slice->get_all_SNPs;   # dont need once use new snp api (i think)
   }
 
   my $trans_start  = $flanking + 1;
@@ -278,7 +282,7 @@ sub get_all_SNPs {
       foreach my $e (@{$transcript->get_all_Exons}) {
         if($snp->end >= $e->start && $snp->start <= $e->end) {
           # this snp is in an exon
-
+	  
           if(($trans_strand == 1 && 
               $snp->end < $transcript->coding_region_start) ||
              ($trans_strand == -1 && 
@@ -315,7 +319,8 @@ sub get_all_SNPs {
 
     if(exists $snp_hash{$key}) {
       push @{$snp_hash{$key}}, $snp;
-    } else {
+    } 
+    else {
       $snp_hash{$key} = [$snp];
     }
   }
@@ -357,7 +362,7 @@ sub get_all_cdna_SNPs {
   my @cdna_types = ('three prime UTR', 'five prime UTR','coding');
 
   my $slice = $transcript->slice();
-  my $sa = $slice->adaptor();
+  my $sa    = $slice->adaptor();
 
   $slice = $sa->fetch_by_Feature($transcript);
 
