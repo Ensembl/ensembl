@@ -173,6 +173,10 @@ do {
 
 } while ( ! defined $dna_file );
 
+my $dna_dir = $dna_file;
+$dna_dir =~ s/\/.*$/\//;
+
+
 #
 # Sanity checks
 #
