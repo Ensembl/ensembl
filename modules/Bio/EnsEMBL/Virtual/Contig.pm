@@ -1169,7 +1169,10 @@ sub _get_all_SeqFeatures_type {
 
 sub _convert_seqfeature_to_vc_coords {
     my ($self,$sf) = @_;
-    
+    print STDERR ( "_conv_sf: ".ref($sf)."\n" );
+    print STDERR join( "\n", map {("$_: ".$sf->{$_})} ( keys %$sf ));
+    print STDERR "\n";
+
     #print STDERR "In Contig._convert_seqfeature_to_vc_coords() has a $sf\n";
     my $cid = $sf->seqname();
     my $mc;
