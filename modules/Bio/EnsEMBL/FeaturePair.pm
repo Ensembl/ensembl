@@ -255,6 +255,35 @@ sub hstrand{
   return $self->{'hstrand'};
 }
 
+=head2 hslice
+
+  Arg [1]    : (optional) Bio::EnsEMBL::Slice $slice
+  Example    : $hseqname = $featurepair->hslice()->seq_region_name();
+  Description: Getter/Setter for the Slice that is associated with this 
+               hit feature.  The slice represents the underlying sequence that this
+               feature is on.  Note that this method call is analagous to the
+               old SeqFeature methods contig(), entire_seq(), attach_seq(),
+               etc.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : thrown if an invalid argument is passed
+  Caller     : general
+
+=cut
+
+sub hslice {
+  my $self = shift;
+
+  if(@_) {
+    my $sl = shift;
+    if(defined($sl) && (!ref($sl) || !$sl->isa('Bio::EnsEMBL::Slice'))) {
+      throw('slice argument must be a Bio::EnsEMBL::Slice');
+    }
+
+    $self->{'hslice'} = $sl;
+  }
+
+  return $self->{'hslice'};
+}
 
 =head2 score
 
@@ -411,6 +440,45 @@ sub positive_matches{
     return $self->{'_positive_matches'};
 }
 
+=head2 group_id
+ 
+  Arg [1]    : int $group_id
+  Example    : none
+  Description: get/set for attribute group_id
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+ 
+=cut
+
+sub group_id {
+   my ($self, $arg) = @_;
+ 
+   if ( defined $arg ) {
+      $self->{'group_id'} = $arg ;
+   }
+   return $self->{'group_id'};
+}
+
+=head2 level_id
+ 
+  Arg [1]    : int $level_id
+  Example    : none
+  Description: get/set for attribute level_id
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+ 
+=cut
+
+sub level_id {
+   my ($self, $arg) = @_;
+ 
+   if ( defined $arg ) {
+      $self->{'level_id'} = $arg ;
+   }
+   return $self->{'level_id'};
+}
 
 =head1 DEPRECATED METHODS
 
@@ -494,6 +562,10 @@ sub feature2 {
 sub invert {
     my ($self,$slice) = @_;
 
+    if (! defined $slice && defined $self->hslice) {
+      $slice = $self->hslice;
+    }
+
     my $hstart   = $self->{'hstart'};
     my $hend     = $self->{'hend'};
     my $hstrand  = $self->{'hstrand'};
@@ -518,6 +590,7 @@ sub invert {
     $self->{'hseqname'} = $seqname;
     $self->{'hspecies'} = $species;
 
+    $self->{'hslice'} = $self->slice;
     $self->{'slice'} = $slice;
 }
 
