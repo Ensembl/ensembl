@@ -970,6 +970,46 @@ Calling Gene_Obj->get_array_supporting instead!");
     return $self->gene_Obj->get_array_supporting($supporting,@geneid);
 }
 
+
+
+=head2 get_Virtual_Contig
+    
+ Title   : get_Virtual_Contig
+ Usage   : $obj->get_Virtual_Contig($transcript,$max_length)
+ Function: Gets a Bio::EnsEMBL::DB::Virtual Contig object which 
+           spans the whole sequence on which the given 
+           Bio::EnsEMBL::Transcript object lies, as long 
+           as its length does not exceed max_length. If max_length
+           is exceeded, undef is returned instead.
+ Example : $obj->get_Virtual_Contig($transcript,50000)
+ Returns : VirtualContig Object (or undef)
+ Args    : Bio::EnsEMBL::Transcript object and max_length int variable
+
+
+=cut
+
+
+
+sub get_Virtual_Contig {
+   my ($self,$tid, $maxlen) = @_;
+
+   $self->warn("Obj->get_Virtual_contig is a deprecated method! 
+Calling Gene_Obj->get_Virtual_contig instead!");
+
+   return $self->gene_Obj->get_Gene_by_Transcript_id($tid,$maxlen);
+}
+
+
+
+
+
+
+
+
+
+
+
+
 =head2 donor_locator
     
  Title   : get_donor_locator
