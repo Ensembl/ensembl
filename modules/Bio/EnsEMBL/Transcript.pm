@@ -174,6 +174,8 @@ sub add_Exon{
  Title   : each_Exon
  Usage   : foreach $exon ( $trans->each_Exon)
  Function: Returns an array of exons in the transcript
+           in order, ie the first exon is the 5' most exon
+           in the transcript (the one closest to the 5' UTR).
  Example : my @exons = $tr->each_Exon
  Returns : An array of exon objects
  Args    : none
