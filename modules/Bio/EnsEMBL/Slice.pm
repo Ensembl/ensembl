@@ -93,15 +93,10 @@ sub new {
     } else {
       $self->strand('1');
     }
-
-    my $mapper = $adaptor->db->get_AssemblyMapperAdaptor->
-      fetch_by_type($type);
-    $mapper->register_region($self->chr_name(),$self->chr_start(),
-			     $self->chr_end());
   } else {
     $self->strand( 1 );
     $self->chr_start( 1 );
-
+    
     # empty Slices are used to do mapping to chromosomal coords.
     # After the mapping, the Slice contains chr_name and is reference 
     # point for the mapped object
@@ -110,7 +105,7 @@ sub new {
   $self->assembly_type($type);
   $self->adaptor($adaptor);
   $self->dbID( $dbID );
-# set stuff in self from @args
+  # set stuff in self from @args
 
   if( defined $adaptor && !defined $type ) {
     $self->assembly_type

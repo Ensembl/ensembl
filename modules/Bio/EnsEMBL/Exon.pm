@@ -349,19 +349,87 @@ sub transform {
   my $slice = shift;
   my $mapper;
 
-  if(( ! defined $slice ) &&
-     ( defined  $self->contig ) &&
-     ( $self->contig->isa( "Bio::EnsEMBL::RawContig" )) ) {
-    return $self;
+  if( ! defined $slice ) {
+    #Since slice arg is not defined -  we want raw contig coords
+    if(( defined  $self->contig ) && 
+       ( $self->contig->isa( "Bio::EnsEMBL::RawContig" )) ) {
+      #we are already in rawcontig coords, nothing needs to be done
+      return $self;
+    } else {
+      #transform to raw_contig coords from Slice coords
+      return $self->_transform_to_rawcontig();
+    }
   }
 
-  if( defined $self->contig and 
-      $self->contig->isa( "Bio::EnsEMBL::RawContig" ) )  {
-    $self->_transform_to_slice( $slice );
+  #slice arg is defined - we want slice coords
+  if( defined $self->contig ) {  
+    if($self->contig->isa( "Bio::EnsEMBL::RawContig" ))  {
+      #transform to slice coords from raw contig coords
+      return $self->_transform_to_slice( $slice );
+    } elsif($self->contig->isa( "Bio::EnsEMBL::Slice" )) {
+      #transform to slice coords from other slice coords
+      return $self->_transform_between_slices( $slice );
+    } else {
+      #Unknown contig type - throw an exception
+      return $self->throw("Exon's 'contig' is of unknown type " 
+		   . $self->contig() . " - cannot transform to Slice coords");
+    }
   } else {
-    $self->_transform_to_rawcontig();
+    #Can't convert to slice coords without a contig to work with
+    return $self->throw("Exon's contig is not defined - cannot transform to " .
+			"Slice coords");
   }
 }
+
+
+sub _transform_between_slices {
+  my ($self, $to_slice) = @_;
+
+  my $from_slice = $self->contig();
+
+  #sanity check - make sure we have something to transform from
+  unless(defined $from_slice) {
+    $self->throw("Exon's contig is not defined - cannot transform between "
+		 . "slices\n");
+  }
+  #sanity check - make sure the from slice's chromosome is defined
+  unless(defined $from_slice->chr_name()) {
+    $self->throw("Exon's chromosome is not defined - cannot transform between "
+		 . "slices\n");
+  }
+
+  unless(defined $to_slice->chr_name()) {
+    #from slice is an empty slice, create a entire chromosome slice
+    my $sa = $self->adaptor()->db()->get_SliceAdaptor();
+    %$to_slice = %{$sa->fetch_by_chr_name($from_slice->chr_name())}
+
+  }
+
+  #sanity check - make sure we are transforming to the same chromosome
+  if($to_slice->chr_name() ne $from_slice->chr_name()) {
+    $self->throw("Cannot transform exon on chr " . $from_slice->chr_name() .
+		 "to chr " . $to_slice->chr_name());
+  }
+  
+  my $new_exon = new Bio::EnsEMBL::Exon();
+  
+  %$new_exon = %$self;
+
+  my $shift = $from_slice->chr_start() - $to_slice->chr_start();
+
+  #shift the start and end of the exon accordingly
+  #negative coordinates are permitted, as are coords past slice boundary
+  $new_exon->start($self->start() + $shift);
+  $new_exon->end($self->end() + $shift);
+
+  $new_exon->contig($to_slice);
+  $new_exon->attach_seq($to_slice);
+
+  return $new_exon;
+}
+
+
+
 
 
 sub _transform_to_slice {
@@ -395,13 +463,12 @@ sub _transform_to_slice {
     return $self;
   }
 
-  # use empty Slice to map to chromosomal coords
+  # the slice is an empty slice, create an enitre chromosome slice and
+  # replace the empty slice with it
   if( ! defined $slice->chr_name() ) {
-    $slice->chr_name( $mapped[0]->id() );
-    $slice->chr_start( 1 );
-    $slice->strand( 1 );
+    my $sa = $self->adaptor()->db()->get_SliceAdaptor();
+    %$slice = %{$sa->fetch_by_chr_name( $mapped[0]->id() )};
   } 
-	  
 
   my $newexon = Bio::EnsEMBL::Exon->new();
   %$newexon = %$self;
@@ -484,7 +551,6 @@ sub _transform_to_rawcontig {
     }
     $stickyExon->end( $sticky_length );
     $stickyExon->strand( 1 );
-    
     return $stickyExon;
     
   } else {
