@@ -430,6 +430,37 @@ sub get_Gene_chr_bp {
         
 }
 
+=head2 fetch_Slice_by_transcript
+
+ Title   : fetch_Slice_by_transcript_dbID
+ Usage   : $slice = $slice_adaptor->fetch_Slice_by_transcript(
+                                       'ENST00000302930',1000);
+ Function: Creates a slice of the specified object.  If a context
+           size is given, the slice is extended by that number of
+	   basepairs on either side of the transcript.  Throws if
+	   the transcript is not golden.
+ Returns : Slice object 
+ Args    : transcript stable ID, [context size in bp]
+
+
+=cut
+
+sub fetch_Slice_by_transcript{
+  my ($self,$transcriptid,$size) = @_;
+
+  # Just get the dbID, then fetch slice by that
+  
+  my $ta = $self->db->get_TranscriptAdaptor;
+  my $transcript_obj = $ta->fetch_by_stable_id($transcriptid);
+  my $dbID = $transcript_obj->dbID;
+  if (defined $size) {
+    return $self->fetch_Slice_by_transcript_dbID($dbID, $size);
+  } else {
+    return $self->fetch_Slice_by_transcript_dbID($dbID);
+  } 
+
+}
+
 =head2 fetch_Slice_by_transcript_dbID
 
  Title   : fetch_Slice_by_transcript_dbID
@@ -456,8 +487,7 @@ sub fetch_Slice_by_transcript_dbID{
 					      '-ASSEMBLY_TYPE' =>
 					      $self->db->assembly_type);
    my $ta = $self->db->get_TranscriptAdaptor;
-   my $transcript_obj;
-   $transcript_obj = $ta->fetch_by_dbID($transcriptid);
+   my $transcript_obj = $ta->fetch_by_dbID($transcriptid);
 
    my %exon_transforms;
    for my $exon ( $transcript_obj->get_all_Exons() ) {
