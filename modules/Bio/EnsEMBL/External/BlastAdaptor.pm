@@ -174,6 +174,13 @@ SELECT object
 FROM   blast_hsp%s
 WHERE  hsp_id = ? ";
 
+our $SQL_HSP_REMOVE = "
+UPDATE  blast_hsp%s
+SET     chr_name  = NULL,
+        chr_start = NULL,
+        chr_end   = NULL
+WHERE   hsp_id    = ?";
+
 
 #----------------------------------------------------------------------
 
@@ -299,19 +306,22 @@ sub remove {
   my $self = shift;
   my $obj = shift;
   if( $obj->isa("Bio::Tools::Run::EnsemblSearchMulti") ){
+    return 1; # Nothing to do here
     #return $self->remove_search_multi( @_ );
   }
   elsif( $obj->isa("Bio::Search::Result::ResultI") ){
+    return 1; # Nothing to do here
     #return $self->remove_result( @_ );
   }
   elsif( $obj->isa("Bio::Search::Hit::HitI") ){
+    return 1; # Nothing to do here
     #return $self->remove_hit( @_ );
   }
   elsif( $obj->isa("Bio::Search::HSP::HSPI") ){
-    #return $self->remove_hsp( @_ );
+    return $self->remove_hsp( $obj ); # Run HSP-specific code
   }
-  $self->throw( "Do not know how to remove objects of type ".
-		ref($obj) );
+  #$self->warn( "Do not know how to remove objects of type ".ref($obj) );
+  return undef();
 }
 #----------------------------------------------------------------------
 =head2 store_search_multi
@@ -620,6 +630,38 @@ sub retrieve_hsp{
   $sth->finish;
   return $frozen;
 }
+
+#----------------------------------------------------------------------
+
+=head2 remove_hsp
+
+  Arg [1]   : $hsp object to be removed
+  Function  : 'removes' hsp from e.g. contigview by setting chr fields
+              to null
+  Returntype: 
+  Exceptions: 
+  Caller    : $self->remove
+  Example   : 
+
+=cut
+
+sub remove_hsp {
+  my $self = shift;
+  my $hsp  = shift || 
+    $self->throw( "Need a Bio::Search::HSP::EnsemblHSP obj" );
+
+  my $dbh  = $self->db->db_handle;
+
+  my ( $id, $use_date ) = split( '!!', $hsp->token || '');
+  $use_date ||= $hsp->use_date() || $hsp->use_date($self->use_date('HSP'));
+
+  my $sth = $dbh->prepare( sprintf $SQL_HSP_REMOVE, $use_date );
+  my @bound = ( $id );
+  my $rv = $sth->execute( @bound ) || $self->throw( $sth->errstr );
+  $sth->finish;
+  return 1;
+}
+
 
 
 #----------------------------------------------------------------------
