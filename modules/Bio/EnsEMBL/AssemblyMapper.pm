@@ -130,10 +130,10 @@ sub map_coordinates_to_assembly {
 #        $self->throw("Expecting +/- 1 for contig strand, but got '$strand'");
 #    }  
 
-    if( ! $self->_have_registered_contig( $contig_id )) {
+    if( ! exists $self->{'_contig_register'}->{$contig_id} ) {
       $self->register_region_around_contig( $contig_id, 0, 0 );
     }
-    return $self->_mapper->map_coordinates($contig_id, $start, $end, $strand, 'rawcontig');
+    return $self->{'_mapper'}->map_coordinates($contig_id, $start, $end, $strand, 'rawcontig');
 }
 
 
