@@ -737,8 +737,6 @@ sub get_all_SimilarityFeatures_above_score{
     print STDERR "Contigs are " . $self->_vmap->get_all_RawContigs . "\n";
     foreach my $c ($self->_vmap->get_all_RawContigs) {
 	
-	print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
-	
 	push(@$sf,$c->get_all_SimilarityFeatures_above_score($analysis_type,$score));
 	
 	# Need to clip seq features to fit the boundaries of
@@ -1106,7 +1104,6 @@ sub _get_all_SeqFeatures_type {
    }
    
    foreach my $c ($self->_vmap->get_all_RawContigs) {
-       print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
        if( $type eq 'repeat' ) {
 	   push(@$sf,$c->get_all_RepeatFeatures());
        } elsif ( $type eq 'similarity' ) {
