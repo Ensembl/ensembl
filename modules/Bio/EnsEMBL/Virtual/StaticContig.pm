@@ -60,7 +60,7 @@ sub new {
     my ($class,$global_start,$vc_start_position,$global_end,@contigs) = @_;
     
     my $self = {};
-    bless $self,$class;
+    bless ($self,$class);
     $self->_make_datastructures(); # back to virtual contig
 
 
@@ -100,7 +100,7 @@ sub new {
 		$rc_start = $rc->static_golden_start + ($global_start - $rc->chr_start);
 	    } else {
 		# don't need to move start, unless end - handled below
-		$rc_start = $rc->chr_start;
+		$rc_start = $rc->static_golden_start;
 	    }
 
 	    $chr_start = $global_start;
@@ -118,7 +118,6 @@ sub new {
 	} else {
 	    $chr_end = $rc->chr_end;
 	}
-
 
 
 	$self->_vmap->create_MapContig($rc,
@@ -147,6 +146,258 @@ sub new {
     $self->id("static".$static_number++);
     
     return $self;
+}
+
+
+
+=head2 get_all_SimilarityFeatures_above_score
+
+ Title   : get_all_SimilarityFeatures_above_score
+ Usage   : foreach my $sf ( $contig->get_all_SimilarityFeatures_above_score(analysis_type, score) ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_SimilarityFeatures_above_score{
+    my ($self, $analysis_type, $score) = @_;
+    
+    $self->throw("Must supply analysis_type parameter") unless $analysis_type;
+    $self->throw("Must supply score parameter") unless $score;
+    
+    my $glob_start=$self->_global_start;
+    my $glob_end=$self->_global_end;
+    my $chr_name=$self->_chr_name;
+    
+  
+       
+    my    $statement = "SELECT f.id, 
+                               f.seq_start+s.chr_start-s.raw_start,
+                               f.seq_end+s.chr_start-s.raw_start, 
+                               f.strand, f.score,f.analysis, f.name, f.hstart, f.hend, f.hid,
+                               s.chr_start,s.chr_end,s.raw_ori
+		        FROM   feature f, analysis a,static_golden_path s
+                        WHERE  f.score > $score
+                        AND    f.analysis = a.id 
+                        AND    s.raw_id = f.contig
+		        AND    a.db = '$analysis_type'  
+                        AND    s.chr_end >= $glob_start 
+		        AND    s.chr_start <=$glob_end 
+		        AND    s.chr_name='$chr_name'";
+    
+    my  $sth = $self->dbobj->prepare($statement);    
+    $sth->execute(); 
+
+
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
+    
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,
+		       \$name,\$hstart,\$hend,\$hid,\$chr_start,\$chr_end,\$raw_ori);
+
+
+    my @array;
+    my %analhash;
+    my $out;
+    my @distinct_features;
+    
+  FEATURE: while($sth->fetch) {
+      my $out;
+      my $analysis;
+   
+      # exclude overlaping features
+
+      foreach my $arrayref(@distinct_features){
+	  if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
+      }
+      my @list=($start,$end,$analysisid);
+      push @distinct_features,\@list;
+
+      # flip contigs
+      my $vc_start;
+      my $vc_end;
+	if ($raw_ori == -1){         
+	    $vc_start=$chr_end+$chr_start-$end;
+	    $vc_end=$chr_end+$chr_start-$start;
+	    $strand=-1*$strand;
+	}
+      else {
+	  $vc_start=$start;
+	  $vc_end=$end;
+      }
+     
+      # clip and map to vc coordinates
+
+      if ($vc_start>=$glob_start && $vc_end<=$glob_end){
+
+    	$start=$vc_start-$glob_start;
+    	$end=$vc_end-$glob_start;
+
+	# create features
+
+	  if (!$analhash{$analysisid}) 
+	  {
+	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	      $analysis = $feature_obj->get_Analysis($analysisid);
+	      $analhash{$analysisid} = $analysis;	   
+	  } 
+	  else {$analysis = $analhash{$analysisid};}
+	  
+	  if( !defined $name ) {
+	      $name = 'no_source';
+	  }
+	  $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+	  $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
+	  $out->analysis    ($analysis);
+	  $out->id          ($hid);              
+	   
+	  $out = new Bio::EnsEMBL::SeqFeature;
+	  $out->seqname   ($self->id);
+	  $out->start     ($start);
+	  $out->end       ($end);
+	  $out->strand    ($strand);
+	  $out->source_tag($name);
+	  $out->primary_tag('similarity');
+	  $out->id         ($hid);
+	  
+	  if( defined $f_score ) {
+	      $out->score($f_score);
+	  }
+	  $out->analysis($analysis);
+	  
+	  $out->validate();
+	  
+	  push(@array,$out);       
+      }
+  }
+
+    return @array;
+}
+
+
+=head2 get_all_RepeatFeatures
+
+ Title   : get_all_RepeatFeatures
+ Usage   : foreach my $sf ( $contig->get_all_RepeatFeatures ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_RepeatFeatures {
+  
+  my ($self) = @_;
+
+   my @array;
+  my %analhash;
+
+  my $glob_start=$self->_global_start;
+  my $glob_end=$self->_global_end;
+  my $chr_name=$self->_chr_name;
+  
+
+  my $statement = "SELECT rf.id,
+                          rf.seq_start+sgp.chr_start-sgp.raw_start,
+                          rf.seq_end+sgp.chr_start-sgp.raw_start,
+                          rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
+                          sgp.raw_ori,sgp.chr_start,sgp.chr_end 
+                   FROM   repeat_feature rf,static_golden_path sgp
+                   WHERE  sgp.raw_id = rf.contig
+                   AND    sgp.chr_end >= $glob_start 
+                   AND    sgp.chr_start <=$glob_end
+		   AND    sgp.chr_name='$chr_name' ";
+  
+
+  my $sth = $self->dbobj->prepare($statement);
+  $sth->execute();
+  
+
+  my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid,$raw_ori,$chr_start,$chr_end);
+  
+  $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,
+		     \$hstart,\$hend,\$hid,\$raw_ori,\$chr_start,\$chr_end);
+
+ 
+
+
+  my @distinct_features;  
+
+ FEATURE:  while( $sth->fetch ) {
+     
+     my $out;
+     my $analysis;
+
+     # exclude overlapping features
+     
+     foreach my $arrayref(@distinct_features){
+	 if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
+     }
+     my @list=($start,$end,$analysisid);
+     push @distinct_features,\@list;
+     
+    # flip contigs
+
+     my $vc_start;
+     my $vc_end;
+     
+     if ($raw_ori == -1){    
+	 $vc_start=$chr_end+$chr_start-$end;
+	 $vc_end=$chr_end+$chr_start-$start;
+	 $strand=-1*$strand;
+     } else {
+	 $vc_start=$start;
+	 $vc_end=$end;
+     }
+      
+    # clip and map to vc coordinates  
+     
+     if ($vc_start>=$glob_start && $vc_end<=$glob_end){
+	  
+	  $start=$vc_start-$glob_start;
+	  $end=$vc_end-$glob_start;
+
+	  # create features
+	  
+	  if (!$analhash{$analysisid}) {
+	      
+	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	      $analysis = $feature_obj->get_Analysis($analysisid);
+	      
+	      $analhash{$analysisid} = $analysis;
+	      
+	  } else {
+	      $analysis = $analhash{$analysisid};
+	  }
+	  
+      
+	  if( $hid ne '__NONE__' ) {
+	      # is a paired feature
+	      # build EnsEMBL features and make the FeaturePair
+	      
+	      $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
+	      $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$self->id,
+				   $hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
+	      
+	      $out->analysis($analysis);
+	      
+	  } else {
+	      $self->warn("Repeat feature does not have a hid. bad news....");
+	  }
+	  
+	  $out->validate();
+	  
+	  push(@array,$out);
+      }  
+  }
+   
+  return @array;
 }
 
 
