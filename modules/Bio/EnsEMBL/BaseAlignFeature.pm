@@ -118,40 +118,19 @@ sub new {
     return $self;
 }
 
+
 =head2 cigar_string
 
-    Arg      : Nothing (for just returning an existing cigar_string) or
-               A cigar string which looks something like
-
-               '100,200,3:109,203,12'
-
-               The cigar_string contains the ungapped pieces that make up the gapped alignment.
-
-               Its format is qstart,qend,length*strand.
-
-               So in the above example the gapped alignment contains 2 ungapped pieces from
-
-                  100-102 in the query and 200-200 in the hit and
-                  109-120 in the query and 203-206 in the hit.
-  
-               The length parts of the cigar string are positive as the strand is +ve.
-
-    Usage    : $pep_feat->cigar_string('100,200,3:109,203,12');
-               my $cigar_string = $pep_feat->cigar_string
-
-    Function : This module is for storing gapped dna-protein alignments.  To save 
-               space and memory all the structure of the gapped alignment
-               is stored in a string and the ->start and ->end values
-               are the minimum and maximum coords of all the gapped pieces.
-               This allows the gapped alignment to also function as
-               a feature pair.  It is mostly used for storing Blast HSPs
-               (see Bio::EnsEMBL::Pipeline::Runnable::Blast)
-
-               If a cigar_string is defined it is returned otherwise an exception is thrown
-
-    Exception: If no cigar_string is defined an exception is thrown
-
-    Caller   : Bio::EnsEMBL::Pipeline::Runnable::Blast
+  Arg [1]    : string $cigar_string
+  Example    : ( "12MI3M2D" )
+  Description: get/set for attribute cigar_string
+               cigar_string describes the alignment. "xM" stands for 
+               x matches (mismatches), "xI" for inserts into query sequence 
+               (thats the ensembl sequence), "xD" for deletions (inserts in the 
+               subject). an "x" that is 1 can be omitted.
+  Returntype : string
+  Exceptions : throws on a get without previous set
+  Caller     : general
 
 =cut
 
@@ -178,20 +157,17 @@ sub cigar_string {
 
 =head2 ungapped_features
 
-    Arg      : None.  
-
-    Usage    : my @feature_pairs = $pep_feat->ungapped_features;
-
-    Function : Converts the cigar_string contained by the module into 
-               an array of ungapped Bio::EnsEMBL::FeaturePair.
-
-               All the work is done in the subroutine _parse_cigar_string
-
-    Exception: If no cigar string is defined
-
-    Caller   : No specific caller.
+  Args       : none
+  Example    : none
+  Description: converts the internal cigar_string into an array of
+               ungapped feature pairs
+  Returntype : list of Bio::EnsEMBL::FeaturePair
+  Exceptions : cigar_string not set internally
+  Caller     : general
 
 =cut
+
+
 
 sub ungapped_features {
   my ($self) = @_;
@@ -208,19 +184,18 @@ sub ungapped_features {
 
 =head2 transform
 
-  Arg    :  None or Bio::EnsEMBL::Slice
-  
-  Usage  :  my @raw_contig_features = $f->transform();        # assummes is on a slice
-            my @slice_features      = $f->transform($slice);  # maps to slice
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+  Example    : none
+  Description: if argument is given, transforms this feature into the slice
+               coordinate system, invalidating this one.
+               if no argument is given, transforms this feature into raw contig
+               coordinates, invalidating this one.
+               The process can produce more than one feature so we return an array. 
+  Returntype : list of Bio::EnsEMBL::BaseAlignFeature
+  Exceptions : none
+  Caller     : general
 
-  Function : Converts feature into new coordinate system, either to or from
-             a Slice. This method follows other transform semantics meaning that
-             transform invalidates the current feature - you must use the features
-             returned on the array. This handles the underlying gaps fine
-
-  Exception : called on a feature with no args and no slice
-
-  Caller : No specific caller
+=cut
 
 =cut
 
@@ -752,6 +727,15 @@ sub _generic_parse_features {
 }
 
 
+#################################################
+#                                               #
+#  SOMEBODY  IGNORED THE ABOVE IMPLEMENTATION   #
+#    OF TRANMSFORM, WHY ??  WHICH ONE WORKS?    #
+#                                               #
+#################################################
+
+
+
 sub _generic_transform_to_slice{
   my ($self, $slice, $query_unit, $hit_unit) = @_;
 
@@ -837,12 +821,23 @@ sub _generic_transform_to_rawcontig{
 
 
 
-
 sub _generic_transform_between_slices{
   my ($self, $to_slice, $query_unit, $hit_unit) = @_;
 
   
 }
+
+=head2 dbID
+
+  Arg [1]    : int $dbID
+  Example    : none
+  Description: get/set for the database internal id
+  Returntype : int
+  Exceptions : none
+  Caller     : general, set from adaptor on store
+
+=cut
+
 
 sub dbID{
   my ($self, $arg) = @_;
@@ -855,15 +850,14 @@ sub dbID{
 
 }
 
-
 =head2 adaptor
 
- Title   : adaptor
- Usage   : $obj->adaptor($newval)
- Function: 
- Returns : value of adaptor
- Args    : newvalue (optional)
-
+  Arg [1]    : Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor $adaptor
+  Example    : none
+  Description: get/set for this objects Adaptor
+  Returntype : Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor
+  Exceptions : none
+  Caller     : general, set from adaptor on store
 
 =cut
 
@@ -880,14 +874,17 @@ sub adaptor {
 
 =head2 contig
 
- Title   : contig
- Usage   : 
- Function: stores a RawContig or Slice
- Returns : 
- Args    : 
-
+  Arg [1]    : Bio::EnsEMBL::Slice or
+               Bio::EnsEMBL::RawContig $contig
+  Example    : none
+  Description: The sequnence where the coordinates make sense. Channeled to
+               attach_seq/entire_seq from BioPerl
+  Returntype : Slice/RawContig
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub contig {
   my $self = shift;
@@ -900,5 +897,6 @@ sub contig {
     return $self->entire_seq();
   }
 }
+
 
 1;
