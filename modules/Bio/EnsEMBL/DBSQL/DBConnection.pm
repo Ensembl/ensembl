@@ -197,7 +197,6 @@ sub connect {
   my $self = shift;
 
   return if($self->connected);
-  $self->connected(1);
 
   if(defined($self->db_handle()) and $self->db_handle()->ping()) {
     warning("unconnected db_handle is still pingable, reseting connected boolean\n");
@@ -210,21 +209,19 @@ sub connect {
 
   my $dbh;
   eval{
-    $dbh = DBI->connect($dsn,
-                        $self->username(),
-                        $self->password(),
-                        {'RaiseError' => 1});
+    $dbh = DBI->connect($dsn, $self->username(), $self->password(), {'RaiseError' => 1});
   };
 
   if(!$dbh || $@ || !$dbh->ping()) {
     warn("Could not connect to database " . $self->dbname() .
-          " as user " . $self->username() .
-          " using [$dsn] as a locator:\n" . $DBI::errstr);
+         " as user " . $self->username() . 
+         " using [$dsn] as a locator:\n" . $DBI::errstr);
     throw("Could not connect to database " . $self->dbname() .
           " as user " . $self->username() .
           " using [$dsn] as a locator:\n" . $DBI::errstr);
   }
 
+  $self->connected(1);
   $self->db_handle($dbh);
   #print("CONNECT\n");
 }
@@ -564,6 +561,7 @@ sub prepare {
 
   # print STDERR  "SQL(".$self->dbname."):$string\n";
 
+   $self->connect() unless $self->connected();
    my $sth = $self->db_handle->prepare($string);
 
    # return an overridden statement handle that provides us with
@@ -598,6 +596,7 @@ sub do {
 
    #info("SQL(".$self->dbname."):$string");
 
+   $self->connect() unless $self->connected();
    my $result = $self->db_handle->do($string);
 
    # disconnect if the disconnect when inactive flag is set and
@@ -659,6 +658,7 @@ sub disconnect_if_idle {
   $self->connected(undef);
   $self->disconnect_count($self->disconnect_count()+1);
   #print("DISCONNECT\n");
+  $self->db_handle(undef);
   return 0;
 }
 

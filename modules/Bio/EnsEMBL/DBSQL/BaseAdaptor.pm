@@ -309,7 +309,7 @@ sub generic_fetch {
   my $sth = $db->dbc->prepare($sql);
   $sth->execute;
   my $res = $self->_objs_from_sth($sth, $mapper, $slice);
-
+  $sth->finish();
   return $res;
 }
 
