@@ -39,7 +39,7 @@ use strict;
                class and its superclasses.  
   Returntype : Bio::EnsEMBL::PepDnaAlignFeature
   Exceptions : none
-  Caller     : Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor
+  Caller     : none currently
 
 =cut
 
