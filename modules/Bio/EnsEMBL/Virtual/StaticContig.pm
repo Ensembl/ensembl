@@ -482,7 +482,7 @@ sub get_all_RepeatFeatures {
 	    $out->analysis($analysis);
 	    
 	} else {
-	    print(STDERR "Repeat feature does not have a hid. bad news....");
+	    #print(STDERR "Repeat feature does not have a hid. bad news....");
 	}
 	push(@features,$out);
     }
@@ -1598,11 +1598,11 @@ sub get_all_Genes{
 
    my $gene_obj = $self->dbobj->gene_Obj();
 
-   print STDERR "Before gene query " . time . "\n";
+   #print STDERR "Before gene query " . time . "\n";
 
    my @genes = $gene_obj->get_array_supporting('without',@gene_ids);
 
-   print STDERR "After gene query " . time . "\n";
+   #print STDERR "After gene query " . time . "\n";
 
    my %gene;
 
@@ -1615,9 +1615,9 @@ sub get_all_Genes{
    &eprof_start("gene-convert");
    
    # this delegates off to Virtual::Contig
-   print STDERR "BEfore convert " . time . "\n";
+   #print STDERR "BEfore convert " . time . "\n";
    my @newgenes=$self->_gene_query(%gene);
-   print STDERR "After convert " . time . "\n";
+   #print STDERR "After convert " . time . "\n";
 
    &eprof_end("gene-convert");
 
