@@ -337,5 +337,17 @@ sub overlap_size {
   return $overlap;
 }
 
+
+# low level function to access the ranges
+# only use for read access
+
+sub get_ranges {
+  my $self = shift;
+  my $id = shift;
+  
+  return $self->{'registry'}->{$id};
+}
+
+
 1;
 
