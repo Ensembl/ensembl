@@ -39,16 +39,21 @@ my $sa = $db->get_StaticGoldenPathAdaptor();
 
 # this is more efficient SQL query, but you won't see results until entire
 # set is returned
-foreach my $gene ( $db->gene_Obj->get_array_supporting('none',@gene_ids ) )
-#foreach my $geneid (@gene_ids )  
+#foreach my $gene ( $db->gene_Obj->get_array_supporting('none',@gene_ids ) )
+foreach my $geneid (@gene_ids )  
 {
-#    my $gene = $db->gene_Obj->get($geneid);
-    my $geneid = $gene->id;
+    my $gene = $db->gene_Obj->get($geneid);
+#    my $geneid = $gene->id;
     foreach my $trans ( $gene->each_Transcript ) {
 	my @exon = $trans->each_Exon;
 	my $fe = $exon[0];
 	my ($chr,$gene_start,$cdna_start) = find_trans_start($trans);	
 
+	# hmm, we skip ones that are not correct
+	if( ! $chr || ! $gene_start ) {
+	    print STDERR "skipping $geneid because location is Chr:$chr Start:$gene_start\n"; 
+	    next;
+	}
 	# Just want first exon.  Going to assume here that the first exon
 	# is on the same strand as the rest of the gene which I know
 	# is not always true in the Ensembl world because of
