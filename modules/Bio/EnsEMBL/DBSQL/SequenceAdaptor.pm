@@ -83,8 +83,6 @@ sub fetch_by_RawContig_start_end_strand {
 sub fetch_by_Slice_start_end_strand {
    my ( $self, $slice, $start, $end, $strand ) = @_;
 
-   my $seq= "";
-
    if(!$slice || !ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
      throw("Slice argument is required.");
    }
@@ -124,7 +122,7 @@ sub fetch_by_Slice_start_end_strand {
                "SELECT SUBSTRING( d.sequence, ?, ?)
                 FROM dna d
                 WHERE d.seq_region_id = ?");
-   my $seq;
+   my $seq = '';
    my $total = 0;
    my $tmp_seq;
 
