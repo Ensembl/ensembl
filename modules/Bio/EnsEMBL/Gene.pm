@@ -174,7 +174,7 @@ sub is_known{
   if( scalar(@array) > 0 ) {
     return 1;
   }
-  foreach my $trans ( $self->each_Transcript ) {
+  foreach my $trans ( $self->get_all_Transcripts ) {
     @array = $trans->each_DBLink();
     if( scalar(@array) > 0 ) {
       return 1;
