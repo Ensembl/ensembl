@@ -365,7 +365,7 @@ CREATE TABLE protein_feature (
   hend          int(10) NOT NULL,
   hid           varchar(40) NOT NULL,
   score         double(16,4) NOT NULL,
-  evalue        double(16,4),
+  evalue        varchar(20),
   perc_id       int(10),
 
   PRIMARY KEY   (id),
