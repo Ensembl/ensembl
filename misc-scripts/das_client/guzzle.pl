@@ -66,7 +66,7 @@ my $result_page_title	= 'Guzzle result page';
 # default.
 #
 my @presets = (
-    {	NAME	=> 'EMBL (via Sprot) [test]',
+    {	NAME	=> 'Sprot (using Ensembl peptide IDs) [test]',
 	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
 	MAPTYPE	=> 'simple',
 	MAPFILE	=> '/home/ak/ensembl-cvs/ensembl/misc-scripts/' .
@@ -209,6 +209,7 @@ sub do_query
     foreach my $source (@{ $sources }) {
 	if (!defined $source->{MAPTYPE}) {
 	    # Don't do mapping for this source.
+	    $query{$seqid}{SEGMENT} = $seqid . $range;
 	    push(@{ $query{$seqid}{DSN} }, $source->{DSN});
 	    next;
 	}
@@ -615,12 +616,6 @@ sub result_page
 
 	my @replies = do_query($cgi, \@sources);
 
-	if (scalar @replies == 0) {
-	    print $cgi->b("Sorry, no features were found for your query.");
-	    page_foot_and_end($cgi);
-	    exit;
-	}
-
 	foreach my $reply (@replies) {
 	    next unless ($reply->is_success && defined $reply->results);
 
@@ -668,6 +663,13 @@ sub result_page
 		last;
 	    }
 	}
+
+	if (scalar @replies == 0 || scalar @{ $table } == 0) {
+	    print $cgi->b("Sorry, no features were found for your query.");
+	    page_foot_and_end($cgi);
+	    exit;
+	}
+
     } else {
         # The results are picked up from the encoded string,
         # not from any DAS server.  Hopefully this works
