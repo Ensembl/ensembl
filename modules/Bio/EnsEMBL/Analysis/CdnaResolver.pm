@@ -89,10 +89,14 @@ sub resolve{
     # write out the sequence somewhere sensible.
     my %top_sf;
 
+    my $nseq = $aseq->seq->seq();
+    my $bnseq = Bio::Seq->new( -seq => lc($nseq), -type => 'Dna', -id => $aseq->seq->id() );
+    
     my $seqout1 = Bio::SeqIO->new( -format => 'Fasta', -file => ">/tmp/aseq.$$");
-    $seqout1->write_seq($aseq->seq);
+    $seqout1->write_seq($bnseq);
     $seqout1 = undef;
     
+    $bnseq = $nseq = undef;
 
   ACC: 
     foreach my $embl_acc ( @cdna_accessions ) {
@@ -127,9 +131,10 @@ sub resolve{
 	    # assumme file is in fasta format for sim4 stuff.
 	    
 	    my $seqout = Bio::SeqIO->new( '-format' => 'Fasta', -file => ">/tmp/sim4.cdna.$$");
+	    $cdna->seq->setseq(lc($cdna->seq->seq));
 	    $seqout->write_seq($cdna->seq);
 	    $seqout = undef;
-	    #print STDERR "file $file vs /tmp/sim4.cdna.$$ \n";
+	    print STDERR "file /tmp/aseq.$$ vs /tmp/sim4.cdna.$$ \n";
 
 	    my $sim4 = Bio::Tools::Sim4::Results->new( -file => "sim4 /tmp/aseq.$$ /tmp/sim4.cdna.$$ |" );
 	    
