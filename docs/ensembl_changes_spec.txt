@@ -223,16 +223,26 @@ Slice
 
   The concept of an 'empty' slice will no longer exist.
 
-  Should we remove all of the get_all_FeatureTypeX methods from Slice?  These
-  methods are not strictly needed and they are annoying because they result in
-  a duplication of coding effort.  Everytime a new feature is added, a new
-  feature adaptor needs to be added AND a new method needs to be added to the
-  slice.  Would it not make everything simpler if features could still be
-  fetched by slice from adaptors but not from slices as well?  This also 
-  results in slices being smaller objects and makes the code more distributed.
-  *probably can't get away with this change since much code depends on it,
-   and it is not a huge flaw in the design anyway
+  The get_tiling_path method will have to be implemented differently for the
+  new system.  It will take a coord_system string as an argument and rather than
+  returning a list of Tile objects it will return a listref of triplets containing
+  a start int, and end int, and a 'to' slice object.  The following is an example
+  of how this method would be used ($clone is a reference to a slice object in 
+  the clone coordinate system):
 
+    my $clone_path = $slice->get_tiling_path('clone');
+
+    foreach my $tile (@$clone_path) {
+      my ($start, $end, $clone) = @$tile;
+      print $slice->frag_name, ':', $start, '-', $end , ' -> ',
+            $clone->frag_name, ':', $clone->start, '-', $clone->end, 
+            $clone->strand, "\n";
+    }
+
+
+Tile
+----
+  The tile object will no longer be necessary.
 
 
 SliceAdaptor
