@@ -245,6 +245,8 @@ sub store {
     $sth->finish();
   }
 
+  $translation->get_all_Attributes();
+
   $translation->dbID( $transl_dbID );
   $translation->adaptor( $self );
 
