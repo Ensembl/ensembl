@@ -5,6 +5,7 @@ use strict;
 use DBI;
 use Storable qw(freeze thaw);
 use Data::Dumper qw( Dumper );
+use Time::Local;
 
 use vars qw(@ISA);
 
@@ -45,6 +46,7 @@ CREATE TABLE blast_result (
 our $SQL_CREATE_TABLE_LOG = "
 CREATE TABLE blast_table_log (
   table_id int(10) unsigned NOT NULL auto_increment,
+  table_name varchar(32),
   table_type enum('TICKET','RESULT','HIT','HSP') default NULL,
   table_status enum('CURRENT','FILLED','DELETED') default NULL,
   use_date date default NULL,
@@ -52,13 +54,14 @@ CREATE TABLE blast_table_log (
   delete_time datetime default NULL,
   num_objects int(10) default NULL,
   PRIMARY KEY  (table_id),
+  KEY table_name (table_name),
   KEY table_type (table_type),
   KEY use_date (use_date),
   KEY table_status (table_status)
 ) TYPE=MyISAM";
 
 our $SQL_CREATE_DAILY_HIT = "
-CREATE TABLE blast_hit%s (
+CREATE TABLE %s (
   hit_id int(10) unsigned NOT NULL auto_increment,
   ticket varchar(32) default NULL,
   object longblob,
@@ -67,7 +70,7 @@ CREATE TABLE blast_hit%s (
 ) TYPE=MyISAM";
 
 our $SQL_CREATE_DAILY_HSP = "
-CREATE TABLE blast_hsp%s (
+CREATE TABLE %s (
   hsp_id int(10) unsigned NOT NULL auto_increment,
   ticket varchar(32) default NULL,
   object longblob,
@@ -88,14 +91,15 @@ ORDER BY use_date DESC";
 
 our $SQL_TABLE_LOG_INSERT = "
 INSERT into blast_table_log 
-       ( table_status, table_type, use_date, create_time)
-VALUES ( ?, ?, ?, NOW() )";
+       ( table_name, table_status, table_type, use_date, create_time)
+VALUES ( ?, ?, ?, ?, NOW() )";
 
 our $SQL_TABLE_LOG_UPDATE = "
 UPDATE blast_table_log
-SET    table_status = ?
-WHERE  table_type   = ?
-AND    use_date     = ?";
+SET    table_status = ?,
+       delete_time  = ?,
+       num_objects  = ?
+WHERE  table_name   = ?";
 
 #--- TICKETS ---
 
@@ -636,7 +640,7 @@ sub use_date {
   $self->{$key} ||= {};
   if( ! $self->{$key}->{$type} ){
     my $sth = $self->db->db_handle->prepare( $SQL_SELECT_TABLE_LOG_CURRENT );
-    my $rv = $sth->execute( $type ) || $self->throw( $sth->errstr );
+    my $rv = $sth->execute( $type ) || ( warn( $sth->errstr ) && return );
     $rv > 0 || ( warn( "No current $type table found" ) && return );
     my $date = $sth->fetchrow_arrayref->[0];
     $date =~ s/-//g;
@@ -662,111 +666,198 @@ sub use_date {
 
 sub clean_blast_database{
   my $self = shift;
+  my $days = shift || $self->throw( "Missing arg: number of days" );
+  $days =~ /\D/    && $self->throw( "Bad arg: number of days $days not int" );
   my $dbh = $self->db->db_handle;
 
-  # Get list of existing tables in database
-  my $q = 'show tables';
-  my $sth = $dbh->prepare( $q );
+  # Rotate daily Hit and HSP tables
+  $self->rotate_daily_tables;
+
+  # Get list of tickets > $days days old
+  my $q = qq/
+SELECT ticket 
+FROM   blast_ticket
+WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
+
+  my $sth = $self->db->db_handle->prepare($q);
   my $rv = $sth->execute() || $self->throw( $sth->errstr );
   my $res = $sth->fetchall_arrayref;
   $sth->finish;
-  my %existing_tables = map{ $_->[0], 1 } @$res;
+  
+  # Delete result and ticket rows associated with old tickets
+  my $q_del_tmpl = qq/
+DELETE
+FROM   blast_%s
+WHERE  ticket like "%s" /;
 
-  # Create blast_ticket, blast_result and/or blast_table_log if missing
-  if( ! $existing_tables{blast_ticket} ){
+  my @types = ( 'result','ticket' );
+  my %num_deleted = map{ $_=>0 } @types;
+
+  foreach my $row( @$res ){
+    my $ticket = $row->[0];
+
+    foreach my $type( @types ){
+      my $q_del = sprintf( $q_del_tmpl, $type, $ticket );
+      my $sth = $self->db->db_handle->prepare($q_del);
+      my $rv = $sth->execute() || $self->throw( $sth->errstr );
+      $num_deleted{$type} += $rv;
+    }
+  }
+  map{ warn("Purging $days days: Deleted $num_deleted{$_} rows of type $_\n") }
+  keys %num_deleted;
+
+  # Drop daily Hit and HSP tables not updated within $days days
+  my $q_find = 'show table status like ?';
+  my $sth2 = $dbh->prepare( $q_find );
+  $sth2->execute( "blast_hit%" ) || $self->throw( $sth2->errstr );
+  my $hit_res = $sth2->fetchall_arrayref();
+  $sth2->execute( "blast_hsp%" ) || $self->throw( $sth2->errstr );
+  my $hsp_res = $sth2->fetchall_arrayref();
+
+  my @deletable_hit_tables;
+  foreach my $row( @$hit_res, @$hsp_res ){
+    my $table_name  = $row->[0];
+    my $num_rows    = $row->[3];
+    my $update_time = $row->[11]; # Should be a string like 2003-08-15 10:36:56
+    my @time = split( /[-:\s]/, $update_time );
+    
+    my $epoch_then = timelocal( $time[5], $time[4],   $time[3], 
+				$time[2], $time[1]-1, $time[0] - 1900 );
+    my $secs_old = time() - $epoch_then;
+    my $days_old = $secs_old / ( 60 * 60 * 24 );
+    
+    if( $days_old > $days ){
+      warn( "Dropping table $table_name: $num_rows rows\n" );
+      my $sth_drop = $dbh->prepare( "DROP table $table_name" );
+      my $sth_log  = $dbh->prepare( $SQL_TABLE_LOG_UPDATE );
+      $sth_drop->execute || $self->throw( $sth_drop->errstr );
+      $sth_log->execute
+	('DELETED','NOW()',$num_rows,$table_name) ||
+	  $self->throw( $sth_log->errstr );;
+      
+    }
+  }
+
+
+  return 1;
+}
+
+#----------------------------------------------------------------------
+
+=head2 create_tables
+
+  Arg [1]   : none
+  Function  : Creates the blast_ticket, blast_result and blast_table_log
+              tables in the database indicated by the database handle.
+              Checks first to make sure they do not exist
+  Returntype: boolean
+  Exceptions: 
+  Caller    : 
+  Example   : 
+
+=cut
+
+sub create_tables {
+  my $self = shift;
+  my $dbh = $self->db->db_handle;
+
+  # Get list of existing tables in database
+  my $q = 'show tables like ?';
+  my $sth = $dbh->prepare( $q );
+
+  my $rv_tck = $sth->execute("blast_ticket")    || $self->throw($sth->errstr);
+  my $rv_res = $sth->execute("blast_result")    || $self->throw($sth->errstr);
+  my $rv_log = $sth->execute("blast_table_log" )|| $self->throw($sth->errstr);
+
+  if( $rv_tck == 0 ){
     warn( "Creating blast_ticket table" );
-    my $q = $SQL_CREATE_TICKET;
-    my $sth = $dbh->prepare( $q );
-    #my $rv = $sth->execute() || $self->throw( $sth->errstr );
+    my $sth = $dbh->prepare( $SQL_CREATE_TICKET );
+    my $rv = $sth->execute() || $self->throw( $sth->errstr );
   }
-  if( ! $existing_tables{blast_result} ){
+  if( $rv_res == 0 ){
     warn( "Creating blast_result table" );
-    my $q = $SQL_CREATE_RESULT;
-    my $sth = $dbh->prepare( $q );
-    #my $rv = $sth->execute() || $self->throw( $sth->errstr );    
+    my $sth = $dbh->prepare( $SQL_CREATE_RESULT );
+    my $rv = $sth->execute() || $self->throw( $sth->errstr );    
   }
-  if( ! $existing_tables{blast_table_log} ){
+  if( $rv_log == 0 ){
     warn( "Creating blast_result table" );
-    my $q = $SQL_CREATE_TABLE_LOG;
-    my $sth = $dbh->prepare( $q );
-    #my $rv = $sth->execute() || $self->throw( $sth->errstr );    
+    my $sth = $dbh->prepare( $SQL_CREATE_TABLE_LOG );
+    my $rv = $sth->execute() || $self->throw( $sth->errstr );    
   }
+  return 1;
+}
 
+#----------------------------------------------------------------------
+
+=head2 rotate_daily_tables
+
+  Arg [1]   : none
+  Function  : Creates the daily blast_hit{date} and blast_hsp{date} 
+              tables in the database indicated by the database handle.
+              Checks first to make sure they do not exist.
+              Sets the new table to 'CURRENT' in the blast_table_log.
+              Sets the previous 'CURRENT' table to filled.
+  Returntype: boolean
+  Exceptions: 
+  Caller    : 
+  Example   : 
+
+=cut
+
+sub rotate_daily_tables {
+  my $self = shift;
+  my $dbh = $self->db->db_handle;
+ 
   # Get date
   my( $day, $month, $year ) = (localtime)[3,4,5];
-  my $use_date = sprintf( "%04d%02d%02d", $year+1900, $month+1, $day );
+  my $date = sprintf( "%04d%02d%02d", $year+1900, $month+1, $day );
 
-  # Create today's blast_hit and blast_hsp tables if missing
-  if( ! $existing_tables{'blast_hit'.$use_date} ){
-    warn( "Creating todays blast_hit$use_date table" );
+  my $hit_table = "blast_hit$date";
+  my $hsp_table = "blast_hsp$date";
+
+  # Get list of existing tables in database
+  my $q = 'show table status like ?';
+  my $sth = $dbh->prepare( $q );
+  
+  my $rv_hit  = $sth->execute($hit_table) || $self->throw($sth->errstr);
+  my $rv_hsp  = $sth->execute($hsp_table) || $self->throw($sth->errstr);
+
+  if( $rv_hit == 0 ){
+    warn( "Creating today's $hit_table table\n" );
 
     # Create new table
-    my $q = sprintf($SQL_CREATE_DAILY_HIT, $use_date);
+    my $q = sprintf($SQL_CREATE_DAILY_HIT, $hit_table);
     my $sth = $dbh->prepare( $q );
     my $rv = $sth->execute() || $self->throw( $sth->errstr );         
-    
-    # Flip current table
-    my $last_use_date = $self->use_date( "HIT" ) || '';
+
+    # Flip current table in blast_table_tog
+    my $last_date = $self->use_date( "HIT" ) || '';
     my $sth2 = $dbh->prepare( $SQL_TABLE_LOG_INSERT );
     my $sth3 = $dbh->prepare( $SQL_TABLE_LOG_UPDATE );
-    $sth2->execute( 'CURRENT','HIT',$use_date ) 
+    $sth2->execute( "$hit_table",'CURRENT','HIT',$date ) 
       || die( $self->throw( $sth2->errstr ) );
-    $sth3->execute( 'FILLED','HIT',$last_use_date) 
+    $sth3->execute( 'FILLED','0',0,"blast_hit$last_date") 
       || die( $self->throw( $sth3->errstr ) );
   }
+  
+  if( $rv_hsp == 0 ){
+    warn( "Creating today's $hsp_table table\n" );
 
-  if( ! $existing_tables{'blast_hsp'.$use_date} ){
-    warn( "Creating todays blast_hsp$use_date table" );
-
-     # Create new table
-    my $q = sprintf($SQL_CREATE_DAILY_HSP, $use_date );
+    # Create new table
+    my $q = sprintf($SQL_CREATE_DAILY_HSP, $hsp_table );
     my $sth = $dbh->prepare( $q );
     my $rv = $sth->execute() || $self->throw( $sth->errstr );         
-    
-    my $last_use_date = $self->use_date( "HSP" ) || '';    
+
+    # Flip current table in blast_table_tog
+    my $last_date = $self->use_date( "HSP" ) || '';    
     my $sth2 = $dbh->prepare( $SQL_TABLE_LOG_INSERT );
     my $sth3 = $dbh->prepare(  $SQL_TABLE_LOG_UPDATE );
-    $sth2->execute( 'CURRENT','HSP',$use_date ) 
+    $sth2->execute( "$hsp_table",'CURRENT','HSP',$date ) 
       || die( $self->throw( $sth2->errstr ) );
-    $sth3->execute( 'FILLED','HSP',$last_use_date) 
+    $sth3->execute( 'FILLED','0',0,"blast_hsp$last_date") 
       || die( $self->throw( $sth3->errstr ) );
   }
-
-
-#  my $days = shift || $self->throw( "Missing arg: number of days" );
-#  $days =~ /\D/    && $self->throw( "Bad arg: number of days $days not int" );
-
-#  my $q = qq/
-#SELECT ticket 
-#FROM   blast_ticket
-#WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
-
-#  my $q_del_tmpl = qq/
-#DELETE
-#FROM   blast_%s
-#WHERE  ticket like "%s" /;
-
-#  my $sth = $self->db->db_handle->prepare($q);
-#  my $rv = $sth->execute() || $self->throw( $sth->errstr );
-#  my $res = $sth->fetchall_arrayref;
-#  $sth->finish;
-  
-#  my @types = ( 'hsp','hit','result','ticket' );
-#  my %num_deleted = map{ $_=>0 } @types;
-
-#  foreach my $row( @$res ){
-#    my $ticket = $row->[0];
-
-#    foreach my $type( @types ){
-#      my $q_del = sprintf( $q_del_tmpl, $type, $ticket );
-#      my $sth = $self->db->db_handle->prepare($q_del);
-#      my $rv = $sth->execute() || $self->throw( $sth->errstr );
-#      $num_deleted{$type} += $rv;
-#    }
-#  }
-#  map{ warn("Purging $days days: Deleted $num_deleted{$_} rows of type $_\n") }
-#  keys %num_deleted;
-#  return 1;
+  return 1;
 }
 
 #----------------------------------------------------------------------
