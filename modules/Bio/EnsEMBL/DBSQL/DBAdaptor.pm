@@ -203,8 +203,19 @@ sub new {
       $self->{'_lite_db_name'} = $litedbname;
     }
 
-    my $sgp = $self->get_MetaContainer->get_default_assembly || undef;
-    $self->static_golden_path_type($sgp);
+    my $sgp = undef;
+    eval { 
+        $sgp = $self->get_MetaContainer->get_default_assembly
+    };
+    if ( $@ ) {
+        use Carp qw(cluck);
+        my $hardcoded_default = 'UCSC';
+        cluck "*** get_MetaContainer->get_default_assembly failed:\n$@\n"
+          ."*** Using hardcoded default: '$hardcoded_default' instead\n";
+        $self->static_golden_path_type($hardcoded_default);
+    } else { 
+      $self->static_golden_path_type($sgp);
+    }
 
     return $self; # success - we hope!
 }
