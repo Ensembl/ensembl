@@ -687,24 +687,22 @@ sub store {
 
   # get current max object_xref_id
   # TODO use selectall_arrayref
-  my $max_object_xref_id = 0;
-  my $sth = $self->dbi()->prepare("SELECT MAX(object_xref_id) FROM object_xref");
-  $sth->execute();
-  my $max_object_xref_id = ($sth->fetchrow_array())[0];
+  my $row = @{$self->dbi()->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
+  my $max_object_xref_id = @{$row}[0];
   if (!defined $max_object_xref_id) {
     print "Can't get highest existing object_xref_id, using 1\n)";
   } else {
     print "Maximum existing object_xref_id = $max_object_xref_id\n";
+    $max_object_xref_id = 1;
   }
 
-  my $max_xref_id = 0;
-  my $core_sth = $self->dbi->prepare("SELECT MAX(xref_id) FROM xref");
-  $core_sth->execute();
-  my $max_xref_id = ($core_sth->fetchrow_array())[0];
+  $row = @{$self->dbi->selectall_arrayref("SELECT MAX(xref_id) FROM xref")}[0];
+  my $max_xref_id = @$row[0];
   if (!defined $max_xref_id) {
     print "Can't get highest existing xref_id, using 0\n)";
   } else {
     print "Maximum existing xref_id = $max_xref_id\n";
+    $max_object_xref_id = 1;
   }
   my $xref_id_offset = $max_xref_id + 1;
 
@@ -987,14 +985,13 @@ sub dump_core_xrefs {
   open(EXTERNAL_DB, ">external_db.txt");
 
   # get current highest internal ID from external_db
-  my $max_edb_id = 0;
-  my $core_sth = $core_dbi->prepare("SELECT MAX(external_db_id) FROM external_db");
-  $core_sth->execute();
-  my $max_edb_id = ($core_sth->fetchrow_array())[0];
+  my $row = @{$core_dbi->selectall_arrayref("SELECT MAX(external_db_id) FROM external_db")}[0];
+  my $max_edb_id = @{$row}[0];
   if (!defined $max_edb_id) {
-    print "Can't get highest existing external_db_id, using 0\n)";
+    print "Can't get highest existing external_db_id, using 1\n)";
   } else {
     print "Maximum existing external_db_id = $max_edb_id\n";
+    $max_edb_id = 0;
   }
   my $edb_id = $max_edb_id + 1;
 
