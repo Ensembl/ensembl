@@ -710,7 +710,7 @@ CREATE TABLE qtl_synonym (
 );
 
 CREATE TABLE qtl_feature (
-  chromosome_id int not null,
+  seq_region_id int not null,
   start int not null,
   end int not null,
   qtl_id int not null,
