@@ -18,8 +18,10 @@
     </process>
   </introduction>
   
+<!--
   <diagram url="http://www.sanger.ac.uk/Users/dta/schema/schema_a4.pdf" description="Schema diagram on 2 A4 pages for easy printing."/>
   <diagram url="http://www.sanger.ac.uk/Users/dta/schema/schema_a3.pdf" description="Schema diagram on one A3 page."/>
+-->
 
   <tablegroup name="Fundamental tables" description="">
     
