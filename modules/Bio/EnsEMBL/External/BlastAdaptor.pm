@@ -574,7 +574,7 @@ sub store_hsp{
   my $chr_name  = 'NULL';
   my $chr_start = 'NULL';
   my $chr_end   = 'NULL';
-  if( my $genomic = $hsp->genomic_hit || $hsp->contig_hit ){
+  if( my $genomic = $hsp->genomic_hit ){
     $chr_name  = $genomic->seqname;
     $chr_start = $genomic->start;
     $chr_end   = $genomic->end;
