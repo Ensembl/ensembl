@@ -232,7 +232,7 @@ sub has_genes{
 sub primary_seq{
    my ($self,@args) = @_;
 
-   if( $self->perlonlysequences == 1 ) {
+   if( $self->perl_only_sequences == 1 ) {
        return $self->perl_primary_seq();
    }
    return $self->db_primary_seq();

@@ -1916,7 +1916,7 @@ sub get_Contig{
 #Calling Contig->fetch instead!");
 
    my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
-							  -id    => $id 
+							  -id    => $id,
 							  -perlonlysequences => $self->perl_only_sequences() );
    
    return $contig->fetch();
