@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DB::VirtualPrimarySeq - DESCRIPTION of Object
+Bio::EnsEMBL::DB::VirtualPrimarySeq - Object that "pretends" to be a PrimarySeq without actual phyiscally having the DNA.
 
 =head1 SYNOPSIS
 
