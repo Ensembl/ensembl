@@ -95,7 +95,7 @@ sub _columns {
 
   #warning, implementation of _objs_from_sth method depends on order of list
   return qw(dna_align_feature_id contig_id analysis_id contig_start 
-	    contig_end contig_strand hit_start hit_name hit_strand
+	    contig_end contig_strand hit_start hit_end hit_name hit_strand
 	    cigar_line evalue perc_ident score);
 }
 
@@ -181,29 +181,31 @@ sub _objs_from_sth {
   my ($self, $sth, $mapper, $slice) = @_;
 
   my ($dna_align_feature_id, $contig_id, $analysis_id, $contig_start, 
-      $contig_end, $contig_strand, $hit_start, $hit_name, $hit_strand,
-      $cigar_line, $evalue, $perc_ident, $score);
-
+      $contig_end, $contig_strand, $hit_start, $hit_end, $hit_name, 
+      $hit_strand, $cigar_line, $evalue, $perc_ident, $score);
   
   my $rca = $self->db()->get_RawContigAdaptor();
   my $aa = $self->db()->get_AnalysisAdaptor();
   
-  $sth->bind_columns(\$dna_align_feature_id, \$contig_id, \$analysis_id,
-		     \$contig_start, \$contig_end, \$contig_strand, 
-		     \$hit_start, \$hit_name, \$hit_strand, \$cigar_line,
-		     \$evalue, \$perc_ident, \$score);
-
   my ($analysis, $contig);
   my @features;
 
   my %a_hash;
+
+  my ($row, $row_cache);
+
+  my $row_cache = $sth->fetchall_arrayref();
 
   if($slice) {
     my ($chr, $start, $end, $strand);
     my $slice_start = $slice->chr_start() - 1;
     my $slice_name = $slice->name();
     
-    while($sth->fetch()) {
+    while($row = shift @$row_cache) {
+      ($dna_align_feature_id, $contig_id, $analysis_id, $contig_start, 
+       $contig_end, $contig_strand, $hit_start, $hit_end, $hit_name, 
+       $hit_strand, $cigar_line, $evalue, $perc_ident, $score) = @$row;
+
       $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
       
       ($chr, $start, $end, $strand) = 
@@ -227,7 +229,7 @@ sub _objs_from_sth {
 		     '_percent_id'    =>  $perc_ident,
 		     '_p_value'       =>  $evalue,
                      '_hstart'        =>  $hit_start,
-                     '_hend'          =>  $hit_name,
+                     '_hend'          =>  $hit_end,
                      '_hstrand'       =>  $hit_strand,
                      '_hseqname'      =>  $hit_name,
 		     '_gsf_seq'       =>  $slice,
@@ -237,7 +239,11 @@ sub _objs_from_sth {
     }
   } else {
     my %c_hash;
-    while($sth->fetch) {
+    while($row = shift @$row_cache) {
+      ($dna_align_feature_id, $contig_id, $analysis_id, $contig_start, 
+       $contig_end, $contig_strand, $hit_start, $hit_end, $hit_name, 
+       $hit_strand, $cigar_line, $evalue, $perc_ident, $score) = @$row;
+      
       $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
       $contig   = $c_hash{$contig_id}   ||= $rca->fetch_by_dbID($contig_id);
 	
@@ -256,7 +262,7 @@ sub _objs_from_sth {
 		     '_percent_id'    =>  $perc_ident,
 		     '_p_value'       =>  $evalue,
                      '_hstart'        =>  $hit_start,
-                     '_hend'          =>  $hit_name,
+                     '_hend'          =>  $hit_end,
                      '_hstrand'       =>  $hit_strand,
                      '_hseqname'      =>  $hit_name,
 		     '_gsf_seq'       =>  $contig,

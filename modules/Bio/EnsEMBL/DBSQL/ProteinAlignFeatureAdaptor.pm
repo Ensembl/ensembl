@@ -149,22 +149,25 @@ sub _objs_from_sth {
   my $aa = $self->db()->get_AnalysisAdaptor();
   my @features;
 
-  $sth->bind_columns(\$protein_align_feature_id, \$contig_id, \$contig_start, 
-		     \$contig_end, \$analysis_id, \$contig_strand, \$hit_start,
-		     \$hit_end, \$hit_name, \$cigar_line, \$evalue, 
-		     \$perc_ident, \$score);
-
   my($analysis, $contig);
 
   my %a_hash;
   my %c_hash;
+
+  my($row_cache, $row);
+
+  $row_cache = $sth->fetchall_arrayref();
 
   if($slice) {
     my ($chr, $start, $end, $strand);
     my $slice_start = $slice->chr_start() - 1;
     my $slice_name = $slice->name();
     
-    while($sth->fetch()) {
+    while($row = shift @$row_cache) {
+      ($protein_align_feature_id, $contig_id, $contig_start, $contig_end,
+      $analysis_id, $contig_strand, $hit_start, $hit_end, $hit_name, 
+      $cigar_line, $evalue, $perc_ident, $score) = @$row;
+
       $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
       ($chr, $start, $end, $strand) = 
 	$mapper->fast_to_assembly($contig_id, $contig_start, 
@@ -198,8 +201,11 @@ sub _objs_from_sth {
     }    
 
   } else {
+    while($row = shift @$row_cache) {
+      ($protein_align_feature_id, $contig_id, $contig_start, $contig_end,
+      $analysis_id, $contig_strand, $hit_start, $hit_end, $hit_name, 
+      $cigar_line, $evalue, $perc_ident, $score) = @$row;
 
-    while($sth->fetch) {
       $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
       $contig   = $c_hash{$contig_id}   ||= $rca->fetch_by_dbID($contig_id);
       
