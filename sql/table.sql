@@ -803,3 +803,10 @@ CREATE TABLE coord_system (
     PRIMARY KEY (coord_system_id)
 
 ) TYPE=MyISAM;
+
+CREATE TABLE meta_coord (
+
+    table_name             VARCHAR(40),
+    coord_system_id        INT
+
+) TYPE=MyISAM;
