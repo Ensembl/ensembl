@@ -1304,6 +1304,14 @@ sub pep2genomic {
                The end position in genomic coordinates
   Arg [3]    : $strand
                The strand of the genomic coordinates
+  Arg [4]    : (optional) $contig
+               The contig the coordinates are on.  This can be a slice
+               or RawContig, but must be the same object in memory as
+               the contig(s) of this transcripts exon(s), because of the
+               use of object identity. If no contig argument is specified the
+               contig of the first exon is used, which is fine for slice
+               coordinates but may cause incorrect mappings in raw contig
+               coords if this transcript spans multiple contigs.
   Example    : @coords = $transcript->genomic2pep($start, $end, $strand);
   Description: Converts genomic coordinates to peptide coordinates.  The
                return value is a list of coordinates and gaps.
@@ -1315,13 +1323,13 @@ sub pep2genomic {
 =cut
 
 sub genomic2pep {
-  my ($self, $start, $end, $strand) = @_;
+  my ($self, $start, $end, $strand, $contig) = @_;
 
   unless(defined $start && defined $end && defined $strand) {
     $self->throw("start, end and strand arguments are required");
   }
  
-  my @coords = $self->genomic2cdna($start, $end, $strand);
+  my @coords = $self->genomic2cdna($start, $end, $strand, $contig);
 
   my @out;
 
