@@ -144,7 +144,6 @@ sub new {
     }
     if( ! $host ) {
         $host = 'localhost';
-	$self->host( $host );
     }
     if ( ! $port ) {
         $port = 3306;
@@ -171,6 +170,7 @@ sub new {
         $self->_db_handle($dbh);
     }
     $self->username( $user );
+    $self->host( $host );
     $self->dbname( $db );
     # following was added on branch; unclear if it is needed:
     $self->mapdbname( $mapdbname );
