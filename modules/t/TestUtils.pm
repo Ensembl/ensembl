@@ -2,6 +2,10 @@ use strict;
 
 package TestUtils;
 
+require Exporter;
+use vars qw( @ISA @EXPORT_OK );
+@ISA=('Exporter');
+@EXPORT_OK=qw(&debug &test_getter_setter);
 
 =head2 test_getter_setter
 
@@ -40,6 +44,16 @@ sub test_getter_setter {
     
     return $ret_val;
 }
+
+sub debug {
+  my $txt = shift;
+  if( $::verbose ) {
+    print STDERR $txt,"\n";
+  }
+}
+
+
+
 
 1;
 
