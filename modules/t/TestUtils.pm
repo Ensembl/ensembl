@@ -47,9 +47,8 @@ sub test_getter_setter {
 }
 
 sub debug {
-  my $txt = shift;
   if( $::verbose ) {
-    print STDERR $txt,"\n";
+    print STDERR @_,"\n";
   }
 }
 
