@@ -68,11 +68,12 @@ sub fetch_by_dbID {
   #     from the database and add it to the cache.
   unless( $self->{'_chr_cache'}->{$id} ) {
     my $sth;
-    eval {
-      $sth = $self->prepare( "SELECT chromosome_id, name, length FROM chromosome WHERE chromosome_id = ?" );
-      $sth->execute( $id );
-    };
-    $self->throw("Could not create chromosome from dbID $id\nException: $@\n") if $@;
+
+    $sth = $self->prepare( "SELECT chromosome_id, name, length 
+                              FROM chromosome 
+                              WHERE chromosome_id = ?" );
+    $sth->execute( $id );
+
     my $a = $sth->fetchrow_arrayref();
     $self->throw("Could determine chromosome name from dbID $id\n") unless $a;
     $self->_create_object_from_arrayref( $a );
@@ -104,13 +105,15 @@ sub fetch_by_chr_name{
 
   unless($self->{'_chr_name_cache'}->{$chr_name}) {
     my $sth;
-    eval {
-      $sth = $self->prepare( "SELECT chromosome_id, name, length  FROM chromosome WHERE name = ?" );
-      $sth->execute( $chr_name );
-    };
-    $self->throw("Could not create chromosome from chr $chr_name\nException: $@\n") if $@;
+
+    $sth = $self->prepare( "SELECT chromosome_id, name, length  
+                              FROM chromosome WHERE name = ?" );
+    $sth->execute( "$chr_name" );
+
     my $a = $sth->fetchrow_arrayref();
+
     $self->throw("Do not recognise chromosome $chr_name\n") unless $a;
+
     $self->_create_object_from_arrayref( $a );
   }
   return $self->{'_chr_name_cache'}->{$chr_name};
@@ -132,8 +135,9 @@ sub fetch_all {
   my($self) = @_;
   my @chrs = (); 
 
-  my $sth = $self->prepare( "SELECT chromosome_id, name, length from chromosome");
-     $sth->execute();
+  my $sth = $self->prepare( "SELECT chromosome_id, name, length 
+                             FROM chromosome");
+  $sth->execute();
   while( my $a = $sth->fetchrow_arrayref() ) {
     push @chrs, $self->_create_object_from_arrayref( $a );
   } 
@@ -164,11 +168,14 @@ sub _create_object_from_arrayref {
 sub store{
   my ($self, $chromosome) = @_;
 
-  $self->throw("can't store a chromosome without a name") unless my $chr_name = $chromosome->chr_name;
-  $self->throw("can't store a chromosome without a length") unless my $length = $chromosome->length;
+  $self->throw("can't store a chromosome without a name") 
+    unless my $chr_name = $chromosome->chr_name;
+  $self->throw("can't store a chromosome without a length") 
+    unless my $length = $chromosome->length;
   my $sth = $self->db->prepare("insert into chromosome set name=?, length=?");
-  $sth->execute($chr_name, $length);
+  $sth->execute("$chr_name", $length);
   $chromosome->dbID($sth->{'mysql_insertid'});
   $chromosome->adaptor($self);
 }
+
 1;
