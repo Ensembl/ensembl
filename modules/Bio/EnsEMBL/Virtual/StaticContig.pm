@@ -1351,15 +1351,12 @@ sub get_all_VirtualGenes_startend
 
 	&eprof_start("virtualgene-externaldb");
 
-	my $query = "select external_db,external_id from genedblink where gene_id = '$gene_id'";
-	my $sth = $self->dbobj->prepare($query);
-	my $res = $sth ->execute();
-	while( (my $hash = $sth->fetchrow_hashref()) ) {
-	    my $dblink = Bio::Annotation::DBLink->new();
-	    $dblink->database($hash->{'external_db'});
-	    $dblink->primary_id($hash->{'external_id'});
-	    $gene->add_DBLink($dblink);
-	}
+    my $entryAdaptor = $self->dbobj->get_DBEntryAdaptor();
+    my @gene_xrefs = $entryAdaptor->fetch_by_gene($gene_id);
+
+    foreach my $genelink (@gene_xrefs) {
+        $gene->add_DBLink($genelink);
+    }
 
 	&eprof_end("virtualgene-externaldb");
 
