@@ -67,6 +67,7 @@ sub new {
     my ($class, @args) = @_;
     my $self = bless {}, $class;
     $self->{'_gene_array'} = [];
+    $self->{'_transcript_array'} = [];
     return $self;
 }
 
@@ -89,14 +90,18 @@ sub parse_file {
     
     my @genes;
     my $oldgene;
+    my $oldtrans;
     my $flag=1;
     my %exons;
     my $trans_start;
     my $trans_end;
     while( <FILE> ) {
 	(/^\#/) && next;
-	my ($contig,$source,$feature,$start,$end,$score,$strand,$frame,$gene_name, $gene_id,$exon_num);
-	if ((/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.).+gene_name \"(\w+)\".+gene_id \"(\w+\.\w+\-\d+\.\d+)\".+exon_number (\d)/) || (/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.).+gene_name \"(\w+)\".+gene_id \"(\w+\.\w+\-\d+\.\d+)\"/)){
+	(/^$/) && next;
+	my ($contig,$source,$feature,$start,$end,$score,$strand,$frame);
+	my ($gene_name, $gene_id,$transcript_id,$exon_num);
+
+	if (/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)/){
 	    $contig=$1;
 	    $source=$2;
 	    $feature=$3;
@@ -105,26 +110,51 @@ sub parse_file {
 	    $score=$6;
 	    $strand=$7;
 	    $frame=$8;
-	    $gene_name=$9;
-	    $gene_id=$10;
-	    $exon_num=$11;
 	}
+	else {
+	    $self->warn("Could not parse line:\n$_");
+	}
+
+	if (/gene_name \"(\w+)\"/) { 
+	    $gene_name=$1; 
+	}
+
+	if (/gene_id \"(.+)\".+transcript/) { 
+	    $gene_id = $1;
+	}
+	else { 
+	    $self->warn("Cannot parse line without gene id, skipping!");
+	    next;
+	}
+
+	if (/transcript_id \"(.+)\"/) { $transcript_id = $1;}
+	else { 
+	    $self->warn("Cannot parse line without transcript id, skipping!");
+	    next;
+	}
+
+	if (/exon_number (\d)/) { $exon_num = $1;}
+	
 	if ($contig !~ /^ctg/) {
-	    #$self->warn("Could not parse line\n$_\n");
+	    $self->warn("Could not parse line\n$_\n");
 	}
 	#print STDERR "Contig: $contig\nSource: $source\nFeature: $feature\nStart: $start\nEnd: $end\nScore: $score\nStrand: $strand\nGene name: $gene_name\nGene id: $gene_id\nExon number: $exon_num\n\n";
 	if ($flag == 1) {
-	    $oldgene = $gene_name;
+	    $oldtrans = $transcript_id;
+	    $oldgene = $gene_id;
 	    $flag=0;
 	}
 	#When new gene components start, do the gene building 
 	#with all the exons found up to now, start_codon and end_codon
-	if ($oldgene ne $gene_name) {
-	    my $gene=$self->_build_gene($trans_start,$trans_end,$oldgene,%exons);
-	    $gene && push(@{$self->{'_gene_array'}},$gene);
+	
+	if ($oldtrans ne $transcript_id) {
+	    my $gene=$self->_build_transcript($trans_start,$trans_end,$oldtrans,%exons);
 	    $trans_start = undef;
 	    $trans_end = undef;
 	    %exons = undef;
+	}
+	if ($oldgene ne $gene_id) {
+	    $self->_build_gene($oldgene);
 	}
 	
 	if ($feature eq 'exon') {
@@ -154,56 +184,94 @@ sub parse_file {
 	else {
 	    #print STDERR "Feature $feature not parsed\n";
 	}
-	$oldgene=$gene_name;
+	$oldgene=$gene_id;
+	$oldtrans=$transcript_id;
     }
-    my $gene=$self->_build_gene($trans_start,$trans_end,$oldgene,%exons);
-    $gene && push(@{$self->{'_gene_array'}},$gene);
-    return @genes;
+    $self->_build_transcript($trans_start,$trans_end,$oldtrans,%exons);
+    my $gene = $self->_build_gene($oldgene);
+    return  @{$self->{'_gene_array'}};
 }
 
 =head2 _build_gene
 
  Title   : _build_gene
- Usage   : GTF_handler->_build_gene($trans_start,$trans_end,%exons)
- Function: Internal method used to build a gene using a hash of 
-           exons, translation start and translation end
+ Usage   : GTF_handler->_build_gene()
+ Function: Internal method used to build a gene using an internal array
+           of transcripts
  Example : 
  Returns : a Bio::EnsEMBL::Gene object
- Args    : hash of exons, int translation start, int translation end
-
+ Args    : hash of exons, int translation start, int translation end, 
+           old gene id
 =cut
 
 sub _build_gene {
-    my ($self,$trans_start,$trans_end,$oldgene,%exons)=@_;
+    my ($self,$oldgene) = @_;
 
-    my $gene = Bio::EnsEMBL::Gene->new;
+    my $trans_number= scalar(@{$self->{'_transcript_array'}});
+
+    #Only build genes if there are transcripts in the trans array
+    #If translation start/end were not found, no transcript would be built!
+    if ($trans_number > 1) {
+	print STDERR "Wow! Got multiple transcripts! Gene: $oldgene\n";
+    }
+    if ($trans_number) {
+	my $gene=Bio::EnsEMBL::Gene->new();
+	$gene->id($oldgene);
+	$gene->version(1);
+	my $time = time; chomp($time);
+	$gene->created($time);
+	$gene->modified($time);
+	$gene->type('neomorphic');
+	foreach my $transcript (@{$self->{'_transcript_array'}}) {
+	    $gene->add_Transcript($transcript);
+	}
+	$self->{'_transcript_array'}=[];
+	$gene && push(@{$self->{'_gene_array'}},$gene);
+    }
+}
+
+=head2 _build_transcript
+
+ Title   : _build_transcript
+ Usage   : GTF_handler->_build_transcript($trans_start,$trans_end,
+           $oldtrans,%exons)
+ Function: Internal method used to build a transcript using a hash of 
+           exons, translation start and translation end
+ Example : 
+ Returns : a Bio::EnsEMBL::Transcript object
+ Args    : hash of exons, int translation start, int translation end, 
+           old gene id
+=cut
+
+sub _build_transcript {
+    my ($self,$trans_start,$trans_end,$oldtrans,%exons)=@_;
+
     my $trans = Bio::EnsEMBL::Transcript->new;
     my $translation = Bio::EnsEMBL::Translation->new;
-    $gene->id($oldgene);
-    $gene->version(1);
-    $gene->type('neomorphic');
+    $trans->id($oldtrans);
+    $trans->version(1);
     my $time = time; chomp($time);
-    $gene->created($time);
-    $gene->modified($time);
+    $trans->created($time);
+    $trans->modified($time);
+
     foreach my $num (keys%exons) {
 	#print STDERR "Adding exon ".$exons{$num}->id." to transcript\n";
 	$trans->add_Exon($exons{$num});
     }
     if ($trans_start == undef) {
-	$self->warn("Could not find translation start for gene $oldgene, skipping");
+	$self->warn("Could not find translation start for gene $oldtrans, skipping");
 	return;
     }
     #print STDERR "Adding translation start $trans_start\n";
     $translation->start($trans_start);
     if ($trans_end == undef) {
-	$self->warn("Could not find translation end for gene $oldgene, skipping");
+	$self->warn("Could not find translation end for gene $oldtrans, skipping");
 	return;
     }
     #print STDERR "Adding translation end $trans_end\n";
     $translation->end($trans_end);
     $trans->translation($translation);
-    $gene->add_Transcript($trans);
-    return $gene;
+    push(@{$self->{'_transcript_array'}},$trans);
 }
 
 =head2 dump_genes
@@ -220,11 +288,13 @@ sub _build_gene {
 sub dump_genes {
     my ($self,$file,@genes) = @_;
 
+    print STDERR "Dumping to file $file\n";
     open (FILE,">$file");
 
     print FILE "##gff-version 2\n##source-version EnsEMBL-Gff 1.0\n";
     print FILE "##date ".time()."\n";
     foreach my $gene (@genes) {
+	print STDERR "Dumping gene ".$gene->id."\n";
 	foreach my $trans ($gene->each_Transcript) {
 	    my $c=1;
 	    my $start=$trans->translation->start;
@@ -275,6 +345,7 @@ sub print_genes {
     foreach my $gene (@genes) {
 	print STDOUT "Gene ".$gene->id."\n";
 	foreach my $trans ($gene->each_Transcript) {
+	    print STDOUT "  Transcript ".$trans->id."\n";
 	    foreach my $exon ($gene->each_unique_Exon) {
 		print STDOUT "   exon ".$exon->id."\n";
 	    }

@@ -203,7 +203,6 @@ sub add_Exon{
    my ($self,$exon) = @_;
 
    #yup - we are going to be picky here...
-
    if( ! $exon->isa("Bio::EnsEMBL::Exon") ) {
        $self->throw("$exon is not a Bio::EnsEMBL::Exon!");
    }

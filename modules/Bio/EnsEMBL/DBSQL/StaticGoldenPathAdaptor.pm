@@ -26,6 +26,12 @@ Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor - Database adaptor for static golde
 
     @rawcontigs = $adaptor->fetch_RawContigs_by_chr('chr2');
 
+    #Create Virtual Contigs for fpc contigs or chromosomes
+
+    $vc = $adaptor->VirtualContig_by_fpc_name('ctg123');
+
+    $vc = $adaptor->VirtualContig_by_chr('chr2');
+
     # can throw an exception: Not on Same Chromosome
     @rawcontigs = $adaptor->fetch_RawContigs_between_RawContigs($start_rc,$end_rc);
 
@@ -104,11 +110,14 @@ sub fetch_RawContigs_by_fpc_name{
    $sth->execute;
    my @out;
    my $cid;
+
    while( ( my $cid = $sth->fetchrow_arrayref) ) {
        my $rc = $self->dbobj->get_Contig($cid->[0]);
        push(@out,$rc);
    }
-
+   if ($sth->rows == 0) {
+       $self->throw("Could not find rawcontigs for fpc contig $fpc!");
+   }
    return @out;
 }
 
@@ -138,7 +147,9 @@ sub fetch_RawContigs_by_chr_name{
        my $rc = $self->dbobj->get_Contig($cid->[0]);
        push(@out,$rc);
    }
-
+   if ($sth->rows == 0) {
+       $self->throw("Could not find rawcontigs for chromosome $chr!");
+   }
    return @out;
 }
 
