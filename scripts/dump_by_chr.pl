@@ -428,7 +428,9 @@ SELECT trlsi.*
 
 ### bug here: joining  int(10) to varchar(40), works but looses index : slow
 ### therefore, create a tmp table containing the mapping and indexes. 
+    warn "*** work-around for failing index join on protein_feature, due to type mismatch ...";
 
+# original:
 #     $sql="
 # SELECT distinct pf.*
 #   FROM $litedb.gene lg,
@@ -439,12 +441,13 @@ SELECT trlsi.*
 #    AND lgp.translation_id = pf.translation
 # ";
 
+# replaced by:
     my $translidid = 'tmp_transl_id_string2int';
     $sql="
 CREATE TABLE $translidid (as_string CHAR(40), as_int INT(10) unsigned);
 INSERT INTO $translidid(as_string) 
   SELECT DISTINCT(translation) 
-  FROM protein_feature;
+  FROM $satdb.protein_feature;
 UPDATE $translidid set as_int = as_string;
 ALTER TABLE $translidid ADD KEY(as_int);
 ALTER TABLE $translidid ADD KEY(as_string);
@@ -463,17 +466,8 @@ SELECT distinct pf.*
    AND idid.as_string = pf.translation
 ";
     dump_data($sql, $satdb, 'protein_feature');
+# end of replacement
 
-# genetype has gone:
-# 
-#     $sql="
-# SELECT distinct gt.* 
-# FROM   $satdb.genetype gt, 
-#        $litedb.gene lg
-# WHERE  lg.chr_name = '$chr'
-#   AND  lg.name = gt.gene_id
-# ";
-#     dump_data($sql, $satdb, 'genetype');
 
     $sql="
 SELECT gd.* 
@@ -503,55 +497,128 @@ WHERE  lg.chr_name = '$chr'
 
     warn "only looking at Xrefs involving Translations";
 
+    warn "*** work-around for failing index join on objectXref, due to type mismatch ...";
+# original:
+#     $sql="
+# SELECT distinct ox.*
+# FROM   $satdb.objectXref ox, 
+#        $litedb.gene_prot lgp, 
+#        $litedb.gene lg
+# WHERE  lg.chr_name = '$chr'
+#   AND  lg.gene = lgp.gene
+#   AND  ox.ensembl_id = lgp.translation_id
+# ";
+
+# replaced by:
+
     $sql="
 SELECT distinct ox.*
 FROM   $satdb.objectXref ox, 
+       $tmpdb.$translidid idid,
        $litedb.gene_prot lgp, 
        $litedb.gene lg
 WHERE  lg.chr_name = '$chr'
   AND  lg.gene = lgp.gene
-  AND  ox.ensembl_id = lgp.translation_id
+  AND  ox.ensembl_id = idid.as_string
+  AND  idid.as_int = lgp.translation_id
 ";
-
+# end replacement;
     dump_data($sql, $satdb, 'objectXref');
+
+    warn "*** work-around for failing index join on Xref, due to type mismatch ...";
+#original:
+#     $sql="
+# SELECT distinct x.* 
+# FROM   $satdb.Xref x,
+#        $satdb.objectXref ox, 
+#        $litedb.gene_prot lgp, 
+#        $litedb.gene lg
+# WHERE  lg.chr_name = '$chr'
+#   AND  lg.gene = lgp.gene
+#   AND  ox.ensembl_id = lgp.translation_id
+#   AND  x.xrefId = ox.xrefId
+# ";
+# replaced by:
 
     $sql="
 SELECT distinct x.* 
 FROM   $satdb.Xref x,
        $satdb.objectXref ox, 
        $litedb.gene_prot lgp, 
-       $litedb.gene lg
+       $litedb.gene lg,
+       $tmpdb.$translidid idid
 WHERE  lg.chr_name = '$chr'
   AND  lg.gene = lgp.gene
-  AND  ox.ensembl_id = lgp.translation_id
+  AND  ox.ensembl_id = idid.as_string
+  AND  idid.as_int = lgp.translation_id
   AND  x.xrefId = ox.xrefId
 ";
+# end replacement;
+
     dump_data($sql, $satdb, 'Xref');
+
+    warn "*** work-around for failing index join on externalSynonym, due to type mismatch ...";
     
+#     $sql="
+# SELECT distinct xs.* 
+# FROM   $satdb.externalSynonym xs,
+#        $satdb.objectXref ox, 
+#        $litedb.gene_prot lgp, 
+#        $litedb.gene lg
+# WHERE  lg.chr_name = '$chr'
+#   AND  lg.gene = lgp.gene
+#   AND  ox.ensembl_id = lgp.translation_id
+#   AND  xs.xrefId = ox.xrefId
+# ";
+#
+
+# replacement:
     $sql="
 SELECT distinct xs.* 
 FROM   $satdb.externalSynonym xs,
        $satdb.objectXref ox, 
        $litedb.gene_prot lgp, 
-       $litedb.gene lg
+       $litedb.gene lg,
+       $tmpdb.$translidid idid
 WHERE  lg.chr_name = '$chr'
   AND  lg.gene = lgp.gene
-  AND  ox.ensembl_id = lgp.translation_id
+  AND  ox.ensembl_id = idid.as_string
+  AND  idid.as_int = lgp.translation_id
   AND  xs.xrefId = ox.xrefId
 ";
+# end replacement
+
     dump_data($sql, $satdb, 'externalSynonym');
 
+    warn "*** work-around for failing index join on identityXref, due to type mismatch ...";
+# original:
+#     $sql="
+# SELECT distinct ix.* 
+# FROM  $satdb.identityXref ix,
+#       $satdb.objectXref ox, 
+#       $litedb.gene_prot lgp, 
+#       $litedb.gene lg
+# WHERE lg.chr_name = '$chr'
+#  AND  lg.gene = lgp.gene
+#  AND  ox.ensembl_id = lgp.translation_id
+#  AND  ix.objectXrefId = ox.objectXrefId
+# ";
+
+# replacement:
     $sql="
 SELECT distinct ix.* 
 FROM  $satdb.identityXref ix,
       $satdb.objectXref ox, 
       $litedb.gene_prot lgp, 
-      $litedb.gene lg
+      $litedb.gene lg,
+      $tmpdb.$translidid idid
 WHERE lg.chr_name = '$chr'
  AND  lg.gene = lgp.gene
- AND  ox.ensembl_id = lgp.translation_id
+ AND  ox.ensembl_id = idid.as_string
+ AND  idid.as_int = lgp.translation_id
  AND  ix.objectXrefId = ox.objectXrefId
 ";
+# end replacement
     dump_data($sql, $satdb, 'identityXref');
 
 }                                       # dump_core
@@ -1183,7 +1250,7 @@ sub create_tmp_db {
 
     my ($cmd)="$mysqladmin -u $user -h $host $pass_arg create $tmpdb";
     my ($out)= `$cmd 2>&1`;
-    if ( $? || $out )  {
+    if ( $? || $out )  { 
         &drop_tmp_db;                   # in case it was created
         die "``$cmd'' exited with exit status $? and stdout/err: $out";
     }
@@ -1225,9 +1292,12 @@ sub create_tmp_table {
 ## NOTE: this is very hackish, I expect an SQL string that looks like
 ## "create ... select ; alter ...", containing stuff for a single table.
 ## To speed it up, get rid of any DISTINCTs and add LIMIT 1
-        $sql =~ s/distinct//gi;         # makes it slow, so get rid of it
-        $sql =~ s/;/ limit 1;/;         # just get the first line
-#        warn "SQL\n\n$sql\n\n";
+#        $sql =~ s/distinct//gi;         # makes it slow, so get rid of it
+#        $sql =~ s/(select[^;]+);/$1 limit 1;/ig; # just get the first line
+# No, don't do this, we need a decent table, otherwise the usage of this
+# table in further statements won't work (i.e. finding no hits or far too
+# many)
+##        warn "SQL\n\n$sql\n\n";
     }
 
     # now create/populate the table
@@ -1236,11 +1306,11 @@ sub create_tmp_table {
     my $out = `$cmd 2>&1`;
 
     if ( $? || $out )  {
-        drop_tmp_table($table);    # that's why we needed the $table arg.
         warn "``$cmd'' exited with exit status $? or (unexpected) stdout/err: $out";
+        drop_tmp_table($table);    # that's why we needed the $table arg.
     }
     return;
-}                                       # create_tmp_db
+}                                       # create_tmp_table
 
 sub drop_tmp_table {
     my ($table)= @_;
