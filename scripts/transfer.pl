@@ -71,6 +71,9 @@ use Bio::EnsEMBL::TimDB::Obj;
 use Bio::AnnSeqIO;
 use Getopt::Long;
 
+# signal handler
+$SIG{INT}=sub {my $sig=shift;die "exited after SIG$sig";};
+
 my $fdbtype = 'rdb';
 my $fhost   = 'localhost';
 my $fport   = '410000';

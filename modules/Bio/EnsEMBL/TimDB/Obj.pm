@@ -581,6 +581,7 @@ sub _write_lockfile{
 	my $file="$dir/timdb-lock.$time.$$";
 	local *OUT;
 	if(open(OUT,">$file")){
+	    print OUT "# host=".$ENV{'HOST'}." user=".$ENV{'USER'}."\n";
 	    foreach my $clone (@$raclones){
 		print OUT "$clone\n";
 	    }
