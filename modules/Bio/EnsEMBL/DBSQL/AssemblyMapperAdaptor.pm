@@ -764,6 +764,27 @@ sub register_chained {
 }
 
 
+=head2 deleteObj
+
+  Arg [1]    : none
+  Example    : none
+  Description: Cleans up this objects references to other objects so that
+               proper garbage collection can occur
+  Returntype : none
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBConnection
+
+=cut
+
+sub deleteObj {
+  my $self = shift;
+
+  delete $self->{'_asm_mapper_cache'};
+  $self->SUPER::deleteObj();
+}
+
+
+
 =head2 seq_regions_to_ids
 
   Arg [1]    : Bio::EnsEMBL::CoordSystem $coord_system
