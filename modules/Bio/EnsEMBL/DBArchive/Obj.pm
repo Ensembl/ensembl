@@ -28,11 +28,14 @@ Bio::EnsEMBL::DBArchive::Obj - Object representing the EnsEMBL Archive DB
 
 =head1 DESCRIPTION
 
-This object represents an archive database that is implemented somehow (you shouldn\'t
-care much as long as you can get the object). The archive database holds a slice of data for older
-versions of proteins, genes, and exons. It comprises three methods for writing and retrieving sequences
-from the database. The purpose of this object is to allow versioning in EnsEMBL, holding only the most recent
-of an entry in the main DBSQL database, and storing here only the relevant information of older versions.
+This object represents an archive database that is implemented somehow
+(you shouldn\'t care much as long as you can get the object). The
+archive database holds a slice of data for older versions of proteins,
+genes, and exons. It comprises three methods for writing and
+retrieving sequences from the database. The purpose of this object is
+to allow versioning in EnsEMBL, holding only the most recent of an
+entry in the main DBSQL database, and storing here only the relevant
+information of older versions.
 
 
 =head1 CONTACT
@@ -41,7 +44,8 @@ Elia Stupka - EBI (elia@ebi.ac.uk)
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -71,18 +75,24 @@ sub new {
 
 
   #print "Got",join(',',@args),"\n";
-  my ($db,$host,$driver,$user,$password,$debug) = 
+  my ($db,$host,$driver,$user,$password,$debug,$readonly) = 
       $self->_rearrange([qw(DBNAME
 			    HOST
 			    DRIVER
 			    USER
 			    PASS
 			    DEBUG
+			    READONLY
 			    )],@args);
   #print "Got $db as db and $user as user\n";
 
   $db || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
+
+  $self->_readonly($readonly);
+  if($self->_readonly){
+      $self->warn("Archive Database accessed in READONLY mode");
+  }
 
   if( $debug ) {
       $self->_debug($debug);
@@ -286,9 +296,13 @@ sub get_seq_by_gene_version{
 
 sub write_dead_geneid{
     my ($self,$geneid) = @_;
-    
-    my $sth = $self->prepare("insert into dead_genes (id) values ('$geneid')");
-    $sth->execute();
+    my $query="insert into dead_genes (id) values ('$geneid')";
+    if($self->_readonly){
+	$self->warn("READONLY: $query");
+    }else{
+	my $sth = $self->prepare("$query");
+	$sth->execute();
+    }
 }
 
 
@@ -307,19 +321,24 @@ sub write_dead_geneid{
 =cut
 
 sub write_seq{
-   my ($self, $seq, $version, $type, $gene_id,$gene_version,$cid,$cv) = @_;
+    my ($self, $seq, $version, $type, $gene_id,$gene_version,$cid,$cv) = @_;
    
-   $seq || $self->throw("Attempting to write a sequence without a sequence object!");
-   $type || $self->throw("Attempting to write a sequence without a sequence type!");
-   $version || $self->throw("Attempting to write a sequence without a sequence version number!");
-   $seq ||  $self->throw("Attempting to write a sequence without a sequence!");
-   $gene_id || $self->throw("Attempting to write a sequence without a gene id!");
-   $gene_version || $self->throw("Attempting to write a sequence without a gene version number!");
-   $cid || $self->throw("Attempting to write a sequence without a clone id!");
-   $cv || $self->throw("Attempting to write a sequence without a clone version number!");
-
-   my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence,clone_id,clone_version) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."','".$cid."','".$cv."')");
-   $sth->execute();
+    $seq || $self->throw("Attempting to write a sequence without a sequence object!");
+    $type || $self->throw("Attempting to write a sequence without a sequence type!");
+    $version || $self->throw("Attempting to write a sequence without a sequence version number!");
+    $seq ||  $self->throw("Attempting to write a sequence without a sequence!");
+    $gene_id || $self->throw("Attempting to write a sequence without a gene id!");
+    $gene_version || $self->throw("Attempting to write a sequence without a gene version number!");
+    $cid || $self->throw("Attempting to write a sequence without a clone id!");
+    $cv || $self->throw("Attempting to write a sequence without a clone version number!");
+    
+    my $query="insert into sequence (id,version,seq_type,gene_id,gene_version,sequence,clone_id,clone_version) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."','".$cid."','".$cv."')";
+    if($self->_readonly){
+	$self->warn("READONLY: $query");
+    }else{
+	my $sth = $self->prepare($query);
+	$sth->execute();
+    }
 }
 =head2 delete_seq
 
@@ -344,8 +363,13 @@ sub delete_seq{
     }
 
     # delete the sequence entry
-    my $sth = $self->prepare("delete from sequence where (id = '$seqid' && version = '$seqversion')");
-    my $res = $sth->execute();
+    my $query="delete from sequence where (id = '$seqid' && version = '$seqversion')";
+    if($self->_readonly){
+	$self->warn("READONLY: $query");
+    }else{
+	my $sth = $self->prepare($query);
+	my $res = $sth->execute();
+    }
 }
 
 =head2 prepare
@@ -402,6 +426,27 @@ sub _debug{
     }
     return $self->{'_debug'};
     
+}
+
+
+=head2 _readonly
+
+ Title   : _readonly
+ Usage   : $obj->_readonly($newval)
+ Function: 
+ Example : 
+ Returns : value of _readonly
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _readonly{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'_readonly'} = $value;
+    }
+    return $self->{'_readonly'};
 }
 
 
@@ -499,9 +544,13 @@ sub get_new_stable_ids {
     $table .= "_stable";
     my @out;
 
-
-    my $lsth   = $self->prepare("lock table $table write");
-    $lsth->execute;
+    my $query="lock table $table write";
+    if($self->_readonly){
+	$self->warn("READONLY: $query");
+    }else{
+	my $lsth   = $self->prepare($query);
+	$lsth->execute;
+    }
 
     # wrap critical region in an eval so we can catch errors and release table
 
@@ -537,8 +586,12 @@ sub get_new_stable_ids {
 		}
 		my $c = $stub . $newid;
 		my $query = "insert into $table (internal_id,external_id,created) values (NULL,'$c',NOW())";
-		my $sth   = $self->prepare($query);
-		my $res   = $sth->execute;
+		if($self->_readonly){
+		    $self->warn("READONLY: $query");
+		}else{
+		    my $sth   = $self->prepare($query);
+		    my $res   = $sth->execute;
+		}
 		
 		push(@out,$c);
 	    }
@@ -555,10 +608,13 @@ sub get_new_stable_ids {
 	$error = $@;
     }
 
-
-    my $usth   = $self->prepare("unlock tables");
-    $usth->execute;
-
+    my $query="unlock tables";
+    if($self->_readonly){
+	$self->warn("READONLY: $query");
+    }else{
+	my $usth   = $self->prepare($query);
+	$usth->execute;
+    }
 
     if( defined $error ) {
 	$self->throw("Problem in making IDs. Unlocked tables. \n\n Error $@");

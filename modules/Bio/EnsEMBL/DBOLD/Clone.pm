@@ -48,13 +48,13 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use Bio::EnsEMBL::DBOLD::RawContig;
 use Bio::EnsEMBL::DBOLD::Feature_Obj;
 use Bio::EnsEMBL::DBOLD::Gene_Obj;
 use Bio::EnsEMBL::DB::CloneI;
 
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
+@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::CloneI);
 
 # new() is inherited from Bio::Root::Object
 

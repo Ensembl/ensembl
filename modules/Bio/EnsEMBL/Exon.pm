@@ -92,10 +92,8 @@ use Bio::Seq; # exons have to have sequences...
 sub new {
   my($class,@args) = @_;
 
-  my $self = Bio::SeqFeature::Generic->new(@args);
-  # rebless into this class
-  bless $self,$class;
-  
+  my $self = $class->SUPER::new(@args);
+
   # Array to store supporting evidence for this exon
   $self->{_supporting_evidence} = [];
 
