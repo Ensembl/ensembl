@@ -27,10 +27,7 @@ want to make a slice of the chromosome)
     
 =head1 CONTACT
 
-
-    Contact Arne Stabenau on implemetation/design detail: stabenau@ebi.ac.uk
-    Contact Ewan Birney on EnsEMBL in general: birney@sanger.ac.uk
-
+Post questions to the EnsEMBL developer mailing list: <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
@@ -48,6 +45,24 @@ use strict;
 use Bio::EnsEMBL::Root;
 
 @ISA = qw( Bio::EnsEMBL::Root );
+
+
+=head2 new
+
+  Args [...] : List of named arguments 
+  Example    : $chr = new Chromosome(-chr_name      => $name,
+                                     -dbID          => $dbID,
+                                     -adaptor       => $adaptor,
+                                     -length        => $length,
+                                     -known_genes   => $known_genes,
+                                     -unknown_genes => $unknown_genes,
+                                     -snps          => $snps);
+  Description: Creates a new chromosome object
+  Returntype : Bio::EnsEMBL::Chromosome
+  Exceptions : thrown if the adaptor or chr_name argument is not supplied
+  Caller     : Bio::EnsEMBL::DBSQL::ChromosomeAdaptor
+
+=cut
 
 sub new {
     my ($class,@args) = @_;
@@ -83,6 +98,7 @@ sub new {
 }
 
 
+
 =head2 chr_name
 
   Arg [1]    : string $chr_name
@@ -94,7 +110,6 @@ sub new {
 
 =cut
 
-
 sub chr_name{
    my ($obj,$value) = @_;
    if( defined $value) {
@@ -103,6 +118,8 @@ sub chr_name{
     return $obj->{'chr_name'};
 
 }
+
+
 
 =head2 adaptor
 
@@ -115,7 +132,6 @@ sub chr_name{
 
 =cut
 
-
 sub adaptor {
    my ($obj,$value) = @_;
    if( defined $value) {
@@ -123,6 +139,8 @@ sub adaptor {
     }
     return $obj->{'adaptor'};
 }
+
+
 
 =head2 dbID
 
@@ -135,7 +153,6 @@ sub adaptor {
 
 =cut
 
-
 sub dbID {
   my ($self, $value) = @_;
 
@@ -147,11 +164,13 @@ sub dbID {
 }
 
 
+
 =head2 length
 
   Arg [1]    : int $length
   Example    : none
-  Description: get/set for the attribute length, the Chromosomes length in basepairs
+  Description: get/set for the attribute length, the Chromosomes length in 
+               basepairs
   Returntype : int
   Exceptions : none
   Caller     : general
@@ -168,6 +187,8 @@ sub length {
   return $self->{'length'};
 }
 
+
+
 =head2 known_genes
 
   Arg [1]    : int $number_of_known_genes
@@ -180,7 +201,6 @@ sub length {
 
 =cut
 
-
 sub known_genes {
   my ($self, $known_genes) = @_;
 
@@ -191,12 +211,14 @@ sub known_genes {
   return $self->{'known_genes'};
 }
 
+
+
 =head2 unknown_genes
 
   Arg [1]    : int $number_of_unknown_genes
   Example    : none
-  Description: get/set for the attribute unknown_genes, the number of unknown genes
-               on this chromosome
+  Description: get/set for the attribute unknown_genes, the number of unknown 
+               genes on this chromosome
   Returntype : int
   Exceptions : none
   Caller     : general
@@ -212,7 +234,9 @@ sub unknown_genes {
 
   return $self->{'unknown_genes'};
 }
+
 			    
+
 =head2 snps
 
   Arg [1]    : int $number_of_snps
@@ -225,7 +249,6 @@ sub unknown_genes {
 
 =cut
 
-
 sub snps {
   my($self, $snps) = @_;
 
@@ -236,7 +259,8 @@ sub snps {
   return $self->{'snps'}
 }
 
-# compiled successfull
+
+
 =head2 chromosome_id
 
   Args       : none
@@ -247,8 +271,6 @@ sub snps {
   Caller     : none
 
 =cut
-
-
 
 sub chromosome_id {
   my ($self, $id ) = @_;
@@ -262,9 +284,16 @@ sub chromosome_id {
 }
 
 
+
 =head2 get_landmark_MarkerFeatures
 
-  Description: DEPRECATED use Slice::get_landmark_MarkerFeatures instead
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED 
+               use Bio::EnsEMBL::Slice::get_all_landmark_MarkerFeatures instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 

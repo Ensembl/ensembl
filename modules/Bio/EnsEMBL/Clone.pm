@@ -1,4 +1,3 @@
-
 #
 # EnsEMBL module for Bio::EnsEMBL::Clone
 #
@@ -28,11 +27,12 @@ Represents information on one Clone
 
 =head1 CONTACT
 
-Describe contact details here
+Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk> 
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. Internal 
+methods are usually preceded with a _
 
 =cut
 
