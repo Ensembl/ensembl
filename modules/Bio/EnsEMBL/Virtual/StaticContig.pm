@@ -166,116 +166,127 @@ sub new {
 =cut
 
 sub get_all_SimilarityFeatures_above_score{
-    my ($self, $analysis_type, $score) = @_;
-    
-    $self->throw("Must supply analysis_type parameter") unless $analysis_type;
-    $self->throw("Must supply score parameter") unless $score;
-    
-    my $glob_start=$self->_global_start;
-    my $glob_end=$self->_global_end;
-    my $chr_name=$self->_chr_name;
-    
-    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
-	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
-    
-       
-    my    $statement = "SELECT f.id, f.seq_start+s.chr_start,f.seq_end+s.chr_start, 
-                               f.strand, f.score,f.analysis, f.name, f.hstart, f.hend, f.hid,
-                               s.chr_start,s.chr_end,s.raw_ori
-		        FROM   feature f, analysis a,static_golden_path s
-                        WHERE  f.score > $score  
-                        AND    f.analysis = a.id 
-                        AND    s.raw_id = f.contig
-		        AND    a.db = '$analysis_type'  
-                        AND    s.chr_end >= $glob_start 
-		        AND    s.chr_start <=$glob_end 
-		        AND    s.chr_name='$chr_name'";
-    
-    my  $sth = $self->dbobj->prepare($statement);    
-    $sth->execute(); 
 
-    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,
-		       \$name,\$hstart,\$hend,\$hid,\$chr_start,\$chr_end,\$raw_ori);
+my ($self, $analysis_type, $score) = @_;
+    
+$self->throw("Must supply analysis_type parameter") unless $analysis_type;
+$self->throw("Must supply score parameter") unless $score;
 
 
-    my @array;
-    my %analhash;
+my $glob_start=$self->_global_start;
+my $glob_end=$self->_global_end;
+my $chr_name=$self->_chr_name;
+
+my    $statement = "SELECT f.id, 
+                      IF     (sgp.raw_ori=1,
+                                 (f.seq_start+sgp.chr_start-sgp.raw_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_end)),
+  
+                      IF     (sgp.raw_ori=1,
+                                 (f.seq_end+sgp.chr_start-sgp.raw_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_start)), 
+                      IF     (sgp.raw_ori=1,
+                                  f.strand,
+                                  (-f.strand)),
+                      f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
+		    FROM   feature f, analysis a,static_golden_path sgp
+                    WHERE  f.score > $score
+                    AND    f.analysis = a.id 
+                    AND    sgp.raw_id = f.contig
+		    AND    a.db = '$analysis_type'  
+                    AND    sgp.chr_end >= $glob_start 
+		    AND    sgp.chr_start <=$glob_end 
+		    AND    sgp.chr_name='$chr_name'";
+    
+
+my  $sth = $self->dbobj->prepare($statement);    
+$sth->execute(); 
+
+
+my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+    $hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
+    
+$sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
+                       \$analysisid,\$name,\$hstart,\$hend,\$hid);
+
+
+my @features;
+my @distinct_features;
+
+ FEATURE: while($sth->fetch) {
+    
+     my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
+    
+     # exclude overlaping features (for the web)
+     foreach my $arrayref(@distinct_features){
+	 if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
+     }
+     my @list=($start,$end,$analysisid);
+     push @distinct_features,\@list;
+
+
+     # create features
+     my $out=$self->_create_similarity_features(@args);
+
+     if (defined $out){
+	 if ($self->_clip_2_vc($out)){
+	     push @features,$self->_convert_2_vc($out);
+	 }
+     }
+ }
+
+return @features;
+
+}                                       # get_all_SimilarityFeatures_above_score
+
+
+sub _create_similarity_features {
+    my ($self,@args)=@_;
+    
     my $out;
-    my @distinct_features;
+    my $analysis;
+    my %analhash;
+    my $contig;
     
-  FEATURE: while($sth->fetch) {
-      my $out;
-      my $analysis;
-   
-      # exclude overlaping features
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,
+        $name,$hstart,$hend,$hid)=@args;
+    
+    
+    if (!$analhash{$analysisid}) 
+      {
+          my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+          $analysis = $feature_obj->get_Analysis($analysisid);
+          $analhash{$analysisid} = $analysis;	   
+      } 
+    else {$analysis = $analhash{$analysisid};}
+    
+    if( !defined $name ) {
+        $name = 'no_source';
+    }
+    
+    $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+    $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+                         $hstart,$hend,1,$f_score,$name,'similarity',$hid);
+    $out->analysis    ($analysis);
+    $out->id          ($hid);              
+    $out->seqname   ($self->id);
+    $out->start     ($start);
+    $out->end       ($end);
+    $out->strand    ($strand);
+    $out->source_tag($name);
+    $out->primary_tag('similarity');
+    $out->id         ($hid);
+    
+    if( defined $f_score ) {
+        $out->score($f_score);
+    }
+    $out->analysis($analysis);
+    $out->validate();
+    
+    return $out;
+}                                       # _create_similarity_features
 
-      foreach my $arrayref(@distinct_features){
-	  if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
-      }
-      my @list=($start,$end,$analysisid);
-      push @distinct_features,\@list;
 
-      # flip contigs
-      my $vc_start;
-      my $vc_end;
-	if ($raw_ori == -1){         
-	    $vc_start=$chr_end+$chr_start-$end;
-	    $vc_end=$chr_end+$chr_start-$start;
-	    $strand=-1*$strand;
-	}
-      else {
-	  $vc_start=$start;
-	  $vc_end=$end;
-      }
-     
-      # clip and map to vc coordinates
-
-      if ($vc_start>=$glob_start && $vc_end<=$glob_end){
-
-    	$start=$vc_start-$glob_start;
-    	$end=$vc_end-$glob_start;
-
-	# create features
-
-	  if (!$analhash{$analysisid}) 
-	  {
-	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	      $analysis = $feature_obj->get_Analysis($analysisid);
-	      $analhash{$analysisid} = $analysis;	   
-	  } 
-	  else {$analysis = $analhash{$analysisid};}
-	  
-	  if( !defined $name ) {
-	      $name = 'no_source';
-	  }
-	  $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
-	  $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
-				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
-	  $out->analysis    ($analysis);
-	  $out->id          ($hid);              
-	   
-#	  $out = new Bio::EnsEMBL::SeqFeature;
-	  $out->seqname   ($self->id);
-	  $out->start     ($start);
-	  $out->end       ($end);
-	  $out->strand    ($strand);
-	  $out->source_tag($name);
-	  $out->primary_tag('similarity');
-	  $out->id         ($hid);
-	  
-	  if( defined $f_score ) {
-	      $out->score($f_score);
-	  }
-	  $out->analysis($analysis);
-	  
-	  $out->validate();
-	  
-	  push(@array,$out);       
-      }
-  }
-
-    return @array;
-}
 
 
 =head2 get_all_RepeatFeatures
@@ -292,112 +303,493 @@ sub get_all_SimilarityFeatures_above_score{
 
 sub get_all_RepeatFeatures {
   
-  my ($self) = @_;
+my ($self) = @_;
 
-   my @array;
-  my %analhash;
-
-  my $glob_start=$self->_global_start;
-  my $glob_end=$self->_global_end;
-  my $chr_name=$self->_chr_name;
+my $glob_start=$self->_global_start;
+my $glob_end=$self->_global_end;
+my $chr_name=$self->_chr_name;
   
 
-  my $statement = "SELECT rf.id,rf.seq_start+sgp.chr_start,rf.seq_end+sgp.chr_start,
-                          rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
-                          sgp.raw_ori,sgp.chr_start,sgp.chr_end 
-                   FROM   repeat_feature rf,static_golden_path sgp
-                   WHERE  sgp.raw_id = rf.contig
-                   AND    sgp.chr_end >= $glob_start 
-                   AND    sgp.chr_start <=$glob_end
-		   AND    sgp.chr_name='$chr_name' ";
+my $statement = "SELECT rf.id,
+                 IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start),
+                        (sgp.chr_start+sgp.raw_end-rf.seq_end)),                                        
+                 IF     (sgp.raw_ori=1,(rf.seq_end+sgp.chr_start-sgp.raw_start),
+                        (sgp.chr_start+sgp.raw_end-rf.seq_start)), 
+                 IF     (sgp.raw_ori=1,rf.strand,(-rf.strand)),                         
+                        rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid  
+                 FROM   repeat_feature rf,static_golden_path sgp
+                 WHERE  sgp.raw_id = rf.contig
+                 AND    sgp.chr_end >= $glob_start 
+                 AND    sgp.chr_start <=$glob_end
+		 AND    sgp.chr_name='$chr_name' ";
   
 
-  my $sth = $self->dbobj->prepare($statement);
+my $sth = $self->dbobj->prepare($statement);
+$sth->execute();
   
-  $sth->execute();
+
+my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
   
-  my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid,$raw_ori,$chr_start,$chr_end);
-  
-  $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,
-		     \$hstart,\$hend,\$hid,\$raw_ori,\$chr_start,\$chr_end);
+$sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,
+		     \$hstart,\$hend,\$hid);
 
  
-
-
-  my @distinct_features;  
+my @features;
+my @distinct_features;  
 
  FEATURE:  while( $sth->fetch ) {
      
-     my $out;
-     my $analysis;
-
-     # exclude overlapping features
-     
+     # exclude overlapping features (for the web)     
      foreach my $arrayref(@distinct_features){
 	 if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
      }
      my @list=($start,$end,$analysisid);
      push @distinct_features,\@list;
      
-    # flip contigs
 
-     my $vc_start;
-     my $vc_end;
-     
-     if ($raw_ori == -1){    
-	 $vc_start=$chr_end+$chr_start-$end;
-	 $vc_end=$chr_end+$chr_start-$start;
-	 $strand=-1*$strand;
-     } else {
-	 $vc_start=$start;
-	 $vc_end=$end;
-     }
-      
-    # clip and map to vc coordinates  
-     
-     if ($vc_start>=$glob_start && $vc_end<=$glob_end){
-	  
-	  $start=$vc_start-$glob_start;
-	  $end=$vc_end-$glob_start;
-
-	  # create features
-	  
-	  if (!$analhash{$analysisid}) {
-	      
-	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	      $analysis = $feature_obj->get_Analysis($analysisid);
-	      
-	      $analhash{$analysisid} = $analysis;
-	      
-	  } else {
-	      $analysis = $analhash{$analysisid};
-	  }
-	  
-      
-	  if( $hid ne '__NONE__' ) {
-	      # is a paired feature
-	      # build EnsEMBL features and make the FeaturePair
-	      
-	      $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
-	      $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$self->id,
-				   $hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
-	      
-	      $out->analysis($analysis);
-	      
-	  } else {
-	      $self->warn("Repeat feature does not have a hid. bad news....");
-	  }
-	  
-	  $out->validate();
-	  
-	  push(@array,$out);
-      }  
-  }
+     # create features
+     my @args=($fid,$start,$end,$strand,$score,$analysisid,
+	       $hstart,$hend,$hid);
    
-  return @array;
+     my $out=$self->_create_repeat_features(@args);
+
+     if (defined $out){
+	 if ($self->_clip_2_vc($out)){
+	     push @features,$self->_convert_2_vc($out);
+	 }
+     }
+ }
+
+return @features;
+
 }
 
 
+
+sub _create_repeat_features {
+my ($self,@args)=@_;
+
+
+my $out;
+my $analysis;
+my %analhash;
+
+my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid)=@args;
+
+
+if (!$analhash{$analysisid}) {
+    
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+    $analysis = $feature_obj->get_Analysis($analysisid);
+    
+    $analhash{$analysisid} = $analysis;
+    
+} else {
+    $analysis = $analhash{$analysisid};
+}
+
+
+if( $hid ne '__NONE__' ) {
+    # is a paired feature
+    # build EnsEMBL features and make the FeaturePair
+    
+    $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
+    $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$self->id,
+			 $hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
+    
+    $out->analysis($analysis);
+    
+} else {
+    $self->warn("Repeat feature does not have a hid. bad news....");
+}
+
+$out->validate();  
+ 
+ return $out;
+}
+
+=head2 get_landmark_MarkerFeatures
+
+  Title   : get_landmark_MarkerFeatures 
+  Usage   : @fp = $contig->get_landmark_MarkerFeatures; 
+  Function: Gets MarkerFeatures with identifiers like D8S509. 
+            MarkerFeatures can be asked for a Marker. 
+            Its assumed, that when you can get MarkerFeatures, then you can 
+            get the Map Code as well.
+  Example : - 
+  Returns : -
+  Args : -
+
+=cut
+
+
+sub get_landmark_MarkerFeatures {
+
+my ($self) = @_;
+
+my $glob_start=$self->_global_start;
+my $glob_end=$self->_global_end;
+my $chr_name=$self->_chr_name;
+my $dbname=$self->dbobj->dbname;
+my $mapsdbname=$self->dbobj->mapdbname;
+my @markers;
+
+
+eval {
+    require Bio::EnsEMBL::Map::MarkerFeature;
+    
+    my $statement= "  SELECT 
+                      IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start),
+                             (sgp.chr_start+sgp.raw_end-f.seq_end)),                                        
+                      IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
+                             (sgp.chr_start+sgp.raw_end-f.seq_start)), 
+                             f.score, 
+                      IF     (sgp.raw_ori=1,f.strand,(-f.strand)), 
+                             f.name, f.hstart, f.hend, 
+                             f.hid, f.analysis, s.name 
+                      FROM   $dbname.feature f, $dbname.analysis a, 
+                             $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
+                             $dbname.static_golden_path sgp 
+                      WHERE  m.marker=s.marker 
+                      AND    f.hid=m.marker 
+                      AND    sgp.raw_id=f.contig 
+                      AND    f.analysis = a.id 
+                      AND    a.db='mapprimer'
+                      AND    sgp.chr_end >= $glob_start 
+                      AND    sgp.chr_start <=$glob_end 
+                      AND    sgp.chr_name='$chr_name' 
+                      AND    s.name regexp '^D[0-9,X,Y][0-9]?S'";
+
+    
+    my $sth = $self->dbobj->prepare($statement);
+    $sth->execute;
+    
+    my ($start, $end, $score, $strand, $hstart, 
+        $name, $hend, $hid, $analysisid,$synonym);
+    
+    my $analysis;
+    my %analhash;
+    
+    $sth->bind_columns
+	( undef, \$start, \$end, \$score, \$strand, \$name, 
+	  \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
+            
+    while( $sth->fetch ) {
+	
+	my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
+		  $analysisid,$synonym);
+
+
+	my $out=$self->_create_Marker_features(@args);
+	if (defined $out){
+	    if ($self->_clip_2_vc($out)){
+		push @markers,$self->_convert_2_vc($out);
+	    }
+	} 
+    }
+};
+ 
+ 
+if($@){$self->warn("Problems retrieving map data\nMost likely not connected to maps db\n$@\n");}
+
+return @markers;
+
+}
+
+
+
+=head2 next_landmark_Marker
+
+ Title   : next_landmark_Marker
+ Usage   : $obj->next_landmark_Marker
+ Function: retrieves next marker  
+ Returns : marker feature
+ Args    : golden path position, chromosome, Mb limit (optional)
+
+
+=cut
+
+
+
+sub next_landmark_Marker
+{
+
+my ($self,$start,$chr_name,$Mb)=@_;
+
+$self->throw("Must supply golden path position") unless $start;
+$self->throw("Must supply chromosome") unless $chr_name;
+if (!defined $Mb){$Mb=1000000;}
+
+my $glob_start=$self->_global_start;
+my $glob_end=$self->_global_end;
+my $chr_name=$self->_chr_name;
+my $dbname=$self->dbobj->dbname;
+my $mapsdbname=$self->dbobj->mapdbname;
+
+my @markers;
+
+eval {
+    require Bio::EnsEMBL::Map::MarkerFeature;
+    
+    my $end;
+    my $limit;
+    unless ($#markers>=0 || $end >255000000){
+
+	$limit=$limit+$Mb;
+	$end=$start+$limit;
+
+	my $statement=   "SELECT    
+                          IF        (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_end)) as start,                                        
+                          IF        (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_start)),                                       
+                                    f.score, 
+                          IF        (sgp.raw_ori=1,f.strand,(-f.strand)),
+                                    f.name, f.hstart, f.hend, 
+                                    f.hid, f.analysis, s.name  
+                          FROM      $dbname.feature f, $dbname.analysis a, 
+                                    $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
+                                    $dbname.static_golden_path sgp
+                          WHERE     sgp.raw_id=f.contig and  m.marker=s.marker 
+                          AND       f.hid=m.marker
+                          AND       sgp.chr_name='$chr_name' 
+                          AND       f.analysis = a.id 
+                          AND       a.db='mapprimer'
+                          AND       sgp.chr_start>$start 
+                          AND       sgp.chr_start <$end 
+                          AND       sgp.chr_start+f.seq_start-sgp.raw_start>$start  
+                          AND       s.name regexp '^D[0-9,X,Y][0-9]?S' 
+                          ORDER BY  start limit 1";
+
+
+
+	my $sth = $self->dbobj->prepare($statement);
+	$sth->execute;
+	
+	my ($score, $strand, $hstart, $name, $hend, $hid, $analysisid,$synonym);
+	
+	my $analysis;
+	my %analhash;
+	
+	$sth->bind_columns
+	    ( undef, \$start, \$end, \$score, \$strand, \$name, 
+	      \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
+	
+        
+	while( $sth->fetch ) {
+	    
+	    my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
+		      $analysisid,$synonym);
+	    
+	    my $out=$self->_create_Marker_features(@args);
+	    if (defined $out){push @markers,$self->_convert_2_vc($out);}; 
+	}
+    }
+};
+
+if($@){$self->warn("Problems retrieving map data\nMost likely not connected to maps db\n$@\n");}
+
+return $markers[0];
+
+}
+
+
+=head2 _previous_landmark_Marker
+
+ Title   : previous_landmark_Marker
+ Usage   : $obj->previous_landmark_Marker
+ Function: retrieves previous marker  
+ Returns : marker feature
+ Args    : golden path position, chromosome, Mb limit (optional) 
+
+
+=cut
+
+
+
+sub previous_landmark_Marker
+{
+
+my ($self,$start,$chr_name,$Mb)=@_;
+
+$self->throw("Must supply golden path position") unless $start;
+$self->throw("Must supply chromosome") unless $chr_name;
+if (!defined $Mb){$Mb=1000000;}
+
+
+my $glob_start=$self->_global_start;
+my $glob_end=$self->_global_end;
+my $chr_name=$self->_chr_name;
+my $dbname=$self->dbobj->dbname;
+my $mapsdbname=$self->dbobj->mapdbname;
+
+my @markers;
+
+
+eval {
+    require Bio::EnsEMBL::Map::MarkerFeature;
+
+    my $end;
+    my $limit;
+    unless ($#markers>=0 || $end==1){
+   
+	$limit=$limit+$Mb; 
+	$end=$start-$limit;
+	if ($end<0){$end=1;}
+
+
+	my $statement=   "SELECT    
+                          IF        (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_end)) as start,                                        
+                          IF        (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_start)),                                       
+                                    f.score, 
+                          IF        (sgp.raw_ori=1,f.strand,(-f.strand)), 
+                                    f.name, f.hstart, f.hend, 
+                                    f.hid, f.analysis, s.name  
+                          FROM      $dbname.feature f, $dbname.analysis a, 
+                                    $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
+                                    $dbname.static_golden_path sgp
+                          WHERE     sgp.raw_id=f.contig and  m.marker=s.marker 
+                          AND       f.hid=m.marker
+                          AND       sgp.chr_name='$chr_name' 
+                          AND       f.analysis = a.id 
+                          AND       a.db='mapprimer'                       
+                          AND       sgp.chr_start<$start 
+                          AND       sgp.chr_start>=$end 
+                          AND       sgp.chr_start+f.seq_start-sgp.raw_start<$start  
+                          AND       s.name regexp '^D[0-9,X,Y][0-9]?S' 
+                          ORDER BY  start limit 1";
+
+
+
+	my $sth = $self->dbobj->prepare($statement);
+	$sth->execute;
+	
+	my ($score, $strand, $hstart, $name, $hend, $hid, $analysisid,$synonym);
+	
+	my $analysis;
+	my %analhash;
+	
+	$sth->bind_columns
+	    ( undef, \$start, \$end, \$score, \$strand, \$name, 
+	      \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
+	
+        
+	while( $sth->fetch ) {
+	    
+	    my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
+		      $analysisid,$synonym);
+	    
+	    my $out=$self->_create_Marker_features(@args);
+	    if (defined $out){push @markers,$self->_convert_2_vc($out);}; 
+	}
+    }
+};
+
+if($@){$self->warn("Problems retrieving map data\nMost likely not connected to maps db\n$@\n");}
+
+return $markers[0];
+
+
+}
+
+# PL: not used in this file, should it be called _gp_position ? 
+sub _gp_position
+{
+my ($self,$marker,$contig)=@_;
+
+$self->throw("Must supply marker id") unless $marker;
+$self->throw("Must supply contig id") unless $contig;
+
+
+my $statement=  "select sgp.chr_start+f.seq_start-sgp.raw_start,sgp.chr_name 
+                 from static_golden_path sgp, feature f,contig c 
+                 where c.internal_id=sgp.raw_id 
+                 and sgp.raw_id=f.contig  
+                 and f.analysis=11 
+                 and f.hid='$marker' 
+                 and c.id='$contig'";
+ 
+
+my $sth = $self->dbobj->prepare($statement);
+$sth->execute;
+
+my ($start, $chr_name);
+$sth->bind_columns(undef,\$start,\$chr_name);
+while ($sth->fetch){}; 
+
+return ($start,$chr_name);
+
+
+}
+
+
+sub _create_Marker_features
+{
+
+my ($self,@args)=@_;
+
+my $analysis;
+my %analhash;
+
+my ($start,$end,$score,$strand,$name,$hstart,$hend,$hid,$analysisid,$synonym)=@args;
+
+
+ my ( $out, $seqf1, $seqf2 );
+        
+    if (!$analhash{$analysisid}) {
+	
+	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	$analysis = $feature_obj->get_Analysis($analysisid);
+	$analhash{$analysisid} = $analysis;
+	
+    } else {
+	$analysis = $analhash{$analysisid};
+    }
+    
+    $seqf1 = Bio::EnsEMBL::SeqFeature->new();
+    $seqf2 = Bio::EnsEMBL::SeqFeature->new();
+    $out = Bio::EnsEMBL::Map::MarkerFeature->new
+	( -feature1 => $seqf1, -feature2 => $seqf2 );
+ 
+    $out->set_all_fields
+	( $start,$end,$strand,$score,
+	  $name,'similarity',$self->id,
+	  $hstart,$hend,1,$score,$name,'similarity',$name);
+
+    $out->analysis($analysis);
+    $out->mapdb( $self->dbobj->mapdb );
+    $out->id ($synonym);
+
+    return $out;
+
+
+}
+
+
+
+sub _clip_2_vc
+{
+    my ($self,$ft)=@_;
+
+    $self->throw ("need a feature") unless $ft;
+    if ($ft->start>=$self->_global_start && $ft->end<=$self->_global_end){return 1;}
+    else {return 0;}
+}
+
+
+
+sub _convert_2_vc
+{
+ my ($self,$ft)=@_;
+ $self->throw ("need a feature") unless $ft;
+
+ $ft->start ($ft->start-$self->_global_start);
+ $ft->end ($ft->end-$self->_global_start);
+
+ return $ft;
+}
 
 
 =head2 _global_start
