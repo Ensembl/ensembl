@@ -245,7 +245,7 @@ CREATE TABLE protein_align_feature (
   #  What scoring do we need ?
 
   evalue double,
-  perc_ident tinyint,
+  perc_ident float,
   score double,
 
   PRIMARY KEY (	protein_align_feature_id ),
@@ -275,7 +275,7 @@ CREATE TABLE dna_align_feature (
 #  What scoring do we need ?
 
   evalue double,
-  perc_ident tinyint,
+  perc_ident float,
   score double,
 
   PRIMARY KEY ( dna_align_feature_id ),
@@ -380,8 +380,8 @@ CREATE TABLE supporting_feature (
   hit_start     int(11) NOT NULL,
   hit_end       int(11) NOT NULL,
   hit_id        varchar(40) NOT NULL,
-  evalue        double(16,4),
-  perc_id       int(10),
+  evalue        double,
+  perc_ident    float,
   phase         tinyint(1),
   end_phase     tinyint(1),
   hit_strand    tinyint(1),
@@ -513,7 +513,7 @@ CREATE TABLE protein_feature (
   hit_id           varchar(40) NOT NULL,
   score         double NOT NULL,
   evalue        double,
-  perc_ident     int(10),
+  perc_ident    float,
 
   PRIMARY KEY   (protein_feature_id),
   KEY (translation_id),
