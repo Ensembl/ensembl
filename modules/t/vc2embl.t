@@ -41,4 +41,4 @@ $seqout->write_seq($vc2);
 
 print "ok 3\n";
 
-unlink("t/vc2embl.out");
+#unlink("t/vc2embl.out");

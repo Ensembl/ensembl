@@ -1016,6 +1016,7 @@ sub _translate_coherent{
        my $seq = $exon->seq();
        my $str = $seq->seq();
        
+       print STDERR "Exon has length ",$exon->length," and sequence length ",length($str),"\n";
 
        if( CORE::length( $str ) == 0 ) {
 	   $self->throw("Bad internal error - got a 0 length rstring...");
@@ -1061,6 +1062,8 @@ sub _translate_coherent{
 
    my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -moltype => 'dna' );
   #my $trans_seq = $temp_seq->translate();
+
+   print STDERR "Sequence is $tstr \n";
 
    return $temp_seq->translate();
 }

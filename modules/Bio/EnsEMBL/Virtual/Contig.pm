@@ -981,7 +981,7 @@ sub _gene_query{
 	    # $exon->seqname($exon->contig_id);
 	    $exon{$exon->dbID} = $exon;
 	    
-            #print STDERR "Exon for gene ",$gene->id," is on ",$exon->seqname," ",$exon->start,":",$exon->end,"\n";
+            print STDERR "Exon for gene ",$gene->dbID," is on ",$exon->seqname," ",$exon->start,":",$exon->end,"\n";
 
 	    ### got to treat sticky exons separately.
 	    if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
@@ -998,19 +998,22 @@ sub _gene_query{
                 my $vc_strand = undef;
 
                 foreach my $sticky ( @stickies ) {
+		    print STDERR "Mapping sticky $sticky ",$sticky->start," ",$sticky->end,"\n";
                     unless ( $self->_convert_seqfeature_to_vc_coords($sticky) ) {
+			print STDERR "Unmappable!\n";
                         # unmappable component exon, abort.
                         $mapped_sticky = 0;
                         last;
                     } else {
                         # handle start end points.
-                        if( !defined $vc_strand ) {
+			print STDERR "In sticky, seen ",$sticky->start," ",$sticky->end,"\n";
+			if( !defined $vc_strand ) {
                             $vc_start = $sticky->start;
                             $vc_end   = $sticky->end;
                             $vc_strand = $sticky->strand;
                         } else {
                             if( $vc_strand != $sticky->strand ) {
-                                #$self->warn("sticky exon mappable but strand switching");
+                                $self->warn("sticky exon mappable but strand switching");
                                 $mapped_sticky = 0;
                                 last; # end of foreach my $sticky
                             }
@@ -1049,7 +1052,7 @@ sub _gene_query{
 		    $exonconverted{$exon->dbID} = 1;
 		}               
 	    }
-            #print STDERR "Exon for gene is now on ",$gene->id," is on ",$exon->seqname," at ",$exon->start,":",$exon->end,"\n";
+            print STDERR "Exon for gene is now on ",$gene->dbID," is on ",$exon->seqname," at ",$exon->start,":",$exon->end,"\n";
 
 	}                               # foreach exon
         
@@ -1564,7 +1567,7 @@ sub convert_Gene_to_raw_contig {
    #
    my %convertedexon;
 
-   foreach my $exon ( $gene->each_unique_Exon ) {
+   foreach my $exon ( $gene->get_all_Exons ) {
        $convertedexon{$exon} = $self->_reverse_map_Exon($exon);
    }
 
