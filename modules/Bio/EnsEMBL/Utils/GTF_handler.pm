@@ -651,7 +651,7 @@ sub dump_genes {
                     if ($strand eq '+') {
                         ($x, $y) = ($translation_start, $translation_start + 2);
                     } else {
-                        ($x, $y) = ($translation_start - 2, $translation_start);
+                        ($x, $y) = ($translation_start, $translation_start-2);
                     }
                     $transcript_string .= join("\t",
                         $seq_name, $type, 'start_codon',
@@ -678,9 +678,9 @@ sub dump_genes {
                     $seen_end = 1;
                     my( $x, $y );
                     if ($strand eq '+') {
-                        ($x, $y) = ($translation_end + 1, $translation_end + 3);
+                        ($x, $y) = ($translation_end -2, $translation_end);
                     } else {
-                        ($x, $y) = ($translation_end - 3, $translation_end - 1);
+                        ($x, $y) = ($translation_end + 2, $translation_end);
                     }
                     $transcript_string .= join("\t",
                         $seq_name, $type, 'stop_codon',
