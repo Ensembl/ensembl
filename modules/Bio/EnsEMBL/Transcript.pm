@@ -1158,6 +1158,8 @@ sub five_prime_utr {
   my $seq = substr($self->spliced_seq, 0, $self->cdna_coding_start - 1);
   CORE::length($seq) or return;
 
+  return undef if(!$seq);
+
   return Bio::Seq->new(
 	       -DISPLAY_ID => $self->stable_id,
 	       -MOLTYPE    => 'dna',
@@ -1170,6 +1172,8 @@ sub three_prime_utr {
 
   my $seq = substr($self->spliced_seq, $self->cdna_coding_end);
   CORE::length($seq) or return;
+
+  return undef if(!$seq);
 
   return Bio::Seq->new(
 	       -DISPLAY_ID => $self->stable_id,
