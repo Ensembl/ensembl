@@ -49,7 +49,7 @@ my %gene_name;
 my %utr;
 
 # get the old (Celera) scaffold names
-open (SCAFMAP,"/acari/work1/mongin/anopheles_17_2a_ncbisub/input/accessions") || die "can't open SCAFMAP file";
+open (SCAFMAP,"/ecs2/work6/mh4/gbdump_19_2b/input/accessions") || die "can't open SCAFMAP file";
 while(<SCAFMAP>) {
     chomp;
     my ($new,$a,$old) = split;
@@ -102,6 +102,7 @@ my $genes_bacterial=0;
 my $genes_kept=0;
 my $genes_named=0;
 my $orths=0;
+my $gene_orth=0;
 
 # temporary counters for protein stuff
 my ($fetch_count, $count_old_id, $count_prot_id, $count_new,$proteins_named,$moved,$proteins_described);
@@ -110,8 +111,8 @@ $fetch_count=$count_old_id=$count_prot_id=$count_new=$proteins_named=$moved=$pro
 
 while (my ($clone_name,$ori) = $sth1->fetchrow_array) {
 
-  open (OUT,">/ecs2/work6/mh4/gbdump_19_2b/temp_output/$clone_name.tbl") || die "can't open tbl file";
-  open (SEQ,">/ecs2/work6/mh4/gbdump_19_2b/temp_output/$clone_name.fsa") || die "can't open fsa file";
+  open (OUT,">/ecs2/work6/mh4/gbdump_19_2b/output/$clone_name.tbl") || die "can't open tbl file";
+  open (SEQ,">/ecs2/work6/mh4/gbdump_19_2b/output/$clone_name.fsa") || die "can't open fsa file";
 
   my $slice = $slice_adapt->fetch_by_clone_accession($clone_name);
   if ($ori == -1) {
@@ -180,7 +181,7 @@ while (my ($clone_name,$ori) = $sth1->fetchrow_array) {
       my $coding_start;
       my $coding_end;
 
-# print the gene coordinates after checking if bacterial and for UTRs
+# print the gene coordinates after checking for UTRs
 # where a UTR not present in the munged gene add < or > as appropriate
 
       if (($utr{$new_gene_dbID}->{'up'}==1)&&($utr{$new_gene_dbID}->{'down'}==1)) {
@@ -249,14 +250,19 @@ while (my ($clone_name,$ori) = $sth1->fetchrow_array) {
       print OUT "\t\t\tlocus_tag\t$gene_id\n";
 
 # query Mart to get the display id for any drosophila orthologues
+      my @homologues;
       my $query2 = "select display_id from agambiae_ensemblgene_homologs_dmelanogaster_dm where gene_stable_id like ?";
       my $sth2 = $martdb->prepare($query2);
       $sth2->execute($gene_id);
       while ((my $dros_name) = $sth2->fetchrow_array) {
-	print OUT "\t\t\tnote\tsimilar to Drosophila $dros_name\n";
+	push @homologues,$dros_name;
 	$orths++;
       }
-
+      if (scalar @homologues >0) {
+	$gene_orth++;
+	print OUT "\t\t\tnote\tsimilar to Drosophila ";
+	print OUT join(', ',@homologues),"\n";
+      }
 
 # get the transcript(s) and print mRNA and protein features
 
@@ -270,17 +276,16 @@ while (my ($clone_name,$ori) = $sth1->fetchrow_array) {
     if ($fetch_count % 100 == 0) {
       print STDERR "Fetched $fetch_count proteins so far\n";
     }
-# end of this gene
+# end of else (i.e. this real gene)
     }
-# end of else 
+# end of gene loop
   }
 # end of this scaffold
-  last if $fetch_count >999;
   close(OUT);
   close(SEQ);
 }
 
-print STDERR "Finished\nRemoved as multiscaff: $genes_multiscaff\tRemoved as bacterial: $genes_bacterial\tKept: $genes_kept\nWith names: $genes_named\tTotal dros orthologues: $orths\n";
+print STDERR "Finished\nRemoved as multiscaff: $genes_multiscaff\tRemoved as bacterial: $genes_bacterial\tKept: $genes_kept\nWith names: $genes_named\tGenes with Dros orths: $gene_orth\tTotal dros orthologues: $orths\n";
 print STDERR "Fetched proteins: $fetch_count, have 'moved' $moved, named $proteins_named, described $proteins_described\n";
 print STDERR "Assigned $count_old_id old & prot ids, $count_prot_id prot id only, $count_new with neither\n";
 
@@ -750,7 +755,7 @@ sub print_translation_coordinates {
 
 # if find single protein name ...
 # print as note (but not if case-insensitive-same as gene name), and
-# print description, if any
+# print description, if any, as a 2nd product tag (not as prot_desc which is invisible to TrEMBL folk)
   my @protein_names;
   foreach my $db_entry (@{$translation->get_all_DBEntries()}) {
     if ($db_entry->dbname eq 'Anopheles_symbol') {
@@ -764,7 +769,7 @@ sub print_translation_coordinates {
     }
     if (defined  $gene_name{lc $protein_names[0]}->{'description'}) {
       my $description = $gene_name{lc $protein_names[0]}->{'description'};
-      print OUT "\t\t\tprot_desc\t$description\n";
+      print OUT "\t\t\tproduct\t$description\n";
       $proteins_described++;
     }
   }
