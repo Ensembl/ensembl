@@ -306,7 +306,7 @@ sub last_exon {
 
 =cut
 
-sub translateable_exons{
+sub translateable_exons {
    my ($self) = @_;
    my (@out);
 
@@ -319,7 +319,8 @@ sub translateable_exons{
    # one exon genes - easy to handle.
    if( $#exons == 0 ) {
        my $exon = shift @exons;
-       if( $self->translation->start > $exon->length || $self->translation->end > $exon->length ) {
+       if(    $self->translation->start > $exon->length 
+           || $self->translation->end > $exon->length ) {
 	   $self->throw("Single Exon transcript, but with start or stop outside of that exon");
        }
 
@@ -344,26 +345,28 @@ sub translateable_exons{
        return $retexon;
    }
 
-
-   while( my $exon = shift @exons ) {
-       if( $exon->id eq $self->translation->start_exon_id() ) {
-	   #print STDERR "New start exon " . $exon->id . "\n";
-
-	   if( $self->translation->start > $exon->length ) {
-	       $self->throw("In exon ".$exon->id." translation start ".$self->translation->start." is greater than exon length".$exon->start.":".$exon->end);
-	   }
-
+   my $exon;
+   while( $exon = shift @exons ) {
+       if( $exon->id eq $self->translation->start_exon_id() ) { #start exon
+           # see if endpoints are sane:
+           if( $self->translation->start <  1) {
+               $self->throw("In exon ".$exon->id." translation start "
+                            .$self->translation->start." < 1!");
+           }
+           if( $self->translation->start > $exon->length ) {
+               $self->throw("In exon ".$exon->id." translation start "
+                            .$self->translation->start.
+                            " is greater than exon length"
+                            .$exon->start.":".$exon->end);
+           }
 
 	   my $stexon = new Bio::EnsEMBL::Exon;
 
+	   $stexon->id($exon->id());
 	   $stexon->contig_id ($exon->contig_id);
 	   $stexon->clone_id  ($exon->clone_id);
 	   $stexon->strand    ($exon->strand);
 	   $stexon->attach_seq($exon->entire_seq());
-
-#	   print (STDERR "Exon entire seq is " . ref($stexon->entire_seq) . "\n");
-
-	   $stexon->id($exon->id());
 
 	   if( $exon->strand == 1  ){
 	       $stexon->start($exon->start + $self->translation->start-1);
@@ -374,27 +377,26 @@ sub translateable_exons{
 	   }
 	   $stexon->phase(0);
 	   push(@out,$stexon);
-	   last;
-       }
-   }
+       } elsif ( $exon->id eq $self->translation->end_exon_id()) { # end exon
+           # see if end points are sane:
+           if( $self->translation->end <  1) {
+               $self->throw("In exon ".$exon->id." translation end "
+                            .$self->translation->end." < 1!");
+           }
+           if( $self->translation->end > $exon->length ) {
+               $self->throw("In exon ".$exon->id." translation end "
+                            .$self->translation->start
+                            ." is greater than exon length"
+                            .$exon->start.":".$exon->end);
+           }
 
-   my $exon;
-   while( $exon = shift @exons ) {
-       if( $exon->id eq $self->translation->end_exon_id()) {
-
-	   if( $self->translation->end > $exon->length ) {
-	       $self->throw("In exon ".$exon->id." translation end ".$self->translation->end." is greater than exon length".$exon->start.":".$exon->end);
-	   }
-
-	   
 	   my $endexon = new Bio::EnsEMBL::Exon;
-	   
+	   $endexon->id($exon->id);
 	   $endexon->contig_id($exon->contig_id);
 	   $endexon->clone_id($exon->clone_id);
 	   $endexon->strand($exon->strand);
 	   $endexon->phase($exon->phase);
 	   $endexon->attach_seq($exon->entire_seq());
-	   $endexon->id($exon->id);
 
 	   if( $exon->strand == 1 ) {
 	       $endexon->start($exon->start);
@@ -404,21 +406,19 @@ sub translateable_exons{
 	       $endexon->start($exon->end - ($self->translation->end -1));
 	       $endexon->end($exon->end);
 	   }
-	  
 	   push(@out,$endexon);
 	   last;
-       } else {
+       } else {                         # ordinary, intermediate exon
 	   push(@out,$exon);
        }
-   }
+   }                                    # while @exons
 
    if( !defined $exon || $exon->id ne $self->translation->end_exon_id()) {
        $self->throw("Unable to find end translation exon");
    }
 
-
    return @out;
-}
+}                                       # translateable_exons
 
 
 =head2 split_Transcript_to_Partial
@@ -435,13 +435,15 @@ sub translateable_exons{
 
 =cut
 
-sub split_Transcript_to_Partial{
+sub split_Transcript_to_Partial {
    my ($self,$on_translate) = @_;
 
 
    if( $on_translate == 1 && ! defined $self->translation ) {
        $self->throw("Attempting to split Transcript on translation, but not there...");
    }
+   # should we check here if the Exons know their entire_seq?
+
    my @exons;
    if( $on_translate == 1 ) {
        @exons = $self->translateable_exons();
@@ -508,14 +510,18 @@ sub split_Transcript_to_Partial{
    }
 
    return @out;
-}
+}                                       # split_Transcript_to_Partial
 
 
 =head2 translate
 
  Title   : translate
  Usage   : $pep = $feat->translate()
- Function: returns the peptide translation of the gene - in the correct phase
+
+ Function: returns the peptide translation of the gene - in the correct phase. 
+           This method now requires that the Transcript has a valid Translation
+           object.
+
  Returns : Bio::Seq
  Args    : none
 
@@ -598,6 +604,7 @@ sub translate {
   return $trans_seq;
 }
 
+#PL: prolly should read 'cDNA' for 'mRNA' below:
 =head2 dna_seq
 
   Title   : dna_seq
@@ -662,7 +669,6 @@ sub dna_seq {
     $mrna  .= $tmp; 
   }
 
-
   my $seq = new Bio::PrimarySeq(-SEQ => $mrna,-ID => $self->id);
 
   return $seq;
@@ -678,6 +684,7 @@ sub dna_seq {
 
 =cut
 
+# PL: why is this here? Is this OK when using VirtualContigs? 
 sub contig_dna {
   my ($self,$dna) = @_;
 
@@ -1053,6 +1060,7 @@ sub gene_is_known {
     
     return $self->{'_web_hack_gene_is_known'};
 }
+
 =head2 rna_pos
 
   Title   : rna_pos
