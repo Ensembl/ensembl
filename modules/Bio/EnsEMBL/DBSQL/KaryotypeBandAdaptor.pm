@@ -198,7 +198,7 @@ sub fetch_by_chr_band {
 
     $sth->execute( $band, $chr_id );
 
-    my ($chr, $chr_start,$chr_end,$stain) = $sth->fetchrow_array;
+    my ($chr_start,$chr_end,$stain) = $sth->fetchrow_array;
 
     return undef unless defined $chr_start;
 
