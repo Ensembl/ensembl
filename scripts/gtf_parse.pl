@@ -85,12 +85,12 @@ my $compare;
 	     );
 
 my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
-
 open (PARSE,"$parse") || die("Could not open $parse for gtf reading$!");
-    
 my @gtf_genes=$gtfh->parse_file(\*PARSE);
-my $n=scalar @gtf_genes;
-print STDERR "Got $n genes from gtf file\n";
+my $g_n=scalar @gtf_genes;
+$parse =~/ctg(\d+).gtf/;
+print STDERR "Comparing genes for fpc contig $1\n";
+print STDERR "Got $g_n genes from EnsEMBL file $parse\n";
 if ($print) {
     $gtfh->print_genes;
 }
@@ -155,28 +155,66 @@ elsif ($compare) {
 	#push @ensembl_genes,@vc_genes;
     #}
     
+    $parse =~/ctg(\d+).gtf/;
+    my $parse2 = "../neomorphic/ctg$1.mrg.gtf";
     my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
     open (PARSE2,"$parse2") || die("Could not open $parse2 for ensembl gtf reading$!");
     
     my @ensembl_genes=$gtfh->parse_file(\*PARSE2);
     my $n=scalar @ensembl_genes;
-    print STDERR "Got $n EnsEMBL genes from gtf file\n";
+    print STDERR "Got $n genes from Neomoprhic file $parse2\n";
     foreach my $gene (@ensembl_genes) {
 	foreach my $exon ($gene->each_unique_Exon) {
 	    #print STDERR "EnsEMBL gene has exon: ".$exon->id."\n";
 	}
     }
     my $stats=Bio::EnsEMBL::GeneComparison::GeneComparisonStats->new(-standard=>\@ensembl_genes, -predictor=>\@gtf_genes);
-    #my $string=$stats->getGeneComparisonStats;
-    #print STDERR "Gene comparison stats:\n";
-    #print STDERR $string;
-    my %genes=$stats->get_OverlapMap;
+ my %genes=$stats->get_OverlapMap;
+    my $knownoverlap=0;
     foreach my $gene_id (keys(%genes)){
-	print STDERR "$gene_id overlaps:\n ";
-	foreach my $predictor (@{$genes{$gene_id}}) {
-	    print STDERR "$predictor\n";
+	my $n=scalar(@{$genes{$gene_id}});
+	
+	if ($n) {
+	    print STDERR "$gene_id overlaps $n gene(s): ";
+	    $knownoverlap++;
+	    foreach my $predictor (@{$genes{$gene_id}}) {
+		print STDERR "$predictor ";
+	    }
+	    print STDERR "\n";
 	}
     }
+    print STDERR "In total, $knownoverlap known genes overlap ensembl genes\n";
+    my @missed_genes=$stats->getMissedGenes();
+    my $missed= scalar(@missed_genes);
+    print STDERR "$missed known genes were missed completely: ";
+    foreach my $id (@missed_genes) {
+	print STDERR "$id ";
+    }
+    print STDERR "\n";
+    my @matched_ensembl= $stats->getExactlyMatchedPredictorGenes();
+    my $n_mens= scalar @matched_ensembl;
+    print STDERR "$n_mens ensembl predictions were exactly matched: ";
+    foreach my $id (@matched_ensembl) {
+	print STDERR "Matched ensembl gene $id ";
+    }
+    print STDERR "\n";
+    my @matched_known=$stats->getExactlyMatchedStandardGenes();
+    my $n_mknown=scalar(@matched_known);
+    print STDERR "$n_mknown known genes were exactly matched: ";
+    foreach my $id (@matched_known) {
+	print STDERR "$id ";
+    }
+    print STDERR "\n";
+    my %overlaps = $stats->getOverlapStats;
+    foreach my $overlap (keys %overlaps) {
+	print STDERR "Gene overlap: ". $overlap. " Proportion of bases ".
+	    $overlaps{$overlap}. "\n";                    
+    }
+
+    my $string=$stats->getGeneComparisonStats;
+    print STDERR "Gene comparison stats:\n";
+    print STDERR $string;
+   
 }
     
 else {

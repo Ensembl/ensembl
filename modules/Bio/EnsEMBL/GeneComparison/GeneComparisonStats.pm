@@ -125,6 +125,9 @@ sub new {
     
     my @standard = @{$self->{'_standardGenes'}}; 
     my $ns = scalar @standard; 
+    if ($ns == 0) {
+	$self->throw("No standard genes given!\n");
+    }
     print STDERR "Got $ns standard genes\n";
     if (!$standard[0]->isa('Bio::EnsEMBL::Gene')) {
 	$self->throw("Standard genes are not Bio::EnsEMBL::Gene objects\n");
@@ -132,6 +135,9 @@ sub new {
 
     my @predictor = @{$self->{'_predictorGenes'}};
     my $np = scalar @predictor;
+    if ($np == 0) {
+	$self->throw("No standard genes given!\n");
+    }
     print STDERR "Got $np predictor genes\n";
     
     if (!$predictor[0]->isa('Bio::EnsEMBL::Gene')) {
@@ -271,8 +277,7 @@ sub _genePredictions {
     
     # If there are no true positives we don't need to calculate the false positives
     if ($truePositive == 0) {     
-	print STDERR "There are no true positives, skipping false positives!\n";
-        $self->{'_geneSpecificity'} = 0;  
+	$self->{'_geneSpecificity'} = 0;  
         $self->{'_geneSensitivity'} = 0;
         return;
     }
