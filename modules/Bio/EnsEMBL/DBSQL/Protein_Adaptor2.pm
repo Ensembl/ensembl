@@ -83,36 +83,6 @@ sub _gene_obj {
     return $self->{'gene_obj'};
 }
 
-sub _protfeat_obj {
-    my($self) = @_;
-    if( !defined $self->{'protfeat_obj'}) {
-
-	my $feat_obj = $self->db->get_Protfeat_Adaptor2;
-	$self->{'protfeat_obj'} = $feat_obj;
-    }
-    
-    return $self->{'protfeat_obj'};
-}
-
-sub _familyAdaptor {
-   my($self) = @_;
-    if( !defined $self->{'familyAdaptor'}) {
-	my $feat_obj = $self->db->get_FamilyAdaptor;
-	$self->{'familyAdaptor'} = $feat_obj;
-    }
-    
-    return $self->{'familyAdaptor'};
-}
- 
-sub _dbEntryAdaptor {
-     my($self) = @_;
-     if( !defined $self->{'dbEntryAdaptor'}) {
-	 my $dbentryadaptor = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($self);
-	 $self->{'dbEntryAdaptor'} = $dbentryadaptor;
-    }
-     return $self->{'dbEntryAdaptor'};
-}
-   
 =head2 snp_obj
 
  Title   : snp_obj
@@ -251,11 +221,11 @@ sub fetch_Protein_by_dbid{
    $protein->transcriptac($transid);                                              
    $protein->geneac($geneid);
    
-#Set up the different adaptors which will be used by the protein Object
+#Cache the different adaptors which will be used by the protein Object
    $protein->adaptor($self);
-   $protein->protfeat_adaptor($self->_protfeat_obj());
-   $protein->dbEntry_adaptor($self->_dbEntryAdaptor());
-   #$protein->family_adaptor($self->_familyAdaptor());
+   $protein->protfeat_adaptor($self->db->get_Protfeat_Adaptor2);
+   $protein->dbEntry_adaptor(Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($self));
+   #$protein->family_adaptor($self->db->get_FamilyAdaptor);
 
 #Add the date of creation of the protein to the annotation object
    my $ann  = Bio::Annotation->new;
