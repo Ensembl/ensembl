@@ -45,11 +45,20 @@ print "ok 2\n";
 
 $gene_obj = $db->gene_Obj();
 
-$gene = $gene_obj->get('gene-id-1');
+eval {
+    $gene = $gene_obj->get('gene-id-1');
+};
 
-print "ok 3\n";
+if ($@) {
+    print "not ok 3\n";
+}
+
+else {
+    print "ok 3\n";
+}
 
 @dblink = $gene->each_DBLink();
+
 $dbl = shift @dblink;
 
 if( !defined $dbl || $dbl->database ne 'swissprot' ) {

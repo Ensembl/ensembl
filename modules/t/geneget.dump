@@ -60,8 +60,11 @@ VALUES (2, 'genscan', 12, 'blast', 12, 'blast', 'similarity');
 # Dumping data for table 'objectXref'
 #
 
-INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('trl-1','Translation', 1);
-INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('trl-1','Translation', 2);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 'gene-id-1', 'Gene', 1);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 'gene-id-1','Gene', 2);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 'transcript-1', 'Transcript', 1);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 'transcript-1','Transcript', 2);
+
 #
 # Dumping data for table 'Xref'
 #
