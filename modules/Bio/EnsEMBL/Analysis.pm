@@ -146,6 +146,8 @@ sub new {
 sub adaptor {
     my ($self,$arg) = @_;
 
+    $self->{_adaptor} ||= undef;
+
     if (defined($arg)) {
 	$self->{_adaptor} = $arg;
     }
