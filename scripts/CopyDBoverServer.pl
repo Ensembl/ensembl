@@ -34,7 +34,7 @@ RESTRICTIONS:
    ia64[ef] port: 3306
 3- -pass is compulsory and is expected to be the mysql password to connect as ensadmin
 
-";
+This script MUST be run as the mysqlens Unix user.";
 
 my $help = 0;
 my $pass;
