@@ -175,7 +175,7 @@ CREATE TABLE ghost (
   obj_type set("transcript","protein","exon") DEFAULT '' NOT NULL, 
   deleted datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-  PRIMARY KEY (id,version,seq_type)
+  PRIMARY KEY (id,version,obj_type)
 );
 
 #
