@@ -2789,7 +2789,7 @@ sub static_golden_path_type{
 
 =cut
 
-sub _crossdb{
+sub _crossdb {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -2799,5 +2799,60 @@ sub _crossdb{
 
 }
 
+## support for external adaptors
+=head2 _ext_adaptor
+
+ Title   : _ext_adaptor
+ Usage   : $obj->_ext_adaptor('family' [, $famAdaptorObj] )
+ Function: 
+ Returns : an adaptor or undef
+ Args    : a name and a adaptor object. 
+=cut
+
+sub _ext_adaptor {
+    my ($self, $adtor_name, $adtor_obj) = @_;
+    if( $adtor_obj ) {
+        if ($adtor_obj eq 'DELETE') { 
+            delete $adtor_obj->{'_ext_adaptors'}{$adtor_name};
+        } else {
+            $self->{'_ext_adaptors'}{$adtor_name} = $adtor_obj;
+        }
+    }
+    return $self->{'_ext_adaptors'}{$adtor_name};
+}
+
+## support for external adaptors
+
+sub list_ExternalAdaptors {
+    my ($self) = @_;
+    return keys % {$self->{_ext_adaptors}};
+}
+
+
+=head2 add_ExternalAdaptor
+
+ Title   : add_ExternalAdaptor
+ Usage   : $obj->add_ExternalAdaptor('family', $famAdaptorObj);
+ Function: adds the external adaptor the internal hash of known 
+           external adaptors 
+ Returns : undef
+ Args    : a name and a adaptor object. 
+
+=cut
+
+sub add_ExternalAdaptor {
+    my ($self, $adtor_name, $adtor_obj) = @_;
+    $self->_ext_adaptor($adtor_name, $adtor_obj);
+}
+
+sub remove_ExternalAdaptor {
+    my ($self, $adtor_name) = @_;
+    $self->_ext_adaptor($adtor_name, 'DELETE');
+}
+
+sub get_ExternalAdaptor {
+    my ($self, $adtor_name) = @_;
+    $self->_ext_adaptor($adtor_name);
+}
 
 1;
