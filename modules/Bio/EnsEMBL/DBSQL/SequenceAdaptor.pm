@@ -71,12 +71,14 @@ sub fetch_by_contig_id_start_end_strand {
     $self->throw( "Wrong parameters" );
   }
 
+  my $query;
+
   if( $end == -1 ) { 
 
-    $sth = $self->prepare( "SELECT c.length, SUBSTRING( d.sequence, $start )
-                            FROM dna d, contig c 
-                            WHERE d.dna_id = c.dna_id 
-                            AND c.contig_id = $contig_id" );
+    $query = "SELECT c.length, SUBSTRING( d.sequence, $start )
+                FROM dna d, contig c 
+               WHERE d.dna_id = c.dna_id 
+                 AND c.contig_id = $contig_id";
       
   } else {
     my $length = $end - $start + 1;
@@ -84,11 +86,18 @@ sub fetch_by_contig_id_start_end_strand {
       $self->throw( "Wrong parameters" );
     }
     
-    $sth = $self->prepare( "SELECT c.length, SUBSTRING( d.sequence, $start, $length )
-                            FROM dna d, contig c 
-                            WHERE d.dna_id = c.dna_id 
-                            AND c.contig_id = $contig_id" );    
+    $query = "SELECT c.length, SUBSTRING( d.sequence, $start, $length )
+                FROM dna d, contig c 
+               WHERE d.dna_id = c.dna_id 
+                 AND c.contig_id = $contig_id";    
   }
+
+  if( defined $self->db()->dnadb() ) {
+    $sth = $self->db()->dnadb()->prepare( $query );
+  } else {
+    $sth = $self->prepare( $query );
+  }
+
 
   $sth->execute();
 
