@@ -532,11 +532,12 @@ sub cdna_coding_start {
     my $start = 0;
 
     my @exons = @{$self->get_all_Exons};
- 
+    my $exon;
+
     while($exon = shift @exons) {
       if($exon == $transl->start_Exon) {
 	#add the utr portion of the start exon
-	$start += $transl->coding_start;
+	$start += $transl->start;
 	last;
       } else {
 	#add the entire length of this non-coding exon
@@ -568,6 +569,7 @@ sub cdna_coding_end {
   my ($self, $value) = @_;
 
   my $transl = $self->translation;
+  my $exon;
 
   if($value) {
     $self->{'cdna_coding_end'} = $value;
@@ -578,7 +580,7 @@ sub cdna_coding_end {
     while($exon = shift @exons) {
       if($exon == $transl->end_Exon) {
 	#add the coding portion of the final coding exon
-	$end += $transl->coding_end;
+	$end += $transl->end;
 	last;
       } else {
 	#add the entire exon
@@ -608,7 +610,7 @@ sub cdna_coding_end {
 sub coding_start {
   my ($self, $value) = @_;
 
-  my $transl = $self->transl;
+  my $transl = $self->translation();
 
   if( defined $value ) {
     $self->{'coding_start'} = $value;
@@ -643,7 +645,7 @@ sub coding_start {
 =cut
 
 sub coding_end {
-  my ($self, $value, $arg) = shift;
+  my ($self, $value ) = @_;
 
   my $strand;
   my $end;
@@ -1036,8 +1038,8 @@ sub pep2genomic {
 
   # move start end into translate cDNA coordinates now.
   # much easier!
-  $start = 3* $start-2 + ($self->coding_start - 1);
-  $end   = 3* $end + ($self->coding_start - 1);
+  $start = 3* $start-2 + ($self->cdna_coding_start - 1);
+  $end   = 3* $end + ($self->cdna_coding_start - 1);
 
   return $self->cdna2genomic( $start, $end );
 }
