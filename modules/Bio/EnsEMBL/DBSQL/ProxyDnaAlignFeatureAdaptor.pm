@@ -73,7 +73,7 @@ sub generic_fetch {
     if(defined $est_db) {
       #forward request to the EST database
       my $est_adaptor = $est_db->get_DnaAlignFeatureAdaptor();
-      return $est_adaptor->generic_fetch($constraint, $logic_name, $mapper, $slice);
+      return $est_adaptor->generic_fetch($constraint, "", $mapper, $slice);
     }
   }
   
