@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..3\n"; 
+BEGIN { $| = 1; print "1..7\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -70,7 +70,7 @@ system($meta) == 0 or die "$0\nError running '$meta' : $!";
 print "ok 5\n";
 
 #Update recipient from donor
-my $update="perl ../../scripts/update_list_chunk.pl -thost localhost -tdbname recipient -tdbuser ensembl"
+my $update="perl ../../scripts/update_list_chunk.pl -thost localhost -tdbname recipient -tdbuser ensembl";
 system($update) == 0 or die "$0\nError running '$meta' : $!";
 
 print "ok 6\n";
