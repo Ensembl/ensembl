@@ -489,8 +489,10 @@ sub fetch_VirtualContig_of_clone{
 					    st.chr_end,
 					    st.chr_name 
 				    FROM    static_golden_path st, 
-					    contig c 
-				    WHERE c.clone = '$clone' 
+					    contig c, 
+                                            clone  cl
+				    WHERE c.clone = cl.internal_id
+                                    AND cl.id = '$clone'  
                                     AND c.internal_id = st.raw_id 
 				    AND st.type = '$type' 
                                     ORDER BY st.fpcctg_start"
