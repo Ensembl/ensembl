@@ -2,9 +2,8 @@
 #
 # Ensembl module for Bio::EnsEMBL::DBSQL::SliceAdaptor
 #
-# Cared for by Ewan Birney <ensembl-dev@ebi.ac.uk>
 #
-# Copyright Ewan Birney
+# Copyright (c) 2004 Ensembl
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -17,36 +16,68 @@ the creation of Slice objects.
 
 =head1 SYNOPSIS
 
-  my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+  use Bio::EnsEMBL::DBSQL::DBAdaptor;
+  use Bio::EnsEMBL::Utils::Slice qw(split_Slices);
 
-  my $slice_adaptor = $db->get_SliceAdaptor();
+  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
 
-  #get a slice on the entire chromosome X
-  my $chr_slice = $slice_adaptor->fetch_by_region('chromosome','X');
+  $slice_adaptor = $db->get_SliceAdaptor();
 
-  #get a slice for each clone in the database
-  foreach my $cln_slice (@{$slice_adaptor->fetch_all('clone')}) {
+  # get a slice on the entire chromosome X
+  $chr_slice = $slice_adaptor->fetch_by_region('chromosome','X');
+
+  # get a slice for each clone in the database
+  foreach $cln_slice (@{$slice_adaptor->fetch_all('clone')}) {
     #do something with clone
   }
 
-  #get a slice which is part of NT_004321
-  my $spctg_slice = $slice_adaptor->fetch_by_region('supercontig','NT_004321',
+  # get a slice which is part of NT_004321
+  $spctg_slice = $slice_adaptor->fetch_by_region('supercontig','NT_004321',
                                                     200_000, 600_000);
 
+
+  # get all non-redundant slices from the highest possible coordinate systems
+  $slices = $slice_adaptor->fetch_all('toplevel');
+
+  # include non-reference regions
+  $slices = $slice_adaptor->fetch_all('toplevel',undef,1);
+
+  # include non-duplicate regions
+  $slices = $slice_adaptor->fetch_all('toplevel', undef, 0, 1);
+
+  # split up a list of slices into smaller slices
+  $overlap = 1000;
+  $max_length = 1e6;
+  $slices = split_Slices($slices, $max_length, $overlap);
+
+
+  # store a list of slice names in a file
+  open(FILE, ">$filename") or die("Could not open file $filename");
+  foreach my $slice (@$slices) {
+    print FILE $slice->name(), "\n";
+  }
+  close FILE;
+
+  # retreive a list of slices from a file
+  open(FILE, $filename) or die("Could not open file $filename");
+  while($name = <FILE>) {
+    chomp($name);
+    $slice = $slice_adaptor->fetch_by_name($name);
+
+    # do something with slice
+  }
 
 =head1 DESCRIPTION
 
 This module is responsible for fetching Slices representing genomic regions
-from a database.  Details on how slices can be used are in the
+from a database.  A Details on how slices can be used are in the
 Bio::EnsEMBL::Slice module.
-
-=head1 AUTHOR - Ewan Birney
-
-This modules is part of the Ensembl project http://www.ensembl.org
 
 =head1 CONTACT
 
-Email ensembl-dev@ebi.ac.uk
+This module is part of the Ensembl project http://www.ensembl.org
+
+For more information email <ensembl-dev@ebi.ac.uk>
 
 =head1 METHODS
 
@@ -101,7 +132,7 @@ sub new {
                'toplevel'.
   Arg [2]    : string $seq_region_name
                The name of the sequence region that the slice will be
-               created on.                
+               created on.
   Arg [3]    : int $start (optional, default = 1)
                The start of the slice on the sequence region
   Arg [4]    : int $end (optional, default = seq_region length)
@@ -168,16 +199,16 @@ sub fetch_by_region {
     my $sth = $self->prepare("SELECT seq_region_id, length " .
                              "FROM seq_region " .
                              "WHERE name = ? AND coord_system_id = ?");
- 
+
     #force seq_region_name cast to string so mysql cannot treat as int
     $sth->execute("$seq_region_name", $coord_system->dbID());
 
     if($sth->rows() == 0) {
       $sth->finish();
- 
+
       #do fuzzy matching, assuming that we are just missing a version on 
       #the end of the seq_region name
-   
+
       $sth = $self->prepare("SELECT name, seq_region_id, length " .
                             "FROM   seq_region " .
                             "WHERE  name LIKE ?" .
@@ -199,7 +230,7 @@ sub fetch_by_region {
                        $coord_system->version));
         $name_cache->{$key}         = [$id,$tmp_length];
         $self->{'_id_cache'}->{$id} = [$tmp_name,$tmp_length,$coord_system];
-        
+
         my $version = substr($tmp_name, $prefix_len);
 
         #skip versions which are non-numeric and apparently not versions
@@ -209,8 +240,8 @@ sub fetch_by_region {
           $seq_region_name = $tmp_name;
           $length          = $tmp_length;
           $highest_version = $version;
-        } 
-      } 
+        }
+      }
       $sth->finish();
 
       #return if we did not find any appropriate match:
@@ -228,7 +259,7 @@ sub fetch_by_region {
   }
 
   $end = $length if(!defined($end));
-  
+
   if($end < $start) {
     throw('start [$start] must be less than or equal to end [$end]');
   }
@@ -256,7 +287,7 @@ sub fetch_by_region {
                pass a slice over a network.
                Slice::name allows you to serialise/marshall a slice and this
                method allows you to deserialise/unmarshal it.
-                
+
                Returns undef if no seq_region with the provided name exists in
                the database.
 
@@ -424,12 +455,17 @@ sub get_seq_region_id {
                If this argument is not provided then only reference slices
                will be returned. If set, both reference and non refeference
                slices will be rerurned.
-  Arg [4]    : int $no_duplicates (optional)
-               If set no duplicate entries will be returned.
+  Arg [4]    : int $include_duplicates (optional)
+               If set duplicate regions will be returned.
 
   Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
                @contigs = @{$slice_adaptor->fetch_all('contig')};
 
+               # get even non-reference regions
+               @slices = @{$slice_adaptor->fetch_all('toplevel',undef,1)};
+
+               # include duplicate regions (such as pseudo autosomal regions)
+               @slices = @{$slice_adaptor->fetch_all('toplevel', undef,0,1)};
 
   Description: Retrieves slices of all seq_regions for a given coordinate
                system.  This is analagous to the methods fetch_all which were
