@@ -32,6 +32,9 @@ my $go           = $conf{'go'};
 my $mgi_sp     = $conf{'mgi_sp'};
 my $mgi_locus  = $conf{'mgi_locus'};
 
+#Get specific options for anopheles
+my $sub_genes  = $conf{'submitted_genes'};
+
 if ((!defined $organism) || (!defined $sptr_swiss) || (!defined $out)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nsptr_swiss: $sptr_swiss\nx_map: $out\n";
 }
@@ -273,6 +276,25 @@ if ($organism eq "mouse") {
     }
 }
 
+#Get specific xmapping for anopheles.
+if($organism eq "anopheles") {
+    print STDERR "Getting Xref specifically for anopheles\n";
+    open (SUB,"$sub_genes") || die "Can't open $sub_genes\n";
+
+    while(<SUB>) {
+#This input uses fasta files with the header as follow:
+#>AC\tGene name
+#This files can be dumped using the following utility scripts in /ensembl-genename/scripts
+	chomp;
+	if ($_ =~ />/) {
+#	    print STDERR "$_\n";
+	    my ($ac,$name) = $_ =~ />(\S+)\t(\S+)/;
+		    
+	    print OUT "$ac\tANOSUB\t$ac\tANOSUB\t$name\tKNOWN\n";
+	
+	}
+    }
+}
 
 print STDERR "The output has been written there: $out\n";
 
