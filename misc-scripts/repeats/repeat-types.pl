@@ -91,11 +91,11 @@ somewhat sensible categories.  It does this through a combination of a
 repeat.txt file extracted from RepeatMasker repeat libraries and through
 some simple pattern matching of the repeat names.
 
-usage: perl repeat-libraries.pl  [-user <user>] [-port <port>] [-pass <pass>]
+usage: perl repeat-types.pl  [-user <user>] [-port <port>] [-pass <pass>]
                -host <host> -dbpattern <regexp>
 
-example: perl repeat-libraries.pl -user ensadmin -pass secret -host ecs1g \\
-                -dbpattern '^homo_sapiens_(core|vega)_20_34c$'
+example: perl repeat-types.pl -user ensadmin -pass secret -host ecs1g \\
+             -port 3306 -dbpattern '^homo_sapiens_(core|vega)_20_34c$'
 
 EOF
 ;
