@@ -138,6 +138,37 @@ sub map_coordinates_to_assembly {
 					       $end, $strand, 'rawcontig');
 }
 
+=head2 fast_to_assembly
+
+  Arg  1     : int $contig_id
+               raw contig internal ID
+  Arg  2     : int $start
+               start position on raw contig
+  Arg  3     : int $end
+               end position on raw contig
+  Arg  4     : int $strand
+               raw contig orientation (+/- 1)
+  Example    : none
+  Description: takes RawContig coordinates and remaps it
+               to Assembly coordinates. This is a fast simple version
+               that only maps when there are no gaps and no splits.
+               It will just return id, start, end, strand
+  Returntype : list of results
+  Exceptions : throws if args are not numeric
+  Caller     : general
+
+=cut
+
+
+sub fast_to_assembly {
+    my ($self, $contig_id, $start, $end, $strand) = @_;
+
+    if( ! exists $self->{'_contig_register'}->{$contig_id} ) {
+      $self->register_region_around_contig( $contig_id, 0, 0 );
+    }
+    return $self->{'_mapper'}->fastmap($contig_id, $start, $end, $strand, 'rawcontig');
+}
+
 
 =head2 map_coordinates_to_rawcontig
 
