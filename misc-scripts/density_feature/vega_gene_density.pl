@@ -237,7 +237,7 @@ foreach my $object ($big_chr, $small_chr) {
 		print STDERR join(",", map { $num{$gene_types{$_}} || 0 }
 				  sort keys %gene_types);
 		print STDERR " | ";
-		print STDERR "Mem: " . `ps $$ -o vsz |tail -1`;
+		print STDERR "Mem: " . `ps -p $$ -o vsz |tail -1`;
 	    }
 	    
 	    

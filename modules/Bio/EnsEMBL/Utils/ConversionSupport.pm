@@ -730,7 +730,7 @@ sub finish_log {
 
 sub date_and_mem {
     my $date = strftime "%Y-%m-%d %T", localtime;
-    my $mem = `ps $$ -o vsz |tail -1`;
+    my $mem = `ps -p $$ -o vsz |tail -1`;
     chomp $mem;
     return "[$date, mem $mem]";
 }
@@ -761,7 +761,7 @@ sub date {
 =cut
 
 sub mem {
-    my $mem = `ps $$ -o vsz |tail -1`;
+    my $mem = `ps -p $$ -o vsz |tail -1`;
     chomp $mem;
     return $mem;
 }
