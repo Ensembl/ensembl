@@ -72,12 +72,7 @@ my ($clone,$as);
 HOP: foreach my $c (@clones){
 	$count++;
 
-&eprof_dump(\*STDERR);	
-
-	print STDERR " clone $c\n";
-
-if ($count==2){exit;}
-
+#&eprof_dump(\*STDERR);	
 
 	eval{
 	    $clone = $db->get_Clone($c);
@@ -115,7 +110,6 @@ if ($count==2){exit;}
 
 	    &eprof_start('make_db_flatfiles - write_seq'); 
             
-	    print STDERR "as $as gbout $gbout\n";
 	    $gbout->write_seq($as);
 	    &eprof_end('make_db_flatfiles - write_seq'); 
 
