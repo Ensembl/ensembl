@@ -87,15 +87,15 @@ sub fetch_by_translationID {
     my @features;
 
 
-    my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,d.description from protein_feature p,interpro_description d,interpro i where p.translation = '$transl' and i.id = p.hid and i.interpro_ac = d.interpro_ac");
+    my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,d.description from protein_feature p,interpro_description d,interpro i,analysis a where p.translation = '$transl' and i.id = p.hid and i.interpro_ac = d.interpro_ac and p.analysis = a.id and a.gff_feature = 'domain'");
     $sth->execute();
 
 
     my %anahash;
 
     while( my $arrayref = $sth->fetchrow_arrayref) {
+    
 	my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
-	
 	if( !defined $anahash{$analysisid} ) {
 	    my $analysis = $self->_feature_obj->get_Analysis($analysisid);
 	    $anahash{$analysisid} = $analysis;
@@ -119,10 +119,14 @@ sub fetch_by_translationID {
 
 	$feature->idesc($desc);
 	
-	push(@features,$feature);
+	if ($feature) {
+	    push(@features,$feature);
+	}
+
     }
 
-    $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid from protein_feature p,analysis a where a.id = p.analysis and p.translation = '$transl' and a.gff_feature != 'domain'");
+    $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid from protein_feature p,analysis a where a.id = p.analysis and p.translation = '$transl' and p.analysis = a.id and a.gff_feature != 'domain'");
+
     $sth->execute();
 
     while( my $arrayref = $sth->fetchrow_arrayref) {
@@ -150,10 +154,11 @@ sub fetch_by_translationID {
 							    -feature2 => $feat2,);
 
 	$feature->idesc($desc);
-	
-	push(@features,$feature);
+	if ($feature) {
+	    push(@features,$feature);
+	}
     }
-
+    
     return @features;    
 }
 
@@ -397,8 +402,6 @@ sub _set_protein_feature{
    my ($self,$rowhash) = @_;
 
 my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
-
-#my $analysis = $self->_feature_obj->get_Analysis(7);
 
    
    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $rowhash->{'translation'},
