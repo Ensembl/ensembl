@@ -81,6 +81,32 @@ if($organism eq 'briggsae'){
 
 ### END MAIN
 
+sub parse_refseq {
+
+  open (IN, "<$refseq") or die "Can't open $refseq\n";
+  open (OUT, ">>$protfile") or die "Can't open $protfile\n";
+
+  while(<IN>){
+    # eg >gi|4501893|ref|NP_001094.1| actinin, alpha 2 [Homo sapiens]
+    if(/^>/){
+      if(/^>\w+\|\w+\|\w+\|(\S+)\.\d+\|/){
+        print OUT ">$1\n";
+      }
+      else {
+        print OUT $_;
+      }
+    }
+    else {
+      # sequence - sub U by X
+      s/U/X/g;
+      print OUT $_;
+    }
+  }
+  close IN;
+  close OUT;
+
+}
+
 sub parse_sptr {
 
   open (IN, "<$sptr") or die "Can't open $sptr\n";
