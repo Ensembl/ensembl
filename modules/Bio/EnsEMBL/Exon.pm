@@ -775,6 +775,26 @@ sub each_Supporting_Feature {
     return @{$self->{_supporting_evidence}};
 }
 
+
+=head2 each_overlapping_Feature
+
+ Title   : each_oiverlapping_Feature
+ Usage   : my \@f = $obj->each_overlapping_Feature
+ Function: All features from Feature table which overlap the exon 
+ Returns : \@Bio::EnsEMBL::Feature
+ Args    : none
+
+
+=cut
+
+
+sub each_overlapping_Feature {
+    my ($self) = @_;
+
+    return $self->adaptor->fetch_overlapping_by_Exon( $self );
+}
+
+
 =head2 find_supporting_evidence
 
  Title   : find_supporting_evidence

@@ -262,7 +262,8 @@ sub _new_Exon_from_hashRef {
 
  Title   : fetch_evidence_by_Exon
  Usage   : $exonAdaptor->fetch_evidence_by_Exon($exon)
- Function: Fetch evidence for this Exon.
+ Function: Fetch evidence for this Exon. Attaches the evidence to the exon.
+           .
  Returns : nothing
  Args    : 
 
@@ -327,6 +328,91 @@ sub fetch_evidence_by_Exon {
   return 1;
 }
 
+=head2 fetch_overlapping_by_Exon
+
+ Title   : fetch_overlapping_by_Exon
+ Usage   : $exonAdaptor->fetch_overlapping_by_Exon($exon)
+ Function: Fetch evidence for this Exon.
+ Returns : ref to feature array. Doesnt change exon.
+ Args    : 
+
+=cut
+
+sub fetch_overlapping_by_Exon {
+  my ( $self, $exon )  = @_;
+  my @result;
+
+  # if exon is sticky, get supporting from components
+  if( $exon->isa( 'Bio::EnsEMBL::StickyExon' )) {
+    # sticky storing. Sticky exons contain normal exons ...
+
+    my @componentExons = $exon->each_component_Exon();
+    for my $componentExon ( @componentExons ) {
+      my $component_features;
+
+      $component_features = $self->fetch_overlapping_by_Exon( $componentExon );
+      push( @result, @$component_features );
+    }
+    return \@result;
+  }
+                        
+  my $statement = "SELECT contig, seq_start, seq_end, score,
+                          strand, analysis, name, hstart, hend,
+                          hid, evalue, perc_id, phase, end_phase
+                   FROM feature 
+                   WHERE contig = ".$exon->contig->internal_id."
+                   AND seq_start <= ".$exon->end()."
+                   AND seq_end >= ".$exon->start();
+
+
+  my $sth = $self->prepare($statement);
+  $sth->execute || $self->throw("execute failed for supporting evidence get!");
+
+  my @features;
+  my $anaAdaptor = $self->db->get_AnalysisAdaptor;
+
+  while (my $rowhash = $sth->fetchrow_hashref) {
+      my $analysis = $anaAdaptor->fetch_by_dbID( $rowhash->{analysis} );
+
+#   Dont know if the following is necessary ....
+
+#       if( $analysis->logic_name ne "Swall" &&
+#           $analysis->logic_name ne "Vertrna" &&
+#           $analysis->logic_name ne "Unigene" &&
+#           $analysis->logic_name ne "TGE_e2g" &&
+#           $analysis->logic_name ne "similarity_genewise" &&
+#           $analysis->logic_name ne "combined_gw_e2g" ) {
+#         next;
+#       }
+
+      my $f = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+      $f->set_all_fields($rowhash->{'seq_start'},
+                         $rowhash->{'seq_end'},
+                         $rowhash->{'strand'},
+                         $rowhash->{'score'},
+                         $rowhash->{'name'},
+                         'similarity',
+                         $rowhash->{'contig'},
+                         $rowhash->{'hstart'},
+                         $rowhash->{'hend'},
+                         1, # hstrand
+                         $rowhash->{'score'},
+                         $rowhash->{'name'},
+                         'similarity',
+                         $rowhash->{'hid'});
+
+      #
+      # WARNING - assumming perl extensions, not C
+      #
+
+      $f->analysis($analysis);
+        
+      $f->validate;
+      push( @result, $f );
+    }
+  
+  return \@result;
+}
 
 
 =head2 store
