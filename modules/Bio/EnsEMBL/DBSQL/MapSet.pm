@@ -26,6 +26,7 @@ sub AUTOLOAD {
     no strict 'refs';
     my $var = $AUTOLOAD;
     $var =~ s/.*:://;
+    *{$AUTOLOAD} = sub { return $_[0]{$var}; };
     return $self->{$var}
 }
 

@@ -110,6 +110,11 @@ sub AUTOLOAD {
     no strict 'refs';
     my $var = $AUTOLOAD;
     $var =~ s/.*:://;
+    if($self->{$var}) {
+	*{$AUTOLOAD} = sub { return $_[0]{$var}; };
+    } elsif($self->{'_annotations'}{$var}) {
+	*{$AUTOLOAD} = sub { return $_[0]{'_annotations'}{$var}; };
+    }
     return exists $self->{$var} ? $self->{$var} : $self->{'_annotations'}{$var};
 }
 
