@@ -232,7 +232,7 @@ sub _get_hits {
     if (! exists $hits_hash{$hseqname})
     {
       push @hseqnames, $$features_arr_ref[$i]->hseqname;
-      if (($i % $clump_size) == 0) {
+      if ((@hseqnames % $clump_size) == 0) {
         open (EVIDENCEALIGNMENT_PFETCH_IN_FH, "$pfetch -q @hseqnames |")
           or $self->throw("error running pfetch");
         my $seq_no = 0;
