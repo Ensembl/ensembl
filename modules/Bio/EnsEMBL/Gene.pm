@@ -705,14 +705,16 @@ sub _dump{
 
 =head2 transform
 
-  Arg  1    : Bio::EnsEMBL::Slice $slice
-              make this Gene slice coords
-              Without a $slice, transform to rawContig Coords
-  Function  : make slice coords from raw contig coords or vice versa
-              changes gene in place and returns itself.
-  Returntype: Bio::EnsEMBL::Gene
-  Exceptions: none
-  Caller    : object::methodname or just methodname
+  Arg  1     : (optional) Bio::EnsEMBL::Slice $slice
+              
+  Description: when passed a Slice as argument,
+               it will transform this Gene to the Slice coordinate system.
+               Without an argument it  transforms the Gene (which should be in a slice) to a RawContig 
+               coordinate system.
+               The method changes the Gene in place and returns itself.
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : object::methodname or just methodname
 
 =cut
 
