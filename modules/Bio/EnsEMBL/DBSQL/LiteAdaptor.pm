@@ -222,8 +222,8 @@ sub fetch_snp_features {
             
             #Variation
             $snp = new Bio::EnsEMBL::ExternalData::Variation
-              (-start => $snp_start,
-               -end => $snp_start,
+              (-start => $snp_start-$vc_start,
+               -end => $snp_start-$vc_start,
                -strand => $chrom_strand,
                -original_strand => $strand,
                -score => 1,
