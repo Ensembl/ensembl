@@ -11,7 +11,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::ChromosomeAdaptor - DESCRIPTION of Object
+Bio::EnsEMBL::DBSQL::ChromosomeAdaptor - DB Connectivity for Chromosome Object
 
 =head1 SYNOPSIS
 
@@ -28,31 +28,16 @@ This modules is part of the Ensembl project http://www.ensembl.org
 
 Email birney@ebi.ac.uk
 
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
-
 =cut
-
-
-# Let the code begin...
-
 
 package Bio::EnsEMBL::DBSQL::ChromosomeAdaptor;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::EnsEMBL::Root
-
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Chromosome;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
-
-# new inherited from BaseAdaptor
-
-
 
 =head2 fetch_by_dbID
 
@@ -88,14 +73,13 @@ sub fetch_by_dbID {
   # from the database and add it to the cache.
   #
   unless($chr = $self->{'_chr_cache'}->{$id}) {
-    my $sth = $self->prepare( "SELECT name, known_genes, unknown_genes, 
-                                      snps, length
+    my $sth = $self->prepare( "SELECT name, length
                                FROM chromosome
                                WHERE chromosome_id = ?" );
     $sth->execute( $id );
     
-    my($name, $known_genes, $unknown_genes, $snps, $length);
-    $sth->bind_columns(\$name,\$known_genes,\$unknown_genes,\$snps,\$length); 
+    my($name, $length);
+    $sth->bind_columns(\$name,\$length); 
     $sth->fetch();
    
 
@@ -111,10 +95,7 @@ sub fetch_by_dbID {
     $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
                                          -dbID => $id,
 					 -chr_name => $name,
-					 -known_genes => $known_genes,
-					 -unknown_genes => $unknown_genes,
-					 -snps => $snps,
-					 '-length' => $length );
+					 -length => $length );
 
     $self->{'_chr_cache'}->{$id} = $chr;
     $self->{'_chr_name_cache'}->{$name} = $chr;
@@ -156,14 +137,13 @@ sub fetch_by_chr_name{
   # from the database and add it to the cache.
   #
   unless($chr = $self->{'_chr_name_cache'}->{$chr_name}) {
-    my $sth = $self->prepare( "SELECT chromosome_id, known_genes, unknown_genes, 
-                                      snps, length
+    my $sth = $self->prepare( "SELECT chromosome_id, length
                                FROM chromosome
                                WHERE name = ?" );
     $sth->execute( $chr_name );
     
-    my($dbID, $known_genes, $unknown_genes, $snps, $length);
-    $sth->bind_columns(\$dbID,\$known_genes,\$unknown_genes,\$snps,\$length); 
+    my($dbID, $length);
+    $sth->bind_columns(\$dbID,\$length); 
 
     if ($sth->rows > 0) {
     $sth->fetch();
@@ -171,10 +151,7 @@ sub fetch_by_chr_name{
     $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
 					 -dbID => $dbID,
 					 -chr_name => $chr_name,
-					 -known_genes => $known_genes,
-					 -unknown_genes => $unknown_genes,
-					 -snps => $snps,
-					 '-length' => $length );
+					 -length => $length );
 
     $self->{'_chr_cache'}->{$dbID} = $chr;
     $self->{'_chr_name_cache'}->{$chr_name} = $chr;
@@ -201,24 +178,19 @@ sub fetch_all {
   my @chrs = (); 
 
 
-    my $sth = $self->prepare( "SELECT chromosome_id, name, known_genes, 
-                                      unknown_genes, snps, length
+    my $sth = $self->prepare( "SELECT chromosome_id, name, length
                                FROM chromosome" );
     $sth->execute();
     
-    my($chromosome_id, $name, $known_genes, $unknown_genes, $snps, $length);
-    $sth->bind_columns(\$chromosome_id,\$name,\$known_genes,
-                       \$unknown_genes,\$snps,\$length); 
+    my($chromosome_id, $name, $length);
+    $sth->bind_columns(\$chromosome_id,\$name,\$length); 
 
     while($sth->fetch()) {
    
     my $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
 					 -chr_name => $name,
 					 -dbID => $chromosome_id,
-					 -known_genes => $known_genes,
-					 -unknown_genes => $unknown_genes,
-					 -snps => $snps,
-					 '-length' => $length );
+					 -length => $length );
 
     $self->{'_chr_cache'}->{$chromosome_id} = $chr;
     $self->{'_chr_name_cache'}->{$name} = $chr;
@@ -227,44 +199,6 @@ sub fetch_all {
 
   return \@chrs;
 }
-
-
-=head2 get_dbID_by_chr_name
-
-  Arg [1]    : string $chr_name
-               the name of the chromosome whose dbID is wanted.
-  Example    : $dbID = $chromosome_adaptor->fetch_by_dbID('X') 
-  Description: Retrieves a unique database identifier for a chromosome
-               using the chromosomes name.  It is not recommended that this
-               method be used externally from ChromosomeAdaptor.  It should 
-               probably be private and may be made private in the future. A
-               better way to obtain a dbID is:
-               $dbID = $chromosome_adaptor->fetch_by_chr_name('X')->dbID();
-  Returntype : int
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::ChromosomeAdaptor
-
-=cut
-
-sub get_dbID_by_chr_name {
-  my ($self, $chr_name) = @_;
-
-  unless (defined $self->{_chr_name_mapping}) {
-    $self->{_chr_name_mapping} = {};
-
-    #get the chromo names and ids from the database
-    my $sth = $self->prepare('SELECT name, chromosome_id FROM chromosome');
-    $sth->execute();
-    
-    #Construct the mapping of chromosome name to id
-    while(my $a = $sth->fetchrow_arrayref()) {
-      $self->{_chr_name_mapping}->{$a->[0]} = $a->[1];
-    }
-  }
-
-  return $self->{_chr_name_mapping}->{$chr_name};
-}    
-
 
 
 
@@ -279,27 +213,10 @@ sub store{
   if(!$length){
     $self->throw("can't store a chromosome without a length");
   }
-  my $known_genes = $chromosome->known_genes;
-  if(!$known_genes){
-    $known_genes = 0;
-  } 
-  my $unknown_genes = $chromosome->unknown_genes;
-  if(!$unknown_genes){
-    $unknown_genes = 0;
-  } 
-  my $snps = $chromosome->snps;
-  if(!$snps){
-    $snps = 0;
-  } 
-  my $sql = "insert into chromosome(name,
-                                    known_genes,
-                                    unknown_genes,
-                                    snps,
-                                    length)
-                             values(?, ?, ?, ?, ?)";
+  my $sql = "insert into chromosome(name, length) values(?, ?)";
 
   my $sth = $self->db->prepare($sql);
-  $sth->execute($chr_name, $known_genes, $unknown_genes, $snps, $length);
+  $sth->execute($chr_name, $length);
   $chromosome->dbID($sth->{'mysql_insertid'});
   $chromosome->adaptor($self);
 }
