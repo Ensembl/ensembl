@@ -19,7 +19,5 @@ ok($mf);
 # 2 test the only method getter and setters
 #
 
-# 2 start
-my $test = 0;
-$test = test_getter_setter($mf,'marker_name','dummy_marker');
-ok($test);
+ok(test_getter_setter($mf,'marker_name','dummy_marker'));
+
