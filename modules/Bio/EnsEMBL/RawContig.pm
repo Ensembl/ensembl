@@ -330,8 +330,13 @@ sub subseq {
 =cut
 
 sub get_repeatmasked_seq {
-    my ($self) = @_;
-    my @repeats = $self->get_all_RepeatFeatures();
+    my ($self, $logic_name) = @_;
+    
+    if(!$logic_name){
+      $logic_name = 'RepeatMask';
+    }
+
+    my @repeats = $self->get_all_RepeatFeatures($logic_name);
 
     my $dna = $self->seq();
     my $masked_dna = $self->_mask_features($dna, @repeats);
@@ -397,6 +402,7 @@ sub _mask_features {
 
 sub get_all_RepeatFeatures {
    my $self = shift;
+   my $logic_name = shift;
 
    if( ! defined $self->adaptor() ) {
      $self->warn( "Need db connection for get_all_RepeatFeatures()" );
@@ -404,7 +410,7 @@ sub get_all_RepeatFeatures {
    }
 
    my $rfa = $self->adaptor()->db->get_RepeatFeatureAdaptor();
-   my @repeats = $rfa->fetch_by_Contig( $self );
+   my @repeats = $rfa->fetch_by_Contig( $self , $logic_name);
 
    return @repeats;
 }

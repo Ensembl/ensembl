@@ -708,9 +708,12 @@ sub get_Chromosome {
 }
 
 sub get_repeatmasked_seq {
-    my ($self) = @_;
+    my ($self, $logic_name) = @_;
 
-    $self->warn("Slice: get_repeatmasked_seq\n");
+    if(!$logic_name){
+      $logic_name = 'RepeatMask';
+    }
+    #$self->warn("Slice: get_repeatmasked_seq\n");
 
     my @repeats = $self->get_all_RepeatFeatures();
     my $dna = $self->seq();
