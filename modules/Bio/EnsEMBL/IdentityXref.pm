@@ -37,7 +37,21 @@ use strict;
 
 @ISA = qw( Bio::EnsEMBL::DBEntry );
 
+=head2 new
+  
+  See Bio::EnsEMBL::DBEntry::new
 
+=cut
+
+sub new {
+    my ($class, @args) = @_;
+    my $self = $class->SUPER::new(@args);
+    my ($query_identity, $target_identity) = $self->_rearrange(
+        [qw(QUERY_IDENTITY TARGET_IDENTITY)], @args);
+    if(defined $query_identity) { $self->query_identity($query_identity); }
+    if(defined $target_identity) { $self->target_identity($target_identity); }
+    return $self;
+}
 
 =head2 query_identity
 
