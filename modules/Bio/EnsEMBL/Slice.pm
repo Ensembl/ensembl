@@ -1253,10 +1253,16 @@ sub get_all_Haplotypes {
 
 sub get_all_DASFeatures{
    my ($self,@args) = @_;
-   my %genomic_features =
+  
+######################################################
+
+ my %genomic_features =
       map { ( $_->_dsn => $_->fetch_all_by_Slice($self) ) }
          $self->adaptor()->db()->_each_DASFeatureFactory;
-   return \%genomic_features;
+   
+#############################################
+
+return \%genomic_features;
 
 }
 
