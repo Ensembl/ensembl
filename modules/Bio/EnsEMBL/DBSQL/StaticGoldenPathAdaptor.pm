@@ -436,9 +436,11 @@ sub fetch_VirtualContig_of_gene{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("SELECT  (e.seq_start+sgp.chr_start),
-   					    (e.seq_end+sgp.chr_end),
-					    sgp.chr_name 
+   my $sth = $self->dbobj->prepare("SELECT  
+   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),(sgp.chr_start+sgp.raw_end-e.seq_start)),
+   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),(sgp.chr_start+sgp.raw_end-e.seq_end)),
+     sgp.chr_name
+  
 				    FROM    exon e,
 					    transcript tr,
 					    exon_transcript et,
@@ -451,22 +453,19 @@ sub fetch_VirtualContig_of_gene{
 		   		    );
    $sth->execute();
 
-
-   my ($start,$end,$chr_name); 
+   my ($start,$end,$chr_name);
    my @start;
-   my @end;
    while ( my @row=$sth->fetchrow_array){
-       ($start,$end,$chr_name)=@row;
-
+      ($start,$end,$chr_name)=@row;
+       print STDERR "Got $start-$end \n";
        push @start,$start;
-       push @end,$end;     
+       push @start,$end;
    }   
    
-   my @start_sorted=sort @start;
-   my @end_sorted=sort @end;
+   my @start_sorted=sort { $a <=> $b } @start;
 
-   $start=shift @start_sorted;
-   $end=pop @end_sorted;
+   my $start=shift @start_sorted;
+   my $end=pop @start_sorted;
 
    if( !defined $start ) {
        $self->throw("Gene is not on the golden path. Cannot build VC");
