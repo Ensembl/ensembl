@@ -903,7 +903,7 @@ sub _build_contig_map {
   
   $current_contig = $focuscontig;
   
-  #print STDERR "Left size is $left\n";
+  print STDERR "Left size is $left\n";
   
   my %seen_hash;
 

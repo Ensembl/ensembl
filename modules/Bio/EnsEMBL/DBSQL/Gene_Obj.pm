@@ -367,7 +367,7 @@ sub get_array_supporting {
 	
 	
 	my $exon = Bio::EnsEMBL::Exon->new();
-	print(STDERR "Creating exon - contig id $contigid\n");
+	#print(STDERR "Creating exon - contig id $contigid\n");
 	$exon->clone_id ($cloneid);
 	$exon->contig_id($contigid);
 	$exon->id       ($exonid);
