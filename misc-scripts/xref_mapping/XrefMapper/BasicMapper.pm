@@ -450,8 +450,6 @@ sub fetch_and_dump_seq{
   close DNA;
   close PEP;
 
-  print time() . " after \n";
-  exit(0);
 }
 
 
