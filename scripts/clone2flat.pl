@@ -139,7 +139,7 @@ my $nogene=0;
 my $nosecure=0;
 
 # defaults for msql (rdb) access
-my $host      = 'ensrv4';
+my $host      = 'localhost';
 my $dbname    = 'ensembl_freeze17';
 my $dbuser    = 'ensro';
 my $dbpass    = undef;
