@@ -436,8 +436,7 @@ sub _transform_to_Slice {
 
 sub _transform_to_RawContig {
   my $self = shift;
-  #print STDERR "\tTransforming exons to rawcontig coords\n";
-  #print STDERR "exon ".$self->gffstring."\n";
+
   my $slice_adaptor = $self->contig->adaptor;
 
   unless($slice_adaptor) {
@@ -448,19 +447,19 @@ sub _transform_to_RawContig {
   my $asma = $slice_adaptor->db->get_AssemblyMapperAdaptor();
 
   my $mapper = $asma->fetch_by_type( $self->contig()->assembly_type() );
-  my $rcAdaptor = $slice_adaptor->db->get_RawContigAdaptor();
+  my $rcAdaptor       = $slice_adaptor->db->get_RawContigAdaptor();
   my $slice_chr_start = $self->contig->chr_start();
-  my $slice_chr_end = $self->contig->chr_end();
+  my $slice_chr_end   = $self->contig->chr_end();
 
-  #print STDERR "exon has ".$self->get_all_supporting_features." supporting features before transformation\n";
   my ($exon_chr_start,$exon_chr_end);
 
   if ($self->contig()->strand() == 1) {
     $exon_chr_start = $self->start() + $slice_chr_start - 1;
-    $exon_chr_end = $self->end() + $slice_chr_start - 1;
-  } else {
-    $exon_chr_end = $slice_chr_end - $self->start() + 1,
-    $exon_chr_start = $slice_chr_end - $self->end() + 1,
+    $exon_chr_end   = $self->end()   + $slice_chr_start - 1;
+  } 
+  else {
+    $exon_chr_end   = $slice_chr_end - $self->start() + 1;
+    $exon_chr_start = $slice_chr_end - $self->end()   + 1;
   }
 
   my @mapped = $mapper->map_coordinates_to_rawcontig
@@ -486,9 +485,7 @@ sub _transform_to_RawContig {
 	unless(exists $sf_hash{$mapped_feat->contig->name}) {
 	  $sf_hash{$mapped_feat->contig->name} = [];
 	}
-	#print STDERR "transform has returned ".$mapped_feat." on contig ".$mapped_feat->contig->name."\n";
 	push @{$sf_hash{$mapped_feat->contig->name}}, $mapped_feat;
-	#print STDERR "array for ".$mapped_feat->contig->name." contig has ".@{$sf_hash{$mapped_feat->contig->name}}." features\n";
       }
     }
   }
@@ -528,7 +525,7 @@ sub _transform_to_RawContig {
       if(exists $sf_hash{$rawContig->name}) {	
         $componentExon->add_supporting_features(@{$sf_hash{$rawContig->name}});
       }
-
+      
       $stickyExon->add_component_Exon( $componentExon );
       $sticky_length += ( $mapped[$i]->end() - $mapped[$i]->start() + 1 );
     }
@@ -546,7 +543,6 @@ sub _transform_to_RawContig {
     if (defined($self->modified)) {
       $stickyExon->modified($self->modified);
     }
-   #  print STDERR "transformed sticky exon ".$stickyExon->gffstring."\n";
     return $stickyExon;
     
   } else {
@@ -1076,7 +1072,7 @@ sub add_supporting_features {
 =head2 get_all_supporting_features
 
   Arg [1]    : none
-  Example    : @evidence = $exon->get_all_supporting_features();
+  Example    : @evidence = @{$exon->get_all_supporting_features()};
   Description: Retreives any supporting features added manually by 
                calls to add_supporting_features. If no features have been
                added manually and this exon is in a database (i.e. it h
@@ -1088,25 +1084,17 @@ sub add_supporting_features {
 
 sub get_all_supporting_features {
   my $self = shift;
-
-   # if exon is StickyExon, get the evidence from the components
-  if ( $self->isa('Bio::EnsEMBL::StickyExon') && ! $self->{_supporting_evidence} ){
-    foreach my $component ( @{$self->get_all_component_Exons} ){
-      push( @{$self->{_supporting_evidence} }, @{$component->get_all_supporting_features} );
-    }
-  }
-
-  if( !defined( $self->{_supporting_evidence} ) 
-      || scalar @{$self->{_supporting_evidence}} == 0) {
-
+  
+  if( !exists  $self->{_supporting_evidence} )  {
     if($self->adaptor) {
       my $sfa = $self->adaptor->db->get_SupportingFeatureAdaptor();
       $self->{_supporting_evidence} = $sfa->fetch_all_by_Exon($self);
-    } else {
+    } 
+    else {
       $self->{_supporting_evidence} = [];
     }
   }
-
+  
   return $self->{_supporting_evidence};
 }
 

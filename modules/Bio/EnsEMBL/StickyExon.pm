@@ -514,6 +514,71 @@ sub transform {
 
 
 
+=head2 get_all_supporting_features
+
+  Arg [1]    : none
+  Example    : @evidence = @{$sticky_exon->get_all_supporting_features};
+  Description: Retreives any supporting features on this sticky exons 
+               component exons. 
+  Returntype : listreference of Bio::EnsEMBL::BaseAlignFeature objects 
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_supporting_features {
+  my $self = shift;
+
+  my @out = ();
+
+  foreach my $cexon (@{$self->get_all_component_Exons}) {
+    push @out, @{$cexon->get_all_supporting_features};
+  }
+
+  return \@out;
+}
+
+
+
+=head2 add_supporting_features
+
+  Arg [1]    : Bio::EnsEMBL::SeqFeatureI $feature
+  Example    : $exon->add_supporting_features(@features);
+  Description: Adds a list of supporting features to this exon. 
+               Duplicate features are not added.  
+               If supporting features are added manually in this
+               way, prior to calling get_all_supporting_features then the
+               get_all_supporting_features call will not retrieve supporting
+               features from the database.
+  Returntype : none
+  Exceptions : throw if any of the features are not SeqFeatureIs
+               throw if any of the features are not in the same coordinate
+               system as the exon
+  Caller     : general
+
+=cut
+
+sub add_supporting_features {
+  my ($self,@features) = @_;
+
+  # check whether this feature object has been added already
+ FEATURE: foreach my $feature (@features) {
+    foreach my $cexon (@{$self->get_all_component_Exons}) {
+      
+      if ((defined $cexon->contig() && defined $feature->contig())&&
+	  ( $cexon->contig()->name() eq $feature->contig()->name())){
+	$cexon->add_supporting_features($feature);
+	next FEATURE;
+      }
+    }
+
+    $self->warn("SupportingFeature could not be added, not on same contig " .
+		"as component exons");
+  }
+}
+
+
+
 
 =head2 each_component_Exon
 

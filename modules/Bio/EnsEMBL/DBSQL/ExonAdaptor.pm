@@ -454,57 +454,44 @@ sub store {
   my $dna_adaptor = $self->db->get_DnaAlignFeatureAdaptor();
   my $pep_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
   my $type;
- FEATURE: foreach my $sf (@{$exon->get_all_supporting_features}) {
-    #print STDERR "have supporting feature ".$sf." ".$sf->gffstring."\n";
-    if(!$sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
-      $self->throw("$sf must be an align feature" .
-		   "otherwise it can't be stored");
-    }
-    eval {
-      #print STDERR "start ".$sf->start." end ".$sf->end." strand ".$sf->strand."\n";
-      $sf->validate();
-    };
-    
-    if ($@) {
-      print(STDERR "Supporting feature invalid. Skipping feature\n");
-      next FEATURE;
-    }
-    
-    if($sf->isa("Bio::EnsEMBL::DnaDnaAlignFeature")){
-      $sf->attach_seq($exon->contig);
-      $dna_adaptor->store($sf);
-      $type = 'dna_align_feature';
-    }elsif($sf->isa("Bio::EnsEMBL::DnaPepAlignFeature")){
-      $sf->attach_seq($exon->contig);
-      $pep_adaptor->store($sf);
-      $type = 'protein_align_feature';
-    }
-    
-    $sf_sth->execute($exon->dbID, $sf->dbID, $type);
+
+  my @exons = ();
+  if($exon->isa('Bio::EnsEMBL::StickyExon')) {
+    @exons = @{$exon->get_all_component_Exons};
+  } else {
+    @exons = ($exon);
   }
 
-  # Commented out until fully integrated into codebase
-  # store exon frameshifts BUT only if there are some
-  
-#  if ( exists $exon->{'_frameshifts'} ) {
-#
-#   my $frameshift_sql = q{
-#      INSERT INTO exon_frameshift 
-#	( exon_id, frameshift_start, length )
-#      VALUES ( ?, ?, ? )
-#    };
+  foreach my $e (@exons) {
+    foreach my $sf (@{$e->get_all_supporting_features}) {
+      unless($sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
+	$self->throw("$sf must be an align feature otherwise" .
+		     "it can't be stored");
+      }
+      
+      #sanity check
+      eval { $sf->validate(); };
+      if ($@) {
+        $self->warn("Supporting feature invalid. Skipping feature\n");
+	next;
+      }
 
-#    my $frameshift_sth = $self->prepare($frameshift_sql);
-
-#    for my $i ( 0 .. $#{$exon->{'_frameshifts'}} ) {
-
-#      $frameshift_sth->execute( $exon->dbID,
-#                               $exon->{'_frameshifts'}[$i][0],
-#			       $exon->{'_frameshifts'}[$i][1]
-#			     );
-#    }
-#  }
-
+      $sf->contig($e->contig);
+    
+      if($sf->isa("Bio::EnsEMBL::DnaDnaAlignFeature")){
+	$dna_adaptor->store($sf);
+	$type = 'dna_align_feature';
+      }elsif($sf->isa("Bio::EnsEMBL::DnaPepAlignFeature")){
+	$pep_adaptor->store($sf);
+	$type = 'protein_align_feature';
+      } else {
+	$self->warn("Supporting feature of unknown type. Skipping : [$sf]\n");
+	next;
+      }
+    
+      $sf_sth->execute($exon->dbID, $sf->dbID, $type);
+    }
+  }
 }
 
 
@@ -591,10 +578,11 @@ sub remove {
     if($type eq 'protein_align_feature'){
       my $f = $prot_adp->fetch_by_dbID($feature_id);
       $prot_adp->remove($f);
-      print "have removed ".$f->dbID."\n";
-    }elsif($type eq 'dna_align_feature'){
+      #print "have removed ".$f->dbID."\n";
+    }
+    elsif($type eq 'dna_align_feature'){
       my $f = $dna_adp->fetch_by_dbID($feature_id);
-      print "have removed ".$f->dbID."\n";
+      #print "have removed ".$f->dbID."\n";
       $dna_adp->remove($f);
     }
   }
