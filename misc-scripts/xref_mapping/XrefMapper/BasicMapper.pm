@@ -1452,7 +1452,7 @@ sub do_upload {
 
   # TODO warn if table not empty
 
-  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym") {
+  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "gene_description") {
 
     my $file = $self->dir() . "/" . $table . ".txt";
     my $sth;
@@ -1600,7 +1600,7 @@ sub build_gene_descriptions {
 	  $local_xref_to_object{$xref} = $key;
 	}
       }
-
+      
     }
 
     # Now sort through these and find the "best" description and write it
