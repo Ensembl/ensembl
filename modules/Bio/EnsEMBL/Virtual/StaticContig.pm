@@ -842,7 +842,7 @@ sub get_all_PredictionFeatures {
 #   my $id     = $self->internal_id();
    my $length = $self->length();
 
-	
+
    if( exists $self->{'_genscan_cache'} ) {
        return @{$self->{'_genscan_cache'}};
    }
