@@ -197,7 +197,7 @@ sub write_Clone {
         insert into clone (id, version, embl_id, embl_version, htg_phase, created, modified, stored) 
         values(?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), NOW())
         '); 
-               
+
     my $rv = $sth->execute(
         $clone_id,
         $clone->version || "NULL",
@@ -215,12 +215,9 @@ sub write_Clone {
         $self->write_Contig($contig,$clone_id);
     }
     
-    # Note: During an update ContigOverlaps should only be written
-    # after all the Contigs have been written because the overlaping Contig
-    # may itself be a new Contig yet to be written to the DB.  
-#    foreach my $overlap ($clone->get_all_ContigOverlaps) {     
-#        $self->write_ContigOverlap($overlap, $clone);
-#    }
+    foreach my $overlap ($clone->get_all_ContigOverlaps) {    
+        $self->write_ContigOverlap($overlap, $clone);
+    }
    
 }
 
@@ -282,12 +279,6 @@ sub write_Contig {
           
     $self->throw("Failed to insert contig $contigid") unless $rv;
        
-    #foreach my $sql (@sql) {
-    #
-    #my $sth =  $self->prepare($sql);
-    #my $rv  =  $sth->execute();
-    #$self->throw("Failed to insert contig $contigid") unless $rv;
-    #}
     
     $sth = $self->prepare("select last_insert_id()");
     my $res = $sth->execute;
@@ -471,6 +462,27 @@ sub write_ContigOverlap {
     my $contig_b_position = $overlap->positionb;
     my $overlap_type      = $overlap->overlap_type;
 
+    # Firstly check that both contigs involved in the overlap are present in the db.
+    # If they are new they may not have been inserted yet. In this case when they are inserted, 
+    # this ContigOverlap should be found again and will be correctly inserted, hopefully!
+    my $sth = $self->prepare("select id from contig where id = '". $contiga->id ."'");
+    my $res = $sth->execute;
+    if ($sth->rows == 0) {
+        # Contig a has not been entered into the DB yet! 
+        $self->warn("ContigOverlap of " . $clone->id . " can't be written as contiga: " . 
+            $contiga->id . " not found in DB");
+	return;
+    } 
+    
+    $sth = $self->prepare("select id from contig where id = '". $contigb->id ."'");
+    $res = $sth->execute;
+    if ($sth->rows == 0) {
+        # Contig b has not been entered into the DB yet! 
+        $self->warn("ContigOverlap of " . $clone->id . " can't be written as contigb: " . 
+            $contigb->id . " not found in DB");
+	return;
+    }
+    
     print(STDERR "contiga "         . $contiga->id . "\t" . $contiga->internal_id . "\n");
     print(STDERR "contigb "         . $contigb->id . "\t" . $contigb->internal_id . "\n");
     print(STDERR "contigaposition " . $contig_a_position . "\n");
@@ -482,17 +494,17 @@ sub write_ContigOverlap {
 	        "where  d.id = c.dna ".
   	        "and    c.id = '". $contiga->id ."'";
 
-    my $sth = $self->prepare($query);
-    my $res = $sth->execute;
+    $sth = $self->prepare($query);
+    $res = $sth->execute;
     my $rowhash;
     my $dna_a_id;
+    my $dna_b_id;
     
     if ($sth->rows == 0) {
-        # Contig a has not been entered into the DB yet so write it now
-        $self->write_Contig($contiga, $clone);
+        $self->throw("No dna entry found for " . $contiga->id);
     }
     elsif ($sth->rows > 1) {
-        $self->throw("More than one dna entry found for " . $contiga->id ) unless $sth->rows == 1;
+        $self->throw("More than one dna entry found for " . $contiga->id);
     }
     else {
         $rowhash = $sth->fetchrow_hashref;
@@ -502,15 +514,21 @@ sub write_ContigOverlap {
     $query = "select d.id from dna as d,contig as c " .
 	        "where  d.id = c.dna ".
   	        "and    c.id = '". $contigb->id ."'";
-
     $sth = $self->prepare($query);
-    $res = $sth->execute;
-    
-    $self->throw("More than one dna entry found for " . $contigb->id )unless $sth->rows == 1;
+    $res = $sth->execute; 
+     
+    if ($sth->rows == 0) {
+        $self->throw("No dna entry found for " . $contigb->id);
+    }
+    elsif ($sth->rows > 1) {
+        $self->throw("More than one dna entry found for " . $contigb->id);
+    }
+    else {
+        $rowhash = $sth->fetchrow_hashref;
+        $dna_b_id = $rowhash->{id};
+    }  
+       
 
-    $rowhash = $sth->fetchrow_hashref;
-
-    my $dna_b_id = $rowhash->{id};
     my $type     = $overlap->source;
     my $distance = $overlap->distance;
 

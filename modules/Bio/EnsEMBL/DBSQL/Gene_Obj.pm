@@ -771,21 +771,22 @@ sub write_Exon {
 	$self->throw("$exon is not a EnsEMBL exon - not dumping!");
     }
     
-    my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
-	
-	$exon->id()        . "'," .
-	$exon->version()   . ",'".
-	$exon->contig_id() . "', FROM_UNIXTIME(" .
-	$exon->created()   . "), FROM_UNIXTIME(" .
-	$exon->modified()  . ")," .
-	$exon->start       . ",".
-	$exon->end         . ",".
-	$exon->strand      . ",".
-	$exon->phase       . ",now(),".
-        $exon->end_phase . ")";
+    my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) 
+        values (?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), ?, ?, ?, ?, NOW(), ?)";
     
     my $sth = $self->_db_obj->prepare($exonst);
-    $sth->execute();
+    $sth->execute(
+        $exon->id(),
+        $exon->version(),
+        $exon->contig_id(),
+        $exon->created(),
+        $exon->modified(),
+        $exon->start,
+        $exon->end,
+        $exon->strand,
+        $exon->phase,
+        $exon->end_phase
+        );
     
     # Now the supporting evidence
     
