@@ -858,14 +858,12 @@ eval {
                        FROM   feature f,
                               contig_landmarkMarker c,
                               static_golden_path sgp 
-                       WHERE  f.contig = c.contig
-                       AND    f.hid=c.marker  
+                       WHERE    f.hid=c.marker  
                        AND    f.contig in $idlist 
                        AND    sgp.raw_id=f.contig 
                        AND    sgp.chr_end >= $glob_start 
                        AND    sgp.chr_start <=$glob_end 
-                       AND    sgp.chr_name='$chr_name' 
-                       GROUP BY f.hid";
+                       AND    sgp.chr_name='$chr_name'";
     
 
 	my $sth = $self->dbobj->prepare($statement);
