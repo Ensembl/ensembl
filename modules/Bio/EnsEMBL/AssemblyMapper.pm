@@ -13,31 +13,37 @@
 =head1 NAME
 
 Bio::EnsEMBL::AssemblyMapper - 
-Handles mapping from raw contigs to assembly coordinates
+Handles mapping between two coordinate systems using the information stored in
+the assembly table
 
 =head1 SYNOPSIS
+    $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+    $asma = $db->get_AssemblyMapperAdaptor();
+    $csa  = $db->get_CoordSystemAdaptor();
 
-    $map_adaptor = $dbadaptor->get_AssemblyMapperAdaptor();
-    $mapper = $map_adaptor->fetch_by_type('UCSC');
+    my $clone_cs = $cs_adaptor->fetch_by_name('chromosome', 'NCBI33');
+    my $ctg_cs   = $cs_adaptor->fetch_by_name('contig');
 
-    $mapper->register_region('chr1', 1, 100000);
+    $asm_mapper = $map_adaptor->fetch_by_CoordSystems($cs1, $cs2);
 
-    $mapper->register_region_around_contig(30001, 1000, 1000);
+    #map to contig coordinate system from chromosomal
+    @ctg_coord_list = $asm_mapper->map(23142,1_000_000,2_000_000, 1, $ctg_cs);
 
-    my @chr_coordlist = $mapper->map_coordinates_to_assembly(627012, 2, 5, -1);
+    #map to chromosome coordinate system from contig
+    @chr_coord_list = $asm_mapper->map(5431, 1000, 10_000, -1, $chr_cs);
 
-    my @raw_coordlist = $mapper->map_coordinates_to_rawcontig("1",10002,10020);
+    #list contig ids for a region of chromsome with seq_region_id 23142
+    @ctg_ids = $asm_mapper->list_ids(23142, 1_000_000, 1, $chr_cs);
 
-    my @cid_list = $mapper->list_contig_ids("1", 10002, 10020);
+    #list chromosome ids for a contig
+    @chr_ids = $asm_mapper->list_ids(5431, 10_000, -1, $ctg_cs);
 
 =head1 DESCRIPTION
 
-The AssemblyMapper is a database aware mapper which handles the raw
-contig to assembly mapping. It allows mappings both from raw contigs
-to assembly coordinates and from assembly coordinates back to raw
-contigs.
-
-It extracts the mapping dynamically from the database
+The AssemblyMapper is a database aware mapper which faciliates conversion
+of coordinates between any two coordinate systems with an relationship
+explicitly defined in the assembly table.  In the future it may be possible to
+perform multiple step (implicit) mapping between coordinate systems.
 
 It is implemented using the Bio::EnsEMBL::Mapper object, which is a generic
 mapper object between disjoint coordinate systems.
@@ -59,45 +65,110 @@ package Bio::EnsEMBL::AssemblyMapper;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::EnsEMBL::Root
-
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Mapper;
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
 
+my $CHUNKFACTOR = 20;
+my $CHUNKSIZE   = 2**$CHUNKFACTOR;
+
 =head2 new
 
   Arg [1]    : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
-  Arg [2]    : string $type
-               The type of assembly mapper
-  Example    : $mapper = new Bio::EnsEMBL::AssemblyMapper($adaptor,'assembly');
-  Description: Creates a new AssemblyMapper object.
-  Returntype : Bio::EnsEMBL::AssemblyMapper;
-  Exceptions : thrown if arg count is wrong
-  Caller     : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
+  Arg [2]    : Bio::EnsEMBL::CoordSystem $asm_cs
+  Arg [3]    : Bio::EnsEMBL::CoordSystem $cmp_cs
+  Example    : Should use AssemblyMapperAdaptor->fetch_by_CoordSystems
+  Description: Creates a new AssemblyMapper
+  Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
+  Exceptions : thrown if multiple coord_systems are provided
+  Caller     : 
 
 =cut
 
 sub new {
-  my($class,$adaptor,$type) = @_;
+  my ($caller,$adaptor,@coord_systems) = @_;
+
+  my $class = ref($caller) || $caller;
 
   my $self = {};
-  bless $self,$class;
+  bless $self, $class;
 
-  if( !defined $type ) {
-      $self->throw("Must have adaptor, type for the assembly mapper");
-  }
-  $self->{'_contig_register'} = {};
   $self->adaptor($adaptor);
-  $self->_type($type);
 
-  my $mapper = Bio::EnsEMBL::Mapper->new('rawcontig','assembly');
-  $self->_mapper($mapper);
+  if(@coord_systems != 2) {
+    throw('Can currently only map between 2 coordinate systems. ' .
+          scalar(@coord_systems) . ' were provided');
+  }
+
+  $self->{'asm_cs'} = $coord_system[0];
+  $self->{'cmp_cs'} = $coord_system[1];
+
+  my $mapper = Bio::EnsEMBL::Mapper->new($coord_system[0]->dbID,
+                                         $coord_system[1]->dbID);
+
+  $self->{'mapper'} = $mapper;
+
   return $self;
 }
 
+
+
+sub map {
+  my ($self, $frm_id, $frm_start, $frm_end, $frm_strand, $to_cs) = @_;
+
+  #
+  # Function calls are slow and this method is used in several
+  # tight loops when mapping large numbers of features.
+  # First just check pointer equality to see if it same coord system object
+  # is used. This will work most of the time because the CoordSystemAdaptor
+  # only creates a single CoordSystem object for each coord system.
+  # If it doesn't work go with the slow approach of a function call
+  #
+  if($to_cs == $self->{'asm_cs'}) {
+    if(!$self->{'cmp_register'}->{$id}) {
+      $self->{'adaptor'}->register_component($self,$frm_id);
+    }
+    $self->{'mapper'}->map($frm_id, $frm_start,$frm_end,$frm_strand,
+                           $to_cs->dbID());
+  }
+
+
+  } elsif($to_cs == $self->{'cmp_cs'} || $to_cs->equals($self->{'cmp_cs'})) {
+    #
+    # This can be probably be sped up some by only calling registered
+    # assembled if needed
+    #
+    $self->{'adaptor'}->register_assembled($self,$frm_id,$frm_start,$frm_end);
+    $self->{'mapper'}->map($frm_id,$frm_start,$frm_end,$frm_strand,
+                           $to_cs->dbID());
+  }
+
+  #ptr test failed, do slow comparison
+  elsif($to_cs->equals($self->{'asm_cs'})) {
+    if(!$self->{'_cmp_register'}->{$id}) {
+      $self->{'adaptor'}->register_component($self,$from_id);
+    }
+    $self->{'mapper'}->map($frm_id, $frm_start, $frm_end, $frm_strand,
+                           $to_cs->dbID());
+
+  } else {
+    throw("Coordinate system " . $to_cs->name . " " . $to_cs->version .
+          " is neither the assembled nor the component coordinate system " .
+          " of this AssemblyMapper");
+  }
+}
+
+
+
+sub list_ids {
+  my($self, $frm_start, $frm_end, $frm_strand, $to_cs) = @_;
+
+  if($to_cs->equals($self->assembled_CoordSystem())) {
+    
+  } elsif
+}
 
 
 =head2 map_coordinates_to_assembly
@@ -314,99 +385,72 @@ Internal functions
 
 
 
-=head2 _have_registered_contig
+sub have_registered_component {
+  my $self = shift;
+  my $id = shift;
 
-  Arg  1     : int $rawContig_dbID
-  Example    : none
-  Description: checks if given raw contig was registered before
-  Returntype : int 0,1
-  Exceptions : none
-  Caller     : internal
+  if($self->{'cmp_register'}->{$id}) {
+    return 1;
+  }
 
-=cut
-
-
-
-sub _have_registered_contig {
-   my ($self,$id) = @_;
-
-   if( $self->{'_contig_register'}->{$id} ) {
-       return 1;
-   } else {
-       return 0;
-   }
-
+  return 0;
 }
 
 
-=head2 _register_contig
+sub have_registered_assembled {
+  my $self = shift;
+  my $id   = shift;
 
-  Arg  1     : int $rawContig_dbID
-  Example    : none
-  Description: marks given raw contig as registered
-  Returntype : none
-  Exceptions : none
-  Caller     : internal
+  if($self->{'_assembled_register'}->{$id}) {
+    return 1;
+  }
 
-=cut
-
-
-
-sub _register_contig {
-   my ($self,$id) = @_;
-  
-   $self->{'_contig_register'}->{$id} = 1;
-
+  return 0;
 }
 
 
 
-=head2 _type
+sub register_component {
+  my $self = shift;
+  my $id = shift;
 
-  Arg [1]    : string $type
-  Example    : none
-  Description: get/set of attribute _type
-  Returntype : string
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-
-sub _type {
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'_type'} = $value;
-    }
-    return $self->{'_type'};
-
+  $self->{'cmp_register'}->{$id} = 1;
 }
 
 
-=head2 _mapper
+sub register_assembled {
+  my $self = shift;
+  my $id = shift;
 
-  Arg [1]    : Bio::EnsEMBL::Mapper $mapper
-               The mapper object which will be used to map between
-               assembly and raw contigs
-  Example    : none
-  Description: get/set of the attribute _mapper 
-  Returntype : Bio::EnsEMBL::Mapper
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-
-sub _mapper {
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'_mapper'} = $value;
-    }
-    return $self->{'_mapper'};
-
+  $self->{'cmp_register'}->{$id} = 1;
 }
 
 
+
+sub mapper {
+  my $self = shift;
+  return $self->{'mapper'};
+}
+
+sub assembled_CoordSystem {
+  my $self = shift;
+  return $self->{'asm_cs'};
+}
+
+
+sub component_CoordSystem {
+  my $self = shift;
+  return $self->{'cmp_cs'};
+}
+
+
+sub chunk_size {
+  return $CHUNKSIZE;
+}
+
+sub chunk_factor {
+  return $CHUNKFACTOR;
+}
 
 =head2 adaptor
 
@@ -421,36 +465,9 @@ sub _mapper {
 
 
 sub adaptor {
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'adaptor'} = $value;
-    }
-    return $self->{'adaptor'};
-
-}
-
-
-# this function should be customized for the assemblies that are in 
-# EnsEMBL. (Could be a hash of assembly_type ->size )
-
-
-=head2 _chunksize
-
-  Args       : none
-  Example    : none
-  Description: returns the size in which this mapper registers chromosomal
-               regions. It should be optimized on the size of pieces 
-               in assembly table, so that not to many and not too little
-               rows are retrieved. 
-  Returntype : int
-  Exceptions : none
-  Caller     : internal
-
-=cut
-
-
-sub _chunksize {
-  return 1000000;
+  my $self = shift;
+  $self->{'adaptor'} = shift if(@_);
+  return $self->{'adaptor'};
 }
 
 
