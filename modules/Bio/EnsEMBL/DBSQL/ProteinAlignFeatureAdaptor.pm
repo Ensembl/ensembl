@@ -62,7 +62,7 @@ use Bio::EnsEMBL::DnaPepAlignFeature;
   Returntype : none
   Exceptions : throw if any of the provided features cannot be stored
                which may occur if:
-                 * The feature does not have an associate Slice
+                 * The feature does not have an associated Slice
                  * The feature does not have an associated analysis
                  * The Slice the feature is associated with is on a seq_region
                    unknown to this database
@@ -93,44 +93,61 @@ sub store{
      VALUES (?,?,?,?,?,?,?,?,?,?, ?, ?)");
 
  FEATURE: foreach my $feat ( @feats ) {
-    if( !ref $feat || !$feat->isa("Bio::EnsEMBL::DnaPepAlignFeature") ) {
-      throw("feature must be a Bio::EnsEMBL::DnaPepAlignFeature,"
-            . " not a [".ref($feat)."].");
-    }
+   if( !ref $feat || !$feat->isa("Bio::EnsEMBL::DnaPepAlignFeature") ) {
+     throw("feature must be a Bio::EnsEMBL::DnaPepAlignFeature,"
+           . " not a [".ref($feat)."].");
+   }
 
-    if($feat->is_stored($db)) {
-      warning("PepDnaAlignFeautre [".$feat->dbID."] is already stored" .
-              " in this database.");
-      next FEATURE;
-    }
+   if($feat->is_stored($db)) {
+     warning("PepDnaAlignFeature [".$feat->dbID."] is already stored" .
+             " in this database.");
+     next FEATURE;
+   }
 
-    if(!defined($feat->analysis)) {
-      throw("An analysis must be attached to the features to be stored.");
-    }
+   #sanity check the hstart and hend
+   my $hstart  = $feat->hstart();
+   my $hend    = $feat->hend();
+   $self->_check_start_end_strand($hstart,$hend,1);
 
-    #store the analysis if it has not been stored yet
-    if(!$feat->analysis->is_stored($db)) {
-      $analysis_adaptor->store($feat->analysis());
-    }
+   my $cigar_string = $feat->cigar_string();
+   if(!$cigar_string) {
+     $cigar_string = $feat->length() . 'M';
+     warning("DnaPepAlignFeature does not define a cigar_string.\n" .
+             "Assuming ungapped block with cigar_string=$cigar_string\n");
+   }
 
-    my $slice = $feat->slice();
-    if(!defined($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
-      throw("A slice must be attached to the features to be stored.");
-    }
+   my $hseqname = $feat->hseqname();
+   if(!$hseqname) {
+     throw("DnaPepAlignFeature must define an hseqname.");
+   }
 
-    my $original = $feat;
-    my $seq_region_id;
-    ($feat, $seq_region_id) = $self->_pre_store($feat);
+   if(!defined($feat->analysis)) {
+     throw("An analysis must be attached to the features to be stored.");
+   }
 
-    $sth->execute( $seq_region_id, $feat->start, $feat->end, $feat->strand,
-		   $feat->hstart, $feat->hend, $feat->hseqname,
-		   $feat->cigar_string, $feat->analysis->dbID, $feat->score,
-		   $feat->p_value, $feat->percent_id);
-    $original->dbID($sth->{'mysql_insertid'});
-    $original->adaptor($self);
-  }
+   #store the analysis if it has not been stored yet
+   if(!$feat->analysis->is_stored($db)) {
+     $analysis_adaptor->store($feat->analysis());
+   }
 
-  $sth->finish();
+   my $slice = $feat->slice();
+   if(!defined($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
+     throw("A slice must be attached to the features to be stored.");
+   }
+
+   my $original = $feat;
+   my $seq_region_id;
+   ($feat, $seq_region_id) = $self->_pre_store($feat);
+
+   $sth->execute( $seq_region_id, $feat->start, $feat->end, $feat->strand,
+                  $feat->hstart, $feat->hend, $feat->hseqname,
+                  $feat->cigar_string, $feat->analysis->dbID, $feat->score,
+                  $feat->p_value, $feat->percent_id);
+   $original->dbID($sth->{'mysql_insertid'});
+   $original->adaptor($self);
+ }
+
+ $sth->finish();
 }
 
 
@@ -250,20 +267,20 @@ sub _objs_from_sth {
     #
     if($dest_slice) {
       if($dest_slice_start != 1 || $dest_slice_strand != 1) {
-	if($dest_slice_strand == 1) {
-	  $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-	  $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
-	} else {
-	  my $tmp_seq_region_start = $seq_region_start;
-	  $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-	  $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
-	  $seq_region_strand *= -1;
-	}
+        if($dest_slice_strand == 1) {
+          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+          $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+        } else {
+          my $tmp_seq_region_start = $seq_region_start;
+          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+          $seq_region_strand *= -1;
+        }
 	
-	#throw away features off the end of the requested slice
-	if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-	  next FEATURE;
-	}
+        #throw away features off the end of the requested slice
+        if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+          next FEATURE;
+        }
       }
       $slice = $dest_slice;
     }
