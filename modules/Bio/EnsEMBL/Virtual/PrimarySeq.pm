@@ -338,6 +338,11 @@ sub moltype{
    return "dna";
 }
 
+
+sub desc {
+   return "";
+}
+
 =head2 id
 
  Title   : id

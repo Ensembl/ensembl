@@ -1041,6 +1041,8 @@ sub _get_all_SeqFeatures_type {
        }
    }
 
+   #print STDERR "before clipping ",scalar(@$sf)," for $type\n";
+
    my @vcsf = ();
 
 
@@ -1049,7 +1051,6 @@ sub _get_all_SeqFeatures_type {
 
    my $count = 0;
    foreach $sf ( @$sf ) {
-
        #print "\n ##### Starting to convert featre " . $sf->seqname . " " . $sf->id . "\n";
        $sf = $self->_convert_seqfeature_to_vc_coords($sf);
 
@@ -1065,6 +1066,16 @@ sub _get_all_SeqFeatures_type {
 	    $count++;
         }
         else{
+
+     if( $type eq 'prediction' ) {
+       print "##### Finished to convert featre " . $sf->seqname . " " . $sf->id . " ".$sf->strand. " ".$sf->start."\n";
+       foreach my $sub ( $sf->sub_SeqFeature ) {
+	 print "### sub is ".$sub->start." ".$sub->end." ".$sub->strand."\n";
+       }
+     }
+
+     
+	  
 	    push (@vcsf, $sf);
         }
    }
@@ -1855,9 +1866,10 @@ sub _sanity_check{
 	       $error = 1;
 	       $message .= "Exon has no contig id";
 	   } else {
+	 
 	       if( $exon->contig_id ne $self->id ) {
-		   $error = 1;
-		   $message .= "Exon [".$exon->id."] does not seem to be on this VirtualContig";
+	#	   $error = 1;
+	#	   $message .= "Exon [".$exon->id."] does not seem to be on this VirtualContig";
 	       }
 	   }
 	   if( !defined $exon->start || !defined $exon->end) {
