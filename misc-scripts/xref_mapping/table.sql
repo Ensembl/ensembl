@@ -67,6 +67,7 @@ CREATE TABLE source (
   name                        varchar(255) not null,
   release                     varchar(255),
   download                    enum('Y', 'N') default 'Y',
+  ordered                     int unsigned not null, 
    
   PRIMARY KEY (source_id),
   KEY name_idx(name) 
@@ -79,6 +80,7 @@ CREATE TABLE source_url (
 
   source_url_id               int unsigned not null auto_increment,
   source_id                   int unsigned not null,
+  species_id                  int unsigned not null,
   url                         varchar(255),
   checksum                    varchar(255),
   file_modified_date          datetime,
