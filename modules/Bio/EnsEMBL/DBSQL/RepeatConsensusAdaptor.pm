@@ -129,7 +129,7 @@ sub fetch_by_name_class {
                  fetch_by_name_class('trf', 'ATGGTGTCA');
   Description: Obtains a repeat consensus from the database
                via its class and sequence
-  Returntype : list of Bio::EnsEMBL::RepeatConsensus
+  Returntype : listREF of Bio::EnsEMBL::RepeatConsensus
   Exceptions : none
   Caller     : general
 
@@ -151,7 +151,7 @@ sub fetch_by_class_seq {
   Example    : none
   Description: PRIVATE used to create RepeatConsensus features from an 
                SQL constraint
-  Returntype : list reference of Bio::EnsEMBL::RepeatConsensus objects
+  Returntype : listref of Bio::EnsEMBL::RepeatConsensus objects
   Exceptions : none
   Caller     : internal
 

@@ -274,9 +274,9 @@ sub store {
       $cons->repeat_consensus($rcon);
 
       # Look for matches already stored
-      my @match = ($rca->fetch_by_name_class($cons->name, 'Simple_repeat')); 
-      if (@match) {
-	  $cons->dbID($match[0]->dbID());
+      my $match = $rca->fetch_by_name_class($cons->name, 'Simple_repeat'); 
+      if ($match) {
+	  $cons->dbID($match->dbID());
       }
       else {
 	  $rca->store($cons);
