@@ -1209,6 +1209,31 @@ sub store {
 }
 
 
+=head2 prepare
+
+  Arg [1]    : String $sql
+  Example    :  ( optional )
+  Description: overrides the default adaptor prepare method.
+               All slice sql will usually use the dna_db.
+  Returntype : DBD::sth 
+  Exceptions : none
+  Caller     : internal, convenience method
+
+=cut
+
+
+
+sub prepare {
+  my $self = shift;
+  my $sql = shift;
+
+  return $self->db()->dnadb()->prepare( $sql );
+}
+
+
+  
+
+
 
 #####################################
 # sub DEPRECATED METHODs
