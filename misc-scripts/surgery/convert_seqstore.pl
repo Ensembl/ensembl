@@ -84,7 +84,12 @@ execute($dbi, "INSERT INTO seq_region SELECT contig_id, name, $cs_id, length fro
 
 # Similarly for the clone table - can use autonumber for the IDs as they're not referenced anywhere
 $cs_id = $coord_system_ids{"clone"};
-execute($dbi, "INSERT INTO seq_region (name, coord_system_id, length) SELECT CONCAT(cl.name, '.', cl.version), $cs_id, MAX(ctg.embl_offset)+ctg.length-1 FROM $source.clone cl, $source.contig ctg WHERE cl.clone_id=ctg.clone_id GROUP BY ctg.clone_id");
+execute($dbi, "INSERT INTO seq_region (name, coord_system_id, length) " .
+	      "SELECT CONCAT(cl.name, '.', cl.version), " .
+	      "$cs_id, " . 
+	      "MAX(ctg.embl_offset)+ctg.length-1 " .
+	      "FROM $source.clone cl, $source.contig ctg " .
+	      "WHERE cl.clone_id=ctg.clone_id GROUP BY ctg.clone_id");
 
 # And chromosomes
 # Note old/new ID mapping is stored in %chromosme_id_old_new 
@@ -100,9 +105,6 @@ while(my $row = $sth->fetchrow_hashref()) {
   my $new_id = $dbi->{'mysql_insertid'};
   $chromosome_id_old_new{$old_id} = $new_id;
 }
-#foreach my $id (keys (%chromosome_id_old_new)) {
-#  print "OLD: $id   NEW: " . $chromosome_id_old_new{$id} . "\n";
-#}
 
 # ----------------------------------------------------------------------
 # Gene
@@ -297,7 +299,8 @@ while(my $row = $sth->fetchrow_hashref()) {
 }
 
 # ----------------------------------------------------------------------
-# These tables are copied as-is]
+# These tables are copied as-is
+
 copy_table($dbi, "supporting_feature");
 copy_table($dbi, "map");
 copy_table($dbi, "analysis");
@@ -332,8 +335,6 @@ copy_table($dbi, "stable_id_event");
 copy_table($dbi, "transcript_stable_id");
 copy_table($dbi, "translation_stable_id");
 copy_table($dbi, "xref");
-
-# TODO finish
 
 # ----------------------------------------------------------------------
 
