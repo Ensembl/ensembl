@@ -604,47 +604,46 @@ sub _dump_feature_table {
       if($self->is_enabled($gene_type)) {
 	my $db = $self->get_database($gene_dbs->{$gene_type});
 	if($db) {
+	  warn "adding gene slice for db $gene_dbs->{$gene_type}";
 	  push @gene_slices, $db->get_SliceAdaptor->fetch_by_chr_start_end
 	    ($slice->chr_name, $slice->chr_start, $slice->chr_end);
-	} 
-      } else {
-	$self->warn("A [". $gene_dbs->{$gene_type} ."] database must be " .
-		    "attached to this SeqDumper\n(via a call to " .
-		    "attach_database) to retrieve genes of type [$gene_type]");
+	} else {
+	  $self->warn("A [". $gene_dbs->{$gene_type} ."] database must be " .
+		     "attached to this SeqDumper\n(via a call to " .
+		     "attach_database) to retrieve genes of type [$gene_type]");
+	}
       }
     }
   }
   
   foreach my $gene_slice (@gene_slices) {
-    if($self->is_enabled('gene')) {
-      foreach my $gene (@{$gene_slice->get_all_Genes}) {
-	foreach my $transcript (@{$gene->get_all_Transcripts}) {
-	  my $translation = $transcript->translation;
-	  $value = $self->features2location($transcript->get_all_Exons);
-	  $self->write(@ff,'CDS', $value);
-	  $self->write(@ff,''   , '/gene="'.$gene->stable_id().'"');
-	  $translation && 
-	    $self->write(@ff,'', '/protein_id="'.$translation->stable_id().'"');
-	  $self->write(@ff,''  , 
-		       '/note="transcript_id='.$transcript->stable_id().'"');
+    foreach my $gene (@{$gene_slice->get_all_Genes}) {
+      foreach my $transcript (@{$gene->get_all_Transcripts}) {
+	my $translation = $transcript->translation;
+	$value = $self->features2location($transcript->get_all_Exons);
+	$self->write(@ff,'CDS', $value);
+	$self->write(@ff,''   , '/gene="'.$gene->stable_id().'"');
+	$translation && 
+	  $self->write(@ff,'', '/protein_id="'.$translation->stable_id().'"');
+	$self->write(@ff,''
+		     ,'/note="transcript_id='.$transcript->stable_id().'"');
 
-	  foreach my $dbl (@{$transcript->get_all_DBLinks}) {
-	    $value = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
-	    $self->write(@ff, '', $value);
-	  }
-	  if($translation) { 
-	    $value = '/translation="'.$transcript->translate()->seq().'"';
-	    $self->write(@ff, '', $value);
-	  }
+	foreach my $dbl (@{$transcript->get_all_DBLinks}) {
+	  $value = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
+	  $self->write(@ff, '', $value);
+	}
+	if($translation) { 
+	  $value = '/translation="'.$transcript->translate()->seq().'"';
+	  $self->write(@ff, '', $value);
 	}
       }
+    }
       
-      # exons
-      foreach my $gene (@{$gene_slice->get_all_Genes}) {
-	foreach my $exon (@{$gene->get_all_Exons}) {
-	  $self->write(@ff,'exon', $self->features2location([$exon]));
-	  $self->write(@ff,''    , '/note="exon_id='.$exon->stable_id().'"');
-	}
+    # exons
+    foreach my $gene (@{$gene_slice->get_all_Genes}) {
+      foreach my $exon (@{$gene->get_all_Exons}) {
+	$self->write(@ff,'exon', $self->features2location([$exon]));
+	$self->write(@ff,''    , '/note="exon_id='.$exon->stable_id().'"');
       }
     }
   }
