@@ -273,7 +273,7 @@ sub get_available_adaptors{
       RegulatoryMotif          RepeatConsensus
       RepeatFeature            Sequence             SimpleFeature
       Slice                    SupportingFeature    Transcript
-      Translation
+      TranscriptSupportingFeature Translation
     ) ),
    # Those whose adaptors are in Map::DBSQL
     map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(
