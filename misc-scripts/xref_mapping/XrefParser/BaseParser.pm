@@ -8,9 +8,9 @@ use File::Path;
 use POSIX qw(strftime);
 use Getopt::Long;
 
-use UniProtParser;
-use RefSeqParser;
-use RefSeqGPFFParser;
+use XrefParser::UniProtParser;
+use XrefParser::RefSeqParser;
+use XrefParser::RefSeqGPFFParser;
 
 my $base_dir = ".";
 

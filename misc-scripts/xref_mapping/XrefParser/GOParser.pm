@@ -4,7 +4,7 @@ use strict;
 use POSIX qw(strftime);
 use File::Basename;
 
-use BaseParser;
+use XrefParser::BaseParser;
 
 use vars qw(@ISA);
 @ISA = qw(BaseParser);
