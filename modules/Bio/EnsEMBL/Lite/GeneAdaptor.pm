@@ -147,8 +147,8 @@ sub fetch_by_Slice {
     my $transcript = Bio::EnsEMBL::Transcript->new();
     $transcript->adaptor( $core_DBAdaptor->get_TranscriptAdaptor() );
     $transcript->dbID( $hr->{'transcript_id'});
-    $transcript->coding_start( $hr->{'coding_start'} );
-    $transcript->coding_end( $hr->{'coding_end'} );
+    $transcript->coding_start( $hr->{'coding_start'} -$slice->chr_start() + 1);
+    $transcript->coding_end( $hr->{'coding_end'} -$slice->chr_start() - 1);
 
 
     $transcript->stable_id( $hr->{ 'transcript_name' });
