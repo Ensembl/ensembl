@@ -59,6 +59,32 @@ use Bio::EnsEMBL::Tile;
 
 
 
+=head2 new
+
+  Arg [...]  : List of optional named arguments 
+               string CHR_NAME, 
+               int    CHR_START, 
+               int    CHR_END, 
+               int    STRAND,
+               string ASSEMBLY_TYPE,
+               Bio::EnsEMBL::DBSQL::SliceAdaptor ADAPTOR
+               int    DBID
+               boolean EMPTY   
+  Example    : $slice = new Bio::EnsEMBL::Slice(-start => 1, 
+						-end => 10000, 
+						-chr_name => 'X',
+					        -adaptor => $slice_adaptor);
+  Description: Creates a new slice object.  The empty flag is intended to 
+               create an empty slice which is not on a particular chromosome.
+               In this way objects can be transformed to slice coordinates 
+               from raw contig coordinates when their location in the assembly
+               is not known.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : none
+  Caller     : general, Bio::EnsEMBL::SliceAdaptor
+
+=cut
+
 sub new {
   my($class,@args) = @_;
 
@@ -169,7 +195,7 @@ sub dbID {
   Arg [1]    : none
   Example    : $name = $slice->name();
   Description: Returns the name of this slice. The name is formatted as a 
-               the following string: "$chr_name:$chr_start-$chr_end". 
+               the following string: "$chr_name.$chr_start-$chr_end". 
                (e.g. 'X.10000-20000')
                This essentially allows slices to be easily compared and 
                can also act as a hash value. This is similar to the name 
@@ -177,7 +203,7 @@ sub dbID {
                of sequence attached it provides a more common interface.
   Returntype : string
   Exceptions : none
-  Caller     : 
+  Caller     : general
 
 =cut
 
@@ -193,7 +219,6 @@ sub name {
 
   return $string;
 }
-
 
 
 
@@ -223,7 +248,7 @@ sub id {
 
   Arg [1]    : none
   Example    : $length = $slice->length();
-  Description: Returns the length of this slice
+  Description: Returns the length of this slice in basepairs
   Returntype : int
   Exceptions : none
   Caller     : general
@@ -241,7 +266,7 @@ sub length {
 =head2 invert
 
   Arg [1]    : none
-  Example    : $slice->invert;
+  Example    : $inverted_slice = $slice->invert;
   Description: Creates a copy of this slice on the opposite strand and 
                returns it.
   Returntype : Bio::EnsEMBL::Slice
@@ -686,10 +711,10 @@ sub get_Chromosome {
 
 =head2 get_repeatmasked_seq
 
-  Arg [1]    : string $logic_name (optional)
+  Arg [1]    : listref of strings $logic_names (optional)
   Arg [2]    : int $soft_masking_enable (optional)
   Example    : $slice->get_repeatmasked_seq 
-               or $slice->get_repeatmasked_seq('RepeatMask',1)
+               or $slice->get_repeatmasked_seq(['RepeatMask'],1)
   Description: Returns Bio::PrimarySeq containing the masked (repeat replaced 
                by N) 
                or soft-masked (when Arg[2]=1, repeat in lower case while non
@@ -703,19 +728,22 @@ sub get_Chromosome {
 =cut
 
 sub get_repeatmasked_seq {
-    my ($self,$logic_name,$soft_mask) = @_;
+    my ($self,$logic_names,$soft_mask) = @_;
 
-    if(!$logic_name){
-      $logic_name = 'RepeatMask';
+    unless($logic_names && @$logic_names) {
+      $logic_names = [ '' ];
     }
 
-    unless (defined $soft_mask) {
+    unless(defined $soft_mask) {
       $soft_mask = 0;
     }
 
-    #$self->warn("Slice: get_repeatmasked_seq\n");      
+    my $repeats = [];
 
-    my $repeats = $self->get_all_RepeatFeatures($logic_name);
+    foreach my $l (@$logic_names) {
+      push @{$repeats}, @{$self->get_all_RepeatFeatures($l)};
+    }
+
     my $dna = $self->seq();
     my $masked_dna = $self->_mask_features($dna,$repeats,$soft_mask);
     my $masked_seq = Bio::PrimarySeq->new('-seq'        => $masked_dna,
@@ -758,9 +786,9 @@ sub _mask_features {
     
     # check if we get repeat completely outside of expected slice range
     if ($end < 1 || $start > $dnalen) {
-      warn "Repeat completely outside slice coordinates! " .
+      $self->warn("Repeat completely outside slice coordinates! " .
 	"That should not happen! repeat_start $start or repeat_end $end not" .
-	"within [1-$dnalen] slice range coordinates\n";
+	"within [1-$dnalen] slice range coordinates\n");
       next REP;
     }
     

@@ -247,10 +247,12 @@ sub subseq {
   Arg [2]    : int $soft_masking_enable (optional)
   Example    : $slice->get_repeatmasked_seq or
                $slice->get_repeatmasked_seq(['RepeatMask'],1)
-  Description: Returns Bio::PrimarySeq containing the masked (repeat replaced by N) 
-               or soft-masked (when Arg[2]=1, repeat in lower case while non repeat
-               in upper case) sequence corresponding to the Slice object.
-               Will only work with database connection to get repeat features.
+  Description: Returns Bio::PrimarySeq containing the masked 
+               (repeat replaced by N) 
+               or soft-masked (when Arg[2]=1, repeat in lower case while 
+               non repeat in upper case) sequence corresponding to the 
+               Slice object. Will only work with database connection to get 
+               repeat features.
   Returntype : Bio::PrimarySeq
   Exceptions : none
   Caller     : general.
@@ -260,15 +262,16 @@ sub subseq {
 sub get_repeatmasked_seq {
     my ($self, $logic_names, $soft_mask) = @_;
     
-    unless ($logic_names) {
-        $logic_names = [ undef ];
+    unless ($logic_names && @$logic_names) {
+        $logic_names = [ '' ];
     }
 
     unless (defined $soft_mask) {
       $soft_mask = 0;
     }
 
-    my $repeats;
+    my $repeats = [];
+
     foreach my $l (@$logic_names) {
 	push @{$repeats}, @{$self->get_all_RepeatFeatures($l)};
     }
@@ -303,7 +306,7 @@ sub get_repeatmasked_seq {
 sub _mask_features {
   my ($self,$dnastr,$repeats,$soft_mask) = @_;
     
-  # explicit CORE::length call, to avoid any confusion with the Slice length method
+  # explicit CORE::length call, to avoid confusion with Slice::length method
   my $dnalen = CORE::length($dnastr);
     
  REP:foreach my $f (@{$repeats}) {
@@ -314,8 +317,10 @@ sub _mask_features {
     
     # check if we get repeat completely outside of expected slice range
     if ($end < 1 || $start > $dnalen) {
-      warn "Repeat completely outside RawContig coordinates!!! That should not happen!!
-repeat_start $start or repeat_end $end not within [1-$dnalen] RawContig range coordinates\n";
+      $self->warn("Repeat completely outside RawContig coordinates!".
+		  "That should not happen! repeat_start $start or " .
+		  "repeat_end $end not within [1-$dnalen] RawContig " .
+		  "range coordinates\n");
       next REP;
     }
     

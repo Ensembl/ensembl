@@ -349,7 +349,7 @@ sub _transform_to_Slice {
     $self->throw("Exon's contig must be defined to transform to Slice coords");
   }
 
-  my $adaptor = $slice->adaptor || $self->contig_adaptor;
+  my $adaptor = $slice->adaptor || $self->contig->adaptor;
 
   unless($adaptor) {
     $self->throw("Cannot transform to exon slice unless either the " .
