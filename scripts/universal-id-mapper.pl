@@ -3,8 +3,8 @@
 # 
 # quick script for id-mapping pretty much anything to anything. 
 #
-# The idea is that this script finds, in STDIN, *all* and *only*,
-# the ID's given in the file.map argument, and replaces them on STDOUT. 
+# The idea is that this script finds, in STDIN, *all* and *only*, the ID's
+# given in the file.map argument, and replaces all of them on STDOUT.
 #
 # To make this process safer (i.e., if things on STDIN look like ID's but
 # really should be left alone), make the regexp args (see Usage or -h) more
