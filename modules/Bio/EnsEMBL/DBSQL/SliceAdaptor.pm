@@ -168,19 +168,17 @@ sub fetch_by_supercontig_name {
   
   my $assembly_type = $self->db->assembly_type();
   
-  my $sth = $self->db->prepare("
-        SELECT chr.name, a.superctg_ori, MIN(a.chr_start), MAX(a.chr_end)
-        FROM assembly a, chromosome chr
-        WHERE superctg_name = ?
-        AND type = ?
-        AND chr.chromosome_id = a.chromosome_id
-        GROUP by superctg_name
-        ");
+  my $sth = $self->db->prepare(
+    "SELECT chr.name, a.superctg_ori, MIN(a.chr_start), MAX(a.chr_end)
+       FROM assembly a, chromosome chr
+      WHERE superctg_name = ? AND type = ? AND chr.chromosome_id = a.chromosome_id
+      GROUP BY superctg_name"
+  );
 
   $sth->execute( $supercontig_name, $assembly_type );
   
   my ($chr, $strand, $slice_start, $slice_end) = $sth->fetchrow_array;
-  
+    
   my $slice;
   
   $slice = new Bio::EnsEMBL::Slice
