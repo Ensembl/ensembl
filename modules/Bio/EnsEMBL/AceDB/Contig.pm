@@ -63,16 +63,18 @@ sub _initialize {
   my($self,@args) = @_;
 
   my $make = $self->SUPER::_initialize(@args);
-  my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
-					  ID
+  my ($dbobj, $id, $clone) = $self->_rearrange([qw(DBOBJ
+					  ID CLONE
 					  )],@args);
 
-  $id || $self->throw("Cannot make contig db object without id");
-  $dbobj || $self->throw("Cannot make contig db object without db object");
+  $id || $self->throw("Cannot make AceDB Contig object without id");
+  $dbobj || $self->throw("Cannot make AceDB Contig object without db object");
+  $clone || $self->throw("Cannot make AceDB Contig object without clone");
   $dbobj->isa('Bio::EnsEMBL::AceDB::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");  
     # set stuff in self from @args
   $self->id($id); 
   $self->dbobj($dbobj);
+  $self->clone($clone);
   return $make; # success - we hope!
 }
 
@@ -257,25 +259,14 @@ sub get_all_SeqFeatures {
 sub get_all_Genes {
     my ($self) = @_;
     
-    my @genes;
-    my $id = $self->id();        
     # Create a hash of methods we're interested in
     my %methods = map{$_, 1} ('supported_CDS', 'curated');
     
-    # Get the sequence object
+    my $id = $self->id();        
     my $seq = $self->ace_seq();
-    
+    my $phase = $self->_get_phase();
     my $annotated = map($_->name, $seq->at('Properties.Status.Annotated'));
-    my $phase = $seq->at('Properties.Coding.CDS[1]');
-    # If the phase is defined set it to phase - 1 
-    if ($phase) {
-        $phase = $phase->name() - 1;
-    } 
-    # Otherwise it's 0
-    else {
-        $phase = 0;
-    }
-
+    my @genes;
     
     # Loop through the subsequences
     foreach my $sub ($seq->at('Structure.Subsequence')) {
@@ -284,16 +275,11 @@ sub get_all_Genes {
         if ($methods{$sub->fetch->at("Method[1]")}) {
              
             my $genename = "$sub";                                  
-
             my ($start, $end) = map($_->name(), $sub->row(1));
-
-            my $strand = 1;
-            if ( $start > $end ) {
-	        $strand = -1;
-            } 
+            my $strand = ($start < $end) ? 1 : -1;
             my $subseq = $sub->fetch();             
-            my @exons;
             my $index = 1;
+            my @exons;
             
             # Fetch all the exons            
             foreach my $hit ($subseq->at('Structure.From.Source_Exons[1]')) {  
@@ -311,16 +297,19 @@ sub get_all_Genes {
             
             # Create a new Translation object with the start and end exon IDs
             my $translation = new Bio::EnsEMBL::Translation();
- 	    $translation->start($start);
-	    $translation->end($end);
+           
             $translation->id($genename); 
             $translation->version(1);
             
             if ($strand) {                   
-	        $translation->start_exon_id($exons[0]->id());
+	        $translation->start($start);
+	        $translation->end($end);
+                $translation->start_exon_id($exons[0]->id());
 	        $translation->end_exon_id($exons[$#exons]->id());
             }
             else {            
+                $translation->start($end);
+	        $translation->end($start);
                 $translation->start_exon_id($exons[$#exons]->id());
 	        $translation->end_exon_id($exons[0]->id());
             } 
@@ -336,6 +325,7 @@ sub get_all_Genes {
             $gene->id($genename);
             $gene->version(1); 
             $gene->add_Transcript($transcript);
+            $gene->add_cloneid_neighbourhood($self->clone);
             
             # Add the gene to the genes array
             push(@genes, $gene);
@@ -344,6 +334,27 @@ sub get_all_Genes {
 
     # Return all the genes
     return @genes;
+}
+
+
+=head2 clone
+
+ Title   : clone
+ Usage   : $obj->clone($newval)
+ Function: 
+ Example : 
+ Returns : value of clone
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub clone {
+    my ($self,$value) = @_;
+    if (defined $value) {
+	$self->{'clone'} = $value;
+    }
+    return $self->{'clone'};
 }
 
 
@@ -740,13 +751,45 @@ sub _create_overlap {
         return undef;
     }
     # Create a new Contig and return the ContigOverlapHelper
-    my $overlapContig = new Bio::EnsEMBL::AceDB::Contig($self->dbobj(), $overlapID);     
+    my $overlapContig = new Bio::EnsEMBL::AceDB::Contig(-'dbobj' => $self->dbobj(),
+                                                        -'id' => $overlapID,
+                                                        -'clone' => $self->clone);     
     return new Bio::EnsEMBL::ContigOverlapHelper(-sister => $overlapContig, 
                                                 -sisterposition => $overlapPosition, 
                                                 -sisterpolarity => $overlapPolarity, 
                                                 -source => $self, 
                                                 -distance => 1,        # There is no distance between them
                                                 -selfposition => $selfPosition);   
+}
+
+
+=head2 _get_phase
+
+ Title   : _get_phase
+ Usage   : $phase = get_phase()
+ Function: Gets the phase of the contig from AceDB.
+ Example :
+ Returns : integer
+ Args    : none
+
+
+=cut
+
+sub _get_phase {
+    my ($self) = @_;
+    
+    # Get the sequence object
+    my $seq = $self->ace_seq();
+    
+    my $phase = $seq->at('Properties.Coding.CDS[1]');
+    
+    # If the phase is defined set it to phase - 1 
+    if ($phase) {
+        return $phase->name() - 1;
+    } 
+    
+    # Otherwise it's 0
+    return 0;
 }
 
 
