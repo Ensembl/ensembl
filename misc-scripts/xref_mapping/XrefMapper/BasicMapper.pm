@@ -55,7 +55,7 @@ sub dump_seqs{
 
 
 
-=head2 run_matching
+=head2 build_list_and_map
 
   Arg[1]: xref object which holds info on method and files.
 
@@ -66,7 +66,8 @@ sub dump_seqs{
 
 =cut
 
-sub run_matching{
+sub build_list_and_map {
+
   my ($self) = @_;
 
   my @list=();
@@ -685,6 +686,7 @@ sub store {
   my ($self, $xref) = @_;
 
   # get current max object_xref_id
+  # TODO use selectall_arrayref
   my $max_object_xref_id = 0;
   my $sth = $self->dbi()->prepare("SELECT MAX(object_xref_id) FROM object_xref");
   $sth->execute();
@@ -742,7 +744,7 @@ sub store {
     open(FILE, $file);
     $total_files++;
 
-    # files are named Method_(dna|prot)_N.map
+    # files are named Method_(dna|peptide)_N.map
     my $type = get_ensembl_object_type($file);
 
     # get or create the appropriate analysis ID
@@ -918,13 +920,13 @@ sub dump_core_xrefs {
     my $xref_sth = $xref_dbi->prepare($sql);
     $xref_sth->execute();
 
-    my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id);
+    my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id, $master_xref_id);
     $xref_sth->bind_columns(\$xref_id, \$accession, \$version, \$label, \$description, \$source_id, \$species_id);
 
     # note the xref_id we write to the file is NOT the one we've just read
     # from the internal xref database as the ID may already exist in the core database
     # so we add on $xref_id_offset
-    while (my @row = $xref_sth->fetchrow_array()) {
+    while ($xref_sth->fetch()) {
 
       print XREF ($xref_id+$xref_id_offset) . "\t" . $accession . "\t" . $label . "\t" . $description . "\n";
       $source_ids{$source_id} = $source_id;
@@ -932,23 +934,23 @@ sub dump_core_xrefs {
     }
 
     # Now get the dependent xrefs for each of these xrefs and write them as well
-    $sql = "SELECT DISTINCT(x.xref_id), x.accession, x.label, x.description, x.source_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id $id_str";
+    $sql = "SELECT DISTINCT(x.xref_id), dx.master_xref_id, x.accession, x.label, x.description, x.source_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id $id_str";
 
     my $dep_sth = $xref_dbi->prepare($sql);
     $dep_sth->execute();
 
-    $dep_sth->bind_columns(\$xref_id, \$accession, \$label, \$description, \$source_id);
-    while (my @row = $dep_sth->fetchrow_array()) {
+    $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id);
+    while ($dep_sth->fetch()) {
 
       print XREF ($xref_id+$xref_id_offset) . "\t" . $accession . "\t" . $label . "\t" . $description . "\tDEPENDENT\n";
       $source_ids{$source_id} = $source_id;
 
       # create an object_xref linking this (dependent) xref with any objects it maps to
       # write to file and add to object_xref_mappings
-      if (defined $xref_to_objects{$xref_id+$xref_id_offset}) {
-	my @objects = keys( %{$xref_to_objects{$xref_id+$xref_id_offset}} );
-	print "xref $accession has " . scalar(@objects) . " associated ensembl objects\n";
-	foreach my $object_id (@objects) {
+      if (defined $xref_to_objects{$master_xref_id}) { # XXX check 
+	my @ensembl_object_ids = keys( %{$xref_to_objects{$master_xref_id}} ); # XXX check
+	print "xref $accession has " . scalar(@ensembl_object_ids) . " associated ensembl objects\n";
+	foreach my $object_id (@ensembl_object_ids) {
 	  my $type = $ensembl_object_types{$object_id};
 	  print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tDEPENDENT\n";
 	  $object_xref_id++;
@@ -966,7 +968,7 @@ sub dump_core_xrefs {
     $syn_sth->execute();
 
     $syn_sth->bind_columns(\$xref_id, \$accession);
-    while (my @row = $syn_sth->fetchrow_array()) {
+    while ($syn_sth->fetch()) {
 
       print EXTERNAL_SYNONYM ($xref_id+$xref_id_offset) . "\t" . $accession . "\n";
 
@@ -1014,7 +1016,7 @@ sub dump_core_xrefs {
   my ($source_name, $release, $source_id);
   $source_sth->bind_columns(\$source_name, \$release, \$source_id);
 
-  while (my @row = $source_sth->fetchrow_array()) {
+  while ($source_sth->fetch()) {
     print EXTERNAL_DB "$edb_id\t$source_name\t$release\tXREF\n";
     # TODO knownxref etc??
     $edb_id++;
@@ -1083,7 +1085,7 @@ sub build_transcript_display_xrefs {
   my ($xref_id, $source_name);
   $sth->bind_columns(\$xref_id, \$source_name);
 
-  while (my @row = $sth->fetchrow_array()) {
+  while ($sth->fetch()) {
     $xref_to_source{$xref_id} = $source_name;
   }
 
@@ -1098,7 +1100,7 @@ sub build_transcript_display_xrefs {
   my ($translation_id, $transcript_id);
   $sth->bind_columns(\$translation_id, \$transcript_id);
 
-  while (my @row = $sth->fetchrow_array()) {
+  while ($sth->fetch()) {
     $translation_to_transcript{$translation_id} = $transcript_id;
   }
 
@@ -1196,7 +1198,7 @@ sub build_gene_display_xrefs {
   $sth->bind_columns(\$gene_id, \$transcript_id);
 
   my %genes_to_transcripts;
-  while (my @row = $sth->fetchrow_array()) {
+  while ($sth->fetch()) {
     push @{$genes_to_transcripts{$gene_id}}, $transcript_id;
   }
 
