@@ -54,6 +54,7 @@ use Bio::Annotation;
 use Bio::Annotation::DBLink;
 use Bio::EnsEMBL::VirtualGene;
 use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
+use Bio::EnsEMBL::WebTranscript;
 
 @ISA = qw(Bio::EnsEMBL::Virtual::Contig);
 
@@ -1154,6 +1155,7 @@ sub get_all_Genes_exononly{
    my $previous_exon;
 
    my @out;
+   my @trans;
    my $length = $glob_end - $glob_start;
 
    while( $sth->fetch ) {
@@ -1171,8 +1173,15 @@ sub get_all_Genes_exononly{
 
        if( $transcriptid ne $current_transcript_id ) {
 	   # make a new transcript
-	   $current_transcript = Bio::EnsEMBL::Transcript->new();
+	   $current_transcript = Bio::EnsEMBL::WebTranscript->new();
 	   $current_gene->add_Transcript($current_transcript);
+	   push(@trans,$current_transcript);
+	   if( $rank == 1 ) {
+	       $current_transcript->is_start_exon_in_context(1);
+	   } else {
+	       $current_transcript->is_start_exon_in_context(0);
+	   }
+
 	   $current_transcript_id = $transcriptid;
 	   $current_transcript->id($transcriptid);
        }
@@ -1196,9 +1205,25 @@ sub get_all_Genes_exononly{
        $exon->id($exonid);
        $previous_exon = $exon;
        $current_transcript->add_Exon($exon);
-
+       $current_transcript->end_exon_rank($rank);
+       
    }
 
+   #
+   # We need to make another quick trip to the database for each
+   # transcript to discover whether we have all of it or not
+   #
+
+   foreach my $trans ( @trans ) {
+       my $sth2 = $self->dbobj->prepare("select max(rank) from exon_transcript where transcript = '".$trans->id."'");
+       $sth2->execute;
+       my ($rank) = $sth2->fetchrow_array();
+       if( $rank == $trans->end_exon_rank) {
+	   $trans->is_end_exon_in_context(1);
+       } else {
+	   $trans->is_end_exon_in_context(0);
+       }
+   }
 
 
    #
