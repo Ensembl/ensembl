@@ -363,11 +363,13 @@ foreach my $clone_id ( @clones ) {
 	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
 	    my $gbout = Bio::SeqIO->new( '-format' => 'GenBank', -fh => $OUT);
 	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($gbout);
+	   
 	    # genbank format - the ID line is wrong. Fall back to locus
-	    $gbout->_id_generation_func(undef);
-	    $gbout->_ac_generation_func(undef);
-	   # $as->accession($clone->id());
-	   # $as->division("PRI");
+	    # $gbout->_id_generation_func(undef);
+	    # $gbout->_ac_generation_func(undef);
+	    # $as->accession($clone->id());
+	    # $as->division("PRI");
+	    
 	    if( $nodna == 1 ) {
 		$gbout->_show_dna(0);
 	    }
