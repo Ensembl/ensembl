@@ -203,6 +203,7 @@ sub fetch_by_chromosome_name_virtual {
 
     $self->throw("Need both chromosome and name") unless defined $name;
 
+    print STDERR "CHR: $chr, NAME: $name\n";
     my $sth;
     $sth = $self->prepare(
         "select	chr_start, chr_end
@@ -333,26 +334,20 @@ sub fetch_by_name_virtual {
 =cut
 
 sub fetch_chromosome_length {
-  my ($self,$chr) = @_;
+    my ($self,$chr) = @_;
 
-  $self->throw("Need a chromosome") unless defined $chr;
+    $self->throw("Need a chromosome") unless defined $chr;
 
-  # return a cached copy of the chromosome bands
-  if (exists $self->{"_karyotype_band_cache_$chr"}){
-    my @tmp = @{$self->{"_karyotype_band_cache_$chr"}};
-    return $tmp[-1]->end();
-  }
-  
-  my $q = qq(
-SELECT max(chr_end)
-FROM   karyotype
-WHERE  chr_name = ? );
+    # return a cached copy of the chromosome bands
+    if (exists $self->{"_karyotype_band_cache_$chr"}){
+        my @tmp = @{$self->{"_karyotype_band_cache_$chr"}};
+        return $tmp[-1]->end();
+    }
+    my $sth = $self->prepare('select max(chr_end) from karyotype where chr_name = ?');
 
-  my $sth = $self->prepare($q);
-  $sth->execute( $chr ) or die( $sth->errstr() );
-  my ($chr_end) = $sth->fetchrow_array();
-  return($chr_end);
-  
+    $sth->execute( $chr );
+    my ($chr_end) = $sth->fetchrow_array();
+    return $chr_end ;
 }
 
 
