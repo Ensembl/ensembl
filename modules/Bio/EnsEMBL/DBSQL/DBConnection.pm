@@ -20,8 +20,8 @@
 
 =head1 DESCRIPTION
 
-  This only wraps around the perl DBI->connect call, so you dont have to remember
-  how to do this.
+  This only wraps around the perl DBI->connect call, 
+  so you dont have to remember how to do this.
 
 =head1 CONTACT
 
@@ -62,7 +62,6 @@ sub new {
       $user,
       $password,
       $port,
-      $debug
      ) = $self->_rearrange([qw(
 			       DBNAME
 			       HOST
@@ -70,7 +69,6 @@ sub new {
 			       USER
 			       PASS
 			       PORT
-			       DEBUG
 			      )],@_);
     
 
@@ -86,31 +84,18 @@ sub new {
   if ( ! $port ) {
     $port = 3306;
   }
-  if( $debug ) {
-    $self->_debug($debug);
-  } else {
-    $self->_debug(0);
-  }
 
   my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
 
-  if( $debug && $debug > 10 ) {
-    $self->_db_handle("dummy dbh handle in debug mode $debug");
-  } else {
-    my( $dbh );
-    eval{
-      $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
-    };
+  my $dbh;
+  eval{
+    $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
+  };
     
-    $dbh || $self->throw("Could not connect to database $db user " .
-			 "$user using [$dsn] as a locator\n" . $DBI::errstr);
+  $dbh || $self->throw("Could not connect to database $db user " .
+		       "$user using [$dsn] as a locator\n" . $DBI::errstr);
 
-    if( $self->_debug > 3 ) {
-      $self->warn("Using connection $dbh");
-    }
-
-    $self->db_handle($dbh);
-  }
+  $self->db_handle($dbh);
 
   $self->username( $user );
   $self->host( $host );
@@ -166,24 +151,47 @@ sub password {
 }
 
 
+=head2 _get_adaptor
 
-=head2 _debug
-
- Title   : _debug
- Usage   : $obj->_debug($newval)
- Function: 
- Example : 
- Returns : value of _debug
- Args    : newvalue (optional)
+  Title   : _get_adaptor
+  Usage   : $obj->get_adaptor("full::module::name", )
+  Returns : An already existing, or a new instance of the specified DB adaptor 
+  Args : the fully qualified name of the adaptor module to retrieve
+         (optional) special additional args for the adaptors constructor
 
 =cut
 
-sub _debug {
-    my ($self,$value) = @_;
-    if( defined $value) {
-	$self->{'_debug'} = $value;
+sub _get_adaptor {
+  my( $self, $module, @args) = @_;
+
+  my( $adaptor, $internal_name );
+  
+  #Create a private member variable name for the adaptor by replacing
+  #:: with _
+  
+  $internal_name = $module;
+
+  $internal_name =~ s/::/_/g;
+
+  unless (defined $self->{'_adaptors'}{$internal_name}) {
+    eval "require $module";
+    
+    if($@) {
+      $self->warn("$module cannot be found.\nException $@\n");
+      return undef;
     }
-    return $self->{'_debug'};
+      
+    $adaptor = "$module"->new($self, @args);
+
+    unless($adaptor->isa('Bio::EnsEMBL::DBSQL::BaseAdaptor')) {
+      $self->throw("$module is not a Bio::EnsEMBL::DBSQL::BaseAdaptor\n");
+      return undef;
+    }
+
+    $self->{'_adaptors'}{$internal_name} = $adaptor;
+  }
+
+  return $self->{'_adaptors'}{$internal_name};
 }
 
 
@@ -226,75 +234,15 @@ sub prepare {
    my ($self,$string) = @_;
 
    if( ! $string ) {
-       $self->throw("Attempting to prepare an empty SQL query!");
+       $self->throw("Attempting to prepare an empty SQL query.");
    }
    if( !defined $self->{_db_handle} ) {
-      $self->throw("Database object has lost its database handle! getting otta here!");
+      $self->throw("Database object has lost its database handle.");
    }
       
-   if ($self->diffdump) {
-       my $fh=$self->diff_fh;
-       open (FILE,">>$fh");
-       if ($string =~ /insert|delete|replace/i) {
-	   print FILE "$string\n";
-       }
-       
-   }
-   
-   if( $self->_debug > 10 ) {
-       print STDERR "Prepared statement $string\n";
-       my $st = Bio::EnsEMBL::DBSQL::DummyStatement->new();
-       $st->_fileh(\*STDERR);
-       $st->_statement($string);
-       return $st;
-   }
-
    # should we try to verify the string?
    return $self->{_db_handle}->prepare($string);
 } 
-
-
-=head2 diff_fh
-
- Title   : diff_fh
- Usage   : $obj->diff_fh($newval)
- Function: path and name of the file to use for writing the mysql diff dump
- Example : $obj->diff_fh(STDERR) 
- Returns : value of diff_fh
- Args    : newvalue (optional)
-
-
-=cut
-
-sub diff_fh{
-    my ($self,$value) = @_;
-    if( defined $value) {
-	$self->{'_diff_fh'} = $value;
-    }
-    return $self->{'_diff_fh'};    
-}
-
-
-=head2 diffdump
-
- Title   : diffdump
- Usage   : $obj->diffdump($newval)
- Function: If set to 1 sets $self->_prepare to print the diff sql 
-           statementents to the filehandle specified by $self->diff_fh
- Example : $db->diffdump(1);
- Returns : value of diffdump
- Args    : newvalue (optional)
-
-=cut
-
-sub diffdump{
-    my ($self,$value) = @_;
-    if( defined $value) {
-	$self->{'_diffdump'} = $value;
-    }
-    return $self->{'_diffdump'};
-    
-}
 
 
 =head2 DESTROY
