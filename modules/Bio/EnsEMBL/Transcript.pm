@@ -544,7 +544,7 @@ sub cdna_coding_start {
 	$start += $exon->length;
       }
     }
-    $self->{'cdna_coding_start'} = $value;
+    $self->{'cdna_coding_start'} = $start;
   }
 
   return $self->{'cdna_coding_start'};
@@ -569,7 +569,6 @@ sub cdna_coding_end {
   my ($self, $value) = @_;
 
   my $transl = $self->translation;
-  my $exon;
 
   if($value) {
     $self->{'cdna_coding_end'} = $value;
@@ -577,7 +576,7 @@ sub cdna_coding_end {
     my @exons = @{$self->get_all_Exons};
 
     my $end = 0;
-    while($exon = shift @exons) {
+    while(my $exon = shift @exons) {
       if($exon == $transl->end_Exon) {
 	#add the coding portion of the final coding exon
 	$end += $transl->end;
