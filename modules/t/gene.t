@@ -2,48 +2,69 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 16;
+	plan tests => 21;
 }
 
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}
 
-use EnsTestDB;
-use Bio::EnsEMBL::DBLoader;
+use MultiTestDB;
 use Bio::EnsEMBL::Gene;
-use Bio::EnsEMBL::Transcript;
-use Bio::EnsEMBL::Translation;
-use Bio::EnsEMBL::Exon;
-
-
 
 $loaded = 1;
 
+# switch on the debug prints
+my $verbose = 0;
+
 ok(1);
 
-# Database will be dropped when this
-# object goes out of scope
-my $ens_test = EnsTestDB->new;
+my $multi = MultiTestDB->new();
 
-$ens_test->do_sql_file("t/minidatabase.dump");
-
-ok($ens_test);
+my $db = $multi->get_DBAdaptor( "core" );
 
 
+ok( $db );
 
-my $db = $ens_test->get_DBSQL_Obj;
-$cadp = $db->get_RawContigAdaptor();
-$contig = $cadp->fetch_by_dbID(3);
-my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name("dummy-gene");
+my $gene;
+$ga = $db->get_GeneAdaptor();
+
+$gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
+
+ok( $gene );
+
+my $e_slice = Bio::EnsEMBL::Slice->new
+  ( -empty => 1,
+    -adaptor => $db->get_SliceAdaptor() 
+  );
+
+$gene->transform( $e_slice );
+
+debug( "Gene dbID: ". $gene->dbID());
+debug( "Gene start: ".$gene->start );
+debug( "Gene end: ".$gene->end );
+
+ok( $gene->start() == 30735607 );
+ok( $gene->dbID() == 18267 );
+ok( $gene->end() == 30815178 );
+
+
+
+$links = $gene->get_all_DBLinks();
+debug( "Links: ".scalar( @$links ));
+
+ok( scalar @$links == 6 );
+
+# now create a new gene ...
+
+$slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end( "20",30264615, 30265615 );
+
+my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name("ensembl");
 
 ok($analysis);
-ok($contig);
+ok($slice);
 
 
-$gene_ad = $db->get_GeneAdaptor();
-
-
-my $gene = Bio::EnsEMBL::Gene->new();
+$gene = Bio::EnsEMBL::Gene->new();
 
 my $transcript1 = Bio::EnsEMBL::Transcript->new();
 my $transcript2 = Bio::EnsEMBL::Transcript->new();
@@ -62,7 +83,7 @@ $ex1->start(5);
 $ex1->end(10);
 $ex1->phase(0);
 $ex1->end_phase( 0 );
-$ex1->contig( $contig );
+$ex1->contig( $slice );
 $ex1->strand(1);
 $ex1->analysis($analysis);
 
@@ -70,7 +91,7 @@ $ex2->start(15);
 $ex2->end(23);
 $ex2->phase(0);
 $ex2->end_phase( 0 );
-$ex2->contig( $contig );
+$ex2->contig( $slice );
 $ex2->strand(1);
 $ex2->analysis($analysis);
 
@@ -78,11 +99,9 @@ $ex3->start(28);
 $ex3->end(33);
 $ex3->phase(0);
 $ex3->end_phase( 0 );
-$ex3->contig( $contig );
+$ex3->contig( $slice );
 $ex3->strand(1);
 $ex3->analysis($analysis);
-
-
 
 $transcript1->add_Exon($ex1);
 $transcript1->add_Exon($ex2);
@@ -91,7 +110,6 @@ $translation1->end_Exon($ex2);
 $translation1->start(1);
 $translation1->end(9);
 $transcript1->translation($translation1);
-
 
 ok($transcript1);
 
@@ -112,10 +130,15 @@ $gene->add_Transcript($transcript2);
 
 $gene->analysis($analysis);
 
+
+
 my $count = 0;
 
 foreach my $tr( @{$gene->get_all_Transcripts()} ) {
   foreach my $exon ( @{$tr->get_all_Exons()} ) {
+    debug( "  Exon start: ". $exon->start());
+    debug( "  Exon end:   ". $exon->end() );
+    debug( "  Exon strand ".$exon->strand() );
     $count++;
   }	
 }
@@ -124,53 +147,68 @@ foreach my $tr( @{$gene->get_all_Transcripts()} ) {
 
 ok($count == 5);
 
-
 ok( scalar(@{$gene->get_all_Exons()} ) == 3);
 
+$gene->transform();
+$multi->hide( "core", "gene", "transcript", "exon", "exon_transcript", "gene_description", "translation", "gene_stable_id", "transcript_stable_id", "exon_stable_id", "translation_stable_id" );
+
+my $gene_ad = $db->get_GeneAdaptor();
 $gene_ad->store($gene);
 
 ok(1);
 
-my @contig_ids = ($contig->name);
+my $new_slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end( "20",30263615, 30265615 );
 
-my @genes = @{ $gene_ad->fetch_all_by_contig_list(@contig_ids)};
+my $genes = $new_slice->get_all_Genes();
 
-ok(@genes);
 
-my $gene_out = $genes[0];
+
+ok(scalar( @$genes) == 1 );
+
+my $gene_out = $genes->[0];
 
 ok(scalar(@{$gene_out->get_all_Exons()}) == 3);
 
-my $exons = $gene_out->get_all_Exons();
 
-@sorted_exons = sort{$a->start <=> $b->start} @$exons;
+foreach my $tr( @{$gene_out->get_all_Transcripts()} ) {
+  debug( "NewTranscript: ".$tr->dbID() );
+  foreach my $exon ( @{$tr->get_all_Exons()} ) {
+    debug( "  NewExon: ".$exon->start(). " ".$exon->end()." ".$exon->strand());
+  }	
+}
 
+my $exons = $gene_out->get_all_Transcripts()->[0]->get_all_Exons();
 
-
-ok($sorted_exons[0]->start==5);
-
-
-
-ok($sorted_exons[1]->strand==1);
-
-
-
-ok($sorted_exons[2]->phase==0);
+ok($exons->[0]->start==1005);
+ok($exons->[1]->strand==1);
+ok($exons->[1]->phase==0);
 
 
 
 my $pep;
 my $translate = 0;
-foreach my $trans( @{$gene->get_all_Transcripts()} ){
+foreach my $trans( @{$gene_out->get_all_Transcripts()} ){
 
   my $pep = $trans->translate();
-  
+  debug( "Peptide: ".$pep->seq() );
+
   if($pep->seq !~ /\*\./){
     $translate = 1;
-  }else{
+  } else {
     $translate = 0;
   }  	    
-
 }
 
 ok($translate == 1);
+
+
+
+$multi->restore();
+
+
+sub debug {
+  my $txt = shift;
+  if( $verbose ) {
+    print STDERR $txt,"\n";
+  }
+}
