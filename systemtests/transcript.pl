@@ -97,49 +97,82 @@ else {
 
 foreach my $clone_id ( @clone_id ) {
     print STDERR "\nDumping clone      $clone_id\n";
-    eval {
-	my $clone = $db->get_Clone($clone_id);
-	foreach my $contig ($clone->get_all_Contigs()) {
-	    print STDERR "\n        contig     ",$contig->id,"\n";
-	    foreach my $gene ($contig->get_all_Genes()) {
-		print STDERR "\n        gene       ",$gene->id,"\n";
-		foreach my $trans ($gene->each_Transcript()) {
-		    print STDERR "\n        transcript ",$trans->id,"\n";
+    my $clone = $db->get_Clone($clone_id);
+    foreach my $contig ($clone->get_all_Contigs()) {
+	print STDERR "\n        contig     ",$contig->id,"\n";
+	foreach my $gene ($contig->get_all_Genes()) {
+	    print STDERR "\n        gene       ",$gene->id,"\n";
+	    foreach my $trans ($gene->each_Transcript()) {
+		print STDERR "\n        transcript ",$trans->id,"\n";
+		
+		my $trans_dna;
+		my $trans_seq;
+		my $trans_pep;
+
+		eval {
 		    my $trans_dna = $trans->dna_seq;
 		    my $trans_seq=$trans_dna->seq;
-		    my $err;
-		    $debug && print "Start: ".$trans_dna->start."\n";
-		    $debug && print "End:   ".$trans_dna->end."\n";
-		    $debug && print "Sequence:\n$trans_seq.\n";
-		    
-		    if ($trans_seq eq "") {
-			$err = "no sequence present in this contig!\n";
-		    }
-		    $trans_seq =~ s/[A,T,G,C,N,Y,R]//g;
-		    print "$trans_seq\n";
-		    if ($trans_seq ne "") {
-			$errcount++;
-			print "Error $errcount\n";
-			print "Clone:     $clone_id\n";
-			print "Contig:    ",$contig->id,"\n";
-			print "Gene:      ",$gene->id,"\n";
-			print "Transcript ",$trans->id,"\n";
-			print "Error:\n";
-			if ($err) {
+		};
+		
+		my $err;
+		$debug && print "Start: ".$trans_dna->start."\n";
+		$debug && print "End:   ".$trans_dna->end."\n";
+		$debug && print "Sequence:\n$trans_seq.\n";
+		
+		if ($trans_seq eq "") {
+		    $err = "no sequence present in this contig!\n";
+		}
+		$trans_seq =~ s/[A,T,G,C,N,Y,R]//g;
+		print "$trans_seq\n";
+		if ($trans_seq ne "") {
+		    $errcount++;
+		    print "Error $errcount\n";
+		    print "Clone:     $clone_id\n";
+		    print "Contig:    ",$contig->id,"\n";
+		    print "Gene:      ",$gene->id,"\n";
+		    print "Transcript ",$trans->id,"\n";
+		    print "Error:\n";
+		    if ($err) {
 			    print $err;
 			}
-			else {
-			    print "non-DNA sequence found:\"$trans_seq\"\n\n";
-			}
+		    else {
+			print "non-DNA sequence found:\"$trans_seq\"\n\n";
 		    }
+		}
+		if ($@) {
+		    $errcount++;
+		    print "Error $errcount\n";
+		    print "Clone:     $clone_id\n";
+		    print "Contig:    ",$contig->id,"\n";
+		    print "Gene:      ",$gene->id,"\n";
+		    print "Transcript ",$trans->id,"\n";
+		    print "Error:\n$@";
+		}
+		eval {
+		    my $trans_pep=$trans->translate->seq;
+		};
+		if ($@) {
+		     $errcount++;
+		    print "Error $errcount\n";
+		    print "Clone:     $clone_id\n";
+		    print "Contig:    ",$contig->id,"\n";
+		    print "Gene:      ",$gene->id,"\n";
+		    print "Transcript ",$trans->id,"\n";
+		    print "Error:\n$@";
+		}
+		if ($trans_pep =~ /\*/) {
+		    $$errcount++;
+		    print "Error $errcount\n";
+		    print "Clone:     $clone_id\n";
+		    print "Contig:    ",$contig->id,"\n";
+		    print "Gene:      ",$gene->id,"\n";
+		    print "Transcript ",$trans->id,"\n";
+		    print "Error: Got stop codons in peptide sequence!\n";
 		}
 	    }
 	}
-    };
-    if( $@ ) {
-	print "Unable to process $clone_id due to \n$@\n";
     }
-    
+        
     if ($errcount>0) {
 	print STDERR "\nFound $errcount errors\n";
     }
