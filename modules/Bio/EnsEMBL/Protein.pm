@@ -233,11 +233,30 @@ sub each_Protein_feature{
 sub each_Intron_feature{
    my ($self) = @_;
    my $proteinid = $self->id();
-   print STDERR "$proteinid\n";
    my @array_introns = $self->adaptor->get_Intron_Position($proteinid);
    return @array_introns;
 }
 
+=head2 each_snps_feature
+
+ Title   : each_snps_feature
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_snps_feature{
+   my ($self) = @_;
+     
+   my @snps_array = $self->adaptor->get_snps($self);
+   
+   return @snps_array;
+
+}
 
 
 =head2 add_Protein_feature
