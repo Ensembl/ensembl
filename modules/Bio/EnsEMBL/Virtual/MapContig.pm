@@ -12,7 +12,8 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Virtual::MapContig - An internal object for VirtualContig
+Bio::EnsEMBL::Virtual::MapContig - An internal helper object for
+VirtualContig
 
 =head1 SYNOPSIS
 
@@ -197,7 +198,7 @@ sub rawcontig_end{
 
 =cut
 
-sub orientation{
+sub orientation {
    my ($obj,$value) = @_;
    if( defined $value) {
       $obj->{'orientation'} = $value;
@@ -210,11 +211,10 @@ sub orientation{
 
  Title   : contig
  Usage   : $obj->contig($newval)
- Function: 
+ Function: get or set a the RawContig
  Example : 
- Returns : value of contig
+ Returns : the RawContig
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -278,9 +278,10 @@ sub end_in{
 
  Title   : seq
  Usage   :
- Function: the sequence of the raw contig as a string
+ Function: 
  Example :
- Returns : 
+ Returns : the segment of the sequence of the RawContig that is on the
+           GoldenPath, as a string
  Args    :
 =cut
 
