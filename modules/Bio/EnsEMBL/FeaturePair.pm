@@ -889,14 +889,20 @@ sub gffstring {
     my ($self) = @_;
 
     my $str;
+    my $strand = "+";
+
+    if ($self->strand == -1) {
+      $strand = "-";
+    }
+
     #hope this doesn't slow things down too much
     $str .= (defined $self->seqname)    ?   $self->seqname."\t"     :  "\t";
     $str .= (defined $self->source_tag) ?   $self->source_tag."\t"  :  "\t";
     $str .= (defined $self->primary_tag)?   $self->primary_tag."\t" :  "\t";
     $str .= (defined $self->start)      ?   $self->start."\t"       :  "\t";
     $str .= (defined $self->end)        ?   $self->end."\t"         :  "\t";
-    $str .= (defined $self->strand)     ?   $self->strand."\t"      :  ".\t";
     $str .= (defined $self->score)      ?   $self->score."\t"       :  "\t";
+    $str .= $strand . "\t";
     $str .= (defined $self->phase)      ?   $self->phase."\t"       :  ".\t";
     $str .= (defined $self->hseqname)   ?   $self->hseqname."\t"    :  "\t";
     $str .= (defined $self->hstart)     ?   $self->hstart."\t"      :  "\t";

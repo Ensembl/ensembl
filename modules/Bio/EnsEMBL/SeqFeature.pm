@@ -98,10 +98,10 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 			    SOURCE_TAG
 			    PRIMARY_TAG
 			    SEQNAME
-                PERCENT_ID
-                P_VALUE
-                PHASE
-                END_PHASE
+			    PERCENT_ID
+			    P_VALUE
+			    PHASE
+			    END_PHASE
 			    )],@args);
 };
   if( $@ ) {
@@ -111,14 +111,14 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 
 #  $gff_string && $self->_from_gff_string($gff_string);
 
-  ( defined $start )        && $self->start($start);
-  ( defined $end )          && $self->end($end);
-  ( defined $strand )       && $self->strand($strand);
-  ( defined $primary_tag )  && $self->primary_tag($primary_tag);
-  ( defined $source_tag )  && $self->source_tag($source_tag);
-  ( defined $frame )        && $self->frame($frame);
-  ( defined $score )        && $self->score($score);
-  ( defined $analysis )    && $self->analysis($analysis);
+  if ( defined ($start) && $start ne "" )        { $self->start($start)};
+  if ( defined ($end )  && $end   ne "" )        { $self->end($end)}
+  if ( defined $strand )       { $self->strand($strand)}
+  if ( defined $primary_tag )  { $self->primary_tag($primary_tag)}
+  if ( defined $source_tag )   { $self->source_tag($source_tag)}
+  if ( defined $frame  && $frame ne "")        { $self->frame($frame)}
+  if ( defined $score  && $score ne "")        { $self->score($score)}
+  if ( defined $analysis  && $analysis ne "")  { $self->analysis($analysis)};
   ( defined $seqname )      && $self->seqname($seqname);
   ( defined $percent_id )   && $self->percent_id($percent_id);
   ( defined $p_value )      && $self->p_value($p_value);
@@ -174,7 +174,7 @@ sub seqname{
 sub start{
     my ($self,$value) = @_;
 
-    if(defined($value)) {
+    if (defined($value)) {
 	if ($value !~ /^\-?\d+/ ) {
 	$self->throw("$value is not a valid start");
     }
@@ -202,7 +202,7 @@ sub end{
 
     if (defined($value)) {
 	if( $value !~ /^\-?\d+/ ) {
-	    $self->throw("$value is not a valid end");
+	    $self->throw("[$value] is not a valid end");
 	}
 	$self->{'_gsf_end'} = $value;
     }
