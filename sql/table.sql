@@ -310,7 +310,8 @@ CREATE TABLE repeat_feature (
   
   PRIMARY KEY (	repeat_feature_id ),
   KEY contig_idx( contig_id, contig_start, analysis_id ),
-  KEY repeat_idx( repeat_id, contig_id, contig_start )
+  KEY repeat_idx( repeat_id, contig_id, contig_start ),
+  KEY analysis_idx( analysis_id )
 ) max_rows=300000000 avg_row_length=80;
 
 #
