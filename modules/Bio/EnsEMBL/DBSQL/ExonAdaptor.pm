@@ -354,15 +354,17 @@ sub fetch_evidence_by_Exon {
   if($exon->dbID){
   #
   # This looks broken...
-  #
-    my $sql = "select type, feature_id from supporting feature where exon_id = ".$exon->dbID;
+    
+#    print STDERR "trying to store ".$exon->dbID."\n";
+    my $sql = "select feature_type, feature_id from supporting_feature where exon_id = ".$exon->dbID." ";
 
-    my $sth->prepare($sql);
-
+#    print STDERR "sql = ".$sql."\n";
+    my $sth = $self->db->prepare($sql);
+ 
     $sth->execute;
 
-    my $prot_adp = $self->db->fetch_ProteinAlignFeatureAdaptor;
-    my $dna_adp = $self->db->fetch_DnaAlignFeatureAdaptor;
+    my $prot_adp = $self->get_ProteinAlignFeatureAdaptor;
+    my $dna_adp = $self->get_DnaAlignFeatureAdaptor;
     
     while(my ($type, $feature_id) = $sth->fetchrow){
       
@@ -485,12 +487,13 @@ sub store {
   my $pep_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
   my $type;
  FEATURE: foreach my $sf ($exon->each_Supporting_Feature) {
-    #print STDERR "have supporting feature ".$sf."\n";
+    print STDERR "have supporting feature ".$sf." ".$sf->gffstring."\n";
     if(!$sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
       $self->throw("$sf must be an align feature" .
 		   "otherwise it can't be stored");
     }
     eval {
+      print STDERR "start ".$sf->start." end ".$sf->end." strand ".$sf->strand."\n";
       $sf->validate();
     };
     
@@ -500,10 +503,12 @@ sub store {
     }
     
     if($sf->isa("Bio::EnsEMBL::DnaDnaAlignFeature")){
-      $dna_adaptor->store($sf->seqname, $sf);
+      $sf->attach_seq($exon->contig);
+      $dna_adaptor->store($sf);
       $type = 'dna_align_feature';
     }elsif($sf->isa("Bio::EnsEMBL::DnaPepAlignFeature")){
-      $pep_adaptor->store($sf->seqname, $sf);
+      $sf->attach_seq($exon->contig);
+      $pep_adaptor->store($sf);
       $type = 'protein_align_feature';
     }
     
@@ -592,13 +597,36 @@ sub remove {
   if ( ! defined $exon->dbID() ) {
     return;
   }
-
+  print "have ".$self->db."\n";
   my $sth = $self->prepare( "delete from exon where exon_id = ?" );
   $sth->execute( $exon->dbID );
-
+  print "have deleted ".$exon->dbID."\n";
   $sth = $self->prepare( "delete from exon_stable_id where exon_id = ?" );
   $sth->execute( $exon->dbID );
   
+  my $sql = "select feature_type, feature_id from supporting_feature where exon_id = ".$exon->dbID." ";
+
+  #    print STDERR "sql = ".$sql."\n";
+  $sth = $self->prepare($sql);
+  
+  $sth->execute;
+  
+  my $prot_adp = $self->db->get_ProteinAlignFeatureAdaptor;
+  my $dna_adp = $self->db->get_DnaAlignFeatureAdaptor;
+  
+  while(my ($type, $feature_id) = $sth->fetchrow){
+    
+    if($type eq 'protein_align_feature'){
+      my $f = $prot_adp->fetch_by_dbID($feature_id);
+      $prot_adp->remove($f);
+      print "have removed ".$f->dbID."\n";
+    }elsif($type eq 'dna_align_feature'){
+      my $f = $dna_adp->fetch_by_dbID($feature_id);
+      print "have removed ".$f->dbID."\n";
+      $dna_adp->remove($f);
+    }
+  }
+
   $sth = $self->prepare( "delete from supporting_feature where exon_id = ?" );
   $sth->execute( $exon->dbID );
 
