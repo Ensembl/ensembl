@@ -472,7 +472,7 @@ sub get_all_SimilarityFeatures_above_score{
                      "AND    feature.score > '$score' " . 
                      "AND    feature.analysis = analysis.id " .
                      "AND    analysis.db = '$analysis_type' " .
-                     "AND    contig = '$id' ";
+                     "AND    feature.contig = '$id' ";
                                      
        $sth = $self->dbobj->prepare($statement);
        
@@ -482,7 +482,7 @@ sub get_all_SimilarityFeatures_above_score{
                      "WHERE  feature.score > '$score' " . 
                      "AND    feature.analysis = analysis.id " .
                      "AND    analysis.db = '$analysis_type' " .
-                     "AND    contig = '$id' ";
+                     "AND    feature.contig = '$id' ";
                      
                      
                      
