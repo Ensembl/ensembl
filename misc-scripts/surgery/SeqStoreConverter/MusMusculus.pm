@@ -179,7 +179,7 @@ sub clone_to_seq_region {
   my $select_sth = $dbh->prepare
     ("SELECT cl.clone_id,
              CONCAT(cl.embl_acc, '.', cl.embl_version),
-             MAX(ctg.embl_offset)+ctg.length-1
+             MAX(ctg.embl_offset+ctg.length-1)
      FROM   $source.clone cl, $source.contig ctg
 		 WHERE  cl.clone_id = ctg.clone_id
      AND    cl.embl_acc not like 'C%'
