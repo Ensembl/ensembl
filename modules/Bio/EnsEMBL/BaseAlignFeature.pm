@@ -203,6 +203,79 @@ sub ungapped_features {
 
 }
 
+
+=head2 transform
+
+  Arg    :  None or Bio::EnsEMBL::Slice
+  
+  Usage  :  my @raw_contig_features = $f->transform();        # assummes is on a slice
+            my @slice_features      = $f->transform($slice);  # maps to slice
+
+  Function : Converts feature into new coordinate system, either to or from
+             a Slice. This method follows other transform semantics meaning that
+             transform invalidates the current feature - you must use the features
+             returned on the array. This handles the underlying gaps fine
+
+  Exception : called on a feature with no args and no slice
+
+  Caller : No specific caller
+
+=cut
+
+sub transform {
+    my ($self,$slice) = shift;
+
+
+    if( !defined $slice && ! defined $self->entire_seq || !$self->entire_seq->isa('Bio::EnsEMBL::Slice') ) {
+	$self->throw("Called transform on a feature without a slice as argument, and no slice in entire_seq slot");
+    }
+
+    my @unmapped = $self->ungapped_features;
+    
+    if( !defined $slice ) {
+	my %mapped;
+
+	# mapping from slice to raw contigs
+	$slice = $self->entire_seq();
+	my $global_start = $slice->global_start;
+	my $global_end   = $slice->global_end;
+
+	my $mapper = $slice->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
+
+	foreach my $f ( @unmapped ) {
+	    my @mapped = $mapper->map_coordinates_to_rawcontig
+		(
+		 $slice->chr_name,
+		 $f->start()+$global_start-1,
+		 $f->end()+$global_start-1,
+		 $f->strand()*$slice->strand()
+		 );
+	    
+	    if( ! @mapped ) {
+		$self->throw( "feature could not map" );
+	    }
+
+	    foreach my $co ( @mapped ) {
+		if( !defined $mapped{$co->id} ) {
+		    $mapped{$co->id} = [];
+		}
+		
+		# have to handle other side of mapping. Bollocks.
+
+	    }
+
+
+
+	    # map to exon
+	}
+    } else {
+	$self->throw("mapping to raw contigs not implemented yet. Ewan's fault!");
+    }
+}
+
+
+
+
 =head2 _generic_parse_cigar
 
   Arg 1     : int query_unit, 
