@@ -266,7 +266,7 @@ sub load_databases {
 	next;
       }
 
-      $db->do( "load data infile '$txt_file' into table $tablename" );
+      $db->do( "load data local infile '$txt_file' into table $tablename" );
 
     }
   }
