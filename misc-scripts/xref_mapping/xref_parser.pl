@@ -19,6 +19,7 @@ GetOptions('user=s'       => \$user,
 @species = split(/,/,join(',',@species));
 @sources  = split(/,/,join(',',@sources));
 
+
 if (!$user || !$host || !$dbname) {
 
   usage();
@@ -35,7 +36,7 @@ sub usage {
 
   print << "EOF";
 
-  xref_parser.pm -user {user} -pass {password} -host {host} -port {port} -dbname {database} -species {species1,species2} -source {source1,source2} -skipdownload -create
+  xref_parser.pl -user {user} -pass {password} -host {host} -port {port} -dbname {database} -species {species1,species2} -source {source1,source2} -skipdownload -create
 
 EOF
 
