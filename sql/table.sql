@@ -52,20 +52,6 @@ CREATE TABLE contig (
 );
 
 #
-# Table structure for table 'contig_equiv'
-#
-CREATE TABLE contig_equiv (
-  id varchar(40) DEFAULT '' NOT NULL,
-  from_contig_id varchar(40),
-  from_contig_postion int(11),
-  from_contig_strand char(1),
-  to_contig_id varchar(40),
-  to_contig_position int(11),
-  to_contig_strand char(1),
-  PRIMARY KEY (id)
-);
-
-#
 # Table structure for table 'db_update'
 #
 CREATE TABLE db_update (
@@ -299,14 +285,12 @@ CREATE TABLE translation (
 
 
 create table contigoverlap (
-       contig_a varchar(40) DEFAULT '' NOT NULL,
-       contig_b varchar(40) DEFAULT '' NOT NULL,
-       contig_a_position int(10) unsigned,
-       contig_b_position int(10) unsigned,
-       contig_a_version int(10) unsigned NOT NULL,
-       contig_b_version int(10) unsigned NOT NULL,
-       type varchar(40) DEFAULT '' NOT NULL,
-       overlap_size int(10) unsigned,
-       overlap_type set('right2left','left2right','left2left','right2right'),
-       PRIMARY KEY(contig_a,contig_a_version,contig_b,contig_b_version,type)
+	dna_a_id int(10) NOT NULL,
+	dna_b_id int(10) NOT NULL,
+	contig_a_position int(10) unsigned,
+        contig_b_position int(10) unsigned,
+        type varchar(40) DEFAULT '' NOT NULL,
+        overlap_size int(10) unsigned,
+        overlap_type set('right2left','left2right','left2left','right2right'),
+       PRIMARY KEY(dna_a_id,dna_b_id,type)
   );
