@@ -166,7 +166,9 @@ sub transfer_transcript {
 
  EXON:
   foreach my $human_exon (@$human_exons) {
-
+    info("Exon: " . $human_exon->stable_id() . " chr=" . 
+         $human_exon->slice->seq_region_name() . " start=". 
+         $human_exon->seq_region_start());
     my $chimp_exon = InterimExon->new();
     $chimp_exon->stable_id($human_exon->stable_id());
     $chimp_exon->cdna_start($cdna_exon_start);
@@ -430,7 +432,8 @@ sub create_transcripts {
 
     #sanity check:
     if($iexon->end() < $iexon->start()) {
-      throw("Unexpected: exon start less than end.");
+      throw("Unexpected: exon start less than end:\n" .
+            $iexon->stable_id().": ".$iexon->start().'-'.$iexon->end());
     }
 
     my $cdna_end = $cdna_start + $iexon->length() - 1;

@@ -15,6 +15,8 @@ sub process_insert {
   my $exon             = shift;
   my $transcript       = shift;
 
+  info("insert ($insert_len)");
+
   my $code = StatMsg::EXON | StatMsg::INSERT |
              Length::length2code($insert_len);
 
@@ -32,7 +34,6 @@ sub process_insert {
 
       $exon->add_StatMsg(StatMsg->new($code | StatMsg::CONFUSED));
       $exon->fail(1);
-      $transcript->fail(1);
       return;
     }
 
@@ -51,6 +52,8 @@ sub process_insert {
      $$cdna_ins_pos_ref <  $transcript->cdna_coding_end()) {
 
     info("insertion in cds ($insert_len)");
+    # print "BEFORE CDS INSERT:\n";
+    # print_exon($exon);
 
     $code |= StatMsg::CDS;
 
@@ -105,6 +108,10 @@ sub process_insert {
         $exon->end($exon->end() - ($first_len + $frameshift));
       }
     }
+
+    # print "AFTER CDS INSERT:\n";
+    # print_exon($exon);
+
   }
 
   #
@@ -143,6 +150,24 @@ sub process_insert {
 
   return;
 }
+
+#sub print_exon {
+  #my $exon = shift;
+
+  #if(!$exon) {
+   #throw("Exon undefined");
+  #}
+	
+                                                                                
+  #print "EXON:\n";
+  #print "cdna_start = ". $exon->cdna_start() . "\n";
+  #print "cdna_end   = ". $exon->cdna_end() . "\n";
+  #print "start             = ". $exon->start() . "\n";
+  #print "end               = ". $exon->end() . "\n";
+  #print "strand            = ". $exon->strand() . "\n\n";
+                                                                                
+  #return;
+#}
 
 
 1;

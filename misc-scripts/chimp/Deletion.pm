@@ -27,9 +27,9 @@ sub process_delete {
   my $del_end   = $del_start + $del_len - 1;
 
   info((($entire_delete) ? 'entire ' : '')."delete ($del_len)");
-  print STDERR "BEFORE cds: ", $transcript->cdna_coding_start, '-', 
-               $transcript->cdna_coding_end(), "\n";
-  print STDERR "BEFORE del_start = $del_start\n";
+  #print STDERR "BEFORE cds: ", $transcript->cdna_coding_start, '-', 
+  #             $transcript->cdna_coding_end(), "\n";
+  #print STDERR "BEFORE del_start = $del_start\n";
 
   # sanity check, deletion should be completely in
   # or adjacent to exon boundaries
@@ -50,7 +50,7 @@ sub process_delete {
   if($del_start < $transcript->cdna_coding_start()) {
     my $utr_del_len;
 
-    if($del_end > $transcript->cdna_coding_start()) {
+    if($del_end >= $transcript->cdna_coding_start()) {
       $utr_del_len = $transcript->cdna_coding_start() - $del_start;
     } else {
       $utr_del_len = $del_len;
@@ -172,12 +172,6 @@ sub process_cds_delete {
 
   info("delete ($del_len) in cds");
 
-
-  if(!$entire_delete) {
-    print "BEFORE DELETE:\n";
-    print_exon($exon) if(!$entire_delete);
-  }
-
   my $del_start = $$cdna_del_pos_ref + 1;
   my $del_end   = $del_start + $del_len - 1;
 
@@ -273,7 +267,16 @@ sub process_cds_delete {
       info("introducing frameshift intron ($intron_len) " .
             "to maintain reading frame");
 
-      if($first_len + $intron_len >= $exon->length()) {
+      # very short exons can be entirely consumed by the intron 
+      if($intron_len == $exon->length()) {
+        $code |= StatMsg::ALL_INTRON;
+        $exon->fail(1);
+      } 
+      elsif($intron_len > $exon->length()) {
+        $code |= StatMsg::CONFUSED | StatMsg::ALL_INTRON;
+        $exon->fail(1);
+      }
+      elsif($first_len + $intron_len >= $exon->length()) {
         # we may have encountered a delete at the very end of the exon
         # in this case we have to take the intron out of the end of this exon
         # since we are not creating a second one
@@ -339,28 +342,22 @@ sub process_cds_delete {
 
   $exon->add_StatMsg(StatMsg->new($code));
 
-
-  if(!$entire_delete) {
-    print "AFTER DELETE:\n";
-    print_exon($exon);
-  }
-
   return;
 }
 
 
 
-sub print_exon {
-  my $exon = shift;
+#sub print_exon {
+  #my $exon = shift;
+#
+  #print "EXON:\n";
+  #print "cdna_start = ". $exon->cdna_start() . "\n";
+  #print "cdna_end   = ". $exon->cdna_end() . "\n";
+  #print "start             = ". $exon->start() . "\n";
+  #print "end               = ". $exon->end() . "\n";
+  #print "strand            = ". $exon->strand() . "\n\n";
 
-  print "EXON:\n";
-  print "cdna_start = ". $exon->cdna_start() . "\n";
-  print "cdna_end   = ". $exon->cdna_end() . "\n";
-  print "start             = ". $exon->start() . "\n";
-  print "end               = ". $exon->end() . "\n";
-  print "strand            = ". $exon->strand() . "\n\n";
-
-  return;
-}
+  #return;
+#}
 
 1;

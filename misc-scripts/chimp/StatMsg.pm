@@ -41,6 +41,7 @@ use constant THREE_PRIME            => 0x00020000;
 use constant MIDDLE                 => 0x00040000;
 
 use constant CONFUSED               => 0x00080000;
+use constant ALL_INTRON             => 0x00100000;
 
 use vars qw(@EXPORT_OK @ISA);
 
@@ -138,6 +139,12 @@ sub code2str {
   }
   if($code & NO_CDS_LEFT) {
     $str .= " all CDS deleted";
+  }
+  if($code & CONFUSED) {
+    $str .= " confused";
+  }
+  if($code & ALL_INTRON) {
+    $str .= " consumed by frameshift intron";
   }
 
   return "$str\n";
