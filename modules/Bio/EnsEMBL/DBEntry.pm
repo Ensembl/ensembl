@@ -185,40 +185,6 @@ sub flush_synonyms {
   $self->{_synonyms} = [];
 }
 
-
-# the urlpattern contains a space where the primary id 
-# of the refernce can be put. This will lead you to a page
-# hopefully giving you more information on the object
-# referenced
-sub url_pattern {
-  my ( $self, $arg ) = @_;
-  if( defined $arg ) {
-    $self->{_urlPattern} = $arg;
-  } 
-  return $self->{_urlPattern};
-}
-
-
-
-# returns a url for the object
-# you can set it, but stored is only a pattern
-sub url {
-  my ( $self, $arg ) = @_;
-  if( defined $arg ) {
-    $self->{_url} = $arg;
-    return;
-  }
-
-  if( defined $self->{_url} ) {
-    return $self->{_url};
-  }
-
-  my $id = $self->primary_id();
-  my $url = $self->urlPattern();
-  $url =~ s/ /$id/;
-  return $url;
-}
-
 sub dump {
   my $self = shift;
   my ($k,$v);

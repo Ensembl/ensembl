@@ -43,15 +43,14 @@ sub fetch_by_dbID {
   my $sth = $self->prepare( "
     SELECT Xref.xrefId, Xref.dbprimary_id, Xref.display_id,
            Xref.version, Xref.description,
-           exDB.db_name, exDB.release,
-           exDB.url_pattern
+           exDB.db_name, exDB.release
       FROM Xref, externalDB exDB
      WHERE Xref.xrefId = $dbID
        AND Xref.externalDBId = exDb.externalDBId 
    " );
 
   $sth->execute();
-  my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release, $url ) =
+  my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release) =
     $sth->fetchrow_array();
 
   if( ! defined $refID ) {
@@ -71,10 +70,7 @@ sub fetch_by_dbID {
     $exDB->description( $desc );
   }
 
-  if( $url ) {
-    $exDB->urlPattern( $url );
-  }
-
+  
   my $get_synonym = $self->prepare( "
     SELECT synonym 
       FROM externalSynonym
@@ -115,11 +111,9 @@ sub store {
     $sth = $self->prepare( "
        INSERT INTO externalDB 
        SET db_name = ?,
-           release = ?,
-           url_pattern = ?
+           release = ?
      " );
-    $sth->execute( $exObj->dbname(), $exObj->release(),
- 		   $exObj->url_pattern() );
+    $sth->execute( $exObj->dbname(), $exObj->release());
     
     $dbUnknown = 1;
     $sth = $self->prepare( "
@@ -240,8 +234,7 @@ sub _fetch_by_EnsObject_type {
   my $sth = $self->prepare( "
     SELECT Xref.xrefId, Xref.dbprimary_id, Xref.display_id,
            Xref.version, Xref.description,
-           exDB.db_name, exDB.release,
-           exDB.url_pattern
+           exDB.db_name, exDB.release
       FROM Xref, externalDB exDB, objectXref oxr 
      WHERE Xref.xrefId = oxr.xrefId
        AND Xref.externalDBId = exDB.externalDBId 
@@ -251,7 +244,7 @@ sub _fetch_by_EnsObject_type {
 
   $sth->execute();
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
-    my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release, $url ) =
+    my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release ) =
       @$arrRef;;
 
     my $exDB = Bio::EnsEMBL::DBEntry->new
@@ -267,10 +260,7 @@ sub _fetch_by_EnsObject_type {
       $exDB->description( $desc );
     }
 
-    if( $url ) {
-      $exDB->url_pattern( $url );
-    }
-
+    
     my $sth = $self->prepare( "
       SELECT synonym 
         FROM externalSynonym
@@ -465,7 +455,6 @@ sub create_tables {
          externalDBId INT not null auto_increment,
          db_name VARCHAR(40) not null,
 	 release VARCHAR(40),
-         url_pattern VARCHAR(255),
          PRIMARY KEY( externalDBId ) ) 
    } );
   $sth->execute();
@@ -523,5 +512,4 @@ ExternalDB
 externalDBId int
 db_name varchar
 release varchar
-url_pattern varchar
 
