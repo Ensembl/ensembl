@@ -379,5 +379,82 @@ sub validate {
 
 }
 
+# These methods are specified in the SeqFeatureI interface but we don't want
+# people to store data in them.  These are just here in order to keep
+# existing code working
+
+=head2 has_tag
+
+ Title   : has_tag
+ Usage   : $value = $self->has_tag('some_tag')
+ Function: 
+ Returns : 0 - not implemented
+ Args    :
+
+
+=cut
+
+sub has_tag{
+   my ($self,$tag) = (shift, shift);
+
+   return 0;
+}
+
+=head2 add_tag_value
+
+ Title   : add_tag_value
+ Usage   : $self->add_tag_value('note',"this is a note");
+ Function: Does nothing - throws a warning
+ Returns : nothing
+ Args    : tag (string) and value (any scalar)
+
+
+=cut
+
+sub add_tag_value{
+   my ($self,$tag,$value) = @_;
+
+   $self->warn("add_tag_value not implemented in Bio::EnsEMBL::SeqFeature");
+}
+
+=head2 each_tag_value
+
+ Title   : each_tag_value
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_tag_value {
+   my ($self,$tag) = @_;
+
+   $self->warn("each_tag_value not implemented in Bio::EnsEMBL::SeqFeature");
+
+   return;
+
+}
+
+
+=head2 all_tags
+
+ Title   : all_tags
+ Usage   : @tags = $feat->all_tags()
+ Function: gives all tags for this feature
+ Returns : an array of strings
+ Args    : none
+
+
+=cut
+
+sub all_tags{
+   my ($self,@args) = @_;
+
+   $self->warn("all_tags not implemented in Bio::EnsEMBL::SeqFeature");
+   return;
+}
 
 1;
