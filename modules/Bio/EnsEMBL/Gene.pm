@@ -263,7 +263,7 @@ sub all_Exon_objects{
  Title   : get_all_Exons
  Usage   : foreach my $exon ( $gene->each_unique_Exon )
  Function: retrieves an array of exons associated with this
-           gene, guarenteed to be nonredundant
+           gene, guaranteed to be nonredundant
  Example :
  Returns : 
  Args    :
@@ -595,15 +595,14 @@ sub _dump{
        $fh = \*STDOUT;
    }
 
-   print $fh "Gene ", $self->id(), "\n";
+   print $fh "Gene ", $self->dbID(), "\n";
    foreach my $t ( $self->each_Transcript ) {
-       print $fh "  Trans ", $t->id(), " :";
-       foreach my $e ( $t->each_Exon ) {
-	   print $fh " ",$e->id(),",";
+       print $fh "  Trans ", $t->dbID(), " :";
+       foreach my $e ( $t->get_all_Exons ) {
+	   print $fh " ",$e->dbID(),",";
        }
        print "\n";
    }
-
 
 }
 
@@ -624,17 +623,52 @@ sub transform {
   my $self = shift;
   my $slice = shift;
 
-  my %exon_transformes;
+  # hash arrray to store the refs of transformed exons
+  my %exon_transforms;
+
+  #print STDERR "*******************************\n";
+  #print STDERR "Gene id : " . $self->dbID . "\n";
+  #print STDERR "*******************************\n";
+
+  # comment in to check the original translation before the transformation
+  #for my $transcript ( $self->each_Transcript() ) {
+  #  my $pep = $transcript->translate();
+  #  print STDERR "\n--Before transform--\n";
+  #  print STDERR "Orig Peptide: " . $pep->seq . "\n";
+  #  print STDERR "[Start exon: " . $transcript->start_exon . "]\n";
+  #  print STDERR "[End exon:   " . $transcript->end_exon . "]\n\n";
+  #}
 
   # transform Exons
   for my $exon ( $self->get_all_Exons() ) {
     my $newExon = $exon->transform( $slice );
-    $exon_transformes{ $exon } = $newExon;
+    $exon_transforms{ $exon } = $newExon;
   }
 
-  for my $transcript ( $self->get_all_Transcripts() ) {
-    $transcript->transform( \%exon_transformes );
+  # now need to re-jiggle the transcripts and their
+  # translations to account for the re-mapping process
+
+  for my $transcript ( $self->each_Transcript() ) {
+
+    # need to grab the translation before starting to 
+    # re-jiggle the exons
+
+    my $translation = $transcript->translation();
+
+    $transcript->transform( \%exon_transforms );
+
+    # now adjust the start and end exons in the translation
+    $translation->transform( \%exon_transforms );
   }
+
+  # comment in to check the translation after the transformation
+  #  for my $transcript ( $self->each_Transcript() ) {
+  #    my $pep = $transcript->translate();
+  #    print STDERR "\n--After transform--\n";
+  #    print STDERR "Tran Peptide: " . $pep->seq . "\n";
+  #    print STDERR "[Start exon: " . $transcript->start_exon . "]\n";
+  #    print STDERR "[End exon:   " . $transcript->end_exon . "]\n\n";
+  #  }
 
   return $self;
 }

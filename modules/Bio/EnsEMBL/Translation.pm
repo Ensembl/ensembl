@@ -1,5 +1,3 @@
-
-
 #
 # BioPerl module for Bio::EnsEMBL::Translation
 #
@@ -372,6 +370,43 @@ sub adaptor {
     return $self->{'adaptor'};
 
 }
+
+
+=head2 transform
+
+  Arg  1    : Bio::EnsEMBL::Transcript $slice
+              
+  Function  : make slice coords from raw contig coords or vice versa
+  Returntype: Bio::EnsEMBL::Transcript
+  Exceptions: none
+  Caller    : object::methodname or just methodname
+
+=cut
+
+
+sub transform {
+  my $self = shift;
+  my $href_exons = shift;
+  my @mapped_list_of_exons;
+
+  my $start_exon = $self->start_exon();
+  my $end_exon = $self->end_exon();
+
+  if ( exists $$href_exons{$start_exon} ) {
+    $self->start_exon($$href_exons{$start_exon});
+    }
+  else { 
+    $self->throw("Unable to map a transformed start exon");
+  }
+
+  if ( exists $$href_exons{$end_exon} ) {
+      $self->end_exon($$href_exons{$end_exon});
+    }
+  else { 
+    $self->throw("Unable to map a transformed end exon");
+  }
+}
+
 
 
 1;

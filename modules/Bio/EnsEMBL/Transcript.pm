@@ -263,6 +263,10 @@ sub add_Exon{
    # at the moment, use the SeqFeature sub hash. But in the future,
    # possibly do something better?
 
+  # print STDERR "Transcript.pm: Adding exon " . $exon . "\n";
+  # print STDERR "[Start " . $exon->start . "\t";
+  # print STDERR "End " . $exon->end . "\tStrand: " . $exon->strand . "]\n\n";
+
    push(@{$self->{'_trans_exon_array'}},$exon);
    
 }
@@ -429,7 +433,7 @@ sub last_exon {
     my ($self) = @_;
     {
         my($pkg, $file, $line) = caller(0);
-        $self->warn("In file '$file', package '$pkg' line $line\n".
+         $self->warn("In file '$file', package '$pkg' line $line\n".
              "please switch your code to call 'end_exon'\n".
              "'last_exon' is now deprecated\n");
     }
@@ -565,11 +569,12 @@ sub translateable_exons {
     my $end_exon        = $translation->end_exon;
     my $t_start         = $translation->start;
     my $t_end           = $translation->end;
-    
+
     my( @translateable );
     foreach my $ex ($self->get_all_Exons) {
         my $ex_id   = $ex->dbID;
 
+#	print STDERR $ex->contig() . "\n";
         if ($ex ne $start_exon and ! @translateable) {
             next;   # Not yet in translated region
         }
@@ -617,10 +622,15 @@ sub translateable_exons {
             $new_exon->end  ($trunc_end);
             
             $new_exon->strand($strand);
-            $new_exon->clone_id($ex->clone_id);
+#            $new_exon->clone_id($ex->clone_id);
             $new_exon->contig_id($ex->contig_id);
             $new_exon->phase($ex->phase);
+	    $new_exon->contig($ex->contig);
             $new_exon->attach_seq($ex->entire_seq);
+
+	    my $temp = $ex->entire_seq();
+	    my $tseq = $temp->seq;
+	    
             push(@translateable, $new_exon);
         } else {
             # It's just an ordinary internal exon
@@ -688,7 +698,6 @@ sub split_Transcript_to_Partial {
 
    TRANSCRIPT :
    while (@exons) {
-
 
        # make a new transcript, add the old exon
        $t = $self->new();
@@ -783,7 +792,8 @@ sub translate {
 
 	    # last exon
 	    if( $last_exon->end_phase != 0 ) {
-	        $filler = substr($last_exon->seq->seq, $last_exon->seq->length - $last_exon->end_phase);
+#	        $filler = substr($last_exon->seq->seq, $last_exon->seq->length - $last_exon->end_phase);
+	        $filler = substr($last_exon->seq, length($last_exon->seq) - $last_exon->end_phase);
 	    } 
 	    $filler .= 'N' x (3 - $last_exon->end_phase);
 
@@ -794,7 +804,8 @@ sub translate {
 	    } else {
 	        $filler .= 'N' x $first_exon->phase;
 	    }
-	    $filler .= substr($first_exon->seq->seq, 0, (3 - $first_exon->phase) % 3);
+#	    $filler .= substr($first_exon->seq->seq, 0, (3 - $first_exon->phase) % 3);
+	    $filler .= substr($first_exon->seq, 0, (3 - $first_exon->phase) % 3);
 
 	    # translate it.
 	    if( CORE::length($filler) != 6 ) {
@@ -841,7 +852,8 @@ sub seq {
     
     my $transcript_seq_string = '';
     foreach my $ex ($self->get_all_Exons) {
-        $transcript_seq_string .= $ex->seq->seq;
+        $transcript_seq_string .= $ex->seq;
+#        $transcript_seq_string .= $ex->seq->seq;
     }
     
     my $seq = Bio::Seq->new(
@@ -849,6 +861,7 @@ sub seq {
         -MOLTYPE    => 'dna',
         -SEQ        => $transcript_seq_string,
         );
+
     return $seq;
 }
 
@@ -1009,7 +1022,6 @@ sub _translate_coherent{
 
    foreach my $exon ( @exons ) {
 
-
        # trim down start ends on the basis of phase.
        if( $prev && $prev->end_phase != $exon->phase ) {
 	   $self->throw("Called coherent translate but exon phases don't match. Yuk!");
@@ -1017,10 +1029,11 @@ sub _translate_coherent{
 
        # warn about non DNA passed in. 
 
-       my $seq = $exon->seq();
-       my $str = $seq->seq();
+#       my $seq = $exon->seq();
+       my $str = $exon->seq();
+#       my $str = $seq->seq();
        
-       #print STDERR "Exon has length ",$exon->length," and sequence length ",length($str),"\n";
+#       print STDERR "Exon " . $exon->dbID . " has length ",$exon->length," and sequence length ",length($str),"\n";
 
        if( CORE::length( $str ) == 0 ) {
 	   $self->throw("Bad internal error - got a 0 length rstring...");
@@ -1065,9 +1078,6 @@ sub _translate_coherent{
 
 
    my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -alphabet => 'dna' );
-  #my $trans_seq = $temp_seq->translate();
-
-#   print STDERR "Sequence is $tstr \n";
 
    return $temp_seq->translate();
 }
@@ -1858,6 +1868,45 @@ sub finex_string {
 
    return $finex;
 }
+
+
+=head2 transform
+
+  Arg  1    : Bio::EnsEMBL::Transcript $Slice
+              
+  Function  : make slice coords from raw contig coords or vice versa
+  Returntype: Bio::EnsEMBL::Transcript
+  Exceptions: none
+  Caller    : object::methodname or just methodname
+
+=cut
+
+
+sub transform {
+  my $self = shift;
+  my $href_exons = shift;
+  my @mapped_list_of_exons;
+
+  foreach my $exon ($self->get_all_Exons()) {
+    # the old exon was successfully remapped then store the new exon
+    if ( exists $$href_exons{$exon} ) {
+      push @mapped_list_of_exons, $$href_exons{$exon};
+    }
+    # but for the case where the exon was unable to be mapped, as it
+    # was outside the bounds of the slice, include the original exon.
+    else {
+      push @mapped_list_of_exons, $exon;
+    }
+  }
+
+  # flush the old list of exons
+  $self->{'_trans_exon_array'} = [];
+
+  # attach the new list of exons to the transcript
+  push @{$self->{'_trans_exon_array'}},@mapped_list_of_exons;
+
+}
+
 
 
 1;

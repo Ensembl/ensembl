@@ -51,8 +51,9 @@ use strict;
 # Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeq);
 
 # new() is written here 
 
@@ -65,6 +66,7 @@ sub new {
   my ($chr,$start,$end,$strand,$type,$adaptor, $dbID) = $self->_rearrange([qw(CHR_NAME CHR_START CHR_END STRAND ASSEMBLY_TYPE ADAPTOR DBID)],@args);
 
   if( !defined $chr || !defined $start || !defined $end || !defined $type ) {
+    print "Chr: " . $chr . "\t" . "Start: " . $start . "\t" . "End: " . $end . "\t" . "Type: " . $type . "\n";
     $self->throw("Do not have all the parameters for slice");
   }
 
@@ -73,13 +75,13 @@ sub new {
   $self->chr_end($end);
 
   #set strand to a default of 1 if it is not set
-  if (!defined $strand) {
+  if ( undef $strand) {
     $self->strand($strand);
   }
   else {
-    $self->strand(1);
+    $self->strand('1');
   }
-    
+
   $self->assembly_type($type);
   $self->adaptor($adaptor);
   $self->dbID( $dbID );
@@ -150,18 +152,28 @@ sub seq {
               relative to start of slice, which is 1.
   Arg  2    : int $endBasePair
               relative to start of slice.
+  Arg  3    : int $strand
   Function  : returns string of dna sequence
   Returntype: txt
   Exceptions: end should be at least as big as start
+              strand must be set
   Caller    : general
 
 =cut
 
 sub subseq {
-  my ( $self, $start, $end ) = @_;
+  my ( $self, $start, $end, $strand ) = @_;
+
+  if ( $end < $start ) {
+    $self->throw("End coord is less then start coord to call on Slice subseq.");
+  }
+
+  if ( !defined $strand || ( $strand != -1 && $strand != 1 )) {
+    $self->throw("Incorrect strand information set to call on Slice subseq.");
+  }
 
   my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
-  my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, $start, $end, 1 );
+  my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, $start, $end, $strand );
 
   return $seq;
 }
@@ -267,11 +279,8 @@ sub get_all_ExternalFeatures{
 sub get_all_Genes{
    my ($self,@args) = @_;
 
-   my $gene_adaptor = $self->adaptor->get_GeneAdaptor();
+   my $gene_adaptor = $self->adaptor->db->get_GeneAdaptor();
    my @genes = $gene_adaptor->fetch_by_Slice($self);
-
-   #$self->throw("Ewan has not implemented this function! Complain!!!!");
-
 }
 
 
@@ -329,8 +338,18 @@ sub invert{
 sub primary_seq{
    my ($self,@args) = @_;
 
-   $self->throw("Ewan has not implemented this function! Complain!!!!");
+    if( $self->{'_virtual_primary_seq'} ){
+	return $self->{'_virtual_primary_seq'};
+    }
 
+   my $seq = $self->seq();
+    my $slice_seq = Bio::PrimarySeq->new( 
+					 -id =>$self->dbID,
+					 -seq =>$seq
+					);
+
+    $self->{'_virtual_primary_seq'} = $slice_seq;
+    return $slice_seq;
 }
 
 
@@ -461,6 +480,7 @@ sub chr_end{
 
 sub strand{
    my ($self,$value) = @_;
+
    if( defined $value) {
       $self->{'strand'} = $value;
     }

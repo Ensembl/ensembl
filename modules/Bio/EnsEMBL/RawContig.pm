@@ -282,6 +282,36 @@ sub sequence {
 
 sub seq {
   my $self = shift;
+
+  my $seq = $self->adaptor->db->get_SequenceAdaptor->fetch_by_contig_id_start_end_strand($self->dbID, 1, -1, 1);
+
+  return $seq;
+}
+
+sub subseq {
+  my ($self, $start, $end, $strand) = @_;
+
+  if ( $end < $start ) {
+    $self->throw("End coord is less then start coord to call on RawContig subseq.");
+  }
+
+  if ( !defined $strand || ( $strand != -1 && $strand != 1 )) {
+    $self->throw("Incorrect strand information set to call on RawContig subseq.");
+  }
+
+
+  my $sub_seq = $self->adaptor->db->get_SequenceAdaptor->fetch_by_contig_id_start_end_strand($self->dbID, $start, $end, $strand);
+
+#  print STDERR "[RawContig subseq method: Strand: " . $strand . "\t";
+#  print STDERR "Start: " . $start . "\tEnd: " . $end . "\tContig dbID: " . $self->dbID . "]\n";
+#  print STDERR "Subseq: " . $sub_seq . "\n";
+
+  return $sub_seq;
+}
+
+
+sub seq_old {
+  my $self = shift;
   my $arg = shift;
 
 #   print STDERR "Sequence with $arg\n";
@@ -291,7 +321,7 @@ sub seq {
   } else {
     if( ! defined $self->{_seq} &&
       defined $self->adaptor() ) {
-	# print STDERR "Fetching sequence\n";
+	 print STDERR "Fetching sequence\n";
       $self->adaptor->fetch( $self );
     }
   }
@@ -300,9 +330,24 @@ sub seq {
 }
 
 sub primary_seq {
+
   my $self = shift;
-  
-  $self->seq();
+  my $arg = shift;
+
+#   print STDERR "Sequence with $arg\n";
+
+  if( defined $arg ) {
+    $self->{_seq} = $arg ;
+  } else {
+    if( ! defined $self->{_seq} &&
+      defined $self->adaptor() ) {
+#	 print STDERR "Fetching sequence\n";
+      $self->adaptor->fetch( $self );
+    }
+  }
+#   print STDERR "Returning...\n";
+#  return $self->{_seq};
+
 }
 
 

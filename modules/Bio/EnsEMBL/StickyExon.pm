@@ -289,5 +289,131 @@ sub _sort_by_sticky_rank {
 }
 
 
+=head2 transform
+
+  Arg  1    : Bio::EnsEMBL::Slice $slice
+              make this slice coords, but how does lazy loading work then??
+  Function  : make slice coords from raw contig coords or vice versa
+  Returntype: Bio::EnsEMBL::Exon (Bio::EnsEMBL::StickyExon)
+  Exceptions: none
+  Caller    : Gene::transform()
+
+=cut
+
+
+sub transform {
+  my $self = shift;
+  my $slice = shift;
+
+  if( defined $self->{'contig'} and 
+      $self->{'contig'}->isa( "Bio::EnsEMBL::RawContig" ) )  {
+
+    print STDERR "WARNING sticky exon alert!!\n";
+
+    my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
+      ( $slice->assembly_type() );
+
+    my $dna_seq = "";
+    my $mapped_start = 0;
+    my $mapped_end = -1;
+    my $composite_exon_strand = 0;
+    my $composite_exon_phase = -1;
+
+    # sort the component exons
+    $self->_sort_by_sticky_rank(); 
+
+    # and now retrieve them
+    my @component_exons = $self->each_component_Exon();
+
+    foreach my $c_exon ( @component_exons ) {
+
+      my @mapped = $mapper->map_coordinates_to_assembly
+	(
+	 $c_exon->contig()->dbID,
+	 $c_exon->start(),
+	 $c_exon->end(),
+	 $c_exon->strand()
+	);
+
+    #  print STDERR "\nStickyExon.pm transform method:\n"; 
+    #  print STDERR "[Mapped start  " . $mapped[0]->start . "\t";
+    #  print STDERR "Mapped end    " . $mapped[0]->end . "\t";
+    #  print STDERR "Mapped strand " . $mapped[0]->strand . "]\n";
+    #  print STDERR "Sticky rank : " . $c_exon->sticky_rank() . "\n";
+
+      # exons should always transform so in theory no error check
+      # necessary
+      if( ! @mapped ) {
+	$self->throw( "Component Sticky Exon couldnt map" );
+      }
+    
+      # should get a gap object returned if an exon lies outside of 
+      # the current slice.  Simply return the exon as is - i.e. untransformed.
+      # this untransformed exon will be distinguishable as it will still have
+      # contig attached to it and not a slice.
+      if( $mapped[0]->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
+	return $self;
+      }
+
+      # concatenate the raw sequence together
+      $dna_seq .= $c_exon->seq();
+
+      # print STDERR $c_exon->dbID . " " . $c_exon->seq . "\n";
+
+      # now pull out the start and end points of the newly concatenated sequence
+      # if we've got the first sticky exon, store the relevant info
+
+      if ($c_exon->sticky_rank == 1 ) {
+	# this assumes that the strand of the sticky exon is
+	# set by the first one - is this correct?
+	$composite_exon_strand = $mapped[0]->strand();
+
+	if ( $composite_exon_strand == 1 ) {
+	  $mapped_start = $mapped[0]->start();
+	  $composite_exon_phase = $c_exon->phase();
+	}
+	else { # for the reverse strand case it is something different
+	  $mapped_end = $mapped[0]->end();
+	}
+      }
+
+      # now do the end point
+      # keep storing as you iterate over the component exons
+      # since the exons are previously sorted based on their sticky rank
+      # then the last set of stored values will be the last component exon
+      else {
+	if ( $mapped[0]->strand == 1 ) {
+	  $mapped_end = $mapped[0]->end;
+	}
+	else {
+	  $mapped_start = $mapped[0]->start;
+	  $composite_exon_phase = $c_exon->phase();
+	}
+      }
+    }
+    
+    # now build the new composite exon
+    my $newexon = Bio::EnsEMBL::Exon->new();
+    $newexon->start( $mapped_start - $slice->chr_start() + 1 );
+    $newexon->end( $mapped_end - $slice->chr_start() + 1);
+    $newexon->strand( $composite_exon_strand * $slice->strand() );
+
+    $newexon->contig( $slice );
+    $newexon->phase( $composite_exon_phase );
+
+    my $newexon_primaryseq = new Bio::PrimarySeq (
+       -SEQ => $dna_seq , 
+       '-id' => 'composite_exon' , 
+       -alphabet => 'dna'
+    );
+
+    $newexon->attach_seq( $newexon_primaryseq );
+
+    return $newexon;
+  } else {
+    $self->throw( "Not implemented yet" );
+  }
+}
+
 
 1;

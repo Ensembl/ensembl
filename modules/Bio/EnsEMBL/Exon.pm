@@ -92,6 +92,7 @@ use strict;
 # Object preamble - inherits from Bio::SeqFeature::Generic
 
 use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::Slice;
 use Bio::Seq; # exons have to have sequences...
 
 @ISA = qw(Bio::EnsEMBL::SeqFeature);
@@ -268,7 +269,7 @@ sub contig_id{
   if( defined $self->{'contigid'} ) {
     return $self->{'contigid'};
   } elsif( defined $self->contig() ) {
-    return $self->contig->internal_id();
+    return $self->contig->dbID();
   } else {
     return undef;
   }
@@ -287,6 +288,10 @@ sub contig_id{
 
 sub clone_id{
    my $self = shift;
+
+   $self->warn("Exon->clone_id method deprecated\n");
+   return undef;
+
    if( @_ ) {
      my $value = shift;
      $self->{'clone_id'} = $value;
@@ -340,9 +345,10 @@ sub transform {
   my $slice = shift;
 
   if( defined $self->{'contig'} and 
-      $self->{'contig'}->ISA( "Bio::EnsEMBL::RawContig" ) )  {
-    my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type
+      $self->{'contig'}->isa( "Bio::EnsEMBL::RawContig" ) )  {
+    my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
       ( $slice->assembly_type() );
+
     my @mapped = $mapper->map_coordinates_to_assembly
       (
        $self->contig()->dbID,
@@ -350,20 +356,43 @@ sub transform {
        $self->end(),
        $self->strand()
       );
+
     # exons should always transform so in theory no error check
     # necessary
-    if(( ! @mapped ) ||
-       ( $mapped[0]->isa( "Bio::EnsEMBL::Mapper::Gap" ))) {
+    if( ! @mapped ) {
       $self->throw( "Exon couldnt map" );
     }
-       
+    
+    # should get a gap object returned if an exon lies outside of 
+    # the current slice.  Simply return the exon as is - i.e. untransformed.
+    # this untransformed exon will be distinguishable as it will still have
+    # contig attached to it and not a slice.
+    if( $mapped[0]->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
+      print "Exon " . $self->dbID . " Start:" . $self->start . " End:". $self->end . " mapped to a gap \n";
+      return $self;
+    }
+
     my $newexon = Bio::EnsEMBL::Exon->new();
-    $newexon->start( $mapped[0]->start()) - $slice->start() + 1;
-    $newexon->end( $mapped[0]->end() - $slice->start() + 1);
+    %$newexon = %$self;
+
+    $newexon->start( $mapped[0]->start() - $slice->chr_start() + 1);
+    $newexon->end( $mapped[0]->end() - $slice->chr_start() + 1);
     $newexon->strand( $mapped[0]->strand() * $slice->strand() );
 
     $newexon->contig( $slice );
     $newexon->attach_seq( $slice );
+
+    #print "Exon start " . $self->start . "\n";
+    #print "Exon end   " . $self->end . "\n";
+    #print "Mapped start " . $newexon->start . "\n";
+    #print "Mapped end   " . $newexon->end . "\n";
+
+#    print "Mapped seq: " . $newexon->seq(). "\n";
+#    print "Original:   " . $self->seq() . "\n";
+
+
+    return $newexon;
+
   } else {
     $self->throw( "Not implemented yet" );
   }
@@ -573,7 +602,7 @@ sub _translate {
     # Get the DNA sequence and create the sequence string
     $self->seq() || $self->throw("No DNA in object. Can't translate\n");
 
-    my $dna = $self->seq()->seq();
+    my $dna = $self->seq();
   
     # Translate in all frames - have to chop
     # off bases from the beginning of the dna sequence 
@@ -1315,8 +1344,22 @@ sub cdna2genomic {
 }
 
 
+sub seq {
+  my $self = shift;
 
+  if ( ! defined $self->{'contig'} ) {
+    return undef;
+  }
+  else {
+    # call subseq on the contig which may be a RawContig or a Slice
 
+#    print STDERR "[Exon.pm seq method: Start: " . $self->start . "\tEnd:   " . $self->end . "\t";
+#    print STDERR "Strand: " . $self->strand . "]\nContig: " . $self->contig() . "\n\n";
+
+    my $seq = $self->contig()->subseq($self->start, $self->end, $self->strand);
+    return $seq;
+  }
+}
 
 
 # Inherited methods
