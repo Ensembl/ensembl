@@ -22,9 +22,9 @@ Bio::EnsEMBL::Utils::GTF_Merge - Module having the GTF merge subroutines
  
 =head1 DESCRIPTION
 
-Module containing the sub routine gtf_merge, which works on files to
-provide merging between two gtf files. It has to work file based as
-there needs to be a 2 pass approach.
+Module containing the sub routine gtf_merge, which works on one sorted stream
+containing gtf features from several different sources.
+
 
 The merge is done on overlapping exon lines
 
@@ -32,8 +32,8 @@ The end result is a new file in $output file which has the gene name
 of input1 and input2 replaced by the "new_gene_prefix_unique number"
 appropiate to the merge.
 
-This only works if the transcript identifiers in the two files are
-distinct, but does handle unsorted files fine.
+The routine gets  confused if the transcript identifiers in the two files are
+not distinct.
 
 =head1 CONTACT
 
@@ -70,11 +70,11 @@ use Carp;
  Example :
  Returns : nothing
  Args    : read stream, MUST BE SORTED by contig, strand, start
-           (sort -k1,1 -k7,7 -k4,4n in UNIX commands)
+             (sort -k1,1 -k7,7 -k4,4n in UNIX commands); if not sorted,
+             module will gtf_merge will die with an error message.  
            output stream
-           prefix
-           (optional log output stream for intermedaite data)
-
+           prefix (optional)
+           log output stream for intermediate data
 
 =cut
 
@@ -123,13 +123,13 @@ sub gtf_merge {
 	if( !defined $thash{$trans} ) {
 	    my $new_igi = "temp_" . $unique_number;
 	    $unique_number++;
-	    $thash{$trans} = $new_igi;
-	    $ghash{$new_igi} = [];
-	    push(@{$ghash{$new_igi}},$trans);
+	    $thash{$trans} = $new_igi; # one igi of trans
+	    $ghash{$new_igi} = [];     
+	    push(@{$ghash{$new_igi}},$trans); # all transcripts of igi
 	}
 
 	if( !defined $prevctg || $ctg ne $prevctg || $strand ne $prevstrand) {
-	    # new contig/strand/file
+	    # new contig or strand
 	    if( $strand eq $prevstrand && $seenctg{$ctg} ) {
 		&confess("Not sorted GTF file - Seen $ctg already but in a between contig move!");
 	    }
@@ -220,8 +220,7 @@ sub gtf_merge {
 	    print STDERR "Line with no transcript id: $_\n";
 	    print $out $_;
 	    next;
-	}
-
+	} 
 	$trans =~ s/\"//g;
 	$trans =~ s/;$//g;
 
