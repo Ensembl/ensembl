@@ -3333,12 +3333,13 @@ sub has_MapSet {
 
 sub get_Haplotypes_start_end {
   my ($self,$adaptor) = @_;
-  
+  my $use_lite = 1;
   my @haps = $adaptor->fetch_Haplotype_by_chr_start_end(
                          $self->_chr_name, 
                          $self->_global_start, 
                          $self->_global_end,
-                        );
+                         $use_lite, #  this is an optional parameter that returns a lite obj
+						);
                         
     # reset haplotype object  global coordinated to be vc-based...
     # to keep the drawing code happy

@@ -906,9 +906,18 @@ sub dna_seq {
 
     # we now have to figure out if the phase is compatible. If it
     # is not, we need to add some stuff in...
-
+    my $tl = $self->translation;
+    my $start_exon;
+    if( $tl  ) {
+      $start_exon = $tl->start_exon();
+    } else {
+      $start_exon = undef;
+    }
+    
     if( $prev ) {
-	if( $prev->end_phase != $exon->phase ) {
+       
+	if( defined $start_exon && $prev != $start_exon && $prev->phase != -1 && $prev->end_phase != $exon->phase ) {
+	#if( $prev->end_phase != $exon->phase ) {
 	    if( $prev->end_phase == 0 ) {
 		if( $exon->phase == 1 ) {
 		    $mrna .= "N" x 2;

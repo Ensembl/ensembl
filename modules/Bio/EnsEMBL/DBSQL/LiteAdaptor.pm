@@ -292,8 +292,8 @@ sub fetch_snp_features {
                  refsnpid, tscid, hgbaseid
         FROM   	 $_db_name.snp
         WHERE  	 chr_name='$chr' 
-        AND      snp_chrom_start>$vc_start
-	AND      snp_chrom_start<$vc_end
+        AND      chr_start>$vc_start
+    	AND      chr_start<$vc_end
               };
 
     #&eprof_start('snp-sql-query');
@@ -437,6 +437,11 @@ sub fetch_virtualsnps {
                 'id'        => $row->{'refsnpid'},
                 'tscid'     => $row->{'tcsid'},
                 'hgbaseid'  => $row->{'hgbaseid'}
+                'strand'    => $row->{'chr_strand'},
+                'id'        => $row->{'refsnpid'},
+                'tscid'     => $row->{'tcsid'},
+                'hgbaseid'  => $row->{'hgbaseid'},
+                'type'      => $row->{'type'},
             };
     	  	$old_start = $start;
 		}
