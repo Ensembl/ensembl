@@ -117,6 +117,7 @@ sub _initialize {
   # define a few other important files
   my $file_root;
   if($part){
+      $self->throw("Do not use -part  This is a development option which is currently disabled");
       $file_root="$unfinished_root/partial";
   }else{
       $file_root="$unfinished_root";

@@ -54,7 +54,7 @@ my $db1 = Bio::EnsEMBL::DBSQL::Obj->new( -user => $dbuser, -db => $dbname ,
 my $raclones=['AP000228'];
 my $db2 = Bio::EnsEMBL::TimDB::Obj->new($raclones);
 
-print STDERR "Making clone list from DBSQL\n";
+print STDERR "\nMaking clone list from DBSQL\n";
 my @clones1 = $db1->get_all_Clone_id();
 print STDERR scalar(@clones1)." clones found\n\n";
 my %clones1=map{ $_, 1 } @clones1;
