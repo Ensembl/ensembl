@@ -337,9 +337,21 @@ WHERE  lg.chr_name = '$chr'
 ";
     dump_data($sql, $satdb, 'Hit');
 
+# GPHit (i.e., those on the golden path); denormalized table used by contigview
+    $sql="
+SELECT distinct h.*
+FROM   $satdb.Hit h, 
+       $litedb.gene_snp lgs,
+       $litedb.gene lg
+WHERE  lg.chr_name = '$chr'
+ AND   lg.gene = lgs.gene
+ AND   lgs.refsnpid = h.refsnpid 
+"
+    dump_data($sql, $satdb, 'GPHit');
+
+
 # ignore these (says Heikki):
 #  Freq  
-#  GPHit      
 #  SubPop     
 
 }                                       # snp
@@ -584,7 +596,7 @@ sub dump_data {
     
     $sql =~ s/\s+/ /g;
     
-    my $cmd = "echo \"$sql\" | $mysql -q --batch -u $dbuser -p$dbpass $litedb > $destdir/$datfile";
+    my $cmd = "echo \"$sql\" | $mysql -N -q --batch -u $dbuser -p$dbpass $litedb > $destdir/$datfile";
     # warn "dumping: $cmd\n"; too verbose
     warn "dumping $tablename ...\n";
 
