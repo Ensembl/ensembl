@@ -26,11 +26,6 @@ if( !($old && $new) ) {
 my ($new_x2e_r, $new_e2x_r) = read_mappings($new);
 my ($old_x2e_r, $old_e2x_r) = read_mappings($old);
 
-#my %new_x2e = %$new_x2e_r;
-#my %old_x2e = %$old_x2e_r;
-#my %new_e2x = %$new_e2x_r;
-#my %old_e2x = %$old_e2x_r;
-
 compare($old_x2e_r, $new_x2e_r, "xref");
 compare($old_e2x_r, $new_e2x_r, "ensembl_object");
 
@@ -39,23 +34,20 @@ compare($old_e2x_r, $new_e2x_r, "ensembl_object");
 
 sub compare {
 
-  my ($oldr, $newr, $desc) = @_;
+  my ($old, $new, $desc) = @_;
 
   open(NEW_ONLY, ">${desc}_new_only.txt");
   open(OLD_ONLY, ">${desc}_old_only.txt");
 
-  my %new = %$newr;
-  my %old = %$oldr;
-
   my ($matched, $mismatched, $new_only, $old_only, $total);
 
-  foreach my $key (keys %new) {
+  foreach my $key (keys %$new) {
 
     # if a mapping exists, look for any matches
     my $found = 0;
-    if (exists $old{$key}) {
-      foreach my $old_value (@{$old{$key}}) {
-	foreach my $new_value (@{$new{$key}}) {
+    if (exists $old->{$key}) {
+      foreach my $old_value (@{$old->{$key}}) {
+	foreach my $new_value (@{$new->{$key}}) {
 	  if ($old_value eq $new_value) {
 	    $found = 1;
 	  }
@@ -75,9 +67,9 @@ sub compare {
 
   }
 
-  foreach my $key (keys %old) {
+  foreach my $key (keys %$old) {
 
-    if (!exists $new{$key}) {
+    if (!exists $new->{$key}) {
       $old_only++;
       print OLD_ONLY join("\t", split(/\./, $key)) . "\n";
     }
@@ -88,7 +80,7 @@ sub compare {
   close(OLD_ONLY);
   close(MISMATCHED);
 
-  print "\nCompared " . scalar(keys %new) . " new xref mappings with " . scalar(keys %old) . " existing ensembl mappings\n";
+  print "\nCompared " . scalar(keys %$new) . " new xref mappings with " . scalar(keys %$old) . " existing ensembl mappings\n";
 
   print "\nComparing keyed on $desc:\n\n";
 
