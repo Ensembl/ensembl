@@ -184,7 +184,23 @@ sub check_and_register {
   #loop through the list of existing ranges recording any "gaps" where the
   #existing range does not cover part of the requested range
   #
-  for($CUR=0; $CUR < $len; $CUR++) {
+  my $start_idx = 0;
+  my $end_idx = $#$list;
+  my ( $mid_idx, $range );
+
+  # binary search the relevant pairs
+  # helps if the list is big
+  while(( $end_idx - $start_idx ) > 1 ) {
+    $mid_idx = ($start_idx+$end_idx)>>1;
+    $range = $list->[$mid_idx];
+    if( $range->[1] < $start ) {
+      $start_idx = $mid_idx;
+    } else {
+      $end_idx = $mid_idx;
+    }
+  }
+
+  for($CUR=$start_idx; $CUR < $len; $CUR++) {
     my $PREV = $CUR-1;
     my ($pstart,$pend) = @{$list->[$CUR]};
 
