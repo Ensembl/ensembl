@@ -245,7 +245,8 @@ sub _fetch_seq {
         $sth->fetch();
         $sth->finish();
 
-        $entire_seq .= $tmp_seq;
+        # always give back uppercased sequence so it can be properly softmasked
+        $entire_seq .= uc($tmp_seq);
         $cache->{"$seq_region_id:$i"} = $tmp_seq;
       }
     }
@@ -269,6 +270,9 @@ sub _fetch_seq {
     $sth->bind_columns(\$tmp_seq);
     $sth->fetch();
     $sth->finish();
+
+    # always give back uppercased sequence so it can be properly softmasked
+    $tmp_seq = uc($tmp_seq);
 
     return \$tmp_seq;
   }
