@@ -303,25 +303,6 @@ sub write_deleted_id{
     $self->_execute($query);
 }
 
-
-=head2 write_dead_geneid
-
- Title   : write_dead_geneid
- Usage   : $arcdb->write_dead_geneid($geneid)
- Function: write the id of a dead gene to the db 
- Example : $arcdb->write_dead_geneid('ENSG0000003456')
- Returns : nothing
- Args    : gene id string
-
-
-=cut
-
-sub write_dead_geneid{
-    my ($self,$geneid) = @_;
-    my $query="insert into dead_genes (id) values ('$geneid')";
-    $self->_execute($query);
-}
-
 =head2 write_seq
 
  Title   : write_seq
@@ -665,5 +646,3 @@ sub DESTROY{
        $obj->{'_db_handle'} = undef;
    }
 }
-
-
