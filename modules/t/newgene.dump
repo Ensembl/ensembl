@@ -101,6 +101,12 @@ INSERT INTO gene (id,version,created,modified,stored) VALUES ('test_gene',1,'200
 INSERT INTO genedblink (gene_id, external_db, external_id) VALUES ('test_gene','sptrembl','MC1R');
 
 #
+# Dumping data for table 'genedescription'
+#
+INSERT INTO gene_description (gene_id,description) VALUES ('test_gene', 'some test description');
+
+
+#
 
 # Dumping data for table 'ghost'
 #
