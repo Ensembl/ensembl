@@ -3,7 +3,7 @@ use TestUtils qw(test_getter_setter);
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 9;
+	plan tests => 10;
 }
 
 use MultiTestDB;
@@ -76,3 +76,7 @@ ok($sf);
 #
 $sf->adaptor($sfa);
 ok($sf->adaptor->isa('Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor'));
+
+# list_dbIDs
+my $ids = $sfa->list_dbIDs();
+ok (@{$ids});

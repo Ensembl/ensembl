@@ -2,7 +2,7 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 11;
+	plan tests => 12;
 }
 
 
@@ -82,6 +82,11 @@ my $dbID = $repeat->dbID;
 my $r = $repeat_f_ad->fetch_by_dbID($dbID);
 
 ok($r->dbID == $dbID && $r->start == 26 && $r->hend == 45);
+
+
+# list_dbIDs
+my $ids = $repeat_f_ad->list_dbIDs();
+ok (@{$ids});
 
 $multi->restore('core', 'repeat_feature');
 
