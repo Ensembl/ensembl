@@ -130,6 +130,84 @@ sub fset2transcript {
     return $transcript;
 }
 
+sub fset2transcript_guess_phases {
+    my ($fset,$contig) = @_;
+
+    my $transcript = new Bio::EnsEMBL::Transcript;
+
+    $transcript->id($contig->id . "." . $fset->id);
+
+    my @exons;
+    my $count    = 1;
+
+    foreach my $f ($fset->sub_SeqFeature) {
+
+	my $exon  = new Bio::EnsEMBL::Exon;
+	$exon->id       ($contig->id . ".$count");
+	$exon->contig_id($contig->id);
+	$exon->start    ($f->start);
+	$exon->end      ($f->end  );
+	$exon->strand   ($f->strand);
+	$exon->attach_seq($contig->primary_seq);
+	$exon->phase($f->phase); 
+	push(@exons,$exon);
+	$count++;
+	
+    }
+	
+    my $translation = new Bio::EnsEMBL::Translation;
+    $translation->id($contig->id);
+	
+    if ($exons[0]->strand == 1) {
+	@exons = sort {$a->start <=> $b->start} @exons;
+    } else {
+	@exons = sort {$b->start <=> $a->start} @exons;
+    }
+	
+    $translation->start        (1);
+    $translation->end          ($exons[$#exons]->end - $exons[$#exons]->start + 1);
+    $translation->start_exon_id($exons[0]->id);
+    $translation->end_exon_id  ($exons[$#exons]->id);
+    $transcript->translation($translation);
+    
+    my $endphase = 0;
+    
+    foreach my $exon (@exons) {
+	
+	$exon      ->phase   ($endphase);
+	$transcript->add_Exon($exon);
+
+	$endphase = $exon->end_phase;
+	
+    }
+
+    if ($transcript->translate->seq !~ /\*/) {
+	return $transcript;
+    }  	
+
+    $endphase = 1;
+    
+    foreach my $exon (@exons) {
+	$exon->phase($endphase);
+	$endphase = $exon->end_phase;
+    }
+
+    if ($transcript->translate->seq !~ /\*/) {
+	return $transcript;
+    }  	
+
+    $endphase = 2;
+    
+    foreach my $exon (@exons) {
+	$exon->phase($endphase);
+	$endphase = $exon->end_phase;
+    }
+    
+    if ($transcript->translate->seq !~ /\*/) {
+	return $transcript;
+    }  	
+}
+
 1;
 
 
