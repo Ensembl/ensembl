@@ -554,47 +554,66 @@ sub fetch_PredictionFeature_by_id {
  
     $genscan_id || $self->throw("I need a genscan id");
    
-    my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,f.name,f.hid,fset.id,c.id,f.phase " .
-       "from feature f, fset fset,fset_feature ff,contig c where ff.feature = f.id and fset.id = ff.fset ".
-        " and c.internal_id=f.contig and ff.fset ='$genscan_id' and name = 'genscan'";
-    my $sth = $self->db->prepare($query);   
-    $sth->execute();
-    my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hid,$fsetid,$contig,$phase);
-    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hid,\$fsetid,\$contig,\$phase);
-    my $analysisadaptor = $self->db->get_AnalysisAdaptor;
-    my $current_fset;
-    while( $sth->fetch ) {
-	unless($current_fset) {
-	    $current_fset = Bio::EnsEMBL::FeatureFactory->new_feature;
+#    my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,f.name,f.hid,fset.id,c.id,f.phase " .
+#       "from feature f, fset fset,fset_feature ff,contig c where ff.feature = f.id and fset.id = ff.fset ".
+#        " and c.internal_id=f.contig and ff.fset ='$genscan_id' and name = 'genscan'";
+#    my $sth = $self->db->prepare($query);   
+#    $sth->execute();
+#    my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hid,$fsetid,$contig,$phase);
+#    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hid,\$fsetid,\$contig,\$phase);
+#    my $analysisadaptor = $self->db->get_AnalysisAdaptor;
+#    my $current_fset;
+#    while( $sth->fetch ) {
+#	unless($current_fset) {
+#	    $current_fset = Bio::EnsEMBL::FeatureFactory->new_feature;
 #	    $current_fset = new Bio::EnsEMBL::SeqFeature;
-	    $current_fset->source_tag($name);
-	    $current_fset->primary_tag('prediction');
-	    $current_fset->analysis($analysisadaptor->fetch_by_dbID($analysisid));
-	    $current_fset->seqname($contig);
-	    $current_fset->raw_seqname($contig);
-	    $current_fset->id($fsetid);
-	    $current_fset->score(defined($score) ? $score : undef);
-	    $current_fset->strand($strand);
-        }
+#	    $current_fset->source_tag($name);
+#	    $current_fset->primary_tag('prediction');
+#	    $current_fset->analysis($analysisadaptor->fetch_by_dbID($analysisid));
+#	    $current_fset->seqname($contig);
+#	    $current_fset->raw_seqname($contig);
+#	    $current_fset->id($fsetid);
+#	    $current_fset->score(defined($score) ? $score : undef);
+#	    $current_fset->strand($strand);
+#        }
 
-	my $out = Bio::EnsEMBL::FeatureFactory->new_feature;
-	$out->seqname($contig);
-	$out->start($start);
-	$out->end($end);
-	$out->strand($strand);
-	$out->phase($phase);
-	$out->source_tag($name);
-	$out->primary_tag($hid);
-	$out->score(defined($score) ? $score : undef);
-	$out->analysis($analysisadaptor->fetch_by_dbID($analysisid));
+#	my $out = Bio::EnsEMBL::FeatureFactory->new_feature;
+#	$out->seqname($contig);
+#	$out->start($start);
+#	$out->end($end);
+#	$out->strand($strand);
+#	$out->phase($phase);
+#	$out->source_tag($name);
+#	$out->primary_tag($hid);
+#	$out->score(defined($score) ? $score : undef);
+#	$out->analysis($analysisadaptor->fetch_by_dbID($analysisid));
 
 	# Final check that everything is ok.
-	$out->validate();
+#	$out->validate();
 
-	$current_fset->add_sub_SeqFeature($out,'EXPAND');
+#	$current_fset->add_sub_SeqFeature($out,'EXPAND');
+#    }
+#    $current_fset || $self->throw("Fset $genscan_id does not exist in the database");
+
+    my $contigid = $genscan_id;
+
+    $contigid =~ s/(.*?)\..*/$1/;
+
+    my $contig =  $self->db->get_Contig_by_internal_id($contigid);
+
+    my @fsets = $contig->get_all_PredictionFeatures;
+
+    foreach my $fset (@fsets) {
+      if (defined($fset->sub_SeqFeature)) {
+	my @f = $fset->sub_SeqFeature;
+
+	if ($f[0]->id eq $genscan_id) {
+	  return $fset;
+	}
+      }
     }
-    $current_fset || $self->throw("Fset $genscan_id does not exist in the database");
-    return $current_fset;
+    $self->throw("Fset $genscan_id does not exist in the dataabase");
+
 }
 
 
