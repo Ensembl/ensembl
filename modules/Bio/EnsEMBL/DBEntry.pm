@@ -34,8 +34,9 @@ The rest of the documentation details each of the object methods. Internal metho
 
 # Let the code begin...
 
-
 package Bio::EnsEMBL::DBEntry;
+
+use Bio::Annotation::DBLink;
 use vars qw(@ISA $AUTOLOAD);
 use strict;
 
