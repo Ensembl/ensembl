@@ -87,13 +87,9 @@ package Bio::EnsEMBL::FeaturePair;
 use vars qw(@ISA $ENSEMBL_EXT_LOADED $ENSEMBL_EXT_USED );
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
+use Bio::EnsEMBL::SeqFeatureI;
 
-
-use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::FeaturePairI;
-
-@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::FeaturePairI);
+@ISA = qw(Bio::EnsEMBL::SeqFeatureI);
 
 
 sub new {
@@ -1109,6 +1105,25 @@ sub has_tag{
    my ($self,@args) = @_;
 
    return 0;
+}
+
+
+#
+# Bioperl 0.7 compliance
+#
+sub location {
+    my ($self) = @_;
+    return $self;
+}
+
+sub to_FTstring {
+    my ($self) = @_;
+    
+    if( $self->strand == 1 ) {
+	return $self->start."..".$self->end;
+    } else {
+	return "complement(".$self->start."..".$self->end.")";
+    }
 }
 
 1;
