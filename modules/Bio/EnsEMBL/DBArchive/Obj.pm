@@ -282,6 +282,28 @@ sub get_seq_by_gene_version{
     return @out;
 }
 
+=head2 write_deleted_id
+
+ Title   : write_deleted_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_deleted_id{
+    my ($self,$type,$old_id,$old_v,$new_id) = @_;
+    
+    $old_v || $self->throw("Must give type[got $type], old_id [got $old_id] and version [got $old_v] at least");
+    $new_id ||= "NULL";
+    my $sth = $self->prepare("insert into deleted_id (old_id,old_version,new_id,id_type) values('$old_id',$old_v,'$new_id','$type')");
+    my $res = $sth->execute();
+}
+
+
 =head2 write_dead_geneid
 
  Title   : write_dead_geneid
@@ -297,14 +319,8 @@ sub get_seq_by_gene_version{
 sub write_dead_geneid{
     my ($self,$geneid) = @_;
     my $query="insert into dead_genes (id) values ('$geneid')";
-    if($self->_readonly){
-	#print "READONLY: $query\n";
-    }else{
-	my $sth = $self->prepare("$query");
-	$sth->execute();
-    }
+    $self->_execute($query);
 }
-
 
 =head2 write_seq
 
@@ -333,13 +349,10 @@ sub write_seq{
     $cv || $self->throw("Attempting to write a sequence without a clone version number!");
     
     my $query="insert into sequence (id,version,seq_type,gene_id,gene_version,sequence,clone_id,clone_version) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."','".$cid."','".$cv."')";
-    if($self->_readonly){
-	#print "READONLY: $query\n";
-    }else{
-	my $sth = $self->prepare($query);
-	$sth->execute();
-    }
+
+    $self->_execute($query);
 }
+
 =head2 delete_seq
 
  Title   : delete_seq
@@ -364,12 +377,8 @@ sub delete_seq{
 
     # delete the sequence entry
     my $query="delete from sequence where (id = '$seqid' && version = '$seqversion')";
-    if($self->_readonly){
-	#print "READONLY: $query\n";
-    }else{
-	my $sth = $self->prepare($query);
-	my $res = $sth->execute();
-    }
+
+    $self->_execute($query);
 }
 
 =head2 prepare
@@ -545,12 +554,8 @@ sub get_new_stable_ids {
     my @out;
 
     my $query="lock table $table write";
-    if($self->_readonly){
-	#print "READONLY: $query\n";
-    }else{
-	my $lsth   = $self->prepare($query);
-	$lsth->execute;
-    }
+
+    $self->_execute($query);
 
     # wrap critical region in an eval so we can catch errors and release table
 
@@ -586,13 +591,9 @@ sub get_new_stable_ids {
 		}
 		my $c = $stub . $newid;
 		my $query = "insert into $table (internal_id,external_id,created) values (NULL,'$c',NOW())";
-		if($self->_readonly){
-		    #print "READONLY: $query\n";
-		}else{
-		    my $sth   = $self->prepare($query);
-		    my $res   = $sth->execute;
-		}
-		
+
+		$self->_execute($query);
+			
 		push(@out,$c);
 	    }
 	    
@@ -609,12 +610,7 @@ sub get_new_stable_ids {
     }
 
     $query = "unlock tables";
-    if($self->_readonly){
-	#print "READONLY: $query\n";
-    }else{
-	my $usth   = $self->prepare($query);
-	$usth->execute;
-    }
+    $self->_execute($query);
 
     if( defined $error ) {
 	$self->throw("Problem in making IDs. Unlocked tables. \n\n Error $@");
@@ -623,6 +619,30 @@ sub get_new_stable_ids {
     return @out;
     
 }
+=head2 _execute
+
+ Title   : _execute
+ Usage   :
+ Function: Internal SQL prepare and execute function
+           which does nothing if in readonly mode
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _execute{
+   my ($self,$query) = @_;
+
+   if($self->_readonly){
+       #print "READONLY: $query\n";
+   }else{
+       my $usth   = $self->prepare($query);
+       $usth->execute;
+   }
+}
+
 
 
 =head2 DESTROY

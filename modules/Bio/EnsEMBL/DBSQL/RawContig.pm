@@ -304,20 +304,19 @@ sub get_all_Exons {
     my $contig_id=$self->id;
 
 
-    my $query="SELECT e.id, e.seq_start,e.seq_end,e.strand,e.phase,e.created,e.modified 
+    my $query="SELECT e.id, e.seq_start,e.seq_end,e.strand,e.phase,e.created,e.modified,e.version
                FROM   exon e,contig c 
                WHERE  c.internal_id=e.contig and c.id ='$contig_id'";
 
     my $sth = $self->dbobj->prepare ($query);
     $sth->execute;
 
-    my ($id,$start,$end,$strand,$phase,$created,$modified);
-    $sth->bind_columns (undef,\$id,\$start,\$end,\$strand,\$phase,\$created,\$modified);
+    my ($id,$start,$end,$strand,$phase,$created,$modified,$version);
+    $sth->bind_columns (undef,\$id,\$start,\$end,\$strand,\$phase,\$created,\$modified,\$version);
     
     my @exons;
     while ($sth->fetch){
 	my $exon=Bio::EnsEMBL::Exon->new;
-	
 	$exon->id($id);
 	$exon->start($start);
 	$exon->end($end);
@@ -327,6 +326,7 @@ sub get_all_Exons {
 	$exon->phase($phase);
 	$exon->created($created);
 	$exon->modified($modified);
+	$exon->version($version);
 	$exon->sticky_rank(1);
 
 	push @exons,$exon;
