@@ -92,7 +92,7 @@ sub new {
   $self->external_db( $external_db ) if( defined $external_db );
   $self->external_status( $external_status ) if( defined $external_status );
   $self->display_xref( $display_xref ) if( defined $display_xref );
-  $self->edits_enabled(0);
+  $self->edits_enabled(1);
 
 
   return $self;
@@ -657,7 +657,7 @@ sub coding_region_end {
   Arg [1]    : (optional) boolean $newval
   Example    : $transcript->edits_enabled(1);
   Description: Enables/Disables the application of SeqEdits to this transcript.
-               Edits are disabled by default, and affect the cdna/mrna
+               Edits are enabled by default, and affect the cdna/mrna
                sequences coordinates and the resultant translation.
   Returntype : boolean - the current value of the edits
   Exceptions : none
