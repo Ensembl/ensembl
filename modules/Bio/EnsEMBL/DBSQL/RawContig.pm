@@ -91,6 +91,83 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
+=head2 fetch
+
+ Title   : fetch
+ Usage   : $contig->fetch($contig_id)
+ Function: fetches the data necessary to build a Rawcontig object
+ Example : $contig->fetch(1)
+ Returns : Bio::EnsEMBL::DBSQL::RawContig object
+ Args    : $contig_id
+
+
+=cut
+
+sub fetch{
+   my ($self) = @_;
+
+   my $id=$self->id;
+
+
+   my $sth = $self->prepare("select c.id,c.internal_id,cl.embl_version " . 
+			    "from dna as d,contig as c,clone as cl " .
+			    "where d.id = c.dna and c.id = '$id' and c.clone = cl.id");
+
+
+   my $res = $sth ->execute;
+   my $row = $sth->fetchrow_arrayref;
+   
+   if( ! $row->[0] || ! $row->[1] ) {
+       $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
+   }
+
+   $self->id($id);
+   $self->internal_id($row->[1]);
+   $self->seq_version($row->[2]);
+
+   return $self;
+
+}
+
+=head2 get_Contigs_by_Chromosome
+
+ Title   : get_Contig_by_Chromosome
+ Usage   : @contigs = $dbobj->get_Contig_by_Chromosome( $chrObj );
+ Function: retrieve contigs belonging to a certain chromosome from the
+           database 
+ Example :
+ Returns : A list of Contig objects. Probably an empty list.
+ Args    :
+
+
+=cut
+
+sub get_Contigs_by_Chromosome {
+   my ($self,$chromosome ) = @_;
+   my $chromosomeId = $chromosome->get_db_id;
+   my @result = ();
+
+   my $sth = $self->prepare("select c.id,c.internal_id,cl.embl_version " . 
+			    "from dna as d,contig as c,clone as cl " .
+			    "where d.id = c.dna and c.chromosomeId = '$chromosomeId' and c.clone = cl.id");
+
+
+   my $res = $sth ->execute;
+   my $row;
+   
+   while( $row = $sth->fetchrow_arrayref ) {
+       my $contig = new Bio::EnsEMBL::DBSQL::RawContig 
+	   ( -dbobj => $self,		
+	     -id    => $row->[0] );
+       $contig->internal_id($row->[1]);
+       $contig->seq_version($row->[2]);
+       push( @result, $contig );
+   }
+
+   return @result;
+}
+
+
 =head2 get_all_Genes
 
  Title   : get_all_Genes

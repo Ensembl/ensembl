@@ -1,5 +1,4 @@
 #
-#
 # BioPerl module for DBSQL::Obj
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
@@ -57,6 +56,9 @@ use strict;
 
 use Bio::Root::Object;
 
+use Bio::EnsEMBL::DBSQL::Gene_Obj;
+use Bio::EnsEMBL::DBSQL::Update_Obj;
+use Bio::EnsEMBL::DBSQL::Feature_Obj;
 use Bio::EnsEMBL::Ghost;
 use Bio::EnsEMBL::DBSQL::RawContig;
 use Bio::EnsEMBL::DBSQL::Clone;
@@ -166,22 +168,18 @@ sub _initialize {
 
 sub get_Gene {
    my ($self,$geneid, $supporting) = @_;
-   my @out;
 
-   if ($supporting && $supporting eq 'evidence') {
-       @out = $self->get_Gene_array_supporting('evidence',$geneid);
-   }   else {
-       @out = $self->get_Gene_array_supporting('without',$geneid);
-   }
-   return $out[0];
+   $self->warn("Obj->get_Gene is a deprecated method! 
+Calling Gene_Obj->get instead!");
+   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+   return $gene_obj->get($geneid,$supporting);
 }
-
 
 =head2 get_Gene_array
 
  Title   : get_Gene_array
  Usage   :
- Function: old method, present for historical reasons, points to new method
+ Function: old deprecated method, points to new method
            get_gene_array_supporting without asking for supp.evidence
  Example :
  Returns : 
@@ -193,13 +191,8 @@ sub get_Gene {
 sub get_Gene_array {
     my ($self,@geneid) = @_;
 
-    if( @geneid == 0 ) {
-	$self->throw("Attempting to create gene with no id");
-    }
-    
-    my @out=$self->get_Gene_array_supporting('without',@geneid); 
-
-    return @out;
+    $self->throw("Very deprecated method, should call methods with supporting evidence and from
+Gene_Obj!");
 }
 
 =head2 get_Gene_array_supporting
@@ -213,157 +206,17 @@ sub get_Gene_array {
  Returns : an array of gene objects
  Args    : 'evidence' and gene id array
 
-
 =cut
 
 sub get_Gene_array_supporting {
     my ($self,$supporting,@geneid) = @_;
 
-    $supporting || $self->throw("You need to specify whether to retrieve supporting evidence or not!");
+    $self->warn("Obj->get_Gene_array_supporting is a deprecated method!
+Calling Gene_Obj->get_array_supporting instead!");
 
-    if( @geneid == 0 ) {
-	$self->throw("Attempting to create gene with no id");
-    }
-    
-    my (@out, @sup_exons);
-
-    my $inlist = join(',',map "'$_'", @geneid);
-       $inlist = "($inlist)";
-				
-    # I know this SQL statement is silly.
-    #
-    
-				  
-    my $query =              "select p3.gene," .
-			             "p4.id," .
-			             "p3.id," .
-			             "p1.exon," .
-			             "p1.rank," .
-			             "p2.seq_start,p2.seq_end," .
-			             "UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified)," .
-			             "p2.strand,p2.phase," .
-            			     "p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id," .
-			             "p6.version,p3.version,p2.version,p5.version,p4.clone " .
-			     "from   gene as p6," .
-			             "contig as p4, " .
-			             "transcript as p3, " .
-			             "exon_transcript as p1, " .
-			             "exon as p2," .
-			             "translation as p5," .
-			             "geneclone_neighbourhood as p7  " .
-			     "where  p6.id in $inlist " .
-			     "and    p3.gene = p6.id " .
-			     "and    p4.clone = p7.clone " .
-			     "and    p7.gene = p6.id  " .
-			     "and    p2.contig = p4.internal_id " .
-			     "and    p1.exon = p2.id " .
-			     "and    p3.id = p1.transcript " .
-			     "and    p5.id = p3.translation " .
-			     "order by p3.gene,p3.id,p1.rank";
-    
-    my $sth = $self->prepare($query);
-    my $res = $sth ->execute();
-    
-    my $current_gene_id       = '';
-    my $current_transcript_id = '';
-    
-    my ($gene,$trans);
-    
-    while( (my $arr = $sth->fetchrow_arrayref()) ) {
-
-	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
-	    $exoncreated,$exonmodified,$strand,$phase,$trans_start,
-	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
-	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
-
-	if( ! defined $phase ) {
-	    $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
-	}
-
-	# Create new gene if the id has changed
-	if( $geneid ne $current_gene_id ) {
-
-	    if( $transcriptid eq $current_transcript_id ) {
-		$self->throw("Bad internal error. Switching genes without switching transcripts");
-	    } 
-	    
-	    $gene = Bio::EnsEMBL::Gene->new();
-
-	    $gene->id                       ($geneid);
-	    $gene->version                  ($geneversion);
-	    $gene->add_cloneid_neighbourhood($cloneid);
-
-	    $current_gene_id = $geneid;
-	    push(@out,$gene);
-
-	}
-
-	# Create new transcript if the id has changed
-	if( $transcriptid ne $current_transcript_id ) {
-
-	    $trans = Bio::EnsEMBL::Transcript->new();
-
-	    $trans->id     ($transcriptid);
-	    $trans->version($transcriptversion);
-
-	    $current_transcript_id = $transcriptid;
-	    
-	    my $translation = Bio::EnsEMBL::Translation->new();
-
-	    $translation->start        ($trans_start);
-	    $translation->end          ($trans_end);
-	    $translation->start_exon_id($trans_exon_start);
-	    $translation->end_exon_id  ($trans_exon_end);
-	    $translation->id           ($translationid);
-	    $translation->version      ($translationversion);
-	    $trans->translation        ($translation);
-	    $gene ->add_Transcript     ($trans);
-	}
-	
-	
-	my $exon = Bio::EnsEMBL::Exon->new();
-	#print(STDERR "Creating exon - contig id $contigid\n");
-	$exon->clone_id ($cloneid);
-	$exon->contig_id($contigid);
-	$exon->id       ($exonid);
-	$exon->created  ($exoncreated);
-	$exon->modified ($exonmodified);
-	$exon->start    ($start);
-	$exon->end      ($end);
-	$exon->strand   ($strand);
-	$exon->phase    ($phase);
-	$exon->version  ($exonversion);
-	$exon->seqname  ($contigid);
-
-	#
-	# Attach the sequence, cached if necessary...
-	#
-	if ($supporting && $supporting eq 'evidence') {
-	    push @sup_exons, $exon;
-	}
-	
-	my $seq;
-	
-	if( $self->_contig_seq_cache($exon->contig_id) ) {
-	    $seq = $self->_contig_seq_cache($exon->contig_id);
-	} else {
-	    my $contig = $self->get_Contig($exon->contig_id());
-	    $seq = $contig->primary_seq();
-	    $self->_contig_seq_cache($exon->contig_id,$seq);
-	}
-	
-	$exon ->attach_seq($seq);
-	$trans->add_Exon($exon);
-
-    }
-    
-    if ($supporting && $supporting eq 'evidence') {
-	$self->get_supporting_evidence(@sup_exons);
-    }
-
-    return @out;
+    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+    return $gene_obj->get_array_supporting($supporting,@geneid);
 }
-
 
 =head2 donor_locator
     
@@ -379,15 +232,12 @@ sub get_Gene_array_supporting {
 
 sub get_donor_locator {
     my ($self) = @_;
+
+    $self->warn("Obj->get_donor_locator is a deprecated method! 
+Calling Update_Obj->get_donor_locator instead!");
     
-    my $sth     = $self->prepare("select donor_database_locator from meta");
-    my $res     = $sth->execute();
-    my $rowhash = $sth->fetchrow_hashref;
-    my $donor   = $rowhash->{'donor_database_locator'};
-
-    ($donor eq "") && $self->throw ("No value stored for database locator in meta table!");
-
-    return $rowhash->{'donor_database_locator'};
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->get_donor_locator();
 }
 
 =head2 get_last_update_offset
@@ -403,22 +253,13 @@ sub get_donor_locator {
 
 sub get_last_update_offset{
     my ($self) = @_;
-    
-    #Get the last update time
-    my $last = $self->get_last_update;
 
-    #Now get the offset time from the meta table, which is in time format
-    my $sth     = $self->prepare("select UNIX_TIMESTAMP(offset_time) from meta");
-    my $res     = $sth->execute();
-    my $rowhash = $sth->fetchrow_hashref();
-    my $offset  = $rowhash->{'offset_time'};
-
-    my $last_offset = $last - $offset;
-
-    if ($last_offset < 0) {$last_offset = 0;}
-
-    return $last_offset;
-}
+    $self->warn("Obj->get_last_update_offset is a deprecated method! 
+Calling Update_Obj->get_last_update_offset instead!");
+ 
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->get_last_update_offset();
+}    
 
 =head2 get_last_update
 
@@ -435,21 +276,12 @@ sub get_last_update_offset{
 sub get_last_update{
     my ($self) = @_;
     
-    #Get the last update time
-    my $sth     = $self->prepare("select max(time_started) from db_update where status = 'COMPLETE'");
-    my $res     = $sth ->execute();
-    my $rowhash = $sth->fetchrow_hashref;
-    my $last    = $rowhash->{'max(time_finished)'};
-
-    $sth     = $self->prepare("select UNIX_TIMESTAMP('". $last ."')");
-    $res     = $sth->execute();
-    $rowhash = $sth->fetchrow_arrayref();
-    $last    = $rowhash->[0];
-
-    ($last eq "") && $self->throw ("No value stored for last_update in db_update table!");
-
-    return $last;
-}
+    $self->warn("Obj->get_last_update is a deprecated method! 
+Calling Update_Obj->get_last_update_offset instead!");
+    
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->get_last_update_offset();
+}     
 
 =head2 get_now_offset
 
@@ -467,26 +299,11 @@ sub get_last_update{
 sub get_now_offset{
     my ($self) = @_;
 
-    #First, get now, i.e. current time from db, in datetime format
-    my $sth     = $self->prepare("select now()");
-    my $res     = $sth->execute();
-    my $rowhash = $sth->fetchrow_hashref;
-    my $now     = $rowhash->{'now()'};
-    
-    #Now get the offset time from the meta table, which is in time format
-    my $offset = $self->get_offset;
-
-    #Perform the subtraction in mysql
-    $sth         = $self->prepare("select DATE_SUB(\"$now\", INTERVAL \"$offset\" HOUR_SECOND)");
-    $res         = $sth->execute();
-    $rowhash     = $sth->fetchrow_arrayref();
-    my $datetime = $rowhash->[0];
-
-    #Transform the result into unix time and return it
-    $sth     = $self->prepare("select UNIX_TIMESTAMP('".$datetime."')");
-    $res     = $sth->execute();
-    $rowhash = $sth->fetchrow_arrayref();
-    return $rowhash->[0];
+    $self->warn("Obj->get_now_offset is a deprecated method! 
+Calling Update_Obj->get_now_offset instead!");
+   
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->get_now_offset();
 }
     
 =head2 get_offset
@@ -504,19 +321,9 @@ sub get_now_offset{
 sub get_offset{
     my ($self) = @_;
 
-     #Now get the offset time from the meta table, which is in time format
-    my $sth     = $self->prepare("select offset_time from meta");
-    my $res     = $sth->execute();
-    my $rowhash = $sth->fetchrow_hashref();
-    my $offset  = $rowhash->{'offset_time'};
-
-    #Transform the result into unix time and return it
-    $sth     = $self->prepare("select UNIX_TIMESTAMP('".$offset."')");
-    $res     = $sth->execute();
-    $rowhash = $sth->fetchrow_arrayref();
-    return $rowhash->[0];
-}  
-
+    $self->throw("Obj->get_offset should not be needed any more!"); 
+}
+    
 =head2 get_Protein_annseq
 
  Title   : get_Protein_annseq
@@ -534,41 +341,12 @@ sub get_offset{
 sub get_Protein_annseq{
     my ($self,$ENSP) = @_;
 
-    my $annseq = Bio::EnsEMBL::AnnSeq->new();
+    $self->warn("Obj->get_Protein_annseq is a deprecated method! 
+Calling Feature_Obj->get_Protein_annseq instead!");
     
-    my $sth     = $self->prepare("select id from transcript where translation = '$ENSP'");
-    my $res     = $sth->execute();
-    my $rowhash = $sth->fetchrow_hashref;
-
-    my $transcript  = Bio::EnsEMBL::Transcript->new();
-       $transcript  = $self->get_Transcript($rowhash->{'id'});
-    my $translation = $self->get_Translation($ENSP);
-
-    $transcript->translation($translation);
-
-    my $seq = $transcript->translate();
-    $annseq->primary_seq($seq);
-
-    $sth = $self->prepare("select * from proteinfeature where translation = '$ENSP'");
-    $res = $sth->execute();
-
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	my $analysis = $rowhash->{'analysis'};
-	my $sth2     = $self->prepare("select * from analysis where id = '$analysis'");
-	my $res2     = $sth2->execute();
-	my $rowhash2 = $sth2->fetchrow_hashref;
-
-	my $feature  = new Bio::SeqFeature::Generic ( -start   => $rowhash->{'seq_start'}, 
-						      -end     => $rowhash->{'seq_end'},
-						      -score   => $rowhash->{'score'},
-						      -primary => $rowhash2->{'gff_feature'},
-						      -source  => $rowhash2->{'gff_source'});
-
-	$annseq->add_SeqFeature($feature);
-    }
-    
-    return $annseq;   
-}
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    $feature_obj->get_Protein_annseq($ENSP);
+} 
 
 =head2 get_Transcript
     
@@ -584,26 +362,12 @@ sub get_Protein_annseq{
     
 sub get_Transcript{
     my ($self,$transid) = @_;
+ 
+    $self->warn("Obj->get_Transcript is a deprecated method! 
+Calling Gene_Obj->get_Translation instead!");
 
-    my $seen = 0;
-    my $trans = Bio::EnsEMBL::Transcript->new();
-
-    my $sth = $self->prepare("select exon from exon_transcript where transcript = '$transid'");
-    my $res = $sth->execute();
-
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	my $exon = $self->get_Exon($rowhash->{'exon'});
-	$trans->add_Exon($exon);
-	$seen = 1;
-    }
-
-    if ($seen == 0 ) {
-	$self->throw("transcript $transid is not present in db");
-    }
-    
-    $trans->id($transid);
-
-    return $trans;
+    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+    return $gene_obj->get_Transcript($transid);
 }
 
 =head2 get_Translation
@@ -621,24 +385,11 @@ sub get_Transcript{
 sub get_Translation{
    my ($self,$translation_id) = @_;
 
-   my $sth     = $self->prepare("select version,seq_start,start_exon,seq_end,end_exon from translation where id = '$translation_id'");
-   my $res     = $sth->execute();
-   my $rowhash = $sth->fetchrow_hashref;
+   $self->warn("Obj->get_Translation is a deprecated method! 
+Calling Gene_Obj->get_Translation instead!");
 
-   if( !defined $rowhash ) {
-       $self->throw("no translation of $translation_id");
-   }
-
-   my $out = Bio::EnsEMBL::Translation->new();
-
-   $out->version      ($rowhash->{'version'});
-   $out->start        ($rowhash->{'seq_start'});
-   $out->end          ($rowhash->{'seq_end'});
-   $out->start_exon_id($rowhash->{'start_exon'});
-   $out->end_exon_id  ($rowhash->{'end_exon'});
-   $out->id           ($translation_id);
-
-   return $out;
+   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+   return $gene_obj->get_Translation($translation_id);
 }
 
 =head2 get_Exon
@@ -656,62 +407,12 @@ sub get_Translation{
 sub get_Exon{
    my ($self,$exonid) = @_;
 
-   my $sth     = $self->prepare("select e.id as exonid,e.version,e.contig," .
- 			        "       UNIX_TIMESTAMP(e.created),UNIX_TIMESTAMP(e.modified), " .
-				"       e.seq_start,e.seq_end,e.strand,e.phase, " .
-				"       c.id as contigid " .
-				"from   exon as e," .
-				"       contig as c " .
-				"where  e.id = '$exonid'" . 
-				"and    e.contig = c.internal_id");
+   $self->warn("Obj->get_Exon is a deprecated method! 
+Calling Gene_Obj->get_Exon instead!");
 
-   my $res     = $sth->execute;
-   my $rowhash = $sth->fetchrow_hashref;
-
-   if( ! defined $rowhash ) {
-       $self->throw("No exon of this id $exonid");
-   }
-   my $exon = Bio::EnsEMBL::Exon->new();
-
-      $exon->contig_id($rowhash->{'contigid'});
-      $exon->version  ($rowhash->{'version'});
-
-   my $contig_id = $exon->contig_id();
-
-   # we have to make another trip to the database to get out the contig to clone mapping.
-   my $sth2     = $self->prepare("select clone from contig where internal_id = '$contig_id'");
-   my $res2     = $sth2->execute;
-   my $rowhash2 = $sth2->fetchrow_hashref;
-
-   $exon->clone_id($rowhash2->{'clone'});
-
-   # rest of the attributes
-   $exon->id      ($rowhash->{'exonid'});
-   $exon->created ($rowhash->{'UNIX_TIMESTAMP(created)'});
-   $exon->modified($rowhash->{'UNIX_TIMESTAMP(modified)'});
-   $exon->start   ($rowhash->{'seq_start'});
-   $exon->end     ($rowhash->{'seq_end'});
-   $exon->strand  ($rowhash->{'strand'});
-   $exon->phase   ($rowhash->{'phase'});
-   
-   # we need to attach this to a sequence. For the moment, do it the stupid
-   # way perhaps?
-
-   my $seq;
-
-   if( $self->_contig_seq_cache($exon->contig_id) ) {
-       $seq = $self->_contig_seq_cache($exon->contig_id);
-   } else {
-       my $contig = $self->get_Contig($exon->contig_id());
-       $seq = $contig->primary_seq();
-       $self->_contig_seq_cache($exon->contig_id,$seq);
-   }
-
-   $exon->attach_seq($seq);
-
-   return $exon;
+   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+   return $gene_obj->get_Exon($exonid);
 }
-
 
 =head2 get_Clone
 
@@ -859,15 +560,11 @@ sub get_all_Clone_id{
 sub get_all_Gene_id{
    my ($self) = @_;
 
-   my @out;
-   my $sth = $self->prepare("select id from gene");
-   my $res = $sth->execute;
+   $self->warn("Obj->get_all_Gene_id is a deprecated method! 
+Calling Gene_Obj->get_all_Gene_id instead!");
 
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'id'});
-   }
-
-   return @out;
+   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+   return $gene_obj->get_all_Gene_id();
 }
 
 =head2 get_updated_Clone_id
@@ -884,32 +581,13 @@ sub get_all_Gene_id{
 sub get_updated_Clone_id {
     my ($self, $last_offset, $now_offset) = @_;
     
-    $last_offset || $self->throw("Attempting to get updated objects without the recipient db last update time");
-    $now_offset  || $self->throw("Attempting to get updated objects without the recipient db current time");
-
-    ($last_offset>$now_offset) && $self->throw("Last update more recent than now-offset time, serious trouble");
-
-    my $sth      = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
-    my $res      = $sth->execute();
-    my $rowhash  = $sth->fetchrow_arrayref();
-    $last_offset = $rowhash->[0];               print STDERR "Last= $last_offset\n";
-
-    $sth        = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
-    $res        = $sth->execute();
-    $rowhash    = $sth->fetchrow_arrayref();
-    $now_offset = $rowhash->[0];                print STDERR "now: $now_offset\n";
-
-    $sth = $self->prepare("select id from clone where modified > '".$last_offset." - 00:30:00' and modified <= '".$now_offset."'");
-    $res = $sth->execute;
-
-    my @clones;
-
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	push(@clones,$rowhash->{'id'});
-    }
-
-    return @clones;
+    $self->warn("Obj->get_updated_Clone_id is a deprecated method! 
+Calling Update_Obj->get_updated_Clone_id instead!");
+   
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->get_updated_Clone_id($last_offset, $now_offset);
 }
+    
 
 =head2 get_updated_Objects
     
@@ -926,51 +604,14 @@ sub get_updated_Clone_id {
 
 sub get_updated_Objects{
     my ($self, $last_offset, $now_offset) = @_;
+
+    $self->warn("Obj->get_updated_Objects is a deprecated method! 
+Calling Update_Obj->get_updated_Objects instead!");
     
-    $last_offset || $self->throw("Attempting to get updated objects without the recipient db last update time");
-    $now_offset  || $self->throw("Attempting to get updated objects without the recipient db current time");
-
-    ($last_offset>$now_offset) && $self->throw("Last update more recent than now-offset time, serious trouble");
-
-    my $sth      = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
-    my $res      = $sth->execute();
-    my $rowhash  = $sth->fetchrow_arrayref();
-    $last_offset = $rowhash->[0];       print STDERR "Last: $last_offset\n";
-
-    $sth        = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
-    $res        = $sth->execute();
-    $rowhash    = $sth->fetchrow_arrayref();
-    $now_offset = $rowhash->[0];        print STDERR "now: $now_offset\n";
-
-    $sth = $self->prepare("select id from clone where stored > '".$last_offset." - 00:30:00' and stored <= '".$now_offset."'");
-    $res = $sth->execute;
-
-    my @out;
-    my @clones;
-
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	push(@clones,$rowhash->{'id'});
-    }
-    
-    foreach my $cloneid (@clones) {
-	push @out, $self->get_Clone ($cloneid);
-    }	
-    
-    $sth = $self->prepare("select id from gene where stored > '".$last_offset."' and stored <= '".$now_offset."'");
-    $sth->execute;
-
-    my @genes;
-
-    while( $rowhash = $sth->fetchrow_hashref) {
-	push(@genes,$rowhash->{'id'});
-    }
-    
-    #Get all gene objects for the ids contained in @clones, and push them in @out
-    foreach my $geneid (@genes) {
-	push @out, $self->get_Gene ($geneid);
-    }	
-    return @out;
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->get_updated_Objects($last_offset,$now_offset);
 }
+    
 
 =head2 get_updated_Ghosts
     
@@ -987,42 +628,14 @@ sub get_updated_Objects{
 
 sub get_updated_Ghosts{
     my ($self, $last_offset, $now_offset) = @_;
-    my @out;
+
+    $self->warn("Obj->get_updated_Ghosts is a deprecated method! 
+Calling Update_Obj->get_updated_Ghosts instead!");
     
-    $last_offset || $self->throw("Attempting to get updated objects without the recipient db last update time");
-    $now_offset  || $self->throw("Attempting to get updated objects without the recipient db current time");
-
-    ($last_offset>$now_offset) && $self->throw("Last update more recent than now-offset time, serious trouble");
-    
-    my $sth      = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
-    my $res      = $sth->execute();
-    my $rowhash  = $sth->fetchrow_arrayref();
-    $last_offset = $rowhash->[0];
-    
-    $sth        = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
-    $res        = $sth->execute();
-    $rowhash    = $sth->fetchrow_arrayref();
-    $now_offset = $rowhash->[0];
-    
-    #Get all ghosts that have deleted times between last and now-offset
-    $sth = $self->prepare("select id,version,obj_type,deleted,stored from ghost where stored > '".$last_offset."' and stored <= '".$now_offset."'");
-    $res = $sth->execute();
-
-    while(my $rowhash = $sth->fetchrow_hashref()) {
-	my $ghost = Bio::EnsEMBL::Ghost->new();
-
-	$ghost->id      ($rowhash->{'id'});
-	$ghost->version ($rowhash->{'version'});
-	$ghost->obj_type($rowhash->{'obj_type'});
-	$ghost->deleted ($rowhash->{'deleted'});
-	$ghost->_stored ($rowhash->{'stored'});
-
-	push @out, $ghost;
-    }
-
-    return @out;
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->get_updated_Ghosts($last_offset, $now_offset);
 }
-
+    
 =head2 get_Ghost
     
  Title   : get_Ghost
@@ -1035,27 +648,15 @@ sub get_updated_Ghosts{
 =cut
 
 sub get_Ghost{
-    my ($self, $g_id, $g_obj_type) = @_;
-    my @out;
-    
-    $g_id                        || $self->throw("Attempting to get a ghost object without an id");
-    $g_obj_type                  || $self->throw("Attempting to get a ghost object without an object type");
+    my ($self, $ghost_id, $ghost_type) = @_;
 
-    my $sth     = $self->prepare("select id,version,obj_type,deleted,stored from ghost where id='" . $g_id . "' and obj_type = '" . $g_obj_type . "'");
-    my $res     = $sth->execute();
-    my $rv      = $sth->rows     || $self->throw("Ghost not found in database!");
-    my $rowhash = $sth->fetchrow_hashref();
-
-    my $ghost   = Bio::EnsEMBL::Ghost->new();
-
-    $ghost->id      ($rowhash->{'id'});
-    $ghost->version ($rowhash->{'version'});
-    $ghost->obj_type($rowhash->{'obj_type'});
-    $ghost->deleted ($rowhash->{'deleted'});
-    $ghost->_stored ($rowhash->{'stored'});
-
-    return $ghost;
+    $self->warn("Obj->get_Ghost is a deprecated method! 
+Calling Update_Obj->get_Ghost instead!");
+   
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->get_Ghost($ghost_id,$ghost_type);
 }
+    
 
 =head2 write_Ghost
     
@@ -1070,19 +671,14 @@ sub get_Ghost{
 
 sub write_Ghost{
     my ($self, $ghost) = @_;
-    
-    $ghost                             || $self->throw("Attempting to write a ghost without a ghost object");
-    $ghost->isa("Bio::EnsEMBL::Ghost") || $self->throw("$ghost is not an EnsEMBL ghost - not dumping!");
-    
-    my $sth = $self->prepare("insert into ghost (id, version, obj_type,deleted,stored) values('".
-			     $ghost->id          . "','" . 
-			     $ghost->version     . "','" .
-			     $ghost->obj_type    . "','" .
-			     $ghost->deleted     . "',now())");
 
-    $sth->execute();
-    return 1;
+    $self->warn("Obj->write_Ghost is a deprecated method! 
+Calling Update_Obj->write_Ghost instead!");
+    
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->write_Ghost($ghost);
 }
+    
 
 =head2 archive_Gene
     
@@ -1100,56 +696,12 @@ sub write_Ghost{
 sub archive_Gene {
    my ($self,$gene,$arc_db) = @_;
 
-   my $sth;
-   my $res;
-
-   foreach my $transcript ($gene->each_Transcript) {
-       
-       my $seq = $transcript->dna_seq;
-          $seq->id($transcript->id);
-       
-       #Temporary, since versions not stored yet...
-       !$transcript->version && $transcript->version(1);
-       !$gene      ->version && $gene      ->version(1);
-       
-       # Store transcript and protein translation in the archive database
-       $arc_db->write_seq($seq, $transcript->version, 'transcript', $gene->id, $gene->version);
-       
-       $seq = $transcript->translate;
-
-       $arc_db->write_seq($seq, $transcript->version, 'protein', $gene->id, $gene->version);
-
-       #Delete transcript rows
-       $sth = $self->prepare("delete from transcript where id = '".$transcript->id."'");
-       $res = $sth->execute;
-       
-       foreach my $exon ($gene->each_unique_Exon) {
-	   #Get out info needed to write into archive db
-	   $seq = $exon->primary_seq;
-	   $seq->id($exon->id);
-	   
-	   #Temporary, since versions not stored yet...
-	   !$exon->version && $exon->version(1);
-	   
-	   #Write into archive db
-	   $arc_db->write_seq($seq, $exon->version, 'exon', $gene->id, $gene->version);
-       }
-
-       foreach my $exon ($transcript->each_Exon) {
-	   
-	   #Delete exon_transcript and exon rows
-	   $sth = $self->prepare("delete from exon_transcript where transcript = '" . $transcript->id . "'");
-	   $res = $sth->execute;
-
-	   $sth = $self->prepare("delete from exon where id = '" . $exon->id . "'");
-	   $res = $sth->execute;
-       }
-   }
+   $self->warn("Obj->archive_Gene is a deprecated method! 
+Calling Update_Obj->archive_Gene instead!");
    
-   # delete gene rows
-   $sth = $self->prepare("delete from gene where id = '".$gene->id."'");
-   $res = $sth->execute;
-}   
+   my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+   return $update_obj->archive_Gene($gene,$arc_db);
+}
 
 =head2 delete_Exon
 
@@ -1166,18 +718,11 @@ sub archive_Gene {
 sub delete_Exon{
     my ($self,$exon_id) = @_;
 
-    $exon_id || $self->throw ("Trying to delete an exon without an exon_id\n");
-    
-    #Delete exon_transcript rows
-    my $sth = $self->prepare("delete from exon_transcript where transcript = '".$exon_id."'");
-    my $res = $sth ->execute;
+    $self->warn("Obj->delete_Exon is a deprecated method
+Calling Gene_Obj->delete_Exon instead!");
 
-    #Delete exon rows
-    $sth = $self->prepare("delete from exon where id = '".$exon_id."'");
-    $res = $sth->execute;
-
-    $self->delete_Supporting_Evidence($exon_id);
-
+    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+    return $gene_obj->delete_Exon($exon_id);
 }
 
 =head2 delete_Supporting_Evidence
@@ -1194,11 +739,12 @@ sub delete_Exon{
 
 sub delete_Supporting_Evidence {
     my ($self,$exon_id) = @_;
+ 
+    $self->warn("Obj->delete_Supporting_Evidence is a deprecated method
+Calling Gene_Obj->delete_Supporting_Evidence instead!");
 
-    $exon_id || $self->throw ("Trying to delete supporting_evidence without an exon_id\n");
-
-    my $sth = $self->prepare("delete from supporting_feature where exon = '" . $exon_id . "'");
-    my $res = $sth->execute;
+    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+    return $gene_obj->delete_Supporting_Evidence($exon_id);
 }
 
 =head2 delete_Clone
@@ -1236,7 +782,9 @@ sub delete_Clone{
    foreach my $contig ( @contigs ) {
        my $sth = $self->prepare("delete from contig where internal_id = '$contig'");
        my $res = $sth->execute;
-       $self->delete_Features($contig); 
+
+       my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+       $gene_obj->delete_Features($contig);
    }
 
 
@@ -1269,51 +817,12 @@ sub delete_Clone{
 sub delete_Features {
     my ($self,$contig) = @_;
 
-    my $sth = $self->prepare("select fs.feature,fs.fset " .
-			     "from   fset_feature as fs, " .
-			     "       feature as f " .
-			     "where  fs.feature = f.id " .
-			     "and    f.contig = '$contig'");
+    $self->warn("Obj->delete_Features is a deprecated method! 
+Calling Feature_Obj->delete instead!");
 
-    my $res = $sth->execute;
-
-    my %fset;
-
-    while (my $rowhash = $sth->fetchrow_hashref) {
-	$fset{$rowhash->{fset}} = 1;
-    }
-    
-    my @fset = keys %fset;
-    
-    if ($#fset >= 0) {
-	my $fsstr = "";
-
-	foreach my $fs (@fset) {
-	    $fsstr .= $fs . ",";
-	}
-
-	chop($fsstr);
-	
-	print STDERR "Deleting feature sets for contig $contig : $fsstr\n";
-	
-	$sth = $self->prepare("delete from fset where id in ($fsstr)");
-	$res = $sth->execute;
-	
-	$sth = $self->prepare("delete from fset_feature where fset in ($fsstr)");
-	$res = $sth->execute;
-    }
-    
-    print(STDERR "Deleting features for contig $contig\n");
-    
-    $sth = $self->prepare("delete from feature where contig = '$contig'");
-    $res = $sth->execute;
-    
-    print(STDERR "Deleting repeat features for contig $contig\n");
-    
-    $sth = $self->prepare("delete from repeat_feature where contig = '$contig'");
-    $res = $sth->execute;
-
-}
+   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+   $feature_obj->delete($contig);
+} 
 
 =head2 delete_Gene
 
@@ -1329,53 +838,13 @@ sub delete_Features {
 
 sub delete_Gene{
    my ($self,$geneid) = @_;
-   my @trans;
-   my %exon;
-   my $translation;
-   # get out exons, transcripts for gene. 
 
-   my $sth = $self->prepare("select id,translation from transcript where gene = '$geneid'");
-   $sth->execute;
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@trans,$rowhash->{'id'});
-       $translation = $rowhash->{'translation'};
-   }
+   $self->warn("Obj->delete_Gene is a deprecated method! 
+Calling Gene_Obj->delete instead!");
 
-   foreach my $trans ( @trans ) {
-       my $sth = $self->prepare("select exon from exon_transcript where transcript = '$trans'");
-       $sth->execute;
-       while( my $rowhash = $sth->fetchrow_hashref) {
-	   $exon{$rowhash->{'exon'}} =1;
-       }
-   }
-
-   my $sth2 = $self->prepare("delete from translation where id = '$translation'");
-   $sth2->execute;
-
-   # delete exons, transcripts, gene rows
-
-   foreach my $exon ( keys %exon ) {
-       print STDERR "Got exon $exon in delete_Gene\n";
-       my $sth = $self->prepare("delete from exon where id = '$exon'");
-       $sth->execute;
-
-       $sth = $self->prepare("delete from supporting_feature where exon = '$exon'");
-       $sth->execute;
-   }
-
-   foreach my $trans ( @trans ) {
-       my $sth= $self->prepare("delete from transcript where id = '$trans'");
-       $sth->execute;
-       $sth= $self->prepare("delete from exon_transcript where transcript = '$trans'");
-       $sth->execute;
-   }
-
-   
-
-   $sth = $self->prepare("delete from gene where id = '$geneid'");
-   $sth->execute;
-}   
-       
+   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+   $gene_obj->delete($geneid);
+}
 
 =head2 geneid_to_cloneid
 
@@ -1390,17 +859,12 @@ sub delete_Gene{
 =cut
 
 sub geneid_to_cloneid{
-   my ($self,$geneid) = @_;
-
-   my $sth = $self->prepare("select clone from geneclone_neighbourhood where gene = '$geneid'");
-
-   my @out;
-
-   $sth->execute;
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'clone'});
-   }
-
+    my ($self,$geneid) = @_;
+    
+    $self->warn("Obj->geneid_to_cloneid is a deprecated method, called Gene_Obj->each_cloneid instead!
+All the gene, transcript, and exon methods are now to be found in Gene_Obj");
+    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+    $gene_obj->each_cloneid($geneid);
 }
 
 =head2 cloneid_to_geneid
@@ -1455,27 +919,13 @@ sub cloneid_to_geneid{
 
 sub replace_last_update {
     my ($self, $now_offset) = @_;
+
+    $self->warn("Obj->replace_last_update is a deprecated method! 
+Calling Update_Obj->replace_last_update instead!");
     
-    $now_offset || $self->throw("Trying to replace last update without a now-offset time\n");
-    
-    my $last_offset= $self->get_last_update;
-    
-    my $sth = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
-    $sth->execute();
-    my $rowhash = $sth->fetchrow_arrayref();
-    $now_offset = $rowhash->[0];
-    
-    $sth = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
-    $sth->execute();
-    $rowhash = $sth->fetchrow_arrayref();
-    $last_offset = $rowhash->[0];
-    
-    my $donor=$self->get_donor_locator;
-    my $offset=$self->get_offset;
-    
-    $sth = $self->prepare("update db_update set time_finished=now(),status='COMPLETE' where status='STARTED'");
-    $sth->execute;
-}
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->replace_last_update($now_offset);
+}        
 
 =head2 current_update
     
@@ -1491,16 +941,12 @@ sub replace_last_update {
 sub current_update {
     my ($self) = @_;
 
-    my $sth = $self->prepare("select * from db_update where status = 'STARTED'");
-    my $res = $sth ->execute;
-
-    my $id = 0;
-
-    my $rowhash = $sth->fetchrow_hashref;
-       $id      = $rowhash->{'id'};
-
-    return $id;
-}
+     $self->warn("Obj->current_update is a deprecated method! 
+Calling Update_Obj->current_update instead!");
+ 
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->current_update();
+}    
 
 =head2 start_update
     
@@ -1515,28 +961,13 @@ sub current_update {
 
 sub start_update {
     my ($self,$start,$end) = @_;
-
-    my $cid = $self->current_update;
     
-    $self->throw("No start time defined") unless defined($start);
-    $self->throw("No end time defined")   unless defined($end);
-
-    $self->throw("Update already in progresss id [$cid]") unless ! $cid;
-    
-    
-    my $sth = $self->prepare("insert into db_update" . 
-			     "(id,time_started,status,modified_start,modified_end) " . 
-			     " values(NULL,now(),'STARTED',FROM_UNIXTIME($start),FROM_UNIXTIME($end))");
-
-    $sth->execute;
-    $sth = $self->prepare("select last_insert_id()");
-    $sth->execute;
-
-    my $rowhash = $sth->fetchrow_hashref;
-    my $id      = $rowhash->{'last_insert_id()'};
-    
-    return $id;
-}
+     $self->warn("Obj->start_update is a deprecated method! 
+Calling Update_Obj->start_update instead!");
+ 
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->start_update($start,$end);
+}   
 
 =head2 finish_update
     
@@ -1552,27 +983,12 @@ sub start_update {
 sub finish_update {
     my ($self) = @_;
 
-    my $cid = $self->current_update;
-
-    $self->throw("No current updating process. Can't finish") unless $cid;
-
-    my $sth = $self->prepare("select * from db_update where id = $cid");
-    my $res = $sth->execute;
-
-    my $rowhash = $self->fetchrow_hashref;
-
-    my $id              = $rowhash->{id};
-    my $time_started    = $rowhash->{time_started};
-    my $modified_end    = $rowhash->{modified_end};
-    my $modified_start  = $rowhash->{modified_start};
-
-    # Should get stats on each table here as well.
-
-    $sth = $self->prepare("replace into db_update(id,time_started,time_finished,modified_start,modified_end,status)".
-			     "values($id,\'$time_started\',now(),\'$modified_start\',\'$modified_end\','COMPLETE'");
-    $sth->execute;
-
-}
+    $self->warn("Obj->finish_update is a deprecated method! 
+Calling Update_Obj->finish_update instead!");
+    
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->finish_update();
+}   
 
 =head2 write_Gene
 
@@ -1590,86 +1006,13 @@ sub finish_update {
 
 sub write_Gene{
    my ($self,$gene) = @_;
-   my $old_gene;
 
-   my %done;
+   $self->warn("Obj->write_Gene is a deprecated method! 
+Calling Gene_Obj->write instead!");
 
-   if ( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
-       $self->throw("$gene is not a EnsEMBL gene - not writing!");
-   }
-
-   # get out unique contig ids from gene to check against
-   # database.
-
-   my %contighash;
-
-   foreach my $contig_id ( $gene->unique_contig_ids() ) {
-       eval {
-	   my $contig = $self->get_Contig($contig_id);
-
-	   $contighash{$contig_id} = $contig;
-
-	   # if there is no exception then it is there. Get rid of it
-	   $contig = 0;
-       };
-       if( $@ ) {
-	   $self->throw("In trying to write gene " . $gene->id(). " into the database, unable to find contig $contig_id. Aborting write\n\nFull Exception\n\n$@\n");
-	   # done before locks, so we are ok.
-       }
-       
-   }
-
-   # gene is big daddy object
-
-   
-   foreach my $trans ( $gene->each_Transcript() ) {
-       $self->write_Transcript($trans,$gene);
-       my $c = 1;
-       foreach my $exon ( $trans->each_Exon() ) {
-	   my $sth = $self->prepare("insert into exon_transcript (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
-	   $sth->execute();
-	   if( $done{$exon->id()} ) { next; }
-	   $done{$exon->id()} = 1;
-
-	   my $internal_contig_id = $contighash{$exon->contig_id}->internal_id;
-
-	   if (!defined($internal_contig_id)) {
-	       $self->throw("Internal id not found for contig [" . $exon->contig_id . "]");
-	   }
-	   my $tmpid = $exon->contig_id;
-	   $exon->contig_id($internal_contig_id);
-	   $self->write_Exon($exon);
-	   $exon->contig_id($tmpid);
-	   
-	   $c++;
-       }
-   }
-
-   !$gene->created() && $gene->created(0);
-   !$gene->modified() && $gene->modified(0);
-   
-   my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
-			     $gene->id       . "','".
-			     $gene->version  . "',FROM_UNIXTIME(".
-			     $gene->created  . "),FROM_UNIXTIME(".
-			     $gene->modified . "),now())");
-   $sth2->execute();
-
-   foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
-
-       my $sth = $self->prepare("select gene,clone from geneclone_neighbourhood where gene='".$gene->id."' && clone='$cloneid'");
-       $sth->execute();
-       my $rowhash =  $sth->fetchrow_arrayref();
-       my  $rv = $sth->rows;
-       if( ! $rv ) {
-	   $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . 
-				 $gene->id . "','". 
-				 $cloneid ."')");
-	   $sth->execute();
-       }
-   }
+   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+   return $gene_obj->write($gene);
 }
-
 
 =head2 write_all_Protein_features
 
@@ -1685,24 +1028,14 @@ sub write_Gene{
 
 sub write_all_Protein_features {
     my ($self,$prot_annseq,$ENSP) = @_;
+
+    $self->warn("Obj->write_all_Protein_features is a deprecated method! 
+Calling Feature_Obj->write_all_Protein_features instead!");
     
-    my $c=0;
-    foreach my $feature ($prot_annseq->all_SeqFeatures()) {
-	my $sth = $self->prepare("insert into proteinfeature (id,seq_start, seq_end, score, analysis, translation) values (NULL,"
-				 .$feature->start().","
-				 .$feature->end().","
-				 .$feature->score().",'"
-				 .$c."','"
-				 .$ENSP."')");
-	$sth->execute();
-	
-	my $sth2 = $self->prepare("insert into analysis (id,db,db_version,program,program_version,gff_source,gff_feature) values ('$c','testens',1,'elia_program',1,'"
-				  .$feature->source_tag()."','"
-				  .$feature->primary_tag()."')");
-	 $sth2->execute();
-	$c++;
-    }
-}
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    $feature_obj->write_all_Protein_features($prot_annseq,$ENSP);
+} 
+
 
 =head2 write_Protein_feature
 
@@ -1718,15 +1051,13 @@ sub write_all_Protein_features {
 
 sub write_Protein_feature {
     my ($self,$ENSP,$feature) = @_;
+ 
+    $self->warn("Obj->write_Protein_feature is a deprecated method! 
+Calling Feature_Obj->write_Protein_feature instead!");
     
-    my $sth = $self->prepare("insert into proteinfeature (seq_start, seq_end, score, translation) values ("
-			     .$feature->start()." ,"
-			     .$feature->end()." ,'"
-			     .$feature->score()." ,'"
-			     .$ENSP."'
-				)");
-    $sth->execute();
-}
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    $feature_obj->write_Protein_feature($ENSP,$feature);
+} 
 
 =head2 write_Feature
 
@@ -1743,159 +1074,12 @@ sub write_Protein_feature {
 sub write_Feature {
     my ($self,$contig,@features) = @_;
 
-    #
-    # Yes - we need to rethink how we are writing features into the
-    # database. This is a little obtuse and clunky now
-    #
-
-    $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")          unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
+    $self->warn("Obj->write_Feature is a deprecated method! 
+Calling Feature_Obj->write_Feature instead!");
     
-    my $contigid = $contig->id;
-    my $analysis;
-
-    my $sth = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
-    
-    # Put the repeats in a different table, and also things we need to write
-    # as fsets.
-    my @repeats;
-    my @fset;
-
-    FEATURE :
-    foreach my $feature ( @features ) {
-	
-	if( ! $feature->isa('Bio::EnsEMBL::SeqFeatureI') ) {
-	    $self->throw("Feature $feature is not a feature!");
-	}
-
-	eval {
-	    $feature->validate();
-	};
-
-	if ($@) {
-	    print(STDERR "Feature invalid. Skipping feature\n");
-	    next FEATURE;
-	}
-
-	
-	if($feature->isa('Bio::EnsEMBL::Repeat')) {
-	    push(@repeats,$feature);
-	} elsif ( $feature->sub_SeqFeature ) {
-	    push(@fset,$feature);
-	} else {    
-	    if (!defined($feature->analysis)) {
-		$self->throw("Feature " . $feature->seqname . " " . $feature->source_tag ." doesn't have analysis. Can't write to database");
-	    } else {
-		$analysis = $feature->analysis;
-	    }
-	    
-	    my $analysisid = $self->write_Analysis($analysis);
-
-
-	    if ( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
-		my $homol = $feature->feature2;
-	    
-		$sth->execute('NULL',
-			      $contig->internal_id,
-			      $feature->start,
-			      $feature->end,
-			      $feature->score,
-			      $feature->strand,
-			      $feature->source_tag,
-			      $analysisid,
-			      $homol->start,
-			      $homol->end,
-			      $homol->seqname);
-	    } else {
-		$sth->execute('NULL',
-			      $contig->internal_id,
-			      $feature->start,
-			      $feature->end,
-			      $feature->score,
-			      $feature->strand,
-			      $feature->source_tag,
-			      $analysisid,
-			      -1,
-			      -1,
-			      "__NONE__");
-	    }
-	}
-    }
-
-    my $sth2 = $self->prepare("insert into repeat_feature(id,contig,seq_start,seq_end,score,strand,analysis,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?)");
-
-    foreach my $feature (@repeats) {
-	if (!defined($feature->analysis)) {
-	    $self->throw("Feature " . $feature->seqname . " " . $feature->source_tag ." doesn't have analysis. Can't write to database");
-	} else {
-	    $analysis = $feature->analysis;
-	}
-
-	my $analysisid = $self->write_Analysis($analysis);
-	my $homol = $feature->feature2;
-
-	$sth2->execute('NULL',
-		       $contig->internal_id,
-		       $feature->start,
-		       $feature->end,
-		       $feature->score,
-		       $feature->strand,
-		       $analysisid,
-		       $homol->start,
-		       $homol->end,
-		       $homol->seqname);
-    }
-
-
-    # Now the predictions
-    # we can't block do these as we need to get out the id wrt to the features
-    foreach my $feature ( @fset ) {
-#	print STDERR "Adding in a fset feature ",$feature->gff_string,"\n";
-
-	if (!defined($feature->analysis)) {
-
-	    $self->throw("Feature " . $feature->seqname . " " . 
-			              $feature->source_tag . 
-			 " doesn't have analysis. Can't write to database");
-	} else {
-	    $analysis = $feature->analysis;
-	}
-
-	my $analysisid = $self->write_Analysis($analysis);
-	my $score      = $feature->score();
-
-	if( !defined $score ) { $score = "-1000"; }
-
-	my $sth3 = $self->prepare("insert into fset(id,score) values ('NULL',$score)");
-	   $sth3->execute();
-
-	# get out this id. This looks really clunk I know. Any better ideas... ?
-
-	my $sth4 = $self->prepare("select LAST_INSERT_ID()");
-	   $sth4->execute();
-
-	my $arr = $sth4->fetchrow_arrayref();
-	my $fset_id = $arr->[0];
-
-	# now write each sub feature
-	my $rank = 1;
-
-	foreach my $sub ( $feature->sub_SeqFeature ) {
-	    my $sth5 = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values('NULL','".$contig->internal_id."',"
-				      .$sub->start   .","
-				      .$sub->end     . ","
-				      .$sub->score   . ","
-				      .$sub->strand  . ","
-				      .$analysisid   . ",\'" 
-				      .$sub->source_tag  . "\',-1,-1,'__NONE__')");
-	    $sth5->execute();
-	    my $sth6 = $self->prepare("insert into fset_feature(fset,feature,rank) values ($fset_id,LAST_INSERT_ID(),$rank)");
-	    $sth6->execute();
-	    $rank++;
-	}
-    }
-    
-    return 1;
-}
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    $feature_obj->write($contig,@features);
+} 
 
 =head2 write_supporting_evidence
 
@@ -1912,42 +1096,12 @@ sub write_Feature {
 sub write_supporting_evidence {
     my ($self,$exon) = @_;
 
-    $self->throw("Argument must be Bio::EnsEMBL::Exon. You entered [$exon]\n") unless $exon->isa("Bio::EnsEMBL::Exon");
+    $self->warn("Obj->write_supporting_evidence is a deprecated method!
+Calling Gene_Obj->write_supporting_evidence instead!");
 
-    my $sth  = $self->prepare("insert into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
-    
-    FEATURE: foreach my $f ($exon->each_Supporting_Feature) {
-
-	eval {
-	    $f->validate();
-	};
-
-	if ($@) {
-	    print(STDERR "Supporting feature invalid. Skipping feature\n");
-	    next FEATURE;
-	}
-
-	my $analysisid = $self->write_Analysis($f->analysis);
-	
-	if ($f->isa("Bio::EnsEMBL::FeaturePair")) {
-	    $sth->execute('NULL',
-			  $exon->id,
-			  $f->start,
-			  $f->end,
-			  $f->score,
-			  $f->strand,
-			  $analysisid,
-			  $f->source_tag,
-			  $f->hstart,
-			  $f->hend,
-			  $f->hseqname
-			  );
-	} else {
-	    #$self->warn("Feature is not a Bio::EnsEMBL::FeaturePair");
-	}
-    }
+    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+    return $gene_obj->write_supporting_evidence($exon);
 }
-
 
 =head2 get_supporting_evidence
 
@@ -1964,70 +1118,12 @@ sub write_supporting_evidence {
 sub get_supporting_evidence {
     my ($self,@exons) = @_;
 
-    my $instring = "'";
-    my %exhash;
+ $self->warn("Obj->get_supporting_evidence is a deprecated method! 
+Calling Gene_Obj->get_supporting_evidence instead!");
 
-    if (@exons == 0) {
-	$self->throw("No exon objects were passed on!");
-    }
-
-    foreach my $exon (@exons) {
-
-	$exhash{$exon->id} = $exon;
-
-	$instring = $instring . $exon->id . "','";
-    }
-    
-    $instring = substr($instring,0,-2);
-   
-    my $sth = $self->prepare("select * from supporting_feature where exon in (" . $instring . ")");
-    $sth->execute;
-
-    my %anahash;
-
-    while (my $rowhash = $sth->fetchrow_hashref) {
-	my $f1 = new Bio::EnsEMBL::SeqFeature;
-	my $f2 = new Bio::EnsEMBL::SeqFeature;
-	
-	my $f = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
-					      -feature2 => $f2);
-
-	my $exon = $rowhash->{exon};
-
-#	$f1->seqname($rowhash->{contig});
-	$f1->seqname("Supporting_feature");
-	$f1->start  ($rowhash->{seq_start});
-	$f1->end    ($rowhash->{seq_end});
-	$f1->strand ($rowhash->{strand});
-	$f1->source_tag($rowhash->{name});
-	$f1->primary_tag('similarity');
-	$f1->score  ($rowhash->{score});
-	
-	$f2->seqname($rowhash->{hid});
-	$f2->start  ($rowhash->{hstart});
-	$f2->end    ($rowhash->{hend});
-	$f2->strand ($rowhash->{strand});
-	$f2->source_tag($rowhash->{name});
-	$f2->primary_tag('similarity');
-	$f2->score  ($rowhash->{score});
-
-	my $analysisid = $rowhash->{analysis};
-
-	if ($anahash{$analysisid}) {
-	    $f->analysis($anahash{$analysisid});
-
-	} else {
-	    $f->analysis($self->get_Analysis($analysisid));
-	    $anahash{$analysisid} = $f->analysis;
-	}
-	
-	$f->validate;
-
-	$exhash{$exon}->add_Supporting_Feature($f);
-    }
-
+   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+   return $gene_obj->get_supporting_evidence(@exons);
 }
-
 
 =head2 write_Analysis
 
@@ -2086,7 +1182,6 @@ sub write_Analysis {
 
 }
 
-
 =head2 exists_Homol_Feature
 
  Title   : exists_Homol_Feature
@@ -2102,40 +1197,13 @@ sub write_Analysis {
 sub exists_Homol_Feature {
     my ($self,$feature,$analysisid,$contig) = @_;
 
-    $self->throw("Feature is not a Bio::SeqFeature::Homol") unless $feature->isa("Bio::SeqFeature::Homol");
+    $self->warn("Obj->exists_Homol_Feature is a deprecated method! 
+Calling Feature_Obj->exists_Homol_Feature instead!");
     
-    my $homol = $feature->homol_SeqFeature;
-
-    if (!defined($homol)) {
-	$self->throw("Homol feature doesn't exist");
-    }
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    $feature_obj->exists($feature,$analysisid,$contig);
+} 
     
-    my $query = "select f.id  from feature as f,homol_feature as h where " .
-			     "  f.id = h.feature " . 
-			     "  and h.hstart = "    . $homol  ->start . 
-			     "  and h.hend   = "    . $homol  ->end   . 
-			     "  and h.hid    = '"   . $homol  ->seqname . 
-			     "' and f.contig = '"   . $contig ->internal_id . 
-			     "' and f.seq_start = " . $feature->start . 
-			     "  and f.seq_end = "   . $feature->end .
-			     "  and f.score = "     . $feature->score . 
-			     "  and f.name = '"     . $feature->source_tag . 
-			     "' and f.analysis = "  . $analysisid;
-
-
-    my $sth = $self->prepare($query);
-    my $rv  = $sth->execute;
-    my $rowhash;
-
-    if ($rv && $sth->rows > 0) {
-	my $rowhash = $sth->fetchrow_hashref;
-	return $rowhash->{'id'};
-    } else {
-	return 0;
-    }
-}
-    
-
 =head2 get_Analysis
 
  Title   : get_Analysis
@@ -2250,22 +1318,12 @@ sub exists_Analysis {
 
 sub write_Transcript{
    my ($self,$trans,$gene) = @_;
-   my $old_trans;
 
-   if( ! $trans->isa('Bio::EnsEMBL::Transcript') ) {
-       $self->throw("$trans is not a EnsEMBL transcript - not dumping!");
-   }
+   $self->warn("Obj->write_Transcript is a deprecated method! 
+Calling Gene_Obj->write_Transcript instead!");
 
-   if( ! $gene->isa('Bio::EnsEMBL::Gene') ) {
-       $self->throw("$gene is not a EnsEMBL gene - not dumping!");
-   }
-
-   # ok - now load this line in
-   my $tst = $self->prepare("insert into transcript (id,gene,translation,version) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "',".$trans->version.")");
-   $tst->execute();
-   $self->write_Translation($trans->translation());
-
-   return 1;
+   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+   return $gene_obj->write_Transcript($trans,$gene);
 }
 
 =head2 write_Translation
@@ -2282,26 +1340,14 @@ sub write_Transcript{
 
 sub write_Translation{
     my ($self,$translation) = @_;
-    my $old_transl;
-    
-    if( !$translation->isa('Bio::EnsEMBL::Translation') ) {
-	$self->throw("Is not a translation. Cannot write!");
-    }
-    
-    if ( !defined $translation->version  ) {
-	$self->throw("No version number on translation");
-    }
-    
-    my $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
-			     . $translation->id . "',"
-			     . $translation->version . ","
-			     . $translation->start . ",'"  
-			     . $translation->start_exon_id. "',"
-			     . $translation->end . ",'"
-			     . $translation->end_exon_id . "')");
-    $tst->execute();
-    
+
+    $self->warn("Obj->write_Translation is a deprecated method
+Calling Gene_Obj->write_Translation instead!");
+
+    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+    return $gene_obj->write_Translation($translation);
 }
+
 
 =head2 write_Exon
 
@@ -2317,33 +1363,12 @@ sub write_Translation{
 
 sub write_Exon {
    my ($self,$exon) = @_;
-   my $old_exon;
 
-   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
-       $self->throw("$exon is not a EnsEMBL exon - not dumping!");
-   }
-   
-       my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
+   $self->warn("Obj->write_Exon is a deprecated method! 
+Calling Gene_Obj->write_Exon instead!");
 
-	   $exon->id()        . "'," .
-	   $exon->version()   . ",'".
-	   $exon->contig_id() . "', FROM_UNIXTIME(" .
-	   $exon->created()   . "), FROM_UNIXTIME(" .
-	   $exon->modified()  . ")," .
-	   $exon->start       . ",".
-	   $exon->end         . ",".
-           $exon->strand      . ",".
-	   $exon->phase       . ",now(),".
-	   $exon->end_phase . ")";
-       
-       my $sth = $self->prepare($exonst);
-       $sth->execute();
-
-       # Now the supporting evidence
-
-       $self->write_supporting_evidence($exon);
-   
-   return 1;
+   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
+   return $gene_obj->write_Exon($exon);
 }
 
 =head2 write_Contig
@@ -2677,8 +1702,6 @@ sub write_ContigOverlap {
     $res = $sth ->execute;
 
 }
-
-    
 
 =head2 prepare
 
