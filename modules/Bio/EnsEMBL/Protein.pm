@@ -729,7 +729,7 @@ sub get_all_SuperfamilyFeatures{
        my $proteinid = $self->id();
 	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('superfamily',$proteinid);
 	foreach my $in (@array_features) {
-	    $self->add_Lowcompl($in);
+	    $self->add_Superfamily($in);
 	}
 	return @array_features;
     }
