@@ -94,7 +94,7 @@ sub adaptor {
 
 
 sub map {
-  throw('Incorrect number of arguments.') if(@_ != 6);
+  throw('Incorrect number of arguments.') if(@_ != 6 && @_ != 7);
 
   my($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $frm_cs,
     $fastmap) = @_;
