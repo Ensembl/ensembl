@@ -34,15 +34,6 @@ CREATE TABLE blast_ticket (
   KEY update_time (update_time)
 ) TYPE=MyISAM";
 
-our $SQL_CREATE_RESULT = "
-CREATE TABLE blast_result (
-  result_id int(10) unsigned NOT NULL auto_increment,
-  ticket varchar(32) default NULL,
-  object longblob,
-  PRIMARY KEY  (result_id),
-  KEY ticket (ticket)
-) TYPE=MyISAM";
-
 our $SQL_CREATE_TABLE_LOG = "
 CREATE TABLE blast_table_log (
   table_id int(10) unsigned NOT NULL auto_increment,
@@ -58,6 +49,16 @@ CREATE TABLE blast_table_log (
   KEY table_type (table_type),
   KEY use_date (use_date),
   KEY table_status (table_status)
+) TYPE=MyISAM";
+
+
+our $SQL_CREATE_DAILY_RESULT = "
+CREATE TABLE %s (
+  result_id int(10) unsigned NOT NULL auto_increment,
+  ticket varchar(32) default NULL,
+  object longblob,
+  PRIMARY KEY  (result_id),
+  KEY ticket (ticket)
 ) TYPE=MyISAM";
 
 our $SQL_CREATE_DAILY_HIT = "
@@ -121,18 +122,18 @@ WHERE  ticket = ? ";
 #--- RESULTS ---
 
 our $SQL_RESULT_STORE = "
-INSERT INTO blast_result ( object, ticket )
+INSERT INTO blast_result%s ( object, ticket )
 VALUES                   ( ? , ? )";
 
 our $SQL_RESULT_UPDATE = "
-UPDATE  blast_result
+UPDATE  blast_result%s
 SET     object = ?,
         ticket = ?
 WHERE   result_id = ?";
 
 our $SQL_RESULT_RETRIEVE = "
 SELECT object
-FROM   blast_result
+FROM   blast_result%s
 WHERE  result_id = ? ";
 
 #--- HITS ---
@@ -289,26 +290,28 @@ sub store_result{
 
   my $dbh  = $self->db->db_handle;
 
-  my $ticket = $res->group_ticket;
-  my $token  = $res->token;
   my $store_obj = $res->_prepare_storable;
   my $frozen = freeze( $store_obj );
+  my $ticket = $res->group_ticket;
+  my ( $id, $use_date ) = split( '!!', $res->token);
+  $use_date ||= $self->use_date('RESULT');
 
   my $rv = 0;
-  if( $token ){
-    my $sth = $dbh->prepare( $SQL_RESULT_RETRIEVE );
-    $rv = $sth->execute( $token ) ||  $self->throw( $sth->errstr );
+  if( $id ){
+    my $sth = $dbh->prepare( sprintf $SQL_RESULT_RETRIEVE, $use_date );
+    $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
     $sth->finish;
   }
   if( $rv < 1 ){# Insert
-    my $sth = $dbh->prepare( $SQL_RESULT_STORE );
+    my $sth = $dbh->prepare( sprintf $SQL_RESULT_STORE, $use_date );
     $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
-    $res->token( $dbh->{mysql_insertid} );
+    my $id = $dbh->{mysql_insertid};
+    $res->token( join( '!!', $id, $use_date ) );
     $sth->finish;
   }
   else{  # Update
-    my $sth = $dbh->prepare( $SQL_RESULT_UPDATE );
-    $sth->execute( $frozen, $ticket, $token ) || $self->throw( $sth->errstr );
+    my $sth = $dbh->prepare( sprintf $SQL_RESULT_UPDATE, $use_date );
+    $sth->execute( $frozen, $ticket, $id ) || $self->throw( $sth->errstr );
     $sth->finish;
   }
   return $res->token();
@@ -329,10 +332,12 @@ sub store_result{
 
 sub retrieve_result{
   my $self = shift;
-  my $id   = shift || $self->throw( "Need a Result token" );
+  my $token  = shift || $self->throw( "Need a Hit token" );
+  my ( $id, $use_date ) = split( '!!',$token);
+  $use_date ||= '';
 
   my $dbh  = $self->db->db_handle;
-  my $sth = $dbh->prepare( $SQL_RESULT_RETRIEVE );
+  my $sth = $dbh->prepare( sprintf $SQL_RESULT_RETRIEVE, $use_date );
   my $rv  = $sth->execute( $id ) || $self->throw( $sth->errstr );
   if( $rv < 1 ){ $self->throw( "Token $id not found" ) }
   my ( $frozen ) = $sth->fetchrow_array;
@@ -629,13 +634,13 @@ sub dynamic_use {
 
 =cut
 
-my %valid_table_types = ( HIT=>1, HSP=>1 );
+my %valid_table_types = ( HIT=>1, HSP=>1, RESULT=>1 );
 sub use_date {
   my $key  = '_current_table';
   my $self = shift;
   my $type = uc( shift );
   $valid_table_types{$type} || 
-    $self->throw( "Need a table type (Hit or HSP)" );
+    $self->throw( "Need a table type (Result, Hit or HSP)" );
 
   $self->{$key} ||= {};
   if( ! $self->{$key}->{$type} ){
@@ -747,7 +752,7 @@ WHERE  ticket like "%s" /;
 =head2 create_tables
 
   Arg [1]   : none
-  Function  : Creates the blast_ticket, blast_result and blast_table_log
+  Function  : Creates the blast_ticket and blast_table_log
               tables in the database indicated by the database handle.
               Checks first to make sure they do not exist
   Returntype: boolean
@@ -774,11 +779,6 @@ sub create_tables {
     my $sth = $dbh->prepare( $SQL_CREATE_TICKET );
     my $rv = $sth->execute() || $self->throw( $sth->errstr );
   }
-  if( $rv_res == 0 ){
-    warn( "Creating blast_result table" );
-    my $sth = $dbh->prepare( $SQL_CREATE_RESULT );
-    my $rv = $sth->execute() || $self->throw( $sth->errstr );    
-  }
   if( $rv_log == 0 ){
     warn( "Creating blast_result table" );
     my $sth = $dbh->prepare( $SQL_CREATE_TABLE_LOG );
@@ -792,8 +792,9 @@ sub create_tables {
 =head2 rotate_daily_tables
 
   Arg [1]   : none
-  Function  : Creates the daily blast_hit{date} and blast_hsp{date} 
-              tables in the database indicated by the database handle.
+  Function  : Creates the daily blast_result{date}, blast_hit{date} 
+              and blast_hsp{date} tables in the database indicated by 
+              the database handle.
               Checks first to make sure they do not exist.
               Sets the new table to 'CURRENT' in the blast_table_log.
               Sets the previous 'CURRENT' table to filled.
@@ -812,6 +813,7 @@ sub rotate_daily_tables {
   my( $day, $month, $year ) = (localtime)[3,4,5];
   my $date = sprintf( "%04d%02d%02d", $year+1900, $month+1, $day );
 
+  my $res_table = "blast_result$date";
   my $hit_table = "blast_hit$date";
   my $hsp_table = "blast_hsp$date";
 
@@ -819,8 +821,27 @@ sub rotate_daily_tables {
   my $q = 'show table status like ?';
   my $sth = $dbh->prepare( $q );
   
+  my $rv_res  = $sth->execute($res_table) || $self->throw($sth->errstr);
   my $rv_hit  = $sth->execute($hit_table) || $self->throw($sth->errstr);
   my $rv_hsp  = $sth->execute($hsp_table) || $self->throw($sth->errstr);
+
+  if( $rv_res == 0 ){
+    warn( "Creating today's $res_table table\n" );
+
+    # Create new table
+    my $q = sprintf($SQL_CREATE_DAILY_RESULT, $res_table);
+    my $sth = $dbh->prepare( $q );
+    my $rv = $sth->execute() || $self->throw( $sth->errstr );         
+
+    # Flip current table in blast_table_tog
+    my $last_date = $self->use_date( "RESULT" ) || '';
+    my $sth2 = $dbh->prepare( $SQL_TABLE_LOG_INSERT );
+    my $sth3 = $dbh->prepare( $SQL_TABLE_LOG_UPDATE );
+    $sth2->execute( "$res_table",'CURRENT','RESULT',$date ) 
+      || die( $self->throw( $sth2->errstr ) );
+    $sth3->execute( 'FILLED','0',0,"blast_result$last_date") 
+      || die( $self->throw( $sth3->errstr ) );
+  }
 
   if( $rv_hit == 0 ){
     warn( "Creating today's $hit_table table\n" );
