@@ -64,7 +64,7 @@ sub list_value_by_key {
   my ($self,$key) = @_;
   my @result;
   
-  my $sth = $self->prepare( "select meta_value from meta where meta_key = ?" );
+  my $sth = $self->prepare( "select meta_value from meta where meta_key = ? order by meta_id" );
   $sth->execute( $key );
   while( my $arrRef = $sth->fetchrow_arrayref() ) {
     push( @result, $arrRef->[0] );
@@ -105,15 +105,27 @@ sub create_tables {
 
 # add well known meta info get-functions below
 
-sub get_species {
+sub get_Species {
   my $self = shift;
-  my $sth = $self->prepare( "select meta_value from meta where meta_key = 'species'" );
+  my $sth = $self->prepare( "select meta_value from meta where meta_key = 'species.common_name'" );
   $sth->execute;
+  my $common_name;
   if( my $arrRef = $sth->fetchrow_arrayref() ) {
-    return $arrRef->[0];
+    $common_name = $arrRef->[0];
   } else {
     return undef;
   }
+  my @classification = list_value_by_key( 'species.classification' );
+  if( ! defined @classification ) {
+    return undef;
+  }
+  my $species = new Bio::Species;
+  $species->common_name( $common_name );
+  $species->classification( @classification );
+
+  return $species;
 }
 
+
+1;
 
