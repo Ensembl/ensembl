@@ -349,6 +349,122 @@ sub get_all_Clone_id{
    return @out;
 }
 
+=head2 get_all_Gene_id
+
+ Title   : get_all_Gene_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Gene_id{
+   my ($self) = @_;
+   my $sth = $self->prepare("select id from gene");
+   my @out;
+
+   $sth->execute;
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+   return @out;
+}
+
+
+=head2 delete_Clone
+
+ Title   : delete_Clone
+ Usage   : $obj->delete_Clone($clone_id)
+ Function: Deletes clone, including contigs, but not its genes
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub delete_Clone{
+   my ($self,$clone_id) = @_;
+   
+   my @contigs;
+   # get a list of contigs to zap
+   my $sth = $self->prepare("select id from contig where clone = '$clone_id'");
+
+   $sth->execute;
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@contigs,$rowhash->{'id'});
+   }
+
+
+   # Delete from DNA table, Contig table, Clone table
+
+   foreach my $contig ( @contigs ) {
+       my $sth = $self->prepare("delete from contig where id = '$contig'");
+       $sth->execute;
+       $sth = $self->prepare("delete from dna where contig = '$contig'");
+       $sth->execute;
+   }
+
+   $sth = $self->prepare("delete from clone where id = '$clone_id'");
+   $sth->execute;
+}
+
+=head2 delete_Gene
+
+ Title   : delete_Gene
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub delete_Gene{
+   my ($self,$geneid) = @_;
+   my @trans;
+   my %exon;
+
+   # get out exons, transcripts for gene. 
+
+   my $sth = $self->prepare("select id from transcript where gene = '$geneid'");
+   $sth->execute;
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@trans,$rowhash->{'id'});
+   }
+
+   foreach my $trans ( @trans ) {
+       my $sth = $self->prepare("select exon from exon_transcript where transcript = '$trans'");
+       $sth->execute;
+       while( my $rowhash = $sth->fetchrow_hashref) {
+	   $exon{$rowhash->{'id'}} =1;
+       }
+   }
+
+   # delete exons, transcripts, gene rows
+
+   foreach my $exon ( keys %exon ) {
+       my $sth = $self->prepare("delete from exon where id = '$exon'");
+       $sth->execute;
+   }
+
+   foreach my $trans ( @trans ) {
+       my $sth= $self->prepare("delete from transcript where id = '$trans'");
+       $sth->execute;
+       $sth= $self->prepare("delete from exon_transcript where transcript = '$trans'");
+       $sth->execute;
+   }
+
+   $sth = $self->prepare("delete from gene where id = '$geneid'");
+   $sth->execute;
+}   
+       
+
 =head2 write_Gene
 
  Title   : write_Gene
@@ -386,6 +502,36 @@ sub geneid_to_cloneid{
    }
 
 }
+
+=head2 cloneid_to_geneid
+
+ Title   : cloneid_to_geneid
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub cloneid_to_geneid{
+   my ($self,$cloneid) = @_;
+
+   my $sth = $self->prepare("select p2.gene from contig as p1, transcript as p2, exon_transcript as p3 where p2.rtranscript =  and p2.id = p3.transcript and p3 ");
+   my @out;
+
+   $sth->execute;
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+   return @out;
+}
+
+
+
+
 
 sub write_Gene{
    my ($self,$gene) = @_;

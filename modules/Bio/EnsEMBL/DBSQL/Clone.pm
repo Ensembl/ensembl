@@ -96,8 +96,6 @@ sub get_all_Genes{
    my @out;
    my $id = $self->id();
    my %got;
-   # prepare the SQL statement
-
 
    my $sth = $self->_dbobj->prepare("select p3.gene from contig as p4, transcript as p3, exon_transcript as p1, exon as p2 where p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript");
 
@@ -117,6 +115,45 @@ sub get_all_Genes{
 
 
 }
+
+# Alternative get_all_Genes. Does not use large joins, but does it in Perl.
+#     # prepare the SQL statement
+#     # try this differently:
+#     my %exon;
+#     my %trans;
+#     my %gene;
+#     my @contigs = $self->get_all_Contigs();
+#     foreach my $contig ( @contigs ) {
+#         my $sth = $self->_dbobj->prepare("select id from exon where contig = '". $contig->id ."'");
+#         my $res = $sth->execute();
+#         while( my $rowhash = $sth->fetchrow_hashref) {
+#  	   $exon{$rowhash->{'id'}} = 1;
+#         }
+#     }
+#     # if we have no exons - bomb out!
+#     if( scalar keys %exon == 0 ) {
+#         return;
+#     }
+#     # yank out genes from exons
+#     foreach my $exon_id ( keys %exon ) { 
+#         my $sth = $self->_dbobj->prepare("select transcript from exon_transcript where exon = '$exon_id'");
+#         my $res = $sth->execute();
+#         while( my $rowhash = $sth->fetchrow_hashref) {
+#  	   $trans{$rowhash->{'transcript'}} = 1;
+#         }
+#     }
+#     foreach my $trans_id ( keys %trans ) {
+#         my $sth = $self->_dbobj->prepare("select gene from transcript where id = '$trans_id'");
+#         my $res = $sth->execute();
+#         while( my $rowhash = $sth->fetchrow_hashref) {
+#  	   $gene{$rowhash->{'gene'}} = 1;
+#         }
+#     }
+#     foreach my $gene_id ( keys %gene ) {
+#         my $gene = $self->_dbobj->get_Gene($gene_id);
+#         push(@out,$gene);
+#     }
+#     return @out;
 
 =head2 get_Contig
 
@@ -168,10 +205,10 @@ sub get_all_Contigs{
        my $contig = new Bio::EnsEMBL::DBSQL::Contig ( -dbobj => $self->_dbobj,
 						   -id => $rowhash->{'id'} );
        $contig->order($count++);
-       $contig->offset($total);
+       #$contig->offset($total);
        
-       $total += $contig->length();
-       $total += 400;
+       #$total += $contig->length();
+       #$total += 400;
 
        push(@res,$contig);
        $seen = 1;
