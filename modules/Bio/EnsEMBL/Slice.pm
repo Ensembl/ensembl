@@ -137,26 +137,24 @@ sub new {
   defined($end)     || throw('END argument is required');
   ($start <= $end)  || throw('start must be less than or equal to end');
 
-  if(!defined($seq_region_length)) {
-    warning("SEQ_REGION_LENGTH argument not provided.\nUsing end of Slice ".
-            "which may not be correct.");
-    $seq_region_length = $end;
-  } else {
-    throw('SEQ_REGION_LENGTH must be > 0') if($seq_region_length < 1);
-  }
+  $seq_region_length = $end if(!defined($seq_region_length));
+
+  ($seq_region_length > 0) || throw('SEQ_REGION_LENGTH must be > 0');
 
   if($seq && length($seq) != ($end - $start + 1)){
       throw('SEQ must be the same length as the defined LENGTH not '.
             length($seq).' compared to '.($end - $start + 1));
   }
-  if(!$coord_system || !ref($coord_system) ||
-     !$coord_system->isa('Bio::EnsEMBL::CoordSystem')) {
-    throw('COORD_SYSTEM argument must be a Bio::EnsEMBL::CoordSystem');
-  } elsif($coord_system->is_top_level()) {
-    throw('Cannot create slice on toplevel CoordSystem.');
+
+  if(defined($coord_system)) {
+   if(!ref($coord_system) || !$coord_system->isa('Bio::EnsEMBL::CoordSystem')){
+     throw('COORD_SYSTEM argument must be a Bio::EnsEMBL::CoordSystem');
+   }
+   if($coord_system->is_top_level()) {
+     throw('Cannot create slice on toplevel CoordSystem.');
+   }
   }
 
-  #strand defaults to 1 if not defined
   $strand ||= 1;
 
   if($strand != 1 && $strand != -1) {
@@ -374,9 +372,11 @@ sub strand{
 sub name {
   my $self = shift;
 
+  my $cs = $self->{'coord_system'};
+
   return join(':',
-              $self->{'coord_system'}->name(),
-              $self->{'coord_system'}->version(),
+              ($cs) ? $cs->name()    : '',
+              ($cs) ? $cs->version() : '',
               $self->{'seq_region_name'},
               $self->{'start'},
               $self->{'end'},
@@ -419,17 +419,14 @@ sub length {
 sub invert {
   my $self = shift;
 
-  if($self->{'seq'}){
-    warning("Cannot invert a slice which has a manually attached sequence ");
-    return;
-  }
-
-  #make a shallow copy of the slice via a hash copy,
+  # make a shallow copy of the slice via a hash copy and flip the strand
   my %s = %$self;
-
-  #flip the strand,
   $s{'strand'} = $self->{'strand'} * -1;
-  #bless and return the copy
+
+  # reverse compliment any attached sequence
+  reverse_comp(\$s{'seq'}) if($s{'seq'});
+
+  # bless and return the copy
   return  bless \%s, ref $self;
 }
 
@@ -450,12 +447,15 @@ sub invert {
 sub seq {
   my $self = shift;
 
-  if(!$self->{'seq'}){
-    my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor;
-    return ${$seqAdaptor->fetch_by_Slice_start_end_strand($self,1,undef,1)};
-   }
+  return $self->{'seq'} if($self->{'seq'});
 
-  return $self->{'seq'};
+  if($self->adaptor()) {
+    my $seqAdaptor = $self->adaptor()->db()->get_SequenceAdaptor();
+    return ${$seqAdaptor->fetch_by_Slice_start_end_strand($self,1,undef,1)};
+  }
+
+  # no attached sequence, and no db, so just return Ns
+  return 'N' x $self->length();
 }
 
 
@@ -608,18 +608,18 @@ sub project {
 
   throw('Coord_system name argument is required') if(!$cs_name);
 
-  #obtain a mapper between this coordinate system and the requested one
-  if(!$self->adaptor){
-    warning("You can't project a slice which isn't attached to a ".
-            "database on to another coordinate system");
-    return;
-  }
   my $slice_adaptor = $self->adaptor();
 
   if(!$slice_adaptor) {
-    warning("Cannot project slice without an attached SliceAdaptor");
+    warning("Cannot project without attached adaptor.");
     return [];
   }
+
+  if(!$self->coord_system()) {
+    warning("Cannot project without attached coord system.");
+    return [];
+  }
+
 
   my $db = $slice_adaptor->db();
   my $csa = $db->get_CoordSystemAdaptor();
@@ -773,7 +773,7 @@ sub expand {
 
   if($self->{'seq'}){
     warning("Cannot expand a slice which has a manually attached sequence ");
-    return;
+    return undef;
   }
 
   my $new_start;
@@ -807,7 +807,13 @@ sub expand {
   Arg   2    : int $end
   Arge [3]   : int $strand
   Example    : none
-  Description: makes another Slice that covers only part of this slice
+  Description: Makes another Slice that covers only part of this slice
+               If a slice is requested which lies outside of the boundaries
+               of this function will return undef.  This means that
+               behaviour will be consistant whether or not the slice is
+               attached to the database (i.e. if there is attached sequence
+               to the slice).  Alternatively the expand() method or the
+               SliceAdaptor::fetch_by_region method can be used instead.
   Returntype : Bio::EnsEMBL::Slice or undef if arguments are wrong
   Exceptions : none
   Caller     : general
@@ -816,12 +822,6 @@ sub expand {
 
 sub sub_Slice {
   my ( $self, $start, $end, $strand ) = @_;
-
-  if($self->{'seq'}){
-    warning("Cannot get a sub_Slice of a slice which has manually attached ".
-            "sequence ");
-    return;
-  }
 
   if( $start < 1 || $start > $self->{'end'} ) {
     # throw( "start argument not valid" );
@@ -888,7 +888,7 @@ sub seq_region_Slice {
   if($self->{'seq'}){
     warning("Cannot get a seq_region_Slice of a slice which has manually ".
             "attached sequence ");
-    return;
+    return undef;
   }
 
   # quick shallow copy
@@ -915,7 +915,7 @@ sub seq_region_Slice {
                method if you are working with multiple databases since is 
                possible to work with slices from databases with different
                internal seq_region identifiers.
-  Returntype : int
+  Returntype : int or undef if slices does not have attached adaptor
   Exceptions : warning if slice is not associated with a SliceAdaptor
   Caller     : assembly loading scripts, general
 
@@ -928,7 +928,7 @@ sub get_seq_region_id {
     return $self->adaptor->get_seq_region_id($self);
   } else {
     warning('Cannot retrieve seq_region_id without attached adaptor.');
-    return 0;
+    return undef;
   }
 }
 
@@ -952,7 +952,7 @@ sub get_all_Attributes {
   my $attrib_code = shift;
 
   my $result;
-  my @results; 
+  my @results;
 
   if(!$self->adaptor()) {
     warning('Cannot get attributes without an adaptor.');
@@ -983,13 +983,18 @@ sub get_all_Attributes {
                this slice with logic_name $logic_name.  If logic_name is 
                not defined then all prediction transcripts are retrieved.
   Returntype : listref of Bio::EnsEMBL::PredictionTranscript
-  Exceptions : none
+  Exceptions : warning if slice does not have attached adaptor
   Caller     : none
 
 =cut
 
 sub get_all_PredictionTranscripts {
    my ($self,$logic_name) = @_;
+
+   if(!$self->adaptor()) {
+     warning('Cannot get PredictionTranscripts without attached adaptor');
+     return [];
+   }
 
    my $pta = $self->adaptor()->db()->get_PredictionTranscriptAdaptor();
 
@@ -1015,13 +1020,18 @@ sub get_all_PredictionTranscripts {
                retrieved.  If $score is not defined features of all scores are
                retrieved.
   Returntype : listref of Bio::EnsEMBL::DnaDnaAlignFeatures
-  Exceptions : none
+  Exceptions : warning if slice does not have attached adaptor
   Caller     : general
 
 =cut
 
 sub get_all_DnaAlignFeatures {
    my ($self, $logic_name, $score, $dbtype) = @_;
+
+   if(!$self->adaptor()) {
+     warning('Cannot get DnaAlignFeatures without attached adaptor');
+     return [];
+   }
 
    my $db;
 
@@ -1059,13 +1069,18 @@ sub get_all_DnaAlignFeatures {
                retrieved.  If $score is not defined features of all scores are
                retrieved.
   Returntype : listref of Bio::EnsEMBL::DnaPepAlignFeatures
-  Exceptions : none
+  Exceptions : warning if slice does not have attached adaptor
   Caller     : general
 
 =cut
 
 sub get_all_ProteinAlignFeatures {
   my ($self, $logic_name, $score, $dbtype) = @_;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get ProteinAlignFeatures without attached adaptor');
+    return [];
+  }
 
   my $db;
 
@@ -1100,7 +1115,7 @@ sub get_all_ProteinAlignFeatures {
                retrieved.  If $score is not defined features of all scores are
                retrieved.
   Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
-  Exceptions : none
+  Exceptions : warning if slice does not have attached adaptor
   Caller     : general
 
 =cut
@@ -1132,13 +1147,18 @@ sub get_all_SimilarityFeatures {
                retrieved.  If $score is not defined features of all scores are
                retrieved.
   Returntype : listref of Bio::EnsEMBL::SimpleFeatures
-  Exceptions : none
+  Exceptions : warning if slice does not have attached adaptor
   Caller     : general
 
 =cut
 
 sub get_all_SimpleFeatures {
   my ($self, $logic_name, $score) = @_;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get SimpleFeatures without attached adaptor');
+    return [];
+  }
 
   my $sfa = $self->adaptor()->db()->get_SimpleFeatureAdaptor();
 
@@ -1160,17 +1180,22 @@ sub get_all_SimpleFeatures {
                $logic_name is not defined features of all logic names are 
                retrieved.
   Returntype : listref of Bio::EnsEMBL::RepeatFeatures
-  Exceptions : none
+  Exceptions : warning if slice does not have attached adaptor
   Caller     : general
 
 =cut
 
 sub get_all_RepeatFeatures {
-   my ($self, $logic_name, $repeat_type) = @_;
+  my ($self, $logic_name, $repeat_type) = @_;
 
-   my $rpfa = $self->adaptor()->db()->get_RepeatFeatureAdaptor();
+  if(!$self->adaptor()) {
+    warning('Cannot get RepeatFeatures without attached adaptor');
+    return [];
+  }
 
-   return $rpfa->fetch_all_by_Slice($self, $logic_name, $repeat_type);
+  my $rpfa = $self->adaptor()->db()->get_RepeatFeatureAdaptor();
+
+  return $rpfa->fetch_all_by_Slice($self, $logic_name, $repeat_type);
 }
 
 
@@ -1191,6 +1216,11 @@ sub get_all_RepeatFeatures {
 sub get_all_SNPs {
   my $self = shift;
 
+  if(!$self->adaptor()) {
+    warning('Cannot get SNPs without attached adaptor');
+    return [];
+  }
+
   my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
   if( $snpa ) {
     return $snpa->fetch_all_by_Slice($self);
@@ -1202,6 +1232,12 @@ sub get_all_SNPs {
 
 sub get_all_SNPs_transcripts {
   my $self = shift;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get SNPs without attached adaptor');
+    return [];
+  }
+
   my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
   if( $snpa ) {
     return $snpa->fetch_all_by_Slice_transcript_ids($self, @_ );
@@ -1225,6 +1261,12 @@ sub get_all_SNPs_transcripts {
 
 sub get_all_Genes{
    my ($self, $logic_name, $dbtype) = @_;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get Genes without attached adaptor');
+    return [];
+  }
+
    my $db;
    if($dbtype) {
      $db = $self->adaptor->db->get_db_adaptor($dbtype);
@@ -1261,6 +1303,11 @@ sub get_all_Genes{
 sub get_all_Genes_by_type{
   my ($self, $type, $logic_name) = @_;
 
+  if(!$self->adaptor()) {
+    warning('Cannot get Genes without attached adaptor');
+    return [];
+  }
+
   my @out = grep { $_->type eq $type } @{ $self->get_all_Genes($logic_name)};
 
   return \@out;
@@ -1283,6 +1330,12 @@ sub get_all_Genes_by_type{
 
 sub get_all_Transcripts {
   my $self = shift;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get Transcripts without attached adaptor');
+    return [];
+  }
+
   return $self->adaptor->db->get_TranscriptAdaptor->fetch_all_by_Slice($self);
 }
 
@@ -1302,6 +1355,12 @@ sub get_all_Transcripts {
 
 sub get_all_Exons {
   my $self = shift;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get Exons without attached adaptor');
+    return [];
+  }
+
   return $self->adaptor->db->get_ExonAdaptor->fetch_all_by_Slice($self);
 }
 
@@ -1320,6 +1379,11 @@ sub get_all_Exons {
 
 sub get_all_QtlFeatures {
   my $self = shift;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get QtlFeatures without attached adaptor');
+    return [];
+  }
 
   my $qfAdaptor;
   if( $self->adaptor()) {
@@ -1347,6 +1411,11 @@ sub get_all_QtlFeatures {
 
 sub get_all_KaryotypeBands {
   my ($self) = @_;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get KaryotypeBands without attached adaptor');
+    return [];
+  }
 
   my $kadp = $self->adaptor->db->get_KaryotypeBandAdaptor();
   return $kadp->fetch_all_by_Slice($self);
@@ -1376,7 +1445,6 @@ sub get_all_KaryotypeBands {
 sub get_repeatmasked_seq {
     my ($self,$logic_names,$soft_mask) = @_;
 
-    #creat a slice that 
     return Bio::EnsEMBL::RepeatMaskedSlice->new
       (-START   => $self->{'start'},
        -END     => $self->{'end'},
@@ -1425,7 +1493,7 @@ sub _mask_features {
 
     # check if we get repeat completely outside of expected slice range
     if ($end < 1 || $start > $dnalen) {
-	  warning("Unexpected: Repeat completely outside slice coordinates.");
+      warning("Unexpected: Repeat completely outside slice coordinates.");
       next REP;
     }
 
@@ -1476,6 +1544,11 @@ sub get_all_SearchFeatures {
 
     unless($ticket) {
       throw("ticket argument is required");
+    }
+
+    if(!$self->adaptor()) {
+      warning("Cannot get SearchFeatures without an attached adaptor");
+      return [];
     }
 
     my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
@@ -1578,6 +1651,11 @@ sub get_all_MiscFeatures {
 sub get_all_MarkerFeatures {
   my ($self, $logic_name, $priority, $map_weight) = @_;
 
+  if(!$self->adaptor()) {
+    warning('Cannot retrieve MarkerFeatures without attached adaptor.');
+    return [];
+  }
+
   my $ma = $self->adaptor->db->get_MarkerFeatureAdaptor;
 
   my $feats = $ma->fetch_all_by_Slice_and_priority($self, 
@@ -1615,6 +1693,11 @@ sub get_all_MarkerFeatures {
 sub get_all_compara_DnaAlignFeatures {
   my ($self, $qy_species, $qy_assembly, $alignment_type) = @_;
 
+  if(!$self->adaptor()) {
+    warning("Cannot retrieve DnaAlignFeatures without attached adaptor");
+    return [];
+  }
+
   unless($qy_species && $alignment_type # && $qy_assembly
   ) {
     throw("Query species and assembly and alignmemt type arguments are required");
@@ -1634,6 +1717,11 @@ sub get_all_compara_DnaAlignFeatures {
 
 sub get_all_compara_Syntenies {
   my ($self, $qy_species ) = @_;
+
+  if(!$self->adaptor()) {
+    warning("Cannot retrieve features without attached adaptor");
+    return [];
+  }
 
   unless($qy_species) {
     throw("Query species and assembly arguments are required");
@@ -1670,6 +1758,11 @@ sub get_all_compara_Syntenies {
 sub get_all_Haplotypes {
   my($self, $lite_flag) = @_;
 
+  if(!$self->adaptor()) {
+    warning("Cannot retrieve features without attached adaptor");
+    return [];
+  }
+
   my $haplo_db = $self->adaptor->db->get_db_adaptor('haplotype');
 
   unless($haplo_db) {
@@ -1704,6 +1797,11 @@ sub get_all_Haplotypes {
 
 sub get_all_DASFeatures{
    my ($self,@args) = @_;
+
+  if(!$_->adaptor()) {
+    warning("Cannot retrieve features without attached adaptor");
+    return [];
+  }
   
   my %genomic_features =
       map { ( $_->adaptor->dsn => [ $_->fetch_all_by_Slice($self) ]  ) }
@@ -1731,6 +1829,11 @@ sub get_all_DASFeatures{
 
 sub get_all_ExternalFeatures {
    my ($self, $track_name) = @_;
+
+   if(!$self->adaptor()) {
+     warning("Cannot retrieve features without attached adaptor");
+     return [];
+   }
 
    my $features = [];
 
@@ -1779,6 +1882,11 @@ sub get_all_ExternalFeatures {
 sub get_generic_features {
 
   my ($self, @names) = @_;
+
+  if(!$self->adaptor()) {
+    warning('Cannot retrieve features without attached adaptor');
+    return [];
+  }
 
   my $db = $self->adaptor()->db();
 

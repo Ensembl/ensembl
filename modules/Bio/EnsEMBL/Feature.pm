@@ -1,6 +1,6 @@
-# EnsEMBL module for Bio::EnsEMBL::Feature
+# Ensembl module for Bio::EnsEMBL::Feature
 #
-# Copyright (c) 2003 EnsEMBL
+# Copyright (c) 2003 Ensembl
 #
 
 
@@ -36,13 +36,13 @@ Bio::EnsEMBL::Feature - Ensembl specific sequence feature.
 
 =head1 DESCRIPTION
 
-This is the Base feature class from which all EnsEMBL features inherit.  It
+This is the Base feature class from which all Ensembl features inherit.  It
 provides a bare minimum functionality that all features require.  It basically
 describes a location on a sequence in an arbitrary coordinate system.
 
 =head1 CONTACT
 
-Post questions to the EnsEMBL development list: ensembl-dev@ebi.ac.uk
+Post questions to the Ensembl development list: ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 
@@ -361,7 +361,7 @@ sub slice {
                entire chromosome.
   Returntype : Bio::EnsEMBL::Feature (or undef)
   Exceptions : thrown if an invalid coordinate system is provided
-               thrown if this feature is not already on a slice
+               warning if Feature is not attached to a slice
   Caller     : general, transfer()
 
 =cut
@@ -382,13 +382,26 @@ sub transform {
   my $slice = $self->{'slice'};
 
   if(!$slice) {
-    throw('Feature is not associated with a slice and may not be transformed');
+    warning("Feature cannot be transformed without attached slice.");
+    return undef;
+  }
+
+  if(!$slice->adaptor()) {
+    warning("Feature cannot be transformed without adaptor on" .
+            " attached slice.");
+    return undef;
   }
 
   #use db from slice since this feature may not yet be stored in a database
   my $db = $slice->adaptor->db();
   my $cs = $db->get_CoordSystemAdaptor->fetch_by_name($cs_name, $cs_version);
   my $current_cs = $slice->coord_system();
+
+  if(!$current_cs) {
+    warning("Feature cannot be transformed without CoordSystem on " .
+            "attached slice.");
+    return undef;
+  }
 
   if(!$cs) {
     throw("Cannot transform to unknown coordinate system " .
@@ -466,16 +479,17 @@ sub transfer {
     throw('Slice argument is required');
   }
 
-  my $current_slice = $self->{'slice'};
-
-  if(!$current_slice) {
-    throw('Feature must be on a slice to be transfered.');
-  }
-
   #make a shallow copy of the feature to be transfered
   my $feature;
   %{$feature} = %{$self};
   bless $feature, ref($self);
+
+  my $current_slice = $self->{'slice'};
+
+  if(!$current_slice) {
+    warning("Feature cannot be transfered without attached slice.");
+    return undef;
+  }
 
   my $cur_cs = $current_slice->coord_system();
   my $dest_cs = $slice->coord_system();
@@ -586,8 +600,10 @@ sub project {
   my $slice = $self->{'slice'};
 
   if(!$slice) {
-    throw("Feature is not associated with a Slice and may not be projected");
+    warning("Feature cannot be projected without attached slice.");
+    return [];
   }
+
 
   #get an adaptor from the attached slice because this feature may not yet
   #be stored and may not have its own adaptor
@@ -669,16 +685,22 @@ sub display_id {
   Description: This is a convenience method to return a slice that covers the
                Area of this feature. The feature start will be at 1 on it, and
                it will have the length of this feature.
-  Returntype : Bio::EnsEMBL::Slice
-  Exceptions : none
+  Returntype : Bio::EnsEMBL::Slice or undef if this feature has no attached
+               Slice.
+  Exceptions : warning if Feature does not have attached slice.
   Caller     : web drawing code
 
 =cut
 
 sub feature_Slice {
   my $self = shift;
-  
+
   my $slice = $self->slice();
+
+  if(!$slice) {
+    warning('Cannot obtain Feature_Slice for feature without attached slice');
+    return undef;
+  }
 
   return Bio::EnsEMBL::Slice->new
     (-seq_region_name   => $slice->seq_region_name,
