@@ -358,6 +358,9 @@ sub add_DASFeatureFactory{
 }
 
 
+sub remove_all_DASFeatureFactories {
+  $_[0]->{'_das_ff'} = [];
+}
 =head2 _each_DASFeatureFactory
 
   Args       : none
