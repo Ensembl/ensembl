@@ -607,6 +607,41 @@ sub _dump{
 
 }
 
+
+=head2 transform
+
+  Arg  1    : Bio::EnsEMBL::Slice $slice
+              make this slice coords, but how does lazy loading work then??
+  Function  : make slice coords from raw contig coords or vice versa
+  Returntype: Bio::EnsEMBL::Gene
+  Exceptions: none
+  Caller    : object::methodname or just methodname
+
+=cut
+
+
+sub transform {
+  my $self = shift;
+  my $slice = shift;
+
+  my %exon_transformes;
+
+  # transform Exons
+  for my $exon ( $self->get_all_Exons() ) {
+    my $newExon = $exon->transform( $slice );
+    $exon_transformes{ $exon } = $newExon;
+  }
+
+  for my $transcript ( $self->get_all_Transcripts() ) {
+    $transcript->transform( \%exon_transformes );
+  }
+
+  return $self;
+}
+
+
+
+
 =head2 temporary_id
 
  Title   : temporary_id

@@ -265,6 +265,49 @@ sub fetch_by_contig_list{
 }
 
 
+=head2 fetch_by_Slice
+
+  Arg  1    : Bio::EnsEMBL::Slice $slice
+              The slice we want genes on
+  Function  : retrieve all the genes on this slice. Uses contig list from
+              Assembly Mapper and Gene->transform. Uses fetch_by_dbID to find
+              Genes initially and then makes transformed versions.
+  Returntype: list of Bio::EnsEMBL::Gene
+  Exceptions: none
+  Caller    : Bio::EnsEMBL::Slice
+
+=cut
+
+sub fetch_by_Slice {
+  my ( $self, $slice ) = @_;
+  my @out;
+
+  my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type
+    ( $slice->assembly_type() );
+  
+  $mapper->register_region( $slice->chr_name(),
+			    $slice->chr_start(),
+			    $slice->chr_end());
+  
+  my @cids = $mapper->list_contig_ids( $slice->chr_name(),
+				       $slice->chr_start(),
+				       $slice->chr_end());
+  
+  my $str = "(".join( ",",@cids ).")";
+
+  my $sth = $self->prepare("select distinct(t.gene_id) from transcript t,exon_transcript et,exon e where e.contig_id in $str and et.exon_id = e.exon_id and et.transcript_id = t.transcript_id");
+  $sth->execute;
+  
+  while( my $arref = $sth->fetchrow_arrayref() ) {
+    my $gene = $self->fetch_by_dbID( $$arref );
+    my $newgene = $gene->transform( $slice );
+    
+    push( @out, $newgene );
+  }
+}
+
+
+
 =head2 fetch_by_Transcript_id
 
  Title   : fetch_by_Transcript_id

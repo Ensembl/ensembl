@@ -323,6 +323,53 @@ sub contig {
 }
 
 
+=head2 transform
+
+  Arg  1    : Bio::EnsEMBL::Slice $slice
+              make this slice coords, but how does lazy loading work then??
+  Function  : make slice coords from raw contig coords or vice versa
+  Returntype: Bio::EnsEMBL::Exon (Bio::EnsEMBL::StickyExon)
+  Exceptions: none
+  Caller    : Gene::transform()
+
+=cut
+
+
+sub transform {
+  my $self = shift;
+  my $slice = shift;
+
+  if( defined $self->{'contig'} and 
+      $self->{'contig'}->ISA( "Bio::EnsEMBL::RawContig" ) )  {
+    my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type
+      ( $slice->assembly_type() );
+    my @mapped = $mapper->map_coordinates_to_assembly
+      (
+       $self->contig()->dbID,
+       $self->start(),
+       $self->end(),
+       $self->strand()
+      );
+    # exons should always transform so in theory no error check
+    # necessary
+    if(( ! @mapped ) ||
+       ( $mapped[0]->isa( "Bio::EnsEMBL::Mapper::Gap" ))) {
+      $self->throw( "Exon couldnt map" );
+    }
+       
+    my $newexon = Bio::EnsEMBL::Exon->new();
+    $newexon->start( $mapped[0]->start()) - $slice->start() + 1;
+    $newexon->end( $mapped[0]->end() - $slice->start() + 1);
+    $newexon->strand( $mapped[0]->strand() * $slice->strand() );
+
+    $newexon->contig( $slice );
+    $newexon->attach_seq( $slice );
+  } else {
+    $self->throw( "Not implemented yet" );
+  }
+}
+
+
 
 =head2 pep_seq
 
@@ -1128,7 +1175,7 @@ sub get_frameshifts {
 
  Title   : get_cdna
  Usage   : $seq = $exon->get_cdna()
- Function: converts an exon's dna based on any existing frameshifts
+ Function: converts an exons dna based on any existing frameshifts
  Returns : Bio::Seq object
  Args    : None
 
@@ -1181,7 +1228,7 @@ sub get_cdna {
       }
 
       # else if bps have been deleted, insert some Ns.
-      # there shouldn't be a 0 case but cover it just in case.
+      # there shouldnt be a 0 case but cover it just in case.
       elsif ( $frameshifts[$curr_frame][1] <= 0 ) {
 	$fshift_seq .= substr($seq, $bp-1, 1);
             # -1 to be consistent with the dna seqeunce	
