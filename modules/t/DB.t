@@ -26,19 +26,17 @@ BEGIN { $| = 1; print "1..5\n";
 
 END {print "not ok 1\n" unless $loaded;}
 
-use Bio::EnsEMBL::DB::Obj;
-use Bio::EnsEMBL::DB::Clone;
-use Bio::EnsEMBL::DB::Contig;
+use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBSQL::Clone;
+use Bio::EnsEMBL::DBSQL::Contig;
+use Bio::EnsEMBL::DBLoader;
 
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
 
 my $db;
-eval {
-    $db = new Bio::EnsEMBL::DB::Obj( -user => 'root', -db => 'pog' , -host => 'croc' );
-};
-if( $@ =~ /connect/ ) {
-    print STDERR "Could not connect to DB. Skipping test\n";
+
+sub skip_tests {
     print "ok 2\n";
     print "ok 3\n";
     print "ok 4\n";
@@ -46,20 +44,37 @@ if( $@ =~ /connect/ ) {
     exit(0);
 }
 
+open(FILE,"t/locator") || do {
+		       print STDERR "Could not open locator string in t/locator\nYou need a database to test against in t/locator\nSee t/locator.example for an example locator\n";
+		       print STDERR "\nDeliberately skipping tests\n";
+		       &skip_tests();
+		       exit(0);
+		       };
+
+$locator = <FILE>;
+chomp $locator;		       
+eval {
+    $db = Bio::EnsEMBL::DBLoader->new($locator);	
+
+};
+
+if( $@  ) {
+    print STDERR "Could not connect to database in locator [$locator]\nCompile went ok. Locator string looks incorrect\nDeliberately skipping test\n";
+    &skip_tests();
+}
+
 
 print "ok 2\n";
-my $clone  = $db->get_Clone("dJ382I10");
+@cloneids =  $db->get_all_Clone_id();
+my $clone  = $db->get_Clone($cloneids[0]);
 print "ok 3\n";
 
-
 my @contigs = $clone->get_all_Contigs();
-
 my $contig = $db->get_Contig($contigs[0]->id);
 print "ok 4\n";
 
-foreach $sf ( $contig->get_all_SeqFeatures ) {
-    # $sf is Bio::SeqFeature::Generic object.
-    if( ! $sf->isa("Bio::SeqFeatureI") ) {
+foreach $gene ( $clone->get_all_Genes() ) {
+    if( ! $gene->isa("Bio::EnsEMBL::Gene") ) {
       print "not ok 5\n";
       exit(1);
     }
