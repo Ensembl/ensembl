@@ -56,6 +56,10 @@ sub new {
     my ($annseq,$id)=$self->_rearrange([qw(ANNSEQ)],@args);
 
     $self->_get_Seq($annseq);
+    if( !$annseq->can('seq_version') ) {
+	$self->throw("Sequence $annseq does not have a seq_version method. Probably a wrong version of bioperl");
+    }
+
     my $sv=$annseq->seq_version;
     my $len=$annseq->length;
 
