@@ -313,11 +313,9 @@ sub adaptor {
    my $self = shift;
    
    if( @_ ) {
-      my $value = shift;
-      $self->{'adaptor'} = $value;
+      $self->{'adaptor'} = shift;
     }
     return $self->{'adaptor'};
-
 }
 
 
@@ -391,6 +389,7 @@ sub translation {
       $self->throw("This [$value] is not a translation");
     }
     $self->{'translation'} = $value;
+    $self->{'_translation_id'} = $value->dbID();
   } else {
     if( ! defined $self->{'translation'} &&
 	defined $self->_translation_id() ) {
@@ -558,17 +557,20 @@ sub cdna_coding_start {
 
     my @exons = @{$self->get_all_Exons};
     my $exon;
+    my $found = 0;
 
     while($exon = shift @exons) {
       if($exon == $self->translation->start_Exon) {
-	#add the utr portion of the start exon
-	$start += $self->translation->start;
-	last;
+        #add the utr portion of the start exon
+        $start += $self->translation->start;
+        $found = 1;
+        last;
       } else {
-	#add the entire length of this non-coding exon
-	$start += $exon->length;
+        #add the entire length of this non-coding exon
+        $start += $exon->length;
       }
     }
+    $self->throw("Start exon could not be found") if(!$found);
     $self->{'cdna_coding_start'} = $start;
   }
 
@@ -920,17 +922,18 @@ sub get_all_peptide_variations {
 
 sub get_all_SNPs {
   my $self = shift;
-  my $flanking = shift;
+  my $flanking = shift || 0;
 
   my %snp_hash;
   my $sa = $self->adaptor->db->get_SliceAdaptor;
 
   #retrieve a slice in the region of the transcript
-  my $slice = $sa->fetch_by_transcript_id($self->dbID);
+  my $slice = $sa->fetch_by_transcript_id($self->dbID, $flanking);
 
   #copy this transcript, so we can work in coord system we are interested in
   my $transcript = Bio::EnsEMBL::Transcript->new;
   %$transcript = %$self;
+  delete $transcript->{'translation'};
 
   #transform transcript to same coord system we will get snps in
   my %exon_transforms;
@@ -1049,6 +1052,7 @@ sub get_all_cdna_SNPs {
   #copy this transcript, so we can work in coord system we are interested in
   my $transcript = Bio::EnsEMBL::Transcript->new;
   %$transcript = %$self;
+  delete $transcript->{'translation'};
 
   #transform transcript to same coord system we will get snps in
   my %exon_transforms;
