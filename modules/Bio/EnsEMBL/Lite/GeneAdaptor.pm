@@ -108,6 +108,7 @@ sub fetch_by_Slice {
     my @lengths = split( ":", $hr->{'exon_structure'} );
     my ( $start, $end );
 
+      
     # lowest chr coord  exon first
     $start = $hr->{'chr_start'} - $slice->chr_start + 1;
     $end = $start + $lengths[0] - 1;
@@ -159,7 +160,11 @@ sub fetch_by_Slice {
     $transcript->type( $hr->{ 'type' } );
     $transcript->external_name( $hr->{'external_name'} );
     $transcript->external_db( $hr->{'external_db' } );
-      
+
+    if( $gene->stable_id() =~ /UBE2C/ ) {
+      print STDERR ( "coding_start: ",$transcript->coding_start(),"\n" );
+      print STDERR ( "coding_end: ",$transcript->coding_end(),"\n" );
+    } 
     # Add the exons
     if( $hr->{'chr_strand'} != 1 ) {
       @exons = reverse( @exons );
