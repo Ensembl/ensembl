@@ -3258,4 +3258,9 @@ sub get_all_MapFrags {
         $mapset, $self->_chr_name, $self->_global_start, $self->_global_end
     );
 }    
+
+sub has_MapSet {
+    my( $self, $mapset_name ) = @_;
+    return $self->dbobj->get_MapFragAdaptor->has_mapset( $mapset_name );
+}
 1;

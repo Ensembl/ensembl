@@ -122,6 +122,7 @@ sub new {
     $self->{'_lock_table_hash'} = {};
     $self->_analysis_cache({});
     $self->{'_external_ff'} = [];
+    $self->{'_das_ff'}      = [];
 
     if( $debug ) {
         $self->_debug($debug);
@@ -981,7 +982,7 @@ sub add_DASFeatureFactory{
 sub _each_DASFeatureFactory{
    my ($self) = @_;
 
-   return @{$self->{'_das_ff'}}
+   return @{$self->{'_das_ff'}};
 }
 
 

@@ -2,6 +2,7 @@ package Bio::EnsEMBL::DBSQL::MapFragAdaptor;
 use strict;
 use vars '@ISA';
 use Bio::EnsEMBL::DBSQL::MapFrag;
+use Bio::EnsEMBL::DBSQL::MapSet;
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
@@ -9,7 +10,7 @@ use Bio::EnsEMBL::DBSQL::MapFrag;
 ## cache and max_feature_length values.........
 sub new {
     my $class = shift;
-    my $self = $class->SUPER::new(@_);
+    my $self = $class->SUPER::new( @_ );
     $self->max_feature_length( 1e8 );
     $self->{'_cache'} = {};
     return $self;
@@ -90,6 +91,8 @@ sub fetch_mapset_chr_start_end {
         }
         if($data->{'note_type'} eq 'synonym') {
             $map_frag->add_synonym( $data->{'note'} ); 
+        } elsif($data->{'note_type'} eq 'embl_acc') {
+            $map_frag->add_embl_acc( $data->{'note'} ); 
         } else {
             $map_frag->add_annotation( $data->{'note_type'}, $data->{'note'} );
         }
@@ -117,7 +120,6 @@ sub fetch_by_internal_id {
         
     $sth->execute( $ID );
     return undef unless($sth->rows>0);
-    print STDERR "FETCH_BY INTERNAL ID\n";
     
     my $map_frag  = undef;
     while( my $data = $sth->fetchrow_hashref() ) {
@@ -133,24 +135,25 @@ sub fetch_by_internal_id {
         }
         if($data->{'note_type'} eq 'synonym') {
             $map_frag->add_synonym( $data->{'note'} ); 
+        } elsif($data->{'note_type'} eq 'embl_acc') {
+            $map_frag->add_embl_acc( $data->{'note'} ); 
         } else {
             $map_frag->add_annotation( $data->{'note_type'}, $data->{'note'} );
         }
     }
-    print STDERR "FETCH_BY INTERNAL ID\n";
+
     $sth = $self->prepare(
-        qq(select ms.*
+        qq(select ms.id, ms.code, ms.name, ms.description
              from mapset as ms, mapfrag_mapset as mm
             where ms.mapset_id = mm.mapset_id and mm.mapfrag_id = ?
         )
     );
     $sth->execute( $ID );
-    print STDERR "FETCH_BY INTERNAL ID\n";
-    while( my $data = $sth->fetchrow_hashref() ) {
-        $map_frag->add_mapset( $data )
+
+    while( my $data = $sth->fetchrow_arrayref() ) {
+        $map_frag->add_mapset( Bio::EnsEMBL::DBSQL::MapSet->new( $data ) )
     }
     
-    print STDERR "FETCH_BY INTERNAL ID\n";
     return $self->{'_cache'}{$key} = $map_frag;
 }
 
@@ -224,10 +227,19 @@ sub get_mapsets {
     $sth->execute();
     my %results = ();
     my $key = $flag eq 'mapset_id' ? 'mapset_id' : 'code'; # Key to store hash on...
-    while( my $data = $sth->fetchrow_hashref() ) {
-        $results{ $data->{$key} } = $data;
+    while( my $data = $sth->fetchrow_arrayref() ) {
+        $results{ $data->{$key} } = Bio::EnsEMBL::DBSQL::MapSet->new( $data );
     }
     return %results;
 }
 
+sub has_mapset {
+    my $self = shift;
+    my $name = shift;
+    my $sth = $self->prepare(
+        "select 1 from mapset as ms, mapfrag_mapset as mm where ms.code = ? and ms.mapset_id = mm.mapset_id limit 1"
+    );
+    $sth->execute( $name );
+    return $sth->fetchrow_array();
+}
 1;
