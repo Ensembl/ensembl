@@ -395,7 +395,7 @@ $name=$ft->hseqname;
         }
 
 if ($ft->analysis->db eq "PfamFrag"){
-print "SCORE ",$ft->score,"\n";
+print STDERR "SCORE ",$ft->score,"\n";
            
         }
 
