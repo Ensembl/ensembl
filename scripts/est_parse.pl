@@ -1,20 +1,20 @@
 #!/usr/local/bin/perl
 
-=head1 NAME - gtf dump
+=head1 NAME - EST dump
 
-    Parses files in GTF format (Gene Transfer Format)
+    Parses files in EST format (Gene Transfer Format)
 
 =head1 SYNOPSIS - 
 
-    gtfparse -dbname ensembl -parsefile genes.gtf
+    ESTparse -dbname ensembl -parsefile genes.EST
 
 =head1 DESCRIPTION
 
-    This script parses GTF files and writes the genes extracted to a database.
+    This script parses EST files and writes the genes extracted to a database.
     The database is specified using the usual EnsEMBL options, described below.
 
-    The actual parsing happens in the Bio::EnsEMBL::Utils::GTF_handler module,
-    which also handles the dumping of GTF files.
+    The actual parsing happens in the Bio::EnsEMBL::Utils::EST_handler module,
+    which also handles the dumping of EST files.
 
     If the print option is specified, then the genes are not written to db, 
     but printed to STDOUT (mainly for testing)
@@ -35,7 +35,7 @@
 
     -module    module name to load to (Defaults to Bio::EnsEMBL::DBSQL::Obj)
 
-    -parsefile name of the GTF file to parse
+    -parsefile name of the EST file to parse
 
     -print     prints gene structures to STDOUT
 
@@ -43,7 +43,7 @@
 
 =cut
 
-use Bio::EnsEMBL::Utils::GTF_handler;
+use Bio::EnsEMBL::Utils::EST_parser;
 use Bio::EnsEMBL::DBLoader;
 use strict;
 use Getopt::Long;
@@ -75,34 +75,26 @@ my $help;
 	     'h|help'     => \$help
 	     );
 
-my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
+my $ESTh=Bio::EnsEMBL::Utils::EST_parser->new();
 
-open (PARSE,"$parsefile") || die("Could not open $parsefile for gtf reading$!");
+open (PARSE,"$parsefile") || die("Could not open $parsefile for EST reading$!");
     
-my @genes=$gtfh->parse_file(\*PARSE);
+my @features=$ESTh->parse_file(\*PARSE);
 
 if ($print) {
-    $gtfh->print_genes;
+    $ESTh->print_ests;
 }
 
-#DB writing option not yet implemented
-#Mapping of coordinates still needs to be done
+ #DB writing option not yet implemented
+ #Mapping of coordinates still needs to be done
 
 else {
-    my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
-        
-    my $db =  Bio::EnsEMBL::DBLoader->new($locator);
-    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
-    foreach my $gene (@genes) {
-	my @exons=$gene->each_unique_Exon;
-	my $fpc=$exons[0]->contig_id;
-	print STDERR "Got seqname $fpc\n";
-	$db->static_golden_path_type('UCSC');
-	my $sgp_adaptor = $db->get_StaticGoldenPathAdaptor();
-	my $vc = $sgp_adaptor->fetch_VirtualContig_by_fpc_name($fpc);
-	my $newgene = $vc->convert_Gene_to_raw_contig($gene);
-	print STDERR "Writing gene $gene\n";
-	$gene_obj->write($gene);
-    }
+     my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+     my $db =  Bio::EnsEMBL::DBLoader->new($locator);
+     my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($db);
+     my $int_id=$features[0]->seqname;
+     print STDERR "Got $int_id\n";
+     my $contig=$db->get_Contig_by_international_id($int_id);
+     $feature_obj->write($contig,@features);
 }
 

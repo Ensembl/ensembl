@@ -1993,6 +1993,31 @@ sub get_Contig{
    return $contig->fetch();
 }
 
+=head2 get_Contig
+
+ Title   : get_Contig
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Contig_by_international_id{
+   my ($self,$int_id) = @_;
+
+   #$self->warn("Obj->get_Contig is a deprecated method! 
+#Calling Contig->fetch instead!");
+   my $sth=$self->prepare("select id from contig where international_id = '$int_id'");
+   $sth->execute;
+   my $row = $sth->fetchrow_hashref;
+   my $id  = $row->{'id'};
+
+   return $self->get_Contig($id);
+}
+
 =head2 get_Contigs_by_Chromosome
 
  Title   : get_Contig_by_Chromosome
