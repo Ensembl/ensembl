@@ -77,7 +77,7 @@ sub convert{
        $gf->end($sf->end());
        if( $sf->strand == 1 ) {
 	   $gf->strand('+');
-       } elsif ( $gf->strand == -1 ) {
+       } elsif ( $sf->strand == -1 ) {
 	   $gf->strand('-');
        } else {
 	   $gf->strand('.');

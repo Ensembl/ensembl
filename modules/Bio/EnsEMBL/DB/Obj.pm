@@ -68,14 +68,19 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  my ($db,$host,$driver,$user) = $self->_rearrange([qw(DB
+  my ($db,$host,$driver,$user,$debug) = $self->_rearrange([qw(DB
 					       HOST
 					       DRIVER
 					       USER
+					       DEBUG
 					       )],@args);
 
   $db || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
+  
+  if( $debug ) {
+     $self->_debug($debug);
+  }
   
   if( ! $driver ) {
       $driver = 'mysql';
@@ -89,6 +94,10 @@ sub _initialize {
 
   $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
 
+  if( $self->_debug > 3 ) {
+     $self->warn("Using connection $dbh");
+  }
+     
   $self->_db_handle($dbh);
 
 # set stuff in self from @args
@@ -179,6 +188,27 @@ sub prepare{
    return $self->_db_handle->prepare($string);
 }
 
+
+=head2 _debug
+
+ Title   : _debug
+ Usage   : $obj->_debug($newval)
+ Function: 
+ Example : 
+ Returns : value of _debug
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _debug{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'_db_handle'} = $value;
+    }
+    return $self->{'_db_handle'};
+
+}
 
 
 =head2 _db_handle
