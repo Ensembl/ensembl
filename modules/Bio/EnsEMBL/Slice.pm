@@ -1323,7 +1323,7 @@ sub get_all_SNPs {
 
   my $db = $self->adaptor()->db();
   if(defined($db)){
-      $snpa = $reg->get_adaptor( $db->species(), "snp", "SNP" );
+      $snpa = $reg->get_adaptor( $db->species(), $db->group(), "SNP" );
   }
   if( $snpa ) {
     return $snpa->fetch_all_by_Slice($self);
