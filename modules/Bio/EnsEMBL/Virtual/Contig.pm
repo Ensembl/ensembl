@@ -1224,37 +1224,50 @@ sub _convert_seqfeature_to_vc_coords {
     # if this is something with subfeatures, then this is much more complex
     my @sub = $sf->sub_SeqFeature();
     
+    # if there is any sub_SeqFeature
     if( $#sub >=  0 ) {
-	    # chain to constructor of the object. Not pretty this.
-	    $sf->flush_sub_SeqFeature();
-	    my $seen = 0;
-	    my $strand;
-	    foreach my $sub ( @sub ) {
-#	        print STDOUT "Converting sub ",$sub->id,":",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
-	        $sub = $self->_convert_seqfeature_to_vc_coords($sub);
-	        if( !defined $sub ) {        
-		        next;
-	        }
-	        if( $seen == 0 ){
-		        $sf->start($sub->start);
-		        $sf->end($sub->end);
-	        }
-	        $seen =1;
-	        $strand = $sub->strand;
-	        $sf->add_sub_SeqFeature($sub,'EXPAND');
-	    }
-	    if( $seen == 1 ) {       
-	        # we assumme that the mapping was unambiguous wrt to the strand
-	        $sf->strand($strand);
-	        return $sf;
-	    } else {
-	        return undef;
-	    }
+      # chain to constructor of the object. Not pretty this.
+      $sf->flush_sub_SeqFeature();
+      my $seen = 0;
+      my $strand;
+      foreach my $sub ( @sub ) {
+	#print STDOUT "Converting sub ",$sub->id,":",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
+	$sub = $self->_convert_seqfeature_to_vc_coords($sub);
+	if( !defined $sub ) {        
+	  next;
+	}
+	
+	# the first sub_feature determines the start-coord
+	if( $seen == 0 ){
+	  $sf->start($sub->start);
+	  $sf->end($sub->end);
+	}
+	# sub-sequence sub_features expand the end-coord$seen =1;
+	$strand = $sub->strand;
+	$sf->add_sub_SeqFeature($sub,'EXPAND');
+      }
+      
+      # we've remapped all sub_features, and the feature itself
+      if( $seen == 1 ) {       
+	# we assumme that the mapping was unambiguous wrt to the strand
+	$sf->strand($strand);
+	return $sf;
+      } 
+      else {
+	print STDERR "Nothing to return\n";
+	return undef;
+      }
     }
 
     # if this is an exon, we need to convert any supporting evidence
     if($sf->isa("Bio::EnsEMBL::Exon")){
-      foreach my $se($sf->each_Supporting_Feature){
+     
+      # get supporting evidence through an ExonAdaptor just once! 
+      my $exon_adaptor = $self->dbobj->get_ExonAdaptor;
+      $exon_adaptor->fetch_evidence_by_Exon($sf);
+      my @evidence = $sf->each_Supporting_Feature;
+      
+      foreach my $se( @evidence ){
 	if($se->seqname == $sf->contig->internal_id){
 	  $se->seqname($sf->seqname); # hack much like the one for exon->seqname above
 	  $self->_convert_seqfeature_to_vc_coords($se);
@@ -1271,14 +1284,24 @@ sub _convert_seqfeature_to_vc_coords {
     # might be clipped left/right
     #print ("Leftmost " . $mc->leftmost . " " . $mc->orientation . " " . $mc->start_in . " " . $mc->end_in  . " " . $sf->start . " " . $sf->end . "\n");
     # Could be clipped on ANY contig  
+    
+    # check whether the feature falls over the contig
     if ($sf->start < $mc->rawcontig_start) {
-#         print STDERR "Binning $cid\n";
-	    return undef;              
+      #print STDERR "feature $sf cannot be map\n";
+      #print STDERR "-Binning $cid\n";
+      #print STDERR "Feature START ", $sf->start     ,"\n";
+      #print STDERR "RawContig START ", $mc->rawcontig_start ,"\n";
+      return undef;              
     }
     if ($sf->end >  $mc->rawcontig_end) {  
-#         print STDERR "Binning $cid\n";
-	    return undef;              
+      #print STDERR "feature $sf cannot be map\n";
+      #print STDERR "+Binning $cid\n";
+      #print STDERR "Feature END ", $sf->end     ,"\n";
+      #print STDERR "RawContig END ", $mc->rawcontig_end ,"\n";
+      return undef;              
     }
+
+    # Finally, convert the coordinates of the feature
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
 
     if( $sf->can('attach_seq') ) {
@@ -1286,6 +1309,13 @@ sub _convert_seqfeature_to_vc_coords {
 	        $sf->attach_seq($self->primary_seq);
 	    }
     }
+    
+    ## test
+    #print STDERR "re-mapping object $sf: ";
+    #print STDERR "start: ".$sf->start." --> ".$rstart.
+    #             " end: " .$sf->end  ." --> ". $rend."\n";
+
+    # redefine coordinates
     $sf->start ($rstart);
     $sf->end   ($rend);
     $sf->strand($rstrand);
@@ -1334,7 +1364,9 @@ sub _convert_start_end_strand_vc {
 	$rstrand = $strand * -1;
 	
 	# yup. A number of different off-by-one errors possible here
-
+	
+	# well, believe or not, this actually works
+	# take a virtual contig starting in 1 and you'll see
 	$rstart = $mc->end   - ($end   - $mc->rawcontig_start);
 	$rend   = $mc->end   - ($start - $mc->rawcontig_start);
 
