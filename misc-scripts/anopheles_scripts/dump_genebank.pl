@@ -5,12 +5,13 @@ use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Utils::Eprof('eprof_start','eprof_end','eprof_dump');
 
-my $host      = 'ecs2d';
-my $dbuser    = 'ensro';
-my $dbname    = 'anopheles_gambiae_core_12_2';
+my $host      = 'localhost';
+my $dbuser    = 'manu';
+my $dbname    = 'anopheles_gambiae_core_10_2';
 my $dbpass    = '';
 my $path      = 'MOZ2';
 
+my %scafmap;
 my %utr;
 my %utr_tmp;
 
@@ -30,9 +31,22 @@ my $clone_adapt = $db->get_CloneAdaptor();
 my $gene_adapt = $db->get_GeneAdaptor();
 my $slice_adapt = $db->get_SliceAdaptor();
 
-open (MAP,"/acari/work1/mongin/test_dump/AAAB01.output.p2g") || die;
-open (OUT,">/acari/work1/mongin/test_dump/AAAB01008846.tbl") || die;
-open (SEQ,">/acari/work1/mongin/test_dump/AAAB01008846.fsa") || die;
+
+#open (MAP,"/acari/work1/mongin/test_dump/AAAB01.output.p2g") || die;
+#open (OUT,">/acari/work1/mongin/test_dump/AAAB01008846.tbl") || die;
+#open (SEQ,">/acari/work1/mongin/test_dump/AAAB01008846.fsa") || die;
+
+
+open (MAP,"/Users/emmanuelmongin/work/ncbi_dump/AAAB01.output.p2g") || die;
+open (OUT,">/Users/emmanuelmongin/work/ncbi_dump/AAAB01008846.tbl") || die;
+open (SEQ,">/Users/emmanuelmongin/work/ncbi_dump/AAAB01008846.fsa") || die;
+open (SCAFMAP,"/Users/emmanuelmongin/work/ncbi_dump/accessions") || die;
+
+while(<SCAFMAP>) {
+    chomp;
+    my ($new,$a,$old) = split;
+    $scafmap{$new} = $old;
+}
 
 while(<MAP>) {
     chomp;
@@ -53,86 +67,85 @@ $sth1->execute();
 
 my ($id,$clone_name,$ori) = $sth1->fetchrow_array;
 
-    my $slice = $slice_adapt->fetch_by_clone_accession($clone_name);
+
+
+my $slice = $slice_adapt->fetch_by_clone_accession($clone_name);
+
+if ($ori == -1) {
+    $slice = $slice->invert();
+}
+
+
+my $chr_name = $slice->chr_name;
+
+my $clone_seq = $slice->seq;
+
+my $old_clone_name = $scafmap{$clone_name};
+
+print SEQ ">gnl|WGS:AAAB|$old_clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs] [chromosome=$chr_name]\n$clone_seq\n";
+
+
+print OUT ">Feature gnl|WGS:AAAB|$old_clone_name\n";
+
+my @genes = @{$slice->get_all_Genes};
+
+foreach my $gene(@genes) {
     
-    if ($ori == -1) {
-	$slice = $slice->invert();
-    }
-        
-
-    my $chr_name = $slice->chr_name;
-
-    my $clone_seq = $slice->seq;
+    my $gene_id = $gene->dbID;
     
-    print SEQ ">gnl|WGS:AAAB|$clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs] [chromosome=$chr_name]\n$clone_seq\n";
+    my @transcripts = @{$gene->get_all_Transcripts};
     
+    my $tr_start = $transcripts[0]->start;
     
-    print OUT ">gnl|WGS:AAAB|$clone_name\n";
-    
-    my @genes = @{$slice->get_all_Genes};
-
-    print STDERR "HERE\n";
-
-    foreach my $gene(@genes) {
-
-	my $gene_id = $gene->dbID;
-
-	print STDERR "GENEDBID: $gene_id\n";
-
-	my @transcripts = @{$gene->get_all_Transcripts};
-
-	my $tr_start = $transcripts[0]->start;
+    foreach my $tr(@transcripts) {
 	
-	foreach my $tr(@transcripts) {
-	    
-	    $tr_start = $tr->start;
-	}
-
-	my $new_gene = &checks($gene);
-
-	my @new_transcripts = @{$new_gene->get_all_Transcripts};
-
+	$tr_start = $tr->start;
+    }
+    
+    my $new_gene = &checks($gene);
+    
+    my @new_transcripts = @{$new_gene->get_all_Transcripts};
+    
 #print the gene coordinates
 
-	my $new_gene_dbID = $new_gene->dbID;
-	
-	my $start = $gene->start;
-	my $end = $gene->end;
-	my $name = $gene->stable_id;
+    my $new_gene_dbID = $new_gene->dbID;
+    
+    my $start = $gene->start;
+    my $end = $gene->end;
+    my $name = $gene->stable_id;
 
-	my $ebi;
-	my $cel_gene;
-	my $cel_transcript;
-	my $cel_translation;
+    my $ebi;
+    my $cel_gene;
+    my $cel_transcript;
+    my $cel_translation;
+    
+    my $cdna_start;
+    my $cdna_end;
+    my $coding_start;
+    my $coding_end;
+    
+#Check for the gene the presence of UTRs\
+    
 
-	my $cdna_start;
-	my $cdna_end;
-	my $coding_start;
-	my $coding_end;
-
-#	print OUT "UTR COUNT ". $utr{$new_gene_dbID}->{'count'}."\n";
-#	print OUT "UP ".$utr{$new_gene_dbID}->{'up'}."\n";
-#	print OUT "DOWN ".$utr{$new_gene_dbID}->{'down'}."\n";
-
-	if ($utr{$new_gene_dbID}->{'count'} == 2) {
-	    if ($gene->strand == 1) {
-		print OUT "$start\t$end\tgene\n";
-	    }
-	    else {
-		print OUT "$end\t$start\tgene\n";
-	    }
+    if (($utr{$new_gene_dbID}->{'up'}==1)&&($utr{$new_gene_dbID}->{'down'}==1)) {
+	if ($gene->strand == 1) {
+	    print OUT "$start\t$end\tgene\n";
 	}
-	
-	elsif (($utr{$new_gene_dbID}->{'count'} == 1)&&($utr{$new_gene_dbID}->{'up'})) {
-	    if ($gene->strand == 1) {
-		print OUT "$start\t>$end\tgene\n";
-	    }
-	    else {
-		print OUT "$end\t>$start\tgene\n";
-	    }
+	else {
+	    print OUT "$end\t$start\tgene\n";
 	}
-	
-	elsif (($utr{$new_gene_dbID}->{'count'} == 1)&&($utr{$new_gene_dbID}->{'up'})) {
+    }
+    
+    elsif (($utr{$new_gene_dbID}->{'up'} == 1)&&($utr{$new_gene_dbID}->{'down'}!=1)) {
+	if ($gene->strand == 1) {
+	    print OUT "$start\t>$end\tgene\n";
+	}
+	else {
+	    print OUT "$end\t>$start\tgene\n";
+	}
+    }
+    
+	elsif (($utr{$new_gene_dbID}->{'up'} != 1)&&($utr{$new_gene_dbID}->{'down'}==1)) {
 	    if ($gene->strand == 1) {
 		print OUT "<$start\t$end\tgene\n";
 	    }
@@ -140,30 +153,28 @@ my ($id,$clone_name,$ori) = $sth1->fetchrow_array;
 		print OUT "<$end\t$start\tgene\n";
 	    }
 	}
-	
-	elsif ($utr{$new_gene_dbID}->{'count'} == 0) {
-	    if ($gene->strand == 1) {
-		print OUT "<$start\t>$end\tgene\n";
-	    }
-	    else {
-		print OUT "<$end\t>$start\tgene\n";
-	    }
+    
+    elsif (($utr{$new_gene_dbID}->{'up'} != 1)&&($utr{$new_gene_dbID}->{'down'}!=1)) {
+	if ($gene->strand == 1) {
+	    print OUT "<$start\t>$end\tgene\n";
 	}
-	print OUT "\t\t\tlocus_tag\t$name\n";
-
-	foreach my $new_tr(@new_transcripts) {
-	    &print_transcript_coordinates($new_tr);
-	    &print_translation_coordinates($new_tr,$db);
-	}
+	else {
+	    print OUT "<$end\t>$start\tgene\n";
+	    }
     }
+    print OUT "\t\t\tlocus_tag\t$name\n";
+    
+    foreach my $new_tr(@new_transcripts) {
+	&print_transcript_coordinates($new_tr);
+	&print_translation_coordinates($new_tr,$db);
+    }
+}
 #}
 
 sub checks {
     my ($gene) = @_;
     
     my $gene_dbID = $gene->dbID;
-
-    print STDERR "Checks GENE: $gene_dbID\n";
     
     my @transcripts = @{$gene->get_all_Transcripts};
 
@@ -200,18 +211,12 @@ sub checks {
 
 	my @exon_coords = $tr->cdna2genomic($new_cdna_start,$new_cdna_end);
 
-	print STDERR "$c_start\t$c_end\n";
-	
 	my @new_exons;
 
 	for my $exon_coord ( @exon_coords ) {
-	    if ($exon_coord->isa("Bio::EnsEMBL::Mapper::Gap")) {
-		print STDERR "GAP ".$tr->dbID."\t".$exon_coord->start."\t".$exon_coord->end."\n";
-	    }
-
 	    if ($exon_coord->isa("Bio::EnsEMBL::Mapper::Coordinate")) {
 		
-		print STDERR $exon_coord->start."\t".$exon_coord->end."\t".$exon_coord->strand."\t".$exon_coord->id."\n";
+#		print STDERR $exon_coord->start."\t".$exon_coord->end."\t".$exon_coord->strand."\t".$exon_coord->id."\n";
 		
 		my $new_exon = new Bio::EnsEMBL::Exon($exon_coord->start,$exon_coord->end,$exon_coord->strand);
 		$new_exon->contig($exon_coord->id);
@@ -219,7 +224,7 @@ sub checks {
 		$new_exon->end_phase(0);
 		
 		push (@new_exons,$new_exon);
-		print STDERR "NEW EX: $new_exon\n";
+		#print STDERR "NEW EX: $new_exon\n";
 	    }
 	    
 	}
@@ -229,11 +234,11 @@ sub checks {
 	my $tl_end_exon;
 	my $seen;
 	
-	print STDERR "TRANSLATION: $tl_start\t$tl_end\n";
+	#print STDERR "TRANSLATION: $tl_start\t$tl_end\n";
 
 	foreach my $exon  (@new_exons ) {
 	    if( ($tl_start > $exon->length) && (! defined $seen) ) {
-		print STDERR "Translation_start: $tl_start\n";
+	#	print STDERR "Translation_start: $tl_start\n";
 		$tl_start -= $exon->length;
 	    } elsif (! defined $seen) {
 		$seen = 1;
@@ -254,7 +259,15 @@ sub checks {
 	    
 	}
 	
-	print STDERR "EX: ".$tl_end_exon."\n";
+	$tr->{'cdna_coding_start'} =undef;
+	$tr->{'cdna_coding_end'} =undef;
+
+	#$tr->cdna_coding_start($new_cdna_start);
+	#$tr->cdna_coding_end($new_cdna_end);
+	
+#	print STDERR "CDNA start: ".$tr->cdna_coding_end."\t".$tl_start."\n";
+
+	#print STDERR "EX: ".$tl_end_exon."\n";
 
 	my $translation = $tr->translation;
 	$translation->start_Exon($tl_start_exon);
@@ -263,8 +276,9 @@ sub checks {
 	$translation->end($tl_end);
 
 	
-
-	print STDERR "TR: $tr\n";
+	$tr->{'translation'} = [];
+	$tr->translation($translation);
+	#print STDERR "TR: .".$tr->translation->start."\n";
 
 	push(@new_transcripts,$tr);
 	
@@ -274,6 +288,27 @@ sub checks {
     $gene->{'_transcript_array'} =[];
 	
     foreach my $new_tr(@new_transcripts) {
+	my $cdna_length = length($new_tr->seq->seq);
+	my $coding_start = $new_tr->cdna_coding_start;
+	my $coding_end = $new_tr->cdna_coding_end;
+	my $gene_dbid = $gene->dbID;
+	my $tl_start = $new_tr->translation->start;
+#	print STDERR "Coding start: $coding_start\n";
+
+	#print STDERR "SEQ: ".$new_tr->translate->seq."\n";
+
+	my $coding_length = $coding_end - $coding_start + 1;
+	
+	print STDERR "Coding start: $coding_start\tcoding end: $coding_end\tLength: $cdna_length\n";
+
+	if ($tl_start > 1) {
+	    $utr{$gene_dbid}->{'up'} = 1;
+	}
+	
+	 if ($coding_end != $cdna_length) {
+	     $utr{$gene_dbid}->{'down'} = 1;
+	 }
+	    
 	$gene->add_Transcript($new_tr);
     }
     
@@ -304,7 +339,7 @@ sub print_transcript_coordinates {
 	
 	my $ex_start = $ex->start;
 	my $ex_end = $ex->end;
-	
+	#print OUT "$coding_start\t$coding_end\t$cdna_length\n";
 #one exon case
 	if ($nb_ex == 1) {
 	    if (($coding_start > 1)&& ($coding_end != $cdna_length)) {
@@ -382,10 +417,10 @@ sub print_transcript_coordinates {
 		}
 		elsif($coding_end != $cdna_length)  {
 		    if ($strand == 1) {
-			print OUT "$ex_start\t>$ex_end\n";
+			print OUT "$ex_start\t$ex_end\n";
 		    }
 		    else {
-			print OUT "$ex_end\t>$ex_start\n";
+			print OUT "$ex_end\t$ex_start\n";
 		    }
 		}
 	    }
@@ -419,10 +454,10 @@ sub print_translation_coordinates {
     
     my $seq = $tr->translate->seq;
     
-    #    print STDERR "SEQ: $seq\n";
+    #   print STDERR "SEQ: $seq\n";
     my ($first) = $seq =~ /(^\S)/;
     my ($last) = $seq =~ /(\S$)/;
-#	    print STDERR "FIRST: $first\tLAST: $last\n";
+    #print OUT "FIRST: $first\tLAST: $last\n";
     my $tr_dbID = $translation->dbID;
     
     my ($cel_id,$old_cel_id,$ebi_id,$old_ebi_id,$symbol) = &fetch_2update($tr_dbID,$db);
@@ -511,7 +546,7 @@ sub print_translation_coordinates {
 #last exon case
 	    elsif ($count_lation == $nb1) {
 #last exon partial feature (no stop)
-		if ($first !~ /\*/) {
+		if ($last !~ /\*/) {
 		    if ($strand == 1) {
 			print OUT "$tr_start\t>$tr_end\n";
 		    }
@@ -582,9 +617,12 @@ sub fetch_2update {
 
     my $ebi_id = $sth1->fetchrow;
     
-    
-    my ($nid) = $ebi_id =~ /(\d+)$/;
-    my $new_ebi_id = "ebiP".int($nid);
+    my $new_ebi_id;
+
+    if($ebi_id) {
+	my ($nid) = $ebi_id =~ /(\d+)$/;
+	$new_ebi_id = "ebiP".int($nid);
+    }
     
 
 #    print STDERR "EBI: $ebi_id\n";
