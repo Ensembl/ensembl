@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Bio::EnsEMBL::Virtual::Contig.pm
 #
@@ -867,11 +866,11 @@ sub get_MarkerFeatures {
 =cut
 
 sub get_all_Genes {
-    my ($self) = @_;
+    my ($self, $supporting) = @_;
     my (%gene,%trans,%exon,%exonconverted);
     
     foreach my $contig ($self->_vmap->get_all_RawContigs) {
-	foreach my $gene ( $contig->get_all_Genes() ) {      
+	foreach my $gene ( $contig->get_all_Genes($supporting) ) {      
 	    $gene{$gene->id()} = $gene;
 	}
     }
@@ -933,20 +932,16 @@ sub _gene_query{
     
     my ($self,%gene) = @_;
     my (%trans,%exon,%exonconverted);
-        
+    my %trans_gene;
     
-
     foreach my $gene ( values %gene ) {
-
+	
 	my $internalExon = 0;
-
-
-
+	
 	foreach my $exon ( $gene->all_Exon_objects() ) {
 	    # hack to get things to behave
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
-
 	    ### got to treat sticky exons separately.
 	    if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
 		my @stickies = $exon->each_component_Exon();
@@ -999,13 +994,6 @@ sub _gene_query{
 		} else {$internalExon=0;}               
 	    
 	    }
-	 
-
-
-
-
-
-
    
 	}
         
@@ -1018,54 +1006,57 @@ sub _gene_query{
 	foreach my $transcript ( $gene->each_Transcript ) {
 	    my $translation = $transcript->translation;
 	    $trans{"$translation"} = $translation;	    
+	    $trans_gene{$translation} = $gene->id;
 	}
     } 
 
-
-    
     foreach my $t ( values %trans ) {
-
-	if( exists $exonconverted{$t->start_exon_id} ) {
-	    my $contigid;
-
-	    if( $exon{$t->start_exon_id}->isa('Bio::EnsEMBL::StickyExon') ) {
-		# we screwed up here sooooooo badly.
-                
-		foreach my $c ( $exon{$t->start_exon_id}->each_component_Exon() ) {
-		    $contigid = $c->contig_id;
-		    if( $t->start >= $c->start && $t->start <= $c->end ) {
-			last;
+	eval {
+	    if( exists $exonconverted{$t->start_exon_id} ) {
+		my $contigid;
+		
+		if( $exon{$t->start_exon_id}->isa('Bio::EnsEMBL::StickyExon') ) {
+		    # we screwed up here sooooooo badly.
+		    
+		    foreach my $c ( $exon{$t->start_exon_id}->each_component_Exon() ) {
+			$contigid = $c->contig_id;
+			if( $t->start >= $c->start && $t->start <= $c->end ) {
+			    last;
+			}
 		    }
+		} else {
+		    $contigid = $exon{$t->start_exon_id}->contig_id;
 		}
-	    } else {
-		$contigid = $exon{$t->start_exon_id}->contig_id;
+		
+		my ($start,$end,$str) = $self->_convert_start_end_strand_vc($contigid,$t->start,$t->start,1);
+		$t->start($start);
 	    }
-
-	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($contigid,$t->start,$t->start,1);
-	    $t->start($start);
-	}
-
-	if( exists $exonconverted{$t->end_exon_id}  ) {
-
-	    my $contigid;
-
-	    if( $exon{$t->end_exon_id}->isa('Bio::EnsEMBL::StickyExon') ) {
-		# we screwed up here sooooooo badly.
-		foreach my $c ( $exon{$t->end_exon_id}->each_component_Exon() ) {
-		    $contigid = $c->contig_id;
-		    if( $t->end >= $c->start && $t->end <= $c->end ) {
-			last;
+	    
+	    if( exists $exonconverted{$t->end_exon_id}  ) {
+		
+		my $contigid;
+		
+		if( $exon{$t->end_exon_id}->isa('Bio::EnsEMBL::StickyExon') ) {
+		    # we screwed up here sooooooo badly.
+		    foreach my $c ( $exon{$t->end_exon_id}->each_component_Exon() ) {
+			$contigid = $c->contig_id;
+			if( $t->end >= $c->start && $t->end <= $c->end ) {
+			    last;
+			}
 		    }
+		} else {
+		    $contigid = $exon{$t->end_exon_id}->contig_id;
 		}
-	    } else {
-		$contigid = $exon{$t->end_exon_id}->contig_id;
+		
+		my ($start,$end,$str) = $self->_convert_start_end_strand_vc($contigid,$t->end,$t->end,1);
+		$t->end($start);
 	    }
-
-	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($contigid,$t->end,$t->end,1);
-	    $t->end($start);
+	};
+	if ($@) {
+	    $self->warn("Couldn't get gene ".$trans_gene{$t->id}." in conversion: $@\n");
+	    delete $gene{$trans_gene{$t->id}};
 	}
     }
-    
     return values %gene;
 }
 
@@ -1650,12 +1641,12 @@ sub _reverse_map_Exon{
        $self->throw("Must supply reverse map an exon not an [$exon]");
    }
 
-   print STDERR "Reverse mapping $exon ",$exon->start,":",$exon->end,"\n";
+   #print STDERR "Reverse mapping $exon ",$exon->start,":",$exon->end,"\n";
 
    my ($scontig,$start,$sstrand) = $self->_vmap->raw_contig_position($exon->start,$exon->strand);
    my ($econtig,$end,$estrand)   = $self->_vmap->raw_contig_position($exon->end  ,$exon->strand);
 
-   print STDERR "Got $scontig ",$start," to $econtig ",$end,"\n";
+   #print STDERR "Got $scontig ",$start," to $econtig ",$end,"\n";
 
   
    if( $scontig->id eq $econtig->id ) {
@@ -1663,7 +1654,7 @@ sub _reverse_map_Exon{
 	   $self->throw("Bad internal error. Exon mapped to same contig but different strands!");
        }
 
-       print STDERR "Straight forward mapping\n";
+       #print STDERR "Straight forward mapping\n";
 
        my $rmexon = Bio::EnsEMBL::Exon->new();
        $rmexon->id($exon->id);
@@ -1711,7 +1702,7 @@ sub _reverse_map_Exon{
        return ($rmexon);
    } else {
        # we are in the world of sticky-ness....
-       print STDERR "Into sticky exon\n";
+       #print STDERR "Into sticky exon\n";
 
        my @mapcontigs = $self->_vmap->each_MapContig();
 
@@ -1725,7 +1716,7 @@ sub _reverse_map_Exon{
 	   my $mc;
 	   while ( $mc = shift @mapcontigs ) { 
 	       if( $mc->contig->id eq $scontig->id ) {
-		   print STDERR "Unshifting ",$mc->contig->id,"\n";
+		   #print STDERR "Unshifting ",$mc->contig->id,"\n";
 		   unshift(@mapcontigs,$mc);
 		   $found = 1;
 		   last;

@@ -552,7 +552,7 @@ eval {
 
 
 
-    my $statement="SELECT    f.seq_start+sgp.chr_start-sgp.raw_start as start, 
+    $statement="SELECT    f.seq_start+sgp.chr_start-sgp.raw_start as start, 
                              f.seq_end+sgp.chr_start-sgp.raw_start, 
                              f.score, f.strand, f.name, f.hstart, f.hend, 
                              f.hid, f.analysis, s.name,
@@ -572,11 +572,10 @@ eval {
 
 
 
-    my $sth = $self->dbobj->prepare($statement);
+    $sth = $self->dbobj->prepare($statement);
     $sth->execute;
     
-    my ($start, $end, $score, $strand, $hstart, 
-        $name, $hend, $hid, $analysisid,$synonym,$raw_ori,$chr_start,$chr_end);
+    my ($score, $strand, $hstart, $name, $hend, $hid, $analysisid,$synonym,$raw_ori,$chr_start,$chr_end);
     
     my $analysis;
     my %analhash;
