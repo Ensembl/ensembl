@@ -44,7 +44,6 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::Feature;
-use Bio::EnsEMBL::TranscriptI;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Translation;
 use Bio::Tools::CodonTable;
@@ -53,7 +52,7 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
 
 
-@ISA = qw(Bio::EnsEMBL::Feature Bio::EnsEMBL::TranscriptI);
+@ISA = qw(Bio::EnsEMBL::Feature);
 
 sub new {
   my($class) = shift;
