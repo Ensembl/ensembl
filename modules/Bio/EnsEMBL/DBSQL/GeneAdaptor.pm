@@ -546,6 +546,8 @@ sub store {
    $gene->adaptor( $self );
    $gene->dbID( $sth2->{'mysql_insertid'} );
 
+    $self->store_description($gene);
+
    my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
 
    foreach my $dbl ( $gene->each_DBLink ) {
@@ -567,6 +569,49 @@ sub store {
    }
    
    return $gene->dbID;
+}
+
+sub store_description {
+    my( $self, $gene ) = @_;
+    
+    my $desc  = $gene->description or return;
+    my $db_id = $gene->dbID or $self->throw("dbID not set");
+    my $sth = $self->prepare("INSERT gene_description(gene_id, description) VALUES (?,?)");
+    $sth->execute($db_id, $desc);
+}
+
+sub store_all_component_stable_ids {
+    my( $self, $gene ) = @_;
+    
+    $self->store_stable_id($gene);
+    my $dba = $self->db;
+    
+    my $exon_aptr = $dba->get_ExonAdaptor;
+    foreach my $exon ($gene->get_all_Exons) {
+        $exon_aptr->store_stable_id($exon);
+    }
+    
+    my $transcript_aptr = $dba->get_TranscriptAdaptor;
+    foreach my $tscpt ($gene->each_Transcript) {
+        $transcript_aptr->store_stable_id($tscpt);
+        if (my $trnsl = $tscpt->translation) {
+            $dba->get_TranslationAdaptor
+                ->store_stable_id($trnsl);
+        }
+    }
+    
+}
+
+sub store_stable_id {
+    my( $self, $gene ) = @_;
+    
+    my $stable_id = $gene->stable_id or $self->throw("No stable_id");
+    my $db_id     = $gene->dbID      or $self->throw("No dbID");
+    my $sth = $self->prepare(qq{
+        INSERT gene_stable_id (gene_id, stable_id)
+        VALUES ($db_id, '$stable_id')
+        });
+    $sth->execute;
 }
 
 sub remove {

@@ -1104,7 +1104,7 @@ sub _fetch_SimpleFeatures_SQL_clause {
           , f.name
           , f.hid
         FROM feature f
-          , analysisproces a
+          , analysisprocess a
           , static_golden_path sgp
         WHERE f.analysis = a.analysisId
           AND sgp.raw_id = f.contig
@@ -1115,7 +1115,7 @@ sub _fetch_SimpleFeatures_SQL_clause {
     
     # All statements have this ORDER by clause on the end
     my $sql_order = qq{
-        ORDER BY start
+        ORDER BY seq_start
         };
 
     # Make the full statement and execute it
@@ -1356,8 +1356,8 @@ sub _convert_chrfeature_to_vc_coords{
     
     if($f->das_start > $chr_end || $f->das_end < $chr_start) {
 #        print STDERR "DAS ERROR! Feature not on VC between $chr_start and $chr_end: START: ",
-                    $f->das_start,' END: ',$f->das_end,' STRAND: ',$f->das_strand, ' ID: ', $f->das_feature_id,
-                    "\n";
+#                    $f->das_start,' END: ',$f->das_end,' STRAND: ',$f->das_strand, ' ID: ', $f->das_feature_id,
+#                    "\n";
         return ();
     }
 

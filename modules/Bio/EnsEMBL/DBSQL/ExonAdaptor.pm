@@ -283,7 +283,7 @@ sub fetch_evidence_by_Exon {
 
   my @features;
   my $anaAdaptor = $self->db->get_AnalysisAdaptor;
-  my $contig_id = $exon->contig->internal_id;
+  my $contig_id = $exon->contig_id;
   
   while (my $rowhash = $sth->fetchrow_hashref) {
       my $analysis = $anaAdaptor->fetch_by_dbID( $rowhash->{analysis} );
@@ -631,6 +631,22 @@ sub fetch_frameshifts {
    push @{$exon->{'_frameshifts'}}, [$arr[0], $arr[1]];
   }
 }
+
+sub store_stable_id {
+    my( $self, $exon ) = @_;
+    
+    use Carp;
+    my $stable_id = $exon->stable_id
+        or $self->throw("No stable_id");
+        #or warn "No stable_id" and return;
+    my $db_id     = $exon->dbID      or $self->throw("No dbID");
+    my $sth = $self->prepare(qq{
+        INSERT exon_stable_id (exon_id, stable_id)
+        VALUES ($db_id, '$stable_id')
+        });
+    $sth->execute;
+}
+
 
 
 1;

@@ -162,7 +162,7 @@ sub dbID {
 
  Title   : description
  Usage   : $gene->description
- Function: gets the gene description line. Setting is not allowed
+ Function: gets or sest the gene description line.
  Example :
  Returns : a string
  Args    : none
@@ -170,12 +170,16 @@ sub dbID {
 =cut
 
 sub description {
-    my ($self) = @_;
+    my( $self, $desc ) = @_;
     
-    if( exists $self->{'_description'} ) {
-      return $self->{'_description'};
+    if ($desc) {
+        $self->{'_description'} = $desc;
     }
-    $self->{'_description'} = $self->adaptor->get_description($self->dbID);
+    elsif ( ! exists $self->{'_description'} ) {
+        if (my $aptr = $self->adaptor) {
+            $self->{'_description'} = $aptr->get_description($self->dbID);
+        }
+    }
     return $self->{'_description'};
 }
 

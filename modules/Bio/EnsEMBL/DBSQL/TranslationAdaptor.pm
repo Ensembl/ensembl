@@ -153,4 +153,17 @@ sub remove {
   $translation->dbID( undef );
 }
 
+sub store_stable_id {
+    my( $self, $translation ) = @_;
+    
+    my $stable_id = $translation->stable_id or $self->throw("No stable_id");
+    my $db_id     = $translation->dbID      or $self->throw("No dbID");
+    my $sth = $self->prepare(qq{
+        INSERT translation_stable_id (translation_id, stable_id)
+        VALUES ($db_id, '$stable_id')
+        });
+    $sth->execute;
+}
+
+
 1;

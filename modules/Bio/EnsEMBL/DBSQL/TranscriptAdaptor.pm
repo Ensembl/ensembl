@@ -272,5 +272,18 @@ sub remove {
   $transcript->{'dbID'} = undef;
 }
 
+sub store_stable_id {
+    my( $self, $transcript ) = @_;
+    
+    my $stable_id = $transcript->stable_id or $self->throw("No stable_id");
+    my $db_id     = $transcript->dbID      or $self->throw("No dbID");
+    my $sth = $self->prepare(qq{
+        INSERT transcript_stable_id (transcript_id, stable_id)
+        VALUES ($db_id, '$stable_id')
+        });
+    $sth->execute;
+}
+
+
 1;
 

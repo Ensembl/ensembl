@@ -1644,15 +1644,12 @@ sub convert_Gene_to_raw_contig {
    my %translation;
    $clonedgene->type($gene->type);
    $clonedgene->analysis($gene->analysis);
+   $clonedgene->stable_id($gene->stable_id);
+   $clonedgene->description($gene->description);
 
    foreach my $dbl ( $gene->each_DBLink() ) {
        $clonedgene->add_DBLink($dbl);
    }
-
-   #
-   #
-   #
-
 
    # 
    # convert exons first, as unique exons. In particular this is to 
@@ -1667,6 +1664,7 @@ sub convert_Gene_to_raw_contig {
 
    foreach my $trans ( $gene->each_Transcript ) {
        my $clonedtrans = Bio::EnsEMBL::Transcript->new();
+       $clonedtrans->stable_id($trans->stable_id);
 #       print STDERR "Reverse mapping ",$trans->dbID,"\n";
        foreach my $dbl ( $trans->each_DBLink() ) {
 	   $clonedtrans->add_DBLink($dbl);
@@ -1676,20 +1674,22 @@ sub convert_Gene_to_raw_contig {
 
        foreach my $exon ( $trans->get_all_Exons ) {
 	   $clonedtrans->add_Exon($convertedexon{$exon});
+       }
 
-	   # translations.
-           # (PL: looks like a 'deep copy' is being made;
-           # can't we reuse the existing object, and forget about deep
-           # copying ?)
-	   if( exists $translation{$trans->translation} ) {
-#	     print STDERR "Translation already exists " . $trans->id . " " . $trans->translation->id . "\n";
+       # translations.
+       # (PL: looks like a 'deep copy' is being made;
+       # can't we reuse the existing object, and forget about deep
+       # copying ?)
+       if (my $trl = $trans->translation) {
+           if( $translation{$trl} ) {
+    #	     print STDERR "Translation already exists " . $trans->id . " " . $trans->translation->id . "\n";
                # (PL: looks like this is cached; should it? )
-	       $clonedtrans->translation($translation{$trans->translation});
-	   } else {
-	#     print STDERR "Making new translation " . $trans->id . " " . $trans->translation->id . "\n";
-	       my $trl = $trans->translation(); 
+	       $clonedtrans->translation($translation{$trl});
+           } else {
+    #     print STDERR "Making new translation " . $trans->id . " " . $trans->translation->id . "\n";
 
 	       my $clonedtrl = Bio::EnsEMBL::Translation->new();
+               $clonedtrl->stable_id($trl->stable_id);
 #	       $clonedtrl->id($trl->id);
 	       $clonedtrl->start_exon($convertedexon{$trl->start_exon});
                $clonedtrl->start( $trl->start );
@@ -1699,11 +1699,11 @@ sub convert_Gene_to_raw_contig {
 
                ## code converting Translation obj. coordinates to VC
                ## coords is now gone (since rev. 1.17)
-	       
-	       $translation{$trans->translation} = $clonedtrl;
+
+	       $translation{$trl} = $clonedtrl;
 	       $clonedtrans->translation($clonedtrl);
-	   }
-       }
+            }
+        }
    }
 
 #    $self->_sanity_check($clonedgene);
@@ -1763,7 +1763,7 @@ sub _reverse_map_Exon {
    # print STDERR "Got $scontig ",$start," to $econtig ",$end,"\n";
 
    if ($scontig eq 'gapcontig' || $econtig eq 'gapcontig') {
-       $self->throw("gap contigs not allowed: exon " . $exon->id );
+       $self->throw("gap contigs not allowed: exon start = $start on $scontig, end = $end on $econtig");
    }
 
    my $exon_to_return;
@@ -1777,6 +1777,7 @@ sub _reverse_map_Exon {
 
        my $rmexon = Bio::EnsEMBL::Exon->new(); # the re-mapped exon
 #       $rmexon->id($exon->id);
+       $rmexon->stable_id($exon->stable_id);
        $rmexon->created($exon->created);
        $rmexon->modified($exon->modified);
        $rmexon->version($exon->version);
@@ -1879,6 +1880,7 @@ sub _reverse_map_Exon {
        }
        my $sticky_exon = Bio::EnsEMBL::StickyExon->new();
        $sticky_exon->dbID($exon->dbID);
+       $sticky_exon->stable_id($exon->stable_id);
        # for reverse strand exons, we need to reverse the
        # order of the components and renumber
        if( $exon->strand == -1) {
@@ -2012,8 +2014,8 @@ sub _sanity_check{
    foreach my $transc ( $gene->each_Transcript ) {
 
        if( !defined $transc->translation || !ref $transc->translation) {
-	   $error = 1;
-	   $message .= "Transcript has no translation;";
+	   #$error = 1;
+	   #$message .= "Transcript has no translation;";
        } else {
 	   if( !defined $transc->translation->start ) {
 	       $error = 1;
@@ -2061,16 +2063,16 @@ sub _sanity_check{
        # now see if the changes (using exon coords rather than VC)
        # have worked:
        # start exon:
-       my $t = $transc->translation;
-       if( $t->start > $t->start_exon->length ) {
-	   $message .= "Translation start ".$t->start." is greater than start exon length ".$t->start_exon->length;
-	   $error = 1;
-       }
-       if( $t->end > $t->end_exon->length ) {
-	   $message .= "Translation end ".$t->end." is greater than end exon length ".$t->end_exon->length;
-	   $error = 1;
-       }
-
+       if (my $t = $transc->translation) {
+           if( $t->start > $t->start_exon->length ) {
+	       $message .= "Translation start ".$t->start." is greater than start exon length ".$t->start_exon->length;
+	       $error = 1;
+           }
+           if( $t->end > $t->end_exon->length ) {
+	       $message .= "Translation end ".$t->end." is greater than end exon length ".$t->end_exon->length;
+	       $error = 1;
+           }
+        }
    }                                    # each_Transcript
 
    if( $error ) {
