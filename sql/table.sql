@@ -262,6 +262,7 @@ CREATE TABLE repeat_feature (
   
   PRIMARY KEY (id),
   KEY contig (contig),
+  KEY ana (analysis),
   KEY hid (hid)
 );
 
