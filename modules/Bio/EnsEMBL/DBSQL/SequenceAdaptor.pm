@@ -43,8 +43,7 @@ use Bio::EnsEMBL::Utils::Cache;
 
 our $SEQ_CHUNK_PWR   = 18; # 2^18 = approx. 250KB
 our $SEQ_CACHE_SZ    = 5;
-#our $SEQ_CACHE_MAX   = (2 ** $SEQ_CHUNK_PWR) * $SEQ_CACHE_SZ;
-our $SEQ_CACHE_MAX   = 0;
+our $SEQ_CACHE_MAX   = (2 ** $SEQ_CHUNK_PWR) * $SEQ_CACHE_SZ;
 
 
 
