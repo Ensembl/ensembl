@@ -75,9 +75,9 @@ Usage
 
         ./apply.pl homo_sapiens_core 11_31 12_31 | tee apply.out
 
-    Note  that  the  non-optional  arguments   are  exactly  the  same  as
-    those  used  with build.pl  to  create  the  delta files.   The  delta
-    files  for   this  example  are   assumed  to  be  available   in  the
+    Note  that  the three  non-optional  arguments  are exactly  the  same
+    as  those  used  with  build.pl   to  create  the  delta  files.   The
+    delta  files for  this  example are  assumed to  be  available in  the
     homo_sapiens_core_11_31_delta_12_31 directory.
 
     The "| apply.out" bit  is only needed if you want  to store the output
@@ -88,8 +88,9 @@ Usage
 
     The  apply.pl program  will  verify  the MD5  checksums  of all  files
     involved in the  patch, including the delta files.   The patching will
-    fail if any checksum fails.  This means that databases modified on the
-    external site can not be updated in this way.
+    fail and  the whole  process will  be aborted  if any  checksum fails.
+    This means  that databases modified  on the  external site can  not be
+    updated in this way.
 
 
 
