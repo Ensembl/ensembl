@@ -686,7 +686,7 @@ sub _store_exons_in_transcript{
 
    my $exon;
    while ( ($exon = shift @exons)) {
-       #print STDERR "Handling exon",$exon->id,":",$exon->sticky_rank,"\n";
+#       print STDERR "Handling exon",$exon->id,":",$exon->sticky_rank,"\n";
 
        if( $#exons >= 0 && $exons[0]->id eq $exon->id ) {
         
@@ -700,16 +700,18 @@ sub _store_exons_in_transcript{
                    
 	       } else {
                
-		   unshift(@exons,$exon);
+		   unshift(@exons,$newexon);
 		   last;
 	       }
 	   }
            
 	   my $sticky = $self->_make_sticky_exon(@sticky_exons);
-	   print STDERR "Added sticky exon... $sticky\n";
+#	   print STDERR "Added sticky exon... $sticky\n";
 	   $trans->add_Exon($sticky);
            
        } else {
+#           print STDERR "Storing exon ",$exon->id,"as standard exon...\n";
+
 	   $trans->add_Exon($exon);
        }
    }
@@ -1399,7 +1401,7 @@ sub get_Transcript_in_VC_coordinates
   GENE: foreach my $gene ($vc->get_all_Genes){
       foreach my $transcript($gene->each_Transcript){
 	
-	  print STDERR $transcript->id,"\n";
+#	  print STDERR $transcript->id,"\n";
 
 	  if ($transcript->id eq $transcript_id){$found=$transcript;last GENE;}
       }
@@ -1443,7 +1445,7 @@ sub write{
 
    foreach my $contig_id ( $gene->unique_contig_ids() ) {
        eval {
-	   print STDERR "Getting out contig for $contig_id\n";
+#	   print STDERR "Getting out contig for $contig_id\n";
 	   my $contig      = $self->_db_obj->get_Contig($contig_id);
 	   $contig->fetch();
 	   
