@@ -87,65 +87,65 @@ sub fetch_by_dbID {
 
 
 sub store {
-  my ( $self, $exObj, $ensObject, $ensType ) = @_;
-
-  # $self->throw( "Sorry, store not yet supported" );
-  my $dbUnknown;
-
-  # check if db exists
-  # urlPattern dbname release
-  my $sth = $self->prepare( "
+    my ( $self, $exObj, $ensObject, $ensType ) = @_;
+    
+    # $self->throw( "Sorry, store not yet supported" );
+    my $dbUnknown;
+    
+    # check if db exists
+    # urlPattern dbname release
+    my $sth = $self->prepare( "
      SELECT externalDBId
        FROM externalDB
       WHERE db_name = ?
         AND release = ?
     " );
-  $sth->execute( $exObj->dbname(), $exObj->release() );
-
-  my $dbRef;
-
-  if(  ($dbRef) =  $sth->fetchrow_array() ) {
+    $sth->execute( $exObj->dbname(), $exObj->release() );
     
-  } else {
-    # store it, get dbID for that
-    $sth = $self->prepare( "
+    my $dbRef;
+    
+    if(  ($dbRef) =  $sth->fetchrow_array() ) {
+    
+    } else {
+	# store it, get dbID for that
+	$sth = $self->prepare( "
        INSERT INTO externalDB 
        SET db_name = ?,
            release = ?
      " );
-    $sth->execute( $exObj->dbname(), $exObj->release());
-    
-    $dbUnknown = 1;
-    $sth = $self->prepare( "
+	$sth->execute( $exObj->dbname(), $exObj->release());
+	
+	$dbUnknown = 1;
+	$sth = $self->prepare( "
        SELECT LAST_INSERT_ID()
      " );
-    $sth->execute();
-    ( $dbRef ) = $sth->fetchrow_array();
-    if( ! defined $dbRef ) {
-      $self->throw( "Database entry failed." );
+	$sth->execute();
+	( $dbRef ) = $sth->fetchrow_array();
+	if( ! defined $dbRef ) {
+	    $self->throw( "Database entry failed." );
+	}
     }
-  }
-
-  my $dbX;
-  
-  if( ! $dbUnknown ) {
-    $sth = $self->prepare( "
+    
+    my $dbX;
+    
+    if( ! $dbUnknown ) {
+	$sth = $self->prepare( "
        SELECT xrefId
          FROM Xref
         WHERE externalDBId = ?
           AND dbprimary_id = ?
           AND version = ?
      " );
-    $sth->execute( $dbRef, $exObj->primary_id(), 
-		   $exObj->version() );
-    ( $dbX ) = $sth->fetchrow_array();
-  } else {
-    # dont check for existence
-  }
-
-  if( ! defined $dbX ) {
-
-    $sth = $self->prepare( "
+	$sth->execute( $dbRef, $exObj->primary_id(), 
+		       $exObj->version() );
+	( $dbX ) = $sth->fetchrow_array();
+    } else {
+	# dont check for existence
+    }
+    
+    if( ! defined $dbX ) {
+	
+	$sth = $self->prepare( "
       INSERT INTO Xref 
        SET dbprimary_id = ?,
            display_id = ?,
@@ -153,40 +153,62 @@ sub store {
            description = ?,
            externalDBId = $dbRef
      " );
-    $sth->execute( $exObj->primary_id(), $exObj->display_id(), $exObj->version(),
-		   $exObj->description());
+	$sth->execute( $exObj->primary_id(), $exObj->display_id(), $exObj->version(),
+		       $exObj->description());
 
-    $sth = $self->prepare( "
+	$sth = $self->prepare( "
       SELECT LAST_INSERT_ID()
     " );
-    $sth->execute();
-    ( $dbX ) = $sth->fetchrow_array();
-
-    # synonyms
-
-    my @synonyms = $exObj->get_synonyms();
-    foreach my $syn ( @synonyms ) {
-      $sth = $self->prepare( "
+	$sth->execute();
+	( $dbX ) = $sth->fetchrow_array();
+	
+	# synonyms
+	
+	
+	
+	my @synonyms = $exObj->get_synonyms();
+	foreach my $syn ( @synonyms ) {
+	    
+#Check if this synonym is already in the database for the given primary id
+	    my $sth = $self->prepare( "
+     SELECT xrefId,
+            synonym
+       FROM externalSynonym
+      WHERE xrefId = '$dbX'
+        AND synonym = '$syn'
+    " );
+	    $sth->execute;
+	    
+	    my @dbSyn = $sth->fetchrow_array();
+	    
+	    #print STDERR $dbSyn[0],"\n";
+	    
+	    if( ! defined @dbSyn ) {
+		
+		
+		$sth = $self->prepare( "
         INSERT INTO externalSynonym
          SET xrefId = $dbX,
             synonym = '$syn'
       " );
-      $sth->execute();
-    }
-  }
-  
-  $sth = $self->prepare( "
+		$sth->execute();
+	    }
+	}
+    
+    
+    $sth = $self->prepare( "
    INSERT INTO objectXref
      SET xrefId = $dbX,
          ensembl_object_type = ?,
          ensembl_id = ?
   " );
+
   $sth->execute( $ensType, $ensObject );
-
-  $exObj->dbID( $dbX );
-  $exObj->adaptor( $self );
-
-  return $dbX;
+    
+    $exObj->dbID( $dbX );
+    $exObj->adaptor( $self );
+    }
+    return $dbX;
 }
 
 sub fetch_by_gene {
