@@ -408,7 +408,7 @@ sub _make_exon {
     # Make a, hopefull unique, exon ID, it there wasn't one in the file
     unless ($exon_id) {
         my $gene_id = "$gene";
-	my $gene_id = s/HASH//g;
+	$gene_id = s/HASH//g;
         my $type    = $gene->type;
         $exon_id = "$type-$gene_id-$exon_num";
     }
