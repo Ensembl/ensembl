@@ -24,6 +24,7 @@ my $port2   = 310000;
 
 my $infile  = '';
 $| = 1;
+
 &GetOptions( 'dbtype1:s'  => \$dbtype1,
 	     'host1:s'    => \$host1,
 	     'port1:n'    => \$port1,
@@ -37,40 +38,53 @@ $| = 1;
 	     'infile=s'   => \$infile,
 	     );
 
-my ($db1,$db2) = get_db_handles();
 
+# Beginning of script
+my ($db1, $db2) = get_db_handles();
 my ($clone1, $clone2) = get_cloneids($infile, @ARGV);
+process_clones($clone1, $clone2);
+# End of script
 
-for (my $i = 0; $i <= $#$clone1; $i++) {
-    print("Processing clone " . $clone1->[$i] . " " . $clone2->[$i] . "\n");
+
+sub process_clones {
+    my (@clone1, @clone2) = @_;
+
+    for (my $i = 0; $i <= $#$clone1; $i++) {
+        print("Processing clone 1: " . $clone1->[$i] . " and clone 2: " . $clone2->[$i] . "\n");
     
-    eval {
-        my $cl1    = $db1->get_Clone($clone1->[$i]);
-        my $cl2    = $db2->get_Clone($clone2->[$i]);
+        eval {
+            my $cl1    = $db1->get_Clone($clone1->[$i]);
+            my $cl2    = $db2->get_Clone($clone2->[$i]);
 
-        my @genes1 = $cl1->get_all_Genes();
-        my @genes2 = $cl2->get_all_Genes();
+            my @genes1 = $cl1->get_all_Genes();
+            my @genes2 = $cl2->get_all_Genes();
 
-        print("Genes1 " . scalar(@genes1) . " genes2 " . scalar(@genes2)  . "\n");
-        my $count = 1;
+            print(scalar(@genes1) . " genes on clone 1; " . scalar(@genes2)  . " genes on clone 2\n\n");
 
-        foreach my $gene2 (@genes2) {
-        my ($over,$exact,$link,$miss) = find_overlaps($gene2,@genes1);
-        my $numexons                  = scalar($gene2->each_unique_Exon);
-
-        print(" Gene1 $count :\t$numexons\t$over\t$exact\t$link\t$miss\n");
-        $count++;
+            # Go through each gene on contig 1 and find the overlaps with all the genes on contig2 
+            my $count = 1;
+            foreach my $gene1 (@genes1) {
+                my ($over, $exact, $link, $miss, $geneover, $matched_bases) = find_overlaps($gene1, @genes2);
+            
+                print("Clone 1 gene $count overlaps with $geneover genes and $matched_bases " .
+                    "base pairs of exons from clone 2\n");
+            
+                my $numexons = scalar($gene1->each_unique_Exon);
+                print("Total no. exons:$numexons, Overlaps:$over, Exact overlaps:$exact, Links:$link, Missed:$miss\n");
+                $count++;
+            }
+        };
+    
+        if ($@) {
+            print(STDERR "Skipping " . $clone1->[$i] . "\t" . $clone2->[$i] . "\n$@\n");
         }
-    };
-    
-    if ($@) {
-      print(STDERR "Skipping " . $clone1->[$i] . "\t" . $clone2->[$i] . "\n$@\n");
     }
 }
 
 
+
 sub find_overlaps {
-    my ($gene1,@genes2) = @_;
+    my ($gene1, @genes2) = @_;
 
     my @exons1 = $gene1->each_unique_Exon;
     @exons1 = sort { $a->start <=> $b->start } @exons1;
@@ -79,11 +93,14 @@ sub find_overlaps {
     my %exonexacthash;
     my %linkhash;
     my %matchhash;
+    my $geneoverlaps = 0;
+    my $matchedbases = 0;
 
     foreach my $gene2 (@genes2) {
 	my @exons2 = $gene2->each_unique_Exon;
  	   @exons2 = sort { $a->start <=> $b->start } @exons2;
-
+        my $exonoverlap = 0;
+        
 	foreach my $ex1 (@exons1) {
        
 	    # Intialise the hashes for this exon to indicate no overlaps, links or matches
@@ -95,14 +112,24 @@ sub find_overlaps {
             for (my $i = 0; $i < scalar(@exons2); $i++) {
                 
                 # This call increments the hashes as appropriate
-		if (overlap($ex1, $exons2[$i], $exonoverhash{$ex1}, $exonexacthash{$ex1})) {
+                my $bases = overlap($ex1, $exons2[$i], $exonoverhash{$ex1}, $exonexacthash{$ex1});
+		if ($bases) {
                     # If there's an overlap, set the matchhash for exon1 to the index of exon2
                     $matchhash{$ex1} = $i;
+                    $exonoverlap = 1;
+                    $matchedbases += $bases;
                 }
 	    }
 	}
 
-	# Tot up the matchhash to find confirmed links
+        # If there was at least one exonoverlap found between gene1 and this particular gene2 
+        # increment geneoverlaps
+        if ($exonoverlap == 1) {
+            $geneoverlaps++;
+        }
+        
+
+	# Tot up the matchhash to find confirmed links for this gene2
 	for (my $i = 0; $i < scalar(@exons1); $i++) {
         
             if (($matchhash{ $exons1[$i] } != -1) && ($matchhash{ $exons1[$i + 1] } != -1)) {
@@ -115,6 +142,7 @@ sub find_overlaps {
             }         
 	}
     }
+
 
     # Now add up all the gene2 exons with at least one overlap, exact overlap or having a linkhash 
     # equal to 1. If the linkhash isn't 1 check that consecutive exons1 do have an overlap. If so
@@ -149,7 +177,7 @@ sub find_overlaps {
 	$count++;
     }
 
-    return ($overlap_num,$exact_num,$confirmedlinks,$missedlinks);
+    return ($overlap_num, $exact_num, $confirmedlinks, $missedlinks, $geneoverlaps, $matchedbases);
 }    
 
 
@@ -163,11 +191,18 @@ sub overlap {
         $overlap++;
         my $left  = ($exon2->start - $exon1->start);
 	my $right = ($exon1->end   - $exon2->end);
+        my $overlapsize = $right - $left;
+        
+        # Only the magnitude is required
+        if ($overlapsize < 0) {
+            $overlapsize = -$overlapsize;
+        }
         
         if ($left == 0 && $right == 0) {
             $exact_overlap++        
         }
-        return 1;
+        
+        return $overlapsize;
     }
 
     return 0;
