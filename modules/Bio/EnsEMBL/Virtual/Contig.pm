@@ -683,10 +683,26 @@ sub get_all_Genes {
     my ($self, $supporting) = @_;
     my (%gene,%trans,%exon,%exonconverted);
     
-    foreach my $contig ($self->_vmap->get_all_RawContigs) {
-	foreach my $gene ( $contig->get_all_Genes($supporting) ) {
-	    $gene{$gene->id()} = $gene;
-	}
+    my @internal_id;
+    foreach my $contig ( $self->_vmap->get_all_RawContigs) {
+	push(@internal_id,$contig->internal_id);
+    }
+
+    my $idlist = join(',',@internal_id);
+
+    my $sth = $self->dbobj->prepare("select distinct(t.gene) from transcript t,exon_transcript et,exon e where e.contig in ($idlist) and et.exon = e.id and et.transcript = t.id");
+    my $res = $sth->execute;
+
+    my @geneid;
+    while( my ($gene) = $sth->fetchrow_array ) {
+	push(@geneid,$gene);
+    }
+
+    my $gobj = $self->dbobj->gene_Obj();
+
+    my @gene = $gobj->get_array_supporting('without',@geneid);
+    foreach my $gene ( @gene ) {
+	$gene{$gene->id()}= $gene;
     }
 
     return $self->_gene_query(%gene);
