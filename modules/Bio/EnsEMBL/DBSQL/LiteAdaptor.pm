@@ -180,7 +180,7 @@ sub fetch_virtualgenes_start_count {
                 g.chr_name, g.chr_start, g.chr_end,
                 g.chr_strand, g.external_name, g.external_db
            from $_db_name.gene as g 
-          where g.chr_name = ? and g.chr_start < ?
+          where g.chr_name = ? and g.chr_start <= ?
 		and g.db = 'core'
 	  order by g.chr_start desc
           limit ?"
@@ -190,7 +190,7 @@ sub fetch_virtualgenes_start_count {
                 g.chr_name, g.chr_start, g.chr_end,
                 g.chr_strand, g.external_name, g.external_db
            from $_db_name.gene as g 
-          where g.chr_name = ? and g.chr_start >= ?
+          where g.chr_name = ? and g.chr_end >= ?
 		and g.db = 'core'
 	  order by g.chr_start
           limit ?"
