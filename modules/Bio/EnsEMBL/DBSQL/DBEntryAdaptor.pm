@@ -50,7 +50,7 @@ sub fetch_by_dbID {
            exDB.db_name, exDB.release
       FROM Xref, externalDB exDB
      WHERE Xref.xrefId = $dbID
-       AND Xref.externalDBId = exDb.externalDBId 
+       AND Xref.externalDBId = exDB.externalDBId 
    " );
 
   $sth->execute();
