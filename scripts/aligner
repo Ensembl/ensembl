@@ -61,7 +61,7 @@ foreach my $id (@ARGV) {
   if ($using_transcripts) {
     $ea->transcriptid($id);
   } else {
-    $ea->contigid($id);
+    $ea->contigname($id);
   }
   my $evidence_seq_arr_ref;
   eval {
