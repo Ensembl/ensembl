@@ -132,6 +132,27 @@ sub snp_obj{
 
 }
 
+=head2 fetch_Protein_by_transcriptId
+
+ Title   : fetch_Protein_by_transcriptId
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_Protein_by_transcriptId{
+   my ($self,$transid) = @_;
+   my $query = "select translation from transcript where id = '$transid'";
+   my $sth = $self->prepare($query);
+   $sth->execute();
+   my @row = $sth->fetchrow;
+   return $self->fetch_Protein_by_dbid($row[0]);
+ }
+
 
 =head2 fetch_Protein_by_dbid
 
