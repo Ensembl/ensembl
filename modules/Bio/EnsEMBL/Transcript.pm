@@ -729,7 +729,7 @@ sub _translate_coherent{
    my $prev;
    my $tstr;
 
-   $self->sort();
+   #$self->sort();
    my @exons = $self->each_Exon;
    my $exon_start = $exons[0];
 
