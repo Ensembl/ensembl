@@ -613,6 +613,7 @@ sub get_AnnSeq {
 sub write_acedb {
     my ($self, $fh, $seqname, $type, $supp_evid, $revcom, $url_ob) = @_;
      
+    my $nexons=0; 
     my $contig_id = $self->id();
      
     $type ||= 'ensembl';
@@ -626,7 +627,7 @@ sub write_acedb {
     # exit if the clone has no genes
     unless (@genes) {                
         print STDERR "'$seqname' has no genes\n";
-        return;
+        return $nexons;
     } 
     
     GENE:          
@@ -649,15 +650,16 @@ sub write_acedb {
             my $description = $trans->description;
             
             # get all exons of this transcript	                           
-            my @exons = $trans->each_Exon;   
-                                                                                                        
+            my @exons = $trans->each_Exon;
+
             # get transcript exons which belong to the contig 
             my @exons_in_contig;
             
-            foreach my $exon ( @exons ) {                             
-               if ( $exon->contig_id eq $contig_id ) {               
-                  push ( @exons_in_contig, $exon );                                                     
-               }
+            foreach my $exon ( @exons ) {
+		if ( $exon->contig_id eq $contig_id ) {
+		    push ( @exons_in_contig, $exon );
+		    $nexons++;
+		}
             }  
             
             if (@exons_in_contig) {
@@ -726,6 +728,7 @@ sub write_acedb {
             }
         }
     }
+    return $nexons;
 }
 
 
