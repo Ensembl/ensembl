@@ -257,11 +257,10 @@ sub fetch_by_stable_id {
               g.external_status as gene_external_status, 
               g.external_db as gene_external_db, g.type as gene_type
               g.analysis as analysis 
-        FROM  transcript t 
-    LEFT JOIN gene g 
-           ON g.gene_id = t.gene_id
+        FROM  transcript t, gene g 
+        WHERE g.gene_id = t.gene_id
           AND g.db = t.db 
-        WHERE t.gene_name = ? " );
+          AND t.gene_name = ? " );
 
   my $slice = Bio::EnsEMBL::Slice->new
     ( '-empty' => 1,
@@ -292,13 +291,12 @@ sub fetch_by_transcript_stable_id {
               t.external_db, t.coding_start, t.coding_end, 
               g.external_name as gene_external_name, 
               g.external_status as gene_external_status, 
-              g.external_db as gene_external_db, g.type as gene_type
+              g.external_db as gene_external_db, g.type as gene_type,
               g.analysis as analysis 
-        FROM  transcript t 
-    LEFT JOIN gene g 
-           ON g.gene_id = t.gene_id
+        FROM  transcript t, gene g 
+        WHERE g.gene_id = t.gene_id
           AND g.db = t.db 
-        WHERE t.transcript_name = ? " );
+          AND t.transcript_name = ?" );
 
   my $slice = Bio::EnsEMBL::Slice->new
     ( '-empty' => 1,
