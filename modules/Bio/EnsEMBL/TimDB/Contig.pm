@@ -59,7 +59,7 @@ sub _initialize {
   my($self,@args) = @_;
   
   my $make = $self->SUPER::_initialize;
-  my ($dbobj,$id,$disk_id,$clone_dir,$order,$offset,$orientation)=
+  my ($dbobj,$id,$disk_id,$clone_dir,$order,$offset,$orientation,$length)=
       $self->_rearrange([qw(DBOBJ
 			    ID
 			    DISK_ID
@@ -67,6 +67,7 @@ sub _initialize {
 			    ORDER
 			    OFFSET
 			    ORIENTATION
+			    LENGTH
 			    )],@args);
   $id || $self->throw("Cannot make contig object without id");
   $disk_id || $self->throw("Cannot make contig object without disk_id");
@@ -76,6 +77,7 @@ sub _initialize {
   $order || $self->throw("Cannot make contig object without order");
   $offset || $self->throw("Cannot make contig object without offset");
   $orientation || $self->throw("Cannot make contig object without orientation");
+  $length || $self->throw("Cannot make contig object without length");
   
   # id of contig
   $self->id($id);
@@ -87,6 +89,7 @@ sub _initialize {
   $self->order($order);
   $self->offset($offset);
   $self->orientation($orientation);
+  $self->length($length);
 
   # ok. Hell. We open the Genscan file using the Genscan object.
   # this is needed to remap the exons lower down
@@ -219,6 +222,27 @@ sub add_SeqFeature{
 sub add_Gene{
     my ($self,$gene) = @_;
     $self->throw("Genes cannot be added to TimDB");
+}
+
+
+=head2 length
+
+ Title   : length
+ Usage   : $obj->length($newval)
+ Function: 
+ Returns : value of length
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub length{
+    my $self = shift;
+    if( @_ ) {
+	my $value = shift;
+	$self->{'_length'} = $value;
+    }
+    return $self->{'_length'};
 }
 
 

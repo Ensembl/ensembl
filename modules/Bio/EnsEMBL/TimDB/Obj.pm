@@ -203,6 +203,9 @@ sub get_id_acc{
 	# translate to $acc if output requires this
 	if($self->{'_byacc'}){
 	    $id2=$id;
+	    if(!$acc){
+		$self->throw("Accession number is unknown for $id");
+	    }
 	    $id=$acc;
 	}else{
 	    $id2=$id;

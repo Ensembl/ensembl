@@ -195,6 +195,7 @@ sub _initialize {
 						     -order => $order{$contig_id},
 						     -offset => $offset{$contig_id},
 						     -orientation => $orientation{$contig_id},
+						     -length => $contig_len{$contig_id},
 						     );
       push(@res,$contig);
   }
