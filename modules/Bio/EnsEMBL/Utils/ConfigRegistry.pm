@@ -164,15 +164,7 @@ sub load_core{
 		 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor');
 
   foreach my $key (keys %pairs){
-#    my $module = $pairs{$key};
-#    eval "require $module";
-#
-#    if($@) {
-#      warning("$module cannot be found.\nException $@\n");
-#      return undef;
-#    }
-#    my $adap = "$module"->new($dba);
-#
+
     Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
   }
 
@@ -316,7 +308,7 @@ sub load_estgene{
 		 'Attribute'            => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
 		 'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
 		 'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
-		 #      'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
+		 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
 		 'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
 		 'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
 		 'CompressedSequence' => 'Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor',
@@ -353,16 +345,7 @@ sub load_estgene{
 		 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor' );
 
   foreach my $key (keys %pairs){
-    my $module = $pairs{$key};
-
-    eval "require $module";
-
-    if($@) {
-      warning("$module cannot be found.\nException $@\n");
-      return undef;
-    }
-    my $adap = "$module"->new($dba);
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $adap);
+    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
   }
 
   #if dnadb has been set then for the follwing use it.
@@ -427,17 +410,7 @@ sub load_vega{
 		 'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
 		 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor' );
   foreach my $key (keys %pairs){
-    my $module = $pairs{$key};
-    eval "require $module";
-
-    if($@) {
-      warning("$module cannot be found.\nException $@\n");
-      return undef;
-    }
-    my $adap = "$module"->new($dba);
-
-
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $adap);
+    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
   }
 }
 
@@ -497,16 +470,8 @@ sub load_compara{
 	      "SimpleRule"      => "Bio::EnsEMBL::Hive::DBSQL::SimpleRuleAdaptor");
 
   foreach my $key (keys %pairs){
-    my $module = $pairs{$key};
-    eval "require $module";
 
-    if($@) {
-      warning("$module cannot be found.\nException $@\n");
-      return undef;
-    }
-    my $adap = "$module"->new($dba);
-
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $adap);
+    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
   }
 
 }
