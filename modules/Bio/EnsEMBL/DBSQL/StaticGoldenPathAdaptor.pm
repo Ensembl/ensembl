@@ -230,7 +230,7 @@ sub fetch_VirtualContig_by_chr_start_end {
  Title   : fetch_VirtualContig_by_clone
  Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('AC000012',40000);
  Function: create a VirtualContig based on clone, and of a
-           given length. The thing is centered around the start of the clone.
+           given length. The VC is centered around the start of the clone.
  Example :
  Returns : 
  Args    : clone name, size
@@ -268,7 +268,8 @@ sub fetch_VirtualContig_by_clone {
 
  Title   : fetch_VirtualContig_by_contig
  Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('AC000012.00001',40000);
- Function: as fetch_VirtualContig_by_clone, but based on a RawContig. 
+ Function: create a VirtualContig based on a RawContig, and of a
+           given length. The VC is centered around the start of the clone.
  Example :
  Returns : 
  Args    : contigid (display_id, not internal one).
@@ -279,7 +280,7 @@ sub fetch_VirtualContig_by_contig {
    my ($self,$contigid,$size) = @_;
 
    if( !defined $size ) {
-       $self->throw("Must have clone and size to fetch VirtualContig by clone");
+       $self->throw("Must have contig id and size to fetch VirtualContig by contig");
    }
 
    my $type = $self->dbobj->static_golden_path_type();
