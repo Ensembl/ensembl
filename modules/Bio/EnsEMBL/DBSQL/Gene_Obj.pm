@@ -1710,14 +1710,6 @@ sub write{
 			     $gene->modified . "),now(),$analysisId )");
    $sth2->execute();
 
-   foreach my $dbl ( $gene->each_DBLink ) {
-       my $sth3 = $self->_db_obj->prepare("insert into genedblink (gene_id,external_id,external_db) values ('". 
-			     $gene->id        . "','".
-			     $dbl->primary_id . "','".
-			     $dbl->database   . "')");
-       $sth3->execute();
-   }
-    
    my $id=$gene->id;
    my $type=$gene->type;
 
@@ -1931,16 +1923,6 @@ sub write_Transcript{
         );
 
 #    print STDERR "Going to look at gene links\n";
-
-   foreach my $dbl ( $trans->each_DBLink ) {
-       #print STDERR "Going to insert for",$trans->id," ",$dbl->primary_id," ",$dbl->database,"\n";
-       my $sth3 = $self->_db_obj->prepare("insert into transcriptdblink (transcript_id,external_id,external_db) values ('". 
-					  $trans->id        . "','".
-					  $dbl->primary_id . "','".
-					  $dbl->database   . "')");
-       $sth3->execute();
-       
-   }
 
    $self->write_Translation($translation) if $translation;
    return 1;

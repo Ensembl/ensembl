@@ -347,7 +347,7 @@ else {
 }
 
 $gene_by_link=$gene_obj->get_Gene_by_DBLink('paranoya_is_good');
-if ($gene_by_link == undef) {
+if (!defined $gene_by_link) {
     print "ok 31\n";
 }
 else {
