@@ -2,6 +2,7 @@
 # add more as appropriate, line begining with # are supposed to be comments
 
 ^BA\S+\s+\(NOVEL PROTEIN\)\.?
+^DJ\S+\s+\(NOVEL PROTEIN\)\.?
 ^LOC\d+\s*(PROTEIN)?\.?
 ^ORF.*
 ^PROTEIN C\d+ORF\d+\.*
