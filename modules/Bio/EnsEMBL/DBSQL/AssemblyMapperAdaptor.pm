@@ -158,7 +158,7 @@ sub fetch_by_CoordSystems {
           "\nrequires ". (scalar(@mapping_path)-1) . " steps.");
   }
 
-  $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new(@mapping_path);
+  $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
 
   $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
 
@@ -247,15 +247,16 @@ sub register_assembled {
 
   return if(!@chunk_regions);
 
-  my $asm_seq_region_id = $self->{'_sr_id_cache'}->{"$asm_seq_region:$asm_cs_id"};
+  my $asm_seq_region_id =
+    $self->{'_sr_id_cache'}->{"$asm_seq_region:$asm_cs_id"};
 
   if(!$asm_seq_region_id) {
     # Get the seq_region_id via the name.  This would be quicker if we just
     # used internal ids instead but stored but then we lose the ability
     # the transform accross databases with different internal ids
 
-    my $sth = $self->prepare("SELECT seq_region_id" .
-                             "FROM   seq_region" .
+    my $sth = $self->prepare("SELECT seq_region_id " .
+                             "FROM   seq_region " .
                              "WHERE  name = ? AND coord_system_id = ?");
 
     $sth->execute($asm_seq_region, $asm_cs_id);
@@ -302,9 +303,11 @@ sub register_assembled {
     $sth->execute($asm_seq_region_id, $region_start, $region_end, 
 		  $asm_mapper->component_CoordSystem->dbID());
 
-    my($cmp_start, $cmp_end, $cmp_seq_region_id, $cmp_seq_region, $ori);
+    my($cmp_start, $cmp_end, $cmp_seq_region_id, $cmp_seq_region, $ori,
+      $asm_start, $asm_end);
+
     $sth->bind_columns(\$cmp_start, \$cmp_end, \$cmp_seq_region_id,
-                       \$cmp_seq_region, \$ori);
+                       \$cmp_seq_region, \$ori, \$asm_start, \$asm_end);
 
     #
     # Load the unregistered regions of the mapper
@@ -315,7 +318,7 @@ sub register_assembled {
       $asm_mapper->mapper->add_map_coordinates(
                  $cmp_seq_region, $cmp_start, $cmp_end,
                  $ori,
-                 $asm_seq_region, $region_start, $region_end);
+                 $asm_seq_region, $asm_start, $asm_end);
       $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"} =
         $cmp_seq_region_id;
     }
@@ -362,8 +365,8 @@ sub register_component {
 
 
   if(!$cmp_seq_region_id) {
-    my $sth = $self->prepare("SELECT seq_region_id" .
-                             "FROM   seq_region" .
+    my $sth = $self->prepare("SELECT seq_region_id " .
+                             "FROM   seq_region " .
                              "WHERE  name = ? AND coord_system_id = ?");
 
     $sth->execute($cmp_seq_region, $cmp_cs_id);
