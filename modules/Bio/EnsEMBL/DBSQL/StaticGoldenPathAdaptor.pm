@@ -1033,11 +1033,11 @@ sub fetch_VirtualContig_by_contig {
    my ($self,$contigid,$size) = @_;
 
    $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_by_contig is " . 
-    "deprecated. Use SliceAdaptor::fetch_Slice_by_contig_name instead\n");
+    "deprecated. Use SliceAdaptor::fetch_by_contig_name instead\n");
 
    return 
-     $self->db()->get_SliceAdaptor()->fetch_Slice_by_contig_name($contigid,
-								 $size);
+     $self->db()->get_SliceAdaptor()->fetch_by_contig_name($contigid,
+							   $size);
 
 #   if( !defined $size ) {
 #       $self->throw("Must have contig id and size to fetch VirtualContig by contig");
@@ -1087,10 +1087,10 @@ sub fetch_VirtualContig_by_gene{
    my ($self,$geneid,$size) = @_;
 
    $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_by_gene is " . 
-	"deprecated. Use SliceAdaptor::fetch_Slice_by_gene_stable_id instead\n");
+	"deprecated. Use SliceAdaptor::fetch_by_gene_stable_id instead\n");
 
-   return $self->db()->get_SliceAdaptor()->fetch_Slice_by_gene_stable_id($geneid,
-									 $size);
+   return $self->db()->get_SliceAdaptor()->fetch_by_gene_stable_id($geneid,
+								   $size);
    
 #   if( !defined $geneid ) {
 #       $self->throw("Must have gene id to fetch VirtualContig of gene");
