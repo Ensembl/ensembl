@@ -9,7 +9,8 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::GeneLiteAdaptor - MySQL Database queries to retrieve genes quickly from denormalized tables.
+Bio::EnsEMBL::DBSQL::GeneLiteAdaptor - MySQL Database queries to retrieve 
+genes quickly from denormalized tables.
 
 =head1 SYNOPSIS
 
@@ -26,7 +27,6 @@ use strict;
 
 package Bio::EnsEMBL::Lite::GeneAdaptor;
 
-use Bio::EnsEMBL::DBSQL::GeneAdaptorI;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Transcript;

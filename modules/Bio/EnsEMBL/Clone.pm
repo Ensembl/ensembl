@@ -50,9 +50,7 @@ use strict;
 
 use Bio::EnsEMBL::Root;
 
-use Bio::EnsEMBL::DB::CloneI;
-
-@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::DB::CloneI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 sub new {
     my ($class,$adaptor,@args) = @_;
