@@ -316,9 +316,23 @@ if ($organism eq "drosophila") {
 	$sth->execute();
 
 	while (my $trans_id = $sth->fetchrow) {
-#	    if (! defined $seen{$trans_id}) {
-#		$seen{$trans_id} = 1;
-#	    }
+	
+	    if ($seen{$cg} != 1) {
+		my $extdb = "drosophila_gene_id"; 
+		my $dbentry = Bio::EnsEMBL::DBEntry->new
+		    ( -adaptor => $adaptor,
+		      -primary_id => $cg,
+		      -display_id => $cg,
+		      -version => 1,
+		      -release => 1,
+		      -dbname => $extdb );
+		$dbentry->status("KNOWNXREF");
+		if($trans_id == 0){
+		    die "have no translation_id $!";
+		}
+		$adaptor->store($dbentry,$trans_id,"Translation");
+		$seen{$trans_id} = 1;
+	    }
 
 	    if ($trans_id) {
 	    #Create a new dbentry object
@@ -329,7 +343,7 @@ if ($organism eq "drosophila") {
 		      -version => 1,
 		      -release => 1,
 		      -dbname => $extdb );
-		$dbentry->status("XREF");
+		$dbentry->status("KNOWNXREF");
 		if($trans_id == 0){
 		  die "have no translation_id $!";
 		}
@@ -339,6 +353,14 @@ if ($organism eq "drosophila") {
 
     }
 
+}
+
+if ($organism eq "drosophila") {
+    my $query = "select distinct(stable_id) from gene_stable_id";
+    my $sth = $db->prepare($query);
+
+    
+    
 }
 
 if ($organism eq "elegans") {
