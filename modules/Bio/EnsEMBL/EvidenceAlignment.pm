@@ -42,6 +42,9 @@ Internal methods are usually preceded with a _
 
 package Bio::EnsEMBL::EvidenceAlignment;
 
+# pfetch binary - just pick it up from PATH
+use constant PFETCH => 'pfetch';
+
 # modify placement by adding the following to the genomic start/end
 use constant MINUS_STRAND_HACK_BP => -1;
 use constant PLUS_STRAND_HACK_BP  => +1;
@@ -132,7 +135,6 @@ sub get_features {
     
   my @exons = $transcript_obj->get_all_Exons;
   my $strand = $exons[0]->strand;
-  print STDERR "transcript ", $transcript_obj->stable_id, "strand ", $strand, "\n";
   my @all_features = $vc->get_all_SimilarityFeatures;
   my @features = ();
   FEATURE_LOOP:
@@ -210,14 +212,8 @@ sub _get_transcript_nuc {
 
   my $retval = '';
   my $seq_str;
-  for (my $i = 0; $i <= $#$exon_arr_ref; $i++) {
-    my $exon_seq = $$exon_arr_ref[$i]->seq->seq;
-    if ($i & 1) {
-      $seq_str = "\L$exon_seq";
-    } else {
-      $seq_str = "\U$exon_seq";
-    }
-    $retval .= $seq_str;
+  foreach my $exon (@$exon_arr_ref) {
+    $retval .= $exon->seq->seq;
   }
   return $retval;
 }
@@ -227,17 +223,17 @@ sub _get_hits {
   my ($self, $features_arr_ref) = @_;
   $self->throw('interface fault') if (@_ != 2);
 
-  my $pfetch = '/usr/local/pubseq/bin/pfetch';	# executable
+  my $pfetch = PFETCH;		# executable
   my $clump_size = 1000;	# number of sequences to fetch at once
   my %hits_hash = ();
   my @hseqnames = ();
   for (my $i = 0; $i < @$features_arr_ref; $i++) {
     push @hseqnames, $$features_arr_ref[$i]->hseqname;
     if (($i % $clump_size) == 0) {
-      open (PFETCH_IN, "$pfetch -q @hseqnames |")
+      open (EVIDENCEALIGNMENT_PFETCH_IN_FH, "$pfetch -q @hseqnames |")
         or $self->throw("error running pfetch");
       my $seq_no = 0;
-      while (<PFETCH_IN>) {
+      while (<EVIDENCEALIGNMENT_PFETCH_IN_FH>) {
         chomp;
 	my $seq_obj;
 	if ($_ ne "no match") {
@@ -254,10 +250,10 @@ sub _get_hits {
   }
 
   # fetch the non-clump-sized remainder
-  open (PFETCH_IN, "$pfetch -q @hseqnames |")
+  open (EVIDENCEALIGNMENT_PFETCH_IN_FH, "$pfetch -q @hseqnames |")
     or $self->throw("error running pfetch");
   my $seq_no = 0;
-  while (<PFETCH_IN>) {
+  while (<EVIDENCEALIGNMENT_PFETCH_IN_FH>) {
     chomp;
     my $seq_obj;
     if ($_ ne "no match") {
@@ -548,21 +544,12 @@ sub _get_aligned_evidence {
   my @sorted_nuc_evidence_arr = @{$self->_evidence_sort(\@nuc_evidence_arr)};
 
   $evidence_line = '';
-  my $uppercase = 1;	# case of sequence for output
   my $hit = $sorted_nuc_evidence_arr[0];
   my $prev_exon = $$hit{exon};
   $prev_hseqname = '-' x 1000;	# fake initial ID
   for (my $i = 0; $i < @sorted_nuc_evidence_arr; $i++) {
     my $hit = $sorted_nuc_evidence_arr[$i];
-    if ($$hit{exon} ne $prev_exon) {
-      $uppercase = ! $uppercase;
-    }
     my $hseq_str = $$hit{hseq};
-    if ($uppercase) {
-      $hseq_str = "\U$hseq_str";
-    } else {
-      $hseq_str = "\L$hseq_str";
-    }
     if ($$hit{hseqname} ne $prev_hseqname) {	# make new evidence line
       $evidence_line = '-' x $cdna_len_bp;
     }
@@ -583,19 +570,42 @@ sub _get_aligned_evidence {
 		      -moltype          => $$hit{moltype}
 		    );
       push @evidence_arr, $evidence_obj;
-      $uppercase = 0;	# so next line starts uppercase
     }
     $prev_hseqname = $$hit{hseqname};
     $prev_exon = $$hit{exon};
   }
 
   # remove blank evidence lines
+
   my @filtered_evidence_arr = ();
   foreach my $evidence_line (@evidence_arr) {
     push @filtered_evidence_arr, $evidence_line
       if ($$evidence_line{seq} =~ /[^-]/);
   }
-  
+
+  # change case at exon boundaries
+
+  my @exon_lengths = ();
+  foreach my $exon (@all_exons) {
+    push @exon_lengths, ($exon->end - $exon->start + 1);
+  }
+  foreach my $evidence_line (@filtered_evidence_arr) {
+    my $seq_str = $evidence_line->seq;
+    $total_exon_len = 0;
+    for (my $i = 0; $i < @exon_lengths; $i++) {
+      my $replacement = substr $seq_str, $total_exon_len,
+                               $exon_lengths[$i];
+      if (! ($i & 2)) {
+        $replacement = uc $replacement;
+      } else {
+        $replacement = lc $replacement;
+      }
+      substr $seq_str, $total_exon_len, $exon_lengths[$i], $replacement;
+      $total_exon_len += $exon_lengths[$i];
+    }
+    $evidence_line->seq($seq_str);
+  }
+
   return \@filtered_evidence_arr;
 
 }
