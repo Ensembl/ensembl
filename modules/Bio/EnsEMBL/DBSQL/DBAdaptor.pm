@@ -441,173 +441,6 @@ sub get_object_by_wildcard{
    return;
 }
 
-=head2 write_Clone
-
- Title   : write_Clone
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub write_Clone {
-    my ($self,$clone) = @_;
-
-
-    $self->warn("this method is being depreciated please use Bio::EnsEMBL::CloneAdaptor->store()\n");
-
-    my $clone_ad = $self->get_CloneAdaptor();
-
-    $clone_ad->store($clone);
-   # my $clone_id = $clone->id;
-
-#    $clone || $self->throw("Trying to write a clone without a clone object!\n");
-#    if( !$clone->isa('Bio::EnsEMBL::DB::CloneI') ) {
-#	$self->throw("Clone '$clone' is not a 'Bio::EnsEMBL::DB::CloneI'");
-#    }
-    
-#    my @sql;
-#    my $sql = "insert into clone(name, embl_acc, version, embl_version, htg_phase, created, modified) values('$clone_id', '".$clone->embl_id."', ".$clone->version.",".$clone->embl_version.", ".$clone->htg_phase.", FROM_UNIXTIME(".$clone->created."), FROM_UNIXTIME(".$clone->modified."))";
-#    my $sth = $self->prepare($sql);
-#    #my $sth = $self->prepare('insert into clone (clone_id, name,  embl_acc, version, embl_version, htg_phase, created, modified) values(?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?)'); 
-#    my $rv = $sth->execute();
-        
-#    $self->throw("Failed to insert clone $clone_id") unless $rv;
-#    $sth = $self->prepare("select last_insert_id()");
-#    my $res = $sth->execute;
-#    my $row = $sth->fetchrow_hashref;
-#    $sth->finish;
-#    my $id  = $row->{'last_insert_id()'};
-#    #print(STDERR "Clone $clone_id - $id\n");
-    
-#    foreach my $contig ( $clone->get_all_Contigs() ) {        
-#        $self->write_Contig($contig,$id);
-#    }
-    
-   
-}
-
-=head2 write_Contig
-
- Title   : write_Contig
- Usage   : $obj->write_Contig($contig,$clone)
- Function: Writes a contig and its dna into the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub write_Contig {
-    my($self, $contig, $clone)  = @_;
-       
-
-    $self->warn("this method is depreciated please use Bio::EnsEMBL::DBSQL::RawContigAdaptor->store()\n");
-    
-    my $rca = $self->get_RawContigAdaptor();
-
-    $rca->store($contig, $clone);
-    #Why do we have $clone if contig->cloneid is ok?
-     
-   # $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI - cannot insert contig for clone $clone")
-#        unless $contig->isa('Bio::EnsEMBL::DB::ContigI');   
-#    my $dna = $contig->primary_seq  || $self->throw("No sequence in contig object");
-#    $dna->id                        || $self->throw("No contig id entered.");
-#    $clone                          || $self->throw("No clone entered.");
-    
-##   (defined($contig->species)    && $contig->species   ->isa("Bio::EnsEMBL::Species"))    || $self->throw("No species object defined");
-##    (defined($contig->chromosome) && $contig->chromosome->isa("Bio::EnsEMBL::Chromosome")) 
-##                                    || $self->throw("No chromosomeobject defined");
-                                    
-##   my $species_id    = $self->write_Species   ($contig->species);
-##   my $chromosome_id = $self->write_Chromosome($contig->chromosome,$species_id);    
-#    my $contigid      = $contig->id;
-#    my $len           = $dna   ->length;
-#    my $seqstr        = $dna   ->seq;
-#    my $offset        = $contig->embl_offset();
-#    my $corder         = $contig->order();
-#    #my $chromosome_id = $contig->chromosome->get_db_id;
-#    my  $international_name = $contig->international_name();
-
-    # Insert the sequence into the dna table
-    #$self->_insertSequence($seqstr, $contig->seq_date);
-    
- #   my @sql;
-    
-#    my $sth = $self->prepare("
-#        insert into contig(name, dna_id, length, clone_id, offset, corder, international_name ) 
-#        values(?, LAST_INSERT_ID(), ?, ?, ?, ?, ?)
-#        "); 
-#    #print STDERR "contig name = ",$contigid,"\n";
-#    my $rv = $sth->execute(
-#        $contigid,			   
-#        $len,
-#        $clone,
-#        $offset,
-#        $corder,
-#        $international_name
-#        );  
-          
-#    $self->throw("Failed to insert contig $contigid") unless $rv;
-       
-    
-#    $sth = $self->prepare("select last_insert_id()");
-#    $sth->execute;
-#    my ($id) = $sth->fetchrow
-#        or $self->throw("Failed to get last insert id");
-#    #can no longer do this as get_all_SeqFeatures no longer exists
-#    #if a contig is written to the database
-#    # this is a nasty hack. We should have a cleaner way to do this.
-#    #my @features = $contig->get_all_SeqFeatures;
-#    #print(STDERR "Contig $contigid - $id\n"); 
-#    # write sequence features. We write all of them together as it
-#    # is more efficient
-#    #$self->get_Feature_Obj->write($contig, @features);
-    
-    return 1;
-}
-
-=head2 _insertSequence
-
- Title   : _insertSequence
- Usage   : $obj->_insertSequence
- Function: Insert the dna sequence and date into the dna table.
- Example :
- Returns : 
- Args    : $sequence, $date
-
-
-=cut
-
-sub _insertSequence {
-    my ($self, $sequence, $date) = @_;
-    
-    $sequence =~ tr/atgcn/ATGCN/;
-    
-    $self->warn("this method is depreciated please use Bio::EnsEMBL::RawContigAdaptor->_insertSequence\n");
-    
-    my $rca = $self->get_RawContigAdaptor();
-
-    $rca->_insertSequence($sequence, $date);
-
-    #if ($self->dnadb ne $self) {
-#      $self->throw("ERROR: Trying to write to a remote dna database");
-#    } 
-    
-#    my $statement = $self->prepare("
-#        insert into dna(sequence,created) 
-#        values(?, FROM_UNIXTIME(?))
-#        "); 
-        
-#    my $rv = $statement->execute($sequence, $date); 
-    
-#    $self->throw("Failed to insert dna $sequence") unless $rv;    
-}
-
 
 =head2 write_Chromosome
 
@@ -725,59 +558,6 @@ sub mapdbname {
   return $self->{_mapdbname};
 }
 
-=head2 write_Species
-
- Title   : write_Species
- Usage   : $obj->write_Species
- Function: writes a species object into the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub write_Species {
-    my ($self,$species) = @_;
-
-    $self->throw("there isn't a species table in the new schema\n");
-
-    #if (!defined($species)) {
-#	$self->throw("No species argument input");
-#    }
-#    if (!$species->isa("Bio::EnsEMBL::Species")) {
-#	$self->throw("[$species] is not a Bio::EnsEMBL::Species object");
-#    }
-
-#    my $query = "select species_id " .
-#	        "from   species " .
-#		"where  nickname    = '" . $species->nickname . "' " . 
-#		"and    taxonomy_id = "  . $species->taxonomy_id;
-
-#    my $sth = $self->prepare($query);
-#    my $res = $sth->execute;
-
-#    if ($sth->rows == 1) {
-#	my $rowhash    = $sth->fetchrow_hashref;
-#	my $species_id = $rowhash->{species_id};
-#	return $species_id;
-#    } 
-
-#    $query =  "insert into species(species_id,nickname,taxonomy_id) " . 
-#	      "            values(null,'" . $species->nickname . "'," . $species->taxonomy_id . ")";
-	
-    
-#    $sth = $self->prepare($query);
-#    $res = $sth->execute;
-
-#    $sth = $self->prepare("select last_insert_id()");
-#    $res = $sth->execute;
-
-#    my $rowhash = $sth->fetchrow_hashref;
-#    my $species_id = $rowhash->{'last_insert_id()'};
-   
-#    return $species_id;
-}
 
 
 =head2 prepare
@@ -1103,6 +883,966 @@ sub DESTROY {
    }
 }
 
+
+
+=head2 get_Clone
+
+ Title   : get_Clone
+ Usage   :
+ Function: retrieve latest version of a clone from the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Clone { 
+    my( $self, $accession ) = @_;
+
+    my $ca = $self->get_CloneAdaptor;
+
+    if ($accession =~ /(.+?)\.(\d+)/) {
+	$accession = $1;
+	my $version   = $2;
+	return $ca->fetch_by_accession_version($accession, $version);
+    }
+    else {
+	return $ca->fetch_by_accession($accession);
+    }
+
+}
+  
+=head2 list_embl_version_by_Clone
+
+ Title   : list_embl_version_by_Clone
+ Usage   :
+ Function: retrieve list of embl_versions of a clone from the database
+ Example : @versions = $dbobj->list_embl_versions_by_Clone('AB000381');
+ Returns : @versions
+ Args    : $accession
+
+
+=cut
+
+sub list_embl_version_by_Clone { 
+    my( $self, $accession ) = @_;
+
+    my $ca = $self->get_CloneAdaptor;
+
+    return $ca->list_embl_version_by_accession($accession);
+}
+
+=head2 get_Clone_by_version
+
+ Title   : get_Clone_by_version
+ Usage   :
+ Function: retrieve specific version of a clone from the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Clone_by_version { 
+    my ($self,$accession,$ver) = @_;
+
+    my $ca = $self->get_CloneAdaptor;
+
+    return $ca->fetch_by_accession_version($accession,$ver);
+}
+  
+=head2 get_Contig
+
+ Title   : get_Contig
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Contig {
+    my ($self,$id) = @_;
+
+    $self->warn("Obj->get_Contig is a deprecated method!"); 
+
+    return $self->get_RawContigAdaptor->fetch_by_name($id);
+}
+
+sub get_Contig_by_internal_id {
+  my ($self,$id) = @_;
+
+  if (!defined($id)) {
+    $self->throw("No id defined\n");
+  }
+  my $query = "select id from contig where internal_id = $id";
+
+  my $sth = $self->prepare($query);
+  my $res = $sth->execute;
+
+  if ($sth->rows < 1) {
+    $self->throw("No contig available with id $id\n");
+  }
+  my $ref = $sth->fetchrow_hashref;
+  my $contigid = $ref->{'id'};
+
+  return $self->get_Contig($contigid);
+}
+
+  
+ 
+sub get_Contig_by_international_id{
+   my ($self,$int_id) = @_;
+   #$self->warn("Obj->get_Contig is a deprecated method! 
+#Calling Contig->fetch instead!");
+   my $sth=$self->prepare("select id from contig where international_id = '$int_id'");
+   $sth->execute;
+   my $row = $sth->fetchrow_hashref;
+   my $id  = $row->{'id'};
+
+   return $self->get_Contig($id);
+}
+
+=head2 get_Contigs_by_Chromosome
+
+ Title   : get_Contig_by_Chromosome
+ Usage   : @contigs = $dbobj->get_Contig_by_Chromosome( $chrObj );
+ Function: retrieve contigs belonging to a certain chromosome from the
+           database 
+ Example :
+ Returns : A list of Contig objects. Probably an empty list.
+ Args    :
+
+
+=cut
+
+sub get_Contigs_by_Chromosome {
+    my ($self,$chromosome ) = @_;
+    
+    $self->throw("Obj->get_Contigs_by_Chromosome is a deprecated method! 
+Call Contig->get_by_Chromosome instead!");
+}
+
+=head2 get_all_Clone_id
+
+ Title   : get_all_Clone_id
+ Usage   : @cloneid = $obj->get_all_Clone_id
+ Function: returns all the valid (live) Clone ids in the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Clone_id{
+   my ($self) = @_;
+   my @out;
+
+   my $sth = $self->prepare("select id from clone");
+   my $res = $sth->execute;
+
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+   return @out;
+}
+
+=head2 get_all_Contig_id
+
+ Title   : get_all_Contig_id
+ Usage   : @Contigid = $obj->get_all_Contig_id
+ Function: returns all the valid (live) Contig ids in the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Contig_id{
+   my ($self) = @_;
+   my @out;
+
+   my $sth = $self->prepare("select id from contig");
+   my $res = $sth->execute;
+
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+   return @out;
+}
+
+
+=head2 perl_only_sequences
+
+ Title   : perl_only_sequences
+ Usage   : $obj->perl_only_sequences($newval)
+ Function: 
+ Returns : value of perl_only_sequences
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub perl_only_sequences{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'perl_only_sequences'} = $value;
+    }
+    return $obj->{'perl_only_sequences'};
+
+}
+
+=head2 perl_only_contigs
+
+ Title   : perl_only_contigs
+ Usage   : $obj->perl_only_contigs($newval)
+ Function: 
+ Returns : value of perl_only_contigs
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub perl_only_contigs{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'perl_only_contigs'} = $value;
+    }
+    return $obj->{'perl_only_contigs'};
+
+}
+
+=head2 get_adaptor
+
+  Title   : get_adaptor
+  Usage   : $obj->get_adaptor("full::module::name")
+  Returns : An already existing, or a new instance of the specified DB adaptor 
+  Args : the fully qualified name of the adaptor module to retrieve
+
+=cut
+
+sub get_adaptor {
+  my( $self, $module) = @_;
+
+  my( $adaptor, $internal_name );
+  
+  #Create a private member variable name for the adaptor by: 
+  # (1)stripping out the the parent package names, 
+  # (2)prepending an underscore, and (3) converting to all lower case 
+  
+  $module =~ /(::)?(\S+)$/;
+  $internal_name = '_' . lc($2); 
+
+  unless ($adaptor = $self->{'_int_adaptors'}{$internal_name}) {
+    eval "require $module";
+    
+    if($@) {
+      print STDERR "$module cannot be found.\nException $@\n";
+      return undef;
+    }
+      
+    $adaptor = "$module"->new($self);
+    $self->{'_int_adaptors'}{$internal_name} = $adaptor;
+  }
+
+  return $adaptor;
+}
+
+
+=head2 get_Protfeat_Adaptor
+
+ Title   : get_Protfeat_Adaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Protfeat_Adaptor {
+    my( $self ) = @_;
+    
+    return 
+      $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor");
+}
+
+
+=head2 get_Protein_Adaptor
+
+ Title   : get_Protein_Adaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Protein_Adaptor {
+    my( $self ) = @_;
+ 
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::Protein_Adaptor");
+}
+
+=head2 get_CloneAdaptor
+
+    my $ca = $dba->get_CloneAdaptor;
+
+Returns a B<Bio::EnsEMBL::DBSQL::CloneAdaptor>
+object, which is used for reading and writing
+B<Clone> objects from and to the SQL database.
+
+=cut 
+
+sub get_CloneAdaptor {
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::CloneAdaptor");
+}
+
+
+=head2 get_PredictionTranscriptAdaptor
+
+  Args      : none
+  Function  : PredictionTranscript Adaptor for this database.
+  Returntype: Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor
+  Exceptions: none
+  Caller    : general
+
+=cut
+
+sub get_PredictionTranscriptAdaptor {
+   my ($self) = @_;
+
+   return $self->get_adaptor("Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor");
+ }
+
+=head2 get_SequenceAdaptor
+
+  Args      : none
+  Function  : The sequence producing adaptor. Could be hooked to a different
+              database than the rest for example.
+  Returntype: Bio::EnsEMBL::DBSQL::SequenceAdaptor
+  Exceptions: none
+  Caller    : general, Bio::EnsEMBL::Slice, Bio::EnsEMBL::RawContig
+
+=cut
+
+sub get_SequenceAdaptor {
+   my $self = shift;
+
+   return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SequenceAdaptor");
+}
+
+
+
+sub get_GeneAdaptor {
+    my( $self ) = @_;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
+}
+
+=head2 get_LiteAdaptor
+    
+ Title   : get_LiteAdaptor
+ Usage   : my $la = $db->get_LiteAdaptor;
+ Function: Returns the lite database object handler
+ Example : 
+ Returns : Bio::EnsEMBL::DBSQL::LiteAdaptor
+ Args    : 
+
+=cut
+
+sub get_LiteAdaptor {
+    my( $self ) = @_;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::LiteAdaptor");
+}
+
+sub get_ExonAdaptor {
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ExonAdaptor");
+}
+
+sub get_TranscriptAdaptor {
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::TranscriptAdaptor");
+}
+
+sub get_TranslationAdaptor {
+    my( $self ) = @_;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::TranslationAdaptor");
+}
+
+sub get_FeatureAdaptor {
+    my( $self ) = @_;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::FeatureAdaptor");
+}
+
+sub get_RawContigAdaptor {
+    my( $self ) = @_;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::RawContigAdaptor");
+}
+
+sub get_SliceAdaptor {
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SliceAdaptor");
+}
+
+=head2 get_AnalysisAdaptor
+
+ Title   : get_AnalysisAdaptor
+ Usage   : $analysisAdaptor = $dbObj->get_AnalysisAdaptor;
+ Function: gives the adaptor to fetch/store Analysis objects.
+ Example :
+ Returns : the adaptor
+ Args    :
+
+=cut
+
+sub get_AnalysisAdaptor {
+    my( $self ) = @_;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::AnalysisAdaptor");
+}
+
+=head2 get_SimpleFeatureAdaptor
+
+ Title   : get_SimpleFeatureAdaptor
+ Usage   : $sa = $db->get_SimpleFeatureAdaptor;
+ Example :
+ Returns : the adaptor
+ Args    : none
+
+=cut
+
+sub get_SimpleFeatureAdaptor {
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor");
+}
+
+
+=head2 get_RepeatConsensusAdaptor
+
+ Title   : get_SimpleFeatureAdaptor
+ Usage   : $sa = $db->get_SimpleFeatureAdaptor;
+ Example :
+ Returns : the adaptor
+ Args    : none
+
+=cut
+
+sub get_RepeatConsensusAdaptor {
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor");
+}
+
+sub get_RepeatFeatureAdaptor {
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor");
+}
+
+=head2 get_ProteinAlignFeatureAdaptor
+
+ Title   : get_ProteinAlignFeatureAdaptor
+ Usage   : $sa = $db->get_ProteinAlignFeatureAdaptor;
+ Returns : the adaptor
+
+
+=cut
+
+sub get_ProteinAlignFeatureAdaptor {
+  my( $self ) = @_;
+    
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor");
+}
+
+
+=head2 get_DnaAlignFeatureAdaptor
+
+ Args      : none
+ Function  : Returns the DnaAlignFeatuire Adaptor which is connected to
+             this database. There should only be one around.
+ Returntype: Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor
+ Exceptions: none
+ Caller    : FeatureAdaptor, general
+
+=cut
+  
+  
+sub get_DnaAlignFeatureAdaptor {
+  my $self = shift;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor");
+}
+
+=head2 get_AssemblyMapperAdaptor
+
+ Title   : get_AssemblyMapperAdaptor
+ Usage   : $sa = $db->get_AssemblyMapperAdaptor;
+ Example :
+ Returns : the adaptor
+ Args    :
+
+=cut
+
+sub get_AssemblyMapperAdaptor {
+  my( $self ) = @_;
+    
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor");
+}
+
+
+sub get_DBEntryAdaptor {
+    my( $self ) = @_;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::DBEntryAdaptor");
+}
+
+
+=head2 get_StaticGoldenPathAdaptor
+
+ Title   : get_StaticGoldenPathAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_StaticGoldenPathAdaptor{
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor");
+}
+
+
+=head2 get_KaryotypeBandAdaptor
+
+ Title   : get_KaryotypeBandAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_KaryotypeBandAdaptor {
+    my( $self ) = @_;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor");
+}
+
+=head2 get_ChromosomeAdaptor
+
+ Title   : get_ChromosomeAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_ChromosomeAdaptor {
+    my( $self ) = @_;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ChromosomeAdaptor");
+}
+
+=head2 get_FamilyAdaptor
+
+ Title   : get_FamilyAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+## following is not part of core EnsEMBL, so maybe doesn't belong here and
+## has to be moved elsehwere (e.g. as part of a more dynamical
+## add_external_adaptor scheme). For convenience I have it here, now,
+## though. It will break things for people who don't have ensembl-external
+## checked out ...
+
+sub get_FamilyAdaptor {
+    my( $self ) = @_;
+    
+    my( $fa );
+    unless ($fa = $self->{'_externaldata_family_familyadaptor'}) {
+        eval{
+            require Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
+        };
+        if ($@) {
+            $self->throw(
+                "Unable to load 'Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor'\n"
+                . "It is not part of the core Ensembl distribution.\n"
+                . "Have you installed it?");
+        }
+        $fa = Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor->new($self);
+        $self->{'_externaldata_family_familyadaptor'} = $fa;
+    }
+    return $fa;
+}
+
+
+
+sub list_supported_assemblies {
+    my($self) = @_;
+    my @out;
+
+    my $query = q{
+        SELECT distinct type
+        FROM   static_golden_path
+    };
+
+    my $sth = $self->prepare($query) ||
+     $self->throw("Error in list_supported_assemblies");
+    my $res = $sth->execute ||
+     $self->throw("Error in list_supported_assemblies");
+
+    while (my($type) = $sth->fetchrow_array) {
+       push(@out, $type);
+    }
+    return @out;
+}
+
+
+
+=head2 find_GenomeHits
+    
+ Title   : find_GenomeHits
+ Usage   : my @features = $self->find_GenomeHits($hid)
+ Function: Finds all features in the db that
+           are hits to a sequence with id $hid
+ Example : 
+ Returns : @ Bio::EnsEMBL::FeaturePair
+ Args    : string
+
+=cut
+ 
+sub find_GenomeHits {
+    my ($self,$arg) = @_;
+
+    return $self->feature_Obj->find_GenomeHits($arg);
+}
+			     
+
+=head2 deleteObj
+
+    Title   : deleteObj
+    Usage   : $dbObj->deleteObj
+    Function: Call when you are done with this object. Breaks links between objects. Necessary to clean up memory.
+    Example : -
+    Returns : -
+    Args    : -
+
+
+=cut
+
+sub deleteObj {
+
+  my  $self=shift;
+  my $dummy;
+  $self->DESTROY;
+  
+  foreach my $name ( keys %{$self} ) {
+    eval {
+      $dummy = $self->{$name}; 
+      $self->{$name}  = undef;
+      $dummy->deleteObj;
+    };
+  }
+}
+
+
+
+=head2 diff_fh
+
+ Title   : diff_fh
+ Usage   : $obj->diff_fh($newval)
+ Function: path and name of the file to use for writing the mysql diff dump
+ Example : 
+ Returns : value of diff_fh
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub diff_fh{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'_diff_fh'} = $value;
+    }
+    return $self->{'_diff_fh'};
+    
+}
+
+
+=head2 diffdump
+
+ Title   : diffdump
+ Usage   : $obj->diffdump($newval)
+ Function: If set to 1 sets $self->_prepare to print the diff sql 
+           statementents to the filehandle specified by $self->diff_fh
+ Example : 
+ Returns : value of diffdump
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub diffdump{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'_diffdump'} = $value;
+    }
+    return $self->{'_diffdump'};
+    
+}
+
+
+
+
+
+
+=head2 extension_tables
+
+ Title   : extension_tables
+ Usage   : $obj->extension_tables($newval)
+ Function: 
+ Returns : value of extension_tables
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub extension_tables{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'extension_tables'} = $value;
+    }
+    return $obj->{'extension_tables'};
+
+}
+
+=head2 static_golden_path_type
+
+ Title   : static_golden_path_type
+ Usage   : $obj->static_golden_path_type($newval)
+ Function: 
+ Example : 
+ Returns : value of static_golden_path_type
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub static_golden_path_type{
+   my ($obj,$value) = @_;
+   if($value) {
+      $obj->{'static_golden_path_type'} = $value;
+    }
+    return $obj->{'static_golden_path_type'};
+
+}
+
+
+=head2 _crossdb
+
+ Title   : _crossdb
+ Usage   : $obj->_crossdb($newval)
+ Function: 
+ Returns : value of _crossdb
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _crossdb {
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_crossdb'} = $value;
+    }
+    return $obj->{'_crossdb'};
+
+}
+
+
+sub create_tables { 
+  my $self = shift;
+
+  # get all adaptors ...
+  # call create_tables on them
+
+  # create some tables without adaptors
+  # (which should disappear once)
+}
+
+
+## internal stuff for external adaptors
+
+=head2 _ext_adaptor
+
+ Title   : _ext_adaptor
+ Usage   : $obj->_ext_adaptor('family' [, $famAdaptorObj] )
+ Function: 
+ Returns : an adaptor or undef
+ Args    : a name and a adaptor object. 
+
+=cut
+
+sub _ext_adaptor {
+    my ($self, $adtor_name, $adtor_obj) = @_;
+    
+    $self->throw("No adaptor name given") unless $adtor_name;
+    
+    if( $adtor_obj ) {
+        if ($adtor_obj eq 'DELETE') { 
+            delete $adtor_obj->{'_ext_adaptors'}{$adtor_name};
+        } else {
+            $self->{'_ext_adaptors'}{$adtor_name} = $adtor_obj;
+        }
+    }
+    return $self->{'_ext_adaptors'}{$adtor_name};
+}
+
+
+=head2 dnadb
+
+ Title   : dnadb
+ Usage   : my $dnadb = $db->dnadb;
+ Function: returns the database adaptor where the dna lives
+           Useful if you only want to keep one copy of the dna
+           on disk but have other databases with genes and features in
+ Returns : dna database adaptor
+  Args    : Bio::EnsEMBL::DBSQL::DBAdaptor
+
+=cut
+
+sub dnadb {
+  my ($self,$arg) = @_;
+
+  if (defined($arg)) {
+    if (! $arg->isa("Bio::EnsEMBL::DBSQL::DBAdaptor")) {
+      $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::DBAdaptor");
+    }
+    $self->{_dnadb} = $arg;
+  }
+  return $self->{_dnadb} || $self;
+}
+
+## support for external adaptors
+=head2 list_ExternalAdaptors
+
+ Title   : list_ExternalAdaptors
+ Usage   : $obj->list_ExternalAdaptors
+ Function: returns all the names of installed external adaptors
+ Returns : a (possibly empty) list of name of external adaptors
+ Args    : none
+
+=cut
+
+sub list_ExternalAdaptors {
+    my ($self) = @_;
+    return keys % {$self->{_ext_adaptors}};
+}
+
+=head2 add_ExternalAdaptor
+
+ Title   : add_ExternalAdaptor
+ Usage   : $obj->add_ExternalAdaptor('family', $famAdaptorObj);
+ Function: adds the external adaptor the internal hash of known 
+           external adaptors. If an adaptor of the same name is installed, 
+           it will be overwritten.
+ Returns : undef
+ Args    : a name and a adaptor object. 
+
+=cut
+
+sub add_ExternalAdaptor {
+    my ($self, $adtor_name, $adtor_obj) = @_;
+    $self->_ext_adaptor($adtor_name, $adtor_obj);
+    undef;
+}
+
+=head2 get_ExternalAdaptor
+
+ Title   : get_ExternalAdaptor
+ Usage   : $obj->get_ExternalAdaptor('family');
+ Function: retrieve external adaptor by name
+ Returns : an adaptor (sub-type of BaseAdaptor) or undef
+ Args    : the name 
+
+=cut
+
+sub get_ExternalAdaptor {
+    my ($self, $adtor_name) = @_;
+    $self->_ext_adaptor($adtor_name);
+}
+
+
+=head2 remove_ExternalAdaptor
+
+ Title   : remove_ExternalAdaptor
+ Usage   : $obj->remove_ExternalAdaptor('family')
+ Function: removes the named external adaptor from the internal hash of known 
+           external adaptors. If the adaptor name is not known, nothing 
+           happens. 
+ Returns : undef
+ Args    : a name
+
+=cut
+
+sub remove_ExternalAdaptor {
+    my ($self, $adtor_name) = @_;
+    $self->_ext_adaptor($adtor_name, 'DELETE');
+    undef;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 ##################DEPRECATED METHODS######################
 #                                                        #
 #All the methods below are deprecated methods,           #
@@ -1110,6 +1850,33 @@ sub DESTROY {
 #They all send a warning and call the new method instead #
 #                                                        #
 ##########################################################
+
+
+=head1 Old Functions 
+
+Functions which are completely deprecated 
+
+=cut
+
+
+=head2 feature_Obj
+    
+ Title   : feature_Obj
+ Usage   : my $featureobj = $db->feature_Obj
+ Function: Returns the feature object database handle
+ Example : 
+ Returns : Bio::EnsEMBL::DB::Feature_ObjI
+ Args    : 
+
+=cut
+
+sub feature_Obj {
+    my $self = shift;
+    $self->throw("No more Feature Objs!");
+
+}
+
+
 
 =head2 get_Gene
 
@@ -1894,740 +2661,6 @@ Calling gene_Obj->write_Exon instead!");
    return $self->gene_Obj->write_Exon($exon);
 }
 
-=head2 get_Clone
-
- Title   : get_Clone
- Usage   :
- Function: retrieve latest version of a clone from the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Clone { 
-    my( $self, $accession ) = @_;
-
-    my $ca = $self->get_CloneAdaptor;
-
-    if ($accession =~ /(.+?)\.(\d+)/) {
-	$accession = $1;
-	my $version   = $2;
-	return $ca->fetch_by_accession_version($accession, $version);
-    }
-    else {
-	return $ca->fetch_by_accession($accession);
-    }
-
-}
-  
-=head2 list_embl_version_by_Clone
-
- Title   : list_embl_version_by_Clone
- Usage   :
- Function: retrieve list of embl_versions of a clone from the database
- Example : @versions = $dbobj->list_embl_versions_by_Clone('AB000381');
- Returns : @versions
- Args    : $accession
-
-
-=cut
-
-sub list_embl_version_by_Clone { 
-    my( $self, $accession ) = @_;
-
-    my $ca = $self->get_CloneAdaptor;
-
-    return $ca->list_embl_version_by_accession($accession);
-}
-
-=head2 get_Clone_by_version
-
- Title   : get_Clone_by_version
- Usage   :
- Function: retrieve specific version of a clone from the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Clone_by_version { 
-    my ($self,$accession,$ver) = @_;
-
-    my $ca = $self->get_CloneAdaptor;
-
-    return $ca->fetch_by_accession_version($accession,$ver);
-}
-  
-=head2 get_Contig
-
- Title   : get_Contig
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Contig {
-    my ($self,$id) = @_;
-
-    $self->warn("Obj->get_Contig is a deprecated method!"); 
-
-    return $self->get_RawContigAdaptor->fetch_by_name($id);
-}
-
-sub get_Contig_by_internal_id {
-  my ($self,$id) = @_;
-
-  if (!defined($id)) {
-    $self->throw("No id defined\n");
-  }
-  my $query = "select id from contig where internal_id = $id";
-
-  my $sth = $self->prepare($query);
-  my $res = $sth->execute;
-
-  if ($sth->rows < 1) {
-    $self->throw("No contig available with id $id\n");
-  }
-  my $ref = $sth->fetchrow_hashref;
-  my $contigid = $ref->{'id'};
-
-  return $self->get_Contig($contigid);
-}
-
-  
- 
-sub get_Contig_by_international_id{
-   my ($self,$int_id) = @_;
-   #$self->warn("Obj->get_Contig is a deprecated method! 
-#Calling Contig->fetch instead!");
-   my $sth=$self->prepare("select id from contig where international_id = '$int_id'");
-   $sth->execute;
-   my $row = $sth->fetchrow_hashref;
-   my $id  = $row->{'id'};
-
-   return $self->get_Contig($id);
-}
-
-=head2 get_Contigs_by_Chromosome
-
- Title   : get_Contig_by_Chromosome
- Usage   : @contigs = $dbobj->get_Contig_by_Chromosome( $chrObj );
- Function: retrieve contigs belonging to a certain chromosome from the
-           database 
- Example :
- Returns : A list of Contig objects. Probably an empty list.
- Args    :
-
-
-=cut
-
-sub get_Contigs_by_Chromosome {
-    my ($self,$chromosome ) = @_;
-    
-    $self->throw("Obj->get_Contigs_by_Chromosome is a deprecated method! 
-Call Contig->get_by_Chromosome instead!");
-}
-
-=head2 get_all_Clone_id
-
- Title   : get_all_Clone_id
- Usage   : @cloneid = $obj->get_all_Clone_id
- Function: returns all the valid (live) Clone ids in the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_Clone_id{
-   my ($self) = @_;
-   my @out;
-
-   my $sth = $self->prepare("select id from clone");
-   my $res = $sth->execute;
-
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'id'});
-   }
-
-   return @out;
-}
-
-=head2 get_all_Contig_id
-
- Title   : get_all_Contig_id
- Usage   : @Contigid = $obj->get_all_Contig_id
- Function: returns all the valid (live) Contig ids in the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_Contig_id{
-   my ($self) = @_;
-   my @out;
-
-   my $sth = $self->prepare("select id from contig");
-   my $res = $sth->execute;
-
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'id'});
-   }
-
-   return @out;
-}
-
-
-=head2 perl_only_sequences
-
- Title   : perl_only_sequences
- Usage   : $obj->perl_only_sequences($newval)
- Function: 
- Returns : value of perl_only_sequences
- Args    : newvalue (optional)
-
-
-=cut
-
-sub perl_only_sequences{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'perl_only_sequences'} = $value;
-    }
-    return $obj->{'perl_only_sequences'};
-
-}
-
-=head2 perl_only_contigs
-
- Title   : perl_only_contigs
- Usage   : $obj->perl_only_contigs($newval)
- Function: 
- Returns : value of perl_only_contigs
- Args    : newvalue (optional)
-
-
-=cut
-
-sub perl_only_contigs{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'perl_only_contigs'} = $value;
-    }
-    return $obj->{'perl_only_contigs'};
-
-}
-
-=head2 get_adaptor
-
-  Title   : get_adaptor
-  Usage   : $obj->get_adaptor("full::module::name")
-  Returns : An already existing, or a new instance of the specified DB adaptor 
-  Args : the fully qualified name of the adaptor module to retrieve
-
-=cut
-
-sub get_adaptor {
-  my( $self, $module) = @_;
-
-  my( $adaptor, $internal_name );
-  
-  #Create a private member variable name for the adaptor by: 
-  # (1)stripping out the the parent package names, 
-  # (2)prepending an underscore, and (3) converting to all lower case 
-  
-  $module =~ /(::)?(\S+)$/;
-  $internal_name = '_' . lc($2); 
-
-  unless ($adaptor = $self->{'_int_adaptors'}{$internal_name}) {
-    eval "require $module";
-    
-    if($@) {
-      print STDERR "$module cannot be found.\nException $@\n";
-      return undef;
-    }
-      
-    $adaptor = "$module"->new($self);
-    $self->{'_int_adaptors'}{$internal_name} = $adaptor;
-  }
-
-  return $adaptor;
-}
-
-
-=head2 get_Protfeat_Adaptor
-
- Title   : get_Protfeat_Adaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Protfeat_Adaptor {
-    my( $self ) = @_;
-    
-    return 
-      $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor");
-}
-
-
-=head2 get_Protein_Adaptor
-
- Title   : get_Protein_Adaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Protein_Adaptor {
-    my( $self ) = @_;
- 
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::Protein_Adaptor");
-}
-
-=head2 get_CloneAdaptor
-
-    my $ca = $dba->get_CloneAdaptor;
-
-Returns a B<Bio::EnsEMBL::DBSQL::CloneAdaptor>
-object, which is used for reading and writing
-B<Clone> objects from and to the SQL database.
-
-=cut 
-
-sub get_CloneAdaptor {
-  my( $self ) = @_;
-  
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::CloneAdaptor");
-}
-
-
-=head2 get_PredictionTranscriptAdaptor
-
-  Args      : none
-  Function  : PredictionTranscript Adaptor for this database.
-  Returntype: Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor
-  Exceptions: none
-  Caller    : general
-
-=cut
-
-sub get_PredictionTranscriptAdaptor {
-   my ($self) = @_;
-
-   return $self->get_adaptor("Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor");
- }
-
-=head2 get_SequenceAdaptor
-
-  Args      : none
-  Function  : The sequence producing adaptor. Could be hooked to a different
-              database than the rest for example.
-  Returntype: Bio::EnsEMBL::DBSQL::SequenceAdaptor
-  Exceptions: none
-  Caller    : general, Bio::EnsEMBL::Slice, Bio::EnsEMBL::RawContig
-
-=cut
-
-sub get_SequenceAdaptor {
-   my $self = shift;
-
-   return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SequenceAdaptor");
-}
-
-
-
-sub get_GeneAdaptor {
-    my( $self ) = @_;
-
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
-}
-
-=head2 get_LiteAdaptor
-    
- Title   : get_LiteAdaptor
- Usage   : my $la = $db->get_LiteAdaptor;
- Function: Returns the lite database object handler
- Example : 
- Returns : Bio::EnsEMBL::DBSQL::LiteAdaptor
- Args    : 
-
-=cut
-
-sub get_LiteAdaptor {
-    my( $self ) = @_;
-
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::LiteAdaptor");
-}
-
-sub get_ExonAdaptor {
-  my( $self ) = @_;
-  
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ExonAdaptor");
-}
-
-sub get_TranscriptAdaptor {
-  my( $self ) = @_;
-  
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::TranscriptAdaptor");
-}
-
-sub get_TranslationAdaptor {
-    my( $self ) = @_;
-
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::TranslationAdaptor");
-}
-
-sub get_FeatureAdaptor {
-    my( $self ) = @_;
-
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::FeatureAdaptor");
-}
-
-sub get_RawContigAdaptor {
-    my( $self ) = @_;
-
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::RawContigAdaptor");
-}
-
-sub get_SliceAdaptor {
-  my( $self ) = @_;
-  
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SliceAdaptor");
-}
-
-=head2 get_AnalysisAdaptor
-
- Title   : get_AnalysisAdaptor
- Usage   : $analysisAdaptor = $dbObj->get_AnalysisAdaptor;
- Function: gives the adaptor to fetch/store Analysis objects.
- Example :
- Returns : the adaptor
- Args    :
-
-=cut
-
-sub get_AnalysisAdaptor {
-    my( $self ) = @_;
-
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::AnalysisAdaptor");
-}
-
-=head2 get_SimpleFeatureAdaptor
-
- Title   : get_SimpleFeatureAdaptor
- Usage   : $sa = $db->get_SimpleFeatureAdaptor;
- Example :
- Returns : the adaptor
- Args    :
-
-=cut
-
-sub get_SimpleFeatureAdaptor {
-  my( $self ) = @_;
-  
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor");
-}
-
-sub get_RepeatConsensusAdaptor {
-  my( $self ) = @_;
-  
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor");
-}
-
-sub get_RepeatFeatureAdaptor {
-  my( $self ) = @_;
-  
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor");
-}
-
-=head2 get_ProteinAlignFeatureAdaptor
-
- Title   : get_ProteinAlignFeatureAdaptor
- Usage   : $sa = $db->get_ProteinAlignFeatureAdaptor;
- Returns : the adaptor
-
-
-=cut
-
-sub get_ProteinAlignFeatureAdaptor {
-  my( $self ) = @_;
-    
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor");
-}
-
-
-=head2 get_DnaAlignFeatureAdaptor
-
- Args      : none
- Function  : Returns the DnaAlignFeatuire Adaptor which is connected to
-             this database. There should only be one around.
- Returntype: Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor
- Exceptions: none
- Caller    : FeatureAdaptor, general
-
-=cut
-  
-  
-sub get_DnaAlignFeatureAdaptor {
-  my $self = shift;
-  
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor");
-}
-
-=head2 get_AssemblyMapperAdaptor
-
- Title   : get_AssemblyMapperAdaptor
- Usage   : $sa = $db->get_AssemblyMapperAdaptor;
- Example :
- Returns : the adaptor
- Args    :
-
-=cut
-
-sub get_AssemblyMapperAdaptor {
-  my( $self ) = @_;
-    
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor");
-}
-
-
-sub get_DBEntryAdaptor {
-    my( $self ) = @_;
-
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::DBEntryAdaptor");
-}
-
-
-=head2 get_StaticGoldenPathAdaptor
-
- Title   : get_StaticGoldenPathAdaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_StaticGoldenPathAdaptor{
-  my( $self ) = @_;
-  
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor");
-}
-
-
-=head2 get_KaryotypeBandAdaptor
-
- Title   : get_KaryotypeBandAdaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_KaryotypeBandAdaptor {
-    my( $self ) = @_;
-
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor");
-}
-
-=head2 get_ChromosomeAdaptor
-
- Title   : get_ChromosomeAdaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_ChromosomeAdaptor {
-    my( $self ) = @_;
-
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ChromosomeAdaptor");
-}
-
-=head2 get_FamilyAdaptor
-
- Title   : get_FamilyAdaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-## following is not part of core EnsEMBL, so maybe doesn't belong here and
-## has to be moved elsehwere (e.g. as part of a more dynamical
-## add_external_adaptor scheme). For convenience I have it here, now,
-## though. It will break things for people who don't have ensembl-external
-## checked out ...
-
-sub get_FamilyAdaptor {
-    my( $self ) = @_;
-    
-    my( $fa );
-    unless ($fa = $self->{'_externaldata_family_familyadaptor'}) {
-        eval{
-            require Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
-        };
-        if ($@) {
-            $self->throw(
-                "Unable to load 'Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor'\n"
-                . "It is not part of the core Ensembl distribution.\n"
-                . "Have you installed it?");
-        }
-        $fa = Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor->new($self);
-        $self->{'_externaldata_family_familyadaptor'} = $fa;
-    }
-    return $fa;
-}
-
-
-
-sub list_supported_assemblies {
-    my($self) = @_;
-    my @out;
-
-    my $query = q{
-        SELECT distinct type
-        FROM   static_golden_path
-    };
-
-    my $sth = $self->prepare($query) ||
-     $self->throw("Error in list_supported_assemblies");
-    my $res = $sth->execute ||
-     $self->throw("Error in list_supported_assemblies");
-
-    while (my($type) = $sth->fetchrow_array) {
-       push(@out, $type);
-    }
-    return @out;
-}
-
-
-
-=head2 find_GenomeHits
-    
- Title   : find_GenomeHits
- Usage   : my @features = $self->find_GenomeHits($hid)
- Function: Finds all features in the db that
-           are hits to a sequence with id $hid
- Example : 
- Returns : @ Bio::EnsEMBL::FeaturePair
- Args    : string
-
-=cut
- 
-sub find_GenomeHits {
-    my ($self,$arg) = @_;
-
-    return $self->feature_Obj->find_GenomeHits($arg);
-}
-			     
-
-=head2 deleteObj
-
-    Title   : deleteObj
-    Usage   : $dbObj->deleteObj
-    Function: Call when you are done with this object. Breaks links between objects. Necessary to clean up memory.
-    Example : -
-    Returns : -
-    Args    : -
-
-
-=cut
-
-sub deleteObj {
-
-  my  $self=shift;
-  my $dummy;
-  $self->DESTROY;
-  
-  foreach my $name ( keys %{$self} ) {
-    eval {
-      $dummy = $self->{$name}; 
-      $self->{$name}  = undef;
-      $dummy->deleteObj;
-    };
-  }
-}
-
-
-
-=head2 diff_fh
-
- Title   : diff_fh
- Usage   : $obj->diff_fh($newval)
- Function: path and name of the file to use for writing the mysql diff dump
- Example : 
- Returns : value of diff_fh
- Args    : newvalue (optional)
-
-
-=cut
-
-sub diff_fh{
-    my ($self,$value) = @_;
-    if( defined $value) {
-	$self->{'_diff_fh'} = $value;
-    }
-    return $self->{'_diff_fh'};
-    
-}
-
-
-=head2 diffdump
-
- Title   : diffdump
- Usage   : $obj->diffdump($newval)
- Function: If set to 1 sets $self->_prepare to print the diff sql 
-           statementents to the filehandle specified by $self->diff_fh
- Example : 
- Returns : value of diffdump
- Args    : newvalue (optional)
-
-
-=cut
-
-sub diffdump{
-    my ($self,$value) = @_;
-    if( defined $value) {
-	$self->{'_diffdump'} = $value;
-    }
-    return $self->{'_diffdump'};
-    
-}
 
 
 
@@ -2652,251 +2685,227 @@ sub get_PredictionFeature_as_Transcript{
 }
 
 
+=head2 write_Clone
 
-
-
-
-
-
-
-=head2 extension_tables
-
- Title   : extension_tables
- Usage   : $obj->extension_tables($newval)
- Function: 
- Returns : value of extension_tables
- Args    : newvalue (optional)
-
-
-=cut
-
-sub extension_tables{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'extension_tables'} = $value;
-    }
-    return $obj->{'extension_tables'};
-
-}
-
-=head2 static_golden_path_type
-
- Title   : static_golden_path_type
- Usage   : $obj->static_golden_path_type($newval)
- Function: 
- Example : 
- Returns : value of static_golden_path_type
- Args    : newvalue (optional)
-
-
-=cut
-
-sub static_golden_path_type{
-   my ($obj,$value) = @_;
-   if($value) {
-      $obj->{'static_golden_path_type'} = $value;
-    }
-    return $obj->{'static_golden_path_type'};
-
-}
-
-
-=head2 _crossdb
-
- Title   : _crossdb
- Usage   : $obj->_crossdb($newval)
- Function: 
- Returns : value of _crossdb
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _crossdb {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_crossdb'} = $value;
-    }
-    return $obj->{'_crossdb'};
-
-}
-
-
-sub create_tables { 
-  my $self = shift;
-
-  # get all adaptors ...
-  # call create_tables on them
-
-  # create some tables without adaptors
-  # (which should disappear once)
-}
-
-
-## internal stuff for external adaptors
-
-=head2 _ext_adaptor
-
- Title   : _ext_adaptor
- Usage   : $obj->_ext_adaptor('family' [, $famAdaptorObj] )
- Function: 
- Returns : an adaptor or undef
- Args    : a name and a adaptor object. 
-
-=cut
-
-sub _ext_adaptor {
-    my ($self, $adtor_name, $adtor_obj) = @_;
-    
-    $self->throw("No adaptor name given") unless $adtor_name;
-    
-    if( $adtor_obj ) {
-        if ($adtor_obj eq 'DELETE') { 
-            delete $adtor_obj->{'_ext_adaptors'}{$adtor_name};
-        } else {
-            $self->{'_ext_adaptors'}{$adtor_name} = $adtor_obj;
-        }
-    }
-    return $self->{'_ext_adaptors'}{$adtor_name};
-}
-
-
-=head2 dnadb
-
- Title   : dnadb
- Usage   : my $dnadb = $db->dnadb;
- Function: returns the database adaptor where the dna lives
-           Useful if you only want to keep one copy of the dna
-           on disk but have other databases with genes and features in
- Returns : dna database adaptor
-  Args    : Bio::EnsEMBL::DBSQL::DBAdaptor
-
-=cut
-
-sub dnadb {
-  my ($self,$arg) = @_;
-
-  if (defined($arg)) {
-    if (! $arg->isa("Bio::EnsEMBL::DBSQL::DBAdaptor")) {
-      $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::DBAdaptor");
-    }
-    $self->{_dnadb} = $arg;
-  }
-  return $self->{_dnadb} || $self;
-}
-
-## support for external adaptors
-=head2 list_ExternalAdaptors
-
- Title   : list_ExternalAdaptors
- Usage   : $obj->list_ExternalAdaptors
- Function: returns all the names of installed external adaptors
- Returns : a (possibly empty) list of name of external adaptors
- Args    : none
-
-=cut
-
-sub list_ExternalAdaptors {
-    my ($self) = @_;
-    return keys % {$self->{_ext_adaptors}};
-}
-
-=head2 add_ExternalAdaptor
-
- Title   : add_ExternalAdaptor
- Usage   : $obj->add_ExternalAdaptor('family', $famAdaptorObj);
- Function: adds the external adaptor the internal hash of known 
-           external adaptors. If an adaptor of the same name is installed, 
-           it will be overwritten.
- Returns : undef
- Args    : a name and a adaptor object. 
-
-=cut
-
-sub add_ExternalAdaptor {
-    my ($self, $adtor_name, $adtor_obj) = @_;
-    $self->_ext_adaptor($adtor_name, $adtor_obj);
-    undef;
-}
-
-=head2 get_ExternalAdaptor
-
- Title   : get_ExternalAdaptor
- Usage   : $obj->get_ExternalAdaptor('family');
- Function: retrieve external adaptor by name
- Returns : an adaptor (sub-type of BaseAdaptor) or undef
- Args    : the name 
-
-=cut
-
-sub get_ExternalAdaptor {
-    my ($self, $adtor_name) = @_;
-    $self->_ext_adaptor($adtor_name);
-}
-
-
-=head2 remove_ExternalAdaptor
-
- Title   : remove_ExternalAdaptor
- Usage   : $obj->remove_ExternalAdaptor('family')
- Function: removes the named external adaptor from the internal hash of known 
-           external adaptors. If the adaptor name is not known, nothing 
-           happens. 
- Returns : undef
- Args    : a name
-
-=cut
-
-sub remove_ExternalAdaptor {
-    my ($self, $adtor_name) = @_;
-    $self->_ext_adaptor($adtor_name, 'DELETE');
-    undef;
-}
-
-
-=head1 Old Functions 
-
-Functions which are completely deprecated 
-
-=cut
-
-
-=head2 get_Feature_Obj
-
- Title   : get_Feature_Obj
+ Title   : write_Clone
  Usage   :
  Function:
  Example :
  Returns : 
  Args    :
 
-=cut
-
-sub get_Feature_Obj {
-    my( $self ) = @_;
-    
-    $self->throw("No more Feature Objs!");
-}
-
-=head2 feature_Obj
-    
- Title   : feature_Obj
- Usage   : my $featureobj = $db->feature_Obj
- Function: Returns the feature object database handle
- Example : 
- Returns : Bio::EnsEMBL::DB::Feature_ObjI
- Args    : 
 
 =cut
 
-sub feature_Obj {
-    my $self = shift;
-    $self->throw("No more Feature Objs!");
+sub write_Clone {
+    my ($self,$clone) = @_;
 
+
+    $self->warn("this method is being depreciated please use Bio::EnsEMBL::CloneAdaptor->store()\n");
+
+    my $clone_ad = $self->get_CloneAdaptor();
+
+    $clone_ad->store($clone);
+   # my $clone_id = $clone->id;
+
+#    $clone || $self->throw("Trying to write a clone without a clone object!\n");
+#    if( !$clone->isa('Bio::EnsEMBL::DB::CloneI') ) {
+#	$self->throw("Clone '$clone' is not a 'Bio::EnsEMBL::DB::CloneI'");
+#    }
+    
+#    my @sql;
+#    my $sql = "insert into clone(name, embl_acc, version, embl_version, htg_phase, created, modified) values('$clone_id', '".$clone->embl_id."', ".$clone->version.",".$clone->embl_version.", ".$clone->htg_phase.", FROM_UNIXTIME(".$clone->created."), FROM_UNIXTIME(".$clone->modified."))";
+#    my $sth = $self->prepare($sql);
+#    #my $sth = $self->prepare('insert into clone (clone_id, name,  embl_acc, version, embl_version, htg_phase, created, modified) values(?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?)'); 
+#    my $rv = $sth->execute();
+        
+#    $self->throw("Failed to insert clone $clone_id") unless $rv;
+#    $sth = $self->prepare("select last_insert_id()");
+#    my $res = $sth->execute;
+#    my $row = $sth->fetchrow_hashref;
+#    $sth->finish;
+#    my $id  = $row->{'last_insert_id()'};
+#    #print(STDERR "Clone $clone_id - $id\n");
+    
+#    foreach my $contig ( $clone->get_all_Contigs() ) {        
+#        $self->write_Contig($contig,$id);
+#    }
+    
+   
 }
 
+=head2 write_Contig
+
+ Title   : write_Contig
+ Usage   : $obj->write_Contig($contig,$clone)
+ Function: Writes a contig and its dna into the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_Contig {
+    my($self, $contig, $clone)  = @_;
+       
+
+    $self->warn("this method is depreciated please use Bio::EnsEMBL::DBSQL::RawContigAdaptor->store()\n");
+    
+    my $rca = $self->get_RawContigAdaptor();
+
+    $rca->store($contig, $clone);
+    #Why do we have $clone if contig->cloneid is ok?
+     
+   # $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI - cannot insert contig for clone $clone")
+#        unless $contig->isa('Bio::EnsEMBL::DB::ContigI');   
+#    my $dna = $contig->primary_seq  || $self->throw("No sequence in contig object");
+#    $dna->id                        || $self->throw("No contig id entered.");
+#    $clone                          || $self->throw("No clone entered.");
+    
+##   (defined($contig->species)    && $contig->species   ->isa("Bio::EnsEMBL::Species"))    || $self->throw("No species object defined");
+##    (defined($contig->chromosome) && $contig->chromosome->isa("Bio::EnsEMBL::Chromosome")) 
+##                                    || $self->throw("No chromosomeobject defined");
+                                    
+##   my $species_id    = $self->write_Species   ($contig->species);
+##   my $chromosome_id = $self->write_Chromosome($contig->chromosome,$species_id);    
+#    my $contigid      = $contig->id;
+#    my $len           = $dna   ->length;
+#    my $seqstr        = $dna   ->seq;
+#    my $offset        = $contig->embl_offset();
+#    my $corder         = $contig->order();
+#    #my $chromosome_id = $contig->chromosome->get_db_id;
+#    my  $international_name = $contig->international_name();
+
+    # Insert the sequence into the dna table
+    #$self->_insertSequence($seqstr, $contig->seq_date);
+    
+ #   my @sql;
+    
+#    my $sth = $self->prepare("
+#        insert into contig(name, dna_id, length, clone_id, offset, corder, international_name ) 
+#        values(?, LAST_INSERT_ID(), ?, ?, ?, ?, ?)
+#        "); 
+#    #print STDERR "contig name = ",$contigid,"\n";
+#    my $rv = $sth->execute(
+#        $contigid,			   
+#        $len,
+#        $clone,
+#        $offset,
+#        $corder,
+#        $international_name
+#        );  
+          
+#    $self->throw("Failed to insert contig $contigid") unless $rv;
+       
+    
+#    $sth = $self->prepare("select last_insert_id()");
+#    $sth->execute;
+#    my ($id) = $sth->fetchrow
+#        or $self->throw("Failed to get last insert id");
+#    #can no longer do this as get_all_SeqFeatures no longer exists
+#    #if a contig is written to the database
+#    # this is a nasty hack. We should have a cleaner way to do this.
+#    #my @features = $contig->get_all_SeqFeatures;
+#    #print(STDERR "Contig $contigid - $id\n"); 
+#    # write sequence features. We write all of them together as it
+#    # is more efficient
+#    #$self->get_Feature_Obj->write($contig, @features);
+    
+    return 1;
+}
+
+=head2 _insertSequence
+
+ Title   : _insertSequence
+ Usage   : $obj->_insertSequence
+ Function: Insert the dna sequence and date into the dna table.
+ Example :
+ Returns : 
+ Args    : $sequence, $date
+
+
+=cut
+
+sub _insertSequence {
+    my ($self, $sequence, $date) = @_;
+    
+    $sequence =~ tr/atgcn/ATGCN/;
+    
+    $self->warn("this method is depreciated please use Bio::EnsEMBL::RawContigAdaptor->_insertSequence\n");
+    
+    my $rca = $self->get_RawContigAdaptor();
+
+    $rca->_insertSequence($sequence, $date);
+
+    #if ($self->dnadb ne $self) {
+#      $self->throw("ERROR: Trying to write to a remote dna database");
+#    } 
+    
+#    my $statement = $self->prepare("
+#        insert into dna(sequence,created) 
+#        values(?, FROM_UNIXTIME(?))
+#        "); 
+        
+#    my $rv = $statement->execute($sequence, $date); 
+    
+#    $self->throw("Failed to insert dna $sequence") unless $rv;    
+}
+
+
+=head2 write_Species
+
+ Title   : write_Species
+ Usage   : $obj->write_Species
+ Function: writes a species object into the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_Species {
+    my ($self,$species) = @_;
+
+    $self->throw("there isn't a species table in the new schema\n");
+
+    #if (!defined($species)) {
+#	$self->throw("No species argument input");
+#    }
+#    if (!$species->isa("Bio::EnsEMBL::Species")) {
+#	$self->throw("[$species] is not a Bio::EnsEMBL::Species object");
+#    }
+
+#    my $query = "select species_id " .
+#	        "from   species " .
+#		"where  nickname    = '" . $species->nickname . "' " . 
+#		"and    taxonomy_id = "  . $species->taxonomy_id;
+
+#    my $sth = $self->prepare($query);
+#    my $res = $sth->execute;
+
+#    if ($sth->rows == 1) {
+#	my $rowhash    = $sth->fetchrow_hashref;
+#	my $species_id = $rowhash->{species_id};
+#	return $species_id;
+#    } 
+
+#    $query =  "insert into species(species_id,nickname,taxonomy_id) " . 
+#	      "            values(null,'" . $species->nickname . "'," . $species->taxonomy_id . ")";
+	
+    
+#    $sth = $self->prepare($query);
+#    $res = $sth->execute;
+
+#    $sth = $self->prepare("select last_insert_id()");
+#    $res = $sth->execute;
+
+#    my $rowhash = $sth->fetchrow_hashref;
+#    my $species_id = $rowhash->{'last_insert_id()'};
+   
+#    return $species_id;
+}
 
 
 1;

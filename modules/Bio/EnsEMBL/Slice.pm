@@ -631,7 +631,8 @@ sub fetch_chromosome_length {
   my ($self) = @_;
 
   $self->warn( "Call to deprecated method fetch_chromosome_length\n" .
-	       "use \$slice->get_Chromosome()->length(); instead.\n" );
+	       "use \$slice->get_Chromosome()->length(); instead.\n" .
+	       $self->stack_trace_dump());
 
   return $self->get_Chromosome()->length();
 }
@@ -642,7 +643,8 @@ sub fetch_karyotype_band_start_end {
    my ($self,@args) = @_;
 
    $self->warn( "Call to deprecated method fetch_karyotype_band_start_end\n" .
-		"use \$slice->get_KaryotypeBands(); instead.\n" );
+		"use \$slice->get_KaryotypeBands(); instead.\n" .
+	       $self->stack_trace_dump());
 
    return $self->get_KaryotypeBands();
 }
@@ -754,15 +756,17 @@ sub get_all_DASFeatures {
 sub get_all_SangerGenes_startend_lite {
   my $self = shift;
 
-  $self->warn("Slice->get_all_SangerGenes_startend_lite deprecated use get_allGenes() instead\n");
-
+  $self->warn("Slice->get_all_SangerGenes_startend_lite deprecated use get_allGenes() instead\n" .
+	      $self->stack_trace_dump());
   return ();
 }
   
 sub get_all_VirtualGenes_startend_lite {
   my $self = shift;
 
-  $self->warn("Slice->get_all_VirtualGenes_startend_lite deprecated use get_allGenes() instead\n");
+  $self->warn("Slice->get_all_VirtualGenes_startend_lite deprecated" .
+	      "use get_allGenes() instead\n" .
+	     $self->stack_trace_dump());
 
   return ();
 }
@@ -771,7 +775,7 @@ sub get_all_VirtualGenes_startend_lite {
 sub get_all_EMBLGenes_startend_lite {
   my $self = shift;
 
-  $self->warn("Slice->get_all_EMBLGenes_startend_lite deprecated use get_allGenes() instead\n");
+  $self->warn("Slice->get_all_EMBLGenes_startend_lite deprecated use get_allGenes() instead\n" .  $self->stack_trace_dump());
 
   return ();
 }
