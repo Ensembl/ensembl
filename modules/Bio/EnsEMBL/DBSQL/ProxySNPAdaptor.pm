@@ -40,6 +40,19 @@ use vars '@ISA';
 @ISA = qw(Bio::EnsEMBL::DBSQL::ProxyAdaptor);
 
 
+=head2 fetch_by_Slice
+
+  Arg [1]    : list of arbitrary args @args
+  Example    : none
+  Description: Forwards request to the Lite database if it is available
+               If the lite database is not available the request is 
+               forwarded to the SNP database. 
+  Returntype : list of Bio::EnsEMBL::ExternalData::Variation
+  Exceptions : thrown if neither the SNP nor Lite databases are available
+  Caller     : snpview
+
+=cut
+
 sub fetch_by_Slice {
   my ($self, @args) = @_;
 
@@ -61,6 +74,20 @@ sub fetch_by_Slice {
 
   return undef;
 }
+
+
+=head2 fetch_by_SNP_id
+
+  Arg [1]    : list of arbitrary args @args
+  Example    : none
+  Description: Forwards request to the Lite database if it is available
+               If the lite database is not available the request is 
+               forwarded to the SNP database. 
+  Returntype : Bio::EnsEMBL::ExternalData::Variation
+  Exceptions : thrown if neither the SNP nor Lite databases are available
+  Caller     : snpview
+
+=cut
 
 sub fetch_by_SNP_id {
   my ($self, @args) = @_;

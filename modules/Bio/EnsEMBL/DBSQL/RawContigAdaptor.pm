@@ -11,18 +11,19 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::RawContigAdaptor - MySQL database adapter class for EnsEMBL Feature Objects
+Bio::EnsEMBL::DBSQL::RawContigAdaptor - MySQL database adapter class 
+for EnsEMBL RawContig Objects
 
 =head1 SYNOPSIS
 
-
+$contig_adaptor = $database_adaptor->get_RawContigAdaptor();
+$contig = $contig_adaptor->fetch_by_dbID(1234); 
 
 =head1 DESCRIPTION
 
-
+Allows for the retrieval and storage of RawContig objects from the database.
 
 =head1 CONTACT
-
 
 
 =head1 APPENDIX
@@ -56,6 +57,19 @@ use constant RAW_CONTIG_CACHE_SIZE => 50;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 #Override the inherited constructor
+
+
+=head2 new
+
+  Arg [1]    : list of arguments @args
+  Example    : $contig_adaptor = new Bio::EnsEMBL::RawContigAdaptor($db);
+  Description: Creates a new RawContigAdaptor
+  Returntype : Bio::EnsEMBL::RawContig
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::DBConnection
+
+=cut
+
 sub new {
   my($class, @args) = @_;
 
@@ -63,18 +77,35 @@ sub new {
   my $self = $class->SUPER::new(@args);
 
   #Initialize caching data structures
-  tie %{$self->{_raw_contig_cache}}, 'Bio::Ensembl::Utils::Cache', RAW_CONTIG_CACHE_SIZE, {Debug =>0};
+  tie(%{$self->{_raw_contig_cache}}, 
+      'Bio::Ensembl::Utils::Cache', 
+      RAW_CONTIG_CACHE_SIZE, 
+      {Debug =>0});
 
   return $self;
 }
 
 
-sub get_internal_id_by_id
-{
+
+=head2 get_internal_id_by_id
+
+  Arg [1]    : string $id
+               The string name of the contig.
+  Example    : $contig_id = $raw_contig_adaptor->get_internal_id_by_id($name);
+  Description: It is not recommended that this method be used since 
+               should probably be deprecated. A much better approach would be:
+               $contig_id = $raw_contig_adaptor->fetch_by_name($name)->dbID();
+  Returntype : int
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub get_internal_id_by_id {
     my ($self, $id) = @_;
     my $sth = $self->db->prepare
     (
-         "select contig_id from contig where name = '$id'"
+         "SELECT contig_id FROM contig WHERE name = '$id'"
     );
     my $res = $sth->execute;
     if(my $rowhash = $sth->fetchrow_hashref) {
@@ -84,12 +115,26 @@ sub get_internal_id_by_id
     }
 }
 
-sub get_id_by_contig_id
-{
+
+=head2 get_id_by_contig_id
+
+  Arg [1]    : int $contig_id
+               The unique database identifier of the desired contig
+  Example    : $contig_name = $raw_contig_adaptor->get_id_by_contig_id($id);
+  Description: It is not recommended that this method be used since it
+               should probably be deprecated.  A much better approach would be:
+               $contig_name = $raw_contig_adaptor->fetch_by_dbID($id)->name();
+  Returntype : string
+  Exceptions : none 
+  Caller     : ?
+
+=cut
+
+sub get_id_by_contig_id {
     my ($self, $contig_id) = @_;
     my $sth = $self->db->prepare
     (
-         "select name from contig where contig_id = '$contig_id'"
+         "SELECT name FROM contig WHERE contig_id = '$contig_id'"
     );
     my $res = $sth->execute;
     if(my $rowhash = $sth->fetchrow_hashref) {
@@ -99,6 +144,25 @@ sub get_id_by_contig_id
     }
 }
 
+
+=head2 fetch_by_dbID
+
+  Arg [1]    : int $dbID
+               the database identifier for the contig to retrieve
+  Example    : $contig = $raw_contig_adaptor->fetch_by_dbID(1234);
+  Description: Retreives a RawContig object from the database.  RawContigs
+               retrieved by this method are in fact lazy loaded and not
+               populated at all.  Once data is actually requested from a 
+               RawContig object the attributes are pulled from the database.
+               This is far faster for many requests which do not require 
+               populated Contigs.  However, if a list of fully filled contigs
+               is going to be required, then it may be much faster to use
+               the fetch_filled_by_dbIDs method. 
+  Returntype : Bio::EnsEMBL::RawContig 
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub fetch_by_dbID {
   my $self = shift;
@@ -123,6 +187,18 @@ sub fetch_by_dbID {
 }
 
 
+=head2 fetch_all
+
+  Arg [1]    : none
+  Example    : @contigs = $raw_contig_adaptor->fetch_all();
+  Description: Retrieves all of the contig objects in the database.  This will
+               be a very slow request on a full-sized database
+  Returntype : list of Bio::EnsEMBL::RawContig
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub fetch_all {
   my $self  = shift;
   my @res;
@@ -136,6 +212,17 @@ sub fetch_all {
 }
 
 
+=head2 fetch_by_name
+
+  Arg [1]    : string $name
+               the name of the contig to retrieve
+  Example    : $contig = $rca->fetch_by_name('AC004501.1.1.39507');
+  Description: Retrieves a contig from the database using the contig name
+  Returntype : Bio::EnsEMBL::RawContig
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub fetch_by_name {
   my $self = shift;
@@ -152,14 +239,18 @@ sub fetch_by_name {
   return $contig;
 }
 
+
 =head2 fetch_filled_by_dbIDs
 
-  Args      : list $contig_ids
-  Function  : retrieves given RawContigs with clone information set inside
-              Result hash has key dbID value RawContig
-  Returntype: hashref
-  Exceptions: none
-  Caller    : Bio::EnsEMBL::Slice->get_tiling_path()
+  Arg [1]    : list of ints @contig_ids
+               The list of contigs to retrieve
+  Example    : @contigs = $raw_contig_adaptor->fetch_filled_by_dbIDs(120, 121);
+  Description: Returns a hashref of RawContigs retrieved from the database.  
+               The contigs are fully filled, and their attached clone is 
+               retrieved fully filled as well. 
+  Returntype : hasref of RawContigs, with dbIDs as keys
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Slice::get_tiling_path
 
 =cut
 
@@ -213,6 +304,18 @@ sub fetch_filled_by_dbIDs {
 }
 
 
+=head2 fetch_by_clone
+
+  Arg [1]    : Bio::EnsEMBL::Clone $clone
+               The clone object that the contigs are desired from 
+  Example    : $contigs = raw_contig_adaptor->fetch_by_clone($clone);
+  Description: Returns a list reference of contig objects on a particular
+               clone.
+  Returntype : list reference of Bio::EnsEMBL::RawContig
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub fetch_by_clone {
   my $self = shift;
@@ -230,8 +333,17 @@ sub fetch_by_clone {
 }
 
 
-# mainly used from RawContig object. 
-# Argument is a ready contig which needs its attributes filled
+=head2 fetch_attributes
+
+  Arg [1]    : Bio::EnsEMBL::RawContig $contig 
+  Example    : $raw_contig_adaptor->fetch_attributes($contig);
+  Description: Fills in the attributes of a lazy-loaded RawContig object.
+               RawContig.  
+  Returntype : none
+  Exceptions : thrown if the attributes for a contig could not be filled
+  Caller     : Bio::EnsEMBL::RawContig
+
+=cut
 
 sub fetch_attributes {
   my $self = shift;
@@ -253,6 +365,17 @@ sub fetch_attributes {
   }
 }
 
+
+=head2 _contig_from_sth
+
+  Arg [1]    : DBI Statementhandle $sth
+  Example    : @contigs = $self->_contig_from_sth($sth);
+  Description: PRIVATE creates a contig from an executed  DBI statement handle.
+  Returntype : list of Bio::EnsEMBL::RawContig
+  Exceptions : thrown if the statement handle is not defined
+  Caller     : internal
+
+=cut
 
 sub _contig_from_sth {
   my $self = shift;
@@ -278,6 +401,19 @@ sub _contig_from_sth {
 
 
 
+=head2 _fill_contig_from_arrayref
+
+  Arg [1]    : DBI array reference $aref
+  Arg [2]    : Bio::EnsEMBL::RawContig $contig
+  Example    : $contig = $self->_fill_contig_from_arrayref($arr_ref); 
+  Description: PRIVATE Populates an empty RawContig object from an 
+               array ref to an SQL query
+  Returntype : Bio::EnsEMBL::RawContig
+  Exceptions : thrown if 
+  Caller     : internal
+
+=cut
+
 sub _fill_contig_from_arrayref {
   my $self   = shift;
   my $contig = shift;
@@ -302,172 +438,6 @@ sub _fill_contig_from_arrayref {
   
 
   return $contig;
-}
-
-
-sub store{
-  my($self, $contig, $clone_id) = @_;
-
-  $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI - cannot insert contig for clone $clone_id")
-    unless $contig->isa('Bio::EnsEMBL::DB::ContigI');   
-  my $dna = $contig->primary_seq  || $self->throw("No sequence in contig object");
-  $dna->id                        || $self->throw("No contig id entered.");
-  $clone_id                          || $self->throw("No clone_id entered.");
-
-
-  $self->_insertSequence($dna->seq, $contig->seq_date);
-  my $sql = "insert into contig(name,
-                                dna_id,
-                                length,
-                                clone_id,
-                                embl_offset)
-              values('".$contig->id."', 
-                    LAST_INSERT_ID(), 
-		    ".$contig->primary_seq->length." ,
-                    ".$clone_id." ,
-                    ".$contig->embl_offset.")";
-  
-  my $sth = $self->prepare($sql);
-  my $rv = $sth->execute();
-  $self->throw("Failed to insert contig ".$contig->id."\n") unless $rv;
-       
-    
-    $sth = $self->prepare("select last_insert_id()");
-    $sth->execute;
-    my ($id) = $sth->fetchrow
-        or $self->throw("Failed to get last insert id");
-    #can no longer do this as get_all_SeqFeatures no longer exists
-    #if a contig is written to the database
-    # this is a nasty hack. We should have a cleaner way to do this.
-    #my @features = $contig->get_all_SeqFeatures;
-    #print(STDERR "Contig $contigid - $id\n"); 
-    # write sequence features. We write all of them together as it
-    # is more efficient
-    #$self->get_Feature_Obj->write($contig, @features);
-    
-    return 1;
-}
-
-
-sub _insertSequence{
-
-   my ($self, $sequence, $date) = @_;
-    
-    $sequence =~ tr/atgcn/ATGCN/;
-    
-
-  
-    
-    my $statement = $self->prepare("
-        insert into dna(sequence,created) 
-        values(?, FROM_UNIXTIME(?))
-        "); 
-        
-    my $rv = $statement->execute($sequence, $date); 
-    
-    $self->throw("Failed to insert dna $sequence") unless $rv;   
-
-
-}
-
-
-sub fetch_all_repeat_features{
-  my($self, $contig, $logic_name) = @_;
-
-  if(!$contig){
-    $self->throw("can't fetch all repeat features if con't have a contig to fetch them for\n");
-  }
-
-  my @repeats = $self->db->get_RepeatFeatureAdaptor->fetch_by_contig_id($contig->dbID, $logic_name);
-
-  return @repeats;
-
-}
-
-sub fetch_all_simple_features{
-  my($self, $contig, $logic_name) = @_;
-
-  if(!$contig){
-    $self->throw("can't fetch all simple features if con't have a contig to fetch them for\n");
-  }
-
-  my @simple = $self->db->get_SimpleFeatureAdaptor->fetch_by_contig_id($contig->dbID, $logic_name);
-
-  return @simple;
-
-}
-
-sub fetch_all_prediction_transcripts{
-  my($self, $contig, $logic_name) = @_;
-
-  if(!$contig){
-    $self->throw("can't fetch all simple features if con't have a contig to fetch them for\n");
-  }
-
-  my @prediction = $self->db->get_PredictionTranscriptAdaptor->fetch_by_contig_id($contig->dbID, $logic_name);
-
-  return @prediction;
-
-}
-
-
-sub fetch_all_similarity_features{
-  my($self, $contig, $logic_name) = @_;
-
-  if(!$contig){
-    $self->throw("can't fetch all simple features if con't have a contig to fetch them for\n");
-  }
-  
-  my @out;
-
-  my @dnaalign = $self->db->get_DnaAlignFeatureAdaptor->fetch_by_contig_id($contig->dbID, $logic_name);
-  my @pepalign = $self->db->get_ProteinAlignFeatureAdaptor->fetch_by_contig_id($contig->dbID, $logic_name);
-
-  push(@out, @dnaalign);
-  push(@out, @pepalign);
-
-  return @out;
-}
-
-sub fetch_all_similarity_features_above_score{
-  my($self, $contig, $score, $logic_name) = @_;
-
-  if(!$contig){
-    $self->throw("can't fetch all simple features if con't have a contig to fetch them for\n");
-  }
-  if(!$score){
-    $self->throw("need score even if it 0\n");
-  }
-  my @out;
-
-  my @dnaalign = $self->db->get_DnaAlignFeatureAdaptor->fetch_by_contig_id_and_score($contig->dbID, $score, $logic_name);
-  my @pepalign = $self->db->get_ProteinAlignFeatureAdaptor->fetch_by_contig_id_and_score($contig->dbID, $score, $logic_name);
-
-  push(@out, @dnaalign);
-  push(@out, @pepalign);
-
-  return @out;
-}
-
-
-sub fetch_all_similarity_features_above_pid{
-  my($self, $contig, $pid, $logic_name) = @_;
-
-  if(!$contig){
-    $self->throw("can't fetch all simple features if con't have a contig to fetch them for\n");
-  }
-  if(!$pid){
-    $self->throw("need percent_id even if it 0\n");
-  }
-  my @out;
-
-  my @dnaalign = $self->db->get_DnaAlignFeatureAdaptor->fetch_by_contig_id_and_pid($contig->dbID, $pid, $logic_name);
-  my @pepalign = $self->db->get_ProteinAlignFeatureAdaptor->fetch_by_contig_id_and_pid($contig->dbID, $pid, $logic_name);
-
-  push(@out, @dnaalign);
-  push(@out, @pepalign);
-
-  return @out;
 }
 
 

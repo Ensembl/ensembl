@@ -10,7 +10,8 @@
 =head1 NAME
 
 Bio::EnsEMBL::RawContig
-  Contig object which represents part of an EMBL Clone.Mostly for database usage
+  Contig object which represents part of an EMBL Clone.Mostly for 
+  database usage
 
 =head1 SYNOPSIS
 
@@ -422,16 +423,25 @@ sub get_all_RepeatFeatures {
 =cut
 
 sub get_all_SimilarityFeatures {
-    my $self = shift;
+  my ($self, $logic_name) = @_;
+  
+  if( ! defined $self->adaptor() ) {
+    $self->warn( "Need db connection for get_all_SimilarityFeatures()" );
+    return ();
+  }
+  
+  my @out;
+  my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
+  my $pafa = $self->adaptor->db->get_ProteinAlignFeatureAdaptor();
+      
 
-   if( ! defined $self->adaptor() ) {
-     $self->warn( "Need db connection for get_all_SimilarityFeatures()" );
-     return ();
-   }
+  my @dnaalign = $dafa->fetch_by_contig_id($self->dbID, $logic_name);
+  my @pepalign = $pafa->fetch_by_contig_id($self->dbID, $logic_name);
+    
+  push(@out, @dnaalign);
+  push(@out, @pepalign);
 
-    my @sim_feat = $self->adaptor->fetch_all_similarity_features($self);
-
-    return @sim_feat;
+  return @out;
 }
 
 =head2 get_all_PredictionFeatures
@@ -446,16 +456,18 @@ sub get_all_SimilarityFeatures {
 =cut
 
 sub get_all_PredictionFeatures {
-    my $self = shift;
+  my $self = shift;
+  
+  if( ! defined $self->adaptor() ) {
+    $self->warn( "Need db connection for get_all_PredictionFeatures()" );
+    return ();
+  }
+  
+  my $pta = $self->adaptor->db->get_PredictionTranscriptAdaptor();
+    
+  my @pred_feat = $pta->fetch_by_contig_id($self->dbID);
 
-   if( ! defined $self->adaptor() ) {
-     $self->warn( "Need db connection for get_all_PredictionFeatures()" );
-     return ();
-   }
-
-    my @pred_feat = $self->adaptor->db->get_PredictionTranscriptAdaptor->fetch_by_contig_id($self->dbID);
-
-    return @pred_feat;
+  return @pred_feat;
 }
 
 
@@ -470,16 +482,25 @@ sub get_all_PredictionFeatures {
 
 =cut
 
-sub get_genscan_peptides {
-   my $self = shift;
-   if( ! defined $self->adaptor() ) {
-     $self->warn( "Need db connection for get_genscan_peptides()" );
-     return ();
-   }
+=head2 get_genscan_peptides
 
-   my @transcripts = $self->adaptor()->db()->get_PredictionTranscriptAdaptor()->
-     fetch_by_Contig( $self );
-   return @transcripts;
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_PredictionFeatures instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_genscan_peptides {
+  my ($self, @args)  = @_;
+  
+  $self->warn("Use of deprecated method " .
+	      "Bio::EnsEMBL::RawContig::get_genscan_peptides. " .
+	      "Use get_PreedictionFeatures instead\n" );
+
+  return $self->get_PredictionFeatures(@args);
 }
 
 
