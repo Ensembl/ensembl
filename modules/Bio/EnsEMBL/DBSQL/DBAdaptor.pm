@@ -100,6 +100,7 @@ sub new {
       'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
       'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
       'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
+      'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
       'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
       'MapFrag'              => 'Bio::EnsEMBL::DBSQL::MapFragAdaptor',
       'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
