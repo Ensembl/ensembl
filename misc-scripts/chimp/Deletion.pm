@@ -26,6 +26,11 @@ sub process_delete {
   my $del_start = $$cdna_del_pos_ref + 1;
   my $del_end   = $del_start + $del_len - 1;
 
+  info((($entire_delete) ? 'entire ' : '')."delete ($del_len)");
+  print STDERR "BEFORE cds: ", $transcript->cdna_coding_start, '-', 
+               $transcript->cdna_coding_end(), "\n";
+  print STDERR "BEFORE del_start = $del_start\n";
+
   # sanity check, deletion should be completely in
   # or adjacent to exon boundaries
   if(!$entire_delete && ($del_start < $exon->cdna_start() - 1 ||
@@ -42,11 +47,11 @@ sub process_delete {
   #
   # deal with five prime UTR portion of delete
   #
-  if($$cdna_del_pos_ref+1 < $transcript->cdna_coding_start()) {
+  if($del_start < $transcript->cdna_coding_start()) {
     my $utr_del_len;
 
     if($del_end > $transcript->cdna_coding_start()) {
-      $utr_del_len = $transcript->cdna_coding_start() - $del_start + 1;
+      $utr_del_len = $transcript->cdna_coding_start() - $del_start;
     } else {
       $utr_del_len = $del_len;
     }
@@ -55,8 +60,9 @@ sub process_delete {
 				  $exon, $transcript);
 
     # take away the processed part of the deletion
-    $del_start += $utr_del_len;
+    $del_start = $$cdna_del_pos_ref + 1;
     $del_len   -= $utr_del_len;
+    $del_end   = $del_start + $del_len - 1;
   }
 
   return if($del_len == 0); # no deletion left
@@ -79,8 +85,10 @@ sub process_delete {
 		      $entire_delete);
 
     # take away the processed part of the deletion
-    $del_start += $cds_del_len;
+    # the cdna start is in the same place because
+    $del_start += $$cdna_del_pos_ref + 1;
     $del_len  -= $cds_del_len;
+    $del_end   = $del_start + $del_len - 1;
   }
 
   return if($del_len == 0); # no deletion left
@@ -112,6 +120,8 @@ sub process_five_prime_utr_delete {
   my $exon             = shift;
   my $transcript       = shift;
 
+  info("delete ($del_len) in 5' utr");
+
   # shift up the CDS
   $transcript->move_cdna_coding_start(-$del_len);
   $transcript->move_cdna_coding_end(-$del_len);
@@ -137,6 +147,7 @@ sub process_three_prime_utr_delete {
   my $transcript       = shift;
 
   #do not have to do anything...
+  info("delete ($del_len) in 3' utr");
 
   # create a status message and add it to the exon
   my $code = StatMsg::EXON | StatMsg::DELETE | StatMsg::THREE_PRIME |
@@ -159,6 +170,14 @@ sub process_cds_delete {
   my $transcript       = shift;
   my $entire_delete    = shift;
 
+  info("delete ($del_len) in cds");
+
+
+  if(!$entire_delete) {
+    print "BEFORE DELETE:\n";
+    print_exon($exon) if(!$entire_delete);
+  }
+
   my $del_start = $$cdna_del_pos_ref + 1;
   my $del_end   = $del_start + $del_len - 1;
 
@@ -167,8 +186,6 @@ sub process_cds_delete {
 
   my $frameshift = $del_len % 3;
 
-  # move up CDS end to account for CDS deletion
-  $transcript->move_cdna_coding_end(-$del_len);
 
   #
   # case 1: delete is all of CDS
@@ -178,6 +195,9 @@ sub process_cds_delete {
     info("delete ($del_len) is all of cds");
 
     $code |= StatMsg::ENTIRE;
+
+    # move up CDS end to account for CDS deletion
+    $transcript->move_cdna_coding_end(-$del_len);
   }
 
   #
@@ -187,6 +207,9 @@ sub process_cds_delete {
     info("delete ($del_len) at start of cds");
 
     $code |= StatMsg::FIVE_PRIME;
+
+    # move up CDS end to account for CDS deletion
+    $transcript->move_cdna_coding_end(-$del_len);
 
     if($frameshift) {
       $code |= StatMsg::FRAMESHIFT if($frameshift);
@@ -205,6 +228,9 @@ sub process_cds_delete {
 
     $code |= StatMsg::THREE_PRIME;
 
+    # move up CDS end to account for CDS deletion
+    $transcript->move_cdna_coding_end(-$del_len);
+
     if($frameshift) {
       $code |= StatMsg::FRAMESHIFT if($frameshift);
 
@@ -222,6 +248,9 @@ sub process_cds_delete {
     info("delete ($del_len) in middle of cds");
 
     $code |= StatMsg::MIDDLE;
+
+    # move up CDS end to account for CDS deletion
+    $transcript->move_cdna_coding_end(-$del_len);
 
     if($frameshift && !$entire_delete) {
       $code |= StatMsg::FRAMESHIFT if($frameshift);
@@ -245,69 +274,93 @@ sub process_cds_delete {
             "to maintain reading frame");
 
       if($first_len + $intron_len >= $exon->length()) {
-	# we may have encountered a delete at the very end of the exon
-	# in this case we have to take the intron out of the end of this exon
-	# since we are not creating a second one
+        # we may have encountered a delete at the very end of the exon
+        # in this case we have to take the intron out of the end of this exon
+        # since we are not creating a second one
 
         if($exon->strand() == 1) {
           $exon->end($exon->end - $intron_len);
         } else {
-          $exon->start($exon->start - $intron_len);
-          $exon->cdna_start($exon->cdna_start - $intron_len);
+          $exon->start($exon->start + $intron_len);
         }
+        $exon->cdna_end($exon->cdna_end - $intron_len);
       } else {
-	# second exon is going to start right after 'frameshift intron'
+        # second exon is going to start right after 'frameshift intron'
 
-	if($exon->strand == 1) {
-	  # end the current exon at the beginning of the deletion
-	  # watch out though, because we may be at the very beginning of
-	  # the exon in which case we do not want to create one
+        if($exon->strand == 1) {
+          # end the current exon at the beginning of the deletion
+          # watch out though, because we may be at the very beginning of
+          # the exon in which case we do not want to create one
 
-	  if($first_len) {
-	    my $first_exon = InterimExon->new();
+          if($first_len) {
+            my $first_exon = InterimExon->new();
 
-	    # copy the original exon and adjust the coords as necessary
-	    %{$first_exon} = %{$exon};
-	    $first_exon->cdna_end($exon->cdna_start() + $first_len - 1);
-	    $first_exon->end($first_exon->start() + $first_len - 1);
-	    $transcript->add_Exon($first_exon);
+            # copy the original exon and adjust the coords as necessary
+            %{$first_exon} = %{$exon};
+            $first_exon->cdna_end($exon->cdna_start() + $first_len - 1);
+            $first_exon->end($first_exon->start() + $first_len - 1);
+            $transcript->add_Exon($first_exon);
 
-	    $exon->cdna_start($first_exon->cdna_end() + 1);
-	    $exon->flush_StatMsgs();
-	  }
+            $exon->cdna_start($first_exon->cdna_end() + 1);
+            $exon->flush_StatMsgs();
+          }
 
-	  # start next exon after new intron
-	  $exon->start($exon->start() + $first_len + $intron_len);
-	} else {
-	  if($first_len) {
-	    my $first_exon = InterimExon->new();
+          # start next exon after new intron
+          $exon->start($exon->start() + $first_len + $intron_len);
+        } else {
+          if($first_len) {
+            my $first_exon = InterimExon->new();
 
-	    # copy the original exon and adjust the coords as necessary
-	    %{$first_exon} = %{$exon};
-	    $first_exon->cdna_end($exon->cdna_start + $first_len - 1);
-	    $first_exon->start($exon->end() - $first_len + 1);
-	    $transcript->add_Exon($first_exon);
+            # copy the original exon and adjust the coords as necessary
+            %{$first_exon} = %{$exon};
+            $first_exon->cdna_end($exon->cdna_start + $first_len - 1);
+            $first_exon->start($exon->end() - $first_len + 1);
+            $transcript->add_Exon($first_exon);
 
-	    $exon->cdna_start($first_exon->cdna_end() + 1);
-	    $exon->flush_StatMsgs();
-	  }
+            $exon->cdna_start($first_exon->cdna_end() + 1);
+            $exon->flush_StatMsgs();
+          }
 
-	  # start next exon after new intron
-	  $exon->end($exon->end() - ($first_len + $intron_len));
-	}
+          # start next exon after new intron
+          $exon->end($exon->end() - ($first_len + $intron_len));
+        }
       }
     }
   }
 
   # sanity check:
   else {
-    throw("Unexpected: CDS delete appears to be outside of CDS.");
+    throw("Unexpected: CDS delete appears to be outside of CDS:\n" .
+         "  del_start = $del_start\n".
+         "  del_end   = $del_end\n" .
+         "  cdna_coding_start = ".$transcript->cdna_coding_start() . "\n".
+         "  cdna_coding_end   = ".$transcript->cdna_coding_end() . "\n");
   }
 
   $exon->add_StatMsg(StatMsg->new($code));
 
+
+  if(!$entire_delete) {
+    print "AFTER DELETE:\n";
+    print_exon($exon);
+  }
+
   return;
 }
 
+
+
+sub print_exon {
+  my $exon = shift;
+
+  print "EXON:\n";
+  print "cdna_start = ". $exon->cdna_start() . "\n";
+  print "cdna_end   = ". $exon->cdna_end() . "\n";
+  print "start             = ". $exon->start() . "\n";
+  print "end               = ". $exon->end() . "\n";
+  print "strand            = ". $exon->strand() . "\n\n";
+
+  return;
+}
 
 1;
