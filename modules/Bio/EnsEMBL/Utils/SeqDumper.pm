@@ -142,7 +142,7 @@ sub attach_database {
   my ($self, $name, $db) = @_;
 
   $name || throw("name arg is required");
-  unless($db && ref($db) && $db->isa('Bio::EnsEMBL::DBSQL::DBConnection')) {
+  unless($db && ref($db) && $db->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')) {
     throw("db arg must be a Bio::EnsEMBL::DBSQL::DBConnection not a [$db]");
   }
 
