@@ -62,7 +62,7 @@ sub new {
   my $self = {};
   bless $self,$class;
 
-  my ($chr,$start,$end,$type,$adaptor, $dbID) = $self->_rearrange([qw(CHR_NAME CHR_START CHR_END ASSEMBLY_TYPE ADAPTOR DBID)],@args);
+  my ($chr,$start,$end,$strand,$type,$adaptor, $dbID) = $self->_rearrange([qw(CHR_NAME CHR_START CHR_END STRAND ASSEMBLY_TYPE ADAPTOR DBID)],@args);
 
   if( !defined $chr || !defined $start || !defined $end || !defined $type ) {
     $self->throw("Do not have all the parameters for slice");
@@ -71,6 +71,15 @@ sub new {
   $self->chr_name($chr);
   $self->chr_start($start);
   $self->chr_end($end);
+
+  #set strand to a default of 1 if it is not set
+  if (!defined $strand) {
+    $self->strand($strand);
+  }
+  else {
+    $self->strand(1);
+  }
+    
   $self->assembly_type($type);
   $self->adaptor($adaptor);
   $self->dbID( $dbID );
@@ -258,7 +267,10 @@ sub get_all_ExternalFeatures{
 sub get_all_Genes{
    my ($self,@args) = @_;
 
-   $self->throw("Ewan has not implemented this function! Complain!!!!");
+   my $gene_adaptor = $self->adaptor->get_GeneAdaptor();
+   my @genes = $gene_adaptor->fetch_by_Slice($self);
+
+   #$self->throw("Ewan has not implemented this function! Complain!!!!");
 
 }
 
@@ -434,6 +446,28 @@ sub chr_end{
     return $self->{'chr_end'};
 
 }
+
+=head2 strand
+
+ Title   : strand
+ Usage   : $obj->strand($newval)
+ Function: 
+ Example : 
+ Returns : value of strand
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub strand{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'strand'} = $value;
+    }
+    return $self->{'strand'};
+
+}
+
 
 =head2 assembly_type
 
