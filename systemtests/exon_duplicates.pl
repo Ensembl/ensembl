@@ -24,12 +24,7 @@ my $tdbtype = 'rdb';
 my $thost   = 'sol28';
 my $tport   = '410000';
 my $tdbname = 'ensdev';
-my $format  = 'pep';
-my $verbose = 1;
-my $noacc   = 0;
-my $test    = 0;
 my $user    = 'ensembl';
-my $logerror = 'error.log';
 
 &GetOptions( 
 	     'dbtype:s'   => \$tdbtype,
@@ -37,30 +32,13 @@ my $logerror = 'error.log';
 	     'port:n'     => \$tport,
 	     'user:s'     => \$user,
 	     'dbname:s'   => \$tdbname,
-	     'format:s'   => \$format,
-	     'verbose'    => \$verbose,
-	     'test'       => \$test,
-	     'noacc'      => \$noacc,
-	     'logerror:s'   => \$logerror,
 	     );
-my $db;
 
-
-open(ERROR,">$logerror") || die "Could not open $logerror $!";
-
-$db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $user, -db => $tdbname , -host => $thost );
-
+my $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $user, -db => $tdbname , -host => $thost );
 my @clone_id = $db->get_all_Clone_id();
-
 my $seqio;
-
-if( $format eq 'pep' ) {
-    $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*STDOUT ) ;
-}
-
-#@clone_id = ('dummy_clone');
-
 my $errcount = 0;
+
 foreach my $clone_id ( @clone_id ) {
     print STDERR "\nDumping clone      $clone_id\n";
     
@@ -88,12 +66,12 @@ foreach my $clone_id ( @clone_id ) {
 			for ($j=$i+1; $j<=@starts;$j++) {
 			    if ($starts[$i] == $starts[$j] && $ends[$i]==$ends[$j]) {
 				$errcount++;
-				print ERROR "Error $errcount\n";
-				print ERROR "Clone:      $clone_id\n";
-				print ERROR "Contig:     ",$contig->id,"\n";
-				print ERROR "Gene:       ",$gene->id,"\n";
-				print ERROR "Transcript: ",$trans->id,"\n";
-				print ERROR "Exon $ids[$i] has the same start and and as exon $ids[$j] \n";
+				print "Error $errcount\n";
+				print "Clone:      $clone_id\n";
+				print "Contig:     ",$contig->id,"\n";
+				print "Gene:       ",$gene->id,"\n";
+				print "Transcript: ",$trans->id,"\n";
+				print "Exon $ids[$i] has the same start and and as exon $ids[$j] \n";
 			    }
 			}
 		    } 
@@ -101,13 +79,14 @@ foreach my $clone_id ( @clone_id ) {
 	    }
 	}
     };
+
     if( $@ ) {
-	print ERROR "Unable to process $clone_id due to \n$@\n";
+	print "Unable to process $clone_id due to \n$@\n";
     }
 }
+
 if ($errcount>0) {
-    print STDERR "\nFound $errcount  duplicated exons (see error.log for details)\n";
+    print STDERR "\nFound $errcount  duplicated exons\n";
 }
 
-close ERROR;
 
