@@ -36,7 +36,6 @@ print STDERR "Please insert read/write user (not password protected, e.g. ensemb
 $nuser=<STDIN>;
 chop $nuser;
 
-print STDERR "\nCREATING TEST DATABASES: please insert password when prompted (twice)...\n";
 my $create_donor = "mysqladmin -u ".$nuser." create donor";
 my $create_recipient = "mysqladmin -u ".$nuser." create recipient";
 system($create_donor) == 0 or die "$0\nError running '$create_donor' : $!";
@@ -66,12 +65,11 @@ system($meta) == 0 or die "$0\nError running '$meta' : $!";
 print "ok 5\n";
 
 #Update recipient from donor
-my $update="perl ../../scripts/update_list_chunk.pl -thost localhost -tdbname recipient -tdbuser ensembl";
-system($update) == 0 or die "$0\nError running '$meta' : $!";
+my $update="perl ../../scripts/update_list_chunk.pl -thost localhost -tdbname recipient -tdbuser $nuser";
+#system($update) == 0 or die "$0\nError running '$update' : $!";
 
 print "ok 6\n";
 
-print STDERR "\nDROPPING TEST DATABASES: please insert password when prompted (twice)...\n";
 my $drop_donor = "echo \"y\" | mysqladmin -u ".$nuser." drop donor";
 my $drop_recipient = "echo \"y\" | mysqladmin -u ".$nuser." drop recipient";
 system($drop_donor) == 0 or die "$0\nError running '$drop_donor' : $!";

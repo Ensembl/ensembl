@@ -68,7 +68,7 @@ use strict;
 
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::TimDB::Obj;
-use Bio::AnnSeqIO;
+#use Bio::AnnSeqIO;
 use Getopt::Long;
 
 $| = 1;
@@ -185,7 +185,7 @@ foreach my $clone_id ( @clone ) {
 	    if( $@ ) {
 		# do nothing. Clone not there
 	    } else {
-		foreach my $gene ( $oldclone->get_all_Genes() ) {
+		foreach my $gene ( $oldclone->get_all_Genes('evidence') ) {
 		    print STDERR "Deleting gene " . $gene->id . "\n";
 		    $to_db->delete_Gene($gene->id());
 		    # Should delete supporting evidence too.
@@ -195,9 +195,7 @@ foreach my $clone_id ( @clone ) {
 		# Should delete contig features here too.
 	    }
 	}
-
 	$to_db->write_Clone($clone);
-	
 	my @features;
 	
 	foreach my $contig ($clone->get_all_Contigs) {

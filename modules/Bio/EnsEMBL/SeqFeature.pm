@@ -420,7 +420,7 @@ sub vthrow {
     print(STDERR "   Score       : [" . $self->{_gsf_score} . "]\n");
     print(STDERR "   Source_tag  : [" . $self->{_source_tag} . "]\n");
     print(STDERR "   Primary_tag : [" . $self->{_primary_tag} . "]\n");
-    print(STDERR "   Analysis    : [" . $self->{_analysis} . "]\n");
+    print(STDERR "   Analysis    : [" . $self->{_analysis}->id . "]\n");
 
     $self->throw("Invalid feature - see dump on STDERR");
 }

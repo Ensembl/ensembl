@@ -488,7 +488,7 @@ sub get_offset{
  Title   : get_Protein_annseq
  Usage   : get_Protein_annseq ($ENSP); 
  Function: Creates an annseq object for a particular peptide, storing the peptide
-           sequence in $annseq->seq, and adding all the protein features as generic
+           sequence in $annseq->primary_seq, and adding all the protein features as generic
            Seqfeatures
  Example : 
  Returns : $annseq
@@ -513,7 +513,7 @@ sub get_Protein_annseq{
     $transcript->translation($translation);
 
     my $seq = $transcript->translate();
-    $annseq->seq($seq);
+    $annseq->primary_seq($seq);
 
     $sth = $self->prepare("select * from proteinfeature where translation = '$ENSP'");
     $res = $sth->execute();
@@ -1040,7 +1040,7 @@ sub archive_Gene {
        
        foreach my $exon ($gene->each_unique_Exon) {
 	   #Get out info needed to write into archive db
-	   $seq = $exon->seq;
+	   $seq = $exon->primary_seq;
 	   $seq->id($exon->id);
 	   
 	   #Temporary, since versions not stored yet...
@@ -1331,6 +1331,7 @@ sub cloneid_to_geneid{
    return @out;
 }
 
+
 =head2 replace_last_update
     
  Title   : replace_last_update(@$now_offset)
@@ -1340,6 +1341,7 @@ sub cloneid_to_geneid{
  Returns : nothing
  Args    : 
 
+=cut
 
 sub replace_last_update {
     my ($self, $now_offset) = @_;
@@ -1361,10 +1363,7 @@ sub replace_last_update {
     my $donor=$self->get_donor_locator;
     my $offset=$self->get_offset;
     
-    $sth = $self->prepare("delete from meta where last_update = '".$last_offset."'");  
-    $sth->execute;
- 
-    $sth = $self->prepare("insert into meta (last_update,donor_database_locator,offset_time) values ('".$now_offset."','".$donor."','".$offset."')");
+    $sth = $self->prepare("update db_update set time_finished=now(),status='COMPLETE' where status='STARTED'");
     $sth->execute;
 }
 
@@ -1520,23 +1519,15 @@ sub write_Gene{
        }
    }
 
-   $old_gene = $self->get_Gene($gene->id);
+   !$gene->created() && $gene->created(0);
+   !$gene->modified() && $gene->modified(0);
    
-   if ( !defined($old_gene) || ($gene->version > $old_gene->version)) {
-
-       !$gene->created() && $gene->created(0);
-       !$gene->modified() && $gene->modified(0);
-
-       my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
-				 $gene->id       . "','".
-				 $gene->version  . "',FROM_UNIXTIME(".
-				 $gene->created  . "),FROM_UNIXTIME(".
-				 $gene->modified . "),now())");
-       $sth2->execute();
-   }
-   else {
-       print "Got this gene with this version already, no need to write in db\n";
-   }
+   my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
+			     $gene->id       . "','".
+			     $gene->version  . "',FROM_UNIXTIME(".
+			     $gene->created  . "),FROM_UNIXTIME(".
+			     $gene->modified . "),now())");
+   $sth2->execute();
 
    foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
 
@@ -2144,22 +2135,10 @@ sub write_Transcript{
    }
 
    # ok - now load this line in
+   my $tst = $self->prepare("insert into transcript (id,gene,translation,version) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "',".$trans->version.")");
+   $tst->execute();
+   $self->write_Translation($trans->translation());
 
-   
-   eval {
-       $old_trans=$self->get_Transcript($trans->id);
-   };
-    
-
-   if ( $@ || ($trans->version > $old_trans->version)) {
-
-       my $tst = $self->prepare("insert into transcript (id,gene,translation,version) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "',".$trans->version.")");
-       $tst->execute();
-       $self->write_Translation($trans->translation());
-   }
-   else {
-       print "Transcript already present in the database with the same version number $old_trans [",$old_trans->version,"], no need to write it in\n";
-   }
    return 1;
 }
 
@@ -2183,27 +2162,17 @@ sub write_Translation{
 	$self->throw("Is not a translation. Cannot write!");
     }
     
-    eval {
-	$old_transl=$self->get_Translation($translation->id);
-    };
-    
-
-    if ( $@ || ($translation->version > $old_transl->version)) {
-	if( !defined $translation->version  ) {
-	    $self->throw("No version number on translation");
-	}
-	my $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
-				 . $translation->id . "',"
-				 . $translation->version . ","
-				 . $translation->start . ",'"  
-				 . $translation->start_exon_id. "',"
-				 . $translation->end . ",'"
-				 . $translation->end_exon_id . "')");
-	$tst->execute();
+    if( !defined $translation->version  ) {
+	$self->throw("No version number on translation");
     }
-    else {
-	print "Translation already present in the database with the same version number, no need to write it in\n";
-    }
+    my $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
+			     . $translation->id . "',"
+			     . $translation->version . ","
+			     . $translation->start . ",'"  
+			     . $translation->start_exon_id. "',"
+			     . $translation->end . ",'"
+			     . $translation->end_exon_id . "')");
+    $tst->execute();
 }
 
 =head2 write_Exon
@@ -2233,34 +2202,25 @@ sub write_Exon{
 
    # FIXME: better done with placeholders. (perhaps?).
 
-   eval {
-       $old_exon=$self->get_Exon($exon->id);
-   };
-   
-   if  ( $@ || ($exon->version > $old_exon->version)) {
 #       print(STDERR "Inserting " . $exon->created . " " . $exon->modified . "\n");
        my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
 	   $exon->id() . "'," .
-	   $exon->version() . ",'".
-	   $exon->contig_id() . "', FROM_UNIXTIME(" .
-	   $exon->created(). "), FROM_UNIXTIME(" .
-	   $exon->modified() . ")," .
+	       $exon->version() . ",'".
+		   $exon->contig_id() . "', FROM_UNIXTIME(" .
+		       $exon->created(). "), FROM_UNIXTIME(" .
+			   $exon->modified() . ")," .
 			       $exon->start . ",".
 				   $exon->end . ",".
 				       $exon->strand . ",".
 					   $exon->phase . ",now(),".
 					       $exon->end_phase . ")";
-       
-       my $sth = $self->prepare($exonst);
-       $sth->execute();
-
-       # Now the supporting evidence
-
-       $self->write_supporting_evidence($exon);
-   }
-   else {
-       print "Exon with the same version number already present, no need to write it in";
-   }
+   
+   my $sth = $self->prepare($exonst);
+   $sth->execute();
+   
+   # Now the supporting evidence
+   
+   $self->write_supporting_evidence($exon);
 #   my $unlockst = $self->prepare("unlock exon");
 #   $unlockst->execute;
    
@@ -2287,22 +2247,24 @@ sub write_Contig {
        $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI  - can't insert contig for clone $clone");
    }
 
-   my $dna = $contig->seq || $self->throw("No sequence in contig object");
+   my $dna = $contig->primary_seq || $self->throw("No sequence in contig object");
              $dna->id     || $self->throw("No contig id entered.");
              $clone       || $self->throw("No clone entered.");
 
    my $contigid  = $dna->id;
    my $date      = $contig->seq_date;
-   my $len       = $dna->seq_len;
+   my $len       = $dna->length;
    my $seqstr    = $dna->seq;
-   my $offset    = $contig->offset();
-   my $orientation    = $contig->orientation();
-   my $order = $contig->order();
+   my $offset    = $contig->embl_offset();
+   
+   #Removed in new schema?
+   #my $orientation    = $contig->embl_orientation();
+   my $order = $contig->embl_order();
    my @sql;
 
    push(@sql,"lock tables contig write,dna write");
    push(@sql,"insert into dna(contig,sequence,created) values('$contigid','$seqstr',FROM_UNIXTIME($date))");
-   push(@sql,"replace into contig(id,dna,length,clone,offset,orientation,corder) values('$contigid',LAST_INSERT_ID(),$len,'$clone',$offset,$orientation,$order)");
+   push(@sql,"replace into contig(id,dna,length,clone,offset,corder) values('$contigid',LAST_INSERT_ID(),$len,'$clone',$offset,$order)");
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {
