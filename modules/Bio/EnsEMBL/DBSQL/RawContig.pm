@@ -15,7 +15,7 @@ Bio::EnsEMBL::DB::RawContig - Handle onto a database stored raw contiguous DNA
 
 =head1 SYNOPSIS
 
-    # get a contig object somehow, eg from an DB::Obj
+    # get a contig object somehow,eg from an DB::Obj
 
     @genes = $contig->get_all_Genes();
     @sf    = $contig->get_all_RepeatFeatures();
@@ -1281,7 +1281,7 @@ sub get_all_PredictionFeatures {
 
    # make the SQL query
    my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid ". 
-       "from feature f where contig = $id and name = 'genscan' order by f.strand,f.seq_start";
+       "from feature f where contig = $id and name = 'genscan' order by hid";
 
    my $sth = $self->dbobj->prepare($query);
    
@@ -1313,8 +1313,8 @@ sub get_all_PredictionFeatures {
        }
 
        #MC.  This has been temporarily changed back to the old way of genscans
-       if( $hid =~ /Initial/ || $hid =~ /Single Exon/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 ) {
-#       if( $hid ne $previous || $previous eq -1 ) {
+       #if( $hid =~ /Initial/ || $hid =~ /Single Exon/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 ) {
+       if( $hid ne $previous || $previous eq -1 ) {
 	   $current_fset = new Bio::EnsEMBL::SeqFeature;
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
