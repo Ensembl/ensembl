@@ -521,7 +521,7 @@ sub load_compara{
 	      "Attribute" => "Bio::EnsEMBL::Compara::DBSQL::AttributeAdaptor",
 	      "Taxon" => "Bio::EnsEMBL::Compara::DBSQL::TaxonAdaptor",
 	      "PeptideAlignFeature" => "Bio::EnsEMBL::Compara::DBSQL::PeptideAlignFeatureAdaptor",
-	      "AnalysisAdaptor" => "Bio::EnsEMBL::DBSQL::AnalysisAdaptor"
+	      "Analysis" => "Bio::EnsEMBL::DBSQL::AnalysisAdaptor"
         );
 
   foreach my $key (keys %pairs){
