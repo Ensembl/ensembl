@@ -138,9 +138,6 @@ sub add_ensembl_comments {
    $sf->primary_tag('source');
    $sf->add_tag_value('organism','Homo sapiens');
    $aseq->add_SeqFeature($sf);
-   
-
-   $aseq->species($species);
    # done!
 }
 
