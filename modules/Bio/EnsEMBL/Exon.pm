@@ -436,8 +436,7 @@ sub _transform_to_Slice {
 
 sub _transform_to_RawContig {
   my $self = shift;
-  #print STDERR "\tTransforming exons to rawcontig coords\n";
-  #print STDERR "exon ".$self->gffstring."\n";
+
   my $slice_adaptor = $self->contig->adaptor;
 
   unless($slice_adaptor) {
@@ -447,12 +446,11 @@ sub _transform_to_RawContig {
 
   my $asma = $slice_adaptor->db->get_AssemblyMapperAdaptor();
 
-  my $mapper          = $asma->fetch_by_type( $self->contig()->assembly_type() );
+  my $mapper = $asma->fetch_by_type( $self->contig()->assembly_type() );
   my $rcAdaptor       = $slice_adaptor->db->get_RawContigAdaptor();
   my $slice_chr_start = $self->contig->chr_start();
   my $slice_chr_end   = $self->contig->chr_end();
 
-  #print STDERR "exon has ".$self->get_all_supporting_features." supporting features before transformation\n";
   my ($exon_chr_start,$exon_chr_end);
 
   if ($self->contig()->strand() == 1) {
@@ -487,9 +485,7 @@ sub _transform_to_RawContig {
 	unless(exists $sf_hash{$mapped_feat->contig->name}) {
 	  $sf_hash{$mapped_feat->contig->name} = [];
 	}
-	#print STDERR "transform has returned ".$mapped_feat." on contig ".$mapped_feat->contig->name."\n";
 	push @{$sf_hash{$mapped_feat->contig->name}}, $mapped_feat;
-	#print STDERR "array for ".$mapped_feat->contig->name." contig has ".@{$sf_hash{$mapped_feat->contig->name}}." features\n";
       }
     }
   }

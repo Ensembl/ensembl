@@ -476,7 +476,7 @@ sub store {
 	next;
       }
 
-      $sf->contig($exon->contig);
+      $sf->contig($e->contig);
     
       if($sf->isa("Bio::EnsEMBL::DnaDnaAlignFeature")){
 	$dna_adaptor->store($sf);
