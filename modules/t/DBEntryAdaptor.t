@@ -149,7 +149,7 @@ else {
     print "not ok 10\n";
 }
 
-my @matches = $dbentry_adaptor->fetch_by_gene(1);
+my @matches = $dbentry_adaptor->fetch_by_dbID(1);
 
 if (scalar (@matches) == 1) {
     print "ok 11\n";
@@ -159,7 +159,8 @@ else {
     print "not ok 11\n";
 }
 
-if ($matches[0]->primary_id eq "Q9Ngene") {
+
+if ($matches[0]->primary_id eq "AL365511") {
     print "ok 12\n";
 }
 
