@@ -157,9 +157,11 @@ sub add_feature_type {
     if( !$self->{'_max_len_cache'}->{$cs->dbID()}->{$table} ||
         $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} < $length ) {
       my $sth = $self->prepare('UPDATE meta_coord ' .
-			       "SET max_length = $length " .
-			       'WHERE coord_system_id = ? ' .
-			       'AND table_name = ? ' );
+                               "SET max_length = $length " .
+                               'WHERE coord_system_id = ? ' .
+                               'AND table_name = ? '.
+                               "AND (max_length<$length ".
+                               "OR max_length is null));
       $sth->execute( $cs->dbID(), $table );
       $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} = $length;
     }
