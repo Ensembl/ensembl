@@ -365,6 +365,7 @@ sub top_SeqFeatures {
     $sf->start(1);
     $sf->end($self->slice->length());
     $sf->strand(1);
+    $sf->primary_tag( "source" );
     my $species = $self->species;
     $sf->add_tag_value('organism', $species->common_name());
     $sf->add_tag_value('classification', 
@@ -385,7 +386,7 @@ sub top_SeqFeatures {
     push @sfs, @{$self->slice->get_all_ExternalFeatures()};
   }
   unless($self->skip_SeqFeature('prediction')) {
-    push @sfs, @{$self->slice->get_all_PredictionFeatures()};
+   # push @sfs, @{$self->slice->get_all_PredictionTranscripts()};
   }
   unless($self->skip_SeqFeature('gene')) {
     foreach my $gene (@{$self->slice->get_all_Genes()}) {
