@@ -483,13 +483,20 @@ sub _gene_query{
      
      if( ! exists $got{$rowhash->{'gene'}}) {  
 	 
-	 my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->dbobj);             
-	 my $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
-	 if ($gene) {
-	     push(@out, $gene);
-	 }
+	 my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->dbobj);
+         my $gene;
+         #PL: this may be overcautious, e.g. when called by get_GeneByType()
+         eval {
+             $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
+         };
+         if ($@) {
+             $self->warn("In RawContig, tried to get gene ".$rowhash->{'gene'}." but couldn't (data bug?)\n");
+         }
+         else {
+             push(@out, $gene);
+         }
 	 $got{$rowhash->{'gene'}} = 1;
-     }       
+     }
  }
  
  if (@out) {
@@ -1069,7 +1076,7 @@ sub get_all_RepeatFeatures {
   }
  
    return @array;
-}
+}                                       # get_all_RepeatFeatures
 
 =head2 get_MarkerFeatures
 
@@ -1084,65 +1091,139 @@ sub get_all_RepeatFeatures {
 
 =cut
 
-
 sub get_MarkerFeatures {
-  my $self = shift;
+    my ($self)=@_;
+  
+    my $id = $self->internal_id;
+    my @markers;
 
-  my $id = $self->internal_id;
-  my @result = ();
-  eval {
-    require Bio::EnsEMBL::Map::MarkerFeature;
-
-    # features for this contig with db=mapprimer
-    my $sth = $self->dbobj->prepare
-      ( "select f.seq_start, f.seq_end, f.score, f.strand, f.name, ".
-        "f.hstart, f.hend, f.hid, f.analysis ".
-        "from feature f, analysis a ".
-        "where f.contig='$id' and ".
-        "f.analysis = a.id and a.db='mapprimer'" );
-    $sth->execute;
-    
-    my ($start, $end, $score, $strand, $hstart, 
-        $name, $hend, $hid, $analysisid );
-    my $analysis;
-    my %analhash;
-
-    $sth->bind_columns
-      ( undef, \$start, \$end, \$score, \$strand, \$name, 
-        \$hstart, \$hend, \$hid, \$analysisid );
+    eval {
+        require Bio::EnsEMBL::Map::MarkerFeature;
         
-    while( $sth->fetch ) {
-      my ( $out, $seqf1, $seqf2 );
+        my $statement="SELECT f.seq_start, f.seq_end, f.score, f.strand, f.name, 
+	                  f.hstart, f.hend, f.hid, f.analysis 
+	           FROM   feature f, analysis a 
+		   WHERE  f.contig='$id' 
+                   AND    f.analysis = a.id and a.db='mapprimer'";
+        
+        @markers=$self->_create_MarkerFeatures($statement);	
+	
+    };
+
+    if( $@ ) {
+        print STDERR ("Problems retrieving map data. Most likely not connected to maps db\n$@\n" );
+    }
+    
+    return @markers;
+}                                       # get_MarkerFeatures
+
+
+=head2 get_landmark_MarkerFeatures
+
+  Title   : get_landmark_MarkerFeatures 
+  Usage   : @fp = $contig->get_landmark_MarkerFeatures; 
+  Function: Gets MarkerFeatures with identifiers like D8S509. 
+            MarkerFeatures can be asked for a Marker. 
+            Its assumed, that when you can get MarkerFeatures, then you can 
+            get the Map Code as well.
+  Example : - 
+  Returns : -
+  Args : -
+
+=cut
+
+
+sub get_landmark_MarkerFeatures {
+      my ($self)=@_;
       
-      if (!$analhash{$analysisid}) {
-        $analysis = $self->dbobj->get_Analysis($analysisid);
+      
+      my $dbname=$self->dbobj->dbname;
+      my $mapsdbname=$self->dbobj->mapdbname;
+      
+      my $id = $self->internal_id;
+      my @markers;
+      
+      
+      eval {
+          require Bio::EnsEMBL::Map::MarkerFeature;
+          
+          my $statement="SELECT f.seq_start, f.seq_end, f.score, f.strand, f.name, 
+	                  f.hstart, f.hend, s.name, f.analysis 
+                   FROM   $dbname.feature f, $dbname.analysis a, 
+                          $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m 
+		   WHERE  f.contig='$id' 
+                   AND    f.analysis = a.id 
+                   AND    a.db='mapprimer'
+                   AND    m.marker=s.marker 
+                   AND    f.hid=m.marker 
+                   AND    s.name regexp '^D[0-9,X,Y][0-9]?S'";
+          
+          @markers=$self->_create_MarkerFeatures($statement);	
+          
+      };
+      
+      if( $@ ) {
+          print STDERR ("Problems retrieving map data. Most likely not connected to maps db\n$@\n" );
+      }
+
+      return @markers;
+}                                       # get_landmark_MarkerFeatures
+
+
+
+sub _create_MarkerFeatures
+{
+my ($self,$statement)=@_;
+
+my @result; 
+my $analysis;
+my %analhash;
+    
+
+my $sth = $self->dbobj->prepare($statement);
+$sth->execute;
+
+my ($start, $end, $score, $strand, $hstart, 
+    $name, $hend, $hid, $analysisid );
+
+
+$sth->bind_columns
+    ( undef, \$start, \$end, \$score, \$strand, \$name, 
+      \$hstart, \$hend, \$hid, \$analysisid);
+
+
+while( $sth->fetch ) {
+    
+    my ( $out, $seqf1, $seqf2 );
+    
+    if (!$analhash{$analysisid}) {
+	
+	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	$analysis = $feature_obj->get_Analysis($analysisid);
         $analhash{$analysisid} = $analysis;
         
-      } else {
+    } else {
         $analysis = $analhash{$analysisid};
-      }
+    }
     
-      $seqf1 = Bio::EnsEMBL::SeqFeature->new();
-      $seqf2 = Bio::EnsEMBL::SeqFeature->new();
-      $out = Bio::EnsEMBL::Map::MarkerFeature->new
+    $seqf1 = Bio::EnsEMBL::SeqFeature->new();
+    $seqf2 = Bio::EnsEMBL::SeqFeature->new();
+    $out = Bio::EnsEMBL::Map::MarkerFeature->new
 	( -feature1 => $seqf1, -feature2 => $seqf2 );
-      $out->set_all_fields
+    $out->set_all_fields
         ( $start,$end,$strand,$score,
           $name,'similarity',$self->id,
           $hstart,$hend,1,$score,$name,'similarity',$hid);
-          $out->analysis($analysis);
-      $out->mapdb( $self->dbobj->mapdb );
-      $out->id ($hid);
-      push( @result, $out );
-    }
-  };
-
-  if( $@ ) {
-    print STDERR ("Install the Ensembl-map package for this feature" );
-  }
-  return @result;
+    $out->analysis($analysis);
+    $out->mapdb( $self->dbobj->mapdb );
+    $out->id ($hid);
+    
+    push( @result, $out );
 }
 
+return @result;
+
+}                                       # _create_MarkerFeatures
 
 =head2 get_all_PredictionFeatures
 
@@ -1314,7 +1395,7 @@ sub get_all_ExternalFeatures{
 
    return @out;
 
-}
+}                                       # get_all_ExternalFeatures
 
 
 =head2 length
@@ -2516,69 +2597,6 @@ sub use_rawcontig_acc{
     return $obj->{'use_rawcontig_acc'};
 
 }
-
-=head2 get_repeatmasked_seq
-
- Title   : get_repeatmasked_seq
- Usage   : $seq = $obj->get_repeatmasked_seq()
- Function: Masks DNA sequence by replacing repeats with N's
- Returns : Bio::PrimarySeq
- Args    : none
-
-
-=cut
-
-
-sub get_repeatmasked_seq {
-    my ($self) = @_;
-    my @repeats = $self->get_all_RepeatFeatures();
-    my $seq = $self->primary_seq();
-    my $dna = $seq->seq();
-    my $masked_dna = $self->_mask_features($dna, @repeats);
-    my $masked_seq = Bio::PrimarySeq->new(   -seq => $masked_dna, 
-                                             -display_id => $self->id,         
-                                             -primary_id => $self->internal_id,
-                                             -moltype => 'dna',
-                                         );
-    return $masked_seq;
-}
-
-sub _mask_features {
-    my ($self, $dnastr,@repeats) = @_;
-    my $dnalen = CORE::length($dnastr);
-
-    $dnastr =~ s/[^A-Za-z\-\.\*]//g; #TEMP BUG FIX: removing rubbish from sequence, not sure where it comes from
-
-    REP:foreach my $f (@repeats) 
-    {
-
-	    my $start  = $f->start;
-	    my $end    = $f->end;
-	    my $length = ($end - $start) + 1;
-
-
-	    if ($start < 0 || $start > $dnalen || $end < 0 || $end > $dnalen) 
-        {
-	        print STDERR "Eeek! Coordinate mismatch - $start or $end not within $dnalen\n";
-	        next REP;
-	    }
-
-	    $start--;
-
-	    my $padstr = 'N' x $length;
-
-	    substr ($dnastr,$start,$length) = $padstr;
-        if ($dnastr !~ /^[A-Za-z\-\.\*]+$/)
-        {
-            $dnastr =~ s/[A-Za-z\-\.\*]//g;
-            $self->throw("Nonstandard characters found $dnastr\n"); 
-        }
-    }
-
-    return $dnastr;
-}
-
-
 
 =head2 overlap_distance_cutoff
 
