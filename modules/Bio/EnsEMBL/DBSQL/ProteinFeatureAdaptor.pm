@@ -79,94 +79,83 @@ use Bio::EnsEMBL::SeqFeature;
 =cut
 
 sub fetch_by_translation_id {
-    my($self,$transl) = @_;
+  my($self,$transl) = @_;
 
-    my @features;
-    my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
+  my @features;
+  my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
+  
+  
+  my $sth = $self->prepare(
+	      "SELECT p.seq_start, p.seq_end, p.analysis_id, 
+                      p.score, p.perc_ident, p.evalue, 
+                      p.hit_start, p.hit_end, p.hit_id, 
+                      x.display_label 
+               FROM protein_feature p,analysis a 
+               LEFT JOIN interpro AS i ON p.hit_id = i.id
+               LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac
+               WHERE p.translation_id = ? 
+               AND p.analysis_id = a.analysis_id 
+               AND a.gff_feature = ?");
 
-    my $sth = $self->prepare("SELECT p.seq_start, p.seq_end, p.analysis_id,
-                                     p.score, p.perc_ident, p.evalue, 
-                                     p.hit_start, p.hit_end, p.hit_id, 
-                                     d.short_description 
-                              FROM   protein_feature p,interpro_description 
-                                     d,interpro i,analysis a 
-                              WHERE  p.translation_id = '$transl' 
-                                     AND i.id = p.hit_id 
-                                     AND i.interpro_ac = d.interpro_ac 
-                                     AND p.analysis_id = a.id 
-                                     AND a.gff_feature = 'domain'");
-    $sth->execute();
+  $sth->execute("$transl", 'domain');
 
-    while( my $arrayref = $sth->fetchrow_arrayref) {
-      my ($start, $end, $analysisid, $score, $perc_id, $evalue, $hstart,
-	  $hend,$hid,$desc) = @{$arrayref};
-
-      my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
-
-      my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
-						   -start => $start,
-						   -end => $end,
-						   -score => $score, 
-						   -analysis => $analysis,
-						   -percent_id => $perc_id,
-						   -p_value => $evalue);
-	
-      my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
-						-end => $hend,
-						-analysis => $analysis,
-						-seqname => $hid);
-	
-      my $feature = new Bio::EnsEMBL::ProteinFeature(-feature1 => $feat1,
-						     -feature2 => $feat2,);
-
-      $feature->idesc($desc);
-      
-      if ($feature) {
-	push(@features,$feature);
-      }
-    }
-
-    $sth = $self->prepare ("SELECT p.seq_start, p.seq_end, p.analysis_id, 
+  while( my $row = $sth->fetchrow_arrayref) {
+    my ($start, $end, $analysisid, $score, $perc_id, $evalue, $hstart,
+	$hend,$hid,$desc) = @$row;
+    
+    my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
+    
+    my $feat = Bio::EnsEMBL::ProteinFeature->new();
+    $feat->seqname($transl);
+    $feat->start($start);
+    $feat->end($end);
+    $feat->analysis($analysis);
+    $feat->percent_id($perc_id);
+    $feat->p_value($evalue);
+    
+    $feat->hstart($hstart);
+    $feat->hend($hend);
+    $feat->hseqname($hid);
+    
+    $feat->idesc($desc);
+    
+    push(@features,$feat);
+  }
+  
+  $sth = $self->prepare ("SELECT p.seq_start, p.seq_end, p.analysis_id, 
                                    p.score, p.perc_ident, p.evalue, 
                                    p.hit_start, p.hit_end, p.hit_id 
                             FROM   protein_feature p, analysis a 
-                            WHERE  a.id = p.analysis_id 
-                                   AND p.translation_id = '$transl' 
-                                   AND p.analysis_id = a.id 
-                                   AND a.gff_feature != 'domain'");
+                            WHERE  a.analysis_id = p.analysis_id 
+                                   AND p.translation_id = ? 
+                                   AND a.gff_feature != ?");
 
-    $sth->execute();
+  $sth->execute("$transl", 'domain');
 
-    while( my $arrayref = $sth->fetchrow_arrayref) {
-	my ($start,$end,$analysisid,$score,$perc_id,
-	    $evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
-	
-	my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
-	
-
-	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
-						   -start => $start,
-						   -end => $end,
-						   -score => $score, 
-						   -analysis => $analysis,
-						   -percent_id => $perc_id,
-						   -p_value => $evalue);
-	
-	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
-						  -end => $hend,
-						  -analysis => $analysis,
-						  -seqname => $hid);
-	
-	my $feature = new Bio::EnsEMBL::ProteinFeature(-feature1 => $feat1,
-						       -feature2 => $feat2,);
-
-	$feature->idesc($desc);
-	if ($feature) {
-	    push(@features,$feature);
-	}
-    }
+  while( my $row = $sth->fetchrow_arrayref) {
+    my ($start,$end,$analysisid,$score,$perc_id,
+	$evalue,$hstart,$hend,$hid) = @$row;
     
-    return \@features;    
+    my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
+    
+    
+    my $feat = Bio::EnsEMBL::ProteinFeature->new();
+    $feat->seqname($transl);
+    $feat->start($start);
+    $feat->end($end);
+    $feat->analysis($analysis);
+    $feat->percent_id($perc_id);
+    $feat->p_value($evalue);
+    
+    $feat->hstart($hstart);
+    $feat->hend($hend);
+    $feat->hseqname($hid);
+    
+    
+    push(@features,$feat);	
+  }
+  
+  return \@features;    
 }
 
 
