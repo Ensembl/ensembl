@@ -725,38 +725,6 @@ sub length {
 }
 
 
-
-=head2 get_all_Introns
-
-  Args       : none
-  Example    : @introns = @{$transcript->get_all_Introns()};
-  Description: Returns an listref of Bio::EnsEMBL::Intron objects.  The result 
-               is not cached in any way, so calling each_Intron multiple times
-               will create new Intron objects (although they will, of course, 
-               have the same properties).
-  Returntype : list reference to Bio::EnsEMBL::Intron objects
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_all_Introns {
-    my( $self ) = @_;
-    
-    my @exons = @{$self->get_all_Exons};
-    my $last = @exons - 1;
-    my( @int );
-    for (my $i = 0; $i < $last; $i++) {
-        my $intron = Bio::EnsEMBL::Intron->new;
-        $intron->upstream_Exon  ($exons[$i]    );
-        $intron->downstream_Exon($exons[$i + 1]);
-        push(@int, $intron);
-    }
-    return \@int;
-}
-
-
-
 =head2 get_all_peptide_variations
 
   Arg [1]    : (optional) $snps listref of coding snps in cdna coordinates
