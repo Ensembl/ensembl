@@ -124,7 +124,7 @@ sub load_all{
     }
     elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
       print STDERR  "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
-      print STDERR "Called from ".caller()."\n";
+#      print STDERR "Called from ".caller()."\n";
       unless (my $return = do $ENV{ENSEMBL_REGISTRY}){
 	throw "Error in Configuration\n $!\n";
       }
@@ -138,16 +138,16 @@ sub load_all{
     }
   }
   else{
-    print STDERR "Already configured???\n";
+#    print STDERR "Already configured???\n";
 
-    if(defined($registry_register{'_DBA'})){ # print available
-      foreach my $db (@{$registry_register{'_DBA'}}){
-	print STDERR $db->species."\t".$db->group()."\n";
-      }
-    }
-    else{
-      print STDERR "No dbas ???\n";
-    }
+#    if(defined($registry_register{'_DBA'})){ # print available
+#      foreach my $db (@{$registry_register{'_DBA'}}){
+#	print STDERR $db->species."\t".$db->group()."\n";
+#      }
+#    }
+#    else{
+#      print STDERR "No dbas ???\n";
+#    }
   }
 }
 
@@ -428,11 +428,11 @@ sub add_adaptor{
     return;
   }
   if(defined($registry_register{$species}{$group}{$type})){ #&& warn_on_duplicates()){
-    print STDERR ("Overwriting Adaptor in Registry for $species $group $type\n");
+#    print STDERR ("Overwriting Adaptor in Registry for $species $group $type\n");
     $registry_register{$species}{$group}{$type} = $adap;
-    if($species eq 'Homo_sapiens' and $group eq  'core' and $type eq 'MetaCoordContainer'){
-      print STDERR stack_trace_dump();
-    }
+#    if($species eq 'Homo_sapiens' and $group eq  'core' and $type eq 'MetaCoordContainer'){
+#      print STDERR stack_trace_dump();
+#    }
    return;
   }
   $registry_register{$species}{$group}{$type} = $adap;
@@ -446,10 +446,10 @@ sub add_adaptor{
   else{
     push(@{$registry_register{$species}{'list'}},$adap);
   }
-  print STDERR "REGADD  $species \t $group \t $type to the registry\n";
-  if($type eq "MetaContainer"){
-    print STDERR "called by ".caller()."\n";
-  }
+#  print STDERR "REGADD  $species \t $group \t $type to the registry\n";
+#  if($type eq "MetaContainer"){
+#    print STDERR "called by ".caller()."\n";
+#  }
   if(!defined ($registry_register{$type}{$species})){
     my @list =();
     push(@list,$adap);
@@ -493,9 +493,9 @@ sub get_adaptor{
 
   my $ret = $registry_register{$species}{$group}{$type};
   if(!defined($ret)){
-    foreach my $arse (@{$registry_register{$species}{'list'}}){
-      print STDERR $species."\t".$arse."\n";
-    } 
+#    foreach my $arse (@{$registry_register{$species}{'list'}}){
+#      print STDERR $species."\t".$arse."\n";
+#    } 
     throw("COULD NOT FIND ADAPTOR species=$species\tgroup=$group\ttype=$type\n");
     print STDERR caller();
     print STDERR "\nfin\n";;
@@ -580,7 +580,7 @@ sub add_new_track{
 #  my $view = $config->{'type'};
 
 #  print STDERR "art => ".$config->{'general'}->{$view}{'_artefacts'}."\n";
-  print STDERR "art => ".$config->{'_artefacts'}."\n";
+#  print STDERR "art => ".$config->{'_artefacts'}."\n";
 
 #  find the vega point and use this as the start point.
   my $start = 1001;
@@ -591,7 +591,7 @@ sub add_new_track{
     $start = $config->{'transcript_lite'}->{'pos'};
   }
   else{ # no transcripts on this view so do not add track here
-    print STDERR "no transcript options on this display \n";
+#    print STDERR "no transcript options on this display \n";
     return;
   }
   my $KEY = $dba->group();
@@ -603,7 +603,7 @@ sub add_new_track{
 #  else{ # already added 
 #    return;
 #  }
-  print STDERR "HELL adding $KEY at pos $start\n";
+#  print STDERR "HELL adding $KEY at pos $start\n";
   $config->{$KEY} ={
 		    'on'    => "on",
 		    'compact' => 'yes',
