@@ -499,10 +499,10 @@ sub remove {
 
 
 
-=head2 remove_RawContig
+=head2 remove_by_RawContig
 
   Arg [1]    : Bio::Ensembl::RawContig $contig 
-  Example    : $feature_adaptor->remove_RawContig($contig);
+  Example    : $feature_adaptor->remove_by_RawContig($contig);
   Description: This removes features from the database which lie on a removed
                contig.  The table the features are removed from is defined by 
                the abstract method_tablename, and the primary key of the table
@@ -513,7 +513,7 @@ sub remove {
 
 =cut
 
-sub remove_RawContig {
+sub remove_by_RawContig {
   my ($self, $contig) = @_;
 
   unless($contig) {

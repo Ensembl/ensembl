@@ -607,7 +607,7 @@ sub remove {
     if ( ! $fa ) {
       $self->throw("Couldn't get a '$adaptor'Adaptor");
     }
-    $fa->remove_RawContig($contig);
+    $fa->remove_by_RawContig($contig);
   }
 
   # Delete DNA as long as we aren't using a remote DNA database.
