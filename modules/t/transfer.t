@@ -88,12 +88,12 @@ system($update) == 0 or die "$0\nError running '$update' : $!";
 print "ok 6\n";
 
 
-END {
-    my $drop_donor = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{donor}";
-    my $drop_recipient = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{recipient}";
-    system($drop_donor) == 0 or die "$0\nError running '$drop_donor' : $!";
-    system($drop_recipient) == 0 or die "$0\nError running '$drop_recipient' : $!";
-}
+#END {
+#    my $drop_donor = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{donor}";
+#    my $drop_recipient = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{recipient}";
+#    system($drop_donor) == 0 or die "$0\nError running '$drop_donor' : $!";
+#    system($drop_recipient) == 0 or die "$0\nError running '$drop_recipient' : $!";
+#}
 
 
 
