@@ -537,7 +537,12 @@ sub get_all_ExternalFeatures {
        foreach my $sf (@sfs) {
 	 my $start = $sf->start - $offset+1;
 	 my $end   = $sf->end   - $offset+1;
-	 if($start > 0) {
+	 if($start < 0 || $end > $self->length()) {
+	   #discard features which are not entirely on this contig.
+	   #features that span contigs should be shortened, but it is
+           #unlikely anyone uses features spanning contigs anyway
+	   next;
+	 }
 	 $sf->start($start);
 	 $sf->end($end);
 	 push(@out,$sf);

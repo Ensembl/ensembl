@@ -770,7 +770,7 @@ sub length {
 sub get_all_MapFrags {
     my $self = shift;
     my $mapset = shift;
-    return $self->adaptor->db->get_MapFragAdaptor->fetch_mapset_chr_start_end( 
+    return $self->adaptor->db->get_MapFragAdaptor->fetch_by_mapset_chr_start_end( 
         $mapset, $self->chr_name, $self->chr_start, $self->chr_end
     );
 }    
