@@ -99,7 +99,8 @@ sub fetch_by_Slice_start_end_strand {
            'incorrect assembly_exception information.');
    }
 
-   #no projection is necessary if there was no symlink
+   #call this method again with any slices that were 'symlinked' to by this
+   #slice
    if(@symproj != 1 || $symproj[0]->[2] != $slice) {
      my $seq;
      foreach my $segment (@symproj) {
@@ -115,17 +116,12 @@ sub fetch_by_Slice_start_end_strand {
    }
 
    # we need to project this slice onto the sequence coordinate system
-   # if it is not already in it
+   # even if the slice is in the same coord system, we want to trim out
+   # flanking gaps (if the slice is past the edges of the seqregion)
    my $csa = $self->db->get_CoordSystemAdaptor();
    my $seqlevel = $csa->fetch_sequence_level();
 
-   my @projection;
-   if($slice->coord_system->equals($seqlevel)) {
-     #create a fake projection to the entire length of the same slice
-     @projection = ([1, $slice->length, $slice]);
-   } else {
-     @projection = @{$slice->project($seqlevel->name(), $seqlevel->version())};
-   }
+   my @projection=@{$slice->project($seqlevel->name(), $seqlevel->version())};
 
    my $seq = '';
    my $total = 0;
@@ -200,15 +196,17 @@ sub _fetch_seq {
 
 =head2 store
 
-  Arg [1]    : string $seq_region_id the id of the sequence region this dna
+  Arg [1]    : int $seq_region_id the id of the sequence region this dna
                will be associated with.
-  Arg [2]    : string $sequence the dna sequence to be stored in the database
-  Example    : $dbID = $seq_adaptor->store(11, 'ACTGGGTACCAAACAAACACAACA');
+  Arg [2]    : string $sequence the dna sequence to be stored 
+               in the database.  Note that the sequence passed in will be
+               converted to uppercase.
+  Example    : $seq_adaptor->store(11, 'ACTGGGTACCAAACAAACACAACA');
   Description: stores a dna sequence in the databases dna table and returns the
                database identifier for the new record.
-  Returntype : int
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::DBSQL::RawContigAdaptor::store
+  Returntype : none
+  Exceptions : throw if the database insert fails
+  Caller     : sequence loading scripts
 
 =cut
 
@@ -224,14 +222,11 @@ sub store {
   my $statement = 
     $self->prepare("INSERT INTO dna(seq_region_id, sequence) VALUES(?,?)");
 
-  my $rv = $statement->execute($seq_region_id, $sequence);
-  throw("Failed to insert dna.") if(!$rv);
-
-  my $id = $statement->{'mysql_insertid'};
+  $statement->execute($seq_region_id, $sequence);
 
   $statement->finish();
 
-  return $id;
+  return;
 }
 
 
