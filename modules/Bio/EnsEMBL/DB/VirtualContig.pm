@@ -895,8 +895,11 @@ sub _build_contig_map{
 sub found_left_end {
     my ($self, $arg) = @_;
 
-    if (defined ($arg)) {
+    if (defined($arg) && ($arg == 1 || $arg == 0)) {
+
 	$self->{_found_left_end} = $arg;
+    } else {
+	$self->throw("Arg to found_left_end should be 0,1");
     }
 
     return $self->{_found_left_end};
@@ -918,8 +921,10 @@ sub found_left_end {
 sub found_right_end {
     my ($self,$arg) = @_;
 
-    if (defined($arg)) {
+    if (defined($arg) && ($arg == 1 || $arg == 0)) {
 	$self->{_found_right_end} = $arg;
+    } else {
+	$self->throw("Arg to found_right_end should be 0,1");
     }
 
     return $self->{_found_right_end};
@@ -977,13 +982,12 @@ sub _get_all_SeqFeatures_type {
    # ok - build the sequence feature list...
 
    my $sf;
+
    if( $self->_cache_seqfeatures() ) {
        $sf = $self->_make_cache($type);
    } else {
-       $sf = []; # will be destroyed when drops out of scope
+       $sf = []; 
    }
-
-#   print STDERR "About enter the hash call\n";
 
    foreach my $c ( values %{$self->{'contighash'}} ) {
        print STDERR "Looking at ",$c->id,"\n";
@@ -1023,14 +1027,15 @@ sub _convert_seqfeature_to_vc_coords{
    my ($self,$sf) = @_;
 
    my $cid = $sf->seqname();
+
    if( !defined $cid ) {
        $self->throw("sequence feature [$sf] has no seqname!");
    }
 
    my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
    
-   $sf->start($rstart);
-   $sf->end($rend);
+   $sf->start ($rstart);
+   $sf->end   ($rend);
    $sf->strand($rstrand);
 
    if( $sf->can('attach_seq') ) {
@@ -1038,6 +1043,21 @@ sub _convert_seqfeature_to_vc_coords{
    }
 
    $sf->seqname($self->id);
+
+   foreach my $f ($sf->sub_SeqFeature) {
+       my ($subrstart,$subrend,$subrstrand) = $self->_convert_start_end_strand_vc($cid,$f->start,$f->end,$f->strand);
+
+       $f->start ($subrstart);
+       $f->end   ($subrend);
+       $f->strand($subrstrand);
+
+       if( $sf->can('attach_seq') ) {
+	   $sf->attach_seq($self->primary_seq);
+       }
+       
+       $sf->seqname($self->id);
+   }
+       
 }
 
 =head2 _convert_start_end_strand_vc
