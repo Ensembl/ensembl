@@ -128,7 +128,7 @@ while (<AGP>) {
 
 		print SGP "$nt_ctg\t$chr\t", $raw_ctg->{'iid'};
 		print SGP "\t$chr_start\t$chr_end\t$nt_start\t$nt_end";
-		print SGP "\traw_start\t$raw_end\t$raw_ori\tNCBI\n";
+		print SGP "\t$raw_start\t$raw_end\t$raw_ori\tNCBI\n";
 
 		print INF $raw_ctg->{'id'}, "\t", $raw_ctg->{'iid'}, "\n";
 
