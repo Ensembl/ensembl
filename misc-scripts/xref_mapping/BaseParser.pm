@@ -208,14 +208,14 @@ sub upload_xrefs {
 	my %dep = %$depref;
 
 	$xref_sth->execute($dep{ACCESSION},
-			   "",
+			   $dep{LABEL},
 			   "",
 			   $dep{SOURCE_ID},
 			   $xref->{SPECIES_ID});
 
 	my $dep_xref_id = insert_or_select($xref_sth, $dbi->err, $dep{ACCESSION}, $dep{SOURCE_ID});
 			
-	$dep_sth->execute($xref_id, $dep_xref_id, '', $dep{SOURCE_ID} ) || die $dbi->errstr;
+	$dep_sth->execute($xref_id, $dep_xref_id, $dep{LINKAGE_ANNOTATION}, $dep{SOURCE_ID} ) || die $dbi->errstr;
 	# TODO linkage anntation?
 
       }				# foreach dep
