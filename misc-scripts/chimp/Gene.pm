@@ -10,8 +10,8 @@ use warnings;
 package Gene;
 
 
-use Bio::EnsEMBL::Utils::Exception qw(info throw);
-
+use Bio::EnsEMBL::Utils::Exception qw(info throw warning);
+use Bio::EnsEMBL::DBEntry;
 
 use constant NEAR => 1.5e6;
 
@@ -45,6 +45,9 @@ sub store_gene {
     }
   }
 
+  # create xrefs to reference the human transcripts and translations
+  create_ensembl_xrefs($ctranscripts);
+
   # transfer xrefs from human transcripts/translations
   transfer_xrefs($hum_gene, $ctranscripts);
 
@@ -67,6 +70,14 @@ sub store_gene {
 
     # one gene for each cluster
     my $cgene = Bio::EnsEMBL::Gene->new();
+
+    # add reference to the original human gene
+    $cgene->add_DBEntry(Bio::EnsEMBL::DBEntry->new
+                        (-primary_id => $hum_gene->stable_id(),
+                         -version    => $hum_gene->version(),
+                         -dbname     => 'Ens_Hs_gene',
+                         -release    => 1,
+                         -display_id => $hum_gene->stable_id()));
 
     generate_stable_id($cgene);
 
@@ -194,11 +205,24 @@ sub compact_transcripts {
   info("Compacting transcripts");
 
   foreach my $transcript (@$transcripts) {
-    my $hashkey = '';
+    my $hashkey = 'exons:';
 
     foreach my $exon (@{$transcript->get_all_Exons}) {
       $hashkey .= '('.$exon->hashkey.')';
     }
+
+    # include the translation in the hashkey because sometimes the
+    # same transcripts may end up with different translations
+    # (this is especially possible when split transcripts become partially the
+    # same)
+    if($transcript->translation) {
+      $hashkey .= 'translation:' .
+        $transcript->translation->start() . '-' .
+        $transcript->translation->end() . '(' .
+        $transcript->translation->start_Exon->hashkey() . ')('.
+        $transcript->translation->end_Exon->hashkey() . ')';
+    }
+
 
     $unique_hash{$hashkey} ||= [];
     push @{$unique_hash{$hashkey}}, $transcript;
@@ -273,6 +297,7 @@ sub merge_xrefs {
 
   if(@new_tl_xrefs && !$tl) {
     throw("Some duplicate transcripts have translations, and others do not?");
+    return;
   }
 
   foreach my $xref (@new_tl_xrefs) {
@@ -303,8 +328,8 @@ sub cluster_transcripts {
     my $cl = undef;
 
     foreach my $c (@clusters) {
-      if(is_near($tr->start(),$tr->end(),$tr->strand(),
-                 $c->{'start'}, $c->{'end'}, $c->{'strand'})) {
+      if(is_near($tr->start(), $tr->end(), $tr->strand(), $tr->slice(),
+                 $c->{'start'}, $c->{'end'}, $c->{'strand'}, $c->{'slice'})) {
 
         $cl = $c;
       }
@@ -322,6 +347,7 @@ sub cluster_transcripts {
       $cl = {'start'  => $tr->start(),
              'end'    => $tr->end(),
              'strand' => $tr->strand(),
+             'slice'  => $tr->slice(),
              'transcripts' => [$tr]};
 
       push @clusters, $cl;
@@ -334,8 +360,8 @@ sub cluster_transcripts {
     for(my $j = $i+1; $j < @clusters; $j++) {
       my $c1 = $clusters[$i];
       my $c2 = $clusters[$j];
-      if(is_near($c1->{'start'}, $c1->{'end'}, $c1->{'strand'},
-                 $c2->{'start'}, $c2->{'end'}, $c2->{'strand'})) {
+      if(is_near($c1->{'start'}, $c1->{'end'}, $c1->{'strand'}, $c1->{'slice'},
+              $c2->{'start'}, $c2->{'end'}, $c2->{'strand'}, $c2->{'slice'})) {
         # merge clusters and take one of them out of the list
         splice(@clusters, $j, 1);
 
@@ -375,10 +401,15 @@ sub cluster_transcripts {
 
 
 sub is_near {
-  my ($start1,$end1,$strand1, $start2, $end2, $strand2) = @_;
+  my ($start1,$end1,$strand1, $slice1, $start2, $end2, $strand2, $slice2) = @_;
 
   # cannot be clustered if not on same strand
   if($strand1 != $strand2) {
+    return 0;
+  }
+
+  # cannot be clustered if not on same slice
+  if($slice1->name() ne $slice2->name()) {
     return 0;
   }
 
@@ -440,6 +471,32 @@ sub transfer_xrefs {
   }
 
   return;
+}
+
+
+
+sub create_ensembl_xrefs {
+  my $chimp_transcripts = shift;
+
+  foreach my $transcript (@$chimp_transcripts) {
+    my $dbe = Bio::EnsEMBL::DBEntry->new
+      (-primary_id => $transcript->stable_id(),
+       -version    => $transcript->version(),
+       -dbname     => 'Ens_Hs_transcript',
+       -release    => 1,
+       -display_id => $transcript->stable_id());
+    $transcript->add_DBEntry($dbe);
+
+    if($transcript->translation()) {
+      $dbe = Bio::EnsEMBL::DBEntry->new
+        (-primary_id => $transcript->translation->stable_id(),
+         -version    => $transcript->translation->version(),
+         -dbname     => 'Ens_Hs_translation',
+         -release    => 1,
+         -display_id => $transcript->translation->stable_id());
+      $transcript->translation->add_DBEntry($dbe);
+    }
+  }
 }
 
 1;

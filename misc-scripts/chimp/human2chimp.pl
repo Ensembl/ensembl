@@ -149,7 +149,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
 
     my $genes = $gene_adaptor->fetch_all_by_Slice($slice);
 
-    foreach my $gene (reverse @$genes) {
+    foreach my $gene (@$genes) {
       info("Gene: ".$gene->stable_id);
       my $transcripts = $gene->get_all_Transcripts();
 
@@ -170,6 +170,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
         foreach my $tr (@$finished_transcripts) {
           if($tr->translation() && $transcript->translation()) {
             $tr->translation->stable_id($transcript->translation->stable_id);
+            $tr->translation->version($transcript->translation->version);
           }
         }
 
@@ -284,6 +285,7 @@ sub transfer_transcript {
 
   my $chimp_transcript = InterimTranscript->new();
   $chimp_transcript->stable_id($transcript->stable_id());
+  $chimp_transcript->version($transcript->version());
   $chimp_transcript->cdna_coding_start($transcript->cdna_coding_start());
   $chimp_transcript->cdna_coding_end($transcript->cdna_coding_end());
 

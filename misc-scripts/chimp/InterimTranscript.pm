@@ -60,6 +60,12 @@ sub stable_id {
   return $self->{'stable_id'};
 }
 
+sub version {
+  my $self = shift;
+  $self->{'version'} = shift if(@_);
+  return $self->{'version'};
+}
+
 sub cdna_coding_start {
   my $self = shift;
   $self->{'cdna_coding_start'} = shift if(@_);

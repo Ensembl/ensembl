@@ -198,6 +198,7 @@ sub split_itrans {
   my @first_exons;
   my $first_trans = InterimTranscript->new();
   $first_trans->stable_id($itrans->stable_id());
+  $first_trans->version($itrans->version);
 
   my $cur_exon = shift(@remaining_exons);
 
@@ -315,6 +316,7 @@ sub make_Transcript {
 
   my $transcript = Bio::EnsEMBL::Transcript->new();
   $transcript->stable_id($itrans->stable_id);
+  $transcript->version($itrans->version);
 
   info("making final transcript for ". $itrans->stable_id);
 
