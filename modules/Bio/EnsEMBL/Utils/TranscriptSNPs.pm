@@ -413,8 +413,8 @@ sub get_all_cdna_SNPs {
       $new_snp->start($coord->start);
       $new_snp->end($coord->end);
       $new_snp->strand(1);
-      $new_snp->{'alleles'} = $alleles;
-      $new_snp->{'_ambiguity_code'} = $ambicode;
+      $new_snp->allele_string($alleles);
+      $new_snp->ambig_code($ambicode);
       push @{$snp_hash{$type}}, $new_snp;
     }
   }
