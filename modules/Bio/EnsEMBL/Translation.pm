@@ -329,13 +329,13 @@ sub transform {
   my $end_exon = $self->end_Exon();
 
   if ( exists $$href_exons{$start_exon} ) {
-    $self->start_exon($$href_exons{$start_exon});
+    $self->start_Exon($$href_exons{$start_exon});
   } else {
     # do nothing, the start exon wasnt mapped
   }
 
   if ( exists $$href_exons{$end_exon} ) {
-    $self->end_exon($$href_exons{$end_exon});
+    $self->end_Exon($$href_exons{$end_exon});
   } else { 
     # do nothing, the end exon wasnt mapped
   }
@@ -402,7 +402,7 @@ sub end_exon_id{
 	       "out the object. We have returned the dbID of the Exon object. "
              . "This might not be what you want!");
 
-   return $self->end_exon->dbID;
+   return $self->end_Exon->dbID;
 }
 
 
@@ -426,6 +426,13 @@ sub start_exon {
   $self->start_Exon(@args);
 }
 
+sub end_exon {
+  my ($self, @args) = @_;
+
+  $self->warn("end_exon has been renamed start_Exon " . caller);
+
+  $self->end_Exon(@args);
+}
 
 =head2 start_exon_id
 
@@ -451,7 +458,7 @@ sub start_exon_id{
 	       "to get out the object. We have returned the dbID of the " .
 	       "Exon object. This might not be what you want!");
 
-   return $self->start_exon->dbID;
+   return $self->start_Exon->dbID;
 }
 
 

@@ -95,8 +95,8 @@ sub fetch_by_dbID {
      $self->throw("Could not find start or end exon in transcript\n");
    }
 
-   $out->start_exon($start_exon);
-   $out->end_exon($end_exon);
+   $out->start_Exon($start_exon);
+   $out->end_Exon($end_exon);
    $out->dbID($rowhash->{'tlid'});
    $out->adaptor( $self );
    
@@ -108,8 +108,8 @@ sub fetch_by_dbID {
 sub store {
   my ( $self, $translation )  = @_;
 
-  unless( defined $translation->start_exon->dbID && 
-	  defined $translation->end_exon->dbID ) {
+  unless( defined $translation->start_Exon->dbID && 
+	  defined $translation->end_Exon->dbID ) {
     $self->throw("Attempting to write a translation where the dbIDs of the " .
 		 "start and exons are not set. This is most likely to be " .
 		 "because you assigned the exons for translation start_exon " .
@@ -117,7 +117,7 @@ sub store {
 		 "objects from your transcript exons - although it could " .
 		 "also be an internal error in the adaptors. For your " .
 		 "info the exon memory locations are " . 
-		 $translation->start_exon." and ".$translation->end_exon());
+		 $translation->start_Exon." and ".$translation->end_Exon());
   }
 
   my $sth = $self->prepare( "INSERT INTO translation( seq_start, start_exon_id,
@@ -125,9 +125,9 @@ sub store {
                              VALUES( ?,?,?,? )");
 
   $sth->execute( $translation->start(),
-		 $translation->start_exon()->dbID(),
+		 $translation->start_Exon()->dbID(),
 		 $translation->end(),
-		 $translation->end_exon()->dbID() );
+		 $translation->end_Exon()->dbID() );
 
   $translation->dbID( $sth->{'mysql_insertid'} );
   $translation->adaptor( $self );

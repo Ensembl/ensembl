@@ -317,6 +317,7 @@ sub store {
 
 sub fetch_by_Gene {
   my ( $self, $gene ) = @_;
+ 
   my $query1 = "SELECT t.translation_id 
                 FROM transcript t
                 WHERE t.gene_id = ?";
@@ -325,16 +326,18 @@ sub fetch_by_Gene {
   $sth1->execute( $gene->dbID );
 
   while (my $transid = $sth1->fetchrow) {
+   
     my $translation_xrefs = 
       $self->_fetch_by_object_type( $transid, 'Translation' );
     foreach my $translink(@$translation_xrefs) {
       $gene->add_DBLink($translink);
     }
   }
-
-  my $genelinks = $self->_fetch_by_object_type( $gene->stable_id, 'Gene' );
-  foreach my $genelink ( @$genelinks ) {
-    $gene->add_DBLink( $genelink );
+  if($gene->stable_id){
+    my $genelinks = $self->_fetch_by_object_type( $gene->stable_id, 'Gene' );
+    foreach my $genelink ( @$genelinks ) {
+      $gene->add_DBLink( $genelink );
+    }
   }
 }
 
