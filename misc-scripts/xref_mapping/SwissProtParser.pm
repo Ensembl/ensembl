@@ -1,6 +1,7 @@
-# Parse SwissProt files to create xrefs.
+# Parse UniProt/SwissProt files to create xrefs.
 
 package SwissProtParser;
+
 
 use strict;
 use POSIX qw(strftime);
