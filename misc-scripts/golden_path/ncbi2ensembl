@@ -13,6 +13,7 @@ use strict;
 # 1. and 2. are given with the assembly; 3. must be dumped out
 # It might be a good idea to sort 1. by chromosome name, so that
 # the chromosome_id and name match for chr 1 to 22
+#  Additionally requires golden_path type as last option
 #
 # [examples at end of file]
 #
@@ -36,10 +37,9 @@ use strict;
 # where another assembly is already stored.
 
 
-my($nt, $agp, $raw, $chr);
+my($nt, $agp, $raw, $gptype);
 
-($nt, $agp, $raw) = @ARGV or die "horribly";
-$chr = shift or undef;
+($nt, $agp, $raw, $gptype) = @ARGV or die "horribly";
 
 my %chr_len;
 my $chr_id = 1;
@@ -51,14 +51,12 @@ my %used_ctg_ids;
 my $default_ori = 1;
 my $chr_offset = 0;	# chr coordinates may be off by 1
 			# but depends on the assembly version...
-my $gptype = 'NCBI_30';
 my $allow_pipe = 0;	# convert '|' to '_'
 
 
 open NT,  "< $nt"  or die "Can't open nt_contig file $nt";
 open AGP, "< $agp" or die "Can't open agp file $agp";
 open CTG, "< $raw" or die "Can't open raw contig file $raw";
-open CHR, "< $chr" or die "Can't open chromosome file $chr";
 
 open SGP, "> static.txt" or die "Can't open static.txt for output";
 open INF, "> idlist.txt" or die "Can't open idlist.txt for output";
@@ -75,13 +73,9 @@ while (<NT>) {
         $chr_len{$chr}->{'end'}   = undef;
 	$chr_id++;
     };
-    unless (defined $chr_len{$chr}->{'start'} && $chr_len{$chr}->{'start'} < $start) {
-	$chr_len{$chr}->{'start'} = $start;
-    }
 
-    unless (defined $chr_len{$chr}->{'end'} && $chr_len{$chr}->{'end'} > $end) {
-	$chr_len{$chr}->{'end'} = $end;
-    }
+    $chr_len{$chr}->{'start'} ||= $start;
+    $chr_len{$chr}->{'end'} = $end;
 
     if    ($ori eq '+') { $ori = 1;  }
     elsif ($ori eq '-') { $ori = -1; }
@@ -213,7 +207,7 @@ foreach my $chr (keys %chr_len) {
 	0,
 	0,
 	0,
-	$chr_len{$chr}->{'end'} - $chr_len{$chr}->{'start'} + 1
+	$chr_len{$chr}->{'end'}
     ), "\n" if $used_chr_ids{$chr_len{$chr}->{'id'}};
 }
 
