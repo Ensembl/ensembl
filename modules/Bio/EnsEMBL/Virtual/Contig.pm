@@ -114,6 +114,23 @@ sub _make_datastructures {
     return $self;
 }
 
+
+sub new_from_one {
+    my ($class,$contig) = @_;
+
+    my $self = {};
+    bless $self,$class;
+    $self->_make_datastructures();
+
+    if (! $contig->isa('Bio::EnsEMBL::DB::ContigI') ) {
+	$self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI object, cannot make Virtual Contig!");
+    }
+    
+    $self->_vmap->create_MapContig($contig,1,$contig->length,1,1);
+    $self->id($contig->id);
+    return $self;
+}
+
 sub new {
     my ($class,@args) = @_;
     
@@ -1443,10 +1460,11 @@ sub _reverse_map_Exon{
 		   last;
 	       }
 	   }
-	   if( $found == 0 ) {
-	       $self->throw("Internal error - unable to find map contig with this id");
-	   }
        }
+       if( $found == 0 ) {
+	   $self->throw("Internal error - unable to find map contig with this id");
+       }
+
 
        my $vcstart = $exon->start;
        #print STDERR "Looking from exon-wise",$exon->start,":",$exon->end,"\n";
@@ -1811,6 +1829,7 @@ sub noseq{
     }
     return $obj->{'_noseq'};    
 }
+
 
 1;
 
