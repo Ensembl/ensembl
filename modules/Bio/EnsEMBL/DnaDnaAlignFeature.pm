@@ -13,76 +13,76 @@ package Bio::EnsEMBL::DnaDnaAlignFeature;
 
 =head1 SYNOPSIS
 
-  my $feat = new Bio::EnsEMBL::DnaDnaAlignFeature(-seqname => 'myseq',
-						  -start   => 100,
-						  -end     => 120,
-						  -strand  => 1,
-						  -hstart  => 200,
-						  -hend    => 220,
-						  -analysis    => $analysis,
-						  -cigar_string => '100,200,3:110,210,11');
+    my $feat = new Bio::EnsEMBL::DnaDnaAlignFeature(-seqname => 'myseq',
+						    -start   => 100,
+						    -end     => 120,
+						    -strand  => 1,
+						    -hstart  => 200,
+						    -hend    => 220,
+						    -analysis    => $analysis,
+						    -cigar_string => '100,200,3:110,210,11');
 
-  # Alternatively if you have an array of ungapped features
+Alternatively if you have an array of ungapped features
 
-      my $feat = new Bio::EnsEMBL::DnaDnaAlignFeature(-features => \@features);
+    my $feat = new Bio::EnsEMBL::DnaDnaAlignFeature(-features => \@features);
 
-  # Where @features is an array of Bio::EnsEMBL::FeaturePair
+Where @features is an array of Bio::EnsEMBL::FeaturePair
 
-  # There is a method to manipulate the cigar_string into ungapped features
+There is a method to manipulate the cigar_string into ungapped features
 
-      my @ungapped_features = $feat->ungapped_features;
+    my @ungapped_features = $feat->ungapped_features;
 
-  # This converts the cigar string into an array of Bio::EnsEMBL::FeaturePair
+This converts the cigar string into an array of Bio::EnsEMBL::FeaturePair
 
-  # $analysis is a Bio::EnsEMBL::Analysis object
-  
-  # Bio::EnsEMBL::SeqFeature methods can be used
-  # Bio::EnsEMBL::FeaturePair methods can be used
+$analysis is a Bio::EnsEMBL::Analysis object
 
-  # The cigar_string contains the ungapped pieces that make up the gapped alignment
-  #
-  # It's format is qstart,qend,length*strand.
-  #
-  # So in the above example the gapped alignment contains 2 ungapped pieces from
-  #
-  # 100-102 in the query and 200-202 in the hit and
-  # 110-120 in the query and 210-220 in the hit.
-  #
-  # The length parts of the cigar string are positive as the strand is +ve.
+Bio::EnsEMBL::SeqFeature methods can be used
+Bio::EnsEMBL::FeaturePair methods can be used
+
+The cigar_string contains the ungapped pieces that make up the gapped alignment
+
+It's format is qstart,qend,length*strand.
+
+So in the above example the gapped alignment contains 2 ungapped pieces from
+
+    100-102 in the query and 200-202 in the hit and
+    110-120 in the query and 210-220 in the hit.
+
+The length parts of the cigar string are positive as the strand is +ve.
 
 
-  # To make things clearer this is how a blast HSP would be parsed
+To make things clearer this is how a blast HSP would be parsed
 
-  #>AK014066
-  #       Length = 146
+    >AK014066
+           Length = 146
 
-  #  Minus Strand HSPs:
+      Minus Strand HSPs:
 
-  #  Score = 76 (26.8 bits), Expect = 1.4, P = 0.74
-  #  Identities = 20/71 (28%), Positives = 29/71 (40%), Frame = -1
+      Score = 76 (26.8 bits), Expect = 1.4, P = 0.74
+      Identities = 20/71 (28%), Positives = 29/71 (40%), Frame = -1
 
-  #Query:   479 GLQAPPPTPQGCRLIPPPPLGLQAPLPTLRAVGSSHHHP*GRQGSSLSSFRSSLASKASA 300
-  #             G  APPP PQG R   P P G + P   L             + + ++  R  +A   +
-  #Sbjct:     7 GALAPPPAPQG-RWAFPRPTG-KRPATPLHGTARQDRQVRRSEAAKVTGCRGRVAPHVAP 64
+    Query:   479 GLQAPPPTPQGCRLIPPPPLGLQAPLPTLRAVGSSHHHP*GRQGSSLSSFRSSLASKASA 300
+                 G  APPP PQG R   P P G + P   L             + + ++  R  +A   +
+    Sbjct:     7 GALAPPPAPQG-RWAFPRPTG-KRPATPLHGTARQDRQVRRSEAAKVTGCRGRVAPHVAP 64
 
-  #Query:   299 SSPHNPSPLPS 267
-  #                H P+P P+
-  #Sbjct:    65 PLTHTPTPTPT 75
+    Query:   299 SSPHNPSPLPS 267
+                    H P+P P+
+    Sbjct:    65 PLTHTPTPTPT 75
 
-  #The alignment goes from 267 to 479 in sequence 1 and 7 to 75 in sequence 2 and the
-  #strand is -1.
+The alignment goes from 267 to 479 in sequence 1 and 7 to 75 in sequence 2 and the
+strand is -1.
 
-  #The alignment is made up of the following ungapped pieces :
+The alignment is made up of the following ungapped pieces :
 
-  #sequence 1 start 447 , sequence 2 start 7  , match length 33 , strand -1
-  #sequence 1 start 417 , sequence 2 start 18 , match length 27 , strand -1
-  #sequence 1 start 267 , sequence 2 start 27 , match length 137 , strand -1
+    sequence 1 start 447 , sequence 2 start 7  , match length 33 , strand -1
+    sequence 1 start 417 , sequence 2 start 18 , match length 27 , strand -1
+    sequence 1 start 267 , sequence 2 start 27 , match length 137 , strand -1
 
-  #These ungapped pieces are made up into the following string (called a cigar string)
+These ungapped pieces are made up into the following string (called a cigar string)
 
-  #447,7,-33:417,18,-27:267,27,-137
+    447,7,-33:417,18,-27:267,27,-137
 
-  #i.e. seqstart1,seqstart2,length: etc
+i.e. seqstart1,seqstart2,length: etc
 
 
 =cut 
