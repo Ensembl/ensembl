@@ -529,7 +529,8 @@ CREATE TABLE identity_xref(
 
 CREATE TABLE go_xref (
   object_xref_id int(10) unsigned DEFAULT '0' NOT NULL,
-  linkage_type enum('computational','experimental','curated'),
+  linkage_type enum('IC', 'IDA', 'IEA', 'IEP', 'IGI', 'IMP', 
+		    'IPI', 'ISS', 'NAS', 'ND', 'TAS' ) NOT NULL,
   PRIMARY KEY (object_xref_id)
 );
 
