@@ -10,6 +10,9 @@
 
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (1,'analysis_test3','nb3','gogene','h3r','gff_test','gff_feat');
 
+INSERT INTO analysisprocess (analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (1,'NOW','analysis_test3','nb3',3,'gogene',1,'gff_test','gff_feat');
+
+
 #
 # Dumping data for table 'chromosome'
 #
