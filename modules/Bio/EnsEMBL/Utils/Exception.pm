@@ -8,15 +8,30 @@ Bio::EnsEMBL::Utils::Exception - Utility functions for error handling
 
 =head1 SYNOPSIS
 
-    use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate verbose)
+    use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate verbose try catch);
+
+    or to get all methods just
+
+    use Bio::EnsEMBL::Utils::Exception;
 
     eval {
       throw("this is an exception with a stack trace");
-    );
-    
+    };
+
     if($@) {
       print "Caught exception:\n$@";
     }
+
+    # or you can us the try/catch confortable syntax instead
+    # to deal with throw or die.
+    # don't forget the ";" after the catch block
+    # With this syntax, the original $@ is in $_ in the catch subroutine.
+
+    try {
+      throw("this is an exception with a stack trace");
+    } catch {
+      print "Caught exception:\n$_";
+    };
 
     #silence warnings
     verbose('OFF');
@@ -74,12 +89,11 @@ package Bio::EnsEMBL::Utils::Exception;
 
 use Exporter;
 
-use vars qw(@ISA @EXPORT_OK);
+use vars qw(@ISA @EXPORT);
 
 @ISA = qw(Exporter);
-
-@EXPORT_OK = qw(&throw &warning &stack_trace_dump 
-                &stack_trace &verbose &deprecate &info);
+@EXPORT = qw(throw warning stack_trace_dump 
+             stack_trace verbose deprecate info try catch);
 
 my $VERBOSITY         = 3000;
 my $DEFAULT_INFO      = 4000;
@@ -435,6 +449,52 @@ sub deprecate {
   $DEPRECATED{"$line:$file"} = 1;
 }
 
+=head2 try/catch
 
+  Arg [1]    : anonymous subroutine
+               the block to be tried
+  Arg [2]    : return value of the catch function
+  Example    : use Bio::EnsEMBL::Utils::Exception qw(throw try catch)
+               The syntax is:
+               try { block1 } catch { block2 };
+               { block1 } is the 1st argument
+               catch { block2 } is the 2nd argument
+               e.g.
+               try {
+                 throw("this is an exception with a stack trace");
+               } catch {
+                 print "Caught exception:\n$_";
+               };
+               In block2, $_ is assigned the value of the first
+               throw or die statement executed in block 1.
+
+  Description: Replaces the classical syntax
+               eval { block1 };
+               if ($@) { block2 }
+               by a more confortable one.
+               In the try/catch syntax, the original $@ is in $_ in the catch subroutine.
+               This try/catch implementation is a copy and paste from
+               "Programming Perl" 3rd Edition, July 2000, by L.Wall, T. Christiansen
+               & J. Orwant. p227, and is only possible because of the possibility of
+               subroutine prototypes.
+  Returntype : implemented by the catch block
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub try (&$) {
+  my ($try, $catch) = @_;
+  eval { &$try };
+  if ($@) {
+    chop $@;
+    local $_ = $@;
+    &$catch;
+  }
+}
+
+sub catch (&) {
+  shift;
+}
 
 1;
