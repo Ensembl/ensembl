@@ -110,12 +110,29 @@ sub new_fast {
 =cut
 
 sub add_attribute {
-  my ($self, $type, $value) = @_;
+  throw( "You need to make Attribute objects now, use add_Attribute" );
+}
 
-  throw('Type argument is required') if(!$type);
+=head2 add_Attribute
 
-  $self->{'attributes'}->{$type} ||= [];
-  push @{$self->{'attributes'}->{$type}}, $value
+  Arg [1]    : Bio::EnsEMBL::Attribute $attribute
+  Example    : $misc_feature->add_attribute($attribute);
+  Description: Adds an attribute to this misc. feature
+  Returntype : none
+  Exceptions : throw on wrong argument type
+  Caller     : general
+
+=cut
+
+sub add_Attribute {
+  my ($self, $attrib) = @_;
+
+  if( ! defined $attrib || ! $attrib->isa( "Bio::EnsEMBL::Attribute" )) {
+    throw( "You have to provide a Bio::EnsEMBL::Attribute, not a [$attrib]" );
+  }
+
+  $self->{'attributes'} ||= [];
+  push @{$self->{'attributes'}}, $attrib
 }
 
 
@@ -133,61 +150,42 @@ sub add_attribute {
 =cut
 
 sub add_set {
-  my ($self, $set) = @_;
+  throw( "Use add_MiscSet instead." );
+}
 
-  if(!$set || !ref($set) || !$set->isa('Bio::EnsEMBL::MiscSet')) {
+
+=head2 add_MiscSet
+
+  Arg [1]    : Bio::EnsEMBL::MiscSet $set
+               The set to add
+  Example    : $misc_feature->add_MiscSet(Bio::EnsEMBL::MiscSet->new(...));
+  Description: Associates this MiscFeature with a given Set.
+  Returntype : none
+  Exceptions : throw if the set arg is not provided,
+               throw if the set to be added does not have a code
+  Caller     : general
+
+=cut
+
+
+sub add_MiscSet {
+  my $self = shift;
+  my $miscSet = shift;
+
+  if(!$miscSet || !ref($miscSet) || !$miscSet->isa('Bio::EnsEMBL::MiscSet')) {
     throw('Set argument must be a Bio::EnsEMBL::MiscSet');
   }
 
-  my $code = $set->code();
+  $self->{'miscSets'} ||= [];
 
-  throw('Set must be associated with a code to be added') if(!$code);
-
-  $self->{'sets'}->{$code} = $set;
+  push( @{$self->{'miscSets'}}, $miscSet );
 }
 
-
-
-=head2 get_attribute_types
-
-  Arg [1]    : none
-  Example    : @attrib_types = $misc_feature->get_attribute_types();
-  Description: returns a list of attribute types that this feature has
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_attribute_types {
-  my $self = shift;
-  $self->{'attributes'} ||= {};
-
-  return keys %{$self->{'attributes'}};
-}
-
-=head2 get_set_codes
-
-  Arg [1]    : none
-  Example    : @set_codes = $misc_feature->get_set_codes();
-  Description: returns a list of codes for the sets this feature is associated
-               with
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_set_codes {
-  my $self = shift;
-  $self->{'sets'} ||= {};
-  return keys %{$self->{'sets'}};
-}
 
 
 =head2 get_set
 
-  Arg [1]    : string $code
+  Arg [1]    : optional string $code
                The code of the set to retrieve
   Example    : $set = $misc_feature->get_set($code);
   Description: Retrieves a set that this feature is associated with via its
@@ -200,14 +198,36 @@ sub get_set_codes {
 =cut
 
 sub get_set {
+  throw( "Use get_MiscSets()" );
+}
+
+
+=head2 get_all_MiscSets
+
+  Arg [1]    : optional string $code
+               The code of the set to retrieve
+  Example    : $set = $misc_feature->get_all_MiscSets($code);
+  Description: Retrieves a set that this feature is associated with via its
+               code. Can return empty lists. Usually returns about one elements lists.
+  Returntype : listref of Bio::EnsEMBL::MiscSet
+  Exceptions : throw if the code arg is not provided
+  Caller     : general
+
+=cut
+
+
+sub get_all_MiscSets {
   my $self = shift;
   my $code = shift;
 
-  throw('Code arg is required.') if (!$code);
-
-  return $self->{'sets'}->{$code};
+  $self->{'miscSets'} ||= [];
+  if( defined $code ) {
+    my @results = grep { uc($_->code())eq uc( $code ) } @{$self->{'miscSets'}};
+    return \@results;
+  } else {
+    return $self->{'miscSets'};
+  }
 }
-
 
 
 =head2 get_attribute
@@ -223,18 +243,37 @@ sub get_set {
 =cut
 
 sub get_attribute {
-  my $self = shift;
-  my $type = shift;
-
-  throw('Type arg is required.') if(!$type);
-
-  if(exists $self->{'attributes'}->{$type}) {
-    return wantarray() ? @{$self->{'attributes'}->{$type}} : $self->{'attributes'}->{$type}->[0];
-  }
-
-  return ();
+  throw( "Use get_Attributes now" );
 }
 
+
+=head2 get_all_Attributes
+
+  Arg [1]    : optional string $code
+               The code of the Attribute objects to retrieve
+  Example    : @attributes = $misc_feature->get_all_Attributes('name');
+  Description: Retrieves a list of Attribute objects for given code or all
+               of the associated Attributes.
+  Returntype : listref of Bio::EnsEMBL::Attribute
+  Exceptions : 
+  Caller     : general
+
+=cut
+
+sub get_all_Attributes {
+  my $self = shift;
+  my $code = shift;
+
+  my @results;
+  my $result;
+
+  if( defined $code ) {
+    @results = grep { uc( $_->code() ) eq uc( $code )} @{$self->{'attributes'}};
+    return \@results;
+  } else {
+    return $self->{'attributes'};
+  }
+}
 
 
 =head2 display_id
@@ -252,9 +291,13 @@ sub get_attribute {
 
 sub display_id {
   my $self = shift;
-  my ($attrib) = $self->get_attribute('name');
-  ($attrib) =  $self->get_attribute('synonym') if(!$attrib);
-  return $attrib || '';
+  my ($attrib) = @{$self->get_all_Attributes('name')};
+  ($attrib) =  @{$self->get_all_Attributes('synonym')} if(!$attrib);
+  if( defined $attrib ) {
+    return $attrib->value();
+  } else {
+    return '';
+  }
 }
 
 

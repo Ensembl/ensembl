@@ -87,14 +87,12 @@ sub print_features {
   my $features = shift;
   foreach my $f (@$features) {
     if(defined($f)) {
-      my @attrib_types = $f->get_attribute_types;
-      my @attrib_vals  = map {"$_ => " . join(',',$f->get_attribute($_))} @attrib_types;
+      my @attribs = @{$f->get_all_Attributes() };
+      my @sets = @{$f->get_all_MiscSets()};
 
-      my @set_codes = $f->get_set_codes;
-      my @set_names = map {"$_ => " . $f->get_set($_)->name()} @set_codes;
-
-      my $attrib_string = join(":", @attrib_vals);
-      my $set_string = join(":", @set_names);
+      
+      my $attrib_string = join(":", map { $_->code()." => ".$_->value() } @attribs );;
+      my $set_string = join(":", map { $_->code() } @sets );
 
       my $seqname = $f->slice->seq_region_name();
       debug($seqname . ' ' . $f->start().'-'.$f->end().'('.$f->strand().

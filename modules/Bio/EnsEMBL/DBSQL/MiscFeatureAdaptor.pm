@@ -49,6 +49,7 @@ package Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor;
 use strict;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::MiscFeature;
+use Bio::EnsEMBL::Attribute;
 use Bio::EnsEMBL::MiscSet;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
@@ -214,8 +215,10 @@ sub _columns {
 	     mf.seq_region_end
 	     mf.seq_region_strand
 	     ma.value
-       at.code
-       mfms.misc_set_id);
+	     at.code
+	     mfms.misc_set_id
+	     at.name
+	     at.description);
 }
 
 
@@ -284,11 +287,13 @@ sub _objs_from_sth {
   my %sr_cs_hash;
 
   my($misc_feature_id, $seq_region_id, $seq_region_start, $seq_region_end,
-     $seq_region_strand, $attrib_value, $attrib_type_code, $misc_set_id);
+     $seq_region_strand, $attrib_value, $attrib_type_code, $misc_set_id,
+     $attrib_type_name, $attrib_type_description );
 
   $sth->bind_columns( \$misc_feature_id, \$seq_region_id, \$seq_region_start,
                       \$seq_region_end, \$seq_region_strand,
-                      \$attrib_value, \$attrib_type_code,\$misc_set_id);
+                      \$attrib_value, \$attrib_type_code,\$misc_set_id,
+		      \$attrib_type_name, \$attrib_type_description );
 
   my $asm_cs;
   my $cmp_cs;
@@ -334,15 +339,25 @@ sub _objs_from_sth {
       if($misc_set_id) {
         my $misc_set = $ms_hash{$misc_set_id} ||=
           $msa->fetch_by_dbID($misc_set_id);
-        #doesn't matter if it is added twice in same slot
-        $feat_misc_sets->{$misc_set->{'code'}} = $misc_set;
+        if( ! exists $feat_misc_sets->{$misc_set->{'code'}} ) {
+	  $feat->add_MiscSet( $misc_set );
+	  $feat_misc_sets->{$misc_set->{'code'}} = $misc_set;
+	}
       }
 
       #if there is a new attribute add it to the current feature
       if($attrib_value && $attrib_type_code &&
          !$seen_attribs->{"$attrib_type_code:$attrib_value"}) {
-        $feat_attribs->{$attrib_type_code} ||= [];
-        push @{$feat_attribs->{$attrib_type_code}}, $attrib_value;
+	my $attrib = Bio::EnsEMBL::Attribute->new
+	  ( -CODE => $attrib_type_code,
+	    -NAME => $attrib_type_name,
+	    -DESC => $attrib_type_description,
+	    -VALUE => $attrib_value
+	  );
+	
+	
+        $feat_attribs ||= [];
+        push @$feat_attribs, $attrib;
         $seen_attribs->{"$attrib_type_code:$attrib_value"} = 1;
       }
 
@@ -419,15 +434,15 @@ sub _objs_from_sth {
         $slice = $dest_slice;
       }
 
-      if($misc_set_id) {
-        #get the misc_set object
-        my $misc_set = $ms_hash{$misc_set_id} ||=
-          $msa->fetch_by_dbID($misc_set_id);
-        $feat_misc_sets->{$misc_set->{'code'}} = $misc_set;
-      }
 
       if($attrib_value && $attrib_type_code) {
-        $feat_attribs->{$attrib_type_code} = [$attrib_value];
+	my $attrib = Bio::EnsEMBL::Attribute->new
+	  ( -CODE => $attrib_type_code,
+	    -NAME => $attrib_type_name,
+	    -DESC => $attrib_type_description,
+	    -VALUE => $attrib_value
+	  );
+        $feat_attribs = [$attrib];
         $seen_attribs->{"$attrib_type_code:$attrib_value"} = 1;
       }
 
@@ -438,9 +453,18 @@ sub _objs_from_sth {
           'slice'   => $slice,
           'adaptor' => $self,
           'dbID'    => $misc_feature_id,
-          'attributes' => $feat_attribs,
-          'sets'    => $feat_misc_sets});
+          'attributes' => $feat_attribs });
       push @features, $feat;
+
+      if($misc_set_id) {
+        #get the misc_set object
+        my $misc_set = $ms_hash{$misc_set_id} ||=
+          $msa->fetch_by_dbID($misc_set_id);
+        if( ! exists $feat_misc_sets->{$misc_set->{'code'}} ) {
+	  $feat->add_MiscSet( $misc_set );
+	  $feat_misc_sets->{$misc_set->{'code'}} = $misc_set;
+	}
+      }
     }
   }
 
@@ -465,6 +489,8 @@ sub list_dbIDs {
 
    return $self->_list_dbIDs("misc_feature");
 }
+
+
 
 1;
 

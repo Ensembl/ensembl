@@ -3,10 +3,11 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 11
+	plan tests => 8
 }
 
 use MultiTestDB;
+use Bio::EnsEMBL::Attribute;
 use Bio::EnsEMBL::MiscFeature;
 use Bio::EnsEMBL::MiscSet;
 use TestUtils qw(debug test_getter_setter);
@@ -39,43 +40,47 @@ my $ms2 = Bio::EnsEMBL::MiscSet->new(4, undef,
 
 
 
-$mf->add_set($ms1);
-$mf->add_set($ms2);
+$mf->add_MiscSet($ms1);
+$mf->add_MiscSet($ms2);
 
 
-ok($mf->get_set($ms1->code) == $ms1);
-ok($mf->get_set($ms2->code) == $ms2);
+my $ms3 = $mf->get_all_MiscSets($ms1->code)->[0];
+my $ms4 = $mf->get_all_MiscSets($ms2->code)->[0];
 
-my @codes = $mf->get_set_codes;
+ok( $ms3 == $ms1);
+ok( $ms4 == $ms2);
 
-ok(@codes == 2);
-
-@codes = grep {($_ eq $ms1->code()) || ($_ eq $ms2->code())} @codes;
-
-ok(@codes == 2);
 
 #
 # Test add_attribute, get_attribute_types, get_attribute
 #
 
-my $name1 = 'test name';
-my $name2 = 'AL4231124.1';
+my $name1 = Bio::EnsEMBL::Attribute->new
+  ( -CODE => 'name',
+    -VALUE => 'test name'
+  );
 
-$mf->add_attribute('name',  $name1);
+my $name2 = Bio::EnsEMBL::Attribute->new
+  ( -CODE => 'name',
+    -VALUE => 'AL4231124.1'
+  );
 
-ok($mf->display_id eq $name1);
 
-$mf->add_attribute('name',  $name2);
-$mf->add_attribute('version', '4');
+$mf->add_Attribute( $name1 );
 
-my @types = $mf->get_attribute_types();
-ok(@types == 2);
+ok($mf->display_id eq "test name");
 
-@types = grep {$_ eq 'name' || $_ eq 'version'} @types;
+$mf->add_Attribute( $name2 );
 
-ok(@types == 2);
+my $vers1 = Bio::EnsEMBL::Attribute->new
+  ( -CODE => 'version',
+    -VALUE => 4
+  );
 
-my @attribs = $mf->get_attribute('name');
+$mf->add_Attribute( $vers1 );
+
+
+my @attribs = @{$mf->get_all_Attributes('name')};
 
 ok(@attribs == 2);
 
@@ -83,5 +88,8 @@ ok(@attribs == 2);
 
 ok(@attribs == 2);
 
-@attribs = $mf->get_attribute('version');
-ok(@attribs == 1 && $attribs[0] eq '4');
+@attribs = @{$mf->get_all_Attributes('version')};
+ok(@attribs == 1 && $attribs[0]->value() eq '4');
+
+@attribs = @{$mf->get_all_Attributes()};
+ok( @attribs == 3 );

@@ -795,59 +795,44 @@ sub get_seq_region_id {
 }
 
 
-=head2 get_all_attribute_types
 
-  Arg [1]    : none
-  Example    : my @attribute_types = $slice->get_attribute_types();
-  Description: Gets a list of the types of attributes associated with the
-               seq_region this slice is on.
-  Returntype : list of strings
+=head2 get_all_Attributes
+
+  Arg [1]    : optional string $attrib_code
+               The code of the attribute type to retrieve values for.
+  Example    : ($htg_phase) = @{$slice->get_all_Attributes('htg_phase')};
+               @slice_attributes    = @{$slice->get_all_Attributes()};
+  Description: Gets a list of Attributes of this slice''s seq_region.
+               Optionally just get Attrubutes for given code.
+  Returntype : listref Bio::EnsEMBL::Attribute
   Exceptions : warning if slice does not have attached adaptor
   Caller     : general
 
 =cut
 
-sub get_attribute_types {
-  my $self = shift;
-
-  if(!$self->adaptor()) {
-    warning('Cannot get attributes without an adaptor.');
-    return ();
-  }
-  my %attrib_hash = %{$self->adaptor->get_seq_region_attribs($self)};
-  return keys %attrib_hash;
-}
-
-
-=head2 get_attribute
-
-  Arg [1]    : string $attrib_type
-               The code of the attribute type to retrieve values for.
-  Example    : ($htg_phase) = $slice->get_attribute('htg_phase');
-               @synonyms    = $slice->get_attribute('synonyms');
-  Description: Gets a list of values for a given attribute of this
-               slice''s seq_region.
-  Returntype : list of strings
-  Exceptions : warning is slice does not have attached adaptor
-               throw if argument is not provided
-  Caller     : general
-
-=cut
-
-sub get_attribute {
+sub get_all_Attributes {
   my $self = shift;
   my $attrib_code = shift;
 
-  throw('Attrib code argument is required.') if(!$attrib_code);
+  my $result;
+  my @results; 
 
   if(!$self->adaptor()) {
     warning('Cannot get attributes without an adaptor.');
-    return ();
+    return [];
   }
 
-  my %attribs = %{$self->adaptor->get_seq_region_attribs($self)};
+  my $attribute_adaptor = $self->db->get_AttributeAdaptor();
 
-  return @{$attribs{uc($attrib_code)} || []};
+  if( defined $attrib_code ) {
+    @results = grep { uc($_->code()) eq uc($attrib_code) }  
+      @{$attribute_adaptor->fetch_all_by_Slice( $self )};
+    $result = \@results;
+  } else {
+    $result = $attribute_adaptor->fetch_all_by_Slice( $self );
+  }
+
+  return $result;
 }
 
 
