@@ -60,6 +60,7 @@ use Bio::EnsEMBL::SeqFeature;
 
 sub _initialize {
   my($self,@args) = @_;
+
   my $make = $self->SUPER::_initialize(@args);
 
   my ($start_frac,$end_frac) = 
@@ -67,8 +68,10 @@ sub _initialize {
 			    END_FRAC
 			    )],@args);
 
-  $start_frac && $self->start_frac($start_frac);
-  $end_frac   && $self->end_frac  ($end_frac);
+  print("starty $start_frac $end_frac\n");
+
+  if ($start_frac) {$self->start_frac($start_frac);}
+  if ($end_frac)   {$self->end_frac  ($end_frac);}
   
   return $make;
 }
@@ -89,6 +92,7 @@ sub _initialize {
 
 sub start_frac {
     my ($self,$arg) = @_;
+
 
     if (defined $arg) {
 	$self->throw("ERROR: only 1,2,3 allowed for end_frac : $arg") unless ($arg == 1 || $arg == 2 || $arg == 3);
