@@ -1366,7 +1366,7 @@ sub get_all_PredictionFeatures {
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
 	   $current_fset->analysis($analysis);
-	   $current_fset->seqname($hid);
+	   $current_fset->seqname($self->id);
 	   $current_fset->id($count);
 	   $current_fset->score(0.0);
            $count++;
@@ -1377,7 +1377,7 @@ sub get_all_PredictionFeatures {
 
        $out = new Bio::EnsEMBL::SeqFeature;
        
-       $out->seqname   ($hid);
+       $out->seqname   ($self->id);
        $out->raw_seqname($hid);
 
        $out->start     ($start);
