@@ -80,7 +80,7 @@ my $usefile  = 0;
 my $pepformat = 'Fasta';
 my $test=0;
 my $part=0;
-my $verbose   = 0;
+my $verbose=0;
 my $outfile;
 my $checkdna;
 # test
@@ -149,12 +149,22 @@ my @vcs;
 
 if( $usefile == 1 ) {
     while( <> ) {
+	print $_;
 	my ($focus_contig,$focus_position,$ori,$left,$right);
-	($focus_contig,$focus_position,$ori,$left,$right) =~ /(S+),(S+),(S+),(S+),(S+)/ or
+	if (/(.+)\,(.+)\,(.+)\,(.+)\,(.+)/) { 
+	    $focus_contig=$1;
+	    $focus_position=$2;
+	    $ori=$3;
+	    $left=$4;
+	    $right=$5;
+	}
+	else {
+	    print STDERR "Got $focus_contig and $focus_position and $ori and $left and $right\n";
 	    die ("Could not read vc parameter file!\n The format should be one vc 
-per line, with vc parameters separated by commas!");
+per line, ith vc parameters separated by commas!");
+	}
 	my @list=($focus_contig,$focus_position,$ori,$left,$right);
-	push(@vcs,@list);
+	push(@vcs,\@list);
     }
 } else {
     $focuscontig || die ("Need to supply a focus contig!\n");
