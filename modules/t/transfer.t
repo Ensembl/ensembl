@@ -104,8 +104,8 @@ my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 $don_db =  Bio::EnsEMBL::DBLoader->new($locator);
 
-my $dbname = $conf{'recipient'};
-my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+$dbname = $conf{'recipient'};
+$locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 $rec_db =  Bio::EnsEMBL::DBLoader->new($locator);
 
 $gene=$don_db->get_Gene('ENSG00000019482');
