@@ -70,8 +70,8 @@ my $vc=$gene_obj->get_Virtual_Contig($conf{'transcript'},150000);
 print "ok 3\n";
 #$vc->_dump_map;
 
-my $seq=$vc->primary_seq;
-my $subseq=$seq->subseq(3333,3567);
+my $seq=$vc->virtual_primary_seq;
+my $subseq=$seq->subseq(10,20);
 print "Subseq is $subseq\n";
 $vc->id;
 my $length=$vc->length;

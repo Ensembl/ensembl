@@ -391,12 +391,11 @@ sub primary_seq {
        }
        if( $mc->orientation == 1 ) {
 	   print STDERR "About to call with ",$mc->start_in,":",$end,"\n";
-
 	   $trunc = $tseq->subseq($mc->start_in,$end);
        } else {
-	   $trunc = $tseq->subseq($end,$mc->start_in);
-	   $trunc =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
-	   my $trunc = CORE::reverse $trunc;
+	   my $subseq = $tseq->subseq($end,$mc->start_in);
+	   $subseq =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+	   $trunc = CORE::reverse $subseq;
        }
        $seq_string .= $trunc;
        $last_point  = $mc->end;

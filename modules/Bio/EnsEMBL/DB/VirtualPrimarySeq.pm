@@ -203,8 +203,8 @@ sub seq {
        if( $mc->orientation == 1 ) {
 	   $trunc = $tseq->subseq($mc->start_in,$end);
        } else {
-	   $trunc = $tseq->subseq($end,$mc->start_in);
-	   my $trunc = $self->revcom($trunc);
+	   my $subseq = $tseq->subseq($end,$mc->start_in);
+	   $trunc = $self->revcom($subseq);
        }
        $seq_string .= $trunc;
        $last_point += length($trunc);
@@ -244,11 +244,26 @@ sub subseq{
    
    my ($start_rc,$start_rc_pos)=$self->_vmap->vcpos_to_rcpos($start);
    my ($end_rc,$end_rc_pos)=$self->_vmap->vcpos_to_rcpos($end);
-   
-   print STDERR "START: contig ".$start_rc->id." and pos. $start_rc_pos\n";
-   print STDERR "END: contig ".$end_rc->id." and pos. $end_rc_pos\n";
+   my $mc;
+   my $start_gap=0;
+   my $end_gap=0;
 
-   my $mc=$self->_vmap->get_MapContig($start_rc->id);
+   if ($start_rc ne 'N') {
+       print STDERR "START: contig ".$start_rc->id." and pos. $start_rc_pos\n";
+       $mc=$self->_vmap->get_MapContig($start_rc->id);  
+   }
+   else {
+       print STDERR "Start vc position in gap...\n";
+       $start_gap=1;
+   }
+
+   if ($end_rc ne 'N') {
+       print STDERR "END: contig ".$end_rc->id." and pos. $end_rc_pos\n";
+   }
+   else {
+       print STDERR "End vc position in gap...\n";
+       $end_gap=1;
+   }
 
    #Let's deal straight away with the simplest case, i.e. start and end in 
    #the same RawContig. This is a very powerful way to reduce the time it 
@@ -257,21 +272,24 @@ sub subseq{
    #If start and end RawContig identical, just do a subseq and complement it 
    #if the orientation of the RawContig in the VirtualContig is -1
    my $subseq;
-   if ($start_rc->id eq $end_rc->id) {
-       print STDERR "Using the new fast VirtualPrimarySeq method to retrieve sequence!\n";
-       
-       if ($mc->orientation == 1) {
-	   my $seq=$start_rc->primary_seq->subseq($start_rc_pos,$end_rc_pos);
-	   return $seq;
-       }
-       else {
-	   my $seq=$start_rc->primary_seq->subseq($end_rc_pos,$start_rc_pos);
-	   return $seq;
-	   #return $self->revcom($seq);
+   if ((!$start_gap) && (!$end_gap)) {
+       if ($start_rc->id eq $end_rc->id) {
+	   print STDERR "Using the new fast VirtualPrimarySeq method to retrieve sequence!\n";
+	   
+	   if ($mc->orientation == 1) {
+	       my $seq=$start_rc->primary_seq->subseq($start_rc_pos,$end_rc_pos);
+	       return $seq;
+	   }
+	   else {
+	       my $seq=$start_rc->primary_seq->subseq($end_rc_pos,$start_rc_pos);
+	       #return $seq;
+	       return $self->revcom($seq);
+	   }
        }
    }
+       
    #If the start and end RawContig are different, then it gets a bit more complicated...
-   #else {
+   else {
 
        #First of all we get the seq from the start in the start RawContig to its golden_end
        #Again, if the orientation is negative we do it the other way around and revcom it!
@@ -328,6 +346,7 @@ sub subseq{
    #} 
    
    #Need to do this properly...
+   $start--;
    return substr $self->seq, $start, ($end-$start);
    #return $subseq;
 }
@@ -474,10 +493,8 @@ sub _clone_map{
 
 sub revcom{
     my ($self,$str)=@_;
-    
     $str =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
     my $revcom = CORE::reverse $str;
-
     return $revcom;
 }
 1;
