@@ -157,7 +157,8 @@ sub _objs_from_sth {
       $chr, $start, $end, $strand, 
       $slice_start, $slice_end, $slice_strand,
       $exon, $exon_start, $exon_end, $exon_strand,
-      $stable_start, $stable_end, $stable_ctg);
+      $stable_start, $stable_end, $stable_ctg,
+      $transcript_slice_start, $transcript_slice_end );
   my (%analysis_hash, %contig_hash);
 
   if($slice) {
@@ -186,8 +187,9 @@ sub _objs_from_sth {
       $pre_trans->set_exon_count($exon_count);
   
       if(@out) {
-	#throw away last pred_transcript if none of the exons were on the slice
-	if(@out && $slice && $on_slice_flag == 0) {
+	#throw away last pt if no exons or introns were on the slice
+	if($slice && ( $transcript_slice_end < 1 || 
+		       $transcript_slice_start > $slice->length() )) {
 	  pop @out;
 	} else {
 	  #set the stable_id of the previous prediction
@@ -198,11 +200,12 @@ sub _objs_from_sth {
       push( @out, $pre_trans );
 
       #reset values used for last predtrans
-      $on_slice_flag = 0;
-      $last_end = undef;
       $stable_start = -1;
       $stable_end   = -1;
       $stable_ctg = '';
+
+      $transcript_slice_end = undef;
+      $transcript_slice_start = undef;
     }
 
     #recalculate stable id values
@@ -229,14 +232,6 @@ sub _objs_from_sth {
       #if mapped to gap skip
       next unless(defined $start);
 
-      #determine if any portion of the transcript is on the slice
-      if(($start <= $slice_end && $end >= $slice_start) ||  #exon overlaps?
-	 (defined $last_end && 
-	  $last_end < $slice_start && $start > $slice_end)) { #intron overlaps?
-	$on_slice_flag = 1;
-      }
-
-      $last_end = $end;
       
       #convert to slice coordinates
       if($slice_strand == -1) {
@@ -248,7 +243,16 @@ sub _objs_from_sth {
 	$exon_end    = $end   - $slice_start   + 1;
 	$exon_strand = $strand;
       }   
+
+      if( !defined $transcript_slice_start || 
+	  $transcript_slice_start > $exon_start ) {
+	$transcript_slice_start = $exon_start;
+      }
       
+      if( ! defined $transcript_slice_end ||
+	  $transcript_slice_end < $exon_end ) {
+	$transcript_slice_end = $exon_end;
+      }
       #use slice as the contig instead of the raw contig
       $contig = $slice;
     } else {
@@ -270,13 +274,16 @@ sub _objs_from_sth {
 
     $pre_trans->add_Exon($exon, $exon_rank);
   }
-
+  
   #throw away last  pred_transcript if it had no exons overlapping the slice
-  if(@out && $slice && $on_slice_flag == 0) {
-    pop @out;
-  } else {
-    #set the stable id of the last prediction transcript
-    $out[$#out]->stable_id("$stable_ctg.$stable_start.$stable_end");
+  if(@out) {
+    if($slice && ( $transcript_slice_end < 1 || 
+		   $transcript_slice_start > $slice->length() )) {
+      pop @out;
+    } else {
+      #set the stable id of the last prediction transcript
+      $out[$#out]->stable_id("$stable_ctg.$stable_start.$stable_end");
+    }
   }
 
   return \@out;
