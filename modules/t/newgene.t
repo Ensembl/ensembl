@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..27\n"; 
+BEGIN { $| = 1; print "1..28\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -300,6 +300,19 @@ else {
     print STDERR "Could not get the test translation from the database!\n";
 }
 
+$gene_obj->delete_Exon('test_exon_1');
+#Checking if the exon has been really deleted
+eval {
+    my $gene = $gene_obj->get_Exon('test_exon_1');
+};
+if ($@) {
+    print "ok 27\n";
+}
+else {
+    print "not ok 27\n";
+    print STDERR "Exon still present after deleting!\n";
+} 
+
 $gene_obj->delete($gene->id);
 #Checking if the gene has been really deleted
 eval {
@@ -307,10 +320,10 @@ eval {
 };
 
 if ($@) {
-    print "ok 27\n";
+    print "ok 28\n";
 }
 else {
-    print "not ok 27\n";
+    print "not ok 28\n";
     print STDERR "Gene still present after deleting!\n";
 } 
 
