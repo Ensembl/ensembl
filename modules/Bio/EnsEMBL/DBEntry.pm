@@ -194,6 +194,26 @@ sub dump {
   }
 }
 
+=head2 status
+
+ Title   : status
+ Usage   : $obj->status($newval)
+ Function: 
+ Returns : value of status
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub status{
+ my ( $self, $arg ) = @_;
+   if( defined $arg ) {
+       $self->{_status} = $arg;
+   } 
+   return $self->{_status};
+}
+
+
 #Cheat to comply with bioperl
 sub comment {
     my ($self) = @_;
