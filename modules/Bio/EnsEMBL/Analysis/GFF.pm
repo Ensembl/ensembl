@@ -156,8 +156,8 @@ sub _parse {
     $self->_make_analysis;
     
     open(IN,"<$file") || $self->throw("Can't open $file");
-
-    while (defined(IN) && my $line = <IN>) {
+    my $fh = \*IN;
+    while (my $line = <$fh>) {
 	if ($line !~ /^\#/) {
 	    my $feature = $self->_parse_line($line);
 	    $self->add_Feature($feature);
