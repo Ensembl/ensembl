@@ -191,11 +191,11 @@ sub ensembl_annseq_output {
 sub id_EnsEMBL {
     my $annseq = shift;
 
-    return $annseq->id;
+    #return $annseq->id;
 
     # JGRG - is this correct?  I thought phase 3 was HUM.
     my $division = $annseq->htg_phase == 4 ? 'HUM' : 'HTG';
-    my $length = $annseq->seq->length();
+    my $length = $annseq->length();
     my $id = $annseq->id();
 
     return sprintf("%-9s  ENSEMBL; DNA; %s; %d BP.", $id, $division, $length );
@@ -226,13 +226,13 @@ sub sv_EnsEMBL {
        return undef;
    }
 
-   return $annseq->id() . "." . $annseq->sv
+   return $annseq->id() . "." . $annseq->sv;
 }
 
 sub ac_EnsEMBL {
    my ($annseq) = @_;
 
-   return $annseq->id() . ";";
+   return $annseq->id();
 }
 
 
