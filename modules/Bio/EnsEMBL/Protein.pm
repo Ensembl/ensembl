@@ -343,6 +343,43 @@ sub moltype{
 
 }
 
+=head2 start
+
+ Title   : start
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub start{
+   my ($self) = @_;
+   return 0;
+
+}
+
+=head2 end
+
+ Title   : end
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub end{
+   my ($self) = @_;
+   my $length = $self->length;
+   return $length;
+
+}
+
 
 1;
 
