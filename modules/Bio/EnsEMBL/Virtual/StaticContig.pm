@@ -172,9 +172,7 @@ sub get_all_SimilarityFeatures_above_score{
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
     
-    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
-	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
-    
+  
        
     my    $statement = "SELECT f.id, 
                                f.seq_start+s.chr_start-s.raw_start,
@@ -193,6 +191,10 @@ sub get_all_SimilarityFeatures_above_score{
     my  $sth = $self->dbobj->prepare($statement);    
     $sth->execute(); 
 
+
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
+    
     $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,
 		       \$name,\$hstart,\$hend,\$hid,\$chr_start,\$chr_end,\$raw_ori);
 
@@ -301,7 +303,9 @@ sub get_all_RepeatFeatures {
   my $chr_name=$self->_chr_name;
   
 
-  my $statement = "SELECT rf.id,rf.seq_start+sgp.chr_start,rf.seq_end+sgp.chr_start,
+  my $statement = "SELECT rf.id,
+                          rf.seq_start+sgp.chr_start-sgp.raw_start,
+                          rf.seq_end+sgp.chr_start-sgp_raw_start,
                           rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
                           sgp.raw_ori,sgp.chr_start,sgp.chr_end 
                    FROM   repeat_feature rf,static_golden_path sgp
@@ -312,9 +316,9 @@ sub get_all_RepeatFeatures {
   
 
   my $sth = $self->dbobj->prepare($statement);
-  
   $sth->execute();
   
+
   my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid,$raw_ori,$chr_start,$chr_end);
   
   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,
