@@ -47,19 +47,19 @@ sub new {
     my ($class, @args) = @_;
     my $self = $class->SUPER::new(@args);
     my ($query_identity, $target_identity, $score, $evalue, 
-        $cigar_line, $hit_start, $hit_end, $translation_start,
+        $cigar_line, $query_start, $query_end, $translation_start,
         $translation_end, $analysis ) = $self->_rearrange(
         [qw(QUERY_IDENTITY TARGET_IDENTITY SCORE EVALUE CIGAR_LINE 
-            HIT_START HIT_END TRANSLATION_START TRANSLATION_END
+            QUERY_START QUERY_END TRANSLATION_START TRANSLATION_END
             ANALYSIS)], @args);
     
     $self->{'query_identity'} = $query_identity;
-    $self->{'traget_identity'} = $target_identity;
+    $self->{'target_identity'} = $target_identity;
     $self->{'score'} = $score;
     $self->{'evalue'} = $evalue;
     $self->{'cigar_line'} = $cigar_line;
-    $self->{'hit_start'} = $hit_start;
-    $self->{'hit_end'} = $hit_end;
+    $self->{'query_start'} = $query_start;
+    $self->{'query_end'} = $query_end;
     $self->{'translation_start'} = $translation_start;
     $self->{'translation_end'} = $translation_end;
     $self->{'analysis'} = $analysis;
@@ -166,39 +166,39 @@ sub translation_end {
 }
 
 
-=head2 hit_start
+=head2 query_start
 
-  Arg [1]    : string $hit_start
+  Arg [1]    : string $query_start
   Example    : none
-  Description: get/set for attribute hit_start
+  Description: get/set for attribute query_start
   Returntype : string
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub hit_start {
+sub query_start {
    my $self = shift;
-  $self->{'hit_start'} = shift if( @_ );
-  return $self->{'hit_start'};
+  $self->{'query_start'} = shift if( @_ );
+  return $self->{'query_start'};
 }
 
 
-=head2 hit_end
+=head2 query_end
 
-  Arg [1]    : string $hit_end
+  Arg [1]    : string $query_end
   Example    : none
-  Description: get/set for attribute hit_end
+  Description: get/set for attribute query_end
   Returntype : string
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub hit_end {
+sub query_end {
    my $self = shift;
-  $self->{'hit_end'} = shift if( @_ );
-  return $self->{'hit_end'};
+  $self->{'query_end'} = shift if( @_ );
+  return $self->{'query_end'};
 }
 
 
@@ -289,8 +289,8 @@ sub get_mapper {
   }    
   my $translation_start = $self->translation_start();
   my $translation_end = $self->translation_end();
-  my $hit_start = $self->hit_start();
-  my $hit_end = $self->hit_end();
+  my $query_start = $self->query_start();
+  my $query_end = $self->query_end();
 
   #  my $hit_id = $self->display_id();
   my $hit_id = "external_id";
@@ -305,12 +305,12 @@ sub get_mapper {
     if( $char eq "M" ) {
       $mapper->add_map_coordinates( $translation_id, $translation_start,
 				    $translation_start + $length - 1,
-				    1, $hit_id, $hit_start, $hit_start + $length - 1 );
-      $hit_start += $length;
+				    1, $hit_id, $query_start, $query_start + $length - 1 );
+      $query_start += $length;
       $translation_start += $length;
 
     } elsif( $char eq "D" ) {
-      $hit_start += $length;
+      $query_start += $length;
     } elsif( $char eq "I" ) {
       $translation_start += $length;
     }
