@@ -156,9 +156,9 @@ sub _initialize {
 	      }
 	      
 	      if( $le->strand == -1 ) {
-		  $trans->end($le->end - $le->end_phase );
+		  $trans->end($le->start + $le->end_phase );
 	      } else {
-		  $trans->end($le->end + $le->end_phase );
+		  $trans->end($le->end - $le->end_phase );
 	      }
 	      my $tid = $transcript->id();
 	      # horrible

@@ -13,28 +13,37 @@ my $fdbtype = 'timdb';
 my $fhost   = 'croc';
 my $fport   = '410000';
 my $fdbname = 'ensdev';
+my $fdbuser = 'ensembl';
 
 my $tdbtype = 'rdb';
 my $thost   = 'croc';
 my $tport   = '410000';
 my $tdbname = 'ensdev';
+my $tdbuser = 'ensembl';
 
 my $usefile = 0;
 my $use_embl = 0;
-my $tdbuser = 'ensembl';
+
+my $cstart = 0;
+my $cend;
+my $getall = 0;
 
 &GetOptions( 
 	     'fembl'     => \$use_embl, 
 	     'fdbtype:s' => \$fdbtype,
 	     'fhost:s'   => \$fhost,
 	     'fport:n'   => \$fport,
+	     'fdbuser:s' => \$fdbuser,
 	     'tdbtype:s' => \$tdbtype,
 	     'fdbname:s' => \$fdbname,
 	     'thost:s'   => \$thost,
 	     'tport:n'   => \$tport,
 	     'tdbname:s' => \$tdbname,
 	     'tdbuser:s' => \$tdbuser,
+	     'getall'    => \$getall,
 	     'usefile'   => \$usefile,
+	     'start:i'     => \$cstart,
+	     'end:i'       => \$cend
 	     );
 
 my $from_db;
@@ -42,14 +51,8 @@ my $to_db;
 
 my @clone;
 
-if( $usefile == 1 ) {
-    while( <> ) {
-	my ($en) = split;
-	push(@clone,$en);
-    }
-} else {
-    @clone = @ARGV;
-}
+
+
 
 open(ERROR,">transfer.error\n");
 
@@ -65,12 +68,32 @@ if( $tdbtype =~ 'ace' ) {
 if( $fdbtype =~ 'ace' ) {
     $from_db = Bio::EnsEMBL::AceDB::Obj->new( -host => $fhost, -port => $fport);
 } elsif ( $fdbtype =~ 'rdb' ) {
-    $from_db = Bio::EnsEMBL::DBSQL::Obj->new( -user => 'root', -db => $fdbname , -host => $fhost );
+    $from_db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $fdbuser, -db => $fdbname , -host => $fhost );
 } elsif ( $fdbtype =~ 'timdb' ) {
     $from_db = Bio::EnsEMBL::TimDB::Obj->new(\@clone,0,0,1);
 } else {
     die("$fdbtype is not a good type (should be ace, rdb or timdb)");
 }
+
+if( $usefile == 1 ) {
+    while( <> ) {
+	my ($en) = split;
+	push(@clone,$en);
+    }
+} elsif ( $getall == 1 ) {
+    @clone = $from_db->get_all_Clone_id();
+    print STDERR scalar(@clone)." clones found in DB\n";
+} else {
+    @clone = @ARGV;
+}
+
+
+if( defined $cend ) {
+    print STDERR "splicing $cstart to $cend\n";
+    my @temp = splice(@clone,$cstart,($cend-$cstart));
+    @clone = @temp;
+}
+
 
 foreach my $clone_id ( @clone ) {
     print STDERR "Loading $clone_id\n";

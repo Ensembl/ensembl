@@ -112,7 +112,9 @@ sub to_FTHelper{
    my $exh = {};
    
    foreach my $trans ( $self->gene()->each_Transcript() ) {
-       push(@out,$self->_process_Transcript($trans,$exh));
+       # oldstyle is set to one if the object wants to dump as transcript_id
+       # not cds_id
+       push(@out,$self->_process_Transcript($trans,$exh,$self->_oldstyle));
    }
     #   foreach my $ptrans ( $trans->split_Transcript_to_Partial ) {
     #	   push(@out,$self->_process_Transcript($ptrans,$exh));
@@ -182,7 +184,7 @@ sub gene{
 =cut
 
 sub _process_Transcript{
-   my ($self,$trans,$exon_hash_ref) = @_;
+   my ($self,$trans,$exon_hash_ref,$oldstyle) = @_;
 
    my $ori;
    my $firstexon;
@@ -323,10 +325,16 @@ sub _process_Transcript{
 
 
    my $t_fth = new Bio::AnnSeqIO::FTHelper->new();
+  
    $t_fth->key("CDS");
    my $pseq = $trans->translate();
    $t_fth->add_field('translation',$pseq->str);
-   $t_fth->add_field('transcript_id',$trans->id());
+   if( $oldstyle == 1 ) {
+       $t_fth->add_field('transcript_id',$trans->id());
+   } else {
+       $t_fth->add_field('cds_id',$trans->translation->id());
+   }
+
    $t_fth->add_field('gene_id',$self->gene->id());
 
    # map phase1 -> 2, phase 2 -> 1, phase 0 -> 0 and then add 1. Easy huh?
@@ -453,6 +461,27 @@ sub _deduce_exon_location{
        }
    }
    return ($locstart,$locend,$loc_comp);
+}
+
+=head2 _oldstyle
+
+ Title   : _oldstyle
+ Usage   : $obj->_oldstyle($newval)
+ Function: 
+ Returns : value of _oldstyle
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _oldstyle{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_oldstyle'} = $value;
+    }
+    return $obj->{'_oldstyle'};
+
 }
 
 1;

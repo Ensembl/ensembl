@@ -108,6 +108,7 @@ my $verbose   = 0;
 my $cstart    = 0;
 my $cend      = undef;
 my $outfile;
+my $oldstyle = 0;
 
 # defaults for msql (rdb) access
 # msql was 'croc'
@@ -150,6 +151,7 @@ my $port      = '410000';
 	     'start:i'   => \$cstart,
 	     'end:i'     => \$cend,
 	     'outfile:s' => \$outfile,
+	     'oldstyle'  => \$oldstyle,
 	     );
 
 if($help){
@@ -240,7 +242,8 @@ foreach my $clone_id ( @clones ) {
     # wrap in eval to protect from exceptions being
     # thrown. One problem here is that if the exception
     # is thrown during the feature table dumping, then it
-    # has still dumped part of the entry. Bad news.
+    # has still dumped part of the entry. Bad news. Need to "exercise" the
+    # objects first.
     #
 
     eval {

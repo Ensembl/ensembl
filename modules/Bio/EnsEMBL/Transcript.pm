@@ -270,7 +270,28 @@ sub translateable_exons{
 
    # one exon genes - easy to handle.
    if( $#exons == 0 ) {
-       return @exons;
+       my $exon = shift @exons;
+       if( $self->translation->start_exon_id ne $exon->id || $self->translation->end_exon_id ne $exon->id ) {
+	   $self->throw("Single Exon transcript, but with start or stop outside of that exon");
+       }
+
+       my $retexon = new Bio::EnsEMBL::Exon;
+       $retexon->contig_id($exon->contig_id);
+       $retexon->clone_id($exon->clone_id);
+       $retexon->strand($exon->strand);
+       $retexon->phase(0);
+       $retexon->attach_seq($exon->entire_seq);
+       $retexon->id($exon->id());
+       
+       if( $exon->strand == 1 ) {
+	   $retexon->start($self->translation->start());
+	   $retexon->end($self->translation->end());
+       } else {
+	   $retexon->end($self->translation->start());
+	   $retexon->start($self->translation->end());
+       }
+       
+       return $retexon;
    }
 
    while( my $exon = shift @exons ) {
@@ -287,9 +308,17 @@ sub translateable_exons{
 	   $stexon->id($exon->id());
 	   
 	   if( $exon->strand == 1 ) {
+	       # paranoid...
+	       if( $self->translation->start < $exon->start || $self->translation->start > $exon->end ) {
+		   $self->throw("For start exon ".$exon->id." translation start not within exon bounds. Start ". $self->translation->start . "Exon " .$exon->start.":".$exon->end."\n");
+	       }
+
 	       $stexon->start($self->translation->start());
 	       $stexon->end($exon->end);
 	   } else {
+	       if( $self->translation->start < $exon->start || $self->translation->start > $exon->end ) {
+		   $self->throw("For start exon ".$exon->id." translation start not within exon bounds. Start ". $self->translation->start . "Exon " .$exon->start.":".$exon->end."\n");
+	       }
 	       $stexon->end($self->translation->start());
 	       $stexon->start($exon->start);
 	   }
@@ -298,7 +327,8 @@ sub translateable_exons{
        }
    }
 
-   while( my $exon = shift @exons ) {
+   my $exon;
+   while( $exon = shift @exons ) {
        if( $exon->id eq $self->translation->end_exon_id()) {
 	   
 	   my $endexon = new Bio::EnsEMBL::Exon;
@@ -311,18 +341,30 @@ sub translateable_exons{
 	   $endexon->id($exon->id);
 
 	   if( $exon->strand == 1 ) {
+	       if( $self->translation->end() > $exon->end ) {
+		   $self->throw("Bad news. Attempting to say that this translation is inside this exon, but outside".$exon->id." ".$exon->end()." ".$self->translation->end()."\n");
+	       }
+
 	       $endexon->start($exon->start());
 	       $endexon->end($self->translation->end());
 	   } else {
-	       $endexon->end($self->translation->end());
-	       $endexon->start($exon->start);
+	       if( $self->translation->end() < $exon->start ) {
+		   $self->throw("Bad news. Attempting to say that this translation is inside this exon (reversed), but outside".$exon->id." ".$exon->start()." ".$self->translation->end()."\n");
+	       }
+	       $endexon->start($self->translation->end());
+	       $endexon->end($exon->end);
 	   }
-	   push(@out,$exon);
+	   push(@out,$endexon);
 	   last;
        } else {
 	   push(@out,$exon);
        }
    }
+
+   if( $exon->id ne $self->translation->end_exon_id()) {
+       $self->throw("Unable to find end translation exon");
+   }
+
 
    return @out;
 }
@@ -502,7 +544,7 @@ sub translate {
   
   $seqstr =~ s/\*$//g;
 
-  my $trans_seq = Bio::Seq->new( -seq => $seqstr , -id => $self->id() ) ;
+  my $trans_seq = Bio::Seq->new( -seq => $seqstr , -id => $self->translation->id() ) ;
 
 
   return $trans_seq;
