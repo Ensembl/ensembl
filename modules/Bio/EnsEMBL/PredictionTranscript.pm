@@ -35,7 +35,7 @@ Creation:
 
 Manipulation:
 
-     my @exons = $tran->get_all_Exons         # Returns an array of Exon objects, might contain undef instead of exon.
+     my @exons = @{$tran->get_all_Exons}         # Returns an array of Exon objects, might contain undef instead of exon.
      my $pep   = $tran->translate()       # Returns the peptide translation as string
      my $cdna = $trans->get_cdna() # phase padded Exons cdna sequence.Padding might not often occur, phases usually match.
 
@@ -289,7 +289,7 @@ sub add_Exon {
 sub get_all_Exons {
    my ($self) = @_;
    
-   return @{$self->{'exons'}};
+   return $self->{'exons'};
 }
 
 
@@ -356,7 +356,7 @@ sub length {
     my( $self ) = @_;
     
     my $length = 0;
-    foreach my $ex ($self->get_all_Exons) {
+    foreach my $ex (@{$self->get_all_Exons}) {
       if( defined $ex ) { $length += $ex->length };
     }
     return $length;
@@ -427,7 +427,7 @@ sub translate {
 sub get_cdna {
   my $self = shift;
 
-  my @exons = $self->get_all_Exons();
+  my $exons = $self->get_all_Exons();
   
   my $cdna = undef;
   my $lastphase = 0;
@@ -441,7 +441,7 @@ sub get_cdna {
 
   $self->{'_exon_align'} = [];
 
-  for my $exon ( @exons ) {
+  for my $exon ( @$exons ) {
     my $exon_align = {};
     if( ! defined $exon ) {
       if( ! defined $cdna ) {
