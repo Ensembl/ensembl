@@ -55,7 +55,6 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::RootI;
-use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DB::Gene_ObjI;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
