@@ -117,8 +117,8 @@ sub new {
 
                The ordering of the coodinate systems is arbitrary.
                The following two statements are equivalent:
-               $mapper = $asma->fetch_by_coord_systems($cs1,$cs2);
-               $mapper = $asma->fetch_by_coord_systems($cs2,$cs1);
+               $mapper = $asma->fetch_by_CoordSystems($cs1,$cs2);
+               $mapper = $asma->fetch_by_CoordSystems($cs2,$cs1);
   Returntype : Bio::EnsEMBL::AssemblyMapper
   Exceptions : none
   Caller     : general
@@ -960,7 +960,7 @@ sub register_contig {
 sub fetch_by_type{
   my ($self,$type) = @_;
 
-  deprecate('Use fetch_by_coord_systems instead');
+  deprecate('Use fetch_by_CoordSystems instead');
 
   #assume that what the user wanted was a mapper between the sequence coord
   #level and the top coord level
