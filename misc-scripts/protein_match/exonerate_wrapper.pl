@@ -6,6 +6,7 @@ use diagnostics;
 
 use Data::Dumper;
 use Getopt::Std;
+use IO::Handle;
 
 # $Id$
 #
@@ -200,23 +201,29 @@ if (defined($fin) && length($fin) != 0) {
     $cmd = "$e_cmd $e_opt";
 }
 
+my $in  = new IO::Handle;
+my $out = new IO::Handle;
+
+open($in,  "$cmd |") or die "Pipe failed: $!";
+
 if (!defined($fout) || length($fout) == 0) {
-   $fout = '/dev/tty';
+    $out->fdopen(fileno(STDOUT), "w") or
+	die "Can not open STDOUT for writing: $!";
+    $fout = 'standard output';
+} else {
+    open($out, ">$fout") or die "Can not open '$fout' for writing: $!";
 }
 
 if (defined($opts{v}) && $opts{v} == 1) {
     warn "Will execute and parse the output from " .
 	"the following command:\n$cmd\n";
-    warn "Output goes to '$fout'\n";
+    warn "Output goes to $fout\n";
 }
-
-open(IN,  "$cmd |") or die "Pipe failed: $!";
-open(OUT, ">$fout") or die "Can not open '$fout' for writing: $!";
 
 $s_min /= 100.0;
 my %r;
 
-while (defined(my $line = <IN>)) {
+while (defined(my $line = <$in>)) {
     # Perl script to calculate the percentage of identity
     # and reformat cigar lines.  Takes tab-delimited list in
     # specific format from exonerate as input on stdin and
@@ -272,7 +279,7 @@ while (defined(my $line = <IN>)) {
     }
 }
 
-close(IN);
+close($in);
 
 # Output
 
@@ -285,11 +292,11 @@ foreach my $q (values %r) {
 	$t->{C} =~ s/([MDI])1([MDI])/$1$2/g;      # no lone 1
 	$t->{C} =~ s/^1([MDI])/$1/;               # no lone 1 at start
 
-	printf OUT "%s,%g,%d,%d,%s,%g,%d,%d,%d,%s\n",
+	printf $out "%s,%g,%d,%d,%s,%g,%d,%d,%d,%s\n",
 	$t->{ti}, $t->{tp}, $t->{tab}, $t->{tae},
 	$t->{qi}, $t->{qp}, $t->{qab}, $t->{qae},
 	$t->{s}, $t->{C};
     }
 }
 
-close(OUT);
+close($out);
