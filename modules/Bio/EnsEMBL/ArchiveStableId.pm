@@ -30,8 +30,6 @@ ArchiveStableId objects are the main workunit for retrieving stable id archived 
   new_fast:
   get_all_direct_predecessors:
   get_all_direct_successors:
-  get_all_predecessors:
-  get_all_successors:
 
   get_components:
   
@@ -53,6 +51,23 @@ use vars qw(@ISA);
 
 
 
+=head2 new
+
+  Arg  1     : -stable_id $stable_id 
+  Arg [ ]    : -version $version 
+  Arg [ ]    : -db_name $db_name 
+  Arg [ ]    : -adaptor $adaptor 
+  Arg [ ]    : -type $type 
+  "Gene", "Transcript", "Translation", "Exon"
+  Example    : none
+  Description: standard constructor with named arguments to create ArchiveStableId
+  Returntype : Bio::EnsEMBL::ArchiveStableId
+  Exceptions : none
+  Caller     : Adaptor
+
+=cut
+
+
 sub new {
   my $class = shift;
   $class = ref( $class ) || $class;
@@ -67,9 +82,26 @@ sub new {
   $self->{'db_name'} = $db_name;
   $self->{'type'} = $type;
   $self->{'adaptor'} = $adaptor;
+
+  return $self;
 }
 
 
+
+=head2 new_fast
+
+  Arg [1]    : string $stable_id
+  Arg [2]    : int $version
+  Arg [3]    : string $db_name
+  Arg [4]    : string $type
+  Arg [5]    : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor $adaptor
+  Example    : none
+  Description: faster version of above constructor
+  Returntype : Bio::EnsEMBL::ArchiveStableId
+  Exceptions : none
+  Caller     : general, Adaptor
+
+=cut
 
 
 sub new_fast {
@@ -88,31 +120,115 @@ sub new_fast {
 }
 
 
-sub get_all_direct_predecessors {
-  my $self = shift;
+=head2 get_all_predecessors
 
-  
-}
+  Args       : none
+  Example    : none
+  Description: Retrieve a list of ArchiveStableIds that were mapped to this one. 
+  Returntype : listref Bio::EnsEMBL::ArchiveStableId
+  Exceptions : none
+  Caller     : general
 
-sub get_all_direct_successors {
-  my $self = shift;
+=cut
 
-}
 
 sub get_all_predecessors {
   my $self = shift;
 
+  $self->adaptor->fetch_pre_by_arch_id( $self );
 }
 
-sub get_all_successor {
+=head2 get_all_successors
+
+  Args       : none
+  Example    : none
+  Description: Retrieve a list of ArchiveStableIds that this one was mapped to.
+  Returntype : listref Bio::EnsEMBL::ArchiveStableId
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_successors {
   my $self = shift;
 
+  $self->adaptor->fetch_succ_by_arch_id();
 }
 
-sub get_components {
+
+
+=head2 get_peptide
+
+  Args       : none
+  Example    : none
+  Description: Retrieves the peptide string for this ArchiveStableId.
+               Undef if this is not a Translation or cant be found in the database.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_peptide {
   my $self = shift;
 
+  if( $self->type() eq "Translation" ) {
+    return $self->adaptor->get_peptide( $self );
+  } else { 
+    return undef;
+  }
 }
+
+
+=head2 get_all_by_transcript_archive_id
+
+  Args       : none
+  Example    : none
+  Description: If this is a genes ArchiveStableId and found in the database, this 
+    function gets the transcripts archiveStableIds from it. Returns undef otherwise.
+  Returntype : listref Bio::EnsEMBL::ArchiveStableId
+  Exceptions : empty if not a gene stable id or not in database
+  Caller     : general
+
+=cut
+
+
+sub get_all_transcript_archive_ids {
+  my $self = shift;
+
+  if( $self->type() eq "Gene" ) {
+    return $self->adaptor->fetch_all_by_gene_archive_id( $self );
+  } else {
+    return undef;
+  }
+}
+
+
+
+=head2 get_translation_archive_id
+
+  Args       : none
+  Example    : none
+  Description: Given a Transcripts ArchiveStableId retrieves the
+   Translations ArchiveStableId. If not found or this is not a trnascripts id
+   return undef 
+  Returntype : Bio::EnsEMBL::ArchiveStableId
+  Exceptions : undef if not in db or not a Transcript
+  Caller     : general
+
+=cut
+
+
+sub get_translation_archive_id {
+  my $self = shift;
+
+  if( $self->type() eq "Transcript" ) {
+    return $self->adaptor->fetch_by_transcript_archive_id( $self );
+  } else {
+    return undef;
+  }
+}
+
 
 
 
@@ -156,11 +272,15 @@ sub version {
   my $self = shift;
   if( @_ ) {
     $self->{'version'} = shift;
+
   } else {
     if( ! defined $self->{'version'} ) {
-      # lazy loading
-      print STDERR "Lazy loading of version not yet implemented\n";
-    }
+      if( defined $self->{'db_name'} && defined $self->{'adaptor'} ) {
+	# lazy loading
+	$self->{'adaptor'}->_lookup_version( $self );
+      }
+    }       
   }
+  return $self->{'version'};
 }
 
