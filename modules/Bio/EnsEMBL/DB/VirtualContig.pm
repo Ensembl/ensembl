@@ -127,7 +127,7 @@ sub _initialize {
       
   } else {
       if( !defined $focuscontig || !defined $focusposition || !defined $ori || !defined $leftsize || !defined $rightsize ) {
-	  $self->throw("Have to provide all arguments to virtualcontig: focuscontig, focusposition, ori, left and right");
+	  $self->throw("Have to provide all arguments to virtualcontig \n(focuscontig, focusposition, ori, left and right)");
       }
       
       # build the map of how contigs go onto the vc coorindates
@@ -176,6 +176,7 @@ sub extend {
     my $current_focuscontig   = $self->_focus_contig;
     my $current_focusposition = $self->_focus_position;
     
+    print STDERR "Extending raw contig ".$current_focuscontig->id." (ori = $current_ori)\n";
 
     my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $current_focuscontig,
 					        -focusposition   => $current_focusposition,
