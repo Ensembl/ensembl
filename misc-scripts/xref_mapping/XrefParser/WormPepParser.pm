@@ -38,27 +38,27 @@ sub run {
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
-  my %worm = %{XrefParser::BaseParser->get_valid_xrefs_for_dependencies
-	      ('wormbase_transcript','Uniprot/SPTREMBL','RefSeq_peptide',
-	       'Uniprot/SWISSPROT')}; 
-  my $sql = "update xref set accession =\'?\' where xref_id=?";
+
+  my (%worm)  =  %{XrefParser::BaseParser->get_valid_codes("wormbase_transcript",$species_id)};
+
+  my (%swiss)  =  %{XrefParser::BaseParser->get_valid_codes("Uniprot",$species_id)};
+
+  my $sql = "update xref set accession =? where xref_id=?";
   my $dbi =  XrefParser::BaseParser->dbi();
   my $sth = $dbi->prepare($sql);
 
 
-  my $count  = 0;
-
   open(PEP,"<".$file) || die "Could not open $file\n";
 
   while (<PEP>) {
-    my ($transcript, $wb, $swiss)  = (split(/\t/,substr($_,1)))[0,1,5];
+    my ($transcript, $wb, $swiss_ref)  = (split(/\t/,substr($_,1)))[0,1,5];
     
-    if($swiss =~ /SW:(.*)/){
-      $swiss = $1;
+    if($swiss_ref =~ /SW:(.*)/){
+      $swiss_ref = $1;
     }
-#    else{
-#      print "ERR:".$_;
-#    }
+    else{
+      $swiss_ref  = 0 ;
+    }
     if(length($wb) < 3){
       print "ERRR:".$_;
     }
@@ -81,21 +81,22 @@ sub run {
     if(defined($worm{$gene}) and !defined($worm{$transcript})){
       # change accesion to transcript name instead of gene
       $sth->execute($transcript, $worm{$gene}) || die $dbi->errstr;
-      print "changing $gene (".$worm{$gene}.") to $transcript\n";
+      print "changing $gene to $transcript\n";
     }
     # if no record exists for this 
     elsif(!defined($worm{$gene}) and !defined($worm{$transcript})){
-      print "Could not find: $transcript  ????";
-      if($swiss){
-	print " on sw: $swiss";
+      if($swiss_ref){
+	if(defined($swiss{$swiss_ref})){
+	  XrefParser::BaseParser->add_to_xrefs($swiss{$swiss_ref},$transcript,'',$transcript,"","",$source_id,$species_id);	  
+	}
+	else{
+	  print $swiss_ref." not found\n";
+	}  
       }
-      print "\n";
     }
       
 
-#    print $gene,"\t",$swiss,"\t",$wb,"\n";
   }
-#  die "Just testing at the moment\n";
 
 }
 
