@@ -267,7 +267,8 @@ sub equals{
 
 
   if($dbc->host() eq $self->host and $dbc->dbname() eq $self->dbname
-     and $dbc->driver() eq $self->driver and $dbc->port() eq $self->port){
+     and $dbc->driver() eq $self->driver and $dbc->port() eq $self->port
+     and $dbc->username() eq $self->username){
     return 1;
   }
   return 0;
