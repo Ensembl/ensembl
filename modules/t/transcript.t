@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 32;
+	plan tests => 33;
 }
 
 use MultiTestDB;
@@ -60,6 +60,30 @@ for my $gene ( @$genes ) {
 debug( "utr Transcript is $utr_trans" );
 
 ok( $translates );
+
+#
+# Try pulling off genes from an NTContig and making sure they still translate.
+# This is a fairly good test of the chained coordinate mapping since the
+# transcripts are stored in chromosomal coordinates and there is no direct
+# mapping path to the supercontig coordinate system.
+#
+my $supercontig = $sa->fetch_by_region('supercontig', "NT_028392");
+
+my $transcripts = $slice->get_all_Transcripts();
+
+debug( "Checking if all transcripts on NTContig NT_028392 translate and transform" );
+
+$translates = 1;
+for my $trans ( @$transcripts ) {
+  if( $trans->translate()->seq() =~ /\*./ ) {
+    $translates = 0;
+    debug( $trans->stable_id()." does not translate." );
+    last;
+  }
+#  debug($trans->stable_id() .  ":" . $trans->translate()->seq() . "\n");
+}
+
+ok($translates);
 
 
 my $ta = $db->get_TranscriptAdaptor();
