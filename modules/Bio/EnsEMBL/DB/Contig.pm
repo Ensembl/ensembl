@@ -94,13 +94,15 @@ sub get_all_SeqFeatures{
 
    # make the SQL query
 
-   my $sth = $dbh->prepare("select start,end,analysis from feature where contig = \"$id\"");
+   my $sth = $dbh->prepare("select start,end,strand,score,analysis from feature where contig = \"$id\"");
    my $res = $sth->execute();
 
    while( my $rowhash = $sth->fetchrow_hashref) {
       my $out = new Bio::SeqFeature::Generic;
       $out->start($rowhash->{start});
       $out->end($rowhash->{end});
+      $out->strand($rowhash->{strand});
+      $out->score($rowhash->{score});
       $out->primary_tag($rowhash->{analysis});
       $out->source_tag('EnsEMBL');
       push(@array,$out);

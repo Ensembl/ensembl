@@ -16,7 +16,7 @@ Bio::EnsEMBL::DB::Obj - Object representing an instance of an EnsEMBL DB
 
 =head1 SYNOPSIS
 
-    $db = new Bio::EnsEMBL::DB::Obj( -user => 'root', -db => 'pog' );
+    $db = new Bio::EnsEMBL::DB::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
 
     $clone = $db->get_clone('X45667');
 
@@ -68,18 +68,26 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  my ($db,$host,$user) = $self->_rearrange([qw(DB
+  my ($db,$host,$driver,$user) = $self->_rearrange([qw(DB
 					       HOST
+					       DRIVER
 					       USER
 					       )],@args);
 
   $db || $self->throw("Database object must have a database name");
-  #$host || $self->throw("Database object must have a host name");
   $user || $self->throw("Database object must have a user");
   
-  my $dbh = DBI->connect("DBI:mysql:$db","$user",'');
+  if( ! $driver ) {
+      $driver = 'mysql';
+  }
+  if( ! $host ) {
+      $host = 'localhost';
+  }
+  my $dsn = "DBI:$driver:database=$db;host=$host";
 
-  $dbh || $self->throw("Could not connect to database $db user $user");
+  my $dbh = DBI->connect("$dsn","$user",'');
+
+  $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
 
   $self->_db_handle($dbh);
 

@@ -27,7 +27,7 @@ modules in place.
 use strict;
 use Bio::EnsEMBL::DB::Obj;
 
-my $db = new Bio::EnsEMBL::DB::Obj( -user => 'root', -db => 'pog');
+my $db = new Bio::EnsEMBL::DB::Obj( -user => 'root', -db => 'pog' , -host => 'caldy.sanger.ac.uk' );
 my $contig = $db->get_Contig(shift);
 
 foreach my $sf ( $contig->get_all_SeqFeatures ) {
