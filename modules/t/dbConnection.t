@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 19;
+	plan tests => 29;
 }
 
 use MultiTestDB;
@@ -115,6 +115,7 @@ $dbc->remove_db_adaptor('core');
 ok(!defined $dbc->get_db_adaptor('core'));
 ok(!defined $dbc->get_all_db_adaptors->{'core'});
 
+
 #
 # 16-17 disconnect and auto-reconnect via a prepare
 #
@@ -123,6 +124,30 @@ $sth = $dbc->prepare('SELECT * from gene limit 1');
 $sth->execute;
 ok($sth->rows);
 $sth->finish;
+
+
+#
+# test construction with another datbase connection
+#
+{
+  my $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbconn => $dbc);
+  ok($dbc2->host()     eq $dbc->host());
+  ok($dbc2->username() eq $dbc->username());
+  ok($dbc2->password() eq $dbc->password());
+  ok($dbc2->port()     == $dbc->port());
+  ok($dbc2->driver()   eq $dbc->driver());
+  ok(${$dbc2->ref_count()} == 2 && $dbc2->ref_count() == $dbc->ref_count());
+}
+
+#make sure connection is still ok on first db after second is garbage collected
+$sth = $dbc->prepare('show tables');
+ok($sth->execute());
+$sth->finish();
+
+my $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbconn => $dbc);
+my $dbc3 = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbconn => $dbc2);
+
+ok(${$dbc2->ref_count()} == 3 && $dbc3->ref_count() == $dbc->ref_count());
 
 #
 # 18-19 make new connection with shared dbhandle, 
@@ -141,7 +166,14 @@ $sth->execute;
 ok($sth->rows);
 $sth->finish;
 
+$dbc = undef;
 
+$sth = $dbc2->prepare('show tables');
+ok($sth->execute());
+$sth->finish();
 
+$dbc3 = undef;
 
-
+$sth = $dbc2->prepare('show tables');
+ok($sth->execute());
+$sth->finish();
