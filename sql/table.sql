@@ -771,3 +771,38 @@ CREATE TABLE peptide_archive (
 
   PRIMARY KEY( translation_stable_id, translation_version )
 ) TYPE=MyISAM;
+
+CREATE TABLE seq_region (
+
+    seq_region_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+    name             VARCHAR(40),
+    coord_system     VARCHAR(40),
+    version          VARCHAR(40),
+    is_default       ENUM('true', 'false'),
+    length           INT(10),
+
+    PRIMARY KEY (seq_region_id)
+) TYPE=MyISAM;
+
+
+CREATE TABLE seq_region_annotation (
+
+    seq_region_id    INT,
+    value            VARCHAR(40),
+    attrib           VARCHAR(40)
+
+) TYPE=MyISAM;
+
+
+CREATE TABLE assembly_exception (
+
+    seq_region_id        INT,
+    seq_region_start     INT,
+    seq_region_end       INT, 
+    exc_type             ENUM('HAP', 'PAR'),
+    exc_seq_region_id    INT, 
+    exc_seq_region_start INT, 
+    exc_seq_region_end   INT,
+    ori                  INT
+
+) TYPE=MyISAM;
