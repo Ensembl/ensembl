@@ -133,7 +133,7 @@ sub _columns {
 	  'mf.contig_id', 'mf.contig_start', 'mf.contig_end', 
 	  'mf.contig_strand', 'mf.analysis_id', 'mf.map_weight',
 	  'm.left_primer', 'm.right_primer', 'm.min_primer_dist', 
-	  'm.max_primer_dist', 'm.priority', 'ms.marker_synonym_id',
+	  'm.max_primer_dist', 'm.priority', 'm.type', 'ms.marker_synonym_id',
 	  'ms.name', 'ms.source');
 }
 
@@ -166,14 +166,14 @@ sub _objs_from_sth {
       $contig_id, $contig_start, $contig_end, $contig_strand,
       $analysis_id, $map_weight,
       $left_primer, $right_primer, $min_primer_dist, $max_primer_dist, 
-      $priority, $ms_id, $ms_name, $ms_source);
+      $priority, $type, $ms_id, $ms_name, $ms_source);
 
   #warning: ordering depends on _columns function implementation
   $sth->bind_columns(\$marker_feature_id, \$marker_id, 
       \$contig_id, \$contig_start, \$contig_end, \$contig_strand,
       \$analysis_id, \$map_weight,
       \$left_primer, \$right_primer, \$min_primer_dist, \$max_primer_dist,
-      \$priority, \$ms_id, \$ms_name, \$ms_source);
+      \$priority, \$type, \$ms_id, \$ms_name, \$ms_source);
 
   my @out = ();
 
@@ -197,7 +197,7 @@ sub _objs_from_sth {
       $marker = Bio::EnsEMBL::Map::Marker->new
 	($marker_id, $marker_adp, 
 	 $left_primer, $right_primer, $min_primer_dist, $max_primer_dist, 
-	 $priority, [], $ms);
+	 $priority, $type, $ms);
       $marker_cache{$marker_id} = $marker;
     }
 

@@ -52,7 +52,7 @@ sub fetch_all {
   my $dbID = shift;
 
   my $sth = $self->prepare("SELECT m.marker_id, m.priority, m.left_primer, 
-                                   m.right_primer,
+                                   m.right_primer, m.type,
                                    m.min_primer_dist, m.max_primer_dist,
                                    ms.marker_synonym_id, ms.name, ms.source
                             FROM   marker m 
@@ -62,10 +62,10 @@ sub fetch_all {
 
   $sth->execute;
 
-  my( $marker_id, $priority, $left_primer, $right_primer,
+  my( $marker_id, $priority, $left_primer, $right_primer, $type,
       $min_pdist, $max_pdist, $ms_id, $ms_name, $ms_src);
 
-  $sth->bind_columns(\$marker_id, \$priority, 
+  $sth->bind_columns(\$marker_id, \$priority, \$type,
 		     \$left_primer, \$right_primer, \$min_pdist, \$max_pdist,
 		     \$ms_id, \$ms_name, \$ms_src);
 
@@ -80,7 +80,7 @@ sub fetch_all {
     
     push @out, Bio::EnsEMBL::Map::Marker->new
       ($marker_id, $self, $left_primer, $right_primer, $min_pdist, $max_pdist,
-       $priority, $synonym);
+       $priority, $type, $synonym);
   }
 
   return \@out;
@@ -109,6 +109,7 @@ sub fetch_by_dbID {
 
   my $sth = $self->prepare("SELECT m.marker_id, m.display_marker_synonym_id, 
                                    m.priority, m.left_primer, m.right_primer,
+                                   m.type,
                                    m.min_primer_dist, m.max_primer_dist, 
                                    ms.marker_synonym_id,
                                    ms.source, ms.name
@@ -119,10 +120,11 @@ sub fetch_by_dbID {
   $sth->execute($dbID);
 
   my( $marker_id, $display_ms_id, $priority, $left_primer, $right_primer,
-      $min_pdist, $max_pdist, $ms_id, $ms_src, $ms_name);
+      $type, $min_pdist, $max_pdist, $ms_id, $ms_src, $ms_name);
 
   $sth->bind_columns(\$marker_id, \$display_ms_id, \$priority, 
-		     \$left_primer, \$right_primer, \$min_pdist, \$max_pdist, 
+		     \$left_primer, \$right_primer, \$type, 
+		     \$min_pdist, \$max_pdist, 
 		     \$ms_id, \$ms_src, \$ms_name);
 
   my $display_synonym;
@@ -143,8 +145,8 @@ sub fetch_by_dbID {
     
   #now create the marker
   return new Bio::EnsEMBL::Map::Marker->new(
-     $marker_id, $self, $left_primer, $right_primer, $min_pdist, $max_pdist,
-     $priority, $display_synonym, \@synonyms);
+     $marker_id, $self, $left_primer, $right_primer,$min_pdist, $max_pdist,
+     $priority, $type,$display_synonym, \@synonyms);
 }
 
 

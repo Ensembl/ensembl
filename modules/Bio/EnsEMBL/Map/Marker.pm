@@ -41,6 +41,7 @@ use Bio::EnsEMBL::Root;
   Arg [4]    : (optional) string $right_primer
   Arg [5]    : (optional) int $primer_distance
   Arg [6]    : (optional) int $priority
+  Arg [7]    : (optional) string $type
   Arg [8]    : (optional) Bio::EnsEMBL::Map::MarkerSynonym $display_synonym
   Arg [9]    : (optional) listref of Bio::EnsEMBL::Map::MarkerSynonyms $syns
   Arg [10]   : (optional) listref of Bio::EnsEMBL::Map::MapLocations $locs
@@ -57,7 +58,7 @@ use Bio::EnsEMBL::Root;
 
 sub new {
   my ($caller, $dbID, $adaptor, $left_primer, $right_primer,
-      $min_primer_dist, $max_primer_dist, $priority, $display_synonym,
+      $min_primer_dist, $max_primer_dist, $priority, $type, $display_synonym,
       $syns, $mlocs) = @_;
 
   my $class = ref($caller) || $caller;
@@ -69,6 +70,7 @@ sub new {
                  'min_primer_dist'  => $min_primer_dist,
                  'max_primer_dist'  => $max_primer_dist,
 		 'priority'         => $priority,
+		 'type'             => $type,
 		 'display_marker_synonym' => $display_synonym
 	        }, $class);
 
@@ -235,7 +237,7 @@ sub max_primer_dist {
   Example    : $priority = $marker->priority;
   Description: Getter/Setter for priority of this marker which can be used to 
                determine which markers are displayed.
-  Returntype : Bio::EnsEMBL::
+  Returntype : int
   Exceptions : none
   Caller     : general
 
@@ -249,6 +251,32 @@ sub priority {
   }
   
   return $self->{'priority'};
+}
+
+
+
+
+=head2 type
+
+  Arg [1]    : (optional) string $type
+  Example    : $type = $marker->type;
+  Description: Getter/Setter for type of this marker. Rat markers are typed
+               as 'est' or 'microsatellite'.  Other markers may not have 
+               defined types.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub type {
+  my $self = shift;
+
+  if(@_) {
+    $self->{'type'} = shift;
+  }
+  
+  return $self->{'type'};
 }
 
 
