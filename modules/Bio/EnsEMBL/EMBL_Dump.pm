@@ -139,12 +139,6 @@ sub add_ensembl_comments {
    $sf->add_tag_value('organism','Homo sapiens');
    $aseq->add_SeqFeature($sf);
    
-   my $species = new Bio::Species;
-   $species->common_name("Human");
-   $species->classification(qw( sapiens Homo Hominidae
-				Catarrhini Primates Eutheria
-				Mammalia Vertebrata Chordata
-				Metazoa Eukaryota ));
 
    $aseq->species($species);
    # done!

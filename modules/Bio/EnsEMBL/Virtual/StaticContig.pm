@@ -1934,26 +1934,6 @@ sub desc{
 
 }
 
-=head2 species
-
- Title   : species
- Usage   : $obj->species($newval)
- Function: 
- Example : 
- Returns : value of species
- Args    : newvalue (optional)
-
-
-=cut
-
-sub species{
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'species'} = $value;
-    }
-    return $obj->{'species'};
-
-}
 
 =head2 id
 

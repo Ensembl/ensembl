@@ -76,6 +76,7 @@ use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::EnsEMBL::DBSQL::ChromosomeAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::DBSQL::CloneAdaptor;
+use Bio::EnsEMBL::DBSQL::MetaContainer;
 
 ## following is not part of core EnsEMBL, so maybe doesn't belong here and
 ## has to be moved elsehwere (e.g. as part of a more dynamical

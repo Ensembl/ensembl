@@ -292,14 +292,15 @@ CREATE TABLE ghost (
   PRIMARY KEY (id,version,obj_type)
 );
 
-#
-# Table structure for table 'meta'
-#
 CREATE TABLE meta (
-  donor_database_locator    varchar(100) NOT NULL,
-  offset_time               time DEFAULT '00:30:00' NOT NULL,
-  schema_version            varchar(40) NOT NULL
-);
+   meta_id INT not null auto_increment,
+   meta_key varchar( 40 ) not null,
+   meta_value varchar( 255 ) not null,
+
+   PRIMARY KEY( meta_id ),
+   KEY meta_key_index ( meta_key ),
+   KEY meta_value_index ( meta_value ));
+
 
 #
 # Table structure for table 'repeat_feature'
@@ -601,3 +602,4 @@ CREATE TABLE contig_landmarkMarker (
        KEY (contig,marker),
        KEY (marker)
        );
+

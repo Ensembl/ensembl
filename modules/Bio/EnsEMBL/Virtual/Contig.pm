@@ -2112,6 +2112,32 @@ sub noseq{
 }
 
 
+=head2 species
+
+ Title   : species
+ Usage   : $obj->species($newval)
+ Function: 
+ Example : 
+ Returns : value of species
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub species{
+   my ($self,$value) = @_;
+
+   if( defined $value ) {
+       $self->throw("Can't set species any more - comes from database");
+   }
+
+   if( !defined $self->{'_species_cache'} ) {
+       $self->{'_species_cache'} = $self->dbobj->get_MetaContainer->get_Species();
+   }
+   return $self->{'_species_cache'};
+}
+
+
 =head2 dbobj
 
  Title   : dbobj
