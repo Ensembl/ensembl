@@ -212,6 +212,7 @@ sub fetch_by_CoordSystems {
 =cut
 
 my $CHUNKFACTOR = 20;  # 2^20 = approx. 10^6
+my $MAX_PAIR_COUNT = 1000; # if the mapper is bigger than that its flushed before registering new stuff
 
 sub register_assembled {
   my $self = shift;
@@ -230,11 +231,11 @@ sub register_assembled {
   #vicinity (the minimum size registered the chunksize (2^chunkfactor)
 
   my @chunk_regions;
+  #determine span of chunks
+  #bitwise shift right is fast and easy integer division
+  my $start_chunk = $asm_start >> $CHUNKFACTOR;
+  my $end_chunk   = $asm_end   >> $CHUNKFACTOR;
   {
-    #determine span of chunks
-    #bitwise shift right is fast and easy integer division
-    my $start_chunk = $asm_start >> $CHUNKFACTOR;
-    my $end_chunk   = $asm_end   >> $CHUNKFACTOR;
 
     #find regions of continuous unregistered chunks
     my $i;
@@ -264,6 +265,15 @@ sub register_assembled {
   }
 
   return if(!@chunk_regions);
+
+  # keep the Mapper to a reasonable size
+  if( $asm_mapper->size() > $MAX_PAIR_COUNT ) {
+    $asm_mapper->flush();
+    @chunk_regions = ( [ $start_chunk, $end_chunk ] );
+    for( my $i = $start_chunk; $i <= $end_chunk; $i++ ) {
+      $asm_mapper->register_assembled( $asm_seq_region, $i );
+    }
+  }
 
   my $asm_seq_region_id =
     $self->_seq_region_name_to_id($asm_seq_region,$asm_cs_id);
