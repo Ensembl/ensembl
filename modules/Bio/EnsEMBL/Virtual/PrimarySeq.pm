@@ -170,17 +170,18 @@ sub subseq{
 
    while ($start_contig->end < $start) {
        $start_contig = shift(@mapcontigs);
-       print STDERR "Got map contig with start ".$start_contig->rawcontigstart."\n";
    }
    
    # could be in the middle of a gap
    if( $start_contig->start > $end ) {
+       print STDERR "start gap\n";
        return 'N' x ($end - $start +1);
    }
 
    # check to see if this is simple, start-end in one contig
    if( $start >= $start_contig->start && $end <= $start_contig->end ) {
        # map straight away.
+       print STDERR "simple map\n";
        if( $start_contig->orientation == 1 ) {
 	   return $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start + ($start - $start_contig->start),$start_contig->rawcontig_start + ($end - $start_contig->start));
        } else {
@@ -195,12 +196,33 @@ sub subseq{
        
    # ok end is > than start. See if start is actually in contig
    if( $start < $start_contig->start ) {
+       print STDERR "start in gap before contig\n";
+
        #nope. Got some N's to put in
        $seqstr .= 'N' x ($start_contig->start - $start);
        # now put in the rest of this contig
-       $seqstr .= $start_contig->_actual_sequence_as_string;
+
+       # of course, end could be in this contig. Bugger.
+       if( $end < $start_contig->end ) {
+	   print STDERR "start in gap before: end in contig\n";
+
+	   if( $start_contig->orientation == 1 ) {
+	       $seqstr .= $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start,$start_contig->rawcontig_start + ($end - $start_contig->start));
+	       return $seqstr;
+	   } else {
+	       my $temp = $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_end-($end - $start_contig->start),$start_contig->rawcontig_end);
+	       $temp =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+	       $temp = reverse $temp;
+	       $seqstr .= $temp;
+	       return $seqstr;
+	   }
+       } else {
+	   $seqstr .= $start_contig->_actual_sequence_as_string;
+       }
    } else {
        # start is in the middle of a contig
+       print STDERR "start in middle of a contig\n";
+
        if( $start_contig->orientation == 1 ) {
 	   $seqstr .= $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start + ($start - $start_contig->start),$start_contig->rawcontig_end);
        } else {
@@ -216,14 +238,14 @@ sub subseq{
    my $previous = $start_contig;
    my $current;
    while( ($current = shift @mapcontigs) ) {
-
+       
        if( $end <= $current->end ) {
 	   last;
        }
        
        # check to add Ns
        if( $previous->end+1 != $current->start ) {
-	   $seqstr .= 'N' x ($current->start - $previous->end );
+	   $seqstr .= 'N' x ($current->start - $previous->end -1);
        }
        
        # add sequence
@@ -242,6 +264,13 @@ sub subseq{
        $seqstr .= 'N' x ($end - $previous->end);
    } else {
        # ok. Add the remainder
+
+       # could be that there are some N's to add first
+       if( $previous->end+1 != $current->start ) {
+	   $seqstr .= 'N' x ($current->start - $previous->end -1);
+       }
+
+       # add in remainder of this contig
        if( $current->orientation == 1 ) {
 	   $seqstr .= $current->contig->primary_seq->subseq($current->rawcontig_start,$current->rawcontig_start + ($end - $current->start));
        } else {

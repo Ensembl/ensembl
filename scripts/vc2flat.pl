@@ -62,6 +62,8 @@ use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::EMBL_Dump;
 use Bio::EnsEMBL::DB::VirtualContig;
 use Bio::EnsEMBL::DB::EmblVirtualContig;
+
+
 use Bio::SeqIO;
 
 use Getopt::Long;
@@ -107,6 +109,8 @@ my $ori;
 my $left;
 my $right;
 
+my $static = 0;
+
 &GetOptions( 'module:s'  => \$module,
 	     'dbtype:s'  => \$dbtype,
 	     'dbuser:s'  => \$dbuser,
@@ -129,6 +133,7 @@ my $right;
 	     'outfile:s' => \$outfile,
 	     'species:s' => \$species,
 	     'freeze:n'  => \$freeze,
+	     'static'    => \$static,
 	     'nogene'    => \$nogene,
 	     'nosecure'  => \$nosecure,
 	     'fcontig:s' => \$focuscontig,
@@ -167,6 +172,9 @@ per line, ith vc parameters separated by commas!");
 	my @list=($focus_contig,$focus_position,$ori,$left,$right);
 	push(@vcs,\@list);
     }
+} elsif ( $static ) {
+    # subvert this list thang
+    @vcs = @ARGV;
 } else {
     $focuscontig || die ("Need to supply a rawcontig id to use as a focus contig!\n");
     $focusposition || die ("Need to supply a focus position!\n");
@@ -205,19 +213,26 @@ foreach my $vc_list_ref ( @vcs ) {
     }
 
     eval {
-	my $focuscontig=$db->get_Contig($vc_list_ref->[0]);
-	my $vc=Bio::EnsEMBL::DB::EmblVirtualContig->new(
-	 				       -focuscontig => $focuscontig,
-	       				       -focusposition => $vc_list_ref->[1],
-	       				       -ori => $vc_list_ref->[2],
-	       				       -left => $vc_list_ref->[3], 
-	       				       -right => $vc_list_ref->[4] 
-						       );
-	$vc->id( "virtual_contig_".$vc->_unique_number);
-	$vc->sv(1);
-	my $date=localtime()." (created on the fly by the EnsEMBL system)";
-	$vc->add_date($date);
-        # debug tests by contig
+	my $vc;
+	if( $static == 1 ) {
+	    $vc = $db->get_StaticGoldenPathAdaptor->fetch_VirtualContig_by_fpc_name($vc_list_ref);
+	} else {
+	    my $focuscontig=$db->get_Contig($vc_list_ref->[0]);
+	    $vc=Bio::EnsEMBL::DB::EmblVirtualContig->new(
+							 -focuscontig => $focuscontig,
+							 -focusposition => $vc_list_ref->[1],
+							 -ori => $vc_list_ref->[2],
+							 -left => $vc_list_ref->[3], 
+							 -right => $vc_list_ref->[4] 
+							 );
+	    $vc->id( "virtual_contig_".$vc->_unique_number);
+	    $vc->sv(1);
+	    my $date=localtime()." (created on the fly by the EnsEMBL system)";
+	    $vc->add_date($date);
+	}
+
+
+	# debug tests by contig
 	print(STDERR "Format is $format\n");
 	if( $format =~ /gff/ ) {
 	    my @seqfeatures = $vc->top_SeqFeatures();
@@ -267,7 +282,11 @@ foreach my $vc_list_ref ( @vcs ) {
 	}
     };
     if( $@ ) {
-	print STDERR "Dumping Error! Cannot dump ".$vc_list_ref->[0]."\n$@\n";
+	if( $static == 0 ) {
+	    print STDERR "Dumping Error! Cannot dump ".$vc_list_ref->[0]."\n$@\n";
+	} else {
+	    print STDERR "Dumping Error! Cannot dump ".$vc_list_ref."\n$@\n";
+	}
     }
 }
 

@@ -115,7 +115,7 @@ sub _initialize {
   $self->{'_lock_table_hash'} = {};
   $self->_analysis_cache({});
   $self->{'_external_ff'} = [];
-
+  $self->static_golden_path_type('UCSC');
   if( $debug ) {
       $self->_debug($debug);
   } else {
