@@ -57,7 +57,7 @@ print "ok ", $counter++, "\n";
 
 
 #Test fetch_PredictionFeature_by_id
-my $pf = $fa->fetch_PredictionFeature_by_id("194643");
+my $pf = $fa->fetch_PredictionFeature_by_id("1594");
 $debug && print "fetch_PredictionFeature_by_id\t";
 ($pf->isa("Bio::EnsEMBL::SeqFeatureI")) ? (print "ok " . $counter++ . "\n") : (print "not ok " . $counter++ . "\n");
 my $contig = $db->get_Contig($pf->seqname); 
