@@ -539,11 +539,11 @@ sub seq {
 
   Arg [1]    : optional string $attrib_code
                The code of the attribute type to retrieve values for.
-  Example    : ($sc_attr) = @{$tl->get_all_Attributes('_selenocystein')};
+  Example    : ($sc_attr) = @{$tl->get_all_Attributes('_selenocysteine')};
                @tl_attributes = @{$translation->get_all_Attributes()};
   Description: Gets a list of Attributes of this translation.
                Optionally just get Attrubutes for given code.
-               Recognized attribute "_selenocystein"
+               Recognized attribute "_selenocysteine"
   Returntype : listref Bio::EnsEMBL::Attribute
   Exceptions : warning if translation does not have attached adaptor and 
                attempts lazy load.
@@ -579,9 +579,9 @@ sub get_all_Attributes {
 
   Arg [1...] : Bio::EnsEMBL::Attribute $attribute
                You can have more Attributes as arguments, all will be added.
-  Example    : $translation->add_Attributes($selenocystein_attribute);
+  Example    : $translation->add_Attributes($selenocysteine_attribute);
   Description: Adds an Attribute to the Translation. Usefull to 
-               do _selenocystein.
+               do _selenocysteine.
                If you add an attribute before you retrieve any from database, 
                lazy load will be disabled.
   Returntype : none
@@ -623,7 +623,7 @@ sub get_all_SeqEdits {
 
   my @seqeds;
 
-  my $attribs = $self->get_all_Attributes('_selenocystein');
+  my $attribs = $self->get_all_Attributes('_selenocysteine');
 
   # convert attributes to SeqEdit objects
   foreach my $a (@$attribs) {
@@ -638,7 +638,7 @@ sub get_all_SeqEdits {
   Arg    1   : Bio::Seq $peptide 
   Example    : my $seq = Bio::Seq->new(-SEQ => $dna)->translate();
                $translation->modify_translation($seq);
-  Description: Applies sequence edits such as selenocysteins to the Bio::Seq 
+  Description: Applies sequence edits such as selenocysteines to the Bio::Seq 
                peptide thats passed in
   Returntype : Bio::Seq
   Exceptions :
