@@ -229,6 +229,76 @@ sub add_DBEntry {
 
 
 
+=head2 get_all_supporting_features
+
+  Arg [1]    : none
+  Example    : @evidence = @{$transcript->get_all_supporting_features()};
+  Description: Retreives any supporting features added manually by 
+               calls to add_supporting_features.
+  Returntype : listreference of Bio::EnsEMBL::FeaturePair
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_supporting_features {
+  my $self = shift;
+  
+  return $self->{_supporting_evidence} || [];
+}
+
+
+
+=head2 add_supporting_features
+
+  Arg [1]    : Bio::EnsEMBL::FeaturePair $feature
+  Example    : $exon->add_supporting_features(@features);
+  Description: Adds a list of supporting features to this Transcript.
+               The added features can be retieved by get_all_supporting_features
+  Returntype : none
+  Exceptions : throw if any of the features are not FeaturePairs
+               throw if any of the features are not in the same coordinate
+               system as the Transcript
+  Caller     : general
+ 
+=cut
+ 
+sub add_supporting_features {
+  my ($self,@features) = @_;
+
+  return unless @features;
+ 
+  $self->{_supporting_evidence} ||= [];
+  
+  # check whether this feature object has been added already
+  FEATURE: foreach my $feature (@features) {
+
+    unless($feature && $feature->isa("Bio::EnsEMBL::FeaturePair")) {
+      throw("Supporting feat [$feature] not a " .
+            "Bio::EnsEMBL::FeaturePair");
+    } 
+    
+    if ((defined $self->slice() && defined $feature->slice())&&
+	    ( $self->slice()->name() ne $feature->slice()->name())){
+      throw("Supporting feat not in same coord system as exon\n" .
+            "exon is attached to [".$self->slice()->name()."]\n" .
+            "feat is attached to [".$feature->slice()->name()."]");
+    }
+
+    foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
+      # compare objects
+      if ( $feature == $added_feature ){
+	#this feature has already been added
+	next FEATURE;
+      }
+    }
+    
+    #no duplicate was found, add the feature
+    push(@{$self->{_supporting_evidence}},$feature);
+  }
+}
+
+
 =head2 external_db
 
  Title   : external_db
