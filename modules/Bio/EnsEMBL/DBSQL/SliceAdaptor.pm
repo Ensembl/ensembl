@@ -121,7 +121,10 @@ sub fetch_by_region {
     $sth->execute("$seq_region_name", $coord_system->dbID());
 
     if($sth->rows() != 1) {
-      throw("Cannot create slice on non-existant or ambigous seq_region:" .
+      $version ||= '';
+      $seq_region_name ||= '';
+      $coord_system_name ||= '';
+      throw("Cannot create slice on non-existant or ambigous seq_region:\n" .
             "  coord_system=[$coord_system_name],\n" .
             "  name=[$seq_region_name],\n" .
             "  version=[$version]");
@@ -656,68 +659,6 @@ sub fetch_by_mapfrag{
 
 
 
-
-
-=head2 _get_chr_start_end_of_gene
-
- Title   : get_Gene_chr_bp
- Usage   : 
- Function: 
- Returns :  
- Args    :
-
-
-=cut
-
-
-sub _get_chr_start_end_of_gene {
-  my ($self,$geneid) =  @_;
-  
-  my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
-  
-  my $sth = $self->db->prepare("SELECT  
-   if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.contig_end)),
-   if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.contig_start)),
-     chr.name
-  
-                    FROM    exon e,
-                        transcript tr,
-                        exon_transcript et,
-                        assembly a,
-                        gene_stable_id gsi,
-                        chromosome chr
-                    WHERE e.exon_id=et.exon_id 
-                    AND et.transcript_id =tr.transcript_id 
-                    AND a.contig_id=e.contig_id 
-                    AND a.type = '$type' 
-                    AND tr.gene_id = gsi.gene_id
-                    AND gsi.stable_id = '$geneid'
-                    AND a.chromosome_id = chr.chromosome_id" 
-                    );
-   $sth->execute();
-
-   my ($start,$end,$chr);
-   my @start;
-   while ( my @row=$sth->fetchrow_array){
-      ($start,$end,$chr)=@row;
-       push @start,$start;
-       push @start,$end;
-   }   
-   
-   my @start_sorted=sort { $a <=> $b } @start;
-
-   $start=shift @start_sorted;
-   $end=pop @start_sorted;
-
-   return ($chr,$start,$end);      
-}
-
-
-
-
 =head2 fetch_by_chr_start_end
 
   Description: DEPRECATED use fetch_by_region instead
@@ -792,6 +733,24 @@ sub fetch_by_clone_accession{
   if(!$clone_cs) {
     warning('Clone coordinate system does not exist for this species');
     return undef;
+  }
+
+  #this unfortunately needs a version on the end to work
+  if(! ($name =~ /\./)) {
+    my $sth = $self->prepare("SELECT sr.name " .
+                             "FROM   seq_region sr, coord_system cs " .
+                             "WHERE  cs.name = 'clone' " .
+                             "AND    cs.coord_system_id = sr.coord_system_id ".
+                             "AND    sr.name LIKE '$name.%'");
+    $sth->execute();
+    if(!$sth->rows()) {
+      $sth->finish();
+      throw("Clone $name not found in database");
+    }
+
+    ($name) = $sth->fetchrow_array();
+
+    $sth->finish();
   }
 
   my $clone = $self->fetch_by_region($clone_cs->name(), $name);
