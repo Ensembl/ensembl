@@ -59,7 +59,7 @@ my $adaptor = $db->get_DBEntryAdaptor();
 
 if (($organism eq "human") || ($organism eq "mouse")) {
     print STDERR "Reading Refseq file\n";
-    open (REFSEQ,"$refseq_gnp") || die "Can't open $refseq_gnp\n";
+    open (REFSEQ,"$refseq_gnp") || die "Can't open REFSEQ $refseq_gnp\n";
 #Read the file by genbank entries (separated by //) 
     $/ = "\/\/\n";
     while (<REFSEQ>) {
@@ -74,8 +74,8 @@ if (($organism eq "human") || ($organism eq "mouse")) {
 }
 close(REFSEQ);
 
-if ($organism = "human") {
-    open (REFSEQPRED,"$refseq_pred") || die "Can't open $refseq_pred\n";
+if ($organism eq "human") {
+    open (REFSEQPRED,"$refseq_pred") || die "Can't open REFSEQ PRED $refseq_pred\n";
     #Read the file by genbank entries (separated by //) 
     $/ = "\/\/\n";
     while (<REFSEQPRED>) {
@@ -91,7 +91,7 @@ if ($organism = "human") {
 close(REFSEQPRED);
 
 
-open (XMAP,"$xmap") || die "Can't open $xmap\n";
+open (XMAP,"$xmap") || die "Can't open XMAP $xmap\n";
 
 print STDERR "Reading X_map ($xmap)\n";
 
@@ -161,7 +161,7 @@ while (<XMAP>) {
 close (XMAP);
 
 if ($check eq "yes") {
-    open (QUERY,"$query_pep");
+    open (QUERY,"$query_pep") || die "Can't open QUERY PEP $query_pep\n";
     while (<QUERY>) {
 	if ($_ =~ /^>\S+\s*\S+\s* Clone:\S+/) {
 	    my ($pepac,$cloneac) = $_ =~ /^>(\S+)\s*\S+\s* Clone:(\S+)/; 
@@ -172,7 +172,7 @@ if ($check eq "yes") {
     close (QUERY);
 }
 
-open (MAP,"$map") || die "Can't open $map\n";
+open (MAP,"$map") || die "Can't open MAP $map\n";
 
 print STDERR "Reading pmatch output\n";
 MAPPING: while (<MAP>) {
