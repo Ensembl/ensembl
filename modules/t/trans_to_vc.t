@@ -65,12 +65,8 @@ my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
 print "ok 2\n";
 
-#Get Transcript object
-my $trans = $gene_obj->get_Transcript($conf{'transcript'});
-print "ok 3\n";
-
 #Get Virtual Contig for this transcript
-my $vc=$gene_obj->get_Virtual_Contig($trans,150000);
-print "ok 4\n";
+my $vc=$gene_obj->get_Virtual_Contig($conf{'transcript'},150000);
+print "ok 3\n";
 
 				      

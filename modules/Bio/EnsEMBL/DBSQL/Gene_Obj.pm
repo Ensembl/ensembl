@@ -774,15 +774,17 @@ sub get_Translation{
 =cut
     
 sub get_Virtual_Contig{
-    my ($self,$transcript, $max_length) = @_;
+    my ($self,$trans_id, $max_length) = @_;
 
-    if ( !defined $transcript || ! $transcript->isa('Bio::EnsEMBL::Transcript') ) {
-	$self->throw("$transcript is not a Bio::EnsEMBL::Transcript, cannot get Virtual Contig!");
+    if ( !defined $trans_id) {
+	$self->throw("Cannot create Virtual Contig without a transcript id!");
     }
 
     if (!defined $max_length) {
 	$self->throw("You need to specify the max. length of the Virtual Contig!");
     }
+
+    my $transcript=$self->get_Transcript($trans_id);
 
     #First of all, get out first exon, and create a 10000 bp Virtual Contig
     #starting from the contig on which the first exon is lying
