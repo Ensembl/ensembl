@@ -275,7 +275,7 @@ sub strand{
 sub score {
     my ($self,$value) = @_;
   
-    if (defined($value)) {
+    if (defined($value) && $value ne '') {
       if( $value !~ /^[+-]?\d+\.?\d*(e-\d+)?/ ) {
 	  $self->throw("'$value' is not a valid score");
       }
