@@ -852,7 +852,7 @@ sub store {
   my @attrib;
 
   push @attrib, 'top_level' if($toplevel);
-  push @attrib, 'seq_level' if($seqlevel);
+  push @attrib, 'sequence_level' if($seqlevel);
   push @attrib, 'default_version' if($default);
 
   my $attrib_str = (@attrib) ? join(',', @attrib) : undef;
