@@ -830,6 +830,7 @@ sub get_all_PredictionFeatures {
    
    $previous = -1;
    my $current_fset;
+   my $fsetstart;
    my $count;
    my $prev;
 
@@ -871,7 +872,7 @@ sub get_all_PredictionFeatures {
 	   $current_fset->seqname($self->id);
 	   $current_fset->id($count);
 	   $current_fset->score(0.0);
-	   
+	   $fsetstart = $seqstart;
 	   $current_fset->raw_seqname($self->id);
 	   push(@array,$current_fset);
        }
@@ -891,12 +892,18 @@ sub get_all_PredictionFeatures {
        $out->end_phase ($end_phase) if (defined $end_phase);
         
 
-	my $query="select fset from fset_feature where feature=$fid"; 
-	my $sth = $self->dbobj->prepare($query);
-   	$sth->execute();
-	my $arr_ref=$sth->fetchrow_arrayref;
+       #MC Now fset ids have never worked well for genscans.  The new id
+       #is contig internal_id . start in raw contig coords.  Ugly I know but 
+       #it works.
 
-	my $fsetid=$arr_ref->[0];
+       #my $query="select fset from fset_feature where feature=$fid"; 
+       #my $sth = $self->dbobj->prepare($query);
+       #$sth->execute();
+       #my $arr_ref=$sth->fetchrow_arrayref;
+       
+       #my $fsetid=$arr_ref->[0];
+
+       my $fsetid = $contig . "." .  $fsetstart;
 
        $out->id($fsetid); # to make genscan peptide work
 
