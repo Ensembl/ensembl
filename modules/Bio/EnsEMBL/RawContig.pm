@@ -25,7 +25,6 @@ Bio::EnsEMBL::RawContig
 =cut
 
 
-
 package Bio::EnsEMBL::RawContig;
 
 use vars qw( @ISA );
@@ -55,7 +54,6 @@ use Bio::PrimarySeqI;
   Caller    : RawContigAdaptor, Data upload script
 
 =cut
-
 
 sub new {
   my ( $class, @args ) = @_;
@@ -221,7 +219,8 @@ sub clone {
       if( !defined $self->_clone_id() ) {
 	$self->adaptor->fetch_attributes($self);
       }
-      $self->{_clone} = $self->adaptor->db->get_CloneAdaptor->fetch_by_dbID($self->_clone_id());
+      $self->{_clone} = 
+       $self->adaptor->db->get_CloneAdaptor->fetch_by_dbID($self->_clone_id());
     }
   }
   
@@ -255,69 +254,68 @@ sub length {
   return $self->{_length};
 }
 
-sub sequence {
-    my ($self,$arg) = @_;
- 
-    return $self->seq($arg);
-}
+
+
+=head2 seq
+
+  Arg [1]    : none
+  Example    : $dna = $contig->seq();
+  Description: Obtains the dna sequence of this entire contig as a string
+               (positive strand).
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub seq {
   my $self = shift;
 
-  my $seq = $self->adaptor->db->get_SequenceAdaptor->fetch_by_contig_id_start_end_strand($self->dbID, 1, -1, 1);
+  my $seq_adaptor = $self->adaptor->db->get_SequenceAdaptor();
+
+  my $seq = $seq_adaptor->fetch_by_Contig_start_end_strand($self, 1, -1, 1);
 
   return $seq;
 }
+
+
+=head2 subseq
+
+  Arg [1]    : int $start
+               The start basepair of the sequence to obtain
+  Arg [2]    : int $end
+               The end basepair of the sequence to obtain
+  Arg [3]    : (optional) int $strand
+               The strand of the sequence to obtain.  Default is the contigs
+               forward strand.
+  Example    : $dna = $contig->subseq(1, 1000, -1);
+  Description: Obtains a subsequence of this contigs dna sequence
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub subseq {
   my ($self, $start, $end, $strand) = @_;
 
   if ( $end < $start ) {
-    $self->throw("End coord is less then start coord to call on RawContig subseq.");
+    $self->throw("End coord is less then start coord to call on RawContig " .
+		 "subseq.");
   }
 
   if ( !defined $strand || ( $strand != -1 && $strand != 1 )) {
-    #$self->throw("Incorrect strand information set to call on RawContig subseq.");
     $strand = 1;
   }
 
+  my $seq_adaptor = $self->adaptor->db->get_SequenceAdaptor();
 
-  my $sub_seq = $self->adaptor->db->get_SequenceAdaptor->fetch_by_contig_id_start_end_strand($self->dbID, $start, $end, $strand);
-
-  #print STDERR "[RawContig subseq method: Strand: " . $strand . "\t";
-  #print STDERR "Start: " . $start . "\tEnd: " . $end . "\tContig dbID: " . $self->dbID . "]\n";
-  #print STDERR "Subseq: " . $sub_seq . "\n";
-
+  my $sub_seq = $seq_adaptor->fetch_by_Contig_start_end_strand($self, 
+							       $start, $end, 
+							       $strand);
   return $sub_seq;
 }
 
-
-sub seq_old {
-  my $self = shift;
-  my $arg = shift;
-
-#   print STDERR "Sequence with $arg\n";
-
-  if( defined $arg ) {
-    $self->{_seq} = $arg ;
-  } else {
-    if( ! defined $self->{_seq} &&
-      defined $self->adaptor() ) {
-	 print STDERR "Fetching sequence\n";
-      $self->adaptor->fetch_attributes( $self );
-    }
-  }
-#   print STDERR "Returning...\n";
-  return $self->{_seq};
-}
-
-sub primary_seq {
-  my $self = shift;
-
-  $self->warn("Bio::EnsEMBL::RawContig is now a primary seq object use it directly or use the seq method to return a sequence string\n");
-
-  return $self;
-}
 
 
 =head2 get_repeatmasked_seq
@@ -330,7 +328,6 @@ sub primary_seq {
   Caller    : RunnableDB::Genscan::fetch_input(), other Pipeline modules.
 
 =cut
-
 
 sub get_repeatmasked_seq {
     my ($self) = @_;
@@ -360,7 +357,6 @@ sub get_repeatmasked_seq {
 
 =cut
 
-
 sub _mask_features {
     my ($self, $dnastr,@repeats) = @_;
     my $dnalen = CORE::length($dnastr);
@@ -372,7 +368,8 @@ sub _mask_features {
       my $length = ($end - $start) + 1;
       
       if ($start < 0 || $start > $dnalen || $end < 0 || $end > $dnalen) {
-	  print STDERR "Eeek! Coordinate mismatch - $start or $end not within $dnalen\n";
+	  $self->warn("Coordinate mismatch - $start or $end not " .
+	    "within $dnalen\n");
 	  next REP;
       }
       
@@ -383,7 +380,7 @@ sub _mask_features {
       substr ($dnastr,$start,$length) = $padstr;
   }
     return $dnastr;
-}                                       # mask_features
+}
 
 
 
@@ -406,10 +403,12 @@ sub get_all_RepeatFeatures {
      return ();
    }
 
-   my @repeats = $self->adaptor()->db()->get_RepeatFeatureAdaptor()->
-     fetch_by_RawContig( $self );
+   my $rfa = $self->adaptor()->db->get_RepeatFeatureAdaptor();
+   my @repeats = $rfa->fetch_by_Contig( $self );
+
    return @repeats;
 }
+
 
 =head2 get_all_SimilarityFeatures
 
@@ -435,8 +434,8 @@ sub get_all_SimilarityFeatures {
   my $pafa = $self->adaptor->db->get_ProteinAlignFeatureAdaptor();
       
 
-  my @dnaalign = $dafa->fetch_by_contig_id($self->dbID, $logic_name);
-  my @pepalign = $pafa->fetch_by_contig_id($self->dbID, $logic_name);
+  my @dnaalign = $dafa->fetch_by_Contig($self, $logic_name);
+  my @pepalign = $pafa->fetch_by_Contig($self, $logic_name);
     
   push(@out, @dnaalign);
   push(@out, @pepalign);
@@ -444,12 +443,14 @@ sub get_all_SimilarityFeatures {
   return @out;
 }
 
+
 =head2 get_all_PredictionFeatures
 
   Args      : none
   Function  : connect to database through set adaptor and retrieve the 
               PredictionFeatures for this contig.
-  Returntype: list Bio::EnsEMBL::PredictionTranscript (previously this returned a SeqFeature)
+  Returntype: list Bio::EnsEMBL::PredictionTranscript 
+              (previously this returned a SeqFeature)
   Exceptions: none
   Caller    : general
 
@@ -465,43 +466,26 @@ sub get_all_PredictionFeatures {
   
   my $pta = $self->adaptor->db->get_PredictionTranscriptAdaptor();
     
-  my @pred_feat = $pta->fetch_by_contig_id($self->dbID);
+  my @pred_feat = $pta->fetch_by_Contig($self);
 
   return @pred_feat;
 }
 
-
-=head2 get_genscan_peptides
-
-  Args      : none
-  Function  : retrieves Prediction Transcripts on this RawContig from
-              Database connection.
-  Returntype: list Bio::EnsEMBL::PredictionTranscript
-  Exceptions: Warning when no database connection
-  Caller    : Pipeline RunnableDB::BlastGenscanPep
-
-=cut
-
-=head2 get_genscan_peptides
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use get_PredictionFeatures instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub get_genscan_peptides {
-  my ($self, @args)  = @_;
+sub accession_number {
+  my $self = shift;
   
-  $self->warn("Use of deprecated method " .
-	      "Bio::EnsEMBL::RawContig::get_genscan_peptides. " .
-	      "Use get_PreedictionFeatures instead\n" );
-
-  return $self->get_PredictionFeatures(@args);
+  $self->dbID();
 }
+
+sub moltype {
+  return "DNA";
+}
+
+sub desc {
+  return "Contig, no description";
+}
+
+
 
 
 
@@ -552,16 +536,34 @@ sub get_all_ExternalFeatures {
 }
 
 
+=head2 sequence
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use seq method instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub sequence {
+    my ($self,$arg) = @_;
+
+    $self->warn("call to deprecated method Bio::EnsEMBL::RawContig::sequence "
+		. "use the seq method instead\n");
+ 
+    return $self->seq($arg);
+}
 
 =head2 dbobj
 
- Title   : dbobj
- Usage   :
- Function:
- Example :
- Returns : The Bio::EnsEMBL::DBSQL::ObjI object
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use adaptor->db instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -570,29 +572,84 @@ sub dbobj {
 
    $self->throw("RawContig::dbobj() is deprecated");
 
-#   if (defined($arg)) {
-#        $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::Obj") unless ($arg->isa("Bio::EnsEMBL::DBSQL::Obj") || $arg->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
-#        $self->{'_dbobj'} = $arg;
-#   }
-#   return $self->{'_dbobj'};
-
    return undef;
 }
 
-sub accession_number {
-  my $self = shift;
+
+=head2 get_genscan_peptides
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_PredictionFeatures instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_genscan_peptides {
+  my ($self, @args)  = @_;
   
-  $self->dbID();
+  $self->warn("Use of deprecated method " .
+	      "Bio::EnsEMBL::RawContig::get_genscan_peptides. " .
+	      "Use get_PreedictionFeatures instead\n" );
+
+  return $self->get_PredictionFeatures(@args);
 }
 
-sub moltype {
-  return "DNA";
+
+=head2 primary_seq
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED Bio::EnsEMBL::RawContig is now a primary seq object.
+              It should be used directly, or the seq method can be used
+              to obtain a sequence string.
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub primary_seq {
+  my $self = shift;
+
+  $self->warn("Bio::EnsEMBL::RawContig is now a primary seq object use it " .
+	      "directly or use the seq method to return a sequence string\n");
+
+  return $self;
 }
 
-sub desc {
-  return "Contig, no description";
-}
 
+=head2 seq_old
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED should not have to use this method
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub seq_old {
+  my $self = shift;
+  my $arg = shift;
+
+  $self->warn("call to deprecated method Bio::EnsEMBL::RawContig::seq_old");
+
+  if( defined $arg ) {
+    $self->{_seq} = $arg ;
+  } else {
+    if( ! defined $self->{_seq} &&
+      defined $self->adaptor() ) {
+	 print STDERR "Fetching sequence\n";
+      $self->adaptor->fetch_attributes( $self );
+    }
+  }
+
+  return $self->{_seq};
+}
 
 
 1;

@@ -71,24 +71,23 @@ sub fetch_by_Slice {
 
       #create a partially filled repeat object
       my $r = new Bio::EnsEMBL::RepeatFeature();
-            $rc->name($hid);
-      $r->repeat_id($id);
-
+      
+      $rc->name($hid);
+      $rc->dbID($id);
+      $r->repeat_consensus($rc);
+     
       $r->start($start - $slice->chr_start() + 1);
       $r->end($end - $slice->chr_start() + 1);
       $r->strand($strand);
 
       if($core) {
 	$rc->adaptor($core->get_RepeatConsensusAdaptor());
-	$rc->name($hid);
-	$rc->dbID($id);
-	$r->repeat_consensus($rc);
 
 	#set the adaptor to be the proxy repeat feature adaptor
 	$r->adaptor($core->get_RepeatFeatureAdaptor());
       } else {
 	$self->warn("Core Database not attached to lite database.  Not able to 
-                     Retrieve repeat consensi for repeat features\n");
+                     Retrieve repeat consensus adaptor for repeat features\n");
 	$r->adaptor($self);
       }
 

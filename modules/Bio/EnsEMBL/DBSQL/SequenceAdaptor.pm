@@ -16,7 +16,7 @@ Bio::EnsEMBL::DBSQL::SequenceAdaptor - produce sequence strings from locations
 =head1 SYNOPSIS
 
 $seq_adptr = $database_adaptor->get_SequenceAdaptor();
-$dna = $seq_adptr->fetch_by_contig_id_start_end_strand(1234, 1, 1000, -1);
+$dna = $seq_adptr->fetch_by_Contig_start_end_strand($contig, 1, 1000, -1);
 
 =head1 DESCRIPTION
 
@@ -47,31 +47,35 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
-=head2 fetch_by_contig_id_start_end_strand
+=head2 fetch_by_Contig_start_end_strand
 
-  Arg [1]    : int rawContigdbID
-  Arg [2]    : int startBasePair
-  Arg [3]    : int endBasePair
+  Arg [1]    : int Bio::EnsEMBL::RawContig $contig
+  Arg [2]    : int $start
+  Arg [3]    : int $end
                a -1 means until the end
-  Arg [4]    : int strand
+  Arg [4]    : int $strand
                -1, 1 are possible values
-  Example    : $dna = $seq_adp->fetch_by_contig_id_start_end_strand(1234, 1, 
-                                                                    1000, -1);
+  Example    : $dna = $seq_adp->fetch_by_Contig_start_end_strand($contig, 1,
+                                                                 1000, -1);
   Description: retrieves the dna string from the database from the 
-               given RawContig internal id. 
+               given RawContig. 
   Returntype : string 
   Exceptions : thrown if start < 1
   Caller     : Bio::EnsEMBL::RawContig::seq(), RawContig::subseq()
 
 =cut
 
-sub fetch_by_contig_id_start_end_strand {
-  my ( $self, $contig_id, $start, $end, $strand ) = @_;
+sub fetch_by_Contig_start_end_strand {
+  my ( $self, $contig, $start, $end, $strand ) = @_;
   my $sth;
   
   if( $start < 1 ) {
     $self->throw( "Wrong parameters" );
   }
+
+  unless($contig && ref $contig && $contig->isa("Bio::EnsEMBL::RawContig")) {
+    $self->throw("contig arg must be contig not a [$contig]");
+  } 
 
   my $query;
 
@@ -80,7 +84,7 @@ sub fetch_by_contig_id_start_end_strand {
     $query = "SELECT c.length, SUBSTRING( d.sequence, $start )
                 FROM dna d, contig c 
                WHERE d.dna_id = c.dna_id 
-                 AND c.contig_id = $contig_id";
+                 AND c.contig_id = ?";
       
   } else {
     my $length = $end - $start + 1;
@@ -91,7 +95,7 @@ sub fetch_by_contig_id_start_end_strand {
     $query = "SELECT c.length, SUBSTRING( d.sequence, $start, $length )
                 FROM dna d, contig c 
                WHERE d.dna_id = c.dna_id 
-                 AND c.contig_id = $contig_id";    
+                 AND c.contig_id = ?";    
   }
 
   if( defined $self->db()->dnadb() ) {
@@ -100,8 +104,7 @@ sub fetch_by_contig_id_start_end_strand {
     $sth = $self->prepare( $query );
   }
 
-
-  $sth->execute();
+  $sth->execute($contig->dbID());
 
   if( my $aref = $sth->fetchrow_arrayref() ) {
     my ( $length, $seq ) = @$aref;
@@ -217,8 +220,11 @@ sub fetch_by_assembly_location {
    for my $segment ( @coord_list ) {
      if( $segment->isa( "Bio::EnsEMBL::Mapper::Coordinate" )) {
 
-       my $contig_seq = $self->fetch_by_contig_id_start_end_strand
-	 ( $segment->id(),
+       my $contig = 
+	 $self->db->get_RawContigAdaptor()->fetch_by_dbID($segment->id());
+
+       my $contig_seq = $self->fetch_by_Contig_start_end_strand
+	 ( $contig,
 	   $segment->start(),
 	   $segment->end(),
 	   $segment->strand() );

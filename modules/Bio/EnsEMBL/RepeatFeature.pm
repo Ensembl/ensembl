@@ -35,15 +35,6 @@ sub repeat_consensus_id {
     return $self->{'_repeat_consensus_id'};
 }
 
-sub contig_id {
-    my( $self, $contig_id ) = @_;
-    
-    if ($contig_id) {
-        $self->{'_contig_id'} = $contig_id;
-    }
-    return $self->{'_contig_id'};
-}
-
 
 sub adaptor {
   my ($self, $adaptor) = @_;
@@ -181,6 +172,40 @@ sub to_FTString {
     }
 }
 
+
+=head2 contig_id
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use attach_seq or entire_seq insted
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub contig_id {
+    my( $self, $contig_id ) = @_;
+    
+    $self->warn("call to deprecated method " .
+		"Bio::EnsEMBL::RepeatFeature::contig_id. Use attach_seq, or " .
+		"entire_seq methods to associate contig objects instead");
+
+    if($contig_id) {
+      my $contig = 
+	$self->adaptor->db->get_RawContigAdaptor->fetch_by_dbID($contig_id);
+
+      $self->attach_seq($contig);
+    }
+
+    return $self->entire_seq()->dbID();
+
+#    if ($contig_id) {
+#        $self->{'_contig_id'} = $contig_id;
+#    }
+
+#    return $self->{'_contig_id'};
+}
 
 
 1;

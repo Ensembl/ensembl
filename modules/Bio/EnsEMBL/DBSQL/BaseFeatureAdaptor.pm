@@ -142,15 +142,15 @@ sub fetch_by_dbID{
 }
 
 
-=head2 fetch_by_contig_id_constraint
+=head2 fetch_by_Contig_constraint
 
-  Arg [1]    : int $cid
-               the unique identifier (dbID) for contig to obtain feats from
+  Arg [1]    : Bio::EnsEMBL::RawContig $contig
+               The contig object from which features are to be obtained
   Arg [2]    : (optional) string $constraint
                An SQL query constraint (i.e. part of the WHERE clause)
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_contig_id_constraint(1, 'perc_ident > 5.0');
+  Example    : @fts = $a->fetch_by_Contig_constraint($contig, 'perc_ident>5.0');
   Description: Returns a list of features created from the database which are 
                are on the contig defined by $cid and fulfill the SQL constraint
                defined by $constraint. If logic name is defined, only features
@@ -161,12 +161,18 @@ sub fetch_by_dbID{
 
 =cut
 
-sub fetch_by_contig_id_constraint {
-  my ($self, $cid, $constraint, $logic_name) = @_;
+sub fetch_by_Contig_constraint {
+  my ($self, $contig, $constraint, $logic_name) = @_;
   
-  if( !defined $cid ) {
-    $self->throw("fetch_by_contig_id_constraint must have an contig id");
+  unless( defined $contig ) {
+    $self->throw("fetch_by_Contig_constraint must have an contig");
   }
+
+  unless( ref $contig && $contig->isa('Bio::EnsEMBL::RawContig')) {
+    $self->throw("contig argument is not a Bio::EnsEMBL::RawContig object\n");
+  }
+
+  my $cid = $contig->dbID();
 
   if($constraint) {
     $constraint .= " AND contig_id = $cid";
@@ -178,13 +184,13 @@ sub fetch_by_contig_id_constraint {
 }
 
 
-=head2 fetch_by_contig_id
+=head2 fetch_by_Contig
 
-  Arg [1]    : int $cid
-               the unique identifier (dbID) for contig to obtain feats from
+  Arg [1]    : Bio::EnsEMBL::RawContig $contig 
+               the contig from which features should be obtained
   Arg [2]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_contig_id(1, 'swall');
+  Example    : @fts = $a->fetch_by_Contig($contig, 'swall');
   Description: Returns a list of features created from the database which are 
                are on the contig defined by $cid If logic name is defined, 
                only features with an analysis of type $logic_name will be 
@@ -195,23 +201,23 @@ sub fetch_by_contig_id_constraint {
 
 =cut
    
-sub fetch_by_contig_id{
-  my ($self, $cid, $logic_name) = @_;
+sub fetch_by_Contig{
+  my ($self, $contig, $logic_name) = @_;
 
   #fetch by contig id constraint with empty constraint
-  return $self->fetch_by_contig_id_constraint($cid, '',$logic_name);
+  return $self->fetch_by_Contig_constraint($contig, '',$logic_name);
 }
 
 
-=head2 fetch_by_contig_id_and_score
+=head2 fetch_by_Contig_and_score
 
-  Arg [1]    : int $cid
-               the unique identifier (dbID) for contig to obtain feats from
+  Arg [1]    : Bio::EnsEMBL::RawContig $contig 
+               the contig from which features should be obtained
   Arg [2]    : float $score
                the lower bound of the score of the features to obtain
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_contig_id_and_score(1, 50.0, 'swall');
+  Example    : @fts = $a->fetch_by_Contig_and_score(1, 50.0, 'swall');
   Description: Returns a list of features created from the database which are 
                are on the contig defined by $cid and which have score greater
                than score.  If logic name is defined, only features with an 
@@ -222,8 +228,8 @@ sub fetch_by_contig_id{
 
 =cut
 
-sub fetch_by_contig_id_and_score{
-  my($self, $cid, $score, $logic_name) = @_;
+sub fetch_by_Contig_and_score{
+  my($self, $contig, $score, $logic_name) = @_;
 
   my $constraint;
 
@@ -234,7 +240,7 @@ sub fetch_by_contig_id_and_score{
   }
     
   my @features = 
-    $self->fetch_by_contig_id_constraint($cid, $constraint, $logic_name);
+    $self->fetch_by_Contig_constraint($contig, $constraint, $logic_name);
   
   return @features;
 }
@@ -518,7 +524,11 @@ sub fetch_by_assembly_location_constraint {
     $f->start($coord->start());
     $f->end($coord->end());
     $f->strand($coord->strand());
-    $f->seqname($coord->id());
+    #$f->seqname($coord->id());
+
+    #
+    # Should we attach a slice of the entire chromosome here? (mcvicker)
+    #
 
     push(@out,$f);
   }

@@ -54,15 +54,15 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
 
 
-=head2 fetch_by_contig_id_and_pid
+=head2 fetch_by_Contig_and_pid
 
-  Arg [1]    : int $cid
-               the unique identifier (dbID) for contig to obtain feats from
+  Arg [1]    : Bio::EnsEMBL::RawContig
+               the contig to obtain align features from
   Arg [2]    : float $pid 
                a lower bound for the percentage identifier of feats to obtain
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @feats = $adaptor->fetch_by_contig_id_and_pid(1234, 50.0);
+  Example    : @feats = $adaptor->fetch_by_Contig_and_pid($contig, 50.0);
   Description: Returns a list of features created from the database which are 
                are on the contig defined by $cid and with a percentage id 
                greater than $pid.  If logic name is defined, only features
@@ -73,8 +73,8 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
 =cut
 
-sub fetch_by_contig_id_and_pid {
-  my($self, $cid, $pid, $logic_name) = @_;
+sub fetch_by_Contig_and_pid {
+  my($self, $contig, $pid, $logic_name) = @_;
 
   my $constraint;
 
@@ -85,7 +85,7 @@ sub fetch_by_contig_id_and_pid {
   }
 
   my @features = 
-    $self->fetch_by_contig_id_constraint($cid, $constraint, $logic_name);
+    $self->fetch_by_Contig_constraint($contig, $constraint, $logic_name);
   
   return @features;
 }

@@ -98,32 +98,7 @@ sub fetch_by_dbID {
 =head2 fetch_by_Contig
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig
-               the contig to retrieve prediction transcripts on
-  Arg [2]    : (optional) string $logic_name
-               the type of analysis performed on objects which should be
-               retrieved
-  Example    : @pts = $pt_adaptor->fetch_by_Contig($contig,'Genscan')
-  Description: Retrieves prediction transcripts from a contig
-  Returntype : list of Bio::EnsEMBL::PredictionTranscript in contig coords
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub fetch_by_Contig{
-  my ($self, $contig, $logic_name) = @_;
-
-  my @results = $self->fetch_by_contig_id($contig->dbID, $logic_name);
-  
-  return @results;
-}
-
-
-=head2 fetch_by_contig_id
-
-  Arg [1]    : int $contig_id
-               the database id of the contig to retrieve prediction 
-               transcripts on
+               The contig to retrieve prediction transcripts from
   Arg [2]    : (optional) string $logic_name
                the type of analysis performed on objects which should be
                retrieved
@@ -135,9 +110,9 @@ sub fetch_by_Contig{
 
 =cut
 
-sub fetch_by_contig_id {
-  my ($self, $contig_id, $logic_name) = @_;
-  
+sub fetch_by_Contig {
+  my ($self, $contig, $logic_name) = @_;
+
   my $constraint = undef;
   
   if($logic_name){
@@ -152,21 +127,20 @@ sub fetch_by_contig_id {
     $constraint = " analysis_id = ".$analysis->dbID;
   }
 
-  my @results = $self->fetch_by_contig_id_constraint($contig_id, $constraint);
+  my @results = $self->fetch_by_Contig_constraint($contig, $constraint);
 
   return @results;
 }
 
 
-=head2 fetch_by_contig_id_constraint
+=head2 fetch_by_Contig_constraint
 
-  Arg [1]    : int $contig_id
-               the unique database identifier of the contig to retrieve 
-               prediction transcripts from
+  Arg [1]    : Bio::EnsEMBL::RawContig $contig
+               The contig to obtain prediction transcripts from
   Arg [2]    : (optional) string $constraint
                the limiting SQL to form the where clause of the the database
                query
-  Example    : @pts = $pta->fetch_by_contig_id_constraint(1,'analysis_id = 2');
+  Example    : @pts = $pta->fetch_by_Contig_constraint($contig, 'analysis_id = 2');
   Description: returns all PredicitonTranscipts on given contig 
   Returntype : list of Bio::EnsEMBL::PredictionTranscript in contig coords 
   Exceptions : none, if there are none, the list is empty.
@@ -174,10 +148,16 @@ sub fetch_by_contig_id {
 
 =cut
 
-sub fetch_by_contig_id_constraint {
+sub fetch_by_Contig_constraint {
   my $self = shift;
-  my $contig_id = shift;
+  my $contig = shift;
   my $constraint = shift;
+
+  unless(defined $contig && ref $contig && 
+	 $contig->isa('Bio::EnsEMBL::Contig')){
+    $self->throw("contig arg must be a Bio::EnsEMBL::RawContig");
+    return undef;
+  }
 
   my $query = qq {
     SELECT  p.prediction_transcript_id
@@ -203,7 +183,7 @@ sub fetch_by_contig_id_constraint {
   $query .= " order by p.prediction_transcript_id, p.exon_rank";
   #print $query."\n";
   my $sth = $self->prepare( $query );
-  $sth->execute( $contig_id );
+  $sth->execute( $contig->dbID() );
 
   my @res = $self->_ptrans_from_sth( $sth );
   return @res;

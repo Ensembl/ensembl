@@ -638,6 +638,31 @@ sub id {
    return $self->{'id'};
 }
 
+
+=head2 name
+
+  Arg [1]    : none
+  Example    : $name = $slice->name();
+  Description: Returns the name of this slice. The name is formatted as a 
+               the following string: "$chr_name:$chr_start-$chr_end". 
+               (e.g. 'X:10000-20000')
+               This essentially allows slices to be easily compared and 
+               can also act as a hash value. This is similar to the name 
+               method in RawContig so for exons which can have either type 
+               of sequence attached it provides a more common interface.
+  Returntype : string
+  Exceptions : none
+  Caller     : 
+
+=cut
+
+sub name {
+  my $self = shift;
+
+  return join( $self->chr_name(), ':', $self->chr_start(), 
+	       '-', $self->chr_end());
+}
+
 sub display_id{
   my ( $self, $value ) = @_;
   if( defined $value ) {

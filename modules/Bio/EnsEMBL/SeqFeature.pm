@@ -41,7 +41,8 @@ Bio::EnsEMBL::SeqFeature - Ensembl specific sequence feature.
 
 =head1 DESCRIPTION
 
-This is an implementation of the ensembl Bio::EnsEMBL::SeqFeatureI interface.  Extra
+This is an implementation of the ensembl Bio::EnsEMBL::SeqFeatureI interface.
+Extra
 methods are to store details of the analysis program/database/version used
 to create this data and also a method to validate all data in the object is
 present and of the right type.  This is useful before writing into
@@ -83,9 +84,6 @@ sub new {
   $self->{'_gsf_tag_hash'} = {};
   $self->{'_gsf_sub_array'} = [];
   $self->{'_parse_h'} = {};
-  $self->{'_contig_id'} = undef;
-
-  
 
 my($start,$end,$strand,$frame,$score,$analysis,$seqname,$source_tag, $primary_tag, $percent_id, $p_value, $phase, $end_phase); 
 
@@ -132,57 +130,7 @@ my($start,$end,$strand,$frame,$score,$analysis,$seqname,$source_tag, $primary_ta
 
 }
 
-=head2 seqname
 
- Title   : seqname
- Usage   : $obj->seqname($newval)
- Function: There are many cases when you make a feature that you
-           do know the sequence name, but do not know its actual
-           sequence. This is an attribute such that you can store 
-           the seqname.
-
- Returns : value of seqname
- Args    : newvalue (optional)
-
-
-=cut
-
-sub seqname{
-   my ($self,$arg) = @_;
-
-   if( $arg) {
-      $self->{'_gsf_seqname'} = $arg;
- 
-   }
-
-    return $self->{'_gsf_seqname'};
-
-}
-
-sub contig_id{
-   my ($self,$arg) = @_;
-
-   if( $arg) {
-      $self->{'_contig_id'} = $arg;
- 
-   }
-
-    return $self->{'_contig_id'};
-
-}
-
-sub raw_seqname{
-   my ($self,$arg) = @_;
-
-   if( $arg) {
-      $self->{'_gsf_raw_seqname'} = $arg;
-  
-  }
-  
-
-    return $self->{'_gsf_raw_seqname'};
-
-}
 
 
 
@@ -581,6 +529,40 @@ sub all_tags{
    return keys %{$self->{'_gsf_tag_hash'}};
 }
 
+
+
+=head2 seqname
+
+  Arg [1]    : string $seqname
+  Example    : $seqname = $self->seqname();
+  Description: Obtains the seqname of this features sequence.  This is set 
+               automatically when a sequence with a name is attached, or may 
+               be set manually.
+  Returntype : string
+  Exceptions : none
+  Caller     : general, attach_seq
+
+=cut
+
+sub seqname{
+   my ($self,$seqname) = @_;
+
+   my $seq = $self->entire_seq();
+
+   if(defined $seqname) {
+     $self->{_seqname} = $seqname;
+   } else {
+     if(defined $self->{_seqname}) {
+       return $self->{_seqname};
+     } elsif($seq && ref $seq && $seq->can('name')) {
+       $self->{_seqname} = $seq->name();
+     }
+   }
+
+   return $self->{_seqname};
+}
+
+
 =head2 attach_seq
 
  Title   : attach_seq
@@ -603,6 +585,11 @@ sub attach_seq{
    }
 
    $self->{'_gsf_seq'} = $seq;
+
+   #update the seqname accordingly if the attached sequence has one
+   if($seq->can('name') && $seq->name()) {
+     $self->{'_seqname'} = $seq->name();
+   }
 
    # attach to sub features if they want it
 
@@ -629,7 +616,8 @@ sub seq{
    my ($self,$arg) = @_;
 
    if( defined $arg ) {
-       $self->throw("Calling SeqFeature::Generic->seq with an argument. You probably want attach_seq");
+       $self->throw("Calling SeqFeature::Generic->seq with an argument. " .
+		    "You probably want attach_seq");
    }
 
    if( ! exists $self->{'_gsf_seq'} ) {
@@ -907,5 +895,68 @@ sub external_db {
 
     return $self->{'_external_db'};
 }
+
+
+
+
+
+
+=head2 contig_id
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use Bio::EnsEMBL::SeqFeature::attach_seq or
+               Bio::EnsEMBL::SeqFeature::entire_seq instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub contig_id{
+   my ($self,$arg) = @_;
+
+   $self->warn("Bio::EnsEMBL::SeqFeature::contig_id is deprecated. " .
+	    "Use attach_seq instead to associate a contig with a SeqFeature");
+
+   if($arg) {
+     my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($arg);
+     $self->attach_seq($contig);
+   }
+
+   return $self->entire_seq();
+}
+
+
+=head2 raw_seqname
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use Bio::EnsEMBL::SeqFeature::attach_seq->name or
+               Bio::EnsEMBL::SeqFeature::raw_seqname instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub raw_seqname{
+   my ($self,$arg) = @_;
+
+   $self->warn("Bio::EnsEMBL::SeqFeature::raw_seqname is deprecated. " .
+	       "Use Bio::EnsEMBL::entire_seq()->name() instead");
+
+   my $seq = $self->entire_seq();
+
+   if($arg && $seq && ref $seq && $seq->can('name')) {
+     $self->entire_seq()->name($arg);
+   }
+
+   if($seq && ref $seq && $seq->can('name')) {
+     return $seq->name;
+   }
+
+   return undef;
+ }
 
 1;

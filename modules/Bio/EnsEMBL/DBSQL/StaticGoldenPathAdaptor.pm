@@ -670,9 +670,9 @@ sub fetch_VirtualContig_of_contig{
 
 
    $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_of_contig "
-       . "is deprecated. use SliceAdaptor::fetch_by_contig_id instead\n"); 
+       . "is deprecated. use SliceAdaptor::fetch_by_contig_name instead\n"); 
 
-   return $self->db()->get_SliceAdaptor()->fetch_by_contig_id($contigid, $size);
+   return $self->db()->get_SliceAdaptor()->fetch_by_contig_name($contigid, $size);
 
 #   if( !defined $size ) {$size=0;}
 

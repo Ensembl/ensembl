@@ -49,28 +49,23 @@ use Bio::EnsEMBL::SimpleFeature;
 
 =head2 store
 
-  Arg [1]    : int contig_id
-               the database id of the contig these features are on
-  Arg [2]    : list of Bio::EnsEMBL::SimpleFeatures @sf
+  Arg [1]    : list of Bio::EnsEMBL::SimpleFeatures @sf
                the simple features to store in the database
   Example    : $simple_feature_adaptor->store(1234, @simple_feats);
   Description: Stores a list of simple feature objects in the database
   Returntype : none
-  Exceptions : thrown if $contig_id is not an int or if @sf is not defined
+  Exceptions : thrown if @sf is not defined, if any of the features do not
+               have an attached contig object, 
                or if any elements of @sf are not Bio::EnsEMBL::SeqFeatures 
   Caller     : general
 
 =cut
 
 sub store{
-  my ($self,$contig_id,@sf) = @_;
+  my ($self,@sf) = @_;
   
   if( scalar(@sf) == 0 ) {
-    $self->throw("Must call store with contig_id then sequence features");
-  }
-  
-  if( $contig_id !~ /^\d+$/ ) {
-    $self->throw("Contig_id must be a number, not [$contig_id]");
+    $self->throw("Must call store with list of sequence features");
   }
   
   my $sth = 
@@ -95,7 +90,14 @@ sub store{
 		   "not putting in!");
     }
     
-    $sth->execute($contig_id, $sf->start, $sf->end, $sf->strand,
+    my $contig = $sf->entire_seq();
+    unless(defined $contig && ref $contig && 
+	   $contig->isa("Bio::EnsEMBL::RawContig")) {
+      $self->throw("Cannot store feature without a Contig object attached via "
+		   . "attach_seq\n");
+    }
+
+    $sth->execute($contig->dbID(), $sf->start, $sf->end, $sf->strand,
 		  $sf->display_label, $sf->analysis->dbID, $sf->score);
   } 
 }
@@ -168,7 +170,6 @@ sub _obj_from_hashref {
   $out->strand($hashref->{'contig_strand'});
   $out->analysis($analysis);
   $out->display_label($hashref->{'display_label'});
-  $out->seqname($contig->name());
   $out->attach_seq($contig); 
 
   if($hashref->{'score'}) {

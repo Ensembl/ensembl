@@ -164,8 +164,6 @@ sub _obj_from_hashref {
   #create the new repeat feature
   my $r = new Bio::EnsEMBL::RepeatFeature;
   $r->dbID($hashref->{'repeat_feature_id'});
-  $r->repeat_consensus_id($hashref->{'repeat_consensus_id'});
-  $r->contig_id($hashref->{'contig_id'});
 
   $r->start($hashref->{'contig_start'});
   $r->end($hashref->{'contig_end'});
@@ -188,30 +186,24 @@ sub _obj_from_hashref {
 }
   
 
-
 =head2 store
 
-  Arg [1]    : int $contig_id
-               the database id of the contig to store this repeat_feature on
-  Arg [2]    : list of Bio::EnsEMBL::RepeatFeatures $repeat_feature_id
+  Arg [1]    : list of Bio::EnsEMBL::RepeatFeatures $repeat_feature_id
                the list of repeat features to store in the database
   Example    : $repeat_feature_adaptor->store(1234, @repeat_features);
   Description: stores a repeat feature in the database
   Returntype : none
-  Exceptions : thrown if $contig_id is not an int, or if repeat_consensus is
-               not used
-  Caller     : genreal
+  Exceptions : if the repeat features do not have attached sequences 
+               or if repeat_consensus are not present 
+  Caller     : general
 
 =cut
 
 sub store {
-  my( $self, $contig_id, @repeats ) = @_;
+  my( $self, @repeats ) = @_;
   
   my $rca = $self->db->get_RepeatConsensusAdaptor;
   my ($cons, $db_id);
-
-  $self->throw("Can't store repeats without a contig_id (got '$contig_id')")
-    unless $contig_id =~ /^\d+$/;
 
   my $sth = $self->prepare(qq{
     INSERT into repeat_feature( repeat_feature_id
@@ -226,79 +218,74 @@ sub store {
 				, analysis_id )
       VALUES(NULL, ?,?,?,?,?,?,?,?,?)
     });
+
   foreach my $rf (@repeats) {
-            
-        unless ($rf->repeat_consensus_id){
-
-   $self->throw("Must have a RepeatConsensus attached")
-	unless defined ($cons = $rf->repeat_consensus);
+    $self->throw("Must have a RepeatConsensus attached")
+      unless defined ($cons = $rf->repeat_consensus);
       
-      # for tandem repeats - simply store consensus and repeat
-      # one pair per hit. don't need to check consensi stored
-      # already. consensus has name and class set to 'trf'
- }
-      if ($cons->repeat_class eq 'trf') {
+    # for tandem repeats - simply store consensus and repeat
+    # one pair per hit. don't need to check consensi stored
+    # already. consensus has name and class set to 'trf'
 
-	$rca->store($cons);
-	$rf->repeat_consensus_id($cons->dbID);
-
-      } elsif ($cons->repeat_class eq 'Simple_repeat') {
-
-        my $rcon = $cons->name;
-        $rcon =~ s/\((\S+)\)n/$1/;   # get repeat element
-	$cons->repeat_consensus($rcon);
-	$rca->store($cons);
-	$rf->repeat_consensus_id($cons->dbID);
-
-      } else {
+    if ($cons->repeat_class eq 'trf') {
+      $rca->store($cons);
+    } elsif ($cons->repeat_class eq 'Simple_repeat') {
+      my $rcon = $cons->name;
+      $rcon =~ s/\((\S+)\)n/$1/;   # get repeat element
+      $cons->repeat_consensus($rcon);
+      $rca->store($cons);
+    } else {
+      # for other repeats - need to see if a consensus is stored already
+      unless ($cons->dbID) {
+	my @match = ($rca->fetch_by_name($cons->name));
 	
-	# for other repeats - need to see if a consensus is stored already
+	if(@match) {
+	  #set the consensus dbID to be the same as the database one
+	  $cons->dbID($match[0]->dbID());
+	} else {
+	  # if we don't match a consensus already stored create a fake one 
+	  # and set consensus to 'N' as null seq not allowed
+	  # FIXME: not happy with this, but ho hum ...
+	  $self->warn("Can't find " . $cons->name . "\n");
+	  $cons->repeat_consensus("N");
+	  $rca->store($cons);
+	}
 	
-	unless ($rf->repeat_consensus_id) {
-
-	  # need to get the consensus seq object for this repeat
-
-	  unless ($cons->dbID) {
-	    my @match = ($rca->fetch_by_name($cons->name));
-	    
-	    if (@match > 1) {
-	      $self->warn(@match . " consensi for " . $cons->name . "\n");
-	    } elsif (@match == 0) {
-	      # if we don't match a consensus already stored
-	      # create a fake one
-	      # set consensus to 'N' as null seq not allowed
-	      # FIXME: not happy with this, but ho hum ...
-	      $self->warn("Can't find " . $cons->name . "\n");
-	      $cons->repeat_consensus("N");
-	      $rca->store($cons);
-	    }
-	    $db_id = ($rca->fetch_by_name($cons->name))[0]->dbID;
-	    
-	    $cons->dbID($db_id);
-	  }
-	  $rf->repeat_consensus_id($cons->dbID);
+	if (@match > 1) {
+	  #multiple consensi were matched
+	  $self->warn(@match . " consensi for " . $cons->name . "\n");
 	}
       }
-	#print STDERR "repeat = ".$rf->analysis." ".$rf->analysis->dbID."\n";
-      $sth->execute(
-		    $contig_id,
-		    $rf->start,
-		    $rf->end,
-		    $rf->strand,
-		    $rf->repeat_consensus_id,
-		    $rf->hstart,
-		    $rf->hend,
-		    $rf->score,
-		    $rf->analysis->dbID,
-		   );
-      my $db_id = $sth->{'mysql_insertid'}
-      or $self->throw("Didn't get an insertid from the INSERT statement");
-      $rf->dbID($db_id);
-      }
+    }
+    
+    my $contig = $rf->entire_seq();
 
+    unless(defined $contig && ref $contig && 
+	   contig->isa("Bio::EnsEMBL::RawContig")) {
+      $self->throw("RepeatFeautre cannot be stored without a Contig  " .
+		   "attached via the attach_seq method");
+    } unless($contig->dbID()) {
+      $self->throw("RepeatFeature cannot be stored because attached contig " .
+		   "does not have a dbID");
+    }
+    
+    $sth->execute(
+		  $contig->dbID(),
+		  $rf->start,
+		  $rf->end,
+		  $rf->strand,
+		  $rf->repeat_consensus->dbID(),
+		  $rf->hstart,
+		  $rf->hend,
+		  $rf->score,
+		  $rf->analysis->dbID,
+		 );
+
+    my $db_id = $sth->{'mysql_insertid'}
+    or $self->throw("Didn't get an insertid from the INSERT statement");
+    $rf->dbID($db_id);
+  }
 }
-
-
 
 
 1;

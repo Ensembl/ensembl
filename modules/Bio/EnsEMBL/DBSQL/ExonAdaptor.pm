@@ -312,7 +312,8 @@ sub _new_Exon_from_hashRef {
    $exon->sticky_rank($hashRef->{'sticky_rank'});
    $exon->adaptor($self);
 
-   my $rc = $self->db->get_RawContigAdaptor->fetch_by_dbID($hashRef->{'contig_id'});
+   my $rc = 
+     $self->db->get_RawContigAdaptor->fetch_by_dbID($hashRef->{'contig_id'});
 
    $exon->contig( $rc );
    $exon->seqname($hashRef->{'cid'});
@@ -430,13 +431,15 @@ sub store {
 
     my @componentExons = $exon->each_component_Exon();
     for my $componentExon ( @componentExons ) {
+      my $contig = $componentExon->contig();
 
-      if( !defined $componentExon->contig_id ) {
-	$self->throw("Component Exon does not have a contig_id set. " .
+      unless(defined $contig && ref $contig && $contig->dbID()) {
+	$self->throw("Component Exon does not have an attached contig " .
+		     "with a valid set database id. " .
 		     "Needs to have one set");
       }
 
-      $exonst->execute( $exonId, $componentExon->contig_id,
+      $exonst->execute( $exonId, $contig->dbID,
 			$componentExon->start(),
 			$componentExon->end(),
 			$componentExon->strand(),
@@ -452,12 +455,14 @@ sub store {
   } else {
     # normal storing
     
-    if( !defined $exon->contig_id ) {
-      $self->throw("Exon does not have a contig_id set." . 
-		   "Needs to have one set");
+    my $contig = $exon->contig();
+
+    unless( defined $contig && ref $contig && $contig->dbID() ) {
+      $self->throw("Exon does not have an attached contig with a valid " . 
+		   "database id.  Needs to have one set");
     }
 
-    $exonst->execute( undef,$exon->contig_id,
+    $exonst->execute( undef,$contig->dbID,
 		      $exon->start(),
 		      $exon->end(),
 		      $exon->strand(),

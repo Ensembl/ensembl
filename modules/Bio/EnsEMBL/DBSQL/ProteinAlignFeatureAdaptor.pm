@@ -18,11 +18,11 @@ Adaptor for ProteinAlignFeatures
 
     $pfadp = $dbadaptor->get_ProteinAlignFeatureAdaptor();
 
-    my @features = $pfadp->fetch_by_contig_id($contig_numeric_id);
+    my @features = $pfadp->fetch_by_Contig($contig);
 
     my @features = $pfadp->fetch_by_assembly_location($start,$end,$chr,'UCSC');
  
-    $pfadp->store($contig_numeric_id, @features);
+    $pfadp->store(@features);
 
 
 =head1 DESCRIPTION
@@ -64,48 +64,63 @@ use Bio::EnsEMBL::SeqFeature;
 
 =head2 store
 
- Title   : store
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : list of Bio::EnsEMBL::DnaPepAlignFeature @sf
+  Example    : $protein_align_feature_adaptor->store(@sf);
+  Description: stores a list of features in the database
+  Returntype : none
+  Exceptions : thrown if there is no attached sequence on any of the features,
+               if the features are not defined
+  Caller     : 
 
 =cut
 
+
 sub store{
-   my ($self,$contig_id,@sf) = @_;
+   my ($self ,@sf) = @_;
 
    if( scalar(@sf) == 0 ) {
-       $self->throw("Must call store with contig_id then sequence features");
+       $self->throw("Must call store with list of sequence features");
    }
 
-   if( $contig_id !~ /^\d+$/ ) {
-       $self->throw("Contig_id must be a number, not [$contig_id]");
-   }
-
-   my $sth = $self->prepare("insert into protein_align_feature (contig_id,contig_start,contig_end,contig_strand,hit_start,hit_end,hit_name,cigar_line,analysis_id,score, evalue, perc_ident) values (?,?,?,?,?,?,?,?,?,?, ?, ?)");
+   my $sth = $self->prepare(
+	"INSERT INTO protein_align_feature(contig_id, contig_start, contig_end,
+                                           contig_strand, hit_start, hit_end,
+                                           hit_name, cigar_line, analysis_id,
+                                           score, evalue, perc_ident) 
+         VALUES (?,?,?,?,?,?,?,?,?,?, ?, ?)");
 
    foreach my $sf ( @sf ) {
-       if( !ref $sf || !$sf->isa("Bio::EnsEMBL::DnaPepAlignFeature") ) {
-	   $self->throw("Simple feature must be an Ensembl ProteinAlignFeature, not a [$sf]");
-       }
+     if( !ref $sf || !$sf->isa("Bio::EnsEMBL::DnaPepAlignFeature") ) {
+       $self->throw("Feature must be a Bio::EnsEMBL::ProteinAlignFeature, " .
+		    "not a [$sf]");
+     }
+     
+     if( !defined $sf->analysis ) {
+       $self->throw("Cannot store sequence features without analysis");
+     }
+     if( !defined $sf->analysis->dbID ) {
+       # maybe we should throw here. Shouldn't we always have an 
+       # analysis from the database?
+       $self->throw("I think we should always have an analysis object " .
+		    "which has originated from the database. No dbID, " .
+		    "not putting in!");
+     }
 
-       if( !defined $sf->analysis ) {
-	   $self->throw("Cannot store sequence features without analysis");
-       }
-       if( !defined $sf->analysis->dbID ) {
-	   # maybe we should throw here. Shouldn't we always have an analysis from the database?
-	   $self->throw("I think we should always have an analysis object which has originated from the database. No dbID, not putting in!");
-       }
-       #print STDERR "storing ".$sf->gffstring."\n";
-       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->hstart,$sf->hend,$sf->hseqname,$sf->cigar_string,$sf->analysis->dbID,$sf->score, $sf->p_value, $sf->percent_id);
-       $sf->dbID($sth->{'mysql_insertid'});
+     my $contig = $sf->entire_seq();
+     unless(defined $contig && ref $contig && 
+	    $contig->isa("Bio::EnsEMBL::RawContig")) { 
+       $self->throw("Cannot store feature without Contig attached via " .
+		    "attach_seq\n");
+     }   
+     
+     $sth->execute($contig->dbID(), $sf->start, $sf->end,
+		   $sf->strand, $sf->hstart, $sf->hend,
+		   $sf->hseqname, $sf->cigar_string, $sf->analysis->dbID,
+		   $sf->score, $sf->p_value, $sf->percent_id);
+     
+     $sf->dbID($sth->{'mysql_insertid'});
    }
-
-
-}
+ }
 
 
 # 
@@ -149,7 +164,6 @@ sub _obj_from_hashref {
 						      -cigar_string => $cigar);
 
   $dnapep->analysis($analysis);
-  $dnapep->seqname($contig->name());
   $dnapep->attach_seq($contig);
   #set the 'id' of the feature to the hit name
   $dnapep->id($hashref->{'hit_name'});

@@ -47,26 +47,6 @@ use Bio::EnsEMBL::MarkerFeature;
 
 my $MAX_FEATURE_LENGTH = 5000;
 
-
-
-sub fetch_by_dbID {
-  my ($self,$id) = @_;
-  
-  $self->warn( "No dbID in landmark_features" );
-  return;
-}
-
-
-
-sub fetch_by_contig_id_constraint{
-}
-
-sub fetch_by_contig_id{
-  my($self, $cid, $logic_name) = @_;
-
-}
-
-
 =head2 fetch_by_Slice
 
   Arg  1    : Bio::EnsEMBL::Slice $slice
@@ -77,8 +57,6 @@ sub fetch_by_contig_id{
   Caller    : Bio::EnsEMBL::Slice
 
 =cut
-
-
 
 sub fetch_by_Slice {
   my( $self, $slice ) = @_;
@@ -162,15 +140,5 @@ sub fetch_by_Marker {
 
   return \@result;
 }
-
-
-
-
-sub store{
-   my ($self,$contig_id,@sf) = @_;
-   $self->warn( "Cannot store MarkerFeature" );
-   return;
-}
-
 
 1;

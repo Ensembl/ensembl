@@ -151,10 +151,11 @@ sub write {
 =head2 store
 
  Title   : store
- Usage   : $fa->store($contig,@features)
- Function: Writes a feature on the genomic sequence of a contig into the database.
-           Checks that we have contig_obj, gets its internal_id. Checks that each
-           feature_obj has analysis_obj attached, gets analysis_id from it.
+ Usage   : $fa->store(@features)
+ Function: Writes a feature on the genomic sequence of a contig into the 
+           database. Checks that we have contig_obj, gets its internal_id. 
+           Checks that each feature_obj has analysis_obj attached, 
+           gets analysis_id from it.
            Checks what kind of feature(s) is/are passed in and passes it/them
            further to appropriate _store_blabla function together with contig_internal_id
            and analysis_id.
@@ -166,7 +167,7 @@ sub write {
 
 
 sub store {
-    my ($self,$contig,@features) = @_;
+    my ($self,@features) = @_;
 
 
     my ($p,$f,$l) = caller;
@@ -181,9 +182,9 @@ sub store {
 
 
     # Check for contig
-    $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")
-        unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
-    my $contig_internal_id = $contig->dbID();
+    #$self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")
+    #   unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
+    #my $contig_internal_id = $contig->dbID();
 
 
     #
@@ -224,13 +225,13 @@ sub store {
 	#
 	print STDERR "storing ".$feature."\n";
 	if( $feature->isa('Bio::EnsEMBL::DnaPepAlignFeature') ) {
-	    $protein_align_adaptor->store($contig_internal_id,$feature);
+	    $protein_align_adaptor->store($feature);
 	} elsif ( $feature->isa('Bio::EnsEMBL::DnaDnaAlignFeature') ) {
-	    $dna_align_adaptor->store($contig_internal_id,$feature);
+	    $dna_align_adaptor->store($feature);
 	} elsif ( $feature->isa('Bio::EnsEMBL::RepeatFeature') ) {
-	    $repeat_adaptor->store($contig_internal_id,$feature);
+	    $repeat_adaptor->store($feature);
 	} elsif ( $feature->isa('Bio::EnsEMBL::SimpleFeature') ) {
-	    $simple_adaptor->store($contig_internal_id,$feature);
+	    $simple_adaptor->store($feature);
 #	} elsif ( $feature->isa('Bio::EnsEMBL::PredictionFeature') ) {
 #	    $prediction_adaptor->store($contig_internal_id,$feature);
 	} else {

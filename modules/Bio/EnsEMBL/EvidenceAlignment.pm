@@ -415,14 +415,13 @@ sub _get_features_from_rawcontig {
   my @wanted_arr = @_;
 
   my $rca = $db->get_RawContigAdaptor;
-  my $contig_id = $rawcontig_obj->dbID;
-
+  
   # keeping protein and DNA together for simplified porting
   # from branch-ensembl-6
   my $pfadp = $db->get_ProteinAlignFeatureAdaptor;
-  my @gapped_features = $pfadp->fetch_by_contig_id($contig_id);
+  my @gapped_features = $pfadp->fetch_by_Contig($rawcontig_obj);
   my $dfadp = $db->get_DnaAlignFeatureAdaptor;
-  push @gapped_features, $dfadp->fetch_by_contig_id($contig_id);
+  push @gapped_features, $dfadp->fetch_by_Contig($rawcontig_obj);
 
   my @all_features = ();
   GAPPED_FEATURE_LOOP:

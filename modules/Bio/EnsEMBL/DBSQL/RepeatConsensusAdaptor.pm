@@ -178,33 +178,32 @@ sub fetch_seq_string_for_dbID {
 =cut
 
 sub store {
-    my( $self, @consensi ) = @_;
-    
-    my $sth = $self->prepare(q{
-        INSERT into repeat_consensus( repeat_consensus_id
+  my( $self, @consensi ) = @_;
+  
+  my $sth = $self->prepare(q{
+    INSERT into repeat_consensus( repeat_consensus_id
           , repeat_name
           , repeat_class
           , repeat_consensus )
-        VALUES (NULL, ?,?,?)
-        });
+      VALUES (NULL, ?,?,?)
+    });
     
-    foreach my $rc (@consensi) {
-        my $name  = $rc->name
-            or $self->throw("name not set");
-        my $class = $rc->repeat_class
-            or $self->throw("repeat_class not set");
-        my $seq   = $rc->repeat_consensus
-            or $self->throw("repeat_consensus not set");
-        
-        $sth->execute($name, $class, $seq);
-        
-        my $db_id = $sth->{'mysql_insertid'}
-            or $self->throw("Didn't get an insertid from the INSERT statement");
-        
-        $rc->dbID($db_id);
-        $rc->adaptor($self);
-    }
-
+  foreach my $rc (@consensi) {
+    my $name  = $rc->name
+      or $self->throw("name not set");
+    my $class = $rc->repeat_class
+      or $self->throw("repeat_class not set");
+    my $seq   = $rc->repeat_consensus
+      or $self->throw("repeat_consensus not set");
+    
+    $sth->execute($name, $class, $seq);
+    
+    my $db_id = $sth->{'mysql_insertid'}
+    or $self->throw("Didn't get an insertid from the INSERT statement");
+    
+    $rc->dbID($db_id);
+    $rc->adaptor($self);
+  }
 }
 
 1;

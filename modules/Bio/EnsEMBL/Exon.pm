@@ -222,37 +222,6 @@ sub adaptor {
 }
 
 
-=head2 contig_id
-
-  Arg [1]    : string $contig_dbID
-               You could set a contig ID in the Exon. Generally its a better
-               idea to attach a complete contig to the exon.
-  Example    : none
-  Description: set a contig id (dbID or eventually others). The get part goes to the
-               attached contig if there is nothing explicitly set.
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub contig_id{
-  my $self = shift;
-  if( @_ ) {
-    my $value = shift;
-    #print "setting contig_id = ".$value."\n";
-    $self->{'contigid'} = $value;
-  }
-  if( defined $self->{'contigid'} ) {
-    return $self->{'contigid'};
-  } elsif( defined $self->contig() ) {
-    return $self->contig->dbID();
-  } else {
-    return undef;
-  }
-}
-
 
 
 =head2 contig
@@ -270,14 +239,13 @@ sub contig_id{
 
 sub contig {
   my $self = shift;
-  if( @_ ) {
-    my $value = shift;
-    #print "setting exons contig to ".$value." \n";
-    $self->attach_seq($value);
+  my $seq = shift;
+  
+  if( $seq ) {
+    $self->attach_seq($seq);
   }
-  else {
-    return $self->entire_seq();
-  }
+
+  return $self->entire_seq();
 }
 
 
@@ -388,7 +356,6 @@ sub _transform_between_slices {
   $new_exon->end($self->end() + $shift);
 
   $new_exon->contig($to_slice);
-  $new_exon->attach_seq($to_slice);
 
   return $new_exon;
 }
@@ -456,9 +423,6 @@ sub _transform_to_slice {
  
 
   $newexon->contig( $slice );
-  $newexon->attach_seq( $slice );
-  
-
 
   return $newexon;
 }
@@ -526,7 +490,6 @@ sub _transform_to_rawcontig {
       $componentExon->strand( $mapped[$i]->strand() );
       my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[$i]->id() );
       $componentExon->contig( $rawContig );
-      $componentExon->contig_id( $rawContig->dbID );
       $componentExon->sticky_rank( $i + 1 );
       $componentExon->phase( $self->phase );
       $componentExon->end_phase($self->end_phase);
@@ -553,9 +516,7 @@ sub _transform_to_rawcontig {
     $self->end( $mapped[0]->end() );
     $self->strand( $mapped[0]->strand() );
     # attaching seq ?
-    $self->attach_seq( $rawContig );
     $self->contig( $rawContig );
-    $self->contig_id($rawContig->dbID);
     return $self;
   }
 }
@@ -1087,7 +1048,7 @@ sub find_supporting_evidence {
 
 	  $self->find_supporting_evidence(\@subf);
 	} else {
-	  if ($f->seqname eq $self->contig_id) {
+	  if ($f->entire_seq()->name eq $self->contig()->name) {
 	    if (!($f->end < $self->start || $f->start > $self->end)) {
 	      $self->add_Supporting_Feature($f);
 	    }
@@ -1794,5 +1755,44 @@ sub clone_id{
      return undef;
    }
 }
+
+=head2 contig_id
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use Bio::EnsEMBL::Exon::contig instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub contig_id{
+  my $self = shift;
+#  $self->warn("Bio::EnsEMBL::Exon::contig_id is deprecated.  \n" .
+#	      "Use contig instead\n");
+
+#  if($contig_id) {
+#    my $contig = 
+#      $self->adaptor->db->get_RawContigAdaptor->fetch_by_dbID($contig_id);
+#    $self->contig($contig);
+#  }
+
+#  return $self->contig()->dbID();
+  
+  if( @_ ) {
+    my $value = shift;
+    #print "setting contig_id = ".$value."\n";
+    $self->{'contigid'} = $value;
+  }
+  if( defined $self->{'contigid'} ) {
+    return $self->{'contigid'};
+  } elsif( defined $self->contig() ) {
+    return $self->contig->dbID();
+  } else {
+    return undef;
+  }
+}
+
 
 1;
