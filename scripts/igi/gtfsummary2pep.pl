@@ -115,8 +115,10 @@ sub print_peptides {
     my ($ignored, $kept) = (0,0);
 
   IGI:
-    foreach my $igi (sort Bio::EnsEMBL::Utils::igi_utils::by_igi_number 
-                     keys %$igis) {
+# $a 
+    my @igis = sort Bio::EnsEMBL::Utils::igi_utils::by_igi_number 
+                     keys %$igis;
+    foreach my $igi (@igis) {
         # (this sorts on the numerical part of the "igi3_" identifier)
         my $peps= $peptides->{$igi};
         if (!defined $peps) {
