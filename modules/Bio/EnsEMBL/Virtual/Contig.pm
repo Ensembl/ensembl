@@ -311,6 +311,7 @@ sub top_SeqFeatures {
         @sf, 
         $self->skip_SeqFeature('similarity') ? () : $self->get_all_SimilarityFeatures(),
         $self->skip_SeqFeature('repeat')     ? () : $self->get_all_RepeatFeatures(),
+        $self->skip_SeqFeature('external')     ? () : $self->get_all_SNPFeatures(),
         $self->skip_SeqFeature('external')   ? () : $self->get_all_ExternalFeatures(),
         $self->skip_SeqFeature('prediction') ? () : $self->get_all_PredictionFeatures(),
         $self->skip_SeqFeature('contig')     ? () : $self->_vmap->each_MapContig(),
