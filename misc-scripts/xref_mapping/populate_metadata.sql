@@ -31,6 +31,7 @@ INSERT INTO source VALUES (2, "RefSeq", 1, 'Y');
 INSERT INTO source VALUES (1000, 'EMBL', 1, 'N');
 INSERT INTO source VALUES (1001, 'PUBMED', 1, 'N');
 INSERT INTO source VALUES (1002, 'MEDLINE', 1, 'N');
+INSERT INTO source VALUES (1003, 'GO', 1, 'N');
 
 ################################################################################
 # Files to fetch data from
