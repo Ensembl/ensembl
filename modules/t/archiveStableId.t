@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 7;
+	plan tests => 8;
 }
 
 use MultiTestDB;
@@ -100,6 +100,20 @@ for my $asi ( @$succ_asis ) {
 
 ok( scalar( @$succ_asis ) == 0 );
 
+#
+# 8 fetch_all_currently_related
+#
+
+$asi = $asia->fetch_by_stable_id_dbname( "G2", "release_1" );
+my $asis = $asia->fetch_all_currently_related( $asi );
+
+debug( "Currently related from G2.release_1" );
+for my $asi ( @$asis ) {
+ _print_asi( $asi );
+}
+
+ok(( $asis->[0]->db_name eq "release_4" ) &&
+   ( scalar @$asis == 2 ));
 
 
 sub _print_asi {
