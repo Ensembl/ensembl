@@ -134,13 +134,16 @@ my $sth = $dba->prepare("select * from clone");
 $sth->execute;
 #print STDERR "Num clones " . scalar($sth->rows) . "\n";
 ok(scalar($sth->rows) == 11);
+$sth->finish();
+
 
 #
 # check the contigs
-#$sth = $dba->prepare("select * from contig");
+$sth = $dba->prepare("select * from contig");
 $sth->execute;
 #print STDERR "Num contigs " . scalar($sth->rows) . "\n";
 ok(scalar($sth->rows) == 11);
+$sth->finish();
 
 #
 # check the simple features
@@ -149,6 +152,7 @@ $sth = $dba->prepare("select * from simple_feature");
 $sth->execute;
 #print STDERR "Num simple_features " . scalar($sth->rows) . "\n";
 ok(scalar($sth->rows) == 116);
+$sth->finish();
 
 #
 # check the repeat features
@@ -157,6 +161,7 @@ $sth = $dba->prepare("select * from repeat_feature");
 $sth->execute;
 #print STDERR "Num repeat_features " . scalar($sth->rows) . "\n";
 ok(scalar($sth->rows) == 1937);
+$sth->finish();
 
 #
 # check the protein_align_features
@@ -165,6 +170,7 @@ $sth = $dba->prepare("select * from protein_align_feature");
 $sth->execute;
 #print STDERR "Num protein_align_features " . scalar($sth->rows) . "\n";
 ok(scalar($sth->rows) == 4727);
+$sth->finish();
 
 #
 # check the protein_align_features
@@ -173,6 +179,7 @@ $sth = $dba->prepare("select * from dna_align_feature");
 $sth->execute;
 #print STDERR "Num dna_align_features " . scalar($sth->rows) . "\n";
 ok(scalar($sth->rows) == 15525);
+$sth->finish();
 
 #
 # check the prediction_transcripts
@@ -190,7 +197,7 @@ $sth = $dba->prepare("select * from dna");
 $sth->execute;
 #print STDERR "Num dna records " . scalar($sth->rows) . "\n";
 ok(scalar($sth->rows) == 11);
-
+$sth->finish();
 
 # restore the tables for the next test
 $multi->restore("core","contig","clone","dna","repeat_feature","simple_feature",
@@ -203,7 +210,7 @@ $multi->restore("core","contig","clone","dna","repeat_feature","simple_feature",
 $sth = $dba->prepare("select * from contig");
 $sth->execute;
 ok(scalar($sth->rows) == 12);
-
+$sth->finish();
 
 #
 # This is a snpview method

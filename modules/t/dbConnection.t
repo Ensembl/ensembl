@@ -91,6 +91,8 @@ ok(test_getter_setter($dbc, 'db_handle', $db->db_handle));
 my $sth = $dbc->prepare('SELECT * from gene limit 1');
 $sth->execute;
 ok($sth->rows);
+$sth->finish();
+
 
 #
 # 12 add_db_adaptor

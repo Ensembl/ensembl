@@ -112,6 +112,7 @@ ok($marker_feature->dbID &&
 my $sth = $db->prepare('SELECT count(*) from marker_feature');
 $sth->execute;
 my ($count) = $sth->fetchrow_array;
+$sth->finish();
 
 ok($count == 1);
 
