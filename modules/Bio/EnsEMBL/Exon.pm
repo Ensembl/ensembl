@@ -406,7 +406,6 @@ sub _transform_to_Slice {
 
   $newexon->strand( $mapped[0]->strand() * $slice->strand() );
   $newexon->contig( $slice );
-  $slice->chr_end;
   #copy the attached supporting features and transform them
   my @feats;
   if( exists $self->{_supporting_evidence} ) {
