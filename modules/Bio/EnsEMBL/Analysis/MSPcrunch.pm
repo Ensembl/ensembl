@@ -77,10 +77,11 @@ sub _initialize {
   # Filename.
   # Type of msp file
 
-  my ($mspfile,$type,$source_tag) = $self->_rearrange([qw(FILE
-							  TYPE
-							  SOURCE_TAG
-							  )],@args);
+  my ($contig_id,$mspfile,$type,$source_tag) = $self->_rearrange([qw(CONTIG_ID
+								     FILE
+								     TYPE
+								     SOURCE_TAG
+								     )],@args);
   # Stored data
   # -----------
   # These are the homols parsed from the mspfile
@@ -90,7 +91,7 @@ sub _initialize {
   $self->source_tag($source_tag);
   $self->type      ($type);
   $self->mspfile   ($mspfile);
-
+  $self->contig_id ($contig_id);
   $self->_parse;
 
   return $self; # success - we hope!
@@ -205,7 +206,7 @@ sub _read_Homol {
     $sf2->score($score);
 
 
-    $sf1->seqname($id1);
+    $sf1->seqname($self->contig_id);
     $sf2->seqname($id2);
 
 
@@ -296,6 +297,26 @@ sub mspfile {
     }
     
     return $self->{_mspfile};
+}
+
+=head2 contig_id
+
+  Title   : contig_id
+  Usage   : $self->contig_id
+  Function: Get/set method for the contig id
+  Returns : String
+  Args    : String
+
+=cut
+
+sub contig_id {
+    my ($self,$id) = @_;
+    
+    if (defined($id)) {
+	$self->{_contig_id} = $id;
+    }
+    
+    return $self->{_contig_id};
 }
 
 

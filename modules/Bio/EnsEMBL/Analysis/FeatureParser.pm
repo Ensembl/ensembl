@@ -208,7 +208,7 @@ sub read_Pfam {
     foreach my $dom ($pfamobj->each_Domain) {
 	my $dom2 = $dom->feature2;
 
-	my $f1 = new Bio::EnsEMBL::SeqFeature(-seqname => $dom->seqname,
+	my $f1 = new Bio::EnsEMBL::SeqFeature(-seqname => $self->id,
 					      -start   => $dom->start,
 					      -end     => $dom->end,
 					      -score   => $dom->score,
@@ -353,8 +353,9 @@ sub read_MSP {
     }
     
 
-    my $mspobj  = new Bio::EnsEMBL::Analysis::MSPcrunch(-file => $mspfile,
-							-type => $type,
+    my $mspobj  = new Bio::EnsEMBL::Analysis::MSPcrunch(-contig_id  => $self->id,
+							-file       => $mspfile,
+							-type       => $type,
 							-source_tag => $msp->[1]);
 
 
