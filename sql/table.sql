@@ -295,7 +295,14 @@ CREATE TABLE translation (
   PRIMARY KEY (id)
 );
 
-
+# It is important that gene_id is the PRIMARY KEY.
+# If it is not, then you can add more than one
+# entry for a gene, the SQL in the object layer
+# gets out each exon more than once, they get made
+# into sticky exons, and the transcript does not
+# translate!
+# Maybe there should just be a type column in gene?
+#   -- JGRG
 CREATE TABLE genetype (
    gene_id      varchar(40) NOT NULL,
    type  varchar(40) NOT NULL,
