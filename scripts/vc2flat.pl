@@ -57,7 +57,7 @@ use Bio::EnsEMBL::Utils::GTF_handler;
 use Getopt::Long;
 
 # global defaults
-my $module    = 'Bio::EnsEMBL::DBSQL::Obj';
+my $module    = 'Bio::EnsEMBL::DBSQL::DBAdaptor';
 my $dbtype    = 'rdb';
 my $format    = 'embl';
 my $nodna     = 0;
@@ -79,8 +79,8 @@ my $nosecure=0;
 my $genetype = undef;
 
 # defaults for msql (rdb) access
-my $host     = 'ensrv4.sanger.ac.uk';
-my $dbname    = 'ensembl_freeze17_michele';
+my $host     = 'ensrv3';
+my $dbname    = 'ensembl100';
 my $dbuser    = 'ensro';
 my $dbpass = undef;
 
