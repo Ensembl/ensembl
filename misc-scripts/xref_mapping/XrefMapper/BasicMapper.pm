@@ -245,7 +245,7 @@ sub dump_xref{
       foreach my $list (@lists){
 	$method[$k++] = shift @$list;
       }
-      $self->method(\@lists);
+      $self->method(\@method);
       return;
     }
   }
