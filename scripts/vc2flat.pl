@@ -54,7 +54,6 @@ use Bio::SeqIO;
 use Getopt::Long;
 
 # global defaults
-my $host = 'localhost';
 my $module    = 'Bio::EnsEMBL::DBSQL::Obj';
 my $dbtype    = 'rdb';
 my $format    = 'embl';
@@ -76,9 +75,9 @@ my $nogene=0;
 my $nosecure=0;
 
 # defaults for msql (rdb) access
-my $host1     = 'localhost';
-my $dbname    = 'ensembl08';
-my $dbuser    = 'root';
+my $host     = 'ensrv4.sanger.ac.uk';
+my $dbname    = 'ensembl_freeze17_michele';
+my $dbuser    = 'ensro';
 my $dbpass = undef;
 
 # defaults for acedb (humace)
