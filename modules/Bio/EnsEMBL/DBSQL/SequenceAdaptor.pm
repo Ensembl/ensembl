@@ -36,6 +36,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
+use Bio::EnsEMBL::Utils::Sequence  qw(reverse_comp);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -110,7 +111,7 @@ sub fetch_by_Slice_start_end_strand {
                                                         1,undef,1)};
      }
      if($strand == -1) {
-       _reverse_comp(\$seq);
+       reverse_comp(\$seq);
      }
      return \$seq;
    }
@@ -144,7 +145,7 @@ sub fetch_by_Slice_start_end_strand {
 
      #reverse compliment on negatively oriented slices
      if($seq_slice->strand == -1) {
-       _reverse_comp(\$tmp_seq);
+       reverse_comp(\$tmp_seq);
      }
 
      $seq .= $tmp_seq;
@@ -166,7 +167,7 @@ sub fetch_by_Slice_start_end_strand {
    }
 
    #if they asked for the negative slice strand revcomp the whole thing
-   _reverse_comp(\$seq) if($strand == -1);
+   reverse_comp(\$seq) if($strand == -1);
 
    return \$seq;
 }
@@ -229,29 +230,6 @@ sub store {
   return;
 }
 
-
-=head2 _reverse_comp
-
-  Arg [1]    : reference to a string $seqref
-  Example    : $self->_reverse_comp(\$seqref);
-  Description: Does an in place reverse compliment of a passed in string
-               reference.  The string is passed by reference
-               rather than by value for memory efficiency.
-  Returntype : none
-  Exceptions : none
-  Caller     : internal
-
-=cut
-
-sub _reverse_comp {
-  my $seqref = shift;
-
-  $$seqref = reverse( $$seqref );
-  $$seqref =~
-    tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
-
-  return undef;
-}
 
 
 
