@@ -263,7 +263,6 @@ CREATE TABLE dna_align_feature (
   hit_name varchar(40) NOT NULL,
   hit_strand tinyint(1) NOT NULL,
 
-  phase tinyint(1), # values 0,1,2. Only used if translations are involved
   cigar_line varchar(255),
   
 #  What scoring do we need ?
@@ -323,28 +322,6 @@ CREATE TABLE gene (
 
   PRIMARY KEY (gene_id)
 );
-
-
-#
-# Experimental table to decouple locations from located objects
-#  Genes will have locations here. Others might follow if performance is ok.
-#
-# A sister fragment_location table might be constructed if this experiment is 
-#  successful. This would enable better support for unassembled genome.
-#
-CREATE TABLE assembly_locations (
-  type enum( 'gene' ) not null,
-  type_id int unsigned not null,
-
-  assembly_type varchar(20) not null,
-  chromosome_id tinyint unsigned not null,
-  chr_start int not null,
-  chr_end int not null,
-  chr_strand tinyint not null,
-
-  KEY loc_idx( assembly_type, chromosome_id, chr_start, chr_end, chr_strand, type, type_id ),
-  KEY obj_idx( type, type_id, assembly_type, chromosome_id, chr_start, chr_end, chr_strand )
-);  
 
 
 CREATE TABLE gene_stable_id (
@@ -588,18 +565,6 @@ CREATE TABLE external_db(
 );
 
 
-#
-# Table structure for table 'landmarkMarker'
-#
-CREATE TABLE landmark_marker (
-  marker char(40) DEFAULT '' NOT NULL,
-  name char(40) DEFAULT '' NOT NULL,
-  chr_start bigint(17) DEFAULT '0' NOT NULL,
-  chr_end bigint(17) DEFAULT '0' NOT NULL,
-  chr_strand bigint(1) DEFAULT '0' NOT NULL,
-  chromosome_id tinyint unsigned NOT NULL,
-  KEY chromosome_id (chromosome_id,chr_start)
-);
 
 CREATE TABLE meta (
     meta_id INT not null auto_increment,
