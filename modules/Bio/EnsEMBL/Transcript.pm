@@ -565,7 +565,7 @@ sub get_all_Introns {
 
 =head2 flush_Exons
 
- Title   : flush_Exon
+ Title   : flush_Exons
  Usage   : Removes all Exons from the array.
  Function:
  Example :
@@ -874,7 +874,7 @@ sub sort {
   my @exons = @{$self->get_all_Exons()};
 
   # Empty the feature table
-  $self->flush_Exon();
+  $self->flush_Exons();
 
   # Now sort the exons and put back in the feature table
   my $strand = $exons[0]->strand;
