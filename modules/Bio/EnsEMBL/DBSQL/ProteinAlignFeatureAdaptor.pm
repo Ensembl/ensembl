@@ -1,7 +1,5 @@
 #
-# BioPerl module for Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor
-#
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
+# Ensembl module for Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor
 #
 # Copyright Ewan Birney
 #
@@ -25,21 +23,12 @@ Adaptor for ProteinAlignFeatures
 
 =head1 DESCRIPTION
 
-This is an adaptor for protein features on DNA sequence. Like other
-feature getting adaptors it has a number of fetch_ functions and a
-store function.
 
+=head1 CONTACT
 
-=head1 AUTHOR - Ewan Birney
+Post questions to the Ensembl development list: ensembl-dev@ebia.ac.uk
 
-Email birney@ebi.ac.uk
-
-Describe contact details here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 

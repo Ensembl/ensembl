@@ -19,10 +19,10 @@ Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor - Adaptor for DnaAlignFeatures
 
 =head1 DESCRIPTION
 
-This is an adaptor for DNA features on DNA sequence. Like other
-feature getting adaptors it has a number of fetch_ functions and a
-store function. This adaptor inherits most of its functionality from
-its BaseAlignFeatureAdaptor superclass.
+This is an adaptor responsible for the retrieval and storage of 
+DnaDnaAlignFeatures from the database. This adaptor inherits most of its 
+functionality from the BaseAlignFeatureAdaptor and BaseFeatureAdaptor 
+superclasses.
 
 =head1 CONTACT
 
