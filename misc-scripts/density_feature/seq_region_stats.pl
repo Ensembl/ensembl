@@ -1,13 +1,24 @@
 use strict;
 
+BEGIN {
+  my $ensembl_root = '/ensweb/wwwdev/server'; 
+  unshift @INC, "$ensembl_root/modules";
+  unshift @INC, "$ensembl_root/ensembl-draw/modules";
+  unshift @INC, "$ensembl_root/ensembl/modules";
+  unshift @INC, "$ensembl_root/ensembl-external/modules";
+  unshift @INC, "$ensembl_root/ensembl-map/modules";
+  unshift @INC, "$ensembl_root/ensembl-compara/modules";
+  unshift @INC, "$ensembl_root/conf";
+  unshift @INC, "$ensembl_root/bioperl-live";
+}
+
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::Attribute;
 
 
-my $host = 'ecs1g';
-my $user = 'ensadmin';
-my $pass = 'ensembl';
-my $dbname = 'homo_sapiens_core_20_34';
+my $host   = 'localhost';
+my $user   = 'ensadmin';
+my $pass   = 'ensembl';
+my $dbname = 'mcvicker_homo_sapiens_core_20_34b';
 my $port = '3306';
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
@@ -15,7 +26,6 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -port => $port,
 					    -pass => $pass,
 					    -dbname => $dbname);
-
 
 my $slice_adaptor = $db->get_SliceAdaptor();
 my $attrib_adaptor = $db->get_AttributeAdaptor();
