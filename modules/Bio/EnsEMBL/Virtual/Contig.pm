@@ -307,6 +307,11 @@ sub top_SeqFeatures {
     if( !$self->skip_SeqFeature('external')  ) { 
 	push(@f,$self->get_all_ExternalFeatures());
     } 
+
+    if ( !$self->skip_SeqFeature('prediction') ) {
+	push(@f,$self->get_all_PredictionFeatures());
+    } 
+
     
     if( !$self->skip_SeqFeature('gene') ) {
 	foreach my $gene ( $self->get_all_Genes()) {
