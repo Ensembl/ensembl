@@ -66,9 +66,18 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::AssemblyMapper;
 use Bio::EnsEMBL::ChainedAssemblyMapper;
 
+use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
 use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+
+
+my $CHUNKFACTOR = 20;  # 2^20 = approx. 10^6
+# if the mapper is bigger than that its flushed before registering new stuff:
+my $MAX_PAIR_COUNT = 1000; 
+
+#number of seq regions to remember ids fo
+my $SEQ_REGION_CACHE_SIZE = 2500;
 
 =head2 new
 
@@ -88,7 +97,10 @@ sub new {
   my $self = $class->SUPER::new($dbadaptor);
 
   $self->{'_asm_mapper_cache'} = {};
-  $self->{'_sr_id_cache'} = {};
+
+  my %cache;
+  tie(%cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_REGION_CACHE_SIZE);
+  $self->{'_sr_id_cache'} = \%cache;
 
   return $self;
 }
@@ -120,11 +132,11 @@ sub fetch_by_CoordSystems {
   my $cs1  = shift;
   my $cs2  = shift;
 
-  if(!$cs1 || !ref($cs1) || !$cs1->isa('Bio::EnsEMBL::CoordSystem')) {
-    throw("cs1 argument must be a Bio::EnsEMBL::CoordSystem");
+  if(!ref($cs1) || !$cs1->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw("cs1 argument must be a Bio::EnsEMBL::CoordSystem.");
   }
-  if(!$cs2 || !ref($cs2) || !$cs2->isa('Bio::EnsEMBL::CoordSystem')) {
-    throw("cs2 argument must be a Bio::EnsEMBL::CoordSystem");
+  if(!ref($cs2) || !$cs2->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw("cs2 argument must be a Bio::EnsEMBL::CoordSystem.");
   }
 
   if($cs1->equals($cs2)) {
@@ -211,9 +223,6 @@ sub fetch_by_CoordSystems {
 
 =cut
 
-my $CHUNKFACTOR = 20;  # 2^20 = approx. 10^6
-# if the mapper is bigger than that its flushed before registering new stuff:
-my $MAX_PAIR_COUNT = 1000; 
 
 sub register_assembled {
   my $self = shift;
@@ -245,8 +254,8 @@ sub register_assembled {
       if($asm_mapper->have_registered_assembled($asm_seq_region, $i)) {
         if(defined($begin_chunk_region)) {
           #this is the end of an unregistered region.
-          my $region = [($begin_chunk_region   << $CHUNKFACTOR) + 1,
-                        $end_chunk_region     << $CHUNKFACTOR];
+          my $region = [($begin_chunk_region   << $CHUNKFACTOR),
+                        ($end_chunk_region     << $CHUNKFACTOR)-1];
           push @chunk_regions, $region;
           $begin_chunk_region = $end_chunk_region = undef;
         }
@@ -259,8 +268,8 @@ sub register_assembled {
 
     #the last part may have been an unregistered region too
     if(defined($begin_chunk_region)) {
-      my $region = [($begin_chunk_region << $CHUNKFACTOR) + 1,
-                    $end_chunk_region   << $CHUNKFACTOR];
+      my $region = [($begin_chunk_region << $CHUNKFACTOR),
+                    ($end_chunk_region   << $CHUNKFACTOR) -1];
       push @chunk_regions, $region;
     }
   }
@@ -270,8 +279,10 @@ sub register_assembled {
   # keep the Mapper to a reasonable size
   if( $asm_mapper->size() > $MAX_PAIR_COUNT ) {
     $asm_mapper->flush();
-    @chunk_regions = ( [ ( $start_chunk << $CHUNKFACTOR) + 1
-                         , ($end_chunk+1) << $CHUNKFACTOR ] );
+    #we now have to go and register the entire requested region since we 
+    #just flushed everything
+    @chunk_regions = ( [ ( $start_chunk << $CHUNKFACTOR)
+                         , (($end_chunk+1) << $CHUNKFACTOR)-1 ] );
     for( my $i = $start_chunk; $i <= $end_chunk; $i++ ) {
       $asm_mapper->register_assembled( $asm_seq_region, $i );
     }
@@ -307,8 +318,7 @@ sub register_assembled {
 
   foreach my $region (@chunk_regions) {
     my($region_start, $region_end) = @$region;
-    $sth->execute($asm_seq_region_id, $region_start, $region_end, 
-		  $asm_mapper->component_CoordSystem->dbID());
+    $sth->execute($asm_seq_region_id, $region_start, $region_end, $cmp_cs_id);
 
     my($cmp_start, $cmp_end, $cmp_seq_region_id, $cmp_seq_region, $ori,
       $asm_start, $asm_end);
@@ -375,7 +385,7 @@ sub _seq_region_name_to_id {
 =head2 register_component
 
   Arg [1]    : Bio::EnsEMBL::AssemblyMapper $asm_mapper
-	       A valid AssemblyMapper object
+               A valid AssemblyMapper object
   Arg [2]    : string $cmp_seq_region
                The name of the seq_region to be registered
   Description: Declares a component region to the AssemblyMapper.
@@ -432,7 +442,7 @@ sub register_component {
     return;
   }
 
-  #something is wonky if there are multiple assembled regions for a component
+  #we do not currently support components mapping to multiple assembled
   if($sth->rows() != 1) {
     throw("Multiple assembled regions for single " .
           "component region cmp_seq_region_id=[$cmp_seq_region_id]");
@@ -792,11 +802,11 @@ sub deleteObj {
   Example    : my @ids = @{$asma->seq_regions_to_ids($coord_sys, \@seq_regs)};
   Description: Converts a list of seq_region names to internal identifiers
                using the internal cache that has accumulated while registering
-               regions for AssemblMappers.  Note that this only works for
-               regions which have been registered and is only intended to be
-               called from the AssemblMapper objects created by this adaptor.
+               regions for AssemblyMappers. If any requested regions are 
+               not  found in the cache an attempt is made to retrieve them
+               from the database.
   Returntype : listref of ints
-  Exceptions : none
+  Exceptions : throw if a non-existant seqregion is provided
   Caller     : general
 
 =cut
@@ -812,7 +822,7 @@ sub seq_regions_to_ids {
 
   foreach my $sr (@$seq_regions) {
     my $id = $self->{'_sr_id_cache'}->{"$sr:$cs_id"};
-    throw("Seq_region [$sr] with coord_system [$cs_id] not found") if(!$id);
+    $id = $self->_seq_region_name_to_id($sr,$cs_id) if(!$id);
     push @out, $id;
   }
 
