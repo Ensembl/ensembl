@@ -959,8 +959,8 @@ sub add_supporting_features {
 sub get_all_supporting_features {
   my $self = shift;
 
-  if( !defined(( $self->{_supporting_evidence} ) 
-      || scalar @{$self->{_supporting_evidence}} == 0)) {
+  if( !defined( $self->{_supporting_evidence} ) 
+      || scalar @{$self->{_supporting_evidence}} == 0) {
 
     $self->{_supporting_evidence} = [];
 
