@@ -12,7 +12,7 @@ use MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use TestUtils qw(test_getter_setter debug);
 
-our $verbose = 1;
+our $verbose = 0;
 
 my ($CHR, $START, $END, $FLANKING) = ("20", 30_252_000, 31_252_001, 1000);
 
