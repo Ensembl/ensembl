@@ -45,6 +45,7 @@ BEGIN {
     unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-draw/modules");
     unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-external/modules");
     unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-otter/modules");
+    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-variation/modules");
     unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/modules");
     unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl/modules");
     unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/bioperl-live");
@@ -57,6 +58,8 @@ use Getopt::Long;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use POSIX;
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
 
 my ($species, $chr, $dry, $avdump, $help);
 &GetOptions(
@@ -83,10 +86,8 @@ if($help || !$species){
 
 $ENV{'ENSEMBL_SPECIES'} = $species;
 
-# set db user/pass to allow write access
-my $db_ref = $EnsWeb::species_defs->databases;
-$db_ref->{'ENSEMBL_DB'}{'USER'} = $EnsWeb::species_defs->ENSEMBL_WRITE_USER;
-$db_ref->{'ENSEMBL_DB'}{'PASS'} = $EnsWeb::species_defs->ENSEMBL_WRITE_PASS;
+## set db user/pass to allow write access
+$EnsWeb::species_defs->set_write_access('ENSEMBL_DB',$species);
 
 # connect to databases
 my $databases = &EnsEMBL::DB::Core::get_databases(qw(core glovar));
@@ -183,37 +184,42 @@ foreach my $slice (@top_slices) {
             $current_end = $slice->end;
         }
         my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
-        my $count =0;
+        my $count = 0;
 
-        my $snps;
-        eval { $snps = $sub_slice->get_all_ExternalFeatures('GlovarSNP'); };
+        my $varfeats;
+        eval { $varfeats = $sub_slice->get_all_ExternalFeatures('GlovarSNP'); };
         if ($@) {
             warn $@;
             $current_start = $current_end + 1;
             next;
         }
-        # only count snps that don't overlap slice start
+        # only count varfeats that don't overlap slice start
         # also, avoid duplicate counting
-        my %snps = map { "$_->display_id => 1" if ($_->start >= 1) } @{$snps};
-        $count = scalar(keys %snps);
+        my %varfeats = map { "$_->variation_name => 1" if ($_->start >= 1) } @{$varfeats};
+        $count = scalar(keys %varfeats);
 
         # AV index dump
         if ($avdump) {
-            foreach my $snpo (@{$snps}) {
-                next if ($snpo->start < 1);
-                my $snpid = $snpo->display_id;
+            foreach my $varfeat (@{$varfeats}) {
+                next if ($varfeat->start < 1);
+                my $snpid = $varfeat->variation_name;
+
+                # dblinks
+                my @sources = @{ $varfeat->variation->get_all_synonym_sources };
                 my (@IDs, @desc);
-                foreach my $link ($snpo->each_DBLink) {
-                    push @IDs, $link->primary_id;
-                    push @desc, $link->database . ": " . $link->primary_id;
+                foreach my $source (@sources) {
+                    my @extIDs = @{ $varfeat->variation->get_all_synonyms($source) };
+                    push @IDs, @extIDs;
+                    push @desc, "$source: @extIDs";
                 }
+                
                 print AV sprintf SNP_LINE,
                     $snpid,
                     $species,
                     $snpid,
                     join(" ", @IDs),
                     $snpid,
-                    $snpo->alleles,
+                    $varfeat->allele_string,
                     join(", ", @desc)
                 ; 
             }
@@ -232,7 +238,7 @@ foreach my $slice (@top_slices) {
 
         # logging
         print STDERR "Chr: $chr | Bin: $i/$bins | Count: $count | ";
-        print STDERR "Mem: " . `ps $$ -o vsz |tail -1`;
+        print STDERR "Mem: " . `ps -p $$ -o vsz |tail -1`;
     }
 
     # stats
