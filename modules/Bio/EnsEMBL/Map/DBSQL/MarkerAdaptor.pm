@@ -282,4 +282,157 @@ sub fetch_attributes {
 }
 
 
+
+=head2 store
+
+  Arg [1]    : Bio::EnsEMBL::Map::Marker
+  Example    : $marker_adaptor->store(@markers);
+  Description: Stores a list of markers in this database.
+               The dbID and adaptor of each marker will be set on successful
+               storing.
+  Returntype : 1 on success
+  Exceptions : thrown if not all data needed for storing is populated in the
+               marker
+  Caller     : general
+
+=cut
+
+sub store {
+  my ($self, @markers) = @_;
+
+  foreach my $marker( @markers ){
+
+    #
+    # Sanity check
+    #
+    if(!$marker ||
+       !ref($marker) || 
+       !$marker->isa('Bio::EnsEMBL::Map::Marker')) {
+      $self->throw('Incorrect argument [$marker] to store.  Expected ' .
+                   'Bio::EnsEMBL::Map::Marker');
+    }
+
+    # Don't store if already stored
+    if($marker->is_stored($self->db())) {
+      warning('Marker ['.$marker->dbID.'] is already stored in this DB.');
+      next;
+    }
+
+    # Get/test the display marker synonym
+    my $display_synonym = $marker->display_MarkerSynonym;
+    if(!$display_synonym || !ref($display_synonym) ||
+       !$display_synonym->isa('Bio::EnsEMBL::Map::MarkerSynonym')) {
+      $self->throw('Cannot store Marker without an associated '.
+                   'display_MarkerSynonym');
+    }
+
+    # Store the Marker itself
+    my $q = qq(
+INSERT INTO marker ( left_primer, right_primer,
+                     min_primer_dist, max_primer_dist, 
+                     priority, type)
+            VALUES ( ?,?,?,?,?,?) );  
+
+    my $sth = $self->prepare($q);
+
+    $sth->execute( $marker->left_primer      || '',
+                   $marker->right_primer     || '',
+                   $marker->min_primer_dist  || 0,
+                   $marker->max_primer_dist  || 0,
+                   $marker->priority,
+                   $marker->type );
+
+    my $dbID = $sth->{'mysql_insertid'};
+    $marker->dbID($dbID);
+    $marker->adaptor($self);
+
+    if(!$display_synonym->dbID) {
+      # Store synonym
+      $self->_store_MarkerSynonym($marker,$display_synonym);
+    }
+    my $display_synonym_id = $display_synonym->dbID ||
+        $self->throw('display_MarkerSynonym must have dbID to store Marker');
+
+    # Update the marker with the display synonym
+    my $qup = qq(
+UPDATE marker 
+SET    display_marker_synonym_id = $display_synonym_id
+                 WHERE  marker_id = ? );
+    my $sthup = $self->prepare($qup);
+    $sthup->execute($dbID);
+
+    # Loop through all MarkerSynonyms and store if needed
+    foreach my $synonym( @{$marker->get_all_MarkerSynonyms} ){
+      if(!$synonym->dbID) {
+        $self->_store_MarkerSynonym($marker,$synonym);
+      }
+    }
+
+    # Loop through all MapLocations and store if needed
+    foreach my $loc( @{$marker->get_all_MapLocations} ){
+      # Dunno how to implement this :( Just bomb out
+      $self->throw( 'Storing of MapLocation objects is not yet implemented' )
+    }
+
+  }
+  return 1;
+}
+
+
+=head2 _store_MarkerSynonym
+
+  Arg [1]    : Bio::EnsEMBL::Map::Marker
+  Arg [2]    : Bio::EnsEMBL::Map::MarkerSynonym
+  Example    : $marker_adaptor->_store_MarkerSynonym($marker,$ms);
+  Description: Stores a marker synonym attached to the marker in the database
+               The dbID of each MarkerSynonym will be set on successful
+               storing.
+  Returntype : dbID of the MarkerSynonym
+  Exceptions : thrown if not all data needed for storing is populated
+  Caller     : $self->store
+
+=cut
+
+sub _store_MarkerSynonym{
+  my $self   = shift;
+  my $marker = shift;
+  my $ms     = shift;
+
+  # Sanity check
+  if(!$marker || !ref($marker) || 
+     !$marker->isa('Bio::EnsEMBL::Map::Marker')) {
+    $self->throw("Incorrect argument [$marker] to _store_MarkerSynonym." .
+                 "Expected Bio::EnsEMBL::Map::Marker");
+  }
+  if(!$ms || !ref($ms) || 
+     !$ms->isa('Bio::EnsEMBL::Map::MarkerSynonym')) {
+    $self->throw("Incorrect argument [$ms] to _store_MarkerSynonym." .
+                 "Expected Bio::EnsEMBL::Map::MarkerSynonym");
+  }
+
+  # Don't store if already stored
+  if($ms->dbID) {
+    warning('MarkerSynonym ['.$ms->dbID.'] is already stored in this DB.');
+    return;
+  }
+
+  my $marker_id = $marker->dbID ||
+      throw( "Marker has no dbID. Cannot store MarkerSynonym" );
+
+  # Store the synonym
+  my $q = qq(
+INSERT INTO marker_synonym ( marker_id, source, name )
+VALUES ( ?,?,?) );
+
+  my $sth = $self->prepare($q);
+
+  $sth->execute( $marker_id,
+                 $ms->source,
+                 $ms->name );
+
+  my $dbID = $sth->{'mysql_insertid'};
+  $ms->dbID($dbID);
+  return $dbID;
+}
+
 1;

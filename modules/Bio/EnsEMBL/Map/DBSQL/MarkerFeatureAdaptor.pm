@@ -319,44 +319,53 @@ sub _objs_from_sth {
 sub store {
   my ($self, @mfs) = @_;
 
-  my $analysis_adaptor = $self->db->get_AnalysisAdaptor();
-
   foreach my $mf (@mfs) {
 
     #
     # Sanity checking!
     #
     if(!ref($mf) || !$mf->isa('Bio::EnsEMBL::Map::MarkerFeature')) {
-      $self->throw('Incorrect argument [$mf] to store.  Expected ' .
+      $self->throw("Incorrect argument [$mf] to store.  Expected " .
                    'Bio::EnsEMBL::Map::MarkerFeature');
     }
 
     #don't store this feature if it has already been stored
     if($mf->is_stored($self->db())) {
       warning('MarkerFeature ['.$mf->dbID.'] is already stored in this DB.');
+      next;
     }
 
+    # Get/test the marker
     my $marker = $mf->marker;
-
     if(!$marker || !ref($marker) ||
        !$marker->isa('Bio::EnsEMBL::Map::Marker')) {
       throw('Cannot store MarkerFeature without an associated Marker');
     }
-
-    my $marker_id = $marker->dbID;
-    if(!$marker_id) {
-      throw('Associated marker must have dbID to store MarkerFeature');
+    
+    #store the marker if it has not been stored yet 
+    if(!$marker->is_stored($self->db())) {
+      my $marker_adaptor = $self->db->get_adaptor('Marker');
+      $marker_adaptor->store($marker);
     }
+    my $marker_id = $marker->dbID ||
+        throw('Associated Marker must have dbID to store MarkerFeature');
 
+    # Get/test the analysis
     my $analysis = $mf->analysis;
+    if(!$analysis || !ref($analysis) ||
+       !$analysis->isa('Bio::EnsEMBL::Analysis')) {
+      throw('Cannot store MarkerFeature without an associated Analysis');
+    }
 
     #store the analysis if it has not been stored yet
     if(!$analysis->is_stored($self->db())) {
+      my $analysis_adaptor = $self->db->get_adaptor('Analysis');
       $analysis_adaptor->store($mf->analysis());
     }
+    my $analysis_id = $analysis->dbID ||
+        throw('Associated Analysis must have dbID to store MarkerFeature');
 
-    my $analysis_id = $analysis->dbID;
-
+    # Store the marker feature itself
     my $original = $mf;
     my $seq_region_id;
     ($mf, $seq_region_id) = $self->_pre_store($mf);
@@ -368,7 +377,7 @@ sub store {
                       VALUES (?, ?, ?, ?, ?, ?)");
     $sth->execute($marker_id,
                   $seq_region_id, $mf->start, $mf->end,
-                  $analysis_id, 0);
+                  $analysis_id, $mf->map_weight || 0);
 
     my $dbID = $sth->{'mysql_insertid'};
 
