@@ -28,7 +28,7 @@ Please read Bio::EnsEMBL::Utils::Converter
 =head2 Reporting Bugs
 
 
-=head1 AUTHOR Juguang Xiao
+=head1 AUTHOR 
 
 Juguang Xiao <juguang@tll.org.sg>
 
@@ -72,12 +72,12 @@ sub _convert_single {
     # the problem arise when I try to converter the seqfeature for tmhmm to 
     # EnsEMBL seqFeature.
     # -- Juguang, 11 July '03
-    my $score = $in->score || 1;
+    my $score = $in->score || 0;
     my $percent_id;
     if($in->has_tag('percent_id')){
         ($percent_id) = @{$in->get_tag_values('percent_id')};
     }else{
-        $percent_id ||= 1;
+        $percent_id ||= 0;
     }
     my $p_value;
     if($in->has_tag('p_value')){
@@ -86,7 +86,7 @@ sub _convert_single {
         $p_value ||= 1;
     }
     my $ens_seqFeature;
-    my @args = (
+    my %args = (
         -start => $in->start,
         -end => $in->end,
         -strand => $in->strand,
@@ -102,22 +102,34 @@ sub _convert_single {
     
     if($output_module eq 'Bio::EnsEMBL::SeqFeature'){
         
-        $ens_seqFeature = new Bio::EnsEMBL::SeqFeature(@args);
+        $ens_seqFeature = new Bio::EnsEMBL::SeqFeature(%args);
     }elsif($self->out eq 'Bio::EnsEMBL::SimpleFeature'){
-        $ens_seqFeature = new Bio::EnsEMBL::SimpleFeature(@args);
+        $ens_seqFeature = new Bio::EnsEMBL::SimpleFeature(%args);
         # The field that there is in SimpleFeature, but not in SeqFeature.
         $ens_seqFeature->display_label('__NONE__');
     }elsif($self->out eq 'Bio::EnsEMBL::Exon'){
         $ens_seqFeature = Bio::EnsEMBL::Exon->new_fast(
             $self->contig, $seqFeature->start, $seqFeature->end, 
             $seqFeature->strand);
-        
+    }elsif($self->out eq 'Bio::EnsEMBL::ProteinFeature'){
+        my $seq_id2 = $self->analysis->logic_name;
+        unless(defined $self->translation_id){
+            $self->throw('translation_id unset, in ProteinFeature conversion');
+        }
+        $args{'-seqname'} = $self->translation_id;
+        $ens_seqFeature = Bio::EnsEMBL::ProteinFeature->new(
+            -feature1 => Bio::EnsEMBL::SeqFeature->new(%args),
+            -feature2 => Bio::EnsEMBL::SeqFeature->new(
+                -start => 0,
+                -end => 0,
+                -seqname => $seq_id2
+            )
+        );
     }else{
         $self->throw("[$output_module] as -out, not supported");
     }
     
     $ens_seqFeature->attach_seq($self->contig);
-    $ens_seqFeature->seqname($seq_id);
     return $ens_seqFeature;
 }
 
