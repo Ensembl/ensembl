@@ -305,6 +305,41 @@ if ($organism eq "drosophila") {
 
 }
 
+if ($organism eq "elegans") {
+    
+    my $query = "select t.translation_id, ts.stable_id, gs.stable_id from transcript t, gene_stable_id gs, transcript_stable_id ts where t.gene_id = gs.gene_id and t.transcript_id = ts.transcript_id";
+    my $sth = $db->prepare($query);
+    $sth->execute();
+    while (my @res = $sth->fetchrow) {
+	my $transl_dbid = $res[0];
+	my $transc_stable_id = $res[2];
+	my $gene_stable_id = $res[2];
+
+	my $dbentry = Bio::EnsEMBL::DBEntry->new
+		( -adaptor => $adaptor,
+		  -primary_id => $gene_stable_id,
+		  -display_id => $gene_stable_id,
+		  -version => 1,
+		  -release => 1,
+		  -dbname => "wormbase gene");
+	$dbentry->status("XREF");
+	
+	$adaptor->store($dbentry,$transl_dbid,"Translation");
+	
+	my $transdbentry = Bio::EnsEMBL::DBEntry->new
+		( -adaptor => $adaptor,
+		  -primary_id => $transc_stable_id,
+		  -display_id => $transc_stable_id,
+		  -version => 1,
+		  -release => 1,
+		  -dbname => "wormbase transcript");
+	$dbentry->status("XREF");
+	
+	$adaptor->store($transdbentry,$transl_dbid,"Translation");
+
+    }
+}
+
 ###############
 #Some OO stuff#
 ###############
