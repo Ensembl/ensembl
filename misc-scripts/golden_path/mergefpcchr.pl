@@ -46,7 +46,7 @@ foreach $chromo ( @chromo ) {
     open(OUT,">$chr/$chromo.fpc");
     
 
-    opendir(DIR,"$contigdir/$chrnumber") || die "no $contigdir/$chrnumber $!\n";
+    opendir(DIR,"$contigdir/$chrnumber") || do {warn "no $contigdir/$chrnumber $!\n"; next;};
     @contigs = readdir(DIR);
     closedir(DIR);
     
