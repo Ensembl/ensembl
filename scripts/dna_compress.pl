@@ -19,6 +19,8 @@ use vars qw($opt_h $opt_T $opt_i
 	    $opt_U $opt_D $opt_P $opt_H $opt_p
 	    $opt_s $opt_c $opt_C $opt_l $opt_d $opt_r $opt_n);
 
+use Time::HiRes qw(gettimeofday);
+
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 getopts("hTi:U:D:P:H:p:s:cCl:dr:n:");
@@ -95,6 +97,8 @@ if($opt_C || $opt_c){
   my $nd=0;
   my $ns=0;
   my $nc=0;
+  my $tc=0;
+  my $tu=0;
   foreach my $clone (@$clones){
     my $clone_dbid=$clone->dbID;
     next if($opt_i && $opt_i!=$clone_dbid);
@@ -168,9 +172,13 @@ if($opt_C || $opt_c){
 	  $r=rand;
 	  my $ed=int($r*($lenr-$st))+$st+1;
 	  print "$lenr: $st-$ed\n";
+	  my $t1=gettimeofday;
 	  $seq=$seq_apt->fetch_by_RawContig_start_end_strand($contig,$st,$ed,1);
+	  $tu+=gettimeofday-$t1;
 	  $len=length($seq);
+	  $t1=gettimeofday;
 	  $seq2=$seq_apt->fetch_by_RawContig_start_end_strand($contig,$st,$ed,1,1);
+	  $tc+=gettimeofday-$t1;
 	  if($seq ne $seq2){
 	    print "DIFFERENT\n";
 	    $nd++;
@@ -195,6 +203,9 @@ if($opt_C || $opt_c){
     last if($opt_n && $nc>$opt_n);
   }
   print "Same: $ns; Different: $nd\n" if $opt_C;
+  my $ratio=0;
+  $ratio=$tc/$tu unless $tu==0;
+  printf "Uncompressed time: %5.1f; Compressed time: %5.1f (%5.1f)\n",$tu,$tc,$ratio;
   exit 0;
 
 }elsif($opt_s && $opt_l){
