@@ -809,7 +809,7 @@ CREATE TABLE coord_system (
     coord_system_id   INT NOT NULL auto_increment,
     name              VARCHAR(40),
     version           VARCHAR(40),
-    attrib            SET ('top_level', 'default_version', 'sequence'),
+    attrib            SET ('top_level', 'default_version', 'sequence_level'),
 
     PRIMARY KEY (coord_system_id)
 
