@@ -1,11 +1,11 @@
 
 
 
-INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES (1,'dummy-contig-1',1,34,1,1,1);
+INSERT into contig (contig_id,name,clone_id,length,embl_offset,dna_id) VALUES (1,'dummy-contig-1',1,34,1,1);
 
-INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES (2,'dummy-contig-2',1,39,201,1,2);
+INSERT into contig (contig_id,name,clone_id,length,embl_offset,dna_id) VALUES (2,'dummy-contig-2',1,39,201,2);
 
-INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES (3,'dummy-contig-3',1,42,301,1,3);
+INSERT into contig (contig_id,name,clone_id,length,embl_offset,dna_id) VALUES (3,'dummy-contig-3',1,42,301,3);
 
 INSERT into clone (clone_id,name,embl_acc,version,htg_phase) VALUES (1,'dummy-clone-1','dummy-embl-acc',12,2);
 
@@ -34,3 +34,4 @@ INSERT into dna(dna_id, sequence, created) values(2, 'CGATCGATCGATCGATCGATCGACGA
 
 
 INSERT into dna(dna_id, sequence, created) values(3, 'ATGCTTTTCGNNNNCTCCCACAANNNNCGAGGGNNNNNNNNN', now());
+
