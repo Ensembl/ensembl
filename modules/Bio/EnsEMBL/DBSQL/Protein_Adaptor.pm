@@ -439,6 +439,10 @@ sub fetch_Family_by_dbid{
 
    my $family = $self->_familyAdaptor->get_Family_of_Ensembl_pep_id($protein_id);
 
+   if( !$family->isa('Bio::EnsEMBL::ExternalData::Family::Family') ) {
+       $self->throw(" $family is not a family object");
+   }
+
    return $family;
 
 }

@@ -271,8 +271,8 @@ sub each_snps_feature{
 sub add_Protein_feature{
    my ($self,$value) = @_;
 
-   if (!defined $value) {
-     $self->throw("The Protein Feature added is not defined!!!");
+   if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+     $self->throw("The Protein Feature added is not defined or is not a protein feature object");
    }
 
    push(@{$self->{'_prot_feat'}},$value);   
@@ -534,6 +534,25 @@ sub checksum{
         
     return $crc64;
 
+}
+
+=head2 get_family
+
+ Title   : get_family
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_family{
+   my ($self) = @_;
+   my $proteinid = $self->id();
+   my $family = $self->adaptor->fetch_Family_by_dbid($proteinid);
+   return $family;
 }
 
 
