@@ -1,8 +1,9 @@
 use lib 't';
+use TestUtils qw(test_getter_setter);
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 5;
+	plan tests => 9;
 }
 
 use MultiTestDB;
@@ -22,15 +23,41 @@ my $sfa = $dba->get_SimpleFeatureAdaptor;
 # 1 create a new Simplefeature
 #
 $sf = new Bio::EnsEMBL::SimpleFeature;
-$sf->start(10);
-$sf->end  (14);
-$sf->strand(1);
-$sf->score(42);
 ok($sf);
 
 
 #
-# 2 attach a contig
+# 2-7 test the basic getter and setters
+#
+
+# 2 start
+my $test = 0;
+$test = test_getter_setter($sf,'start',10);
+ok($test);
+
+# 3 end
+$test = test_getter_setter($sf,'end',14);
+ok($test);
+
+# 4 strand
+$test = test_getter_setter($sf,'strand',1);
+ok($test);
+
+# 5 score
+$test = test_getter_setter($sf,'score',42);
+ok($test);
+
+# 6 display_label
+$test = test_getter_setter($sf,'display_label','dummy_label');
+ok($test);
+
+# 7 dbID
+$test = test_getter_setter($sf,'dbID',42);
+ok($test);
+
+
+#
+# 8 attach a contig
 #
 # create a dummy seq and contig
 #
@@ -50,23 +77,9 @@ $contig->seq($seq);
 $sf->contig($contig);
 ok($sf);
 
-#
-# 3 display_label
-#
-
-$sf->display_label('dummy-label');
-ok($sf->display_label eq 'dummy-label');
-
 
 #
-# 4 dbID
-#
-$sf->dbID('42');
-ok($sf->dbID == 42);
-
-
-#
-# 5 adaptor
+# 9 check adaptor attaching
 #
 $sf->adaptor($sfa);
 ok($sf->adaptor->isa('Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor'));
