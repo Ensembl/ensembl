@@ -265,6 +265,7 @@ sub contig_id{
   my $self = shift;
   if( @_ ) {
     my $value = shift;
+    #print "setting contig_id = ".$value."\n";
     $self->{'contigid'} = $value;
   }
   if( defined $self->{'contigid'} ) {
@@ -322,6 +323,7 @@ sub contig {
    my $self = shift;
    if( @_ ) {
       my $value = shift;
+      #print "setting exons contig to ".$value." \n";
       $self->{'contig'} = $value;
     }
     return $self->{'contig'};
@@ -389,7 +391,7 @@ sub _transform_to_slice {
   # this untransformed exon will be distinguishable as it will still have
   # contig attached to it and not a slice.
   if( $mapped[0]->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
-    print "Exon " . $self->dbID . " Start:" . $self->start . " End:". $self->end . " mapped to a gap \n";
+    #print "Exon " . $self->dbID . " Start:" . $self->start . " End:". $self->end . " mapped to a gap \n";
     return $self;
   }
 
@@ -421,9 +423,94 @@ sub _transform_to_rawcontig {
   my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
     ( $self->contig()->assembly_type() );
   my $global_start = $self->contig->chr_start();
-
+  my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
 
  
+  my @supporting_features = $self->each_Supporting_Feature;
+  my @remapped_sf;
+  
+  foreach my $sf(@supporting_features){
+    #print STDERR "remapping ".$sf->gffstring."\n";
+    my @remapped =   $mapper->map_coordinates_to_rawcontig
+      (
+       $self->contig()->chr_name(),
+       $sf->start()+$global_start-1,
+       $sf->end()+$global_start-1,
+       $sf->strand()*$self->contig()->strand()
+      );
+    if( ! @remapped ) {
+      $self->warn( "supporting feature couldnt map" );
+    }
+    
+    if(scalar( @remapped ) > 1 ) {
+      #print STDERR "maps to multiple coordinate sets\n";
+      if($sf->strand == -1){
+	@remapped = reverse(@remapped);
+      }
+      my $hitstart = $sf->hstart;
+      # and then all the component exons ...
+      SPLIT: for( my $i=0; $i <= $#remapped; $i++ ) {
+	  #print STDERR "coordinates ".$i." ".$remapped[$i]->start." ".$remapped[$i]->end." ".$remapped[$i]->strand." ".$remapped[$i]->id."\n";
+	  my $rawContig = $rcAdaptor->fetch_by_dbID( $remapped[$i]->id() );
+	  my $f1 = new Bio::EnsEMBL::SeqFeature;
+	  my $f2 = new Bio::EnsEMBL::SeqFeature;
+	  my $new_sf = Bio::EnsEMBL::FeaturePair->new( -feature1 => $f1,
+						       -feature2 => $f2,
+						     );
+	  
+	  if($remapped[$i]->isa("Bio::EnsEMBL::Mapper::Gap")){
+	    $self->warn("piece of evidence lies on gap\n");
+	    next SPLIT;
+	  }
+	  
+	  $new_sf->start( $remapped[$i]->start() );
+	  $new_sf->end( $remapped[$i]->end() );
+	  $new_sf->strand( $remapped[$i]->strand() );
+	  $new_sf->score($sf->feature1->score);
+	  $new_sf->feature1->analysis($sf->feature1->analysis);
+	  $new_sf->hstart($sf->hstart);
+	  $new_sf->hend($sf->hend);
+	  $new_sf->hstrand( $sf->feature2->strand() );
+	  $new_sf->hscore($sf->feature2->score);
+	  $new_sf->feature2->analysis($sf->feature2->analysis);
+	  # attaching seq ?
+	  $new_sf->attach_seq( $rawContig );
+	  $new_sf->feature1->seqname($rawContig->dbID);
+	  $new_sf->feature2->seqname($sf->feature2->seqname);
+	  #print STDERR "adding ".$i." ".$new_sf->gffstring."\n";
+	  push(@remapped_sf, $new_sf);
+            
+	
+	}
+    
+    }else{
+      #print STDERR "coordinates  ".$remapped[0]->start." ".$remapped[0]->end." ".$remapped[0]->strand." ".$remapped[0]->id."\n";
+      my $rawContig = $rcAdaptor->fetch_by_dbID( $remapped[0]->id() );
+      
+      my $f1 = new Bio::EnsEMBL::SeqFeature;
+      my $f2 = new Bio::EnsEMBL::SeqFeature;
+      my $new_sf = Bio::EnsEMBL::FeaturePair->new( -feature1 => $f1,
+						   -feature2 => $f2,
+						   );
+
+      $new_sf->start( $remapped[0]->start() );
+      $new_sf->end( $remapped[0]->end() );
+      $new_sf->strand( $remapped[0]->strand() );
+      $new_sf->score($sf->feature1->score);
+      $new_sf->feature1->analysis($sf->feature1->analysis);
+      $new_sf->hstart( $sf->feature2->start() );
+      $new_sf->hend( $sf->feature2->end() );
+      $new_sf->hstrand( $sf->feature2->strand() );
+      $new_sf->hscore($sf->feature2->score);
+      $new_sf->feature2->analysis($sf->feature2->analysis);
+      # attaching seq ?
+      $new_sf->attach_seq( $rawContig );
+      $new_sf->feature1->seqname($rawContig->dbID);
+      $new_sf->feature2->seqname($sf->feature2->seqname);
+      
+      push(@remapped_sf, $new_sf);
+    }
+  }
   
 
   my @mapped = $mapper->map_coordinates_to_rawcontig
@@ -435,14 +522,14 @@ sub _transform_to_rawcontig {
     );
 
   if( ! @mapped ) {
-    $self->warn( "Exon couldnt map" );
+    $self->throw( "Exon couldnt map" );
     return $self;
   }
 
   if( scalar( @mapped ) > 1 ) {
     # sticky exons
     # bjeacchh
-    my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
+   
     my $stickyExon = Bio::EnsEMBL::StickyExon->new();
     $stickyExon->phase( $self->phase() );
     $stickyExon->adaptor( $self->adaptor() );
@@ -454,6 +541,9 @@ sub _transform_to_rawcontig {
     my $sticky_length =0;
     # and then all the component exons ...
     for( my $i=0; $i <= $#mapped; $i++ ) {
+      if($mapped[$i]->isa("Bio::EnsEMBL::Mapper::Gap")){
+	$self->throw(" exon lies on a gap cannot be mapped\n");
+      }
       my $componentExon = Bio::EnsEMBL::Exon->new();
       $componentExon->start( $mapped[$i]->start() );
       $componentExon->end( $mapped[$i]->end() );
@@ -468,59 +558,18 @@ sub _transform_to_rawcontig {
     }
     $stickyExon->end( $sticky_length );
     $stickyExon->strand( 1 );
-   
+    foreach my $sf(@remapped_sf){
+      #print STDERR "adding ".$sf->gffstring." to exon\n";
+      $stickyExon->add_Supporting_Feature($sf);
+    }
+    
     return $stickyExon;
     
   } else {
     # thats a simple exon
-    my @supporting_features = $self->each_Supporting_Feature;
-    my @remapped_sf;
-    
-    foreach my $sf(@supporting_features){
-     
-      my @remapped =   $mapper->map_coordinates_to_rawcontig
-	(
-	 $self->contig()->chr_name(),
-	 $sf->start()+$global_start-1,
-	 $sf->end()+$global_start-1,
-	 $sf->strand()*$self->contig()->strand()
-	);
-      if( ! @remapped ) {
-	$self->warn( "supporting feature couldnt map" );
-      }
-      
-      if(scalar( @remapped ) > 1 ) {
-	print STDERR "normall exon sticky evidence something certainly going on here\n";
-      }else{
-	my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
-	my $rawContig = $rcAdaptor->fetch_by_dbID( $remapped[0]->id() );
-	
-	my $f1 = new Bio::EnsEMBL::SeqFeature;
-	my $f2 = new Bio::EnsEMBL::SeqFeature;
-	my $new_sf = Bio::EnsEMBL::FeaturePair->new( -feature1 => $f1,
-						     -feature2 => $f2,
-						   );
-
-	$new_sf->start( $remapped[0]->start() );
-	$new_sf->end( $remapped[0]->end() );
-	$new_sf->strand( $remapped[0]->strand() );
-	$new_sf->score($sf->feature1->score);
-	$new_sf->feature1->analysis($sf->feature1->analysis);
-	$new_sf->hstart( $sf->feature2->start() );
-	$new_sf->hend( $sf->feature2->end() );
-	$new_sf->hstrand( $sf->feature2->strand() );
-	$new_sf->hscore($sf->feature2->score);
-	$new_sf->feature2->analysis($sf->feature2->analysis);
-	# attaching seq ?
-	$new_sf->attach_seq( $rawContig );
-	$new_sf->feature1->seqname($rawContig->dbID);
-	$new_sf->feature2->seqname($sf->feature2->seqname);
-	
-	push(@remapped_sf, $new_sf);
-      }
+    if($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+      $self->throw(" exon lies on a gap cannot be mapped\n");
     }
-   
-    my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
     my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[0]->id() );
     $self->start( $mapped[0]->start() );
     $self->end( $mapped[0]->end() );
@@ -531,7 +580,7 @@ sub _transform_to_rawcontig {
     $self->contig_id($rawContig->dbID);
     $self->{_supporting_evidence} = [];
     foreach my $sf(@remapped_sf){
-     
+      #print STDERR "adding ".$sf->gffstring." to exon\n";
       $self->add_Supporting_Feature($sf);
     }
     return $self;
