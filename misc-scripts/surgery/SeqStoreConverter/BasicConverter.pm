@@ -4,9 +4,6 @@ use strict;
 use warnings;
 use DBI;
 
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use POSIX qw(ceil);
-
 package SeqStoreConverter::BasicConverter;
 
 ###############################################################################
@@ -23,14 +20,8 @@ sub new {
   ($host, $port) = split(/:/, $host);
   $port ||= 3306;
 
-  my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
-    (-host => $host,
-     -port => $port,
-     -user => $user,
-     -pass => $pass,
-     -driver => 'mysql');
-
-  my $dbh = $db->db_handle();
+  my $dbh = DBI->connect( "DBI:mysql:host=$host:port=$port", $user, $pass,
+                          {'RaiseError' => 1});
 
 
   $self->verbose( $verbose );
@@ -39,8 +30,11 @@ sub new {
   $self->source( $source );
   $self->target( $target );
   $self->schema( $schema );
+  $self->host( $host );
+  $self->password( $pass);
+  $self->user($user);
+  $self->port($port);
   $self->limit($limit);
-  $self->db($db);
 
 
   #check to see if the destination and source databases exist already.
@@ -103,10 +97,27 @@ sub dbh {
   return $self->{'dbh'};
 }
 
-sub db {
+sub user {
   my $self = shift;
-  $self->{'db'} = shift if(@_);
-  return $self->{'db'};
+  $self->{'user'} = shift if(@_);
+  return $self->{'user'};
+}
+sub host {
+  my $self = shift;
+  $self->{'host'} = shift if(@_);
+  return $self->{'host'};
+}
+
+sub port {
+  my $self = shift;
+  $self->{'port'} = shift if(@_);
+  return $self->{'port'};
+}
+
+sub password {
+  my $self = shift;
+  $self->{'password'} = shift if(@_);
+  return $self->{'password'};
 }
 
 
@@ -514,10 +525,10 @@ sub create_coord_systems {
   my $ass_def = $self->get_default_assembly();
 
   my @coords = 
-    (["chromosome" , $ass_def, "top_level,default_version"     ],
-     ["supercontig", undef   , "default_version"               ],
-     ["clone"      , undef   , "default_version"               ],
-     ["contig", undef   , "default_version,sequence_level"]);
+    (["chromosome" , $ass_def, "default_version"               ,1],
+     ["supercontig", undef   , "default_version"               ,2],
+     ["clone"      , undef   , "default_version"               ,3],
+     ["contig", undef        , "default_version,sequence_level",4]);
 
   my @assembly_mappings =  ("chromosome:$ass_def|contig",
                             "clone|contig",
@@ -539,7 +550,7 @@ sub create_coord_systems {
   $self->debug("Building coord_system table");
 
   my $sth = $dbh->prepare("INSERT INTO $target.coord_system " .
-                           "(name, version, attrib) VALUES (?,?,?)");
+                           "(name, version, attrib,rank) VALUES (?,?,?,?)");
 
   my %coord_system_ids;
 
@@ -888,15 +899,6 @@ sub transfer_features {
            "FROM $source.chromosome c, $source.marker_map_location mml " .
            "WHERE c.chromosome_id = mml.chromosome_id $limit");
 
-  $self->debug("Building map_density table");
-  $dbh->do(
-           "INSERT INTO $target.map_density " .
-           "SELECT tcm.new_id, ".
-           "       md.chr_start, md.chr_end, md.type, md.value " .
-           "FROM $target.tmp_chr_map tcm, $source.map_density md " .
-           "WHERE tcm.old_id = md.chromosome_id $limit");
-
-
   $self->debug( "Building misc_feature table" );
   $dbh->do
     ("INSERT INTO $target.misc_feature( misc_feature_id, seq_region_id, " . 
@@ -1043,85 +1045,57 @@ sub create_attribs {
 }
 
 
+#
+# The process of actually identifying toplevel seq_regions using the info in
+# the database is quite slow.  Make the assumption that the coordsystem with
+# lowest rank value is going to have all of the toplevel seq_regions.
+#
+# This method must be overridden if alternate behaviour is required.
+#
 
 sub set_top_level {
   my $self = shift;
 
   my $target = $self->target();
-  my $db = $self->db();
-
-  my $csa = $db->get_CoordSystemAdaptor();
-  my $slice_adaptor = $db->get_SliceAdaptor();
+  my $dbh = $self->dbh();
 
   my $attrib_type_id = $self->add_attrib_code();
 
   $self->debug("Setting toplevel attributes of seq_regions");
-  $self->debug("  Deleting old toplevel attributes");
 
-  my $sth = $db->prepare("DELETE FROM $target.seq_region_attrib " .
-                         "WHERE attrib_type_id = ?");
+  my $sth = $dbh->prepare("DELETE FROM $target.seq_region_attrib " .
+                          "WHERE attrib_type_id = ?");
   $sth->execute($attrib_type_id);
   $sth->finish();
 
-  $sth = $db->prepare("INSERT INTO $target.seq_region_attrib " .
-                      'SET seq_region_id = ?,' .
-                      '    attrib_type_id = ?,' .
-                      '    value = ?');
 
-  #get all of the seqlevel sequence regions and project them to 'toplevel'
-  my $seqlevel_cs = $csa->fetch_by_name('seqlevel');
+  $sth = $dbh->prepare("SELECT coord_system_id FROM $target.coord_system " .
+                       "ORDER BY RANK ASC LIMIT 1");
+  $sth->execute();
 
-  if(!$seqlevel_cs) {
-    die("No 'seqlevel' CoordSystem has been defined.");
-  }
-
-  my $slices = $slice_adaptor->fetch_all($seqlevel_cs->name(),
-                                         $seqlevel_cs->version);
-
-  my %already_seen;
-
-  my $total_number = @$slices;
-  my $total_processed = 0;
-  my $five_percent = int($total_number/20);
-
-  $self->debug("  Adding new toplevel attributes");
-
-  foreach my $slice (@$slices) {
-    my $projection = $slice->project('toplevel');
-    foreach my $segment (@$projection) {
-      my $proj_slice = $segment->[2];
-      my $seq_region_id = $proj_slice->get_seq_region_id();
-
-      if(!$already_seen{$seq_region_id}) {
-
-        my $string = $proj_slice->coord_system->name();
-        $string .= " " . $proj_slice->seq_region_name();
-        $self->debug("  Adding $string to toplevel");
-
-        $sth->execute($seq_region_id,$attrib_type_id, 1);
-        $already_seen{$seq_region_id} = 1;
-      }
-    }
-
-    # print out progress periodically
-    $total_processed++;
-    if($total_processed % $five_percent == 0) {
-      $self->debug("  " . ceil($total_processed/$total_number*100) .
-                   "% complete");
-    }
-  }
+  my ($cs_id) = $sth->fetchrow_array();
 
   $sth->finish();
+
+  $sth = $dbh->prepare("INSERT INTO $target.seq_region_attrib " .
+                      '(seq_region_id, attrib_type_id, value) ' .
+                      "SELECT sr.seq_region_id, $attrib_type_id, 1 " .
+                      "FROM $target.seq_region sr " .
+                      "WHERE sr.coord_system_id = $cs_id");
+
+  $sth->execute();
+  $sth->finish();
+
 }
 
 sub add_attrib_code {
   my $self = shift;
-  my $db = $self->db();
+  my $dbh = $self->dbh();
   my $target = $self->target();
 
   # add a toplevel code to the attrib_type table if it is not there already
 
-  my $sth = $db->prepare("SELECT attrib_type_id " .
+  my $sth = $dbh->prepare("SELECT attrib_type_id " .
                          "FROM $target.attrib_type " .
                          "WHERE code = 'toplevel'");
 
@@ -1135,7 +1109,7 @@ sub add_attrib_code {
   $sth->finish();
 
 
-  $sth = $db->prepare("INSERT INTO $target.attrib_type " .
+  $sth = $dbh->prepare("INSERT INTO $target.attrib_type " .
                     "SET code = 'toplevel', " .
                     "name = 'Top Level', " .
                     "description = 'Top Level Non-Redundant Sequence Region'");

@@ -21,8 +21,8 @@ sub create_coord_systems {
   my $ass_def = $self->get_default_assembly();
 
   my @coords =
-    (["scaffold" , $ass_def, "top_level,default_version"     ],
-     ["contig"     , undef   , "default_version,sequence_level"]);
+    (["scaffold" , $ass_def,   "default_version", 1     ],
+     ["contig"     , undef   , "default_version,sequence_level", 2]);
 
   my @assembly_mappings =  ("scaffold:$ass_def|contig");
 
@@ -42,7 +42,7 @@ sub create_coord_systems {
   $self->debug("Building coord_system table");
 
   my $sth = $dbh->prepare("INSERT INTO $target.coord_system " .
-                           "(name, version, attrib) VALUES (?,?,?)");
+                           "(name, version, attrib, rank) VALUES (?,?,?,?)");
 
   my %coord_system_ids;
 

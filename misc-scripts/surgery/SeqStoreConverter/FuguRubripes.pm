@@ -24,10 +24,10 @@ sub create_coord_systems {
   my $target = $self->target();
 
   my $sth = $self->dbh()->prepare
-   ("INSERT INTO $target.coord_system (name, version, attrib)" .
-    "VALUES (?,?,?)");
-  $sth->execute('scaffold', $default_assembly, 
-                'top_level,default_version,sequence_level');
+   ("INSERT INTO $target.coord_system (name, version, attrib, rank)" .
+    "VALUES (?,?,?,?)");
+  $sth->execute('scaffold', $default_assembly,
+                'default_version,sequence_level', $rank);
 
   my $csid =  $sth->{'mysql_insertid'};
 

@@ -21,10 +21,10 @@ sub create_coord_systems {
   my $ass_def = $self->get_default_assembly();
 
   my @coords =
-    (["chromosome" , $ass_def, "top_level,default_version"],
-     ["supercontig", undef, "default_version"],
-     ["clone"      , undef, "default_version"],
-     ["chunk"      , undef, "default_version,sequence_level"]);
+    (["chromosome" , $ass_def, "default_version", 1],
+     ["supercontig", undef, "default_version", 2],
+     ["clone"      , undef, "default_version", 3],
+     ["chunk"      , undef, "default_version,sequence_level", 4]);
 
   my @assembly_mappings =  ("chromosome:$ass_def|chunk",
                             "clone|chunk",
@@ -45,8 +45,9 @@ sub create_coord_systems {
 
   $self->debug("Building coord_system table");
 
-  my $sth = $dbh->prepare("INSERT INTO $target.coord_system " .
-                           "(name, version, attrib) VALUES (?,?,?)");
+  my $sth = $dbh->prepare
+    ("INSERT INTO $target.coord_system (name, version, attrib, rank) " .
+     "VALUES (?,?,?,?)");
 
   my %coord_system_ids;
 
@@ -126,6 +127,18 @@ sub create_seq_regions {
 
 
   #
+  # create a temporary table to hold the ids of all 'toplevel'
+  # seq_regions.  Keep the old chromosome_id, and the new seq_region_id
+  #
+  $dbh->do
+    ("CREATE TEMPORARY TABLE $target.tmp_toplevel_map " .
+     "(old_id INT, new_id INT, INDEX new_idx(new_id), INDEX old_idx(old_id))");
+
+  my $tmp_toplevel_insert_sth = $dbh->prepare
+    ("INSERT INTO $target.tmp_toplevel_map (old_id, new_id) VALUES (?,?)");
+
+
+  #
   # Turn real clones into clones
   #
   $self->debug("DanioRerio Specific: creating clone seq_regions");
@@ -173,7 +186,9 @@ sub create_seq_regions {
     #insert into seq_region table
     $insert_sth->execute($name, $cs_id, $length);
     #copy old/new mapping into temporary table
-    $tmp_chr_insert_sth->execute($old_id, $insert_sth->{'mysql_insertid'});
+    my $new_id = $insert_sth->{'mysql_insertid'};
+    $tmp_chr_insert_sth->execute($old_id, $new_id);
+    $tmp_toplevel_insert_sth->execute($old_id, $new_id);
     $chr_id_added{$old_id} = 1;
   }
 
@@ -199,13 +214,20 @@ sub create_seq_regions {
     #insert into seq_region table
     $insert_sth->execute($name, $cs_id, $length);
     #copy old/new mapping into temporary table
-   $tmp_supercontig_insert_sth->execute($name,$insert_sth->{'mysql_insertid'});
+    my $new_id = $insert_sth->{'mysql_insertid'};
+    $tmp_supercontig_insert_sth->execute($name,$new_id);
+
+    if(!$chr_id_added{$old_id}) {
+      $chr_id_added{$old_id} = 1;
+      $tmp_toplevel_insert_sth->execute($old_id, $new_id);
+    }
   }
 
   $select_sth->finish();
   $tmp_chr_insert_sth->finish();
   $tmp_supercontig_insert_sth->finish();
   $tmp_clone_insert_sth->finish();
+  $tmp_toplevel_insert_sth->finish();
   $insert_sth->finish();
 }
 
@@ -261,13 +283,13 @@ sub transfer_genes {
   # Transfer the gene table
   #
 
-  $self->debug("DanioRerio Specific: Building gene table (chromosomal genes)");
+  $self->debug("DanioRerio Specific: Building gene table");
 
   # first transfer genes on chromosomes
 
   $dbh->do
     ("INSERT INTO $target.gene " .
-     "SELECT g.gene_id, g.type, g.analysis_id, tcm.new_id, " .
+     "SELECT g.gene_id, g.type, g.analysis_id, toplev.new_id, " .
      "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
      "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
      "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
@@ -276,68 +298,23 @@ sub transfer_genes {
      "       g.display_xref_id " .
      "FROM   $source.transcript t, $source.exon_transcript et, " .
      "       $source.exon e, $source.assembly a, $source.gene g, " .
-     "       $target.tmp_chr_map tcm " .
+     "       $target.tmp_toplevel_map toplev " .
      "WHERE  t.transcript_id = et.transcript_id " .
      "AND    et.exon_id = e.exon_id " .
      "AND    e.contig_id = a.contig_id " .
      "AND    g.gene_id = t.gene_id " .
-     "AND    a.chromosome_id = tcm.old_id " .
-     "GROUP BY g.gene_id");
-
-  # then transfer genes on supercontigs
-
-  $self->debug("DanioRerio Specific: Building gene table (superctg genes)");
-
-  $dbh->do
-    ("INSERT INTO $target.gene " .
-     "SELECT g.gene_id, g.type, g.analysis_id, tscm.new_id, " .
-     "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
-     "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
-     "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
-     "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
-     "       a.contig_ori*e.contig_strand as strand, " .
-     "       g.display_xref_id " .
-     "FROM   $source.transcript t, $source.exon_transcript et, " .
-     "       $source.exon e, $source.assembly a, $source.gene g, " .
-     "       $target.tmp_superctg_map tscm, " .
-     "LEFT JOIN $target.tmp_chr_map tcm on a.chromosome_id = tcm.old_id " .
-     "WHERE  t.transcript_id = et.transcript_id " .
-     "AND    et.exon_id = e.exon_id " .
-     "AND    e.contig_id = a.contig_id " .
-     "AND    g.gene_id = t.gene_id " .
-     "AND    a.superctg_name = tscm.name " .
-     "AND    tcm.new_id is null " . # skip ones that transfered to chromosomes
+     "AND    a.chromosome_id = toplev.old_id " .
      "GROUP BY g.gene_id");
 
 
-  # 
+  #
   # Transfer the transcript table
   #
 
-  $self->debug("DanioRerio Specific: Building transcript table " .
-               "(chromosome transcripts)");
+  $self->debug("DanioRerio Specific: Building transcript table ");
   $dbh->do
     ("INSERT INTO $target.transcript " .
-     "SELECT t.transcript_id, t.gene_id, tcm.new_id, " .
-     "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
-     "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
-     "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
-     "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
-     "       a.contig_ori*e.contig_strand as strand, " .
-     "       t.display_xref_id " .
-     "FROM   $source.transcript t, $source.exon_transcript et, " .
-     "       $source.exon e, $source.assembly a, $target.tmp_chr_map tcm " .
-     "WHERE  t.transcript_id = et.transcript_id " .
-     "AND    et.exon_id = e.exon_id " .
-     "AND    e.contig_id = a.contig_id " .
-     "AND    a.chromosome_id = tcm.old_id " .
-     "GROUP BY t.transcript_id");
-
-  $self->debug("DanioRerio Specific: Building transcript table " .
-               "(superctg transcripts)");
-  $dbh->do
-    ("INSERT INTO $target.transcript " .
-     "SELECT t.transcript_id, t.gene_id, tscm.new_id, " .
+     "SELECT t.transcript_id, t.gene_id, toplev.new_id, " .
      "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
      "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
      "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
@@ -346,26 +323,22 @@ sub transfer_genes {
      "       t.display_xref_id " .
      "FROM   $source.transcript t, $source.exon_transcript et, " .
      "       $source.exon e, $source.assembly a, " .
-     "       $target.tmp_superctg_map tscm " .
-     "LEFT JOIN $target.tmp_chr_map tcm on a.chromosome_id = tcm.old_id " .
+     "       $target.tmp_toplevel_map toplev " .
      "WHERE  t.transcript_id = et.transcript_id " .
      "AND    et.exon_id = e.exon_id " .
      "AND    e.contig_id = a.contig_id " .
-     "AND    a.superctg_name = tscm.name " .
-     "AND    tcm.new_id is null " . # skip ones that transfered to chromosomes
+     "AND    a.chromosome_id = toplev.old_id " .
      "GROUP BY t.transcript_id");
-
 
   #
   # Transfer the exon table
   #
 
-  $self->debug("DanioRerio Specific: Building exon table " .
-               "(chromosome transcripts)");
+  $self->debug("DanioRerio Specific: Building exon table ");
 
   $dbh->do
     ("INSERT INTO $target.exon " .
-     "SELECT e.exon_id, tcm.new_id, " .
+     "SELECT e.exon_id, toplev.new_id, " .
      "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
      "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
      "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
@@ -374,38 +347,17 @@ sub transfer_genes {
      "       e.phase, e.end_phase " .
      "FROM   $source.transcript t, $source.exon_transcript et, " .
      "       $source.exon e, $source.assembly a, $source.gene g, " .
-     "       $target.tmp_chr_map tcm " .
+     "       $target.tmp_toplevel_map toplev " .
      "WHERE  t.transcript_id = et.transcript_id " .
      "AND    et.exon_id = e.exon_id " .
      "AND    e.contig_id = a.contig_id " .
      "AND    g.gene_id = t.gene_id " .
-     "AND    a.chromosome_id = tcm.old_id " .
+     "AND    a.chromosome_id = toplev.old_id " .
      "GROUP BY e.exon_id");
 
 
   $self->debug("DanioRerio Specific: Building exon table " .
                "(superctg exons)");
-
-  $dbh->do
-    ("INSERT INTO $target.exon " .
-     "SELECT e.exon_id, tscm.new_id, " .
-     "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
-     "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
-     "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
-     "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
-     "       a.contig_ori*e.contig_strand as strand, " .
-     "       e.phase, e.end_phase " .
-     "FROM   $source.transcript t, $source.exon_transcript et, " .
-     "       $source.exon e, $source.assembly a, $source.gene g, " .
-     "       $target.tmp_superctg_map tscm " .
-     "LEFT JOIN $target.tmp_chr_map tcm on a.chromosome_id = tcm.old_id " .
-     "WHERE  t.transcript_id = et.transcript_id " .
-     "AND    et.exon_id = e.exon_id " .
-     "AND    e.contig_id = a.contig_id " .
-     "AND    g.gene_id = t.gene_id " .
-     "AND    a.superctg_name = tcm.name " .
-     "AND    tcm.new_id is null " . # skip ones that transfered to chromosomes
-     "GROUP BY e.exon_id");
 
   #
   # Transfer translation table
@@ -422,6 +374,34 @@ sub transfer_genes {
 
   return;
 }
+
+
+
+sub set_top_level {
+  my $self = shift;
+
+  my $target = $self->target();
+  my $dbh = $self->dbh();
+
+  my $attrib_type_id = $self->add_attrib_code();
+
+  $self->debug("DanioRerio Specific: Setting toplevel attributes of " .
+               "seq_regions");
+
+  my $sth = $dbh->prepare("DELETE FROM $target.seq_region_attrib " .
+                          "WHERE attrib_type_id = ?");
+  $sth->execute($attrib_type_id);
+  $sth->finish();
+
+  $sth = $dbh->prepare("INSERT INTO $target.seq_region_attrib " .
+                       '            (seq_region_id, attrib_type_id, value) ' .
+                       "SELECT toplev.new_id, $attrib_type_id, 1 " .
+                       "FROM   $target.tmp_toplevel_map toplev ");
+
+  $sth->execute();
+  $sth->finish();
+}
+
 
 
 1;

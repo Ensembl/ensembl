@@ -22,9 +22,9 @@ sub create_coord_systems {
   my $ass_def = $self->get_default_assembly();
 
   my @coords =
-    (['chunk',         undef, 'default_version,sequence_level'],
-     ['chromosome', $ass_def, 'top_level,default_version'],
-     ["scaffold" ,     undef, "default_version"]);
+    (['chunk',         undef, 'default_version,sequence_level', 3],
+     ['chromosome', $ass_def, 'default_version', 1],
+     ["scaffold" ,     undef, "default_version", 2]);
 
   my @assembly_mappings = ("chromosome:$ass_def|chunk",
                            "chromosome:$ass_def|scaffold");
@@ -45,7 +45,7 @@ sub create_coord_systems {
   $self->debug("Building coord_system table");
 
   my $sth = $dbh->prepare("INSERT INTO $target.coord_system " .
-                           "(name, version, attrib) VALUES (?,?,?)");
+                           "(name, version, attrib,rank) VALUES (?,?,?,?)");
 
   my %coord_system_ids;
 

@@ -74,6 +74,7 @@ for my $converter ( @all_species_converters ) {
   $converter->create_seq_regions();
   $converter->create_assembly();
   $converter->create_attribs();
+  $converter->set_top_level();
 
   $converter->transfer_dna();
   $converter->transfer_genes();
