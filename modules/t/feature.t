@@ -18,7 +18,10 @@ our $verbose= 0;
 
 
 my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
-my $slice = Bio::EnsEMBL::Slice->new();
+my $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => 'chromosome',
+                                     -SEQ_REGION_NAME => 'X',
+                                     -START           => 1_000_000,
+                                     -END             => 2_000_000);
 
 #
 # 1-6 Test new and getters
@@ -29,7 +32,7 @@ my $strand = -1;
 my $feature = Bio::EnsEMBL::Feature->new(-START => 10,
                                          -END   => 100,
                                          -STRAND => -1,
-                                         -ANALYSIS => 1,
+                                         -ANALYSIS => $analysis,
                                          -SLICE => $slice);
 
 
@@ -46,8 +49,10 @@ ok($feature->slice == $slice);
 # 7-11 Test setters
 #
 $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'new analysis');
-$slice = Bio::EnsEMBL::Slice->new();
-
+$slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => 'chromosome',
+                                  -SEQ_REGION_NAME => 'Y',
+                                  -START           => 1_000_000,
+                                  -END             => 2_000_000);
 ok(&test_getter_setter($feature, 'start', 1000));
 ok(&test_getter_setter($feature, 'end', 2000));
 ok(&test_getter_setter($feature, 'strand', 1));
