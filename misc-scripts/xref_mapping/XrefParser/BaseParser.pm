@@ -89,7 +89,7 @@ sub run {
     my $file_cs=0;
     my $type = $name;
     my @new_file=();
-    $dir = $base_dir . "/" . $type;
+    $dir = $base_dir . "/" . sanitise($type);
     foreach my $urls (@files){
       my ($file) = $urls =~ /.*\/(.*)/;
       $last_type = $type;
@@ -128,9 +128,9 @@ sub run {
 	  $parse =1;
 	  print "Checksum for $file does not match, parsing\n";
 	  
-	  # Files from sources "UniProtSwissProt" and "UniProtSpTREMBL" are
+	  # Files from sources "Uniprot/SWISSPROT" and "Uniprot/SPTREMBL" are
 	  # all parsed with the same parser
-	  $parser = 'UniProtParser' if ($parser =~ /UniProt/i);
+	  $parser = 'UniProtParser' if ($parser =~ /Uniprot/i);
 	}
 	else {
 	  
@@ -278,7 +278,7 @@ sub upload_xrefs {
   if ($#xrefs > -1) {
 
     # remove all existing xrefs with same source ID(s)
-    #delete_by_source(\@xrefs);
+    delete_by_source(\@xrefs);
 
     # upload new ones
     print "Uploading xrefs\n";
@@ -308,7 +308,7 @@ sub upload_xrefs {
       }
       else{
 	$xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID});
-      }		   
+      }
 
 
       # create entry in primary_xref table with sequence; if this is a "cumulative"
@@ -527,15 +527,16 @@ sub insert_or_select {
 
   my $id;
 
+  # TODO - check for specific error code rather than for just any error
   if ($error) {
 
     $id = get_xref_id_by_accession_and_source($acc, $source);
-#    print STDERR "Got existing xref id " . $id . " for " . $acc . " " . $source . "\n";
-
+    #print STDERR "Got existing xref id " . $id . " for " . $acc . " " . $source . "\n";
+	
   } else {
 	
     $id = $sth->{'mysql_insertid'};
-
+	
   }
 
   return $id;
@@ -748,6 +749,21 @@ sub add_to_xrefs{
   $dependent_id = get_xref($acc, $source_id);
   $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id)|| die "$master_xref\t$dependent_id\t$linkage\t$source_id";
 
+
+}
+
+# --------------------------------------------------------------------------------
+
+# Remove potentially problematic characters from string used for file/dir names
+
+sub sanitise {
+
+  my $str = shift;
+  my $ret = $str;
+
+  $ret =~ s/[\/\:]//g;
+
+  return $ret;
 
 }
 
