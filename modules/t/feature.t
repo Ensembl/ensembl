@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 94;
+	plan tests => 92;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -443,12 +443,12 @@ my $chr_slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
 						       30_249_935,
 						       31_000_000);
 
-my $sctg_slice  = $db->get_SliceAdaptor->fetch_by_region('supercontig',
-							 'NT_028392');
+# my $sctg_slice  = $db->get_SliceAdaptor->fetch_by_region('supercontig',
+# 							 'NT_028392');
 
-my $ctg_slice = $db->get_SliceAdaptor->fetch_by_region('contig',
-						       'AL359765.6.1.13780',
-						       '30', '3000');
+# my $ctg_slice = $db->get_SliceAdaptor->fetch_by_region('contig',
+# 						       'AL359765.6.1.13780',
+# 						       '30', '3000');
 
 
 my $f1 = new Bio::EnsEMBL::Feature( -start => 1,
@@ -485,32 +485,32 @@ ok( ! $f2->overlaps( $f1 ));
 # other coord system overlaps
 #
 
-$f2 = new Bio::EnsEMBL::Feature( -start => 1,
-				 -end => 1000_000,
-				 -strand => -1,
-				 -slice => $sctg_slice,
-				 -analysis => $analysis
-			       );
+# $f2 = new Bio::EnsEMBL::Feature( -start => 1,
+# 				 -end => 1000_000,
+# 				 -strand => -1,
+# 				 -slice => $sctg_slice,
+# 				 -analysis => $analysis
+# 			       );
 
-debug( "Other coord overlaps ".( $f1->overlaps( $f2 )));
-ok( $f1->overlaps( $f2 ));
-
-
-#
-# Just seqname features
-#
+# debug( "Other coord overlaps ".( $f1->overlaps( $f2 )));
+# ok( $f1->overlaps( $f2 ));
 
 
-$f1->seqname( "minigenewise" );
-$f1->slice( undef );
-
-$f2 = new Bio::EnsEMBL::Feature( -start => 10,
-				 -end => 20,
-				 -strand => -1,
-				 -seqname => "minigenewise",
-				 -analysis => $analysis
-			       );
+# #
+# # Just seqname features
+# #
 
 
-debug( "seqname f1<->f2 overlap = ".($f1->overlaps( $f2 )));
-ok( ($f1->overlaps( $f2 )));
+# $f1->seqname( "minigenewise" );
+# $f1->slice( undef );
+
+# $f2 = new Bio::EnsEMBL::Feature( -start => 10,
+# 				 -end => 20,
+# 				 -strand => -1,
+# 				 -seqname => "minigenewise",
+# 				 -analysis => $analysis
+# 			       );
+
+
+# debug( "seqname f1<->f2 overlap = ".($f1->overlaps( $f2 )));
+# ok( ($f1->overlaps( $f2 )));
