@@ -219,7 +219,7 @@ INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) 
 
 INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 'ENSP00000216167','Translation', 1);
 INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 'ENSP00000216167','Translation', 2);
-
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (3, 'ENSG00000216167','Gene', 3);
 
 #
 #Dumping data for identityXref
@@ -233,6 +233,7 @@ INSERT INTO identityXref (objectxrefId, query_identity, target_identity) VALUES 
 
 INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, version, description) VALUES (1, 1, 'AL365511', 01, 'blablaou');
 INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, version, description) VALUES (2, 2, 'Q9NPS7', 02, 'tremblannot');
+INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, version, description) VALUES (3, 2, 'Q9Ngene', 02, 'tremblageene');
 
 #
 # Dumping data for table 'externalSynonym'

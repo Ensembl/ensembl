@@ -21,7 +21,7 @@
 # This test does not test of all the components of DBEntryAdaptor, most of them are already tested in protein.t
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..10\n"; 
+BEGIN { $| = 1; print "1..15\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -149,7 +149,48 @@ else {
     print "not ok 10\n";
 }
 
+my @matches = $protein_adaptor->fetch_by_union('ENSG00000216167');
+
+if (scalar (@matches) == 1) {
+    print "ok 11\n";
+}
+
+else {
+    print "not ok 11\n";
+}
+
+if ($matches[0]->primary_id eq "Q9Ngene") {
+    print "ok 12\n";
+}
+
+else {
+    print "not ok 12\n";
+}
+
+my @matches2 = $protein_adaptor->fetch_by_union('ENSP00000216167');
 
 
+if (scalar (@matches2) == 2) {
+    print "ok 13\n";
+}
 
+else {
+    print "not ok 13\n";
+}
+
+if ($matches2[0]->primary_id eq "AL365511") {
+     print "ok 14\n";
+}
+
+else {
+    print "not ok 14\n";
+}
+
+if ($matches2[1]->primary_id eq "Q9NPS7") {
+     print "ok 15\n";
+}
+
+else {
+    print "not ok 15\n";
+}
 
