@@ -890,9 +890,13 @@ sub get_tiling_path {
 sub get_landmark_MarkerFeatures {
   my $self = shift;
 
-  $self->warn("Slice->get_landmark_MarkerFeatures not yet implemented\n");
+  my $lma = $self->adaptor()->db()->get_LandmarkMarkerAdaptor();
+  if( ! defined $lma ) {
+    return ();
+  } else {
+    return $lma->fetch_by_Slice( $self );
+  }
 
-  return ();
 }
 
 sub get_all_DASFeatures {

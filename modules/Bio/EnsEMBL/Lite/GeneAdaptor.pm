@@ -155,8 +155,6 @@ sub fetch_by_Slice {
     $transcript->dbID( $hr->{'transcript_id'});
     $transcript->coding_start( $hr->{'coding_start'} -$slice->chr_start() + 1);
     $transcript->coding_end( $hr->{'coding_end'} -$slice->chr_start() + 1);
-
-
     $transcript->stable_id( $hr->{ 'transcript_name' });
     $transcript->type( $hr->{ 'type' } );
     $transcript->external_name( $hr->{'external_name'} );
@@ -185,10 +183,10 @@ sub fetch_by_Slice {
     
     #Right now, just add the first exon as the start, and last exon
     # as the end...
-    if(scalar @exons) {
-      $translation->start_exon(@exons[0]);
-      $translation->end_exon( $exons[$#exons]);
-    }
+#    if(scalar @exons) {
+#      $translation->start_exon(@exons[0]);
+#      $translation->end_exon( $exons[$#exons]);
+#    }
   }
 
   my @out = values( %gene_cache );

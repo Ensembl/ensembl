@@ -476,6 +476,17 @@ sub get_CloneAdaptor {
 }
 
 
+sub get_LandmarkMarkerAdaptor {
+  my $self = shift;
+
+  if( defined $self->lite_DBAdaptor() ) {
+    return $self->lite_DBAdaptor()->get_LandmarkMarkerAdaptor();
+  } else {
+    return undef;
+  }
+}
+
+
 =head2 get_PredictionTranscriptAdaptor
 
   Args      : none
