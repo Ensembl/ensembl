@@ -278,8 +278,8 @@ sub fetch_attributes {
     }
 
     push(@mlocs,
-	 Bio::EnsEMBL::Map::MapLocation->new($name,$mname, $chr,$pos,$lod));
-  }
+	 Bio::EnsEMBL::Map::MapLocation->new($name,$mname, $chr,$pos,$lod))  ;
+  } 
 
   $sth->finish;
 
