@@ -145,7 +145,7 @@ sub map_coordinates{
        $self->_sort();
    }
 
-   if( !defined $hash->{$id} ) {
+   if( !defined $hash->{uc($id)} ) {
        # one big gap!
        my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, $end);
        return $gap;
@@ -154,7 +154,7 @@ sub map_coordinates{
    my $last_used_pair;
    my @result;
 
-   foreach my $pair ( @{$hash->{$id}} ) {
+   foreach my $pair ( @{$hash->{uc($id)}} ) {
        my $self_coord   = $pair->{$from};
        my $target_coord = $pair->{$to};
 
@@ -282,7 +282,7 @@ sub fastmap {
        $self->_sort();
    }
 
-   my $pairs = $hash->{$id};
+   my $pairs = $hash->{uc($id)};
 
    foreach my $pair (@$pairs) {
      my $self_coord   = $pair->{$from};
@@ -346,10 +346,6 @@ sub add_map_coordinates{
        $self->throw("Need 7 arguments!");
    }
 
-   if( $contig_start !~ /\d+/ || $chr_start !~ /\d+/ ) {
-       $self->throw("Not doable - $contig_start as start or $chr_start as start?");
-   }
-
    if( ($contig_end - $contig_start)  != ($chr_end - $chr_start) ) {
        $self->throw("Cannot deal with mis-lengthed mappings so far");
    }
@@ -375,15 +371,11 @@ sub add_map_coordinates{
    my $map_to = $self->{'to'};
    my $map_from = $self->{'from'};
 
-   if( !defined $self->{"_pair_$map_to"}->{$chr_name} ) {
-       $self->{"_pair_$map_to"}->{$chr_name} = [];
-   }
-   push(@{$self->{"_pair_$map_to"}->{$chr_name}},$pair);
+   $self->{"_pair_$map_to"}->{uc($chr_name)} ||= [];
+   push(@{$self->{"_pair_$map_to"}->{uc($chr_name)}},$pair);
 
-   if( !defined $self->{"_pair_$map_from"}->{$contig_id} ) {
-       $self->{"_pair_$map_from"}->{$contig_id} = [];
-   }
-   push(@{$self->{"_pair_$map_from"}->{$contig_id}},$pair);
+   $self->{"_pair_$map_from"}->{uc($contig_id)} ||= [];
+   push(@{$self->{"_pair_$map_from"}->{uc($contig_id)}},$pair);
 
    $self->_is_sorted(0);
 }
@@ -443,11 +435,11 @@ sub list_pairs{
 
    my @list;
 
-   unless(exists $hash->{$id}) {
+   unless(exists $hash->{uc($id)}) {
      return ();
    }
 
-   @list = @{$hash->{$id}}; 
+   @list = @{$hash->{uc($id)}}; 
 
    my @output;
    if( $start == -1 && $end == -1 ) {
@@ -520,7 +512,7 @@ sub _dump{
 
    foreach my $id ( keys %{$self->{'_pair_hash_from'}} ) {
        print $fh "From Hash $id\n";
-       foreach my $pair ( @{$self->{'_pair_hash_from'}->{$id}} ) {
+       foreach my $pair ( @{$self->{'_pair_hash_from'}->{uc($id)}} ) {
 	   print $fh "    ",$pair->from->start," ",$pair->from->end,":",$pair->to->start," ",$pair->to->end," ",$pair->to->id,"\n";
        }
    }
