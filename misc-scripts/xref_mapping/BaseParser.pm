@@ -195,6 +195,27 @@ sub get_source_id_for_filename {
   return $source_id;
 
 }
+# Get species ID for a particular file; matches url field
+
+sub get_species_id_for_filename {
+
+  my ($self, $file) = @_;
+
+  my $sql = "SELECT su.species_id FROM source_url su WHERE su.url LIKE  '%/" . $file . "%'";
+  my $sth = dbi()->prepare($sql);
+  $sth->execute();
+  my @row = $sth->fetchrow_array();
+  my $source_id;
+  if (@row) {
+    $source_id = $row[0];
+  } else {
+    warn("Couldn't get species ID for file $file\n");
+    $source_id = -1;
+  }
+
+  return $source_id;
+
+}
 
 # --------------------------------------------------------------------------------
 # Get source ID for a particular source name
