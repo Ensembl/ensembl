@@ -2452,6 +2452,30 @@ sub get_SimpleFeatureAdaptor {
     return $sf;
 }
 
+sub get_RepeatConsensusAdaptor {
+    my( $self ) = @_;
+    
+    my( $rca );
+    unless ($rca = $self->{'_simple_feature_adaptor'}) {
+        require Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor;
+        $rca = Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor->new($self);
+        $self->{'_simple_feature_adaptor'} = $rca;
+    }
+    return $rca;
+}
+
+sub get_RepeatFeatureAdaptor {
+    my( $self ) = @_;
+    
+    my( $rfa );
+    unless ($rfa = $self->{'_simple_feature_adaptor'}) {
+        require Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor;
+        $rfa = Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor->new($self);
+        $self->{'_simple_feature_adaptor'} = $rfa;
+    }
+    return $rfa;
+}
+
 =head2 get_ProteinAlignFeatureAdaptor
 
  Title   : get_ProteinAlignFeatureAdaptor

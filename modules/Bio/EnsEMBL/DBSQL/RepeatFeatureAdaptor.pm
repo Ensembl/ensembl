@@ -138,7 +138,7 @@ sub store {
             $rf->analysis->dbID,
             );
         my $db_id = $sth->{'insertid'}
-            or $self->throw("Didn't get an insertid from the statement");
+            or $self->throw("Didn't get an insertid from the INSERT statement");
         $rf->dbID($db_id);
     }
 }
