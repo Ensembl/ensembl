@@ -293,6 +293,53 @@ sub fetch_all_by_Slice_constraint {
     return $self->{'_slice_feature_cache'}->{$key};
   }
 
+
+  my $slice_adaptor = $slice->adaptor();
+
+  #retrieve normalized 'non-symlinked' slices
+  #this allows us to support haplotypes and PARs
+  my @projection=@{$slice_adaptor->fetch_normalized_slice_projection($slice)};
+
+  if(@projection == 0) {
+    throw('Could not retrieve normalized Slices. Database contains ' .
+          'incorrect assembly_exception information.');
+  }
+
+  #no projection is necessary if there was no symlink
+  if(@projection != 1 || $projection[0]->[2] != $slice) {
+    my @out;
+
+    foreach my $segment (@projection) {
+      my ($start, $end, $symlink_slice) = @$segment;
+      #recursively call fetch_all_by_Slice_constraint with the
+      #slices of the real area
+      my $features = $self->fetch_all_by_Slice_constraint($symlink_slice,
+                                                         $original_constraint);
+
+      #adjust the features so they are on the original slice not the symlinked
+      #slice
+      foreach my $f (@$features) {
+        #function calls are slow!
+        if($start != 1) {
+          $f->{'start'} += $start-1;
+          $f->{'end'}   += $start-1;
+        }
+        $f->{'slice'} = $slice;
+      }
+
+      #invalidate the cache on the symlinked slices, we just adjusted their
+      #coordinates and this could be messy otherwise
+      my $sym_key = uc(join(':', $symlink_slice->name, $original_constraint));
+      delete $self->{'_slice_feature_cache'}->{$key};
+
+      push @out, @$features;
+    }
+
+    #cache the features for the original slice and return them
+    $self->{'_slice_feature_cache'}->{$key} = \@out;
+    return \@out;
+  }
+
   my $slice_start  = $slice->start();
   my $slice_end    = $slice->end();
   my $slice_strand = $slice->strand();
