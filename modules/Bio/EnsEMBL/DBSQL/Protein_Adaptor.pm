@@ -114,6 +114,14 @@ sub fetch_Protein_by_dbid{
    my $transid = $rowid[0];
    my $geneid = $rowid[1];
 
+   if (!defined $transid) {
+       $self->throw("$id does not have a transcript id");
+   }
+
+   if (!defined $geneid) {
+       $self->throw("$id does not have a gene id");
+   }
+
 #Get the different dates (created and modified) for the corresponding gene   
    my $query1 = "select g.created,g.modified from gene as g, transcript as t where t.gene = g.id and t.translation = '$id'";
    my $sth1 = $self->prepare($query1);
@@ -133,9 +141,8 @@ sub fetch_Protein_by_dbid{
 #Get the transcript object (this will allow us to get the aa sequence of the protein
    my $transcript = $self->fetch_Transcript_by_dbid($transid);
 
-  
 
-#Get all of the Dblink for the given Transcript
+#Get all of the Dblink for the given Peptide id
    my @dblinks = $self->fetch_DBlinks_by_dbid($id);
 
 #Get all of the Protein Features for the given Protein
@@ -147,20 +154,21 @@ sub fetch_Protein_by_dbid{
 #Get all SNPs ?????? method which would be nice to implement
 
 
-#Get the aa sequence using the transcript object   
+#Get the aa sequence out of the transcript object   
    #my $sequence = $transcript->translate->seq;
-   print STDERR $transcript->id,"\n";
    my $sequence = $transcript->translate->seq;
-   
+
+#Calculate the length of the Peptide   
    my $length = length($sequence);
    if ($length == 0) {
-       return 0;
+       $self->throw("Transcript".$transcript->id." does not have any amino acid sequence"); 
+       #return 0;
    }
   
 #Define the moltype
    my $moltype = "protein";
 
-#Define the specie (here by default human, but will have to find something else when other databases come into Ensembl) 
+#Define the specie (here by default human, but will have to find something else when other organisms come into Ensembl) 
    my @class = ( "Eukaryota", "Metazoa", "Chordata", "Craniata", "Vertebrata", "Euteleostomi", "Mammalia", "Eutheria", "Primates", "Catarrhini", "Hominidae","Homo" ,"sapiens (human)");
    @class = reverse(@class);
    my $common;
@@ -175,7 +183,7 @@ sub fetch_Protein_by_dbid{
 
    #This has to be changed, the description may be take from the protein family description line
    my $desc = "Protein predicted by Ensembl";
-   print STDERR "$sequence\n";
+  
 #Create the Protein object
    my $protein = Bio::EnsEMBL::Protein->new ( -seq =>$sequence,
 					      -accession_number  => $id,
@@ -186,6 +194,7 @@ sub fetch_Protein_by_dbid{
 					      -moltype => $moltype
 					      );
 
+#Add the species object to protein object
    $protein->species($species);
 
 #Add the date of creation of the protein to the annotation object
@@ -207,46 +216,57 @@ sub fetch_Protein_by_dbid{
    my %seen1;
    my %seen2;
 
-#Get Interpro data and make with it a dblink object
+#Get Protein feature data and creat a DBlink object
    foreach my $feat (@prot_feat) {
        
 #Get the the accession number of the feature matching to the given Protein
-       my $pfam = $feat->hseqname;
+       my $featid = $feat->hseqname;
 
 #This is supposed to be the rigth way 
        my $dbdesc = $feat->analysis->db;
 
+###########################################################
+
        #But we currently need a hack here, waiting for the analysis table being properly loaded, will then always return    
        #print "PF: $pfam\n";
-       if ($pfam =~ /^PF\w+/) {
+       if ($featid =~ /^PF\w+/) {
 	   $dbdesc = "Pfam";
        }
 
-       if ($pfam =~ /^PR\w+/) {
+       if ($featid =~ /^PR\w+/) {
 	   $dbdesc = "PRINTS";
        }
 
-       if ($pfam =~ /^PS\w+/) {
+       if ($featid =~ /^PS\w+/) {
 	   $dbdesc = "PROSITE";
        }
-#If the Interpro signature has not been already put into DBlink, add it.       
-       if (! defined ($seen1{$pfam})) {
+
+###########################################################
+
+#In the case of a protein feature being an Interpro signature (eg: Pfam, Prints,...) this  signature will also be added to the object as a dblink (this is a requirement to dump peptides in SP format and to use their automatic annotation)
+
+#If protein feature is an Interpro signature and has not been already put into DBlink, add it.       
+       if ((! defined ($seen1{$featid})) && (($dbdesc eq "Pfam") || ($dbdesc eq "PRINTS") || ($dbdesc eq "PROSITE"))) {
 	   my $newdblink = Bio::Annotation::DBLink->new();
 	   $newdblink->database($dbdesc);
-	   $newdblink->primary_id($pfam);
-#The optionnal id in that case is the signature id but not currently stored, thus to make it work with SP parsers replace it with X
+	   $newdblink->primary_id($featid);
+
+#To work with SP dump the signature id has to be given, because we don't store it, an X is given instead
 	   $newdblink->optional_id("X");
 	   $protein->annotation->add_DBLink($newdblink);
-	   $seen1{$pfam} = 1;
+	   $seen1{$featid} = 1;
        }
 
-	   
-       my $query2 = "select interpro_ac from interpro where id = '$pfam'";
-       my $sth2 = $self->prepare($query2);
-       $sth2 ->execute();
-       my $interpro = $sth2->fetchrow;
+#Get the Interpro AC for the given signature
+	    my $query2 = "select interpro_ac from interpro where id = '$featid'";
+	    my $sth2 = $self->prepare($query2);
+	    $sth2 ->execute();
+	    my $interpro = $sth2->fetchrow;
        
-       
+       if (!defined $interpro) {
+	   $self->throw("$featid does not have Interpro accession number");
+       }
+
 #If the Interpro accession number has not already been put into DBlink, add it 
        if (! defined ($seen2{$interpro}) && defined $interpro) {
 	   my $dblink = Bio::Annotation::DBLink->new();
@@ -254,8 +274,11 @@ sub fetch_Protein_by_dbid{
 	   $dblink->primary_id($interpro);
 	   $protein->annotation->add_DBLink($dblink);
 	   $seen2{$interpro} = 1;
+	   
        }
    }
+   
+
 
 #Add the Ensembl gene id (ENSG) as a DBlink to the object
    my $dblink = Bio::Annotation::DBLink->new();
@@ -368,6 +391,7 @@ sub fetch_Protein_features_by_dbid{
 sub fetch_Family_by_dbid{
    my ($self,$protein_id) = @_;
    
+
    #This call a method contained in FamilyAdaptor, perhaps we should one day put all of these objects together; a big protein object
 
    my $family = $self->_familyAdaptor->get_Family_of_Ensembl_pep_id($protein_id);
@@ -424,8 +448,8 @@ sub fetch_by_feature{
    my $sth = $self->prepare($query);
    $sth ->execute();
    while( (my $pepid = $sth->fetchrow) ) {
-       my $pep = $self->fetch_Protein;
-       push(@proteins,$pepid);
+       my $pep = $self->fetch_Protein_by_dbid($pepid);
+       push(@proteins,$pep);
    }
    return @proteins;
 }
@@ -446,11 +470,14 @@ sub fetch_by_array_feature{
    my ($self,@feature) = @_;
 
    my $nb = scalar @feature;
+   
    my %seen;
    my @result;
 
    if (@feature) {
        foreach my $dbl(@feature) {
+
+
 	   my @protein_linked = $self->fetch_by_feature($dbl);
 	   foreach my $prot (@protein_linked) {
 	       if ($seen{$prot}) {
@@ -465,7 +492,7 @@ sub fetch_by_array_feature{
        }
    }
    foreach my $key (keys (%seen)) {
-       if ($seen{$key} = $nb) {
+       if ($seen{$key} == $nb) {
 	   push (@result, $key);
        }
    }
