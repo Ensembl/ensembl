@@ -43,7 +43,10 @@ print "ok 2\n";
 
 my $ens_recipient = EnsTestDB->new();
 open (TEMP,">t/recipient.dump");
-my $meta= "insert into meta (donor_database_locator) values('Bio::EnsEMBL::DBSQL::Obj/host=".$ens_donor->host.";port=".$ens_donor->port.";dbname=".$ens_donor->dbname.";user=".$ens_donor->user.";pass=".$ens_donor->password."')";
+my $meta= "insert into meta (donor_database_locator) values('Bio::EnsEMBL::DBSQL::Obj/host="
+    .$ens_donor->host.";port=".$ens_donor->port
+    .";dbname=".$ens_donor->dbname.";user=".$ens_donor->user
+    .";pass=".$ens_donor->password."')";
 print TEMP $meta;
 $ens_recipient->do_sql_file("t/recipient.dump");
 my $todb = $ens_recipient->get_DBSQL_Obj;

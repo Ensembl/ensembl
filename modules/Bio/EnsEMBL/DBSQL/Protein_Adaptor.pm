@@ -695,7 +695,6 @@ sub get_exon_global_coordinates{
 sub get_snps {
     my ($self,$protein) = @_;
     my $db = $self->db;
-    my $gene;
     my $transcript;
     my @ex_snps;
     my $count = 0;

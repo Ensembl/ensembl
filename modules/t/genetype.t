@@ -67,7 +67,7 @@ my $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $contig,
                                               );
 
 
-my @genes=$vc->get_Genes_by_Type('ensembl');
+@genes=$vc->get_Genes_by_Type('ensembl');
 if (scalar @genes !=0){print "ok 5\n";}
 else {print "Not ok 5\n";}
 

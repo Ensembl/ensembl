@@ -225,7 +225,7 @@ else {
     print "not ok 23\n";
 }
 
-my @introns = $protein->each_Intron_feature();
+@introns = $protein->each_Intron_feature();
 
 if (scalar(@introns) == 1) {
     
