@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 33;
+	plan tests => 39;
 }
 
 use MultiTestDB;
@@ -253,3 +253,55 @@ ok (@{$ids});
 
 
 ok($pt->display_id eq $pt->stable_id);
+
+
+#
+# test PredictionTranscriptAdaptor::store
+#
+
+my $analysis_adaptor = $db->get_AnalysisAdaptor();
+
+my $analysis = $analysis_adaptor->fetch_by_logic_name('Genscan');
+
+$multi->hide('core', 'prediction_transcript', 'prediction_exon');
+
+my @exons;
+push @exons, Bio::EnsEMBL::PredictionExon->new
+  (-START  => 100,
+   -END    => 200,
+   -STRAND => 1,
+   -P_VALUE => 0.98,
+   -SCORE  => 50,
+   -SLICE  => $slice,
+   -PHASE  => 0);
+
+push @exons, Bio::EnsEMBL::PredictionExon->new
+  (-START  => 300,
+   -END    => 400,
+   -STRAND => 1,
+   -P_VALUE => 0.99,
+   -SCORE  => 75,
+   -SLICE  => $slice,
+   -PHASE  => $exons[0]->length % 3);
+   
+$pt = Bio::EnsEMBL::PredictionTranscript->new
+  (-EXONS => \@exons,
+   -SLICE => $slice,
+   -ANALYSIS => $analysis);
+
+$pta->store($pt);
+
+$pt = $pta->fetch_by_dbID($pt->dbID);
+
+ok($pt && $pt->dbID);
+
+@exons = @{$pt->get_all_Exons};
+ok(@exons == 2);
+
+ok($exons[0]->start == $slice->start + 100 - 1);
+ok($exons[1]->start == $slice->start + 300 - 1);
+
+ok($exons[0]->score == 50);
+ok($exons[1]->score == 75);
+
+$multi->restore();
