@@ -37,7 +37,7 @@ run() if (!defined(caller()));
 sub run {
 
   my $dbi = dbi();
-  my $sth = $dbi->prepare("SELECT * FROM source s, source_url su WHERE s.download='Y' AND su.source_id=s.source_id ORDER BY s.name");
+  my $sth = $dbi->prepare("SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum FROM source s, source_url su WHERE s.download='Y' AND su.source_id=s.source_id ORDER BY s.name");
   $sth->execute();
   my ($source_id, $source_url_id, $name, $url, $checksum);
   $sth->bind_columns(\$source_id, \$source_url_id, \$name, \$url, \$checksum);
@@ -76,7 +76,7 @@ sub run {
 
 	print "Checksum for $file does not match, parsing\n";
 
-	update_source($dbi, $source_id, $file_cs, $file);
+	update_source($dbi, $source_url_id, $file_cs, $file);
 
 	my $parserType = $filetype2parser{$type};
 	print "Parsing $file with $parserType\n";
@@ -295,12 +295,12 @@ sub name2species_id {
 
 sub update_source {
 
-  my ($dbi, $source_id, $checksum, $file) = @_;
+  my ($dbi, $source_url_id, $checksum, $file) = @_;
   open(FILE, $file);
   my $file_date = POSIX::strftime('%Y%m%d%H%M%S', localtime((stat($file))[9]));
   close(FILE);
 
-  my $sql = "UPDATE source SET checksum='" . $checksum . "', file_modified_date='" . $file_date . "', upload_date=NOW() WHERE source_id=" . $source_id;
+  my $sql = "UPDATE source_url SET checksum='" . $checksum . "', file_modified_date='" . $file_date . "', upload_date=NOW() WHERE source_url_id=" . $source_url_id;
   # TODO release?
 
   $dbi->prepare($sql)->execute() || die $dbi->errstr;
