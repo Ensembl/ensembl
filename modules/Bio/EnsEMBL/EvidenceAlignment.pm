@@ -20,7 +20,7 @@ Bio::EnsEMBL::EvidenceAlignment.pm
                           -TRANSCRIPTID => $tr_stable_id,
 			  -PFETCH       => '/path/to/pfetch');
  my $alignment_arr_ref = $ea->fetch_alignment;
- $ea->transcriptid($other_tr_stable_id);
+ $ea->transcriptid($other_tr_dbID);
  my $other_alignment_arr_ref = $ea->fetch_alignment;
  my $short_alignment_arr_ref = $ea->fetch_alignment($hid);
  $ea->contigid($contig_stable_id);
@@ -63,7 +63,7 @@ use Bio::Root::RootI;
     Title   :   new
     Usage   :   my $tr_ea   = Bio::EnsEMBL::EvidenceAlignment->new(
                                 -DBADAPTOR    => $dba,
-                                -TRANSCRIPTID => $transcript_stable_id,
+                                -TRANSCRIPTID => $transcript_id,
 				-PFETCH       => '/path/to/pfetch');
 		my $cont_ea = Bio::EnsEMBL::EvidenceAlignment->new(
                                 -DBADAPTOR => $dba,
@@ -72,9 +72,10 @@ use Bio::Root::RootI;
     Returns :   An EvidenceAlignment object
     Args    :   Database adaptor object and an ID string (-CONTIGID
                 with contig ID or -TRANSCRIPTID with transcript
-		stable ID); optional full path of pfetch binary
-		(-PFETCH), defaulting to whatever is in the user's
-		search path.
+		ID, which may be either the transcript stable ID or
+		the transcript dbID); optional full path of pfetch
+		binary (-PFETCH), defaulting to whatever is in the
+		user's search path.
 
 =cut
 
@@ -144,9 +145,10 @@ sub pfetch {
 =head2 transcriptid
 
     Title   :   transcriptid
-    Usage   :   $ea->transcriptid($transcript_stable_id);
-    Function:   get/set for transcript stable id string (setting
-                this also unsets contigid)
+    Usage   :   $ea->transcriptid($transcript_id);
+    Function:   get/set for transcript id string, which may be
+                either the stable ID or the internal (db) ID
+		(setting transcriptid also unsets contigid)
 
 =cut
 
@@ -164,8 +166,8 @@ sub transcriptid {
 
     Title   :   contigid
     Usage   :   $ea->contigid($contig_stable_id);
-    Function:   get/set for contig stable id string (setting this
-                also unsets transcriptid)
+    Function:   get/set for contig stable id string (setting
+                contigid also unsets transcriptid)
 
 =cut
 
@@ -390,8 +392,8 @@ sub _pad_pep_str {
     Args    :   for transcripts, an optional list of accession
 		numbers of hit sequences of interest; if none
 		are given, all relevant hit sequences are
-		retrieved; for contigs, all relevant hit
-		sequences are always retrieved
+		retrieved; note that for contigs, all relevant
+		hit sequences are always retrieved
     Returns :   reference to array of Bio::PrimarySeq
 
 =cut
@@ -399,7 +401,7 @@ sub _pad_pep_str {
 sub fetch_alignment {
   my ($self) = shift;
   $self->throw('interface fault') if (! $self);
-  $self->throw('must have a stable ID and a DB adaptor object')
+  $self->throw('must have a transcript or contig ID and a DB adaptor object')
     unless (($self->transcriptid || $self->contigid) && $self->dbadaptor);
 
   if ($self->transcriptid) {
@@ -840,30 +842,27 @@ sub _get_aligned_evidence_for_transcript {
   my $sgp = $db->get_StaticGoldenPathAdaptor;
   my @evidence_arr;	# a reference to this is returned
   my $evidence_obj;
-
   my $ta = $db->get_TranscriptAdaptor;
   my $ga = $db->get_GeneAdaptor;
   my $ea = $db->get_ExonAdaptor;
+  my $transcript_name_to_display = $transcript_id;
 
-  # get all exons off a VC
-  my $gene = $ga->fetch_by_transcript_stable_id($transcript_id);
-  my $vc = $sgp->fetch_VirtualContig_of_gene($gene->stable_id, 100);
-  my @genes_in_vc = $vc->get_Genes_by_Type('ensembl');
+  # get all exons in VC coordinates
   my $transcript_obj;
-  GENE_LOOP:
-  foreach my $gene_in_vc (@genes_in_vc) {
-    if ($gene_in_vc->stable_id eq $gene->stable_id)
-    {
-      my @transcripts_in_vc = $gene_in_vc->each_Transcript;
-      foreach my $transcript_in_vc (@transcripts_in_vc) {
-        if ($transcript_in_vc->stable_id eq $transcript_id) {
-          $transcript_obj = $transcript_in_vc;
-          last GENE_LOOP;
-        }
-      }
-    }
+  my $transcript_dbID;
+  if ($transcript_id =~ /^ENS/i) {	# stable ID
+    $transcript_obj = $ta->fetch_by_stable_id($transcript_id);
+    $transcript_dbID = $transcript_obj->dbID;
+  } else {	# internal (db) ID
+    $transcript_dbID = $transcript_id;
+    $transcript_obj = $ta->fetch_by_dbID($transcript_dbID);
   }
+  my $vc = $sgp->fetch_VirtualContig_of_transcript_by_dbID($transcript_dbID,
+                                                          1000);
   my @all_exons = $transcript_obj->get_all_Exons;
+  foreach my $exon (@all_exons) {
+    $vc->_convert_seqfeature_to_vc_coords($exon);
+  }
 
   my @features = $self->_get_features_from_transcript($transcript_obj, $vc, @_);
   my $per_hid_effective_scores_hash_ref =
@@ -939,7 +938,7 @@ sub _get_aligned_evidence_for_transcript {
   my $cdna_obj = Bio::PrimarySeq->new(
                     -seq              => $seq_to_translate,
                     -id               => 0,
-                    -accession_number => $transcript_obj->stable_id,
+                    -accession_number => $transcript_name_to_display,
 		    -moltype          => 'dna'
 		  );
   my $translation_including_3prime_utr = $cdna_obj->translate->seq;
@@ -956,7 +955,7 @@ sub _get_aligned_evidence_for_transcript {
   $evidence_obj = Bio::PrimarySeq->new(
                     -seq              => $evidence_line,
                     -id               => 0,
-                    -accession_number => $transcript_obj->stable_id,
+                    -accession_number => $transcript_name_to_display,
 		    -moltype          => 'protein'
 		  );
   push @evidence_arr, $evidence_obj;
@@ -1079,7 +1078,7 @@ sub _get_aligned_evidence_for_transcript {
   $evidence_obj = Bio::PrimarySeq->new(
                     -seq              => $nucseq_str,
                     -id               => 0,
-     		    -accession_number => $transcript_obj->stable_id,
+     		    -accession_number => $transcript_name_to_display,
 		    -moltype          => 'dna'
 		  );
   push @evidence_arr, $evidence_obj;
