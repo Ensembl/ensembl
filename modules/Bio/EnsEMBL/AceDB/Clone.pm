@@ -115,7 +115,7 @@ sub created {
     if (my $date = $contig->ace_seq->at('Properties.Status.Finished[1]')) {
         return $date;
     }
-    return;   
+    return 0;   
 }
 
 
@@ -156,7 +156,9 @@ sub embl_id {
    my ($contig) = $self->get_Contig($self->id());
    if (my $database = $contig->ace_seq->at('DB_info.Database[1]')) {
         if ($database eq "EMBL") {
-            return $contig->ace_seq->at('DB_info.Database[2]');
+            if (my $embl_id = $contig->ace_seq->at('DB_info.Database[2]')) {
+                return $embl_id->name;
+            }
         }
    }
    return;
@@ -216,9 +218,9 @@ sub modified {
     my ($self) = @_;
     my ($contig) = $self->get_Contig($self->id()); 
     if (my $date = $contig->ace_seq->at('Properties.Status.Finished[1]')) {
-        return $date;
+        return $date->name;
     }
-    return;   
+    return 0;   
 }
 
 

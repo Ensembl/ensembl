@@ -261,9 +261,11 @@ sub get_all_Genes {
     my $id = $self->id();        
     # Create a hash of methods we're interested in
     my %methods = map{$_, 1} ('supported_CDS', 'curated');
+    
     # Get the sequence object
     my $seq = $self->ace_seq();
-   
+    
+    my $annotated = map($_->name, $seq->at('Properties.Status.Annotated'));
     my $phase = $seq->at('Properties.Coding.CDS[1]');
     # If the phase is defined set it to phase - 1 
     if ($phase) {
@@ -298,7 +300,7 @@ sub get_all_Genes {
                                          
 	        my ($starte, $ende) = map($_->name(), $hit->row());                              	                        
                 my $exon = $self->_create_exon($id, $strand, $start, 
-                    $starte, $end, $ende, $genename, $index, $phase); 
+                    $starte, $end, $ende, $genename, $index, $phase, $annotated); 
                 
                 # Set index and phase for the next exon
                 $index++;                
@@ -325,10 +327,10 @@ sub get_all_Genes {
            
 	    # Create a new Transcript object from the exons and the Translation
             my $transcript = new Bio::EnsEMBL::Transcript(@exons);
-            $transcript->id($genename);    
+            $transcript->id($genename); 
+            $transcript->version(1);   
 	    $transcript->translation($translation);
 
-#	    print STDERR "Translation is " . $transcript->translate->seq . "\n";
             # Create a new Gene object and add the Transcript 
             my $gene = new Bio::EnsEMBL::Gene();
             $gene->id($genename);
@@ -538,9 +540,9 @@ sub primary_seq {
 sub seq_date {
     my ($self) = @_;
     if (my $date = $self->ace_seq->at('Properties.Status.Finished[1]')) {
-        return $date;
+        return $date->name;
     }
-    return; 
+    return 0; 
 }
 
 
@@ -579,7 +581,7 @@ sub ace_seq {
 =cut
 
 sub _create_exon {
-    my ($self, $id, $strand, $start, $starte, $end, $ende, $genename, $index, $phase) = @_;
+    my ($self, $id, $strand, $start, $starte, $end, $ende, $genename, $index, $phase, $annotated) = @_;
      
     my $bioseq = $self->primary_seq();
 
@@ -590,6 +592,9 @@ sub _create_exon {
     $exon->strand($strand);
     $exon->phase($phase);
     $exon->seqname($genename);
+    $exon->version(1);
+    $exon->modified($annotated);
+    $exon->created($annotated);
     
     # We have to map acedb coordinates which are relative to the
     # start/end in the subsequence to the exon coordinates, which
@@ -614,6 +619,7 @@ sub _create_exon {
 	     $exonid = "dummy_exon_id.$genename.$index";
     }
     $exon->id($exonid);
+    
    
     return $exon;
 }
