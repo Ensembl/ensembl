@@ -53,6 +53,8 @@ use Bio::EnsEMBL::Virtual::Contig
 
 # new() is written here 
 
+my $static_number = 0;
+
 sub new {
     my ($class,$global_start,$global_end,@contigs) = @_;
     
@@ -73,6 +75,9 @@ sub new {
 	$self->_vmap->create_MapContig($rc,$rc->chr_start - $global_start+1,$rc->chr_end - $global_start +1,$rc->static_golden_start,$rc->static_golden_ori);
     }
 
+    
+    $self->_unique_number("static".$static_number++);
+    
     return $self;
 }
 

@@ -1335,15 +1335,13 @@ sub _reverse_map_Exon{
        # we are in the world of sticky-ness....
 
 
-       my @mapcontigs = $self->_vmap->get_all_MapContigs();
+       my @mapcontigs = $self->_vmap->each_MapContig();
 
        # walk to find scontig
        my $found = 0;
        my $mc;
        while ( $mc = shift @mapcontigs ) { 
  
-	   print STDERR "Got ".$mc->contig->id.":".$scontig->id."\n";
-
 	   if( $mc->contig->id eq $scontig->id ) {
 	       print STDERR "Unshifting ",$mc->contig->id,"\n";
 	       unshift(@mapcontigs,$mc);
@@ -1357,7 +1355,7 @@ sub _reverse_map_Exon{
 
 
        my $vcstart = $exon->start;
-       print STDERR "Looking from exon-wise",$exon->start,":",$exon->end,"\n";
+       #print STDERR "Looking from exon-wise",$exon->start,":",$exon->end,"\n";
 
        # ok. Move from start towards end, after we hit end.
        my @exported_exons;
@@ -1365,22 +1363,22 @@ sub _reverse_map_Exon{
 
        foreach my $c ( @mapcontigs ) {	   
 	   my $vcend;
-	   print STDERR "***Looking at",$c->contig->id," - $vcstart...\n";
+	   #print STDERR "***Looking at",$c->contig->id," - $vcstart...\n";
 
 	   if( $c->contig->id eq $econtig->id ) {
 	       # go to end position
-	       print STDERR "Going for end...",$econtig->id,"\n";
+	       #print STDERR "Going for end...",$econtig->id,"\n";
 	       $vcend = $exon->end();
 	   } else {
-	       print STDERR "Going for end of contig\n";
+	       #print STDERR "Going for end of contig\n";
 	       $vcend = $c->end();
 	   }
 
-	   print STDERR "....Going to call with $vcstart:$vcend\n";
-	   $self->_dump_map(\*STDERR);
+	   #print STDERR "....Going to call with $vcstart:$vcend\n";
+	   #$self->_dump_map(\*STDERR);
 
-	   my ($iscontig,$istart,$isstrand) = $self->_vmap->vcpos_to_rcpos($vcstart,$exon->strand);
-	   my ($iecontig,$iend,$iestrand)   = $self->_vmap->vcpos_to_rcpos($vcend  ,$exon->strand);
+	   my ($iscontig,$istart,$isstrand) = $self->_vmap->raw_contig_position($vcstart,$exon->strand);
+	   my ($iecontig,$iend,$iestrand)   = $self->_vmap->raw_contig_position($vcend  ,$exon->strand);
   
 	   if( $iscontig->id ne $iecontig->id || $isstrand != $iestrand) {
 	       $self->throw("Bad internal error. Sticky Exon mapped to different contig/strand for a correct contig placement ".$iscontig->id.":".$iecontig->id);
@@ -1393,9 +1391,18 @@ sub _reverse_map_Exon{
 	   $rmexon->version($exon->version);
 	   $rmexon->phase($exon->phase);
 	   $rmexon->sticky_rank($sticky++);
-	   $rmexon->attach_seq($c->contig->primary_seq);	   
-	   $rmexon->start($istart);
-	   $rmexon->end($iend);
+	   $rmexon->attach_seq($c->contig->primary_seq);
+
+	   # could have flipped around, in which case, flip again.
+	   # Again we assumme everything works as advertised
+	   if( $istart > $iend ) {
+	       $rmexon->start($iend);
+	       $rmexon->end($istart);
+	   } else {
+	       $rmexon->start($istart);
+	       $rmexon->end($iend);
+	   }
+
 	   $rmexon->strand($isstrand);
 	   $rmexon->contig_id($c->contig->id);
 	   $rmexon->seqname($c->contig->id);

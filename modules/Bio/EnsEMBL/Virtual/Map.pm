@@ -393,6 +393,15 @@ sub raw_contig_position {
     return $rc,$rc_pos;
 }
 
+sub vcpos_to_rcpos {
+    my ($self, $vcpos, $vcstrand)=@_;
+    my ($p,$f,$l) = caller;
+    $self->warn("$f:$l:vcpos_to_rcpos a deprecated method. use raw_contig_position instead");
+    return $self->raw_contig_position($vcpos,$vcstrand);
+}
+
+    
+
 =head2 length
 
  Title   : length

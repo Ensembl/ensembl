@@ -608,6 +608,7 @@ sub _make_sticky_exon{
    $sticky->seqname  ($seq->id);
 
    foreach my $exon ( @exons ) {
+       #print STDERR "Exon ",$exon->start," ",$exon->end," ",$exon->seqname,"\n";
        $seqstr .= $exon->seq->seq();
        #print STDERR "Sticking in ",$exon->id,":",$exon->sticky_rank," $seqstr\n";
 
@@ -615,10 +616,12 @@ sub _make_sticky_exon{
    }
 
    $seq->seq($seqstr);
+   $seq->display_id("sequence.join.".$exons[0]->id);
    $sticky->start    (1);
    $sticky->end      ($seq->length);
    $sticky->strand   (1);
-
+   $sticky->seqname  ($seq->id);
+   $sticky->attach_seq($seq);
    return $sticky;
 
 }
@@ -1302,6 +1305,10 @@ sub write_Exon {
     $exon->end || $self->throw("Missing exon end position");
     $exon->created || $self->throw("Missing exon created time");
     $exon->modified || $self->throw("Missing exon modified time");
+
+    if( $exon->start > $exon->end ) {
+	$self->throw("Start is greater than end for exon. Not writing it!");
+    }
 
     my $exonst = q{
         insert into exon (id, version, contig, created, modified

@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..10\n"; 
+BEGIN { $| = 1; print "1..18\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -225,7 +225,7 @@ $exon->add_Supporting_Feature($sf);
 $exon = Bio::EnsEMBL::Exon->new();
 $exon->id('exon-2');
 $exon->start(367);
-$exon->end(380);
+$exon->end(373);
 $exon->strand(1);
 $exon->version(1);
 $exon->phase(0);
@@ -235,12 +235,52 @@ $exon->contig_id($vc2->id);
 $trans->add_Exon($exon);
 $exon{'exon-2'} = $exon;
 
+$exon = Bio::EnsEMBL::Exon->new();
+$exon->id('exon-3');
+$exon->start(373);
+$exon->end(380);
+$exon->strand(1);
+$exon->version(1);
+$exon->phase(0);
+$exon->created(1);
+$exon->modified(1);
+$exon->contig_id($vc2->id);
+$trans->add_Exon($exon);
+
+
 $newgene = $vc2->convert_Gene_to_raw_contig($gene);
 print "ok 15\n";
 
 $db->write_Gene($newgene);
 
 print "ok 16\n";
+
+# retrieve gene, check it is on the correct coordinates
+
+$newgene = $db->gene_Obj->get('gene-id-1');
+($trans) = $newgene->each_Transcript;
+if( !defined $trans ) { die "Didn't even get a transcript!"; }
+
+($exon1,$exon2,$exon3) = $trans->each_Exon;
+
+if( $exon1->id ne 'exon-1' || $exon1->start != 2 ||
+    $exon1->end != 7 || $exon1->strand != 1 ||
+    $exon2->id ne 'exon-2' || $exon2->start != 2 ||
+    $exon2->end != 8 || $exon2->strand != -1 ) {
+    print "not ok 17\n";
+    print STDERR "exon1 ",$exon1->start,":",$exon1->end,";",$exon1->strand," ",
+    "exon2 ",$exon2->start,":",$exon2->end,";",$exon2->strand,"\n";
+} else {
+    print "ok 17\n";
+}
+
+# exon3 is a sticky exon, starting 1 ending 8 on a sticky-wicket
+if( $exon3->start != 1 || $exon3->end != 8 || $exon3->seq->seq ne 'GGTTTTTT' ) {
+    print "not ok 18\n";
+    print STDERR "Exon3 ",$exon3->seqname,"  ",$exon3->start,":",$exon3->end,";",$exon3->strand," ",$exon3->seq->seq,"\n";
+} else {
+    print "ok 18\n";
+}
 
 
 

@@ -6,7 +6,7 @@ VALUES (1, 'contig1', 1, 40, 1, 500, 2, 'chromosome1', 'international-a');
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
 VALUES (2, 'contig2', 1, 40, 2, 0, 1, 'chromosome1', 'international-b');
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
-VALUES (3, 'contig3', 1, 40, 2, 0, 3, 'chromosome1', 'international-b');
+VALUES (3, 'contig3', 1, 40, 3, 0, 3, 'chromosome1', 'international-b');
 
 INSERT INTO static_golden_path (fpcctg_name,chr_name,raw_id,fpcctg_start,fpcctg_end,chr_start,chr_end,raw_start,raw_end,raw_ori,type) VALUES ('ctg123','chr2',1,1,35,200,235,2,36,1,'UCSC');
 INSERT INTO static_golden_path (fpcctg_name,chr_name,raw_id,fpcctg_start,fpcctg_end,chr_start,chr_end,raw_start,raw_end,raw_ori,type) VALUES ('ctg123','chr2',2,135,175,335,374,1,40,-1,'UCSC');
