@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test ;
-	plan tests => 4;
+	plan tests => 7;
 }
 
 use MultiTestDB;
@@ -48,11 +48,16 @@ my $qf = $qtls->[0]->get_QtlFeature();
 debug( join( "\n", %$qf ));
 ok( $qf->isa( "Bio::EnsEMBL::Map::QtlFeature" ));
 
+my $qtl = $qtls->[0];
+ok($qtl->flank_marker_1->isa('Bio::EnsEMBL::Map::Marker'));
+ok($qtl->flank_marker_2->isa('Bio::EnsEMBL::Map::Marker'));
+
+my $synonyms = $qtl->get_synonyms;
+
+ok($synonyms->{'rat genome database'} eq 'rqtl2');
+
 my @result = $qf->transform();
 
 debug( join("\n", @result ));
 ok( scalar( @result ) == 9 );
-
-
-
 
