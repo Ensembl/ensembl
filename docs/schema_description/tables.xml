@@ -597,22 +597,6 @@
 
     </table>
 
- <!-- ============================================================ -->
-
-    <table>
-      
-      <name>map_density</name>
-
-      <description>.</description>
-      
-      <used></used>
-      
-      <see>
-	<tableref name="density_feature" reason=""/>
-      </see>
-
-    </table>
-
     <!-- ============================================================ -->
 
     <table>
