@@ -3,13 +3,13 @@
 # files should be in format
 # xref_accession ensembl_type ensembl_id
 
-# to dump this from an ensembl datbase use something like
+# to dump this from an ensembl database use something like
 # mysql -u ensro -h ecs2 -P 3365 -e "select x.dbprimary_acc, ox.ensembl_object_type, ox.ensembl_id from xref x, object_xref ox, external_db edb where edb.db_name like 'Uniprot/SWISSPROT' and x.external_db_id=edb.external_db_id and x.xref_id=ox.xref_id order by x.xref_id" homo_sapiens_core_25_34e > ensembl_swissprot_translations.txt
 
 
 # ADDITIONALLY
 # read in the synonym conversion. This is created with something like:-
-#mysql -hecs4 -P3350 -uensadmin -pensembl -Dianl_xref_test -e"select x.accession, s.accession from synonym a, xref x, xref s where a.xref_id = x.xref_id and a.synonym_xref_id = s.xref_id " > xref_synonym.txt
+#mysql -hecs4 -P3350 -uensadmin -pensembl -Dianl_xref_test -e"select x.accession, s.synonym from synonym s, xref x where x.xref_id = s.xref_id" > xref_synonym.txt
 
 #ALSO get list of deleted accesions no need to look at these.
 #down load wget http://us.expasy.org/txt/delac_tr.txt
