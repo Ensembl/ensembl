@@ -42,6 +42,7 @@ use vars qw($AUTOLOAD @ISA);
 use strict;
 use Bio::EnsEMBL::DB::CloneI;
 use Bio::EnsEMBL::TimDB::Contig;
+use Bio::SeqIO;
 
 # Object preamble - inheriets from Bio::Root::Object
 use Bio::Root::Object;
@@ -117,11 +118,12 @@ sub _initialize {
   my %id2disk;
   while(($key,$val)=each %unfin_contig){
       if($key=~/^$disk_id/){
-	  my($len)=split(/,/,$val);
+	  my($len,$checksum)=split(/,/,$val);
 	  my $disk_key=$key;
 	  $key=~s/^$disk_id/$id/;
 	  # save by id rather than disk_id, but keep mapping
 	  $contig_len{$key}=$len;
+	  $self->{'_contig_dna_checksum'}->{$key}=$checksum;
 	  $id2disk{$key}=$disk_key;
 	  # check for gs file
 	  if(!-e "$clone_dir/$disk_key.gs"){
@@ -425,6 +427,7 @@ sub htg_phase {
     return $obj->{'_clone_htgsp'};
 }
 
+
 =head2 byacc
 
  Title   : byacc
@@ -444,6 +447,56 @@ sub byacc{
     }
     return $obj->{'byacc'};
 
+}
+
+
+=head2 compare_dna
+
+ Title   : compare_dna
+ Usage   : $obj->compare_dna($file)
+ Function: 
+ Returns : 1 if dna in $file is different (checksum comparision) to dna in clone object
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub compare_dna{
+    my $self = shift;
+    my $file = shift;
+    print "Comparing with $file\n";
+    my $seqio=Bio::SeqIO->new( -format => 'Fasta', -file => $file);
+    my $fseq;
+    my %contigs;
+    my $checksum2;
+    my $eflag=0;
+    my $id=$self->id;
+    my $disk_id=$self->disk_id;
+    while($fseq=$seqio->next_seq()){
+	my $seqid=$fseq->id;
+	$seqid=~s/^$disk_id/$id/;
+	my $seqlen=$fseq->seq_len;
+	my $seq=$fseq->seq;
+	my $checksum=unpack("%32C*",$seq) % 32767;
+	if($checksum2=$self->{'_contig_dna_checksum'}->{$seqid}){
+	    $contigs{$seqid}=1;
+	    if($checksum==$checksum2){
+		print STDERR "Contig $seqid same in Ensembl: $checksum $checksum2\n";
+	    }else{
+		print STDERR "ERROR: Contig $seqid different in Ensembl: $checksum $checksum2\n";
+		$eflag=1;
+	    }
+	}else{
+	    print STDERR "ERROR: Contig $seqid not in Ensembl\n";
+	    $eflag=1;
+	}
+    }
+    foreach my $contig (keys %{$self->{'_contig_dna_checksum'}}){
+	if(!$contigs{$contig}){
+	    print STDERR "ERROR: Contig $contig only in Ensembl\n";
+	}
+    }
+    return $eflag;
 }
 
 

@@ -110,12 +110,14 @@ my $getall    = 0;
 my $pepformat = 'Fasta';
 my $test;
 my $part;
+my $live;
 my $verbose   = 0;
 my $cstart    = 0;
 my $cend      = undef;
 my $outfile;
 my $oldstyle = 0;
 my $usetimdb = 0;
+my $checkdna;
 
 # defaults for msql (rdb) access
 # msql was 'croc'
@@ -156,6 +158,8 @@ my $port      = '410000';
 	     'getall'    => \$getall,
 	     'test'      => \$test,
 	     'part'      => \$part,
+	     'live'      => \$live,
+	     'checkdna:s'=> \$checkdna,
 	     'verbose'   => \$verbose,
 	     'start:i'   => \$cstart,
 	     'end:i'     => \$cend,
@@ -204,7 +208,7 @@ if ( $usetimdb == 1 ) {
     }
 
     # clones required are passed to speed things up - cuts down on parsing of flat files
-    $db = Bio::EnsEMBL::TimDB::Obj->new($raclones,$noacc,$test,$part);
+    $db = Bio::EnsEMBL::TimDB::Obj->new($raclones,$noacc,$test,$part,$live);
 } else {
     
     my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
@@ -267,7 +271,14 @@ foreach my $clone_id ( @clones ) {
 	my $as = $clone->get_AnnSeq();
 	# choose output mode
 	
-	
+	# test clone check call
+	if($checkdna){
+	    if($clone->compare_dna($checkdna)){
+		print STDERR "WARN: DNA of $checkdna DIFFERENT to that in $clone_id\n";
+	    }else{
+		print STDERR "DNA of $checkdna identical to that in $clone_id\n";
+	    }
+	}
 	
 	if( $format =~ /gff/ ) {
 	    foreach my $contig ( $clone->get_all_Contigs )  {

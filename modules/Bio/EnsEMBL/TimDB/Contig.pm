@@ -123,7 +123,11 @@ sub _initialize {
 	      next;
 	  } 
 	  if( $exhash{$exon->start()}->end != $exon->end() ) {
-	      $self->throw("Exons with same start but different end!");
+	      $self->throw("Exons with same start but different end!\n".
+			   "Exon: $exon_id ".$exon->start."-".$exon->end.
+			   " ".$exhash{$exon->start()}->id." ".
+			   " ".$exhash{$exon->start()}->start.
+			   "-".$exhash{$exon->start()}->end);
 	  }
 
 	  $exon->phase($exhash{$exon->start()}->phase);
