@@ -39,6 +39,15 @@ use warnings;
 
 package Bio::EnsEMBL::Storable;
 
+use Bio::EnsEMBL::Root;
+use vars qw(@ISA);
+
+#
+# will eventually remove unneeded inheritance to Root
+#
+@ISA = qw(Bio::EnsEMBL::Root);
+
+
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
