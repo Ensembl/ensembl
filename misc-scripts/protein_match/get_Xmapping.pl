@@ -35,13 +35,15 @@ my $mgi_locus  = $conf{'mgi_locus'};
 #Get specific options for anopheles
 my $sub_genes  = $conf{'submitted_genes'};
 
-#Get specific options for Briggsae
+#Get specific options for elegans
 my $eleg_nom   = $conf{'eleg_nom'};
 
 #Get specific options for zebrafish
 my $zeb_gene    = $conf{'zeb_gene'};
 my $zeb_dblink  = $conf{'zeb_dblink'};
 
+
+my $briggsae_peptides = $conf{'briggsae_hybrid'};
 
 if ((!defined $organism) || (!defined $sptr_swiss) || (!defined $out)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nsptr_swiss: $sptr_swiss\nx_map: $out\n";
@@ -74,7 +76,7 @@ while ( my $seq = $in->next_seq() ) {
     
     #Humm not good... will be removed soon
     $tag = $seq->primary_id;
-
+    print "have tag ".$tag."\n";
     if ($tag eq "STANDARD") {
 	$db = "SWISSPROT";
     }
@@ -82,7 +84,7 @@ while ( my $seq = $in->next_seq() ) {
 	$db = "SPTREMBL";
     }
     else {
-	die "Try to load unknown SPTR database\n";
+	die "Try to load unknown SPTR database with tag ".$tag."\n";
     }
     my $un_ac = "$ac:$db";
     my @secs = $seq->get_secondary_accessions;
@@ -95,8 +97,7 @@ while ( my $seq = $in->next_seq() ) {
 
     #Then get info about the Xref mapping
     my @dblink = $seq->annotation->each_DBLink;
-    
-#All of these entries are flaged as XREF, this mean that they have been retrieved using primary DB (SPTR, Refseq)
+    #All of these entries are flaged as XREF, this mean that they have been retrieved using primary DB (SPTR, Refseq)
     foreach my $link(@dblink) {
 	if ($link->database eq "EMBL") {
 	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\tXREF\n";
@@ -361,5 +362,19 @@ print STDERR "The output has been written there: $out\n";
 
 
 
-
+if($organism eq 'briggsae'){
+ BRIGGSAE: while(my $seq = $in->next_seq){
+    my $in  = Bio::SeqIO->new(-file => $briggsae_peptides, '-format' =>'fasta');
+    #ID CBG11531 desc CBP02734 (cb25.fpc2454.en7794a/cb25.fpc2454.tw352/cb25.fpc2454.gc383) W = 100.00; B = 99.7 
+    #print STDERR "ID ".$seq->id." desc ".$seq->desc."\n";
+    my $id = $seq->id;
+    my @values = split /\s+/, $seq->desc;
+    my $display_id = $values[0];
+    my $syns = $values[1];
+    $syns =~ s/[\(\)]//g;
+    my @secs = split /\//, $syns;
+    my $syn = join(';',@secs);
+    print $display_id."\tSPTR\t".$display_id."\tBRIGGSAE_HYBRID\t".$id."\t".$syn."\tXREF\n";
+  }
+}
 
