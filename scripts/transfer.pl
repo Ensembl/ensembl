@@ -184,7 +184,7 @@ if ($exon_phase) {
 if ( $fdbtype =~ 'timdb' ) {
     if ($freeze) {
 	print STDERR "Loading with freeze settings!\n";
-	$from_db = Bio::EnsEMBL::TimDB::Obj->new(-freeze => 3,-nogene =>1, 
+	$from_db = Bio::EnsEMBL::TimDB::Obj->new(-freeze => 4,-nogene =>1, 
 						 -nosecure=>$nosecure, 
 						 -clones => \@clone,0);
     }
@@ -220,36 +220,33 @@ if ($feature) {
 		next;
 	    } 
 	    #elsif ($oldclone->version == 0) {
-		my $clone = $from_db->get_Clone($clone_id);
-		my $oldclone;
-		print STDERR "Writing features for clone ".$clone->id."\n";
-		foreach my $contig ($clone->get_all_Contigs) {
-		    my @features=$contig->get_all_SeqFeatures;
-		    my $nf=scalar(@features);
-		    print STDERR "Writing $nf features for contig ".$contig->id."\n";
-		    if ($nf) {
-			my $oldcontig = $to_db->get_Contig($contig->id);
-			my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($to_db);
-			$feature_obj->write($oldcontig, @features);
-		    }
-		    else {
-			print STDERR "Warning: Found zero features for this contig\n";
-		    }
-		    print STDERR "Changing clone $clone_id version from 0 to 1\n";
-		    my $sth = $to_db->prepare("update clone set version=1 where id='$clone_id'");
-		    $sth->execute() || print STDERR "Could not change version number!\n";
+	    my $clone = $from_db->get_Clone($clone_id);
+	    my $oldclone;
+	    print STDERR "Writing features for clone ".$clone->id."\n";
+	    foreach my $contig ($clone->get_all_Contigs) {
+		my @features=$contig->get_all_SeqFeatures;
+		my $nf=scalar(@features);
+		print STDERR "Writing $nf features for contig ".$contig->id."\n";
+		if ($nf) {
+		    my $oldcontig = $to_db->get_Contig($contig->id);
+		    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($to_db);
+		    $feature_obj->write($oldcontig, @features);
 		}
+		else {
+		    print STDERR "Warning: Found zero features for contig ". $contig->id."\n";
+		}
+	    }
+	    my $version=$clone->version;
+	    print STDERR "Changing clone $clone_id version from 0 to $version\n";
+	    my $sth = $to_db->prepare("update clone set version=$version where id='$clone_id'");
+	    $sth->execute() || print STDERR "Could not change version number!\n";
 	    #}
 	    #else {
-		#print STDERR "Clone already updated, skipping\n\n";
+		#print STDERR "Clone already updated skipping!\n";
 	    #}
-	};
-	if ( $@ ) {
-	    print STDERR "Could not transfer clone $clone_id\n$@\n";
 	}
     }
 }
-
 else {
     foreach my $clone_id ( @clone ) {
 	print STDERR "Loading $clone_id\n";

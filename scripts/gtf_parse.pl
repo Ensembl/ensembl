@@ -53,10 +53,10 @@ use Bio::EnsEMBL::GeneComparison::GeneComparisonStats;
 
 #Database options
 my $dbtype = 'rdb';
-my $host   = 'localhost';
+my $host   = 'ensrv4.sanger.ac.uk';
 my $port   = '410000';
-my $dbname = 'matloob_freeze17';
-my $dbuser = 'root';
+my $dbname = 'ensembl_freeze17_michele';
+my $dbuser = 'ensro';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 
@@ -92,17 +92,28 @@ my @gtf_genes=$gtfh->parse_file(\*PARSE);
 my $g_n=scalar @gtf_genes;
 print STDERR "Got $g_n genes from file $parse\n";
 if ($print) {
-    $gtfh->print_genes;
-}
+     foreach my $gene (@gtf_genes) {
+	print STDOUT "Gene ".$gene->id."\n";
+	foreach my $trans ($gene->each_Transcript) {
+	    print STDOUT "  Transcript ".$trans->id."\n";
+	    foreach my $exon ($gene->each_unique_Exon) {
+		print STDOUT "   exon ".$exon->id."\n";
+	    }
+	    print STDOUT "   translation start ".$trans->translation->start."\n";
+	    print STDOUT "   translation end ".$trans->translation->end."\n";
+	}
+    }
+ }
 
 #DB writing option not yet implemented
 #Mapping of coordinates still needs to be done
 elsif ($check) {
     my $inputstream = Bio::SeqIO->new(-file => "ctg12382.fa",-format => 'Fasta');
     my $seq = $inputstream->next_seq();
-    
+
     foreach my $gene (@gtf_genes) {
 	foreach my $trans ($gene->each_Transcript) {
+	    
 	    print STDERR "Translation start is ".$trans->translation->start." in exon ".$trans->translation->start_exon_id."\n";
 	    print STDERR "Translation end is ".$trans->translation->end." in exon ".$trans->translation->end_exon_id."\n";
 		
@@ -301,10 +312,20 @@ else {
 	my $vc = $sgp_adaptor->fetch_VirtualContig_by_fpc_name($fpc);
 	foreach my $exon ($gene->each_unique_Exon) {
 	    $exon->contig_id($vc->id);
+	    $exon->attach_seq($vc->primary_seq);
+	    print STDERR "Got exon seq: ".$exon->seq."\n";
 	}
 	my $newgene = $vc->convert_Gene_to_raw_contig($gene);
-	print STDERR "Writing gene ".$gene->id."\n";
-	$gene_obj->write($newgene);
+	
+	print STDERR "Dumping gene ".$gene->id."\n";
+	foreach my $trans ($gene->each_Transcript) {
+	    my $out = Bio::SeqIO->new(-fh => \*STDOUT, -format => 'Fasta');
+	    my $seq= $trans->dna_seq;
+	    my $desc="FPC: $fpc ";
+	    $seq->desc($desc);
+	    $out->write_seq($seq);
+	    }
     }
+    #$gene_obj->write($newgene);
 }
 

@@ -9,9 +9,9 @@ use Bio::EnsEMBL::DBLoader;
 # global defaults
 my $host = 'localhost';
 my $dbuser = 'root';
-my $dbname = 'ensembl';
+my $dbname = 'arne_freeze05_tim';
 my $dbpass = undef;
-my $do_gene = 1;
+my $do_gene = 0;
 my $usefile = 0;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 my $port   = '410000';
