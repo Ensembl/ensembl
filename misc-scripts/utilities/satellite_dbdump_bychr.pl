@@ -63,6 +63,9 @@ my $mysqldump = 'mysqldump'; # in $PATH we trust
 # satellites:
 my $famdb;
 my $diseaseb;
+my $mapsdb;
+my $expressiondb;
+my $estdb;
 # end of satellites
 
 &GetOptions( 
@@ -77,6 +80,8 @@ my $diseaseb;
             'family:s' => \$famdb,
             'disease:s' => \$diseasedb,
             'maps:s' => \$mapsdb,
+            'expression:s' => \$expressiondb,
+            'est:s' => \$estdb,
 	     );
 
 die "need a litedb; use -litedb something " unless $litedb;
@@ -88,52 +93,61 @@ if ($lim) {
     $limit = "limit $lim";
 }
 
-if ($famdb) {
-    my $dumpdir = "$workdir/$famdb";
-    dump_schema($famdb, $dumpdir, 'family.sql');
+&dump_family($famdb);
+&dump_disease($diseasedb);
+&dump_maps($mapsdb);
+&dump_expression($expressiondb);
+
+sub dump_family { 
+    my ($satdb) = @_;
+    return unless $satdb;
+
+    dump_schema($satdb);
 
     my $sql;
     $sql = "
 SELECT distinct f.* 
-FROM $famdb.family f, $litedb.gene g
+FROM $satdb.family f, $litedb.gene g
 WHERE g.chr_name = '$chr'
   and g.family = f.id
   $limit
 ";
-    dump_data($litedb, $sql, $dumpdir, 'family.dat' );
+    dump_data($sql, $satdb, 'family' );
 
     $sql = "
 SELECT fm.* 
-FROM $famdb.family_members fm, $famdb.family f, $litedb.gene g
+FROM $satdb.family_members fm, $satdb.family f, $litedb.gene g
 WHERE g.chr_name = '$chr'
   and g.family = f.id
   and f.internal_id  = fm.family
   $limit
 ";
-    dump_data($litedb, $sql, $dumpdir, 'family_members.dat' );
+    dump_data($sql, $satdb, 'family_members' );
 }                                       # family
 
-if ($diseasedb) {
-    my $dumpdir = "$workdir/$diseasedb";
-    dump_schema($diseasedb, $dumpdir, 'disease.sql');
+sub dump_disease {
+    my ($satdb) = @_;
+    return unless $satdb;
+
+    dump_schema($satdb);
 
 # may need an ALTER TABLE gene ADD KEY(gene_symbol);
     my $sql;
     $sql = "
 SELECT dg.*
-FROM  $diseasedb.gene dg, 
+FROM  $satdb.gene dg, 
       $litedb.gene lg, 
       $litedb.gene_xref lgx
 WHERE lg.chr_name = '$chr' 
   AND lg.gene = lgx.gene 
   AND lgx.display_id = dg.gene_symbol
 ";
-    dump_data($litedb, $sql, $dumpdir, 'gene.dat' );
+    dump_data($sql, $satdb, 'gene' );
 
     $sql = "
 SELECT dd.*
-FROM  $diseasedb.gene dg, 
-      $diseasedb.disease dd,
+FROM  $satdb.gene dg, 
+      $satdb.disease dd,
       $litedb.gene lg, 
       $litedb.gene_xref lgx
 WHERE lg.chr_name = '$chr' 
@@ -141,14 +155,14 @@ WHERE lg.chr_name = '$chr'
   AND lgx.display_id = dg.gene_symbol
   AND dd.id = dg.id;
 ";
-    dump_data($litedb, $sql, $dumpdir, 'disease.dat' );
+    dump_data($sql, $satdb, 'disease' );
 
 # here's the sql to restrict the disease_index_*list, but they're so small
 # it's really not worth the trouble. Left here in case anyone is interested
 #     $sql = "
 # SELECT ddl.*
-# FROM  $diseasedb.gene dg, 
-#       $diseasedb.disease_index_doclist ddl,
+# FROM  $satdb.gene dg, 
+#       $satdb.disease_index_doclist ddl,
 #       $litedb.gene lg, 
 #       $litedb.gene_xref lgx
 # WHERE lg.chr_name = '$chr' 
@@ -159,15 +173,17 @@ WHERE lg.chr_name = '$chr'
 
     foreach my $w ( qw(doc stop vector word) ) {
         my $table = "disease_index_${w}list";
-        $sql = "select * from $diseasedb.$table";
-        dump_data($litedb, $sql, $dumpdir, "$table.dat" );
+        $sql = "select * from $satdb.$table";
+        dump_data($sql, $satdb, $table );
     }
 }                                       # disease
 
-if ($mapsdb) {
-    # note: this will ignore non-RHdb markers; tough. 
-    my $dumpdir = "$workdir/$mapsdb";
-    dump_schema($mapsdb, $dumpdir, 'maps.sql');
+sub dump_maps {
+    my ($satdb) = @_;
+    return unless $satdb;
+
+    warn "ignoring non-RHdb markers !\n";
+    dump_schema($satdb);
 
     my $chr_short = $chr;
     $chr_short =~ s/^chr//;
@@ -177,40 +193,93 @@ if ($mapsdb) {
     # the simple ones having a chromosome column:
     foreach my $table ( qw(ChromosomeBands CytogeneticMap RHMaps Fpc_Contig)) {
         $sql = "
-SELECT * FROM $mapsdb.$table WHERE chromosome = '$chr_short'
+SELECT * FROM $satdb.$table WHERE chromosome = '$chr_short'
 ";
-        dump_data($litedb, $sql, $dumpdir, "$table.dat" );
+        dump_data($sql, $satdb, $table );
     }
 
-    $sql = "SELECT * FROM $mapsdb.Map";  # 4 rows
-    dump_data($litedb, $sql, $dumpdir, "$table.dat" );
+    $sql = "SELECT * FROM $satdb.Map";  # 4 rows
+    dump_data($sql, $satdb, $table );
 
     # less simple ones that can both use the RHMaps table
     foreach my $table ( qw(Marker MarkerSynonym) ) {              
         $sql = "
 SELECT t.* 
-FROM $mapsdb.$table t,
-     $mapsdb.RHMaps r
+FROM $satdb.$table t,
+     $satdb.RHMaps r
 WHERE t.marker=r.marker 
   AND r.chromosome = '$chr_short'
 ";
-        dump_data($litedb, $sql, $dumpdir, "$table.dat" );
+        dump_data($sql, $satdb, $table );
     }    
 
     # this one needs a join 
     $sql="
 SELECT cl.*
-FROM $mapsdb.Fpc_Clone cl,
-     $mapsdb.Fpc_Contig cg
+FROM $satdb.Fpc_Clone cl,
+     $satdb.Fpc_Contig cg
 WHERE cg.chromosome = '$chr_short'
   AND cl.contig_id = cg.contig_id
 ";
-    dump_data($litedb, $sql, $dumpdir, 'Fpc_Clone.dat' );
+    dump_data($sql, $satdb, 'Fpc_Clone' );
 }                                       # maps
 
+sub dump_expression  {
+    my ($satdb) = @_;
+    return unless $satdb;
+
+    warn "ignoring any non-ENSG aliases";
+    my $dumpdir = "$workdir/$satdb";
+    dump_schema($satdb);
+
+    # small ones:
+    foreach $table ( qw(key_word lib_key library source ) ) {
+        $sql = "select * from $satdb.$table";
+        dump_data($sql, $satdb, $table);
+    }
+    # frequency                            ;
+    # seqtag                               ;
+    # seqtag_alias                         ;
+    $sql = "
+SELECT sa.*
+FROM $satdb.seqtag_alias sa, 
+     $litedb.gene lg
+WHERE sa.db_name = 'ensgene'
+  AND sa.external_name =lg.name
+  AND lg.chr_name = '$chr'
+";
+    dump_data($sql, $satdb, 'seqtag_alias');
+
+    $sql = "
+SELECT st.*
+FROM  $satdb.seqtag st,
+      $satdb.seqtag_alias sa, 
+      $litedb.gene lg
+WHERE sa.db_name = 'ensgene'
+  AND sa.external_name =lg.name
+  AND lg.chr_name = '$chr'
+  AND st.seqtag_id = sa.seqtag_id
+";
+    dump_data($sql, $satdb, 'seqtag');
+
+    $sql = "
+SELECT f.*
+FROM  $satdb.frequency f,
+      $satdb.seqtag_alias sa, 
+      $litedb.gene lg
+WHERE sa.db_name = 'ensgene'
+  AND sa.external_name =lg.name
+  AND lg.chr_name = '$chr'
+  AND f.seqtag_id = sa.seqtag_id
+";
+    dump_data($sql, $satdb, 'frequency');
+}                                       # expression
 
 sub dump_schema {
-    my ($dbinstance, $destdir, $destfile) = @_;
+    my ($satdb) = @_;
+
+    my $destdir = "$workdir/$satdb";
+    my $destfile = "$satdb.sql";
 
     unless (-d $destdir) {
         mkdir $destdir, 0755 || die "mkdir $destdir: $!";
@@ -218,16 +287,18 @@ sub dump_schema {
 
     my $d = "$destdir/$destfile";
 
-    warn "Dumping database schema of $dbinstance to $d\n";
+    warn "Dumping database schema of $satdb to $d\n";
     die "$d exists" if -s $d ;
-    $command = "$mysqldump -u $dbuser $pass_arg -d $dbinstance > $d ";
+    $command = "$mysqldump -u $dbuser $pass_arg -d $satdb > $d ";
     if ( system($command) ) {
         die "Error: ``$command'' ended with exit status $?";
     }
 }
 
 sub dump_data {
-    my($db, $sql, $destdir, $destfile) = @_;
+    my($sql, $satdb, $tablename) = @_;
+    my ($destdir) = "$workdir/$satdb";
+    my ($datfile)=  "$tablename.dat";
 
     unless (-d $destdir) {
         mkdir $destdir, 0755 || die "mkdir $destdir: $!";
@@ -235,7 +306,7 @@ sub dump_data {
     
     $sql =~ s/\s+/ /g;
     
-    my $cmd = "echo \"$sql\" | $mysql -q --batch -u $dbuser -p$dbpass $db > $destdir/$destfile";
+    my $cmd = "echo \"$sql\" | $mysql -q --batch -u $dbuser -p$dbpass $litedb > $destdir/$datfile";
     warn "dumping: $cmd\n";
 
     if ( system($cmd) ) { 
