@@ -14,19 +14,8 @@ Bio::EnsEMBL::Utils::ConfigRegistry;
 =head1 SYNOPSIS
 
 
-Bio::EnsEMBL::Utils::ConfigRegistry->load_core( 
-                      -species => "Homo Sapiens",
-                      -host => 'kaka.sanger.ac.uk',
-                      -user => 'anonymous',
-                      -dbname => 'homo_sapiens_core_20_34c',
-                      -port => '3306' );
+Bio::EnsEMBL::Utils::ConfigRegistry->load_core($dba );
  
-Bio::EnsEMBL::Utils::ConfigRegistry->load_estgene(
-                      -species => "Homo Sapiens",
-                      -host => 'kaka.sanger.ac.uk',
-                      -user => 'anonymous',
-                      -dbname => 'homo_sapiens_estgene_20_34c',
-                      -port => '3306' );
 
 =head1 DESCRIPTION
 
@@ -64,44 +53,9 @@ use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump)
 
 
 =head2 load_core, load_estgene, load_vega, load_compara, load_pipeline, load_SNP, load_lite
-
-  Arg [DBNAME] : string
-                 The name of the database to connect to.
-  Arg [HOST] : (optional) string
-               The domain name of the database host to connect to.
-               'localhost' by default.
-  Arg [USER] : string
-               The name of the database user to connect with
-  Arg [PASS] : (optional) string
-               The password to be used to connect to the database
-  Arg [PORT] : int
-               The port to use when connecting to the database
-               3306 by default.
-  Arg [DRIVER] : (optional) string
-                 The type of database driver to use to connect to the DB
-                 mysql by default.
-  Arg [DISCONNECT_WHEN_INACTIVE]: (optional) boolean
-                 If set to true, the database connection will be disconnected
-                 everytime there are no active statement handles. This is
-                 useful when running a lot of jobs on a compute farm
-                 which would otherwise keep open a lot of connections to the
-                 database.  Database connections are automatically reopened
-                 when required.
-  Arg [SPECIES] : string
-                  The name of the species to be used in the registry.
-
-  Example: Bio::EnsEMBL::Utils::ConfigRegistry->load_core(
-                                  -species => "Homo Sapiens",
-                                  -host    => 'kaka.sanger.ac.uk',
-                                  -user    => 'anonymous',
-                                  -dbname  => 'homo_sapiens_core_20_34c',
-                                  -port    => '3306' );
-
-  Description: Load all the necesary adaptors into the Register for the
-               database.
-  Returntype : none.
-  Exceptions : thrown if USER or DBNAME are not specified, or if the
-               database cannot be connected to.
+  Arg [1]    : DBAdaptor with DBConnection alredy attached
+  Returntype : DBAdaptor;
+  Exceptions : none
 
 =cut
 
@@ -109,34 +63,65 @@ sub gen_load{
   my ($dba) = @_;
   my $config_sub;
 
+# at some point we hope to set the group in the DBadaptor
+# hence this long check etc should be simpler
 
   if($dba->isa('Bio::EnsEMBL::Compara::DBSQL::DBAdaptor')){
-    $dba->group('compara');
+    if(!defined($dba->group())){
+      $dba->group('compara');
+    }
     $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_compara; 
   }
   elsif($dba->isa('Bio::EnsEMBL::Lite::DBAdaptor')){
-    $dba->group('lite');
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_lite;
+    if(!defined($dba->group())){
+      $dba->group('lite');
+    }
+    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_lite;
   }
   elsif($dba->isa('Bio::EnsEMBL::External::BlastAdaptor')){
-    $dba->group('blast');
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_blast;
+    if(!defined($dba->group())){
+      $dba->group('blast');
+    }
+    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_blast;
   }
   elsif($dba->isa('Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor')){
-    $dba->group('SNP');
+    if(!defined($dba->group())){
+      $dba->group('SNP');
+    } 
     $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_SNP;
   }
   elsif($dba->isa('Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor')){
-    $dba->group('pipeline');
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_pipeline;
+    if(!defined($dba->group())){
+      $dba->group('pipeline');
+    }
+    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_pipeline;
   }
   elsif($dba->isa('Bio::EnsEMBL::Hive::DBSQL::DBAdaptor')){
-    $dba->group('hive');
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_hive;
+    if(!defined($dba->group())){
+      $dba->group('hive');
+    }
+    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_hive;
+  }
+  elsif($dba->isa('Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor')){
+    if(!defined($dba->group())){
+      $dba->group('haplotype');
+    }
+    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_haplotype;    
   }
   elsif($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
-    $dba->group('core');
+    #vega uses the core DBAdaptor so test if vega is in the dbname
+    if($dba->dbc->dbname() =~ /vega/){
+      if(!defined($dba->group())){
+	$dba->group('vega');
+      }
+      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_vega;
+     }
+    else{
+      if(!defined($dba->group())){
+	$dba->group('core');
+      }
       $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_core;
+    }
   }
   else{
     throw("Unknown DBAdaptor type $dba\n");
@@ -149,7 +134,7 @@ sub gen_load{
     $db_reg = $reg->get_DBAdaptor($dba->species,$dba->group);
   }
   if(defined($db_reg)){
-    if($dba->dbc->equals($db_reg)){
+    if($dba->dbc->equals($db_reg->dbc)){
       return $db_reg;
     }
     else{ # diff conn details
@@ -158,6 +143,8 @@ sub gen_load{
   }
 
   Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species(), $dba->group(), $dba);
+
+  #call the loading subroutine. (add the adaptors to the DBAdaptor)
   &{$config_sub}($dba);
    
   return $dba;
