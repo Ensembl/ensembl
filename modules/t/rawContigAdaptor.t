@@ -186,9 +186,14 @@ ok($stored_contig->clone->isa('Bio::EnsEMBL::Clone'));
 $multi->restore("core","contig","dna");
 
 
+
 #
 # 35-42 remove
 #
+
+# save the original state of the contig table
+$multi->save("core","contig","dna","repeat_feature","simple_feature",
+             "dna_align_feature","protein_align_feature","prediction_transcript");
 
 # remove the contig AL031658.11.1.162976 from the db
 $raw_adaptor->remove($contig);
@@ -231,3 +236,6 @@ $sth = $db->prepare("select * from prediction_transcript");
 $sth->execute;
 ok(scalar($sth->rows) == 161);
 
+# restore the original state of the contig table
+$multi->restore("core","contig","dna","repeat_feature","simple_feature",
+             "dna_align_feature","protein_align_feature","prediction_transcript");
