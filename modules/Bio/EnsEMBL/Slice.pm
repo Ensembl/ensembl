@@ -895,15 +895,156 @@ sub get_landmark_MarkerFeatures {
 
 }
 
-sub get_all_DASFeatures {
-  my $self = shift;
 
-  $self->warn("Slice->get_all_DASFeatures not yet implemented\n");
 
-  return ();
+sub get_all_DASFeatures{
+   my ($self,@args) = @_;
+
+   if( defined $self->{'_das_cached_features'} ) {
+       return @{$self->{'_das_cached_features'}};
+   }
+
+   my $rca;
+
+   my @contig_features;
+   my @chr_features;
+   my @fpc_features;
+   my @clone_features;
+   my @genomic_features;
+
+   my $mapper = $self->adaptor()->db->get_AssemblyMapperAdaptor()->
+     fetch_by_type($self->assembly_type());
+
+   my @raw_contig_ids = $mapper->list_contig_ids( $self->chr_name, 
+						  $self->chr_start,
+						  $self->chr_end );
+
+
+   # need a call here to get a list of FPC contigs that overlap my VC
+   # I also need to have their VC start end in the FPC coordinates.
+   # and somehow pass all this stuff down to the DAS fetcher...eek!
+   my @fpccontigs = (undef);
+    
+   my $rca = $self->adaptor()->db()->get_RawContigAdaptor();
+   my $raw_Contig_Hash = $rca->fetch_filled_by_dbIDs( @raw_contig_ids );
+
+   # provide mapping from contig names to internal ids
+   my %contig_name_hash = 
+     map { ( $_->name(), $_) } values %$raw_Contig_Hash;
+   my @raw_contig_names = keys %contig_name_hash;
+
+   # retrieve all embl clone accessions
+   my %clone_hash  = 
+     map {( $_->clone->embl_id(), 1 ) } values %$raw_Contig_Hash;
+   my @clones = keys %clone_hash;
+
+
+   my $chr_length = $self->get_Chromosome()->length();
+
+   foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
+       
+       if( $extf->can('get_Ensembl_SeqFeatures_DAS') ) {
+	       foreach my $sf (
+                $extf->get_Ensembl_SeqFeatures_DAS(
+                    $self->chr_name,$self->chr_start,$self->chr_end,
+                    \@fpccontigs, \@clones,\@raw_contig_names, $chr_length)
+            ) {
+
+
+# BAC.*_C are fly contigs....
+# CRA_x are Celera mosquito contigs....
+
+	           if( $sf->seqname() =~ /(\w+\.\d+\.\d+.\d+|BAC.*_C)|CRA_.*/ ) {
+#                    warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
+ 		            push(@contig_features,$sf);
+               } elsif( $sf->seqname() =~ /chr[\d+|X|Y]/i) { 
+#                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
+ 	                push(@chr_features, $sf);
+               } elsif( $sf->seqname() =~ /^(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|X|Y|2L|2R|3L|3R)$/o) {  # breaks on mouse!
+#                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
+ 	                push(@chr_features, $sf);
+               } elsif( $sf->seqname() =~ /ctg\d+|NT_\d+/i) { 
+#                    warn ("Got a FPC contig feature: ", $sf->seqname(), "\n");
+ 	                push(@fpc_features, $sf);
+               } elsif( $sf->seqname() =~ /^(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|X)\.\d+\-\d+/i) { 
+#                    warn ("Got a mouse clone feature: ", $sf->seqname(), "\n");
+ 	                push(@contig_features, $sf);
+               } elsif( $sf->seqname() =~ /\w{1,2}\d+/i) { 
+#                    print STDERR "CLONE >".$sf->seqname()."<\n";
+#                    if(my $contig_from_clone = $self->contig_from_clone($sf->seqname()) ) {
+#                        print STDERR "CONTIG NAME FROM CLONE >$contig_from_clone<\n";
+#                        $sf->seqname($contig_from_clone);
+# 	                    push(@contig_features, $sf);
+#                    }
+#                    warn ("Got a clone feature: ", $sf->seqname(), "\n");
+               } elsif( $sf->das_type_id() eq '__ERROR__') { 
+#                    Always push errors even if they aren't wholly within the VC
+	                push(@genomic_features, $sf);
+               } elsif( $sf->seqname() eq '') { 
+                    #suspicious
+	                warn ("Got a DAS feature with an empty seqname! (discarding it)\n");
+	           } else {
+		            warn ("Got a DAS feature with an unrecognized segment type: >", $sf->seqname(), "< >", $sf->das_type_id(), "<\n");
+	           }
+	       }
+	   
+       } else {
+	        warn "Slice: Got a DAS feature factory that can't do get_Ensembl_SeqFeatures_DAS\n";
+	        #$self->throw("Got a DAS feature factory that can't do get_Ensembl_SeqFeatures_DAS");
+       }
+   }
+   
+   my $chr_start = $self->chr_start();
+   my $chr_end   = $self->chr_end();
+   
+   foreach my $sf ( @contig_features ) {
+
+#            print STDERR "SEG ID: ",         $sf->seqname(), "\t";
+#            print STDERR "ID: ",             $sf->das_id(), "\t";
+#            print STDERR "DSN: ",            $sf->das_dsn(), "\t";
+#            print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
+#            print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
+#            print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
+#            print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
+     
+     # map to a chromosomal coordinate
+     my @coord_list = $mapper->map_coordinates_to_assembly
+       ( $contig_name_hash{ $sf->seqname() }->dbID(), 
+	 $sf->das_start, $sf->das_end, $sf->das_strand );
+     # this should work with one coordinate
+     my $coord = shift( @coord_list );
+     
+     # if its not mappable than ignore the feature
+     if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
+       next;
+     }
+     
+     $sf->das_start( $coord->start() - $self->chr_start + 1 );
+     $sf->das_end( $coord->end() - $self->chr_start + 1 );
+     $sf->das_strand( $coord->strand() * $self->strand() );
+
+     if($sf->das_start <= $self->length && $sf->das_end >= 1) {
+       push(@genomic_features, $sf);
+     }
+
+   }
+
+    
+
+   foreach my $sf ( @chr_features ) {
+     
+     # chromosome to slice coords mapping
+     $sf->das_start( $sf->das_start() - $self->chr_start() + 1 );
+     $sf->das_end( $sf->das_end() - $self->chr_start + 1 );
+     $sf->das_strand( $sf->das_strand() * $self->strand() );
+
+     if($sf->das_start <= $self->length && $sf->das_end >= 1) {
+       push(@genomic_features, $sf);
+     }
+   }
+   $self->{'_das_cached_features'} = \@genomic_features;
+   return @genomic_features;
 }
-
-
 
 
 
