@@ -693,7 +693,7 @@ sub _deprecated_transform {
   my $arg = shift;
 
   if(!$arg) {
-    deprecate("Calling transform() with no arguments is deprecated.\n".
+    warning("Calling transform() with no arguments is deprecated.\n".
           "A coordinate system name argument should be used instead.\n".
           "You probably wanted transform('seqlevel') or transform('contig').");
     return $self->transform('seqlevel');
@@ -701,13 +701,13 @@ sub _deprecated_transform {
 
   if(ref($arg) eq 'Bio::EnsEMBL::Slice') {
     if($arg->{'empty'}) {
-      deprecate("Calling transform with an empty slice is deprecated.\n" .
+      warning("Calling transform with an empty slice is deprecated.\n" .
                 "A coordinate system name argument should be used instead.\n".
                 "You probably wanted transform('chromosome') or " .
                 "transform('toplevel')");
       return $self->transform('toplevel');
     }
-    deprecate("Calling transform with a slice is deprecated.\n" .
+    warning("Calling transform with a slice is deprecated.\n" .
               "Use the transfer method instead");
     return $self->transfer($arg);
   }

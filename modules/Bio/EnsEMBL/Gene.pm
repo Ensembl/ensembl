@@ -476,15 +476,11 @@ sub stable_id{
 sub transform {
   my $self = shift;
 
+
   # catch for old style transform calls
-  if( !@_ || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
-    my $slice = shift;
-    deprecate( "transform needs coordinate systems details now, please use transfer" );
-    if ($slice->{'empty'}) {
-      return $self->transform('toplevel');
-    } else {
-      return $self->transfer($slice);
-    }
+  if( !@_  || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
+    deprecate('Calling transform without a coord system name is deprecated.');
+    return $self->_deprecated_transform(@_);
   }
 
   my $new_gene = $self->SUPER::transform( @_ );

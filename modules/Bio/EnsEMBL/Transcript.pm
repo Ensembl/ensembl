@@ -1645,8 +1645,9 @@ sub transform {
 
   # catch for old style transform calls
   if( ref $_[0] eq 'HASH') {
-    deprecate("transform takes a coordinate system argument now, not a" .
-	      " hashref of old tp new exons");
+    deprecate("Calling transform with a hashref is deprecated.\n" .
+              'Use $trans->transfer($slice) or ' .
+              '$trans->transform("coordsysname") instead.');
     my (undef, $new_ex) = each(%{$_[0]});
     $self->transfer($new_ex->slice);
   }
