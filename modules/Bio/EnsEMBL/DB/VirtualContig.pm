@@ -957,15 +957,19 @@ sub _convert_seqfeature_to_vc_coords {
 	}
 	
 	my $seen = 0;
+	my $strand;
 	foreach my $sub ( @sub ) {
 	    $sub = $self->_convert_seqfeature_to_vc_coords($sub);
 	    if( !defined $sub ) {        
 		next;
 	    }
 	    $seen =1;
+	    $strand = $sbu->strand;
 	    $new->add_sub_SeqFeature($sub,'EXPAND');
 	}
 	if( $seen == 1 ) {       
+	    # we assumme that the mapping was unambiguous wrt to the strand
+	    $new->strand($strand);
 	    return $new;
 	} else {        
 	    return undef;
