@@ -252,31 +252,6 @@ sub get_CloneAdaptor {
 }
 
 
-=head2 get_LandmarkMarkerAdaptor
-
-  Args       : none 
-  Example    : $marker_adaptor = $db_adaptor->get_LandmarkMarkerAdaptor();
-  Description: Gets a LandmarkMarkerAdaptor which currently is always retrieved
-               from the lite database attached to this database.
-  Returntype : Bio::EnsEMBL::DBSQL::LandmarkMarkerAdaptor
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_LandmarkMarkerAdaptor {
-  my $self = shift;
-
-  my $lite = $self->get_db_adaptor('lite');
-
-  if( defined $lite ) {
-    return $lite->get_LandmarkMarkerAdaptor();
-  } else {
-    return undef;
-  }
-}
-
-
 =head2 get_PredictionTranscriptAdaptor
 
   Args       : none 
