@@ -682,8 +682,7 @@ sub assembly_type{
         $obj->throw("*** get_MetaContainer->get_default_assembly failed:\n$@\n"
           ."assembly type must be set with assembly_type() first");
       } elsif (! $ass) {
-        $obj->throw("No default assembly defined"
-          . " - must set with assembly_type() first");
+        $obj->throw("No default assembly defined in ".$obj->dnadb->dbname. " - must set with assembly_type() first");
       }
       $obj->{'assembly'} = $ass;
     }
