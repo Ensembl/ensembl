@@ -43,7 +43,7 @@ $src_prefix = $opts{'s'};
 $dst_prefix = $opts{'d'};
 
 if ($#ARGV != 2) {
-    usage_usage(\%opts);
+    usage_build(\%opts);
     die;
 }
 
