@@ -328,7 +328,7 @@ sub intersection{
 
   # see whether any transcript falls within this intersection
   foreach my $transcript ( @transcripts ){
-    my ($start,$end) = ($self->_get_start($transcript), $self->_get_end($transcript));
+    my ($start,$end) = $self->_get_start_end($transcript);
     if ($strand == 1 &&  $start >= $inter_start && $end <= $inter_end ){
        $inter_cluster->put_Transcripts( $transcript );
     }
@@ -399,8 +399,15 @@ sub put_Transcripts {
     $self->throw( "Can't accept a [ $new_transcripts[0] ] instead of a Bio::EnsEMBL::Transcript");
   }
   
-  my @starts = sort { $a <=> $b } map( { $self->_get_start($_) } @new_transcripts );
-  my @ends   = sort { $a <=> $b } map( { $self->_get_end($_)   } @new_transcripts );
+  my @starts_unsorted;
+  my @ends_unsorted;
+  foreach my $transcript (@new_transcripts) {
+    my ($start, $end) = $self->_get_start_end($transcript);
+    push @starts_unsorted, $start;
+    push @ends_unsorted, $end;
+  }
+  my @starts = sort { $a <=> $b } @starts_unsorted;
+  my @ends   = sort { $a <=> $b } @ends_unsorted;
 
   # check strand consistency among transcripts
   foreach my $transcript (@new_transcripts){
@@ -415,36 +422,20 @@ sub put_Transcripts {
 
   # if start is not defined, set it
   unless ( $self->start ){
-    if ( $self->strand == 1 ){
-      $self->start( $starts[0] );
-    }
-    if ( $self->strand == -1 ){
-      $self->start( $starts[$#starts] );
-    }
+    $self->start( $starts[0] );
   }
 
   # if end is not defined, set it
   unless ( $self->end ){
-    if ( $self->strand == 1 ){
-      $self->end( $ends[$#ends]);
-    }
-    if ( $self->strand == -1 ){
-      $self->end( $ends[0] );
-    }
+    $self->end( $ends[$#ends]);
   }
   
   # extend start and end if necessary as we include more transcripts
-  if ( $self->strand == 1 && $starts[0] < $self->start ){
+  if ($starts[0] < $self->start ){
     $self->start( $starts[0] );
   }
-  if ( $self->strand == -1 && $starts[$#starts] > $self->start ){
-    $self->start( $starts[$#starts] );
-  }
-  if ( $self->strand == 1 && $ends[$#ends] > $self->end ){
+  if ( $ends[$#ends] > $self->end ){
     $self->end( $ends[$#ends] );
-  }
-  if ( $self->strand == -1 && $ends[0] < $self->end ){
-    $self->end( $ends[0] );
   }
 
   push ( @{ $self->{'_transcript_array'} }, @new_transcripts );
@@ -506,6 +497,32 @@ sub exon_Density{
   return $density;
 }
 
+=head2 _get_start_end()
+
+ function to get the start and end positions - written as one method
+ for efficiency
+
+=cut
+
+sub _get_start_end {
+  my ($self, $transcript) = @_;
+  my $start;
+  my $end;
+ 
+  my $start_exon = $transcript->start_exon;
+  my $end_exon = $transcript->end_exon;
+ 
+  if ($start_exon->strand == 1) {
+    $start = $start_exon->start;
+    $end   = $end_exon->end;
+  } else {
+    $end   = $start_exon->end;
+    $start = $end_exon->start;
+  }
+  return ($start, $end);
+}    
+
+
 #########################################################################
 
 =head2 _get_start()
@@ -525,7 +542,7 @@ sub _get_start {
     $st = $exons[0]->start;
   } else {
     @exons = sort {$b->start <=> $a->start} @exons;
-    $st = $exons[0]->end;
+    $st = $exons[$#exons]->start;
   }
 
   return $st;
@@ -550,7 +567,7 @@ sub _get_end {
     $end = $exons[$#exons]->end;
   } else {
     @exons = sort {$b->start <=> $a->start} @exons;
-    $end = $exons[$#exons]->start;
+    $end = $exons[0]->end;
   }
   return $end;
 }
