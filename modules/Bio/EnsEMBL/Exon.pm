@@ -361,7 +361,7 @@ sub _transform_to_Slice {
   # the slice is an empty slice, create an enitre chromosome slice and
   # replace the empty slice with it
   if( ! defined $slice->chr_name() ) {
-    my $sa = $self->adaptor()->db()->get_SliceAdaptor();
+    my $sa = $slice->adaptor()->db()->get_SliceAdaptor();
     %$slice = %{$sa->fetch_by_chr_name( $mapped[0]->id() )};
   } 
 
