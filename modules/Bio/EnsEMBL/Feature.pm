@@ -59,7 +59,7 @@ package Bio::EnsEMBL::Feature;
 
 use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
 use vars qw(@ISA);
 
@@ -535,5 +535,10 @@ sub project {
 }
 
 
+
+sub contig {
+  deprecate('Use slice() instead');
+  slice(@_);
+}
 
 1;
