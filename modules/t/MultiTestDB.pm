@@ -37,11 +37,16 @@ my $CONF_FILE    = 'MultiTestDB.conf';
 
 my $DUMP_DIR = 'test-genome-DBs';
 
-
 sub new {
   my( $pkg, $species ) = @_;
 
   my $self = bless {}, $pkg;
+
+  # go and grab the current directory and store it away
+  my $curr_dir = $ENV{'PWD'} . "/".__FILE__;
+  $curr_dir =~ s/MultiTestDB.pm$//;
+
+  $self->curr_dir($curr_dir);
 
   unless($species) {
     $species = $DEFAULT_SPECIES;
@@ -50,13 +55,17 @@ sub new {
   $self->species($species);
 
 
-  if ( -e $species.$FROZEN_CONF_EXT) {
+  if ( -e $self->curr_dir . $species . $FROZEN_CONF_EXT) {
     $self->load_config;
   }
   else {
     #load the databases and generate the conf hash
     $self->load_databases;
+
+    #freeze configuration in a file
+    $self->store_config;
   }
+
 
   #generate the db_adaptors from the $self->{'conf'} hash
   $self->create_adaptors;
@@ -73,7 +82,7 @@ sub new {
 sub load_config {
   my $self = shift;
 
-  my $conf = $self->species . $FROZEN_CONF_EXT;
+  my $conf = $self->curr_dir . $self->species . $FROZEN_CONF_EXT;
     
   eval {
     $self->{'conf'} = do $conf; #reads file into $self->{'conf'}
@@ -92,7 +101,7 @@ sub load_config {
 sub store_config {
   my $self = shift;
 
-  my $conf = $self->species . $FROZEN_CONF_EXT;
+  my $conf = $self->curr_dir . $self->species . $FROZEN_CONF_EXT;
 
   local *FILE;
 
@@ -151,15 +160,13 @@ sub create_adaptors {
 }
 
 
-
-
 sub load_databases {
   my ($self) = shift;
 
   print STDERR "\nTrying to load [$self->{'species'}] databases\n";
 
   #create database from conf and from zip files 
-  my $db_conf = do $CONF_FILE;
+  my $db_conf = do $self->curr_dir . $CONF_FILE;
 
   my $port   = $db_conf->{'port'};
   my $driver = $db_conf->{'driver'};
@@ -172,7 +179,7 @@ sub load_databases {
   $self->{'conf'} = {};
 
   #unzip database files
-  $self->unzip_test_dbs($zip);
+  $self->unzip_test_dbs($self->curr_dir . $zip);
 
   #connect to the database
   my $locator = "DBI:".$driver.":host=".$host.";port=".$port;
@@ -209,7 +216,7 @@ sub load_databases {
     $db->do("use $dbname");
     
     #load the database with data
-    my $dir = "$DUMP_DIR/".$self->species."/$dbtype";
+    my $dir = $self->curr_dir . "$DUMP_DIR/".$self->species."/$dbtype";
     local *DIR;
 
     opendir(DIR, $dir) or die "could not open dump directory '$dir'";
@@ -271,7 +278,7 @@ sub load_databases {
 sub unzip_test_dbs {
   my ($self, $zipfile) = @_;
 
-  if (-e $DUMP_DIR) {
+  if (-e $self->curr_dir . $DUMP_DIR) {
     $self->warn("Test genome dbs already unpacked\n");
     return;
   }
@@ -285,7 +292,8 @@ sub unzip_test_dbs {
   }
 
   # unzip the zip file quietly
-  system ( "unzip -q $zipfile" );
+
+  system ( "unzip -q $zipfile -d ". $self->curr_dir );
 }
 
 
@@ -355,7 +363,7 @@ sub hide {
     $sth->execute;
 
     #reload the old table from its schema file
-    my $schema_file = "$DUMP_DIR/" . $self->species . "/$dbtype/$table.sql";
+    my $schema_file = $self->curr_dir . "$DUMP_DIR/" . $self->species . "/$dbtype/$table.sql";
 
     local *SCHEMA_FILE;
 
@@ -464,27 +472,6 @@ sub compare {
 }
 
 
-# convenience method: by calling it, you get the name of the database,
-# which  you can cut-n-paste into another window for doing some mysql
-# stuff interactively
-sub pause {
-  my ($self) = @_;
-  
-  print STDERR "pausing to inspect databases\n";
-  foreach my $dbtype (keys %{$self->{'db_adaptors'}}) {
-    my $db_adaptor = $self->{'db_adaptors'}->{$dbtype};
-    print STDERR " [$dbtype]\n";
-    print STDERR "    name=[".$db_adaptor->dbname."]\n";
-    print STDERR "    port=[".$db_adaptor->port."]\n";
-    print STDERR "    host=[".$db_adaptor->host."]\n";
-    print STDERR "    user=[".$db_adaptor->user."]\n";
-  }
-  print STDERR "press ^D to continue\n";
-  `cat `;
-}
-
-
-
 sub species {
   my ($self, $species) = @_;
 
@@ -493,6 +480,18 @@ sub species {
   }
 
   return $self->{'species'};
+}
+
+
+
+sub curr_dir {
+  my ($self, $cdir) = @_;
+
+  if($cdir) {
+    $self->{'_curr_dir'} = $cdir;
+  }
+
+  return $self->{'_curr_dir'};
 }
 
 
@@ -507,9 +506,8 @@ sub _create_db_name {
 
     my $species = $self->species;
 
-#    my $db_name = "_test_db_${species}_${dbtype}_".$ENV{'USER'}."_".$date."_".$time;
-    my $db_name = "_test_db_${species}_${dbtype}_".$ENV{'USER'}."_".$date;
-
+    # create a unique name using host and date / time info
+    my $db_name = "_test_db_${species}_${dbtype}_".$ENV{'USER'}."_".$date."_".$time;
 
     return $db_name;
 }
@@ -557,7 +555,7 @@ sub do_sql_file {
     #\s*\n, takes in account the case when there is space before the new line
     foreach my $s (grep /\S/, split /;[ \t]*\n/, $sql) {
       $s =~ s/\;\s*$//g;
-      $self->validate_sql($s);
+      $self->_validate_sql($s);
       $dbh->do($s);
       $i++
     }
@@ -565,7 +563,7 @@ sub do_sql_file {
   return $i;
 }                                       # do_sql_file
 
-sub validate_sql {
+sub _validate_sql {
   my ($self, $statement) = @_;
   if ($statement =~ /insert/i) {
     $statement =~ s/\n/ /g; #remove newlines
@@ -580,7 +578,7 @@ sub cleanup {
   my $self = shift;
 
   #delete the unpacked schema and data files
-  $self->_delete_files($DUMP_DIR);
+  $self->_delete_files($self->curr_dir . $DUMP_DIR);
 
   #remove all of the handles on dbadaptors
   foreach my $dbtype (keys %{$self->{'db_adaptors'}}) {
@@ -611,7 +609,7 @@ sub cleanup {
     $db->do("DROP database $dbname");
   }
 
-  my $conf_file = $self->species . $FROZEN_CONF_EXT;
+  my $conf_file = $self->curr_dir . $self->species . $FROZEN_CONF_EXT;
   
   #delete the frozen config file
   if(-e $conf_file && -f $conf_file) {
@@ -655,11 +653,9 @@ sub DESTROY {
       #restore tables, do nothing else we want to use the database for 
       #the other tests as well
       $self->restore;
-      #freeze configuration in a file
-      $self->store_config;
     } else {
       #we are runnning a stand-alone test, cleanup created databases
-      print STDERR "Destroying\n";
+      print STDERR "\nCleaning up....\n";
       $self->cleanup;
     }
 }
