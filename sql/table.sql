@@ -207,7 +207,8 @@ CREATE TABLE protein_align_feature (
 
   PRIMARY KEY ( protein_align_feature_id ),
   KEY seq_region_idx( seq_region_id, analysis_id, score, seq_region_start ),
-  KEY hit_idx( hit_name )
+  KEY hit_idx( hit_name ),
+  KEY analysis_idx( analysis_id )
 
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -235,7 +236,8 @@ CREATE TABLE dna_align_feature (
 
   PRIMARY KEY ( dna_align_feature_id ),
   KEY seq_region_idx( seq_region_id, analysis_id, score, seq_region_start ),
-  KEY hit_idx( hit_name )
+  KEY hit_idx( hit_name ),
+  KEY analysis_idx( analysis_id )
 
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -304,7 +306,8 @@ CREATE TABLE gene (
 
   PRIMARY KEY (gene_id),
   KEY seq_region_idx( seq_region_id, seq_region_start ),
-  KEY xref_id_index ( display_xref_id )
+  KEY xref_id_index ( display_xref_id ),
+  KEY analysis_idx( analysis_id )
 
 );
 
@@ -468,7 +471,8 @@ CREATE TABLE protein_feature (
 
   PRIMARY KEY   (protein_feature_id),
   KEY (translation_id),
-  KEY hid_index ( hit_id )
+  KEY hid_index ( hit_id ),
+  KEY analysis_idx( analysis_id )
 
 );
 
@@ -556,7 +560,8 @@ CREATE TABLE identity_xref(
 	evalue double,
 	analysis_id int,
 
-        PRIMARY KEY (object_xref_id)
+  PRIMARY KEY (object_xref_id),
+  KEY analysis_idx( analysis_id )
 );
 
 ################################################################################
@@ -653,7 +658,8 @@ CREATE TABLE prediction_transcript (
     analysis_id int,
     
     PRIMARY KEY( prediction_transcript_id ),
-    KEY ( seq_region_id, seq_region_start )
+    KEY ( seq_region_id, seq_region_start ),
+    KEY analysis_idx( analysis_id )
 );
 
 
@@ -732,7 +738,8 @@ CREATE TABLE marker_feature (
   map_weight                  int(10) unsigned,
 
   PRIMARY KEY (marker_feature_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start )
+  KEY seq_region_idx (seq_region_id, seq_region_start ),
+  KEY analysis_idx( analysis_id )
 
 );
    
@@ -924,7 +931,8 @@ CREATE TABLE qtl_feature (
   analysis_id           int not null,
 
   KEY( qtl_id ),
-  KEY loc_idx( seq_region_id, seq_region_start )
+  KEY loc_idx( seq_region_id, seq_region_start ),
+  KEY analysis_idx( analysis_id )
 );
 
 ################################################################################
