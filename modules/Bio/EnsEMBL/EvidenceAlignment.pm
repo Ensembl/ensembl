@@ -20,7 +20,7 @@ Bio::EnsEMBL::EvidenceAlignment.pm
                           -TRANSCRIPTID => $tr_stable_id,
 			  -PFETCH       => '/path/to/pfetch');
  my $alignment_arr_ref = $ea->fetch_alignment;
- $ea->transcriptid($other_tr_stable_id);
+ $ea->transcriptid($other_tr_dbID);
  my $other_alignment_arr_ref = $ea->fetch_alignment;
  my $short_alignment_arr_ref = $ea->fetch_alignment($hid);
  $ea->contigname($contig_name);
@@ -63,18 +63,20 @@ use Bio::EnsEMBL::Root;
     Title   :   new
     Usage   :   my $tr_ea   = Bio::EnsEMBL::EvidenceAlignment->new(
                                 -DBADAPTOR    => $dba,
-                                -TRANSCRIPTID => $transcript_stable_id,
+                                -TRANSCRIPTID => $transcript_id,
 				-PFETCH       => '/path/to/pfetch');
 		my $cont_ea = Bio::EnsEMBL::EvidenceAlignment->new(
                                 -DBADAPTOR => $dba,
                                 -CONTIGNAME  => $contig_name);
     Function:   Initialises EvidenceAlignment object
     Returns :   An EvidenceAlignment object
-    Args    :   Database adaptor object and an ID string (-CONTIGNAME
-                with contig name or -TRANSCRIPTID with transcript
-		stable ID); optional full path of pfetch binary
-		(-PFETCH), defaulting to whatever is in the user's
-		search path.
+    Args    :   Database adaptor object and an ID string (-CONTIGID
+                with contig ID or -TRANSCRIPTID with transcript
+                ID, which may be either the transcript stable ID or
+                the transcript dbID); optional full path of pfetch
+                binary (-PFETCH), defaulting to whatever is in the
+                user's search path.
+
 
 =cut
 
@@ -145,8 +147,9 @@ sub pfetch {
 
     Title   :   transcriptid
     Usage   :   $ea->transcriptid($transcript_stable_id);
-    Function:   get/set for transcript stable id string (setting
-                this also unsets contigname)
+    Function:   get/set for transcript id string, which may be
+                either the stable ID or the internal (db) ID
+		(setting transcriptid also unsets contigid)
 
 =cut
 
@@ -235,14 +238,24 @@ sub _get_features_from_transcript {
     }
   }
 
-  # remove duplicates
+  my $sorted_features_arr_ref = $self->_remove_duplicate_features(\@features);
+  return @$sorted_features_arr_ref;
+}
+
+# _remove_duplicate_features: takes ref to an array of features,
+# returns ref to an array of those features after duplicates removed
+
+sub _remove_duplicate_features {
+  my ($self, $feature_arr_ref) = @_;
+  $self->throw('interface fault') if (@_ != 2);
+ 
   my @sorted_features = sort {    $a->hseqname cmp $b->hseqname
                                || $a->start    <=> $b->start
                                || $a->end      <=> $b->end
                                || $a->hstart   <=> $b->hstart
                                || $a->hend     <=> $b->hend
                                || $a->strand   <=> $b->strand
-			     } @features;
+                             } @$feature_arr_ref;
   for (my $i = 1; $i < @sorted_features; $i++) {
     my $f1 = $sorted_features[$i];
     my $f2 = $sorted_features[$i-1];
@@ -257,23 +270,28 @@ sub _get_features_from_transcript {
       $i--;
     }
   }
-  
-  return @sorted_features;
+  return \@sorted_features;
 }
 
 =head2 _get_features_from_rawcontig
 
     Title   :   _get_features_from_rawcontig
     Usage   :   $ea->_get_features_from_rawcontig($rc_obj, $strand);
+                $ea->_get_features_from_rawcontig($rc_obj, $strand,
+                                             $logic_name);
     Function:   Get features off specified strand of the raw contig
-                supplied
+                supplied; if a list of logic names is given,
+                features not resulting from an analysis with that
+                logic name are cut; duplicate features are removed
     Returns :   array of featurepairs
 
 =cut
 
 sub _get_features_from_rawcontig {
-  my ($self, $rawcontig_obj, $strand, $db) = @_;
-  $self->throw('interface fault') if (@_ != 4);
+  my ($self, $rawcontig_obj, $strand, $db) = splice @_, 0, 4;
+  $self->throw('interface fault') if (!$self or !$rawcontig_obj or !$strand
+                                      or !$db);
+  my @wanted_arr = @_;
 
   my $rca = $db->get_RawContigAdaptor;
   my $contig_id = $rawcontig_obj->dbID;
@@ -286,7 +304,17 @@ sub _get_features_from_rawcontig {
   push @gapped_features, $dfadp->fetch_by_contig_id($contig_id);
 
   my @all_features = ();
+  GAPPED_FEATURE_LOOP:
   foreach my $gapped_feature (@gapped_features) {
+    if (@wanted_arr) {
+      my $wanted = 0;
+      foreach (@wanted_arr) {
+        if ($_ eq $gapped_feature->analysis->logic_name) {
+          $wanted = 1;
+        }
+      }
+      next GAPPED_FEATURE_LOOP if ! $wanted;
+    }
     push @all_features, $gapped_feature->_parse_cigar;
   }
 
@@ -294,18 +322,15 @@ sub _get_features_from_rawcontig {
   foreach my $feature (@all_features) {
     next unless $feature->primary_tag =~ /similarity/i;
     if ($feature->strand == $strand) {
-      my $tmp;
-      eval {
-        $tmp = $feature->hseqname;
-      };
-      if ($@) {
+      if (! $feature->can('hseqname')) {
         $self->warn("feature $feature has no hseqname method");
       } else {
         push @features, $feature;
       }
     }
   }
-  return @features;
+  my $sorted_features_arr_ref = $self->_remove_duplicate_features(\@features);
+  return @$sorted_features_arr_ref;
 }
 
 =head2 _get_Seqs_by_accs
@@ -326,7 +351,7 @@ sub _get_features_from_rawcontig {
 sub _get_Seqs_by_accs {
   my ($self, @acc) = @_;
 
-  if (! @acc || scalar(@acc < 1)) {
+  if (!@acc || scalar(@acc < 1)) {
     $self->throw("No accession input");
   }
 
@@ -402,18 +427,20 @@ sub _pad_pep_str {
 		contigs, these are displayed for the forward
 		strand followed by the reverse strand
     Args    :   for transcripts, an optional list of accession
-		numbers of hit sequences of interest; if none
+		numbers of hit sequences of interest - if none
 		are given, all relevant hit sequences are
-		retrieved (note that for contigs, all relevant
-		hit sequences are always retrieved)
-    Returns :   reference to array of Bio::PrimarySeq
+		retrieved; for contigs, an optional list of
+		logic names of hits of interest - if none
+                are given, all hits are shown irrespective of
+                logic name
+    Returns :   array of Bio::PrimarySeq
 
 =cut
 
 sub fetch_alignment {
   my ($self) = shift;
   $self->throw('interface fault') if (! $self);
-  $self->throw('must have a stable ID and a DB adaptor object')
+  $self->throw('must have a transcript or contig ID and a DB adaptor object')
     unless (($self->transcriptid || $self->contigname) && $self->dbadaptor);
 
   my $ref_to_retval;	# reference to array to return
@@ -424,9 +451,9 @@ sub fetch_alignment {
     my $rca = $self->dbadaptor->get_RawContigAdaptor;
     my $contig = $rca->fetch_by_name($self->contigname);
     my $plus_strand_alignment  = $self->_get_aligned_features_for_contig(
-                                 $contig, $self->dbadaptor, 1);
+                                 $contig, $self->dbadaptor, 1, @_);
     my $minus_strand_alignment = $self->_get_aligned_features_for_contig(
-                                 $contig, $self->dbadaptor, -1);
+                                 $contig, $self->dbadaptor, -1, @_);
     my $all_alignments = $plus_strand_alignment;
     foreach my $line (@$minus_strand_alignment) {
       push @$all_alignments, $line;
@@ -585,8 +612,9 @@ sub _get_per_hid_effective_scores {
 # returns ref to an array of Bio::PrimarySeq
 
 sub _get_aligned_features_for_contig {
-  my ($self, $contig_obj, $db, $strand) = @_;
-  $self->throw('interface fault') if (@_ != 4);
+  my ($self, $contig_obj, $db, $strand) = splice @_, 0, 4;
+  $self->throw('interface fault') if (!$self or !$contig_obj or !$db
+                                      or ! $strand);
 
   my @evidence_arr;	# a reference to this is returned
   my $evidence_obj;
@@ -595,7 +623,7 @@ sub _get_aligned_features_for_contig {
   my $rca = $db->get_RawContigAdaptor;
 
   my @features = $self->_get_features_from_rawcontig($contig_obj,
-                                                     $strand, $db);
+                                                     $strand, $db, @_);
   my $per_hid_effective_scores_hash_ref
     = $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
@@ -865,22 +893,29 @@ sub _get_aligned_evidence_for_transcript {
   my $ta = $db->get_TranscriptAdaptor;
   my $ga = $db->get_GeneAdaptor;
   my $ea = $db->get_ExonAdaptor;
+  my $transcript_name_to_display = $transcript_id;
 
   # get all exons off a VC
-  my $gene = $ga->fetch_by_transcript_stable_id($transcript_id);
-  my $vc = $sgp->fetch_VirtualContig_of_gene($gene->stable_id, 100);
-  my @genes_in_vc = $vc->get_Genes_by_Type('ensembl');
-  my $transcript_obj;
+  my $transcript_obj_nonvc;
+  my $transcript_dbID;
+  if ($transcript_id =~ /^ENS/i) {      # stable ID
+    $transcript_obj_nonvc = $ta->fetch_by_stable_id($transcript_id);
+    $transcript_dbID = $transcript_obj_nonvc->dbID;
+  } else {      # internal (db) ID
+    $transcript_dbID = $transcript_id;
+    $transcript_obj_nonvc = $ta->fetch_by_dbID($transcript_dbID);
+  }
+  my $vc = $sgp->fetch_VirtualContig_of_transcript_by_dbID($transcript_dbID,
+                                                          1000);
+  my $transcript_obj;   # VC version
+  my @genes = $vc->get_all_Genes;
   GENE_LOOP:
-  foreach my $gene_in_vc (@genes_in_vc) {
-    if ($gene_in_vc->stable_id eq $gene->stable_id)
-    {
-      my @transcripts_in_vc = $gene_in_vc->each_Transcript;
-      foreach my $transcript_in_vc (@transcripts_in_vc) {
-        if ($transcript_in_vc->stable_id eq $transcript_id) {
-          $transcript_obj = $transcript_in_vc;
-          last GENE_LOOP;
-        }
+  foreach my $gene (@genes) {
+    my @transcripts = $gene->each_Transcript;
+    foreach my $transcript (@transcripts) {
+      if ($transcript->dbID eq $transcript_dbID) {
+        $transcript_obj = $transcript;
+        last GENE_LOOP;
       }
     }
   }
@@ -960,7 +995,7 @@ sub _get_aligned_evidence_for_transcript {
   my $cdna_obj = Bio::PrimarySeq->new(
                     -seq              => $seq_to_translate,
                     -id               => 0,
-                    -accession_number => $transcript_obj->stable_id,
+                    -accession_number => $transcript_name_to_display,
 		    -moltype          => 'dna'
 		  );
   my $translation_including_3prime_utr = $cdna_obj->translate->seq;
@@ -977,7 +1012,7 @@ sub _get_aligned_evidence_for_transcript {
   $evidence_obj = Bio::PrimarySeq->new(
                     -seq              => $evidence_line,
                     -id               => 0,
-                    -accession_number => $transcript_obj->stable_id,
+                    -accession_number => $transcript_name_to_display,
 		    -moltype          => 'protein'
 		  );
   push @evidence_arr, $evidence_obj;
@@ -1100,7 +1135,7 @@ sub _get_aligned_evidence_for_transcript {
   $evidence_obj = Bio::PrimarySeq->new(
                     -seq              => $nucseq_str,
                     -id               => 0,
-     		    -accession_number => $transcript_obj->stable_id,
+     		    -accession_number => $transcript_name_to_display,
 		    -moltype          => 'dna'
 		  );
   push @evidence_arr, $evidence_obj;

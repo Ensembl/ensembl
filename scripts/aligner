@@ -2,23 +2,33 @@
 
 # Output a transcript (or raw contig) and its supporting evidence
 # (or similarity features) in Fasta format, to stdout.
-# Can also output more than one such alignment.
+# Can also output more than one such alignment. With raw contigs,
+# output may be limited to all hits with a given logic name.
 #
 # usage: aligner [--user <username>] [--pass <password>] [--dbname <dbname>] \
-#        [--host <host>] --transcript|contig <id> [<id>...]
+#        [--host <host>] --transcript <id> [<id>...]
 #
-# For example:
-#
-# aligner --transcript ENST00000279043 > ENST00000279043.fa
-#
-# aligner --transcript 12213 > 12213.fa
-#
-# aligner --contig --host ecs1h --dbname homo_sapiens_core_4_28 \
-# --user ensro AL356104.6.1.96693 > AL356104.6.1.96693.fa
+#        aligner [--user <username>] [--pass <password>] [--dbname <dbname>] \
+#        [--host <host>] --contig [--logic_name <logicname>] <id> [<id>...]
 #
 # Stable IDs and/or internal dbIDs may be used for transcripts.
 # It isn't possible to mix contigs and transcripts in the
 # same command.
+#
+# For example:
+#
+# transcript stable ID, default database details:
+#     aligner --transcript ENST00000279043 > ENST00000279043.fa
+#
+# transcript internal ID, default database details:
+#     aligner --transcript 12213 > 12213.fa
+#
+# raw contig, nondefault database details, all hits:
+#     aligner --contig --host ecs1h --dbname homo_sapiens_core_4_28 \
+#     --user ensro AL356104.6.1.96693 > AL356104.6.1.96693.fa
+#
+# raw contig, default database details, human_mrna hits only:
+#     aligner --logic_name human_mrna --contig AP001464.1.1.115915 > out.fa
 
 use constant DEFAULT_USER   => 'anonymous';
 use constant DEFAULT_DBNAME => 'current';
@@ -30,24 +40,28 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::EvidenceAlignment;
 
 sub usage_die {
-  die "Usage: $0 [--user <username>] [--pass <password>] [--dbname <dbname>] [--host <host>] --transcript|contig <id> [<id>...]";
+  die "usage: aligner [--user <username>] [--pass <password>] [--dbname <dbname>] \\\n         [--host <host>] --transcript <id> [<id>...]\n       aligner [--user <username>] [--pass <password>] [--dbname <dbname>] \\\n         [--host <host>] --contig [--logic_name <logicname>] <id> [<id>...]\n";
 }
+
 
 # main program
 
-my ($using_transcripts, $using_contigs, $user, $pass, $dbname, $host);
+my ($using_transcripts, $using_contigs, $user, $pass, $dbname, $host,
+    $logic_name);
 
 GetOptions("transcript" => \$using_transcripts,
            "contig"     => \$using_contigs,
 	   "user=s"     => \$user,
 	   "pass=s"     => \$pass,
 	   "dbname=s"   => \$dbname,
-	   "host=s"     => \$host
+	   "host=s"     => \$host,
+           "logic_name=s" => \$logic_name
           ) or usage_die();
 
 usage_die()
   if ( ( $using_transcripts and  $using_contigs)
-    || (!$using_transcripts and !$using_contigs) );
+    || (!$using_transcripts and !$using_contigs)
+    || ( $using_transcripts and $logic_name) );
 
 $user = DEFAULT_USER if (!$user);
 $dbname = DEFAULT_DBNAME if (!$dbname);
@@ -68,11 +82,15 @@ foreach my $id (@ARGV) {
     $ea->contigname($id);
   }
   my @evidence_seq_arr;
-  #eval {
-    @evidence_seq_arr = $ea->fetch_alignment;
-  #};
+  eval {
+    if ($logic_name) {
+      @evidence_seq_arr = $ea->fetch_alignment($logic_name);
+    } else {
+      @evidence_seq_arr = $ea->fetch_alignment;
+    }
+  };
   if ($@) {
-    die "error: can't fetch alignment for $id\n";
+    die "error: can't fetch alignment for $id: $@\n";
   }
   foreach my $evidence_obj (@evidence_seq_arr) {
     print ">", $evidence_obj->accession_number , "\n"
