@@ -91,10 +91,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Slice;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Mapper;
-
-use POSIX qw(ceil floor);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
