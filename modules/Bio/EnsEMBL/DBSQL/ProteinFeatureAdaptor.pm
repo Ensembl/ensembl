@@ -372,25 +372,6 @@ sub fetch_all_by_feature_and_dbID{
 }
 
 
-=head2 fetch_by_feature_and_dbID
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_feature_and_dbID instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_feature_and_dbID {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_feature_and_dbID has been renamed fetch_all_by_feature_and_dbID\n" . caller);
-
-  return $self->fetch_all_by_feature_and_dbID(@args);
-}
-
 
 =head2 store
 
