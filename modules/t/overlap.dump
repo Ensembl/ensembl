@@ -1,30 +1,51 @@
-INSERT INTO clone VALUES ('pog','pog',1,1,-1,'0000-00-00 00:00:00','0000-00-00 00:00:00','0000-00-00 00:00:00');
+INSERT INTO clone (id, embl_id, version, embl_version, htg_phase, created, modified, stored) 
+VALUES ('pog', 'pog', 1, 1, 3, '0000-00-00 00:00:00', '0000-00-00 00:00:00', '0000-00-00 00:00:00');
 
-INSERT INTO contig VALUES ('contig1',1,'pog',5,NULL,NULL,1,0,'international-a');
-INSERT INTO contig VALUES ('contig2',2,'pog',6,NULL,NULL,2,0,'international-b');
-INSERT INTO contig VALUES ('contig3',3,'pog',5,NULL,NULL,3,0,'international-c');
-INSERT INTO contig VALUES ('contig4',4,'pog',6,NULL,NULL,4,0,'international-d');
-INSERT INTO contig VALUES ('contig5',5,'pog',5,NULL,NULL,5,0,'international-e');
+INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
+VALUES (1, 'contig1', 'pog', 5, 1, 0, NULL, 'chromosome1', 'international-a');
+INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
+VALUES (2, 'contig2', 'pog', 6, 2, 0, NULL, 'chromosome1', 'international-b');
+INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
+VALUES (3, 'contig3', 'pog', 5, 3, 0, NULL, 'chromosome1', 'international-c');
+INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
+VALUES (4, 'contig4', 'pog', 6, 4, 0, NULL, 'chromosome1', 'international-d');
+INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
+VALUES (5, 'contig5', 'pog', 5, 5, 0, NULL, 'chromosome1', 'international-e');
 
-INSERT INTO contigoverlap VALUES (1,2,4,5,'TEST',1,'right2right');
-INSERT INTO contigoverlap VALUES (2,3,1,4,'TEST',1,'left2right');
-INSERT INTO contigoverlap VALUES (3,4,2,2,'TEST',1,'left2left');
-INSERT INTO contigoverlap VALUES (4,5,5,2,'TEST',1,'right2left');
+INSERT INTO contigoverlap (dna_a_id, dna_b_id, overlap_type, contig_a_position, contig_b_position, type, overlap_size)
+VALUES (1, 2, 'right2left', 4, 1, 'TEST', 1);
+INSERT INTO contigoverlap (dna_a_id, dna_b_id, overlap_type, contig_a_position, contig_b_position, type, overlap_size)
+VALUES (2, 3, 'right2left', 5, 1, 'TEST', 1);
+INSERT INTO contigoverlap (dna_a_id, dna_b_id, overlap_type, contig_a_position, contig_b_position, type, overlap_size)
+VALUES (3, 4, 'right2left', 3, 2, 'TEST', 1);
+INSERT INTO contigoverlap (dna_a_id, dna_b_id, overlap_type, contig_a_position, contig_b_position, type, overlap_size)
+VALUES (4, 5, 'right2left', 5, 2, 'TEST', 1);
 
-INSERT INTO dna VALUES ('AAAAA','2000-04-27 08:31:59',1);
-INSERT INTO dna VALUES ('GGGGGG','2000-04-27 08:31:59',2);
-INSERT INTO dna VALUES ('AAAAA','2000-04-27 08:31:59',3);
-INSERT INTO dna VALUES ('GGGGGG','2000-04-27 08:31:59',4);
-INSERT INTO dna VALUES ('AAAAA','2000-04-27 08:31:59',5);
+INSERT INTO dna (id, sequence, created) 
+VALUES (1, 'AAAAA', '2000-04-27 08:31:59');
+INSERT INTO dna (id, sequence, created) 
+VALUES (2, 'CCCCCC', '2000-04-27 08:31:59');
+INSERT INTO dna (id, sequence, created) 
+VALUES (3, 'TTTTT', '2000-04-27 08:31:59');
+INSERT INTO dna (id, sequence, created) 
+VALUES (4, 'GGGGGG', '2000-04-27 08:31:59');
+INSERT INTO dna (id, sequence, created) 
+VALUES (5, 'AAAAA', '2000-04-27 08:31:59');
 
-INSERT INTO feature VALUES (1,1,2,3,10,1,1,'silly',100,120,'P30002',0.0,0);
+INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id)
+VALUES (1, 1, 2, 3, 10, 1, 1, 'silly', 100, 120, 'P30002', 0.0, 0);
+INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id)
+VALUES (2, 1, 2, 3, 10, 1, 2, 'genscan', 0, 0, 'genscan', 0.0, 0);
 
-# a one exon gene prediction
-INSERT INTO feature VALUES (2,1,2,3,10,1,2,'genscan',0,0,'genscan',0.0,0);
-INSERT INTO fset VALUES (1,100);
-INSERT INTO fset_feature VALUES (2,1,1);
+INSERT INTO fset (id, score)
+VALUES (1, 100);
 
-INSERT INTO analysis VALUES ('swissprot',12,'blast',12,'blast','similarity',1);
-INSERT INTO analysis VALUES ('genscan',12,'blast',12,'blast','similarity',2);
+INSERT INTO fset_feature (feature, fset, rank) 
+VALUES (2, 1, 1);
+
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
+VALUES (1, 'swissprot', 12, 'blast', 12,  'blast', 'similarity');
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
+VALUES (2, 'genscan', 12, 'blast', 12, 'blast', 'similarity');
 
 
