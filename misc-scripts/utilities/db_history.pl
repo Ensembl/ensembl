@@ -11,10 +11,11 @@ use Sys::Hostname;
 # hard wired
 my $driver="mysql";
 my $port=3306;
-my $password;
-my $create_password;
 my $db_history="db_history";
-my $create_user="ensadmin";
+my $create_user;       # username for read/write access
+my $create_password;   # password for read/write access
+my $user;              # username for readonly access
+my $password;          # password for readonly access
 
 # derived
 # name of user running db_history.pl
@@ -22,6 +23,7 @@ my ($uname)=getpwuid($<);
 
 # user restrictions
 my $host;
+my $cluster;
 my $db;
 my $label;
 my $full_history;
@@ -43,7 +45,6 @@ my $help;
 my $phelp;
 
 # options not listed in help: mainly testing
-my $user='ensadmin';
 my $all_databases;
 my $opt_v;
 
@@ -52,6 +53,7 @@ $Getopt::Long::ignorecase=0;
 &GetOptions(
 
 	    'host|H:s'=>\$host,
+	    'cluster|r:s'=>\$cluster,
 	    'db|d:s'=>\$db,
 	    'label|l:s'=>\$label,
 
@@ -88,6 +90,7 @@ if($help){
 db_history.pl
 
   -H|host         host    restrict to this host
+  -r|cluster      name    restrict to databases on this cluster
   -d|db           dbname  restrict to this database
   -l|label        label   restrict to databases with this label set
 
@@ -116,14 +119,37 @@ my %skip_db=('test'=>1,
 	     );
 
 # set hosts to process
-my @hosts=('ecs1a',
-	   'ecs1b',
-	   'ecs1c',
-	   'ecs1d',
-	   'ecs1e',
-	   'ecs1f',
-	   );
-if($host){@hosts=($host);}
+my @hosts;
+my @ecs1=('ecs1a',
+	  'ecs1b',
+	  'ecs1c',
+	  'ecs1d',
+	  'ecs1e',
+	  'ecs1f',
+	  );
+my @ecs2=('ecs2a',
+	  'ecs2b',
+	  'ecs2c',
+	  'ecs2d',
+	  'ecs2e',
+	  'ecs2f',
+	  );
+
+if ($host) {
+    @hosts=($host);
+}
+elsif($cluster) {
+    if ($cluster eq 'ecs1') {
+	@hosts = @ecs1;
+    }
+    elsif ($cluster eq 'ecs2') {
+	@hosts = @ecs2;
+    }
+    else {
+	die "Unknown cluster $cluster";
+    }
+}
+unless(@hosts){@hosts=(@ecs1, @ecs2);}
 
 # mode 1: write data
 if($db && $host){
@@ -296,7 +322,7 @@ sub _db_history_add{
     &_db_history_create($host,$database) if $opt_C;
 
     my $dbh;
-    if(my $err=&_db_connect(\$dbh,$host,$database,$user,$password)){return $err};
+    if(my $err=&_db_connect(\$dbh,$host,$database,$create_user,$create_password)){return $err};
     &_db_history_insert($dbh,$host,$database,'owner',$set_owner) if $set_owner;
     &_db_history_insert($dbh,$host,$database,'user',$set_user) if $set_user;
     &_db_history_insert($dbh,$host,$database,'title',$set_title) if $set_title;
