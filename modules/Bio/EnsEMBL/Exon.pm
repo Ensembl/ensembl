@@ -453,8 +453,16 @@ sub _transform_to_RawContig {
   
   if( exists $self->{_supporting_evidence} ) {
     my $sfs = $self->get_all_supporting_features();
-    foreach my $sf (@$sfs) {
-      foreach my $mapped_feat ($sf->transform()) {
+  SUPPORTING:foreach my $sf (@$sfs) {
+      my @mapped_feats;
+      eval{
+	@mapped_feats = $sf->transform;
+      };
+      if($@){
+	$self->warn("Supporting feature didn't mapped ignoring $@");
+	next SUPPORTING;
+      }
+      foreach my $mapped_feat (@mapped_feats) {
 	unless(exists $sf_hash{$mapped_feat->contig->name}) {
 	  $sf_hash{$mapped_feat->contig->name} = [];
 	}
@@ -1083,7 +1091,7 @@ sub peptide {
     $tr->genomic2pep($self->start, $self->end, $self->strand, $self->contig);
   
   #filter out gaps
-  my @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
+  @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
 
   #if this is UTR then the peptide will be empty string
   my $pep_str = '';
