@@ -19,12 +19,12 @@ Bio::EnsEMBL::EvidenceAlignment.pm
                           -DBADAPTOR    => $dba,
                           -TRANSCRIPTID => $tr_stable_id,
 			  -PFETCH       => '/path/to/pfetch');
- my $alignment_arr_ref = $ea->fetch_alignment;
+ my @alignment_arr = $ea->fetch_alignment;
  $ea->transcriptid($other_tr_dbID);
- my $other_alignment_arr_ref = $ea->fetch_alignment;
- my $short_alignment_arr_ref = $ea->fetch_alignment($hid);
+ my @other_alignment_arr = $ea->fetch_alignment;
+ my @short_alignment_arr = $ea->fetch_alignment($hid);
  $ea->contigname($contig_name);
- my $contig_based_alignment_arr_ref = $ea->fetch_alignment;
+ my @contig_based_alignment_arr = $ea->fetch_alignment;
 
 =head1 DESCRIPTION
 
@@ -420,8 +420,8 @@ sub _pad_pep_str {
 =head2 fetch_alignment
 
     Title   :   fetch_alignment
-    Usage   :   my $seq_arr_ref = $ea->fetch_alignment;
-                my $seq_arr_ref = $ea->fetch_alignment($hid);
+    Usage   :   my @seq_arr = $ea->fetch_alignment;
+                my @seq_arr = $ea->fetch_alignment($hid);
     Function:   gets transcript or raw contig and corresponding
                 evidence or similarity features; for raw
 		contigs, these are displayed for the forward
