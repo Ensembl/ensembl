@@ -176,6 +176,7 @@ sub fetch {
           , contig.dna
           , clone.embl_version
           , clone.id
+          , contig.offset
         FROM dna
           , contig
           , clone
@@ -193,6 +194,7 @@ sub fetch {
         $self->dna_id($row->[1]);
         $self->seq_version($row->[2]);
 	$self->cloneid    ($row->[3]);
+	$self->embl_offset    ($row->[4]);
     } else {
          $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
     }
@@ -1592,15 +1594,22 @@ sub embl_order{
 =cut
 
 sub embl_offset{
-   my $self = shift;
+   my ( $self, $arg )  = @_;
    my $id = $self->id();
+   if( defined $arg ) {
+     $self->{_embl_offset} = $arg;
+     return;
+   }
 
-
-   my $sth = $self->dbobj->prepare("select offset from contig where id = \"$id\" ");
-   $sth->execute();
-   my $rowhash = $sth->fetchrow_hashref();
-   return $rowhash->{'offset'};
-
+   if( defined $self->{_embl_offset} ) {
+     return $self->{_embl_offset};
+   } else {
+     my $sth = $self->dbobj->prepare("select offset from contig where id = \"$id\" ");
+     $sth->execute();
+     my $rowhash = $sth->fetchrow_hashref();
+     $self->{_embl_offset} = $rowhash->{'offset'};
+     return $self->{_embl_offset};
+   }
 }
 
 =head2 embl_accession
