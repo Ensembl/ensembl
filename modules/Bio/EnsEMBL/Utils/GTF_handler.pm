@@ -44,14 +44,14 @@ package Bio::EnsEMBL::Utils::GTF_handler;
 
 use strict;
 use vars qw(@ISA);
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Exon;
 
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 =head2 new
 

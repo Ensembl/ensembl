@@ -22,9 +22,9 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Utils::GeneCluster;
 use Bio::EnsEMBL::Utils::TranscriptCluster;
 use Bio::EnsEMBL::Utils::GeneComparison;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 ####################################################################################
 

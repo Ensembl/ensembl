@@ -65,7 +65,7 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::DB::ObjI;
 use Bio::EnsEMBL::FeatureFactory;
 use DBI;
@@ -73,7 +73,7 @@ use Bio::EnsEMBL::DBSQL::SQL;
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
 ### Should not be an ObjI!
-@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::EnsEMBL::Root);
 
 sub new {
   my($pkg, @args) = @_;

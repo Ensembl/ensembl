@@ -45,9 +45,9 @@ package Bio::EnsEMBL::Virtual::StaticContig;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::RootI
+# Object preamble - inherits from Bio::EnsEMBL::Root
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Virtual::Contig;
 use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::Annotation;

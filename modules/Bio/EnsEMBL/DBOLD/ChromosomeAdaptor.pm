@@ -45,7 +45,7 @@ package Bio::EnsEMBL::DBOLD::ChromosomeAdaptor;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::RootI
+# Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::DBOLD::BaseAdaptor;
 use Bio::EnsEMBL::Chromosome;

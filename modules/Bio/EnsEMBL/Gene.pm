@@ -42,14 +42,14 @@ use strict;
 
 # Object preamble - inheriets from Bio::SeqFeature::Generic
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Transcript;
 use Bio::DBLinkContainerI;
 use Bio::Annotation::DBLink;
 use Bio::EnsEMBL::DBEntry;
 
 
-@ISA = qw(Bio::Root::RootI Bio::DBLinkContainerI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::DBLinkContainerI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called

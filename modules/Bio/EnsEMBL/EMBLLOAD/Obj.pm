@@ -38,8 +38,8 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::EMBLLOAD::Obj;
 use vars qw(@ISA);
 use strict;
-use Bio::Root::RootI;
-@ISA = qw(Bio::Root::RootI);
+use Bio::EnsEMBL::Root;
+@ISA = qw(Bio::EnsEMBL::Root);
 
 use Bio::SeqIO;
 use Bio::EnsEMBL::Gene;

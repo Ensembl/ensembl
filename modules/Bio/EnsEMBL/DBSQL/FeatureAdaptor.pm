@@ -223,7 +223,7 @@ sub store {
 	#
 	# Retarget to new adaptor scheme
 	#
-
+	print STDERR "storing ".$feature."\n";
 	if( $feature->isa('Bio::EnsEMBL::DnaPepAlignFeature') ) {
 	    $protein_align_adaptor->store($contig_internal_id,$feature);
 	} elsif ( $feature->isa('Bio::EnsEMBL::DnaDnaAlignFeature') ) {

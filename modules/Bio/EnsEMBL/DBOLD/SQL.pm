@@ -9,10 +9,10 @@ use Bio::EnsEMBL::DBOLD::SQL::mysql;
 use Bio::EnsEMBL::DBOLD::SQL::oracle;
 use Bio::EnsEMBL::DBOLD::SQL::sybase;
 use Bio::EnsEMBL::DBOLD::SQL::StatementHandle;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use vars '@ISA';
 
-@ISA = qw{ DBI::db Bio::Root::RootI };
+@ISA = qw{ DBI::db Bio::EnsEMBL::Root };
 
 sub new {
     my( $pkg, $dsn, $user, $password ) = @_;

@@ -2,8 +2,8 @@ package Bio::EnsEMBL::ChromosomeStats;
 
 use strict;
 use vars qw(@ISA);
-use Bio::Root::RootI;
-@ISA = qw(Bio::Root::RootI);
+use Bio::EnsEMBL::Root;
+@ISA = qw(Bio::EnsEMBL::Root);
 
 
 

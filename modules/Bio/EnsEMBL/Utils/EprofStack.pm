@@ -43,9 +43,9 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 
 sub new { 

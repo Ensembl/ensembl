@@ -96,9 +96,9 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use vars qw(@ISA);
 use strict;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 sub new {
     my ($class,$dbobj) = @_;

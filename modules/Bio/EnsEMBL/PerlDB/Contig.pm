@@ -52,9 +52,9 @@ use strict;
 use Bio::EnsEMBL::DB::ContigI;
 
 # Object preamble - inheriets from Bio::Root::Root
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::ContigI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::DB::ContigI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -62,7 +62,7 @@ use Bio::Root::RootI;
 sub new {
   my($class,@args) = @_;
 
-  print STDERR $class."\n";
+  
   
   my $self = bless {
 		    _repeat_array  => [],

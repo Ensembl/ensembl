@@ -44,12 +44,12 @@ package Bio::EnsEMBL::AlignBlock;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::RootI
+# Object preamble - inherits from Bio::EnsEMBL::Root
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::SeqFeatureI;
 
-@ISA = qw(Bio::Root::RootI Bio::SeqFeatureI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::SeqFeatureI);
 
 # new() is written here 
 

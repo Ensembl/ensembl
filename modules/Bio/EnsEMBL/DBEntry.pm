@@ -40,7 +40,7 @@ use vars qw(@ISA $AUTOLOAD);
 use strict;
 
 
-@ISA = qw( Bio::Root::RootI Bio::Annotation::DBLink );
+@ISA = qw( Bio::EnsEMBL::Root Bio::Annotation::DBLink );
 
 
 sub new {

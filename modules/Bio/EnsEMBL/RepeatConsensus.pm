@@ -5,9 +5,10 @@ package Bio::EnsEMBL::RepeatConsensus;
 
 use strict;
 use Bio::PrimarySeqI;
+use Bio::EnsEMBL::Root;
 use vars '@ISA';
 
-@ISA = ('Bio::PrimarySeqI');
+@ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
 
 sub new {
     my( $pkg ) = @_;

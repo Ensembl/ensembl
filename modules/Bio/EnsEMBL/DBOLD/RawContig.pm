@@ -52,7 +52,7 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
 use Bio::EnsEMBL::DBOLD::Obj;
 use Bio::EnsEMBL::DBOLD::Feature_Obj;
@@ -66,7 +66,7 @@ use Bio::EnsEMBL::Chromosome;
 use Bio::EnsEMBL::DBOLD::DBPrimarySeq;
 use Bio::PrimarySeq;
 
-@ISA = qw(Bio::EnsEMBL::DB::RawContigI Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::DB::RawContigI Bio::EnsEMBL::Root);
 
 sub new {
     my( $pkg, @args ) = @_;

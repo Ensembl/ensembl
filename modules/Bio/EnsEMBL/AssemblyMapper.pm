@@ -58,12 +58,12 @@ package Bio::EnsEMBL::AssemblyMapper;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::RootI
+# Object preamble - inheriets from Bio::EnsEMBL::Root
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Mapper;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 
 sub new {

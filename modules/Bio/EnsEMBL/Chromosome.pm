@@ -45,12 +45,12 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::Chromosome;
 use vars qw(@ISA);
 use strict;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Species;
 
 
 
-@ISA = qw( Bio::Root::RootI );
+@ISA = qw( Bio::EnsEMBL::Root );
 
 
 sub new {

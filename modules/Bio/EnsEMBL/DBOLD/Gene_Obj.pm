@@ -54,7 +54,7 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::DB::Gene_ObjI;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
@@ -67,7 +67,7 @@ use Bio::EnsEMBL::DBOLD::DummyStatement;
 use Bio::EnsEMBL::DB::Gene_ObjI;
 use Bio::EnsEMBL::DBOLD::DBEntryAdaptor;
 
-@ISA = qw(Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::DB::Gene_ObjI Bio::EnsEMBL::Root);
 
 
 sub new {

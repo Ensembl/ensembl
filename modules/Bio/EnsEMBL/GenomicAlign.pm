@@ -46,11 +46,11 @@ use strict;
 use Bio::EnsEMBL::AlignBlock;
 use Bio::EnsEMBL::AlignBlockSet;
 
-# Object preamble - inherits from Bio::Root::RootI
+# Object preamble - inherits from Bio::EnsEMBL::Root
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 # new() is written here 
 

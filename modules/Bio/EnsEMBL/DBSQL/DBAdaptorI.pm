@@ -31,10 +31,10 @@ package Bio::EnsEMBL::DBSQL::DBAdaptorI;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::DB::ObjI;
 
-@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::EnsEMBL::Root);
 
 sub new {};
 1;

@@ -53,19 +53,20 @@ package Bio::EnsEMBL::Archive::Seq;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::RootI
+# Object preamble - inherits from Bio::EnsEMBL::Root
 # (inherits for methods like throw and rearrange)
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 sub new {
   my($class, @args) = @_;
   
-  my $self = $class->SUPER::new(@args);
-  
+  my $self = {};
+  bless $self, $class;
+
    my ($dbid,$name,$type,$created,$adaptor) = $self->_rearrange([qw(
 					  DBID
 					  NAME

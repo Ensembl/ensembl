@@ -46,10 +46,10 @@ use Bio::EnsEMBL::DB::CloneI;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
 
-@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::CloneI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::DB::CloneI);
 
 sub new {
   my($class,@args) = @_;

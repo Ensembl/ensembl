@@ -54,14 +54,14 @@ package Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::RootI
+# Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::DnaPepAlignFeature;
 use Bio::EnsEMBL::PepDnaAlignFeature;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
-# new() can be inherited from Bio::Root::RootI
+# new() can be inherited from Bio::EnsEMBL::Root
 
 
 =head2 fetch_by_dbID

@@ -91,10 +91,10 @@ use strict;
 
 
 use Bio::EnsEMBL::FeaturePairI;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
 
-@ISA = qw(Bio::EnsEMBL::FeaturePairI Bio::Root::RootI );
+@ISA = qw(Bio::EnsEMBL::FeaturePairI Bio::EnsEMBL::Root);
 
 
 sub new {

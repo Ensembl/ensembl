@@ -161,10 +161,10 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::DB::ExternalFeatureFactoryI;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use vars qw(@ISA);
 
-@ISA = ( 'Bio::Root::RootI');
+@ISA = ( 'Bio::EnsEMBL::Root');
 
 =head2 get_Ensembl_SeqFeatures_contig
 

@@ -51,7 +51,7 @@ package Bio::EnsEMBL::Archive::DBSQL::DBAdaptor;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use DBI;
 use Bio::EnsEMBL::DBSQL::SQL;
 use Bio::EnsEMBL::Archive::DBSQL::VersionedSeqAdaptor;
@@ -61,7 +61,7 @@ BEGIN {
     print STDERR "\n\n**** Loading Archive ******\n\n";
 };
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 sub new {
   my($class, @args) = @_;

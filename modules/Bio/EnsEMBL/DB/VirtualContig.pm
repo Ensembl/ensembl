@@ -78,7 +78,7 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::DB::VirtualContigI;
 use Bio::EnsEMBL::DB::VirtualMap;
 use Bio::EnsEMBL::DB::VirtualPrimarySeq;
@@ -87,7 +87,7 @@ use Bio::EnsEMBL::Utils::Eprof qw( eprof_start eprof_end );
 
 my $VC_UNIQUE_NUMBER = 0;
 
-@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::VirtualContigI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::DB::VirtualContigI);
 
 # new() is inherited from Bio::Root::Object
 

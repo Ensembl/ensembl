@@ -34,7 +34,7 @@ use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DB::ContigI;
 
-@ISA = qw( Bio::Root::RootI Bio::EnsEMBL::DB::ContigI );
+@ISA = qw( Bio::EnsEMBL::Root Bio::EnsEMBL::DB::ContigI );
 
 =head2 new
 

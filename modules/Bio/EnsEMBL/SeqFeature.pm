@@ -71,7 +71,7 @@ use Bio::EnsEMBL::SeqFeatureI;
 use Bio::EnsEMBL::Analysis;
 
 
-@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::SeqFeatureI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::SeqFeatureI);
 
 sub new {
   my($caller,@args) = @_;
@@ -661,7 +661,6 @@ sub seq{
 
 sub entire_seq{
    my ($self) = @_;
-
    return $self->{'_gsf_seq'};
 }
 

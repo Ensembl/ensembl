@@ -56,7 +56,7 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::DBOLD::Obj;
 use Bio::EnsEMBL::DB::Gene_ObjI;
 use Bio::EnsEMBL::Gene;
@@ -72,15 +72,15 @@ use Bio::EnsEMBL::DB::Gene_ObjI;
 use Bio::EnsEMBL::DBOLD::ObjForeign;
 
 @ISA = qw(Bio::EnsEMBL::DBOLD::ObjForeign 
-          Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::RootI
+          Bio::EnsEMBL::DB::Gene_ObjI Bio::EnsEMBL::Root
           Bio::EnsEMBL::DBOLD::Gene_Obj);
 #
 
 sub new {  # calls on ObjForeign::new
     my ($class, @args) = @_;
-    my $self= $class->SUPER::new(@args);
+    my $self= {};
     bless $self, $class;
-    $self;
+    return $self;
 }
 
 =head2 delete

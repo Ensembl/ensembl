@@ -62,7 +62,7 @@ use Bio::EnsEMBL::AceDB::Update_Obj;
 use Time::Local 'timelocal';
 use Ace;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 sub new {
     my($pkg,@args) = @_;

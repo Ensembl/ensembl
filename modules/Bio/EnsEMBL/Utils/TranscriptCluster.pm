@@ -14,7 +14,7 @@ Each TranscriptCluster object holds the IDs of the transcripts clustered and the
 of each one (taken from the start and end coordinates of the first and last exon in the correspondig
 get_all_Exons array)
 
-It inherits from Bio::Root::RootI and Bio::RangeI. A TranscriptCluster is a range in the sense that it convers
+It inherits from Bio::EnsEMBL::Root and Bio::RangeI. A TranscriptCluster is a range in the sense that it convers
 a defined extent of genomic sequence. It is also possible to check whether two clusters overlap (in range),
 is included into another cluster, etc...
 
@@ -32,10 +32,10 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::Gene;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::RangeI;
 
-@ISA = qw(Bio::Root::RootI,Bio::RangeI);
+@ISA = qw(Bio::EnsEMBL::Root,Bio::RangeI);
 
 =head1 METHODS
 

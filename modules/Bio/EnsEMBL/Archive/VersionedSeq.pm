@@ -55,18 +55,19 @@ package Bio::EnsEMBL::Archive::VersionedSeq;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::RootI
+# Object preamble - inherits from Bio::EnsEMBL::Root
 # (inherits for methods like throw and rearrange)
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::PrimarySeqI;
 
-@ISA = qw(Bio::Root::RootI Bio::PrimarySeqI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
 
 sub new {
   my($class, @args) = @_;
   
-  my $self = $class->SUPER::new(@args);
+  my $self = {};
+  bless $self, $class;
   $self->{'_future_vseqs'} = [];
   $self->{'_relatives'} = [];
   

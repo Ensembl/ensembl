@@ -20,7 +20,7 @@
     'port'          => '3306',
     
     # Password if needed
-    'pass'      => undef,
+    'pass'      => ,
     
     # File containing the datbase schema in SQL format - mandatory
 

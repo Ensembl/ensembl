@@ -39,9 +39,9 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::EMBLLOAD::Contig;
 use vars qw(@ISA);
 use strict;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::ContigI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::DB::ContigI);
 use Bio::EnsEMBL::EMBLLOAD::Obj;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::DBEntry;

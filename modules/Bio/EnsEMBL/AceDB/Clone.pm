@@ -47,9 +47,9 @@ package Bio::EnsEMBL::AceDB::Clone;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::EnsEMBL::DB::CloneI Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::DB::CloneI Bio::EnsEMBL::Root);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called

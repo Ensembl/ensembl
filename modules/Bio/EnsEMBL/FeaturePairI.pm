@@ -61,7 +61,7 @@ use Carp;
 
 use Bio::SeqFeatureI;
 use Bio::EnsEMBL::SeqFeatureI;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
 @ISA = qw(Bio::EnsEMBL::SeqFeatureI);
 

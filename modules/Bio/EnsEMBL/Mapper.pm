@@ -55,15 +55,15 @@ package Bio::EnsEMBL::Mapper;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::RootI
+# Object preamble - inherits from Bio::EnsEMBL::Root
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Mapper::Pair;
 use Bio::EnsEMBL::Mapper::Unit;
 use Bio::EnsEMBL::Mapper::Coordinate;
 use Bio::EnsEMBL::Mapper::Gap;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 
 sub new {

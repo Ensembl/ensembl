@@ -59,7 +59,7 @@ use strict;
 
 use Bio::EnsEMBL::Exon;
 
-@ISA = qw(Bio::EnsEMBL::Exon Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Exon Bio::EnsEMBL::Root);
 
 sub _initialize {
     my ($self,@args) = @_;

@@ -63,7 +63,7 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 #use Bio::EnsEMBL::DBOLD::Obj;
 
 use Bio::EnsEMBL::Ghost;
@@ -77,7 +77,7 @@ use Bio::EnsEMBL::DBOLD::DummyStatement;
 
 
 @ISA = qw(Bio::EnsEMBL::DBOLD::ObjForeign
-          Bio::Root::RootI 
+          Bio::EnsEMBL::Root 
           Bio::EnsEMBL::DBOLD::Feature_Obj
          );
 

@@ -40,7 +40,7 @@ package Bio::EnsEMBL::DB::WebExternalFeatureFactoryI;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::RootI
+# Object preamble - inheriets from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::DB::ExternalFeatureFactoryI;
 

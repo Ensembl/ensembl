@@ -56,14 +56,14 @@ package Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::RootI
+# Object preamble - inherits from Bio::EnsEMBL::Root
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Virtual::StaticContig;
 use Bio::EnsEMBL::DBSQL::RawContig;
 use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 # new() is written here 
 

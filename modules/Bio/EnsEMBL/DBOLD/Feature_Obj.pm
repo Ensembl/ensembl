@@ -53,7 +53,7 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 #use Bio::EnsEMBL::DBOLD::Obj;
 
 use Bio::EnsEMBL::Gene;
@@ -66,7 +66,7 @@ use Bio::EnsEMBL::DBOLD::DummyStatement;
 
 
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 # new() is inherited from Bio::Root::Object
 

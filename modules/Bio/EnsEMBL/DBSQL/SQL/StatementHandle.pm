@@ -5,10 +5,10 @@ package Bio::EnsEMBL::DBSQL::SQL::StatementHandle;
 
 use strict;
 use DBI;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use vars '@ISA';
 
-@ISA = qw{ DBI::st Bio::Root::RootI };
+@ISA = qw{ DBI::st Bio::EnsEMBL::Root };
 
 
 sub execute {

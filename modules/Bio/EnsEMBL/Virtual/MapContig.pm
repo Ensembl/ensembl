@@ -61,10 +61,10 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::Virtual::MapContig;
 use vars qw(@ISA);
 use strict;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::SeqFeatureI;
 
-@ISA = qw(Bio::SeqFeatureI Bio::Root::RootI);
+@ISA = qw(Bio::SeqFeatureI Bio::EnsEMBL::Root);
 
 sub new {
     my ($class,@args) = @_;

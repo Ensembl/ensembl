@@ -55,9 +55,9 @@ use Bio::EnsEMBL::Utils::EprofStack;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::Root::RootI Exporter);
+@ISA = qw(Bio::EnsEMBL::Root Exporter);
 @EXPORT_OK = qw(eprof_start eprof_end eprof_dump );
 
 my $global;

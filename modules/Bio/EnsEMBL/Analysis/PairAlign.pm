@@ -67,11 +67,13 @@ use vars qw(@ISA);
 use strict;
 
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 sub new {
     my($class,@args) = @_;
-    my $self = $class->SUPER::new(@args);
+    my $self = {};
+    bless $self, $class;
+
     $self->{'_homol'} = [];
     
     return $self; # success - we hope!

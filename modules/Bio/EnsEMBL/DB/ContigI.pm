@@ -79,9 +79,9 @@ use vars ('@ISA');
 use strict;
 use Bio::EnsEMBL::VirtualGene;
 use Bio::SeqI;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
-@ISA = qw( Bio::SeqI Bio::Root::RootI );
+@ISA = qw( Bio::EnsEMBL::Root Bio::SeqI );
 
 
 =head2 primary_seq

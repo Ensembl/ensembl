@@ -66,10 +66,9 @@ $contig->international_name($name);
 
 $clone->add_Contig($contig);
 
-print STDERR "CONTIG ".$contig->primary_seq()."\n";
+
 ok($contig);
 
-print STDERR "contig internaltional name = ".$contig->international_name."\n";
 
 $clone_ad->store($clone);
 

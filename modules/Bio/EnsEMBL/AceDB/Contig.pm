@@ -41,7 +41,7 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::Seq;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::AceDB::Obj;
 use Bio::EnsEMBL::ContigOverlap;
 use Bio::EnsEMBL::ContigOverlapHelper;
@@ -55,7 +55,7 @@ use Bio::SeqFeature::Generic;
 
 
 
-@ISA = qw(Bio::EnsEMBL::DB::RawContigI  Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::DB::RawContigI  Bio::EnsEMBL::Root);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called

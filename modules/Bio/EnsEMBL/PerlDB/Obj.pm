@@ -42,13 +42,13 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::DB::ObjI;
 use Bio::EnsEMBL::PerlDB::Contig;
 use Bio::EnsEMBL::PerlDB::Clone;
 
 
-@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::ObjI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::DB::ObjI);
 
 sub new {
   my($class,@args) = @_;

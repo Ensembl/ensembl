@@ -46,12 +46,12 @@ package Bio::EnsEMBL::DBOLD::ExternalWrapper;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::RootI
+# Object preamble - inheriets from Bio::EnsEMBL::Root
 
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::DB::ExternalFeatureFactoryI;
 
-@ISA = qw(Bio::EnsEMBL::DB::ExternalFeatureFactoryI Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::DB::ExternalFeatureFactoryI Bio::EnsEMBL::Root);
 
 sub new {
   my($class,$dbobj) = @_;

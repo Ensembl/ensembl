@@ -50,7 +50,7 @@ use Time::Local;
 use vars qw(@ISA);
 use strict;
 
-@ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::Root::RootI );
+@ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::EnsEMBL::Root );
 
 
 =head2 new

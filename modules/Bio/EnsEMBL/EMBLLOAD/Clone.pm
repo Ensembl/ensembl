@@ -45,13 +45,13 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::EMBLLOAD::Clone;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::EMBLLOAD::Contig;
 use Bio::EnsEMBL::DB::CloneI;
 
-@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::CloneI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::DB::CloneI);
 use Bio::EnsEMBL::Translation;
 
 # Object preamble - inheriets from Bio::Root::Object

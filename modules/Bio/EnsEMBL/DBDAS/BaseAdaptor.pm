@@ -50,9 +50,9 @@ methods are usually preceded with a _
 package Bio::EnsEMBL::DBDAS::BaseAdaptor;
 use vars qw(@ISA);
 use strict;
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 sub new {
     my ($class,$dbobj) = @_;
