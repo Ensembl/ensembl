@@ -221,7 +221,6 @@ sub process_dir {
   else{
     die "directory does not exist $dir\n";
   }
-  print STDERR $dir."\n";
   return $dir;
 }
 
