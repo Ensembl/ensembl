@@ -510,11 +510,11 @@ sub _make_translation {
         $translation_end = [ $end, $exonid ] ;
     }
 
-    ### $translation_start/end are in fpc coords; have to translate them
-    ### to exon coords, since that's what's expected now
-    
     # New translation object
     my $translation = Bio::EnsEMBL::Translation->new;
+#    my $tl_id = $transcript->id;
+#    $tl_id =~ s/ENST/ENSQ/g;            # invent an id?
+    ### note: re-using transcript_ids for translation_id's, for simplicity!
     $translation->id($transcript->id);
     $translation->version(1);
     

@@ -33,20 +33,68 @@ sub  read_igis_from_summary {
         # Extract the extra information from the final field of the GTF line.
         my ($igi, $gene_name, $native_ids, $transcript_id, $exon_num, $exon_id) =
           parse_group_field($group_field);
+
+        unless ($igi) {
+            warn("no  igi; skipping: '$_'\n");
+        }
         
         $big_hash{$igi} = $native_ids;
     }                                   # while <$IN>
     return \%big_hash;
 }                                       # read_igis_from_summary
 
+### put all the transcript_ids found in the summary into one big hash and
+### return it. Key is transcript id; value is the summed length of all its
+### features.
+sub read_transcript_ids_from_summary {
+    my ($IN)  = @_;                     
+    my %bighash = undef;
+
+    SUMMARY_LINE:
+    while (<$IN>) {
+        next SUMMARY_LINE if /^#/;
+          next SUMMARY_LINE if /^\s*$/;
+        chomp;
+    
+        my @fields = split "\t", $_;
+        my ($seq_name, $source, $feature,
+            $start,  $end,    $score,
+            $strand, $phase,  $group_field)  = @fields;
+        $feature = lc $feature;
+        
+        unless ($group_field) {
+            warn("no group field: skipping : '$_'\n");
+            next SUMMARY_LINE ;
+        }
+        
+        # Extract the extra information from the final field of the GTF line.
+        my ($igi, $gene_name, $native_ids, $transcript_ids, $exon_num, $exon_id) =
+          parse_group_field($group_field);
+
+        if (@$transcript_ids==0) {
+            die("no transcript_ids; skipping: '$_'\n");
+        }
+
+        if (@$transcript_ids==0) {
+            die("no transcript_ids: '$_'\n");
+        }
+
+        foreach my $tid ( @$transcript_ids ) {
+            $big_hash{$tid} ++;
+        }
+        
+    }                                   # while <$IN>
+    return \%big_hash;
+}                                       # read_transcript_ids_from_summary
+
 
 # return a list of fields from a gtf file. 
-# the native_id is actually a list, since the 
-# summary files usually contain more than one native id. 
+# native_id and trancript_id are lists, since the 
+# summary files usually contain more than one native id and transcript_id
 sub parse_group_field {
     my( $group_field ) = @_;
     
-    my ($igi, $gene_name, @native_ids, $transcript_id, $exon_num, $exon_id);
+    my ($igi, $gene_name, @native_ids, @transcript_ids, $exon_num, $exon_id);
 
     # Parse the group field
     foreach my $tag_val (split /;/, $group_field) {
@@ -70,7 +118,7 @@ sub parse_group_field {
             push @native_ids,  $value;
         }
         elsif ($tag eq 'transcript_id') {
-            $transcript_id = $value;
+            push @transcript_ids, $value;
         }
         elsif ($tag eq 'exon_number') {
             $exon_num = $value;
@@ -82,7 +130,7 @@ sub parse_group_field {
             #warn "Ignoring group field element: '$tag_val'\n";
         }
     }
-    return($igi, $gene_name, \@native_ids, $transcript_id, $exon_num, $exon_id);
+    return($igi, $gene_name, \@native_ids, \@transcript_ids, $exon_num, $exon_id);
 }                                       # parse_group_field
 
 
