@@ -1004,7 +1004,7 @@ sub fetch_VirtualContig_by_mapfrag {
    return $self->fetch_VirtualContig_by_chr_start_end(
        $mapfrag->seq,
        $start-$halfsize,
-       $end+$size-$halfsize
+       $start+$size-$halfsize
    );
 }
 
