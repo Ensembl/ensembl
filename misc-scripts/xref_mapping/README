@@ -1,4 +1,5 @@
-THe following is the initial first draft/initial mind dump which will be tidiedup. 
+THe following is the initial first draft/initial mind dump which will be tidied
+up. 
 
 The Xref tables are created and populated by the scripts in this directory.
 The process can be viewed as a two part process. 
@@ -69,6 +70,30 @@ entries loaded. These can then be mapped to the ENSEMBL entitys with the
 xref_mapper.pl script.
 
 
+To add new data to the xrefs you will have to edit sql/populate_metadata.sql
+and/or type in the sql.
+
+Add a new source you will insert a new source code. i.e.
+
+INSERT INTO source VALUES (2000, 'NEW', 1, 'Y', 4);
+
+Becouse some sources are dependent on others being loaded the last argument is
+the order. Lower numbers are processed first. 
+
+
+You will also have to specify the files to down load and the parser to use. 
+i.e.
+
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date,
+	upload_date, parser) VALUES (2000, 9606,'ftp://ftp.new.org/new.gz', '',
+	now(), now(), "NEWParser");
+
+You will have to create XrefParser/NEWparser.pm.
+
+
+
+
+
 The parsers.
 
 
@@ -132,8 +157,8 @@ for that particular species.
 
 
 NOTE: RefSeqParser.pm also exists and can be used to parse the fasta type
-files for the Refseq's.  At the moment The genbank style files are passed for 
-both protein and rna files. But the xrefs are on a whole are just duplicated
+files for the Refseq's.  At the moment the genbank style files are passed for 
+both protein and rna files. But the xrefs are on a whole just duplicated
 as they contain bascially the same xref data. A decision will have to be made
 as to the benefits/disadvantages of this. The alternative is to pass the rna 
 as a fasta. (which i think is what the old system used to do, judging by the
