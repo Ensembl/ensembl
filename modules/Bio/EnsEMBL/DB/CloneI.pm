@@ -400,7 +400,7 @@ sub get_AnnSeq {
     $as = Bio::EnsEMBL::AnnSeq->new();
     
     $as->embl_id($self->embl_id());
-    $as->sv($self->sv());
+    $as->sv($self->embl_version());
     $as->htg_phase($self->htg_phase());
 
     $as->seq($seq);

@@ -87,7 +87,9 @@ use strict;
 
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::EMBL_Dump;
-use Bio::EnsEMBL::TimDB::Obj;
+
+# we run time load tim db now
+#use Bio::EnsEMBL::TimDB::Obj;
 
 use Bio::AnnSeqIO;
 use Bio::SeqIO;
@@ -196,9 +198,18 @@ if( $fromfile == 1 ) {
 
 if ( $usetimdb == 1 ) {
 
-    # EWAN: no more - you should be able to load as many clones as you like!
-    unless (@clones) {
-	push(@clones,'dJ271M21');
+    # run time loading of TimDB so sites with no
+    # timdb dependencies can loaded. Yes - this is not pretty.
+    # Yes - we will get rid of it as soon as we can.
+
+    my $requirestr = "Bio::EnsEMBL::TimDB::Obj.pm";
+    $requirestr =~ s/::/\//g;
+
+    eval {
+	require $requirestr;
+    };
+    if( $@ ){
+	print STDERR "Unable to load TimDB, due to\n $@\n";
     }
 
     # don't specify clone list if want to do getall, so whole db loads
@@ -214,19 +225,6 @@ if ( $usetimdb == 1 ) {
     my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
     $db = Bio::EnsEMBL::DBLoader->new($locator);
 
-}
-
-# test report number of clones in db
-my $debug_lists=0;
-if($debug_lists){
-    # all clones
-    my @list=$db->get_all_Clone_id();
-    print scalar(@list)." clones returned in list\n";
-    # clones updated from before when I first started updating
-    @list=$db->get_updated_Clone_id('939220000');
-    # clones updated from now (should be none)
-    @list=$db->get_updated_Clone_id(time);
-    exit 0;
 }
 
 if ( $getall == 1 ) {
@@ -249,6 +247,13 @@ if($outfile){
 }else{
     $OUT=\*STDOUT;
 }
+
+
+#
+# Main loop over clone ids...
+#
+#
+#
 
 foreach my $clone_id ( @clones ) {
 

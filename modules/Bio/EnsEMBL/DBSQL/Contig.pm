@@ -48,6 +48,7 @@ use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DB::ContigI;
 use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::Homol;
+use Bio::EnsEMBL::Analysis::Repeat;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
 # new() is inherited from Bio::Root::Object
