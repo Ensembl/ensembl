@@ -93,7 +93,7 @@ sub name {
 
 sub stats {
    my $self = shift;
-   return %{$self->{'stats'}};
+   return %{$self->{'stats'} || {}};
 }
 
 =head2 stat
