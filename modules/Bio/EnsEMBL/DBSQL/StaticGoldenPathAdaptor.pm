@@ -63,6 +63,7 @@ use strict;
 
 use Bio::Root::RootI;
 use Bio::EnsEMBL::Virtual::StaticContig;
+use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
 
 @ISA = qw(Bio::Root::RootI);
 
@@ -358,6 +359,9 @@ sub fetch_RawContigs_by_chr_start_end {
    # our start (doesn't overlap), and therefore get every
    # contig that overlaps.  This takes care of the condition
    # where our start and end lie within a contig.
+
+
+   &eprof_start('VC: fetch_rc_get');
    my $sth = $self->dbobj->prepare("
         SELECT c.id
           , c.internal_id
@@ -377,9 +381,13 @@ sub fetch_RawContigs_by_chr_start_end {
           AND NOT (st.chr_end < $start) 
         ");
    $sth->execute;
+   &eprof_end('VC: fetch_rc_get');
 
    my @out;
    my $cid;
+
+   &eprof_start('VC: rc_build');
+
    while( ( my $array = $sth->fetchrow_arrayref) ) {
 
        my ($id,$internalid,$dna,$clone,$seq_version,$chr_start,$chr_end) = @{$array};
@@ -399,6 +407,8 @@ sub fetch_RawContigs_by_chr_start_end {
 	     );
        push(@out,$rc);
    }
+
+   &eprof_end('VC: rc_build');
 
    return @out;
    
@@ -437,12 +447,15 @@ sub fetch_VirtualContig_by_chr_start_end {
 
     my $vc;
 
+    &eprof_start('VC: staticcontig build');
+
     eval {
       $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start,1,$end,@rc);
     } ;
     if( $@ ) {
       $self->throw("Unable to build a virtual contig at $chr, $start,$end\n\nUnderlying exception $@\n");
     }
+    &eprof_end('VC: staticcontig build');
 
     $vc->_chr_name($chr);
     $vc->dbobj($self->dbobj);
