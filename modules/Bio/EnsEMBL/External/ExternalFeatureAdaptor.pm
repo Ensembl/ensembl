@@ -292,7 +292,7 @@ sub fetch_all_by_Slice {
   } 
 
   #fetch the features in assembly coords
-  $out = $self->fetch_all_by_chr_start_end($slice_chr,$slice_start,$slice_end);
+  $out = $self->fetch_all_by_chr_start_end($slice_chr,$slice_start,$slice_end,$slice_strand);
 
   #convert from assembly coords to slice coords
   my($f_start, $f_end, $f_strand);
@@ -321,6 +321,10 @@ sub fetch_all_by_Slice {
 =head2 fetch_all_by_RawContig
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig
+  Arg [2]    : (optional) int $start
+               The start coordinate of the RawContig to retrieve features from.
+  Arg [3]    : (optional) int $end
+               The end coordinate of the RawContig to retrieve features from.
   Example    : @features = @{$self->fetch_all_by_RawContig($contig)};
   Description: Retrieves features on the region defined by the $contig arg in 
                RawContig coordinates. 
@@ -344,7 +348,7 @@ sub fetch_all_by_Slice {
 =cut
 
 sub fetch_all_by_RawContig {
-  my ($self, $contig) = @_;
+  my ($self, $contig, $start, $end) = @_;
 
   unless($contig && ref $contig && $contig->isa('Bio::EnsEMBL::RawContig')) {
     $self->throw("[$contig] is not a Bio::EnsEMBL::RawContig");
@@ -359,11 +363,13 @@ sub fetch_all_by_RawContig {
   if($self->_supported('CLONE')) {
     #retrieve features in clone coordinates
 
+    #if we didn't get start/end, fetch features from whole clone
     my $offset = $contig->embl_offset;
     my $length = $contig->length;
-
-    my $feats = $self->fetch_all_by_Clone($contig->clone, $offset, 
-					  $offset + $length - 1);
+    $start ||= $offset;
+    $end ||= $offset + $length - 1;
+    
+    my $feats = $self->fetch_all_by_Clone($contig->clone, $start, $end);
     
     my ($start, $end);
 
@@ -411,7 +417,8 @@ sub fetch_all_by_RawContig {
     #retrieve the features in assembly coordinates
     push @$out, @{$self->fetch_all_by_chr_start_end($coord->id, 
 						$coord->start, 
-						$coord->end)};
+						$coord->end,
+                                                $coord->strand)};
   }
     
   #map each feature from assembly coords back to raw contig coords
@@ -534,16 +541,12 @@ sub fetch_all_by_contig_name {
 sub fetch_all_by_Clone {
   my ($self, $clone, $clone_start, $clone_end) = @_;
 
-  #ignore $clone_start && $clone_end it is only useful when 
-  #fetch_all_by_RawContig is not implemented, but fetch_all_by_Clone is
-  #i.e. it can be used by people who override this method...
-
   unless($clone && ref $clone && $clone->isa('Bio::EnsEMBL::Clone')) {
     $self->throw("Clone must be a Bio::EnsEMBL::Clone");
   }
 
   if($self->_supported('CLONE')) {
-    return $self->fetch_all_by_clone_accession($clone->id, $clone->embl_acc,
+    return $self->fetch_all_by_clone_accession($clone->id, $clone->embl_id,
 					       $clone_start, $clone_end);
   }
   
@@ -654,6 +657,8 @@ sub fetch_all_by_clone_accession {
   Arg [3]    : int $end
                The end coordinate of the chromosomal region to retrieve 
                features from.
+  Arg [4]    : (optional) int $strand
+               The strand of the chromosomal region to retrieve features from.
   Example    : @features
   Description: Retrieves features on the region defined by the $chr_name,
                $start, and $end args in assembly (chromosomal) coordinates. 
@@ -672,7 +677,7 @@ sub fetch_all_by_clone_accession {
 =cut
 
 sub fetch_all_by_chr_start_end {
-  my ($self, $chr_name, $start, $end) = @_;
+  my ($self, $chr_name, $start, $end, $strand) = @_;
 
   unless($chr_name && defined $start && defined $end && $start < $end) {
     $self->throw("Incorrect start [$start] end [$end] or chr [$chr_name] arg");
@@ -717,12 +722,24 @@ sub fetch_all_by_chr_start_end {
   #fetch via rawcontig and convert to assembly coords
 
   #Figure out what contigs we are overlapping
-  my @cids = $mapper->list_contig_ids( $chr_name, $start, $end);
+  my @cids = $mapper->list_contig_ids($chr_name, $start, $end);
+  #convert start/end from assembly to contig coords if we know the strand
+  my %contig_coords;
+  if ($strand) {
+    my @mapped_contig = $mapper->map_coordinates_to_rawcontig($chr_name,
+                                                              $start,
+                                                              $end,
+                                                              $strand);
+    foreach my $mc (@mapped_contig) {
+      next if $mc->isa('Bio::EnsEMBL::Mapper::Gap');
+      $contig_coords{$mc->id} = [$mc->start, $mc->end];
+    }
+  }
     
   foreach my $cid (@cids) {
     my $contig = $contig_adaptor->fetch_by_dbID($cid);
     #retrieve features of each contig that we are overlapping
-    my $feats = $self->fetch_all_by_RawContig($contig);
+    my $feats = $self->fetch_all_by_RawContig($contig, @{$contig_coords{$cid}});
     
     foreach my $f (@$feats) {
       #convert each feature from contig coords to assembly coords
