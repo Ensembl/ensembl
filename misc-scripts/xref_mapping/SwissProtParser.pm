@@ -89,8 +89,7 @@ sub create_xrefs {
 
   my @xrefs;
 
-  my $previous_rs = $/;
-  $/ = "\/\/\n";
+  local $/ = "\/\/\n";
 
   while (<SWISSPROT>) {
 
@@ -164,8 +163,6 @@ sub create_xrefs {
   }
 
   close (SWISSPROT);
-
-  $/ = $previous_rs;
 
   print "Read " . scalar(@xrefs) ." xrefs from $file\n";
 
