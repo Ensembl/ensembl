@@ -26,7 +26,7 @@ package main;
              #################
 
              #'check'      => 'yes',
-             'check'      => 'no',
+             'check'      => '',
 
 
              #The mapping to known genes is assymetrical. This is due to the fact that's our gene prediction is quite fragmented compared to the manually curated genes             
@@ -40,10 +40,10 @@ package main;
              #For the mapping to predicted gene, the mapping is better to be more or less symetrical (the values given are indication on what should be used)
 
              #'query_idt'  => 40,
-             'pred_query_idt'    => ,
+             'pred_query_idt'  => ,
 
              #'target_idt  => 50,
-             'pred_target_idt'  => ,
+             'pred_target_idt' => ,
 
              #Location of the statistic file (only neede if you run get_stats.pl)
              #'statistic'  => '/work1/mongin/mapping/stats.txt',
@@ -69,8 +69,8 @@ package main;
 	     
              #Location of the sptr file in Swiss-Prot format containing the entries specific to the organism
 	     #'sptr_swiss'      => '/work1/mongin/mapping/primary/HS.SPTR',
-	     'sptr_swiss'      => '',
-	     	     
+	     #'sptr_swiss'      => '/ecs2/work1/lec/briggsae_peptides/briggsae.test',
+	     'sptr_swiss' => '',	     
              #Location of the file containing all refseq and all SP in fasta format (This file will be produced by runni             ng prepare_proteome.pl)
              #'human_fa'    => '/work1/mongin/mapping/kate/refseq_p.fa',
 	     'pmatch_input_fa'    => '',
@@ -159,23 +159,31 @@ package main;
 
                    'dros_ext_annot' => '',
 
+
+		   ##########
+		   #briggsae#
+                   ##########
+		 #get from wormbase ftp site ftp://ftp.wormbase.org/pub/wormbase/briggsae
+		   'briggsae_hybrid' => '',
+
+ 
              ###################
              #Database handling#
              ###################
 
              #DB name
              #'db' => 'proteintest',
-             'db' => '',
+             'db' => 'briggsae_protein',
 
              #Host name
              #'host' => 'ecs1d',
-             'host' => '',
+             'host' => 'ecs1f',
 
              #User
-             'dbuser' => '',
+             'dbuser' => 'ensadmin',
 
              #Password
-             'password' => '',
+             'password' => 'ensembl',
              
              #Port
              'port' => '',
@@ -186,7 +194,7 @@ package main;
 
              #Location for pmatch binaries
              #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
-             'pmatch' => '/nfs/disk65/ms2/bin/pmatch',
+             'pmatch' => 'pmatch',
 
              
 
@@ -197,14 +205,15 @@ package main;
              #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse, elegans, anopheles, zebrafish
              #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
              #'organism' => 'human'
-             'organism' => 'anopheles',
+             'organism' => 'briggsae',
              
 
              #OX (Organism taxonomy cross-reference) number
              #'ox' => '9606'
              #'ox' => '10090'
              #'ox' => '7227'
-             'ox'  => ''
+	     #'ox' => '6238' briggsae 	 
+             'ox'  => '6238'
 
  );
 
