@@ -796,11 +796,10 @@ sub get_all_ExternalGenes {
    #    $gene{$gene->id()} = $gene;
    #}
    #}
-
+   
    &eprof_start("external_gene_lift");
    my @array=$self->_gene_query(%gene);
    &eprof_end("external_gene_lift");
-
    $self->{'_external_gene_cache'} = \@array;
    return @array;
 }

@@ -458,9 +458,9 @@ sub get_array_supporting {
     
     defined($supporting) || $self->throw("You need to specify whether to retrieve supporting evidence or not!");
 
-    if( @geneid == 0 ) {
-	$self->throw("Attempting to create gene with no id");
-    }
+    #if( @geneid == 0 ) {
+	#$self->throw("Attempting to create gene with no id");
+    #}
    
     my (@out, @sup_exons);
     

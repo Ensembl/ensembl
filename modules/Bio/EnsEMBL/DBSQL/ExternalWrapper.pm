@@ -142,27 +142,32 @@ sub get_Ensembl_Genes_contig_list{
    my %seen;
    while( my ($id,$contig) = $sth->fetchrow_array ) {
        if (!$seen{$id}) {
-	   push (@{$gc{$id}},$contig);
+	   $gc{$id}=$contig;
 	   $seen{$id}++;
        }
    }
    push(@geneids,keys(%gc));
    if( scalar(@geneids) == 0 ) {
+       print STDERR "No ids here...\n";
      return();
    }
    my @genes;
 
    #Hash of array of gene objects by contig
-   my %cg;
    if (my $cgr = $self->cg) {
        #Get them from the cache
+       print STDERR "Getting them from the cache\n";
        my %cg = %$cgr;
        foreach my $c (@contigs) {
-	   push (@genes,$cg{$c});
+	   if ($cg{$c}) {
+	       push (@genes,@{$cg{$c}});
+	   }
        }
    }
    else {
-       @genes = $self->dbobj->gene_Obj->get_array_supporting('none',@genes);
+       my %cg;
+       print STDERR "Getting them normally\n";
+       @genes = $self->dbobj->gene_Obj->get_array_supporting('none',@geneids);
        foreach my $gene (@genes) {
 	   if (my $contig = $gc{$gene->id}) {
 	       push(@{$cg{$contig}},$gene);
@@ -170,6 +175,7 @@ sub get_Ensembl_Genes_contig_list{
        }
        $self->cg(\%cg);
    }
+   print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
    return @genes;
 }
 
