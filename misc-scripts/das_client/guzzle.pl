@@ -14,11 +14,7 @@ use strict;
 use warnings;
 
 # Where you keep non-standard modules (including Bioperl)
-use lib qw(/opt/local/libdata/perl5/i386-openbsd/5.8.0
-	   /opt/local/libdata/perl5/i386-openbsd
-	   /opt/local/libdata/perl5/site_perl/i386-openbsd
-	   /opt/local/libdata/perl5/site_perl
-	   /opt/local/libdata/perl5);
+use lib qw(/opt/perl/libdata/perl5/site_perl);
 
 use Bio::Das;
 use CGI::Pretty qw(:standard -compile);
@@ -51,7 +47,7 @@ my $tmpurl  = '/guzzle_tmp';
 #
 my $tmpdir  = $htdocs . $tmpurl;
 if (! (-d $tmpdir && -w $tmpdir && -x $tmpdir)) {
-    die "Check value of \$tmpdir, '$tmpdir' is not a writable directory\n";
+   # die "Check value of \$tmpdir, '$tmpdir' is not a writable directory\n";
 }
 
 # $query_page_title and $result_page_title:
@@ -157,7 +153,7 @@ my $use_graphics = 1;
 # e.g. Ensembl and Swissprot.
 #
 my $use_simple_mapping = 1;
-my $use_align_mapping = 1;
+my $use_align_mapping = 0; # not implemented
 
 # No servicable parts inside...
 #---------------------------------------------------------------
@@ -176,13 +172,6 @@ if ($use_graphics) {
 
     require File::Temp;
     import File::Temp 'tempfile';
-}
-
-if ($use_align_mapping) {
-    require Storable;
-    import Storable 'dclone';
-
-    require Guzzle::Mapper;
 }
 
 my $use_mapping = ($use_align_mapping || $use_simple_mapping);
@@ -258,108 +247,6 @@ sub do_query
 	    }
 
 	    close IN;
-	} elsif ($source->{MAPTYPE} eq 'align') {
-
-	    # Alignment mapping:
-	    #
-            # Notation: The ID requested by the user is the
-            #           "query ID".  The ID actually used by
-            #           the client to perform the query is the
-            #           "target ID".
-	    #
-            # 1. Find the target ID(s) that corresponds to
-            #    the requested query ID in the map file.  The
-            #    query ID should be found in column 1, and the
-            #    corresponding target ID(s) will then be in
-            #    column 2.  The map file is a comma-delimited
-            #    file and the query IDs in column 1 need not be
-            #    unique if one query ID corresponds to more than
-            #    one target ID.
-	    #
-            #    Column 3 and 4 should contain the start
-            #    of the alignment in the query and target
-            #    coordinate systems respecitvely.  The last
-            #    column should contain the Ensembl style cigar
-            #    string (e.g. "20MD340M2I20M" or somesuch
-            #    thing).
-	    #
-            # 2. Parse the cigar line and build a
-            #    Guzzle::Mapper object from it.
-	    #
-            # 3. If a range was specified, map it into the
-            #    target coordinate system.
-	    #
-	    # 4. Perform the query.
-	    #
-            # 5. Tag all occurances of the target ID in the
-            #    reply with the query ID.
-	    #
-            # 6. Map the features back to the query coordinate
-            #    system.
-            #
-
-	    open(IN, $source->{MAPFILE}) or
-		die "Can't open map data file '" .
-		    $source->{MAPFILE} ."': " .  $!;
-
-	    while (defined(my $line = <IN>)) {
-		chomp $line;
-		my ($qi, $ti, $qab, $tab, $C) = split /,/, $line;
-
-		last if ($qi gt $seqid);
-		next if ($qi ne $seqid);
-
-		my $map = new Guzzle::Mapper('queryCOORD', 'targetCOORD');
-
-		my ($qpos, $tpos) = ($qab, $tab);
-
-		# Parse the cigar string:
-		while ($C =~ /(\d*)([MID])/g) {
-		    my ($len, $op) = ($1, $2);
-		    my ($qadd, $tadd) = (0, 0);
-
-		    if ($len eq '') {
-			$len = 1;
-		    }
-
-		    if ($op eq 'M') {
-			$map->add_map_coordinates(
-			    'queryID', $qpos, $qpos + $len, 1,
-			    'targetID', $tpos, $tpos + $len);
-
-			$qpos += $len;
-			$tpos += $len;
-
-		    } elsif ($op eq 'D') {
-			$qpos += $len;
-		    } elsif ($op eq 'I') {
-			$tpos += $len;
-		    } else {
-			die "Unknown cigar string operation '$op'\n";
-		    }
-		}
-
-		if ($range ne '') {
-		    # Map the requested range.
-		    my @mapped = $map->map_coordinates(
-			'queryID', $start, $stop, 1,
-			'queryCOORD');
-
-		    foreach my $mapped (@mapped) {
-			next if ($mapped->isa('Guzzle::Mapper::Gap'));
-			$range = ':' . $mapped->start . ',' .  $mapped->end;
-			push(@{ $query{$ti}{SEGMENT} }, $ti . $range);
-		    }
-		} else {
-		    $query{$ti}{SEGMENT} = $ti . $range;
-		}
-
-		$query{$ti}{MAPPER} = $map;
-		push(@{ $query{$ti}{DSN} }, $source->{DSN});
-	    }
-
-	    close(IN);
-
 	} else {
 	    die "Unknown mapping type: " .
 		$source->{MAPTYPE} . "\n";
@@ -370,81 +257,13 @@ sub do_query
 	foreach my $query (values %query) {
 	    foreach my $dsn (@{ $query->{DSN} }) {
 		my $reply = $das->features(
-		    -dsn	    => $dsn,
-		    -segment    => $query->{SEGMENT});
+		    -dsn	=> $dsn,
+		    -segment	=> $query->{SEGMENT});
 
 		next if (!$reply->is_success);
 
 		#print $cgi->pre(Dumper($reply));
 
-		if (exists $query->{MAPPER} ) {
-		    # Map results using align mapper.
-		    # Scary stuff.  If this works, I deserve a beer.
-
-		    my @results = $reply->results;
-		    foreach my $result (@results) {
-			# Tag the string that we later use in the tabla
-			# and graphics.
-
-			# Do the reverse mapping from the target
-			# coodinate system into the query coordinate
-			# system.  This will yield an array of "gaps"
-			# and "coordinates".  If a range is mapped as a
-			# whole (no holes) then just change the start
-			# and stop coodinates.  Tag the result with
-			# "mapped", "fragmented", and "unmappable" as
-			# neccesary.
-
-			my @mapped = $query->{MAPPER}->map_coordinates(
-			    'targetID', $result->start, $result->stop, 1,
-			    'targetCOORD');
-
-			if (scalar @mapped > 1) {
-			    for my $i (0 .. (scalar @mapped - 1)) {
-
-				my $resultcopy = dclone($result);
-
-				$resultcopy->start($mapped[$i]->start);
-				$resultcopy->stop($mapped[$i]->end);
-
-				$resultcopy->group($result->group .
-				    " [fragmented in $seqid]");
-
-				# The following if-statment and
-				# push-call breaks the OO badly since
-				# it assumes that the underlying
-				# representation of the objects are
-				# known, but it was the only way I could
-				# make it work.
-
-				$resultcopy->{segment} = $result->{segment};
-
-				if ($mapped[$i]->
-					isa('Guzzle::Mapper::Gap')) {
-				    $resultcopy->{type}{label} .=
-					" [fragment " .  (1 + $i) .
-					" (not mapped)]";
-				} else {
-				    $resultcopy->{type}{label} .=
-					" [fragment " .  (1 + $i) . "]";
-				}
-
-				push(@{ $reply->{results}[1] }, $resultcopy);
-			    }
-			    # Will take it off the display
-			    $result->group('NOSHOW');
-
-			} elsif ($mapped[0]->isa('Guzzle::Mapper::Gap')) {
-			    $result->group($result->group .
-				" [unmappable in $seqid]");
-			} else {
-			    $result->group($result->group .
-				" [mapped to $seqid]");
-			    $result->start($mapped[0]->start);
-			    $result->stop($mapped[0]->end);
-			}
-		    }
-		}
 		push(@replies, $reply);
 	    }
 	}

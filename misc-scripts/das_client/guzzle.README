@@ -12,17 +12,18 @@
     ABOUT
 
     Guzzle consists  of the "guzzle.pl"  Perl script.   It is a  web based
-    client program that may be  used to interface a distributed annotation
-    server (DAS).   The name means "to  eat or drink quickly,  eagerly and
-    usually  in  large  amounts" (Cambridge  International  Dictionary  of
-    English).  More information about DAS may be found at [1].
+    client program, running as a CGI script, that may be used to interface
+    a  distributed annotation  server (DAS).   The name  means "to  eat or
+    drink  quickly,  eagerly  and  usually in  large  amounts"  (Cambridge
+    International Dictionary of English).   More information about DAS may
+    be found at [1].
 
     This particular  client was  developed at  the EBI to  be used  with a
-    Dazzle  server  [2] or  a  Lightweight  Distributed Annotation  Server
-    (LDAS)  [3] serving  protein  features, but  there  is really  nothing
-    stopping it from being  used as a more generic DAS  client for LDAS or
-    Dazzle  or  any  other server  that  serves  data  in  a way  that  is
-    consistent with version 1.5 of the DAS protocol.
+    Dazzle server [2] or a  ProServer server [3] serving protein features,
+    but there  is really  nothing stopping  it from being  used as  a more
+    generic DAS  client for ProServer or  Dazzle or any other  server that
+    serves data in  a way that is  consistent with version 1.5  of the DAS
+    protocol.
 
 
     USAGE
@@ -80,9 +81,6 @@
         Data::Serializer            required for being nice
                                     to DAS servers (optional)
 
-        Storable                    required for alignment
-                                    mapping (optional)
-
     Most of these Perl modules  have additional dependencies in themselves
     (e.g. the Bio::Graphics module depends on the Perl GD module, which in
     turn depends on the libgd C  library etc.), but they are all available
@@ -101,13 +99,6 @@
 
         cgi-bin/
             guzzle.pl
-            Guzzle/
-                Mapper.pm
-                Mapper/
-                    Coordinate.pm
-                    Gap.pm
-                    Pair.pm
-                    Unit.pm
 
 
     CONFIGURATION
@@ -140,8 +131,8 @@
     MAPPING
 
     The mapping  feature is a  new addition.  It  allows you to  provide a
-    simple comma-delimited file containing mapping information.  Currently
-    mappings may be of the following types:
+    simple  comma-delimited file  containing mapping  information (segment
+    name translation).  Currently mappings may be of the following types:
 
         * simple
             A  simple  mapping of  a  user-requested  ID into  one  or
@@ -155,22 +146,6 @@
 
           The  "queryID" is  what the  user requests  and need  not be
           unique.  The file needs to be sorted.
-
-
-        * align
-            Like the  simpe mapping, but  the mapping is  dependent on
-            alignment information.   This depends on  the availability
-            of  the  Storable  module  (which  is  standard  in  later
-            versions of Perl).
-
-          Format of map data file:
-
-            queryID,targetID,qAlignStart,tAlignStart,cigarLine
-
-          The  "queryID" is  what the  user requests  and need  not be
-          unique.  The cigar line is  on the Ensembl Cigar format, see
-          [5] (at  the end  of the  document).  The  file needs  to be
-          lexicographically sorted.
 
 
     BUGS
@@ -194,7 +169,7 @@
 
     [1] http://www.biodas/org/
     [2] http://www.biojava.org/dazzle/
-    [3] http://www.biodas.org/servers/
+    [3] http://www.sanger.ac.uk/proserver/
     [4] http://www.ensembl.org/
     [5] http://www.ensembl.org/Docs/wiki/html/EnsemblDocs/CigarFormat.html
 
