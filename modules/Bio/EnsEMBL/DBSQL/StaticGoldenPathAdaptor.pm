@@ -532,27 +532,21 @@ sub fetch_VirtualContig_by_chr_start_end {
         $self->throw("start must be less than end: parameters $chr:$start:$end");
     }
 
+    my $slice;
 
-    my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end);
-    # Ewan's note - We can have zero rawcontigs - when there is a gap
-        #or $self->throw("Got zero rawcontigs");
+    &eprof_start('Slice: staticcontig build');
 
-
-    my $vc;
-
-    &eprof_start('VC: staticcontig build');
+    my $type = $self->dbobj->static_golden_path_type();
 
     eval {
-      $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start,1,$end,@rc);
+      $slice = Bio::EnsEMBL::Slice->new($chr,$start,$end,$type);
     } ;
     if( $@ ) {
-      $self->throw("Unable to build a virtual contig at $chr, $start,$end\n\nUnderlying exception $@\n");
+      $self->throw("Unable to build a slice for $chr, $start,$end\n\nUnderlying exception $@\n");
     }
-    &eprof_end('VC: staticcontig build');
+    &eprof_end('Slice: staticcontig build');
 
-    $vc->_chr_name($chr);
-    $vc->dbobj($self->dbobj);
-    return $vc;
+    return $slice;
 }
 
 
@@ -1020,35 +1014,38 @@ sub fetch_VirtualContig_by_gene{
 =cut
 
 sub fetch_VirtualContig_by_fpc_name{
-    my ($self,$name) = @_;
+    my ($self,$fpc_name) = @_;
 
-    my @raw = $self->fetch_RawContigs_by_fpc_name($name);
-    my $start = $raw[0];
-    my $vc = Bio::EnsEMBL::Virtual::StaticContig->new(
-        $start->chr_start,
-        1,
-        -1,
-        @raw
-        );
+    my $type = $self->dbobj->static_golden_path_type();
 
-    $vc->dbobj($self->dbobj);
-    $vc->id($name);
+    my $sth = $self->dbobj->prepare("
+        SELECT $chromosome_id, $superctg_ori, MIN(chr_start), MAX(chr_end)
+        FROM assembly
+        WHERE superctg_name = '$fpc_name'
+        AND type = '$type'
+        GROUP by superctg_name
+        ");
 
-    # Fill in the chr_name
-    my $get_chr_name = $vc->dbobj->prepare(q{
-        SELECT chr_name
-        FROM static_golden_path
-        WHERE fpcctg_name = ?
-        LIMIT 1
-        });
-    $get_chr_name->execute($name);
-    my ($chr_name) = $get_chr_name->fetchrow;
-    $vc->_chr_name($chr_name);
+    $sth->execute;
 
-    return $vc;
+    my ($chr, $strand, $slice_start, $slice_end) = $sth->fetchrow_array;
+
+    my $slice;
+
+    &eprof_start('Slice: staticcontig build');
+
+    eval {
+      $slice = Bio::EnsEMBL::Slice->new($chr,$slice_start,$slice_end,$type);
+    } ;
+    if( $@ ) {
+      $self->throw("Unable to build a slice using its fpc_name for for $chr, $start,$end\n\nUnderlying exception $@\n");
+    }
+    &eprof_end('Slice: staticcontig build');
+
+    return $slice;
 }
 
-# depracated
+# deprecated
 =head2 fetch_VirtualContig_by_fpc_name_slice
 
  Title   : fetch_VirtualContig_by_fpc_name_slice
