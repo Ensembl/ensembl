@@ -101,13 +101,13 @@ sub generic_fetch {
   # left-joined table from the table list
   #
   my @left_join_list = $self->_left_join();
-  my %left_join_hash = map { $_->[0], $_->[1] } @left_join_list;
   my $left_join = '';
   my @tables;
   if(@left_join_list) {
+    my %left_join_hash = map { $_->[0], $_->[1] } @left_join_list;
     while(my $t = shift @tabs) {
       if( exists $left_join_hash{ $t->[0] } ) {
-	my $condition = $left_join_hash{ $t->[0] };
+        my $condition = $left_join_hash{ $t->[0] };
         my $syn = $t->[1];
         $left_join .=  "LEFT JOIN ".$t->[0]." $syn ON $condition ";
       } else {

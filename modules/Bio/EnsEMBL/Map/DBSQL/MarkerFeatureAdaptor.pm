@@ -240,7 +240,7 @@ sub store {
   my ($self, @mfs) = @_;
 
   my $analysis_adaptor = $self->db->get_AnalysisAdaptor();
-  my $slice_adaptor = $self->db->get_SliceAdapor();
+  my $slice_adaptor = $self->db->get_SliceAdaptor();
 
   foreach my $mf (@mfs) {
 

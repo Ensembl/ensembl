@@ -478,15 +478,15 @@ sub _parse_features {
     if( defined($f->strand()) && ($f->strand != $strand)) {
       throw("Inconsistent strands in feature array");
     }
-    if ($name ne $f->slice->name()) {
+    if ( defined($name) && $name ne $f->slice->name()) {
       throw("Inconsistent names in feature array [$name - ".
             $f->slice->name()."]");
     }
-    if ($hname ne $f->hseqname) {
+    if ( defined($hname) && $hname ne $f->hseqname) {
       throw("Inconsistent hit names in feature array [$hname - ".
             $f->hseqname . "]");
     }
-    if ($score ne $f->score) {
+    if ( defined($score) && $score ne $f->score) {
       throw("Inconsisent scores in feature array [$score - " .
             $f->score . "]");
     }
@@ -494,7 +494,7 @@ sub _parse_features {
       throw("Inconsistent pids in feature array [$percent - " .
             $f->percent_id . "]");
     }
-    if($pvalue != $f->p_value()) {
+    if(defined($pvalue) && $pvalue != $f->p_value()) {
       throw("Inconsistant p_values in feature arraw [$pvalue " .
             $f->p_value() . "]");
     }

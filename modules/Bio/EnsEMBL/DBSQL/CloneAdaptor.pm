@@ -62,6 +62,24 @@ sub fetch_by_accession {
 
   deprecate('Use SliceAdaptor::fetch_by_region instead');
 
+  #this unfortunately needs a version on the ned to work
+  if(! ($acc =~ /\./)) {
+    my $sth = $self->prepare("SELECT sr.name " .
+                             "FROM   seq_region sr, coord_system cs " .
+                             "WHERE  cs.name = 'clone' " .
+                             "AND    cs.coord_system_id = sr.coord_system_id ".
+                             "AND    sr.name LIKE '$acc.%'");
+    $sth->execute();
+    if(!$sth->rows()) {
+      $sth->finish();
+      throw("Clone $acc not found in database");
+    }
+
+    ($acc) = $sth->fetchrow_array();
+
+    $sth->finish();
+  }
+
   my $clone = $self->fetch_by_region('clone', $acc);
 
   #rebless slice into clone so old methods still work
@@ -95,13 +113,8 @@ sub fetch_by_accession_version {
 
 sub fetch_by_name {
   my ($self, $name) = @_;
-
   deprecate('Use SliceAdaptor::fetch_by_region instead');
-
-  my $clone = $self->fetch_by_region('clone', $name);
-
-  #rebless slice into clone so old methods still work
-  return bless($clone, 'Bio::EnsEMBL::Clone');
+  return $self->fetch_by_accession($name);
 }
 
 

@@ -77,12 +77,12 @@ sub clone {
   my $clone = $projection[0]->[2];
 
   #get full clone instead of potentially partial clone
-  $clone = $self->adaptor->fetch_by_region('clone', $clone->seq_region_name(),
-                                         $clone->coord_system->name(),
-                                         undef,
-                                         undef,
-                                         undef,
-                                         $clone->coord_system->version());
+  $clone = $self->adaptor->fetch_by_region($clone->coord_system->name(),
+                                           'clone',
+                                           undef,
+                                           undef,
+                                           undef,
+                                           $clone->coord_system->version());
 
 
   #rebless the slice as a Bio::EnsEMBL::Clone so old method calls still work

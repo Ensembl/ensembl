@@ -181,10 +181,9 @@ sub chromosome {
     }
   }
 
-  if($self->adaptor) {
-    return $self->adaptor->db->get_SliceAdaptor->fetch_by_region('chromosome',
-                                                      $self->chromosome_name);
-  }
+  #this object has no way to talk to db and thus no way to
+  #get a chromosome object
+  return $self->chromosome_name();
 }
 
 

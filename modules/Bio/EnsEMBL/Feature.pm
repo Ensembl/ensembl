@@ -555,6 +555,13 @@ sub contig {
   slice(@_);
 }
 
+sub seqname {
+  my $self = shift;
+  deprecate('Use $feat->slice->name or $feat->slice->seq_region_name instead');
+  return '' if(!$self->slice());
+  return $self->slice->seq_region_name();
+}
+
 
 sub _deprecated_transform {
   my $self = shift;

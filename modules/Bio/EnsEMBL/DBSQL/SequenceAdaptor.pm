@@ -163,7 +163,7 @@ sub fetch_by_Slice_start_end_strand {
    }
 
    #if they asked for the negative slice strand revcomp the whole thing
-   $self->_reverse_compliment(\$seq) if($strand == -1);
+   $self->_reverse_comp(\$seq) if($strand == -1);
 
    return \$seq;
 }

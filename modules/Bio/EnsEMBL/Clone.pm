@@ -130,7 +130,7 @@ sub get_RawContig_by_position {
 
   throw("get_rawcontig_by_position error: Position must be > 0") if($pos < 1);
 
-  my $projection = $self->project();
+  my $projection = $self->project('seqlevel');
   foreach my $segment (@$projection) {
     my($start,$end,$contig) = @$segment;
     if($start <= $pos) {
@@ -234,6 +234,12 @@ sub embl_id {
   return $acc;
 }
 
+
+#what is actually meant by clone->name is seq_region_name not name
+sub name {
+  my $self = shift;
+  return $self->seq_region_name();
+}
 
 
 =head2 id

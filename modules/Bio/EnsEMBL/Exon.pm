@@ -859,60 +859,10 @@ sub created{
 
 sub modified{
     my ($self,$value) = @_;
-    deprecated( "Created attribute not supported any more" );
+    deprecated( "Modified attribute not supported any more" );
     if( defined $value ) {
       $self->{'_modified'} = $value;
     }
-    return $self->{'_modified'};
-}
-
-
-
-=head2 created
-
- Title   : created
- Usage   : $obj->created()
- Function: 
- Returns : value of created
- Args    :
-
-
-=cut
-
-sub created{
-    my ($self,$value) = @_;
-
-    deprecated( "Created attribute not supported any more" );
-    if(defined $value ) {
-      $self->{'_created'} = $value;
-    }
-
-
-    return $self->{'_created'};
-
-}
-
-=head2 modified
-
- Title   : modified
- Usage   : $obj->modified()
- Function: 
- Returns : value of modified
- Args    : 
-
-
-=cut
-
-sub modified{
-    my ($self,$value) = @_;
-    
-
-    deprecated( "Created attribute not supported any more" );
-    if( defined $value ) {
-      $self->{'_modified'} = $value;
-    }
-
-
     return $self->{'_modified'};
 }
 

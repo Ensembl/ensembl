@@ -106,6 +106,7 @@ sub new {
       'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
       'MarkerFeature'        =>
           'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
+      'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
       'MiscSet'              => 'Bio::EnsEMBL::DBSQL::MiscSetAdaptor',
       'MiscFeature'          => 'Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor',
       'PredictionTranscript' =>
@@ -182,10 +183,8 @@ sub get_ArchiveStableIdAdaptor {
 =cut
 
 sub get_QtlFeatureAdaptor {
-    my( $self ) = @_;
-
-    return
-      $self->get_adaptor("QtlFeature");
+  my $self = shift;
+  return $self->get_adaptor("QtlFeature");
 }
 
 =head2 get_QtlAdaptor
@@ -200,10 +199,8 @@ sub get_QtlFeatureAdaptor {
 =cut
 
 sub get_QtlAdaptor {
-    my( $self ) = @_;
-
-    return
-      $self->get_adaptor("Qtl");
+    my $self  = shift;
+    return $self->get_adaptor("Qtl");
 }
 
 =head2 get_MetaContainer
@@ -213,22 +210,14 @@ sub get_QtlAdaptor {
   Description: Gets a MetaContainer object for this database
   Returntype : Bio::EnsEMBL::DBSQL::MetaContainer
   Exceptions : none
-  Caller     : ?
+  Caller     : general
 
 =cut
 
 sub get_MetaContainer {
-    my( $self ) = @_;
-
-    my( $mc );
-    unless ($mc = $self->{'_meta_container'}) {
-        require Bio::EnsEMBL::DBSQL::MetaContainer;
-        $mc = Bio::EnsEMBL::DBSQL::MetaContainer->new($self);
-        $self->{'_meta_container'} = $mc;
-    }
-    return $mc;
+    my $self = shift;
+    return $self->get_adaptor('MetaContainer');
 }
-
 
 
 =head2 get_ProteinFeatureAdaptor
@@ -244,10 +233,8 @@ sub get_MetaContainer {
 =cut
 
 sub get_ProteinFeatureAdaptor {
-    my( $self ) = @_;
-
-    return 
-      $self->get_adaptor("ProteinFeature");
+    my $self = shift;
+    return $self->get_adaptor("ProteinFeature");
 }
 
 
@@ -264,8 +251,7 @@ sub get_ProteinFeatureAdaptor {
 =cut
 
 sub get_ProteinAdaptor {
-    my( $self ) = @_;
-
+    my $self  = shift;
     return $self->get_adaptor("Protein");
 }
 
@@ -325,42 +311,6 @@ sub get_BlastAdaptor {
 
   return $self->get_adaptor("Blast",
 			     $db_apt);
-}
-
-
-=head2 get_MapFragAdaptor
-
-  Args       : none 
-  Example    : $map_frag_adaptor = $db_adaptor->get_MapFragAdaptor();
-  Description: Gets a MapFragAdaptor for this database
-  Returntype : Bio::EnsEMBL::DBSQL::MapFragAdaptor
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_MapFragAdaptor {
-  my $self = shift;
-
-  return $self->get_adaptor( "MapFrag" );
-}
-
-
-=head2 get_CloneAdaptor
-
-  Args       : none 
-  Example    : $clone_adaptor = $db_adaptor->get_CloneAdaptor();
-  Description: Gets a CloneAdaptor for this database
-  Returntype : Bio::EnsEMBL::DBSQL::CloneAdaptor
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_CloneAdaptor {
-  my( $self ) = @_;
-
-  return $self->dnadb->get_adaptor("Clone");
 }
 
 
@@ -495,23 +445,6 @@ sub get_TranslationAdaptor {
     return $self->get_adaptor("Translation");
 }
 
-
-=head2 get_RawContigAdaptor
-
-  Args       : none 
-  Example    : $rca = $db_adaptor->get_RawContigAdaptor();
-  Description: Gets a RawContigAdaptor for this database
-  Returntype : Bio::EnsEMBL::DBSQL::RawContigAdaptor
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_RawContigAdaptor {
-    my( $self ) = @_;
-
-    return $self->dnadb->get_adaptor("RawContig");
-}
 
 
 =head2 get_SliceAdaptor
@@ -709,25 +642,6 @@ sub get_KaryotypeBandAdaptor {
 }
 
 
-=head2 get_ChromosomeAdaptor
-
-  Args       : none 
-  Example    : $ca = $db_adaptor->get_ChromosomeAdaptor();
-  Description: Gets a ChromosomeAdaptor for this database
-  Returntype : Bio::EnsEMBL::DBSQL::ChromosomeAdaptor
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_ChromosomeAdaptor {
-    my( $self ) = @_;
-
-    return 
-      $self->dnadb->get_adaptor("Chromosome");
-}
-
-
 
 =head2 get_SupportingFeatureAdaptor
 
@@ -823,6 +737,17 @@ sub get_MiscSetAdaptor {
 }
 
 
+
+=head2 get_MiscFeatureAdaptor
+
+  Arg [1]    : none
+  Example    : $mfa = $db_adaptor->get_MiscFeatureAdaptor();
+  Description: Gets a MiscFeature adaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub get_MiscFeatureAdaptor {
   my $self = shift;
@@ -1203,6 +1128,58 @@ sub add_GenericFeatureAdaptor() {
 #########################
 # sub DEPRECATED METHODS
 #########################
+
+
+
+=head2 get_MapFragAdaptor
+
+  Description: MapFragAdaptor is deprecated. Use MiscFeatureAdaptor instead.
+
+=cut
+
+sub get_MapFragAdaptor {
+  my $self = shift;
+
+  return $self->get_adaptor( "MapFrag" );
+}
+
+=head2 get_CloneAdaptor
+
+  Description: CloneAdaptor is deprecated.  Use SliceAdaptor instead.
+
+=cut
+
+sub get_CloneAdaptor {
+  my( $self ) = @_;
+
+  return $self->dnadb->get_adaptor("Clone");
+}
+
+=head2 get_ChromosomeAdaptor
+
+  Description: ChromosomeAdaptor is deprecated.  Use SliceAdaptor instead.
+
+=cut
+
+sub get_ChromosomeAdaptor {
+    my( $self ) = @_;
+
+    return 
+      $self->dnadb->get_adaptor("Chromosome");
+}
+
+=head2 get_RawContigAdaptor
+
+  Description: RawContigAdaptor is deprecated. Use SliceAdaptor instead.
+
+=cut
+
+sub get_RawContigAdaptor {
+    my( $self ) = @_;
+
+    return $self->dnadb->get_adaptor("RawContig");
+}
+
 
 sub source {
   deprecate('Do not use - this method does nothing');

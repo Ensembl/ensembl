@@ -75,11 +75,7 @@ sub fetch_all {
 
   deprecate('Use SliceAdaptor::fetch_all instead');
 
-  #assume that by 'contig' what is actually meant is sequence level
-  my $csa = $self->db->get_CoordSystemAdaptor();
-  my $cs = $csa->fetch_sequence_level();
-
-  my $result = $self->SUPER::fetch_all($cs->name,$cs->version);
+  my $result = $self->SUPER::fetch_all('seqlevel');
 
   #change blessings to RawContig so old contig functions still work
   foreach my $contig (@$result) {

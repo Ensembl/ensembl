@@ -37,6 +37,8 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::Utils::Exception qw(deprecate);
+
 use Bio::Species;
 
 
@@ -186,10 +188,9 @@ sub get_default_assembly {
 
   deprecate('Use CoordSystemAdaptor::fetch_top_level instead');
 
-  my ($dbID,$name,$version) =
-    $self->db->get_CoordSystemAdaptor->fetch_top_level();
+  my $cs = $self->db->get_CoordSystemAdaptor->fetch_top_level();
 
-  return $version;
+  return $cs->version();
 }
 
 

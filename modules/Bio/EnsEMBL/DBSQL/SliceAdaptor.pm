@@ -359,7 +359,7 @@ sub get_seq_region_attribs {
 sub fetch_all {
   my $self = shift;
   my $cs_name = shift;
-  my $cs_version = shift;
+  my $cs_version = shift || '';
 
   my $csa = $self->db->get_CoordSystemAdaptor();
   my $cs = $csa->fetch_by_name($cs_name, $cs_version);
@@ -379,7 +379,7 @@ sub fetch_all {
   my $cs_key = lc($cs->name().':'.$cs_version);
 
   my @out;
-  while($sth->execute()) {
+  while($sth->fetch()) {
     #cache values for future reference
     my $key = lc($name) . ':'. $cs_key;
     $name_cache->{$key} = [$seq_region_id, $length];

@@ -194,4 +194,24 @@ sub fetch_by_chr_band {
   return $kb;
 }
 
+
+=head2 list_dbIDs
+
+  Arg [1]    : none
+  Example    : @kary_ids = @{$karyotype_band_adaptor->list_dbIDs()};
+  Description: Gets an array of internal ids for all karyotype bands in the
+               current db
+  Returntype : reference to a list of ints
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub list_dbIDs {
+  my $self = shift;
+
+  return $self->_list_dbIDs("karyotype");
+}
+
+
 1;
