@@ -44,5 +44,5 @@ while (<SCOP>) {
 	}
 
     print OUT "$map{$scopac}\t$scopac\tSCOP1\t$pdb\|\|$chain\n";
-    print OUT "$map{$scopac}\t$scopac\tSCOP1\t$scopnb\n";
+    print OUT "$map{$scopac}\t$scopac\tSCOP2\t$scopnb\n";
 }

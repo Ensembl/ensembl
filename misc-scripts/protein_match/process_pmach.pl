@@ -50,7 +50,7 @@ sub runpmatch {
 
     system($pmatch1); # == 0 or die "$0\Error running '$pmatch1' : $!";
     system($pmatch2); #== 0 or die "$0\Error running '$pmatch2' : $!";
-   system($pmatch3); #== 0 or die "$0\Error running '$pmatch2' : $!"; 
+    system($pmatch3); #== 0 or die "$0\Error running '$pmatch2' : $!"; 
 
 }
 
@@ -77,7 +77,7 @@ sub postprocesspmatch {
     elsif ($db eq $pdb) {
 	print STDERR "Postprocessing pmatch for PDB mapping\n"; 
 	open (OUT, ">ens_pdb.processed") || die "Can't open File\n";;
-	open (PROC, "ens_pdb_rawpmatch") || die "Can't open file ens_refseq_rawpmatch\n";
+	open (PROC, "ens_pdb_rawpmatch") || die "Can't open file ens_pdb_rawpmatch\n";
     }
     
     while (<PROC>) {
@@ -100,7 +100,8 @@ sub postprocesspmatch {
 
 #Write out the processed data
     foreach my $key ( keys %hash1 ) {
-	if (($hashlength{$key} >= 20)) {
+	#if (($hashlength{$key} >= 20)) {
+	if (($hash1{$key} >= 25)) {
 	    ($a,$b) = split(/:/,$key);
 	    print OUT "$a\t$b\t$hash1{$key}\n";
 	}
@@ -130,7 +131,7 @@ sub finalprocess {
 
     elsif ($db eq $pdb) {
 	print STDERR "Getting final mapping for PDB mapping\n";
-	open (PROC, "ens_refseq.processed") || die "Can' open file ens_refseq.processed\n";
+	open (PROC, "ens_pdb.processed") || die "Can' open file ens_refseq.processed\n";
 	open (OUT, ">ens_pdb.final");
     }
 

@@ -28,103 +28,141 @@ The different options only deal with file names
 
 use Getopt::Long;
 
-my ($nomeid,$ens1,$ens2,$out,$dbmap);
+#perl ../../../src/ensembl-live/misc-scripts/protein_match/get_hugo_mapping.pl -ens1 ../secondary/ens1.txt -ens2 ../secondary/ens2.txt -ens4 ../secondary/ens4.txt -ens5 ../secondary/ens5.txt -out hugo.map -dbmap mapdb.map
+
+my ($ens1,$ens2,$ens4,$ens5,$out,$dbmap);
 
 my %map;
-my %en1;
+my %hugo_sp;
+my %hugo_refseq;
 my %en2;
 my %hugohash;
 
 &GetOptions(
-	    'nomeid:s'=>\$nomeid,
 	    'ens1:s'=>\$ens1,
             'ens2:s'=>\$ens2,
-	    'output:s'=>\$out,
-	    'dbmap:s'=>\$dbmap
+	    'ens4:s'=>\$ens4,
+	    'ens5:s'=>\$ens5,
+	    'dbmap:s'=>\$dbmap,
+	    'output:s'=>\$out
             );
 
 
 
 open (ENS1,"$ens1") || die "Can't open file $ens1\n";
 open (ENS2,"$ens2") || die "Can't open file $ens2\n";
-open (NOME,"$nomeid") || die "Can't open file $nomeid\n";
+open (ENS4,"$ens4") || die "Can't open file $ens4\n";
+open (ENS5,"$ens5") || die "Can't open file $ens5\n";
 open (DBMAP,"$dbmap") || die "Can't open file $dbmap\n";
 open (OUT,">$out") || die "Can't open output file $out\n";
+open (ERROR,">hugo.err") || die "Can't open output file hugo.err\n";
 
+while (<DBMAP>) {
+    chomp;
+     my ($mapac,$mapdb) = split(/\t/,$_);
+     $map{$mapac} = $mapdb;
+}
 
 while (<ENS1>) {
     chomp;
-    
+    #Get hugo id
     #Get rid of the annoying carriage return!
     $_ =~ s/\r//g;
     my ($hgnc,$sp,$refseq) = split(/\t/,$_);
 
-
-    
     if ($sp) {
-	$en1{$sp} = $hgnc;
+	print OUT "$map{$sp}\t$sp\tHUGOID\t$hgnc\n";
+    }
+
+    if ($refseq) {
+	print OUT "$map{refseq}\t$refseq\tHUGOID\t$hgnc\n";
+    }
+
+    if ($sp) {
+	$hugo_sp{$hgnc} = $sp;
     }
     if ($refseq) {
-	$en1{$refseq} = $hgnc;
+	$hugo_refseq{$hgnc} = $refseq;
     }
 }
 
 while (<ENS2>) {
     chomp;
-    
+#Get hugo symbol
     $_ =~ s/\r//g;
-    my ($hgnc,$hugo) = split(/\t/,$_);
+    my ($hgnc1,$hugo) = split(/\t/,$_);
     
-    if (!defined $en2{$hgnc}) {
-	$en2{$hgnc} = [];
+#    if (!defined $hugo_sp{$hgnc1}) {
+#	print ERROR "Can't map back $hugo_sp{$hgnc} (ENS2)\n";
+#    }
+
+#    if (!defined $hugo_refseq{$hgnc1}) {
+#	print ERROR "Can't map back $hugo_refseq{$hgnc} (ENS2)\n";
+#    }
+
+    if ($hugo_sp{$hgnc1}) {
+	print OUT "$map{$hugo_sp{$hgnc1}}\t$hugo_sp{$hgnc1}\tHUGOSYMBOL\t$hugo\n";
+    }
+
+    if ($hugo_refseq{$hgnc1}) { 
+	print OUT "$map{$hugo_refseq{$hgnc1}}\t$hugo_refseq{$hgnc1}\tHUGOSYMBOL\t$hugo\n";
+    }
+
+    if (!defined $en2{$hgnc1}) {
+	$en2{$hgnc1} = [];
     }
     
-    $en2{$hgnc} = $hugo;
+    $en2{$hgnc1} = $hugo;
 }
 
-
-
-while (<NOME>) {
+while (<ENS4>) {
 #Get hugo aliases given a hugo primary accession number. For each primary accession number, the aliases are put in a hash of array
     
     chomp;
-    my @chunk = split (/\t/,$_);
-    
-    if ($chunk[8]) {
-	$hugohash{$chunk[1]} = $chunk[8];
-    }
-    
-}
+    my ($hgnc2, $symbol, $alias, $withdrawn) = split (/\t/,$_);
 
-while (<DBMAP>) {
-    chomp;
-    my ($mapac,$mapdb) = split(/\t/,$_);
-    my $hugo_ac = $en2{$en1{$mapac}};
-    if ($hugo_ac) {
-
-#Print the HUGOs primary accession numbers	
-	print OUT "$mapdb\t$mapac\tHUGO\t$hugo_ac\n";
-	
-	if ($hugohash{$hugo_ac}) {
-	    my @syn = split (/, /,$hugohash{$hugo_ac});
-	    
-	    foreach my $sol (@syn) {
-#print the HUGOs aliases
-		print OUT "$mapdb\t$mapac\tHUGO\t$sol\n";
-	    }
-	    
+    if ((defined $hugo_sp{$hgnc2}) && (defined $alias)) {
+	my @aliases1 = split (/, /,$alias);
+	foreach my $aliase1 (@aliases1) {
+	    print OUT "$map{$hugo_sp{$hgnc2}}\t$hugo_sp{$hgnc2}\tHUGOALIAS\t$aliase1\n";
 	}
-	#if (!defined $en2{$en1{$mapac}}) {
-	 #   print STDERR "$mapac\n";
-	#}
-
+    }
+    
+    if ((defined $hugo_sp{$hgnc2}) && ($withdrawn =~ /\S+/)) {
+	my @withdrawns1 = split (/, /,$withdrawn);
+	foreach my $withdrawn1 (@withdrawns1) {
+	    print OUT "$map{$hugo_sp{$hgnc2}}\t$hugo_sp{$hgnc2}\tHUGOWITHDRAWN\t$withdrawn1\n";
+	}
+    }
+    
+    if ((defined $hugo_refseq{$hgnc2}) && (defined $alias)) {
+	my @aliases2 = split (/, /,$alias);
+	foreach my $aliase2 (@aliases2) {
+	    print OUT "$map{$hugo_sp{$hgnc2}}\t$hugo_sp{$hgnc2}\tHUGOALIAS\t$aliase2\n";
+	}
+    }
+    
+    if ((defined $hugo_refseq{$hgnc2}) && ($withdrawn =~ /\S+/)) {
+	my @withdrawns2 = split (/, /,$withdrawn);
+	foreach my $withdrawn2 (@withdrawns2) {
+	    print OUT "$map{$hugo_sp{$hgnc2}}\t$hugo_sp{$hgnc2}\tHUGOWITHDRAWN\t$withdrawn2\n";
+	}
     }
 }
 
+while (<ENS5>) {
+#Use Hugo mapping to get EC numbers    
+    chomp;
+    my ($hgnc3, $symbol1, $name, $ec, $sp) = split (/\t/,$_);
+    
+    if ((defined $hugo_sp{$hgnc3}) && (defined $ec)) {
+	 print OUT "$map{$hugo_sp{$hgnc3}}\t$hugo_sp{$hgnc3}\tEC\t$ec\n";
+     }
 
-
-
-
+    if ((defined $hugo_refseq{$hgnc3}) && (defined $ec)) {
+	 print OUT "$map{$hugo_sp{$hgnc3}}\t$hugo_sp{$hgnc3}\tEC\t$ec\n";
+     }
+}
 
 
 
