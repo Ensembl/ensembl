@@ -468,11 +468,11 @@ sub get_array_supporting {
    
     my (@out, @sup_exons);
     
+    my $analysisAdaptor = $self->_db_obj->get_AnalysisAdaptor;     
 
     # The gene list is split into chunks of 10 as
     # mysql grinds to a halt over this number
     my $chunk_size = 10;
-    my( @inlist );
     for (my $i = 0; $i < @geneid; $i += $chunk_size) {
         my $j = $i + $chunk_size - 1;
         
@@ -480,15 +480,8 @@ sub get_array_supporting {
         # if it is beyond it
         $j = $#geneid if $j > $#geneid;
         
-        # Take a slice of @geneid between $i and $j
-        push(@inlist, [ @geneid[$i..$j] ]);
-    }
-    
-   # my $inlist = join(',', map "'$_'", @geneid);
-    my $analysisAdaptor = $self->_db_obj->get_AnalysisAdaptor;     
-   
-    foreach my $inarray (@inlist)   {
-        my $inlist = join(',', map "'$_'", @$inarray);
+        # Make an SQL list from the slice of @geneid between $i and $j
+        my $inlist = join(',', map "'$_'", @geneid[$i..$j]);
  
         # I know this SQL statement is silly.
         #    

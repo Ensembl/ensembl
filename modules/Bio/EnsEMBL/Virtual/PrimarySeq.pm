@@ -212,9 +212,13 @@ sub subseq{
        # map straight away.
        #print STDERR "simple map\n";
        if( $start_contig->orientation == 1 ) {
-	   return $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start + ($start - $start_contig->start),$start_contig->rawcontig_start + ($end - $start_contig->start));
+	   return $start_contig->contig->primary_seq->subseq(
+            $start_contig->rawcontig_start + ($start - $start_contig->start),
+            $start_contig->rawcontig_start + ($end - $start_contig->start));
        } else {
-	   my $temp = $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_end - ($end - $start_contig->start),$start_contig->rawcontig_end - ($start - $start_contig->start));
+	   my $temp = $start_contig->contig->primary_seq->subseq(
+                $start_contig->rawcontig_end - ($end - $start_contig->start),
+                $start_contig->rawcontig_end - ($start - $start_contig->start));
 	   $temp =~ tr/ATGCNatgcn/TACGNtacgn/;
 	   $temp = reverse $temp;
 	   return $temp;

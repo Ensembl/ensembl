@@ -398,11 +398,27 @@ sub end_phase {
 
 =head2 phase
 
-  Title   : phase
-  Usage   : $phase = $feat->phase
-  Function: Returns the phase of the exon
-  Returns : int
-  Args    : none
+  my $phase = $exon->phase;
+  $exon->phase(2);
+
+Get or set the phase of the Exon, which tells the
+translation machinery, which makes a peptide from
+the DNA, where to start.
+
+The Ensembl phase convention can be thought of as
+"the number of bases of the first codon which are
+on the previous exon".  It is therefore 0, 1 or 2
+(or -1 if the exon is non-coding).  In ascii art,
+with alternate codons represented by B<###> and
+B<+++>:
+
+       Previous Exon   Intron   This Exon
+    ...-------------            -------------...
+
+    5'                    Phase                3'
+    ...#+++###+++###          0 +++###+++###+...
+    ...+++###+++###+          1 ++###+++###++...
+    ...++###+++###++          2 +###+++###+++...
 
 =cut
 
