@@ -592,6 +592,10 @@ sub prepare {
    if( ! $string ) {
        $self->throw("Attempting to prepare an empty SQL query!");
    }
+   if( !defined $self->_db_handle ) {
+      $self->throw("Database object has lost its database handle! getting otta here!");
+   }
+      
 
    if( $self->_debug > 10 ) {
        print STDERR "Prepared statement $string\n";
@@ -1931,8 +1935,7 @@ sub deleteObj {
   my  $self=shift;
   my $dummy;
 
-  print STDERR "Destroying DB Obj!\n";
-
+  print STDERR "Destroying DB Obj!\n";       
   $self->DESTROY;
   
   foreach my $name ( keys %{$self} ) {
