@@ -293,7 +293,7 @@ sub external_name {
 sub is_known {
   my $self = shift;
   for my $entry ( @{$self->get_all_DBLinks()} ) {
-    return 1 if $entry->status =~ /KNOWN/ ;
+    return 1 if uc($entry->status) eq "KNOWN" ;
   }
   return 0;
 }
