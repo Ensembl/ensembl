@@ -148,7 +148,7 @@ sub get_Ensembl_Genes_contig_list{
 	       push (@todocontigs,$c);
 	   }
        }
-       @genes;
+       return @genes;
    }
    else {
        foreach my $c (@contigs) {
