@@ -226,6 +226,8 @@ sub _parse {
     $transcript->sort();
     
     # Catch any exceptions where the phase can't be set for the gene
+    $transcript->dna_seq ||  $self->throw("Transcript passed into GenScan does not contain any dna!");
+    $transcript->dna_seq =~ /a-z/ &&  $self->throw("DNA sequence passed into GenScan analysis code contains lower case characters!");
 
     if (defined($self->{_dna})) {
       $self->_set_exon_phases($transcript,$pep);
@@ -301,7 +303,7 @@ sub _set_exon_phases {
     }
 
     my @trans;
-
+    
     $trans[0] = $exon->seq->translate();
     # this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
     # intron leaves one base pair.
