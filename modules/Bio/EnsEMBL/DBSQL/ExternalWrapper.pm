@@ -88,7 +88,7 @@ sub get_Ensembl_Genes_clone{
 
    my $dbobj = $self->dbobj;
 
-   #print STDERR "Got dbobj $dbobj connected to ",$dbobj->dbname,"\n";
+   print STDERR "Got dbobj $dbobj connected to ",$dbobj->dbname,"\n";
 
    eval {
        $clone = $self->dbobj->get_Clone($cloneid);
@@ -135,7 +135,7 @@ sub get_Ensembl_Genes_contig_list{
    my @todocontigs;
    if (my $cgr = $self->cg) {
        #Get them from the cache
-       #print STDERR "Getting external genes from the cache\n";
+   #    print STDERR "Getting external genes from the cache\n";
        my %cgh = %$cgr;
        foreach my $c (@contigs) {
 	 if ($cgh{$c}) {
@@ -163,7 +163,6 @@ sub get_Ensembl_Genes_contig_list{
        }
        chop $list;
        $list = "($list)";
-       
        my $sth = $self->dbobj->prepare("
              SELECT t.gene_id,c.id 
                FROM transcript t,exon_transcript et,exon e,
@@ -228,6 +227,7 @@ sub cg{
     return $obj->{'cg'};
 
 }
+
 
 =head2 get_Ensembl_SeqFeatures_contig
 
