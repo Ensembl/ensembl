@@ -224,10 +224,6 @@ sub load_databases {
 
   $db->disconnect;
   
-  #freeze configuration in a file
-  $self->store_config;
-  
-
 }
 
 
@@ -524,11 +520,87 @@ sub validate_sql {
 }
 
 
+sub cleanup {
+  my $self = shift;
+
+  #delete the unpacked schema and data files
+  $self->_delete_files($DUMP_DIR);
+
+  #remove all of the handles on dbadaptors
+  foreach my $dbtype (keys %{$self->{'db_adaptors'}}) {
+    delete $self->{'db_adaptors'}->{$dbtype};
+  }
+
+  #delete each of the created temporary databases
+  foreach my $dbtype (keys %{$self->{'conf'}->{'databases'}}) {
+    my $db_conf = $self->{'conf'}->{'databases'}->{$dbtype};
+    
+    my $host   = $db_conf->{'host'};
+    my $user   = $db_conf->{'user'};
+    my $pass   = $db_conf->{'pass'};
+    my $port   = $db_conf->{'port'};
+    my $driver = $db_conf->{'driver'};
+    my $dbname = $db_conf->{'dbname'};
+    
+    #connect to the database
+    my $locator = 'DBI:$driver:host=$host;port=$port';
+    my $db = DBI->connect($locator, $user, $pass, {RaiseError => 1});
+      
+    unless($db) {
+      die "Can't connect to database $locator";
+    }
+    
+    $db->do('drop database dbname');
+  }
+
+  my $conf_file = $self->species . $FROZEN_CONF_EXT;
+  
+  #delete the frozen config file
+  if(-e $conf_file && -f $conf_file) {
+    unlink $conf_file;
+  }
+}
+
+
+sub _delete_files {
+  my ($self, $dir) = shift;
+
+  local *DIR;
+  opendir DIR, $dir;
+  
+  #ignore files starting with '.'
+  my @files = grep !/$\./, readdir DIR;
+
+  foreach my $file (@files) {
+    if(-d $file) {
+      #call recursively on subdirectories
+      $self->_delete_files($file);
+    } else {
+      unlink $file;
+    }
+  }
+
+  closedir DIR;
+
+  rmdir $dir;
+}
+
 
 sub DESTROY {
-    my( $self ) = @_;
+    my( $self ) = shift;
 
+    if($ENV{'HARNESS_ACTIVE'}) {
+      #restore tables, do nothing else we want to use the database for 
+      #the other tests as well
+      $self->restore;
+      #freeze configuration in a file
+      $self->store_config;
+    } else {
+      #we are runnning a stand-alone test, cleanup created databases
+      $self->cleanup;
+    }
 }
+
 
 
 
