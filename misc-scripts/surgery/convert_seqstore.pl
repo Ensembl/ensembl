@@ -89,24 +89,16 @@ debug("Copying source contig table to seq_region");
 my $cs_id = $coord_system_ids{"contig"};
 execute($dbi, "INSERT INTO seq_region SELECT contig_id, name, $cs_id, length from $source.contig");
 
-#xxx # Similarly for the clone table - can use autonumber for the IDs as they're not referenced anywhere
-#xxx $cs_id = $coord_system_ids{"clone"};
-#xxx execute($dbi, "INSERT INTO seq_region (name, coord_system_id, length) " .
-#xxx 			  "SELECT CONCAT(cl.name, '.', cl.version), " .
-#xxx 			  "$cs_id, " .
-#xxx 			  "MAX(ctg.embl_offset)+ctg.length-1 " .
-#xxx 			  "FROM $source.clone cl, $source.contig ctg " .
-#xxx 			  "WHERE cl.clone_id=ctg.clone_id GROUP BY ctg.clone_id");
-#xxx 
 # And chromosomes
 # Note old/new ID mapping is stored in %chromosme_id_old_new; it turns out it is vastly
 # quicker to store the mappings in a temporary table and join to it rather than
 # doing a row-by-row INSERT using this hash
 
+debug("Transforming chromosome table into seq_region");
 my %chromosome_id_old_new;
 $cs_id = $coord_system_ids{"chromosome"};
 $sth = $dbi->prepare("SELECT chromosome_id, name, length FROM $source.chromosome");
-$sth->execute or die "Error when caching coord-system IDs";
+$sth->execute or die "Error when building chromosome ID/ seq_region ID map";
 while(my $row = $sth->fetchrow_hashref()) {
   my $old_id = $row->{"chromosome_id"};
   my $name   = $row->{"name"};
@@ -128,220 +120,313 @@ while (my ($old_id, $new_id) = each %chromosome_id_old_new) {
   $sth->execute($old_id, $new_id) || die "Error writing to tmp_chr_map";
 }
 
-#xxx # ----------------------------------------------------------------------
-#xxx # Gene
-#xxx # Need to calculate start, end etc
-#xxx 
-#xxx debug("Building gene table");
-#xxx 
-#xxx my $sql =
-#xxx 	      "INSERT INTO $target.gene " .
-#xxx 	      "SELECT g.gene_id, g.type, g.analysis_id, e.contig_id, " .
-#xxx 	      "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
-#xxx 	      "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
-#xxx 	      "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
-#xxx 	      "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
-#xxx 	      "       a.contig_ori*e.contig_strand as strand, " .
-#xxx 	      "       g.display_xref_id " .
-#xxx 	      "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
-#xxx 	      "WHERE  t.transcript_id = et.transcript_id " .
-#xxx 	      "AND    et.exon_id = e.exon_id " .
-#xxx 	      "AND    e.contig_id = a.contig_id " .
-#xxx 	      "AND    g.gene_id = t.gene_id " . 
-#xxx 	      "GROUP BY g.gene_id";
-#xxx execute($dbi, $sql);
-#xxx 
-#xxx # ----------------------------------------------------------------------
-#xxx # Transcript
-#xxx # Need to calculate start, end etc
-#xxx 
-#xxx debug("Building transcript table");
-#xxx 
-#xxx $sql =
-#xxx 	      "INSERT INTO $target.transcript " .
-#xxx 	      "SELECT t.transcript_id, g.gene_id, e.contig_id, " .
-#xxx 	      "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
-#xxx 	      "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
-#xxx 	      "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
-#xxx 	      "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
-#xxx 	      "       a.contig_ori*e.contig_strand as strand, " .
-#xxx 	      "       g.display_xref_id " .
-#xxx 	      "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
-#xxx 	      "WHERE  t.transcript_id = et.transcript_id " .
-#xxx 	      "AND    et.exon_id = e.exon_id " .
-#xxx 	      "AND    e.contig_id = a.contig_id " .
-#xxx 	      "AND    g.gene_id = t.gene_id " .
-#xxx 	      "GROUP BY t.transcript_id";
-#xxx #print $sql . "\n";
-#xxx execute($dbi, $sql);
-#xxx 
-#xxx # ----------------------------------------------------------------------
-#xxx # Exon
-#xxx # Translation to chromosomal co-ordinates should take care of sticky exons
-#xxx # so new exon table will have <= number of rows as old exon table
-#xxx debug("Building exon table");
-#xxx 
-#xxx $sql =
-#xxx 	      "INSERT INTO $target.exon " .
-#xxx 	      "SELECT e.exon_id, e.contig_id, " .
-#xxx 	      "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
-#xxx 	      "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
-#xxx 	      "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
-#xxx 	      "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
-#xxx 	      "       a.contig_ori*e.contig_strand as strand, " .
-#xxx 	      "       e.phase, e.end_phase " .
-#xxx 	      "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
-#xxx 	      "WHERE  t.transcript_id = et.transcript_id " .
-#xxx 	      "AND    et.exon_id = e.exon_id " .
-#xxx 	      "AND    e.contig_id = a.contig_id " .
-#xxx 	      "AND    g.gene_id = t.gene_id " .
-#xxx 	      "GROUP BY e.exon_id";
-#xxx #print $sql . "\n";
-#xxx execute($dbi, $sql);
-#xxx 
-#xxx # ----------------------------------------------------------------------
-#xxx # Translation
-#xxx # Now includes transcript_id
-#xxx 
-#xxx debug("Building translation table");
-#xxx 
-#xxx $sql =
-#xxx   "INSERT INTO $target.translation " .
-#xxx   "SELECT tl.translation_id, ts.transcript_id, tl.seq_start, tl.start_exon_id, tl.seq_end, tl.end_exon_id " .
-#xxx   "FROM $source.transcript ts, $source.translation tl " .
-#xxx   "WHERE ts.translation_id = tl.translation_id";
-#xxx #print $sql . "\n";
-#xxx execute($dbi, $sql);
-#xxx 
-#xxx # ----------------------------------------------------------------------
+# Similarly for the clone table
+debug("Transforming clone table into seq_region");
+my %clone_id_old_new;
+$cs_id = $coord_system_ids{"clone"};
+$sth = $dbi->prepare("SELECT cl.clone_id, " .
+		     "CONCAT(cl.name, '.', cl.version) AS name, " .
+		     "$cs_id, " .
+		     "MAX(ctg.embl_offset)+ctg.length-1 AS length " .
+		     "FROM $source.clone cl, $source.contig ctg " .
+		     "WHERE cl.clone_id=ctg.clone_id GROUP BY ctg.clone_id");
+$sth->execute or die "Error when building clone ID / seq_region ID map";
+while(my $row = $sth->fetchrow_hashref()) {
+  my $old_id = $row->{"clone_id"};
+  my $name   = $row->{"name"};
+  my $length = $row->{"length"};
+  execute($dbi, "INSERT INTO seq_region (name, coord_system_id, length) VALUES ('$name', $cs_id, $length)");
+  my $new_id = $dbi->{'mysql_insertid'};
+  $clone_id_old_new{$old_id} = $new_id;
+}
+
+# store this hash in a temporary table to save having to do row-by-row inserts later
+$create_sql =
+  "CREATE TEMPORARY TABLE $target.tmp_cln_map (" .
+  "old_id INT, new_id INT, ".
+  "INDEX new_idx (new_id))";
+$sth = $dbi->prepare($create_sql);
+$sth->execute or die "Error when creating temporary tmp_cln_map table";
+$sth = $dbi->prepare("INSERT INTO $target.tmp_cln_map (old_id, new_id) VALUES (?, ?)");
+while (my ($old_id, $new_id) = each %clone_id_old_new) {
+  $sth->execute($old_id, $new_id) || die "Error writing to tmp_cln_map";
+  #print "$old_id\t$new_id\n";
+}
+
+# Supercontigs - need to store new (seq_region) ID->name mapping for later
+my %superctg_name_id;
+$cs_id = $coord_system_ids{"supercontig"};
+$sth = $dbi->prepare("SELECT superctg_name, " .
+		     "MAX(superctg_end)-MIN(superctg_start)+1 AS length " .
+		     "FROM $source.assembly " .
+		     "GROUP BY superctg_name");
+$sth->execute or die "Error when building supercontig name / seq region ID map";
+while(my $row = $sth->fetchrow_hashref()) {
+  my $name = $row->{"superctg_name"};
+  my $length = $row->{"length"};
+  execute($dbi, "INSERT INTO seq_region (name, coord_system_id, length) VALUES ('$name', $cs_id, $length)");
+  my $new_id = $dbi->{'mysql_insertid'};
+  $superctg_name_id{$name} = $new_id;
+}
+
+# store this hash in a temporary table to save having to do row-by-row inserts later
+$create_sql =
+  "CREATE TEMPORARY TABLE $target.tmp_superctg_map (" .
+  "name VARCHAR(255), new_id INT, ".
+  "INDEX new_idx (new_id))";
+$sth = $dbi->prepare($create_sql);
+$sth->execute or die "Error when creating temporary tmp_superctg_map table";
+$sth = $dbi->prepare("INSERT INTO $target.tmp_superctg_map (name, new_id) VALUES (?, ?)");
+while (my ($name, $new_id) = each %superctg_name_id) {
+  $sth->execute($name, $new_id) || die "Error writing to tmp_superctg_map";
+  #print "$name\t$new_id\n";
+}
+
+
+# ----------------------------------------------------------------------
+# Gene
+# Need to calculate start, end etc
+
+debug("Building gene table");
+
+my $sql =
+  "INSERT INTO $target.gene " .
+  "SELECT g.gene_id, g.type, g.analysis_id, e.contig_id, " .
+  "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
+  "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
+  "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
+  "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
+  "       a.contig_ori*e.contig_strand as strand, " .
+  "       g.display_xref_id " .
+  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+  "WHERE  t.transcript_id = et.transcript_id " .
+  "AND    et.exon_id = e.exon_id " .
+  "AND    e.contig_id = a.contig_id " .
+  "AND    g.gene_id = t.gene_id " . 
+  "GROUP BY g.gene_id";
+execute($dbi, $sql);
+
+# ----------------------------------------------------------------------
+# Transcript
+# Need to calculate start, end etc
+
+debug("Building transcript table");
+
+$sql =
+  "INSERT INTO $target.transcript " .
+  "SELECT t.transcript_id, g.gene_id, e.contig_id, " .
+  "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
+  "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
+  "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
+  "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
+  "       a.contig_ori*e.contig_strand as strand, " .
+  "       g.display_xref_id " .
+  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+  "WHERE  t.transcript_id = et.transcript_id " .
+  "AND    et.exon_id = e.exon_id " .
+  "AND    e.contig_id = a.contig_id " .
+  "AND    g.gene_id = t.gene_id " .
+  "GROUP BY t.transcript_id";
+#print $sql . "\n";
+execute($dbi, $sql);
+
+# ----------------------------------------------------------------------
+# Exon
+# Translation to chromosomal co-ordinates should take care of sticky exons
+# so new exon table will have <= number of rows as old exon table
+debug("Building exon table");
+
+$sql =
+  "INSERT INTO $target.exon " .
+  "SELECT e.exon_id, e.contig_id, " .
+  "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
+  "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
+  "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
+  "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
+  "       a.contig_ori*e.contig_strand as strand, " .
+  "       e.phase, e.end_phase " .
+  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+  "WHERE  t.transcript_id = et.transcript_id " .
+  "AND    et.exon_id = e.exon_id " .
+  "AND    e.contig_id = a.contig_id " .
+  "AND    g.gene_id = t.gene_id " .
+  "GROUP BY e.exon_id";
+#print $sql . "\n";
+execute($dbi, $sql);
+
+# ----------------------------------------------------------------------
+# Translation
+# Now includes transcript_id
+
+debug("Building translation table");
+
+$sql =
+  "INSERT INTO $target.translation " .
+  "SELECT tl.translation_id, ts.transcript_id, tl.seq_start, tl.start_exon_id, tl.seq_end, tl.end_exon_id " .
+  "FROM $source.transcript ts, $source.translation tl " .
+  "WHERE ts.translation_id = tl.translation_id";
+#print $sql . "\n";
+execute($dbi, $sql);
+
+# ----------------------------------------------------------------------
 # Assembly
 
 debug("Building assembly table - contig/chromosome");
 
 execute($dbi,
-	"INSERT INTO $target.assembly " .
-	"SELECT tcm.new_id, " .
-	"a.contig_id, a.chr_start, a.chr_end, a.contig_start, a.contig_end, a.contig_ori " .
-	"FROM $target.tmp_chr_map tcm, $source.assembly a, $source.contig c " .
-	"WHERE tcm.old_id = a.chromosome_id " .
-	"AND c.contig_id = a.contig_id "); # only copy assembly entries that refer to valid contigs
- 
-#xxx #debug("Building assembly table - contig/clone");
-#xxx 
-#xxx #execute($dbi,
-#xxx #	"INSERT INTO $target.assembly " .
-#xxx 
-#xxx 
-#xxx 
-#xxx # ----------------------------------------------------------------------
-#xxx # dna table
-#xxx 
-#xxx debug("Translating dna");
-#xxx execute($dbi, "INSERT INTO $target.dna SELECT dna_id, sequence FROM $source.dna");
-#xxx 
-#xxx # ----------------------------------------------------------------------
-#xxx # Feature tables
-#xxx # Note that we can just rename contig_* to set_region_* since the
-#xxx # contig IDs were copied verbatim into seq_region
-#xxx 
-#xxx # simple_feature
-#xxx debug("Translating simple_feature");
-#xxx execute($dbi, "INSERT INTO $target.simple_feature (simple_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, display_label, analysis_id, score) SELECT simple_feature_id, contig_id, contig_start, contig_end, contig_strand, 'display_label', analysis_id, score FROM $source.simple_feature");
-#xxx 
-#xxx # repeat_feature
-#xxx debug("Translating repeat_feature");
-#xxx execute($dbi, "INSERT INTO $target.repeat_feature (repeat_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, repeat_start, repeat_end, repeat_consensus_id, score) SELECT repeat_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, repeat_start, repeat_end, repeat_consensus_id, score FROM $source.repeat_feature");
-#xxx 
-#xxx # protein_align_feature
-#xxx debug("Translating protein_align_feature");
-#xxx execute($dbi, "INSERT INTO $target.protein_align_feature (protein_align_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, hit_name, cigar_line, evalue, perc_ident, score) SELECT protein_align_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, hit_start, hit_end, hit_name, cigar_line, evalue, perc_ident, score FROM $source.protein_align_feature");
-#xxx 
-#xxx # dna_align_feature
-#xxx debug("Translating dna_align_feature");
-#xxx execute($dbi, "INSERT INTO $target.dna_align_feature (dna_align_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, hit_name, hit_strand, cigar_line, evalue, perc_ident, score) SELECT dna_align_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, hit_start, hit_end, hit_name, hit_strand, cigar_line, evalue, perc_ident, score FROM $source.dna_align_feature");
-#xxx 
-#xxx # marker_feature
-#xxx debug("Translating marker_feature");
-#xxx execute($dbi, "INSERT INTO $target.marker_feature (marker_feature_id, marker_id, seq_region_id, seq_region_start, seq_region_end, analysis_id, map_weight) SELECT marker_feature_id, marker_id, contig_id, contig_start, contig_end, analysis_id, map_weight FROM $source.marker_feature");
-#xxx 
-#xxx # qtl_feature
-#xxx # Note this uses chromosome coords so we have to join with tmp_chr_map to get the mapping
-#xxx debug("Translating qtl_feature");
-#xxx 
-#xxx execute($dbi,
-#xxx 	     "INSERT INTO $target.qtl_feature(seq_region_id, start, end, qtl_id, analysis_id) " .
-#xxx 	     "SELECT tcm.new_id, " .
-#xxx 	     "       q.start, q.end, q.qtl_id, q.analysis_id " .
-#xxx 	     "FROM $target.tmp_chr_map tcm, $source.qtl_feature q " .
-#xxx 	     "WHERE tcm.old_id = q.chromosome_id");
-#xxx 
-#xxx # ----------------------------------------------------------------------
-#xxx # These tables now have seq_region_* instead of chromosome_*
-#xxx 
-#xxx debug("Translating karyotype");
-#xxx execute($dbi,
-#xxx 	     "INSERT INTO $target.karyotype " .
-#xxx 	     "SELECT tcm.new_id, " .
-#xxx 	     "       k.chr_start, k.chr_end, k.band, k.stain " .
-#xxx 	     "FROM $target.tmp_chr_map tcm, $source.karyotype k " .
-#xxx 	     "WHERE tcm.old_id = k.chromosome_id");
-#xxx 
-#xxx 
-#xxx debug("Translating marker_map_location");
-#xxx execute($dbi, 
-#xxx 	     "INSERT INTO $target.marker_map_location " .
-#xxx 	     "SELECT mml.marker_id, mml.map_id, " .
-#xxx 	     "       tcm.new_id, " .
-#xxx 	     "       mml.marker_synonym_id, mml.position, mml.lod_score " .
-#xxx 	     "FROM $target.tmp_chr_map tcm, $source.marker_map_location mml " .
-#xxx 	     "WHERE tcm.old_id = mml.chromosome_id");
-#xxx 
-#xxx debug("Translating map_density");
-#xxx execute($dbi,
-#xxx 	     "INSERT INTO $target.map_density " .
-#xxx 	     "SELECT tcm.new_id, ".
-#xxx 	     "       md.chr_start, md.chr_end, md.type, md.value " .
-#xxx 	     "FROM $target.tmp_chr_map tcm, $source.map_density md " .
-#xxx 	     "WHERE tcm.old_id = md.chromosome_id");
-#xxx 
-#xxx # ----------------------------------------------------------------------
-#xxx # These tables are copied as-is
-#xxx 
-#xxx copy_table($dbi, "supporting_feature");
-#xxx copy_table($dbi, "map");
-#xxx copy_table($dbi, "meta");
-#xxx copy_table($dbi, "analysis");
-#xxx copy_table($dbi, "dnafrag");
-#xxx copy_table($dbi, "exon_stable_id");
-#xxx copy_table($dbi, "exon_transcript");
-#xxx copy_table($dbi, "external_db");
-#xxx copy_table($dbi, "external_synonym");
-#xxx copy_table($dbi, "gene_archive");
-#xxx copy_table($dbi, "gene_description");
-#xxx copy_table($dbi, "gene_stable_id");
-#xxx copy_table($dbi, "go_xref");
-#xxx copy_table($dbi, "identity_xref");
-#xxx copy_table($dbi, "interpro");
-#xxx copy_table($dbi, "map");
-#xxx copy_table($dbi, "mapannotation");
-#xxx copy_table($dbi, "mapannotationtype");
-#xxx copy_table($dbi, "mapfrag");
-#xxx copy_table($dbi, "mapfrag_mapset");
-#xxx copy_table($dbi, "mapping_session");
-#xxx copy_table($dbi, "mapset");
-#xxx copy_table($dbi, "marker");
-#xxx copy_table($dbi, "marker_feature");
-#xxx copy_table($dbi, "marker_synonym");
-#xxx copy_table($dbi, "object_xref");
-#xxx copy_table($dbi, "peptide_archive");
-#xxx copy_table($dbi, "protein_feature");
-#xxx copy_table($dbi, "qtl");
-#xxx copy_table($dbi, "qtl_synonym");
-#xxx copy_table($dbi, "repeat_consensus");
-#xxx copy_table($dbi, "stable_id_event");
-#xxx copy_table($dbi, "transcript_stable_id");
-#xxx copy_table($dbi, "translation_stable_id");
-#xxx copy_table($dbi, "xref");
+	 "INSERT INTO $target.assembly " .
+	 "SELECT tcm.new_id, " .            # asm_seq_region_id (old-new chromosome ID mapping)
+	 "a.contig_id, " .	           # cmp_seq_region_id
+	 "a.chr_start, " .	           # asm_start
+	 "a.chr_end, " .		           # asm_end
+	 "a.contig_start, " .	           # cmp_start
+	 "a.contig_end, " .	           # cmp_end
+	 "a.contig_ori " .	           # ori
+	 "FROM $target.tmp_chr_map tcm, $source.assembly a, $source.contig c " .
+	 "WHERE tcm.old_id = a.chromosome_id " .
+	 "AND c.contig_id = a.contig_id "); # only copy assembly entries that refer to valid contigs
+
+debug("Building assembly table - contig/clone");
+
+execute($dbi,
+	  "INSERT INTO $target.assembly " .
+	  "SELECT tcm.new_id, " .            # asm_seq_region_id (old-new clone ID mapping)
+	  "ctg.contig_id, ".                 # cmp_seq_region_id
+	  "ctg.embl_offset, " .              # asm_start
+	  "ctg.embl_offset+ctg.length-1, " . # asm_end
+	  "1, " .                            # cmp_start
+	  "ctg.length, " .                   # cmp_end
+	  "1 " .                             # ori - contig always positively oriented on the clone
+	  "FROM $target.tmp_cln_map tcm, " .
+	  "$source.clone cln, $source.contig ctg " .
+	  "WHERE tcm.old_id = cln.clone_id " .
+	  "AND cln.clone_id = ctg.clone_id");
+
+debug("Building assembly table - contig/supercontig");
+
+execute($dbi,
+	  "INSERT INTO $target.assembly " .
+	  "SELECT tsm.new_id, " .             # asm_seq_region_id (superctg name-seq_region_id mapping)
+	  "a.contig_id, " .                   # cmp_seq_region_id
+	  "a.superctg_start, " .              # asm_start
+	  "a.superctg_end, " .                # asm_end
+	  "a.contig_start, " .                # cmp_start
+	  "a.contig_end, " .                  # cmp_end
+	  "a.contig_ori " .                   # ori
+	  "FROM $target.tmp_superctg_map tsm, $source.assembly a, $source.contig c " .
+	  "WHERE tsm.name = a.superctg_name " .
+	  "AND c.contig_id = a.contig_id "); # only copy assembly entries that refer to valid contigs
+
+
+# ----------------------------------------------------------------------
+# dna table
+
+debug("Translating dna");
+execute($dbi, "INSERT INTO $target.dna SELECT dna_id, sequence FROM $source.dna");
+
+# ----------------------------------------------------------------------
+# Feature tables
+# Note that we can just rename contig_* to set_region_* since the
+# contig IDs were copied verbatim into seq_region
+
+# simple_feature
+debug("Translating simple_feature");
+execute($dbi, "INSERT INTO $target.simple_feature (simple_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, display_label, analysis_id, score) SELECT simple_feature_id, contig_id, contig_start, contig_end, contig_strand, 'display_label', analysis_id, score FROM $source.simple_feature");
+
+# repeat_feature
+debug("Translating repeat_feature");
+execute($dbi, "INSERT INTO $target.repeat_feature (repeat_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, repeat_start, repeat_end, repeat_consensus_id, score) SELECT repeat_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, repeat_start, repeat_end, repeat_consensus_id, score FROM $source.repeat_feature");
+
+# protein_align_feature
+debug("Translating protein_align_feature");
+execute($dbi, "INSERT INTO $target.protein_align_feature (protein_align_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, hit_name, cigar_line, evalue, perc_ident, score) SELECT protein_align_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, hit_start, hit_end, hit_name, cigar_line, evalue, perc_ident, score FROM $source.protein_align_feature");
+
+# dna_align_feature
+debug("Translating dna_align_feature");
+execute($dbi, "INSERT INTO $target.dna_align_feature (dna_align_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, hit_name, hit_strand, cigar_line, evalue, perc_ident, score) SELECT dna_align_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, hit_start, hit_end, hit_name, hit_strand, cigar_line, evalue, perc_ident, score FROM $source.dna_align_feature");
+
+# marker_feature
+debug("Translating marker_feature");
+execute($dbi, "INSERT INTO $target.marker_feature (marker_feature_id, marker_id, seq_region_id, seq_region_start, seq_region_end, analysis_id, map_weight) SELECT marker_feature_id, marker_id, contig_id, contig_start, contig_end, analysis_id, map_weight FROM $source.marker_feature");
+
+# qtl_feature
+# Note this uses chromosome coords so we have to join with tmp_chr_map to get the mapping
+debug("Translating qtl_feature");
+
+execute($dbi,
+	     "INSERT INTO $target.qtl_feature(seq_region_id, start, end, qtl_id, analysis_id) " .
+	     "SELECT tcm.new_id, " .
+	     "       q.start, q.end, q.qtl_id, q.analysis_id " .
+	     "FROM $target.tmp_chr_map tcm, $source.qtl_feature q " .
+	     "WHERE tcm.old_id = q.chromosome_id");
+
+# ----------------------------------------------------------------------
+# These tables now have seq_region_* instead of chromosome_*
+
+debug("Translating karyotype");
+execute($dbi,
+	     "INSERT INTO $target.karyotype " .
+	     "SELECT tcm.new_id, " .
+	     "       k.chr_start, k.chr_end, k.band, k.stain " .
+	     "FROM $target.tmp_chr_map tcm, $source.karyotype k " .
+	     "WHERE tcm.old_id = k.chromosome_id");
+
+
+debug("Translating marker_map_location");
+execute($dbi, 
+	     "INSERT INTO $target.marker_map_location " .
+	     "SELECT mml.marker_id, mml.map_id, " .
+	     "       tcm.new_id, " .
+	     "       mml.marker_synonym_id, mml.position, mml.lod_score " .
+	     "FROM $target.tmp_chr_map tcm, $source.marker_map_location mml " .
+	     "WHERE tcm.old_id = mml.chromosome_id");
+
+debug("Translating map_density");
+execute($dbi,
+	     "INSERT INTO $target.map_density " .
+	     "SELECT tcm.new_id, ".
+	     "       md.chr_start, md.chr_end, md.type, md.value " .
+	     "FROM $target.tmp_chr_map tcm, $source.map_density md " .
+	     "WHERE tcm.old_id = md.chromosome_id");
+
+# ----------------------------------------------------------------------
+# These tables are copied as-is
+
+copy_table($dbi, "supporting_feature");
+copy_table($dbi, "map");
+copy_table($dbi, "meta");
+copy_table($dbi, "analysis");
+copy_table($dbi, "dnafrag");
+copy_table($dbi, "exon_stable_id");
+copy_table($dbi, "exon_transcript");
+copy_table($dbi, "external_db");
+copy_table($dbi, "external_synonym");
+copy_table($dbi, "gene_archive");
+copy_table($dbi, "gene_description");
+copy_table($dbi, "gene_stable_id");
+copy_table($dbi, "go_xref");
+copy_table($dbi, "identity_xref");
+copy_table($dbi, "interpro");
+copy_table($dbi, "map");
+copy_table($dbi, "mapannotation");
+copy_table($dbi, "mapannotationtype");
+copy_table($dbi, "mapfrag");
+copy_table($dbi, "mapfrag_mapset");
+copy_table($dbi, "mapping_session");
+copy_table($dbi, "mapset");
+copy_table($dbi, "marker");
+copy_table($dbi, "marker_feature");
+copy_table($dbi, "marker_synonym");
+copy_table($dbi, "object_xref");
+copy_table($dbi, "peptide_archive");
+copy_table($dbi, "protein_feature");
+copy_table($dbi, "qtl");
+copy_table($dbi, "qtl_synonym");
+copy_table($dbi, "repeat_consensus");
+copy_table($dbi, "stable_id_event");
+copy_table($dbi, "transcript_stable_id");
+copy_table($dbi, "translation_stable_id");
+copy_table($dbi, "xref");
 
 # ----------------------------------------------------------------------
 
