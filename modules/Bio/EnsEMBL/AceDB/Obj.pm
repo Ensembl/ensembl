@@ -61,7 +61,7 @@ use Bio::EnsEMBL::AceDB::Clone;
 use Bio::EnsEMBL::AceDB::Update_Obj;
 use Ace;
 
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
+@ISA = qw(Bio::Root::Object);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
