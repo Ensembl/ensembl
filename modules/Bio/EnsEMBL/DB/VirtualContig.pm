@@ -447,24 +447,32 @@ sub top_SeqFeatures {
     my ($self,@args) = @_;
     my (@f);
 
-    
+
+    &eprof_start('vc - similarity');
     if( !$self->skip_SeqFeature('similarity')  ) { 
 	push(@f,$self->get_all_SimilarityFeatures());
     } 
-    
+    &eprof_end('vc - similarity');
+
+    &eprof_start('vc - repeat');
     if( !$self->skip_SeqFeature('repeat')  ) { 
 	push(@f,$self->get_all_RepeatFeatures());
     } 
-    
+    &eprof_end('vc - repeat');    
+
+    &eprof_start('vc - external');
     if( !$self->skip_SeqFeature('external')  ) { 
 	push(@f,$self->get_all_ExternalFeatures());
     } 
+    &eprof_end('vc - external');
     
+    &eprof_start('vc - genes');
     foreach my $gene ( $self->get_all_Genes()) {
 	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
 	push(@f,$vg);
     }
-    
+    &eprof_end('vc - genes');    
+
     return @f;
 }
 

@@ -180,7 +180,7 @@ sub get_all_SimilarityFeatures_above_score{
                                f.strand, f.score,f.analysis, f.name, f.hstart, f.hend, f.hid,
                                s.chr_start,s.chr_end,s.raw_ori
 		        FROM   feature f, analysis a,static_golden_path s
-                        WHERE  f.score > $score  
+                        WHERE  f.score > $score
                         AND    f.analysis = a.id 
                         AND    s.raw_id = f.contig
 		        AND    a.db = '$analysis_type'  

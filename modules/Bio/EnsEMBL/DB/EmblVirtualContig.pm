@@ -347,7 +347,24 @@ sub top_SeqFeatures{
    my ($self) = @_;
    my @sf;
 
+   $self->skip_SeqFeature('similarity',1);
+   $self->skip_SeqFeature('external',1);
+
    @sf = $self->SUPER::top_SeqFeatures();
    push(@sf,@{$self->{'additional_seqf'}});
    return @sf;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

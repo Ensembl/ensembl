@@ -9,11 +9,15 @@ use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::EMBL_Dump;
 use strict;
+use Bio::EnsEMBL::Utils::Eprof qw( eprof_start eprof_end eprof_dump);
+
+
+
 
 my $dbuser = 'root';
 my $dbname = 'ens074';
-#my $host = 'obi-wan';
-#my $host = 'cgisrv4';
+my $host = 'obi-wan';
+my $host = 'cgisrv4';
 my $host = 'localhost';
 my $dbpass = undef;
 
@@ -23,7 +27,7 @@ sub get_locator {
 
 $|=1;
 
-my $outpath = '..';
+my $outpath = '../..';
 my @clones = ();
 my @contigs;
 my $db;
@@ -39,8 +43,12 @@ if( $@ ) {
     exit;
 }
 
-
+ 
 @clones = &find_clones($db);
+ 
+
+
+
 
 if ($ARGV[1] =~ /start=(.*)/){
     while ($clones[0] ne $1){
@@ -48,7 +56,7 @@ if ($ARGV[1] =~ /start=(.*)/){
     }
 }
 
-for (0..7900){ shift @clones;}
+for (0..7){ shift @clones;}
 
 my $num = scalar @clones;
 print STDERR "Writing flat files for $num clones...\n";
@@ -63,9 +71,17 @@ my ($clone,$as);
 
 HOP: foreach my $c (@clones){
 	$count++;
+
+&eprof_dump(\*STDERR);	
+
+	print STDERR " clone $c\n";
+
+if ($count==2){exit;}
+
+
 	eval{
 	    $clone = $db->get_Clone($c);
-            $as    = $clone->virtualcontig;
+            $as    = $clone->virtualcontig;	    
 	};
 
 	if ($@){
@@ -74,20 +90,39 @@ HOP: foreach my $c (@clones){
 	}
 
 	eval{
+	    &eprof_start('make_db_flatfiles - genbank');
 	    my $filename = "$outpath/genbank/$c.genbank";
 	    print STDERR "Creating genbank dump file $count: $filename...\n";
 	    open (FLAT, ">$filename") or die "Cannot create flat file ($filename): $!\n";
-            &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
-            my $gbout = Bio::SeqIO->new( '-format' => 'GenBank', -fh => \*FLAT);
+	    
+	    &eprof_start('make_db_flatfiles - add_comments'); 
+           &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
+	    &eprof_end('make_db_flatfiles - add_comments');           
+
+	    &eprof_start('make_db_flatfiles - bio_seq'); 
+	    my $gbout = Bio::SeqIO->new( '-format' => 'GenBank', -fh => \*FLAT);
+	    &eprof_end('make_db_flatfiles - bio_seq');  
+
+	    &eprof_start('make_db_flatfiles - ensembl_dump'); 
             &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($gbout);
+	    &eprof_end('make_db_flatfiles - ensembl_dump'); 
+
             # genbank format - the ID line is wrong. Fall back to locus
-            $gbout->_id_generation_func(undef);
-            $gbout->_ac_generation_func(undef);
+	    #$gbout->_id_generation_func(undef);
+	    #$gbout->_ac_generation_func(undef);
             #$as->accession($clone->id());
             #$as->division("PRI");
-            $gbout->write_seq($as);
+
+	    &eprof_start('make_db_flatfiles - write_seq'); 
+            
+	    print STDERR "as $as gbout $gbout\n";
+	    $gbout->write_seq($as);
+	    &eprof_end('make_db_flatfiles - write_seq'); 
+
 
 	    close(FLAT);
+
+	    &eprof_end('make_db_flatfiles - genbank');
 
 	    my $filename = "$outpath/embl/$c.embl";
 	    print STDERR "Creating embldump file $count: $filename...\n";
@@ -137,4 +172,12 @@ sub find_clones {
 }
 
 ############################################################################
+
+
+
+
+
+
+
+
 
