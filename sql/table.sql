@@ -64,7 +64,8 @@ CREATE TABLE analysis (
   gff_feature                 varchar(40),
 
   PRIMARY KEY (analysis_id),
-  KEY logic_name_idx( logic_name )
+  KEY logic_name_idx( logic_name ),
+  UNIQUE(logic_name)
 
 );
 
