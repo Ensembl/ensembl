@@ -642,4 +642,17 @@ sub fetch_frameshifts {
 }
 
 
+sub store_stable_id {
+    my( $self, $exon ) = @_;
+    
+    my $stable_id = $exon->stable_id or $self->throw("No stable_id");
+    my $db_id     = $exon->dbID      or $self->throw("No dbID");
+    my $sth = $self->prepare(qq{
+        INSERT exon_stable_id (exon_id, stable_id)
+        VALUES ($db_id, '$stable_id')
+        });
+    $sth->execute;
+}
+
+
 1;

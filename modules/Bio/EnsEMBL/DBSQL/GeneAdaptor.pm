@@ -541,6 +541,40 @@ sub store {
    return $gene->dbID;
 }
 
+sub store_all_component_stable_ids {
+    my( $self, $gene ) = @_;
+    
+    $self->store_stable_id($gene);
+    my $dba = $self->db;
+    
+    my $exon_aptr = $dba->get_ExonAdaptor;
+    foreach my $exon ($gene->get_all_Exons) {
+        $exon_aptr->store_stable_id($exon);
+    }
+    
+    my $transcript_aptr = $dba->get_TranscriptAdaptor;
+    foreach my $tscpt ($gene->each_Transcript) {
+        $transcript_aptr->store_stable_id($tscpt);
+        if (my $trnsl = $tscpt->translation) {
+            $dba->get_TranslationAdaptor
+                ->store_stable_id($trnsl);
+        }
+    }
+    
+}
+
+sub store_stable_id {
+    my( $self, $gene ) = @_;
+    
+    my $stable_id = $gene->stable_id or $self->throw("No stable_id");
+    my $db_id     = $gene->dbID      or $self->throw("No dbID");
+    my $sth = $self->prepare(qq{
+        INSERT gene_stable_id (gene_id, stable_id)
+        VALUES ($db_id, '$stable_id')
+        });
+    $sth->execute;
+}
+
 sub remove {
   my $self = shift;
   my $gene = shift;

@@ -94,7 +94,7 @@ sub store {
 
 
   if( !defined $translation->start_exon->dbID || !defined $translation->end_exon->dbID ) {
-    $self->throw("Attempting to write a translation where the dbIDs to the start and exons are not set. This is most likely to be because you assigned the exons for translation start_exon and translation end_exon to be different in memory objects from your trnascript exons - although it could also be an internal error in the adaptors. For your info the exon memory locations are ".$translation->start_exon." and ".$translation->end_exon());
+    $self->throw("Attempting to write a translation where the dbIDs to the start or end exons are not set. This is most likely to be because you assigned the exons for translation start_exon and translation end_exon to be different in memory objects from your transcript exons - although it could also be an internal error in the adaptors. For your info the exon memory locations are ".$translation->start_exon." and ".$translation->end_exon());
   }
 
 
@@ -152,5 +152,19 @@ sub remove {
   $sth->execute( $translation->dbID );
   $translation->dbID( undef );
 }
+
+
+sub store_stable_id {
+    my( $self, $translation ) = @_;
+    
+    my $stable_id = $translation->stable_id or $self->throw("No stable_id");
+    my $db_id     = $translation->dbID      or $self->throw("No dbID");
+    my $sth = $self->prepare(qq{
+        INSERT translation_stable_id (translation_id, stable_id)
+        VALUES ($db_id, '$stable_id')
+        });
+    $sth->execute;
+}
+
 
 1;
