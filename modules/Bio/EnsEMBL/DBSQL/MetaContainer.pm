@@ -64,7 +64,7 @@ use Bio::Species;
 sub list_value_by_key {
   my ($self,$key) = @_;
   my @result;
-  
+
   $self->{'cache'} ||= {};
   if( exists $self->{'cache'}->{$key} ) {
     return $self->{'cache'}->{$key};
@@ -176,6 +176,81 @@ sub get_taxonomy_id {
 }
 
 
+
+=head2 get_top_coord_system
+
+  Arg [1]    : none
+  Example    : $top_level = $meta_container->get_top_coord_system;
+  Description: Retrieves the top-level coordinate system for this database.
+               For a genome that is fully assembled this will be 'chromosome',
+               but for a shattered genome this might be 'supercontig' or
+               'clone'.
+  Returntype : string
+  Exceptions : none
+  Caller     : web?, SliceAdaptor
+
+=cut
+
+
+sub get_top_coord_system {
+  my $self = shift;
+
+  my ($top) = @{$self->get_all_coord_systems};
+
+  return $top;
+}
+
+
+
+=head2 is_valid_coord_system
+
+  Arg [1]    : none
+  Example    : do_something() if ($meta_container->is_valid_coord_system($cs));
+  Description: Returns true if a provided coordinate system is valid.  I.e.
+               that coordinate system is present in the meta table.
+  Returntype : string
+  Exceptions : none
+  Caller     : web?, SliceAdaptor
+
+=cut
+
+sub is_valid_coord_system {
+  my $self = shift;
+  my $coord_system = lc(shift);
+
+  if(!exists($self->{'valid_coord_systems'})) {
+    my %vcs = ();
+    foreach my $value (@{$self->get_all_coord_systems()}) {
+      $vcs{lc($value)} = 1;
+    }
+    $self->{'valid_coord_systems'} = \%vcs;
+  }
+
+  return $self->{'valid_coord_systems'}->{$coord_system};
+}
+
+
+=head2 get_all_coord_systems
+
+  Arg [1]    : none
+  Example    : my @coord_systems = @{$meta_container->get_all_coord_systems};
+  Description: Returns a listref of the valid coordinate systems for this
+               database.
+  Returntype : string
+  Exceptions : none
+  Caller     : web?
+
+=cut
+
+sub get_all_coord_systems {
+  my $self = shift;
+  return $self->list_value_by_key('coord_systems');
+}
+
+
+
+
+
 =head2 get_default_assembly
 
   Arg [1]    : none
@@ -188,6 +263,9 @@ sub get_taxonomy_id {
 
 =cut
 
+#
+# TBD This method should be removed/deprecated
+#
 sub get_default_assembly {
   my $self = shift;
 
@@ -200,6 +278,9 @@ sub get_default_assembly {
   }
 }
 
+#
+# TBD This method should be removed/deprecated
+#
 sub get_max_assembly_contig {
   my $self = shift;
 
@@ -210,6 +291,7 @@ sub get_max_assembly_contig {
     return undef;
   }
 }
+
 
 
 1;
