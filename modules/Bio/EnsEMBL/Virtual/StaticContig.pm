@@ -1406,7 +1406,7 @@ sub _fetch_SimpleFeatures_SQL_clause {
     # retrieval of results.
     my ($fid,
         $start, $end, $strand,
-        $f_score, $analysis_id, $name, $hid, $f_perc_id, $f_evalue );
+        $f_score, $analysis_id, $name, $hid, $f_perc_id, $f_evalue);
     $sth->bind_columns(undef,
         \$fid,
         \$start, \$end, \$strand,
@@ -1437,14 +1437,15 @@ sub _fetch_SimpleFeatures_SQL_clause {
     
         # Make the feature
         my $feat = Bio::EnsEMBL::FeatureFactory->new_feature;
-        $feat->id       ($fid);
-        $feat->start    ($start);
-        $feat->end      ($end);
-        $feat->strand   ($strand);
-        $feat->score    ($f_score);
-        $feat->analysis ($analysis);
-        $feat->percent_id ($f_perc_id) if ( defined $f_perc_id );
-        $feat->p_value ($f_evalue) if ( defined $f_evalue ); 
+        $feat->id        ($fid);
+        $feat->start     ($start);
+        $feat->end       ($end);
+        $feat->strand    ($strand);
+        $feat->score     ($f_score);
+        $feat->analysis  ($analysis);
+        $feat->source_tag($name);
+        $feat->percent_id($f_perc_id) if ( defined $f_perc_id );
+        $feat->p_value   ($f_evalue)  if ( defined $f_evalue ); 
         
         push(@features, $feat);
     }
@@ -2551,24 +2552,30 @@ sub get_all_VirtualGenes_startend
     
     &eprof_start("virtualgene-sql-get");
 
-    my $query ="SELECT     STRAIGHT_JOIN t.gene_id,
-                       MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
-                                  (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
-                       MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
-                                  (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end, 
-                       IF (sgp.raw_ori=1,e.strand,(-e.strand)),
-                       gsi.stable_id
-            FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t, gene_stable_id gsi
-            WHERE      sgp.raw_id=e.contig_id
-            AND        e.contig_id in $idlist 
-            AND        e.exon_id=et.exon_id 
-            AND        t.transcript_id=et.transcript_id 
-            AND        sgp.chr_end >= $glob_start   
-            AND        sgp.chr_start <=$glob_end 
-            AND        sgp.chr_name='$chr_name'
-            AND        sgp.type = '$type'
-            AND        gsi.gene_id = t.gene_id
-            GROUP BY   t.gene_id;";
+    my $query = "
+        SELECT STRAIGHT_JOIN t.gene_id
+          , MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start)
+                  , (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start
+          , MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start)
+                  , (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end
+          , IF (sgp.raw_ori=1,e.strand,(-e.strand))
+          , gsi.stable_id
+          , g.type
+        FROM static_golden_path sgp ,exon e,exon_transcript et,transcript t
+          , gene_stable_id gsi
+          , gene g
+        WHERE sgp.raw_id=e.contig_id
+          AND e.contig_id IN $idlist
+          AND e.exon_id=et.exon_id
+          AND t.transcript_id=et.transcript_id
+          AND sgp.chr_end >= $glob_start
+          AND sgp.chr_start <=$glob_end
+          AND sgp.chr_name='$chr_name'
+          AND sgp.type = '$type'
+          AND gsi.gene_id = t.gene_id
+          AND t.gene_id = g.gene_id
+        GROUP BY t.gene_id
+        ";
 # note: without the e.contig in $idlist, the query results and the query
 # plan are identical. Scrap it ? PL
 
@@ -2581,8 +2588,8 @@ sub get_all_VirtualGenes_startend
     &eprof_start("virtualgene-build");
 
 				# 
-    my ($gene_id,$start,$end,$strand, $stable_id);	# 
-    $sth->bind_columns(undef,\$gene_id,\$start,\$end,\$strand,\$stable_id);
+    my ($gene_id,$start,$end,$strand, $stable_id, $type);	# 
+    $sth->bind_columns(undef,\$gene_id,\$start,\$end,\$strand,\$stable_id,\$type);
 
     while ($sth->fetch){
 	if( $end < 1 ) { 
@@ -2602,6 +2609,7 @@ sub get_all_VirtualGenes_startend
 	$gene=Bio::EnsEMBL::Gene->new();
 	$gene->dbID($gene_id);
 	$gene->stable_id( $stable_id );
+        $gene->type($type);
 
 	&eprof_start("virtualgene-externaldb");
 
