@@ -699,7 +699,7 @@ sub peptide {
 
   my @coords = 
     $tr->genomic2pep($tmp_exon->start, $tmp_exon->end, $tmp_exon->strand);
-  
+
   #filter out gaps
   @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
 
@@ -720,7 +720,7 @@ sub peptide {
     $start = ($c->start < $end) ? $c->start : $end;
     $pep_str = $tr->translate->subseq($start, $end);
   }
-    
+
   return Bio::Seq->new(-seq => $pep_str, 
 		       -moltype => 'protein',
 		       -alphabet => 'protein',
@@ -736,8 +736,10 @@ sub peptide {
   Description: Retrieves the dna sequence of this Exon.
                Returned in a Bio::Seq object.  Note that the sequence may
                include UTRs (or even be entirely UTR).
-  Returntype : Bio::Seq
-  Exceptions : warning if argument passed, warning if exon->contig not defined
+  Returntype : Bio::Seq or undef
+  Exceptions : warning if argument passed,
+               warning if exon does not have attatched slice
+               warning if exon strand is not defined (or 0)
   Caller     : general
 
 =cut
@@ -755,17 +757,22 @@ sub seq {
     my $seq;
 
     if ( ! defined $self->slice ) {
-      warning(" this exon doesn't have a slice you won't get a seq \n");
+      warning("Cannot retrieve seq for exon without slice\n");
       return undef;
-    } else {
-      $seq = $self->slice()->subseq($self->start, $self->end, $self->strand);
     }
+
+    if(!$self->strand()) {
+      warning("Cannot retrieve seq for unstranded exon\n");
+      return undef;
+    }
+
+    $seq = $self->slice()->subseq($self->start, $self->end, $self->strand);
     $self->{'_seq_cache'} = $seq;
   }
 
   return Bio::Seq->new(-seq     => $self->{'_seq_cache'},
                        -id      => $self->stable_id,
-                       -moltype => 'dna'); 
+                       -moltype => 'dna');
 }
 
 
