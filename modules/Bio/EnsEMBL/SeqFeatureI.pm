@@ -12,27 +12,17 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::SeqFeature - Ensembl specific sequence feature.
+Bio::EnsEMBL::SeqFeatureI - Ensembl specific sequence feature interface.
 
 =head1 SYNOPSIS
 
-    my $feat = new Bio::EnsEMBL::SeqFeature(-seqname => 'pog',
-					    -start   => 100,
-					    -end     => 220,
-					    -strand  => -1,
-					    -frame   => 1,
-					    -source  => 'tblastn_vert',
-					    -primary => 'similarity',
-					    -analysis => $analysis
-					    );
+    my $feat = get_feature_from_somewhere;
 
-    # $analysis is a Bio::EnsEMBL::Analysis::Analysis object
-    
-    # SeqFeatureI methods can be used
+    # Bio::SeqFeatureI methods can be used
     my $start = $feat->start;
     my $end   = $feat->end;
 
-    # Bio::EnsEMBL::SeqFeature specific methods can be used
+    # New Bio::EnsEMBL::SeqFeatureI specific methods are :
     my $analysis = $feat->analysis;
 
     # Validate all the data in the object
@@ -40,7 +30,7 @@ Bio::EnsEMBL::SeqFeature - Ensembl specific sequence feature.
 
 =head1 DESCRIPTION
 
-This is an implementation of the ensembl Bio::EnsEMBL::SeqFeatureI interface.  Extra
+This is an extension of the bioperl Bio::SeqFeatureI interface.  Extra
 methods are to store details of the analysis program/database/version used
 to create this data and also a method to validate all data in the object is
 present and of the right type.  This is useful before writing into
@@ -60,32 +50,41 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::SeqFeature;
+package Bio::EnsEMBL::SeqFeatureI;
 
 use vars qw(@ISA);
 use strict;
+use Carp;
 
-# Object preamble - inheriets from Bio::Root::Object
+# Object preamble - inherits from Bio::Root::Object
 
 use Bio::SeqFeatureI;
-use Bio::Root::Object;
 
-@ISA = qw(Bio::SeqFeatureI
-	  Bio::Root::Object);
+@ISA = qw(Bio::SeqFeatureI Exporter);
 
-# new is inherited from Bio::Root::Object
+sub _abstractDeath {
+    my $self = shift;
+    my $package = ref $self;
+    my $caller = (caller)[1];
+    
+    confess "Abstract method '$caller' defined in interface Bio::SeqFeatureI not implemented by package $package";
+}
 
-sub _initialize {
-  my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
+=head1 Abstract methods
 
-  my ($analysis) = $self->_rearrange([qw(ANALYSIS
-					 )],@args);
+These methods must be implemented in all subclasses.
 
-  $self->analysis($analysis);
+=head2
 
-  return $make; # success - we hope!
+  Title   : new
+  Function: confesses if you try to instantiate a SeqFeatureI
+
+=cut
+
+sub new {
+    my ($self,@args) = @_;
+    $self->_abstractDeath();
 }
 
 =head2 analysis
@@ -105,12 +104,7 @@ sub _initialize {
 sub analysis {
    my ($self,$value) = @_;
 
-   if (defined($value)) {
-       $self->throw("Analysis is not a Bio::EnsEMBL::Analysis::Analysis object") unless 
-	   $value->isa("Bio::EnsEMBL::Analysis::Analysis");
-       $self->{_analysis} = $value;
-   }
-   return $self->{_analysis};
+   $self->_abstractDeath;
 
 }
 
@@ -131,7 +125,6 @@ sub validate {
    my ($self,$value) = @_;
 
    $self->_abstractDeath;
-
 }
 
 
