@@ -354,11 +354,21 @@ sub get_all_RepeatFeatures {
 sub get_all_ExternalFeatures{
    my ($self,$glob) = @_;
    
+
+   if (! defined $glob) {
+       $glob=0;
+   }
+
+   
    my @web;
    my @std;
 
    my @features;
    my @contig_features;
+
+   if( scalar($self->_vmap->get_all_RawContigs) == 0) {
+       return();
+   }
 
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
        if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
@@ -377,12 +387,15 @@ sub get_all_ExternalFeatures{
 	       $cloneh{$contig->cloneid} = [];
 	       $featureh{$contig->cloneid} = [];
 	   }
-	   push(@clones,$contig->cloneid.$contig->seq_version);
+	   my $string = $contig->cloneid.".".$contig->seq_version;
+	  
+	   push(@clones,$string);
 	   push(@{$cloneh{$contig->cloneid}},$contig);
        }
        # get them out, push into array by clone
        foreach my $extf ( @web ) {
 	   foreach my $feature ( $extf->get_Ensembl_SeqFeatures_clone_web($glob,@clones) ) {
+	      
 	       my $clone = $feature->seqname;
 	       $clone =~ s/\.\d+$//g;
 	       push(@{$featureh{$clone}},$feature);
@@ -400,7 +413,7 @@ sub get_all_ExternalFeatures{
 	       while( $current_contig->length + $current_contig->embl_offset < $f->start ) {
 		   $current_contig = shift @contigs;
 	       }
-	       if( $f->end < $current_contig->start ) {
+	       if( $f->end < $current_contig->embl_offset ) {
 		   next; # not on a contig on this golden path presumably
 	       }
 	       $f->start($f->start - $current_contig->embl_offset+1);
