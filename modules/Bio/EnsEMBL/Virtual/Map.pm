@@ -319,6 +319,18 @@ sub get_all_MapContigs {
 }
 
 
+sub get_all_RawContigs {
+    my ($self) = @_;
+
+    my @contigs;
+
+    foreach my $contig ($self->each_MapContig) {
+	push(@contigs,$contig->contig);
+    }
+
+    return @contigs;
+}
+
 =head2 raw_contig_position
 
  Title   : raw_contig_position

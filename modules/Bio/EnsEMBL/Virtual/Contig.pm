@@ -792,7 +792,7 @@ sub _convert_seqfeature_to_vc_coords {
     # potentially we could be asked to convert something
     # that wasn't on this VC at all, eg, an exon from a distant contig
     eval {
-	$mc=$self->_vmap->get_MapContig($cid);
+	$mc=$self->_vmap->get_MapContig_by_id($cid);
     };
     if ($@) { 
 	return undef;
@@ -843,53 +843,21 @@ sub _convert_seqfeature_to_vc_coords {
     # might be clipped left/right
     #print ("Leftmost " . $mc->leftmost . " " . $mc->orientation . " " . $mc->start_in . " " . $mc->end_in  . " " . $sf->start . " " . $sf->end . "\n");
 
-
-    if ($mc->leftmost){
-	
-	if ( $mc->orientation == 1) {
-	    
-	    # If end < startincontig contig for orientation 1 
-	    if ($sf->start < $mc->start_in) {  
-		return undef;              
-	    }
-	    
-	} else {
-	    # If start > startincontig for orientation <> 1
-	    if ($sf->end > $mc->start_in) {  
-		return undef;              
-	    }
-	}
-    }  elsif ($mc->rightmost_end){
-	
-	if ( $mc->orientation == 1) {
-	    
-	    if ($sf->end >  $mc->rightmost_end) {  
-		return undef;              
-	    }
-	    
-	} else {
-            # If start > startincontig for orientation <> 1
-	    if ($sf->start <  $mc->rightmost_end) {  
-		return undef;              
-	    }
-        }
-    }
-    
     
     # Could be clipped on ANY contig
 
     if( $mc->orientation == 1 ) {
-	if ($sf->start < $mc->start_in) {  
+	if ($sf->start < $mc->rawcontig_start) {  
 	    return undef;              
 	}
-	if ($sf->end >  $mc->end_in) {  
+	if ($sf->end >  $mc->rawcontig_end) {  
 	    return undef;              
 	}
     } else {
-	if ($sf->end > $mc->start_in) {  
+	if ($sf->end > $mc->rawcontig_start) {  
 	    return undef;              
 	}
-	if ($sf->start <  $mc->end_in) {  
+	if ($sf->start <  $mc->rawcontig_end) {  
 	    return undef;              
 	}
     }
