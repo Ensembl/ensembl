@@ -2588,8 +2588,8 @@ sub get_all_VirtualGenes_startend
     &eprof_start("virtualgene-build");
 
 				# 
-    my ($gene_id,$start,$end,$strand, $stable_id, $type);	# 
-    $sth->bind_columns(undef,\$gene_id,\$start,\$end,\$strand,\$stable_id,\$type);
+    my ($gene_id,$start,$end,$strand, $stable_id, $gene_type);	# 
+    $sth->bind_columns(undef,\$gene_id,\$start,\$end,\$strand,\$stable_id,\$gene_type);
 
     while ($sth->fetch){
 	if( $end < 1 ) { 
@@ -2609,7 +2609,7 @@ sub get_all_VirtualGenes_startend
 	$gene=Bio::EnsEMBL::Gene->new();
 	$gene->dbID($gene_id);
 	$gene->stable_id( $stable_id );
-        $gene->type($type);
+        $gene->type($gene_type);
 
 	&eprof_start("virtualgene-externaldb");
 
