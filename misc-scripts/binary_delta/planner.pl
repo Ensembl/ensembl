@@ -29,7 +29,7 @@ while (defined(my $line = <>)) {
 
     $line =~ /^(.*)_([1-9][0-9]*_[0-9]*[a-z]?)$/;
     if (!defined($1) || !defined($2) || $1 eq "" || $2 eq "") {
-	printf STDERR "Problems: %s\n", $line;
+	printf STDERR "Problems: '%s'\n", $line;
 	die;	# FIXME:  Doesn't catch everything...
     }
     my $db = $1;
@@ -38,7 +38,6 @@ while (defined(my $line = <>)) {
     push @{ $thing{$db} }, $v;
 }
 
-my @work;
 foreach my $db (keys %thing) {
     foreach my $v (@{ $thing{$db} }) {
 	print <<EOT;
@@ -48,8 +47,8 @@ EOT
 
     for (my $i = 0; $i < scalar @{ $thing{$db} } - 1; ++$i) {
 	print <<EOT;
-perl ./build.pl -c ./xdelta.osf -s databases -d deltas \\
-   $db $thing{$db}[$i] $thing{$db}[$i + 1] | \\
+/usr/bin/time perl ./build.pl -c ./xdelta.osf -s databases -d deltas \\
+   $db $thing{$db}[$i] $thing{$db}[$i + 1] 2>&1 | \\
    tee deltas/${db}_$thing{$db}[$i]_delta_$thing{$db}[$i + 1].txt
 EOT
     }
