@@ -416,14 +416,25 @@ CREATE TABLE symmetric_contig_feature (
 
 CREATE TABLE protein_feature (
   id            int(10) unsigned NOT NULL auto_increment,
+  translation   varchar(40) NOT NULL,	
   seq_start     int(10) NOT NULL,
   seq_end       int(10) NOT NULL,
-  score         double(16,4) NOT NULL,
   analysis      int(10) unsigned NOT NULL,
-  translation   varchar(40) NOT NULL,
   hstart        int(10) NOT NULL,
   hend          int(10) NOT NULL,
   hid           varchar(40) NOT NULL,
+  score         double(16,4) NOT NULL,
+  evalue        double(16,4),
+  perc_id       int(10),
 
   PRIMARY KEY   (id)
+);
+
+#
+#Table structure for table 'interpro'
+#
+
+CREATE TABLE interpro (
+  interpro_ac	varchar(40) NOT NULL,
+  id		varchar(40) NOT NULL
 );
