@@ -52,6 +52,7 @@ use strict;
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::EMBL_Dump;
 use Bio::SeqIO;
+use Bio::EnsEMBL::Utils::GTF_handler;
 
 use Getopt::Long;
 
@@ -216,14 +217,16 @@ foreach my $vcstring ( @vcstrings ) {
 	    my $vcid = $vc->id();
 
 	    if( $format =~ /pep/ ) {
-		my $geneid = $gene->id();
-		foreach my $trans ( $gene->each_Transcript ) {
-		    my $tseq = $trans->translate();
-		    if( $tseq->seq =~ /\*/ ) {	
-			print STDERR $trans-id," got stop codons. Not dumping. on $vcid\n";
+		foreach my $gene ( @genes ) {
+		    my $geneid = $gene->id();
+		    foreach my $trans ( $gene->each_Transcript ) {
+			my $tseq = $trans->translate();
+			if( $tseq->seq =~ /\*/ ) {	
+			    print STDERR $trans-id," got stop codons. Not dumping. on $vcid\n";
+			}
+			$tseq->desc("VirtualContig:$vcid Gene:$geneid");
+			$seqout->write_seq($tseq);
 		    }
-		    $tseq->desc("VirtualContig:$vcid Gene:$geneid");
-		    $seqout->write_seq($tseq);
 		}
 	    } elsif ( $format =~ /gtf/ ) {
 	      Bio::EnsEMBL::Utils::GTF_handler->dump_genes($OUT,@genes);
