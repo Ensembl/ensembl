@@ -532,7 +532,10 @@ sub _pre_store {
   $self->_check_start_end_strand($feature->start(),$feature->end(),
                                  $feature->strand());
 
-  my $slice_adaptor = $self->db->get_SliceAdaptor();
+
+  my $db = $self->db();
+
+  my $slice_adaptor = $db->get_SliceAdaptor();
   my $slice = $feature->slice();
 
   if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
@@ -562,13 +565,27 @@ sub _pre_store {
   # Ensure that this type of feature is known to be stored in this coord
   # system.
   #
-  my $csa = $self->db->get_CoordSystemAdaptor();
+  my $csa = $db->get_CoordSystemAdaptor();
   my $cs = $slice->coord_system;
 
   my ($tab) = $self->_tables();
   my $tabname = $tab->[0];
 
   $csa->add_feature_table($cs, $tabname);
+
+  # we have to update the meta coord table in both the dna db and the feature
+  # db so that the feature db can be used independently later
+
+  if($db->dnadb() != $db) {
+    my $dnadb = $db->dnadb();
+    $db->dnadb(undef); # unset the dnadb temporarily
+
+    #get a coord system adaptor from the feature database
+    $csa = $db->get_CoordSystemAdaptor();
+    $csa->add_feature_table($cs, $tabname);
+
+    $db->dnadb($dnadb); # reinstate the dnadb
+  }
 
   my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
 
