@@ -386,11 +386,71 @@ sub fetch_snp_features {
 
 }
 
-
-
-
-
-
+sub fetch_virtualfeatures {
+    my ( $self, $chr, $vc_start, $vc_end, $type, $score, $glob ) =@_;
+    my $_db_name = $self->{'_lite_db_name'};
+    my $cache_name = "_$type"."_cache_$chr"."_$vc_start"."_$vc_end"."_$score";
+    return $self->{$cache_name} if( $self->{$cache_name} );
+    my $sth = $self->prepare(
+        "select id, score, chr_name, chr_start, chr_end, chr_strand
+           from $_db_name.js5_$type
+          where chr_name=? and chr_start<=? and chr_start >= ? and chr_end >= ? and
+                score >= ?"
+    );
+    eval {
+        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start, $score );
+    };
+    return [] if($@);
+    my @features;
+    while( my $row = $sth->fetchrow_arrayref() ) {
+        push @features, {
+            'chr_name'  => $row->[2],
+            'chr_start' => $row->[3],
+            'chr_end'   => $row->[4],
+            'start'     => $row->[3] - $vc_start + 1,
+            'end'       => $row->[4] - $vc_start + 1,
+            'strand'    => $row->[5],
+            'id'        => $row->[0],
+            'score'     => $row->[1]
+        };
+    }
+    return $self->{$cache_name} = \@features;
+}
+    
+sub fetch_virtualsnps {
+    my ( $self, $chr, $vc_start, $vc_end, $glob ) =@_;
+    my $_db_name = $self->{'_lite_db_name'};
+    my $cache_name = "_snp_cache_$chr"."_$vc_start"."_$vc_end";
+    return $self->{$cache_name} if( $self->{$cache_name} );
+    my $sth = $self->prepare(
+        "select  snp_chrom_start, strand,chrom_strand,
+                 refsnpid, tscid, hgbaseid, clone 
+        FROM   	 $_db_name.snp
+        WHERE  	 chr_name=?
+        AND      snp_chrom_start>=?
+	    AND      snp_chrom_start<=?"
+    );
+    eval {
+        $sth->execute( $chr, $vc_start, $vc_end );
+    };
+    return [] if($@);
+    my @variations;
+    while( my $row = $sth->fetchrow_arrayref() ) {
+        push @variations, {
+            'chr_name'  => $chr,
+            'chr_start' => $row->[0],
+            'chr_end'   => $row->[0],
+            'start'     => $row->[0] - $vc_start + 1,
+            'end'       => $row->[0] - $vc_start + 1,
+            'strand'    => $row->[2],
+            'id'        => $row->[3],
+            'tscid'     => $row->[4],
+            'hgbaseid'  => $row->[5],
+            'clone'     => $row->[6],
+        };
+    }
+    return $self->{$cache_name} = \@variations;
+}
 
 1;
 __END__

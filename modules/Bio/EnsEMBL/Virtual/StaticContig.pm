@@ -718,7 +718,17 @@ sub get_all_SNPFeatures {
   return @snps;
 }
 
+sub get_all_SNPFeatures_lite {
+  my ($self,$bp) = @_;
+  return $self->dbobj->get_LiteAdaptor->fetch_virtualsnps(
+     $self->_chr_name, $self->_global_start, $self->_global_end, $bp );
+}
 
+sub get_all_virtualfeatures_lite {
+  my ($self,$type,$score,$bp) = @_;
+  return $self->dbobj->get_LiteAdaptor->fetch_virtualfeatures(
+     $self->_chr_name, $self->_global_start, $self->_global_end, $type,$score,$bp );
+}
 
 
 =head2 get_all_RepeatFeatures
