@@ -381,9 +381,9 @@ sub fetch_by_translation_stable_id {
 
 =head2 fetch_all_by_external_name
 
-  Arg [1]    : in $external_id
+  Arg [1]    : string $external_id
                the external identifier for the gene to be obtained
-  Example    : @genes = @{$gene_adaptor->fetch_all_by_external_name($ext_id)}
+  Example    : @genes = @{$gene_adaptor->fetch_all_by_external_name('BRCA2')}
   Description: retrieves a list of genes with an external database 
                idenitifier $external_id.  The genes returned are in their
                native coordinate system.  I.e. in the coordinate system they
@@ -520,7 +520,7 @@ sub store {
 
    foreach my $trans ( @{$gene->get_all_Transcripts} ) {
      foreach my $e ( @{$trans->get_all_Exons} ) {
-       my $key = $e->start()."-".$e->end()."-".$e->strand()."-".$e->phase()."-".$e->end_phase();
+       my $key = $e->hashkey();
 
        if( exists $exons{ $key } ) {
          $trans->swap_exons( $e, $exons{$key} );
@@ -604,14 +604,16 @@ sub get_Interpro_by_geneid {
     my $sql="
 	SELECT	i.interpro_ac, 
 		x.description 
-        FROM	transcript t, 
+  FROM	transcript t,
+    translation tl, 
 		protein_feature pf, 
 		interpro i, 
-                xref x,
+    xref x,
 		gene_stable_id gsi
 	WHERE	gsi.stable_id = '$gene' 
 	    AND	t.gene_id = gsi.gene_id
-	    AND	t.translation_id = pf.translation_id 
+      AND tl.transcript_id = t.transcript_id
+	    AND	tl.translation_id = pf.translation_id 
 	    AND	i.id = pf.hit_id 
 	    AND	i.interpro_ac = x.dbprimary_acc";
    
