@@ -443,14 +443,15 @@ sub write_Exon{
 
 
 sub write_Contig {
-   my($self,$clone,$dna)  = @_;
+   my($self,$contig,$clone)  = @_;
 
-   if( ! $dna->isa('Bio::Seq') ) {
-       $self->throw("$dna is not a Bio::Seq can't insert contig for clone $clone");
+   if( ! $contig->isa('Bio::EnsEMBL::DB::ContigI') ) {
+       $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI  - can't insert contig for clone $clone");
    }
 
-   $dna->id  || $self->throw("No contig id entered.");
-   $clone    || $self->throw("No clone entered.");
+   my $dna = $contig->seq || $self->throw("No sequence in contig object");
+             $dna->id     || $self->throw("No contig id entered.");
+             $clone       || $self->throw("No clone entered.");
 
    my $contigid  = $dna->id;
    my $date      = `date '+%Y-%m-%d'`; chomp $date;
