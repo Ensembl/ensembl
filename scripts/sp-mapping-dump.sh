@@ -28,7 +28,7 @@ FROM transcript tsc,
 WHERE tsc.translation_id = ox.ensembl_id 
   AND ox.xrefId = x.xrefId
   AND x.externalDBId = xdb.externalDBId
-  AND xdb.db_name in ('SWISS-PROT', 'SPTREMBL')
+  AND xdb.db_name in ('SWISSPROT', 'SPTREMBL')
 order by tsc.gene_id asc, xdb.db_name desc, x.dbprimary_id asc
 into outfile '$outfile'
 EOF
