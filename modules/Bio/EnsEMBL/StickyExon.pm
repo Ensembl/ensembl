@@ -400,7 +400,11 @@ sub peptide {
   #the peptide of this sticky is the region spanned by the component exons
   my $pep_str = '';
   if($pep_start && $pep_end) {
-    $pep_str = $tr->translate->subseq($pep_start, $pep_end);
+    #stop codon is trimmed off end so end may be past end of sequence
+    my $pep = $tr->translate();
+    my $len = $pep->length();
+    $pep_end = $len if($len < $pep_end);
+    $pep_str = $pep->subseq($pep_start, $pep_end);
   }
 
   return Bio::Seq->new(-seq => $pep_str, 
