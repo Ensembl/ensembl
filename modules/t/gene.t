@@ -2,7 +2,7 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 21;
+	plan tests => 22;
 }
 
 my $loaded = 0;
@@ -14,7 +14,7 @@ use Bio::EnsEMBL::Gene;
 $loaded = 1;
 
 # switch on the debug prints
-my $verbose = 0;
+my $verbose = 1;
 
 ok(1);
 
@@ -201,6 +201,18 @@ foreach my $trans( @{$gene_out->get_all_Transcripts()} ){
 
 ok($translate == 1);
 
+my $t = $gene_out->get_all_Transcripts()->[1];
+my $e = $t->get_all_Exons()->[0];
+
+my $pep1 = $t->translate()->seq();
+
+$e->phase(1);
+my $pep2 = $t->translate()->seq();
+
+debug( "Pep phase 0: $pep1" );
+debug( "Pep phase 1: $pep2" );
+
+ok( $pep1 ne $pep2 );
 
 
 $multi->restore();
