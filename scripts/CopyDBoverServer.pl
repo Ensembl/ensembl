@@ -16,8 +16,8 @@ source_server\tsource_database\tdestination_server\tdestination_database
 
 e.g.
 
-#source_server\\tsource_db\\tdestination_server\\tdestination_db
-ecs3d.internal.sanger.ac.uk     homo_sapiens_core_13_31 ecs2d.internal.sanger.ac.uk     homo_sapiens_core_14_31
+#source_server\\tsource_port\\tsource_db\\tdestination_server\\tdestination_port\\tdestination_db
+ecs3d.internal.sanger.ac.uk 3306 homo_sapiens_core_13_31 ecs2d.internal.sanger.ac.uk 3306 homo_sapiens_core_14_31
 
 Lines starting with # are ignored and considered as comments.
 
@@ -29,6 +29,7 @@ RESTRICTIONS:
 2- This script works only for copy processes from and to ecs nodes, namely
    ecs1[abcdefgh]
    ecs2[abcdef]
+   ecs4
    ecs3d only
 3- -pass is compulsory and is expected to be the mysql password to connect as ensadmin
 
@@ -48,27 +49,29 @@ if ($help || scalar @ARGV == 0 || ! defined $pass) {
 my ($input_file) = @ARGV;
 my @dbs_to_copy;
 
-my %mysql_directory_per_svr = ('ecs1a' => "/mysql1a",
-			       'ecs1b' => "/mysql2a",
-			       'ecs1c' => "/mysql3a",
-			       'ecs1d' => "/mysql4a",
-			       'ecs1e' => "/mysql5a",
-			       'ecs1f' => "/mysql6a",
-			       'ecs1g' => "/mysql7a",
-			       'ecs1h' => "/mysql_archive",
-			       'ecs2a' => "/mysqla",
-			       'ecs2b' => "/mysqlb",
-			       'ecs2c' => "/mysqlc",
-			       'ecs2d' => "/mysqld",
-			       'ecs2e' => "/mysqle",
-			       'ecs2f' => "/mysqlf",
-			       'ecs3d' => "/mysqld");
+my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/current/var",
+			       'ecs1b:3306' => "/mysql2a/current/var",
+			       'ecs1c:3306' => "/mysql3a/current/var",
+			       'ecs1d:3306' => "/mysql4a/current/var",
+			       'ecs1e:3306' => "/mysql5a/current/var",
+			       'ecs1f:3306' => "/mysql6a/current/var",
+			       'ecs1g:3306' => "/mysql7a/current/var",
+			       'ecs1h:3306' => "/mysql_archive/current/var",
+			       'ecs2a:3306' => "/mysqla/current/var",
+			       'ecs2b:3306' => "/mysqlb/current/var",
+			       'ecs2c:3306' => "/mysqlc/current/var",
+			       'ecs2d:3306' => "/mysqld/current/var",
+			       'ecs2e:3306' => "/mysqle/current/var",
+			       'ecs2f:3306' => "/mysqlf/current/var",
+			       'ecs3d:3307' => "/mysqld/current/var",
+			       'ecs4:3350' => "/mysql-3350",
+			       'ecs4:3351' => "/mysql-3351",
+			       'ecs4:3352' => "/mysql-3352",
+			       'ecs4:3353' => "/mysql-3353");
 
-my $source_port = 3306;
-my %mysql_port_per_svr = ('ecs3d' => 3307);
 my $working_host = $ENV{'HOST'};
 my $generic_working_host = $working_host;
-$generic_working_host =~ s/(ecs[123]).*/$1/;
+$generic_working_host =~ s/(ecs[1234]).*/$1/;
 my $working_dir = $ENV{'PWD'};
 my $copy_executable = "/usr/bin/cp";
 my %already_flushed;
@@ -80,35 +83,38 @@ open F, $input_file ||
 
 while (my $line = <F>) {
   next if ($line =~ /^\#.*$/);
-  if ($line =~ /^(\S+)\t(\S+)\t(\S+)\t(\S+)$/) {
-    my ($src_srv,$src_db,$dest_srv,$dest_db) = ($1,$2,$3,$4);
+  if ($line =~ /^(\S+)\t(\d+)\t(\S+)\t(\S+)\t(\d+)\t(\S+)$/) {
+    my ($src_srv,$src_port,$src_db,$dest_srv,$dest_port,$dest_db) = ($1,$2,$3,$4,$5,$6);
     unless ($dest_srv =~ /^$generic_working_host.*$/) {
       my $generic_destination_server = $dest_srv;
-      $generic_destination_server =~ s/(ecs[123]).*/$1/;
+      $generic_destination_server =~ s/(ecs[1234]).*/$1/;
       warn "// skipped copy of $src_db from $src_srv to $dest_srv
 // this script should be run on a generic destination host $generic_destination_server\n";
       next;
     }
     my $src_srv_ok = 0;
     my $dest_srv_ok = 0;
-    foreach my $available_srv (keys %mysql_directory_per_svr) {
-      if ($src_srv =~ /^$available_srv.*$/) {
+    foreach my $available_srv_port (keys %mysql_directory_per_svr) {
+      my ($srv,$port) = split ":", $available_srv_port;
+      if ($src_srv =~ /^$srv.*$/ && $src_port == $port) {
 	$src_srv_ok = 1;
       }
-      if ($dest_srv =~ /^$available_srv.*$/) {
+      if ($dest_srv =~ /^$srv.*$/ && $dest_port == $port) {
 	$dest_srv_ok = 1;
       }
     }
     unless ($src_srv_ok && $dest_srv) {
       warn "// skipped copy of $src_db from $src_srv to $dest_srv
-// this script works only to copy dbs between certain ecs nodes" .
+// this script works only to copy dbs between certain ecs_nodes:mysql_port" .
 join(", ", keys %mysql_directory_per_svr) ."\n";
       next;
     }
     my %hash = ('src_srv' => $src_srv,
 		'src_db' => $src_db,
+		'src_port' => $src_port,
 		'dest_srv' => $dest_srv,
 		'dest_db' => $dest_db,
+		'dest_port' => $dest_port,
 		'status' => "FAILED");
     push @dbs_to_copy, \%hash;
   } else {
@@ -130,23 +136,18 @@ foreach my $db_to_copy (@dbs_to_copy) {
 // Starting new copy process
 //\n";
 
-
   my $source_srv = $db_to_copy->{src_srv};
-  $source_srv =~ s/(ecs[123].{1}).*/$1/;
-  if (defined $mysql_port_per_svr{$source_srv}) {
-    $source_port = $mysql_port_per_svr{$source_srv};
-  }
-  my $source_db = $mysql_directory_per_svr{$source_srv}."/current/var/".$db_to_copy->{src_db};
+  $source_srv =~ s/(ecs[1234][a-h]?)\.*.*/$1/;
+  my $source_port = $db_to_copy->{src_port};
+
+  my $source_db = $mysql_directory_per_svr{$source_srv . ":" . $source_port} . "/" . $db_to_copy->{src_db};
 
   my $destination_srv = $db_to_copy->{dest_srv};
-  $destination_srv =~ s/(ecs[123].{1}).*/$1/;
-  my $destination_tmp_directory = $mysql_directory_per_svr{$destination_srv}."/current/tmp";
-  unless (-e $destination_tmp_directory && -d $destination_tmp_directory) {
-    print STDERR "// temporary destination directory $destination_tmp_directory does not exist.
-// Create it before trying to copy the database.
-// Skipped copy of $source_db of $source_srv\n";
-  }
-  my $destination_directory = $mysql_directory_per_svr{$destination_srv}."/current/var";
+  $destination_srv =~ s/(ecs[1234][a-h]?)\.*.*/$1/;
+  my $destination_port = $db_to_copy->{dest_port};
+
+  my $destination_tmp_directory = "/tmp";
+  my $destination_directory = $mysql_directory_per_svr{$destination_srv . ":" . $destination_port};
 
   # checking that destination db does not exist
   if (-e "$destination_directory/$db_to_copy->{dest_db}") {
@@ -157,10 +158,11 @@ foreach my $db_to_copy (@dbs_to_copy) {
     next;
   }
   
-  my $myisamchk_executable = $mysql_directory_per_svr{$destination_srv}."/current/bin/myisamchk";
-    
-  $source_srv =~ s/(ecs[123]).*/$1/;
-  $destination_srv =~ s/(ecs[123]).*/$1/;
+#  my $myisamchk_executable = $mysql_directory_per_svr{$destination_srv}."/current/bin/myisamchk";
+  my $myisamchk_executable = "/usr/local/ensembl/mysql/bin/myisamchk";
+  
+  $source_srv =~ s/(ecs[1234]).*/$1/;
+  $destination_srv =~ s/(ecs[1234]).*/$1/;
 
   if ($source_srv ne $destination_srv) {
     $copy_executable = "/usr/bin/rcp";
@@ -221,7 +223,7 @@ skipped checking/copying of $db_to_copy->{dest_db}\n";
     next;
   }
 
-  # moved db to mysql directory if checking went fine, skip otherwise
+  # moves db to mysql directory if checking went fine, skip otherwise
   if (system("mv $destination_tmp_directory/$db_to_copy->{dest_db} $destination_directory") == 0) {
     print STDERR "// moving $destination_tmp_directory/$db_to_copy->{dest_db} to $destination_directory DONE\n";
   } else {
