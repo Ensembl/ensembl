@@ -27,3 +27,36 @@ CREATE TABLE deleted_id (
   id_type varchar(40) DEFAULT '' NOT NULL, 
   PRIMARY KEY (old_id,id_type)
 );
+
+
+create TABLE gene_stable (
+       internal_id            int(10) unsigned NOT NULL auto_increment,
+       external_id	     varchar(40) NOT NULL,
+       created   datetime NOT NULL,
+       PRIMARY KEY(internal_id),
+       UNIQUE (external_id)
+);
+
+create TABLE exon_stable (
+       internal_id            int(10) unsigned NOT NULL auto_increment,
+       external_id	     varchar(40) NOT NULL,
+       created   datetime NOT NULL,
+       PRIMARY KEY(internal_id),
+       UNIQUE (external_id)
+);
+
+create TABLE transcript_stable (
+       internal_id            int(10) unsigned NOT NULL auto_increment,
+       external_id	     varchar(40) NOT NULL,
+       created   datetime NOT NULL,
+       PRIMARY KEY(internal_id),
+       UNIQUE (external_id)
+);
+
+create TABLE translation_stable (
+       internal_id            int(10) unsigned NOT NULL auto_increment,
+       external_id	     varchar(40) NOT NULL,
+       created   datetime NOT NULL,
+       PRIMARY KEY(internal_id),
+       UNIQUE (external_id)
+);
