@@ -1461,8 +1461,30 @@ sub get_all_FPCClones {
     return @fpcclones;
 }
 
-   
+sub get_all_clones_in_cloneset {
+    my $self = shift;
+    my $cloneset = shift;
+    
+    my $mapdb;
+    eval {
+        $mapdb = $self->dbobj->mapdb();
+    };
+    if( $@ || !defined $mapdb ) {
+	    $self->warn("in get_all_clones_in_cloneset, unable to get mapdb. Returning empty list [$@]");
+	    return ();
+    }
+    my $glob_start = $self->_global_start;
+    my $glob_end   = $self->_global_end;
+    my $length     = $self->length;
+    my $chr_name   = $self->_chr_name;
+    my $fpcmap = $mapdb->get_Map('FPC');
+    $chr_name =~ s/chr//g;
 
+    my $chr = $fpcmap->get_ChromosomeMap($chr_name);
+
+    my @cloneset = $chr->get_all_clones_in_cloneset($cloneset, $glob_start, $glob_end);
+    return @cloneset;
+}
 sub get_landmark_MarkerFeatures_old {
 
 my ($self) = @_;
