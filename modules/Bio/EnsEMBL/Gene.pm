@@ -195,7 +195,7 @@ sub id{
 
 sub each_cloneid_neighbourhood{
    my ($self) = @_;
-   
+
    return @{$self->{'_clone_neighbourhood'}};
 }
 
