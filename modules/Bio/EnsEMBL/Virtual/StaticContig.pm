@@ -176,15 +176,15 @@ sub get_all_SimilarityFeatures_above_score{
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
-    
+    print STDERR "Speedy method....\n";
     my    $statement = "SELECT f.id, 
                       IF     (sgp.raw_ori=1,
-                                 (f.seq_start+sgp.chr_start-sgp.raw_start),
-                                 (sgp.chr_start+sgp.raw_end-f.seq_end)) as start,
+                                 (f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,
   
                       IF     (sgp.raw_ori=1,
-                                 (f.seq_end+sgp.chr_start-sgp.raw_start),
-                                 (sgp.chr_start+sgp.raw_end-f.seq_start)), 
+                                 (f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
                       IF     (sgp.raw_ori=1,
                                   f.strand,
                                   (-f.strand)),
@@ -211,29 +211,29 @@ sub get_all_SimilarityFeatures_above_score{
     
     
     my @features;
-    my @global_features;
     
     my $out;
     my %analhash;
-    
+    my $length=$self->length;
   FEATURE: 
 
     while($sth->fetch) {
+
+	if (($end > $length) || ($start < 1)) {
+	    next;
+	}
 	
 	my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
 	
-	# exclude overlaping features (for the web)
-	
-    if(  defined $bp && defined $out && $end < $out->end ) { next; }
+	#exclude contained features
+	if(  defined $bp && defined $out && $end < $out->end ) { next; }
 
-
+	#Glob overlapping and close features
 	if ( defined $bp && defined $out && $out->end+$bp >= $start ) {
 		
-	    if( $end <= $self->_global_end ) {
-		# reset previous guys end to end
-		$out->end($end);
-		next;
-	    }
+	    # reset previous guys end to end
+	    $out->end($end);
+	    next;
 	}
 
 	
@@ -255,19 +255,10 @@ sub get_all_SimilarityFeatures_above_score{
 			     $hstart,$hend,1,$f_score,$name,'similarity',$hid);
 
 	$out->analysis($analysis);
-	push(@global_features,$out);
+	push(@features,$out);
     }
-
-    foreach $out ( @global_features ) {
-	if ($self->_clip_2_vc($out)){
-	    push @features,$self->_convert_2_vc($out);
-	}
-    }
-  
-    
     return @features;
-    
-}                                       # get_all_SimilarityFeatures_above_score
+}
 
 
 
