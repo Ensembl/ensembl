@@ -44,7 +44,8 @@ CREATE TABLE clone (
   modified      datetime NOT NULL,
   stored        datetime NOT NULL,
   
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  UNIQUE embl (embl_id,embl_version)
 );
 
 #
