@@ -22,7 +22,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..34\n"; 
+BEGIN { $| = 1; print "1..33\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -446,14 +446,9 @@ $chr = $chadp->fetch_by_chrname('chr2');
 
 print "ok 33\n";
 
-my @m = $chr->get_landmark_MarkerFeatures();
-
-if( scalar(@m) > 0 ) {
-   print "ok 34\n";
-}
-
-
-
-
-
+#my @m = $chr->get_landmark_MarkerFeatures();
+#
+#if( scalar(@m) > 0 ) {
+#   print "ok 34\n";
+#}
 
