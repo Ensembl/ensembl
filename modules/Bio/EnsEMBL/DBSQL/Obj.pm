@@ -93,7 +93,6 @@ sub _initialize {
 			    PERLONLYFEATURES
 			    EXTERNAL
 			    )],@args);
-
   $db   || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
 

@@ -501,10 +501,10 @@ sub get_Analysis {
 	    $anal->db_version($rh->{'db_version'});
 	}
 
-	$anal->program($rh->{'program'});
+	$anal->program        ($rh->{'program'});
 	$anal->program_version($rh->{'program_version'});
-	$anal->gff_source($rh->{gff_source});
-	$anal->gff_feature($rh->{gff_feature});
+	$anal->gff_source     ($rh->{gff_source});
+	$anal->gff_feature    ($rh->{gff_feature});
 	my $mid = $rh->{'id'};
 
 	$anal->id("$mid");
@@ -686,9 +686,7 @@ sub find_GenomeHits {
 	
 	if (!$analhash{$analysisid}) {
 	   
-	    my $feature_obj = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
-
-	    $analysis = $feature_obj->get_Analysis($analysisid);
+	    $analysis = $self->get_Analysis($analysisid);
 	    $analhash{$analysisid} = $analysis;
 	   
 	} else {
@@ -698,7 +696,6 @@ sub find_GenomeHits {
 	if( !defined $name ) {
 	    $name = 'no_source';
 	}
-       
 	 
 	$out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
 	$out->set_all_fields($start,$end,$strand,$score,$name,'similarity',$contig,
@@ -734,3 +731,6 @@ sub _db_obj{
     return $self->{'_db_obj'};
 
 }
+
+
+
