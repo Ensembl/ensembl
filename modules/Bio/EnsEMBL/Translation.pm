@@ -293,12 +293,10 @@ sub get_all_DBEntries {
   if(!defined $self->{'dbentries'}) {
     my $adaptor = $self->adaptor();
     my $dbID    = $self->dbID();
-    if(!$adaptor || !$dbID) {
-      warning("Cannot retrieve DBEntries from translation without " .
-              "an attached adaptor and a dbID. Returning empty list.");
-      return [];
-    }
-    $self->{'dbentries'} = 
+
+    return [] if(!$adaptor || !$dbID);
+
+    $self->{'dbentries'} =
       $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self);
   }
 
