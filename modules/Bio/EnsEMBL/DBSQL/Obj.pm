@@ -1104,6 +1104,7 @@ sub replace_last_update {
 
 sub write_Gene{
    my ($self,$gene) = @_;
+   my $old_gene;
 
    my %done;
 
