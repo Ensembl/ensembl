@@ -59,8 +59,9 @@ use Carp;
 # Object preamble - inherits from Bio::Root::Object
 
 use Bio::SeqFeatureI;
+use Bio::Root::RootI;
 
-@ISA = qw(Bio::SeqFeatureI Exporter);
+@ISA = qw(Bio::SeqFeatureI Bio::Root::RootI);
 
 
 =head1 Abstract methods
@@ -85,7 +86,7 @@ These methods must be implemented in all subclasses.
 sub analysis {
    my ($self,$value) = @_;
 
-   $self->_abstractDeath;
+   $self->throw("Have not implemeneted analysis");
 
 }
 
@@ -105,7 +106,7 @@ sub analysis {
 sub validate {
    my ($self,$value) = @_;
 
-   $self->_abstractDeath;
+   $self->throw("Have not implemeneted validate");
 
 
 }
@@ -114,7 +115,7 @@ sub validate {
 sub id {
     my ($self,$value) = @_;
 
-    $self->_abstractDeath;
+    $self->("Have not implemented id");
 }
 
 1;
