@@ -183,8 +183,14 @@ sub get_landmark_MarkerFeatures{
    my ($self,$chr_name) = @_;
 
 
-   my $statement= "   select start,end,strand,name from contig_landmarkMarker where 
-                      chr_name='$chr_name'";
+   my $statement= " SELECT  start,
+			    end,
+			    strand,
+			    name 
+		    FROM    contig_landmarkMarker 
+		    WHERE   chr_name = '$chr_name'
+		    ORDER BY start
+		";
    
    $statement =~ s/\s+/ /g;
    #print STDERR "Doing Query ... $statement\n";
