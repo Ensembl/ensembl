@@ -1,0 +1,109 @@
+#!/usr/local/bin/perl -w
+#A script to gather statistics on gc content of virtual contigs
+#MAQ
+
+=head1 NAME
+
+vc_repeatstats.scrpt: Generates statistics about repeats within a virtual contig
+
+=head1 SYNOPSIS
+
+    vc_gccontent.scrpt
+
+=head1 DESCRIPTION
+
+
+
+=head1 OPTIONS
+
+     -host      host name for database (gets put as host= in locator)
+
+    -port      For RDBs, what port to connect to (port= in locator)
+
+    -dbname    For RDBs, what name to connect to (dbname= in locator)
+
+    -dbuser    For RDBs, what username to connect as (dbuser= in locator)
+
+    -dbpass    For RDBs, what password to use (dbpass= in locator)
+
+=cut
+
+use strict;
+
+use Getopt::Long;
+
+use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBLoader;
+use Data::Dumper;
+
+my $dbtype = 'rdb';
+my $host   = 'localhost';
+my $port   = '410000';
+my $dbname = 'ensembl_freeze24';
+my $dbuser = 'root';
+my $pass   = '';
+my $seedlist  = undef;
+
+&GetOptions( 
+	     'host:s'    => \$host,
+	     'port:n'    => \$port,
+	     'dbname:s'  => \$dbname,
+	     'dbuser:s'  => \$dbuser,
+	     'pass:s'    => \$pass,
+	     'seed=s'    => \$seedlist,
+         );
+         
+         
+my $module  = "Bio::EnsEMBL::DBSQL::Obj";
+
+my $locator = make_locator_string
+                ($dbtype,$module,$host,$port,$dbname,$dbuser,$pass);
+
+my $db      = new Bio::EnsEMBL::DBLoader($locator);
+
+my ($totlength, $tot_gc);
+#make array of seed ids
+die "Require list of contig ids\n" unless ($seedlist);
+my @seeds = split(/\s+/, $seedlist);
+
+foreach my $seedid (@seeds)
+{
+    print STDERR "SEED ID $seedid\n";
+    my $rawcontig = Bio::EnsEMBL::DBSQL::RawContig->new (
+                                                -dbobj  => $db,
+                                                -id     => $seedid,
+                                                );
+                    
+    my $position = $rawcontig->golden_start;
+    my $virtcontig = Bio::EnsEMBL::DB::VirtualContig->new (
+                                                -focuscontig    => $rawcontig,
+                                                -focusposition  => $position,
+                                                -ori            => 1,
+                                                -left           => 200000000,
+                                                -right          => 200000000,
+                                                );
+    $totlength += $virtcontig->length();
+    my $seq = $virtcontig->primary_seq()->seq();
+    print " Window(bp)\t GC Content(bp)\n";
+    
+    for (my $index =0; $index < $totlength; $index +=100)
+    {
+        my $step = 100;
+        $step = $totlength - $index if ($totlength - $index < 100);
+        my $subseq = substr($seq, $index, $step);
+        $_ = $subseq;
+        my $gc_count = tr/GCgc//;
+        printf " %-d - %-d \t %-d bp\n", $index, ($index+$step), $gc_count;
+        $tot_gc += $gc_count;
+    }
+}
+printf "SUM TOTAL\n TOTAL LENGTH: %-d bp\t TOTAL GC: %-d bp\t Percent GC: %-3.2f %%\n",
+            $totlength, $tot_gc, ($tot_gc/$totlength)*100; 
+
+
+sub make_locator_string {
+    my ($type,$module,$host,$port,$dbname,$dbuser,$dbpass) = @_;
+
+    return "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+
+}
