@@ -268,7 +268,7 @@ sub fetch_Protein_by_dbid{
 	    my $interpro = $sth2->fetchrow;
        
        if (!defined $interpro) {
-	   $self->throw("$featid does not have Interpro accession number");
+	   #$self->throw("$featid does not have Interpro accession number");
        }
 
 #If the Interpro accession number has not already been put into DBlink, add it 
