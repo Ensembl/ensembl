@@ -1430,6 +1430,27 @@ sub get_all_Genes{
 
 
 
+=head2 fetch_karyotype_band_startend
+
+ Title   : fetch_karyotype_band_startend
+ Usage   : $band_obj = $self->fetch_karyotype_band_startend
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_karyotype_band_start_end {
+   my ($self,@args) = @_;
+
+   my $kadp = $self->dbobj->get_KaryotypeBandAdaptor();
+   my @bands = $kadp->fetch_by_chromosome_start_end($self->_chr_name,$self->_global_start,$self->_global_end);
+
+   return @bands; 
+}
+
 =head2 fetch_karyotype_band
 
  Title   : fetch_karyotype_band
@@ -1446,11 +1467,10 @@ sub fetch_karyotype_band {
    my ($self,@args) = @_;
 
    my $kadp = $self->dbobj->get_KaryotypeBandAdaptor();
-   my $band = $kadp->fetch_by_chromosome_position($self->_chr_name,$self->_global_start + ($self->length/2));
+   my $band = $kadp->fetch_by_chromosome_position($self->_chr_name,$self->_global_start + int($self->length/2));
 
    return $band 
 }
-
 =head2 get_landmark_MarkerFeatures
 
   Title   : get_landmark_MarkerFeatures 
