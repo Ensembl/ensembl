@@ -431,15 +431,27 @@ sub get_Introns{
 	    my $intron_start = $previous_ex_end;
 	    my $intron_end = $ex_start;
 
+#Create an analysis object
+	    my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
+	
+	    $anal->program        ('NULL');
+	    $anal->program_version('NULL');
+	    $anal->gff_source     ('Intron');
+	    $anal->gff_feature    ('Intron');
+	    #$anal->dbID(2);
+
+
 	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
 						       -start => $starts->[$count],
 						       -end => $starts->[$count],
 						       -score => 0, 
 						       -percent_id => "NULL",
+						       -analysis => $anal,
 						       -p_value => "NULL");
 	    
 	    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $intron_start,
 						      -end => $intron_end,
+						      -analysis => $anal,
 						      -seqname => "Intron");
 	    
 	    my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
