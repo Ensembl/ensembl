@@ -8,9 +8,11 @@ use Data::Dumper qw( Dumper );
 
 use vars qw(@ISA);
 
-use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::DBSQL::DBConnection;
 
-@ISA = qw( Bio::EnsEMBL::Root );
+@ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
+#@ISA = qw( Bio::EnsEMBL::DBSQL::DBConnection );
 
 #----------------------------------------------------------------------
 
@@ -27,31 +29,9 @@ use Bio::EnsEMBL::Root;
 
 sub new {
   my $caller = shift;
-  my $db     = shift || $caller->throw( "Need a db_adaptor!" );
-  my $self = $caller->SUPER::new();
-  $self->db_adaptor($db);
+  my $connection = Bio::EnsEMBL::DBSQL::DBConnection->new(@_);
+  my $self = $caller->SUPER::new($connection);
   return $self;
-}
-
-#----------------------------------------------------------------------
-
-=head2 dbh
-
-  Arg [1]   : 
-  Function  : 
-  Returntype: 
-  Exceptions: 
-  Caller    : 
-  Example   : 
-
-=cut
-
-sub dbh {
-  my $self = shift;
-  if( my $dba = shift ){
-    $self->{__dbh} =$dba;
-  }
-  return $self->{__dbh}->db_handle;
 }
 
 #----------------------------------------------------------------------
@@ -98,7 +78,7 @@ AND    chr_end   <= ? );
        push @binded, $chr_start && $chr_end;
      }
    }
-   my $sth = $self->dbh->prepare($q);
+   my $sth = $self->db->db_handle->prepare($q);
    my $rv = $sth->execute( @binded ) || $self->throw( $sth->errstr );
 
    my @hsps = map{ thaw( $_->[0] ) } @{$sth->fetchall_arrayref()};
