@@ -190,6 +190,38 @@ sub cigar_string {
 }
 
 
+=head2 alignment_length
+
+  Arg [1]    : None
+  Example    : 
+  Description: return the alignment length (including indels) based on the cigar_string
+  Returntype : int
+  Exceptions : 
+  Caller     : 
+
+=cut
+
+sub alignment_length {
+  my $self = shift;
+
+  if (! defined $self->{'_alignment_length'} && defined $self->cigar_string) {
+    
+    my @pieces = ( $self->cigar_string =~ /(\d*[MDI])/g );
+    unless (@pieces) {
+      print STDERR "Error parsing cigar_string\n";
+    }
+    my $alignment_length = 0;
+    foreach my $piece (@pieces) {
+      my ($length) = ( $piece =~ /^(\d*)/ );
+      if (! defined $length || $length eq "") {
+        $length = 1;
+      }
+      $alignment_length += $length;
+    }
+    $self->{'_alignment_length'} = $alignment_length;
+  }
+  return $self->{'_alignment_length'};
+}
 
 =head2 ungapped_features
 
