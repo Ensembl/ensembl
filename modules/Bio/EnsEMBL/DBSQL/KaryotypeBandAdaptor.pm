@@ -92,6 +92,7 @@ sub fetch_all_by_Slice {
 				WHERE	chromosome_id = $chr_id
 				AND	$start <= chr_end 
 				AND	$end > chr_start 
+                                order   by chr_start
 			     ");
 
   $sth->execute;
@@ -139,7 +140,8 @@ sub fetch_all_by_chr_name {
     my $sth = $self->prepare(
         "SELECT	chr_start, chr_end, stain, band
          FROM karyotype 
-         WHERE chromosome_id = ?"
+         WHERE chromosome_id = ?
+         ORDER BY chr_start"
     );
     $sth->execute( $chr_id );
     
