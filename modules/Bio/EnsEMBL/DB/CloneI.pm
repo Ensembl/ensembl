@@ -237,9 +237,9 @@ sub seq{
 	   $self->throw("Got a $seq not a Bio::Seq!");
        }
 
-       if( $seq->type ne 'Dna' ) {
-	   $self->warn("For contig " . $contig->id . "sequence type is ". $seq->type . " not Dna");
-       }
+       #if( $seq->type ne 'Dna' ) {
+#	   $self->warn("For contig " . $contig->id . "sequence type is ". $seq->type . " not Dna");
+ #      }
 
        if( $contig->orientation == -1 ) {
 	   $seq = $seq->revcom();
