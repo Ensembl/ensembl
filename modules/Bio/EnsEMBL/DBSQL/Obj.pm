@@ -1509,7 +1509,7 @@ sub write_supporting_evidence {
 	if ($f->isa("Bio::EnsEMBL::FeaturePair")) {
 	    $sth->execute('NULL',
 			  $exon->id,
-			  $f->seqname,
+			  $exon->contig_id,
 			  $f->start,
 			  $f->end,
 			  $f->score,
@@ -1540,16 +1540,23 @@ sub write_supporting_evidence {
 =cut
 
 sub get_supporting_evidence {
-    my ($self,$exon) = @_;
+    my ($self,@exons) = @_;
 
-    $self->throw("Argument must be Bio::EnsEMBL::Exon. You entered [$exon]\n") unless $exon->isa("Bio::EnsEMBL::Exon");
-    $self->throw("No exon id defined\n") unless defined($exon->id);
+    my $instring = "'";
+    my %exhash;
+    foreach my $exon (@exons) {
+	print(STDERR " Exonid " . $exon->id . "\n");
+	$exhash{$exon->id} = $exon;
 
-    my $id  = $exon->id;
-#    my $sth = $self->prepare("select f.* from feature as f,supporting_feature as sf,exon as ex where ex.id = '$id' and sf.exon = '$id' and sf.feature = f.id");
+	$instring = $instring . $exon->id . "','";
+    }
+    
+    $instring = substr($instring,0,-2);
+    print(STDERR $instring . "\n");
 
-    my $sth  = $self->prepare("select * from supporting_feature where exon = '$id'");
 
+
+    my $sth = $self->prepare("select * from supporting_feature where exon in (" . $instring . ")");
     $sth->execute;
 
     my %anahash;
@@ -1561,6 +1568,8 @@ sub get_supporting_evidence {
 	
 	my $f = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
 					      -feature2 => $f2);
+
+	my $exon = $rowhash->{exon};
 
 	$f1->seqname($rowhash->{contig});
 	$f1->start  ($rowhash->{seq_start});
@@ -1590,8 +1599,7 @@ sub get_supporting_evidence {
 	
 	$f->validate;
 
-	print($exon->id . " " . $f->seqname . "\n");
-	$exon->add_Supporting_Feature($f);
+	$exhash{$exon}->add_Supporting_Feature($f);
     }
 
 }

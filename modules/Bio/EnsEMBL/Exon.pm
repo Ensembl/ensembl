@@ -702,7 +702,7 @@ sub find_supporting_evidence {
     foreach my $f (@$features) {
 
 	# We should probably check the contig name here.
-	if (($f->seqname == $self->contig_id) && $f->overlaps($self)) {
+	if (($f->seqname eq $self->contig_id) && $f->overlaps($self)) {
 	    $self->add_Supporting_Feature($f);
 	}
     }
