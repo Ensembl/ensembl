@@ -420,13 +420,14 @@ sub write_Contig {
     my $res = $sth->execute;
     my $row = $sth->fetchrow_hashref;
     my $id  = $row->{'last_insert_id()'};
-    
+
+    # this is a nasty hack. We should have a cleaner way to do this.
+    my @features = $contig->get_all_SeqFeatures;
     #print(STDERR "Contig $contigid - $id\n");
     $contig->internal_id($id);
     
     # write sequence features. We write all of them together as it
     # is more efficient
-    my @features = $contig->get_all_SeqFeatures;
     my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
     $feature_obj->write($contig, @features);
     
