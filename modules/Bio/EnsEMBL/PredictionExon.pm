@@ -217,75 +217,37 @@ sub transfer {
 }
 
 
-
-
-
-
 =head2 add_supporting_features
 
-  Arg [1]    : Bio::EnsEMBL::SeqFeatureI $feature
-  Example    : $exon->add_supporting_features(@features);
-  Description: Adds a list of supporting features to this exon. 
-               Duplicate features are not added.  
-               If supporting features are added manually in this
-               way, prior to calling get_all_supporting_features then the
-               get_all_supporting_features call will not retrieve supporting
-               features from the database.
+  Description: For compatibility with Bio::EnsEMBL::Exon
+               Does nothing.
   Returntype : none
-  Exceptions : throw if any of the features are not SeqFeatureIs
-               throw if any of the features are not in the same coordinate
-               system as the exon
-  Caller     : general
 
 =cut
 
-sub add_supporting_features {
-  throw( "This object doesnt have supporting_feature" );
-}
+sub add_supporting_features { }
 
 
 =head2 get_all_supporting_features
 
-  Arg [1]    : none
-  Example    : @evidence = @{$exon->get_all_supporting_features()};
-  Description: Retreives any supporting features added manually by 
-               calls to add_supporting_features. If no features have been
-               added manually and this exon is in a database (i.e. it h
-  Returntype : listreference of Bio::EnsEMBL::BaseAlignFeature objects 
-  Exceptions : none
-  Caller     : general
+  Description: For compatibility with Bio::EnsEMBL::Exon
+               Does nothing and returns empty list
+  Returntype : empty list.
 
 =cut
 
-sub get_all_supporting_features {
-  throw( "This object doesnt have supporting_feature" );
-}
+sub get_all_supporting_features { return []; }
 
 
 =head2 find_supporting_evidence
 
-  Arg [1]    : Bio::EnsEMBL::SeqFeatureI $features
-               The list of features to search for supporting (i.e. overlapping)
-               evidence.
-  Arg [2]    : (optional) boolean $sorted
-               Used to speed up the calculation of overlapping features.  
-               Should be set to true if the list of features is sorted in 
-               ascending order on their start coordinates.
-  Example    : $exon->find_supporting_evidence(\@features);
-  Description: Looks through all the similarity features and
-               stores as supporting features any feature
-               that overlaps with an exon.  
-  Returntype : none
-  Exceptions : none
-  Caller     : general
+  Description: For compatibility with Bio::EnsEMBL::Exon
+               Does nothing.
+  Returntype : empty list.
 
 =cut
 
-sub find_supporting_evidence {
-  throw( "This object doesnt have supporting_feature" );
-}
-
-
+sub find_supporting_evidence { return []; }
 
 
 1;
