@@ -2598,13 +2598,13 @@ sub write_ContigOverlap {
     my $contig_b_position = $overlap->positionb;
     my $overlap_type      = $overlap->overlap_type;
 
-    print("contiga "         . $contiga->id . "\t" . $contiga->internal_id . "\n");
-    print("contigb "         . $contigb->id . "\t" . $contigb->internal_id . "\n");
+    print(STDERR "contiga "         . $contiga->id . "\t" . $contiga->internal_id . "\n");
+    print(STDERR "contigb "         . $contigb->id . "\t" . $contigb->internal_id . "\n");
 
-    print("contigaposition " . $contig_a_position . "\n");
-    print("contigbposition " . $contig_b_position . "\n");
+    print(STDERR "contigaposition " . $contig_a_position . "\n");
+    print(STDERR "contigbposition " . $contig_b_position . "\n");
 
-    print("overlap type "    . $overlap_type . "\n");
+    print(STDERR "overlap type "    . $overlap_type . "\n");
 
     # First of all we need to fetch the dna ids
     my $query = "select d.id from dna as d,contig as c " .
@@ -2631,6 +2631,7 @@ sub write_ContigOverlap {
     $rowhash = $sth->fetchrow_hashref;
     my $dna_b_id = $rowhash->{id};
     my $type     = $overlap->source;
+    my $distance = $overlap->distance;
 
     print(STDERR "DNA ids are $dna_a_id : $dna_b_id\n");
 
@@ -2639,12 +2640,12 @@ sub write_ContigOverlap {
 					"type,overlap_size,overlap_type) " .
 				"values($dna_a_id,$dna_b_id," . 
 				"$contig_a_position,$contig_b_position,".
-				"'$type',1,'$overlap_type')";
+				"'$type',$distance,'$overlap_type')";
 
     print(STDERR "query is $query\n");
 
     $sth = $self->prepare($query);
-    $res = $sth->execute;
+    $res = $sth ->execute;
 
 }
 

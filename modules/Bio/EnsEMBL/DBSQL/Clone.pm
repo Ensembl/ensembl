@@ -312,7 +312,7 @@ sub get_Contig{
 
 =cut
 
-sub get_all_Contigs{
+sub get_all_Contigs {
    my ($self) = @_;
    my $sth;
    my @res;
@@ -343,6 +343,24 @@ sub get_all_Contigs{
    }
 
    return @res;   
+}
+
+=head2 get_all_ContigOverlaps 
+
+ Title   : get_all_ContigOverlaps
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ContigOverlaps {
+    my ($self) = @;
+
+    # Not written yet
 }
 
 =head2 htg_phase
