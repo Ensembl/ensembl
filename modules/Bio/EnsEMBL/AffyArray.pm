@@ -167,27 +167,6 @@ sub setsize {
 }
 
 
-=head2 probecount
-
-  Arg [1]    : int $probecount
-  Example    : none
-  Description: getter / setter / lazy load for attribute probecount. Here you
-               can optionally provide how manny probes are there on the array.
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-
-=cut
-
-sub probecount {
-    my $self = shift;
-    $self->{'probecount'} = shift if( @_) ;
-    if(( ! exists $self->{'probecount'}) && $self->{'dbID'} && $self->{'adaptor'} ) {
-	$self->adaptor->fetch_attributes( $self );
-    }
-    return $self->{'probecount'};
-}
 
 
 =head2 superset
