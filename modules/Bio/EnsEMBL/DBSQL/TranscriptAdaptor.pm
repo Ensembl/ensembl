@@ -107,14 +107,19 @@ sub _left_join {
 sub fetch_by_stable_id{
    my ($self,$id) = @_;
 
-   my $constraint = "tsi.stable_id = \"$id\"";
+   # because of the way this query is constructed (with a left join to the
+   # transcript_stable_id table), it is faster to do 2 queries, getting the 
+   # transcript_id in the first query
+   my $sth = $self->prepare("SELECT transcript_id from transcript_stable_id ". 
+                            "WHERE  stable_id = ?");
+   $sth->execute($id);
 
-   # should be only one :-)
-   my $transcripts = $self->SUPER::generic_fetch( $constraint );
+   my ($dbID) = $sth->fetchrow_array();
 
-   if( ! @$transcripts ) { return undef }
+   return undef if(!$dbID);
 
-   return $transcripts->[0];
+   return $self->fetch_by_dbID($dbID);
+
 }
 
 

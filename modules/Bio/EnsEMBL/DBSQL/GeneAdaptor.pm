@@ -149,14 +149,19 @@ sub list_stable_ids {
 sub fetch_by_stable_id {
    my ($self,$id) = @_;
 
-   my $constraint = "gsi.stable_id = \"$id\"";
+   #because of the way this query is constructed (with a left join to the
+   # gene_stable_id table), it is faster to do 2 queries, getting the gene_id
+   # in the first query
 
-   # should be only one :-)
-   my ($gene) = @{$self->generic_fetch( $constraint )};
+   my $sth = $self->prepare("SELECT gene_id from gene_stable_id " . 
+                            "WHERE  stable_id = ?");
+   $sth->execute($id);
 
-   if( !$gene ) { return undef }
+   my ($dbID) = $sth->fetchrow_array();
 
-   return $gene;
+   return undef if(!$dbID);
+
+   return $self->fetch_by_dbID($dbID);
  }
 
 
