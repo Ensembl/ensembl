@@ -1059,7 +1059,7 @@ sub _load_overlaps {
    # start by switching on whether things are in the a or b contig
    # positions, then builds left/right and polarity variables.
    #
-   print("Number of rows is " . $sth->rows . "\n");
+   print STDERR ("Number of rows is " . $sth->rows . "\n");
    while( my $rowhash = $sth->fetchrow_hashref ) {
        print STDERR "We have a potential overlap,",$rowhash->{'dna_a_id'},"\n";
        
@@ -1153,7 +1153,7 @@ sub _load_overlaps {
 	   } else {
 	       $self->throw("ERROR: Wrong number of rows returned for dna id $sisterdnaid " . $sth->rows);
 	   }
-	   print("Sister id is $sisterid\n");
+	   print STDERR ("Sister id is $sisterid\n");
 
 	   my $sis      = new Bio::EnsEMBL::DBSQL::RawContig ( '-dbobj' => $self->dbobj,
 							       '-id'    => $sisterid );
