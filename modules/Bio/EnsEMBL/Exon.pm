@@ -738,7 +738,6 @@ sub _genscan_peptide{
 
 =cut
 
-
 sub add_Supporting_Feature {
     my ($self,$feature) = @_;
 
@@ -747,9 +746,23 @@ sub add_Supporting_Feature {
 
     $self->{_supporting_evidence} = [] unless defined($self->{_supporting_evidence});
 
-    push(@{$self->{_supporting_evidence}},$feature);
+    # check whether this feature object has been added already
+    my $found = 0;
+    if ( $feature && $self->{_supporting_evidence} ){
+      foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
+	# compare objects
+	if ( $feature == $added_feature ){
+	  $found = 1;
+	  
+	  # no need to look further
+	  last;
+	}
+      }
+    }
+    if ( $found == 0 ){
+      push(@{$self->{_supporting_evidence}},$feature);
+    }
 }
-
 
 
 =head2 each_Supporting_Feature
