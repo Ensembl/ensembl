@@ -108,7 +108,7 @@ sub add_ensembl_comments {
    my $comment = Bio::Annotation::Comment->new();
    
    $comment->text("This sequence was reannotated via the Ensembl system. Please visit the Ensembl web site, http://www.ensembl.org/ for more information.");
-   $aseq->annotation->add_Comment($comment);
+   $aseq->annotation->add_Annotation('comment', $comment);
 
    $comment = Bio::Annotation::Comment->new();
    $comment->text("All feature locations are relative to the first (5') base" .
@@ -117,16 +117,16 @@ sub add_ensembl_comments {
 		  "that lie outside of the sequence contained in this file " .
 		  "have clonal location coordinates in the format: " .
 		  "<clone accession>.<version>:<start>..<end>");
-   $aseq->annotation->add_Comment($comment);
+   $aseq->annotation->add_Annotation('comment', $comment);
 
    $comment = Bio::Annotation::Comment->new();
    $comment->text("The /gene indicates a unique id for a gene, /cds a unique id for a translation and a /exon a unique id for an exon. These ids are maintained wherever possible between versions.");
 
-   $aseq->annotation->add_Comment($comment);
+   $aseq->annotation->add_Annotation('comment', $comment);
 
    $comment = Bio::Annotation::Comment->new();
    $comment->text("All the exons and transcripts in Ensembl are confirmed by similarity to either protein or cDNA sequences.");
-   $aseq->annotation->add_Comment($comment); 
+   $aseq->annotation->add_Annotation('comment', $comment); 
 }
 
 =head2 ensembl_annseq_output

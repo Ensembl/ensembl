@@ -54,7 +54,7 @@ package Bio::EnsEMBL::Utils::EMBL::SliceWrapper;
 use vars qw(@ISA);
 
 use Bio::EnsEMBL::Root;
-use Bio::Annotation;
+use Bio::Annotation::Collection;
 use Bio::SeqFeature::Generic;
 use Bio::SeqI;
 use Bio::EnsEMBL::Utils::EMBL::GeneWrapper;
@@ -84,7 +84,7 @@ sub new {
 
   $self->slice($slice);
   
-  $self->annotation(new Bio::Annotation);
+  $self->annotation(new Bio::Annotation::Collection);
 
   return $self;
 }
@@ -136,7 +136,7 @@ sub primary_seq {
 
 =head2 annotation
 
-  Arg [1]    : (optional) Bio::Annotation $annotation
+  Arg [1]    : (optional) Bio::Annotation::Collection $annotation
   Example    : none
   Description: Wrapper method - gets/sets annotation object contained 
                in wrapper
@@ -150,8 +150,8 @@ sub annotation {
   my ($self, $annotation) = @_;
 
   if($annotation) {
-    unless($annotation->isa("Bio::Annotation")) {
-      $self->throw("[$annotation] is not a Bio::Annotation");
+    unless($annotation->isa("Bio::Annotation::Collection")) {
+      $self->throw("[$annotation] is not a Bio::Annotation::Collection");
     }
 
     $self->{_annotation} = $annotation;
