@@ -161,7 +161,7 @@ foreach my $object (@object_array) {
 	    #NOTE: We permanently delete clones, without archiving them!
 	    if ($object->version > $rec_clone->version) {
 		print "Clone with new version, updating the database, and deleting the old version\n";
-		$rec_db->delete_Clone($rec_clone);
+		$rec_db->delete_Clone($rec_clone->id);
 		$rec_db->write_Clone($object);
 	    }
 	    
@@ -194,16 +194,13 @@ foreach my $ghost (@object_array) {
    
     #If not present in recipient, archive objects, and write the ghost
     if ( $@ ) {
-	if ($ghost->obj_type eq 'transcript') {
-	    #Note:Missing archiving!!!
+	if ($ghost->obj_type eq 'clone') {
+	    $rec_db->delete_Clone($ghost->id);
 	}
-	elsif ($ghost->obj_type eq 'protein') {
-	    #Note: Missing archiving!!!
+	elsif ($ghost->obj_type eq 'gene') {
+	    my $gene = $rec_db->get_Gene($ghost->id);
+	    $rec_db->archive_Gene($gene,$arc_db);
 	}
-	elsif ($ghost->obj_type eq 'exon') {
-	    #Note: missing archiving!!!
-	}
-
 	#Finally write ghost in recipient
 	$rec_db->write_Ghost($ghost);
     }
