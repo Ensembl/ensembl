@@ -183,4 +183,10 @@ sub end_phase {
 }
 
 
+# this is a bit too sneaky. 
+#sub location {
+#    my ($self)= @_;
+#    return $self;
+#}
+
 1;
