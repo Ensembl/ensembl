@@ -508,55 +508,42 @@ sub get_all_Genes{
    my ($self, $empty_flag) = @_;
 
    #caching is performed on a per slice basis in the GeneAdaptor
-   return $self->adaptor->db->get_GeneAdaptor()->fetch_all_by_Slice($self, $empty_flag);
+   return $self->adaptor->db->get_GeneAdaptor->fetch_all_by_Slice($self, 
+								  $empty_flag);
 }
 
 
 
-=head2 get_Genes_by_source
+=head2 get_all_Genes_by_source
 
- Title   : get_Genes_by_source
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
 
 =cut
 
-sub get_Genes_by_source {
-  my $self = shift; 
-  warn( "\$Slice->get_Genes_by_source(\$source): You don't want to do it like that!.\nYou want to do it like this \$Slice->get_all_Genes_by_source(\$source)");
-  return $self->get_all_Genes_by_source( @_ );
-}
-
 sub get_all_Genes_by_source{
    my ($self, $source, $empty_flag) = @_;
-   my @out = grep { $_->source eq $source } @{$self->get_all_Genes($empty_flag)};
+   my @out = 
+     grep { $_->source eq $source } @{$self->get_all_Genes($empty_flag)};
    return \@out;
 }
 
 
 
-=head2 get_Genes_by_type
+=head2 get_all_Genes_by_type
 
- Title   : get_Genes_by_type
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
 
 =cut
-
-sub get_Genes_by_type {
-  
-  my $self = shift; 
-  warn( "\$Slice->get_Genes_by_type(\$type): You don't want to do it like that!.\nYou want to do it like this \$Slice->get_all_Genes_by_type(\$type)");
-  return $self->get_all_Genes_by_type( @_ );
-}
-
 
 sub get_all_Genes_by_type{
   my ($self, $type, $empty_flag) = @_;
@@ -576,7 +563,6 @@ sub get_all_Genes_by_type{
  Example : 
  Returns : value of chr_name
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -930,9 +916,73 @@ sub get_all_landmark_MarkerFeatures {
   } else {
     return $lma->fetch_all_by_Slice( $self );
   }
-
 }
 
+
+=head2 get_all_compara_DnaAlignFeatures
+
+  Arg [1]    : string $qy_species
+               The name of the speicies to retrieve similarity features from
+  Example    : $fs = $slc->get_all_compara_DnaAlignFeatures('Mus_musculus');
+  Description: Retrieves a list of DNA-DNA Alignments to the species specified
+               by the $qy_species argument. The argument must be the genus
+               name and species name as an underscore seperated string.
+               The compara database must be attached to the core database
+               for this call to work correctly.
+  Returntype : reference to a list of Bio::EnsEMBL::DnaDnaAlignFeatures
+  Exceptions : warning if compara database is not available
+  Caller     : contigview
+
+=cut
+
+sub get_all_compara_DnaAlignFeatures {
+  my ($self, $qy_species) = @_;
+
+  unless($qy_species) {
+    $self->throw("Query species argument is required");
+  }
+
+  #this function will be cleaned up once compara is cleaned up 
+  #most likely a fetch by slice method will be present in compara
+
+  my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
+
+  unless($compara_db) {
+    $self->warn("Compara database must be attached to core database to " .
+		"retrieve compara information");
+    return [];
+  }
+
+  #we will probably use a taxon object instead of a string eventually
+  my $species = $self->adaptor->db->get_MetaContainer->get_Species;
+  my $sb_species = $species->binomial;
+  $sb_species =~ s/ /_/; #replace spaces with underscores
+
+  my $gaa = $compara_db->get_GenomicAlignAdaptor;
+
+  my $features = $gaa->fetch_DnaDnaAlignFeature_by_species_chr_start_end(
+						$sb_species,
+						$qy_species,
+						$self->chr_name,
+						$self->chr_start,
+					        $self->chr_end);
+
+  #all compara features are returned on positive chr strand
+  if($self->strand == -1) {
+    my $slice_end   = $self->chr_end;
+    my $slice_start = $self->chr_start;
+    foreach my $f (@$features) {
+      my $start  = $slice_end - $f->start + 1;
+      my $end    = $slice_end - $f->end   + 1;
+      my $strand = $f->strand * -1;
+      $f->start($start);
+      $f->end($end);
+      $f->strand($strand);
+    }
+  }
+
+  return $features;
+}
 
 ### This is a hacky little function which gets the name of the contig
 ### from a finished clone - or returns undef otherwise.
@@ -1399,5 +1449,50 @@ sub get_landmark_MarkerFeatures {
 }
 
 
+
+
+=head2 get_Genes_by_source
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_Genes_by_source instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_Genes_by_source {
+  my $self = shift; 
+
+  $self->warn( "\$Slice->get_Genes_by_source(\$source): You don't want to do" .
+	       " it like that!.\nYou want to do it like this " .
+	       "\$Slice->get_all_Genes_by_source(\$source)");
+
+  return $self->get_all_Genes_by_source( @_ );
+}
+
+
+
+
+=head2 get_Genes_by_type
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_Genes_by_type instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_Genes_by_type {
+  
+  my $self = shift; 
+  $self->warn( "\$Slice->get_Genes_by_type(\$type): You don't want to do it " .
+	       "like that!.\nYou want to do it like this " .
+	       "\$Slice->get_all_Genes_by_type(\$type)");
+  return $self->get_all_Genes_by_type( @_ );
+}
 
 1;
