@@ -307,7 +307,7 @@ sub GFFFile {
 sub _make_analysis {
     my ($self) = @_;
     
-    (my $ext  = $self->) =~ s/.*(\..*.out.gff)/$1/;
+    (my $ext  = $self->GFFFile) =~ s/.*(\..*.out.gff)/$1/;
     
     my $test    = Bio::EnsEMBL::Analysis::MSPType->each_MSPType;
     my $MSPType = Bio::EnsEMBL::Analysis::MSPType->extension2MSPType($ext);
