@@ -168,16 +168,15 @@ sub fetch_EMBLgenes_start_end {
     my $cache_name = "_emblgenes_cache_$chr"."_$vc_start"."_$vc_end";
     return $self->{$cache_name} if( $self->{$cache_name} );
     my $sth = $self->prepare(
-        "select g.gene, g.name, 
-                g.chr_name, g.gene_chrom_start, g.gene_chrom_end,
-                g.chrom_strand, gx.display_id, gx.db_name, g.type
-           from $_db_name.embl_gene as g, $_db_name.embl_gene_xref as gx
-          where g.gene = gx.gene and
-                g.chr_name = ? and g.gene_chrom_start <= ? and g.gene_chrom_start >= ? and
-                g.gene_chrom_end >= ?"
+        "select gene, name, 
+                chr_name, gene_chrom_start, gene_chrom_end,
+                chrom_strand, display_id, db_name, type
+           from $_db_name.www_embl_gene 
+          where chr_name = ? and gene_chrom_start <= ? and gene_chrom_start >= ? and
+                gene_chrom_end >= ?"
     );
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start );
+        $sth->execute( $chr, $vc_end, $vc_start-2000000, $vc_start );
     };
     return [] if($@);
     my @genes;
@@ -206,21 +205,19 @@ sub fetch_SangerGenes_start_end {
     my $cache_name = "_sangergenes_cache_$chr"."_$vc_start"."_$vc_end";
     return $self->{$cache_name} if( $self->{$cache_name} );
     my $sth = $self->prepare(
-        "select g.gene, g.name,
-                g.chr_name, g.gene_chrom_start, g.gene_chrom_end,
-                g.chrom_strand, gx.display_id, gx.db_name, g.type
-           from $_db_name.sanger_gene as g, $_db_name.sanger_gene_xref as gx
-          where g.gene = gx.gene and
-                g.chr_name = ? and g.gene_chrom_start <= ? and
-                g.gene_chrom_end >= ?"
+        "select gene, name,
+                chr_name, gene_chrom_start, gene_chrom_end,
+                chrom_strand, display_id, db_name, type
+           from $_db_name.www_sanger_gene
+          where chr_name = ? and gene_chrom_start <= ? and gene_chrom_start >= ? and
+                gene_chrom_end >= ? "
     );
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start );
+        $sth->execute( $chr, $vc_end, $vc_start-2000000, $vc_start );
     };
     return [] if($@);
     my @genes;
     while( my $row = $sth->fetchrow_arrayref() ) {
-        next unless $row->[8]=~/HUMACE/;
         push @genes, {
             'gene'      => $row->[0],
             'stable_id' => $row->[1],
@@ -241,16 +238,18 @@ sub fetch_SangerGenes_start_end {
 
 sub fetch_virtualRepeatFeatures_start_end {
     my ( $self, $chr, $vc_start, $vc_end, $type, $glob_bp ) =@_;
+    print STDERR "REP: $glob_bp\n";
     my $cache_name = "_repeats_$type"."_cache_$chr"."_$vc_start"."_$vc_end";
     return $self->{$cache_name} if( $self->{$cache_name} );
-	my $glob_bp ||= 0;
+	$glob_bp ||= 0;
     my $_db_name = $self->{'_lite_db_name'};
 
     my $sth = $self->prepare(
         "select r.id, r.hid,  r.chr_name, r.repeat_chrom_start, r.repeat_chrom_end, r.repeat_chrom_strand
            from $_db_name.repeat as r
           where r.chr_name = ? and r.repeat_chrom_start <= ? and r.repeat_chrom_start >= ? and r.repeat_chrom_end >= ?".
-		  	( (defined $type && $type ne '') ? " and r.type = '$type'" : '' )
+		  	( (defined $type && $type ne '') ? " and r.type = '$type'" : '' ).
+          " order by r.repeat_chrom_start"            
     );
 
     eval {
@@ -259,26 +258,28 @@ sub fetch_virtualRepeatFeatures_start_end {
     return [] if($@);
 
 	my @repeats;
-	my $old_end = -99999999999999999;
+	my $old_start = -99999999999999999;
+	my $old_end   = -99999999999999999;
 	while( my $row = $sth->fetchrow_arrayref() ) {
       	my $end = $row->[4];
 ## Glob results! 
         next if($end < $old_end );
-    	if($end < $old_end + $glob_bp) {
-			$repeats[-1]->{'chr_end'} = $end;
+    	$old_end   = $end;
+    	if( $end-$old_start < $glob_bp/2 ) {
+			$repeats[-1]->{'end'} = $end - $vc_start + 1; 
 	  	}	else {
+    	  	$old_start = $row->[3];
 			push @repeats, {
 				'id'        => $row->[0],
 				'hid'       => $row->[1],
     	        'chr_name'  => $row->[2],
-        	    'chr_start' => $row->[3],
+        	    'chr_start' => $old_start,
             	'chr_end'   => $end,
-        	    'start'     => $row->[3]-$vc_start+1,
-            	'end'       => $end     -$vc_start+1,
+        	    'start'     => $old_start-$vc_start+1,
+            	'end'       => $end      -$vc_start+1,
 	            'strand'    => $row->[5],
 			};
 		}
-	  	$old_end = $end;
     }
     return $self->{$cache_name} = \@repeats;
     return \@repeats;
@@ -418,7 +419,8 @@ sub fetch_virtualfeatures {
 }
     
 sub fetch_virtualsnps {
-    my ( $self, $chr, $vc_start, $vc_end, $glob ) =@_;
+    my ( $self, $chr, $vc_start, $vc_end, $glob_bp ) =@_;
+    $glob_bp||=0;
     my $_db_name = $self->{'_lite_db_name'};
     my $cache_name = "_snp_cache_$chr"."_$vc_start"."_$vc_end";
     return $self->{$cache_name} if( $self->{$cache_name} );
@@ -428,27 +430,38 @@ sub fetch_virtualsnps {
         FROM   	 $_db_name.snp
         WHERE  	 chr_name=?
         AND      snp_chrom_start>=?
-	    AND      snp_chrom_start<=?"
+	    AND      snp_chrom_start<=?
+        order by snp_chrom_start"
     );
     eval {
         $sth->execute( $chr, $vc_start, $vc_end );
     };
     return [] if($@);
     my @variations;
-    while( my $row = $sth->fetchrow_arrayref() ) {
-        push @variations, {
-            'chr_name'  => $chr,
-            'chr_start' => $row->[0],
-            'chr_end'   => $row->[0],
-            'start'     => $row->[0] - $vc_start + 1,
-            'end'       => $row->[0] - $vc_start + 1,
-            'strand'    => $row->[2],
-            'id'        => $row->[3],
-            'tscid'     => $row->[4],
-            'hgbaseid'  => $row->[5],
-            'clone'     => $row->[6],
-        };
+	my $old_start = -99999999999999999;
+	while( my $row = $sth->fetchrow_arrayref() ) {
+      	my $start = $row->[0];
+## Glob results! 
+        next if($start < $old_start );
+    	if($start < $old_start + $glob_bp/2) {
+			$variations[-1]->{'end'} = $start - $vc_start+1;
+	  	}	else {
+            push @variations, {
+                'chr_name'  => $chr,
+                'chr_start' => $start,
+                'chr_end'   => $start,
+                'start'     => $start - $vc_start + 1,
+                'end'       => $start - $vc_start + 1,
+                'strand'    => $row->[2],
+                'id'        => $row->[3],
+                'tscid'     => $row->[4],
+                'hgbaseid'  => $row->[5],
+                'clone'     => $row->[6],
+            };
+    	  	$old_start = $start;
+		}
     }
+
     return $self->{$cache_name} = \@variations;
 }
 
