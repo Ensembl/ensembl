@@ -816,7 +816,7 @@ sub get_all_PredictionFeatures {
 		        AND    a.gff_source = '$analysis_type'  
                         AND    sgp.type = '$type'
 		        AND    sgp.chr_name='$chr_name' 
-                        ORDER BY f.contig,f.strand,f.id
+                        ORDER BY f.contig,f.strand*f.seq_start
                         ";
    
    my $sth = $self->dbobj->prepare($query);
@@ -831,6 +831,7 @@ sub get_all_PredictionFeatures {
    $previous = -1;
    my $current_fset;
    my $count;
+   my $prev;
 
    while( $sth->fetch ) {
        if (($end > $length) || ($start < 1)) {
@@ -840,6 +841,11 @@ sub get_all_PredictionFeatures {
            next;
        }
        
+       #MC This is one humdinger of a hack to get rid of duplicate genscans
+
+       if (defined $prev && $start == $prev->start && $end == $prev->end) {
+	 next;
+       }
        my $out;
        
        my $analysis;
@@ -912,6 +918,7 @@ sub get_all_PredictionFeatures {
 
        $previous        = $hid;
        $previous_contig = $contig;
+       $prev            = $out;
   }
  
 
