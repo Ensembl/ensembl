@@ -60,16 +60,22 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 # new is inherited from BaseAdaptor
 
 
+
 =head2 fetch_by_chr_start_end
 
- Title   : fetch_by_chr_start_end
- Usage   :
- Function: create a Slice based on a segment of a chromosome and
-           start/end
- Example :
- Returns : A Slice
- Args    : chromosome, start, end (in Chromosome coordinates)
-
+  Arg [1]    : string $chr
+               the name of the chromosome to obtain a slice for
+  Arg [2]    : int $start
+               the start basepair of the slice to obtain in chromosomal 
+               coordinates
+  Arg [3]    : int $end 
+               the end basepair of the slice to obtain in chromosomal 
+               coordinates
+  Example    : $slice = $slice_adaptor->fetch_by_chr_start_end();
+  Description: Creates a slice object on the given chromosome and coordinates.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : none
+  Caller     : general
 
 =cut
 

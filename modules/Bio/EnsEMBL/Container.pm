@@ -132,24 +132,17 @@ sub AUTOLOAD {
 
   $method =~ s/.*:://;
 
-  unless($self->_obj->can($method)) {
-    #the object doesn't have method of this name but this may be ok
-    #if the something sneaky has been done with an AUTOLOAD
-    #to be safe use a (slow) eval
-    my $ret_val;
-
-    eval { 
-      $ret_val = $self->_obj->$method(@args);
+  #update the symbol table so AUTOLOAD is not needed the next time
+  #this method is called (faster this way)
+  no strict 'refs';
+  *{$AUTOLOAD} = 
+    sub {
+      my $self = shift;    
+      return $self->_obj->$method(@args);
     };
-
-    if($@) {
-      $self->throw("Could not invoke requested method on contained object:\n" .
-		   "$@");
-    }
-
-    return $ret_val;
-  }
-
+  use strict 'refs';
+  
+  #call the method on the contained object
   return $self->_obj->$method(@args);
 }
 

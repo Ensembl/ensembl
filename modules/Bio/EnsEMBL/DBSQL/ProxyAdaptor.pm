@@ -154,4 +154,23 @@ sub AUTOLOAD {
   return undef;
 }
 
+
+=head2 DELETE
+
+  Arg [1]    : none
+  Example    : none
+  Description: Called automatically by garbage collector. This method does not
+               actually do anything, but if it was not defined, then the 
+               AUTOLOAD method would be called during destruction by the 
+               garbage collector instead.
+  Returntype : none
+  Exceptions : none
+  Caller     : automatic
+
+=cut
+
+sub DELETE {
+  #do nothing
+}
+
   
