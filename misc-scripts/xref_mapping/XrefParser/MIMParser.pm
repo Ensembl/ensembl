@@ -17,7 +17,7 @@ use vars qw(@ISA);
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 1) {
-    print "\nUsage: MIMParser.pm file\n\n";
+    print "\nUsage: MIMParser.pm file <source_id> <species_id>\n\n";
     exit(1);
   }
 
@@ -34,11 +34,9 @@ sub run {
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-    print "source id is $source_id \n";
   }
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-    print "species id is $species_id \n";
   }
 
 
@@ -67,8 +65,8 @@ sub run {
        $mismatch++;
     }
   }
-  print "$count succesfull xrefs loaded\n";
-  print "$mismatch FAILED xrefs\n";
+  print "\t$count succesfull xrefs loaded\n";
+  print "\t$mismatch FAILED xrefs\n";
 }
 
 sub gene_name_2_xref_from_hugo{

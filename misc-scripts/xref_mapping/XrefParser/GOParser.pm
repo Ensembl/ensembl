@@ -17,7 +17,7 @@ use vars qw(@ISA);
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 1) {
-    print "\nUsage: GoParser.pm file\n\n";
+    print "\nUsage: GoParser.pm file <source_id> <species_id>\n\n";
     exit(1);
   }
 
@@ -34,16 +34,16 @@ sub run {
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-    print "source id is $source_id \n";
   }
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-    print "species id is $species_id \n";
   }
 
 
   my (%swiss) = XrefParser::BaseParser->get_valid_codes("uniprot",$species_id);
   my (%refseq) = XrefParser::BaseParser->get_valid_codes("refseq",$species_id);
+
+  my $count  = 0;
 
   open(GO,"<".$file) || die "Could not open $file\n";
 
@@ -61,18 +61,20 @@ sub run {
     elsif($array[0] =~ /RefSeq/){
       if($refseq{$array[1]}){
 	 XrefParser::BaseParser->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
-#	print "$array[1]\tSPTR\t$array[4]\tGO\t$array[6]\t$array[9]\tXREF\n";
+	 $count++;
       }
     }
     elsif($array[0] =~ /UniProt/){
       if($swiss{$array[1]}){
 	XrefParser::BaseParser->add_to_xrefs($swiss{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+	$count++;
       }
     }
     else{
       print STDERR "unknown type ".$array[0]."\n";
     }
   }
+  print "\t$count GO dependent xrefs added\n"; 
 }
 
 sub new {

@@ -17,7 +17,7 @@ use vars qw(@ISA);
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 1) {
-    print "\nUsage: ZFINParser.pm file\n\n";
+    print "\nUsage: ZFINParser.pm file <source_id> <species_id>\n\n";
     exit(1);
   }
 
@@ -34,11 +34,9 @@ sub run {
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-    print "source id is $source_id \n";
   }
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-    print "species id is $species_id \n";
   }
 
   my $dir = dirname($file);
@@ -46,8 +44,6 @@ sub run {
 
   my (%swiss) = XrefParser::BaseParser->get_valid_codes("uniprot",$species_id);
   my (%refseq) = XrefParser::BaseParser->get_valid_codes("refseq",$species_id);
-
-#  my $taxonomy_id =  XrefParser::BaseParser->get_taxonomy_from_species_id($species_id);
 
   open(SWISSPROT,"<".$dir."/swissprot.txt") || die "Could not open $dir/swissprot.txt\n";
 #e.g.
@@ -85,9 +81,9 @@ sub run {
     }
   }
   close REFSEQ;
-  print "$count xrefs succesfully loaded\n";
-  print "$mismatch xrefs ignored\n";
-  die "Do not store loaded bit\n";
+  print "\t$count xrefs succesfully loaded\n";
+  print "\t$mismatch xrefs ignored\n";
+  die "Do not store loaded bit  (NOT tested yet)\n";
 }
 
 sub new {

@@ -19,7 +19,7 @@ my $dep_sth;
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 1) {
-    print "\nUsage: RGDParser.pm file\n\n";
+    print "\nUsage: RGDParser.pm file <source_id> <species_id>\n\n";
     exit(1);
   }
 
@@ -38,15 +38,12 @@ sub run {
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-    print "source id is $source_id \n";
   }
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-    print "species id is $species_id \n";
   }
 
 
-#  my (%swiss) = XrefParser::BaseParser->get_valid_codes("uniprot",$species_id);
   my (%genbank) = XrefParser::BaseParser->get_valid_codes("EMBL",$species_id);
   my (%refseq) = XrefParser::BaseParser->get_valid_codes("refseq",$species_id);
 
@@ -72,8 +69,8 @@ sub run {
       $mismatch++;
     }
   }
-  print "$count xrefs succesfully loaded\n";
-  print "$mismatch xrefs ignored\n";
+  print "\t$count xrefs succesfully loaded\n";
+  print "\t$mismatch xrefs ignored\n";
 }
 
 

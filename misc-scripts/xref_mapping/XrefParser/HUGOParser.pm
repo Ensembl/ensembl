@@ -20,7 +20,7 @@ my $dep_sth;
 if (!defined(caller())) {
   
   if (scalar(@ARGV) != 1) {
-    print "\nUsage: HUGOParser.pm file\n\n";
+    print "\nUsage: HUGOParser.pm file <source_id> <species_id>\n\n";
     exit(1);
   }
   
@@ -38,11 +38,9 @@ sub run {
   print STDERR "source = $source_id\tspecies = $species_id\n";
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-    print "source id is $source_id \n";
   }
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-    print "species id is $species_id \n";
   }
 
   my $dir = dirname($file);
@@ -107,8 +105,8 @@ sub run {
     }
   }
   close (ENS1);
-  print "$count xrefs succesfully loaded\n";
-  print "$mismatch xrefs failed to load\n";
+  print "\t$count xrefs succesfully loaded\n";
+  print "\t$mismatch xrefs failed to load\n";
 }
   
       

@@ -86,6 +86,7 @@ sub run {
     my @files = split(/\s+/,$url);
     
     my $parse = 0;
+    my $empty = 0;
     my $file_cs=0;
     my $type = $name;
     my @new_file=();
@@ -120,7 +121,6 @@ sub run {
 
       # compare checksums and parse/upload if necessary
       # need to check file size as some .SPC files can be of zero length
-      print "HELLO: $dir/$file\n";
       $file_cs = md5sum("$dir/$file");
       if (!defined $checksum || $checksum ne $file_cs) {
 	
@@ -133,14 +133,13 @@ sub run {
 	  $parser = 'UniProtParser' if ($parser =~ /Uniprot/i);
 	}
 	else {
-	  
+	  $empty = 1;
 	  print $file . " has zero length, skipping\n";
 	  
 	}
       }
     }
     if($parse){
-
 	print "Parsing ".join(' ',@new_file)." with $parser\n";
 	eval "require XrefParser::$parser";
 	my $new = "XrefParser::$parser"->new();
@@ -150,6 +149,9 @@ sub run {
 	update_source($dbi, $source_url_id, $file_cs, $new_file[0]);
 
       } 
+    elsif(!$empty){
+      print "Ignoring ".join(' ',@new_file)." as checksums match\n";
+    }
     
   }
 

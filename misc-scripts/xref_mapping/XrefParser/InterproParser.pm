@@ -20,7 +20,7 @@ my $dep_sth;
 if (!defined(caller())) {
   
   if (scalar(@ARGV) != 1) {
-    print "\nUsage: InterproParser.pm file\n\n";
+    print "\nUsage: InterproParser.pm file <source_id> <species_id>\n\n";
     exit(1);
   }
   
@@ -38,11 +38,9 @@ sub run {
   print STDERR "source = $source_id\tspecies = $species_id\n";
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-    print "source id is $source_id \n";
   }
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-    print "species id is $species_id \n";
   }
 
   my $add_interpro_sth =  XrefParser::BaseParser->dbi->prepare
@@ -93,11 +91,6 @@ sub run {
     ($tigr) = $_ =~ /db\=\"TIGRFAMs\".*dbkey\=\"(\S+)\"/;
     
 
-#    print "#########################################################\n$interpro\n$name\n$short_name\n";
-#    $i++;
-#    if($i > 10){
-#      die "first ten done";
-#    }
     if($interpro){
       if(!get_xref($get_xref_sth, $interpro, $source_id)){
 	$count++;
@@ -105,14 +98,12 @@ sub run {
 	  || die "Problem adding ".$interpro."\n";
       }
       if($pfam){
-	#      print "PFAM $pfam\n";
 	if(!get_xref($get_interpro_sth, $interpro,$pfam)){
 	  $add_interpro_sth->execute($interpro,$pfam);
 	  $count2++;
 	}
       }  
       if($tigr){
-	#     print "TIGR $tigr\n";
 	if(!get_xref($get_interpro_sth, $interpro,$tigr)){
 	  $add_interpro_sth->execute($interpro,$tigr);
 	  $count3++;
@@ -122,11 +113,9 @@ sub run {
   }
   close (LONG);
        
-  print "$count xref successfully loaded.\n";
-  print "$count2 interpro/pfam relationships added\n";
-  print "$count3 interpro/tigr relationships added\n";
-#  die "not ready yet\n";
-  
+  print "\t$count xref successfully loaded.\n";
+  print "\t$count2 interpro/pfam relationships added\n";
+  print "\t$count3 interpro/tigr relationships added\n";
   
 }
 
@@ -135,10 +124,8 @@ sub get_xref{
 
   $get_xref_sth->execute($acc, $source) || die "FAILED $acc  $source\n";
   if(my @row = $get_xref_sth->fetchrow_array()) {
-#    print "FOUND $acc\n";
     return $row[0];
   }   
-#  print "UNKOWN $acc";
   return 0;
 }
 
