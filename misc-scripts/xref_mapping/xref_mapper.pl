@@ -90,7 +90,7 @@ if(defined($new)){ #save last one
 
 for my $species ( @all_species ) {
   $species->dump_seqs($xref);
-  $species->run_matching();
+  $species->run_matching($xref);
   $species->store();
 }
 
