@@ -66,8 +66,7 @@ sub store{
       }
 
       if($probe->is_stored($db)) {
-	  warning("AffyProbe [".$probe->dbID."] is already stored" .
-		  " in this database.");
+	  warning("AffyProbe [".$probe->dbID."] is already stored in this database.");
 	  next PROBE;
       }
 
@@ -126,7 +125,7 @@ sub fetch_all_by_probeset {
     my $self = shift;
     my $probeset = shift;
     
-    return $self->generic_fetch( "ap.probeset = $probeset" );
+    return $self->generic_fetch( "ap.probeset = '$probeset'" );
 }
 
 
@@ -248,20 +247,15 @@ sub _objs_from_sth {
   my $probe;
 
   while( $sth->fetch() ) {
-      $array  = ( $array_cache{$array_id} ||= 
-		  $self->db->get_AffyArrayAdaptor()->fetch_by_dbID( $array_id ) );
-      if( $current_dbid != $probe_id ) {
-	  # make a new probe
-	  $probe = Bio::EnsEMBL::AffyProbe->new(
-	      -array => $array,
-	      -probeset => $probeset,
-	      -name => $name,
-	  );
-	  push( @result, $probe );
-	  $current_dbid = $probe_id;
-      } else {
-	  $probe->add_Array_probename( $array, $name );
-      }
+    $array  = $array_cache{$array_id} ||= $self->db->get_AffyArrayAdaptor()->fetch_by_dbID( $array_id );
+    if( $current_dbid != $probe_id ) {
+      # make a new probe
+      $probe = Bio::EnsEMBL::AffyProbe->new( -array => $array, -probeset => $probeset, -name => $name, -dbID => $probe_id, -adaptor => $self );
+      push @result, $probe;
+      $current_dbid = $probe_id;
+    } else {
+      $probe->add_Array_probename( $array, $name );
+    }
   }
   return \@result;
 }
