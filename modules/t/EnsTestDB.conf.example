@@ -14,7 +14,7 @@
     'host'          => 'localhost',
     
     # user to connect to server as - mandatory
-    'user'          => 'root',
+    'user'          => 'ensadmin',
     
     # port the server is running on - optional
     'port'          => '3306',

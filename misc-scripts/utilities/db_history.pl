@@ -11,6 +11,7 @@ use DBI;
 my $driver="mysql";
 my $port=3306;
 my $password;
+my $create_password;
 my $db_history="db_history";
 my $create_user="root";
 
@@ -22,6 +23,7 @@ my ($uname)=getpwuid($<);
 my $host;
 my $db;
 my $label;
+my $full_history;
 
 # count action
 my $table;
@@ -41,7 +43,7 @@ my $phelp;
 
 # options not listed in help: mainly testing
 my $user='ensadmin';
-my $show_all;
+my $all_databases;
 my $opt_v;
 
 $Getopt::Long::ignorecase=0;
@@ -51,6 +53,8 @@ $Getopt::Long::ignorecase=0;
 	    'host|H:s'=>\$host,
 	    'db|d:s'=>\$db,
 	    'label|l:s'=>\$label,
+
+	    'full_history|F'=>\$full_history,
 
 	    'table|t:s'=>\$table,
 
@@ -65,8 +69,10 @@ $Getopt::Long::ignorecase=0;
 	    'h'=>\$help,
 
 	    'user|u:s'=>\$user,
-	    'show_all|A'=>\$show_all,
+	    'all_databases|A'=>\$all_databases,
 	    'v'=>\$opt_v,
+	    'passwd|password|p:s'=>\$password,
+	    'create_password|P:s'=>\$create_password,
 
 	     );
 
@@ -79,22 +85,24 @@ if($help){
     print<<ENDOFTEXT;
 db_history.pl
 
-  -H|host      host    restrict to this host
-  -d|db        dbname  restrict to this database
-  -l|label     label   restrict to databases with this label set
+  -H|host         host    restrict to this host
+  -d|db           dbname  restrict to this database
+  -l|label        label   restrict to databases with this label set
 
-  -t|table     string  count entries in this table across selected databases
+  -F|full_history         show full history of each database
 
-  -O|set_owner id      identify the owner/creator of the database
-  -U|set_user  id      identify a user who needs this database
-  -T|set_title string  short description of database
-  -N|set_note  string  append a note about the database
-  -L|set_label string  add a label to a database, e.g identifying it as part of a set
+  -t|table     string     count entries in this table across selected databases
 
-  -C|create            create table in database for history
+  -O|set_owner id         identify the owner/creator of the database
+  -U|set_user  id         identify a user who needs this database
+  -T|set_title string     short description of database
+  -N|set_note  string     append a note about the database
+  -L|set_label string     add a label to a database, e.g identifying it as part of a set
 
-  -h                   this help
-  -help                perldoc help
+  -C|create               create table in database for history
+
+  -h                      this help
+  -help                   perldoc help
 
 ENDOFTEXT
     exit 0;
@@ -129,8 +137,11 @@ if($db && $host){
     my @history;
     my $err=&_db_history($host,$db,\@history);
 
-    if($err<0){
-	print "No history for $db on $host not found\n";
+    if($err<-1){
+	print "$db not found on $host\n";
+	exit 0;
+    }elsif($err<0){
+	print "No history for $db on $host\n";
 	exit 0;
     }
 
@@ -149,6 +160,8 @@ if($db && $host){
 my $description;
 if($table){
     $description="Rows in Table \'$table\'";
+}elsif($full_history){
+    $description="";
 }else{
     $description="TITLE";
 }
@@ -171,7 +184,7 @@ foreach my $host (@hosts){
 
 	# unless explicitly told to show all databases, skip ones
 	# in skip list
-	next if(!$show_all && $skip_db{$database});
+	next if(!$all_databases && $skip_db{$database});
 
 	if($table){
 	    my $count;
@@ -183,13 +196,29 @@ foreach my $host (@hosts){
 
 	    $count=0 if !$count;
 	    printf "%-10s %-30s %10d\n",$host,$database,$count;
+	}elsif($full_history){
+	    my @history;
+	    my $err=&_db_history($host,$database,\@history);
+	    my $info;
+	    my $err2=&_summarize_history(\@history,\$info);
+	    if($err2<-2){
+		# label not found - skip
+		next;
+	    }else{
+		printf "%-10s %-30s\n",$host,$database;
+		if($err<0){
+		    print " No history\n\n";
+		}else{
+		    print "$info\n";
+		}
+	    }
 	}else{
 	    my $title;
 	    my $err=&_db_history_title($host,$database,\$title);
 	    # skip if database doesn't exist or missing label; continue if table exists
 	    next if $err<-1;
 
-	    printf "%-10s %-30s %s\n",$host,$database,"$title";
+	    printf "%-10s %-30s \'%s\'\n",$host,$database,$title;
 	}
     }
 }
@@ -213,8 +242,47 @@ sub _db_list{
 
 sub _summarize_history{
     my($rahistory,$rinfo)=@_;
-    $$rinfo="no history data";
+    my($notes,$title,$owner,@users,@labels,%labels);
+    foreach my $row (@$rahistory){
+	my($type,$user,$date,$isc,$text)=@$row;
+	if($type eq 'owner' && $isc==1){
+	    $owner=$text;
+	}elsif($type eq 'title' && $isc==1){
+	    $title=$text;
+	}elsif($type eq 'note'){
+	    my $ymd=&_time2date($date);
+	    $notes.=sprintf("   %s %-10s %s\n",$ymd,$user,$text);
+	}elsif($type eq 'user'){
+	    push(@users,$text);
+	}elsif($type eq 'label'){
+	    push(@labels,$text);
+	    $labels{$text}=1;
+	}
+    }
+    if($label && !$labels{$label}){
+	return -3;
+    }
+    my $info;
+    if(!$owner && !$title && !$notes && scalar(@users)==0 && scalar(@labels)==0){
+	$info="no history data";
+    }else{
+	$info=" TITLE: \'$title\'\n OWNER: \'$owner\', USERS: \'".join('\',\'',@users)."\'\n";
+	if(scalar(@labels)){
+	    $info.=" LABELS: \'".join('\',\'',@labels)."\'\n";
+	}
+	$info.=$notes;
+    }
+    $$rinfo=$info;
     return;
+}
+
+sub _time2date{
+    my($date)=@_;
+    if($date=~/(\d+\-\d+\-\d+)/){
+	return $1;
+    }else{
+	return 'XXXX-XX-XX';
+    }
 }
 
 sub _db_history_add{
@@ -226,7 +294,7 @@ sub _db_history_add{
     &_db_history_create($host,$database) if $opt_C;
 
     my $dbh;
-    if(my $err=&_db_connect(\$dbh,$host,$database,$user)){return $err};
+    if(my $err=&_db_connect(\$dbh,$host,$database,$user,$password)){return $err};
     &_db_history_insert($dbh,$host,$database,'owner',$set_owner) if $set_owner;
     &_db_history_insert($dbh,$host,$database,'user',$set_user) if $set_user;
     &_db_history_insert($dbh,$host,$database,'title',$set_title) if $set_title;
@@ -273,7 +341,7 @@ sub _db_history_insert{
 sub _db_history_create{
     my($host,$database)=@_;
     my $dbh;
-    if(my $err=&_db_connect(\$dbh,$host,$database,$create_user)){return $err};
+    if(my $err=&_db_connect(\$dbh,$host,$database,$create_user,$create_password)){return $err};
     eval{
 	my $query="create table if not exists $db_history".
 	    "(type enum ('owner','user','title','note','label') not null,".
@@ -294,7 +362,7 @@ sub _db_history_create{
 sub _db_history{
     my($host,$database,$rahistory)=@_;
     my $dbh;
-    if(my $err=&_db_connect(\$dbh,$host,$database,$user)){return $err};
+    if(my $err=&_db_connect(\$dbh,$host,$database,$user,$password)){return $err};
 
     eval{
 	my $sth = $dbh->prepare("SELECT * FROM $db_history order by date");
@@ -315,7 +383,7 @@ sub _db_history{
 sub _db_history_title{
     my($host,$database,$rtitle)=@_;
     my $dbh;
-    if(my $err=&_db_connect(\$dbh,$host,$database,$user)){return $err};
+    if(my $err=&_db_connect(\$dbh,$host,$database,$user,$password)){return $err};
 
     # look for a title
     eval{
@@ -331,7 +399,8 @@ sub _db_history_title{
     if($@){
 	$dbh->disconnect();
 	if($label){
-	    print "failed to fetch title - skip since selectiong by label\n$@\n" 
+	    # BUG - assumes that if no title, won't have label
+	    print "failed to fetch title - skip since selection by label\n$@\n" 
 		if $opt_v;
 	    return -3;
 	}else{
@@ -366,7 +435,7 @@ sub _db_history_title{
 sub _db_count{
     my($host,$database,$table,$rcount)=@_;
     my $dbh;
-    if(my $err=&_db_connect(\$dbh,$host,$database,$user)){return $err};
+    if(my $err=&_db_connect(\$dbh,$host,$database,$user,$password)){return $err};
 
     # try to access
     eval{
@@ -384,7 +453,7 @@ sub _db_count{
 
 # connect to db with error handling
 sub _db_connect{
-    my($rdbh,$host,$database,$user)=@_;
+    my($rdbh,$host,$database,$user,$password)=@_;
     my $dsn = "DBI:$driver:database=$database;host=$host;port=$port";
 
     # try to connect to database
@@ -420,9 +489,9 @@ Get titles of all databases:
 Set of databases can be restricted by host (-H host), by database name
 (-d database) and by label [user added] (-l ensembl100).
 
-e.g. Find location of all copies of ensembl100 databases:
+e.g. Find location of all copies of database 'ensembl100':
 
-    db_history.pl -d ensembl100
+    db_history.pl -d new_genes
 
 
 Various types of annotation can be added to a database using (-O
@@ -438,9 +507,18 @@ label = subsets of databases can be selected by label, so this should allow data
 e.g. Set the title of the new_genes database on host ensembl1, the owner, an interested user and
 a note about it being incomplete.
 
-    db_history.pl -d new_genes -H ens1d -O jack -U jill 
+    db_history.pl -d new_genes -H hostx -O jack -U jill 
         -T 'database of extra genes from RTpcr experiments'
         -N 'only genes on chr1 have been loaded'
+
+
+Full annotation of individual databases can be viewed (notes are viewed in historical order):
+
+    db_history.pl -d new_genes -H ens1d
+
+Full history of a list of database can be shown using the -F flag
+
+    db_history.pl -d new_genes -F
 
 
 As well as return user added notes about the databases, its also possible to compare
@@ -463,7 +541,7 @@ Count
 
 Displays short help
 
-=item -H
+=item -help
 
 Displays this help message
 
@@ -473,9 +551,9 @@ Displays this help message
 
 =over 4
 
-=item XX-XXX-1999
+=item 09-JUL-2001
 
-B<th> added
+B<th> released first version
 
 =back
 

@@ -32,9 +32,8 @@ my $clone_id;
 my $processed_clone_list='extract_curated.processed.lis';
 my $log='extract_curated.log';
 my $max_clone;
-
+my $nodb;
 my $help;
-
 &GetOptions(
 
 	    'ohost:s'=>\$ohost,
@@ -55,23 +54,47 @@ my $help;
 	    'log:s'=>\$log,
 	    'processed:s'=>\$processed_clone_list,
 	    'max:n'=>\$max_clone,
-
+	    'nodb'=>\$nodb,
 	    'help|h'=>\$help,
 	     );
 
 if($help){
-    print<<ENDOFTEXT;
+    print << "ENDOFTEXT";
 extract_curated.pl
 
-TEST MODE (parsing individual embl files)
-  -emblfile  file   emblfile [$emblfile]
-  -c         name   cloneid, for use with -d option to override emblfile
-  -d                remove entries related to this clone from DB
-  -w                write to database
+  -v               verbose
+  -w               write gene structures to output database
 
-  -h                this help
+  -d               delete (used with mode 2 to remove entries from database - bugs)
+  -c clone_id      clone_id override (to replace id read from embl file by id that will be
+                   used to name genes and write to database)
+
+  -log file        log file for stack trace of fatal errors (mode 1) [$log]
+  -processed file  file of all previously processed clones that have not been written to
+                   database - read before and written after processing (mode 1)
+  -max number      number of clones to process (mode 1)
+  -nodb            allow script to run without presence of database (testing only)
+
+Two sources of data to process:
+  -l               select list mode (mode 1)
+
+1. process all entries in 'clone' table of input database that are not
+   present in corresponding table of output database or in 'processed' log file.
+  -ihost hostname  hostname of input database [$ihost]
+  -iuser username  username of input database [$iuser]
+  -idbname dbname  name of input database [$idbname]
+
+2. read a single file:
+  -emblfile file   specify file for processing [$emblfile]
+
+
+  -ohost hostname  hostname of input database [$ohost]
+  -ouser username  username of input database [$ouser]
+  -odbname dbname  name of input database [$odbname]
+
+  -h               help
 ENDOFTEXT
-    exit 0;
+    exit;
 }
 
 # use -d -c clone to force a delete
@@ -88,8 +111,11 @@ my %processed;
 my $logging;
 
 # connect to db for writing
-my $db = Bio::EnsEMBL::DBLoader->new(
-    "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ohost;user=$ouser;dbname=$odbname");
+my $db;
+unless($nodb){
+    $db = Bio::EnsEMBL::DBLoader->new(
+       "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ohost;user=$ouser;dbname=$odbname");
+}
 
 # adaptor for xrefs
 my $adx=Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($db);
