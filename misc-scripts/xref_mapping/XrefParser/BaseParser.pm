@@ -812,8 +812,17 @@ sub create {
 
   if ($dbs{$dbname}) {
     if ($create) {
-      $dbh->do( "DROP DATABASE $dbname" );
-      print "Removed existing database $dbname\n";
+      print "WARNING: about to drop database $dbname on $host:$port; yes to confirm, otherwise exit: ";
+      $| = 1; # flush stdout
+      my $p = <STDIN>;
+      chomp $p;
+      if ($p eq "yes") {
+	$dbh->do( "DROP DATABASE $dbname" );
+	print "Removed existing database $dbname\n";
+      } else {
+	print "$dbname NOT removed\n";
+	exit(1);
+      }
     } else {
       die("Database $dbname already exists. Use -create option to overwrite it.");
     }
