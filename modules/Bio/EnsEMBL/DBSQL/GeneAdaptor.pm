@@ -278,7 +278,7 @@ sub fetch_by_contig_list{
 =cut
 
 sub fetch_by_Slice {
-  my ( $self, $slice ) = @_;
+  my ( $self, $slice, $type ) = @_;
   my @out;
 
  my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type
@@ -299,7 +299,7 @@ sub fetch_by_Slice {
 
  my $str = "(".join( ",",@cids ).")";
 
- my $sth = $self->prepare("
+  my $sth = $self->prepare("
     SELECT distinct(t.gene_id) 
     FROM   transcript t,exon_transcript et,exon e 
     WHERE  e.contig_id in $str 

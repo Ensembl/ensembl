@@ -60,7 +60,7 @@ sub fetch_by_Slice {
               transcript_name, translation_id, translation_name, gene_id,
               type, gene_name, db, exon_structure, external_name,
               external_db, coding_start, coding_end 
-        FROM  www_transcript
+        FROM  transcript
         WHERE chr_name = ? and chr_start <= ? and chr_start >= ? and
                 chr_end >= ?"
     );

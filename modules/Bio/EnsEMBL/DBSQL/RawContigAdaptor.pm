@@ -175,6 +175,10 @@ sub fetch_filled_by_dbIDs {
   my @contig_ids = @_;
   my %result = ();
 
+  if(scalar(@contig_ids) == 0) {
+    return ();
+  }
+
   my $sth = $self->prepare( "SELECT co.contig_id, co.name, co.clone_id, 
                                     co.length, co.offset, co.corder, 
                                     co.dna_id, co.international_name,
@@ -182,7 +186,7 @@ sub fetch_filled_by_dbIDs {
                                     cl.name, cl.version, cl.htg_phase,
                                     cl.created, cl.modified
                              FROM contig co, clone cl
-                             WHERE co.contig_id in ( " .
+                             WHERE co.contig_id IN ( " .
 			           join( ", ", @contig_ids ) . ")  
                              AND co.clone_id = cl.clone_id"  );
   $sth->execute();

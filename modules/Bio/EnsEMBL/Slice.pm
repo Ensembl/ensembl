@@ -375,10 +375,22 @@ sub get_all_Genes{
 =cut
 
 sub get_Genes_by_type{
-   my ($self,@args) = @_;
+   my ($self,$type) = @_;
+   
+   # Possibly this can be improved by selecting genes a query,
+   # we expect that most times there will not be many genes in a region
+   # however
+   my @genes = $self->get_all_Genes();
+   
+   my @out = ();
 
-   $self->throw("Ewan has not implemented this function! Complain!!!!");
+   foreach my $gene (@genes) {
+     if($gene->type() eq $type) {
+       push @out, $type;
+     }
+   }
 
+   return @out;
 }
 
 =head2 invert

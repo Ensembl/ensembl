@@ -241,6 +241,8 @@ sub prepare {
        
    }
    
+   print(STDERR, "Prepared statement: $string\n");
+
    if( $self->_debug > 10 ) {
        print STDERR "Prepared statement $string\n";
        my $st = Bio::EnsEMBL::DBSQL::DummyStatement->new();
