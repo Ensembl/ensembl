@@ -4,11 +4,11 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 51;
+	plan tests => 54;
 }
 
 use MultiTestDB;
-use TestUtils qw ( debug test_getter_setter );
+use TestUtils qw ( debug test_getter_setter count_rows);
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Transcript;
@@ -491,9 +491,42 @@ for my $gene ( @$alt_genes ) {
 }
 ok( $ok );
 
+#
+# Gene remove test
+#
+
+$multi->save( "core", "gene", "gene_stable_id", "gene_description", 
+	      "transcript", "transcript_stable_id", 
+	      "translation", "translation_stable_id", 
+	      "exon", "exon_stable_id", "exon_transcript",
+	      "object_xref", "go_xref", "identity_xref" );
+
+$gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
+
+my $gene_count = count_rows( $db, "gene" );
+my $exon_count = count_rows( $db, "exon" );
+my $trans_count = count_rows( $db, "transcript" );
+my $tl_count = count_rows( $db, "translation" );
+
+my $tminus = scalar( @{$gene->get_all_Transcripts() } );
+my $eminus = scalar( @{$gene->get_all_Exons() } );
+
+debug( "Genes before ".$gene_count );
+debug( "Exons before ".$exon_count );
+debug( "Transcripts before ".$trans_count );
+debug( "Translations before ".$tl_count );
+debug( "Gene has ".$tminus." transcripts" );
+debug( "Gene has ".$eminus." exons" );
+
+$ga->remove( $gene );
+
+ok( count_rows( $db, "gene" ) == ( $gene_count - 1 ));
+ok( count_rows( $db, "transcript" ) == ($trans_count-$tminus));
+ok( count_rows( $db, "exon" ) == ( $exon_count - $eminus ));
+
+
 
 $multi->restore('core');
-
 
 #
 # regression test - test the recalculation of coords
