@@ -646,9 +646,6 @@ sub get_all_SimilarityFeatures_above_pid{
 
 sub get_all_RepeatFeatures {
     my ($self,$bp) = @_;
-    
-    $bp = $bp+100;
-
 
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
@@ -901,12 +898,37 @@ sub get_all_PredictionFeatures {
 
 Returns a list of B<Bio::EnsEMBL::SeqFeature>
 objects.  Features which overlap the ends of the
-contig are truncated to the contig, not discarded
-like
+contig are truncated to the contig, whereas the
+other methods which return FeaturePairs discard
+them.
 
 =head2 get_all_SimpleFeatures_by_feature_type
 
-    my @cpg = $contig->get_all_SimpleFeatures_by_feature_type('cpg_island');
+    my @cpg = $contig->get_all_SimpleFeatures_by_feature_type(
+        'cpg_island');
+
+Same as B<get_all_SimpleFeatures>, but returns
+only the features where the B<gff_feature> column
+in the analsis table matches the string given in
+the argument.
+
+=head2 get_all_SimpleFeatures_by_feature_type_above_score
+
+    my @cpg = $contig->get_all_SimpleFeatures_by_feature_type_above_score(
+        'cpg_island', 400);
+
+Extends B<get_all_SimpleFeatures_by_feature_type>,
+taking an additional argument which is a number. 
+Only features with a score higher than this
+number are returned.
+
+=head2 get_all_SimpleFeatures_by_analysis_id
+
+    my @cpg = $contig->get_all_SimpleFeatures_by_analysis_id(21);
+
+Same as B<get_all_SimpleFeatures>, but returns
+only the features where the analysis_id matches
+the integer argument.
 
 =cut
 
@@ -933,7 +955,7 @@ sub get_all_SimpleFeatures_by_feature_type_above_score {
     $self->throw("No score given") unless defined($score);
     
     return $self->_fetch_SimpleFeatures_SQL_clause(qq{
-        AND a.type = '$feature_type'
+        AND a.gff_feature = '$feature_type'
         AND f.score >= $score
         });
 }
@@ -965,7 +987,7 @@ sub _fetch_SimpleFeatures_SQL_clause {
         SELECT f.id
           , IF (sgp.raw_ori = 1
               , (sgp.chr_start + f.seq_start - sgp.raw_start - $global_start)
-              , (sgp.chr_start + sgp.raw_end - f.seq_end     - $global_start)) as start
+              , (sgp.chr_start + sgp.raw_end - f.seq_end     - $global_start))
           , IF (sgp.raw_ori = 1
               , (sgp.chr_start + f.seq_end   - sgp.raw_start - $global_start)
               , (sgp.chr_start + sgp.raw_end - f.seq_start   - $global_start))
@@ -2092,7 +2114,7 @@ sub get_Genes {
   my $gene_obj = $self->dbobj->gene_Obj();
 
   my @newgenes;
-  my @genes = $gene_obj->get_array_supporting('without',@gene_ids);
+  my @genes = $gene_obj->get_array_supporting('without', @gene_ids);
   
   my %gene;
   
