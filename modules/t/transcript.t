@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 61;
+	plan tests => 131;
 }
 
 use MultiTestDB;
@@ -333,6 +333,8 @@ $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 # 5 prime UTR editing
 #
 
+$tr->edits_enabled(1);
+
 my $seq1 = $tr->spliced_seq();
 my $tlseq1 = $tr->translateable_seq();
 
@@ -387,7 +389,6 @@ ok($tr->cdna_coding_end()   == $cdna_cds_end1);
 ok($tr->spliced_seq() eq $seq1);
 ok($tr->translateable_seq() eq $tlseq1);
 
-
 #
 # try save and retrieve by lazy load
 #
@@ -398,8 +399,153 @@ my $attribAdaptor = $db->get_AttributeAdaptor();
 $attribAdaptor->store_on_Transcript( $tr, $tr->get_all_Attributes() );
 
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+$tr->edits_enabled(1);
 
 ok( $tr->translateable_seq() eq $tlseq2 );
 ok( $tr->spliced_seq() =~ /^GATTACA/ );
 
 $multi->restore();
+
+
+
+#
+# test that the transcript mapper handles edits
+#
+$tr = $ta->fetch_by_translation_id(21734);
+$slice = $tr->feature_Slice();
+$tr = $tr->transfer($slice);
+test_trans_mapper_edits($tr);
+
+# test again with reverse strand
+$tr = $ta->fetch_by_translation_id(21734);
+$slice->invert();
+$tr = $tr->transfer($slice);
+test_trans_mapper_edits($tr);
+
+sub test_trans_mapper_edits {
+  $tr->edits_enabled(1);
+
+
+  my $start = ($tr->strand() == 1) ? 1  : $tr->end() - 11;
+  my $end   = ($tr->strand() == 1) ? 12 : $tr->end();
+
+  @coords = $tr->genomic2cdna($start, $end, $tr->strand());
+
+  ok(@coords == 1 && $coords[0]->isa('Bio::EnsEMBL::Mapper::Coordinate'));
+  ok($coords[0]->start() == 1);
+  ok($coords[0]->end()   == 12);
+
+  # deletion of 3 bp
+  my $se = Bio::EnsEMBL::SeqEdit->new
+    (-CODE  => '_rna_edit',
+     -START => 2,
+     -END   => 4,
+     -ALT_SEQ => '');
+
+  $tr->add_Attributes($se->get_Attribute());
+
+  @coords = $tr->genomic2cdna($start, $end, $tr->strand());
+
+  debug("Expect coord, gap, coord");
+  print_coords(\@coords);
+
+  ok(@coords == 3);
+  ok($coords[0]->start == 1);
+  ok($coords[0]->end   == 1);
+
+  ok($coords[1]->isa('Bio::EnsEMBL::Mapper::Gap'));
+  ok($coords[1]->length() == 3);
+
+  ok($coords[2]->start == 2);
+  ok($coords[2]->end   == 9);
+
+
+  # replacement, should have no effect
+  $se->start(6);
+  $se->end(8);
+  $se->alt_seq('ACT');
+  $tr->add_Attributes($se->get_Attribute());
+
+  @coords = $tr->genomic2cdna($start, $end, $tr->strand());
+
+  debug("Expect coord, gap, coord");
+  print_coords(\@coords);
+
+  ok(@coords == 3);
+  ok($coords[0]->start == 1);
+  ok($coords[0]->end   == 1);
+
+  ok($coords[1]->isa('Bio::EnsEMBL::Mapper::Gap'));
+  ok($coords[1]->length() == 3);
+
+  ok($coords[2]->start == 2);
+  ok($coords[2]->end   == 9);
+
+  # insertion in middle
+
+  $se->start(10);
+  $se->end(9);
+  $se->alt_seq('GGGG');
+  $tr->add_Attributes($se->get_Attribute());
+
+  @coords = $tr->genomic2cdna($start, $end, $tr->strand());
+
+  debug("Expect coord, gap, coord, coord");
+
+  ok(@coords == 4);
+
+  ok($coords[0]->start == 1);
+  ok($coords[0]->end   == 1);
+
+  ok($coords[1]->isa('Bio::EnsEMBL::Mapper::Gap'));
+  ok($coords[1]->length() == 3);
+
+  ok($coords[2]->start == 2);
+  ok($coords[2]->end   == 6);
+
+  ok($coords[3]->start == 11);
+  ok($coords[3]->end   == 13);
+
+  print_coords(\@coords);
+
+  # insert at very start of cdna
+
+  $se->start(1);
+  $se->end(0);
+  $se->alt_seq('A');
+  $tr->add_Attributes($se->get_Attribute());
+
+  @coords = $tr->genomic2cdna($start, $end, $tr->strand());
+
+  debug("Expect coords, gap, coord, coord");
+
+  ok(@coords == 4);
+
+  ok($coords[0]->start == 2);
+  ok($coords[0]->end   == 2);
+
+  ok($coords[1]->isa('Bio::EnsEMBL::Mapper::Gap'));
+  ok($coords[1]->length() == 3);
+
+  ok($coords[2]->start == 3);
+  ok($coords[2]->end   == 7);
+
+  ok($coords[3]->start == 12);
+  ok($coords[3]->end   == 14);
+
+  print_coords(\@coords);
+}
+
+
+sub print_coords {
+  my $coords = shift;
+
+  foreach my $c (@$coords) {
+    if($c->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+      debug("COORD ",$c->start .'-'.$c->end);
+    } else {
+      debug("GAP (". $c->length().")");
+    }
+  }
+}
+
