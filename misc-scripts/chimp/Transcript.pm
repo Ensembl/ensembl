@@ -114,7 +114,8 @@ sub check_iexons {
   my $itranscript = shift;
   my $itranscript_array   = shift;
 
-  my $prev_end = 0;
+  my $prev_start = undef;
+  my $prev_end = undef;
   my $transcript_seq_region = undef;
   my $transcript_strand     = undef;
 
@@ -185,9 +186,12 @@ sub check_iexons {
     }
 
 
-    if ($prev_end > $iexon->start()) {
-      # something funny has happened, this exon starts before end of previous
-      # exon
+    # watch out for exons that come in the wrong order
+
+    if((defined($prev_end) && $iexon->strand() == 1 &&
+        $prev_end > $iexon->start()) ||
+       (defined($prev_start) && $iexon->strand() == -1 &&
+        $prev_start < $iexon->end())) {
 
       debug("  inversion, splitting transcript");
 
@@ -203,6 +207,9 @@ sub check_iexons {
       }
       return check_iexons($itranscript, $itranscript_array);
     }
+
+    $prev_end = $iexon->end();
+    $prev_start = $iexon->start();
 
     if (!defined($transcript_strand)) {
       $transcript_strand = $iexon->strand();
@@ -405,6 +412,7 @@ sub make_Transcript {
        -STABLE_ID => $iexon->stable_id(),
        -SLICE     => $slice);
 
+    #print STDERR "Adding exon " . $exon->stable_id . " to final transcript\n";
     $transcript->add_Exon($exon);
 
     #
