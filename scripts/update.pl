@@ -268,7 +268,7 @@ sub _place_gene {
     #If gene not present in recipient, write it in
     if ( $@ ) {
 	$verbose && print "New Gene, writing it in the database\n";
-	$verbose &&  print "In _place_gene: Gene ".$gene->id." has version ".$gene->version."\n";
+	$verbose &&  print "In _place_gene: Gene ".$don_gene->id." has version ".$don_gene->version."\n";
 	$rec_db->write_Gene($don_gene);
     }
     #If gene present in recipient, check donor and recipient version
