@@ -1061,7 +1061,7 @@ sub list_overlapping_supercontigs {
    }
 
    my @out;
-   foreach my $seg ($slice->project($sc_level->name(), $sc_level->version)){
+   foreach my $seg (@{$slice->project($sc_level->name(), $sc_level->version)}){
      push @out, $seg->[2]->seq_region_name();
    }
 
