@@ -481,8 +481,8 @@ Features
 
     move( start, end, strand )
     --------------------------
-      In place change of the coordinates of the feature. It will stay on the same
-      slice.
+      In place change of the coordinates of the feature. It will stay on the 
+      same slice.
 
     map(coord_system)
     -----------------
@@ -592,81 +592,107 @@ Haplotypes (and the MHC region)
     - Must be able to retrieve a slice on a haplotype and its flanking
       regions (i.e. the regions of the default assembly bordering the 
       haplotype).
+    - It may be desireable to interpolate features from the default sequence
+      onto the haplotype
 
    Proposal:
-    Store haplotypes as features in a haplotype feature table, but also as
-    a single entry in the dnafrag table.  The dnafrag table will contain an 
-    extra column 'flags' of type set which will allow additional properties
-    to be associated with a dnafrag.  If the haplotype dnafrag is assembled 
-    from smaller dnafrags then this will be described by the assembly table
-    as usual (actually it may be necessary to do this if dna is not associated
-    directly with the haplotype coordinate system).  
+    Create a new table assembly_exception to describe unusual assembly 
+    regions such as haplotypes and PARs.
+    The haplotype will be present as a full length 'chromosome' in the dnfrag 
+    table (or other appropriate coordinate system) but only the region which
+    differs from the the default assembly will be described in the chromosome
+    table.  The regions which are identical will be described by the 
+    assembly_exception table. 
 
-    The haplotype table will look similar to the assembly table, but can be
-    viewed as a feature table that describes haplotypes:
-
-      haplo_feature
-      -------------   
-      haplo_feature_id  int
+      assembly_exception
+      ------------------   
       dnafrag_id        int
       dnafrag_start     int
       dnafrag_end       int
-      dnafrag_strand    int  (may not be needed, may implicitly be 1)
-      haplo_dnafrag_id  int  (this references the dnafrag that is a haplotype)
+      exc_type          enum('HP', 'PAR')
+      exc_dnafrag_id    int
+      exc_dnafrag_start int
+      exc_dnafrag_end   int
+      ori               int  (may not be needed, may implicitly be 1)
      
-    With the addition of a HaplotypeFeatureAdaptor it will be possible to
-    retrieve haplotypes which overlap a slice.  A HaplotypeFeature will inherit
-    from the Feature class and will have the basic 'start', 'end', 'strand', 
-    'slice', attributes, but also a 'name' and 'length' retrieved from the
-    associated dnafrag.
-
     It is possible to retrieve a slice on a haplotype just as any other slice
     is retrieved from the SliceAdaptor.  For example: 
     $slice = $slice_adaptor->fetch_by_region('chromosome', '6_DR52');
 
-    The slice will have an additional method is_type('haplotype') which
-    will return true or false depending on whether the slice is a haplotype
-    slice or not.  This method will have to query the dnfrag table and 
-    cache the result.
+    The slice will have an additional method has_exceptions('haplotype') which
+    will return true or false depending on whether the slice overlaps any
+    regions of assembly exception of type 'haplotype'.
+    This method will have to query the dnfrag table and cache the result.
+    
+    Another new slice method get_all_exceptions will return a listref of the
+    assembly exceptions overlapping the slice.
 
     A slice created on a haplotype will have coordinates relative to the
-    start of the haplotype region NOT the start of the entire chromosome
-    as a normal slice.  Furthermore creating a slice that extends past the
-    the boundaries of the slice (i.e. start < 1 or end > length) will 
-    allow the user to retrieve flanking features and sequence from the 
-    default region.  The feature adaptors fetch_by_Slice method will have to
-    be altered to check whether a slice is a haplotype slice.  If it is a
-    haplotype slice then the following algorithm will apply:
-     (a) Split the slice into 3 slices on the following regions: 
-         (1)     slice_start -> 0, 
-         (2)               1 -> frag_length, 
-         (3) frag_length + 1 -> slice_end
-        
-         Slices that would be of length < 1 are not created or used.  
-         Slices (1) and (3) are normal non-haplotype slices that are created
-         on the default chromosome which will be determined by querying the 
-         haplo_feature table.  Slice (2) is a haplotype slice.
-         The case in which it is not necessary to create slices (1) and (3) is
-         the degenerative case: it is not necessary to create any new slices 
-         and the features for this slice can be returned right away.
+    start of the chromosome NOT relative to the start of the haplotype
+    region. For all intents and purposes a haplotype slice will behave as
+    a normal slice.
+
+    The feature adaptor fetch_all_by_Slice method will have to
+    be altered to check whether a slice overlaps haplotype assembly
+    exceptions.  If it does the following algorithm will apply:
+     (a) Split the slice into regions of exception and non-exception.
+         The regions of exception should be used to create slices on the 
+         default chromosome not the haplotype chromosome.
      (b) Retrieve features by recursively calling fetch_by_Slice on each of
          the slices created.
-     (c) Adjust the start/end of features from slice (2) by adding the
-         the length of slice (1).  
-     (d) Adjust the start/end of features from slice (3) by adding the
-         combined lengths of slice (1) and slice (2)
-     (e) Return all of the features retrieved
+     (c) Adjust the start/end of the features retrieved fromeach of the slices 
+         so that they are relative to the start of the original slice, and
+         place them on the original slice.
+     (d) Return all of the features retrieved
 
     The SequenceAdaptor will also need to take haplotype slices into account.
-    A similar algorithm to above will need to apply in which up to 3 seperate
-    slices are created, seperate sequence for all three obtained and the
-    sequence from each of them obtained, spliced together and returned. 
+    A similar algorithm to above will need to apply in which sequence for 
+    seperate component slices is retrieved, spliced together and returned.
+
+    For example, the assembly table could define the composition of the 
+    divergent region of chromosome 6_DR52 (C), but leave the remainder of the
+    chromosomal composition undefined (A,B).  However the remainder of the 
+    chromosome composition would be accounted for is by 2 rows in the 
+    assembly_exception table which described the synonymous regions in terms 
+    of chromosome 6:
+ 
+      A______________         B_______________ (6)
+                   C ==========                (6_DR52)
+
+
+
 
 
 Pseudo Autosomal Regions (PARs)
 -------------------------------
+  There are several requirements related to PARs:
+    - The same sequence and features must be present on a region of
+      both chromosome X and chromosome Y
+    - The region and features should be returned when retreiving features
+      from either chromosome.
+    - It must still be possible to retrieve one of the features via its 
+      identifier
+    - It must still be possible to transform features in the region from 
+      chromosomal coordinates to contig coords and vice-versa.
+    - The genebuild should run over the region, but only once.
 
-TBD
+  Proposal:
+    Use the same assembly_exception table as described in the Haplotype section
+    above. Chromosome X can be the 'default' chromosome for the PAR
+    and Chromosome Y can be described by the assembly table except in the 
+    PAR.  The PAR on chromosome Y can be defined by the assembly_exception
+    table and refer to the corresponding sequence on chromosome X.  The same
+    algorithm as used for haplotypes can then be used when retrieving sequence
+    or features from slices which overlap this exception on chromosome Y.
+
+    The following diagram illustrates how chromsome X and chromosome Y would
+    be defined:
+
+    ========================================== X
+           ^                 ^ 
+          _|_            ____|____ (X)
+    ======   ============         ============= Y
+
 
 Multiple Assemblies
 -------------------
