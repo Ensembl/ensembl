@@ -282,7 +282,7 @@ foreach my $daf (@$dafs) {
 }
 
 #fetch a transcript by its internal identifier
-my $transcript = $tr->adaptor->fetch_by_dbID(100);
+my $transcript = $tr_adaptor->fetch_by_dbID(100);
 
 #fetch a dnaAlignFeature by its internal identifiers
 my $dna_align_feat = $daf_adaptor->fetch_by_dbID(100);
@@ -312,7 +312,8 @@ sub feature2string {
 
 
 $slice_adaptor = $db->get_SliceAdaptor();
-$slice = $slice_adaptor->fetch_by_chr_start_end('X', 1e6, 10e6);
+$slice = $slice_adaptor->fetch_by_region('chromosome','X',
+                                         1e6,10e6);
 
 foreach my $gene (@{$slice->get_all_Genes()}) {
   my $gstring = feature2string($gene);
