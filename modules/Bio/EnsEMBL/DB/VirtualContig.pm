@@ -1005,9 +1005,9 @@ sub _convert_seqfeature_to_vc_coords {
 	my $seen = 0;
 	my $strand;
 	foreach my $sub ( @sub ) {
-	    print STDERR "Converting ",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
+	    #print STDERR "Converting ",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
 	    $sub = $self->_convert_seqfeature_to_vc_coords($sub);
-	    print STDERR "To: ",$sub->start,":",$sub->end,":",$sub->strand,"\n";
+	    #print STDERR "To: ",$sub->start,":",$sub->end,":",$sub->strand,"\n";
 	    if( !defined $sub ) {        
 		next;
 	    }
