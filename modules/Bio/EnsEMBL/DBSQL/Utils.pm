@@ -156,7 +156,7 @@ sub fset2transcript_guess_phases {
     }
 	
     my $translation = new Bio::EnsEMBL::Translation;
-    $translation->id($contig->id);
+    $translation->id($contig->id . "." . $fset->id);
 	
     if ($exons[0]->strand == 1) {
 	@exons = sort {$a->start <=> $b->start} @exons;

@@ -1160,7 +1160,6 @@ sub get_supporting_evidence_direct {
            AND !(f.seq_end < e.seq_start OR f.seq_start > e.seq_end) 
 	       AND f.strand = e.strand
               AND f.analysis != 3}; #hack for genscan
-
  # PL: query not checked thoroughly
     my $sth2=$self->_db_obj->prepare($query);
     $sth2->execute;
@@ -1200,8 +1199,8 @@ sub get_supporting_evidence_direct {
          WHERE e.id  = sf.exon 
            AND e.id in ($list) 
            AND !(sf.seq_end < e.seq_start OR sf.seq_start > e.seq_end) 
-	       AND sf.strand = e.strand
-              AND sf.analysis != 3}; #hack for genscan
+	   AND sf.strand = e.strand
+           AND sf.analysis != 3}; #hack for genscan
 
  # PL: query not checked thoroughly
     $sth2=$self->_db_obj->prepare($query);

@@ -274,7 +274,7 @@ sub get_all_SimilarityFeatures_above_score{
 	return ();
     }
 
-    print STDERR "SIMI: got bump factor ",$bp,"\n";
+    #print STDERR "SIMI: got bump factor ",$bp,"\n";
 
     if( ! defined $self->{'_feature_cache'} ) {
       &eprof_start('similarity-query');
@@ -368,7 +368,7 @@ sub get_all_SimilarityFeatures_above_score{
 	  &eprof_end('similarity-obj-creation');
       }
       
-      print STDERR "FEATURE: got $count in entire call\n";
+      #print STDERR "FEATURE: got $count in entire call\n";
       &eprof_end('similarity-obj');
       
   }
@@ -419,7 +419,7 @@ sub get_all_SimilarityFeatures_by_strand{
        }
    }
    &eprof_end("similarity-by-strand");
-   print STDERR "Returning ",scalar(@f)," features for ",$analysis_type,"\n";
+   #print STDERR "Returning ",scalar(@f)," features for ",$analysis_type,"\n";
    return (@f);
 }
 
@@ -1228,12 +1228,13 @@ sub get_all_ExternalFeatures{
    &eprof_start("External-coordinate-lift");
    
    my @final;
+   #print STDERR "Got ",scalar(@contig_features),"before lift\n";
    foreach my $f ( @contig_features ) {
        if( defined $self->_convert_seqfeature_to_vc_coords($f) ) {
 	   push(@final,$f);
        }
    }
-
+   #print STDERR "Got ",scalar(@final),"after lift\n";
 
    &eprof_end("External-coordinate-lift");
 

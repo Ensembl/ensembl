@@ -761,7 +761,7 @@ sub get_PredictionFeature_by_id {
        $out->analysis($analysis);
 
        # Final check that everything is ok.
-           
+       # MC THis isn't playing nicely with the c extensions
        #$out->validate();
        $fset->add_sub_SeqFeature($out,'EXPAND');
        $fset->strand($row->{strand});
