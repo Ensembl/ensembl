@@ -183,7 +183,7 @@ sub create_xrefs {
     my $description;
     foreach my $line (@all_lines) {
       my ($description_only) = $line =~ /^DE\s+(.+)/;
-      $description .= $description_only if ($description_only);
+      $description .= " " . $description_only if ($description_only);
     }
 
     $xref->{DESCRIPTION} = $description;
