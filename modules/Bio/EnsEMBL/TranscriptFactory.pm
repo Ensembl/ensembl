@@ -134,7 +134,7 @@ sub fset2transcript_guess_phases {
 	$exon->strand   ($f->strand);
 	$exon->score($f->score);
 	$exon->p_value($f->p_value);
-	$exon->attach_seq($contig->primary_seq);
+	$exon->attach_seq($contig);
 	$exon->phase($f->phase); 
 	push(@exons,$exon);
 	$count++;
@@ -162,9 +162,10 @@ sub fset2transcript_guess_phases {
 	$exon      ->phase   ($endphase);
 	$transcript->add_Exon($exon);
 
-	$endphase = $exon->end_phase;
+	$endphase = $exon->end_phase(($exon->phase + $exon->length)%3);
 	
     }
+
 
     if ($transcript->translate->seq !~ /\*/) {
 	return $transcript;
@@ -174,7 +175,7 @@ sub fset2transcript_guess_phases {
     
     foreach my $exon (@exons) {
 	$exon->phase($endphase);
-	$endphase = $exon->end_phase;
+	$endphase = $exon->end_phase(($exon->phase + $exon->length)%3);
     }
 
     if ($transcript->translate->seq !~ /\*/) {
@@ -185,7 +186,7 @@ sub fset2transcript_guess_phases {
     
     foreach my $exon (@exons) {
 	$exon->phase($endphase);
-	$endphase = $exon->end_phase;
+	$endphase = $exon->end_phase(($exon->phase + $exon->length)%3);
     }
     
     if ($transcript->translate->seq !~ /\*/) {
