@@ -671,7 +671,7 @@ sub _objs_from_sth {
 
       ($sr_name,$seq_region_start,$seq_region_end,$seq_region_strand) =
         $dest_mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
-			 $seq_region_strand, $sr_cs);
+                              $seq_region_strand, $sr_cs);
 
       #skip features that map to gaps or coord system boundaries
       next FEATURE if(!defined($sr_name));
@@ -694,22 +694,22 @@ sub _objs_from_sth {
     #
     if($dest_slice) {
       if($dest_slice_start != 1 || $dest_slice_strand != 1) {
-	if($dest_slice_strand == 1) {
-	  $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-	  $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
-	} else {
-	  my $tmp_seq_region_start = $seq_region_start;
-	  $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-	  $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
-	  $seq_region_strand *= -1;
-	}
+        if($dest_slice_strand == 1) {
+          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+          $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+        } else {
+          my $tmp_seq_region_start = $seq_region_start;
+          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+          $seq_region_strand *= -1;
+        }
 
-	#throw away features off the end of the requested slice
-	if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-	  next FEATURE if(!$keep_all);
-	}
+        #throw away features off the end of the requested slice
+        if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+          next FEATURE if(!$keep_all);
+        }
       }
-
+      
       $slice = $dest_slice;
     }
 
@@ -717,28 +717,28 @@ sub _objs_from_sth {
 
     if( $display_xref_id ) {
       $display_xref = bless 
-	{ 'dbID' => $display_xref_id,
-	  'adaptor' => $dbEntryAdaptor,
-	   'display_id' => $external_name,
-	   'dbname' => $external_db
-	}, "Bio::EnsEMBL::DBEntry";
+        { 'dbID' => $display_xref_id,
+          'adaptor' => $dbEntryAdaptor,
+          'display_id' => $external_name,
+          'dbname' => $external_db
+        }, "Bio::EnsEMBL::DBEntry";
     }
 				
 
     #finally, create the new transcript
     push @transcripts, Bio::EnsEMBL::Transcript->new
       ( '-start'         =>  $seq_region_start,
-	'-end'           =>  $seq_region_end,
-	'-strand'        =>  $seq_region_strand,
-	'-adaptor'       =>  $self,
-	'-slice'         =>  $slice,
-	'-dbID'          =>  $transcript_id,
+        '-end'           =>  $seq_region_end,
+        '-strand'        =>  $seq_region_strand,
+        '-adaptor'       =>  $self,
+        '-slice'         =>  $slice,
+        '-dbID'          =>  $transcript_id,
         '-stable_id'     =>  $stable_id,
         '-version'       =>  $version,
-	'-external_name' =>  $external_name,
+        '-external_name' =>  $external_name,
         '-external_db'   =>  $external_db,
         '-external_status' => $external_status,
-	'-display_xref' => $display_xref );
+        '-display_xref' => $display_xref );
   }
 
   return \@transcripts;
