@@ -273,7 +273,7 @@ sub extend_maximally_right {
 sub windowed_VirtualContig {
    my ($self,$position,$left,$right) = @_;
 
-   if( $position < 0 || $postion > $self->length ) {
+   if( $position < 0 || $position > $self->length ) {
        $self->throw("Attempting to build a new virtual contig out of length bounds!");
    }
 

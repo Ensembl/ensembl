@@ -339,7 +339,10 @@ sub draw_gene
 
 	    # calculate x coord 
 	    if ($type eq 'exon'){@x_args=($len,$exon->start-$substr,$exon->end-$substr,$exon->end-$exon->start,$fixed)};
-	    if ($type eq 'intron'){@x_args=($len,$keep_coord-$substr,$exon->start-$substr,$exon->start-$keep_coord,$fixed);}
+	    if ($type eq 'intron'){
+		
+		@x_args=($len,$keep_coord-$substr,$exon->start-$substr,$exon->start-$keep_coord,$fixed);
+	    }
 	    my  ($x_start,$x_end)=&calc_x_coord(@x_args);
 	 
 	    # calculate y coord
@@ -351,7 +354,10 @@ sub draw_gene
 	    if 	($type eq 'exon' || $new_gene_status !=1){  	
 	   
 		# do not draw unless exons and introns are on the contig (contig image) or it is a gene image
-		if (!defined $seq_len || $exon->contig_id eq $contig_id){
+		if (!defined $seq_len || $exon->seqname eq $contig_id){
+		
+		   
+
 		$im->filledRectangle($x_start,$y_start,$x_end,$y_end,$gd_col_ref->{$image_comp_ref->{$type}{color}});
 	    }	    
 		# do not print map for a gene image
@@ -359,7 +365,7 @@ sub draw_gene
 	    }
 	}
 	# do not reset variables unless exons and introns are on the contig (contig image) or it is a gene image
-	if (!defined $seq_len || $exon->contig_id eq $contig_id){	
+	if (!defined $seq_len || $exon->seqname eq $contig_id){	
 	    $new_gene_status=0;
 	    $keep_coord=$exon->end;  
 	}	    
