@@ -477,6 +477,39 @@ sub fetch_by_transcript_id {
     return $gene;
 }
 
+=head2 fetch_by_transcript_stable_id
+
+  Arg [1]    : string $transid 
+               unique database identifier for the transcript whose gene should
+               be retrieved.
+  Example    : none
+  Description: Retrieves a gene from the database via the database identifier
+               of one of its transcripts
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub fetch_by_transcript_stable_id {
+    my $self = shift;
+    my $transid = shift;
+
+    # this is a cheap SQL call
+     my $sth = $self->prepare("	SELECT	tr.gene_id 
+				FROM	transcript as tr, transcript_stable_id tcl 
+				WHERE	tr.transcript_id = $transid
+                                  AND   tr.transcript_id = tcl.transcript_id");
+    $sth->execute;
+
+    my ($geneid) = $sth->fetchrow_array();
+    if( !defined $geneid ) {
+        return undef;
+    }
+    my $gene = $self->fetch_by_dbID( $geneid );
+    return $gene;
+}
+
 
 
 =head2 fetch_by_Peptide_id
