@@ -61,12 +61,12 @@ sub contig_image_components
 {
     my $components={
 	sequence    =>{color=>'red',       factor=>0,height=>1,legend=>'contig',},
-	exon        =>{color=>'black',     factor=>1,height=>9,legend=>'Ensembl gene',link=>'http://www.ensembl.org/cgi-bin/geneview.pl?gene=',},
-	intron      =>{color=>'black',     factor=>1,height=>1,legend=>'Ensembl gene',link=>'http://www.ensembl.org/cgi-bin/geneview.pl?gene=',},
+	exon        =>{color=>'black',     factor=>1,height=>9,legend=>'Ensembl gene',link=>'/perl/geneview?gene=',},
+	intron      =>{color=>'black',     factor=>1,height=>1,legend=>'Ensembl gene',link=>'/perl/geneview?gene=',},
 	swir        =>{color=>'darkorange',factor=>3,height=>6,legend=>'swissprot',   link=>'http://www.ebi.ac.uk/cgi-bin/swissfetch?',},
 	dbest       =>{color=>'red',       factor=>5,height=>6,legend=>'dbEST',       link=>"http://www.ncbi.nlm.nih.gov/htbin-post/Entrez/query?form=6&dopt=g&db=n&uid=",},
 	vert        =>{color=>'pine',      factor=>6,height=>6,legend=>'vert',        link=>'http://www.ebi.ac.uk/cgi-bin/emblfetch?',},
-	PfamFrag    =>{color=>'flora',     factor=>4,height=>6,legend=>'pfam',        link=>'http://www.ensembl.org/cgi-bin/getpfamacc?pfamentry=',},
+	PfamFrag    =>{color=>'flora',     factor=>4,height=>6,legend=>'pfam',        link=>'/perl/getpfamacc?pfamentry=',},
 	RepeatMasker=>{color=>'darkgreen', factor=>7,height=>6,legend=>'repeat'},
 	genscan     =>{color=>'blue2',     factor=>2,height=>6,legend=>'genscan',},
 	scale       =>{color=>'black',     factor=>8,height=>0,legend=>'scale (bp)',length=>1000,step=>10,times=>5,},		       
@@ -95,8 +95,8 @@ sub gene_image_components
     
 {
     my $components={	
-	exon     =>{color=>'black',factor=>1,height=>30,legend=>'Ensembl gene',link=>'http://www.ensembl.org/cgi-bin/geneview.pl?gene=',legend=>'Ensembl gene',},
-	intron   =>{color=>'black',factor=>1,height=>2, legend=>'Ensembl gene',link=>'http://www.ensembl.org/cgi-bin/geneview.pl?gene=',legend=>'Ensembl gene',},	
+	exon     =>{color=>'black',factor=>1,height=>30,legend=>'Ensembl gene',link=>'/perl/geneview?gene=',legend=>'Ensembl gene',},
+	intron   =>{color=>'black',factor=>1,height=>2, legend=>'Ensembl gene',link=>'/perl/geneview?gene=',legend=>'Ensembl gene',},	
 
 	scale_bar=>{color=>'blue' ,legend_color=>'black',height=>1,descr=>'bp',length=>1000,},
     };   
