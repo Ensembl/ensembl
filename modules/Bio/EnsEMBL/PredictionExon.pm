@@ -10,7 +10,7 @@
 
 =pod 
 
-=head1 NAME Bio::EnsEMBL::PredictionExon - A class representing an Exon from an 
+=head1 NAME Bio::EnsEMBL::PredictionExon - A class representing an Exon from an
 ab initio prediction method
 
 =head1 SYNOPSIS
@@ -55,7 +55,7 @@ package Bio::EnsEMBL::PredictionExon;
 use vars qw(@ISA);
 use strict;
 
-
+use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
@@ -65,7 +65,7 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
 =head2 new
 
-  Args       : see SUPERCLASS Bio::EnsEMBL::SeqFeature
+  Args       : see SUPERCLASS Bio::EnsEMBL::Exon
   Example    : none
   Description: create an Exon object
   Returntype : Bio::EnsEMBL::Exon 
@@ -125,7 +125,7 @@ sub end_phase {
 
   Arg  1     : String $coordinate_system_name
   Arg [2]    : String $coordinate_system_version
-  Description: moves this exon to the given coordinate system. If this exon has 
+  Description: moves this exon to the given coordinate system. If this exon has
                attached supporting evidence, they move as well.
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : wrong parameters
@@ -168,8 +168,8 @@ sub transform {
 
 sub transfer {
   my $self  = shift;
-  
-  my $new_exon = Bio::EnsEMBL::Feature::transform( $self, @_ );
+
+  my $new_exon = Bio::EnsEMBL::Feature::transfer( $self, @_ );
   return undef unless $new_exon;
 
   #dont want to share the same sequence cache
