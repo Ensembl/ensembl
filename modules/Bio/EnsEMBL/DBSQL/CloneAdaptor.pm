@@ -233,9 +233,9 @@ sub fetch_all {
   my $self = shift;
 
   my $sth = $self->prepare("SELECT clone_id, name, embl_acc, version,
-                                   embl_version, htg_phase, created, modified
+                                   embl_version, htg_phase, 
+                                   UNIX_TIMESTAMP(created), UNIX_TIMESTAMP(modified)
                             FROM clone");
-  
 
   $sth->execute();
 

@@ -509,8 +509,25 @@ sub remove {
     my $dna_id = $sth->fetchrow_array;
     $sth = $self->prepare("DELETE FROM dna WHERE dna_id = $dna_id");
     $sth->execute;
-    $self->throw("Failed to delete dna for dna_id '$dna_id'")
-      unless $sth->rows;
+    my $flag_found=0;
+    if($sth->rows){
+      $flag_found=1;
+    }
+    # now try dnac - eval since table might not be present..
+    $sth = $self->prepare("DELETE FROM dnac WHERE dna_id = $dna_id");
+    eval{
+      $sth->execute;
+    };
+    if($@){
+    }else{
+      if($sth->rows){
+	$flag_found=1;
+      }
+    }
+    print "got here\n";
+    if($flag_found==0){
+      $self->throw("Failed to delete dna for dna_id '$dna_id'")
+    }
   }
 
   # Remove the contig

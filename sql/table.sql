@@ -146,6 +146,24 @@ CREATE TABLE dna (
 ) MAX_ROWS = 750000 AVG_ROW_LENGTH = 19000;
 
 #
+# Table structure for table 'dnac'
+#
+
+# Contains equivalent data to dna table, but 4 letters of DNA code are represented
+# by a single binary character, based on 2 bit encoding
+# don't need to worry about ambiguity of length, since this is stored in contig.length
+# n_line column contains start-end pairs of coordinates in the string that are really Ns
+
+CREATE TABLE dnac (
+  dna_id    int(10) unsigned NOT NULL auto_increment,
+  sequence  mediumblob NOT NULL,
+  created   datetime NOT NULL,
+  n_line    text,  
+
+  PRIMARY KEY (dna_id)
+) MAX_ROWS = 750000 AVG_ROW_LENGTH = 19000;
+
+#
 # Table structure for table 'exon'
 #
 
