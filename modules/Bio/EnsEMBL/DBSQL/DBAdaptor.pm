@@ -809,6 +809,20 @@ sub assembly_type{
    if($value) {
       $obj->{'assembly'} = $value;
     }
+    if (! defined $obj->{'assembly'}) {
+      print STDERR "DBAdaptor.pm: using default assembly type\n";
+      my $ass;
+      eval {
+        $ass = $obj->get_MetaContainer()->get_default_assembly();
+      };
+      if ( $@ ) {
+        $obj->throw("*** get_MetaContainer->get_default_assembly failed:\n$@\n"
+          ."assembly type must be set with assembly_type() first");
+      } elsif (! $ass) {
+        $obj->throw("No default assembly defined"
+          . " - must set with assembly_type() first");
+      }
+    }
     return $obj->{'assembly'};
 
 }
