@@ -641,6 +641,13 @@ sub get_mapping_path {
 
   $self->{'_shortest_path'} ||= {};
 
+  if(!ref($cs1) || !$cs1->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw("CoordSystem argument expected.");
+  }
+  if(!ref($cs2) || !$cs2->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw("CoordSystem argument expected.");
+  }
+
   my $cs1_id = $cs1->dbID();
   my $cs2_id = $cs2->dbID();
 
