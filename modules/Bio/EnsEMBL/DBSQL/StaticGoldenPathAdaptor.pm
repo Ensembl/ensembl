@@ -929,6 +929,7 @@ sub fetch_VirtualContig_by_chr_name{
 				    $self->fetch_RawContigs_by_chr_name($name));
   
    $vc->dbobj($self->dbobj);
+   $vc->_chr_name($name);
    return $vc; 
 }
 
