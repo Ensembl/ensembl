@@ -288,12 +288,7 @@ sub write_dead_geneid{
     my ($self,$geneid) = @_;
     
     my $sth = $self->prepare("insert into dead_genes (id) values ('$geneid')");
-    eval {
-	$sth->execute();
-    };
-    if ($@) {
-	$self->warn("Could not wirte dead gene $geneid because $@\n");
-    }
+    $sth->execute();
 }
 
 
@@ -325,12 +320,8 @@ sub write_seq{
    $cv || $self->throw("Attempting to write a sequence without a clone version number!");
 
    my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence,clone_id,clone_version) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."','".$cid."','".$cv."')");
-   eval {
-       $sth->execute();
-   };
-   if ($@) {
-       $self->warn("Could not archive because $@");
-   }
+   $sth->execute();
+   $self->warn("Not good, BUG: Could not archive because $@");
 }
 =head2 delete_seq
 
