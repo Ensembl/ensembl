@@ -58,7 +58,6 @@ use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 use Bio::EnsEMBL::Slice;
-
 use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::Storable);
@@ -955,25 +954,22 @@ sub sub_SeqFeature{
 #
 sub add_sub_SeqFeature{
   my ($self,$feat,$expand) = @_;
-
+  my ($p, $f, $l) = caller;
   if( $expand eq 'EXPAND' ) {
     # if this doesn't have start/end set - forget it!
-    if( !defined $self->start && !defined $self->end ) {
+    if( ! $self->start && ! $self->end ) {
+      
       $self->start($feat->start());
       $self->end($feat->end());
       $self->strand($feat->strand);
     } else {
-      my ($start,$end);
       if( $feat->start < $self->start ) {
-        $start = $feat->start;
+        $self->start($feat->start);
       }
 
       if( $feat->end > $self->end ) {
-        $end = $feat->end;
+        $self->end($feat->end);
       }
-
-      $self->start($start);
-      $self->end($end);
     }
    } else {
      if($self->start > $feat->start || $self->end < $feat->end) {
