@@ -56,6 +56,15 @@ my @clone;
 
 open(ERROR,">transfer.error\n");
 
+if( $usefile == 1 ) {
+    while( <> ) {
+	my ($en) = split;
+	push(@clone,$en);
+    }
+} else {
+    @clone = @ARGV;
+}
+
 
 if( $tdbtype =~ 'ace' ) {
     $to_db = Bio::EnsEMBL::AceDB::Obj->new( -user => $tdbuser, -host => $thost, -port => $tport);
@@ -75,18 +84,10 @@ if( $fdbtype =~ 'ace' ) {
     die("$fdbtype is not a good type (should be ace, rdb or timdb)");
 }
 
-if( $usefile == 1 ) {
-    while( <> ) {
-	my ($en) = split;
-	push(@clone,$en);
-    }
-} elsif ( $getall == 1 ) {
+if ( $getall == 1 ) {
     @clone = $from_db->get_all_Clone_id();
     print STDERR scalar(@clone)." clones found in DB\n";
-} else {
-    @clone = @ARGV;
 }
-
 
 if( defined $cend ) {
     print STDERR "splicing $cstart to $cend\n";
