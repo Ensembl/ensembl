@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 7;
+	plan tests => 8;
 }
 
 use TestUtils qw( debug );
@@ -28,7 +28,7 @@ ok($mc);
 
 
 #
-# 2 - list_value_by_key
+# list_value_by_key
 #
 
 my ($asm_default) = @{$mc->list_value_by_key('assembly.default')};
@@ -36,7 +36,7 @@ ok($asm_default eq 'NCBI_30');
 
 
 #
-# 3-4 store key value
+#  store key value
 #
 
 $mc->store_key_value('testkey', 'testvalue1');
@@ -46,9 +46,14 @@ my $listref = $mc->list_value_by_key('testkey');
 ok($listref->[0] eq 'testvalue1');
 ok($listref->[1] eq 'testvalue2');
 
+$mc->delete_key('testkey');
+
+$listref = $mc->list_value_by_key('testkey');
+ok(@$listref == 0);
+
 
 #
-# 5-6 - get_Species
+# get_Species
 #
 
 my $species = $mc->get_Species();
@@ -62,5 +67,5 @@ ok($bin eq 'Homo sapiens');
 my $taxid = $mc->get_taxonomy_id();
 ok($taxid == 9606);
 
-
+$mdb->restore('core', 'meta');
 
