@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 29;
+	plan tests => 31;
 }
 
 use MultiTestDB;
