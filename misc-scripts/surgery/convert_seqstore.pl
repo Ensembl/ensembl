@@ -381,10 +381,10 @@ debug("Translating marker_map_location");
 execute($dbi, 
 	     "INSERT INTO $target.marker_map_location " .
 	     "SELECT mml.marker_id, mml.map_id, " .
-	     "       tcm.new_id, " .
+	     "       c.name, " .
 	     "       mml.marker_synonym_id, mml.position, mml.lod_score " .
-	     "FROM $target.tmp_chr_map tcm, $source.marker_map_location mml " .
-	     "WHERE tcm.old_id = mml.chromosome_id");
+	     "FROM $source.chromosome c, $source.marker_map_location mml " .
+	     "WHERE c.chromosome_id = mml.chromosome_id");
 
 debug("Translating map_density");
 execute($dbi,
