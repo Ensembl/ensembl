@@ -698,8 +698,7 @@ sub split_Transcript_to_Partial {
 	       if( $#exons < 0 ) {
 		   # this was the last exon!
 		   $t = $self->new();
-		   $t->id($self->id);
-		   
+		   $t->dbID($self->dbID);
 		   $t->add_Exon($prev);
 		   $t->is_partial(1);
 		   push(@out,$t);

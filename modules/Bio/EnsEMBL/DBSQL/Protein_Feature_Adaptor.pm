@@ -358,7 +358,7 @@ sub write_Protein_feature_by_translationID {
     my $analysis;
    
 #Check if the translation id exist in the database, throw an exeption if not.
-    my $sth1 = $self->prepare("select id from translation where id = '$pep'");
+    my $sth1 = $self->prepare("select translation_id from translation where translation_id = $pep");
     $sth1->execute;
    
     if ($sth1->rows == 0) {
@@ -397,7 +397,7 @@ sub write_Protein_feature_by_translationID {
 		
 		my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
 					   "values ('NULL',"
-					   ."'".$pep                 ."',"
+					   ."".$pep                 .","
 					   .$features->start          .","
 					   .$features->end            .","
 					   .$analysisid              .","

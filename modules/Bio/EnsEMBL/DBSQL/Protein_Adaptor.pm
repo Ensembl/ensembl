@@ -377,12 +377,12 @@ sub get_Introns{
     my $transcript = $self->fetch_Transcript_by_dbid($transid);
     my ($starts,$ends) = $transcript->pep_coords;
     
-    my @exons = $transcript->each_Exon();
+    my @exons = $transcript->get_all_Exons();
     my $nbex = scalar(@exons);
     
     foreach my $ex(@exons) {
 	my $length;
-	my $exid = $ex->id();
+	my $exid = $ex->dbID();
 	my ($ex_start, $ex_end) = $self->get_exon_global_coordinates($exid);
 	if ($previous_ex_end != 0) {
 	    my $intron_start = $previous_ex_end;

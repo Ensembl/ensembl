@@ -118,7 +118,6 @@ sub fetch_by_dbID {
 
 
   foreach my $exon ( @exons ) {
-    print STDERR "Fetching exon with $exon ",$exon->dbID,"\n";
     $exonIds{$exon->dbID} = $exon;
   }
 
@@ -186,7 +185,6 @@ sub fetch_by_dbID {
     $transcript->_translation_id($transcripts{$transcriptId} );
 
     foreach my $exonId ( @{$transcriptExons{$transcriptId}} ) {
-      print STDERR "placing exon ",$exonId,"\n";
       $transcript->add_Exon( $exonIds{$exonId} );
     }
     $gene->add_Transcript( $transcript );

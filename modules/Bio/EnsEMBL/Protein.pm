@@ -115,6 +115,10 @@ sub add_date {
 
 sub get_dates {
    my ($self) = @_;
+
+   $self->warn("In giving back dates, have not sorted out how stable id system works with proteins");
+
+   return ();
    return @{$self->{'date'}}; 
 }
 

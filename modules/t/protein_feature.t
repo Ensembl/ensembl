@@ -240,17 +240,18 @@ else {
 }
 
 eval {
-$protfeat->write_Protein_feature_by_translationID("translation_id3",$feature,$feature1);
+$protfeat->write_Protein_feature_by_translationID(3,$feature,$feature1);
 };
 
 if ($@) {
     print "not ok 21\n";
+    print STDERR "Exception $@\n";
 }
 else {
     print "ok 21\n";
 }
 
-my @transl2 = $protfeat->fetch_by_translationID("translation_id3");
+my @transl2 = $protfeat->fetch_by_translationID(3);
 
 if (scalar @transl2 == 2) {
     print "ok 22\n";

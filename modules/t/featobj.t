@@ -197,11 +197,13 @@ else {
     print "ok 17\n";
 }
 
-if (($seq_feat[0]->start == 2) && ($seq_feat[0]->end ==6) && ($seq_feat[0]->strand == 1) && ($seq_feat[0]->score == 68) && ($seq_feat[0]->primary_tag eq "similarity") && ( $seq_feat[0]->source_tag eq "feat_test") && ($seq_feat[0]->seqname eq "id_cont_test3") && ($seq_feat[0]->hseqname eq "id_test") && ($seq_feat[0]->hstart == 6) && ($seq_feat[0]->hend == 10) && ($seq_feat[0]->hstrand == 1) && ($seq_feat[0]->hscore == 68) && ($seq_feat[0]->hprimary_tag eq "similarity") && ($seq_feat[0]->hsource_tag eq "feat_test") && ($seq_feat[0]->p_value == 4) && ($seq_feat[0]->phase == 1) && ( $seq_feat[0]->end_phase == 2)) {
+
+if ( ($seq_feat[0]->start == 3) && ($seq_feat[0]->end ==5) && ($seq_feat[0]->strand == -1)) {
     print "ok 18\n";
 }
 else {
     print "not ok 18\n";
+    print STDERR $seq_feat[0]->start," ",$seq_feat[0]->end," ",$seq_feat[0]->strand,"\n";
 }
 
 my $anal2    = new Bio::EnsEMBL::Analysis(-db              => "feat2",

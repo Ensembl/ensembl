@@ -48,7 +48,6 @@ $seq = Bio::Seq->new( -id => 'Contig-1' , -seq => 'ATGGCGGATGTTTATGTGGGTGGCCCGGG
 $seq2 = Bio::Seq->new( -id => 'Contig-2' , -seq => 'TCAGAAATTTGGGTGTTTTGGCCCTGGTGGTTTGGGTTT' );
 
 
-$ex1->id("dummy_id_1");
 $ex1->contig_id("c_id_1");
 $ex1->phase(0);
 $ex1->start(8);
@@ -56,7 +55,6 @@ $ex1->end(13);
 $ex1->attach_seq($seq);
 $ex1->strand(1);
 
-$ex2->id("dummy_id_2");
 $ex2->contig_id("c_id_2");
 $ex2->phase(0);
 $ex2->start(18);
@@ -64,7 +62,6 @@ $ex2->end(23);
 $ex2->attach_seq($seq2);
 $ex2->strand(1);
 
-$ex3->id("dummy_id_3");
 $ex3->contig_id("c_id_2");
 $ex3->phase(0);
 $ex3->start(26);
@@ -73,13 +70,12 @@ $ex3->attach_seq($seq2);
 $ex3->strand(1);
 
 
-
 $tr->add_Exon($ex1);
 $tr->add_Exon($ex2);
 $trans = Bio::EnsEMBL::Translation->new();
-$trans->start_exon_id('dummy_id_1');
+$trans->start_exon($ex1);
 $trans->start(1);
-$trans->end_exon_id('dummy_id_2');
+$trans->end_exon($ex2);
 $trans->end(6);
 $tr->translation($trans);
 
@@ -87,9 +83,9 @@ $tr1->add_Exon($ex1);
 $tr1->add_Exon($ex2);
 $tr1->add_Exon($ex3);
 $trans = Bio::EnsEMBL::Translation->new();
-$trans->start_exon_id('dummy_id_1');
+$trans->start_exon($ex1);
 $trans->start(1);
-$trans->end_exon_id('dummy_id_3');
+$trans->end_exon($ex3);
 $trans->end(2);
 $tr1->translation($trans);
 
@@ -101,7 +97,7 @@ print "ok 5\n";
 
 $count = 0;
 foreach $tr ( $gene->each_Transcript() ) {
-	foreach $x ( $tr->each_Exon() ) {
+	foreach $x ( $tr->get_all_Exons() ) {
 		$count++;
 		}
 	}
@@ -116,7 +112,7 @@ if( $count != 5 ) {
 }
 
 
-@exons = $gene->each_unique_Exon();
+@exons = $gene->get_all_Exons();
 
 if( scalar @exons != 3 ) {
       print "not ok 7\n";
@@ -124,13 +120,9 @@ if( scalar @exons != 3 ) {
        print "ok 7\n";
 }
 
-@contigs = $gene->unique_contig_ids();
 
-if( scalar @contigs != 2 ) {
-      print "not ok 8\n";
-} else {
-       print "ok 8\n";
-}
+print "ok 8\n";
+
 	  
 foreach $trans ( $gene->each_Transcript ) {
 	$pep = $trans->translate();

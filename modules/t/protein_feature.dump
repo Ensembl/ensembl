@@ -40,7 +40,7 @@ INSERT INTO dna (id, sequence, created) VALUES (1,'ACTAGATGATTCAGTA','2000-10-18
 # Dumping data for table 'exon_transcript'
 #
 
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('exon_id3','transcript_id3',2);
+INSERT INTO exon_transcript (exon_id, transcript_id, rank) VALUES (3,3,2);
 
 #
 # Dumping data for table 'fset'
@@ -58,18 +58,13 @@ INSERT INTO fset_feature (feature, fset, rank) VALUES (1,1,1);
 # Dumping data for table 'gene'
 #
 
-INSERT INTO gene (id, version, created, modified, stored) VALUES ('gene_id3',1,'2000-10-17 13:29:52','2000-10-17 13:29:52','2000-10-17 13:29:52');
+INSERT INTO gene (gene_id, type) VALUES (3,'ensembl');
 
 #
 # Dumping data for table 'genedblink'
 #
 
 
-#
-# Dumping data for table 'genetype'
-#
-
-INSERT INTO genetype (gene_id, type) VALUES ('gene_id3','test');
 
 #
 # Dumping data for table 'ghost'
@@ -124,7 +119,7 @@ INSERT INTO protein_feature (id, seq_start, seq_end, analysis, translation, hsta
 # Dumping data for table 'transcript'
 #
 
-INSERT INTO transcript (id, version, gene, translation) VALUES ('transcript_id3',2,'gene_id3','translation_id3');
+INSERT INTO transcript (transcript_id, gene_id, translation_id) VALUES (3,3,3);
 
 #
 # Dumping data for table 'transcriptdblink'
@@ -135,10 +130,11 @@ INSERT INTO transcript (id, version, gene, translation) VALUES ('transcript_id3'
 # Dumping data for table 'translation'
 #
 
-INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) VALUES ('translation_id3',1,25,'exon_id3',100,'exon_id3');
+INSERT INTO translation (translation_id, seq_start, start_exon_id, seq_end, end_exon_id) VALUES (3,25,3,100,3);
 
 #
 # Dumping data for table 'interpro'
 #
 
 INSERT INTO interpro (interpro_ac,id) VALUES ('IPR003255','PF01038');
+
