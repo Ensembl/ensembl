@@ -65,6 +65,7 @@ my $dbuser = 'ensembl';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 
+my $webdir = undef;
 my $format  = 'transcript';
 my $usefile = 0;
 my $getall  = 0;
@@ -86,6 +87,7 @@ my $chunk   = 1;
 	     'chunk:i'    => \$chunk,
 	     'usefile'    => \$usefile,
 	     'format:s'   => \$format,
+	     'webdir:s'     => \$webdir,
 	     'getall'     => \$getall,
 	     'verbose'    => \$verbose,
 	     'test'       => \$test,
@@ -130,6 +132,10 @@ if( $format eq 'id' ) {
 	print "$id\n";
     }
     exit(0);
+}
+
+if ($format eq 'webdump') {
+    mkdir($webdir, 0777) or die "Can't create '$webdir' : $!";
 }
 
 while ( @gene_id > 0 ) {
@@ -179,6 +185,34 @@ while ( @gene_id > 0 ) {
 		    $seqio->write_seq($seq);
 		}
 	    }
+	    elsif ($format eq 'webdump') {
+		my $trans_file = $webdir.$gene->id.".trans";
+		open (TRANS,">$trans_file");
+		foreach my $trans ( $gene->each_Transcript ) {
+		    my $seq = $trans->dna_seq();
+		    $seq->id($trans->id);
+		    my @exon = $trans->each_Exon;
+		    my $fe = $exon[0];
+		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*TRANS ) ;
+		    $seqio->write_seq($seq);
+		}
+		my $pep_file =  $webdir.$gene->id.".pep";
+		open (PEP,">$pep_file");
+		foreach my $trans ( $gene->each_Transcript ) {
+		    # get out first exon. Tag it to clone and gene on this basis
+		    my @exon = $trans->each_Exon;
+		    my $fe = $exon[0];
+		    my $tseq = $trans->translate();
+		    if ( $tseq->seq =~ /\*/ ) {
+			print STDERR "Skipping peptide dumping of ".$gene->id.", translation has stop codons. (in clone ". $fe->clone_id .")\n\n";
+			next;
+		    }
+		    $tseq->desc("Gene:$gene_id Clone: ".$fe->clone_id);
+		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*PEP) ;
+		    $seqio->write_seq($tseq);
+		}
+	    }
 	    else {
 		die "No valid format!";
 	    }
@@ -186,6 +220,9 @@ while ( @gene_id > 0 ) {
     };
     
     if( $@ ) {
+	foreach my $clone ( $db->geneid_to_cloneid($gene_id)) {
+	    print STDERR "Error in clone $clone:\n";
+	}
 	print STDERR "Unable to process @chunk_list due to \n$@\n";
     }
     
