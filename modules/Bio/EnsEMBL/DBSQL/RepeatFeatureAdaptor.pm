@@ -242,10 +242,19 @@ sub store {
       # one pair per hit. don't need to check consensi stored
       # already. consensus has name and class set to 'trf'
  }
-      if ($cons->name eq 'trf') {
+      if ($cons->repeat_class eq 'trf') {
+
 	$rca->store($cons);
 	$rf->repeat_id($cons->dbID);
-	
+
+      } elsif ($cons->repeat_class eq 'Simple_repeat') {
+
+        my $rcon = $cons->name;
+        $rcon =~ s/\((\S+)\)n/\1/;   # get repeat element
+	$cons->repeat_consensus($rcon);
+	$rca->store($cons);
+	$rf->repeat_id($cons->dbID);
+
       } else {
 	
 	# for other repeats - need to see if a consensus is stored already
