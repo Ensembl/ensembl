@@ -41,6 +41,49 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
+=head2 generic_fetch
+
+  Arg [1]    : (optional) string $constraint
+               An SQL query constraint (i.e. part of the WHERE clause)
+  Arg [2]    : (optional) Bio::EnsEMBL::AssemblyMapper $mapper
+               A mapper object used to remap features
+               as they are retrieved from the database
+  Arg [3]    : (optional) Bio::EnsEMBL::Slice $slice
+               A slice that features should be remapped to
+  Arg [4]    : (optional) boolean $keep_all
+               Set to 1 if all features, even ones entirely off slice,
+               should be kept
+  Example    : $fts = $a->generic_fetch('contig_id in (1234, 1235)', 'Swall');
+  Description: Overrides the default generic fetch for this object. Will
+               ignore slice constraints.
+  Returntype : listref of Bio::EnsEMBL::SeqFeature in contig coordinates
+  Exceptions : none
+  Caller     : BaseFeatureAdaptor
+
+=cut
+
+sub generic_fetch {
+  my ($self, $constraint, $mapper, $slice, $keep_all) = @_;
+
+  my $columns = join(', ', $self->_columns());
+
+  my $db = $self->db();
+
+  my $sql = "SELECT $columns FROM assembly_exception ae";
+
+  # if there is a slice constraint we remove the constraints ...
+  unless( $constraint =~ /seq_region_id/ || $constraint eq "" ) {
+    $sql .= "WHERE $constraint";
+  }
+
+  my $sth = $db->prepare($sql);
+
+  $sth->execute;
+
+  my $res = $self->_objs_from_sth($sth, $mapper, $slice, $keep_all);
+
+  return $res;
+}
 
 =head2 _tablename
 
