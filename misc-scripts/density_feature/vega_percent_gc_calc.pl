@@ -91,11 +91,12 @@ for my $slice ( @$top_slices ) {
     push @big_chr_names, $slice->seq_region_name;
     push @{$big_chr->[0]}, $slice;
 }
+
 $big_block_size = int( $min_big_chr / 150 );
 $small_block_size = int( $min_small_chr / 150 );
-
 push @{$big_chr}, $big_block_size;
 push @{$small_chr}, $small_block_size;
+
 
 print STDERR "\nAvailable chromosomes using block size of $big_block_size: @big_chr_names\n";
 print STDERR "\nAvailable chromosomes using block size of $small_block_size: @small_chr_names\n";
@@ -113,47 +114,54 @@ $aa->store($analysis) unless $dry;
 #
 # Create new density types
 #
-my $small_density_type = Bio::EnsEMBL::DensityType->new
-  (-analysis   => $analysis,
-   -block_size => $small_block_size,
-   -value_type => 'ratio');
+if ($small_block_size) {
+    my $small_density_type = Bio::EnsEMBL::DensityType->new
+	(-analysis   => $analysis,
+	 -block_size => $small_block_size,
+	 -value_type => 'ratio');
+    $dta->store($small_density_type) unless $dry;
+    push @{$small_chr}, $small_density_type;
+}
 
-my $big_density_type = Bio::EnsEMBL::DensityType->new
-  (-analysis   => $analysis,
-   -block_size => $big_block_size,
-   -value_type => 'ratio');
-
-$dta->store($small_density_type) unless $dry;
-$dta->store($big_density_type) unless $dry;
-
-push @{$big_chr}, $big_density_type;
-push @{$small_chr}, $small_density_type;
+if ($big_block_size) {
+    my $big_density_type = Bio::EnsEMBL::DensityType->new
+	(-analysis   => $analysis,
+	 -block_size => $big_block_size,
+	 -value_type => 'ratio');
+    $dta->store($big_density_type) unless $dry;
+    push @{$big_chr}, $big_density_type;
+}
 
 my ( $current_start, $current_end );
 
-foreach my $object ($big_chr, $small_chr) {
-    my $block_size = $object->[1];
-    foreach my $slice (@{$object->[0]}){
-	$current_start = 1;
-	warn "Chromosome ",$slice->seq_region_name;
-	while($current_start <= $slice->end()) {
-	    $current_end = $current_start+$block_size-1;
-	    if( $current_end > $slice->end() ) {
-		$current_end = $slice->end();
+$Data::Dumper::Maxdepth = 2;
+
+my $types = [];
+foreach my $object ( $big_chr, $small_chr) {
+    eval {
+	my $block_size = $object->[1];
+	foreach my $slice (@{$object->[0]}){
+	    $current_start = 1;
+	    warn "Chromosome ",$slice->seq_region_name;
+	    while($current_start <= $slice->end()) {
+		$current_end = $current_start+$block_size-1;
+		if( $current_end > $slice->end() ) {
+		    $current_end = $slice->end();
+		}
+		my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
+		warn "start = $current_start, end = $current_end\n";
+		my $gc = $sub_slice->get_base_count()->{'%gc'};
+		my $df =  Bio::EnsEMBL::DensityFeature->new
+		    (-seq_region    => $slice,
+		     -start         => $current_start,
+		     -end           => $current_end,
+		     -density_type  => $object->[2],
+		     -density_value => $gc);
+		$dfa->store($df) unless $dry;
+		$current_start = $current_end+1;
 	    }
-	    my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
-	    warn "start = $current_start, end = $current_end\n";
-	    my $gc = $sub_slice->get_base_count()->{'%gc'};
-	    my $df =  Bio::EnsEMBL::DensityFeature->new
-	    (-seq_region    => $slice,
-	     -start         => $current_start,
-	     -end           => $current_end,
-	     -density_type  => $object->[2],
-	     -density_value => $gc);
-	    $dfa->store($df) unless $dry;
-	    $current_start = $current_end+1;
 	}
-    }
+    };
 }
 
 #

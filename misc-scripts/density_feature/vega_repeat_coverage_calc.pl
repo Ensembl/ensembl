@@ -90,9 +90,10 @@ for my $slice ( @$top_slices ) {
     push @big_chr_names, $slice->seq_region_name;
     push @{$big_chr->[0]}, $slice;
 }
+
+
 $big_block_size = int( $min_big_chr / 150 );
 $small_block_size = int( $min_small_chr / 150 );
-
 push @{$big_chr}, $big_block_size;
 push @{$small_chr}, $small_block_size;
 
@@ -109,59 +110,63 @@ my $analysis = new Bio::EnsEMBL::Analysis (-program     => "repeat_coverage_calc
 					   -logic_name  => "PercentageRepeat");
 $aa->store($analysis) unless $dry;
 
-my $small_density_type = Bio::EnsEMBL::DensityType->new
-  (-analysis   => $analysis,
-   -block_size => $small_block_size,
-   -value_type => 'ratio');
+if ($small_block_size) {
+    my $small_density_type = Bio::EnsEMBL::DensityType->new
+	(-analysis   => $analysis,
+	 -block_size => $small_block_size,
+	 -value_type => 'ratio');
+    $dta->store($small_density_type) unless $dry;
+    push @{$small_chr}, $small_density_type;
+}
 
-my $big_density_type = Bio::EnsEMBL::DensityType->new
-  (-analysis   => $analysis,
-   -block_size => $big_block_size,
-   -value_type => 'ratio');
-
-$dta->store($small_density_type) unless $dry;
-$dta->store($big_density_type) unless $dry;
-
-push @{$big_chr}, $big_density_type;
-push @{$small_chr}, $small_density_type;
+if ($big_block_size) {
+    my $big_density_type = Bio::EnsEMBL::DensityType->new
+	(-analysis   => $analysis,
+	 -block_size => $big_block_size,
+	 -value_type => 'ratio');
+    $dta->store($big_density_type) unless $dry;
+    push @{$big_chr}, $big_density_type;
+}
 
 my ( $current_start, $current_end );
 
 foreach my $object ($big_chr, $small_chr) {
-    my $block_size = $object->[1];
-    foreach my $slice ( @{$object->[0]} ) {
-	$current_start = 1;
-	warn "Chromosome ", $slice->seq_region_name;
-	while($current_start <= $slice->end()) {
-	    $current_end = $current_start+$block_size-1;
-	    if( $current_end > $slice->end() ) {
-		$current_end = $slice->end();
-	    }
-	    my $this_block_size = $current_end - $current_start + 1;
-	    my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
-	    warn "start = $current_start, end = $current_end\n";
-	    my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
-	    foreach my $repeat (@{$sub_slice->get_all_RepeatFeatures()}){
-		$rr->check_and_register("1",$repeat->start,$repeat->end);
-	    }
-	    my $count = 0;
-	    my $non_repeats = $rr->check_and_register("1",1,$this_block_size);
-	    if( defined $non_repeats ) {
-		foreach my $non_repeat ( @$non_repeats ) {
-		    $count += ($non_repeat->[1]-$non_repeat->[0])+1;
+    eval {
+	my $block_size = $object->[1];
+	foreach my $slice ( @{$object->[0]} ) {
+	    $current_start = 1;
+	    warn "Chromosome ", $slice->seq_region_name;
+	    while($current_start <= $slice->end()) {
+		$current_end = $current_start+$block_size-1;
+		if( $current_end > $slice->end() ) {
+		    $current_end = $slice->end();
 		}
+		my $this_block_size = $current_end - $current_start + 1;
+		my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
+		warn "start = $current_start, end = $current_end\n";
+		my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
+		foreach my $repeat (@{$sub_slice->get_all_RepeatFeatures()}){
+		    $rr->check_and_register("1",$repeat->start,$repeat->end);
+		}
+		my $count = 0;
+		my $non_repeats = $rr->check_and_register("1",1,$this_block_size);
+		if( defined $non_repeats ) {
+		    foreach my $non_repeat ( @$non_repeats ) {
+			$count += ($non_repeat->[1]-$non_repeat->[0])+1;
+		    }
+		}
+		my $percentage_repeat = (($this_block_size-$count)/$this_block_size)*100;
+		my $df = Bio::EnsEMBL::DensityFeature->new
+		    (-seq_region    => $slice,
+		     -start         => $current_start,
+		     -end           => $current_end,
+		     -density_type  => $object->[2],
+		     -density_value => $percentage_repeat);
+		$dfa->store($df) unless $dry;
+		$current_start = $current_end + 1;
 	    }
-	    my $percentage_repeat = (($this_block_size-$count)/$this_block_size)*100;
-	    my $df = Bio::EnsEMBL::DensityFeature->new
-	    (-seq_region    => $slice,
-	     -start         => $current_start,
-	     -end           => $current_end,
-	     -density_type  => $object->[2],
-	     -density_value => $percentage_repeat);
-	    $dfa->store($df) unless $dry;
-	    $current_start = $current_end + 1;
 	}
-    }
+    };
 }
 
 #
