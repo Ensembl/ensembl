@@ -149,7 +149,6 @@ my @vcs;
 
 if( $usefile == 1 ) {
     while( <> ) {
-	print $_;
 	my ($focus_contig,$focus_position,$ori,$left,$right);
 	if (/(.+)\,(.+)\,(.+)\,(.+)\,(.+)/) { 
 	    $focus_contig=$1;
