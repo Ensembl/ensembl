@@ -504,6 +504,10 @@ sub get_all_ExternalFeatures{
        $glob=50;
    }
 
+   if( $self->_external_feature_cache == 1 ) {
+       return @{$self->{'_external_feature_cache_array'}};
+   }
+
    
    my @web;
    my @std;
@@ -606,7 +610,32 @@ sub get_all_ExternalFeatures{
        }
    }
 
+
+   $self->{'_external_feature_cache_array'} = \@final;
+   $self->_external_feature_cache(1);
+
    return @final;
+
+}
+
+=head2 _external_feature_cache
+
+ Title   : _external_feature_cache
+ Usage   : $obj->_external_feature_cache($newval)
+ Function: 
+ Returns : value of _external_feature_cache
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _external_feature_cache{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_external_feature_cache'} = $value;
+    }
+    return $obj->{'_external_feature_cache'};
 
 }
 
