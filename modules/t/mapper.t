@@ -35,7 +35,7 @@ use Bio::EnsEMBL::Mapper;
 
 # testing the Bio::EnsEMBL::Mapper module
 
-$mapper = Bio::EnsEMBL::Mapper->new( "virtualcontig", "rawcontig" );
+$mapper = Bio::EnsEMBL::Mapper->new( "rawcontig", "virtualcontig" );
 load_sgp_dump( $mapper );
 $mapper->_freeze;
 

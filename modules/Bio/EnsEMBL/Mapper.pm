@@ -67,11 +67,15 @@ use Bio::EnsEMBL::Mapper::Gap;
 sub new {
   my($class,@args) = @_;
 
-  my $to   = shift @args;
   my $from = shift @args;
+  my $to   = shift @args;
 
   my $self = {};
   bless $self,$class;
+
+  if( !defined $to ) {
+      $self->throw("Must supply from and to tags");
+  }
   
   $self->{'_pair_hash_to'} = {};
   $self->{'_pair_hash_from'} = {};
@@ -238,6 +242,10 @@ sub map_coordinates{
 
 sub add_map_coordinates{
    my ($self,$contig_start,$contig_end,$contig_id,$chr_start,$chr_end,$chr_name,$contig_ori) = @_;
+
+   if( !defined $contig_ori ) {
+       $self->throw("Need 7 arguments!");
+   }
 
    if( $contig_start !~ /\d+/ || $chr_start !~ /\d+/ ) {
        $self->throw("Not doable - $contig_start as start or $chr_start as start?");

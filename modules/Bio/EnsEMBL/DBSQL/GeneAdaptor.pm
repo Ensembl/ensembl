@@ -194,6 +194,7 @@ sub fetch_by_dbID {
   return $gene;
 }
 
+
 =head2 fetch_by_stable_id
 
  Title   : fetch_by_stable_id
@@ -244,12 +245,13 @@ sub fetch_by_contig_list{
    $str =~ s/\,$//g;
    $str = "($str)";
 
+
    # 
    # this is non-optimised, because we are going to make multiple
    # trips to the database. should fix here
    #
 
-   my $sth = $self->prepare("select distinct(t.gene_id) from transcript t,exon_transcript et,exon e,contig c where c.id in $str and c.internal_id = e.contig and et.exon_id = e.exon_id and et.transcript_id = t.transcript_id");
+   my $sth = $self->prepare("select distinct(t.gene_id) from transcript t,exon_transcript et,exon e,contig c where c.id in $str and c.internal_id = e.contig_id and et.exon_id = e.exon_id and et.transcript_id = t.transcript_id");
    $sth->execute;
 
    my @out;
