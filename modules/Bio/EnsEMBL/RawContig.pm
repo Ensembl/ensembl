@@ -668,6 +668,36 @@ sub get_all_ExternalFeatures {
 }
 
 
+=head2:  ctg2genomic
+
+  Arg [1]    : $start
+               The start position in contig coordinates
+  Arg [2]    : $end
+               The end position in contig coordinates
+  Arg [3]    : (optional) $strand
+               The strand of the contig coordinates
+  Example    : @coords = $transcript->ctg2genomic($start, $end);
+  Description: Converts contig coordinates to genomic coordinates.  The
+               return value is a list of coordinates and gaps.
+  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
+               Bio::EnsEMBL::Mapper::Gap objects
+  Exceptions : none   
+  Caller     : general
+
+=cut
+
+sub ctg2genomic{
+  # Map the internal ID onto the golden path  
+  my( $self, $start, $end, $strand ) = @_;
+  if( ! $end ){ $self->throw( "Required args: contig_start, contig_end" ) }
+  $strand ||= 1;
+  my $db = $self->adaptor->db();
+  my $aa = $db->get_AssemblyMapperAdaptor();
+  my $ma = $aa->fetch_by_type( $db->assembly_type );
+  return $ma->map_coordinates_to_assembly( $self->dbID, $start, $end,
+                                           $strand );
+}
+
 
 =head2 Methods included only for BioPerl compliance
 =cut
