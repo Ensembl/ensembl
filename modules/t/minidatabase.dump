@@ -8,3 +8,14 @@ INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES 
 INSERT into clone (clone_id,name,embl_acc,version,htg_phase) VALUES (1,'dummy-clone-1','dummy-embl-acc',12,2);
 
 INSERT into analysis (analysis_id,logic_name,db,db_version,gff_source,gff_feature) VALUES (1,"dummy-blast","swall","1","blast","similarity");
+
+
+INSERT into analysis (analysis_id,logic_name,gff_source,gff_feature) VALUES (2,"dummy-simple","dummy","feature");
+
+
+INSERT into analysis (analysis_id,logic_name,db,db_version,gff_source,gff_feature) VALUES (3,"dummy-genscan","HumanIso.mat","1","genscan","prediction");
+
+INSERT into dna(dna_id, sequence, created) values(1, 'ATGATCAGTACAGTTACAGTAGACACAGATGTAG', now());
+
+
+INSERT into dna(dna_id, sequence, created) values(2, 'CGATCGATCGATCGATCGATCGACGATCGCGTACGATCG', now());
