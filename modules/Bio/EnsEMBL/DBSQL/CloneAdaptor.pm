@@ -19,7 +19,7 @@ Bio::EnsEMBL::DBSQL::CloneAdaptor
     # $db is Bio::EnsEMBL::DB::DBAdaptor
 
     my $da= Bio::EnsEMBL::DBSQL::CloneAdaptor->new($obj);
-    my $clone=$da->fetch($id);
+    my $clone=$da->fetch_by_dbID($id);
 
     @contig = $clone->get_all_Contigs();
     @genes    = $clone->get_all_Genes();
@@ -64,9 +64,12 @@ sub _generic_sql_fetch {
           , htg_phase
           , UNIX_TIMESTAMP(created)
           , UNIX_TIMESTAMP(modified)
-          , UNIX_TIMESTAMP(stored) }
+	      , UNIX_TIMESTAMP(stored) FROM clone }
         . $where_clause .
         q{ ORDER BY embl_version DESC };
+
+    print STDERR "issue: $sql\n";
+
     my $sth = $self->prepare($sql);
     $sth->execute;
     
@@ -77,18 +80,17 @@ sub _generic_sql_fetch {
     }
 }
 
+
 =head2 fetch_by_accession
 
- Title   : fetch_by_accession
- Usage   :
- Function:
- Example :
- Returns : Bio::EnsEMBL::Clone
- Args    :
+ Function: fetches a clone by its EMBL/GenBank accession number
+           It will fetch the highest version in the database
 
+ Args    : accession number, as a string, no version number
+
+ Returns : Bio::EnsEMBL::Clone
 
 =cut
-
 
 sub fetch_by_accession { 
     my ($self,$acc) = @_;
@@ -108,16 +110,12 @@ sub fetch_by_accession {
     }
 }
 
-
 =head2 fetch_by_accession_version
 
- Title   : fetch_by_accession_version
- Usage   :
- Function:
- Example :
+ Function: fetches a specific version of an accession number
+ Args   1: accession number as a string
+        2: version as a digit 
  Returns : Bio::EnsEMBL::Clone
- Args    :
-
 
 =cut
 
@@ -138,6 +136,17 @@ sub fetch_by_accession_version {
     }
 }
 
+=head2 fetch_by_name
+
+ Function: fetches a single clone by the "name" field. The name
+           field is often the EMBL ID of a clone (which itself is often
+           the same as the accession number) but is a deliberately open
+           slot for another identifier for the clone, eg. the stringified
+           tracking identifier in a sequencing centre
+ Args    : name as a string
+ Returns : Bio::EnsEMBL::Clone
+
+=cut
 
 sub fetch_by_name {
     my ($self, $name) = @_;
@@ -155,6 +164,29 @@ sub fetch_by_name {
     }
 }
 
+=head2 fetch_by_dbID
+
+ Function: fetches a clone by the internal id in the database
+           of the Clone. Most likely this will be used by
+           other adaptors to build objects from references to Clones
+ Args    : the numeric internal id of the clone table
+ Returns : Bio::EnsEMBL::Clone
+
+=cut
+
+
+
+sub fetch_by_dbID {
+    my ($self,$id) = @_;
+    
+    if( !defined $id ) {
+	$self->throw("No internal ID provided");
+    }
+
+    my $clone = $self->_generic_sql_fetch("WHERE clone_id = $id");
+
+    return $clone;
+}
 
 
 sub fetch {
@@ -201,9 +233,6 @@ sub list_embl_version_by_accession {
     
     return @vers;
 }
-
-
-
 
 
 =head2 delete_by_dbID

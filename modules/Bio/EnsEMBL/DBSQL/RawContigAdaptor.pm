@@ -201,18 +201,23 @@ sub _contig_from_arrayref {
     
   my $dbPrimarySeq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new
     ( $dna_id, $self->db() ); # ?
-    
-  my $clone = $self->db->get_CloneAdaptor->fetch_by_dbID($clone_id);
+
+  my $contig = Bio::EnsEMBL::RawContig->new($contig_id,$self);
 
 
-  $contig->clone( $clone );
   $contig->sequence( $dbPrimarySeq );
   $contig->length( $length );
   $contig->name( $name );
   $contig->offset( $offset );
   $contig->corder( $corder );
   $contig->international_name( $international_name );
+
+  # these are lazy fetched
+  #my $clone = $self->db->get_CloneAdaptor->fetch_by_dbID($clone_id);
+  #$contig->clone( $clone );
   
+
+  return $contig;
 }
 
 

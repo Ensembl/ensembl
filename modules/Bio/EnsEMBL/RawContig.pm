@@ -63,7 +63,8 @@ sub new {
 
   unless (( defined $dbID && defined $adaptor ) ||
 	  ( defined $clone && defined $sequence )) {
-    return undef;
+      $self->throw("Must have at least dbID and adaptor in new!");
+      return undef;
   }
 
   (defined $dbID) && $self->dbID( $dbID );
@@ -76,6 +77,8 @@ sub new {
   (defined $offset) && $self->offset( $offset );
   (defined $international_name) && $self->international_name
     ( $international_name );
+
+  return $self;
 }
 
 
@@ -253,19 +256,28 @@ sub length {
   return $self->{_length};
 }
 
+sub sequence {
+    my ($self,$arg) = @_;
+ 
+    return $self->seq($arg);
+}
+
 sub seq {
   my $self = shift;
   my $arg = shift;
-  
+
+  print STDERR "Sequence with $arg\n";
+
   if( defined $arg ) {
     $self->{_seq} = $arg ;
   } else {
     if( ! defined $self->{_seq} &&
       defined $self->adaptor() ) {
+	print STDERR "Fetching sequence\n";
       $self->adaptor->fetch( $self );
     }
   }
-  
+  print STDERR "Returning...\n";
   return $self->{_seq};
 }
 
