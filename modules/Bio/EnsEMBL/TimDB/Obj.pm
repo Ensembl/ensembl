@@ -268,59 +268,20 @@ sub get_Gene{
  Example :
  Returns : 
  Args    :
-
+    
 =cut
-
+    
 sub get_Clone {
     my ($self,$id) = @_;
-
-    # translate incoming id to ensembl_id, taking into account nacc flag
-    my($disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species);
-    ($id,$disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species)=
-	$self->get_id_acc($id);
-    if($id eq 'unk'){
-	$self->throw("Cannot get accession for $disk_id");
-    }
-
-    # if its already been created, get it from the hash
-    if($self->{'_clone_array'}->{$id}){
-	return $self->{'_clone_array'}->{$id};
-    }
-
-    # else, have to build it
-
-    # can only build it, if it was 'loaded' in the initial call to timdb
-    # (i.e. that it is in the active list)
-    unless($self->{'_active_clones'}->{$id}){
-	$self->throw("$id fetched - not loaded in original object call - locked?");
-    }
-
-    # test if clone is not locked (for safety); don't check for valid SV's
-    # (probably overkill, as locking at Obj.pm level)
-    my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id);
-    if($flock){
-	$self->throw("$id is locked by TimDB");
-    }
-    if($facc){
-	$self->throw("$id does not have an accession number");
-    }
-
+    
+    $self->warn("Obj->get_Clone is a deprecated method! 
+Calling Clone->fetch instead!");
+    
     # create clone object
     my $clone = new Bio::EnsEMBL::TimDB::Clone(-id => $id,
-					       -disk_id => $disk_id,
-					       -dbobj => $self,
-					       -cgp => $cgp,
-					       -sv=>$sv,
-					       -emblid=>$emblid,
-					       -htgsp=>$htgsp,
-					       -byacc => $self->{'_byacc'},
-					       '-chr' => $chr,
-					       '-species' => $species,
-					       );
-    # save it to hash
-    $self->{'_clone_array'}->{$id}=$clone;
+					       -dbobj => $self);
 
-    return $clone;
+    return $clone->fetch();
 }
 
 
@@ -376,32 +337,13 @@ sub get_updated_Objects{
 
 sub get_updated_Clone_id{
     my ($self,$last,$now_offset,$fall) = @_;
-    my @objs;
-
-    # FIXME - time offset of 30mins = 30x60 seconds
-    my $offset_time = 1800;
-
-    $last = $last - $offset_time;
+ 
+    $self->warn("Obj->get_updated_Clone_id is a deprecated method! 
+Calling Update_Obj->get_updated_Clone_id instead!");
     
-    # get list of updated clones
-    my @clones;
-
-    my($val,$key);
-
-    while(($key,$val) = each %{$self->{'_clone_update_dbm'}}){
-
-	my($date2)=split(',',$val);
-	# make list of updatable clones
-
-	if($date2 > $last && $date2 < $now_offset){
-	    push(@clones,$key);
-	}
-    }
-
-    # check validity of clones selected, then fetch
-    return &_get_Clone_id($self,$fall,\@clones);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    return $update_obj->get_updated_Clone_id($last, $now_offset,$fall);
 }
-
 
 =head2 _get_Clone_id, _check_clone_entry
 

@@ -64,44 +64,92 @@ sub _initialize {
   my ($dbobj,$id,$cgp,$disk_id,$sv,$emblid,$htgsp,$byacc,$chr,$species)=
       $self->_rearrange([qw(DBOBJ
 			    ID
-			    CGP
-			    DISK_ID
-			    SV
-			    EMBLID
-			    HTGSP
-			    BYACC
-			    CHR
-			    SPECIES
 			    )],@args);
 
   $id      || $self->throw("Cannot make contig db object without id");
-  $disk_id || $self->throw("Cannot make contig db object without disk_id");
   $dbobj   || $self->throw("Cannot make contig db object without db object");
-  $cgp     || $self->throw("Cannot make contig db object without location data");
 
   $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') || 
       $self->throw("Cannot make contig db object with a $dbobj object");
 
   $self->_dbobj      ($dbobj);  
   $self->id          ($id);
-  $self->disk_id     ($disk_id);
-  $self->embl_version($sv);
-  $self->embl_id     ($emblid);
-  $self->chromosome  ($chr);
-  $self->species     ($species);
-  $self->htg_phase   ($htgsp);
-  $self->byacc       ($byacc);
-
-  # construct and test the directory of the clone
-  # fast (direct)
-  my $cgp_dir         = $dbobj->{'_unfin_data_root_cgp'}->{$cgp};
-  my $clone_dir       = "$cgp_dir/data/$disk_id";
-  my $contig_dbm_file = "$cgp_dir/unfinished_ana.dbm";
   
-  $self->clone_dir     ($clone_dir,$disk_id);
-  $self->build_contigs ($contig_dbm_file);
-
   return $make; # success - we hope!
+}
+
+=head2 fetch
+
+ Title   : fetch
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub fetch {
+    my ($self) = @_;
+
+    my $id=$self->id;
+    
+    # translate incoming id to ensembl_id, taking into account nacc flag
+    my($disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species);
+    ($id,$disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species)=
+	$self->_dbobj->get_id_acc($id);
+    if($id eq 'unk'){
+	$self->throw("Cannot get accession for $disk_id");
+    }
+    
+    # if its already been created, get it from the hash
+    if($self->_dbobj->{'_clone_array'}->{$id}){
+	return $self->_dbobj->{'_clone_array'}->{$id};
+    }
+    
+    # else, have to build it
+    
+    # can only build it, if it was 'loaded' in the initial call to timdb
+    # (i.e. that it is in the active list)
+    unless($self->_dbobj->{'_active_clones'}->{$id}){
+	$self->throw("$id fetched - not loaded in original object call - locked?");
+    }
+
+    # test if clone is not locked (for safety); don't check for valid SV's
+    # (probably overkill, as locking at Obj.pm level)
+    my($flock,$fsv,$facc)=$self->_dbobj->_check_clone_entry($disk_id);
+    if($flock){
+	$self->throw("$id is locked by TimDB");
+    }
+    if($facc){
+	$self->throw("$id does not have an accession number");
+    }
+
+    my $byacc= $self->{'_byacc'};
+    
+    # Fill clone object
+    $self->disk_id     ($disk_id);
+    $self->embl_version($sv);
+    $self->embl_id     ($emblid);
+    $self->chromosome  ($chr);
+    $self->species     ($species);
+    $self->htg_phase   ($htgsp);
+    $self->byacc       ($byacc);
+
+    # construct and test the directory of the clone
+    # fast (direct)
+    my $cgp_dir         = $self->_dbobj->{'_unfin_data_root_cgp'}->{$cgp};
+    my $clone_dir       = "$cgp_dir/data/$disk_id";
+    my $contig_dbm_file = "$cgp_dir/unfinished_ana.dbm";
+    
+    $self->clone_dir     ($clone_dir,$disk_id);
+    $self->build_contigs ($contig_dbm_file);
+    
+    
+    # save it to hash
+    $self->_dbobj->{'_clone_array'}->{$id}=$self;
+    
+    return $self;
 }
 
 sub build_contigs {

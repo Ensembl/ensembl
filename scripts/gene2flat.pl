@@ -147,7 +147,7 @@ while ( @gene_id > 0 ) {
 
     eval {
 	
-	my @genes = $db->get_Gene_array(@chunk_list);
+	my @genes = $db->get_Gene_array_supporting("no_evidence",@chunk_list);
 	foreach my $gene ( @genes ) {
 	    my $gene_id = $gene->id();
 	    if( $format eq 'pep' ) {
@@ -220,6 +220,7 @@ while ( @gene_id > 0 ) {
     };
     
     if( $@ ) {
+	my $gene_id = "@chunk_list";
 	foreach my $clone ( $db->geneid_to_cloneid($gene_id)) {
 	    print STDERR "Error in clone $clone:\n";
 	}
