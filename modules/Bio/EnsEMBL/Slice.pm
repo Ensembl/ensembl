@@ -904,8 +904,6 @@ sub get_all_DASFeatures{
        return @{$self->{'_das_cached_features'}};
    }
 
-   my $rca;
-
    my @contig_features;
    my @chr_features;
    my @fpc_features;
