@@ -66,10 +66,7 @@ sub get_all_Contigs {
   deprecate('Use Slice::project instead');
 
   # Assume that we actually want to project to sequence level
-  my $csa = $self->adaptor->db->get_CoordSystemAdaptor;
-  my $cs  = $csa->fetch_sequence_level();
-
-  my $projection = $self->project($cs->name, $cs->version);
+  my $projection = $self->project('seqlevel');
 
   my @out;
   foreach my $segment (@$projection) {
@@ -317,14 +314,18 @@ sub id {
 
   Description: Deprecated. Use SliceAdaptor::get_seq_region_id instead
 
+  Exceptions : none
+  Caller     : general, set from adaptor on store
+
 =cut
 
 sub dbID{
   my $self = shift;
-  deprecate('Use SliceAdaptor::get_seq_region_id instead');
+  deprecate('Use Bio::EnsEMBL::Slice instead of Bio::EnsEMBL::RawContig');
 
   return $self->adaptor->get_seq_region_id($self);
 }
+
 
 
 
