@@ -91,15 +91,16 @@ sub seq{
 
    my $sth = $self->_dbobj->prepare("select sequence from dna where contig = \"$id\"");
    my $res = $sth->execute();
-   # should be a better way of doing this
-   my $str = $res->fetchrow_hashref->{sequence};
-   
-   if( ! $str ) {
-       $self->throw("No DNA sequence in contig $id");
-   }
 
-   return Bio::Seq->new ( -seq => $str, -id => $id, -type => 'Dna' );
-   
+   # should be a better way of doing this
+   while(my $rowhash = $sth->fetchrow_hashref) {
+     my $str = $rowhash->{sequence};
+
+     if( ! $str) {
+       $self->throw("No DNA sequence in contig $id");
+     } 
+     return Bio::Seq->new ( -seq => $str, -id => $id, -type => 'Dna' );
+   }
 }
 
 =head2 get_all_SeqFeatures
