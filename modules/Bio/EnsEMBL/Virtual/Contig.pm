@@ -319,22 +319,27 @@ sub windowed_VirtualContig {
 =head1 Functions implementing the Bio::SeqI interface inherieted by ContigI
 
 =head2 id
-
+    
  Title   : id
- Usage   : $obj->id($newval)
+ Usage   : 
  Function: 
- Example : 
- Returns : value of id
- Args    : newvalue (optional)
+ Example :
+ Returns : 
+ Args    :
 
 
 =cut
 
 sub id {
-    my ($self) = @_;
-
-    return "virtual_contig_".$self->_unique_number;
+    my $obj = shift;
+    
+    if( @_ ) {
+	my $value = shift;
+	$obj->{'id'} = $value;
+    }
+    return $obj->{'id'};
 }
+
 
 =head2 top_SeqFeatures
     

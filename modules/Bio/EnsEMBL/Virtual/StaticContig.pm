@@ -81,7 +81,7 @@ sub new {
     $self->_vmap->length($last->end);
     $self->length($last->end);
     
-    $self->_unique_number("static".$static_number++);
+    $self->id("static".$static_number++);
     
     return $self;
 }
