@@ -36,6 +36,8 @@ INSERT INTO source VALUES (1030, 'PDB', 1, 'N', 2);
 INSERT INTO source VALUES (1040, 'protein_id', 1, 'N', 2);
 INSERT INTO source VALUES (1050, 'PUBMED', 1, 'N', 2);
 INSERT INTO source VALUES (1060, 'MEDLINE', 1, 'N', 2);
+INSERT INTO source VALUES (1100, 'LocusLink', 1, 'N', 2);
+INSERT INTO source VALUES (1110, 'MIM', 1, 'N', 2);
 
 INSERT INTO source VALUES (1070, 'GO', 1, 'Y',2);
 INSERT INTO source VALUES (1080, 'MarkerSymbol', 1, 'Y',2);
