@@ -1346,7 +1346,7 @@ sub cdna2genomic {
 
 sub seq {
   my $self = shift;
-
+  my $seq;
   if ( ! defined $self->{'contig'} ) {
     return undef;
   }
@@ -1356,12 +1356,17 @@ sub seq {
 #    print STDERR "[Exon.pm seq method: Start: " . $self->start . "\tEnd:   " . $self->end . "\t";
 #    print STDERR "Strand: " . $self->strand . "]\nContig: " . $self->contig() . "\n\n";
 
-    my $seq = $self->contig()->subseq($self->start, $self->end);
-    if ($self->strand == -1) {
-      ($seq = reverse $seq) =~ tr/actgACTG/tgacTGAC/;
+      
+    $seq = $self->contig()->subseq($self->start, $self->end);
+	 
+    if($self->strand == -1){
+      $seq =~ tr/ATGCatgc/TACGtacg/;
+      $seq = reverse($seq);
     }
-    return $seq;
-  }
+      
+   }
+  my $bioseq = Bio::Seq->new(-seq=> $seq);
+  return $bioseq;
 }
 
 

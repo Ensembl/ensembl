@@ -763,7 +763,7 @@ sub translate {
     }
 
     my @trans = $self->split_Transcript_to_Partial(1);
-
+    #print "there are ".scalar(@trans)." spilt transcripts\n";
     unless (@trans) {
         $self->throw("Bad internal error - split a transcript to zero transcripts! Doh!");
     }  
@@ -852,8 +852,8 @@ sub seq {
     
     my $transcript_seq_string = '';
     foreach my $ex ($self->get_all_Exons) {
-        $transcript_seq_string .= $ex->seq;
-#        $transcript_seq_string .= $ex->seq->seq;
+#        $transcript_seq_string .= $ex->seq;
+        $transcript_seq_string .= $ex->seq->seq;
     }
     
     my $seq = Bio::Seq->new(
@@ -1019,7 +1019,7 @@ sub _translate_coherent{
    #$self->sort();
    my @exons = $self->get_all_Exons;
    my $exon_start = $exons[0];
-
+   #print "there are ".@exons." exons\n";
    foreach my $exon ( @exons ) {
 
        # trim down start ends on the basis of phase.
@@ -1029,11 +1029,11 @@ sub _translate_coherent{
 
        # warn about non DNA passed in. 
 
-#       my $seq = $exon->seq();
-       my $str = $exon->seq();
-#       my $str = $seq->seq();
+       #       my $seq = $exon->seq();
+       my $str = $exon->seq->seq();
+       #       my $str = $seq->seq();
        
-#       print STDERR "Exon " . $exon->dbID . " has length ",$exon->length," and sequence length ",length($str),"\n";
+       #print STDERR "Exon " . $exon->seqname . " has length ",$exon->length," and sequence length ",length($str)," and strand ".$exon->strand."\n";
 
        if( CORE::length( $str ) == 0 ) {
 	   $self->throw("Bad internal error - got a 0 length rstring...");
@@ -1076,9 +1076,9 @@ sub _translate_coherent{
 
    # phase 0 - no need.
 
-
+   #print "sequence = ".$tstr."\n";
    my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -alphabet => 'dna' );
-
+   #print "transcript seq ".$temp_seq->seq."\n";
    return $temp_seq->translate();
 }
 

@@ -293,8 +293,10 @@ sub translate {
   my $dna = $self->get_cdna();
   my $bioseq = new Bio::Seq( -seq => $dna, -moltype => 'dna' );
   my $pep = $bioseq->translate();
-  
-  return $pep->seq();
+
+  my $pep_seq = $pep->seq;
+  $pep_seq =~ s/\*$//;
+  return $pep_seq;
 }
 	 
 
@@ -358,7 +360,8 @@ sub get_cdna {
       $cdna_start += $exon->phase();
     }
     
-    $new_cdna = $exon->seq();
+    $new_cdna = $exon->seq->seq();
+#    print $new_cdna."\n";
     $cdna .= $new_cdna;
     $cdna_end = $cdna_start + length( $new_cdna ) - 1;
 

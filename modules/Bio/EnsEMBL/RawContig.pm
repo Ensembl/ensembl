@@ -310,15 +310,16 @@ sub subseq {
   }
 
   if ( !defined $strand || ( $strand != -1 && $strand != 1 )) {
-    $self->throw("Incorrect strand information set to call on RawContig subseq.");
+    #$self->throw("Incorrect strand information set to call on RawContig subseq.");
+    $strand = 1;
   }
 
 
   my $sub_seq = $self->adaptor->db->get_SequenceAdaptor->fetch_by_contig_id_start_end_strand($self->dbID, $start, $end, $strand);
 
-#  print STDERR "[RawContig subseq method: Strand: " . $strand . "\t";
-#  print STDERR "Start: " . $start . "\tEnd: " . $end . "\tContig dbID: " . $self->dbID . "]\n";
-#  print STDERR "Subseq: " . $sub_seq . "\n";
+  #print STDERR "[RawContig subseq method: Strand: " . $strand . "\t";
+  #print STDERR "Start: " . $start . "\tEnd: " . $end . "\tContig dbID: " . $self->dbID . "]\n";
+  #print STDERR "Subseq: " . $sub_seq . "\n";
 
   return $sub_seq;
 }
