@@ -74,9 +74,12 @@ sub _is_prog {
     if (-l "$path$prog") {
         # Follow link
         _follow( $h, $path ) or return;
-        my $link = readlink( $prog )
-            or confess "Can't read link '$path$prog' : $!";
-        return _is_prog( $h, $link );
+        unless (-x readlink($prog)) {
+          confess "Can't read link '$path$prog' : $!";
+	}
+	my $link = $prog;
+	$path = cwd() or confess "Can't determine cwd";
+        return "$path/$prog";
     } elsif (-f _ and -x _) {
         # Return full path
         _follow( $h, $path ) or return;
