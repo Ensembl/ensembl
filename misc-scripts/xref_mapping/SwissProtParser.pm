@@ -110,9 +110,21 @@ sub create_xrefs {
 
   while (<SWISSPROT>) {
 
+    # if an OX line exists, only store the xref if the taxonomy ID that the OX
+    # line refers to is in the species table
+    my ($ox) = $_ =~ /OX\s+[a-zA-Z_]+=(\d+);/;
+    if (defined $ox) {
+      my $taxon = $1;
+      my %taxonomy2species_id = BaseParser->taxonomy2species_id();
+      if (!exists $taxonomy2species_id{$taxon}) {
+	print "Skipping xref for species with taxonomy ID $taxon\n";
+	next;
+      }
+    }
+
     my $xref;
     my $acc;
-    ($acc) =$_ =~ /AC\s+(.+);/; # may catch multiple ; separated accessions
+    ($acc) = $_ =~ /AC\s+(.+);/; # may catch multiple ; separated accessions
     ($xref->{LABEL})    = $_ =~ /ID\s+(\w+)/;
     ($xref->{SPECIES_ID}) = $species_id;
     ($xref->{SOURCE_ID}) = $source_id;
