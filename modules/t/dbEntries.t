@@ -14,7 +14,7 @@ use Bio::EnsEMBL::DBEntry;
 
 # switch on the debug prints
 
-our $verbose = 1;
+our $verbose = 0;
 
 debug( "Startup test" );
 #
