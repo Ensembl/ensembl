@@ -929,7 +929,7 @@ sub _convert_seqfeature_to_vc_coords {
     eval {
 	$mc=$self->_vmap->get_MapContig_by_id($cid);
     };
-    if ($@) { 
+    if ($@ || !ref $mc) { 
 	return undef;
     }
     
