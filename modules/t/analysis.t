@@ -2,26 +2,27 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 7;
+	plan tests => 8;
 }
 
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}
 
-use EnsTestDB;
-use Bio::EnsEMBL::DBLoader;
+use MultiTestDB;
+
+my $verbose = 0;
 
 $loaded = 1;
 
 ok(1);
 
-# Database will be dropped when this
-# object goes out of scope
-my $ens_test = EnsTestDB->new;
+my $multi = MultiTestDB->new();
+ok( $multi );
+$multi->hide( "core", "analysis" );
 
-$ens_test->do_sql_file("t/minidatabase.dump");
-my $db = $ens_test->get_DBSQL_Obj;
-ok($ens_test);
+my $db = $multi->get_DBAdaptor( "core" );
+ok($db);
+
 
 my $analysis_ad = $db->get_AnalysisAdaptor();
 
@@ -43,11 +44,42 @@ ok($analysis);
 $analysis_ad->store($analysis);
 
 
-ok(1);
+ok(defined $analysis->dbID() );
 
 
 my $analysis_out = $analysis_ad->fetch_by_logic_name('dummy_analysis');
 
 
 ok($analysis_out);
+
 ok($analysis_out->db eq 'dummy');
+
+ok( check_methods( $analysis_out, "db", "db_file", "id", "dbID", "compare",
+		   "logic_name", "parameters", "gff_source", "gff_feature",
+		   "module", "module_version", "program_file",
+		   "program", "db_version", "adaptor" ));
+		   
+
+$multi->restore();
+
+
+sub check_methods { 
+  my $obj = shift;
+
+  my $all_implemented = 1;
+  while( my $method = shift ) {
+    if( ! $obj->can( $method )) {
+      $all_implemented = 0;
+      debug( "Analysis doesnt implement $method" );
+    }
+  }
+  return $all_implemented;
+}
+
+
+sub debug {
+  my $txt = shift;
+  if( $verbose ) {
+    print STDERR $txt,"\n";
+  }
+}
