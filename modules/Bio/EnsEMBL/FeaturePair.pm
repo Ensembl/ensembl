@@ -415,7 +415,8 @@ sub feature2 {
         -STRAND     => $self->hstrand(),
 		    -SCORE      => $self->score(),
 		    -PERCENT_ID => $self->percent_id(),
-		    -ANALYSIS   => $self->analysis);
+		    -ANALYSIS   => $self->analysis,
+        -SEQNAME    => $self->hseqname());
 }
 
 
