@@ -193,9 +193,9 @@ sub get_landmark_MarkerFeatures{
 			    chr_end,
 			    chr_strand,
 			    name 
-		    FROM    landmarkMarker 
+		    FROM    landmark_marker 
 		    WHERE   chr_name = '$chr_name'
-		    ORDER BY start
+		    ORDER BY chr_start
 		";
    
    $statement =~ s/\s+/ /g;
