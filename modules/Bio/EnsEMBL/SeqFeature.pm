@@ -149,6 +149,7 @@ sub start{
         if ($value !~ /^\-?\d+/ ) {
         $self->throw("$value is not a valid start");
     }
+	
     $self->{'_gsf_start'} = $value
    }
 
@@ -175,6 +176,7 @@ sub end{
         if( $value !~ /^\-?\d+/ ) {
             $self->throw("[$value] is not a valid end");
         }
+	
         $self->{'_gsf_end'} = $value;
     }
 
@@ -948,6 +950,9 @@ sub contig {
       }
     }
   }
+  #print STDERR "contig is ".$self->{'_gsf_seq'}." with name ".$self->{'_gsf_seq'}->name."\n" unless(!$self->{'_gsf_seq'});
+#  my ($p, $f, $l) = caller;
+#  print STDERR "Caller = ".$f." ".$l."\n";
   return $self->{'_gsf_seq'};
 }
 
@@ -1117,6 +1122,7 @@ sub _transform_between_Slices {
 sub _transform_to_RawContig {
   my($self) = @_;
 
+  #print STDERR "transforming ".$self." to raw contig coords\n";
   $self->throw("can't transform coordinates of $self without a contig defined")
    unless $self->contig;
 
@@ -1171,6 +1177,7 @@ sub _transform_to_RawContig {
     $self->end       ($mapped[0]->end);
     $self->strand    ($mapped[0]->strand);
     $self->seqname   ($mapped[0]->id);
+    #print STDERR "setting contig to be ".$mapped[0]->id."\n";
     $self->contig($rca->fetch_by_dbID($mapped[0]->id));
 
     return $self;
@@ -1199,6 +1206,7 @@ sub _transform_to_RawContig {
         $self->end    ($coords[0]->end);
         $self->strand ($coords[0]->strand);
         $self->seqname($coords[0]->id);
+	#print STDERR "2 setting contig to be ".$coords[0]->id."\n";
         $self->contig ($rca->fetch_by_dbID($coords[0]->id));
 
 	$self->warn("Feature [$self] truncated as lies partially on a gap");
@@ -1225,11 +1233,14 @@ sub _transform_to_RawContig {
       $feat->start  ($map->start);
       $feat->end    ($map->end);
       $feat->strand ($map->strand);
+      #print STDERR "3 setting contig to be ".$mapped[0]->id."\n";
       $feat->contig ($rca->fetch_by_dbID($map->id));
       $feat->adaptor($self->adaptor) if $self->adaptor();
-
+      $feat->display_label($self->display_label) if($self->can('display_label'));
+      $feat->analysis($self->analysis);
       push @out, $feat;
     }
+    
     return @out;
   }
 }
