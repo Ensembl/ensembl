@@ -135,7 +135,7 @@ $sf = shift @sf;
 @sf = $sf->sub_SeqFeature();
 $sf = shift @sf;
 
-;print "On vc, sequence is ",$sf->seq->seq,"\n";
+print "On vc, sequence is ",$sf->seq->seq,"\n";
 
 @sf = $contig2->get_all_SimilarityFeatures();
 $sf = shift @sf;
@@ -144,6 +144,7 @@ $sf = shift @sf;
 #print "On contig, sequence is ",$sf->seq->seq,"\n";
 
 print "ok 11\n";
+
 
 
 
