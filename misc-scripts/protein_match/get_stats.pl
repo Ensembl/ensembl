@@ -34,8 +34,8 @@ my $refid  = undef;
 #Hashes definition
 my %dbid2name;
 
-open (OUT,'>$file');
-
+#open (STDOUT,'>$file') or die "couldn't open ".$file;
+print STDERR "have opened ".$file."\n";
 #Get the DB object
 my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -user   => $user,
@@ -47,14 +47,14 @@ my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
 
 
 #First get the DBid for each dbname
-my $query = "select externalDBId, db_name from externalDB";
+my $query = "select external_db_id, db_name from external_db";
 
 my $sth = $db->prepare($query);
 
 $sth->execute;
 
 while (my $hash = $sth->fetchrow_hashref()) {
-    my $dbid = $hash->{'externalDBId'};
+    my $dbid = $hash->{'external_db_id'};
     my $dbname = $hash->{'db_name'};
     
     $dbid2name{$dbid} = $dbname;
@@ -66,43 +66,45 @@ while (my $hash = $sth->fetchrow_hashref()) {
 my @ids = keys %dbid2name;
 
 foreach my $i(@ids) {
-    $query = "select count(distinct(dbprimary_id)) from Xref where externalDBId = $i";
+    $query = "select count(distinct(dbprimary_acc)) from xref where external_db_id = $i";
     $sth = $db->prepare($query);
     $sth->execute;
     $unique = $sth->fetchrow;
 
-    print OUT "$unique unique $dbid2name{$i} entries matched\n";
+    print STDOUT "$unique unique $dbid2name{$i} entries matched\n" if($unique);
 }
 
 
 
-$query = "select count(distinct(ensembl_id)) from objectXref";
+$query = "select count(distinct(ensembl_id)) from object_xref";
 
 $sth = $db->prepare($query);
 $sth->execute;
 $unique = $sth->fetchrow;
 
-print OUT "$unique Ensembl id matched\n";
+print STDOUT "$unique Ensembl id matched\n";
 
-print OUT "REFID: $refid\n";
+print STDOUT "REFID: $refid\n";
 
-while ($q_idt <= 100) {
+while ($q_idt < 100) {
     
-    $query = "select count(distinct(o.objectxrefId)) 
-          from objectXref as o,
-          Xref as x,
-          identityXref as i
-          where  o.xrefId = x.xrefId
-          and externalDBId = $refid
-          and o.objectxrefId = i.objectxrefId
+    $query = "select count(distinct(o.object_xref_id)) 
+          from object_xref as o,
+          xref as x,
+          identity_xref as i
+          where  o.xref_id = x.xref_id
+          and external_db_id = $refid
+          and o.object_xref_id = i.object_xref_id
           and i.query_identity >= $q_idt";
-
+    #print $query."\n";
     $sth = $db->prepare($query);
     $sth->execute;
     my $row = $sth->fetchrow();
-    print OUT "$q_idt\t$row\n";
+    print STDOUT "$q_idt\t$row\n";
     $q_idt = $q_idt + 5;
     if ($q_idt > 100) {
 	$q_idt = 100;
     }
 }
+
+#close(OUT);
