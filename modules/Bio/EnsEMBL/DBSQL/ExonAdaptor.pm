@@ -282,14 +282,11 @@ sub fetch_evidence_by_Exon {
     return;
   }
 			
-  my $statement = "SELECT contig, seq_start, seq_end, score,
+  my $statement = "SELECT contig_id, seq_start, seq_end, score,
                           strand, analysis, name, hstart, hend,
                           hid, evalue, perc_id, phase, end_phase
-                   FROM feature 
-                   WHERE contig = ".$exon->contig->internal_id."
-                   AND seq_start <= ".$exon->end()."
-                   AND seq_end >= ".$exon->start();
-
+                   FROM supporting_feature 
+		   WHERE exon_id = ".$exon->dbID;
 
   my $sth = $self->prepare($statement);
   $sth->execute || $self->throw("execute failed for supporting evidence get!");
@@ -300,15 +297,6 @@ sub fetch_evidence_by_Exon {
   while (my $rowhash = $sth->fetchrow_hashref) {
       my $analysis = $anaAdaptor->fetch_by_dbID( $rowhash->{analysis} );
 
-      if( $analysis->logic_name ne "Swall" &&
-	  $analysis->logic_name ne "Vertrna" &&
-	  $analysis->logic_name ne "Unigene" &&
-	  $analysis->logic_name ne "TGE_e2g" &&
-	  $analysis->logic_name ne "similarity_genewise" &&
-	  $analysis->logic_name ne "combined_gw_e2g" ) {
-	next;
-      }
-
       my $f = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
       $f->set_all_fields($rowhash->{'seq_start'},
 			 $rowhash->{'seq_end'},
@@ -316,7 +304,7 @@ sub fetch_evidence_by_Exon {
 			 $rowhash->{'score'},
 			 $rowhash->{'name'},
 			 'similarity',
-			 $rowhash->{'contig'},
+			 $rowhash->{'contig_id'},
 			 $rowhash->{'hstart'},
 			 $rowhash->{'hend'},
 			 1, # hstrand
