@@ -47,7 +47,7 @@ CREATE TABLE contig (
   mapbin varchar(40) DEFAULT '' NOT NULL,
   length int(10) unsigned,
   offset int(10) unsigned,
-  orientation char(1) DEFAULT '0' NOT NULL,
+  orientation int(1) DEFAULT '1' NOT NULL,
   corder int(10) unsigned,
   dna varchar(40),
   PRIMARY KEY (id)
@@ -86,12 +86,12 @@ CREATE TABLE dna (
 CREATE TABLE exon (
   id varchar(40) DEFAULT '' NOT NULL,
   contig varchar(40) DEFAULT '' NOT NULL,
-  version varchar(10) DEFAULT '' NOT NULL,
+  version int(10) DEFAULT '1' NOT NULL,
   created date DEFAULT '0000-00-00' NOT NULL,
   modified date DEFAULT '0000-00-00' NOT NULL,
   start int(10) DEFAULT '0' NOT NULL,
   end int(10) DEFAULT '0' NOT NULL,
-  strand char(1) DEFAULT '' NOT NULL,
+  strand int (2) DEFAULT '1' NOT NULL,
   phase int(11) DEFAULT '0' NOT NULL,
   end_phase int(11) DEFAULT '0' NOT NULL,
   KEY idx1 (id,contig),
@@ -129,7 +129,7 @@ CREATE TABLE feature (
   start int(10) DEFAULT '0' NOT NULL,
   end int(10) DEFAULT '0' NOT NULL,
   score int(10) DEFAULT '0' NOT NULL,
-  strand char(1),
+  strand int(1) DEFAULT 1 NOT NULL,
   analysis varchar(40) DEFAULT '' NOT NULL,
   name varchar(40),
   KEY overlap (id,contig,start,end,analysis)
@@ -158,7 +158,7 @@ CREATE TABLE fset_feature (
 #
 CREATE TABLE gene (
   id varchar(40) DEFAULT '' NOT NULL,
-  version varchar(40) DEFAULT '' NOT NULL,
+  version int(10) DEFAULT '1' NOT NULL,
   created date DEFAULT '0000-00-00' NOT NULL,
   modified date DEFAULT '0000-00-00' NOT NULL,
   PRIMARY KEY (id)
@@ -196,8 +196,19 @@ CREATE TABLE supporting_feature (
 #
 CREATE TABLE transcript (
   id varchar(40) DEFAULT '' NOT NULL,
-  gene varchar(40),
+  version int(10) DEFAULT '1' NOT NULL,
+  gene varchar(40) DEFAULT '' NOT NULL,
+  translation varchar(40) DEFAULT '' NOT NULL,
   PRIMARY KEY (id),
   KEY id_geneid (id)
 );
 
+CREATE TABLE translation (
+  id varchar(40) DEFAULT '' NOT NULL,
+  version int(10) DEFAULT '1' NOT NULL,
+  start int(10) DEFAULT '0' NOT NULL,
+  start_exon varchar(40) DEFAULT '' NOT NULL,
+  end   int(10) DEFAULT '0' NOT NULL,
+  end_exon varchar(40) DEFAULT '' NOT NULL,
+  PRIMARY KEY(id)
+); 

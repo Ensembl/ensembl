@@ -56,6 +56,7 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::Translation;
 
 
 @ISA = qw(Bio::Root::Object);
@@ -96,6 +97,49 @@ sub id{
       $self->{'id'} = $value;
     }
     return $self->{'id'};
+
+}
+
+=head2 version
+
+ Title   : version
+ Usage   : $obj->version($newval)
+ Function: 
+ Returns : value of version
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub version{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'version'} = $value;
+    }
+    return $obj->{'version'};
+
+}
+
+
+=head2 translation
+
+ Title   : translation
+ Usage   : $obj->translation($newval)
+ Function: 
+ Returns : value of translation
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub translation{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'translation'} = $value;
+    }
+    return $obj->{'translation'};
 
 }
 
@@ -178,8 +222,9 @@ sub flush_Exon{
 
 sub first_exon{
    my ($self,@args) = @_;
+   my @temp = @{$self->{'_trans_exon_array'}};
 
-   return $self->{'_trans_exon_array'}->[0];
+   return shift @temp;
 }
 
 =head2 last_exon
@@ -198,7 +243,88 @@ sub last_exon{
    my ($self) = @_;
    my @temp = @{$self->{'_trans_exon_array'}};
 
-   return @temp[$#temp];
+   return pop @temp;
+}
+
+=head2 translatable_exons
+
+ Title   : translatable_exons
+ Usage   : @exons = $transcript->translateable_exons
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub translateable_exons{
+   my ($self) = @_;
+   my (@out);
+
+   if( ! defined $self->translation ) {
+       $self->throw("Attempting to split Transcript on translation, but not there...");
+   }
+   
+   my @exons = $self->each_Exon;
+
+   # one exon genes - easy to handle.
+   if( $#exons == 0 ) {
+       return $self;
+   }
+
+   while( my $exon = shift @exons ) {
+       if( $exon->id eq $self->translation->start_exon_id() ) {
+	   
+	   my $stexon = new Bio::EnsEMBL::Exon;
+
+	   $stexon->contig_id($exon->contig_id);
+	   $stexon->clone_id($exon->clone_id);
+	   
+	   $stexon->strand($exon->strand);
+	   $stexon->phase(0);
+	   $stexon->attach_seq($exon->entire_seq());
+	   $stexon->id($exon->id());
+	   
+	   if( $exon->strand == 1 ) {
+	       $stexon->start($self->translation->start());
+	       $stexon->end($exon->end);
+	   } else {
+	       $stexon->end($self->translation->start());
+	       $stexon->start($exon->start);
+	   }
+	   push(@out,$stexon);
+	   last;
+       }
+   }
+
+   while( my $exon = shift @exons ) {
+       if( $exon->id eq $self->translation->end_exon_id()) {
+	   
+	   my $endexon = new Bio::EnsEMBL::Exon;
+	   
+	   $endexon->contig_id($exon->contig_id);
+	   $endexon->clone_id($exon->clone_id);
+	   $endexon->strand($exon->strand);
+	   $endexon->phase($exon->phase);
+	   $endexon->attach_seq($exon->entire_seq());
+	   $endexon->id($exon->id);
+
+	   if( $exon->strand == 1 ) {
+	       $endexon->start($exon->start());
+	       $endexon->end($self->translation->end());
+	   } else {
+	       $endexon->end($self->translation->end());
+	       $endexon->start($exon->start);
+	   }
+	   push(@out,$exon);
+	   last;
+       } else {
+	   push(@out,$exon);
+       }
+   }
+
+   return @out;
 }
 
 
@@ -207,7 +333,8 @@ sub last_exon{
  Title   : split_Transcript_to_Partial
  Usage   : @trans = $trans->split_Transcript_to_Partial
  Function: splits a transcript with potential non spliceable
-           exons into a set of partial transcripts
+           exons into a set of partial transcripts, from start/end
+           of the Translation if the second argument is true
  Example :
  Returns : an array of Bio::EnsEMBL::Transcript objects
  Args    :
@@ -216,18 +343,32 @@ sub last_exon{
 =cut
 
 sub split_Transcript_to_Partial{
-   my ($self,@args) = @_;
+   my ($self,$on_translate) = @_;
 
-   my @exons = $self->each_Exon;
+
+   if( $on_translate == 1 && ! defined $self->translation ) {
+       $self->throw("Attempting to split Transcript on translation, but not there...");
+   }
+   my @exons;
+   if( $on_translate == 1 ) {
+       @exons = $self->translateable_exons();
+   } else {
+       @exons = $self->each_Exon;
+   }
 
    # one exon genes - easy to handle.
    if( $#exons == 0 ) {
        return $self;
    }
 
-   my $l = $#exons;
-   my $prev = shift @exons;
+   # find the start exon;
 
+   my $prev;
+
+
+   $prev = shift @exons;
+   
+   my $l = $#exons;
 
    my $t;
    my @out;
@@ -243,6 +384,7 @@ sub split_Transcript_to_Partial{
        
        $t->add_Exon($prev);
        $t->is_partial(1);
+
        push(@out,$t);
 
        while( my $exon = shift @exons ) {
@@ -252,7 +394,7 @@ sub split_Transcript_to_Partial{
 	       $prev = $exon;
 	   } else {
 	       if( $exon->contig_id eq $prev->contig_id ) {
-		   $self->warn("Got two exons, ". $exon->id ."[".$exon->contig_id."]:".$prev->id. "[".$prev->contig_id."] same contigs but incompatible phases!");
+		   $self->warn("Got two exons, ".$prev->id. "[".$prev->contig_id."]".$prev->start."/".$prev->phase .":". $exon->id ."[".$exon->contig_id."]: same contigs but incompatible phases!");
 	       }
 
 	       $prev = $exon;
@@ -294,16 +436,24 @@ sub translate {
   my ($self) = @_;
 
   my $debug;
-  
-  my @trans = $self-> split_Transcript_to_Partial();
+
+
+  if ( ! defined $self->translation ) {
+      $self->throw("You have to have a translation now to make a translation. Doh!");
+  }
+
+  my @trans = $self-> split_Transcript_to_Partial(1);
 
   if( $#trans == -1 ) {
       $self->throw("Bad internal error - split a transcript to zero transcripts! Doh!");
   }
 
+  
 
   my $seqstr;
   my $prevtrans;
+  my $seen_start =0;
+
   foreach my $ptrans ( @trans ) {
       my $tseq = $ptrans->_translate_coherent($debug);
      
@@ -506,6 +656,7 @@ sub _translate_coherent{
    $self->sort();
    my @exons = $self->each_Exon;
    my $exon_start = $exons[0];
+
 
    foreach my $exon ( @exons ) {
       # if( $exon->id eq 'HE000030314' ) {

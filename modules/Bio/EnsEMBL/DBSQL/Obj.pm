@@ -162,12 +162,14 @@ sub get_Gene{
 
 
    # go over each Transcript
-   my $sth = $self->prepare("select id from transcript where gene = '$geneid'");
+   my $sth = $self->prepare("select id,translation from transcript where gene = '$geneid'");
 
    my $res = $sth->execute();
    my $seen =0;
    while( my $rowhash = $sth->fetchrow_hashref) {
        my $trans = $self->get_Transcript($rowhash->{'id'});
+       my $translation = $self->get_Translation($rowhash->{'translation'});
+       $trans->translation($translation);
        $gene->add_Transcript($trans);
        $seen = 1;
    }
@@ -207,6 +209,34 @@ sub get_Transcript{
    $trans->id($transid);
 
    return $trans;
+}
+
+=head2 get_Translation
+
+ Title   : get_Translation
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Translation{
+   my ($self,$translation_id) = @_;
+
+   my $sth = $self->prepare("select start,start_exon,end,end_exon from translation where id = '$translation_id'");
+   my $res = $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref;
+   my $out = Bio::EnsEMBL::Translation->new();
+   $out->start($rowhash->{'start'});
+   $out->end($rowhash->{'end'});
+   $out->start_exon_id($rowhash->{'start_exon'});
+   $out->end_exon_id($rowhash->{'end_exon'});
+   $out->id($translation_id);
+
+   return $out;
 }
 
 =head2 get_Exon
@@ -614,10 +644,41 @@ sub write_Transcript{
 
    # ok - now load this line in
 
-   my $tst = $self->prepare("insert into transcript (id,gene) values ('" . $trans->id . "','" . $gene->id . "')");
+   my $tst = $self->prepare("insert into transcript (id,gene,translation) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "')");
    $tst->execute();
+   $self->write_Translation($trans->translation());
    
    return 1;
+}
+
+=head2 write_Translation
+
+ Title   : write_Translation
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_Translation{
+   my ($self,$translation) = @_;
+   
+   if( !$translation->isa('Bio::EnsEMBL::Translation') ) {
+       $self->throw("Is not a translation. Cannot write!");
+   }
+
+   
+   my $tst = $self->prepare("insert into translation (id,start,start_exon,end,end_exon) values ('" 
+			    . $translation->id . "',"
+			    . $translation->start . ",'"  
+			    . $translation->start_exon_id. "',"
+			    . $translation->end . ",'"
+			    . $translation->end_exon_id . "')");
+   $tst->execute();
+   
 }
    
 

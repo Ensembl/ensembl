@@ -21,6 +21,8 @@ my $tdbname = 'ensdev';
 
 my $usefile = 0;
 my $use_embl = 0;
+my $tdbuser = 'ensembl';
+
 &GetOptions( 
 	     'fembl'     => \$use_embl, 
 	     'fdbtype:s' => \$fdbtype,
@@ -31,6 +33,7 @@ my $use_embl = 0;
 	     'thost:s'   => \$thost,
 	     'tport:n'   => \$tport,
 	     'tdbname:s' => \$tdbname,
+	     'tdbuser:s' => \$tdbuser,
 	     'usefile'   => \$usefile,
 	     );
 
@@ -50,6 +53,15 @@ if( $usefile == 1 ) {
 
 open(ERROR,">transfer.error\n");
 
+
+if( $tdbtype =~ 'ace' ) {
+    $to_db = Bio::EnsEMBL::AceDB::Obj->new( -user => $tdbuser, -host => $thost, -port => $tport);
+} elsif ( $tdbtype =~ 'rdb' ) {
+    $to_db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $tdbuser, -db => $tdbname , -host => $thost );
+} else {
+    die("$tdbtype is not a good type (should be ace, rdb)");
+}
+
 if( $fdbtype =~ 'ace' ) {
     $from_db = Bio::EnsEMBL::AceDB::Obj->new( -host => $fhost, -port => $fport);
 } elsif ( $fdbtype =~ 'rdb' ) {
@@ -58,14 +70,6 @@ if( $fdbtype =~ 'ace' ) {
     $from_db = Bio::EnsEMBL::TimDB::Obj->new(\@clone,0,0,1);
 } else {
     die("$fdbtype is not a good type (should be ace, rdb or timdb)");
-}
-
-if( $tdbtype =~ 'ace' ) {
-    $to_db = Bio::EnsEMBL::AceDB::Obj->new( -host => $thost, -port => $tport);
-} elsif ( $tdbtype =~ 'rdb' ) {
-    $to_db = Bio::EnsEMBL::DBSQL::Obj->new( -user => 'root', -db => $tdbname , -host => $thost );
-} else {
-    die("$tdbtype is not a good type (should be ace, rdb)");
 }
 
 foreach my $clone_id ( @clone ) {
@@ -80,7 +84,8 @@ foreach my $clone_id ( @clone ) {
 	}
     };
     if ( $@ ) {
-	print ERROR "$@\n";
+	
+	print ERROR "Clone $clone_id\n$@\n";
     }
 }
 

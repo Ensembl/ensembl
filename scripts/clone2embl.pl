@@ -115,7 +115,8 @@ my $host1     = 'obi-wan';
 # msql was 'ensdev'
 my $dbname    = 'ens2';
 my $dbuser    = 'humpub';
-my $dbpass    = 'ens2pass';
+#my $dbpass    = 'ens2pass';
+my $dbpass = undef;
 
 # defaults for acedb (humace)
 my $host2     = 'humsrv1';

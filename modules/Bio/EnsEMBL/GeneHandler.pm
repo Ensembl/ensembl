@@ -220,7 +220,42 @@ sub _process_Transcript{
    my $prev;
    print STDERR "Looking at this transcript ",$trans->id(),"\n";
 
-   foreach my $exon ( $trans->each_Exon() ) {
+
+   foreach my $exon ( $trans->each_Exon ) {
+
+       if( ! $exon_hash_ref->{$exon->id()}  ) {
+	   $contig = $self->clone()->get_Contig($exon->contig_id());
+	   my ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
+       
+	   # add this exon
+	   # make an Exon FTHelper and add them
+	   
+	   my $ft = new Bio::AnnSeqIO::FTHelper->new();
+	   $ft->key("exon");
+	   # add other stuff to Exon?
+	   $ft->add_field('created',$exon->created());
+	   $ft->add_field('modified',$exon->modified());
+	   $ft->add_field('exon_id',$exon->id());
+	   $ft->add_field('start_phase',$exon->phase());
+	   $ft->add_field('end_phase',$exon->end_phase());
+	   
+	   if( $loc_comp == -1 ) {
+	       $ft->loc("complement($locstart..$locend)");
+	   } else {
+	       $ft->loc("$locstart..$locend");
+	   }
+	   $exon_hash_ref->{$exon->id()} = $ft;
+       }
+   }
+
+   
+   my @exons;
+
+   # now build the CDS lines.
+
+   @exons = $trans->translateable_exons();
+
+   foreach my $exon ( @exons ) {
        # get out the clone
 
        print STDERR "Looking at exon ",$exon->id,"\n";
@@ -236,27 +271,6 @@ sub _process_Transcript{
        ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
        
 
-       if( ! $exon_hash_ref->{$exon->id()}  ) {
-	   # add this exon
-	   # make an Exon FTHelper and add them
-	   
-	   my $ft = new Bio::AnnSeqIO::FTHelper->new();
-	   $ft->key("exon");
-	   # add other stuff to Exon?
-	   $ft->add_field('created',$exon->created());
-	   $ft->add_field('modified',$exon->modified());
-	   $ft->add_field('exon_id',$exon->id());
-	   $ft->add_field('start_phase',$exon->phase());
-	   $ft->add_field('end_phase',$exon->end_phase());
-
-
-	   if( $loc_comp == -1 ) {
-	       $ft->loc("complement($locstart..$locend)");
-	   } else {
-	       $ft->loc("$locstart..$locend");
-	   }
-	   $exon_hash_ref->{$exon->id()} = $ft;
-       }
 
        # check to see whether we are jumping contigs or not
 
@@ -306,7 +320,6 @@ sub _process_Transcript{
        $trans_loc =~ s/(\d+)\.\.(>?)(\d+)(\)?)$/<$1..$2$3$4/;
    }
 
-   # use first exon to find appropiate start point
 
 
    my $t_fth = new Bio::AnnSeqIO::FTHelper->new();
@@ -317,7 +330,7 @@ sub _process_Transcript{
    $t_fth->add_field('gene_id',$self->gene->id());
 
    # map phase1 -> 2, phase 2 -> 1, phase 0 -> 0 and then add 1. Easy huh?
-   $t_fth->add_field('codon_start',((3 -$firstexon->phase) %3)+1);
+   #$t_fth->add_field('codon_start',((3 -$firstexon->phase) %3)+1);
 
    if( $trans->is_partial() == 1 ) {
        $t_fth->add_field('note',"transcript is a partial transcript");

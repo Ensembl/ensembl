@@ -160,6 +160,27 @@ sub id{
    
 }
 
+=head2 version
+
+ Title   : version
+ Usage   : $obj->version($newval)
+ Function: 
+ Returns : value of version
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub version{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'version'} = $value;
+    }
+    return $obj->{'version'};
+
+}
+
 =head2 contig_id
 
  Title   : contig_id
