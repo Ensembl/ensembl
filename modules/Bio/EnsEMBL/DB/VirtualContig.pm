@@ -169,15 +169,23 @@ sub extend {
        $self->throw("Must supply a left and right value when extending a VirtualContig");
    }
 
-   print STDERR "Extending raw contig ".$self->_focus_contig->id." (ori = $self->_focus_orientation)\n";
 
-   my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig     => $self->_focus_contig,
-					           -focusposition   => $self->_focus_position,
-					           -ori             => $self->_focus_orientation,
-					           -left            => $self->_left_size - $left,
-					           -right           => $self->_right_size + $right,
-					         );
-  return $nvc;
+    my $current_left          = $self->_left_size;
+    my $current_right         = $self->_right_size;
+    my $current_ori           = $self->_focus_orientation;
+    my $current_focuscontig   = $self->_focus_contig;
+    my $current_focusposition = $self->_focus_position;
+    
+    print STDERR "Extending raw contig ".$current_focuscontig->id." (ori = $current_ori)\n";
+
+    my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $current_focuscontig,
+					        -focusposition   => $current_focusposition,
+					        -ori             => $current_ori,
+					        -left            => $current_left - $left,
+					        -right           => $current_right + $right,
+					        );
+
+   return $nvc;
 }
 
 
@@ -588,6 +596,7 @@ sub _build_clone_map{
 
    # Remember this vc contructed from a clone (rather than extending a 'seed' contig)
    $self->_clone_map(1);
+
 }
 
 
@@ -649,7 +658,6 @@ sub _build_contig_map{
 		print STDERR "getting out - no overlap\n";
 		last;
 	    }
-	    
 	    
 	    if( $overlap->distance == 0 ) {
 		# The mystic -1 here is because otherwise we double count the
@@ -760,7 +768,7 @@ sub _build_contig_map{
 	    # as this means we have run out of contigs
 	    if( !defined $overlap ) {
 		print STDERR "Out of contigs!\n";
-		
+		$self->found_right_end(1);
 		$right = $current_length - $left;
 		last;
 	   }
@@ -811,6 +819,7 @@ sub _build_contig_map{
 	    # if there is no left overlap, trim right to this size
 	    # as this means we have run out of contigs
 	    if( !defined $overlap ) {
+		$self->found_left_end(1);
 		$right = $current_length - $left;
 		last;
 	    }
@@ -877,6 +886,78 @@ sub _build_contig_map{
 
 }
 
+
+=head2 found_left_end
+
+ Title   : found_left_end
+ Usage   : 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub found_left_end {
+    my ($self,$arg) = @;
+
+    if (defined($arg)) {
+	$self->{_found_left_end} = $arg;
+    }
+
+    return $self->{_found_left_end};
+}
+
+
+=head2 found_right_end
+
+ Title   : found_right_end
+ Usage   : 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub found_right_end {
+    my ($self,$arg) = @;
+
+    if (defined($arg)) {
+	$self->{_found_right_end} = $arg;
+    }
+
+    return $self->{_found_right_end};
+}
+
+=head2 is_truncated
+
+ Title   : is_truncated
+ Usage   : 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_truncated {
+    my ($self) = @_;
+
+    my $flag = 0;
+
+    if ($self->found_right_end == 1) {
+	$flag = 1;
+    } 
+    if ($self->found_left_end == 1) {
+	$flag = 1;
+    }
+
+    return $flag;
+}
 
 =head2 _get_all_SeqFeatures_type
 
