@@ -467,7 +467,9 @@ sub fetch_all_alt_alleles {
 
 
 
+
 =head2 store_alt_alleles
+
 
   Arg [1]    : reference to list of Bio::EnsEMBL::Genes $genes
   Example    : $gene_adaptor->store_alt_allele([$gene1, $gene2, $gene3]);
@@ -1044,7 +1046,7 @@ sub _objs_from_sth {
 sub fetch_by_maximum_DBLink {
   my ( $self, $external_id ) = @_;
   
-  my $genes=$self->fetch_all_by_DBEntry( $external_id);
+  my $genes=$self->fetch_all_by_external_name( $external_id);
   
   my $biggest;
   my $max=0;
@@ -1143,7 +1145,7 @@ sub get_description {
 sub fetch_by_Peptide_id {
     my ( $self, $translation_stable_id) = @_;
 
-    deprecate( "Please use better named fetch_by_translation_stable_id" );
+    deprecate( "Please use better named fetch_by_translation_stable_id \n".caller(2) );
 
     $self->fetch_by_translation_stable_id($translation_stable_id);
 }
