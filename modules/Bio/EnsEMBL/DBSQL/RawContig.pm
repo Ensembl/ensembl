@@ -503,6 +503,8 @@ sub get_all_SimilarityFeatures{
 				$hstart,$hend,1,$score,$name,'similarity',$hid);
 
 	   $out->analysis    ($analysis);
+	   $out->id          ($hid);              # MC This is for Arek - but I don't
+	                                          #    really know where this method has come from.
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;
 	   $out->seqname   ($self->id);
@@ -861,6 +863,7 @@ sub embl_offset{
 sub id {
    my ($self,$value) = @_;
    if( defined $value) {
+       print(STDERR "Setting id to $value\n");
       $self->{'id'} = $value;
     }
     return $self->{'id'};
