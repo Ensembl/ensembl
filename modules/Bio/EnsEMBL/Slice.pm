@@ -54,6 +54,7 @@ use strict;
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::PrimarySeqI;
+use Bio::EnsEMBL::Tile;
 
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
 
@@ -820,27 +821,38 @@ sub get_tiling_path {
   }
 
   #Fetch filled raw contigs (non lazy-loaded) containing filled clone objects
-  my $raw_contigs = 
-    $self->adaptor->db->get_RawContigAdaptor()->
-      fetch_filled_by_dbIDs(@raw_contig_ids);
+  my $rca = $self->adaptor->db->get_RawContigAdaptor();
+  my $raw_contigs = $rca->fetch_filled_by_dbIDs(@raw_contig_ids);
 
   my @tiling_path;
   my $current_start = 1;
 
+  my($length, $slice_start, $slice_end, 
+     $contig, $contig_start, $contig_end, $contig_ori);  
+
   foreach my $coord ( @mapped ) {
-    my $length = $coord->end() - $coord->start() + 1; 
+    $contig_start = $coord->start();
+    $contig_end   = $coord->end();
+    $length       = $contig_end - $contig_start + 1; 
 
     if ( $coord->isa("Bio::EnsEMBL::Mapper::Coordinate" ) ) {
-      # this is a contig, create a tiling path piece from it
-      my $tile = {};
-      $tile->{'start'} = $current_start;
-      $tile->{'end'} = ($current_start + $length-1);
-      $tile->{'contig'} = $raw_contigs->{ $coord->id() };
-      $tile->{'strand'} = $coord->strand();
+      # create a tile for each coordinate
+      $contig_ori  =  $coord->strand();
+      $slice_start = $current_start;
+      $slice_end   = $current_start + $length - 1;
+      $contig      = $raw_contigs->{ $coord->id() };
+      
+      push @tiling_path, Bio::EnsEMBL::Tile->new_fast($self,
+						      $slice_start,
+						      $slice_end,
+						      $contig,
+						      $contig_start,
+						      $contig_end,
+						      $contig_ori);
+						
+ 
       
       $current_start += $length;
-
-      push(@tiling_path, $tile);
     } else {
       # this is a gap, just add the length and discard it
       $current_start += $length;
