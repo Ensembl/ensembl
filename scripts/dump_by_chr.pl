@@ -3,6 +3,9 @@
 # $Id$
 # 
 #
+
+die "Not yet ready for the MAIN branch; use Tbranch-ensembl-110!"
+
 use Carp;
 
 =head1 NAME
