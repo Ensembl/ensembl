@@ -1,0 +1,6 @@
+# regexp used for filter out useless description for Danio rerio
+# add more as appropriate, line begining with # are supposed to be comments
+
+^HYPOTHETICAL\s+PROTEIN\.?
+^\s*\(?FRAGMENT\)?\.?\s*
+^SIMILAR TO HUMAN CDNA KIAA\d+\.?
