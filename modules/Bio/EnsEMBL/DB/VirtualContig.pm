@@ -161,9 +161,16 @@ sub primary_seq {
 
    my @contig_id = sort { $self->{'start'}->{$a} <=> $self->{'start'}->{$b} } keys %{$self->{'start'}};
    my $seq_string;
+   my $last_point = 1;
    foreach my $cid ( @contig_id ) {
        my $c = $self->{'contighash'}->{$cid};
        my $tseq = $c->primary_seq();
+       if( $self->{'start'}->{$cid} != ($last_point+1) ) {
+	   print STDERR "Putting in N's\n";
+	   my $no = $self->{'start'}->{$cid} - $last_point -1;
+	   $seq_string .= 'N' x $no;
+	   $last_point += $no;
+       } 
 
        my $trunc;
        my $end;
@@ -190,6 +197,7 @@ sub primary_seq {
        }
     #   print STDERR "Got $trunc\n";
        $seq_string .= $trunc;
+       $last_point += length($trunc);
    }
 
    $seq = Bio::PrimarySeq->new( -id => "virtual_contig_".$self->_unique_number,
