@@ -26,7 +26,7 @@ my %clone;
 my $default_ori = 1;
 my $chr_offset = 0;	# chr coordinates may be off by 1
 			# but depends on the assembly version...
-my $gptype = 'NCBI_26';
+my $gptype = 'NCBI_28';
 my $allow_pipe = 0;	# convert '|' to '_'
 
 
@@ -52,7 +52,7 @@ while (<CHR>) {
 
     if    ($ori eq '+') { $ori = 1;  }
     elsif ($ori eq '-') { $ori = -1; }
-    elsif ($ori eq '?') { $ori = $default_ori; }
+    elsif ($ori eq '?' || $ori eq '0') { $ori = $default_ori; }
     else  { die "Bad NT contig orientation $ori"; }
 
     $nt_contig{$nt_ctg}->{'chr'}   = $chr;
@@ -131,7 +131,7 @@ while (<AGP>) {
 		$raw_end   = $raw_end   - $start + 1;
 
 		print SGP "$nt_ctg\t$chr\t", $raw_ctg->{'iid'};
-		print SGP "\t$chr_start\t$chr_end\t$nt_start\t$nt_end";
+		print SGP "\t$chr_start\t$chr_end\t$nt_start\t$nt_end\t$nt_ori";
 		print SGP "\t$raw_start\t$raw_end\t$raw_ori\t$gptype\n";
 
 		print INF $raw_ctg->{'id'}, "\t", $raw_ctg->{'iid'}, "\n";
