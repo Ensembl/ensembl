@@ -250,7 +250,7 @@ sub get_all_SimilarityFeatures_above_score{
 	$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
 			     $hstart,$hend,1,$f_score,$name,'similarity',$hid);
 
-	out->analysis($analysis);
+	$out->analysis($analysis);
 	push(@global_features,$out);
     }
 
