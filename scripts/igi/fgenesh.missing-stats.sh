@@ -1,21 +1,24 @@
 #!/bin/sh -x
 # -*- mode: sh; -*-
+# $Id$
 
 # litte script to compile statistics on missing features:
 
 outdir=./
-logfile=all.log
+# create the following files:
 missing=$outdir/missing
 init=$outdir/assumed-on-first
-stats=$outdir/missing-stats
+stats=$outdir/stats
 tmp=$outdir/x
 
-Usage="Usage: $0 reads from $logfile, writes to files '$missing, $init, $stats"
-
-if [ $# -ne 0  ] ; then
+Usage="Usage: $0 logfile. Reads from $logfile, writes to files $missing, $init, $stats"
+if [ $# -ne 1  ] ; then
     echo $Usage >&2
     exit 1;
 fi
+
+logfile=$1
+
 
 awk -F';' '/initial/{print $1}' $logfile | sort -u > $init
 awk -F';' '/ignor/{print $1}' $logfile | sort -u > $missing
