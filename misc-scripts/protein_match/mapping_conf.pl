@@ -28,16 +28,16 @@ package main;
 	     #The mapping to known genes is assymetrical. This is due to the fact that's our gene prediction is quite fragmented compared to the manually curated genes       	 
             
 	     #'query_idt'  => 40,
-             'query_idt'    => ,
+             'query_idt'    => 40,
 
              #'target_idt  => 10,
-             'target_idt'  => ,
+             'target_idt'  => 10,
 
              
 
              #Location of the statistic file (only neede if you run get_stats.pl)
              #'statistic'  => '/work1/mongin/mapping/stats.txt',
-             'statistic_file'  => ,        
+             'statistic_file'  => '',        
 
 
              ################################ 
@@ -47,43 +47,43 @@ package main;
 
              #Location of the query peptide file (eg: Ensembl predicted protein) 
              #'query'        => '/work1/mongin/mapping/primary/ensembl110.pep',
-             'query'       => ,   
+             'query'       => '',   
              
              #Location of the sptr file, this file will be used as an 
 	     #input to grep the specific sp entries to the organism 
 	     #using grep_sp_entries.pl. This file is supposed to be 
 	     #in SP format
 	   
-	      'total_sptr'  => ,
+	      'total_sptr'  => '',
 
              #Location of the sptr file in fasta format containing the entries specific to the organism
 	     #'sptr_fa'      => '/work1/mongin/mapping/primary/HS.f',
-	     'sptr_fa'      => ,
+	     'sptr_fa'      => '',
 	     
              #Location of the sptr file in Swiss-Prot format containing the entries specific to the organism
 	     #'sptr_swiss'      => '/ecs2/work1/lec/briggsae_peptides/briggsae.test',
-	     'sptr_swiss' => ,	     
+	     'sptr_swiss' => '',	     
 
              #Location of the file containing all refseq and all SP in fasta format (This file will be produced by running prepare_proteome.pl)
             
-	     'pmatch_input_fa'    => ,
+	     'pmatch_input_fa'    => '',
 
              #Output file containing the mapping of SP and refseq sequences to external databases
            
-             'x_map_out'  => ,
+             'x_map_out'  => '',
 
              #Output file from pmatch.pl and input file for maps2db.pl
              #'pmatch_out'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
-             'pmatch_out'  => ,
+             'pmatch_out'  => '',
 
 
              #Location of the Refseq (proteins) file in fasta format
 	     #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
-	     'refseq_fa'    => ,
+	     'refseq_fa'    => '',
 	     
              #Location of the Refseq (proteins) file in Genbank format
 	     #'refseq_gnp'    => '/work1/mongin/mouse/mapping/primary/mouse.gnp',
-	     'refseq_gnp'  => ,
+	     'refseq_gnp'  => '',
 
              ############################################
              #Organism specific files for the X_mapping #
@@ -117,11 +117,11 @@ package main;
                   
                    #File containing MGI/SP mapping (MRK_SwissProt.rpt)
                    #'mgi_sp'  => '/work1/mongin/mouse/mapping/primary/MRK_SwissProt.rpt',                 
-                   'mgi_sp'  => ,
+                   'mgi_sp'  => '',
                   
                    #File containing MGI/LocusLink mapping (MRK_LocusLink.rpt)
                    #'mgi_locus'  => '/work1/mongin/mouse/mapping/primary/MRK_LocusLink.rpt',                   
-                   'mgi_locus'  => ,
+                   'mgi_locus'  => '',
                                       
 
                    ###########
@@ -204,7 +204,8 @@ package main;
              #OX (Organism taxonomy cross-reference) number
              #'ox' => '9606', human
              #'ox' => '10090', mouse
-             #'ox' => '7227',elegans
+             #'ox' => '7227', drosophilla
+	     #'ox' => '6239' elegans
 	     #'ox' => '6238' briggsae 	 
              'ox'  => '',
 
