@@ -485,8 +485,8 @@ sub get_adaptor{
   my $dnadb_group =  $registry_register{$species}{$group}{_DNA};
 
   if( defined($dnadb_group) && defined($dnadb_adaptors{$type}) ) {
+      $species = $registry_register{$species}{$group}{'_DNA2'};
       $group = $dnadb_group;
-      $species = $registry_register{$species}{$group}{_DNA2};
   }
 
   my $ret = $registry_register{$species}{$group}{$type};
