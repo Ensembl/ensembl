@@ -32,6 +32,7 @@ INSERT INTO source VALUES (2, "Uniprot/SPTREMBL", 1, 'Y',1);
 INSERT INTO source VALUES (3, "RefSeq_peptide", 1, 'Y',1);
 INSERT INTO source VALUES (4, "RefSeq_dna", 1, 'Y',1);
 INSERT INTO source VALUES (5, "IPI", 1, 'Y',2);
+##INSERT INTO source VALUES (6, "UniGene", 1, 'Y',2);
 
 # Other sources - used to create dependent xrefs, but not to upload from
 
@@ -90,6 +91,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##      CCDS
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2000, 9606,'/dummy/CCDS.txt', '', now(), now(), "CCDSParser");
+
+##      UniGene
+##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9606,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Hs.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Hs.data.gz', '', now(), now(), "UniGeneParser");
 
 
 ###MOUSE
