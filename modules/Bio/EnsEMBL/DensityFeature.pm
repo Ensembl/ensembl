@@ -268,21 +268,19 @@ sub end{
 
  Title   : scaledvalue
  Usage   : $obj->scaledvalue($newval)
- Function: 
- Returns : this object's scaled value
+ Function:
+ Returns : this objects scaled value
  Args    : newvalue (optional)
-
 
 =cut
 
 sub scaledvalue{
-   my $obj = shift;
-   if( @_ ) {
-      my $scaledvalue = shift;
-      $obj->{'scaledvalue'} = $scaledvalue;
-    }
-    return $obj->{'scaledvalue'};
-
+  my $obj = shift;
+  if( @_ ) {
+    my $scaledvalue = shift;
+    $obj->{'scaledvalue'} = $scaledvalue;
+  }
+  return $obj->{'scaledvalue'};
 }
 
 
@@ -291,7 +289,7 @@ sub scaledvalue{
 
  Title   : url
  Usage   : $obj->url($newval)
- Function: 
+ Function:
  Returns : this object's url
  Args    : newvalue (optional)
 

@@ -7,23 +7,23 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DensityFeatureSet - A feature representing a set of density features
+Bio::EnsEMBL::DensityFeatureSet -
+A feature representing a set of density features
 
 =head1 SYNOPSIS
 
 use Bio::EnsEMBL::DensityFeatureSet;
 
 my $densitySet = Bio::EnsEMBL::DensityFeatureSet->new
-		( -bin_array = @out,
-		  -max_value = $max_value,
-		  -min_value = $min_value,
-		
+		( -bin_array = \@out,
+		  -stretch   = 1,
 		);
 
 =head1 DESCRIPTION
 
-A density feature set is a wrap around a array of density features with additional information about the collective density feature set, such as max_min_values and scale factors etc.
-a given region.
+A density feature set is a wrap around a array of density features
+with additional information about the collective density feature set,
+such as max_min_values and scale factors etc.  a given region.
 
 This module is part of the Ensembl project http://www.ensembl.org
 
@@ -52,7 +52,6 @@ use Data::Dumper;
   Returntype : Bio::EnsEMBL::DensityFeatureSet
   Exceptions : throw if invalid density value type is provided
   Caller     : general
-
 =cut
 
 sub new {
@@ -61,19 +60,19 @@ sub new {
   my $max_value = undef;
   my $min_value = undef;
 
-  my($dfeats, $stretch, $scale_to_fit) = 
+  my($dfeats, $stretch, $scale_to_fit) =
       rearrange(['FEATURES', 'STRETCH', 'SCALE_TO_FIT'], @_);
   foreach (@$dfeats){
 	  my $value = $_->density_value;
 	  $max_value = $value if (!defined($max_value) || $value > $max_value); 
 	  $min_value = $value if (!defined($min_value) || $value < $min_value);
   }
-  
-  return bless {'bin_array'  => $dfeats,
-  	            'stretch'   => $stretch,
-				'scale_to_fit' => $scale_to_fit,              
-                'min_value' => $min_value,
-			    'max_value' => $max_value}, $class;
+
+  return bless {'bin_array'    => $dfeats,
+  	            'stretch'      => $stretch,
+                'scale_to_fit' => $scale_to_fit,
+                'min_value'    => $min_value,
+                'max_value'    => $max_value}, $class;
 }
 
 
@@ -172,54 +171,93 @@ sub label2{
 }
 
 
+
 =head2 get_all_binvalues
 
- Title   : get_all_binvalues
- Usage   : my @binvalue_objects = @{$BVSet->get_all_binvalues};
- Function: scales all the binvalues by the scale_factor and returns them.
- Example :
- Returns : array of BinValue objects 
- Args    : none
-
+  Arg [1]    : none
+  Example    : @binvalues = @{$dfs->get_all_binvalues};
+  Description: Scales all of the contained DensityFeatures by $scalefactor
+               and returns them.
+  Returntype : reference to a list of DensityFeatures
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub get_all_binvalues{
-    my $self = shift;
-    my $max_value = $self->max_value();
-	my $min_value = $self->min_value();
- 
+  my $self = shift;
+  my $max_value = $self->max_value();
+  my $min_value = $self->min_value();
+
  	return [] if(!@{$self->{'bin_array'}});
- 
 
-    my $width = $self->scale_to_fit() || $self->throw("Cannot scale values - scale_to_fit has not been set");  
+  my $width = $self->scale_to_fit() ||
+    throw("Cannot scale values - scale_to_fit has not been set");
 
-    if ($self->stretch && ($max_value-$min_value) ){
-    	foreach my $bv (@{ $self->{'bin_array'}}){
-	        my $scaledval = (($bv->density_value - $min_value) / ($max_value-$min_value) )* $width;
-	        $bv->scaledvalue($scaledval);
-    	}
-    } elsif($max_value) {
-        foreach my $bv (@{ $self->{'bin_array'}}){
-	        my $scaledval = ($bv->density_value / $max_value) * $width;
-	        $bv->scaledvalue($scaledval);
-	    }
-    } else {
-        foreach my $bv (@{ $self->{'bin_array'}}){
-	        $bv->scaledvalue(0);
-	    }
+  if ($self->stretch && ($max_value-$min_value) ){
+    foreach my $bv (@{ $self->{'bin_array'}}){
+      my $scaledval = (($bv->density_value - $min_value) /
+                       ($max_value-$min_value) )* $width;
+      $bv->scaledvalue($scaledval);
     }
+  } elsif($max_value) {
+    foreach my $bv (@{ $self->{'bin_array'}}){
+      my $scaledval = ($bv->density_value / $max_value) * $width;
+      $bv->scaledvalue($scaledval);
+    }
+  } else {
+    foreach my $bv (@{ $self->{'bin_array'}}){
+      $bv->scaledvalue(0);
+    }
+  }
 
-   return $self->{'bin_array'};  
-
+  return $self->{'bin_array'};
 }
+
+
+=head2 max_value
+
+  Arg [1]    : none
+  Example    : my $max = $dfs->max_value();
+  Description: Returns the maximum density feature value from the density
+               feature set
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub max_value{ $_[0]->{'max_value'};}
 
-sub min_value{ $_[0]->{'min_value'};}
- 
 
-1;
+=head2 min_value
+
+  Arg [1]    : none
+  Example    : my $min = $dfs->min_value();
+  Description: Returns the minimum density feature value from the density
+               feature set.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub min_value{ $_[0]->{'min_value'};}
+
+
+
+=head2 size
+
+  Arg [1]    : none
+  Example    : my $num_features = $dfs->size();
+  Description: Returns the number of density features in this density feature
+               set.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub size {
     my $self = shift;
     return scalar @{$self->{'bin_array'}};
