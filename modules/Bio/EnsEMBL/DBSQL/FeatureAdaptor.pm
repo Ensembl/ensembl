@@ -329,7 +329,8 @@ sub _store_single_feature
 
 sub _store {
     my $self = shift;
-    my $sth = $self->db->prepare("insert into feature (id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid,evalue,perc_id,phase,end_phase) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+    my $query = "insert into feature (id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid,evalue,perc_id,phase,end_phase) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    my $sth = $self->db->prepare($query);
 #    print STDERR join(", ", @_), "\n";
     $sth->execute(@_);
     return $sth->{mysql_insertid};
@@ -351,7 +352,7 @@ sub _store {
 sub _store_PredictionFeature {
     my ($self,$contig_internal_id,$analysisid,@features) = @_;
     foreach my $feature ( @features ) {
-#	print STDERR "Adding in a fset feature ",$feature->gff_string,"\n";
+
 	my $score = defined($feature->score) ? $feature->score : "-1000";
 	my $sth = $self->db->prepare("insert into fset(id,score) values ('NULL',$score)");
 	$sth->execute();
@@ -379,7 +380,8 @@ sub _store_PredictionFeature {
                  ((defined $sub->phase)       ?   $sub->phase         : 'NULL'),
                  ((defined $sub->end_phase)   ?   $sub->end_phase     : 'NULL')
 	    );
-	    my $sth2 = $self->db->prepare("insert into fset_feature(fset,feature,rank) values ($fset_id,$last_insert_id,$rank)");
+	    my $query = "insert into fset_feature(fset,feature,rank) values ($fset_id,$last_insert_id,$rank)";
+	    my $sth2 = $self->db->prepare($query);
 	    $sth2->execute();
 	    $rank++;
 	}

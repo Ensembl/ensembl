@@ -55,8 +55,8 @@ use strict;
 use Bio::Root::RootI;
 
 use Bio::EnsEMBL::DBSQL::Obj;
-use Bio::EnsEMBL::DBSQL::Feature_Obj;
-use Bio::EnsEMBL::DBSQL::Gene_Obj;
+use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
+use Bio::EnsEMBL::DBSQL::FeatureAdaptor;
 use Bio::EnsEMBL::DB::RawContigI;
 
 use Bio::EnsEMBL::Repeat;
@@ -742,13 +742,13 @@ sub get_all_SimilarityFeatures_above_score{
 
     my $statement = "SELECT feature.id, seq_start, seq_end, strand, feature.score, analysis, name, " .
 		             "hstart, hend, hid, evalue, perc_id, phase, end_phase, fset, rank, fset.score " .
-		     "FROM   feature, fset_feature, fset, analysis " .
+		     "FROM   feature, fset_feature, fset, analysisprocess " .
 		     "WHERE  feature.contig ='$id' " .
 		     "AND    fset_feature.feature = feature.id " .
 		     "AND    fset.id = fset_feature.fset " .
                      "AND    feature.score > '$score' " .
-                     "AND    feature.analysis = analysis.id " .
-                     "AND    analysis.db = '$analysis_type' " .
+                     "AND    feature.analysis = analysisprocess.analysisId " .
+                     "AND    analysisprocess.db = '$analysis_type' " .
                      "ORDER BY fset";
 		     
    my $sth = $self->dbobj->prepare($statement);                                                                       
@@ -770,9 +770,8 @@ sub get_all_SimilarityFeatures_above_score{
        my $analysis;
 
        if (!$analhash{$analysisid}) {
-	   
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	   $analysis = $feature_obj->get_Analysis($analysisid);
+	 my $analysis_adp = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
+	 $analysis = $analysis_adp->fetch_by_dbID($analysisid);
 	   $analhash{$analysisid} = $analysis;
        
        } else {
@@ -831,24 +830,22 @@ sub get_all_SimilarityFeatures_above_score{
 
    if ($fset_id_str) {
         $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase " .
-		     "FROM   feature, analysis " .
+		     "FROM   feature, analysisprocess " .
                      "WHERE  feature.id not in (" . $fset_id_str . ") " .
                      "AND    feature.score > '$score' " . 
-                     "AND    feature.analysis = analysis.id " .
-                     "AND    analysis.db = '$analysis_type' " .
+                     "AND    feature.analysis = analysisprocess.analysisId " .
+                     "AND    analysisprocess.db = '$analysis_type' " .
                      "AND    feature.contig = '$id' ";
-                                     
+
        $sth = $self->dbobj->prepare($statement);
        
    } else {
         $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase " .
-		     "FROM   feature, analysis " .
+		     "FROM   feature, analysisprocess " .
                      "WHERE  feature.score > '$score' " . 
-                     "AND    feature.analysis = analysis.id " .
-                     "AND    analysis.db = '$analysis_type' " .
+                     "AND    feature.analysis = analysisprocess.analysisId " .
+                     "AND    analysisprocess.db = '$analysis_type' " .
                      "AND    feature.contig = '$id' ";
-                     
-                     
                      
        $sth = $self->dbobj->prepare($statement);
    }
@@ -864,9 +861,10 @@ sub get_all_SimilarityFeatures_above_score{
               
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	   $analysis = $feature_obj->get_Analysis($analysisid);
-	   $analhash{$analysisid} = $analysis;
+	 my $analysis_adp = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
+	 $analysis = $analysis_adp->fetch_by_dbID($analysisid);
+	 $analhash{$analysisid} = $analysis;
+
 	   
        } else {
 	   $analysis = $analhash{$analysisid};
@@ -967,9 +965,9 @@ sub get_all_SimilarityFeatures {
        
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	   my $analysis_adp=Bio::EnsEMBL::DBSQL::AnalysisAdaptor->new($self->dbobj);
 	   eval {
-	     $analysis = $feature_obj->get_Analysis($analysisid);
+	     $analysis = $analysis_adp->fetch_by_dbID($analysisid);
 	     $analhash{$analysisid} = $analysis;
 	   };
 	   if ($@) {
@@ -1079,10 +1077,9 @@ sub get_all_RepeatFeatures {
 
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	   $analysis = $feature_obj->get_Analysis($analysisid);
-
-	   $analhash{$analysisid} = $analysis;
+	 my $analysis_adp = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
+	 $analysis = $analysis_adp->fetch_by_dbID($analysisid);
+	 $analhash{$analysisid} = $analysis;
 
        } else {
 	   $analysis = $analhash{$analysisid};
@@ -1231,10 +1228,10 @@ while( $sth->fetch ) {
     
     if (!$analhash{$analysisid}) {
 	
-	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	$analysis = $feature_obj->get_Analysis($analysisid);
-        $analhash{$analysisid} = $analysis;
-        
+      my $analysis_adp = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
+      $analysis = $analysis_adp->fetch_by_dbID($analysisid);
+      $analhash{$analysisid} = $analysis;
+
     } else {
         $analysis = $analhash{$analysisid};
     }
@@ -1283,7 +1280,7 @@ sub get_all_PredictionFeatures {
 
    # make the SQL query
    my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid ". 
-       "from feature f where contig = $id and name = 'genscan'";
+       "from feature f where contig = $id and name = 'genscan' order by f.strand,f.seq_start";
 
    my $sth = $self->dbobj->prepare($query);
    
@@ -1305,17 +1302,17 @@ sub get_all_PredictionFeatures {
 	   
        if (!$analhash{$analysisid}) {
 
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	   $analysis = $feature_obj->get_Analysis($analysisid);
-
-	   $analhash{$analysisid} = $analysis;
+	 my $analysis_adp = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
+	 $analysis = $analysis_adp->fetch_by_dbID($analysisid);
+	 $analhash{$analysisid} = $analysis;
+	 
 	   
        } else {
 	   $analysis = $analhash{$analysisid};
        }
 
 
-       if( $hid =~ /Initial/ || $hid =~ /Single Exon/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 ) {
+       if( $hid ne $previous || $previous eq -1 ) {
 	   $current_fset = new Bio::EnsEMBL::SeqFeature;
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
