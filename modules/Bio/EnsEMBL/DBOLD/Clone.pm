@@ -97,12 +97,14 @@ sub get_all_Genes{
    my $id = $self->id();
    my %got;
 
-   my $sth = $self->_dbobj->prepare("select p3.gene from contig as p4, transcript as p3, exon_transcript as p1, exon as p2 where p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript");
+   my $sth = $self->_dbobj->prepare("select p3.gene from geneclone_neighbourhood as p5,contig as p4, transcript as p3, exon_transcript as p1, exon as p2 where p5.clone = '$id' and p3.gene = p5.gene and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript");
+
+#   my $sth = $self->_dbobj->prepare("select p3.gene from contig as p4, transcript as p3, exon_transcript as p1, exon as p2 where p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript");
 
    my $res = $sth->execute();
+   
    while( my $rowhash = $sth->fetchrow_hashref) {
-
-       if( $got{$rowhash->{'gene'}} != 1 ) {
+       if( ! exists $got{$rowhash->{'gene'}} ) {
           my $gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
 	  push(@out,$gene);
 	  $got{$rowhash->{'gene'}} = 1;
@@ -233,8 +235,6 @@ sub get_all_Contigs{
 =cut
 
 sub htg_phase{
-   my ($self) = @_;
-
    my $self = shift;
    my $id = $self->id();
 
@@ -257,8 +257,6 @@ sub htg_phase{
 =cut
 
 sub sv{
-   my ($self) = @_;
-
    my $self = shift;
    my $id = $self->id();
 
@@ -281,8 +279,6 @@ sub sv{
 =cut
 
 sub embl_id{
-   my ($self) = @_;
-
    my $self = shift;
    my $id = $self->id();
 

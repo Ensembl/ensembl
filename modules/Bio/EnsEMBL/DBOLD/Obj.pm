@@ -96,7 +96,7 @@ sub _initialize {
   # here to allow multiple exons to be retrieved fine
   #
   $self->{'_contig_seq_cache'} = {};
-  
+  $self->{'_contig_seq_cnt'} = 0;  
 
   $self->{'_lock_table_hash'} = {};
 
