@@ -59,7 +59,7 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 
 use Bio::EnsEMBL::DB::ObjI;
 use Bio::EnsEMBL::DBSQL::Gene_Obj;
@@ -74,107 +74,127 @@ use Bio::EnsEMBL::DB::ObjI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
-@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::Object);
+@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::RootI);
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+    my($pkg, @args) = @_;
 
-  my $make = $self->SUPER::_initialize;
+    my $self = bless {}, $pkg;
 
-  my ($db,$mapdbname,$host,$driver,$user,$password,$debug,$perl,$perlonlysequences,$external,$port) = 
-      $self->_rearrange([qw(DBNAME
-			    MAPDBNAME
-			    HOST
-			    DRIVER
-			    USER
-			    PASS
-			    DEBUG
-			    PERLONLYFEATURES
-			    PERLONLYSEQUENCES
-			    EXTERNAL
-			    PORT
-			    )],@args);
-  $db   || $self->throw("Database object must have a database name");
-  $user || $self->throw("Database object must have a user");
+    my (
+        $db,
+        $mapdbname,
+        $host,
+        $driver,
+        $user,
+        $password,
+        $debug,
+        $perl,
+        $perlonlysequences,
+        $external,
+        $port,
+        $contig_overlap_source,
+        $overlap_distance_cutoff,
+        ) = $self->_rearrange([qw(
+            DBNAME
+	    MAPDBNAME
+	    HOST
+	    DRIVER
+	    USER
+	    PASS
+	    DEBUG
+	    PERLONLYFEATURES
+	    PERLONLYSEQUENCES
+	    EXTERNAL
+	    PORT
+            CONTIG_OVERLAP_SOURCE
+            OVERLAP_DISTANCE_CUTOFF
+	    )],@args);
+    $db   || $self->throw("Database object must have a database name");
+    $user || $self->throw("Database object must have a user");
 
-  #
-  # This needs to be rethought. We are caching sequences
-  # here to allow multiple exons to be retrieved fine
-  # And now more cache's. I think cache's might be a fact of life...
-  # 
+    #
+    # This needs to be rethought. We are caching sequences
+    # here to allow multiple exons to be retrieved fine
+    # And now more cache's. I think cache's might be a fact of life...
+    # 
 
-  $self->{'_contig_seq_cache'} = {};
-  $self->{'_contig_seq_cnt'} = 0;
-  $self->{'_lock_table_hash'} = {};
-  $self->_analysis_cache({});
-  $self->{'_external_ff'} = [];
+    $self->{'_contig_seq_cache'} = {};
+    $self->{'_contig_seq_cnt'} = 0;
+    $self->{'_lock_table_hash'} = {};
+    $self->_analysis_cache({});
+    $self->{'_external_ff'} = [];
 
-  if( $debug ) {
-      $self->_debug($debug);
-  } else {
-      $self->_debug(0);
-  }
-  
-  if( ! $driver ) {
-      $driver = 'mysql';
-  }
+    if( $debug ) {
+        $self->_debug($debug);
+    } else {
+        $self->_debug(0);
+    }
 
-  if( ! $host ) {
-      $host = 'localhost';
-  }
+    if( ! $driver ) {
+        $driver = 'mysql';
+    }
 
-  if( ! defined $perlonlysequences ) {
-      $perlonlysequences = 0;
-  }
+    if( ! $host ) {
+        $host = 'localhost';
+    }
 
-  my $dsn = "DBI:$driver:database=$db;host=$host";
-  
-  if( $debug && $debug > 10 ) {
-      $self->_db_handle("dummy dbh handle in debug mode $debug");
-  } else {
+    if( ! defined $perlonlysequences ) {
+        $perlonlysequences = 0;
+    }
 
-      my $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
+    my $dsn = "DBI:$driver:database=$db;host=$host";
 
-      $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
-      
-      if( $self->_debug > 3 ) {
-	  $self->warn("Using connection $dbh");
-      }
-     
-      $self->_db_handle($dbh);
-  }
+    if( $debug && $debug > 10 ) {
+        $self->_db_handle("dummy dbh handle in debug mode $debug");
+    } else {
 
-  if ($perl && $perl == 1) {
-      $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
-  }
+        my $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
 
-  $self->perl_only_sequences($perlonlysequences);
+        $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
 
-  if( defined $external ){
-      foreach my $external_f ( @{$external} ) {
-	  $self->add_ExternalFeatureFactory($external_f);
-      }
-  }
-  
-  # Store info for connecting to a mapdb.
-  {
-    $mapdbname ||= 'maps';
-    $self->{'_mapdb'} = {
-        -DBNAME => $mapdbname,
-        -HOST   => $host,
-        -DRIVER => $driver,
-        -USER   => $user,
-        -PASS   => $password,
-        -ENSDB  => $db,
-        };
-  }
+        if( $self->_debug > 3 ) {
+	    $self->warn("Using connection $dbh");
+        }
 
-  return $make; # success - we hope!
+        $self->_db_handle($dbh);
+    }
 
+    if ($perl && $perl == 1) {
+        $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
+    }
 
+    $self->perl_only_sequences($perlonlysequences);
 
+    if( defined $external ){
+        foreach my $external_f ( @{$external} ) {
+	    $self->add_ExternalFeatureFactory($external_f);
+        }
+    }
+
+    # Store info for connecting to a mapdb.
+    {
+      $mapdbname ||= 'maps';
+      $self->{'_mapdb'} = {
+          -DBNAME => $mapdbname,
+          -HOST   => $host,
+          -DRIVER => $driver,
+          -USER   => $user,
+          -PASS   => $password,
+          -ENSDB  => $db,
+          };
+    }
+
+    # What source of contigoverlaps should we use?
+    $self->contig_overlap_source($contig_overlap_source) if $contig_overlap_source;
+
+    # What is the maximum distance allowed between contigs
+    # in an overlap?
+    $self->overlap_distance_cutoff($overlap_distance_cutoff) if $overlap_distance_cutoff;
+
+    return $self; # success - we hope!
 }
 
 =head2 get_Update_Obj
@@ -1943,16 +1963,20 @@ sub get_Clone {
 =cut
 
 sub get_Contig{
-   my ($self,$id) = @_;
+    my ($self,$id) = @_;
 
-   #$self->warn("Obj->get_Contig is a deprecated method! 
-#Calling Contig->fetch instead!");
+    #$self->warn("Obj->get_Contig is a deprecated method! 
+ #Calling Contig->fetch instead!");
 
-   my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
-							  -id    => $id,
-							  -perlonlysequences => $self->perl_only_sequences() );
-   
-   return $contig->fetch();
+    my $contig = new Bio::EnsEMBL::DBSQL::RawContig(
+        -id                         => $id,
+        -dbobj                      => $self,
+        -perlonlysequences          => $self->perl_only_sequences(),
+        -contig_overlap_source      => $self->contig_overlap_source(),
+        -overlap_distance_cutoff    => $self->overlap_distance_cutoff(),
+        );
+
+    return $contig->fetch();
 }
 
 =head2 get_Contigs_by_Chromosome
@@ -2210,3 +2234,70 @@ sub diffdump{
     return $self->{'_diffdump'};
     
 }
+
+=head2 contig_overlap_source
+
+ Title   : contig_overlap_source
+ Usage   : $obj->contig_overlap_source($newval)
+ Function: Gets or sets a subroutine which is used to
+           decide which overlap sources are used to
+           build virtual contigs.
+ Returns : value of contig_overlap_source, or a ref to
+           the default subroutine "_default_contig_overlap_source".
+ Args    : ref to a subroutine
+
+
+=cut
+
+sub contig_overlap_source {
+    my( $self, $sub ) = @_;
+    
+    if ($sub) {
+        $self->throw("'$sub' is not a CODE reference")
+            unless ref($sub) eq 'CODE';
+        $self->{'_contig_overlap_source'} = $sub;
+    }
+    return $self->{'_contig_overlap_source'} || \&_default_contig_overlap_source;
+}
+
+=pod
+
+=head2 _default_contig_overlap_source
+
+The default subroutine used by B<contig_overlap_source>.
+
+=cut
+
+sub _default_contig_overlap_source {
+    #return $_[0] eq 'phrap';
+    return 1;
+}
+
+=head2 overlap_distance_cutoff
+
+ Title   : overlap_distance_cutoff
+ Usage   : $obj->overlap_distance_cutoff($int)
+ Function: Gets or sets an integer which is used when building
+           VirtualContigs.  If the distance in a contig overlap
+           is greater than the cutoff, then the overlap will
+           not be returned.
+ Returns : value of overlap_distance_cutoff, or -1 if it isn't set
+ Args    : ref to a subroutine
+
+
+=cut
+
+
+sub overlap_distance_cutoff {
+    my( $self, $cutoff ) = @_;
+    
+    if ($cutoff) {
+        $self->throw("'$cutoff' is not an positive integer")
+            unless $cutoff =~ /^\d+$/;
+        $self->{'_overlap_distance_cutoff'} = $cutoff;
+    }
+    return $self->{'_overlap_distance_cutoff'} || -1;
+}
+
+
+1;

@@ -605,6 +605,7 @@ sub get_rawcontig_by_position {
 sub get_all_ContigOverlaps {
     my ($self) = @_;
     
+    
     my @overlaps;
 
     foreach my $contig ($self->get_all_Contigs) {
@@ -621,13 +622,15 @@ sub get_all_ContigOverlaps {
 		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
 	    }
 	    
-	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga => $contig,
-							     -contigb => $overlap->sister,
-							     -positiona => $overlap->self_position,
-							     -positionb => $overlap->sister_position,
-							     -source    => $overlap->source,
-							     -distance  => $overlap->distance,
-							     -overlap_type => $type);
+	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(
+                -contiga => $contig,
+                -contigb => $overlap->sister,
+                -positiona => $overlap->self_position,
+                -positionb => $overlap->sister_position,
+                -source    => $overlap->source,
+                -distance  => $overlap->distance,
+                -overlap_type => $type,
+                );
 	    
 	    push(@overlaps,$tmpoverlap);
 	}
@@ -645,13 +648,15 @@ sub get_all_ContigOverlaps {
 		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
 	    }
 	    
-	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga => $contig,
-							     -contigb => $overlap->sister,
-							     -positiona => $overlap->self_position,
-							     -positionb => $overlap->sister_position,
-							     -source    => $overlap->source,
-							     -distance  => $overlap->distance,
-							     -overlap_type => $type);
+	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(
+                -contiga => $contig,
+                -contigb => $overlap->sister,
+                -positiona => $overlap->self_position,
+                -positionb => $overlap->sister_position,
+                -source    => $overlap->source,
+                -distance  => $overlap->distance,
+                -overlap_type => $type,
+                );
 	    
 	    push(@overlaps,$tmpoverlap);
 	    

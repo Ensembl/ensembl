@@ -73,10 +73,17 @@ sub new {
     
     my $self = bless {}, $pkg;
 
-    my ($dbobj,$id,$perlonlysequences) = $self->_rearrange([qw(DBOBJ
-					    ID
-					    PERLONLYSEQUENCES
-					    )],@args);
+    my (
+        $dbobj,
+        $id,
+        $perlonlysequences,
+        $contig_overlap_source,
+        ) = $self->_rearrange([qw(
+            DBOBJ
+	    ID
+	    PERLONLYSEQUENCES
+            CONTIG_OVERLAP_SOURCE
+	    )], @args);
 
     $id    || $self->throw("Cannot make contig db object without id");
     $dbobj || $self->throw("Cannot make contig db object without db object");
@@ -87,6 +94,7 @@ sub new {
     $self->_got_overlaps(0);
     $self->fetch();
     $self->perl_only_sequences($perlonlysequences);
+    $self->contig_overlap_source($contig_overlap_source);
 
     return $self;
 }
@@ -1362,13 +1370,11 @@ sub dbobj {
 =cut
 
 sub _got_overlaps {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_got_overlaps'} = $value;
+    my($obj, $value) = @_;
+    if (defined($value)) {
+        $obj->{'_got_overlaps'} = $value;
     }
     return $obj->{'_got_overlaps'};
-
 }
 
 =head2 _load_overlaps
@@ -1382,129 +1388,131 @@ sub _got_overlaps {
 
 =cut
 
-{
-    # Certainly worth explaining here.
-    #
-    # The overlap type indicates which end on the two contigs this overlap is.
-    # left means 5', right means 3'. There are four options. From these four
-    # options we can figure out
-    #    a) whether this overlap is on the 5' or the 3' of our contig
-    #    b) which polarity the overlap on the next contig is 
-    #
-    # Polarity indicates whether the sequence is being read in the same 
-    # direction as this contig. 
-    # 
-    # The sequence has to be appropiately versioned otherwise this gets complicated
-    # in the update scheme.
+
+sub _load_overlaps {
+    my( $self ) = @_;
     
-    # The polarity look up tables in this array belong
-    # with the respective queries in the queries array below.
-    my @polarity_lut = (
-            {
-              'right2left'   => ['right',  1],
-              'right2right'  => ['right', -1],
-              'left2right'   => ['left',   1],
-              'left2left'    => ['left',  -1],
-            },
-            {
-              'right2left'   => ['left',   1],
-              'right2right'  => ['right', -1],
-              'left2right'   => ['right',  1],
-              'left2left'    => ['left',  -1],
-            },
-        );
+    my $id = $self->id;
+    my @over = $self->get_all_Overlaps;
+    foreach my $lap (@over) {
+        my( $end, $helper ) = $lap->make_ContigOverlapHelper($id);
+        if ($end eq 'left') {
+            $self->_left_overlap($helper);
+        }
+        elsif ($end eq 'right') {
+            $self->_right_overlap($helper);
+        }
+        else {
+            $self->throw("Weird, got: '$end', '$helper'");
+        }
+    }
 
+    # Flag that we've visited the database to get overlaps
+    $self->_got_overlaps(1);
+
+    # sanity check ourselves
+    if( $self->golden_start > $self->golden_end ) {
+	$self->throw("This contig ".$self->id." has dodgy golden start/ends with start:".$self->golden_start." end:".$self->golden_end);
+    }
+}
+
+
+
+{ # Begin bare block to keep @queries array private to get_all_Overlaps
+
+    # Doing two queries seems to be quickest
+    # Statements like:
+    #   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
+    # make queries inordinately slow because MySQL
+    # doesn't use indices on OR statements.
     my @queries = (
-       q{SELECT c.id sister_id
-          , o.contig_b_position sister_pos
-          , o.contig_a_position self_pos
-          , o.overlap_type
-          , o.overlap_size
-          , o.type
-        FROM contigoverlap o
-          , contig c
-        WHERE c.dna = o.dna_b_id
-          AND dna_a_id = ?},
+       q{SELECT cb.id
+          , co.contig_a_position
+          , co.contig_b_position
+          , co.overlap_type
+          , co.overlap_size
+          , co.type
+        FROM contigoverlap co
+          , contig cb
+        WHERE co.dna_b_id = cb.dna
+          AND co.dna_a_id = ?
+        },
 
-       q{SELECT c.id sister_id
-          , o.contig_a_position sister_pos
-          , o.contig_b_position self_pos
-          , o.overlap_type
-          , o.overlap_size
-          , o.type
-        FROM contigoverlap o
-          , contig c
-        WHERE c.dna = o.dna_a_id
-          AND dna_b_id = ?},
-        );
+       q{SELECT ca.id
+          , co.contig_a_position
+          , co.contig_b_position
+          , co.overlap_type
+          , co.overlap_size
+          , co.type
+        FROM contigoverlap co
+          , contig ca
+        WHERE co.dna_a_id = ca.dna
+          AND co.dna_b_id = ?
+        },
+    );
 
-    sub _load_overlaps {
+    sub get_all_Overlaps {
         my ($self) = @_;
 
-        my $id      = $self->dna_id();
-        my $version = $self->seq_version();
-
-        # Doing two queries seems to be quickest
-        # Statements like:
-        #   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
-        # seem to make queries inordinately slow.
+        my $id                  = $self->dna_id();
+        my $version             = $self->seq_version();
+        my $overlap_source_sub  = $self->contig_overlap_source();
+        my $overlap_cutoff      = $self->overlap_distance_cutoff();
+        
+        my( @overlap );
         foreach my $i (0,1) {
             my $query_str = $queries[$i];
-            my $pol_lut = $polarity_lut[$i];
 
             my $sth = $self->dbobj->prepare($query_str);
             $sth->execute($id);
 
             while (my $row = $sth->fetchrow_arrayref) {
                 
-                my( $sister_id, 
-                    $sister_pos,
-                    $self_pos,
+                my( $sister_id,
+                    $pos_a,
+                    $pos_b,
                     $type,
-                    $size,
+                    $distance,
                     $source,
                     ) = @$row;
                 
-                # Must have a way to choose right overlap types
-                #next unless $source eq 'ucsc';
+                # Skip this overlap if it isn't from the right source
+                next unless &$overlap_source_sub($source);
                 
-                # Make the sister contig object
-		my $sis = $self->dbobj->get_Contig($sister_id);
+                # Skip overlaps with distances larger than the cutoff
+                if ($overlap_cutoff > -1) {
+                    next if $distance > $overlap_cutoff;
+                }
                 
-                # Get the overlap end, and sister polarity
-                # (Will cause an exception if $type is 
-                my( $end, $sister_pol ) = @{$pol_lut->{$type}};
-                
-                # Make a new ContigOverlapHelper object
-                my $co = Bio::EnsEMBL::ContigOverlapHelper->new(
-	            -sister         => $sis,
-	            -sisterposition => $sister_pos, 
-	            -selfposition   => $self_pos,
-	            -sisterpolarity => $sister_pol,
-	            -distance       => $size,
-	            -source         => $source,
-		    );
-                
-                # Save as left or right overlap depending upon the end
-	        if ($end eq 'left') {
-	            $self->_left_overlap($co);
-	        } else {
-	            $self->_right_overlap($co);
-	        }
+                # Make the other contig of the overlap
+                my( $contig_a, $contig_b );
+                if ($i == 0) {
+                    $contig_a = $self;
+                    $contig_b = $self->dbobj->get_Contig($sister_id);
+                } else {
+                    $contig_a = $self->dbobj->get_Contig($sister_id);
+                    $contig_b = $self;
+                }
+
+                my $new_overlap = Bio::EnsEMBL::ContigOverlap->new(
+                    '-contiga'      => $contig_a,
+                    '-contigb'      => $contig_b,
+                    '-positiona'    => $pos_a,
+                    '-positionb'    => $pos_b,
+                    '-overlap_type' => $type,
+                    '-distance'     => $distance,
+                    '-source'       => $source,
+                    );
+                push(@overlap, $new_overlap);
             }
         }
-        # Flag that we've visited the database to get overlaps
-        $self->_got_overlaps(1);
-
-	# sanity check ourselves
-	if( $self->golden_start > $self->golden_end ) {
-	    $self->throw("This contig ".$self->id." has dodgy golden start/ends with start:".$self->golden_start." end:".$self->golden_end);
-	}
+        if (@overlap > 2) {
+            $self->throw("Got '". scalar(@overlap) ."' overlaps, which is too many for 1 contig!");
+        } else {
+            return @overlap;
+        }
     }
-
-# this brace is the end-of-scope flag to statically compile the
-# SQL queries.
-} 
+} # End privacy block
 
 =head2 _right_overlap
 
@@ -1542,10 +1550,10 @@ sub _right_overlap {
 =cut
 
 sub _left_overlap {
-   my ($obj,$value) = @_;
+    my ($obj,$value) = @_;
 
-   if( defined $value) {
-      $obj->{'_left_overlap'} = $value;
+    if (defined $value) {
+        $obj->{'_left_overlap'} = $value;
     }
     return $obj->{'_left_overlap'};
 
@@ -1691,4 +1699,187 @@ sub perl_only_sequences{
 }
 
 
+=head2 contig_overlap_source
+
+ Title   : contig_overlap_source
+ Usage   : my $source_sub = $contig->contig_overlap_source()
+ Function: Gets or sets a subroutine which is used to
+           decide which overlap sources are used to
+           build virtual contigs.
+ Returns : value of contig_overlap_source.
+ Args    : ref to a subroutine
+
+
+=cut
+
+sub contig_overlap_source {
+    my( $self, $sub ) = @_;
+    
+    if ($sub) {
+        $self->throw("'$sub' is not a CODE reference")
+            unless ref($sub) eq 'CODE';
+        $self->{'_contig_overlap_source'} = $sub;
+    }
+    return $self->{'_contig_overlap_source'};
+}
+
+
+=head2 overlap_distance_cutoff
+
+ Title   : overlap_distance_cutoff
+ Usage   : my $cutoff = $contig->overlap_distance_cutoff()
+ Function: Gets or sets an integer which is used when building
+           VirtualContigs.  If the distance in a contig overlap
+           is greater than the cutoff, then the overlap will
+           not be returned.
+ Returns : value of overlap_distance_cutoff, or -1 if it isn't set
+ Args    : ref to a subroutine
+
+
+=cut
+
+
+sub overlap_distance_cutoff {
+    my( $self, $cutoff ) = @_;
+    
+    if ($cutoff) {
+        $self->throw("'$cutoff' is not an positive integer")
+            unless $cutoff =~ /^\d+$/;
+        $self->{'_overlap_distance_cutoff'} = $cutoff;
+    }
+    return $self->{'_overlap_distance_cutoff'} || -1;
+}
+
 1;
+
+
+
+
+#{
+#    # Certainly worth explaining here.
+#    #
+#    # The overlap type indicates which end on the two contigs this overlap is.
+#    # left means 5', right means 3'. There are four options. From these four
+#    # options we can figure out
+#    #    a) whether this overlap is on the 5' or the 3' of our contig
+#    #    b) which polarity the overlap on the next contig is 
+#    #
+#    # Polarity indicates whether the sequence is being read in the same 
+#    # direction as this contig. 
+#    # 
+#    # The sequence has to be appropiately versioned otherwise this gets complicated
+#    # in the update scheme.
+#    
+#    # The polarity look up tables in this array belong
+#    # with the respective queries in the queries array below.
+#    my @polarity_lut = (
+#            {
+#              'right2left'   => ['right',  1],
+#              'right2right'  => ['right', -1],
+#              'left2right'   => ['left',   1],
+#              'left2left'    => ['left',  -1],
+#            },
+#            {
+#              'right2left'   => ['left',   1],
+#              'right2right'  => ['right', -1],
+#              'left2right'   => ['right',  1],
+#              'left2left'    => ['left',  -1],
+#            },
+#        );
+#
+    #my @queries = (
+    #   q{SELECT c.id sister_id
+    #      , o.contig_b_position sister_pos
+    #      , o.contig_a_position self_pos
+    #      , o.overlap_type
+    #      , o.overlap_size
+    #      , o.type
+    #    FROM contigoverlap o
+    #      , contig c
+    #    WHERE c.dna = o.dna_b_id
+    #      AND dna_a_id = ?
+    #      AND o.type like ?},
+
+       #q{SELECT c.id sister_id
+       #   , o.contig_a_position sister_pos
+       #   , o.contig_b_position self_pos
+       #   , o.overlap_type
+       #   , o.overlap_size
+       #   , o.type
+       # FROM contigoverlap o
+       #   , contig c
+       # WHERE c.dna = o.dna_a_id
+       #   AND dna_b_id = ?
+       #   AND o.type like ?},
+       # );
+
+    #sub _load_overlaps {
+    #    my ($self) = @_;
+
+        #my $id      = $self->dna_id();
+        #my $version = $self->seq_version();
+        #my $overlap_source_like = $self->contig_overlap_source() .'%';
+
+        ## Doing two queries seems to be quickest
+        ## Statements like:
+        ##   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
+        ## seem to make queries inordinately slow.
+        #foreach my $i (0,1) {
+        #    my $query_str = $queries[$i];
+        #    my $pol_lut = $polarity_lut[$i];
+
+            #my $sth = $self->dbobj->prepare($query_str);
+            #$sth->execute($id, $overlap_source_like);
+
+        #    while (my $row = $sth->fetchrow_arrayref) {
+        #        
+        #        my( $sister_id, 
+        #            $sister_pos,
+        #            $self_pos,
+        #            $type,
+        #            $size,
+        #            $source,
+        #            ) = @$row;
+        #        
+        #        # Must have a way to choose right overlap types
+        #        #next unless $source eq 'ucsc';
+        #        
+        #        # Make the sister contig object
+        #my $sis = $self->dbobj->get_Contig($sister_id);
+        #        
+        #        # Get the overlap end, and sister polarity
+        #        # (Will cause an exception if $type is 
+        #        my( $end, $sister_pol ) = @{$pol_lut->{$type}};
+        #        
+        #        # Make a new ContigOverlapHelper object
+        #        my $co = Bio::EnsEMBL::ContigOverlapHelper->new(
+        #        -sister         => $sis,
+        #        -sisterposition => $sister_pos, 
+        #        -selfposition   => $self_pos,
+        #        -sisterpolarity => $sister_pol,
+        #        -distance       => $size,
+        #        -source         => $source,
+        #    );
+        #        
+        #        # Save as left or right overlap depending upon the end
+        #    if ($end eq 'left') {
+        #        $self->_left_overlap($co);
+        #    } else {
+        #        $self->_right_overlap($co);
+        #    }
+        #    }
+        #}
+        ## Flag that we've visited the database to get overlaps
+        #$self->_got_overlaps(1);
+
+    ## sanity check ourselves
+    #if( $self->golden_start > $self->golden_end ) {
+    #    $self->throw("This contig ".$self->id." has dodgy golden start/ends with start:".$self->golden_start." end:".$self->golden_end);
+    #}
+    #}
+
+## this brace is the end-of-scope flag to statically compile the
+## SQL queries.
+#} 
+#
+
