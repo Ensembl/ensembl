@@ -21,7 +21,7 @@ if (!defined(caller())) {
     exit(1);
   }
 
-  run();
+  run($ARGV[0], -1);
 
 }
 
@@ -29,14 +29,18 @@ if (!defined(caller())) {
 
 sub run {
 
-  my $file = $ARGV[0];
+  my $self = shift if (defined(caller(1)));
+  my $file = shift;
+  my $source_id = shift;
 
   my ($species_id, $species_name) = get_species($file);
 
   $species_name =~ s/ /_/g;
-  my $name = "UniProt_SwissProt_" . $species_name;
+  my $name = "UniProtSwissProt_" . $species_name;
 
-  my $source_id = BaseParser->get_source_id($name);
+  if ($source_id < 1) {
+    $source_id = BaseParser->get_source_id($name);
+  }
 
   BaseParser->upload_xrefs(create_xrefs($source_id, $species_id, $file));
 
@@ -73,24 +77,6 @@ sub get_species {
   }
 
   return ($species_id, $species_name);
-
-}
-
-# --------------------------------------------------------------------------------
-# Create source object to be loaded into source table
-
-sub create_source {
-
-  my ($file) = @_;
-  my $source;
-  my $file_date = POSIX::strftime('%Y%m%d%H%M%S', localtime((stat($file))[9]));
-  $source = { NAME => "UniProt/SwissProt",
-	      URL  => $file,
-	      FILE_MODIFIED_DATE => $file_date
-	      # TODO URL? Release?
-	    };
-
-  return $source;
 
 }
 

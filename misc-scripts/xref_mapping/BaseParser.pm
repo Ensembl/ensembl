@@ -1,7 +1,12 @@
 package BaseParser;
 
-use DBI;
 use strict;
+
+use DBI;
+use Digest::MD5 qw(md5_hex);
+use POSIX qw(strftime);
+
+use SwissProtParser;
 
 my $host = "ecs1g";
 my $port = 3306;
@@ -9,8 +14,63 @@ my $database = "glenn_test_xref";
 my $user = "ensadmin";
 my $password = "ensembl";
 
+my $base_dir = ".";
+
 my $dbi;
 my %dependent_sources;
+my %taxonomy2species_id;
+
+my %filetype2parser = (
+		       "UniProtSwissProt" => "SwissProtParser",
+		       "UniProtTrEMBL"    => "SwissProtParser"
+		      );
+
+run() if (!defined(caller()));
+
+# --------------------------------------------------------------------------------
+# Get info about files to be parsed from the database
+
+sub run {
+
+  my $dbi = dbi();
+  my $sth = $dbi->prepare("SELECT * FROM source WHERE url IS NOT NULL");
+  $sth->execute();
+  my ($source_id, $name, $url, $checksum, $modified_date, $upload_date, $release);
+  $sth->bind_columns(\$source_id, \$name, \$url, \$checksum, \$modified_date, \$upload_date, \$release);
+  while (my @row = $sth->fetchrow_array()) {
+
+    # Download each source into the appropriate directory for parsing later
+    # Convention is that part of name up to _ is file type
+    my ($type) = $name =~ /^([^_]+)_.*/;
+    my $dir = $base_dir . "/" . $type;
+    mkdir $dir if (!-e $dir);
+
+    my ($file) = $url =~ /.*\/(.*)/;
+
+    print "Downloading $url to $dir/$file\n";
+    # TODO remove --timestamping??
+    my $result = system("wget", "--quiet", "--timestamping", "--directory-prefix=$dir", $url);
+
+    # compare checksums and parse/upload if necessary
+    my $file_cs = md5sum("$dir/$file");
+    if (!defined $checksum || $checksum ne $file_cs) {
+
+      print "Checksum for $file does not match, parsing\n";
+
+      update_source($dbi, $source_id, $file_cs, $file);
+
+      my $parserType = $filetype2parser{$type};
+      print "Parsing $file with $parserType\n";
+      $parserType->run("$dir/$file", $source_id);
+
+    } else {
+
+      print $file . " has not changed, skipping\n";
+
+    }
+  }
+
+}
 
 # --------------------------------------------------------------------------------
 
@@ -129,7 +189,7 @@ sub upload_xrefs {
 
 sub get_dependent_xref_sources {
 
-  my $self= shift;
+  my $self = shift;
 
   if (!defined %dependent_sources) {
 
@@ -146,6 +206,47 @@ sub get_dependent_xref_sources {
   return %dependent_sources;
 
 }
+
+# --------------------------------------------------------------------------------
+# Get & cache a hash of all the species IDs & taxonomy IDs.
+
+sub taxonomy2species_id {
+
+  my $self = shift;
+
+  if (!defined %taxonomy2species_id) {
+
+    my $dbi = dbi();
+    my $sth = $dbi->prepare("SELECT species_id, taxonomy_id FROM species");
+    $sth->execute() || die $dbi->errstr;
+    while(my @row = $sth->fetchrow_array()) {
+      my $species_id = $row[0];
+      my $taxonomy_id = $row[1];
+      $taxonomy2species_id{$taxonomy_id} = $species_id;
+    }
+  }
+
+  return %taxonomy2species_id;
+
+}
+
+# --------------------------------------------------------------------------------
+# Update a row in the source table
+
+sub update_source {
+
+  my ($dbi, $source_id, $checksum, $file) = @_;
+  open(FILE, $file);
+  my $file_date = POSIX::strftime('%Y%m%d%H%M%S', localtime((stat($file))[9]));
+  close(FILE);
+
+  my $sql = "UPDATE source SET checksum='" . $checksum . "', file_modified_date='" . $file_date . "', upload_date=NOW() WHERE source_id=" . $source_id;
+  # TODO release?
+
+  $dbi->prepare($sql)->execute() || die $dbi->errstr;
+
+}
+
 
 # --------------------------------------------------------------------------------
 
@@ -165,6 +266,18 @@ sub dbi {
 }
 
 # --------------------------------------------------------------------------------
+
+sub md5sum {
+
+  my $file = shift;
+  open(FILE, $file);
+  binmode(FILE);
+  my $md5 = Digest::MD5->new->addfile(*FILE)->hexdigest();
+  close(FILE);
+
+  return $md5;
+
+}
 
 
 # --------------------------------------------------------------------------------
