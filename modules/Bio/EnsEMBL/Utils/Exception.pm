@@ -436,7 +436,7 @@ sub deprecate {
 
   #keep track of who called this method so that the warning is only displayed
   #once per deprecated call
-  return if $DEPRECATED{"$line:$file"};
+  return if $DEPRECATED{"$line:$file:$subname"};
 
   if($VERBOSITY > -1) {
     print STDERR "\n------------------ DEPRECATED ---------------------\n" .
@@ -446,7 +446,7 @@ sub deprecate {
                    "---------------------------------------------------\n";
   }
 
-  $DEPRECATED{"$line:$file"} = 1;
+  $DEPRECATED{"$line:$file:$subname"} = 1;
 }
 
 =head2 try/catch
