@@ -271,6 +271,11 @@ sub get_all_db_adaptors{
 sub add_DBAdaptor{
   my ($class, $species, $group, $adap) = @_;
 
+  if(!($class->alias_exists($species))){
+    $class->add_alias($species,$species);
+  }
+  
+
   $species = $class->get_alias($species);
 
   $registry_register{$species}{$group}{'_DB'} = $adap;
