@@ -23,6 +23,16 @@ my $protein_adaptor=Bio::EnsEMBL::Protein_Adaptor->new($obj);
 
 my $protein = $protein_adaptor->fetch_Protein_by_dbid;
 
+If the SNPs are wanted:
+
+my $snpdb = Bio::EnsEMBL::ExternalData::SNPSQL::DBAdapter->new(
+							       -dbname=>$snpdbname,
+							       -user=>$dbuser,
+							       -host=>$host);    
+ 
+$protein_adaptor->snp_obj($snpdb);
+
+
 =head1 DESCRIPTION
 
 This Object inherit from BaseAdaptor following the new adaptor rules. It also has pointers to 3 different objects: Obj.pm, Gene_Obj.pm and FamilyAdaptor.pm (which is not currently used). This pointers allow the object to use the methods contained in these objects. SNPs db adaptor may also be added in these pointers.
@@ -89,6 +99,27 @@ sub _familyAdaptor {
 }
  
    
+=head2 snp_obj
+
+ Title   : snp_obj
+ Usage   : $obj->snp_obj($newval)
+ Function: 
+ Returns : value of snp_obj
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub snp_obj{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'snp_obj'} = $value;
+    }
+    return $obj->{'snp_obj'};
+
+}
+
 
 =head2 fetch_Protein_by_dbid
 
@@ -229,26 +260,6 @@ sub fetch_Protein_by_dbid{
 #This is supposed to be the rigth way 
        my $dbdesc = $feat->analysis->db;
 
-###########################################################
-
-       #But we currently need a hack here, waiting for the analysis table being properly loaded, will then always return    
-       #print "PF: $pfam\n";
-       #if ($featid =~ /^PF\w+/) {
-	#   $dbdesc = "Pfam";
-	 #  $feat->hdbname($dbdesc);
-       #}
-
-       #if ($featid =~ /^PR\w+/) {
-	#   $dbdesc = "PRINTS";
-	 #  $feat->hdbname($dbdesc);
-       #}
-
-       #if ($featid =~ /^PS\w+/) {
-	#   $dbdesc = "PROSITE";
-	 #  $feat->hdbname($dbdesc);
-       #}
-
-###########################################################
 
 #In the case of a protein feature being an Interpro signature (eg: Pfam, Prints,...) this  signature will also be added to the object as a dblink (this is a requirement to dump peptides in SP format and to use their automatic annotation)
 
@@ -296,7 +307,6 @@ sub fetch_Protein_by_dbid{
 #Add each protein features to the protein object
    foreach my $feat (@prot_feat) {
        if ($feat) {
-	   #print STDERR $feat, "\n";
 	   $protein->add_Protein_feature($feat);
        }
    }
@@ -548,7 +558,6 @@ sub get_Intron_Position{
 	my $length;
 	my $exid = $ex->id();
 	my ($ex_start, $ex_end) = $self->get_exon_global_coordinates($exid);
-	print STDERR "COORD: $ex_start\t$ex_end\n";
 	if ($previous_ex_end != 0) {
 	    my $intron_start = $previous_ex_end;
 	    my $intron_end = $ex_start;
@@ -594,8 +603,6 @@ sub get_Intron_Position{
 sub get_exon_global_coordinates{
    my ($self,$exid) = @_;
    
-   print STDERR "$exid\n";
-
    my $query ="SELECT
                IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start),
                  (sgp.chr_start+sgp.raw_end-e.seq_end)) as start,
@@ -614,4 +621,107 @@ sub get_exon_global_coordinates{
    my $end = $row[1];
    return ($start,$end);
 }
+
+
+=head2 get_snps
+
+ Title   : get_snps
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_snps {
+   my ($self,$protein) = @_;
+   my $db = $self->db;
+   my $gene;
+   my $transcript;
+   my @ex_snps;
+   my $count = 0;
+   my @array_features;
+   
+
+   my $transid = $protein->transcriptac();
+   my $geneid = $protein->geneac();
+   my $protid = $protein->id();
+
+   $db->add_ExternalFeatureFactory($self->snp_obj()); 
+   $db->static_golden_path_type('UCSC');
+
+   my $virtual = $db->get_StaticGoldenPathAdaptor();
+   
+   my $vc = $virtual->fetch_VirtualContig_of_transcript($transid,0);
+   my @snips = $vc->get_all_ExternalFeatures();
+   my @genes = $vc->get_all_Genes();
+   
+   foreach my $gen (@genes) {
+       if ($gen->id eq $geneid) {
+	   $gene = $gen;
+       }
+   }
+
+   my @transcripts = $gene->each_Transcript();
+
+   foreach my $trans  (@transcripts) {
+       if ($trans->id eq $transid) {
+	   $transcript = $trans;
+       }
+   }
+
+   my @exons = $transcript->each_Exon;
+
+   foreach my $sn (@snips) {
+       my $sn_pos = $sn->start;
+
+
+
+       foreach my $ex(@exons) {
+	   if (($sn_pos >= $ex->start) && ($sn_pos <= $ex->end)) {
+	       my $uni;
+	       $uni->{snp} = $sn;
+	       $uni->{pos} = $count;
+	       push (@ex_snps, $uni);
+	   }
+	   $count++;
+       }
+       $count = 0;
+   }
+
+   foreach my $rt (@ex_snps) {
+      	my @array = (0..$rt->{pos});
+
+	my $previous_exons_length = 0;
+
+	foreach my $po (@array) {
+	    $previous_exons_length =+ $exons[$po]->length;
+	}
+	    
+	my $aa_pos = int (($rt->{snp}->start - @exons[$rt->{pos}]->start + $previous_exons_length)/3) + 1;
+	
+	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
+						   -start => $aa_pos,
+						   -end => $aa_pos,
+						   -score => 0, 
+						   -percent_id => "NULL",
+						   -p_value => "NULL");
+	
+	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => 0,
+						  -end => 0,
+						  -seqname => "SNP");
+	
+	my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
+							    -feature2 => $feat2,);
+	
+	push(@array_features,$feature);
+	    
+   }
+   return @array_features;
+}
+
+
+
 
