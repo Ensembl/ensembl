@@ -35,11 +35,9 @@ sub run {
 
   my ($species_id, $species_name) = get_species($file);
 
-  $species_name =~ s/ /_/g;
-  my $name = "UniProtSwissProt_" . $species_name;
-
-  if ($source_id < 1) {
-    $source_id = BaseParser->get_source_id($name);
+  if ($source_id < 1) { # if being run directly
+    $source_id = BaseParser->get_source_id_for_filename($file);
+    print "Source id for $file: $source_id\n";
   }
 
   BaseParser->upload_xrefs(create_xrefs($source_id, $species_id, $file));
@@ -158,6 +156,8 @@ sub create_xrefs {
     push @xrefs, $xref;
 
   }
+
+  close (SWISSPROT);
 
   $/ = $previous_rs;
 
