@@ -9,7 +9,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::DBEntryAdaptor - 
+Bio::EnsEMBL::DBSQL::DBEntryAdaptor -
 MySQL Database queries to load and store external object references.
 
 =head1 SYNOPSIS
@@ -73,33 +73,109 @@ sub fetch_by_dbID {
   $sth->execute($dbID);
 
   my $exDB;
-  my %duplicate;
 
   while ( my $arrayref = $sth->fetchrow_arrayref()){
     my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, 
-	 $release, $synonym) = @$arrayref;
-    return undef if( ! defined $refID );
+         $release, $synonym) = @$arrayref;
 
-    unless ($duplicate{$refID}){
-      $duplicate{$refID} = 1;
-
+    if(!$exDB) {
       $exDB = Bio::EnsEMBL::DBEntry->new
-	( -adaptor => $self,
-	  -dbID => $dbID,
-	  -primary_id => $dbprimaryId,
-	  -display_id => $displayid,
-	  -version => $version,
-	  -release => $release,
-	  -dbname => $dbname );
+        ( -adaptor => $self,
+          -dbID => $dbID,
+          -primary_id => $dbprimaryId,
+          -display_id => $displayid,
+          -version => $version,
+          -release => $release,
+          -dbname => $dbname );
 
       $exDB->description( $desc ) if ( $desc );
-    } # end duplicate
+    }
 
     $exDB->add_synonym( $synonym )  if ($synonym);
-  } # end while
+  }
+
+  $sth->finish();
 
   return $exDB;
 }
+
+
+
+=head2 fetch_by_db_accession
+
+  Arg [1]    : string $dbname - The name of the database which the provided
+               accession is for.
+  Arg [2]    : string $accession - The accesion of the external reference to
+               retrieve.
+  Example    : my $xref = $dbea->fetch_by_db_accession('Interpro','IPR003439');
+               print $xref->description(), "\n" if($xref);
+  Description: Retrieves a DBEntry (xref) via the name of the database it is
+               from and its primary accession in that database. Undef is
+               returned if the xref cannot be found in the database.
+  Returntype : Bio::EnsEMBL::DBSQL::DBEntry
+  Exceptions : thrown if arguments are incorrect
+  Caller     : general, domainview
+
+=cut
+
+sub fetch_by_db_accession {
+  my $self = shift;
+  my $dbname = shift;
+  my $accession = shift;
+
+  my $sth = $self->prepare(
+   "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
+           xref.version, xref.description,
+           exDB.db_name, exDB.release, es.synonym
+    FROM   xref, external_db exDB
+    LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
+    WHERE  xref.dbprimary_acc = ?
+    AND    exDB.db_name = ?
+    AND    xref.external_db_id = exDB.external_db_id");
+
+  $sth->execute($accession, $dbname);
+
+  if(!$sth->rows() && lc($dbname) eq 'interpro') {
+    #
+    # This is a minor hack that means that results still come back even
+    # when a mistake was made and no interpro accessions were loaded into
+    # the xref table.  This has happened in the past and had the result of
+    # breaking domainview
+    #
+    $sth->finish();
+    $sth = $self->prepare
+      ("SELECT null, i.interpro_ac, i.id, null, null, 'Interpro', null, null ".
+       "FROM interpro i where i.interpro_ac = ?");
+    $sth->execute($accession);
+  }
+
+  my $exDB;
+
+  while ( my $arrayref = $sth->fetchrow_arrayref()){
+    my ( $dbID, $dbprimaryId, $displayid, $version, $desc, $dbname,
+         $release, $synonym) = @$arrayref;
+
+    if(!$exDB) {
+      $exDB = Bio::EnsEMBL::DBEntry->new
+        ( -adaptor => $self,
+          -dbID => $dbID,
+          -primary_id => $dbprimaryId,
+          -display_id => $displayid,
+          -version => $version,
+          -release => $release,
+          -dbname => $dbname );
+
+      $exDB->description( $desc ) if ( $desc );
+    }
+
+    $exDB->add_synonym( $synonym )  if ($synonym);
+  }
+
+  $sth->finish();
+
+  return $exDB;
+}
+
 
 
 =head2 store
