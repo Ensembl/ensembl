@@ -267,7 +267,7 @@ sub _get_external_info {
   foreach my $curr_db ( @priority_order ) { 
     foreach my $dbl ( @{$dblinks} ) {
       if ( $curr_db eq $dbl->dbname ) {
-	$name = $dbl->primary_id;
+	$name = $dbl->display_id;
 	$db = $dbl->dbname;
 	last;
       }
