@@ -1029,7 +1029,7 @@ sub _transform_to_Slice {
     $self->contig->dbID,
     $self->start,
     $self->end,
-    $self->strand * $slice->strand
+    $self->strand
   );
 
   unless (@mapped) {
@@ -1046,6 +1046,11 @@ sub _transform_to_Slice {
     return;
   }
 
+  if( ! defined $slice->chr_name() ) {
+    my $slice_adaptor = $slice->adaptor();
+    %$slice = %{$slice_adaptor->fetch_by_chr_name( $mapped[0]->id() )};
+  }
+   
   # mapped coords are on chromosome - need to convert to slice
   if($slice->strand == 1) {
     $self->start  ($mapped[0]->start - $slice->chr_start + 1);
