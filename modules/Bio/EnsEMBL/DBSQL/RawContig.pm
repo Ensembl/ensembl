@@ -742,7 +742,7 @@ sub _got_overlaps{
 sub _load_overlaps{
    my ($self,@args) = @_;
    my $id = $self->id();
-   my $version = $self->seq_version()
+   my $version = $self->seq_version();
 
    my $sth = $self->_dbobj->prepare("select contig_a,contig_b,contig_a_position,contig_b_position,overlap_type from contigoverlap where (contig_a = '$id' and contig_a_version = $version ) or (contig_b = '$id' and contig_b_version = $version )");
    

@@ -307,7 +307,7 @@ sub get_all_Contigs{
    while( my $rowhash = $sth->fetchrow_hashref) {
        my $contig = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_dbobj,
 						      -id => $rowhash->{'id'} );
-       $contig->order($count++);
+       #$contig->order($count++);
 
        push(@res,$contig);
        $seen = 1;
