@@ -388,7 +388,7 @@ sub transform {
   my $db = $slice->adaptor->db();
   my $cs = $db->get_CoordSystemAdaptor->fetch_by_name($cs_name, $cs_version);
   my $current_cs = $slice->coord_system();
-  
+
   # self is already in the requested coordinate system, so we can just return a copy
   if( $cs->equals( $current_cs ) && $slice->start() == 1 && $slice->strand() == 1 ) {
     my $new_feature;
@@ -542,10 +542,81 @@ sub transfer {
 
 
 
+=head2 project
+
+  Arg [1]    : string $name
+               The name of the coordinate system to project this feature onto
+  Arg [2]    : string $version (optional)
+               The version of the coordinate system (such as 'NCBI34') to
+               project this feature onto
+  Example    :
+    my $clone_projection = $feature->project('clone');
+
+    foreach my $segment (@$clone_projection) {
+      my ($start, $end, $clone) = @$segment;
+      print "Features current coords $start-$end project onto clone coords " .
+        $clone->seq_region_name, ':', $clone->start, '-', $clone->end,
+          $clone->strand, "\n";
+    }
+  Description: Returns the results of 'projecting' this feature onto another
+               coordinate system.  This is useful to see where a feature
+               where a feature would lie in a coordinate system in which it
+               crosses a boundary.
+
+               This method returns a listref of triplets [start,end,slice]
+               which represents the projection.  The start and end are the
+               feature coordinates which make up this part of the projection.
+               These are relative to the slice that the feature is currently
+               on.  For example if a feature is current 100-200bp on a slice
+               then the triplets returned might be:
+               100,150,$slice1
+               151,200,$slice2
+
+               The third value of the returned triplets is a slice spanning
+               the region on the requested coordinate system that this feature
+               porjected to.
+
+  Returntype : list reference of [$start,$end,$slice] triplets
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub project {
   my $self = shift;
+  my $cs_name = shift;
+  my $cs_version = shift;
 
+  my $slice = $self->{'slice'};
+
+  if(!$slice) {
+    throw("Feature is not associated with a Slice and may not be projected");
+  }
+
+  #get an adaptor from the attached slice because this feature may not yet
+  #be stored and may not have its own adaptor
+  my $slice_adaptor = $slice->adaptor();
+
+  if(!$slice_adaptor) {
+    throw("Cannot project feature because associated slice does not have an " .
+          " adaptor");
+  }
+
+  #get a slice that exactly overlaps the feature
+  my $slice = $slice_adaptor->fetch_by_Feature($self);
+
+  my $offset = $self->{'start'} - 1;
+
+  my $projection = $slice->project($cs_name, $cs_version);
+
+  #adjust the project coordinates so that they are relative to the
+  #the slice the feature is currently on
+  foreach my $segment (@$projection) {
+    $segment->[0] += $offset;
+    $segment->[1] += $offset;
+  }
+
+  return $projection;
 }
 
 
