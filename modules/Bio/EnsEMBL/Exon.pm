@@ -419,12 +419,14 @@ sub _transform_to_rawcontig {
 
   my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
     ( $self->contig()->assembly_type() );
+  my $global_start = $self->contig->chr_start();
+
   my @mapped = $mapper->map_coordinates_to_rawcontig
     (
      $self->contig()->chr_name(),
-     $self->start(),
-     $self->end(),
-     $self->strand()
+     $self->start()+$global_start-1,
+     $self->end()+$global_start-1,
+     $self->strand()*$self->contig()->strand()
     );
 
   if( ! @mapped ) {
