@@ -150,3 +150,5 @@ sub fetch_by_stable_id{
   #otherwise use the core database
   return $self->{'_primary_adaptor'}->fetch_by_stable_id(@args);
 }
+
+1;
