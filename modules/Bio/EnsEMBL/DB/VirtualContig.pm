@@ -102,7 +102,7 @@ sub _initialize {
   $self->{'start'} = {};
   $self->{'startincontig'} = {};
   $self->{'contigori'} = {};
-  
+  $self->{'feature_skip'} = {};
   # this actually stores the contig we are using
   $self->{'contighash'} = {};
 
@@ -247,6 +247,44 @@ sub id{
 
 =cut
 
+=head2 top_SeqFeatures
+
+ Title   : top_SeqFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub top_SeqFeatures{
+   my ($self,@args) = @_;
+   my (@f);
+
+   print STDERR "Skip value is [",$self->skip_SeqFeature('similarity'),"]\n";
+
+   if( $self->skip_SeqFeature('similarity') != 1 ) { 
+       print STDERR "Going to call similarity features...!\n";
+
+       push(@f,$self->get_all_SimilarityFeatures());
+   } 
+
+   if( $self->skip_SeqFeature('repeat') != 1 ) { 
+       push(@f,$self->get_all_RepeatFeatures());
+   } 
+
+   foreach my $gene ( $self->get_all_Genes()) {
+       print STDERR "Got a $gene\n";
+       my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
+       push(@f,$vg);
+   }
+
+   return @f;
+}
+
+
 sub get_all_SeqFeatures{
    my ($self) = @_;
    my @out;
@@ -337,7 +375,7 @@ sub get_all_Genes{
 	   $exon->seqname($exon->contig_id);
 	   $exon{$exon->id} = $exon;
 	   $self->_convert_seqfeature_to_vc_coords($exon);
-	   print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand,"\n";
+	   print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand," ,",$exon->seqname,"\n";
        }
    }
    
@@ -371,6 +409,27 @@ sub length {
 
 }
 
+=head2 embl_accession
+
+ Title   : embl_accession
+ Usage   : $obj->embl_accession($newval)
+ Function: 
+ Returns : value of embl_accession
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub embl_accession{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'embl_accession'} = $value;
+    }
+    return $obj->{'embl_accession'};
+
+}
+
 
 =head2 dbobj
 
@@ -391,6 +450,28 @@ sub dbobj{
     }
     return $obj->{'dbobj'};
 
+}
+
+=head2 skip_SeqFeature
+
+ Title   : skip_SeqFeature
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub skip_SeqFeature{
+   my ($self,$tag,$value) = @_;
+
+   if( defined $value ) {
+       $self->{'feature_skip'}->{$tag} = $value;
+   }
+
+   return $self->{'feature_skip'}->{$tag};
 }
 
 
@@ -783,6 +864,7 @@ sub _convert_seqfeature_to_vc_coords{
        $sf->attach_seq($self->primary_seq);
    }
 
+   $sf->seqname($self->id);
 }
 
 =head2 _convert_start_end_strand_vc

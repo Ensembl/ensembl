@@ -427,7 +427,7 @@ sub split_Transcript_to_Partial{
        # make a new transcript, add the old exon
        $t = $self->new();
        $t->id($self->id);
-       
+
        $t->add_Exon($prev);
        $t->is_partial(1);
 
@@ -767,7 +767,7 @@ sub _translate_coherent{
 
 
    my $temp_seq = Bio::Seq->new( -seq => $tstr , '-id' => 'temp', -moltype => 'dna' );
-   my $trans_seq = $temp_seq->translate();
+  #my $trans_seq = $temp_seq->translate();
 
    return $temp_seq->translate();
 }
@@ -920,6 +920,42 @@ sub is_partial{
     }
     return $obj->{'is_partial'};
 
+}
+
+=head2 start_exon
+
+ Title   : start_exon
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub start_exon{
+   my ($self,@args) = @_;
+
+   return ${$self->{'_trans_exon_array'}}[0];
+
+}
+
+=head2 end_exon
+
+ Title   : end_exon
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub end_exon{
+   my ($self,@args) = @_;
+   return ${$self->{'_trans_exon_array'}}[$#{$self->{'_trans_exon_array'}}];
 }
 
 

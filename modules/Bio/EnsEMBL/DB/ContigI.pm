@@ -258,7 +258,8 @@ As ContigI is-a SeqI, we need to implement some sequence
 feature methods. It is in these calls where the "magic" happens
 by calling VirtualGene for genes to map genes to contigs.
 
-You do not need to implement this methods
+You do not need to implement this methods, but you can if you 
+wish to control their behaviour
 
 =cut
 

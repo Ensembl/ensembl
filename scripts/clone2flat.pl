@@ -277,7 +277,7 @@ foreach my $clone_id ( @clones ) {
     eval {
 	my $clone = $db->get_Clone($clone_id);
 	my $as = $clone->virtualcontig;
-	
+	$as->skip_SeqFeature('similarity',1);
 	# choose output mode
 	
 	# test clone check call
