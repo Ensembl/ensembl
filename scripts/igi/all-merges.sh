@@ -14,9 +14,11 @@ ens=ensembl/all.gtf
 affy=affymetrix/all.gtf
 fgenesh=fgenesh/chr_gff/all.gtf 
 
-gtf_merge.pl $ens $affy > ens_affy.merge  2> ens_affy.log
-gtf_merge.pl $ens $fgenesh > ens_fgenesh.merge 2> ens_fgenesh.log
-gtf_merge.pl $affy $fgenesh > affy_fgenesh.merge 2> affy_fgenesh.log
-gtf_merge.pl $ens $affy $fgenesh > ens_affy_fgenesh.merge 2>ens_affy_fgenesh.log
+prefix=igi3
+
+gtf_merge.pl -p $prefix $ens $affy > ens_affy.merge  2> ens_affy.log
+gtf_merge.pl -p $prefix $ens $fgenesh > ens_fgenesh.merge 2> ens_fgenesh.log
+gtf_merge.pl -p $prefix $affy $fgenesh > affy_fgenesh.merge 2> affy_fgenesh.log
+gtf_merge.pl -p $prefix $ens $affy $fgenesh > ens_affy_fgenesh.merge 2>ens_affy_fgenesh.log
 
 ### after this, run the statistics on these files using all-stats.sh
