@@ -202,8 +202,7 @@ sub remove {
 sub get_Interpro_by_geneid {
     my ($self, @args) = @_;
 
-
-    return $self->{'_core_adaptor'}->get_Interpro_by_geneid();
+    return $self->{'_core_adaptor'}->get_Interpro_by_geneid(@args);
 }
 
 
