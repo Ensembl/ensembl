@@ -48,12 +48,13 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::DB::CloneI;
-use vars qw($AUTOLOAD @ISA);
+use vars qw($AUTOLOAD @ISA $CONTIG_SPACING);
 use strict;
 use Bio::EnsEMBL::GeneHandler;
 
 # Object preamble - inheriets from Bio::Root::Object
 
+$CONTIG_SPACING = 400;
 
 @ISA = qw();
 # new() is inherited from Bio::Root::Object
