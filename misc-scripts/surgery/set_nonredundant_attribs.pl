@@ -147,7 +147,7 @@ sub get_coord_systems_in_order() {
       $total_len += $slice->length();
     }
     if ($total_len > 0) {
-      $lengths{$cs->name()} = $total_len /= scalar(@slices);
+      $lengths{$cs->name()} = $total_len / scalar(@slices);
     } else {
       $lengths{$cs->name()} = 0;
       print "Warning - total length for " . $cs->name() . " is zero!\n";
@@ -157,7 +157,7 @@ sub get_coord_systems_in_order() {
   my @coord_systems = sort { $lengths{$a} <=> $lengths{$b} } keys %lengths;
 
   foreach my $cs_name (@coord_systems) {
-    debug("Co-ord system: " . $cs_name . "  Average length: " . $lengths{$cs_name});
+    debug("Co-ord system: " . $cs_name . "  Average length: " . int $lengths{$cs_name});
   }
 
   debug("Got co-ordinate systems in order: " . join(', ', @coord_systems));
