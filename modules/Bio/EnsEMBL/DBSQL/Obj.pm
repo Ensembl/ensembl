@@ -202,8 +202,7 @@ sub new {
           -ENSDB  => $db,
           };
     }
-	#$self->store_mapdb_handle();
-	
+
   # What source of contigoverlaps should we use?
   $self->contig_overlap_source($contig_overlap_source) if $contig_overlap_source;
   
@@ -241,22 +240,6 @@ sub dbname {
   ( defined $arg ) &&
     ( $self->{_dbname} = $arg );
   $self->{_dbname};
-}
-
- # make the cunningly stored map DB handle available to everybody
- # who wants to play with it...
- 
-sub store_mapdb_handle {
-	my ($self, $arg ) = @_;
-	my $dsn = "DBI:"       . $self->{'_mapdb'}->{'-DRIVER'}
-			. ":database=" . $self->{'_mapdb'}->{'-DBNAME'}
-			. ";host="     . $self->{'_mapdb'}->{'-HOST'}
-			. ";port="     . $self->{'_mapdb'}->{'-PORT'}
-		;
-	$self->warn("Using mapdb DSN $dsn");
-	my $mapdbh = DBI->connect("$dsn",$self->{'_mapdb'}->{'-USER'},$self->{'_mapdb'}->{'-PASS'}, {RaiseError => 1});
-	$mapdbh || $self->throw("Could not connect to maps database!");
-	$self->_mapdb_handle($mapdbh);
 }
 
 sub username {

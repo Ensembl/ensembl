@@ -61,7 +61,7 @@ sub new {
   bless $self,$class;
 
 
-  if( !defined $dbobj  ) {
+  if( !defined $dbobj || !$dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') ) {
       $self->throw("No dbobj or not a dbobj [$dbobj]");
   }
   
