@@ -1239,7 +1239,7 @@ sub get_all_DASFeatures{
 # BAC.*_C are fly contigs....
 # CRA_x are Celera mosquito contigs....
 
-	           if( $sf->seqname() =~ /(\w+\.\d+\.\d+.\d+|BAC.*_C)|CRA_.*/ ) {
+	           if( $sf->seqname() =~ /(\w+\.\d+\.\d+.\d+|BAC.*_C|AAAB\d+_\d+)/ ) {
 #                    warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
  		            push(@contig_features,$sf);
                } elsif( $sf->seqname() =~ /chr[\d+|X|Y]/i) { 
