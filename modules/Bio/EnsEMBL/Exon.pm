@@ -868,13 +868,15 @@ sub strand {
 }
 
 
+
 =head2 start_translation
 
- Title   : start_translation
- Usage   : $start_translation = $feat->start_translation
- Function: Returns coordinate taking into account phase
- Returns : number
- Args    : none
+  Arg [1]    : none
+  Example    : $start_translation = $exon->start_translation
+  Description: Returns start translation coord taking into account phase
+  Returntype : int
+  Exceptions : thrown if arguments are passed
+  Caller     : none
 
 =cut
 
