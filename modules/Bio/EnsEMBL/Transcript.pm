@@ -350,7 +350,7 @@ sub translation {
   } elsif( !exists $self->{'translation'} and defined $self->adaptor() ) {
     $self->{'translation'} = 
       $self->adaptor()->db()->get_TranslationAdaptor()->
-	fetch_by_Transcript( $self );
+        fetch_by_Transcript( $self );
   }
   return $self->{'translation'};
 }
@@ -1103,7 +1103,7 @@ sub three_prime_utr {
   Description: Returns a list of exons that translate with the
                start and end exons truncated to the CDS regions.
   Returntype : listref Bio::EnsEMBL::Exon
-  Exceptions : If there is no Translation object
+  Exceptions : throw if translation has invalid information
   Caller     : Genebuild, $self->translate()
 
 =cut
@@ -1112,8 +1112,8 @@ sub three_prime_utr {
 sub get_all_translateable_Exons {
   my ( $self ) = @_;
 
-  my $translation = $self->translation
-    or throw("No translation attached to transcript object");
+  #return an empty list if there is no translation (i.e. pseudogene)
+  my $translation = $self->translation or return [];  
   my $start_exon      = $translation->start_Exon;
   my $end_exon        = $translation->end_Exon;
   my $t_start         = $translation->start;
