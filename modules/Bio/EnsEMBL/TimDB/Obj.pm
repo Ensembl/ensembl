@@ -294,20 +294,29 @@ sub _get_Clone_id{
    }else{
        print STDERR "$nc clones in database\n";
    }
+   print STDERR "$nsid have cloneid rather than accession numbers\n\n";
+
    print STDERR "$nlock clones are locked for reading and are excluded\n";
-   print STDERR "$nsid have cloneid rather than accession numbers\n";
    print STDERR "$nisv have invalid SV numbers";
    if($fall){
        print STDERR " and are included\n";
    }else{
        print STDERR " and are excluded\n";
    }
+   print STDERR "\n";
+
    return sort @list;
 }
 
 sub _check_clone_entry{
     my($self,$key,$val,$fall,$ralist,$rnc,$rnsid,$rnisv,$rnlock)=@_;
     $$rnc++;
+
+    my($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$val);
+    # count cases where cloneid is not accession (for information purposes)
+    if($key ne $acc){
+	$$rnsid++;
+    }
 
     # skip locked clones
     my $val2;
@@ -319,11 +328,6 @@ sub _check_clone_entry{
 	}
     }
 
-    my($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$val);
-    # count cases where cloneid is not accession (for information purposes)
-    if($key ne $acc){
-	$$rnsid++;
-    }
     # count where sv is invalid (and generally reject)
     if($sv!~/^\d+$/){
 	$$rnisv++;
