@@ -71,6 +71,59 @@ sub new {
 }
 
 
+
+=head2 fetch_by_gene_id_list
+
+  Arg [1]    : arrayref $gene_ids  
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
+sub fetch_by_gene_id_list {
+  my ($self, $gene_ids, $empty_flag ) = @_;
+
+  my $db = 'core';
+
+  my @genes = ();
+
+  if($empty_flag) {
+    my $gene_list = join(', ', @$gene_ids); 
+    my $sth = $self->prepare("SELECT gene_id, gene_name, chr_name, chr_start, 
+                                     chr_end, chr_strand
+                              FROM   gene
+                              WHERE  db = '$db' AND gene_id IN ($gene_list)");
+    
+    $sth->execute();
+      
+    my ($gene_id, $gene_name, $chr_name, $chr_start, $chr_end, $chr_strand);
+
+    $sth->bind_columns(\$gene_id, \$gene_name, \$chr_name, \$chr_start, 
+		       \$chr_end, \$chr_strand);
+
+    while($sth->fetch()) {
+      my $gene = new Bio::EnsEMBL::Gene();
+      $gene->stable_id($gene_name);
+      $gene->start($chr_start);
+      $gene->end($chr_end);
+      $gene->strand($chr_strand);
+      $gene->adaptor($self);
+      $gene->dbID($gene_id);
+      push @genes, $gene;
+    }
+
+    return @genes;
+  }
+
+  $self->warn("fetch_by_gene_id_list for non-empty genes not yet implemented");
+
+  return ();
+}
+  
+
 =head2 fetch_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
