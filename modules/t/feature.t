@@ -531,13 +531,34 @@ print_locations($f1);
 print_locations($alt[0]);
 
 @alt = @{$alt[0]->get_all_alt_locations()};
+debug( "There are ".scalar( @alt )." alternative locations" );
+
 ok($alt[0]->slice->seq_region_name eq 'Y' &&
    $alt[0]->start == 10000009 && $alt[0]->end == 10000019);
 
 
+$chr_slice = $db->get_SliceAdaptor->fetch_by_region('chromosome', 
+                                                    '20_HAP1');
 
+$f1 = new Bio::EnsEMBL::Feature(-start => 10, -end => 20, -strand => 1,
+                                -slice => $chr_slice);
 
+@alt = @{$f1->get_all_alt_locations()};
+ok( scalar( @alt ) == 1 );
 
+debug( "Alt locations from a HAP thing ".scalar( @alt ) );
+
+$chr_slice = $db->get_SliceAdaptor->fetch_by_region('chromosome', 
+                                                    '20');
+
+$f1 = new Bio::EnsEMBL::Feature(-start => 10, -end => 20, -strand => 1,
+                                -slice => $chr_slice);
+
+@alt = @{$f1->get_all_alt_locations()};
+
+debug( "Alt locations from non HAP thing ".scalar( @alt ) );
+
+ok( scalar( @alt ) == 0 );
 
 #
 # other coord system overlaps
