@@ -92,6 +92,7 @@ use strict;
 # Object preamble - inherits from Bio::SeqFeature::Generic
 
 use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Slice;
 use Bio::Seq; # exons have to have sequences...
 
@@ -421,6 +422,10 @@ sub _transform_to_rawcontig {
     ( $self->contig()->assembly_type() );
   my $global_start = $self->contig->chr_start();
 
+
+ 
+  
+
   my @mapped = $mapper->map_coordinates_to_rawcontig
     (
      $self->contig()->chr_name(),
@@ -455,6 +460,7 @@ sub _transform_to_rawcontig {
       $componentExon->strand( $mapped[$i]->strand() );
       my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[$i]->id() );
       $componentExon->contig( $rawContig );
+      $componentExon->contig_id( $rawContig->dbID );
       $componentExon->sticky_rank( $i + 1 );
       $componentExon->phase( $self->phase );
       $stickyExon->add_component_Exon( $componentExon );
@@ -462,11 +468,58 @@ sub _transform_to_rawcontig {
     }
     $stickyExon->end( $sticky_length );
     $stickyExon->strand( 1 );
+   
     return $stickyExon;
     
   } else {
     # thats a simple exon
-    my ( $newstart, $newend, $newstrand );
+    my @supporting_features = $self->each_Supporting_Feature;
+    my @remapped_sf;
+    
+    foreach my $sf(@supporting_features){
+     
+      my @remapped =   $mapper->map_coordinates_to_rawcontig
+	(
+	 $self->contig()->chr_name(),
+	 $sf->start()+$global_start-1,
+	 $sf->end()+$global_start-1,
+	 $sf->strand()*$self->contig()->strand()
+	);
+      if( ! @remapped ) {
+	$self->warn( "supporting feature couldnt map" );
+      }
+      
+      if(scalar( @remapped ) > 1 ) {
+	print STDERR "normall exon sticky evidence something certainly going on here\n";
+      }else{
+	my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
+	my $rawContig = $rcAdaptor->fetch_by_dbID( $remapped[0]->id() );
+	
+	my $f1 = new Bio::EnsEMBL::SeqFeature;
+	my $f2 = new Bio::EnsEMBL::SeqFeature;
+	my $new_sf = Bio::EnsEMBL::FeaturePair->new( -feature1 => $f1,
+						     -feature2 => $f2,
+						   );
+
+	$new_sf->start( $remapped[0]->start() );
+	$new_sf->end( $remapped[0]->end() );
+	$new_sf->strand( $remapped[0]->strand() );
+	$new_sf->score($sf->feature1->score);
+	$new_sf->feature1->analysis($sf->feature1->analysis);
+	$new_sf->hstart( $sf->feature2->start() );
+	$new_sf->hend( $sf->feature2->end() );
+	$new_sf->hstrand( $sf->feature2->strand() );
+	$new_sf->hscore($sf->feature2->score);
+	$new_sf->feature2->analysis($sf->feature2->analysis);
+	# attaching seq ?
+	$new_sf->attach_seq( $rawContig );
+	$new_sf->feature1->seqname($rawContig->dbID);
+	$new_sf->feature2->seqname($sf->feature2->seqname);
+	
+	push(@remapped_sf, $new_sf);
+      }
+    }
+   
     my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
     my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[0]->id() );
     $self->start( $mapped[0]->start() );
@@ -475,9 +528,16 @@ sub _transform_to_rawcontig {
     # attaching seq ?
     $self->attach_seq( $rawContig );
     $self->contig( $rawContig );
+    $self->contig_id($rawContig->dbID);
+    $self->{_supporting_evidence} = [];
+    foreach my $sf(@remapped_sf){
+     
+      $self->add_Supporting_Feature($sf);
+    }
     return $self;
   }
 }
+
 
 
 
@@ -1428,7 +1488,9 @@ sub cdna2genomic {
 sub seq {
   my $self = shift;
   my $seq;
+  #print STDERR " calling exon->seq\n";
   if ( ! defined $self->{'contig'} ) {
+    $self->warn(" this exon doesn't have a contig you won't get a seq \n");
     return undef;
   }
   else {
@@ -1446,7 +1508,9 @@ sub seq {
     }
       
    }
+  #print STDERR "have seq ".$seq."\n";
   my $bioseq = Bio::Seq->new(-seq=> $seq);
+  #print STDERR "have object ".$bioseq."\n";
   return $bioseq;
 }
 

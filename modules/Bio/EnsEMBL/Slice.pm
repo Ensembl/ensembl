@@ -56,6 +56,9 @@ use Bio::PrimarySeqI;
 
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
 
+
+
+
 # new() is written here 
 
 sub new {
@@ -452,9 +455,15 @@ sub primary_seq{
 =cut
 
 sub convert_Gene_to_raw_contig{
-   my ($self,@args) = @_;
+  my ($self,$gene) = @_;
 
-   $self->throw("Ewan has not implemented this function! Complain!!!!");
+  if(!$gene->isa("Bio::EnsEMBL::Gene")){
+    $self->throw("trying to use the wrong method can called convert gene to RawContig coords on ".$gene."\n");
+  }
+     
+  $gene->transform;
+  
+  return $gene;
 }
 
 
@@ -645,6 +654,38 @@ sub id {
    return $self->{'id'};
 }
 
+sub display_id{
+  my ( $self, $value ) = @_;
+  if( defined $value ) {
+    $self->{'display_id'} = $value;
+  }
+  return $self->{'display_id'};
+}
+
+sub desc{
+  my ( $self, $value ) = @_;
+  if( defined $value ) {
+    $self->{'desc'} = $value;
+  }
+  return $self->{'desc'};
+}
+
+sub moltype {
+    my ($obj) = @_;
+    return 'dna';
+}
+
+sub accession_number {
+    my( $obj, $acc ) = @_;
+
+    if (defined $acc) {
+        $obj->{'accession_number'} = $acc;
+    } else {
+        $acc = $obj->{'accession_number'};
+        $acc = 'unknown' unless defined $acc;
+    }
+    return $acc;
+}
 
 sub fetch_chromosome_length {
   my ($self) = @_;

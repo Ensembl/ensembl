@@ -550,7 +550,7 @@ sub store {
        $self->throw("$gene is not a EnsEMBL gene - not writing!");
    }
  
-   my $trans_count = scalar($gene->each_Transcript);
+   my $trans_count = scalar($gene->get_all_Transcripts);
    print $trans_count."\n";
    print $gene->type()."\n";
    my $type = $gene->type;
@@ -579,7 +579,7 @@ sub store {
 
 
    # write exons transcripts and exon_transcript table
-   foreach my $trans ( $gene->each_Transcript() ) {
+   foreach my $trans ( $gene->get_all_Transcripts() ) {
      $transcriptAdaptor->store($trans,$gene);
    }
    
@@ -601,7 +601,7 @@ sub remove {
   $sth->execute( $gene->dbID );
   my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
   # my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
-  foreach my $trans ( $gene->each_Transcript() ) {
+  foreach my $trans ( $gene->get_all_Transcripts() ) {
     $transcriptAdaptor->remove($trans,$gene);
   }
 
