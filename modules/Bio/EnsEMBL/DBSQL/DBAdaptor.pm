@@ -355,6 +355,32 @@ sub get_Protfeat_Adaptor {
     return $pfa;
 }
 
+
+=head2 get_Protfeat_Adaptor
+
+ Title   : get_Protfeat_Adaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Protein_Adaptor {
+    my( $self ) = @_;
+    
+    my( $pa );
+    unless ($pa = $self->{'_protein_adaptor'}) {
+        require Bio::EnsEMBL::DBSQL::Protein_Adaptor;
+        $pa = Bio::EnsEMBL::DBSQL::Protein_Adaptor->new($self);
+    }
+    return $pa;
+}
+
+
+
 =head2 get_all_fpcctg_ids
 
  Title   : get_all_fpcctg_ids
