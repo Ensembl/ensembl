@@ -1222,7 +1222,6 @@ sub translate {
 
   my $mrna = $self->translateable_seq();
   my $display_id;
-
   if( defined $self->translation->stable_id ) {
     $display_id = $self->translation->stable_id;
   } elsif ( defined $self->temporary_id ) {
@@ -1231,7 +1230,7 @@ sub translate {
     $display_id = $self->translation->dbID;
   }
 
-  if( length( $mrna ) % 3 == 0 ) {
+  if( CORE::length( $mrna ) % 3 == 0 ) {
     $mrna =~ s/TAG$|TGA$|TAA$//i;
   }
   # the above line will remove the final stop codon from the mrna
