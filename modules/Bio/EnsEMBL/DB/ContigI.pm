@@ -56,7 +56,7 @@ subset of features out and genes.
 The contig interface just defines a number of functions which have to provided 
 by implementations. Two good implementations are the RawContig implementation
 found in Bio::EnsEMBL::DBSQL::RawContig and the generic VirtualContig interface
-in Bio::EnsEMBL::DB::VirtualContig
+in Bio::EnsEMBL::Virtual::Contig (previously Bio::EnsEMBL::DB::VirtualContig)
 
 
 =head1 CONTACT
