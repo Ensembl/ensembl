@@ -253,7 +253,7 @@ sub clone {
     if( ! defined $self->{_clone} &&
       defined $self->adaptor() ) {
       if( !defined $self->_clone_id() ) {
-	$self->adaptor->fetch( $self);
+	$self->adaptor->fetch_attributes($self);
       }
       $self->{_clone} = $self->adaptor->db->get_CloneAdaptor->fetch_by_dbID($self->_clone_id());
     }
