@@ -46,15 +46,15 @@ if ((!defined $organism) || (!defined $xmap) || (!defined $map)) {
 print STDERR "Connecting to the database...\n";
 
 
-#my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-#        -user   => $user,
-#        -dbname => $dbname,
-#        -host   => $host,
-#	-pass   => $pass,			     
-#        -driver => 'mysql',
-#	);
+my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+        -user   => $user,
+        -dbname => $dbname,
+        -host   => $host,
+	-pass   => $pass,			     
+        -driver => 'mysql',
+	);
 
-my $adaptor;# = $db->get_DBEntryAdaptor();
+my $adaptor = $db->get_DBEntryAdaptor();
 
 if (($organism eq "human") || ($organism eq "mouse")) {
     print STDERR "Reading Refseq file\n";
@@ -211,7 +211,7 @@ MAPPING: while (<MAP>) {
 			}
 
 		#print STDERR "Calling store on $queryid\n";
-		#$adaptor->store($dbentry,$queryid,"Translation");
+		$adaptor->store($dbentry,$queryid,"Translation");
 	    }
 	    
 	    
@@ -235,7 +235,7 @@ MAPPING: while (<MAP>) {
 		    }
 		}
 		#print STDERR "Calling store1 on $queryid\n";
-		#$adaptor->store($dbentry,$queryid,"Translation");
+		$adaptor->store($dbentry,$queryid,"Translation");
 		    
 	    }
 	}
