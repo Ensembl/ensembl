@@ -2,9 +2,9 @@
 
 # $Id$ 
 
-# yet another little ad hoc script 
-use Bio::EnsEMBL::Utils::GTF_handler;
-my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new(); # just for some parse functions!
+# yet another little ad hoc script use Bio::EnsEMBL::Utils::GTF_handler;
+# my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new(); # just for some parse
+# functions!
 
 # sub parse_group_field {
 #     my ($_) = @_;
@@ -92,8 +92,11 @@ while (<>) {
     }
     
     ${$igi_ids_of_source{$source}}->{$igi_id}++;
+    # (more later)
     
-    $gtf{$igi_id} .= "$source" unless 
+    ${$sources_of_igi_id{igi_id}}->{$source}++;
+    # (for easy statistics)
+# 
     
 #     unless ($gene_id) {
 #         warn("Skipping line with no gene_id: '$_'\n");
@@ -103,4 +106,37 @@ while (<>) {
 #         warn("Skipping line with no transcript_id: '$_'\n");
 #         next GTF_LINE;
 #     }
+}
+
+my @all_sources = keys %igi_ids_of_source;
+warn join ', ', @all_sources;
+
+print "total numbers:\n";
+foreach my $source (@all_sources) {
+    my $igi_per_source = $igi_ids_of_source{$source};
+    my $num = int(keys %{%igi_per_source});
+    print "source $source: $num igi's\n";
+}
+
+print "2-overlaps numbers:\n";
+foreach my $source (@all_sources) {
+    my @igis_per_source = keys @{$igi_ids_of_source{$source}};
+    foreach my $source2 (@all_sources) {
+        next if $source2 le $source;
+        my @igis_per_source2 = keys @{$igi_ids_of_source{$source2}};
+        
+        my %h = undef;
+
+        foreach $elt (@igis_per_source) {
+            $h{$elt} ++;
+        }
+        
+        foreach $elt (@igis_per_source2) {
+            $h{$elt} += 2;
+        }
+        
+        print "Only in $source :" . int(grep( $_== 1, keys %h)) . "\n";
+        print "Only in $source2 :" . int(grep( $_== 2, keys %h)) . "\n";
+        print "In both $source and $source2 :" . int(grep( $_== 3,  keys %h)) . "\n";
+    }
 }
