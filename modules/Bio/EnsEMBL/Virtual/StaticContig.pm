@@ -1356,8 +1356,8 @@ sub _convert_chrfeature_to_vc_coords{
     
     if($f->das_start > $chr_end || $f->das_end < $chr_start) {
 #        print STDERR "DAS ERROR! Feature not on VC between $chr_start and $chr_end: START: ",
-                    $f->das_start,' END: ',$f->das_end,' STRAND: ',$f->das_strand, ' ID: ', $f->das_feature_id,
-                    "\n";
+#                    $f->das_start,' END: ',$f->das_end,' STRAND: ',$f->das_strand, ' ID: ', $f->das_feature_id,
+#                    "\n";
         return ();
     }
 
