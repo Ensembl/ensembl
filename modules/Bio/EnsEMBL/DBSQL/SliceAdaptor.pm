@@ -457,8 +457,8 @@ sub get_seq_region_attribs {
 
   my %attrib_hash;
   while($sth->fetch()) {
-    $attrib_hash{$code} ||= [];
-    push @{$attrib_hash{$code}}, $attrib;
+    $attrib_hash{uc($code)} ||= [];
+    push @{$attrib_hash{uc($code)}}, $attrib;
   }
 
   $sth->finish();
@@ -528,8 +528,8 @@ sub set_seq_region_attrib {
   #update the cache if it exists already
   if(exists $self->{'_attribs_cache'} &&
      exists $self->{'_attribs_cache'}->{$srid}) {
-    $self->{'_attribs_cache'}->{$srid}->{$code} ||= [];
-    push(@{$self->{'_attribs_cache'}->{$srid}->{$code}}, $value);
+    $self->{'_attribs_cache'}->{$srid}->{uc($code)} ||= [];
+    push(@{$self->{'_attribs_cache'}->{$srid}->{uc($code)}}, $value);
   }
 
   return;

@@ -848,7 +848,7 @@ sub get_attribute {
 
   my %attribs = %{$self->adaptor->get_seq_region_attribs($self)};
 
-  return @{$attribs{$attrib_code} || []};
+  return @{$attribs{uc($attrib_code)} || []};
 }
 
 
