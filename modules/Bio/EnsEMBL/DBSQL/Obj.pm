@@ -1165,15 +1165,21 @@ sub write_Gene{
        $self->warn ("Got this gene with this version already, no need to write in db");
    }
    foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
-       print STDERR "Using $cloneid and ",$gene->id,"\n";
-       print STDERR "Calling [","insert into geneclone_neighbourhood (gene,clone) values ('" . 
-	   $gene->id ."','" . 
-	   $cloneid  . "')","\n";
-       
-       my $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . 
-				$gene->id . "','". 
-				$cloneid ."')");
+       #print STDERR "Using $cloneid and ",$gene->id,"\n";
+       #print STDERR "Calling [","insert into geneclone_neighbourhood (gene,clone) values ('" . 
+	   #$gene->id ."','" . 
+	   #$cloneid  . "')","\n";
+
+       my $sth = $self->prepare("select gene,clone from geneclone_neighbourhood where gene='".$gene->id."' && clone='$cloneid'");
        $sth->execute();
+       my $rowhash =  $sth->fetchrow_arrayref();
+       my  $rv = $sth->rows;
+       if( ! $rv ) {
+	   $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . 
+				 $gene->id . "','". 
+				 $cloneid ."')");
+	   $sth->execute();
+       }
    }
 }
 
@@ -1603,7 +1609,8 @@ sub write_Translation{
 
 sub write_Exon{
    my ($self,$exon) = @_;
-   
+   my $old_exon;
+
    if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
        $self->throw("$exon is not a EnsEMBL exon - not dumping!");
    }
@@ -1615,20 +1622,28 @@ sub write_Exon{
 
    # FIXME: better done with placeholders. (perhaps?).
 
-   my $exonst = "insert into exon (id,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
-       $exon->id() . "','" .
-	   $exon->contig_id() . "','" .
-	       $exon->created(). "','" .
-		   $exon->modified . "'," .
-		       $exon->start . ",".
-			   $exon->end . ",".
-			       $exon->strand . ",".
-				   $exon->phase . ",now(),".
-				       $exon->end_phase . ")";
+   eval {
+       $old_exon=$self->get_Exon($exon->id);
+   };
    
-   my $sth = $self->prepare($exonst);
-   $sth->execute();
-   
+   if  ( $@ || $exon->version > $old_exon->version) {
+       my $exonst = "insert into exon (id,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
+	   $exon->id() . "','" .
+	       $exon->contig_id() . "','" .
+		   $exon->created(). "','" .
+		       $exon->modified . "'," .
+			   $exon->start . ",".
+			       $exon->end . ",".
+				   $exon->strand . ",".
+				       $exon->phase . ",now(),".
+					   $exon->end_phase . ")";
+       
+       my $sth = $self->prepare($exonst);
+       $sth->execute();
+   }
+   else {
+       $self->warn("Exon with the same version number already present, no need to write it in");
+   }
 #   my $unlockst = $self->prepare("unlock exon");
 #   $unlockst->execute;
    
