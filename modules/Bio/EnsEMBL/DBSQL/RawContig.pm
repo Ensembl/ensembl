@@ -1465,8 +1465,8 @@ sub get_all_ExternalFeatures{
        push(@out,$extf->get_Ensembl_SeqFeatures_contig($self->id,$self->seq_version,1,$self->length));
        
        foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($acc,$self->seq_version,$self->embl_offset,$self->embl_offset+$self->length()) ) {
-	   my $start = $sf->start - $embl_offset;
-	   my $end   = $sf->end   - $embl_offset;
+	   my $start = $sf->start - $embl_offset+1;
+	   my $end   = $sf->end   - $embl_offset+1;
 	   $sf->start($start);
 	   $sf->end($end);
 	   push(@out,$sf);
