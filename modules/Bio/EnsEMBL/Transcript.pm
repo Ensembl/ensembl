@@ -1296,6 +1296,23 @@ sub pep2genomic {
 
 
 
+=head2 genomic2pep
+
+  Arg [1]    : $start
+               The start position in genomic coordinates
+  Arg [2]    : $end
+               The end position in genomic coordinates
+  Arg [3]    : $strand
+               The strand of the genomic coordinates
+  Example    : @coords = $transcript->genomic2pep($start, $end, $strand);
+  Description: Converts genomic coordinates to peptide coordinates.  The
+               return value is a list of coordinates and gaps.
+  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
+               Bio::EnsEMBL::Mapper::Gap objects
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub genomic2pep {
   my ($self, $start, $end, $strand) = @_;
@@ -1328,7 +1345,8 @@ sub genomic2pep {
       if($coord->strand == -1 || $end < $cdna_cstart || $start > $cdna_cend) {
 	#is all gap - does not map to peptide
 	my $gap = new Bio::EnsEMBL::Mapper::Gap;
-	$gap->length($end - $start + 1);
+	$gap->start($start);
+	$gap->end($end);
 	push @out, $gap;
       } else {
 	#we know area is at least partially overlapping CDS
@@ -1340,7 +1358,8 @@ sub genomic2pep {
 	  #start of coordinates are in the 5prime UTR
 	  my $gap = new Bio::EnsEMBL::Mapper::Gap;
 	  my $gap_len = $cdna_cstart - $start;
-	  $gap->length($gap_len);
+	  $gap->start($start);
+	  $gap->end($cdna_cstart - 1);
 	  #start is now relative to start of CDS
 	  $cds_start = 1;
 	  push @out, $gap;
@@ -1350,8 +1369,8 @@ sub genomic2pep {
 	if($end > $cdna_cend) {
 	  #end of coordinates are in the 3prime UTR
 	  $end_gap = new Bio::EnsEMBL::Mapper::Gap;
-	  my $gap_len = $end - $cdna_cend;
-	  $end_gap->length($gap_len);
+	  $end_gap->start($cdna_cend + 1);
+	  $end_gap->end($end);
 	  #adjust end to relative to CDS start
 	  $cds_end = $cdna_cend - $cdna_cstart + 1;
 	}

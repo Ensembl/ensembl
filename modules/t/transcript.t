@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 22;
+	plan tests => 24;
 }
 
 use MultiTestDB;
@@ -99,6 +99,38 @@ ok( $tr->coding_end() == 108631 );
 debug( "pep2genomic: ".($tr->pep2genomic( 10,20 ))[0]->start());
 my @pepcoords = $tr->pep2genomic( 10, 20 );
 ok( $pepcoords[0]->start() == 85861 );
+
+my $t_start = $tr->start;
+my $t_end   = $tr->end;
+my $t_strand = $tr->get_all_Exons->[0]->strand;
+my $pep_len = ($tr->cdna_coding_end - $tr->cdna_coding_start + 1) / 3;
+
+my $coord_num = 0;
+my $coding_start = $tr->coding_start;
+my $coding_end   = $tr->coding_end;
+#expect coordinate for each exon with coding sequence 
+foreach my $e (@{$tr->get_all_Exons}) {
+  if($e->end > $coding_start && $e->start < $coding_end) {
+    $coord_num++;
+  }
+}
+
+my @coords = ();
+my @gaps = ();
+my $coord_len = 0;
+foreach my $c ($tr->genomic2pep($t_start, $t_end, $t_strand)) {
+  if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
+    push @gaps, $c;
+  } else {
+    push @coords, $c;
+  }
+}
+
+debug("expecting $coord_num coords (in pep coords), got " . scalar(@coords));
+ok(scalar(@coords) == $coord_num);
+my ($last_coord) = reverse(@coords); 
+debug("expecting peptide length: $pep_len, got".$last_coord->end);
+ok($pep_len == $last_coord->end);
 
 debug( "start Exon: ".$tr->start_Exon->stable_id() );
 debug( "end Exon: ".$tr->end_Exon->stable_id() );
