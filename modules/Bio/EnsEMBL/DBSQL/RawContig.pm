@@ -1199,7 +1199,7 @@ sub get_landmark_MarkerFeatures {
       
       my $dbname=$self->dbobj->dbname;
       my $mapsdbname=$self->dbobj->mapdbname;
-      
+    
       my $id = $self->internal_id;
       my @markers;
       
@@ -1209,11 +1209,11 @@ sub get_landmark_MarkerFeatures {
           
           my $statement="SELECT f.seq_start, f.seq_end, f.score, f.strand, f.name, 
 	                  f.hstart, f.hend, s.name, f.analysis 
-                   FROM   $dbname.feature f, $dbname.analysis a, 
+                   FROM   $dbname.feature f, $dbname.analysisprocess a, 
                           $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m 
 		   WHERE  f.contig='$id' 
-                   AND    f.analysis = a.id 
-                   AND    a.db='mapprimer'
+                   AND    f.analysis = a.analysisId 
+                   AND    a.program='e-PCR'
                    AND    m.marker=s.marker 
                    AND    f.hid=m.marker 
                    AND    s.name regexp '^D[0-9,X,Y][0-9]?S'";
@@ -1227,7 +1227,7 @@ sub get_landmark_MarkerFeatures {
       }
 
       return @markers;
-}                                       # get_landmark_MarkerFeatures
+}                                       
 
 
 
