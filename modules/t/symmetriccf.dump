@@ -23,6 +23,6 @@ INSERT into symmetric_contig_feature (symcfid,symchid,rawcontigid,seq_start,seq_
 
 INSERT into symmetric_contig_feature (symcfid,symchid,rawcontigid,seq_start,seq_end,strand) VALUES (6,1,2,220,230,1);
 
-INSERT into symmetric_contig_pair_hit (symchid,perc_subs,perc_ins,perc_del) VALUES (1,2,1,1);
+INSERT into symmetric_contig_pair_hit (symchid,score,perc_subs,perc_ins,perc_del) VALUES (1,200,2,1,1);
 
 

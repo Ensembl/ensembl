@@ -41,7 +41,7 @@ my $symadp = Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer->new($db);
 
 print "ok 2\n";
 
-#($fp) = $symadp->get_FeaturePair_list_by_rawcontig_id(1);
+($fp) = $symadp->get_FeaturePair_list_by_rawcontig_id(1);
 
 
 

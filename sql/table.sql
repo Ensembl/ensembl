@@ -391,7 +391,7 @@ CREATE TABLE static_golden_path (
 
 CREATE TABLE symmetric_contig_pair_hit (
   symchid       int(10) unsigned NOT NULL auto_increment,
-#  score		int(10),
+  score		int(10),
   perc_subs            int(10),
   perc_ins          int(10),
   perc_del          int(10),

@@ -48,6 +48,7 @@ use strict;
 
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::FeatureFactory;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -70,11 +71,22 @@ sub get_FeaturePair_list_by_rawcontig_id{
        $self->throw("Must have a raw contig id");
    }
 
-   my $sth = $self->prepare("select a.seq_start,a.seq_end,a.strand,b.seq_start,b.seq_end,b.strand,p.score  from symmetric_contig_feature a, symmetric_contig_pair_hit p,symmetric_contig_feature b where a.symchid = p.symchid and p.symchid = b.symchid and a.symcfid != b.symcfid and a.rawcontig = $id");
+   my $sth = $self->prepare("select a.seq_start,a.seq_end,a.strand,b.seq_start,b.seq_end,b.strand,b.rawcontigid,p.score  from symmetric_contig_feature a, symmetric_contig_pair_hit p,symmetric_contig_feature b where a.symchid = p.symchid and p.symchid = b.symchid and a.symcfid != b.symcfid and a.rawcontigid = $id");
    
    $sth->execute;
-   my @hitids;
+   my @out;
+   while( my $aref = $sth->fetchrow_arrayref ) {
+       my ($start,$end,$strand,$hstart,$hend,$hstrand,$hname,$score) = @{$aref};
+       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+       
 
+       $out->set_all_fields($start,$end,$strand,$score,$id,'symmetric',$id,
+			    $hstart,$hend,$hstrand,$score,$hname,'symmetric',$hname);
+
+       push(@out,$out);
+   }
+
+   return @out;
 }
 
 
