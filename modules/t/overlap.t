@@ -103,6 +103,7 @@ die ("$0\nCan't create virtual contig :$!") unless defined ($vc);
 print "ok 7\n";
 
 my $seq      = $vc->primary_seq;
+print STDERR "Sequence is [" .$seq->seq ."] Should be AAAACCCCTTGGGAAA\n";
 
 die "$0\nVirtual contig sequence " . $seq->seq . "does not equal AAAACCCCTTGGGAAA : $!" if ($seq->seq ne "AAAACCCCTTGGGAAA");
   
