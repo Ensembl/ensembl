@@ -340,6 +340,118 @@ sub get_all_RepeatFeatures {
 }
 
 
+=head2 get_all_ExternalFeatures
+
+ Title   : get_all_ExternalFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ExternalFeatures{
+   my ($self,$glob) = @_;
+   
+   my @web;
+   my @std;
+
+   my @features;
+   my @contig_features;
+
+   foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
+       if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
+	   push(@web,$extf);
+       } else {
+	   push(@std,$extf);
+       }
+   }
+
+   if( scalar(@web) > 0 ) {
+       my @clones;
+       my %cloneh;
+       my %featureh;
+       foreach my $contig ( $self->_vmap->get_all_RawContigs) {
+	   if( !defined $cloneh{$contig->cloneid} ) {
+	       $cloneh{$contig->cloneid} = [];
+	       $featureh{$contig->cloneid} = [];
+	   }
+	   push(@clones,$contig->cloneid.$contig->seq_version);
+	   push(@{$cloneh{$contig->cloneid}},$contig);
+       }
+       # get them out, push into array by clone
+       foreach my $extf ( @web ) {
+	   foreach my $feature ( $extf->get_Ensembl_SeqFeatures_clone_web($glob,@clones) ) {
+	       my $clone = $feature->seqname;
+	       $clone =~ s/\.\d+$//g;
+	       push(@{$featureh{$clone}},$feature);
+	   }
+       }
+
+       # loop over clone. Sort both feature and contig arrays.
+       # then loop over features, changing identifiers and then push onto final array
+
+       foreach my $clone ( keys %cloneh ) {
+	   my @features = sort { $a->start <=> $b->start } @{$featureh{$clone}};
+	   my @contigs  = sort { $a->embl_offset <=> $b->embl_offset } @{$cloneh{$clone}};
+	   my $current_contig = shift @contigs;
+	   foreach my $f ( @features ) {
+	       while( $current_contig->length + $current_contig->embl_offset < $f->start ) {
+		   $current_contig = shift @contigs;
+	       }
+	       if( $f->end < $current_contig->start ) {
+		   next; # not on a contig on this golden path presumably
+	       }
+	       $f->start($f->start - $current_contig->embl_offset+1);
+	       $f->end  ($f->end   - $current_contig->embl_offset+1);
+	       $f->seqname($current_contig->id);
+	       push(@contig_features,$f);
+	   }
+       }
+   }
+ 
+   if( scalar(@std) > 0 ) {
+       foreach my $contig ( $self->_vmap->get_all_RawContigs) {       
+	   foreach my $extf ( @std ) {
+	       if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
+		   push(@contig_features,$extf->get_Ensembl_SeqFeatures_contig($contig->internal_id,$contig->seq_version,1,$contig->length));
+	       }
+	       if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
+       
+		   foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$contig->embl_offset,$contig->embl_offset+$contig->length()) ) {
+		       
+		       my $start = $sf->start - $contig->embl_offset+1;
+		       my $end   = $sf->end   - $contig->embl_offset+1;
+		       $sf->start($start);
+		       $sf->end($end);
+		       $sf->seqname($contig->id);
+		       push(@contig_features,$sf);
+		   }
+	       }
+	   }
+       }
+   }
+		    
+
+   # ok. Now @contig_features are in contig coordinates. Map up.
+   
+   # this is the simplest way. We can do this more efficiently if need be
+
+   my @final;
+   foreach my $f ( @contig_features ) {
+       if( defined $self->_convert_seqfeature_to_vc_coords($f) ) {
+	   push(@final,$f);
+       }
+   }
+
+   return @final;
+
+}
+
+
+
 
 =head2 karyotype_band
 
