@@ -33,7 +33,7 @@ my %family_species = (6 => "drosophila", # set this to the species you want for 
 my $family_coverage_percentage = 40.0; # families who have more than this %age of genes on $chr_name will be printed
 
 my $exon_density_step_size = 100000; # step size for exon density table
-my $exon_density_file_name = "exon_density_chr_" . $chr_name;
+my $exon_density_file_name = "exon_density_chr_" . $chr_name . ".txt";
 
 my $verbose = 1;	 # if > 0, print debug output preceeded by a #
 
@@ -144,6 +144,8 @@ if ($do_exon_density) {
   my $chunk_start = 1;
   my $chunk_end = $exon_density_step_size;
 
+  my $total_density = 0.0;
+
   while ($chunk_end < $slice->chr_end()) {
 
     my $non_exon_length = 0;
@@ -163,7 +165,8 @@ if ($do_exon_density) {
 
     # calculate exon_density for this chunk
     my $exon_density = ($exon_density_step_size - $non_exon_length) / $exon_density_step_size;
-    print EXON_FILE $chunk_start . "->" . $chunk_end . "\t" . $exon_density;
+    printf EXON_FILE ("$chunk_start -> $chunk_end \t %2.1f \n", ($exon_density * 100));
+    $total_density += $exon_density;
 
     $chunk_start += $exon_density_step_size;
     $chunk_end += $exon_density_step_size;
