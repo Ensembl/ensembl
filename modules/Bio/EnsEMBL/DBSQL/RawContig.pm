@@ -435,7 +435,6 @@ sub get_old_Exons {
     # now perform the mapping
 
     my @mapped_exons;
-    my @unmapped;
     EXON:foreach my $exon (@old_exons) {
 	my $mapped=0;
 	foreach my $fp ( @{$fphash{$validoldcontigs{$exon->seqname}}} ) {
