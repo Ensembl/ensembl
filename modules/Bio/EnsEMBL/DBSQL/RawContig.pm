@@ -368,9 +368,54 @@ sub get_all_SeqFeatures {
     push(@out,$self->get_all_RepeatFeatures);
 #   push(@out,$self->get_all_PredictionFeatures);
 
-#    print(STDERR "Fetched all features\n");
     return @out;
 }
+
+
+=head2 get_all_FeaturesByScore
+
+ Title   : get_all_FeaturesByScore
+ Usage   : foreach my $sf ( $contig->get_all_FeaturesByScore(score, feature_type) ) 
+ Function:
+ Example :
+ Returns : 
+ Args    : Score - only features with a score greater than this will be retrieved
+            Type (optional) This must be 'repeat', 'similarity' or 'prediction'
+            If specified only that type of feature will be returned.
+
+
+=cut
+
+sub get_all_FeaturesByScore{
+    my ($self, $score, $type) = @_;
+
+    $self->throw("Must supply score parameter") unless $score;
+    
+    my @sf = ();
+        
+    if (!defined $type) {
+            # If the type isn't defined get all types of feature 
+            push(@sf, $self->get_all_RepeatFeatures($score));
+            push(@sf, $self->get_all_SimilarityFeatures($score));
+            push(@sf, $self->get_all_PredictionFeatures($score));
+      
+    } elsif( $type eq 'repeat' ) {
+	   push(@sf, $self->get_all_RepeatFeatures($score));
+       
+    } elsif ( $type eq 'similarity' ) {
+	   push(@sf, $self->get_all_SimilarityFeatures($score));
+       
+    } elsif ( $type eq 'prediction' ) {
+	   push(@sf, $self->get_all_PredictionFeatures($score));
+       
+    } else {
+	   $self->throw("Type $type not recognised");
+    }
+   
+   return @sf;
+}
+
+
 
 =head2 get_all_SimilarityFeatures
 
@@ -379,13 +424,13 @@ sub get_all_SeqFeatures {
  Function: Gets all the sequence similarity features on the whole contig
  Example :
  Returns : 
- Args    :
+ Args    : Score (optional) Only features with a score greater than this will be returned 
 
 
 =cut
 
 sub get_all_SimilarityFeatures{
-   my ($self) = @_;
+   my ($self, $score) = @_;
 
    my @array;
 
@@ -396,19 +441,36 @@ sub get_all_SimilarityFeatures{
 
    #First of all, get all features that are part of a feature set
 
-   my $sth = $self->dbobj->prepare("select  p1.id, " .
-				             "p1.seq_start, p1.seq_end, " . 
- 				             "p1.strand,p1.score,p1.analysis,p1.name,  " .
-				             "p1.hstart,p1.hend,p1.hid,"  .
-				             "p2.fset,p2.rank, " . 
-				             "fs.score " .
-				    "from    feature as p1,  " .
-				    "        fset_feature as p2, " .
-				    "        fset as fs " .
-				    "where   p1.contig ='$id' " .
-				    "and     p2.feature = p1.id " .
-				    "and     fs.id = p2.fset " .
-				    "order by p2.fset");
+   #my $sth = $self->dbobj->prepare("select  p1.id, " .
+   #                          "p1.seq_start, p1.seq_end, " . 
+   #                           "p1.strand,p1.score,p1.analysis,p1.name,  " .
+   #                          "p1.hstart,p1.hend,p1.hid,"  .
+   #                          "p2.fset,p2.rank, " . 
+   #                          "fs.score " .
+   #                 "from    feature as p1,  " .
+   #                 "        fset_feature as p2, " .
+   #                 "        fset as fs " .
+   #                 "where   p1.contig ='$id' " .
+   #                 "and     p2.feature = p1.id " .
+   #                 "and     fs.id = p2.fset " .
+   #                 "order by p2.fset");
+
+    my $statement = "SELECT feature.id, seq_start, seq_end, strand, feature.score, analysis, name, " .
+		             "hstart, hend, hid, fset, rank, fset.score " .
+		     "FROM   feature, fset_feature, fset " .
+		     "WHERE  feature.contig ='$id' " .
+		     "AND    fset_feature.feature = feature.id " .
+		     "AND    fset.id = fset ";
+		     
+    # If score was given as a parameter to the method call only retieve scores greater than this
+    if ($score) {
+        $statement .= "AND feature.score > $score ";
+    }                                    
+    
+    $statement .= "ORDER BY fset";
+                                    
+   my $sth = $self->dbobj->prepare($statement);                                    
+                                    
    $sth->execute();
    
    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score);
@@ -557,13 +619,13 @@ sub get_all_SimilarityFeatures{
  Function: Gets all the repeat features on a contig.
  Example :
  Returns : 
- Args    :
+ Args    : Score (optional) Only features with a score greater than this will be returned 
 
 
 =cut
 
 sub get_all_RepeatFeatures {
-   my ($self) = @_;
+   my ($self, $min_score) = @_;
 
    my @array;
 
@@ -573,9 +635,15 @@ sub get_all_RepeatFeatures {
    my %analhash;
 
    # make the SQL query
+    my $statement = "select id,seq_start,seq_end,strand,score,analysis,hstart,hend,hid " . 
+				    "from repeat_feature where contig = '$id'";
+                                    
+    # If score was given as a parameter to the method call only retieve scores greater than this
+    if ($min_score) {
+        $statement .= " AND score > $min_score";
+    }  
 
-   my $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,hstart,hend,hid " . 
-				    "from repeat_feature where contig = '$id'");
+   my $sth = $self->dbobj->prepare();
 
    $sth->execute();
 
@@ -695,20 +763,20 @@ sub get_MarkerFeatures {
 }
 
 
-=head2 get_all_RepeatFeatures
+=head2 get_all_PredictionFeatures
 
- Title   : get_all_RepeatFeatures
+ Title   : get_all_PredictionFeatures
  Usage   : foreach my $sf ( $contig->get_all_RepeatFeatures )
  Function: Gets all the repeat features on a contig.
  Example :
  Returns : 
- Args    :
+ Args    : Score (optional) Only features with a score greater than this will be returned
 
 
 =cut
 
 sub get_all_PredictionFeatures {
-   my ($self) = @_;
+   my ($self, $min_score) = @_;
 
    my @array;
 
@@ -720,9 +788,12 @@ sub get_all_PredictionFeatures {
    # make the SQL query
    my $query = "select id,seq_start,seq_end,strand,score,analysis " . 
        "from feature where contig = $id and name = 'genscan'";
-
-   #print STDERR "Query is " . $query . "\n";
-
+    
+    # If score was given as a parameter to the method call only retieve scores greater than this
+    if ($min_score) {
+        $query .= " AND score > $min_score";
+    } 
+    
    my $sth = $self->dbobj->prepare($query);
    
    $sth->execute();
@@ -781,13 +852,14 @@ sub get_all_PredictionFeatures {
  Function:
  Example :
  Returns : 
- Args    :
+ Args    : 
 
 
 =cut
 
 sub get_all_ExternalFeatures{
-   my ($self,@args) = @_;
+   my ($self) = @_;
+   
    my @out;
    my $acc;
    
@@ -1087,6 +1159,14 @@ sub get_right_overlap {
    return $self->_right_overlap();
 }
 
+
+
+sub _db_obj {
+   my ($self,@args) = @_;
+   $self->warn("Someone is using a deprecated _db_obj call!");
+   return $self->dbobj(@args);
+}
+
 =head2 dbobj
 
  Title   : dbobj
@@ -1098,18 +1178,6 @@ sub get_right_overlap {
 
 
 =cut
-
-sub _db_obj {
-   my ($self,@args) = @_;
-   $self->warn("Someone is using a deprecated _db_obj call!");
-   return $self->dbobj(@args);
-}
-
-sub _dbobj {
-   my ($self,@args) = @_;
-   $self->warn("Someone is using a deprecated _dbobj call!");
-   return $self->dbobj(@args);
-}
 
 sub dbobj {
    my ($self,$arg) = @_;
