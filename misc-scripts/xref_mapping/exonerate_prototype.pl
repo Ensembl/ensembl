@@ -78,8 +78,7 @@ lsrcp /tmp/$output ecs1a:$root_dir/$output
 rm -f /tmp/\$LSB_JOBINDEX.$query /tmp/\$LSB_JOBINDEX.$target /tmp/$output
 EOF
 
-# TODO make sure query/target are the right way round
-# TODO analysis ID
+  # TODO make sure query/target are the right way round
 
   print $wtr $dna_job;
 
