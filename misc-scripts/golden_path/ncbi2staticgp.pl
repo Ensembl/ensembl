@@ -98,7 +98,6 @@ while (<AGP>) {
     my $nt_ori = $nt_contig{$nt_ctg}->{'ori'};
     my $chr    = $nt_contig{$nt_ctg}->{'chr'};
     my ($chr_start, $chr_end);
-    $chr =~ s!^(\d+|X|Y)!chr\1!;	# Oh, the joy of regex ...
     $chr =~ s!\|!_! unless $allow_pipe;	# "we" don't want |'s in chr name ...
 
     if ($nt_ori == 1) {
