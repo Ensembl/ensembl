@@ -76,9 +76,9 @@ source ALL:
 	minfeats=3, maxfeats=235, avgfeats=12 // igi gene length goes up the 
 	minexons=1, maxexons=78, avgexons=4   // more native genes it has (of course)
 	3: 8635
-        .
-        .
-        .
+         . 
+         .
+         .
 	26: 1
 	minl=2114986, maxl=2114986, avgl=2114986
 	minfeats=113, maxfeats=113, avgfeats=113
@@ -89,14 +89,14 @@ source AFFY: // same thing, but now per source.
 	minfeats=1, maxfeats=762, avgfeats=26
 	minexons=0, maxexons=190, avgexons=7
 	2: 787
-        .
-        .
-        .
+         .
+         .
+         .
 source FGENH:
 	1: 28877
 	minl=149, maxl=63879900, avgl=3177104
 	minfeats=1, maxfeats=295, avgfeats=15
 	minexons=1, maxexons=117, avgexons=5
-        .
-        .
-        .
+         .
+         .
+         .
