@@ -446,5 +446,59 @@ sub get_display_xref_id {
 }
 
 
+=head2 update
+
+  Arg [1]    : Bio::EnsEMBL::Transcript
+  Example    : $transcript_adaptor->update($transcript);
+  Description: Updates a transcript in the database
+  Returntype : None
+  Exceptions : thrown if the $transcript is not a Bio::EnsEMBL::Transcript
+               warn if trying to update the number of attached exons.  This
+               is a far more complex process and is not yet implemented.
+               warn if the method is called on a transcript that does not exist 
+               in the database.
+  Caller     : general
+
+=cut
+
+sub update {
+   my ($self,$transcript) = @_;
+   my $update = 0;
+
+   if( !defined $transcript || !ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+       $self->throw("Must update a transcript object, not a $transcript");
+   }
+
+   my $sth = $self->prepare("SELECT exon_count, display_xref_id 
+                             FROM   transcript 
+                             WHERE  transcript_id = ?
+                           ");
+
+   $sth->execute($transcript->dbID);
+
+   if ( my ($exons, $dxref_id) = $sth->fetchrow_array() ){
+
+     if ( $exons != scalar(@{$transcript->get_all_Exons})) {
+       $self->warn("Trying to update the number of exons on a stored transcript. Not yet implemented.");
+     }
+
+     if ( $dxref_id != $transcript->display_xref ) {
+
+       $sth = $self->prepare("UPDATE transcript
+                              SET    display_xref_id = ?
+                              WHERE  transcript_id = ?
+                            ");
+
+       $sth->execute($transcript->display_xref, $transcript->dbID);
+     }
+   }
+   else {
+     $self->warn("Trying to update a transcript that is not in the database.  Try store\'ing first.");
+   }
+}
+
+
+
+
 1;
 
