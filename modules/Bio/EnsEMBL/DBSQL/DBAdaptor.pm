@@ -147,6 +147,8 @@ sub new {
 	# initialise generic feature adaptor storage
 	$self->_obj->{'generic_feature_adaptors'} = {};
 
+
+
   return $self;
 }
 
@@ -346,8 +348,16 @@ sub get_PredictionExonAdaptor {
 sub get_SequenceAdaptor {
    my $self = shift;
 
-   #return the sequence adaptor for the dnadb (which may be this db)
-   return $self->dnadb->get_adaptor("Sequence");
+   my $mc = $self->get_MetaContainer();
+
+   my ($use_compressed) = @{$mc->list_value_by_key('sequence.compression')};
+
+   if($use_compressed) {
+     return $self->dnadb->get_adaptor("CompressedSequence");
+   } else {
+     #return the sequence adaptor for the dnadb (which may be this db)
+     return $self->dnadb->get_adaptor("Sequence");
+   }
 }
 
 
