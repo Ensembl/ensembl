@@ -19,50 +19,17 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %name2species_id;
 
-my $host;
-my $port;
-my $dbname;
-my $user;
-my $pass;
-my @species;
-my @sources;
-
-if (!defined(caller())) {
-
-  get_options();
-  run();
-
-}
-
-# --------------------------------------------------------------------------------
-
-sub get_options {
-
-  GetOptions('user=s'    => \$user,
-	     'pass=s'    => \$pass,
-	     'host=s'    => \$host,
-	     'port=i'    => \$port,
-	     'dbname=s'  => \$dbname,
-	     'species=s' => \@species,
-	     'source=s'  => \@sources,
-	     'help'     => sub { usage(); exit(0); });
-
-  @species = split(/,/,join(',',@species));
-  @sources  = split(/,/,join(',',@sources));
-
-  if (!$user || !$host || !$dbname) {
-
-    usage();
-    exit(1);
-
-  }
-
-}
+my ($host, $port, $dbname, $user, $pass);
 
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
 
 sub run {
+
+  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr) = @_;
+
+  my @species = @$speciesr;
+  my @sources = @$sourcesr;
 
   my $dbi = dbi();
 
@@ -95,7 +62,7 @@ sub run {
   }
 
   my $sql =
-    "SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser su.species_id" .
+    "SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser, su.species_id " .
       "FROM source s, source_url su " .
 	"WHERE s.download='Y' AND su.source_id=s.source_id " .
 	  $source_sql . $species_sql .
@@ -611,18 +578,6 @@ sub delete_by_source {
 
 # --------------------------------------------------------------------------------
 
-sub usage {
-
-  print << "EOF";
-
-  BaseParser.pm -user {user} -pass {password} -host {host} -port {port} -dbname {database} -species {species1,species2} -source {source1,source2}
-
-EOF
-
-}
-
-# --------------------------------------------------------------------------------
-
 sub validate_sources {
 
   my @sources = @_;
@@ -636,13 +591,28 @@ sub validate_sources {
     if ($sth->fetchrow_array()) {
       print "Source $source is valid\n";
     } else {
-      print "Source $source is not valid, exiting\n";
+      print "\nSource $source is not valid; valid sources are:\n";
+      show_valid_sources();
       return 0;
     }
 
   }
 
   return 1;
+
+}
+
+# --------------------------------------------------------------------------------
+
+sub show_valid_sources() {
+
+  my $dbi = dbi();
+  my $sth = $dbi->prepare("SELECT name FROM source WHERE download='Y'");
+
+  $sth->execute();
+  while (my @row = $sth->fetchrow_array()) {
+    print @row[0] . "\n";
+  }
 
 }
 
@@ -666,13 +636,28 @@ sub validate_species {
       print "Species $sp is valid (name = " . $species_name . ", ID = " . $species_id . ")\n";
       push @species_ids, $species_id;
     } else {
-      print "Species $sp is not valid, exiting\n";
+      print "Species $sp is not valid; valid species are:\n";
+      show_valid_species();
       exit(1);
     }
 
   }
 
   return @species_ids;
+
+}
+
+# --------------------------------------------------------------------------------
+
+sub show_valid_species() {
+
+  my $dbi = dbi();
+  my $sth = $dbi->prepare("SELECT name, aliases FROM species");
+
+  $sth->execute();
+  while (my @row = $sth->fetchrow_array()) {
+    print @row[0] . " (aliases: " . $row[1] . ")\n";
+  }
 
 }
 
