@@ -599,11 +599,13 @@ sub fetch_VirtualContig_of_clone{
  
    my ($contig,$start,$end,$chr_name); 
    my $counter; 
-   my $first_start;
-   while ( my @row=$sth->fetchrow_array){
+   my $first_start = 1e20;
+   my $last_end    = 0;
+   while ( my @row=$sth->fetchrow_array ){
        $counter++;
        ($contig,$start,$end,$chr_name)=@row;
-       if ($counter==1){$first_start=$start;}      
+       $first_start = $start if $start < $first_start;
+       $last_end    = $end   if $end   > $last_end;
    }
 
    if( !defined $contig ) {
@@ -612,13 +614,12 @@ sub fetch_VirtualContig_of_clone{
      
    my $vc = $self->fetch_VirtualContig_by_chr_start_end(    $chr_name,
                             $first_start-$size,
-                            $end+$size
+                            $last_end+$size
                             );
    $vc->dbobj($self->dbobj);
    return $vc;
 
 }
-
 
 
 =head2 fetch_VirtualContig_of_contig
