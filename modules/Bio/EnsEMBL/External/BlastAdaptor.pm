@@ -374,17 +374,17 @@ sub store_hit{
     $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
     $sth->finish;
   }
-  if( $rv > 0 ){ # Update
-    my $sth = $dbh->prepare( sprintf $SQL_HIT_UPDATE, $use_date );
-    $sth->execute( $frozen, $ticket, $id ) || $self->throw( $sth->errstr );
-    $sth->finish;
-  }
-  else{ # Insert
-    my $use_date = $self->use_date('HIT') || '';
+  if( $rv < 1 ){ # Insert
+    my $use_date = $hit->use_date() || $hit->( $self->use_date('HIT') );
     my $sth = $dbh->prepare( sprintf $SQL_HIT_STORE, $use_date );
     $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
     my $id = $dbh->{mysql_insertid};
     $hit->token( join( '!!', $id, $use_date ) );
+    $sth->finish;
+  }
+  else{ # Update
+    my $sth = $dbh->prepare( sprintf $SQL_HIT_UPDATE, $use_date );
+    $sth->execute( $frozen, $ticket, $id ) || $self->throw( $sth->errstr );
     $sth->finish;
   }
   return $hit->token();
@@ -465,7 +465,7 @@ sub store_hsp{
     $sth->finish;
   }
   if( $rv < 1 ){ # Insert
-    my $use_date = $self->use_date('HSP') || '';
+    my $use_date = $hsp->use_date() || $hsp->( $self->use_date('HSP') );
     my $sth = $dbh->prepare( sprintf $SQL_HSP_STORE, $use_date );
     my @bound = ( $frozen, $ticket, $chr_name,  $chr_start, $chr_end );
     $sth->execute( @bound ) || $self->throw( $sth->errstr );
@@ -537,10 +537,12 @@ sub get_all_HSPs {
    my $chr_name  = shift || undef;
    my $chr_start = shift || undef;
    my $chr_end   = shift || undef;
+   my ( $id, $use_date )  = split( '!!', $ticket );
+   $use_date ||= '';
 
    my $SQL = qq(
 SELECT object
-FROM   blast_hsp
+FROM   blast_hsp%s
 WHERE  ticket = ? );
 
    my $CHR_SQL = qq(
@@ -550,8 +552,8 @@ AND    chr_name = ? );
 AND    chr_start <= ?
 AND    chr_end   >= ? );
 
-   my $q = $SQL;
-   my @binded = ( $ticket );
+   my $q = sprintf( $SQL, $use_date );
+   my @binded = ( $id );
 
    if( $chr_name ){
      $q .= $CHR_SQL;
