@@ -99,6 +99,7 @@ sub _initialize {
   $self->{'_contig_seq_cache'} = {};
   $self->{'_contig_seq_cnt'} = 0;
   $self->{'_lock_table_hash'} = {};
+  $self->{'_contig_cache'} = {};
   $self->_analysis_cache({});
 
   if( $debug ) {
@@ -781,6 +782,12 @@ sub get_Clone{
 sub get_Contig{
    my ($self,$id) = @_;
 
+
+   if( $self->_get_Contig_cache($id) ) {
+	return $self->_get_Contig_cache($id);
+   }
+
+
    my $sth = $self->prepare("select p1.id,p2.id from dna as p1,contig as p2 where p2.id = '$id'");
    my $res = $sth ->execute;
    my $row = $sth->fetchrow_arrayref;
@@ -788,12 +795,38 @@ sub get_Contig{
    if( ! $row->[0] || ! $row->[1] ) {
        $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
    }
+   
 
    my $contig = new Bio::EnsEMBL::DBSQL::Contig ( -dbobj => $self,
 						  -id    => $id );
 
+   $self->_cache_Contig($contig);
+
+
    return $contig;
 }
+
+
+sub _cache_Contig {
+   my $self = shift;
+   my $contig   = shift;
+
+   if( scalar(keys(%{$self->{'_contig_cache'}})) > 5000 ) {
+	$self->{'_contig_cache'} = {};
+   }
+
+   $self->{'_contig_cache'}->{$contig->id} = $contig;
+
+}
+
+sub _get_Contig_cache {
+   my $self = shift;
+   my $id   = shift;
+
+   return $self->{'_contig_cache'}->{$id};
+}
+
+
 =head2 get_all_Clone_id
 
  Title   : get_all_Clone_id
@@ -2451,6 +2484,9 @@ sub prepare{
        $st->_statement($string);
        return $st;
    }
+
+   #my ($package,$filename,$line) = caller;
+   #print STDERR "executing [$string] in $package:$filename:$line\n";
 
    # should we try to verify the string?
 

@@ -259,8 +259,8 @@ sub get_all_clone_Genes{
    }
    foreach my $exon ( @exons ) {
        if( !exists $contig{$exon->contig_id} ) {
-	   $clone{$exon->clone_id} = $self->get_Clone($exon->clone_id)->seq;
-	   $contig{$exon->contig_id} = $self->get_Contig($exon->contig_id);
+	   $clone{$exon->clone_id} = $self->_dbobj->get_Clone($exon->clone_id)->seq;
+	   $contig{$exon->contig_id} = $self->_dbobj->get_Contig($exon->contig_id);
        }
        my ($s,$e,$str) = $contig{$exon->contig_id}->_convert_coords_contig_clone($exon->start,$exon->end,$exon->strand);
        

@@ -419,6 +419,8 @@ sub get_all_RepeatFeatures {
 
    # make the SQL query
 
+   print STDERR "Getting into get all Repeat Features for $id\n";
+
    my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,hstart,hend,hid " . 
 				    "from repeat_feature where contig = '$id'");
 
@@ -490,6 +492,8 @@ sub get_all_RepeatFeatures {
       push(@array,$out);
   }
  
+   print STDERR "Got out repeat features\n";
+
    return @array;
 }
 =head2 get_all_RepeatFeatures
@@ -665,9 +669,16 @@ sub offset{
    my $self = shift;
    my $id = $self->id();
 
+   if( defined $self->{'_offset'} ) {
+      return $self->{'_offset'};
+   }
+
    my $sth = $self->_dbobj->prepare("select offset from contig where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
+
+   $self->{'_offset'} = $rowhash->{'offset'};
+
    return $rowhash->{'offset'};
 
 }
@@ -689,9 +700,15 @@ sub orientation{
    my ($self) = @_;
    my $id = $self->id();
 
+   if( defined $self->{'_orientation'}  ) {
+	return $self->{'_orientation'};
+	}
+
    my $sth = $self->_dbobj->prepare("select orientation from contig where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
+   $self->{'_orientation'} = $rowhash->{'orientation'};
+
    return $rowhash->{'orientation'};
 }
 
