@@ -158,10 +158,4 @@ sub _create_consensus{
     return $consensus;
 }
 
-sub translation_id {
-    my ($self, $arg) = @_;
-    return $self->{_translation_id} = $arg if(defined($arg));
-    return $self->{_translation_id};
-}
-        
 1;

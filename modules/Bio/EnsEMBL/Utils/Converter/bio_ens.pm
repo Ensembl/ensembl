@@ -120,6 +120,10 @@ sub _initialize {
     }else{
         # No contig information
     }
+
+    if(defined $translation_id){
+        $self->translation_id($translation_id);
+    }
 }
 
 
@@ -127,7 +131,7 @@ sub _guess_module {
     my ($self, $in, $out) = @_;
     my $tail;
     if($in eq 'Bio::Search::HSP::GenericHSP'){
-        $tail = 'bio_ens_hit';
+        $tail = 'bio_ens_hsp';
     }elsif($in eq 'Bio::SeqFeature::Generic'){
         $tail = 'bio_ens_seqFeature';
     }elsif($in eq 'Bio::SeqFeature::FeaturePair'){
@@ -296,15 +300,15 @@ sub analysis_dbID {
 sub analysis_logic_name {
     my ($self, $arg) = @_;
     
-    if(defined $arg){
-        my $analysis;
-        eval{
-            $analysis = $self->dbadaptor->get_AnalysisAdaptor->fetch_by_logic_name($arg);
-        };
-        $self->throw("Problem happens when fetching analysis by logic name\n$@") if($@);
+    return $self->{_analysis_logic_name} unless(defined $arg);
+    my $analysis;
+    eval{
+        $analysis = 
+            $self->dbadaptor->get_AnalysisAdaptor->fetch_by_logic_name($arg);
+    };
+    $self->throw("Not found analysis with logic name as \[$arg\]\n$@") if($@);
 
-        $self->analysis($analysis);
-    }
+    $self->analysis($analysis);
     return $self->{_analysis_logic_name};
 }
 
@@ -399,4 +403,9 @@ sub slice_chr_start_end {
     }
 }
  
+sub translation_id {
+    my ($self, $arg) = @_;
+    return $self->{_translation_id} = $arg if(defined($arg));
+    return $self->{_translation_id};
+}
 1;
