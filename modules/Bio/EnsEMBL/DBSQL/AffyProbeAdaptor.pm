@@ -33,14 +33,13 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 =head2 store
 
-  Arg [1]    : list of Bio::EnsEMBL::AffyFeatures @afs
-               the affy features to store in the database
-  Example    : $affy_feature_adaptor->store(@affy_feats);
-  Description: Stores a list of affy feature objects in the database
+  Arg [1]    : list of Bio::EnsEMBL::AffyProbe @probes
+               the affy probes to store in the database
+  Example    : $affy_probe_adaptor->store(@affy_probes);
+  Description: Stores a list of affy probe objects in the database. The method doesnt check
+               if a Probe is already in the database. It sets dbID and adaptor on storing.
   Returntype : none
-  Exceptions : thrown if @afs is not defined, if any of the features do not
-               have an attached slice or atached probe.
-               or if any elements of @afs are not Bio::EnsEMBL::AffyFeatures 
+  Exceptions : throw on arong argument type
   Caller     : general
 
 =cut
@@ -111,7 +110,19 @@ sub store{
   }
 }
 
-sub fetch_by_probeset {
+=head2 fetch_all_by_probeset
+
+  Arg [1]    : string $probesetname
+  Example    : none
+  Description: Returns all the probes for given probesetname
+  Returntype : listref of Bio::EnsEMBL::AffyProbe
+  Exceptions : none
+  Caller     : general
+
+
+=cut
+
+sub fetch_all_by_probeset {
     my $self = shift;
     my $probeset = shift;
     
@@ -119,6 +130,18 @@ sub fetch_by_probeset {
 }
 
 
+
+=head2 fetch_all_by_AffyArray
+
+  Arg [1]    : Bio::EnsEMBL::AffyArray $array
+  Example    : none
+  Description: Fetches all Arrays that given probe is part of.
+  Returntype : listref of Bio::EnsEMBL::AffyFeature
+  Exceptions : none
+  Caller     : AffyProbe->get_all_AffyFeatures()
+
+
+=cut
 
 sub fetch_by_AffyArray {
     my $self = shift;
@@ -134,8 +157,21 @@ sub fetch_by_AffyArray {
 	return [];	
     }
 
-    return $self->generic_fetch( "ap.affy_array_id = array_id" );
+    return $self->generic_fetch( "ap.affy_array_id = $array_id" );
 }
+
+=head2 fetch_all_by_AffyProbe
+
+  Arg [1]    : Bio::EnsEMBL::AffyProbe $probe
+  Example    : none
+  Description: Fetches all features that given probe creates.
+  Returntype : listref of Bio::EnsEMBL::AffyFeature
+  Exceptions : none
+  Caller     : AffyProbe->get_all_AffyFeatures()
+
+
+=cut
+
 
 sub fetch_by_AffyFeature {
     my $self = shift;
