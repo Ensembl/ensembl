@@ -375,3 +375,7 @@ sub can_call_new{
 
    return 0;
 }
+
+sub desc {
+    return "";
+}

@@ -660,10 +660,55 @@ sub _gene_query{
 	    # hack to get things to behave
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
-	    if ($self->_convert_seqfeature_to_vc_coords($exon)) {
-                $internalExon = 1;
-		$exonconverted{$exon->id} = 1;
-            }                           
+
+	    ### got to treat sticky exons separately.
+	    if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
+		my @stickies = $exon->each_component_Exon();
+		# sort them by start-end
+		@stickies = sort { $a->start <=> $b->start } @stickies;
+		my $st_start;
+		my $st_end;
+		my $st_strand;
+		my $current_end;
+		my $mapped_sticky = 1;
+
+		foreach my $sticky ( @stickies ) {
+		    if( $self->_convert_seqfeature_to_vc_coords($sticky) == 0 ) {
+			$mapped_sticky = 0;
+			last;
+		    } else {
+			if( defined $current_end ) {
+			    if( $sticky->start-1 != $current_end ) {
+				$mapped_sticky = 0;
+				last; 
+			    }
+			}
+			if( !defined $st_start ) {
+			    $st_start = $sticky->start;
+			}
+			# at the end of this loop, will be the last one
+			$st_end = $sticky->end;
+			$st_strand = $sticky->strand;
+		    }
+		}
+
+		if( $mapped_sticky == 1 ) {
+		    $exon->attach_seq($self->primary_seq);
+		    $exon->start($st_start);
+		    $exon->end($st_end);
+		    $exon->strand($st_strand);
+		    $exonconverted{$exon->id} = 1;
+		} else {
+		    # do nothing
+		}
+
+	    } else {
+		# soooooo much simpler
+		if ($self->_convert_seqfeature_to_vc_coords($exon)) {
+		    $internalExon = 1;
+		    $exonconverted{$exon->id} = 1;
+		}               
+	    }
 	}
         
         unless ($internalExon) {    
