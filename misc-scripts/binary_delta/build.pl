@@ -17,6 +17,7 @@ use strict;
 use warnings;
 
 use File::Basename;
+use File::Copy;
 
 use Getopt::Std;
 
@@ -95,9 +96,18 @@ foreach my $v2_file (glob($v2_dir . '/*')) {
 	    print "\tFiles are huge, compressing new file\n";
 	    do_compress($v2_file, $delta_file);
 	} else {
-	    $patch_command = 'PATCH';
 	    print "\tCreating delta file\n";
 	    system($xdelta_cmd, 'delta', '-9', $v1_file, $v2_file, $delta_file);
+
+	    $delta_size = (stat $delta_file)[7];
+	    if ($delta_size > $v2_size) {
+		print "\tOoops, delta file larger than new revision\n";
+		print "\t(copying new file)\n";
+		$patch_command = 'ADD';
+		copy($v2_file, $delta_file);
+	    } else {
+		$patch_command = 'PATCH';
+	    }
 	}
     } else {
 	$patch_command = 'ZIP';	    # (was 'ADD')
