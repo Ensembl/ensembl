@@ -82,6 +82,7 @@ while( my $line = <FILE> ) {
     if(defined($use_existing_mappings)){
       $species->use_existing_mappings("yes");
     }
+
   }
   elsif($key eq "xref"){
     $type = "xref";
@@ -100,10 +101,17 @@ if(defined($species)){
 
 
 for my $species ( @all_species ) {
+
   $species->xref($xref); # attach xref object to species object
+
   $species->dump_seqs();
+
   $species->build_list_and_map();
+
   $species->parse_mappings();
+
+  $species->do_upload() if (defined($upload));
+
 }
 
  
