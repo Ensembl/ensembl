@@ -448,6 +448,30 @@ sub fetch_VirtualContig_by_chr_name{
 }
 
 
+=head2 convert_chromosome_to_fpc
+
+ Title   : convert_chromosome_to_fpc
+ Usage   : ($fpcname,$start,$end) = $stadp->convert_chromosome_to_fpc('chr1',10000,10020)
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub convert_chromosome_to_fpc{
+   my ($self,$chr,$start,$end) = @_;
+
+   my $type = $self->dbobj->static_golden_path_type();
+
+   my $sth = $self->prepare("select fpcctg_name,chr_start from static_golden_path where chr_name = '$chr' AND fpc_start = 1 AND chr_start <= $start AND chr_end >= $start");
+   $sth->execute;
+   my ($fpc,$startpos) = $sth->fetchrow_array;
+
+   return ($fpc,$start-$startpos,$end-$startpos);
+}
+
 
 =head2 get_all_fpc_ids
 

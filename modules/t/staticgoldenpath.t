@@ -46,7 +46,7 @@ $db->static_golden_path_type('UCSC');
 $stadaptor = $db->get_StaticGoldenPathAdaptor();
 
 @array = $stadaptor->fetch_RawContigs_by_fpc_name('ctg123');
-if( scalar(@array) != 3 ) {
+if( scalar(@array) != 4 ) {
    print "not ok 3\n";
 } else {
    print "ok 3\n";
@@ -60,7 +60,7 @@ if( $rc1->id ne 'contig1' ) {
 }
 
 @array = $stadaptor->fetch_RawContigs_by_chr_name('chr2');
-if( scalar(@array) != 3 ) {
+if( scalar(@array) != 4 ) {
    print "not ok 5\n";
 } else {
    print "ok 5\n";
