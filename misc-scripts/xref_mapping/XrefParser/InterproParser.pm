@@ -68,9 +68,7 @@ sub run {
   #     <db_xref protein_count="18" db="PFAM" dbkey="PF01278" name="Omptin" />
   #      <db_xref protein_count="344" db="TIGRFAMs" dbkey="TIGR00099" name="Cof-subfamily" />
   
-  my $count  = 0;
-  my $count2 = 0;
-  my $count3 = 0;
+  my %count;
   local $/ = "</interpro>";
  
 
@@ -80,42 +78,36 @@ sub run {
 
     my $interpro;
     my $short_name;
-    my $pfam;
-    my $tigr;
     my $name;
     
     ($interpro) = $_ =~ /interpro id\=\"(\S+)\"/;
     ($short_name) = $_ =~ /short_name\=\"(\S+)\"/;
     ($name) = $_ =~ /\<name\>(.*)\<\/name\>/;
-    ($pfam) = $_ =~ /db\=\"PFAM\".*dbkey\=\"(\S+)\"/;
-    ($tigr) = $_ =~ /db\=\"TIGRFAMs\".*dbkey\=\"(\S+)\"/;
-    
-
+	  
     if($interpro){
+#      print $interpro."\n";
       if(!get_xref($get_xref_sth, $interpro, $source_id)){
-	$count++;
+	$count{INTERPRO}++;
 	$add_xref_sth->execute($interpro,'',$short_name, $name,$source_id,$species_id)
 	  || die "Problem adding ".$interpro."\n";
       }
-      if($pfam){
-	if(!get_xref($get_interpro_sth, $interpro,$pfam)){
-	  $add_interpro_sth->execute($interpro,$pfam);
-	  $count2++;
+
+      while( /db="(PROSITE|PFAM|PRINTS|PREFILE|PROFILE|TIGRFAMs)"\s+dbkey="(\S+)"/cgm ) {
+	my ( $db_type, $id ) =  ( $1, $2 );
+#	print $db_type."\t".$id."\n";
+	if(!get_xref($get_interpro_sth, $interpro,$id)){
+	  $add_interpro_sth->execute($interpro,$id);
+	  $count{$db_type}++;
 	}
-      }  
-      if($tigr){
-	if(!get_xref($get_interpro_sth, $interpro,$tigr)){
-	  $add_interpro_sth->execute($interpro,$tigr);
-	  $count3++;
-	}
-      }  
+      }
     }
   }
+
   close (LONG);
-       
-  print "\t$count xref successfully loaded.\n";
-  print "\t$count2 interpro/pfam relationships added\n";
-  print "\t$count3 interpro/tigr relationships added\n";
+#  die "\n";
+  for my $db ( keys %count ) {
+    print "\t".$count{$db}." $db loaded.\n";
+  }
   
 }
 
