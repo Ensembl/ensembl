@@ -142,10 +142,7 @@ sub gen_load{
 
 
   # return if the connection and species, group are the same
-  my $db_reg;
-  if($reg->get_alias($dba->species,"no throw")){
-    $db_reg = $reg->get_DBAdaptor($dba->species,$dba->group);
-  }
+  my $db_reg = $reg->get_DBAdaptor($dba->species,$dba->group);
   if(defined($db_reg)){
     if($dba->dbc->equals($db_reg->dbc)){
       return $db_reg;
