@@ -14,8 +14,18 @@ Bio::EnsEMBL::DBSQL::AffyFeatureAdaptor
 
 =head1 SYNOPSIS
 
-=head1 DESCRIPTION
+  my $featureAdaptor = $db->get_AffyFeatureAdaptor();
+  
+  my $features = $featureAdaptor->fetch_all_by_AffyProbe( $probe );
+  $features = $featureAdaptor->fetch_all_by_Slice_arrayname( $slice, "Array1", "Array2" );
 
+  
+=head1 DESCRIPTION
+ 
+  Adaptor to load and store AffyFeature objects in the connected database. 
+  The store does not look for duplicates, so you have to make sure to store 
+  Features only once.
+ 
 =head1 METHODS
 
 =cut
@@ -30,6 +40,19 @@ use Bio::EnsEMBL::AffyFeature;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
+
+
+=head2 fetch_all_by_AffyProbe
+
+  Arg [1]    : Bio::EnsEMBL::AffyProbe $probe
+  Example    : none
+  Description: Fetches all featurs that given probe creates.
+  Returntype : listref of Bio::EnsEMBL::AffyFeature
+  Exceptions : none
+  Caller     : AffyProbe->get_all_AffyFeatures()
+
+
+=cut
 
 
 sub fetch_all_by_AffyProbe {
@@ -50,6 +73,21 @@ sub fetch_all_by_AffyProbe {
     return $res;
 }
 
+
+=head2 fetch_all_by_Slice_arrayname
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+  Arg [2..]  : list of String @arraynames
+  Example    : my $slice = $sliceAdaptor->fetch_by_region( "chromosome", "1" );
+               $features = $affy_feature_adaptor->fetch_by_Slice_arrayname( $slice, "" );
+  Description: Retrieves a list of features on given Slice that are created by probes from the
+               Arrays that are given by their names. If none is given, all features on that Slice 
+               are returned.
+  Returntype : listref of Bio::EnsEMBL::AffyFeature
+  Exceptions : none
+  Caller     : slice->get_all_AffyFeatures()
+
+=cut
 
 sub fetch_all_by_Slice_arrayname {
     my $self = shift;
@@ -159,6 +197,7 @@ sub _tables {
 	   ['affy_probe', 'ap' ], 
 	   [ 'affy_array', 'aa' ]);
 }
+
 
 sub _default_where_clause {
   my $self = shift;
