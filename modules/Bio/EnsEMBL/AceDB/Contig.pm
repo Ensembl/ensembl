@@ -45,11 +45,11 @@ use strict;
 use Bio::Root::Object;
 use Bio::SeqFeature::Generic;
 use Bio::EnsEMBL::AceDB::Obj;
-use Bio::EnsEMBL::DB::ContigI;
+use Bio::EnsEMBL::DB::RawContigI;
 use Bio::Seq;
 use Bio::EnsEMBL::Gene;
 
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::RawContigI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -86,7 +86,7 @@ sub _initialize {
 
 =cut
 
-sub seq{
+sub seq {
    my ($self) = @_;
    my $id = $self->id();
 
@@ -149,10 +149,10 @@ sub get_all_SeqFeatures {
    return @array;
 }
 
-=head2 order
+=head2 embl_order
 
- Title   : order
- Usage   : $order = $contig->order()
+ Title   : embl_order
+ Usage   : $order = $contig->embl_order()
  Function: Provides the order of the contig, starting at
          : zero.
  Example :
@@ -162,7 +162,7 @@ sub get_all_SeqFeatures {
 
 =cut
 
-sub order {
+sub embl_order {
    my ($self) = @_;
 
    # All AceDB contigs are single contigs in a single clone.
@@ -171,6 +171,27 @@ sub order {
 
 }
 
+
+=head2 length
+
+ Title   : length
+ Usage   : $len = $contig->length
+ Function: Provides the length of the contig
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub length {
+    my ($self) = @_;
+
+    my $seq = $self->seq;
+
+    return $seq->length;
+}
+    
 =head2 get_all_Genes
 
  Title   : get_all_Genes
@@ -328,9 +349,9 @@ sub id{
     return $self->{'id'};
 }
 
-=head2 offset
+=head2 embl_offset
 
- Title   : offset
+ Title   : embl_offset
  Usage   :
  Function:
  Example :
@@ -340,7 +361,7 @@ sub id{
 
 =cut
 
-sub offset{
+sub embl_offset {
    my ($self,@args) = @_;
 
    return 1;
@@ -365,6 +386,25 @@ sub orientation{
 
 }
 
+=head2 dbobj
+
+ Title   : dbobj
+ Usage   :
+ Function:
+ Example :
+ Returns : The Bio::EnsEMBL::DBSQL::ObjI object
+ Args    :
+
+
+=cut
+
+sub dbobj{
+   my ($self,@args) = @_;
+
+   return $self->_dbobj(@args);
+}
+
+
 =head2 _dbobj
 
  Title   : _dbobj
@@ -386,4 +426,13 @@ sub _dbobj{
 
 }
 
+sub seq_date {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_seq_date} = $arg;
+    }
+
+    return $self->{_seq_date};
+}
 1;

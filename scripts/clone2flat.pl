@@ -276,8 +276,11 @@ foreach my $clone_id ( @clones ) {
 
     eval {
 	my $clone = $db->get_Clone($clone_id);
-	my $as = $clone->virtualcontig;
+	print(STDERR "ick\n");
+	my $as    = $clone->virtualcontig;
+	print(STDERR "wor\n");
 	$as->skip_SeqFeature('similarity',1);
+	print(STDERR "pog\n");
 	# choose output mode
 	
 	# test clone check call
@@ -289,7 +292,7 @@ foreach my $clone_id ( @clones ) {
 	    }
 	}
 
-	my $debug;
+	my $debug = 1;
 	if($debug){
 	    # debug tests
 	    my $id=$clone->id;
@@ -320,7 +323,9 @@ foreach my $clone_id ( @clones ) {
 		$seqout->write_seq($contig->seq());
 	    }
 	} elsif ( $format =~ /embl/ ) {
+	    print(STDERR "Dumping embl\n");
 	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
+	    print(STDERR "making new seq\n");
 	    my $emblout = Bio::SeqIO->new( '-format' => 'EMBL', -fh => $OUT);
 	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($emblout);
 	    if( $nodna == 1 ) {
