@@ -59,6 +59,17 @@ foreach my $gene_id ( @gene_id ) {
 		my $tseq = $trans->translate();
 		$seqio->write_seq($tseq);
 	    }
+	} elsif ( $format eq 'dump' ) {
+	    foreach my $trans ( $gene->each_Transcript ) {
+		print "Transcript ",$trans->id,"\n";
+		foreach my $exon ( $trans->each_Exon ) {
+		    print "  Exon ",$exon->id," ",$exon->contig_id,":",$exon->start,"-",$exon->end,".",$exon->strand,"\n";
+		    my $seq = $exon->seq();
+		    my $str = $seq->str();
+		    print "    Start phase ",$exon->phase,"[",substr($str,0,10),"] End phase ",$exon->end_phase," [",substr($str,-10),"]\n";
+		}
+	    }
+
 	} else {
 	    die "No valid format!";
 	}
