@@ -7,21 +7,42 @@
 igihome=$HOME/proj/igi                  # change to needs
 resultdir=$igihome/out
 indir=$resultdir/merged
+
 outdir=$resultdir/stats
 mappingoutdir=$resultdir/mapping
+summaryoutdir=$resultdir/summary
+finaloutdir=$resultdir/final
+
+allmerges=*.merge
+fullmergeonly=ens_affy_fgenesh.merge
 
 [ ! -d $indir ] && echo "$indir: not found ">&2 && exit 1
-[ -d $outdir ]  && echo "Found dir $outdir, not merging" >&2  && exit 1
-[ -d $mappingoutdir ] && echo "Found $mappingoutdir, not doing stats">&2 && exit 1
-mkdir $outdir
-mkdir $mappingoutdir
-cd $indir
 
-for m in *.merge; do
-  stats-from-merge-files.pl < $m -stats -chaining 5  \
-         -igi2native $mappingoutdir/$m-i2n           \
-         -native2igi $mappingoutdir/$m-n2i           \
-         | remap-sources.sed > $outdir/$m.stats 2> $outdir/$m.log
+for d in $outdir $mappingoutdir $summaryoutdir $finaloutdir; do 
+    [ -d $d ]  && echo "Found dir $d, not merging" >&2  && exit 1
+    mkdir $d
 done
 
+cd $indir
+
+
+for m in $allmerges ; do
+    name=`basename $m .merge`
+    stats-from-merge-files.pl < $m -stats -chaining 5  \
+         -igi2native $mappingoutdir/$name-i2n           \
+         -native2igi $mappingoutdir/$name-n2i            \
+         -clustern 2                                      \
+         -gtfsummary $summaryoutdir/$name.summary          \
+       > $outdir/$name.stats 2> $outdir/$name.log
+done
+
+# now produce the 'final' gtf files, i.e. the ones that are predicted by two
+# or more sources:
+cd $indir
+for m in $fullmergeonly; do 
+    name=`basename $m .merge`
+    final=$name.gtf
+    gtfsummary2gtf.pl $summaryoutdir/$name.summary  < $m > $finaloutdir/$final
+    gzip < $finaloutdir/$final > $finaloutdir/$final.gz
+done
 
