@@ -1,4 +1,3 @@
-
 #
 # Ensembl module for Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor
 #
@@ -326,19 +325,23 @@ sub fetch_VirtualContig_by_fpc_name{
 =head2 fetch_VirtualContig_by_fpc_name_slice
 
  Title   : fetch_VirtualContig_by_fpc_name_slice
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : do not use; depracated. Use a construct with
+           fetch_VirtualContig_list_sized() instead.
 
+ Function: bit bizarre: start and end (in fpc coords) indicate which
+           RawContigs to use, then construct a VC consisting of the _full_
+           extent of these RCs. (As a result, its length is not simply
+           end-start+1)
+ Example :
+ Returns : a Virtual contig, consisting of all the overlap of th
+ Args    : fpc contig id, and start end in fpc coordinates?
 
 =cut
 
 sub fetch_VirtualContig_by_fpc_name_slice {
    my ($self,$name,$start,$end) = @_;
    
-   $self->warn("Usage of fetch_VirtualContig_by_fpc_name_slice is depracated. Please use nothing instead :-)");
+   $self->warn("Usage of StaticGoldenPathAdaptor.fetch_VirtualContig_by_fpc_name_slice is depracated. Use a construct with fetch_VirtualContig_list_sized() instead");
    
    if( !defined $end ) {
        $self->throw("must have start end to fetch by slice");
