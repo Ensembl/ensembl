@@ -7,9 +7,9 @@ use Bio::EnsEMBL::Utils::Eprof('eprof_start','eprof_end','eprof_dump');
 
 my $host      = 'ecs1b';
 my $dbuser    = 'ensadmin';
-my $dbname    = 'drosophila_melanogaster_9_3';
+my $dbname    = 'ewan_ciona_int_10';
 my $dbpass    = 'ensembl';
-my $path      = 'FLYBASE';
+my $path      = 'JGI_CIONA';
 
 print STDERR "Connecting to $host, $dbname\n";
 
@@ -57,9 +57,11 @@ while( (my $seq = $in->next_seq ) ) {
 		  0,
 		  3
 		  );
-		    
+
+    use POSIX;
     
-    my $div = int($length/25000);
+    my $div = POSIX::ceil($length/25000);
+
     my $l = int ($length/$div);
     
     print STDERR "AC: $ac\tDIV: $div\tL: $l\n";
@@ -122,7 +124,7 @@ while( (my $seq = $in->next_seq ) ) {
 		      1,
 		      $t,
 		      1,
-		      "FLYBASE"
+		      "JGI_CIONA"
 		      
 		      );
 
@@ -188,7 +190,7 @@ while( (my $seq = $in->next_seq ) ) {
 		      1,
 		      $t,
 		      1,
-		      "FLYBASE"
+		      "JGI_CIONA"
 		      
 		      );
 
@@ -251,7 +253,7 @@ while( (my $seq = $in->next_seq ) ) {
 		      1,
 		      $subseql,
 		      1,
-		      "FLYBASE"
+		      "JGI_CIONA"
 		      
 		      );
 
