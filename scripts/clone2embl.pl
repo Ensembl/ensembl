@@ -73,7 +73,7 @@ my $pepformat = 'Fasta';
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
 # this does have genes (finished)
-my $clone  = 'dJ271M21';
+#my $clone  = 'dJ271M21';
 # this does have genes (unfinished)
 # my $clone = '217N14';
 
@@ -94,8 +94,7 @@ if($help){
 
 my $db;
 
-my $clone_id = shift;
-$clone_id=$clone unless $clone_id;
+
 
 if( $dbtype =~ 'ace' ) {
     $host=$host2 unless $host;
@@ -104,78 +103,87 @@ if( $dbtype =~ 'ace' ) {
     $host=$host1 unless $host;
     $db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'ensdev' , -host => $host );
 } elsif ( $dbtype =~ 'timdb' ) {
+    if( $#ARGV != 0 && $#ARGV != -1 ) {
+	die "When using timdb - can only load one clone!";
+    } 
+    if( $#ARGV == -1 ) {
+	push(@ARGV,'dJ271M21');
+    }
+
     # clone_id is passed to speed things up - cuts down on parsing of flag files
-    $db = Bio::EnsEMBL::TimDB::Obj->new($clone_id,$noacc);
+    $db = Bio::EnsEMBL::TimDB::Obj->new($ARGV[0],$noacc);
 } else {
     die("$dbtype is not a good type (should be ace, rdb or timdb)");
 }
 
-my $clone = $db->get_Clone($clone_id);
-my $as = $clone->get_AnnSeq();
 
-# choose output mode
+foreach my $clone_id ( @ARGV ) {
+    my $clone = $db->get_Clone($clone_id);
+    my $as = $clone->get_AnnSeq();
+    # choose output mode
 
 
-if( $format =~ /gff/ ) {
-    foreach my $contig ( $clone->get_all_Contigs )  {
-	my @seqfeatures = $contig->as_seqfeatures();
-	foreach my $sf ( @seqfeatures ) {
-	    print $sf->gff_string, "\n";
+    if( $format =~ /gff/ ) {
+	foreach my $contig ( $clone->get_all_Contigs )  {
+	    my @seqfeatures = $contig->as_seqfeatures();
+	    foreach my $sf ( @seqfeatures ) {
+		print $sf->gff_string, "\n";
+	    }
+	}
+    } elsif ( $format =~ /fastac/ ) {
+	my $seqout = Bio::SeqIO->new( -format => 'Fasta' , -fh => \*STDOUT);
+	
+	foreach my $contig ( $clone->get_all_Contigs ) {
+	    $seqout->write_seq($contig->seq());
+	}
+    } elsif ( $format =~ /embl/ ) {
+	
+	$as->seq->desc("Reannotated sequence via EnsEMBL");
+	my $comment = Bio::Annotation::Comment->new();
+	
+	$comment->text("This sequence was reannotated via the EnsEMBL system. Please visit the EnsEMBL web site, http://ensembl.ebi.ac.uk for more information");
+	$as->annotation->add_Comment($comment);
+	
+	$comment = Bio::Annotation::Comment->new();
+	$comment->text("The /gene_id indicates a unique id for a gene, /transcript_id a unique id for a transcript and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://ensembl.ebi.ac.uk/docs/embl.html");
+	$as->annotation->add_Comment($comment);
+	
+	my $sf = Bio::SeqFeature::Generic->new();
+	$sf->start(1);
+	$sf->end($as->seq->seq_len());
+	$sf->primary_tag('source');
+	$sf->add_tag_value('organism','Homo sapiens');
+	$as->add_SeqFeature($sf);
+	my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
+	$emblout->_post_sort(\&sort_FTHelper_EnsEMBL);
+	
+	# attach ensembl specific dumping functions
+	$emblout->_id_generation_func(\&id_EnsEMBL);
+	$emblout->_kw_generation_func(\&kw_EnsEMBL);
+	$emblout->_sv_generation_func(\&sv_EnsEMBL);
+	$emblout->_ac_generation_func(\&ac_EnsEMBL);
+	
+	if( $nodna == 1 ) {
+	    $emblout->_show_dna(0);
+	}
+	
+	$emblout->write_annseq($as);
+    } elsif ( $format =~ /pep/ ) {
+	my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => \*STDOUT ) ;
+	
+	foreach my $gene ( $clone->get_all_Genes() ) {
+	    foreach my $trans ( $gene->each_Transcript ) {
+		my $tseq = $trans->translate();
+		$seqout->write_seq($tseq);
+	    }
+	}
+    } elsif ( $format =~ /ace/ ) {
+	foreach my $contig ( $clone->get_all_Contigs() ) {
+	    $contig->write_acedb(\*STDOUT,$aceseq);
 	}
     }
-} elsif ( $format =~ /fastac/ ) {
-    my $seqout = Bio::SeqIO->new( -format => 'Fasta' , -fh => \*STDOUT);
-
-    foreach my $contig ( $clone->get_all_Contigs ) {
-	$seqout->write_seq($contig->seq());
-    }
-} elsif ( $format =~ /embl/ ) {
-
-    $as->seq->desc("Reannotated Clone via EnsEMBL");
-    my $comment = Bio::Annotation::Comment->new();
-
-    $comment->text("This clone was reannotated via the EnsEMBL system. Please visit the EnsEMBL web site, http://ensembl.ebi.ac.uk for more information");
-    $as->annotation->add_Comment($comment);
-
-    $comment = Bio::Annotation::Comment->new();
-    $comment->text("The /gene_id indicates a unique id for a gene, /transcript_id a unique id for a transcript and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://ensembl.ebi.ac.uk/docs/embl.html");
-    $as->annotation->add_Comment($comment);
-
-    my $sf = Bio::SeqFeature::Generic->new();
-    $sf->start(1);
-    $sf->end($as->seq->seq_len());
-    $sf->primary_tag('source');
-    $sf->add_tag_value('organism','homo sapiens');
-    $as->add_SeqFeature($sf);
-    my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
-    $emblout->_post_sort(\&sort_FTHelper_EnsEMBL);
-
-    # attach ensembl specific dumping functions
-    $emblout->_id_generation_func(\&id_EnsEMBL);
-    $emblout->_kw_generation_func(\&kw_EnsEMBL);
-    $emblout->_sv_generation_func(\&sv_EnsEMBL);
-    $emblout->_ac_generation_func(\&ac_EnsEMBL);
-
-    if( $nodna == 1 ) {
-	$emblout->_show_dna(0);
-    }
-
-    $emblout->write_annseq($as);
-} elsif ( $format =~ /pep/ ) {
-    my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => \*STDOUT ) ;
-
-    foreach my $gene ( $clone->get_all_Genes() ) {
-	foreach my $trans ( $gene->each_Transcript ) {
-	    my $tseq = $trans->translate();
-	    $seqout->write_seq($tseq);
-	}
-    }
-} elsif ( $format =~ /ace/ ) {
-    foreach my $contig ( $clone->get_all_Contigs() ) {
-	$contig->write_acedb(\*STDOUT,$aceseq);
-    }
+    
 }
-
 
 #########################
 # sub routines
@@ -192,10 +200,10 @@ sub kw_EnsEMBL{
    my ($annseq) = @_;
 
    if( $annseq->htg_phase == 4 ) {
-       return "HTG";
+       return "HTG.";
    }
 
-   return "HTG; HTG_PHASE" . $annseq->htg_phase();
+   return "HTG; HTG_PHASE" . $annseq->htg_phase() . ".";
 }
 
 sub sv_EnsEMBL {
@@ -204,6 +212,9 @@ sub sv_EnsEMBL {
    if( ! $annseq->sv ) {
        return "NO_SV_NUMBER";
    }
+   if( $annseq->sv == -1 ) {
+       return undef;
+   }
 
    return $annseq->seq->id() . "." . $annseq->sv
 }
@@ -211,7 +222,7 @@ sub sv_EnsEMBL {
 sub ac_EnsEMBL {
    my ($annseq) = @_;
 
-   return $annseq->seq->id();
+   return $annseq->seq->id() . ";";
 }
 
 
