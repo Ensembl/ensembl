@@ -47,7 +47,7 @@ sub _fetch_seq {
 
   #calculate the offset and start in the compressed sequence 
   my $comp_start  = ($start-1 >> 2) + 1;
-  my $comp_len    = ($length  >> 2) + 2;
+  my $comp_len    = ($len  >> 2) + 2;
 
   my ($bvector, $nline);
 
@@ -56,7 +56,7 @@ sub _fetch_seq {
                 FROM dnac d
                 WHERE d.seq_region_id = ?");
   $sth->execute($comp_start, $comp_len, $seq_region_id);
-  $sth->bind_columns(\$bvector, $n_line);
+  $sth->bind_columns(\$bvector, \$nline);
   $sth->fetch();
   $sth->finish();
 
@@ -70,7 +70,7 @@ sub _fetch_seq {
   #convert from 0123 to ACTG
   $str =~ tr/0123/ACTG/;
 
-  $str = substr($str, $start%4, $len);
+  $str = substr($str, ($start-1)%4, $len);
 
   #expand the nlines and place them back in the sequence
   my @nlines = split(/:/, $nline);
@@ -92,7 +92,7 @@ sub _fetch_seq {
       $nlen = $len - $offset + 1;
     }
 
-    substr($str,$offset,$nlen) = $char x $nlen;    
+    substr($str,$offset-1,$nlen) = $char x $nlen;    
   }
 
   return \$str;
@@ -103,8 +103,9 @@ sub _fetch_seq {
 
   Arg [1]    : string $seq_region_id the id of the sequence region this dna
                will be associated with.
-  Arg [2]    : string $sequence the dna sequence to be stored in the database
-  Example    : $dbID = $seq_adaptor->store(12,'ACTGGGTACCAAACAAACACAACA');
+  Arg [2]    : string reference  $sequence the dna sequence to be stored in 
+               the database
+  Example    : $dbID = $seq_adaptor->store(12,\'ACTGGGTACCAAACAAACACAACA');
   Description: stores a dna sequence in the databases dna table and returns the
                database identifier for the new record.
   Returntype : int
@@ -168,21 +169,17 @@ sub store {
       }
     }
 
-    vec($bvector, $i,2) = char; 
+    vec($bvector, $i,2) = $char; 
   }
 
   my $nline = join(':', @nlines);
   my $statement = $self->prepare(
         "INSERT INTO dnac(seq_region_id, sequence, n_line) VALUES(?,?,?)");
 
-  my $rv = $statement->execute($seq_region_id, $bvector, $nline);
-  $self->throw("Failed to insert dna $sequence") if(!$rv);
-
-  my $id = $statement->{'mysql_insertid'};
+  $statement->execute($seq_region_id, $bvector, $nline);
 
   $statement->finish();
-
-  return $id;
+  return;
 }
 
 
