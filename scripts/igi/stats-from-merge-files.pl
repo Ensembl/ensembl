@@ -39,7 +39,7 @@ my $cluster_n;
 	     'igi2native:s'     => \$i2nmapping, 
 	     'native2igi:s'     => \$n2imapping, 
              'gtfsummary:s' => \$gtf_summary,
-             'cluster_n:d'  => \$cluster_n,
+             'cluster_n:s'  => \$cluster_n,
 	     'h|help'     => \$help,
 	     );
 die $usage if $help;

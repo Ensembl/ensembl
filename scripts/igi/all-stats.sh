@@ -31,7 +31,7 @@ for m in $allmerges ; do
     stats-from-merge-files.pl < $m -stats -chaining 5  \
          -igi2native $mappingoutdir/$name-i2n           \
          -native2igi $mappingoutdir/$name-n2i            \
-         -clustern 2                                      \
+         -cluster_n 2                                     \
          -gtfsummary $summaryoutdir/$name.summary          \
        > $outdir/$name.stats 2> $outdir/$name.log
 done
