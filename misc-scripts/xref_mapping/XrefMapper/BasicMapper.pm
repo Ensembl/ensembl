@@ -4,6 +4,12 @@ use strict;
 use DBI;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Translation;
+use  XrefMapper::db;
+
+use vars '@ISA';
+
+@ISA = qw{ XrefMapper::db };
+
 
 =head1 NAME
 
@@ -36,30 +42,10 @@ my $xref_password = "ensembl";
 
 
 
-sub new {
-  my($class, $species, $host, $port, $dbname, $user, $password ,$dir) = @_;
-
-  my $self ={};
-  bless $self,$class;
-
-  $self->species($species);
-  $self->host($host);
-  $self->port($port);
-  $self->dbname($dbname);
-  $self->user($user);
-  $self->password($password);
-  $self->dir($dir);
-
-
-  return $self;
-}
-
-
-
 sub dump_seqs{
-  my ($self, $slice) = @_;
+  my ($self, $xref) = @_;
   $self->dump_ensembl($slice);
-  $self->dump_xref();
+  $self->dump_xref($xref);
 }
 
 sub run_matching{
@@ -71,13 +57,17 @@ sub store{
 }
 
 sub dump_xref{
-  my ($self) = @_;
+  my ($self,$xref) = @_;
+
+  if(!defined($xref->species())){
+    $xref->species($self->species);
+  }
 
   #
   # the species specified must be in the database and hence have a species_id
   #
-  my $sql = "select species_id from species where name = '".$self->species."'";
-  my $dbi = $self->dbi();
+  my $sql = "select species_id from species where name = '".$xref->species."'";
+  my $dbi = $xref->dbi();
   my $sth = $dbi->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
@@ -85,7 +75,7 @@ sub dump_xref{
   if (defined @row) {
     $species_id = $row[0];
   } else {
-    print STDERR "Couldn't get ID for species ".$self->species."\n";
+    print STDERR "Couldn't get ID for species ".$xref->species."\n";
     print STDERR "It must be one of :-\n";
     $sql = "select name from species";
     $sth = dbi()->prepare($sql);
@@ -100,8 +90,8 @@ sub dump_xref{
   # Dump out the sequences where the species has an id of species_id
   # and the sequence type is 'dna'
   #
-  $self->xref_dna_file($self->dir."/".$self->species."_xref_dna.fasta");
-  open(XDNA,">".$self->dir."/".$self->species."_xref_dna.fasta") || die "Could not open xref_dna.fasta";
+  $self->xref_dna_file($self->dir."/".$xref->species."_xref_dna.fasta");
+  open(XDNA,">".$self->dir."/".$xref->species."_xref_dna.fasta") || die "Could not open xref_dna.fasta";
   my $sql = "select p.xref_id, p.sequence from primary_xref p, xref x ";
   $sql   .= "where p.xref_id = x.xref_id and ";
   $sql   .= "      p.sequence_type ='dna' and ";
@@ -209,19 +199,6 @@ FIN:
 
 
 
-sub dbi {
-
-  my $self = shift;
-
-  my $dbi = DBI->connect("dbi:mysql:host=$xref_host;port=$xref_port;database=$xref_database",
-                        "$xref_user",
-                        "$xref_password",
- 			 {'RaiseError' => 1}) || die "Can't connect to database";
-
-
-  return $dbi;
-}
-
 ###
 # Getter/Setter methods
 ###
@@ -268,64 +245,4 @@ sub ensembl_dna_file{
 #  return \%type;
 #}
 
-sub species {
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_species} = $arg );
-  return $self->{_species};
-}
-
-sub host {
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_host} = $arg );
-  return $self->{_host};
-}
-
-
-sub port {
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_port} = $arg );
-  return $self->{_port};
-}
-
-sub dbname {
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_dbname} = $arg );
-  return $self->{_dbname};
-}
-
-sub user {
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_user} = $arg );
-  return $self->{_user};
-}
-
-sub password {
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_password} = $arg );
-  return $self->{_password};
-}
-
-sub dir {
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_dir} = $arg );
-  return $self->{_dir};
-}
-
-
-
- 
 1;
