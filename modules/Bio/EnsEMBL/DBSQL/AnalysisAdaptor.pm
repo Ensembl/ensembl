@@ -241,7 +241,9 @@ sub store {
     $self->throw("called store on AnalysisAdaptor with a [$analysis]");
   }
 
-  $analysis->dbID && return $analysis->dbID;
+  $analysis->dbID && ( $analysis->adaptor() == $self ) && 
+    return $analysis->dbID;
+
   my $dbID;
  
   if( !defined $analysis->logic_name ) {

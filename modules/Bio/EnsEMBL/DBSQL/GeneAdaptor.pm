@@ -722,15 +722,7 @@ sub store {
                               VALUES('$type', $analysisId, $trans_count, $xref_id)" );
    $sth2->execute();
 
-   
-   $gene->adaptor( $self );
-   $gene->dbID( $sth2->{'mysql_insertid'} );
-
-   my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
-
-   foreach my $dbl ( @{$gene->get_all_DBLinks} ) {
-     $dbEntryAdaptor->store( $dbl, $gene->dbID, "Gene" );
-   }
+   my $gene_dbID = $sth2->{'mysql_insertid'};
 
    if (defined($gene->stable_id)) {
      if (!defined($gene->created) || 
@@ -741,7 +733,7 @@ sub store {
 
      my $statement = "INSERT INTO gene_stable_id(gene_id," .
                                    "version, stable_id, created, modified)".
-                      " VALUES(" . $gene->dbID . "," .
+                      " VALUES(" . $gene_dbID . "," .
                                $gene->version . "," .
                                "'" . $gene->stable_id . "'," .
                                "FROM_UNIXTIME(".$gene->created."),".
@@ -750,18 +742,27 @@ sub store {
      $sth->execute();
    }
 
-   # write exons at this level to avoid duplicates
-   my $exonAdaptor = $self->db->get_ExonAdaptor();
-   my @ex = @{$gene->get_all_Exons};
 
-   foreach my $exon (@ex){
-     $exonAdaptor->store( $exon );
+   my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
+
+   foreach my $dbl ( @{$gene->get_all_DBLinks} ) {
+     $dbEntryAdaptor->store( $dbl, $gene_dbID, "Gene" );
    }
+
 
    # write exons transcripts and exon_transcript table
-   foreach my $trans ( @{$gene->get_all_Transcripts()} ) {
-       $transcriptAdaptor->store($trans,$gene);
+
+   my $trans = $gene->get_all_Transcripts;
+
+   #force lazy loading of translations before new exon dbIDs are set
+   map {$_->translation} @$trans;
+
+   foreach my $t ( @$trans ) {
+     $transcriptAdaptor->store($t,$gene_dbID );
    }
+
+   $gene->adaptor( $self );
+   $gene->dbID( $gene_dbID );
    
    return $gene->dbID;
 }

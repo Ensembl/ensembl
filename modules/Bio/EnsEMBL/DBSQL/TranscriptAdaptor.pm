@@ -168,14 +168,10 @@ sub fetch_by_translation_stable_id {
 =cut
 
 sub store {
-   my ($self,$transcript,$gene) = @_;
+   my ($self,$transcript,$gene_dbID) = @_;
 
    if( ! ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
        $self->throw("$transcript is not a EnsEMBL transcript - not dumping!");
-   }
-
-   if( ! ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
-       $self->throw("$gene is not a EnsEMBL gene - not dumping!");
    }
 
    # store translation
@@ -183,11 +179,19 @@ sub store {
    # then store the exon_transcript table
 
    my $translation = $transcript->translation();
-   my $exon_count;
+   my ( $exon_count, $exons );
+   $exons = $transcript->get_all_Exons();
+   $exon_count = scalar( @{$exons} );
+
+   my $exonAdaptor = $self->db->get_ExonAdaptor();
+   foreach my $exon ( @{$exons} ) {
+     $exonAdaptor->store( $exon );
+   }
+
    if( defined $translation ) {
      $self->db->get_TranslationAdaptor()->store( $translation );
    }
-   $exon_count = scalar(@{$transcript->get_all_Exons()});
+
 
    # assuming that the store is used during the Genebuil process, set
    # the display_xref_id to 0.  This ought to get re-set during the protein
@@ -202,25 +206,24 @@ sub store {
         ");
 
    if( defined $translation ) {
-     $tst->execute( $gene->dbID(), $translation->dbID(), $exon_count, $xref_id );
+     $tst->execute( $gene_dbID, $translation->dbID(), $exon_count, $xref_id );
    } else {
-     $tst->execute( $gene->dbID(), 0, $exon_count, $xref_id );
+     $tst->execute( $gene_dbID, 0, $exon_count, $xref_id );
    }
 
-   $transcript->dbID( $tst->{'mysql_insertid'});
-   $transcript->adaptor( $self );
+   my $transc_dbID = $tst->{'mysql_insertid'};
 
    #print STDERR "Going to look at gene links\n";
    my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
 
    foreach my $dbl ( @{$transcript->get_all_DBLinks} ) {
-     $dbEntryAdaptor->store( $dbl, $transcript->dbID, "Transcript" );
+     $dbEntryAdaptor->store( $dbl, $transc_dbID, "Transcript" );
    }
 
    my $etst = $self->prepare("insert into exon_transcript (exon_id,transcript_id,rank) values (?,?,?)");
    my $rank = 1;
    foreach my $exon ( @{$transcript->get_all_Exons} ) {
-     $etst->execute($exon->dbID,$transcript->dbID,$rank);
+     $etst->execute($exon->dbID,$transc_dbID,$rank);
      $rank++;
    }
 
@@ -231,7 +234,7 @@ sub store {
 
      my $statement = "INSERT INTO transcript_stable_id(transcript_id," .
                                    "stable_id,version)".
-                      " VALUES(" . $transcript->dbID . "," .
+                      " VALUES(" . $transc_dbID . "," .
                                "'" . $transcript->stable_id . "'," .
                                $transcript->version . 
                                ")";
@@ -239,9 +242,9 @@ sub store {
      $sth->execute();
    }
 
-
-   return $transcript->dbID;
-
+   $transcript->dbID( $transc_dbID );
+   $transcript->adaptor( $self );
+   return $transc_dbID;
 }
 
 =head2 get_stable_entry_info

@@ -351,8 +351,6 @@ sub store {
   }
 
   if( $exon->dbID && $exon->adaptor && $exon->adaptor == $self ) {
-    $self->warn("Exon with dbID " . $exon->dbID . " has already got a dbID" .
-		"and is attached to this adaptor. No need therefore to store");
     return $exon->dbID();
   }
 
