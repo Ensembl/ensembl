@@ -154,7 +154,8 @@ CREATE TABLE evidence (
   evidence_name varchar(40) default NULL,
   transcript_info_id int(10) unsigned default NULL,
   type enum('EST','cDNA','Protein','Genomic','UNKNOWN') default NULL,
-  PRIMARY KEY  (evidence_id)
+  PRIMARY KEY  (evidence_id),
+  INDEX transcript_info_id_idx (transcript_info_id)
 ) TYPE=MyISAM;
 
 ################################################################################
