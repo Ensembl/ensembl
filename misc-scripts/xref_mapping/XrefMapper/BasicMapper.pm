@@ -905,6 +905,21 @@ sub dump_direct_xrefs {
   open (XREF, ">>" . $self->dir() . "/xref.txt");
   open (OBJECT_XREF, ">>" . $self->dir() . "/object_xref.txt");
 
+  # Will need to look up translation stable ID from transcript stable ID, build hash table
+  print "Building transcript stable ID -> translation stable ID lookup table\n";
+  my %transcript_stable_id_to_translation_stable_id;
+  my $trans_sth = $self->dbi()->prepare("SELECT tss.stable_id as transcript, tls.stable_id AS translation FROM translation tl, translation_stable_id tls, transcript_stable_id tss WHERE tss.transcript_id=tl.transcript_id AND tl.translation_id=tls.translation_id");
+  $trans_sth->execute();
+  my ($transcript_stable_id, $translation_stable_id);
+  $trans_sth->bind_columns(\$transcript_stable_id, \$translation_stable_id);
+  while ($trans_sth->fetch()) {
+    $transcript_stable_id_to_translation_stable_id{$transcript_stable_id} = $translation_stable_id;
+  }
+  $trans_sth->finish();
+
+  # Will need lookup tables for gene/transcript/translation stable ID to internal ID
+  my $stable_id_to_internal_id = $self->build_stable_id_to_internal_id_hash();
+
   # SQL / statement handle for getting all direct xrefs
   my $xref_sql = "SELECT dx.general_xref_id, dx.ensembl_stable_id, dx.type, dx.linkage_xref, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM direct_xref dx, xref x WHERE dx.general_xref_id=x.xref_id";
   my $xref_sth = $self->xref()->dbi()->prepare($xref_sql);
@@ -919,12 +934,17 @@ sub dump_direct_xrefs {
     my $external_db_id = $source_to_external_db{$source_id};
     if ($external_db_id) {
 
-      # Look up Ensembl internal ID from stable ID. No joins, so quick.
-      my $core_sql = "SELECT ${type}_id FROM ${type}_stable_id WHERE stable_id=\'$ensembl_stable_id\'" ;
-      my $core_sth = $self->dbi()->prepare($core_sql);
-      $core_sth->execute();
-      my @row = $core_sth->fetchrow_array();
-      my $ensembl_internal_id = $row[0];
+      # In the case of CCDS xrefs, direct_xref is to transcript but we want
+      # the mapping in the core db to be to the *translation*
+      if ($source_id == get_source_id_from_source_name($self->xref(), "CCDS")) {
+	$type = 'translation';
+	my $tmp_esid = $ensembl_stable_id;
+	$ensembl_stable_id = $transcript_stable_id_to_translation_stable_id{$tmp_esid};
+	warn "Can't find translation for transcript $tmp_esid" if (!$ensembl_stable_id);
+	#print "CCDS: transcript $tmp_esid -> translation $ensembl_stable_id\n";
+      }
+
+      my $ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$ensembl_stable_id};
       if ($ensembl_internal_id) {
 
 	if (!$xrefs_written{$xref_id}) {
@@ -976,6 +996,33 @@ sub dump_interpro {
 
 }
 
+sub build_stable_id_to_internal_id_hash {
+
+  my $self = shift;
+
+  my %stable_id_to_internal_id;
+
+  foreach my $type ('gene', 'transcript', 'translation') { # Add exon here if required
+
+    print "Caching stable ID -> internal ID links for ${type}s\n";
+
+    my $core_sql = "SELECT ${type}_id, stable_id FROM ${type}_stable_id" ;
+    my $sth = $self->dbi()->prepare($core_sql);
+    $sth->execute();
+    my ($internal_id, $stable_id);
+    $sth->bind_columns(\$internal_id, \$stable_id);
+
+    while ($sth->fetch) {
+
+      $stable_id_to_internal_id{$type}{$stable_id} = $internal_id;
+
+    }
+
+  }
+
+  return \%stable_id_to_internal_id;
+
+}
 
 sub get_ensembl_object_type {
 
