@@ -1,9 +1,11 @@
 #!/usr/local/bin/perl -w
 
 use strict;
+use lib 't';
 
 use Getopt::Std;
 use Test::Harness;
+use MultiTestDB;
 
 use vars qw($opt_l $opt_h);
 
@@ -26,9 +28,18 @@ if($opt_l) {
 }
 
 #run all of the specified tests  
-runtests(@{&get_all_tests('.', \@ARGV)});
 
+$ENV{'RUNTESTS_HARNESS'} = 1;
 
+my $clean_up = new MultiTestDB;
+
+eval {
+  runtests(@{&get_all_tests('.', \@ARGV)});
+};
+
+# do some clean up by creating a MultiTestDB object
+
+delete $ENV{"RUNTESTS_HARNESS"};
 
 =head2 get_all_tests
 
