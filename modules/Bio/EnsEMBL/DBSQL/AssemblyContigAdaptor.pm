@@ -91,7 +91,6 @@ sub fetch_by_chr_start_end {
     AND   assembly_contig_chr_start   >= $chrstart
     AND   assembly_contig_chr_end     <= $chrend};
       
-  print "$query\n";
 
   my $sth = $self->prepare($query);
 
