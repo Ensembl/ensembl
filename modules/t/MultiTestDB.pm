@@ -1,4 +1,4 @@
-
+ 
 
 =pod
 
@@ -15,11 +15,9 @@
 
 package MultiTestDB;
 
-use vars qw(@ISA %ENV);
+use vars qw(%ENV);
 
-use Bio::EnsEMBL::Root;
-
-@ISA = ('Bio::EnsEMBL::Root');
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 use strict;
 
@@ -150,7 +148,7 @@ sub create_adaptors {
     };
 	
     if ($@) {
-      $self->warn("WARNING: Could not instantiate $dbtype DBAdaptor:\n$@");
+      warning("WARNING: Could not instantiate $dbtype DBAdaptor:\n$@");
     } else {
       $self->{'db_adaptors'}->{$dbtype} = $adaptor;
     }
@@ -193,7 +191,7 @@ sub load_databases {
   my $db = DBI->connect($locator, $user, $pass, {RaiseError => 1});
 
   unless($db) {
-    $self->warn("Can't connect to database $locator");
+    warning("Can't connect to database $locator");
     return;
   }
 
@@ -222,7 +220,7 @@ sub load_databases {
       print STDERR "\nCreating db $dbname";
       
       unless($db->do("CREATE DATABASE $dbname")) {
-	$self->warn("Could not create database [$dbname]");
+	warning("Could not create database [$dbname]");
 	return;
       }
 
@@ -246,7 +244,7 @@ sub load_databases {
       local *DIR;
 
       unless(opendir(DIR, $dir)) {
-	$self->warn("could not open dump directory '$dir'");
+	warning("could not open dump directory '$dir'");
 	return;
       }
 
@@ -261,7 +259,7 @@ sub load_databases {
 	$sql_file = "$dir/$sql_file";
 	
 	unless(-f $sql_file && -r $sql_file) {
-	  $self->warn("could not read SQL file '$sql_file'\n");
+	  warning("could not read SQL file '$sql_file'\n");
 	  next;
 	}
 
@@ -288,7 +286,7 @@ sub load_databases {
         (my $txt_file = $sql_file) =~ s/\.sql$/\.txt/;
 
         unless(-f $txt_file && -r $txt_file) {
-	  $self->warn("could not read data file '$txt_file'\n");
+	  warning("could not read data file '$txt_file'\n");
 	  next;
         }
 
@@ -308,16 +306,16 @@ sub unzip_test_dbs {
   my ($self, $zipfile) = @_;
 
   if (-e $self->curr_dir . $DUMP_DIR) {
-    $self->warn("Test genome dbs already unpacked\n");
+    warning("Test genome dbs already unpacked\n");
     return;
   }
 
   unless($zipfile) {
-    $self->throw("zipfile argument is required\n");
+    throw("zipfile argument is required\n");
   }
 
   unless(-f $zipfile) {
-    $self->warn("zipfile could not be found\n");
+    warning("zipfile could not be found\n");
     return;
   }
 
@@ -337,7 +335,7 @@ sub get_DBAdaptor {
   }
 
   unless($self->{'db_adaptors'}->{$type}) {
-    $self->warn("dbadaptor of type $type is not available\n");
+    warning("dbadaptor of type $type is not available\n");
     return undef;
   }
 
@@ -368,7 +366,7 @@ sub get_DBAdaptor {
 
 sub hide {
   my ($self, $dbtype, @tables) = @_;
-  
+
   unless($dbtype && @tables) {
     die("dbtype and table args must be defined\n");
   }
@@ -380,44 +378,27 @@ sub hide {
   }
 
   foreach my $table (@tables) {
+
     if($self->{'conf'}->{$dbtype}->{'hidden'}->{$table}) {
-      $self->warn("table '$table' is already hidden and cannot be hidden again\n");
+      warning("table '$table' is already hidden and cannot be hidden again\n");
       next;
     }
 
     my $hidden_name = "_hidden_$table";
 
-    #do some table renaming sql
-    my $sth = $adaptor->prepare("alter table $table rename $hidden_name");
+    #copy contents of table into a temp table
 
-    $sth->execute;
+    my $sth =
+      $adaptor->prepare("CREATE TABLE $hidden_name " .
+                        "SELECT * FROM $table");
 
-    #reload the old table from its schema file
-    my $schema_file = $self->curr_dir . "$DUMP_DIR/" . $self->species . "/$dbtype/$table.sql";
+    $sth->execute();
+    $sth->finish();
 
-    local *SCHEMA_FILE;
-
-    unless(-f $schema_file && -e $schema_file && 
-	   open (SCHEMA_FILE,$schema_file) ) {
-      #rename the table back
-      $sth = $adaptor->prepare("alter table $hidden_name rename $table");
-      $sth->execute;
-      $self->warn("could not read schema file '$schema_file' for $dbtype $table" .
-	  ". table could not be hidden");
-      next;
-    }
-    
-    #read all the lines from the schema definition
-    my @lines = <SCHEMA_FILE>;
-    my $sql = join ' ', @lines;
-
-    $sql =~ s/;\s*$//;
-
-    close SCHEMA_FILE;
-
-    #presumably create the **empty** table
-    $sth = $adaptor->prepare($sql);
-    $sth->execute;
+    #delete the contents of the original table
+    $sth = $adaptor->prepare("DELETE FROM $table");
+    $sth->execute();
+    $sth->finish();
 
     #update the hidden table config
     $self->{'conf'}->{$dbtype}->{'hidden'}->{$table} = $hidden_name;
@@ -445,8 +426,8 @@ sub hide {
 
 sub restore {
   my ($self, $dbtype, @tables) = @_;
-  
-  unless($dbtype) {
+
+  if(!$dbtype) {
     #restore all of the tables in every dbtype
 
     foreach my $dbtype (keys %{$self->{'conf'}}) {
@@ -454,7 +435,7 @@ sub restore {
     }
 
     #lose the hidden table details
-#    delete $self->{'conf'}->{'hidden'};
+    delete $self->{'conf'}->{'hidden'};
 
     return;
   }
@@ -463,8 +444,8 @@ sub restore {
   unless($adaptor) {
     die "Adaptor for $dbtype is not available";
   }
-  
-  unless(@tables) {
+
+  if(!@tables) {
     #restore all of the tables for this db
     @tables = keys %{$self->{'conf'}->{$dbtype}->{'hidden'}};
   }
@@ -472,18 +453,25 @@ sub restore {
   foreach my $table (@tables) {
     my $hidden_name = $self->{'conf'}->{$dbtype}->{'hidden'}->{$table};
 	
-    #drop existing table
-    my $sth = $adaptor->prepare("drop table $table");
-    $sth->execute;
+    #delete current contents of table
+    my $sth = $adaptor->prepare("delete from $table");
+    $sth->execute();
+    $sth->finish();
 
-    #rename hidden table
-    $sth = $adaptor->prepare("alter table $hidden_name rename $table");
-    $sth->execute;
+    #copy contents of tmp table back into main table
+    $sth = $adaptor->prepare("insert into $table " .
+                             "select * from $hidden_name");
+    $sth->execute();
+    $sth->finish();
+
+    #drop temp table
+    $sth = $adaptor->prepare("drop table $hidden_name");
+    $sth->execute();
+    $sth->finish();
 
     #delete value from hidden table config
     delete $self->{'conf'}->{$dbtype}->{'hidden'}->{$table};
   }
-  
 }
 
 =head2 save
@@ -528,11 +516,12 @@ sub save {
       $hidden_name = "_hidden_$table";
 
       #copy the data from the hidden table into the new table
-      my $sth = $adaptor->prepare("insert into $table select * from $hidden_name"); 
+      my $sth = $adaptor->prepare("insert into $table " .
+                                  "select * from $hidden_name"); 
       $sth->execute;
     }
     else {
-      $self->warn("hidden table '$hidden_name' does not exist so saving is not possible\n");
+      warning("hidden table '$hidden_name' does not exist so saving is not possible\n");
     }
   }
 }
@@ -540,7 +529,7 @@ sub save {
 sub compare {
   my ($self, $dbtype, $table) = @_;
 
-  $self->warn("save method not yet implemented\n");
+  warning("save method not yet implemented\n");
 
 }
 
@@ -675,6 +664,9 @@ sub DESTROY {
     } else {
       #we are runnning a stand-alone test, cleanup created databases
       print STDERR "\nCleaning up....\n";
+      #restore database state since we may not actually delete it in the
+      #cleanup - it may be defined as a preloaded db
+      $self->restore;
       $self->cleanup;
     }
 }
