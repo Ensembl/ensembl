@@ -2337,6 +2337,28 @@ sub _default_contig_overlap_source {
     return 1;
 }
 
+
+=head2 get_PredictionFeature_as_Transcript
+
+ Title   : get_PredictionFeature_as_Transcript
+ Usage   :$obj->get_PredictionFeature_as_Transcript($genscan_id)
+ Function:Call get_PredictionFeature_as_Transcript in Feature_obj object,see documentation for this method
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_PredictionFeature_as_Transcript{
+   my ($self,$genscan_id) = @_;
+
+   return $self->Feature_obj->get_PredictionFeature_as_Transcript($genscan_id);
+
+}
+
+
+
 =head2 overlap_distance_cutoff
 
  Title   : overlap_distance_cutoff
