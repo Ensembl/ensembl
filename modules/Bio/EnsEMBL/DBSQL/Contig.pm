@@ -181,9 +181,8 @@ sub _seq_cache{
 =head2 get_all_SeqFeatures
 
  Title   : get_all_SeqFeatures
- Usage   : foreach my $sf ( $contig->get_all_SeqFeatures($start,$end) ) 
- Function: Gets all the sequence features that lie between the coordinates
-           specified or on the whole contig.
+ Usage   : foreach my $sf ( $contig->get_all_SeqFeatures
+ Function: Gets all the sequence features on the whole contig
  Example :
  Returns : 
  Args    :
@@ -191,7 +190,30 @@ sub _seq_cache{
 
 =cut
 
-sub get_all_SeqFeatures{
+sub get_all_SeqFeatures {
+    my ($self) = @_;
+
+    my @out;
+
+    push(@out,$self->get_all_SimilarityFeatures);
+    push(@out,$self->get_all_RepeatFeatures);
+
+    return @out;
+}
+
+=head2 get_all_SimilarityFeatures
+
+ Title   : get_all_SimilarityFeatures
+ Usage   : foreach my $sf ( $contig->get_all_SimilarityFeatures($start,$end) ) 
+ Function: Gets all the sequence similarity features on the whole contig
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_SimilarityFeatures{
    my ($self) = @_;
 
    my @array;
@@ -273,17 +295,13 @@ sub get_all_SeqFeatures{
       push(@array,$out);
   }
  
-   # Now get the repeats
-   my @repeats = $self->get_all_Repeats;
-
-   push(@array,@repeats);
-
    return @array;
 }
-=head2 get_all_Repeats
 
- Title   : get_all_Repeats
- Usage   : foreach my $sf ( $contig->get_all_Repeats )
+=head2 get_all_RepeatFeatures
+
+ Title   : get_all_RepeatFeatures
+ Usage   : foreach my $sf ( $contig->get_all_RepeatFeatures )
  Function: Gets all the repeat features on a contig.
  Example :
  Returns : 
@@ -292,7 +310,7 @@ sub get_all_SeqFeatures{
 
 =cut
 
-sub get_all_Repeats {
+sub get_all_RepeatFeatures {
    my ($self) = @_;
 
    my @array;
@@ -339,7 +357,7 @@ sub get_all_Repeats {
 	   $out->hstart      ($hstart);
 	   $out->hend       ($hend);
 	   $out->hseqname   ($hid);
-	   $out->hsource_tag('Repeat');
+	   $out->hsource_tag('repeat');
 	   $out->hprimary_tag('similarity');
 	   $out->hstrand     ($strand);
 	   $out->analysis    ($analysis);
@@ -358,7 +376,7 @@ sub get_all_Repeats {
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);
-#       $out->source_tag($name);
+       $out->source_tag('repeat');
        $out->primary_tag('similarity');
 
        if( defined $score ) {

@@ -521,6 +521,7 @@ sub get_Exon{
    $exon->id($rowhash->{'id'});
    $exon->created($rowhash->{'UNIX_TIMESTAMP(created)'});
    $exon->modified($rowhash->{'UNIX_TIMESTAMP(modified)'});
+#   print STDERR "Got exon with ",$exon->created," ",$exon->modified,"\n";
    $exon->start($rowhash->{'seq_start'});
    $exon->end($rowhash->{'seq_end'});
    $exon->strand($rowhash->{'strand'});
@@ -1163,7 +1164,7 @@ sub write_Gene{
    };
     
 
-   if ( $@ || $gene->version > $old_gene->version) {
+   if ( $@ || ($gene->version > $old_gene->version)) {
 
        my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
 				 $gene->id()     . "','".
@@ -1269,16 +1270,15 @@ sub write_Feature {
     my ($self,$contig,@features) = @_;
 
     $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")          unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
-
-
+    
     my $contigid = $contig->id;
     my $analysis;
-
+    
     my $sth = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
-
+    
     # Put the repeats in a different table
     my @repeats;
-
+    
     FEATURE :
     foreach my $feature ( @features ) {
 	
@@ -1286,6 +1286,51 @@ sub write_Feature {
 	    $self->throw("Feature $feature is not a feature!");
 	}
 
+	if($feature->isa('Bio::EnsEMBL::Repeat')) {
+	    push(@repeats,$feature);
+	} else {    
+	    if (!defined($feature->analysis)) {
+		$self->throw("Feature " . $feature->seqname . " " . $feature->source_tag ." doesn't have analysis. Can't write to database");
+	    } else {
+		$analysis = $feature->analysis;
+	    }
+	    
+	    my $analysisid = $self->write_Analysis($analysis);
+
+
+	    if ( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
+		my $homol = $feature->feature2;
+	    
+		$sth->execute('NULL',
+			      $contig->id,
+			      $feature->start,
+			      $feature->end,
+			      $feature->score,
+			      $feature->strand,
+			      $feature->source_tag,
+			      $analysisid,
+			      $homol->start,
+			      $homol->end,
+			      $homol->seqname);
+	    } else {
+		$sth->execute('NULL',
+			      $contig->id,
+			      $feature->start,
+			      $feature->end,
+			      $feature->score,
+			      $feature->strand,
+			      $feature->source_tag,
+			      $analysisid,
+			      -1,
+			      -1,
+			      "__NONE__");
+	    }
+	}
+    }
+
+    my $sth2 = $self->prepare("insert into repeat_feature(id,contig,seq_start,seq_end,score,strand,analysis,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?)");
+
+    foreach my $feature (@repeats) {
 	if (!defined($feature->analysis)) {
 	    $self->throw("Feature " . $feature->seqname . " " . $feature->source_tag ." doesn't have analysis. Can't write to database");
 	} else {
@@ -1293,43 +1338,8 @@ sub write_Feature {
 	}
 
 	my $analysisid = $self->write_Analysis($analysis);
-
-	if($feature->isa('Bio::EnsEMBL::Repeat')) {
-	    push(@repeats,$feature);
-	} elsif ( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
-	    my $homol = $feature->feature2;
-
-	    $sth->execute('NULL',
-			  $contig->id,
-			  $feature->start,
-			  $feature->end,
-			  $feature->score,
-			  $feature->strand,
-			  $feature->source_tag,
-			  $analysisid,
-			  $homol->start,
-			  $homol->end,
-			  $homol->seqname);
-	} else {
-	    $sth->execute('NULL',
-			  $contig->id,
-			  $feature->start,
-			  $feature->end,
-			  $feature->score,
-			  $feature->strand,
-			  $feature->source_tag,
-			  $analysisid,
-			  -1,
-			  -1,
-			  "__NONE__");
-	}
-    }
-    my $sth2 = $self->prepare("insert into repeat_feature(id,contig,seq_start,seq_end,score,strand,analysis,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?)");
-    
-    my $analysisid = $self->write_Analysis($analysis);
-
-    foreach my $feature (@repeats) {
 	my $homol = $feature->feature2;
+
 	$sth2->execute('NULL',
 		       $contig->id,
 		       $feature->start,
@@ -1343,6 +1353,18 @@ sub write_Feature {
     }
     return 1;
 }
+
+=head2 write_supporting_evidence
+
+ Title   : write_supporting_evidence
+ Usage   : $obj->write_supporting_evidence
+ Function: Writes supporting evidence features to the database
+ Example :
+ Returns : nothing
+ Args    : None
+
+
+=cut
 
 =head2 write_Analysis
 
@@ -1578,7 +1600,7 @@ sub write_Transcript{
    };
     
 
-   if ( $@ || $trans->version > $old_trans->version) {
+   if ( $@ || ($trans->version > $old_trans->version)) {
 
        my $tst = $self->prepare("insert into transcript (id,gene,translation,version) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "',".$trans->version.")");
        $tst->execute();
@@ -1615,7 +1637,7 @@ sub write_Translation{
     };
     
 
-    if ( $@ || $translation->version > $old_transl->version) {
+    if ( $@ || ($translation->version > $old_transl->version)) {
 	if( !defined $translation->version  ) {
 	    $self->throw("No version number on translation");
 	}
@@ -1624,7 +1646,7 @@ sub write_Translation{
 				 . $translation->version . ","
 				 . $translation->start . ",'"  
 				 . $translation->start_exon_id. "',"
-				. $translation->end . ",'"
+				 . $translation->end . ",'"
 				 . $translation->end_exon_id . "')");
 	$tst->execute();
     }
@@ -1664,13 +1686,14 @@ sub write_Exon{
        $old_exon=$self->get_Exon($exon->id);
    };
    
-   if  ( $@ || $exon->version > $old_exon->version) {
+   if  ( $@ || ($exon->version > $old_exon->version)) {
+#       print(STDERR "Inserting " . $exon->created . " " . $exon->modified . "\n");
        my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
 	   $exon->id() . "'," .
-	       $exon->version() . ",'".
-		   $exon->contig_id() . "',FROM_UNIXTIME(" .
-		       $exon->created(). "),FROM_UNIXTIME(" .
-			   $exon->modified() . ")," .
+	   $exon->version() . ",'".
+	   $exon->contig_id() . "', FROM_UNIXTIME(" .
+	   $exon->created(). "), FROM_UNIXTIME(" .
+	   $exon->modified() . ")," .
 			       $exon->start . ",".
 				   $exon->end . ",".
 				       $exon->strand . ",".

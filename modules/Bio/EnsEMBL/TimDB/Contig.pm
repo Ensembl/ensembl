@@ -193,10 +193,63 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
-
 =head2 get_all_SeqFeatures
 
  Title   : get_all_SeqFeatures
+ Usage   : foreach my $sf ( $contig->get_all_SeqFeatures)
+ Function: Gets all the sequence features on the whole contig.
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_SeqFeatures {
+    my ($self) = @_;
+
+    my @out;
+
+    push(@out,$self->get_all_SimilarityFeatures);
+    push(@out,$self->get_all_RepeatFeatures);
+
+    return @out;
+}
+
+=head2 get_all_RepeatFeatures
+
+ Title   : get_all_RepeatFeatures
+ Usage   : foreach my $sf ( $contig->get_all_RepeatFeatures
+ Function: Gets all the repeat features on the whole contig.
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_RepeatFeatures {
+    my ($self) = @_;
+
+    my $debug=0;
+
+    my $sfobj=Bio::EnsEMBL::Analysis::FeatureParser->new($self->id,
+							 $self->_clone_dir,
+							 $self->disk_id,
+							 $self->_gs,
+							 $self->seq,
+							 'repeat',
+							 $debug);
+
+    push(@{$self->{'_sf_array'}},$sfobj->each_Feature);
+    
+    # return array of objects
+    return @{$self->{'_sf_array'}};
+}
+
+=head2 get_all_SimilarityFeatures
+
+ Title   : get_all_SimilarityFeatures
  Usage   :
  Function:
  Example :
@@ -206,25 +259,22 @@ sub _initialize {
 
 =cut
 
-sub get_all_SeqFeatures{
+sub get_all_SimilarityFeatures {
     my ($self) = @_;
 
-    # $self->throw("Tim has not reimplemented this function");
+    # get sf object
+    my $debug=0;
 
-    # not clear if this load step should be here or in init
-    {
-	# get sf object
-	my $debug=0;
-	my $sfobj=Bio::EnsEMBL::Analysis::FeatureParser->new($self->id,
-							     $self->_clone_dir,
-							     $self->disk_id,
-							     $self->_gs,
-							     $self->seq,
-							     $debug);
-	push(@{$self->{'_sf_array'}},$sfobj->each_Feature);
+    my $sfobj=Bio::EnsEMBL::Analysis::FeatureParser->new($self->id,
+							 $self->_clone_dir,
+							 $self->disk_id,
+							 $self->_gs,
+							 $self->seq,
+							 'similarity',
+							 $debug);
 
-    }
-
+    push(@{$self->{'_sf_array'}},$sfobj->each_Feature);
+    
     # return array of objects
     return @{$self->{'_sf_array'}};
 }
