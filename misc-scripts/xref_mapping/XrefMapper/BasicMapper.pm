@@ -1218,6 +1218,8 @@ sub build_gene_display_xrefs {
   open (GENE_DX, ">gene_display_xref.sql");
   my $hit = 0;
   my $miss = 0;
+  my $trans_no_xref = 0;
+  my $trans_xref = 0;
   foreach my $gene_id (keys %genes_to_transcripts) {
 
     my @transcripts = @{$genes_to_transcripts{$gene_id}};
@@ -1226,24 +1228,22 @@ sub build_gene_display_xrefs {
     my $best_xref_priority_idx = 99999;
     my $best_transcript_length = -1;
     foreach my $transcript_id (@transcripts) {
-      next if (!$transcript_display_xrefs->{$transcript_id});
+      if (!$transcript_display_xrefs->{$transcript_id}) {
+	#print "No display_xref assigned to transcript $transcript_id\n";
+	$trans_no_xref++;
+	next;
+      } else {
+	$trans_xref++;
+      }
       my ($xref_id, $priority) = split (/:/, $transcript_display_xrefs->{$transcript_id});
       #print "gene $gene_id orig:" . $transcript_display_xrefs->{$transcript_id} . " xref id: " . $xref_id . " pri " . $priority . "\n";
       my $transcript = $ta->fetch_by_dbID($transcript_id);
       my $transcript_length = $transcript->length();
-      if ($priority lt $best_xref_priority_idx) {
-	#print "greater for gene $gene_id ts length $transcript_length best $best_transcript_length\n";
+      if (($priority lt $best_xref_priority_idx) ||
+	  ($priority eq $best_xref_priority_idx && $transcript_length gt $best_transcript_length)) {
 	$best_transcript_length = $transcript_length;
 	$best_xref_priority_idx = $priority;
 	$best_xref = $xref_id;
-      } elsif ($priority eq $best_xref_priority_idx) {
-	#print "equal for gene $gene_id ts length $transcript_length best $best_transcript_length\n";
-	if ($transcript_length gt $best_transcript_length) {
-	  $best_transcript_length = $transcript_length;
-	  $best_xref_priority_idx = $priority;
-	  $best_xref = $xref_id;
-	  #print "here, gene $gene_id best xref now $best_xref\n";
-	}
       }
     }
 
@@ -1259,7 +1259,7 @@ sub build_gene_display_xrefs {
   }
 
   close (GENE_DX);
-
+  print "Transcripts with no xrefs: $trans_no_xref with xrefs: $trans_xref\n";
   print "Wrote $hit gene display_xref entries to gene_display_xref.sql\n";
   print "Couldn't find display_xrefs for $miss genes\n";
 
