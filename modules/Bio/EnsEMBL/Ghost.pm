@@ -90,23 +90,65 @@ sub id{
 
 }
 
-=head2 seq_type
+=head2 version
 
- Title   : seq_type
- Usage   : $obj->seq_type($newval)
- Function: stores the sequence type of the deleted object
- Returns : value of seq_type
+ Title   : version
+ Usage   : $obj->version($newval)
+ Function: stores the version of the deleted object
+ Returns : value of version
  Args    : newvalue (optional)
 
 
 =cut
 
-sub seq_type{
+sub version{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'seq_type'} = $value;
+      $obj->{'version'} = $value;
     }
-    return $obj->{'seq_type'};
+    return $obj->{'version'};
+
+}
+
+=head2 obj_type
+
+ Title   : obj_type
+ Usage   : $obj->obj_type($newval)
+ Function: stores the object type of the deleted object
+ Returns : value of obj_type
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub obj_type{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'obj_type'} = $value;
+    }
+    return $obj->{'obj_type'};
+
+}
+
+=head2 deleted_time
+
+ Title   : deleted_time
+ Usage   : $obj->deleted_time($newval)
+ Function: stores the time of deletion of the deleted object
+ Returns : value of deleted_time
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub deleted_time{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'deleted_time'} = $value;
+    }
+    return $obj->{'deleted_time'};
 
 }
