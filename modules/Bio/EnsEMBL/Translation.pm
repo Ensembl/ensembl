@@ -454,7 +454,7 @@ sub display_id {
 sub length {
   my $self = shift;
   my $seq = $self->seq();
-  return ($seq) ? length($seq) : 0;
+  return ($seq) ? CORE::length($seq) : 0;
 }
 
 
