@@ -1582,7 +1582,7 @@ sub get_cloneset_on_chromosome {
     $chr_name_X =~ s/chr//g; 
 
     my $chr = $fpcmap->get_ChromosomeMap($chr_name||$chr_name_X);
-    my $cloneset = $chr->get_cloneset_on_chromosome($cloneset, $chr_name);
+    $cloneset = $chr->get_cloneset_on_chromosome($cloneset, $chr_name);
     return @$cloneset;
 }
 

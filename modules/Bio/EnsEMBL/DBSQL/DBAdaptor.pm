@@ -2908,9 +2908,9 @@ sub get_CrossMatchDBAdaptor{
         my $dbhost      = $::pipeConf{'dbhost'} || undef;
 
 
-        $cma = Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new(-dbname => $cmname,
-                                                             -user =>$cmuser,
-                                                             -host =>$dbhost,
+        $cma = Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new(-'dbname' => $cmname,
+                                                             -'user' =>$cmuser,
+                                                             -'host' =>$dbhost,
                                                               );
 
     }

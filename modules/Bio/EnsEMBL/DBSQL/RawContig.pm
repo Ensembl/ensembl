@@ -940,109 +940,129 @@ sub get_all_SimilarityFeatures_above_score{
 =cut
 
 sub get_all_SimilarityFeatures {
-   my ($self) = @_;
+    my ($self) = @_;
 
-   my @array;
-   my @fps;
+    my @array;
+    my @fps;
 
-   my $id     = $self->internal_id();
-   my $length = $self->length();
+    my $id     = $self->internal_id();
+    my $length = $self->length();
 
-   #Removed genscan addition, now Virtual Contig adds it using properly get_all_PredictionFeatures
+#Removed genscan addition, now Virtual Contig adds it using properly get_all_PredictionFeatures
 
-   #my @genscan = $self->get_all_PredictionFeatures;
+    #my @genscan = $self->get_all_PredictionFeatures;
 
-   #push(@array,@genscan);
-   my %analhash;
+    #push(@array,@genscan);
+    my %analhash;
 
-   #Then get the rest of the features, i.e. featurepairs and single features that are not part of a fset
-   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$phase,$end_phase);
+#Then get the rest of the features, i.e. featurepairs and single features that are not part of a fset
+    my (
+        $fid,        $start,   $end,    $strand,  $f_score,
+        $analysisid, $name,    $hstart, $hend,    $hid,
+        $evalue,     $perc_id, $phase,  $end_phase
+    );
 
-   my $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid, evalue, perc_id, phase, end_phase ".
-				"from feature where contig = $id");
-   
-   $sth->execute();
+    my $sth =
+      $self->dbobj->prepare(
+"select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid, evalue, perc_id, phase, end_phase "
+        . "from feature where contig = $id" );
 
-   # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,\$end_phase);
-   
-   FEAT: while($sth->fetch) {
-       my $out;
-       my $analysis;
-              
+    $sth->execute();
+
+    # bind the columns
+    $sth->bind_columns(
+        undef,     \$fid,     \$start,      \$end,
+        \$strand,  \$f_score, \$analysisid, \$name,
+        \$hstart,  \$hend,    \$hid,        \$evalue,
+        \$perc_id, \$phase,   \$end_phase
+    );
+
+    FEAT: while ( $sth->fetch ) {
+        my $out;
+        my $analysis;
+
 #       print STDERR  "\nID $fid, START $start, END $end, STRAND $strand, SCORE $f_score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid\n";
-       
-       if (!$analhash{$analysisid}) {
-	   
-	   my $analysis_adp=Bio::EnsEMBL::DBSQL::AnalysisAdaptor->new($self->dbobj);
 
-	   eval {
-	     $analysis = $analysis_adp->fetch_by_dbID($analysisid);
-	     $analhash{$analysisid} = $analysis;
-	   };
-	   if ($@) {
-	     print STDERR "Error fetching analysis $analysisid. Skipping [$@]\n";
-	     next FEAT;
-	   }
-	   
-       } else {
-	   $analysis = $analhash{$analysisid};
-       }
-       
-       if( !defined $name ) {
-	 $name = 'no_source';
-       } elsif ($name eq "genscan") {
-	 next FEAT;
-       }
-       
-       if( $hid ne '__NONE__' ) {
-	   # is a paired feature
-	   # build EnsEMBL features and make the FeaturePair
-	 
-	 $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+        if ( !$analhash{$analysisid} ) {
 
+            my $analysis_adp =
+              Bio::EnsEMBL::DBSQL::AnalysisAdaptor->new( $self->dbobj );
 
-	   $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$self->id,
-				            $hstart,$hend,1,$f_score,$name,'similarity',$hid, $evalue, $perc_id, $phase, $end_phase);
+            eval {
+                $analysis = $analysis_adp->fetch_by_dbID($analysisid);
+                $analhash{$analysisid} = $analysis;
+            };
+            if ($@) {
+                print STDERR
+                  "Error fetching analysis $analysisid. Skipping [$@]\n";
+                next FEAT;
+            }
 
-	   $out->analysis    ($analysis);
-	   $out->id($fid);
-	   # see comment below
-	   #$out->id          ($hid);              # MC This is for Arek - but I don't
-	                                          #    really know where this method has come from.
-       } else {
-	 $out = new Bio::EnsEMBL::SeqFeature;
-	 $out->seqname    ($self->id);
-	 $out->start      ($start);
-	 $out->end        ($end);
-	 $out->strand     ($strand);
-	 $out->source_tag ($name);
-	 $out->primary_tag('similarity');
-	 $out->id         ($fid);
-	 $out->p_value    ($evalue)    if (defined $evalue);
-	 $out->percent_id ($perc_id)   if (defined $perc_id); 
-	 $out->phase      ($phase)     if (defined $phase);    
-	 $out->end_phase  ($end_phase) if (defined $end_phase); 
-	   $out->raw_seqname   ($self->id);
+        }
+        else {
+            $analysis = $analhash{$analysisid};
+        }
 
-	   if( defined $f_score ) {
-	       $out->score($f_score);
-	   }
-	   $out->analysis($analysis);
-       }
-       # Final check that everything is ok.
-       $out->validate() || $out->throw("Invalid data in $out");
-       if( $out->can('attach_seq') ) {
-	   $out->attach_seq($self->primary_seq);
-       }
+        if ( !defined $name ) {
+            $name = 'no_source';
+        }
+        elsif ( $name eq "genscan" ) {
+            next FEAT;
+        }
 
-      push(@fps,$out);
-      
-   }
-   
-   push(@array,@fps);
+        if ( $hid ne '__NONE__' ) {
 
-   return @array;
+            # is a paired feature
+            # build EnsEMBL features and make the FeaturePair
+
+            $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+
+            $out->set_all_fields( $start, $end, $strand, $f_score, $name,
+                'similarity', $self->id, $hstart, $hend, 1, $f_score, $name,
+                'similarity', $hid, $evalue, $perc_id, $phase, $end_phase );
+
+            $out->analysis($analysis);
+            $out->id($fid);
+
+            # see comment below
+            #$out->id          ($hid);              # MC This is for Arek - but I don't
+            #    really know where this method has come from.
+        }
+        else {
+            $out = new Bio::EnsEMBL::SeqFeature;
+            $out->seqname( $self->id );
+            $out->start($start);
+            $out->end($end);
+            $out->strand($strand);
+            $out->source_tag($name);
+            $out->primary_tag('similarity');
+            
+            $out->id($fid);
+            $out->p_value($evalue)      if ( defined $evalue );
+            $out->percent_id($perc_id)  if ( defined $perc_id );
+            $out->phase($phase)         if ( defined $phase );
+            $out->end_phase($end_phase) if ( defined $end_phase );
+            $out->raw_seqname( $self->id );
+
+            if ( defined $f_score ) {
+                $out->score($f_score);
+            }
+            $out->analysis($analysis);
+        }
+
+        # Final check that everything is ok.
+        $out->validate() ;   #|| $out->throw("Invalid data in $out");
+          if ( $out->can('attach_seq') ) {
+            $out->attach_seq( $self->primary_seq );
+        }
+
+        push ( @fps, $out );
+
+    }
+
+    push ( @array, @fps );
+
+    return @array;
 }
 
 =head2 get_all_RepeatFeatures
@@ -1452,9 +1472,9 @@ sub get_all_PredictionFeatures_by_analysis_id {
 
     # bind the columns
     $sth->bind_columns(
-        undef,    \$fid,       \$start,      \$end,
+        undef,    \$fid,       \$start,      \$end, \$strand,
         \$prediction_feat,
-        \$strand, \$score,     \$evalue,     \$perc_id,
+        \$score,     \$evalue,     \$perc_id,
         \$phase,  \$end_phase, \$analysisid, \$hid
     );
 	
