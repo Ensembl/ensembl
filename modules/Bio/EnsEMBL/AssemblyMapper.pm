@@ -128,7 +128,7 @@ sub map_coordinates_to_assembly {
 
 #    unless ($strand =~ /^[+-]?1$/ || $strand == 0) {
 #        $self->throw("Expecting +/- 1 for contig strand, but got '$strand'");
-#    }
+#    }  
 
     if( ! $self->_have_registered_contig( $contig_id )) {
       $self->register_region_around_contig( $contig_id, 0, 0 );

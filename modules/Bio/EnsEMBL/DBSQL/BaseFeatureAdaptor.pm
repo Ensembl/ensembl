@@ -529,7 +529,6 @@ sub fetch_by_assembly_location_constraint {
   
   #convert the features to assembly coordinates from raw contig coordinates
   #&eprof_start('rawcontig2assembly transform');
-
   my ($start, $end, $strand);
   while(my $f = shift @$features) {
     #since feats were obtained in contig coords, attached seq is a contig
@@ -569,7 +568,6 @@ sub fetch_by_assembly_location_constraint {
     #$f->strand($strand);
     #$f->seqname($coord->id());
     
-
     push(@out,$f);
   }
   

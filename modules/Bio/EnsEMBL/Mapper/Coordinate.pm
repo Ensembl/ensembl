@@ -50,12 +50,12 @@ use Bio::EnsEMBL::Root;
 @ISA = qw(Bio::EnsEMBL::Root);
 
 sub new {
-  my($class,@args) = @_;
+  my($class, $id, $start, $end, $strand) = @_;
 
-  my $self = {};
-  bless $self,$class;
-  
-  return $self;
+  return bless { 'id' => $id,
+		 'start' => $start,
+		 'end'   => $end,
+		 'strand' => $strand }, $class;
 }
 
 

@@ -52,13 +52,11 @@ use Bio::EnsEMBL::Root;
 # new() is written here 
 
 sub new {
-  my($class,@args) = @_;
+  my($class,$start, $end) = @_;
 
-    my $self = {};
-    bless $self,$class;
+  return bless { 'start' => $start,
+		 'end'   => $end }, $class;
 
-# set stuff in self from @args
-    return $self;
 }
 
 =head2 start
