@@ -14,7 +14,15 @@ Bio::EnsEMBL::DBSQL::AffyArrayAdaptor
 
 =head1 SYNOPSIS
 
+my $arrayAdaptor = $db->get_AffyArrayAdaptor();
+
+my $array = $arrayAdaptor->fetch_by_name( 'some name' );
+my $arrays = $arrayAdaptor->fetch_all();
+
+
 =head1 DESCRIPTION
+
+The AffyArrayAdaptor module stores and retrieves AffyArray objects in the database it is connected to.
 
 =head1 METHODS
 
@@ -31,6 +39,18 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
+=head2 fetch_by_name
+
+  Arg [1]    : string $name
+  Example    : my $array = $arrayAdaptor->fetch_by_name( 'U133_X3P' );
+  Description: Retrieves an AffyArray object by name from the database. Its created
+               from the entries in affy_array table
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub fetch_by_name {
     my $self = shift;
     my $name = shift;
@@ -43,6 +63,18 @@ sub fetch_by_name {
     return $result->[0];
 }
 
+
+=head2 fetch_attributes
+
+  Arg [1]    : Bio::EnsEMBL::AffyArray $array
+  Example    : none
+  Description: This function is soley intended to lazy load attributes into empty 
+               AffyArray objects. You should not need to call this.
+  Returntype : none
+  Exceptions : none
+  Caller     : lazy load Array attributes into empty array from AffyArray object
+
+=cut
 
 sub fetch_attributes {
     my $self = shift;
@@ -129,6 +161,20 @@ sub _objs_from_sth {
   }
   return \@result;
 }
+
+
+=head2 store
+
+  Arg [1..]  : list of Bio::EnsEMBL::AffyArray @arrays
+  Example    : $arrayAdaptor->store( $array1, $array2, $array3 )
+  Description: Stores te given AffyArray objects in the database. There is no check wether
+               they already exist, so only call once per Array. Sets dbID and adaptor on the
+               objects that it stores.
+  Returntype : none
+  Exceptions : none
+  Caller     : affy feature calculating scripts
+
+=cut
 
 
 sub store {
