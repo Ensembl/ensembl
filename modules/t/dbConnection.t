@@ -75,7 +75,7 @@ ok(test_getter_setter($dbc, 'password', 'ensembl_password'));
 #
 # 8-9 _get_adaptor
 #
-my $adaptor_name = 'Bio::EnsEMBL::DBSQL::SliceAdaptor';
+my $adaptor_name = 'Bio::EnsEMBL::DBSQL::GeneAdaptor';
 my $adaptor = $dbc->_get_adaptor($adaptor_name);
 ok($adaptor->isa($adaptor_name));
 ok($adaptor == $dbc->_get_adaptor($adaptor_name)); #verify cache is used
