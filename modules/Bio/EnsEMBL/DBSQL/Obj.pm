@@ -2274,8 +2274,9 @@ sub write_Contig {
    }
 
    my $dna = $contig->seq || $self->throw("No sequence in contig object");
-             $dna->id     || $self->throw("No contig id entered.");
-             $clone       || $self->throw("No clone entered.");
+   $dna->id     || $self->throw("No contig id entered.");
+   $clone       || $self->throw("No clone entered.");
+   $contig->order || $self->throw("No contig order found!");
 
    my $contigid  = $dna->id;
    my $date      = $contig->seq_date;
@@ -2294,7 +2295,7 @@ sub write_Contig {
    foreach my $sql (@sql) {
      my $sth =  $self->prepare($sql);
      my $rv  =  $sth->execute();
-     $self->throw("Failed to insert contig $contigid [@sql]") unless $rv;
+     $self->throw("Failed to insert contig $contigid") unless $rv;
    }
 
    # write sequence features. We write all of them together as it
