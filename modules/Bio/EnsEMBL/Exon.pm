@@ -394,7 +394,7 @@ sub _transform_to_Slice {
   %$newexon = %$self;
 
   #unset supporting features of new exon
-  $newexon->{'_supporting_evidence'} = [];
+  delete $newexon->{'_supporting_evidence'};
   
   if ($slice->strand == 1) {
     $newexon->start( $mapped[0]->start() - $slice->chr_start() + 1);
