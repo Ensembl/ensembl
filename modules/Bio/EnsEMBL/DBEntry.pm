@@ -11,23 +11,24 @@
 
 =pod 
 
-=head1 NAME
+=head1 NAME 
 
-Bio::EnsEMBL::DBEntry - Module to collect information about an
- external reference
+Bio::EnsEMBL::DBEntry - Module to collect information about an external reference
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
 
+This module stores information about external references to EnsEMBL objects
+
 =head1 CONTACT
 
-  Arne Stabenau <stabenau@ebi.ac.uk>
-  Ewan Birney <birney@ebi.ac.uk>
+Post questions to the EnsEMBL developer mailing list: <ensembl-dev@ebi.ac.uk> 
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. Internal 
+methods are usually preceded with a _
 
 =cut
 
@@ -45,12 +46,43 @@ use strict;
 @ISA = qw( Bio::EnsEMBL::Root Bio::Annotation::DBLink );
 
 
+=head2 new_fast
+
+  Arg [1]    : hash reference $hashref
+  Example    : none
+  Description: A very quick constructor that requires internal knowledge of
+               the class. This is used in speed critical sections of the code
+               where many objects need to be created quickly.
+  Returntype : Bio::EnsEMBL::DBEntry
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
 
   return bless $hashref, $class;
 }
+
+
+
+=head2 new
+
+  Args [...] : list of named parameters 
+  Example    : my $dbentry = new Bio::EnsEMBL::DBEntry(-adaptor => $adaptor,
+						       -primary_id => $pid,
+						       -version => $version,
+						       -dbname  => $dbname,
+						       -release => $release,
+						       -display_id => $did);
+  Description: Creates a new DBEntry object
+  Returntype : Bio::EnsEMBL::DBEntry
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBEntryAdaptor
+
+=cut
 
 sub new {
   my ($class, @args) = @_;
@@ -81,6 +113,7 @@ sub new {
 }
 
 
+
 =head2 primary_id
 
   Arg [1]    : string $primary_id
@@ -93,7 +126,6 @@ sub new {
 
 =cut
 
-
 sub primary_id {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
@@ -101,6 +133,7 @@ sub primary_id {
   } 
   return $self->{_primary_id};
 }
+
 
 
 =head2 display_id
@@ -116,8 +149,6 @@ sub primary_id {
 
 =cut
 
-
-
 sub display_id{
    my ( $self, $arg ) = @_;
    if( defined $arg ) {
@@ -126,6 +157,7 @@ sub display_id{
    return $self->{_display_id};
 
 }
+
 
 
 =head2 dbname
@@ -139,7 +171,6 @@ sub display_id{
 
 =cut
 
-
 sub dbname {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
@@ -147,6 +178,7 @@ sub dbname {
   } 
   return $self->{_dbname};
 }
+
 
 
 =head2 database
@@ -161,11 +193,11 @@ sub dbname {
 
 =cut
 
-
 sub database {
   my $self = shift;
   return $self->dbname();
 }
+
 
 
 =head2 optional_id
@@ -180,12 +212,11 @@ sub database {
 
 =cut
 
-
-
 sub optional_id {
   my $self = shift;
   return $self->display_id;
 }
+
 
 
 =head2 release
@@ -199,8 +230,6 @@ sub optional_id {
 
 =cut
 
-
-
 sub release {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
@@ -210,6 +239,20 @@ sub release {
 }
 
 
+
+=head2 adaptor
+
+  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBEntryAdaptor $arg
+  Example    : $adaptor = $dbentry->adaptor;
+  Description: Getter/Setter for the adaptor used by this object for database 
+               interaction. This attribute is set by the adaptor when this
+               object is stored in the database or retrieved from the database.
+  Returntype : Bio::EnsEMBL::DBSQL::DBEntryAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub adaptor {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
@@ -218,6 +261,20 @@ sub adaptor {
   return $self->{_adaptor};
 }
 
+
+
+=head2 dbID
+
+  Arg [1]    : (optional) int 
+  Example    : $dbID = $dbentry->dbID;
+  Description: Getter/Setter for this objects unique database identifier. This
+               attribute is set the adaptor when this object is store in the
+               database or retrieved from the database.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub dbID {
   my ( $self, $arg ) = @_;

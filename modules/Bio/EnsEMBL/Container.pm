@@ -9,13 +9,13 @@ $container = new Bio::EnsEMBL::Container($obj);
 This object is a hack necessary to work around perls circular reference 
 memory leak problems.  Its sole purpose is to channel calls to the 
 object which is held onto by the container and to invoke the objects deleteObj
-method to breaks all circular memory references at the correct time. 
+method to breaks all circular memory references at the correct time.
+
+Eventually this problem may be solved through the use of WeakRef instead. 
 
 =head1 CONTACT
 
-Arne Stabenau - stabenau@ebi.ac.uk
-Graham McVicker - mcvicker@ebi.ac.uk
-Ewan Birney - birney@ebi.ac.uk 
+Post questions to the EnsEMBL developer mailing list: <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
