@@ -559,7 +559,7 @@ sub get_all_SeqFeatures {
 
 sub get_all_SimilarityFeatures_above_score{
     my ($self, $analysis_type, $score) = @_;
-     
+    
     $self->throw("Must supply analysis_type parameter") unless $analysis_type;
     $self->throw("Must supply score parameter") unless $score;
     
@@ -579,61 +579,70 @@ sub get_all_SimilarityFeatures_above_score{
                         AND    feature.analysis = analysis.id 
                         AND    static_golden_path.raw_id = feature.contig
 		        AND    analysis.db = '$analysis_type'  
-                        AND    NOT (static_golden_path.chr_end < '$chr_start' 
+                        AND    NOT(static_golden_path.chr_end < '$chr_start' 
 		        OR     static_golden_path.chr_start >'$chr_end' )
-		        AND    static_golden_path.chr_name='$chr_name' order by s";
-                     
+		        AND    static_golden_path.chr_name='$chr_name' 
+                        ORDER  by s";
+    
     my  $sth = $self->dbobj->prepare($statement);    
     $sth->execute(); 
     $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
-
+    
 
     my @array;
     my %analhash;
     my $out;
+    my @distinct_features;
     
-    while($sth->fetch) {
-       my $out;
-       my $analysis;
+  FEATURE: while($sth->fetch) {
+      my $out;
+      my $analysis;
    
-       if ($start>=$chr_start && $end<=$chr_end){
+      foreach my $arrayref(@distinct_features){
+	  if ($start>=$arrayref->[0] && $end<=$arrayref->[1]){ next FEATURE;}
+      }
+      my @list=($start,$end);
+      push @distinct_features,\@list;
+      
+      
+      if ($start>=$chr_start && $end<=$chr_end){
     
-	   if (!$analhash{$analysisid}) 
-	   {
-	       my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	       $analysis = $feature_obj->get_Analysis($analysisid);
-	       $analhash{$analysisid} = $analysis;	   
-	   } 
-	   else {$analysis = $analhash{$analysisid};}
-	   
-	   if( !defined $name ) {
-	       $name = 'no_source';
-	   }
-	   $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
-	   $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+	  if (!$analhash{$analysisid}) 
+	  {
+	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	      $analysis = $feature_obj->get_Analysis($analysisid);
+	      $analhash{$analysisid} = $analysis;	   
+	  } 
+	  else {$analysis = $analhash{$analysisid};}
+	  
+	  if( !defined $name ) {
+	      $name = 'no_source';
+	  }
+	  $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+	  $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
 				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
-	   $out->analysis    ($analysis);
-	   $out->id          ($hid);              
+	  $out->analysis    ($analysis);
+	  $out->id          ($hid);              
 	   
-	   $out = new Bio::EnsEMBL::SeqFeature;
-	   $out->seqname   ($self->id);
-	   $out->start     ($start);
-	   $out->end       ($end);
-	   $out->strand    ($strand);
-	   $out->source_tag($name);
-	   $out->primary_tag('similarity');
-	   $out->id         ($fid);
-	   
-	   if( defined $f_score ) {
-	       $out->score($f_score);
-	   }
-	   $out->analysis($analysis);
-	   
-       $out->validate();
-	   
-	   push(@array,$out);       
-       }
-   }
+	  $out = new Bio::EnsEMBL::SeqFeature;
+	  $out->seqname   ($self->id);
+	  $out->start     ($start);
+	  $out->end       ($end);
+	  $out->strand    ($strand);
+	  $out->source_tag($name);
+	  $out->primary_tag('similarity');
+	  $out->id         ($fid);
+	  
+	  if( defined $f_score ) {
+	      $out->score($f_score);
+	  }
+	  $out->analysis($analysis);
+	  
+	  $out->validate();
+	  
+	  push(@array,$out);       
+      }
+  }
     return @array;
 }
 
