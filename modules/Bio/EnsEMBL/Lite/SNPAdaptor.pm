@@ -172,7 +172,7 @@ sub fetch_all_by_Slice_transcript_ids {
   my $snps = $self->fetch_all_by_Slice( $slice );
   my %SNPS = ();
   foreach my $transid ( @{$transcript_ids||[]} ) {
-  warn "TRANSCRIPT: $transid";
+ # warn "TRANSCRIPT: $transid";
     my $sth = $self->prepare(qq(select gs.snp_id, gs.type, gs.aminoacid_start,
                 gs.aminoacid_offset, gs.wildtype_aminoacid,
                 gs.aminoacids, s.internal_id, s.chr_start
@@ -192,7 +192,7 @@ sub fetch_all_by_Slice_transcript_ids {
       foreach my $transid ( keys %{$SNPS{$snp->dbID}} ) {
         my $a = $SNPS{$snp->dbID}{$transid};
         $snp->{'_transcripts'}{$transid} = $a;
-        warn $snp->dbID, $a->[1];
+        #warn $snp->dbID, $a->[1];
         $snptype = $a->[1] if $a->[1] lt $snptype;
       }
     }
