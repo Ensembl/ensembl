@@ -6,3 +6,5 @@ INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES 
 INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES (2,'dummy-contig-2',1,100,201,1,2);
 
 INSERT into clone (clone_id,name,embl_acc,version,htg_phase) VALUES (1,'dummy-clone-1','dummy-embl-acc',12,2);
+
+INSERT into analysis (analysis_id,logic_name,db,db_version,gff_source,gff_feature) VALUES (1,"dummy-blast","swall","1","blast","similarity");

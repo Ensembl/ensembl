@@ -148,7 +148,7 @@ sub fetch_by_contig_id{
        }
 
 
-       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
+       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
        $out->start($start);
        $out->end($end);
        $out->strand($strand);
