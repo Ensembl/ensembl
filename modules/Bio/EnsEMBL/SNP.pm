@@ -1,13 +1,10 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::SNP
+# Ensembl module for Bio::EnsEMBL::SNP
 #
-# Cared for by Graham McVicker
-#
-# Copyright EMBL/EBI
+# Copyright Ensembl
 #
 # You may distribute this module under the same terms as perl itself
 
-# POD documentation - main docs before the code
 
 =head1 NAME
 
@@ -30,35 +27,29 @@ Bio::EnsEMBL::SNP
    $annseq->add_SeqFeature($feat);
 
 
-
 =head1 DESCRIPTION
 
 This class was written because the EnsEMBL::ExternalData::Variation object
-is way too slow.  There was simply too chaining to bioperl methods many,
-many layers deep.  This object behaves like a Variation but has a 
+is way too slow.  There was simply too much chaining to bioperl methods many,
+many layers deep.  This object behaves like a Variation but has a
 much faster constructor, and faster accessors for the relevant methods
 needed by the web.
 
 =head1 CONTACT
 
-Graham McVicker <mcvicker@ebi.ac.uk>
+Post questions to the Ensmebl development list.
 
 =cut
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object
-methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
-# Let the code begin...
 
 package Bio::EnsEMBL::SNP;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheritance
 
 use Bio::EnsEMBL::ExternalData::Variation;
 
