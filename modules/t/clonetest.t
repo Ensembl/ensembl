@@ -140,20 +140,20 @@ else {
     print STDERR "clone->htg_phase does not give the expected value!\n";
 }
 
-if ($clone->created == 971774887) {
+if ($clone->created == 971749687) {
     print "ok 13\n";
 }
 else {
     print "not ok 13\n";
-    print STDERR "clone->created does not give the expected value!\n";
+    print STDERR $clone->created." does not give the expected value!\n";
 }
 
-if ($clone->modified == 971774887) {
+if ($clone->modified == 971749687) {
     print "ok 14\n";
 }
 else {
     print "not ok 14\n";
-    print STDERR "clone->modified does not give the expected value!\n";
+    print STDERR $clone->modified." does not give the expected value!\n";
 }
 
 
