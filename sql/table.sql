@@ -1141,7 +1141,8 @@ CREATE TABLE density_feature (
   density_value         FLOAT NOT NULL,
 
   PRIMARY KEY(density_feature_id),
-  KEY seq_region_idx (density_type_id, seq_region_id, seq_region_start)
+  KEY seq_region_idx (density_type_id, seq_region_id, seq_region_start),
+  KEY seq_region_id_idx (seq_region_id)
 
 ) TYPE=MyISAM;
 
