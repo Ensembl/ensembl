@@ -22,8 +22,8 @@ my $seqMatches = 0;
 my $cmmaps = 0;
 my $lasttime;
 
-my $sdbh = DBI->connect( "DBI:mysql:host=ecs1d;database=homo_sapiens_core_120", "ensro", "");
-my $tdbh = DBI->connect( "DBI:mysql:host=ecs1d;database=homo_sapiens_core_130", "ensro", "");
+my $sdbh = DBI->connect( "DBI:mysql:host=ecs1d;database=homo_sapiens_core_130", "ensro", "");
+my $tdbh = DBI->connect( "DBI:mysql:host=ecs1e;database=ens_NCBI_28", "ensro", "");
 
 my $starttime = scalar( localtime() );
 
