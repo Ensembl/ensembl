@@ -7,7 +7,6 @@
 # Copyright EMBL-EBI 2000
 #
 # You may distribute this module under the same terms as perl itself
-
 # POD documentation - main docs before the code
 
 =head1 NAME
@@ -25,14 +24,13 @@ more detailed information - check out SliceAdaptor for that (you will
 want to make a slice of the chromosome)
 
     
-=head1 CONTACT
+=head1 CONTACT 
 
 Post questions to the EnsEMBL developer mailing list: <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal 
-methods are usually preceded with a _
+The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
     
 =cut
 
