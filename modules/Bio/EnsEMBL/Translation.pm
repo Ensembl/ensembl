@@ -170,6 +170,7 @@ sub start_exon_id{
 
 sub start_exon {
    my $self = shift;
+
    if( @_ ) {
       my $value = shift;
       if( !ref $value || !$value->isa('Bio::EnsEMBL::Exon') ) {
@@ -177,8 +178,7 @@ sub start_exon {
       }
       $self->{'start_exon'} = $value;
     }
-    return $self->{'start_exon'};
-
+   return $self->{'start_exon'};
 }
 
 
@@ -219,9 +219,9 @@ sub end_exon {
          $self->throw("Got to have an Exon object, not a $value");
       }
       $self->{'end_exon'} = $value;
-    }
-    return $self->{'end_exon'};
+    } 
 
+    return $self->{'end_exon'};
 }
 
 

@@ -353,10 +353,16 @@ sub _get_all_SeqFeatures_type {
 sub get_all_Genes{
    my ($self,@args) = @_;
 
-   my $gene_adaptor = $self->adaptor->db->get_GeneAdaptor();
-   my @genes = $gene_adaptor->fetch_by_Slice($self);
-
-   return @genes;
+   #if the genes have not been requested before, cache them now
+   unless(defined $self->{_gene_cache}) {
+     my $gene_adaptor = $self->adaptor->db->get_GeneAdaptor();
+     my @genes = $gene_adaptor->fetch_by_Slice($self);
+     foreach my $gene (@genes) {
+       $self->{_gene_cache}->{$gene->dbID()} = $gene;
+     }
+   }
+     
+   return values(%{$self->{_gene_cache}});
 }
 
 

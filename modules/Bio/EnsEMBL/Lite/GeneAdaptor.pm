@@ -88,9 +88,6 @@ sub fetch_by_Slice {
       $gene->source( $hr->{'db'} );
       $gene->adaptor( $core_DBAdaptor->get_GeneAdaptor() );
       $gene_cache{ $hr->{gene_id} } = $gene;
-
-      print STDERR "Created Gene\n";
-
     } else {
       $gene = $gene_cache{ $hr->{gene_id} };
     }
@@ -114,7 +111,6 @@ sub fetch_by_Slice {
       $exon->contig( $slice );
       $exon->adaptor( $core_DBAdaptor->get_ExonAdaptor() );
       $exon_cache{"$start-$end"} = $exon;
-      print STDERR "\tCreated Exon\n";
     } else {
       $exon = $exon_cache{"$start-$end"};
     }
@@ -135,7 +131,6 @@ sub fetch_by_Slice {
 	$exon->contig( $slice );
 	$exon->adaptor( $core_DBAdaptor->get_ExonAdaptor() );
 	$exon_cache{"$start-$end"} = $exon;
-	print STDERR "\tCreated Exon\n";
       } else {
 	$exon = $exon_cache{"$start-$end"};
       }
@@ -152,7 +147,7 @@ sub fetch_by_Slice {
 
 
     $transcript->stable_id( $hr->{ 'transcript_name' });
-    $transcript->type( $hr->{ 'transcript_type' } );
+    $transcript->type( $hr->{ 'type' } );
     $transcript->external_name( $hr->{'external_name'} );
     $transcript->external_db( $hr->{'external_db' } );
       
@@ -176,6 +171,13 @@ sub fetch_by_Slice {
 
     # we need start and end Exon
     # hope they are lazy loaded ... nope they are not!!!
+    
+    #Right now, just add the first exon as the start, and last exon
+    # as the end...
+    if(scalar @exons) {
+      $translation->start_exon(@exons[0]);
+      $translation->end_exon(reverse @exons[0]);
+    }
   }
 
   my @out = values( %gene_cache );
