@@ -368,13 +368,17 @@ sub _set_exon_phases {
 		# to make the phase 0.
 
 		my $phase = $exon->phase;
-
-		if ($exon->strand == 1) {
-		    $exon->start($exon->start + 3 - $phase);
-		} else {
-		    $exon->end($exon->end - 3 + $phase);
+		
+		if ($exon->phase != 0) {
+		    
+		    if ($exon->strand == 1) {
+			$exon->start($exon->start + 3 - $phase);
+		    } else {
+			$exon->end($exon->end - 3 + $phase);
+		    }
+		    
+		    $exon->phase(0);
 		}
-		$exon->phase(0);
 	    }
 	} else {
 	    my $pep0 = $trans[0]->seq;
