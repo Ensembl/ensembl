@@ -374,16 +374,23 @@ sub translateable_seq {
   my ( $self ) = @_;
 
   my $mrna = "";
-  my $prev = undef;
   my $lastphase = 0;
+  my $first = 1;
+
   foreach my $exon (@{$self->get_all_translateable_Exons()}) {
 
     my $phase = 0;
     if (defined($exon->phase)) {
       $phase = $exon->phase;
     }
+    
+    # startpadding is needed if MONKEY_EXONS are on
+    if( $first && (! defined $ENV{'MONKEY_EXONS'}) ) {
+      $mrna .= 'N' x $phase;
+      $first = 0;
+    }
 
-    if( $phase != $lastphase && $ENV{'MONKEY_EXONS'} == 1 ) {
+    if( $phase != $lastphase && ( defined $ENV{'MONKEY_EXONS'})) {
       # endpadding for the last exon
       if( $lastphase == 1 ) {
 	$mrna .= 'NN';
