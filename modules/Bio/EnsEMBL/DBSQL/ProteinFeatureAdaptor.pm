@@ -233,11 +233,10 @@ sub fetch_all_by_feature_and_dbID{
                                        p.score, p.perc_ident, p.evalue, 
                                        p.hit_start, p.hit_end, p.hit_id, 
                                        x.display_label 
-                                FROM protein_feature p,interpro i,analysis a, 
-                                     xref x  
+                                FROM protein_feature p,analysis a 
+                                      left join interpro as i on p.hit_id = i.id
+                                      left join xref as x on x.dbprimary_acc = i.interpro_ac
                                 WHERE p.translation_id = '$transl' 
-                                      AND i.id = p.hit_id 
-                                      AND i.interpro_ac = x.dbprimary_acc 
                                       AND p.analysis_id = a.analysis_id 
                                       AND a.gff_feature = 'domain' 
                                       AND a.gff_source = '$feature'");
