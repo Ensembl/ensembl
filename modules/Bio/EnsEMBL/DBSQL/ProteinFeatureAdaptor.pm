@@ -227,7 +227,6 @@ sub fetch_all_by_feature_and_dbID{
                                       left join xref as x on x.dbprimary_acc = i.interpro_ac
                                 WHERE p.translation_id = '$transl' 
                                       AND p.analysis_id = a.analysis_id 
-                                      AND a.gff_feature = 'domain' 
                                       AND a.gff_source = '$feature'");
       
       $sth->execute();
