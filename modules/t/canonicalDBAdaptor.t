@@ -46,7 +46,7 @@ ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor"));
 $test_adaptor = $db->get_SequenceAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::SequenceAdaptor"));
 $test_adaptor = $db->get_GeneAdaptor();
-ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor"));
+ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::GeneAdaptor"));
 $test_adaptor = $db->get_ExonAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ExonAdaptor"));
 $test_adaptor = $db->get_TranscriptAdaptor();
