@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/local/bin/perl 
 
 =head1 NAME - clone2flat.pl
 
@@ -82,17 +82,6 @@
 
 # to find more things in TimDB use:
 #~humpub/scripts.devel/set_dbm.pl -f ~/th/unfinished_ana/unfinished_clone -l 10
-
-BEGIN
-{
-  my $rootdir = "/nfs/disk65/sjk/perl";
-
-  unshift (@INC,"$rootdir/ensembl/modules");
-  unshift (@INC,"$rootdir/PerlModules");
-
-}
-
-use lib qw(/nfs/disk100/humpub/modules/bioperl-0.6);
 
 use strict;
 
