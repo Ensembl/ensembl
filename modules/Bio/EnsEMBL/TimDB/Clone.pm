@@ -159,7 +159,7 @@ sub _initialize {
 	  if($contig_len{$contig}){
 	      $offset+=$contig_len{$contig}+$spacing;
 	  }else{
-	      $self->throw("Contig in contigorder $contig not in DBM file");
+	      $self->throw("Contig in contigorder \'$contig\' not in DBM file [\'$id\',\'$ocontig\']");
 	  }
 	  push(@contig_id,$contig);
       }

@@ -148,8 +148,10 @@ sub _initialize {
 						  $exon_file,$contig_order_file);
 
   # need a full list if $raclones not set
-  my @clones=$self->get_all_Clone_id();
-  $raclones=\@clones;
+  if(!$raclones){
+      my @clones=$self->get_all_Clone_id();
+      $raclones=\@clones;
+  }
 
   # doing conversion acc->id->acc or id->acc, need it here too
   $p->map_all($self,$raclones);
