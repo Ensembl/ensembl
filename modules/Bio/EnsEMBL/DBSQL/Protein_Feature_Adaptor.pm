@@ -370,7 +370,7 @@ sub write_Protein_feature{
 
     my $homol = $feature->feature2;
       
-    my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
+ my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
 			       "values ('NULL',"
 			       ."'".$feature->seqname    ."',"
 			       .$feature->start          .","
@@ -379,8 +379,7 @@ sub write_Protein_feature{
 			       .$homol->start            .","
 			       .$homol->end              .","
 			       ."'".$homol->seqname      ."',"
-			       .$feature->score         .","
-			       .$feature->percent_id    .","
+			       .$feature->score         .",'NULL',"
 			       ."'".$feature->p_value   ."')");
     $sth->execute();
 
