@@ -14,6 +14,17 @@ sub options {
 
 }
 
+sub query_identity_threshold {
+
+  return 100;
+
+}
+
+sub target_identity_threshold {
+
+  return 100;
+
+}
 
 
 1;
