@@ -127,6 +127,22 @@ sub get_Species {
 }
 
 
+sub get_taxonomy_id {
+  my $self = shift;
+  if( ! defined $self->{'_taxonomy_id'} ) {
+    my $sth = $self->prepare( "select meta_value from meta where meta_key = 'species.taxonomy_id'" );
+    $sth->execute();
+
+    my ( $tax ) = $sth->fetchrow_array();
+    if( ! defined $tax ) {
+      print STDERR "Please insert meta_key 'species.taxonomy_id' in meta table at core db.\n";
+    }
+    $self->{'_taxonomy_id'} = $tax;
+  }
+
+  return $self->{'_taxonomy_id'};
+}
+
 sub get_default_assembly {
   my $self = shift;
 
