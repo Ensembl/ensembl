@@ -2,7 +2,7 @@ use lib 't';
 use Test;
 use strict;
 
-BEGIN { $| = 1; plan tests => 9;}
+BEGIN { $| = 1; plan tests => 6;}
 
 use MultiTestDB;
 use Bio::Seq;
