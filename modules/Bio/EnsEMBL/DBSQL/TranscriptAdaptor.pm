@@ -198,14 +198,14 @@ sub store {
    $exon_count = scalar(@{$transcript->get_all_Exons()});
 
    # assuming that the store is used during the Genebuil process, set
-   # the relevant_xref_id to 0.  This ought to get re-set during the protein
+   # the display_xref_id to 0.  This ought to get re-set during the protein
    # pipeline run.  This probably update to the gene table has yet to be
    # implemented.
    my $xref_id = 0;
 
    # ok - now load this line in
    my $tst = $self->prepare("
-        insert into transcript ( gene_id, translation_id, exon_count, relevant_xref_id )
+        insert into transcript ( gene_id, translation_id, exon_count, display_xref_id )
         values ( ?, ?, ?, ?)
         ");
 
@@ -339,7 +339,7 @@ sub remove {
   Example    : $external_name = $transcript_adaptor->get_external_name(42);
   Description: Retrieves the external name for a transcript.  This is implemented
                by joining across the xref and transcript tables, using the 
-               relevant_xref_id column.
+               display_xref_id column.
   Returntype : string
   Exceptions : thrown if $dbId arg is not defined
   Caller     : general
@@ -357,7 +357,7 @@ sub get_external_name {
                             FROM   transcript t, 
                                    xref x 
                             WHERE  t.transcript_id = ?
-                              AND  t.relevant_xref_id = x.xref_id
+                              AND  t.display_xref_id = x.xref_id
                            ");
   $sth->execute($dbID);
 
@@ -378,7 +378,7 @@ sub get_external_name {
   Example    : $external_dbname = $transcript_adaptor->get_external_dbname(42);
   Description: Retrieves the external db name for a transcript from which its external
                name is derived..  This is implemented by joining across the xref, 
-               transcript and external_db tables, using the relevant_xref_id column.
+               transcript and external_db tables, using the display_xref_id column.
   Returntype : string
   Exceptions : thrown if $dbId arg is not defined
   Caller     : general
@@ -397,7 +397,7 @@ sub get_external_dbname {
                                    xref x, 
                                    external_db e
                             WHERE  t.transcript_id = ?
-                              AND  t.relevant_xref_id = x.xref_id
+                              AND  t.display_xref_id = x.xref_id
                               AND  x.external_db_id = e.external_db_id
                            ");
   $sth->execute($dbID);
@@ -411,27 +411,27 @@ sub get_external_dbname {
 }
 
 
-=head2 get_relevant_xref_id
+=head2 get_display_xref_id
 
   Arg [1]    : int $dbID
                the database identifier of the transcript for which the name 
                of external db from which its external name is derived.
-  Example    : $external_dbname = $transcript_adaptor->get_relevant_xref_id(42);
-  Description: Retrieves the relevant_xref_id for a transcript.
+  Example    : $external_dbname = $transcript_adaptor->get_display_xref_id(42);
+  Description: Retrieves the display_xref_id for a transcript.
   Returntype : int
   Exceptions : thrown if $dbId arg is not defined
   Caller     : general
 
 =cut
 
-sub get_relevant_xref_id {
+sub get_display_xref_id {
   my ($self, $dbID) = @_;
 
   if( !defined $dbID ) {
       $self->throw("Must call with a dbID");
   }
 
-  my $sth = $self->prepare("SELECT relevant_xref_id 
+  my $sth = $self->prepare("SELECT display_xref_id 
                             FROM   transcript 
                             WHERE  transcript_id = ?
                            ");

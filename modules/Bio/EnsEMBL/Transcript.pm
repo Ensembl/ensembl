@@ -239,33 +239,33 @@ sub adaptor {
 }
 
 
-=head2 relevant_xref
+=head2 display_xref
 
-  Arg [1]    : int $relevant_xref_id
-  Example    : $transcript->relevant_xref(42);
-  Description: get/set/lazy_loaded relevant_xref_id for this transcript
+  Arg [1]    : int $display_xref_id
+  Example    : $transcript->display_xref(42);
+  Description: get/set/lazy_loaded display_xref_id for this transcript
   Returntype : int
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub relevant_xref{
+sub display_xref{
 
     my ($self,$value) = @_;
     
     if( defined $value ) {
-      $self->{'relevant_xref'} = $value;
+      $self->{'display_xref'} = $value;
       return;
     }
 
-    if( exists $self->{'relevant_xref'} ) {
-      return $self->{'relevant_xref'};
+    if( exists $self->{'display_xref'} ) {
+      return $self->{'display_xref'};
     }
 
-    $self->{'relevant_xref'} = $self->adaptor->get_relevant_xref_id($self->dbID);
+    $self->{'display_xref'} = $self->adaptor->get_display_xref_id($self->dbID);
 
-    return $self->{'relevant_xref'};
+    return $self->{'display_xref'};
 }
 
 

@@ -712,13 +712,13 @@ sub store {
    }
 
    # assuming that the store is used during the Genebuil process, set
-   # the relevant_xref_id to 0.  This ought to get re-set during the protein
+   # the display_xref_id to 0.  This ought to get re-set during the protein
    # pipeline run.  This probably update to the gene table has yet to be
    # implemented.
    my $xref_id = 0;
 
    my $sth2 = $self->prepare("INSERT INTO gene(type, analysis_id, 
-                                               transcript_count, relevant_xref_id) 
+                                               transcript_count, display_xref_id) 
                               VALUES('$type', $analysisId, $trans_count, $xref_id)" );
    $sth2->execute();
 
@@ -917,7 +917,7 @@ sub deleteObj {
   Example    : $external_name = $gene_adaptor->get_external_name(42);
   Description: Retrieves the external name for a gene.  This is implemented
                by joining across the xref and gene tables, using the 
-               relevant_xref_id column.
+               display_xref_id column.
   Returntype : string
   Exceptions : thrown if $dbId arg is not defined
   Caller     : general
@@ -935,7 +935,7 @@ sub get_external_name {
                             FROM   gene g, 
                                    xref x 
                             WHERE  g.gene_id = ?
-                              AND  g.relevant_xref_id = x.xref_id
+                              AND  g.display_xref_id = x.xref_id
                            ");
   $sth->execute($dbID);
 
@@ -956,7 +956,7 @@ sub get_external_name {
   Example    : $external_dbname = $gene_adaptor->get_external_dbname(42);
   Description: Retrieves the external db name for a gene from which its external
                name is derived..  This is implemented by joining across the xref, 
-               gene and external_db tables, using the relevant_xref_id column.
+               gene and external_db tables, using the display_xref_id column.
   Returntype : string
   Exceptions : thrown if $dbId arg is not defined
   Caller     : general
@@ -975,7 +975,7 @@ sub get_external_dbname {
                                    xref x, 
                                    external_db e
                             WHERE  g.gene_id = ?
-                              AND  g.relevant_xref_id = x.xref_id
+                              AND  g.display_xref_id = x.xref_id
                               AND  x.external_db_id = e.external_db_id
                            ");
   $sth->execute($dbID);
@@ -989,27 +989,27 @@ sub get_external_dbname {
 }
 							
 
-=head2 get_relevant_xref_id
+=head2 get_display_xref_id
 
   Arg [1]    : int $dbID
                the database identifier of the gene for which the name of
                external db from which its external name is derived.
-  Example    : $external_dbname = $gene_adaptor->get_relevant_xref_id(42);
-  Description: Retrieves the relevant_xref_id for a gene.
+  Example    : $external_dbname = $gene_adaptor->get_display_xref_id(42);
+  Description: Retrieves the display_xref_id for a gene.
   Returntype : int
   Exceptions : thrown if $dbId arg is not defined
   Caller     : general
 
 =cut
 
-sub get_relevant_xref_id {
+sub get_display_xref_id {
   my ($self, $dbID) = @_;
 
   if( !defined $dbID ) {
       $self->throw("Must call with a dbID");
   }
 
-  my $sth = $self->prepare("SELECT relevant_xref_id 
+  my $sth = $self->prepare("SELECT display_xref_id 
                             FROM   gene 
                             WHERE  gene_id = ?
                            ");
