@@ -183,7 +183,7 @@ sub create_xrefs {
 
     }
 
-    $xref->{LABEL} = $xref->{ACCESSION};
+    $xref->{LABEL} = $label;
     $xref->{SPECIES_ID} = $species_id;
     $xref->{SEQUENCE_TYPE} = 'peptide';
     $xref->{STATUS} = 'experimental';
