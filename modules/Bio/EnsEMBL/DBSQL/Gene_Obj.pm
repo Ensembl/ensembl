@@ -273,39 +273,90 @@ sub get_array_supporting {
    
     my (@out, @sup_exons);
     
-    my $inlist = join(',',map "'$_'", @geneid);
-    $inlist = "($inlist)";
+    my $inlist = join(',', map "'$_'", @geneid);
     
     # I know this SQL statement is silly.
     #    
      
-    my $query =  "select  p3.gene," .
-                         "p4.id," .
-                         "p3.id," .
-                         "p1.exon," .
-                         "p1.rank," .
-                         "p2.seq_start,p2.seq_end," .
-                         "UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified)," .
-                         "p2.strand,p2.phase," .
-                             "p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id," .
-                         "p6.version,p3.version,p2.version,p5.version,p4.clone " .
-                 "from   gene as p6," .
-                         "contig as p4, " .
-                         "transcript as p3, " .
-                         "exon_transcript as p1, " .
-                         "exon as p2," .
-                         "translation as p5," .
-                         "geneclone_neighbourhood as p7  " .
-                 "where  p6.id in $inlist " .
-                 "and    p3.gene = p6.id " .
-                 "and    p4.clone = p7.clone " .
-                 "and    p7.gene = p6.id  " .
-                 "and    p2.contig = p4.internal_id " .
-                 "and    p1.exon = p2.id " .
-                 "and    p3.id = p1.transcript " .
-                 "and    p5.id = p3.translation " .
-                 "order by p3.gene,p3.id,p1.rank";
+    my $query = qq{
+        SELECT tscript.gene
+          , con.id
+          , tscript.id
+          , e_t.exon, e_t.rank
+          , exon.seq_start, exon.seq_end
+          , UNIX_TIMESTAMP(exon.created)
+          , UNIX_TIMESTAMP(exon.modified)
+          , exon.strand
+          , exon.phase
+          , transl.seq_start, transl.start_exon
+          , transl.seq_end, transl.end_exon
+          , transl.id
+          , gene.version
+          , tscript.version
+          , exon.version
+          , transl.version
+          , con.clone
+        FROM contig con
+          , gene
+          , transcript tscript
+          , exon_transcript e_t
+          , exon
+          , translation transl
+          , geneclone_neighbourhood g_n
+        WHERE g_n.gene = gene.id
+          AND gene.id = tscript.gene
+          AND tscript.id = e_t.transcript
+          AND e_t.exon = exon.id
+          AND exon.contig = con.internal_id
+          AND con.clone = g_n.clone
+          AND tscript.translation = transl.id
+          AND gene.id IN ($inlist)
+        ORDER BY tscript.gene
+          , tscript.id
+          , e_t.rank
+        };
     
+    # This should work as but I couldn't test it because
+    # the exon.contig was the wrong column type.
+    # (NOTE: geneclone_neighbourhood table not needed)
+    #
+    #                       JGRG
+    #
+    #my $query = qq{
+    #    SELECT tscript.gene
+    #      , con.id
+    #      , tscript.id
+    #      , e_t.exon, e_t.rank
+    #      , exon.seq_start, exon.seq_end
+    #      , UNIX_TIMESTAMP(exon.created)
+    #      , UNIX_TIMESTAMP(exon.modified)
+    #      , exon.strand
+    #      , exon.phase
+    #      , transl.seq_start, transl.start_exon
+    #      , transl.seq_end, transl.end_exon
+    #      , transl.id
+    #      , gene.version
+    #      , tscript.version
+    #      , exon.version
+    #      , transl.version
+    #      , con.clone
+    #    FROM contig con
+    #      , gene
+    #      , transcript tscript
+    #      , exon_transcript e_t
+    #      , exon
+    #      , translation transl
+    #    WHERE con.internal_id = exon.contig
+    #      AND exon.id = e_t.exon
+    #      AND e_t.transcript = tscript.id
+    #      AND tscript.translation = transl.id
+    #      AND tscript.gene = gene.id
+    #      AND gene.id IN ('ENSG00000019144','ENSG00000019009','ENSG00000019031','ENSG00000019032','ENSG00000019123')
+    #    ORDER BY tscript.gene
+    #      , tscript.id
+    #      , e_t.rank
+    #    };
+
     my $sth = $self->_db_obj->prepare($query);
     my $res = $sth ->execute();
    

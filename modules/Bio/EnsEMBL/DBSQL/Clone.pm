@@ -296,7 +296,7 @@ sub get_all_Genes {
               , tscript.id
               , e_t.rank
          };
-            
+
        my $sth = $self->_db_obj->prepare($query);
        $sth->execute($id, $geneid);
        my $current_gene_id       = '';

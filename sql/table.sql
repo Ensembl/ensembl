@@ -48,8 +48,8 @@ CREATE TABLE clone (
 # Table structure for table 'contig'
 #
 CREATE TABLE contig (
-  id varchar(40) DEFAULT '' NOT NULL,
   internal_id int(10) DEFAULT '0' NOT NULL auto_increment,
+  id varchar(40) DEFAULT '' NOT NULL,
   clone varchar(40) DEFAULT '' NOT NULL,
   length int(10) unsigned,
   offset int(10) unsigned,
@@ -114,7 +114,7 @@ CREATE TABLE dna (
 #
 CREATE TABLE exon (
   id varchar(40) DEFAULT '' NOT NULL,
-  contig  int(40) DEFAULT '' NOT NULL,
+  contig  int(10) DEFAULT '' NOT NULL,
   version int(10) DEFAULT '1' NOT NULL,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
@@ -148,7 +148,7 @@ CREATE TABLE exon_transcript (
 #
 CREATE TABLE feature (
   id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
-  contig int(40) DEFAULT '' NOT NULL,
+  contig int(10) DEFAULT '' NOT NULL,
   seq_start int(10) DEFAULT '0' NOT NULL,
   seq_end int(10) DEFAULT '0' NOT NULL,
   score double(16,4) DEFAULT '0' NOT NULL,
@@ -237,7 +237,7 @@ CREATE TABLE meta (
 #
 CREATE TABLE repeat_feature (
   id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
-  contig varchar(40) DEFAULT '' NOT NULL,
+  contig int(10) DEFAULT '' NOT NULL,
   seq_start int(10) DEFAULT '0' NOT NULL,
   seq_end int(10) DEFAULT '0' NOT NULL,
   score double(16,4) DEFAULT '0' NOT NULL,
