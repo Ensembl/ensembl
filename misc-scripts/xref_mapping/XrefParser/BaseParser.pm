@@ -12,6 +12,7 @@ use Getopt::Long;
 my $base_dir = ".";
 
 my $add_xref_sth = undef;
+my $add_direct_xref_sth = undef;
 my $add_dependent_xref_sth = undef;
 my $get_xref_sth = undef;
 
@@ -732,15 +733,18 @@ sub get_xref{
   return undef;
 }
 
-sub add_xref{
- my ($self,$acc,$version,$label,$description,$source_id,$species_id) = @_;
+sub add_xref {
+
+  my ($self,$acc,$version,$label,$description,$source_id,$species_id) = @_;
 
   if(!defined($add_xref_sth)){
     $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
   }
  $add_xref_sth->execute($acc,$version,$label,$description,$source_id,$species_id) 
    || die "$acc\t$label\t\t$source_id\t$species_id\n";
- 
+
+  return $add_xref_sth->{'mysql_insertid'};
+
 }
 
 
@@ -759,6 +763,20 @@ sub add_to_xrefs{
   $dependent_id = get_xref($acc, $source_id);
   $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id)|| die "$master_xref\t$dependent_id\t$linkage\t$source_id";
 
+
+}
+
+# --------------------------------------------------------------------------------
+# Add a single record to the direct_xref table.
+# Note that an xref must already have been added to the xref table (xref_id passed as 1st arg)
+
+sub add_direct_xref {
+
+  my ($self, $general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_xref) = @_;
+
+  $add_direct_xref_sth = dbi->prepare("INSERT INTO direct_xref VALUES(?,?,?,?)") if (!defined($add_direct_xref_sth));
+
+  $add_direct_xref_sth->execute($general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_xref);
 
 }
 
