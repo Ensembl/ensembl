@@ -56,7 +56,7 @@ $contig->id('Contig-1');
 $seq2 = Bio::Seq->new( -id => 'Contig-2' , -seq => 'TCAGAAATTTGGGTGTTTTGGCCCTGGTGGTTTGGGTTT' );
 $contig2 = Bio::EnsEMBL::PerlDB::Contig->new();
 $contig2->offset(60);
-$contig2->orientation(-1);
+$contig2->orientation(1);
 $contig2->id('Contig-2');
 $contig2->seq($seq2);
 
@@ -80,7 +80,7 @@ $ex1->id('exon-id-1');
 
 $ex2->start(18);
 $ex2->end(23);
-$ex2->phase(1);
+$ex2->phase(0);
 $ex2->strand(1);
 $ex2->attach_seq($seq2);
 $ex2->contig_id('Contig-2');
