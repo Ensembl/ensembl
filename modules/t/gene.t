@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 26;
+	plan tests => 27;
 }
 
 use MultiTestDB;
@@ -50,7 +50,9 @@ ok( $gene->start() == 30735607 );
 debug( "Gene end: ".$gene->end );
 ok( $gene->end() == 30815178 );
 
-
+my $species = $gene->species()->binomial();
+debug( "Species: ".$species );
+ok( $species eq "Homo sapiens" );
 
 my $links = $gene->get_all_DBLinks();
 debug( "Links: ".scalar( @$links ));
