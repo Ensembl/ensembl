@@ -462,8 +462,77 @@ sub get_seq_region_attribs {
   }
 
   $sth->finish();
-  $self->{'_attribs_cache'} = \%attrib_hash;
+  $self->{'_attribs_cache'}->{$srid} = \%attrib_hash;
   return \%attrib_hash;
+}
+
+
+
+=head2 set_seq_region_attrib
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The seq_region of the slice is the one which gets this attribute set
+  Arg [2]    : string $code
+               code in attrib_type table. This method can not set name or description in
+               that table.
+  Arg [3]    : string $value
+               An attribute value for the given code and seq_region
+  Example    : $slice_adaptor->set_seq_region_attrib
+                                 ( $chromosome_slice, "GeneCount", 23332 )
+  Description: Set an attribute for given slices seq_region.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub set_seq_region_attrib {
+  my $self = shift;
+  my $slice = shift;
+  my $code = shift;
+  my $value = shift;
+
+  my $sth = $self->prepare
+    ("INSERT IGNORE INTO attrib_type set code = ?");
+  $sth->execute($code);
+
+  my $atid = $sth->{'mysql_insertid'};
+
+  $sth->finish();
+
+  if(!defined($atid)) {
+    # the insert failed because the code is already stored
+    $sth = $self->prepare
+      ("SELECT attrib_type_id FROM attrib_type " .
+       "WHERE code = ?");
+    $sth->execute($code);
+    ($atid) = $sth->fetchrow_array();
+
+    $sth->finish();
+
+    if(!$atid) {
+      throw("Could not store or fetch attrib_type code [$code]\n" .
+	    "Wrong permissions?");
+    }
+  }
+
+  my $srid = $self->get_seq_region_id($slice);
+
+  $sth = $self->prepare
+    ("INSERT INTO seq_region_attrib " .
+     "SET seq_region_id=?, value=?, attrib_type_id=?" );
+  $sth->execute( $srid, $value, $atid );
+
+  $sth->finish();
+
+  #update the cache if it exists already
+  if(exists $self->{'_attribs_cache'} &&
+     exists $self->{'_attribs_cache'}->{$srid}) {
+    $self->{'_attribs_cache'}->{$srid}->{$code} ||= [];
+    push(@{$self->{'_attribs_cache'}->{$srid}->{$code}}, $value);
+  }
+
+  return;
 }
 
 
