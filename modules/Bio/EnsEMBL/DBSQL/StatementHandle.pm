@@ -29,7 +29,7 @@ use strict;
 
 use DBD::mysql;
 
-@ISA = qw(DBD::mysql::st);
+@ISA = qw(DBI::st);
 
 # As DBD::mysql::st is a tied hash can't store things in it,
 # so have to have parallel hash
@@ -48,7 +48,7 @@ sub dbc {
 sub DESTROY {
   my ($obj) = @_;
 
-  DBD::mysql::st::DESTROY($obj);
+  DBI::st::DESTROY($obj);
 
   my $dbc = $obj->dbc;
   # print STDERR "StatementHandle destroy $obj $dbc\n";
