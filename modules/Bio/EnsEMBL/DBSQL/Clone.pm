@@ -120,7 +120,7 @@ sub fetch {
 
 =cut
 
-sub get_all_id{
+sub get_all_id {
    my ($self) = @_;
    my @out;
 
@@ -146,7 +146,7 @@ sub get_all_id{
 
 =cut
 
-sub delete{
+sub delete {
    my ($self) = @_;
    
  
@@ -203,7 +203,7 @@ sub delete{
 
 =cut
 
-sub get_all_Genes{
+sub get_all_Genes {
    my ($self,$supporting) = @_;
    my @out;
    my $id = $self->id();
@@ -380,7 +380,7 @@ sub get_all_Genes{
 
 =cut
 
-sub get_all_Genes_slow{
+sub get_all_Genes_slow {
    my ($self,@args) = @_;
    my @out;
    my $id = $self->id();
@@ -537,11 +537,9 @@ sub get_rawcontig_by_position {
     foreach my $c (reverse @contigs ) {
         if ($pos > $c->embl_offset) {
             my $size = $c->embl_offset + $c->length;
-            #print STDERR "Wanted base $pos in ",$c->id," with start at ",$c->embl_offset," and endpoint at: $size\n";
             return $c;
         } else {
             my $size = $c->embl_offset + $c->length;
-            #print STDERR "$pos less than $size for ",$c->id,"\n";
             next;
         }
     }
@@ -633,7 +631,7 @@ sub get_all_ContigOverlaps {
 
 =cut
 
-sub htg_phase{
+sub htg_phase {
    my $self = shift;
 
    my $id = $self->id();
@@ -657,7 +655,7 @@ sub htg_phase{
 
 =cut
 
-sub created{
+sub created {
    my ($self) = @_;
 
    my $id = $self->id();
@@ -681,7 +679,7 @@ sub created{
 
 =cut
 
-sub modified{
+sub modified {
    my ($self) = @_;
 
    my $id = $self->id();
@@ -710,7 +708,7 @@ sub modified{
 
 =cut
 
-sub version{
+sub version {
    my $self = shift;
    my $id = $self->id();
 
@@ -732,7 +730,7 @@ sub version{
 
 =cut
 
-sub _stored{
+sub _stored {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -753,7 +751,7 @@ sub _stored{
 
 =cut
 
-sub embl_version{
+sub embl_version {
    my $self = shift;
    my $id = $self->id();
 
@@ -777,7 +775,7 @@ sub embl_version{
 
 =cut
 
-sub seq_date{
+sub seq_date {
    my ($self) = @_;
 
    my $id = $self->id();
@@ -828,7 +826,7 @@ sub sv{
 
 =cut
 
-sub embl_id{
+sub embl_id {
    my ($self) = @_;
 
    my $id = $self->id();
@@ -873,7 +871,7 @@ sub id {
 
 =cut
 
-sub _db_obj{
+sub _db_obj {
    my ($obj,$value) = @_;
    if( defined $value) {
       $obj->{'_db_obj'} = $value;
