@@ -1,0 +1,230 @@
+# $Id$
+# testing of translations of exons that lie across contig boundaries.
+# based on staticgoldenpath.t and staticgoldenpath.dump
+
+## We start with some black magic to print on failure.
+BEGIN { $| = 1; print "1..7\n";  warn "there'(ll be more tests than this)";
+	use vars qw($loaded); }
+
+END {print "not ok 1\n" unless $loaded;}
+
+use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBLoader;
+use lib 't';
+use EnsTestDB;
+$loaded = 1;
+print "ok 1\n";    # 1st test passes.
+    
+my $ens_test = EnsTestDB->new();
+    
+# Load some data into the db
+$ens_test->do_sql_file("t/stickytranslate.dump");
+
+
+# Get an EnsEMBL db object for the test db
+my $db = $ens_test->get_DBSQL_Obj;
+print "ok 2\n";    
+$db->static_golden_path_type('UCSC');
+
+$stadaptor = $db->get_StaticGoldenPathAdaptor();
+
+### 2nd gene, now for the more stringent sticky exon translation test (all
+### have id'2 ending in 's', and ly on chr3. 
+
+$vc = $stadaptor->fetch_VirtualContig_by_chr_name('chr3');
+
+$seq =$vc->primary_seq->seq; 
+$expected = 'N'x203 . 'TGG' x 5 . 'GCC' x 8 . 'TAC' x 7;
+if ( $seq eq $expected) {
+    print "ok 3\n";
+} else {
+    print "not ok 3\n";
+    warn "expected $expected\ngot $seq\n";
+}
+
+# just for fun, translate the static golden path, apart from the first 203
+# Ns, as is:
+$expected = 'W'x5 . 'A'x8 . 'Y'x7;
+$seq = $vc->primary_seq->trunc(204, $vc->length);
+$pep = $seq->translate->seq;
+
+if ($pep eq $expected) {
+    print "ok 4\n";
+} else { 
+    print "not ok 4\n";
+    warn "expected $expected\ngot $pep\n";
+}
+
+### ok, following (exons with different strandedness) doen'st make
+### biological sense, but it works (or should the code guard against this? )
+
+# exon of 5 aa's, last three of RawContig10, first 2 of RawContig20
+$exon1 = Bio::EnsEMBL::Exon->new();
+
+$exon1->attach_seq($vc);                # why is this needed ?
+
+$exon1->contig_id($vc->id);
+$exon1->id('exon-1s');
+$exon1->start(210);
+$exon1->end(224);
+$exon1->strand(-1);
+$exon1->version(1);
+$exon1->phase(0);
+$exon1->created(1);
+$exon1->modified(1);
+
+$seq=$exon1->seq->seq;
+$expected= 'GGC' x 2 . 'CCA' x 3;
+if ($seq eq $expected) {
+    print "ok 5\n";
+} else  { 
+    print "not ok 5\n";
+    warn "expected $expected\ngot $seq\n";
+}
+
+# exon of two aa residues, midway RawContig20
+$exon2 = Bio::EnsEMBL::Exon->new();
+$exon2->attach_seq($vc);                # why is this needed ?
+$exon2->id('exon-2s');
+$exon2->contig_id($vc->id);
+$exon2->start(228);
+$exon2->end(233);
+$exon2->strand(1);
+$exon2->version(1);
+$exon2->phase(0);
+$exon2->created(1);
+$exon2->modified(1);
+
+$seq=$exon2->seq->seq;
+$expected= 'GCC' x 2 ;
+if ($seq eq $expected) {
+    print "ok 6\n";
+} else  { 
+    print "not ok 6\n";
+    warn "expected $expected\ngot $seq\n";
+}
+
+# exon of 7 a.a. residues, last two of RawContig20, first 5 of RawContig30
+$exon3 = Bio::EnsEMBL::Exon->new();
+$exon3->id('exon-3s');
+$exon3->contig_id($vc->id);
+$exon3->attach_seq($vc);                # why is this needed ?
+
+$exon3->start(237);
+$exon3->end(257);
+$exon3->strand(-1);
+$exon3->version(1);
+$exon3->phase(0);
+$exon3->created(1);
+$exon3->modified(1);
+
+$seq=$exon3->seq->seq;
+$expected= 'GTA' x 5 . 'GGC' x 2 ;
+if ($seq eq $expected) {
+    print "ok 7\n";
+} else  { 
+    print "not ok 7\n";
+    warn "expected $expected\ngot $seq\n";
+}
+
+$trl = Bio::EnsEMBL::Translation->new();
+$trl->start_exon_id('exon-1s');
+$trl->start(4); # second aa residue of exon1
+$trl->end_exon_id('exon-3s');
+$trl->end(18);  # second last residue of exon2
+$trl->id('trl-id-1s');
+$trl->version(1);
+
+$transc = Bio::EnsEMBL::Transcript->new();
+$transc->id('trans-id-1s');
+$transc->version(1);
+
+$transc->add_Exon($exon1);
+$transc->add_Exon($exon2);
+$transc->add_Exon($exon3);
+
+$transc->translation($trl);
+$transc->created(1);
+$transc->modified(1);
+
+
+$seq = $transc->dna_seq->seq;
+$expected = 'GGC' x 2 . 'CCA' x 3 . 'GCC' x 2 . 'GTA' x 5 . 'GGC' x 2;
+
+if ($seq eq $expected) { 
+    print "ok 8\n";
+} else { 
+    print "not ok 8\n";
+    warn "expected $expected\ngot $seq\n";
+}
+
+# did this work?
+$seq = $transc->translate;
+$pep = $seq->seq;
+$expected = 'G' x 1 . 'P' x 3 . 'A' x 2 . 'V' x 5 . 'G' x 1;
+if ($pep eq $expected) { 
+    print "ok 9\n";
+} else {
+    print "not ok 9\n";
+    warn "expected $expected\ngot $pep\n";
+}
+
+$gene = Bio::EnsEMBL::Gene->new();
+$gene->id('gene-id-1s');
+$gene->version(1);
+
+$gene->add_Transcript($transc);
+$gene->created(1);
+$gene->modified(1);
+
+# try to store it; this should create Sticky Exons, or not? 
+$geneObj = $db->gene_Obj;
+$geneObj->write($gene);
+print "ok 10\n";
+
+warn  "sticky translate is not completely ready; more to follow; exiting now";
+# exit;
+
+# use PLens;
+# PLens::dbstop($ens_test->dbname);
+
+# now translate the transcript: 
+
+@genes = $vc->get_all_Genes();
+if ( @genes == 1 and defined( $genes[0]) ) { 
+    print "ok n\n";
+} else { 
+    print "not ok n\n";
+    warn "not exactly 1 gene, or it is undefined\n";
+}
+
+@genes = $vc->get_all_VirtualGenes();
+if ( @genes == 1 and defined( $genes[0]) ) { 
+    print "ok n\n";
+} else { 
+    print "not ok n\n";
+    warn "not exactly 1 VirtualGene, or it is undefined\n";
+}
+
+$gene = $genes[0];
+$expected = '????';
+$pep = $gene->tranlation->seq;
+
+if (  $pep eq $expected ) {
+    print "ok n\n"; 
+} else { 
+    print "not ok n\n";
+    warn "expected $expected\ngot $pep\n";
+}
+
+
+# make a new gene, this time using raw coords
+$newgene = $vc->convert_Gene_to_raw_contig($gene);
+print "ok n\n";
+
+
+# PLens::dbstop($ens_test->dbname);
+
+# and get it back out:
+
+

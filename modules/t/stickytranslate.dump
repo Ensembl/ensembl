@@ -1,0 +1,47 @@
+# $Id$
+# testing of translations of exons that lie across contig boundaries.
+# based on staticgoldenpath.t
+
+INSERT INTO clone (id, embl_id, version, embl_version, htg_phase, created, modified, stored) 
+VALUES (1, 'pog', 1, 3, 3, '0000-00-00 00:00:00', '0000-00-00 00:00:00', '0000-00-00 00:00:00');
+
+
+INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
+  VALUES (10, 'contig10', 1, 30, 40, 5500, 2, 'chromosome3', 'int-g');
+INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
+  VALUES (20, 'contig20', 1, 30, 50, 1100, 1, 'chromosome3', 'int-g');
+INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
+VALUES (30, 'contig30', 1, 30, 60, 2200, 3, 'chromosome3', 'international-h');
+# (should this break? offset and corder don't match)
+
+# 5 x Trp; length 15
+INSERT INTO static_golden_path (fpcctg_name,chr_name,raw_id,
+        fpcctg_start,fpcctg_end,
+        chr_start,chr_end,raw_start,raw_end,raw_ori,type) 
+  VALUES ('ctg456','chr3',10,   4004,4018,   204,218,   4,18,  -1,'UCSC');
+
+# 8 x Ala; length 24
+INSERT INTO static_golden_path (fpcctg_name,chr_name,raw_id,
+        fpcctg_start,fpcctg_end,
+        chr_start,chr_end,raw_start,raw_end,raw_ori,type) 
+  VALUES ('ctg456','chr3',20,   4019,4042,   219,242,   7,30,   1,'UCSC');
+
+# 7 x Tyrosine; length 21
+INSERT INTO static_golden_path (fpcctg_name,chr_name,raw_id,
+        fpcctg_start,fpcctg_end,
+        chr_start,chr_end,raw_start,raw_end,raw_ori,type) 
+  VALUES ('ctg456','chr3',30,   4043,4063,   243,263,   1,21,  -1,'UCSC');
+
+
+
+# 10 x Trp (when reversed):
+INSERT INTO dna (id, sequence, created) 
+VALUES (40, 'CCACCACCACCACCACCACCACCACCACCA', '1980-04-27 08:31:59');
+
+# 10 x Ala:
+INSERT INTO dna (id, sequence, created) 
+VALUES (50, 'GCCGCCGCCGCCGCCGCCGCCGCCGCCGCC', '1980-04-27 08:31:59');
+
+# 10 x Tyrosine (when reversed):
+INSERT INTO dna (id, sequence, created) 
+VALUES (60, 'GTAGTAGTAGTAGTAGTAGTAGTAGTAGTA', '1980-04-27 08:31:59');
