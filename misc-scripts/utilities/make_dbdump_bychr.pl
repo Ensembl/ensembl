@@ -1,8 +1,8 @@
-#This script generates a full dump of the EnsEMBL database for 
-#a particular chromosome. Useful to create a small but fully functional
-#EnsEMBL db
-
 #!/usr/local/bin/perl
+
+# This script generates a full dump of an EnsEMBL core database for 
+# a particular chromosome. Useful to create a small but fully functional
+# EnsEMBL db
 
 =head1 NAME
 
@@ -24,19 +24,23 @@ a particular chromosome. Useful to create a small but fully functional
 EnsEMBL db (e.g. laptop mini-mirror)
 =cut
 
+use strict;
+
 use Bio::EnsEMBL::DBLoader;
 use Getopt::Long;
 
-my $workdir = "/nfs/acari/elia/test";
+my $workdir = `pwd`; chomp($workdir);
 my $host = "localhost";
 my $port   = '';
-my $dbname = 'homo_sapiens_core_110';
+my $dbname = undef; # force users to specify e.g. 'homo_sapiens_core_110';
 my $dbuser = 'ensadmin';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::DBAdaptor';
-my $chr = 'chr21';
+my $chr = 'chr21';                      # smaller than chr22
 my $lim;
-my $mysqldump = '/nfs/croc/michele/mysql/bin/mysqldump';
+# my $mysqldump = '/nfs/croc/michele/mysql/bin/mysqldump';
+#                  /mysql/current/bin/mysqldump
+my $mysqldump = 'mysqldump'; # in $PATH we trust
 
 &GetOptions( 
 	     'port:n'     => \$port,
@@ -48,43 +52,71 @@ my $mysqldump = '/nfs/croc/michele/mysql/bin/mysqldump';
 	     'workdir:s'  => \$workdir,
 	     'limit:n'    => \$lim
 	     );
+
+die "no database specified; use -dbname a-core(like)-database" unless $dbname;
+die "chromosome names should start with 'chr'" unless $chr =~ /^chr/;
+
+my $pass_arg=""; $pass_arg="-p$dbpass" if $dbpass;
+
+$workdir= "$workdir/$dbname";           # following the import scheme
+
 my $limit;
 if ($lim) {
     $limit = "limit $lim";
 }
 
 my $locator = "$module/host=$host;port=;dbname=$dbname;user=$dbuser;pass=$dbpass";
-$db =  Bio::EnsEMBL::DBLoader->new($locator);
+my $db =  Bio::EnsEMBL::DBLoader->new($locator);
+$db->{RaiseError}++;                    # carp as soon as something wrong
 
-#Dump data from tables that are needed in full regardless of
-#dump size: analysis,analysisprocess,chromosome,externalDB,meta,species
+unless (-d $workdir) {
+    my $cmd = "mkdir -p $workdir";
+    system($cmd) && die "``$cmd'' exited with exit status $?";
+}
+
+print STDERR "Dumping data from small tables needed full:\n";
 
 #interpro and interpro_description in theory could be trimmed based on the hid of the protein_feature, but the join would take long, and the table is tiny!
+my @small_tables =  qw(analysis analysisprocess chromosome externalDB meta
+                       species interpro interpro_description);
+$"=' ';
+my $command = "$mysqldump -u $dbuser $pass_arg -T $workdir $dbname @small_tables";
+system ($command) && die "``$command'' exited with exit status $?";
 
-print STDERR "Dumping data from small tables needed in full\n";
-$command = "$mysqldump -u $dbuser -T $workdir $dbname analysis analysisprocess chromosome externalDB meta species interpro interpro_description";
-system ($command);
-
-my $command = "rm $workdir/*.sql";
-system ($command);
+$command = "rm $workdir/*.sql";
+system ($command) && die "``$command'' exited with exit status $?";
 
 #Dump schema
-print STDERR "Dumping database schema into table.sql\n";
-my $command = "$mysqldump -u $dbuser -d $dbname > $workdir/table.sql";
-system($command);
+print STDERR "Dumping database schema to $workdir/$dbname.sql\n";
+$command = "$mysqldump -u $dbuser $pass_arg -d $dbname > $workdir/$dbname.sql";
+system($command) && die "``$command'' exited with exit status $?";
 
 my $sth = $db->prepare("select * from karyotype where chr_name = '$chr' $limit into outfile '$workdir/karyotype.txt'");
 $sth->execute;
 
-my $sth = $db->prepare("select chromosome_id from chromosome where name = '$chr'");
+$sth = $db->prepare("select chromosome_id from chromosome where name = '$chr'");
 $sth->execute;
 my ($chrom) = $sth->fetchrow_array;
 
-my $sth = $db->prepare("select * from map_density where chromosome_id = $chrom into outfile '$workdir/map_density.txt'");
+# my $sth = $db->prepare("select * from map_density where chromosome_id = $chrom into outfile '$workdir/map_density.txt'");
+$sth = $db->prepare("select * from map_density where chrname = '$chr' into outfile '$workdir/map_density.txt'");
 $sth->execute;
 
+warn "Finding markers for chromosome $chr\n";
+my $q = "select * from contig_landmarkMarker where chr_name = '$chr'";
+$sth= $db->prepare($q);
+$sth->execute;
+open (FILE,">$workdir/contig_landmarkMarker.txt") || die "";
+while( (my $arr = $sth->fetchrow_arrayref()) ) {
+    my @array = @$arr;
+    print FILE join("\t",@array)."\n";
+}
+close (FILE);
+
+
 print STDERR "Finding golden path contigs for chromosome $chr\n";
-my $sth = $db->prepare("select * from static_golden_path where chr_name = '$chr' $limit");
+my $golden_path_q = "select * from static_golden_path where chr_name = '$chr' $limit";
+$sth = $db->prepare($golden_path_q);
 
 $sth->execute;
 my @contig_ids;
@@ -97,6 +129,7 @@ while( (my $arr = $sth->fetchrow_arrayref()) ) {
     print FILE join("\t",@array)."\n";
 }
 close (FILE);
+die "no contigs found for ``$golden_path_q''" unless @contig_ids;
 
 my $contig_list = &get_inlist(0,@contig_ids);
 
@@ -115,6 +148,7 @@ while( (my $arr = $sth->fetchrow_arrayref()) ) {
     print FILE join("\t",@array)."\n";
 }
 close (FILE);
+
 my $dna_list = &get_inlist(0,@dna_ids);
 @clone_ids = &unique(@clone_ids);
 my $clone_list = &get_inlist(0,@clone_ids);
@@ -122,8 +156,9 @@ my $clone_list = &get_inlist(0,@clone_ids);
 $sth = $db->prepare("select * from dna where id in $dna_list into outfile '$workdir/dna.txt'");
 $sth->execute;
 
-$sth = $db->prepare("select * from contig_landmarkMarker where contig in $contig_list into outfile '$workdir/contig_landmarkMarker.txt'");
-$sth->execute;
+# $sth = $db->prepare("select * from contig_landmarkMarker where contig in
+# $contig_list into outfile '$workdir/contig_landmarkMarker.txt'");
+# $sth->execute;
 
 $sth = $db->prepare("select * from clone where internal_id in $clone_list into outfile '$workdir/clone.txt'");
 $sth->execute;
@@ -132,7 +167,7 @@ print STDERR "Getting all features...\n";
 $sth = $db->prepare("select * from repeat_feature where contig in $contig_list into outfile '$workdir/repeat_feature.txt'");
 $sth->execute;
 
-my $sth = $db->prepare("select * from feature where contig in $contig_list");
+$sth = $db->prepare("select * from feature where contig in $contig_list");
 $sth->execute;
 
 my @feature_ids;
@@ -153,7 +188,7 @@ my $feature_list = &get_inlist(0,@feature_ids);
 #my $sth = $db->prepare("select * from fset_feature where feature in $feature_list");
 #$sth->execute;
 my @fset_ids;
-open (FILE,">$workdir/fset_feature.txt");
+open (FILE,">$workdir/fset_feature.txt") || die $!;
 foreach my $feature (@feature_ids) {
     
     my $sth = $db->prepare("select * from fset_feature where feature = $feature");
@@ -183,7 +218,7 @@ print STDERR "Dumping gene data from chromosome $chr\n";
 $sth = $db->prepare("select * from exon where contig in $contig_list");
 $sth->execute;
 my @exon_ids;
-open (FILE,">$workdir/exon.txt");
+open (FILE,">$workdir/exon.txt") || die $!;
 while( (my $arr = $sth->fetchrow_arrayref()) ) {
     my @array = @$arr;
     
@@ -198,7 +233,7 @@ my $exon_list = &get_inlist(1,@exon_ids);
 $sth = $db->prepare("select * from exon_transcript where exon in $exon_list");
 $sth->execute;
 my @transcript_ids;
-open (FILE,">$workdir/exon_transcript.txt");
+open (FILE,">$workdir/exon_transcript.txt") || die $!;
 while( (my $arr = $sth->fetchrow_arrayref()) ) {
     my @array = @$arr;
     
@@ -214,7 +249,7 @@ $sth = $db->prepare("select * from transcript where id in $transcript_list");
 $sth->execute;
 my @gene_ids;
 my @translation_ids;
-open (FILE,">transcript.txt");
+open (FILE,">$workdir/transcript.txt") || die $!;
 while( (my $arr = $sth->fetchrow_arrayref()) ) {
     my @array = @$arr;
     
@@ -247,7 +282,7 @@ $sth = $db->prepare("select * from objectXref where ensembl_id in $translation_l
 $sth->execute;
 my @oxref_ids;
 my @xref_ids;
-open (FILE,">objectXref.txt");
+open (FILE,">$workdir/objectXref.txt") || die $!;
 while( (my $arr = $sth->fetchrow_arrayref()) ) {
     my @array = @$arr;
     
