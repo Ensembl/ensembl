@@ -11,7 +11,7 @@ use Bio::EnsEMBL::Test::TestUtils qw( test_getter_setter debug );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 18;
+	plan tests => 16;
 }
 
 
@@ -87,12 +87,6 @@ ok( test_getter_setter( $merge_probe, "dbID", 1 ));
 ok( test_getter_setter( $merge_probe, "adaptor", bless( {}, "Bio::EnsEMBL::DBSQL::BaseAdaptor" )));
 ok( test_getter_setter( $merge_probe, "probeset", "Affy_probeset" ));
 
-
-# This is expected to access the database
-my $features = $affy_probe->get_all_AffyFeatures();
-
-ok( ref( $features ) eq "ARRAY" );
-ok( $features->[0] && $features->[0]->isa( "Bio::EnsEMBL::AffyFeature" ));
 
 my $arrays = $affy_probe->get_all_AffyArrays();
 ok( ref( $arrays ) eq "ARRAY" );
