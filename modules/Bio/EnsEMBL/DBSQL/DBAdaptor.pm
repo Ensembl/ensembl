@@ -681,7 +681,7 @@ sub dnadb {
 
   if(@_) {
     my $arg = shift;
-    $reg->add_DNAAdaptor($self->species(),$self->group(),$arg->group());
+    $reg->add_DNAAdaptor($self->species(),$self->group(),$arg->species(),$arg->group());
   }
 
 #  return $self->{'dnadb'} || $self;
