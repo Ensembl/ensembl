@@ -256,6 +256,55 @@ sub fetch_by_stable_id{
 }
 
 
+
+=head2 fetch_by_domain
+
+  Arg [1]    : string $domain
+               the domain to fetch genes from
+  Arg [2]    : (optional) boolean $empty_flag
+               true if lightweight genes are desired (for speed purposes)
+  Example    : my @genes = $gene_adaptor->fetch_by_domain($domain);
+  Description: retrieves a list of genes whose translation contain interpro
+               domain $domain.
+  Returntype : list of Bio::EnsEMBL::Genes
+  Exceptions : none
+  Caller     : domainview
+
+=cut
+
+sub fetch_by_domain {
+  my ($self, $domain, $empty_flag) = @_;
+
+  unless($domain) {
+    $self->throw("domain argument is required");
+  }
+
+  my $sth = $self->prepare("SELECT tr.gene_id
+                            FROM interpro i,
+                                 protein_feature pf,
+                                 transcript tr
+                            WHERE i.interpro_ac = ?
+                            AND   i.id = pf.hit_id
+                            AND   pf.translation_id = tr.translation_id
+                            GROUP BY tr.gene_id");
+ 
+  $sth->execute($domain);
+  my @gene_ids = ();
+  my $gene_id;
+
+  $sth->bind_columns(\$gene_id);
+  while($sth->fetch()) {
+    push @gene_ids, $gene_id;
+  }
+
+  #may want to use proxy...
+  return $self->db->get_GeneAdaptor->fetch_by_gene_id_list(\@gene_ids, 
+							   $empty_flag);
+}
+
+
+  
+
 =head2 fetch_by_contig_list
 
   Arg [1]    : list of ints @list
