@@ -334,23 +334,8 @@ sub list_ids {
 }
 
 
-=head2 mapper
 
-  Arg [1]    : none
-  Example    : $mapper = $casm_mapper->mapper();
-  Description: Retrieves the internal mapper used by this Assembly Mapper.
-               This is unlikely to be useful unless you _really_ know what you
-               are doing.
-  Returntype : Bio::EnsEMBL::Mapper
-  Exceptions : none
-  Caller     : internal, AssemblyMapperAdaptor
 
-=cut
-
-sub mapper {
-  my $self = shift;
-  return $self->first_last_mapper();
-}
 
 
 sub first_last_mapper {
@@ -393,6 +378,29 @@ sub first_registry {
 sub last_registry {
   my $self = shift;
   return $self->{'last_registry'};
+}
+
+
+
+
+
+#
+# Methods supplied to maintain polymorphism with AssemblyMapper
+# there is no real assembled or component in the chained mapper, since the
+# ordering is arbitrary and both ends might actually be assembled, but these
+# methods provide convenient synonyms
+#
+sub mapper {
+  my $self = shift;
+  return $self->first_last_mapper();
+}
+sub assembled_CoordSystem {
+  my $self = shift;
+  return $self->{'first_cs'};
+}
+sub component_CoordSystem {
+  my $self = shift;
+  return $self->{'last_cs'};
 }
 
 
