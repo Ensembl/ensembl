@@ -220,34 +220,7 @@ CREATE TABLE feature (
   KEY ana (analysis)
 ) MAX_ROWS = 300000000 AVG_ROW_LENGTH = 80;
 
-#
-# Table structure for table 'fset'
-#
 
-# NOT USED
-# The fset and fset_feature table are not actively used and will
-# be dropped in the future.
-
-CREATE TABLE fset (
-  id        int(10) unsigned NOT NULL auto_increment,
-  score     double(16,4) DEFAULT '0.0000' NOT NULL,
-  
-  PRIMARY KEY (id)
-);
-
-#
-# Table structure for table 'fset_feature'
-#
-# NOT USED
-
-CREATE TABLE fset_feature (
-  feature   int(10) unsigned NOT NULL,
-  fset      int(10) unsigned NOT NULL,
-  rank      int(11) NOT NULL,
-  
-  PRIMARY KEY (feature,fset,rank),
-  KEY fset (fset)
-);
 
 #
 # Table structure for table 'gene'
@@ -401,6 +374,7 @@ CREATE TABLE static_golden_path (
     chr_end        int(10) NOT NULL,
     fpcctg_start   int(10) NOT NULL,
     fpcctg_end     int(10) NOT NULL,
+    fpcctg_ori	   tinyint(2) NOT NULL,
     raw_start      int(10) NOT NULL,
     raw_end        int(10) NOT NULL,
     raw_ori        tinyint(2)  NOT NULL, 
