@@ -12,13 +12,14 @@ use DBI;
 
 use Getopt::Long;
 
-my ( $host, $user, $pass, $port, $expression, $dbpattern );
+my ( $host, $user, $pass, $port, $expression, $dbpattern, $file );
 
 GetOptions( "host=s", \$host,
 	    "user=s", \$user,
 	    "pass=s", \$pass,
 	    "port=i", \$port,
 	    "expr=s", \$expression,
+	    "file=s", \$file,
 	    "dbpattern=s", \$dbpattern
 	  );
 
@@ -29,6 +30,36 @@ if( !$host ) {
 my $dsn = "DBI:mysql:host=$host";
 if( $port ) {
   $dsn .= ";port=$port";
+}
+
+my @expressions;
+
+if( $file ) {
+  local *FH;
+  if( ! -r $file ) {
+    die ( "File $file not readable" );
+  }
+  open( FH, "<$file" );
+  
+  my $exp;
+
+  while( my $line = <FH> ) {
+    if( $line =~ /;$/ ) {
+      $line =~ s/;$//;
+      $exp .= " ".$line;
+      push( @expressions, $exp );
+      $exp = "";
+	
+    } else {
+      $exp .= " ".$line;
+    }      
+  }
+  
+  if( $exp ) {
+    push( @expressions, $exp );
+  }    
+  
+  close FH;
 }
 
 my $db = DBI->connect( $dsn, $user, $pass );
@@ -44,14 +75,19 @@ for my $dbname ( @dbnames ) {
   
     
   print STDERR "$dbname\n";
-  if( ! $expression ) {
+  if(( ! $expression ) && ( !$file )) {
     next;
   }
 
   $db->do( "use $dbname" );
-  if( $expression =~ /^\s*select/i ||
-      $expression =~ /^\s*show/i ||
-      $expression =~ /^\s*desc/i ) {
+  if( $file ) {
+    for my $sql ( @expressions ) {
+      print STDERR "Do $sql\n";
+      $db->do( $sql );
+    }
+  } elsif( $expression =~ /^\s*select/i ||
+	   $expression =~ /^\s*show/i ||
+	   $expression =~ /^\s*desc/i ) {
     my $res = $db->selectall_arrayref( $expression );
     my @results = map { join( " ", @$_ ) } @$res ;
     for my $result ( @results ) {
@@ -73,8 +109,10 @@ sub usage {
                     -pass password 
                     -port port_of_server optional
                     -dbpattern regular expression that the database name has to match
-                    -expr sql statement you want to execute. Has to be a select.
+                    -expr sql statement you want to execute. 
                           if omitted, just print database names matching
+                          if select, show or describe prints results
+                    -file Apply sql in file to all databases. Doesnt print results.
 
 EOF
 ;
