@@ -1912,4 +1912,35 @@ sub gene_Obj {
     return $self->{_gene_obj};
 
 }
+ 
+ 
+=head2 deleteObj
+
+    Title   : deleteObj
+    Usage   : $dbObj->deleteObj
+    Function: Call when you are done with this object. Breaks links between objects. Necessary to clean up memory.
+    Example : -
+    Returns : -
+    Args    : -
+
+
+=cut
+
+sub deleteObj {
+
+  my  $self=shift;
+  my $dummy;
+
+  print STDERR "Destroying DB Obj!\n";
+
+  $self->DESTROY;
   
+  foreach my $name ( keys %{$self} ) {
+    eval {$dummy = $self->{$name}; 
+          $dummy->deleteObj;
+    };
+    delete $self->{$name};
+   }
+}
+
+

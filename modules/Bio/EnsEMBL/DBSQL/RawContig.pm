@@ -888,7 +888,7 @@ sub internal_id {
 
 =cut
 
-sub seq_date{
+sub seq_date {
    my ($self) = @_; 
 
    my $id = $self->internal_id();
@@ -910,7 +910,7 @@ sub seq_date{
 
 =cut
 
-sub get_left_overlap{
+sub get_left_overlap {
    my ($self,@args) = @_;
 
    if( $self->_got_overlaps == 0 ) {
@@ -932,7 +932,7 @@ sub get_left_overlap{
 
 =cut
 
-sub get_right_overlap{
+sub get_right_overlap {
    my ($self,@args) = @_;
 
    if( $self->_got_overlaps == 0 ) {
@@ -954,13 +954,13 @@ sub get_right_overlap{
 
 =cut
 
-sub _db_obj{
+sub _db_obj {
    my ($self,@args) = @_;
    $self->warn("Someone is using a deprecated _db_obj call!");
    return $self->dbobj(@args);
 }
 
-sub _dbobj{
+sub _dbobj {
    my ($self,@args) = @_;
    $self->warn("Someone is using a deprecated _dbobj call!");
    return $self->dbobj(@args);
@@ -987,7 +987,7 @@ sub dbobj {
 
 =cut
 
-sub _got_overlaps{
+sub _got_overlaps {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -1009,7 +1009,7 @@ sub _got_overlaps{
 
 =cut
 
-sub _load_overlaps{
+sub _load_overlaps {
    my ($self,@args) = @_;
 
    my $id      = $self->internal_id();
@@ -1176,7 +1176,7 @@ sub _load_overlaps{
 
 =cut
 
-sub _right_overlap{
+sub _right_overlap {
    my ($obj,$value) = @_;
 
 
@@ -1199,7 +1199,7 @@ sub _right_overlap{
 
 =cut
 
-sub _left_overlap{
+sub _left_overlap {
    my ($obj,$value) = @_;
 
    if( defined $value) {
