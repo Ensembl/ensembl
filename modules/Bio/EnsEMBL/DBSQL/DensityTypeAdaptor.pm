@@ -93,6 +93,11 @@ sub fetch_all {
   while($sth->fetch()) {
     my $analysis = $analysis_adaptor->fetch_by_dbID($analysis_id);
 
+    if($blk_size < 1) {
+      warning("density_type table contains invalid block_size=$blk_size.");
+      $blk_size = 1;
+    }
+
     my $dt = Bio::EnsEMBL::DensityType->new(-ADAPTOR => $self,
                                             -DBID    => $dbID,
                                             -ANALYSIS => $analysis,
@@ -159,7 +164,6 @@ sub fetch_all_by_logic_name {
   }
 
   my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
-
   my $analysis = $analysis_adaptor->fetch_by_logic_name($logic_name);
 
   return [] if(!$analysis);
@@ -176,6 +180,12 @@ sub fetch_all_by_logic_name {
   my @out;
 
   while($sth->fetch()) {
+
+    if($blk_size < 1) {
+      warning("density_type table contains invalid block_size=$blk_size.");
+      $blk_size = 1;
+    }
+
     my $dt = Bio::EnsEMBL::DensityType->new(-ADAPTOR => $self,
                                             -DBID    => $dbID,
                                             -ANALYSIS => $analysis,
