@@ -4,17 +4,16 @@
 
 # conventions
 # use lower case and underscores
-# internal ids are integers
-# named tablename_id
-# same name is given in foreign keys relations
+# internal ids are integers named tablename_id
+# same name is given in foreign key relations
 
 
 #
-# Table structure for table 'analysisprocess'
+# Table structure for table 'analysis'
 #
 # 
 
-CREATE TABLE analysisprocess (
+CREATE TABLE analysis (
   analysis_id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   logic_name varchar(40) not null,
@@ -87,6 +86,7 @@ CREATE TABLE clone (
   KEY embl (embl_id,embl_version),
   KEY id   (id,version)
 );
+
 # semantics
 # id - string we give to this clone in ensembl
 #      should be same as embl_id unless clone is not in embl
@@ -209,38 +209,47 @@ CREATE TABLE exon_transcript (
 );
 
 
+
 CREATE TABLE simple_feature (
+  simple_feature_id int unsigned not null autoincrement,
   contig_id int(10) unsigned NOT NULL,
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
-  strand tinyint(1) DEFAULT '1' NOT NULL,
-  display_id varchar(40) NOT NULL,
+  contig_strand tinyint(1) DEFAULT '1' NOT NULL,
+  display_id varchar(40) NOT NULL, # what to show, may link to other things, depends on analysis
   analysis_id int(10) unsigned NOT NULL,
-  score double(16,4) NOT NULL,
-  evalue double(16,4),
-  perc_id tinyint(2),
 
+# What scoring do we need ?
+
+  score double,
+
+  PRIMARY KEY ( simple_feature_id ),
   KEY contig_idx( contig_id, contig_start, analysis_id ),
   KEY hit_idx( display_id );
-)
+) max_rows=300000000 avg_row_length=80;
 
 CREATE TABLE repeat_feature (
+  repeat_feature_id int unsigned not null autoincrement,
   contig_id int(10) unsigned NOT NULL,
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
   analysis_id int(10) unsigned NOT NULL,
-  strand tinyint(1) DEFAULT '1' NOT NULL,
+  orientation tinyint(1) DEFAULT '1' NOT NULL, # 1 positive oriented 0 not oriented -1 negative oriented
   hit_start int(10) NOT NULL,
   hit_end int(10) NOT NULL.
   repeat_id int(10) unsigned NOT NULL,
 
-  scoring ?	
 
+#  What scoring do we need ?
+
+  score double,
+  
+  PRIMARY KEY (	repeat_feature_id ),
   KEY contig_idx( contig_id, contig_start, analysis_id ),
+) max_rows=300000000 avg_row_length=80;
 
-)
-
-CREATE TABLE protein_feature_block (
+CREATE TABLE protein_align_feature (
+  protein_align_feature_id int unnsigned not null autoincrement,
   contig_id int(10) unsigned NOT NULL,
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
@@ -251,29 +260,46 @@ CREATE TABLE protein_feature_block (
   hit_id varchar(40) NOT NULL,
   cigar_line varchar(255),
   
-  score, evalue, perc_id ?
+#  What scoring do we need ?
 
+  evalue double,
+  perc_id int(10),
+  score double,
+
+  PRIMARY KEY (	protein_align_feature_id ),
   KEY hit_idx( hit_id ),
-  KEY ctg_idx( contig_id, contig_start, analysis_id )
+  KEY ctg_idx( contig_id, contig_start, analysis_id ),
+  
 )
 
 
-CREATE TABLE dna_feature_block (
+CREATE TABLE dna_align_feature (
+  dna_align_feature_id int unsigned not null autoincrement,
   contig_id int(10) unsigned NOT NULL,
   analysis_id int(10) unsigned NOT NULL,
+
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
-  strand tinyint(1) DEFAULT '1' NOT NULL,tinyint(1) 
+  contig_strand tinyint(1) DEFAULT '1' NOT NULL,
+
   hit_start int NOT NULL,
   hit_end int NOT NULL
   hit_id varchar(40) NOT NULL,
+  hit_strand tinyint(1) DEFAULT 1 NOT NULL,
+
+  phase tinyint(1), # values 0,1,2. Only used if translations are involved
   cigar_line varchar(255),
   
-  score, evalue, perc_id ?,
+#  What scoring do we need ?
 
+  evalue double,
+  perc_id int(10),
+  score double,
+
+  PRIMARY KEY ( dna_align_feature ),
   KEY hit_idx( hit_id ),
   KEY ctg_idx( contig_id, contig_start, analysis_id )
-)
+) max_rows=300000000 avg_row_length=80;
 
 #
 # Table structure for table 'gene'
@@ -285,6 +311,29 @@ CREATE TABLE gene (
      
   PRIMARY KEY (gene_id)
 );
+
+
+#
+# Experimental table to decouple locations from located objects
+#  Genes will have locations here. Others might follow if performance is ok.
+#
+# A sister fragment_location table might be constructed if this experiment is 
+#  successful. This would enable better support for unassembled genome.
+#
+CREATE TABLE assembly_locations (
+  type enum( 'gene' ) not null,
+  type_id int unsigned not null,
+
+  assembly_type varchar(20) not null,
+  chromosome_id int not null,
+  chr_start int not null,
+  chr_end int not null,
+  chr_strand tinyint not null,
+
+  KEY loc_idx( assembly_type, chromosome_id, chr_start, chr_end, chr_strand, type, type_id ),
+  KEY obj_idx( type, type_id, assembly_type, chromosome_id, chr_start, chr_end, chr_strand )
+);  
+
 
 CREATE TABLE gene_stable_id (
     gene_id int unsigned not null,    # foreign key gene:gene_id
@@ -325,6 +374,21 @@ CREATE TABLE supporting_feature (
   KEY analysis (contig_id, analysis_id),
   KEY hid (hit_id),
 );
+
+
+# Avoid feature duplication by just linking exons with their
+#  belonging feature. Do we need to find exons by feature??
+
+CREATE TABLE exon_feature (
+  exon_id int unsigned not null,
+  feature_id int unsigned not null,
+  feature_type enum( "dna_align", "simple", "protein_align" ) not null,
+
+  key exon_idx( exon_id, feature_id, feature_type )
+) max_rows=300000000 avg_row_length=80;;
+  
+ 
+
 
 #
 # Table structure for table 'transcript'
