@@ -88,7 +88,7 @@ sub repair {
   $db->do( $database );
 
   my @tables = qw( seq_region_attrib misc_attrib translation_attrib transcript_attrib );
-  my $ref = $db->selectall_arrayref( "show create table attib_type" );
+  my $ref = $db->selectall_arrayref( "show create table attrib_type" );
   my $create_table = $ref->[0]->[0];
   $db->do( "alter table attrib_type rename old_attrib_type" );
   $db->do( $create_table );

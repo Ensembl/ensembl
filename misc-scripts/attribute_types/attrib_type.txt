@@ -7,8 +7,93 @@
 # for the attrib_type table
 
 # each attribute type should be preceeded with a comment that
-# describes its uses.
+# describes its uses, unless its description field is deemed to be
+# expressive enough
+
+# need o document and find out about each attrib_type
 
 
+1	embl_acc	EMBL accession
 
+2	status	Status
 
+3	synonym	Synonym
+
+4	name	Name
+
+5	type	Type of feature
+
+# A seq_region that is not represented in a more global coordinate system
+# should get the toplevel attribute and value 1
+# If you have more than one assembly in you database, this feature will
+# not work as expected. You should then explicitly request features in a specific
+# cordinate system
+6	toplevel	Top Level	Top Level Non-Redundant Sequence Region
+
+# The number of genes on each seq_region is counted and stored under this
+# seq_region_attribute to be displayed on mapview. Mainly web code uses this.
+7	GeneCount	Gene Count	Total Number of Genes
+
+# Same as above for known genes
+8	KnownGeneCount	Known Gene Count	Total Number of Known Genes
+
+# same as above for pseudogenes. The criteria for a pseudogene is,
+# that the gene.type fieled matches /pseudogene/
+9	PseudoGeneCount	PseudoGene Count	Total Number of PseudoGenes
+
+# Snps on a seq_region. See above.
+10	SNPCount	SNP Count	Total Number of SNPs
+
+# another seq_region attribute. When a seq_region should be used with a 
+# different codon table this attrbutes value should contain its number.
+# This is a bioperl codon table, find out from there which number to use 
+# for your seq_region
+# Useful for Mitochondrium and Bacteria with non standard codon tables
+11	codon_table	Codon Table	Alternate codon table
+
+# This is an attribute for a translation. Values describe start and end
+# position of a seelnocystein in a Translation (Amino Acid coordinates)
+# Example: "123 123 U". This is the general sequence edit format.
+# Other attributess with sequence edits for different reasons will come
+# up in the future
+12	_selenocysteine	Selenocysteine
+
+13	bacend	bacend
+
+# Contains the htg phase for clones. 
+14	htg	htg	High Throughput phase attribute
+
+15	miRNA	Micro RNA	Coordinates of the mature miRNA
+
+# A sequence region that you consider not part of the reference genome should
+# be tagged as non_ref in seq_region_attrib. Chromosome 6 haplotypes in human are
+# exmaples of that. 
+16	non_ref	Non Reference	Non Reference Sequence Region
+
+17	sanger_project	Sanger Project name
+
+18	clone_name	Clone name 
+
+19	fish	FISH location 
+
+20	state	Clone state 
+
+21	org	Sequencing centre 
+
+22	method	Method 
+
+23	superctg	Super contig id
+
+24	inner_start	Max start value
+
+25	inner_end	Min end value
+
+26	state	Current state of clone 
+
+27	organisation	Organisation sequencing clone
+
+28	seq_len	Accession length 
+
+29	fp_size	FP size 
+
+30	BACend_flag	BAC end flags
