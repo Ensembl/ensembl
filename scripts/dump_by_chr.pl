@@ -299,7 +299,7 @@ SELECT distinct f.*
 # ";
 #     dump_data($sql, $satdb, 'fset_feature');
 
-# has gone too:
+# has gone too (empty):
 #     $sql="
 # SELECT distinct fs.*
 #   FROM $satdb.static_golden_path sgp,
