@@ -345,8 +345,12 @@ sub translateable_exons {
 	   $retexon->start($exon->start + $self->translation->start() -1);
 	   $retexon->end  ($exon->start + $self->translation->end() -1);
        } else {
-	   $retexon->end  ($exon->end - ($self->translation->start -1));
-	   $retexon->start($exon->end - ($self->translation->end -1));
+	 # reverse strand is just as easy
+	   $retexon->start($exon->start + $self->translation->start -1);
+	   $retexon->end($exon->start + $self->translation->end -1);
+
+#	   $retexon->end  ($exon->end - ($self->translation->start -1));
+#	   $retexon->start($exon->end - ($self->translation->end -1));
        }
        
 
@@ -390,14 +394,16 @@ sub translateable_exons {
 	   push(@out,$stexon);
 
 	 # unspliced 3' UTRs of single exon genes make this more complex.
+	 # to avoid problems caused by 3' UTRs of single exon genes
 	 if ($self->translation->start_exon_id() eq $self->translation->end_exon_id()){
 	   if( $exon->strand == 1 ) {
 	     $stexon->end($exon->start + $self->translation->end -1 );
 	   } else {
 	     
 	     # single exon genes with UTRs are slightly wacky
-	     $stexon->start($exon->end - ($self->translation->end -1));
-	     $stexon->end  ($exon->end - ($self->translation->start -1));
+	     $stexon->start($exon->start + $self->translation->start -1);
+	     $stexon->end($exon->start + $self->translation->end -1);
+	     
 	   }
 	   
 	   last EXON;
