@@ -92,6 +92,48 @@ CREATE TABLE source_url (
 
 ################################################################################
 
+CREATE TABLE direct_xref (
+
+  general_xref_id             int unsigned not null,
+  ensembl_stable_id           varchar(255),
+  type                        enum('gene','transcript','translation'),
+  linkage_xref                varchar(255),
+
+  KEY primary_idx(general_xref_id),
+  KEY ensembl_idx(ensembl_stable_id)
+
+);
+
+################################################################################
+
+CREATE TABLE species (
+
+  species_id                  int unsigned not null auto_increment,
+  taxonomy_id                 int unsigned not null,
+  name                        varchar(255) not null,
+
+  PRIMARY KEY(species_id),
+  KEY taxonomy_idx(taxonomy_id),
+  KEY name_idx(name)
+
+);
+
+################################################################################
+
+INSERT INTO species (taxonomy_id, name) VALUES (9606,  'homo_sapiens');
+INSERT INTO species (taxonomy_id, name) VALUES (10090, 'mus_musculus');
+INSERT INTO species (taxonomy_id, name) VALUES (10116, 'rattus_norvegicus');
+INSERT INTO species (taxonomy_id, name) VALUES (31033, 'fugu_rubripes');
+INSERT INTO species (taxonomy_id, name) VALUES (7165,  'anopheles_gambiae');
+INSERT INTO species (taxonomy_id, name) VALUES (7227,  'drosophila_melanogaster');
+INSERT INTO species (taxonomy_id, name) VALUES (6239,  'caenorhabditis_elegans');
+INSERT INTO species (taxonomy_id, name) VALUES (6238,  'caenorhabditis_briggsae');
+INSERT INTO species (taxonomy_id, name) VALUES (7955,  'danio_rerio');
+INSERT INTO species (taxonomy_id, name) VALUES (9598,  'pan_troglodytes');
+INSERT INTO species (taxonomy_id, name) VALUES (9031,  'gallus_gallus');
+
+################################################################################
+
 # "High level" sources that we will also download from (via source_url)
 
 INSERT INTO source VALUES (1, "UniProtSwissProt", 1, 'Y');
@@ -152,48 +194,6 @@ INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_dat
 # cumulative
 INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/cumulative/rscu.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
 INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/cumulative/rscu.fna.gz', '', now(), now(), "RefSeqParser");
-
-
-################################################################################
-
-CREATE TABLE species (
-
-  species_id                  int unsigned not null auto_increment,
-  taxonomy_id                 int unsigned not null,
-  name                        varchar(255) not null,
-
-  PRIMARY KEY(species_id),
-  KEY taxonomy_idx(taxonomy_id),
-  KEY name_idx(name)
-
-);
-
-INSERT INTO species (taxonomy_id, name) VALUES (9606,  'homo_sapiens');
-INSERT INTO species (taxonomy_id, name) VALUES (10090, 'mus_musculus');
-INSERT INTO species (taxonomy_id, name) VALUES (10116, 'rattus_norvegicus');
-INSERT INTO species (taxonomy_id, name) VALUES (31033, 'fugu_rubripes');
-INSERT INTO species (taxonomy_id, name) VALUES (7165,  'anopheles_gambiae');
-INSERT INTO species (taxonomy_id, name) VALUES (7227,  'drosophila_melanogaster');
-INSERT INTO species (taxonomy_id, name) VALUES (6239,  'caenorhabditis_elegans');
-INSERT INTO species (taxonomy_id, name) VALUES (6238,  'caenorhabditis_briggsae');
-INSERT INTO species (taxonomy_id, name) VALUES (7955,  'danio_rerio');
-INSERT INTO species (taxonomy_id, name) VALUES (9598,  'pan_troglodytes');
-INSERT INTO species (taxonomy_id, name) VALUES (9031,  'gallus_gallus');
-
-
-################################################################################
-
-CREATE TABLE direct_xref (
-
-  general_xref_id             int unsigned not null,
-  ensembl_stable_id           varchar(255),
-  type                        enum('gene','transcript','translation'),
-  linkage_xref                varchar(255),
-
-  KEY primary_idx(general_xref_id),
-  KEY ensembl_idx(ensembl_stable_id)
-
-);
 
 ################################################################################
 
