@@ -483,7 +483,7 @@ CREATE TABLE externalDB(
 #
 # Table structure for table 'landmarkMarker'
 #
-CREATE TABLE landmarkMarker (
+CREATE TABLE landmark_marker (
   marker char(40) DEFAULT '' NOT NULL,
   name char(40) DEFAULT '' NOT NULL,
   chr_start bigint(17) DEFAULT '0' NOT NULL,
