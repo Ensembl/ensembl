@@ -86,7 +86,9 @@ sub new {
 		       'similarity'  => 1,
 		       'variation'   => 1,
 		       'contig'      => 1,
-		       'marker'      => 1};
+		       'marker'      => 1,
+		       'estgene'     => 0,
+                       'vegagene'    => 0};
 
   my $self = bless {'feature_types' => $feature_types}, $class;
 
@@ -120,6 +122,82 @@ sub enable_feature_type {
   }
 }
 
+
+
+=head2 attach_database
+
+  Arg [1]    : string name
+  Arg [2]    : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Example    : $seq_dumper->attach_database('estgene', $estgene_db);
+  Description: Attaches a database to the seqdumper that can be used to 
+               dump data which is external to the ensembl core database.
+               Currently this is necessary to dump est genes and vega genes
+  Returntype : none
+  Exceptions : thrown if incorrect argument is supplied
+  Caller     : general
+
+=cut
+
+sub attach_database {
+  my ($self, $name, $db) = @_;
+
+  $name || $self->throw("name arg is required");
+  unless($db && ref($db) && $db->isa('Bio::EnsEMBL::DBSQL::DBConnection')) {
+    $self->throw("db arg must be a Bio::EnsEMBL::DBSQL::DBConnection not a " .
+		 "[$db]");
+  }
+
+  $self->{'attached_dbs'}->{$name} = $db;
+}
+
+
+
+=head2 get_database
+
+  Arg [1]    : string $name
+  Example    : $db = $seq_dumper->get_database('vega');
+  Description: Retrieves a database that has been attached to the 
+               seqdumper via the attach database call.
+  Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Exceptions : thrown if incorrect argument is supplied
+  Caller     : dump_feature_table
+
+=cut
+
+sub get_database {
+  my ($self, $name) = @_;
+
+  $name || $self->throw("name arg is required");
+  
+  return $self->{'attached_dbs'}->{$name};
+}
+
+
+
+=head2 remove_database
+
+  Arg [1]    : string $name 
+  Example    : $db = $seq_dumper->remove_database('estgene');
+  Description: Removes a database that has been attached to the seqdumper
+               via the attach database call.  The database that is removed
+               is returned (or undef if it did not exist).
+  Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Exceptions : thrown if incorrect argument is supplied
+  Caller     : general
+
+=cut
+
+sub remove_database {
+  my ($self, $name) = @_;
+
+  $name || $self->throw("name arg is required");
+
+  if(exists $self->{'attached_dbs'}->{$name}) {
+    return delete $self->{'attached_dbs'}->{$name};
+  }
+
+  return undef;
+}
 
 
 =head2 disable_feature_type
@@ -506,34 +584,67 @@ sub _dump_feature_table {
   $self->write(@ff,''      , '/organism="'.$species->binomial . '"');
   $self->write(@ff,''      , '/db_xref="taxon:'.$meta->get_taxonomy_id().'"');
 
+
+
   #
   # Transcripts & Genes
   #
-  if($self->is_enabled('gene') && $slice->can('get_all_Genes')) {
-
-    foreach my $gene (@{$slice->get_all_Genes}) {
-      foreach my $transcript (@{$gene->get_all_Transcripts}) {
-	my $translation = $transcript->translation;
-	$value = $self->features2location($transcript->get_all_Exons);
-	$self->write(@ff,'CDS', $value);
-	$self->write(@ff,''   , '/gene="'.$gene->stable_id().'"');
-	$self->write(@ff,''   , '/protein_id="'.$translation->stable_id().'"');
-	$self->write(@ff,''   , '/note="transcript_id='.$transcript->stable_id().'"');
-
-	foreach my $dbl (@{$transcript->get_all_DBLinks}) {
-	  $value = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
-	  $self->write(@ff, '', $value);
-	}
-	$value = '/translation="'.$transcript->translate()->seq().'"';
-	$self->write(@ff, '', $value);
+  my @gene_slices;
+  if($slice->isa('Bio::EnsEMBL::Slice')) { #can't dump genes from RawContigs
+    if($self->is_enabled('gene')) {
+      push @gene_slices, $slice;
+    }
+    
+    # Retrieve slices of other database where we need to pull genes from
+    
+    my $gene_dbs = {'vegagene' => 'vega',
+		    'estgene'  => 'estgene'};
+    
+    foreach my $gene_type (keys %$gene_dbs) {
+      if($self->is_enabled($gene_type)) {
+	my $db = $self->get_database($gene_dbs->{$gene_type});
+	if($db) {
+	  push @gene_slices, $db->get_SliceAdaptor->fetch_by_chr_start_end
+	    ($slice->chr_name, $slice->chr_start, $slice->chr_end);
+	} 
+      } else {
+	$self->warn("A [". $gene_dbs->{$gene_type} ."] database must be " .
+		    "attached to this SeqDumper\n(via a call to " .
+		    "attach_database) to retrieve genes of type [$gene_type]");
       }
     }
- 
-    # exons
-    foreach my $gene (@{$slice->get_all_Genes}) {
-      foreach my $exon (@{$gene->get_all_Exons}) {
-	$self->write(@ff,'exon', $self->features2location([$exon]));
-	$self->write(@ff,''    , '/note="exon_id='.$exon->stable_id().'"');
+  }
+  
+  foreach my $gene_slice (@gene_slices) {
+    if($self->is_enabled('gene')) {
+      foreach my $gene (@{$gene_slice->get_all_Genes}) {
+	foreach my $transcript (@{$gene->get_all_Transcripts}) {
+	  my $translation = $transcript->translation;
+	  $value = $self->features2location($transcript->get_all_Exons);
+	  $self->write(@ff,'CDS', $value);
+	  $self->write(@ff,''   , '/gene="'.$gene->stable_id().'"');
+	  $translation && 
+	    $self->write(@ff,'', '/protein_id="'.$translation->stable_id().'"');
+	  $self->write(@ff,''  , 
+		       '/note="transcript_id='.$transcript->stable_id().'"');
+
+	  foreach my $dbl (@{$transcript->get_all_DBLinks}) {
+	    $value = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
+	    $self->write(@ff, '', $value);
+	  }
+	  if($translation) { 
+	    $value = '/translation="'.$transcript->translate()->seq().'"';
+	    $self->write(@ff, '', $value);
+	  }
+	}
+      }
+      
+      # exons
+      foreach my $gene (@{$gene_slice->get_all_Genes}) {
+	foreach my $exon (@{$gene->get_all_Exons}) {
+	  $self->write(@ff,'exon', $self->features2location([$exon]));
+	  $self->write(@ff,''    , '/note="exon_id='.$exon->stable_id().'"');
+	}
       }
     }
   }
@@ -605,7 +716,7 @@ sub _dump_feature_table {
   #
   # markers
   #
-  if($self->is_enabled('marker')) {
+  if($self->is_enabled('marker') && $slice->can('get_all_MarkerFeatures')) {
     foreach my $mf (@{$slice->get_all_MarkerFeatures}) {
       $self->write(@ff, 'STS', $self->features2location([$mf]));
       $self->write(@ff, ''   , '/standard_name="' . 
@@ -619,6 +730,7 @@ sub _dump_feature_table {
 	$self->write(@ff, '', '/db_xref="'.$synonym->source.
 		     ':'.$synonym->name.'"');
       }
+      $self->write(@ff, '', '/note="map_weight='.$mf->map_weight.'"');
     }
   }
 
