@@ -182,6 +182,9 @@ sub new {
 sub new_from_inverted{
    my ($class,$vc) = @_;
 
+   # don't forget to keep a database object
+   my $db = $vc->dbobj;
+
    my $self = {};
    bless $self,$class;
    $self->_make_datastructures();
@@ -189,20 +192,17 @@ sub new_from_inverted{
    if( !ref $vc || !$vc->isa("Bio::EnsEMBL::Virtual::Contig") ) {
        $self->throw("no virtual contig provided to new from inverted");
    }
-
    my $length = $vc->length;
    foreach my $mc ( $vc->_vmap->each_MapContig ) {
        # this looks too easy ;)
        $self->_vmap->create_MapContig($mc->contig,$length-$mc->end+1,$length-$mc->start+1,$mc->rawcontig_start,$mc->orientation*-1);
    }
 
-
-   # these need to set separately to deal with overhangs
    $self->_vmap->length($length);
    $self->length($length);
-
    $self->id($vc->id.".inverted");
-
+   $self->dbobj($db);
+   
    return $self;
 }
 
@@ -983,7 +983,6 @@ sub _gene_query{
 	    
      #      print STDERR "Exon for gene ",$gene->dbID," is on ",$exon->seqname," ",$exon->start,":",$exon->end,"\n";
 
-
 	    ### got to treat sticky exons separately.
 	    if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
 		my @stickies = $exon->each_component_Exon();
@@ -1124,7 +1123,6 @@ sub _get_all_SeqFeatures_type {
 
    my @vcsf = ();
 
-
    # need to clip seq features to fit the boundaries of
    # our v/c so displays don't break
 
@@ -1172,6 +1170,7 @@ sub _get_all_SeqFeatures_type {
 sub _convert_seqfeature_to_vc_coords {
     my ($self,$sf) = @_;
     
+    #print STDERR "In Contig._convert_seqfeature_to_vc_coords() has a $sf\n";
     my $cid = $sf->seqname();
     my $mc;
     if( !defined $cid ) {
@@ -1181,47 +1180,68 @@ sub _convert_seqfeature_to_vc_coords {
     # that wasn't on this VC at all, eg, an exon from a distant contig
 
     eval {
-	    $mc = $self->_vmap->get_MapContig_by_id($cid);
+      $mc = $self->_vmap->get_MapContig_by_id($cid);
     };
-    if ($@ || !ref $mc) { 
-      print STDERR "Unable to map $cid\n";
+    if ($@ || !ref($mc) ) { 
+      print STDERR "In Bio::EnsEMBL::Virtual::Contig, unable to map $cid\n";
       return undef;
     }
 
-    # if this is something with subfeatures, then this is much more complex
+    ###if this is something with subfeatures, then this is much more complex
     my @sub = $sf->sub_SeqFeature();
-    
-    if( $#sub >=  0 ) {
-	    # chain to constructor of the object. Not pretty this.
-	    $sf->flush_sub_SeqFeature();
-	    my $seen = 0;
-	    my $strand;
-	    foreach my $sub ( @sub ) {
-#	        print STDOUT "Converting sub ",$sub->id,":",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
-	        $sub = $self->_convert_seqfeature_to_vc_coords($sub);
-	        if( !defined $sub ) {        
-		        next;
-	        }
-	        if( $seen == 0 ){
-		        $sf->start($sub->start);
-		        $sf->end($sub->end);
-	        }
-	        $seen =1;
-	        $strand = $sub->strand;
-	        $sf->add_sub_SeqFeature($sub,'EXPAND');
-	    }
-	    if( $seen == 1 ) {       
-	        # we assumme that the mapping was unambiguous wrt to the strand
-	        $sf->strand($strand);
-	        return $sf;
-	    } else {
-	        return undef;
-	    }
+    #print STDERR scalar( @sub )." subFeatures retrieved from $sf\n";
+   
+    # if there is any sub_SeqFeature
+    if( $#sub >= 0 ) {
+      # chain to constructor of the object. Not pretty this.
+      $sf->flush_sub_SeqFeature();
+      my $seen = 0;
+      my $strand;
+
+      # loop over the sub_SeqFeatures
+      foreach my $sub ( @sub ) {
+	#print STDERR "In Contig: Converting sub $sub",$sub->id,":",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
+	$sub = $self->_convert_seqfeature_to_vc_coords($sub);
+	if( !defined $sub ) {        
+	  next;
+	}
+
+	# the first sub_feature determines the start-coord
+	if( $seen == 0 ){
+	  $sf->start($sub->start);
+	  $sf->end($sub->end);
+	}
+	# sub-sequence sub_features expand the end-coord
+	$seen   = 1;
+	$strand = $sub->strand;
+	$sf->add_sub_SeqFeature($sub,'EXPAND');
+      }
+
+      # we've remapped all sub_features, and the feature itself
+      if( $seen == 1 ) {       
+	# we assumme that the mapping was unambiguous wrt to the strand
+	$sf->strand($strand);
+	return $sf;
+      }
+      else {
+	print STDERR "Nothing to return\n";
+	return undef;
+      }
+ 
+    }
+    else{
+      # nothing to do here, continue further
     }
 
-    # if this is an exon, we need to convert any supporting evidence
+    ### if this is an exon, we need to convert any supporting evidence
     if($sf->isa("Bio::EnsEMBL::Exon")){
-      foreach my $se($sf->each_Supporting_Feature){
+
+      # get supporting evidence through an ExonAdaptor just once! 
+      my $exon_adaptor = $self->dbobj->get_ExonAdaptor;
+      $exon_adaptor->fetch_evidence_by_Exon($sf);
+      my @evi = $sf->each_Supporting_Feature;
+      
+      foreach my $se ($sf->each_Supporting_Feature){
 	if($se->seqname == $sf->contig->internal_id){
 	  $se->seqname($sf->seqname); # hack much like the one for exon->seqname above
 	  $self->_convert_seqfeature_to_vc_coords($se);
@@ -1229,32 +1249,48 @@ sub _convert_seqfeature_to_vc_coords {
 	else{
 	  print STDERR "This seqfeature is on contig " . $se->seqname
 	    . " but the exon is on contig " . $sf->contig->internal_id
-	    . " - odd things will happen\n";
-	  
+	      . " - odd things will happen\n";	  
 	}
       }
     }
+    
 
     # might be clipped left/right
-    #print ("Leftmost " . $mc->leftmost . " " . $mc->orientation . " " . $mc->start_in . " " . $mc->end_in  . " " . $sf->start . " " . $sf->end . "\n");
+    #print ("Leftmost " . $mc->leftmost . " " 
+    #. $mc->orientation . " " . $mc->start_in . " " . $mc->end_in  . " " . $sf->start . " " . $sf->end . "\n");
     # Could be clipped on ANY contig  
+
+    # check whether the feature falls over the contig
     if ($sf->start < $mc->rawcontig_start) {
-#           print STDERR "-Binning $cid\n";
-#           print STDERR "SF START ", $sf->start     ,"\n";
-#           print STDERR "RC START ", $mc->rawcontig_start ,"\n";
-	    return undef;              
+      #print STDERR "feature $sf cannot be map\n";
+      #print STDERR "-Binning $cid\n";
+      #print STDERR "Feature START ", $sf->start     ,"\n";
+      #print STDERR "RawContig START ", $mc->rawcontig_start ,"\n";
+      return undef;              
     }
     if ($sf->end >  $mc->rawcontig_end) {  
-#           print STDERR "+Binning $cid\n";
-	    return undef;              
+      #print STDERR "feature $sf cannot be map\n";
+      #print STDERR "+Binning $cid\n";
+      #print STDERR "Feature END ", $sf->end     ,"\n";
+      #print STDERR "RawContig END ", $mc->rawcontig_end ,"\n";
+      return undef;              
     }
+    
+    # Finally, convert the coordinates of the feature
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
 
     if( $sf->can('attach_seq') ) {
-	    if (!$self->noseq) {
-	        $sf->attach_seq($self->primary_seq);
-	    }
+      if (!$self->noseq) {
+	$sf->attach_seq($self->primary_seq);
+      }
     }
+
+    ## test
+    #print STDERR "re-mapping object $sf: ";
+    #print STDERR "start: ".$sf->start." --> ".$rstart.
+    #             " end: " .$sf->end  ." --> ". $rend."\n";
+
+    # redefine coordinates
     $sf->start ($rstart);
     $sf->end   ($rend);
     $sf->strand($rstrand);
@@ -1303,7 +1339,9 @@ sub _convert_start_end_strand_vc {
 	$rstrand = $strand * -1;
 	
 	# yup. A number of different off-by-one errors possible here
-
+	
+	# well, believe or not, this actually works
+	# take a virtual contig starting in 1 and you'll see
 	$rstart = $mc->end   - ($end   - $mc->rawcontig_start);
 	$rend   = $mc->end   - ($start - $mc->rawcontig_start);
 
@@ -1725,14 +1763,14 @@ sub _reverse_map_Exon {
        my $found=0;
        my $mc;
        while ( $mc = shift @mapcontigs ) { 
-           if( $mc->contig->id eq $scontig->id ) {
-# print STDERR "Unshifting ",$mc->contig->id,"\n";
-               unshift(@mapcontigs,$mc);
-               $found = 1;
-               last;
-           }
+	 if( $mc->contig->id eq $scontig->id ) {
+	   # print STDERR "Unshifting ",$mc->contig->id,"\n";
+	   unshift(@mapcontigs,$mc);
+	   $found = 1;
+	   last;
+	 }
        }
-
+       
        if ( $found == 0 ) {
 	   $self->throw("Internal error - unable to find map contig with this id");
        }
@@ -1819,6 +1857,7 @@ sub _reverse_map_Exon {
    #
    # here we handle supporting features
    #
+   
    foreach my $se ( $exon->each_Supporting_Feature ) {
      # we only map featurepairs
 
@@ -1826,9 +1865,10 @@ sub _reverse_map_Exon {
        $self->warn("In reverse map exon, cannot map supporting feature $se");
        next;
      }
-
+     
+     #print STDERR "about to map feature $se  start: ".$se->start." end: ".$se->end."\t";
      my @res = $self->_vmap->raw_contig_interval($se->start,$se->end,$se->strand);
-
+     
      my $hstart = $se->hstart;
      foreach my $res ( @res ) {
        if( $res->{'gap_start'} ) {
@@ -1837,21 +1877,18 @@ sub _reverse_map_Exon {
        }
 
        $se->validate();
-#       print STDERR "SE validation done!";
-
+       
        my $new_feature = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
        $new_feature->start($res->{'raw_start'});
        $new_feature->end($res->{'raw_end'});
-#       print STDERR "Setting strand to ",$res->{'raw_strand'},"\n";
+       print STDERR "new_start: ".$res->{'raw_start'}." new_end: ".$res->{'raw_end'}."\n";
        $new_feature->strand($res->{'raw_strand'});
        $new_feature->seqname($res->{'raw_contig_id'});
 
-# hstart & hend do not need remapping!!!!
+       # hstart & hend do not need remapping!!!!
 
        $new_feature->hstart($se->hstart);
-#       $new_feature->hend($hstart + $res->{'raw_end'} - $res->{'raw_start'});
        $new_feature->hend($se->hend);
-#       $hstart =$hstart + $res->{'raw_end'} - $res->{'raw_start'}+1;
        $new_feature->hstrand($se->hstrand);
        $new_feature->score($se->score);
        $new_feature->hscore($se->score);
@@ -1864,7 +1901,6 @@ sub _reverse_map_Exon {
        $new_feature->hsource_tag($se->hsource_tag);
        $new_feature->hprimary_tag($se->hprimary_tag);
 
-#       print STDERR "Adding feature to exon ",$exon_to_return->dbID,"\n";
        $new_feature->validate();
        $exon_to_return->add_Supporting_Feature($new_feature);
      }
