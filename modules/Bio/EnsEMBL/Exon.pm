@@ -896,7 +896,7 @@ sub display_id {
 
 sub _get_stable_entry_info {
    my $self = shift;
-   deprecated( "This function shouldnt be called any more" );
+   deprecate( "This function shouldnt be called any more" );
    if( !defined $self->adaptor ) {
      return undef;
    }
@@ -925,7 +925,7 @@ sub temporary_id {
 
 sub created{
     my ($self,$value) = @_;
-    deprecated( "Created attribute not supported any more" );
+    deprecate( "Created attribute not supported any more" );
     if(defined $value ) {
       $self->{'_created'} = $value;
     }
@@ -940,7 +940,7 @@ sub created{
 
 sub modified{
     my ($self,$value) = @_;
-    deprecated( "Modified attribute not supported any more" );
+    deprecate( "Modified attribute not supported any more" );
     if( defined $value ) {
       $self->{'_modified'} = $value;
     }

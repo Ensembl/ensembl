@@ -234,7 +234,7 @@ sub store {
     my $sth = $self->prepare(
       "INSERT INTO exon_stable_id " .
       "SET version = ?, " .
-          "table_id = ?, " .
+          "stable_id = ?, " .
           "exon_id = ?");
 
     $sth->execute( $exon->version, $exon->stable_id, $exonId );

@@ -701,7 +701,7 @@ sub temporary_id {
 
 sub created{
     my ($self,$value) = @_;
-    deprecated( "The created attribute isnt available any more" );
+    deprecate( "The created attribute isnt available any more" );
     if(defined $value ) {
       $self->{'created'} = $value;
     }

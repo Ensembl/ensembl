@@ -1643,7 +1643,7 @@ sub transform {
 
   # catch for old style transform calls
   if( ref $_[0] eq 'HASH') {
-    deprecate("Calling transform with a hashref is deprecated.\n" .
+    deprecate("Calling transform with a hashref is deprecate.\n" .
               'Use $trans->transfer($slice) or ' .
               '$trans->transform("coordsysname") instead.');
     my (undef, $new_ex) = each(%{$_[0]});
@@ -1875,7 +1875,7 @@ sub sort {
 
 sub _translation_id {
    my $self = shift;
-   deprecated( "This method shouldnt be necessary any more" );
+   deprecate( "This method shouldnt be necessary any more" );
    if( @_ ) {
       my $value = shift;
       $self->{'_translation_id'} = $value;
@@ -1909,7 +1909,7 @@ sub created{
 
 sub modified{
    my $obj = shift;
-   deprecated( "This attribute is no longer supported" );
+   deprecate( "This attribute is no longer supported" );
    if( @_ ) {
       my $value = shift;
       $obj->{'modified'} = $value;
