@@ -209,7 +209,7 @@ sub get_all_SeqFeatures {
     my @seq_features = $self->get_all_RepeatFeatures();
     push(@seq_features, $self->get_all_ExternalFeatures());
     push(@seq_features, $self->get_all_SimilarityFeatures());
-    print(STDERR "Fetched all features\n");
+#    print(STDERR "Fetched all features\n");
     
     # Return all the sequence features
     return @seq_features; 
@@ -242,6 +242,7 @@ sub get_all_Genes {
     my %methods = map{$_, 1} ('supported_CDS', 'curated');
     # Get the sequence object
     my $seq = $self->ace_seq();
+
     # Start the phase at whatever it's defined as -1 or 0 if it's not defined
     my $phase = $seq->at('Properties.Coding.CDS[1]') || 1;
     $phase--;
@@ -254,6 +255,10 @@ sub get_all_Genes {
              
             my $genename = "$sub";                                  
             my ($start,$end) = $sub->row(1);
+
+	    $start = "$start";
+	    $end   = "$end";
+
             my $strand = 1;
             if ( $start > $end ) {
 	        $strand = -1;
@@ -267,7 +272,7 @@ sub get_all_Genes {
                                          
 	        my ($starte, $ende) = map("$_", $hit->row());                              	                        
                 my $exon = $self->_create_exon($id, $strand, $start, 
-                    $starte, $end, $ende, $genename, $index, $phase);
+		    $starte, $end, $ende, $genename, $index, $phase);
                 
                 # Set index and phase for the next exon
                 $index++;                
@@ -290,14 +295,17 @@ sub get_all_Genes {
                 $translation->start_exon_id($exons[$#exons]->id());
 	        $translation->end_exon_id($exons[0]->id());
             }  
-    print "Trans start: ", $translation->start(), "\n";  
-    print "Trans end: ", $translation->end(), "\n"; 
-    print "Trans start id: ", $translation->start_exon_id(), "\n"; 
-    print "Trans end id: ", $translation->end_exon_id(), "\n";        
+
+#	    print "Trans start: ", $translation->start(), "\n";  
+#	    print "Trans end: ", $translation->end(), "\n"; 
+#	    print "Trans start id: ", $translation->start_exon_id(), "\n"; 
+#	    print "Trans end id: ", $translation->end_exon_id(), "\n";        
+
 	    # Create a new Transcript object from the exons and the Translation
             my $transcript = new Bio::EnsEMBL::Transcript(@exons);    
 	    $transcript->translation($translation);
 
+#	    print STDERR "Translation is " . $transcript->translate->seq . "\n";
             # Create a new Gene object and add the Transcript 
             my $gene = new Bio::EnsEMBL::Gene();
             $gene->id($genename); 
@@ -500,7 +508,7 @@ sub ace_seq {
    
    unless($self->{'_ace_seq'}) {
         my $id = $self->id();
-        $self->{'_ace_seq'} = $self->dbobj->fetch('Sequence', $id) || 
+        $self->{'_ace_seq'} = $self->dbobj->fetch('Genome_sequence', $id) || 
            $self->throw("Could not retrieve $id from acedb" . Ace->error());
    }
    return $self->{'_ace_seq'};
@@ -522,11 +530,11 @@ sub _create_exon {
     my ($self, $id, $strand, $start, $starte, $end, $ende, $genename, $index, $phase) = @_;
      
     my $bioseq = $self->primary_seq();
-       
+
     my $exon = new Bio::EnsEMBL::Exon();        
     $exon->clone_id($id);
     $exon->contig_id($id);
-    $exon->attach_seq($bioseq);
+
     $exon->strand($strand);
     $exon->phase($phase);
     $exon->seqname($genename);
@@ -542,7 +550,8 @@ sub _create_exon {
 	    $exon->start($start-$ende+1);
 	    $exon->end($start-$starte+1);
     } 
-    
+    $exon->attach_seq($bioseq);
+#    print STDERR "Exon " . $exon->start . "\t" . $exon-> end . "\t" . $exon->seq->seq . "\n";
     my $exonid;
     if( $self->dbobj->_exon_id_start() ) {
 	     $exonid = $self->dbobj->_exon_id_start();

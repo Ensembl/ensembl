@@ -379,8 +379,7 @@ sub get_updated_objects {
 	}
     } else {
 	eval {
-	    my $update_obj = $fromdb->get_Update_Obj;
-	    @clones = $update_obj->get_updated_Clone_id($self->fromtime,$self->totime);
+	    @clones = $fromdb->get_updated_Clone_id($self->fromtime,$self->totime);
 	};
 	if ($@) {
 	    print "Could not call get_updated_Clone_id from the donor database:\n$@!";

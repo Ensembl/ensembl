@@ -317,7 +317,7 @@ sub translateable_exons{
 
    while( my $exon = shift @exons ) {
        if( $exon->id eq $self->translation->start_exon_id() ) {
-	   print STDERR "New start exon " . $exon->id . "\n";
+#	   print STDERR "New start exon " . $exon->id . "\n";
 	   my $stexon = new Bio::EnsEMBL::Exon;
 
 	   $stexon->contig_id ($exon->contig_id);
@@ -327,7 +327,7 @@ sub translateable_exons{
 
 	   $stexon->attach_seq($exon->entire_seq());
 
-	   print (STDERR "Exon entire seq is " . ref($stexon->entire_seq) . "\n");
+#	   print (STDERR "Exon entire seq is " . ref($stexon->entire_seq) . "\n");
 
 	   $stexon->id($exon->id());
 	   
@@ -345,8 +345,8 @@ sub translateable_exons{
 	       $stexon->phase(0);             # MC translation is always phase 0.
 	       $stexon->end($exon->end);
 
-	       print STDERR "Setting start end to " . $stexon->start   . "\t" . $stexon->end  ."\n";
-	       print (STDERR "Exon sequence is "    . $stexon->seq->seq . "\n");	       
+#	       print STDERR "Setting start end to " . $stexon->start   . "\t" . $stexon->end  ."\n";
+#	       print (STDERR "Exon sequence is "    . $stexon->seq->seq . "\n");	       
 	   } else {
 	       if( $self->translation->start < $exon->start || $self->translation->start > $exon->end ) {
 		   $self->throw("For start exon ".$exon->id." translation start not within exon bounds. Start ". $self->translation->start . "Exon " .$exon->start.":".$exon->end."\n");
@@ -747,8 +747,8 @@ sub _translate_coherent{
 	   #$self->warn("Error. Whoever implemented this databases did not set type to Dna. Setting now!");
 	   $exon->entire_seq()->moltype('dna');
        }
-       print STDERR "Exon phase " . $exon->phase . "\t" . $exon->start . "\t" . $exon->end . "\n";
-       print STDERR "Exon sequence is " . $exon->seq->seq . "\n";
+#       print STDERR "Exon phase " . $exon->phase . "\t" . $exon->start . "\t" . $exon->end . "\n";
+#       print STDERR "Exon sequence is " . $exon->seq->seq . "\n";
 
        my $seq = $exon->seq();
        my $str = $seq->seq();
@@ -764,8 +764,8 @@ sub _translate_coherent{
    $debug = 1;
 
    if ( $debug ) {
-       print STDERR "Bstr is $tstr\n";
-       print STDERR "Exon phase is " . $exon_start->phase . "\n";
+#       print STDERR "Bstr is $tstr\n";
+#       print STDERR "Exon phase is " . $exon_start->phase . "\n";
        my @trans;
        my $exseq = new Bio::PrimarySeq(-seq => $tstr , '-id' => 'dummy' , -moltype => 'dna');
        	$trans[0] = $exseq->translate();
@@ -776,10 +776,10 @@ sub _translate_coherent{
 	$trans[1] = $exseq->translate('*','X',2);
 	$trans[2] = $exseq->translate('*','X',1);
 
-       print(STDERR "Exon start end " . $exon_start->start . " " . $exon_start->end . " " . $exon_start->phase . " " . $exon_start->strand ."\n");
-       print(STDERR "Translation 0 " . $trans[0]->seq . "\n");
-       print(STDERR "Translation 1 " . $trans[1]->seq . "\n");
-       print(STDERR "Translation 2 " . $trans[2]->seq . "\n");
+#       print(STDERR "Exon start end " . $exon_start->start . " " . $exon_start->end . " " . $exon_start->phase . " " . $exon_start->strand ."\n");
+#       print(STDERR "Translation 0 " . $trans[0]->seq . "\n");
+#       print(STDERR "Translation 1 " . $trans[1]->seq . "\n");
+#       print(STDERR "Translation 2 " . $trans[2]->seq . "\n");
    }
 
 
