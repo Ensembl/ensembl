@@ -8,14 +8,23 @@
 
 use strict;
 
-my $new_mapping_file = "comparison/xref_mappings.txt";
-my $ensembl_mapping_file = "comparison/ensembl_swissprot_translations.txt";
+use Getopt::Long;
+
+my ( $old, $new, $pass, $port, $dbname  );
+
+GetOptions( "old=s", \$old,
+	    "new=s", \$new);
+
+if( !($old && $new) ) {
+  usage();
+  exit(1);
+}
 
 # read files into xref/object hashes
 # TODO - more than one mapping?
 
-my %new_mappings = read_mappings($new_mapping_file);
-my %ensembl_mappings = read_mappings($ensembl_mapping_file);
+my %new_mappings = read_mappings($new);
+my %ensembl_mappings = read_mappings($old);
 
 compare_mappings(\%new_mappings, \%ensembl_mappings);
 
@@ -81,7 +90,7 @@ sub compare_mappings {
 
   print "Compared " . scalar(keys %new_mappings) . " new xref mappings with " . scalar(keys %ensembl_mappings) . " existing ensembl mappings\n\n";
 
-  my $fmt = "%-30s\t%6d\t%+3.2f%%\n";
+  my $fmt = "%-30s\t%6d\t%3.2f%%\n";
   printf $fmt, "Mapped with same result:", $matched, pc($matched, $total);
   printf $fmt, "Mapped with different result:", $mismatched, pc($mismatched, $total);
   printf $fmt, "Mapped by new method only:", $new_only, pc($new_only, $total);
@@ -96,5 +105,19 @@ sub pc {
 
   my ($a, $total) = @_;
   return 100 * $a / $total;
+
+}
+
+sub usage {
+
+print << "EOF";
+
+Usage: compare_mapping.pl -old <old mapping file> -new <new mapping file>
+
+Mapping files should be in the following format:
+
+xref_accession ensembl_type ensembl_id
+
+EOF
 
 }
