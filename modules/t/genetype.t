@@ -34,7 +34,7 @@ print "ok 1\n";    # 1st test passes.
 my $ens_test = EnsTestDB->new();
     
 # Load some data into the db
-$ens_test->do_sql_file("t/genetype.dump");
+$ens_test->do_sql_file("t/geneget.dump");
     
 # Get an EnsEMBL db object for the test db
 my $db = $ens_test->get_DBSQL_Obj;
@@ -42,9 +42,9 @@ print "ok 2\n";
 
 
 
-my $gene_obj = $db->gene_Obj;
+my $gene_obj = $db->get_GeneAdaptor;
 
-my $gene=$gene_obj->get('ENSG00000003941');
+my $gene=$gene_obj->fetch_by_stable_id('ENSG1');
 
 
 if ($gene){print "ok 3\n";}
@@ -52,7 +52,7 @@ else {print "Not ok 3\n";}
 
 
 
-my $contig=$db->get_Contig('AB000381.00001');
+my $contig=$db->get_Contig('contig1');
 
 my @genes=$contig->get_Genes_by_Type('ensembl');
 if (scalar @genes !=0){print "ok 4\n";}

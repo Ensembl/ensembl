@@ -66,6 +66,10 @@ sub fetch_by_geneId {
   my %exons;
   my ( $currentId, $currentTranscript );
 
+  if( !defined $geneId ) {
+      $self->throw("Must has a geneId ... ");
+  }
+
   my $query = qq {
     SELECT  e.exon_id
       , e.contig_id
@@ -121,7 +125,8 @@ sub fetch_by_geneId {
 	      $sticky_length += $component->length;
 	      $sticky_str    .= $component->seq->seq;
 	      $sticky->phase($component->phase);
-
+	      $sticky->dbID($component->dbID);
+	      $sticky->adaptor($self);
 	      # continue while loop until we hit sticky_rank 1
 	      while( $hashRef = $sth->fetchrow_hashref() ) {
 		  my $component = $self->_new_Exon_from_hashRef($hashRef);
@@ -187,7 +192,7 @@ sub _new_Exon_from_hashRef {
    $exon->dbID($hashRef->{'exon_id'});
    $exon->sticky_rank($hashRef->{'sticky_rank'});
    $exon->contig_id( $hashRef->{'contig_id'} );
-   
+   $exon->adaptor($self);
 
    # maybe we should cache this.
    

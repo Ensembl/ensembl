@@ -43,11 +43,10 @@ my $db = $ens_test->get_DBSQL_Obj;
 print "ok 2\n";    
 
 
-$gene_obj = $db->gene_Obj();
+$gene_obj = $db->get_GeneAdaptor();
 
-eval {
-    $gene = $gene_obj->get('ENSG1');
-};
+$gene = $gene_obj->fetch_by_stable_id('ENSG1');
+
 
 if ($@) {
     print "not ok 3\n";
@@ -67,7 +66,7 @@ if( !defined $dbl || $dbl->database ne 'swissprot' ) {
   print "ok 4\n";
 }
 
-print STDERR $gene->is_known,"\n";
+#print STDERR $gene->is_known,"\n";
 
 #@trans = $gene->each_Transcript();
 #$trans = shift @trans;

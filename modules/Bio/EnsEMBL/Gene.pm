@@ -59,7 +59,7 @@ sub new {
   my $self = bless {}, $class;
 
   $self->{'_transcript_array'} = [];
-  $self->{'_db_link'} = [];
+#  $self->{'_db_link'} = [];
 # set stuff in self from @args
   return $self; # success - we hope!
 }
@@ -195,7 +195,12 @@ sub description {
 sub each_DBLink {
    my ($self,@args) = @_;
 
-   # This could become an on-demand call
+   if( !defined $self->{'_db_link'} ) {
+       my @array = $self->adaptor->db->get_DBEntryAdaptor->fetch_by_gene($self->dbID);
+       $self->{'_db_link'} = [];
+       push(@{$self->{'_db_link'}},@array);
+   }
+
 
    return @{$self->{'_db_link'}}
 }
@@ -215,6 +220,14 @@ sub each_DBLink {
 
 sub add_DBLink{
    my ($self,$value) = @_;
+
+   $self->throw("Cannot sensibly add DBLinks now. (sadly). Please talk to Ewan or Arne about this");
+   
+   # 
+   # note to Ewan/Arne/Craig. By making db_link an on-demand call we sort of make life difficult
+   # for adding DBLinks. This could be good or bad
+   #
+
 
    if( !defined $value || !ref $value || ! $value->isa('Bio::Annotation::DBLink') ) {
        $self->throw("This [$value] is not a DBLink");

@@ -281,13 +281,10 @@ sub _make_gene_from_gtf_hash {
     
     # Make a new gene object
     my $gene = Bio::EnsEMBL::Gene->new();
-    $gene->id($gene_id);
-    $gene->version(1);
-    $gene->type($source);
     
-    my $time = time;
-    $gene->created($time);
-    $gene->modified($time);
+    # NO IDEA WHAT TO DO WITH STABLE IDs
+    #$gene->id($gene_id);
+    $gene->type($source);
     
     # The %gene_exons hash is used so each exon is only made once,
     # even if it occurs in multiple transcripts.  The keys of the
@@ -310,12 +307,9 @@ sub _make_transcript {
     
     # Make a new transcript object
     my $transcript = Bio::EnsEMBL::Transcript->new;
-    $transcript->id($trans_id);
-    $transcript->version(1);
 
-    my $time = time;
-    $transcript->created($time);
-    $transcript->modified($time);
+    # NO IDEA WHAT TO DO WITH STABLE IDS
+    #$transcript->id($trans_id);
 
     my @exon_num = sort {$a <=> $b} keys %$trans_gtf;
     my $translation_start = []; # For recording the exon number and sequence position
@@ -350,10 +344,10 @@ sub _make_transcript {
         
         # Record translation starts and ends if they are in this exon
         if ($t_start) {
-            $translation_start = [$t_start, $exon->id];
+            $translation_start = [$t_start, $exon];
         }
         if ($t_end) {
-            $translation_end = [$t_end, $exon->id];
+            $translation_end = [$t_end, $exon];
         }
 
         # Add this exon to the transcript
@@ -404,24 +398,22 @@ sub _make_exon {
     my $exon = Bio::EnsEMBL::Exon->new($start, $end, $strand);
 
 
-    $exon->version(1);
     $exon->contig_id($seq_name);
     $exon->seqname($seq_name);  ### What is seqname for ???
     $exon->phase($phase);
     $exon->sticky_rank(1);
 
-    my $time = time;
-    $exon->created($time);
-    $exon->modified($time);
     
     my $exon_id = $exon_gtf->{'exon_id'};
     # Make a, hopefull unique, exon ID, it there wasn't one in the file
     unless ($exon_id) {
-        my $gene_id = $gene->id;
+        my $gene_id = "$gene";
+	my $gene_id = s/HASH//g;
         my $type    = $gene->type;
         $exon_id = "$type-$gene_id-$exon_num";
     }
-    $exon->id($exon_id);
+    # No idea what to do with stable ids
+    #$exon->id($exon_id);
     
     # Fill in the translation start and ends if we have them
     my( $t_start, $t_end );
@@ -480,7 +472,7 @@ sub _make_translation {
         } else {
             $start = $exon->end;
         }
-        $translation_start = [$start, $exon->id];
+        $translation_start = [$start, $exon];
     }
 
     # Set the translation end to the end of the last exon
@@ -493,7 +485,7 @@ sub _make_translation {
         } else {
             $end = $exon->start;
         }
-        $translation_end = [$end, $exon->id];
+        $translation_end = [$end, $exon];
     }
 
     ### these start/ends are in fpc contig coords; we now have to map it
@@ -515,16 +507,17 @@ sub _make_translation {
 #    my $tl_id = $transcript->id;
 #    $tl_id =~ s/ENST/ENSQ/g;            # invent an id?
     ### note: re-using transcript_ids for translation_id's, for simplicity!
-    $translation->id($transcript->id);
-    $translation->version(1);
+
+    # NO IDEA WHAT TO DO with STABLE IDs
+    #$translation->id($transcript->id);
     
     # Translation start
     $translation->start        ($translation_start->[0]);
-    $translation->start_exon_id($translation_start->[1]);
+    $translation->start_exon($translation_start->[1]);
 
     # Translation end
     $translation->end        ($translation_end->[0]);
-    $translation->end_exon_id($translation_end->[1]);
+    $translation->end_exon($translation_end->[1]);
     
     $transcript->translation($translation);
 }                                       # _make_translation

@@ -13,18 +13,27 @@ INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromos
 VALUES (5, 'contig5', 1, 5, 5, 0, NULL, 'chromosome1', 'international-e');
 
  
-INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('exon-1',1,2,4,1,0,1);
-INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('exon-1',2,2,4,2,0,1);
-INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('exon-2',2,5,6,1,0,1);
+INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (1,1,2,4,1,0,1);
+INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (1,2,2,4,2,0,1);
+INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (2,2,5,6,1,0,1);
 
-INSERT INTO exon_transcript (exon,transcript,rank) VALUES ('exon-1','ENST1',1);
-INSERT INTO exon_transcript (exon,transcript,rank) VALUES ('exon-2','ENST1',2);
+INSERT INTO exon_stable_id (exon_id,stable_id) VALUES (1,'exon-1');
+INSERT INTO exon_stable_id (exon_id,stable_id) VALUES (2,'exon-2');
 
-INSERT INTO transcript (id,gene,translation) VALUES ('ENST1','ENSG1','trl-1');
-INSERT INTO gene (id) VALUES ('ENSG1');
-INSERT INTO genetype (gene_id,type) VALUES ('ENSG1','type');
 
-INSERT INTO translation (id,start_exon,seq_start,end_exon,seq_end) VALUES ('trl-1','exon-1',2,'exon-2',6);
+INSERT INTO exon_transcript (exon_id,transcript_id,rank) VALUES (1,1,1);
+INSERT INTO exon_transcript (exon_id,transcript_id,rank) VALUES (2,1,2);
+
+INSERT INTO transcript (transcript_id,gene_id,translation_id) VALUES (1,1,1);
+INSERT INTO transcript_stable_id (transcript_id,stable_id) VALUES (1,'ENST1');
+
+INSERT INTO gene (gene_id,type,analysisId) VALUES (1,'ensembl',1);
+INSERT INTO gene_stable_id (gene_id,stable_id) VALUES (1,'ENSG1');
+
+INSERT INTO gene_description (gene_id,description) VALUES (1,"some description");
+
+INSERT INTO translation (translation_id,start_exon_id,seq_start,end_exon_id,seq_end) VALUES (1,1,2,2,6);
+INSERT INTO translation_stable_id (translation_id,stable_id) VALUES (1,'trl-1');
 
 
 
@@ -60,11 +69,11 @@ VALUES (2, 'genscan', 12, 'blast', 12, 'blast', 'similarity');
 # Dumping data for table 'objectXref'
 #
 
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 'ENSG1', 'Gene', 1);
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 'ENSG1','Gene', 2);
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 'ENST1', 'Transcript', 1);
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 'ENST1','Transcript', 2);
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 'ENSP1','Translation', 2);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 1,'Gene', 1);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 1,'Gene', 2);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 1,'Transcript', 1);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 1,'Transcript', 2);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 1,'Translation', 2);
 
 #
 # Dumping data for table 'Xref'

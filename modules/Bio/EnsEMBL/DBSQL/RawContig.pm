@@ -491,10 +491,11 @@ my $query="
         SELECT t.gene_id
         FROM transcript t,
              exon_transcript et,
-             exon e,
-        WHERE e.contig_id = '$contig_id'
+             exon e, gene g
+        WHERE e.contig_id = $contig_id
           AND et.exon_id = e.exon_id
           AND t.transcript_id = et.transcript_id
+          AND t.gene_id = g.gene_id
           AND g.type = '$type'
         ";
 

@@ -196,6 +196,33 @@ sub fetch_by_dbID {
   return $gene;
 }
 
+=head2 fetch_by_stable_id
+
+ Title   : fetch_by_stable_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_by_stable_id{
+   my ($self,$id) = @_;
+
+   my $sth = $self->prepare("select gene_id from gene_stable_id where stable_id = '$id'");
+   $sth->execute;
+
+   my ($dbID) = $sth->fetchrow_array();
+
+   if( !defined $dbID ) {
+       $self->throw("No stable id with $id, cannot fetch");
+   }
+
+   return $self->fetch_by_dbID($dbID);
+}
+
 
 =head2 fetch_by_Transcript_id
 
