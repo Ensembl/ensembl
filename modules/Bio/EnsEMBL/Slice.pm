@@ -1825,11 +1825,11 @@ sub get_all_Haplotypes {
 sub get_all_DASFeatures{
    my ($self,@args) = @_;
 
-  if(!$_->adaptor()) {
+  if(!$self->adaptor()) {
     warning("Cannot retrieve features without attached adaptor");
     return [];
   }
-  
+
   my %genomic_features =
       map { ( $_->adaptor->dsn => [ $_->fetch_all_by_Slice($self) ]  ) }
          $self->adaptor()->db()->_each_DASFeatureFactory;
