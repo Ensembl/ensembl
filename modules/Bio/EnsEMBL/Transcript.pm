@@ -1958,44 +1958,6 @@ sub convert_peptide_coordinate_to_contig {
     return @result;
 }
 
-sub convert_transcript_coordinate_to_contig {
-    my ($self,$start,$end) = @_;
-
-    $self->throw("Must call with start/end") unless defined $end;
-
-  # get out exons, walk along until we hit first exon
-  # calculate remaining distance.
-
-    my $start_exon;
-    my @exons = $self->get_all_Exons;
-  
-    my $exon;
-    my ( @features, @result );
-  # ec start end are cdna relative positions for the current exons cdna
-    my ( $ec_start, $ec_end, $offset );
-
-  # which area of the exon overlaps with requested start,end
-  # usually either the last bit, the first bit or all.
-    my ( $ov_start, $ov_end );
-
-    $ec_start = 0; $ec_end = -1;
-
-    while( $exon = shift  @exons ) {
-        $ec_start = $ec_end + 1;
-        $ec_end   = $exon->length() + $ec_start - 1;
-    # now exon covers ec_start - ec_end in cdna
-        $ov_start = ( $start >= $ec_start ) ? $start : $ec_start;
-        $ov_end   = ( $end <= $ec_end )     ? $end   : $ec_end;
-    
-        if( $ov_end >= $ov_start ) {
-            @features = $exon->cdna_coord_2_features(
-                $ov_start - $ec_start + 1, $ov_end   - $ec_start + 1
-            );
-            push( @result, @features );
-        }
-    }
-    return @result;
-}
 
 1;
 
