@@ -59,7 +59,7 @@ use strict;
 # Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::Virtual::StaticContig;
+#use Bio::EnsEMBL::Virtual::StaticContig;
 use Bio::EnsEMBL::RawContig;
 use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
 use Bio::EnsEMBL::Slice;
