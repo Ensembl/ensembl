@@ -319,7 +319,7 @@ sub translateable_exons{
    # one exon genes - easy to handle.
    if( $#exons == 0 ) {
        my $exon = shift @exons;
-       if( $self->translation->start_exon_id ne $exon->id || $self->translation->end_exon_id ne $exon->id ) {
+       if( $self->translation->start > $exon->length || $self->translation->end > $exon->length ) {
 	   $self->throw("Single Exon transcript, but with start or stop outside of that exon");
        }
 
@@ -328,64 +328,51 @@ sub translateable_exons{
        $retexon->contig_id ($exon->contig_id);
        $retexon->clone_id  ($exon->clone_id);
        $retexon->strand    ($exon->strand);
-       $retexon->phase     ($exon->phase);         # MC exon phase can be 0,1,2
+       $retexon->phase     (0); # first exon - must be phase 0        
        $retexon->attach_seq($exon->entire_seq);
        $retexon->id($exon->id());
        
        if( $exon->strand == 1 ) {
-	   $retexon->start($self->translation->start());
-	   $retexon->end  ($self->translation->end());
+	   $retexon->start($exon->start + $self->translation->start() -1);
+	   $retexon->end  ($exon->start + $self->translation->end() -1);
        } else {
-	   $retexon->end  ($self->translation->start());
-	   $retexon->start($self->translation->end());
+	   $retexon->end  ($exon->end - $self->translation->start -1);
+	   $retexon->start($exon->end - $self->translation->end -1);
        }
        
+
        return $retexon;
    }
+
 
    while( my $exon = shift @exons ) {
        if( $exon->id eq $self->translation->start_exon_id() ) {
 	   #print STDERR "New start exon " . $exon->id . "\n";
+
+	   if( $self->translation->start > $exon->length ) {
+	       $self->throw("In exon ".$exon->id." translation start ".$self->translation->start." is greater than exon length".$exon->start.":".$exon->end);
+	   }
+
+
 	   my $stexon = new Bio::EnsEMBL::Exon;
 
 	   $stexon->contig_id ($exon->contig_id);
 	   $stexon->clone_id  ($exon->clone_id);
 	   $stexon->strand    ($exon->strand);
-	   $stexon->phase     ($exon->phase);             # MC exon phase can be 0,1,2
-
 	   $stexon->attach_seq($exon->entire_seq());
 
 #	   print (STDERR "Exon entire seq is " . ref($stexon->entire_seq) . "\n");
 
 	   $stexon->id($exon->id());
-	   
-	   if( $exon->strand == 1 ) {
-	       # paranoid...
-	       if( $self->translation->start < $exon->start || $self->translation->start > $exon->end ) {
-		   $self->throw("For start exon " . $exon->id . 
-				" translation start not within exon bounds. Start " 
-				. $self->translation->start . 
-				"Exon "  . $exon->start . ":" . 
-				           $exon->end."\n");
-	       }
 
-	       $stexon->start($self->translation->start());
-           #commented out by MAQ - this was breaking genscan parsing
-	       #$stexon->phase(0);             # MC translation is always phase 0.
+	   if( $exon->strand == 1  ){
+	       $stexon->start($exon->start + $self->translation->start-1);
 	       $stexon->end($exon->end);
-
-	       #print STDERR "Setting start end to " . $stexon->start   . "\t" . $stexon->end  ."\n";
-	       #print (STDERR "Exon sequence is "    . $stexon->seq->seq . "\n");	       
 	   } else {
-	       if( $self->translation->start < $exon->start || $self->translation->start > $exon->end ) {
-		   $self->throw("For start exon ".$exon->id." translation start not within exon bounds. Start ". 
-                        $self->translation->start . " Exon " .$exon->start." : ".$exon->end."\n");
-	       }
-	       $stexon->end($self->translation->start());
 	       $stexon->start($exon->start);
-	       #commented out by MAQ - this was breaking genscan parsing
-           #$stexon->phase(0);             # MC translation is always phase 0.
+	       $stexon->end($exon->end - $self->translation->start-1);
 	   }
+	   $stexon->phase(0);
 	   push(@out,$stexon);
 	   last;
        }
@@ -394,6 +381,11 @@ sub translateable_exons{
    my $exon;
    while( $exon = shift @exons ) {
        if( $exon->id eq $self->translation->end_exon_id()) {
+
+	   if( $self->translation->end > $exon->length ) {
+	       $self->throw("In exon ".$exon->id." translation end ".$self->translation->end." is greater than exon length".$exon->start.":".$exon->end);
+	   }
+
 	   
 	   my $endexon = new Bio::EnsEMBL::Exon;
 	   
@@ -405,18 +397,11 @@ sub translateable_exons{
 	   $endexon->id($exon->id);
 
 	   if( $exon->strand == 1 ) {
-	       if( $self->translation->end() > $exon->end ) {
-		   $self->throw("Bad news. Attempting to say that this translation is inside this exon, but outside".$exon->id." ".$exon->end()." ".$self->translation->end()."\n");
-	       }
-
-	       $endexon->start($exon->start());
-	       $endexon->end  ($self->translation->end());
-
+	       $endexon->start($exon->start);
+	       $endexon->end($exon->start + $self->translation->end -1 );
 	   } else {
-	       if( $self->translation->end() < $exon->start ) {
-		   $self->throw("Bad news. Attempting to say that this translation is inside this exon (reversed), but outside".$exon->id." ".$exon->start()." ".$self->translation->end()."\n");
-	       }
-	       $endexon->start($self->translation->end());
+	       # I hope this is correct
+	       $endexon->start($exon->end - $self->translation->end -1);
 	       $endexon->end($exon->end);
 	   }
 	   push(@out,$endexon);
@@ -500,10 +485,6 @@ sub split_Transcript_to_Partial{
 	       $t->add_Exon($exon);
 	       $prev = $exon;
 	   } else {
-	       if( $exon->seqname eq $prev->seqname ) {
-		   $self->warn("Got two exons, ".$prev->id. "[".$prev->contig_id."]".$prev->start."/".$prev->phase .":". $exon->id ."[".$exon->contig_id."]: same contigs but incompatible phases!");
-	       }
-
 	       $prev = $exon;
 	       if( $#exons < 0 ) {
 		   # this was the last exon!

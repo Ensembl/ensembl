@@ -78,9 +78,9 @@ $tr->add_Exon($ex1);
 $tr->add_Exon($ex2);
 $trans = Bio::EnsEMBL::Translation->new();
 $trans->start_exon_id('dummy_id_1');
-$trans->start(8);
+$trans->start(1);
 $trans->end_exon_id('dummy_id_2');
-$trans->end(23);
+$trans->end(6);
 $tr->translation($trans);
 
 $tr1->add_Exon($ex1);
@@ -88,9 +88,9 @@ $tr1->add_Exon($ex2);
 $tr1->add_Exon($ex3);
 $trans = Bio::EnsEMBL::Translation->new();
 $trans->start_exon_id('dummy_id_1');
-$trans->start(8);
+$trans->start(1);
 $trans->end_exon_id('dummy_id_3');
-$trans->end(28);
+$trans->end(2);
 $tr1->translation($trans);
 
 $gene->add_Transcript($tr);
