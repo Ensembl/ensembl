@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 37;
+	plan tests => 50;
 }
 
 use MultiTestDB;
@@ -305,6 +305,53 @@ print_features($sfs2);
 
 ok(@$sfs1 == @$sfs2);
 
+
+#
+# test fetch_by_name
+#
+$slice = $slice_adaptor->fetch_by_name($slice->name());
+
+ok($slice->coord_system->name eq 'chromosome');
+ok($slice->seq_region_name eq '20');
+ok($slice->start == -10);
+ok($slice->strand == 1);
+ok($slice->end == 35e6);
+
+$slice = $slice_adaptor->fetch_by_name('clone::AL121583.25:1:10000:-1');
+
+ok($slice->coord_system->name eq 'clone');
+ok($slice->seq_region_name eq 'AL121583.25');
+ok($slice->start == 1);
+ok($slice->end == 10000);
+ok($slice->strand == -1);
+
+
+#
+# test fetch_all
+#
+my $slices = $slice_adaptor->fetch_all('chromosome');
+ok(@$slices == 62);
+
+$slices = $slice_adaptor->fetch_all('chromosome', undef,1e6, 1e4);
+
+print_slices($slices);
+ok(@$slices == 3185);
+
+
+$slices = $slice_adaptor->fetch_all('contig', undef, 50000);
+
+ok(@$slices == 26);
+
+print_slices($slices);
+
+
+sub print_slices {
+  my $slices = shift;
+  foreach my $slice (@$slices) {
+    debug($slice->name());
+  } 
+  debug( "Got ". scalar(@$slices));
+}
 
 sub print_features {
   my $fs = shift;
