@@ -65,7 +65,7 @@ use vars qw(@ISA);
 =cut
 
 sub generic_fetch {
-  my($self, $constraint, $logic_name) = @_;
+  my($self, $constraint, $logic_name, $mapper, $slice) = @_;
 
   if($logic_name eq 'ex_e2g_feat') {
     my $est_db = $self->db()->get_db_adaptor('est');
@@ -73,12 +73,12 @@ sub generic_fetch {
     if(defined $est_db) {
       #forward request to the EST database
       my $est_adaptor = $est_db->get_DnaAlignFeatureAdaptor();
-      return $est_adaptor->generic_fetch($constraint, $logic_name);
+      return $est_adaptor->generic_fetch($constraint, $logic_name, $mapper, $slice);
     }
   }
   
   #use the core adaptor
-  return $self->{'_primary_adaptor'}->generic_fetch($constraint, $logic_name);
+  return $self->{'_primary_adaptor'}->generic_fetch($constraint, $logic_name, $mapper, $slice);
 }
 
 

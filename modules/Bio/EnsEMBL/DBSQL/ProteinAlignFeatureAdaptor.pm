@@ -139,7 +139,7 @@ sub store{
 =cut
 
 sub _objs_from_sth {
-  my ($self, $sth) = @_;
+  my ($self, $sth, $mapper, $slice) = @_;
 
   my ($protein_align_feature_id, $contig_id, $contig_start, $contig_end,
       $analysis_id, $contig_strand, $hit_start, $hit_end, $hit_name, 
@@ -158,13 +158,54 @@ sub _objs_from_sth {
 
   my %a_hash;
   my %c_hash;
-  while($sth->fetch) {
-    $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
-    $contig   = $c_hash{$contig_id}   ||= $rca->fetch_by_dbID($contig_id);
 
-    #use a very fast (hack) constructor - normal object construction is too
-    #slow for the number of features we are potentially dealing with
-    push @features, Bio::EnsEMBL::PepDnaAlignFeature->new_fast(
+  if($slice) {
+    $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
+       my ($chr, $start, $end, $strand);
+    my $slice_start = $slice->chr_start() - 1;
+    my $slice_name = $slice->name();
+    
+    while($sth->fetch()) {
+      ($chr, $start, $end, $strand) = 
+	$mapper->fast_to_assembly($contig_id, $contig_start, 
+				  $contig_end, $contig_strand);
+      
+      unless(defined $start) {
+	next;
+      }
+      
+      #use a very fast (hack) constructor - normal object construction is too
+      #slow for the number of features we are potentially dealing with
+      push @features, Bio::EnsEMBL::PepDnaAlignFeature->new_fast(
+                {'_gsf_tag_hash'  =>  {},
+		 '_gsf_sub_array' =>  [],
+		 '_parse_h'       =>  {},
+		 '_analysis'      =>  $analysis,
+		 '_gsf_start'     =>  $start - $slice_start,
+		 '_gsf_end'       =>  $end - $slice_start,
+		 '_gsf_strand'    =>  $strand,
+		 '_gsf_score'     =>  $score,
+		 '_seqname'       =>  $slice_name,
+		 '_percent_id'    =>  $perc_ident,
+		 '_p_value'       =>  $evalue,
+                 '_hstart'        =>  $hit_start,
+                 '_hend'          =>  $hit_end,
+                 '_hseqname'      =>  $hit_name,
+		 '_gsf_seq'       =>  $slice,
+		 '_cigar_string'  =>  $cigar_line,
+		 '_id'            =>  $hit_name,
+                 '_database_id'   =>  $protein_align_feature_id});
+    }    
+
+  } else {
+
+    while($sth->fetch) {
+      $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
+      $contig   = $c_hash{$contig_id}   ||= $rca->fetch_by_dbID($contig_id);
+      
+      #use a very fast (hack) constructor - normal object construction is too
+      #slow for the number of features we are potentially dealing with
+      push @features, Bio::EnsEMBL::PepDnaAlignFeature->new_fast(
                 {'_gsf_tag_hash'  =>  {},
 		 '_gsf_sub_array' =>  [],
 		 '_parse_h'       =>  {},
@@ -183,7 +224,9 @@ sub _objs_from_sth {
 		 '_cigar_string'  =>  $cigar_line,
 		 '_id'            =>  $hit_name,
                  '_database_id'   =>  $protein_align_feature_id});
+    }
   }
+
 
   return \@features;
 }

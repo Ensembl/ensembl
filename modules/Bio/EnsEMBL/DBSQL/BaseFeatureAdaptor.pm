@@ -97,7 +97,7 @@ sub new {
 =cut
   
 sub generic_fetch {
-  my ($self, $constraint, $logic_name) = @_;
+  my ($self, $constraint, $logic_name, $mapper, $slice) = @_;
   
   my $tablename = $self->_tablename();
   my $columns = join(', ', $self->_columns());
@@ -130,11 +130,9 @@ sub generic_fetch {
   
   my $sth = $self->prepare($sql);
 
-  #print STDERR "SQL START\n\n";
   $sth->execute();
-  #print STDERR "SQL END\n";
   
-  return $self->_objs_from_sth($sth);
+  return $self->_objs_from_sth($sth, $mapper, $slice);
 }
 
 
@@ -384,12 +382,16 @@ sub fetch_by_Slice_constraint {
   } else {
     $constraint = "contig_id IN ($cid_list)";
   }
-  
-  my $features = $self->generic_fetch($constraint, $logic_name); 
+
+  my $features = 
+    $self->generic_fetch($constraint, $logic_name, $mapper, $slice); 
+
+  if(@$features) {
+    return @$features if $features->[0]->contig == $slice;
+  }
 
   my @out;
   
-
   #&eprof_start('transform');
   #convert the features to slice coordinates from raw contig coordinates
   foreach my $f (@$features) {
@@ -397,9 +399,8 @@ sub fetch_by_Slice_constraint {
     my $contig_id = $f->contig->dbID();
 
     #&eprof_start('rawcontig2assembly CALL');
-    my ($chr_name, $start, $end, $strand)  = 
-      $mapper->fast_to_assembly($contig_id, $f->start(),
-				$f->end(),$f->strand(),"rawcontig");
+    my ($chr_name, $start, $end, $strand) = 
+      $mapper->fast_to_assembly($contig_id, $f->start(), $f->end(),$f->strand(),"rawcontig");
     #&eprof_end('rawcontig2assembly CALL');
 
     #not defined start means gap
@@ -408,7 +409,7 @@ sub fetch_by_Slice_constraint {
     }
 
     #maps to region outside desired area
-    if(($start < $chr_start) || ($end > $chr_end)) {
+    if(($start > $chr_end) || ($end < $chr_start)) {
       next;
     }
     
