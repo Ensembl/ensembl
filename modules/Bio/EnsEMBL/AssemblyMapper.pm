@@ -593,7 +593,7 @@ sub in_assembly {
 
   if($object->isa("Bio::EnsEMBL::Clone")) {
     #get contigs from this clone
-    @contigs = $object->get_all_Contigs(); 
+    @contigs = @{$object->get_all_Contigs()}; 
   } elsif ($object->isa("Bio::EnsEMBL::RawContig")) {
     #we already have the contig we need
     @contigs = ($object);
