@@ -65,10 +65,12 @@ sub fetch_all_by_Marker {
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
   Arg [2]    : (optional) int $priority
+  Arg [3]    : (optional) int $map_weight
   Arg [3]    : (optional) string $logic_name
-  Example    : @feats = @{$mfa->fetch_all_by_Slice_and_priority($slice,80)};
+  Example    : @feats = @{$mfa->fetch_all_by_Slice_and_priority($slice,80,2)};
   Description: Retrieves all marker features above a specified threshold 
-               priority which overlap the provided slice.
+               priority which overlap the provided slice, below a 
+               a specified map_weight.
   Returntype : listref of Bio::EnsEMBL::Map::MarkerFeatures in slice coords
   Exceptions : none
   Caller     : general
@@ -76,15 +78,24 @@ sub fetch_all_by_Marker {
 =cut
 
 sub fetch_all_by_Slice_and_priority {
-  my ($self, $slice, $priority, @args) = @_;
+  my ($self, $slice, $priority, $map_weight, @args) = @_;
 
   my $constraint = '';
   if(defined $priority) {
     $constraint = "m.priority > $priority";
   }
 
-  return $self->fetch_all_by_Slice_constraint($constraint, @args);
+  if(defined $map_weight) {
+    if($constraint) {
+      $constraint .= " AND mf.map_weight < $map_weight";
+    } else {
+      $constraint = "mf.map_weight < $map_weight";
+    }
+  }
+
+  return $self->fetch_all_by_Slice_constraint($slice, $constraint, @args);
 }
+
 
 
 =head2 fetch_all_by_RawContig_and_priority
@@ -189,7 +200,7 @@ sub _objs_from_sth {
       #create a new marker synonym for the display synonym (if defined)
       my $ms;
       if($ms_id) {
-	my $ms = Bio::EnsEMBL::Map::MarkerSynonym->new
+	$ms = Bio::EnsEMBL::Map::MarkerSynonym->new
 	  ($ms_id, $ms_source, $ms_name);
       }
 
