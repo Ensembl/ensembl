@@ -2153,16 +2153,16 @@ sub get_all_VirtualTranscripts_startend {
                            MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                                       (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end 
                 FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t,transcript_stable_id ts  
-                WHERE      sgp.raw_id=e.contig
-                AND        e.contig in $idlist 
+                WHERE      sgp.raw_id=e.contig_id 
+                AND        e.contig_id in $idlist 
                 AND        ts.transcript_id=t.transcript_id 
-                AND        e.id=et.exon 
+                AND        e.exon_id=et.exon_id 
                 AND        t.transcript_id=et.transcript_id  
                 AND        sgp.chr_end >= $glob_start   
                 AND        sgp.chr_start <=$glob_end 
                 AND        sgp.chr_name='$chr_name'
                 AND        sgp.type = '$type'
-                GROUP BY   t.id;";
+                GROUP BY   ts.stable_id;";
 
 
     my $sth = $self->dbobj->prepare($query);
