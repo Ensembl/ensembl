@@ -1,4 +1,5 @@
-#=Head1 NAME - Bio::EnsEMBL::DBSQL::DBConnection
+
+=head1 NAME - Bio::EnsEMBL::DBSQL::DBConnection
 
 =head1 SYNOPSIS
 
