@@ -24,7 +24,8 @@ my %conf =  %::mapping_conf; # configuration options
 my $org_list = $conf{'organism_list'};
 my $refseq_gnp = $conf{'refseq_gnp'};
 my $xmap       = $conf{'x_map_out'};
-my $mapping    = $conf{'pmatch_out'};
+my $mapping    = $conf{'mapping_out'};
+my $submitted_genes = $conf{'submitted_genes'};
 my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
 my $user       = $conf{'dbuser'};
@@ -95,7 +96,7 @@ if ($seenorg == 0) {
 if($organism eq "human") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
     $check{'x_map_out'} = $conf{'x_map_out'};
-    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'mapping_out'} = $conf{'mapping_out'};
     $check{'db'}     = $conf{'db'};
     $check{'host'}       = $conf{'host'};
     $check{'dbuser'}       = $conf{'dbuser'};
@@ -114,7 +115,7 @@ if ($organism eq "mouse") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
     $check{'x_map_out'} = $conf{'x_map_out'};
     $check{'refseq_gnp'} = $conf{'refseq_gnp'};
-    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'mapping_out'} = $conf{'mapping_out'};
     $check{'db'}     = $conf{'db'};
     $check{'host'}       = $conf{'host'};
     $check{'dbuser'}       = $conf{'dbuser'};
@@ -134,7 +135,7 @@ if ($organism eq "elegans") {
     $check{'x_map_out'} = $conf{'x_map_out'};
     $check{'elegans_nom'} = $conf{'elegans_nom'};
     $check{'elegans_pseudo'} = $conf{'elegans_pseudo'};
-    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'mapping_out'} = $conf{'mapping_out'};
     $check{'db'}     = $conf{'db'};
     $check{'host'}       = $conf{'host'};
     $check{'dbuser'}       = $conf{'dbuser'};
@@ -152,11 +153,12 @@ if ($organism eq "elegans") {
 if ($organism eq "anopheles") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
     $check{'x_map_out'} = $conf{'x_map_out'};
-    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'mapping_out'} = $conf{'mapping_out'};
     $check{'db'}     = $conf{'db'};
     $check{'host'}       = $conf{'host'};
     $check{'dbuser'}       = $conf{'dbuser'};
     $check{'password'} = $conf{'password'};
+    $check{'submitted_genes'} = $conf{'submitted_genes'};
 
     foreach my $k (keys %check) {
 	print STDERR $check{$k}."\n";
@@ -171,7 +173,7 @@ if ($organism eq "drosophila") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
     $check{'x_map_out'} = $conf{'x_map_out'};
     $check{'refseq_gnp'} = $conf{'refseq_gnp'};
-    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'mapping_out'} = $conf{'mapping_out'};
     $check{'db'}     = $conf{'db'};
     $check{'host'}       = $conf{'host'};
     $check{'dbuser'}       = $conf{'dbuser'};
@@ -191,7 +193,7 @@ if ($organism eq "rat") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
     $check{'x_map_out'} = $conf{'x_map_out'};
     $check{'refseq_gnp'} = $conf{'refseq_gnp'};
-    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'mapping_out'} = $conf{'mapping_out'};
     $check{'db'}     = $conf{'db'};
     $check{'host'}       = $conf{'host'};
     $check{'dbuser'}       = $conf{'dbuser'};
@@ -209,7 +211,7 @@ if ($organism eq "rat") {
 if ($organism eq "zebrafish") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
     $check{'x_map_out'} = $conf{'x_map_out'};
-    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'mapping_out'} = $conf{'mapping_out'};
     $check{'db'}     = $conf{'db'};
     $check{'host'}       = $conf{'host'};
     $check{'dbuser'}       = $conf{'dbuser'};
@@ -506,7 +508,7 @@ MAPPING: while (<MAP>) {
 
 
 if ($organism eq "anopheles") {
-    open (ANOANNOT,"/acari/work4/mongin/anopheles_mai/mapping/Primary/celera_mapping.txt") || die "Can't open Anno file\n";
+    open (ANOANNOT,"$submitted_genes") || die "Can't open Anno file\n";
     
     while (<ANOANNOT>) {
 	chomp;

@@ -31,9 +31,9 @@ my $refseq_fa = $conf{'refseq_fa'};
 
 #Set the default percentage of idt
 
-my $opt_q = $conf{'query'};
-my $opt_t = $conf{'pmatch_input_fa'};
-my $opt_o = $conf{'pmatch_out'};
+my $opt_q = $conf{'ensembl_predictions'};
+my $opt_t = $conf{'total_known_fa'};
+my $opt_o = $conf{'mapping_out'};
 
 my $t_thr = $conf{'target_idt'};
 my $q_thr = $conf{'query_idt'};
@@ -53,9 +53,9 @@ if ($help) {
 
 #Check if the configuration file is correct
 my %check;
-$check{'query'} = $conf{'query'};
-$check{'pmatch_input_fa'} = $conf{'pmatch_input_fa'};
-$check{'pmatch_out'} = $conf{'pmatch_out'};
+$check{'ensembl_predictions'} = $conf{'ensembl_predictions'};
+$check{'total_known_fa'} = $conf{'total_known_fa'};
+$check{'mapping_out'} = $conf{'mapping_out'};
 $check{'target_id'} = $conf{'target_idt'};
 $check{'query_idt'} = $conf{'query_idt'};
 $check{'pmatch'} = $conf{'pmatch'};

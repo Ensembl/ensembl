@@ -46,8 +46,8 @@ package main;
 
 
              #Location of the query peptide file (eg: Ensembl predicted protein) 
-             #'query'        => '/work1/mongin/mapping/primary/ensembl110.pep',
-             'query'       => '',   
+             #'ensembl_predictions'        => '/work1/mongin/mapping/primary/ensembl110.pep',
+             'ensembl_predictions'       => '',   
              
              #Location of the sptr file, this file will be used as an 
 	     #input to grep the specific sp entries to the organism 
@@ -66,16 +66,19 @@ package main;
 
              #Location of the file containing all refseq and all SP in fasta format (This file will be produced by running prepare_proteome.pl)
             
-	     'pmatch_input_fa'    => '',
+	     'total_known_fa'    => '',
 
              #Output file containing the mapping of SP and refseq sequences to external databases
            
              'x_map_out'  => '',
 
-             #Output file from pmatch.pl and input file for maps2db.pl
-             #'pmatch_out'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
-             'pmatch_out'  => '',
+             #Output file from mapping and input file for maps2db.pl
+             #'mapping_out'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
+             'mapping_out'  => '',
 
+
+             #Only fill Refseq options if these are available for the organism mapped.
+             #If not human or mouse, make sure those are used
 
              #Location of the Refseq (proteins) file in fasta format
 	     #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
@@ -171,14 +174,14 @@ package main;
              'db' => '',
 
              #Host name
-             #'host' => 'ecs1d',
+             #'host' => 'ecs2d',
              'host' => '',
 
              #User
-             'dbuser' => 'ecs2dadmin',
+             'dbuser' => '',
 
              #Password
-             'password' => 'TyhRv',
+             'password' => '',
              
              #Port
              'port' => '',
@@ -188,9 +191,12 @@ package main;
              #####################
 
              #Location for pmatch binaries
-             #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
+             #'pmatch' => '/nfs/disk65/ms2/bin/pmatch',
              'pmatch' => '',
-
+	     
+             #Location of exonerate binaries
+             #'exonerate' => '/acari/work2/gs2/gs2/local/OSF1/bin/exonerate',
+             'exonerate' => '',
              
 
              ##############################
@@ -209,7 +215,7 @@ package main;
              #OX (Organism taxonomy cross-reference) number
              #'ox' => '9606', human
              #'ox' => '10090', mouse
-             #'ox' => '7227', drosophilla
+             #'ox' => '7227', drosophila
 	     #'ox' => '6239' elegans
 	     #'ox' => '6238' briggsae 	 
              'ox'  => '',

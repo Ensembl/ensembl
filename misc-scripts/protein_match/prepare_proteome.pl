@@ -56,7 +56,7 @@ my %conf     = %::mapping_conf;
 my $org_list = $conf{'organism_list'};
 my $refseq   = $conf{'refseq_fa'};
 my $sptr     = $conf{'sptr_fa'};
-my $protfile = $conf{'pmatch_input_fa'};
+my $protfile = $conf{'total_known_fa'};
 my $pmatch   = $conf{'pmatch'};
 my $organism = $conf{'organism'};
 my $refseq_pred = $conf{'refseq_pred_fa'};
@@ -102,7 +102,7 @@ if ($seenorg == 0) {
 if($organism eq "human") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
     $check{'refseq_gnp'} = $conf{'refseq_gnp'};
-    $check{'pmatch_input_fa'} = $conf{'pmatch_input_fa'};
+    $check{'total_known_fa'} = $conf{'total_known_fa'};
     $check {'pmatch'} = $conf{'pmatch'};
     
     foreach my $k (keys %check) {
@@ -116,7 +116,7 @@ if($organism eq "human") {
 if ($organism eq "mouse") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
     $check{'refseq_gnp'} = $conf{'refseq_gnp'};
-    $check{'pmatch_input_fa'} = $conf{'pmatch_input_fa'};
+    $check{'total_known_fa'} = $conf{'total_known_fa'};
     $check {'pmatch'} = $conf{'pmatch'};
 
     foreach my $k (keys %check) {
@@ -130,7 +130,7 @@ if ($organism eq "mouse") {
 
 if ($organism eq "elegans") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
-    $check{'pmatch_input_fa'} = $conf{'pmatch_input_fa'};
+    $check{'total_known_fa'} = $conf{'total_known_fa'};
     $check {'pmatch'} = $conf{'pmatch'};
 
     foreach my $k (keys %check) {
@@ -145,7 +145,7 @@ if ($organism eq "elegans") {
 if ($organism eq "anopheles") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
     $check{'submitted_genes'} = $conf{'submitted_genes'};
-    $check{'pmatch_input_fa'} = $conf{'pmatch_input_fa'};
+    $check{'total_known_fa'} = $conf{'total_known_fa'};
     $check {'pmatch'} = $conf{'pmatch'};
 
     foreach my $k (keys %check) {
@@ -159,7 +159,7 @@ if ($organism eq "anopheles") {
 if ($organism eq "drosophila") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
     $check{'refseq_gnp'} = $conf{'refseq_gnp'};
-    $check{'pmatch_input_fa'} = $conf{'pmatch_input_fa'};
+    $check{'total_known_fa'} = $conf{'total_known_fa'};
     $check {'pmatch'} = $conf{'pmatch'};
     
     foreach my $k (keys %check) {
@@ -174,7 +174,7 @@ if ($organism eq "drosophila") {
 if ($organism eq "rat") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
     $check{'refseq_gnp'} = $conf{'refseq_gnp'};
-    $check{'pmatch_input_fa'} = $conf{'pmatch_input_fa'};
+    $check{'total_known_fa'} = $conf{'total_known_fa'};
     $check {'pmatch'} = $conf{'pmatch'};
 
     foreach my $k (keys %check) {
@@ -188,7 +188,7 @@ if ($organism eq "rat") {
 
 if ($organism eq "zebrafish") {
     $check{'sptr_swiss'} = $conf{'sptr_swiss'};
-    $check{'pmatch_input_fa'} = $conf{'pmatch_input_fa'};
+    $check{'total_known_fa'} = $conf{'total_known_fa'};
     $check {'pmatch'} = $conf{'pmatch'};
 
     foreach my $k (keys %check) {

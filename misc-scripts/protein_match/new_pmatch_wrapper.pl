@@ -20,7 +20,7 @@ use Bio::Range;
 
 my $pmatch_cmd	= '/nfs/disk5/ms2/bin/pmatch';
 my $pmatch_opt	= '-T 14';
-my ($unused_fh, $pmatch_out) = tempfile("pmatch_XXXXX",
+my ($unused_fh, $mapping_out) = tempfile("pmatch_XXXXX",
 	DIR => '/tmp', UNLINK => 0);
 
 my $datadir	= '/acari/work4/mongin/final_build/release_mapping/Primary';
@@ -88,7 +88,7 @@ if ($opts{'d'} == 1) {
 
 	$query = $conf{'query'};
 	$target = $conf{'pmatch_input_fa'};
-	$output = $conf{'pmatch_out'};
+	$output = $conf{'mapping_out'};
 
 	$t_thr = $conf{'target_idt'};
 	$q_thr = $conf{'query_idt'};
@@ -97,12 +97,12 @@ if ($opts{'d'} == 1) {
 }
 
 
-if (system("$pmatch_cmd $pmatch_opt $target $query >$pmatch_out") != 0) {
+if (system("$pmatch_cmd $pmatch_opt $target $query >$mapping_out") != 0) {
 	# Failed to run pmatch command
 	die($!);
 }
 
-open(PMATCH, $pmatch_out) or die($!);
+open(PMATCH, $mapping_out) or die($!);
 
 my %hits;
 
@@ -163,9 +163,9 @@ foreach my $query (values(%hits)) {
 
     
 if (!$opts{'k'}) {
-	unlink($pmatch_out);	# Get rid of pmatch output file
+	unlink($mapping_out);	# Get rid of pmatch output file
 } else {
-	print(STDERR "$pmatch_out\n");
+	print(STDERR "$mapping_out\n");
 }
 
 
