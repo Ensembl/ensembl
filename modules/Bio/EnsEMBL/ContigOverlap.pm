@@ -70,7 +70,7 @@ sub _initialize {
   unless ($contiga and $contigb
           and defined($positiona) and defined($positionb)
           and $overlap_type and $source) {
-      $self->throw("You have to construct ContigOverlap objects with all six arguments (contiga,contigb,positiona,positionb,overlap_type)\n"
+      $self->throw("You have to construct ContigOverlap objects with all six arguments (contiga,contigb,positiona,positionb,overlap_type,source) "
         ."Only got :". join(',', map "'$_'", ($contiga,$contigb,$positiona,$positionb,$overlap_type,$source)));
   }
 

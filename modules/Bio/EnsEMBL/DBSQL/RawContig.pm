@@ -272,44 +272,43 @@ sub has_genes{
 =cut
 
 sub primary_seq {
-   my ($self) = @_;
-   my $id = $self->internal_id();
+    my ($self) = @_;
 
-   if( $self->_seq_cache() ) {
-       return $self->_seq_cache();
-   }
+    if ( $self->_seq_cache() ) {
+        return $self->_seq_cache();
+    }
 
-   my $sth = $self->dbobj->prepare("select d.sequence from dna as d,contig as c where c.internal_id = $id and c.dna = d.id");
-   my $res = $sth->execute();
+    my $dna_id = $self->dna_id()
+        or $self->throw("No dna_id in RawContig ". $self->id);
+    my $sth = $self->dbobj->prepare(q{ SELECT sequence FROM dna WHERE id = ? });
+    my $res = $sth->execute($dna_id);
 
-   # should be a better way of doing this
-   while(my $rowhash = $sth->fetchrow_hashref) {
-     my $str = $rowhash->{sequence};
+    my($str) = $sth->fetchrow
+        or $self->throw("No DNA sequence in RawContig " . $self->id . " for dna id " . $dna_id);
 
-     if( ! $str) {
-       $self->throw("No DNA sequence in contig " . $self->id . " " . $id);
-     } 
+    # Shouldn't sequence integrity be checked on the way
+    # into the datbase instead of here?
+    $str =~ /[^ATGCNRY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
+    $str =~ s/\s//g;
+    $str =~ s/[^ATGCNRY]/N/g;
 
-     $str =~ /[^ATGCNRY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
-     $str =~ s/\s//g;
-     $str =~ s/[^ATGCNRY]/N/g;
+    my $ret = Bio::PrimarySeq->new( 
+        -seq => $str, 
+        -display_id => $self->id,           # eg: AC004092.00001
+        -primary_id => $self->internal_id,  # eg: 874
+        -moltype => 'dna',
+        );
+    $self->_seq_cache($ret);
 
-     my $ret =Bio::PrimarySeq->new ( -seq => $str, -id => $id, -moltype => 'dna' );
-     $self->_seq_cache($ret);
-     
-     return $ret;
-   }
-
-
-   $self->throw("No dna sequence associated with $id!");
-   
+    return $ret;
 }
 
 =head2 _seq_cache
 
  Title   : _seq_cache
  Usage   : $obj->_seq_cache($newval)
- Function: 
+ Function: Used to cache the primary seq object to avoid 
+           more than one trip to the database for the dna
  Returns : value of _seq_cache
  Args    : newvalue (optional)
 
