@@ -5,13 +5,14 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 38;
+	plan tests => 40;
 }
 
 use MultiTestDB;
 use TestUtils qw( debug test_getter_setter );
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Slice;
+use Bio::EnsEMBL::Intron;
 
 my $multi = MultiTestDB->new();
 
@@ -242,6 +243,42 @@ $tr = $ta->fetch_by_translation_id(21734);
 ok($tr && $tr->stable_id eq 'ENST00000201961');
 
 ok($tr->display_id() eq $tr->stable_id());
+
+#
+# Test get_all_Introns by joining Exons and introns
+# and comparing it to the original
+#
+
+foreach my $stable_id (qw(ENST00000201961 ENST00000217347)){ #test both strands
+#foreach my $stable_id (qw(ENST00000217347)){ #test both strands
+
+  my $transcript_adaptor = $db->get_TranscriptAdaptor();
+  my $transcript = 
+    $transcript_adaptor->fetch_by_stable_id($stable_id);
+
+
+  my @exons = (@{$transcript->get_all_Exons()});  
+  my @introns = (@{$transcript->get_all_Introns()});  
+
+  my $orig_seq = $transcript->slice->subseq(
+					    $transcript->start(),
+					    $transcript->end(), 
+					    $transcript->strand());
+
+  my $idl=0;
+  my $new_seq = $exons[0]->seq()->seq();
+  foreach my $intron (@introns){
+    
+    $new_seq .= $intron->seq;
+    $new_seq .= $exons[$idl+1]->seq->seq();
+    $idl++;
+    
+  }
+  
+  ok($orig_seq eq $new_seq);
+
+}
+
 
 #
 # regression test:  five_prime_utr and three_prime_utr were failing
