@@ -120,7 +120,9 @@ sub get_all_peptide_variations {
     my $codon = substr($cdna, $start - $codon_pos-1, $codon_length);
 
     #store each alternative allele by its location in the peptide
-    my @alleles = split(/\/|\|/, lc($snp->alleles));
+    my @alleles = split(/\/|\|/, lc($snp->allele_string));
+    #my @alleles = split(/\/|\|/, lc($snp->alleles));
+
     foreach my $allele (@alleles) {
       next if $allele eq '-';       #skip deletions
       next if CORE::length($allele) != 1; #skip insertions
@@ -388,18 +390,25 @@ sub get_all_cdna_SNPs {
         next;
       }
 
-      my $alleles = $snp->{'alleles'};
-      my $ambicode = $snp->{'_ambiguity_code'};
+      my $alleles;
+      my $ambicode;
 
+      if ($source eq 'variation') {
+	$alleles = $snp->allele_string;
+	$ambicode = $snp->ambig_code;
+      }
+      else {
+	$alleles = $snp->{'alleles'};     # old snp API
+	$ambicode = $snp->{'_ambiguity_code'};  # old snp API
+      }
       #we arbitrarily put the SNP on the +ve strand because it is easier to
-      #work with in the webcode.
+      #work with in the webcode
       if($coord->strand == -1) {
         $alleles =~
          tr/acgthvmrdbkynwsACGTDBKYHVMRNWS\//tgcadbkyhvmrnwsTGCAHVMRDBKYNWS\//;
         $ambicode =~
          tr/acgthvmrdbkynwsACGTDBKYHVMRNWS\//tgcadbkyhvmrnwsTGCAHVMRDBKYNWS\//;
       }
-
       #copy the snp and convert to cdna coords...
       my $new_snp;
       %$new_snp = %$snp;
