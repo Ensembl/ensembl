@@ -252,6 +252,7 @@ sub create_xrefs {
 	  $dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
 	  $dep{SOURCE_ID} = $dependent_sources{'wormbase_transcript'};
 	  $dep{ACCESSION} = $acc;
+	  $dep{LABEL} = $acc;
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 
 	  my $gene;
@@ -262,6 +263,7 @@ sub create_xrefs {
 	    $dep2{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
 	    $dep2{SOURCE_ID} = $dependent_sources{'wormbase_gene'};
 	    $dep2{ACCESSION} = $gene;
+	    $dep2{LABEL} = $gene;
 	    push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
 	  }
 
@@ -274,6 +276,7 @@ sub create_xrefs {
 	  $dep3{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
 	  $dep3{SOURCE_ID} = $dependent_sources{'wormpep_id'};
 	  $dep3{ACCESSION} = $worm_id;
+	  $dep3{LABEL} = $worm_id;
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep3; # array of hashrefs
 
 #	  print $worm_id."\t".$gene."\t".$acc."\n";

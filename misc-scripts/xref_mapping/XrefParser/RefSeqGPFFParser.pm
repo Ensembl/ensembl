@@ -169,6 +169,7 @@ sub create_xrefs {
 	$dep{SOURCE_ID} = $dependent_sources{'wormbase_transcript'};
 	$dep{LINKAGE_SOURCE_ID} = $source_id;
 	$dep{ACCESSION} = $ll;
+	$dep{LABEL} = $ll;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
 	if($ll =~ /(\S+\.\d+)/){
 	  my $temp = $1;
@@ -176,6 +177,7 @@ sub create_xrefs {
 	  $dep2{SOURCE_ID} = $dependent_sources{'wormbase_gene'};
 	  $dep2{LINKAGE_SOURCE_ID} = $source_id;
 	  $dep2{ACCESSION} = $temp;
+	  $dep2{LABEL} = $temp;
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
 	}
       }
