@@ -398,54 +398,28 @@ sub transform {
     return $new_feature;
   }
 
-  #convert this features coords to absolute coords (i.e. relative to the start
-  #of the seq_region, not to the slice)
-  my $slice_adaptor = $db->get_SliceAdaptor;
-  $slice = $slice_adaptor->fetch_by_region($current_cs->name(),
-                                           $slice->seq_region_name(),
-                                           undef, #start
-                                           undef, #end
-                                           1, #strand
-                                           $current_cs->version);
-
-  #this also copies the feature so we no longer have to, and can alter it
-  #in place
-  my $feature = $self->transfer($slice);
-
-  #if the current coord system is the same as the new one, we are already done
-  return $feature if($cs->equals($current_cs));
-
-  #otherwise convert this features coordinates to the other coord system
-  my $asma = $db->get_AssemblyMapperAdaptor();
-  my $asm_mapper = $asma->fetch_by_CoordSystems($current_cs, $cs);
-
-  #remember the coords are already relative to start of seq_region
-  my @coords = $asm_mapper->map($slice->seq_region_name(),
-                                $feature->{'start'},
-                                $feature->{'end'},
-                                $feature->{'strand'} || 1, #strand can be 0
-                                $current_cs);
-
-  #we don't deal with gaps or with multiple seq_region mappings
-  if(@coords != 1 || $coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+  my $projection = $self->project( $cs_name, $cs_version );
+  if( @$projection != 1 ) {
     return undef;
+  } else {
+    my $p_slice = $projection->[0]->[2];
+    my $slice_adaptor = $db->get_SliceAdaptor;
+    $slice = $slice_adaptor->fetch_by_region($p_slice->coord_system()->name(),
+					     $p_slice->seq_region_name(),
+					     undef, #start
+					     undef, #end
+					     1, #strand
+					     $p_slice->coord_system()->version);
+
+    my $new_feature;
+    %$new_feature = %$self;
+    bless $new_feature, ref $self;
+    $new_feature->{'start'}  = $p_slice->start();
+    $new_feature->{'end'}    = $p_slice->end();
+    $new_feature->{'strand'} = ($self->{'strand'} == 0) ? 0 : $p_slice->strand();
+    $new_feature->{'slice'}  = $slice;
+    return $new_feature;
   }
-  my $coord = $coords[0];
-
-  $slice = $slice_adaptor->fetch_by_region($cs->name(),
-                                           $coord->id(), #seq_region
-                                           undef,        #start
-                                           undef,        #end
-                                           1,            #strand
-                                           $cs->version());
-
-  #shift the feature and place it on the appropriate slice
-  $feature->{'start'}  = $coord->start();
-  $feature->{'end'}    = $coord->end();
-  $feature->{'strand'} = $coord->strand();
-  $feature->{'slice'}  = $slice;
-
-  return $feature;
 }
 
 
@@ -566,16 +540,15 @@ sub transfer {
 
                This method returns a listref of triplets [start,end,slice]
                which represents the projection.  The start and end are the
-               feature coordinates which make up this part of the projection.
-               These are relative to the slice that the feature is currently
-               on.  For example if a feature is current 100-200bp on a slice
+               coordinates relative to the feature start.
+               For example if a feature is current 100-200bp on a slice
                then the triplets returned might be:
-               100,150,$slice1
-               151,200,$slice2
+               1,50,$slice1
+               51,101,$slice2
 
                The third value of the returned triplets is a slice spanning
                the region on the requested coordinate system that this feature
-               porjected to.
+               projected to.
 
                If the feature projects entirely into a gap then a reference to
                an empty list is returned.
@@ -606,71 +579,12 @@ sub project {
           " adaptor");
   }
 
-  my $db = $slice_adaptor->db();
-  my $cs  = $slice->coord_system();
+  my $strand = $self->strand() * $slice->strand();
+  #fetch by feature always gives back forward strand slice:
+  $slice = $slice_adaptor->fetch_by_Feature($self);
+  $slice = $slice->invert if($strand == -1);
 
-  #convert this features coords to absolute coords (i.e. relative to the start
-  #of the seq_region, not to the slice)
-  $slice = $slice_adaptor->fetch_by_region($cs->name(),
-                                           $slice->seq_region_name(),
-                                           undef, #start
-                                           undef, #end
-                                           1, #strand
-                                           $cs->version);
-  my $feature = $self->transfer($slice);
-
-  #map the absolute coords to the other coord system
-  my $csa = $db->get_CoordSystemAdaptor();
-  my $dest_cs = $csa->fetch_by_name($cs_name, $cs_version);
-
-  if($dest_cs->equals($cs)) {
-    #no transformation is necessary, just give back a slice
-    #spanning the feature (on the same strand as the feature)
-    my $strand = $feature->strand;
-    my $slice = Bio::EnsEMBL::Slice->new
-      (-COORD_SYSTEM    => $dest_cs,
-       -START           => $feature->start(),
-       -END             => $feature->end(),
-       -STRAND          => $feature->strand(),
-       -SEQ_REGION_NAME => $slice->seq_region_name,
-       -ADAPTOR         => $slice_adaptor);
-    return [[$self->{'start'}, $self->{'end'}, $slice]];
-  }
-
-  my $asma = $db->get_AssemblyMapperAdaptor();
-  my $asm_mapper = $asma->fetch_by_CoordSystems($cs, $dest_cs);
-
-  my @coords = $asm_mapper->map($slice->seq_region_name,
-                                $feature->start(),
-                                $feature->end(),
-                                $feature->strand(),
-                                $cs);
-
-  my @projection;
-  my $current_start = $self->{'start'};
-
-  foreach my $coord (@coords) {
-    my $coord_start = $coord->start();
-    my $coord_end   = $coord->end();
-    my $length = $coord_end - $coord_start + 1;
-
-    if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-      my $slice = Bio::EnsEMBL::Slice->new
-        (-COORD_SYSTEM => $dest_cs,
-         -START        => $coord_start,
-         -END          => $coord_end,
-         -STRAND       => $coord->strand(),
-         -SEQ_REGION_NAME => $coord->id(),
-         -ADAPTOR      => $slice_adaptor);
-
-      my $current_end = $current_start + $length - 1;
-      push @projection, [$current_start, $current_end, $slice];
-    }
-
-    $current_start += $length;
-  }
-
-  return \@projection;
+  return $slice->project($cs_name, $cs_version);
 }
 
 
