@@ -98,19 +98,21 @@ INSERT INTO source VALUES (2, "RefSeq", 1);
 # Other sources - used to create dependent xrefs, but not to upload from
 
 INSERT INTO source VALUES (1000, 'EMBL', 1);
+INSERT INTO source VALUES (1001, 'PUBMED', 1);
+INSERT INTO source VALUES (1002, 'MEDLINE', 1);
 
 # Files to fetch data from
 
 # --------------------------------------------------------------------------------
 # UniProt/SwissProt
 # Note currently no UniProt/SwissProt data for fugu, anopheles, c.briggsae or chicken.
-INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date)  VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9606.SPC', '', now(), now());
-INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date)  VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10090.SPC', '', now(), now());
-INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date)  VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10116.SPC', '', now(), now());
-INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date)  VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/7227.SPC', '', now(), now());
-INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date)  VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/6239.SPC', '', now(), now());
-##INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date)  VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9031.SPC', '', now(), now());
-INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date)  VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9598.SPC', '', now(), now());
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date) VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9606.SPC', '', now(), now());
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date) VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10090.SPC', '', now(), now());
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date) VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10116.SPC', '', now(), now());
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date) VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/7227.SPC', '', now(), now());
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date) VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/6239.SPC', '', now(), now());
+##INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date) VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9031.SPC', '', now(), now());
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date) VALUES (1, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9598.SPC', '', now(), now());
 
 # --------------------------------------------------------------------------------
 # RefSeq - release/ and cumulative/ directories, for protein and mRNA
