@@ -1508,8 +1508,8 @@ sub get_cloneset_on_chromosome {
     $chr_name_X =~ s/chr//g; 
 
     my $chr = $fpcmap->get_ChromosomeMap($chr_name||$chr_name_X);
-    my $cloneset = $chr->get_cloneset_on_chromosome($cloneset, $chr_name);
-    return @$cloneset;
+    my $retcloneset = $chr->get_cloneset_on_chromosome($cloneset, $chr_name);
+    return @$retcloneset;
 }
 sub get_all_clones_in_cloneset {
     my $self = shift;
@@ -1904,12 +1904,13 @@ return $markers[0];
 
  Title   : get_all_Genes_exononly
  Usage   :
- Function:
+ Function: Get all genes making sure there is no redundant exons
+           Suitable if no translation has to be intended on transcript.
+           Much faster than get_all_Genes.
  Example :
- Returns : 
+ Returns : Array of Bio::EnsEMBL::Gene
  Args    :
-
-
+ 
 =cut
 
 sub get_all_Genes_exononly{
@@ -1963,6 +1964,7 @@ sub get_all_Genes_exononly{
     my @out;
     my @trans;
     my $length = $glob_end - $glob_start;
+    my %exon_already_seen;
 
     while( $sth->fetch ) {
         next if (($end > $length) || ($start < 1));
@@ -2011,6 +2013,7 @@ sub get_all_Genes_exononly{
 #	        }
 #        }
 
+	next if (exists $exon_already_seen{$exonid}); # just to make sure there is no redundant exons.
         my $exon = Bio::EnsEMBL::Exon->new();
             $exon->start($start);
             $exon->end($end);
@@ -2022,6 +2025,7 @@ sub get_all_Genes_exononly{
             $previous_exon = $exon;
             $current_transcript->add_Exon($exon);
             $current_transcript->end_exon_rank($rank);
+	    $exon_already_seen{$exonid} = 1;
    }
 
    #
