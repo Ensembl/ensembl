@@ -77,7 +77,7 @@ else {
     print STDERR "clone->id does not give the expected value!\n";
 }
 
-if ($clone->_internal_id == 3) {
+if ($clone->dbID == 3) {
     print "ok 6\n";
     
 }
@@ -190,7 +190,7 @@ else {
 }
 
 #Delete the current clone and test if this clone and the contigs have been deleted from the database
-$clone->delete();
+$clone->delete_by_dbID();
 
 #Check if the clone has been deleted
 eval {

@@ -91,7 +91,7 @@ foreach my $clone_id (@clones) {
     foreach my $gene_id (@geneids) {
 	$fromdb->gene_Obj->delete($gene_id);
     }
-    $don_clone->delete;
+    $don_clone->delete_by_dbID;
     print "ok 38\n";
     check_delete(39);
 }
@@ -109,7 +109,7 @@ sub check_clone {
 	print STDERR "Clone id not set correctly\n";
     }
     $c++;
-    if ($clone->_internal_id == 1) {
+    if ($clone->dbID == 1) {
 	print "ok $c\n";
     }
     else {
@@ -225,9 +225,12 @@ sub check_gene {
 	$c++;
 
 	my $test =0;
+
 	if( defined $suppexon ) {
 	    my @sup = $suppexon->each_Supporting_Feature();
 	    my $sup = shift @sup;
+
+
 	    if( defined $sup && $sup->hseqname eq 'AB004857' ) {
 		$test = 1;
 	    }
