@@ -349,22 +349,7 @@ sub get_GeneAdaptor {
 			     $core_adaptor);
   }
 
-=head2 get_LiteAdaptor
-    
- Title   : get_LiteAdaptor
- Usage   : my $la = $db->get_LiteAdaptor;
- Function: Returns the lite database object handler
- Example : 
- Returns : Bio::EnsEMBL::DBSQL::LiteAdaptor
- Args    : 
 
-=cut
-
-sub get_LiteAdaptor {
-    my( $self ) = @_;
-
-    return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::LiteAdaptor");
-}
 
 sub get_ExonAdaptor {
   my( $self ) = @_;
@@ -929,6 +914,29 @@ sub _ext_adaptor {
 Functions which are completely deprecated 
 
 =cut
+
+
+=head2 get_LiteAdaptor
+    
+ Title   : DEPRECATED get_LiteAdaptor
+ Usage   : DEPRECATED my $la = $db->get_LiteAdaptor;
+ Function: DEPRECATED Returns the lite database object handler
+ Example : DEPRECATED
+ Returns : DEPRECATED Bio::EnsEMBL::DBSQL::LiteAdaptor
+ Args    : DEPRECATED
+
+=cut
+
+sub get_LiteAdaptor {
+    my( $self ) = @_;
+    
+    $self->throw("The lite adaptor is deprecated. Use the " .
+		"Bio::EnsEMBL::Lite::DBAdaptor instead.\n" .
+		 "This may be attached to the core DBAdaptor using the" .
+		."lite_DBAdaptor method\n");
+
+    return undef;
+}
 
 
 =head2 feature_Obj
