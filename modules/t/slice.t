@@ -140,13 +140,9 @@ ok($slice->length == ($END-$START + 1));
 
 my $clone = $slice_adaptor->fetch_by_region('clone','AL121583.25');
 
-my @types = $clone->get_attribute_types();
+my @attrib = @{$clone->get_all_Attributes('htg_phase')};
 
-ok(@types == 1 && $types[0] eq 'htg_phase');
-
-my @attrib = $clone->get_attribute('htg_phase');
-
-ok(@attrib == 1 && $attrib[0] == 4);
+ok(@attrib == 1 && $attrib[0]->value() == 4);
 
 #
 # Test expand
