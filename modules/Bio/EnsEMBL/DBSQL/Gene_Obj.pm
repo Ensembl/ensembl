@@ -374,9 +374,9 @@ sub get_array_supporting {
         ORDER BY tscript.gene
           , tscript.id
           , e_t.rank
-          , exon.rank
+          , exon.rank LIMIT 8000
         };
-
+    #$query =~ s/\s+/ /g;
     #print STDERR "query [$query]\n"; 
 
     # This should work as but I couldn't test it because
@@ -420,6 +420,7 @@ sub get_array_supporting {
     #      , e_t.rank
     #    };
 
+
     my $sth = $self->_db_obj->prepare($query);
     my $res = $sth ->execute();
    
@@ -430,6 +431,7 @@ sub get_array_supporting {
     
     my ($gene,$trans);
     my @transcript_exons;
+    my $trans_number = 0;
     
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
 	#print STDERR "Getting into this row now....\n";
@@ -457,7 +459,7 @@ sub get_array_supporting {
 	    if( $transcriptid eq $current_transcript_id ) {
 		$self->throw("Bad internal error. Switching genes without switching transcripts");
 	    } 
-	    
+	    $trans_number = 0;
 	    $gene = Bio::EnsEMBL::Gene->new();
 	    
 	    $gene->id                       ($geneid);
@@ -480,8 +482,15 @@ sub get_array_supporting {
 		#print "Storing\n";
 	        $self->_store_exons_in_transcript($trans,@transcript_exons);
             }
+	     # auto-drop out at 200 Transcripts
+	     if( $trans_number > 200 ) {
+		 last;
+	     }
+	     $trans_number++;
+
 	    # put in new exons
-	    
+	  
+  
 	    $trans = Bio::EnsEMBL::Transcript->new();
 	    
 	    $trans->id     ($transcriptid);
