@@ -147,7 +147,7 @@ CREATE TABLE exon (
 CREATE TABLE exon_stable_id (
    
   exon_id   		      int unsigned not null,       # foreign key exon:exon_id
-  stable_id                   VARCHAR(40) not null,
+  stable_id                   VARCHAR(128) not null,
   version                     int(10),
   
   PRIMARY KEY( exon_id ),
@@ -327,7 +327,7 @@ CREATE TABLE gene (
 CREATE TABLE gene_stable_id (
 
   gene_id 		      int unsigned not null,  # foreign key gene:gene_id
-  stable_id                   VARCHAR(40) not null,
+  stable_id                   VARCHAR(128) not null,
   version                     int(10),
   
   PRIMARY KEY( gene_id ),
@@ -381,7 +381,7 @@ CREATE TABLE transcript (
 CREATE TABLE transcript_stable_id (
 
   transcript_id               int unsigned not null,  # foreign key transcript:transcript_id
-  stable_id                   VARCHAR(40) not null,
+  stable_id                   VARCHAR(128) not null,
   version                     int(10),
   
   PRIMARY KEY( transcript_id ),
@@ -418,7 +418,7 @@ CREATE TABLE translation (
 CREATE TABLE translation_stable_id (
 
   translation_id 	      INT unsigned NOT NULL, # foreign key translation:translation_id
-  stable_id                   VARCHAR(40) NOT NULL,
+  stable_id                   VARCHAR(128) NOT NULL,
   version                     INT(10),
   
   PRIMARY KEY( translation_id ),
@@ -635,6 +635,7 @@ CREATE TABLE external_db (
   PRIMARY KEY( external_db_id ) 
 
 );
+
 
 
 CREATE TABLE prediction_exon (
@@ -967,9 +968,9 @@ CREATE TABLE mapping_session (
 
 CREATE TABLE stable_id_event (
 
-  old_stable_id 	      varchar(40),
+  old_stable_id 	      varchar(128),
   old_version                 smallint,
-  new_stable_id               varchar(40),
+  new_stable_id               varchar(128),
   new_version                 smallint,
   mapping_session_id          int(11) NOT NULL default '0',
   type                        ENUM('gene', 'transcript', 'translation') NOT NULL,
@@ -986,11 +987,11 @@ CREATE TABLE stable_id_event (
 
 CREATE TABLE gene_archive (
 
-  gene_stable_id	      VARCHAR(40) NOT NULL,
+  gene_stable_id	      VARCHAR(128) NOT NULL,
   gene_version                smallint NOT NULL,
-  transcript_stable_id        VARCHAR(40) NOT NULL,
+  transcript_stable_id        VARCHAR(128) NOT NULL,
   transcript_version          smallint NOT NULL,
-  translation_stable_id       VARCHAR(40) NOT NULL,
+  translation_stable_id       VARCHAR(128) NOT NULL,
   translation_version         smallint NOT NULL,
   mapping_session_id          int NOT NULL,
 
@@ -1006,7 +1007,7 @@ CREATE TABLE gene_archive (
 
 CREATE TABLE peptide_archive (
 
-  translation_stable_id       VARCHAR(40) NOT NULL,
+  translation_stable_id       VARCHAR(128) NOT NULL,
   translation_version         smallint NOT NULL,
   peptide_seq                 mediumtext NOT NULL,
 
