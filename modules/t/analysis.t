@@ -1,13 +1,14 @@
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 9;
+	plan tests => 11;
 }
 
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::Test::MultiTestDB;
+use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0;
 
@@ -36,7 +37,8 @@ $analysis->db('dummy');
 $analysis->program('dummy');
 $analysis->gff_source('dummy');
 $analysis->gff_feature('dummy');
-
+$analysis->description( "some funny description" );
+$analysis->display_label( "and a label" );
 
 ok($analysis);
 
@@ -57,7 +59,9 @@ ok( check_methods( $analysis_out, "db", "db_file", "dbID", "compare",
 		   "logic_name", "parameters", "gff_source", "gff_feature",
 		   "module", "module_version", "program_file",
 		   "program", "db_version", "adaptor" ));
-		   
+
+ok( $analysis_out->description eq "some funny description" );
+ok( count_rows( $db, "analysis_description" ) == 1 );
 
 $multi->restore();
 
@@ -75,10 +79,3 @@ sub check_methods {
   return $all_implemented;
 }
 
-
-sub debug {
-  my $txt = shift;
-  if( $verbose ) {
-    print STDERR $txt,"\n";
-  }
-}
