@@ -57,149 +57,46 @@ use Bio::Root::Object;
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,@args) = @_;
+    my($self,@args) = @_;
   
-  my $make = $self->SUPER::_initialize;
-  my ($dbobj,$id,$disk_id,$clone_dir,$order,$offset,$orientation,$length)=
-      $self->_rearrange([qw(DBOBJ
-			    ID
-			    DISK_ID
-			    CLONE_DIR
-			    ORDER
-			    OFFSET
-			    ORIENTATION
-			    LENGTH
-			    )],@args);
-
-  $id          || $self->throw("Cannot make contig object without id");
-  $disk_id     || $self->throw("Cannot make contig object without disk_id");
-  $dbobj       || $self->throw("Cannot make contig object without db object");
-  $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') ||   $self->throw("Cannot make contig object with a $dbobj object");
-  $order       || $self->throw("Cannot make contig object without order");
-  $offset      || $self->throw("Cannot make contig object without offset");
-  $orientation || $self->throw("Cannot make contig object without orientation");
-  $length      || $self->throw("Cannot make contig object without length");
-  
-  $self->id         ($id);
-  $self->disk_id    ($disk_id);
-  $self->_dbobj     ($dbobj);
-  $self->_clone_dir ($clone_dir);
-  $self->order      ($order);
-  $self->offset     ($offset);
-  $self->orientation($orientation);
-  $self->length     ($length);
-
-  # ok. Hell. We open the Genscan file using the Genscan object.
-  # this is needed to remap the exons lower down
-
-  $self->_gs;
-
-  my %exhash = $self->make_exon_hash;   # we yank out each exon and build a hash on start position
-  
-
-  $self->{'_gene_array'} = [];   # build array of genes
-  {
-      my $bioseq=$self->seq;
-      # 1. loop over list of exons in this contig
-      my %transcript_id;
-      my %gene_id;
-
-      foreach my $exon (@{$dbobj->{'_contig2exon'}->{$id}}){
-	  my $exon_id=$exon->id;
-	  $exon->attach_seq($bioseq);
-	  if( ! defined $exhash{$exon->start()} ) {
-	      $self->warn("No exon in in genscan file. Ugh [Exon $exon_id, Disk id ".
-			  $self->disk_id);
-	      next;
-	  } 
-	  if( $exhash{$exon->start()}->end != $exon->end() ) {
-	      $self->throw("Exons with same start but different end!\n".
-			   "Exon: $exon_id ".$exon->start."-".$exon->end.
-			   " ".$exhash{$exon->start()}->id." ".
-			   " ".$exhash{$exon->start()}->start.
-			   "-".$exhash{$exon->start()}->end);
-	  }
-
-	  $exon->phase($exhash{$exon->start()}->phase);
-
-	  # 2. build list of transcripts containing these exons
-
-	  foreach my $transcript (@{$dbobj->{'_exon2transcript'}->{$exon_id}}){
-	      $transcript_id{$transcript->id()}=$transcript;
-	      # Now deal with adding translations!
-
-	      #
-	      # This puts in the Translation information
-	      #
-	      
-	      my $fe = $transcript->first_exon();
-	      my $le = $transcript->last_exon();
-	      
-	      if( !defined $fe ) {
-		  $self->throw("Atempting to build a transcript with no Exons. problem!");
-	      }
-	      
-	      my $trans = Bio::EnsEMBL::Translation->new();
-
-	      $trans->start_exon_id($fe->id);
-	      $trans->end_exon_id  ($le->id);
-	      
-	      if( $fe->strand == 1 ) {
-		  $trans->start($fe->start + (3 -$fe->phase)%3 );
-	      } else {
-		  $trans->start($fe->end - (3 -$fe->phase)%3 );
-	      }
-	      
-	      if( $le->strand == -1 ) {
-		  $trans->end($le->start + $le->end_phase );
-	      } else {
-		  $trans->end($le->end - $le->end_phase );
-	      }
-	      my $tid = $transcript->id();
-	      # horrible
-	      $tid =~ s/ENST/ENSP/;
-	      
-	      $trans->id($tid);
-	      $trans->version($transcript->version);
-	      
-	      $transcript->translation($trans);
-	      
-	  }
-      }
-      # 3. build list of genes containing these transcripts
-      foreach my $transcript_id (keys %transcript_id){
-	  foreach my $gene (@{$dbobj->{'_transcript2gene'}->{$transcript_id}}){
-	      $gene_id{$gene->id()}=$gene;
-	  }
-      }
-      foreach my $gene (values %gene_id){
-	  push(@{$self->{'_gene_array'}},$gene);
-      }
-  }
-
-  # declared here as an array, but data is parsed in
-  # method call to get features
-
-  $self->{'_sf_array'}        = [];   # Sequence features
-  $self->{'_sf_repeat_array'} = [];   # Repeat features
-
-  # set stuff in self from @args
-  return $make; # success - we hope!
-}
-
-sub make_exon_hash {
-    my ($self) = @_;
-
-    my $gs = $self->_gs;
-
-    my %exhash;
-
-    foreach my $t ( $gs->each_Transcript ) {
-	foreach my $ex ( $t->each_Exon ) {
-	    $exhash{$ex->start} = $ex;
-	}
-    }
-    return (%exhash);
+    my $make = $self->SUPER::_initialize;
+    my ($dbobj,$id,$disk_id,$clone_dir,$order,$offset,$orientation,$length)=
+	$self->_rearrange([qw(DBOBJ
+			      ID
+			      DISK_ID
+			      CLONE_DIR
+			      ORDER
+			      OFFSET
+			      ORIENTATION
+			      LENGTH
+			      )],@args);
+    
+    $id          || $self->throw("Cannot make contig object without id");
+    $disk_id     || $self->throw("Cannot make contig object without disk_id");
+    $dbobj       || $self->throw("Cannot make contig object without db object");
+    $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') ||   $self->throw("Cannot make contig object with a $dbobj object");
+    $order       || $self->throw("Cannot make contig object without order");
+    $offset      || $self->throw("Cannot make contig object without offset");
+    $orientation || $self->throw("Cannot make contig object without orientation");
+    $length      || $self->throw("Cannot make contig object without length");
+    
+    $self->id         ($id);
+    $self->disk_id    ($disk_id);
+    $self->_dbobj     ($dbobj);
+    $self->_clone_dir ($clone_dir);
+    $self->order      ($order);
+    $self->offset     ($offset);
+    $self->orientation($orientation);
+    $self->length     ($length);
+    
+    # declared here as an array, but data is parsed in
+    # method call to get features
+    
+    $self->{'_sf_array'}        = [];   # Sequence features
+    $self->{'_sf_repeat_array'} = [];   # Repeat features
+    
+    # set stuff in self from @args
+    return $make; # success - we hope!
 }
 
 =head2 get_all_SeqFeatures
@@ -341,6 +238,10 @@ sub get_all_GenePredictions {
 
 sub get_all_Genes{
     my ($self) = @_;
+
+    # map genes if not already mapped
+    $self->_build_genes unless $self->{'_mapped'};
+    
     return @{$self->{'_gene_array'}};
 }
 
@@ -600,7 +501,7 @@ sub _clone_dir{
 sub _gs{
     my ($self) = @_;
 
-    if(!defined($self->{_gs})) {
+    if(!defined($self->{'_gs'})) {
 	my $gs = Bio::EnsEMBL::Analysis::Genscan->new($self->_clone_dir . "/" . 
 						      $self->disk_id . ".gs",
 						      $self->seq());
@@ -654,4 +555,133 @@ sub seq_date{
     $id=~s/\.\d+$//;
     return $self->_dbobj->get_Clone($id)->seq_date;
 }
+
+=head2 _build_genes
+
+ Title   : _build_genes
+ Usage   : never called by user
+ Function: deferred loading routine - builds etg map (if not yet called) then builds
+    gene map for this contig
+ Example : 
+ Returns : none
+ Args    : none
+
+
+=cut
+
+sub _build_genes{
+    my $self=shift;
+
+    # map if not already mapped
+    $self->_dbobj->map_etg unless $self->_dbobj->{'_mapped'};
+    
+    # ok. Hell. We open the Genscan file using the Genscan object.
+    # this is needed to remap the exons lower down
+    # FIXME - sure we don't need this call
+    $self->_gs;
+  
+    # we yank out each exon and build a hash on start position
+    my %exhash = $self->_make_exon_hash;
+
+    my $id=$self->id;
+    my $dbobj=$self->_dbobj;
+
+    # build array of genes
+    $self->{'_gene_array'} = [];
+    {
+	my $bioseq=$self->seq;
+	# 1. loop over list of exons in this contig
+	my %transcript_id;
+	my %gene_id;
+	
+	foreach my $exon (@{$dbobj->{'_contig2exon'}->{$id}}){
+	    my $exon_id=$exon->id;
+	    $exon->attach_seq($bioseq);
+	    if( ! defined $exhash{$exon->start()} ) {
+		$self->warn("No exon in in genscan file. Ugh [Exon $exon_id, Disk id ".
+			    $self->disk_id);
+		next;
+	    } 
+	    if( $exhash{$exon->start()}->end != $exon->end() ) {
+		$self->throw("Exons with same start but different end!\n".
+			     "Exon: $exon_id ".$exon->start."-".$exon->end.
+			     " ".$exhash{$exon->start()}->id." ".
+			     " ".$exhash{$exon->start()}->start.
+			     "-".$exhash{$exon->start()}->end);
+	    }
+	    
+	    $exon->phase($exhash{$exon->start()}->phase);
+	    
+	    # 2. build list of transcripts containing these exons
+	    
+	    foreach my $transcript (@{$dbobj->{'_exon2transcript'}->{$exon_id}}){
+		$transcript_id{$transcript->id()}=$transcript;
+		# Now deal with adding translations!
+		
+		#
+		# This puts in the Translation information
+		#
+		
+		my $fe = $transcript->first_exon();
+		my $le = $transcript->last_exon();
+		
+		if( !defined $fe ) {
+		    $self->throw("Atempting to build a transcript with no Exons. problem!");
+		}
+		
+		my $trans = Bio::EnsEMBL::Translation->new();
+		
+		$trans->start_exon_id($fe->id);
+		$trans->end_exon_id  ($le->id);
+		
+		if( $fe->strand == 1 ) {
+		    $trans->start($fe->start + (3 -$fe->phase)%3 );
+		} else {
+		    $trans->start($fe->end - (3 -$fe->phase)%3 );
+		}
+		
+		if( $le->strand == -1 ) {
+		    $trans->end($le->start + $le->end_phase );
+		} else {
+		    $trans->end($le->end - $le->end_phase );
+		}
+		my $tid = $transcript->id();
+		# horrible
+		$tid =~ s/ENST/ENSP/;
+		
+		$trans->id($tid);
+		$trans->version($transcript->version);
+		
+		$transcript->translation($trans);
+		
+	    }
+	}
+	# 3. build list of genes containing these transcripts
+	foreach my $transcript_id (keys %transcript_id){
+	    foreach my $gene (@{$dbobj->{'_transcript2gene'}->{$transcript_id}}){
+		$gene_id{$gene->id()}=$gene;
+	    }
+	}
+	foreach my $gene (values %gene_id){
+	    push(@{$self->{'_gene_array'}},$gene);
+	}
+    }
+    $self->{'_mapped'}=1;
+}
+
+sub _make_exon_hash {
+    my ($self) = @_;
+
+    my $gs = $self->_gs;
+
+    my %exhash;
+
+    foreach my $t ( $gs->each_Transcript ) {
+	foreach my $ex ( $t->each_Exon ) {
+	    $exhash{$ex->start} = $ex;
+	}
+    }
+    return (%exhash);
+}
+
 1;

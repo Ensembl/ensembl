@@ -122,13 +122,14 @@ sub _initialize {
   $self->{'_clone_dbm'}=\%unfin_clone;
 
   # if going to do things !$noacc then need to open this dbm file too
+  my %unfin_accession;
   if(!$noacc){
       my $accession_dbm_file="$unfinished_root/unfinished_accession.dbm";
-      my %unfin_accession;
       unless(tie(%unfin_accession,'NDBM_File',$accession_dbm_file,O_RDONLY,0644)){
 	  $self->throw("Error opening accession dbm file");
       }
       $self->{'_accession_dbm'}=\%unfin_accession;
+#      print "ACC: $accession_dbm_file: ".scalar(keys %{$self->{'_accession_dbm'}})."\n";
   }
 
   # clone update file access
@@ -163,24 +164,32 @@ sub _initialize {
   if(!-e $exon_file){
       $self->throw("Could not access exon file");
   }
+  $self->{'_exon_file'}=$exon_file;
+
   if(!-e $transcript_file){
       $self->throw("Could not access transcript file");
   }
+  $self->{'_transcript_file'}=$transcript_file;
+
   if(!-e $gene_file){
       $self->throw("Could not access gene file");
   }
+  $self->{'_gene_file'}=$gene_file;
+
   if(!-e $contig_order_file){
       $self->throw("Could not access contig order file");
   }
-  # only exon file needs to be saved as it contains more information than in following mappings
-  $self->{'_exon_file'}=$exon_file;
+  $self->{'_contig_order_file'}=$contig_order_file;
 
   # build mappings from these flat files
   # (better to do it here once than each time we need the information!)
   # FIXME - should this be moved to the pipeline so that this information
   # is stored in DBM files - currently in legacy parser
-  my $p=Bio::EnsEMBL::Analysis::LegacyParser->new($gene_file,$transcript_file,
-						  $exon_file,$contig_order_file);
+  my $p=Bio::EnsEMBL::Analysis::LegacyParser->new($self->{'_gene_file'},
+						  $self->{'_transcript_file'},
+						  $self->{'_exon_file'},
+						  $self->{'_contig_order_file'});
+  $self->{'_parser_object'}=$p;
 
   # need a full list if $raclones not set,
   # but also need to check clones in list provided to see if they are valid
@@ -201,15 +210,15 @@ sub _initialize {
 	      $fok=1;
 	  }else{
 	      # see if maps via a translation
-	      my($clone2)=$self->get_id_acc($clone);
-	      next if $clone2==-1;
+	      my($clone2)=$self->get_id_acc($clone,1);
+	      next if $clone2 eq 'unk';
 	      if($clones{$clone2}){
 		  push(@okclones,$clone2);
 		  $fok=1;
 	      }
 	  }
 	  if(!$fok){
-	      $self->warn("Clone $clone is not recognised");
+	      $self->warn("Clone $clone is not recognised or locked");
 	  }
       }
       $raclones=\@okclones;
@@ -218,12 +227,10 @@ sub _initialize {
   # keep a record of which clones have been loaded
   %{$self->{'_active_clones'}}=map{$_,1} @$raclones;
 
-  $self->warn("DEBUG: initialising map of TimDB for ".scalar(@$raclones)." clones");
-
   # doing conversion acc->id->acc or id->acc, need it here too
-  $p->map_all($self,$raclones);
+  $p->map_contigorder($self,\@clones);
 
-  $self->warn("DEBUG: TimDB initialisation complete");
+  #$self->map_etg;
 
   return $make; # success - we hope!
 }
@@ -243,6 +250,8 @@ sub _initialize {
 sub get_Gene{
     my ($self,$geneid) = @_;
     $self->throw("Tim has not reimplemented this function");
+
+    $self->map_etg unless $self->{'_mapped'};
     $self->{'_gene_hash'}->{$geneid} || 
 	$self->throw("No gene with $geneid stored in TimDB");
     return $self->{'_gene_hash'}->{$geneid};
@@ -266,7 +275,7 @@ sub get_Clone {
     # translate incoming id to ensembl_id, taking into account nacc flag
     my($disk_id,$cgp,$sv,$emblid,$htgsp);
     ($id,$disk_id,$cgp,$sv,$emblid,$htgsp)=$self->get_id_acc($id);
-    if($id==-1){
+    if($id eq 'unk'){
 	$self->throw("Cannot get accession for $disk_id");
     }
 
@@ -280,7 +289,7 @@ sub get_Clone {
     # can only build it, if it was 'loaded' in the initial call to timdb
     # (i.e. that it is in the active list)
     unless($self->{'_active_clones'}->{$id}){
-	$self->throw("$id cannot be fetched as not loaded in original object call ");
+	$self->throw("$id fetched - not loaded in original object call - locked?");
     }
 
     # test if clone is not locked (for safety); don't check for valid SV's
@@ -417,8 +426,7 @@ sub _get_Clone_id{
 	   ($id,$disk_id)=$self->get_id_acc($id);
 
 	   # in cases where nacc flag set to return ensembl_id and emsembl_id missing
-	   # return $id=-1;
-	   next if $id==-1;
+	   next if $id eq 'unk';
 
 	   my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id,\$nc,\$nsid,
 							   \$nisv,\$nlock);
@@ -438,7 +446,7 @@ sub _get_Clone_id{
 	       # translate incoming disk_id to ensembl_id, taking into account nacc flag
 	       # at this stage know there is an ensembl_id set, so translation is possible
 	       ($id)=$self->get_id_acc($disk_id);
-	       if($id==-1){
+	       if($id eq 'unk'){
 		   $self->throw("Unexpected failure of get_id_acc");
 	       }
 	       push(@list,$id);
@@ -527,10 +535,11 @@ sub _check_clone_entry{
 =cut
 
 sub get_id_acc{
-    my($self,$id)=@_;
+    my($self,$id,$t)=@_;
     # check to see if clone exists, and extract relevant items from dbm record
     # cgp is the clone category (SU, SF, EU, EF)
     my($line,$cdate,$type,$cgp,$acc,$sv,$id2,$fok,$emblid,$htgsp);
+
     if($line=$self->{'_clone_dbm'}->{$id}){
 	# first straight forward lookup
 	($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$line);
@@ -540,7 +549,7 @@ sub get_id_acc{
 	    if(!$acc){
 		# if can't return an ensembl_id when requested to, fail
 		# gracefully
-		return -1,$id;
+		return 'unk',$id;
 	    }
 	    $id=$acc;
 	}else{
@@ -644,6 +653,18 @@ sub _write_lockfile{
     }else{
 	$self->warn("Could not read lock directory $dir");
     }
+}
+
+# build the exon/transcript/gene map
+sub map_etg{
+    my($self)=shift;
+    my $p=$self->{'_parser_object'};
+    my @clones=(keys %{$self->{'_active_clones'}});
+    $self->warn("DEBUG: initialising map of TimDB for ".scalar(@clones)." clones");
+    # doing conversion acc->id->acc or id->acc, need it here too
+    $p->map_all($self,\@clones);
+    $self->warn("DEBUG: TimDB initialisation complete");
+    $self->{'_mapped'}=1;
 }
 
 # close the dbm clone file, remove lock

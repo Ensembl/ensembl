@@ -292,6 +292,9 @@ sub get_all_Genes{
     my ($self,$evidence) = @_;
     my %h;
     
+    # map if not already mapped
+    $self->_dbobj->map_etg unless $self->_dbobj->{'_mapped'};
+
     my @features;
 
     foreach my $contig ($self->get_all_Contigs) {

@@ -75,10 +75,15 @@ if ($help) {
     exec('perldoc', $0);
 }
 
-my $last_offset = 949000000;# 948560282;         $verbose && print "\nLast update-offset: $last_offset\n";
-my $now_offset  = 949001000;#time;              $verbose && print "Time now-offset at recipient: $now_offset\n";
-
 $| = 1;
+
+my $now=time;
+print "It is now $now\n";
+
+my $last_offset = 949000000;
+$verbose && print "\nLast update-offset: $last_offset\n";
+my $now_offset  = 949329046;
+$verbose && print "Time now-offset at recipient: $now_offset\n";
 
 if ($last_offset > $now_offset) {
     print "Time of last_offset update more recent than now-offset, exiting!\n";
