@@ -1049,9 +1049,10 @@ sub find_supporting_evidence {
       my @subf = $f->sub_SeqFeature;
       
       $self->find_supporting_evidence(\@subf);
-    } else {
+    } 
+    else {
       if ($f->entire_seq()->name eq $self->contig()->name) {
-	if ($f->end >= $self->start && $f->start <= $self->end) {
+	if ($f->end >= $self->start && $f->start <= $self->end && $f->strand == $self->strand) {
 	  $self->add_supporting_feature($f);
 	}
       }
