@@ -146,8 +146,11 @@ sub fetch_by_translation_stable_id {
   $sth->execute($transl_stable_id);
 
   my ($id) = $sth->fetchrow_array;
-
-  return $self->fetch_by_dbID($id);
+  if ($id){
+  	return $self->fetch_by_dbID($id);
+  } else {
+  	return undef;
+  }
 } 
                              
 =head2 fetch_all_by_DBEntry
@@ -178,6 +181,42 @@ sub fetch_all_by_DBEntry {
   }
   return \@trans;
 }
+
+
+=head2 fetch_all_by_exon_stable_id
+
+  Arg [1]    : string $stable_id 
+               The stable id of an exon in a transcript
+  Example    : $trans = $trans_adptr->fetch_all_by_exon_stable_id('ENSE00000309301');
+  Description: Retrieves a list of transcripts via an exon stable id
+  Returntype : Bio::EnsEMBL::Transcript
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub fetch_all_by_exon_stable_id {
+  my ($self, $stable_id) = @_;
+  my @trans ;
+  my $sth = $self->prepare( qq(	SELECT et.transcript_id 
+  								FROM exon_transcript as et, 
+									 exon_stable_id as esi 
+								WHERE esi.exon_id = et.exon_id and 
+									  esi.stable_id = "$stable_id"  ));
+  $sth->execute(  );
+
+  while( my $id = $sth->fetchrow_array ) {    
+		my $transcript = $self->fetch_by_dbID( $id );
+    	push(@trans, $transcript) if $transcript;
+
+  } 
+  if (!@trans) {
+    $self->warn( "No Transcript with this exon stable id found in the database." );
+    return undef;
+  }
+  return \@trans;
+}
+
 
 =head2 store
 
