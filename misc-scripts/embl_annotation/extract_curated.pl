@@ -363,6 +363,9 @@ sub _process_file{
 	    if($write){
 		eval{
 		    $db->write_Gene($gene);
+
+		    print STDERR "DB ID >........................................".$gene->dbID,"\t",$gene->stable_id,"\n";
+
 		    print GENE_MAP $gene->dbID,"\t",$gene->stable_id,"\n";
 		    foreach  my $transcript ($gene->each_Transcript){
 			print TRANSCRIPT_MAP $transcript->dbID,"\t",$transcript->stable_id,"\n";

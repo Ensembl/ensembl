@@ -271,6 +271,7 @@ sub _build_gene{
     my $clone_id=$id;
     $clone_id=~s/\.\d+$//;
 
+    print STDERR "Handling Clone $clone_id\n";
 
     # need to extract and process text from a number of tags
 
@@ -290,15 +291,18 @@ sub _build_gene{
 	    $product_tag=$1;
 	    $gene_id=$2;
 	    $description=$3;
+	    print STDERR "Handling Clone $clone_id - assigning gene id from product as $gene_id\n";
 	}elsif($product_tag=~/^((\w+\.\d+)\S+)$/){
 	    # no description
 	    $product_tag=$1;
 	    $gene_id=$2;
+	    print STDERR "Handling Clone $clone_id - assigning gene id from product as $gene_id (2)\n";
 	}else{
 	    # cannot be parsed
 	    print "productID could not be extracted: \"$product_tag\"\n";
 	    $description=$product_tag;
 	    $hack=1;
+	    print STDERR "Handling Clone $clone_id No product id extract $product_tag\n";
 	}
     }else{
 	print "product tag missing\n";
@@ -306,7 +310,7 @@ sub _build_gene{
     }
     if($hack){
 	# see if we can derive a transcript from the gene_id (if its been set)
-	if($gene_tag){
+	if(0){
 	    my $inc=1;
 	    {
 		$product_tag=$gene_tag.".$inc";
@@ -314,6 +318,7 @@ sub _build_gene{
 		    $inc++;
 		    redo;
 		}
+		print STDERR "Handling Clone $clone_id - generating new tag??\n";
 		print "created product tag from gene_tag \"$product_tag\"\n";
 	    }
 	}else{
@@ -321,9 +326,14 @@ sub _build_gene{
 	    $product_tag="$clone_id.$$rtranscounter";
 	    $gene_id=$product_tag;
 	    $$rtranscounter++;
+	    print STDERR "Handling Clone $clone_id - generating new tag (2)??\n";
 	    print "created product tag from accession and counter \"$product_tag\"\n";
 	}
     }
+
+
+    print STDERR "Handling Clone $clone_id - decided on $gene_id\n";
+
 
     # set gene_tag to gene_id if not set
     if(!$gene_tag){
