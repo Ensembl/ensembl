@@ -75,8 +75,8 @@ sub fetch_virtualtranscripts_start_end {
         push @transcripts, {
             'db'            => $row->{'db'},
             'type'          => $row->{'type'},
-            'transcript'    => $row->{'transcript_name'},
-            'stable_id'     => $row->{'transcript_id'},
+            'transcript'    => $row->{'transcript_id'},
+            'stable_id'     => $row->{'transcript_name'},
             'translation'   => $row->{'translation_name'},
             'gene'          => $row->{'gene_name'},
             'chr_name'      => $row->{'chr_name'},
