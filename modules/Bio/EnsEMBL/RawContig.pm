@@ -78,7 +78,7 @@ sub clone {
 
   #get full clone instead of potentially partial clone
   $clone = $self->adaptor->fetch_by_region($clone->coord_system->name(),
-                                           'clone',
+                                           $clone->seq_region_name(),
                                            undef,
                                            undef,
                                            undef,
