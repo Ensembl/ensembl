@@ -200,6 +200,7 @@ foreach my $slice (@top_slices) {
         # AV index dump
         if ($avdump) {
             foreach my $snpo (@{$snps}) {
+                next if ($snpo->start < 1);
                 my $snpid = $snpo->display_id;
                 my (@IDs, @desc);
                 foreach my $link ($snpo->each_DBLink) {
