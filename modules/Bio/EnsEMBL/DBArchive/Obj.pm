@@ -173,7 +173,7 @@ sub get_seq{
     my $sth = $self->prepare("select id,version,sequence from sequence where (id = '$seqid' && version = '$seqversion')");
     my $res = $sth->execute();
     my @out = $self->_create_seq_obj($sth);
-    return @out[0];
+    return $out[0];
 }
 
 =head2 get_seq_by_id
@@ -191,7 +191,6 @@ sub get_seq{
 sub get_seq_by_id{
     my ($self,$seqid) = @_;
     
-    my @out;
     $seqid || $self->throw("Attempting to get a sequence with no id");
     
     # get the sequence object
@@ -217,7 +216,6 @@ sub get_seq_by_id{
 sub get_seq_by_clone_version{
     my ($self,$clone_id, $clone_version, $seq_type) = @_;
     my $where_clause;
-    my @out;
 
     $clone_id || $self->throw("Attempting to get a sequence with no clone id");
     $clone_version || $self->throw("Attempting to get a sequence with no clone version");
@@ -254,7 +252,6 @@ sub get_seq_by_clone_version{
 sub get_seq_by_gene_version{
     my ($self,$gene_id, $gene_version, $seq_type) = @_;
     my $where_clause;
-    my @out;
     
     $gene_id || $self->throw("Attempting to get a sequence with no gene id");
     $gene_version || $self->throw("Attempting to get a sequence with no gene version");

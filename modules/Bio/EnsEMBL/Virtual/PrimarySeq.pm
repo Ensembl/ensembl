@@ -198,6 +198,7 @@ sub subseq{
        
    # ok end is > than start. See if start is actually in contig
    if( $start < $start_contig->start ) {
+       print STDERR "start in gap before contig $start : " . $start_contig->start . "\n";
        #print STDERR "start in gap before contig ... honest\n";
 
        #nope. Got some N's to put in
@@ -244,7 +245,7 @@ sub subseq{
    my $current;
    #print STDERR "About to enter loop...\n";
    while( ($current = shift @mapcontigs) ) {
-       #print STDERR "Looking at ",$current->end," vs ",$end,"\n";
+       print STDERR "Looking at ",$current->end," vs ",$end,"\n";
        if( $end <= $current->end ) {
 	   last;
        }

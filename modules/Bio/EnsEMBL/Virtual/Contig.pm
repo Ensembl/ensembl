@@ -558,10 +558,13 @@ sub get_all_SeqFeatures {
 sub get_all_SimilarityFeatures_above_score{
     my ($self, $analysis_type, $score) = @_;
     
-    my $sf = ();
+    my $sf = [];
     foreach my $c ($self->_vmap->get_all_RawContigs) {
-	   push(@$sf, $c->get_all_SimilarityFeatures_above_score($analysis_type, $score));
+	print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
+	push(@$sf, $c->get_all_SimilarityFeatures_above_score($analysis_type, $score));
    }
+
+   print STDERR "before clipping ",scalar(@$sf),"\n";
 
    # Need to clip seq features to fit the boundaries of
    # our v/c so displays don't break
@@ -574,6 +577,7 @@ sub get_all_SimilarityFeatures_above_score{
        if( !defined $sf ) {      
 	   next;
        }	
+
        if (($sf->start < 0 ) || ($sf->end > $self->length)) {
 	   $count++;
        }
@@ -711,11 +715,11 @@ sub get_all_Genes {
 =cut
 
 sub get_Genes_by_Type {
-    my ($self,$type) = @_;
+    my ($self,$type,$supporting) = @_;
     my (%gene,%trans,%exon,%exonconverted);
     
     foreach my $contig ($self->_vmap->get_all_RawContigs) {
-	foreach my $gene ( $contig->get_Genes_by_Type($type) ) {      
+	foreach my $gene ( $contig->get_Genes_by_Type($type,$supporting) ) {      
 	    $gene{$gene->id()} = $gene;
 	}
     }
@@ -732,8 +736,10 @@ sub _gene_query{
         
 
     foreach my $gene ( values %gene ) {
-	
-        my $internalExon = 0;
+
+	my $internalExon = 0;
+
+
 	foreach my $exon ( $gene->all_Exon_objects() ) {
 	    # hack to get things to behave
 	    $exon->seqname($exon->contig_id);
@@ -1390,15 +1396,20 @@ sub _reverse_map_Exon{
        $self->throw("Must supply reverse map an exon not an [$exon]");
    }
 
+   print STDERR "Reverse mapping $exon ",$exon->start,":",$exon->end,"\n";
+
    my ($scontig,$start,$sstrand) = $self->_vmap->raw_contig_position($exon->start,$exon->strand);
    my ($econtig,$end,$estrand)   = $self->_vmap->raw_contig_position($exon->end  ,$exon->strand);
 
+   print STDERR "Got $scontig ",$start," to $econtig ",$end,"\n";
 
   
    if( $scontig->id eq $econtig->id ) {
        if( $sstrand != $estrand ) {
 	   $self->throw("Bad internal error. Exon mapped to same contig but different strands!");
        }
+
+       print STDERR "Straight forward mapping\n";
 
        my $rmexon = Bio::EnsEMBL::Exon->new();
        $rmexon->id($exon->id);
@@ -1446,7 +1457,7 @@ sub _reverse_map_Exon{
        return ($rmexon);
    } else {
        # we are in the world of sticky-ness....
-
+       print STDERR "Into sticky exon\n";
 
        my @mapcontigs = $self->_vmap->each_MapContig();
 

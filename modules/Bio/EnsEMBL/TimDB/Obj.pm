@@ -521,11 +521,11 @@ sub _get_Clone_id{
    }else{
        print STDERR " and are excluded\n";
    }
-   my $nc=scalar(@list);
-   if($nc==1){
-       print STDERR "  Total of $nc clone is in final list\n";
+   my $nc2=scalar(@list);
+   if($nc2==1){
+       print STDERR "  Total of $nc2 clone is in final list\n";
    }else{
-       print STDERR "  Total of $nc clones are in final list\n";
+       print STDERR "  Total of $nc2 clones are in final list\n";
    }
    if(scalar(@list)<10){
        print STDERR "  ".join(',',@list)."\n";

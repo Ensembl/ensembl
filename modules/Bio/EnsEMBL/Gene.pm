@@ -155,7 +155,9 @@ sub each_unique_Exon{
    my %h;
 
    foreach my $trans ( $self->each_Transcript ) {
+#       print STDERR "Transcript " . $trans->id . "\n";
        foreach my $exon ( $trans->each_Exon ) {
+#	   print STDERR "Found exon $exon " . $exon->id . "\t" . $exon->start . "\t" . $exon->end . "\n";
 	   $h{$exon->id()} = $exon;
        }
    }
@@ -312,10 +314,6 @@ sub id{
     return $obj->{'id'};
 
 }
-
-
-
-
 
 
 

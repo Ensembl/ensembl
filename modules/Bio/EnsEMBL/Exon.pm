@@ -723,13 +723,25 @@ sub each_Supporting_Feature {
 
 
 sub find_supporting_evidence {
-    my ($self,$features) = @_;
+    my ($self,$features,$sorted) = @_;
 
-    foreach my $f (@$features) {
-	if (($f->seqname eq $self->contig_id) && ($f->overlaps($self))) {
-	    $self->add_Supporting_Feature($f);
+    FEAT : foreach my $f (@$features) {
+	# return if we have a sorted feature array
+	if ($sorted == 1 && $f->start > $self->end) {
+	    return;
 	}
-    }
+	if ($f->sub_SeqFeature) {
+	  my @subf = $f->sub_SeqFeature;
+
+	  $self->find_supporting_evidence(\@subf);
+	} else {
+	  if ($f->seqname eq $self->contig_id) {
+	    if (!($f->end < $self->start || $f->start > $self->end)) {
+	      $self->add_Supporting_Feature($f);
+	    }
+	  }
+	}
+      }
 }
 
 

@@ -61,6 +61,7 @@ my $msptype =  [['swir_p',  'blastp',  'swir',     'pep', '.blastp_swir.msptmp',
 		['dbest_p', 'tblastn', 'dbest',    'dna', '.tblastn_dbest.msptmp', 'msp' ,  1 ,1,'similarity'],
 		['pfam_p',  'hmmpfam', 'PfamFrag', 'pep', '.hmmpfam_frag',         'pfam',  1 ,1,'pfam_prediction'],
 		['repeat_n','RepeatMasker', ''   , 'dna', '.RepMask.out.gff',      'repeat','','042199','similarity'],
+		['genewise_p','genewise', 'swir'   , 'pep', '.swir.msptmp',      'msp',1,1,'similarity'],
 		];
   
 sub _initialize {

@@ -298,7 +298,7 @@ sub get {
 sub get_array_supporting {
     my ($self,$supporting,@geneid) = @_;
     
-    $supporting || $self->throw("You need to specify whether to retrieve supporting evidence or not!");
+    defined($supporting) || $self->throw("You need to specify whether to retrieve supporting evidence or not!");
 
     if( @geneid == 0 ) {
 	$self->throw("Attempting to create gene with no id");
@@ -354,7 +354,7 @@ sub get_array_supporting {
        LIMIT 2500
         };
 
-
+#    print STDERR "Query is " . $query . "\n";
     my $sth = $self->_db_obj->prepare($query);
     my $res = $sth ->execute();
    
@@ -1227,6 +1227,18 @@ sub write_Exon {
     
     my $contig = $self->_db_obj->get_Contig($exon->contig_id);
 
+    print STDERR $exon->id . " " . 
+	$exon->version . " " .
+	$contig->internal_id . " " . 
+	$exon->created . " " . 
+	$exon->modified . " " . 
+	$exon->start . " " . 
+	$exon->end . " " . 
+	$exon->strand . " " . 
+	$exon->phase . " " . 
+	$exon->end_phase . " " . 
+	$exon->sticky_rank . "\n";
+
     my $sth = $self->_db_obj->prepare($exonst);
     $sth->execute(
         $exon->id(),
@@ -1245,6 +1257,7 @@ sub write_Exon {
     # Now the supporting evidence
     
     if( !defined $no_supporting || !$no_supporting ) {
+
 	$self->write_supporting_evidence($exon);
     }
 
@@ -1299,6 +1312,7 @@ sub write_supporting_evidence {
 
     my $sth  = $self->_db_obj->prepare("insert DELAYED into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
     
+
     FEATURE: foreach my $f ($exon->each_Supporting_Feature) {
 
 	eval {
@@ -1426,30 +1440,33 @@ sub write_Translation{
 sub get_NewId {
     my ($self,$table,$stub) = @_;
 
-
-    my $query = "select max(id) as id from $table";
+    my $query = "select max(id) as id from $table where id like '$stub%'";
 
     my $sth   = $self->_db_obj->prepare($query);
     my $res   = $sth->execute;
     my $row   = $sth->fetchrow_hashref;
     my $id    = $row->{id};
 
-    if ($id eq "") {
+    if (!defined($id) || $id eq "") {
 	$id = $stub . "00000000000";
     }
-    
-    if ($id =~ /$stub(\d+)$/) {
+
+    if ($id =~ /\D+(\d+)$/) {
+
 	my $newid  = $1;
+
 	$newid++;
 	
+
 	if (length($newid) > 11) {
 	    if ($newid =~ /^0/) {
 		$newid =~ s/^0//;
 	    } else {
-		$self->throw("Can't truncation number string to generate new id [$newid]");
+		$self->throw("Can't truncate number string to generate new id [$newid]");
 	    }
 	}
 	$newid = $stub . $newid;
+
 	return $newid;
     } else {
 	$self->throw("[$id] does not look like an object id (e.g. ENST00000019784)");

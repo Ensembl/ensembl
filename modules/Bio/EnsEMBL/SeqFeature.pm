@@ -730,6 +730,22 @@ sub id {
 
 }
 
+sub gffstring {
+   my ($self) = @_;
+
+   my $str = $self->seqname . "\t" . $self->source_tag . "\t" . 
+          $self->primary_tag . "\t" . $self->start . "\t" . $self->end . "\t" ;
+
+   my $strand = ".";
+   if ($self->strand == 1) {
+       $strand = "+";
+   } elsif ($self->strand == -1) {
+       $strand = "-";
+   }
+
+   $str .= $self->score .    "\t" . $strand . "\t.\t" ;     
+
+   return $str;
+}
+ 
 1;
-
-

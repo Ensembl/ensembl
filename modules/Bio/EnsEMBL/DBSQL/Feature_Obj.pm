@@ -175,7 +175,7 @@ sub write {
     my $contigid = $contig->id;
     my $analysis;
 
-    my $sth = $self->_db_obj->prepare("insert DELAYED into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
+    my $sth = $self->_db_obj->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
     
     # Put the repeats in a different table, and also things we need to write
     # as fsets.
@@ -299,14 +299,29 @@ sub write {
 	my $rank = 1;
 
 	foreach my $sub ( $feature->sub_SeqFeature ) {
+	    if ($sub->isa("Bio::EnsEMBL::FeaturePairI")) {
+
 	    my $sth5 = $self->_db_obj->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values('NULL','".$contig->internal_id."',"
 				      .$sub->start   .","
 				      .$sub->end     . ","
 				      .$sub->score   . ","
 				      .$sub->strand  . ","
 				      .$analysisid   . ",\'" 
-				      .$sub->source_tag  . "\',-1,-1,'__NONE__')");
+				      .$sub->source_tag  . "\',"
+                                      .$sub->hstart   . ","
+                                      .$sub->hend     . ",\'"
+				      .$sub->hseqname . "\')");
 	    $sth5->execute();
+	} else {
+	    my $sth5 = $self->_db_obj->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values('NULL','".$contig->internal_id."',"
+					       .$sub->start   .","
+					       .$sub->end     . ","
+					       .$sub->score   . ","
+					       .$sub->strand  . ","
+					       .$analysisid   . ",\'" 
+					       .$sub->source_tag  . "\',-1,-1,'__NONE__')");
+	    $sth5->execute();
+	}
 	    my $sth6 = $self->_db_obj->prepare("insert into fset_feature(fset,feature,rank) values ($fset_id,LAST_INSERT_ID(),$rank)");
 	    $sth6->execute();
 	    $rank++;
@@ -531,6 +546,7 @@ sub get_Analysis {
 
 sub exists_Analysis {
     my ($self,$anal) = @_;
+
     
     $self->throw("Object is not a Bio::EnsEMBL::AnalysisI") unless $anal->isa("Bio::EnsEMBL::AnalysisI");
     # If all the attributes of the analysis object are not set it's existence can't be tested 

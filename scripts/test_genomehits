@@ -1,5 +1,11 @@
 #!/usr/local/bin/perl 
 
+BEGIN {
+   unshift(@INC,"/nfs/disk100/humpub/birney/ensembl/modules");
+   unshift(@INC,"/nfs/disk100/humpub/birney/ensembl-pipeline/modules");
+   unshift(@INC,"/nfs/disk100/humpub/birney/bioperl-live");
+}
+
 use strict;
 use Getopt::Long;
 use vars qw(@ISA);
@@ -9,53 +15,64 @@ use Bio::EnsEMBL::DBLoader;
 @ISA = qw(Bio::Root::Object);
 
 my $dbtype = 'rdb';
-my $host   = 'ensrv3.sanger.ac.uk';
-my $port   = '3306';
-my $dbname = 'ensembl07';
+my $host   = 'ensrv4.sanger.ac.uk';
+my $dbname = 'ensembl_freeze17_michele';
 my $dbuser = 'ensro';
-my $pass = undef;
 my $module = "Bio::EnsEMBL::DBSQL::Obj";
-
+my $infile;
 
 &GetOptions( 
-	     'dbtype:s'  => \$dbtype,
 	     'host:s'    => \$host,
-	     'port:n'    => \$port,
 	     'dbname:s'  => \$dbname,
 	     'dbuser=s'  => \$dbuser,
-	     'pass:s'    => \$pass,
+	     'infile=s'  => \$infile,
 	     );
 
 $|=1;
 
-my $locator       = make_locator_string($dbtype,$module,$host,$port,$dbname,$dbuser,$pass);
+my $locator       = make_locator_string($dbtype,$module,$host,3306,$dbname,$dbuser,'');
 my $db            = new Bio::EnsEMBL::DBLoader($locator);
+my @hids          = get_hit_ids($infile,@ARGV);
 
 if (defined($db)) {
-  print("Connected to database\n");
+  print(STDERR "Connected to database\n");
 }
 
-my @hids;
-
-push(@hids,@ARGV);
-
-if (scalar(@hids) == 0) {
-    push(@hids,"SW:HBA_HUMAN");
+if ($#hids < 0) {
+    die "No input hit ids\n";
 }
+$db->static_golden_path_type("UCSC");
+my %contig;
 
 foreach my $f (@hids) {
     my @features      = $db->find_GenomeHits($f);
 
-    foreach my $f (@features) {
-	$f->invert;
+    foreach my $h (@features) {
+	if (!defined($contig{$h->seqname})) {
+	    $contig{$h->seqname} = $db->get_Contig($h->seqname);
+	}
 
-	my $gffstring = gffstring($f);
+	my $con = $contig{$h->seqname};
+	my $offset = $con->embl_offset;
 
-	print($gffstring . "\n");
+	$h->seqname($con->cloneid);
+	$h->start  ($h->start + $con->embl_offset - 1);
+	$h->end    ($h->end   + $con->embl_offset - 1);
 
+	print STDERR $h->gffstring     . "\t" . 
+	        $con->chromosome       . "\t" . 
+		$con->fpc_contig_name  . "\t" . 
+		$con->fpc_contig_start . "\t" . 
+		$con->fpc_contig_end   . "\n";
     }
+    
 
 }
+
+sub usage {
+    print STDERR "\nUsage genomehits [-host <host>] [-dbname <dbname>] [-infile <infile>] hitid1 hitid2...\n\n";
+}
+
 sub make_locator_string {
     my ($type,$module,$host,$port,$dbname,$dbuser,$dbpass) = @_;
 
@@ -88,4 +105,26 @@ sub gffstring {
    return $str;
 }
 
+sub get_hit_ids {
+    my ($infile,@arg) = @_;
+
+    my @ids;
+
+    if (defined($infile)) {
+	if (-e $infile) {
+	    open(IN,"<$infile") || die "Couldn't open input file";
+
+	    while(<IN>) {
+		chomp;
+		push(@ids,$_);
+	    }
+	} else {
+	    die "Input file [$infile] doesn't exist";
+	}
+    }
+
+    push(@ids,@arg);
+
+    return @ids;
+}
 

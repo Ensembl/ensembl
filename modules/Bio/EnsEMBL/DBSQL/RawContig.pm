@@ -197,13 +197,16 @@ my $query="
    }       
    
 
+#   print STDERR "Gene array is [@gene_array]\n";
    my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->dbobj);             
 
-   my @out = $gene_obj->get_array_supporting($supporting,@gene_array);
- 
-   if (@out) {
-       return @out;
+   my @out;
+
+   if (@gene_array) {
+       @out = $gene_obj->get_array_supporting($supporting,@gene_array);
    }
+   return @out;
+
 
 }
 
@@ -1146,36 +1149,6 @@ sub cloneid {
     return $self->{_cloneid};
 }
 
-=head2 chromosome
-
- Title   : chromosome
- Usage   : $chr = $contig->chromosome( [$chromosome] )
- Function: get/set the chromosome of the contig.
- Example :
- Returns : the chromsome object
- Args    :
-
-=cut
-
-sub chromosome {
-   my ($self,$chromosome ) = @_;
-   my $id= $self->internal_id();
-
-   if( defined( $chromosome )) {
-       $self->{_chromosome} = $chromosome;
-   } else {
-       if (! defined ($self->{_chromosome})) {
-	   my $sth = $self->dbobj->prepare("select chromosomeId from contig where internal_id = \"$id\" ");
-	   $sth->execute();
-	   
-	   my $rowhash = $sth->fetchrow_hashref();
-	   my $chrId = $rowhash->{'chromosomeId'};
-	   $self->{_chromosome} = Bio::EnsEMBL::Chromosome->get_by_id
-	       ( $chrId );
-       }
-   }
-   return $self->{_chromosome};
-}
 
 =head2 seq_version
 
