@@ -466,7 +466,7 @@ sub write_Protein_feature {
 
 sub get_Analysis {
     my ($self,$id) = @_;
-
+    print STDERR "Id is $id\n";
     my $sth = $self->_db_obj->prepare("select db,db_version,program,program_version,gff_source,gff_feature,id from analysis where id = $id");
     my $rv  = $sth->execute;
     my $rh  = $sth->fetchrow_hashref;
@@ -706,85 +706,69 @@ sub find_GenomeHits {
 
 =cut
 
-
-
-
-
-
 sub get_PredictionFeature_by_id {
    my ($self,$genscan_id) = @_;
  
    unless ($genscan_id){$self->throw("I need a genscan id");}
-   
-   my $fsetid;
+
    my %analhash;
   
-   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,fset.id,c.id,f.phase " .
-       "from feature f, fset fset,fset_feature ff,contig c where ff.feature = f.id and fset.id = ff.fset ".
-        " and c.internal_id=f.contig and ff.fset ='$genscan_id' and name = 'genscan'";
- 
-       
+   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,fset.id,c.id " .
+       "from feature f, fset ,fset_feature ff,contig c where ff.feature = f.id and fset.id = ff.fset ".
+        " and c.internal_id=f.contig and ff.fset = $genscan_id and name = \'genscan\'";
+
    my $sth = $self->_db_obj->prepare($query);   
         
    $sth->execute();
-   
-   my ($fid,$start,$end,$strand,$score,$analysisid,$contig,$phase);
+
+   my ($fid,$start,$end,$strand,$score,$analysisid,$fsetid,$contig);
            
-    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid,\$contig,\$phase);
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid,\$contig);
 
-   my $current_fset;
-   if( $sth->fetch ) {
-       my $out;
-       my $analysis;
-
-       if (!$analhash{$analysisid}) {
+   my $fset;
+   my $analysis;
        
-           
-           $analysis = $self->get_Analysis($analysisid);
+   $fset = new Bio::EnsEMBL::SeqFeature;
+   $fset->source_tag('genscan');
+   $fset->primary_tag('prediction');
+   $fset->id($genscan_id);
 
-           $analhash{$analysisid} = $analysis;
-       
-       } else {
-           $analysis = $analhash{$analysisid};
-       }
-       
-       $current_fset = new Bio::EnsEMBL::SeqFeature;
-       $current_fset->source_tag('genscan');
-       $current_fset->primary_tag('prediction');
-       $current_fset->analysis($analysis);
-       $current_fset->seqname($contig);
-       $current_fset->raw_seqname($contig);
-       $current_fset->id($fsetid);
-        
+   while( my $row = $sth->fetchrow_hashref ) {
+     my $analysisid = $row->{analysis};
 
-       $out = new Bio::EnsEMBL::SeqFeature;
+     if (!$analhash{$analysisid}) {
+        $analysis = $self->get_Analysis($analysisid);
+        $analhash{$analysisid} = $analysis;
+     } else {
+        $analysis = $analhash{$analysisid};
+     }
+       $fset->analysis($analysis);
+       $fset->seqname($contig);
+       $fset->raw_seqname($contig);
+
+       my $out = new Bio::EnsEMBL::SeqFeature;
  
        $out->seqname   ($contig);
-       $out->start     ($start);
-       $out->end       ($end);
-       $out->strand    ($strand);  
-       $out->phase     ($phase);
+       $out->start     ($row->{seq_start});
+       $out->end       ($row->{seq_end});
+       $out->strand    ($row->{strand});  
        $out->source_tag('genscan');
        $out->primary_tag('prediction');
  
        if( defined $score ) {
-           $out->score($score);
+           $out->score($row->{score});
        }
 
        $out->analysis($analysis);
 
        # Final check that everything is ok.
            
-       $out->validate();
-
-       $current_fset->add_sub_SeqFeature($out,'EXPAND');
-       $current_fset->strand($strand);
-   } else { 
-       $self->throw("Fset $genscan_id does not exist in the database");
+       #$out->validate();
+       $fset->add_sub_SeqFeature($out,'EXPAND');
+       $fset->strand($row->{strand});
    }
 
-
-   return $current_fset;
+   return $fset;
 
 }
 
@@ -811,8 +795,8 @@ sub get_PredictionFeature_as_Transcript{
     my ($self,$genscan_id)=@_;
     unless ($genscan_id){$self->throw("I need a genscan id");}
 
-    my $ft=$self->get_PredictionFeature_by_id($genscan_id);
-    my $contig=$self->_db_obj->get_Contig($ft->seqname);
+    my $ft     = $self->get_PredictionFeature_by_id($genscan_id);
+    my $contig = $self->_db_obj->get_Contig($ft->seqname);
 
     # Due to f*cked up genscan phases we are reduced to guessing the phases
 #    return &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
