@@ -103,7 +103,6 @@ sub list_stable_geneIds {
 
 sub fetch_by_dbID {
   my ( $self, $geneId ) = @_;
-  
   my $exonAdaptor = $self->db->get_ExonAdaptor();
   my @exons = $exonAdaptor->fetch_by_geneId( $geneId );
 
@@ -503,6 +502,15 @@ sub store {
    foreach my $dbl ( $gene->each_DBLink ) {
      $dbEntryAdaptor->store( $dbl, $gene->dbID, "Gene" );
    }
+
+   # write exons at this level to avoid duplicates
+   my $exonAdaptor = $self->db->get_ExonAdaptor();
+   my @ex = $gene->get_all_Exons;
+
+   foreach my $exon($gene->get_all_Exons){
+     $exonAdaptor->store( $exon );
+   }
+
 
    # write exons transcripts and exon_transcript table
    foreach my $trans ( $gene->each_Transcript() ) {
