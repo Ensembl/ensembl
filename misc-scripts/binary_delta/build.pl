@@ -100,13 +100,12 @@ foreach my $v2_file (glob($v2_dir . '/*')) {
 	} else {
 	    $patch_command = 'PATCH';
 	    print "\tCreating delta file\n";
-	    system($xdelta_cmd, 'delta', '-9',
-		$v1_file, $v2_file, $delta_file);
+	    system($xdelta_cmd, 'delta', '-9', $v1_file, $v2_file, $delta_file);
 	}
     } else {
-	$patch_command = 'ADD';	    # use 'ZIP' here as well?
-	print "\tCopying file\n";
-	copy($v2_file, $delta_file);
+	$patch_command = 'ZIP';	    # (was 'ADD')
+	print "\tCopying (and compressing) new file\n";
+	do_compress($v2_file, $delta_file);
     }
 
     if ($patch_command ne 'COPY') {

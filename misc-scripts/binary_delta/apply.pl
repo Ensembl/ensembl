@@ -111,9 +111,6 @@ foreach my $info_file (glob($delta_dir . '/*.info')) {
     if ($patch_command eq 'PATCH') {
 	print "\tPatching file\n";
 	system($xdelta_cmd, 'patch', $delta_file, $v1_file, $v2_file);
-    } elsif ($patch_command eq 'ADD') {
-	print "\tAdding new file\n";
-	copy($delta_file, $v2_file);
     } elsif ($patch_command eq 'COPY') {
 	print "\tCopying old file\n";
 	copy($v1_file, $v2_file);
