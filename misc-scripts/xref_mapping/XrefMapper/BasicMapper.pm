@@ -573,8 +573,6 @@ sub run_mapping {
 
     my ($method, $queryfile ,$targetfile)  =  @$list;
 
-    print "Method:$method Query:$queryfile Target:$targetfile\n";
-
     my $obj_name = "XrefMapper::Methods::$method";
     # check that the appropriate object exists
     eval "require $obj_name";
