@@ -30,7 +30,7 @@ my $pass       = $conf{'password'};
 my $organism   = $conf{'organism'};
 my $check      = $conf{'check'};
 my $query_pep  = $conf{'query'};
-
+my $refseq_pred = $conf{'refseq_pred_gnp'};
 
 my %map;
 my %ref_map;
@@ -38,6 +38,7 @@ my %sp2embl;
 my %ens2embl;
 my %embl2sp;
 my %errorflag;
+my %ref_map_pred;
 
 if ((!defined $organism) || (!defined $xmap) || (!defined $map)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $map\ndb: $dbname\nhost: $host\n\n";
@@ -71,6 +72,23 @@ if (($organism eq "human") || ($organism eq "mouse")) {
 #Put back the default (new line) for reading file
     $/ = "\n"; 
 }
+close(REFSEQ);
+
+if ($organism = "human") {
+    open (REFSEQPRED,"$refseq_pred") || die "Can't open $refseq_pred\n";
+    #Read the file by genbank entries (separated by //) 
+    $/ = "\/\/\n";
+    while (<REFSEQ>) {
+#This subroutine store for each NP (refseq protein accession number) its corresponding NM (DNA accession number)
+	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
+	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
+
+	$ref_map_pred{$prot_ac} = $dna_ac;
+    }
+#Put back the default (new line) for reading file
+    $/ = "\n"; 
+}
+close(REFSEQPRED);
 
 
 open (XMAP,"$xmap") || die "Can't open $xmap\n";
@@ -81,6 +99,8 @@ while (<XMAP>) {
     
     chomp;
     my ($targetid,$targetdb,$xac,$xdb,$xid,$xsyn,$status) = split (/\t/,$_);
+
+    #print STDERR "STATUS: $status\n";
 
     if ($check eq "yes") {
 #Get the all of the EMBL accessions for a given SP
@@ -107,6 +127,30 @@ while (<XMAP>) {
 	($xid) = $xid =~ /^(NP_\d+)/;
 	$xid = $ref_map{$xid};
     }
+
+
+    if ($targetid =~ /^XP_\d+/) {
+	
+	    ($targetid) = $targetid =~ /^(XP_\d+)/;
+	    $targetid = $ref_map_pred{$targetid};
+	}
+
+
+    if ($xac =~ /^XP_\d+/) {
+	
+	    ($xac) = $xac =~ /^(XP_\d+)/;
+	    $xac = $ref_map_pred{$xac};
+	}
+
+    if ($xid =~ /^XP_\d+/) {
+	
+	($xid) = $xid =~ /^(XP_\d+)/;
+	$xid = $ref_map_pred{$xid};
+    }
+
+
+
+
 
         #print STDERR "TARGETID: $targetid\t$xdb\n";
     
@@ -145,18 +189,25 @@ MAPPING: while (<MAP>) {
     my ($queryid,$tid,$tag,$queryperc,$targetperc) = split (/\t/,$_);
     
     my $m = $tid; 
+    
+    print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";
 
     if ($tid =~ /^NP_\d+/) {
 	
 	($tid) = $tid =~ /^(NP_\d+)/;
 	$tid = $ref_map{$tid};
     }
+
+ if ($tid =~ /^XP_\d+/) {
+	
+	($tid) = $tid =~ /^(XP_\d+)/;
+	$tid = $ref_map_pred{$tid};
+    }
     
     if ($tid =~ /^(\w+-\d+)/) {
 	($tid) = $tid =~ /^(\w+)-\d+/;
     }
     
-
     if ((defined $tid) && (defined $map{$tid})) {
 	
 	
@@ -226,7 +277,7 @@ MAPPING: while (<MAP>) {
 		      -version => 1,
 		      -release => 1,
 		      -dbname => $a->xDB );
-		
+		$dbentry->status($a->stat);
 		
 		
 		my @synonyms = split (/;/,$a->xSYN);
@@ -381,5 +432,25 @@ sub xSYN{
 
 }
 
+=head2 stat
+
+ Title   : stat
+ Usage   : $obj->stat($newval)
+ Function: 
+ Returns : value of stat
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub stat{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'stat'} = $value;
+    }
+    return $obj->{'stat'};
+
+}
 
 

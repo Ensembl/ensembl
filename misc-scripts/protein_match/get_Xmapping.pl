@@ -25,7 +25,7 @@ my $refseq_gnp = $conf{'refseq_gnp'};
 #Get specific options for human
 my $ens1       = $conf{'ens1'};
 my $ens4       = $conf{'ens4'};
-my $refeseq_pred = $conf{'refseq_pred'};
+my $refseq_pred = $conf{'refseq_pred_gnp'};
 my $go           = $conf{'go'}; 
 
 #Get specific options for the mouse
@@ -59,6 +59,10 @@ while ( my $seq = $in->next_seq() ) {
     #print STDERR "ID: $id\n";
 
     my ($displ_id,$tag) = split(/:/,$id);
+
+    
+    #Humm not good... will be removed soon
+    $tag = $seq->primary_id;
 
     if ($tag eq "STANDARD") {
 	$db = "SWISS-PROT";
@@ -97,12 +101,23 @@ while ( my $seq = $in->next_seq() ) {
 	}
 
 	if  ($link->database eq "PDB") {
-	    print STDERR "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\tXREF\n";
+	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\tXREF\n";
 	}
 
     }
 
 
+
+#Get Xref mapping specifically for drosophila
+
+    if ($organism eq "drosophila") {
+	#Get the gene name, especially useful to replace Hugo name when these don't exist.
+	my @gene_names = $seq->annotation->each_gene_name;
+	foreach my $g(@gene_names) {
+	    print OUT "$ac\tSPTR\t".$g."\tFlyBase\t".$g."\t\tXREF\n";
+	}
+    }
+    
 }
 
 if (($organism eq "human") || ($organism eq "mouse")) {
@@ -259,15 +274,6 @@ if ($organism eq "mouse") {
     }
 }
 
-#Get Xref mapping specifically for drosophila
-
-if ($organism eq "drosophila") {
-    #Get the gene name, especially useful to replace Hugo name when these don't exist.
-    my @gene_names = $seq->annotation->each_gene_name;
-    foreach my $g(@gene_names) {
-	print OUT "$ac\tSPTR\t".$g."\tFlyBase\t".$g."\t\tXREF\n";
-    }
-}
 
 print STDERR "The output has been written there: $out\n";
 
