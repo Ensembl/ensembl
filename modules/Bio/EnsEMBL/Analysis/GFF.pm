@@ -152,10 +152,12 @@ sub _parse {
     $self->throw("No GFF file input") unless $self->GFFFile;
 
     my $file = $self->GFFFile;
-
+    
+    $self->_make_analysis;
+    
     open(IN,"<$file") || $self->throw("Can't open $file");
 
-    while (defined(my $line = <IN>)) {
+    while (my $line = <IN>) {
 	if ($line !~ /^\#/) {
 	    my $feature = $self->_parse_line($line);
 	    $self->add_Feature($feature);
@@ -206,7 +208,8 @@ sub _parse_line {
 					 );
 
     $f->seqname    ($seqname);
-    
+    $f->add_tag_value('Analysis',$self->analysis);
+
     if ($attrib[0] eq "Target" && $feature eq "similarity") {
 	$f = $self->_parse_attrib($f,$feature,@attrib);
     }
@@ -301,6 +304,32 @@ sub GFFFile {
     return $self->{_GFFFile};
 }
 
+sub _make_analysis {
+    my ($self) = @_;
+    
+    (my $ext  = $self->) =~ s/.*(\..*.out.gff)/$1/;
+    
+    my $test    = Bio::EnsEMBL::Analysis::MSPType->each_MSPType;
+    my $MSPType = Bio::EnsEMBL::Analysis::MSPType->extension2MSPType($ext);
+    my $anal    = new Bio::EnsEMBL::Analysis::Analysis;
+    
+    $anal->db             ($MSPType->[2]);
+    $anal->db_version     ($MSPType->[6]);
+    $anal->program        ($MSPType->[1]);
+    $anal->program_version($MSPType->[7]);
+    $anal->gff_source     ($MSPType->[1]);
+    $anal->gff_feature    ($MSPType->[8]);
+    
+    $self->analysis($anal);
+}
 
+sub analysis {
+    my ($self,$arg) = @_;
 
+    if (defined($arg)) {
+	$self->{_analysis} = $arg;
+    } 
+
+    return $self->{_analysis};
+}
 1;
