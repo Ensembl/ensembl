@@ -79,7 +79,6 @@ sub new {
 
   $self->{"_pair_$from"} = {};
   $self->{"_pair_$to"} = {};
-  $self->{'_is_sorted'} = 0;
 
   $self->to($to);
   $self->from($from);
@@ -135,10 +134,6 @@ sub map_coordinates{
 
    unless(defined $hash) {
        $self->throw("Type $type is neither to or from coordinate systems");
-   }
-
-   if( $self->{'_is_sorted'} == 0 ) {
-       $self->_sort();
    }
 
    if( !defined $hash->{uc($id)} ) {
@@ -274,9 +269,6 @@ sub fastmap {
    my $hash = $self->{"_pair_$type"} or
        $self->throw("Type $type is neither to or from coordinate systems");
 
-   if( $self->{'_is_sorted'} == 0 ) {
-       $self->_sort();
-   }
 
    my $pairs = $hash->{uc($id)};
 
@@ -326,55 +318,200 @@ sub fastmap {
     Arg  7      int $end
                 end coordinate of 'targe' sequence
     Function    stores details of mapping between two regions:
-                'source' and 'target'
-    Returntype  none
+                'source' and 'target'. Returns 1 if the pair was added, 0 if it
+                was already in.
+    Returntype  int 0,1
     Exceptions  none
     Caller      Bio::EnsEMBL::Mapper
 
 =cut
 
 sub add_map_coordinates{
-   my ($self, $contig_id, $contig_start, $contig_end, 
-       $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
+  my ($self, $contig_id, $contig_start, $contig_end, 
+      $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
+  
+  unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
+	 && defined($contig_ori) && defined($chr_name) && defined($chr_start)
+	 && defined($chr_end)) {
+    $self->throw("7 arguments expected");
+  }
 
-   unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
-          && defined($contig_ori) && defined($chr_name) && defined($chr_start)
-          && defined($chr_end)) {
-       $self->throw("7 arguments expected");
-   }
+  if( ($contig_end - $contig_start)  != ($chr_end - $chr_start) ) {
+    $self->throw("Cannot deal with mis-lengthed mappings so far");
+  }
 
-   if( ($contig_end - $contig_start)  != ($chr_end - $chr_start) ) {
-       $self->throw("Cannot deal with mis-lengthed mappings so far");
-   }
+  my $pair = Bio::EnsEMBL::Mapper::Pair->new();
+  
+  my $from = Bio::EnsEMBL::Mapper::Unit->new();
+  $from->start($contig_start);
+  $from->end($contig_end);
+  $from->id($contig_id);
 
-   my $pair = Bio::EnsEMBL::Mapper::Pair->new();
+  my $to = Bio::EnsEMBL::Mapper::Unit->new();
+  $to->start($chr_start);
+  $to->end($chr_end);
+  $to->id($chr_name);
 
-   my $from = Bio::EnsEMBL::Mapper::Unit->new();
-   $from->start($contig_start);
-   $from->end($contig_end);
-   $from->id($contig_id);
+  $pair->to($to);
+  $pair->from($from);
 
-   my $to = Bio::EnsEMBL::Mapper::Unit->new();
-   $to->start($chr_start);
-   $to->end($chr_end);
-   $to->id($chr_name);
+  $pair->ori($contig_ori);
 
-   $pair->to($to);
-   $pair->from($from);
+  # place into hash on both ids
+  my $map_to = $self->{'to'};
+  my $map_from = $self->{'from'};
+  my ( $lr, $cmp, $del_pair, $last, $current_pair );
 
-   $pair->ori($contig_ori);
+  if( defined( $lr = $self->{"_pair_$map_to"}->{uc($chr_name)} )) {
+    # insertion sort
+    my $i = 0;
+    for( $i = 0; $i <= $#$lr; $i++ ) {
+      $current_pair = $lr->[$i];
 
-   # place into hash on both ids
-   my $map_to = $self->{'to'};
-   my $map_from = $self->{'from'};
+      # possible merge directly after current element 
+      if(( $pair->{'from'}->{'id'} eq $current_pair->{'from'}->{'id'} ) &&
+	 ( $pair->{'ori'} == $current_pair->{'ori'} ) &&
+	 ( $pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
 
-   $self->{"_pair_$map_to"}->{uc($chr_name)} ||= [];
-   push(@{$self->{"_pair_$map_to"}->{uc($chr_name)}},$pair);
+	$last = ( $i == $#$lr );
+	if( $pair->{'ori'} == 1 ) {
+	  # check forward strand merge
+	  if( $pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
+	    # yes its a merge
+	    # possible merge with next element?
+	    if(( ! $last ) &&
+	       ( $pair->{'ori'} == $lr->[$i+1]->{'ori'} ) &&
+	       ( $pair->{'from'}->{'id'} eq $lr->[$i+1]->{'from'}->{'id'} ) &&
+	       ( $pair->{'to'}->{'end'} + 1 == $lr->[$i+1]->{'to'}->{'start'} )) {
+	      # thats a three_some :-
+	      $current_pair->{'to'}->{'end'} = $lr->[$i+1]->{'to'}->{'end'};
+	      $current_pair->{'from'}->{'end'} = $lr->[$i+1]->{'from'}->{'end'};
+	      $del_pair = $lr->[$i+1];
+	      splice( @$lr, $i+1, 1 );
+	      last;
+	    } else {
+	      # normal merge with previous element
+	      $current_pair->{'to'}->{'end'} = $pair->{'to'}->{'end'};
+	      $current_pair->{'from'}->{'end'} = $pair->{'from'}->{'end'};
+	      return 1;
+	    }
+	  }
+	} else {
+	  # check backward strand merge
+	  if( $pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
+	    # yes its a merge
+	    # possible merge with next element?
+	    if(( ! $last ) &&
+	       ( $pair->{'ori'} == $lr->[$i+1]->{'ori'} ) &&
+	       ( $pair->{'from'}->{'id'} eq $lr->[$i+1]->{'from'}->{'id'} ) &&
+	       ( $pair->{'to'}->{'end'} + 1 == $lr->[$i+1]->{'to'}->{'start'} )) {
+	      # thats a three_some :-
+	      $current_pair->{'to'}->{'end'} = $lr->[$i+1]->{'to'}->{'end'};
+	      $current_pair->{'from'}->{'start'} = $lr->[$i+1]->{'from'}->{'start'};
+	      $del_pair = $lr->[$i+1];
+	      splice( @$lr, $i+1, 1 );
+	      last;
+	    } else {
+	      # normal merge with previous element
+	      $current_pair->{'to'}->{'end'} = $pair->{'to'}->{'end'};
+	      $current_pair->{'from'}->{'start'} = $pair->{'from'}->{'start'};
+	      return 1;
+	    }
+	  }
+	}
+      }
+	      
+      
+      $cmp = $pair->{'to'}->{'start'} <=> $current_pair->{'to'}->{'start'};
 
-   $self->{"_pair_$map_from"}->{uc($contig_id)} ||= [];
-   push(@{$self->{"_pair_$map_from"}->{uc($contig_id)}},$pair);
+      # normal case. Insertion in the right place in the list ...
+      if( $cmp == -1 ) {
+	last;
+      } 
 
-   $self->_is_sorted(0);
+      # duplicate or overlapping pair, just reject it
+      if( $cmp == 0 ) {
+	return 0;
+      }
+
+      # check a merge with directly after,
+      # now check a merge pair directly before $lr->[$i]
+      # no threesome check necessary !
+      if(( $pair->{'from'}->{'id'} eq $current_pair->{'from'}->{'id'} ) &&
+	 ( $pair->{'ori'} == $current_pair->{'ori'} ) &&
+	 ( $pair->{'to'}->{'end'} +1 == $current_pair->{'to'}->{'start'} )) {
+	
+	if( $pair->{'ori'} == 1 ) {
+	  # check forward strand merge
+	  if( $pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
+	    # yes its a merge
+	    $current_pair->{'to'}->{'start'} = $pair->{'to'}->{'start'};
+	    $current_pair->{'from'}->{'start'} = $pair->{'from'}->{'start'};
+	    return 1;
+	  }
+	} else {
+	  # check backward strand merge
+	  if( $pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
+	    # yes its a merge
+	    $current_pair->{'to'}->{'start'} = $pair->{'to'}->{'start'};
+	    $current_pair->{'from'}->{'start'} = $pair->{'from'}->{'start'};
+	    return 1;
+	  }
+	}	  
+      }
+    } # end of insertion sort while loop
+
+    # we might have actually merged two pairs in the mapper, thus one pair
+    # has to be deleted, the other was updated to cover the greater area
+    if( $del_pair ) {
+      $lr = $self->{"_pair_$map_from"}->{uc($contig_id)};
+      for( my $j=0; $j <= $#$lr; $j++ ) {
+	if( $lr->[$j] == $del_pair ) {
+	  splice( @$lr, $j, 1 );
+	  last;
+	}
+      }
+      return 1;
+    }      
+
+    # no wired merging happened?
+    if( $pair->{'to'}->{'start'} > $lr->[-1]->{'to'}->{'start'} ) {
+      push( @$lr, $pair );
+    } else {
+      splice( @$lr, $i, 0, $pair );
+    }
+  } else {
+    $self->{"_pair_$map_to"}->{uc($chr_name)} = [ $pair ];
+  }
+
+
+  if( defined( $lr = $self->{"_pair_$map_from"}->{uc($contig_id)} )) {
+    # insertion sort, merging cant happen here any more
+    my $i = 0;
+    for( $i = 0; $i <= $#$lr; $i++ ) {
+      $current_pair = $lr->[$i];
+      $cmp = $pair->{'from'}->{'start'} <=> $current_pair->{'from'}->{'start'};
+
+      # normal case. Insertion in the right place in the list ...
+      if( $cmp == -1 ) {
+	last;
+      } 
+
+      # duplicate or overlapping pair, just reject it
+      if( $cmp == 0 ) {
+	return 0;
+      }
+    }
+
+    if( $pair->{'from'}->{'start'} > $lr->[-1]->{'from'}->{'start'} ) {
+      push( @$lr, $pair );
+    } else {
+      splice( @$lr, $i, 0, $pair );
+    }
+  } else {
+    $self->{"_pair_$map_from"}->{uc($contig_id)} = [ $pair ];
+    return 1;
+  }
 }
 
 
@@ -409,9 +546,6 @@ sub list_pairs{
    }
 
    # perhaps a little paranoid/excessive
-   if( $self->_is_sorted == 0 ) {
-       $self->_sort();
-   }
 
 
    my $hash = $self->{"_pair_$type"};
