@@ -463,12 +463,41 @@ sub load_compara{
 	      "Attribute" => "Bio::EnsEMBL::Compara::DBSQL::AttributeAdaptor",
 	      "Taxon" => "Bio::EnsEMBL::Compara::DBSQL::TaxonAdaptor",
 	      "PeptideAlignFeature" => "Bio::EnsEMBL::Compara::DBSQL::PeptideAlignFeatureAdaptor",
-	      "AnalysisAdaptor" => "Bio::EnsEMBL::DBSQL::AnalysisAdaptor",
-	      "Queen"           => "Bio::EnsEMBL::Hive::Queen",
-	      "AnalysisJob"     => "Bio::EnsEMBL::Hive::DBSQL::AnalysisJobAdaptor",
-	      "AnalysisStats"   => "Bio::EnsEMBL::Hive::DBSQL::AnalysisStatsAdaptor",
-	      "DataflowRule"    => "Bio::EnsEMBL::Hive::DBSQL::DataflowRuleAdaptor",
-	      "SimpleRule"      => "Bio::EnsEMBL::Hive::DBSQL::SimpleRuleAdaptor");
+	      "AnalysisAdaptor" => "Bio::EnsEMBL::DBSQL::AnalysisAdaptor"
+        );
+
+  foreach my $key (keys %pairs){
+
+    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
+  }
+
+}
+
+sub load_hive{
+  my ($class, @args) = @_;
+  require Bio::EnsEMBL::Hive::DBSQL::DBAdaptor;
+
+  my ($species) = rearrange([qw(SPECIES)],@args);
+  my $group = 'hive';
+
+
+  push (@args, '-group');
+  push (@args, $group);
+
+  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(@args);
+
+  my $dba = new_fast  Bio::EnsEMBL::Hive::DBSQL::DBAdaptor('-con' => $dbc);
+
+  Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
+
+  my %pairs =  (
+	      "Analysis"         => "Bio::EnsEMBL::DBSQL::AnalysisAdaptor",
+	      "Queen"            => "Bio::EnsEMBL::Hive::Queen",
+	      "AnalysisJob"      => "Bio::EnsEMBL::Hive::DBSQL::AnalysisJobAdaptor",
+	      "AnalysisStats"    => "Bio::EnsEMBL::Hive::DBSQL::AnalysisStatsAdaptor",
+	      "AnalysisCtrlRule" => "Bio::EnsEMBL::Hive::DBSQL::AnalysisCtrlRuleAdaptor",
+	      "DataflowRule"     => "Bio::EnsEMBL::Hive::DBSQL::DataflowRuleAdaptor",
+	      "SimpleRule"       => "Bio::EnsEMBL::Hive::DBSQL::SimpleRuleAdaptor");
 
   foreach my $key (keys %pairs){
 

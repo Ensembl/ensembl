@@ -50,7 +50,7 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Utils::SeqRegionCache;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-
+use Bio::EnsEMBL::Utils::ConfigRegistry;
 
 =head2 new
 
@@ -120,6 +120,10 @@ sub new {
     elsif($class->isa('Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor')){
       $group = "pipeline";
       $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_pipeline;
+    }
+    elsif($class->isa('Bio::EnsEMBL::Hive::DBSQL::DBAdaptor')){
+      $group = "hive";
+      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_hive;
     }
     elsif($class->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
       $group = "core";
