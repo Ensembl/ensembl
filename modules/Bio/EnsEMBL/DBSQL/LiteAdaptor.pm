@@ -113,7 +113,7 @@ sub fetch_virtualgenscans_start_end {
     };
     return [] if($@);
     my @transcripts;
-    while( my $row = $sth->fetchrow_arrayref() ) {
+    while( my $row = $sth->fetchrow_hashref() ) {
         push @transcripts, {
             'genscan'   => $row->{'name'},
             'chr_name'  => $row->{'chr_name'},
