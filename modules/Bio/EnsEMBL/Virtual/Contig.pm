@@ -1010,7 +1010,8 @@ sub _gene_query{
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->dbID} = $exon;
 	    
-      #      print STDERR "Exon for gene ",$gene->dbID," is on ",$exon->seqname," ",$exon->start,":",$exon->end,"\n";
+     #      print STDERR "Exon for gene ",$gene->dbID," is on ",$exon->seqname," ",$exon->start,":",$exon->end,"\n";
+
 
 	    ### got to treat sticky exons separately.
 	    if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
@@ -1081,7 +1082,6 @@ sub _gene_query{
 		    $exonconverted{$exon->dbID} = 1;
 		}               
 	    }
-         #   print STDERR "Exon for gene is now on ",$gene->dbID," is on ",$exon->seqname," at ",$exon->start,":",$exon->end,"\n";
 
 	}                               # foreach exon
         
@@ -1722,7 +1722,7 @@ sub _reverse_map_Exon {
 	   $rmexon->end($start);
        }
        $rmexon->strand($sstrand);
-       $rmexon->contig_id($scontig->internal_id);
+       $rmexon->contig($scontig);
        $rmexon->seqname($scontig->id);
        $rmexon->attach_seq($scontig->primary_seq);
        $exon_to_return = $rmexon;
@@ -1796,7 +1796,7 @@ sub _reverse_map_Exon {
 	   }
 
 	   $rmexon->strand($isstrand);
-	   $rmexon->contig_id($c->contig->internal_id);
+	   $rmexon->contig($c->contig);
 	   $rmexon->seqname($c->contig->id);
 	   push(@exported_exons,$rmexon);
 
