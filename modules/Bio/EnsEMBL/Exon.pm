@@ -1089,6 +1089,13 @@ sub add_supporting_features {
 sub get_all_supporting_features {
   my $self = shift;
 
+   # if exon is StickyExon, get the evidence from the components
+  if ( $self->isa('Bio::EnsEMBL::StickyExon') && ! $self->{_supporting_evidence} ){
+    foreach my $component ( @{$self->get_all_component_Exons} ){
+      push( @{$self->{_supporting_evidence} }, @{$component->get_all_supporting_features} );
+    }
+  }
+
   if( !defined( $self->{_supporting_evidence} ) 
       || scalar @{$self->{_supporting_evidence}} == 0) {
 
