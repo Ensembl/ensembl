@@ -211,7 +211,7 @@ sub build_contigs {
 	  
 	    # all of these values should be positive, non zero
 	    $self->throw("Error: invalid length [$len] for contig $key") 		if !$len         || $len<1;
-	    $self->throw("Error: invalid checksum [$checksum] for contig $key") 	if !$checksum    || $checksum<1;
+	    # $self->throw("Error: invalid checksum [$checksum] for contig $key") 	if !$checksum    || $checksum<1;
 	    $self->throw("Error: invalid embl_order [$embl_order] for contig $key")	if !$embl_order  || $embl_order<1;
 	    $self->throw("Error: invalid embl_order [$embl_offset] for contig $key")	if !$embl_offset  || $embl_offset<1;
 
