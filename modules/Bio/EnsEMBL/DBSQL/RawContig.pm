@@ -1746,13 +1746,23 @@ sub overlap_distance_cutoff {
     my( $self, $cutoff ) = @_;
     
     if (defined $cutoff) {
-        $self->throw("'$cutoff' is not an positive integer")
-            unless $cutoff =~ /^\d+$/;
+	if( $cutoff !~ /^\d+$/ && $cutoff != -1 ) {
+	    $self->throw("'$cutoff' is not an positive integer");
+	    }
         $self->{'_overlap_distance_cutoff'} = $cutoff;
     }
     return $self->{'_overlap_distance_cutoff'};
 }
 
+
+sub is_golden {
+   my $self = shift;
+
+   if( defined $self->get_left_overlap || defined $self->get_right_overlap ) {
+       return 1;
+   } 
+   return 0;
+}
 
 1;
 
