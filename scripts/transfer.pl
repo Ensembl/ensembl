@@ -150,7 +150,7 @@ if ( $tdbtype =~ 'timdb' ) {
     die "Cannot write to timdb!";
 } else {
     my $locator = "$tmodule/host=$thost;port=$tport;dbname=$tdbname;user=$tdbuser;pass=$tdbpass";
-    print STDERR "Using $locator for todb";
+    print STDERR "Using $locator for todb\n";
     $to_db =  Bio::EnsEMBL::DBLoader->new($locator);
 }
 

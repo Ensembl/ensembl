@@ -75,24 +75,24 @@ CREATE TABLE contig (
 #
 CREATE TABLE contigoverlap (
   dna_a_id              int(10) unsigned NOT NULL,
-  dna_b_id              int(10) unsigned  NOT NULL,
-  source                varchar(40) NOT NULL,
+  dna_b_id              int(10) unsigned NOT NULL,
+  overlap_source        varchar(40) NOT NULL,
   contig_a_position     int(10) unsigned,
   contig_b_position     int(10) unsigned,
   overlap_size          int(10) unsigned,
   overlap_type          enum('right2left','left2right','left2left','right2right'),
   
-  PRIMARY KEY (dna_a_id,dna_b_id,source),
+  PRIMARY KEY (dna_a_id,dna_b_id,overlap_source),
   KEY dna_b_dna_a(dna_b_id,dna_a_id),
-  KEY (source)
+  KEY (overlap_source)
 );
 
 
 CREATE TABLE contig_orientation (
    dna_id      int(10) unsigned NOT NULL,
    orientation int(2),
-   source      varchar(40) NOT NULL,
-   PRIMARY KEY (dna_id,source)
+   orientation_source varchar(40) NOT NULL,
+   PRIMARY KEY (dna_id,orientation_source)
 );
 
 

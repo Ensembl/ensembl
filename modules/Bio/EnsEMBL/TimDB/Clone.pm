@@ -242,7 +242,7 @@ sub build_contigs {
 
     }
 
-    #$self->_make_ContigOverlaps;
+    $self->_make_ContigOverlaps;
     
     print STDERR scalar($self->get_all_Contigs) . " contigs found in clone\n";
 }
@@ -254,7 +254,7 @@ sub _make_ContigOverlaps {
     my $spacing     = $Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING;
     
     return unless defined($clone_order);
-    return;
+    #return;
  
     my @pieces = split(/:/,$clone_order);
 
@@ -311,7 +311,7 @@ sub _make_ContigOverlaps {
 		} else {
 		    $self->throw("Wrong finalorient [$finalorient]");
 		}
-		print(STDERR "Joinging " .$finalcontig->id . "\t" . $contiga->id . "\n");
+		print(STDERR "Joining " .$finalcontig->id . "\t" . $contiga->id . "\n");
 		my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga   => $finalcontig,
 								 -contigb   => $contiga,
 								 -positiona => $positiona,
