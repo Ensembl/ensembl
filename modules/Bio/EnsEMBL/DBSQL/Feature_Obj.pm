@@ -490,7 +490,6 @@ sub get_Analysis {
     my $rv  = $sth->execute;
     my $rh  = $sth->fetchrow_hashref;
 
-
     if ($sth->rows) {
 	my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
 

@@ -8,6 +8,7 @@
 # Dumping data for table 'analysis'
 #
 
+INSERT INTO analysis VALUES (4,'swir','1','blastp','1','blastp','similarity');
 
 #
 # Dumping data for table 'chromosome'
@@ -120,6 +121,9 @@ INSERT INTO gene VALUES ('test_gene',1,'2000-07-03 16:30:06','2000-07-03 16:30:0
 # Dumping data for table 'supporting_feature'
 #
 
+INSERT INTO supporting_feature VALUES (1,'test_exon_1',8,13,1000,1,4,'blastp',8,13,'TR:P78310');
+INSERT INTO supporting_feature VALUES (2,'test_exon_2',18,23,1000,1,4,'blastp',118,123,'TR:P78310');
+INSERT INTO supporting_feature VALUES (3,'test_exon_3',26,28,1000,1,4,'blastp',126,128,'TR:P78310');
 
 #
 # Dumping data for table 'transcript'

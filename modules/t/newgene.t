@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..22\n"; 
+BEGIN { $| = 1; print "1..27\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -237,8 +237,8 @@ gene_obj->get_Exon did not throw an exception!\n";
 } 
 
 #Checking get method (correct use)
-my $gene = $gene_obj->get_Exon('test_exon_1');
-if ($gene->isa('Bio::EnsEMBL::Exon')) {
+$exon = $gene_obj->get_Exon('test_exon_1');
+if ($exon->isa('Bio::EnsEMBL::Exon')) {
     print "ok 21\n";
 }
 else {
@@ -246,18 +246,74 @@ else {
     print STDERR "Could not get the test exon from the database!\n";
 }
 
+$gene_obj->get_supporting_evidence($exon);
+foreach my $feature ($exon->each_Supporting_Feature){
+    if ($feature->analysis->id == 4) {
+	print "ok 22\n";
+    }
+    else {
+	print "not ok 22\n";
+    }
+}
+
+eval{
+my $trans = $gene_obj->get_Transcript('these_tests_are_boring_to_write');
+};
+if ($@) {
+    print "ok 23\n";
+}
+else {
+    print "not ok 23\n";
+    print STDERR "Trying to get a non-existing transcript with 
+gene_obj->get_Transcript did not throw an exception!\n";
+} 
+
+#Checking get method (correct use)
+my $gene = $gene_obj->get_Transcript('test_transcript_1');
+if ($gene->isa('Bio::EnsEMBL::Transcript')) {
+    print "ok 24\n";
+}
+else {
+    print "not ok 24\n";
+    print STDERR "Could not get the test transcript from the database!\n";
+}
+
+eval{
+    my $translation = $gene_obj->get_Translation('these_tests_are_boring_to_write');
+};
+if ($@) {
+    print "ok 25\n";
+}
+else {
+    print "not ok 25\n";
+    print STDERR "Trying to get a non-existing transcript with 
+gene_obj->get_Transcript did not throw an exception!\n";
+} 
+
+#Checking get method (correct use)
+my $gene = $gene_obj->get_Translation('test_translation_1');
+if ($gene->isa('Bio::EnsEMBL::Translation')) {
+    print "ok 26\n";
+}
+else {
+    print "not ok 26\n";
+    print STDERR "Could not get the test translation from the database!\n";
+}
 
 $gene_obj->delete($gene->id);
+#Checking if the gene has been really deleted
 eval {
     my $gene = $gene_obj->get_Gene('test_gene');
 };
 
 if ($@) {
-    print "ok 22\n";
+    print "ok 27\n";
 }
 else {
-    print "not ok 22\n";
+    print "not ok 27\n";
+    print STDERR "Gene still present after deleting!\n";
 } 
+
 
 #Methods still needed to test:
 
@@ -266,10 +322,7 @@ else {
 
 #$gene_obj->get_geneids_by_hids;
 #$gene_obj->get_Gene_by_DBLink; 
-#$gene_obj->get_Exon;
 #$gene_obj->get_supporting_evidence;
-#$gene_obj->get_Transcript;
-#$gene_obj->get_Translation;
 #$gene_obj->get_Virtual_Contig;
 #$gene_obj->get_Transcript_in_VC_coordinates;
 #$gene_obj->write;

@@ -838,7 +838,6 @@ sub get_supporting_evidence {
 
 	$instring = $instring . $exon->id . "','";
     }
-    
     $instring = substr($instring,0,-2);
    
     my $sth = $self->_db_obj->prepare("select * from supporting_feature where exon in (" . $instring . ")");
@@ -854,7 +853,6 @@ sub get_supporting_evidence {
 					      -feature2 => $f2);
 
 	my $exon = $rowhash->{exon};
-
 #	$f1->seqname($rowhash->{contig});
 	$f1->seqname("Supporting_feature");
 	$f1->start  ($rowhash->{seq_start});
@@ -873,7 +871,7 @@ sub get_supporting_evidence {
 	$f2->score  ($rowhash->{score});
 
 	my $analysisid = $rowhash->{analysis};
-
+	
 	if ($anahash{$analysisid}) {
 	    $f->analysis($anahash{$analysisid});
 
