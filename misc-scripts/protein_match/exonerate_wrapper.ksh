@@ -4,10 +4,10 @@
 #
 # Author:  Andreas Kahari, <andreas.kahari@ebi.ac.uk>
 #
-# This is a wrapper around exonerate that produces a comma separated file
-# of alignment information, including cigar lines and separate percentage
-# of identity for query and target sequences.  Run with -h or -? for
-# usage information.
+# This is a wrapper around exonerate that produces a comma
+# separated file of alignment information, including cigar lines
+# and separate percentage of identity for query and target
+# sequences.  Run with -h or -? for usage information.
 #
 #----------------------------------------------------------------------
 #
@@ -63,10 +63,6 @@ function usage
 	EOT
 }
 
-e_mod='affine:local'
-
-e_fmt='%qi\t%qal\t%ql\t%qab\t%qae\t%ti\t%tal\t%tl\t%tab\t%tae\t%p\t%s\t%C\n'
-
 while getopts 'h?e:q:t:v' opt; do
     case $opt in
 	e) e_cmd=$OPTARG ;;
@@ -85,18 +81,22 @@ elif [[ ! -r $t_fa ]]; then
     print -u2 "Can't find or read file '$t_fa'"
     exit 1
 elif [[ ! -x $e_cmd && ! -x $(whence $e_cmd) ]]; then
-    print -u2 "Can't find or execute '$e_cmd'"
+    print -u2 "Can't find or execute command '$e_cmd'"
     exit 1
 fi
+
+e_mod='affine:local'
+e_fmt='%qi\t%qal\t%ql\t%qab\t%qae\t%ti\t%tal\t%tl\t%tab\t%tae\t%p\t%s\t%C\n'
 
 e_opt="--showalignment no --showsugar no --showcigar no --showvulgar no 
        --model $e_mod --ryo $e_fmt -q $q_fa -t $t_fa $@"
 
 nice -n 19 $e_cmd $e_opt |
 perl -ne '
-    # Perl script to calculate the percentage of identity.
-    # Takes tab-delimited list in specific format from exonerate as
-    # input on stdin and writes comma-separated output to stdout.
+    # Perl script to calculate the percentage of identity
+    # and reformat cigar lines.  Takes tab-delimited list in
+    # specific format from exonerate as input on stdin and
+    # writes comma-separated output to stdout.
 
     next if (/^Message:/ || /^--/);
     chomp;
@@ -108,8 +108,8 @@ perl -ne '
      $p,  $s,   $C) = split /\t/;
 
     # Calculate the percent of identity.
-    $qp = 100 * $qal*($p/100)/$ql;
-    $tp = 100 * $tal*($p/100)/$tl;
+    $qp = $qal * $p / $ql;
+    $tp = $tal * $p / $tl;
 
     # Reformat the cigar line.
     $C =~ s/([MDI]+) ([0-9]+) ?/$2$1/g;	# flip
@@ -118,5 +118,6 @@ perl -ne '
 
     printf "\"%s\",%g,%d,%d,\"%s\",%g,%d,%d,%d,\"%s\"\n",
 	$qi, $qp, $qab, $qae,
-	$ti, $tp, $tab, $tae, $s, $C;
+	$ti, $tp, $tab, $tae,
+	$s, $C;
 '
