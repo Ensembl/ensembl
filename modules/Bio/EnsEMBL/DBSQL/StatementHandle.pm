@@ -30,6 +30,7 @@ use strict;
 use Bio::EnsEMBL::Utils::Exception qw(warning);
 
 use DBD::mysql;
+use DBI;
 
 @ISA = qw(DBI::st);
 
@@ -53,7 +54,9 @@ sub DESTROY {
   my $dbc = $obj->dbc;
   $obj->dbc(undef);
 
-  DBI::st::DESTROY($obj);
+  # rebless into DBI::st so that superclass destroy method is called
+  # if it exists (it does not exist in all DBI versions)
+  bless($obj, 'DBI::st');
 
   # The count for the number of kids is decremented only after this
   # function is complete. Disconnect if there is 1 kid (this one) remaining.
