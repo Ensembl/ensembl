@@ -1289,8 +1289,8 @@ sub get_all_PredictionFeatures {
    my %analhash;
 
    # make the SQL query
-   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid ". 
-       "from feature f where contig = $id and name = 'genscan' order by f.strand*f.seq_start";
+   my $query = "select id, seq_start, seq_end, strand, score, evalue, perc_id, phase, end_phase, analysis, hid ". 
+       "from feature f where contig = $id and name = 'genscan' order by strand*seq_start";
 
    my $sth = $self->dbobj->prepare($query);
    
@@ -1402,8 +1402,10 @@ sub get_all_PredictionFeatures {
 =cut
 
 
-sub get_PredictionFeature {
-    my ( $self, $prediction_feat ) = @_;
+sub get_all_PredictionFeatures_by_analysis_id {
+    my ( $self, $ana_id ) = @_;
+
+    $self->throw("No analysis_id given") unless $ana_id;
 
     my @array;
 
@@ -1416,16 +1418,34 @@ sub get_PredictionFeature {
 	
 
     # make the SQL query
-    my $query =
-		"select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid " . "from feature f where contig = $id and name = ? order by f.strand*f.seq_start";
+    my $query = "
+        SELECT id
+          , seq_start
+          , seq_end
+          , strand
+          , name
+          , score
+          , evalue
+          , perc_id
+          , phase
+          , end_phase
+          , analysis
+          , hid
+        FROM feature
+        WHERE contig = $id
+          AND analysis = $ana_id
+        ORDER BY strand * seq_start";
+
+    warn $query;
 
     my $sth = $self->dbobj->prepare($query);
 
-    $sth->execute($prediction_feat);
+    $sth->execute;
 	
 		
-	my (
+    my (
         $fid,       $start,      $end,     $strand,
+        $prediction_feat,
         $score,     $evalue,     $perc_id, $phase,
         $end_phase, $analysisid, $hid
     );
@@ -1433,6 +1453,7 @@ sub get_PredictionFeature {
     # bind the columns
     $sth->bind_columns(
         undef,    \$fid,       \$start,      \$end,
+        \$prediction_feat,
         \$strand, \$score,     \$evalue,     \$perc_id,
         \$phase,  \$end_phase, \$analysisid, \$hid
     );
