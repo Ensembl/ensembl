@@ -236,28 +236,24 @@ sub store {
 
   my $self = shift;
   my $analysis = shift;
-  
+
   if( !defined $analysis || !ref $analysis) {
-    $self->throw("called store on AnalysisAdaptor with a [$analysis]");
+    throw("called store on AnalysisAdaptor with a [$analysis]");
   }
 
-  $analysis->dbID && $analysis->adaptor && ( $analysis->adaptor() == $self ) && 
-    return $analysis->dbID;
-
-
+  #if this analysis has already been stored in this db, just update the adaptor
+  #and dbID of the object and return the dbID
   my $dbID;
-
   if( $dbID = $self->exists( $analysis )) {
     $analysis->adaptor( $self );
     $analysis->dbID( $dbID );
     return $dbID;
   }
- 
+
   if( !defined $analysis->logic_name ) {
-    $self->throw("Must have a logic name on the analysis object");
+    throw("Must have a logic name on the analysis object");
   }
 
- 
   if($analysis->created ) {
     my $sth = $self->prepare( q{
       INSERT INTO analysis
@@ -339,7 +335,7 @@ sub store {
 
   $analysis->adaptor( $self );
   $analysis->dbID( $dbID );
-  
+
   return $dbID;
 }
 
@@ -360,7 +356,7 @@ sub update {
   my ($self, $analysis) = @_;
   
   if (!defined $analysis || !ref $analysis) {
-    $self->throw("called update on AnalysisAdaptor with a [$analysis]");
+    throw("called update on AnalysisAdaptor with a [$analysis]");
   }
 
   $analysis->dbID && ($analysis->adaptor() == $self) or
@@ -408,7 +404,7 @@ sub remove {
   my $dbID;
   
   if (!defined $analysis || !ref $analysis) {
-    $self->throw("called remove on AnalysisAdaptor with a [$analysis]");
+    throw("called remove on AnalysisAdaptor with a [$analysis]");
   }
 
   unless ($dbID = $self->exists($analysis)) {
@@ -438,22 +434,16 @@ sub remove {
 sub exists {
   my ($self,$anal) = @_;
 
-  unless($anal->isa("Bio::EnsEMBL::Analysis")) {
-    $self->throw("Object is not a Bio::EnsEMBL::Analysis");
-  } 
-  
-  
-  # objects with already have this adaptor are store here.
-  if( $anal->can("adaptor") && defined $anal->adaptor &&
-      $anal->adaptor == $self ) {
-    if (my $id = $anal->dbID) {
-      return $id;
-    }
-    else {
-      $self->throw ("analysis does not have an analysisId");
-    }
+  if(!ref($anal) || !$anal->isa("Bio::EnsEMBL::Analysis")) {
+    throw("Object is not a Bio::EnsEMBL::Analysis");
   }
-  
+
+  #if this analysis is stored in this db already return its dbID
+  if($anal->is_stored($self->db())) {
+    return $anal->dbID();
+  }
+
+  #this analysis object is not stored but one exactly like it may have been
   foreach my $cacheId (keys %{$self->{_cache}}) {
     if ($self->{_cache}->{$cacheId}->compare($anal) >= 0) {
       # $anal->dbID( $cacheId );
@@ -461,6 +451,8 @@ sub exists {
       return $cacheId;
     }
   }
+
+  #no analysis like this one exists in the database
   return undef;
 }
 
@@ -475,7 +467,7 @@ sub exists {
   Caller     : Bio::EnsEMBL::DBSQL::AnalsisAdaptor::fetch_* methods
 
 =cut
-  
+
 sub _objFromHashref {
   my $self = shift;
   my $rowHash = shift;
@@ -497,30 +489,10 @@ sub _objFromHashref {
       -created         => $rowHash->{created},
       -logic_name      => $rowHash->{logic_name}
     );
-  
+
   return $analysis;
 }
 
-
-=head2 db
-
-  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor $db
-               the database used by this adaptor.
-  Example    : my $db = $analysis_adaptor->db()
-  Description: Getter/Setter for the database this adaptor uses internally
-               to fetch and store database objects.
-  Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
-  Exceptions : none
-  Caller     : BaseAdaptor::new, general
-
-=cut
-
-sub db {
-  my ( $self, $arg )  = @_;
-  ( defined $arg ) &&
-    ($self->{_db} = $arg);
-  $self->{_db};;
-}
 
 
 1;
