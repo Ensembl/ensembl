@@ -10,7 +10,7 @@ BEGIN { $| = 1;
 
 use MultiTestDB;
 
-our $verbose = 1;
+our $verbose = 0;
 
 my $multi = MultiTestDB->new;
 
@@ -54,8 +54,8 @@ print_features($features);
 my $feature = $mfa->fetch_by_dbID(1);
 debug('--- fetch_by_dbID ---');
 ok($feature->dbID() == 1);
-ok($feature->start() == 29307627);
-ok($feature->end() == 29541965);
+ok($feature->start() == 61140848);
+ok($feature->end()   == 62842997);
 ok($feature->strand() == 1);
 print_features([$feature]);
 
