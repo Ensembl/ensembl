@@ -111,7 +111,9 @@ sub map_coordinates_to_assembly {
     }
 
     unless ($start =~ /^\d+$/) {
+      unless($start =~ /^-\d+$/){
         $self->throw("Expecting integer for contig start coord, but got '$start'");
+      }
     }
 
     unless ($end =~ /^\d+$/) {
@@ -153,14 +155,16 @@ sub map_coordinates_to_assembly {
 
 sub map_coordinates_to_rawcontig {
     my ($self, $chr_name, $start, $end, $strand) = @_;
-
+#    print STDERR "have name ".$chr_name." start ".$start." end ".$end." strand ".$strand."\n";
     unless ($chr_name =~ /^\S+$/) {
         $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
     }
 
-   # unless ($start =~ /^\d+$/) {
-   #     $self->throw("Expecting integer for chromosome start, but got '$start'");
-   # }
+    unless ($start =~ /^\d+$/) {
+      unless($start =~ /^-\d+$/){
+	$self->throw("Expecting integer for contig start coord, but got '$start'");
+      }
+    }
 
     unless ($end =~ /^\d+$/) {
         $self->throw("Expecting integer for chromosome end, but got '$end'");
@@ -200,7 +204,9 @@ sub list_contig_ids {
    }
 
    unless ($start =~ /^\d+$/) {
-      $self->throw("Expecting integer for chromosome start, but got '$start'");
+     unless ($start =~ /^-\d+$/) {
+       self->throw("Expecting integer for chromosome start, but got '$start'");
+     }
    }
 
    unless ($end =~ /^\d+$/) {
@@ -251,9 +257,11 @@ sub register_region {
       $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
    }
 
-#   unless ($start =~ /^\d+$/) {
-#      $self->throw("Expecting integer for chromosome start, but got '$start'");
-#   }
+   unless ($start =~ /^\d+$/) {
+       unless ($start =~ /^-\d+$/) {
+	 $self->throw("Expecting integer for chromosome start, but got '$start'");
+       }
+   }
 
    unless ($end =~ /^\d+$/) {
       $self->throw("Expecting integer for chromosome end, but got '$end'");

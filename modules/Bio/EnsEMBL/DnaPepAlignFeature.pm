@@ -84,8 +84,10 @@ These ungapped pieces are made up into the following string (called a cigar stri
 
 i.e. seqstart1,seqstart2,length: etc
 
+'
 
 =cut 
+
 
 
 use Bio::EnsEMBL::BaseAlignFeature;
@@ -122,7 +124,7 @@ use strict;
 
 
 sub _parse_cigar {
-  my ($self) = @_;
+  my ($self) = @_;  
   return $self->_generic_parse_cigar( 3, 1 );
 }
 
@@ -161,8 +163,81 @@ sub _parse_cigar {
 
 sub _parse_features {
   my ($self,$features) = @_;
-
   $self->_generic_parse_features( $features, 3, 1 );
+}
+
+
+
+
+sub transform{
+  my ($self, $slice) = @_;
+
+  if( ! defined $slice ) {
+    #Since slice arg is not defined -  we want raw contig coords
+    if(( defined  $self->contig ) && 
+       ( $self->contig->isa( "Bio::EnsEMBL::RawContig" )) ) {
+      print STDERR "DnaPepAlignFeature::tranform, you are already apparently in rawcontig coords so why try to transform to them\n";
+      #we are already in rawcontig coords, nothing needs to be done
+      return $self;
+    } else {
+      #transform to raw_contig coords from Slice coords
+      return $self->_transform_to_rawcontig();
+    }
+  }
+
+  if( defined $self->contig ) {  
+    if($self->contig->isa( "Bio::EnsEMBL::RawContig" ))  {
+      #transform to slice coords from raw contig coords
+      return $self->_transform_to_slice( $slice );
+    } elsif($self->contig->isa( "Bio::EnsEMBL::Slice" )) {
+      #transform to slice coords from other slice coords
+      return $self->_transform_between_slices( $slice );
+    } else {
+      #Unknown contig type - throw an exception
+      return $self->throw("Exon's 'contig' is of unknown type " 
+		   . $self->contig() . " - cannot transform to Slice coords");
+    }
+  } else {
+    #Can't convert to slice coords without a contig to work with
+    return $self->throw("Exon's contig is not defined - cannot transform to " .
+			"Slice coords");
+  }
+}
+
+sub _transform_to_slice{
+  my ($self, $slice) = @_;
+
+  $self->throw("_transform_to_slice not yet implemented in ".$self." complain to arne\n");
+  #return $self->_generic_transform_to_slice($slice, 1, 1);
+}
+
+sub _transform_to_rawcontig{
+  my ($self, $rc) = @_;
+  
+  return $self->_generic_transform_to_rawcontig($rc, 3, 1);
+}
+
+sub _transform_between_slices{
+  my ($self, $to_slice) = @_;
+  
+  $self->throw("_transform_between_slices not yet implemented in ".$self." complain to arne\n");
+   #return $self->_generic_transform_to_slice($to_slice, 1, 1);
+
+}
+
+sub _create_new_feature{
+  my ($self, $query_unit, $hit_unit) = @_;
+
+  my $new_feature;
+  my $f1 = new Bio::EnsEMBL::SeqFeature();
+  my $f2 = new Bio::EnsEMBL::SeqFeature();
+ 
+  $new_feature = Bio::EnsEMBL::DnaPepAlignFeature->new( -cigar_string => $self->cigar_string, 
+							-feature1 => $f1, 
+							-feature2 => $f2);
+ 
+
+  return $new_feature;
 }
 
 1;

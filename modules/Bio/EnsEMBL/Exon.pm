@@ -584,94 +584,13 @@ sub _transform_features_to_rawcontig {
     return;
   }
   
-  my $global_start = $self->contig->chr_start();
-  my $mapper = $self->contig()->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
-    ( $self->contig()->assembly_type() );
   my @supporting_features = $self->each_Supporting_Feature;
-  my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
-
   my @remapped_sf;
-  
   foreach my $sf(@supporting_features) {
-    #print STDERR "remapping ".$sf->gffstring."\n";
-    my @remapped =   $mapper->map_coordinates_to_rawcontig
-      (
-       $self->contig()->chr_name(),
-       $sf->start()+$global_start-1,
-       $sf->end()+$global_start-1,
-       $sf->strand()*$self->contig()->strand()
-      );
-
-    if( ! @remapped ) {
-      $self->warn( "supporting feature couldnt map" );
-    }
+    my @new_sf = $sf->transform();
+    #print STDERR "have ".$new_sf."\n";
+    push(@remapped_sf, @new_sf);
     
-    if(scalar( @remapped ) > 1 ) {
-      #print STDERR "maps to multiple coordinate sets\n";
-      if($sf->strand == -1){
-	@remapped = reverse(@remapped);
-      }
-      my $hitstart = $sf->hstart;
-      # and then all the component exons ...
-      SPLIT: for( my $i=0; $i <= $#remapped; $i++ ) {
-	  #print STDERR "coordinates ".$i." ".$remapped[$i]->start." ".$remapped[$i]->end." ".$remapped[$i]->strand." ".$remapped[$i]->id."\n";
-	  my $rawContig = $rcAdaptor->fetch_by_dbID( $remapped[$i]->id() );
-	  my $f1 = new Bio::EnsEMBL::SeqFeature;
-	  my $f2 = new Bio::EnsEMBL::SeqFeature;
-	  my $new_sf = Bio::EnsEMBL::FeaturePair->new( -feature1 => $f1,
-						       -feature2 => $f2,
-						     );
-	  
-	  if($remapped[$i]->isa("Bio::EnsEMBL::Mapper::Gap")){
-	    $self->warn("piece of evidence lies on gap\n");
-	    next SPLIT;
-	  }
-	  
-	  $new_sf->start( $remapped[$i]->start() );
-	  $new_sf->end( $remapped[$i]->end() );
-	  $new_sf->strand( $remapped[$i]->strand() );
-	  $new_sf->score($sf->feature1->score);
-	  $new_sf->feature1->analysis($sf->feature1->analysis);
-	  $new_sf->hstart($sf->hstart);
-	  $new_sf->hend($sf->hend);
-	  $new_sf->hstrand( $sf->feature2->strand() );
-	  $new_sf->hscore($sf->feature2->score);
-	  $new_sf->feature2->analysis($sf->feature2->analysis);
-	  # attaching seq ?
-	  $new_sf->attach_seq( $rawContig );
-	  $new_sf->feature1->seqname($rawContig->dbID);
-	  $new_sf->feature2->seqname($sf->feature2->seqname);
-	  #print STDERR "adding ".$i." ".$new_sf->gffstring."\n";
-	  push(@remapped_sf, $new_sf);
-	}
-      
-    } else {
-      #print STDERR "coordinates  ".$remapped[0]->start." ".$remapped[0]->end." ".$remapped[0]->strand." ".$remapped[0]->id."\n";
-      my $rawContig = $rcAdaptor->fetch_by_dbID( $remapped[0]->id() );
-      
-      my $f1 = new Bio::EnsEMBL::SeqFeature;
-      my $f2 = new Bio::EnsEMBL::SeqFeature;
-      my $new_sf = Bio::EnsEMBL::FeaturePair->new( -feature1 => $f1,
-						   -feature2 => $f2,
-						   );
-
-      $new_sf->start( $remapped[0]->start() );
-      $new_sf->end( $remapped[0]->end() );
-      $new_sf->strand( $remapped[0]->strand() );
-      $new_sf->score($sf->feature1->score);
-      $new_sf->feature1->analysis($sf->feature1->analysis);
-      $new_sf->hstart( $sf->feature2->start() );
-      $new_sf->hend( $sf->feature2->end() );
-      $new_sf->hstrand( $sf->feature2->strand() );
-      $new_sf->hscore($sf->feature2->score);
-      $new_sf->feature2->analysis($sf->feature2->analysis);
-      # attaching seq ?
-      $new_sf->attach_seq( $rawContig );
-      $new_sf->feature1->seqname($rawContig->dbID);
-      $new_sf->feature2->seqname($sf->feature2->seqname);
-      
-      push(@remapped_sf, $new_sf);
-    }
   }
 
   $self->{'_supporting_evidence'} = \@remapped_sf;
@@ -1126,6 +1045,7 @@ sub add_Supporting_Feature {
       }
     }
     if ( $found == 0 ){
+      #print STDERR "adding ".$feature." to evidence array\n";
       push(@{$self->{_supporting_evidence}},$feature);
     }
 }
@@ -1152,7 +1072,10 @@ sub each_Supporting_Feature {
 	$self->adaptor->fetch_evidence_by_Exon( $self );
       }
     }
-
+    #print STDERR "returning ".@{$self->{_supporting_evidence}}." pieces of evidence\n";
+    #foreach my $sf(@{$self->{_supporting_evidence}}){
+    #  print STDERR "have ".$sf." evidence to return\n";
+    #}
     return @{$self->{_supporting_evidence}};
 }
 

@@ -813,6 +813,7 @@ sub set_featurepair_fields {
    my ($self, $start, $end, $strand, $score, $seqname, $hstart, $hend,
         $hstrand, $hscore, $hseqname, $analysis, $e_value, $perc_id, 
         $phase, $end_phase) = @_;
+   #print STDERR "start ".$start." end ".$end." strand ".$strand." score ".$score." seqname ".$seqname." hstart ".$hstart." hend ".$hend." hstrand ".$hstrand." hscore ".$hscore." hseqname ".$hseqname." analysis ".$analysis." e_vlaue ".$e_value." pid ".$perc_id." phase ".$phase." end phase ".$end_phase."\n";
    $self->throw('interface fault') if (@_ < 12 or @_ > 16);
 
    $self->start($start);
@@ -837,7 +838,7 @@ sub set_all_fields{
         $hstrand,$hscore, $hsource,$hprimary,$hseqname, $e_value, $perc_id, 
         $phase, $end_phase) = @_;
     
-    $self->warn("set_all_fields deprecated, use set_featurepair_fields instead\n- note this is not just a change of name, set_featurepair_fields\nexpects different arguments!");
+    $self->warn("set_all_fields deprecated, use set_featurepair_fields instead\n- note this is not just a change of name, set_featurepair_fields\nexpects different arguments! $!");
 
     $self->start($start);
     $self->end($end);
@@ -1047,26 +1048,7 @@ sub phase {
     return $self->feature1->phase();
 }
 
-=head2 cigar
 
- Title   : cigar
- Usage   : $obj->cigar($newval)
- Function: 
- Example : 
- Returns : value of cigar
- Args    : newvalue (optional)
-
-
-=cut
-
-sub cigar{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'cigar'} = $value;
-    }
-    return $self->{'cigar'};
-
-}
 
 =head2 end_phase
 

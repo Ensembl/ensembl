@@ -18,7 +18,7 @@
                                                   -hstart  => 200,
                                                   -hend    => 220,
                                                   -analysis    => $analysis,
-                                                  -cigar_string => '100,200,3:109,203,12');
+                                                  -cigar_string => '');
 
   # Alternatively if you have an array of ungapped features
 
@@ -101,7 +101,9 @@ sub new {
     my $self = $class->SUPER::new(@args);
     
     my ($cigar_string,$features) = $self->_rearrange([qw(CIGAR_STRING FEATURES)],
+
                                                      @args);
+
     #print STDERR "@args\n";
     if (defined($cigar_string) && defined($features)) {
       $self->throw("Can't input cigar_string and an array of features.");
@@ -346,8 +348,8 @@ sub _generic_parse_cigar {
 
   
   my @pieces = ( $string =~ /(\d*[MDI])/g );
-  #print ::LOG "cigar: ",join ( ",", @pieces ),"\n";
-
+  #print "cigar: ",join ( ",", @pieces ),"\n";
+  
   my @features;
   my $strand1 = $self->strand() || 1;
   my $strand2 = $self->hstrand() || 1;
@@ -504,7 +506,7 @@ sub _generic_parse_cigar {
 
 sub _generic_parse_features {
   my ($self,$features, $query_unit, $hit_unit ) = @_;
-
+#  print STDERR "calling generic parse features\n";
   if (ref($features) ne "ARRAY") {
     $self->throw("features must be an array reference not a [" . ref($features) . "]");
   }
@@ -742,11 +744,161 @@ sub _generic_parse_features {
   $feature2->validate;
   $self->feature1($feature1);
   $self->feature2($feature2);
-
+  #print "have created cigar ".$string."\n";
   $self->cigar_string($string);
 
   #print STDERR "\n\n";
   #print ::LOG "Exit with cigar $string.\n";
+}
+
+
+sub _generic_transform_to_slice{
+  my ($self, $slice, $query_unit, $hit_unit) = @_;
+
+  
+}
+
+sub _generic_transform_to_rawcontig{
+  my ($self, $rc, $query_unit, $hit_unit) = @_;
+
+  if(!$self->contig){
+    $self->throw("can't transform coordinates of ".$self." without some sort of contig defined");
+  }
+  my $mapper = $self->contig->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type( $self->contig()->assembly_type() );
+ 
+  my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
+  my $global_start = $self->contig->chr_start();
+  my @out;
+  my @mapped = $mapper->map_coordinates_to_rawcontig
+    (
+     $self->contig()->chr_name(),
+     $self->start()+$global_start-1,
+     $self->end()+$global_start-1,
+     $self->strand()*$self->contig()->strand()
+    );
+
+  if( ! @mapped ) {
+    $self->throw( "couldn't map ".$self."\n" );
+    return $self;
+  }
+  if( scalar( @mapped ) > 1 ) {
+  SPLIT: for( my $i=0; $i <= $#mapped; $i++ ) {
+      my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[$i]->id() );
+      my $new_feature = $self->_create_new_feature($query_unit, $hit_unit);
+      if($mapped[$i]->isa("Bio::EnsEMBL::Mapper::Gap")){
+            $self->warn("piece of evidence lies on gap\n");
+            next SPLIT;
+          }
+      $new_feature->start($mapped[$i]->start);
+      $new_feature->end($mapped[$i]->end);
+      $new_feature->strand($mapped[$i]->strand);
+      $new_feature->seqname($mapped[$i]->id);
+      $new_feature->score($self->score);
+      $new_feature->percent_id($self->percent_id);
+      $new_feature->p_value($self->p_value);
+      $new_feature->hstart($self->hstart);
+      $new_feature->hend($self->hend);
+      $new_feature->hstrand($self->hstrand);
+      $new_feature->hseqname($self->hseqname);
+      $new_feature->hscore($self->score);
+      $new_feature->analysis($self->analysis);
+      $new_feature->attach_seq($rawContig);
+    
+      push(@out, $new_feature)
+    }
+  }else{
+    if($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+      $self->warn("piece of evidence lies on gap\n");
+      return;
+    }
+    my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[0]->id() );
+    my $new_feature = $self->_create_new_feature($query_unit, $hit_unit);
+    $new_feature->start($mapped[0]->start);
+    $new_feature->end($mapped[0]->end);
+    $new_feature->strand($mapped[0]->strand);
+    $new_feature->seqname($mapped[0]->id);
+    $new_feature->score($self->score);
+    $new_feature->percent_id($self->percent_id);
+    $new_feature->p_value($self->p_value);
+    $new_feature->hstart($self->hstart);
+    $new_feature->hend($self->hend);
+    $new_feature->hstrand($self->hstrand);
+    $new_feature->hseqname($self->hseqname);
+    $new_feature->hscore($self->score);
+    $new_feature->analysis($self->analysis);
+    $new_feature->attach_seq($rawContig);
+
+    push(@out, $new_feature);
+  }
+
+  return @out;
+
+}
+
+
+
+
+sub _generic_transform_between_slices{
+  my ($self, $to_slice, $query_unit, $hit_unit) = @_;
+
+  
+}
+
+sub dbID{
+  my ($self, $arg) = @_;
+
+  if($arg){
+    $self->{_database_id} = $arg;
+  }
+
+  return $self->{_database_id}; 
+
+}
+
+
+=head2 adaptor
+
+ Title   : adaptor
+ Usage   : $obj->adaptor($newval)
+ Function: 
+ Returns : value of adaptor
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub adaptor {
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'adaptor'} = $value;
+    }
+    return $self->{'adaptor'};
+
+}
+
+
+=head2 contig
+
+ Title   : contig
+ Usage   : 
+ Function: stores a RawContig or Slice
+ Returns : 
+ Args    : 
+
+
+=cut
+
+sub contig {
+  my $self = shift;
+  if( @_ ) {
+    my $value = shift;
+    #print "setting exons contig to ".$value." \n";
+    $self->attach_seq($value);
+  }
+  else {
+    return $self->entire_seq();
+  }
 }
 
 1;
