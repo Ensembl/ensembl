@@ -2574,30 +2574,59 @@ sub _fill_cext_SimilarityFeature_cache{
 sub get_all_coding_Snps{
    my ($self) = @_;
    my @snps;
-   my %hash;
+   my %csnp;
+   my %genestr;
 
    my $glob_start=$self->_global_start;
    my $glob_end=$self->_global_end;
    my $chr_name=$self->_chr_name;
    
-   my $query = "select e.exon, s.refsnpid, s.snp_chrom_start from ensembl_lite100.gene_exon as e, ensembl_lite100.gene_snp as s where e.gene_chrom_start >= $glob_start and e.gene_chrom_end <= $glob_end and e.chr_name = '$chr_name' and e.gene = s.gene and s.snp_chrom_start>e.exon_chrom_start and s.snp_chrom_start<e.exon_chrom_end";
+   my $query = "select e.contig, e.gene_name, e.exon, s.refsnpid, s.snp_chrom_start from ensembl_lite100.gene_exon as e, ensembl_lite100.gene_snp as s where e.gene_chrom_start >= $glob_start and e.gene_chrom_end <= $glob_end and e.chr_name = '$chr_name' and e.gene = s.gene and s.snp_chrom_start>e.exon_chrom_start and s.snp_chrom_start<e.exon_chrom_end";
 
    my $sth = $self->dbobj->prepare($query);
    $sth->execute;
 
    while( my $rowhash = $sth->fetchrow_hashref) {
+       my $contig_id = $rowhash->{'contig'};
+       my $gene_id = $rowhash->{'gene_name'};
        my $ex_id = $rowhash->{'exon'};
        my $start = $rowhash->{'snp_chrom_start'};
        my $sn_id = $rowhash->{'refsnpid'};
+       my $strand = $rowhash->{'exon_chrom_strand'};
        
-       #push(@{$hash{$sn_id}},$sn_id);
-       push(@{$hash{$sn_id}},$start);
-       push(@{$hash{$sn_id}},$ex_id);
-              
+       $csnp{$sn_id}->{'contig_id'} = $contig_id;
+       $csnp{$sn_id}->{'gene_id'} = $gene_id;
+       $csnp{$sn_id}->{'exon'} = $ex_id;
+       $csnp{$sn_id}->{'snp_id'} = $sn_id;
+       $csnp{$sn_id}->{'start'} = $start;
+       $csnp{$sn_id}->{'strand'} = $strand;
+   
    } 
-   return %hash;
+
+   my $query2 = "select gene_name,exon, exon_chrom_start, exon_chrom_end, rank, exon_chrom_strand from ensembl_lite100.gene_exon as e where e.gene_chrom_start >= $glob_start and e.gene_chrom_end <= $glob_end";
+
+   my $sth2 = $self->dbobj->prepare($query2);
+   $sth2->execute;
+
+   while( my $rowhash2 = $sth2->fetchrow_hashref) {
+       my $geneid = $rowhash2->{'gene_name'};
+       my $exonid = $rowhash2->{'exon'};
+       my $exstart = $rowhash2->{'exon_chrom_start'};
+       my $exend = $rowhash2->{'exon_chrom_end'};
+       my $rank = $rowhash2->{'rank'};
+       my $strand = $rowhash2->{'exon_chrom_strand'};
+
+       $genestr{$exonid}->{'gene_id'} = $geneid;
+       $genestr{$exonid}->{'start'} = $exstart;
+        $genestr{$exonid}->{'end'} = $exend;
+       $genestr{$exonid}->{'rank'} = $rank;
+       $genestr{$exonid}->{'strand'} = $strand;
+   }
+      
+   return (\%csnp,\%genestr);
 }
 
 
 
 1;
+
