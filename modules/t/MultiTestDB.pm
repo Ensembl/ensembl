@@ -1,4 +1,5 @@
 
+
 =pod
 
 =head1 NAME - EnsTestDB
@@ -15,24 +16,26 @@
 package MultiTestDB;
 
 use vars qw(@ISA);
+
+use Bio::EnsEMBL::Root;
+
+@ISA = ('Bio::EnsEMBL::Root');
+
 use strict;
 
 use DBI;
-use Digest::MD5;
 use Data::Dumper;
 
 
 #homo sapiens is used if no species is specified
-my $DEFAULT_SPECIES  = 'Homo_sapiens';
+my $DEFAULT_SPECIES  = 'homo_sapiens';
 
 #configuration file extension appended onto species name
 my $FROZEN_CONF_EXT  = '.MultiTestDB.frozen.conf';
 
 my $CONF_FILE    = 'MultiTestDB.conf';
 
-my $DUMP_DIR = 'multi_test_dbs';
-
-
+my $DUMP_DIR = 'test-genome-DBs';
 
 
 sub new {
@@ -46,11 +49,14 @@ sub new {
 
   $self->species($species);
 
-  if($ENV{'HARNESS_ACTIVE'}) {
+   if($ENV{'HARNESS_ACTIVE'}) {
     #databases are loaded already, read conf hash from file
     $self->load_config($species);
   } else {
     #load the databases and generate the conf hash
+
+    print STDERR "Trying to load [$species] databases\n";
+
     $self->load_databases($species);
   }
 
@@ -111,24 +117,33 @@ sub create_adaptors {
 
   #establish a connection to each of the databases in the configuration
   foreach my $dbtype (keys %{$self->{'conf'}}) {
-    print "Connecting to $dbtype\n";
+
     my $db = $self->{'conf'}->{$dbtype};
-    
     my $adaptor;
-    
+    my $module = $db->{'databases'}->{$dbtype};
+
     #try to instantiate an adaptor for this database 
     eval {
-      require $db->{'module'};
-      $adaptor = new $db->{'module'}('dbname' => $db->{'name'},
-				     'user'   => $db->{'user'},
-				     'pass'   => $db->{'pass'},
-				     'port'   => $db->{'port'},
-				     'host'   => $db->{'host'},
-				     'driver' => $db->{'driver'});
+
+      # require needs /'s rather than colons
+      if ( $module =~ /::/ ) {
+	$module =~ s/::/\//g;
+      }
+      require "${module}.pm";
+
+      # but switch back for the new instantiation
+      $module =~ s/\//::/g;
+
+      $adaptor = $module->new(-dbname => $db->{'dbname'},
+			      -user   => $db->{'user'},
+			      -pass   => $db->{'pass'},
+			      -port   => $db->{'port'},
+			      -host   => $db->{'host'},
+			      -driver => $db->{'driver'});
     };
 	
     if ($@) {
-      warn("WARNING: Could not instantiate $dbtype DBAdaptor:\n$@");
+      $self->warn("WARNING: Could not instantiate $dbtype DBAdaptor:\n$@");
     } else {
       $self->{'db_adaptors'}->{$dbtype} = $adaptor;
     }
@@ -155,14 +170,14 @@ sub load_databases {
   $self->{'conf'} = {};
 
   #unzip database files
-  unzip_test_dbs($zip);
+  $self->unzip_test_dbs($zip);
 
   #connect to the database
-  my $locator = 'DBI:$driver:host=$host;port=$port';
+  my $locator = "DBI:".$driver.":host=".$host.";port=".$port;
   my $db = DBI->connect($locator, $user, $pass, {RaiseError => 1});
 
   unless($db) {
-    die "Can't connect to database $locator";
+    $self->throw("Can't connect to database $locator");
   }
 
   #create a database for each database specified
@@ -170,9 +185,10 @@ sub load_databases {
     #create a unique random dbname
     my $dbname = $self->_create_db_name($species, $dbtype);
 
-    
+    print STDERR "Creating db $dbname \n";
+
     unless($db->do("CREATE DATABASE $dbname")) {
-      die("Could not create database [$dbname]");
+      $self-throw("Could not create database [$dbname]");
     }
 
     #copy the general config into a dbtype specific config 
@@ -185,7 +201,7 @@ sub load_databases {
     $db->do("use $dbname");
     
     #load the database with data
-    my $dir = "$DUMP_DIR/species";
+    my $dir = "$DUMP_DIR/".$self->species."/$dbtype";
     local *DIR;
 
     opendir(DIR, $dir) or die "could not open dump directory '$dir'";
@@ -195,28 +211,45 @@ sub load_databases {
     local *FILE;
 
     #read in table creat statements from *.sql files and process them with DBI
+
     foreach my $sql_file (grep /\.sql$/, @files) {
+
+      $sql_file = "$dir/$sql_file";
+
       unless(-f $sql_file && -r $sql_file) {
-	warn("could not read SQL file '$sql_file'\n");
+	$self->warn("could not read SQL file '$sql_file'\n");
 	next;
       }
-      
-      FILE = open $sql_file;
-      my @file = <FILE>;
-      $db->do(join ' ', @file);
+
+      open(FILE, $sql_file);
+
+      my $sql_com ='';
+
+      while (<FILE>) {
+	next if ( /^#/ );  # ignore comments
+	next unless ( /\S/ );  # ignore lines of white spaces
+
+	$sql_com .= $_;
+     }
+     $sql_com =~ s/;$//;  # chop off the last ;
+
+      $db->do($sql_com);
+
       close FILE;
 
       #import data from the txt files of the same name
       $sql_file  =~ /.*\/(.*)\.sql/;
       my $tablename = $1;
-      my $txt_file = s/\.sql$/\.txt/;
-      
+
+      (my $txt_file = $sql_file) =~ s/\.sql$/\.txt/;
+
       unless(-f $txt_file && -r $txt_file) {
-	warn("could not read data file '$txt_file'\n");
+	$self->warn("could not read data file '$txt_file'\n");
 	next;
       }
 
       $db->do( "load data local infile '$txt_file' into table $tablename" );
+
     }	     
   }
   
@@ -231,19 +264,19 @@ sub unzip_test_dbs {
   my ($self, $zipfile) = @_;
 
   if (-e $DUMP_DIR) {
-    warn "Test genome dbs already unpacked\n";
+    $self->warn("Test genome dbs already unpacked\n");
     return;
   }
 
   unless($zipfile) {
-    die("zipfile argument is required\n");
+    $self->throw("zipfile argument is required\n");
   }
 
   unless(-f $zipfile) {
-    die("zipfile could not be found\n");
+    $self->throw("zipfile could not be found\n");
   }
 
-  system ( "unzip $zipfile" );
+  system ( "unzip -q $zipfile" );
 }
 
 
@@ -257,7 +290,7 @@ sub get_DBAdaptor {
   }
 
   unless($self->{'db_adaptors'}->{$type}) {
-    warn("dbadaptor of type $type is not available\n");
+    $self->warn("dbadaptor of type $type is not available\n");
     return undef;
   }
 
@@ -452,8 +485,14 @@ sub species {
 sub _create_db_name {
     my( $self, $species, $dbtype ) = @_;
 
-    my $rand = &Digest::MD5::md5_hex(rand());
-    my $db_name = "_test_db_${species}_${dbtype}_${rand}";
+    my @t_info = localtime;
+
+    my $date = join ( "_", $t_info[3],$t_info[4]);  
+    my $time = join ( "", $t_info[2],$t_info[1],$t_info[0]);  
+
+#    my $db_name = "_test_db_${species}_${dbtype}_".$ENV{'USER'}."_".$date."_".$time;
+    my $db_name = "_test_db_${species}_${dbtype}_".$ENV{'USER'}."_".$date;
+
 
     return $db_name;
 }
@@ -532,10 +571,10 @@ sub cleanup {
   }
 
   #delete each of the created temporary databases
-  foreach my $dbtype (keys %{$self->{'conf'}->{'databases'}}) {
-    my $db_conf = $self->{'conf'}->{'databases'}->{$dbtype};
-    
-    my $host   = $db_conf->{'host'};
+  foreach my $dbtype (keys %{$self->{'conf'}}) {
+
+    my $db_conf = $self->{'conf'}->{$dbtype};
+        my $host   = $db_conf->{'host'};
     my $user   = $db_conf->{'user'};
     my $pass   = $db_conf->{'pass'};
     my $port   = $db_conf->{'port'};
@@ -543,14 +582,16 @@ sub cleanup {
     my $dbname = $db_conf->{'dbname'};
     
     #connect to the database
-    my $locator = 'DBI:$driver:host=$host;port=$port';
+    my $locator = "DBI:".$driver.":host=".$host.";port=".$port;
+
     my $db = DBI->connect($locator, $user, $pass, {RaiseError => 1});
       
     unless($db) {
       die "Can't connect to database $locator";
     }
     
-    $db->do('drop database dbname');
+    print STDERR "Dropping db $dbname \n";
+    $db->do("DROP database $dbname");
   }
 
   my $conf_file = $self->species . $FROZEN_CONF_EXT;
@@ -563,23 +604,27 @@ sub cleanup {
 
 
 sub _delete_files {
-  my ($self, $dir) = shift;
+  my ($self, $dir) = @_;
 
   local *DIR;
   opendir DIR, $dir;
-  
+
   #ignore files starting with '.'
-  my @files = grep !/$\./, readdir DIR;
+
+  my @files = grep !/^\./, readdir DIR;
 
   foreach my $file (@files) {
+
+    $file = $dir ."/". $file;
     if(-d $file) {
+
       #call recursively on subdirectories
       $self->_delete_files($file);
+
     } else {
       unlink $file;
     }
   }
-
   closedir DIR;
 
   rmdir $dir;
