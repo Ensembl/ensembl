@@ -728,7 +728,7 @@ sub store {
   my %ensembl_object_types;
 
   # and a list of mappings of ensembl objects to xrefs
-  # (primary now, dependent added in dump_xrefs)
+  # (primary now, dependent added in dump_core_xrefs)
   # this is required for display_xref generation later
   # format:
   #   key: ensembl object type:ensembl object id
@@ -805,8 +805,8 @@ sub store {
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
   # write relevant xrefs to file
-  print "passing object_xref_mappings to dump_xrefs with " . scalar (keys %object_xref_mappings) . "\n";
-  $self->dump_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, \%ensembl_object_types, \%object_xref_mappings);
+  print "passing object_xref_mappings to dump_core_xrefs with " . scalar (keys %object_xref_mappings) . "\n";
+  $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, \%ensembl_object_types, \%object_xref_mappings);
 
   # write comparison info. Can be removed after development
   dump_comparison();
@@ -874,7 +874,7 @@ sub get_analysis_id {
 }
 
 
-sub dump_xrefs {
+sub dump_core_xrefs {
 
   my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset, $ensembl_object_types_hashref, $object_xref_mappings) = @_;
 
