@@ -368,21 +368,23 @@ sub _get_all_SeqFeatures_type {
    my @vcsf = ();
    foreach my $id (@cids) {
      my $c = $rca->fetch_by_dbID($id);
-     my $virtual_contig_of_contig = $self->adaptor->fetch_Slice_by_contig($c->name);
-     my $contig_chr_start = $virtual_contig_of_contig->chr_start;
-     my $contig_chr_end = $virtual_contig_of_contig->chr_end;
-     if ( $type eq 'external' ) {
-       foreach my $f ($c->get_all_ExternalFeatures()) {
+
+     # get start and end of the golden path fragment of the raw contig
+     my ($chr, $start, $end) = $self->adaptor->get_chr_start_end_of_contig(
+                                                                  $c->name);
+
+     if ($type eq 'external') {
+       foreach my $f ($c->get_all_ExternalFeatures) {
          my @feature_mapped_to_assembly = $mapper->map_coordinates_to_assembly
                          ($id, $f->start, $f->end, $f->strand);
          if($feature_mapped_to_assembly[0]->isa("Bio::EnsEMBL::Mapper::Gap")) {
            next;
 	 }
-
-	 my $newstrand = $feature_mapped_to_assembly[0]->strand * $self->strand;
+	 my $newstrand = $feature_mapped_to_assembly[0]->strand
+	                                       * $self->strand;
 	 my $newstart = $feature_mapped_to_assembly[0]->start
-	                - $self->chr_start;
-	 my $newend = $newstart + $f->end - $f->start + 1;
+	                                  - $self->chr_start + 1;
+	 my $newend = $newstart + $f->end - $f->start;
 	 my $newf = Bio::EnsEMBL::SeqFeature->new();
 	 %$newf = %$f;
 	 $newf->start($newstart);
