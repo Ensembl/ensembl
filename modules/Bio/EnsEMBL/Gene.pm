@@ -695,7 +695,7 @@ sub transform {
   # now need to re-jiggle the transcripts and their
   # translations to account for the re-mapping process
 
-  for my $transcript ( $self->each_Transcript() ) {
+  for my $transcript ( $self->get_all_Transcripts() ) {
 
     # need to grab the translation before starting to 
     # re-jiggle the exons
