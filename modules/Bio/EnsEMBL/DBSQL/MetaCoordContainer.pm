@@ -161,7 +161,7 @@ sub add_feature_type {
                                'WHERE coord_system_id = ? ' .
                                'AND table_name = ? '.
                                "AND (max_length<$length ".
-                               "OR max_length is null));
+                               "OR max_length is null)");
       $sth->execute( $cs->dbID(), $table );
       $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} = $length;
     }
