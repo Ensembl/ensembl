@@ -43,8 +43,7 @@ $priority{'LocusLink'} = 100;
 #$priority{'Anopheles_paper'} = 50;
 #$priority{'Celera_Gene'} = 50;
 
-if (!defined $organism) {
-    die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\n\n";
+if (!defined $organism) {    die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\n\n";
 }
 
 print STDERR "Connecting to the database...\n";
@@ -78,13 +77,14 @@ while(my $id = $sth->fetchrow) {
     foreach my $xref(@$xrefs) {
 	
 	if ($priority{$xref->database} > $current) {
-	    $display = $xref->dbID;
+	    $display = $xref;
 	    $cdb = $xref->database;
 	    $current = $priority{$xref->database};
 	}
     }
 
     $trans->display_xref($display);
+    #print STDERR "updateing transcript ".$trans->stable_id." with xref ".$trans->display_xref."\n";
     $transadaptor->update($trans);
 #    print STDERR "ID: $id\tDISPLAY: $display\tTEST: ".$transadaptor->get_display_xref_id($id)."\n";
 }
@@ -123,8 +123,9 @@ elsif ($organism eq "elegans") {
     $sth1->execute();
     
     while(my ($gene_id,$xref)  = $sth1->fetchrow) {
-	my $gene = $geneadaptor->fetch_by_dbID($gene_id);
-	$gene->display_xref($xref);
+      my $xref_obj = $db->get_DBEntryAdaptor->fetch_by_dbID($xref);
+      my $gene = $geneadaptor->fetch_by_dbID($gene_id);
+	$gene->display_xref($xref_obj);
 	$geneadaptor->update($gene);
      }
     
