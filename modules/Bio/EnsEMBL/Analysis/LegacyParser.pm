@@ -278,7 +278,7 @@ sub _parse_contig_order{
     my $fh = new FileHandle;
     my $cof = $self->contig_order_file;
     $fh->open($cof) || 
-	$self->throw("Could not open exon file [$cof]");
+	$self->throw("Could not open contig order file [$cof]");
     while(<$fh>){
 	if(/^(\S+):\s+(.*)/){
 	    my $cloneid=$1;
@@ -398,6 +398,33 @@ sub list_exons{
 }
 
 
+=head2 map_contigorder
+
+ Title   : list_exons
+ Usage   : $self->map_contigorder(object_hash)
+ Function: 
+ Example : 
+ Returns : adds hash to object
+ Args    : 
+
+
+=cut
+
+sub map_contigorder{
+    my($self,$obj,$raclones) = @_;
+
+    my $disk_id={};
+    # do clone->disk_id lookups
+    if($raclones){
+	foreach my $clone (@$raclones){
+	    my($id,$disk_id2)=$obj->get_id_acc($clone);
+	    $disk_id->{$disk_id2}=$id;
+	}
+    }
+
+    $self->_parse_contig_order($raclones,$obj,$disk_id);
+}
+
 =head2 map_all
 
  Title   : list_exons
@@ -425,7 +452,6 @@ sub map_all{
     $self->_parse_exon($raclones,$obj,$disk_id);
     $self->_parse_trans;
     $self->_parse_gene;
-    $self->_parse_contig_order($raclones,$obj,$disk_id);
 
     # contig->exons
     my %contig2exon;

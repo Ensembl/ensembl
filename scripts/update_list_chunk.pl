@@ -14,15 +14,15 @@ This script updates a recipient database by checking its donor database
 
 =head1 OPTIONS
 
-    -host      host name for database (gets put as host= in locator)
+    -thost     host name for database (gets put as host= in locator)
 
-    -port      For RDBs, what port to connect to (port= in locator)
+    -tport     For RDBs, what port to connect to (port= in locator)
 
-    -dbname    For RDBs, what name to connect to (dbname= in locator)
+    -tdbname   For RDBs, what name to connect to (dbname= in locator)
 
-    -dbuser    For RDBs, what username to connect as (dbuser= in locator)
+    -tdbuser   For RDBs, what username to connect as (dbuser= in locator)
 
-    -dbpass    For RDBs, what password to use (dbpass= in locator)
+    -tpass     For RDBs, what password to use (dbpass= in locator)
 
     -help      Displays script documentation with PERLDOC
     
@@ -54,6 +54,8 @@ my $nowrite;
 my $verbose = 1;
 my $slice;
 
+my $from;
+
 &GetOptions( 
 	     'tdbtype:s'  => \$tdbtype,
 	     'thost:s'    => \$thost,
@@ -66,7 +68,8 @@ my $slice;
 	     'h|help'    => \$help,
 	     'nowrite'   => \$nowrite,
 	     'slice:s'   => \$slice,
-	     'v|verbose' => \$verbose
+	     'v|verbose' => \$verbose,
+	     'from:n'    => \$from,
 	     );
 
 
@@ -81,7 +84,12 @@ my $tdb              = new Bio::EnsEMBL::DBLoader($to_locator);
 my $from_locator     = $tdb->get_donor_locator;
 my $arc_locator      = "Bio::EnsEMBL::DBArchive::Obj//host=$thost;port=$tport;dbname=$adbname;user=$tdbuser;pass=$tpass";
 
-my $last_offset      = $tdb->get_last_update_offset;
+my $last_offset;
+if($from){
+    $last_offset=$from;
+}else{
+    $last_offset=$tdb->get_last_update_offset;
+}
 my $now_offset       = $tdb->get_now_offset;    # This should be something different
 
 print STDERR "From/to times $last_offset $now_offset\n";

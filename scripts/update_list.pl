@@ -52,6 +52,9 @@ my $help;
 my $nowrite;
 my $verbose;
 my $slice;
+my $clone;
+my $last_offset=0;
+my $now_offset=time;
 
 &GetOptions( 
 	     'dbtype:s'  => \$dbtype,
@@ -64,7 +67,10 @@ my $slice;
 	     'h|help'    => \$help,
 	     'nowrite'   => \$nowrite,
 	     'slice:s'   => \$slice,
-	     'v|verbose' => \$verbose
+	     'v|verbose' => \$verbose,
+	     'clone:s'   => \$clone,
+	     'from:n' =>\$last_offset,
+	     'to:n' =>\$now_offset,
 	     );
 
 
@@ -75,8 +81,8 @@ if ($help) {
     exec('perldoc', $0);
 }
 
-my $last_offset = 949000000;# 948560282;         $verbose && print "\nLast update-offset: $last_offset\n";
-my $now_offset  = 949001000;#time;              $verbose && print "Time now-offset at recipient: $now_offset\n";
+$verbose && print "\nLast update-offset: $last_offset\n";
+$verbose && print "Time now-offset at recipient: $now_offset\n";
 
 $| = 1;
 
@@ -105,6 +111,12 @@ my @clone_id;
     @clone_id = $don_db->get_updated_Clone_id($last_offset, $now_offset);
 
     $verbose && print "\n".scalar(@clone_id)." clones found for updating\n";
+    local *OUT;
+    open(OUT,">update.lis") || die "cannot open list";
+    foreach my $clone (@clone_id){
+	print OUT "$clone\n";
+    }
+    close(OUT);
 }
 
 $verbose && print "\nTransferring updated and new objects from donor to recipient...\n";
@@ -117,6 +129,9 @@ my $numclones = scalar(@clone_id);
 
 while(@slice_array = splice(@clone_id,0,$slice)){
 
+    my $string=join(',',@slice_array);
+    next if($clone && $string!~/$clone/);
+
     print "\nActive clones: $count/$numclones" . join(',',@slice_array) . "\n\n";
     $count += $slice;
     eval 
@@ -126,6 +141,7 @@ while(@slice_array = splice(@clone_id,0,$slice)){
 
 	# loop over clones
 	foreach my $id (@slice_array) {
+	    next if($clone && $string!~/$clone/);
 	    my $object=$don_db->get_Clone($id);
 	    my $type;
 	    

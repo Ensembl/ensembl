@@ -416,8 +416,13 @@ sub update {
     my $id         = $tdb ->start_update($self->fromtime,$self->totime) unless $self->nowrite;
     my @clone_id   = $self->get_updated_objects($fdb);
 
+    # test
+    # @clone_id      = ('AL132766');
+
     my $num_clones = scalar(@clone_id);
     my $current    = 0;
+
+    $self->verbose && print STDERR "$num_clones to check for updates\n";
 
     while ($current < $num_clones) {
 	print(STDERR "Starting new fork chunk $current/$num_clones\n");
