@@ -22,6 +22,7 @@ my $use_existing_mappings=undef;
 my $maxdump=undef;
 my $help;
 my $upload = undef;
+my $deleteexisting;;
 
 GetOptions ('file=s'              => \$file,
             'verbose'             => \$verbose,
@@ -29,6 +30,7 @@ GetOptions ('file=s'              => \$file,
 	    'useexistingmappings' => \$use_existing_mappings,
 	    'maxdump=n'           => \$maxdump,
 	    'upload'              => \$upload,
+	    'deleteexisting'      => \$deleteexisting,
             'help'                => sub { &show_help(); exit 1;} );
  
 usage("-file option is required")   if(!$file);
@@ -110,7 +112,7 @@ for my $species ( @all_species ) {
 
   $species->parse_mappings();
 
-  $species->do_upload() if (defined($upload));
+  $species->do_upload($deleteexisting) if (defined($upload));
 
 }
 
@@ -122,26 +124,31 @@ sub usage {
  
   print STDERR "$msg\n\n" if($msg);
   print STDERR <<EOF;
-usage:   perl xref_mapper <options>
+usage: perl xref_mapper <options>
                                                                                     
-options: -file <input_file>     input file with keyword pairs for  'species',
-                                'host', 'port', 'dbname' ,'user', 'password' and 'directory'
-                          
-         -maxdump <int>         dump only <int> sequences.
+options:
 
-         -dumpcheck             only dump if files do not exist.
+ -file <input_file>     input file with keyword pairs for 'species','host',
+                        'port', 'dbname' ,'user', 'password' and 'directory'
 
-         -useexistingmapping    use existing *.map files
+  -maxdump <int>        dump only <int> sequences.
 
-         -upload                upload xref, object_xref, identity_xref data, and set
-                                display_xrefs for genes and transcripts. Data is written
-                                to xref.txt etc regardless of whether this option is used.
+  -dumpcheck            only dump if files do not exist.
 
-         -help                  display this message
+  -useexistingmapping   use existing *.map files
+
+  -upload               upload xref, object_xref, identity_xref data, and set
+                        display_xrefs for genes and transcripts. Data is written
+                        to *.txt etc regardless of whether this option is used.
+
+  -deleteexisting       delete existing data from xref, object_xref,
+                        identity_xref and external synonym tables. Also set all
+                        existing display_xref_id columns in gene and transcript
+                        to null.
+
+  -help                 display this message
  
-example: perl xref_mapper.pl -file mapper.input \\
-              -verbose
- 
+example: perl xref_mapper.pl -file mapper.input 
 EOF
  
   exit;
