@@ -184,9 +184,36 @@ sub end_phase {
 
 
 # this is a bit too sneaky. 
-#sub location {
-#    my ($self)= @_;
-#    return $self;
-#}
+sub location {
+    my ($self)= @_;
+    return $self;
+}
+
+sub to_FTstring {
+    my ($self) = @_;
+
+    my @sf = $self->sub_SeqFeature();
+    
+    if( scalar(@sf) > 0 ) {
+	my $string = "join(";
+	foreach my $sf ( @sf ) {
+	    if( $sf->strand == 1 ) {
+		$string .= $sf->start."..".$self->end.",";
+	    } else {
+		$string .= "complement(".$sf->start."..".$self->end."),";
+	    }
+	}
+	$string =~ s/\,$//g;
+	$string .= ")";
+	return $string;
+    }
+
+    # else simple
+    if( $self->strand == 1 ) {
+	return $self->start."..".$self->end;
+    } else {
+	return "complement(".$self->start."..".$self->end.")";
+    }
+}
 
 1;

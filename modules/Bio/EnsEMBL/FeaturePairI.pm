@@ -198,4 +198,26 @@ sub hend_phase {
     my ($self) = @_;
     $self->throw("Method not impelemented here");
 }
+
+
+#
+# Bioperl 0.7 compliance
+#
+
+sub location {
+    my ($self) = @_;
+    return $self;
+}
+
+sub to_FTstring {
+    my ($self) = @_;
+    
+    if( $self->strand == 1 ) {
+	return $self->start."..".$self->end;
+    } else {
+	return "complement(".$self->start."..".$self->end.")";
+    }
+}
+
+    
 1;
