@@ -52,16 +52,25 @@ sub run {
     my $result = system("wget", "--quiet", "--timestamping", "--directory-prefix=$dir", $url);
 
     # compare checksums and parse/upload if necessary
+    # need to check file size as some .SPC files can be of zero length
     my $file_cs = md5sum("$dir/$file");
     if (!defined $checksum || $checksum ne $file_cs) {
 
-      print "Checksum for $file does not match, parsing\n";
+      if (-s "$dir/$file") {
 
-      update_source($dbi, $source_id, $file_cs, $file);
+	print "Checksum for $file does not match, parsing\n";
 
-      my $parserType = $filetype2parser{$type};
-      print "Parsing $file with $parserType\n";
-      $parserType->run("$dir/$file", $source_id);
+	#update_source($dbi, $source_id, $file_cs, $file);
+
+	my $parserType = $filetype2parser{$type};
+	print "Parsing $file with $parserType\n";
+	#$parserType->run("$dir/$file", $source_id);
+
+      } else {
+	
+	print $file . " has zero length, skipping\n";
+
+      }
 
     } else {
 
