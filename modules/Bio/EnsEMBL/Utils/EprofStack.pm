@@ -38,6 +38,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::EnsEMBL::Utils::EprofStack;
 use vars qw(@ISA);
+use POSIX;
 use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
@@ -78,8 +79,9 @@ sub push_stack{
    if( $self->is_active == 1 ) {
        $self->warn("Attempting to push stack on tag ",$self->tag," when active. Discarding previous push");
    }
-   my($user,$sys) = times();
-   $self->current_start($user);
+   #my($user,$sys) = times();
+   my $real = (POSIX::times)[0];
+   $self->current_start($real);
    $self->is_active(1);
 }
 
@@ -101,8 +103,11 @@ sub pop_stack{
    if( $self->is_active == 0 ) {
        $self->warn("Attempting to push stack on tag ",$self->tag," when not active. Ignoring");
    }
-   my($user,$sys) = times();
-   $self->total_time( $self->total_time() + $user - $self->current_start);
+   #my($user,$sys) = times();
+   my $real = (POSIX::times)[0];
+   my $clockticks =  $real - $self->current_start;
+   my $clocktime = $clockticks / POSIX::sysconf(&POSIX::_SC_CLK_TCK);
+   $self->total_time( $self->total_time() + $clocktime);
    $self->number( $self->number() + 1 );
    $self->is_active(0);
 }
