@@ -90,7 +90,6 @@ sub new {
 
 sub fetch_all_by_Slice {
   my ($self, $slice, $logic_name) = @_;
-
   #fetch by constraint with empty constraint
   return $self->fetch_all_by_Slice_constraint($slice, '', $logic_name);
 }
@@ -213,7 +212,7 @@ sub fetch_all_by_Slice_constraint {
     my $offset = $seg->from_start();
     my $seg_slice  = $seg->to_Slice();
 
-    my $features = $self->_slice_fetch($seg_slice, $constraint);
+    my $features = $self->_slice_fetch($seg_slice, $constraint); ## NO RESULTS
 
     # if this was a symlinked slice offset the feature coordinates as needed
     if($seg_slice->name() ne $slice->name()) {
@@ -236,12 +235,14 @@ sub fetch_all_by_Slice_constraint {
         $f->{'slice'} = $slice;
         push @result, $f;
       }
-    } else {
+    }
+    else {
       push @result, @$features;
     }
   }
 
   $self->{'_slice_feature_cache'}->{$key} = \@result;
+
 
   return \@result;
 }
@@ -271,7 +272,7 @@ sub _slice_fetch {
 
   my $asma = $self->db->get_AssemblyMapperAdaptor();
   my @features;
-
+#warn "jere are $self, @feat_css\n";
   # fetch the features from each coordinate system they are stored in
  COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
     my $mapper;
@@ -286,7 +287,13 @@ sub _slice_fetch {
 
       my $constraint = $orig_constraint;
 
-      my $sr_id = $self->db->get_SliceAdaptor->get_seq_region_id($slice);
+      my $sr_id;
+      if( $slice->adaptor() ) {
+	$sr_id = $slice->adaptor()->get_seq_region_id($slice);
+      } else {
+	$sr_id = $self->db()->get_SliceAdaptor()->get_seq_region_id($slice);
+      }
+
       $constraint .= " AND " if($constraint);
       $constraint .=
           "${tab_syn}.seq_region_id = $sr_id AND " .
