@@ -951,8 +951,9 @@ return @markers;
 
 
 sub get_landmark_MarkerFeatures{
-   my ($self,$chr_name,$glob) = @_;
+   my ($self,$glob) = @_;
 
+my $chr_name   = $self->_chr_name;
 
    if( !defined $glob ) {
        $glob = 500000;
@@ -961,7 +962,7 @@ sub get_landmark_MarkerFeatures{
 
 my $glob_start = $self->_global_start;
 my $glob_end   = $self->_global_end;
-
+my $length     = $self->length;
 
 
    my $statement= " SELECT  start,
@@ -976,7 +977,7 @@ my $glob_end   = $self->_global_end;
 		";
    
    $statement =~ s/\s+/ /g;
-   #print STDERR "Doing Query ... $statement\n";
+ #  print STDERR "Doing Query ... $statement\n";
    
    my $sth = $self->dbobj->prepare($statement);
    $sth->execute;
@@ -992,11 +993,14 @@ my $glob_end   = $self->_global_end;
    my @out;
    my $prev;
    while( $sth->fetch ) {
-       if( defined $prev && $prev->end + $glob > $start  && $prev->id eq $name ) {
-           
+       if( defined $prev && $prev->end + $glob > $start  && $prev->id eq $name ) {           
            next;
        }
+       #clipping 
+       $start=$start-$glob_start;
+       $end=$end-$glob_start;
 
+#       print STDERR "fetching $start\n";
        my $sf = Bio::EnsEMBL::SeqFeature->new();
        $sf->start($start);
        $sf->end($end);
