@@ -978,6 +978,98 @@ sub _translate_coherent{
    return $temp_seq->translate();
 }
 
+=head2 translateable_dna
+
+ Title   : translateable_dna
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub translateable_dna{
+   my ($self,@args) = @_;
+
+      my $prev;
+   my $tstr;
+
+   #$self->sort();
+   my @exons = $self->each_Exon;
+   my $exon_start = $exons[0];
+
+
+   foreach my $exon ( @exons ) {
+
+
+       # trim down start ends on the basis of phase.
+       if( $prev && $prev->end_phase != $exon->phase ) {
+	   $self->throw("Called coherent translate but exon phases don't match. Yuk!");
+       }
+
+       # warn about non DNA passed in. 
+
+       if( $exon->entire_seq()->moltype ne 'dna' ) {
+	   #$self->warn("Error. Whoever implemented this databases did not set type to Dna. Setting now!");
+	   $exon->entire_seq()->moltype('dna');
+       }
+#       print STDERR "Exon phase " . $exon->id ." " . $exon->phase . "\t" . $exon->start . "\t" . $exon->end . " " .$exon->strand. " ".$exon->entire_seq->id ."\n";
+#       print STDERR "Exon sequence is " . $exon->seq->seq . "\n";
+
+       my $seq = $exon->seq();
+       my $str = $seq->seq();
+       
+
+       if( CORE::length( $str ) == 0 ) {
+	   $self->throw("Bad internal error - got a 0 length rstring...");
+       }
+
+       $tstr .= $str;
+   }
+
+   $debug = 0;
+
+   if ( $debug ) {
+#       print STDERR "Bstr is $tstr\n";
+#       print STDERR "Exon phase is " . $exon_start->phase . "\n";
+       my @trans;
+       my $exseq = new Bio::PrimarySeq(-SEQ => $tstr , '-id' => 'dummy' , -moltype => 'dna');
+       	$trans[0] = $exseq->translate();
+
+	# this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
+	# intron leaves one base pair.
+
+	$trans[1] = $exseq->translate('*','X',2);
+	$trans[2] = $exseq->translate('*','X',1);
+
+#       print(STDERR "Exon start end " . $exon_start->start . " " . $exon_start->end . " " . $exon_start->phase . " " . $exon_start->strand ."\n");
+#       print(STDERR "Translation 0 " . $trans[0]->seq . "\n");
+#       print(STDERR "Translation 1 " . $trans[1]->seq . "\n");
+#       print(STDERR "Translation 2 " . $trans[2]->seq . "\n");
+   }
+
+
+   if( $exon_start->phase == 1 ) {
+       $tstr = substr $tstr, 2;
+   } elsif ( $exon_start->phase == 2 ) {
+       $tstr = substr $tstr, 1;
+   } 
+
+   if ( $debug ) {
+       print STDERR "Exon start phase is " . $exon_start->phase . "\n";
+       print STDERR "Tstr is $tstr\n";
+   }
+
+   # phase 0 - no need.
+
+
+   my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -moltype => 'dna' );
+   return $temp_seq;
+}
+
+
 
 sub exon_dna {
   my ($self,$exon) = @_;
