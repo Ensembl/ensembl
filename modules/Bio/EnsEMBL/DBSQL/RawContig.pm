@@ -1046,7 +1046,7 @@ sub get_all_PredictionFeatures {
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);
-
+       $out->id($fsetid); # to make genscan peptide work
        $out->source_tag('genscan');
        $out->primary_tag('prediction');
        
