@@ -739,26 +739,42 @@ sub get_all_peptide_variations {
   }
 
   my $variant_alleles;
+  my $translation_start = $self->cdna_coding_start;
   foreach my $snp (@$snps) {
-    my $start = $snp->start;
-
     #skip variations not on a single base
-    next if ($start != $snp->end);
+    next if ($snp->start != $snp->end);
 
-    #modulus is the offset of the nucleotide from codon start (0|1|2)
-    my $codon_pos = $start % $codon_length;
+    my $start = $snp->start;
+    my $strand = $snp->strand;    
+
+    #calculate offset of the nucleotide from codon start (0|1|2)
+    my $codon_pos = ($start - $translation_start) % $codon_length;
 
     #calculate the peptide coordinate of the snp
-    my $peptide = ($start + $codon_pos) / $codon_length;
+    my $peptide = ($start - $translation_start + 
+		   ($codon_length - $codon_pos)) / $codon_length;
 
     #retrieve the codon
-    my $codon = substr($cdna, $start - $codon_pos, $codon_length);
+    my $codon = substr($cdna, $start - $codon_pos-1, $codon_length);
 
+#    {
+#      my $context = substr($cdna, $start - 6, 11);
+#	print "CONTEXT (".$snp->alleles."): $context\n";
+#      print "START:$start CODON_POS:$codon_pos" .
+#	" PEPTIDE:$peptide CODON:$codon\n";
+#    }
+   	
     #store each alternative allele by its location in the peptide
     my @alleles = split('/', lc($snp->alleles));
     foreach my $allele (@alleles) {
       next if $allele eq '-';       #skip deletions
       next if CORE::length($allele) != 1; #skip insertions
+      
+      if($strand == -1) {
+	#complement the allele if the snp is on the reverse strand
+	$allele = $allele =~ 
+	 tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+      }
 
       #create a data structure of variant alleles sorted by both their
       #peptide position and their position within the peptides codon
@@ -770,7 +786,7 @@ sub get_all_peptide_variations {
 	#create a list of 3 lists (one list for each codon position)
 	my $alleles_arr = [[],[],[]];
 	push @{$alleles_arr->[$codon_pos]}, $allele;
-	$variant_alleles->{$peptide} = [$codon, [$alleles_arr]];
+	$variant_alleles->{$peptide} = [$codon, $alleles_arr];
       }
     }
   }
@@ -782,13 +798,9 @@ sub get_all_peptide_variations {
 
     #need to push original nucleotides onto each position
     #so that all possible combinations can be generated
-    my $n1 = $codon->substr($codon,0,1);
-    my $n2 = $codon->substr($codon,1,1);
-    my $n3 = $codon->substr($codon,2,1);
-
-    push @{$alleles->[0]}, $n1;
-    push @{$alleles->[1]}, $n2;
-    push @{$alleles->[2]}, $n3;
+    push @{$alleles->[0]}, substr($codon,0,1);
+    push @{$alleles->[1]}, substr($codon,1,1);
+    push @{$alleles->[2]}, substr($codon,2,1);
 
     my %alt_amino_acids;
     foreach my $a1 (@{$alleles->[0]}) {
@@ -796,8 +808,9 @@ sub get_all_peptide_variations {
       foreach my $a2 (@{$alleles->[1]}) {
 	substr($codon, 1, 1) = $a2;
 	foreach my $a3 (@{$alleles->[2]}) {
-	  substr($codon, 2, 1) = $3;
+	  substr($codon, 2, 1) = $a3;
 	  my $aa = $codon_table->translate($codon);
+	  #print "$codon translation is $aa\n";
 	  $alt_amino_acids{$aa} = 1;
 	}
       }
@@ -974,6 +987,7 @@ sub get_all_cdna_SNPs {
   foreach my $type (@cdna_types) {
     $snp_hash{$type} = [];
     foreach my $snp (@{$all_snps->{$type}}) {
+      #print "SNP CONTEXT:". $slice->subseq($snp->start - 5, $snp->start + 5). "\n";
       my @coords = 
 	$transcript->genomic2cdna($snp->start, 
 				  $snp->end, 
@@ -1001,6 +1015,7 @@ sub get_all_cdna_SNPs {
       $new_snp->end($coord->end);
       $new_snp->strand($coord->strand);
       push @{$snp_hash{$type}}, $new_snp;
+      #print "SNP CONTEXT AFTER(".$new_snp->id."):". substr($transcript->spliced_seq, $new_snp->start - 6,11). "\n";
     }
   }
 
@@ -1181,10 +1196,7 @@ sub translate {
   my $peptide = Bio::Seq->new( -seq => $mrna,
 			       -moltype => "dna",
 			       -id => $display_id );
-  
- 
-  
-  
+    
   return $peptide->translate;
 }
 
@@ -1356,7 +1368,7 @@ sub genomic2cdna {
   my $mapper = $self->_get_cdna_coord_mapper;
 
 
-  print "MAPPING $start - $end ($strand)\n";
+  #print "MAPPING $start - $end ($strand)\n";
   #print $contig->name . "=" . $self->get_all_Exons->[0]->contig->name . "\n";
 
   return $mapper->map_coordinates($contig, $start, $end, $strand, "genomic");
