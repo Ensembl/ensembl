@@ -113,6 +113,9 @@ sub create_xrefs {
     ($xref->{SPECIES_ID}) = $species_id;
     ($xref->{SOURCE_ID}) = $source_id;
 
+    $xref->{SEQUENCE_TYPE} = 'peptide';
+    $xref->{STATUS} = 'experimental';
+
     my ($description) = $_ =~ /DE\s(.*)\n/;
     $xref->{DESCRIPTION} = $description;
 

@@ -120,7 +120,7 @@ sub get_source_id_for_filename {
   my ($self, $file) = @_;
 
   my $sql = "SELECT source_id FROM source WHERE url LIKE '%/" . $file . "%'"; 
-  print $sql . "\n";
+  #print $sql . "\n";
   my $sth = dbi()->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
@@ -173,8 +173,8 @@ sub upload_xrefs {
       # TODO experimental/predicted????
       $pri_sth->execute($xref_id,
 			$xref->{SEQUENCE},
-			'peptide',
-			'experimental',
+			$xref->{SEQUENCE_TYPE},
+			$xref->{STATUS},
 			$xref->{SOURCE_ID}) || die $dbi->errstr;
 
       # if there are synonyms, create xrefs for them and entries in the synonym table
