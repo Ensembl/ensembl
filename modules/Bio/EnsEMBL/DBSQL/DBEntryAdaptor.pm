@@ -114,9 +114,10 @@ sub store {
 	$sth = $self->prepare( "
        INSERT INTO externalDB 
        SET db_name = ?,
-           release = ?
+           release = ?,
+           status  = ?
      " );
-	$sth->execute( $exObj->dbname(), $exObj->release());
+	$sth->execute( $exObj->dbname(), $exObj->release(), $exObj->status);
 	
 	$dbJustInserted = 1;
 	$sth = $self->prepare( "
