@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 3;
+	plan tests => 4;
 }
 
 use TestUtils qw( debug );
@@ -23,3 +23,11 @@ my ($one, $two, $three) = rearrange(['ONE','TWO','THREE'],@args);
 ok($one == 1);
 ok($two == 2);
 ok($three == 3);
+
+#
+#regression test args with 0 were being set to undef instead of 0
+#
+@args = ('-ZERO' => 0, '-ONE' => 1);
+my $zero;
+($one, $zero) = rearrange(['ONE', 'ZERO'], @args);
+ok(defined($zero) && $zero == 0 && $one == 1);
