@@ -27,6 +27,7 @@ my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
 my $user       = $conf{'dbuser'};
 my $pass       = $conf{'password'};
+my $port       = $conf{'port'};
 my $organism   = $conf{'organism'};
 my %priority;
 
@@ -53,7 +54,8 @@ my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -user   => $user,
         -dbname => $dbname,
         -host   => $host,
-	-pass   => $pass,			     
+	-pass   => $pass,
+	-port   => $port,
         -driver => 'mysql',
 	);
 
