@@ -111,34 +111,12 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 sub new {
   my $class = shift;
 
-  my ($db,$host,$driver,$user,$password,$port, $inactive_disconnect, $dbconn, $species, $group, $dnadb) =
-    rearrange([qw(DBNAME HOST DRIVER USER PASS PORT
-                  DISCONNECT_WHEN_INACTIVE DBCONN SPECIES GROUP DNADB)], @_);
+  my ($db,$host,$driver,$user,$password,$port, $inactive_disconnect, $dbconn, $dnadb) =
+    rearrange([qw(DBNAME HOST DRIVER USER PASS PORT 
+                  DISCONNECT_WHEN_INACTIVE DBCONN DNADB)], @_);
 
   my $self = {};
   bless $self, $class;
-
- # make sure the register can find the species name in the alias list as itself.
-
-  if(!defined($species)){
-    $species= "DEFAULT";
-    $group = "core";
-
-    Bio::EnsEMBL::Registry->add_alias($species,$species); #set needed self alias
-
-    my $free=0;
-    my $i = 1;
-    while(!$free){
-      Bio::EnsEMBL::Registry->add_alias($species.$i,$species.$i); #set needed self alias
-      if(!defined(Bio::EnsEMBL::Registry->get_DBAdaptor($species.$i, $group))){
-	$free =1;
-      }
-      else{
-	$i++;
-      }
-    }
-    $species .= $i;
-  }
 
   if($dbconn) {
     if($db || $host || $driver || $password || $port || $inactive_disconnect
@@ -152,10 +130,6 @@ sub new {
     $self->password($dbconn->password());
     $self->port($dbconn->port());
     $self->driver($dbconn->driver());
-    $self->species($dbconn->species());
-    $self->group($dbconn->group());
-
-#    $self->connect();
 
     if($dbconn->disconnect_when_inactive()) {
       $self->disconnect_when_inactive(1);
@@ -186,18 +160,18 @@ sub new {
 #    $self->connect();
 
     
-    if($species){
+#    if($species){
 #      print "setting species to $species\n";
-      Bio::EnsEMBL::Registry->add_alias($species,$species);
-      $self->species($species);
-#      print "setting species to $species\n";
-    }
-    else{
-      throw("No species specified\n");
-    }
-    if($group){
-      $self->group($group);
-    }
+#      Bio::EnsEMBL::Registry->add_alias($species,$species);
+#      $self->species($species);
+##      print "setting species to $species\n";
+#    }
+#    else{
+#      throw("No species specified\n");
+#    }
+#    if($group){
+#      $self->group($group);
+#    }
 
 
     if($inactive_disconnect) {
@@ -257,6 +231,23 @@ sub connect {
   return;
 }
 
+=head2 equals
+
+  
+
+=cut
+
+  
+sub equals{
+  my ($self, $dbc) = @_;
+
+
+  if($dbc->host() eq $self->host and $dbc->dbname() eq $self->dbname
+     and $dbc->driver() eq $self->driver and $dbc->port() eq $self->port){
+    return 1;
+  }
+  return 0;
+}
 
 =head2 driver
 

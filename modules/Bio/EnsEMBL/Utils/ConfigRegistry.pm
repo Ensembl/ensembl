@@ -50,6 +50,7 @@ package Bio::EnsEMBL::Utils::ConfigRegistry;
 
 #use Exporter;
 use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -104,26 +105,101 @@ use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump)
 
 =cut
 
-sub load_core{
-  my ($class, @args) = @_;
+sub gen_load{
+  my ($dba) = @_;
+  my $config_sub;
 
-  my ($species) = rearrange([qw(SPECIES)],@args);
 
-#  print STDERR "species is $species\n";
-  my $group = 'core';
-
-  push (@args, '-group');
-  push (@args, $group);
-
-  my ($spec,$gro) = Bio::EnsEMBL::Registry->check_if_already_there(@args);
-  if($spec){
-    return;
+  if($dba->isa('Bio::EnsEMBL::Compara::DBSQL::DBAdaptor')){
+    $dba->group('compara');
+    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_compara; 
   }
-  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(@args);
+  elsif($dba->isa('Bio::EnsEMBL::Lite::DBAdaptor')){
+    $dba->group('lite');
+      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_lite;
+  }
+  elsif($dba->isa('Bio::EnsEMBL::External::BlastAdaptor')){
+    $dba->group('blast');
+      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_blast;
+  }
+  elsif($dba->isa('Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor')){
+    $dba->group('SNP');
+    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_SNP;
+  }
+  elsif($dba->isa('Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor')){
+    $dba->group('pipeline');
+      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_pipeline;
+  }
+  elsif($dba->isa('Bio::EnsEMBL::Hive::DBSQL::DBAdaptor')){
+    $dba->group('hive');
+      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_hive;
+  }
+  elsif($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
+    $dba->group('core');
+      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_core;
+  }
+  else{
+    throw("Unknown DBAdaptor type $dba\n");
+  }
 
-  my $dba = new_fast  Bio::EnsEMBL::DBSQL::DBAdaptor('-con' => $dbc);
 
-  Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
+  # return if the connection and species, group are the same
+  my $db_reg;
+  if($reg->get_alias($dba->species,"no throw")){
+    $db_reg = $reg->get_DBAdaptor($dba->species,$dba->group);
+  }
+  if(defined($db_reg)){
+    if($dba->dbc->equals($db_reg)){
+      return $db_reg;
+    }
+    else{ # diff conn details
+      $dba->species(find_unique_species($dba->species,$dba->group));
+    }
+  }
+
+  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species(), $dba->group(), $dba);
+  &{$config_sub}($dba);
+   
+  return $dba;
+}
+
+
+
+sub find_unique_species{
+  my ($species, $group) = @_;
+
+  $reg->add_alias($species,$species);
+
+  my $i = 0;
+  my $free =0;
+  while(!$free){
+    if($i == 0){
+      if(!defined($reg->get_DBAdaptor($species, $group))){
+	$free =1;
+	$i ="";
+      }
+      else{
+	$i = 1;
+      }
+    }
+    else{
+      $reg->add_alias($species.$i,$species.$i); #set needed self alias
+      if(!defined($reg->get_DBAdaptor($species.$i, $group))){
+	$free =1;
+      }
+      else{
+	$i++;
+      }
+    }
+  }
+  
+  $species .= $i;
+  return ($species);
+}
+
+sub load_core{
+  my ($dba) = @_;
+
 
   my %pairs =  ( 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
 		 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
@@ -167,75 +243,52 @@ sub load_core{
 
   foreach my $key (keys %pairs){
 
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
+    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
 
 
   foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
-    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($species,$type);
+    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
   }
 
 }
 
 
 sub load_lite{
-  my ($class, @args) = @_;
-  require Bio::EnsEMBL::Lite::DBAdaptor;
+  my ($dba) = @_;
 
-  my ($species) = rearrange([qw(SPECIES)],@args);
-  my $group = 'lite';
-
-
-  push (@args, '-group');
-  push (@args, $group);
-
-  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(@args);
-
-  my $dba = new_fast  Bio::EnsEMBL::Lite::DBAdaptor('-con' => $dbc);
-
-  Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
+#  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species, $dba->group, $dba);
 
   eval "require Bio::EnsEMBL::Lite::SNPAdaptor";
-
 
   my $adap = Bio::EnsEMBL::Lite::SNPAdaptor->new($dba);
 
   my $prim_adap = Bio::EnsEMBL::DBSQL::ProxySNPAdaptor->new($dba,$adap);
 
-  Bio::EnsEMBL::Registry->add_adaptor($species, $group, $group, $adap);
-  Bio::EnsEMBL::Registry->add_adaptor($species, $group, "ProxySNP", $prim_adap);
+  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $dba->group, $adap);
+  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, "ProxySNP", $prim_adap);
 
 }
 
 sub load_SNP{
-  my ($class, @args) = @_;
-  require Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor;
+  my ($dba) = @_;
+#  require Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor;
   require Bio::EnsEMBL::ExternalData::SNPSQL::SNPAdaptor;
 
-  my ($species) = rearrange([qw(SPECIES)],@args);
-  my $group = 'SNP';
-
-  push (@args, '-group');
-  push (@args, $group);
-
-  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(@args);
-
-  my $dba = new_fast  Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor('-con' => $dbc);
-
-  Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
-
-  eval "require Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor";
+#  eval "require Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor";
   my $adap = Bio::EnsEMBL::ExternalData::SNPSQL::SNPAdaptor->new($dba);
   my $prim_adap = Bio::EnsEMBL::DBSQL::ProxySNPAdaptor->new($dba,$adap);
 
 
-  Bio::EnsEMBL::Registry->add_adaptor($species, $group, $group, $adap);
+  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, "SNP", $adap);
 
-  Bio::EnsEMBL::Registry->add_adaptor($species, $group, "ProxySNP", $prim_adap);
+  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, "ProxySNP", $prim_adap);
 }
 
 sub attach_database{
   my ($class, $species, $core, $name1) = @_;
+
+  print STDERR "attach_databse called ".caller(). "\n";
 
   my $first =  Bio::EnsEMBL::Registry->get_DBAdaptor($species,$name1);
   my $coredb = Bio::EnsEMBL::Registry->get_DBAdaptor($species,$core);
@@ -246,6 +299,7 @@ sub attach_database{
 
 sub attach_dna{
   my ($class, $species, $main, $attach) = @_; 
+  print STDERR "attach_dna called ".caller(). "\n";
 
   my $no_seq =  Bio::EnsEMBL::Registry->get_DBAdaptor($species,$main);
   my $seq = Bio::EnsEMBL::Registry->get_DBAdaptor($species,$attach);
@@ -255,27 +309,13 @@ sub attach_dna{
 
 
 sub load_blast{
-  my ($class, @args) = @_;
-
-  my ($species) = rearrange([qw(SPECIES)],@args);
-  if(!defined($species)){
-    $species = 'NONE'; # NOT species dependent.
-    push (@args, '-species');
-    push (@args, $species);
-  }
-  my $group = 'blast';
-
-  push (@args, '-group');
-  push (@args, $group);
+  my ($dba) = @_;
 
   eval "require Bio::EnsEMBL::External::BlastAdaptor";
 
-  my $dba = Bio::EnsEMBL::External::BlastAdaptor->new(@args);
-  my $dbc = $dba->db();
+  my $objadap = Bio::EnsEMBL::External::BlastAdaptor->new($dba);
 
-  my $key = 'Blast';
-
-  Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $dba);
+  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, 'Blast', $objadap);
 }
 
 
@@ -301,19 +341,7 @@ sub add_blast_link{
 
 
 sub load_estgene{
-  my ($class, @args) = @_;
-
-  my ($species) = rearrange([qw(SPECIES)],@args);
-  my $group = 'estgene';
-
-  push (@args, '-group');
-  push (@args, $group);
-
-  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(@args);
-
-  my $dba = new_fast  Bio::EnsEMBL::DBSQL::DBAdaptor('-con' => $dbc);
-
-  Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
+  my ($dba) = @_;
 
   my %pairs =  ( 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
 		 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
@@ -358,31 +386,19 @@ sub load_estgene{
 
 
   foreach my $key (keys %pairs){
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
+    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
 
   #if dnadb has been set then for the follwing use it.
   foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
-    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($species,$type);
+    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
   }
 
 }
 
 
 sub load_est{
-  my ($class, @args) = @_;
-
-  my ($species) = rearrange([qw(SPECIES)],@args);
-  my $group = 'est';
-
-  push (@args, '-group');
-  push (@args, $group);
-
-  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(@args);
-
-  my $dba = new_fast  Bio::EnsEMBL::DBSQL::DBAdaptor('-con' => $dbc);
-
-  Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
+  my ($dba) = @_;
 
   my %pairs =  ( 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
 		 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
@@ -427,30 +443,18 @@ sub load_est{
 
 
   foreach my $key (keys %pairs){
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
+    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
 
   #if dnadb has been set then for the follwing use it.
   foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
-    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($species,$type);
+    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
   }
 }
 
 
 sub load_vega{
-  my ($class, @args) = @_;
-
-  my ($species) = rearrange([qw(SPECIES)],@args);
-  my $group = 'vega';
-
-  push (@args, '-group');
-  push (@args, $group);
-
-  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(@args);
-
-  my $dba = new_fast  Bio::EnsEMBL::DBSQL::DBAdaptor('-con' => $dbc);
-
-  Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
+  my ($dba) = @_;
 
   my %pairs =  ( 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
 		 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
@@ -492,28 +496,15 @@ sub load_vega{
 		 'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
 		 'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
 		 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor' );
+
   foreach my $key (keys %pairs){
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
+    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
 }
 
 
 sub load_compara{
-  my ($class, @args) = @_;
-  require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor;
-
-  my ($species) = rearrange([qw(SPECIES)],@args);
-  my $group = 'compara';
-
-
-  push (@args, '-group');
-  push (@args, $group);
-
-  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(@args);
-
-  my $dba = new_fast  Bio::EnsEMBL::Compara::DBSQL::DBAdaptor('-con' => $dbc);
-
-  Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
+  my ($dba) = @_;
 
   my %pairs =  ( "MetaContainer" => "Bio::EnsEMBL::DBSQL::MetaContainer",
 	      'SyntenyRegion'   => 'Bio::EnsEMBL::Compara::DBSQL::SyntenyRegionAdaptor',
@@ -535,27 +526,13 @@ sub load_compara{
 
   foreach my $key (keys %pairs){
 
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
+    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
 
 }
 
 sub load_hive{
-  my ($class, @args) = @_;
-  require Bio::EnsEMBL::Hive::DBSQL::DBAdaptor;
-
-  my ($species) = rearrange([qw(SPECIES)],@args);
-  my $group = 'hive';
-
-
-  push (@args, '-group');
-  push (@args, $group);
-
-  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(@args);
-
-  my $dba = new_fast  Bio::EnsEMBL::Hive::DBSQL::DBAdaptor('-con' => $dbc);
-
-  Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
+  my ($dba) = @_;
 
   my %pairs =  (
 	      "Analysis"         => "Bio::EnsEMBL::DBSQL::AnalysisAdaptor",
@@ -568,7 +545,7 @@ sub load_hive{
 
   foreach my $key (keys %pairs){
 
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
+    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
 
 }
@@ -590,51 +567,21 @@ sub load_go{
 
 
 sub load_haplotype{
-  my ($class, @args) = @_;
+  my ($dba) = @_;
 
   require Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor;
-
-  my ($species) = rearrange([qw(SPECIES)],@args);
-
-  my $group = 'haplotype';
-
-  push (@args, '-group');
-  push (@args, $group);
-
-  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(@args);
-
-  my $dba = new_fast Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor('-con' => $dbc);
-
-
-  Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
 
   my %pairs = ('Haplotype' => 'Bio::EnsEMBL::ExternalData::Haplotype::HaplotypeAdaptor');
 
   foreach my $key (keys %pairs){
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
+    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
 
 }
 
 
 sub load_pipeline{
-  my ($class, @args) = @_;
-
-  require Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor;
-
-  my ($species) = rearrange([qw(SPECIES)],@args);
-
-  my $group = 'pipeline';
-
-  push (@args, '-group');
-  push (@args, $group);
-
-  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(@args);
-
-  my $dba = new_fast Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor('-con' => $dbc);
-
-
-  Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
+  my ($dba) = @_;
 
   my %pairs =  ( 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
 		 'Attribute'            => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
@@ -680,7 +627,7 @@ sub load_pipeline{
 		 'StateInfoContainer' => 'Bio::EnsEMBL::Pipeline::DBSQL::StateInfoContainer');
 
   foreach my $key (keys %pairs){
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
+    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
 
 }
@@ -689,6 +636,7 @@ sub load_pipeline{
 sub dnadb_add{
   my $class = shift;
   my ($dnaspecies, $dnagroup, $species, $group) = @_;
+  print STDERR "dnadb_add called ".caller(). "\n";
 
   my $dnadb =  Bio::EnsEMBL::Registry->get_DBAdaptor($dnaspecies, $dnagroup);
   my $featdb = Bio::EnsEMBL::Registry->get_DBAdaptor($species, $group);

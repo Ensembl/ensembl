@@ -78,105 +78,38 @@ my $reg = "Bio::EnsEMBL::Registry";
 sub new {
   my($class, @args) = @_;
 
-  #call superclass constructor
   my $self ={};
   bless $self,$class;
 
-  my ($species, $group, $dbname) =
-    rearrange([qw(SPECIES GROUP DBNAME)], @args);
+  
+  $self->dbc(new Bio::EnsEMBL::DBSQL::DBConnection(@args));
 
+  my ($species, $group, $con, $dnadb) =
+    rearrange([qw(SPECIES GROUP DBCONN DNADB)], @args);
 
-  my ($spec,$gro) = $reg->check_if_already_there(@args);
-  if($spec){
-    $self = $reg->get_DBAdaptor($spec,$gro);
+  if(defined($con)){
+    $self->dbc($con);
+  }
+  else{
+    $self->dbc(new Bio::EnsEMBL::DBSQL::DBConnection(@args));
+  }
+  
+  if(defined($species)){
     $self->species($species);
-    $self->group($group);
-    return $self;
   }
-  my $config_sub;
-  if(defined($species)and defined($group)){ # NEW style usage of registry
-    $self = $reg->get_DBAdaptor($species,$group);
-    $self->species($species);
+  else{
+    $self->species("DEFAULT");
+  }
+  if(defined($group)){
     $self->group($group);
   }
-  else{                  # OLD style, so mimic by adding to registry
-    my $free=0;
-    if(!defined($species)){
-      $species= "DEFAULT";
-    }
-    if($class->isa('Bio::EnsEMBL::Compara::DBSQL::DBAdaptor')){
-      $group = "compara";
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_compara;
-    }
-    elsif($class->isa('Bio::EnsEMBL::Lite::DBAdaptor')){
-      $group = 'lite';
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_lite;
-    }
-    elsif($class->isa('Bio::EnsEMBL::External::BlastAdaptor')){
-      $group = 'blast';
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_blast;
-    }
-    elsif($class->isa('Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor')){
-      $group = "SNP";
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_SNP;
-    }
-    elsif($class->isa('Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor')){
-      $group = "pipeline";
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_pipeline;
-    }
-    elsif($class->isa('Bio::EnsEMBL::Hive::DBSQL::DBAdaptor')){
-      $group = "hive";
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_hive;
-    }
-    elsif($class->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
-      $group = "core";
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_core;
-    }
-    else{
-      throw("Unknown DBAdaptor type $class\n");
-    }
 
-    $reg->add_alias($species,$species);
-
-    my $i = 0;
-    while(!$free){
-      if($i == 0){
-	if(!defined($reg->get_DBAdaptor($species, $group))){
-	  $free =1;
-	  $i ="";
-	}
-	else{
-	  $i = 1;
-	}
-      }
-      else{
-	$reg->add_alias($species.$i,$species.$i); #set needed self alias
-	if(!defined($reg->get_DBAdaptor($species.$i, $group))){
-	  $free =1;
-	}
-	else{
-	  $i++;
-	}
-      }
-    }
-
-    $species .= $i;
-
-    push (@args, '-species');
-    push (@args, $species);
-
-
-    &{$config_sub}($class,@args);
-
-    $self = $reg->get_DBAdaptor($species,$group);
-
-  }
-
-  my ( $dnadb ) = rearrange([qw(DNADB)],@args);
+  Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
 
   if(defined $dnadb) {
     $self->dnadb($dnadb);
   }
+ 
   return $self;
 }
 

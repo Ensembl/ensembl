@@ -173,23 +173,26 @@ sub load_all{
 =cut
 
   
-sub check_if_already_there{
-  my ($class) = shift;
-
-  my ($dbname,$host,$driver,$port ) =
-    rearrange([qw(DBNAME HOST DRIVER PORT )], @_);
-
-  if(defined($registry_register{'_DBA'})){
-    foreach my $db (@{$registry_register{'_DBA'}}){
-      my $dbc= $db->db();
-      if($dbc->host() eq $host and $dbc->dbname() eq $dbname
-	 and $dbc->driver() eq $driver and $dbc->port() eq $port){
-	return ($db->species(),$db->group());
-      }
-    }
-  }
-  return 0;
-}
+#sub check_if_already_there{
+#  my ($class) = shift;
+#
+#  my ($dbname,$host,$driver,$port,$species, $group ) =
+#    rearrange([qw(DBNAME HOST DRIVER PORT SPECIES GROUP)], @_);
+#
+#  if(defined($registry_register{'_DBA'})){
+#    foreach my $db (@{$registry_register{'_DBA'}}){
+#      my $dbc= $db->db();
+#      if($dbc->host() eq $host and $dbc->dbname() eq $dbname
+#	 and $dbc->driver() eq $driver and $dbc->port() eq $port){
+#	if(defined($species) and defined($group) and 
+#	   $db->species eq $species and $db->group eq $group){
+#	  return ($db->species(),$db->group());
+#	}
+#      }
+#    }
+#  }
+#  return 0;
+#}
 
 
 #
@@ -262,8 +265,8 @@ sub get_all_db_adaptors{
   my ($class,$db) = @_;
   my %ret=();
 
- foreach my $key (keys %{$registry_register{$db->species()}{$db->group()}{'_special'}}){
-   $ret{$key} = $registry_register{$db->species()}{$db->group()}{'_special'}{$key};
+ foreach my $key (keys %{$registry_register{$class->get_alias($db->species())}{$db->group()}{'_special'}}){
+   $ret{$key} = $registry_register{$class->get_alias($db->species())}{$db->group()}{'_special'}{$key};
  }
 
   return \%ret;
@@ -289,9 +292,6 @@ sub add_DBAdaptor{
   my ($class, $species, $group, $adap) = @_;
 
   $species = $class->get_alias($species);
-#  if(defined($registry_register{$species}{$group}{'_DB'}) && warn_on_duplicates()){
-#    warning("Overwriting DBAdaptor in Registry for $species $group $adap\n");
-#  }
 
   $registry_register{$species}{$group}{'_DB'} = $adap;
 
@@ -364,9 +364,6 @@ sub add_DNAAdaptor{
   my ($class, $species, $group, $adap) = @_;
 
   $species = $class->get_alias($species);
-#  if(defined($registry_register{$species}{$group}{'_DNA'}) && warn_on_duplicates()){
-#    warning("Overwriting DNAAdaptor in Registry for $species $group $adap\n");
-#  }
 
   $registry_register{$species}{$group}{'_DNA'} = $adap;
 
@@ -474,7 +471,7 @@ sub add_adaptor{
 sub set_get_via_dnadb_if_set{
   my ($class,$species,$type) = @_;
 
-  $registry_register{$species}{$type}{'DNADB'} = 1;
+  $registry_register{$class->get_alias($species)}{$type}{'DNADB'} = 1;
 }
 
 =head2 get_adaptor
@@ -590,12 +587,7 @@ sub get_alias{
   my ($class, $key, $no_throw) = @_;
 
   if(!defined($registry_register{'_ALIAS'}{$key})){
-    if(defined($no_throw)){
-      return undef;
-    }
-    else{
-      throw("Unknown species $key has it been mistyped??\n");
-    }
+    return $key;
   }
   return $registry_register{'_ALIAS'}{$key};
 }
