@@ -10,7 +10,7 @@ our %sr_id_cache;
 our %sr_name_cache;
 
 tie(%sr_name_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_REGION_CACHE_SIZE);
-tie(%sr_name_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_REGION_CACHE_SIZE);
+tie(%sr_id_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_REGION_CACHE_SIZE);
 
 1;
 
