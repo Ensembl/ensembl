@@ -69,6 +69,7 @@ sub fetch_by_dbID {
     WHERE e.exon_id = $dbID
     ORDER BY e.sticky_rank DESC  };
 
+  
   my $sth = $self->prepare($query);
 
   $sth->execute();
@@ -147,7 +148,7 @@ sub fetch_by_geneId {
     ORDER BY t.transcript_id,e.exon_id
       , e.sticky_rank DESC
   };
-
+  #print STDERR $query."\n ".$self->db->dbname."\n";
   my $sth = $self->prepare( $query );
   $sth->execute();
 
@@ -155,6 +156,7 @@ sub fetch_by_geneId {
     if( ! exists $exons{ $hashRef->{exon_id} } ) {
 
       my $exon = $self->_exon_from_sth( $sth, $hashRef );
+   #   print STDERR "have exon coords ".$exon->start."-".$exon->end."\n";
       $exons{$exon->dbID} = $exon;
     }
   }
@@ -298,7 +300,7 @@ sub fetch_evidence_by_Exon {
   if( ! $exon->dbID() ) {
     $self->throw( "Exon fetch evidence: $statement.\n" );
   }
-
+  #print STDERR $statement."\n";
   my $sth = $self->prepare($statement);
   $sth->execute || $self->throw("execute failed for supporting evidence get!");
 
@@ -309,25 +311,27 @@ sub fetch_evidence_by_Exon {
       my $analysis = $anaAdaptor->fetch_by_dbID( $rowhash->{analysis} );
       
       my $f = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
-      $f->set_all_fields($rowhash->{'seq_start'},
-			 $rowhash->{'seq_end'},
-			 $rowhash->{'strand'},
-			 $rowhash->{'score'},
-			 $rowhash->{'name'},
-			 'similarity',
-			 $rowhash->{'contig_id'},
-			 $rowhash->{'hstart'},
-			 $rowhash->{'hend'},
-			 1, # hstrand
-			 $rowhash->{'score'},
-			 $rowhash->{'name'},
-			 'similarity',
-			 $rowhash->{'hid'});
-
+      $f->set_featurepair_fields($rowhash->{'contig_start'},
+				 $rowhash->{'contig_end'},
+				 $rowhash->{'strand'},
+				 $rowhash->{'score'},
+				 $rowhash->{'contig_id'},
+				 $rowhash->{'hit_start'},
+				 $rowhash->{'hit_end'},
+				 1, # hstrand
+				 $rowhash->{'score'},
+				 $rowhash->{'hit_id'},
+				 $analysis,
+				 $rowhash->{'evalue'},
+				 $rowhash->{'perc_ident'},
+				 $rowhash->{'phase'},
+				 $rowhash->{'end_phase'},
+				);
+      
       #
       # WARNING - assumming perl extensions, not C
       #
-
+      #print STDERR $f->gffstring."\n";
       $f->analysis($analysis);
 	
       $f->validate;
@@ -358,7 +362,7 @@ sub store {
   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
     $self->throw("$exon is not a EnsEMBL exon - not dumping!");
   }
-
+  #print STDERR "storing exon ".$exon->start."-".$exon->end."\n";
   if( $exon->dbID && $exon->adaptor == $self ) {
       $self->warn("Exon with dbID ".$exon->dbID." has already got a dbID and is attached to this adaptor. No need therefore to store");
       return $exon->dbID();
@@ -428,69 +432,44 @@ sub store {
 
  
 
-  my $sth  = $self->prepare("
-     INSERT INTO supporting_feature(exon_id,
-                                    contig_id,
-                                    contig_start,
-                                    contig_end,
-                                    score,
-                                    strand,
-                                    analysis_id,
-                                    hit_start,
-                                    hit_end,
-                                    hit_id,
-                                    hit_strand, 
-                                    evalue,  
-                                    perc_ident, 
-                                    phase, 
-                                    end_phase) 
-     VALUES(?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?) 
-   ");
+  my $sql = "insert into supporting_feature (exon_id, feature_id, feature_type)
+           values(?, ?, ?)";  
+  
+  my $sf_sth = $self->db->prepare($sql);
 
 
   my $anaAdaptor = $self->db->get_AnalysisAdaptor();
-
-  FEATURE: foreach my $f ($exon->each_Supporting_Feature) {
-	#print STDERR "Writing supporting feature ".$f->source_tag."\n";
-	eval {
-	    $f->validate();
-	};
-
-	if ($@) {
-	    print(STDERR "Supporting feature invalid. Skipping feature\n");
-	    next FEATURE;
-	}
-
-  	# my $analysisid = $feature_obj->write_Analysis($f->analysis);
-	my $analysisid;
-	if( !$f->analysis->adaptor == $anaAdaptor ) {
-	  $analysisid = $f->analysis->dbID();
-	} else {
-	  $analysisid = $anaAdaptor->store( $f->analysis );
-	  $f->analysis->dbID( $analysisid );
-	}
-	
-	if ($f->isa("Bio::EnsEMBL::FeaturePair")) {
-	    $sth->execute($exon->dbID(),
-			  $f->seqname,
-			  $f->start,
-			  $f->end,
-			  $f->score,
-			  $f->strand,
-			  $analysisid,
-			  $f->hstart,
-			  $f->hend,
-			  $f->hseqname,
-			  $f->hstrand,
-			  $f->p_value,
-			  $f->percent_id,
-			  $f->phase,
-			  $f->end_phase,
-			  );
-	} else {
-	    #$self->warn("Feature is not a Bio::EnsEMBL::FeaturePair");
-	}
+  my $dna_adaptor = $self->db->get_DnaAlignFeatureAdaptor();
+  my $pep_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
+  my $type;
+ FEATURE: foreach my $sf ($exon->each_Supporting_Feature) {
+    #print STDERR "Writing supporting feature ".$f->start."-".$f->end."\n";
+    #print STDERR "have ".$sf." as supporting feature\n"; 
+    if(!$sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
+      $self->throw("$sf must be an align feature otherwise is can't be stored");
     }
+    eval {
+      $sf->validate();
+    };
+    
+    if ($@) {
+      print(STDERR "Supporting feature invalid. Skipping feature\n");
+      next FEATURE;
+    }
+    
+    if($sf->isa("Bio::EnsEMBL::DnaDnaAlignFeature")){
+      $dna_adaptor->store($sf->seqname, $sf);
+      $type = 'dna_align_feature';
+    }elsif($sf->isa("Bio::EnsEMBL::DnaPepAlignFeature")){
+      $pep_adaptor->store($sf->seqname, $sf);
+      $type = 'protein_align_feature';
+    }
+    
+    $sf_sth->execute($exon->dbID, $sf->dbID, $type);
+    
+	   
+	   
+  }
 
   # Commented out until fully integrated into codebase
   # store exon frameshifts BUT only if there are some

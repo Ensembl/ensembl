@@ -241,6 +241,7 @@ sub fetch_by_contig_id_and_pid{
 
 sub fetch_by_Slice{
   my($self, $slice, $logic_name) = @_;
+  #print STDERR "args @_\n";
   my $constraint;
   my $analysis;
   if(!$slice){
@@ -466,6 +467,7 @@ sub fetch_by_assembly_location_and_pid{
 
 sub fetch_by_assembly_location_constraint{
   my ($self, $chr_start, $chr_end, $chr, $type, $constraint) = @_;
+  #print STDERR "assembly args @_\n";
   my $tablename = $self->tablename();
 
   if( !defined $type ) {
@@ -499,7 +501,7 @@ sub fetch_by_assembly_location_constraint{
   if($constraint) {
     $sql .=  " AND $constraint";
   }
-
+  #print STDERR $sql."\n";
   my $sth = $self->prepare($sql);
 
   $sth->execute();
@@ -596,7 +598,8 @@ sub store{
                       $sf->hstart, $sf->hend, $sf->hstrand, $sf->hseqname,
 		      $sf->cigar_string, $sf->analysis->dbID, $sf->score, 
                       $sf->p_value, $sf->percent_id);
-   }
+       $sf->dbID($sth->{'mysql_insertid'});
+     }
 
 
 }

@@ -551,7 +551,7 @@ sub store{
    my $sth = $self->prepare("insert into protein_align_feature (contig_id,contig_start,contig_end,contig_strand,hit_start,hit_end,hit_name,cigar_line,analysis_id,score, evalue, perc_ident) values (?,?,?,?,?,?,?,?,?,?, ?, ?)");
 
    foreach my $sf ( @sf ) {
-       if( !ref $sf || !$sf->isa("Bio::EnsEMBL::FeaturePair") ) {
+       if( !ref $sf || !$sf->isa("Bio::EnsEMBL::DnaPepAlignFeature") ) {
 	   $self->throw("Simple feature must be an Ensembl ProteinAlignFeature, not a [$sf]");
        }
 
@@ -564,6 +564,7 @@ sub store{
        }
        #print STDERR "storing ".$sf->gffstring."\n";
        $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->hstart,$sf->hend,$sf->hseqname,$sf->cigar_string,$sf->analysis->dbID,$sf->score, $sf->p_value, $sf->percent_id);
+       $sf->dbID($sth->{'mysql_insertid'});
    }
 
 
