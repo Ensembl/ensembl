@@ -696,7 +696,7 @@ sub dna_seq {
   }
 
 
-  my $seq = new Bio::PrimarySeq(-seq => $mrna,-id => $self->id);
+  my $seq = new Bio::PrimarySeq(-SEQ => $mrna,-ID => $self->id);
 
   return $seq;
 }
