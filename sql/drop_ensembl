@@ -1,0 +1,1 @@
+echo 'show tables' |  mysql -u ensro -A ensembl | grep -v 'Tables' | perl -ne 'chomp;print ("delete from $_;\n");' | mysql  -u root --password=superpog -A ensembl

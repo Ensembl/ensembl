@@ -1,8 +1,8 @@
 # MySQL dump 5.13
 #
-# Host: localhost    Database: small
+# Host: obi-wan    Database: ens500
 #--------------------------------------------------------
-# Server version	3.22.22
+# Server version	3.22.32
 
 #
 # Table structure for table 'analysis'
@@ -16,6 +16,17 @@ CREATE TABLE analysis (
   gff_feature varchar(40),
   id int(11) DEFAULT '0' NOT NULL auto_increment,
   PRIMARY KEY (id)
+);
+
+#
+# Table structure for table 'chromosome'
+#
+CREATE TABLE chromosome (
+  name varchar(40) DEFAULT '' NOT NULL,
+  chromosome_id int(11) DEFAULT '0' NOT NULL auto_increment,
+  species_id int(11) DEFAULT '0' NOT NULL,
+  id int(11) DEFAULT '0' NOT NULL,
+  PRIMARY KEY (chromosome_id)
 );
 
 #
@@ -40,16 +51,28 @@ CREATE TABLE contig (
   id varchar(40) DEFAULT '' NOT NULL,
   internal_id int(10) DEFAULT '0' NOT NULL auto_increment,
   clone varchar(40) DEFAULT '' NOT NULL,
-  mapbin varchar(40) DEFAULT '' NOT NULL,
   length int(10) unsigned,
   offset int(10) unsigned,
-  orientation int(1) DEFAULT '1' NOT NULL,
   corder int(10) unsigned,
   dna int(10),
-  chromosomeId int(10) default '0' not null,
+  chromosomeId int(10) DEFAULT '0' NOT NULL,
   PRIMARY KEY (internal_id),
   KEY clone_index (clone),
   KEY id_index (id)
+);
+
+#
+# Table structure for table 'contigoverlap'
+#
+CREATE TABLE contigoverlap (
+  dna_a_id int(10) DEFAULT '0' NOT NULL,
+  dna_b_id int(10) DEFAULT '0' NOT NULL,
+  contig_a_position int(10) unsigned,
+  contig_b_position int(10) unsigned,
+  type varchar(40) DEFAULT '' NOT NULL,
+  overlap_size int(10) unsigned,
+  overlap_type set('right2left','left2right','left2left','right2right'),
+  PRIMARY KEY (dna_a_id,dna_b_id,type)
 );
 
 #
@@ -197,15 +220,6 @@ CREATE TABLE ghost (
 );
 
 #
-# Table structure for table 'mapbin'
-#
-CREATE TABLE mapbin (
-  id varchar(40) DEFAULT '' NOT NULL,
-  chromosome char(2) DEFAULT '' NOT NULL,
-  PRIMARY KEY (id)
-);
-
-#
 # Table structure for table 'meta'
 #
 CREATE TABLE meta (
@@ -232,6 +246,16 @@ CREATE TABLE repeat_feature (
   PRIMARY KEY (id),
   KEY contig_index (contig),
   KEY hid_index (hid)
+);
+
+#
+# Table structure for table 'species'
+#
+CREATE TABLE species (
+  species_id int(10) DEFAULT '0' NOT NULL auto_increment,
+  nickname varchar(40) DEFAULT '' NOT NULL,
+  taxonomy_id int(10) DEFAULT '0' NOT NULL,
+  PRIMARY KEY (species_id)
 );
 
 #
@@ -284,14 +308,3 @@ CREATE TABLE translation (
   PRIMARY KEY (id)
 );
 
-
-create table contigoverlap (
-	dna_a_id int(10) NOT NULL,
-	dna_b_id int(10) NOT NULL,
-	contig_a_position int(10) unsigned,
-        contig_b_position int(10) unsigned,
-        type varchar(40) DEFAULT '' NOT NULL,
-        overlap_size int(10) unsigned,
-        overlap_type set('right2left','left2right','left2left','right2right'),
-       PRIMARY KEY(dna_a_id,dna_b_id,type)
-  );
