@@ -31,6 +31,7 @@ my $organism   = $conf{'organism'};
 my $check      = $conf{'check'};
 my $query_pep  = $conf{'query'};
 my $refseq_pred = $conf{'refseq_pred_gnp'};
+my $dros_ext_annot = $conf{'dros_ext_annot'};
 
 my %map;
 my %ref_map;
@@ -271,6 +272,38 @@ MAPPING: while (<MAP>) {
     }  
 }
 
+if ($organism eq "drosophila") {
+    open (DROSANNOT,"$dros_ext_annot") || die "Can't open Dros file $dros_ext_annot\n";
+    
+    while (<DROSANNOT>) {
+	chomp;
+	my ($cg,$db,$ac) = split;
+
+	
+	#Here we get CG accession numbers ($cg) corresponding to gene_stable_id in Ensembl, get all of the translation internal ids for the given entry
+
+	my $query = "select t.translation_id from transcript t, gene_stable_id g where g.gene_id = t.gene_id and g.stable_id = '$cg'";
+	my $sth = $db->prepare($query);
+	$sth->execute();
+
+	while (my $trans_is = $sth->fetchrow) {
+	    
+	    #Create a new dbentry object
+	    my $dbentry = Bio::EnsEMBL::DBEntry->new
+		( -adaptor => $adaptor,
+		      -primary_id => $ac,
+		      -display_id => $ac,
+		      -version => 1,
+		      -release => 1,
+		      -dbname => $db );
+		$dbentry->status("XREF");
+	    
+	    $adaptor->store($dbentry,$trans_id,"Translation");
+	}
+
+    }
+
+}
 
 ###############
 #Some OO stuff#
