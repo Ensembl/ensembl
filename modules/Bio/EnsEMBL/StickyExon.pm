@@ -320,7 +320,7 @@ sub seq {
     }
   } else {
     my $seqString = "";
-    for my $cExon ( $self->each_component_Exons() ) {
+    for my $cExon ( $self->each_component_Exon() ) {
       $seqString .= $cExon->seq()->seq();
     }
     $self->{'_seq'} = $seqString;
