@@ -2135,6 +2135,29 @@ sub get_all_Clone_id{
    return @out;
 }
 
+=head2 contig_overlap_source
+
+ Title   : contig_overlap_source
+ Usage   : my $source_sub = $contig->contig_overlap_source()
+ Function: Gets or sets a subroutine which is used to
+           decide which overlap sources are used to
+           build virtual contigs.
+ Returns : value of contig_overlap_source.
+ Args    : ref to a subroutine
+
+=cut
+
+sub contig_overlap_source {
+    my( $self, $sub ) = @_;
+    
+    if ($sub) {
+        $self->throw("'$sub' is not a CODE reference")
+            unless ref($sub) eq 'CODE';
+        $self->{'_contig_overlap_source'} = $sub;
+    }
+    return $self->{'_contig_overlap_source'};
+}
+
 
 
 =head2 perl_only_sequences

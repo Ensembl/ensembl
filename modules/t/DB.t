@@ -43,6 +43,8 @@ $ens_test->do_sql_file("t/db.dump");
 my $db = $ens_test->get_DBSQL_Obj;
 print "ok 2\n";    
 
+$db->contig_overlap_source(\&ret_one);
+
 
 @cloneids =  $db->get_all_Clone_id();
 my $clone  = $db->get_Clone($cloneids[0]);
@@ -128,6 +130,11 @@ if( $contig->get_attribute('silly') ne 'something' ) {
     print "not ok 12\n";
 } else {
     print "ok 12\n";
+}
+
+
+sub ret_one {
+    return 1;
 }
     
 

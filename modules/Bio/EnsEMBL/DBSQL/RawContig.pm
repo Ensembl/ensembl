@@ -96,7 +96,6 @@ sub new {
     $self->_got_overlaps(0);
     $self->fetch();
     $self->perl_only_sequences($perlonlysequences);
-    $self->contig_overlap_source($contig_overlap_source);
     $self->overlap_distance_cutoff($overlap_distance_cutoff);
 
     return $self;
@@ -1918,7 +1917,7 @@ sub _load_overlaps {
         # Statements like:
         #   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
         # seem to make queries inordinately slow.
-        my $overlap_source_sub  = $self->contig_overlap_source();
+        my $overlap_source_sub  = $self->_db_obj->contig_overlap_source();
         my $overlap_cutoff      = $self->overlap_distance_cutoff();
         
         my( @overlap );
@@ -2730,29 +2729,6 @@ sub _mask_features {
 }
 
 
-
-=head2 contig_overlap_source
-
- Title   : contig_overlap_source
- Usage   : my $source_sub = $contig->contig_overlap_source()
- Function: Gets or sets a subroutine which is used to
-           decide which overlap sources are used to
-           build virtual contigs.
- Returns : value of contig_overlap_source.
- Args    : ref to a subroutine
-
-=cut
-
-sub contig_overlap_source {
-    my( $self, $sub ) = @_;
-    
-    if ($sub) {
-        $self->throw("'$sub' is not a CODE reference")
-            unless ref($sub) eq 'CODE';
-        $self->{'_contig_overlap_source'} = $sub;
-    }
-    return $self->{'_contig_overlap_source'};
-}
 
 
 =head2 overlap_distance_cutoff
