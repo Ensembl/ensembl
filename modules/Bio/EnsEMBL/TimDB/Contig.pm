@@ -168,7 +168,8 @@ sub _initialize {
 	      $tid =~ s/ENST/ENSP/;
 	      
 	      $trans->id($tid);
-	      $trans->version($trans->version);
+	      $trans->version($transcript->version);
+	      
 	      $transcript->translation($trans);
 	      
 	  }
