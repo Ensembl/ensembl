@@ -40,7 +40,7 @@ use vars '@ISA';
 @ISA = qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 #implement the interface GeneAdaptorI
-# use implements qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI);
+use implements qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI);
 
 sub new {
   my($class, $db, $core_adaptor) = @_;
