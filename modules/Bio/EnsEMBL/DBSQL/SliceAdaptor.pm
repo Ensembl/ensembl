@@ -616,55 +616,75 @@ sub fetch_by_Feature{
 
 
 
+=head2 fetch_by_misc_feature_attribute
+
+  Arg [1]    : string $attribute_type
+               The code of the attribute type
+  Arg [2]    : (optional) string $attribute_value
+               The value of the attribute to fetch by
+  Arg [3]    : (optional) int $size
+               The amount of flanking region around the misc feature desired.
+  Example    : $slice = $sa->fetch_by_misc_feature_attribute('superctg',
+                                                             'NT_030871');
+               $slice = $sa->fetch_by_misc_feature_attribute('synonym',
+                                                             'AL00012311',
+                                                             $flanking);
+  Description: Fetches a slice around a MiscFeature with a particular
+               attribute type and value. If no value is specified then
+               the feature with the particular attribute is used.
+               If no size is specified then 0 is used.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : Throw if no feature with the specified attribute type and value
+               exists in the database
+               Warning if multiple features with the specified attribute type
+               and value exist in the database.
+  Caller     : webcode
+
+=cut
+
+sub fetch_by_misc_feature_attribute {
+  my ($self, $attrib_type_code, $attrib_value, $size) = @_;
+
+  my $mfa = $self->db()->get_MiscFeatureAdaptor();
+
+  my $feats = $mfa->fetch_all_by_attribute_type_value($attrib_type_code,
+                                                   $attrib_value);
+
+  if(@$feats == 0) {
+    throw("MiscFeature with $attrib_type_code=$attrib_value does " .
+          "not exist in DB.");
+  }
+
+  if(@$feats > 1) {
+    warning("MiscFeature with $attrib_type_code=$attrib_value is " .
+            "ambiguous - using first one found.");
+  }
+
+  my ($feat) = @$feats;
+
+  return $self->fetch_by_Feature($feat, $size);
+}
+
+
+
+
+#####################################
+# sub DEPRECATED METHODs
+#####################################
+
 =head2 fetch_by_mapfrag
 
- Title   : fetch_by_mapfrag
- Usage   : $slice = $slice_adaptor->fetch_by_mapfrag('20');
- Function: Creates a slice of a "mapfrag"
- Returns : Slice object
- Args    : chromosome name
-
+ Function: DEPRECATED use fetch_by_misc_feature_attribute('synonym',$mapfrag)
 
 =cut
 
 sub fetch_by_mapfrag{
    my ($self,$mymapfrag,$flag,$size) = @_;
-
+   deprecate('Use fetch_by_misc_feature_attribute instead');
    $flag ||= 'fixed-width'; # alt.. 'context'
-   $size ||= $flag eq 'fixed-width' ? 200000 : 0;
-   unless( $mymapfrag ) {
-       $self->throw("Mapfrag name argument required");
-   }
-
-   my( $chr_start,$chr_end);
-  
-   #set the end of the slice to the end of the chromosome
-   my $ca = $self->db()->get_MapFragAdaptor();
-   my $mapfrag = $ca->fetch_by_synonym($mymapfrag);
-   return undef unless defined $mapfrag;
-
-   if( $flag eq 'fixed-width' ) {
-       my $halfsize = int( $size/2 );
-       $chr_start = $mapfrag->seq_start - $halfsize;
-       $chr_end   = $mapfrag->seq_start + $size - $halfsize;
-   } else {
-       $chr_start     = $mapfrag->seq_start - $size;
-       $chr_end       = $mapfrag->seq_end   + $size;
-   }
-   my $type = $self->db->assembly_type();
-
-   my $slice = Bio::EnsEMBL::Slice->new
-     (
-      -chr_name      => $mapfrag->seq,
-      -chr_start     => $chr_start,
-      -chr_end       => $chr_end,
-      -assembly_type => $type,
-      -adaptor       => $self
-     );
-
-   return $slice;
+   $size ||= $flag eq 'fixed-width' ? 100000 : 0;
+   return $self->fetch_by_misc_feature_attribute('synonym',$mymapfrag,$size);
 }
-
 
 
 
