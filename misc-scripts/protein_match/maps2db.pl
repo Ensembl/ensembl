@@ -120,7 +120,6 @@ while (<XMAP>) {
 	
 	    ($xac) = $xac =~ /^(XP_\d+)/;
 	    $xac = $ref_map_pred{$xac};
-	    #print STDERR "XAC: $xac\n";
 	}
 
     if ($xid =~ /^XP_\d+/) {
@@ -128,6 +127,7 @@ while (<XMAP>) {
 	($xid) = $xid =~ /^(XP_\d+)/;
 	$xid = $ref_map_pred{$xid};
     }
+
 
     my $p= Desc->new;
     $p->targetDB($targetdb);
@@ -164,7 +164,6 @@ MAPPING: while (<MAP>) {
     my ($tid,$queryid,$tag,$targetperc,$queryperc) = split (/\t/,$_);
 
     my $m = $tid; 
-    
     #print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";
 
     if ($tid =~ /^NP_\d+/) {
@@ -173,13 +172,13 @@ MAPPING: while (<MAP>) {
 	$tid = $ref_map{$tid};
     }
 
- if ($tid =~ /^XP_\d+/) {
+    if ($tid =~ /^XP_\d+/) {
 	
 	($tid) = $tid =~ /^(XP_\d+)/;
 	$tid = $ref_map_pred{$tid};
     }
     
-    if ($tid =~ /^(\w+-\d+)/) {
+    if (($tid =~ /^(\w+-\d+)/)&&($organism ne "anopheles")) {
 	($tid) = $tid =~ /^(\w+)-\d+/;
     }
  
@@ -191,13 +190,11 @@ MAPPING: while (<MAP>) {
 	my @array = @{$map{$tid}};
 	
 	
-	
-
-
 	foreach my $a(@array) {
 #If the target sequence is either an SPTR or RefSeq accession number, we have some information concerning the percentage of identity (that the sequences we directly used for the pmatch mapping) 
-	
-	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISSPROT") || ($a->xDB eq "RefSeq")) {
+	    
+	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISSPROT") || ($a->xDB eq "RefSeq") || ($a->xDB eq "ANOSUB")) {
+
 		my $dbentry = Bio::EnsEMBL::IdentityXref->new
 		    ( -adaptor => $adaptor,
 		      -primary_id => $a->xAC,
