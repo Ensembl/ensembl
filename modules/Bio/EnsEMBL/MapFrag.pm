@@ -102,9 +102,14 @@ sub bacinfo {
 sub AUTOLOAD {
     my $self = shift;
     no strict 'refs';
-    my $var = $AUTOLOAD;
-    $var =~ s/.*:://;
-    return exists $self->{$var} ? $self->{$var} : $self->{'_annotations'}{$var};
+    (my $var = $AUTOLOAD) =~ s/.*:://;
+    if(exists $self->{$var}) {
+        *{$AUTOLOAD} = sub { return $_[0]{$var}; };
+        return $self->{$var}
+    } elsif($self->{'_annotations'}{$var}) {
+        *{$AUTOLOAD} = sub { return $_[0]{'_annotations'}{$var}; };
+        return $self->{'_annotations'}{$var}
+    }
 }
 
 1;

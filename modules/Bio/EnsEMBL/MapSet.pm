@@ -24,9 +24,9 @@ sub destroy { return 1; }
 sub AUTOLOAD {
     my $self = shift;
     no strict 'refs';
-    my $var = $AUTOLOAD;
-    $var =~ s/.*:://;
-    return $self->{$var}
+    (my $var = $AUTOLOAD) =~ s/.*:://;
+    *{$AUTOLOAD} = sub { return $_[0]{$var}; };
+    return $self->{$var};
 }
 
 1;
