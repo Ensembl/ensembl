@@ -254,7 +254,7 @@ $slices = split_Slices($slices, $max_length, $overlap);
 To obtain sequence from a slice the seq or subseq methods can be used:
 
 my $sequence = $slice->seq();
-print "$sequence\n";
+print “$sequence\n”;
 
 $sequence = $slice->subseq(100, 200);
 
@@ -267,7 +267,7 @@ my $start      = $slice->start();
 my $end        = $slice->end();
 my $strand     = $slice->strand();
 
-print "Slice: $coord_sys $seq_region $start-$end ($strand)\n";
+print “Slice: $coord_sys $seq_region $start-$end ($strand)\n”;
 
 Many object adaptors can provide a set of features which overlap a slice.   The Slice itself also provides a means to obtain features which overlap its region.  The following are two ways to obtain a list of genes which overlap a Slice:
 
@@ -298,7 +298,7 @@ foreach my $tr (@$transcripts) {
   my $end    = $tr->end();
   my $strand = $tr->strand();
   my $stable_id = $tr->stable_id();
-  print "Transcript $stable_id [$dbID] $start-$end($strand)\n";
+  print “Transcript $stable_id [$dbID] $start-$end($strand)\n”;
 }
 
 # fetch all of the dna-dna alignments overlapping chr20 10-11MB
@@ -309,7 +309,7 @@ foreach my $daf (@$dafs) {
   my $end      = $daf->end();
   my $strand   = $daf->strand();
   my $hseqname = $daf->hseqname();
-  print "DNA Alignment $hseqname [$dbID] $start-$end($strand)\n"; 
+  print “DNA Alignment $hseqname [$dbID] $start-$end($strand)\n”; 
 }
 
 # fetch a transcript by its internal identifier
@@ -340,7 +340,7 @@ sub feature2string {
   my $end   = $f->end();
   my $strand = $f->strand();
 
-  return "$stable_id : $seq_region:$start-$end ($strand)";
+  return “$stable_id : $seq_region:$start-$end ($strand)”;
 }
 
 
@@ -350,15 +350,15 @@ $slice = $slice_adaptor->fetch_by_region('chromosome','X',
 
 foreach my $gene (@{$slice->get_all_Genes()}) {
   my $gstring = feature2string($gene);
-  print "$gstring\n";
+  print “$gstring\n”;
   
   foreach my $trans (@{$gene->get_all_Transcripts()}) {
     my $tstring = feature2string($trans);
-    print "  $tstring\n";
+    print “  $tstring\n”;
 
     foreach my $exon (@{$trans->get_all_Exons()}) {
       my $estring = feature2string($exon);
-      print "    $estring\n";
+      print “    $estring\n”;
     }
   }
 }
@@ -368,36 +368,36 @@ In addition to the methods which are present on every feature, the transcript cl
 
 # spliced_seq returns the concatenation of the exon sequences.
 # This is the cDNA of the transcript
-print "cDNA: ", $trans->spliced_seq(), "\n";
+print “cDNA: “, $trans->spliced_seq(), “\n”;
 
 # translateable_seq returns only the CDS of the transcript
-print "CDS: ", $trans->translateable_seq(), "\n";
+print “CDS: “, $trans->translateable_seq(), “\n”;
 
 # UTR sequences are obtained via the five_prime_utr and
 # three_prime_utr methods
 my $fiv_utr = $trans->five_prime_utr();
 my $thr_utr = $trans->three_prime_utr();
 
-print ($fiv_utr) ? $fiv_utr->seq() : 'No 5' UTR', "\n";
-print ($thr_utr) ? $thr_utr->seq() : 'No 3' UTR', "\n";
+print ($fiv_utr) ? $fiv_utr->seq() : 'No 5' UTR', “\n”;
+print ($thr_utr) ? $thr_utr->seq() : 'No 3' UTR', “\n”;
 
 # The peptide sequence is obtained from the translate method 
 # undef is returned if this transcript is non-coding
 my $pep = $trans->translate();
-print ($pep) ? $pep->seq() : 'No Translation', "\n";
+print ($pep) ? $pep->seq() : 'No Translation', “\n”;
 
 
 Translations and ProteinFeatures
 
-Translation objects and peptide sequence can be extracted from a Transcript object.  It is important to remember that some Ensembl transcripts are non-coding (pseudogenes,  ncRNAs, etc.) and have no translation.  The primary purpose of a Translation object is to define the CDS and UTRs of its associated Transcript object. Peptide sequence is obtained directly from a Transcript object - not a Translation object as might be expected.  The following example obtains the peptide sequence of a Transcript and the Translation's stable identifier: 
+Translation objects and peptide sequence can be extracted from a Transcript object.  It is important to remember that some Ensembl transcripts are non-coding (pseudogenes,  ncRNAs, etc.) and have no translation.  The primary purpose of a Translation object is to define the CDS and UTRs of its associated Transcript object. Peptide sequence is obtained directly from a Transcript object – not a Translation object as might be expected.  The following example obtains the peptide sequence of a Transcript and the Translation's stable identifier: 
 
 my $stable_id = 'ENST00000044768';
 my $transcript_adaptor = $db->get_TranscriptAdaptor();
 my $transcript = 
   $transcript_adaptor->fetch_by_stable_id($stable_id);
 
-print $transcript->translation()->stable_id(), "\n";
-print $transcript->translate()->seq(), "\n";
+print $transcript->translation()->stable_id(), “\n”;
+print $transcript->translate()->seq(), “\n”;
 
 ProteinFeatures are features which are on an amino acid sequence rather than a nucleotide sequence.  The method get_all_ProteinFeatures can be used to obtain a set of protein features from a Translation object.
 
@@ -426,7 +426,7 @@ my $ptranscripts = $slice->get_all_PredictionTranscripts;
 foreach my $ptrans (@$ptranscripts) {
   my $exons = $ptrans->get_all_Exons();
   my $type = $ptrans->analysis->logic_name();
-  print "$type prediction has ".scalar(@$exons)." exons\n";
+  print "$type prediction has ".scalar(@$exons).” exons\n";
 
   foreach my $exon (@$exons) {
     print $exon->start  . " - " . 
@@ -489,8 +489,8 @@ Repetitive regions found by RepeatMasker and TRF (Tandem Repeat Finder) are repr
 
 my $repeats = $slice->get_all_RepeatFeatures();
 foreach my $repeat (@$repeats) {
-  print $repeat->display_id(), " ", 
-        $repeat->start(), "-", $repeat->end(), "\n";
+  print $repeat->display_id(), “ “, 
+        $repeat->start(), “-”, $repeat->end(), “\n”;
 }
 
 RepeatFeatures are used to perform repeat masking of the genomic sequence.  Hard or softmasked genomic sequence can be retrieved from Slice objects using the get_repeatmasked_seq method.  Hardmasking replaces sequence in repeat regions with Ns. Softmasking replaces sequence in repeat regions with lowercase sequence. 
@@ -523,17 +523,17 @@ foreach my $synonym ($marker->get_all_MarkerSynonyms()}) {
 }
 
 # print the primer info
-print "\nleft primer: ", $marker->left_primer(), "\n";
-print "right primer: ", $marker->right_primer(), "\n";
-print "product size: ", $marker->min_primer_dist(), '-', 
-      $marker->max_primer_dist(), "\n";
+print “\nleft primer: ”, $marker->left_primer(), “\n”;
+print “right primer: ”, $marker->right_primer(), “\n”;
+print “product size: ”, $marker->min_primer_dist(), '-', 
+      $marker->max_primer_dist(), “\n”;
 
 # print out genetic/RH/FISH map information
-print "Map locations:\n";
+print “Map locations:\n”;
 foreach my $map_loc (@{$marker->get_all_MapLocations()}) {
-  print "  ", $map_loc->map_name(), ' ',  
+  print “  “, $map_loc->map_name(), ' ',  
         $map_loc->chromosome_name(), ' ', 
-        $map_loc->position(), "\n";
+        $map_loc->position(), “\n”;
 }
 
 MarkerFeatures, which represent genomic positions of markers, can be retrieved and manipulated in the same way as other Ensembl features.
@@ -541,15 +541,15 @@ MarkerFeatures, which represent genomic positions of markers, can be retrieved a
 # obtain the positions for an already retrieved marker
 foreach my $marker_feat (@{$marker->get_all_MarkerFeatures()}) {
   print $marker_feat->seq_region_name(), 
-        $marker_feat->start(), '-', $marker_feat->end(), "\n";
+        $marker_feat->start(), '-', $marker_feat->end(), “\n”;
 }
 
 # retrieve all marker features in a given region
 my $marker_feats = $slice->get_all_MarkerFeatures();
 foreach my $marker_feat (@$marker_feats) {
-  print $marker_feat->display_id(), " ", 
+  print $marker_feat->display_id(), “ “, 
         $marker_feat->seq_region_name(), 
-        $marker_feat->start(), '-', $marker_feat->end(), "\n";
+        $marker_feat->start(), '-', $marker_feat->end(), “\n”;
 }
 
 MiscFeatures
@@ -563,7 +563,7 @@ The following example retrieves all MiscFeatures representing ENCODE regions on 
 my $enc_regions = $slice->get_all_MiscFeatures('encode_regions');
 foreach my $enc_region (@$enc_regions) {
   foreach my $attr (@{$enc_region->get_all_Attributes()}) {
-    print $attr->name(), ':', $attr->value(), "\n";
+    print $attr->name(), ':', $attr->value(), “\n”;
   }
 }
 
@@ -593,20 +593,20 @@ Ensembl cross references its genes, transcripts and translations with identifier
 sub print_DBEntries {
   my $db_entries = shift;
   foreach my $dbe (@$db_entries) {
-    print $dbe->dbname()," - ",$dbe->display_id(),"\n";
+    print $dbe->dbname(),“ - “,$dbe->display_id(),“\n”;
   }
 }
 
-print "GENE ", $gene->stable_id(), "\n";
+print “GENE “, $gene->stable_id(), “\n”;
 print_DBEntries($gene->get_all_DBEntries());
 
 foreach my $trans(@{$gene->get_all_Transcripts()}){
-  print "TRANSCRIPT ", $trans->stable_id(), "\n";
+  print “TRANSCRIPT “, $trans->stable_id(), “\n”;
   print_DBEntries($trans->get_all_DBEntries());
   # watch out: pseudogenes have no translation
   if($trans->translation()) {
     my $transl = $trans->translation();
-    print "TRANSLATION ",$transl->stable_id(),"\n";
+    print “TRANSLATION “,$transl->stable_id(),”\n”;
     print_DBEntries($transl->get_all_DBEntries());
   }
 }
@@ -652,7 +652,7 @@ Sequences stored in Ensembl are associated with coordinate systems.  What the co
 my $csa = $db->get_CoordSystemAdaptor();
 my $cs = $csa->fetch_by_name('chromosome');
 
-print "Coord system: " . $cs->name()." ".$cs->version."\n";
+print “Coord system: “ . $cs->name().“ “.$cs->version.”\n”;
 
 A coordinate system is uniquely defined by its name and version.  Most coordinate systems do not have a version, and the ones that do have a default version, so it is usually sufficient to use only the name when requesting a coordinate system.  For example, chromosome coordinate systems have a version which is the assembly that defined the construction of the coordinate system.  The version of human chromosome coordinate system might be NCBI33 or NCBI34.  
 
@@ -673,7 +673,7 @@ Now suppose that you wish to write code which is independent of the species used
 #list all coordinate systems in this database:
 my @coord_systems = @{$csa->fetch_all()};
 foreach $cs (@coord_systems) {
-  print "Coord system: ".$cs->name()." ".$cs->version."\n"; 
+  print “Coord system: “.$cs->name().“ “.$cs->version.”\n”; 
 }
 
 #get all slices on the highest coordinate system:
@@ -687,12 +687,12 @@ Features on a Slice in a given coordinate system may be moved to another slice i
 The method transform can be used to move a feature to any coordinate system which is in the database.  The feature will be placed on a Slice which spans the entire sequence that the feature is on in the requested coordinate system.
 
 if(my $new_feature = $feature->transform('clone')) {
-  print "Feature's clonal position is:",
+  print “Feature's clonal position is:”,
         $new_feature->slice->seq_region_name(), ' ',
         $new_feature->start(),'-',$feature->end(),' (',
-        $new_feature->strand(), ")\n";
+        $new_feature->strand(), “)\n”;
 } else {
-  print "Feature is not defined in clonal coordinate system\n";
+  print “Feature is not defined in clonal coordinate system\n”;
 }
  
 The transform method returns a copy of the original feature in the new coordinate system, or undef if the feature is not defined in that coordinate system.  A feature is considered to be undefined in a coordinate system if it overlaps an undefined region or if it crosses a coordinate system boundary.  Take for example the tiling path relationship between chromosome and contig coordinate systems:
@@ -710,11 +710,11 @@ Both Feature A and Feature B are defined in the chromosomal coordinate system  d
 The special toplevel coordinate system can also be used in this instance to move the feature to the highest possible coordinate system in a given region:
 
 my $new_feature = $feature->transform('toplevel');
-print "Feature's toplevel position is:",
+print “Feature's toplevel position is:”,
 $new_feature->slice->coord_system->name(), ' ',
 $new_feature->slice->seq_region_name(), ' ',
 $new_feature->start(),'-',$feature->end(),' (',
-$new_feature->strand(), ")\n";
+$new_feature->strand(), “)\n”;
 
 
 Transfer
@@ -728,12 +728,12 @@ $new_slice = $slice_adaptor->fetch_by_region('chromosome, '2',
                                        1_500_000, 2_000_000);
 
 foreach $sf (@{$slice->get_all_SimpleFeatures('Eponine')}) {
-  print "Before: ", $sf->start, '-', $sf->end, "\n";
+  print “Before: “, $sf->start, '-', $sf->end, “\n”;
   $new_feat = $sf->transfer($new_slice);
   if(!$new_feat) {
-    print "Could not transfer feature\n";
+    print “Could not transfer feature\n”;
   } else {
-    print "After: ", $new_feat->start, '-', $new_feat->end, "\n";
+    print “After: “, $new_feat->start, '-', $new_feat->end, “\n”;
   }
 }
 
@@ -753,8 +753,8 @@ my $start      = $feature->start();
 my $end        = $feature->end();
 my $strand     = $feature->strand();
 
-print "Feature at: $seq_region $start-$end ($strand) projects " .    
-      "to\n";
+print “Feature at: $seq_region $start-$end ($strand) projects “ .    
+      “to\n“;
 
 foreach my $segment (@$projection) {
   my $to_slice = $segment->to_Slice();
@@ -762,7 +762,7 @@ foreach my $segment (@$projection) {
   my $to_start      = $to_slice->start();
   my $to_end        = $to_slice->end();
   my $to_strand     = $to_slice->strand();
-  print "  $to_seq_region $to_start-$to_end ($to_strand)\n";
+  print “  $to_seq_region $to_start-$to_end ($to_strand)\n”;
 }
 
 
@@ -776,24 +776,158 @@ print $feat->coord_system_name(),' ',$feat->seq_region_name(),' ';
 
 # get the feature's position on the sequence region
 print $feature->seq_region_start(),'-',$feature->seq_region_end(), 
-      '(', $feature->seq_region_strand(), ")\n";
+      '(', $feature->seq_region_strand(), “)\n”;
 
 Another useful method is display_id. This will return a string that can be used as the name or identifier for a particular feature.  For a gene or transcript this method would return the stable_id, for an alignment feature this would return the hit sequence name (hseqname), etc.
 
 # display_id returns a suitable display value for any feature type
-print $feat->display_id(), "\n";
+print $feat->display_id(), “\n”;
 
 The feature_Slice method will return a Slice which is the exact overlap of the feature the method was called on.  This slice can then be used to obtain the underlying sequence of the feature or to retrieve other features that overlap the same region, etc.
 
 $feat_slice = $feat->feature_Slice();
 
 # print the sequence of the feature region
-print $feat_slice->seq(), "\n";
+print $feat_slice->seq(), “\n”;
 
 # print the sequence of the feature region + 5000bp flanking 
 # sequence
-print $feat_slice->expand(5000, 5000)->seq(), "\n";
+print $feat_slice->expand(5000, 5000)->seq(), “\n”;
 
 # get all genes which overlap the feature
 $genes = $feat_slice->get_all_Genes();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+The Registry
+
+The registry is a convienient storage/retrieval area for all the adaptors and provides an easy way to access them. If you have an Ensembl Web Server setup then you can automatically load all it's adaptors with the load_registry_with_web_adaptors method from the Registry module.
+
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
+ 
+ 
+ 
+$reg->load_registy_with_web_adaptors();
+ 
+ 
+my $ga = $reg>get_adaptor("Homo_sapiens","estgene",”Gene”);
+ 
+my $gene = $ga->fetch_by_stable_id("ENSESTG00000015126");
+ 
+print $gene->seq()."\n";
+ 
+
+The above gives an example of using the database data held in the Ensembl Web Server to ease the maintainance of code as we do not need to add the host, database name, host etc as this will already be set up. Plus it should now be more readable.
+
+Another example of a general script is given below and takes four arguments the species, chromosome, start and end. This script will print out all the gene names with their start and end points and from which group database they were found for all genes found on the named chromosome between the start and end points specified. 
+
+#test2.pl
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
+
+my ($species, $chrom, $start, $end) = @ARGV;
+
+die("Error species chrom start and end needed\n") unless defined($end);
+
+$reg->load_registry_with_web_adaptors();
+
+$species = $reg->get_alias($species);
+
+my @dbs = $reg->get_all_DBAdaptors();
+foreach my $db (@dbs){
+  if($db->species eq $species){
+    my $slice_adap = $reg->get_adaptor
+					($db->species, $db->group,"Slice");
+    if(defined($slice_adap)){
+      my $slice = $slice_adap->fetch_by_region
+								('chromosome',$chrom, $start, $end);
+      foreach $gene ( @{$slice->get_all_Genes} ) {
+			my $gene2= $gene->transform('chromosome');
+			my $name =  $gene->stable_id() || $gene->type().".".
+															$gene->dbID() ;
+			print $db->group."\t".$name."\t".$gene2->start."\t".
+														$gene2->end."\n";
+      } 
+    }
+  }
+}
+
+Note the path to the SiteDefs.pm module must first be added to the PERL5LIB enviroment variable if you want to use the load_registry_with_web_adaptors method. The next example will list all the databases that have been set up for the Ensembl Web Server :-
+
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
+
+$reg->load_registry_with_web_adaptors();
+
+my @dbs = $reg->get_all_DBAdaptors();
+foreach my $db (@dbs){
+  print $db->species()."\t".
+	$db->group()."\t".
+	$db->dbc->dbname()."\t".
+	$db->dbc->host()."\t".
+	$db->dbc->port()."\n";
+}
+
+To ensure the Registry stores the Adaptors in an organised way two new arguments have been added to the DBAdaptor new method, these are species and group. Default values are used if these are not given. Configuration scripts can be written to enable an easy setup of the Registry for all scripts to use. Below is an example of a configuration script.
+
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Utils::ConfigRegistry;
+my $reg = "Bio::EnsEMBL::Registry";
+ 
+my @a = ('H_Sapiens', 'homo sapiens', 'human',
+         'Homo_Sapiens',"Homo sapiens");
+
+Bio::EnsEMBL::Utils::ConfigRegistry->
+	add_alias( -species => "Homo_sapiens",
+              -alias  => \@a);
+   
+new Bio::EnsEMBL::DBSQL::DBAdaptor( 
+					 -species => "Homo_sapiens",
+             -group   => "core",
+             -host    => 'host1',
+             -user    => 'anonymous',
+             -dbname  => 'homo_sapiens_core_24_34e',
+             -port    => '3306' ); 
+
+my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( 
+					 -species => "Homo_sapiens",
+             -group   => "estgene",
+             -host    => 'host1',
+             -user    => 'anonymous',
+             -dbname  => 'homo_sapiens_estgene_24_34e',
+             -port    => '3306' );
+  
+ 
+$reg->add_DNAAdaptor($db->species, $db->group, "core");
+
+The script is ran by calling the method load_all and passing it the file name. Alternatively if there is no file name the Enviroment Variable ENSEMBL_REGISTRY is checked for a valid file. If that fails the file ./ensembl_initrc is checked. So a central configuration script can be setup and occasional API programmers will no longer have to remember what databases are where and on what port etc. So to use the above configuration to get the sequence from a estgene stable_id would be :- This presumes i have set up ENSEMBL_REGISTRY.
+
+
+
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
+ 
+$reg->load_all();
+ 
+my $gadap = $reg->get_adaptor("human","estgene",”Gene”);
+  
+my $gene = $gadap->fetch_by_stable_id("ENSESTG00000015126");
+ 
+print $gene->seq."\n";
+ 
 
