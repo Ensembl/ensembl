@@ -4,7 +4,7 @@
 #
 # GUZZLE
 #
-# A STAND-ALONE PERL-BASED WEB DAS-CLIENT
+# A stand-alone perl-based web DAS-client
 #
 #
 # Author:   Andreas Kähäri (EMBL-EBI/ensembl),
@@ -50,6 +50,9 @@ my $tmpurl  = '/guzzle_tmp';
 # EXECUTABLE BY THE WEB SERVER USER!
 #
 my $tmpdir  = $htdocs . $tmpurl;
+if (! -d $tmpdir) {
+    die "Check value of \$tmpdir, '$tmpdir' is not a directory\n";
+}
 
 # $query_page_title and $result_page_title:
 # These holds the title stings for the two pages.
@@ -120,7 +123,7 @@ EOT
 #
 
 # $use_stylesheets
-# Whether to try to make use of the DAS stylesheets or not
+# Whether to try to make use of DAS stylesheets or not
 # (non-zero is "yes").
 #
 my $use_stylesheets = 1;
@@ -131,7 +134,7 @@ my $use_stylesheets = 1;
 my $be_nice = 1;
 
 # $use_graphics
-# Whether to generate and use graphics ro not.
+# Whether to generate and use graphics or not.
 #
 my $use_graphics = 1;
 
