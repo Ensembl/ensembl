@@ -1170,4 +1170,25 @@ sub gene_name {
      return $self->{'_web_hack_gene_name'};
 }
 
+=head2 description
+
+ Title   : description
+ Usage   : $obj->description($newval)
+ Function: 
+ Returns : value of description
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub description{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'description'} = $value;
+    }
+    return $obj->{'description'};
+
+}
+
 1;

@@ -855,6 +855,12 @@ sub _get_description {
    }else { 
        $gene->description( $unknown_string );
    }
+
+   foreach my $tr ( $gene->each_Transcript ) {
+       $tr->description($gene->description);
+   }
+
+
    undef;
 }                                       # _get_description
 
