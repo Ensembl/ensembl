@@ -69,7 +69,8 @@ sub fset2transcript {
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);
 	$exon->phase    ($f->phase);
-
+	$exon->score($f->score);
+	$exon->p_value($f->p_value);
 	$exon->attach_seq($contig->primary_seq);
 	
 	push(@exons,$exon);
@@ -131,6 +132,8 @@ sub fset2transcript_guess_phases {
 	$exon->start    ($f->start);
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);
+	$exon->score($f->score);
+	$exon->p_value($f->p_value);
 	$exon->attach_seq($contig->primary_seq);
 	$exon->phase($f->phase); 
 	push(@exons,$exon);
@@ -221,7 +224,7 @@ sub fset2transcript_3frame {
     foreach my $f (@f) {
       #print "exon seqname = ".$f->seqname."\n";
       my $exon  = new Bio::EnsEMBL::Exon;
-
+      #print STDERR "exon ".$f->gffstring."\n";
       push(@exons,$exon);
       $exon->seqname($f->seqname);
       $exon->temporary_id ($contig->id . ".$count");
@@ -238,7 +241,7 @@ sub fset2transcript_3frame {
       $transcript->add_Exon($exon);
       $count++;
 
-#      print STDERR "Added exon " . $exon->start . " " . $exon->end . " " . $exon->strand . " " . $exon->phase . " " . $exon->end_phase . "\n";
+      #print STDERR "Added exon start " . $exon->start . " end " . $exon->end . " strand " . $exon->strand . " score " . $exon->score . " pvalue " . $exon->p_value . "\n";
     }
        
     my $translation = new Bio::EnsEMBL::Translation;
@@ -257,6 +260,51 @@ sub fset2transcript_3frame {
   #print "finshed  fset2transcript_3frame\n";
   return @transcripts;
 }
+
+
+sub fset2transcript_with_seq {
+    my ($genscan,$seq)=@_;
+
+  
+    unless ($genscan->isa ("Bio::EnsEMBL::SeqFeatureI"))
+    {print "$genscan must be Bio::EnsEMBL::SeqFeatureI\n";}
+    unless ($seq->isa ("Bio::PrimarySeqI") || $seq->isa ("Bio::SeqI"))
+    {print "$seq must be Bio::SeqI or a Bio::PrimarySeqI\n";}
+
+    #print STDERR "running fset2transcript\n";
+    my $transcript = new Bio::EnsEMBL::Transcript;
+    $transcript->temporary_id($seq->id . "." . $genscan->raw_seqname);
+        
+    my @exons;
+    my $count= 1;
+    
+    foreach my $f ($genscan->sub_SeqFeature) {
+  
+	my $exon  = new Bio::EnsEMBL::Exon;
+	$exon->contig_id($seq->id);
+	$exon->start    ($f->start);
+	$exon->end      ($f->end  );
+	$exon->strand   ($f->strand);
+	$exon->phase    ($f->phase);
+	$exon->score ($f->score);
+	#print STDERR "contig is a = ".$seq."\n";
+	$exon->attach_seq($seq);
+	
+	push(@exons,$exon);
+	$count++;
+	
+    }
+
+    foreach my $exon (@exons) {
+       	
+      $transcript->add_Exon($exon);
+	
+	
+    }
+    return $transcript;
+   
+}
+
 
 
 1;
