@@ -100,10 +100,10 @@ sub fetch_by_chr_start_end {
 
 
 
-=head2 fetch_by_contig_accession
+=head2 fetch_by_contig_name
 
- Title   : fetch_by_contig_accession
- Usage   : $slice = $slice_adaptor->fetch_by_contig_id('AC000012.00001',1000);
+ Title   : fetch_by_contig_name
+ Usage   : $slice = $slice_adaptor->fetch_by_contig_name('AC000012.00001',1000);
  Function: Creates a slice of the specified slice adaptor object.  If a context size is given, the slice is extended by that number of basepairs on either side of the contig.  Throws if the contig is not golden.
  Returns : Slice object 
  Args    : contig id, [context size in bp]
@@ -111,16 +111,16 @@ sub fetch_by_chr_start_end {
 
 =cut
 
-sub fetch_by_contig_accession {
+sub fetch_by_contig_name {
    my ($self,$contigid,$size) = @_;
 
    if( !defined $size ) {$size=0;}
 
-   my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_contig($contigid); 
+   my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_contig($contigid);
 
-   return $self->fetch_Slice_by_chr_start_end($chr_name,
-					      $start-$size,
-					      $end+$size);
+   return $self->fetch_by_chr_start_end($chr_name,
+					$start-$size,
+					$end+$size);
  }
 
 

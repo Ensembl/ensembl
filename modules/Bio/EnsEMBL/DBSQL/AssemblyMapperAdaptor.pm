@@ -186,8 +186,8 @@ sub register_contig {
    my $sth = $self->prepare(qq{
       select
 	c.name,
-	a chr_start,
-	a chr_end
+	a.chr_start,
+	a.chr_end
       from
 	assembly a,
 	chromosome c
