@@ -356,7 +356,7 @@ sub store {
     return $exon->dbID();
   }
 
-  if( ! $exon->start || ! $exon->end || 
+  if( ! $exon->start || ! $exon->end ||
       ! $exon->strand || ! defined $exon->phase ) {
     $self->throw("Exon does not have all attributes to store");
   }
@@ -395,14 +395,11 @@ sub store {
 			$componentExon->sticky_rank() );
       if( ! $exonId ) {
 	$exonId = $exonst->{'mysql_insertid'};
-	$exon->dbID($exonId);
-	$exon->adaptor( $self );
       }
-      $componentExon->dbID($exonId);
     }
   } else {
     # normal storing
-    
+
     my $contig = $exon->contig();
 
     unless( $contig && ref $contig && $contig->dbID() ) {
@@ -417,8 +414,7 @@ sub store {
 		      $exon->phase(),
 		      $exon->end_phase(),
 		      $exon->sticky_rank() );
-    $exon->dbID($exonst->{'mysql_insertid'});
-    $exon->adaptor( $self );
+    $exonId = $exonst->{'mysql_insertid'};
   }
 
   if ($exon->stable_id) {
@@ -426,12 +422,11 @@ sub store {
         !$exon->modified ||
         !$exon->version) {
       $self->throw("Trying to store incomplete stable id information for exon");
-    } 
+    }
 
-        
     my $statement = "INSERT INTO exon_stable_id(exon_id," .
 	"version, stable_id, created, modified)".
-                    " VALUES(" . $exon->dbID . "," .
+                    " VALUES(" . $exonId . "," .
                                $exon->version . "," .
                                "'" . $exon->stable_id . "'," .
                                "FROM_UNIXTIME(".$exon->created."),".
@@ -468,7 +463,7 @@ sub store {
 	$self->throw("$sf must be an align feature otherwise" .
 		     "it can't be stored");
       }
-      
+
       #sanity check
       eval { $sf->validate(); };
       if ($@) {
@@ -477,7 +472,7 @@ sub store {
       }
 
       $sf->contig($e->contig);
-    
+
       if($sf->isa("Bio::EnsEMBL::DnaDnaAlignFeature")){
 	$dna_adaptor->store($sf);
 	$type = 'dna_align_feature';
@@ -488,10 +483,22 @@ sub store {
 	$self->warn("Supporting feature of unknown type. Skipping : [$sf]\n");
 	next;
       }
-    
-      $sf_sth->execute($exon->dbID, $sf->dbID, $type);
+
+      $sf_sth->execute($exonId, $sf->dbID, $type);
     }
   }
+
+  #
+  # Finally, update the dbID and adaptor of the exon (and any component exons)
+  # to point to the new database
+  #
+  foreach my $e (@exons) {
+    $e->dbID($exonId);
+    $e->adaptor($self);
+  }
+
+  $exon->adaptor($self);
+  $exon->dbID($exonId);
 }
 
 
