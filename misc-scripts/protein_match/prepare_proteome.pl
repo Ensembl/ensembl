@@ -59,7 +59,7 @@ my $organism = $conf{'organism'};
 my $refseq_pred = $conf{'refseq_pred_fa'};
 my $sub_genes = $conf{'submitted_genes'};
 
-if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat"))) {
+if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat")) {
     &parse_refseq;
 }
 
