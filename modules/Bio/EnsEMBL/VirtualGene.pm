@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::VirtualGene - A Gene viewed from one Contig's perspective
+Bio::EnsEMBL::VirtualGene - A Gene viewed from one Contig''s perspective
 
 =head1 SYNOPSIS
 
@@ -47,7 +47,7 @@ Bio::EnsEMBL::VirtualGene - A Gene viewed from one Contig's perspective
 =head1 DESCRIPTION
 
 VirtualGene provides a view of a Gene from the perspective of a
-contig. In this contig's perspective, the gene has a start and end, being
+contig. In this contig''s perspective, the gene has a start and end, being
 the first and last exon on the contig respectively. The strand is taken to
 be arbitarily the first exon it encounters on the call to each_unique_Exon
 on this contig. If the gene is jumping strand (a possibility due to software
@@ -98,7 +98,12 @@ sub _initialize {
   }
 
   $self->gene($gene);
-  $self->dbobj($contig->dbobj);
+
+  # sneaky 'only attach db if we have it'
+  if(!$contig->isa('Bio::EnsEMBL::PerlDB::Contig') ) {
+      $self->dbobj($contig->dbobj);
+  }
+
   $self->contig_id($contig->id);
   $self->_calculate_coordinates($gene,$contig);
 
@@ -274,7 +279,7 @@ sub _calculate_coordinates{
    my $inside_exon = 0;
    my ($start,$end,$strand);
    foreach my $exon ( @exons ) {
-       print STDERR "Looking at $cid vs ",$exon->contig_id,":",$exon->seqname,"\n";
+       #print STDERR "Looking at $cid vs ",$exon->contig_id,":",$exon->seqname,"\n";
 
        if( $cid eq $exon->seqname ) {
 	   if( $inside_exon == 0 ) {
