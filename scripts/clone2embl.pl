@@ -54,7 +54,7 @@ my $port   = '410000';
 my $format = 'embl';
 my $nodna = 0;
 my $help;
-my $byacc;
+my $noacc =0;
 my $aceseq;
 
 # this doesn't have genes (finished)
@@ -70,7 +70,7 @@ my $clone  = 'dJ271M21';
 	     'format:s'   => \$format,
 	     'nodna'    => \$nodna,
 	     'h|help'   => \$help,
-	     'byacc'    => \$byacc,
+	     'noacc'    => \$noacc,
 	     'aceseq'   => \$aceseq,
 	     );
 
@@ -91,7 +91,7 @@ if( $dbtype =~ 'ace' ) {
     $db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'pog' , -host => $host );
 } elsif ( $dbtype =~ 'timdb' ) {
     # clone_id is passed to speed things up - cuts down on parsing of flag files
-    $db = Bio::EnsEMBL::TimDB::Obj->new($clone_id,$byacc);
+    $db = Bio::EnsEMBL::TimDB::Obj->new($clone_id,1);
 } else {
     die("$dbtype is not a good type (should be ace, rdb or timdb)");
 }

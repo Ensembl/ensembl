@@ -51,6 +51,7 @@ package Bio::EnsEMBL::DB::CloneI;
 use vars qw($AUTOLOAD @ISA $CONTIG_SPACING);
 use strict;
 use Bio::EnsEMBL::GeneHandler;
+use Bio::EnsEMBL::AnnSeq;
 
 # Object preamble - inheriets from Bio::Root::Object
 
@@ -266,10 +267,15 @@ sub get_AnnSeq{
 
    $seq = $self->seq();
    
-   $as = Bio::AnnSeq->new();
+   $as = Bio::EnsEMBL::AnnSeq->new();
+   
+   $as->embl_id($self->embl_id());
+   $as->sv($self->sv());
+   $as->htg_phase($self->htg_phase());
+      
    $as->seq($seq);
    foreach my $gene ( @genes ) {
-       print STDERR "Adding gene $gene\n";
+       #print STDERR "Adding gene $gene\n";
        my $gh = new Bio::EnsEMBL::GeneHandler( -clone => $self, -gene => $gene );
        $as->add_SeqFeature($gh);
    }

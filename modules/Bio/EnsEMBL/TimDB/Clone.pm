@@ -320,7 +320,7 @@ sub embl_id {
 sub sv {
     my ($obj,$value) = @_;
     if( defined $value) {
-	if($value=~/^\d+$/){
+	if($value=~/^-?\d+$/){
 	    $obj->{'_clone_sv'} = $value;
 	}else{
 	    $obj->throw("Invalid value for SV $value");
@@ -348,7 +348,8 @@ sub htg_phase {
 	if($value=~/^[01234]$/){
 	    $obj->{'_clone_htgsp'} = $value;
 	}else{
-	    $obj->throw("Invalid value for htg_phase $value");
+	#    $obj->throw("Invalid value for htg_phase $value");
+	     $obj->warn("Invalid value for htg_phase $value. Storing undef for the moment");
 	}
     }
     return $obj->{'_clone_htgsp'};
