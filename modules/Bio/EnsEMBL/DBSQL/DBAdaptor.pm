@@ -1356,22 +1356,20 @@ sub source {
 
 =head2 assembly_type
 
-  Description: DEPRECATED - Use CoordSystemAdaptor to obtain default coordinate
-               system instead.
+  Description: DEPRECATED - Use CoordSystemAdaptor to obtain coordinate
+               systems instead.
 
 =cut
 
 sub assembly_type{
   my $self = shift;
-
-  deprecate('Use CoordSystemAdaptor::fetch_top_level instead');
-
+  deprecate("Use version of coordinate system you are interested in instead.\n"
+            . "Example:\n".
+            '  ($cs) = @{$coord_system_adaptor->fetch_all()};'."\n" .
+            '  $assembly = $cs->version();');
   my $csa = $self->get_CoordSystemAdaptor();
-
-  #get the default top-level coord system
-  my ($dbID,$name,$version) = $csa->fetch_top_level();
-
-  return $version;
+  my $cs = @{$csa->fetch_all()};
+  return $cs->version();
 }
 
 
