@@ -89,6 +89,6 @@ while (<STDIN>) {
     print; 
     print "\n";
 }
-warn "Mapped $remapped identifiers\n";
-warn "Not mapped: $notmapped\n";
+my $total=$remapped+$notmapped;
+warn "Mapped $remapped out of $total identifiers\n";
 
