@@ -104,6 +104,27 @@ sub fetch_by_dbID {
   return $contig;
 }
 
+
+sub fetch_all {
+  my $self  = shift;
+  my @res;
+
+  my $sth = $self->prepare( "SELECT contig_id, dna_id
+                          FROM contig " );
+  $sth->execute();
+  while( my $aref = $sth->fetchrow_arrayref() ) {
+    my $dbPrimarySeq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new
+      ( $aref->[1], $self->db() ); # ?
+    
+    my $contig = Bio::EnsEMBL::RawContig->new( $aref->[0], $self );
+    $contig->seq( $dbPrimarySeq );
+    push( @res, $contig );
+  }
+  return @res;
+}
+
+
+
 sub fetch_by_name {
   my $self = shift;
   my $name = shift;

@@ -276,7 +276,7 @@ sub seq {
   } else {
     if( ! defined $self->{_seq} &&
       defined $self->adaptor() ) {
-	print STDERR "Fetching sequence\n";
+	# print STDERR "Fetching sequence\n";
       $self->adaptor->fetch( $self );
     }
   }
@@ -288,6 +288,90 @@ sub primary_seq {
   my $self = shift;
   
   $self->seq();
+}
+
+
+=head2 get_repeatmasked_seq
+
+  Args      : none
+  Function  : Gives back the in memory repeatmasked seq. Will only work with
+              Database connection to get repeat features.
+  Returntype: Bio::PrimarySeq
+  Exceptions: none
+  Caller    : RunnableDB::Genscan::fetch_input(), other Pipeline modules.
+
+=cut
+
+
+sub get_repeatmasked_seq {
+    my ($self) = @_;
+    my @repeats = $self->get_all_RepeatFeatures();
+    my $seq = $self->primary_seq();
+    my $dna = $seq->seq();
+    my $masked_dna = $self->_mask_features($dna, @repeats);
+    my $masked_seq = Bio::PrimarySeq->new(   '-seq'        => $masked_dna,
+                                             '-display_id' => $self->name,
+                                             '-primary_id' => $self->name,
+                                             '-moltype' => 'dna',
+					     );
+    return $masked_seq;
+}
+
+
+=head2 _mask_features
+
+  Arg  1    : txt $dna_string
+  Arg  2    : list Bio::EnsEMBL::RepeatFeature @repeats
+              list of coordinates to replace with N
+  Function  : replaces string positions described im the RepeatFeatures
+              with Ns. 
+  Returntype: txt
+  Exceptions: none
+  Caller    : get_repeatmasked_seq
+
+=cut
+
+
+sub _mask_features {
+    my ($self, $dnastr,@repeats) = @_;
+    my $dnalen = CORE::length($dnastr);
+    
+  REP:foreach my $f (@repeats) {
+      
+      my $start    = $f->start;
+      my $end	   = $f->end;
+      my $length = ($end - $start) + 1;
+      
+      if ($start < 0 || $start > $dnalen || $end < 0 || $end > $dnalen) {
+	  print STDERR "Eeek! Coordinate mismatch - $start or $end not within $dnalen\n";
+	  next REP;
+      }
+      
+      $start--;
+      
+      my $padstr = 'N' x $length;
+      
+      substr ($dnastr,$start,$length) = $padstr;
+  }
+    return $dnastr;
+}                                       # mask_features
+
+
+
+=head2 get_all_RepeatFeatures
+
+  Args      : none
+  Function  : connect to database through set adaptor and retrieve the 
+              repeatfeatures for this contig.
+  Returntype: list Bio::EnsEMBL::RepeatFeature
+  Exceptions: none
+  Caller    : general, get_repeatmasked_seq()
+
+=cut
+
+sub get_all_RepeatFeatures {
+   my $self = shift;
+   return ();
 }
 
 

@@ -221,7 +221,7 @@ sub seq {
    
    my $id=$self->dna_id;
    
-   my $sth=$self->db_handle->prepare("SELECT sequence FROM dna WHERE id = $id");
+   my $sth=$self->db_handle->prepare("SELECT sequence FROM dna WHERE dna_id = $id");
    $sth->execute();
    my($str) = $sth->fetchrow
        or $self->throw("No DNA sequence for dna id " . $id);

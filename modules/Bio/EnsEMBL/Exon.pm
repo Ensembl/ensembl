@@ -1124,7 +1124,8 @@ sub get_frameshifts {
 sub get_cdna {
   my ($self) =@_;
 
-  my $seq = $self->seq->seq;
+  my $seq1 = $self->seq();
+  my $seq = $seq1->seq();
 
   # check to see if frameshifts actually exist
   my @frameshifts = $self->get_frameshifts();

@@ -269,6 +269,31 @@ sub get_CloneAdaptor {
     return $ca;
 }
 
+
+=head2 get_PredictionTranscriptAdaptor
+
+  Args      : none
+  Function  : PredictionTranscript Adaptor for this database.
+  Returntype: Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor
+  Exceptions: none
+  Caller    : general
+
+=cut
+
+sub get_PredictionTranscriptAdaptor {
+   my $self = shift;
+
+   my( $pta );
+   unless ($pta = $self->{'_pt_adaptor'}) {
+     require Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor;
+     $pta = Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor->new($self);
+     $self->{'_pt_adaptor'} = $pta;
+   }
+   return $pta;
+}
+
+
+
 # only the get part of the 3 functions should be considered public
 
 =head2 release_number

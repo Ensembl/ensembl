@@ -125,9 +125,6 @@ sub fetch_all {
 
 =cut
 
-
-=cut
-
 sub fetch_by_dbID {
   my $self = shift;
   my $id = shift;
@@ -371,6 +368,8 @@ sub exists {
 
     foreach my $cacheId (keys %{$self->{_cache}}) {
       if ($self->{_cache}->{$cacheId}->compare($anal) >= 0) {
+	# $anal->dbID( $cacheId );
+	# $anal->adaptor( $self );
         return $cacheId;
       }
     }

@@ -33,24 +33,25 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::PredictionExon;
+use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::EnsEMBL::PredictionTranscript;
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
 
+
 =head2 fetch_by_dbID
 
- Title   : fetch_by_dbID
- Usage   : 
- Function: fetches a PredictionTranscript by its dbID
- Example : 
- Returns : 
- Args    : 
+  Arg  1    : int $dbID
+              database internal id for a PredictionTranscript
+  Function  : Retrieves PredictionTranscript from db with given dbID.
+  Returntype: Bio::EnsEMBL::PredictionTranscript
+  Exceptions: returns undef when not found
+  Caller    : general
 
 =cut
 
-# returns list of exons or maybe empty list (gene not known)
+
 
 sub fetch_by_dbID {
   my ( $self, $dbID ) = @_;
@@ -61,7 +62,6 @@ sub fetch_by_dbID {
       $self->throw("Give a prediction_transcript_id");
   }
 
-  
   my $query = qq {
     SELECT  p.prediction_transcript_id
       , p.contig_id
@@ -69,87 +69,174 @@ sub fetch_by_dbID {
       , p.contig_end
       , p.contig_strand
       , p.start_phase
-      , p.end_phase
-      , p.rank
+      , p.exon_rank
       , p.score
+      , p.p_value	
       , p.analysis_id
-      , c.id cid
+      , p.exon_count
+
     FROM prediction_transcript p
-      , contig c
     WHERE p.prediction_transcript_id = ?
-      AND p.contig_id = c.internal_id
-    ORDER BY p.prediction_transcript_id, p.rank
+    ORDER BY p.prediction_transcript_id, p.exon_rank
   };
 
   my $sth = $self->prepare( $query );
-  $sth->execute();
-  my $analysis = undef;
+  $sth->execute( $dbID );
 
-  while( $hashRef = $sth->fetchrow_hashref() ) {
-    if( ! defined $analysis ) {
-      $analysis = $db->get_AnalysisAdaptor->fetch_by_dbID( $hashRef->{'analysis_id'} );
+  my @res = $self->_ptrans_from_sth( $sth );
+  return $res[0];
+}
+
+
+
+=head2 fetch_by_Slice
+
+  Arg  1    : Bio::EnsEMBL::Slice $slice
+              start, end, chromosome and type are used from the slice.
+  Function  : retrieves PTs from database which overlap with given slice.
+              PTs not fully in the slice are retrieved partially, with exons 
+              set to undef. 
+  Returntype: listref Bio::EnsEMBL::PredictionTranscript
+  Exceptions: none, list can be empty.
+  Caller    : Slice or WebSlice
+
+=cut
+
+sub fetch_by_Slice {
+   my $self = shift;
+   my $slice = shift;
+
+   $self->throw( "Not implemented yet" );
+}
+
+
+=head2 fetch_by_Contig
+
+  Arg  1    : Bio::EnsEMBL::RawContig $contig
+              Only dbID in Contig is used.
+  Function  : returns all PredicitonTranscipts on given contig
+  Returntype: listref Bio::EnsEMBL::PredictionTranscript
+  Exceptions: none, if there are none, the list is empty.
+  Caller    : Bio::EnsEMBL::RawContig->get_all_PredicitonTranscripts;
+
+=cut
+
+
+sub fetch_by_Contig {
+  my $self = shift;
+  my $contig = shift;
+
+  my $query = qq {
+    SELECT  p.prediction_transcript_id
+      , p.contig_id
+      , p.contig_start
+      , p.contig_end
+      , p.contig_strand
+      , p.start_phase
+      , p.exon_rank
+      , p.score
+      , p.p_value	
+      , p.analysis_id
+      , p.exon_count
+
+    FROM prediction_transcript p
+    WHERE p.contig_id = ?
+    ORDER BY p.prediction_transcript_id, p.exon_rank
+  };
+
+  my $sth = $self->prepare( $query );
+  $sth->execute( $contig->dbID );
+
+  my @res = $self->_ptrans_from_sth( $sth );
+  return \@res;
+}
+
+
+
+=head2 _ptrans_from_sth
+
+  Arg  1    : DBI:st $statement_handle
+              an already executed statement handle.
+  Function  : Generate PredictionTranscripts from the handle. Obviously 
+              this needs to come from a query on prediciton_transcript.
+              Needs to be sorted on exon_rank and p.._t.._id.
+  Returntype: list Bio::EnsEMBL::PredictionTranscript
+  Exceptions: none, list can be empty
+  Caller    : internal
+
+=cut
+
+
+sub _ptrans_from_sth {
+  my $self = shift;
+  my $sth = shift;
+
+  my $analysis;
+  my $pre_trans = undef; 
+  my $pre_trans_id = undef;
+  my @result = ();
+
+  while( my $hashRef = $sth->fetchrow_hashref() ) {
+    if(( ! defined $pre_trans  ) ||
+       ( $pre_trans_id != $hashRef->{'prediction_transcript_id'} )) {
+
+      $pre_trans = Bio::EnsEMBL::PredictionTranscript->new(); 
+      $pre_trans_id = $hashRef->{'prediction_transcript_id'};
+      $pre_trans->dbID( $pre_trans_id );
+      $pre_trans->adaptor( $self );
+      my $anaAdaptor = $self->db()->get_AnalysisAdaptor();
+      $analysis = $anaAdaptor->fetch_by_dbID( $hashRef->{'analysis_id'} );
+      $pre_trans->analysis( $analysis );
+      $pre_trans->set_exon_count( $hashRef->{'exon_count'} );
+      push( @result, $pre_trans );
     }
-    my $exon = $self->_exon_from_sth( $sth, $hashRef );
-    push( @exons, $exon );
+
+    my $exon = $self->_new_Exon_from_hashRef( $hashRef );
+    $pre_trans->add_Exon( $exon, $hashRef->{'exon_rank'} );
   }
 
-  delete $self->{rchash};
-  
-  my $pre_trans = Bio::EnsEMBL::PredictionTranscript->new();
-  $pre_trans->analysis( $analysis );
-  # add the exons somehow
-  my $transl = Bio::EnsEMBL::Translation->new( );
-  $transl->start_exon( $exons[0] );
-  $transl->start( 1 );
-  $transl->end_exon( $exons[$#exons] );
-  $transl->end( $exons[$#exons]->length() );
-
-  $pre_trans->translation( $transl );
-
-  return;
+  return @result;
 }
 
 
-sub fetch_by_assembly_location {
-}
+=head2 _new_Exon_from_hashRef
 
-sub fetch_by_contig {
-}
+  Arg  1    : hashref $exon_attributes
+              Data from a line in prediction_transcript
+  Function  : Creates an Exon from the data
+  Returntype: Bio::EnsEMBL::Exon
+  Exceptions: none
+  Caller    : internal
+
+=cut
+
 
 
 sub _new_Exon_from_hashRef {
-   my $self = shift;
-   my $hashRef = shift;
-
-   my $exon = Bio::EnsEMBL::Exon->new();
-
-   #  if exon doesnt support score we need PredictionExons which should
-   # extend Exon
-   #   my $exon = Bio::EnsEMBL::PredictionExon->new();
-   $exon->start( $hashRef->{'contig_start'} );
-   $exon->end( $hashRef->{'contig_end'} );
-   $exon->strand( $hashRef->{'contig_strand'} );
-   $exon->phase( $hashRef->{start_phase} );
-   $exon->end_phase( $hashRef->{end_phase} );
-   $exon->adaptor($self);
-   
-   if( !exists $self->{rchash}{$hashRef->{'contig_id'}} ) {
-     $self->{rchash}{$hashRef->{contig_id}} = $self->db->get_Contig($hashRef->{'cid'});
-   }
-
-   $exon->attach_seq($self->{rchash}{$hashRef->{'contig_id'}}->primary_seq);
-   $exon->contig( $self->{rchash}{$hashRef->{'contig_id'}} );
-   $exon->seqname($hashRef->{'cid'});
-   $exon->ori_start( $exon->start );
-   $exon->ori_end( $exon->end );
-   $exon->ori_strand( $exon->strand );
-
-   # does exon not have score?
-   $exon->score( $hashRef->{'score'} );
-
-# consider the following ...
-#   $exon->dbID( $hashRef->{'rank'} )
-   
+  my $self = shift;
+  my $hashRef = shift;
+  
+  my $exon = Bio::EnsEMBL::Exon->new();
+  my $contig_adaptor = $self->db()->get_RawContigAdaptor();
+  
+  my $contig = Bio::EnsEMBL::RawContig->new
+    ( $hashRef->{'contig_id'}, $contig_adaptor );
+  
+  $exon->start( $hashRef->{'contig_start'} );
+  $exon->end( $hashRef->{'contig_end'} );
+  $exon->strand( $hashRef->{'contig_strand'} );
+  $exon->phase( $hashRef->{start_phase} );
+  
+  $exon->contig( $contig );
+  $exon->attach_seq( $contig->seq() );
+  $exon->ori_start( $exon->start );
+  $exon->ori_end( $exon->end );
+  $exon->ori_strand( $exon->strand );
+  
+  # does exon not have score?
+  $exon->score( $hashRef->{'score'} );
+  $exon->p_value( $hashRef->{'p_value'} );
+  
   return $exon;
 }
 
@@ -159,19 +246,19 @@ sub _new_Exon_from_hashRef {
 
 =head2 store
 
- Title   : store
- Usage   : $ptransAdaptor->store($predicitionTranscriptObject)
- Function: Stores the thing
- Example : 
- Returns : 
- Args    : predictionTranscript object
+  Arg  1    : Bio::EnsEMBL::PredictionTranscript $pt
+  Function  : Stores given $pt in database. Puts dbID and Adaptor into $pt 
+              object. Returns the dbID.
+  Returntype: int
+  Exceptions: on wrong argument type
+  Caller    : general
 
 =cut
 
 sub store {
   my ( $self, $pre_trans ) = @_;
 
-  if( ! $pre_trans->isa('Bio::EnsEMBL::Prediction_Transcript') ) {
+  if( ! $pre_trans->isa('Bio::EnsEMBL::PredictionTranscript') ) {
     $self->throw("$pre_trans is not a EnsEMBL PredictionTranscript - not dumping!");
   }
 
@@ -181,18 +268,23 @@ sub store {
 
 
   my $exon_sql = q{
-       INSERT into prediction_transcript ( prediction_transcript_id, exon_rank, contig_id, contig_start, contig_end, contig_strand, start_phase, end_phase, score, analysis_id )
-		 VALUES ( ?, ?, ?, ?, ?, ?, ?,?, ? )
+       INSERT into prediction_transcript ( prediction_transcript_id, exon_rank, contig_id, 
+                                           contig_start, contig_end, contig_strand, 
+                                           start_phase, score, p_value,
+                                           analysis_id, exon_count )
+		 VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
 	       };
+
   my $exonst = $self->prepare($exon_sql);
 
   my $exonId = undef;
 
-  my @exons = $pre_trans->get_all_exons();
+  my @exons = $pre_trans->get_all_Exons();
   my $dbID = undef;
   my $rank = 1;
 
   for my $exon ( @exons ) {
+    if( ! defined $exon ) { $rank++; next; }
 
     my $contig_id = $exon->contig->dbID();
     my $contig_start = $exon->start();
@@ -204,16 +296,17 @@ sub store {
 
     # this is only in PredictionExon
     my $score = $exon->score();
+    my $p_value = $exon->p_value();
 
     my $analysis = $pre_trans->analysis->dbID;
 
-    if( $rank = 1 ) {
+    if( $rank == 1 ) {
       $exonst->execute( undef, 1, $contig_id, $contig_start, $contig_end, $contig_strand,
-			$start_phase, $end_phase, $score, $analysis );
+			$start_phase, $score, $p_value, $analysis, scalar( @exons) );
       $dbID =   $exonst->{'mysql_insertid'};
     } else {
       $exonst->execute( $dbID, $rank, $contig_id, $contig_start, $contig_end, $contig_strand,
-			$start_phase, $end_phase, $score, $analysis );
+			$start_phase, $end_phase, $score, $analysis, scalar( @exons ) );
     }
     $rank++;
   }
@@ -223,6 +316,19 @@ sub store {
   
   return $dbID;
 }
+
+
+
+=head2 remove
+
+  Arg  1    : Bio::EnsEMBL::PredictionTranscript $pt
+  Function  : removes given $pt from database. Expects access to
+              internal db via $pt->{'dbID'} to set it undef.
+  Returntype: none
+  Exceptions: none
+  Caller    : general
+
+=cut
 
 
 sub remove {
@@ -238,6 +344,7 @@ sub remove {
 
   # uhh, didnt know another way of resetting to undef ...
   $pre_trans->{dbID} = undef;
+  $pre_trans->{adaptor} = undef;
 }
 
 
