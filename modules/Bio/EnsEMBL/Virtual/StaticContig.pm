@@ -983,6 +983,8 @@ sub get_all_VirtualGenes_startend
     $self->throw ("I need a chromosome end") unless defined $glob_end;
     $self->throw ("I need a chromosome start") unless defined $glob_start;
     
+    &eprof_start("virtualgene-sql-get");
+
     my $query ="SELECT     STRAIGHT_JOIN t.gene,
                        MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                   (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
@@ -1001,6 +1003,12 @@ sub get_all_VirtualGenes_startend
     
     my $sth = $self->dbobj->prepare($query);
     $sth->execute;
+
+    &eprof_end("virtualgene-sql-get");
+
+
+    &eprof_start("virtualgene-build");
+
 				# 
     my ($gene_id,$start,$end);	# 
     $sth->bind_columns(undef,\$gene_id,\$start,\$end);
@@ -1023,6 +1031,8 @@ sub get_all_VirtualGenes_startend
 	$gene=Bio::EnsEMBL::Gene->new();
 	$gene->id($gene_id);
 
+	&eprof_start("virtualgene-externaldb");
+
 	my $query = "select external_db,external_id from genedblink where gene_id = '$gene_id'";
 	my $sth = $self->dbobj->prepare($query);
 	my $res = $sth ->execute();
@@ -1032,6 +1042,8 @@ sub get_all_VirtualGenes_startend
 	    $dblink->primary_id($hash->{'external_id'});
 	    $gene->add_DBLink($dblink);
 	}
+
+	&eprof_end("virtualgene-externaldb");
 
 	my $genestr=1;
 	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,
@@ -1046,6 +1058,8 @@ sub get_all_VirtualGenes_startend
 	push @genes,$vg;
     }
 
+
+    &eprof_end("virtualgene-build");
 
     $self->{'_virtualgenes_startend'} = \@genes;
     $self->_cached_virtualgenes_startend(1);
