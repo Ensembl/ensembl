@@ -369,7 +369,7 @@ sub fetch_all_by_feature_and_dbID{
     }	
     
     return \@features;
-  }
+}
 
 
 =head2 fetch_by_feature_and_dbID
@@ -390,9 +390,6 @@ sub fetch_by_feature_and_dbID {
 
   return $self->fetch_all_by_feature_and_dbID(@args);
 }
-
-
-
 
 
 =head2 store
@@ -434,10 +431,12 @@ sub store {
     my $homol = $feature->feature2;
       
     my $sth = 
-      $self->prepare("INSERT INTO protein_feature(id, translation, seq_start,
-                                                  seq_end, analysis,
-                                                  hstart, hend, hid, score,
-                                                  perc_id, evalue) ".
+      $self->prepare("INSERT INTO protein_feature(protein_feature_id, 
+                                                  translation_id, seq_start,
+                                                  seq_end, analysis_id,
+                                                  hit_start, hit_end, 
+                                                  hit_id, score,
+                                                  perc_ident, evalue) ".
 			       "VALUES ('NULL',"
 			       ."'".$feature->seqname    ."',"
 			       .$feature->start          .","
@@ -448,105 +447,11 @@ sub store {
 			       ."'".$homol->seqname      ."',"
 			       .$feature->score         .","
 			       .$feature->percent_id    .","
-			       ."'".$feature->p_value   ."')");
+			       .$feature->p_value   .")");
+    
     $sth->execute();
 
 }
-
-#=head2 write_Protein_feature_by_translationID
-
-# Title   : write_Protein_feature_by_translationID
-# Usage   :$obj->write_Protein_feature_by_translation($pep,@features)
-# Function: Write all of the protein features into the database of a particular peptide
-# Example :
-# Returns : nothing
-# Args    :
-
-
-#=cut
-
-#sub write_Protein_feature_by_translationID {
-#    my ($self,$pep,@features) = @_;
-    
-#    my $analysis;
-   
-##Check if the translation id exist in the database, throw an exeption if not.
-#    my $sth1 = $self->prepare("select translation_id from translation where translation_id = $pep");
-#    $sth1->execute;
-   
-#    if ($sth1->rows == 0) {
-#	$self->throw("This translation id: $pep does not exist in the database");
-#    }
-
-#    FEATURE :
-#	foreach my $features(@features) {	
-	   
-#	    if( ! $features->isa('Bio::EnsEMBL::SeqFeatureI') ) {
-#		$self->throw("Feature $features is not a feature!");
-#	    }
-	    
-#	    eval {
-#		$features->validate_prot_feature();
-#	    };
-	    
-	   
-	    
-#	    if ($@) {
-#		print STDERR "Feature for peptide ". $features->seqname." is not a protein feature, skipped\n";
-#		next FEATURE;
-#	    }
-	    
-	    
-#	    if (!defined($features->analysis)) {
-#		$self->throw("Feature " . $features->seqname . "doesn't have analysis. Can't write to database");
-#	    } else {
-#		$analysis = $features->analysis;
-#	    }
-	    
-#	    my $analysisid = $self->db->get_AnalysisAdaptor->store($analysis);
-	    
-#	    if ( $features->isa('Bio::EnsEMBL::FeaturePair') ) {
-#		my $homol = $features->feature2;
-		
-#		my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
-#					   "values ('NULL',"
-#					   ."".$pep                 .","
-#					   .$features->start          .","
-#					   .$features->end            .","
-#					   .$analysisid              .","
-#					   .$homol->start            .","
-#					   .$homol->end              .","
-#					   ."'".$homol->seqname      ."',"
-#					   .$features->score         .","
-#					   .$features->percent_id    .","
-#					   .$features->p_value       .")");
-#		$sth->execute();
-#	    }
-#	}
-#}
-    
-
-
-#=head2 delete_by_translationID
-
-# Title   : delete_by_translationID
-# Usage   :
-# Function: deletes all protein features for a particular peptide
-# Example :
-# Returns : 
-# Args    :
-
-
-#=cut
-
-#sub delete_by_translationID {
-#    my ($self,$trans) = @_;
-#    my $sth = $self->prepare("delete from protein_feature where translation = '$trans'");
-
-#    $sth->execute;
-#}
-
-
 
 =head2 remove
 
@@ -566,37 +471,6 @@ sub remove {
 
     $sth->execute;
 }
-
-
-
-#=head2 get_interproac_by_signature_id
-
-# Title   : get_interproac_by_signature_id
-# Usage   :
-# Function:
-# Example :
-# Returns : 
-# Args    :
-
-
-#=cut
-
-#sub get_interproac_by_signature_id{
-#   my ($self,$sign_id) = @_;
-#   my $sth = $self->prepare("select interpro_ac from interpro where id = '$sign_id'");
-   
-#   $sth->execute;
-   
-#   my $interpro_ac = $sth->fetchrow;
-   
-#   my $feat = new Bio::EnsEMBL::SeqFeature;
-   
-#   $feat->external_db($interpro_ac);
-   
-#   return $feat;
-
-#}
-
 
 =head2 _set_protein_feature
 
