@@ -814,9 +814,9 @@ sub _merge_pairs {
 #    Caller      internal
 #
 
-sub _is_sorted{
-   my ($self,$value) = @_;
-   $self->{'_is_sorted'} = shift if(@_);
+sub _is_sorted {
+   my ($self, $value) = @_;
+   $self->{'_is_sorted'} = $value if (defined($value));
    return $self->{'_is_sorted'};
 }
 
