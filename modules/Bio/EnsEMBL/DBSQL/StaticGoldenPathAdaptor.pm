@@ -296,7 +296,6 @@ sub fetch_VirtualContig_by_chr_start_end{
    
    my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end);
    my $vc;
-   print STDERR "calling $chr,$start,$end\n";
 
    eval {
      $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start,1,$end,@rc);
@@ -460,9 +459,7 @@ sub fetch_VirtualContig_of_gene{
        ($start,$end,$chr_name)=@row;
 
        push @start,$start;
-       print STDERR "Genestart: $start\n";
        push @end,$end;     
-       print STDERR "Geneend: $end\n";
    }   
    
    my @start_sorted=sort @start;
