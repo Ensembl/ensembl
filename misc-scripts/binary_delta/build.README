@@ -13,11 +13,12 @@ Andreas Kahari, andreas.kahari@ebi.ac.uk
     The program  will compute binary  "delta files"  that may be  used for
     upgrading from  one release of  an Ensembl  database to the  next one.
     The deltas  are computed  from the  text dumps  of the  MySQL database
-    files  (as found  on ftp://ftp.ensembl.org/<species>/data/mysql/)  and
-    will thus incorporate any schema changes  as well as data changes.  It
-    is hoped that the process of  downloading the delta files and applying
-    them to the older  release of the text dump files  on an external site
-    will be much quicker than downloading the complete new release.
+    files  (as  found on  ftp://ftp.ensembl.org/pub/<species>/data/mysql/)
+    and  will  thus  incorporate  any  schema  changes  as  well  as  data
+    changes.  It is hoped that the  process of downloading the delta files
+    and applying them  to the older release  of the text dump  files on an
+    external site will  be much quicker than downloading  the complete new
+    release.
 
     The new release may then be acuired by applying the delta files on the
     old  release  using the  apply.pl  program  (discussed elsewhere)  and
@@ -28,7 +29,7 @@ Andreas Kahari, andreas.kahari@ebi.ac.uk
 Requirements / Configuration
 
     To work,  build.pl needs the  following components, which  are usually
-    not part of your every-day Unix base-system.
+    not part of your every-day Unix-based system.
 
     1. The xdelta program (version 1.1.3, not version 2),
        http://sourceforge.net/projects/xdelta/

@@ -11,14 +11,14 @@ Andreas Kahari, andreas.kahari@ebi.ac.uk
     below).
 
     The  program  will patch  an  older  release  of an  Ensembl  database
-    into  a newer  release by  applying  binary "delta  files" created  by
-    the  build.pl  program (discussed  elsewhere).   The  delta files  are
-    applied to  the text dumps  of the MySQL  database files (as  found on
-    ftp://ftp.ensembl.org/<species>/data/mysql/) and will thus incorporate
-    any schema  changes as  well as  data changes.  It  is hoped  that the
-    process of downloading the delta files  and applying them to the older
-    release  of the  text dump  files  on an  external site  will be  much
-    quicker than downloading the complete new release.
+    into  a  newer  release  by  applying  binary  "delta  files"  created
+    by  the  build.pl  program  (discussed elsewhere).   The  delta  files
+    are  applied  to the  text  dumps  of  the  MySQL database  files  (as
+    found  on  ftp://ftp.ensembl.org/pub/<species>/data/mysql/)  and  will
+    thus incorporate  any schema changes as  well as data changes.   It is
+    hoped that  the process  of downloading the  delta files  and applying
+    them to the older  release of the text dump files  on an external site
+    will be much quicker than downloading the complete new release.
 
     Given a directory  of delta files created by build.pl  and a directory
     containing  the correct  and  untouched old  revision  of a  database,
