@@ -30,17 +30,20 @@ package Bio::EnsEMBL::Gene;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::TranscriptI;
-use Bio::Annotation::DBLink;
-use Bio::EnsEMBL::DBEntry;
+use Bio::EnsEMBL::Feature;
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 
-@ISA = qw(Bio::EnsEMBL::Root);
+
+@ISA = qw(Bio::EnsEMBL::Feature);
 
 
 =head2 new
 
-  Arg [1]    : none
+  Arg [start]  : int $start
+  Arg [end]    : int $end
+  Arg [strand] : 1,-1 $strand
+  Arg [slice]  : Bio::EnsEMBL::Slice $slice
   Example    : $gene = Bio::EnsEMBL::Gene->new();
   Description: Creates a new gene object
   Returntype : Bio::EnsEMBL::Gene
@@ -50,156 +53,14 @@ use Bio::EnsEMBL::DBEntry;
 =cut
 
 sub new {
-  my($class,@args) = @_;
+  my $caller = shift;
 
-  my $self = bless {}, $class;
-  $self->{'_transcript_array'} = [];
+  my $class = ref($caller) || $caller;
+  my $self = $class->SUPER::new(@_);
 
   return $self;
 }
 
-
-
-=head2 start
-
-  Arg [1]    : (optional) int $start
-  Example    : $start = $gene->start;
-  Description: This is a convenience method.  It may be better to calculate
-               your own start by looking at the exons yourself.
-               Gets/sets the lowest start coordinate of this genes exons.
-               No consistancy check is performed and if this is used as a
-               setter potentially the start could be set to a value which
-               does not correspond to the lowest exon start.  If this
-               gene is in RawContig coordinates and its exons span multiple
-               contigs the lowest value is still returned and a warning is
-               issued.
-  Returntype : int
-  Exceptions : warning if gene spans multiple contigs
-  Caller     : general, contigview
-
-=cut
-
-sub start {
-  my($self, $start) = @_;
-
-  my $multi_flag = 0;
-
-  if($start) {
-    $self->{start} = $start;   
-  } elsif(!defined $self->{start}) {
-    my $last_contig;
-    foreach my $exon (@{$self->get_all_Exons}) {
-      if(!defined($self->{start}) || $exon->start() < $self->{start}) {
-        $self->{start} = $exon->start();
-      }
-      $multi_flag = 1 if($last_contig && $last_contig ne $exon->contig->name);
-      $last_contig = $exon->contig->name;
-    }
-  }
-
-  if($multi_flag) {
-    $self->warn("Bio::EnsEMBL::Gene::start - Gene spans multiple contigs." .
-		"The return value from start may not be what you want");
-  }    
-  
-  return $self->{start};
-}
-
-
-
-=head2 end
-
-  Arg [1]    : (optional) int $end
-  Example    : $end = $gene->end;
-  Description: This is a convenience method.  It may be better to calculate
-               your own end by looking at the exons yourself.
-               Gets/sets the highest end coordinate of this genes exons.
-               No consistancy check is performed and if this is used as a
-               setter potentially the end could be set to a value which
-               does not correspond to the highest exon end.  If this
-               gene is in RawContig coordinates and its exons span multiple
-               contigs the highest value is still returned and a warning is
-               issued.
-  Returntype : int
-  Exceptions : warning if gene spans multiple contigs
-  Caller     : general, contigview
-
-=cut
-
-sub end {
-  my($self, $end) = @_;
-
-  my $multi_flag = 0;
-
-  if($end) {
-    $self->{end} = $end;   
-  } elsif(!defined $self->{end}) {
-    my $last_contig;
-    foreach my $exon (@{$self->get_all_Exons()}) {
-      if(!defined($self->{end}) || $exon->end() > $self->{end}) {
-        $self->{end} = $exon->end();
-      }
-      $multi_flag = 1 if($last_contig && $last_contig ne $exon->contig->name);
-      $last_contig = $exon->contig->name;
-    }
-  }
-
-  if($multi_flag) {
-    $self->warn("Bio::EnsEMBL::Gene::end - Gene spans multiple contigs." .
-		"The return value from end may not be what you want");
-  }
-
-  return $self->{end};
-}
-
-
-
-=head2 strand
-
-  Arg [1]    : (optional) int strand 
-  Example    : $strand = $gene->strand;
-  Description: This is a convenience method. It may be better just to
-               get the strand from this genes exons yourself.  
-               Gets/Sets the strand of this gene. No consistancy check is
-               performed and if used as a setter the strand can be set 
-               incorrectly.  If this gene is in RawContig coords and spans 
-               multiple contigs it is not possible to calculate the strand
-               correctly, and a warning is returned.  
-  Returntype : int
-  Exceptions : Warning if strand is not defined and Gene is in RawContig coords
-               so strand cannot be calculated
-  Caller     : general
-
-=cut
-
-sub strand {
-  my $self = shift;
-  my $arg = shift;
-
-  if( defined $arg ) {
-    $self->{'strand'} = $arg;
-  } elsif( ! defined $self->{strand} ) {
-    my $exons = $self->get_all_Exons();
-    if(@$exons) {
-      if($exons->[0]->contig && 
-	 $exons->[0]->contig->isa("Bio::EnsEMBL::RawContig")) {
-	my $last_contig;
-	foreach my $exon (@$exons) {
-	  if($last_contig && $last_contig ne $exon->contig->name) {
-	    $self->warn("Bio::EnsEMBL::Gene::strand - strand can not be " .
-			"calculated for a Gene in RawContig coordinates that "
-			. "spans multiple contigs");
-	    return 0;
-	  }
-	  $last_contig = $exon->contig->name;
-	}
-      }
-      $self->{'strand'} = $exons->[0]->strand();
-    }
-  }
-  return $self->{'strand'};
-
-}
 
 
 =head2 chr_name
@@ -220,25 +81,28 @@ sub strand {
 =cut
 
 sub chr_name {
-  my ($self, $chr_name) = @_;
+  my $self = shift;
 
-  if(defined $chr_name) { 
-    $self->{'_chr_name'} = $chr_name;
-  } elsif(!defined $self->{'_chr_name'}) {
-    #attempt to get the chr_name from the contig attached to the exons
-    my ($exon, $contig);
-    ($exon) = @{$self->get_all_Exons()};
-    if($exon && ($contig = $exon->contig())) {
-      if(ref $contig && $contig->isa('Bio::EnsEMBL::Slice')) {
-        $self->{'_chr_name'} = $contig->chr_name();
-      } else {
-	$self->warn('Gene::chr_name - Gene is in RawContig coords, and must '
-                  . 'be in Slice coords to have a valid chr_name');
-      }
-    }
-  } 
+  deprecate( "Use project() to obtain other coordinate systems" );
 
-  return $self->{'_chr_name'};
+  my $gene_slice = $self->slice();
+  if( $gene_slice->coord_system()->name eq "chromosome" ) {
+    return $gene_slice->seq_region_name();
+  }
+
+  my $sa = $self->slice->adaptor();
+  throw( "need db connection for chr_name call" ) unless $sa;
+
+  my $ca = $sa->db()->get_CoordSystemAdaptor();
+  my $coord_system = $ca->fetch_by_name( "chromosome" );
+  if( ! $coord_system ) {
+    throw( "Chromosome coordinate system not available" );
+  }
+  my $coords = $self->project( $coord_system );
+
+  if( @$coords ) {
+    return $coords->[0]->[2]->seq_region_name();
+  }
 }
 
 
@@ -286,12 +150,11 @@ sub is_known{
 
 
 sub adaptor {
-   my ($self, $arg) = @_;
+   my $self = shift;
 
-   if ( defined $arg ) {
-      $self->{'_adaptor'} = $arg ;
-   }
-   return $self->{'_adaptor'};
+   $self->{'adaptor'} = shift if( @_ );
+
+   return $self->{'adaptor'};
 }
 
 
@@ -310,10 +173,10 @@ sub adaptor {
 
 
 sub analysis {
-  my ($self,$value) = @_;
-  if( defined $value ) {
-    $self->{'analysis'} = $value;
-  }
+  my $self = shift;
+
+  $self->{'analysis'} = shift if(@_);
+
   return $self->{'analysis'};
 }
 
@@ -333,12 +196,10 @@ sub analysis {
 
 
 sub dbID {
-   my ($self, $arg) = @_;
+   my $self = shift;
 
-   if ( defined $arg ) {
-      $self->{'_dbID'} = $arg ;
-   }
-   return $self->{'_dbID'};
+   $self->{'dbID'} = shift if( @_ );
+   return $self->{'dbID'};
 }
 
 
@@ -357,12 +218,10 @@ sub dbID {
 sub external_name {
   my ($self, $ext_name) = @_;
 
-  if(defined $ext_name) { 
-    return ( $self->{'_ext_name'} = $ext_name );
-  } 
+  $self->{'external_name'} = shift if( @_ );
 
-  if( exists $self->{'_ext_name'} ) {
-    return $self->{'_ext_name'};
+  if( exists $self->{'external_name'} ) {
+    return $self->{'external_name'};
   }
 
   my $display_xref = $self->display_xref();
@@ -388,14 +247,12 @@ sub external_name {
 =cut
 
 sub external_db {
-  my ( $self, $ext_dbname ) = @_;
+  my $self = shift;
 
-  if(defined $ext_dbname) { 
-    return ( $self->{'_ext_dbname'} = $ext_dbname );
-  } 
+  $self->{'external_db'} = shift if( @_ );
 
-  if( exists $self->{'_ext_dbname'} ) {
-    return $self->{'_ext_dbname'};
+  if( exists $self->{'external_db'} ) {
+    return $self->{'external_db'};
   }
 
   my $display_xref = $self->display_xref();
@@ -578,8 +435,8 @@ sub get_all_Exons {
    my @out = ();
 
    foreach my $trans ( @{$self->get_all_Transcripts} ) {
-       foreach my $exon ( @{$trans->get_all_Exons} ) {
-	   $h{"$exon"} = $exon;
+       foreach my $e ( @{$trans->get_all_Exons} ) {
+	   $h{$e->start()."-".$e->end()."-".$e->strand()."-".$e->phase()} = $e;
        }
    }
 
@@ -603,12 +460,11 @@ sub get_all_Exons {
 
 
 sub type {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'type'} = $value;
-    }
-    return $obj->{'type'};
+   my $self = shift;
+
+   $self->{'type'} = shift if( @_ );
+
+   return $self->{'type'};
 }
 
 
@@ -630,15 +486,29 @@ sub type {
 sub add_Transcript{
    my ($self,$trans) = @_;
 
-   if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::TranscriptI") ) {
-       $self->throw("$trans is not a Bio::EnsEMBL::TranscriptI!");
+   if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::Transcript") ) {
+       $self->throw("$trans is not a Bio::EnsEMBL::Transcript!");
    }
 
-   #invalidate the start and end since they may need to be recalculated
-   $self->{start} = undef;
-   $self->{end} = undef;
-   $self->{strand} = undef;
+   if( defined $self->{'start'} ) {
+     if( $self->{'start'} > $trans->start() ) {
+       $self->start( $trans->start() );
+     }
+   } else {
+     $self->start( $trans->start() );
+   }
 
+   if( defined $self->{'end'} ) {
+     if( $self->{'end'} < $trans->end() ) {
+       $self->end( $trans->end() );
+     }
+   } else {
+     $self->end( $trans->end() );
+   }
+
+   $self->{strand} = $trans->strand();;
+
+   $self->{'_transcript_array'} ||= [];
    push(@{$self->{'_transcript_array'}},$trans);
 }
 
@@ -659,6 +529,13 @@ sub add_Transcript{
 sub get_all_Transcripts {
   my ($self) = @_;
 
+  if( ! exists $self->{'_transcript_array'} ) {
+    if( defined $self->adaptor() ) {
+      my $ta = $self->adaptor()->db()->get_TranscriptAdaptor();
+      my $transcripts = $ta->fetch_by_Gene( $self );
+      $self->{'_transcript_array'} = $transcripts;
+    }
+  }
   return $self->{'_transcript_array'};
 }
 
@@ -680,6 +557,8 @@ sub get_all_Transcripts {
 
 sub created{
     my ($self,$value) = @_;
+
+    deprecated( "The created attribute isnt available any more" );
 
     if(defined $value ) {
       $self->{'_created'} = $value;
@@ -713,7 +592,8 @@ sub created{
 
 sub modified{
     my ($self,$value) = @_;
-    
+
+    deprecate( "The modified item isnt available any more" );
 
     if( defined $value ) {
       $self->{'_modified'} = $value;
@@ -843,51 +723,34 @@ sub _dump{
 
 =head2 transform
 
-  Arg  1     : (optional) Bio::EnsEMBL::Slice $slice
-  Description: when passed a Slice as argument,
-               it will transform this Gene to the Slice coordinate system.
-               Without an argument it  transforms the Gene (which should be
-               in a slice) to a RawContig
-               coordinate system.
-               The method changes the Gene in place and returns itself.
+  Arg  1     : String $coordinate_system_name
+  Arg [2]    : String $coordinate_system_version
+  Description: moves this gene to the given coordinate system. If this gene has Transcripts
+               attached, they move as well.
   Returntype : Bio::EnsEMBL::Gene
-  Exceptions : none
-  Caller     : object::methodname or just methodname
+  Exceptions : wrong parameters
+  Caller     : general
 
 =cut
 
 
 sub transform {
   my $self = shift;
-  my $slice = shift;
 
-  # hash arrray to store the refs of transformed exons
-  my %exon_transforms;
-
-  # transform Exons
-  for my $exon ( @{$self->get_all_Exons()} ) {
-    my $newExon = $exon->transform( $slice );
-    $exon_transforms{ $exon } = $newExon;
+  # catch for old style transform calls
+  if( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" )) {
+    throw( "transform needs coordinate systems details now, please use transfer" );
   }
 
-  # now need to re-jiggle the transcripts and their
-  # translations to account for the re-mapping process
+  my $new_gene = $self->SUPER::transform( @_ );
 
-  foreach my $transcript ( @{$self->get_all_Transcripts()} ) {
-
-    # need to grab the translation before starting to 
-    # re-jiggle the exons
-
-    $transcript->transform( \%exon_transforms );
+  if( exists $self->{'_transcript_array'} ) {
+    my @new_transcript_array;
+    for my $old_transcript ( @{$self->{'_transcript_array'}} ) {
+      my $new_transcript = $old_transcript->transform( @_ );
+      push( @{$new_gene->{'_transcript_array'}}, $new_transcript );
+    }
   }
-
-  #unset the start, end, and strand - they need to be recalculated
-  $self->{start} = undef;
-  $self->{end} = undef;
-  $self->{strand} = undef;
-  $self->{_chr_name} = undef;
-
-  return $self;
 }
 
 
@@ -908,6 +771,9 @@ sub transform {
 
 sub temporary_id {
    my ($obj,$value) = @_;
+   deprecated( "I cant see what a temporary_id is good for, please use dbID or stableID or\n"
+	       ."try without an id." );
+
    if( defined $value) {
       $obj->{'temporary_id'} = $value;
     }
