@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 40;
+	plan tests => 41;
 }
 
 use MultiTestDB;
@@ -93,7 +93,9 @@ ok($unpop_contig->clone->dbID == 34957);
 my $retrieved_contigs = $raw_adaptor->fetch_all;
 ok(scalar (@$retrieved_contigs) == 12);
 
+my @names = @{$raw_adaptor->fetch_all_names};
 
+ok(scalar(@names) == 12);
 #
 # 18-25 fetch_filled_by_dbIDs
 #
