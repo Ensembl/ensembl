@@ -84,6 +84,28 @@ use Bio::Tools::SeqStats;
 =cut
 
 
+=head2 db
+
+ Title   : db
+ Usage   : $obj->db($newval)
+ Function: 
+ Returns : value of db
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub db{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'db'} = $value;
+    }
+    return $obj->{'db'};
+
+}
+
+
 =head2 add_date
 
  Title   : add_date
@@ -166,6 +188,27 @@ sub primary_seq{
 }
 
 
+
+=head2 geneac
+
+ Title   : geneac
+ Usage   : $obj->geneac($newval)
+ Function: 
+ Returns : value of geneac
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub geneac{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'geneac'} = $value;
+    }
+    return $obj->{'geneac'};
+
+}
 
 
 =head2 molecule
@@ -902,27 +945,6 @@ if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
 
 }
 
-=head2 geneac
-
- Title   : geneac
- Usage   : $obj->geneac($newval)
- Function: 
- Returns : value of geneac
- Args    : newvalue (optional)
-
-
-=cut
-
-sub geneac{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'geneac'} = $value;
-    }
-    return $obj->{'geneac'};
-
-}
-
 =head2 transcriptac
 
  Title   : transcriptac
@@ -1220,69 +1242,6 @@ sub stable_id{
 }
 
 
-=head2 gbrowser_adaptor
-
- Title   : gbrowser_adaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub gbrowser_adaptor{
- my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'gb'} = $value;
-    }
-    return $obj->{'gb'};
-}
-
-
-=head2 snp_adaptor
-
- Title   : snp_adaptor
- Usage   : $obj->snp_adaptor($newval)
- Function: 
- Returns : value of snp_adaptor
- Args    : newvalue (optional)
-
-
-=cut
-
-sub snp_adaptor{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'snp_adaptor'} = $value;
-    }
-    return $obj->{'snp_adaptor'};
-
-}
-
-=head2 db
-
- Title   : db
- Usage   : $obj->db($newval)
- Function: 
- Returns : value of db
- Args    : newvalue (optional)
-
-
-=cut
-
-sub db{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'db'} = $value;
-    }
-    return $obj->{'db'};
-
-}
 
 
 1;
