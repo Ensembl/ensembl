@@ -19,4 +19,4 @@ gtf_merge.pl $ens $fgenesh > ens_fgenesh.merge 2> ens_fgenesh.log
 gtf_merge.pl $affy $fgenesh > affy_fgenesh.merge 2> affy_fgenesh.log
 gtf_merge.pl $ens $affy $fgenesh > ens_affy_fgenesh.merge 2>ens_affy_fgenesh.log
 
-### after this, run the statistics on these files using run-stat.sh!
+### after this, run the statistics on these files using all-stats.sh
