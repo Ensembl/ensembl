@@ -858,10 +858,10 @@ sub build_seq_region_and_assembly() {
 
   if ($species eq "human" ) {
 
+    contig_to_seq_region();
     chromosome_to_seq_region();
     supercontig_to_seq_region();
     clone_to_seq_region();
-    contig_to_seq_region();
 
     assembly_contig_chromosome();
     assembly_contig_clone();
@@ -884,8 +884,8 @@ sub build_seq_region_and_assembly() {
 
   } elsif ($species eq "anopheles") {
 
-    chromosome_to_seq_region();
     contig_to_seq_region("chunk");
+    chromosome_to_seq_region();
     clone_to_seq_region("scaffold");
 
     assembly_contig_chromosome();
@@ -897,23 +897,18 @@ sub build_seq_region_and_assembly() {
 
   } elsif ($species eq "elegans") {
 
-    chromosome_to_seq_region();
     contig_to_seq_region();
-
+    chromosome_to_seq_region();
     assembly_contig_chromosome();
 
   } elsif ($species eq "briggsae") {
-
-    supercontig_to_seq_region();
     contig_to_seq_region();
-
+    supercontig_to_seq_region();
     assembly_contig_supercontig();
 
   } elsif ($species eq "drosophila") {
-
-    chromosome_to_seq_region();
     contig_to_seq_region("chunk");
-
+    chromosome_to_seq_region();
     assembly_contig_chromosome();
 
   } else {
