@@ -445,7 +445,7 @@ sub get_all_VirtualGenes_startend{
        my $geneend   = 1;
        my $genestr;
        foreach my $trans ( $gene->each_Transcript ) {
-	   foreach my $exon ( $trans->each_Exon ) {
+	   foreach my $exon ( $trans->get_all_Exons ) {
 	       
 	       my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
                if( !defined $st ) { 
@@ -1609,23 +1609,23 @@ sub convert_Gene_to_raw_contig {
 
        $clonedgene->add_Transcript($clonedtrans);
 
-       foreach my $exon ( $trans->each_Exon ) {
+       foreach my $exon ( $trans->get_all_Exons ) {
 	   $clonedtrans->add_Exon($convertedexon{$exon});
 
 	   # translations.
            # (PL: looks like a 'deep copy' is being made;
            # can't we reuse the existing object, and forget about deep
            # copying ?)
-	   if( exists $translation{$trans->translation->id} ) {
+	   if( exists $translation{$trans->translation} ) {
 #	     print STDERR "Translation already exists " . $trans->id . " " . $trans->translation->id . "\n";
                # (PL: looks like this is cached; should it? )
-	       $clonedtrans->translation($translation{$trans->translation->id});
+	       $clonedtrans->translation($translation{$trans->translation});
 	   } else {
 	#     print STDERR "Making new translation " . $trans->id . " " . $trans->translation->id . "\n";
 	       my $trl = $trans->translation(); 
 
 	       my $clonedtrl = Bio::EnsEMBL::Translation->new();
-	       $clonedtrl->id($trl->id);
+#	       $clonedtrl->id($trl->id);
 	       $clonedtrl->start_exon($convertedexon{$trl->start_exon});
                $clonedtrl->start( $trl->start );
 	       $clonedtrl->end_exon($convertedexon{$trl->end_exon});
@@ -1635,7 +1635,7 @@ sub convert_Gene_to_raw_contig {
                ## code converting Translation obj. coordinates to VC
                ## coords is now gone (since rev. 1.17)
 	       
-	       $translation{$trl->id} = $clonedtrl;
+	       $translation{$trans->translation} = $clonedtrl;
 	       $clonedtrans->translation($clonedtrl);
 	   }
        }
@@ -1709,7 +1709,7 @@ sub _reverse_map_Exon {
 #       print STDERR "Straight forward mapping\n";
 
        my $rmexon = Bio::EnsEMBL::Exon->new(); # the re-mapped exon
-       $rmexon->id($exon->id);
+#       $rmexon->id($exon->id);
        $rmexon->created($exon->created);
        $rmexon->modified($exon->modified);
        $rmexon->version($exon->version);
@@ -1937,7 +1937,7 @@ sub _sanity_check{
 	       $message .= "Translation has no end exon id";
 	   } 
        }
-       foreach my $exon ( $transc->each_Exon ) {
+       foreach my $exon ( $transc->get_all_Exons ) {
 
 	   if( !defined $exon->contig_id  ) {
 	       $error = 1;
