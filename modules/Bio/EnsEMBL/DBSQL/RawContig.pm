@@ -1917,7 +1917,7 @@ sub _load_overlaps {
         # Statements like:
         #   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
         # seem to make queries inordinately slow.
-        my $overlap_source_sub  = $self->_db_obj->contig_overlap_source();
+        my $overlap_source_sub  = $self->dbobj->contig_overlap_source();
         my $overlap_cutoff      = $self->overlap_distance_cutoff();
         
         my( @overlap );
