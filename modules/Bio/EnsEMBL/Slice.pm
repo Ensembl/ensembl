@@ -153,6 +153,9 @@ sub new {
    if($coord_system->is_top_level()) {
      throw('Cannot create slice on toplevel CoordSystem.');
    }
+  } else {
+   warn("SLICE wo CS");
+   warn(stack_trace_dump());
   }
 
   $strand ||= 1;
