@@ -406,15 +406,15 @@ sub frame {
     return '.'; # gff convention for no frame info
   }
   if( $self->phase == 0 ) {
-    return $self->seq_start%3;
+    return $self->start%3;
   }
 
   if( $self->phase == 1 ) {
-    return ($self->seq_start+2)%3;
+    return ($self->start+2)%3;
   }
 
   if( $self->phase == 2 ) {
-    return ($self->seq_start+1)%3;
+    return ($self->start+1)%3;
   }
 
   $self->throw("bad phase in exon ".$self->phase);
