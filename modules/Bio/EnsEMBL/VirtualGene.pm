@@ -76,7 +76,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::SeqFeatureI;
-use Bio::Root::Object
+use Bio::Root::Object;
 
 @ISA = qw(Bio::Root::Object Bio::SeqFeatureI);
 

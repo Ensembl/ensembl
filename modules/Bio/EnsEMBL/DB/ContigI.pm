@@ -79,7 +79,7 @@ use vars ('@ISA');
 use strict;
 use Bio::EnsEMBL::VirtualGene;
 use Bio::SeqI;
-use Bio::Root::RootI
+use Bio::Root::RootI;
 
 @ISA = qw( Bio::SeqI Bio::Root::RootI );
 
