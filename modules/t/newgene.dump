@@ -8,7 +8,7 @@
 # Dumping data for table 'analysis'
 #
 
-INSERT INTO analysis VALUES (4,'swir','1','blastp','1','blastp','similarity');
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (4,'swir','1','blastp','1','blastp','similarity');
 
 #
 # Dumping data for table 'chromosome'
@@ -19,16 +19,16 @@ INSERT INTO analysis VALUES (4,'swir','1','blastp','1','blastp','similarity');
 # Dumping data for table 'clone'
 #
 
-INSERT INTO clone VALUES (1,'test_clone_1','EMBL_test_1',1,1,1,'2000-07-03 18:31:00','2000-07-03 18:31:00','2000-07-03 18:31:00');
+INSERT INTO clone (internal_id, id, embl_id, version, embl_version, htg_phase, created, modified, stored) VALUES (1,'test_clone_1','EMBL_test_1',1,1,1,'2000-07-03 18:31:00','2000-07-03 18:31:00','2000-07-03 18:31:00');
 
 #
 # Dumping data for table 'contig'
 #
 
-INSERT INTO contig VALUES (1,'test_contig_1',1,30,1,1,1,1,'international_test_1');
-INSERT INTO contig VALUES (2,'test_contig_2',1,39,1,1,2,1,'international_test_2');
-INSERT INTO contig VALUES (3,'test_contig_3',1,30,1,1,3,1,'international_test_3');
-INSERT INTO contig VALUES (4,'test_contig_4',1,30,1,1,4,1,'international_test_4');
+INSERT INTO contig (internal_id, id, clone, length, corder, offset, dna, chromosomeId, international_id)  VALUES(1,'test_contig_1',1,30,1,1,1,1,'international_test_1');
+INSERT INTO contig (internal_id, id, clone, length, corder, offset, dna, chromosomeId, international_id)  VALUES(2,'test_contig_2',1,39,1,1,2,1,'international_test_2');
+INSERT INTO contig (internal_id, id, clone, length, corder, offset, dna, chromosomeId, international_id)  VALUES(3,'test_contig_3',1,30,1,1,3,1,'international_test_3');
+INSERT INTO contig (internal_id, id, clone, length, corder, offset, dna, chromosomeId, international_id)  VALUES(4,'test_contig_4',1,30,1,1,4,1,'international_test_4');
 
 #
 # Dumping data for table 'contigoverlap'
@@ -44,27 +44,27 @@ INSERT INTO contig VALUES (4,'test_contig_4',1,30,1,1,4,1,'international_test_4'
 # Dumping data for table 'dna'
 #
 
-INSERT INTO dna VALUES (1,'ATGGCGGATGTTTATGTGGGTGGCCCGGGG','2000-07-03 16:13:44');
-INSERT INTO dna VALUES (2,'TCAGAAATTTGGGTGTTTTGGCCCTGGTGGTTTGGGTTT','2000-07-03 16:14:11');
-INSERT INTO dna VALUES (3,'ATGGCGGATGTTTATGTGGGTGGCCCGGGG','2000-07-04 15:28:29');
-INSERT INTO dna VALUES (4,'TCAGAAATTTGGGTGTTTTGGCCCTGGTGGTTTGGGTTT','2000-07-04 15:28:48');
+INSERT INTO dna (id, sequence, created) VALUES (1,'ATGGCGGATGTTTATGTGGGTGGCCCGGGG','2000-07-03 16:13:44');
+INSERT INTO dna (id, sequence, created) VALUES (2,'TCAGAAATTTGGGTGTTTTGGCCCTGGTGGTTTGGGTTT','2000-07-03 16:14:11');
+INSERT INTO dna (id, sequence, created) VALUES (3,'ATGGCGGATGTTTATGTGGGTGGCCCGGGG','2000-07-04 15:28:29');
+INSERT INTO dna (id, sequence, created) VALUES (4,'TCAGAAATTTGGGTGTTTTGGCCCTGGTGGTTTGGGTTT','2000-07-04 15:28:48');
 
 #
 # Dumping data for table 'exon'
 #
 
-INSERT INTO exon VALUES ('test_exon_1',1,1,'2000-07-03 16:16:25','2000-07-03 16:16:25','2000-07-03 16:16:25',8,13,1,0,0,1);
-INSERT INTO exon VALUES ('test_exon_2',2,1,'2000-07-03 16:17:09','2000-07-03 16:17:09','2000-07-03 16:17:09',18,23,1,0,0,1);
-INSERT INTO exon VALUES ('test_exon_3',2,1,'2000-07-03 16:17:32','2000-07-03 16:17:32','2000-07-03 16:17:32',26,28,1,0,0,1);
+INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('test_exon_1',1,1,'2000-07-03 16:16:25','2000-07-03 16:16:25','2000-07-03 16:16:25',8,13,1,0,0,1);
+INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('test_exon_2',2,1,'2000-07-03 16:17:09','2000-07-03 16:17:09','2000-07-03 16:17:09',18,23,1,0,0,1);
+INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('test_exon_3',2,1,'2000-07-03 16:17:32','2000-07-03 16:17:32','2000-07-03 16:17:32',26,28,1,0,0,1);
 
 #
 # Dumping data for table 'exon_transcript'
 #
 
-INSERT INTO exon_transcript VALUES ('test_exon_1','test_transcript_1',1);
-INSERT INTO exon_transcript VALUES ('test_exon_2','test_transcript_1',2);
-INSERT INTO exon_transcript VALUES ('test_exon_1','test_transcript_2',1);
-INSERT INTO exon_transcript VALUES ('test_exon_3','test_transcript_2',2);
+INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('test_exon_1','test_transcript_1',1);
+INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('test_exon_2','test_transcript_1',2);
+INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('test_exon_1','test_transcript_2',1);
+INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('test_exon_3','test_transcript_2',2);
 
 #
 # Dumping data for table 'feature'
@@ -96,7 +96,7 @@ INSERT INTO gene (id,version,created,modified,stored) VALUES ('test_gene',1,'200
 # Dumping data for table 'genedblink'
 #
 
-INSERT INTO genedblink VALUES ('test_gene','sptrembl','MC1R');
+INSERT INTO genedblink (gene_id, external_db, external_id) VALUES ('test_gene','sptrembl','MC1R');
 
 #
 # Dumping data for table 'ghost'
@@ -122,16 +122,16 @@ INSERT INTO genedblink VALUES ('test_gene','sptrembl','MC1R');
 # Dumping data for table 'supporting_feature'
 #
 
-INSERT INTO supporting_feature VALUES (1,'test_exon_1',8,13,1000,1,4,'blastp',8,13,'TR:P78310');
-INSERT INTO supporting_feature VALUES (2,'test_exon_2',18,23,1000,1,4,'blastp',118,123,'TR:P78310');
-INSERT INTO supporting_feature VALUES (3,'test_exon_3',26,28,1000,1,4,'blastp',126,128,'TR:P78310');
+INSERT INTO supporting_feature (id, exon, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid) VALUES (1,'test_exon_1',8,13,1000,1,4,'blastp',8,13,'TR:P78310');
+INSERT INTO supporting_feature (id, exon, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid) VALUES (2,'test_exon_2',18,23,1000,1,4,'blastp',118,123,'TR:P78310');
+INSERT INTO supporting_feature (id, exon, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid) VALUES (3,'test_exon_3',26,28,1000,1,4,'blastp',126,128,'TR:P78310');
 
 #
 # Dumping data for table 'transcript'
 #
 
-INSERT INTO transcript VALUES ('test_transcript_1',1,'test_gene','test_translation_1');
-INSERT INTO transcript VALUES ('test_transcript_2',1,'test_gene','test_translation_2');
+INSERT INTO transcript (id, version, gene,translation) VALUES ('test_transcript_1',1,'test_gene','test_translation_1');
+INSERT INTO transcript (id, version, gene,translation) VALUES ('test_transcript_2',1,'test_gene','test_translation_2');
 
 #
 # Dumping data for table 'transcriptdblink'
@@ -142,12 +142,12 @@ INSERT INTO transcript VALUES ('test_transcript_2',1,'test_gene','test_translati
 # Dumping data for table 'translation'
 #
 
-INSERT INTO translation VALUES ('test_translation_1',1,8,'test_exon_1',23,'test_exon_2');
-INSERT INTO translation VALUES ('test_translation_2',1,8,'test_exon_1',28,'test_exon_3');
+INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) VALUES ('test_translation_1',1,8,'test_exon_1',23,'test_exon_2');
+INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) VALUES ('test_translation_2',1,8,'test_exon_1',28,'test_exon_3');
 
 
 #
 # Dumping data for table 'genetype'
 #
 
-INSERT INTO genetype VALUES ('test_gene','ensembl');
+INSERT INTO genetype (gene_id, type) VALUES ('test_gene','ensembl');
