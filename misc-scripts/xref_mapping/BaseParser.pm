@@ -1,5 +1,7 @@
 package BaseParser;
 
+use DBI;
+
 my $host = "ecs1g";
 my $port = 3306;
 my $database = "glenn_test_xref";
@@ -84,6 +86,16 @@ sub dbi {
   my $self = shift;
 
   return $dbi;
+
+}
+
+# --------------------------------------------------------------------------------
+
+sub new {
+
+  my $self = {};
+  bless $self, "BaseParser";
+  return $self;
 
 }
 

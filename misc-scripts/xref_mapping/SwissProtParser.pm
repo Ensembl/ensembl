@@ -80,7 +80,7 @@ sub create_source {
   my ($file) = @_;
   my $source;
   my $file_date = POSIX::strftime('%Y%m%d%H%M%S', localtime((stat($file))[9]));
-  $source = { NAME => "SwissProt",
+  $source = { NAME => "UniProt/SwissProt",
 	      URL  => $file,
 	      FILE_MODIFIED_DATE => $file_date
 	      # TODO URL? Release?
@@ -107,8 +107,8 @@ sub create_xrefs {
   while (<SWISSPROT>) {
 
     my $xref;
-    ($xref->{ACCESSION}) =$_ =~ /AC\s+(\w+);/;
-    ($xref->{LABEL})    = $_ =~ /DE\s+(.+)/;
+    ($xref->{ACCESSION}) =$_ =~ /AC\s+(\w+);/; # note only takes first accession if > 1
+    ($xref->{LABEL})    = $_ =~ /ID\s+(\w+)/;
     ($xref->{SPECIES_ID}) = $species_id;
     ($xref->{SOURCE_ID}) = $source_id;
 
@@ -136,6 +136,7 @@ sub create_xrefs {
 
   return @xrefs;
 
+  #TODO - currently include records from other species - filter on OX line??
 }
 
 # --------------------------------------------------------------------------------
