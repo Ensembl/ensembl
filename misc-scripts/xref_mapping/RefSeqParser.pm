@@ -72,13 +72,13 @@ sub create_xrefs {
 
     (my $gi, my $n, my $ref, my $acc, my $description) = split(/\|/, $header);
     my ($species, $mrna);
-    if ($file =~ /\.protein\.faa$/) {
+    if ($file =~ /\.faa$/) {
 
       ($mrna, $description, $species) = $description =~ /(\S*)\s+(.*)\s+\[(.*)\]$/;
       $xref->{SEQUENCE_TYPE} = 'peptide';
       $xref->{STATUS} = 'experimental';
 
-    } elsif ($file =~ /\.rna\.fna$/) {
+    } elsif ($file =~ /\.fna$/) {
 
       ($species, $description) = $description =~ /\s*(\w+\s+\w+)\s+(.*)$/;
       $xref->{SEQUENCE_TYPE} = 'dna';
