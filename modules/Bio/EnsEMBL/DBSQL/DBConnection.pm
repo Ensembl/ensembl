@@ -198,6 +198,7 @@ sub connect {
 
   return if($self->connected);
   $self->connected(1);
+  warn "$$ - Connecting to ",$self->dbname(),"\n";
 
   if(defined($self->db_handle()) and $self->db_handle()->ping()) {
     warning("unconnected db_handle is still pingable, reseting connected boolean\n");
@@ -210,10 +211,7 @@ sub connect {
 
   my $dbh;
   eval{
-    $dbh = DBI->connect($dsn,
-                        $self->username(),
-                        $self->password(),
-                        {'RaiseError' => 1});
+    $dbh = DBI->connect($dsn, $self->username(), $self->password(), {'RaiseError' => 1});
   };
 
   if(!$dbh || $@ || !$dbh->ping()) {
@@ -564,8 +562,9 @@ sub prepare {
 
   # print STDERR  "SQL(".$self->dbname."):$string\n";
 
+   $self->connect() unless $self-connected;
    my $sth = $self->db_handle->prepare($string);
-
+  
    # return an overridden statement handle that provides us with
    # the means to disconnect inactive statement handles automatically
    bless $sth, "Bio::EnsEMBL::DBSQL::StatementHandle";
@@ -590,22 +589,25 @@ sub prepare {
 =cut
 
 sub do {
-   my ($self,$string) = @_;
+  my ($self,$string) = @_;
 
-   if( ! $string ) {
-     throw("Attempting to do an empty SQL query.");
-   }
+   throw("Attempting to do an empty SQL query.") unless $string;
 
    #info("SQL(".$self->dbname."):$string");
 
+   $self->connect() unless $self-connected;
+   
    my $result = $self->db_handle->do($string);
-
+ #  if( $self->db_handle->err == 2006 ) {
+ #    $self->connected(0);
+ #    $self->connect();
+ #    $result = $self->db_handle->do($string);
+ #  }
+     
    # disconnect if the disconnect when inactive flag is set and
    # there are no active statement handles
 
-   if($self->disconnect_when_inactive()) {
-     $self->disconnect_if_idle();
-   }
+   $self->disconnect_if_idle() if $self->disconnect_when_inactive();
 
    return $result;
 }
@@ -657,6 +659,7 @@ sub disconnect_if_idle {
   
   $db_handle->disconnect();
   $self->connected(undef);
+  $self->db_handle(undef);
   $self->disconnect_count($self->disconnect_count()+1);
   #print("DISCONNECT\n");
   return 0;
