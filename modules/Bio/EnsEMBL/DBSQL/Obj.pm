@@ -622,7 +622,7 @@ sub prepare {
 sub add_ExternalFeatureFactory{
    my ($self,$value) = @_;
 
-   if( ! ref $value || $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
+   unless( ref $value && $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
        $self->throw("[$value] is not a Bio::EnsEMBL::DB::ExternalFeatureFactoryI but it should be!");
    }
 
