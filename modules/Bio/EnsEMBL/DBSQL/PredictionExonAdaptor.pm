@@ -241,7 +241,7 @@ sub remove {
     return undef;
   }
 
-  my $sth = $self->prepare( "delete from exon where exon_id = ?" );
+  my $sth = $self->prepare( "delete from prediction_exon where prediction_exon_id = ?" );
   $sth->execute( $pexon->dbID );
 
   $pexon->dbID(undef);
