@@ -103,7 +103,9 @@ sub top_SeqFeatures{
    
    my @seq_features = $self->each_Protein_feature;
 
-   return @seq_features;
+   if (@seq_features) {
+       return @seq_features;
+   }
 }
 
 =head2 all_SeqFeature
@@ -123,8 +125,9 @@ sub all_SeqFeature{
     my ($self) = @_;
    
     my @seq_feature = $self->each_Protein_feature;
-
-    return @seq_feature;
+    if (@seq_feature) {
+	return @seq_feature;
+    }
 
 }
 
@@ -166,7 +169,9 @@ sub family{
 sub each_Protein_feature{
    my ($self,@args) = @_;
 
-   return @{$self->{'_prot_feat'}};
+   if (defined ($self->{'_prot_feat'})) {
+       return @{$self->{'_prot_feat'}};
+   }
 
 }
 
