@@ -734,11 +734,12 @@ sub get_Contig{
 
    my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
 							  -id    => $id );
-
+   
    $contig->internal_id($row->[1]);
    $contig->seq_version($row->[2]);
 
    return $contig;
+
 }
 
 =head2 get_all_Clone_id
@@ -2184,9 +2185,10 @@ sub write_Translation{
 	$self->throw("Is not a translation. Cannot write!");
     }
     
-    if( !defined $translation->version  ) {
+    if ( !defined $translation->version  ) {
 	$self->throw("No version number on translation");
-
+    }
+    
     my $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
 			     . $translation->id . "',"
 			     . $translation->version . ","
@@ -2195,7 +2197,7 @@ sub write_Translation{
 			     . $translation->end . ",'"
 			     . $translation->end_exon_id . "')");
     $tst->execute();
-
+    
 }
 
 =head2 write_Exon
@@ -2245,7 +2247,6 @@ sub write_Exon{
        # Now the supporting evidence
 
        $self->write_supporting_evidence($exon);
-   }
 #   my $unlockst = $self->prepare("unlock exon");
 #   $unlockst->execute;
    
@@ -2282,6 +2283,8 @@ sub write_Contig {
    my $seqstr    = $dna   ->seq;
    my $offset    = $contig->embl_offset();
    
+   $seqstr =~ tr/atgcn/ATGCN/;
+
    #Removed in new schema?
    #my $orientation    = $contig->embl_orientation();
    my $order     = $contig->embl_order();
@@ -2335,6 +2338,7 @@ sub write_Clone{
    my ($self,$clone) = @_;
 
    my $clone_id = $clone->id;
+
    $clone || $self->throw("Trying to write a clone without a clone object!\n");
    if( !$clone->isa('Bio::EnsEMBL::DB::CloneI') ) {
        $self->throw("Clone must be a CloneI type, not a $clone");

@@ -156,7 +156,7 @@ sub primary_seq {
        return $self->_seq_cache();
    }
 
-   my $sth = $self->_dbobj->prepare("select d.sequence from dna as d,contig as c where c.internal_id = \"$id\" and c.dna = d.id");
+   my $sth = $self->_dbobj->prepare("select d.sequence from dna as d,contig as c where c.internal_id = $id and c.dna = d.id");
    my $res = $sth->execute();
 
    # should be a better way of doing this
@@ -166,6 +166,7 @@ sub primary_seq {
      if( ! $str) {
        $self->throw("No DNA sequence in contig " . $self->id . " " . $id);
      } 
+
      $str =~ /[^ATGCNRY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
      $str =~ s/\s//g;
      $str =~ s/[^ATGCNRY]/N/g;

@@ -117,6 +117,7 @@ sub get_all_Genes{
    #
 
    foreach my $geneid ( @genes ) {
+       print(STDERR "Finding gene $geneid\n");
        #
        # The aim here is to get all the information for constructing the genes one
        # juicy SQL statement, effectively removing multiple SQL statement gets from this
@@ -128,9 +129,33 @@ sub get_all_Genes{
        #
        
        #print STDERR "Using [select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified,p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p6.id = '$geneid' and p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank]\n";
-
-       $sth = $self->_dbobj->prepare("select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified),p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version,p3.version,p2.version,p5.version from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p6.id = '$geneid' and p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.internal_id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
+       my $query =                   "select p3.gene," .
+	                                     "p4.id,   " .
+			                     "p3.id,   " .
+				             "p1.exon,p1.rank, " .
+				             "p2.seq_start,p2.seq_end," .
+				             "UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified), " .
+				             "p2.strand,p2.phase, " .
+				             "p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id," .
+				             "p6.version,p3.version,p2.version,p5.version " .
+				     "from   gene as p6," .
+				             "contig as p4, " .
+				             "transcript as p3, " .
+				             "exon_transcript as p1, " .
+				             "exon as p2," .
+				             "translation as p5 " . 
+				     "where  p6.id    = '$geneid' " .
+				     "and    p3.gene  = '$geneid' " .
+				     "and    p4.clone = '$id' " .
+				     "and    p2.contig = p4.internal_id " .
+				     "and    p1.exon  = p2.id " .
+				     "and    p3.id    = p1.transcript " .
+				     "and    p5.id    = p3.translation " .
+				     "order by p3.gene,p3.id,p1.rank";
    
+       print("Query is $query\n");
+
+       my $sth = $self->_dbobj->prepare($query);
        $sth->execute();
        my $current_gene_id       = '';
        my $current_transcript_id = '';
@@ -140,8 +165,8 @@ sub get_all_Genes{
        while( (my $arr = $sth->fetchrow_arrayref()) ) {
 	   my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exoncreated,$exonmodified,$strand,$phase,$trans_start,$trans_exon_start,$trans_end,$trans_exon_end,$translationid,$geneversion,$transcriptversion,$exonversion,$translationversion) = @{$arr};
 
-	   #print STDERR "Got exon $exonid\n";
-
+	   print STDERR "Got exon $exonid\n";
+	   
 	   if( ! defined $phase ) {
 	       $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
 	   }
@@ -183,7 +208,7 @@ sub get_all_Genes{
 	       $trans->translation        ($translation);
 	       $gene ->add_Transcript     ($trans);
 	   }
-	   
+
 	   my $exon = Bio::EnsEMBL::Exon->new();
 
 	   $exon->clone_id ($id);
@@ -205,16 +230,17 @@ sub get_all_Genes{
 	   }
 
 	   my $seq;
-	   
+
 	   if( $self->_dbobj->_contig_seq_cache($exon->contig_id) ) {
 	       $seq = $self->_dbobj->_contig_seq_cache($exon->contig_id);
 	   } else {
-	       my $contig = $self->_dbobj->get_Contig($exon->contig_id());
+ 	       my $contig = $self->_dbobj->get_Contig($exon->contig_id());
 	       $seq = $contig->primary_seq();
 	       $self->_dbobj->_contig_seq_cache($exon->contig_id,$seq);
 	   }
 	   
-	   $exon ->attach_seq($seq);
+	   $exon ->attach_seq(new Bio::Seq(-id  => $seq->id,
+					   -seq => $seq->seq));
 	   $trans->add_Exon($exon);
        }
    }

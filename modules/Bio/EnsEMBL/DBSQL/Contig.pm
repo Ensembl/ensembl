@@ -121,38 +121,47 @@ sub get_all_Genes{
    return @out;
 
 }
+sub seq {
+    my ($self) = @_;
+
+    $self->warn("Contig->seq deprecated. Use Contig->primary_seq instead");
+
+    return $self->primary_seq;
+}
 
 
-=head2 seq
+=head2 primary_seq
 
- Title   : seq
+ Title   : primary_seq
  Usage   : $seq = $contig->seq();
- Function: Gets a Bio::Seq object out from the contig
+ Function: Gets a Bio::PrimarySeq object out from the contig
  Example :
- Returns : Bio::Seq object
+ Returns : Bio::PrimarySeq object
  Args    :
 
 
 =cut
 
-sub seq{
+sub primary_seq {
    my ($self) = @_;
-   my $id = $self->id();
+
+   my $id = $self->internal_id();
 
    if( $self->_seq_cache() ) {
        return $self->_seq_cache();
    }
 
-   my $sth = $self->_dbobj->prepare("select sequence from dna where contig = \"$id\"");
+   my $sth = $self->_dbobj->prepare("select d.sequence from dna as d,contig as c where c.dna = d.id and c.internal_id = $id");
    my $res = $sth->execute();
 
    # should be a better way of doing this
    while(my $rowhash = $sth->fetchrow_hashref) {
-     my $str = $rowhash->{sequence};
+     my $str = $rowhash->{d.sequence};
 
      if( ! $str) {
        $self->throw("No DNA sequence in contig $id");
      } 
+
      $str =~ /[^ATGCNRY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
      $str =~ s/\s//g;
      $str =~ s/[^ATGCNRY]/N/g;
