@@ -143,8 +143,6 @@ MAPPING: while (<MAP>) {
     chomp;
     my ($queryid,$tid,$tag,$queryperc,$targetperc) = split (/\t/,$_);
     
-    print "HERE1\n";
-
     my $m = $tid; 
 
     if ($tid =~ /^NP_\d+/) {
@@ -169,8 +167,7 @@ MAPPING: while (<MAP>) {
 
 	foreach my $a(@array) {
 #If the target sequence is either an SPTR or RefSeq accession number, we have some information concerning the percentage of identity (that the sequences we directly used for the pmatch mapping) 
-	    print "HERE2\n";
-
+	
 	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT") || ($a->xDB eq "RefSeq")) {
 		my $dbentry = Bio::EnsEMBL::IdentityXref->new
 		    ( -adaptor => $adaptor,
@@ -213,7 +210,7 @@ MAPPING: while (<MAP>) {
 			}
 
 		#print STDERR "Calling store on $queryid\n";
-		#$adaptor->store($dbentry,$queryid,"Translation");
+		$adaptor->store($dbentry,$queryid,"Translation");
 	    }
 	    
 	    
@@ -237,7 +234,7 @@ MAPPING: while (<MAP>) {
 		    }
 		}
 		#print STDERR "Calling store1 on $queryid\n";
-		#$adaptor->store($dbentry,$queryid,"Translation");
+		$adaptor->store($dbentry,$queryid,"Translation");
 		    
 	    }
 	}
