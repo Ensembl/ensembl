@@ -34,8 +34,8 @@ coordinate system).  The 'clone' coordinate system in the same database would
 have no version however.  Although the clone sequences have their own sequence
 versions, there is no version which applies to the entire set of clones.
 
-Coordinate system objects are immutable. Their name and version attributes
-may not be altered after they are created.
+Coordinate system objects are immutable. Their name and version, and other
+attributes may not be altered after they are created.
 
 =head1 AUTHOR - Graham McVicker
 
@@ -43,10 +43,7 @@ may not be altered after they are created.
 
 Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object
-methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -68,20 +65,26 @@ use vars qw(@ISA);
 =head2 new
 
   Arg [..]   : List of named arguments:
-               -NAME    - The name of the coordinate system
-               -VERSION - (optional) The version of the coordinate system
+               -NAME      - The name of the coordinate system
+               -VERSION   - (optional) The version of the coordinate system
                -TOP_LEVEL - (optional) Sets whether this is a top-level coord
                             system. Default = 0
                -SEQUENCE_LEVEL - (optional) Sets whether this is a sequence
-                                 level coordinate system. Default = 0
-               -DBID    - (optional) The internal identifier of this
-                                     coordinate system
-               -ADAPTOR - (optional) The adaptor which provides database
-                                     interaction for this object
+                            level coordinate system. Default = 0
+               -DEFAULT   - (optional) 
+                            Whether this is the default version of the 
+                            coordinate systems of this name. Default = 0
+               -DBID      - (optional) The internal identifier of this
+                             coordinate system
+               -ADAPTOR   - (optional) The adaptor which provides database
+                            interaction for this object
   Example    : $cs = Bio::EnsEMBL::CoordSystem->new(-NAME => 'chromosome',
                                                     -VERSION => 'NCBI33',
                                                     -DBID    => 1,
-                                                    -ADAPTOR => adaptor);
+                                                    -ADAPTOR => adaptor,
+                                                    -DEFAULT => 1,
+                                                    -SEQUENCE_LEVEL => 0,
+                                                    -TOP_LEVEL => 1);
   Description: Creates a new CoordSystem object representing a coordinate
                system.
   Returntype : Bio::EnsEMBL::CoordSystem
@@ -96,8 +99,9 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ($name,$version, $top_level, $sequence_level) =
-    rearrange(['NAME','VERSION','TOP_LEVEL', 'SEQUENCE_LEVEL'], @_);
+  my ($name,$version, $top_level, $sequence_level, $default) =
+    rearrange(['NAME','VERSION','TOP_LEVEL', 'SEQUENCE_LEVEL',
+               'DEFAULT'], @_);
 
   throw('The NAME argument is required') if(!$name);
 
@@ -105,11 +109,13 @@ sub new {
 
   $top_level ||= 0;
   $sequence_level ||= 0;
+  $default ||= 0;
 
   $self->{'version'} = $version;
   $self->{'name'} = $name;
   $self->{'top_level'} = $top_level;
   $self->{'sequence_level'} = $sequence_level;
+  $self->{'default'} = $default;
 
   return $self;
 }
@@ -156,9 +162,12 @@ sub version {
 
 =head2 equals
 
-  Arg [1]    : (optional) string version
+  Arg [1]    : Bio::EnsEMBL::CoordSystem $cs
+               The coord system to compare to for equality.
   Example    : if($coord_sys->equals($other_coord_sys)) { ... }
-  Description: Compares 2 coordinate systems
+  Description: Compares 2 coordinate systems and returns true if they are
+               equivalent.  The definition of equivalent is sharing the same
+               name and version.
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -214,6 +223,24 @@ sub is_top_level {
 sub is_sequence_level {
   my $self = shift;
   return $self->{'sequence_level'};
+}
+
+
+=head2 is_default
+
+  Arg [1]    : none
+  Example    : if($coord_sys->is_default()) { ... }
+  Description: Returns true if this coordinate system is the default
+               version of the coordinate system of this name.
+  Returntype : 0 or 1
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub is_default {
+  my $self = shift;
+  return $self->{'default'};
 }
 
 
