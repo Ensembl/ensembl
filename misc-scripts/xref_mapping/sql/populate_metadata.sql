@@ -51,7 +51,7 @@ INSERT INTO source VALUES (1090, 'HUGO', 1, 'Y',2);
 INSERT INTO source VALUES (1200, 'RGD', 1, 'Y',2);
 INSERT INTO source VALUES (1300, 'Interpro', 1, 'Y', 2);
 INSERT INTO source VALUES (1400, 'ZFIN_ID', 1, 'Y', 2);
-INSERT INTO source VALUES (1500, 'MIM2', 1, 'Y', 3);
+INSERT INTO source VALUES (1500, 'OMIM', 1, 'Y', 3);
 
 INSERT INTO source VALUES (2000, 'CCDS', 1, 'Y', 4);
 
@@ -117,7 +117,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 10090,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10090,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Mm.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Mm.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10090,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Mm.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Mm.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 ### RAT
@@ -144,7 +144,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 10116,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10116,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Rn.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Rn.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10116,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Rn.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Rn.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 
@@ -176,7 +176,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 7955,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 7955,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Dr.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Dr.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 7955,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Dr.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Dr.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 ### Chicken
@@ -201,7 +201,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9031,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9031,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Gga.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Gga.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9031,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Gga.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Gga.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 ### XENOPUS
@@ -227,7 +227,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 8364,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 8364,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Str.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Str.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 8364,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Str.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Str.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 
@@ -250,7 +250,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9615,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9615,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Cfa.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Cfa.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9615,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Cfa.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Cfa.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 
