@@ -89,7 +89,7 @@ my $aa  =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","Analysis") or di
 my $attrib_adaptor =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","Attribute");
 
 ## set db user/pass to allow write access
-$EnsWeb::species_defs->set_write_access('ENSEMBL_DB',$species);
+$species_defs->set_write_access('ENSEMBL_DB',$species);
 
 ## which chromosomes do we run?
 my @top_slices;
