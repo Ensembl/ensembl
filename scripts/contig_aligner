@@ -1,0 +1,43 @@
+#!/usr/local/ensembl/bin/perl -w
+
+# Output a contig and its similarity features in Fasta format, to
+# stdout.
+# Can also output more than one such alignment.
+#
+# usage: contig_aligner <contigid> [<contigid> ...]
+#
+# For example:
+# contig_aligner AL356104.6.1.96693
+
+use strict;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::EvidenceAlignment;
+
+# database details
+my $host = 'ecs1h';
+my $user = 'ensro';
+my $dbname = 'homo_sapiens_core_4_28';
+
+# main program
+
+my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   => $host,
+                                            -user   => $user,
+                                            -dbname => $dbname);
+
+my $ea = Bio::EnsEMBL::EvidenceAlignment->new(-DBADAPTOR => $db);
+
+foreach my $contig_id (@ARGV) {
+  $ea->contigid($contig_id);
+  my $evidence_seq_arr_ref;
+  eval {
+    $evidence_seq_arr_ref = $ea->fetch_alignment;
+  };
+  if ($@) {
+    die "error: can't fetch alignment for $contig_id\n";
+  }
+  foreach my $evidence_obj (@$evidence_seq_arr_ref) {
+    print ">", $evidence_obj->accession_number , "\n" ,
+      $evidence_obj->seq , "\n";
+  }
+  print "\n";
+}
