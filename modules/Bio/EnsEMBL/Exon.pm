@@ -357,7 +357,7 @@ sub strand {
 
 =cut
 
-sub contig {
+sub slice {
   my $self = shift;
   #if an arg was provided, flush the internal sequence cache
   delete $self->{'_seq_cache'} if(@_);
