@@ -33,42 +33,57 @@ package Bio::EnsEMBL::DBSQL::GeneAdaptor;
 use strict;
 
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Gene;
-use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
 
 use vars '@ISA';
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
-my  $SLICE_GENE_CACHE_SIZE = 3;
 
-=head2 new
 
-  Arg [1]    : list of arguments @args
-  Example    : $gene_adaptor = new Bio::EnsEMBL::DBSQL::GeneAdaptor($db_adptr);
-  Description: Craetes a new GeneAdaptor object
-  Returntype : Bio::EnsEMBL::DBSQL::GeneAdaptor
+
+=head2 _tablename
+
+  Arg [1]    : none
+  Example    : none
+  Description: PROTECTED implementation of superclass abstract method
+               returns the names, aliases of the tables to use for queries
+  Returntype : list of listrefs of strings
   Exceptions : none
-  Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Caller     : internal
 
 =cut
 
-sub new {
-  my($class, @args) = @_;
-
-  $class = ref $class || $class;
-
-  #call superclass constructor
-  my $self = $class->SUPER::new(@args);
-
-  #initialize tied hash cache
-  tie (%{$self->{'_slice_gene_cache'}}, 
-       'Bio::EnsEMBL::Utils::Cache', 
-       $SLICE_GENE_CACHE_SIZE,);
-
-  return $self;
+sub _tables {
+  my $self = shift;
+  
+  return (['gene', 'g'],[ 'gene_description', 'gd'], ['gene_stable_id', 'gsi'] );
 }
+
+
+=head2 _columns
+
+  Arg [1]    : none
+  Example    : none
+  Description: PROTECTED implementation of superclass abstract method
+               returns a list of columns to use for queries
+  Returntype : list of strings
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+sub _columns {
+  my $self = shift;
+
+  return qw( g.seq_region_id g.seq_region_start g.seq_region_end g.seq_region_strand
+             g.analysis_id g.type g.display_xref_id gd.description gsi.stable_id 
+             gsi.version  );
+}
+
+
+
 
 =head2 list_dbIDs
 
@@ -104,42 +119,7 @@ sub list_stable_ids {
    return $self->_list_dbIDs("gene_stable_id", "stable_id");
 }
 
-=head2 list_geneIds
 
-  Arg [1]    : none
-  Example    : @gene_ids = $gene_adaptor->list_geneIds();
-  Description: DEPRECATED; use list_dbIDs instead
-  Returntype : list of ints
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-sub list_geneIds {
-   my ($self) = @_;
-
-   $self->warn("list_geneIds is deprecated; use list_dbIDs instead");
-   return $self->list_dbIDs();
-}
-
-=head2 list_stable_geneIds
-
-  Arg [1]    : list_stable_gene_ids
-  Example    : @stable_ids = $gene_adaptor->list_stable_gene_ids();
-  Description: DEPRECATED; use list_stable_dbIDs() instead.
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-sub list_stable_geneIds {
-   my ($self) = @_;
-
-   $self->warn("list_stable_geneIds is deprecated; use list_stable_dbIDs instead");
-   return $self->list_stable_ids();
-
-}
 
 =head2 fetch_by_dbID
 
@@ -274,45 +254,33 @@ sub fetch_by_dbID {
 
 =head2 fetch_by_stable_id
 
-  Arg [1]    : string $id 
+  Arg  1     : string $id 
                The stable id of the gene to retrieve
-  Arg [2]    : (optional) boolean $chr_coords
-               flag indicating genes should be returned in chromosomal
-               coords instead of contig coords.
-  Example    : $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000148944');
+  Arg [2]    : string $coordinate_system_name
+  Arg [3]    : string $coordinate_system_version
+
+  Example    : $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000148944', 'chromosome');
   Description: Retrieves a gene object from the database via its stable id
-  Returntype : Bio::EnsEMBL::Gene in contig coordinates by default or in 
-               chromosomal coords if the $chr_coords arg is set to 1.
-  Exceptions : thrown if no gene of stable_id $id exists in the database
+  Returntype : Bio::EnsEMBL::Gene in given coordinate system
+  Exceptions : if we cant get the gene in given coord system
   Caller     : general
 
 =cut
 
 sub fetch_by_stable_id{
-   my ($self,$id, $chr_coords) = @_;
+   my ($self,$id, $cs_name, $cs_version) = @_;
 
-   my $sth = $self->prepare("SELECT gene_id 
-                             FROM gene_stable_id 
-                             WHERE stable_id = '$id'");
-   $sth->execute;
+   my $constraint = "gsi.stable_id = $id";
 
-   my ($dbID) = $sth->fetchrow_array();
+   # should be only one :-)
+   my $genes = $self->SUPER::generic_fetch( $constraint );
 
-   if( !defined $dbID ) {
-       $self->throw("No stable id with $id, cannot fetch");
-   }
+   if( ! @$genes ) { return undef }
 
-   my $gene = $self->fetch_by_dbID($dbID);
+   my @new_genes = map { $_->transform( $cs_name, $cs_version ) } @$genes;
 
-   if($chr_coords) {
-     #transform gene to chromosomal coords
-     my $slice_adaptor = $self->db->get_SliceAdaptor;
-     my $slice = new Bio::EnsEMBL::Slice(-empty => 1,
-					 -adaptor => $slice_adaptor);
-     $gene->transform($slice);
-   }
-   
-   return $gene;
+
+   return $new_genes->[0];
  }
 
 
@@ -340,12 +308,13 @@ sub fetch_by_exon_stable_id{
         FROM transcript as t,
              exon_transcript as et,
              exon_stable_id as esi
-       WHERE t.transcript_id = et.transcript_id and et.exon_id = esi.exon_id and esi.stable_id = '$id'");
+       WHERE t.transcript_id = et.transcript_id 
+         AND et.exon_id = esi.exon_id 
+         AND esi.stable_id = '$id'");
    $sth->execute;
 
    my ($dbID) = $sth->fetchrow_array();
 
-   warn( "GENE: $dbID\n" );
    if( !defined $dbID ) {
        $self->throw("No stable id with $id, cannot fetch");
    }
