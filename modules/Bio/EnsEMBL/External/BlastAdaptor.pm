@@ -255,6 +255,56 @@ sub dynamic_use {
   return 1;
 }
 
+#----------------------------------------------------------------------
+
+=head2 clean_blast_database
+
+  Arg [1]   : int $days
+  Function  : Removes blast tickets older than $days days
+  Returntype: 
+  Exceptions: SQL errors
+  Caller    : 
+  Example   : $ba->clean_blast_database(14)
+
+=cut
+
+sub clean_blast_database{
+  my $self = shift;
+  my $days = shift || $self->throw( "Missing arg: number of days" );
+  $days =~ /\D/    && $self->throw( "Bad arg: number of days $days not int" );
+
+  my $q = qq/
+SELECT ticket 
+FROM   blast_ticket
+WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
+
+  my $q_del_tmpl = qq/
+DELETE
+FROM   blast_%s
+WHERE  ticket like "%s" /;
+
+  my $sth = $self->db->db_handle->prepare($q);
+  my $rv = $sth->execute() || $self->throw( $sth->errstr );
+  my $res = $sth->fetchall_arrayref;
+  $sth->finish;
+  
+  my @types = ( 'hsp','hit','result','ticket' );
+  my %num_deleted = map{ $_=>0 } @types;
+
+  foreach my $row( @$res ){
+    my $ticket = $row->[0];
+
+    foreach my $type( @types ){
+      my $q_del = sprintf( $q_del_tmpl, $type, $ticket );
+      my $sth = $self->db->db_handle->prepare($q_del);
+      my $rv = $sth->execute() || $self->throw( $sth->errstr );
+      $num_deleted{$type} += $rv;
+    }
+  }
+  map{ warn("Purging $days days: Deleted $num_deleted{$_} rows of type $_\n") }
+  keys %num_deleted;
+  return 1;
+}
 
 #----------------------------------------------------------------------
 1;
