@@ -47,8 +47,8 @@ Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 
 
 sub dump_seqs{
-  my ($self, $xref) = @_;
-  $self->dump_xref($xref);
+  my ($self) = @_;
+  $self->dump_xref();
   $self->dump_ensembl();
 }
 
@@ -66,7 +66,7 @@ sub dump_seqs{
 =cut
 
 sub run_matching{
-  my ($self,$xref) = @_;
+  my ($self) = @_;
 
   my @list=();
 
@@ -74,12 +74,12 @@ sub run_matching{
   foreach my $method (@{$self->method()}){
     my @dna=();
     push @dna, $method;
-    push @dna, $xref->dir."/xref_".$i."_dna.fasta";
+    push @dna, $self->xref->dir."/xref_".$i."_dna.fasta";
     push @dna, $self->ensembl_dna_file();
     push @list, \@dna;
     my @pep=();
     push @pep, $method;
-    push @pep, $xref->dir."/xref_".$i."_prot.fasta";
+    push @pep, $self->xref->dir."/xref_".$i."_prot.fasta";
     push @pep, $self->ensembl_protein_file();
     push @list, \@pep;
     $i++;
@@ -205,8 +205,9 @@ sub get_source_id_from_source_name{
 =cut
 
 sub dump_xref{
-  my ($self,$xref) = @_;
+  my ($self) = @_;
   
+  my $xref =$self->xref();
   if(!defined($xref->dir())){
     if(defined($self->dir)){
       $xref->species($self->dir);
@@ -540,6 +541,14 @@ sub method{
 }
 
 
+sub xref{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_xref} = $arg );
+  return $self->{_xref};
+}
+
 =head2 run_mapping
 
   Arg[1]     : List of lists of (method, query, target)
@@ -732,7 +741,7 @@ sub store {
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
   # write relevant xrefs to file
-  $self->dump_xrefs($xref, \%primary_xref_ids);
+  $self->dump_xrefs(\%primary_xref_ids);
 
 }
 
@@ -798,13 +807,13 @@ sub get_analysis_id {
 
 sub dump_xrefs {
 
-  my ($self, $xref, $xref_ids_hashref) = @_;
+  my ($self, $xref_ids_hashref) = @_;
   my @xref_ids = keys %$xref_ids_hashref;
 
   open (XREF, ">xref.txt");
 
   # TODO - get this from config
-  my $xref_dbi = $xref->dbi();
+  my $xref_dbi = $self->xref()->dbi();
 
   my $core_dbi = $self->dbi();
 
