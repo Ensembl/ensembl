@@ -353,8 +353,9 @@ sub read_MSP {
     }
     
 
-    my $mspobj  = new Bio::EnsEMBL::Analysis::MSPcrunch(-file => $mspfile,
-							-type => $type,
+    my $mspobj  = new Bio::EnsEMBL::Analysis::MSPcrunch(-contig_id  => $self->id,
+							-file       => $mspfile,
+							-type       => $type,
 							-source_tag => $msp->[1]);
 
 
