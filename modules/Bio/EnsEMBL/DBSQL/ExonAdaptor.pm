@@ -290,7 +290,6 @@ sub fetch_evidence_by_Exon {
                    AND seq_start <= ".$exon->end()."
                    AND seq_end >= ".$exon->start();
 
-
   my $sth = $self->prepare($statement);
   $sth->execute || $self->throw("execute failed for supporting evidence get!");
 
@@ -300,12 +299,15 @@ sub fetch_evidence_by_Exon {
   while (my $rowhash = $sth->fetchrow_hashref) {
       my $analysis = $anaAdaptor->fetch_by_dbID( $rowhash->{analysis} );
 
-      if( $analysis->logic_name ne "Swall" &&
-	  $analysis->logic_name ne "Vertrna" &&
-	  $analysis->logic_name ne "Unigene" &&
-	  $analysis->logic_name ne "TGE_e2g" &&
-	  $analysis->logic_name ne "similarity_genewise" &&
-	  $analysis->logic_name ne "combined_gw_e2g" ) {
+      if( 
+	 $analysis->logic_name ne "Swall" &&
+	 $analysis->logic_name ne "Vertrna" &&
+	 $analysis->logic_name ne "Unigene" &&
+	 $analysis->logic_name ne "TGE_e2g" &&
+	 $analysis->logic_name ne "similarity_genewise" &&
+	 $analysis->logic_name ne "combined_gw_e2g" &&
+	 $analysis->logic_name ne "wublastx" 
+	) {
 	next;
       }
 
