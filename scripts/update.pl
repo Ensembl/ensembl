@@ -258,7 +258,7 @@ $rec_db->replace_last_update($now_offset);
 
 sub _place_gene {
     my ($don_gene,$clone_level) = @_;
-    my $rec_gene
+    my $rec_gene;
 
     #Check if the gene is present in the recipient
     eval {
