@@ -120,7 +120,11 @@ sub fetch_all_by_Slice {
 
   my @dtypes = @{$dta->fetch_all_by_logic_name($logic_name)};
   if( ! @dtypes ){
-    $self->warn( "No DensityTypes for logic name $logic_name" );
+    my @all_dtypes =  @{ $dta->fetch_all() };
+    @all_dtypes or warning( "No DensityTypes in $dta" ) && return [];
+    my $valid_list = join( ", ", map{$_->analysis->logic_name} @all_dtypes );
+    warning( "No DensityTypes for logic name $logic_name. ".
+	     "Select from $valid_list" );
     return [];
   }
 
@@ -509,7 +513,7 @@ sub fetch_Featureset_by_Slice {
   my $self = shift;  
   my $dfeats = $self->fetch_all_by_Slice(@_);
   my $dfeatSet = new Bio::EnsEMBL::DensityFeatureSet($dfeats);
-  
+
   return ($dfeatSet);
 }
 
