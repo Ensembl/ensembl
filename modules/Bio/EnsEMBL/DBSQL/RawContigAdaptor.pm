@@ -524,7 +524,7 @@ sub remove {
 	$flag_found=1;
       }
     }
-    print "got here\n";
+
     if($flag_found==0){
       $self->throw("Failed to delete dna for dna_id '$dna_id'")
     }

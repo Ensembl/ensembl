@@ -549,8 +549,6 @@ sub deleteObj {
     #print STDERR "\tbreaking reference to $db_name database\n";
     $self->remove_db_adaptor($db_name);
   }
-  
-  $self->db_handle->disconnect;
 }
 
 
@@ -570,7 +568,7 @@ sub deleteObj {
 sub DESTROY {
    my ($obj) = @_;
 
-   print STDERR "DESTROYING DBConnection\n";
+   #print STDERR "DESTROYING DBConnection\n";
 
    my $dbh = $obj->{'_db_handle'};
 
@@ -578,7 +576,7 @@ sub DESTROY {
      #don't disconnect if the InactiveDestroy flag has been set
      #this can really screw up forked processes
      if(!$dbh->{'InactiveDestroy'}) {
-       print STDERR "Disconnecting db\n";
+       #print STDERR "Disconnecting db\n";
        $dbh->disconnect;
      } 
 
