@@ -209,7 +209,7 @@ sub map {
 
   #use bitwise shift for fast and easy integer multiplication and division
   my $min_start = (($frm_start >> $CHUNKFACTOR) << $CHUNKFACTOR);
-  my $min_end   = (($frm_end >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR - 1 ;
+  my $min_end   = ((($frm_end >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1 ;
 
   #get a list of ranges in the requested region that have not been registered,
   #and register them at the same
@@ -278,8 +278,8 @@ sub list_seq_regions {
   #this larger region if we have a registry miss.
 
   #use bitwise shift for fast and easy integer multiplication and division
-  my $min_start = (($frm_start >> $CHUNKFACTOR) << $CHUNKFACTOR) + 1;
-  my $min_end   = (($frm_end >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR;
+  my $min_start = (($frm_start >> $CHUNKFACTOR) << $CHUNKFACTOR);
+  my $min_end   = ((($frm_end >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1;
 
   if($frm_cs->equals($self->{'first_cs'})) {
     my $registry = $self->{'first_registry'};
