@@ -84,7 +84,7 @@ $SIG{INT} = sub {my $sig=shift;die "exited after SIG$sig";};
 my $fdbtype = 'timdb';
 my $fhost   = 'localhost';
 my $fport   = '410000';
-my $fdbname = 'ensembl08';
+my $fdbname = 'ensembl_freeze17';
 my $fdbuser = 'root';
 my $fdbpass = undef;
 

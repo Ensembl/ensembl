@@ -194,6 +194,36 @@ sub fetch_VirtualContig_by_chr_name{
 
 }
 
+=head2 get_all_fpc_ids
+
+ Title   : get_all_fpc_ids
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_fpc_ids{
+   my ($self,@args) = @_;
+
+   my $type = $self->dbobj->static_golden_path_type();
+   my $sth = $self->dbobj->prepare("select distinct(fpcctg_name) from static_golden_path where type = '$type'");
+   $sth->execute();
+   my @out;
+   my $cid;
+   while (my $rowhash = $sth->fetchrow_hashref){
+       push (@out,$rowhash->{'fpcctg_name'});
+   }
+   if ($sth->rows == 0) {
+       $self->throw("Could not find any fpc contigs in golden path $type!");
+   }
+   return @out;
+}
+
+
 
 =head2 dbobj
 

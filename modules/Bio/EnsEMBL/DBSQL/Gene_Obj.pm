@@ -551,7 +551,7 @@ sub _store_exons_in_transcript{
    if( !ref $trans || !$trans->isa('Bio::EnsEMBL::Transcript') ) {
        $self->throw(" $trans is not a transcript");
    }
-   print STDERR "Got ",scalar(@exons),"to store...\n";
+   #print STDERR "Got ",scalar(@exons),"to store...\n";
 
    my $exon;
    while ( ($exon = shift @exons)) {
