@@ -817,7 +817,7 @@ sub _get_dblinks{
        my @transcript_xrefs = $entryAdaptor->fetch_by_transcript($transid);
        
        foreach my $translink(@transcript_xrefs) {
-	   $trans->add_DBLink($translink);
+	   $gene->add_DBLink($translink);
        }
    }
 }                                       # _get_dblinks
