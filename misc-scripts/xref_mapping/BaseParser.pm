@@ -6,16 +6,11 @@ use DBI;
 use Digest::MD5 qw(md5_hex);
 use File::Path;
 use POSIX qw(strftime);
+use Getopt::Long;
 
 use UniProtParser;
 use RefSeqParser;
 use RefSeqGPFFParser;
-
-my $host = "ecs4";
-my $port = 3350;
-my $database = "glenn_test_xref";
-my $user = "ensadmin";
-my $password = "ensembl";
 
 my $base_dir = ".";
 
@@ -24,7 +19,39 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %name2species_id;
 
-run() if (!defined(caller()));
+my $host = "ecs4";
+my $port = 3350;
+my $dbname = "glenn_test_xref";
+my $user = "ensadmin";
+my $pass = "ensembl";
+my @species;
+my @sources;
+
+if (!defined(caller())) {
+
+  get_options();
+  run();
+
+}
+
+# --------------------------------------------------------------------------------
+
+sub get_options {
+
+  GetOptions('user=s'    => \$user,
+	     'pass=s'    => \$pass,
+	     'host=s'    => \$host,
+	     'port=i'    => \$port,
+	     'dbname=s'  => \$dbname,
+	     'species=s' => \@species,
+	     'source=s'  => \@sources,
+	     'help'     => sub { usage(); exit(0); });
+
+  @species = split(/,/,join(',',@species));
+  @sources  = split(/,/,join(',',@sources));
+
+}
+
 
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
@@ -32,7 +59,29 @@ run() if (!defined(caller()));
 sub run {
 
   my $dbi = dbi();
-  my $sth = $dbi->prepare("SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser FROM source s, source_url su WHERE s.download='Y' AND su.source_id=s.source_id ORDER BY s.name");
+
+  # TODO specify species
+  # TODO error checking of source name
+  my $source_sql = "";
+  if (@sources) {
+    $source_sql .= " AND s.name IN (";
+    for (my $i = 0; $i < @sources; $i++ ) {
+      $source_sql .= "," if ($i ne 0);
+      $source_sql .= "\'" . $sources[$i] . "\'";
+    }
+    $source_sql .= ") ";
+  }
+
+  my $sql =
+    "SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser " .
+      "FROM source s, source_url su " .
+	"WHERE s.download='Y' AND su.source_id=s.source_id " .
+	  $source_sql .
+	  "ORDER BY s.name";
+print $sql . "\n";
+  exit(0);
+
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
   my ($source_id, $source_url_id, $name, $url, $checksum, $parser);
   $sth->bind_columns(\$source_id, \$source_url_id, \$name, \$url, \$checksum, \$parser);
@@ -81,7 +130,7 @@ sub run {
 	$parser->run("$dir/$file", $source_id);
 
       } else {
-	
+
 	print $file . " has zero length, skipping\n";
 
       }
@@ -122,7 +171,7 @@ sub get_source_id_for_filename {
   $sth->execute();
   my @row = $sth->fetchrow_array();
   my $source_id;
-  if (defined @row) {
+  if (@row) {
     $source_id = $row[0];
   } else {
     warn("Couldn't get source ID for file $file\n");
@@ -145,7 +194,7 @@ sub get_source_id_for_source_name {
   $sth->execute();
   my @row = $sth->fetchrow_array();
   my $source_id;
-  if (defined @row) {
+  if (@row) {
     $source_id = $row[0];
   } else {
     warn("Couldn't get source ID for source name $source_name\n");
@@ -262,7 +311,7 @@ sub get_dependent_xref_sources {
 
   my $self = shift;
 
-  if (!defined %dependent_sources) {
+  if (!%dependent_sources) {
 
     my $dbi = dbi();
     my $sth = $dbi->prepare("SELECT name,source_id FROM source WHERE download='N'");
@@ -285,7 +334,7 @@ sub taxonomy2species_id {
 
   my $self = shift;
 
-  if (!defined %taxonomy2species_id) {
+  if (!%taxonomy2species_id) {
 
     my $dbi = dbi();
     my $sth = $dbi->prepare("SELECT species_id, taxonomy_id FROM species");
@@ -308,7 +357,7 @@ sub name2species_id {
 
   my $self = shift;
 
-  if (!defined %name2species_id) {
+  if (!%name2species_id) {
 
     my $dbi = dbi();
     my $sth = $dbi->prepare("SELECT species_id, name FROM species");
@@ -349,9 +398,9 @@ sub dbi {
   my $self = shift;
 
   if (!defined $dbi) {
-    $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$database",
+    $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$dbname",
 			"$user",
-			"$password",
+			"$pass",
 			{'RaiseError' => 1}) || die "Can't connect to database";
   }
 
@@ -480,5 +529,16 @@ sub delete_by_source {
 }
 
 # --------------------------------------------------------------------------------
+
+sub usage {
+
+  print << "EOF";
+
+  BaseParser.pm -user {user} -pass {password} -host {host} -port {port} -dbname {database} -species {species1,species2} -source {source1,source2}
+
+EOF
+
+}
+
 1;
 
