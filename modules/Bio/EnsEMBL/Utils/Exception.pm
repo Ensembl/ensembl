@@ -475,9 +475,8 @@ sub deprecate {
                In the try/catch syntax, the original $@ is in $_ in the catch subroutine.
                This try/catch implementation is a copy and paste from
                "Programming Perl" 3rd Edition, July 2000, by L.Wall, T. Christiansen
-               & J. Orwant. p227, and is only possible because of the possibility of
-               subroutine prototypes.
-  Returntype : implemented by the catch block
+               & J. Orwant. p227, and is only possible because of subroutine prototypes.
+  Returntype : depend on what is implemented the try or catch block
   Exceptions : none
   Caller     : general
 
