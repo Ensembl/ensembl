@@ -129,6 +129,9 @@ sub _initialize {
 	  $self->throw("Have to provide all arguments to virtualcontig \n" .
 		       "(focuscontig, focusposition, ori, left and right)");
       }
+      if (! $focuscontig->isa('Bio::EnsEMBL::DBSQL::RawContig') ) {
+	$self->throw("$focuscontig is not a Bio::EnsEMBL::DBSQL::RawContig object, cannot make Virtual Contig!");
+    }
       
       # build the map of how contigs go onto the vc coorindates
       $self->_build_contig_map($focuscontig,$focusposition,$ori,$leftsize,$rightsize);
@@ -180,7 +183,6 @@ sub extend {
 					       -left            => $self->_left_size - $left,
 					       -right           => $self->_right_size + $right,
 					       );
-
 
    my $id = join('.', ($nvc->_focus_contig->id, $nvc->_focus_position, $nvc->_focus_orientation, $nvc->_left_size, $nvc->_right_size));
    $nvc->_unique_number($id);
