@@ -2193,14 +2193,21 @@ sub get_all_RepeatFeatures_lite {
  
  sub get_all_DnaDnaAlignFeature {
      my  ($self, $compara_dbadaptor, $subject_species, $query_species) = @_;
-     return $compara_dbadaptor->get_GenomicAlignAdaptor->fetch_DnaDnaAlignFeature_by_species_chr_start_end(
-         $subject_species,
-         $query_species,
-         $self->_chr_name,
-         $self->_global_start,
-         $self->_global_end,
-         'VirtualContig');
- }
+     my @Q = 
+        $compara_dbadaptor->get_GenomicAlignAdaptor->fetch_DnaDnaAlignFeature_by_species_chr_start_end(
+             $subject_species,
+             $query_species,
+             $self->_chr_name,
+             $self->_global_start,
+             $self->_global_end,
+             'VirtualContig'
+    );
+    foreach (@Q) {
+        $_->start( $_->start()-$self->_global_start+1 );
+        $_->end(   $_->end()  -$self->_global_start+1 );
+    }
+    return @Q;
+}
 
 sub get_all_VirtualGenes_startend_lite {
 	my  $self = shift;
