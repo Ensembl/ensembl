@@ -318,6 +318,9 @@ else {
 }
 
 
+my $rm = "rm seq_temp.swiss";
+
+system($rm) == 0 or die "$0\Error running '$rm'";
 
 
 
