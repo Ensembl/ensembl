@@ -656,6 +656,7 @@ CREATE TABLE prediction_transcript (
     seq_region_end int unsigned not null,
     seq_region_strand tinyint not null,
     analysis_id int,
+    display_label varchar(255),
     
     PRIMARY KEY( prediction_transcript_id ),
     KEY ( seq_region_id, seq_region_start ),
