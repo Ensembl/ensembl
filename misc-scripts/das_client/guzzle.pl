@@ -875,36 +875,44 @@ sub result_page
     # non-numerical columns (the last few ones and the first few
     # ones, respectively).
 
-    if ($sort1 <= 2) {
-	if ($sort2 <= 2) {
-	    $table = [ sort {
-		$a->{COLUMNS}[$sort1] cmp
-		$b->{COLUMNS}[$sort1] ||
-		$a->{COLUMNS}[$sort2] cmp
-		$b->{COLUMNS}[$sort2] } @{ $table } ];
-	} else {
-	    $table = [ sort {
-		$a->{COLUMNS}[$sort1] cmp
-		$b->{COLUMNS}[$sort1] ||
-		$a->{COLUMNS}[$sort2] <=>
-		$b->{COLUMNS}[$sort2] } @{ $table } ];
-	}
+    # Column 5 (score) is a special case.
+
+    if ($sort1 == 5) {
+	$table = [ sort {
+	    substr($a->{COLUMNS}[2], 0, 1 + index($a->{COLUMNS}[2], ':')) cmp
+	    substr($b->{COLUMNS}[2], 0, 1 + index($b->{COLUMNS}[2], ':')) ||
+	    $a->{COLUMNS}[5] <=> $b->{COLUMNS}[5] } @{ $table } ];
     } else {
-	if ($sort2 <= 2) {
-	    $table = [ sort {
-		$a->{COLUMNS}[$sort1] <=>
-		$b->{COLUMNS}[$sort1] ||
-		$a->{COLUMNS}[$sort2] cmp
-		$b->{COLUMNS}[$sort2] } @{ $table } ];
+	if ($sort1 <= 2) {
+	    if ($sort2 <= 2) {
+		$table = [ sort {
+		    $a->{COLUMNS}[$sort1] cmp
+		    $b->{COLUMNS}[$sort1] ||
+		    $a->{COLUMNS}[$sort2] cmp
+		    $b->{COLUMNS}[$sort2] } @{ $table } ];
+	    } else {
+		$table = [ sort {
+		    $a->{COLUMNS}[$sort1] cmp
+		    $b->{COLUMNS}[$sort1] ||
+		    $a->{COLUMNS}[$sort2] <=>
+		    $b->{COLUMNS}[$sort2] } @{ $table } ];
+	    }
 	} else {
-	    $table = [ sort {
-		$a->{COLUMNS}[$sort1] <=>
-		$b->{COLUMNS}[$sort1] ||
-		$a->{COLUMNS}[$sort2] <=>
-		$b->{COLUMNS}[$sort2] } @{ $table } ];
+	    if ($sort2 <= 2) {
+		$table = [ sort {
+		    $a->{COLUMNS}[$sort1] <=>
+		    $b->{COLUMNS}[$sort1] ||
+		    $a->{COLUMNS}[$sort2] cmp
+		    $b->{COLUMNS}[$sort2] } @{ $table } ];
+	    } else {
+		$table = [ sort {
+		    $a->{COLUMNS}[$sort1] <=>
+		    $b->{COLUMNS}[$sort1] ||
+		    $a->{COLUMNS}[$sort2] <=>
+		    $b->{COLUMNS}[$sort2] } @{ $table } ];
+	    }
 	}
     }
-
 
     if ($be_nice) {
 	# Embed the results for fast re-sort.
