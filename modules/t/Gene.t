@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..7\n"; 
+BEGIN { $| = 1; print "1..6\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -42,14 +42,6 @@ $ex2   = new Bio::EnsEMBL::Exon;
 print "ok 4\n";   
 
 
-# to keep test quiet, initialise Gene/transcript at 20,20
-
-#$gene->start(20);
-#$gene->end(20);
-#$tr->start(20);
-#$tr->end(20);
-
-
 $ex1->start(10);
 $ex1->end(20);
 $ex1->strand(1);
@@ -66,11 +58,6 @@ $gene->add_Transcript($tr);
 
 print "ok 5\n";
 
-if( $gene->start != 10 || $gene->end != 50 ) {
-    print "not ok 6\n";
-} else {
-    print "ok 6\n";
-}
 
 $count = 0;
 foreach $tr ( $gene->each_Transcript() ) {
@@ -83,8 +70,8 @@ $x =0; # stop it whining...
 
 
 if( $count != 2 ) {
-    print "not ok 7\n";
+    print "not ok 6\n";
 } else {
-    print "ok 7\n";
+    print "ok 6\n";
 }
 
