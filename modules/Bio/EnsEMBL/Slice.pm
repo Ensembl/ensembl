@@ -130,9 +130,9 @@ sub get_all_RepeatFeatures{
    my ($self,@args) = @_;
 
 
-   @repeats = $self->repeat_adaptor->fetch_by_Slice($self);
+   my @repeats = $self->repeat_adaptor->fetch_by_Slice($self);
 
-   foreach $repeat ( @repeats ) {
+   foreach my $repeat ( @repeats ) {
        $repeat->transform_location($self->start);
    }
 
