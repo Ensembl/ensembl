@@ -561,8 +561,8 @@ sub get_DnaAlignFeatureAdaptor {
 
 sub get_AssemblyMapperAdaptor {
   my( $self ) = @_;
-    
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor");
+
+  return $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor");
 }
 
 
@@ -717,7 +717,7 @@ sub assembly_type{
     if (! defined $obj->{'assembly'}) {
       my $ass;
       eval {
-        $ass = $obj->get_MetaContainer()->get_default_assembly();
+        $ass = $obj->dnadb->get_MetaContainer()->get_default_assembly();
       };
       if ( $@ ) {
         $obj->throw("*** get_MetaContainer->get_default_assembly failed:\n$@\n"
