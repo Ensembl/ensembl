@@ -196,6 +196,104 @@ sub new {
 }
 
 #----------------------------------------------------------------------
+
+=head2 store
+
+  Arg [1]   : 
+  Function  : 
+  Returntype: 
+  Exceptions: 
+  Caller    : 
+  Example   : 
+
+=cut
+
+sub store {
+  my $self = shift;
+  my $obj = shift;
+  my $ret;
+  if( $obj->isa("Bio::Tools::Run::SearchMulti") ){
+    $ret = $self->store_search_multi( $obj, @_ );
+  }
+  elsif( $obj->isa("Bio::Search::Result::ResultI") ){
+    $ret = $self->store_result( $obj, @_ );
+  }
+  elsif( $obj->isa("Bio::Search::Hit::HitI") ){
+    $ret =$self->store_hit( $obj, @_ );
+  }
+  elsif( $obj->isa("Bio::Search::HSP::HSPI") ){
+    $ret = $self->store_hsp( $obj, @_ );
+  }
+  else{
+    $self->throw( "Do not know how to store objects of type ".ref($obj) );
+  }
+  return $ret;
+}
+
+#----------------------------------------------------------------------
+
+=head2 retrieve
+
+  Arg [1]   : 
+  Function  : 
+  Returntype: 
+  Exceptions: 
+  Caller    : 
+  Example   : 
+
+=cut
+
+sub retrieve {
+  my $self = shift;
+  my $caller = shift;
+  if( $caller->isa("Bio::Tools::Run::EnsemblSearchMulti") ){
+    return $self->retrieve_search_multi( @_ );
+  }
+  elsif( $caller->isa("Bio::Search::Result::ResultI") ){
+    return $self->retrieve_result( @_ );
+  }
+  elsif( $caller->isa("Bio::Search::Hit::HitI") ){
+    return $self->retrieve_hit( @_ );
+  }
+  elsif( $caller->isa("Bio::Search::HSP::HSPI") ){
+    return $self->retrieve_hsp( @_ );
+  }
+  $self->throw( "Do not know how to retrieve objects of type ".
+		ref($caller)? ref($caller) : $caller );
+}
+
+#----------------------------------------------------------------------
+
+=head2 remove
+
+  Arg [1]   : 
+  Function  : TODO: implement remove functions
+  Returntype: 
+  Exceptions: 
+  Caller    : 
+  Example   : 
+
+=cut
+
+sub remove {
+  my $self = shift;
+  my $obj = shift;
+  if( $obj->isa("Bio::Tools::Run::EnsemblSearchMulti") ){
+    #return $self->remove_search_multi( @_ );
+  }
+  elsif( $obj->isa("Bio::Search::Result::ResultI") ){
+    #return $self->remove_result( @_ );
+  }
+  elsif( $obj->isa("Bio::Search::Hit::HitI") ){
+    #return $self->remove_hit( @_ );
+  }
+  elsif( $obj->isa("Bio::Search::HSP::HSPI") ){
+    #return $self->remove_hsp( @_ );
+  }
+  $self->throw( "Do not know how to remove objects of type ".
+		ref($obj) );
+}
+#----------------------------------------------------------------------
 =head2 store_search_multi
 
   Arg [1]   : Bio::Tools::Run::EnsemblSearchMulti obj
@@ -212,9 +310,10 @@ sub store_search_multi{
   my $search_multi = shift || 
     $self->throw( "Need a Bio::Tools::Run::EnsemblSearchMulti obj" );
 
+  my $frozen = shift || $search_multi->serialise;
+
   my $dbh  = $self->db->db_handle;
 
-  my $frozen  = $search_multi->serialise;
   my $ticket  = $search_multi->token ||
     $self->throw( "Bio::Tools::Run::EnsemblSearchMulti obj has no ticket" );
 
@@ -260,13 +359,7 @@ sub retrieve_search_multi {
   my ( $frozen ) = $sth->fetchrow_array;
   $frozen || $self->throw( "Object from ticket $ticket is empty" );
   $sth->finish;
-
-  my $stored_obj = thaw( $frozen );
-  if( ! ref( $stored_obj ) or 
-      ! $stored_obj->isa( 'Bio::Root::Storable' ) ){
-    $self->throw( "Token $ticket returned no data" );
-  }
-  return $stored_obj;
+  return $frozen;
 }
 
 
@@ -287,10 +380,10 @@ sub store_result{
   my $self = shift;
   my $res  = shift || 
     $self->throw( "Need a Bio::Search::Result::EnsemblResult obj" );
+  my $frozen = shift || $res->serialised;
 
   my $dbh  = $self->db->db_handle;
 
-  my $frozen = $res->serialise;
   my $ticket = $res->group_ticket;
   my ( $id, $use_date ) = split( '!!', $res->token || '' );
   $use_date ||= $self->use_date('RESULT');
@@ -344,13 +437,7 @@ sub retrieve_result{
   my ( $frozen ) = $sth->fetchrow_array;
   $frozen || $self->throw( "Object from result $id is empty" );
   $sth->finish;
-
-  my $stored_obj = thaw( $frozen );
-  if( ! ref( $stored_obj ) or 
-      ! $stored_obj->isa( 'Bio::Root::Storable' ) ){
-    $self->throw( "Token $id returned no data" );
-  }
-  return $stored_obj;
+  return $frozen;
 }
 
 #----------------------------------------------------------------------
@@ -369,10 +456,10 @@ sub store_hit{
   my $self = shift;
   my $hit  = shift || 
     $self->throw( "Need a Bio::Search::Hit::EnsemblHit obj" );
+  my $frozen = shift || $hit->serialise;
 
   my $dbh  = $self->db->db_handle;
 
-  my $frozen = $hit->serialise;
   my $ticket = $hit->group_ticket;
   my ( $id, $use_date ) = split( '!!', $hit->token || '' );
   $use_date ||= '';
@@ -425,13 +512,7 @@ sub retrieve_hit{
   my ( $frozen ) = $sth->fetchrow_array;
   $frozen || $self->throw( "Object from hit $id is empty" );
   $sth->finish;
-
-  my $stored_obj = thaw( $frozen );
-  if( ! ref( $stored_obj ) or 
-      ! $stored_obj->isa( 'Bio::Root::Storable' ) ){
-    $self->throw( "Token $token returned no data" );
-  }
-  return $stored_obj;
+  return $frozen;
 }
 
 #----------------------------------------------------------------------
@@ -450,12 +531,13 @@ sub store_hsp{
   my $self = shift;
   my $hsp  = shift || 
     $self->throw( "Need a Bio::Search::HSP::EnsemblHSP obj" );
+  my $frozen = shift || $hsp->serialise;
+
   my $dbh  = $self->db->db_handle;
 
-  my $frozen = $hsp->serialise;
   my $ticket = $hsp->group_ticket;
   my ( $id, $use_date ) = split( '!!', $hsp->token || '');
-  $use_date ||= '';
+  $use_date ||= $self->use_date('HSP');
 
   my $chr_name  = 'NULL';
   my $chr_start = 'NULL';
@@ -516,13 +598,7 @@ sub retrieve_hsp{
   my ( $frozen ) = $sth->fetchrow_array;
   $frozen || $self->throw( "Object from hsp $id is empty" );
   $sth->finish;
-
-  my $stored_obj = thaw( $frozen );
-  if( ! ref( $stored_obj ) or 
-      ! $stored_obj->isa( 'Bio::Root::Storable' ) ){
-    $self->throw( "Token $token returned no data" );
-  }
-  return $stored_obj;
+  return $frozen;
 }
 
 
