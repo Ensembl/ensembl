@@ -140,7 +140,7 @@ sub end {
 sub strand {
     my( $self, $strand ) = @_;
     
-    if ($strand) {
+    if (defined $strand) {
         $self->{'_strand'} = $strand;
     }
     return $self->{'_strand'};
