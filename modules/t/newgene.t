@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..38\n"; 
+BEGIN { $| = 1; print "1..40\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -106,6 +106,7 @@ else {
     print "ok 9\n";
     print STDERR "*** SKIPPING gene modified test \n";
 }  
+
 if ($gene->_stored == 962641806) {
     print "ok 10\n";
 }
@@ -387,6 +388,10 @@ else {
     print "not ok 33\n";
     print STDERR "Exon supporting evidence still present after deleting!\n";
 }
+
+# Checking write method, first get again
+my $newgene = $gene_obj->get('test_gene');
+
 $gene_obj->delete('test_gene');
 
 $gene = undef;
@@ -402,39 +407,69 @@ else {
     print "not ok 34\n";
     print STDERR "Gene still present after deleting!\n";
 } 
-my $newgeneid = $gene_obj->get_new_GeneID;
-if ($newgeneid eq 'ENSG00000000001') {
-    print "ok 35\n";
+
+# writing gene, adding analysis
+if ($newgene->isa('Bio::EnsEMBL::Gene')) {
+    $newgene->id( "newgene" );
+    my $analysis = Bio::EnsEMBL::Analysis->new( -logic_name => 'TestANA',
+      -program => 'GeneWise', -db => 'ESTs' );
+    eval {
+      $newgene->analysis( $analysis );
+      $gene_obj->write( $newgene );
+    };
+    if( $@ ) {
+      print "not ok 35\n";
+      print STDERR "Gene write newgene failed!\n$@\n";
+    } else {
+      print "ok 35\n";
+    }
 }
 else {
     print "not ok 35\n";
+    print STDERR "Could not get the test gene from the database!\n";
+}
+
+my $anotherGen = $gene_obj->get( "newgene" );
+if( $anotherGen->analysis->logic_name eq 'TestANA' ) {
+  print "ok 36\n";
+} else { 
+  print "not ok 36\n";
+}
+
+
+my $newgeneid = $gene_obj->get_new_GeneID;
+if ($newgeneid eq 'ENSG00000000001') {
+    print "ok 37\n";
+}
+else {
+    print "not ok 37\n";
     print STDERR "New gene id does not look right!\n";
 }
 
 my $newtransid = $gene_obj->get_new_TranscriptID;
 if ($newtransid eq 'ENST00000000001') {
-    print "ok 36\n";
+    print "ok 38\n";
 }
 else {
-    print "not ok 36\n";
+    print "not ok 38\n";
     print STDERR "New transcript id does not look right!\n";
 }
 my $newexonid = $gene_obj->get_new_ExonID;
 if ($newexonid eq 'ENSE00000000001') {
-    print "ok 37\n";
+    print "ok 39\n";
 }
 else {
-    print "not ok 37\n";
+    print "not ok 39\n";
     print STDERR "New exon id does not look right!\n";
 }
 
 
 my $newtranslid = $gene_obj->get_new_TranslationID;
 if ($newtranslid eq 'ENSP00000000001') {
-    print "ok 38\n";
+    print "ok 40\n";
 }
 else {
-    print "not ok 38\n";
+    print "not ok 40\n";
     print STDERR "New protein id does not look right!\n";
 }
 
