@@ -2507,40 +2507,26 @@ sub _fpc_contig_end{
 =cut
 
 sub static_golden_start{
-    my $self = shift;
+   my ($self,$static_golden_start) = @_;
 
-    if( defined $self->_static_golden_start) { return $self->_static_golden_start;}
-    my $id  = $self->internal_id;
-    my $type = $self->dbobj->static_golden_path_type();
-    my $sth = $self->dbobj->prepare("select raw_start from static_golden_path where raw_id = $id and type = '$type'");
-    $sth->execute;
-    my ($value) = $sth->fetchrow_array();
-    if( !defined $value) { return undef; }
-    $self->_static_golden_start($value);
-    return $value;
+   if( defined $static_golden_start ) {
+       $self->{'_static_golden_start'} = $static_golden_start;
+       return $static_golden_start;
+   }
 
+   my $id= $self->internal_id();
+   $self->throw("Internal ID not set") unless $id;
 
-}
-
-=head2 _static_golden_start
-
- Title   : static_golden_start
- Usage   : $self->_static_golden_start($newval)
- Function: 
- Returns : value of _static_golden_start
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _static_golden_start{
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'_static_golden_start'} = $value;
-    }
-    return $self->{'_static_golden_start'};
-
+   my $type = $self->dbobj->static_golden_path_type();
+   if (! defined ($self->{'_static_golden_start'})) {
+       my $sth = $self->dbobj->prepare("select raw_start from static_golden_path where raw_id = $id and type = '$type'");
+       $sth->execute();
+       
+       my $rowhash = $sth->fetchrow_hashref();
+       
+       $self->{'_static_golden_start'} = $rowhash->{'raw_start'};
+   }
+   return $self->{'_static_golden_start'};
 }
 
 =head2 static_golden_end
@@ -2555,40 +2541,26 @@ sub _static_golden_start{
 =cut
 
 sub static_golden_end{
-    my $self = shift;
+   my ($self,$static_golden_end) = @_;
 
-    if( defined $self->_static_golden_end) { return $self->_static_golden_end;}
-    my $id  = $self->internal_id;
-    my $type = $self->dbobj->static_golden_path_type();
-    my $sth = $self->dbobj->prepare("select raw_end from static_golden_path where raw_id = $id and type = '$type'");
-    $sth->execute;
-    my ($value) = $sth->fetchrow_array();
-    if( !defined $value) { return undef; }
-    $self->_static_golden_end($value);
-    return $value;
+   if( defined $static_golden_end ) {
+       $self->{'_static_golden_end'} = $static_golden_end;
+       return $static_golden_end;
+   }
 
+   my $id= $self->internal_id();
+   $self->throw("Internal ID not set") unless $id;
 
-}
-
-=head2 _static_golden_end
-
- Title   : static_golden_end
- Usage   : $self->_static_golden_end($newval)
- Function: 
- Returns : value of _static_golden_end
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _static_golden_end{
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'_static_golden_end'} = $value;
-    }
-    return $self->{'_static_golden_end'};
-
+   my $type = $self->dbobj->static_golden_path_type();
+   if (! defined ($self->{'_static_golden_end'})) {
+       my $sth = $self->dbobj->prepare("select raw_end from static_golden_path where raw_id = $id and type = '$type'");
+       $sth->execute();
+       
+       my $rowhash = $sth->fetchrow_hashref();
+       
+       $self->{'_static_golden_end'} = $rowhash->{'raw_end'};
+   }
+   return $self->{'_static_golden_end'};
 }
 
 =head2 static_golden_ori
@@ -2603,41 +2575,28 @@ sub _static_golden_end{
 =cut
 
 sub static_golden_ori{
-    my $self = shift;
+   my ($self,$static_golden_ori) = @_;
 
-    if( defined $self->_static_golden_ori) { return $self->_static_golden_ori;}
-    my $id  = $self->internal_id;
-    my $type = $self->dbobj->static_golden_path_type();
-    my $sth = $self->dbobj->prepare("select raw_ori from static_golden_path where raw_id = $id and type = '$type'");
-    $sth->execute;
-    my ($value) = $sth->fetchrow_array();
-    if( !defined $value) { return undef; }
-    $self->_static_golden_ori($value);
-    return $value;
+   if( defined $static_golden_ori ) {
+       $self->{'_static_golden_ori'} = $static_golden_ori;
+       return $static_golden_ori;
+   }
 
+   my $id= $self->internal_id();
+   $self->throw("Internal ID not set") unless $id;
 
+   my $type = $self->dbobj->static_golden_path_type();
+   if (! defined ($self->{'_static_golden_ori'})) {
+       my $sth = $self->dbobj->prepare("select raw_ori from static_golden_path where raw_id = $id and type = '$type'");
+       $sth->execute();
+       
+       my $rowhash = $sth->fetchrow_hashref();
+       
+       $self->{'_static_golden_ori'} = $rowhash->{'raw_ori'};
+   }
+   return $self->{'_static_golden_ori'};
 }
 
-=head2 _static_golden_ori
-
- Title   : static_golden_ori
- Usage   : $self->_static_golden_ori($newval)
- Function: 
- Returns : value of _static_golden_ori
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _static_golden_ori{
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'_static_golden_ori'} = $value;
-    }
-    return $self->{'_static_golden_ori'};
-
-}
 
 =head2 static_golden_type
 
