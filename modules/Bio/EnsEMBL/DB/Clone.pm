@@ -96,10 +96,10 @@ sub get_all_Genes{
    $self->throw("Not implemented yet!");
 }
 
-=head2 get_Contigs
+=head2 get_Contig
 
- Title   : get_Contigs
- Usage   : foreach $contig ( $clone->get_Contigs ) 
+ Title   : get_Contig
+ Usage   :
  Function:
  Example :
  Returns : 
@@ -108,7 +108,26 @@ sub get_all_Genes{
 
 =cut
 
-sub get_Contigs{
+sub get_Contig{
+   my ($self,$contigid) = @_;
+
+   # should check this contig is in this clone?
+   return $self->_dbobj->get_Contig($contigid);
+}
+
+=head2 get_all_Contigs
+
+ Title   : get_Contigs
+ Usage   : foreach $contig ( $clone->get_all_Contigs ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Contigs{
    my ($self) = @_;
    my $sth;
    my @res;

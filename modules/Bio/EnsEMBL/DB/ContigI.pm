@@ -99,6 +99,45 @@ sub get_all_Genes{
 
 }
 
+=head2 offset
+
+ Title   : offset
+ Usage   : $offset = $contig->offset()
+ Function: Provides the offset of the contig in the clone
+         : somehow. 1 means it is the first contig
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub offset{
+   my ($self,@args) = @_;
+
+   $self->throw("Object did not provide the offset method on Contig interface!");
+
+}
+
+=head2 orientation
+
+ Title   : orientation
+ Usage   : 
+ Function: Provides the orientation of the contig in the clone.
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub orientation{
+   my ($self,@args) = @_;
+
+   $self->throw("Object did not provide the orientation method on Contig interface!");
+
+}
+
 
 =head2 annseq
 
