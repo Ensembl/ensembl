@@ -638,6 +638,82 @@ sub split_Transcript_to_Partial {
    return @out;
 }                                       # split_Transcript_to_Partial
 
+
+sub cds {
+    my ($self) = @_;
+
+    my $debug;
+
+
+    if ( ! defined $self->translation ) {
+        $self->throw("You have to have a translation now to make a translation. Doh!");
+    }
+
+    my @trans = $self->split_Transcript_to_Partial(1);
+
+    unless (@trans) {
+        $self->throw("Bad internal error - split a transcript to zero transcripts! Doh!");
+    }  
+
+    my $seqstr;
+    my $prevtrans;
+    my $seen_start = 0;
+    my $dna_seq = "";
+
+    foreach my $ptrans ( @trans ) {
+
+        my $tseq = $ptrans->_translate_coherent($debug);
+
+        # to be consistent with our EMBL dumping, we need to make the actual join
+        # with fill-in N's and then pass into translate so that ambiguous codons
+        # which still have a translation happen! This has to be the weirdest piece
+        # of manipulation I have done in a long time. What we do is take the last
+        # exon of the old transcript and the first exon of the current transcript,
+        # fill both sides in so that they make nice reading frames and then translate
+        # the 6 bases which this makes. Phase 0 exons are filled in by 3 to make sure
+        # that there is some filler.
+
+        if( defined $prevtrans ) {
+	    my $last_exon  = $prevtrans->end_exon();
+	    my $first_exon = $ptrans   ->start_exon();
+	    my $filler;
+
+	    # last exon
+	    if( $last_exon->end_phase != 0 ) {
+	        $filler = substr($last_exon->seq->seq, $last_exon->seq->length - $last_exon->end_phase);
+	    } 
+	    $filler .= 'N' x (3 - $last_exon->end_phase);
+
+	    # do first exon now.
+
+	    if( $first_exon->phase == 0 ) {
+	        $filler .= 'NNN';
+	    } else {
+	        $filler .= 'N' x $first_exon->phase;
+	    }
+	    $filler .= substr($first_exon->seq->seq, 0, (3 - $first_exon->phase) % 3);
+
+	    # translate it.
+	    if( CORE::length($filler) != 6 ) {
+	        my $lphase = $last_exon->end_phase;
+	        my $fphase = $first_exon->phase;
+	        $self->throw("Wrong length of filler seq. Error in coding [$filler] $lphase:$fphase\n");
+	    }
+	    my $fillerseq = Bio::Seq->new( -seq => $filler, -moltype => 'dna');
+            $dna_seq .= $filler;
+
+        } 
+        $prevtrans = $ptrans;
+    }
+
+    my $bio_seq = Bio::Seq->new( -seq => $dna_seq, -moltype => 'dna',
+                                 -id => $self->translation->id() );
+
+    return $bio_seq;
+}
+
+
+
 =head2 translate
 
  Title   : translate
