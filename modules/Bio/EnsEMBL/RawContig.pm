@@ -73,6 +73,7 @@ sub new {
 
   (defined $dbID) && $self->dbID( $dbID );
   (defined $adaptor) && $self->adaptor( $adaptor );
+  (defined $adaptor) && $self->dbobj( $adaptor->db );
   (defined $clone) && $self->clone( $clone );
   (defined $sequence) && $self->sequence( $sequence );
   (defined $name) && $self->name( $name );
@@ -479,6 +480,69 @@ sub get_genscan_peptides {
    return @$transcripts;
 }
 
+=head2 dbobj
+
+ Title   : dbobj
+ Usage   :
+ Function:
+ Example :
+ Returns : The Bio::EnsEMBL::DBSQL::ObjI object
+ Args    :
+
+
+=cut
+
+sub dbobj {
+   my ($self,$arg) = @_;
+
+   if (defined($arg)) {
+        $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::Obj") unless ($arg->isa("Bio::EnsEMBL::DBSQL::Obj") || $arg->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
+        $self->{'_dbobj'} = $arg;
+   }
+   return $self->{'_dbobj'};
+}
+
+
+sub get_all_ExternalFeatures {
+   my ($self) = @_;
+
+   my @out;
+   my $acc;
+   
+   $acc = $self->clone->id();
+
+   my $offset = $self->offset();
+
+   foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
+
+     if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
+       my @tmp = $extf->get_Ensembl_SeqFeatures_contig($self->dbID,
+							   $self->clone->embl_version,
+							   1,
+							   $self->length,
+							   $self->id);
+       push(@out,@tmp);
+     }
+     if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
+       foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone(
+         $acc,$self->clone->embl_version,$self->offset, $self->offset+$self->length()) )
+       {
+          my $start = $sf->start - $offset+1;
+          my $end   = $sf->end   - $offset+1;
+          $sf->start($start);
+          $sf->end($end);
+          push(@out,$sf);
+       }
+     }
+   }
+   my $id = $self->id();
+   foreach my $f ( @out ) {
+     $f->seqname($id);
+   }
+
+   return @out;
+
+}
 
 
 1;
