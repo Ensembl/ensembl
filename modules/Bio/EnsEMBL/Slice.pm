@@ -15,14 +15,13 @@ Bio::EnsEMBL::Slice - Arbitary Slice of a genome
 
 =head1 SYNOPSIS
 
-   $slice_adaptor = $db->get_SliceAdaptor;
+   $sa = $db->get_SliceAdaptor;
 
-   $slice = $slice_adaptor->fetch_by_chr_start_end('X', 1_000_000, 2_000_000);
+   $slice = $sa->fetch_by_region('chromosome', 'X', 1_000_000, 2_000_000);
 
    foreach $gene ( @{$slice->get_all_Genes} ) {
       # do something with a gene
    }
-       
 
 =head1 DESCRIPTION
 
@@ -44,32 +43,42 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::Root;
-use Bio::PrimarySeqI;
 use Bio::EnsEMBL::Tile;
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
+#inheritance to Bio::EnsEMBL::Root will eventually be removed
+@ISA = qw(Bio::EnsEMBL::Root);
 
 
 =head2 new
 
-  Arg [...]  : List of optional named arguments 
-               string CHR_NAME, 
-               int    CHR_START, 
-               int    CHR_END, 
-               int    STRAND,
-               string ASSEMBLY_TYPE,
-               Bio::EnsEMBL::DBSQL::SliceAdaptor ADAPTOR
-               int    DBID
-               boolean EMPTY   
-  Example    : $slice = new Bio::EnsEMBL::Slice(-start => 1, 
-						-end => 10000, 
-						-chr_name => 'X',
-					        -adaptor => $slice_adaptor);
-  Description: Creates a new slice object.  The empty flag is intended to 
-               create an empty slice which is not on a particular chromosome.
-               In this way objects can be transformed to slice coordinates 
-               from raw contig coordinates when their location in the assembly
-               is not known.
+  Arg [...]  : List of named arguments
+               string COORD_SYSTEM
+               string SEQ_REGION_NAME,
+               int    START,
+               int    END,
+               int    STRAND, (optional)
+               Bio::EnsEMBL::DBSQL::SliceAdaptor ADAPTOR (optional)
+  Example    : $slice = Bio::EnsEMBL::Slice->new(-coord_system => 'chromosome',
+                                                 -start => 1,
+						 -end => 10000,
+                                                 -strand => 1,
+						 -seq_region_name => 'X',
+					         -adaptor => $slice_adaptor);
+  Description: Creates a new slice object.  A slice represents a region
+               of sequence in a particular coordinate system.  Slices can be
+               used to retrieve sequence and features from an area of
+               interest in a genome.
+
+               Coordinates start at 1 and are inclusive.  Negative
+               coordinates or coordinates exceeding the length of the
+               seq_region are permitted.  Start must be less than or equal.
+               to end regardless of the strand.
+
+               Slice objects are immutable. Once instantiated their attributes
+               (with the exception of the adaptor) may not be altered.  To
+               change the attributes a new slice must be created.
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
   Caller     : general, Bio::EnsEMBL::SliceAdaptor
@@ -77,59 +86,39 @@ use Bio::EnsEMBL::Tile;
 =cut
 
 sub new {
-  my($class,@args) = @_;
+  my $caller = shift;
 
-  my $self = {};
-  bless $self,$class;
+  #new can be called as a class or object method
+  my $class = ref($caller) || $caller;
 
-  my ($chr,$start,$end,$strand,$type,$adaptor, $dbID, $empty) = 
-    $self->_rearrange([qw(CHR_NAME 
-			  CHR_START 
-			  CHR_END 
-			  STRAND 
-			  ASSEMBLY_TYPE 
-			  ADAPTOR 
-			  DBID
-                          EMPTY)],
-		      @args);
+  my ($coord_system, $seq_region_name, $start, $end, $strand, $adaptor) =
+   rearrange([qw(COORD_SYSTEM SEQ_REGION_NAME START END STRAND ADAPTOR)],@_);
 
-  if( ! defined $empty ) {
-    if( !defined $chr || !defined $start || !defined $end || !defined $type ) {
-      print STDERR "Chr: " . $chr . "\t" . "Start: " . $start . "\t" . 
-	"End: " . $end . "\t" . "Type: " . $type . "\n";
-      $self->throw("Do not have all the parameters for slice");
-    }
-    $self->chr_name($chr);
-    $self->chr_start($start);
-    $self->chr_end($end);
+  $coord_system    || throw('COORD_SYSTEM argument is required');
+  $seq_region_name || throw('SEQ_REGION_NAME argument is required');
+  defined($start)   || throw('START argument is required');
+  defined($end)    || throw('END argument is required');
+  ($start <= $end) || throw('start must be less than or equal to end');
 
-    if(!defined $strand) {
-      $strand = 1; #default slice strand is 1
-    } else {
-      unless($strand == 1 || $strand == -1) {
-	$self->throw("Slice strand must be either -1 or 1 not [$strand].");
-      }
-    }
-    $self->strand($strand);
-  } else {
-    $self->strand( 1 );
-    $self->chr_start( 1 );
-    
-    # empty Slices are used to do mapping to chromosomal coords.
-    # After the mapping, the Slice contains chr_name and is reference 
-    # point for the mapped object
+  #strand defaults to 1 if not defined
+  $strand ||= 1;
+
+  if($strand != 1 && $strand != -1) {
+    throw('STRAND argument must be -1 or 1');
   }
 
-  $self->assembly_type($type);
-  $self->adaptor($adaptor);
-  $self->dbID( $dbID );
-  # set stuff in self from @args
-
-  if( defined $adaptor && !defined $type ) {
-    $self->assembly_type
-      ( $adaptor->db()->get_MetaContainer()->get_default_assembly());
+  if(defined($adaptor)) {
+    if(!ref($adaptor) || !$adaptor->isa('Bio::EnsEMBL::DBSQL::SliceAdaptor')) {
+      throw('ADAPTOR argument must be a Bio::EnsEMBL::DBSQL::SliceAdaptor');
+    }
   }
-  return $self;
+
+  return bless {'coord_system'    => $coord_system,
+                'seq_region_name' => $seq_region_name,
+                'start'           => $start,
+                'end'             => $end,
+                'strand'          => $strand,
+                'adaptor'         => $adaptor};
 }
 
 
@@ -147,52 +136,166 @@ sub new {
 =cut
 
 sub adaptor{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'adaptor'} = $value;
-    }
-    return $self->{'adaptor'};
+   my $self = shift;
+
+   if(@_) {
+     my $ad = shift;
+     if(defined($ad)) {
+       if(!ref($ad) || !$ad->isa('Bio::EnsEMBL::DBSQL::SliceAdaptor')) {
+         throw('Argument must be a Bio::EnsEMBL::DBSQL::SliceAdaptor');
+       }
+     }
+     $self->{'adaptor'} = $ad;
+   }
+
+   return $self->{'adaptor'};
 }
 
 
 
-=head2 dbID
+=head2 seq_region_name
 
-  Arg [1]    : (optioanl) int $value
-  Example    : none
-  Description: Getter/Setter for the unique database identifier for this 
-               slice. This is not currently useful since slices are 
-               abstractions and not actually stored in a database.  This 
-               function is present to mirror RawContigs dbID method and
-               because it could in theory be used one day.
-  Returntype : int
+  Arg [1]    : none
+  Example    : $seq_region = $slice->seq_region_name;
+  Description: Returns the name of the seq_region that this slice is on. For
+               example if this slice is in chromosomal coordinates the
+               seq_region_name might be 'X' or '10'.
+
+               This function was formerly named chr_name, but since slices can
+               now be on coordinate systems other than chromosomal it has been
+               changed.
+  Returntype : string
   Exceptions : none
-  Caller     : none
+  Caller     : general
 
 =cut
 
-sub dbID {
-   my ( $self, $value ) = @_;
-   if( defined $value ) {
-     $self->{'dbID'} = $value;
-   }
-   return $self->{'dbID'};
+sub seq_region_name {
+  my $self = shift;
+  return $self->{'seq_region_name'};
+}
+
+
+
+=head2 coord_system
+
+  Arg [1]    : none
+  Example    : $cs = $slice->coord_system;
+  Description: Returns the name of the coordinate system that this slice is
+               in.  This could be 'chromosome', 'contig', 'clone', 'NTcontig',
+               etc.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub coord_system {
+  my $self = shift;
+  return $self->{'coord_system'};
+}
+
+
+
+=head2 start
+
+  Arg [1]    : none
+  Example    : $start = $slice->start();
+  Description: Returns the start position of this slice relative to the
+               start of the sequence region that it was created on.
+               Coordinates are inclusive and start at 1.  Negative coordinates
+               or coordinates exceeding the length of the sequence region are
+               permitted.  Start is always less than or equal to end 
+               regardless of the orientation of the slice.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub start {
+  my $self = shift;
+  return $self->{'start'};
+}
+
+
+
+=head2 end
+
+  Arg [1]    : none
+  Example    : $end = $slice->end();
+  Description: Returns the end position of this slice relative to the
+               start of the sequence region that it was created on.
+               Coordinates are inclusive and start at 1.  Negative coordinates
+               or coordinates exceeding the length of the sequence region are
+               permitted.  End is always greater than or equal to start
+               regardless of the orientation of the slice.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub end {
+  my $self = shift;
+  return $self->{'end'};
+}
+
+
+
+=head2 strand
+
+  Arg [1]    : none
+  Example    : $strand = $slice->strand();
+  Description: Returns the orientation of this slice on the seq_region it has
+               been created on
+  Returntype : int (either 1 or -1)
+  Exceptions : none
+  Caller     : general, invert
+
+=cut
+
+sub strand{
+  my $self = shift;
+  return $self->{'strand'};
+}
+
+
+
+=head2 assembly_type
+
+  Arg [1]    : string $value
+  Example    : $assembly_mapper_adaptor->fetch_by_type($slice->assembly_type);
+  Description: Gets/Sets the assembly type that this slice is constructed 
+               from.  This is generally set by the slice adaptor and probably
+               shouldnt be set outside of this context. 
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub assembly_type{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'assembly_type'} = $value;
+    }
+    return $self->{'assembly_type'};
+
 }
 
 
 
 =head2 name
 
-  Arg [1]    : optional string $name
-  Example    : $name = $slice->name();
-  Description: Returns the name of this slice. The name is formatted as a 
-               the following string: "$chr_name.$chr_start-$chr_end". 
-               (e.g. 'X.10000-20000')
-               This essentially allows slices to be easily compared and 
-               can also act as a hash value. This is similar to the name 
-               method in RawContig so for exons which can have either type 
-               of sequence attached it provides a more common interface.
-               You can as well set the slicename to something like "NT_110023" 
+  Arg [1]    : none
+  Example    : do_something() if($slice->name() eq 'chromosome:X:1:100000:1');
+  Description: Returns the name of this slice. The name is formatted as a colon
+               delimited string with the following attributs:
+               coord_system:seq_region_name:start:end:strand
+
+               Slices with the same name are equivalent and thus the name can
+               act as a hash value.
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -200,110 +303,14 @@ sub dbID {
 =cut
 
 sub name {
-  my ( $self, $arg )  = @_;
-  
-  if( defined $arg ) {
-    $self->{name} = $arg;
-  } elsif(!defined $self->{name}) {
-    my $chr_name  = $self->chr_name  || '';
-    my $chr_start = $self->chr_start || '';
-    my $chr_end   = $self->chr_end   || ''; 
-
-    my $string = "$chr_name.$chr_start-$chr_end"; 
-  
-    if($self->strand == -1) {
-      $self->{name} = "reverse($string)";
-    } else {
-      $self->{name} = $string;
-    }
-  }
-
-  return $self->{name};
-}
-
-
-=head2 get_all_QtlFeatures
-
-  Args       : none
-  Example    : none
-  Description: returns overlapping QtlFeatures
-  Returntype : listref Bio::EnsEMBL::Map::QtlFeature
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_all_QtlFeatures {
   my $self = shift;
 
-  my $qfAdaptor;
-  if( $self->adaptor()) {
-    $qfAdaptor = $self->adaptor()->db()->get_QtlFeatureAdaptor();
-  } else {
-    return [];
-  }
-
-  return $qfAdaptor->fetch_all_by_Slice_constraint( $self );
-}
-
-
-=head2 get_all_supercontig_Slices
-
-  Arg [1]    : none
-  Example    : none
-  Description: Returns Slices that represent overlapping supercontigs.
-               Coordinates inside those slices are supercontig coordinates.
-               You can transfer features to this slices coordinate system with
-               the normal transform call. The returned slices hav their names
-               set to the supercontig names.
-  Returntype : listref Bio::EnsEMBL::Slice
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-
-sub get_all_supercontig_Slices {
-  my $self = shift;
-  my $result = [];
-
-  if( $self->adaptor() ) {
-    my $superctg_names = $self->adaptor()->list_overlapping_supercontigs( $self );
-    
-    for my $name ( @$superctg_names ) {
-      my $slice;
-      $slice = $self->adaptor()->fetch_by_supercontig_name( $name );
-      $slice->name( $name );
-      push( @$result, $slice );
-    }
-  } else {
-    $self->warn( "Slice needs to be attached to a database to get supercontigs" );
-  }
-
-  return $result;
-}
-
-    
-
-
-
-=head2 id
-
-  Arg [1]    : none 
-  Example    : none
-  Description: Here to mirror same method in RawContig.  Simply returns 
-               the same thing as $slice->name() and generally name should be
-               used instead.
-  Returntype : string
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub id {
-   my $self = shift;
-
-   return $self->name() || $self->dbID();
+  return join(':',
+              $self->{'coord_system'},
+              $self->{'seq_region_name'},
+              $self->{'start'},
+              $self->{'end'},
+              $self->{'strand'});
 }
 
 
@@ -322,7 +329,7 @@ sub id {
 sub length {
   my ($self) = @_;
 
-  return $self->chr_end() - $self->chr_start() + 1;
+  return $self->{'end'} - $self->{'start'} + 1;
 }
 
 
@@ -331,7 +338,7 @@ sub length {
 
   Arg [1]    : none
   Example    : $inverted_slice = $slice->invert;
-  Description: Creates a copy of this slice on the opposite strand and 
+  Description: Creates a copy of this slice on the opposite strand and
                returns it.
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
@@ -341,27 +348,28 @@ sub length {
 
 sub invert {
   my $self = shift;
-  
+
+  #make a shallow copy of the slice via a hash copy,
   my %s = %$self;
-  my $slice = bless \%s, ref $self;
-  $slice->strand($self->strand * -1);
-  delete $slice->{name};
- 
-  return $slice;
+
+  #flip the strand,
+  $s{'strand'} = $self->{'strand'} * -1;
+
+  #bless and return the copy
+  return  bless \%s, ref $self;
 }
+
 
 
 =head2 seq
 
-  Args      : none
-  Function  : Returns the entire sequence string for this Slice.  This method
-              will return the reverse complement of the sequence of another 
-              slice on the same region but on the opposite strand.
-              Note that the slice needs the adaptor to be set to obtain the 
-              sequence.
-  Returntype: txt
-  Exceptions: none
-  Caller    : general
+  Arg [1]    : none
+  Example    : print "SEQUENCE = ", $slice->seq();
+  Description: Returns the sequence of the region represented by this
+               slice formatted as a string.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -375,18 +383,18 @@ sub seq {
 
 =head2 subseq
 
-  Arg  1    : int $startBasePair
-              relative to start of slice, which is 1.
-  Arg  2    : int $endBasePair
-              relative to start of slice.
-  Arg  3    : (optional) int $strand
-              The strand of the slice to obtain sequence from. Default value is
-              1.
-  Function  : returns string of dna sequence
-  Returntype: txt
-  Exceptions: end should be at least as big as start
-              strand must be set
-  Caller    : general
+  Arg  [1]   : int $startBasePair
+               relative to start of slice, which is 1.
+  Arg  [2]   : int $endBasePair
+               relative to start of slice.
+  Arg  [3]   : (optional) int $strand
+               The strand of the slice to obtain sequence from. Default
+               value is 1.
+  Description: returns string of dna sequence
+  Returntype : txt
+  Exceptions : end should be at least as big as start
+               strand must be set
+  Caller     : general
 
 =cut
 
@@ -394,17 +402,17 @@ sub subseq {
   my ( $self, $start, $end, $strand ) = @_;
 
   if ( $end < $start ) {
-    $self->throw("End coord is less then start coord");
+    throw("End coord is less then start coord");
   }
 
   $strand = 1 unless(defined $strand);
 
   if ( $strand != -1 && $strand != 1 ) {
-    $self->throw("Invalid strand [$strand] in call to Slice::subseq.");
+    throw("Invalid strand [$strand] in call to Slice::subseq.");
   }
 
   my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
-  my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, $start, 
+  my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, $start,
                                                           $end, $strand );
 
   return $seq;
@@ -424,8 +432,8 @@ sub subseq {
                  'g' => num,
                  'n' => num,
                  '%gc' => num }
-               
-               All bases which are not in the set [A,a,C,c,T,t,G,g] are 
+
+               All bases which are not in the set [A,a,C,c,T,t,G,g] are
                included in the 'n' count.  The 'n' count could therefore be
                inclusive of ambiguity codes such as 'y'.
                The %gc is the ratio of GC to AT content as in:
@@ -455,14 +463,14 @@ sub get_base_count {
     $end = $len if($end > $len);
 
     $seq = $self->subseq($start, $end);
-    
+
     $a += $seq =~ tr/Aa/Aa/;
     $c += $seq =~ tr/Cc/Cc/;
     $t += $seq =~ tr/Tt/Tt/;
     $g += $seq =~ tr/Gg/Gg/;
 
     $start = $end + 1;
-  }  
+  }
 
   my $gc_content = 0;
   if($a || $g || $c || $t) {  #avoid divide by 0
@@ -705,11 +713,6 @@ sub get_all_Genes{
 
 
 
-
-
-
-
-
 =head2 get_all_Genes_by_type
 
 
@@ -718,17 +721,17 @@ sub get_all_Genes{
   Arg [3]    : (optional) boolean $empty_flag
   Example    : @genes = @{$slice->get_all_Genes_by_type($type, 
 							'ensembl')};
-  Description: Retrieves genes that overlap this slice of type $type.  
-               This is primarily used by the genebuilding code when several 
+  Description: Retrieves genes that overlap this slice of type $type.
+               This is primarily used by the genebuilding code when several
                types of genes are used.
-               
+
                The logic name is the analysis of the genes that are retrieved.
                If not provided all genes will be retrieved instead.
-  
-               The empty flag indicates light weight genes that only have a 
-               start, end and strand should be used (only works if lite db is 
-               available). If the lite database has 
-               been attached to the core database this method will use the 
+
+               The empty flag indicates light weight genes that only have a
+               start, end and strand should be used (only works if lite db is
+               available). If the lite database has
+               been attached to the core database this method will use the
                lite database (and genes will not be as full featured).
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
@@ -738,134 +741,39 @@ sub get_all_Genes{
 
 sub get_all_Genes_by_type{
   my ($self, $type, $logic_name, $empty_flag) = @_;
-  
+
   my @out = grep { $_->type eq $type } @{ $self->get_all_Genes($logic_name,
 							       $empty_flag)};
-  
+
   return \@out;
 }
 
 
 
+=head2 get_all_QtlFeatures
 
-=head2 chr_name
-
-  Arg [1]    : (optional) string $value 
-  Example    : $chr_name = $slice->chr_name;
-  Description: Getter/Setter for the name of the chromosome that this slice
-               is on.  This is generally set by the SliceAdaptor and should 
-               probably not be set outside of that context.
-  Returntype : string
-  Exceptions : none
-  Caller     : SliceAdaptor
-
-=cut
-
-sub chr_name{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'chr_name'} = $value;
-    }
-    return $self->{'chr_name'};
-
-}
-
-
-
-=head2 chr_start
-
-  Arg [1]    : int $value
-  Example    : $chr_start = $slice->chr_start;
-  Description: Getter/Setter for the start base of this slice on the 
-               chromosome.  This is generally set by the SliceAdaptor and
-               probably shouldnt be set outside of that context.
-               chr_start is always less than or equal to chr_end
-  Returntype : int
-  Exceptions : none
-  Caller     : SliceAdaptor, general
-
-=cut
-
-sub chr_start{
-  my ($self,$value) = @_;
-  if( defined $value) {
-    $self->{'chr_start'} = $value;
-  }
-  return $self->{'chr_start'};
-}
-
-
-
-=head2 chr_end
-
-  Arg [1]    : int $value
-  Example    : $chr_end = $slice->chr_end;
-  Description: Getter/Setter for the end base of this slice on the 
-               chromosome.  This is generally set by the SliceAdaptor and
-               probably shouldnt be set outside of that context.
-               chr_end is always greater than or equal to chr_start
-  Returntype : int
-  Exceptions : none
-  Caller     : SliceAdaptor, general
-
-=cut
-
-sub chr_end{
-  my ($self,$value) = @_;
-  if( defined $value) {
-    $self->{'chr_end'} = $value;
-  }
-  return $self->{'chr_end'};
-}
-
-
-
-=head2 strand
-
-  Arg [1]    : int $value
-  Example    : $strand = $slice->strand;
-  Description: Getter/Setter for the strand of the chromosome this slice is on.
-               This should not be set manually.  A much better way to obtain
-               a slice on the opposite strand is to call the invert method.
-  Returntype : int (either 1 or -1)
-  Exceptions : none
-  Caller     : invert, SliceAdaptor, general
-
-=cut
-
-sub strand{
-   my ($self,$value) = @_;
-
-   if( defined $value) {
-      $self->{'strand'} = $value;
-    }
-    return $self->{'strand'};
-
-}
-
-
-
-=head2 assembly_type
-
-  Arg [1]    : string $value
-  Example    : $assembly_mapper_adaptor->fetch_by_type($slice->assembly_type);
-  Description: Gets/Sets the assembly type that this slice is constructed 
-               from.  This is generally set by the slice adaptor and probably
-               shouldnt be set outside of this context. 
-  Returntype : string
+  Args       : none
+  Example    : none
+  Description: returns overlapping QtlFeatures
+  Returntype : listref Bio::EnsEMBL::Map::QtlFeature
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub assembly_type{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'assembly_type'} = $value;
-    }
-    return $self->{'assembly_type'};
+sub get_all_QtlFeatures {
+  my $self = shift;
 
+  my $qfAdaptor;
+  if( $self->adaptor()) {
+    $qfAdaptor = $self->adaptor()->db()->get_QtlFeatureAdaptor();
+  } else {
+    return [];
+  }
+
+  return $qfAdaptor->fetch_all_by_Slice_constraint( $self );
 }
+
 
 
 
@@ -882,31 +790,11 @@ sub assembly_type{
 
 sub get_all_KaryotypeBands {
   my ($self) = @_;
-  
+
   my $kadp = $self->adaptor->db->get_KaryotypeBandAdaptor();
   return $kadp->fetch_all_by_Slice($self);
 }
 
-
-
-=head2 get_Chromosome
-
-  Arg [1]    : none
-  Example    : $chromosome = $slice->get_Chromosome;
-  Description: Retrieves the chromosome object which this slice is on
-  Returntype : Bio::EnsEMBL::Chromosome
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_Chromosome {
-  my $self = shift @_;
-
-  my $ca =  $self->adaptor->db->get_ChromosomeAdaptor();
-
-  return $ca->fetch_by_chr_name($self->chr_name());
-}
 
 
 
@@ -977,8 +865,8 @@ sub get_repeatmasked_seq {
 
 sub _mask_features {
   my ($self,$dnastr,$repeats,$soft_mask) = @_;
-  
-  # explicit CORE::length call, to avoid any confusion with the Slice 
+
+  # explicit CORE::length call, to avoid any confusion with the Slice
   # length method
   my $dnalen = CORE::length($dnastr);
 
@@ -986,22 +874,22 @@ sub _mask_features {
     my $start  = $f->start;
     my $end    = $f->end;
     my $length = ($end - $start) + 1;
-    
+
     # check if we get repeat completely outside of expected slice range
     if ($end < 1 || $start > $dnalen) {
-      $self->warn("Repeat completely outside slice coordinates! " .
+      warning("Repeat completely outside slice coordinates! " .
 	"That should not happen! repeat_start $start or repeat_end $end not" .
 	"within [1-$dnalen] slice range coordinates\n");
       next REP;
     }
-    
+
     # repeat partly outside slice range, so correct
     # the repeat start and length to the slice size if needed
     if ($start < 1) { 
       $start = 1;
       $length = ($end - $start) + 1;
     }
-    
+
     # repeat partly outside slice range, so correct
     # the repeat end and length to the slice size if needed
     if ($end > $dnalen) {
@@ -1010,9 +898,9 @@ sub _mask_features {
     }
 
     $start--;
-    
+
     my $padstr;
-    
+
     if ($soft_mask) {
       $padstr = lc substr ($dnastr,$start,$length);
     } else {
@@ -1022,7 +910,7 @@ sub _mask_features {
 
   }
   return $dnastr;
-} 
+}
 
 
 =head2 get_all_SearchFeatures
@@ -1043,7 +931,7 @@ sub get_all_SearchFeatures {
     local $_;
 
     unless($ticket) {
-      $self->throw("ticket argument is required");
+      throw("ticket argument is required");
     }
 
     my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
@@ -1051,7 +939,7 @@ sub get_all_SearchFeatures {
     my $offset = $self->chr_start-1;
 
     my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket, $self->chr_name, $self->chr_start, $self->chr_end) : [];
-    #warn join(', ', @$features );
+
     foreach( @$features ) { 
       $_->start( $_->start-$offset );
       $_->end(   $_->end-$offset );
@@ -1076,22 +964,22 @@ sub get_all_MapFrags {
     my $mapset = shift;
 
     unless($mapset) {
-      $self->throw("mapset argument is required");
+      throw("mapset argument is required");
     }
 
     my $mfa = $self->adaptor()->db()->get_MapFragAdaptor();
 
-    return $mfa->fetch_all_by_mapset_chr_start_end($mapset, 
+    return $mfa->fetch_all_by_mapset_chr_start_end($mapset,
 					       $self->chr_name,
-					       $self->chr_start, 
+					       $self->chr_start,
 					       $self->chr_end);
-}    
+}
 
 
 
 sub has_MapSet {
   my( $self, $mapset_name ) = @_;
-    
+
   my $mfa = $self->adaptor()->db()->get_MapFragAdaptor();
 
   return $mfa->has_mapset($mapset_name);
@@ -1156,7 +1044,7 @@ sub get_tiling_path {
       $slice_start = $current_start;
       $slice_end   = $current_start + $length - 1;
       $contig      = $raw_contigs->{ $coord->id() };
-      
+
       push @tiling_path, Bio::EnsEMBL::Tile->new_fast($self,
 						      $slice_start,
 						      $slice_end,
@@ -1165,8 +1053,6 @@ sub get_tiling_path {
 						      $contig_end,
 						      $contig_ori);
 						
- 
-      
       $current_start += $length;
     } else {
       # this is a gap, just add the length and discard it
@@ -1175,7 +1061,7 @@ sub get_tiling_path {
   }
   return \@tiling_path;
 }
-  
+
 
 
 =head2 get_all_MarkerFeatures
@@ -1236,13 +1122,13 @@ sub get_all_compara_DnaAlignFeatures {
   my ($self, $qy_species, $qy_assembly, $alignment_type) = @_;
 
   unless($qy_species && $qy_assembly && $alignment_type) {
-    $self->throw("Query species and assembly and alignmemt type arguments are required");
+    throw("Query species and assembly and alignmemt type arguments are required");
   }
 
   my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
 
   unless($compara_db) {
-    $self->warn("Compara database must be attached to core database to " .
+    warning("Compara database must be attached to core database to " .
 		"retrieve compara information");
     return [];
   }
@@ -1255,13 +1141,13 @@ sub get_all_compara_Syntenies {
   my ($self, $qy_species ) = @_;
 
   unless($qy_species) {
-    $self->throw("Query species and assembly arguments are required");
+    throw("Query species and assembly arguments are required");
   }
 
   my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
 
   unless($compara_db) {
-    $self->warn("Compara database must be attached to core database to " .
+    warning("Compara database must be attached to core database to " .
 		"retrieve compara information");
     return [];
   }
@@ -1292,7 +1178,7 @@ sub get_all_Haplotypes {
   my $haplo_db = $self->adaptor->db->get_db_adaptor('haplotype');
 
   unless($haplo_db) {
-    $self->warn("Haplotype database must be attached to core database to " .
+    warning("Haplotype database must be attached to core database to " .
 		"retrieve haplotype information" );
     return [];
   }
@@ -1374,118 +1260,19 @@ sub get_all_ExternalFeatures {
 
 
 
-=head2 Methods included only for BioPerl compliance
-=cut
-###############################################################################
 
-=head2 display_id
-
-  Arg [1]    : none
-  Example    : none
-  Description: Only for BioPerl compliance.
-  Returntype : string
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-
-sub display_id {
-   my ($self, $value) = @_;
-
-   if(!$self->{'_display_id'}){
-     $self->{'_display_id'} = undef;
-   } 
-   if( defined $value ) {
-      $self->{'_display_id'} = $value;
-   }
-   my $id = $self->{'_display_id'};
-   if(!$id){
-      $id = $self->id;
-   }
-
-   return $id;
-}
-
-=head2 desc
-
-  Arg [1]    : none
-  Example    : none
-  Description: Only for BioPerl compliance
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub desc{
-  my $self = shift;
-  return "Slice, no description";
-}
-
-=head2 moltype
-
-  Arg [1]    : none
-  Example    : none
-  Description: Only for BioPerl compliance
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub moltype {
-  my $self = shift;
-  return 'dna';
-}
-
-=head2 alphabet
-
-  Arg [1]    : none
-  Example    : none
-  Description: Only for BioPerl compliance
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-sub alphabet {
-  my $self = shift;
-  return 'dna';
-}
-
-=head2 accession_number
-
-  Arg [1]    : none
-  Example    : none
-  Description: Only for BioPerl compliance
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub accession_number {
-  my $self = shift;
-  return $self->dbID();
-}
-
-
-
-=head2 sub DEPRECATED methods
-=cut
-
-###############################################################################
 
 # GENERIC FEATURES (See DBAdaptor.pm)
 
 =head2 get_generic_features
 
-  Arg [1]    : (optional) List of names of generic feature types to return. If no feature
-	             names are given, all generic features are returned.
-  Example    : my %features = $slice->get_generic_features()
-  Description: Gets generic features via the generic feature adaptors that have been added
-               via DBAdaptor->add_GenericFeatureAdaptor (if any)
+  Arg [1]    : (optional) List of names of generic feature types to return.
+               If no feature names are given, all generic features are
+               returned.
+  Example    : my %features = %{$slice->get_generic_features()};
+  Description: Gets generic features via the generic feature adaptors that
+               have been added via DBAdaptor->add_GenericFeatureAdaptor (if 
+               any)
   Returntype : Hash of named features.
   Exceptions : none
   Caller     : none
@@ -1505,7 +1292,7 @@ sub get_generic_features() {
 
   foreach my $adaptor_name (keys(%adaptors)) {
 		
-    my $adaptor_obj = %adaptors->{$adaptor_name};
+    my $adaptor_obj = $adaptors{$adaptor_name};
     # get the features and add them to the hash
     my $features_ref = $adaptor_obj->fetch_all_by_Slice($self);
     # add each feature to the hash to be returned
@@ -1522,26 +1309,185 @@ sub get_generic_features() {
 
 # sub DEPRECATED METHODS #
 ###############################################################################
+=head2 sub DEPRECATED methods
+=cut
+
+
+
+=head2 get_all_supercontig_Slices
+
+  Description: DEPRECATED use get_tiling_path("NTcontig") instead
+
+=cut
+
+
+sub get_all_supercontig_Slices {
+  my $self = shift;
+
+  deprecate("Use get_tiling_path('NTcontig') instead");
+
+  my $result = [];
+
+  if( $self->adaptor() ) {
+    my $superctg_names = 
+      $self->adaptor()->list_overlapping_supercontigs( $self );
+
+    for my $name ( @$superctg_names ) {
+      my $slice;
+      $slice = $self->adaptor()->fetch_by_supercontig_name( $name );
+      $slice->name( $name );
+      push( @$result, $slice );
+    }
+  } else {
+    warning( "Slice needs to be attached to a database to get supercontigs" );
+  }
+
+  return $result;
+}
 
 
 =head2 get_all_Genes_by_source
 
-  Arg [1]    : none
-  Example    : none
   Description: DEPRECATED use get_all_Genes instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
 
 =cut
 
 sub get_all_Genes_by_source {
-  my ($self, @args) = @_;
+  deprecate("Use get_all_Genes() instead");
+  return get_all_Genes(@_);
+}
 
-  $self->warn("call to deprecated method get_all_Genes_by_source.  " .
-              "Use get_all_Genes instead\n " . join(':', caller));
 
-  return $self->get_all_Genes;
+sub dbID {
+  deprecate("Do not use this method, it does nothing");
+}
+
+=head2 id
+
+  Description: DEPRECATED use name() instead
+
+=cut
+
+sub id {
+  deprecate("Use name() instead");
+  name(@_);
+}
+
+
+
+=head2 display_id
+
+  Description: DEPRECATED use name() instead
+
+=cut
+
+
+sub display_id {
+  deprecate("Use name() instead");
+  name(@_);
+}
+
+
+=head2 desc
+
+  Description: DEPRECATED use name() instead
+
+=cut
+
+sub desc{
+  deprecate("Use name() instead");
+}
+
+=head2 moltype
+
+  Description: DEPRECATED do not use
+
+=cut
+
+sub moltype {
+  deprecate("Do not use this method");
+  return 'dna';
+}
+
+=head2 alphabet
+
+  Description: DEPRECATED do not use
+
+=cut
+
+sub alphabet {
+  deprecate("Do not use this method");
+  return 'dna';
+}
+
+=head2 accession_number
+
+  Description: DEPRECATED use name() instead
+
+=cut
+
+sub accession_number {
+  deprecate("Use name() instead");
+  name(@_);
+}
+
+=head2 get_Chromosome
+
+  Description: DEPRECATED use this instead:
+               $slice_adp->fetch_by_region('chromosome',
+                                           $slice->seq_region_name)
+=cut
+
+sub get_Chromosome {
+  my $self = shift @_;
+
+  deprecate("Use SliceAdaptor::fetch_by_region('chromosome'," .
+            '$slice->seq_region_name) instead');
+
+  return
+    $self->adaptor->fetch_by_region('chromosome', $self->seq_region_name());
+}
+
+
+
+=head2 chr_name
+
+  Description: DEPRECATED use seq_region_name() instead
+
+=cut
+
+sub chr_name{
+  deprecate("Use seq_region_name() instead");
+  seq_region_name(@_);
+}
+
+
+
+=head2 chr_start
+
+  Description: DEPRECATED use start() instead
+
+=cut
+
+sub chr_start{
+  deprecate('Use start() instead');
+  start(@_);
+}
+
+
+
+=head2 chr_end
+
+  Description: DEPRECATED use end() instead
+  Returntype : int
+  Exceptions : none
+  Caller     : SliceAdaptor, general
+
+=cut
+
+sub chr_end{
+  deprecate('Use end() instead');
+  end(@_);
 }
 
 1;
