@@ -522,4 +522,19 @@ sub remove {
 }
 
 
+
+sub fetch_all_names{
+  my ($self) = @_;
+
+  my $sql = "select name from contig";
+  my $sth = $self->prepare($sql);
+  $sth->execute;
+  my @names;
+  while(my ($name) = $sth->fetchrow){
+    push(@names, $name);
+  }
+  
+  return \@names;
+}
+
 1;
