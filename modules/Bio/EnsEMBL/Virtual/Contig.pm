@@ -1841,16 +1841,25 @@ sub _sanity_check{
        # start exon:
        my $t = $trans->translation;
        my $e = $gene->get_Exon_by_id($t->start_exon_id);
-       if ( $t->start < 1 or $t->end > $e->length) { 
+
+       if ( $t->start < 1 ) { 
            $error =1;
-           $message .= "Transcript's start < 1 or > exon length";
+           $message .= "Transcript's end < 1: " . $t->start;
+       }
+       if ( $t->end > $e->length) { 
+           $error =1;
+           $message .= "Transcript's end (".$t->end.") > exon length (".$e->length.").";
        }
 
        # same for end exon:
        $e = $gene->get_Exon_by_id($t->end_exon_id);
-       if ( $t->start < 1 or $t->end > $e->length) { 
+       if ( $t->start < 1 ) { 
            $error =1;
-           $message .= "Transcript's end < 1 or > exon length";
+           $message .= "Transcript's end < 1: " . $t->start;
+       }
+       if ( $t->end > $e->length) { 
+           $error =1;
+           $message .= "Transcript's end (".$t->end.") > exon length (".$e->length.").";
        }
    }                                    # each_Transcript
 
