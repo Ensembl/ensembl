@@ -67,6 +67,9 @@ while(my $f = shift @fs) {
   #debug("feature at: " . $f->start . "-" . $f->end);
   next if $f->start > $exon->end || $f->end < $exon->start;
   push(@evidence, $f);
+  # cheat it into storing it again
+  $f->dbID( undef );
+  $f->adaptor( undef );
 }
 
 my $count = scalar(@evidence);
@@ -87,12 +90,9 @@ my $newexon = $exonad->fetch_by_dbID($exon->dbID);
 ok($newexon);
 
 
-#
-# Test transform to empty Slice
-#
-my $slice = new Bio::EnsEMBL::Slice(-empty => 1, 
-				    -adaptor => $db->get_SliceAdaptor);
-$exon = $newexon->transform($slice);
+$exon = $newexon->transform( "chromosome" );
+my $slice = $exon->slice();
+
 
 debug("exon chr start  = " . $exon->start);
 debug("exon chr end    = " . $exon->end);
