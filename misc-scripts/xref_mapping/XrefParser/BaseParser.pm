@@ -92,7 +92,6 @@ sub run {
     $dir = $base_dir . "/" . $type;
     foreach my $urls (@files){
       my ($file) = $urls =~ /.*\/(.*)/;
-      push @new_file, $file;
       $last_type = $type;
       
       if (!$skipdownload) {
@@ -117,7 +116,8 @@ sub run {
 	  $file = $1;
 	}
       }
-      
+      push @new_file, $file;
+
       # compare checksums and parse/upload if necessary
       # need to check file size as some .SPC files can be of zero length
       print "HELLO: $dir/$file\n";
