@@ -917,7 +917,6 @@ sub _transform_feature_to_RawContig{
       $new_feature->start($mapped[$i]->start);
       $new_feature->end($mapped[$i]->end);
       $new_feature->strand($mapped[$i]->strand);
-      $new_feature->seqname($mapped[$i]->id);
       $new_feature->score($feature->score);
       $new_feature->percent_id($feature->percent_id);
       $new_feature->p_value($feature->p_value);
@@ -948,7 +947,6 @@ sub _transform_feature_to_RawContig{
     $new_feature->start($mapped[0]->start);
     $new_feature->end($mapped[0]->end);
     $new_feature->strand($mapped[0]->strand);
-    $new_feature->seqname($mapped[0]->id);
     $new_feature->score($feature->score);
     $new_feature->percent_id($feature->percent_id);
     $new_feature->p_value($feature->p_value);
