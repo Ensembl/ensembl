@@ -52,7 +52,7 @@ use Getopt::Long;
 my $dbtype = 'rdb';
 my $host   = 'localhost';
 my $port   = '410000';
-my $dbname = 'f15';
+my $dbname = 'gtf_test';
 my $dbuser = 'root';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
@@ -85,16 +85,21 @@ if ($print) {
 
 #DB writing option not yet implemented
 #Mapping of coordinates still needs to be done
-#
-#else {
-#    my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
-#print STDERR "Using $locator for db\n";
+
+else {
+    my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+print STDERR "Using $locator for db\n";
     
-#    my $db =  Bio::EnsEMBL::DBLoader->new($locator);
-#    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
-#    foreach my $gene (@genes) {
-#	print STDERR "Writing gene $gene\n";
-#	$gene_obj->write($gene);
-#    }
-#}
+    my $db =  Bio::EnsEMBL::DBLoader->new($locator);
+    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
+    foreach my $gene (@genes) {
+	my @exons=$gene->each_unique_Exon;
+	my $fpc=$exons[0]->contig_id;
+	print STDERR "Got seqname $fpc\n";
+	
+
+	print STDERR "Writing gene $gene\n";
+	#$gene_obj->write($gene);
+    }
+}
 
