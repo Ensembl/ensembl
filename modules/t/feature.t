@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 45;
+	plan tests => 74;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -256,3 +256,92 @@ ok($feature->end()    == 658569);
 ok($feature->strand() == 1);
 
 
+#
+# Project over a contig boundary
+#
+
+$feature->move(671600,671800);
+
+my @projection = @{$feature->project('contig')};
+
+ok(@projection == 2);
+
+my ($seg1, $seg2) = @projection;
+
+ok($seg1 && $seg1->[0] == 671600);
+ok($seg1 && $seg1->[1]   == 671649);
+ok($seg1 && $seg1->[2]->start == 13731);
+ok($seg1 && $seg1->[2]->end   == 13780);
+ok($seg1 && $seg1->[2]->seq_region_name eq 'AL359765.6.1.13780');
+
+ok($seg2 && $seg2->[0] == 671650);
+ok($seg2 && $seg2->[1] == 671800);
+ok($seg2 && $seg2->[2]->start == 101);
+ok($seg2 && $seg2->[2]->end   == 251);
+ok($seg2 && $seg2->[2]->seq_region_name eq 'AL031658.11.1.162976');
+
+debug('forward strand slice feature projection');
+foreach my $segment (@projection) {
+  ($start, $end, $slice) = @$segment;
+  debug("[$start-$end] -> " . $slice->seq_region_name
+        . ' ' . $slice->start . '-' . $slice->end . '('.$slice->strand().')');
+}
+
+#
+# Try a projection using an inverted slice
+#
+
+$slice = $feature->slice()->invert();
+$feature->slice($slice);
+$feature->move(4_391_950, 4_392_150);
+
+@projection = @{$feature->project('contig')};
+
+ok(@projection == 2);
+
+($seg1, $seg2) = @projection;
+
+ok($seg1 && $seg1->[0] == 4_391_950);
+ok($seg1 && $seg1->[1]   == 4_391_957);
+ok($seg1 && $seg1->[2]->start == 101);
+ok($seg1 && $seg1->[2]->end   == 108);
+ok($seg1 && $seg1->[2]->seq_region_name eq 'AL031658.11.1.162976');
+
+ok($seg2 && $seg2->[0] == 4_391_958);
+ok($seg2 && $seg2->[1] == 4_392_150);
+ok($seg2 && $seg2->[2]->start == 13588);
+ok($seg2 && $seg2->[2]->end   == 13780);
+ok($seg2 && $seg2->[2]->seq_region_name eq 'AL359765.6.1.13780');
+
+debug('negative strand slice feature projection');
+foreach my $segment (@projection) {
+  ($start, $end, $slice) = @$segment;
+  debug("[$start-$end] -> " . $slice->seq_region_name
+        . ' ' . $slice->start . '-' . $slice->end . '('.$slice->strand().')');
+}
+
+#
+# Try project to same coord system
+#
+
+
+@projection = @{$feature->project('supercontig')};
+
+ok(@projection == 1);
+
+($seg1) = @projection;
+$slice = $feature->slice();
+ok($seg1 && $seg1->[0] == $feature->start());
+ok($seg1 && $seg1->[1]   == $feature->end());
+ok($seg1 && $seg1->[2]->start == $slice->end - $feature->end() + 1);
+ok($seg1 && $seg1->[2]->end   == $slice->end - $feature->start() + 1);
+ok($seg1 && $seg1->[2]->strand == $slice->strand * $feature->strand());
+ok($seg1 && $seg1->[2]->seq_region_name eq 'NT_028392');
+
+
+debug('projection to same coord system');
+foreach my $segment (@projection) {
+  ($start, $end, $slice) = @$segment;
+  debug("[$start-$end] -> " . $slice->seq_region_name
+        . ' ' . $slice->start . '-' . $slice->end . '('.$slice->strand().')');
+}
