@@ -1,3 +1,11 @@
+BEGIN{
+
+    unshift @INC, "../../modules";
+    unshift @INC,"../../../bioperl-ensembl-06/";
+}
+
+
+
 use strict;
 use GD;
 use Bio::EnsEMBL::DBSQL::Obj;
@@ -6,12 +14,14 @@ use SeqContigDraw;
 use Parameters;
 
 
+
+
 my $image_param_ref=&Parameters::contig_image_par;
 my $im=new GD::Image($image_param_ref->{x_img_len},$image_param_ref->{y_img_len});
 
-my $dbuser = 'ensembl';
-my $dbname = 'db11';
-my $host = 'sol28';
+my $dbuser = 'ensro';
+my $dbname = 'ensembl';
+my $host = 'ensrv3.sanger.ac.uk';
 my $dbpass = undef; 
 my $locator = "Bio::EnsEMBL::DBSQL::Obj/host=$host;dbname=$dbname;user=$dbuser;pass=$dbpass";
 my $db =  Bio::EnsEMBL::DBLoader->new($locator);

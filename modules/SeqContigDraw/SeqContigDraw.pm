@@ -383,6 +383,7 @@ sub draw_feature
 
     my $name;
     my $db;
+    my $score;
     if ($ft->isa("Bio::EnsEMBL::FeaturePair")){
 
 $name=$ft->hseqname;
@@ -392,18 +393,35 @@ $name=$ft->hseqname;
 	if ($ft->analysis->db eq "dbest"){
             ($db,$name)=split /\|/,$ft->hseqname;
         }
-#	else {
-  #          $name=$ft->hseqname;
- #       }
+
+if ($ft->analysis->db eq "PfamFrag"){
+print "SCORE ",$ft->score,"\n";
+           
+        }
+
+$score=$ft->score;
+
+
+
+
+
+
     }
     if ($ft->isa("Bio::EnsEMBL::SeqFeature")){
         $name=$ft->analysis->gff_source;
+
+
     }
 
     unless ($url eq ""){
         &print_map($x_start,$y_start,$x_end,$y_end,$name,$url,$name);
     }
+
+    if (($score>25 && $ft->analysis->db eq "PfamFrag") || ($score>80 && $ft->analysis->db ne "PfamFrag")){
+
     $im->filledRectangle($x_start,$y_start,$x_end,$y_end,$color);    
+}
+
 
 }
 
