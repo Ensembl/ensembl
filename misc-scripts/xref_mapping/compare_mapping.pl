@@ -49,12 +49,11 @@ foreach my $xref_id (keys %new_x2e) {
       }
     }
     $found ? $matched++ : $mismatched++;
+    $total++;
 
   } else {
     $new_only++;
   }
-
-  $total++;
 
 }
 
@@ -73,10 +72,10 @@ print "\nComparing by xref:\n\n";
 my $fmt = "%-30s\t%6d\t%5s%%\n";
 printf $fmt, "Mapped with same result:", $matched, pc($matched, $total);
 printf $fmt, "Mapped with different result:", $mismatched, pc($mismatched, $total);
-printf $fmt, "Mapped by new method only:", $new_only, pc($new_only, $total);
-printf $fmt, "Total of new xrefs compared:", $total, pc($total, $total);
+printf $fmt, "Total mapped:", $total, pc($total, $total);
 
-print "\nNumber mapped by old method only: $old_only\n";
+print "\nNumber mapped by new method only: $new_only\n";
+print "Number mapped by old method only: $old_only\n";
 
 # ----------------------------------------------------------------------
 
