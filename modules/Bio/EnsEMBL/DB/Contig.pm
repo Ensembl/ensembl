@@ -100,7 +100,9 @@ sub get_all_SeqFeatures{
       $out->start($rowhash->{start});
       $out->end($rowhash->{end});
       $out->strand($rowhash->{strand});
-      $out->score($rowhash->{score});
+      if( $rowhash->{score} ) {
+	  $out->score($rowhash->{score});
+      }
       $out->primary_tag($rowhash->{analysis});
       $out->source_tag('EnsEMBL');
       push(@array,$out);
