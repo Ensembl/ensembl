@@ -471,9 +471,13 @@ sub map_DBAdaptor {
 sub get_GeneAdaptor {
     my( $self ) = @_;
 
+    #get a core db adaptor
+    my $core_adaptor = $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
+
     #use a proxy gene adaptor, capable of making decisions with regards to the
-    #database that it uses
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor");
+    #database that it uses, passing in the core adaptor as a constructor arg
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor",
+			     $core_adaptor);
   }
 
 =head2 get_LiteAdaptor

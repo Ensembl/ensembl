@@ -61,9 +61,10 @@ sub import {
 #
 CHECK {
   my @errors = ();
-
+ 
   #validate each module that imported 'implements'
   foreach my $implementor (keys %__INTERFACES) {
+    print STDERR "CHECKING $implementor\n";
     my %seen_packages = ();
     my @checked_packages = ();
     
@@ -111,8 +112,8 @@ CHECK {
 	*alias = $value;
 	next unless defined &alias;
 	
-	#print "implements: checking $implementor for implementation of "
-	#  . "$interface\::$method()\n";
+	#print STDERR "implements: checking $implementor for implementation of"
+	#  . " $interface\::$method()\n";
 
 	#check the implentor's symbol table to see if this method exists
 	no strict 'refs';
@@ -128,7 +129,7 @@ CHECK {
                         "'$interface' but does not define method '$method'\n";
 	}
 	
-	#print "implementor contains symbol $method\n";
+	#print STDERR "implementor contains symbol $method\n";
 
       }
       

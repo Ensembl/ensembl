@@ -42,6 +42,14 @@ use vars '@ISA';
 #implement the interface GeneAdaptorI
 use implements qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI);
 
+sub new {
+  my($class, $db, $core_adaptor) = @_;
+
+  #call superclass constructor
+  my $self = $class->SUPER::new($db);
+
+  $self->{'_core_adaptor'} = $core_adaptor;
+}
 
 sub fetch_by_Slice {
   my ($self, @args) = @_;
@@ -54,42 +62,42 @@ sub fetch_by_Slice {
   }
 
   #otherwise use the core database
-  return $self->db()->get_GeneAdaptor()->fetch_by_Slice(@args);
+  return $self->{'_core_adaptor'}->fetch_by_Slice(@args);
 }
 
 sub list_geneIds {
    my ($self, @args) = @_;
 
    #use core db
-   return $self->db()->get_GeneAdaptor()->list_geneIds(@args);
+   return $self->{'_core_adaptor'}->list_geneIds(@args);
 }
 
 sub list_stable_geneIds {
    my ($self, @args) = @_;
 
    #use core db
-   return $self->db()->get_GeneAdaptor()->list_stable_geneIds(@args);
+   return $self->{'_core_adaptor'}->list_stable_geneIds(@args);
 }
 
 sub fetch_by_dbID {
   my ( $self, @args) = @_;
 
   #use core db
-  return $self->db()->get_GeneAdaptor()->fetch_by_dbID(@args);
+  return $self->{'_core_adaptor'}->fetch_by_dbID(@args);
 }
 
 sub fetch_by_stable_id{
   my ($self, @args) = @_;
 
   #use core db
-  return $self->db()->get_GeneAdaptor()->fetch_by_stable_id(@args);
+  return $self->{'_core_adaptor'}->fetch_by_stable_id(@args);
 }
 
 sub fetch_by_contig_list{
   my ($self, @args) = @_;
 
   #use core db
-  return $self->db()->get_GeneAdaptor()->fetch_by_stable_id(@args);
+  return $self->{'_core_adaptor'}->fetch_by_stable_id(@args);
 }
 
 
@@ -97,21 +105,21 @@ sub fetch_by_Transcript_id {
     my ($self, @args) = @_;
 
     #use core db
-    return $self->db()->get_GeneAdaptor()->fetch_by_Transcript_id(@args);
+    return $self->{'_core_adaptor'}->fetch_by_Transcript_id(@args);
 }
 
 sub fetch_by_Peptide_id {
     my ($self, @args) = @_;
     
     #use core db
-    return $self->db()->get_GeneAdaptor()->fetch_by_Peptise_id(@args);
+    return $self->{'_core_adaptor'}->fetch_by_Peptise_id(@args);
 }
 
 sub fetch_by_maximum_DBLink {
     my ($self, @args) = @_;
 
     #use core db
-    return $self->db()->get_GeneAdaptor()->fetch_by_maximum_DBLink(@args);
+    return $self->{'_core_adaptor'}->fetch_by_maximum_DBLink(@args);
 }
 
 
@@ -119,7 +127,7 @@ sub get_description {
     my ($self, @args) = @_;
 
     #use core db
-    return $self->db()->get_GeneAdaptor()->get_description(@args);
+    return $self->{'_core_adaptor'}->get_description(@args);
 }
 
 
@@ -127,7 +135,7 @@ sub get_stable_entry_info {
     my ($self, @args) = @_;
 
     #use core db
-    return $self->db()->get_GeneAdaptor()->get_stable_entry_info(@args);
+    return $self->{'_core_adaptor'}->get_stable_entry_info(@args);
 }
 
 
@@ -135,21 +143,21 @@ sub fetch_by_DBEntry {
     my ($self, @args) = @_;
 
     #use core db
-    return $self->db()->get_GeneAdaptor()->fetch_by_DBEntry(@args);
+    return $self->{'_core_adaptor'}->fetch_by_DBEntry(@args);
 }
 
 
 sub store {
     my ($self, @args) = @_;
 
-    return $self->db()->get_GeneAdaptor()->store(@args);
+    return $self->{'_core_adaptor'}->store(@args);
 }
 
 
 sub remove {
     my ($self, @args) = @_;
 
-    return $self->db()->get_GeneAdaptor()->remove(@args);
+    return $self->{'_core_adaptor'}->remove(@args);
 }
 
 
@@ -170,14 +178,14 @@ sub get_Interpro_by_geneid {
     my ($self, @args) = @_;
 
 
-    return $self->db()->get_GeneAdaptor()->get_Interpro_by_geneid();
+    return $self->{'_core_adaptor'}->get_Interpro_by_geneid();
 }
 
 
 sub create_tables {
   my ($self, @args) = @_;
 
-  return $self->db()->get_GeneAdaptor()->create_tables(@args);
+  return $self->{'_core_adaptor'}->create_tables(@args);
 }
 
 
