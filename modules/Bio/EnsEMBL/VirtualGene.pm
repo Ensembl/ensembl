@@ -580,7 +580,7 @@ sub to_FTHelper {
 	    $ft->key('CDS');
 	    #print STDERR "Translation is [",$translated_seq->seq,"]\n";
 
-	    $ft->add_field('translatation',$translated_seq->seq);
+	    $ft->add_field('translation',$translated_seq->seq);
 	    $ft->add_field('cds',$trans->translation->id);
 	    $ft->add_field('gene',$self->gene->id);
 	    $ft->add_field('transcript',$trans->id);
