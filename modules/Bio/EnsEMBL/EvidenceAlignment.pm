@@ -1041,8 +1041,8 @@ sub _get_aligned_evidence_for_transcript {
     $transcript_dbID = $transcript_id;
     $transcript_obj_nonslice = $ta->fetch_by_dbID($transcript_dbID);
   }
-  my $slice = $sa->fetch_Slice_by_transcript_dbID($transcript_dbID,
-                                                  1000);
+  my $slice = $sa->fetch_by_transcript_id($transcript_dbID,
+					  1000);
   
   my $transcript_obj;   # VC version
   my @genes = $slice->get_all_Genes;
