@@ -2105,7 +2105,7 @@ Calling gene_Obj->write_Exon instead!");
 
  Title   : get_Clone
  Usage   :
- Function:
+ Function: retrieve latest version of a clone from the database
  Example :
  Returns : 
  Args    :
@@ -2119,6 +2119,26 @@ sub get_Clone {
     my $ca= Bio::EnsEMBL::DBSQL::CloneAdaptor->new($self);
 
     return $ca->fetch_by_accession($accession);
+}
+  
+=head2 get_Clone_by_version
+
+ Title   : get_Clone_by_version
+ Usage   :
+ Function: retrieve specific version of a clone from the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Clone_by_version { 
+    my ($self,$accession,$ver) = @_;
+
+    my $ca= Bio::EnsEMBL::DBSQL::CloneAdaptor->new($self);
+
+    return $ca->fetch_by_accession_version($accession,$ver);
 }
   
 =head2 get_Contig

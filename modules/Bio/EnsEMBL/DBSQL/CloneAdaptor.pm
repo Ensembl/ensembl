@@ -74,7 +74,8 @@ sub fetch_by_accession {
                           UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified),
                           UNIX_TIMESTAMP(stored) 
                    from   clone 
-                   where  id = '$id'";
+                  where   id = '$id'
+                 order by embl_version desc";
 
    
     my $sth = $self->prepare($statement);    
@@ -89,6 +90,48 @@ sub fetch_by_accession {
     
     return Bio::EnsEMBL::Clone->new($self,@args);
 }
+
+
+
+
+=head2 fetch_by_accession_version
+
+ Title   : fetch_by_accession_version
+ Usage   :
+ Function:
+ Example :
+ Returns : Bio::EnsEMBL::Clone
+ Args    :
+
+
+=cut
+
+sub fetch_by_accession_version { 
+    my ($self,$id,$ver) = @_;
+
+    if( !defined $id) {$self->throw("Don't have $id for new adaptor");}
+
+    my $statement="select internal_id,embl_id,version,embl_version,htg_phase,
+                          UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified),
+                          UNIX_TIMESTAMP(stored) 
+                   from   clone 
+                   where  id           = '$id'
+                   and    embl_version = $ver";
+
+   
+    my $sth = $self->prepare($statement);    
+    my $res = $sth ->execute();
+
+    my ($internal_id,$embl_id,$version,$embl_version,
+	$htg_phase,$created,$modified, $stored)= $sth->fetchrow_array;
+   
+    $self->throw("no clone $id with version $ver") unless defined $internal_id;
+    
+    my @args=($internal_id,$id,$embl_id,$version,$embl_version,$htg_phase,$created,$modified, $stored);
+    
+    return Bio::EnsEMBL::Clone->new($self,@args);
+}
+
 
 
 

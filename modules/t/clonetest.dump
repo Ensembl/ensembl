@@ -21,6 +21,8 @@
 INSERT INTO clone (internal_id, id, embl_id, version, embl_version, htg_phase, created, modified, stored) VALUES (1,'manu-test','embl-manu',1,1,1,'2000-10-16 14:18:11','2000-10-16 14:18:11','2000-10-16 14:18:11');
 INSERT INTO clone (internal_id, id, embl_id, version, embl_version, htg_phase, created, modified, stored) VALUES (2,'manu-test2','embl-manu2',1,1,1,'2000-10-16 14:22:41','2000-10-16 14:22:41','2000-10-16 14:22:41');
 INSERT INTO clone (internal_id, id, embl_id, version, embl_version, htg_phase, created, modified, stored) VALUES (3,'test3','embl-test3',1,1,1,'2000-10-17 10:28:07','2000-10-17 10:28:07','2000-10-17 10:28:07');
+INSERT INTO clone (internal_id, id, embl_id, version, embl_version, htg_phase, created, modified, stored) VALUES (4,'manu-test','embl-manu',2,2,1,'2000-10-16 14:18:11','2000-10-16 14:18:11','2000-10-16 14:18:11');
+INSERT INTO clone (internal_id, id, embl_id, version, embl_version, htg_phase, created, modified, stored) VALUES (5,'test3','embl-test3',3,3,2,'2000-10-17 10:28:07','2000-10-17 10:28:07','2000-10-17 10:28:07');
 
 #
 # Dumping data for table 'contig'
