@@ -339,18 +339,18 @@ ok($slice->strand == -1);
 #default no duplicates and reference only
 my $slices = $slice_adaptor->fetch_all('chromosome',undef);
 print_slices($slices);
-ok(@$slices == 63);
+ok(@$slices == 64);
 
 # include duplicates
 $slices = $slice_adaptor->fetch_all('chromosome', undef,0, 1);
 
 print_slices($slices);
-ok(@$slices == 62);
+ok(@$slices == 63);
 
 
 $slices = $slice_adaptor->fetch_all('contig', undef);
 
-ok(@$slices == 12);
+ok(@$slices == 13);
 
 print_slices($slices);
 
