@@ -1730,12 +1730,30 @@ sub get_all_VirtualGenes_startend
 
 	&eprof_start("virtualgene-externaldb");
 
+#Get the DBlinks for the given gene
     my $entryAdaptor = $self->dbobj->get_DBEntryAdaptor();
     my @gene_xrefs = $entryAdaptor->fetch_by_gene($gene_id);
 
     foreach my $genelink (@gene_xrefs) {
         $gene->add_DBLink($genelink);
     }
+
+	foreach my $trans ( $gene->each_Transcript ) {
+	    my $transid = $trans->id;
+	    
+	    $transid =~ s/T/P/;
+	    
+	    my @transcript_xrefs = $entryAdaptor->fetch_by_translation($transid);
+	    
+	    foreach my $translink(@transcript_xrefs) {
+		
+		
+		$trans->add_DBLink($translink);
+		$gene->add_DBLink($translink);
+	    }
+	}
+#End for fetching the DBlinks
+	
 
 	&eprof_end("virtualgene-externaldb");
 
