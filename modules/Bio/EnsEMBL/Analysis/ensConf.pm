@@ -73,6 +73,7 @@ my $ftp    = ( getpwnam('ftp')    )[7];
 	    PROTEIN_ID_SUBSCRIPT => 'ENSP',
 	    PROTEIN_ID_DIGITS => 11,
 	    CONTIG_CLUSTER_ID_SUBSCRIPT => 'HCC',
+            WWW4EBI => "/nfs/WWW/htdocs/Users/humpub/ensembl",
 	    );
 
 sub import {
