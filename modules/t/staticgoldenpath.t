@@ -22,7 +22,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..31\n"; 
+BEGIN { $| = 1; print "1..32\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -329,7 +329,7 @@ if( $fp->start != 9 || $fp->end != 19 ) {
 #$invert->_dump_map(\*STDERR);
 
 # testing get on vc is good
-
+$vcsave = $vc2;
 @genes = $vc2->get_all_Genes();
 $gene = shift @genes;
 if( !defined $gene ) {
@@ -364,6 +364,7 @@ if( $vc->length eq length($vc->seq) && $vc->length == 380) {
 
 $vc = $stadaptor->fetch_VirtualContig_by_chr_start_end('chr2',250,350);
 
+
 print "ok 27\n";
 
 if( $vc->length eq length($vc->seq) && $vc->length == 101) {
@@ -397,5 +398,17 @@ if ($contig->isa(Bio::EnsEMBL::Virtual::StaticContig)){print "ok 31\n";}
 else {print "not ok 31\n";}
 
 
+@genes = $vcsave->get_all_Genes_exononly();
+
+#foreach $g ( @genes ) {
+#	print STDERR "Got ",$g->id,"\n";
+#	foreach $e ( $g->each_unique_Exon ) {
+#		print STDERR " Got exon ",$e->id,"\n";
+#	}
+#}
+
+if( scalar(@genes) == 2 ) {
+	print "ok 32\n";
+}
 
 

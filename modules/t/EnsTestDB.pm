@@ -212,7 +212,7 @@ sub test_locator {
 sub ensembl_locator {
     my( $self) = @_;
     
-    my $module = ($self->module() || 'Bio::EnsEMBL::DBSQL::Obj');
+    my $module = ($self->module() || 'Bio::EnsEMBL::DBSQL::DBAdaptor');
     my $locator = '';
     foreach my $meth (qw{ host port dbname user password }) {
         my $value = $self->$meth();

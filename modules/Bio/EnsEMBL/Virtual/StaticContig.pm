@@ -1099,6 +1099,125 @@ return $markers[0];
 }
 
 
+=head2 get_all_Genes_exononly
+
+ Title   : get_all_Genes_exononly
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Genes_exononly{
+   my ($self) = @_;
+
+   
+   my $glob_start=$self->_global_start;
+   my $glob_end=$self->_global_end;
+   my $chr_name=$self->_chr_name;
+   my $idlist  = $self->_raw_contig_id_list();
+   
+   unless ($idlist){
+       return ();
+   }
+   
+
+   my $query = "SELECT e.id,e.sticky_rank,et.rank,et.transcript,t.gene, 
+                        IF     (sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start)) as start,  
+                        IF     (sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start)), 
+                        IF     (sgp.raw_ori=1,e.strand,(-e.strand))
+                        FROM   exon e,static_golden_path sgp,exon_transcript et,transcript t
+                        WHERE  t.id = et.transcript
+                        AND    et.exon = e.id 
+                        AND    sgp.raw_id = e.contig
+		        AND    sgp.chr_name = '$chr_name' 
+                        AND    e.contig in $idlist
+                        AND    sgp.chr_end >= $glob_start 
+		        AND    sgp.chr_start <=$glob_end 
+                        ORDER  BY t.gene,t.id,et.rank,e.sticky_rank";
+
+   my $sth = $self->dbobj->prepare($query);
+   $sth->execute();
+
+   my ($exonid,$stickyrank,$rank,$transcriptid,$geneid,$start,$end,$strand);
+   $sth->bind_columns(undef,\$exonid,\$stickyrank,\$rank,\$transcriptid,\$geneid,\$start,\$end,\$strand);
+  
+   my $current_transcript;
+   my $current_gene;
+   my $current_transcript_id;
+   my $current_gene_id;
+   my $previous_exon;
+
+   my @out;
+   my $length = $glob_end - $glob_start;
+
+   while( $sth->fetch ) {
+
+       if (($end > $length) || ($start < 1)) {
+	   next;
+       }
+       if( $geneid ne $current_gene_id ) {
+	   # make a new gene
+	   $current_gene = Bio::EnsEMBL::Gene->new;
+	   $current_gene->id($geneid);
+	   push(@out,$current_gene);
+	   $current_gene_id = $geneid;
+       }
+
+       if( $transcriptid ne $current_transcript_id ) {
+	   # make a new transcript
+	   $current_transcript = Bio::EnsEMBL::Transcript->new();
+	   $current_gene->add_Transcript($current_transcript);
+	   $current_transcript_id = $transcriptid;
+	   $current_transcript->id($transcriptid);
+       }
+
+       if( $stickyrank > 1 ) {
+	   if( !defined $previous_exon ) {
+	       $self->warn("Really bad news - half-on-half off Sticky Exon. Faking it");
+	   }
+	   if( $previous_exon->end < $end ) {
+	       $previous_exon->end($end);
+	       next;
+	   }
+
+       }
+
+
+       my $exon = Bio::EnsEMBL::Exon->new();
+       $exon->start($start);
+       $exon->end($end);
+       $exon->strand($strand);
+       $exon->id($exonid);
+       $previous_exon = $exon;
+       $current_transcript->add_Exon($exon);
+
+   }
+
+
+
+   #
+   # This can obviously be optimised to a better single trip
+   # to the database
+   #
+
+   my $gene_obj = $self->dbobj->gene_Obj;
+
+   foreach my $g ( @out ) {
+       $gene_obj->_get_dblinks($g);
+       $gene_obj->_get_description($g);
+   }
+
+
+   return @out;
+
+}
+
 
 
 
