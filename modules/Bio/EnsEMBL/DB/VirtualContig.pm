@@ -147,9 +147,50 @@ sub _initialize {
 These functions are to implement the ContigI interface
 
 
+=head2 extend
+
+ Title   : extend
+ Usage   : $new_vc = $vc->extend(100,100);
+ Function: Make a new vc by entending an existing one
+ Example :
+ Returns : Bio::EnsEMBL::DB::VirtualContig
+ Args    :
+
+
+=cut
+
+sub extend {
+   my ($self, $left, $right) = @_;
+
+   if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+       $self->throw("Can only extend a VirtualContigI, Bailing out...");
+   }
+
+   if (! defined $left || ! defined $right ){
+       $self->throw("Must supply a left and right value when extending a VirtualContig");
+   }
+
+    my $current_left          = $self->_left_size;
+    my $current_right         = $self->_right_size;
+    my $current_ori           = $self->_focus_orientation;
+    my $current_focuscontig   = $self->_focus_contig;
+    my $current_focusposition = $self->_focus_position;
+    
+
+    my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $current_focuscontig,
+					        -focusposition   => $current_focusposition,
+					        -ori             => $current_ori,
+					        -left            => $current_left + $left,
+					        -right           => $current_right + $right,
+					        );
+
+   return $nvc;
+}
+
+
 =head2 primary_seq
 
- Title   : seq
+ Title   : primary_seq
  Usage   : $seq = $contig->primary_seq();
  Function: Gets a Bio::PrimarySeqI object out from the contig
  Example :
@@ -420,7 +461,8 @@ sub get_all_Genes{
 sub length {
    my ($self,@args) = @_;
 
-   return $self->_left_size + $self->_right_size +1;
+   #return $self->_left_size + $self->_right_size +1;
+   return $self->_left_size + $self->_right_size;
 
 }
 
@@ -635,7 +677,7 @@ sub _build_contig_map{
 
    my $total = $left + $right;
 
-   print STDERR "leftmost contig is ",$current_contig->id,"with $total to account for, gone $current_left_size of $left\n";
+   print STDERR "leftmost contig is ",$current_contig->id," with $total to account for, gone $current_left_size of $left\n";
    $self->{'leftmostcontig_id'} = $current_contig->id;
 
    # the first contig will need to be trimmed at a certain point
