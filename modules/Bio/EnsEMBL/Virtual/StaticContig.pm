@@ -293,7 +293,7 @@ sub get_all_SimilarityFeatures_above_score{
                         AND    a.id = f.analysis
                         AND    f.score > $score
                         AND    a.db in ('unigene.seq','sptr','embl_vertrna')
-                        ORDER  by f.hid,start";
+                        ORDER  by start";
       #open(T,">>/tmp/stat.sql");
       #print T $statement,"\n";
       #close(T);
@@ -375,6 +375,37 @@ sub get_all_SimilarityFeatures_above_score{
    #return @{$self->{_feature_cache}->{$analysis_type}};
 
 }
+
+=head2 get_all_Similarity_Features_by_strand
+
+ Title   : get_all_Similarity_Features_by_strand
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_SimilarityFeatures_by_strand{
+   my ($self, $analysis_type, $score, $bp,$strand) = @_;
+
+   my @features = $self->get_all_SimilarityFeatures_above_score($analysis_type, $score, $bp);
+   my (@f);
+
+   foreach my $f (@features) {
+       if ($f->strand == 1 && $strand == 1) {
+	   unshift(@f,$f);
+       }
+       elsif ($strand == -1) {
+	   push(@f,$f);
+       }
+   }
+
+   return (@f);
+}
+
 
 
 #
