@@ -353,7 +353,7 @@ sub _objects_from_sth {
 	Bio::EnsEMBL::Analysis->new(-logic_name => $hr->{'analysis'}); 
       $gene->analysis($analysis_cache{$hr->{'analysis'}});
 
-      $gene->chr_name( $chr );
+      $gene->chr_name( $hr->{'chr_name'} );
       $gene->start( $hr->{'gene_start'} );
       $gene->end( $hr->{'gene_end'} );
       $gene->strand( $hr->{'chr_strand'} );
