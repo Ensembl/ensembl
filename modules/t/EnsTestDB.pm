@@ -435,6 +435,18 @@ sub test_db {
    return $static_test_dbh;
 }
 
+
+=head2 remove_test_db
+
+  Args      : none
+  Function  : drops test database which was created with test_db.
+  Returntype: none
+  Exceptions: none, will fail if no test database was created.
+  Caller    : test scripts may remove the test database after usage,
+              but should consider not, as upload takes some time.
+
+=cut
+
 sub remove_test_db {
   $static_test_dbh->do( "drop database $static_test_dbname" );
   $static_test_dbh->disconnect();
