@@ -88,12 +88,6 @@ sub run {
 	  XrefParser::BaseParser->add_to_xrefs($worm{$array[2]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
 	  $count++;
 	}
-	else{
-	  $miss++;
-	  if($miss < 10){
-	    print "miss: ".$array[2]."\n";
-	  }
-	}
       }
       elsif(!defined($wrongtype{$array[0]})){
 	print STDERR "WARNING: unknown type ".$array[0]."\n";
