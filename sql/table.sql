@@ -206,7 +206,7 @@ CREATE TABLE protein_align_feature (
   cigar_line                  text,
 
   PRIMARY KEY ( protein_align_feature_id ),
-  KEY seq_region_idx( seq_region_id, analysis_id, score, seq_region_start ),
+  KEY seq_region_idx( seq_region_id, analysis_id, seq_region_start, score ),
   KEY hit_idx( hit_name ),
   KEY analysis_idx( analysis_id )
 
@@ -235,7 +235,7 @@ CREATE TABLE dna_align_feature (
   cigar_line                  text,
 
   PRIMARY KEY ( dna_align_feature_id ),
-  KEY seq_region_idx( seq_region_id, analysis_id, score, seq_region_start ),
+  KEY seq_region_idx( seq_region_id, analysis_id, seq_region_start, score ),
   KEY hit_idx( hit_name ),
   KEY analysis_idx( analysis_id )
 
@@ -1114,6 +1114,7 @@ CREATE TABLE meta_coord (
 
   table_name                  VARCHAR(40) NOT NULL,
   coord_system_id             INT NOT NULL,
+  max_length                  INT
 
   UNIQUE(table_name, coord_system_id)
 
