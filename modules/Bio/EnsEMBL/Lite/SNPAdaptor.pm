@@ -62,8 +62,10 @@ sub fetch_all_by_Slice {
                 WHERE chr_name = ? AND chr_start >= ? and chr_start <= ? AND chr_end >= ?";
 
   my $sth = $self->prepare( $QUERY ); 
+  eval {
   $sth->execute($slice->chr_name(), $slice_start - 500 , $slice_end, $slice_start);
-  
+  };
+  return [] if $@;
   my @snps = ();  
 
   my %link_hash;
