@@ -68,6 +68,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 my $ASSEMBLED = 'assembled';
 my $COMPONENT = 'component';
 
+my $MAX_CACHED_PAIRS = 1000;
+
 =head2 new
 
   Arg [1]    : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
@@ -151,12 +153,18 @@ sub map {
   if($frm_cs == $cmp_cs || ($frm_cs != $asm_cs && $frm_cs->equals($cmp_cs))) {
 
     if(!$self->{'cmp_register'}->{$frm_seq_region}) {
+      if( $mapper->{'pair_count'} > $MAX_CACHED_PAIRS ) {
+	$self->flush();
+      }
       $adaptor->register_component($self,$frm_seq_region);
     }
     $frm = $COMPONENT;
 
   } elsif($frm_cs == $asm_cs || $frm_cs->equals($asm_cs)) {
 
+    if( $mapper->{'pair_count'} > $MAX_CACHED_PAIRS ) {
+      $self->flush();
+    }
     # This can be probably be sped up some by only calling registered
     # assembled if needed
     $adaptor->register_assembled($self,$frm_seq_region,$frm_start,$frm_end);
@@ -174,6 +182,27 @@ sub map {
 }
 
 
+
+=head2 _flush
+
+  Args       : none
+  Example    : none
+  Description: remove all cached items from this AssemblyMapper
+  Returntype : none
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+
+
+sub _flush {
+  my $self = shift;
+
+  $self->{'mapper'}->flush();
+  $self->{'cmp_register'} = {};
+  $self->{'asm_register'} = {};
+}
 
 
 sub fastmap {

@@ -79,9 +79,35 @@ sub new {
   $self->to($to);
   $self->from($from);
 
+  $self->{'pair_count'} = 0;
 # set stuff in self from @args
   return $self;
 }
+
+
+
+=head2 flush
+
+  Args       : none
+  Example    : none
+  Description: removes all cached information out of this mapper
+  Returntype : none
+  Exceptions : none
+  Caller     : AssemblyMapper, ChainedAssemblyMapper
+
+=cut
+
+sub flush {
+  my $self = shift;
+  my $from = $self->from();
+  my $to = $self->to();
+
+  $self->{"pair_$from"} = {};
+  $self->{"pair_$to"} = {};
+
+  $self->{'pair_count'} = 0;
+}
+
 
 
 =head2 map_coordinates
@@ -384,6 +410,7 @@ sub add_map_coordinates{
 	      $current_pair->{'from'}->{'end'} = $lr->[$i+1]->{'from'}->{'end'};
 	      $del_pair = $lr->[$i+1];
 	      splice( @$lr, $i+1, 1 );
+	      $self->{'pair_count'}--;
 	      last;
 	    } else {
 	      # normal merge with previous element
@@ -406,6 +433,7 @@ sub add_map_coordinates{
 	      $current_pair->{'from'}->{'start'} = $lr->[$i+1]->{'from'}->{'start'};
 	      $del_pair = $lr->[$i+1];
 	      splice( @$lr, $i+1, 1 );
+	      $self->{'pair_count'}--;
 	      last;
 	    } else {
 	      # normal merge with previous element
@@ -480,6 +508,7 @@ sub add_map_coordinates{
     $self->{"_pair_$map_to"}->{uc($chr_name)} = [ $pair ];
   }
 
+  $self->{'pair_count'}++;
 
   if( defined( $lr = $self->{"_pair_$map_from"}->{uc($contig_id)} )) {
     # insertion sort, merging cant happen here any more
