@@ -28,7 +28,6 @@ CREATE TABLE primary_xref (
   sequence                    mediumtext,
   sequence_type               enum('dna','peptide'),
   status                      enum('experimental','predicted'),
-  source_id                   int unsigned not null,
 
   PRIMARY KEY (xref_id)
 
@@ -41,7 +40,7 @@ CREATE TABLE dependent_xref (
   master_xref_id              int unsigned not null,
   dependent_xref_id           int unsigned not null,
   linkage_annotation          varchar(255),
-  source_id                   int unsigned not null,
+  linkage_source_id           int unsigned not null,
 
   KEY master_idx(master_xref_id),
   KEY dependent_idx(dependent_xref_id)
@@ -54,7 +53,6 @@ CREATE TABLE synonym (
 
   xref_id                     int unsigned not null,
   synonym_xref_id             int unsigned not null,
-  source_id                   int unsigned not null,
 
   KEY xref_idx(xref_id)
 

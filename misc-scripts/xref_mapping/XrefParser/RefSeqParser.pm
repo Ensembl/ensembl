@@ -121,7 +121,7 @@ sub create_xrefs {
 
   print "Read " . scalar(@xrefs) ." xrefs from $file\n";
 
-  return @xrefs;
+  return \@xrefs;
 
 }
 

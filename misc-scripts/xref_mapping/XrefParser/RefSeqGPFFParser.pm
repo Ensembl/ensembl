@@ -141,24 +141,28 @@ sub create_xrefs {
       foreach my $ll (@LocusIDline) {
 	my %dep;
 	$dep{SOURCE_ID} = $dependent_sources{LocusLink};
+	$dep{LINKAGE_SOURCE_ID} = $source_id;
 	$dep{ACCESSION} = $ll;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
       }
       foreach my $mim (@mimline) {
 	my %dep;
 	$dep{SOURCE_ID} = $dependent_sources{MIM};
+	$dep{LINKAGE_SOURCE_ID} = $source_id;
 	$dep{ACCESSION} = $mim;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
       }
       foreach my $med (@medline) {
 	my %dep;
 	$dep{SOURCE_ID} = $dependent_sources{MEDLINE};
+	$dep{LINKAGE_SOURCE_ID} = $source_id;
 	$dep{ACCESSION} = $med;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
       }
       foreach my $pub (@pubmed) {
 	my %dep;
 	$dep{SOURCE_ID} = $dependent_sources{PUBMED};
+	$dep{LINKAGE_SOURCE_ID} = $source_id;
 	$dep{ACCESSION} = $pub;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
       }
@@ -169,6 +173,7 @@ sub create_xrefs {
       if($mrna){
         my %mrna_dep;
         $mrna_dep{SOURCE_ID} = $source_id; # source is still RefSeq
+	$mrna_dep{LINKAGE_SOURCE_ID} = $source_id;
         my ($mrna_acc,$mrna_ver) = split (/\./,$mrna);
 
         $mrna_dep{ACCESSION} = $mrna_acc;
@@ -185,7 +190,7 @@ sub create_xrefs {
 
   print "Read " . scalar(@xrefs) ." xrefs from $file\n";
 
-  return @xrefs;
+  return \@xrefs;
 
 }
 

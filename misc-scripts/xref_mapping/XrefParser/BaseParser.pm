@@ -278,21 +278,24 @@ sub get_valid_codes{
 
 sub upload_xref_object_graphs {
 
-  my ($self, @xrefs) = @_;
+  my ($self, $rxrefs) = @_;
+
 
   my $dbi = dbi();
 
-  if ($#xrefs > -1) {
+#  print "count = ".$#$rxrefs."\n";
+
+  if ($#$rxrefs > -1) {
 
     # remove all existing xrefs with same source ID(s)
-    delete_by_source(\@xrefs);
+    delete_by_source($rxrefs);
 
     # upload new ones
     print "Uploading xrefs\n";
     my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
-    my $pri_insert_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
+    my $pri_insert_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?)");
     my $pri_update_sth = $dbi->prepare("UPDATE primary_xref SET sequence=? WHERE xref_id=?");
-    my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?,?)");
+    my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?)");
     my $dep_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
     my $xref_update_label_sth = $dbi->prepare("UPDATE xref SET label=? WHERE xref_id=?");
     my $xref_update_descr_sth = $dbi->prepare("UPDATE xref SET description=? WHERE xref_id=?");
@@ -300,7 +303,7 @@ sub upload_xref_object_graphs {
     local $xref_sth->{RaiseError}; # disable error handling here as we'll do it ourselves
     local $xref_sth->{PrintError};
 
-    foreach my $xref (@xrefs) {
+    foreach my $xref (@{$rxrefs}) {
        my $xref_id;
       # Create entry in xref table and note ID
       if(! $xref_sth->execute($xref->{ACCESSION},
@@ -332,23 +335,26 @@ sub upload_xref_object_graphs {
 	$pri_insert_sth->execute($xref_id,
 				 $xref->{SEQUENCE},
 				 $xref->{SEQUENCE_TYPE},
-				 $xref->{STATUS},
-				 $xref->{SOURCE_ID}) || die $dbi->errstr;
+				 $xref->{STATUS}) || die $dbi->errstr;
       }
 
       # if there are synonyms, create xrefs for them and entries in the synonym table
       foreach my $syn (@{$xref->{SYNONYMS}}) {
 
-	$xref_sth->execute($syn,
-			   "",
-			   "",
-			   "",
-			   $xref->{SOURCE_ID},
-			   $xref->{SPECIES_ID});
-
-	my $syn_xref_id = insert_or_select($xref_sth, $dbi->err, $syn, $xref->{SOURCE_ID});
-
-	$syn_sth->execute($xref_id, $syn_xref_id, $xref->{SOURCE_ID} ) || die $dbi->errstr;
+	my $syn_xref_id = get_xref($syn,$xref->{SOURCE_ID});
+	if(!defined($syn_xref_id)){
+	  $xref_sth->execute($syn,
+			     "",
+			     "",
+			     "",
+			     $xref->{SOURCE_ID},
+			     $xref->{SPECIES_ID});
+	  $syn_xref_id = get_xref($syn,$xref->{SOURCE_ID});
+	}
+	if(!defined($syn_xref_id)){
+	  print STDERR $xref->{ACCESSION}."\n$syn\n";
+	}
+	$syn_sth->execute($xref_id, $syn_xref_id ) || die "$dbi->errstr \n $xref_id\n $syn_xref_id\n";
 
       }				# foreach syn
 
@@ -370,9 +376,9 @@ sub upload_xref_object_graphs {
 	  print STDERR "dbi\t$dbi->err \n$dep{ACCESSION} \n $dep{SOURCE_ID} \n";
 	}
 	if(!defined($dep_xref_id)){
-	  print STDERR "$dep{ACCESSION} \n $dep{SOURCE_ID} \n".$dbi->err."\n";
+	  print STDERR "acc = $dep{ACCESSION} \nlink = $dep{LINKAGE_SOURCE_ID} \n".$dbi->err."\n";
 	}
-	$dep_sth->execute($xref_id, $dep_xref_id, $dep{LINKAGE_ANNOTATION}, $dep{SOURCE_ID} ) || die $dbi->errstr;
+	$dep_sth->execute($xref_id, $dep_xref_id, $dep{LINKAGE_ANNOTATION}, $dep{LINKAGE_SOURCE_ID} ) || die $dbi->errstr;
 	# TODO linkage anntation?
 
       }				# foreach dep

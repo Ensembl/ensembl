@@ -195,6 +195,7 @@ sub create_xrefs {
 	  # create dependent xref structure & store it
 	  my %dep;
 	  $dep{SOURCE_NAME} = $source;
+	  $dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
 	  $dep{SOURCE_ID} = $dependent_sources{$source};
 	  $dep{ACCESSION} = $acc;
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
@@ -205,6 +206,7 @@ sub create_xrefs {
 	      my %dep2;
 	      $dep2{SOURCE_NAME} = $source;
 	      $dep2{SOURCE_ID} = $dependent_sources{protein_id};
+	      $dep2{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
 	      $dep2{ACCESSION} = $protein_id;
 	      push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
 	    }
@@ -219,6 +221,7 @@ sub create_xrefs {
 
       my %medline_dep;
       $medline_dep{SOURCE_ID} = $dependent_sources{PUBMED};
+      $medline_dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
       $medline_dep{ACCESSION} = $medline;
       push @{$xref->{DEPENDENT_XREFS}}, \%medline_dep;
 
@@ -229,6 +232,7 @@ sub create_xrefs {
 
       my %pubmed_dep;
       $pubmed_dep{SOURCE_ID} = $dependent_sources{PUBMED};
+      $pubmed_dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
       $pubmed_dep{ACCESSION} = $pubmed;
       push @{$xref->{DEPENDENT_XREFS}}, \%pubmed_dep;
 
@@ -242,7 +246,7 @@ sub create_xrefs {
 
   print "Read $num_sp SwissProt xrefs and $num_sptr SPTrEMBL xrefs from $file\n";
 
-  return @xrefs;
+  return \@xrefs;
 
   #TODO - currently include records from other species - filter on OX line??
 }
