@@ -381,8 +381,8 @@ sub _process_file{
 			foreach my $dbentry ($transcript->each_DBLink){
 			    # attach adapter
 			    $dbentry->adaptor($adx);
-			    print STDERR "Storing ",$transcript->translation->stable_id," ",$dbentry->primary_id,"\n";
-			    $adx->store($dbentry,$transcript->translation->stable_id,'Translation');
+			    print STDERR "Storing ",$transcript->stable_id," ",$dbentry->primary_id,"\n";
+			    $adx->store($dbentry,$transcript->stable_id,'Transcript');
 			}
 		    }
 		};
