@@ -172,7 +172,8 @@ sub fetch_by_CoordSystems {
 
   if(@mapping_path == 2) {
     #1 step regular mapping
-    $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
+#    $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
+    $asm_mapper = Bio::EnsEMBL::ChainedAssemblyMapper->new( $self, $mapping_path[0], undef, $mapping_path[1] );  
     $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
     return $asm_mapper;
   }
@@ -483,6 +484,7 @@ sub register_component {
                The name of the seqregion we are registering on
   Arg [4]    : listref $ranges
                A list  of ranges to register (in [$start,$end] tuples).
+
   Description: Registers a set of ranges on a chained assembly mapper.
                This function is at the heart of the chained mapping process.
                It retrieves information from the assembly table and
@@ -537,7 +539,7 @@ sub register_chained {
     $end_mid_mapper   = $casm_mapper->first_middle_mapper();
     $end_cs           = $casm_mapper->first_CoordSystem();
     $end_registry     = $casm_mapper->first_registry();
-    $end_name         = 'first';
+    $end_name         = 'first';    
   } else {
     throw("Invalid from argument: [$from], must be 'first' or 'last'");
   }
@@ -547,6 +549,10 @@ sub register_chained {
   my $mid_name   = 'middle';
   my $csa = $self->db->get_CoordSystemAdaptor();
 
+  # Check for the simple case where the ChainedMapper is short
+  if( ! defined $mid_cs ) {
+      $start_mid_mapper = $combined_mapper;
+  }
 
   #the SQL varies depending on whether we are coming from assembled or
   #component coordinate system
@@ -593,7 +599,15 @@ sub register_chained {
   #
 
   #ascertain which is component and which is actually assembled coord system
-  my @path = @{$csa->get_mapping_path($start_cs, $mid_cs)};
+  my @path;
+
+  # check for the simple case, where the ChainedMapper is short
+  if( defined $mid_cs ) {
+      @path = @{$csa->get_mapping_path($start_cs, $mid_cs)};
+  } else {
+      @path = @{$csa->get_mapping_path( $start_cs, $end_cs )};
+  }
+
   if(@path != 2) {
     my $path = join(',', map({$_->name .' '. $_->version} @path));
     my $len  = scalar(@path) - 1;
@@ -610,7 +624,14 @@ sub register_chained {
 
   my $seq_region_id = $self->_seq_region_name_to_id($seq_region_name,
 						    $start_cs->dbID());
-  my $mid_cs_id = $mid_cs->dbID();
+  my $mid_cs_id;
+
+  # check for the simple case where the ChainedMapper is short
+  if( defined $mid_cs ) {
+      $mid_cs_id = $mid_cs->dbID();
+  } else {
+      $mid_cs_id = $end_cs->dbID();
+  }
 
   my @mid_ranges;
   my @start_ranges;
@@ -632,12 +653,30 @@ sub register_chained {
 		       \$start_end);
 
     while($sth->fetch()) {
-      $newly_added = 
-	$start_mid_mapper->add_map_coordinates
-	  (
-	   $seq_region_name,$start_start, $start_end, $ori,
-	   $mid_seq_region, $mid_start, $mid_end
-	  );
+      if( defined $mid_cs ) {
+	$newly_added = 
+	    $start_mid_mapper->add_map_coordinates
+	    (
+	     $seq_region_name,$start_start, $start_end, $ori,
+	     $mid_seq_region, $mid_start, $mid_end
+	     );
+      } else {
+	if( $from eq "first" ) {
+	  $newly_added = 
+	      $combined_mapper->add_map_coordinates
+	      (
+	       $seq_region_name,$start_start, $start_end, $ori,
+	       $mid_seq_region, $mid_start, $mid_end
+	       );
+	} else {
+	  $newly_added = 
+	      $combined_mapper->add_map_coordinates
+	      (
+	       $mid_seq_region, $mid_start, $mid_end, $ori,
+	       $seq_region_name,$start_start, $start_end
+	       );
+	}
+      }
 
       next if( ! $newly_added );
       #update sr_name cache
@@ -658,6 +697,20 @@ sub register_chained {
       }
     }
   }
+
+  # in the one step case, we load the mid ranges in the last_registry and we are done
+  if( ! defined $mid_cs ) {
+    for my $range ( @mid_ranges ) {
+      $end_registry->check_and_register( $range->[1], $range->[2], $range->[3] );
+    }
+
+    # and thats it for the simple case ...
+    return;
+  }
+
+
+
+
 
   ###########
   # now the second half of the mapping
