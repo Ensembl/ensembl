@@ -15,15 +15,29 @@ Bio::EnsEMBL::DBSQL::GeneAdaptor - MySQL Database queries to generate and store 
 
 =head1 SYNOPSIS
 
-$gene_adaptor = $db_adaptor->get_GeneAdaptor();
+  use Bio::EnsEMBL::DBSQL::DBAdaptor;
+  
+  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+  
+  $gene_adaptor = $db->get_GeneAdaptor();
+
+  $gene = $gene_adaptor->fetch_by_dbID(1234);
+
+  $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000184129');
+
+  @genes = @{$gene_adaptor->fetch_all_by_external_name('BRCA2')};
+
+  $slice_adaptor = $db->get_SliceAdaptor;
+  $slice = $slice_adaptor->fetch_by_region('chromosome', '1', 1, 1000000);
+  @genes = @{$gene_adaptor->fetch_all_by_Slice($slice)};
+
 
 =head1 CONTACT
 
-  Arne Stabenau: stabenau@ebi.ac.uk
-  Elia Stupka  : elia@ebi.ac.uk
-  Ewan Birney  : birney@ebi.ac.uk
+Contact the EnsEMBL development list for questions or information:
+ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
+=head1 METHODS
 
 =cut
 
@@ -42,7 +56,6 @@ use Bio::EnsEMBL::Gene;
 
 use vars '@ISA';
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
-
 
 
 
@@ -242,16 +255,13 @@ sub fetch_all_by_domain {
                            "GROUP BY tr.gene_id");
 
   $sth->execute($domain);
-  my @gene_ids = ();
-  my $gene_id;
 
-  $sth->bind_columns(\$gene_id);
-  while($sth->fetch()) {
-    push @gene_ids, $gene_id;
-  }
+  my @array = @{$sth->fetchall_arrayref()};
+  $sth->finish();
+  
+  my @gene_ids = map {$_->[0]} @array;
 
-  my $constraint = "g.gene_id in (".join( ",", @gene_ids ).")";
-  return $self->generic_fetch( $constraint );
+  return $self->fetch_all_by_dbID_list(\@gene_ids);
 }
 
 
@@ -369,36 +379,34 @@ sub fetch_by_translation_stable_id {
 
 
 
-=head2 fetch_all_by_DBEntry
+=head2 fetch_all_by_external_name
 
   Arg [1]    : in $external_id
                the external identifier for the gene to be obtained
-  Example    : @genes = @{$gene_adaptor->fetch_all_by_DBEntry($ext_id)}
+  Example    : @genes = @{$gene_adaptor->fetch_all_by_external_name($ext_id)}
   Description: retrieves a list of genes with an external database 
-               idenitifier $external_id
-  Returntype : listref of Bio::EnsEMBL::DBSQL::Gene in contig coordinates
+               idenitifier $external_id.  The genes returned are in their
+               native coordinate system.  I.e. in the coordinate system they
+               are stored in the database in.  If another coordinate system
+               is required then the Gene::transfer or Gene::transform method 
+               can be used.
+  Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
-  Caller     : ?
+  Caller     : goview
 
 =cut
 
-sub fetch_all_by_DBEntry {
+sub fetch_all_by_external_name {
   my ( $self, $external_id) = @_;
-
-  my @genes = ();
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
 
-
   my @ids = $entryAdaptor->list_gene_ids_by_extids( $external_id );
-  foreach my $gene_id ( @ids ) {
-    my $gene = $self->fetch_by_dbID( $gene_id );
-    if( $gene ) {
-      push( @genes, $gene );
-    }
-  }
-  return \@genes;
+
+  return $self->fetch_all_by_dbID_list(\@ids);
 }
+
+
 
 
 =head2 store
@@ -726,17 +734,15 @@ sub _objs_from_sth {
   my %sr_name_hash;
   my %sr_cs_hash;
 
-  my ( $gene_id, $seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand,
-       $analysis_id, $type, $display_xref_id, $gene_description, $stable_id, 
-       $version, $external_name, $external_db, $external_status );  
+  my ( $gene_id, $seq_region_id, $seq_region_start, $seq_region_end, 
+       $seq_region_strand, $analysis_id, $type, $display_xref_id, 
+       $gene_description, $stable_id, $version, $external_name, $external_db, 
+       $external_status );  
 
-
-  $sth->bind_columns( \$gene_id, \$seq_region_id, \$seq_region_start, \$seq_region_end, 
-		      \$seq_region_strand, \$analysis_id, \$type, \$display_xref_id, 
-		      \$gene_description, \$stable_id, \$version, \$external_name, 
-		      \$external_db, \$external_status );
-
-
+  $sth->bind_columns( \$gene_id, \$seq_region_id, \$seq_region_start, 
+          \$seq_region_end, \$seq_region_strand, \$analysis_id, \$type, 
+          \$display_xref_id, \$gene_description, \$stable_id, \$version, 
+          \$external_name, \$external_db, \$external_status );
 
   my $asm_cs;
   my $cmp_cs;
@@ -744,6 +750,7 @@ sub _objs_from_sth {
   my $asm_cs_name;
   my $cmp_cs_vers;
   my $cmp_cs_name;
+
   if($mapper) {
     $asm_cs = $mapper->assembled_CoordSystem();
     $cmp_cs = $mapper->component_CoordSystem();
@@ -811,22 +818,22 @@ sub _objs_from_sth {
     #
     if($dest_slice) {
       if($dest_slice_start != 1 || $dest_slice_strand != 1) {
-	if($dest_slice_strand == 1) {
-	  $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-	  $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
-	} else {
-	  my $tmp_seq_region_start = $seq_region_start;
-	  $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-	  $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
-	  $seq_region_strand *= -1;
-	}
+        if($dest_slice_strand == 1) {
+          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+          $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+        } else {
+          my $tmp_seq_region_start = $seq_region_start;
+          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+          $seq_region_strand *= -1;
+        }
 
-	#throw away features off the end of the requested slice
-	if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-	  next FEATURE;
-	}
+        #throw away features off the end of the requested slice
+        if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+          next FEATURE;
+        }
       }
-
+      
       $slice = $dest_slice;
     }
 
@@ -834,46 +841,41 @@ sub _objs_from_sth {
 
     if( $display_xref_id ) {
       $display_xref = Bio::EnsEMBL::DBEntry->new_fast
-	(
-	 { 'dbID' => $display_xref_id,
-	   'adaptor' => $dbEntryAdaptor,
-	   'display_id' => $external_name,
-	   'dbname' => $external_db
-	 }
-	);
+        ({ 'dbID' => $display_xref_id,
+           'adaptor' => $dbEntryAdaptor,
+           'display_id' => $external_name,
+           'dbname' => $external_db
+         });
       $display_xref->status( $external_status );
-    }
-				
+    }				
 
     #finally, create the new gene
     push @genes, Bio::EnsEMBL::Gene->new
       ( '-analysis'      =>  $analysis,
-	'-type'          =>  $type,
-	'-start'         =>  $seq_region_start,
-	'-end'           =>  $seq_region_end,
-	'-strand'        =>  $seq_region_strand,
-	'-adaptor'       =>  $self,
-	'-slice'         =>  $slice,
-	'-dbID'          =>  $gene_id,
+        '-type'          =>  $type,
+        '-start'         =>  $seq_region_start,
+        '-end'           =>  $seq_region_end,
+        '-strand'        =>  $seq_region_strand,
+        '-adaptor'       =>  $self,
+        '-slice'         =>  $slice,
+        '-dbID'          =>  $gene_id,
         '-stable_id'     =>  $stable_id,
         '-version'       =>  $version,
         '-description'   =>  $gene_description,
-	'-external_name' =>  $external_name,
+        '-external_name' =>  $external_name,
         '-external_db'   =>  $external_db,
         '-external_status' => $external_status,
-	'-display_xref' => $display_xref );
+        '-display_xref' => $display_xref );
   }
 
   return \@genes;
 }
 
+
+
 =head2 fetch_by_maximum_DBLink
 
- Title   : fetch_by_maximum_DBLink
- Usage   : $geneAdaptor->fetch_by_maximum_DBLink($ext_id)
- Function: gets one gene out of the db with 
- Returns : gene object (with transcripts, exons)
- Args    : 
+ Description: DEPRECATED - use fetch_all_by_external_name instead
 
 
 =cut
@@ -1015,6 +1017,23 @@ sub get_stable_entry_info {
 
   return 1;
 }
+
+
+
+=head2 fetch_all_by_DBEntry
+
+  Description: DEPRECATED - Use fetch_all_by_external_name instead
+
+=cut
+
+sub fetch_all_by_DBEntry {
+  my $self = shift;
+  deprecate('This method has been deprecated because there was another.' .
+            "Method which did exactly the same thing.\n" .
+            'Use fetch_all_by_external_name instead.');
+  return $self->fetch_all_by_external_name(@_);
+}
+
 
 
 1;
