@@ -1384,10 +1384,14 @@ sub skip_SeqFeature {
 
 =cut
 
-sub rawcontig_ids {
+sub list_rawcontig_ids {
    my ($self) = @_;
    
-   return $self->_vmap->RawContig_ids;
+   my @contig_ids;
+   for my $contig ( $self->_vmap->get_all_RawContigs() ) {
+     push ( @contig_ids, $contig->id() );
+   }
+   return @contig_ids;
 }
 
 =head2 found_left_end

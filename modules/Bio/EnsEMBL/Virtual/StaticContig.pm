@@ -2835,6 +2835,37 @@ sub get_all_coding_Snps{
 }
 
 
+=head2 _sgp_select
+
+ Title   : 
+ Usage   : $sth = $self->prepare( "SELECT".
+           _sgp_select( "e.seq_start", "e.seq_end", "e.strand" ).
+
+ Function: Produces a string as part of sql-select statement
+           which does the start end strand selection
+ Example :
+ Returns : 
+ Args    : start end strand as column name strings
+
+
+=cut
+
+sub _sgp_select {
+  my $self = shift;
+  my ($start, $end, $strand ) = @_;
+
+  my $glob_start = $self->_global_start();
+  
+  my $str = "IF (sgp.raw_ori=1,
+                  ($start+sgp.chr_start-sgp.raw_start-$glob_start+1),
+                  (sgp.chr_start+sgp.raw_end-$end-$glob_start+1)),  
+             IF (sgp.raw_ori=1,
+                  ($end+sgp.chr_start-sgp.raw_start-$glob_start+1),
+                  (sgp.chr_start+sgp.raw_end-$start-$glob_start+1)), 
+             IF (sgp.raw_ori=1,$strand,(-$strand)) ";
+  return $str;
+}
+
 
 1;
 
