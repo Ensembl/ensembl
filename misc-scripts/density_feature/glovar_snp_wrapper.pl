@@ -10,12 +10,13 @@ Wrapper for glovar_snp_density.pl
     ./glovar_snp_density.pl
         --species=Homo_sapiens
         [--dry-run|-n]
+        [--avdump|-a]
 
 =head1 DESCRIPTION
 
 Wrapper for glovar_snp_density.pl to run it chromosome by chromosome. This is
 an attempt to avoid high memory footprints caused by a memory leak somerwhere
-in the API ...
+in the API. See glovar_snp_density.pl for more detailed documentation.
 
 =head1 LICENCE
 
@@ -49,17 +50,20 @@ use SiteDefs;
 use EnsWeb;
 use Getopt::Long;
 
-my ($species, $dry);
+my ($species, $dry, $avdump);
 &GetOptions(
     "species=s" => \$species,
     "dry-run"   => \$dry,
     "n"         => \$dry,
+    "avdump"    => \$avdump,
+    "a"         => \$avdump,
 );
 
 unless ($species) {
     print qq(Usage:
     ./glovar_snp_density.pl
         --species=Homo_sapiens
+        [--avdump|-a]
         [--dry-run|-n]\n\n);
     exit;
 }
@@ -69,8 +73,9 @@ $ENV{'ENSEMBL_SPECIES'} = $species;
 ## run glovar_snp_density.pl for each chromsome in this species
 my $command = "./glovar_snp_density.pl --species=$species";
 $command .= " -n" if ($dry);
+$command .= " -a" if ($avdump);
 foreach my $chr (@{$EnsWeb::species_defs->ENSEMBL_CHROMOSOMES}) {
     warn "$command --chr=$chr\n";
-    system("$command --chr=$chr");
+    system("$command --chr=$chr") == 0 or die "$command --chr=$chr failed: $!\n";
 }
 
