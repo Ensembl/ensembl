@@ -66,17 +66,6 @@ sub new {
 }
 
 
-=head2 start
-  Title    : start
-  Usage    : $start = $gene->start()
-  Function : Gets/Sets the lowest start coordinate of this genes exons. 
-             No consistancy check is performed and if this 
-             is used as a setter and potentially the start could be set to 
-             a value which does not correspond to the lowest  exon start.
-  Returns  : int
-  Args     : none, or the start coordinate of this gene
-=cut
-
 
 =head2 start
 
@@ -260,6 +249,18 @@ sub chr_name {
 }
 
 
+=head2 source
+
+  Arg [1]    : string $source
+  Example    : none
+  Description: get/set for attribute source
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
 sub source {
   my ($self, $source) = @_;
 
@@ -271,17 +272,19 @@ sub source {
 }
 
 
+
 =head2 is_known
 
- Title   : is_known
- Usage   : if( $gene->is_known ) 
- Function: returns true if there are any dblinks on the gene or 
-           transcript objects
- Example :
- Returns : 
- Args    :
+  Args       : none
+  Example    : none
+  Description: returns true if the Gene or one of its Transcripts have
+               DBLinks
+  Returntype : 0,1
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub is_known{
   my ($self) = @_;
@@ -303,14 +306,15 @@ sub is_known{
 
 =head2 adaptor
 
- Title   : adaptor
- Usage   :
- Function: give this genes GeneAdaptor if known
- Example :
- Returns : 
- Args    :
+  Arg [1]    : Bio::EnsEMBL::DBSQL::GeneAdaptor $adaptor
+  Example    : none
+  Description: get/set for attribute adaptor
+  Returntype : Bio::EnsEMBL::DBSQL::GeneAdaptor
+  Exceptions : none
+  Caller     : set only used by adaptor on store or retrieve
 
 =cut
+
 
 sub adaptor {
    my ($self, $arg) = @_;
@@ -323,15 +327,18 @@ sub adaptor {
 
 
 
+
 =head2 analysis
 
- Title   : analysis
- Usage   : $gene->analysis($analysisObject)
- Function: get/set this genes analysis object
- Returns : on get the analysis object
- Args    : newvalue (optional)
+  Arg [1]    : Bio::EnsEMBL::Analysis $analysis
+  Example    : none
+  Description: get/set for attribute analysis
+  Returntype : Bio::EnsEMBL::Analysis
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub analysis {
   my ($self,$value) = @_;
@@ -343,16 +350,18 @@ sub analysis {
 
 
 
+
 =head2 dbID
 
- Title   : dbID
- Usage   : $id = $obj->dbID();
- Function: internal db id if available
- Example :
- Returns : 
- Args    :
+  Arg [1]    : int $dbID
+  Example    : none
+  Description: get/set for attribute dbID
+  Returntype : int
+  Exceptions : none
+  Caller     : set only by adaptor on store or retrieve
 
 =cut
+
 
 sub dbID {
    my ($self, $arg) = @_;
@@ -367,12 +376,14 @@ sub dbID {
 
 =head2 external_name
 
- Title   : external_name
- Usage   : $ext_name = $obj->external_name();
- Function: external_name if available
- Example : 
- Returns : the external name of this gene
- Args    : new external name (optional)
+  Arg [1]    : string $external_name
+  Example    : none
+  Description: get/set for attribute external_name. It could be calculated
+               from dblinks in a species dependent way. Well introduce 
+               that later.
+  Returntype : string
+  Exceptions : none
+  Caller     : Lite::GeneAdaptor knows how to set it correct
 
 =cut
 
@@ -386,6 +397,21 @@ sub external_name {
   return $self->{'_external_name'};
 }
 
+
+
+=head2 external_db	
+
+  Arg [1]    : string $external_db
+  Example    : none
+  Description: get/set for attribute external_db. The db is the one that 
+               belongs to the external_name
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
 sub external_db {
   my ($self, $arg ) = @_;
 
@@ -398,20 +424,28 @@ sub external_db {
 
 
 
+
 =head2 description
 
- Title   : description
- Usage   : $gene->description
- Function: gets the gene description line. Setting is not allowed
- Example :
- Returns : a string
- Args    : none
+  Arg [1]    : (optional) string $description
+  Example    : none
+  Description: you can set get this argument. If not set its lazy loaded
+               from attached adaptor.
+  Returntype : string
+  Exceptions : if no GeneAdaptor is set and no description is there
+  Caller     : general
 
 =cut
 
+
 sub description {
-    my ($self) = @_;
+    my ($self, $arg) = @_;
     
+    if( defined $arg ) {
+      $self->{'_description'} = $arg;
+      return $arg;
+    }
+
     if( exists $self->{'_description'} ) {
       return $self->{'_description'};
     }
@@ -449,15 +483,18 @@ sub get_all_DBLinks {
 
 =head2 add_DBLink
 
- Title   : add_DBLink
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : Bio::Annotation::DBLink $link
+               a link is a database entry somewhere else.
+               Usually this is a Bio::EnsEMBL::DBEntry.
+  Example    : none
+  Description: will add  the link to the list of links already in the
+               gene object.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub add_DBLink{
   my ($self,$value) = @_;
@@ -477,19 +514,17 @@ sub add_DBLink{
 
 
 
-
 =head2 get_all_Exons
 
- Title   : get_all_Exons
- Usage   : foreach my $exon ( $gene->each_unique_Exon )
- Function: retrieves a listref of exons associated with this
-           gene, guaranteed to be nonredundant
- Example : @exons = @{$gene->get_all_Exons()};
- Returns : listref of Bio::EnsEMBL::Exon objects
- Args    : none
-
+  Args       : none
+  Example    : none
+  Description: a set off all the exons associated with this gene.
+  Returntype : listref Bio::EnsEMBL::Exon
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub get_all_Exons {
    my ($self,@args) = @_;
@@ -509,16 +544,18 @@ sub get_all_Exons {
 }
 
 
+
 =head2 type
 
- Title   : type
- Usage   : $obj->type($newval)
- Function: 
- Returns : value of type
- Args    : newvalue (optional)
-
+  Arg [1]    : string $type
+  Example    : none
+  Description: get/set for attribute type
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub type {
    my $obj = shift;
@@ -530,17 +567,20 @@ sub type {
 }
 
 
+
 =head2 add_Transcript
 
- Title   : add_Transcript
- Usage   : $gene->add_Transcript($tr)
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg  1     : Bio::EnsEMBL::Transcript $transcript
+  Example    : none
+  Description: adds another Transcript to the set of alternativly
+               spliced Transcripts off this gene. If it shares exons 
+               with another Transcript, these should be object-identical
+  Returntype : none
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub add_Transcript{
    my ($self,$trans) = @_;
@@ -558,16 +598,18 @@ sub add_Transcript{
 }
 
 
+
 =head2 get_all_Transcripts
 
- Title   : get_all_Transcripts
- Usage   : foreach $trans ( @{$gene->get_all_Transcripts})
- Function:
- Example :
- Returns : A listref of Transcript objects
- Args    :
+  Args       : none
+  Example    : none
+  Description: return the Transcripts in this gene
+  Returntype : listref Bio::EnsEMBL::Transcript
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub get_all_Transcripts {
   my ($self) = @_;
@@ -579,14 +621,17 @@ sub get_all_Transcripts {
 
 =head2 created
 
- Title   : created
- Usage   : $obj->created()
- Function: 
- Returns : value of created
- Args    :
-
+  Arg [1]    : string $created
+               The time the stable id for this gene was created. Not very well
+               maintained data (at release 9)
+  Example    : none
+  Description: get/set/lazy_load for the created timestamp
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub created{
     my ($self,$value) = @_;
@@ -606,16 +651,20 @@ sub created{
 
 }
 
+
 =head2 modified
 
- Title   : modified
- Usage   : $obj->modified()
- Function: 
- Returns : value of modified
- Args    : 
-
+  Arg [1]    : string $modified
+               The time the gene with this stable_id was last modified.
+               Not well maintained data (release 9)
+  Example    : none
+  Description: get/set/lazy_load of modified timestamp
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub modified{
     my ($self,$value) = @_;
@@ -635,15 +684,19 @@ sub modified{
 }
 
 
+
 =head2 version
 
- Title   : version
- Usage   : $obj->version()
- Function: 
- Returns : value of version
- Args    : 
+  Arg [1]    : int $version
+               A version number for the stable_id
+  Example    : nonen
+  Description: get/set/lazy_load for the version number
+  Returntype : int
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub version{
 
@@ -665,14 +718,15 @@ sub version{
 }
 
 
+
 =head2 stable_id
 
- Title   : stable_id
- Usage   : $obj->stable_id
- Function: 
- Returns : value of stable_id
- Args    : 
-
+  Arg [1]    : string $stable_id
+  Example    : ("ENSG0000000001")
+  Description: get/set/lazy_loaded stable id for this gene
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -696,6 +750,20 @@ sub stable_id{
 
 }
 
+
+
+=head2 _get_stable_entry_info
+
+  Args       : none
+  Example    : none
+  Description: does the lazy loading for all stable id related information
+  Returntype : none
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+
 sub _get_stable_entry_info {
    my $self = shift;
 
@@ -708,18 +776,6 @@ sub _get_stable_entry_info {
 }
 
 
-
-=head2 _dump
-
- Title   : _dump
- Usage   : dump data structure for debugging
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
 
 sub _dump{
    my ($self,$fh) = @_;
