@@ -100,7 +100,8 @@ sub _left_join {
 #  Caller     : internal
 
 sub _final_clause {
-  return "ORDER BY et.transcript_id, et.rank";
+  my $self = shift;
+  return $self->{'final_clause'} || '';
 }
 
 
@@ -153,6 +154,8 @@ sub fetch_all_by_Transcript {
   my @tables = $self->_tables();
   push @tables, ['exon_transcript', 'et'];
   $self->{'tables'} = \@tables;
+  $self->{'final_clause'} = "ORDER BY et.transcript_id, et.rank";
+
 
   my $constraint = "et.transcript_id = ".$transcript->dbID() .
                    " AND e.exon_id = et.exon_id";
@@ -161,10 +164,13 @@ sub fetch_all_by_Transcript {
 
   if( ! @$exons ) { return [] }
 
-  my @new_exons = map { $_->transfer( $transcript->slice() ) } @$exons;
+  my $slice = $transcript->slice();
+
+  my @new_exons = map { $_->transfer( $slice ) } @$exons;
 
   #un-override the table definition
   $self->{'tables'} = undef;
+  $self->{'final_clause'} = undef;
 
   return \@new_exons;
 }
@@ -565,13 +571,8 @@ sub get_stable_entry_info {
 
 =head2 fetch_all_by_gene_id
 
-  Arg [1]    : int $id
-               The identifier of the gene whose exons will be retrieved 
-  Example    : @exons = $exon_adaptor->fetch_all_by_gene_id(1234); 
-  Description: Retrieves all exons from the gene specified by $geneId
-  Returntype : listref of Bio::EnsEMBL::Exon in contig coordinates
-  Exceptions : thrown if $geneId is not defined  
-  Caller     : general
+  Description: DEPRECATED. This method should not be needed - Exons can
+               be fetched by Transcript.
 
 =cut
 
