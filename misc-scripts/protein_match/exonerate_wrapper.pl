@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use diagnostics;
 
+use Data::Dumper;
 use Getopt::Std;
 
 # $Id$
@@ -42,11 +43,13 @@ use Getopt::Std;
 # $[qts]_min: Minimum values on query, target, and score percentages
 #             (min score is as a percentage of best score per query)
 #             (-Q, -T, and -S flags).
+#
 # $fin:    File that is passed to the perl script rather than running
 #          exonerate (-f flag).
-# $fout:   File where the intermediate exonerate output should be
+# $finter: File where the intermediate exonerate output should be
 #          stored (this file is the suitable for use with the -f flag
-#          in later runs) (-o flag).
+#          in later runs) (-i flag).
+# $fout:   Where the output goeth (usually stdout) (-o flag).
 #
 #----------------------------------------------------------------------
 
@@ -63,9 +66,9 @@ sub usage
 
 	print STDERR <<EOT;
 Usage:	$0 [-h?]
-	$0 [-v] [-e path] [-q path] [-t path] [-o path]
-	$padding [-Q val] [-T val] [-S val] [-- opts]	
-	$0 [-v] [-f path] [-Q val] [-T val] [-S val]
+	$0 [-v] [-e path] [-q path] [-t path] [-i path]
+	$padding [-o path] [-Q val] [-T val] [-S val] [-- opts]	
+	$0 [-v] [-f path] [-o path] [-Q val] [-T val] [-S val]
 	$0 [-v] -d
 
 -h, -?   Show usage information (this text).
@@ -79,9 +82,12 @@ Usage:	$0 [-h?]
 -f path  Don't run exonerate, read from this properly formatted
 	 file instead.
 
--o path  Save intermediate exonerate output to the specified
+-i path  Save intermediate exonerate output to the specified
 	 file.  This file is properly formatted for use with
 	 the -f flag in later runs.
+
+-o path  Save the final output to the specified file instead of dumping
+         it on stdout.
 
 -d       Read configuration from "mapping_config.pl".  The
 	 configuration in that file overruns any other configuration
@@ -113,13 +119,14 @@ EOT
 }
 
 my %opts;
-if (!getopts('h?e:q:t:f:o:vQ:T:S:', \%opts) || defined $opts{h}) {
+if (!getopts('h?e:q:t:f:o:i:vQ:T:S:d', \%opts) || defined $opts{h}) {
     usage();
     exit(1);
 }
 
-my $fin   = $opts{f} if (defined $opts{f});
-my $fout  = $opts{o} if (defined $opts{o});
+my $fin    = $opts{f} if (defined $opts{f});
+my $finter = $opts{i} if (defined $opts{i});
+my $fout   = $opts{o} if (defined $opts{o});
 
 $e_cmd = $opts{e} if (defined $opts{e});
 $q_fa  = $opts{q} if (defined $opts{q});
@@ -128,11 +135,21 @@ $q_min = $opts{Q} if (defined $opts{Q});
 $t_min = $opts{T} if (defined $opts{T});
 $s_min = $opts{S} if (defined $opts{S});
 
-$s_min /= 100.0;
+if (defined $opts{d} && $opts{d} == 1) {
+    our %mapping_conf;
+    require 'mapping_conf.pl';
+
+    $e_cmd = $mapping_conf{exonerate}  if (exists $mapping_conf{exonerate});
+    $q_fa  = $mapping_conf{query}      if (exists $mapping_conf{query});
+    $t_fa  = $mapping_conf{pmatch_input_fa}
+	if (exists $mapping_conf{pmatch_input_fa});
+    $q_min = $mapping_conf{query_idt}  if (exists $mapping_conf{query_idt});
+    $t_min = $mapping_conf{target_idt} if (exists $mapping_conf{target_idt});
+}
 
 if (defined($fin) && length($fin) != 0 &&
-    defined($fout) && length($fout) != 0) {
-    die "Can't specify -f and -o at the same time\n";
+    defined($finter) && length($finter) != 0) {
+    die "Can't specify -f and -i at the same time\n";
 } elsif (! -R $q_fa) {
     die "Can't find or read file '$q_fa'\n";
 } elsif (! -R $t_fa) {
@@ -143,12 +160,12 @@ if (defined($fin) && length($fin) != 0 &&
 
 # Set default options for exonerate using environment variables (may be
 # overridden by command line options).
-$ENV{EXONERATE_EXONERATE_FSMMEMORY} = 512;
-$ENV{EXONERATE_EXONERATE_HSPDROPOFF} = 5;
-$ENV{EXONERATE_EXONERATE_HSPTHRESHOLD} = 30;
-$ENV{EXONERATE_EXONERATE_MODEL} = 'affine:local';
+$ENV{EXONERATE_EXONERATE_FSMMEMORY}      = 512;
+$ENV{EXONERATE_EXONERATE_HSPDROPOFF}     = 5;
+$ENV{EXONERATE_EXONERATE_HSPTHRESHOLD}   = 30;
+$ENV{EXONERATE_EXONERATE_MODEL}          = 'affine:local';
 $ENV{EXONERATE_EXONERATE_PROTEINWORDLEN} = 6;
-$ENV{EXONERATE_EXONERATE_WORDTHRESHOLD} = 3;
+$ENV{EXONERATE_EXONERATE_WORDTHRESHOLD}  = 3;
 
 my $e_ryo =
     '%qi\t%qal\t%ql\t%qab\t%qae\t%ti\t%tal\t%tl\t%tab\t%tae\t%p\t%s\t%C\n';
@@ -159,20 +176,28 @@ my $e_opt =
 my $cmd;
 if (defined($fin) && length($fin) != 0) {
     $cmd = "cat $fin";
-} elsif (defined($fout) && length($fout) != 0) {
-    $cmd = "$e_cmd $e_opt | tee $fout";
+} elsif (defined($finter) && length($finter) != 0) {
+    $cmd = "$e_cmd $e_opt | tee $finter";
 } else {
     $cmd = "$e_cmd $e_opt";
 }
 
-if (defined($opts{v}) && $opts{v} == 1) {
-    warn "Will execute and parse the output from " .
-	"the following command:\n$cmd\n"
+if (!defined($fout) || length($fout) == 0) {
+   $fout = '/dev/tty';
 }
 
-open(IN, "$cmd |") or die "Pipe failed: $!";
+if (defined($opts{v}) && $opts{v} == 1) {
+    warn "Will execute and parse the output from " .
+	"the following command:\n$cmd\n";
+    warn "Output goes to '$fout'\n";
+}
 
+open(IN,  "$cmd |") or die "Pipe failed: $!";
+open(OUT, ">$fout") or die "Can not open '$fout' for writing: $!";
+
+$s_min /= 100.0;
 my %r;
+
 while (defined(my $line = <IN>)) {
     # Perl script to calculate the percentage of identity
     # and reformat cigar lines.  Takes tab-delimited list in
@@ -242,7 +267,7 @@ foreach my $q (values %r) {
 	$t->{C} =~ s/([MDI])1([MDI])/$1$2/g;      # no lone 1
 	$t->{C} =~ s/^1([MDI])/$1/;               # no lone 1 at start
 
-	printf "%s,%g,%d,%d,%s,%g,%d,%d,%d,%s\n",
+	printf OUT "%s,%g,%d,%d,%s,%g,%d,%d,%d,%s\n",
 	    $t->{qi}, $t->{qp}, $t->{qab}, $t->{qae},
 	    $t->{ti}, $t->{tp}, $t->{tab}, $t->{tae},
 	    $t->{s}, $t->{C};
