@@ -90,8 +90,8 @@ sub new {
   Example    : foreach my $ms (@{$msa->fetch_all()}) {
                  print $ms->code(), ' ', $ms->name(), "\n";
                }
-  Description: Retrieves every MapSet defined in the DB
-  Returntype : listref of Bio::EnsEMBL::MapSets
+  Description: Retrieves every MiscSet defined in the DB
+  Returntype : listref of Bio::EnsEMBL::MiscSets
   Exceptions : none
   Caller     : general
 

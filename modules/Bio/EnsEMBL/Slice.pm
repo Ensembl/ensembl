@@ -2255,14 +2255,13 @@ sub get_all_MapFrags {
 
 =head2 has_MapSet
 
-  Description: Not sure how this function is used, but it probably
-               is not necessary.
+  Description: DEPRECATED use get_all_MiscFeatures instead
 
 =cut
 
 sub has_MapSet {
   my( $self, $mapset_name ) = @_;
-  deprecate('Not sure what this function was meant to do.');
+  deprecate('Use get_all_MiscFeatures instead');
   my $mfs = $self->get_all_MiscFeatures($mapset_name);
   return (@$mfs > 0);
 }

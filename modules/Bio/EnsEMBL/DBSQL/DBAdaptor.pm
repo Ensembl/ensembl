@@ -851,19 +851,6 @@ sub DESTROY {} # required due to AUTOLOAD
 #########################
 
 
-
-=head2 get_MapFragAdaptor
-
-  Description: MapFragAdaptor is deprecated. Use MiscFeatureAdaptor instead.
-
-=cut
-
-sub get_MapFragAdaptor {
-  my $self = shift;
-
-  return $self->get_adaptor( "MapFrag" );
-}
-
 =head2 get_CloneAdaptor
 
   Description: CloneAdaptor is deprecated.  Use SliceAdaptor instead.

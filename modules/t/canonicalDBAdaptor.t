@@ -36,8 +36,6 @@ $test_adaptor = $db->get_ProteinFeatureAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor"));
 #$test_adaptor = $db->get_ProteinAdaptor();
 #ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinAdaptor"));
-#$test_adaptor = $db->get_MapFragAdaptor();
-#ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::MapFragAdaptor"));
 #$test_adaptor = $db->get_CloneAdaptor();
 #ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::CloneAdaptor"));
 $test_adaptor = $db->get_PredictionTranscriptAdaptor();
