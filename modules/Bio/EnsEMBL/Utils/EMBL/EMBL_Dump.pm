@@ -64,6 +64,7 @@ use Exporter;
 use strict;
 use Carp;
 use Bio::Species;
+use Bio::Annotation::Comment;
 
 @ISA = ('Exporter');
 
