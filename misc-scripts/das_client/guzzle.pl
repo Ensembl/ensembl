@@ -157,14 +157,6 @@ my $use_graphics = 1;
 my $use_simple_mapping = 1;
 my $use_align_mapping = 1;
 
-if ($use_align_mapping) {
-    # Where you keep Ensembl modules (this is for
-    # Bio::EnsEMBL::Mapper which is not part of Bioperl)
-
-    use lib qw(/home/ak/ensembl-cvs/ensembl/modules);
-}
-
-
 # No servicable parts inside...
 #---------------------------------------------------------------
 
@@ -188,7 +180,7 @@ if ($use_align_mapping) {
     require Storable;
     import Storable 'dclone';
 
-    require Bio::EnsEMBL::Mapper;
+    require Mapper;
 }
 
 my $use_mapping = ($use_align_mapping || $use_simple_mapping);
@@ -297,7 +289,7 @@ sub do_query
             #    thing).
 	    #
             # 2. Parse the cigar line and build a
-            #    Bio::EnsEMBL::Mapper object from it.
+            #    Mapper object from it.
 	    #
             # 3. If a range was specified, map it into the
             #    target coordinate system.
@@ -322,7 +314,7 @@ sub do_query
 		last if ($qi gt $seqid);
 		next if ($qi ne $seqid);
 
-		my $map = new Bio::EnsEMBL::Mapper('queryCOORD', 'targetCOORD');
+		my $map = new Mapper('queryCOORD', 'targetCOORD');
 
 		my ($qpos, $tpos) = ($qab, $tab);
 
@@ -359,7 +351,7 @@ sub do_query
 			'queryCOORD');
 
 		    foreach my $mapped (@mapped) {
-			next if ($mapped->isa('Bio::EnsEMBL::Mapper::Gap'));
+			next if ($mapped->isa('Gap'));
 			$range = ':' . $mapped->start . ',' .  $mapped->end;
 			push(@{ $query{$ti}{SEGMENT} }, $ti . $range);
 		    }
@@ -431,7 +423,7 @@ sub do_query
 				$resultcopy->{segment} = $result->{segment};
 
 				if ($mapped[$i]->
-					isa('Bio::EnsEMBL::Mapper::Gap')) {
+					isa('Gap')) {
 				    $resultcopy->{type}{label} .=
 					" [fragment " .  (1 + $i) . " (GAP)]";
 				} else {
@@ -444,7 +436,7 @@ sub do_query
 			    # Will take it off the display
 			    $result->group('NOSHOW');
 
-			} elsif ($mapped[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+			} elsif ($mapped[0]->isa('Gap')) {
 			    $result->group($result->group .
 				" [unmappable in $seqid]");
 			} else {

@@ -49,19 +49,15 @@ Internal methods are usually preceded with a _
 
 =cut
 
-package Bio::EnsEMBL::Mapper;
+package Mapper;
 use vars qw(@ISA);
 use strict;
 
 
-use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::Mapper::Pair;
-use Bio::EnsEMBL::Mapper::Unit;
-use Bio::EnsEMBL::Mapper::Coordinate;
-use Bio::EnsEMBL::Mapper::Gap;
-
-
-@ISA = qw(Bio::EnsEMBL::Root);
+use Pair;
+use Unit;
+use Coordinate;
+use Gap;
 
 
 sub new {
@@ -142,7 +138,7 @@ sub map_coordinates{
 
    if( !defined $hash->{uc($id)} ) {
        # one big gap!
-       my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, $end);
+       my $gap = Gap->new($start, $end);
        return $gap;
    }
 
@@ -165,8 +161,7 @@ sub map_coordinates{
 
        if( $start < $self_coord->{'start'} ) {
 	   # gap detected
-	   my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, 
-						    $self_coord->{'start'}-1);
+	   my $gap = Gap->new($start, $self_coord->{'start'}-1);
 	
 	   push(@result,$gap);
            $start = $gap->{'end'}+1;
@@ -205,7 +200,7 @@ sub map_coordinates{
 	   }
        }
 
-       my $res = Bio::EnsEMBL::Mapper::Coordinate->new($target_coord->{'id'},
+       my $res = Coordinate->new($target_coord->{'id'},
 						     $target_start,
 						     $target_end,
 						     $pair->{'ori'} * $strand);
@@ -216,12 +211,12 @@ sub map_coordinates{
    }
 
    if( !defined $last_used_pair ) {
-       my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, $end);
+       my $gap = Gap->new($start, $end);
        push(@result,$gap);
 
    } elsif( $last_used_pair->{$from}->{'end'} < $end ) {
        # gap at the end
-       my $gap = Bio::EnsEMBL::Mapper::Gap->new(
+       my $gap = Gap->new(
 			   $last_used_pair->{$from}->{'end'} + 1,
 			   $end);
        push(@result,$gap);
@@ -346,14 +341,14 @@ sub add_map_coordinates{
        $self->throw("Cannot deal with mis-lengthed mappings so far");
    }
 
-   my $pair = Bio::EnsEMBL::Mapper::Pair->new();
+   my $pair = Pair->new();
 
-   my $from = Bio::EnsEMBL::Mapper::Unit->new();
+   my $from = Unit->new();
    $from->start($contig_start);
    $from->end($contig_end);
    $from->id($contig_id);
 
-   my $to = Bio::EnsEMBL::Mapper::Unit->new();
+   my $to = Unit->new();
    $to->start($chr_start);
    $to->end($chr_end);
    $to->id($chr_name);

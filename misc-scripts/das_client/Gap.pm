@@ -39,15 +39,11 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 
-package Bio::EnsEMBL::Mapper::Gap;
+package Gap;
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::EnsEMBL::Root
-
-use Bio::EnsEMBL::Root;
-
-@ISA = qw(Bio::EnsEMBL::Root);
 
 # new() is written here 
 

@@ -38,16 +38,9 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 
-package Bio::EnsEMBL::Mapper::Coordinate;
+package Coordinate;
 use vars qw(@ISA);
 use strict;
-
-# Object preamble - inheriets from Bio::EnsEMBL::Root
-
-use Bio::EnsEMBL::Root;
-
-
-@ISA = qw(Bio::EnsEMBL::Root);
 
 sub new {
   my($class, $id, $start, $end, $strand) = @_;
