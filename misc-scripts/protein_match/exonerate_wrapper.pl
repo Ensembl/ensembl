@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use diagnostics;
 
-use Data::Dumper;
+#use Data::Dumper;
 use Getopt::Std;
 use IO::Handle;
 
@@ -31,7 +31,7 @@ use IO::Handle;
 # 7	Alignment start in query	integer
 # 8	Alignment end in query		integer
 # 9	Score				integer
-# 10	Cigar line			string
+# 10	Cigar line (Ensembl style)	string
 #
 #----------------------------------------------------------------------
 #
@@ -56,7 +56,7 @@ use IO::Handle;
 
 my $q_fa='/acari/work4/mongin/anopheles_mai/mapping/Primary/peptides_new.fa';
 my $t_fa='/acari/work4/mongin/anopheles_mai/mapping/Primary/total.fa';
-my $e_cmd='/acari/work2/gs2/gs2/local/OSF1/bin/exonerate';
+my $e_cmd='/usr/local/ensembl/bin/exonerate-0.7.1';
 my $q_min=25;
 my $t_min=25;
 my $s_min=99;
@@ -177,16 +177,12 @@ if (defined($fin) && length($fin) != 0 &&
 # Set default options for exonerate using environment variables (may be
 # overridden by command line options).
 $ENV{EXONERATE_EXONERATE_FSMMEMORY}      = 512;
-$ENV{EXONERATE_EXONERATE_HSPDROPOFF}     = 5;
-$ENV{EXONERATE_EXONERATE_HSPTHRESHOLD}   = 30;
 $ENV{EXONERATE_EXONERATE_MODEL}          = 'affine:local';
-$ENV{EXONERATE_EXONERATE_PROTEINWORDLEN} = 6;
-$ENV{EXONERATE_EXONERATE_WORDTHRESHOLD}  = 3;
 
 my $e_ryo =
     '%qi\\\t%qal\\\t%ql\\\t%qab\\\t%qae\\\t' .
     '%ti\\\t%tal\\\t%tl\\\t%tab\\\t%tae\\\t' .
-    '%p\\\t%s\\\t%C\\\n';
+    '%pi\\\t%s\\\t%C\\\n';
 
 my $e_opt =
     "--showalignment no --showvulgar no -q $q_fa -t $t_fa --ryo $e_ryo " .
