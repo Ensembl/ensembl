@@ -52,36 +52,64 @@ use Bio::EnsEMBL::Chromosome;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-# we inheriet new of BaseAdaptor
-
+# new inherited from BaseAdaptor
 
 =head2 fetch_by_dbID
 
   Arg 1     : txt $chromosome_name
-  Function  : return a chromosome object from the name for the chromosome.
-              Uses static_golden_path ??
+  Function  : return a chromosome object from the dbID of the chromosome.
   Returntype: Bio::EnsEMBL::Chromosome
   Exceptions: if chromosome_name not present in static_golden_path table
   Caller    : ??
 
 =cut
 
-
 sub fetch_by_dbID {
-   my ($self,$id) = @_;
+  my ($self,$id) = @_;
 
-   # should check is correct!
-   my $sth= $self->prepare("select chr_name from static_golden_path where chr_name = '$id' limit 1");
-   $sth->execute;
-   my $a = $sth->fetchrow_arrayref();
-   if( !defined $a ) {
-       $self->throw("No chromosome of $id");
-   }
+  my $chr = (); 
 
+  unless(defined $self->{'_chr_cache'} ) {
+    $self->{'_chr_cache'} = {};
+  }
 
-   my $chr = Bio::EnsEMBL::Chromosome->new( -adaptor => $self,-chrname => $id);
+  #
+  # If there is not already a cached version of this chromosome pull it
+  # from the database and add it to the cache.
+  #
+  unless($chr = $self->{'_chr_cache'}->{$id}) {
+    my $sth = $self->prepare( "SELECT name, known_genes, unknown_genes, 
+                                      snps, length
+                               FROM chromosome
+                               WHERE chromosome_id = $id" );
+    $sth->execute();
+    
+    my($name, $known_genes, $unknown_genes, $snps, $length);
+    $sth->bind_columns(\$name,\$known_genes,\$unknown_genes,\$snps,\$length); 
+    $sth->fetch();
+   
 
-   return $chr;
+    if($@) {
+      $self->throw("Could not create chromosome from dbID $id\n" .
+		   "Exception: $@\n");
+    }
+
+    unless($name) {
+      $self->throw("Could determine chromosome name from dbID $id\n");
+    }
+
+    $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
+					 -chrname => $name,
+					 -chromosome_id => $id,
+					 -known_genes => $known_genes,
+					 -unknown_genes => $unknown_genes,
+					 -snps => $snps,
+					 -length => $length );
+
+    $self->{'_chr_cache'}->{$id} = $chr;
+  }
+
+  return $chr;
 }
 
 
@@ -97,12 +125,13 @@ sub fetch_by_dbID {
 
 
 sub fetch_by_chrname{
-   my ($self,$id) = @_;
+   my ($self,$chr_name) = @_;
 
-   # for the moment, chain to fetch_by_dbID, but sometime this will change
-   return $self->fetch_by_dbID($id);
+   #Convert the name to the dbID
+   my $dbID = $self->get_dbID_by_chrname($chr_name);
+   
+   return $self->fetch_by_dbID($dbID);
 }
-
 
 
 =head2 get_landmark_MarkerFeatures_old
@@ -182,7 +211,6 @@ sub get_landmark_MarkerFeatures_old{
 
 =cut
 
-
 sub get_landmark_MarkerFeatures{
    my ($self,$chr_name,$glob) = @_;
 
@@ -234,5 +262,34 @@ sub get_landmark_MarkerFeatures{
 }
 
 
+=head2 get_dbID_from_chrname
+
+  Arg  1    : txt $chr_name
+  Function  : Given a chromosome name of the format 'chrN' returns the dbID
+              of the given chromosome
+  Returntype: int
+  Exceptions: none
+  Caller    : ??
+
+=cut
+
+sub get_dbID_by_chrname {
+  my ($self, $chr_name) = @_;
+
+  unless (defined $self->{_chrname_mapping}) {
+    $self->{_chrname_mapping} = {};
+
+    #get the chromo names and ids from the database
+    my $sth = $self->prepare('SELECT name, chromosome_id FROM chromosome');
+    $sth->execute();
+    
+    #Construct the mapping of chromosome name to id
+    while(my $a = $sth->fetchrow_arrayref()) {
+      $self->{_chrname_mapping}->{$a->[0]} = $a->[1];
+    }
+  }
+
+  return $self->{_chrname_mapping}->{$chr_name};
+}    
 
 

@@ -64,10 +64,19 @@ sub new {
   my $self = {};
   bless $self,$class;
 
-  my ($chr,$start,$end,$strand,$type,$adaptor, $dbID) = $self->_rearrange([qw(CHR_NAME CHR_START CHR_END STRAND ASSEMBLY_TYPE ADAPTOR DBID)],@args);
+  my ($chr,$start,$end,$strand,$type,$adaptor, $dbID) = 
+    $self->_rearrange([qw(CHR_NAME 
+			  CHR_START 
+			  CHR_END 
+			  STRAND 
+			  ASSEMBLY_TYPE 
+			  ADAPTOR 
+			  DBID)],
+		      @args);
 
   if( !defined $chr || !defined $start || !defined $end || !defined $type ) {
-    print "Chr: " . $chr . "\t" . "Start: " . $start . "\t" . "End: " . $end . "\t" . "Type: " . $type . "\n";
+    print "Chr: " . $chr . "\t" . "Start: " . $start . "\t" . 
+      "End: " . $end . "\t" . "Type: " . $type . "\n";
     $self->throw("Do not have all the parameters for slice");
   }
 
@@ -591,6 +600,25 @@ sub id {
 }
 
 
+sub fetch_chromosome_length {
+  my ($self ) = @_;
+
+  my $ca = $self->adaptor->db->get_ChromosomeAdaptor();
+
+  return $ca->fetch_by_chrname($self->chr_name())->length();
+}
+
+        
+sub fetch_karyotype_band_start_end {
+   my ($self,@args) = @_;
+
+   my $kadp = $self->adaptor->db->get_KaryotypeBandAdaptor();
+   my @bands = $kadp->fetch_by_chromosome_start_end($self->chr_name(),
+						    $self->chr_start(),
+						    $self->chr_end());
+
+   return @bands; 
+}
+
 
 1;
-

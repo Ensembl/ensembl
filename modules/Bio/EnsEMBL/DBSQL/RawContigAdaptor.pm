@@ -64,9 +64,6 @@ sub new {
   my $self = $class->SUPER::new(@args);
 
   #Initialize caching data structures
-
-  #%$self->{_raw_contig_cache} = %{};
-
   tie %{$self->{_raw_contig_cache}}, 'Bio::Ensembl::Utils::Cache', RAW_CONTIG_CACHE_SIZE, {Debug =>0};
 
   return $self;
@@ -184,7 +181,7 @@ sub fetch_by_clone {
 # mainly used from RawContig object. 
 # Argument is a ready contig which needs its attributes filled
 
-sub fetch {
+sub fetch_attributes {
   my $self = shift;
   my $contig = shift;
   

@@ -34,13 +34,13 @@ more detailed information - check out StaticGoldenPathAdaptor for that
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. Internal 
+methods are usually preceded with a _
     
 =cut
 
 
 # Let the code begin...
-
 
 package Bio::EnsEMBL::Chromosome;
 use vars qw(@ISA);
@@ -48,25 +48,36 @@ use strict;
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Species;
 
-
-
 @ISA = qw( Bio::EnsEMBL::Root );
-
 
 sub new {
     my ($class,@args) = @_;
     
     my $self = {};
-    bless $self,$class;
 
-
-    my ($chrname,$adaptor) = $self->_rearrange([qw(CHRNAME ADAPTOR)],@args);
+    bless($self, $class);
+	 
+    my ( $chrname, $chromosome_id, $adaptor, $length, 
+	 $known_genes, $unknown_genes, $snps) = 
+	 $self->_rearrange([qw(CHRNAME
+			       CHROMOSOME_ID
+			       ADAPTOR 
+			       LENGTH 
+			       KNOWN_GENES
+			       UNKNOWN_GENES
+			       SNPS)], 
+			   @args);
 
     if( !defined $chrname || !defined $adaptor ) {
-	$self->throw("Badly formed chromosome");
+      $self->throw("Badly formed chromosome");
     }
+
     $self->adaptor($adaptor);
     $self->chrname($chrname);
+    $self->chromosome_id($chromosome_id);
+    $self->length($length);
+    $self->known_genes($known_genes);
+    $self->snps($snps);
 
     return $self;
 }
@@ -131,9 +142,58 @@ sub adaptor{
       $obj->{'adaptor'} = $value;
     }
     return $obj->{'adaptor'};
-
 }
 
+
+sub chromosome_id() {
+  my ($self, $id ) = @_;
+
+  if(defined $id) {
+    $self->{'chromosome_id'} = $id;
+  }
+
+  return $self->{'chromosome_id'};
+}
+
+sub length() {
+  my ($self, $length) = @_;
+
+  if(defined $length) {
+    $self->{'length'} = $length;
+  }
+
+  return $self->{'length'} = $length;
+}
+
+sub known_genes() {
+  my ($self, $known_genes) = @_;
+
+  if(defined $known_genes) {
+    $self->{'known_genes'} = $known_genes;
+  }
+
+  return $self->{'known_genes'};
+}
+
+sub unknown_genes() {
+  my ($self, $unknown_genes) = @_;
+  
+  if(defined $unknown_genes) {
+    $self->{'unknown_genes'} = $unknown_genes;
+  }
+
+  return $self->{'unknown_genes'};
+}
+			    
+sub snps() {
+  my($self, $snps) = @_;
+
+  if(defined $snps) {
+    $self->{'snps'} = $snps;
+  }
+
+  return $self->{'snps'}
+}
 
 # compiled successfull
 
