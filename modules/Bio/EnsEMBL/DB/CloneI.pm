@@ -324,8 +324,8 @@ sub virtualcontig{
    $vc->id($self->id);
    $vc->sv($self->embl_version);
    
-   my $created=localtime($self->created);
-   my $modified=localtime($self->modified);
+   my $created=localtime($self->created)." (CREATION DATE)";
+   my $modified=localtime($self->modified)." (LAST MODIFICATION DATE)";
    
    $vc->add_date($created);
    $vc->add_date($modified);
