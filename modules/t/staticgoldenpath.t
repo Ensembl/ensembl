@@ -190,7 +190,6 @@ $exon->created(1);
 $exon->modified(1);
 $exon->contig_id($vc2->id);
 $trans->add_Exon($exon);
-$exon{'exon-1'} = $exon;
 
 
 $sf = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
@@ -232,7 +231,6 @@ $exon->created(1);
 $exon->modified(1);
 $exon->contig_id($vc2->id);
 $trans->add_Exon($exon);
-$exon{'exon-2'} = $exon;
 
 $exon = Bio::EnsEMBL::Exon->new();
 $exon->id('exon-3');
