@@ -363,7 +363,7 @@ sub get_Protfeat_Adaptor {
     return $pfa;
 }
 
-sub get_Protfeat_adaptor2 {
+sub get_Protfeat_Adaptor2 {
     my( $self ) = @_;
     
     my( $pfa );

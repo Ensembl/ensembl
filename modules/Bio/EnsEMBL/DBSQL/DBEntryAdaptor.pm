@@ -30,7 +30,7 @@ package Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBEntry;
-
+use Bio::EnsEMBL::IdentityXref;
 
 use vars qw(@ISA);
 use strict;
@@ -256,7 +256,7 @@ sub _fetch_by_EnsObject_type {
   my $sth = $self->prepare( "
     SELECT Xref.xrefId, Xref.dbprimary_id, Xref.display_id,
            Xref.version, Xref.description,
-           exDB.db_name, exDB.release
+           exDB.db_name, exDB.release, oxr.objectxrefId
       FROM Xref, externalDB exDB, objectXref oxr 
      WHERE Xref.xrefId = oxr.xrefId
        AND Xref.externalDBId = exDB.externalDBId 
@@ -265,21 +265,51 @@ sub _fetch_by_EnsObject_type {
    " );
 
   $sth->execute();
-  while ( my $arrRef = $sth->fetchrow_arrayref() ) {
-    my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release ) =
-      @$arrRef;;
 
-    my $exDB = Bio::EnsEMBL::DBEntry->new
-      ( -adaptor => $self,
-	-dbID => $refID,
-	-primary_id => $dbprimaryId,
-	-display_id => $displayid,
-	-version => $version,
-	-release => $release,
-	-dbname => $dbname );
-  
+ 
+  while ( my $arrRef = $sth->fetchrow_arrayref() ) {
+    my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release, $objid ) =
+      @$arrRef;;
+    
+    my $exDB;
+
+    my $sth1 = $self->prepare( "
+      SELECT idt.query_identity , idt.target_identity
+      FROM   identityXref idt, objectXref oxr
+      WHERE  idt.objectxrefId = '$objid'
+    ");
+ 
+    $sth1->execute();
+    my ($queryid, $targetid) = $sth1->fetchrow_array();
+
+    if ((defined $queryid) || (defined $targetid)) {
+	$exDB = Bio::EnsEMBL::IdentityXref->new
+	    ( -adaptor => $self,
+	      -dbID => $refID,
+	      -primary_id => $dbprimaryId,
+	      -display_id => $displayid,
+	      -version => $version,
+	      -release => $release,
+	      -dbname => $dbname);
+	      
+	$exDB->query_identity($queryid);
+	$exDB->target_identity($targetid);
+
+    }
+    
+    else {
+	$exDB = Bio::EnsEMBL::DBEntry->new
+	    ( -adaptor => $self,
+	      -dbID => $refID,
+	      -primary_id => $dbprimaryId,
+	      -display_id => $displayid,
+	      -version => $version,
+	      -release => $release,
+	      -dbname => $dbname );
+    }
+    
     if( $desc ) {
-      $exDB->description( $desc );
+	$exDB->description( $desc );
     }
 
     
