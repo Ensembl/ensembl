@@ -1161,7 +1161,7 @@ sub get_all_DASFeatures{
                } elsif( $sf->seqname() =~ /\w{1,2}\d+/i) { 
                     #warn ("Got a clone feature: ", $sf->seqname(), "\n");
  	                push(@clone_features, $sf);
-               } elsif( $sf->seqname() eq '__ERROR__') { 
+               } elsif( $sf->das_type_id() eq '__ERROR__') { 
                     #Always push errors even if they aren't wholly within the VC
 	                push(@genomic_features, $sf);
                } elsif( $sf->seqname() eq '') { 
@@ -1194,6 +1194,12 @@ sub get_all_DASFeatures{
    foreach my $sf ( @chr_features ) {
        #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
        #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
+            #print STDERR "SC SEG ID: ",         $sf->seqname(), "\t";
+            #print STDERR "SC DSN: ",            $sf->das_dsn(), "\t";
+            #print STDERR "SC FEATURE START: ",  $sf->das_start(), "\t";
+            #print STDERR "SC FEATURE END: ",    $sf->das_end(), "\t";
+            #print STDERR "SC FEATURE STRAND: ", $sf->das_strand(), "\t";
+            #print STDERR "SC FEATURE TYPE: ",   $sf->das_type_id(), "\n";
        #print STDERR "FEATURE START: ",  $sf->start() , "\t";
        #print STDERR "FEATURE END: ",    $sf->end() , "\t";
        #print STDERR "FEATURE STRAND: ", $sf->strand() , "\t";
@@ -1234,16 +1240,15 @@ sub _convert_chrfeature_to_vc_coords{
     my $chr_start = $self->_global_start();
     my $chr_end   = $self->_global_end();
     
-	if($f->start() < $self->_global_start()){
-		print STDERR "DAS ERROR! Feature not on VC  between $chr_start and $chr_end: ";
-        print STDERR " START: ",  $f->das_start(), "\t";
-        print STDERR " END: ",    $f->das_end(), "\t";
-        print STDERR " STRAND: ", $f->das_strand(), "\t";
-       	print STDERR " ID: ",   $f->das_feature_id(), "\n";	
-		return();
-	}
-    $f->start($f->start() - $chr_start + 1);
-    $f->end($f->end() - $chr_start + 1);
+    if($f->start < $chr_start) {
+        print STDERR "DAS ERROR! Feature not on VC between $chr_start and $chr_end: START: ",
+                    $f->das_start,' END: ',$f->das_end,' STRAND: ',$f->das_strand, ' ID: ', $f->das_feature_id,
+                    "\n";
+        return ();
+    }
+        
+    $f->start( $f->start() - $chr_start +1 );
+    $f->end(   $f->end() - $chr_start  + 1);
     return($f);
 }
 
@@ -1290,6 +1295,7 @@ sub get_all_ExternalFeatures{
    ## Note that they should always return lists (possible empty) or bad things happen.
    
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
+	print STDERR "EXTFEATFACT: $extf\n";
        if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
 	   push(@web,$extf);
        } elsif( $extf->isa('Bio::EnsEMBL::ExternalData::DAS::DAS') ) {
@@ -1481,6 +1487,29 @@ sub get_all_FPCClones {
     return @fpcclones;
 }
 
+sub get_cloneset_on_chromosome {
+    my $self = shift;
+    my $cloneset = shift;
+    my $chr_name      = shift; 
+
+    my $mapdb;
+    eval {
+        $mapdb = $self->dbobj->mapdb();
+    };
+    if( $@ || !defined $mapdb ) {
+	    $self->warn("in get_all_clones_in_cloneset, unable to get mapdb. Returning empty list [$@]");
+	    return ();
+    }
+    my $fpcmap = $mapdb->get_Map('FPC');
+    $chr_name =~ s/chr//g;
+    my $chr_name_X = $self->_chr_name;
+    $chr_name_X =~ s/chr//g; 
+
+    my $chr = $fpcmap->get_ChromosomeMap($chr_name||$chr_name_X);
+    my $cloneset = $chr->get_cloneset_on_chromosome($cloneset, $chr_name);
+    return @$cloneset;
+}
+
 sub get_all_clones_in_cloneset {
     my $self = shift;
     my $cloneset = shift;
@@ -1571,7 +1600,7 @@ eval {
 		next;
 	    }
 	    
-	    if( defined $prev && $prev->end+$glob > $start && $synonym eq $prev->id) {
+	    if( defined $prev && $prev->end+$glob > $start && uc($synonym) eq uc($prev->id)) {
 		next;
 	    }
 
@@ -2040,6 +2069,24 @@ sub get_all_VirtualGenes_startend_lite {
         $self->_global_start, 
         $self->_global_end
     ); 
+}
+
+sub get_all_VirtualTranscripts_startend_lite {
+    my  $self = shift;
+    return $self->dbobj->get_LiteAdaptor->fetch_virtualtranscripts_start_end(
+        $self->_chr_name,
+        $self->_global_start,
+        $self->_global_end
+    );
+}
+
+sub get_all_VirtualGenscans_startend_lite {
+    my  $self = shift;
+    return $self->dbobj->get_LiteAdaptor->fetch_virtualgenscans_start_end(
+        $self->_chr_name,
+        $self->_global_start,
+        $self->_global_end
+    );
 }
 
 sub get_all_EMBLGenes_startend_lite {
