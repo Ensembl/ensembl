@@ -213,7 +213,7 @@ sub parse_file {
             }
         }
         else {
-            warn "Ignoring '$feature' feature: '$gtf_line'\n";
+            #warn "Ignoring '$feature' feature: '$gtf_line'\n";
             next GTF_LINE;
         }
         
@@ -263,7 +263,7 @@ sub parse_group_field {
             $exon_id = $value;
         }
         else {
-            warn "Ignoring group field element: '$tag_val'\n";
+            #warn "Ignoring group field element: '$tag_val'\n";
         }
     }
     
@@ -512,7 +512,7 @@ sub _correct_exon_phases {
         if ($exon_id eq $start_exon_id) {
             # First coding exon
             if (defined($exon_phase) and $exon_phase != 0) {
-                warn "Resetting phase for first coding exon '$exon_id' from '$exon_phase' to '0'\n";
+                #warn "Resetting phase for first coding exon '$exon_id' from '$exon_phase' to '0'\n";
             }
             $phase = 0;
             $exon->phase($phase);
@@ -524,7 +524,7 @@ sub _correct_exon_phases {
         }
         elsif (defined $phase) {
             if (defined($exon_phase) and $exon_phase != $phase) {
-                warn "Resetting phase for exon '$exon_id' from '$exon_phase' to '$phase'\n";
+                #warn "Resetting phase for exon '$exon_id' from '$exon_phase' to '$phase'\n";
             }
             $exon->phase($phase);
             $phase = $self->calculate_end_phase($phase, $exon->start, $exon->end, $exon->strand);
@@ -541,8 +541,8 @@ sub _correct_exon_phases {
             } else {
                 $phase = $self->calculate_end_phase($phase, $t_start, $exon->end, $exon->strand);
             }
-            warn "Transcript '$trans_id' ends in phase '$phase', not '0' in exon '$exon_id'\n"
-                unless $phase == 0;
+            #warn "Transcript '$trans_id' ends in phase '$phase', not '0' in exon '$exon_id'\n"
+                #unless $phase == 0;
             
             # We've reached the last coding exon
             last;

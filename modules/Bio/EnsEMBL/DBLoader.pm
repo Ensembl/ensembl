@@ -78,8 +78,9 @@ sub new{
    $string =~ /(\S+?)\/(\S+)/ || die "Could not parse [$string] as a ensembl database locator. Needs database_module/params";
    $module = $1;
    my $param = $2;
-
+  
    &_load_module($module);
+
    my @param = split(/;/,$param);
    foreach my $keyvalue ( @param ) {
        $keyvalue =~ /(\S+?)=(\S*)/ || do { warn("In loading $keyvalue, could not split into keyvalue for loading $module. Ignoring"); next; };
@@ -89,7 +90,7 @@ sub new{
 
        $hash{"-$key"} = $value;
    }
-   
+
    my @kv = %hash;
 
    return "$module"->new(%hash);

@@ -792,7 +792,6 @@ sub validate_prot_feature{
 
 }
 
-
 =head2 set_all_fields
 
  Title   : set_all_fields
@@ -809,29 +808,22 @@ sub validate_prot_feature{
 =cut
 
 sub set_all_fields{
-   my ($self,$start,$end,$strand,$score,$source,$primary,$seqname,$hstart,$hend,
-        $hstrand,$hscore, $hsource,$hprimary,$hseqname, $e_value, $perc_id, 
-        $phase, $end_phase) = @_;
+   my ($self,$start,$end,$strand,$score,$source,$primary,$seqname,$hstart,$hend,$hstrand,$hscore,$hsource,$hprimary,$hseqname) = @_;
 
-    $self->start($start);
-    $self->end($end);
-    $self->strand($strand);
-    $self->score($score);
-    $self->source_tag($source);
-    $self->primary_tag($primary);
-    $self->seqname($seqname);
-    $self->hstart($hstart);
-    $self->hend($hend);
-    $self->hstrand($hstrand);
-    $self->hscore($hscore);
-    $self->hsource_tag($hsource);
-    $self->hprimary_tag($hprimary);
-    $self->hseqname($hseqname);
-    $self->p_value    ($e_value)   if (defined $e_value);
-    $self->percent_id ($perc_id)   if (defined $perc_id);
-    $self->phase      ($phase)     if (defined $phase);
-    $self->end_phase  ($end_phase) if (defined $end_phase);
-
+   $self->start($start);
+   $self->end($end);
+   $self->strand($strand);
+   $self->score($score);
+   $self->source_tag($source);
+   $self->primary_tag($primary);
+   $self->seqname($seqname);
+   $self->hstart($hstart);
+   $self->hend($hend);
+   $self->hstrand($hstrand);
+   $self->hscore($hscore);
+   $self->hsource_tag($hsource);
+   $self->hprimary_tag($hprimary);
+   $self->hseqname($hseqname);
 
 }
 
@@ -886,25 +878,28 @@ sub id {
 }
 
 sub gffstring {
-    my ($self) = @_;
+   my ($self) = @_;
 
-    my $str;
-    #hope this doesn't slow things down too much
-    $str .= (defined $self->seqname)    ?   $self->seqname."\t"     :  "\t";
-    $str .= (defined $self->source_tag) ?   $self->source_tag."\t"  :  "\t";
-    $str .= (defined $self->primary_tag)?   $self->primary_tag."\t" :  "\t";
-    $str .= (defined $self->start)      ?   $self->start."\t"       :  "\t";
-    $str .= (defined $self->end)        ?   $self->end."\t"         :  "\t";
-    $str .= (defined $self->strand)     ?   $self->strand."\t"      :  ".\t";
-    $str .= (defined $self->score)      ?   $self->score."\t"       :  "\t";
-    $str .= (defined $self->phase)      ?   $self->phase."\t"       :  ".\t";
-    $str .= (defined $self->hseqname)   ?   $self->hseqname."\t"    :  "\t";
-    $str .= (defined $self->hstart)     ?   $self->hstart."\t"      :  "\t";
-    $str .= (defined $self->hend)       ?   $self->hend."\t"        :  "\t";
-    $str .= (defined $self->hstrand)    ?   $self->hstrand."\t"     :  "\t";
-    $str .= (defined $self->hphase)     ?   $self->hphase."\t"      :  ".\t";
-    
-    return $str;
+   my $str = $self->seqname . "\t" . $self->source_tag . "\t" . 
+          $self->primary_tag . "\t" . $self->start . "\t" . $self->end . "\t" ;
+
+   my $strand = ".";
+   if ($self->strand == 1) {
+       $strand = "+";
+   } elsif ($self->strand == -1) {
+       $strand = "-";
+   }
+
+   $str .= $self->score .    "\t" . $strand . "\t.\t" ;     
+   $str .= $self->hseqname . "\t" . $self->hstart . "\t" . 
+           $self->hend     . "\t" . $self->hstrand ;
+
+   return $str;
+}
+
+
+sub has_tag {
+    return 0;
 }
 
 =head2 percent_id
@@ -929,28 +924,6 @@ sub percent_id {
 
 }
 
-
-=head2 hpercent_id
-
- Title   : hpercent_id
- Usage   : $percent_id = $featpair->hpercent_id
-           $featpair->hpercent_id($pid)
- Function: Get/set on the percent_id of feature2
- Returns : integer
- Args    : none
-
-=cut
-
-sub hpercent_id {
-    my ($self,$value) = @_;
-    
-    if (defined($value)) 
-    {
-	    return $self->feature2->percent_id($value);
-    }     
-	return $self->feature2->percent_id();
-}
-
 =head2 p_value
 
  Title   : p_value
@@ -972,115 +945,5 @@ sub p_value {
 	return $self->feature1->p_value();
 
 }
-
-=head2 hp_value
-
- Title   : hp_value
- Usage   : $p_value = $featpair->hp_value
-           $featpair->hp_value($p_value)
- Function: Get/set on the p_value of feature2
- Returns : integer
- Args    : none
-
-=cut
-
-sub hp_value {
-    my ($self,$value) = @_;
-    
-    if (defined($value)) 
-    {
-	    return $self->feature2->p_value($value);
-    }     
-	return $self->feature2->p_value();
-}
-
-=head2 phase
-
- Title   : phase
- Usage   : $phase = $feat->phase()
-           $feat->phase($phase)
- Function: get/set on start phase of predicted feature1
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
-
-=cut
-
-sub phase {
-    my ($self, $value) = @_;
-    
-    if (defined($value)) 
-    {
-        $self->feature1->phase($value);
-    }
-    return $self->feature1->phase();
-}
-
-=head2 end_phase
-
- Title   : end_phase
- Usage   : $end_phase = $feat->end_phase()
-           $feat->end_phase($end_phase)
- Function: get/set on end phase of predicted feature1
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
-
-=cut
-
-sub end_phase {
-    my ($self, $value) = @_;
-    
-    if (defined($value)) 
-    {
-        $self->feature1->end_phase($value);
-    }
-    return $self->feature1->end_phase();
-}
-
-=head2 hphase
-
- Title   : hphase
- Usage   : $hphase = $fp->hphase()
-           $fp->hphase($hphase)
- Function: get/set on start hphase of predicted feature2
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
-
-=cut
-
-sub hphase {
-    my ($self, $value) = @_;
-    if (defined($value)) 
-    {
-        $self->feature2->phase($value);
-    }
-    return $self->feature2->phase();
-    
-}
-
-=head2 hend_phase
-
- Title   : hend_phase
- Usage   : $hend_phase = $feat->hend_phase()
-           $feat->hend_phase($hend_phase)
- Function: get/set on end phase of predicted feature2
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
-
-=cut
-
-sub hend_phase {
-    my ($self, $value) = @_;
-    
-    if (defined($value)) 
-    {
-        $self->feature2->end_phase($value);
-    }
-    return $self->feature2->end_phase();
-}
-
-
-sub has_tag {
-    return 0;
-}
-
+                   
 1;

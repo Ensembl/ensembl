@@ -203,6 +203,7 @@ sub add_Exon{
    my ($self,$exon) = @_;
 
    #yup - we are going to be picky here...
+
    if( ! $exon->isa("Bio::EnsEMBL::Exon") ) {
        $self->throw("$exon is not a Bio::EnsEMBL::Exon!");
    }
@@ -272,26 +273,42 @@ sub flush_Exon{
    $self->{'_trans_exon_array'} = [];
 }
 
-sub first_exon {
-    my ($self) = @_;
-    {
-        my($pkg, $file, $line) = caller(0);
-        $self->warn("In file '$file', package '$pkg' line $line\n".
-             "please switch your code to call 'start_exon'\n".
-             "'first_exon' is now deprecated\n");
-    }
-    return $self->start_exon;
+=head2 first_exon
+
+ Title   : first_exon
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub first_exon{
+   my ($self,@args) = @_;
+   my @temp = @{$self->{'_trans_exon_array'}};
+
+   return shift @temp;
 }
 
-sub last_exon {
-    my ($self) = @_;
-    {
-        my($pkg, $file, $line) = caller(0);
-        $self->warn("In file '$file', package '$pkg' line $line\n".
-             "please switch your code to call 'end_exon'\n".
-             "'last_exon' is now deprecated\n");
-    }
-    return $self->end_exon;
+=head2 last_exon
+
+ Title   : last_exon
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub last_exon{
+   my ($self) = @_;
+   my @temp = @{$self->{'_trans_exon_array'}};
+
+   return pop @temp;
 }
 
 =head2 translatable_exons
@@ -370,8 +387,7 @@ sub translateable_exons{
 	       }
 
 	       $stexon->start($self->translation->start());
-           #commented out by MAQ - this was breaking genscan parsing
-	       #$stexon->phase(0);             # MC translation is always phase 0.
+	       $stexon->phase(0);             # MC translation is always phase 0.
 	       $stexon->end($exon->end);
 
 	       #print STDERR "Setting start end to " . $stexon->start   . "\t" . $stexon->end  ."\n";
@@ -383,8 +399,7 @@ sub translateable_exons{
 	       }
 	       $stexon->end($self->translation->start());
 	       $stexon->start($exon->start);
-	       #commented out by MAQ - this was breaking genscan parsing
-           #$stexon->phase(0);             # MC translation is always phase 0.
+	       $stexon->phase(0);             # MC translation is always phase 0.
 	   }
 	   push(@out,$stexon);
 	   last;
@@ -398,126 +413,127 @@ sub translateable_exons{
 	   my $endexon = new Bio::EnsEMBL::Exon;
 	   
 	   $endexon->contig_id($exon->contig_id);
-	   $endexon->clone_id($exon->clone_id);
-	   $endexon->strand($exon->strand);
-	   $endexon->phase($exon->phase);
-	   $endexon->attach_seq($exon->entire_seq());
-	   $endexon->id($exon->id);
+	    $endexon->clone_id($exon->clone_id);
+	    $endexon->strand($exon->strand);
+	    $endexon->phase($exon->phase);
+	    $endexon->attach_seq($exon->entire_seq());
+	    $endexon->id($exon->id);
 
-	   if( $exon->strand == 1 ) {
-	       if( $self->translation->end() > $exon->end ) {
-		   $self->throw("Bad news. Attempting to say that this translation is inside this exon, but outside".$exon->id." ".$exon->end()." ".$self->translation->end()."\n");
-	       }
+	    if( $exon->strand == 1 ) {
+		if( $self->translation->end() > $exon->end ) {
+		    $self->throw("Bad news. Attempting to say that this translation is inside this exon, but outside".$exon->id." ".$exon->end()." ".$self->translation->end()."\n");
+		}
 
-	       $endexon->start($exon->start());
-	       $endexon->end  ($self->translation->end());
+		$endexon->start($exon->start());
+		$endexon->end  ($self->translation->end());
 
-	   } else {
-	       if( $self->translation->end() < $exon->start ) {
-		   $self->throw("Bad news. Attempting to say that this translation is inside this exon (reversed), but outside".$exon->id." ".$exon->start()." ".$self->translation->end()."\n");
-	       }
-	       $endexon->start($self->translation->end());
-	       $endexon->end($exon->end);
-	   }
-	   push(@out,$endexon);
-	   last;
-       } else {
-	   push(@out,$exon);
-       }
-   }
+	    } else {
+		if( $self->translation->end() < $exon->start ) {
+		    $self->throw("Bad news. Attempting to say that this translation is inside this exon (reversed), but outside".$exon->id." ".$exon->start()." ".$self->translation->end()."\n");
+		}
+		$endexon->start($self->translation->end());
+		$endexon->end($exon->end);
+	    }
+	    push(@out,$endexon);
+	    last;
+	} else {
+	    push(@out,$exon);
+	}
+    }
 
-   if( !defined $exon || $exon->id ne $self->translation->end_exon_id()) {
-       $self->throw("Unable to find end translation exon");
-   }
+    if( !defined $exon || $exon->id ne $self->translation->end_exon_id()) {
+	$self->throw("Unable to find end translation exon");
+    }
 
 
-   return @out;
-}
+    return @out;
+ }
 
 
 =head2 split_Transcript_to_Partial
 
- Title   : split_Transcript_to_Partial
- Usage   : @trans = $trans->split_Transcript_to_Partial
- Function: splits a transcript with potential non spliceable
-           exons into a set of partial transcripts, from start/end
-           of the Translation if the second argument is true
- Example :
- Returns : an array of Bio::EnsEMBL::Transcript objects
- Args    :
+  Title   : split_Transcript_to_Partial
+  Usage   : @trans = $trans->split_Transcript_to_Partial
+  Function: splits a transcript with potential non spliceable
+	    exons into a set of partial transcripts, from start/end
+	    of the Translation if the second argument is true
+  Example :
+  Returns : an array of Bio::EnsEMBL::Transcript objects
+  Args    :
 
 
 =cut
 
-sub split_Transcript_to_Partial{
-   my ($self,$on_translate) = @_;
+ sub split_Transcript_to_Partial{
+    my ($self,$on_translate) = @_;
 
 
-   if( $on_translate == 1 && ! defined $self->translation ) {
-       $self->throw("Attempting to split Transcript on translation, but not there...");
-   }
-   my @exons;
-   if( $on_translate == 1 ) {
-       @exons = $self->translateable_exons();
-   } else {
-       @exons = $self->each_Exon;
-   }
+    if( $on_translate == 1 && ! defined $self->translation ) {
+	$self->throw("Attempting to split Transcript on translation, but not there...");
+    }
+    my @exons;
+    if( $on_translate == 1 ) {
+	@exons = $self->translateable_exons();
+    } else {
+	@exons = $self->each_Exon;
+    }
 
-   # one exon genes - easy to handle.
-   if( $#exons == 0 ) {
-       return $self;
-   }
+    # one exon genes - easy to handle.
+    if( $#exons == 0 ) {
+	return $self;
+    }
 
-   # find the start exon;
+    # find the start exon;
 
-   my $prev;
-
-
-   $prev = shift @exons;
-   
-   my $l = $#exons;
-
-   my $t;
-   my @out;
+    my $prev;
 
 
-   TRANSCRIPT :
-   while ( $#exons >= 0 ) {
+    $prev = shift @exons;
+
+    my $l = $#exons;
+
+    my $t;
+    my @out;
 
 
-       # make a new transcript, add the old exon
-       $t = $self->new();
-       $t->id($self->id);
+    TRANSCRIPT :
+    while ( $#exons >= 0 ) {
+	# MC - we are allowing split phases within a contig now.
 
-       $t->add_Exon($prev);
-       $t->is_partial(1);
+	# make a new transcript, add the old exon
+	$t = $self->new();
+	$t->id($self->id);
 
-       push(@out,$t);
+	$t->add_Exon($prev);
+	$t->is_partial(1);
 
-       while( my $exon = shift @exons ) {
-	   if( $exon->contig_id eq $prev->contig_id && $exon->phase == $prev->end_phase) {
-	       # add it
-	       $t->add_Exon($exon);
-	       $prev = $exon;
-	   } else {
-	       if( $exon->contig_id eq $prev->contig_id ) {
-		   $self->warn("Got two exons, ".$prev->id. "[".$prev->contig_id."]".$prev->start."/".$prev->phase .":". $exon->id ."[".$exon->contig_id."]: same contigs but incompatible phases!");
-	       }
+	push(@out,$t);
 
-	       $prev = $exon;
-	       if( $#exons < 0 ) {
-		   # this was the last exon!
-		   $t = $self->new();
-		   $t->id($self->id);
-		   
-		   $t->add_Exon($prev);
-		   $t->is_partial(1);
-		   push(@out,$t);
-		   last TRANSCRIPT;
-	       } else {
-		   next TRANSCRIPT;
-	       }
-	   }
+	while( my $exon = shift @exons ) {
+	    if( $exon->phase == $prev->end_phase) {
+		# add it
+		$t->add_Exon($exon);
+		$prev = $exon;
+	    } else {
+ #	       if( $exon->seqname eq $prev->seqname ) {
+ #		   $self->warn("Got two exons, ".$prev->id. "[".$prev->seqname."]".$prev->start."/".$prev->phase .":". $exon->id ."[".$exon->seqname."]: same contigs but incompatible phases!");
+ #	       }
+
+		$prev = $exon;
+
+		if( $#exons < 0 ) {
+		    # this was the last exon!
+		    $t = $self->new();
+		    $t->id($self->id);
+
+		    $t->add_Exon($prev);
+		    $t->is_partial(1);
+		    push(@out,$t);
+		    last TRANSCRIPT;
+		} else {
+		    next TRANSCRIPT;
+		}
+	    }
        }
    }
 
@@ -575,8 +591,8 @@ sub translate {
       # that there is some filler.
       
       if( defined $prevtrans ) {
-	  my $last_exon  = $prevtrans->end_exon();
-	  my $first_exon = $ptrans   ->start_exon();
+	  my $last_exon  = $prevtrans->last_exon();
+	  my $first_exon = $ptrans   ->first_exon();
 	  my $filler;
 
 	  # last exon
@@ -681,7 +697,7 @@ sub dna_seq {
   }
 
 
-  my $seq = new Bio::PrimarySeq(-SEQ => $mrna,-ID => $self->id);
+  my $seq = new Bio::PrimarySeq('-seq' => $mrna,'-id' => $self->id);
 
   return $seq;
 }
@@ -988,9 +1004,11 @@ sub is_partial{
 =head2 start_exon
 
  Title   : start_exon
- Usage   : $start_exon = $transcript->start_exon;
- Returns : The first exon in the transcript.
- Args    : NONE
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
 
 
 =cut
@@ -1005,9 +1023,11 @@ sub start_exon{
 =head2 end_exon
 
  Title   : end_exon
- Usage   : $end_exon = $transcript->end_exon;
- Returns : The last exon in the transcript.
- Args    : NONE
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
 
 
 =cut
@@ -1059,6 +1079,18 @@ sub modified{
     }
     return $obj->{'modified'};
 
+}
+
+# sneaky web only function...
+
+sub gene_is_known {
+    my ($self,$value) = @_;
+    
+    if( defined $value ) {
+         $self->{'_web_hack_gene_is_known'} = $value;
+    }
+    
+    return $self->{'_web_hack_gene_is_known'};
 }
 
 

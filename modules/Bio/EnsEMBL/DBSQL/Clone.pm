@@ -75,7 +75,6 @@ sub _initialize {
 
   $self->id($id);
   $self->_db_obj($dbobj);
-  $self->fetch();
 
 # set stuff in self from @args
   return $make; # success - we hope!
@@ -97,18 +96,43 @@ sub fetch {
     my ($self) = @_;
  
     my $id=$self->id();   
-    my $sth = $self->_db_obj->prepare("select internal_id,id from clone where id = \"$id\";");    
+    my $sth = $self->_db_obj->prepare("select id from clone where id = \"$id\";");    
     my $res = $sth ->execute();   
-    my $rowhash = $sth->fetchrow_hashref;
-    if( ! $rowhash ) {
+    my $rv  = $sth ->rows;    
+    if( ! $rv ) {
 	# make sure we deallocate sth - keeps DBI happy!
 	$sth = 0;
+        print STDERR "Clone $id does not seem to occur in the database!\n";     
 	$self->throw("Clone $id does not seem to occur in the database!");
     }   
-    $self->_internal_id($rowhash->{'internal_id'});
     return $self;
 }
 
+=head2 get_all_id
+
+ Title   : get_all_id
+ Usage   : @cloneid = $clone->get_all_id
+ Function: returns all the valid (live) Clone ids in the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_id {
+   my ($self) = @_;
+   my @out;
+
+   my $sth = $self->_db_obj->prepare("select id from clone");
+   my $res = $sth->execute;
+
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+   return @out;
+}
 
 =head2 delete
 
@@ -128,13 +152,13 @@ sub delete {
  
    #(ref($clone_id)) && $self->throw ("Passing an object reference instead of a variable\n");
 
-   my $internal_id = $self->_internal_id;
+   my $clone_id = $self->id;
 
    my @contigs;
    my @dnas;
 
    # get a list of contigs to zap
-   my $sth = $self->_db_obj->prepare("select internal_id,dna from contig where clone = $internal_id");
+   my $sth = $self->_db_obj->prepare("select internal_id,dna from contig where clone = '$clone_id'");
    my $res = $sth->execute;
 
    while( my $rowhash = $sth->fetchrow_hashref) {
@@ -145,7 +169,7 @@ sub delete {
    # Delete from DNA table, Contig table, Clone table
    
    foreach my $contig ( @contigs ) {
-       my $sth = $self->_db_obj->prepare("delete from contig where internal_id = $contig");
+       my $sth = $self->_db_obj->prepare("delete from contig where internal_id = '$contig'");
        my $res = $sth->execute;
 
        my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
@@ -157,15 +181,14 @@ sub delete {
        $sth = $self->_db_obj->prepare("delete from dna where id = $dna");
        $res = $sth->execute;
 
-       # Mysql does not optimise or statements in where clauses
-       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_a_id = $dna");
+       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_a_id = $dna;");
        $res = $sth ->execute;
-       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_b_id = $dna");
+       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_b_id = $dna;");
        $res = $sth ->execute;
 
    }
 
-   $sth = $self->_db_obj->prepare("delete from clone where internal_id = $internal_id");
+   $sth = $self->_db_obj->prepare("delete from clone where id = '$clone_id'");
    $res = $sth->execute;
 }
 
@@ -185,7 +208,7 @@ sub delete {
 sub get_all_Genes {
    my ($self, $supporting) = @_;
    my @out;
-   my $clone_id = $self->_internal_id();   
+   my $clone_id = $self->id();   
    my %got;
     # prepare the SQL statement
    my $sth = $self->_db_obj->prepare("
@@ -197,9 +220,9 @@ sub get_all_Genes {
         WHERE e.contig = c.internal_id
           AND et.exon = e.id
           AND t.id = et.transcript
-          AND c.clone = $clone_id
+          AND c.clone = '$clone_id'
         ");
-
+ 
     my $res = $sth->execute();
    
     while (my $rowhash = $sth->fetchrow_hashref) { 
@@ -258,7 +281,7 @@ sub get_Contig {
 sub get_all_my_geneid {
    my ($self) = @_;
 
-   my $cloneid = $self->_internal_id;
+   my $cloneid = $self->id;
 
    my $sth = $self->_db_obj->prepare("select count(*),cont.clone ,ex.contig,tran.gene  " .
 			    "from   contig          as cont, ".
@@ -267,7 +290,7 @@ sub get_all_my_geneid {
 			    "       exon            as ex " .
 			    "where  ex.id            = et.exon " .
 			    "and    tran.id          = et.transcript " .
-			    "and    cont.clone       = $cloneid  " .
+			    "and    cont.clone       = '$cloneid'  " .
 			    "and    cont.internal_id = ex.contig " .
 			    "group by tran.gene");
 
@@ -296,9 +319,9 @@ sub get_all_Contigs {
    my ($self) = @_;
    my $sth;
    my @res;
-   my $internal_id = $self->_internal_id();
+   my $name = $self->id();
 
-   my $sql = "select id,internal_id from contig where clone = $internal_id";
+   my $sql = "select id,internal_id from contig where clone = \"$name\" ";
 
    $sth= $self->_db_obj->prepare($sql);
    my $res  = $sth->execute();
@@ -318,7 +341,7 @@ sub get_all_Contigs {
    }
 
    if( $seen == 0  ) {
-       $self->throw("Clone [$internal_id] has no contigs in the database. Should be impossible, but clearly isn't...");
+       $self->throw("Clone $name has no contigs in the database. Should be impossible, but clearly isn't...");
    }
 
    return @res;   
@@ -380,61 +403,39 @@ sub get_rawcontig_by_position {
 sub get_all_ContigOverlaps {
     my ($self) = @_;
     
-    my @overlaps;
-
+    
+    my( %overlap );
     foreach my $contig ($self->get_all_Contigs) {
-	if (defined($contig->get_left_overlap)) {
-	    
-	    my $overlap    = $contig->get_left_overlap;
-	    my $type;
-	    
-	    if ($overlap->sister_polarity == 1) {
-		$type = 'left2right';
-	    } elsif ($overlap->sister_polarity == -1) {
-		$type = 'left2left';
-	    } else {
-		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
-	    }
-	    
-	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga => $contig,
-							     -contigb => $overlap->sister,
-							     -positiona => $overlap->self_position,
-							     -positionb => $overlap->sister_position,
-							     -source    => $overlap->source,
-							     -distance  => $overlap->distance,
-							     -overlap_type => $type);
-	    
-	    push(@overlaps,$tmpoverlap);
-	}
-
-	if (defined($contig->get_right_overlap)) {
-	    
-	    my $overlap    = $contig->get_right_overlap;
-	    my $type;
-	    
-	    if ($overlap->sister_polarity == 1) {
-		$type = 'right2left';
-	    } elsif ($overlap->sister_polarity == -1) {
-		$type = 'right2right';
-	    } else {
-		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
-	    }
-	    
-	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga => $contig,
-							     -contigb => $overlap->sister,
-							     -positiona => $overlap->self_position,
-							     -positionb => $overlap->sister_position,
-							     -source    => $overlap->source,
-							     -distance  => $overlap->distance,
-							     -overlap_type => $type);
-	    
-	    push(@overlaps,$tmpoverlap);
-	    
-	}
+	foreach my $lap ($contig->get_all_Overlaps) {
+            $overlap{$lap->hash_string} = $lap;
+        }
     }
-
-    return (@overlaps);
+    return values %overlap;
 }
+
+=head2 is_golden
+
+ Title   : is_golden
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_golden{
+   my ($self,@args) = @_;
+   
+   foreach my $contig ($self->get_all_Contigs) {
+       if ($contig->is_golden) {
+	   return 1;
+       }
+   }
+   return 0;
+}
+
 
 =head2 htg_phase
 
@@ -450,17 +451,13 @@ sub get_all_ContigOverlaps {
 
 sub htg_phase {
    my $self = shift;
-   if( defined $self->{'_htg_phase'} ) {
-       return $self->{'_htg_phase'};
-   }
 
-   my $internal_id = $self->_internal_id();
+   my $id = $self->id();
 
-   my $sth = $self->_db_obj->prepare("select htg_phase from clone where internal_id = $internal_id");
+   my $sth = $self->_db_obj->prepare("select htg_phase from clone where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
-   $self->{'_htg_phase'} = $rowhash->{'htg_phase'};
-   return $self->{'_htg_phase'};
+   return $rowhash->{'htg_phase'};
 }
 
 =head2 created
@@ -479,9 +476,9 @@ sub htg_phase {
 sub created {
    my ($self) = @_;
 
-   my $internal_id = $self->_internal_id();
+   my $id = $self->id();
 
-   my $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP(created) from clone where internal_id = $internal_id");
+   my $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP(created) from clone where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'UNIX_TIMESTAMP(created)'};
@@ -503,12 +500,16 @@ sub created {
 sub modified {
    my ($self) = @_;
 
-   my $internal_id = $self->_internal_id();
+   my $id = $self->id();
 
-   my $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP(modified) from clone where internal_id = $internal_id");
+   my $sth = $self->_db_obj->prepare("select modified from clone where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
-   return $rowhash->{'UNIX_TIMESTAMP(modified)'};
+   my $datetime = $rowhash->{'modified'};
+   $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP('".$datetime."')");
+   $sth->execute();
+   $rowhash = $sth->fetchrow_arrayref();
+   return $rowhash->[0];
 }
 
 
@@ -527,10 +528,9 @@ sub modified {
 
 sub version {
    my $self = shift;
+   my $id = $self->id();
 
-   my $internal_id = $self->_internal_id();
-
-   my $sth = $self->_db_obj->prepare("select version from clone where internal_id = $internal_id");
+   my $sth = $self->_db_obj->prepare("select version from clone where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'version'};
@@ -571,9 +571,9 @@ sub _stored {
 
 sub embl_version {
    my $self = shift;
-   my $internal_id = $self->_internal_id();
+   my $id = $self->id();
 
-   my $sth = $self->_db_obj->prepare("select embl_version from clone where internal_id = $internal_id");
+   my $sth = $self->_db_obj->prepare("select embl_version from clone where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'embl_version'};
@@ -647,9 +647,9 @@ sub sv{
 sub embl_id {
    my ($self) = @_;
 
-   my $internal_id = $self->_internal_id();
+   my $id = $self->id();
 
-   my $sth = $self->_db_obj->prepare("select embl_id from clone where internal_id = $internal_id");
+   my $sth = $self->_db_obj->prepare("select embl_id from clone where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'embl_id'};
@@ -673,27 +673,6 @@ sub id {
       $obj->{'_clone_id'} = $value;
     }
     return $obj->{'_clone_id'};
-
-}
-
-=head2 _internal_id
-
- Title   : _internal_id
- Usage   : $obj->_internal_id($newval)
- Function: 
- Returns : value of _internal_id
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _internal_id{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_internal_id'} = $value;
-    }
-    return $obj->{'_internal_id'};
 
 }
 

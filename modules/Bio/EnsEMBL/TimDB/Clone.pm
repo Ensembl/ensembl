@@ -151,7 +151,7 @@ sub fetch {
     }
 
     my $byacc= $self->{'_byacc'};
-    
+
     # Fill clone object
     $self->disk_id     ($disk_id);
     $self->embl_version($sv);
@@ -203,13 +203,13 @@ sub build_contigs {
 
 #	print(STDERR "[$key][$val]\n");
 
-	if($key=~/^$disk_id/){
+	if($key=~/^$disk_id\./){
 	    
 	    my($len,$checksum,$embl_offset,$embl_order,$international_id) = split(/,/,$val);
 	  
 	    # all of these values should be positive, non zero
 	    $self->throw("Error: invalid length [$len] for contig $key") 		if !$len         || $len<1;
-	    $self->throw("Error: invalid checksum [$checksum] for contig $key") 	if !$checksum    || $checksum<1;
+	    # $self->throw("Error: invalid checksum [$checksum] for contig $key") 	if !$checksum    || $checksum<1;
 	    $self->throw("Error: invalid embl_order [$embl_order] for contig $key")	if !$embl_order  || $embl_order<1;
 	    $self->throw("Error: invalid embl_order [$embl_offset] for contig $key")	if !$embl_offset  || $embl_offset<1;
 
@@ -220,7 +220,6 @@ sub build_contigs {
 	    
 	    my $disk_key = $key;
 	    $key =~ s/^$disk_id/$id/;
-
 	    print STDERR "Attempting to retrieve contig with $disk_key [$key]\n";
 	    
 	    my $tmpcontig = new Bio::EnsEMBL::TimDB::Contig( -dbobj => $self->_dbobj,
@@ -242,7 +241,7 @@ sub build_contigs {
 
     }
 
-    $self->_make_ContigOverlaps;
+    #$self->_make_ContigOverlaps;
     
     print STDERR scalar($self->get_all_Contigs) . " contigs found in clone\n";
 }
@@ -254,7 +253,7 @@ sub _make_ContigOverlaps {
     my $spacing     = $Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING;
     
     return unless defined($clone_order);
-    #return;
+    return;
  
     my @pieces = split(/:/,$clone_order);
 
@@ -311,7 +310,7 @@ sub _make_ContigOverlaps {
 		} else {
 		    $self->throw("Wrong finalorient [$finalorient]");
 		}
-		print(STDERR "Joining " .$finalcontig->id . "\t" . $contiga->id . "\n");
+		print(STDERR "Joinging " .$finalcontig->id . "\t" . $contiga->id . "\n");
 		my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga   => $finalcontig,
 								 -contigb   => $contiga,
 								 -positiona => $positiona,
@@ -1164,26 +1163,6 @@ sub get_Contig {
     return $self->{_contighash}{$arg};
 }
 
-=head2 _internal_id
-
- Title   : _internal_id
- Usage   : $obj->_internal_id($newval)
- Function: 
- Returns : value of _internal_id
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _internal_id{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_internal_id'} = $value;
-    }
-    return $obj->{'_internal_id'};
-
-}
 
 =head2 get_all_ContigIds
 

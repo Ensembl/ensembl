@@ -155,13 +155,36 @@ sub each_unique_Exon{
    my %h;
 
    foreach my $trans ( $self->each_Transcript ) {
+#       print STDERR "Transcript " . $trans->id . "\n";
        foreach my $exon ( $trans->each_Exon ) {
+#	   print STDERR "Found exon $exon " . $exon->id . "\t" . $exon->start . "\t" . $exon->end . "\n";
 	   $h{$exon->id()} = $exon;
        }
    }
 
    return values %h;
    
+}
+
+
+=head2 type
+
+ Title   : type
+ Usage   : $obj->type($newval)
+ Function: 
+ Returns : value of type
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub type{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'type'} = $value;
+    }
+    return $obj->{'type'};
 }
 
 =head2 all_Exon_objects
@@ -291,30 +314,6 @@ sub id{
     return $obj->{'id'};
 
 }
-
-
-
-=head2 type
-
- Title   : type
- Usage   : $obj->type($newval)
- Function: 
- Returns : value of type
- Args    : newvalue (optional)
-
-
-=cut
-
-sub type{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'type'} = $value;
-    }
-    return $obj->{'type'};
-}
-
-
 
 
 

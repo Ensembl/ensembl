@@ -237,7 +237,7 @@ sub create_MapContig{
    my ($self,$rawcontig,$start,$end,$start_in_rawcontig,$orientation) = @_;
 
    if( !defined $orientation || $start > $end ||
-       !ref $rawcontig || !$rawcontig->isa('Bio::EnsEMBL::DB::ContigI') ) {
+       !ref $rawcontig || !$rawcontig->isa('Bio::EnsEMBL::DB::RawContigI') ) {
        $self->throw("Invalid arguments passed into create_MapContig ($rawcontig)");
    }
 
@@ -393,9 +393,9 @@ sub raw_contig_position {
 	#If we are not out of the loop at this stage it means that
 	#our Contig lies in a gap
 	if ($mc->start > $vcpos) {
-	    $rc='N';
-	    $rc_pos=-1;
-	    $rc_strand=-2;
+	    $rc='gapcontig';
+	    $rc_pos= $vcpos;
+	    $rc_strand= $vcstrand;
 	    last;
 	}
     }

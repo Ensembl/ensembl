@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::VirtualGene - A Gene viewed from one Contig''s perspective
+Bio::EnsEMBL::VirtualGene - A Gene viewed from one Contig's perspective
 
 =head1 SYNOPSIS
 
@@ -47,7 +47,7 @@ Bio::EnsEMBL::VirtualGene - A Gene viewed from one Contig''s perspective
 =head1 DESCRIPTION
 
 VirtualGene provides a view of a Gene from the perspective of a
-contig. In this contig''s perspective, the gene has a start and end, being
+contig. In this contig's perspective, the gene has a start and end, being
 the first and last exon on the contig respectively. The strand is taken to
 be arbitarily the first exon it encounters on the call to each_unique_Exon
 on this contig. If the gene is jumping strand (a possibility due to software
@@ -89,7 +89,7 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
-  my ($gene,$contig) = $self->_rearrange(['GENE','CONTIG'],@args);
+  my ($gene,$contig,$start,$end,$strand) = $self->_rearrange(['GENE','CONTIG','START','END','STRAND'],@args);
   if( !defined $gene ) {
       $self->throw("No gene in virtualgene object");
   }
@@ -98,14 +98,15 @@ sub _initialize {
   }
 
   $self->gene($gene);
-
-  # sneaky 'only attach db if we have it'
-  if(!$contig->isa('Bio::EnsEMBL::PerlDB::Contig') ) {
-      $self->dbobj($contig->dbobj);
-  }
-
+  $self->dbobj($contig->dbobj);
   $self->contig_id($contig->id);
-  $self->_calculate_coordinates($gene,$contig);
+  if( !defined $start ) {
+      $self->_calculate_coordinates($gene,$contig);
+  } else {
+      $self->start($start);
+      $self->end($end);
+      $self->strand($strand);
+  }
 
   return $make; # success - we hope!
 }
@@ -279,7 +280,7 @@ sub _calculate_coordinates{
    my $inside_exon = 0;
    my ($start,$end,$strand);
    foreach my $exon ( @exons ) {
-       #print STDERR "Looking at $cid vs ",$exon->contig_id,":",$exon->seqname,"\n";
+       print STDERR "Looking at $cid vs ",$exon->contig_id,":",$exon->seqname,"\n";
 
        if( $cid eq $exon->seqname ) {
 	   if( $inside_exon == 0 ) {
@@ -528,6 +529,9 @@ sub to_FTHelper {
     my $id = $self->gene->id();
     my $cid = $self->contig_id();
 
+
+    my @dblinks = $self->gene->each_DBLink();
+
     foreach my $trans ( $self->gene->each_Transcript ) {
 	foreach my $ptrans ( $trans->split_Transcript_to_Partial(1) ) {
 	    # sneaky call 
@@ -551,7 +555,7 @@ sub to_FTHelper {
 		    }
 		    my $tstart = $exon->start + $contig{$exon->contig_id}->embl_offset;
 		    my $tend   = $exon->end   + $contig{$exon->contig_id}->embl_offset;
-		    my $acc = $contig{$exon->contig_id}->embl_accession;
+		    my $acc = $contig{$exon->contig_id}->cloneid;
 
 		    if( $exon->strand == 1 ) {
 			$join .= "$acc:".$exon->start."..".$exon->end.",";
@@ -573,6 +577,14 @@ sub to_FTHelper {
 
 	    $ft->add_field('translate',$translated_seq->seq);
 	    $ft->add_field('cds',$trans->translation->id);
+	    $ft->add_field('gene',$self->gene->id);
+	    $ft->add_field('transcript',$trans->id);
+	    foreach my $dbl ( @dblinks ) {
+		$ft->add_field('dbxref',$dbl->database.":".$dbl->primary_id);
+	    }
+	    if( $ptrans->is_partial == 1 ) {
+		$ft->add_field('note',"transcript split due to inability to predict a single translateable transcript");
+	    }
 	    push(@out,$ft);
 	}
     }
@@ -591,8 +603,8 @@ sub to_FTHelper {
 	if ($self->strict_EMBL_dumping) {
 	    $ft->add_field('db_xref', 'ENSEMBL:HUMAN-Exon-'. $exon->id);
 	} else {
-	    $ft->add_field('created',     scalar(gmtime($exon->created())));
-	    $ft->add_field('modified',    scalar(gmtime($exon->modified())));
+	    #$ft->add_field('created',     scalar(gmtime($exon->created())));
+	    #$ft->add_field('modified',    scalar(gmtime($exon->modified())));
 	    $ft->add_field('exon_id',     $exon->id());
 	    $ft->add_field('start_phase', $exon->phase());
 	    $ft->add_field('end_phase',   $exon->end_phase());

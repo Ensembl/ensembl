@@ -261,24 +261,7 @@ sub golden_end{
    }
 }
     
-=head2 is_golden
 
- Title   : is_golden
- Usage   :
- Function:
- Example :
- Returns :
- Args    :
-
-
-=cut
-
-sub is_golden{
-  my ($self,@args) = @_;
-
-  return ( $self->get_left_overlap || $self->get_right_overlap );
-
-}
 1;
 
 

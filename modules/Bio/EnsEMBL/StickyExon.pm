@@ -13,7 +13,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::StickyExon - A Confirmed Exon which spans two contigs internally
+Bio::EnsEMBL::#StickyExon - A Confirmed Exon which spans two contigs internally
 
 =head1 SYNOPSIS
 
@@ -98,6 +98,7 @@ sub id{
    return $self->{'_sticky_id'};
 
 }
+
 
 =head2 each_component_Exon
 

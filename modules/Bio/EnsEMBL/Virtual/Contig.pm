@@ -114,6 +114,7 @@ sub _make_datastructures {
     return $self;
 }
 
+
 sub new_from_one {
     my ($class,$contig) = @_;
 
@@ -386,10 +387,17 @@ sub top_SeqFeatures {
 	push(@f,$self->get_all_ExternalFeatures());
     } 
     
-    foreach my $gene ( $self->get_all_Genes()) {
-	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
-	push(@f,$vg);
+    if( !$self->skip_SeqFeature('gene') ) {
+	foreach my $gene ( $self->get_all_Genes()) {
+	    my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
+	    push(@f,$vg);
+	}
     }
+
+    if( !$self->skip_SeqFeature('contig') ) {
+	push(@f,$self->_vmap->each_MapContig);
+    }
+
     
     return @f;
 }
@@ -463,6 +471,111 @@ sub get_all_VirtualGenes {
     return @out;
 }
 
+=head2 get_all_VirtualGenes_startend
+
+ Title   : get_all_VirtualGenes_startend
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_VirtualGenes_startend{
+   my ($self,@args) = @_;
+
+   my %gene;
+   my @ret;
+
+   foreach my $contig ($self->_vmap->get_all_RawContigs) {
+       foreach my $gene ( $contig->get_all_Genes() ) {      
+	   $gene{$gene->id()} = $gene;
+       }
+   }
+   
+ GENE:
+   foreach my $gene ( values %gene ) {
+       my $genestart = $self->length;
+       my $geneend   = 1;
+       my $genestr;
+       foreach my $trans ( $gene->each_Transcript ) {
+	   foreach my $exon ( $trans->each_Exon ) {
+
+	       my $mc = $self->_vmap->get_MapContig_by_id($exon->contig_id);
+	       if( !defined $mc ) {
+		   next;
+	       }
+	       
+	       
+	       my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
+	       if( $st < $genestart ) {
+		   $genestart = $st;
+	       }
+	       if( $en > $geneend ) {
+		   $geneend = $en;
+	       }
+	       $genestr = $str;
+	   }
+       }
+       
+       my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self, -start => $genestart, -end => $geneend, -strand => $genestr);
+       push(@ret,$vg);
+   }
+
+   return @ret;
+}
+
+
+
+
+
+=head2 get_old_Exons
+
+ Title   : get_old_exons
+ Usage   : foreach my $exon ( $contig->get_old_Exons ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_old_Exons{
+
+    my ($self) = @_;
+    
+    my @exons;
+    
+    foreach my $c ($self->_vmap->get_all_RawContigs) {push(@exons,$c->get_old_Exons);}
+    
+    my @vcexons = ();
+    foreach my $exon ( @exons ) {
+	
+	my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
+	
+	if( !defined $st ) {next;}        
+	if (($st < 0 ) || ($en >$self->length)) {next;}
+	
+	else 
+	{
+	    $exon->start($st);
+	    $exon->end($en);
+	    $exon->($str);   
+	    
+	    push @vcexons;
+	}
+    }
+    
+    return @vcexons;	  
+}
+
+
+
+
+
 
 =head2 get_all_SeqFeatures
 
@@ -487,6 +600,8 @@ sub get_all_SeqFeatures {
 }
 
 
+
+
 =head2 get_all_SimilarityFeatures_above_score
 
  Title   : get_all_SimilarityFeatures_above_score
@@ -500,34 +615,41 @@ sub get_all_SeqFeatures {
 =cut
 
 sub get_all_SimilarityFeatures_above_score{
+
     my ($self, $analysis_type, $score) = @_;
     
-    my $sf = ();
+    my $sf = [];
+    
     foreach my $c ($self->_vmap->get_all_RawContigs) {
-	   push(@$sf, $c->get_all_SimilarityFeatures_above_score($analysis_type, $score));
-   }
-
-   # Need to clip seq features to fit the boundaries of
-   # our v/c so displays don't break
-   my @vcsf = ();
-   my $count = 0;
-   foreach $sf ( @$sf ) {
-
-       $sf = $self->_convert_seqfeature_to_vc_coords($sf);
-
-       if( !defined $sf ) {      
-	   next;
-       }	
-       if (($sf->start < 0 ) || ($sf->end > $self->length)) {
-	   $count++;
-       }
-       else{
-	    push (@vcsf, $sf);
-       }
-   }
-   
-   return @vcsf;
+	
+	print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
+	
+	push(@$sf,$c->get_all_SimilarityFeatures_above_score($analysis_type,$score));
+	
+	# Need to clip seq features to fit the boundaries of
+	# our v/c so displays don't break
+	my @vcsf = ();
+	my $count = 0;
+	foreach $sf ( @$sf ) {
+	    $sf = $self->_convert_seqfeature_to_vc_coords($sf);
+	    
+	    if( !defined $sf ) {next;}        
+	    
+	    if (($sf->start < 0 ) || ($sf->end >$self->length)) {$count++;}
+	    
+	    else{push (@vcsf, $sf);}
+	}
+	
+	return @vcsf;	
+    }
+    
 }
+
+
+
+
+
+
 
 
 =head2 get_all_SimilarityFeatures
@@ -568,6 +690,9 @@ sub get_all_RepeatFeatures {
 
 }
 
+
+
+
 =head2 get_all_ExternalFeatures
 
  Title   : get_all_ExternalFeatures
@@ -579,6 +704,9 @@ sub get_all_RepeatFeatures {
 
 
 =cut
+
+
+
 
 sub get_all_ExternalFeatures {
    my ($self) = @_;
@@ -604,6 +732,12 @@ sub get_all_PredictionFeatures {
    return $self->_get_all_SeqFeatures_type('prediction');
 }
 
+
+sub get_MarkerFeatures {
+
+    my ($self)=@_;
+     return $self->_get_all_SeqFeatures_type('marker');
+}
 
 
 
@@ -649,11 +783,11 @@ sub get_all_Genes {
 =cut
 
 sub get_Genes_by_Type {
-    my ($self,$type) = @_;
+    my ($self,$type,$supporting) = @_;
     my (%gene,%trans,%exon,%exonconverted);
     
     foreach my $contig ($self->_vmap->get_all_RawContigs) {
-	foreach my $gene ( $contig->get_Genes_by_Type($type) ) {      
+	foreach my $gene ( $contig->get_Genes_by_Type($type,$supporting) ) {      
 	    $gene{$gene->id()} = $gene;
 	}
     }
@@ -670,8 +804,10 @@ sub _gene_query{
         
 
     foreach my $gene ( values %gene ) {
-	
-        my $internalExon = 0;
+
+	my $internalExon = 0;
+
+
 	foreach my $exon ( $gene->all_Exon_objects() ) {
 	    # hack to get things to behave
 	    $exon->seqname($exon->contig_id);
@@ -867,7 +1003,7 @@ sub _convert_seqfeature_to_vc_coords {
     eval {
 	$mc=$self->_vmap->get_MapContig_by_id($cid);
     };
-    if ($@) { 
+    if ($@ || !ref $mc) { 
 	return undef;
     }
     
@@ -1328,18 +1464,20 @@ sub _reverse_map_Exon{
        $self->throw("Must supply reverse map an exon not an [$exon]");
    }
 
+   print STDERR "Reverse mapping $exon ",$exon->start,":",$exon->end,"\n";
+
    my ($scontig,$start,$sstrand) = $self->_vmap->raw_contig_position($exon->start,$exon->strand);
    my ($econtig,$end,$estrand)   = $self->_vmap->raw_contig_position($exon->end  ,$exon->strand);
 
-   if( !ref $scontig || !ref $econtig || !$scontig->isa('Bio::EnsEMBL::DB::RawContigI') || !$econtig->isa('Bio::EnsEMBL::DB::RawContigI') ) {
-       $self->throw("Exon on vc ".$exon->id." [".$exon->start.":".$exon->end."] is unmappable to rawcontig positions, probably being in a gap. Can't write");
-   }
+   print STDERR "Got $scontig ",$start," to $econtig ",$end,"\n";
 
   
    if( $scontig->id eq $econtig->id ) {
        if( $sstrand != $estrand ) {
 	   $self->throw("Bad internal error. Exon mapped to same contig but different strands!");
        }
+
+       print STDERR "Straight forward mapping\n";
 
        my $rmexon = Bio::EnsEMBL::Exon->new();
        $rmexon->id($exon->id);
@@ -1387,20 +1525,25 @@ sub _reverse_map_Exon{
        return ($rmexon);
    } else {
        # we are in the world of sticky-ness....
-
+       print STDERR "Into sticky exon\n";
 
        my @mapcontigs = $self->_vmap->each_MapContig();
 
-       # walk to find scontig
-       my $found = 0;
-       my $mc;
-       while ( $mc = shift @mapcontigs ) { 
- 
-	   if( $mc->contig->id eq $scontig->id ) {
-	       print STDERR "Unshifting ",$mc->contig->id,"\n";
-	       unshift(@mapcontigs,$mc);
-	       $found = 1;
-	       last;
+       my $found;
+       # walk to find scontig. If it is a gap, simply move on
+       if( $scontig eq 'gapcontig' ) {
+	   $scontig = $self->dbobj->get_Contig('gapcontig');
+       } 
+       else {
+	   $found = 0;
+	   my $mc;
+	   while ( $mc = shift @mapcontigs ) { 
+	       if( $mc->contig->id eq $scontig->id ) {
+		   print STDERR "Unshifting ",$mc->contig->id,"\n";
+		   unshift(@mapcontigs,$mc);
+		   $found = 1;
+		   last;
+	       }
 	   }
        }
        if( $found == 0 ) {
@@ -1771,6 +1914,30 @@ sub noseq{
     }
     return $obj->{'_noseq'};    
 }
+
+
+=head2 dbobj
+
+ Title   : dbobj
+ Usage   : $obj->dbobj($newval)
+ Function: 
+ Example : 
+ Returns : value of dbobj
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub dbobj{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_dbobj'} = $value;
+    }
+   return $obj->{'_dbobj'};
+
+}
+
+
 
 1;
 

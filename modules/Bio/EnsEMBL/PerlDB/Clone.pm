@@ -46,27 +46,22 @@ use Bio::EnsEMBL::DB::CloneI;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::Root::Object;
 
 
-@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::CloneI);
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
+# new() is inherited from Bio::Root::Object
 
-sub new {
-  my($class,@args) = @_;
+# _initialize is where the heavy stuff will happen when new is called
 
-  my $self = bless {
-      _contig_hash     => {},
-      _id              => undef,
-      _embl_id         => undef,
-      _embl_version    => undef,
-      _htg_phase       => 1,
-      _created         => time,
-      _modified        => time,
-      _seq_date        => 0,
-      _contig_overlaps => [],
-  }, $class;
+sub _initialize {
+  my($self,@args) = @_;
 
- return $self; # success - we hope!
+  my $make = $self->SUPER::_initialize;
+
+  $self->{'_contig_hash'} = {};
+# set stuff in self from @args
+ return $make; # success - we hope!
 }
 
 =head2 get_Contig
@@ -173,9 +168,9 @@ sub get_all_Genes{
 sub id{
    my ($obj,$value) = @_;
    if( defined $value) {
-       $obj->{'_id'} = $value;
+       $obj->{'id'} = $value;
    }
-   return $obj->{'_id'};
+   return $obj->{'id'};
    
 }
 
@@ -195,9 +190,9 @@ sub embl_id{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'_embl_id'} = $value;
+      $obj->{'embl_id'} = $value;
     }
-    return $obj->{'_embl_id'};
+    return $obj->{'embl_id'};
 
 }
 
@@ -216,26 +211,10 @@ sub embl_version{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'_embl_version'} = $value;
+      $obj->{'embl_version'} = $value;
     }
-    return $obj->{'_embl_version'};
+    return $obj->{'embl_version'};
 
-}
-
-=head2 sv
-
- Title   : sv
- Function: returns the version number (not the acc.version, just verision).
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub sv {
-   my ($self,@args) = @_;
-   return $self->version(@args);
 }
 
 =head2 seq_date
@@ -253,9 +232,9 @@ sub seq_date{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'_seq_date'} = $value;
+      $obj->{'seq_date'} = $value;
     }
-    return $obj->{'_seq_date'};
+    return $obj->{'seq_date'};
 
 }
 
@@ -274,9 +253,9 @@ sub version{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'_version'} = $value;
+      $obj->{'version'} = $value;
     }
-    return $obj->{'_version'};
+    return $obj->{'version'};
 
 }
 =head2 htg_phase
@@ -294,71 +273,10 @@ sub htg_phase{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'_htg_phase'} = $value;
+      $obj->{'htg_phase'} = $value;
     }
-    return $obj->{'_htg_phase'};
+    return $obj->{'htg_phase'};
 
-}
-
-=head2 modified
-
- Title   : modified
- Usage   : $clone->modified()
- Function: Gives the unix time value of the modified 
-           datetime field, which indicates
-           the last time this clone was modified in ensembl
- Example : $clone->modified()
- Returns : unix time
- Args    : none
-
-
-=cut
-
-sub modified{
-    my ($self,$value) = @_;
-    if( defined($value) && $value ne '' ) {
-      $self->{'_modified'} = $value;
-    }
-    return $self->{'_modified'};
-}
-
-=head2 created
-
- Title   : created
- Usage   : $clone->created()
- Function: Gives the unix time value of the created 
-           datetime field, which indicates
-           the first time this clone was put in ensembl
- Example : $clone->created()
- Returns : unix time
- Args    : none
-
-
-=cut
-sub created{
-    my ($self,$value) = @_;
-    if( defined($value) && $value ne '' ) {
-      $self->{'_created'} = $value;
-    }
-    return $self->{'_created'};
-}
-
-=head2 get_all_ContigOverlaps 
-
- Title   : get_all_ContigOverlaps
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_ContigOverlaps {
-    my ($self) = @_;
-    
-    return @{$self->{'_contig_overlaps'}};
 }
 
 1;

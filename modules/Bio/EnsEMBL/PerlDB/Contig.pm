@@ -18,14 +18,10 @@ Bio::EnsEMBL::PerlDB::Contig - Pure Perl implementation of contig object
 
     $contig = Bio::EnsEMBL::PerlDB::Contig->new();
     
-    #$contig inherits of Bio::SeqI and therefore suuports:
-    $contig->seq($seq); 
-    $contig->top_SeqFeatures;
+    # $sf is a Bio::SeqFeatureI type object. $seq is a Bio::Seq object
 
-    #$contig also has its own methods such as:
-    $contig->add_Gene($gene);
-    $contig->add_SeqFeature($feature);
-    my @genes=$contig->get_all_genes;
+    $contig->add_SeqFeature($sf);
+    $contig->seq($seq); 
 
 =head1 DESCRIPTION
 
@@ -51,35 +47,29 @@ use vars qw($AUTOLOAD @ISA);
 use strict;
 use Bio::EnsEMBL::DB::ContigI;
 
-# Object preamble - inheriets from Bio::Root::RootI
-use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::ContigI);
+# Object preamble - inheriets from Bio::Root::Object
+
+use Bio::Root::Object;
+
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub new {
-  my($class,@args) = @_;
+sub _initialize {
+  my($self,@args) = @_;
 
-  my $self = bless {
-      _repeat_array  => [],
-      _gene_array    => [],
-      _id            => undef,
-      _version       => undef,
-      _internal_id   => undef,
-      _seq_date      => '',
-      _embl_offset   => 0,
-      _offset        => 0,
-      _orientation   => undef,
-      _order         => 1,
-      _embl_order    => 1,
-      _chromosome    => undef,
-      _species       => undef,
-  }, $class;
+  my $make = $self->SUPER::_initialize;
 
-  return $self;
+  $self->{'_repeat_array'} = [];
+  $self->{'_simil_array'} = [];
+  $self->{'_gene_array'} = [];
+ 
+# set stuff in self from @args
+  return $make; # success - we hope!
 }
+
 
 =head2 get_all_Genes
 
@@ -163,9 +153,9 @@ sub add_RepeatFeature{
 }
 
 
-=head2 get_all_SeqFeatures
+=head2 get_all_SimilarityFeatures
 
- Title   : get_all_SeqFeatures
+ Title   : get_all_SimilarityFeatures
  Usage   :
  Function:
  Example :
@@ -175,18 +165,15 @@ sub add_RepeatFeature{
 
 =cut
 
-sub get_all_SeqFeatures{
+sub get_all_SimilarityFeatures{
    my ($self,@args) = @_;
-   if( defined $self->seq() ) {
-       return $self->seq->all_SeqFeatures();
-   } else {
-       return ();
-   }
+
+   return @{$self->{'_simil_array'}};
 }
 
-=head2 add_SeqFeatures
+=head2 add_SimilarityFeatures
 
- Title   : add_SeqFeatures
+ Title   : add_SimilarityFeatures
  Usage   :
  Function:
  Example :
@@ -196,18 +183,81 @@ sub get_all_SeqFeatures{
 
 =cut
 
-sub add_SeqFeature {
+sub add_SimilarityFeatures {
    my ($self,$value) = @_;
    
-   if( !ref $value || !$value->isa('Bio::EnsEMBL::SeqFeatureI') ) {
-       $self->throw("$value is not a SeqFeature");
+   if( !ref $value || !$value->isa('Bio::EnsEMBL::FeaturePair') ) {
+       $self->throw("$value is not a FeaturePair");
    }
-   if( defined $self->seq ) {
-       $self->seq->add_SeqFeature($value);
-   } else { 
-       $self->throw("must have a seq loaded before adding features");
-   }   
+
+   push(@{$self->{'_simil_array'}},$value);
 }
+
+
+=head2 offset
+
+ Title   : offset
+ Usage   : $obj->offset($newval)
+ Function: 
+ Returns : value of offset
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub offset{
+   my $obj = shift;
+   if( @_ ) {
+       my $value = shift;
+       $obj->{'offset'} = $value;
+   }
+    return $obj->{'offset'};
+
+}
+
+=head2 orientation
+
+ Title   : orientation
+ Usage   : $obj->orientation($newval)
+ Function: 
+ Returns : value of orientation
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub orientation{
+   my $obj = shift;
+   if( @_ ) {
+       my $value = shift;
+       $obj->{'orientation'} = $value;
+   }
+   return $obj->{'orientation'};
+   
+}
+
+=head2 order
+
+ Title   : order
+ Usage   : $obj->order($newval)
+ Function: 
+ Returns : value of order
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub order{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'order'} = $value;
+    }
+    return $obj->{'order'};
+
+}
+
+
 
 =head2 seq
 
@@ -228,10 +278,9 @@ sub seq{
 	    $obj->throw("$value is not a Bio::Seq!");
 	}			
 
-	$obj->{'_seq'} = $value;
-	$obj->seq_date(time);
+	$obj->{'seq'} = $value;
     }
-    return $obj->{'_seq'};
+    return $obj->{'seq'};
     
 }
 
@@ -250,30 +299,10 @@ sub id{
    my $obj = shift;
    if( @_ ) {
        my $value = shift;
-       $obj->{'_id'} = $value;
+       $obj->{'id'} = $value;
    }
-   return $obj->{'_id'};
+   return $obj->{'id'};
    
-}
-
-=head2 internal_id
-
- Title   : internal_id
- Usage   : $obj->internal_id($newval)
- Function: 
- Example : 
- Returns : value of database internal id
- Args    : newvalue (optional)
-
-=cut
-
-sub internal_id {
-   my ($self,$value) = @_;
-
-   if( defined $value) {
-      $self->{'_internal_id'} = $value;
-    }
-    return $self->{'_internal_id'};
 }
 
 =head2 version
@@ -291,212 +320,10 @@ sub version{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'_version'} = $value;
+      $obj->{'version'} = $value;
     }
-    return $obj->{'_version'};
+    return $obj->{'version'};
 
 }
-
-=head2 primary_seq
-
-  Title    : primary_seq
-  Usage    : $obj->primary_seq
-  Function :
-  Returns  : value of primary_seq
-  Args     : 
-
-=cut 
-
-sub primary_seq {
-    my ($self) = @_;
-    if( defined $self->seq ) {
-	return $self->seq->primary_seq;
-    }
-    return undef;
-}
-
-=head2 seq_date
-
- Title   : seq_date
- Usage   : $contig->seq_date()
- Function: Gives the unix time value of the dna table 
-           created datetime field, which indicates
-           the original time of the dna sequence data
- Example : $contig->seq_date()
- Returns : unix time
- Args    : none
-
-
-=cut
-
-sub seq_date{
-    my ($self,$value) = @_;    
-    if( defined $value && $value ne '' ) {
-	$self->{'_seq_date'} = $value;
-    }
-    return $self->{'_seq_date'};
-}
-
-=head2 offset
-
- Title   : $obj->offset($newval)
- Usage   : 
- Returns : 
- Args    : value of offset
-
-
-=cut
-
-sub offset{
-   my ($self,$value) = @_;
-    if( defined $value && $value ne '' ) {
-	$self->{'_offset'} = $value;
-    }
-    return $self->{'_offset'};
-}
-
-=head2 order
-
- Title   : $obj->order($newval)
- Usage   : 
- Returns : 
- Args    : value of order
-
-
-=cut
-
-sub order{
-   my ($self,$value) = @_;
-    if( defined $value && $value ne '' ) {
-	$self->{'_order'} = $value;
-    }
-    return $self->{'_order'};
-}
-
-=head2 orientation
-
- Title   : $obj->orientation($newval)
- Usage   : 
- Returns : 
- Args    : value of orientation
-
-
-=cut
-
-sub orientation{
-   my ($self,$value) = @_;
-    if( defined $value && $value ne '' ) {
-	$self->{'_orientation'} = $value;
-    }
-    return $self->{'_orientation'};
-}
-
-=head2 embl_offset
-
- Title   : embl_offset
- Usage   : 
- Returns : 
- Args    :
-
-
-=cut
-
-sub embl_offset{
-   my ($self,$value) = @_;
-    if( defined $value && $value ne '' ) {
-	$self->{'_embl_offset'} = $value;
-    }
-    return $self->{'_embl_offset'};
-}
-
-=head2 embl_order
-
- Title   : embl_order
- Usage   : 
- Returns : 
- Args    :
-
-
-=cut
-
-sub embl_order {
-   my ($self,$value) = @_;
-    if( defined $value && $value ne '' ) {
-	$self->{'_embl_order'} = $value;
-    }
-    return $self->{'_embl_order'};
-}
-
-=head2 length
-
- Title   : length
- Usage   : This is a slightly sneaky method, it returns the seq length 
-           there is a seq attached, and otherwise works as a set/get.
-           This is in order to have "artificial" contigs which have no seq,
-           but still comply to ContigI
- Returns : length if defined in seq or if set
- Args    : optional length
-
-=cut
-
-sub length {
-   my ($self,$value) = @_;
-
-   if( defined $self->seq ) {
-       return $self->seq->length;
-   } else {
-       if ( defined $value && $value ne '' ) {
-	   $self->{'_length'} = $value;
-       }
-   }
-   if (defined  $self->{'_length'}) {
-       return $self->{'_length'};
-   }
-   else {
-       $self->throw("You must either set the length of a PerlDB::Contig or attach a Bio::Seq object to it to determine the length!");
-   }
-}
-
-
-=head2 species
-
- Title   : species
- Usage   : $obj->species($newval)
- Function: 
- Returns : value of species
- Args    : newvalue (optional)
-
-
-=cut
-
-sub species{
-    my ($self,$value) = @_;
-    if( defined $value && $value ne '' ) {
-	$self->{'_species'} = $value;
-    }
-    return $self->{'_species'};
-}
-
-=head2 chromosome
-
- Title   : chromosome
- Usage   : $obj->chromosome($newval)
- Function: 
- Returns : value of chromosome
- Args    : newvalue (optional)
-
-
-=cut
-
-sub chromosome{
-   my ($self,$value) = @_;
-   if( defined $value && $value ne '' ) {
-	$self->{'_chromosome'} = $value;
-    }
-    return $self->{'_chromosome'};
-    
-}
-
 
 1;
-

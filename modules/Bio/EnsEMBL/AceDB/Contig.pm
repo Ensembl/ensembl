@@ -935,7 +935,7 @@ sub _load_overlaps {
     $self->{'_got_overlaps'} = 1;
     
     my $id = $self->id;
-    my @over = $self->get_ContigOverlaps;
+    my @over = $self->get_all_ContigOverlaps;
     foreach my $lap (@over) {
         my( $end, $helper ) = $lap->make_ContigOverlapHelper($id);
         if ($end eq 'left') {

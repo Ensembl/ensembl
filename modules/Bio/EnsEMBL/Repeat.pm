@@ -56,9 +56,9 @@ use strict;
 
 use Bio::SeqIO::FTHelper;
 use Bio::EnsEMBL::FeaturePair;
-use Bio::EnsEMBL::RepeatI;
 
-@ISA = qw(Bio::EnsEMBL::FeaturePair Bio::EnsEMBL::RepeatI);
+
+@ISA = qw(Bio::EnsEMBL::FeaturePair);
 
 # new() is inherited from Bio::SeqFeature::Generic
 

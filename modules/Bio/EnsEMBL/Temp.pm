@@ -18,24 +18,24 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
-=head2 id
+=head2 gene
 
- Title   : id
- Usage   : $obj->id($newval)
- Function: stores the id of the deleted object
- Returns : value of id
+ Title   : gene
+ Usage   : $obj->gene($newval)
+ Function: stores the gene of the deleted object
+ Returns : value of gene
  Args    : newvalue (optional)
 
 
 =cut
 
-sub id{
+sub gene{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'id'} = $value;
+      $obj->{'gene'} = $value;
     }
-    return $obj->{'id'};
+    return $obj->{'gene'};
 
 }
 
@@ -60,23 +60,3 @@ sub transcript{
 
 }
 
-=head2 rank
-
- Title   : rank
- Usage   : $obj->rank($newval)
- Function: stores the object type of the deleted object
- Returns : value of rank
- Args    : newvalue (optional)
-
-
-=cut
-
-sub rank{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'rank'} = $value;
-    }
-    return $obj->{'rank'};
-
-}

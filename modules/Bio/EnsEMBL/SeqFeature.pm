@@ -69,6 +69,23 @@ use strict;
 use Bio::EnsEMBL::SeqFeatureI;
 use Bio::Root::RootI;
 
+BEGIN {
+    
+    eval { 
+	require EnsemblExt;
+    };
+    if( $@ ) {
+	$ENSEMBL_EXT_LOADED = 0;
+	$ENSEMBL_EXT_USED = 0;
+    } else {
+
+	$ENSEMBL_EXT_LOADED = 1;
+	$ENSEMBL_EXT_USED = 0;
+	print STDERR "Using EnsemblExt...\n";
+	print STDERR "Got $ENSEMBL_EXT_LOADED with $ENSEMBL_EXT_USED\n";
+    }
+}
+
 @ISA = qw(Bio::EnsEMBL::SeqFeatureI Bio::Root::RootI );
 
 # new is inherited from Bio::Root::Object
@@ -85,10 +102,10 @@ sub new {
 
   bless $self,$class;
 
-my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value, $phase, $end_phase); 
+my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname,$raw_seqname,$percent_id,$p_value,$external_db); 
 
   eval {
-  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value, $phase, $end_phase) = 
+  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname,$raw_seqname,$percent_id,$p_value,$external_db) = 
       $self->_rearrange([qw(START
 			    END
 			    STRAND
@@ -98,10 +115,10 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 			    SOURCE_TAG
 			    PRIMARY_TAG
 			    SEQNAME
-                PERCENT_ID
-                P_VALUE
-                PHASE
-                END_PHASE
+			    RAW_SEQNAME
+			    PERCENT_ID
+			    P_VALUE
+			    EXTERNAL_DB
 			    )],@args);
 };
   if( $@ ) {
@@ -111,19 +128,19 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 
 #  $gff_string && $self->_from_gff_string($gff_string);
 
-  ( defined $start )        && $self->start($start);
-  ( defined $end )          && $self->end($end);
-  ( defined $strand )       && $self->strand($strand);
-  ( defined $primary_tag )  && $self->primary_tag($primary_tag);
-  ( defined $source_tag )  && $self->source_tag($source_tag);
-  ( defined $frame )        && $self->frame($frame);
-  ( defined $score )        && $self->score($score);
-  ( defined $analysis )    && $self->analysis($analysis);
-  ( defined $seqname )      && $self->seqname($seqname);
-  ( defined $percent_id )   && $self->percent_id($percent_id);
-  ( defined $p_value )      && $self->p_value($p_value);
-  ( defined $phase )       && $self->phase($phase);
-  ( defined $end_phase )    && $self->end_phase($end_phase);
+  $start        && $self->start($start);
+  $end          && $self->end($end);
+  $strand       && $self->strand($strand);
+  $primary_tag  && $self->primary_tag($primary_tag);
+  $source_tag   && $self->source_tag($source_tag);
+  $frame        && $self->frame($frame);
+  $score        && $self->score($score);
+  $analysis     && $self->analysis($analysis);
+  $seqname      && $self->seqname($seqname);
+  $raw_seqname  && $self->raw_seqname($raw_seqname);
+  $percent_id   && $self->percent_id($percent_id);
+  $p_value      && $self->p_value($p_value);
+  $external_db  && $self->external_db($external_db);
   return $self; # success - we hope!
 
 }
@@ -151,11 +168,28 @@ sub seqname{
 
    if( $arg) {
       $self->{'_gsf_seqname'} = $arg;
-    }
+ 
+   }
 
     return $self->{'_gsf_seqname'};
 
 }
+
+
+
+sub raw_seqname{
+   my ($self,$arg) = @_;
+
+   if( $arg) {
+      $self->{'_gsf_raw_seqname'} = $arg;
+  
+  }
+  
+
+    return $self->{'_gsf_raw_seqname'};
+
+}
+
 
 
 
@@ -244,7 +278,7 @@ sub length{
 sub strand{
     my ($self,$value) = @_;
     
-    if (defined($value) ) {
+    if (defined($value)) {
 	if( $value eq '+' ) { $value = 1; }
 	if( $value eq '-' ) { $value = -1; }
 	if( $value eq '.' ) { $value = 0; }
@@ -273,7 +307,7 @@ sub strand{
 sub score {
     my ($self,$value) = @_;
   
-    if(defined ($value) ) {
+    if (defined($value)) {
       if( $value !~ /^[+-]?\d+\.?\d*(e-\d+)?/ ) {
 	  $self->throw("'$value' is not a valid score");
       }
@@ -407,8 +441,6 @@ sub validate {
     
 }
 
-
-
 sub vthrow {
     my ($self,$message) = @_;
 
@@ -431,7 +463,6 @@ sub vthrow {
 
     $self->throw("Invalid feature - see dump on STDERR");
 }
-
 
 =head2 validate_prot_feature
 
@@ -457,7 +488,6 @@ sub validate_prot_feature{
     }
     $self->throw("analysis not defined in feature")    unless defined($self->analysis);    
 }
-
 
 
 # These methods are specified in the SeqFeatureI interface but we don't want
@@ -732,6 +762,46 @@ sub id {
 
 }
 
+sub gffstring {
+   my ($self) = @_;
+
+   my $str = $self->seqname . "\t" . $self->source_tag . "\t" . 
+          $self->primary_tag . "\t" . $self->start . "\t" . $self->end . "\t" ;
+
+   my $strand = ".";
+   if ($self->strand == 1) {
+       $strand = "+";
+   } elsif ($self->strand == -1) {
+       $strand = "-";
+   }
+
+   $str .= $self->score .    "\t" . $strand . "\t.\t" ;     
+
+   return $str;
+}
+
+=head2 external_db
+
+ Title   : external_db
+ Usage   : $pid = $feat->external_db()
+           $feat->external_db($dbid)
+ Function: get/set for an external db accession number (e.g.: Interpro)
+ Returns : 
+ Args    : none if get, the new value if set
+
+=cut
+
+sub external_db {
+    my ($self,$value) = @_;
+    
+    if (defined($value)) 
+    {
+	    $self->{'_external_db'} = $value;
+    }
+
+    return $self->{'_external_db'};
+}
+
 =head2 percent_id
 
  Title   : percent_id
@@ -776,89 +846,21 @@ sub p_value {
     return $self->{_p_value};
 }
 
-=head2 phase
-
- Title   : phase
- Usage   : $phase = $feat->phase()
-           $feat->phase($phase)
- Function: get/set on start phase of predicted exon feature
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
-
-=cut
-
-sub phase {
-    my ($self, $value) = @_;
-    
-    if (defined($value) ) 
-    {
-        $self->throw("Valid values for Phase are [0,1,2] \n") if ($value < 0 || $value > 2);
-	    $self->{_phase} = $value;
-    }
-
-    return $self->{_phase};
-}
-
-=head2 end_phase
-
- Title   : end_phase
- Usage   : $end_phase = $feat->end_phase()
-           $feat->end_phase($end_phase)
- Function: returns end_phase based on phase and length of feature
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set.
-
-=cut
-
-sub end_phase {
-   my ($self, $value) = @_;
-    
-    if (defined($value)) 
-    {
-            $self->throw("Valid values for Phase are [0,1,2] \n") if ($value < 0 || $value > 2);
-            $self->{_end_phase} = $value;
-    }
-
-    return $self->{_end_phase};
-}
-
-sub gffstring {
-   my ($self) = @_;
-
-   my $str;
-   
-   $str .= (defined $self->seqname)     ?   $self->seqname."\t"      :  "\t";
-   $str .= (defined $self->source_tag)  ?   $self->source_tag."\t"   :  "\t";
-   $str .= (defined $self->primary_tag) ?   $self->primary_tag."\t"  :  "\t";
-   $str .= (defined $self->start)       ?   $self->start."\t"        :  "\t";
-   $str .= (defined $self->end)         ?   $self->end."\t"          :  "\t";
-   $str .= (defined $self->strand)      ?   $self->strand."\t"       :  ".\t";
-   $str .= (defined $self->score)       ?   $self->score."\t"        :  "\t";
-   $str .= (defined $self->phase)       ?   $self->phase."\t"        :  ".\t";
-
-   return $str;
-}
-
-
-=head2 external_db
-
- Title   : external_db
- Usage   : $pid = $feat->external_db()
-           $feat->external_db($dbid)
- Function: get/set for an external db accession number (e.g.: Interpro)
- Returns : 
- Args    : none if get, the new value if set
-
-=cut
-
-sub external_db {
-    my ($self,$value) = @_;
-    
-    if (defined($value)) 
-    {
-	    $self->{'_external_db'} = $value;
-    }
-
-    return $self->{'_external_db'};
-}
 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -42,23 +42,27 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::Root::Object;
 use Bio::EnsEMBL::DB::ObjI;
 use Bio::EnsEMBL::PerlDB::Contig;
 use Bio::EnsEMBL::PerlDB::Clone;
 
 
-@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::ObjI);
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ObjI);
+# new() is inherited from Bio::Root::Object
 
-sub new {
-  my($class,@args) = @_;
+# _initialize is where the heavy stuff will happen when new is called
 
-  my $self = bless {
-      _gene_hash   => {},
-      _contig_hash => {},
-  }, $class;
+sub _initialize {
+  my($self,@args) = @_;
 
-  return $self;
+  my $make = $self->SUPER::_initialize;
+
+  $self->{'_gene_hash'} = {};
+  $self->{'_contig_hash'} = {};
+      
+# set stuff in self from @args
+ return $make; # success - we hope!
 }
 
 =head2 get_Gene

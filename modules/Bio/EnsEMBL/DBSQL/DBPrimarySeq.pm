@@ -376,22 +376,6 @@ sub can_call_new{
    return 0;
 }
 
-=head2 desc
-
- Title   : desc
- Usage   : $obj->desc($newval)
- Function: 
- Example : 
- Returns : value of desc
- Args    : newvalue (optional)
-
-
-=cut
-
 sub desc {
-   my ($self,$value) = @_;
-   if( defined $value && $value ne '' ) {
-       $self->{'desc'} = $value;
-   } 
-   return $self->{'desc'} || '';
+    return "";
 }

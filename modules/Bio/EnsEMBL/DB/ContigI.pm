@@ -43,7 +43,6 @@ Bio::EnsEMBL::DB::ContigI.pm - Abstract Interface for Contig
     $seqout->write_seq($contig);
 
 
-
 =head1 DESCRIPTION
 
 The contig interface defines a single continuous piece of DNA with both
@@ -57,7 +56,6 @@ The contig interface just defines a number of functions which have to provided
 by implementations. Two good implementations are the RawContig implementation
 found in Bio::EnsEMBL::DBSQL::RawContig and the generic VirtualContig interface
 in Bio::EnsEMBL::DB::VirtualContig
-
 
 =head1 CONTACT
 
@@ -83,7 +81,6 @@ use Bio::Root::RootI
 
 @ISA = qw( Bio::SeqI Bio::Root::RootI );
 
-
 =head2 primary_seq
 
  Title   : seq
@@ -100,7 +97,6 @@ sub primary_seq {
    my ($self) = @_;
    $self->throw("Object did not provide the primary_seq method on a contig interface");
 }
-
 
 =head2 id
 
@@ -120,22 +116,6 @@ sub id{
 }
 
 
-=head2 internal_id
-
- Title   : internal_id
- Usage   : $obj->internal_id($newval)
- Function: 
- Example : 
- Returns : value of database internal id
- Args    : newvalue (optional)
-
-=cut
-
-sub internal_id {
-   my ($self,$value) = @_;
-    $self->throw("Object did not provide the id method on a contig interface");
-}
-
 =head2 get_all_SeqFeatures
 
  Title   : get_all_SeqFeatures
@@ -154,8 +134,6 @@ sub get_all_SeqFeatures{
    $self->throw("Object did not provide the get_all_SeqFeatures method on Contig interface!");
 
 }
-
-
 
 =head2 get_all_SimilarityFeatures_above_score
 
@@ -177,8 +155,6 @@ sub get_all_SimilarityFeatures_above_score{
 }
 
 
-
-
 =head2 get_all_SimilarityFeatures
 
  Title   : get_all_SimilarityFeatures
@@ -198,9 +174,6 @@ sub get_all_SimilarityFeatures{
 
 }
 
-
-
-
 =head2 get_all_RepeatFeatures
 
  Title   : get_all_RepeatFeatures
@@ -219,9 +192,6 @@ sub get_all_RepeatFeatures{
    $self->throw("Object did not provide the get_all_RepeatFeatures method on Contig interface!");
 
 }
-
-
-
 
 =head2 get_all_ExternalFeatures
 
@@ -244,9 +214,6 @@ sub get_all_ExternalFeatures{
 
 
 
-
-
-
 =head2 get_all_Genes
 
  Title   : get_all_Genes
@@ -265,36 +232,6 @@ sub get_all_Genes{
    $self->throw("Object did not provide the get_all_Genes method on Contig interface!");
 
 }
-
-
-
-
-
-
-=head2 get_Genes_by_Type
-
- Title   : get_Genes_by_Type
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Genes_by_Type{
-   my ($self) = @_;
-
-   $self->throw("Object did not provide the get_Genes_by_Type method on Contig interface!");
-
-}
-
-
-
-
-
-
 
 
 =head2 length
@@ -701,73 +638,6 @@ sub as_seqfeatures {
     return @sf;
 }
 
-=head2 embl_order
-
- Title   : embl_order
- Usage   : $obj->embl_order
- Function: 
- Returns : 
- Args    : 
-
-
-=cut
-
-sub embl_order{
-    my ($self) = @_;
-    $self->throw("Object did not provide the embl_order method on a contig interface");
-}
-
-=head2 embl_offset
-
- Title   : embl_offset
- Usage   : $obj->embl_offset
- Function: 
- Returns : 
- Args    : 
-
-
-=cut
-
-sub embl_offset{
-    my ($self) = @_;
-    $self->throw("Object did not provide the embl_offset method on a contig interface");
-}
-
-=head2 seq_date
-
- Title   : seq_date
- Usage   : $contig->seq_date()
- Function: Gives the unix time value of the dna table 
-           created datetime field, which indicates
-           the original time of the dna sequence data
- Example : $contig->seq_date()
- Returns : unix time
- Args    : none
-
-
-=cut
-
-sub seq_date{
-    my ($self) = @_;
-    $self->throw("Object did not provide the seq_date method on a contig interface");
-}
-
-=head2 version
-
- Title   : version
- Usage   : $obj->version($newval)
- Function: 
- Returns : value of version
- Args    : newvalue (optional)
-
-
-=cut
-
-sub version{
-   my $self = shift;
-    $self->throw("Object did not provide the version method on a contig interface");
-
-}
 
 =head1 Cruft
 

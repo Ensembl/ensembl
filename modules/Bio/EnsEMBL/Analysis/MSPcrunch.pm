@@ -57,9 +57,9 @@ use Bio::Root::Object;
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::Analysis::MSPType;
 use Bio::EnsEMBL::FeaturePair;
+use Bio::EnsEMBL::Pep_SeqFeature;
 
 use FileHandle;
-
 # Inherits from the base bioperl object
 @ISA = qw(Bio::Root::Object);
 
@@ -117,8 +117,13 @@ sub _parse {
     my $fh = new FileHandle("<$file") || $self->throw("Can't open $file");
 
     while (defined(my $line = <$fh>)) {
-	my $homol = $self->_read_Homol($line);
-	$self->add_Homol($homol);
+	eval {
+	    my $homol = $self->_read_Homol($line);
+	    $self->add_Homol($homol);
+	};
+	if ($@) {
+	    print STDERR "Couldn't parse line [$line] [$@]\n";
+	}
     }
 
     $fh->close;
@@ -137,8 +142,6 @@ sub _parse {
 
 sub _read_Homol {
     my ($self,$line) = @_;
-
-    #chomp($line);  # Unnecessary because of split
 
     my ($score, $pid,
         $qstart, $qend, $id1,
@@ -160,12 +163,20 @@ sub _read_Homol {
     if ($hstart > $hend ) {
 
 	my $tmp    = $hend;
-	   $hend   = $hstart;
-	   $hstart = $tmp;
+	$hend   = $hstart;
+	$hstart = $tmp;
 
 	$strand2 = -1;
     }
 
+
+    print STDERR "Strands are $strand1 $strand2\n";
+
+    my $strand = 1;
+
+    if ($strand1 == -1 || $strand2 == -1) {
+	$strand = -1;
+    }
 
     my ($type1,$type2) = $self->get_types;
 
@@ -191,24 +202,21 @@ sub _read_Homol {
     if ($type2 eq "PEP") {
 	$sf2 = new Bio::EnsEMBL::Pep_SeqFeature(-start  => $hstart,
 						-end    => $hend,
-						-strand => $strand1);
+						-strand => $strand);
 	$sf2->start_frac(1);
 	$sf2->end_frac  (3);
 
     } else {
 	$sf2 = new Bio::EnsEMBL::SeqFeature(-start  => $hstart,
 					    -end    => $hend,
-					    -strand => $strand1);
+					    -strand => $strand);
     }
-
 
     $sf1->score($score);
     $sf2->score($score);
 
-
     $sf1->seqname($self->contig_id);
     $sf2->seqname($id2);
-
 
     $sf1->primary_tag('similarity');
     $sf2->primary_tag('similarity');
@@ -220,7 +228,6 @@ sub _read_Homol {
     $sf2->source_tag($self->source_tag);
 
 
-
     my $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $sf1,
 					   -feature2 => $sf2,
 					   );
@@ -230,9 +237,7 @@ sub _read_Homol {
     $self->throw("Can't make analysis\n") unless defined($self->analysis);
     $sf1->analysis($self->analysis);
     $sf2->analysis($self->analysis);
-
     $fp->analysis ($self->analysis);
-
     return ($fp);
 }
 	
@@ -370,9 +375,9 @@ BEGIN {
 	    $self->{_type} = $type;
         }
         
-        use Carp;
+        #use Carp;
         #use Data::Dumper;
-        confess("No type", $self) unless defined $self->{_type};
+        #confess("No type", Dumper($self)) unless defined $self->{_type};
         
         return $self->{_type};
     }

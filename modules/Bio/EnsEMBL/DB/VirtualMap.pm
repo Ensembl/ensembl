@@ -372,10 +372,11 @@ sub build_contig_map {
 	my $mc=$self->get_MapContig($current_contig->id);
 	$mc->leftmost(1);
 	
+	# first +1 for the 1 convention, second to ensure abutting bases.
 	if( $current_orientation == 1 ) {
-	    $current_length = $current_contig->golden_end - $startpos +1;
+	    $current_length = $current_contig->golden_end - $startpos +1 +1;
 	} else {
-	    $current_length = $startpos - $current_contig->golden_start+1;
+	    $current_length = $startpos - $current_contig->golden_start+1 +1;
 	}
     } else {
 	# has an overhang - first contig offset into the system
