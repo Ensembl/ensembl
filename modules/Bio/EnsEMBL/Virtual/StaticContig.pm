@@ -224,7 +224,11 @@ sub get_all_SimilarityFeatures_above_score{
 	
 	# exclude overlaping features (for the web)
 	
+    if(  defined $bp && defined $out && $end < $out->end ) { next; }
+
+
 	if ( defined $bp && defined $out && $out->end+$bp >= $start ) {
+		
 	    if( $end <= $self->_global_end ) {
 		# reset previous guys end to end
 		$out->end($end);

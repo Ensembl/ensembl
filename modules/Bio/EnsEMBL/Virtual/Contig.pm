@@ -688,6 +688,8 @@ sub get_all_Genes {
 	push(@internal_id,$contig->internal_id);
     }
 
+    if( scalar(@internal_id) == 0 ) { return (); }
+
     my $idlist = join(',',@internal_id);
 
     my $sth = $self->dbobj->prepare("select distinct(t.gene) from transcript t,exon_transcript et,exon e where e.contig in ($idlist) and et.exon = e.id and et.transcript = t.id");
@@ -697,6 +699,10 @@ sub get_all_Genes {
     while( my ($gene) = $sth->fetchrow_array ) {
 	push(@geneid,$gene);
     }
+
+	if( scalar(@geneid) == 0 ) {
+		return ();
+	}
 
     my $gobj = $self->dbobj->gene_Obj();
 
