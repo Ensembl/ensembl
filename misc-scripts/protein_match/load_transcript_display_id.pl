@@ -1,4 +1,8 @@
 #Contact: Emmanuel Mongin (mongin@ebi.ac.uk)
+#This script loads the display_xref ids in the tables gene and transcript. The priority to which xref to load is given in the priority hash. Please edit it if needed. These script can be used for any organism
+#The database connection values are taken from mapping_conf.pl
+
+
 
 use strict;
 use DBI;
@@ -7,8 +11,6 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 use Bio::EnsEMBL::DBEntry;
 use Bio::SeqIO;
-#use MultiTestDB;
-
 
 BEGIN {
     my $script_dir = $0;
@@ -20,9 +22,7 @@ BEGIN {
 my %conf =  %::mapping_conf; # configuration options
 
 
-# global vars
-
-
+# Database connection values
 my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
 my $user       = $conf{'dbuser'};
@@ -30,6 +30,7 @@ my $pass       = $conf{'password'};
 my $organism   = $conf{'organism'};
 my %priority;
 
+#Priority set up
 $priority{'BRIGGSAE_HYBRID'} = 1000;
 $priority{'HUGO'} = 1000;
 $priority{'MarkerSymbol'} = 1000;
@@ -49,8 +50,6 @@ if (!defined $organism) {
 
 print STDERR "Connecting to the database...\n";
 
-#my $multi = MultiTestDB->new();
-
 my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -user   => $user,
         -dbname => $dbname,
@@ -59,12 +58,11 @@ my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -driver => 'mysql',
 	);
 
-#my $db = $multi->get_DBAdaptor( 'core' );
-
 my $transadaptor = $db->get_TranscriptAdaptor();
 my $geneadaptor  = $db->get_GeneAdaptor();
 my $xrefadaptor  = $db->get_DBEntryAdaptor();
 
+#First get through all of the transcripts and set up the display xref following the priority list
 my $query = "select transcript_id from transcript";
 my $sth = $db->prepare($query);
 $sth->execute();
@@ -81,9 +79,8 @@ while(my $id = $sth->fetchrow) {
     }
     $trans->display_xref($display);
     $transadaptor->update($trans);
-    print STDERR "ID: $id\tDISPLAY: $display\tTEST: ".$transadaptor->get_display_xref_id($id)."\n";
-}
 
+#Then get through all of the genes and choose from the transcripts which one to use. There is currently am exeption for elegans as the display xref should be the gene and transcripts stable ids.
 if ($organism ne "elegans") {
 
     my $query1 = "select gene_id from gene";
@@ -108,7 +105,6 @@ if ($organism ne "elegans") {
 	}
 	$gene->display_xref($display);
 	$geneadaptor->update($gene);
-#    print STDERR "GENE_ID: $gene_id\tDISPLAY: $display\tTEST: ".$geneadaptor->get_display_xref_id($gene_id)."\n";
     }
 }
 elsif ($organism eq "elegans") {
