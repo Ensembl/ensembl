@@ -192,6 +192,63 @@ sub get_Clone{
     return $clone;
 }
 
+
+=head2 get_all_Clone_id
+
+ Title   : get_all_Clone_id
+ Usage   : @cloneid = $obj->get_all_Clone_id
+ Function: returns all the valid (live) Clone ids in the database
+ Example :
+ Returns : 
+ Args    :
+
+Note: for speed this does not return the ensembl_id but the disk_id
+
+
+=cut
+
+sub get_all_Clone_id{
+   my ($self,$fall) = @_;
+   my($key,$val);
+   my @list;
+   my $nc=0;
+   my $nisv=0;
+   my $nsid=0;
+   while(($key,$val)=each %{$self->{'_clone_dbm'}}){
+       $nc++;
+       my($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$val);
+       if($key ne $acc){
+	   $nsid++;
+       }
+       if($sv!~/^[1234]$/){
+	   $nisv++;
+	   next unless $fall;
+       }
+       push(@list,$key);
+   }
+   print STDERR "$nc clones in database\n";
+   print STDERR "$nsid have cloneid rather than accession numbers\n";
+   print STDERR "$nisv have invalid SV numbers";
+   if($fall){
+       print " and are included\n";
+   }else{
+       print " and are excluded\n";
+   }
+   return @list;
+}
+
+
+=head2 get_id_acc
+
+ Title   : get_id_acc
+ Usage   : @array=$self->$id;
+ Function: returns id (id or acc dependent on _byacc flag) and other parameters associated with a clone
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
 sub get_id_acc{
     my($self,$id)=@_;
     # check to see if clone exists, and extract relevant items from dbm record

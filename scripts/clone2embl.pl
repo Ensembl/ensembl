@@ -122,7 +122,6 @@ if( $fromfile == 1 ) {
     @clones = @ARGV;
 }
 
-
 if( $dbtype =~ 'ace' ) {
     $host=$host2 unless $host;
     $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host, -port => $port);
@@ -141,6 +140,10 @@ if( $dbtype =~ 'ace' ) {
 } else {
     die("$dbtype is not a good type (should be ace, rdb or timdb)");
 }
+
+# test report number of clones in db
+#my @list=$db->get_all_Clone_id();
+#exit 0;
 
 if ( $getall == 1 ) {
     @clones = $db->get_all_Clone_id();

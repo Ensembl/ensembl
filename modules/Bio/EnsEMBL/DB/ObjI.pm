@@ -151,9 +151,3 @@ sub write_Contig {
 }
 
 1;
-
-
-
-
-
-
