@@ -4,7 +4,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 132;
+	plan tests => 133;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -432,6 +432,52 @@ ok($tr->translate->seq() eq 'MNFALILMINTLLALLLMIITFWLPQLNGYMEKSTPYECGFDPMSPARVPF
 
 
 
+# check that attributes are stored when transcript is stored
+
+$tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+my $g = $db->get_GeneAdaptor->fetch_by_transcript_id($tr->dbID());
+
+
+$tr->translation()->adaptor(undef);
+$tr->translation()->dbID(undef);
+
+# unstore the transcript so it can be stored again
+
+foreach my $ex (@{$tr->get_all_Exons()}) {
+  $ex->dbID(undef);
+  $ex->adaptor(undef);
+}
+
+$tr->dbID(undef);
+$tr->adaptor(undef);
+
+
+$multi->hide('core', 'transcript', 'transcript_attrib', 'translation',
+             'exon_transcript', 'exon', 'exon_stable_id', 
+             'transcript_stable_id', 'translation_stable_id');
+
+
+my $attrib1 = Bio::EnsEMBL::Attribute->new
+  ( -code => '_rna_edit',
+    -value => "65 64 NNN",
+    -name => "RNA editing");
+
+$tr->add_Attributes($attrib1);
+
+my $attrib2 = Bio::EnsEMBL::Attribute->new
+  ( -code => '_rna_edit',
+    -value => "66 65 NNN",
+    -name => "RNA editing");
+
+$tr->add_Attributes($attrib2);
+
+$ta->store($tr, $g->dbID());
+
+ok(count_rows($db, 'transcript_attrib') == 2);
+
+
+
+$multi->restore('core');
 
 
 sub test_trans_mapper_edits {

@@ -7,7 +7,7 @@ use Bio::EnsEMBL::Exon;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 30;
+	plan tests => 31;
 }
 
 my $loaded = 0;
@@ -220,3 +220,45 @@ my $tr2 = $tra->fetch_by_stable_id('ENST00000252021');
 my @tls = @{$ta->fetch_all_by_Transcript_list([$tr,$tr2])};
 
 ok(@tls == 2);
+
+
+
+# test that translation attribs are stored when translation is stored
+# check that attributes are stored when transcript is stored
+
+$tr = $tra->fetch_by_stable_id( "ENST00000217347" );
+
+$tl = $tr->translation();
+
+# unstore the translation so it can be stored again
+
+$tl->adaptor(undef);
+$tl->dbID(undef);
+
+
+$multi->hide('core', 'transcript', 'translation_attrib', 'translation',
+             'translation_stable_id');
+
+
+# add a couple of attributes to the translation
+
+$sc = Bio::EnsEMBL::SeqEdit->new(-START   => 2,
+                                 -END     => 2,
+                                 -ALT_SEQ => 'U',
+                                 -CODE    => '_selenocysteine',
+                                 -NAME    => 'Selenocysteine');
+
+$tl->add_Attributes( $sc->get_Attribute() );
+
+$sc->start(3);
+$sc->end(3);
+
+$tl->add_Attributes( $sc->get_Attribute() );
+
+$ta->store($tl, $tr->dbID());
+
+ok(count_rows($db, 'translation_attrib') == 2);
+
+$multi->restore('core');
+
+
