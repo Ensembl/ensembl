@@ -45,32 +45,53 @@ foreach my $db (keys %thing) {
 EOT
     foreach my $v (@{ $thing{$db} }) {
 	shift(@pair) if (scalar @pair == 2);
-	push(@pair, [ $db, $v ]);
+	push(@pair, $v);
 	next if (scalar @pair != 2);
 
-	my $p0 = $pair[0][0] . '_' . $pair[0][1];
-	my $p1 = $pair[1][0] . '_' . $pair[1][1];
-	my $d  = $p0 . '_delta_' . $pair[1][1];
+	my $v0 = $pair[0]; my $db0 = $db . '_' . $v0;
+	my $v1 = $pair[1]; my $db1 = $db . '_' . $v1;
+	my $d  = $db . '_' . $v0 . '_delta_' . $v1;
 	print <<EOT;
-# DELTA: $pair[0][1] -> $pair[1][1]
-if [ ! -f deltas/$d.txt ]; then
-  if [ ! -d databases/$p0 ]; then
-    scp -c none -r ecs3:/mysqla/current/var/$p0 databases/
-  fi
-  if [ ! -d databases/$p1 ]; then
-    scp -c none -r ecs3:/mysqla/current/var/$p1 databases/
-  fi
-  /usr/bin/time perl ./build.pl -c ./xdelta.osf -s databases -d deltas \\
-    $pair[0][0] $pair[0][1] $pair[1][1] 2>&1 | \\
-    tee deltas/$d.txt
-  rm -rf databases/$p0
+# DELTA: $v0 -> $v1
+if [ ( ! -f deltas/${d}_build.txt -o \\
+       ! -f deltas/${d}_apply.txt ) -a \\
+       ! -d databases/$db0 ]; then
+  # Get older revision (needed for build and apply)
+  scp -c none -r ecs3:/mysqla/current/var/$db0 databases/
+fi
+
+if [ ! -f deltas/${d}_build.txt -a \\
+     ! -d databases/$db1 ]; then
+  # Get newer revision (only needed for build)
+  scp -c none -r ecs3:/mysqla/current/var/$db1 databases/
+fi
+
+if [ ! -f deltas/${d}_build.txt ]; then
+  # Compute delta
+  /usr/bin/time perl -w ./build.pl -c ./xdelta.osf -s databases -d deltas \\
+    $db $v0 $v1 2>&1 | \\
+    tee deltas/${d}_build.txt
+fi
+
+if [ ! -f deltas/${d}_apply.txt ]; then
+  # Apply the delta as a test
+  /usr/bin/time perl -w ./apply.pl -c ./xdelta.osf -s deltas -s databases \\
+    $db $v0 $v1 2>&1 | \\
+     tee deltas/${d}_apply.txt
+fi
+
+  # Remove older revision and new revision built by apply.pl
+  rm -rf databases/$db0
+  rm -rf databases/${db1}.????
 fi
 EOT
     }
     if (defined $pair[1]) {
+	my $db1 = $db . '_' . $pair[1];
 	print <<EOT;
-if [ -d databases/$pair[1][0]_$pair[1][1] ]; then
-  rm -rf databases/$pair[1][0]_$pair[1][1]
+if [ -d databases/$db1 ]; then
+  # Remove newer (latest) revision
+  rm -rf databases/$db1
 fi
 EOT
     }
