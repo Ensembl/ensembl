@@ -16,7 +16,9 @@
 =head1 SYNOPSIS
 
   my $meta_container = $db_adaptor->get_MetaContainer();
-  my $assembly_type = $meta_container->get_default_assembly();  
+  my $species = $meta_container->get_Species();
+
+  my @mapping_info = @{$meta_container->list_value_by_key('assembly.mapping')};
 
 =head1 DESCRIPTION
 
