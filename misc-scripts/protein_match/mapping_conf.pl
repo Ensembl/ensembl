@@ -221,6 +221,10 @@ package main;
              ##################
 
 	     'check'      => '', #obslete option? 	 
+
+
+#Help related stuff. Put the location of the latest help file
+             'help'      => 'For an extensive help please check out ensembl-doc and have a look at protein_mapping.txt',
  );
 
 

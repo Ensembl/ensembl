@@ -32,6 +32,17 @@ my $port       = $conf{'port'};
 my $organism   = $conf{'organism'};
 my $query_pep  = $conf{'query'};
 my $refseq_pred = $conf{'refseq_pred_gnp'};
+my $help;
+
+
+&GetOptions(
+	    'help' => \$help,
+	    );
+
+if ($help) {
+    print STDERR $conf{'help'}."\n";
+    exit();
+}
 
 #Organism specific options
 #Drosophila
@@ -52,6 +63,10 @@ my %ens2embl;
 my %embl2sp;
 my %errorflag;
 my %ref_map_pred;
+
+my $help = $conf{'help'};
+
+print STDERR "$help\n";
 
 #Checks
 

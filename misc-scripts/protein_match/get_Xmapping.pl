@@ -47,6 +47,18 @@ my $zeb_dblink  = $conf{'zeb_dblink'};
 
 my $briggsae_peptides = $conf{'briggsae_hybrid'};
 
+my $help;
+
+
+&GetOptions(
+	    'help' => \$help,
+	    );
+
+if ($help) {
+    print STDERR $conf{'help'}."\n";
+    exit();
+}
+
 #Check that the configuration file has been well filled in for each different organism
 #Beginning of check
 
@@ -640,3 +652,4 @@ HELP
 
   exit();
 }
+

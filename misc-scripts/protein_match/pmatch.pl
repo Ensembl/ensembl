@@ -11,7 +11,7 @@
 
 
 use strict;
-use Getopt::Std;
+use Getopt::Long;
 #use vars qw($opt_q $opt_t $opt_l $opt_o $t_thr $q_thr $opt_w $opt_s $opt_c $opt_d);
 
 BEGIN {
@@ -39,6 +39,17 @@ my $t_thr = $conf{'target_idt'};
 my $q_thr = $conf{'query_idt'};
 my $pmatch_bin = $conf{'pmatch'};
 my ($opt_w,$opt_l,$opt_d);
+my $help;
+
+
+&GetOptions(
+	    'help' => \$help,
+	    );
+
+if ($help) {
+    print STDERR $conf{'help'}."\n";
+    exit();
+}
 
 #Check if the configuration file is correct
 my %check;
