@@ -123,6 +123,7 @@ sub fetch_EMBLgenes_start_end {
     return $self->{$cache_name} = \@genes;
     return \@genes
 }
+
 sub fetch_virtualRepeatFeatures_start_end {
     my ( $self, $chr, $vc_start, $vc_end, $type, $glob_bp ) =@_;
     my $cache_name = "_repeats_$type"."_cache_$chr"."_$vc_start"."_$vc_end";
