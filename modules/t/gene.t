@@ -41,7 +41,7 @@ debug ("Gene->list_stable_ids");
 my $stable_ids = $ga->list_stable_ids();
 ok (@{$stable_ids});
 
-$gene = $ga->fetch_by_stable_id( "ENSG00000171456", "chromosome" );
+$gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
 debug( "Gene->fetch_by_stable_id()" );
 ok( $gene );
@@ -383,12 +383,12 @@ ok( $known==17 );
 
 # tests for update method
 # go get a fresh gene again
-$gene = $ga->fetch_by_stable_id( "ENSG00000171456", "toplevel" ); 
+$gene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
 
 # the first update should no effect
 $ga->update($gene);
 
-my $newgene = $ga->fetch_by_stable_id( "ENSG00000171456", "chromosome" ); 
+my $newgene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
 ok ( $newgene->display_xref->dbID() == 128324 );
 ok ( $newgene->type eq 'ensembl' );
 
@@ -399,6 +399,6 @@ $gene->display_xref( $dbEntryAdaptor->fetch_by_dbID( 614 ));
 $gene->type('dummy');
 $ga->update($gene);
 
-$newgene = $ga->fetch_by_stable_id( "ENSG00000171456", "chromosome" ); 
+$newgene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
 ok ( $newgene->display_xref->dbID() == 614 );
 ok ( $newgene->type eq 'dummy' );
