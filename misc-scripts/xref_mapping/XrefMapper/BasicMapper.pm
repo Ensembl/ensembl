@@ -149,7 +149,7 @@ sub get_set_lists{
 #	  ["method2",[$self->species,"*"]],
 #	  ["method3",["*","*"]]];
 
-  return [["ExonerateUngappedBest1", ["homo_sapiens","UniProtSwissProt"]]];
+  return [["ExonerateGappedBest1", ["homo_sapiens","UniProtSwissProt"]]];
 #  return [["ExonerateBest1",["*","*"]]];
 
 }
@@ -722,6 +722,7 @@ sub store {
   open (IDENTITY_XREF, ">identity_xref.txt");
 
   my $total_lines = 0;
+  my $last_lines = 0;
   my $total_files = 0;
 
   my $object_xref_id = $max_object_xref_id + 1;
@@ -762,7 +763,7 @@ sub store {
       # TODO make sure query & target are the right way around
 
       # only take mappings where there is a good match on or both sequences
-      next if ($query_identity < 98 and $target_identity < 98);
+      #next if ($query_identity < 98 and $target_identity < 98);
 
       # note we add on $xref_id_offset to avoid clashes
       print OBJECT_XREF "$object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
@@ -788,7 +789,8 @@ sub store {
     }
 
     close(FILE);
-
+    #print "After $file, lines read increased by " . ($total_lines-$last_lines) . "\n";
+    $last_lines = $total_lines;
   }
 
   close(IDENTITY_XREF);
@@ -874,6 +876,7 @@ sub dump_xrefs {
 
   open (XREF, ">xref.txt");
   open (OBJECT_XREF, ">>object_xref.txt");
+  open (EXTERNAL_SYNONYM, ">external_synonym.txt");
 
   my $xref_dbi = $self->xref()->dbi();
   my $core_dbi = $self->dbi();
@@ -929,7 +932,7 @@ sub dump_xrefs {
     $dep_sth->bind_columns(\$xref_id, \$accession, \$label, \$description, \$source_id);
     while (my @row = $dep_sth->fetchrow_array()) {
 
-print XREF ($xref_id+$xref_id_offset) . "\t" . $accession . "\t" . $label . "\t" . $description . "DEPENDENT\n";
+      print XREF ($xref_id+$xref_id_offset) . "\t" . $accession . "\t" . $label . "\t" . $description . "DEPENDENT\n";
       $source_ids{$source_id} = $source_id;
 
       # create an object_xref linking this (dependent) xref with any objects it maps to
@@ -944,12 +947,26 @@ print XREF ($xref_id+$xref_id_offset) . "\t" . $accession . "\t" . $label . "\t"
       }
     }
 
+    # Now get the synonyms for each of these xrefs and write them to the external_synonym table
+    $sql = "SELECT s.synonym_xref_id, x2.accession FROM synonym s, xref x, xref x2 WHERE x.xref_id=s.xref_id AND x2.xref_id=s.synonym_xref_id AND s.xref_id $id_str";
+
+    my $syn_sth = $xref_dbi->prepare($sql);
+    $syn_sth->execute();
+
+    $syn_sth->bind_columns(\$xref_id, \$accession);
+    while (my @row = $syn_sth->fetchrow_array()) {
+
+      print EXTERNAL_SYNONYM ($xref_id+$xref_id_offset) . "\t" . $accession . "\n";
+
+    }
+
     #print "source_ids: " . join(" ", keys(%source_ids)) . "\n";
 
   } # while @xref_ids
 
   close(XREF);
   close(OBJECT_XREF);
+  close(EXTERNAL_SYNONYM);
 
   # now write the exernal_db file - the %source_ids hash will contain the IDs of the
   # sources that need to be written as external_dbs
