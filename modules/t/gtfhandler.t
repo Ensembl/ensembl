@@ -32,20 +32,22 @@ $loaded = 1;
 print "ok 1\n";    # 1st test passes.
     
 my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
-my @genes=&parse_genes('genes.gtf',1);
+my @genes=&parse_genes('t/genes.gtf',1);
 
-open (DUMP,">t/gene_dump.gtf");
-$gtfh->dump_genes(\*DUMP,@genes);
+my $dump_file = 't/gene_dump.gtf';
+open (DUMP,"> $dump_file");
+$gtfh->dump_genes(\*DUMP, @genes);
 close (DUMP);
 print "ok 6\n";
-&parse_genes('gene_dump.gtf',6);
+&parse_genes($dump_file, 6);
 
 sub parse_genes {
     my ($file,$c)=@_;
     
     #Use new parser module, to empty gene array
     my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
-    open (PARSE,"t/$file") || die("Could not open $file for Fasta stream reading $!");
+    open (PARSE, $file)#
+        or die("Can't read '$file' : $!");
     
     @genes=$gtfh->parse_file(\*PARSE);
     close (PARSE);
