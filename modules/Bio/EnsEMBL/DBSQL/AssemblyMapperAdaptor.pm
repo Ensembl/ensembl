@@ -182,11 +182,11 @@ sub fetch_by_CoordSystems {
 
   if(@mapping_path == 2) {
     #1 step regular mapping
-    #$asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
+    $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
 
 #   If you want multiple pieces on two seqRegions to map to each other
 #   uncomment following. AssemblyMapper assumes only one mapped piece per contig
-    $asm_mapper = Bio::EnsEMBL::ChainedAssemblyMapper->new( $self, $mapping_path[0], undef, $mapping_path[1] );  
+#    $asm_mapper = Bio::EnsEMBL::ChainedAssemblyMapper->new( $self, $mapping_path[0], undef, $mapping_path[1] );  
     $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
     return $asm_mapper;
   }
