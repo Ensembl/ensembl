@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 36;
+	plan tests => 38;
 }
 
 use MultiTestDB;
@@ -242,3 +242,18 @@ $tr = $ta->fetch_by_translation_id(21734);
 ok($tr && $tr->stable_id eq 'ENST00000201961');
 
 ok($tr->display_id() eq $tr->stable_id());
+
+#
+# regression test:  five_prime_utr and three_prime_utr were failing
+# for transcripts that had no UTR. undef should have been returned instead
+#
+$tr = $ta->fetch_by_stable_id('ENST00000246203');
+
+my $three_prime = $tr->three_prime_utr();
+
+ok(!defined($three_prime));
+
+my $five_prime = $tr->five_prime_utr();
+
+ok(!defined($five_prime));
+
