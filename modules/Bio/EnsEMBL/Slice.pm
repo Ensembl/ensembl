@@ -1241,18 +1241,24 @@ sub get_all_RepeatFeatures {
 
 sub get_all_VariationFeatures{
   my $self = shift;
-  my $vfa;
+
   if(!$self->adaptor()) {
     warning('Cannot get variation features without attached adaptor');
     return [];
   }
 
-  my $db = $self->adaptor()->db();
-  if(defined($db)){
-      $vfa = $reg->get_adaptor( $db->species(), "variation", "VariationFeature" );
+  my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+
+  unless($variation_db) {
+    warning("Variation database must be attached to core database to " .
+		"retrieve variation information" );
+    return [];
   }
-  if( $vfa ) {
-    return $vfa->fetch_all_by_Slice($self);
+
+  my $vf_adaptor = $variation_db->get_VariationFeatureAdaptor;
+
+  if( $vf_adaptor ) {
+    return $vf_adaptor->fetch_all_by_Slice($self);
   } else {
     return [];
   }
@@ -1276,15 +1282,20 @@ sub get_all_genotyped_VariationFeatures{
     warning('Cannot get variation features without attached adaptor');
     return [];
   }
+  my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
 
-  my $db = $self->adaptor()->db();
-  if(defined($db)){
-      $vfa = $reg->get_adaptor( $db->species(), "variation", "VariationFeature" );
+  unless($variation_db) {
+      warning("Variation database must be attached to core database to " .
+	      "retrieve variation information" );
+      return [];
   }
-  if( $vfa ) {
-    return $vfa->fetch_all_genotyped_by_Slice($self);
+  
+  my $vf_adaptor = $variation_db->get_VariationFeatureAdaptor;
+  
+  if( $vf_adaptor ) {
+      return $vf_adaptor->fetch_all_genotyped_by_Slice($self);
   } else {
-    return [];
+      return [];
   }
 }
 
