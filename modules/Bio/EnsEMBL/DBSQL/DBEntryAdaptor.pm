@@ -91,7 +91,8 @@ sub fetch_by_dbID {
 
 sub store {
     my ( $self, $exObj, $ensObject, $ensType ) = @_;
-    
+
+    print STDERR "Got  $exObj, $ensObject, $ensType \n";
     # $self->throw( "Sorry, store not yet supported" );
     my $dbJustInserted;
     

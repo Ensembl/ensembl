@@ -246,7 +246,7 @@ sub fetch_by_chromosome_name_virtual {
 
 
 sub fetch_by_name{
-    my ($self,$chr,$name) = @_;
+    my ($self,$chr_name,$name) = @_;
 
     $self->throw("Need both name") unless defined $name;
 
@@ -286,7 +286,7 @@ sub fetch_by_name{
 =cut
 
 sub fetch_by_name_virtual {
-    my ($self,$chr,$name) = @_;
+    my ($self,$chr_name,$name) = @_;
 
     $self->throw("Need both chromosome and name") unless defined $name;
 

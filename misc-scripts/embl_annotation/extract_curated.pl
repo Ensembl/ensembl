@@ -13,16 +13,16 @@ use Bio::SeqIO;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 
 # embl genes will be written to this database:
-my $ohost='ecs1b';
-my $ouser='ensadmin';
-my $odbname='tim_embl_test';
-my $pass='ensembl';
+my $ohost='localhost';
+my $ouser='root';
+my $odbname='embl_test';
+my $pass='';
 
 # list of clones in ensembl for which an embl file should be
 # checked is read from here
-my $ihost='ecs1c';
-my $iuser='ensro';
-my $idbname='ensembl100';
+my $ihost='localhost';
+my $iuser='root';
+my $idbname='';
 
 # test file
 my $emblfile='AL109928.embl';
@@ -125,13 +125,13 @@ open(TRANSLATION_MAP,$translation_map_file) || die "cant open $translation_map_f
 
 # connect to db for writing
 my $db;
+my $adx;
 unless($nodb){
     $db = Bio::EnsEMBL::DBLoader->new(
        "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ohost;user=$ouser;dbname=$odbname;pass=$pass");
+    # adaptor for xrefs
+    $adx = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($db);
 }
-
-# adaptor for xrefs
-my $adx=Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($db);
 
 my $dbi;
 if($list){
@@ -381,8 +381,8 @@ sub _process_file{
 			foreach my $dbentry ($transcript->each_DBLink){
 			    # attach adapter
 			    $dbentry->adaptor($adx);
-			    print STDERR "Storing ",$transcript->stable_id," ",$dbentry->primary_id,"\n";
-			    $adx->store($dbentry,$transcript->stable_id,'Transcript');
+			    print STDERR "Storing ",$transcript->translation->stable_id," ",$dbentry->primary_id,"\n";
+			    $adx->store($dbentry,$transcript->translation->stable_id,'Translation');
 			}
 		    }
 		};
