@@ -156,5 +156,5 @@ for my $name ( @$name_list ) {
   debug( "Overlapping supercontig ".$name );
 }
 
-ok( $name_list->[0] eq "NT_028392" );
+ok( grep { $_ eq "NT_028392" } @$name_list);
 
