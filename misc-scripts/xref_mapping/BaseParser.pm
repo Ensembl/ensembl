@@ -1,6 +1,7 @@
 package BaseParser;
 
 use DBI;
+use strict;
 
 my $host = "ecs1g";
 my $port = 3306;
@@ -20,23 +21,24 @@ sub new {
 }
 
 # --------------------------------------------------------------------------------
-# Upload a source object to the source table.
-# Return the ID of the new row in the database.
+# Get source ID for a particular source name
 
-sub upload_source {
+sub get_source_id {
 
-  my ($self, $source) = @_;
+  my ($self, $name) = @_;
 
-  my $sth = $dbi->prepare("INSERT INTO source (name,url,file_modified_date,upload_date,release) VALUES(?,?,?, NOW(),?)");
-  $sth->execute($source->{NAME},
-		$source->{URL},
-		$source->{FILE_MODIFIED_DATE}, "") || die $dbi->errstr;
+  my $sth = $dbi->prepare("SELECT source_id FROM source WHERE name='" . $name . "'");
+  $sth->execute();
+  my @row = $sth->fetchrow_array();
+  my $source_id;
+  if (defined @row) {
+    $source_id = $row[0];
+  } else {
+    warn("Couldn't get source ID for name $name\n");
+    $source_id = -1;
+  }
 
-  my $id = $sth->{'mysql_insertid'};
-
-  $sth->finish() if defined $sth;
-
-  return $id;
+  return $source_id;
 
 }
 
@@ -47,33 +49,38 @@ sub upload_xrefs {
 
   my ($self, @xrefs) = @_;
 
-  my $sth;
+  # remove all existing xrefs with same source ID
+  my $source_id = $xrefs[0]->{SOURCE_ID};
+  my $del_sth = $dbi->prepare("DELETE FROM xref WHERE source_id=$source_id");
+  $del_sth->execute();
+
+  # upload new ones
+  my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,source_id,species_id) VALUES(?,?,?,?)");
+  my $pri_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
+  my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?,?)");
+
   foreach my $xref (@xrefs) {
 
     # Create entry in xref table and note ID
-    $sth = $dbi->prepare("INSERT INTO xref (accession,label,source_id,species_id) VALUES(?,?,?,?)");
-    $sth->execute($xref->{ACCESSION},
-		  $xref->{LABEL},
-		  $xref->{SOURCE_ID},
-		  $xref->{SPECIES_ID}) || die $dbi->errstr;
+    $xref_sth->execute($xref->{ACCESSION},
+		       $xref->{LABEL},
+		       $xref->{SOURCE_ID},
+		       $xref->{SPECIES_ID}) || die $dbi->errstr;
 
     # get ID of xref just inserted
-    my $xref_id = $sth->{'mysql_insertid'};
+    my $xref_id = $xref_sth->{'mysql_insertid'};
 
     # create entry in primary_xref table with sequence
     # TODO experimental/predicted????
-    $sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
-    $sth->execute($xref_id,
-		  $xref->{SEQUENCE},
-		  'peptide',
-		  'experimental',
-		  $xref->{SOURCE_ID}) || die $dbi->errstr;
+    $pri_sth->execute($xref_id,
+		      $xref->{SEQUENCE},
+		      'peptide',
+		      'experimental',
+		      $xref->{SOURCE_ID}) || die $dbi->errstr;
 
     # if there are synonyms, create xrefs for them and entries in the synonym table
-    my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,source_id,species_id) VALUES(?,?,?,?)");
-    my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?,?)");
     foreach my $syn (@{$xref->{SYNONYMS}}) {
-      
+
       $xref_sth->execute($syn,
 			 $xref->{LABEL},
 			 $xref->{SOURCE_ID},
@@ -82,10 +89,13 @@ sub upload_xrefs {
       my $syn_xref_id = $xref_sth->{'mysql_insertid'};
       $syn_sth->execute($xref_id, $syn_xref_id, $xref->{SOURCE_ID} ) || die $dbi->errstr;
 
-    }
-  }
+    } # foreach syn
 
-  $sth->finish() if defined $sth;
+  } # foreach xref
+
+  $del_sth->finish() if defined $del_sth;
+  $xref_sth->finish() if defined $xref_sth;
+  $pri_sth->finish() if defined $pri_sth;
 
 }
 
