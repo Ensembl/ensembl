@@ -22,7 +22,97 @@ use File::Copy;
 
 use Getopt::Std;
 
-use aux qw(:default :apply);
+use Digest::MD5;
+use Compress::Zlib;
+
+# Compute the MD5 checksum of a file.  Returns the checksum as a
+# hex string.
+sub make_checksum
+{
+    my $file_path = shift;
+
+    my $digest = new Digest::MD5;
+
+    open FILE, $file_path or die $!;
+    binmode FILE;
+
+    $digest->addfile(*FILE);
+
+    my $hex = $digest->hexdigest;
+    close FILE;
+
+    return $hex;
+}
+
+# Converts a byte count to a form more easly read by humans.
+# Returns a string consisting of an float (two decimal places),
+# a space, and a suffix.
+sub make_human_readable
+{
+    my $bytes = shift;
+
+    my @prefix = qw(b Kb Mb Gb Tb Pb);
+    my $step = 0;
+
+    while ($bytes > 10000) {
+	$bytes /= 1024;
+	++$step;
+    }
+
+    return sprintf("%.2f %s", $bytes, $prefix[$step]);
+}
+
+# Display usage information for the apply.pl program.
+sub usage_apply
+{
+    my $opts = shift;
+
+    print STDERR <<EOT;
+Usage:  $0 [options] [--] database old_v new_v
+
+database    The database to work on, e.g. "homo_sapiens_core".
+old_v       The older version, e.g. "11_31".
+new_v       The newer version, e.g. "12_31".
+
+The options may be any of these:
+
+-c cmd  Path to xdelta executable.
+        Default: "$opts->{'c'}".
+-s path Path to the directory where the delta directory is stored.
+        Default: "$opts->{'s'}"
+-d path Path to the directory holding the old version of the
+        database, and where the new version of the database
+        should be created.  The new database directory will be
+        given a unique name.
+        Default: "$opts->{'d'}"
+
+EOT
+}
+
+# Decompress a file.
+sub do_decompress
+{
+    my $zfile_path = shift;
+    my $file_path  = shift;
+
+    open(OUT, '>' . $file_path) or die $!;
+    binmode OUT;
+
+    my $gz = gzopen($zfile_path, "r");
+
+    if (!defined($gz)) {
+	close OUT;
+	die $gzerrno;
+    }
+
+    my $buffer;
+    while ((my $bytesread = $gz->gzread($buffer)) != 0) {
+	print OUT substr($buffer, 0, $bytesread);
+    }
+
+    $gz->gzclose();
+    close OUT;
+}
 
 my %opts;
 my $xdelta_cmd	= $opts{'c'} = 'xdelta';
