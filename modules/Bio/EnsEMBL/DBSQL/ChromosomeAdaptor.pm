@@ -140,7 +140,7 @@ sub fetch_by_dbID {
 sub fetch_by_chr_name{
    my ($self,$chr_name) = @_;
 
-  my $chr = (); 
+  my $chr = undef; 
 
   unless(defined $chr_name) {
     $self->throw("Chromosome name argument required\n");
@@ -164,6 +164,8 @@ sub fetch_by_chr_name{
     
     my($dbID, $known_genes, $unknown_genes, $snps, $length);
     $sth->bind_columns(\$dbID,\$known_genes,\$unknown_genes,\$snps,\$length); 
+
+    if ($sth->rows > 0) {
     $sth->fetch();
 
     $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
@@ -176,9 +178,8 @@ sub fetch_by_chr_name{
 
     $self->{'_chr_cache'}->{$dbID} = $chr;
     $self->{'_chr_name_cache'}->{$chr_name} = $chr;
-    
   }
-
+  }
   return $chr;
 }
 
