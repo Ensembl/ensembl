@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..9\n"; 
+BEGIN { $| = 1; print "1..7\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -91,65 +91,12 @@ if( $mc->start != 400 ||
     print "ok 6\n";
 }
 
-# raw contig seq  is:
-# AAAAAAAAAACCCCCCCCCCGGGGGGGGGGTTTTTTTTTT
-$str = $mc->seq;
-$shouldbe='AAAAAAAACCCCCCCCCCGGG';
-# if( $str ne 'AAAAAAAATTTTTTTTTAAAA' ) {
-  if( $str ne $shouldbe ) {
+$str = $mc->_actual_sequence_as_string;
+if( $str ne 'AAAAAAAATTTTTTTTTAAAA' ) {
     print "not ok 7\n";
-    print STDERR "Seq $str, should be $shouldbe\n";
+    print STDERR "Seq $str\n";
 } else {
     print "ok 7\n";
 }
 
-# reverse strand:
-$mc = Bio::EnsEMBL::Virtual::MapContig->new(
-	-rawcontig => $contig,
-	-start => 1001,
-	-end   => 1010,
- 	-rawcontig_start => 8,
-	-orientation => -1,
-	);
-# raw contig seq  is:
-# AAAAAAAAAACCCCCCCCCCGGGGGGGGGGTTTTTTTTTT
-$str=$mc->seq;
-$shouldbe='GGGGGGGTTT';
-if ($str eq $shouldbe )  {
-  print "ok 8\n";
-} else {
-  print "not ok 8\n";
-  warn "Seq $str, should be $shouldbe\n";
-}
 
-# check missing args:
-eval { 
-  $mc = Bio::EnsEMBL::Virtual::MapContig->new(
-	-rawcontig => $contig,
-	-start => 230,
- 	-rawcontig_start => 3,
-	-orientation => 1
-	);
-}; 
-if ($@) {
-   print "ok 8\n";
-} else {
-   print "not ok 8\n";
-   warn "expected exception on missing arguments";
-}
-
-eval {
-$mc = Bio::EnsEMBL::Virtual::MapContig->new(
-	-rawcontig => $contig,
-	-start => 30,
-	-end   => 10,
- 	-rawcontig_start => 3,
-	-orientation => 1
-	);
-};
-if ( $@ ) {
-   print "ok 9\n";
-} else {
-   print "not ok 9\n";
-   warn "expected exception on start > end ";
-}

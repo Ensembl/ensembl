@@ -203,9 +203,9 @@ sub ensembl_locator {
     
     my $module = ($self->module() || 'Bio::EnsEMBL::DBSQL::Obj');
     my $locator = '';
-    foreach my $meth (qw{ host port dbname user password }) {
+    foreach my $meth (qw{ host port dbname user }) {
         my $value = $self->$meth();
-	next unless defined $value;
+	if( !defined $value ) { next; }
         $locator .= ';' if $locator;
         $locator .= "$meth=$value";
     }
@@ -237,9 +237,7 @@ sub do_sql_file {
         }
         close SQL;
         
-	#Modified split statement, only semicolumns before end of line,
-	#so we can have them inside a string in the statement
-        foreach my $s (grep /\S/, split /;\n/, $sql) {
+        foreach my $s (grep /\S/, split /;/, $sql) {
             $self->validate_sql($s);
             $dbh->do($s);
             $i++
