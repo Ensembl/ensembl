@@ -8,7 +8,6 @@
 # Dumping data for table 'analysis'
 #
 
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (7,'analysis_test3','nb3','gogene','h3r','gff_test','gff_feat');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (1,'analysis_test3','nb3','gogene','h3r','gff_test','gff_feat');
 
 #

@@ -19,12 +19,8 @@
 ## etc. etc. etc. (continue on for each tested function in the .t file)
 #-----------------------------------------------------------------------
 
-#
-#NB: Are not tested the following methods: get_Protein_annseq, write_all_Protein_features, write_Protein_feature.
-#
-
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..10\n"; 
+BEGIN { $| = 1; print "1..12\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -108,8 +104,6 @@ else {
 
 my @dblinks = $protein->annotation->each_DBLink();
 
-print STDERR scalar @dblinks, "\n";
-
 if (scalar @dblinks == 7) {
      print "ok 9\n";
 }
@@ -124,9 +118,28 @@ else {
     print "not ok 10\n";
 }
 
-#my $rm = "rm seq_temp.swiss";
+if ($features[0]->analysis->db eq "Pfam") {
+     print "ok 11\n";
+}
+else {
+    print "not ok 11\n";
+}
 
-#system($rm) == 0 or die "$0\Error running '$rm'";
+
+if ($features[1]->analysis->db eq "PRINTS") {
+     print "ok 12\n";
+}
+else {
+    print "not ok 12\n";
+}
+
+
+
+
+my $rm = "rm seq_temp.swiss";
+
+system($rm) == 0 or die "$0\Error running '$rm'";
+
 
 
 
