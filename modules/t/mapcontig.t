@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..9\n"; 
+BEGIN { $| = 1; print "1..10\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -131,10 +131,11 @@ eval {
 	-orientation => 1
 	);
 }; 
+
 if ($@) {
-   print "ok 8\n";
+   print "ok 9\n";
 } else {
-   print "not ok 8\n";
+   print "not ok 9\n";
    warn "expected exception on missing arguments";
 }
 
@@ -148,8 +149,8 @@ $mc = Bio::EnsEMBL::Virtual::MapContig->new(
 	);
 };
 if ( $@ ) {
-   print "ok 9\n";
+   print "ok 10\n";
 } else {
-   print "not ok 9\n";
+   print "not ok 10\n";
    warn "expected exception on start > end ";
 }
