@@ -46,10 +46,12 @@ $aef->adaptor($aefa);
 ok($aef->adaptor->isa('Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor'));
 
 # fetch all
-my $chr_slice = $dba->get_SliceAdaptor->fetch_by_region('chromosome', 'Y');
+my $chr_slice = $dba->get_SliceAdaptor->fetch_by_region('chromosome', '20_HAP1');
 my @features = @{$aefa->fetch_all_by_Slice($chr_slice)};
 
 ok(@features);
 foreach my $f (@features) {
-  print "Feature:" . $f->start . " " . $f->end . " " . $f->type . "\n";
+  print "Feature: " . $f->slice->seq_region_name . " " . $f->start . " " . $f->end . " " . $f->type;
+  my $as = $f->alternate_slice();
+  print " Alternate slice: " . $as->seq_region_name . " " . $as->start . " " . $as->end . "\n";
 }
