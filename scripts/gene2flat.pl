@@ -26,7 +26,7 @@ in particular the protein translation
 
     -module    Module name to load (Defaults to Bio::EnsEMBL::DBSQL::DBAdaptor)
 
-    -format    [pep/dump/transcript] dump in peptides/info/dna format
+    -format    [pep/dump/transcript/exon] dump in peptides/info/dna/exon format
 
     -getall    all genes from the database [no applicable to timdb]
 
