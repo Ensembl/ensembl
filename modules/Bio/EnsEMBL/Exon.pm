@@ -447,20 +447,21 @@ sub _transform_to_RawContig {
 
   my $asma = $slice_adaptor->db->get_AssemblyMapperAdaptor();
 
-  my $mapper = $asma->fetch_by_type( $self->contig()->assembly_type() );
-  my $rcAdaptor = $slice_adaptor->db->get_RawContigAdaptor();
+  my $mapper          = $asma->fetch_by_type( $self->contig()->assembly_type() );
+  my $rcAdaptor       = $slice_adaptor->db->get_RawContigAdaptor();
   my $slice_chr_start = $self->contig->chr_start();
-  my $slice_chr_end = $self->contig->chr_end();
+  my $slice_chr_end   = $self->contig->chr_end();
 
   #print STDERR "exon has ".$self->get_all_supporting_features." supporting features before transformation\n";
   my ($exon_chr_start,$exon_chr_end);
 
   if ($self->contig()->strand() == 1) {
     $exon_chr_start = $self->start() + $slice_chr_start - 1;
-    $exon_chr_end = $self->end() + $slice_chr_start - 1;
-  } else {
-    $exon_chr_end = $slice_chr_end - $self->start() + 1,
-    $exon_chr_start = $slice_chr_end - $self->end() + 1,
+    $exon_chr_end   = $self->end()   + $slice_chr_start - 1;
+  } 
+  else {
+    $exon_chr_end   = $slice_chr_end - $self->start() + 1;
+    $exon_chr_start = $slice_chr_end - $self->end()   + 1;
   }
 
   my @mapped = $mapper->map_coordinates_to_rawcontig
@@ -1095,7 +1096,8 @@ sub get_all_supporting_features {
     if($self->adaptor) {
       my $sfa = $self->adaptor->db->get_SupportingFeatureAdaptor();
       $self->{_supporting_evidence} = $sfa->fetch_all_by_Exon($self);
-    } else {
+    } 
+    else {
       $self->{_supporting_evidence} = [];
     }
   }
