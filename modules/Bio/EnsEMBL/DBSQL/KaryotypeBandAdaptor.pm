@@ -163,15 +163,13 @@ sub fetch_by_chromosome_name{
 
     $self->throw("Need both chromosome and name") unless defined $name;
 
-    my $sth = $self->prepare("	SELECT	chr_start,
-					chr_end,
-					stain
-				FROM	karyotype 
-				WHERE	chr_name = '$chr' 
-				AND	band = '$name'
-			     ");
+    my $sth = $self->prepare(
+        "select	chr_start, chr_end, stain
+           from karyotype 
+          where chr_name = ? and band = ?"
+    );
+    $sth->execute( $chr, $name );
 
-    $sth->execute;
     my ($chr_start,$chr_end,$stain) = $sth->fetchrow_array;
 
     return undef unless defined $chr_start;
@@ -192,35 +190,36 @@ sub fetch_by_chromosome_name{
  Usage   : $band_obj = $kary_adp->fetch_by_chromosome_name('chr1','q23.1');
  Function: Retrieves a KaryotypeBand obj by its chromosome ('chrN' notation)
            and its band name (e.g. 'q23.1'). { can also use a non-fully declared band:
-	   e.g. q23
+	   e.g. q23, q23.3
  Example :
- Returns : A KaryotypeBand object DOES NOT RETURN STAIN INFORMATION!!!!!
- Args    : Chromosome id (chrN notation) and band name 
+ Returns : A KaryotypeBand object BUT DOES NOT RETURN STAIN INFORMATION!!!!!
+         : (as we can not get this from the information we retrieve)
+ Args    : Chromosome id (chrN notation) and (partial?) band name 
 
 =cut
 
-sub fetch_by_chromosome_name_virtual{
+sub fetch_by_chromosome_name_virtual {
     my ($self,$chr,$name) = @_;
 
     $self->throw("Need both chromosome and name") unless defined $name;
 
     my $sth;
-    $sth = $self->prepare("	SELECT	chr_start,
-					chr_end
-				FROM	karyotype 
-				WHERE	chr_name = '$chr' 
-				AND	band = '$name' ");
-    $sth->execute;
-    my ($chr_start,$chr_end) = $sth->fetchrow_array;
+    $sth = $self->prepare(
+        "select	chr_start, chr_end
+           from karyotype 
+          where chr_name = ? and band = ?"
+    );
+    $sth->execute( $chr, $name );
+    my ( $chr_start, $chr_end ) = $sth->fetchrow_array;
 
 	unless($chr_start) {
-	    $sth = $self->prepare("	SELECT	min(chr_start),
-					max(chr_end)
-					FROM	karyotype 
-					WHERE	chr_name = '$chr' 
-					AND	band like '$name.\%' ");
+	    $sth = $self->prepare(
+            "select min(chr_start), max(chr_end)
+               from karyotype 
+              where chr_name = '$chr' and band like '$name\%'"
+        );
 	    $sth->execute;
-	    ($chr_start,$chr_end) = $sth->fetchrow_array;
+	    ( $chr_start, $chr_end ) = $sth->fetchrow_array;
 	}
 
     return undef unless defined $chr_start;
