@@ -1235,8 +1235,12 @@ sub get_all_MarkerFeatures {
 sub get_all_compara_DnaAlignFeatures {
   my ($self, $qy_species, $qy_assembly, $alignment_type) = @_;
 
-  unless($qy_species && $qy_assembly && $alignment_type) {
-    $self->throw("Query species and assembly and alignmemt type arguments are required");
+  unless($qy_species && $alignment_type) {
+    $self->throw("Query species and alignmemt type arguments are required");
+  }
+
+  unless (defined $qy_assembly) {
+    warn "qy_assembly undef, will query the default one\n";
   }
 
   my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
