@@ -3,7 +3,6 @@
 #
 # Cared for by Arne Stabenau
 #
-
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -57,6 +56,7 @@ package Bio::EnsEMBL::PredictionTranscript;
 use vars qw(@ISA);
 use strict;
 
+use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Translation;
 
@@ -146,6 +146,21 @@ sub external_name { return undef; }
 sub is_known { return 0;}
 
 
+=head2 translation
+
+  Arg [1]    : none
+  Example    : $translation = $pt->translation();
+  Description: Retrieves a Bio::EnsEMBL::Translation object for this prediction
+               transcript.  Note that this translation is generated on the fly
+               and is not stored in the database.  The translation always
+               spans the entire transcript (no UTRs; all CDS) and does not
+               have an associated dbID, stable_id or adaptor.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub translation {
   my $self = shift;
 
@@ -155,9 +170,9 @@ sub translation {
   my $start_exon;
   my $end_exon;
 
-  my @exons = $self->get_all_Exons();
+  my @exons = @{$self->get_all_Exons()};
 
-  return undef if(!@$exons);
+  return undef if(!@exons);
 
   if($strand == 1) {
     $start_exon = $exons[0];
@@ -182,8 +197,7 @@ sub translation {
   Function  : Give a peptide translation of all exons currently in
               the PT. Gives empty string when none is in.
   Returntype: a Bio::Seq as in transcript->translate()
-  Exceptions: if the exons come in two or more groups, with an undef exon
-              in the middle, only the first group is translated.
+  Exceptions: none
   Caller    : general
 
 =cut
@@ -192,7 +206,7 @@ sub translation {
 sub translate {
   my ($self) = @_;
 
-  my $dna = $self->get_cdna();
+  my $dna = $self->translateable_seq();
   $dna    =~ s/TAG$|TGA$|TAA$//i;
   # the above line will remove the final stop codon from the mrna
   # sequence produced if it is present, this is so any peptide produced
@@ -204,299 +218,59 @@ sub translate {
 
   return $bioseq->translate();
 }
-	 
 
 
-=head2 get_cdna
+=head2 cdna_coding_start
 
-  Args      : none
-  Function  : Give a concat cdna of all exons currently in
-              the PT. Gives empty string when none is in. Pads between not  
-              phase matching exons. Builds internal coord translation table.
-  Returntype: txt
-  Exceptions: if the exons come in two or more groups, with an undef exon
-              in the middle, only the first groups cdna is returned.
-  Caller    : general, $self->translate()
+  Arg [1]    : none
+  Example    : $relative_coding_start = $transcript->cdna_coding_start;
+  Description: Retrieves the position of the coding start of this transcript
+               in cdna coordinates (relative to the start of the 5prime end of
+               the transcript, excluding introns, including utrs). This is
+               always 1 for prediction transcripts because they have no UTRs.
+  Returntype : int
+  Exceptions : none
+  Caller     : five_prime_utr, get_all_snps, general
 
 =cut
 
-sub get_cdna {
+sub cdna_coding_start { return 1; }
+
+
+
+=head2 cdna_coding_end
+
+  Arg [1]    : none
+  Example    : $relative_coding_start = $transcript->cdna_coding_start;
+  Description: Retrieves the position of the coding end of this transcript
+               in cdna coordinates (relative to the start of the 5prime end of
+               the transcript, excluding introns, including utrs). This is
+               always te length of the cdna for prediction transcripts because
+               they have no UTRs.
+  Returntype : int
+  Exceptions : none
+  Caller     : five_prime_utr, get_all_snps, general
+
+=cut
+
+sub cdna_coding_end {
   my $self = shift;
-
-  my $exons = $self->get_all_Exons();
-  
-  my $cdna = undef;
-  my $lastphase = 0;
-
-  my ( $cdna_start, $cdna_end );
-  my ( $pep_start, $pep_end );
-  my ( $new_cdna, $pep_count );
-
-  $cdna_start = 1;
-  $pep_start = 1;
-
-  $self->{'_exon_align'} = [];
-
-  for my $exon ( @$exons ) {
-    my $exon_align = {};
-    if( ! defined $exon ) {
-      if( ! defined $cdna ) {
-	next;
-      } else {
-	last;
-      }
-    } 
-
-    push( @{$self->{'_exon_align'}}, $exon_align );
-
-    my $phase = 0;
-
-    if (defined($exon->phase)) {
-      $phase = $exon->phase;
-    }
-
-    if( $phase != $lastphase ) {
-
-      if( $lastphase == 1 ) {
-	$cdna .= 'NN';
-	$cdna_start += 2;
-	$pep_start++;
-      } elsif( $lastphase == 2 ) {
-	$cdna .= 'N';
-	$cdna_start += 1;
-	$pep_start++;
-      }
-
-      #startpadding for this exon
-      $cdna .= 'N' x $phase;
-      $cdna_start += $phase;
-    }
-    
-    $new_cdna = $exon->seq->seq();
-#    print $new_cdna."\n";
-    $cdna .= $new_cdna;
-    $cdna_end = $cdna_start + CORE::length( $new_cdna ) - 1;
-
-    # how many peptides are added by this exon??
-
-    $pep_count = int( ( CORE::length( $new_cdna ) + $phase + 2 ) / 3 );
-
-    $pep_end = $pep_start + $pep_count - 1; 
-    $lastphase = $exon->end_phase();
-      
-    $exon_align->{ 'cdna_start' } = $cdna_start;
-    $exon_align->{ 'cdna_end' } =  $cdna_end;
-    $exon_align->{ 'pep_start' } = $pep_start;
-    $exon_align->{ 'pep_end' } = $pep_end;
-    $exon_align->{ 'exon' } = $exon;
-
-    if( $lastphase == 0 ) { 
-      $pep_start = $pep_end + 1;
-    } else {
-      $pep_start = $pep_end;
-    }
-    $cdna_start = $cdna_end+1;
-
-  }
-
-  if( ! defined $cdna ) { $cdna = '' };
-  return $cdna
-}
-
-
-
-=head1 pep2genomic
-
-  Arg  1   : integer start - relative to peptide
-  Arg  2   : integer end   - relative to peptide
-
-  Function : Provides a list of Bio::EnsEMBL::SeqFeatures which
-             is the genomic coordinates of this start/end on the peptide
-
-  Returns  : list of Bio::EnsEMBL::SeqFeature
-
-=cut
-
-sub pep2genomic {
-  my ($self,$start,$end) = @_;
-
-  if( !defined $end ) {
-    $self->throw("Must call with start/end");
-  }
-
-  # move start end into translate cDNA coordinates now.
-  # much easier!
-  $start = 3* $start-2;
-  $end   = 3* $end;
-
-  #
-  # Adjust the phase
-  #
-  my $exons = $self->get_all_Exons;
-  if($exons && (my $e = $exons->[0])) {
-    $start -= $e->phase;
-    $end   -= $e->phase;
-  }
-
-  return $self->cdna2genomic( $start, $end );
-}
-
-
-
-=head2 cdna2genomic
-
-  Arg [1]    : $start
-               The start position in genomic coordinates
-  Arg [2]    : $end
-               The end position in genomic coordinates
-  Arg [3]    : (optional) $strand
-               The strand of the genomic coordinates
-  Example    : @coords = $transcript->cdna2genomic($start, $end);
-  Description: Converts cdna coordinates to genomic coordinates.  The
-               return value is a list of coordinates and gaps.
-  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
-               Bio::EnsEMBL::Mapper::Gap objects
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub cdna2genomic {
-  my $self = shift;
-  my $start = shift || 1;
-  my $end = shift || $self->length;
-
-  if( !defined $end ) {
-    $self->throw("Must call with start/end");
-  }
-
-  my $mapper = $self->_get_cdna_coord_mapper();
-
-  return $mapper->map_coordinates( $self, $start, $end, 1, "cdna" );
-}
-
-
-
-=head2 genomic2cdna
-
-  Arg [1]    : $start
-               The start position in genomic coordinates
-  Arg [2]    : $end
-               The end position in genomic coordinates
-  Arg [3]    : (optional) $strand
-               The strand of the genomic coordinates (default value 1)
-  Arg [4]    : (optional) $contig
-               The contig the coordinates are on.  This can be a slice
-               or RawContig, but must be the same object in memory as
-               the contig(s) of this transcripts exon(s), because of the
-               use of object identity. If no contig argument is specified the
-               contig of the first exon is used, which is fine for slice
-               coordinates but may cause incorrect mappings in raw contig
-               coords if this transcript spans multiple contigs.
-  Example    : @coords = $transcript->genomic2cdna($start, $end, $strnd, $ctg);
-  Description: Converts genomic coordinates to cdna coordinates.  The
-               return value is a list of coordinates and gaps.  Gaps
-               represent intronic or upstream/downstream regions which do
-               not comprise this transcripts cdna.  Coordinate objects
-               represent genomic regions which map to exons (utrs included).
-  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
-               Bio::EnsEMBL::Mapper::Gap objects
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub genomic2cdna {
-  my ($self, $start, $end, $strand, $contig) = @_;
-
-  unless(defined $start && defined $end) {
-    $self->throw("start and end arguments are required\n");
-  }
-  $strand = 1 unless(defined $strand);
-
-  #"ids" in mapper are contigs of exons, so use the same contig that should
-  #be attached to all of the exons...
-  unless(defined $contig) {
-    my @exons = @{$self->get_all_translateable_Exons};
-    return () unless(@exons);
-    $contig = $exons[0]->contig;
-  }
-  my $mapper = $self->_get_cdna_coord_mapper;
-
-  return $mapper->map_coordinates($contig, $start, $end, $strand, "genomic");
-}
-
-
-=head2 _get_cdna_coord_mapper
-
-  Args       : none
-  Example    : none
-  Description: creates and caches a mapper from "cdna" coordinate system to 
-               "genomic" coordinate system. Uses Exons to help with that. Only
-               calculates in the translateable part. 
-  Returntype : Bio::EnsEMBL::Mapper( "cdna", "genomic" );
-  Exceptions : none
-  Caller     : cdna2genomic, pep2genomic
-
-=cut
-
-sub _get_cdna_coord_mapper {
-  my ( $self ) = @_;
-
-  if( defined $self->{'_exon_coord_mapper'} ) {
-    return $self->{'_exon_coord_mapper'};
-  }
-
-  #
-  # the mapper is loaded with OBJECTS in place of the IDs !!!!
-  #  the objects are the contigs in the exons
-  #
-  my $mapper;
-  $mapper = Bio::EnsEMBL::Mapper->new( "cdna", "genomic" );
-  my @exons = @{$self->get_all_translateable_Exons() };
-  my $start = 1;
-  for my $exon ( @exons ) {
-    $exon->load_genomic_mapper( $mapper, $self, $start );
-    $start += $exon->length;
-  }
-  $self->{'_exon_coord_mapper'} = $mapper;
-  return $mapper;
-}
-
-
-
-=head2 type
-
-  Arg [1]    : (optional) string $type 
-  Example    : none
-  Description: Getter setter for the type of this prediction transcript
-  Returntype : string
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub type {
-  my ($self, $type) = @_;
-
-  if(defined $type) {
-    $self->{'_type'} = $type;
-  }
-
-  return $self->{'_type'};
+  return length($self->spliced_seq);
 }
 
 
 =head2 transform
 
-  Arg [1]    : (optional) $slice
-               The slice to transform this transcript to.  If not provided
-               the transcript is transformed to raw contig coords.
-  Example    : $pt->transform($slice)
-  Description: Transforms this prediction transcript to slice or chromosomal
-               coordinates
-  Returntype : none
-  Exceptions : none
+  Arg  1     : String $coordinate_system_name
+  Arg [2]    : String $coordinate_system_version
+  Example    : $ptrans = $ptrans->transform('chromosome', 'NCBI33');
+               $ptrans = $ptrans->transform('clone');
+  Description: Moves this PredictionTranscript to the given coordinate system.
+               If this Transcript has Exons attached, they move as well.
+               A new Transcript is returned or undefined if this PT is not
+               defined in the new coordinate system.
+  Returntype : Bio::EnsEMBL::PredictionTranscript
+  Exceptions : wrong parameters
   Caller     : general
 
 =cut
@@ -504,19 +278,62 @@ sub type {
 sub transform {
   my $self = shift;
 
-  my @exons;
-
-  foreach my $exon (@{$self->get_all_Exons()}) {
-    push @exons, $exon->transform(@_);
+  # catch for old style transform calls
+  if( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" )) {
+    throw("transform needs coordinate systems details now," .
+          "please use transfer");
   }
 
-  #flush the exons and all related internal caches
-  $self->flush_Exons();
+  my $new_transcript = Bio::EnsEMBL::Feature::transform($self, @_ );
+  return undef unless $new_transcript;
 
-  # attach the new list of exons to the transcript
-  $self->{'exons'} = \@exons;
+  #go through the _trans_exon_array so as not to prompt lazy-loading
+  if(exists($self->{'_trans_exon_array'})) {
+    my @new_exons;
+    foreach my $old_exon ( @{$self->{'_trans_exon_array'}} ) {
+      my $new_exon = $old_exon->transform(@_);
+      push(@new_exons, $new_exon);
+    }
+    $new_transcript->{'_trans_exon_array'} = \@new_exons;
+  }
+
+  return $new_transcript;
 }
 
+
+
+=head2 transfer
+
+  Arg  1     : Bio::EnsEMBL::Slice $destination_slice
+  Example    : $ptrans = $ptrans->transfer($slice);
+  Description: Moves this PredictionTranscript to the given slice.
+               If this Transcripts has Exons attached, they move as well.
+               If this transcript cannot be moved then undef is returned
+               instead.
+  Returntype : Bio::EnsEMBL::PredictionTranscript
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub transfer {
+  my $self = shift;
+
+  my $new_transcript = $self->SUPER::transfer( @_ );
+  return undef unless $new_transcript;
+
+  if( exists $self->{'_trans_exon_array'} ) {
+    my @new_exons;
+    for my $old_exon ( @{$self->{'_trans_exon_array'}} ) {
+      my $new_exon = $old_exon->transfer( @_ );
+      push( @new_exons, $new_exon );
+    }
+
+    $new_transcript->{'_trans_exon_array'} = \@new_exons;
+  }
+
+  return $new_transcript;
+}
 
 
 
@@ -528,7 +345,7 @@ sub transform {
 
 sub get_exon_count {
    my $self = shift;
-   deprecate("Use scalar(@{get_all_Exons}) instead");
+   deprecate('Use scalar(@{$transcript->get_all_Exon()s}) instead');
    return scalar( @{$self->get_all_Exons} );
 }
 
@@ -544,5 +361,17 @@ sub set_exon_count {
 }
 
 
+
+=head2 get_cdna
+
+  Description : DEPRECATED - use spliced_seq() or translateable_seq instead
+
+=cut
+
+sub get_cdna {
+  my $self = shift;
+  deprecate('use spliced_seq instead');
+  return $self->spliced_seq();
+}
 
 1;
