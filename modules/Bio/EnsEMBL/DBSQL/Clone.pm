@@ -153,7 +153,7 @@ sub get_all_Genes{
 				     "and    p5.id    = p3.translation " .
 				     "order by p3.gene,p3.id,p1.rank";
    
-       print("Query is $query\n");
+       print STDERR ("Query is $query\n");
 
        my $sth = $self->_dbobj->prepare($query);
        $sth->execute();
