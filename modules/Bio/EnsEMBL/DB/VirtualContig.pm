@@ -950,7 +950,6 @@ sub _build_contig_map {
 	} else {
 	    $mc_startin=$current_contig->golden_end;
 	}
-	my $mc_start=$self->_left_overhang+1;
 
 	$self->_vmap->create_MapContig($mc_start,$mc_startin,$current_orientation,$current_contig);
 	my $mc=$self->_vmap->get_MapContig($current_contig->id);
