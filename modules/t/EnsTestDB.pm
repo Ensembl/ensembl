@@ -11,6 +11,10 @@
     use EnsTestDB;
     
     my $ens_test = EnsTestDB->new();
+    # OR: 
+    #   my $ens_test = EnsTestDB->new({host=>'foo'});
+    # OR:
+    #   my $ens_test = EnsTestDB->new('myconf.dat');
     
     # Load some data into the db
     $ens_test->do_sql_file("some_data.sql");
@@ -31,6 +35,15 @@ scope.
 The settings, such as the server host and port,
 are found in the file B<EnsTestDB.conf>.  See
 B<EnsTestDB.conf.example> for an example.
+
+
+Firstly, the file EnsTestDB.conf will be read. If this fails, some
+(hopefully reasonable) defaults are taken. Secondly, if an argument is
+given, this will be used to get arguments from. They will supplement or
+override those of EnsTestDB.conf. If the argument is a filename, that file
+will be read, and its contents will override/merge with those of
+EnsTestDB.conf. If the argument is a hash, its contents will likewise
+override/merge with those read from EnsTestDB.conf
 
 =head1 METHODS
 
@@ -61,18 +74,20 @@ my $counter=0;
         module
         );
 
-    ### now takes an optional argument; when given, it can be a filename
-    ### or a hash, and will be used to get arguments from. If not, the
-    ### file 'EnsTestDB.conf' will be tried; it it exist; that is taken;
-    ### otherwise, some hopefully defaults will be used.
+    ### Firstly, the file EnsTestDB.conf will be read. If this fails, some
+    ### hopefully reasonable defaults are taken. Secondly, if an argument
+    ### is given, this will be used to get arguments from. They will
+    ### supplement or override those of EnsTestDB.conf. If the argument
+    ### is a filename, that file will be read, and its contents will
+    ### override/merge with those of EnsTestDB.conf. If the argument is a
+    ### hash, its contents will likewise override/merge with those read
+    ### from EnsTestDB.conf
     sub new {
         my( $pkg, $arg ) = @_;
 
         $counter++;
-
-        my $self =undef;
-	$self = do 'EnsTestDB.conf'
-	    || {
+        my $conf_file='EnsTestDB.conf';
+        my $fallback_defaults = {
 		'driver'        => 'mysql',
 		'host'          => 'localhost',
 		'user'          => 'root',
@@ -81,6 +96,9 @@ my $counter=0;
 		'schema_sql'    => ['../sql/table.sql'],
 		'module'        => 'Bio::EnsEMBL::DBSQL::DBAdaptor'
 		};
+
+        my $self =undef;
+	$self = do $conf_file || $fallback_defaults;
 	if ($arg) {
 	    if  (ref $arg eq 'HASH' ) {  # a hash ref
                 foreach my $key (keys %$arg) {
