@@ -372,10 +372,18 @@ sub translation {
 
 sub spliced_seq {
   my ( $self ) = @_;
-  
+
   my $seq_string = "";
   for my $ex ( @{$self->get_all_Exons()} ) {
-    $seq_string .= $ex->seq()->seq();
+    my $seq = $ex->seq();
+
+    if(!$seq) {
+      warning("Could not obtain seq for exon.  Transcript sequence may not " .
+              "be correct.");
+      $seq_string .= 'N' x $ex->length();
+    } else {
+      $seq_string .= $seq->seq();
+    }
   }
 
   return $seq_string;
@@ -412,7 +420,7 @@ sub translateable_seq {
     if (defined($exon->phase)) {
       $phase = $exon->phase;
     }
-    
+
     # startpadding is needed if MONKEY_EXONS are on
     if( $first && (! defined $ENV{'MONKEY_EXONS'}) ) {
       $mrna .= 'N' x $phase;
@@ -429,7 +437,17 @@ sub translateable_seq {
       #startpadding for this exon
       $mrna .= 'N' x $phase;
     }
-    $mrna .= $exon->seq->seq();
+    my $seq = $exon->seq();
+
+    # if there is an error in the exon (e.g. strand not set or no slice)
+    # no seq object will be returned by exon->seq
+    if(!$seq) {
+      warning("Could not get exon sequence. Resultant translation may be" .
+              " incorrect.");
+      $mrna .= 'N' x $exon->length();
+    } else {
+      $mrna .= $seq->seq();
+    }
     $lastphase = $exon->end_phase();
   }
   return $mrna;
@@ -467,12 +485,12 @@ sub cdna_coding_start {
 
     while($exon = shift @exons) {
       if($exon == $self->translation->start_Exon) {
-	#add the utr portion of the start exon
-	$start += $self->translation->start;
-	last;
+        #add the utr portion of the start exon
+        $start += $self->translation->start;
+        last;
       } else {
-	#add the entire length of this non-coding exon
-	$start += $exon->length;
+        #add the entire length of this non-coding exon
+        $start += $exon->length;
       }
     }
     $self->{'cdna_coding_start'} = $start;
@@ -1185,7 +1203,7 @@ sub get_all_translateable_Exons {
     } else {
       push(@translateable, $ex);
     }
-        
+
     # Exit the loop when we've found the last exon
     last if $ex eq $end_exon;
   }
@@ -1233,11 +1251,11 @@ sub translate {
   # or call translatable seq directly and produce a translation from it
 
   my $peptide = Bio::Seq->new( -seq => $mrna,
-			       -moltype => "dna",
-			       -alphabet => 'dna',
-			       -id => $display_id );
+                               -moltype => "dna",
+                               -alphabet => 'dna',
+                               -id => $display_id );
 
-  return $peptide->translate;
+  return $peptide->translate();
 }
 
 =head2 seq
@@ -1250,21 +1268,25 @@ Exon phases like B<dna_seq> does.
 =cut
 
 sub seq {
-    my( $self ) = @_;
-    
-    my $transcript_seq_string = '';
-    foreach my $ex (@{$self->get_all_Exons}) {
-#        $transcript_seq_string .= $ex->seq;
-        $transcript_seq_string .= $ex->seq->seq;
-    }
-    
-    my $seq = Bio::Seq->new(
-        -DISPLAY_ID => $self->stable_id,
-        -MOLTYPE    => 'dna',
-        -SEQ        => $transcript_seq_string,
-        );
+  my( $self ) = @_;
 
-    return $seq;
+  my $transcript_seq_string = '';
+  foreach my $ex (@{$self->get_all_Exons}) {
+    my $seq = $ex->seq;
+    if(!$seq) {
+      warning("Could not get exon seq.  Transcript seq may not be correct.");
+      $transcript_seq_string .= 'N' x $ex->length();
+    } else {
+      $transcript_seq_string .= $seq->seq;
+    }
+  }
+
+  my $seq = Bio::Seq->new
+    (-DISPLAY_ID => $self->stable_id,
+     -MOLTYPE    => 'dna',
+     -SEQ        => $transcript_seq_string);
+
+  return $seq;
 }
 
 
