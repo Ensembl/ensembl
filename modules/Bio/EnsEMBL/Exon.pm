@@ -1419,7 +1419,7 @@ sub seq {
     return $self->{'_seq_cache'};
   }
 
-  print "Seq on " . $self->stable_id . "\n";
+  #print "Seq on " . $self->stable_id . "\n";
   my $seq;
   #print STDERR " calling exon->seq\n";
   if ( ! defined $self->contig ) {
