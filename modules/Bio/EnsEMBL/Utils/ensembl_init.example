@@ -1,0 +1,60 @@
+#
+# Example of configuration file used by Bio::EnsEMBL::Registry::load_all method
+# to store/register all kind of Adaptors.
+
+use strict;
+use Bio::EnsEMBL::Utils::ConfigRegistry;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Compara::DBSQL::DBAdaptor;
+
+my @aliases;
+ 
+new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => 'ensembldb.ensembl.org',
+                                   -user => 'anonymous',
+                                   -port => 3306,
+                                   -species => 'Homo sapiens',
+                                   -group => 'core',
+                                   -dbname => 'homo_sapiens_core_23_34e');
+
+@aliases = ('H_Sapiens', 'homo sapiens', 'Homo_Sapiens','Homo_sapiens', 'Homo', 'homo', 'human');
+
+Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Homo sapiens",
+                                               -alias => \@aliases);
+
+
+new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => 'ensembldb.ensembl.org',
+                                   -user => 'anonymous',
+                                   -port => 3306,
+                                   -species => 'Mus musculus',
+                                   -group => 'core',
+                                   -dbname => 'mus_musculus_core_23_32c');
+
+@aliases = ('M_Musculus', 'mus musculus', 'Mus_Musculus','Mus_musculus', 'Mus', 'mus', 'mouse');
+
+Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Mus musculus",
+                                               -alias => \@aliases);
+
+new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => 'ensembldb.ensembl.org',
+                                   -user => 'anonymous',
+                                   -port => 3306,
+                                   -species => 'Rattus norvegicus',
+                                   -group => 'core',
+                                   -dbname => 'rattus_norvegicus_core_23_3c');
+
+@aliases = ('R_Norvegicus', 'rattus norvegicus', 'Rattus_Norvegicus','Rattus_norvegicus', 'Rattus', 'rattus', 'rat');
+
+Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Rattus norvegicus",
+                                               -alias => \@aliases);
+
+new Bio::EnsEMBL::Compara::DBSQL::DBAdaptor(-host => 'ensembldb.ensembl.org',
+                                            -user => 'anonymous',
+                                            -port => 3306,
+                                            -species => 'Compara23',
+                                            -dbname => 'ensembl_compara_23_1');
+
+@aliases = ('ensembl_compara_23_1', 'compara23');
+
+Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Compara23",
+                                               -alias => \@aliases);
+
+1;
