@@ -14,9 +14,6 @@ and it compares them using different methods (see Synopsis):
   get_Exon_Statistics
   get_Coding_Exon_Statistics
 
-  get_3prime_overlaps() (under development)
-  get_5prime_overlaps() (under development)
-
 The object can be created without passing any genes. The genes to be compared can instead be passed to the
 appropriate methods (see below), however, this may lose (in the current version) some info about the gene
 types involved in the comparison when there are more than three.
@@ -80,8 +77,8 @@ eae@sanger.ac.uk
 
 package Bio::EnsEMBL::Utils::GeneComparison;
 
-use strict;
 use vars qw(@ISA);
+use strict;
 
 use Bio::EnsEMBL::Utils::GeneCluster;
 use Bio::EnsEMBL::Utils::TranscriptCluster;
@@ -106,6 +103,8 @@ sub new {
   }
   my $self = {};
   bless($self,$class);
+  $self->{'_unclustered'}= [];
+  $self->{'_clusters'}= [];
 
   if ( $gene_array1 && $gene_array2 ){
     $self->{'_gene_array1'}= $gene_array1;
@@ -129,7 +128,6 @@ sub new {
       push( @{ $self->{'_type_array2'} }, $k);  # the gene types present in gene_array2
     }
   }
-  
   return $self;
 }
 
@@ -143,20 +141,19 @@ sub new {
 
 =head2 gene_Types()
 
-this function sets labels to the arrays of genes passed to new().
-It can also be used to retrieve the gene types. 
+this function sets or returns two arrayref with the types of the genes to be compared
 
 =cut
 
 sub gene_Types {
    my ($self,$type1,$type2) = @_;
    if ( $type1 && $type2 ){
-     @{ $self->{'_type_array1'} }= $type1;
-     @{ $self->{'_type_array2'} }= $type2;
+     $self->{'_type_array1'} = $type1;
+     $self->{'_type_array2'} = $type2;
    }
-   return ($type1,$type2);
+   return ( $self->{'_type_array1'}, $self->{'_type_array2'} );
 }
-  
+
 ######################################################################################
 
 =head2 cluster_Genes
@@ -164,22 +161,16 @@ sub gene_Types {
   This method takes an array of genes and cluster them
   according to their exon overlap. As a default it takes the genes stored in the GeneComparison object 
   as data fields (or attributes) '_gene_array1' and '_gene_array2'. It can also accept instead as argument
-  an array of genes to be clustered, but then information about their gene-type is lost. 
+  an array of genes to be clustered, but then information about their gene-type is lost (to be solved). 
   This method returns an array of GeneCluster objects.
 
 =cut
 
 sub cluster_Genes {
 
-  my ($self, @array) = @_;
-  my @genes;
-  if (@array){
-    @genes = @array;
-  }
-  else{
-    @genes = ( @{ $self->{'_gene_array1'} }, @{ $self->{'_gene_array2'} } );
-  }
-
+  my ($self) = @_;
+  my @genes = ( @{ $self->{'_gene_array1'} }, @{ $self->{'_gene_array2'} } );
+  
   #### first sort the genes by the left-most position coordinate ####
   my %start_table;
   my $i=0;
@@ -191,32 +182,205 @@ sub cluster_Genes {
   foreach my $k ( sort { $start_table{$a} <=> $start_table{$b} } keys %start_table ){
     push (@sorted_genes, $genes[$k]);
   }
-  @genes = @sorted_genes;
 
-  #### cluster the genes ####
-  my @clusters; # this will hold an array of GeneCluster objects
+  print "Clustering ".scalar( @sorted_genes )." genes...\n";
+  my $label=1;
+  foreach my $gene (@sorted_genes){
+    print $label." gene ".$gene->id."\t\t"._get_start_of_Gene($gene)." "._get_strand_of_Gene($gene)."\n";
+    $label++;
+  }
   my $found;
+  my $time1=time();
+##### old clustering algorithm ###########################################
+
+#  my @clusters=(); # this will hold an array of GeneCluster objects
+#  my $lookups=0;
+#  my $count = 1;
+#  my $new_cluster_count=1;
+#  my $jumpy=0;
+
+#  foreach my $gene (@sorted_genes){
+#    print STDERR $count." gene ".$gene->id." being located...";
+#    $count++;
+#    $found=0;
+#    my $cluster_count=1;
+#  LOOP:
+#    foreach my $cluster (@clusters){
+#      foreach my $gene_in_cluster ( $cluster->get_Genes ){  # read all  genes from GeneCluster object
+#	$lookups++;
+#        if ( _compare_Genes($gene,$gene_in_cluster) ){
+#          print STDERR "put in cluster ".$cluster_count."\n";
+#	  if ( $cluster_count != ($new_cluster_count-1)  ){
+#	    print STDERR "\nONE JUMPING AROUND!!\n\n";
+#	    $jumpy++;
+#	  }
+	  
+#	  $cluster->put_Genes($gene);                       # put gene into GeneCluster object
+#          $found=1;
+#          last LOOP;
+#        }
+#      }
+#      $cluster_count++;
+#    }
+#    if ($found==0){
+#      my $new_cluster=Bio::EnsEMBL::Utils::GeneCluster->new();   # create a GeneCluser object
+#      print STDERR "put in new cluster [".$new_cluster_count."]\n";
+#      $new_cluster_count++;
+#      $new_cluster->gene_Types($self->gene_Types);
+#      $new_cluster->put_Genes($gene);
+#      push(@clusters,$new_cluster);
+#    }
+#  }
+#  my $time2 = time();
+#  print STDERR "\ntime for clustering: ".($time2-$time1)."\n";
+#  print STDERR "number of lookups: ".$lookups."\n";
+#  print STDERR "number of jumpies: ".$jumpy."\n\n";
+#  return @clusters;
+#  # put all unclustered genes (annotated and predicted) into one separate array
+#  $self->flush_Clusters;
+#  foreach my $cl (@clusters){
+#    if ( $cl->get_Gene_Count == 1 ){
+#      $self->unclustered_Genes($cl); # this push the cluster into array @{ $self->{'_unclustered'} }
+#    }
+#    else{
+#      $self->clusters( $cl );
+#    }
+#  }  
+#  return $self->clusters;
+
+#########################################################################
+
+  #### new clustering algorithm, faster than the old one ####
+  #### however, the order of the genes does not guarantee that genes are not skipped, since this algorithm
+  #### only checks the current cluster and all previous clusters
+  # create a new cluster 
+  my $cluster=Bio::EnsEMBL::Utils::GeneCluster->new();
+
+  # pass in the types we're using
+  my ($types1,$types2) = $self->gene_Types;
+  $cluster->gene_Types($types1,$types2);
+
+  # put the first gene into these cluster
+  $cluster->put_Genes( $sorted_genes[0] );
+
+  $self->clusters($cluster);
   
-  foreach my $gene (@genes){
+  # loop over the rest of the genes
+ LOOP1:
+  for (my $c=1; $c<=$#sorted_genes; $c++){
     $found=0;
   LOOP:
-    foreach my $cluster (@clusters){
-      foreach my $gene_in_cluster ( $cluster->get_Genes ){  # read genes from GeneCluster object
-	
-	if ( _compare_Genes($gene,$gene_in_cluster) ){	
-	  $cluster->put_Genes($gene);                       # put gene into GeneCluster object
-	  $found=1;
-	  last LOOP;
-	}
+    foreach my $gene_in_cluster ( $cluster->get_Genes ){       
+      if ( _compare_Genes( $sorted_genes[$c], $gene_in_cluster ) ){	
+	$cluster->put_Genes( $sorted_genes[$c] );                       
+	$found=1;
+	next LOOP1;
       }
     }
-    
-    if ($found==0){
-      my $new_cluster=Bio::EnsEMBL::Utils::GeneCluster->new($gene);   # create a GeneCluser object
-      push(@clusters,$new_cluster);
+    if ($found==0){  # if not-clustered create a new GeneCluser
+      $cluster = new Bio::EnsEMBL::Utils::GeneCluster; 
+      $cluster->gene_Types($types1,$types2);
+      $cluster->put_Genes( $sorted_genes[$c] );
+      $self->clusters( $cluster );
     }
   }
-  return @clusters;
+  # put all unclustered genes (annotated and predicted) into one separate array
+  
+  my $time2 = time();
+  print STDERR "time for clustering: ".($time2-$time1)."\n";
+  my @clusters;
+  
+  foreach my $cl ($self->clusters){
+    if ( $cl->get_Gene_Count == 1 ){
+      $self->unclustered_Genes($cl); # this push the cluster into array @{ $self->{'_unclustered'} }
+    }
+    else{
+      push( @clusters, $cl );
+    }
+  }
+  $self->flush_Clusters;
+  $self->clusters(@clusters);
+  return $self->clusters; # this returns an array of clusters (containing more than one gene each)  
+}
+ 
+######################################################################################
+
+=head2 pair_Genes
+
+  This method crates one GeneCluster object per benchmark gene and then PAIR them with predicted genes
+  according to their exon overlap. As a default it takes the genes stored in the GeneComparison object 
+  as data fields (or attributes) '_gene_array1' and '_gene_array2'. It can also accept instead as argument
+  an array of genes to be paired, but then information about their gene-type is lost (to be solved). 
+  The result is put into $self->{'_clusters'} and $self->{'_unclustered'} 
+  
+=cut
+
+sub pair_Genes {
+
+  my ($self) = @_;
+  my (@genes1,@genes2);
+
+  @genes1 =  @{ $self->{'_gene_array1'} };
+  @genes2 =  @{ $self->{'_gene_array2'} };
+
+  #### first sort the genes by the left-most position coordinate ####
+  my %start_table;
+  my $i=0;
+  foreach my $gene (@genes1){
+    $start_table{$i}=_get_start_of_Gene($gene);
+    $i++;
+  }
+  my @sorted_genes=();
+  foreach my $k ( sort { $start_table{$a} <=> $start_table{$b} } keys %start_table ){
+    push (@sorted_genes, $genes1[$k]);
+  }
+  @genes1 = @sorted_genes;
+  
+  %start_table = (); 
+  $i=0;
+  foreach my $gene (@genes2){
+    $start_table{$i}=_get_start_of_Gene($gene);
+    $i++;
+  }
+  @sorted_genes=();
+  foreach my $k ( sort { $start_table{$a} <=> $start_table{$b} } keys %start_table ){
+    push (@sorted_genes, $genes2[$k]);
+  }
+  @genes2 = @sorted_genes;
+
+  #### PAIR the genes ####
+  #### creating a new cluster for each gene in the benchmark set ### 
+
+  foreach my $gene (@genes2){
+    # create a GeneCluser object
+    my $cluster=Bio::EnsEMBL::Utils::GeneCluster->new();
+    my ($type1,$type2) = $self->gene_Types;
+    $cluster->gene_Types($type1,$type2);
+    $cluster->put($gene);
+    $self->clusters($cluster);
+  }
+  
+ GENE:   while (@genes1){
+    my $gene = shift @genes1;
+    
+    foreach my $cluster ($self->clusters){	
+      my $gene_in_cluster = $cluster->get_first_Gene ;  # read first gene from GeneCluster object
+      
+      if ( _compare_Genes($gene,$gene_in_cluster) ){	
+	$cluster->put_Genes($gene);       # put gene into GeneCluster object
+	next GENE;
+      }
+    }
+    #### an arbitary cluster containing the set of predicted genes that do not overlap with any from the 
+    #### benchmark set
+    my $unclustered = new Bio::EnsEMBL::Utils::GeneCluster;
+    $unclustered->gene_Types($self->gene_Types);
+    $unclustered->put_Genes($gene);  # NOTE: this holds unclustered predicted genes, but does not
+                                     # know about unpaired benchmark genes
+    
+    $self->unclustered_Genes($unclustered); # push the cluster into an array	 
+  }
+  return 1;
 }
 #########################################################################
 
@@ -233,7 +397,6 @@ sub _get_start_of_Gene {
   my $gene = shift @_;
   my @exons = $gene->each_unique_Exon;
   my $st;
-  
   if ($exons[0]->strand == 1) {
     @exons = sort {$a->start <=> $b->start} @exons;
     $st = $exons[0]->start;
@@ -243,6 +406,27 @@ sub _get_start_of_Gene {
   }
   return $st;
 }
+
+##########################################################################
+
+=head2 _get_strand_of_Gene()
+
+=cut
+
+sub _get_strand_of_Gene {
+  my $gene = shift @_;
+  my @exons = $gene->each_unique_Exon;
+  
+  if ($exons[0]->strand == 1) {
+    return 1;
+  }
+  else{
+    return -1;
+  }
+  return 0;
+}
+
+
 
 ####################################################################################
 
@@ -257,11 +441,11 @@ See cluster_Transcripts for a different way of clustering transcripts.
 =cut
 
 sub cluster_Transcripts_by_Gene {
-  my ($self,@array) = @_;
+  my ($self,$array) = @_;
   my @gene_clusters;      # array of GeneCluster objects
   my @transcript_clusters;
   if (@array){
-    @gene_clusters = @array;
+    push(@gene_clusters,@array);
   }
   else{
     @gene_clusters = $self->cluster_Genes;
@@ -488,7 +672,6 @@ sub get_Coding_Exon_Statistics{
   
   foreach my $t1 (@transcripts1){
     foreach my $t2 (@transcripts2){
-      if ( _compare_Transcripts($t1,$t2) ){
 	if ($t1->translation && $t2->translation){
 	  my %partial_stats = _coding_Exon_Statistics($t1,$t2);
 	  foreach my $k ( keys %partial_stats ) {
@@ -505,7 +688,6 @@ sub get_Coding_Exon_Statistics{
 	  }
 	  print "\n";
 	}
-      }
     }
   }
   return %stats;
@@ -524,7 +706,6 @@ sub _coding_Exon_Statistics {
 
   # the coding region may start in any exon, not necessarily the first one
   # and may end in any one as well
-
   my ($transcript1,$transcript2) = @_;
 
   my @exons1 = $transcript1->each_Exon;
@@ -533,12 +714,15 @@ sub _coding_Exon_Statistics {
   my $translation1 = $transcript1->translation;
   my $translation2 = $transcript2->translation;
 
+
   # IDs of the exons where the coding region starts and ends
   my ($s_id1,$e_id1) = ($translation1->start_exon_id,$translation1->end_exon_id);
   my ($s_id2,$e_id2) = ($translation2->start_exon_id,$translation2->end_exon_id);
 
+
   # identify those exons in each transcript
   my ($s_exon1,$e_exon1);  # these will be the exons where the coding region (starts,ends) in the 1st transcript
+
   foreach my $exon1 (@exons1){
     if ($exon1->id eq $s_id1){
       $s_exon1 = $exon1;
@@ -556,19 +740,45 @@ sub _coding_Exon_Statistics {
       $e_exon2 = $exon2;
     }
   }
+print "Exon of 2ndt transcript\n";
+foreach my $e2 (@exons2){
+print "Exon ".$e2->strand." ".$e2->start." ".$e2->end."\n";
+}
+
+
   # take these exons and those in between these exons (since only these exons contain coding region)
   my @coding_exons1;
+
   foreach my $exon1 (@exons1){
-    if ( $exon1->start >= $s_exon1->start && $exon1->start <= $e_exon1->start ){
-      push ( @coding_exons1, $exon1 );
-    }
+	if ($exon1->strand eq 1){
+    	if ( $exon1->start >= $s_exon1->start && $exon1->start <= $e_exon1->end ){
+      		push ( @coding_exons1, $exon1 );
+		}
+	}else{
+    	if ( $exon1->start >= $e_exon1->end && $exon1->start <= $s_exon1->start ){
+     		push ( @coding_exons1, $exon1 );
+		}
+	}
   }
+print "coding region start: ".$s_exon2->start." end: ".$e_exon2->end."\n";
+
+
+
   my @coding_exons2;
-  foreach my $exon2 (@exons2){
-    if ( $exon2->start >= $s_exon2->start && $exon2->start <= $e_exon2->start ){
-      push ( @coding_exons2, $exon2 );
-    }
-  }
+
+
+	foreach my $exon2 (@exons2){
+	if ($exon2->strand eq 1){
+        	if ( $exon2->start >= $s_exon2->start && $exon2->start <= $e_exon2->end ){
+            	push ( @coding_exons2, $exon2 );
+        	}
+		}else{
+    		if ( $exon2->start >= $e_exon2->end && $exon2->start <= $s_exon2->start ){
+      		push ( @coding_exons2, $exon2 );
+			}
+		}
+  	}
+
   @exons1 = @coding_exons1;
   @exons2 = @coding_exons2;
     
@@ -576,7 +786,7 @@ sub _coding_Exon_Statistics {
   # relative to the origin of the first and last exons where the coding region starts
   my ($s_code1,$e_code1) = ($translation1->start,$translation1->end);
   my ($s_code2,$e_code2) = ($translation2->start,$translation2->end);
-
+ 
   # here I hold my stats results
   my %stats;
   
@@ -585,7 +795,6 @@ sub _coding_Exon_Statistics {
     foreach my $exon2 (@exons2){
 
       if ( ($exon1->overlaps($exon2)) && ($exon1->strand == $exon2->strand) ){
-
 	# start and end coord of the overlap
 	my ($s,$e)=(0,0);  
 
@@ -688,22 +897,45 @@ sub _coding_Exon_Statistics {
 =head2 get_unmatched_Genes()
 
   This function returns those genes that have not been identified with any other gene in the
-  two arrays (of type1 and type2) passed to GeneComparison->new(). It derives the unmatched genes
-  directly from the gene_arrays passed to the GeneComaprison object. It returns two references to 
-  two arrays of GeneCluster objects. The first one corresponds to the genes of type1 which have 
-  not been identified in type2, and the second one holds the genes of type2 that have not been 
-  identified with any of the genes of type1. The actual Gene objects within it can be retrieved 
-  using the method get_Genes on the GeneCluster objects
+  two arrays (of type1 and type2) passed to GeneComparison->new(). If we have clustered the genes
+  before, then we have probably filled the array $self->{'_unclustered'}, so we can read out the 
+  unmatched genes from there. If not, it derives the unmatched genes
+  directly from the gene_arrays passed to the GeneComaprison object. 
 
-  In order to recover the type one could as well use the get_Genes method on the array elements
-  and then the type method on the Bio::EnsEMBL::Gene objects
+  It returns two references to two arrays of GeneCluster objects. 
+  The first one corresponds to the genes of type1 which have not been identified in type2, 
+  and the second one holds the genes of type2 that have not been 
+  identified with any of the genes of type1. 
   
 =cut
 
 sub get_unmatched_Genes {
   my $self = shift @_;
-  my %found1;
-  my %found2;
+  
+  # if we have already the unclustered genes, we can read them out from $self->{'_unclustered'}
+  if ($self->unclustered ){
+    my @types1 = @{ $self->{'_type_array1'} };
+    my @types2 = @{ $self->{'_type_array2'} };
+    my @unclustered = $self->unclustered; 
+    my (@array1,@array2);
+    foreach my $cluster (@unclustered){
+      my $gene = ${ $cluster->get_Genes }[0]; 
+      foreach my $type1 ( @{ $self->{'_type_array1'} } ){
+	if ($gene->type eq $type1){
+	  push ( @array1, $gene );
+	}
+      }
+      foreach my $type2 ( @{ $self->{'_type_array2'} } ){
+	if ($gene->type eq $type2){
+	  push ( @array2, $gene );
+	}
+      }
+    }
+    return (\@array1,\@array2);
+  }
+
+  # if not, we can compute them directly
+  my (%found1,%found2);
 
   foreach my $gene1 ( @{ $self->{'_gene_array1'} } ){
     foreach my $gene2 ( @{ $self->{'_gene_array2'} } ){
@@ -716,14 +948,18 @@ sub get_unmatched_Genes {
   my @unmatched1;
   foreach my $gene1 ( @{ $self->{'_gene_array1'} } ){
     unless ( $found1{$gene1->id} ){
-      my $new_cluster = Bio::EnsEMBL::Utils::GeneCluster->new( $gene1 );
+      my $new_cluster = Bio::EnsEMBL::Utils::GeneCluster->new();
+      $new_cluster->gene_Types($self->gene_Types);
+      $new_cluster->put_Genes($gene1);
       push (@unmatched1, $new_cluster);
     }
   }
   my @unmatched2;
   foreach my $gene2 ( @{ $self->{'_gene_array2'} } ){
     unless ( $found2{$gene2->id} ){
-      my $new_cluster = Bio::EnsEMBL::Utils::GeneCluster->new( $gene2 );
+      my $new_cluster = Bio::EnsEMBL::Utils::GeneCluster->new();
+      $new_cluster->gene_Types($self->gene_Types);
+      $new_cluster->put_Genes($gene2);
       push (@unmatched2, $new_cluster);
     }
   }
@@ -776,6 +1012,114 @@ sub get_fragmented_Genes {
 
 #########################################################################
 
+=head2 find_missing_Exons()
+
+  Pretty ambitious method to check missing exons in genes, get its position (1st, last, middle
+  one) and see whether there is available data that could have helped us
+  to predicted.
+
+  You can pass an array (ref) of clusters, or else it will do it for you.
+  It only uses clusters with more than on gene
+
+=cut
+
+sub find_missing_Exons {
+  
+  my ($self,$clusters) = @_;
+
+  my @clusters;
+  if (!defined($clusters)) {
+    print "Creating new clusters for you\n";
+    $self->flush_Clusters;
+    @clusters = $self->cluster_Genes; # this only give clusters with more than one gene
+  }
+  else{
+    my @array = @{ $clusters };
+    
+    # take only the clusters with more than one gene
+    foreach my $cluster (@array){
+      unless ( $cluster->get_Gene_Count == 1 ){
+	push( @clusters, $cluster);
+      }
+    }
+  }
+
+ CLUSTER:
+  foreach my $cluster (@clusters){
+    my ($genes1,$genes2) = $cluster->get_separated_Genes;
+    
+    # momentarily we skip the clusters with more than two genes per type
+    # we'll deal with them later
+    if ( scalar( @$genes1 ) >1 || scalar( @$genes2 ) >1){
+      next CLUSTER;
+    }
+    
+    my %exonhash;
+  GENE1:
+    foreach my $gene1 ( @$genes1 ){
+      my @transcripts1 = $gene1->each_Transcript;
+      if ( scalar(@transcripts1) > 1 ){
+	print "skipping gene with more than one transcript\n";  # only for the moment
+	next CLUSTER;
+      }
+      
+      foreach my $transcript1 (@transcripts1){
+	my @exons1 = $transcript1->each_Exon;
+	
+      GENE2:
+	foreach my $gene2 ( @$genes2 ){
+	  my @transcripts2 = $gene2->each_Transcript;
+	  if ( scalar(@transcripts2) > 1 ){
+	    print "skipping gene with more than one transcript\n";  # only for the moment
+	    next CLUSTER;
+	  }
+	  foreach my $transcript2 (@transcripts2){
+	    my @exons2 = $transcript2->each_Exons; # put get_all_Exons in the new_schema;
+	    
+	    my ($exonsA,$exonsB);
+	    my %genehash;
+	    
+	    if ( scalar( @exons1) >= scalar( @exons2 ) ){
+	      ($exonsA, $exonsB) = (\@exons1,\@exons2);
+	      ($genehash{'A'}, $genehash{'B'}) = ($gene1,$gene2);
+	    }
+	    else{
+	      ($exonsA, $exonsB) = (\@exons2,\@exons1);
+	      ($genehash{'A'}, $genehash{'B'}) = ($gene2,$gene1);
+	    }
+	    
+	    my $count = 1;
+	    print "Comparing gene ".$genehash{'A'}->dbID." with ".$genehash{'A'}->dbID."\n";
+	    
+	  EXONS:
+	    for (my $i=1; $i<=scalar( @$exonsA ); $i++){
+	      my $exonA = $$exonsA[$i-1];
+	      my $found = 0;
+	      
+	      while ($found == 0){
+		my $exonB = $$exonsB[$count-1];
+		if ( $exonA->overlaps($exonB) ){
+		  $found =1;
+		  print "exon ".$i. " matches with exon ".$count."\n";
+		  my ($uniqueA,$common,$uniqueB) = $exonA->overlap_extent($exonB);
+		  if ( $uniqueA == 0 && $uniqueB == 0 ){
+		    print "100 percent overlap\n";
+		  }
+		}
+		$count++;
+	      }# end of while loop
+	    }  # end of EXONS:
+	    
+	  }
+	}      # end of GENE2:
+      }
+    }          # end of GENE1: 
+  }            # end of CLUSTER:    
+}
+
+
+#########################################################################
+
 =head2 get_3prime_overlaps()
 
 =cut
@@ -792,7 +1136,7 @@ sub get_fragmented_Genes {
 =head2 _compare_Genes()
 
  Title: _compare_Genes
- Usage: this internal function compares the exons of two genes on overlap and returns the number of overlaps
+ Usage: this internal function compares the exons of two genes on overlap
 
 =cut
 
@@ -801,17 +1145,16 @@ sub _compare_Genes {
   my @exons1 = $gene1->each_unique_Exon;
   my @exons2 = $gene2->each_unique_Exon;
   
-  my $overlap_count=0;
   foreach my $exon1 (@exons1){
   
     foreach my $exon2 (@exons2){
 
       if ( ($exon1->overlaps($exon2)) && ($exon1->strand == $exon2->strand) ){
-	$overlap_count++;
+	return 1;
       }
     }
   }
-  return $overlap_count;
+  return 0;
 }      
 #########################################################################
 
@@ -827,21 +1170,75 @@ sub _compare_Transcripts {
   my ($transcript1,$transcript2) = @_;
   my @exons1 = $transcript1->each_Exon;
   my @exons2 = $transcript2->each_Exon;
-  my $overlap_count=0;
   
   foreach my $exon1 (@exons1){
     
     foreach my $exon2 (@exons2){
 
       if ( ($exon1->overlaps($exon2)) && ($exon1->strand == $exon2->strand) ){
-	$overlap_count++;
+	print "positive transcript comparison.\n";	
+	return 1;
       }
     }
   }
-  return $overlap_count;
+  return 0;
 }    
 
 #########################################################################
+
+=head2 unclustered_Genes()
+
+ Title  : unclustered_Genes()
+ Usage  : This function stores and returns an array of GeneClusters with only one gene (unclustered) 
+ Args   : a Bio::EnsEMBL::Utils::GeneCluster object
+ Returns: an array of Bio::EnsEMBL::Utils::GeneCluster objects
+
+=cut
+
+sub unclustered_Genes{
+    my ($self, @unclustered) = @_;
+ 
+    if (@unclustered)
+    {
+       # $self->throw("Input $unclustered is not a Bio::EnsEMBL::Utils::GeneCluster\n")
+       # unless $_->isa("Bio::EnsEMBL::Utils::GeneCluster");
+
+        push ( @{ $self->{'_unclustered'} }, @unclustered);
+    }
+    return @{ $self->{'_unclustered'} };
+}
+
+#########################################################################
+
+=head2 clusters()
+
+	Title: clusters()
+	Usage: This function stores and returns an array of clusters
+
+=cut
+sub clusters {
+    my ($self, @clusters) = @_;
+ 
+    if (@clusters)
+    {
+        push (@{$self->{'_clusters'}}, @clusters);
+    }
+    return @{$self->{'_clusters'}};
+}
+#########################################################################
+
+=head2 flush_Clusters()
+
+	Usage: This function cleans up the array in $self->{'_clusters'}
+
+=cut
+
+sub flush_Clusters {
+    my ($self) = @_;
+    $self->{'_clusters'} = [];
+}
+
+
 
 1;
 
