@@ -382,7 +382,7 @@ sub _objs_from_sth {
 
         #get a slice in the coord system we just mapped to
         if($asm_cs == $sr_cs ||
-           ($asm_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
+           ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
           $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
             $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
                                  $cmp_cs_vers);
