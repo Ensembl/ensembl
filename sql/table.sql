@@ -135,7 +135,9 @@ CREATE TABLE exon_stable_id (
   exon_id   		      int unsigned not null,       # foreign key exon:exon_id
   stable_id                   VARCHAR(128) not null,
   version                     int(10),
-  
+  created_date                DATETIME NOT NULL,
+  modified_date               DATETIME NOT NULL,
+
   PRIMARY KEY( exon_id ),
   UNIQUE( stable_id, version )
 
@@ -322,7 +324,9 @@ CREATE TABLE gene_stable_id (
   gene_id 		      int unsigned not null,  # foreign key gene:gene_id
   stable_id                   VARCHAR(128) not null,
   version                     int(10),
-  
+  created_date                DATETIME NOT NULL,
+  modified_date               DATETIME NOT NULL,
+
   PRIMARY KEY( gene_id ),
   UNIQUE( stable_id, version )
 
@@ -376,6 +380,8 @@ CREATE TABLE transcript_stable_id (
   transcript_id               int unsigned not null,  # foreign key transcript:transcript_id
   stable_id                   VARCHAR(128) not null,
   version                     int(10),
+  created_date                DATETIME NOT NULL,
+  modified_date               DATETIME NOT NULL,
   
   PRIMARY KEY( transcript_id ),
   UNIQUE( stable_id, version )
@@ -413,7 +419,9 @@ CREATE TABLE translation_stable_id (
   translation_id 	      INT unsigned NOT NULL, # foreign key translation:translation_id
   stable_id                   VARCHAR(128) NOT NULL,
   version                     INT(10),
-  
+  created_date                DATETIME NOT NULL,
+  modified_date               DATETIME NOT NULL,
+
   PRIMARY KEY( translation_id ),
   UNIQUE( stable_id, version )
 
