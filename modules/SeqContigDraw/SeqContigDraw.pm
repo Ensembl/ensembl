@@ -75,11 +75,18 @@ sub draw_contig_image
     foreach my $ft (sort @features)
     {
 	my $type;
-	if ($ft->analysis->db ne ""){$type=$ft->analysis->db;}
+        
+	if ($ft->analysis && $ft->analysis->db ne ""){$type=$ft->analysis->db;}
 	else{$type=$ft->analysis->gff_source;}
-	
 	my $color=$gd_col_ref->{$image_comp_ref->{$type}{color}};	
-	&draw_feature($im,$ft,$seq_len,$type,$color);	   	
+
+        if ($ft->sub_SeqFeature) {
+           foreach my $f ($ft->sub_SeqFeature) {
+	      &draw_feature($im,$f,$seq_len,$type,$color);	   	
+           }
+        } else {
+	   &draw_feature($im,$ft,$seq_len,$type,$color);	   	
+        }
     }
      
     # draw scale
