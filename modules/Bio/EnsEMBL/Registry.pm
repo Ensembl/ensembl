@@ -722,6 +722,12 @@ sub load_registry_with_web_adaptors{
   eval{ require SpeciesDefs };
   if ($@){ die "Can't use SpeciesDefs.pm - $@\n"; }
   my $conf = new SpeciesDefs();
+  
+  my %species_alias = %{$SiteDefs::ENSEMBL_SPECIES_ALIASES};
+
+  foreach my $spec (keys %species_alias){
+    Bio::EnsEMBL::Registry->add_alias($species_alias{$spec},$spec);
+  }
 
 }
 
