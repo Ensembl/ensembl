@@ -575,7 +575,7 @@ sub get_updated_Objects{
     
 
     #First, get all clone ids that have been updated between last and now-offset
-    my $sth = $self->prepare("select id from clone where modified > '".$last."' and modified <= '".$now_offset."'");
+    my $sth = $self->prepare("select id from clone where modified > '".$last." - 00:30:00' and modified <= '".$now_offset."'");
    
     $sth->execute;
     my @out;

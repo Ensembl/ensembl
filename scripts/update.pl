@@ -77,28 +77,29 @@ my $arcuser = 'root';
 my $arcmodule = 'Bio::EnsEMBL::DBArchive::Obj';
 $arcpass || die "You forgot to give the password for the archive database! Sorry, no access!\n";
 
+print STDERR "\nConnecting to archive database...\n";
 my $arclocator = "$arcmodule/host=$archost;port=$arcport;dbname=$arcname;user=$arcuser;pass=$arcpass";
 my $arc_db = Bio::EnsEMBL::DBLoader->new($arclocator);
     
-print STDERR "\nConnecting to recipient...\n";
+print STDERR "\nConnecting to recipient database...\n";
 my $recipient_locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 my $rec_db =  Bio::EnsEMBL::DBLoader->new($recipient_locator);
 
-print STDERR "\nConnecting to donor...\n";
+print STDERR "\nConnecting to donor database...\n";
 my $donor_locator = $rec_db->get_donor_locator;
 my $don_db =  Bio::EnsEMBL::DBLoader->new($donor_locator);
 
 my $last = $rec_db->get_last_update;
-print STDERR "\nLast update: $last\n";
+print STDERR "\nLast update from donor: $last\n";
 
 my $now = $rec_db->get_now_offset;
-print STDERR "Time now at recipient - offset update time: $now\n";
+print STDERR "Time now-offset at recipient: $now\n";
 
 if ($last > $now) {
     print STDERR "Time of last update more recent than now-offset, exiting!\n";
     exit;
 }
-print "\nTransferring objects updated between last update and now-offset from donor to recipient...\n";
+print "\nTransferring updated and new objects from donor to recipient...\n";
 
 my @object_array = $don_db->get_updated_Objects($last, $now);
 
@@ -107,7 +108,7 @@ foreach my $object (@object_array) {
     my $type;
     #Check if it is a gene
     if ($object->isa("Bio::EnsEMBL::Gene")) {
-	print STDERR "Got a gene with id ".$object->id."\n";
+	print STDERR "Got gene with id ".$object->id."\n";
 	$type = "Gene";
 	my $rec_gene;
 	#Check if it is already present in recipient
@@ -124,7 +125,7 @@ foreach my $object (@object_array) {
 	else {
 	    #If donor gene version greater than recipient gene version, update
 	    if ($object->version > $rec_gene->version) {
-		print "Gene with new version, updating the database, and archiving old version\n";
+		print STDERR "Gene with new version, updating the database, and archiving old version\n";
 		$rec_db->archive_Gene($rec_gene,$arc_db);
 		$rec_db->write_Gene($object);
 	    }
@@ -142,7 +143,7 @@ foreach my $object (@object_array) {
     }
     elsif ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
 	$type = "Clone";
-	print "Got a Clone with id ".$object->id."\n";
+	print "Got clone with id ".$object->id."\n";
 	
 	my $rec_clone;
 	#Check if it is already present in recipient
@@ -173,35 +174,40 @@ foreach my $object (@object_array) {
 	  	  
 	    #If versions equal, nothing needs to be done
 	    else {
-		print STDERR "Clone versions equal, database left unchanged\n";
+		print STDERR "Clone versions equal, not modifying database\n";
 	    }
 	}
     }
 
     else {
-	print STDERR "ERROR: Got an object of unkown type, exiting\n";
+	print STDERR "ERROR: Got an object of unkown type with id ".$object->id."\n";	
     }
 }
 
+print STDERR "\nTransferring new ghosts from donor to recipient...\n";
+
 my @object_array = $don_db->get_Ghosts_by_deleted($last, $now);
 foreach my $ghost (@object_array) {
-    print STDERR "Got ghost ".$ghost->id."\n";
+    print STDERR "Got ghost with id ".$ghost->id."\n";
     
     #Check if the ghost is already present in the recipient database
     eval {
-	my $try=$rec_db->get_Ghost($ghost->id,$ghost->version,$ghost->obj_type);
+	$rec_db->get_Ghost($ghost->id,$ghost->version,$ghost->obj_type);
     };
-   
+    
     #If not present in recipient, archive objects, and write the ghost
     if ( $@ ) {
 	if ($ghost->obj_type eq 'clone') {
+	    print STDERR "New ghost for deleted clone ".$ghost->id.", deleting clone from database\n";
 	    $rec_db->delete_Clone($ghost->id);
 	}
 	elsif ($ghost->obj_type eq 'gene') {
+	    print STDERR "New ghost for deleted gene ".$ghost->id.", archiving gene from recipient to archive\n";
 	    my $gene = $rec_db->get_Gene($ghost->id);
 	    $rec_db->archive_Gene($gene,$arc_db);
 	}
 	#Finally write ghost in recipient
+	print STDERR "Writing ghost in recipient database\n";
 	$rec_db->write_Ghost($ghost);
     }
 
