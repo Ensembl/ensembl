@@ -338,6 +338,7 @@ sub get_all_Families{
   my ($self) = @_;
 
   unless(defined ($self->{'_families'})) {
+    $self->{'_families'} = [];
     my $proteinid = $self->id();
     my $fa = $self->adaptor()->db()->get_FamilyAdaptor();
 
@@ -443,6 +444,7 @@ sub get_all_ProfileFeatures{
   my ($self) = @_;
   
   unless(defined ($self->{'_profile'})) {
+    $self->{'_profile'} = [];
     my $proteinid = $self->id();
     my $pfa = $self->adaptor->db()->get_ProteinFeatureAdaptor;
     my $array_features = 
@@ -495,6 +497,7 @@ sub get_all_blastpFeatures{
   my ($self) = @_;
   
   unless(defined ($self->{'_blastp'})) {
+    $self->{'_blastp'} = [];
     my $proteinid = $self->id();
     my $pfa = $self->adaptor->db()->get_ProteinFeatureAdaptor();
     my $array_features = 
@@ -544,6 +547,7 @@ sub get_all_PrintsFeatures{
   my ($self) = @_;
 
   unless(defined ($self->{'_prints'})) {
+    $self->{'_prints'} = [];	# init in case there are no PRINTS
     my $proteinid = $self->id();
     my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
     my $array_features = 
@@ -552,7 +556,6 @@ sub get_all_PrintsFeatures{
       $self->add_Prints($in);
     } 
   }
-  
   return $self->{'_prints'};
 }
 
@@ -595,6 +598,7 @@ sub get_all_PfamFeatures{
   my ($self) = @_;
   
   unless($self->{'_pfam'}) {
+    $self->{'_pfam'} = [];
     my $proteinid = $self->id();
     my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
     my $array_features = 
@@ -643,6 +647,7 @@ sub get_all_PrositeFeatures{
   my ($self) = @_;
   
   unless(defined ($self->{'_prosite'})) {
+    $self->{'_prosite'} = [];
     my $proteinid = $self->id();
     my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
     my $array_features = 
@@ -651,7 +656,7 @@ sub get_all_PrositeFeatures{
       $self->add_Prosite($in);
     }
   }
-  return @{$self->{'_prosite'}};
+  return $self->{'_prosite'};
 }
 
 =head2 add_Prosite
@@ -691,6 +696,7 @@ sub get_all_SigpFeatures{
   my ($self) = @_;
 
   unless(defined ($self->{'_sigp'})) {
+    $self->{'_sigp'} = [];
     my $proteinid = $self->id();
     my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
     my $array_features = 
@@ -740,6 +746,7 @@ sub get_all_TransmembraneFeatures{
  my ($self) = @_;
 
  unless(defined ($self->{'_transmembrane'})) {
+   $self->{'_transmembrane'} = []; 
    my $proteinid = $self->id();
    my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
    my $array_features = 
@@ -791,6 +798,7 @@ sub get_all_CoilsFeatures{
  my ($self) = @_;
 
  unless(defined ($self->{'_coils'})) {
+   $self->{'_coils'} = [];
    my $proteinid = $self->id();
    my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
    my $array_features = 
@@ -799,7 +807,7 @@ sub get_all_CoilsFeatures{
      $self->add_Coils($in);
    }
  }
- return @{$self->{'_coils'}};
+ return $self->{'_coils'};
 }
 
 =head2 add_Coils
@@ -887,10 +895,11 @@ sub get_all_SuperfamilyFeatures{
   my ($self) = @_;
   
   unless(defined ($self->{'_superfamily'})) {
+    $self->{'_superfamily'} = [];
     my $proteinid = $self->id();
     my $pfa = $self->adaptor()->db->get_ProteinFeatureAdaptor();
     my $array_features = 
-      $pfa->fetch_all_by_feature_and_dbID('superfamily',$proteinid);
+     $pfa->fetch_all_by_feature_and_dbID('superfamily',$proteinid);
     foreach my $in (@$array_features) {
       $self->add_Superfamily($in);
     }
@@ -1083,6 +1092,7 @@ sub get_all_DBLinks{
  my ($self) = @_;
 
  unless(defined $self->{'_dblinks'}) {
+   $self->{'_dblinks'} = [];
    my $transcript = $self->transcript();
 
    unless(defined $transcript) {
