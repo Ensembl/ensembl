@@ -89,6 +89,7 @@ sub fetch_all_by_gene_id_list {
   my $db = 'core';
 
   my @genes = ();
+  my $core_gene_adaptor = $self->db->get_db_adaptor('core')->get_GeneAdaptor;
 
   if($empty_flag) {
     my $gene_list = join(', ', @$gene_ids); 
@@ -111,7 +112,7 @@ sub fetch_all_by_gene_id_list {
       $gene->end($chr_end);
       $gene->strand($chr_strand);
       $gene->chr_name($chr_name);
-      $gene->adaptor($self);
+      $gene->adaptor($core_gene_adaptor);
       $gene->dbID($gene_id);
       push @genes, $gene;
     }
