@@ -960,10 +960,10 @@ sub _build_contig_map {
 	
 	if( $overlap->distance == 1 ) {
 	  $current_left_size += $overlap->sister->golden_length-1;
-	  print("Current " . $current_left_size . " " . $left . "\n");
+	  print STDERR ("Current " . $current_left_size . " " . $left . "\n");
 	} else {
 	  $current_left_size += $overlap->distance;
-	  print("Current " . $current_left_size . " " . $left . "\n");
+	  print STDERR ("Current " . $current_left_size . " " . $left . "\n");
 	  if( $current_left_size > $left ) {
 	    # set the left overhang!
 	    print(STDERR "Setting left overhang " . $current_left_size . " " . $left . "\n");
