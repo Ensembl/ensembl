@@ -43,6 +43,7 @@ use vars qw($AUTOLOAD @ISA);
 use strict;
 use Bio::EnsEMBL::DB::ContigI;
 use Bio::Seq;
+use Bio::SeqIO::Fasta;
 use FileHandle;
 
 # Object preamble - inheriets from Bio::Root::Object
@@ -252,26 +253,15 @@ sub seq{
     my $cloneobj=$self->_cloneobj();
     my $clonediskid=$cloneobj->disk_id;
     my $file=$cloneobj->{'_clone_dir'}."/$clonediskid.seq";
-    my $fh = new FileHandle;
-    $fh->open($file) || 
-	$self->throw("Could not open sequence file [", $file, "]");
-    my $is = $fh->input_record_separator('>');
-    my $flag;
-    while(<$fh>){
-	if(/^$disk_id\s[^\n]+\n(.*)/s){
-	    my $dna=$1;
-	    $dna=~s/\n//g;
-	    $dna=~s/\s//g;
-	    $dna=~tr/[a-z]/[A-Z]/;
-	    $self->{'seq'}=Bio::Seq->new ( -seq => $dna , -id => $id, -type => 'DNA' );
-	    $flag=1;
-	    last;
-	}
+
+    my $seqin = Bio::SeqIO::Fasta->new( -file => $file);
+    $self->{'seq'} = $seqin->next_seq();
+    $self->{'seq'}->type('Dna');
+
+    if( ! $self->{'seq'} ) {
+	$self->throw("Could not read sequence in $file");
     }
-    unless($flag){
-	$self->throw("Could not find contig $id ($disk_id) in sequence file");
-    }
-    $fh->input_record_separator($is);
+
     return $self->{'seq'};
 }
 
