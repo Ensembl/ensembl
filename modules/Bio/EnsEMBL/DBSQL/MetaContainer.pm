@@ -65,6 +65,11 @@ sub list_value_by_key {
   my ($self,$key) = @_;
   my @result;
   
+  $self->{'cache'} ||= {};
+  if( exists $self->{'cache'}->{$key} ) {
+    return $self->{'cache'}->{$key};
+  }
+
   my $sth = $self->prepare( "SELECT meta_value 
                              FROM meta 
                              WHERE meta_key = ? ORDER BY meta_id" );
@@ -72,7 +77,8 @@ sub list_value_by_key {
   while( my $arrRef = $sth->fetchrow_arrayref() ) {
     push( @result, $arrRef->[0] );
   }
-  
+  $self->{'cache'}->{$key} = \@result;
+
   return \@result;
 }
 
@@ -98,29 +104,11 @@ sub store_key_value {
                              VALUES( ?, ? )" );
 
   my $res = $sth->execute( $key, $value );
-  return;
-}
 
-=head2 update_key_value
+  $self->{'cache'} ||= {};
 
-  Arg [1]    : string $key
-               a key under which $value should be updated
-  Arg [2]    : string $value
-               the value to update in the meta table
-  Example    : $meta_container->update_key_value($key, $value);
-  Description: update a value in the meta container, accessable by a key
-  Returntype : none
-  Exceptions : none
-  Caller     : ?
+  delete $self->{'cache'}->{$key};
 
-=cut
-
-sub update_key_value {
-  my ( $self, $key, $value ) = @_;
-
-  my $sth = $self->prepare( "UPDATE meta SET meta_value = ? WHERE meta_key = ?" );
-
-  my $res = $sth->execute( $value, $key );
   return;
 }
 
@@ -142,12 +130,9 @@ sub update_key_value {
 sub get_Species {
   my $self = shift;
 
-  my $sth = $self->prepare( "SELECT meta_value 
-                             FROM meta 
-                             WHERE meta_key = 'species.common_name'" );
-  $sth->execute;
+  my $arrRef = $self->list_value_by_key( 'species.common_name' );
   my $common_name;
-  if( my $arrRef = $sth->fetchrow_arrayref() ) {
+  if( @$arrRef ) {
     $common_name = $arrRef->[0];
   } else {
     return undef;
@@ -179,22 +164,15 @@ sub get_Species {
 
 sub get_taxonomy_id {
   my $self = shift;
+
+  my $arrRef = $self->list_value_by_key( 'species.taxonomy_id' );
   
-  if( ! defined $self->{'_taxonomy_id'} ) {
-    my $sth = $self->prepare( "SELECT meta_value 
-                               FROM meta 
-                               WHERE meta_key = 'species.taxonomy_id'" );
-    $sth->execute();
-
-    my ( $tax ) = $sth->fetchrow_array();
-    if( ! defined $tax ) {
-      $self->warn("Please insert meta_key 'species.taxonomy_id' " .
-		  "in meta table at core db.\n");
-    }
-    $self->{'_taxonomy_id'} = $tax;
+  if( @$arrRef ) {
+    return $arrRef->[0];
+  } else {
+    $self->warn("Please insert meta_key 'species.taxonomy_id' " .
+		"in meta table at core db.\n");
   }
-
-  return $self->{'_taxonomy_id'};
 }
 
 
@@ -213,13 +191,21 @@ sub get_taxonomy_id {
 sub get_default_assembly {
   my $self = shift;
 
-  my $sth = $self->prepare( "SELECT meta_value 
-                             FROM meta 
-                             WHERE meta_key = 'assembly.default'" );
-  $sth->execute;
-
-  if( my $arrRef = $sth->fetchrow_arrayref() ) {
+  my $arrRef = $self->list_value_by_key('assembly.default' );
+ 
+  if( @$arrRef ) {
     return $arrRef->[0];
+  } else {
+    return undef;
+  }
+}
+
+sub get_max_assembly_contig {
+  my $self = shift;
+
+  my $value_list = $self->list_value_by_key( "assembly.maxcontig" );
+  if( @$value_list ) {
+    return $value_list->[0];
   } else {
     return undef;
   }
