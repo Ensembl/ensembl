@@ -395,23 +395,28 @@ sub fetch_VirtualContig_by_gene{
 
    my $sth = $self->dbobj->prepare("select (e.seq_start+sgp.chr_start),(e.seq_end+sgp.chr_end),sgp.chr_name from exon e,
                                     transcript tr,exon_transcript et,static_golden_path sgp where e.id=et.exon 
-                                    and et.transcript=tr.id and sgp.raw_id=e.contig and tr.gene = '$geneid' 
-                                    order by (e.seq_start+sgp.chr_start);"
+                                    and et.transcript=tr.id and sgp.raw_id=e.contig and tr.gene = '$geneid';" 
 				   );
    $sth->execute();
 
 
    my ($start,$end,$chr_name); 
-   my $counter; 
-   my $first_start;
+   my @start;
+   my @end;
    while ( my @row=$sth->fetchrow_array){
-       $counter++;      
-
        ($start,$end,$chr_name)=@row;
-       if ($counter==1){$first_start=$start;}  
+
+       push @start,$start;
+       push @end,$end;     
    }   
    
-   if( !defined $first_start ) {
+   my @start_sorted=sort @start;
+   my @end_sorted=sort @end;
+
+   my $start=pop @start_sorted;
+   my $end=shift @end_sorted;
+
+   if( !defined $start ) {
        $self->throw("Gene is not on the golden path. Cannot build VC");
    }
      
