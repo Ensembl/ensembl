@@ -563,7 +563,7 @@ CREATE TABLE external_db(
          external_db_id INT not null,
          db_name VARCHAR(100) NOT NULL,
 	 release VARCHAR(40)  NOT NULL,
-	 status  ENUM ('KNOWNXREF','KNOWN','XREF','PRED','ORTH') not null,
+	 status  ENUM ('KNOWNXREF','KNOWN','XREF','PRED','ORTH', 'PSEUDO') not null,
          PRIMARY KEY( external_db_id ) 
 );
 
