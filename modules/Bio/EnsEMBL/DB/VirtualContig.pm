@@ -115,6 +115,7 @@ sub _initialize {
 
   if( defined $clone ) {
       $self->_build_clone_map($clone);
+      
   } else {
       if( !defined $focus || !defined $focusposition || !defined $ori || !defined $leftsize || !defined $rightsize ) {
 	  $self->throw("Have to provide all arguments to virtualcontig, focus, focusposition, ori, left, right");
@@ -122,6 +123,7 @@ sub _initialize {
       
       # build the map of how contigs go onto the vc coorindates
       $self->_build_contig_map($focus,$focusposition,$ori,$leftsize,$rightsize);
+      $self->dbobj($focus->dbobj);
   }
 
   $self->_unique_number($VC_UNIQUE_NUMBER++);
@@ -174,20 +176,24 @@ sub primary_seq {
 
        my $trunc;
        my $end;
-       if( $self->{'rightmostcontig_id'} eq $cid ) {
-	   print STDERR "Rightmost end is ",$self->{'rightmostend'},"\n";
-       
-	   $end = $self->{'rightmostend'};
+       if( $self->_clone_map == 1 ) {
+	   $end = $c->length;
        } else {
-	   if( $self->{'contigori'}->{$cid} == 1 ) {
-	       $end = $c->golden_end;
+	   if( $self->{'rightmostcontig_id'} eq $cid ) {
+	       print STDERR "Rightmost end is ",$self->{'rightmostend'},"\n";
+	       
+	       $end = $self->{'rightmostend'};
 	   } else {
-	       $end = $c->golden_start;
+	       if( $self->{'contigori'}->{$cid} == 1 ) {
+		   $end = $c->golden_end;
+	       } else {
+		   $end = $c->golden_start;
+	       }
 	   }
        }
 
        
-       print STDERR "got $cid, from ",$self->{'startincontig'}->{$cid}," to ",$c->golden_end,"\n";
+       #print STDERR "got $cid, from ",$self->{'startincontig'}->{$cid}," to ",$c->golden_end,"\n";
 
        if( $self->{'contigori'}->{$cid} == 1 ) {
 
@@ -366,6 +372,28 @@ sub length {
 }
 
 
+=head2 dbobj
+
+ Title   : dbobj
+ Usage   : $obj->dbobj($newval)
+ Function: 
+ Returns : value of dbobj
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub dbobj{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'dbobj'} = $value;
+    }
+    return $obj->{'dbobj'};
+
+}
+
+
 =head2 _build_clone_map
 
  Title   : _build_clone_map
@@ -382,6 +410,7 @@ sub _build_clone_map{
    my ($self,$clone) = @_;
    my ($tlen,$length);
    $tlen = $length = 0;
+   my $seen = 0;
    foreach my $contig ( $clone->get_all_Contigs ) {
        $self->{'start'}->{$contig->id} = $contig->embl_offset;
        $self->{'startincontig'}->{$contig->id} = 1;
@@ -392,6 +421,11 @@ sub _build_clone_map{
        if( $tlen > $length ) {
 	   $length = $tlen;
        }
+       if( $seen == 0 ) {
+	   $self->dbobj($contig->dbobj);
+	   $seen = 1;
+       }
+
    }
 
    $self->_left_size(1);
@@ -735,8 +769,11 @@ sub _convert_seqfeature_to_vc_coords{
    my ($self,$sf) = @_;
 
    my $cid = $sf->seqname();
+   if( !defined $cid ) {
+       $self->throw("sequence feature [$sf] has no seqname!");
+   }
 
-   my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($sf->seqname,$sf->start,$sf->end,$sf->strand);
+   my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
    
    $sf->start($rstart);
    $sf->end($rend);
@@ -766,7 +803,7 @@ sub _convert_start_end_strand_vc {
    my ($rstart,$rend,$rstrand);
 
    if( !exists $self->{'contighash'}->{$contig} ) {
-       $self->throw("Attempting to map a sequence feature with $contig on a virtual contig with no $contig");
+       $self->throw("Attempting to map a sequence feature with [$contig] on a virtual contig with no $contig");
    }
    if( $self->{'contigori'}->{$contig} == 1 ) {
        # ok - forward with respect to vc. Only need to add offset

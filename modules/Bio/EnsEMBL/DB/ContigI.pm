@@ -233,6 +233,24 @@ sub extend{
    $self->throw("Object did not provide the extend method on Contig interface!");
 }
 
+=head2 dbobj
+
+ Title   : dbobj
+ Usage   : $obj = $contig->dbobj
+ Function: returns a Bio::EnsEMBL::DB::ObjI implementing function
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub dbobj{
+   my ($self,@args) = @_;
+
+   $self->throw("Object did not provide the dbobj method on the Contig interface");
+}
+
 
 =head2 SeqI implementing methods
 

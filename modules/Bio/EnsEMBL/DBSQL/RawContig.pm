@@ -737,6 +737,25 @@ sub get_right_overlap{
    return $self->_right_overlap();
 }
 
+=head2 dbobj
+
+ Title   : dbobj
+ Usage   :
+ Function:
+ Example :
+ Returns : The Bio::EnsEMBL::DBSQL::ObjI object
+ Args    :
+
+
+=cut
+
+sub dbobj{
+   my ($self,@args) = @_;
+
+   return $self->_dbobj;
+}
+
+
 =head2 _got_overlaps
 
  Title   : _got_overlaps
@@ -780,7 +799,10 @@ sub _load_overlaps{
 
    my $sth = $self->_dbobj->prepare("select contig_a,contig_b,contig_a_position,contig_b_position,overlap_type from contigoverlap where (contig_a = '$id' and contig_a_version = $version ) or (contig_b = '$id' and contig_b_version = $version )");
    
-   $sth->execute();
+   if( !$sth->execute() ) {
+       $self->throw("Unable to execute contig overlap get!");
+   }
+
 
    #
    # Certainly worth explaining here.

@@ -276,12 +276,7 @@ foreach my $clone_id ( @clones ) {
 
     eval {
 	my $clone = $db->get_Clone($clone_id);
-	my $as;
-	if( $format eq 'pep' ) {
-	    # do nothing
-	} else {
-	    $as = $clone->get_AnnSeq();
-	}
+	my $as = $clone->virtualcontig;
 	
 	# choose output mode
 	
@@ -325,17 +320,17 @@ foreach my $clone_id ( @clones ) {
 		$seqout->write_seq($contig->seq());
 	    }
 	} elsif ( $format =~ /embl/ ) {
-	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
+	    #&Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
 	    my $emblout = Bio::SeqIO->new( '-format' => 'EMBL', -fh => $OUT);
 	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($emblout);
 	    if( $nodna == 1 ) {
 		$emblout->_show_dna(0);
 	    }
 	    
-	    $emblout->write_annseq($as);
+	    $emblout->write_seq($as);
 	} elsif ( $format =~ /genbank/ ) {
 	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
-	    my $gbout = Bio::AnnSeqIO->new( '-format' => 'GenBank', -fh => $OUT);
+	    my $gbout = Bio::SeqIO->new( '-format' => 'GenBank', -fh => $OUT);
 	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($gbout);
 	    # genbank format - the ID line is wrong. Fall back to locus
 	    $gbout->_id_generation_func(undef);
@@ -346,7 +341,7 @@ foreach my $clone_id ( @clones ) {
 		$gbout->_show_dna(0);
 	    }
 	    
-	    $gbout->write_annseq($as);
+	    $gbout->write_seq($as);
 	} elsif ( $format =~ /pep/ ) {
 	    my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => $OUT ) ;
 	    my $cid = $clone->id();

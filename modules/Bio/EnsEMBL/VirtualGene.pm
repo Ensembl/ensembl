@@ -98,7 +98,7 @@ sub _initialize {
   }
 
   $self->gene($gene);
-
+  $self->dbobj($contig->dbobj);
   $self->_calculate_coordinates($gene,$contig);
 
   return $make; # success - we hope!
@@ -221,6 +221,27 @@ sub frame{
    my ($self,@args) = @_;
 
    return undef;
+}
+
+=head2 dbobj
+
+ Title   : dbobj
+ Usage   : $obj->dbobj($newval)
+ Function: 
+ Returns : value of dbobj
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub dbobj{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'dbobj'} = $value;
+    }
+    return $obj->{'dbobj'};
+
 }
 
 =head2 _calculate_coordinates
@@ -487,6 +508,110 @@ sub sub_SeqFeature{
 }
 
 
+#
+# This is the magic of the FT EMBL file production.
+#
+
+sub to_FTHelper {
+    my ($self) = @_;
+    my (@out);
+
+    my %contig;
+    my $id = $self->id();
+
+    foreach my $trans ( $self->each_Transcript ) {
+	foreach my $ptrans ( $trans->split_Transcript_to_Partial ) {
+	    my $trans = $ptrans->translate();
+	    my $join = "";
+	    foreach my $exon ( $ptrans->each_Exon ) {
+		if( $exon->seqname eq $id ) {
+		    # in this contigs coordinate systems - fine
+		    if( $exon->strand == 1 ) {
+			$join .= $exon->start."..".$exon->end.",";
+		    } else {
+			$join .= "complement(".$exon->start."..".$exon->end."),";
+		    }
+		} else {
+		    # in someone else's coordinate system. Yuk.
+		    if( !defined $contig{$exon->contig_id} ) {
+			$contig{$exon->contig_id} = $self->dbobj->get_Contig($exon->contig_id);
+		    }
+		    my $tstart = $exon->start + $contig{$exon->contig_id}->embl_offset;
+		    my $tend   = $exon->end   + $contig{$exon->contig_id}->embl_offset;
+		    my $acc = $contig{$exon->contig_id}->embl_accession;
+
+		    if( $exon->strand == 1 ) {
+			$join .= "$acc:".$exon->start."..".$exon->end.",";
+		    } else {
+			$join .= "complement($acc:".$exon->start."..".$exon->end."),";
+		    }
+		}
+	    }
+
+	    # strip off trailing comma
+
+	    $join =~ s/\,$//g;
+	    # build FTHelper object
+
+	    my $ft = Bio::SeqIO::FTHelper->new();
+	    $ft->loc($join);
+	    $ft->key('CDS');
+	    $ft->add_field('translate',$trans->seq);
+	    $ft->add_field('cds',$trans->translation->id);
+	    push(@out,$ft);
+	}
+    }
+
+    foreach my $exon ( $self->each_contained_Exon() ) {
+	my $ft = Bio::SeqIO::FTHelper->new();
+
+	if( $exon->strand == 1 ) {
+	    $ft->loc($exon->start."..".$exon->end);
+	} else {
+	    $ft->loc("complement(".$exon->start."..".$exon->end.")");
+	}
+
+	$ft->key("exon");
+	# add other stuff to Exon?
+	if ($self->strict_EMBL_dumping) {
+	    $ft->add_field('db_xref', 'ENSEMBL:HUMAN-Exon-'. $exon->id);
+	} else {
+	    $ft->add_field('created',     scalar(gmtime($exon->created())));
+	    $ft->add_field('modified',    scalar(gmtime($exon->modified())));
+	    $ft->add_field('exon_id',     $exon->id());
+	    $ft->add_field('start_phase', $exon->phase());
+	    $ft->add_field('end_phase',   $exon->end_phase());
+	}
+
+	push(@out,$ft);
+    }
+
+    return @out;
+}
+
+=head2 strict_EMBL_dumping
+
+ Title   : strict_EMBL_dumping
+ Usage   : $obj->strict_EMBL_dumping($newval)
+ Function: 
+ Returns : value of strict_EMBL_dumping
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub strict_EMBL_dumping{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'strict_EMBL_dumping'} = $value;
+    }
+    return $obj->{'strict_EMBL_dumping'};
+
+}
+
+
+		    
 1;
 
 

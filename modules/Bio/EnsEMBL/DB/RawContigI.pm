@@ -87,6 +87,90 @@ sub seq_date{
 
 }
 
+=head2 get_left_overlap
+
+ Title   : get_left_overlap
+ Usage   : $overlap_object = $contig->get_left_overlap();
+ Function: Returns the overlap object of contig to the left.
+           This could be undef, indicating no overlap
+ Returns : A Bio::EnsEMBL::ContigOverlap object
+ Args    : None
+
+=cut
+
+sub get_left_overlap{
+   my ($self,@args) = @_;
+
+   $self->throw("Object did not provide the get_left_overlap method on Contig interface!");
+}
+
+
+=head2 get_right_overlap
+
+ Title   : get_right_overlap
+ Usage   : $overlap_object = $contig->get_right_overlap();
+ Function: Returns the overlap object of contig to the left.
+           This could be undef, indicating no overlap
+ Returns : A Bio::EnsEMBL::ContigOverlap object
+ Args    : None
+
+=cut
+
+sub get_right_overlap{
+   my ($self,@args) = @_;
+
+   $self->throw("Object did not provide the get_left_overlap method on Contig interface!");
+}
+
+
+=head2 embl_offset
+
+ Title   : embl_offset
+ Usage   :
+ Function: Returns position in the original EMBL file. All contigs are assummed to be orientation 1
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub embl_offset{
+   my ($self,@args) = @_;
+
+
+   $self->throw("Object did not provide the embl_offset method on Contig interface!");
+
+}
+
+=head2 embl_accession
+
+ Title   : embl_accession
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub embl_accession{
+   my ($self,@args) = @_;
+
+   $self->throw("Object did not provide the embl_accession method on Contig interface!");
+
+
+}
+
+
+=head2 Decorator Functions
+
+You do not need to implement these functions
+
+=cut
+
+
 =head2 golden_length
 
  Title   : golden_length
@@ -152,41 +236,7 @@ sub golden_end{
        return $self->length;
    }
 }
-
-=head2 get_left_overlap
-
- Title   : get_left_overlap
- Usage   : $overlap_object = $contig->get_left_overlap();
- Function: Returns the overlap object of contig to the left.
-           This could be undef, indicating no overlap
- Returns : A Bio::EnsEMBL::ContigOverlap object
- Args    : None
-
-=cut
-
-sub get_left_overlap{
-   my ($self,@args) = @_;
-
-   $self->throw("Object did not provide the get_left_overlap method on Contig interface!");
-}
-
-
-=head2 get_right_overlap
-
- Title   : get_right_overlap
- Usage   : $overlap_object = $contig->get_right_overlap();
- Function: Returns the overlap object of contig to the left.
-           This could be undef, indicating no overlap
- Returns : A Bio::EnsEMBL::ContigOverlap object
- Args    : None
-
-=cut
-
-sub get_right_overlap{
-   my ($self,@args) = @_;
-
-   $self->throw("Object did not provide the get_left_overlap method on Contig interface!");
-}
+    
 
 1;
 

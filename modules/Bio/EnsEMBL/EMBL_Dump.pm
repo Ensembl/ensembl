@@ -103,7 +103,7 @@ sub add_ensembl_comments {
        confess "Ok. No aseq passed into EMBL_Dump and I can't even throw a nice exception!";
    }
 
-   if( !$aseq->isa('Bio::EnsEMBL::AnnSeq') ) {
+   if( !$aseq->isa('Bio::EnsEMBL::DB::ContigI') ) {
        $aseq->throw("not got a EnsEMBL annseq but a $aseq. Not going to add comments");
    }
 
@@ -168,7 +168,7 @@ sub ensembl_annseq_output {
        confess "Ok. No aseq passed into EMBL_Dump and I can't even throw a nice exception!";
    }
 
-   if( !$aseqstream->isa('Bio::AnnSeqIO::StreamI') ) {
+   if( !$aseqstream->isa('Bio::SeqIO') ) {
        $aseqstream->throw("not got EMBL IO but a $aseqstream. Not going to add output functions");
    }
 
@@ -191,6 +191,8 @@ sub ensembl_annseq_output {
 sub id_EnsEMBL {
     my $annseq = shift;
 
+    return $annseq->id;
+
     # JGRG - is this correct?  I thought phase 3 was HUM.
     my $division = $annseq->htg_phase == 4 ? 'HUM' : 'HTG';
     my $length = $annseq->seq->seq_len();
@@ -203,6 +205,10 @@ sub id_EnsEMBL {
 sub kw_EnsEMBL {
    my ($annseq) = @_;
 
+   if( !$annseq->can('htg_phase') ) {
+       return "ENSEMBL";
+   }
+
    if( $annseq->htg_phase == 4 ) {
        return "HTG.";
    }
@@ -213,7 +219,7 @@ sub kw_EnsEMBL {
 sub sv_EnsEMBL {
    my ($annseq) = @_;
 
-   if( ! $annseq->sv ) {
+   if( ! $annseq->can('sv') || ! $annseq->sv ) {
        return "NO_SV_NUMBER";
    }
    if( $annseq->sv == -1 ) {
@@ -226,7 +232,7 @@ sub sv_EnsEMBL {
 sub ac_EnsEMBL {
    my ($annseq) = @_;
 
-   return $annseq->seq->id() . ";";
+   return $annseq->id() . ";";
 }
 
 
