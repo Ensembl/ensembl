@@ -327,6 +327,27 @@ sub get_all_Exons {
    return $self->{'exons'};
 }
 
+
+
+=head2 get_all_translateable_Exons
+
+  Arg [1]    : none
+  Example    : $exons = $self->get_all_translateable_Exons
+  Description: Retreives the same value of get_all_Exons for this prediction
+               transcript.  In a prediction transcript there is no UTR and
+               thus all exons are entirely translateable.
+  Returntype : listref of Bio::EnsEMBL::Exon
+  Exceptions : none
+  Caller     : Embl_Dumper
+
+=cut
+
+sub get_all_translateable_Exons {
+  my $self = shift;
+
+  return $self->get_all_Exons;
+}
+
 ############################################################
 
 
