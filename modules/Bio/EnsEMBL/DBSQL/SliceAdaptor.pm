@@ -193,10 +193,10 @@ sub fetch_by_fpc_name {
 
  Title   : fetch_by_chr_band
  Usage   :
- Function: create a Slice representing a complete FPC contig
+ Function: create a Slice representing a series of bands
  Example :
  Returns :
- Args    : the FPC contig id.
+ Args    : the band name
 
 
 =cut
