@@ -91,19 +91,21 @@ sub add_ensembl_comments{
    $aseq->seq->desc("Reannotated sequence via Ensembl");
    my $comment = Bio::Annotation::Comment->new();
    
-   $comment->text("This sequence was reannotated via the Ensembl system. Please visit the Ensembl web site, http://ensembl.ebi.ac.uk for more information");
+   $comment->text("This sequence was reannotated via the Ensembl system. Please visit the Ensembl web site, http://ensembl.ebi.ac.uk for more information.");
    $aseq->annotation->add_Comment($comment);
    
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("The /gene_id indicates a unique id for a gene, /transcript_id a unique id for a transcript and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://ensembl.ebi.ac.uk/docs/embl.html");
+   $comment->text("The /gene_id indicates a unique id for a gene, /transcript_id a unique id for a transcript and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://ensembl.ebi.ac.uk/docs/embl.html.");
    $aseq->annotation->add_Comment($comment);
 
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("All the exons and transcripts Ensembl are confirmed by similarity to either protein or cDNA sequences");
+   $comment->text("All the exons and transcripts in Ensembl are confirmed by similarity to either protein or cDNA sequences.");
    $aseq->annotation->add_Comment($comment); 
 
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("In unfinished, rough draft DNA sequence, the ordering of the fragments is likely to be different from the order in EMBL/Genbank/DDBJ. In addition, gene structures can cross fragments and, in these cases, maybe in different orientations relative to the ordering of the fragments.");
+   $comment->text("In unfinished, rough draft DNA sequence, gene structures can cross fragments and, in these cases, the order and orientation of the fragments is likely to be different from the order in the the nucleotide data library.");
+
+#   $comment->text("In unfinished, rough draft DNA sequence, the ordering of the fragments is likely to be different from the order in EMBL/Genbank/DDBJ. In addition, gene structures can cross fragments and, in these cases, maybe in different orientations relative to the ordering of the fragments.");
    $aseq->annotation->add_Comment($comment); 
   
    my $sf = Bio::SeqFeature::Generic->new();

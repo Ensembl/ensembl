@@ -263,7 +263,7 @@ sub _process_Transcript{
        if( $prev && $prev->contig_id ne $exon->contig_id ) {
 	   my $loc_exon = $self->_generate_missing_exon($self->clone->get_Contig($prev->contig_id),
 						 $self->clone->get_Contig($exon->contig_id),
-						 (3-$prev->phase) + (3-(3-$exon->phase)%3),$exon->strand); 
+						 (3-$prev->end_phase) + (3-((3-$exon->phase)%3)),$exon->strand); 
 	   # generate missing exon now, in CDS line
 
 	   print STDERR "Adding $loc_exon\n";
