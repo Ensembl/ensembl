@@ -45,9 +45,10 @@ use strict;
 use Bio::Root::Object;
 use Bio::SeqFeature::Generic;
 use Bio::EnsEMBL::DB::Obj;
+use Bio::EnsEMBL::DB::ContigI;
 
 
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
