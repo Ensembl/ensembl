@@ -27,9 +27,10 @@ package Bio::EnsEMBL::Map::Marker;
 use strict;
 use vars qw(@ISA);
 
-use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Storable;
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Storable);
 
 
 
@@ -63,16 +64,16 @@ sub new {
 
   my $class = ref($caller) || $caller;
 
-  my $self = bless( {'dbID'         => $dbID,
-		 'adaptor'          => $adaptor,
-		 'left_primer'      => $left_primer,
-		 'right_primer'     => $right_primer,
-                 'min_primer_dist'  => $min_primer_dist,
-                 'max_primer_dist'  => $max_primer_dist,
-		 'priority'         => $priority,
-		 'type'             => $type,
-		 'display_marker_synonym' => $display_synonym
-	        }, $class);
+  my $self = bless( {'dbID'            => $dbID,
+                     'adaptor'         => $adaptor,
+                     'left_primer'     => $left_primer,
+                     'right_primer'    => $right_primer,
+                     'min_primer_dist' => $min_primer_dist,
+                     'max_primer_dist' => $max_primer_dist,
+                     'priority'        => $priority,
+                     'type'            => $type,
+                     'display_marker_synonym' => $display_synonym
+                    }, $class);
 
   #only load the marker synononyms if they were supplied, otherwise they 
   # will be lazy-loaded
@@ -90,52 +91,6 @@ sub new {
 
   return $self;
 }
-
-=head2 dbID
-
-  Arg [1]    : (optional) $dbID
-  Example    : $dbID = $marker->dbID;
-  Description: Getter/Setter for the internal identifier of this marker
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub dbID {
-  my $self = shift;
-  
-  if(@_) {
-    $self->{'dbID'} = shift;
-  }
-
-  return $self->{'dbID'};
-}
-
-
-
-=head2 adaptor
-
-  Arg [1]    : (optional) Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor $adaptor
-  Example    : $adaptor = $marker->adaptor;
-  Description: Getter/Setter for the adaptor that performs database interaction
-               for this Marker.
-  Returntype : Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub adaptor {
-  my $self = shift;
-
-  if(@_) {
-    $self->{'adaptor'} = shift;
-  }
-
-  return $self->{'adaptor'};
-}
-
 
 
 =head2 left_primer
@@ -372,7 +327,7 @@ sub display_MarkerSynonym {
   if(@_) {
     my $ms = shift;
     if($ms && !(ref $ms && $ms->isa('Bio::EnsEMBL::Map::MarkerSynonym'))) {
-     $self->throw("ms arg must be Bio::EnsEMBL::Map::MarkerSynonym not [$ms]");
+     throw("ms arg must be Bio::EnsEMBL::Map::MarkerSynonym not [$ms]");
     }    
     $self->{'display_marker_synonym'} = $ms;
   } 
@@ -459,7 +414,7 @@ sub get_MapLocation {
   }
 
   unless($map_name) {
-    $self->throw('map_name argument is required, or use get_all_MapLocations');
+    throw('map_name argument is required, or use get_all_MapLocations');
   }
 
   return $self->{'map_locations'}->{$map_name}; 
@@ -485,12 +440,12 @@ sub add_MapLocations {
 
   foreach my $ml (@mlocs) {
     unless($ml && ref $ml && $ml->isa('Bio::EnsEMBL::Map::MapLocation')) {
-      $self->throw("args must be Bio::EnsEMBL::Map::MapLocations not [$ml]");
+      throw("args must be Bio::EnsEMBL::Map::MapLocations not [$ml]");
     }
 
     my $mname = $ml->map_name;
     unless($mname) {
-      $self->throw("map location arg [$ml] does not define a map name");
+      throw("map location arg [$ml] does not define a map name");
     }
 
     $self->{'map_locations'}->{$mname} = $ml;  
@@ -517,7 +472,7 @@ sub flush_MapLocations{
 
   delete $self->{'map_locations'};
 }
-		       
+
 
 1;
 

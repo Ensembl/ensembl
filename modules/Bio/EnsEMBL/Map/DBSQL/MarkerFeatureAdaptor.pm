@@ -189,8 +189,8 @@ sub _objs_from_sth {
 
       #create a new marker
       $marker = Bio::EnsEMBL::Map::Marker->new
-        ($marker_id, $marker_adp, 
-         $left_primer, $right_primer, $min_primer_dist, $max_primer_dist, 
+        ($marker_id, $marker_adp,
+         $left_primer, $right_primer, $min_primer_dist, $max_primer_dist,
          $priority, $type, $ms);
       $marker_cache{$marker_id} = $marker;
     }

@@ -243,17 +243,17 @@ sub fetch_attributes {
 
   while($sth->fetch) {
     push @syns, Bio::EnsEMBL::Map::MarkerSynonym->new($ms_id,$ms_src,$ms_name);
-  }  
+  }
   $sth->finish;
 
   $marker->add_MarkerSynonyms(@syns) if(@syns);
-  
+
   #
   # Now retrieve map locations for this marker
   #
   $marker->flush_MapLocations;
-  
-  $sth = $self->prepare("SELECT mloc.chromosome_id, mloc.position, 
+
+  $sth = $self->prepare("SELECT mloc.chromosome_name, mloc.position,
                                 mloc.lod_score, map.map_name, ms.name
                          FROM   marker_map_location mloc, map map,
                                 marker_synonym ms
@@ -261,24 +261,16 @@ sub fetch_attributes {
                          AND    map.map_id = mloc.map_id
                          AND   ms.marker_synonym_id = mloc.marker_synonym_id");
 
-  my($chr_id, $pos, $lod, $mname, $name);
+  my($chr_name, $pos, $lod, $mname, $name);
   my @mlocs;
 
   $sth->execute($m_id);
 
-  $sth->bind_columns(\$chr_id, \$pos, \$lod, \$mname, \$name);
+  $sth->bind_columns(\$chr_name, \$pos, \$lod, \$mname, \$name);
 
-  my %chr_cache;
-  my $chr_adaptor = $self->db->get_ChromosomeAdaptor;
   while($sth->fetch) {
-    my $chr;
-    unless($chr = $chr_cache{$chr_id}) {
-      $chr = $chr_adaptor->fetch_by_dbID($chr_id);
-      $chr_cache{$chr_id} = $chr;
-    }
-
-    push(@mlocs,
-	 Bio::EnsEMBL::Map::MapLocation->new($name,$mname, $chr,$pos,$lod));
+    push(@mlocs, Bio::EnsEMBL::Map::MapLocation->new($name, $mname,
+                                                     $chr_name,$pos,$lod));
   }
 
   $sth->finish;

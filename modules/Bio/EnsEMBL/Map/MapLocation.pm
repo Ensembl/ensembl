@@ -27,6 +27,7 @@ use strict;
 use vars qw(@ISA);
 
 use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Utils::Exception qw(deprecate);
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
@@ -35,14 +36,14 @@ use Bio::EnsEMBL::Root;
 
   Arg [1]    : (optional) string $name
   Arg [2]    : (optional) string $map_name
-  Arg [3]    : (optional) Bio::EnsEMBL::Chromosome $chromosome
+  Arg [3]    : (optional) string $chromosome_name
   Arg [4]    : (optional) string $position
   Arg [5]    : (optional) float $lod_score
   Example    : $map_location = Bio::EnsEMBL::Map::MapLocation('DS1234',
-							      'genethon',
-							       $chr,
-							      '12.39',
-							      50.12);
+                                                              'genethon',
+                                                              'X',
+                                                              '12.39',
+                                                              50.12);
   Description: Creates a new MapLocation
   Returntype : Bio::EnsEMBL::Map::MapLocation
   Exceptions : none
@@ -51,15 +52,15 @@ use Bio::EnsEMBL::Root;
 =cut
 
 sub new {
-  my ($caller, $name, $map_name, $chromosome, $position, $lod_score) = @_;
+  my ($caller, $name, $map_name, $chromosome_name, $position, $lod_score) = @_;
 
   my $class = ref($caller) || $caller;
 
-  return bless( {'map_name'   => $map_name,
-                 'name'       => $name, 
-		 'chromosome' => $chromosome, 
-		 'position'   => $position, 
-		 'lod_score'  => $lod_score}, $class );
+  return bless( {'map_name'        => $map_name,
+                 'name'            => $name,
+                 'chromosome_name' => $chromosome_name,
+                 'position'        => $position,
+                 'lod_score'       => $lod_score}, $class );
 }
 
 
@@ -68,20 +69,16 @@ sub new {
 
   Arg [1]    : string $map_name
   Example    : $map_name = $map_location->map_name;
-  Description: Retrieves the map_name
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Description: Getter/Setter for the map name
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub map_name {
   my $self = shift;
-  
-  if(@_) {
-    $self->{'map_name'} = shift;
-  }
-  
+  $self->{'map_name'} = shift if(@_);
   return $self->{'map_name'};
 }
 
@@ -93,7 +90,7 @@ sub map_name {
   Example    : $name = $map_location->name;
   Description: A name associated with the marker at this position.  For
                example if this is a genethon map location the name will be
-               the synonym of source genethon. 
+               the synonym of source genethon.
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -102,39 +99,27 @@ sub map_name {
 
 sub name {
   my $self = shift;
-
-  if(@_) {
-    $self->{'name'} = shift;
-  }
-
-  return $self->{'name'};  
+  $self->{'name'} = shift if(@_);
+  return $self->{'name'};
 }
 
 
-=head2 chromosome
+=head2 chromosome_name
 
-  Arg [1]    : (optional) Bio::EnsEMBL::Chromosome
-  Example    : $chr = $map_location->chromosome;
-  Description: Getter/Setter for the chromosome of this map location
-  Returntype : Bio::EnsEMBL::Chromosome
-  Exceptions : thrown if an invalid arg is passed
+  Arg [1]    : (optional) string $chromosome_name
+  Example    : $chr_name = $map_location->chromosome_name;
+               $map_location->chromosome_name('X');
+  Description: The name of the chromosome associated with this map location
+  Returntype : string
+  Exceptions : none
   Caller     : general
 
 =cut
 
-sub chromosome {
+sub chromosome_name{
   my $self = shift;
-
-  if(@_) {
-    my $chr = shift;
-    if($chr && !(ref($chr) && $chr->isa('Bio::EnsEMBL::Chromosome'))) {
-      $self->throw("arg must be a Bio::EnsEMBL::Chromosome not [$chr]");
-    }
-
-    $self->{'chromosome'} = $chr;
-  }
-
-  return $self->{'chromosome'};
+  $self->{'chromosome_name'} = shift if(@_);
+  return $self->{'chromosome_name'};
 }
 
 
@@ -152,11 +137,7 @@ sub chromosome {
 
 sub position {
   my $self = shift;
-
-  if(@_) {
-    $self->{'position'} = shift;
-  }
-  
+  $self->{'position'} = shift if(@_);
   return $self->{'position'};
 }
 
@@ -175,13 +156,38 @@ sub position {
 
 sub lod_score {
   my $self = shift;
-
-  if(@_) {
-    $self->{'lod_score'} = shift;
-  }
-
+  $self->{'lod_score'} = shift if(@_);
   return $self->{'lod_score'};
 }
+
+
+
+=head2 chromosome
+
+  Description: DEPRECATED use chromosome_name() instead
+
+=cut
+
+sub chromosome {
+  my $self = shift;
+  deprecate('use chromosome_name instead');
+
+  if(@_) {
+    my $chr = shift;
+    if(ref($chr)) {
+      $self->chromosome_name($chr->seq_region_name());
+    } else {
+      $self->chromosome_name($chr);
+    }
+  }
+
+  if($self->adaptor) {
+    return $self->adaptor->db->get_SliceAdaptor->fetch_by_region('chromosome',
+                                                      $self->chromosome_name);
+  }
+}
+
+
 
 
 1;
