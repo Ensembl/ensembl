@@ -480,8 +480,7 @@ CREATE TABLE protein_feature (
   score         double(16,4) NOT NULL,
   evalue        double(16,4),
   perc_id       int(10),
-  key (translation),
-
+  KEY (translation),
   PRIMARY KEY   (id)
 );
 
@@ -500,7 +499,7 @@ CREATE TABLE interpro_description (
   interpro_ac varchar(40) DEFAULT '' NOT NULL,
   description varchar(255),
   short_description varchar(255),
-  PRIMARY KEY (interpro_ac),
+  PRIMARY KEY (interpro_ac)
 );
 
 #
