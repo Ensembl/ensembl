@@ -10,6 +10,6 @@ while(<>) {
 	print ERROR "$_\n";
 	next;
     }
-
+    print "$_\n";
     $h{$rid} = 1;
 }
