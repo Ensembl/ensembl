@@ -22,6 +22,11 @@ sub handler {
 	my $original_uri = $original_request ? $original_request->uri : '';
 	my $admin = $r->server->server_admin;
 	
+        my $header = "";
+        &Apache::EnsEMBL::Header::make_ensembl_header(\$r, \$header);
+
+        $r->print($header);
+
 	$r->print (
 	
 		start_html(	-title   => 'Server Error', 
@@ -74,11 +79,13 @@ sub handler {
 			)
 		),
 			
-		hr,
-		address(a({-href=> "mailto:$admin"}, 'webmaster@sanger.ac.uk')),
 		end_html
 		);
 		
+        my $footer = "";
+        &Apache::EnsEMBL::Footer::make_ensembl_footer(\$r, \$footer);
+        $r->print($footer);
+
 	return OK;
 }
 

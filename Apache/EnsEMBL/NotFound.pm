@@ -5,6 +5,8 @@ use Apache::Constants qw(:response :methods :http);
 use Apache::File ();
 use Apache::Log ();
 use CGI qw(:html);
+use Apache::EnsEMBL::Header;
+use Apache::EnsEMBL::Footer;
 
 sub handler {
 
@@ -13,7 +15,7 @@ sub handler {
 	unless ($error){
 		 $error = 'unknown (no specific information available)';
 	}
-	$error =~ s/\/mysql\/ensembl\/www\/apache_1.3.6\/htdocs\///i;	
+	$error =~ s/\/mysql\/ensembl\/www\/apache_1.3.6\/htdocs//i;	
 
 	$r->content_type('text/html');
 	$r->send_http_header;
@@ -23,8 +25,10 @@ sub handler {
 	my $original_uri = $original_request ? $original_request->uri : '';
 	my $admin = $r->server->server_admin;
 	
+	my $header = "";
+        &Apache::EnsEMBL::Header::make_ensembl_header(\$r, \$header);
 	
-	
+	$r->print($header);
 	
 	$r->print (
 	
@@ -32,10 +36,10 @@ sub handler {
 				-bgcolor => 'white',
 				-style   => {-src => '/EnsEMBL.css'}
 			   ),
-		h1('EnsEMBL Server Error'),
+		h1('EnsEMBL Server: Page Not Found'),
 		p("Sorry, the page you requested was not found on this server.
-		Please check that you have type in the correct URL or use the site search
-		facility to try ans locate information you require.
+		Please check that you have typed in the correct URL or else use the site search
+		facility to try and locate information you require.
 		If you think an error has occurred please send email to the server administrator 
 		using the link below."),
 
@@ -72,12 +76,14 @@ sub handler {
 				strong($ENV{'REDIRECT_QUERY_STRING'}),
 			)
 		),
-			
-		hr,
-		address(a({-href=> "mailto:$admin"}, 'webmaster@sanger.ac.uk')),
-		end_html
-		);
 		
+                )	
+                ;
+		
+	my $footer = "";
+        &Apache::EnsEMBL::Footer::make_ensembl_footer(\$r, \$footer);
+	$r->print($footer);
+
 	return OK;
 }
 
