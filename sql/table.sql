@@ -1,6 +1,8 @@
 # revisited schema naming issues
 # Author: Arne Stabenau
 # Date: 12.11.2001
+#
+# Glenn Proctor July 2003 - adapted for new schema structure
 
 # conventions
 # use lower case and underscores
@@ -51,45 +53,6 @@ CREATE TABLE analysis (
 # gff_source, gff_feature 
 #  - how to make a gff dump from features with this analysis
 
-
-#
-# Table structure for table 'chromosome'
-#
-CREATE TABLE chromosome (
-  chromosome_id     int unsigned NOT NULL auto_increment,
-  name              varchar(40) NOT NULL,
-  length            int(11) NULL,
-  
-  PRIMARY KEY (chromosome_id),
-  unique name (name)
-);
-
-
-#
-# Table structure for table 'clone'
-#
-CREATE TABLE clone (
-  clone_id      int(10) unsigned NOT NULL auto_increment,
-  name          varchar(40) NOT NULL,
-  embl_acc      varchar(40) NOT NULL,
-  version       int(10) NOT NULL,
-  embl_version  int(10) NOT NULL,
-  htg_phase     int(10) DEFAULT '-1' NOT NULL,
-  created       datetime NOT NULL,
-  modified      datetime NOT NULL,
-  
-  PRIMARY KEY (clone_id),
-  KEY embl (embl_acc,embl_version),
-  KEY id   (name, version)
-);
-
-# semantics
-# id - string we give to this clone in ensembl
-#      should be same as embl_id unless clone is not in embl
-# embl_id - hows the clone submitted to embl
-# htg_phase - finished/unfinished: draft is 123, finished is 4
-
-
 #
 # Table structure for table 'map_density'
 #
@@ -103,45 +66,17 @@ CREATE TABLE map_density (
    PRIMARY KEY(type,chromosome_id,chr_start) 
 );
 
-#
-# Table structure for table 'contig'
-#
-CREATE TABLE contig (
-  contig_id         int(10) unsigned NOT NULL auto_increment,
-  name              varchar(40) NOT NULL,
-  clone_id          int(10) NOT NULL,
-  length            int(10) unsigned NOT NULL,   # foreign key clone:internal_id
-  embl_offset       int(10) unsigned,
-  dna_id            int(10) NOT NULL,            # foreign key dna:id
-  
-  PRIMARY KEY (contig_id),
-  UNIQUE name (name),
-  KEY clone (clone_id),
-  KEY dna (dna_id)
-);
-
-
 
 #
 # Table structure for table 'dna'
 #
 
-# This table holds the sequence of the contigs from the contig table.
-# The sequence is that of the contig, not that of the golden
-# path. I.e. to construct the golden path from the dna entries,
-# the sequence of contigs with an orientation of -1 must be
-# reversed and bases complemented. The assembly
-# table has the contig orientation (raw_ori).
-# Note the length of the dna.sequence field is always equal
-# to the appropriate length field in the contig table
-# (probably a violation of some form of normal form since contig.length
-# is an attibute of the dna.sequence field)
+# This table stores DNA sequence.
 
 CREATE TABLE dna (
   dna_id    int(10) unsigned NOT NULL auto_increment,
   sequence  mediumtext NOT NULL,
-  created   datetime NOT NULL,
-  
+
   PRIMARY KEY (dna_id)
 ) MAX_ROWS = 750000 AVG_ROW_LENGTH = 19000;
 
@@ -179,17 +114,17 @@ CREATE TABLE dnac (
 
 CREATE TABLE exon (
   exon_id       int unsigned NOT NULL auto_increment,
-  contig_id     int(10) unsigned NOT NULL,            # foreign key, contig:internal_id
-  contig_start  int(10) unsigned NOT NULL,                     # start of exon within contig
-  contig_end    int(10) unsigned NOT NULL,                     # end of exon within specified contig
-  contig_strand tinyint(2) NOT NULL,                  # 1 or -1 depending on the strand of the exon
+  dnafrag_id     int(10) unsigned NOT NULL,            # foreign key, dnafrag:dnafrag_id
+  dnafrag_start  int(10) unsigned NOT NULL,            # start of exon within dnafrag
+  dnafrag_end    int(10) unsigned NOT NULL,            # end of exon within specified dnafrag
+  dnafrag_strand tinyint(2) NOT NULL,                  # 1 or -1 depending on the strand of the exon
 
   phase         tinyint(2) NOT NULL,
   end_phase     tinyint(2) NOT NULL,
   sticky_rank   tinyint DEFAULT '1' NOT NULL,         # see note above
   
   PRIMARY KEY ( exon_id, sticky_rank),
-  KEY contig_idx (contig_id, contig_start )
+  KEY dnafrag_idx (dnafrag_id, dnafrag_start )
 );
 
 CREATE TABLE exon_stable_id (
@@ -224,10 +159,10 @@ CREATE TABLE exon_transcript (
 
 CREATE TABLE simple_feature (
   simple_feature_id int unsigned not null auto_increment,
-  contig_id int(10) unsigned NOT NULL,
-  contig_start int(10) unsigned NOT NULL,
-  contig_end int(10) unsigned NOT NULL,
-  contig_strand tinyint(1) NOT NULL,
+  dnafrag_id int(10) unsigned NOT NULL,
+  dnafrag_start int(10) unsigned NOT NULL,
+  dnafrag_end int(10) unsigned NOT NULL,
+  dnafrag_strand tinyint(1) NOT NULL,
   display_label varchar(40) NOT NULL, # what to show, may link to other things, depends on analysis
   analysis_id int(10) unsigned NOT NULL,
 
@@ -236,7 +171,7 @@ CREATE TABLE simple_feature (
   score double,
 
   PRIMARY KEY ( simple_feature_id ),
-  KEY contig_idx( contig_id ),
+  KEY dnafrag_idx( dnafrag_id ),
   KEY analysis_idx( analysis_id ),
   KEY hit_idx( display_label )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
@@ -244,10 +179,10 @@ CREATE TABLE simple_feature (
 
 CREATE TABLE protein_align_feature (
   protein_align_feature_id int unsigned not null auto_increment,
-  contig_id int(10) unsigned NOT NULL,
-  contig_start int(10) unsigned NOT NULL,
-  contig_end int(10) unsigned NOT NULL,
-  contig_strand tinyint(1) DEFAULT '1' NOT NULL,
+  dnafrag_id int(10) unsigned NOT NULL,
+  dnafrag_start int(10) unsigned NOT NULL,
+  dnafrag_end int(10) unsigned NOT NULL,
+  dnafrag_strand tinyint(1) DEFAULT '1' NOT NULL,
   hit_start int(10) NOT NULL,
   hit_end int(10) NOT NULL,
   hit_name varchar(40) NOT NULL,
@@ -262,17 +197,17 @@ CREATE TABLE protein_align_feature (
 
   PRIMARY KEY (	protein_align_feature_id ),
   KEY hit_idx( hit_name ),
-  KEY ctg_idx( contig_id ),
+  KEY dfg_idx( dnafrag_id ),
   KEY ana_idx( analysis_id )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
 CREATE TABLE dna_align_feature (
   dna_align_feature_id int unsigned not null auto_increment,
-  contig_id int(10) unsigned NOT NULL,
-  contig_start int(10) unsigned NOT NULL,
-  contig_end int(10) unsigned NOT NULL,
-  contig_strand tinyint(1) NOT NULL,
+  dnafrag_id int(10) unsigned NOT NULL,
+  dnafrag_start int(10) unsigned NOT NULL,
+  dnafrag_end int(10) unsigned NOT NULL,
+  dnafrag_strand tinyint(1) NOT NULL,
   hit_start int NOT NULL,
   hit_end int NOT NULL,
   hit_strand tinyint(1) NOT NULL,
@@ -288,7 +223,7 @@ CREATE TABLE dna_align_feature (
 
   PRIMARY KEY ( dna_align_feature_id ),
   KEY hit_idx( hit_name ),
-  KEY ctg_idx( contig_id ),
+  KEY dfg_idx( dnafrag_id ),
   KEY ana_idx( analysis_id )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -309,10 +244,10 @@ CREATE TABLE repeat_consensus (
 
 CREATE TABLE repeat_feature (
   repeat_feature_id int unsigned NOT NULL auto_increment,
-  contig_id int(10) unsigned NOT NULL,
-  contig_start int(10) unsigned NOT NULL,
-  contig_end int(10) unsigned NOT NULL,
-  contig_strand tinyint(1) DEFAULT '1' NOT NULL,
+  dnafrag_id int(10) unsigned NOT NULL,
+  dnafrag_start int(10) unsigned NOT NULL,
+  dnafrag_end int(10) unsigned NOT NULL,
+  dnafrag_strand tinyint(1) DEFAULT '1' NOT NULL,
   repeat_start int(10) NOT NULL,
   repeat_end int(10) NOT NULL,
   repeat_consensus_id int(10) unsigned NOT NULL,
@@ -323,7 +258,7 @@ CREATE TABLE repeat_feature (
   score double,
   
   PRIMARY KEY (	repeat_feature_id ),
-  KEY contig_idx( contig_id ),
+  KEY dnafrag_idx( dnafrag_id ),
   KEY repeat_idx( repeat_consensus_id ),
   KEY analysis_idx( analysis_id )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
@@ -332,11 +267,14 @@ CREATE TABLE repeat_feature (
 # Table structure for table 'gene'
 #
 CREATE TABLE gene (
-  gene_id   int unsigned NOT NULL auto_increment,
-  type VARCHAR(40) NOT NULL,
-  analysis_id int,
-  transcript_count int NOT NULL,
-  display_xref_id int unsigned NOT NULL,
+  gene_id             int unsigned NOT NULL auto_increment,
+  type                VARCHAR(40) NOT NULL,
+  analysis_id         int,
+  dnafrag_id          int(10) unsigned NOT NULL, 
+  dnafrag_start       int(10) unsigned NOT NULL, 
+  dnafrag_end         int(10) unsigned NOT NULL, 
+  dnafrag_strand      tinyint(2) NOT NULL,       
+  display_xref_id     int unsigned NOT NULL,
 
   PRIMARY KEY (gene_id),
   KEY xref_id_index ( display_xref_id )
@@ -373,15 +311,17 @@ CREATE TABLE supporting_feature (
 # Table structure for table 'transcript'
 #
 CREATE TABLE transcript (
-  transcript_id    INT UNSIGNED NOT NULL auto_increment,  
-  gene_id          INT UNSIGNED NOT NULL,          # foreign key gene:gene_id
-  translation_id   INT UNSIGNED NOT NULL,          # foreign key translation:translation_id
-  exon_count int NOT NULL,
+  transcript_id       INT UNSIGNED NOT NULL auto_increment,  
+  gene_id             INT UNSIGNED NOT NULL,          # foreign key gene:gene_id
+  exon_count          int NOT NULL,
+  dnafrag_id          int(10) unsigned NOT NULL, 
+  dnafrag_start       int(10) unsigned NOT NULL, 
+  dnafrag_end         int(10) unsigned NOT NULL, 
+  dnafrag_strand      tinyint(2) NOT NULL, 
   display_xref_id int unsigned NOT NULL,
 
   PRIMARY KEY (transcript_id),
   KEY gene_index (gene_id),
-  KEY translation_index ( translation_id ),
   KEY xref_id_index ( display_xref_id )
 
 );
@@ -407,6 +347,7 @@ CREATE TABLE transcript_stable_id (
 
 CREATE TABLE translation (
   translation_id  INT UNSIGNED NOT NULL auto_increment, 
+  transcript_id   INT UNSIGNED NOT NULL, 
   seq_start       INT(10) NOT NULL, # relative to exon start
   start_exon_id   INT UNSIGNED NOT NULL,  # foreign key exon:exon_id
   seq_end         INT(10) NOT NULL, # relative to exon start
@@ -446,22 +387,16 @@ CREATE TABLE translation_stable_id (
  
 
 CREATE TABLE assembly (
-    chromosome_id  int unsigned  NOT NULL,
-    chr_start      int(10) NOT NULL,
-    chr_end        int(10) NOT NULL,
-    superctg_name    varchar(20) NOT NULL,
-    superctg_start   int(10) NOT NULL,
-    superctg_end     int(10) NOT NULL,
-    superctg_ori     tinyint(2) NOT NULL,
-    contig_id      int(10) unsigned NOT NULL, # foreign key contig:internal_id
-    contig_start   int(10) NOT NULL,
-    contig_end     int(10) NOT NULL,
-    contig_ori     tinyint  NOT NULL, 
-    type           varchar(20) NOT NULL,
+    dnafrag_id_assembled   int unsigned NOT NULL,
+    dnafrag_id_component   int(10) unsigned NOT NULL, 
+    assembled_start        int(10) NOT NULL,
+    assembled_end          int(10) NOT NULL,
+    component_start        int(10) NOT NULL,
+    component_end          int(10) NOT NULL,
+    orientation            tinyint  NOT NULL, 
     
-    PRIMARY KEY(contig_id,type),
-    KEY(superctg_name, superctg_start),
-    KEY(chromosome_id,chr_start) 
+    PRIMARY KEY(dnafrag_id_assembled),
+    KEY(dnafrag_id_component,assembled_start) 
 );
 
 
@@ -471,16 +406,16 @@ CREATE TABLE assembly (
 
 CREATE TABLE protein_feature (
   protein_feature_id  int(10) unsigned NOT NULL auto_increment,
-  translation_id int NOT NULL,	
-  seq_start     int(10) NOT NULL,
-  seq_end       int(10) NOT NULL,
-  hit_start        int(10) NOT NULL,
-  hit_end          int(10) NOT NULL,
-  hit_id           varchar(40) NOT NULL,
-  analysis_id      int(10) unsigned NOT NULL,
-  score         double NOT NULL,
-  evalue        double,
-  perc_ident    float,
+  translation_id      int NOT NULL,	
+  seq_start           int(10) NOT NULL,
+  seq_end             int(10) NOT NULL,
+  hit_start           int(10) NOT NULL,
+  hit_end             int(10) NOT NULL,
+  hit_id              varchar(40) NOT NULL,
+  analysis_id         int(10) unsigned NOT NULL,
+  score               double NOT NULL,
+  evalue              double,
+  perc_ident          float,
 
   PRIMARY KEY   (protein_feature_id),
   KEY (translation_id),
@@ -612,24 +547,6 @@ CREATE TABLE meta (
 insert into meta (meta_key, meta_value) values ("schema_version", "$Revision$");
 
 
-CREATE TABLE prediction_transcript (
-    prediction_transcript_id int unsigned not null auto_increment,
-    exon_rank smallint unsigned not null,
-    exon_count smallint,
-    contig_id int unsigned not null,
-    contig_start int unsigned not null,
-    contig_end int unsigned not null,
-    contig_strand tinyint not null,
-    start_phase tinyint not null,
-    score double,
-    p_value double,
-    analysis_id int,
-
-    PRIMARY KEY( prediction_transcript_id, exon_rank ),
-    KEY (contig_id)
-);
-
-
 CREATE TABLE marker_synonym (
     marker_synonym_id int unsigned not null auto_increment,
     marker_id         int unsigned not null,  #foreign key marker:marker_id
@@ -660,14 +577,14 @@ CREATE TABLE marker (
 CREATE TABLE marker_feature (
     marker_feature_id         int unsigned not null auto_increment,
     marker_id                 int unsigned not null,     #foreign key marker:marker_id
-    contig_id                 int(10) unsigned NOT NULL, #foreign key contig:contig_id
-    contig_start              int(10) unsigned NOT NULL,
-    contig_end                int(10) unsigned NOT NULL,
+    dnafrag_id                 int(10) unsigned NOT NULL, #foreign key contig:dnafrag_id
+    dnafrag_start              int(10) unsigned NOT NULL,
+    dnafrag_end                int(10) unsigned NOT NULL,
     analysis_id               int(10) unsigned NOT NULL, #foreign key analysis:analysis_id
     map_weight                int(10) unsigned,
 
     PRIMARY KEY (marker_feature_id),
-    KEY contig_idx (contig_id )
+    KEY dnafrag_idx (dnafrag_id )
 );
     
 CREATE TABLE marker_map_location (
@@ -712,9 +629,10 @@ CREATE TABLE mapfrag (
 #
 
 CREATE TABLE dnafrag (
-  dnafrag_id int(10) unsigned NOT NULL auto_increment,
-  name varchar(40) NOT NULL default '',
-  dnafrag_type enum('RawContig','Chromosome') default NULL,
+  dnafrag_id     int(10) unsigned NOT NULL auto_increment,
+  name           varchar(40) NOT NULL default '',
+  type           varchar(40) default NULL,
+  length         int(10),
   PRIMARY KEY (dnafrag_id),
   UNIQUE KEY name(name)
 ) TYPE=MyISAM;
