@@ -400,10 +400,10 @@ sub _seq_cache{
 }
 
 
-=head2 get_old_exons
+=head2 get_old_Exons
 
- Title   : get_old_exons
- Usage   : my @mapped_exons=$rc->get_old_exons 
+ Title   : get_old_Exons
+ Usage   : my @mapped_exons=$rc->get_old_Exons 
  Function: Used to get out exons in new coordinates
  Returns : an array of Bio::EnsEMBL::Exon objects
  Args    : none
@@ -411,7 +411,7 @@ sub _seq_cache{
 
 =cut
 
-sub get_old_exons {
+sub get_old_Exons {
     my ($self) = @_;
 
     #This method requires a connection to a crossmatch database
@@ -433,50 +433,69 @@ sub get_old_exons {
     my $sfpc = $crossdb->get_SymmetricContigFeatureContainer;
     my @fp=$sfpc->get_FeaturePair_list_by_rawcontig_id($self->id);
     my @sorted_fp= sort { $a->start <=> $b->start} @fp;
-    #Get all the exons for this contig, and also sort them by start
-    my @exons;
-    foreach my $gene ($self->get_all_Genes) {
-	push (@exons,$gene->each_unique_Exon);
-    }
-    my @current_exons=sort { $a->start <=> $b->start} @exons;
-    my @mapped_exons;
-    foreach my $exon (@current_exons) {
-	my $new_exon;
-	$new_exon->id($exon->id);
-	$new_exon->clone_id ($exon->clone_id);
-	$new_exon->id       ($exon->id);
-	$new_exon->created  ($exon->created);
-	$new_exon->modified (time());
-	$new_exon->phase   ($exon->phase);
-	my $version=($exon->version)+1;
-	$new_exon->version  ($version);
-	$new_exon->sticky_rank($exon->sticky_rank);
-	#Loop through all feature pairs to find mapping
-	foreach my $fp (@sorted_fp) {
-	    #Need to make sure which is seqname and which is hseqname, i.e. which is new and old
-	    if (($exon->start > $fp->start) && ($exon->start <$fp->end)) {
-		#Map coordinates
-		$new_exon->seqname($fp->hseqname);
-		$new_exon->contig_id($fp->hseqname);
-		my $new_start=$fp->hstart+($exon->start-$fp->start);
-		$new_exon->start($new_start);
-	    }
 
-	    #Hmmm... what if now the end falls on a different seqname? I think this is sticky exon business...
-	    if  (($exon->end > $fp->start) && ($exon->end <$fp->end)) {
-		#Map coordinates
-		$new_exon->seqname($fp->hseqname);
-		$new_exon->contig_id($fp->hseqname);
-		my $new_end=$fp->hend-($fp->end-$exon->end);
-		$new_exon->end($fp->hend);
-	    }
-	    #Ehmm... I think I need to do the revferse strand differently...
-	   
+    my %validoldcontigs;
+    my %fphash;
+
+    foreach my $fp ( @sorted_fp ) {
+	my $contigid = $fp->hseqname;
+	$contigid =~ s/\.\d+\./\./g;
+	$validoldcontigs{$contigid} = $fp->hseqname;
+	if( !exists $fphash{$fp->hseqname} ) {
+	    $fphash{$fp->hseqname} = [];
 	}
-	push (@mapped_exons,$new_exon);
+	push(@{$fphash{$fp->hseqname}},$fp);
     }
+
+
+
+    #We now need to get all the Genes for this clone on the old case
+
+    my $oldclone = $old_db->get_Clone($self->cloneid);
+
+    @genes = $oldclone->get_all_Genes();
+
+    foreach my $gene ( @genes ) {
+	foreach my $exon ( $gene->each_unique_Exon ) {
+	    if( exists $validoldcontigs{$exon->seqname} ) {
+		push(@exons,$exon);
+	    }
+	}
+    }
+
+
+    # now perform the mapping
+
+  EXON:
+
+    foreach my $exon (@exons) {
+	
+	foreach $fp ( @{$fphash{$validoldcontigs{$exon->seqname}}} ) {
+	    if( $fp->hstart < $exon->start && $fp->hend > $exon->start ) {
+		if( $fp->strand == $fp->hstrand ) {
+		    # straightforward mapping
+		    $exon->start($fp->start + $exon->start - $fp->hstart);
+		    $exon->end($fp->start + $exon->end - $fp->hstart);
+		} else {
+		    # Grrr strand hell.
+		    my $oldstart = $exon->start;
+		    my $oldend   = $exon->end;
+
+		    $exon->start($fp->hend - ($oldstart - $fp->hend));  
+		    $exon->end  ($fp->hend - ($oldstart - $fp->hstart));
+		    $exon->strand( -1 * $exon->strand);
+		}
+		push (@mapped_exons,$new_exon);
+		next EXON;
+	    }
+	}
+    }
+
     return @mapped_exons;		
 }
+
+
+
 =head2 get_all_SeqFeatures
 
  Title   : get_all_SeqFeatures
@@ -1488,11 +1507,7 @@ sub dbobj {
 sub _crossdb {
    my ($self,$arg) = @_;
 
-   if (defined($arg)) {
-        $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::Obj") unless $arg->isa("Bio::EnsEMBL::DBSQL::Obj");
-        $self->{'_crossdb'} = $arg;
-   }
-   return $self->{'_crossdb'};
+   return $self->dbobj->_crossdb;
 }
 	
 =head2 _got_overlaps
