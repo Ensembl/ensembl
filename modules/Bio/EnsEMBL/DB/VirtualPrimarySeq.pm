@@ -272,51 +272,84 @@ sub subseq{
    #If start and end RawContig identical, just do a subseq and complement it 
    #if the orientation of the RawContig in the VirtualContig is -1
    my $subseq;
-   if ((!$start_gap) && (!$end_gap)) {
-       if ($start_rc->id eq $end_rc->id) {
-	   print STDERR "Using the new fast VirtualPrimarySeq method to retrieve sequence!\n";
-	   
-	   if ($mc->orientation == 1) {
-	       my $seq=$start_rc->primary_seq->subseq($start_rc_pos,$end_rc_pos);
-	       return $seq;
-	   }
-	   else {
-	       my $seq=$start_rc->primary_seq->subseq($end_rc_pos,$start_rc_pos);
-	       #return $seq;
-	       return $self->revcom($seq);
-	   }
+   if (((!$start_gap) && (!$end_gap))&&($start_rc->id eq $end_rc->id)) {
+       print STDERR "Using the new fast VirtualPrimarySeq method to retrieve sequence!\n";
+       
+       if ($mc->orientation == 1) {
+	   my $seq=$start_rc->primary_seq->subseq($start_rc_pos,$end_rc_pos);
+	   return $seq;
+       }
+       else {
+	   my $seq=$start_rc->primary_seq->subseq($end_rc_pos,$start_rc_pos);
+	   #return $seq;
+	   return $self->revcom($seq);
        }
    }
-       
+   
    #If the start and end RawContig are different, then it gets a bit more complicated...
-   #else {
-
+   else {
        #First of all we get the seq from the start in the start RawContig to its golden_end
-       #Again, if the orientation is negative we do it the other way around and revcom it!
-       
-       #if ($mc->orientation == 1) {
-	   #$subseq=$start_rc->primary_seq->subseq($start_rc_pos,$start_rc->golden_end);
-       #}
-       #else {
-	   #my $seq=$start_rc->primary_seq->subseq($mc->contig->golden_end,$start_rc_pos);
-	   #$subseq=$self->revcom($seq);
-       #}
+       #If the orientation is negative we revcom the sequence from the start of the 
+       #contig to the rc start position
 
+       if ($mc->orientation == 1) {
+	   $subseq=$start_rc->primary_seq->subseq($start_rc_pos,$start_rc->golden_end);
+       }
+       else {
+	   $subseq=$start_rc->primary_seq->subseq($mc->start,$start_rc_pos);
+	   $subseq=$self->revcom($subseq);
+       }
+
+       print STDERR "So far: $subseq\n";
        #Then loop through each MapContig (note: they are given back sorted by start in vc)
-       #my $before_start=1;
-       #foreach my $mc ($self->get_all_MapContigs) {
-	   
+       my $before_start=1;
+       foreach my $mc ($self->_vmap->get_all_MapContigs) {
+
 	   #If this MapContig is before our start contig, skip it
-	   #if (($mc->contig->id ne $start_rc->id)&& ($before_start=1)){
-	       #next;
-	   #}
+	   if (($mc->contig->id ne $start_rc->id)&& ($before_start==1)){
+	       next;
+	   }
 
 	   #Then find the start contig...
-	   #elsif ($mc->contig->id eq $start_rc->id) {
-	       #$before_start=0;
-	       #next;
-	   #}
+	   if ($mc->contig->id eq $start_rc->id) {
+	       $before_start=0;
+	       next;
+	   }
 	   
+	   #If we find the end contig, we add the last piece of 
+           #subseq, and get out of the loop
+	   if ($mc->contig->id eq $end_rc->id) {
+	       
+	       #Add gap
+	       my $sofar_length = length ($subseq);
+	       my $subseq_length = $mc->start - $start;
+	       my $gap = $subseq_length - $sofar_length-1;
+	       $subseq .= 'N'x$gap;
+	       
+	       my $long = length $subseq;
+	       print STDERR "Finishing in contig\n";
+	       if ($mc->orientation == 1) {
+		   $subseq.=$end_rc->primary_seq->subseq($mc->start_in,$end_rc_pos);
+	       }
+	       else {
+		   my $seq=$end_rc->primary_seq->subseq($end_rc_pos,$end_rc->golden_end);
+		   $subseq.=$self->revcom($seq);
+	       } 
+	       last;
+	   }
+
+	   #If end in gap, add Ns and finish
+	   if ($mc->start > $end) {
+	       if ($end_gap) {
+		   my $sofar_length = length ($subseq);
+		   my $subseq_length = $end-$start;
+		   my $gap = $subseq_length - $sofar_length+1;
+		   $subseq .= 'N'x$gap;
+		   my $long = length $subseq;
+		   print STDERR "After adding Ns subseq is $long\n";
+	       }
+	       last;
+	   }
 	   #...and go through the rest of the contigs
 	   
            #If we find the end contig, we add the last piece of 
@@ -342,9 +375,13 @@ sub subseq{
 		   #$subseq.=$self->revcom($seq);
 	      #} 
 	   #}
-       #}
-   #} 
-   
+	   
+       }
+   } 
+
+   print "Virtual subseq is:\n$subseq\n";
+   my $long = length $subseq;
+   print STDERR "Virtual subseq is $long\n";
    #Need to do this properly...
    $start--;
    return substr $self->seq, $start, ($end-$start);

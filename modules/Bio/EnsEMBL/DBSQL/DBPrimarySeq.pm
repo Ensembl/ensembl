@@ -244,7 +244,7 @@ sub subseq{
    my ($self,$start,$end) = @_;
    
    if( $start > $end ){
-       $self->throw("in subseq, start [$start] has to be greater than end [$end]");
+       $self->throw("in subseq, start [$start] cannot be greater than end [$end]");
    }
    
    if( $start <= 0 || $end > $self->length ) {

@@ -189,9 +189,9 @@ sub extend {
     return $nvc;
 }
 
-# Hack to make Areks code display - AS
+# Hack to make Areks code display, now fixed - Elia
 sub get_MarkerFeatures {
-    return my @empty_list;
+    return ();
 }
  
 =head2 extend_maximally

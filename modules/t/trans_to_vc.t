@@ -71,8 +71,11 @@ print "ok 3\n";
 #$vc->_dump_map;
 
 my $seq=$vc->virtual_primary_seq;
-my $subseq=$seq->subseq(10,20);
-print "Subseq is $subseq\n";
+my $subseq=$seq->subseq(10,1100);
+my $long = length $subseq;
+print "Normal subseq is:\n$subseq\n";
+my $long = length $subseq;
+print STDERR "Normal subseq is $long\n";
 $vc->id;
 my $length=$vc->length;
 print STDERR "Length of contig is $length\n";
