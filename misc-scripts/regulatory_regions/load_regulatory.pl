@@ -9,7 +9,7 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Analysis;
 use Getopt::Long;
 
-my ($host, $user, $pass, $port, $dbname, $file, $del);
+my ($host, $user, $pass, $port, $dbname, $file, $del, $motif);
 
 GetOptions( "host=s",   \$host,
 	    "user=s",   \$user,
@@ -17,10 +17,16 @@ GetOptions( "host=s",   \$host,
 	    "port=i",   \$port,
 	    "dbname=s", \$dbname,
 	    "file=s",   \$file,
+	    "motif=i",  \$motif,
 	    "delete",   \$del,
 	    "help",     \&usage
 	  );
 
+
+if (!$motif) {
+  print "No motif ID specified, exiting\n";
+  exit(1);
+}
 
 my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$dbname",
 		       $user,
@@ -109,7 +115,7 @@ while (<FILE>) {
 		   $chr_slice->end(),
 		   $chr_slice->strand(),
 		   $analysis->dbID(),
-		   0,
+		   $motif,
 		   'negative');
 
   my $rr_id = $rr_sth->{'mysql_insertid'};
@@ -152,6 +158,7 @@ Usage: perl load_regulatory.pl
          -user   : user name
          -pass   : password
          -dbname : database name
+         -motif  : ID of motif to link to. Must already exist in database.
 	 -file   : file to load from
 	 -delete : delete existing contents of tables first
 
