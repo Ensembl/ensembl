@@ -8,34 +8,34 @@ use DBI;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
-BEGIN {
- eval {
- require Time::HiRes;
- Time::HiRes->import('time');
- };
-};
-
-
 use vars '@ISA';
 
 @ISA = qw{ DBI::st };
 
-sub execute {
-  my( $sth, @args ) = @_;
-  
-  my $time = time;
-  my $result = $sth->SUPER::execute(@args);
-  
-  $time = time - $time;
-  
-  print STDERR "query time: $time\n";
-  
-  if ($result) {
-    return $result;
-  }
-  
-  throw("execute failed : '$DBI::errstr'");
-}
+
+###
+### Uncomment the following to turn on useful debugging info
+### you will also have to alter DBConnection.pm
+###
+
+#BEGIN {
+# eval {
+# require Time::HiRes;
+# Time::HiRes->import('time');
+# };
+#};
+
+#sub execute {
+#  my( $sth, @args ) = @_;
+#  my $time = time;
+#  my $result = $sth->SUPER::execute(@args);
+#  $time = time - $time;
+#  print STDERR "query time: $time\n";
+#  if ($result) {
+#    return $result;
+#  }  
+#  throw("execute failed : '$DBI::errstr'");
+#}
 
 1;
 
