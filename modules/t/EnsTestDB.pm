@@ -229,10 +229,23 @@ sub do_sql_file {
     my $dbh = $self->db_handle;
     my $i = 0;
     foreach my $s (grep /\S/, split /;/, $sql) {
+        $self->validate_sql($s);
         $dbh->do($s);
         $i++
     }
     return $i;
+}
+
+sub validate_sql {
+    my ($self, $statement) = @_;
+    if ($statement =~ /insert/i)
+    {
+        #print STDERR "scanning: $statement \n";
+        $statement =~ s/\n/ /g;
+        #print STDERR "altered: $statement \n";
+        die ("INSERT should use explicit column names (-c switch in mysqldump)\n$statement\n")
+            unless ($statement =~ /insert.+into.*\(.+\).+values.*\(.+\)/i);
+    }
 }
 
 sub DESTROY {
