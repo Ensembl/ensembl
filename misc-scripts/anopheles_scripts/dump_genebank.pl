@@ -5,9 +5,9 @@ use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Utils::Eprof('eprof_start','eprof_end','eprof_dump');
 
-my $host      = 'localhost';
-my $dbuser    = 'manu';
-my $dbname    = 'anopheles_gambiae_core_10_2';
+my $host      = 'ecs1e';
+my $dbuser    = 'ensro';
+my $dbname    = 'anopheles_gambiae_ncbi_12_2';
 my $dbpass    = '';
 my $path      = 'MOZ2';
 
@@ -38,11 +38,11 @@ my $slice_adapt = $db->get_SliceAdaptor();
 #open (SEQ,">/acari/work1/mongin/test_dump/AAAB01008846.fsa") || die;
 
 
-open (MAP,"/Users/emmanuelmongin/work/ncbi_dump/AAAB01.output.p2g") || die;
-open (OUT,">/Users/emmanuelmongin/work/ncbi_dump/AAAB01008846.tbl") || die;
-open (SEQ,">/Users/emmanuelmongin/work/ncbi_dump/AAAB01008846.fsa") || die;
-open (SCAFMAP,"/Users/emmanuelmongin/work/ncbi_dump/accessions") || die;
-open (EBIMAP,"/Users/emmanuelmongin/work/ncbi_dump/ebi_id_mapping.txt") || die;
+open (MAP,"/acari/work1/mongin/test_dump/AAAB01.output.p2g") || die;
+open (OUT,">/acari/work1/mongin/test_dump/AAAB01008961.tbl") || die;
+open (SEQ,">/acari/work1/mongin/test_dump/AAAB01008961.fsa") || die;
+open (SCAFMAP,"/acari/work1/mongin/test_dump/accessions") || die;
+open (EBIMAP,"/acari/work1/mongin/test_dump/ebi_id_mapping.txt") || die;
 
 while(<EBIMAP>) {
     chomp;
@@ -68,7 +68,7 @@ close(MAP);
 #my $query1 = "select clone_id,name from clone where name = 'AAAB01008961'";
 #my $query1 = "select c.clone_id, c.name, a.superctg_ori from clone c, assembly a where name = 'AAAB01008846' and a.superctg_name = c.name";
 
-my $query1 = "select c.clone_id, c.name, a.superctg_ori from clone c, assembly a where name = 'AAAB01008846' and a.superctg_name = c.name limit 1";
+my $query1 = "select c.clone_id, c.name, a.superctg_ori from clone c, assembly a where name = 'AAAB01008961' and a.superctg_name = c.name limit 1";
 
 my $sth1 = $db->prepare($query1);
 $sth1->execute();
@@ -587,10 +587,10 @@ sub print_translation_coordinates {
     print OUT "\t\t\tproduct\t$translation_name\n";
     
     if ($cel_id) {
-	print OUT "\t\t\tgnl|WGS:AAAB|$cel_id|gb|$map{$cel_id}\n";
+	print OUT "\t\t\tprotein_id\tgnl|WGS:AAAB|$cel_id|gb|$map{$cel_id}\n";
     }
     if ($ebi_id) {
-	print OUT "\t\t\tgnl|WGS:AAAB|$ebi_id|gb|$map{$ebi_id}\n";
+	print OUT "\t\t\tprotein_id\tgnl|WGS:AAAB|$ebi_id|gb|$map{$ebi_id}\n";
     }
     if ($symbol) {
 	print OUT "\t\t\tprotein_id\t$symbol\n";
