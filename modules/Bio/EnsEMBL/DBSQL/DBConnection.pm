@@ -372,7 +372,11 @@ sub prepare {
    if( !defined $self->{_db_handle} ) {
       $self->throw("Database object has lost its database handle.");
    }
-      
+
+#   print STDERR "QUERY: ",join( "\nQUERY: ", split( "\n",$string )),"\n";
+#   $string =~ s/\n/ /g;
+#   $string =~ s/ +/ /g;
+#   print STDERR "QUERY: ",$string,"\n";
    # should we try to verify the string?
    return $self->{_db_handle}->prepare($string);
 } 

@@ -11,6 +11,8 @@ to make sure we can manage 1.0 <-> 0.7 transitions for bioperl
 
 package Bio::EnsEMBL::Root;
 
+use vars qw(@ISA);
+use strict;
 use Bio::Root::RootI;
 
 @ISA = qw(Bio::Root::RootI);

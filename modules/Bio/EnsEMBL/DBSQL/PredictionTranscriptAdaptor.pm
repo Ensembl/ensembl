@@ -195,13 +195,13 @@ sub fetch_all_by_RawContig_constraint {
                obtain
   Example    : @pts = $pta->fetch_all_by_Slice($slice,'Genscan');
   Description: returns all PredicitonTranscipts on the region of the slice 
-  Returntype : list of Bio::EnsEMBL::PredictionTranscript in slice coords 
+  Returntype : listref of Bio::EnsEMBL::PredictionTranscript in slice coords 
   Exceptions : none, if there are none, the list is empty.
   Caller     : ?
 
 =cut
 
-sub fetch_all_by_Slice{
+sub fetch_all_by_Slice {
   my ($self, $slice, $logic_name) = @_;
 
   my $constraint = undef;
@@ -227,7 +227,7 @@ sub fetch_all_by_Slice{
 
   my @out = ();
 
- GENE: foreach my $transcript(@$results){
+ GENE: foreach my $transcript(@$results) {
     my $exon_count = 1;
     my $pred_t = Bio::EnsEMBL::PredictionTranscript->new();
     $pred_t->dbID($transcript->dbID);
@@ -242,17 +242,25 @@ sub fetch_all_by_Slice{
       @sorted_exons = sort{$b->start <=> $a->start} @$exons;
     }
     my $contig = $sorted_exons[0]->contig;
-  EXON:foreach my $e(@sorted_exons){
-      my $start = ($e->start - ($slice->chr_start - 1));
-      my $end = ($e->end - ($slice->chr_start - 1));
-      my $exon = $self->_new_Exon($start, $end, $e->strand, 
-				  $e->phase, $e->score, $e->p_value, $contig);
+  EXON:foreach my $e(@sorted_exons){ 
+      my ( $start, $end, $exon );
+
+      if( $slice->strand == 1 ) {
+	$start = ($e->start - ($slice->chr_start - 1));
+	$end = ($e->end - ($slice->chr_start - 1));
+	$exon = $self->_new_Exon($start, $end, $e->strand, 
+				    $e->phase, $e->score, $e->p_value, $contig);
+      } else {
+	$start = $slice->chr_end() - $e->end() + 1;
+	$end = $slice->chr_end() - $e->start() + 1;
+	$exon = $self->_new_Exon($start, $end, -$e->strand, 
+				    $e->phase, $e->score, $e->p_value, $contig);
+      }      
       $pred_t->add_Exon( $exon, $exon_count );
       $exon_count++;
+      push(@out, $pred_t);
     }
-    push(@out, $pred_t);
-  }
-  
+  } 
   return \@out;
 }
 
@@ -275,7 +283,7 @@ sub fetch_all_by_Slice{
   Example    : @pts = $pta->fetch_all_by_assembly_location(1,20000, '2', 
 							  'NCBI30', 'Genscan');
   Description: Retrieves prediction transcripts from a region of the assembly 
-  Returntype : list of Bio::EnsEMBL::PredictionTranscripts in chromo coords
+  Returntype : listref of Bio::EnsEMBL::PredictionTranscripts in chromo coords
   Exceptions : none
   Caller     : fetch_all_by_Slice
 
@@ -324,13 +332,13 @@ sub fetch_all_by_assembly_location{
   Example    : $pts = $pta->fetch_all_by_assembly_locationconstraint(1,20000, 
 						'2', 'NCBI30','analysis_id=2');
   Description: Retrieves prediction transcripts from a region of the assembly 
-  Returntype : list of Bio::EnsEMBL::PredictionTranscripts in chromo coords
+  Returntype : listref of Bio::EnsEMBL::PredictionTranscripts in chromo coords
   Exceptions : thrown if $chr_start or $chr_end are not numbers
   Caller     : fetch_all_by_assembly_location
 
 =cut
 
-sub fetch_all_by_assembly_location_constraint{
+sub fetch_all_by_assembly_location_constraint {
   my ($self, $chr_start, $chr_end, $chr, $type, $constraint) = @_;
 
   if( !defined $type ) {
@@ -344,8 +352,6 @@ sub fetch_all_by_assembly_location_constraint{
   }
   
   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
-  
-  $mapper->register_region($chr,$chr_start,$chr_end);
   
   my @cids = $mapper->list_contig_ids($chr, $chr_start ,$chr_end);
   my %ana;
@@ -621,13 +627,13 @@ sub store {
       $exonst->execute( undef, 1, $contig_id, $contig_start, 
 			$contig_end, $contig_strand,
 			$start_phase, $score, $p_value, $analysis, 
-			scalar( @exons) );
+			scalar( @{$exons} ));
       $dbID = $exonst->{'mysql_insertid'};
     } else {
       $exonst->execute( $dbID, $rank, $contig_id, $contig_start, 
 			$contig_end, $contig_strand,
 			$start_phase, $score, $p_value, $analysis, 
-			scalar( @exons ) );
+			scalar( @{$exons} ) );
     }
     $rank++;
   }

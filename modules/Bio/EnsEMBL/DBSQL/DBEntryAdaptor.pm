@@ -103,6 +103,7 @@ sub fetch_by_dbID {
 }
 
 
+
 =head2 store
 
   Arg [1]    : ?? $exObj
@@ -115,6 +116,7 @@ sub fetch_by_dbID {
   Caller     : 
 
 =cut
+
 
 sub store {
     my ( $self, $exObj, $ensObject, $ensType ) = @_;

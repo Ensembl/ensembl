@@ -198,7 +198,7 @@ sub fetch_all_by_Contig_constraint {
 }
 
 
-=head2 fetch_all_by_Contig
+=head2 fetch_all_by_RawContig
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig 
                the contig from which features should be obtained
@@ -215,12 +215,21 @@ sub fetch_all_by_Contig_constraint {
 
 =cut
    
+sub fetch_all_by_RawContig {
+  my ( $self, $contig, $logic_name ) = @_;
+
+  return $self->fetch_all_by_Contig_constraint($contig, '',$logic_name);
+}
+
+# old naming convention, replace calls to this.
 sub fetch_all_by_Contig{
   my ($self, $contig, $logic_name) = @_;
 
+  $self->warn( "Please use ...by_RawContig instead of ...by_Contig" );
   #fetch by contig id constraint with empty constraint
   return $self->fetch_all_by_Contig_constraint($contig, '',$logic_name);
 }
+
 
 
 =head2 fetch_all_by_Contig_and_score

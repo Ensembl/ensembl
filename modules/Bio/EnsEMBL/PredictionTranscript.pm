@@ -280,7 +280,7 @@ sub add_Exon {
   Function  : Returns all Exons currently in the PredictionTranscript
               in the order 5' to 3'. If this is a partial PredictionTranscript,
               elements of the list will be undef.
-  Returntype: list Bio::EnsEMBL::Exon
+  Returntype: listref Bio::EnsEMBL::Exon
   Exceptions: none
   Caller    : self->get_cdna(),Web for display.
 
@@ -299,9 +299,10 @@ sub get_all_Exons {
   Args      : none
   Function  : How many exons are in this PTranscript. Some might 
               actually not be in this object, depending on how it was retrieved.
-	      (non golden exons missing on Slice->get_predicitonTranscripts())     Returntype: int
+	      (non golden exons missing on Slice->get_predicitonTranscripts())     
+  Returntype: int
   Exceptions: none
-  Caller    : general usage
+  Caller    : general
 
 =cut
 
