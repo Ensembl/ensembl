@@ -270,9 +270,13 @@ sub fetch_by_name {
 
   $version = lc($version) if($version);
 
+  if(!exists($self->{'_name_cache'}->{$name})) {
+    throw("Coord_system with name [$name] does not exist.");
+  }
+
   my @coord_systems = @{$self->{'_name_cache'}->{$name}};
 
-  throw('Coord_system with name [$name] does not exist.') if(!@coord_systems);
+  throw("Coord_system with name [$name] does not exist.") if(!@coord_systems);
 
   foreach my $cs (@coord_systems) {
     if($version) {
