@@ -1,14 +1,14 @@
-INSERT INTO clone (id, embl_id, version, embl_version, htg_phase, created, modified, stored) 
-VALUES (1, 'pog', 1, 3, 3, '0000-00-00 00:00:00', '0000-00-00 00:00:00', '0000-00-00 00:00:00');
+INSERT INTO clone (internal_id,id, embl_id, version, embl_version, htg_phase, created, modified, stored) 
+VALUES (1,'clone1', 'pog', 1, 3, 3, '0000-00-00 00:00:00', '0000-00-00 00:00:00', '0000-00-00 00:00:00');
 
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
-VALUES (1, 'contig1', 1, 40, 1, 500, 2, 'chromosome1', 'international-a');
+VALUES (1, 'contig1', 1, 40, 1, 1, 2, 'chromosome1', 'international-a');
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
-VALUES (2, 'contig2', 1, 40, 2, 0, 1, 'chromosome1', 'international-b');
+VALUES (2, 'contig2', 1, 40, 2, 141, 1, 'chromosome1', 'international-b');
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
-VALUES (3, 'contig3', 1, 40, 3, 0, 3, 'chromosome1', 'international-b');
+VALUES (3, 'contig3', 1, 40, 3, 281, 3, 'chromosome1', 'international-b');
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
-VALUES (4, 'contig4', 1, 40, 4, 0, 3, 'chromosome1', 'international-b');
+VALUES (4, 'contig4', 1, 40, 4, 421, 3, 'chromosome1', 'international-b');
 
 INSERT INTO static_golden_path (fpcctg_name,chr_name,raw_id,fpcctg_start,fpcctg_end,chr_start,chr_end,raw_start,raw_end,raw_ori,type) VALUES ('ctg123','chr2',1,1,35,201,235,2,36,1,'UCSC');
 INSERT INTO static_golden_path (fpcctg_name,chr_name,raw_id,fpcctg_start,fpcctg_end,chr_start,chr_end,raw_start,raw_end,raw_ori,type) VALUES ('ctg123','chr2',2,135,174,335,374,1,40,-1,'UCSC');
@@ -20,6 +20,8 @@ INSERT INTO dna (id, sequence, created)
 VALUES (2, 'CCCCCCCCCCGGGGGGGGGGCCCCCCCCCCGGGGGGGGGG', '2000-04-27 08:31:59');
 INSERT INTO dna (id, sequence, created) 
 VALUES (3, 'TTTTTTTTTTCCCCCCCCCCTTTTTTTTTTCCCCCCCCCC', '2000-04-27 08:31:59');
+INSERT INTO dna (id, sequence, created) 
+VALUES (4, 'TTTTTTTTTTCCCCCCCCCCTTTTTTTTTTCCCCCCCCCC', '2000-04-27 08:31:59');
 
 INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_feature, id) VALUES ('swir','1','blastp','1','blastp','similarity',1);
 INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_feature, id) VALUES ('marker','1','blastp','1','ePCR','similarity',2);
@@ -39,5 +41,21 @@ INSERT INTO gene (id) VALUES ('tgene-id-1');
 INSERT INTO genetype (gene_id,type) VALUES ('tgene-id-1','type');
 
 INSERT INTO translation (id,start_exon,seq_start,end_exon,seq_end) VALUES ('trl-1','texon-1',2,'texon-2',1);
+
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (1,'species.classification','sapiens');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (2,'species.classification','Homo');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (3,'species.classification','Hominidae');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (4,'species.classification','Catarrhini');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (5,'species.classification','Primates');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (6,'species.classification','Eutheria');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (7,'species.classification','Mammalia');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (8,'species.classification','Vertebrata');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (9,'species.classification','Chordata');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (10,'species.classification','Metazoa');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (11,'species.classification','Eukaryota');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (12,'species.common_name','Human');
+
+
+
 
 
