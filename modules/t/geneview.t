@@ -8,14 +8,11 @@ BEGIN { $| = 1;
 	plan tests => 4;
 }
 
-my $loaded = 1;
-END {print "not ok 1\n" unless $loaded;}
 
 use MultiTestDB;
 use TestUtils qw( debug );
 
 $verbose = 0;
-$loaded = 0;
 
 ok(1);
 
