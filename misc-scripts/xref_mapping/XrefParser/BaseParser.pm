@@ -106,7 +106,7 @@ sub run {
 	# TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
 	if ($file =~ /(.*)\.gz$/) {
 	  print "Uncompressing $dir/$file\n";
-	  system("gunzip -f ", "$dir/$file");
+	  system("gunzip -f $dir/$file");
 	  $file = $1;
 	}
 	
