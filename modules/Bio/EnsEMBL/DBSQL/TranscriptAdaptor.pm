@@ -25,8 +25,6 @@ accepts them (at the moment) in a transcript.
   Elia Stupka  : elia@ebi.ac.uk
   Ewan Birney  : 
 
-=head1 APPENDIX
-
 =cut
 
 package Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
@@ -163,7 +161,6 @@ sub fetch_by_translation_stable_id {
  Example :
  Returns : 
  Args    : needs a gene ...
-
 
 =cut
 

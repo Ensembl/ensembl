@@ -1100,7 +1100,14 @@ sub peptide {
 		 " Is this exon [$self] a member of this transcript [$tr]?");
   } elsif(scalar(@coords) == 1) {
     my $c = $coords[0];
-    $pep_str = $tr->translate->subseq($c->start, $c->end);
+    my $pep = $tr->translate;
+
+    #bioperl doesn't give back residues for incomplete codons
+    #make sure we don't subseq too far...
+    my ($start, $end);
+    $end = ($c->end > $pep->length) ? $pep->length : $c->end; 
+    $start = ($c->start < $end) ? $c->start : $end;
+    $pep_str = $tr->translate->subseq($start, $end);
   }
     
   return Bio::Seq->new(-seq => $pep_str, 
