@@ -46,6 +46,7 @@ use Bio::Seq;
 use Bio::SeqIO;
 use Bio::EnsEMBL::Analysis::Genscan;
 use Bio::EnsEMBL::Analysis::FeatureParser;
+use Bio::EnsEMBL::Chromosome;
 use FileHandle;
 
 # Object preamble - inheriets from Bio::Root::Object
@@ -481,6 +482,29 @@ sub id{
     }
     return $self->{'id'};
 }
+
+=head2 chromosome
+
+ Title   : chromosome
+ Usage   : $chr = $self->chromosome([$chromosome[)
+ Function: get/set chromosome for this contig. Defaults to the unknown
+           human Chromosome.
+ Returns : a Chromosome object
+ Args    : 
+
+=cut
+
+sub chromosome {
+    my $self = shift;
+    my $chr = shift;
+    $chr && ( $self->{_chromosome} = $chr );
+    if( !defined( $self->{_chromosome} )) {
+	$self->{_chromosome} = Bio::EnsEMBL::Chromosome->new
+	    ( 'human','unknown' );
+    }
+    $self->{_chromosome};
+}
+
 
 =head2 internal_id
 

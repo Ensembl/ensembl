@@ -60,6 +60,8 @@ use Bio::EnsEMBL::DB::RawContigI;
 use Bio::EnsEMBL::Repeat;
 use Bio::EnsEMBL::ContigOverlap;
 use Bio::EnsEMBL::FeatureFactory;
+use Bio::EnsEMBL::Chromosome;
+
 use Bio::PrimarySeq;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::RawContigI);
@@ -566,6 +568,36 @@ sub length{
    return $self->{_length};
 }
 
+=head2 chromosome
+
+ Title   : chromosome
+ Usage   : $chr = $contig->chromosome( [$chromosome] )
+ Function: get/set the chromosome of the contig.
+ Example :
+ Returns : the chromsome object
+ Args    :
+
+=cut
+
+sub chromosome {
+   my ($self,$chromosome ) = @_;
+   my $id= $self->internal_id();
+
+   if( defined( $chromosome )) {
+       $self->{_chromosome} = $chromosome;
+   } else {
+       if (! defined ($self->{_chromosome})) {
+	   my $sth = $self->_dbobj->prepare("select chromosomeId from contig where internal_id = \"$id\" ");
+	   $sth->execute();
+	   
+	   my $rowhash = $sth->fetchrow_hashref();
+	   my $chrId = $rowhash->{'chromosomeId'};
+	   $self->{_chromosome} = Bio::EnsEMBL::Chromosome->get_by_id
+	       ( $chrId );
+       }
+   }
+   return $self->{_chromosome};
+}
 
 =head2 seq_version
 

@@ -64,6 +64,7 @@ use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::FeatureFactory;
+use Bio::EnsEMBL::Chromosome;
 use DBI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
@@ -768,6 +769,43 @@ sub get_Contig{
 
    return $contig;
 
+}
+
+=head2 get_Contigs_by_Chromosome
+
+ Title   : get_Contig_by_Chromosome
+ Usage   : @contigs = $dbobj->get_Contig_by_Chromosome( $chrObj );
+ Function: retrieve contigs belonging to a certain chromosome from the
+           database 
+ Example :
+ Returns : A list of Contig objects. Probably an empty list.
+ Args    :
+
+
+=cut
+
+sub get_Contigs_by_Chromosome {
+   my ($self,$chromosome ) = @_;
+   my $chromosomeId = $chromosome->get_db_id;
+   my @result = ();
+
+   my $sth = $self->prepare("select c.id,c.internal_id,cl.embl_version " . 
+			    "from dna as d,contig as c,clone as cl " .
+			    "where d.id = c.dna and c.chromosomeId = '$chromosomeId' and c.clone = cl.id");
+
+
+   my $res = $sth ->execute;
+   my $row;
+   while( $row = $sth->fetchrow_arrayref ) {
+       my $contig = new Bio::EnsEMBL::DBSQL::RawContig 
+	   ( -dbobj => $self,		
+	     -id    => $row->[0] );
+       $contig->internal_id($row->[1]);
+       $contig->seq_version($row->[2]);
+       push( @result, $contig );
+   }
+
+   return @result;
 }
 
 =head2 get_all_Clone_id
@@ -2315,7 +2353,8 @@ sub write_Contig {
    my $len       = $dna   ->length;
    my $seqstr    = $dna   ->seq;
    my $offset    = $contig->embl_offset();
-   
+   my $chromosomeId = $contig->chromosome->get_db_id;
+
    $seqstr =~ tr/atgcn/ATGCN/;
 
    #Removed in new schema?
@@ -2325,8 +2364,8 @@ sub write_Contig {
 
    push(@sql,"lock tables contig write,dna write");
    push(@sql,"insert into dna(sequence,created) values('$seqstr',FROM_UNIXTIME($date))");
-   push(@sql,"insert into contig(id,internal_id,dna,length,clone,offset,corder) " .
-	     "values('$contigid',null,LAST_INSERT_ID(),$len,'$clone',$offset,$order)");
+   push(@sql,"insert into contig(id,internal_id,dna,length,clone,offset,corder,chromosomeId ) " .
+	     "values('$contigid',null,LAST_INSERT_ID(),$len,'$clone',$offset,$order,$chromosomeId)");
 
    push(@sql,"unlock tables");   
 

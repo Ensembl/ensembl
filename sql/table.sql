@@ -46,6 +46,7 @@ CREATE TABLE contig (
   orientation int(1) DEFAULT '1' NOT NULL,
   corder int(10) unsigned,
   dna int(10),
+  chromosomeId int(10) default '0' not null,
   PRIMARY KEY (internal_id),
   KEY clone_index (clone),
   KEY id_index (id)
