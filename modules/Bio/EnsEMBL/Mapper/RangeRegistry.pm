@@ -178,7 +178,6 @@ sub check_and_register {
   }
 
   my $CUR;
-  my $PREV;
 
   #####
   #loop through the list of existing ranges recording any "gaps" where the
@@ -200,8 +199,11 @@ sub check_and_register {
     }
   }
 
+  
+  my ($gap_start, $gap_end, $r_idx, $rstart_idx, $rend_idx);
+  $gap_start = $rstart;
+
   for($CUR=$start_idx; $CUR < $len; $CUR++) {
-    my $PREV = $CUR-1;
     my ($pstart,$pend) = @{$list->[$CUR]};
 
     #no work needs to be done at all if
@@ -210,115 +212,59 @@ sub check_and_register {
       return undef;
     }
 
-    #record the index of the first pair that is within the range to be
-    #registered
-    #subtract one from the range start so that we can detect any
-    #adjacent ranges that will need to be merged
-    if(!defined($rstart_idx) && $pend >= ($rstart-1)) {
-      $rstart_idx = $CUR;
-
-      if($CUR == 0 && $pstart < $rend && $pstart > $rstart) {
-	#need to add a gap at the very beginning because this is the first
-	#range and is overlapped by requested range
-	push @gap_pairs, [$rstart,$pstart-1];
-      }
+    #find adjacent or overlapping regions already registered
+    if($pend >= ($rstart-1) && $pstart <= ($rend+1)) {
+      if(!defined($rstart_idx)) {
+        $rstart_idx = $CUR;
+      }            
+      $rend_idx   = $CUR;
     }
 
-    if($rend < $pstart) {
-      #this range pair is past the end of the requested region
-      #add a gap range up till the end of the requested range and stop
-      #searching
-      if($CUR > 0) {
-        my $gap_start = $list->[$PREV]->[$END] + 1;
-        push @gap_pairs, [$gap_start,$rend];
-      } else {
-	#the requested range is on its own at the beginning of the list
-        push @gap_pairs, [$rstart,$rend];
-      }
-      last;
-    }
-
-    #record any gaps between registered ranges that we pass by on the way
-    if(defined($rstart_idx) && $CUR > 0) {
-      my $gap_start = $list->[$PREV]->[$END] + 1;
-      my $gap_end   = $list->[$CUR]->[$START] - 1;
+    if($pstart > $rstart) {
+      $gap_end   = ($rend   < $pstart) ? $rend   : $pstart-1;
       push @gap_pairs, [$gap_start, $gap_end];
     }
 
-    if($rend <= $pend) {
-      #this range pair overlaps the end of the requested region
+    $gap_start = ($rstart > $pend)   ? $rstart : $pend+1;
+
+    if($pstart > $rend && !defined($r_idx)) {
+      $r_idx = $CUR;
       last;
     }
   }
 
-  #if we went right to the very end set the 'current' range to the
-  #last existing range
-  $CUR-- if($CUR == $len);
-
-  #now check if another gap range pair needs to be added to the end of the list
-  #whice will occur if the requested range extends past the last range in the
-  if($list->[$CUR]->[$END] < $rend) {
-    if($rstart < $list->[$CUR]->[$END]) {
-      #this range overlaps with last seen exising range
-      push @gap_pairs, [$list->[$CUR]->[$END]+1, $rend];
-    } else {
-      #this range is fully outside of the last seen exising range
-      push @gap_pairs, [$rstart, $rend];
-    }
+  #do we have to make another gap?
+  if($gap_start < $rend) {
+    push @gap_pairs, [$gap_start, $rend];
   }
 
-  my $last_range = $list->[$CUR];
-
-  #####
-  # Add the requested range to the list of ranges merging with the
-  # existing ranges as necessary
   #
-  if(!defined($rstart_idx)) {
-    #this range is on its own at the end of the list;
-    push @$list, [$rstart,$rend];
-  } elsif($CUR == 0 && $last_range->[$START] > ($rend+1)) {
-    #this range is on its own at the beginning of the list
-    unshift @$list, [$rstart,$rend];
-  } else {
-    #this range overlaps or is adjacent to some of the existing ranges
-    #we need to splice in a single new node into the list
-    #to do this we just need to figure out the start and end values of the
-    #node and where it should go
-    my($new_start, $new_end, $rend_idx);
-
-    if($list->[$rstart_idx]->[$START] > $rstart) {
-      #the requested range fully covers the first existing overlapped range
+  # Merge the new range into the registered list 
+  #
+  if(defined($rstart_idx)) {
+    my ($new_start, $new_end);
+    if($rstart < $list->[$rstart_idx]->[0]) {
       $new_start = $rstart;
     } else {
-      #the requested range partially overlaps the existing range
-      $new_start = $list->[$rstart_idx]->[$START];
+      $new_start = $list->[$rstart_idx]->[0];
     }
 
-    #add one to check for adjacent ranges
-    if($last_range->[$START] <= ($rend+1)) {
-      if($last_range->[$END] < $rend) {
-        #requested range extends past end of existing range
-        $new_end = $rend;
-        $rend_idx = $CUR+1;
-      } else {
-        #end of requested range is encompassed by or adjacent to existing range
-        $new_end = $last_range->[$END];
-        $rend_idx = $CUR;
-      }
-    } else {
-      #end of requested range is before last examined region of existing range
-      $rend_idx = $CUR-1;
+    if($rend > $list->[$rend_idx]->[1]) {
       $new_end = $rend;
+    } else {
+      $new_end = $list->[$rend_idx]->[1];
     }
 
-    #perform the splice of the new range into the list
-    my $splice_length = $rend_idx - $rstart_idx + 1;
-    my $new_range = [$new_start,$new_end];
-    splice(@$list, $rstart_idx, $splice_length,$new_range);
+    splice(@$list, $rstart_idx, $rend_idx-$rstart_idx+1, [$new_start, $new_end]);
+  } elsif(defined($r_idx)) {
+    splice(@$list, $r_idx, 0, [$rstart, $rend]);
+  } else {
+    push(@$list, [$rstart,$rend]);
   }
 
   return \@gap_pairs;
 }
+
 
 
 1;
