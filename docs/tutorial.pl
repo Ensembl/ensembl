@@ -17,15 +17,15 @@ use Bio::SeqIO;
 
 use strict;
 
-#my $host   = 'kaka.sanger.ac.uk';
-#my $user   = 'anonymous';
-my $host    = 'ecs1d',
-my $user    = 'ensro';
-my $dbname = 'homo_sapiens_core_130';
+my $host   = 'kaka.sanger.ac.uk';
+my $user   = 'anonymous';
+#my $host    = 'ecs1d',
+#my $user    = 'ensro';
+my $dbname = 'homo_sapiens_core_7_29';
 my $mapname= 'homo_sapiens_maps_130';
 my $snpname= 'homo_sapiens_snp_130';
 my $estname= 'homo_sapiens_est_130';
-my $path   = 'NCBI_26';
+my $path   = 'NCBI_29';
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   => $host,
 					    -user   => $user,
@@ -304,4 +304,5 @@ foreach my $ext (@ext_features) {
     print $ext->id . "\t" . $ext->status . "\t".  $ext->clone_name . "\t" . $ext->start_in_clone_coord . "\n";
   }
 }
+
 
