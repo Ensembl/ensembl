@@ -1552,7 +1552,7 @@ sub write_Exon{
 
    # FIXME: better done with placeholders. (perhaps?).
 
-   my $exonst = "insert into exon (id,contig,created,modified,seq_start,seq_end,strand,phase,stored) values ('" .
+   my $exonst = "insert into exon (id,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
        $exon->id() . "','" .
 	   $exon->contig_id() . "','" .
 	       $exon->created(). "','" .
@@ -1560,7 +1560,8 @@ sub write_Exon{
 		       $exon->start . ",".
 			   $exon->end . ",".
 			       $exon->strand . ",".
-				   $exon->phase . ",now())";
+				   $exon->phase . ",now(),".
+				       $exon->end_phase . ")";
    
    my $sth = $self->prepare($exonst);
    $sth->execute();
