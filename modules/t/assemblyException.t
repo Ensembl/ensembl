@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 5;
+	plan tests => 7;
 }
 
 
@@ -25,6 +25,8 @@ my $slice_adaptor = $db->get_SliceAdaptor();
 my $slice = $slice_adaptor->fetch_by_region('chromosome', 'Y',8e6,13e6);
 my $feats = $sfa->fetch_all_by_Slice($slice);
 debug("Got " . scalar(@$feats));
+ok( @$feats ==58 );
+
 print_features($feats);
 
 
@@ -38,6 +40,8 @@ my $org_slice = $slice_adaptor->fetch_by_region('chromosome', '20',
 my $feats = $sfa->fetch_all_by_Slice($slice);
 
 debug("Got " . scalar(@$feats));
+ok( @$feats == 9 );
+
 print_features($feats);
 
 $multi->hide( "core", "simple_feature" );
@@ -87,8 +91,6 @@ ok( $fhs eq $fos );
 ok( $bhs eq $bos );
 
 
-
-
 $slice = $slice_adaptor->fetch_by_region('chromosome', '20_HAP1',
 					 30_499_998,30_500_002);
 
@@ -96,6 +98,16 @@ debug($slice->seq);
 ok( $slice->seq() eq "GTNNN" );
 
 $multi->restore();
+
+
+#try projecting a hap slice to the contig coordinate system
+debug("Org slice projection");
+my $projection = $org_slice->project('contig');
+print_projection($projection);
+
+debug("Hap slice projection");
+$projection = $hap_slice->project('contig');
+print_projection($projection);
 
 
 sub print_features {
@@ -110,5 +122,15 @@ sub print_features {
     } else {
       debug('UNDEF');
     }
+  }
+}
+
+
+
+sub print_projection {
+  my $proj = shift;
+  foreach my $seg (@$proj) {
+    my ($start, $end, $seq_reg) = ($seg->[0],$seg->[1],$seg->[2]->seq_region_name());
+    debug("[$start-$end] $seq_reg");
   }
 }
