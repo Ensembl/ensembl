@@ -489,9 +489,8 @@ sub _transform_to_RawContig {
       $componentExon->adaptor( $self->adaptor() );
 
       #add the supporting features on this contig to the component exon
-      if(exists $sf_hash{$rawContig->name()}) {
-	
-        $componentExon->add_supporting_features(@{$sf_hash{$rawContig->name()}});
+      if(exists $sf_hash{$rawContig->name}) {	
+        $componentExon->add_supporting_features(@{$sf_hash{$rawContig->name}});
       }
 
       $stickyExon->add_component_Exon( $componentExon );

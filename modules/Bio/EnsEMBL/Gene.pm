@@ -77,49 +77,118 @@ sub new {
   Args     : none, or the start coordinate of this gene
 =cut
 
+
+=head2 start
+
+  Arg [1]    : (optional) int $start
+  Example    : $start = $gene->start;
+  Description: This is a convenience method.  It may be better to calculate
+               your own start by looking at the exons yourself.
+               Gets/sets the lowest start coordinate of this genes exons.
+               No consistancy check is performed and if this is used as a
+               setter potentially the start could be set to a value which
+               does not correspond to the lowest exon start.  If this
+               gene is in RawContig coordinates and its exons span multiple
+               contigs the lowest value is still returned and a warning is
+               issued.
+  Returntype : int
+  Exceptions : warning if gene spans multiple contigs
+  Caller     : general, contigview
+
+=cut
+
 sub start {
   my($self, $start) = @_;
+
+  my $multi_flag = 0;
 
   if($start) {
     $self->{start} = $start;   
   } elsif(!defined $self->{start}) {
+    my $last_contig;
     foreach my $exon (@{$self->get_all_Exons}) {
       if(!defined($self->{start}) || $exon->start() < $self->{start}) {
         $self->{start} = $exon->start();
       }
+      $multi_flag = 1 if($last_contig && $last_contig ne $exon->contig->name);
+      $last_contig = $exon->contig->name;
     }
   }
+
+  if($multi_flag) {
+    $self->warn("Bio::EnsEMBL::Gene::start - Gene spans multiple contigs." .
+		"The return value from start may not be what you want");
+  }    
+  
   return $self->{start};
 }
 
 
-=head2 end
-  Title    : end
-  Usage    : $end = $gene->end()
-  Function : Gets/Sets the highest end coordinate in of this genes exons 
-             in slice coordinates. No consistancy check is performed if this 
-             is used as a setter and potentially the end could be set to 
-             a value which does not correspond to the highest exon end.
-  Returns  : int
-  Args     : none, or the end coordinate of this gene
+
+=head2 start
+
+  Arg [1]    : (optional) int $end
+  Example    : $end = $gene->end;
+  Description: This is a convenience method.  It may be better to calculate
+               your own end by looking at the exons yourself.
+               Gets/sets the highest end coordinate of this genes exons.
+               No consistancy check is performed and if this is used as a
+               setter potentially the end could be set to a value which
+               does not correspond to the highest exon end.  If this
+               gene is in RawContig coordinates and its exons span multiple
+               contigs the highest value is still returned and a warning is
+               issued.
+  Returntype : int
+  Exceptions : warning if gene spans multiple contigs
+  Caller     : general, contigview
+
 =cut
 
 sub end {
   my($self, $end) = @_;
 
+  my $multi_flag = 0;
+
   if($end) {
     $self->{end} = $end;   
   } elsif(!defined $self->{end}) {
+    my $last_contig;
     foreach my $exon (@{$self->get_all_Exons()}) {
       if(!defined($self->{end}) || $exon->end() > $self->{end}) {
         $self->{end} = $exon->end();
       }
+      $multi_flag = 1 if($last_contig && $last_contig ne $exon->contig->name);
+      $last_contig = $exon->contig->name;
     }
+  }
+
+  if($multi_flag) {
+    $self->warn("Bio::EnsEMBL::Gene::end - Gene spans multiple contigs." .
+		"The return value from end may not be what you want");
   }
 
   return $self->{end};
 }
 
+
+
+=head2 strand
+
+  Arg [1]    : (optional) int strand 
+  Example    : $strand = $gene->strand;
+  Description: This is a convenience method. It may be better just to
+               get the strand from this genes exons yourself.  
+               Gets/Sets the strand of this gene. No consistancy check is
+               performed and if used as a setter the strand can be set 
+               incorrectly.  If this gene is in RawContig coords and spans 
+               multiple contigs it is not possible to calculate the strand
+               correctly, and a warning is returned.  
+  Returntype : int
+  Exceptions : Warning if strand is not defined and Gene is in RawContig coords
+               so strand cannot be calculated
+  Caller     : general
+
+=cut
 
 sub strand {
   my $self = shift;
@@ -130,9 +199,21 @@ sub strand {
   } elsif( ! defined $self->{strand} ) {
     my $exons = $self->get_all_Exons();
     if(@$exons) {
+      if($exons->[0]->contig && 
+	 $exons->[0]->contig->isa("Bio::EnsEMBL::RawContig")) {
+	my $last_contig;
+	foreach my $exon (@$exons) {
+	  if($last_contig && $last_contig ne $exon->contig->name) {
+	    $self->warn("Bio::EnsEMBL::Gene::strand - strand can not be " .
+			"calculated for a Gene in RawContig coordinates that "
+			. "spans multiple contigs");
+	    return 0;
+	  }
+	  $last_contig = $exon->contig->name;
+	}
+      }
       $self->{'strand'} = $exons->[0]->strand();
-    }      
-    #$self->warn( "Gene strand not set, difficult to calculate..." );
+    }
   }
   return $self->{'strand'};
 
@@ -150,7 +231,8 @@ sub strand {
                This function will return undef if this gene is not attached
                to a slice and the chr_name attribute has not already been set. 
   Returntype : string
-  Exceptions : none
+  Exceptions : warning if chr_name is not defined and Gene is in RawContig 
+               coordinates
   Caller     : Lite GeneAdaptor, domainview
 
 =cut
@@ -167,6 +249,9 @@ sub chr_name {
     if($exon && ($contig = $exon->contig())) {
       if(ref $contig && $contig->isa('Bio::EnsEMBL::Slice')) {
         $self->{'_chr_name'} = $contig->chr_name();
+      } else {
+	$self->warn('Gene::chr_name - Gene is in RawContig coords, and must '
+                  . 'be in Slice coords to have a valid chr_name');
       }
     }
   } 

@@ -64,7 +64,6 @@ use Bio::EnsEMBL::Exon;
 
 
 @ISA = qw(Bio::EnsEMBL::Exon);
-# new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
