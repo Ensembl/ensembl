@@ -23,7 +23,10 @@ CREATE TABLE analysisprocess (
   gff_source varchar(40),
   gff_feature varchar(40),
 
-  PRIMARY KEY (analysisId)
+  PRIMARY KEY (analysisId),
+  index(gff_source),
+  index(gff_feature),
+  index(db)
 );
 
 #
@@ -47,12 +50,12 @@ CREATE TABLE analysis (
 CREATE TABLE chromosome (
   chromosome_id     int(10) unsigned NOT NULL auto_increment,
   name              varchar(40) NOT NULL,
-  species_id        int(11) NOT NULL,
-  id                int(11) NOT NULL,
-  known_genes       int(11) NULL,
-  unknown_genes     int(11) NULL,
-  snps              int(11) NULL,
-  length            int(11) NULL,
+  species_id        int(11) unsigned NOT NULL,
+  id                int(11) unsigned NOT NULL,
+  known_genes       int(11) unsigned NULL,
+  unknown_genes     int(11) unsigned NULL,
+  snps              int(11) unsigned NULL,
+  length            int(11) unsigned NULL,
   
   PRIMARY KEY (chromosome_id)
 );
@@ -76,17 +79,18 @@ CREATE TABLE clone (
   KEY id   (id,embl_version)
 );
 
+
 #
 # Table structure for table 'map_density'
 #
 CREATE TABLE map_density (
-   chromosome_id   int(10) NOT NULL,
+   chr_name   varchar(15) NOT NULL,
    chr_start	int(10) NOT NULL,
    chr_end	int(10) NOT NULL,
    type		varchar(20) NOT NULL,
    value	int(10) NOT NULL,
     
-   PRIMARY KEY(type,chromosome_id,chr_start) 
+   PRIMARY KEY(type,chr_name,chr_start) 
 );
 
 #
@@ -95,11 +99,12 @@ CREATE TABLE map_density (
 CREATE TABLE contig (
   internal_id       int(10) unsigned NOT NULL auto_increment,
   id                varchar(40) NOT NULL,
-  clone             int(10) NOT NULL,
-  length            int(10) unsigned NOT NULL,   # foreign key clone:internal_id
+  clone             int(10) unsigned NOT NULL,
+  length            int(10) unsigned NOT NULL, # foreign key clone:internal_id
+  length            int(10) unsigned NOT NULL,   
   offset            int(10) unsigned,
   corder            int(10) unsigned,
-  dna               int(10) NOT NULL,            # foreign key dna:id
+  dna               int(10) unsigned NOT NULL, # foreign key dna:id
   chromosomeId      int(10) unsigned NOT NULL,
   international_id  varchar(40),
   
@@ -251,7 +256,7 @@ CREATE TABLE fset_feature (
 CREATE TABLE gene (
   gene_id   int unsigned not null auto_increment,
   type VARCHAR(40) not null,
-  analysisId int,
+  analysisId int unsigned not null,
      
   PRIMARY KEY (gene_id)
 );
@@ -294,7 +299,7 @@ CREATE TABLE repeat_feature (
 #
 CREATE TABLE supporting_feature (
   supporting_feature_id            int(10) unsigned NOT NULL auto_increment,
-  exon_id          int NOT NULL,             # foreign key exon:exon_id
+  exon_id          int unsigned NOT NULL,             # foreign key exon:exon_id
   contig_id     int(10) unsigned NOT NULL,
   seq_start     int(10) NOT NULL,
   seq_end       int(10) NOT NULL,
@@ -332,6 +337,7 @@ CREATE TABLE transcript (
 );
 
 CREATE TABLE transcript_stable_id (
+    transcript_id int unsigned not null,
     transcript_id int unsigned not null,  # foreign key transcript:transcript_id
     stable_id     VARCHAR(40) not null,
     version       int(10) DEFAULT '1' NOT NULL,
@@ -475,20 +481,20 @@ CREATE TABLE karyotype (
 #
 
 CREATE TABLE objectXref(
-       objectxrefId INT not null auto_increment,
+       objectxrefId INT unsigned not null auto_increment,
        ensembl_id VARCHAR(40) not null, 
        ensembl_object_type ENUM( 'RawContig', 'Transcript', 'Gene', 'Translation' ) not null,
-       xrefId INT not null,
+       xrefId INT unsigned not null,
 
        UNIQUE ( ensembl_object_type, ensembl_id, xrefId ),
-       KEY xref_index( objectxrefId, xrefId, ensembl_object_type, ensembl_id )
+       PRIMARY KEY (objectxrefId)
    	);
 
 #
 #Table structure for identityXref
 #
 CREATE TABLE identityXref(
-        objectxrefId INT not null ,
+        objectxrefId INT unsigned not null ,
 	query_identity 	int(5),
         target_identity int(5),
         PRIMARY KEY (objectxrefId)
@@ -500,8 +506,8 @@ CREATE TABLE identityXref(
 #
 
 CREATE TABLE Xref(
-         xrefId INT not null auto_increment,
-         externalDBId int not null,
+         xrefId INT unsigned not null auto_increment,
+         externalDBId int unsigned not null,
          dbprimary_id VARCHAR(40) not null,
 	 display_id VARCHAR(40) not null,
          version VARCHAR(10) DEFAULT '' NOT NULL,
@@ -519,7 +525,7 @@ CREATE TABLE Xref(
 #
 
 CREATE TABLE externalSynonym(
-         xrefId INT not null,
+         xrefId INT unsigned not null,
          synonym VARCHAR(40) not null,
          PRIMARY KEY( xrefId, synonym ),
 	 KEY name_index( synonym )
@@ -530,7 +536,7 @@ CREATE TABLE externalSynonym(
 #
 
 CREATE TABLE externalDB(
-         externalDBId INT not null auto_increment,
+         externalDBId INT unsigned not null auto_increment,
          db_name VARCHAR(40) not null,
 	 release VARCHAR(40) DEFAULT '' NOT NULL,
          PRIMARY KEY( externalDBId ) 
@@ -555,16 +561,15 @@ CREATE TABLE landmark_marker (
 
 
 CREATE TABLE meta (
-        meta_id INT not null auto_increment,
-        meta_key varchar( 40 ) not null,
-        meta_value varchar( 255 ) not null,
+    meta_id INT unsigned not null auto_increment,
+    meta_key varchar( 40 ) not null,
+    meta_value varchar( 255 ) not null,
 
-        PRIMARY KEY( meta_id ),
-        KEY meta_key_index ( meta_key ),
-        KEY meta_value_index ( meta_value )
-	);
+    PRIMARY KEY( meta_id ),
+    KEY meta_key_index ( meta_key ),
+    KEY meta_value_index ( meta_value )
+);
 
 # Auto add schema version to database
-insert into meta (meta_key, meta_value) values ("schema_version", "$Revision$");
-
-
+insert into meta (meta_key, meta_value) values (
+	"schema_version", "$Revision$");
