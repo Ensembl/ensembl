@@ -151,6 +151,35 @@ sub get_all_RepeatFeatures{
 
 }
 
+
+=head2 find_supporting_evidence
+
+ Title   : find_supporting_evidence
+ Usage   : $obj->find_supporting_evidence($exon);
+ Function: Looks through all the similarity features and
+           stores as supporting evidence any feature
+           that overlaps with an exon.  I know it is
+           a little crude but it\'s a start/
+ Example : 
+ Returns : Nothing
+ Args    : Bio::EnsEMBL::Exon
+
+
+=cut
+
+
+sub find_supporting_evidence {
+    my ($self,$exon) = @_;
+
+    my @features = $self->get_all_SimilarityFeatures;
+
+    foreach my $f (@features) {
+	if ($f->overlaps($exon)) {
+	    $exon->add_supporting_evidence($f);
+	}
+    }
+}
+
 =head2 get_all_clone_SeqFeatures
 
  Title   : get_all_clone_SeqFeatures
