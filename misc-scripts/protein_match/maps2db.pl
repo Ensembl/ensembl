@@ -199,7 +199,7 @@ MAPPING: while (<MAP>) {
 	foreach my $a(@array) {
 #If the target sequence is either an SPTR or RefSeq accession number, we have some information concerning the percentage of identity (that the sequences we directly used for the pmatch mapping) 
 	    
-	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISSPROT") || ($a->xDB eq "RefSeq") || ($a->xDB eq "ANOSUB")) {
+	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISSPROT") || ($a->xDB eq "RefSeq") || ($a->xDB eq "ANOSUB") || $a->xDB eq 'BRIGGSAE_HYBRID') {
 
 		my $dbentry = Bio::EnsEMBL::IdentityXref->new
 		    ( -adaptor => $adaptor,

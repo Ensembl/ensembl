@@ -67,6 +67,14 @@ if ($organism eq "anopheles") {
     &parse_sub;
 }
 
+
+if($organism eq 'briggsae'){
+   &parse_briggsae_sptr;
+   &parse_blessed;
+   &test_protfile;
+   exit(0);
+}
+
 &parse_sptr;
 &test_protfile;
 
@@ -77,10 +85,12 @@ sub parse_sptr {
 
   open (IN, "<$sptr") or die "Can't open $sptr\n";
   open (OUT, ">>$protfile") or die "Can't open $protfile\n";
-  
+  print STDERR "parsing sptr\n";
   while(<IN>){
+    #>ACE1_CAEBR Q27459 AAB41269.1 Desc: Acetylcholinesterase 1 precursor (EC 3.1.1.7) (AChE 1).
     # eg >143G_HUMAN (Q9UN99) 14-3-3 protein gamma
     if(/^>\S+\s+\((\S+)\)/){
+     
 
       if($1 eq 'P17013'){
 	die("DYING: $sptr still contains P17013. \nThis will probably cause problems with pmatch.\nYou should REMOVE IT AND RERUN prepare_proteome!\n");
@@ -101,6 +111,37 @@ sub parse_sptr {
 
 }
 
+sub parse_briggsae_sptr {
+
+  open (IN, "<$sptr") or die "Can't open $sptr $!";
+  open (OUT, ">>$protfile") or die "Can't open $protfile $!";
+  print STDERR "parsing sptr\n";
+  while(<IN>){
+    #>ACE1_CAEBR Q27459 AAB41269.1 Desc: Acetylcholinesterase 1 precursor (EC 3.1.1.7) (AChE 1).
+    # eg >143G_HUMAN (Q9UN99) 14-3-3 protein gamma
+    if(/^>\S+\s+(\S+)/){
+     
+
+      if($1 eq 'P17013'){
+	die("DYING: $sptr still contains P17013. \nThis will probably cause problems with pmatch.\nYou should REMOVE IT AND RERUN prepare_proteome!\n");
+      }
+	
+      if($1 eq 'Q99784'){
+	die("DYING: $sptr still contains Q99784. \nThis will probably cause problems with pmatch.\nYou should REMOVE IT AND RERUN prepare_proteome!\n");
+      }
+      print OUT ">$1\n";
+    }
+    else {
+      print OUT $_;
+    }
+  }
+  
+  close IN;
+  close OUT;
+
+}
+
+
 sub parse_sub {
     #Simply add the file to the main file which is going to be used for the mapping
     open (IN, "$sub_genes") || die "Can't open $sub_genes\n";
@@ -115,9 +156,35 @@ sub parse_sub {
 
 }
 
-sub parse_refseq {
+sub parse_blessed {
 
   open (IN, "<$refseq") or die "Can't open $refseq\n";
+  open (OUT, ">>$protfile") or die "Can't open $protfile\n";
+
+  while(<IN>){
+    #>CBG00032 CBP00001 (cb25.fpc0002.en5152a) W = 89.6; B = 95.9
+    if(/^>/){
+      if(/^>\w+\s+(\w+)/){
+	print OUT ">$1\n";
+      }
+      else {
+	print OUT $_;
+      }
+    }
+    else {
+      # sequence - sub U by X
+      s/U/X/g;
+      print OUT $_;
+    }
+  }
+  close IN;
+  close OUT;
+
+}
+
+sub parse_refseq_pred {
+    
+  open (IN, "<$refseq_pred") or die "Can't open $refseq_pred\n";
   open (OUT, ">>$protfile") or die "Can't open $protfile\n";
 
   while(<IN>){
@@ -141,8 +208,8 @@ sub parse_refseq {
 
 }
 
-sub parse_refseq_pred {
-    
+
+sub parse_hybrid{
   open (IN, "<$refseq_pred") or die "Can't open $refseq_pred\n";
   open (OUT, ">>$protfile") or die "Can't open $protfile\n";
 
