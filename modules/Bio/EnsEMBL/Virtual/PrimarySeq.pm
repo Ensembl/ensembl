@@ -176,7 +176,7 @@ sub subseq{
    
    # could be in the middle of a gap
    if( $start_contig->start > $end ) {
-       print STDERR "start gap\n";
+       #print STDERR "start gap\n";
        return 'N' x ($end - $start +1);
    }
 
@@ -226,7 +226,7 @@ sub subseq{
        }
    } else {
        # start is in the middle of a contig
-       print STDERR "start in middle of a contig\n";
+       # print STDERR "start in middle of a contig\n";
 
        if( $start_contig->orientation == 1 ) {
 	   $seqstr .= $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start + ($start - $start_contig->start),$start_contig->rawcontig_end);

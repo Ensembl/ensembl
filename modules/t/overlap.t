@@ -76,10 +76,11 @@ if( $vc->length != $vc->primary_seq->length ) {
 $vc =  new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
 						 -focusposition => 1,
 						 -ori           => 1,
-						 -left          => 2,
-						 -right         => 2);
+						 -left          => 10,
+						 -right         => 10);
 
 if( $vc->length != $vc->primary_seq->length ) {
+   print STDERR "length out of sync ",$vc->length," ",$vc->primary_seq->length,"\n";
    print "not ok 7\n";
 } else {
    print "ok 7\n";

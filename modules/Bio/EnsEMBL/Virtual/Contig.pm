@@ -760,7 +760,7 @@ sub _gene_query{
 sub _get_all_SeqFeatures_type {
    my ($self,$type) = @_;
 
-   print STDERR "Getting into seq feature get $type\n";
+   #print STDERR "Getting into seq feature get $type\n";
    if( $self->_cache_seqfeatures() && $self->_has_cached_type($type) ) {
        return $self->_get_cache($type);
    }
@@ -776,7 +776,7 @@ sub _get_all_SeqFeatures_type {
    }
    
    foreach my $c ($self->_vmap->get_all_RawContigs) {
-       print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
+       #print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
        if( $type eq 'repeat' ) {
 	   push(@$sf,$c->get_all_RepeatFeatures());
        } elsif ( $type eq 'similarity' ) {
@@ -791,7 +791,7 @@ sub _get_all_SeqFeatures_type {
 	   $self->throw("Type $type not recognised");
        }
    }
-   print STDERR "before clipping ",scalar(@$sf)," for $type\n";
+   #print STDERR "before clipping ",scalar(@$sf)," for $type\n";
 
    my @vcsf = ();
 
@@ -820,7 +820,7 @@ sub _get_all_SeqFeatures_type {
         }
    }
    
-   print STDERR "returning ",scalar(@vcsf)," for $type\n";
+   #print STDERR "returning ",scalar(@vcsf)," for $type\n";
    return @vcsf;
 }
 
@@ -1250,7 +1250,7 @@ sub convert_Gene_to_raw_contig {
 
    foreach my $trans ( $gene->each_Transcript ) {
        my $clonedtrans = Bio::EnsEMBL::Transcript->new();
-       print STDERR "Reverse mapping ",$trans->id,"\n";
+       #print STDERR "Reverse mapping ",$trans->id,"\n";
        $clonedtrans->id($trans->id);
        $clonedtrans->version($trans->version);
        $clonedtrans->created($trans->created);

@@ -207,7 +207,7 @@ sub fetch_VirtualContig_by_fpc_name_slice{
        $self->throw("No complete raw contigs between $start and $end");
    }
 
-   my $start = $finalfpc[0];
+   $start = $finalfpc[0];
    my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
    $vc->id("$name-$start-$end");
    return $vc;
