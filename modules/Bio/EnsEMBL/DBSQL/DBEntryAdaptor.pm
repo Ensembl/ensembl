@@ -183,7 +183,7 @@ sub store {
 	    
 	    #print STDERR $dbSyn[0],"\n";
 	    
-	    if( ! defined @dbSyn ) {
+	    if( ! @dbSyn ) {
 		
 		
 		$sth = $self->prepare( "
