@@ -57,9 +57,10 @@ use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
 sub _tables {
   my $self = shift;
 
-  return ([ 'exon', 'e' ], [ 'exon_transcript', 'et' ],
-          [ 'exon_stable_id', 'esi' ] );
-
+  ##allow the table definition to be overridden by certain methods
+  return ($self->{'tables'}) ? 
+           @{$self->{'tables'}} :
+           ([ 'exon', 'e' ], [ 'exon_stable_id', 'esi' ] );
 }
 
 
@@ -83,8 +84,7 @@ sub _columns {
 
 
 sub _left_join {
-  return ( [ 'exon_stable_id', "esi.exon_id = e.exon_id" ],
-           [ 'exon_transcript', "et.exon_id = e.exon_id" ] );
+  return ( [ 'exon_stable_id', "esi.exon_id = e.exon_id" ]);
 }
 
 
@@ -147,13 +147,24 @@ sub fetch_by_stable_id {
 sub fetch_all_by_Transcript {
   my ( $self, $transcript ) = @_;
 
-  my $constraint = "et.transcript_id = ".$transcript->dbID();
+  ##override the tables definition to provide an additional join to
+  # the exon_transcript table.  For efficiency we cannot afford to have
+  # this in as a left join every time.
+  my @tables = $self->_tables();
+  push @tables, ['exon_transcript', 'et'];
+  $self->{'tables'} = \@tables;
+
+  my $constraint = "et.transcript_id = ".$transcript->dbID() .
+                   " AND e.exon_id = et.exon_id";
 
   my $exons = $self->SUPER::generic_fetch( $constraint );
 
   if( ! @$exons ) { return [] }
 
   my @new_exons = map { $_->transfer( $transcript->slice() ) } @$exons;
+
+  #un-override the table definition
+  $self->{'tables'} = undef;
 
   return \@new_exons;
 }
