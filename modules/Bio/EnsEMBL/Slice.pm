@@ -2,7 +2,7 @@
 # Ensembl module for Bio::EnsEMBL::Slice
 #
 #
-# Copyright Ewan Birney
+# Copyright Team Ensembl
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -42,8 +42,6 @@ Bio::EnsEMBL::Slice - Arbitary Slice of a genome
 
 A Slice object represents a region of a genome.  It can be used to retrieve
 sequence or features from an area of interest.
-
-=head1 AUTHOR - Ewan Birney
 
 =head1 CONTACT
 
@@ -646,7 +644,7 @@ sub project {
       $new_slice = $self;
     }
 
-    return [[1-$left_contract, $self->length()+$right_contract, $new_slice]];
+    return [bless [1-$left_contract, $self->length()+$right_contract, $new_slice], "Bio::EnsEMBL::ProjectionSegment" ];
   }
 
   my @projection;
@@ -692,7 +690,7 @@ sub project {
 
         my $current_end = $current_start + $length - 1;
 	
-        push @projection, [$current_start, $current_end, $slice];
+        push @projection, bless([$current_start, $current_end, $slice], "Bio::EnsEMBL::ProjectionSegment");
       }
 
       $current_start += $length;

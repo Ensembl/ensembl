@@ -1017,7 +1017,7 @@ sub fetch_normalized_slice_projection {
 
   if(!@pars && !@haps) {
     #just return this slice, there were no haps or pars
-    return  [[1,$slice->length, $slice]];
+    return  [bless ( [1,$slice->length, $slice], "Bio::EnsEMBL::ProjectionSegment")];
   }
 
   my @syms;
@@ -1070,7 +1070,7 @@ sub fetch_normalized_slice_projection {
   #if there was only one coord and it is a gap, we know it is just the
   #same slice with no overlapping symlinks
   if(@linked == 1 && $linked[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
-    return [[1,$slice->length, $slice]];
+    return [bless( [1,$slice->length, $slice], "Bio::EnsEMBL::ProjectionSegment" )];
   }
 
   my @out;
@@ -1084,8 +1084,8 @@ sub fetch_normalized_slice_projection {
          -ADAPTOR           => $self,
          -SEQ_REGION_NAME   => $slice->seq_region_name(),
          -SEQ_REGION_LENGTH => $slice->seq_region_length());
-      push( @out, [ $rel_start, $coord->length()+$rel_start-1,
-                        $exc_slice ] );
+      push( @out, bless ( [ $rel_start, $coord->length()+$rel_start-1,
+                        $exc_slice ], "Bio::EnsEMBL::ProjectionSegment") );
     } else {
       my $exc_slice = $self->fetch_by_seq_region_id( $coord->id() );
       my $exc2_slice = Bio::EnsEMBL::Slice->new
@@ -1099,8 +1099,8 @@ sub fetch_normalized_slice_projection {
          -ADAPTOR           => $self
         );
 	
-      push( @out, [ $rel_start, $coord->length() + $rel_start - 1,
-                    $exc2_slice ] );
+      push( @out, bless( [ $rel_start, $coord->length() + $rel_start - 1,
+                    $exc2_slice ], "Bio::EnsEMBL::ProjectionSegment") );
     }
     $rel_start += $coord->length();
   }
