@@ -986,6 +986,23 @@ sub cdna2genomic {
 	  
   return @out;
 }
+
+
+
+=head2 _get_cdna_coord_mapper
+
+  Args       : none
+  Example    : none
+  Description: creates and caches a mapper from "cdna" coordinate system to 
+               "genomic" coordinate system. Uses Exons to help with that. Only
+               calculates in the translateable part. 
+  Returntype : Bio::EnsEMBL::Mapper( "cdna", "genomic" );
+  Exceptions : none
+  Caller     : cdna2genomic, pep2genomic
+
+=cut
+
+
   
 sub _get_cdna_coord_mapper {
   my ( $self ) = @_;
@@ -1009,95 +1026,6 @@ sub _get_cdna_coord_mapper {
   }
   $self->{'_exon_coord_mapper'} = $mapper;
   return $mapper;
-}
-
-  
-
-sub find_coord {
-  my ($self,$coord,$type) = @_;
- 
-  my ($p,$f,$l) = caller;
-  $self->warn("$f:$l find_coord is deprecated. Use pep2genomic");
-
-  my $count = 0;
-  my @exons = @{$self->get_all_Exons};
-  my $end   = $#exons;
-  my $dna;
-
-  my ($starts,$ends) = $self->pep_coords;
-  my $strand = $exons[0]->strand;
-
-  # $starts and $ends are array refs containing the _peptide_ coordinates
-  # of each exon. We may have 1 missing residue that spans an intron.
-  # We ignore these.
-
-  if ($strand == 1) {
-    foreach my $ex (@{$self->get_all_Exons}) {
-      
-      if ($coord >= $starts->[$count] && $coord <= $ends->[$count]) {
-	my $dna   = $ex->start + $ex->phase;
-	my $nopep = $coord - $starts->[$count];
-	
-	$dna += 3 * $nopep;
-
-	if ($type eq "end") {
-	  $dna += 2;
-	}
-	
-	return $dna;
-	
-      } elsif ($count < $end) {
-	my $endpep = $ends->[$count]+1;
-	if ($endpep == $coord) {
-
-	  my $dna;
-
-	  if ($type eq "end") {
-	    my $end_phase = $ex->end_phase;
-	    $dna = $ex->end - 3 + $end_phase;
-	  } else {
-	    $dna = $exons[$count+1]->start + $exons[$count+1]->phase;
-	  }
-	  return $dna;
-	}
-      }
-      $count++;
-    }
-  } else {
-
-    foreach my $ex (@{$self->get_all_Exons}) {
-      
-      if ($coord >= $starts->[$count] && $coord <= $ends->[$count]) {
-	
-	my $dna   = $ex->end - $ex->phase;
-	my $nopep = $coord - $starts->[$count];
-
-	$dna -= 3*$nopep;
-
-	if ($type eq "end") {
-	  $dna -= 2;
-	}
-	
-	return $dna;
-	
-      } elsif ($count < $end) {
-	my $endpep = $ends->[$count]+1;
-
-	if ($endpep == $coord) {
-	  my $dna;
-
-	  if ($type eq "end") {
-	    my $end_phase = $ex->end_phase;
-	    $dna = $ex->start + 3 - $end_phase;
-	  } else {
-	    $dna = $exons[$count+1]->end - $exons[$count+1]->phase;
-	  }
-	  return $dna;
-	}
-      }
-      $count++;
-    } 
-  }
 }
 
 
@@ -1506,11 +1434,135 @@ sub transform {
 
 
 
+=head2 species
+
+  Arg [1]    : optional Bio::Species $species
+  Example    : none
+  Description: You can set the species for this gene if you want to use species 
+               specific behaviour. Otherwise species is retrieved from attached 
+               database.
+  Returntype : Bio::EnsEMBL::Species
+  Exceptions : none
+  Caller     : external_name, external_db, general for setting
+
+=cut
+
+
+sub species {
+  my ( $self, $species ) = @_;
+
+  if( defined $species ) {
+    $self->{species} = $species;
+  } else {
+    if( ! exists $self->{species} ) {
+      if( defined $self->adaptor() ) {
+	$self->{species} = $self->adaptor()->db->get_MetaContainer()
+	  ->get_Species();
+      }
+    }
+  }
+  
+  return $self->{species};
+}
+
+
+
+
+
 ##########################################################
 #
 # sub DEPRECATED METHODS FOLLOW
 #
 ##########################################################
+
+
+sub find_coord {
+  my ($self,$coord,$type) = @_;
+ 
+  my ($p,$f,$l) = caller;
+  $self->warn("$f:$l find_coord is deprecated. Use pep2genomic");
+
+  my $count = 0;
+  my @exons = @{$self->get_all_Exons};
+  my $end   = $#exons;
+  my $dna;
+
+  my ($starts,$ends) = $self->pep_coords;
+  my $strand = $exons[0]->strand;
+
+  # $starts and $ends are array refs containing the _peptide_ coordinates
+  # of each exon. We may have 1 missing residue that spans an intron.
+  # We ignore these.
+
+  if ($strand == 1) {
+    foreach my $ex (@{$self->get_all_Exons}) {
+      
+      if ($coord >= $starts->[$count] && $coord <= $ends->[$count]) {
+	my $dna   = $ex->start + $ex->phase;
+	my $nopep = $coord - $starts->[$count];
+	
+	$dna += 3 * $nopep;
+
+	if ($type eq "end") {
+	  $dna += 2;
+	}
+	
+	return $dna;
+	
+      } elsif ($count < $end) {
+	my $endpep = $ends->[$count]+1;
+	if ($endpep == $coord) {
+
+	  my $dna;
+
+	  if ($type eq "end") {
+	    my $end_phase = $ex->end_phase;
+	    $dna = $ex->end - 3 + $end_phase;
+	  } else {
+	    $dna = $exons[$count+1]->start + $exons[$count+1]->phase;
+	  }
+	  return $dna;
+	}
+      }
+      $count++;
+    }
+  } else {
+
+    foreach my $ex (@{$self->get_all_Exons}) {
+      
+      if ($coord >= $starts->[$count] && $coord <= $ends->[$count]) {
+	
+	my $dna   = $ex->end - $ex->phase;
+	my $nopep = $coord - $starts->[$count];
+
+	$dna -= 3*$nopep;
+
+	if ($type eq "end") {
+	  $dna -= 2;
+	}
+	
+	return $dna;
+	
+      } elsif ($count < $end) {
+	my $endpep = $ends->[$count]+1;
+
+	if ($endpep == $coord) {
+	  my $dna;
+
+	  if ($type eq "end") {
+	    my $end_phase = $ex->end_phase;
+	    $dna = $ex->start + 3 - $end_phase;
+	  } else {
+	    $dna = $exons[$count+1]->end - $exons[$count+1]->phase;
+	  }
+	  return $dna;
+	}
+      }
+      $count++;
+    } 
+  }
+}
+
 
 
 1;
