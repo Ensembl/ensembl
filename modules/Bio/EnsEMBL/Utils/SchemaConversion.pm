@@ -47,7 +47,8 @@ use Data::Dumper;
 =head2 new
 
   Example     : $conversion->Bio::EnsEMBL::Utils::SchemaConversion->new($serverroot);
-  Description : Constructor, including an instance of a Bio::EnsEMBL::Utils::ConversionSupport object
+  Description : Constructor, including an instance of a Bio::EnsEMBL::Utils::ConversionSupport 
+                object. Parses input file
   Return type : Bio::EnsEMBL::Utils::SchemaConversion object 
   Exceptions  : thrown if $Siteroot not passed over
   Caller      : $Siteroot/utils/vega_schema_conversion
@@ -60,6 +61,10 @@ sub new {
 	my $self = {};
 	bless ($self,$class);
 	$self->{config} =  Bio::EnsEMBL::Utils::ConversionSupport->new($support);
+	$self->conv_support->parse_common_options;
+	my $siteroot = $self->conv_support->serverroot;
+	$self->conv_support->param('vega_sql',$siteroot.$self->conv_support->param('vega_sql'));
+	$self->conv_support->param('core_sql',$siteroot.$self->conv_support->param('core_sql'));
 	return $self;
 }
 
@@ -81,7 +86,7 @@ sub conv_support {
 =head2 species_alias
 
   Example     : $self->species_alias
-  Description : lookup table for common species names and schema conversion modules
+  Description : examines name of source database to determine which conversion module to use
   Return type : string
   Exceptions  : die if wrong species name used
   Caller      : $self
@@ -91,13 +96,11 @@ sub conv_support {
 sub species_alias {
 	my $self=shift;
 	my $name = shift;
-	my %aliases = (
-				   dog       => 'CanisFamiliaris',
-				   human     => 'HomoSapiens',
-				   mouse     => 'MusMusculus',
-				   zebrafish => 'DanioRerio'
-			  );
-	return $aliases{$name} || die "invalid species name, please check configuration file";
+	return 'CanisFamiliaris' if $name =~ /canis/;
+	return 'HomoSapiens' if $name =~ /homo/;
+	return 'MusMusculus' if $name =~ /mus/;
+	return 'DanioRerio' if $name =~ /danio/;
+	die "invalid name of source database, please check configuration file";
 }
 
 =head2 choose_conversion_type
@@ -114,10 +117,9 @@ sub species_alias {
 
 sub choose_conversion_type {
 	my $self = shift;
-	my $siteroot = $self->conv_support->serverroot;
 	my $converter;
 	my $species;
-	$species = $self->species_alias($self->conv_support->param('species'));
+	$species = $self->species_alias($self->conv_support->param('source_db'));
 	if ($self->conv_support->param('do_vega_schema_conversion')) {
 		$species = "vega::".$species;
 		eval "require SeqStoreConverter::$species";
@@ -142,6 +144,7 @@ sub choose_conversion_type {
 		else {
 			warn "Using conversion module SeqStoreConverter::$species for Ensembl conversion\n";
 		}
+		$self->conv_support->param('vega_sql',0);
 	}
 	$converter = "SeqStoreConverter::$species"->new
 		( $self->conv_support->param('user'), 
@@ -149,16 +152,14 @@ sub choose_conversion_type {
 		  $self->conv_support->param('host'), 
 		  $self->conv_support->param('source_db'), 
 		  $self->conv_support->param('target_db'), 
-		  $siteroot.$self->conv_support->param('core_sql'), 
-		  $siteroot.$self->conv_support->param('vega_sql'), 
+		  $self->conv_support->param('core_sql'), 
+		  $self->conv_support->param('vega_sql'), 
 		  $self->conv_support->param('force'), 
 		  $self->conv_support->param('verbose'),
 		  '',
 		);
 	
 	$self->{'converter_object'} = $converter;
-	warn "2. ",Dumper($self);
-
 }
 
 =head2 do_conversion
@@ -237,7 +238,6 @@ options: -pass <password>       the mysql user's password (required)
                                       do_ensembl_conversion (0 or 1)
                                       user (a mysql db user with read/write priveleges)
                                       host (plus port eg ecs3d:3307)
-                                      species (common name - choose from dog, mouse, human and zebrafish)
                                       source_db (schema 19 source database)
                                       target_db (schema 20+ trget database)
                                       core_sql (location of ensembl schema creation script eg ensembl/sql/table.sql)
