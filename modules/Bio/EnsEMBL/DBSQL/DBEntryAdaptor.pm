@@ -402,10 +402,10 @@ sub _fetch_by_object_type {
   my @out;
 
   if (!defined($ensObj)) {
-    $self->throw("Can't fetch_by_EnsObject_type without an object");
+    $self->throw("Can't _fetch_by_object_type without an object ID");
   }
   if (!defined($ensType)) {
-    $self->throw("Can't fetch_by_EnsObject_type without a type");
+    $self->throw("Can't _fetch_by_object_type without a type");
   }
   my $sth = $self->prepare("
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
