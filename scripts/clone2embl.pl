@@ -57,7 +57,7 @@
 use strict;
 
 #use Bio::EnsEMBL::AceDB::Obj;
-use Bio::EnsEMBL::DB::Obj;
+use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::TimDB::Obj;
 use Bio::EnsEMBL::EMBL_Dump;
 use Bio::AnnSeqIO;
@@ -79,6 +79,7 @@ my $fromfile = 0;
 my $getall =0;
 my $pepformat = 'Fasta';
 my $test;
+my $part;
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
@@ -99,6 +100,7 @@ my $test;
 	     'fromfile'  => \$fromfile,
 	     'getall'    => \$getall,
 	     'test'      => \$test,
+	     'part'      => \$part,
 	     );
 
 if($help){
@@ -114,7 +116,7 @@ if( $dbtype =~ 'ace' ) {
     $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host, -port => $port);
 } elsif ( $dbtype =~ 'rdb' ) {
     $host=$host1 unless $host;
-    $db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'ensdev' , -host => $host );
+    $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => 'root', -db => 'ensdev' , -host => $host );
 } elsif ( $dbtype =~ 'timdb' ) {
 
     # EWAN: no more - you should be able to load as many clones as you like!
@@ -123,7 +125,7 @@ if( $dbtype =~ 'ace' ) {
     }
 
     # clones required are passed to speed things up - cuts down on parsing of flat files
-    $db = Bio::EnsEMBL::TimDB::Obj->new(\@ARGV,$noacc,$test);
+    $db = Bio::EnsEMBL::TimDB::Obj->new(\@ARGV,$noacc,$test,$part);
 } else {
     die("$dbtype is not a good type (should be ace, rdb or timdb)");
 }

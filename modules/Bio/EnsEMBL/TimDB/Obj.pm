@@ -55,7 +55,7 @@ use Bio::EnsEMBL::Analysis::ensConf qw(UNFIN_ROOT
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,$raclones,$noacc,$test,@args) = @_;
+  my($self,$raclones,$noacc,$test,$part,@args) = @_;
 
   # DEBUG
   # second parameter is for debugging to avoid reading entire list of objects
@@ -107,9 +107,15 @@ sub _initialize {
   }
 
   # define a few other important files
-  my $transcript_file="$unfinished_root/unfinished_ana.transcript.lis";
-  my $gene_file="$unfinished_root/unfinished_ana.gene.lis";
-  my $contig_order_file="$unfinished_root/unfinished_ana.contigorder.lis";
+  my $file_root;
+  if($part){
+      $file_root="$unfinished_root/partial";
+  }else{
+      $file_root="$unfinished_root";
+  }
+  my $transcript_file="$file_root/unfinished_ana.transcript.lis";
+  my $gene_file="$file_root/unfinished_ana.gene.lis";
+  my $contig_order_file="$file_root/unfinished_ana.contigorder.lis";
   if(!-e $exon_file){
       $self->throw("Could not access exon file");
   }
