@@ -28,10 +28,10 @@ package main;
 	     #The mapping to known genes is assymetrical. This is due to the fact that's our gene prediction is quite fragmented compared to the manually curated genes       	 
             
 	     #'query_idt'  => 40,
-             'query_idt'    => 50,
+             'query_idt'    => ,
 
              #'target_idt  => 10,
-             'target_idt'  => 50,
+             'target_idt'  => ,
 
              
 
@@ -47,7 +47,7 @@ package main;
 
              #Location of the query peptide file (eg: Ensembl predicted protein) 
              #'query'        => '/work1/mongin/mapping/primary/ensembl110.pep',
-             'query'       => '/Users/emmanuelmongin/code_test/mapping_test/Primary',   
+             'query'       => '',   
              
              #Location of the sptr file, this file will be used as an 
 	     #input to grep the specific sp entries to the organism 
@@ -58,23 +58,23 @@ package main;
 
              #Location of the sptr file in fasta format containing the entries specific to the organism
 	     #'sptr_fa'      => '/work1/mongin/mapping/primary/HS.f',
-	     'sptr_fa'      => '/Users/emmanuelmongin/code_test/mapping_test/Primary/7227.FASTAC',
+	     'sptr_fa'      => '',
 	     
              #Location of the sptr file in Swiss-Prot format containing the entries specific to the organism
 	     #'sptr_swiss'      => '/ecs2/work1/lec/briggsae_peptides/briggsae.test',
-	     'sptr_swiss' => '/Users/emmanuelmongin/code_test/mapping_test/Primary/Primary/7227.SPC',	     
+	     'sptr_swiss' => '',	     
 
              #Location of the file containing all refseq and all SP in fasta format (This file will be produced by running prepare_proteome.pl)
             
-	     'pmatch_input_fa'    => '/Users/emmanuelmongin/code_test/mapping_test/Primary/total.fa',
+	     'pmatch_input_fa'    => '',
 
              #Output file containing the mapping of SP and refseq sequences to external databases
            
-             'x_map_out'  => '/Users/emmanuelmongin/code_test/mapping_test/Output/xmap.out',
+             'x_map_out'  => '',
 
              #Output file from pmatch.pl and input file for maps2db.pl
              #'pmatch_out'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
-             'pmatch_out'  => '/Users/emmanuelmongin/code_test/mapping_test/Primary/pmatch.out',
+             'pmatch_out'  => '',
 
 
              #Location of the Refseq (proteins) file in fasta format
@@ -175,10 +175,10 @@ package main;
              'host' => '',
 
              #User
-             'dbuser' => '',
+             'dbuser' => 'ecs2dadmin',
 
              #Password
-             'password' => '',
+             'password' => 'TyhRv',
              
              #Port
              'port' => '',
@@ -189,7 +189,7 @@ package main;
 
              #Location for pmatch binaries
              #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
-             'pmatch' => '/nfs/disk5/ms2/bin/pmatch',
+             'pmatch' => '',
 
              
 
@@ -200,7 +200,7 @@ package main;
              #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse, elegans, anopheles, zebrafish, rat
              #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
              #'organism' => 'human'
-             'organism' => 'human',
+             'organism' => 'anopheles',
              
              #List of authorised organisms, don't forget to add a new organism to this list
              'organism_list' => ['human','drosophila','mouse','elegans','anopheles','zebrafish','rat'],

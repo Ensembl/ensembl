@@ -504,6 +504,37 @@ MAPPING: while (<MAP>) {
     }  
 }
 
+
+if ($organism eq "anopheles") {
+    open (ANOANNOT,"/acari/work4/mongin/anopheles_mai/mapping/Primary/celera_mapping.txt") || die "Can't open Anno file\n";
+    
+    while (<ANOANNOT>) {
+	chomp;
+
+	my ($stable,$id,$extdb) = split;
+	
+	my $query = "select translation_id from translation_stable_id where stable_id = '$stable'";
+	my $sth = $db->prepare($query);
+	$sth->execute();
+	
+	while (my $trans_id = $sth->fetchrow) {
+	    if ($trans_id) {
+		
+		my $dbentry = Bio::EnsEMBL::DBEntry->new
+		    ( -adaptor => $adaptor,
+		      -primary_id => $id,
+		      -display_id => $id,
+		      -version => 1,
+		      -release => 1,
+		      -dbname => $extdb );
+		$dbentry->status("XREF");
+		$adaptor->store($dbentry,$trans_id,"Translation");
+	    }
+	}
+	
+    }
+}
+
 if ($organism eq "drosophila") {
     open (DROSANNOT,"$dros_ext_annot") || die "Can't open Dros file $dros_ext_annot\n";
     

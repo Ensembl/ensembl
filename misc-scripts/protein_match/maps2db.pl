@@ -6,6 +6,7 @@ use Getopt::Long;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 use Bio::EnsEMBL::DBEntry;
+use Bio::EnsEMBL::Analysis;
 use Bio::SeqIO;
 
 BEGIN {
@@ -345,6 +346,15 @@ print STDERR "Reading pmatch output\n";
 
 MAPPING: while (<MAP>) {
     my $target;
+    my $analysis = Bio::EnsEMBL::Analysis->new(
+					       -db           => 'SPTR/ANOSUB',
+					       -program      => 'exonerate',
+					       -program_file => 'exonerate',
+					       -gff_source   => 'mapping',
+					       -gff_feature  => 'mapping',
+					       -module       => 'NULL',
+					       -logic_name   => 'mapping'
+					       );
     chomp;
 #    my ($queryid,$tid,$tag,$queryperc,$targetperc) = split (/\t/,$_);
     my ($tid,$queryid,$tag,$targetperc,$queryperc) = split (/\t/,$_);
@@ -414,6 +424,7 @@ MAPPING: while (<MAP>) {
 
 		$dbentry->query_identity($queryperc);
 		$dbentry->target_identity($targetperc);
+		$dbentry->analysis($analysis);
 		
 		my @synonyms = split (/;/,$a->xSYN);
 		
@@ -481,6 +492,36 @@ MAPPING: while (<MAP>) {
     else  {
 	 print STDERR " $tid not defined in x_map...hum, not good\n";
     }  
+}
+
+if ($organism eq "anopheles") {
+    open (ANOANNOT,"/acari/work4/mongin/anopheles_mai/mapping/Primary/celera_mapping.txt") || die "Can't open Anno file\n";
+    
+    while (<ANOANNOT>) {
+	chomp;
+
+	my ($stable,$id,$extdb) = split;
+	
+	my $query = "select translation_id from translation_stable_id where stable_id = '$stable'";
+	my $sth = $db->prepare($query);
+	$sth->execute();
+	
+	while (my $trans_id = $sth->fetchrow) {
+	    if ($trans_id) {
+		
+		my $dbentry = Bio::EnsEMBL::DBEntry->new
+		    ( -adaptor => $adaptor,
+		      -primary_id => $id,
+		      -display_id => $id,
+		      -version => 1,
+		      -release => 1,
+		      -dbname => $extdb );
+		$dbentry->status("XREF");
+		$adaptor->store($dbentry,$trans_id,"Translation");
+	    }
+	}
+	
+    }
 }
 
 if ($organism eq "drosophila") {
