@@ -130,14 +130,14 @@ sub get_Species {
     return undef;
   }
   
-  my @classification = $self->list_value_by_key( 'species.classification' );
-  if( ! @classification ) {
+  my $classification = $self->list_value_by_key( 'species.classification' );
+  if( ! @$classification ) {
     return undef;
   }
 
   my $species = new Bio::Species;
   $species->common_name( $common_name );
-  $species->classification( @classification );
+  $species->classification( @$classification );
 
   return $species;
 }
