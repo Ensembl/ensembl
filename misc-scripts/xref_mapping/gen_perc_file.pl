@@ -47,14 +47,15 @@ foreach my $file (glob("$map_dir/*.map")) {
       = split(/:/, $_);
     
     if(defined($xref2acc{$query_id})){
-      $seen{$xref2acc{$query_id}} = 1;
       
       
       my $query_identity = int (100 * $identity / $query_length);
       my $target_identity = int (100 * $identity / $target_length);
       
-      print TEMP $query_identity."\t".$target_identity."\t".$xref2acc{$query_id}."\n";
-      
+      if(!defined($seen{$xref2acc{$query_id}})){
+	print TEMP $query_identity."\t".$target_identity."\t".$xref2acc{$query_id}."\n";
+      }
+      $seen{$xref2acc{$query_id}} = 1;
     }
     else{
       $count++;
