@@ -180,6 +180,7 @@ sub feature_classes{
             DensityFeature
             DnaAlignFeature
             Gene
+            PredictionTranscript
             MarkerFeature
             ProteinAlignFeature
             ProteinFeature
