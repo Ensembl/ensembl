@@ -55,7 +55,7 @@ use Bio::EnsEMBL::AssemblyMapper;
 sub new {
   my($class,$dbadaptor) = @_;
 
-  my $self = Bio::EnsEMBL::BaseAdaptor->new($dbadaptor);
+  my $self = Bio::EnsEMBL::DBSQL::BaseAdaptor->new($dbadaptor);
   bless $self,$class;
 
   $self->{'_type_cache'} = {};
@@ -114,7 +114,9 @@ sub register_region{
    # contig that overlaps.  This takes care of the condition
    # where our start and end lie within a contig.
 
-   my $sth = $self->prepare("select ass.contig_start,ass.contig_end,ass.contig_id,ass.contig_ori,chr.name,ass.chr_start,ass.chr_end from assembly ass,chromosome chr where chr.name = $id AND ass.chromosome_id = chr.chromosome_id and NOT (ass.chr_start > $end) and NOT (ass.chr_end < $start)");
+
+
+   my $sth = $self->prepare("select ass.contig_start,ass.contig_end,ass.contig_id,ass.contig_ori,chr.name,ass.chr_start,ass.chr_end from assembly ass,chromosome chr where chr.name = '$id' AND ass.chromosome_id = chr.chromosome_id and NOT (ass.chr_start > $end) and NOT (ass.chr_end < $start) and ass.type = '$type'");
 
    $sth->execute();
 

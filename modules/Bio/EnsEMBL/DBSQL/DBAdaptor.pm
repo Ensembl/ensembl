@@ -2476,6 +2476,30 @@ sub get_ProteinAlignFeatureAdaptor {
 }
 
 
+=head2 get_AssemblyMapperAdaptor
+
+ Title   : get_AssemblyMapperAdaptor
+ Usage   : $sa = $db->get_AssemblyMapperAdaptor;
+ Example :
+ Returns : the adaptor
+ Args    :
+
+
+=cut
+
+sub get_AssemblyMapperAdaptor {
+    my( $self ) = @_;
+    
+    my( $sf );
+    unless ($sf = $self->{'_assembly_mapper_adaptor'}) {
+        require Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor;
+        $sf = Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor->new($self);
+        $self->{'_assembly_mapper_adaptor'} = $sf;
+    }
+    return $sf;
+}
+
+
 sub get_DBEntryAdaptor {
     my( $self ) = @_;
 

@@ -313,13 +313,18 @@ sub list_pairs{
 
 
    my @list;
+   my $self_func;
 
    if( $type eq $self->to ) {
+       $self_func = \&Bio::EnsEMBL::Mapper::Pair::to;
+
        if( !defined $self->{'_pair_hash_to'}->{$id} ) {
 	   return ();
        }
        @list = @{$self->{'_pair_hash_to'}->{$id}};
    } elsif ( $type eq $self->from ) {
+       $self_func = \&Bio::EnsEMBL::Mapper::Pair::from;
+
        if( !defined $self->{'_pair_hash_from'}->{$id} ) {
 	   return ();
        }
@@ -328,11 +333,11 @@ sub list_pairs{
 
    my @output;
    foreach my $p ( @list ) {
-       if( $p->end < $start ) {
+       if( &$self_func($p)->end < $start ) {
 	   next;
        }
-       if( $p->start > $end ) {
-	   break;
+       if( &$self_func($p)->start > $end ) {
+	   last;
        }
        push(@output,$p);
    }

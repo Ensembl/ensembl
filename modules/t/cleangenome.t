@@ -1,6 +1,6 @@
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..5\n"; 
+BEGIN { $| = 1; print "1..9\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -96,3 +96,18 @@ if( scalar(@sf) != 1 || $sf[0]->start != $start ||
 }
 
 
+#
+# Test assembly location gets
+# 
+
+my @sf = $sfadp->fetch_by_assembly_location(1,200,'chr1','UCSC');
+
+#print $sf[0]->start," ",$sf[0]->end,"\n";
+
+if( scalar(@sf) != 1 || $sf[0]->start != 109 ||
+	$sf[0]->end != 119 || $sf[0]->strand != $strand ||
+	$sf[0]->display_text ne $display_text ) {
+	print "not ok 10\n";
+} else {
+	print "ok 10\n";
+}

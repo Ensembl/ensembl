@@ -35,6 +35,50 @@ Bio::EnsEMBL::DBSQL::BaseAdaptor - Base Adaptor for DBSQL adaptors
 This is a true base class for Adaptors in the Ensembl DBSQL
 system. Original idea from Arne
 
+
+Adaptors are expected to have the following functions
+
+    $obj = $adaptor->fetch_by_dbID($internal_id);
+
+which builds the object from the primary key of the object. This
+function is crucial because it allows adaptors to collaborate
+relatively independently of each other - in other words, we can change
+the schema under one adaptor without too many knock on changes through
+the other adaptors.
+
+Most adaptors will also have
+
+    $dbid = $adaptor->store($obj);
+
+which stores the object. Currently the storing of an object also causes
+the objects to set
+
+    $obj->dbID
+
+correctly and attach the adaptor.
+
+
+Other fetch functions go by the convention of
+
+    @object_array = $adaptor->fetch_by_XXXX($arguments_for_XXXX)
+
+sometimes it returns an array, sometimes an individual object depending on the
+semantics to XXXX. For example
+
+    $gene = $gene_adaptor->fetch_by_stable_id($stable_id);
+
+or
+
+    @fp  = $simple_feature_adaptor->fetch_by_contig($contig_internal_id);
+
+
+Occassionally adaptors need to provide access to lists of ids. In this case the
+convention is to go list_XXXX, such as
+
+    @gene_ids = $gene_adaptor->list_geneIds();
+
+
+
 =head1 CONTACT
 
 Describe contact details here

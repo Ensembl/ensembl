@@ -37,6 +37,9 @@ contigs.
 
 It extracts the mapping dynamically from the database
 
+It is implemented using the Bio::EnsEMBL::Mapper object, which is a generic
+mapper object between disjoint coordinate systems.
+
 =head1 CONTACT
 
 Ensembl - ensembl-dev@ebi.ac.uk
@@ -105,7 +108,7 @@ sub map_coordinates{
        $self->throw("maptype must be either rawcontig or assembly, not $maptype");
    }
 
-   if( $maptype eq "rawcontig" && $id =~ /^\w/ ) {
+   if( $maptype eq "rawcontig" && $id =~ /^[^\d]/ ) {
        $self->throw("You have a rawcontig type, but the id is $id. AssemblyMappers expect internal_ids of the contigs in their mappers - probably you have given us a raw contig text id");
    }
 

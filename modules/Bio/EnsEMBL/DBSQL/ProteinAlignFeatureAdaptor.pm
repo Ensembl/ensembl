@@ -29,7 +29,10 @@ Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor - Adaptor for ProteinAlignFeatur
 =head1 DESCRIPTION
 
 
-This is an adaptor for protein features on DNA sequence
+This is an adaptor for protein features on DNA sequence. Like other
+feature getting adaptors it has a number of fetch_ functions and a
+store function.
+
 
 =head1 AUTHOR - Ewan Birney
 

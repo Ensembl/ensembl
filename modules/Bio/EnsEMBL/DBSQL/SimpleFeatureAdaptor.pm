@@ -202,7 +202,7 @@ sub fetch_by_assembly_location{
        my $out = Bio::EnsEMBL::SimpleFeature->new();
        $out->start($coord_list[0]->start);
        $out->end($coord_list[0]->end);
-       $out->seqname($coord_list[0]->seqname);
+       $out->seqname($coord_list[0]->id);
        $out->strand($coord_list[0]->strand);
        $out->analysis($ana{$analysis_id});
        $out->display_text($display);
