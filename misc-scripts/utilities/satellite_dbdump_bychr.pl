@@ -98,6 +98,7 @@ if ($lim) {
     $limit = "limit $lim";
 }
 
+&dump_lite($litedb);
 &dump_family($famdb);
 &dump_disease($diseasedb);
 &dump_maps($mapsdb);
@@ -106,6 +107,38 @@ if ($lim) {
 &dump_embl($embldb);
 
 &dump_est($estdb);
+
+sub dump_lite {
+# needed for a few things
+    my ($satdb) = @_;
+    return unless $satdb;
+    
+    dump_schema($satdb);
+
+    my $sql;
+
+    # tables that have chr_name:
+    foreach my $table ( qw(gene gene_exon karyotype location snp) ) {
+        $sql="
+SELECT t.*
+FROM   $table t
+WHERE  t.chr_name = '$chr' 
+";
+        dump_data($sql, $satdb, $table );
+    }
+
+
+    # tables to be linked to the gene table:
+    foreach my $table ( qw(gene_disease gene_prot gene_snp gene_xref) ) {
+        $sql="
+SELECT t.*
+FROM   $table t, gene g
+WHERE  t.chr_name = '$chr' 
+  AND  t.gene = g.gene
+";
+        dump_data($sql, $satdb, $table );
+    }
+}                                       # dump_lite
 
 sub dump_family { 
     my ($satdb) = @_;
@@ -346,7 +379,7 @@ FROM   $satdb.Hit h,
 WHERE  lg.chr_name = '$chr'
  AND   lg.gene = lgs.gene
  AND   lgs.refsnpid = h.refsnpid 
-"
+";
     dump_data($sql, $satdb, 'GPHit');
 
 
