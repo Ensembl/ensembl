@@ -676,6 +676,7 @@ sub get_Chromosome {
 
   my $ca =  $self->adaptor->db->get_ChromosomeAdaptor();
 
+  # this slice will contain N's at the beginning if the chr_start in the table is > 1
   return $ca->fetch_by_chr_name($self->chr_name());
 }
 
