@@ -252,13 +252,13 @@ sub fetch_by_feature_and_dbID{
 #Superfamily has also a description attached to it but there is no join needed with the interpro table. but its also considered as a domain feature
     elsif ($feature eq "superfamily") {
 #      &eprof_start('superfamily');
-	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,x.display_id from protein_feature as p, analysisprocess as a, Xref as x where a.gff_source = '$feature' and p.translation = '$transl' and a.analysisId = p.analysis and x.dbprimary_id = p.hid");
+	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,x.display_id, x.dbprimary_id from protein_feature as p, analysisprocess as a, Xref as x where a.gff_source = '$feature' and p.translation = '$transl' and a.analysisId = p.analysis and x.dbprimary_id = p.hid");
 	$sth->execute();
 	
 	
 	while( my $arrayref = $sth->fetchrow_arrayref) {
 	    
-	    my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
+	    my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc,$interproac) = @{$arrayref};
 	if( !defined $anahash{$analysisid} ) {
 	    my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysisid);
 	    $anahash{$analysisid} = $analysis;
@@ -281,7 +281,8 @@ sub fetch_by_feature_and_dbID{
 								-feature2 => $feat2,);
 	    
 	    $feature->idesc($desc);
-	    
+	    $feature->interpro_ac($interproac),
+
 	    if ($feature) {
 		push(@features,$feature);
 	    }
