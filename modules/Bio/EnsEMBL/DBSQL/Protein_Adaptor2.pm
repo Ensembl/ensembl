@@ -23,14 +23,6 @@ my $protein_adaptor=Bio::EnsEMBL::Protein_Adaptor->new($obj);
 
 my $protein = $protein_adaptor->fetch_Protein_by_dbid;
 
-If the SNPs are wanted:
-
-my $snpdb = Bio::EnsEMBL::ExternalData::SNPSQL::DBAdapter->new(
-							       -dbname=>$snpdbname,
-							       -user=>$dbuser,
-							       -host=>$host);    
- 
-$protein_adaptor->snp_obj($snpdb);
 
 
 =head1 DESCRIPTION

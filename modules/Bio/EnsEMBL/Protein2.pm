@@ -25,6 +25,24 @@ my $protein = Bio::EnsEMBL::Protein->new ( -seq =>$sequence,
 					      -moltype => $moltype,
 					      );
 
+If the SNPs are wanted:
+
+my $snpdb = Bio::EnsEMBL::ExternalData::SNPSQL::DBAdapter->new(
+							       -dbname=>$snpdbname,
+							       -user=>$dbuser,
+							       -host=>$host);    
+ 
+$protein->snp_adaptor($snpdb);
+
+If the Gbrowser has to be used (with the SNPs for example) do the following:
+
+my $data_source = "DBI:$driver:database=$db;host=$host;port=$port";
+my $username="";
+     
+my $dbh = DBI->connect($data_source, $username);
+
+$protein->gbrowser_adaptor($dbh);
+
 =head1 DESCRIPTION
 
 This object inherit from Bio::SeqI for the implementation and from PrimarySeq
