@@ -4,6 +4,7 @@
 #
 # You may distribute this module under the same terms as perl itself
 #
+=pod
 
 =head1 NAME
 
@@ -20,70 +21,64 @@
                                                   -analysis    => $analysis,
                                                   -cigar_string => '');
 
-  # Alternatively if you have an array of ungapped features
+  Alternatively if you have an array of ungapped features
 
       my $feat = new Bio::EnsEMBL::DnaPepAlignFeature(-features => \@features);
 
-  # Where @features is an array of Bio::EnsEMBL::FeaturePair
+  Where @features is an array of Bio::EnsEMBL::FeaturePair
 
-  # There is a method to manipulate the cigar_string into ungapped features
+  There is a method to manipulate the cigar_string into ungapped features
 
       my @ungapped_features = $feat->ungapped_features;
 
-  # This converts the cigar string into an array of Bio::EnsEMBL::FeaturePair
+  This converts the cigar string into an array of Bio::EnsEMBL::FeaturePair
 
-  # $analysis is a Bio::EnsEMBL::Analysis object
+  $analysis is a Bio::EnsEMBL::Analysis object
   
-  # Bio::EnsEMBL::SeqFeature methods can be used
-  # Bio::EnsEMBL::FeaturePair methods can be used
+  Bio::EnsEMBL::SeqFeature methods can be used
+  Bio::EnsEMBL::FeaturePair methods can be used
 
-  # The cigar_string contains the ungapped pieces that make up the gapped alignment
-  #
-  # It's format is qstart,qend,length*strand.
-  #
-  # So in the above example the gapped alignment contains 2 ungapped pieces from
-  #
-  # 100-102 in the query and 200-200 in the hit and
-  # 109-120 in the query and 203-206 in the hit.
-  #
-  # The length parts of the cigar string are positive as the strand is +ve.
+  The cigar_string contains the ungapped pieces that make up the gapped alignment
+  
+  It looks like: n Matches [ x Deletes or Inserts m Matches ]*
+  but a bit more condensed like "23M4I12M2D1M"
+  and evenmore condensed as you can ommit 1s "23M4I12M2DM"
 
 
-  # To make things clearer this is how a blast HSP would be parsed
+  To make things clearer this is how a blast HSP would be parsed
 
-  #>AK014066
-  #       Length = 146
+  >AK014066
+         Length = 146
 
-  #  Minus Strand HSPs:
+    Minus Strand HSPs:
 
-  #  Score = 76 (26.8 bits), Expect = 1.4, P = 0.74
-  #  Identities = 20/71 (28%), Positives = 29/71 (40%), Frame = -1
+    Score = 76 (26.8 bits), Expect = 1.4, P = 0.74
+    Identities = 20/71 (28%), Positives = 29/71 (40%), Frame = -1
 
-  #Query:   479 GLQAPPPTPQGCRLIPPPPLGLQAPLPTLRAVGSSHHHP*GRQGSSLSSFRSSLASKASA 300
-  #             G  APPP PQG R   P P G + P   L             + + ++  R  +A   +
-  #Sbjct:     7 GALAPPPAPQG-RWAFPRPTG-KRPATPLHGTARQDRQVRRSEAAKVTGCRGRVAPHVAP 64
+  Query:   479 GLQAPPPTPQGCRLIPPPPLGLQAPLPTLRAVGSSHHHP*GRQGSSLSSFRSSLASKASA 300
+               G  APPP PQG R   P P G + P   L             + + ++  R  +A   +
+  Sbjct:     7 GALAPPPAPQG-RWAFPRPTG-KRPATPLHGTARQDRQVRRSEAAKVTGCRGRVAPHVAP 64
 
-  #Query:   299 SSPHNPSPLPS 267
-  #                H P+P P+
-  #Sbjct:    65 PLTHTPTPTPT 75
+  Query:   299 SSPHNPSPLPS 267
+                  H P+P P+
+  Sbjct:    65 PLTHTPTPTPT 75
 
-  #The alignment goes from 267 to 479 in sequence 1 and 7 to 75 in sequence 2 and the
-  #strand is -1.
+  The alignment goes from 267 to 479 in sequence 1 and 7 to 75 in sequence 2 and the
+  strand is -1.
 
-  #The alignment is made up of the following ungapped pieces :
+  The alignment is made up of the following ungapped pieces :
 
-  #sequence 1 start 447 , sequence 2 start 7  , match length 33 , strand -1
-  #sequence 1 start 417 , sequence 2 start 18 , match length 27 , strand -1
-  #sequence 1 start 267 , sequence 2 start 27 , match length 137 , strand -1
+  sequence 1 start 447 , sequence 2 start 7  , match length 33 , strand -1
+  sequence 1 start 417 , sequence 2 start 18 , match length 27 , strand -1
+  sequence 1 start 267 , sequence 2 start 27 , match length 137 , strand -1
 
-  #These ungapped pieces are made up into the following string (called a cigar string)
-
-  #447,7,-33:417,18,-27:267,27,-137
-
-  #i.e. seqstart1,seqstart2,length: etc
-
+  These ungapped pieces are made up into the following string (called a cigar string)
+  "33M3I27M3I137M" with start 267 end 479 strand -1 hstart 7 hend 75 hstrand 1 and
+  feature type would be DnaPepAlignFeature
+  
 
 =cut 
+
 
 package Bio::EnsEMBL::BaseAlignFeature;
 
@@ -122,7 +117,7 @@ sub new {
 =head2 cigar_string
 
   Arg [1]    : string $cigar_string
-  Example    : ( "12MI3M2D" )
+  Example    : ( "12MI3M" )
   Description: get/set for attribute cigar_string
                cigar_string describes the alignment. "xM" stands for 
                x matches (mismatches), "xI" for inserts into query sequence 
@@ -182,6 +177,7 @@ sub ungapped_features {
 }
 
 
+
 =head2 transform
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
@@ -197,123 +193,132 @@ sub ungapped_features {
 
 =cut
 
+
+sub transform{
+  my ($self, $slice) = @_;
+
+  if( ! defined $slice ) {
+    #Since slice arg is not defined -  we want raw contig coords
+    if(( defined  $self->contig ) && 
+       ( $self->contig->isa( "Bio::EnsEMBL::RawContig" )) ) {
+      print STDERR "BaseAlignFeature::transform, you are already apparently in rawcontig coords so why try to transform to them\n";
+      #we are already in rawcontig coords, nothing needs to be done
+      return $self;
+    } else {
+      #transform to raw_contig coords from Slice coords
+      return $self->_transform_to_rawcontig();
+    }
+  }
+
+  if( defined $self->contig ) {  
+    if($self->contig->isa( "Bio::EnsEMBL::RawContig" ))  {
+      #transform to slice coords from raw contig coords
+      return $self->_transform_to_slice( $slice );
+    } elsif($self->contig->isa( "Bio::EnsEMBL::Slice" )) {
+      #transform to slice coords from other slice coords
+      return $self->_transform_between_slices( $slice );
+    } else {
+      #Unknown contig type - throw an exception
+      return $self->throw("Exon's 'contig' is of unknown type " 
+		   . $self->contig() . " - cannot transform to Slice coords");
+    }
+  } else {
+    #Can't convert to slice coords without a contig to work with
+    return $self->throw("Exon's contig is not defined - cannot transform to " .
+			"Slice coords");
+  }
+}
+
+=head2 dbID
+
+  Arg [1]    : int $dbID
+  Example    : none
+  Description: get/set for the database internal id
+  Returntype : int
+  Exceptions : none
+  Caller     : general, set from adaptor on store
+
 =cut
 
-sub transform {
-    my ($self,$slice) = shift;
 
+sub dbID{
+  my ($self, $arg) = @_;
 
-    if( !defined $slice && ! defined $self->entire_seq || !$self->entire_seq->isa('Bio::EnsEMBL::Slice') ) {
-	$self->throw("Called transform on a feature without a slice as argument, and no slice in entire_seq slot");
+  if($arg){
+    $self->{_database_id} = $arg;
+  }
+
+  return $self->{_database_id}; 
+
+}
+
+=head2 adaptor
+
+  Arg [1]    : Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor $adaptor
+  Example    : none
+  Description: get/set for this objects Adaptor
+  Returntype : Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor
+  Exceptions : none
+  Caller     : general, set from adaptor on store
+
+=cut
+
+sub adaptor {
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'adaptor'} = $value;
     }
+    return $self->{'adaptor'};
 
-    my @unmapped = $self->ungapped_features;
-    
-    if( !defined $slice ) {
-	my %mapped;
+}
 
-	# mapping from slice to raw contigs
-	# Basic logic -
-	#    - get ungapped features
-	#    - map each one
-	#    - throw if there is a gap
-	#    - if not form an ungapped feature on the raw contig
-	#    - after all ungapped features are mapped, making new featurepairs
-        #      from the mapped ungapped features keyed by raw contig id
 
-	$slice = $self->entire_seq();
-	my $global_start = $slice->global_start;
-	my $global_end   = $slice->global_end;
+=head2 contig
 
-	my $mapper = $slice->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
+  Arg [1]    : Bio::EnsEMBL::Slice or
+               Bio::EnsEMBL::RawContig $contig
+  Example    : none
+  Description: The sequnence where the coordinates make sense. Channeled to
+               attach_seq/entire_seq from BioPerl
+  Returntype : Slice/RawContig
+  Exceptions : none
+  Caller     : general
 
-	foreach my $f ( @unmapped ) {
-	    my @mapped = $mapper->map_coordinates_to_rawcontig
-		(
-		 $slice->chr_name,
-		 $f->start()+$global_start-1,
-		 $f->end()+$global_start-1,
-		 $f->strand()*$slice->strand()
-		 );
-	    
-	    if( ! @mapped ) {
-		$self->throw( "feature could not map" );
-	    }
-	    my $hstart = $f->hstart;
+=cut
 
-	    foreach my $co ( @mapped ) {
-	      if( $co->isa("Bio::EnsEMBL::Mapper::Gap") ) {
-		$self->throw("Feature transform mapped to gap - currently throwing an exception here");
-	      }
 
-	      
-	      my $f1 = Bio::EnsEMBL::SeqFeature->new();
-	      $f1->start($co->start - $global_start +1 );
-	      $f1->end($co->end - $global_start +1);
-	      $f1->strand($co->strand * $slice->strand());
-	      $f1->seqname("slice");
-
-	      my $f2 = Bio::EnsEMBL::SeqFeature->new();
-	      $f2->start($hstart );
-	      $f2->end($hstart+$co->end-$co->start+1);
-	      $f2->strand($f->hstrand);
-	      $f2->seqname($f->hseqname);
-
-	      $f1->score($f->score);
-	      $f2->score($f->score);
-
-	      my $sf = Bio::EnsEMBL::FeaturePair->new(-feature1 => $f1,
-						      -feature2 => $f2);
-	      $hstart = $f2->end+1;
-	      if( !defined $mapped{$co->id} ) {
-		$mapped{$co->id} = [];
-	      }
-
-	      push(@{$mapped{$co->id}},$sf);
-	    }
-
-	  }
-	my @outputf;
-	foreach my $rawc ( keys %mapped ) {
-	  my $outputf = $self->new( -features => \@{$mapped{$rawc}} );
-	  push(@outputf,$outputf);
-	}
-	
-	return @outputf;
-	
-    } else {
-	$self->throw("mapping to slice from raw contigs not implemented yet. Ewan's fault!");
-    }
+sub contig {
+  my $self = shift;
+  if( @_ ) {
+    my $value = shift;
+    #print "setting exons contig to ".$value." \n";
+    $self->attach_seq($value);
+  }
+  else {
+    return $self->entire_seq();
+  }
 }
 
 
 
+=head2 _parse_cigar
 
-=head2 _generic_parse_cigar
-
-  Arg 1     : int query_unit, 
-                  either 1 (peptide) or 3 (dna)
-
-  Arg 2     : int hit_unit, 
-                  either 1 (peptide) or 3 (dna)
-  
-             a DNA,DNA alignment should use 1,1 for the query_unit and hit_unit        
-  Function  : Converts the cigar_string contained by the module into 
-              an array of ungapped Bio::EnsEMBL::FeaturePair.
-
-              See sub cigar_string for an explanation of what that is.
-
-  Returntype: list of Bio::EnsEMBL::FeaturePairs
-  Exceptions: Mainly internal, eg, no cigar line, wrong arguments or
-              miswritten query_unit or hit_unit
-
-  Caller    : _parse_cigar in derived class
+  Args       : none
+  Example    : none
+  Description: creates ungapped features from internally stored cigar line
+  Returntype : list of Bio::EnsEMBL::FeaturePair
+  Exceptions : none
+  Caller     : ungapped_features
 
 =cut
 
+sub _parse_cigar {
+  my ( $self ) = @_;
 
-sub _generic_parse_cigar {
-  my ( $self, $query_unit, $hit_unit ) = @_;
+  my $query_unit = $self->_query_unit();
+  my $hit_unit = $self->_hit_unit();
+
   
   my $string = $self->cigar_string;
  
@@ -439,73 +444,44 @@ sub _generic_parse_cigar {
   return @features;
 }
 
-=head2 _generic_parse_features
 
-    Arg 1   : listref Bio::EnsEMBL::FeaturePair $features
 
-    Arg 2   : int query_unit, 
-                  either 1 (peptide) or 3 (dna)
 
-    Arg 3   : int hit_unit, 
-                  either 1 (peptide) or 3 (dna)
-  
-             a DNA,DNA alignment should use 1,1 for the query_unit and hit_unit    
+=head2 _parse_features
 
-    Usage    : Internal method - not used.
-
-    Function : Converts an array of FeaturePairs into a gapped feature with
-               a cigar string describing the 
-
-               See sub cigar_string for an explanation of what that is.
-
-    Exception: If the argument passed is not an array reference
-
-               All the features must have arisen from the same source
-               i.e. a blast HSP or some other alignment.  Thus
-               exceptions are thrown when the scores,percent ids,p_values
-               seqnames , hseqnames and strands differ amongst the input 
-               features.
-
-               All the features must not overlap in order to provide a 
-               sane gapped alignment.  An exception is thrown if they do.
-
-               If any element of the array is not a Bio::EnsEMBL::FeaturePair
-
-               If there are no elements in the array
-
-               If the hit length is not exactly 3 times the query length
-
-    Caller   : Called internally to the module by the constructor
+  Arg  1     : listref Bio::EnsEMBL::FeaturePair $ungapped_features
+  Example    : none
+  Description: creates internal cigarstring and start,end hstart,hend
+               entries.
+  Returntype : none, fills in values of self
+  Exceptions : argument list is sanity checked
+  Caller     : new
 
 =cut
 
-sub _generic_parse_features {
-  my ($self,$features, $query_unit, $hit_unit ) = @_;
-#  print STDERR "calling generic parse features\n";
+sub _parse_features {
+  my ($self,$features ) = @_;
+
+  my $query_unit = $self->_query_unit();
+  my $hit_unit = $self->_hit_unit();
+
   if (ref($features) ne "ARRAY") {
     $self->throw("features must be an array reference not a [" . ref($features) . "]");
   }
 
-  # print "Enter new ",ref( $self ), " with ",scalar( @$features ), " features.\n";
   for my $f ( @$features ) {
-    #print ::LOG join( " ", ( $f->start(), $f->end(), $f->strand(), "-", $f->hstart(), $f->hend(), $f->hstrand() )),"\n";
-    #print ::LOG join( " ", ( $f->start(), $f->end(), $f->strand(), "-", $f->hstart(), $f->hend(), $f->hstrand() )),"\n";
-  } 
 
   my $feats = scalar (@$features) - 1;
   my $strand     = $features->[0]->strand;
   my @f;
 
   if( $strand == 1 ) {
-    #print STDERR "features are forward strand being sorted first to last\n";
+
     @f = sort {$a->start <=> $b->start} @$features;
-    #print STDERR "first start = ".$f[0]->start." end " . $f[$#f]->end. "\n";
-    #print STDERR "first hstart = ".$f[0]->hstart." last hstart ".$f[$#f]->hend."\n";
+
   } else {
-    #print STDERR "features are reverse strand being sorted last to first\n";
+
     @f = sort { $b->start <=> $a->start} @$features;
-    #print STDERR "first start = ".$f[0]->start." last start ".$f[$#f]->start."\n";
-    #print STDERR "first hstart = ".$f[0]->hstart." last hstart ".$f[$#f]->hstart."\n";
   }
 
   my $hstrand     = $f[0]->hstrand;
@@ -522,10 +498,6 @@ sub _generic_parse_features {
   ( defined $hstrand ) || ( $hstrand = 1 );
   my $ori = $strand * $hstrand;
 
-  #print "about to make cigar string from these features\n";
-  #foreach my $feature(@f){
-    #print $feature->gffstring."\n";
-  #}
 
   if (scalar(@f) == 0) {
     $self->throw("No features in the array to parse");
@@ -536,20 +508,13 @@ sub _generic_parse_features {
 
   my $string;
  
-
   my $f1start = $f[0]->start;
   my $f1end   = $f[$#f]->end;
   
   if ( $strand == 1 ) {
-    #print STDERR "strand = ".$strand."\n";
-    #print STDERR "f1start set to ".$f[0]->start." feature 0 start\n";
-    #print STDERR "f1end set to ".$f[$#f]->end." feature ".$#f." end\n";
     $f1start = $f[0]->start;
     $f1end   = $f[$#f]->end;
   } else {
-    #print STDERR "strand = ".$strand."\n";
-    #print STDERR "f1end set to ".$f[0]->end." feature 0 start\n";
-    #print STDERR "f1start set to ".$f[$#f]->start." feature ".$#f." end\n";
     $f1end   = $f[0]->end;
     $f1start = $f[$#f]->start;
   }
@@ -558,17 +523,11 @@ sub _generic_parse_features {
   my $f2end;
 
   if ( $hstrand == 1 ) {
-    #print STDERR "hstrand = ".$hstrand."\n";
-    #print STDERR "f2start set to ".$f[0]->hstart." feature 0 hstart\n";
-    #print STDERR "f2end set to ".$f[$#f]->hend."  feature ".$#f." hend\n";
     $f2start = $f[0]->hstart;
     $f2end   = $f[$#f]->hend;
   } else {
     $f2end = $f[0]->hend;
     $f2start = $f[$#f]->hstart;
-    #print STDERR "hstrand = ".$hstrand."\n";
-    #print STDERR "f2start set to ".$f2start." feature 0 hend\n";
-    #print STDERR "f2end set to ".$f2end." feature ".$#f." hstart\n";
   }
 
   foreach my $f (@f) {
@@ -576,7 +535,6 @@ sub _generic_parse_features {
       $self->throw("Array element [$f] is not a Bio::EnsEMBL::FeaturePair");
     }
 
-    #print STDERR "Processing " . $f->gffstring . "\n";
     if( defined $f->hstrand() ) {
       if ($f->hstrand != $hstrand) {
         $self->throw("Inconsistent hstrands in feature array");
@@ -603,7 +561,7 @@ sub _generic_parse_features {
 
     my $start1 = $f->start;
     my $start2 = $f->hstart();
-#    print STDERR "hstrand = ".$hstrand." ori ".$ori." strand ".$strand."\n";
+
     if (defined($prev1)) {
       if ( $strand == 1 ) {
         if ($f->start < $prev1) {
@@ -715,188 +673,160 @@ sub _generic_parse_features {
   $feature2->p_value($pvalue);
   $feature2->phase($phase);
   $feature2->analysis($analysis);
-  #print STDERR "checking feature2 ".$feature2->gffstring."\n";
   $feature2->validate;
   $self->feature1($feature1);
   $self->feature2($feature2);
-  #print "have created cigar ".$string."\n";
   $self->cigar_string($string);
 
-  #print STDERR "\n\n";
-  #print ::LOG "Exit with cigar $string.\n";
 }
 
 
-#################################################
-#                                               #
-#  SOMEBODY  IGNORED THE ABOVE IMPLEMENTATION   #
-#    OF TRANMSFORM, WHY ??  WHICH ONE WORKS?    #
-#                                               #
-#################################################
+sub _transform_to_slice{
+  my ($self, $slice ) = @_;
+  $self->throw( "implented soon :-)" );
+}
 
 
 
-sub _generic_transform_to_slice{
-  my ($self, $slice, $query_unit, $hit_unit) = @_;
-
+sub _transform_to_rawcontig {
+  my ( $self ) = @_;
   
-}
-
-sub _generic_transform_to_rawcontig{
-  my ($self, $rc, $query_unit, $hit_unit) = @_;
-
-  if(!$self->contig){
-    $self->throw("can't transform coordinates of ".$self." without some sort of contig defined");
+  if( !$self->entire_seq->isa('Bio::EnsEMBL::Slice') ) {
+    $self->throw("Called transform on a feature without a slice as argument, and no slice in entire_seq slot");
   }
-  my $mapper = $self->contig->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type( $self->contig()->assembly_type() );
- 
+
+  my @unmapped = $self->ungapped_features;
   my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
-  my $global_start = $self->contig->chr_start();
-  my @out;
-  my @mapped = $mapper->map_coordinates_to_rawcontig
-    (
-     $self->contig()->chr_name(),
-     $self->start()+$global_start-1,
-     $self->end()+$global_start-1,
-     $self->strand()*$self->contig()->strand()
-    );
-
-  if( ! @mapped ) {
-    $self->throw( "couldn't map ".$self."\n" );
-    return $self;
-  }
-  if( scalar( @mapped ) > 1 ) {
-  SPLIT: for( my $i=0; $i <= $#mapped; $i++ ) {
-      my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[$i]->id() );
-      my $new_feature = $self->_create_new_feature($query_unit, $hit_unit);
-      if($mapped[$i]->isa("Bio::EnsEMBL::Mapper::Gap")){
-            $self->warn("piece of evidence lies on gap\n");
-            next SPLIT;
-          }
-      $new_feature->start($mapped[$i]->start);
-      $new_feature->end($mapped[$i]->end);
-      $new_feature->strand($mapped[$i]->strand);
-      $new_feature->seqname($mapped[$i]->id);
-      $new_feature->score($self->score);
-      $new_feature->percent_id($self->percent_id);
-      $new_feature->p_value($self->p_value);
-      $new_feature->hstart($self->hstart);
-      $new_feature->hend($self->hend);
-      $new_feature->hstrand($self->hstrand);
-      $new_feature->hseqname($self->hseqname);
-      $new_feature->hscore($self->score);
-      $new_feature->analysis($self->analysis);
-      $new_feature->attach_seq($rawContig);
     
-      push(@out, $new_feature)
-    }
-  }else{
-    if($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
-      $self->warn("piece of evidence lies on gap\n");
-      return;
-    }
-    my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[0]->id() );
-    my $new_feature = $self->_create_new_feature($query_unit, $hit_unit);
-    $new_feature->start($mapped[0]->start);
-    $new_feature->end($mapped[0]->end);
-    $new_feature->strand($mapped[0]->strand);
-    $new_feature->seqname($mapped[0]->id);
-    $new_feature->score($self->score);
-    $new_feature->percent_id($self->percent_id);
-    $new_feature->p_value($self->p_value);
-    $new_feature->hstart($self->hstart);
-    $new_feature->hend($self->hend);
-    $new_feature->hstrand($self->hstrand);
-    $new_feature->hseqname($self->hseqname);
-    $new_feature->hscore($self->score);
-    $new_feature->analysis($self->analysis);
-    $new_feature->attach_seq($rawContig);
+  if( !defined $slice ) {
+    my %mapped;
+    
+    # mapping from slice to raw contigs
+    # Basic logic -
+    #    - get ungapped features
+    #    - map each one
+    #    - throw if there is a gap
+    #    - if not form an ungapped feature on the raw contig
+    #    - after all ungapped features are mapped, making new featurepairs
+    #      from the mapped ungapped features keyed by raw contig id
 
-    push(@out, $new_feature);
+    $slice = $self->entire_seq();
+    my $global_start = $slice->chr_start;
+    my $global_end   = $slice->chr_end;
+    
+    my $mapper = $slice->adaptor->db->
+      get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
+
+    foreach my $f ( @unmapped ) {
+      my @mapped = $mapper->map_coordinates_to_rawcontig
+	(
+	 $slice->chr_name,
+	 $f->start()+$global_start-1,
+	 $f->end()+$global_start-1,
+	 $f->strand()*$slice->strand()
+	);
+      
+      if( ! @mapped ) {
+	$self->throw( "feature could not map" );
+      }
+
+      my $hstart = $f->hstart;
+
+      foreach my $co ( @mapped ) {
+	if( $co->isa("Bio::EnsEMBL::Mapper::Gap") ) {
+	  $self->throw("Feature transform mapped to gap - currently throwing an exception here");
+	}
+	      
+	my $f1 = Bio::EnsEMBL::SeqFeature->new();
+	$f1->start($co->start - $global_start +1 );
+	$f1->end($co->end - $global_start +1);
+	$f1->strand($co->strand * $slice->strand());
+	$f1->seqname($co->id());
+	$f1->attach_seq( $rcAdaptor->fetch_by_dbID( $co->id() ));
+
+	my $f2 = Bio::EnsEMBL::SeqFeature->new();
+	$f2->start($hstart );
+	$f2->end($hstart+$co->end-$co->start+1);
+	$f2->strand($f->hstrand);
+	$f2->seqname($f->hseqname);
+	
+	$f1->score($f->score);
+	$f2->score($f->score);
+
+	my $sf = Bio::EnsEMBL::FeaturePair->new(-feature1 => $f1,
+						-feature2 => $f2);
+	$hstart = $f2->end+1;
+
+	if( !defined $mapped{$co->id} ) {
+	  $mapped{$co->id} = [];
+	}
+
+	push(@{$mapped{$co->id}},$sf);
+      }
+
+    }
+
+    my @outputf;
+
+    foreach my $rawc ( keys %mapped ) {
+
+      my $outputf = $self->new( -features => \@{$mapped{$rawc}} );
+      $outputf->analysis( $self->analysis() );
+      $outputf->score( $self->score() );
+      $outputf->percent_id( $self->percent_id() );
+      $outputf->pvalue( $self->pvalue() );
+
+      push(@outputf,$outputf);
+    }
+	
+    return @outputf;
   }
-
-  return @out;
-
 }
 
 
 
-sub _generic_transform_between_slices{
-  my ($self, $to_slice, $query_unit, $hit_unit) = @_;
-
-  
+sub _transform_between_slices {
+  my ( $self, $to_slice ) = @_;
 }
 
-=head2 dbID
 
-  Arg [1]    : int $dbID
+
+
+
+=head2 _hit_unit
+
+  Args       : none
   Example    : none
-  Description: get/set for the database internal id
-  Returntype : int
+  Description: abstract method, overwrite with something that returns
+               one or three
+  Returntype : int 1,3
   Exceptions : none
-  Caller     : general, set from adaptor on store
+  Caller     : internal
 
 =cut
 
-
-sub dbID{
-  my ($self, $arg) = @_;
-
-  if($arg){
-    $self->{_database_id} = $arg;
-  }
-
-  return $self->{_database_id}; 
-
-}
-
-=head2 adaptor
-
-  Arg [1]    : Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor $adaptor
-  Example    : none
-  Description: get/set for this objects Adaptor
-  Returntype : Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor
-  Exceptions : none
-  Caller     : general, set from adaptor on store
-
-=cut
-
-sub adaptor {
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'adaptor'} = $value;
-    }
-    return $self->{'adaptor'};
-
-}
-
-
-=head2 contig
-
-  Arg [1]    : Bio::EnsEMBL::Slice or
-               Bio::EnsEMBL::RawContig $contig
-  Example    : none
-  Description: The sequnence where the coordinates make sense. Channeled to
-               attach_seq/entire_seq from BioPerl
-  Returntype : Slice/RawContig
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub contig {
+sub _hit_unit {
   my $self = shift;
-  if( @_ ) {
-    my $value = shift;
-    #print "setting exons contig to ".$value." \n";
-    $self->attach_seq($value);
-  }
-  else {
-    return $self->entire_seq();
-  }
+  $self->throw( "Abstract method call!" );
 }
+
+=head2 _query_unit
+
+  Args       : none
+  Example    : none
+  Description: abstract method, overwrite with something that returns
+               one or three
+  Returntype : int 1,3
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+sub _query_unit {
+  my $self = shift;
+  $self->throw( "Abstract method call!" );
+}
+
 
 
 1;
