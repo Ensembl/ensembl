@@ -603,12 +603,12 @@ sub expand {
     $new_start = $new_end = $middle;
   }
 
-  return $self->new(-COORD_SYSTEM    => $self->{'coord_system'},
-                    -START           => $new_start,
-                    -END             => $new_end,
-                    -STRAND          => $self->{'strand'},
-                    -SEQ_REGION_NAME => $self->{'seq_region_name'},
-                    -ADAPTOR         => $self->{'adaptor'});
+  #fastest way to copy a slice is to do a shallow hash copy
+  my %new_slice = %$self;
+  $new_slice{'start'} = $new_start;
+  $new_slice{'end'}   = $new_end;
+
+  return bless \%new_slice, ref($self);
 }
 
 
