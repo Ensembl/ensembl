@@ -204,4 +204,29 @@ sub deleteObj {
 }
 
 
+# list primary keys for a particular table
+# args are table name and primary key field
+# if primary key field is not supplied, tablename_id is assumed
+# returns listref of IDs
+sub _list_dbIDs {
+
+  my ($self, $table, $pk) = @_;
+  if (!defined($pk)) {
+    $pk = $table . "_id";
+  }
+
+  my @out;
+  my $sql = "SELECT " . $pk . " FROM " . $table;
+  my $sth = $self->prepare($sql);
+  $sth->execute;
+
+  while (my ($id) = $sth->fetchrow) {
+    push(@out, $id);
+  }
+
+  $sth->finish;
+
+  return \@out;
+}
+
 1;
