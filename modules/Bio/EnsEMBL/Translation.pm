@@ -16,7 +16,7 @@ transcript
 
 =head1 DESCRIPTION
 
-A transcript''s translation defines the CDS and UTR regions of the transcript
+A Translation object defines the CDS and UTR regions of a Transcript
 through the use of start_Exon/end_Exon, and start/end attributes.
 
 =head1 CONTACT
@@ -39,6 +39,34 @@ use Bio::EnsEMBL::Storable;
 
 @ISA = qw(Bio::EnsEMBL::Storable);
 
+
+
+=head2 new
+
+  Arg [-START_EXON] : The Exon object in which the translation (CDS) starts
+  Arg [-END_EXON]   : The Exon object in which the translation (CDS) ends
+  Arg [-SEQ_START]  : The offset in the start_Exon indicating the start
+                      position of the CDS.
+  Arg [-SEQ_END]    : The offset in the end_Exon indicating the end
+                      position of the CDS.
+  Arg [-STABLE_ID]  : The stable identifier for this Translation
+  Arg [-VERSION]    : The version of the stable identifier
+  Arg [-DBID]       : The internal identifier of this Translation
+  Arg [-ADAPTOR]    : The TranslationAdaptor for this Translation
+  Arg [-SEQ]        : Manually sets the peptide sequence of this translation.
+                      May be useful if this translation is not stored in
+                      a database.
+  Example    : my $tl = Bio::EnsEMBL::Translation->new
+                   (-START_EXON => $ex1,
+                    -END_EXON   => $ex2,
+                    -SEQ_START  => 98,
+                    -SEQ_END    => 39);
+  Description: Constructor.  Creates a new Translation object
+  Returntype : Bio::EnsEMBL::Translation
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub new {
   my $caller = shift;
@@ -507,8 +535,8 @@ sub seq {
 
   Arg [1]    : optional string $attrib_code
                The code of the attribute type to retrieve values for.
-  Example    : ($selenocystein) = @{$translation->get_all_Attributes('_selenocystein')};
-               @translation_attributes    = @{$translation->get_all_Attributes()};
+  Example    : ($sc_attr) = @{$tl->get_all_Attributes('_selenocystein')};
+               @tl_attributes = @{$translation->get_all_Attributes()};
   Description: Gets a list of Attributes of this translation.
                Optionally just get Attrubutes for given code.
                Recognized attribute "_selenocystein"
@@ -529,12 +557,12 @@ sub get_all_Attributes {
       return [];
     }
 
-    my $attribute_adaptor = $self->adaptor->db->get_AttributeAdaptor();
-    $self->{'attributes'} = $attribute_adaptor->fetch_all_by_Translation( $self );
+    my $aa = $self->adaptor->db->get_AttributeAdaptor();
+    $self->{'attributes'} = $aa->fetch_all_by_Translation( $self );
   }
 
   if( defined $attrib_code ) {
-    my @results = grep { uc($_->code()) eq uc($attrib_code) }  
+    my @results = grep { uc($_->code()) eq uc($attrib_code) }
     @{$self->{'attributes'}};
     return \@results;
   } else {
@@ -548,14 +576,12 @@ sub get_all_Attributes {
   Arg [1...] : Bio::EnsEMBL::Attribute $attribute
                You can have more Attributes as arguments, all will be added.
   Example    : $translation->add_Attributes($selenocystein_attribute);
-  Description: Adds an Attribute to the Translation. Usefull to do _selenocystein.
-               If you add an attribute before you retrieve any from database, lazy load
-               will be disabled.
-               Current API attributes are
-               _selenocystein num
-                 which gives the number of the selenocystein aminoacid (U) 
+  Description: Adds an Attribute to the Translation. Usefull to 
+               do _selenocystein.
+               If you add an attribute before you retrieve any from database, 
+               lazy load will be disabled.
   Returntype : none
-  Exceptions : 
+  Exceptions : throw on incorrect arguments
   Caller     : general
 
 =cut
@@ -570,56 +596,48 @@ sub add_Attributes {
 
   for my $attrib ( @attribs ) {
     if( ! $attrib->isa( "Bio::EnsEMBL::Attribute" )) {
-      throw( "Argument to add_Attribute has to be an Bio::EnsEMBL::Attribute" );
+      throw( "Argument to add_Attribute must be a Bio::EnsEMBL::Attribute" );
     }
     push( @{$self->{'attributes'}}, $attrib );
   }
 }
 
+=head2 get_all_SeqEdits
 
-=head2 add_selenocystein_position
-
-  Arg [1...] : int $num
-               The amino acid that should be a selenocystein. You can provide more 
-               than one.
-  Example    : $translation->add_selenocystein_position( 37 );
-  Description: Will create an Attribute that is attached to this Translation that causes
-               the peptide sequence derived from it to have a U (selenocystein) in
-               the given position(s).
-  Returntype : none
-  Exceptions : 
-  Caller     : general
+  Arg [1]    : none
+  Example    : my @seqeds = @{$transcript->get_all_SeqEdits()};
+  Description: Retrieves all post transcriptional sequence modifications for
+               this transcript.
+  Returntype : Bio::EnsEMBL::SeqEdit
+  Exceptions : none
+  Caller     : spliced_seq()
 
 =cut
 
-
-sub add_selenocystein_position {
+sub get_all_SeqEdits {
   my $self = shift;
-  my @args = @_;
 
-  for my $arg ( @args ) {
-    my $attrib = Bio::EnsEMBL::Attribute->new
-        ( 
-          -code => "_selenocystein",
-          -value => $arg,
-          -name => "Selenocystein position",
-          -description => "Position of selenocystein in peptide sequence" 
-          );
-    $self->add_Attributes( $attrib );
+  my @seqeds;
+
+  my $attribs = $self->get_all_Attributes('_selenocystein');
+
+  # convert attributes to SeqEdit objects
+  foreach my $a (@$attribs) {
+    push @seqeds, Bio::EnsEMBL::SeqEdit->new(-ATTRIB => $a);
   }
+
+  return \@seqeds;
 }
-
-
-
-
 
 =head2 modify_translation
 
   Arg    1   : Bio::Seq $peptide 
-  Example    : 
-  Description: Applies selenocysteins to the Bio::Seq peptide thats passed in
+  Example    : my $seq = Bio::Seq->new(-SEQ => $dna)->translate();
+               $translation->modify_translation($seq);
+  Description: Applies sequence edits such as selenocysteins to the Bio::Seq 
+               peptide thats passed in
   Returntype : Bio::Seq
-  Exceptions : 
+  Exceptions :
   Caller     : Bio::EnsEMBL::Transcript->translate
 
 =cut
@@ -627,25 +645,20 @@ sub add_selenocystein_position {
 sub modify_translation {
   my ($self, $seq) = @_;
 
-  my $attribs = $self->get_all_Attributes( "_selenocystein" );
+  my @seqeds = @{$self->get_all_SeqEdits()};
 
-  if( ! @$attribs ) {
-    return $seq;
-  }
-  
-  # into bioperl (sigh)
+  # sort in reverse order to avoid complication of adjusting downstream edits
+  @seqeds = sort {$b <=> $a} @seqeds;
+
+  # apply all edits
   my $peptide = $seq->seq();
-
-  for my $attrib ( @$attribs ) {
-    my $pos = $attrib->value();
-    substr( $peptide, $pos-1, 1 ) = "U";
+  foreach my $se (@seqeds) {
+    $se->apply_edit(\$peptide);
   }
+  $seq->seq($peptide);
 
-  $seq->seq( $peptide );
   return $seq;
 }
-
-
 
 
 
