@@ -1505,6 +1505,84 @@ sub write_Translation{
 
 
 
+sub get_New_external_id {
+    my ($self,$table,$stub,$number) = @_;
+
+    $table .= "_external";
+    if( !defined $number ) {
+	$number = 1;
+    }
+
+    my @out;
+
+
+    my $lsth   = $self->_db_obj->prepare("lock table $table write");
+    $lsth->execute;
+
+    # wrap critical region in an eval so we can catch errors and release table
+
+    eval {
+
+	my $query = "select max(external_id) as id from $table where external_id like '$stub%'";
+	
+	my $sth   = $self->_db_obj->prepare($query);
+	my $res   = $sth->execute;
+	my $row   = $sth->fetchrow_hashref;
+	my $id    = $row->{id};
+	
+	if (!defined($id) || $id eq "") {
+	    $id = $stub . "00000000000";
+	}
+	
+	if ($id =~ /\D+(\d+)$/) {
+	    
+	    my $newid  = $1;
+	    my $i;
+	    
+	    foreach $i ( 1..$number ) {
+
+		$newid++;
+		
+		
+		if (length($newid) > 11) {
+		    if ($newid =~ /^0/) {
+			$newid =~ s/^0//;
+		    } else {
+			$self->throw("Can't truncate number string to generate new id [$newid]");
+		    }
+		}
+		my $c = $stub . $newid;
+		my $query = "insert into $table (internal_id,external_id) values (NULL,'$c')";
+		my $sth   = $self->_db_obj->prepare($query);
+		my $res   = $sth->execute;
+		
+		push(@out,$c);
+	    }
+	    
+	    
+	} else {
+	    $self->throw("[$id] does not look like an object id (e.g. ENST00000019784)");
+	}
+    };
+
+    my $error = undef;
+
+    if( $@ ) {
+	$error = $@;
+    }
+
+
+    my $usth   = $self->_db_obj->prepare("unlock tables");
+    $usth->execute;
+
+
+    if( defined $error ) {
+	$self->throw("Problem in making IDs. Unlocked tables. \n\n Error $@");
+    }
+
+    return @out;
+    
+}
 
 sub get_NewId {
     my ($self,$table,$stub) = @_;
