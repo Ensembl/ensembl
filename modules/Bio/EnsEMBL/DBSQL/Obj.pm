@@ -536,10 +536,10 @@ sub write_ContigOverlap {
         });
     eval{
         $insert->execute(
-            $dna_a_id, $dna_b_id,
-            $contig_a_position, $contig_b_position,
-            $type,
-            $distance, $overlap_type);
+            $dna_a_id, $dna_b_id
+          , $contig_a_position, $contig_b_position
+          , $type
+          , $distance, $overlap_type);
     };
     
     # Check that insert succeeded
