@@ -61,7 +61,8 @@ sub fetch_by_dbID {
      $self->throw("Translations make no sense outside of their parent Transcript objects. You must retrieve with Transcript parent");
    }
 
-   my $sth     = $self->prepare("select translation_id tlid,seq_start,start_exon_id,seq_end,end_exon_id from translation where translation_id = $dbID" );
+   my $statement = "select translation_id tlid,seq_start,start_exon_id,seq_end,end_exon_id from translation where translation_id = $dbID";
+   my $sth     = $self->prepare($statement);
    my $res     = $sth->execute();
    my $rowhash = $sth->fetchrow_hashref;
 

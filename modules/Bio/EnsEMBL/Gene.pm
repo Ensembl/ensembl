@@ -547,9 +547,7 @@ sub created{
     my ($self,$value) = @_;
 
     if(defined $value ) {
-      my ($p,$f,$l) = caller;
-      $self->warn("$f $l  created dates are loaded. Ignoring set value $value");
-      return;
+      $self->{'_created'} = $value;
     }
 
 
@@ -579,9 +577,7 @@ sub modified{
     
 
     if( defined $value ) {
-      my ($p,$f,$l) = caller;
-      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
-      return;
+      $self->{'_modified'} = $value;
     }
 
     if( exists $self->{'_modified'} ) {
@@ -610,9 +606,7 @@ sub version{
     
 
     if( defined $value ) {
-      my ($p,$f,$l) = caller;
-      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
-      return;
+      $self->{'_version'} = $value;
     }
 
     if( exists $self->{'_version'} ) {

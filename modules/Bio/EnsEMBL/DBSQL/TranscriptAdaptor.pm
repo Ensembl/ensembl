@@ -180,6 +180,22 @@ sub store {
      $rank++;
    }
 
+   if (defined($transcript->stable_id)) {
+     if (!defined($transcript->version)) {
+       $self->throw("Trying to store incomplete stable id information for transcript");
+     }
+
+     my $statement = "INSERT INTO transcript_stable_id(transcript_id," .
+                                   "stable_id,version)".
+                      " VALUES(" . $transcript->dbID . "," .
+                               "'" . $transcript->stable_id . "'," .
+                               $transcript->version . 
+                               ")";
+     my $sth = $self->prepare($statement);
+     $sth->execute();
+   }
+
+
    return $transcript->dbID;
 
 }

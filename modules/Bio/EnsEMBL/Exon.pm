@@ -474,8 +474,8 @@ sub _transform_to_rawcontig {
     $stickyExon->phase( $self->phase() );
     $stickyExon->adaptor( $self->adaptor() );
     $stickyExon->start( 1 );
-    if( defined $self->dbID() ) {
-      $stickyExon->dbID( $self->dbID() );
+    if( defined $self->dbID() ) { 
+      $stickyExon->dbID( $self->dbID() ); 
     }
 
     my $sticky_length =0;
@@ -500,6 +500,10 @@ sub _transform_to_rawcontig {
     }
     $stickyExon->end( $sticky_length );
     $stickyExon->strand( 1 );
+    $stickyExon->stable_id($self->stable_id);
+    $stickyExon->version($self->version);
+    $stickyExon->created($self->created);
+    $stickyExon->modified($self->modified);
     return $stickyExon;
     
   } else {
@@ -1150,9 +1154,7 @@ sub created{
     my ($self,$value) = @_;
 
     if(defined $value ) {
-      my ($p,$f,$l) = caller;
-      $self->warn("$f $l  created dates are loaded. Ignoring set value $value");
-      return;
+      $self->{'_created'} = $value;
     }
 
 
@@ -1182,9 +1184,7 @@ sub modified{
     
 
     if( defined $value ) {
-      my ($p,$f,$l) = caller;
-      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
-      return;
+      $self->{'_modified'} = $value;
     }
 
     if( exists $self->{'_modified'} ) {
@@ -1213,9 +1213,7 @@ sub version{
     
 
     if( defined $value ) {
-      my ($p,$f,$l) = caller;
-      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
-      return;
+      $self->{'_version'} = $value; 
     }
 
     if( exists $self->{'_version'} ) {
@@ -1520,8 +1518,8 @@ sub seq {
   else {
     # call subseq on the contig which may be a RawContig or a Slice
 
-#    print STDERR "[Exon.pm seq method: Start: " . $self->start . "\tEnd:   " . $self->end . "\t";
-#    print STDERR "Strand: " . $self->strand . "]\nContig: " . $self->contig() . "\n\n";
+    # print STDERR "[Exon.pm seq method: Start: " . $self->start . "\tEnd:   " . $self->end . "\t";
+    # print STDERR "Strand: " . $self->strand . "]\nContig: " . $self->contig() . "\n\n";
 
       
     $seq = $self->contig()->subseq($self->start, $self->end);

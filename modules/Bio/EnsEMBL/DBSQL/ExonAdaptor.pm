@@ -453,6 +453,7 @@ sub store {
 	$exon->dbID($exonId);
 	$exon->adaptor( $self );
       }
+      $componentExon->dbID($exonId);
     }
   } else {
     # normal storing
@@ -474,6 +475,26 @@ sub store {
     $exon->dbID($exonst->{'mysql_insertid'});
     $exon->adaptor( $self );
   }
+
+  if (defined($exon->stable_id)) {
+    if (!defined($exon->created) || 
+        !defined($exon->modified) ||
+        !defined($exon->version)) {
+      $self->throw("Trying to store incomplete stable id information for exon");
+    } 
+
+        
+    my $statement = "INSERT INTO exon_stable_id(exon_id," .
+                                   "version, stable_id, created, modified)".
+                    " VALUES(" . $exon->dbID . "," .
+                               $exon->version . "," .
+                               "'" . $exon->stable_id . "'," .
+                               "FROM_UNIXTIME(".$exon->created."),".
+                               "FROM_UNIXTIME(".$exon->modified."))";
+     my $sth = $self->prepare($statement);
+     $sth->execute();
+   }
+
 
   # Now the supporting evidence
   # should be stored from featureAdaptor

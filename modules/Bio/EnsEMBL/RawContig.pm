@@ -224,7 +224,7 @@ sub seq {
 
   #or retrieved from the database
   if($self->adaptor()) {
-    my $sa = $self->adaptor->db->get_SequenceAdaptor(); 
+    my $sa = $self->adaptor->db->dnadb->get_SequenceAdaptor(); 
     return $sa->fetch_by_Contig_start_end_strand($self, 1, -1, 1);
   }
   
@@ -279,7 +279,7 @@ sub subseq {
     return '';
   }
 
-  my $seq_adaptor = $self->adaptor->db->get_SequenceAdaptor();
+  my $seq_adaptor = $self->adaptor->db->dnadb->get_SequenceAdaptor();
 
   my $sub_seq = $seq_adaptor->fetch_by_Contig_start_end_strand($self, 
 							       $start, $end, 

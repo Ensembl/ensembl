@@ -596,6 +596,7 @@ sub store {
                                                transcript_count) 
                               VALUES('$type', $analysisId, $trans_count)" );
    $sth2->execute();
+
    
    $gene->adaptor( $self );
    $gene->dbID( $sth2->{'mysql_insertid'} );
@@ -604,6 +605,24 @@ sub store {
 
    foreach my $dbl ( $gene->each_DBLink ) {
      $dbEntryAdaptor->store( $dbl, $gene->dbID, "Gene" );
+   }
+
+   if (defined($gene->stable_id)) {
+     if (!defined($gene->created) || 
+         !defined($gene->modified) ||
+         !defined($gene->version)) {
+       $self->throw("Trying to store incomplete stable id information for gene");
+     }
+
+     my $statement = "INSERT INTO gene_stable_id(gene_id," .
+                                   "version, stable_id, created, modified)".
+                      " VALUES(" . $gene->dbID . "," .
+                               $gene->version . "," .
+                               "'" . $gene->stable_id . "'," .
+                               "FROM_UNIXTIME(".$gene->created."),".
+                               "FROM_UNIXTIME(".$gene->modified."))";
+     my $sth = $self->prepare($statement);
+     $sth->execute();
    }
 
    # write exons at this level to avoid duplicates

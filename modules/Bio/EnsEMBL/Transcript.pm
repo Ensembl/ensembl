@@ -1742,9 +1742,7 @@ sub version{
     
 
     if( defined $value ) {
-      my ($p,$f,$l) = caller;
-      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
-      return;
+      $self->{'_version'} = $value;
     }
 
     if( exists $self->{'_version'} ) {

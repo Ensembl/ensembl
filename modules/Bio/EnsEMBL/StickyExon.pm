@@ -348,6 +348,8 @@ sub transform {
   my $self = shift;
   my $slice = shift;
 
+  # print "Calling transform on sticky exon\n";
+
   if( defined $self->contig() and 
       $self->contig()->isa( "Bio::EnsEMBL::RawContig" ) )  {
 
@@ -376,11 +378,11 @@ sub transform {
 	 $c_exon->strand()
 	);
 
-    #  print STDERR "\nStickyExon.pm transform method:\n"; 
-    #  print STDERR "[Mapped start  " . $mapped[0]->start . "\t";
-    #  print STDERR "Mapped end    " . $mapped[0]->end . "\t";
-    #  print STDERR "Mapped strand " . $mapped[0]->strand . "]\n";
-    #  print STDERR "Sticky rank : " . $c_exon->sticky_rank() . "\n";
+  #    print STDERR "\nStickyExon.pm transform method:\n"; 
+  #    print STDERR "[Mapped start  " . $mapped[0]->start . "\t";
+  #    print STDERR "Mapped end    " . $mapped[0]->end . "\t";
+  #    print STDERR "Mapped strand " . $mapped[0]->strand . "]\n";
+  #    print STDERR "Sticky rank : " . $c_exon->sticky_rank() . "\n";
 
       # exons should always transform so in theory no error check
       # necessary
@@ -407,7 +409,7 @@ sub transform {
       # concatenate the raw sequence together
       $dna_seq .= $c_exon->seq();
 
-      # print STDERR $c_exon->dbID . " " . $c_exon->seq . "\n";
+   #   print STDERR $c_exon->dbID . " " . $c_exon->seq . "\n";
 
       # now pull out the start and end points of the newly concatenated sequence
       # if we've got the first sticky exon, store the relevant info
@@ -447,9 +449,14 @@ sub transform {
     $newexon->start( $mapped_start - $slice->chr_start() + 1 );
     $newexon->end( $mapped_end - $slice->chr_start() + 1);
     $newexon->strand( $composite_exon_strand * $slice->strand() );
+    $newexon->dbID($component_exons[0]->dbID);
+    $newexon->adaptor($component_exons[0]->adaptor);
 
     $newexon->contig( $slice );
     $newexon->phase( $composite_exon_phase );
+#SMJS Hack
+
+    $newexon->end_phase($self->end_phase);
 
 
     return $newexon;
