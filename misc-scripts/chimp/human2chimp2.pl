@@ -7,6 +7,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Exon;
 
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 my $MAX_CODING_INDEL     = 12; #max allowed coding indel in exon
 my $MAX_FRAMESHIFT_INDEL = 5; #max allowed frameshifting indel in exon
@@ -69,15 +70,20 @@ $human_db->dnadb($chimp_db);
 my $slice_adaptor   = $human_db->get_SliceAdaptor();
 my $gene_adaptor    = $human_db->get_GeneAdaptor();
 
+
+debug("Fetching chromosomes");
+
 my $slices = $slice_adaptor->fetch_all('chromosome', $hassembly);
 
 foreach my $slice (@$slices) {
 
   debug("Chromosome: " . $slice->seq_region_name());
+  debug("Fetching Genes");
 
   my $genes = $gene_adaptor->fetch_all_by_Slice($slice);
 
   foreach my $gene (reverse @$genes) {
+    debug("Gene: ".$gene->stable_id);
     my $transcripts = $gene->get_all_Transcripts();
 
     foreach my $transcript (@$transcripts) {
@@ -89,7 +95,11 @@ foreach my $slice (@$slices) {
 }
 
 
-
+###############################################################################
+#
+# transfer_transcript
+#
+###############################################################################
 
 sub transfer_transcript {
   my $human_db   = shift;
@@ -103,26 +113,22 @@ sub transfer_transcript {
   my $human_cs = $cs_adaptor->fetch_by_name('chromosome', $hassembly);
 
   my $mapper = $asmap_adaptor->fetch_by_CoordSystems($chimp_cs, $human_cs);
+  my $exons = $transcript->get_all_Exons();
+
+  if(!$transcript->translation()) { #watch out for pseudogenes
+    debug("pseudogene - discarding");
+    return ();
+  }
 
   my $trans_mapper = $transcript->get_TranscriptMapper();
 
-  my $slice_adaptor = $chimp_db->get_SliceAdaptor();
+  my $chimp_cdna_pos = 0;
+  my $cdna_exon_start = 1;
+  my $cdna_coding_start = $transcript->cdna_coding_start();
+  my $cdna_coding_end   = $transcript->cdna_coding_end();
 
-  my $exons = $transcript->get_all_Exons();
-  my $translation = $transcript->translation();
+  my @chimp_exons;
 
-  my @chimp_transcripts;
-
-  my $chimp_transcript = Bio::EnsEMBL::Transcript->new();
-  my $chimp_translation;
-
-  if($translation) { #watch out for pseudogenes
-    $chimp_translation = Bio::EnsEMBL::Translation->new();
-    $chimp_translation->start($translation->start());
-    $chimp_translation->end($translation->end());
-  }
-
-  my $chimp_exon = undef;
 
  EXON:
   foreach my $exon (@$exons) {
@@ -133,8 +139,12 @@ sub transfer_transcript {
 
     if(@coords == 1) {
       my $c = $coords[0];
+
       if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
-        #complete failure to map exon
+        #
+        # complete failure to map exon
+        #
+
         #if this is a UTR exon, this is ok
         my @cds_coords = $trans_mapper->genomic2cds($c->start(),$c->end(),
                                                     $exon->strand);
@@ -146,165 +156,522 @@ sub transfer_transcript {
 
           # we can simply throw out this exon, it was all UTR
 
-          next EXON;
         } else {
           ### TBD: can do more sensible checking and maybe split transcript
           debug('entire coding exon deletion - discarding transcript');
-          return @chimp_transcripts;
+          return ();
         }
       } else {
-        #exon mapped completely
+        #
+        # exon mapped completely
+        #
 
         debug('completely mapped exon');
 
-        ###TBD maybe should not assume that human phases are set correctly?
-
-        my $slice = $slice_adaptor->fetch_by_region($chimp_cs->name, $c->id,
-                                                    undef,undef,undef,
-                                                    $chimp_cs->version);
-
-
         ### TBD handle problems with seq_region/strand jumping exons...
 
-        $chimp_transcript->add_Exon( Bio::EnsEMBL::Exon->new
-                                     ( -START     => $c->start,
-                                       -END       => $c->end,
-                                       -STRAND    => $c->strand,
-                                       -PHASE     => $exon->phase,
-                                       -END_PHASE => $exon->end_phase,
-                                       -ANALYSIS  => $exon->analysis,
-                                       -SLICE     => $slice) );
+        $chimp_cdna_pos += $c->length();
+        $cdna_exon_start += $c->length();
+
+        push @chimp_exons, [$c->start(), $c->end(), $c->strand(), $c->id()];
       }
     } else {
       my $num = scalar(@coords);
 
-      my $exon_position = 0;
-      my $chimp_exon = Bio::EnsEMBL::Exon->new();
-      my $is_start_exon = 0;
-      my $is_end_exon   = 0;
-
-      # Fix translation start/end if it needs adjusting here
-      if($translation) {
-
-        if($translation->start_Exon()->hashkey() eq $exon->hashkey()) {
-          $is_start_exon = 1;
-          $chimp_translation->start_Exon($chimp_exon);
-        }
-
-        if($translation->end_Exon()->hashkey eq $exon->hashkey()) {
-          $is_end_exon = 1;
-          $chimp_translation->end_Exon($chimp_exon);
-        }
-      }
-
-      my $result = get_coords_extent(@coords);
+      my $result = get_coords_extent(\@coords);
 
       if(!$result) {
-	#failed to obtain extent of coords due to scaffold spanning
-	#strand flipping, or exon inversion
+        #failed to obtain extent of coords due to scaffold spanning
+        #strand flipping, or exon inversion
 	
-	### TBD - fix this, may be ok to drop exon and continue esp. if exon
-	###       is entirely UTR
-	return @chimp_transcripts;
+        ### TBD - fix this, may be ok to drop exon and continue esp. if exon
+        ###       is entirely UTR
+        return ();
       }
 
       my($exon_start, $exon_end, $exon_strand, $seq_region) = @$result;
 
-      my $human_cdna_pos = 0;
-      
-      my $cdna_coding_start = $transcript->cdna_coding_start();
-      my $cdna_coding_end   = $transcript->cdna_coding_end();
-
-      my $chimp_cdna_pos = 0;
-
-    COORD:
       for(my $i=0; $i < $num; $i++) {
         my $c = $coords[$i];
 
         if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
-	  #deletion in chimp, insert in human
-	  process_deletion(\$human_cdna_pos, \$chimp_cdna_pos, $c->length(),
-			   \$exon_start, \$exon_end, $exon_strand,
-			   \$cdna_coding_start, \$cdna_coding_end);
 
+          #
+          # deletion in chimp, insert in human
+          #
+          my $result =
+            process_deletion(\$chimp_cdna_pos, $c->length(),
+                             \$exon_start, \$exon_end, $exon_strand,
+                             \$cdna_exon_start,
+                             \$cdna_coding_start, \$cdna_coding_end);
+
+          return () if(!defined($result));
+
+          push @chimp_exons, @$result;
+
+        } else {
+          my $prev_c = $coords[$i-1];
+
+          if($i > 0 && !$prev_c->isa('Bio::EnsEMBL::Mapper::Gap')) {
+
+            #
+            # insert in chimp, deletion in human
+            #
+
+            my $insert_len;
+            if($exon_strand == 1) {
+              $insert_len = $c->start() - $prev_c->end() - 1;
+            } else {
+              $insert_len = $prev_c->start() - $c->end() - 1;
+            }
+
+            my $result = process_insertion(\$chimp_cdna_pos, $insert_len,
+                                       \$exon_start, \$exon_end, $exon_strand,
+                                       \$cdna_exon_start,
+                                       \$cdna_coding_start, \$cdna_coding_end);
+
+            return () if(!defined($result));
+
+            push @chimp_exons, @$result;
+
+            $chimp_cdna_pos += $insert_len;
+
+          }
+          $chimp_cdna_pos += $c->length()
+        }
+      }  # foreach coord
+
+      $cdna_exon_start += $exon_end - $exon_start + 1;
+    }
+  } # foreach exon
 }
 
+###############################################################################
+# process_deletion
+#
+# Processes a deletion in an exon by adjusting the exon start/end
+# and adjusting the translation start/end of the transcript as necessary
+#
+# If the deletion is in the CDS and considered to be too long to accomodate
+# this method will return undef.
+#
+# On success this this method will return a listref of extra exons that
+# needed to be created as sometimes it is necessary to split exons into
+# multiple parts.
+#
+###############################################################################
 
 sub process_deletion {
-  my $human_cdna_pos_ref = shift;
   my $chimp_cdna_pos_ref = shift;
-  my $del_length         = shift;
+  my $del_len            = shift;
 
   my $exon_start_ref     = shift;
   my $exon_end_ref       = shift;
   my $exon_strand        = shift;
 
+  my $cdna_exon_start_ref = shift;
+
   my $cdna_coding_start_ref = shift;
   my $cdna_coding_end_ref   = shift;
 
-  my $$human_cdna_pos_ref += $del_length;
-
   my $del_start = $$chimp_cdna_pos_ref + 1;
-  my $del_end   = $$chimp_cdna_pos_ref + $del_length;
+  my $del_end   = $$chimp_cdna_pos_ref + $del_len;
 
+  my $exon_len = $$exon_end_ref - $$exon_start_ref + 1;
+  my $cdna_exon_end = $$cdna_exon_start_ref + $exon_len - 1;
+
+  print STDERR "del_start = $del_start\n";
+  print STDERR "del_end   = $del_end\n";
+
+  # sanity check, deletion should be completely in exon boundaries
+  if($del_start < $$cdna_exon_start_ref ||
+     $del_end   > $cdna_exon_end) {
+
+    # it is ok if this deletion is immediately in front of the exon or
+    # immediately behind the exon
+    if($del_start != $cdna_exon_end + 1 &&
+       $del_end   != $$cdna_exon_start_ref - 1) {
+
+      throw("Unexpected: deletion is outside of exon boundary\n" .
+            "     del_start       = $del_start\n" .
+            "     del_end         = $del_end\n" .
+            "     cdna_exon_start = $$cdna_exon_start_ref\n" .
+            "     cdna_exon_end   = $cdna_exon_end");
+    }
+  }
+
+
+  #
   # case 1: delete covers entire CDS
+  #
   if($del_start <= $$cdna_coding_start_ref &&
      $del_end >= $$cdna_coding_end_ref) {
+
+    # nothing can be done with this exon since entire CDS is deleted
+    debug("entire cds deleted - discarding transcript");
+    return undef;
   }
 
+  #
   # case 2: delete overlaps UTR and start of CDS
+  #
   elsif($del_start < $$cdna_coding_start_ref &&
-	$del_end   >= $$cdna_coding_start_ref) {
+        $del_end   >= $$cdna_coding_start_ref) {
+    my $utr_del_len = $$cdna_coding_start_ref - $del_start;
+    my $cds_del_len = $del_len - $utr_del_len;
+
+    debug("delete in 5' utr ($utr_del_len) and start of cds ($cds_del_len)");
+
+    if($cds_del_len > $MAX_CODING_INDEL) {
+      # too much coding sequence has been deleted
+      debug("cds deletion is too long ($cds_del_len) - " .
+            "discarding transcript");
+      return undef;
+    }
+
+    # move up CDS to account for delete in 5prime UTR
+    $$cdna_coding_start_ref -= $utr_del_len;
+    $$cdna_coding_end_ref   -= $utr_del_len;
+
+    #move up CDS end to account for delete in CDS
+    $$cdna_coding_end_ref   -= $cds_del_len;
+
+    my $frameshift = $cds_del_len % 3;
+
+    if($frameshift) {
+      if($cds_del_len > $MAX_FRAMESHIFT_INDEL) {
+        # frameshift deletion is too long
+        debug("frameshift deletion is too long ($cds_del_len) " .
+              "- discarding transcript");
+        return undef;
+      }
+
+      # move down CDS start to put reading frame back (shrink CDS)
+      debug("shifting cds start to restore reading frame");
+      $$cdna_coding_start_ref += 3 - $frameshift;
+
+      if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
+        debug("no cds left after shift - discarding transcript");
+        return undef;
+      }
+    }
   }
 
+  #
   # case 3: delete overlaps end of CDS and UTR
+  #
   elsif($del_start <= $$cdna_coding_end_ref &&
-	$del_end   > $$cdna_coding_end_ref) {
+        $del_end   > $$cdna_coding_end_ref) {
+    my $cds_del_len = $$cdna_coding_end_ref - $del_start + 1;
+    my $utr_del_len = $del_len - $cds_del_len;
+
+    debug("delete in 3' utr ($utr_del_len) and end of cds ($cds_del_len)");
+
+    if($cds_del_len > $MAX_CODING_INDEL) {
+      # too much coding sequence has been deleted
+      debug("cds deletion is too long ($cds_del_len) - " .
+            "discarding transcript");
+      return undef;
+    }
+
+    # move up CDS end to account for CDS deletion
+    $$cdna_coding_end_ref -= $cds_del_len;
+
+    my $frameshift = $cds_del_len % 3;
+
+    if($frameshift) {
+      if($cds_del_len > $MAX_FRAMESHIFT_INDEL) {
+        debug("frameshift deletion is too long ($cds_del_len) " .
+              "- discarding transcript");
+      return undef;
+      }
+
+      #move up CDS end to put reading frame back (shrink CDS)
+      debug("shifting cds end to restore reading frame");
+      $$cdna_coding_end_ref -= 3 - $frameshift;
+
+      if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
+        debug("no cds left after shift - discarding transcript");
+        return undef;
+      }
+    }
   }
 
+  #
   # case 4: delete is at start of CDS
+  #
   elsif($del_start == $$cdna_coding_start_ref) {
+    debug("delete ($del_len) at start of cds");
+
+    if($del_len > $MAX_CODING_INDEL) {
+      # too much coding sequence has been deleted
+      debug("cds deletion is too long ($del_len) - " .
+            "discarding transcript");
+      return undef;
+    }
+
+    # move up CDS end to account for CDS deletion
+    $$cdna_coding_end_ref -= $del_len;
+
+    my $frameshift = $del_len % 3;
+
+    if($frameshift) {
+      if($del_len > $MAX_FRAMESHIFT_INDEL) {
+        debug("frameshift deletion is too long ($del_len) " .
+              "- discarding transcript");
+        return undef;
+      }
+
+      # move down CDS start to put reading frame back (shrink CDS)
+      debug("shifting cds start to restore reading frame");
+      $$cdna_coding_start_ref += 3 - $frameshift;
+
+      if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
+        debug("no cds left after shift - discarding transcript");
+        return undef;
+      }
+    }
   }
 
+  #
   # case 5: delete is at end of CDS
+  #
   elsif($del_end == $$cdna_coding_end_ref) {
+    debug("delete ($del_len) at end of cds");
+
+    if($del_len > $MAX_CODING_INDEL) {
+      # too much coding sequence has been deleted
+      debug("cds deletion is too long ($del_len) - " .
+            "discarding transcript");
+      return undef;
+    }
+
+    # move up CDS end to account for CDS deletion
+    $$cdna_coding_end_ref -= $del_len;
+
+    my $frameshift = $del_len % 3;
+
+    if($frameshift) {
+      if($del_len > $MAX_FRAMESHIFT_INDEL) {
+        debug("frameshift deletion is too long ($del_len) " .
+              "- discarding transcript");
+        return undef;
+      }
+
+      # move up CDS end to put reading frame back (shrink CDS)
+      $$cdna_coding_end_ref -= 3 - $frameshift;
+
+      if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
+        debug("no cds left after shift - discarding transcript");
+        return undef;
+      }
+    }
   }
 
+  #
   # case 6: delete is in middle of CDS
+  #
   elsif($del_end   > $$cdna_coding_start_ref &&
-	$del_start < $$cdna_coding_end_ref) {
+        $del_start < $$cdna_coding_end_ref) {
+    debug("delete ($del_len) in middle of cds");
 
+    if($del_len > $MAX_CODING_INDEL) {
+      # too much coding sequence has been deleted
+      debug("cds deletion is too long ($del_len) - " .
+            "discarding transcript");
+      return undef;
+    }
+
+    #move up CDS end to account for CDS deletion
+    $$cdna_coding_start_ref -= $del_len;
+
+    my $frameshift = $del_len % 3;
+
+    if($frameshift) {
+      if($del_len > $MAX_FRAMESHIFT_INDEL) {
+        debug("frameshift deletion is too long ($del_len) " .
+              " - discarding transcript");
+        return undef;
+      }
+
+      debug("introducing frameshift intron to maintain reading frame");
+
+      # this is going to require splitting the exon
+      # to make a frameshift deletion
+
+      #first exon is going to end right before deletion
+      my $first_len  = $del_start - $$cdna_coding_start_ref;
+      my $intron_len = 3 - $frameshift;
+
+      #second exon is going to start right after 'frameshift intron'
+      $$cdna_exon_start_ref += $first_len + $intron_len;
+
+      #reduce the length of the CDS by the length of the new intron
+      $$cdna_coding_end_ref -= $intron_len;
+
+      ### TBD may have to check we have not run up to end of CDS here
+
+      if($exon_strand == 1) {
+        #end the current exon at the beginning of the deletion
+        my $out_exon = [$$exon_start_ref, $$exon_start_ref + $first_len - 1];
+        $$exon_start_ref += $first_len + $intron_len;
+        return [$out_exon];
+
+      } else {
+        my $out_exon = [$$exon_end_ref - $first_len + 1, $$exon_end_ref];
+        $$exon_end_ref   -= $first_len + $intron_len;
+        return [$out_exon];
+      }
+    }
   }
 
-  # case 7: delete is in UTR
-  elsif($del_end < $$cdna_coding_start_ref ||
-	$del_start > $$cdna_coding_end_ref) {
+  #
+  # case 7: delete is in 5prime UTR
+  #
+  elsif($del_end < $$cdna_coding_start_ref) {
+    debug("delete ($del_len) in 5' utr");
 
+    # just move up the CDS
+    $$cdna_coding_start_ref -= $del_len;
+    $$cdna_coding_end_ref   -= $del_len;
   }
 
+  #
+  # case 8: delete is in 3prime UTR
+  #
+  elsif($del_start > $$cdna_coding_end_ref) {
+    debug("delete ($del_len) in 3' utr");
+
+    #do not have to do anything
+  }
+
+  #
   # default : sanity check
+  #
   else {
     throw("Unexpected delete case encountered");
   }
 
-  if($$chimp_cdna_pos_ref < $$cdna_coding_start_ref) {
-    $$cdna_coding_start_ref -= $del_length;
-    $$cdna_coding_start_ref = 1 if($$cdna_coding_start_ref < 1);
-  }
-
-  if($$chimp_cdna_pos_ref < $$cdna_coding_end_ref) {
-    $$cdna_coding_end_ref -= $del_length;
-    $$cdna_coding_start_ref = 1 if($$cdna_coding_start_ref < 0);
-  }
-
-
+  return [];
 }
 
+###############################################################################
+# process_insertion
+#
+###############################################################################
 
-sub process_insert {
+sub process_insertion {
+  my $chimp_cdna_pos_ref = shift;   #basepair to left of insert
+
+  my $insert_len         = shift;
+
+  my $exon_start_ref     = shift;
+  my $exon_end_ref       = shift;
+  my $exon_strand        = shift;
+
+  my $cdna_exon_start_ref = shift;
+
+  my $cdna_coding_start_ref = shift;
+  my $cdna_coding_end_ref   = shift;
+
+  my $exon_len = $$exon_end_ref - $$exon_start_ref + 1;
+  my $cdna_exon_end = $$cdna_exon_start_ref + $exon_len - 1;
+
+  # sanity check, insert should be completely in exon boundaries
+  if($$chimp_cdna_pos_ref < $$cdna_exon_start_ref ||
+     $$chimp_cdna_pos_ref >= $cdna_exon_end) {
+    throw("Unexpected: deletion is outside of exon boundary");
+  }
+
+
+  #
+  # case 1: insert in CDS
+  #
+  if($$chimp_cdna_pos_ref >= $$cdna_coding_start_ref &&
+     $$chimp_cdna_pos_ref < $$cdna_coding_end_ref) {
+
+    debug("insertion in cds ($insert_len)");
+
+    if($insert_len > $MAX_CODING_INDEL) {
+      # too much coding sequence has been inserted
+      debug("cds insertion is too long ($insert_len) - " .
+            "discarding transcript");
+      return undef;
+    }
+
+    #adjust CDS end accordingly
+    $$cdna_coding_end_ref += $insert_len;
+
+    my $frameshift = $insert_len % 3;
+
+    if($frameshift) {
+      if($insert_len > $MAX_FRAMESHIFT_INDEL) {
+        debug("frameshift insertion is too long ($insert_len) - " .
+              "discarding transcript");
+        return undef;
+      }
+
+      # need to create frameshift intron to get reading frame back on track
+      # exon needs to be split into two
+
+      debug("introducing frameshift intron to maintain reading frame");
+
+      #first exon ends right before insert
+      my $first_len  = $$chimp_cdna_pos_ref - $$cdna_coding_start_ref + 1;
+
+      # frame shift intron eats into start of inserted region
+      # second exon is going to start right after 'frameshift intron'
+      $$cdna_exon_start_ref += $first_len + $frameshift;
+
+      #reduce the length of the CDS by the length of the new intron
+      $$cdna_coding_end_ref -= $frameshift;
+
+      ### TBD may have to check we have not run up to end of CDS here
+
+      if($exon_strand == 1) {
+        #end the current exon at the beginning of the deletion
+        my $out_exon = [$$exon_start_ref, $$exon_start_ref + $first_len - 1];
+        $$exon_start_ref += $first_len + $frameshift;
+        return [$out_exon];
+
+      } else {
+        my $out_exon = [$$exon_end_ref - $first_len + 1, $$exon_end_ref];
+        $$exon_end_ref   -= $first_len + $frameshift;
+        return [$out_exon];
+      }
+    }
+  }
+
+  #
+  # case 2: insert in 5 prime UTR (or between 5prime UTR and CDS)
+  #
+  elsif($$chimp_cdna_pos_ref < $$cdna_coding_start_ref) {
+    debug("insertion ($insert_len) in 5' utr");
+
+    #shift the coding region down as result of insert
+    $$cdna_coding_start_ref += $insert_len;
+    $$cdna_coding_end_ref   += $insert_len;
+  }
+
+  #
+  # case 3: insert in 3 prime UTR (or between 3prime UTR and CDS)
+  #
+  elsif($$chimp_cdna_pos_ref >= $$cdna_coding_end_ref) {
+    debug("insert ($insert_len) in 3' utr");
+
+    #do not have to do anything
+  }
+
+  #
+  # default: sanity check
+  #
+  else {
+    throw("Unexpected insert case encountered");
+  }
 }
 
-
+###############################################################################
+# get_coords_extent
 #
 # given a list of coords returns the start, end, strand, seq_region
 # of the span of the coords
@@ -312,6 +679,8 @@ sub process_insert {
 # undef is returned if the coords flip strands, have an inversion,
 # or cross multiple seq_regions
 #
+###############################################################################
+
 sub get_coords_extent {
   my $coords = shift;
 
@@ -358,10 +727,12 @@ sub get_coords_extent {
 }
 
 
-
+###############################################################################
+# get_cds_len
 #
 # returns the CDS length of the transcript
 #
+###############################################################################
 sub get_cds_len {
   my $transcript = shift;
 
@@ -374,11 +745,21 @@ sub get_cds_len {
   return $len;
 }
 
+###############################################################################
+# debug
+#
+###############################################################################
+
 sub debug {
   my $msg  = shift;
   print STDERR "$msg\n" if($verbose);
 }
 
+
+###############################################################################
+# usage
+#
+###############################################################################
 
 sub usage {
   my $msg = shift;
