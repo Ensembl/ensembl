@@ -230,9 +230,15 @@ sub _reverse_map_Exon{
 	       $se->start($sestart);
 	       $se->end($seend);
 	   }
+	   $se->strand($sestrand);
+	   $se->seqname($secontig->id);
+	   if( $se->can('attach_seq') ) {
+	       $se->attach_seq($secontig->primary_seq);
+	   }
+
+	   $rmexon->add_Supporting_Feature($se);
        }
 
-       #$rmexon->add_Supporting_Feature
        # we could test on strand changes. This just assummes everything works
        # as it says on the tin ;)
        if( $start < $end ) {

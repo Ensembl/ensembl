@@ -21,13 +21,14 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..10\n"; 
+BEGIN { $| = 1; print "1..12\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::DB::WriteableVirtualContig;
+use Bio::EnsEMBL::FeaturePair;
 $loaded=1;
 print "ok \n";    # 1st test passed, loaded needed modules
 
@@ -80,7 +81,8 @@ print "ok 4\n";
 
 my $db             = new Bio::EnsEMBL::DBSQL::Obj(-host   => 'localhost',
 						  -user   => $conf{user},
-						  -dbname => $conf{overlap}
+						  -dbname => $conf{overlap},
+						  -perlonlyfeatures => 1,
 						 );
 
 die "$0\nError connecting to database : $!" unless defined($db);
@@ -152,6 +154,33 @@ $trans->add_Exon($exon);
 $exon{'exon-1'} = $exon;
 $exon->attach_seq($wvc->primary_seq);
 
+$sf = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+
+$sf->start(6);
+$sf->end(14);
+$sf->hstart(100);
+$sf->hend(110);
+$sf->strand(1);
+$sf->seqname($wvc->id);
+$sf->hseqname('other');
+$sf->score(100);
+$sf->primary_tag('similarity');
+$sf->source_tag('someone');
+$sf->feature2->primary_tag('similarity');
+$sf->feature2->source_tag('someone');
+$analysis = Bio::EnsEMBL::Analysis->new();
+$analysis->program('program');
+$analysis->program_version('version-49');
+$analysis->gff_source('source');
+$analysis->gff_feature('feature');
+
+$sf->analysis($analysis);
+$sf->feature2->analysis($analysis);
+$sf->hstrand(1);
+$sf->hscore(100);
+
+$exon->add_Supporting_Feature($sf);
+
 $exon = Bio::EnsEMBL::Exon->new();
 $exon->id('exon-2');
 $exon->start(25);
@@ -170,29 +199,41 @@ $wvc->write_Gene($gene);
 
 print "ok 8\n";
 
-$newgene = $db->get_Gene('gene-id-1');
+($newgene) = $db->gene_Obj->get_array_supporting('evidence','gene-id-1');
 
-$error = 0;
-foreach $exon ( $newgene->each_unique_Exon ) {
-    if( exists $exon{$exon->id} ) {
-	if( $exon->seq->seq ne $exon{$exon->id}->seq->seq ) {
-	    print STDERR "For exon ",$exon->id," sequences do not agree!\n";
-	    print STDERR "RC :",$exon->seq->seq,"\nVC :",$exon{$exon->id}->seq->seq,"\n";
-	    $error =1;
-	} else {
-	    print STDERR "Got exon match for",$exon->id,"\n";
-	}
-    } else {
-	print STDERR "Weird exon in output...\n";
-    }
-}
-
-$savedgene = $newgene;
-
-if( $error == 1 ) {
+if( !defined $newgene ) {
     print "not ok 9\n";
 } else {
-    print "ok 9\n";
+    $error = 0;
+    foreach $exon ( $newgene->each_unique_Exon ) {
+	if( exists $exon{$exon->id} ) {
+	    if( $exon->seq->seq ne $exon{$exon->id}->seq->seq ) {
+		print STDERR "For exon ",$exon->id," sequences do not agree!\n";
+		print STDERR "RC :",$exon->seq->seq,"\nVC :",$exon{$exon->id}->seq->seq,"\n";
+		
+		$error =1;
+	    } else {
+		if( $exon->id eq 'exon-1') {
+		    @sf = $exon->each_Supporting_Feature();
+		    $sf = shift @ sf;
+		    if( !defined $sf || !ref $sf || $sf->hseqname() ne 'other' ) {
+			print STDERR "did not retrieve supporting evidence on exon-1";
+			$error = 1;
+		    }
+		}
+	    }
+	} else {
+	    print STDERR "Weird exon in output...\n";
+	}
+    }
+    
+    $savedgene = $newgene;
+    
+    if( $error == 1 ) {
+	print "not ok 9\n";
+    } else {
+	print "ok 9\n";
+    }
 }
 
 
