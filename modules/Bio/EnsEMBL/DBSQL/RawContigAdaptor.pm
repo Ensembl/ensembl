@@ -244,5 +244,76 @@ sub _fill_contig_from_arrayref {
 }
 
 
+sub store{
+  my($self, $contig, $clone_id) = @_;
+
+  $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI - cannot insert contig for clone $clone_id")
+    unless $contig->isa('Bio::EnsEMBL::DB::ContigI');   
+  my $dna = $contig->primary_seq  || $self->throw("No sequence in contig object");
+  $dna->id                        || $self->throw("No contig id entered.");
+  $clone_id                          || $self->throw("No clone_id entered.");
+
+
+  $self->_insertSequence($dna->seq, $contig->seq_date);
+  
+  my $sql = "insert into contig(name,
+                                dna_id,
+                                length,
+                                clone_id,
+                                offset,
+                                corder,
+                                international_name)
+              values('".$contig->id."', 
+                    LAST_INSERT_ID(), 
+		    ".$contig->primary_seq->length." ,
+                    ".$clone_id." ,
+                    ".$contig->embl_offset." ,
+                    ".$contig->order." , 
+                    ".$contig->international_name.")";
+  
+  my $sth = $self->prepare($sql);
+  my $rv = $sth->execute();
+  $self->throw("Failed to insert contig ".$contig->id."\n") unless $rv;
+       
+    
+    $sth = $self->prepare("select last_insert_id()");
+    $sth->execute;
+    my ($id) = $sth->fetchrow
+        or $self->throw("Failed to get last insert id");
+    #can no longer do this as get_all_SeqFeatures no longer exists
+    #if a contig is written to the database
+    # this is a nasty hack. We should have a cleaner way to do this.
+    #my @features = $contig->get_all_SeqFeatures;
+    #print(STDERR "Contig $contigid - $id\n"); 
+    # write sequence features. We write all of them together as it
+    # is more efficient
+    #$self->get_Feature_Obj->write($contig, @features);
+    
+    return 1;
+}
+
+
+sub _insertSequence{
+
+   my ($self, $sequence, $date) = @_;
+    
+    $sequence =~ tr/atgcn/ATGCN/;
+    
+
+  
+    
+    my $statement = $self->prepare("
+        insert into dna(sequence,created) 
+        values(?, FROM_UNIXTIME(?))
+        "); 
+        
+    my $rv = $statement->execute($sequence, $date); 
+    
+    $self->throw("Failed to insert dna $sequence") unless $rv;   
+
+
+}
+
+
 
 1;

@@ -150,10 +150,10 @@ sub fetch_by_accession_version {
 
 sub fetch_by_name {
     my ($self, $name) = @_;
+    print $name."\n";
+    $self->throw("name not given") unless $name;
 
-    $self->throw("name not given");
-
-    my $clone = $self->_generic_sql_query(
+    my $clone = $self->_generic_sql_fetch(
         qq{ WHERE name = '$name' }
         );
 
@@ -388,6 +388,49 @@ sub create_tables {
   $sth->execute();
 }
 
+
+sub store{
+  my ($self, $clone) = @_;
+
+  $clone || $self->throw("trying to write a clone without a clone object : $!\n");
+
+  if( !$clone->isa('Bio::EnsEMBL::DB::CloneI') ) {
+	$self->throw("Clone '$clone' is not a 'Bio::EnsEMBL::DB::CloneI'");
+    }
+
+  my $sql =  "insert into clone(name, 
+                                embl_acc, 
+                                version, 
+                                embl_version, 
+                                htg_phase, 
+                                created,
+                                modified) 
+              values( '".$clone->id."' , '".
+                         $clone->embl_id."', ".
+                         $clone->version.",".
+                         $clone->embl_version.", ".
+                         $clone->htg_phase.", 
+                         FROM_UNIXTIME(".$clone->created."), 
+                         FROM_UNIXTIME(".$clone->modified."))";
+  
+
+  my $sth = $self->prepare($sql);
+  my $rv = $sth->execute();
+  
+  $self->throw("Failed to insert clone $clone->id") unless $rv;			   
+  $sth = $self->prepare("select last_insert_id()");
+  my $res = $sth->execute;
+  my $row = $sth->fetchrow_hashref;
+  $sth->finish;
+  my $id  = $row->{'last_insert_id()'};
+
+  foreach my $contig($clone->get_all_Contigs()){
+    my $rca = $self->db->get_RawContigAdaptor();
+    $rca->store($contig, $id);
+  }
+
+
+}
 
 
 1;

@@ -545,30 +545,36 @@ sub get_object_by_wildcard{
 sub write_Clone {
     my ($self,$clone) = @_;
 
-    my $clone_id = $clone->id;
 
-    $clone || $self->throw("Trying to write a clone without a clone object!\n");
-    if( !$clone->isa('Bio::EnsEMBL::DB::CloneI') ) {
-	$self->throw("Clone '$clone' is not a 'Bio::EnsEMBL::DB::CloneI'");
-    }
+    $self->warn("this method is being depreciated please use Bio::EnsEMBL::CloneAdaptor->store()\n");
+
+    my $clone_ad = $self->get_CloneAdaptor();
+
+    $clone_ad->store($clone);
+   # my $clone_id = $clone->id;
+
+#    $clone || $self->throw("Trying to write a clone without a clone object!\n");
+#    if( !$clone->isa('Bio::EnsEMBL::DB::CloneI') ) {
+#	$self->throw("Clone '$clone' is not a 'Bio::EnsEMBL::DB::CloneI'");
+#    }
     
-    my @sql;
-    my $sql = "insert into clone(name, embl_acc, version, embl_version, htg_phase, created, modified) values('$clone_id', '".$clone->embl_id."', ".$clone->version.",".$clone->embl_version.", ".$clone->htg_phase.", FROM_UNIXTIME(".$clone->created."), FROM_UNIXTIME(".$clone->modified."))";
-    my $sth = $self->prepare($sql);
-    #my $sth = $self->prepare('insert into clone (clone_id, name,  embl_acc, version, embl_version, htg_phase, created, modified) values(?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?)'); 
-    my $rv = $sth->execute();
+#    my @sql;
+#    my $sql = "insert into clone(name, embl_acc, version, embl_version, htg_phase, created, modified) values('$clone_id', '".$clone->embl_id."', ".$clone->version.",".$clone->embl_version.", ".$clone->htg_phase.", FROM_UNIXTIME(".$clone->created."), FROM_UNIXTIME(".$clone->modified."))";
+#    my $sth = $self->prepare($sql);
+#    #my $sth = $self->prepare('insert into clone (clone_id, name,  embl_acc, version, embl_version, htg_phase, created, modified) values(?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?)'); 
+#    my $rv = $sth->execute();
         
-    $self->throw("Failed to insert clone $clone_id") unless $rv;
-    $sth = $self->prepare("select last_insert_id()");
-    my $res = $sth->execute;
-    my $row = $sth->fetchrow_hashref;
-    $sth->finish;
-    my $id  = $row->{'last_insert_id()'};
-    #print(STDERR "Clone $clone_id - $id\n");
+#    $self->throw("Failed to insert clone $clone_id") unless $rv;
+#    $sth = $self->prepare("select last_insert_id()");
+#    my $res = $sth->execute;
+#    my $row = $sth->fetchrow_hashref;
+#    $sth->finish;
+#    my $id  = $row->{'last_insert_id()'};
+#    #print(STDERR "Clone $clone_id - $id\n");
     
-    foreach my $contig ( $clone->get_all_Contigs() ) {        
-        $self->write_Contig($contig,$id);
-    }
+#    foreach my $contig ( $clone->get_all_Contigs() ) {        
+#        $self->write_Contig($contig,$id);
+#    }
     
    
 }
@@ -588,62 +594,68 @@ sub write_Clone {
 sub write_Contig {
     my($self, $contig, $clone)  = @_;
        
+
+    $self->warn("this method is depreciated please use Bio::EnsEMBL::DBSQL::RawContigAdaptor->store()\n");
+    
+    my $rca = $self->get_RawContigAdaptor();
+
+    $rca->store($contig, $clone);
     #Why do we have $clone if contig->cloneid is ok?
      
-    $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI - cannot insert contig for clone $clone")
-        unless $contig->isa('Bio::EnsEMBL::DB::ContigI');   
-    my $dna = $contig->primary_seq  || $self->throw("No sequence in contig object");
-    $dna->id                        || $self->throw("No contig id entered.");
-    $clone                          || $self->throw("No clone entered.");
+   # $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI - cannot insert contig for clone $clone")
+#        unless $contig->isa('Bio::EnsEMBL::DB::ContigI');   
+#    my $dna = $contig->primary_seq  || $self->throw("No sequence in contig object");
+#    $dna->id                        || $self->throw("No contig id entered.");
+#    $clone                          || $self->throw("No clone entered.");
     
-#   (defined($contig->species)    && $contig->species   ->isa("Bio::EnsEMBL::Species"))    || $self->throw("No species object defined");
-#    (defined($contig->chromosome) && $contig->chromosome->isa("Bio::EnsEMBL::Chromosome")) 
-#                                    || $self->throw("No chromosomeobject defined");
+##   (defined($contig->species)    && $contig->species   ->isa("Bio::EnsEMBL::Species"))    || $self->throw("No species object defined");
+##    (defined($contig->chromosome) && $contig->chromosome->isa("Bio::EnsEMBL::Chromosome")) 
+##                                    || $self->throw("No chromosomeobject defined");
                                     
-#   my $species_id    = $self->write_Species   ($contig->species);
-#   my $chromosome_id = $self->write_Chromosome($contig->chromosome,$species_id);    
-    my $contigid      = $contig->id;
-    my $len           = $dna   ->length;
-    my $seqstr        = $dna   ->seq;
-    my $offset        = $contig->embl_offset();
-    my $corder         = $contig->order();
-    #my $chromosome_id = $contig->chromosome->get_db_id;
-    my  $international_name = $contig->international_name();
+##   my $species_id    = $self->write_Species   ($contig->species);
+##   my $chromosome_id = $self->write_Chromosome($contig->chromosome,$species_id);    
+#    my $contigid      = $contig->id;
+#    my $len           = $dna   ->length;
+#    my $seqstr        = $dna   ->seq;
+#    my $offset        = $contig->embl_offset();
+#    my $corder         = $contig->order();
+#    #my $chromosome_id = $contig->chromosome->get_db_id;
+#    my  $international_name = $contig->international_name();
 
     # Insert the sequence into the dna table
     $self->_insertSequence($seqstr, $contig->seq_date);
     
-    my @sql;
+ #   my @sql;
     
-    my $sth = $self->prepare("
-        insert into contig(name, dna_id, length, clone_id, offset, corder, international_name ) 
-        values(?, LAST_INSERT_ID(), ?, ?, ?, ?, ?)
-        "); 
-    #print STDERR "contig name = ",$contigid,"\n";
-    my $rv = $sth->execute(
-        $contigid,			   
-        $len,
-        $clone,
-        $offset,
-        $corder,
-        $international_name
-        );  
+#    my $sth = $self->prepare("
+#        insert into contig(name, dna_id, length, clone_id, offset, corder, international_name ) 
+#        values(?, LAST_INSERT_ID(), ?, ?, ?, ?, ?)
+#        "); 
+#    #print STDERR "contig name = ",$contigid,"\n";
+#    my $rv = $sth->execute(
+#        $contigid,			   
+#        $len,
+#        $clone,
+#        $offset,
+#        $corder,
+#        $international_name
+#        );  
           
-    $self->throw("Failed to insert contig $contigid") unless $rv;
+#    $self->throw("Failed to insert contig $contigid") unless $rv;
        
     
-    $sth = $self->prepare("select last_insert_id()");
-    $sth->execute;
-    my ($id) = $sth->fetchrow
-        or $self->throw("Failed to get last insert id");
-    #can no longer do this as get_all_SeqFeatures no longer exists
-    #if a contig is written to the database
-    # this is a nasty hack. We should have a cleaner way to do this.
-    #my @features = $contig->get_all_SeqFeatures;
-    #print(STDERR "Contig $contigid - $id\n"); 
-    # write sequence features. We write all of them together as it
-    # is more efficient
-    #$self->get_Feature_Obj->write($contig, @features);
+#    $sth = $self->prepare("select last_insert_id()");
+#    $sth->execute;
+#    my ($id) = $sth->fetchrow
+#        or $self->throw("Failed to get last insert id");
+#    #can no longer do this as get_all_SeqFeatures no longer exists
+#    #if a contig is written to the database
+#    # this is a nasty hack. We should have a cleaner way to do this.
+#    #my @features = $contig->get_all_SeqFeatures;
+#    #print(STDERR "Contig $contigid - $id\n"); 
+#    # write sequence features. We write all of them together as it
+#    # is more efficient
+#    #$self->get_Feature_Obj->write($contig, @features);
     
     return 1;
 }
@@ -665,19 +677,24 @@ sub _insertSequence {
     
     $sequence =~ tr/atgcn/ATGCN/;
     
+    $self->warn("this method is depreciated please use Bio::EnsEMBL::RawContigAdaptor->_insertSequence\n");
+    
+    my $rca = $self->get_RawContigAdaptor();
 
-    if ($self->dnadb ne $self) {
-      $self->throw("ERROR: Trying to write to a remote dna database");
-    } 
+    $rca->_insertSequence($sequence, $date);
+
+    #if ($self->dnadb ne $self) {
+#      $self->throw("ERROR: Trying to write to a remote dna database");
+#    } 
     
-    my $statement = $self->prepare("
-        insert into dna(sequence,created) 
-        values(?, FROM_UNIXTIME(?))
-        "); 
+#    my $statement = $self->prepare("
+#        insert into dna(sequence,created) 
+#        values(?, FROM_UNIXTIME(?))
+#        "); 
         
-    my $rv = $statement->execute($sequence, $date); 
+#    my $rv = $statement->execute($sequence, $date); 
     
-    $self->throw("Failed to insert dna $sequence") unless $rv;    
+#    $self->throw("Failed to insert dna $sequence") unless $rv;    
 }
 
 

@@ -6,6 +6,7 @@ package Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor;
 use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::RepeatFeature;
+use Bio::LocationI;
 use vars qw(@ISA);
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
@@ -211,7 +212,7 @@ sub store {
 	  $rf->repeat_id($cons->dbID);
 	}
       }
-
+	#print STDERR "repeat = ".$rf->analysis." ".$rf->analysis->dbID."\n";
       $sth->execute(
 		    $contig_id,
 		    $rf->start,
