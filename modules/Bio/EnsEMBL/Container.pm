@@ -117,7 +117,7 @@ sub isa {
 
   Arg [1]    : @args list of arguments
   Example    : none
-  Description: Automatically called to forward calls to the object in this 
+  Description: Automatically callanopheles_build_est_augusted to forward calls to the object in this 
                container
   Returntype : arbitrary
   Exceptions : none
@@ -173,8 +173,8 @@ sub DESTROY {
   my $obj = $self->_obj;
 
   if(!$obj) {
-    $self->warn("Bio::EnsEMBL::Container: potential memory leak, contained\n"
-		. "object is not defined during garbage collection.");
+    warn("Bio::EnsEMBL::Container: potential memory leak, contained"
+	 . " object is not defined during garbage collection.");
   } elsif($obj->can('deleteObj')) {
     $obj->deleteObj();
   }
