@@ -92,7 +92,7 @@ sub new {
   $self->external_db( $external_db ) if( defined $external_db );
   $self->external_status( $external_status ) if( defined $external_status );
   $self->display_xref( $display_xref ) if( defined $display_xref );
-  $self->edits_enabled(1);
+  $self->edits_enabled(0);
 
 
   return $self;
@@ -669,6 +669,7 @@ sub edits_enabled {
     # flush cached values that will be different with/without edits
     $self->{'cdna_coding_start'} = undef;
     $self->{'cdna_coding_end'}   = undef;
+    $self->{'transcript_mapper'} = undef;
   }
 
   return $self->{'edits_enabled'};
@@ -774,6 +775,7 @@ sub add_Attributes {
   # flush cdna coord cache b/c we may have added a SeqEdit
   $self->{'cdna_coding_start'} = undef;
   $self->{'cdna_coding_end'} = undef;
+  $self->{'transcript_mapper'} = undef;
 
   return;
 }
@@ -1211,8 +1213,8 @@ sub genomic2cdna {
 
 sub get_TranscriptMapper {
   my ( $self ) = @_;
-  $self->{'transcript_mapper'} ||= Bio::EnsEMBL::TranscriptMapper->new($self);
-  return $self->{'transcript_mapper'};
+  return $self->{'transcript_mapper'} ||=
+    Bio::EnsEMBL::TranscriptMapper->new($self);
 }
 
 
