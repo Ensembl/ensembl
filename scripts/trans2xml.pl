@@ -65,15 +65,15 @@ my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$d
 my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 my $seqio;
 
+print "<?xml version=\"1.0\" encoding=\"US-ASCII\"?>\n\n";
+print "<!DOCTYPE game SYSTEM \"GAME.dtd\">\n\n";
+print "<game>\n";
 foreach my $clone_id ($db->get_all_Clone_id()) {
     print STDERR "\nDumping  clone  $clone_id\n";
     my $clone = $db->get_Clone($clone_id);
     foreach my $contig ($clone->get_all_Contigs()) {
 	print STDERR "         contig ",$contig->id,"\n";
-	print "<?xml version=\"1.0\" encoding=\"US-ASCII\"?>\n\n";
-	print "<!DOCTYPE game SYSTEM \"GAME.dtd\">\n\n";
-	print "<game>\n";
-	print " <annotation id=\"ENS:",$contig->id,"\n";
+	print " <annotation id=\"ENS:",$contig->id,"\">\n";
 	print "   <name>ENS:",$contig->id,"</name>\n";
 	print "    <version>1</version>\n";
 	print "    <date> </date>\n";
@@ -140,11 +140,10 @@ foreach my $clone_id ($db->get_all_Clone_id()) {
 		    }
 		}
 		print " </feature_set>\n";
-		print "</game>\n";
 	    }
 	}
     }
 }
-
+print "</game>\n";
 
 
