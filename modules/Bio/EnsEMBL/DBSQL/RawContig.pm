@@ -1916,7 +1916,10 @@ sub _load_overlaps {
         # seem to make queries inordinately slow.
         my $overlap_source_sub  = $self->dbobj->contig_overlap_source();
         my $overlap_cutoff      = $self->overlap_distance_cutoff();
-        
+        if( !defined $overlap_cutoff) {
+	    $overlap_cutoff = 100000;
+	}
+
         my( @overlap );
         foreach my $i (0,1) {
             my $query_str = $queries[$i];
