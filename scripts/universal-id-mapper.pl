@@ -3,11 +3,26 @@
 # 
 # quick script for id-mapping pretty much anything to anything. 
 #
+# The idea is that this script finds, in STDIN, *all* and *only*,
+# the ID's given in the file.map argument, and replaces them on STDOUT. 
+#
+# To make this process safer (i.e., if things on STDIN look like ID's but
+# really should be left alone), make the regexp args (see Usage or -h) more
+# restrictive. This will be especially needed for id's that are just
+# numbers. 
+#
+# To see what happens, use the verbose option, which writes all
+# unmatcheable mappable-ids-or-at-least-they-looked-like-it to stderr. 
+#
+# To make the things faster, use the -o option (or its opposite, -n)
+#
+# Since the script uses STDIN and STDOUT, you can set up a pipe of
+# different mappers (operating on either the same or different id's). 
 
 use strict; 
 use Getopt::Std;
 
-my $opts='hi:d:v:o:n:';
+my $opts='hi:d:vo:n:';
 use vars qw($opt_h $opt_i $opt_d $opt_v $opt_o $opt_n);
 
 my $dflt_i = "[A-Z]{3,6}[PGET]\\d{11}";
