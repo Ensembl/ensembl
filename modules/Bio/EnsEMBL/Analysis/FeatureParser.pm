@@ -89,7 +89,8 @@ sub _initialize {
     $self->{_features} = [];   # This stores the features.
     $self->{_repeats}  = [];   # This stores the features.
     $self->{_genscan}  = [];   # This stores the genscan.
-    
+    $self->{ _sts_features } = []; 
+
     # DEBUG
     print_genes($gs,$seq) if $self->_debug;
 
@@ -302,7 +303,171 @@ sub read_Genscan {
 	push(@{$self->{_genscan}},$gene);
     }
 }
-	
+
+
+sub merge_two_entries {
+  my ( $elem1, $elem2 ) = @_;
+  my ( $coStart1, $coEnd1, $stsStart1, $stsEnd1, $conf1 ) = @$elem1;
+  my ( $coStart2, $coEnd2, $stsStart2, $stsEnd2, $conf2 ) = @$elem2;
+  
+  # different directions, dont merge
+  if(( $coStart1 > $coEnd1 ) && ( $coStart2 < $coEnd2 )) {
+    return undef;
+  }
+  if(( $coStart1 < $coEnd1 ) && ( $coStart2 > $coEnd2 )) {
+    return undef;
+  }
+  
+  my $reverse = ($coStart1 > $coEnd1 );
+  my $merge = 0;
+  
+  # overlapping ?
+  
+  if(( $coStart1 > $coStart2) && ($coStart1 < $coEnd2)) {
+    $merge = 1;
+  } elsif(( $coStart2 > $coStart1 ) && ( $coStart2 < $coEnd1 )) {
+    $merge = 1;
+  } else {
+    my $dist1 = abs( $stsStart1- $stsStart2 );
+    my $dist2 = abs( $coStart1 - $coStart2 );
+    
+    if( abs( $dist1 - $dist2 ) <=5 ) {
+      $merge = 1;
+    }
+  }
+  
+  if( $merge ) {
+    #	print "Merge -->\n";
+    #	print( join( " ", @$elem1),"\n" );
+    #	print( join( " ", @$elem2),"\n" );
+    #	print "<-- Merge\n\n";
+    
+    my @tmp;
+    $tmp[2] = $stsStart1<$stsStart2?$stsStart1:$stsStart2;
+    $tmp[3] = $stsEnd1<$stsEnd2?$stsEnd2:$stsEnd1;
+    
+    if( $reverse ) {
+      $tmp[0] = $coStart1<$coStart2?$coStart2:$coStart1;
+      $tmp[1] = $coEnd1<$coEnd2?$coEnd1:$coEnd2;
+    } else {
+      $tmp[0] = $coStart1<$coStart2?$coStart1:$coStart2;
+      $tmp[1] = $coEnd1<$coEnd2?$coEnd2:$coEnd1;
+    }
+    $tmp[4] = $conf1>$conf2?$conf2:$conf1;
+    return \@tmp;
+  } else {
+    return undef;
+  }
+}
+
+sub read_StsFeatures {
+  my ($self) = @_;
+  my $filename = $self->clone_dir."/".$self->disk_id.".blastn_dbsts.msptmp";
+  # print STDERR "File: $filename\n";
+
+  if(( ! -e $filename )||( ! -r $filename )) {
+    print STDERR "$filename not found.\n";
+    return;
+  }
+  my $analysis = new Bio::EnsEMBL::Analysis
+    ( -program => "blastn",
+      -gff_source => "blastn",
+      -gff_feature => "similarity",
+      -db => "dbsts",
+      -db_version => 1,
+      -program_version => 1 );
+
+  open (FH, $filename ) or return;
+  my %idHash;
+
+  while( <FH> ) {
+    # print STDERR "read line\n";
+    next, if /^\s*$/;
+    my @line = split;
+    $line[7] =~ s/[^|]*\|([^|]*)\|.*/$1/g;
+    $line[7] =~ s/([^.]*)\..*/$1/g;
+
+    if(( $line[6]-$line[5]+1 >= 100 ) && ( $line[1] >= 98.0 )) { 
+      push( @{$idHash{$line[7]}}, [ $line[2], $line[3], $line[5], $line[6], $line[1] ]);
+    }
+    #    print join( " ", @line ),"\n";
+  }
+
+  # now try merge multiple matches
+  my $merged;
+  my @arr;
+  my $elem;
+  my $tmp;
+
+  foreach my $key ( keys %idHash ) {
+    # no merge on single hits 
+    next, if $#{$idHash{$key}} == 0;
+
+    @arr = @{$idHash{$key}};
+    
+    # print "$key\n";
+    # grep { print join( " ", @$_ ), "\n"; } @arr;
+
+    my @result;
+    while( $elem = shift( @arr )) {
+	$merged = 0;
+	foreach my $elem2 (@result) {
+	    if( $tmp = merge_two_entries( $elem, $elem2 )) {
+		$elem2 = $tmp;
+		$merged = 1;
+		last;
+	    }
+	}
+	if( !$merged ) {
+	    push( @result, $elem );
+	}
+    }
+    # print "$key\n";
+    # grep { print join( " ", @$_ ), "\n"; } @result;
+    $idHash{$key} = \@result;
+  }
+
+  # finally make Bio::EnsEMBL::FeaturePair objects
+  
+  foreach my $key ( keys %idHash ) {
+    @arr = @{$idHash{$key}};
+    foreach my $featureArr (@arr) {
+      my ( $start, $end, $hStart, $hEnd, $score ) = @$featureArr;
+      my $strand = (($start < $end) ? 1 : -1);
+
+      my $f1 = new Bio::EnsEMBL::SeqFeature
+	( -seqname => $self->id,
+	  -start   => $start,
+	  -end     => $end,
+	  -score   => $score,
+	  -source_tag  =>'blastn',
+	  -primary_tag =>'similarity',
+	  -strand      => $strand,
+	  -analysis    => $analysis,
+      );
+
+      my $f2 = new Bio::EnsEMBL::SeqFeature
+	( -seqname => $key,
+	  -start   => $hStart,
+	  -end     => $hEnd,
+	  -score   => $score,
+	  -source_tag  =>'blastn',
+	  -primary_tag =>'similarity',
+	  -strand      => 1,
+	  -analysis    => $analysis,
+	);
+
+      my $fp = new Bio::EnsEMBL::FeaturePair
+	( -feature1 => $f1,
+	  -feature2 => $f2
+	);
+      # print STDERR "Feature $key stored.\n";
+      push( @{$self->{_sts_features}}, $fp );
+    }
+  }
+}
+
+
 sub each_Genscan {
     my ($self) = @_;
 
@@ -324,6 +489,14 @@ sub add_Feature {
 	push(@{$self->{_features}},$f);
     }
 
+}
+
+sub each_StsFeature {
+    my ($self) = @_;
+
+    if (defined($self->{_sts_features})) {
+	return @{$self->{_sts_features}};
+    } 
 }
 
 sub each_Feature {

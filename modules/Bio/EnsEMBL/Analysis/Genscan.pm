@@ -310,7 +310,7 @@ sub _set_exon_phases {
 EXON:    foreach my $exon ($tran->each_Exon) {
 #	print("Exon coords are " . $exon->start . " " . $exon->end . " " . ($exon->end - $exon->start + 1) . "\n");
 
-	my $seq   = $contig_dna->str($exon->start,$exon->end);
+	my $seq   = $contig_dna->subseq($exon->start,$exon->end);
 
 	if ($exon->strand == -1) {
 	    $seq =~ tr/ATCGatcg/TAGCtagc/;
@@ -339,7 +339,7 @@ EXON:    foreach my $exon ($tran->each_Exon) {
 		# If we have a stop codon at the end of the translation
 		# chop it off before comparing
 		my $tmp = $trans[$i]->seq();
-#		print(STDERR "Trans : $i : " . $trans[$i]->seq . "\n");
+		#print(STDERR "Trans : $i : " . $trans[$i]->seq . "\n");
 		if (substr($tmp,-1) eq "*") {
 		    $tmp = substr($tmp,0,-1);
 		}
