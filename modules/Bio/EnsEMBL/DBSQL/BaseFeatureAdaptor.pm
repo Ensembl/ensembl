@@ -165,7 +165,7 @@ sub fetch_by_contig_id_and_score{
 
   my $constraint;
 
-  if(!$score){
+  if(!defined $score){
     $self->throw("need a score even if its 0\n");
   } else{
     $constraint = "score > $score";
@@ -222,7 +222,7 @@ sub fetch_by_Slice_and_score {
   my ($self, $slice, $score, $logic_name) = @_;
   my $constraint;
 
-  if(!$score) {
+  if(!defined $score) {
     $self->throw("need a score even if its 0\n");
   } else {
     $constraint = "score > $score";
@@ -257,7 +257,7 @@ sub fetch_by_assembly_location_and_score{
   my ($self, $start, $end, $chr, $type, $score, $logic_name) = @_;
   my $constraint;
 
-  if(!$score) {
+  if(!defined $score) {
     $self->throw("need a score even if its 0\n");
   } else {
     $constraint = "score > $score";

@@ -306,20 +306,6 @@ sub lite_DBAdaptor {
 }
 
 
-
-=head2 SNP_DBAdaptor
-
-  Arg    [1]: Bio::EnsEMBL::Lite::DBAdaptor $liteDBConnection
-              From there you get the denormalized GeneAdaptor.
-  Function  : The liteDB is set in EnsWEB to get denormalized access to
-              EnsEMBL data. It provides a GeneAdaptor that makes half
-              filled Genes.
-  Returntype: Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor
-  Exceptions: 
-  Caller    : set in EnsWEB, get internal
-
-=cut
-
 sub SNP_DBAdaptor {
   my ($self, $arg) = @_;
 
@@ -341,6 +327,16 @@ sub map_DBAdaptor {
   return $self->{_mapDB};
 }
 
+
+sub est_DBAdaptor {
+  my ($self, $arg) = @_;
+  
+  if(defined $arg) {
+    $self->{_estDB} = $arg;
+  }
+
+  return $self->{_estDB};
+}
 
 sub get_GeneAdaptor {
     my( $self ) = @_;
@@ -419,6 +415,8 @@ sub get_SliceAdaptor {
 
 sub get_AnalysisAdaptor {
     my( $self ) = @_;
+
+#    print "Getting an analysis adaptor from" . $self->dbname() . "\n";
 
     return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::AnalysisAdaptor");
 }
@@ -499,7 +497,13 @@ sub get_ProteinAlignFeatureAdaptor {
 sub get_DnaAlignFeatureAdaptor {
   my $self = shift;
   
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor");
+  my $core_adaptor = 
+    $self->_get_adaptor("Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor");
+
+  #return a proxy adaptor which can choose between the core and est DBs
+  return 
+    $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor",
+		       $core_adaptor);
 }
 
 =head2 get_AssemblyMapperAdaptor

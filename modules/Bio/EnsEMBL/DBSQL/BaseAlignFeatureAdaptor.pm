@@ -56,7 +56,7 @@ sub fetch_by_contig_id_and_pid {
 
   my $constraint;
 
-  if(!$pid) {
+  if(!defined $pid) {
     $self->throw("need a pid even if its 0\n");
   } else {
     $constraint = "perc_ident > $pid";
@@ -73,7 +73,7 @@ sub fetch_by_Slice_and_pid {
   my ($self,$slice,$pid, $logic_name) = @_;
   my $constraint;
 
-  if(!$pid){
+  if(!defined $pid){
     $self->throw("need a pid even if its 0\n");
   }else{
     $constraint = "perc_ident > $pid";
@@ -87,7 +87,7 @@ sub fetch_by_assembly_location_and_pid{
   my ($self,$start,$end,$chr,$type, $pid, $logic_name) = @_;
   my $constraint;
 
-  if(!$pid){
+  if(!defined $pid){
     $self->throw("need a pid even if its 0\n");
   }else{
     $constraint = "perc_ident > $pid";
