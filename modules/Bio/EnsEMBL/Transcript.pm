@@ -1674,11 +1674,10 @@ Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_peptide_variations
 =cut
 
 sub get_all_peptide_variations {
-  my $self = shift;
-  my $snps = shift;
+  my ($self, $source, $snps) = @_;
 
   if(!$snps) {
-    my $shash = Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs($self);
+    my $shash = Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs($self, $source);
     $snps = $shash->{'coding'};
   }
 

@@ -54,7 +54,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 =head2 get_all_peptide_variations
 
   Arg [1]    : $transcript the transcript to obtain the peptide variations for
-  Arg [1]    : $snps listref of coding snps in cdna coordinates
+  Arg [2]    : $snps listref of coding snps in cdna coordinates
   Example    : $pep_hash = get_all_peptide_variations($transcript, \@snps);
   Description: Takes a list of coding snps on this transcript in
                which are in cdna coordinates and returns a hash with peptide
@@ -185,9 +185,10 @@ sub get_all_peptide_variations {
 
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript
 
-  Arg [1]    : (optional) int $flanking
+  Arg [2]    : (optional) int $flanking
                The number of basepairs of transcript flanking sequence to
                retrieve snps from (default 0)
+  Arg [3]    : $source type of database source (dbSNP, Glovar)
   Example    : $snp_hashref = get_all_transcript_SNPs($transcript)
   Description: Retrieves all snps found within the region of the 
                provided transcript
@@ -215,6 +216,7 @@ sub get_all_peptide_variations {
 sub get_all_SNPs {
   my $transcript = shift;
   my $flanking = shift || 0;
+  my $source = shift;
 
   if(!ref($transcript) || !$transcript->isa('Bio::EnsEMBL::Transcript')) {
     throw('Bio::EnsEMBL::Transcript argument required.');
@@ -244,7 +246,12 @@ sub get_all_SNPs {
   $transcript = $transcript->transfer( $slice );
 
   # get all snps in the transcript region
-  my $snps = $slice->get_all_SNPs;
+  my $snps;
+  if ($source eq 'glovar') {
+    $snps = $slice->get_all_ExternalFeatures('GlovarSNP');
+  } else {
+    $snps = $slice->get_all_SNPs;
+  }
 
   my $trans_start  = $flanking + 1;
   my $trans_end    = $slice->length - $flanking;
@@ -321,6 +328,7 @@ sub get_all_SNPs {
 =head2 get_all_cdna_SNPs
 
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript
+  Arg [2]    : $source type of database source (dbSNP, Glovar)
   Example    : $cdna_snp_hasref = $transcript->get_all_cdna_SNPs;
   Description: Retrieves all snps found within exons of the provided
                transcript.
@@ -340,10 +348,10 @@ sub get_all_SNPs {
 =cut
 
 sub get_all_cdna_SNPs {
-  my $transcript = shift;
+  my ($transcript, $source) = @_;
 
   #retrieve all of the snps from this transcript
-  my $all_snps = get_all_SNPs($transcript);
+  my $all_snps = get_all_SNPs($transcript, 0, $source);
   my %snp_hash;
 
   my @cdna_types = ('three prime UTR', 'five prime UTR','coding');
