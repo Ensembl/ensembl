@@ -111,23 +111,24 @@ sub new {
 sub map_coordinates_to_assembly {
     my ($self, $contig_id, $start, $end, $strand) = @_;
 
-    unless ($contig_id =~ /^\d+$/) {
-        $self->throw("Expecting numeric contig_id, but got '$contig_id'");
-    }
+# REGEXPs slow things down...
+#    unless ($contig_id =~ /^\d+$/) {
+#        $self->throw("Expecting numeric contig_id, but got '$contig_id'");
+#    }
 
-    unless ($start =~ /^\d+$/) {
-      unless($start =~ /^-\d+$/){
-        $self->throw("Expecting integer for contig start coord, but got '$start'");
-      }
-    }
+#    unless ($start =~ /^\d+$/) {
+#      unless($start =~ /^-\d+$/){
+#        $self->throw("Expecting integer for contig start coord, but got '$start'");
+#      }
+#    }
 
-    unless ($end =~ /^\d+$/) {
-        $self->throw("Expecting integer for contig end coord, but got '$end'");
-    }
+#    unless ($end =~ /^\d+$/) {
+#        $self->throw("Expecting integer for contig end coord, but got '$end'");
+#    }
 
-    unless ($strand =~ /^[+-]?1$/ || $strand == 0) {
-        $self->throw("Expecting +/- 1 for contig strand, but got '$strand'");
-    }
+#    unless ($strand =~ /^[+-]?1$/ || $strand == 0) {
+#        $self->throw("Expecting +/- 1 for contig strand, but got '$strand'");
+#    }
 
     if( ! $self->_have_registered_contig( $contig_id )) {
       $self->register_region_around_contig( $contig_id, 0, 0 );
@@ -302,20 +303,21 @@ sub register_region {
 sub register_region_around_contig {
    my ($self, $contig_id, $left, $right) = @_;
 
-   unless ($contig_id =~ /^\d+$/) {
-      $self->throw("Expecting integer for RawContig id, but got '$contig_id'");
-   }
+#   unless ($contig_id =~ /^\d+$/) {
+#      $self->throw("Expecting integer for RawContig id, but got '$contig_id'");
+#   }
 
-   unless ($left =~ /^\d+$/) {
-      $self->throw("Expecting integer for 5 prime extension, but got '$left'");
-   }
+#   unless ($left =~ /^\d+$/) {
+#      $self->throw("Expecting integer for 5 prime extension, but got '$left'");
+#   }
 
-   unless ($right =~ /^\d+$/) {
-      $self->throw("Expecting integer for 3 prime extension, but got '$right'");
-   }
+#   unless ($right =~ /^\d+$/) {
+#      $self->throw("Expecting integer for 3 prime extension, but got '$right'");
+#   }
 
    
-   if( $self->_have_registered_contig( $contig_id ) && $left == 0 && $right==0 ) {
+   if( $self->_have_registered_contig( $contig_id ) 
+       && $left == 0 && $right==0 ) {
      if( $self->_mapper->list_pairs( $contig_id, -1, -1, "rawcontig" )) {
        return 1;
      } else {
@@ -323,8 +325,8 @@ sub register_region_around_contig {
      }
    }
    
-   my ( $chr_name, $chr_start, $chr_end ) = $self->adaptor()->register_contig
-     ( $self, $self->_type, $contig_id );
+   my ( $chr_name, $chr_start, $chr_end ) = 
+     $self->adaptor()->register_contig( $self, $self->_type, $contig_id );
 
    if( defined $chr_name ) {
      $self->register_region( $chr_name, $chr_start-$left, $chr_end+$right );

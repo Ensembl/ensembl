@@ -229,6 +229,31 @@ sub strand {
     return $self->{'_gsf_strand'};
 }
 
+
+=head2 move
+
+  Arg [1]    : int $start
+  Arg [2]    : int $end
+  Arg [3]    : (optional) int $strand 
+  Example    : $feature->move(100, 200, -1);
+  Description: Moves a feature to a different location.  This is faster
+               then calling 3 seperate accesors in a large loop.
+  Returntype : none
+  Exceptions : none
+  Caller     : BaseFeatureAdaptor
+
+=cut
+
+sub move {
+  my ($self, $start, $end, $strand)  = @_;
+
+  $self->{'_gsf_start'} = $start;
+  $self->{'_gsf_end'} = $end;
+  if(defined $strand) {
+    $self->{'_gsf_strand'} = $strand;
+  }
+}
+
 =head2 score
 
  Title   : score

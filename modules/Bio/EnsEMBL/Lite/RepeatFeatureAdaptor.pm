@@ -57,43 +57,46 @@ sub fetch_by_Slice {
 		   $slice->chr_start() );
     
     my @repeats;
-    while( my $row = $sth->fetchrow_arrayref() ) {
-      my $id = $row->[0];
-      my $hid = $row->[1];
-      my $chr_name = $row->[2];
-      my $start = $row->[3];
-      my $end = $row->[4];
-      my $strand = $row->[5];
+    my($rc, $core, $repeat_adaptor, $rc_adaptor);
+    my $slice_start = $slice->chr_start + 1;
+    my %rc_hash;
 
-      #create a partially filled repeat consensus object
-      my $rc = new Bio::EnsEMBL::RepeatConsensus;
-      my $core = $self->db()->get_db_adaptor('core');
+    if($core = $self->db()->get_db_adaptor('core')) {
+      $repeat_adaptor = $core->get_RepeatFeatureAdaptor();
+      $rc_adaptor = $core->get_RepeatConsensusAdaptor();
+    } else {
+      $repeat_adaptor = $self;
+      $self->warn("Core Database not attached to lite database.  Not able to 
+                   Retrieve repeat consensus adaptor for repeat features\n");
+    }
 
-      #create a partially filled repeat object
-      my $r = new Bio::EnsEMBL::RepeatFeature();
-      
-      $rc->name($hid);
-      $rc->dbID($id);
-      $r->repeat_consensus($rc);
-     
-      $r->start($start - $slice->chr_start() + 1);
-      $r->end($end - $slice->chr_start() + 1);
-      $r->strand($strand);
+    my ($id, $hid, $chr_name, $start, $end, $strand);
+    $sth->bind_columns(\$id, \$hid, \$chr_name, \$start, \$end, \$strand);
 
-      if($core) {
-	$rc->adaptor($core->get_RepeatConsensusAdaptor());
-
-	#set the adaptor to be the proxy repeat feature adaptor
-	$r->adaptor($core->get_RepeatFeatureAdaptor());
-      } else {
-	$self->warn("Core Database not attached to lite database.  Not able to 
-                     Retrieve repeat consensus adaptor for repeat features\n");
-	$r->adaptor($self);
+    while($sth->fetch) {
+      #cache repeat_consensi to reduce object construction overhead
+      unless($rc = $rc_hash{$hid}) {
+	$rc = new Bio::EnsEMBL::RepeatConsensus();
+	$rc->name($hid);
+	if($rc_adaptor) {
+	  $rc->adaptor($rc_adaptor);
+	}
+	$rc_hash{$hid} = $rc;
       }
 
-      
-      push @repeats, $r;
+      #create partially filled repeat object using fast (hacky) constructor 
+      push @repeats, Bio::EnsEMBL::RepeatFeature->new_fast(
+			   { '_gsf_tag_hash'  => {},
+			     '_gsf_sub_array' => [],
+			     '_parse_h'       => {},
+                             '_start'         => $start - $slice_start,
+                             '_end'           => $end - $slice_start,
+			     '_strand'        => $strand,
+			     '_adaptor'       => $repeat_adaptor,
+			     '_repeat_consensus' => $rc,
+			     '_db_id'         => $id } );
     }
+
 
     return @repeats;
 }

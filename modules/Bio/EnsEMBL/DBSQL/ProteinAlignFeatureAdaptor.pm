@@ -147,7 +147,7 @@ sub _objs_from_sth {
   
   my $rca = $self->db()->get_RawContigAdaptor();
   my $aa = $self->db()->get_AnalysisAdaptor();
-  my @features = ();
+  my @features;
 
   $sth->bind_columns(\$protein_align_feature_id, \$contig_id, \$contig_start, 
 		     \$contig_end, \$analysis_id, \$contig_strand, \$hit_start,

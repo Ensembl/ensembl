@@ -150,9 +150,6 @@ sub map_coordinates{
    my @result;
 
    foreach my $pair ( @{$hash->{$id}} ) {
-
-
-
        my $self_coord   = &$self_func($pair);
        my $target_coord = &$target_func($pair);
 
@@ -165,8 +162,6 @@ sub map_coordinates{
        if( $self_coord->start > $end ) {
 	   last;
        }
-
-
 
        if( $start < $self_coord->start ) {
 	   # gap detected

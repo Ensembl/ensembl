@@ -48,6 +48,7 @@ use strict;
 # Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+#use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 use Bio::EnsEMBL::Utils::Cache;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
@@ -291,7 +292,7 @@ sub fetch_by_Slice_constraint {
   my($self, $slice, $constraint, $logic_name) = @_;
 
   my $key = join($slice->name, $constraint, $logic_name);
-  
+
   #check the cache
   if($self->{'_slice_feature_cache'}{$key}) {
     return @{$self->{'_slice_feature_cache'}{$key}};
@@ -313,12 +314,10 @@ sub fetch_by_Slice_constraint {
 						 $logic_name);
 
   #convert from chromosomal coordinates to slice coordinates
+  my $chr_start = $slice->chr_start - 1;
   foreach my $f (@$features){
-    my $start = ($f->start - ($slice->chr_start - 1));
-    my $end = ($f->end - ($slice->chr_start - 1));
-   
-    $f->start($start);
-    $f->end($end);
+    #shift the feature start and end
+    $f->move($f->start() - $chr_start,  $f->end() - $chr_start);
     $f->attach_seq($slice);
   }
 
@@ -529,13 +528,19 @@ sub fetch_by_assembly_location_constraint {
   my @out;
   
   #convert the features to assembly coordinates from raw contig coordinates
+  #&eprof_start('rawcontig2assembly transform');
+
+  my ($start, $end, $strand);
   while(my $f = shift @$features) {
     #since feats were obtained in contig coords, attached seq is a contig
     my $contig_id = $f->entire_seq->dbID();
+
+    #&eprof_start('rawcontig2assembly CALL');
     my @coord_list = 
       $mapper->map_coordinates_to_assembly($contig_id, $f->start(),
 					   $f->end(),$f->strand(),"rawcontig");
-       
+    #&eprof_end('rawcontig2assembly CALL');
+    
     # coord list > 1 - means does not cleanly map At the moment, skip
     if( scalar(@coord_list) > 1 ) {
       next;
@@ -548,19 +553,27 @@ sub fetch_by_assembly_location_constraint {
       next;
     }
 
+    $start = $coord->start();
+    $end = $coord->end();
+    $strand = $coord->strand();
+
     #maps to region outside desired area
-    if(!($coord->start() >= $chr_start) ||
-       !($coord->end() <= $chr_end)) {
+    if(($start < $chr_start) || ($end > $chr_end)) {
       next;
     }
-        
-    $f->start($coord->start());
-    $f->end($coord->end());
-    $f->strand($coord->strand());
+    
+    #shift the feature start, end and strand in one call
+    $f->move($start, $end, $strand);
+    #$f->start($start);
+    #$f->end($end);
+    #$f->strand($strand);
     #$f->seqname($coord->id());
+    
 
     push(@out,$f);
   }
+  
+  #&eprof_end('rawcontig2assembly transform');
   
   return \@out;
 }

@@ -187,7 +187,6 @@ sub _objs_from_sth {
   
   my $rca = $self->db()->get_RawContigAdaptor();
   my $aa = $self->db()->get_AnalysisAdaptor();
-  my @features = ();
   
   $sth->bind_columns(\$dna_align_feature_id, \$contig_id, \$analysis_id,
 		     \$contig_start, \$contig_end, \$contig_strand, 
@@ -195,7 +194,7 @@ sub _objs_from_sth {
 		     \$evalue, \$perc_ident, \$score);
 
   my ($analysis, $contig);
-
+  my @features;
   my %a_hash;
   my %c_hash;
   while($sth->fetch) {

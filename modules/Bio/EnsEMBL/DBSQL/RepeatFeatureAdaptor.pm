@@ -151,42 +151,65 @@ sub _objs_from_sth {
   my $ca = $self->db()->get_RawContigAdaptor();
   my $aa = $self->db->get_AnalysisAdaptor();
 
-  my $hashref;
-  my @features = ();
+  my @features;
+  my %rc_hash;
+  my %analysis_hash;
+  my %contig_hash;
 
-  while($hashref = $sth->fetchrow_hashref()) {
+  my($repeat_feature_id, $contig_id, $contig_start, $contig_end, 
+     $contig_strand, $repeat_consensus_id, $repeat_start, $repeat_end,
+     $analysis_id, $score, $repeat_consensus_id, $repeat_name, $repeat_class,
+     $repeat_consensus);
+  
+  $sth->bind_columns( \$repeat_feature_id, \$contig_id, \$contig_start, 
+                      \$contig_end, \$contig_strand, \$repeat_consensus_id, 
+                      \$repeat_start,\$repeat_end, \$analysis_id, \$score, 
+                      \$repeat_consensus_id, \$repeat_name, \$repeat_class,
+                      \$repeat_consensus );
+
+  my $rc;
+  my $contig;
+  my $analysis;
+
+  while($sth->fetch()) {
     #create a repeat consensus object
-    my $rc = new Bio::EnsEMBL::RepeatConsensus;
-    $rc->dbID($hashref->{'repeat_consensus_id'});
-    $rc->repeat_class($hashref->{'repeat_class'});
-    $rc->name($hashref->{'repeat_name'});
-    $rc->repeat_consensus($hashref->{'repeat_consensus'});
-    $rc->adaptor($rca);
+    unless($rc = $rc_hash{$repeat_consensus_id}) {
+      $rc = new Bio::EnsEMBL::RepeatConsensus;
+      $rc->dbID($repeat_consensus_id);
+      $rc->repeat_class($repeat_class);
+      $rc->name($repeat_name);
+      $rc->repeat_consensus($repeat_consensus);
+      $rc->adaptor($rca);
+
+      $rc_hash{$repeat_consensus_id} = $rc;
+    }
     
-    my $analysis = $aa->fetch_by_dbID($hashref->{'analysis_id'});
+    unless($analysis = $analysis_hash{$analysis_id}) {
+      $analysis = $aa->fetch_by_dbID($analysis_id);
+      $analysis_hash{$analysis_id} = $analysis;
+    }
+
+    unless($contig = $contig_hash{$contig_id}) {
+      $contig = $ca->fetch_by_dbID($contig_id);
+      $contig_hash{$contig_id} = $contig;
+    }
 
     #create the new repeat feature
-    my $r = new Bio::EnsEMBL::RepeatFeature;
-    $r->dbID($hashref->{'repeat_feature_id'});
-    
-    $r->start($hashref->{'contig_start'});
-    $r->end($hashref->{'contig_end'});
-    
-    $r->score($hashref->{'score'});
-    $r->strand( $hashref->{'contig_strand'} );  
-    $r->hstart( $hashref->{'repeat_start'} );
-    $r->hend( $hashref->{'repeat_end'} );
-    
-    $r->analysis($analysis);
-    $r->repeat_consensus($rc);
-    $r->adaptor($self);
-
-    #attach the appropriate contig to this sequence
-    my $contig = $ca->fetch_by_dbID($hashref->{'contig_id'});
-    
-    $r->attach_seq($contig);
-    
-    push @features, $r;
+    push @features, Bio::EnsEMBL::RepeatFeature->new_fast(
+			    { '_gsf_tag_hash'  =>  {},
+			      '_gsf_sub_array' =>  [],
+                              '_parse_h'       =>  {},
+                              '_analysis'      =>  $analysis,
+                              '_start'         =>  $contig_start,
+                              '_end'           =>  $contig_end,
+                              '_strand'        =>  $contig_strand,
+                              '_score'         =>  $score,
+                              '_hstart'        =>  $repeat_start,
+                              '_hend'          =>  $repeat_end,
+                              '_repeat_consensus' => $rc,
+			      '_adaptor'       =>  $self,
+			      '_gsf_seq'       =>  $contig,
+                              '_db_id'         =>  $repeat_feature_id } );
   }
   
   return \@features;

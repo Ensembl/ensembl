@@ -12,6 +12,13 @@ use vars '@ISA';
 @ISA = qw{ Bio::EnsEMBL::SeqFeature Bio::LocationI };
 
 
+#ultra fast hacky constructor for rapid feature creation
+sub new_fast {
+  my ($class, $hashref) = @_;
+
+  return bless $hashref, $class;
+}
+
 # new() comes from SeqFeature::new()
 
 
