@@ -187,8 +187,10 @@ sub _initialize {
 
   # declared here as an array, but data is parsed in
   # method call to get features
+
   $self->{'_sf_array'} = [];
- 
+  $self->{'_sf_repeat_array'} = [];
+
   # set stuff in self from @args
   return $make; # success - we hope!
 }
@@ -216,6 +218,7 @@ sub get_all_SeqFeatures {
     return @out;
 }
 
+
 =head2 get_all_RepeatFeatures
 
  Title   : get_all_RepeatFeatures
@@ -228,23 +231,37 @@ sub get_all_SeqFeatures {
 
 =cut
 
+
 sub get_all_RepeatFeatures {
     my ($self) = @_;
-
-    my $debug=0;
-
-    my $sfobj=Bio::EnsEMBL::Analysis::FeatureParser->new($self->id,
-							 $self->_clone_dir,
-							 $self->disk_id,
-							 $self->_gs,
-							 $self->seq,
-							 'repeat',
-							 $debug);
-
-    push(@{$self->{'_sf_array'}},$sfobj->each_Feature);
     
+    if (!$self->{_read_Repeats}) {
+	$self->featureParser->read_Repeats;
+	$self->{_read_Repeats} = 1;
+    } 
+
     # return array of objects
-    return @{$self->{'_sf_array'}};
+    return $self->featureParser->each_Repeat;
+}
+
+
+sub featureParser {
+    my ($self) = @_;
+
+    my $debug = 0;
+
+    if (!defined($self->{_featureParser})) {
+	my $sfobj=Bio::EnsEMBL::Analysis::FeatureParser->new($self->id,
+							     $self->_clone_dir,
+							     $self->disk_id,
+							     $self->_gs,
+							     $self->seq,
+							     $debug);
+
+	$self->{_featureParser} = $sfobj;
+    }
+
+    return $self->{_featureParser};
 }
 
 =head2 get_all_SimilarityFeatures
@@ -262,22 +279,14 @@ sub get_all_RepeatFeatures {
 sub get_all_SimilarityFeatures {
     my ($self) = @_;
 
-    # get sf object
-    my $debug=0;
-
-    my $sfobj=Bio::EnsEMBL::Analysis::FeatureParser->new($self->id,
-							 $self->_clone_dir,
-							 $self->disk_id,
-							 $self->_gs,
-							 $self->seq,
-							 'similarity',
-							 $debug);
-
-    push(@{$self->{'_sf_array'}},$sfobj->each_Feature);
-    
+    if (!defined($self->{_read_Similarities})) {
+	$self->featureParser->read_Similarities;
+	$self->{_read_Similarities} = 1;
+    }
     # return array of objects
-    return @{$self->{'_sf_array'}};
+    return $self->featureParser->each_Feature;
 }
+
 
 =head2 get_all_Genes
 
