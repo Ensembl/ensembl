@@ -91,7 +91,7 @@ sub fetch_all_by_gene_id_list {
   my @genes = ();
   my $core_gene_adaptor = $self->db->get_db_adaptor('core')->get_GeneAdaptor;
 
-  if($empty_flag) {
+  if($empty_flag && @$gene_ids) {
     my $gene_list = join(', ', @$gene_ids); 
     my $sth = $self->prepare("SELECT gene_id, gene_name, chr_name, chr_start, 
                                      chr_end, chr_strand
