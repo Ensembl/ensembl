@@ -116,7 +116,8 @@ sub fetch_by_dbID {
     return $self->{_cache}->{$id};
   }
 
-  my $sth = $self->prepare( q{
+
+  my $query = q{
     SELECT analysisId, logic_name,
            program,program_version,program_file,
            db,db_version,db_file,
@@ -124,8 +125,10 @@ sub fetch_by_dbID {
            gff_source,gff_feature,
            created, parameters
     FROM analysisprocess
-    WHERE analysisId = ? } );
-  
+      WHERE analysisId = ? };
+
+  print STDERR "Query is $query : $id \n";
+  my $sth = $self->prepare($query);  
   $sth->execute( $id );
   my $rowHashRef = $sth->fetchrow_hashref;
   if( ! defined $rowHashRef ) {

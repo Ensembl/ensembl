@@ -966,6 +966,7 @@ sub get_all_SimilarityFeatures {
        if (!$analhash{$analysisid}) {
 	   
 	   my $analysis_adp=Bio::EnsEMBL::DBSQL::AnalysisAdaptor->new($self->dbobj);
+
 	   eval {
 	     $analysis = $analysis_adp->fetch_by_dbID($analysisid);
 	     $analhash{$analysisid} = $analysis;
