@@ -103,8 +103,8 @@ sub flush {
   my $from = $self->from();
   my $to = $self->to();
 
-  $self->{"pair_$from"} = {};
-  $self->{"pair_$to"} = {};
+  $self->{"_pair_$from"} = {};
+  $self->{"_pair_$to"} = {};
 
   $self->{'pair_count'} = 0;
 }
@@ -614,18 +614,18 @@ sub _merge_pairs {
               ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
               ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
 
-	if( $current_pair->{'ori'} == 1 ) {
-	  # check forward strand merge
-	  if( $next_pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
+        if( $current_pair->{'ori'} == 1 ) {
+          # check forward strand merge
+          if( $next_pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
             # normal merge with previous element
             $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
             $current_pair->{'from'}->{'end'} = $next_pair->{'from'}->{'end'};
             $del_pair = $next_pair;
           }
-	} else {
-	  # check backward strand merge
-	  if( $next_pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
-	    # yes its a merge
+        } else {
+          # check backward strand merge
+          if( $next_pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
+            # yes its a merge
             $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
             $current_pair->{'from'}->{'start'} = $next_pair->{'from'}->{'start'};
             $del_pair = $next_pair;
@@ -649,7 +649,7 @@ sub _merge_pairs {
         $i++;
       }
     }
-    $self->{'pairs'} += scalar( @$lr );
+    $self->{'pair_count'} += scalar( @$lr );
   }
 }
  
