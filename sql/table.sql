@@ -623,10 +623,11 @@ CREATE TABLE marker (
     right_primer               varchar(100) not null,
     min_primer_dist            int(10) unsigned not null,
     max_primer_dist            int(10) unsigned not null,
+    type                       enum('est', 'microsatellite'),
     priority                   int,
     
     PRIMARY KEY (marker_id),
-    KEY marker_idx (marker_id, priority)
+    KEY marker_idx (marker_id, priority),
 );
 
 
@@ -692,6 +693,8 @@ CREATE TABLE dnafrag (
   PRIMARY KEY (dnafrag_id),
   UNIQUE KEY name(name)
 ) TYPE=MyISAM;
+
+
 
 #
 # Table structure for table 'mapannotation'
