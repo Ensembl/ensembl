@@ -240,11 +240,11 @@ sub unzip_test_dbs {
   }
 
   unless($zipfile) {
-    $self->throw("zipfile argument is required\n");
+    die("zipfile argument is required\n");
   }
 
   unless(-f $zipfile) {
-    $self->throw("zipfile could not be found\n");
+    die("zipfile could not be found\n");
   }
 
   system ( "unzip $zipfile" );
@@ -260,7 +260,163 @@ sub get_DBAdaptor {
     die('type arg must be specified\n');
   }
 
+  unless($self->{'db_adaptors'}->{$type}) {
+    warn("dbadaptor of type $type is not available\n");
+    return undef;
+  }
+
   return $self->{'db_adaptors'}->{$type};
+}
+
+
+
+=head2 hide
+
+  Arg [1]    : string $dbtype
+               The type of the database containing the hidden table
+  Arg [2]    : string $table
+               The name of the table to hide
+  Example    : $multi_test_db->hide('core', 'gene', 'transcript', 'exon');
+  Description: Hides the contents of specific table(s) in the specified db.
+               The table(s) are first renamed and an empty table are created 
+               in their place by reading the table schema file.
+  Returntype : none
+  Exceptions : thrown if the adaptor for dbtype is not available
+               thrown if both arguments are not defined
+               warning if a table is already hidden
+               warning if a table cannot be hidden because its schema file 
+               cannot be read
+  Caller     : general
+
+=cut
+
+sub hide {
+  my ($self, $dbtype, @tables) = @_;
+  
+  unless($dbtype && @tables) {
+    die("dbtype and table args must be defined\n");
+  }
+
+  my $adaptor = $self->get_DBAdaptor($dbtype);
+
+  unless($adaptor) {
+    die "adaptor for $dbtype is not available\n";
+  }
+
+  foreach my $table (@tables) {
+    if($self->{'conf'}->{'hidden'}->{$dbtype}->{$table}) {
+      warn "table '$table' is already hidden and cannot be hidden again\n";
+      next;
+    }
+
+    my $hidden_name = "_hidden_$table";
+
+    #do some table renaming sql
+    my $sth = $adaptor->prepare("alter table $table rename $hidden_name");
+
+    $sth->execute;
+
+    #reload the old table from its schema file
+    my $schema_file = "$DUMP_DIR/" . $self->species . "/$dbtype/$table.sql";
+
+    local *SCHEMA_FILE;
+
+    unless(-f $schema_file && -e $schema_file && 
+	   (SCHEMA_FILE = open $schema_file)) {
+      #rename the table back
+      $sth = $adaptor->prepare("alter table $hidden_name rename $table");
+      $sth->execute;
+      warn("could not read schema file '$schema_file' for $dbtype $table" .
+	  ". table could not be hidden");
+      next;
+    }
+    
+    #read all the lines from the schema definition
+    my @lines = <SCHEMA_FILE>;
+    my $sql = join ' ', @lines;
+    
+    close SCHEMA_FILE;
+
+    #presumably create the table
+    $sth = $adaptor->prepare($sql);
+    $sth->execute;
+
+    #update the hidden table config
+    $self->{'conf'}->{'hidden'}->{$dbtype}->{$table} = $hidden_name;
+  }
+}
+
+
+
+=head2 restore
+
+  Arg [1]    : (optional) $dbtype 
+               The dbtype of the table(s) to be restored. If not specified all
+               hidden tables in all the databases are restored.
+  Arg [2]    : (optional) @tables
+               The name(s) of the table to be restored.  If not specified all
+               hidden tables in the database $dbtype are restored.
+  Example    : $self->restore('core', 'gene', 'transcript', 'exon');
+  Description: Restores a list of hidden tables. The current version of the
+               table is discarded and the hidden table is renamed.
+  Returntype : none
+  Exceptions : thrown if the adaptor for a dbtype cannot be obtained
+  Caller     : general
+
+=cut
+
+sub restore {
+  my ($self, $dbtype, @tables) = @_;
+  
+  unless($dbtype) {
+    #restore all of the tables in every dbtype
+
+    foreach my $dbtype (keys %{$self->{'conf'}->{'hidden'}}) {
+      $self->restore($dbtype);
+    }
+
+    return;
+  }
+
+  my $adaptor = $self->get_DBAdaptor($dbtype);
+  unless($adaptor) {
+    die "Adaptor for $dbtype is not available";
+  }
+  
+  unless(@tables) {
+    #restore all of the tables for this db
+    @tables = keys %{$self->{'conf'}->{'hidden'}->{$dbtype}};
+  }
+
+  foreach my $table (@tables) {
+    my $hidden_name = $self->{'conf'}->{'hidden'}->{$dbtype}->{$table};
+	
+    #drop existing table
+    my $sth = $adaptor->prepare("drop table $table");
+    $sth->execute;
+
+    #rename hidden table
+    $sth = $adaptor->prepare("alter table $hidden_name rename $table");
+    $sth->execute;
+
+    #delete value from hidden table config
+    delete $self->{'conf'}->{'hidden'}->{$dbtype}->{$table};
+  }
+}
+
+
+sub save {
+  my ($self, $dbtype, $table) = @_;
+
+  warn "save method not yet implemented\n";
+
+}
+
+sub compare {
+  my ($self, $dbtype, $table) = @_;
+
+  warn "save method not yet implemented\n";
+
 }
 
 
