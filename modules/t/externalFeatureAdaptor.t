@@ -29,8 +29,8 @@ package ExternalFF1;
 
     my @out;
 
-    push @out, Bio::EnsEMBL::Feature->new(-START => 20_000,
-                                         -END   => 21_000,
+    push @out, Bio::EnsEMBL::Feature->new(-START => 10_000,
+                                         -END   => 11_000,
                                          -STRAND => 1);
 
     return \@out;
@@ -65,8 +65,8 @@ package ExternalFF2;
 
     my @out;
 
-    push @out, Bio::EnsEMBL::Feature->new(-START => 20_000,
-                                         -END   => 21_000,
+    push @out, Bio::EnsEMBL::Feature->new(-START => 10_000,
+                                         -END   => 11_000,
                                          -STRAND => 1);
 
     return \@out;
@@ -100,7 +100,7 @@ foreach my $f (@$feats) {
   debug("F: $start-$end ($strand)\n");
 }
 
-ok(@$feats == 10);
+ok(@$feats == 12);
 
 my $cln_slice = $slice_adaptor->fetch_by_region('clone', 'AL359765.6');
 
@@ -123,7 +123,7 @@ foreach my $f (@$feats) {
   debug("F: $start-$end ($strand)\n");
 }
 
-ok(@$feats == 10);
+ok(@$feats == 12);
 
 $feats = $xff->fetch_all_by_Slice($cln_slice);
 
@@ -141,6 +141,6 @@ foreach my $f (@$feats) {
   debug("F: $start-$end ($strand)\n");
 }
 
-ok(@$feats == 10);
+ok(@$feats == 12);
 
 $multi=undef;
