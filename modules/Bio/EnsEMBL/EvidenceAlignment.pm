@@ -182,8 +182,9 @@ sub contigid {
     Title   :   _get_features_from_transcript
     Usage   :   $ea->_get_features_from_transcript($transcript_obj, $vc);
     Function:   use SGP adaptor supplied to get evidence off a VC
-		of the transcript supplied; features not falling witin
-		exons are cut
+                of the transcript supplied; features not overlapping
+		any exon are cut; genomic start and end are modified
+		by VC_HACK_BP; duplicate features are removed
     Returns :   array of featurepairs
 
 =cut
@@ -200,16 +201,44 @@ sub _get_features_from_transcript {
   FEATURE_LOOP:
   foreach my $feature (@all_features) {
     if ($feature->strand == $strand) {
+      # fix VC-related coordinate problem
+      $feature->start($feature->start + VC_HACK_BP);
+      $feature->end($feature->end + VC_HACK_BP);
+      # store on overlap
       foreach my $exon (@exons) {
-        if ( $feature->start + VC_HACK_BP >= $exon->start
-	  and $feature->end  + VC_HACK_BP <= $exon->end) {
+        if ($exon->overlaps($feature)) {
 	  push @features, $feature;
 	  next FEATURE_LOOP;
 	}
       }
     }
   }
-  return @features;
+
+  # remove duplicates
+  my @sorted_features = sort {    $a->hseqname cmp $b->hseqname
+                               || $a->start    <=> $b->start
+                               || $a->end      <=> $b->end
+                               || $a->hstart   <=> $b->hstart
+                               || $a->hend     <=> $b->hend
+                               || $a->strand   <=> $b->strand
+			     } @features;
+  for (my $i = 1; $i < @sorted_features; $i++) {
+    print STDERR "removing dupes\n";
+    my $a = $sorted_features[$i];
+    my $b = $sorted_features[$i-1];
+    if ( not $a->hseqname cmp $b->hseqname
+          || $a->start    <=> $b->start
+          || $a->end      <=> $b->end
+          || $a->hstart   <=> $b->hstart
+          || $a->hend     <=> $b->hend
+          || $a->strand   <=> $b->strand )
+    {
+      splice @sorted_features, $i, 1;
+      $i--;
+    }
+  }
+  
+  return @sorted_features;
 }
 
 =head2 _get_features_from_rawcontig
@@ -462,12 +491,6 @@ sub _get_aligned_features_for_contig {
 
   PEP_FEATURE_LOOP:
   foreach my $feature (@features) {
-    next PEP_FEATURE_LOOP	# if feature is a duplicate of the last
-      if ($last_feat
-      && ($last_feat->start  == $feature->start)
-      && ($last_feat->end    == $feature->end)
-      && ($last_feat->hstart == $feature->hstart)
-      && ($last_feat->hseqname eq $feature->hseqname));
     if (($feature->start < 1) || ($feature->end > $dna_len_bp)) {
       $self->warn("genomic coordinates out of range: start " .
         $feature->start . ", end " . $feature->end);
@@ -559,12 +582,6 @@ sub _get_aligned_features_for_contig {
   $last_feat = undef;
   NUC_FEATURE_LOOP:
   foreach my $feature(@features) {
-    next NUC_FEATURE_LOOP	# if feature is a duplicate of the last
-      if ($last_feat
-      && ($last_feat->start  == $feature->start)
-      && ($last_feat->end    == $feature->end)
-      && ($last_feat->hstart == $feature->hstart)
-      && ($last_feat->hseqname eq $feature->hseqname));
     if (($feature->start < 1) || ($feature->end > $dna_len_bp)) {
       $self->warn("genomic coordinates out of range: start " .
         $feature->start . ", end " . $feature->end);
@@ -702,8 +719,8 @@ sub _get_aligned_evidence_for_transcript {
       }
     }
   }
-
   my @all_exons = $transcript_obj->get_all_Exons;
+
   my @features = $self->_get_features_from_transcript($transcript_obj, $vc);
   my $hits_hash_ref = $self->_get_hits(\@features);
   my $translation = $transcript_obj->translate->seq;
@@ -790,14 +807,7 @@ sub _get_aligned_evidence_for_transcript {
     PEP_FEATURE_LOOP:
     foreach my $feature(@features) {
       next PEP_FEATURE_LOOP	# unless feature falls within this exon
-        unless ($feature->start + VC_HACK_BP >= $exon->start
-	    and $feature->end   + VC_HACK_BP <= $exon->end);
-      next PEP_FEATURE_LOOP	# if feature is a duplicate of the last
-        if ($last_feat
-        && ($last_feat->start  == $feature->start)
-        && ($last_feat->end    == $feature->end)
-        && ($last_feat->hstart == $feature->hstart)
-        && ($last_feat->hseqname eq $feature->hseqname));
+        unless $exon->overlaps($feature);
       my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
       if (! $hit_seq_obj) {
         next PEP_FEATURE_LOOP;	# already warned in _get_hits()
@@ -820,13 +830,23 @@ sub _get_aligned_evidence_for_transcript {
       }
       my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
       $hseq = $self->_pad_pep_str($hseq);
+      if ($feature->start < $exon->start) {
+	my $delta = $exon->start - $feature->start;
+        $feature->start($exon->start);
+	$flen += $delta;
+	$hseq =  substr $hseq, $delta;
+      }
+      if ($feature->end > $exon->end) {
+	my $delta = $exon->end - $feature->end;
+	$feature->end($exon->end);
+	$flen += $delta;
+        $hseq = substr $hseq, 0, $flen;
+      }
       my $hindent_bp;
       if ($exon->strand > 0) {
-        $hindent_bp =   $total_exon_len + ($feature->start + VC_HACK_BP)
-	              - $exon->start;
+        $hindent_bp = $total_exon_len + $feature->start - $exon->start;
       } else {
-        $hindent_bp =    $total_exon_len + $exon->end
-	              - ($feature->end   + VC_HACK_BP);
+        $hindent_bp = $total_exon_len + $exon->end - $feature->end;
       }
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
@@ -855,15 +875,17 @@ sub _get_aligned_evidence_for_transcript {
 
     # splice in the evidence fragment
     my $hseqlen = length $$hit{hseq};
-    next if (($$hit{hindent} < $total_5prime_utr_len)
-          || ($$hit{hindent} + $hseqlen
-	     > ($cdna_len_bp - $total_3prime_utr_len)));
     substr $evidence_line, $$hit{hindent}, $hseqlen, $$hit{hseq};
 
     # store if end of evidence line
     if (($i == $#sorted_pep_evidence_arr)
      || ($sorted_pep_evidence_arr[$i+1]{hseqname} ne $$hit{hseqname}))
     {
+      # purge the UTRs of protein 'evidence'
+      substr $evidence_line, 0, $total_5prime_utr_len,
+             ('-' x $total_5prime_utr_len);
+      substr $evidence_line, $cdna_len_bp - $total_3prime_utr_len,
+             $total_3prime_utr_len, ('-' x $total_3prime_utr_len);
       $evidence_obj = Bio::PrimarySeq->new(
                       -seq              => $evidence_line,
                       -id               => 0,
@@ -893,14 +915,7 @@ sub _get_aligned_evidence_for_transcript {
     NUC_FEATURE_LOOP:
     foreach my $feature(@features) {
       next NUC_FEATURE_LOOP	# unless feature falls within this exon
-        unless ($feature->start + VC_HACK_BP >= $exon->start
-	    and $feature->end   + VC_HACK_BP <= $exon->end);
-      next NUC_FEATURE_LOOP	# if feature is a duplicate of the last
-        if ($last_feat
-        && ($last_feat->start  == $feature->start)
-        && ($last_feat->end    == $feature->end)
-        && ($last_feat->hstart == $feature->hstart)
-        && ($last_feat->hseqname eq $feature->hseqname));
+        unless $exon->overlaps($feature);
       my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
       if (! $hit_seq_obj) {
 	next NUC_FEATURE_LOOP;	# already warned in _get_hits()
@@ -921,6 +936,20 @@ sub _get_aligned_evidence_for_transcript {
           ", hit start " . $feature->hstart . ", hit length $hlen\n");
         next NUC_FEATURE_LOOP;
       }
+      if ($feature->start < $exon->start) {
+	my $delta = $exon->start - $feature->start;
+        $feature->start($exon->start);
+        $feature->hstart($feature->hstart + $delta);
+	$flen += $delta;
+	$hlen += $delta;
+      }
+      if ($feature->end > $exon->end) {
+	my $delta = $exon->end - $feature->end;
+	$feature->end($exon->end);
+	$feature->hend($feature->hend + $delta);
+	$flen += $delta;
+	$hlen += $delta;
+      }
       my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
       my $strand_wrt_exon = $exon->strand * $feature->strand;
       if ($strand_wrt_exon < 0) {	# reverse-compliment the hit
@@ -934,11 +963,9 @@ sub _get_aligned_evidence_for_transcript {
       }
       my $hindent_bp;
       if ($exon->strand > 0) {
-        $hindent_bp =   $total_exon_len + ($feature->start + VC_HACK_BP)
-	              - $exon->start;
+        $hindent_bp =   $total_exon_len + $feature->start - $exon->start;
       } else{
-        $hindent_bp =    $total_exon_len + $exon->end
-	              - ($feature->end + VC_HACK_BP);
+        $hindent_bp =    $total_exon_len + $exon->end - $feature->end;
       }
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
