@@ -786,90 +786,6 @@ sub seq {
 
 
 
-=head2 overlaps
-
-  Arg  1     : Bio::EnsEMBL::Feature $feature
-  Example    : if( $this_feature->overlaps( $otherfeature ) ...
-  Description: Test if two features overlap. Strandedness is ignored. Both features have
-               to have slices. If they are not on the same coordinate system they need
-               as well database connection. Calculates how many bases overlap.
-               There is some backward compatibility for unsliced features built in here.
-               Its worth checking once a while wether this can go.
-  Returntype : int
-  Exceptions : wrong argument type, if not on same coord_system
-  Caller     : general
-
-=cut
-
-sub overlaps {
-  my $self = shift;
-  my $feature = shift;
-
-  my ( $sstart, $astart, $send, $aend, $sname, $aname );
-  my ( $scoordsystem, $acoordsystem, $overlap );
-
-  if( defined $self->{'slice'} ) {
-    $sname = $self->seq_region_name();
-    $sstart = $self->seq_region_start();
-    $send = $self->seq_region_end();
-    $scoordsystem = $self->slice->coord_system();
-  } else {
-    $sname = $self->seqname();
-    $sstart = $self->start();
-    $send = $self->end();
-  }
-
-  if( defined $feature->{'slice'} ) {
-    $aname = $feature->seq_region_name();
-    $astart = $feature->seq_region_start();
-    $aend = $feature->seq_region_end();
-    $acoordsystem = $feature->slice()->coord_system();
-  } else {
-    $aname = $feature->seqname();
-    $astart = $feature->start();
-    $aend = $feature->end();
-  }
-
-
-  # simple case
-  if( $sname eq $aname ) {
-    $overlap = (($send>$aend) ? $aend : $send ) - 
-      (($sstart>$astart) ? $sstart : $astart ) +1;
-    if( $overlap < 0 ) { $overlap = 0;}
-    return $overlap;
-  }
-
-  # full feature case
-  # if both have coord systems
-
-  if( defined $scoordsystem && defined $acoordsystem ) {
-    if( $scoordsystem->equals( $acoordsystem )) {
-      # they are really not on the same sequence
-      return 0;
-    } else {
-      my $projection = $self->project( $feature->slice()->coord_system()->name(),
-				       $feature->slice()->coord_system()->version());
-      my $total_overlap = 0;
-      for my $proj ( @$projection ) {
-	my $slice=$proj->[2];
-	if( $slice->seq_region_name() eq $feature->seq_region_name()) {
-	  $overlap = (($slice->end()>$aend) ? $aend : $slice->end() ) - 
-	    (($slice->start()>$astart) ? $slice->start() : $astart ) +1;
-	  if( $overlap < 0 ) { $overlap = 0;}
-	  $total_overlap += $overlap;
-	}
-      }
-      return $total_overlap;
-    }
-  } else {
-    return 0;
-  }
-}
-
-
-
-
-
 ##############################################
 # Methods included for backwards compatibility
 ##############################################
@@ -988,5 +904,26 @@ sub id {
   return $self->{'seqname'}  if($self->{'seqname'});
   return $self->{'dbID'};
 }
+
+
+=head2 overlaps
+
+  Description: This method is only for backwards compatibility and should not
+               be used.  It does a range comparison of this features start and
+               and and compares it with another features start and end.  It
+               Will return true if these ranges overlap but even if these
+               features are on different sequence regions!  Do yourself a
+               favour and use a simple one line comparison instead:
+               $overlaps = ($f1->end() >= $f2->start() &&
+                            $f1->start() <= $f2->end());
+
+=cut
+
+sub overlaps {
+  my $self = shift;
+  my $f = shift;
+  return ($self->end() >= $f->start() && $self->start() <= $f->end());
+}
+
 
 1;
