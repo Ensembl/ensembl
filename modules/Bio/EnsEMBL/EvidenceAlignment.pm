@@ -317,7 +317,16 @@ sub _get_similarity_features_from_transcript {
 
   my @exons = $transcript_obj->get_all_Exons;
   my $strand = $exons[0]->strand;
-  my @all_features = $vc->get_all_SimilarityFeatures;
+  my $db = $self->dbadaptor;
+  my $pfadp = $db->get_ProteinAlignFeatureAdaptor;
+  my @gapped_features = $pfadp->fetch_by_Slice($vc);
+  my $dfadp = $db->get_DnaAlignFeatureAdaptor;
+  push @gapped_features, $dfadp->fetch_by_Slice($vc);
+  my @all_features = ();
+  GAPPED_FEATURE_LOOP:
+  foreach my $gapped_feature (@gapped_features) {
+    push @all_features, $gapped_feature->_parse_cigar;
+  }
   
   my @features = ();
   FEATURE_LOOP:
