@@ -237,8 +237,6 @@ sub _build_gene {
 	my $time = time; chomp($time);
 	$gene->created($time);
 	$gene->modified($time);
-	#This is for the main trunk only!
-	$gene->type('known-neomorphic');
 	foreach my $transcript (@{$self->{'_transcript_array'}}) {
 	    $gene->add_Transcript($transcript);
 	}
