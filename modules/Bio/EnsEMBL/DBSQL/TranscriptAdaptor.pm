@@ -196,16 +196,23 @@ sub store {
      $self->db->get_TranslationAdaptor()->store( $translation );
    }
    $exon_count = scalar(@{$transcript->get_all_Exons()});
+
+   # assuming that the store is used during the Genebuil process, set
+   # the relevant_xref_id to 0.  This ought to get re-set during the protein
+   # pipeline run.  This probably update to the gene table has yet to be
+   # implemented.
+   my $xref_id = 0;
+
    # ok - now load this line in
    my $tst = $self->prepare("
-        insert into transcript ( gene_id, translation_id, exon_count )
-        values ( ?, ?, ?)
+        insert into transcript ( gene_id, translation_id, exon_count, relevant_xref_id )
+        values ( ?, ?, ?, ?)
         ");
 
    if( defined $translation ) {
-     $tst->execute( $gene->dbID(), $translation->dbID(), $exon_count );
+     $tst->execute( $gene->dbID(), $translation->dbID(), $exon_count, $xref_id );
    } else {
-     $tst->execute( $gene->dbID(), 0, $exon_count );
+     $tst->execute( $gene->dbID(), 0, $exon_count, $xref_id );
    }
 
    $transcript->dbID( $tst->{'mysql_insertid'});
@@ -401,6 +408,41 @@ sub get_external_dbname {
   }
 
   return $db_name;
+}
+
+
+=head2 get_relevant_xref_id
+
+  Arg [1]    : int $dbID
+               the database identifier of the transcript for which the name 
+               of external db from which its external name is derived.
+  Example    : $external_dbname = $transcript_adaptor->get_relevant_xref_id(42);
+  Description: Retrieves the relevant_xref_id for a transcript.
+  Returntype : int
+  Exceptions : thrown if $dbId arg is not defined
+  Caller     : general
+
+=cut
+
+sub get_relevant_xref_id {
+  my ($self, $dbID) = @_;
+
+  if( !defined $dbID ) {
+      $self->throw("Must call with a dbID");
+  }
+
+  my $sth = $self->prepare("SELECT relevant_xref_id 
+                            FROM   transcript 
+                            WHERE  transcript_id = ?
+                           ");
+  $sth->execute($dbID);
+
+  my ($xref_id) = $sth->fetchrow_array();
+  if( !defined $xref_id ) {
+    return undef;
+  }
+
+  return $xref_id;
 }
 
 
