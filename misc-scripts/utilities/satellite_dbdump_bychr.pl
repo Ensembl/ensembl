@@ -3,6 +3,7 @@
 # $Id$
 # 
 #
+use Carp;
 
 =head1 NAME
 
@@ -984,9 +985,11 @@ sub dump_mouse  {
 
 sub dump_schema {
     my ($satdb) = @_;
-
+    
     my $destdir = "$workdir/$satdb";
     my $destfile = "$satdb.sql";
+
+    warn "Dumping/checking schema of $satdb\n";
 
     unless (-d $destdir) {
         mkdir $destdir, 0755 || die "mkdir $destdir: $!";
@@ -1002,14 +1005,14 @@ sub dump_schema {
             warn "``$cmd'' exited with no or little  output and exit-status $?\n";
             return;
         } 
-        warn "schema dump OK";
+        warn "schema dumps OK\n";
         return;
     }        
 
     # else: really dump it 
     my $d = "$destdir/$destfile";
     $cmd .= " > $d";
-    warn "Dumping database schema of $satdb to $d\n";
+    warn "Dumping schema to $d\n";
     die "$d exists" if -s $d ;
     
     if ( system($cmd) ) {
@@ -1059,7 +1062,7 @@ sub check_sql {
     }
 
     if ( $out =~ /\bALL\b/ ) {
-        warn "Appears to be missing an index:\n$out\n";
+        carp "$sql: missing/not using index:\n$out\n";
     } else { 
         warn "query for $tablename OK\n";
     } 
