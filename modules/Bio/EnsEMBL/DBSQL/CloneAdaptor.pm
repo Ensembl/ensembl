@@ -429,15 +429,15 @@ sub store{
 
   $sth->finish();
 
-  #update this clones database identifier
-  $clone->dbID($id);
-  $clone->adaptor($self);
-
   #store the contigs which were on this clone
   my $rca = $self->db->get_RawContigAdaptor();
   foreach my $contig(@{$clone->get_all_Contigs()}){
     $rca->store($contig, $clone);
   }
+
+  #update this clones database identifier
+  $clone->dbID($id);
+  $clone->adaptor($self);
 
   return $id;
 }
