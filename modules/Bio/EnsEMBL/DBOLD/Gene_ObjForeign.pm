@@ -1,9 +1,9 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBOLD::Gene_Obj
+# EnsEMBL module for Bio::EnsEMBL::DBOLD::Gene_ObjForeign
 #
-# Cared for by Elia Stupka <elia@ebi.ac.uk>
+# Cared for by Philip lijnzaad@ebi.ac.uk
 #
-# Copyright Elia Stupka
+# Copyright EnsEMBL
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -11,8 +11,11 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBOLD::Gene_Obj - MySQL database adapter class for EnsEMBL genes, transcripts,
-exons, etc.
+Bio::EnsEMBL::DBOLD::Gene_ObjForeign, specialization of Gene_Obj that
+allows you to translate table names to other names. The intended use is
+for an database that reuses (readonly, not writing!) part of another
+database in order to save on speed (no loading of all the assembly related
+data) and disk usage.
 
 =head1 SYNOPSIS
 
@@ -26,16 +29,15 @@ exons, etc.
 
 =head1 DESCRIPTION
 
-This is one of the objects contained in Bio:EnsEMBL::DBOLD::Obj,
-dealing with Gene methods, such as writing and getting genes,
-transcripts, translations, and exons.
-
-The Obj object represents a database that is implemented somehow (you
-shouldn\'t care much as long as you can get the object).
+Bio::EnsEMBL::DBOLD::Gene_ObjForeign is specialization of Gene_Obj that
+allows you to translate table names to other names. The intended use is
+for an database that reuses (readonly, not writing!) part of another
+database in order to save on speed (no loading of all the assembly related
+data) and disk usage.
 
 =head1 CONTACT
 
-Elia Stupka: elia@ebi.ac.uk
+Elia Stupka: elia@ebi.ac.uk, lijnzaad@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -47,7 +49,7 @@ methods. Internal methods are usually preceded with a _
 
 # Let the code begin...
 
-package Bio::EnsEMBL::DBOLD::Gene_Obj;
+package Bio::EnsEMBL::DBOLD::Gene_ObjForeign;
 
 use vars qw(@ISA);
 use strict;
@@ -55,6 +57,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::RootI;
+use Bio::EnsEMBL::DBOLD::Obj;
 use Bio::EnsEMBL::DB::Gene_ObjI;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
@@ -65,20 +68,19 @@ use Bio::EnsEMBL::StickyExon;
 
 use Bio::EnsEMBL::DBOLD::DummyStatement;
 use Bio::EnsEMBL::DB::Gene_ObjI;
-use Bio::EnsEMBL::DBOLD::DBEntryAdaptor;
 
-@ISA = qw(Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::RootI);
+use Bio::EnsEMBL::DBOLD::ObjForeign;
 
+@ISA = qw(Bio::EnsEMBL::DBOLD::ObjForeign 
+          Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::RootI
+          Bio::EnsEMBL::DBOLD::Gene_Obj);
+#
 
-sub new {
-  my($class,$db_obj) = @_;
-  my $self = {};
-  bless $self,$class;
-
-  $db_obj || $self->throw("Database Gene object must be passed a db obj!");
-  $self->_db_obj($db_obj);
-  $self->use_delayed_insert(1);
-  return $self; # success - we hope!
+sub new {  # calls on ObjForeign::new
+    my ($class, @args) = @_;
+    my $self= $class->SUPER::new(@args);
+    bless $self, $class;
+    $self;
 }
 
 =head2 delete
@@ -102,10 +104,10 @@ sub delete {
         SELECT t.id
           , t.translation
           , et.exon
-        FROM gene g
-          , transcript t
-          , exon_transcript et
-          , exon e
+        FROM }. $self->_lookup_table_name('gene').q{ g
+          ,  }. $self->_lookup_table_name('transcript').q{ t
+          ,  }. $self->_lookup_table_name('exon_transcript').q{ et
+          ,  }. $self->_lookup_table_name('exon').q{ e
         WHERE g.id = t.gene
           AND t.id = et.transcript
           AND et.exon = e.id
@@ -121,15 +123,15 @@ sub delete {
     }
     
     # Deletes which use the gene ID
-    my $gene_delete      = $db->prepare(q{DELETE FROM gene WHERE id = ?});
-    my $gene_type_delete = $db->prepare(q{DELETE FROM genetype WHERE gene_id = ?});
+    my $gene_delete      = $db->prepare("DELETE FROM ".$self->_lookup_table_name('gene')." WHERE id = ?");
+    my $gene_type_delete = $db->prepare("DELETE FROM ".$self->_lookup_table_name('genetype')." WHERE gene_id = ?");
 
     $gene_delete     ->execute($gene_id);
     $gene_type_delete->execute($gene_id);
     
     # Deletes which use the transcript ID
-    my $transcript_delete      = $db->prepare(q{DELETE FROM transcript WHERE id = ?});
-    my $exon_transcript_delete = $db->prepare(q{DELETE FROM exon_transcript WHERE transcript = ?});
+    my $transcript_delete      = $db->prepare("DELETE FROM ".$self->_lookup_table_name('transcript')." WHERE id = ?");
+    my $exon_transcript_delete = $db->prepare("DELETE FROM ".$self->_lookup_table_name('exon_transcript')." WHERE transcript = ?");
     
     foreach my $trans_id (keys %transcript) {
         $transcript_delete     ->execute($trans_id);
@@ -137,22 +139,22 @@ sub delete {
     }
     
     # Translation delete
-    my $translation_delete = $db->prepare(q{DELETE FROM translation WHERE id = ?});
+    my $translation_delete = $db->prepare("DELETE FROM ".$self->_lookup_table_name('translation')." WHERE id = ?");
     
     foreach my $transl_id (keys %translation) {
         $translation_delete->execute($transl_id);
     }
     
     # Deletes which use the exon ID
-    my $exon_delete       = $db->prepare(q{DELETE FROM exon WHERE id = ?});
-    my $supporting_delete = $db->prepare(q{DELETE FROM supporting_feature WHERE exon = ?});
+    my $exon_delete       = $db->prepare("DELETE FROM ".$self->_lookup_table_name('exon')." WHERE id = ?");
+    my $supporting_delete = $db->prepare("DELETE FROM }.$self->_lookup_table_name('supporting_feature').q{ WHERE exon = ?");
     
     foreach my $exon_id (keys %exon) {
         $exon_delete      ->execute($exon_id);
         $supporting_delete->execute($exon_id);
     }
 
-   $sth = $db->prepare("delete from genetype where gene_id = '$gene_id'");
+   $sth = $db->prepare("DELETE from ".$self->_lookup_table_name('genetype')." where gene_id = '$gene_id'");
    $sth->execute;
 }   
 
@@ -174,11 +176,11 @@ sub delete_Exon{
     $exon_id || $self->throw ("Trying to delete an exon without an exon_id\n");
     
     #Delete exon_transcript rows
-    my $sth = $self->_db_obj->prepare("delete from exon_transcript where exon = '$exon_id'");
+    my $sth = $self->_db_obj->prepare("DELETE from ".$self->_lookup_table_name('exon_transcript')." where exon = '$exon_id'");
     $sth->execute;
 
     #Delete exon rows
-    $sth = $self->_db_obj->prepare("delete from exon where id = '$exon_id'");
+    $sth = $self->_db_obj->prepare("DELETE from ".$self->_lookup_table_name('exon')." where id = '$exon_id'");
     $sth->execute;
 
     $self->delete_Supporting_Evidence($exon_id);
@@ -201,7 +203,7 @@ sub delete_Supporting_Evidence {
 
     $exon_id || $self->throw ("Trying to delete supporting_evidence without an exon_id\n");
 
-    my $sth = $self->_db_obj->prepare("delete from supporting_feature where exon = '" . $exon_id . "'");
+    my $sth = $self->_db_obj->prepare("DELETE from ".$self->_lookup_table_name('supporting_feature')." where exon = '$exon_id'");
     my $res = $sth->execute;
 }
 
@@ -221,7 +223,7 @@ sub get_all_Gene_id{
    my ($self) = @_;
 
    my @out;
-   my $sth = $self->_db_obj->prepare("select id from gene");
+   my $sth = $self->_db_obj->prepare("select id from ".$self->_lookup_table_name('gene')."");
    my $res = $sth->execute;
 
    while( my $rowhash = $sth->fetchrow_hashref) {
@@ -248,7 +250,7 @@ sub get_all_Transcript_id{
    my ($self) = @_;
 
    my @out;
-   my $sth = $self->_db_obj->prepare("select id from transcript");
+   my $sth = $self->_db_obj->prepare("select id from ".$self->_lookup_table_name('transcript')."");
    my $res = $sth->execute || $self->throw("Could not get any transcript ids!");
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@out,$rowhash->{'id'});
@@ -276,7 +278,7 @@ sub get_Gene_by_Transcript_id {
     my $supporting = shift;
 
     # this is a cheap SQL call
-    my $sth = $self->_db_obj->prepare("select gene from transcript where id = '$transid'");
+    my $sth = $self->_db_obj->prepare("select gene from ".$self->_lookup_table_name('transcript')." where id = '$transid'");
     $sth->execute;
 
     my ($geneid) = $sth->fetchrow_array();
@@ -307,7 +309,7 @@ sub get_Gene_by_Peptide_id {
     my $supporting = shift;
 
     # this is a cheap SQL call
-    my $sth = $self->_db_obj->prepare("select gene from transcript where translation = '$peptideid'");
+    my $sth = $self->_db_obj->prepare("select gene from ".$self->_lookup_table_name('transcript')." where translation = '$peptideid'");
     $sth->execute;
 
     my ($geneid) = $sth->fetchrow_array();
@@ -337,7 +339,12 @@ sub get_geneids_by_hids{
     my $inlist = join(',',map "'$_'", @hids);
        $inlist = "($inlist)";
 
-   my $sth = $self->_db_obj->prepare("select transcript.gene from transcript as transcript, exon_transcript as exon_transcript, exon as exon, supporting_feature as supporting_feature where exon.id = supporting_feature.exon and exon_transcript.exon = exon.id and exon_transcript.transcript = transcript.id and supporting_feature.hid in $inlist");
+   my $sth = $self->_db_obj->prepare("SELECT transcript.gene FROM 
+   ".$self->_lookup_table_name('transcript')." as transcript, 
+   ".$self->_lookup_table_name('exon_transcript')." as exon_transcript, 
+   ".$self->_lookup_table_name('exon')." as exon, 
+   ".$self->_lookup_table_name('supporting_feature')." as supporting_feature 
+   WHERE exon.id = supporting_feature.exon and exon_transcript.exon = exon.id and exon_transcript.transcript = transcript.id and supporting_feature.hid in $inlist");
 
    $sth->execute();
    my %gene;
@@ -367,7 +374,12 @@ sub get_Interpro_by_geneid{
    my ($self,$gene) = @_;
 
 
-   my $sth = $self->_db_obj->prepare("select i.interpro_ac,idesc.description from transcript t, protein_feature pf, interpro i, interpro_description idesc where t.gene = '$gene' and t.translation = pf.translation and i.id = pf.hid and i.interpro_ac = idesc.interpro_ac");
+   my $sth = $self->_db_obj->prepare("SELECT i.interpro_ac,idesc.description 
+    FROM ".$self->_lookup_table_name('transcript')." t, 
+         ".$self->_lookup_table_name('protein_feature')." pf, 
+         ".$self->_lookup_table_name('interpro')." i, 
+         ".$self->_lookup_table_name('interpro_description')." idesc 
+     WHERE t.gene = '$gene' and t.translation = pf.translation and i.id = pf.hid and i.interpro_ac = idesc.interpro_ac");
    $sth->execute;
 
    my @out;
@@ -402,7 +414,7 @@ sub get_Interpro_by_keyword{
    my ($self,$keyword) = @_;
 
 
-   my $sth = $self->_db_obj->prepare("select idesc.interpro_ac,idesc.description from interpro_description idesc where idesc.description like '%$keyword%'");
+   my $sth = $self->_db_obj->prepare("select idesc.interpro_ac,idesc.description FROM ".$self->_lookup_table_name('interpro_description')." idesc where idesc.description like '%$keyword%'");
    $sth->execute;
 
    my @out;
@@ -527,14 +539,14 @@ sub get_array_supporting {
           , cl.id
 	  , genetype.type
           , gene.analysisId
-        FROM contig con
-          , gene
-          , transcript tscript
-          , exon_transcript e_t
-          , exon
-          , translation transl
-	  , genetype
-	  , clone cl
+        FROM }.$self->_lookup_table_name('contig').qq{ con
+          , }.$self->_lookup_table_name('gene').qq{ gene
+          , }.$self->_lookup_table_name('transcript').qq{ tscript
+          , }.$self->_lookup_table_name('exon_transcript').qq{ e_t
+          , }.$self->_lookup_table_name('exon').qq{ exon
+          , }.$self->_lookup_table_name('translation').qq{ transl
+	  , }.$self->_lookup_table_name('genetype').qq{ genetype
+	  , }.$self->_lookup_table_name('clone').qq{ cl
         WHERE gene.id = tscript.gene
           AND tscript.id = e_t.transcript
           AND e_t.exon = exon.id
@@ -819,21 +831,28 @@ sub _get_dblinks{
    }
    my $geneid = $gene->id;
 
-   my $entryAdaptor = $self->_db_obj->get_DBEntryAdaptor();
-
-   my @gene_xrefs = $entryAdaptor->fetch_by_gene($geneid);
-
-   foreach my $genelink (@gene_xrefs) {
-       $gene->add_DBLink($genelink);
+   my $query = "select external_db,external_id from ".$self->_lookup_table_name('genedblink')." where gene_id = '$geneid'";
+   my $sth = $self->_db_obj->prepare($query);
+   my $res = $sth ->execute();
+   while( (my $hash = $sth->fetchrow_hashref()) ) {
+       my $dblink = Bio::Annotation::DBLink->new();
+       $dblink->database($hash->{'external_db'});
+       $dblink->primary_id($hash->{'external_id'});
+       $gene->add_DBLink($dblink);
    }
 
    foreach my $trans ( $gene->each_Transcript ) {
        my $transid = $trans->id;
-
-       my @transcript_xrefs = $entryAdaptor->fetch_by_transcript($transid);
        
-       foreach my $translink(@transcript_xrefs) {
-	   $trans->add_DBLink($translink);
+       $query = "select external_db,external_id from ".$self->_lookup_table_name('transcriptdblink')." where transcript_id = '$transid'";
+       $sth = $self->_db_obj->prepare($query);
+       $res = $sth ->execute();
+       while( (my $hash = $sth->fetchrow_hashref()) ) {
+	   
+	   my $dblink = Bio::Annotation::DBLink->new();
+	   $dblink->database($hash->{'external_db'});
+	   $dblink->primary_id($hash->{'external_id'});
+	   $trans->add_DBLink($dblink);
        }
    }
 }                                       # _get_dblinks
@@ -864,7 +883,7 @@ sub _get_description {
 
    my $q = 
      "SELECT description
-      FROM gene_description
+      FROM ".$self->_lookup_table_name('gene_description')."
       WHERE gene_id = '$geneid'";
 
    $q = $self->_db_obj->prepare($q) || $self->throw($q->errstr);
@@ -942,21 +961,19 @@ sub get_Gene_array_by_DBLink {
     my $supporting = shift;
 
     my @genes;
-
-    my $entryAdaptor = $self->_db_obj->get_DBEntryAdaptor();
-
-
-    my @ids = $entryAdaptor->geneids_by_extids($external_id);
-
-    
+    my $sth = $self->_db_obj->prepare("select gene_id from ".$self->_lookup_table_name('genedblink')." where external_id = '$external_id'");
+    $sth->execute;
     my $seen=0;
-
-    if( scalar(@ids) > 0 ) {
-	return $self->get_array_supporting('without', @ids);
-    } else {
-	return ();
+    while (my ($geneid)=$sth->fetchrow_array()) {
+	push (@genes,$self->get($geneid,$supporting));
+	$seen=1;
     }
-
+    if( !$seen ) {
+	return;
+    }
+    else {
+	return @genes;
+    }
 }
 
 
@@ -979,8 +996,8 @@ sub get_Exon{
  			        "       UNIX_TIMESTAMP(e.created),UNIX_TIMESTAMP(e.modified), " .
 				"       e.seq_start,e.seq_end,e.strand,e.phase, " .
 				"       c.id as contigid " .
-				"from   exon as e," .
-				"       contig as c " .
+				"from   ".$self->_lookup_table_name('exon')." as e," .
+				"       ".$self->_lookup_table_name('contig')." as c " .
 				"where  e.id = '$exonid'" . 
 				"and    e.contig = c.internal_id");
 
@@ -998,7 +1015,7 @@ sub get_Exon{
    my $contig_id = $exon->contig_id();
 
    # we have to make another trip to the database to get out the contig to clone mapping.
-   my $sth2     = $self->_db_obj->prepare("select clone from contig where
+   my $sth2     = $self->_db_obj->prepare("select clone from ".$self->_lookup_table_name('contig')." where
 id = '$contig_id'");
    my $res2     = $sth2->execute;
    my $rowhash2 = $sth2->fetchrow_hashref;
@@ -1065,10 +1082,10 @@ sub get_supporting_evidence {
     $instring = substr($instring,0,-2);
 
    
-    my $statement = "select * from feature f,contig c where c.id in (" . $instring . ")";
+    my $statement = "select * from ".$self->_lookup_table_name('feature')." f,".$self->_lookup_table_name('contig')." c where c.id in (" . $instring . ")";
 
     #my $statement = "select * from supporting_feature where exon in (" . $instring . ")";
-    #print STDERR "going to execute... [$statement]\n";
+    print STDERR "going to execute... [$statement]\n";
     
     my $sth = $self->_db_obj->prepare($statement);
     $sth->execute || $self->throw("execute failed for supporting evidence get!");
@@ -1076,10 +1093,10 @@ sub get_supporting_evidence {
     my @features;
     
     while (my $rowhash = $sth->fetchrow_hashref) {
-	my $f1 = Bio::EnsEMBL::SeqFeature->new();
-	my $f2 = Bio::EnsEMBL::SeqFeature->new();
+	my $f1 = new Bio::EnsEMBL::SeqFeature;
+	my $f2 = new Bio::EnsEMBL::SeqFeature;
 	
-	my $f = Bio::EnsEMBL::FeaturePair->new(-feature1 => $f1,
+	my $f = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
 					      -feature2 => $f2);
 	
 #	    my $exon = $rowhash->{exon};
@@ -1107,8 +1124,11 @@ sub get_supporting_evidence {
 	    $f->analysis($anahash{$analysisid});
 	    
 	} else {
-	    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->_db_obj);
-	    $f->analysis($feature_obj->get_Analysis($analysisid));
+	    my $Feature_ObjForeign 
+              = Bio::EnsEMBL::DBOLD::Feature_ObjForeign->new(
+                -dbobj => $self->_db_obj, 
+                -table_name_translation => $self->_table_name_translations);
+	    $f->analysis($Feature_ObjForeign->get_Analysis($analysisid));
 		
 	    $anahash{$analysisid} = $f->analysis;
 	}
@@ -1159,7 +1179,9 @@ sub get_supporting_evidence_direct {
             f.analysis,f.name,
             f.hstart,f.hend,f.hid,
             f.evalue,f.perc_id,e.id,c.id 
-         FROM feature f, exon e, contig c 
+         FROM }.$self->_lookup_table_name('feature').qq{ f, 
+              }.$self->_lookup_table_name('exon').qq{ e, 
+              }.$self->_lookup_table_name('contig').qq{ c 
          WHERE c.internal_id = f.contig 
             AND f.contig = e.contig 
            AND e.id in ($list) 
@@ -1175,8 +1197,12 @@ sub get_supporting_evidence_direct {
 	my ($start,$end,$f_score,$strand,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$exonid,$contig) = @{$arrayref};
 	my $analysis;
 	if (!$analhash{$analysisid}) {
-	    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->_db_obj);
-	    $analysis = $feature_obj->get_Analysis($analysisid);
+	    my $Feature_ObjForeign
+              = Bio::EnsEMBL::DBOLD::Feature_ObjForeign->new(
+                -dbobj => $self->_db_obj, 
+                -table_name_translation => $self->_table_name_translations);
+
+	    $analysis = $Feature_ObjForeign->get_Analysis($analysisid);
 	    $analhash{$analysisid} = $analysis;	   
 	} 
 	else {
@@ -1201,8 +1227,8 @@ sub get_supporting_evidence_direct {
             sf.analysis,sf.name,
             sf.hstart,sf.hend,sf.hid,
             sf.evalue,sf.perc_id,sf.exon 
-         FROM supporting_feature sf ,
-              exon e
+         FROM }.$self->_lookup_table_name('supporting_feature').qq{ sf ,
+              }.$self->_lookup_table_name('exon').qq{ e
          WHERE e.id  = sf.exon 
            AND e.id in ($list) 
            AND !(sf.seq_end < e.seq_start OR sf.seq_start > e.seq_end) 
@@ -1217,8 +1243,12 @@ sub get_supporting_evidence_direct {
 	my ($start,$end,$f_score,$strand,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$exonid) = @{$arrayref};
 	my $analysis;
 	if (!$analhash{$analysisid}) {
-	    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->_db_obj);
-	    $analysis = $feature_obj->get_Analysis($analysisid);
+	    my $Feature_ObjForeign
+              =  Bio::EnsEMBL::DBOLD::Feature_ObjForeign->new(
+                -dbobj => $self->_db_obj, 
+                -table_name_translation => $self->_table_name_translations);
+
+	    $analysis = $Feature_ObjForeign->get_Analysis($analysisid);
 	    $analhash{$analysisid} = $analysis;	   
 	} 
 	else {
@@ -1275,46 +1305,48 @@ sub get_Transcript{
             , exon.version
             , transl.version
             , cl.id
-		FROM contig con
-                    , transcript tscript
-                    , exon_transcript e_t
-                    , exon
-                    , translation transl
-	      	    , clone cl
+		FROM }.$self->_lookup_table_name('contig').qq{ con
+                    , }.$self->_lookup_table_name('transcript').qq{ tscript
+                    , }.$self->_lookup_table_name('exon_transcript').qq{ e_t
+                    , }.$self->_lookup_table_name('exon').qq{ exon
+                    , }.$self->_lookup_table_name('translation').qq{ transl
+	      	    , }.$self->_lookup_table_name('clone').qq{ cl
             WHERE tscript.id = e_t.transcript
             AND e_t.exon = exon.id
             AND exon.contig = con.internal_id
             AND tscript.translation = transl.id
 	    AND cl.internal_id = con.clone
 	    AND tscript.id = '$transid'
-	    ORDER BY tscript.gene
-                     , tscript.id
-                     , e_t.rank
-                     , exon.sticky_rank
 	    };
     
 #    print STDERR "Query is " . $query . "\n";
     my $sth = $self->_db_obj->prepare($query);
     my $res = $sth ->execute();
     
-    my $trans = undef;
+    my ($trans);
     my @transcript_exons;
     
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
-	
-
 	my ($transcriptid,$contigid,$exonid,$rank,$start,$end,
 	    $exoncreated,$exonmodified,$strand,$phase,$exon_rank,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
 	    $transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
+	
 
-#Creates a transcript object
+ 	
+	if( ! defined $phase ) {
+	    $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
+	}
+	
+	# I think this is a dirty hack 
+	#if( exists $seen{"$exonid-$rank"} ) {
+	#    next;
+	#}
 	$trans = Bio::EnsEMBL::Transcript->new();
 	
 	$trans->id     ($transcriptid);
 	$trans->version($transcriptversion);
-
-#Creates a translation object	
+	
 	my $translation = Bio::EnsEMBL::Translation->new();
 	
 	$translation->start        ($trans_start);
@@ -1324,9 +1356,10 @@ sub get_Transcript{
 	$translation->id           ($translationid);
 	$translation->version      ($translationversion);
 	$trans->translation        ($translation);
-
-#Creates an exon object	    
+	    
 	my $exon = Bio::EnsEMBL::Exon->new();
+	
+	#print(STDERR "Creating exon - contig id $contigid\n");
 	
 	$exon->clone_id ($cloneid);
 	$exon->contig_id($contigid);
@@ -1362,18 +1395,11 @@ sub get_Transcript{
 	$exon ->attach_seq($seq);
 	push(@transcript_exons,$exon);
     }
-
-
-    if( !defined $trans ) {
-	$self->throw("transcript ".$transid." is not present in db");
-    }
-
     $self->_store_exons_in_transcript($trans,@transcript_exons);
     
     if ($supporting && $supporting eq 'evidence') {
 	$self->get_supporting_evidence_direct(@sup_exons);
     }
-
     return $trans;
 }
 
@@ -1397,7 +1423,11 @@ sub get_Transcript_by_est{
 
     my $est = "gb|$est_id%";
 
-    my $sth = $self->_db_obj->prepare("select distinct e_t.transcript from feature as f, exon as e,exon_transcript as e_t where f.hid like '".$est."' and e.seq_start<=f.seq_start and e.seq_end >= f.seq_end and e.contig = f.contig and e_t.exon = e.id;");
+    my $sth = $self->_db_obj->prepare("SELECT distinct e_t.transcript 
+                 FROM ".$self->_lookup_table_name('feature')." as f, 
+                 ".$self->_lookup_table_name('exon')." as e,
+                 ".$self->_lookup_table_name('exon_transcript')." as e_t 
+m                where f.hid like '".$est."' and e.seq_start<=f.seq_start and e.seq_end >= f.seq_end and e.contig = f.contig and e_t.exon = e.id;");
     my $res = $sth->execute();
     my $transcript;
     while( my $rowhash = $sth->fetchrow_hashref) {
@@ -1430,7 +1460,7 @@ sub get_Transcript_by_est{
 sub get_Translation{
    my ($self,$translation_id) = @_;
 
-   my $sth     = $self->_db_obj->prepare("select version,seq_start,start_exon,seq_end,end_exon from translation where id = '$translation_id'");
+   my $sth     = $self->_db_obj->prepare("select version,seq_start,start_exon,seq_end,end_exon ".$self->_lookup_table_name('from')." translation where id = '$translation_id'");
    my $res     = $sth->execute();
    my $rowhash = $sth->fetchrow_hashref;
 
@@ -1657,7 +1687,8 @@ sub write{
    foreach my $contig_id ( $gene->unique_contig_ids() ) {
        eval {
 #	   print STDERR "Getting out contig for $contig_id\n";
-	   my $contig      = $self->_db_obj->get_Contig($contig_id);
+# 	   my $contig      = $self->_db_obj->get_Contig($contig_id);
+	   my $contig      = $self->_read_db_obj->get_Contig($contig_id);
 	   $contig->fetch();
 	   
 	   $contighash{$contig_id} = $contig;
@@ -1679,7 +1710,7 @@ sub write{
        my $c = 1;
        foreach my $exon ( $trans->each_Exon() ) {
 
-	   my $sth = $self->_db_obj->prepare("insert into exon_transcript (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
+	   my $sth = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('exon_transcript')." (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
 	   $sth->execute();
 	   $c++;
 
@@ -1710,7 +1741,7 @@ sub write{
    !$gene->created() && $gene->created(0);
    !$gene->modified() && $gene->modified(0);
  
-   my $sth2 = $self->_db_obj->prepare("insert into gene (id,version,created,modified,stored,analysisId) values ('". 
+   my $sth2 = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('gene')." (id,version,created,modified,stored,analysisId) values ('". 
 			     $gene->id       . "','".
 			     $gene->version  . "',FROM_UNIXTIME(".
 			     $gene->created  . "),FROM_UNIXTIME(".
@@ -1718,7 +1749,7 @@ sub write{
    $sth2->execute();
 
    foreach my $dbl ( $gene->each_DBLink ) {
-       my $sth3 = $self->_db_obj->prepare("insert into genedblink (gene_id,external_id,external_db) values ('". 
+       my $sth3 = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('genedblink')." (gene_id,external_id,external_db) values ('". 
 			     $gene->id        . "','".
 			     $dbl->primary_id . "','".
 			     $dbl->database   . "')");
@@ -1728,7 +1759,7 @@ sub write{
    my $id=$gene->id;
    my $type=$gene->type;
 
-   my $sth4 = $self->_db_obj->prepare("insert into genetype (gene_id,type) values ('$id','$type')");
+   my $sth4 = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('genetype')." (gene_id,type) values ('$id','$type')");
 
    $sth4->execute();
 
@@ -1773,12 +1804,12 @@ sub write_Exon {
     }
 
     my $exonst = q{
-        insert into exon (id, version, contig, created, modified
+        INSERT into }.$self->_lookup_table_name('exon').q{ (id, version, contig, created, modified
           , seq_start, seq_end, strand, phase, stored, end_phase, sticky_rank) 
         values (?,?,?,FROM_UNIXTIME(?),FROM_UNIXTIME(?),?,?,?,?,NOW(),?,?)
         };
     
-    my $contig = $self->_db_obj->get_Contig($exon->contig_id);
+    my $contig = $self->_read_db_obj->get_Contig($exon->contig_id);
 
     my $sth = $self->_db_obj->prepare($exonst);
     $sth->execute(
@@ -1860,7 +1891,7 @@ sub write_supporting_evidence {
 
     #$string = '';
 
-    my $sth  = $self->_db_obj->prepare("insert $string into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
+    my $sth  = $self->_db_obj->prepare("INSERT $string into ".$self->_lookup_table_name('supporting_feature')."(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
     
 
     FEATURE: foreach my $f ($exon->each_Supporting_Feature) {
@@ -1873,8 +1904,10 @@ sub write_supporting_evidence {
 	    print(STDERR "Supporting feature invalid. Skipping feature\n");
 	    next FEATURE;
 	}
-	my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->_db_obj);
-  	my $analysisid = $feature_obj->write_Analysis($f->analysis);
+	my $Feature_ObjForeign = Bio::EnsEMBL::DBOLD::Feature_ObjForeign->new(
+                -dbobj => $self->_db_obj, 
+                -table_name_translation => $self->_table_name_translations);
+  	my $analysisid = $Feature_ObjForeign->write_Analysis($f->analysis);
 	
 	if ($f->isa("Bio::EnsEMBL::FeaturePairI")) {
 	    $sth->execute('NULL',
@@ -1922,7 +1955,7 @@ sub write_Transcript{
 
    # ok - now load this line in
    my $tst = $self->_db_obj->prepare("
-        insert into transcript (id, gene, translation, version) 
+        INSERT into ".$self->_lookup_table_name('transcript')." (id, gene, translation, version) 
         values (?, ?, ?, ?)
         ");
                 
@@ -1937,7 +1970,7 @@ sub write_Transcript{
 
    foreach my $dbl ( $trans->each_DBLink ) {
        #print STDERR "Going to insert for",$trans->id," ",$dbl->primary_id," ",$dbl->database,"\n";
-       my $sth3 = $self->_db_obj->prepare("insert into transcriptdblink (transcript_id,external_id,external_db) values ('". 
+       my $sth3 = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('transcriptdblink')." (transcript_id,external_id,external_db) values ('". 
 					  $trans->id        . "','".
 					  $dbl->primary_id . "','".
 					  $dbl->database   . "')");
@@ -1973,7 +2006,7 @@ sub write_Translation{
 	$self->throw("No version number on translation");
     }
     
-    my $tst = $self->_db_obj->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
+    my $tst = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('translation')." (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
 			     . $translation->id . "',"
 			     . $translation->version . ","
 			     . $translation->start . ",'"  
@@ -2003,7 +2036,7 @@ sub get_New_external_id {
 
     eval {
 
-	my $query = "select max(external_id) as id from $table where external_id like '$stub%'";
+	my $query = "select max(external_id) as id from ".$self->_lookup_table_name($table)." where external_id like '$stub%'";
 	
 	my $sth   = $self->_db_obj->prepare($query);
 	my $res   = $sth->execute;
@@ -2032,7 +2065,7 @@ sub get_New_external_id {
 		    }
 		}
 		my $c = $stub . $newid;
-		my $query = "insert into $table (internal_id,external_id) values (NULL,'$c')";
+		my $query = "INSERT into ".$self->_lookup_table_name($table)." (internal_id,external_id) values (NULL,'$c')";
 		my $sth   = $self->_db_obj->prepare($query);
 		my $res   = $sth->execute;
 		
@@ -2072,7 +2105,7 @@ sub get_NewId {
 
     $table || $self->throw("Need to provide a table name to get a new id!\n");
     
-    my $query = "select max(id) as id from $table where id like '$stub%'";
+    my $query = "select max(id) as id from ".$self->_lookup_table_name($table)." where id like '$stub%'";
 
     my $sth   = $self->_db_obj->prepare($query);
     $sth->execute;

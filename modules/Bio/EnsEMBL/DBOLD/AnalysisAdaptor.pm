@@ -197,6 +197,7 @@ sub store {
 
   my $self = shift;
   my $analysis = shift;
+  $analysis->dbID && return $analysis->dbID;
   my $dbID;
   
   if( defined $analysis->created ) {
@@ -268,12 +269,8 @@ sub store {
 	$analysis->gff_feature
       );
 
-    $sth = $self->prepare( q{
-      SELECT last_insert_id()
-    } );
-    $sth->execute;
+    $dbID = $sth->{insertid};
 
-    $dbID = ($sth->fetchrow_array)[0];
     if( defined $dbID ) {
       $sth = $self->prepare( q{
 	SELECT created 

@@ -1,6 +1,6 @@
 # Ensembl module for Bio::EnsEMBL::DBOLD::Utils
 #
-# Written by Arek Kasprzyk
+# Cared for by EnsEMBL (www.ensembl.org)
 #
 # Copyright GRL and EBI
 #
@@ -72,6 +72,7 @@ sub fset2transcript {
 	$exon->start    ($f->start);
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);
+	$exon->phase    ($f->phase);
 	$exon->attach_seq($contig->primary_seq);
 	
 	push(@exons,$exon);
@@ -79,6 +80,10 @@ sub fset2transcript {
 	
     }
     
+    if( $count == 1 ) {
+	$genscan->throw("Got a 0 exon genscan");
+    }
+
     my $translation = new Bio::EnsEMBL::Translation;
     $translation->id($contig->id.".".$genscan->raw_seqname);
 
@@ -92,7 +97,7 @@ sub fset2transcript {
 	@exons = sort {$b->start <=> $a->start} @exons;
     }
     
-    
+
     if( $exons[0]->phase == 0 ) {
 	$translation->start(1);
     } elsif ( $exons[0]->phase == 1 ) {

@@ -1,9 +1,9 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBOLD::Feature_Obj
+# EnsEMBL module for Bio::EnsEMBL::DBOLD::Feature_ObjForeign
 #
-# Cared for by Elia Stupka <elia@ebi.ac.uk>
+# Cared for by Elia Stupka <elia@ebi.ac.uk>, Philip lijnzaad@ebi.ac.uk
 #
-# Copyright Elia Stupka
+# Copyright EnsEMBL
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -11,44 +11,54 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBOLD::Feature_Obj - MySQL database adapter class for EnsEMBL Feature Objects
+Bio::EnsEMBL::DBOLD::Feature_ObjForeign, specialization of Feature_Obj that
+allows you to translate table names to other names. The intended use is
+for an database that reuses (readonly, not writing!) part of another
+database in order to save on speed (no loading of all the assembly related
+data) and disk usage.
+
 
 =head1 SYNOPSIS
 
   use Bio::EnsEMBL::DBOLD::Obj;
-  use Bio::EnsEMBL::DBOLD::Feature_Obj;
+  use Bio::EnsEMBL::DBOLD::Feature_ObjForeign;
 
   $db = new Bio::EnsEMBL::DBOLD::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
-  my $feature_obj=Bio::EnsEMBL::Feature_Obj->new($obj);
+  my $feature_obj =Bio::EnsEMBL::Feature_ObjForeign->new($obj);
 
-  #Check if a feature exists
-  $feature_obj->exists();
+  my $mapping = { feature => myfeature, 
+                  static_golden_path => ens081.static_golden_path
+                 };
+  my $feature_obj->table_name_tranlations $mapping;
+
+  # From here on, all the application code first translates the table
+  # names, then does the queries on possibly translated names.
 
 =head1 DESCRIPTION
 
-This is one of the objects contained in Bio:EnsEMBL::DBOLD::Obj, dealing with
-feature objects.
-
-The Obj object represents a database that is implemented somehow (you shouldn\'t
-care much as long as you can get the object). 
+Bio::EnsEMBL::DBOLD::Feature_ObjForeign, specialization of Feature_Obj that
+allows you to translate table names to other names. The intended use is
+for an database that reuses (readonly, not writing!) part of another
+database in order to save on speed (no loading of all the assembly related
+data) and disk usage.
 
 =head1 CONTACT
 
-Elia Stupka: elia@ebi.ac.uk
+Elia Stupka: elia@ebi.ac.uk, Philip lijnzaad@ebi.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are 
-usually preceded with a _
+The rest of the documentation details each of the object methods. Internal
+methods are usually preceded with a _
 
 =cut
 
 
 # Let the code begin...
 
-package Bio::EnsEMBL::DBOLD::Feature_Obj;
+package Bio::EnsEMBL::DBOLD::Feature_ObjForeign;
 
-use vars qw(@ISA);
+use vars qw(@ISA $AUTOLOAD);
 use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
@@ -66,22 +76,16 @@ use Bio::EnsEMBL::DBOLD::Utils;
 use Bio::EnsEMBL::DBOLD::DummyStatement;
 
 
+@ISA = qw(Bio::EnsEMBL::DBOLD::ObjForeign
+          Bio::Root::RootI 
+          Bio::EnsEMBL::DBOLD::Feature_Obj
+         );
 
-@ISA = qw(Bio::Root::RootI);
-
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
-
-sub new {
-  my($class,$db_obj) = @_;
-  my $self = {};
-  bless $self,$class;
-
-  $db_obj || $self->throw("Database Gene object must be passed a db obj!");
-  $self->_db_obj($db_obj);
-
-  return $self; # success - we hope!
+sub new {  # comes from ObjForeign
+    my ($class, @args) = @_;
+    my $self= $class->SUPER::new(@_);
+    bless $self, $class;
+    $self;
 }
 
 =head2 delete
@@ -102,10 +106,11 @@ sub delete {
     if (ref( $contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI")) {
 	$self->throw("You have to give a contig id, not a contig object!");
     }
+    
 
-    my $sth = $self->_db_obj->prepare("select fs.feature,fs.fset " .
-			     "from   fset_feature as fs, " .
-			     "       feature as f " .
+    my $sth = $self->_db_obj->prepare("SELECT fs.feature,fs.fset " .
+			     "from   ".$self->_lookup_table_name('fset_feature')." as fs, " .
+			     "       ".$self->_lookup_table_name('feature')." as f " .
 			     "where  fs.feature = f.id " .
 			     "and    f.contig = '$contig'");
 
@@ -130,21 +135,21 @@ sub delete {
 	
 
 	
-	$sth = $self->_db_obj->prepare("delete from fset where id in ($fsstr)");
+	$sth = $self->_db_obj->prepare("DELETE from ".$self->_lookup_table_name('fset')." where id in ($fsstr)");
 	$res = $sth->execute;
 	
-	$sth = $self->_db_obj->prepare("delete from fset_feature where fset in ($fsstr)");
+	$sth = $self->_db_obj->prepare("DELETE from ".$self->_lookup_table_name('fset_feature')." where fset in ($fsstr)");
 	$res = $sth->execute;
     }
     
     #print(STDERR "Deleting features for contig $contig\n");
     
-    $sth = $self->_db_obj->prepare("delete from feature where contig = '$contig'");
+    $sth = $self->_db_obj->prepare("DELETE from ".$self->_lookup_table_name('feature')." where contig = '$contig'");
     $res = $sth->execute;
     
     #print(STDERR "Deleting repeat features for contig $contig\n");
     
-    $sth = $self->_db_obj->prepare("delete from repeat_feature where contig = '$contig'");
+    $sth = $self->_db_obj->prepare("DELETE from ".$self->_lookup_table_name('repeat_feature')." where contig = '$contig'");
     $res = $sth->execute;
 
 }
@@ -214,7 +219,7 @@ sub write {
 	    if ( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
 		my $homol = $feature->feature2;
 	    my $sth = $self->_db_obj->prepare(  
-                  "insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue,phase,end_phase) ".
+                  "INSERT into ".$self->_lookup_table_name('feature')."(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue,phase,end_phase) ".
                   "values ('NULL',"
                   .$contig->internal_id     .","
                   .$feature->start          .","
@@ -235,7 +240,7 @@ sub write {
         
         
         } else {
-		my $sth = $self->_db_obj->prepare(  "insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue,phase,end_phase) ".
+		my $sth = $self->_db_obj->prepare(  "INSERT into ".$self->_lookup_table_name('feature')."(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue,phase,end_phase) ".
                                         "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     
         $sth->execute('NULL',
@@ -257,7 +262,7 @@ sub write {
 	}
     }
 
-    my $sth2 = $self->_db_obj->prepare("insert into repeat_feature(id,contig,seq_start,seq_end,score,strand,analysis,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?)");
+    my $sth2 = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('repeat_feature')."(id,contig,seq_start,seq_end,score,strand,analysis,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?)");
 
     foreach my $feature (@repeats) {
 	if (!defined($feature->analysis)) {
@@ -302,12 +307,12 @@ sub write {
 
 	if( !defined $score ) { $score = "-1000"; }
 
-	my $sth3 = $self->_db_obj->prepare("insert into fset(id,score) values ('NULL',$score)");
+	my $sth3 = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('fset')."(id,score) values ('NULL',$score)");
 	   $sth3->execute();
 
 	# get out this id. This looks really clunk I know. Any better ideas... ?
 
-	my $sth4 = $self->_db_obj->prepare("select LAST_INSERT_ID()");
+	my $sth4 = $self->_db_obj->prepare("SELECT LAST_INSERT_ID()");
 	   $sth4->execute();
 
 	my $arr = $sth4->fetchrow_arrayref();
@@ -317,8 +322,7 @@ sub write {
 	my $rank = 1;
 
 	foreach my $sub ( $feature->sub_SeqFeature ) {
-	    my $sth5 = $self->_db_obj->prepare("insert into feature "
-                      ."(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid,evalue,perc_id,phase,end_phase) "
+	    my $sth5 = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('feature')."(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid,evalue,perc_id,phase,end_phase) "
                       ."values('NULL','"
                       .$contig->internal_id ."',"
 				      .$sub->start          .","
@@ -335,7 +339,7 @@ sub write {
                       . ((defined $sub->end_phase)   ?   $sub->end_phase     : 'NULL')  .")");
 	    
         $sth5->execute();
-	    my $sth6 = $self->_db_obj->prepare("insert into fset_feature(fset,feature,rank) values ($fset_id,LAST_INSERT_ID(),$rank)");
+	    my $sth6 = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('fset_feature')."(fset,feature,rank) values ($fset_id,LAST_INSERT_ID(),$rank)");
 	    $sth6->execute();
 	    $rank++;
 	    }
@@ -363,7 +367,7 @@ sub get_Protein_annseq{
 
     my $annseq = Bio::EnsEMBL::AnnSeq->new();
     
-    my $sth     = $self->_db_obj->prepare("select id from transcript where translation = '$ENSP'");
+    my $sth     = $self->_db_obj->prepare("SELECT id from ".$self->_lookup_table_name('transcript')." where translation = '$ENSP'");
     my $res     = $sth->execute();
     my $rowhash = $sth->fetchrow_hashref;
     
@@ -376,12 +380,12 @@ sub get_Protein_annseq{
     my $seq = $transcript->translate();
     $annseq->primary_seq($seq);
 
-    $sth = $self->_db_obj->prepare("select * from proteinfeature where translation = '$ENSP'");
+    $sth = $self->_db_obj->prepare("SELECT * from ".$self->_lookup_table_name('proteinfeature')." where translation = '$ENSP'");
     $res = $sth->execute();
 
     while( my $rowhash = $sth->fetchrow_hashref) {
 	my $analysis = $rowhash->{'analysis'};
-	my $sth2     = $self->_db_obj->prepare("select * from analysis where id = '$analysis'");
+	my $sth2     = $self->_db_obj->prepare("SELECT * from ".$self->_lookup_table_name('analysis')." where id = '$analysis'");
 	my $res2     = $sth2->execute();
 	my $rowhash2 = $sth2->fetchrow_hashref;
 
@@ -414,7 +418,7 @@ sub write_all_Protein_features {
     
     my $c=0;
     foreach my $feature ($prot_annseq->all_SeqFeatures()) {
-	my $sth = $self->_db_obj->prepare("insert into proteinfeature (id,seq_start, seq_end, score, analysis, translation) values (NULL,"
+	my $sth = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('proteinfeature')." (id,seq_start, seq_end, score, analysis, translation) values (NULL,"
 				 .$feature->start().","
 				 .$feature->end().","
 				 .$feature->score().",'"
@@ -422,7 +426,7 @@ sub write_all_Protein_features {
 				 .$ENSP."')");
 	$sth->execute();
 	
-	my $sth2 = $self->_db_obj->prepare("insert into analysis (id,db,db_version,program,program_version,gff_source,gff_feature) values ('$c','testens',1,'elia_program',1,'"
+	my $sth2 = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('analysis')." (id,db,db_version,program,program_version,gff_source,gff_feature) values ('$c','testens',1,'elia_program',1,'"
 				  .$feature->source_tag()."','"
 				  .$feature->primary_tag()."')");
 	 $sth2->execute();
@@ -445,7 +449,7 @@ sub write_all_Protein_features {
 sub write_Protein_feature {
     my ($self,$ENSP,$feature) = @_;
     
-    my $sth = $self->_db_obj->prepare("insert into proteinfeature (seq_start, seq_end, score, translation) values ("
+    my $sth = $self->_db_obj->prepare("INSERT into ".$self->_lookup_table_name('proteinfeature')." (seq_start, seq_end, score, translation) values ("
 			     .$feature->start()." ,"
 			     .$feature->end()." ,'"
 			     .$feature->score()." ,'"
@@ -469,7 +473,7 @@ sub write_Protein_feature {
 sub get_Analysis {
     my ($self,$id) = @_;
 
-    my $sth = $self->_db_obj->prepare("select db,db_version,program,program_version,gff_source,gff_feature,id from analysis where id = $id");
+    my $sth = $self->_db_obj->prepare("SELECT db,db_version,program,program_version,gff_source,gff_feature,id from ".$self->_lookup_table_name('analysis')." where id = $id");
     my $rv  = $sth->execute;
     my $rh  = $sth->fetchrow_hashref;
 
@@ -523,14 +527,14 @@ sub exists_Analysis {
     my $query;
 
     if ($anal->has_database == 1) {
-            $query = "select id from analysis where db = \""      . $anal->db              . "\" and" .
+            $query = "SELECT id from ".$self->_lookup_table_name('analysis')." where db = \""      . $anal->db              . "\" and" .
                 " db_version = \""      . $anal->db_version      . "\" and " .
                 " program =    \""      . $anal->program         . "\" and " .
                 " program_version = \"" . $anal->program_version . "\" and " .
                 " gff_source = \""      . $anal->gff_source      . "\" and" .
                 " gff_feature = \""     . $anal->gff_feature     . "\"";
     } else {
-        $query = "select id from analysis where " .
+        $query = "SELECT id from ".$self->_lookup_table_name('analysis')." where " .
                 " program =    \""      . $anal->program         . "\" and " .
                 " program_version = \"" . $anal->program_version . "\" and " .
                 " gff_source = \""      . $anal->gff_source      . "\" and" .
@@ -584,7 +588,7 @@ sub write_Analysis {
     
     if ($anal->has_database == 1) {
         local $^W = 0;
-	$query = "insert into analysis(id,db,db_version,program,program_version,gff_source,gff_feature) values (NULL,\"" .
+	$query = "INSERT into ".$self->_lookup_table_name('analysis')."(id,db,db_version,program,program_version,gff_source,gff_feature) values (NULL,\"" .
                 $anal->db               . "\",\""   .
                 $anal->db_version       . "\",\""   .
 		$anal->program          . "\",\"" .
@@ -592,7 +596,7 @@ sub write_Analysis {
                 $anal->gff_source       . "\",\"" .
                 $anal->gff_feature      . "\")";
     } else {
-	$query = "insert into analysis(id,program,program_version,gff_source,gff_feature) values (NULL,\"" .
+	$query = "INSERT into ".$self->_lookup_table_name('analysis')."(id,program,program_version,gff_source,gff_feature) values (NULL,\"" .
                 $anal->program          . "\",\"" .
                 $anal->program_version  . "\",\"" .
                 $anal->gff_source       . "\",\"" .
@@ -603,7 +607,7 @@ sub write_Analysis {
     my $rv   = $sth->execute;
     
     
-    $sth = $self->_db_obj->prepare("select last_insert_id()");
+    $sth = $self->_db_obj->prepare("SELECT last_insert_id()");
     $rv  = $sth->execute;
     
     if ($sth->rows == 1) {
@@ -633,7 +637,7 @@ sub find_GenomeHits {
 
     $self->throw("No hit id input") unless defined($arg);
 
-    my $query = "select c.id, " .
+    my $query = "SELECT c.id, " .
 	                "f.seq_start, " . 
 			"f.seq_end, "   . 
 			"f.score, "     .
@@ -643,7 +647,7 @@ sub find_GenomeHits {
 			"f.hstart, "    .
 			"f.hend, "      .
 			"f.hid "       .
-	        "from   feature as f,contig as c " .
+	        "from   ".$self->_lookup_table_name('feature')." as f,".$self->_lookup_table_name('contig')." as c " .
 		"where  f.hid = '$arg' and " . 
 		        "c.internal_id = f.contig";
 
@@ -718,8 +722,8 @@ sub get_PredictionFeature_by_id {
    my $fsetid;
    my %analhash;
   
-   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,fset.id,c.id,f.phase " .
-       "from feature f, fset fset,fset_feature ff,contig c where ff.feature = f.id and fset.id = ff.fset ".
+   my $query = "SELECT f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,fset.id,c.id " .
+       "from ".$self->_lookup_table_name('feature')." f, ".$self->_lookup_table_name('fset')." fset,".$self->_lookup_table_name('fset_feature')." ff,".$self->_lookup_table_name('contig')." c where ff.feature = f.id and fset.id = ff.fset ".
         " and c.internal_id=f.contig and ff.fset ='$genscan_id' and name = 'genscan'";
  
        
@@ -727,13 +731,14 @@ sub get_PredictionFeature_by_id {
         
    $sth->execute();
    
-   my ($fid,$start,$end,$strand,$score,$analysisid,$contig,$phase);
+   my ($fid,$start,$end,$strand,$score,$analysisid,$contig);
            
-    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid,\$contig,\$phase);
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid,\$contig);
 
    my $current_fset;
    if( $sth->fetch ) {
        my $out;
+
        my $analysis;
 
        if (!$analhash{$analysisid}) {
@@ -746,23 +751,22 @@ sub get_PredictionFeature_by_id {
        } else {
            $analysis = $analhash{$analysisid};
        }
-       
-       $current_fset = new Bio::EnsEMBL::SeqFeature;
-       $current_fset->source_tag('genscan');
-       $current_fset->primary_tag('prediction');
-       $current_fset->analysis($analysis);
-       $current_fset->seqname($contig);
-       $current_fset->raw_seqname($contig);
-       $current_fset->id($fsetid);
+          
+           $current_fset = new Bio::EnsEMBL::SeqFeature;
+           $current_fset->source_tag('genscan');
+           $current_fset->primary_tag('prediction');
+           $current_fset->analysis($analysis);
+           $current_fset->seqname($contig);
+           $current_fset->id($fsetid);
         
 
-       $out = new Bio::EnsEMBL::SeqFeature;
+   $out = new Bio::EnsEMBL::SeqFeature;
  
        $out->seqname   ($contig);
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);  
-       $out->phase     ($phase);
+ 
        $out->source_tag('genscan');
        $out->primary_tag('prediction');
  
@@ -775,15 +779,14 @@ sub get_PredictionFeature_by_id {
        # Final check that everything is ok.
            
        $out->validate();
-
        $current_fset->add_sub_SeqFeature($out,'EXPAND');
        $current_fset->strand($strand);
-   } else { 
-       $self->throw("Fset $genscan_id does not exist in the database");
    }
+   
+     else { $self->throw("Fset $genscan_id does not exist in the database");}
 
 
-   return $current_fset;
+return $current_fset;
 
 }
 
@@ -813,7 +816,9 @@ sub get_PredictionFeature_as_Transcript{
     my $ft=$self->get_PredictionFeature_by_id($genscan_id);
     my $contig=$self->_db_obj->get_Contig($ft->seqname);
  
-    return &Bio::EnsEMBL::DBOLD::Utils::fset2transcript($ft,$contig);
+    &Bio::EnsEMBL::DBOLD::Utils::fset2transcript($ft,$contig);
+
+
 }
 
 
@@ -838,9 +843,6 @@ sub _db_obj{
     return $self->{'_db_obj'};
 
 }
-
-
-
 
 sub exponent {
     my ($number) = @_;

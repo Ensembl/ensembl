@@ -15,7 +15,7 @@ Bio::EnsEMBL::DBOLD::Obj - Object representing an instance of an EnsEMBL DB
 
 =head1 SYNOPSIS
 
-    $db = Bio::EnsEMBL::DBOLD::Obj->new(
+    $db = Bio::EnsEMBL::DBOLD::DBAdaptor->new(
         -user   => 'root',
         -dbname => 'pog',
         -host   => 'caldy',
@@ -52,7 +52,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBOLD::Obj;
+package Bio::EnsEMBL::DBOLD::DBAdaptor;
 
 use vars qw(@ISA);
 use strict;
@@ -70,11 +70,26 @@ use Bio::EnsEMBL::DBOLD::GapContig;
 
 use Bio::EnsEMBL::Clone;
 use Bio::EnsEMBL::DBOLD::StaticGoldenPathAdaptor;
+use Bio::EnsEMBL::DBOLD::DBEntryAdaptor;
 use Bio::EnsEMBL::DBOLD::KaryotypeBandAdaptor;
 use Bio::EnsEMBL::DBOLD::AnalysisAdaptor;
+use Bio::EnsEMBL::DBOLD::ChromosomeAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
-use Bio::EnsEMBL::Chromosome;
 use Bio::EnsEMBL::DBOLD::CloneAdaptor;
+use Bio::EnsEMBL::DBOLD::MetaContainer;
+
+## following is not part of core EnsEMBL, so maybe doesn't belong here and
+## has to be moved elsehwere (e.g. as part of a more dynamical
+## add_external_adaptor scheme). For convenience I have it here, now,
+## though. It will break things for people who don't have ensembl-external
+## checked out ...
+eval {
+    require Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
+};
+if ($@) {
+    warn "error use'ing FamilyAdaptor - that's fine\n";
+}
+
 
 use DBI;
 
@@ -89,7 +104,6 @@ sub new {
   my($pkg, @args) = @_;
 
   my $self = bless {}, $pkg;
-  $self->warn( "DBAdaptor is now copy of Obj. Please start using DBAdaptor instead of Obj" );
 
     my (
         $db,
@@ -174,6 +188,7 @@ sub new {
     $self->username( $user );
     $self->host( $host );
     $self->dbname( $db );
+    $self->password( $password);
     # following was added on branch; unclear if it is needed:
     $self->mapdbname( $mapdbname );
 
@@ -202,8 +217,7 @@ sub new {
           -ENSDB  => $db,
           };
     }
-	#$self->store_mapdb_handle();
-	
+
   # What source of contigoverlaps should we use?
   $self->contig_overlap_source($contig_overlap_source) if $contig_overlap_source;
   
@@ -243,22 +257,6 @@ sub dbname {
   $self->{_dbname};
 }
 
- # make the cunningly stored map DB handle available to everybody
- # who wants to play with it...
- 
-sub store_mapdb_handle {
-	my ($self, $arg ) = @_;
-	my $dsn = "DBI:"       . $self->{'_mapdb'}->{'-DRIVER'}
-			. ":database=" . $self->{'_mapdb'}->{'-DBNAME'}
-			. ";host="     . $self->{'_mapdb'}->{'-HOST'}
-			. ";port="     . $self->{'_mapdb'}->{'-PORT'}
-		;
-	$self->warn("Using mapdb DSN $dsn");
-	my $mapdbh = DBI->connect("$dsn",$self->{'_mapdb'}->{'-USER'},$self->{'_mapdb'}->{'-PASS'}, {RaiseError => 1});
-	$mapdbh || $self->throw("Could not connect to maps database!");
-	$self->_mapdb_handle($mapdbh);
-}
-
 sub username {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
@@ -271,6 +269,13 @@ sub host {
   ( defined $arg ) &&
     ( $self->{_host} = $arg );
   $self->{_host};
+}
+
+sub password {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_password} = $arg );
+  $self->{_password};
 }
 
 
@@ -294,25 +299,8 @@ sub get_Feature_Obj {
     return $update_obj;
 }
 
-=head2 get_Gene_Obj
-
- Title   : get_Gene_Obj
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
 
 
-=cut
-
-sub get_Gene_Obj {
-    my ($self) = @_;
-    
-    my $update_obj = Bio::EnsEMBL::DBOLD::Gene_Obj->new($self);
- 
-    return $update_obj;
-}
 
 =head2 get_Protfeat_Adaptor
 
@@ -334,6 +322,57 @@ sub get_Protfeat_Adaptor {
     return $update_obj;
 }
 
+=head2 get_MetaContainer
+
+ Title   : get_Meta_Container
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_MetaContainer {
+    my ($self) = @_;
+    if( !exists $self->{_metacontainer} ) {
+      $self->{_metacontainer} = 
+	Bio::EnsEMBL::DBOLD::MetaContainer->new($self);
+    } 
+ 
+    return $self->{_metacontainer};
+}
+
+=head2 get_all_fpcctg_ids
+
+ Title   : get_all_fpcctg_ids
+ Usage   : @cloneid = $obj->get_all_fpcctg_ids
+ Function: returns all the valid FPC contigs from given golden path
+ Example :
+ Returns : 
+ Args    : static golden path type (typically, 'UCSC')
+
+
+=cut
+
+sub get_all_fpcctg_ids {
+   my ($self, $type) = @_;
+
+   $self->throw("no static_gold_path given") unless defined $type;
+   my @out;
+
+   my $q= "SELECT DISTINCT fpcctg_name 
+           FROM static_golden_path sgp
+           WHERE type = '$type'";
+   my $sth = $self->prepare($q) || $self->throw("can't prepare: $q");
+   my $res = $sth->execute || $self->throw("can't prepare: $q");
+
+   while( my ($id) = $sth->fetchrow_array) {
+       push(@out, $id);
+   }
+   return @out;
+}
 
 =head2 get_object_by_wildcard
 
@@ -2110,7 +2149,7 @@ Calling gene_Obj->write_Exon instead!");
 
  Title   : get_Clone
  Usage   :
- Function:
+ Function: retrieve latest version of a clone from the database
  Example :
  Returns : 
  Args    :
@@ -2124,6 +2163,26 @@ sub get_Clone {
     my $ca= Bio::EnsEMBL::DBOLD::CloneAdaptor->new($self);
 
     return $ca->fetch_by_accession($accession);
+}
+  
+=head2 get_Clone_by_version
+
+ Title   : get_Clone_by_version
+ Usage   :
+ Function: retrieve specific version of a clone from the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Clone_by_version { 
+    my ($self,$accession,$ver) = @_;
+
+    my $ca= Bio::EnsEMBL::DBOLD::CloneAdaptor->new($self);
+
+    return $ca->fetch_by_accession_version($accession,$ver);
 }
   
 =head2 get_Contig
@@ -2207,36 +2266,6 @@ sub get_all_Clone_id{
        push(@out,$rowhash->{'id'});
    }
 
-   return @out;
-}
-
-=head2 get_all_fpcctg_ids
-
- Title   : get_all_fpcctg_ids
- Usage   : @cloneid = $obj->get_all_fpcctg_ids
- Function: returns all the valid FPC contigs from given golden path
- Example :
- Returns : 
- Args    : static golden path type (typically, 'UCSC')
-
-
-=cut
-
-sub get_all_fpcctg_ids {
-   my ($self, $type) = @_;
-
-   $self->throw("no static_gold_path given") unless defined $type;
-   my @out;
-
-   my $q= "SELECT DISTINCT fpcctg_name 
-           FROM static_golden_path sgp
-           WHERE type = '$type'";
-   my $sth = $self->prepare($q) || $self->throw("can't prepare: $q");
-   my $res = $sth->execute || $self->throw("can't prepare: $q");
-
-   while( my ($id) = $sth->fetchrow_array) {
-       push(@out, $id);
-   }
    return @out;
 }
 
@@ -2358,6 +2387,59 @@ sub gene_Obj {
     return $self->{_gene_obj};
 }
 
+sub get_GeneAdaptor {
+    my ($self) = @_;
+
+    unless (defined($self->{_geneAdaptor})) {
+	$self->{_geneAdaptor} = Bio::EnsEMBL::DBOLD::GeneAdaptor->new($self);    
+    }
+
+    return $self->{_geneAdaptor};
+}
+
+sub get_ExonAdaptor {
+    my ($self) = @_;
+
+    unless (defined($self->{_exonAdaptor})) {
+	$self->{_exonAdaptor} = Bio::EnsEMBL::DBOLD::ExonAdaptor->new($self);    
+    }
+
+    return $self->{_exonAdaptor};
+}
+
+sub get_TranscriptAdaptor {
+    my ($self) = @_;
+
+    unless (defined($self->{_transcriptAdaptor})) {
+	$self->{_transcriptAdaptor} = Bio::EnsEMBL::DBOLD::TranscriptAdaptor->new($self);    
+    }
+
+    return $self->{_transcriptAdaptor};
+}
+
+
+sub get_FeatureAdaptor {
+    my ($self) = @_;
+
+    unless (defined($self->{_featureAdaptor})) {
+	$self->{_featureAdaptor} = Bio::EnsEMBL::DBOLD::FeatureAdaptor->new($self);    
+    }
+
+    return $self->{_featureAdaptor};
+}
+
+
+sub get_RawContigAdaptor {
+    my ($self) = @_;
+
+    unless (defined($self->{_rawContigAdaptor})) {
+	$self->{_rawContigAdaptor} = Bio::EnsEMBL::DBOLD::RawContigAdaptor->new($self);    
+    }
+
+    return $self->{_rawContigAdaptor};
+}
+
+
 =head2 feature_Obj
     
  Title   : feature_Obj
@@ -2402,6 +2484,15 @@ sub get_AnalysisAdaptor {
 }
 
 
+sub get_DBEntryAdaptor {
+   my ($self) = @_;
+   if( ! defined $self->{_dBEntryAdaptor} ) {
+     $self->{_dBEntryAdaptor} = 
+       Bio::EnsEMBL::DBOLD::DBEntryAdaptor->new($self);
+   }
+   return $self->{_dBEntryAdaptor};
+}
+
 
 =head2 get_StaticGoldenPathAdaptor
 
@@ -2437,6 +2528,42 @@ sub get_KaryotypeBandAdaptor{
    my ($self,@args) = @_;
 
    return Bio::EnsEMBL::DBOLD::KaryotypeBandAdaptor->new($self);
+}
+
+=head2 get_ChromosomeAdaptor
+
+ Title   : get_ChromosomeAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_ChromosomeAdaptor{
+   my ($self,@args) = @_;
+
+   return Bio::EnsEMBL::DBOLD::ChromosomeAdaptor->new($self);
+}
+
+=head2 get_FamilyAdaptor
+
+ Title   : get_FamilyAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_FamilyAdaptor {
+   my ($self,@args) = @_;
+
+   return Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor->new($self);
 }
 
 
@@ -2685,7 +2812,7 @@ sub static_golden_path_type{
 
 =cut
 
-sub _crossdb{
+sub _crossdb {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -2693,6 +2820,97 @@ sub _crossdb{
     }
     return $obj->{'_crossdb'};
 
+}
+
+## internal stuff for external adaptors
+=head2 _ext_adaptor
+
+ Title   : _ext_adaptor
+ Usage   : $obj->_ext_adaptor('family' [, $famAdaptorObj] )
+ Function: 
+ Returns : an adaptor or undef
+ Args    : a name and a adaptor object. 
+
+=cut
+
+sub _ext_adaptor {
+    my ($self, $adtor_name, $adtor_obj) = @_;
+    if( $adtor_obj ) {
+        if ($adtor_obj eq 'DELETE') { 
+            delete $adtor_obj->{'_ext_adaptors'}{$adtor_name};
+        } else {
+            $self->{'_ext_adaptors'}{$adtor_name} = $adtor_obj;
+        }
+    }
+    return $self->{'_ext_adaptors'}{$adtor_name};
+}
+
+## support for external adaptors
+=head2 list_ExternalAdaptors
+
+ Title   : list_ExternalAdaptors
+ Usage   : $obj->list_ExternalAdaptors
+ Function: returns all the names of installed external adaptors
+ Returns : a (possibly empty) list of name of external adaptors
+ Args    : none
+
+=cut
+
+sub list_ExternalAdaptors {
+    my ($self) = @_;
+    return keys % {$self->{_ext_adaptors}};
+}
+
+=head2 add_ExternalAdaptor
+
+ Title   : add_ExternalAdaptor
+ Usage   : $obj->add_ExternalAdaptor('family', $famAdaptorObj);
+ Function: adds the external adaptor the internal hash of known 
+           external adaptors. If an adaptor of the same name is installed, 
+           it will be overwritten.
+ Returns : undef
+ Args    : a name and a adaptor object. 
+
+=cut
+
+sub add_ExternalAdaptor {
+    my ($self, $adtor_name, $adtor_obj) = @_;
+    $self->_ext_adaptor($adtor_name, $adtor_obj);
+    undef;
+}
+
+=head2 get_ExternalAdaptor
+
+ Title   : get_ExternalAdaptor
+ Usage   : $obj->get_ExternalAdaptor('family');
+ Function: retrieve external adaptor by name
+ Returns : an adaptor (sub-type of BaseAdaptor) or undef
+ Args    : the name 
+
+=cut
+
+sub get_ExternalAdaptor {
+    my ($self, $adtor_name) = @_;
+    $self->_ext_adaptor($adtor_name);
+}
+
+
+=head2 remove_ExternalAdaptor
+
+ Title   : remove_ExternalAdaptor
+ Usage   : $obj->remove_ExternalAdaptor('family')
+ Function: removes the named external adaptor from the internal hash of known 
+           external adaptors. If the adaptor name is not known, nothing 
+           happens. 
+ Returns : undef
+ Args    : a name
+
+=cut
+
+sub remove_ExternalAdaptor {
+    my ($self, $adtor_name) = @_;
+    $self->_ext_adaptor($adtor_name, 'DELETE');
+    undef;
 }
 
 

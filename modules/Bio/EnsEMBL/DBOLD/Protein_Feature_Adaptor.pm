@@ -52,7 +52,7 @@ use strict;
 use Bio::EnsEMBL::DBOLD::BaseAdaptor;
 
 
-use Bio::EnsEMBL::FeaturePair;
+use Bio::EnsEMBL::Protein_FeaturePair;
 use Bio::EnsEMBL::SeqFeature;
 
 
@@ -85,15 +85,81 @@ sub fetch_by_translationID {
     my($self,$transl) = @_;
 
     my @features;
-    my $sth = $self->prepare ("select * from protein_feature where translation = '$transl'");
-    my $res = $sth->execute;
 
-    while (my $rowhash = $sth->fetchrow_hashref) {   
-	my $feature = $self->_set_protein_feature($rowhash);
- 
-	push(@features,$feature);
+
+    my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,d.short_description from protein_feature p,interpro_description d,interpro i,analysis a where p.translation = '$transl' and i.id = p.hid and i.interpro_ac = d.interpro_ac and p.analysis = a.id and a.gff_feature = 'domain'");
+    $sth->execute();
+
+
+    my %anahash;
+
+
+    while( my $arrayref = $sth->fetchrow_arrayref) {
+    
+	my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
+	if( !defined $anahash{$analysisid} ) {
+	    my $analysis = $self->_feature_obj->get_Analysis($analysisid);
+	    $anahash{$analysisid} = $analysis;
+	}
+
+	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
+						   -start => $start,
+						   -end => $end,
+						   -score => $score, 
+						   -analysis => $anahash{$analysisid},
+						   -percent_id => $perc_id,
+						   -p_value => $evalue);
 	
+	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
+						  -end => $hend,
+						  -analysis => $anahash{$analysisid},
+						  -seqname => $hid);
+	
+	my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
+							    -feature2 => $feat2,);
+
+	$feature->idesc($desc);
+	
+	if ($feature) {
+	    push(@features,$feature);
+	}
+
     }
+
+    $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid from protein_feature p,analysis a where a.id = p.analysis and p.translation = '$transl' and p.analysis = a.id and a.gff_feature != 'domain'");
+
+    $sth->execute();
+
+    while( my $arrayref = $sth->fetchrow_arrayref) {
+	my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
+	
+	if( !defined $anahash{$analysisid} ) {
+	    my $analysis = $self->_feature_obj->get_Analysis($analysisid);
+	    $anahash{$analysisid} = $analysis;
+	}
+
+	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
+						   -start => $start,
+						   -end => $end,
+						   -score => $score, 
+						   -analysis => $anahash{$analysisid},
+						   -percent_id => $perc_id,
+						   -p_value => $evalue);
+	
+	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
+						  -end => $hend,
+						  -analysis => $anahash{$analysisid},
+						  -seqname => $hid);
+	
+	my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
+							    -feature2 => $feat2,);
+
+	$feature->idesc($desc);
+	if ($feature) {
+	    push(@features,$feature);
+	}
+    }
+    
     return @features;    
 }
 
@@ -126,8 +192,6 @@ sub fetch_by_dbID{
    
    return $feature;
 }
-
-
 
 =head2 write_Protein_feature
 
@@ -165,7 +229,7 @@ sub write_Protein_feature{
     my $analysisid = $self->_feature_obj->write_Analysis($analysis);
   
     my $homol = $feature->feature2;
-    
+      
     my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
 			       "values ('NULL',"
 			       ."'".$feature->seqname    ."',"
@@ -353,13 +417,11 @@ my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
 					     -analysis => $analysis,
 					     -seqname => $rowhash->{'hid'});
    
-   my $feature = new Bio::EnsEMBL::FeaturePair(-feature1 => $feat1,
+   my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
 					       -feature2 => $feat2,);
    return $feature;
 
 }
-
-
 
 
 
