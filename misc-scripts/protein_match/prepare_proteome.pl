@@ -57,15 +57,15 @@ my $protfile = $conf{'pmatch_input_fa'};
 my $pmatch   = $conf{'pmatch'};
 my $organism = $conf{'organism'};
 my $refseq_pred = $conf{'refseq_pred_fa'};
-
+my $sub_genes = $conf{'submitted_genes'};
 
 if (($organism eq "human") || ($organism eq "mouse")) {
     &parse_refseq;
 }
 
-#if ($organism eq "human") {
-#    &parse_refseq_pred;
-#}
+if ($organism eq "anopheles") {
+    &parse_sub;
+}
 
 &parse_sptr;
 &test_protfile;
@@ -98,6 +98,20 @@ sub parse_sptr {
   
   close IN;
   close OUT;
+
+}
+
+sub parse_sub {
+    #Simply add the file to the main file which is going to be used for the mapping
+    open (IN, "$sub_genes") || die "Can't open $sub_genes\n";
+    open (OUT, ">>$protfile") || die "Can't open $protfile\n";
+
+    while(<IN>) {
+	print OUT $_;
+    }
+    
+    close IN;
+    close OUT;
 
 }
 
