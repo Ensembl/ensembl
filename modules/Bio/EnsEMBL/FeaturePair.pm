@@ -88,6 +88,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
   Arg [P_VALUE]   : float -  The pvalue or evalue (optional)
   Arg [SPECIES]   : string - The species the query sequence is from (optional)
   Arg [HSPECIES]  : string - The species the hit sequence is from (optional)
+  Arg [COVERAGE]  : string - The % of the query that this feature pair covers
+  Arg [HCOVERAGE] : string - The % of the target this this feature pair covers
   Arg [...]       : Named superclass constructor args (Bio::EnsEMBL::Feature)
   Example    : $feat = Bio::EnsEMBL::FeaturePair->new(-start    => 132_231,
                                               -end      => 132_321,
@@ -116,10 +118,10 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   my ($hstart,$hend,$hstrand,$percent_id,$score, $species, $hspecies,
-      $p_value, $hseqname, $f1,$f2,$group_id,$level_id) =
+      $p_value, $hseqname, $f1,$f2, $coverage, $hcoverage, $group_id,$level_id) =
     rearrange(['HSTART','HEND','HSTRAND','PERCENT_ID','SCORE','SPECIES',
                'HSPECIES', 'P_VALUE', 'HSEQNAME', 'FEATURE1','FEATURE2',
-               'GROUP_ID','LEVEL_ID'], @_);
+               'COVERAGE', 'HCOVERAGE', 'GROUP_ID','LEVEL_ID'], @_);
 
   if(defined($hstart) && defined($hend) && ($hend < $hstart)) {
     throw('HSTART must be less than or equal to HEND');
@@ -137,6 +139,8 @@ sub new {
   $self->{'species'}    = $species;
   $self->{'hspecies'}   = $hspecies;
   $self->{'hseqname'}   = $hseqname;
+  $self->{'coverage'}   = $coverage;
+  $self->{'hcoverage'}  = $hcoverage;
   $self->{'p_value'}    = $p_value;
   $self->{'group_id'}   = $group_id;
   $self->{'level_id'}   = $level_id;
@@ -465,6 +469,41 @@ sub hspecies{
 }
 
 
+=head2 coverage
+
+  Arg [1]    : number (percentage) $coverage (optional)
+  Example    : $cov = $fp->coverage();
+  Description: Getter/Setter for the % of the query covered by the feature
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub coverage {
+  my $self = shift;
+  $self->{'coverage'} = shift if(@_);
+  return $self->{'coverage'};
+}
+
+
+=head2 hcoverage
+
+  Arg [1]    : number (percentage) $hcoverage (optional)
+  Example    : $hcov = $fp->hcoverage();
+  Description: Getter/Setter for the % of the target covered by the feature
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub hcoverage {
+  my $self = shift;
+  $self->{'hcoverage'} = shift if(@_);
+  return $self->{'hcoverage'};
+}
+
 
 =head2 p_value
 
@@ -583,6 +622,11 @@ sub level_id {
    }
    return $self->{'level_id'};
 }
+
+
+
+
+
 
 =head1 DEPRECATED METHODS
 
