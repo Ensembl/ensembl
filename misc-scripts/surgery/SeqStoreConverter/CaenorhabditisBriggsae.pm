@@ -283,21 +283,28 @@ sub clone_to_seq_region {
 
   #
   # We don't want to make clones out of the WGS contigs, only out of
-  # the clones with proper embl accessions
+  # the clones with proper embl accessions.  Also for some reason the embl_offset
+  # is not set in the briggsae 17/18/19 databases, which means we have to deduce the
+  # length from the name of the contigs!
   #
   my $select_sth = $dbh->prepare
     ("SELECT cl.clone_id,
              CONCAT(cl.embl_acc, '.', cl.embl_version),
-             MAX(ctg.embl_offset)+ctg.length-1
+             ctg.name
      FROM   $source.clone cl, $source.contig ctg
 		 WHERE  cl.clone_id = ctg.clone_id
      AND    cl.embl_acc not like 'c%'
-     GROUP BY ctg.clone_id");
+     ORDER BY cl.clone_id");
 
   $select_sth->execute();
 
-  my ($clone_id, $embl_acc, $length);
-  $select_sth->bind_columns(\$clone_id, \$embl_acc, \$length);
+  my ($clone_id, $embl_acc, $ctg_name);
+  $select_sth->bind_columns(\$clone_id, \$embl_acc, \$ctg_name);
+
+  my $highest_end = undef;
+  my $current_clone = undef;
+  my $current_clone_id = undef;
+  my $length;
 
   my $insert_sth = $dbh->prepare
     ("INSERT INTO $target.seq_region (name, coord_system_id, length) " .
@@ -307,11 +314,36 @@ sub clone_to_seq_region {
     ("INSERT INTO $target.tmp_cln_map (old_id, new_id) VALUES (?, ?)");
 
   while ($select_sth->fetch()) {
-    $insert_sth->execute("$embl_acc", $cs_id, $length);
+    #extract the end position of the contig
+    my $ctg_end;
+    (undef,undef,$ctg_end) = split(/\./, $ctg_name);
 
-    #store mapping of old -> new ids in temp table
-    $tmp_insert_sth->execute($clone_id, $insert_sth->{'mysql_insertid'});
+    if(!defined($current_clone)) {
+      $current_clone = $embl_acc;
+      $current_clone_id = $clone_id;
+      $highest_end   = $ctg_end;
+    }
+
+    if($current_clone ne $embl_acc) {
+      #started new clone, store last one
+
+      $insert_sth->execute($current_clone, $cs_id, $highest_end);
+      #store mapping of old -> new ids in temp table
+      $tmp_insert_sth->execute($current_clone_id, $insert_sth->{'mysql_insertid'});
+
+      $current_clone = $embl_acc;
+      $current_clone_id = $clone_id;
+      $highest_end = $ctg_end;
+    } elsif($ctg_end > $highest_end) {
+      #same clone, adjust end if end of contig is highest yet seen
+      $highest_end = $ctg_end;
+    }
   }
+
+  #insert the last clone
+  $insert_sth->execute($current_clone, $cs_id, $highest_end);
+  $tmp_insert_sth->execute($current_clone_id, $insert_sth->{'mysql_insertid'});
+
 
   $select_sth->finish();
   $insert_sth->finish();
