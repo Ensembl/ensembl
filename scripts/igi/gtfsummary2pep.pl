@@ -3,8 +3,7 @@
 # $Id$ 
 
 # This script takes a gtf summary file and peptide files, and produces an
-# ipi file. It is derived from gtfsummary2gtf.pl, and could possibly do
-# with some refactoring.
+# igi peptide file.  For each igi, it simply takes the longest transcript. 
 
 # Written by Philip lijnzaad@ebi.ac.uk
 # Copyright EnsEMBL http://www.ensembl.org
@@ -116,7 +115,8 @@ sub print_peptides {
     my ($ignored, $kept) = (0,0);
 
   IGI:
-    foreach my $igi (sort { substr($a,5) <=> substr($b,5) } keys %$igis) {
+    foreach my $igi (sort Bio::EnsEMBL::Utils::igi_utils::by_igi_number 
+                     keys %$igis) {
         # (this sorts on the numerical part of the "igi3_" identifier)
         my $peps= $peptides->{$igi};
         if (!defined $peps) {
@@ -142,6 +142,6 @@ sub print_peptides {
         my @others = grep ( $_ ne $native_id, @all_natives);
         my $others = join(',', @others);
         my $newheader = ">$igi $native_id; length: $len; others: $others; original: $rest";
-#        print "$newheader\n$sequence";
+        print "$newheader\n$sequence";
     }
 }                                       # print_peptides
