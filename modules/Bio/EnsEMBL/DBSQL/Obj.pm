@@ -133,6 +133,23 @@ sub _initialize {
       $self->_db_handle($dbh);
   }
 
+  # connect to a possible map db object
+  eval q
+   ( use Bio::EnsEMBL::Map::DBSQL::Obj;
+     my $mapdb = Bio::EnsEMBL::Map::DBSQL::Obj->new
+     ( -DBNAME => 'Maps',
+       -HOST => $host,
+       -DRIVER => $driver,
+       -USER => $user,
+       -PASS => $password,
+       -ENSDB => $db );
+     $self->mapdb( $mapdb );
+  );
+ 
+  if( $@ ) {
+    print STDERR ( "No connection to Maps database.\n" );
+    print "Error was following:\n$@";
+  }                                                                             
   return $make; # success - we hope!
 
 }
@@ -2445,6 +2462,14 @@ sub write_Clone{
    
 }
 
+# get/set a possible mapdb connection
+sub mapdb {
+  my $self = shift;
+  my $mapdb = shift;
+  $mapdb &&
+    ( $self->{_mapdb} = $mapdb );
+  $self->{_mapdb};
+}
 
 =head2 prepare
 

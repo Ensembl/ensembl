@@ -119,7 +119,7 @@ sub get_all_SeqFeatures {
     push(@out,$self->get_all_SimilarityFeatures);
     push(@out,$self->get_all_RepeatFeatures);
     push(@out,$self->get_all_GenePredictions);
-
+    push( @out, $self->get_MarkerFeatures );                                    
     return @out;
 }
 
@@ -222,6 +222,17 @@ sub get_all_GenePredictions {
     
     return @out;
 }
+
+sub get_MarkerFeatures {
+    my ($self) = @_;
+ 
+    if (!defined($self->{_read_MarkerFeatures})) {
+        $self->featureParser->read_MarkerFeatures;
+        $self->{_read_MarkerFeatures} = 1;
+    }
+    # return array of objects
+    return $self->featureParser->each_MarkerFeature;
+}                                                                              
 
 
 =head2 get_all_Genes

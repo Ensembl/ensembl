@@ -89,7 +89,8 @@ sub _initialize {
     $self->{_features} = [];   # This stores the features.
     $self->{_repeats}  = [];   # This stores the features.
     $self->{_genscan}  = [];   # This stores the genscan.
-    
+    $self->{_MarkerFeatures} = [];
+
     # DEBUG
     print_genes($gs,$seq) if $self->_debug;
 
@@ -302,6 +303,74 @@ sub read_Genscan {
     }
 }
 	
+
+
+# read the clonename.ePCR file and extract features
+# here we use normal featurePairs
+sub read_MarkerFeatures {
+ 
+  my ($self) = @_;
+ 
+  my $filename = $self->clone_dir."/".$self->disk_id.".ePCR";
+  # print STDERR "File: $filename\n";
+ 
+  if(( ! -e $filename )||( ! -r $filename )) {
+    # print STDERR "$filename not found.\n";
+    return;
+  }
+ 
+  my $analysis = new Bio::EnsEMBL::Analysis
+    ( -program => "e-PCR",
+      -gff_source => "blastn",
+      -gff_feature => "similarity",
+      -db => "mapprimer",
+      -db_version => 1,
+      -program_version => 1 );
+ 
+  open (FH, $filename ) or return;
+  my %idHash;
+ 
+  while( <FH> ) {
+    # print STDERR "read line\n";
+    next, if /^\s*$/;
+    my @line = split;
+    if(( $line[0] cmp $self->id ) != 0 ) {
+      next;
+    }
+ 
+    my ($start, $end) = ( $line[1] =~ /^(\d+)\.\.(\d+)$/ );                     
+ 
+    my $f1 = new Bio::EnsEMBL::SeqFeature
+      ( -seqname => $self->id,
+        -start   => $start,
+        -end     => $end,
+        -score   => 100,
+        -source_tag  =>'ePCR',
+        -primary_tag =>'similarity',
+        -strand      => 1,
+        -analysis    => $analysis,
+    );
+ 
+    my $f2 = new Bio::EnsEMBL::SeqFeature
+      ( -seqname => $line[2],
+        -start   => 1,
+        -end     => ($end-$start+1),
+        -score   => 100,
+        -source_tag  =>'ePCR',
+        -primary_tag =>'similarity',
+        -strand      => 1,
+        -analysis    => $analysis,
+      );
+ 
+    my $fp = new Bio::EnsEMBL::FeaturePair
+      ( -feature1 => $f1,
+        -feature2 => $f2
+      );
+    # print STDERR "Feature $key stored.\n";
+    push( @{$self->{_MarkerFeatures}}, $fp );
+  }
+}  
+
 sub each_Genscan {
     my ($self) = @_;
 
@@ -310,6 +379,10 @@ sub each_Genscan {
     }
 }
 
+sub each_MarkerFeature {
+  my $self = shift;
+  return @{$self->{_MarkerFeatures}};
+}                                                                               
 sub add_Feature {
     my ($self,$f) = @_;
 
