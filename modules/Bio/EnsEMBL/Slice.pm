@@ -90,6 +90,7 @@ use Bio::EnsEMBL::RepeatMaskedSlice;
                                                  -end => 10000,
                                                  -strand => 1,
                                                  -seq_region_name => 'X',
+                                                 -seq_region_length => 12e6,
                                                  -adaptor => $slice_adaptor);
   Description: Creates a new slice object.  A slice represents a region
                of sequence in a particular coordinate system.  Slices can be
@@ -116,9 +117,9 @@ sub new {
   #new can be called as a class or object method
   my $class = ref($caller) || $caller;
 
-  my ($seq, $coord_system, $seq_region_name,
+  my ($seq, $coord_system, $seq_region_name, $seq_region_length,
       $start, $end, $strand, $adaptor, $empty) =
-        rearrange([qw(SEQ COORD_SYSTEM SEQ_REGION_NAME
+        rearrange([qw(SEQ COORD_SYSTEM SEQ_REGION_NAME SEQ_REGION_LENGTH
                       START END STRAND ADAPTOR EMPTY)], @_);
 
   #empty is only for backwards compatibility
@@ -132,6 +133,14 @@ sub new {
   defined($start)   || throw('START argument is required');
   defined($end)     || throw('END argument is required');
   ($start <= $end)  || throw('start must be less than or equal to end');
+
+  if(!defined($seq_region_length)) {
+    warning("SEQ_REGION_LENGTH argument not provided.\nUsing end of Slice ".
+            "which may not be correct.");
+    $seq_region_length = $end;
+  } else {
+    throw('SEQ_REGION_LENGTH must be > 0') if($seq_region_length < 1);
+  }
 
   if($seq && length($seq) != ($end - $start + 1)){
       throw('SEQ must be the same length as the defined LENGTH not '.
@@ -155,13 +164,14 @@ sub new {
     }
   }
 
-  return bless {'coord_system'    => $coord_system,
-                'seq'             => $seq,
-                'seq_region_name' => $seq_region_name,
-                'start'           => $start,
-                'end'             => $end,
-                'strand'          => $strand,
-                'adaptor'         => $adaptor}, $class;
+  return bless {'coord_system'      => $coord_system,
+                'seq'               => $seq,
+                'seq_region_name'   => $seq_region_name,
+                'seq_region_length' => $seq_region_length,
+                'start'             => $start,
+                'end'               => $end,
+                'strand'            => $strand,
+                'adaptor'           => $adaptor}, $class;
 }
 
 
@@ -199,7 +209,7 @@ sub adaptor{
 =head2 seq_region_name
 
   Arg [1]    : none
-  Example    : $seq_region = $slice->seq_region_name;
+  Example    : $seq_region = $slice->seq_region_name();
   Description: Returns the name of the seq_region that this slice is on. For
                example if this slice is in chromosomal coordinates the
                seq_region_name might be 'X' or '10'.
@@ -218,6 +228,25 @@ sub seq_region_name {
   return $self->{'seq_region_name'};
 }
 
+
+
+=head2 seq_region_length
+
+  Arg [1]    : none
+  Example    : $seq_region_length = $slice->seq_region_length();
+  Description: Returns the length of the entire seq_region that this slice is
+               on. For example if this slice is on a chromosome this will be
+               the length (in basepairs) of the entire chromosome.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub seq_region_length {
+  my $self = shift;
+  return $self->{'seq_region_length'};
+}
 
 
 =head2 coord_system
@@ -643,13 +672,12 @@ sub project {
       #skip gaps
       if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
         #create slices for the mapped-to coord system
-        my $slice = $self->new
-          (-COORD_SYSTEM    => $cs,
-           -START           => $coord_start,
-           -END             => $coord_end,
-           -STRAND          => $coord->strand(),
-           -SEQ_REGION_NAME => $coord->id(),
-           -ADAPTOR         => $self->adaptor());
+        my $slice = $slice_adaptor->fetch_by_region($cs->name(),
+                                                    $coord->id(),
+                                                    $coord_start,
+                                                    $coord_end,
+                                                    $coord->strand(),
+                                                    $cs->version());
 
         my $current_end = $current_start + $length - 1;
 	
@@ -1223,6 +1251,7 @@ sub get_repeatmasked_seq {
        -ADAPTOR => $self->{'adaptor'},
        -SEQ     => $self->{'seq'},
        -SEQ_REGION_NAME => $self->{'seq_region_name'},
+       -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
        -COORD_SYSTEM    => $self->{'coord_system'},
        -REPEAT_MASK     => $logic_names,
        -SOFT_MASK       => $soft_mask);
