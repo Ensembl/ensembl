@@ -10,13 +10,21 @@ use Bio::SeqIO;
 
 
 
-my $host      = 'ecs2d';
-my $dbuser    = 'ecs2dadmin';
-my $dbname    = 'rattus_norvegicus_core_11_2';
-my $dbpass    = 'TyhRv';
-my $port;
+my ( $host, $dbuser, $dbname, $dbpass, $port, $filename );
 
 my %map;
+
+GetOptions( "host=s", \$host,
+	    "user=s", \$dbuser,
+	    "pass=s", \$dbpass,
+	    "port=i", \$port,
+	    "dbname=s", \$dbname,
+	    "file=s", \$filename
+	  );
+
+if( ! $filename ) {
+  usage()
+}
 
 print STDERR "Connecting to $host, $dbname\n";
 
@@ -33,7 +41,7 @@ my $adaptor = $db->get_DBEntryAdaptor();
 
 print STDERR "Loading expression data\n";
 
-open (AFFY,'/acari/work1/mongin/mapping_11/rat/Primary/total_expression_rat.txt') || die "Can't open AFFY file";
+open (AFFY, $filename ) || die "Can't open AFFY file";
 
 while (<AFFY>) {
     chomp;
@@ -48,7 +56,7 @@ while (<AFFY>) {
 	      -release => 1,
 	      -dbname => $db1);
 	$dbentry->status("XREF");
-	print STDERR "$transl_id\t$db1\t$id\n";
+	print "$transl_id\t$db1\t$id\n";
 	$adaptor->store($dbentry,$transl_id,"Translation");
     }
 }
@@ -80,3 +88,21 @@ close(AFFY);
 #       $adaptor->store($dbentry,$transl_id,"Translation");
 #    }
 #}
+
+sub usage {
+  print STDERR <<HELP
+
+Usage: perl load_additional_human_xrefs.pl 
+ -host  db connection detail
+ -user 
+ -pass
+ -port
+ -dbname
+ -file filename 
+    File with xrefs to upload
+
+HELP
+;
+
+  exit();
+}
