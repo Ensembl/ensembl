@@ -169,8 +169,7 @@ sub fetch_by_translation_stable_id {
 
 sub store {
    my ($self,$transcript,$gene) = @_;
-   my $exonAdaptor = $self->db->get_ExonAdaptor();
-   #'print STDERR "storing transcript\n";
+
    if( ! ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
        $self->throw("$transcript is not a EnsEMBL transcript - not dumping!");
    }
@@ -179,16 +178,9 @@ sub store {
        $self->throw("$gene is not a EnsEMBL gene - not dumping!");
    }
 
-   # store exons
    # store translation
    # then store the transcript
    # then store the exon_transcript table
-
-# this will write in all the duplicate exons
-#   foreach my $exon ( $transcript->get_all_Exons() ) {
-#     $exonAdaptor->store( $exon );
-#   }
-
 
    my $translation = $transcript->translation();
    my $exon_count;
