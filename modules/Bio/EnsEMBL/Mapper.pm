@@ -371,7 +371,7 @@ sub fastmap {
 sub add_map_coordinates{
   my ($self, $contig_id, $contig_start, $contig_end, 
       $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
-  
+
   unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
 	 && defined($contig_ori) && defined($chr_name) && defined($chr_start)
 	 && defined($chr_end)) {
@@ -382,30 +382,20 @@ sub add_map_coordinates{
     throw("Cannot deal with mis-lengthed mappings so far");
   }
 
-  my $pair = Bio::EnsEMBL::Mapper::Pair->new();
-  
-  my $from = Bio::EnsEMBL::Mapper::Unit->new();
-  $from->start($contig_start);
-  $from->end($contig_end);
-  $from->id($contig_id);
+  my $from =
+    Bio::EnsEMBL::Mapper::Unit->new($contig_id, $contig_start, $contig_end);
+  my $to   =
+    Bio::EnsEMBL::Mapper::Unit->new($chr_name, $chr_start, $chr_end);
 
-  my $to = Bio::EnsEMBL::Mapper::Unit->new();
-  $to->start($chr_start);
-  $to->end($chr_end);
-  $to->id($chr_name);
-
-  $pair->to($to);
-  $pair->from($from);
-
-  $pair->ori($contig_ori);
+  my $pair = Bio::EnsEMBL::Mapper::Pair->new($from, $to, $contig_ori);
 
   # place into hash on both ids
   my $map_to = $self->{'to'};
   my $map_from = $self->{'from'};
- 
+
   push( @{$self->{"_pair_$map_to"}->{uc($chr_name)}}, $pair );
   push( @{$self->{"_pair_$map_from"}->{uc($contig_id)}}, $pair );
-  
+
   $self->{'pair_count'}++;
 
   $self->{'_is_sorted'} = 0;
