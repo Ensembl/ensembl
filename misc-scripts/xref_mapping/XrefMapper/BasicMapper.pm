@@ -2,10 +2,11 @@ package XrefMapper::BasicMapper;
 
 use strict;
 use DBI;
+use File::Basename;
 use IPC::Open3;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Translation;
-use  XrefMapper::db;
+use XrefMapper::db;
 
 use vars '@ISA';
 
@@ -664,12 +665,7 @@ sub submit_depend_job {
 
 sub store {
 
-  my ($self, $xref, $target_file_name) = @_;
-
-  my $type = get_ensembl_object_type($target_file_name);
-
-  # get or create the appropriate analysis ID
-  my $analysis_id = $self->get_analysis_id($type);
+  my ($self, $xref) = @_;
 
   # get current max object_xref_id
   my $max_object_xref_id = 0;
@@ -701,9 +697,17 @@ sub store {
   my $dir = $self->dir();
   foreach my $file (glob("$dir/*.map")) {
 
-    print "Parsing results from $file \n";
+    print "Parsing results from " . basename($file) .  "\n";
     open(FILE, $file);
     $total_files++;
+
+    # files are named Method_(dna|prot)_N.map
+    my $type = get_ensembl_object_type($file);
+
+    # get or create the appropriate analysis ID
+    # XXX restore when using writeable database
+    #my $analysis_id = $self->get_analysis_id($type);
+    my $analysis_id = 999;
 
     while (<FILE>) {
 
@@ -751,11 +755,13 @@ sub get_ensembl_object_type {
   my $filename = shift;
   my $type;
 
-  if ($filename =~ /_dna\./i) {
+  $filename = basename($filename);
+
+  if ($filename =~ /_dna_/i) {
 
     $type = "Transcript";
 
-  } elsif ($filename =~ /_protein\./i) {
+  } elsif ($filename =~ /_prot_/i) {
 
     $type = "Translation";
 
@@ -764,7 +770,6 @@ sub get_ensembl_object_type {
     print STDERR "Cannot deduce Ensembl object type from filename $filename\n";
   }
 
-print "###$filename   $type\n";
   return $type;
 
 }
@@ -812,9 +817,7 @@ sub dump_xrefs {
 
   open (XREF, ">xref.txt");
 
-  # TODO - get this from config
   my $xref_dbi = $self->xref()->dbi();
-
   my $core_dbi = $self->dbi();
 
   # get current highest internal ID from xref
@@ -869,11 +872,12 @@ sub dump_xrefs {
     }
 
     # Now get the dependent xrefs for each of these xrefs and write them as well
-    $sql = "SELECT x.accession, x.label, x.description, x.source_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.master_xref_id AND master_xref_id $id_str";
+    $sql = "SELECT DISTINCT(x.xref_id), x.accession, x.label, x.description, x.source_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id $id_str";
+
     my $dep_sth = $xref_dbi->prepare($sql);
     $dep_sth->execute();
 
-    $dep_sth->bind_columns(\$accession, \$label, \$description, \$source_id);
+    $dep_sth->bind_columns(\$xref_id, \$accession, \$label, \$description, \$source_id);
     while (my @row = $dep_sth->fetchrow_array()) {
       print XREF "$core_xref_id\t$accession\t$label\t$description\tDEPENDENT\n";
       $source_ids{$source_id} = $source_id;
