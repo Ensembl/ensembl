@@ -3015,4 +3015,18 @@ sub get_AssemblyContigAdaptor {
     return $self->{'_assemblycontig_adaptor'};
 }
 
+sub get_MapFragAdaptor {
+    my( $self ) = @_;
+
+    my( $mfa );
+    unless ($mfa = $self->{'_mapfrag_adaptor'}) {
+        require Bio::EnsEMBL::DBSQL::MapFragAdaptor;
+	    $mfa = Bio::EnsEMBL::DBSQL::MapFragAdaptor->new($self);
+        print STDERR "MFA: $mfa\n";
+        $self->{'_mapfrag_adaptor'} = $mfa;
+    }
+    return $mfa;
+}
+
+
 1;
