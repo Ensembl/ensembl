@@ -55,6 +55,7 @@ use strict;
 # Object preamble - inherits from Bio::Root::Object
 
 use Bio::Root::Object;
+use Bio::EnsEMBL::Exon;
 
 
 @ISA = qw(Bio::Root::Object);

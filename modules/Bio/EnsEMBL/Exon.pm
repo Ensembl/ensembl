@@ -183,24 +183,45 @@ sub id{
    
 }
 
-=head2 contigid
+=head2 contig_id
 
- Title   : contigid
- Usage   : $obj->contigid($newval)
+ Title   : contig_id
+ Usage   : $obj->contig_id($newval)
  Function: 
- Returns : value of contigid
+ Returns : value of contig_id
  Args    : newvalue (optional)
 
 
 =cut
 
-sub contigid{
+sub contig_id{
    my $self = shift;
    if( @_ ) {
       my $value = shift;
       $self->{'contigid'} = $value;
     }
     return $self->{'contigid'};
+
+}
+
+=head2 clone_id
+
+ Title   : clone_id
+ Usage   : $obj->clone_id($newval)
+ Function: 
+ Returns : value of clone_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub clone_id{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'clone_id'} = $value;
+    }
+    return $obj->{'clone_id'};
 
 }
 

@@ -42,7 +42,8 @@ use strict;
 
 # Object preamble - inheriets from Bio::SeqFeature::Generic
 
-use Bio::Root::Object
+use Bio::Root::Object;
+use Bio::EnsEMBL::Transcript;
 
 
 @ISA = qw(Bio::Root::Object);
