@@ -359,48 +359,19 @@ CREATE TABLE gene_stable_id (
     UNIQUE( stable_id, version )
 );
 
-# what are we going to do with this ??????
-
 #
 # Table structure for table 'supporting_feature'
-#  try use the exon_feature table
+#
 
 CREATE TABLE supporting_feature (
-  supporting_feature_id            int(10) unsigned NOT NULL auto_increment,
-  exon_id          int NOT NULL,             # foreign key exon:exon_id
-  contig_id     int(10) unsigned NOT NULL,
-  contig_start  int(10) NOT NULL,
-  contig_end    int(10) NOT NULL,
-  score         int(10) NOT NULL,
-  strand        int(1) DEFAULT '1' NOT NULL,
-  analysis_id   int(10) unsigned NOT NULL,
-  hit_start     int(11) NOT NULL,
-  hit_end       int(11) NOT NULL,
-  hit_id        varchar(40) NOT NULL,
-  evalue        double,
-  perc_ident    float,
-  phase         tinyint(1),
-  end_phase     tinyint(1),
-  hit_strand    tinyint(1),
-  
-  PRIMARY KEY (supporting_feature_id),
-  KEY exon( exon_id ),                   # most used index here!
-  KEY analysis (contig_id, analysis_id),
-  KEY hid (hit_id)
-);
-
-
-# Avoid feature duplication by just linking exons with their
-#  belonging feature. Do we need to find exons by feature??
-
-CREATE TABLE exon_feature (
-  exon_id int unsigned not null,
-  feature_id int unsigned not null,
-  feature_type enum( "dna_align", "simple", "protein_align" ) not null,
-
-  key exon_idx( exon_id, feature_id, feature_type )
+  ensembl_type enum('transcript','exon') DEFAULT 'transcript' NOT NULL,
+  ensembl_id int(11) DEFAULT '0' NOT NULL,
+  feature_type enum('dna_align_feature','protein_align_feature'),
+  feature_id int(11) DEFAULT '0' NOT NULL,
+  UNIQUE all_idx (ensembl_type,ensembl_id,feature_type,feature_id),
+  KEY feature_idx (feature_type,feature_id)
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
-  
+
  
 
 
