@@ -470,14 +470,14 @@ sub update {
      "SET created = ?, logic_name = ?, db = ?, db_version = ?, db_file = ?, ".
      "    program = ?, program_version = ?, program_file = ?,  ".
      "    parameters = ?, module = ?, module_version = ?, ".
-     "    gff_source = ?, gff_feature = ?, description = ? " .
+     "    gff_source = ?, gff_feature = ? " .
      "WHERE analysis_id = ?");
 
   $sth->execute
     ($a->created, $a->logic_name, $a->db, $a->db_version, $a->db_file,
      $a->program, $a->program_version, $a->program_file,
      $a->parameters, $a->module, $a->module_version,
-     $a->gff_source, $a->gff_feature,$a->description,
+     $a->gff_source, $a->gff_feature,
      $a->dbID);
 
   $sth->finish();
