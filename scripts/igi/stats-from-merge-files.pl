@@ -1,5 +1,6 @@
 #!/usr/local/bin/perl
 
+use strict;
 # $Id$ 
 
 # yet another little ad hoc script use Bio::EnsEMBL::Utils::GTF_handler;
@@ -23,7 +24,7 @@
 sub parse_group_field {
     my( $group_field ) = @_;
     
-    my ($igi_id, $gene_name, $gene_id, $transcript_id, $exon_num, $exon_id);
+    my ($igi, $gene_name, $gene_id, $transcript_id, $exon_num, $exon_id);
 
     # Parse the group field
     foreach my $tag_val (split /;/, $group_field) {
@@ -37,8 +38,9 @@ sub parse_group_field {
         $value =~ s/^"|"$//g;
         $tag = lc $tag;
 
+#         warn "XX: $tag $value\n";
         if ($tag eq 'igi_id') {
-            $igi_id = $value;
+            $igi = $value;
         }
         elsif ($tag eq 'gene_name') {
             $gene_name = $value;
@@ -60,9 +62,10 @@ sub parse_group_field {
         }
     }
     
-    return($gene_name, $gene_id, $transcript_id, $exon_num, $exon_id);
+    return($igi, $gene_name, $gene_id, $transcript_id, $exon_num, $exon_id);
 }                                       # parse_group_field
 
+my %igis_of_source;
 
 GTF_LINE:
 while (<>) {
@@ -72,7 +75,7 @@ while (<>) {
     chomp;
     
     my @fields = split "\t", $_;
-    my ($seq_name,    $source, $feature,
+    my ($seq_name, $source, $feature,
         $start,  $end,    $score,
         $strand, $phase,  $group_field)  = @fields;
     $feature = lc $feature;
@@ -83,19 +86,21 @@ while (<>) {
     }
     
     # Extract the extra information from the final field of the GTF line.
-    my ($igi_id, gene_name, $gene_id, $transcript_id, $exon_num, $exon_id) =
+    my ($igi, $gene_name, $gene_id, $transcript_id, $exon_num, $exon_id) =
       parse_group_field($group_field);
     
-    unless ($igi_id) {
+    unless ($igi) {
         warn("Skipping line with no igi_id: '$_'\n");
         next GTF_LINE;
     }
     
-    ${$igi_ids_of_source{$source}}->{$igi_id}++;
+    $igis_of_source{$source}{$igi}++;
+# warn "source $source has :", keys %{$igis_of_source{$source}};
+
     # (more later)
     
-    ${$sources_of_igi_id{igi_id}}->{$source}++;
-    # (for easy statistics)
+#    $sources_of_igi{$igi}->{$source}++;
+#    # (for easy statistics?)
 # 
     
 #     unless ($gene_id) {
@@ -108,35 +113,48 @@ while (<>) {
 #     }
 }
 
-my @all_sources = keys %igi_ids_of_source;
-warn join ', ', @all_sources;
+my @all_sources = keys %igis_of_source;
+print "Found following sources:" , join( ' ', @all_sources), "\n";
 
 print "total numbers:\n";
 foreach my $source (@all_sources) {
-    my $igi_per_source = $igi_ids_of_source{$source};
-    my $num = int(keys %{%igi_per_source});
+    my $igi_of_source = $igis_of_source{$source};
+    my $num = int(keys %{$igi_of_source});
     print "source $source: $num igi's\n";
 }
 
+# compare igi's per source
 print "2-overlaps numbers:\n";
-foreach my $source (@all_sources) {
-    my @igis_per_source = keys @{$igi_ids_of_source{$source}};
-    foreach my $source2 (@all_sources) {
-        next if $source2 le $source;
-        my @igis_per_source2 = keys @{$igi_ids_of_source{$source2}};
-        
-        my %h = undef;
+my %h = undef;
+foreach my $source1 (@all_sources) {
+    my $igis_of_source1 = $igis_of_source{$source1};
+# warn "source $source1 has :", keys %{$igis_of_source{$source1}};
+# warn "source1 $source1 has :", keys %$igis_of_source1;
 
-        foreach $elt (@igis_per_source) {
+    my @igis_of_source1 = keys %{$igis_of_source1};
+    my $source2;
+    foreach $source2 (@all_sources) {
+        next if ($source2 le $source1);
+
+        my $igis_of_source2 = $igis_of_source{$source2};
+        my @igis_of_source2 = keys %{$igis_of_source2};
+        
+        foreach my $elt (@igis_of_source1) {
             $h{$elt} ++;
         }
         
-        foreach $elt (@igis_per_source2) {
+        foreach my $elt (@igis_of_source2) {
             $h{$elt} += 2;
         }
-        
-        print "Only in $source :" . int(grep( $_== 1, keys %h)) . "\n";
-        print "Only in $source2 :" . int(grep( $_== 2, keys %h)) . "\n";
-        print "In both $source and $source2 :" . int(grep( $_== 3,  keys %h)) . "\n";
     }
+
+    foreach my $key (keys %h ) {
+        warn "$key: $h{$key}\n";
+    }
+
+
+    #### This is broken., argghg!:
+    print "Only in $source1 :" , int(map( ($_ == 1), (keys %h))) , "\n";
+    print "Only in $source2 :" , int(map( ($_ == 2), (keys %h))) , "\n";
+    print "In both $source1 and $source2 :" , int(map( ($_== 3),  (keys %h))) , "\n";
 }
