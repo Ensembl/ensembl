@@ -582,11 +582,9 @@ sub seqname{
    if(defined $seqname) {
      $self->{_seqname} = $seqname;
    } else {
-     if(defined $self->{_seqname}) {
-       return $self->{_seqname};
-     } elsif($seq && ref $seq && $seq->can('name')) {
-       return $seq->name();
-     }
+     if($seq && ref $seq && $seq->can('name')) {
+       $self->{_seqname} = $seq->name();
+     } 
    }
 
    return $self->{_seqname};
