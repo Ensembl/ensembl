@@ -43,7 +43,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 
-use Bio::EnsEMBL::Pipeline::Analysis;
+use Bio::EnsEMBL::Analysis;
 use Time::Local;
 
 use vars qw(@ISA);
@@ -293,7 +293,7 @@ sub store {
  Function: Tests whether this Analysis already exists in the database
  Example :
  Returns : true if this or more detailed exists.
- Args    : Bio::EnsEMBL::Pipeline::Analysis
+ Args    : Bio::EnsEMBL::Analysis
 
 =cut
 
