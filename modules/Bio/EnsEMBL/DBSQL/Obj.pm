@@ -1551,7 +1551,7 @@ sub write_Transcript{
        $self->write_Translation($trans->translation());
    }
    else {
-       print "Transcript already present in the database with the same version number, no need to write it in");
+       print "Transcript already present in the database with the same version number, no need to write it in";
    }
    return 1;
 }
@@ -1592,7 +1592,7 @@ sub write_Translation{
 	$tst->execute();
     }
     else {
-	print "Translation already present in the database with the same version number, no need to write it in");
+	print "Translation already present in the database with the same version number, no need to write it in";
     }
 }
 
@@ -1643,7 +1643,7 @@ sub write_Exon{
        $sth->execute();
    }
    else {
-       print "Exon with the same version number already present, no need to write it in");
+       print "Exon with the same version number already present, no need to write it in";
    }
 #   my $unlockst = $self->prepare("unlock exon");
 #   $unlockst->execute;
