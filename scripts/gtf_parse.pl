@@ -55,7 +55,7 @@ use Bio::EnsEMBL::GeneComparison::GeneComparisonStats;
 my $dbtype = 'rdb';
 my $host   = 'localhost';
 my $port   = '410000';
-my $dbname = 'matloob_freeze17';
+my $dbname = 'ensembl_freeze17_michele';
 my $dbuser = 'root';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
@@ -64,6 +64,7 @@ my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 my $parse;
 my $parse2;
 my $print;
+my $display;
 my $help;
 my $check;
 my $compare;
@@ -80,6 +81,7 @@ my $longest;
        	     'parse:s'    => \$parse,
 	     'parse2:s'   => \$parse2,
 	     'print'      => \$print,
+	     'display'    => \$display,
 	     'check'      => \$check,
 	     'compare'    => \$compare,
 	     'longest'    => \$longest,
@@ -284,6 +286,39 @@ elsif ($longest) {
 	    }
 	}
     }
+}
+
+elsif ($display) {
+    use Bio::Tk::SeqCanvas;
+    use Bio::EnsEMBL::PerlDB::Contig;
+    use Tk;
+
+    my $MW = MainWindow->new ();
+
+    my $Frame = $MW->Frame()->pack(-side => 'top');
+    my $lblSysMess = $MW->Label()->pack(-side => 'bottom', -fill => 'both');
+    my ($axis_length) = 500;
+    my @exons=$gtf_genes[0]->each_unique_Exon;
+    my $fpc=$exons[0]->contig_id;
+    
+    my $contig = Bio::EnsEMBL::PerlDB::Contig->new();
+    $contig->id($fpc);
+    $contig->length(500000);
+    foreach my $gene (@gtf_genes) {
+	print STDERR "Adding gene ".$gene->id."\n";
+	$contig->add_Gene($gene);
+    }
+    #my $vc = Bio::EnsEMBL::Virtual::Contig->new_from_one($contig);
+    
+    my $MapObj = Bio::Tk::SeqCanvas->new(
+					 $axis_length,
+					 $Frame,
+					 $lblSysMess,
+					 $contig,
+					 -orientation => 'horizontal',
+					 -label => 'primary_id');
+    $MW->update;
+    MainLoop;
 }
     
 else {
