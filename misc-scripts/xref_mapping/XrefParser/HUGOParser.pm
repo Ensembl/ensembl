@@ -35,7 +35,7 @@ sub run {
   my $source_id = shift;
   my $species_id = shift;
 
-  print STDERR $file."\n";
+  print STDERR "source = $source_id\tspecies = $species_id\n";
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
     print "source id is $source_id \n";
@@ -85,15 +85,11 @@ sub run {
       my $master = $swiss{$array[1]};
       my $dep    = $hugo{$hgnc};
       if(!defined($master) or !defined($dep)){
-	print STDERR $_."\n"; 
-	print STDERR "swiss prot $array[1] -> xref $master \n";
-	print STDERR "hugo number $hgnc -> xref $dep \n";
 	$mismatch++;
       }
       else{
-	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,$hugo{hgnc},"",$source_id,$species_id);
+	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,$hugo{hgnc},"",$source_id,$species_id,$count);
 	$count++;
-#	$dep_sth->execute($master, $dep,  "", $source_id);
       }
       #	print "$array[1]\tSPTR\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\tXREF\n";
     }
@@ -102,9 +98,6 @@ sub run {
       my $master = $refseq{$array[2]};
       my $dep    = $hugo{$hgnc};
       if(!defined($master) or !defined($dep)){
-	print STDERR $_."\n"; 
-	print STDERR "ref seq $array[2] -> xref $master \n";
-	print STDERR "hugo number $hgnc -> xref $dep \n";
 	$mismatch++;
       }
       else{
