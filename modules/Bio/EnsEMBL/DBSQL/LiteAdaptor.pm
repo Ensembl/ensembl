@@ -100,9 +100,7 @@ sub fetch_virtualtranscripts_coding_start_end {
     my $cache_name = "_$database"."_vtrans_cache_$chr"."_$vc_start"."_$vc_end";
     return $self->{$cache_name} if( $self->{$cache_name} );
     my $sth = $self->prepare(
-        "select transcript_id, transcript_name, translation_name, gene_name,
-                chr_start, chr_end, chr_strand, external_name, external_db,
-                exon_structure, type, coding_start, coding_end
+        "select *
            from $_db_name.www_transcript
           where chr_name = ? and chr_start <= ? and chr_start >= ? and
                 chr_end >= ? and db = ?"
@@ -113,23 +111,23 @@ sub fetch_virtualtranscripts_coding_start_end {
     };
     return [] if($@);
     my @transcripts;
-    while( my $row = $sth->fetchrow_arrayref() ) {
+    while( my $row = $sth->fetchrow_hashref() ) {
         push @transcripts, {
-            'transcript'=> $row->[0],
-            'stable_id' => $row->[1],
-            'translation'=> $row->[2],
-            'gene'      => $row->[3],
-            'chr_start' => $row->[4],
-            'chr_end'   => $row->[5],
-            'start'     => $row->[4]-$vc_start+1,
-            'end'       => $row->[5]-$vc_start+1,
-            'coding_start' => $row->[11]-$vc_start+1,
-            'coding_end'   => $row->[12]-$vc_start+1,
-            'strand'    => $row->[6],
-            'synonym'   => $row->[7],
-            'db'        => $row->[8],
-            'exon_structure' => [ split ':', $row->[9] ],
-            'type'      => $row->[10]
+            'transcript'=> $row->{'transcript_id'},
+            'stable_id' => $row->{'transcript_name'},
+            'translation'=> $row->{'translation_name'},
+            'gene'      => $row->{'gene_name'},
+            'chr_start' => $row->{'chr_start'},
+            'chr_end'   => $row->{'chr_end'},
+            'start'     => $row->{'chr_start'}-$vc_start+1,
+            'end'       => $row->{'chr_end'}-$vc_start+1,
+            'coding_start' => ( $row->{'coding_start'}||$row->{'chr_start'} ) - $vc_start+1 ,
+            'coding_end'   => ( $row->{'coding_end'}||$row->{'chr_end'} ) - $vc_start+1 ,
+            'strand'    => $row->{'chr_strand'},
+            'synonym'   => $row->{'external_name'},
+            'db'        => $row->{'external_db'},
+            'exon_structure' => [ split ':', $row->{'exon_structure'} ],
+            'type'      => $row->{'type'},
         };
     }
     return $self->{$cache_name} = \@transcripts;
