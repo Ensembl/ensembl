@@ -182,7 +182,8 @@ ok($first_seq->display_id()  && $first_seq->display_id() eq $second_seq->display
 #
 # test the remove method works
 #
-$multi->save("core", "exon", "exon_stable_id", "supporting_feature");
+$multi->save("core", "exon", "exon_stable_id", "supporting_feature",
+  "dna_align_feature", "protein_align_feature");
 
 my $ex_count = count_rows($db, 'exon');
 my $exstable_count = count_rows($db, 'exon_stable_id');

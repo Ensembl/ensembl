@@ -308,7 +308,7 @@ my $ex_tr_minus = @{$tr->get_all_Exons()};
 $multi->save("core", "transcript", "transcript_stable_id", "translation",
              "translation_stable_id", "protein_feature", "exon",
              "exon_stable_id", "exon_transcript", "object_xref",
-             "supporting_feature",
+             "supporting_feature", "dna_align_feature","protein_align_feature",
              "go_xref", "identity_xref");
 
 $ta->remove($tr);

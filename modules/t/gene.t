@@ -499,7 +499,8 @@ $multi->save( "core", "gene", "gene_stable_id", "gene_description",
 	      "transcript", "transcript_stable_id",
 	      "translation", "translation_stable_id", "protein_feature",
 	      "exon", "exon_stable_id", "exon_transcript", "supporting_feature",
-	      "object_xref", "go_xref", "identity_xref" );
+	      "object_xref", "go_xref", "identity_xref",
+        "dna_align_feature", "protein_align_feature");
 
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
