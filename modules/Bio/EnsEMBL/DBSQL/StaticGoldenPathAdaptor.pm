@@ -121,6 +121,55 @@ sub fetch_RawContigs_by_fpc_name{
    return @out;
 }
 
+=head2 convert_chromosome_to_fpc
+ 
+  Title   : convert_chromosome_to_fpc
+  Usage   : ($fpcname,$start,$end) = $stadp->convert_chromosome_to_fpc('chr1',10000,10020)
+  Function:
+  Example :
+  Returns : 
+  Args    :
+ 
+ 
+=cut
+ 
+sub convert_chromosome_to_fpc{
+    my ($self,$chr,$start,$end) = @_;
+ 
+    my $type = $self->dbobj->static_golden_path_type();
+ 
+    my $sth = $self->dbobj->prepare("select fpcctg_name,chr_start from static_golden_path where chr_name = '$chr' AND fpcctg_start = 1 AND chr_start <= $start ORDER BY chr_start desc");
+    $sth->execute;
+    my ($fpc,$startpos) = $sth->fetchrow_array;
+ 
+    return ($fpc,$start-$startpos,$end-$startpos);
+}
+
+=head2 convert_fpc_to_chromosome
+ 
+  Title   : convert_chromosome_to_fpc
+  Usage   : ($chrname,$start,$end) = $stadp->convert_fpc_to_chromosome('ctg1234',10000,10020)
+  Function:
+  Example :
+  Returns : 
+  Args    :
+ 
+ 
+=cut
+ 
+sub convert_chromosome_to_fpc{
+    my ($self,$fpc,$start,$end) = @_;
+ 
+    my $type = $self->dbobj->static_golden_path_type();
+ 
+    my $sth = $self->dbobj->prepare("select chr_name,chr_start from static_golden_path where fpcctg_name = '$fpc' AND fpcctg_start = 1");
+    $sth->execute;
+    my ($chr,$startpos) = $sth->fetchrow_array;
+ 
+    return ($chr,$start+$startpos,$end+$startpos);
+}
+
+
 =head2 fetch_RawContigs_by_chr_name
 
  Title   : fetch_RawContigs_by_chr_name
@@ -189,6 +238,7 @@ sub fetch_RawContigs_by_chr_start_end{
 
 }
 
+
 =head2 fetch_VirtualContig_by_chr_start_end
 
  Title   : fetch_VirtualContig_by_chr_start_end
@@ -228,6 +278,7 @@ sub fetch_VirtualContig_by_chr_start_end{
    $vc->dbobj($self->dbobj);
    return $vc;
 }
+
 
 =head2 fetch_VirtualContig_by_clone
 
