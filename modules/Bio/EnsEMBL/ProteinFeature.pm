@@ -40,11 +40,6 @@ package Bio::EnsEMBL::ProteinFeature;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
-
-use Bio::Root::Object;
-
-
 @ISA = qw(Bio::EnsEMBL::SeqFeature);
 
 sub new {

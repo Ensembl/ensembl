@@ -144,9 +144,10 @@ sub gtf_merge {
 	    &confess("Not sorted GTF file - start $ctg:$start is smaller than previous line of $ctg:$prevstart");
 	}
 
-
+	print STDERR "exon from $trans $start vs $prevend\n";
 	if( $start <= $prevend ) {
 	    # merge $trans into $prevtrans
+	    print STDERR "Seeing a merge between $trans and $prevtrans\n";
 
 	    my $combined_igi  =  $thash{$prevtrans};
 	    my $dead_igi      = $thash{$trans};
@@ -181,9 +182,9 @@ sub gtf_merge {
 
     # dump results for the moment
     #
-    #foreach my $t ( keys %thash ) {
-    #	print STDERR "$thash{$t}\t$t\n";
-    #}
+    foreach my $t ( keys %thash ) {
+    	print STDERR "$thash{$t}\t$t\n";
+    }
 
     # reassign unique numbers
     $unique_number = 1;
