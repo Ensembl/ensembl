@@ -361,7 +361,7 @@ sub primary_seq {
 	   
 	   my $no = $mc->start - $last_point;
 	   
-           if ($no < 0){
+           if ($no < -1){
 	       $self->throw("Error. Trying to insert negative number ($no) of N\'s into contig sequence");
            }
 	   
