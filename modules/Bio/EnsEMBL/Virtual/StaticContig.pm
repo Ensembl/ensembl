@@ -686,6 +686,7 @@ sub get_all_SimilarityFeatures_above_pid{
   return @array;
 }
 
+
 =head2 get_all_SNPFeatures
 
  Title   : get_all_SNPFeatures
@@ -697,9 +698,6 @@ sub get_all_SimilarityFeatures_above_pid{
 
 
 =cut
-
-
-
 sub get_all_SNPFeatures {
   my ($self,$bp) = @_;
   my @snps = $self->dbobj->get_LiteAdaptor->fetch_snp_features
@@ -710,6 +708,12 @@ sub get_all_SNPFeatures {
      $bp
     );
   return @snps;
+}
+
+sub get_all_RepeatFeatures_lite {
+  my ($self,$type,$bp) = @_;
+  return $self->dbobj->get_LiteAdaptor->fetch_virtualRepeatFeatures_start_end(
+     $self->_chr_name, $self->_global_start, $self->_global_end, $type, $bp );
 }
 
 sub get_all_SNPFeatures_lite {
@@ -2211,6 +2215,18 @@ sub get_all_VirtualTranscripts_startend_lite_coding {
         $self->_global_start,
         $self->_global_end,
         @_
+    );
+}
+
+sub get_all_DnaDnaAlignFeature {
+    my  ($self, $compara_dbadaptor, $subject_species, $query_species) = @_;
+    return $compara_dbadaptor->get_GenomicAlignAdaptor->fetch_DnaDnaAlignFeature_by_species_chr_start_end(
+        $subject_species,
+        $query_species,
+        $self->_chr_name,
+        $self->_global_start,
+        $self->_global_end,
+        'VirtualContig'
     );
 }
 
