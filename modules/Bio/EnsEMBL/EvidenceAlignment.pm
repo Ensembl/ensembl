@@ -203,8 +203,9 @@ sub get_features_from_rawcontig {
   my @features = ();
   foreach my $feature (@all_features) {
     if ($feature->strand == $strand) {
+      my $tmp;
       eval {
-        my $tmp = feature->hseqname;
+        $tmp = $feature->hseqname;
       };
       if (! $@) {
         push @features, $feature;
@@ -304,9 +305,6 @@ sub _get_hits {
   my %hits_hash = ();
   my @hseqnames = ();
   for (my $i = 0; $i < @$features_arr_ref; $i++) {
-  print STDERR "XXX XXX cntr: $i, features: ", scalar(@$features_arr_ref), "\n";
-    print STDERR "XXX feature struct: ", $$features_arr_ref[$i], "\n";
-    print STDERR "XXX feature hseqname: ", $$features_arr_ref[$i]->hseqname, "\n";
     my $hseqname = $$features_arr_ref[$i]->hseqname;
     if (! exists $hits_hash{$hseqname})
     {
@@ -382,7 +380,7 @@ sub _get_aligned_features_for_contig {
 
   # protein evidence
 
-  # translation itself forms our first three rows of 'evidence'
+  # translations themselves form our first three rows of 'evidence'
   for (my $i = 0; $i < 3; $i++) {
     my $evidence_line = $translations[$i]->seq;
     $evidence_line = $self->pad_pep_str($evidence_line);
