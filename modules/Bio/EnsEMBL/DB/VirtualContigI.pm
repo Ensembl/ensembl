@@ -42,7 +42,7 @@ use strict;
 use Bio::EnsEMBL::DB::RawContigI;
 use vars qw(@ISA);
 
-@ISA = qw(Bio::EnsEMBL::DB::RawContigI);
+@ISA = qw(Bio::EnsEMBL::DB::ContigI);
 
 =head2 extend_Contig
 
