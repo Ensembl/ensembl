@@ -1,6 +1,6 @@
 # Ensembl module for Bio::EnsEMBL::DBSQL::Utils
 #
-# Written by Arek Kasprzyk
+# Cared for by EnsEMBL (www.ensembl.org)
 #
 # Copyright GRL and EBI
 #

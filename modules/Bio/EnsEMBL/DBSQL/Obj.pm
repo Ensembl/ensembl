@@ -74,6 +74,7 @@ use Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor;
 use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
+use Bio::EnsEMBL::DBSQL::CloneAdaptor;
 
 use DBI;
 
@@ -320,7 +321,7 @@ sub get_object_by_wildcard{
    if ($type eq 'clone') {
        my @clones;
        foreach my $id (@ids) {
-	   push @clones, $self->get_Clone($id);
+	   push @clones, $self->get_Cone($id);
        }
        return @clones;
    }
@@ -2060,16 +2061,11 @@ Calling gene_Obj->write_Exon instead!");
 =cut
 
 sub get_Clone { 
-    my ($self,$id) = @_;
-    
-    #No warning shown for the time being...
-   #$self->warn("Obj->get_Clone is a deprecated method! 
-#Calling Clone->fetch instead!");
-    
-    my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $id,
-						-dbobj => $self );
-   
-    return $clone->fetch();
+    my ($self,$accession) = @_;
+
+    my $ca= Bio::EnsEMBL::DBSQL::CloneAdaptor->new($self);
+
+    return $ca->fetch_by_accession($accession);
 }
   
 =head2 get_Contig
