@@ -117,6 +117,92 @@ sub fetch_all_by_MiscFeature {
 }
 
 
+=head2 fetch_all_by_Transcript
+
+  Arg [1]    : Bio::EnsEMBL::Transcript $tr
+  Example    : @attributes = @{$attrib_adaptor->fetch_all_by_Transcript( $tr )};
+  Description: Fetches all attributes for a given Transcript
+  Returntype : Bio::EnsEMBL::Attribute
+  Exceptions : throw if incorrect arguments
+               throw if provided MiscFeature does not have a dbID
+  Caller     : Transcript
+
+=cut
+
+sub fetch_all_by_Transcript {
+  my $self = shift;
+  my $tr   = shift;
+
+  if(!ref($tr) || !$tr->isa('Bio::EnsEMBL::Transcript')) {
+    throw('Transcript argument is required.');
+  }
+
+  my $trid = $tr->dbID();
+
+  if(!defined($trid)) {
+    throw("Transcript must have dbID.");
+  }
+
+  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
+                           "       ta.value " .
+                           "FROM transcript_attrib ta, attrib_type at " .
+                           "WHERE ta.transcript_id = ? " .
+                           "AND   at.attrib_type_id = ta.attrib_type_id");
+
+  $sth->execute($trid);
+
+  my $results = $self->_obj_from_sth($sth);
+
+  $sth->finish();
+
+  return $results;
+}
+
+
+=head2 fetch_all_by_Translation
+
+  Arg [1]    : Bio::EnsEMBL::Translation $tl
+  Example    : @attributes = @{$attrib_adaptor->fetch_all_by_Translation( $tl )};
+  Description: Fetches all attributes for a given Translation
+  Returntype : Bio::EnsEMBL::Attribute
+  Exceptions : throw if incorrect arguments
+               throw if provided Translation does not have a dbID
+  Caller     : Transcript
+
+=cut
+
+sub fetch_all_by_Translation {
+  my $self = shift;
+  my $tl   = shift;
+
+  if(!ref($tl) || !$tl->isa('Bio::EnsEMBL::Translation')) {
+    throw('Translation argument is required.');
+  }
+
+  my $tlid = $tl->dbID();
+
+  if(!defined($tlid)) {
+    throw("Translation must have dbID.");
+  }
+
+  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
+                           "       ta.value " .
+                           "FROM translation_attrib ta, attrib_type at " .
+                           "WHERE ta.translation_id = ? " .
+                           "AND   at.attrib_type_id = ta.attrib_type_id");
+
+  $sth->execute($tlid);
+
+  my $results = $self->_obj_from_sth($sth);
+
+  $sth->finish();
+
+  return $results;
+}
+
+
+
+
 =head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
@@ -267,6 +353,111 @@ sub store_on_MiscFeature {
 }
 
 
+=head2 store_on_Transcript
+
+  Arg [1]    : Bio::EnsEMBL::Transcript $transcript
+  Arg [2]    : listref Bio::EnsEMBL::Attribute $attribs
+  Example    : $attribute_adaptor->store_on_Transcript($my_transcript,
+                                                        $attributes)
+  Description: Stores all the attributes on the Transcript. 
+               Will duplicate things if called twice.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               throw if provided Transcript is not stored in this database
+  Caller     : general, TranscriptAdaptor
+
+=cut
+
+sub store_on_Transcript {
+  my $self       = shift;
+  my $transcript    = shift;
+  my $attributes = shift;
+
+  if(!ref($transcript) || !$transcript->isa('Bio::EnsEMBL::Transcript')) {
+    throw("Transcript argument expected");
+  }
+
+  if(ref($attributes) ne 'ARRAY') {
+    throw("Reference to list of Bio::EnsEMBL::Attribute objects argument " .
+          "expected");
+  }
+
+  my $db = $self->db();
+  if(!$transcript->is_stored($db)) {
+    throw("Transcript is not stored in this DB - cannot store attributes.");
+  }
+
+  my $transcript_id = $transcript->dbID();
+
+  my $sth = $self->prepare( "INSERT into transcript_attrib ".
+			    "SET transcript_id = ?, attrib_type_id = ?, ".
+			    "value = ? " );
+
+  for my $attrib ( @$attributes ) {
+    if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
+      throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
+            "argument expected.");
+    }
+    my $atid = $self->_store_type( $attrib );
+    $sth->execute( $transcript_id, $atid, $attrib->value() );
+  }
+
+  return;
+}
+
+
+
+=head2 store_on_Translation
+
+  Arg [1]    : Bio::EnsEMBL::Translation $translation
+  Arg [2]    : listref Bio::EnsEMBL::Attribute $attribs
+  Example    : $attribute_adaptor->store_on_Translation($my_translation,
+                                                        $attributes)
+  Description: Stores all the attributes on the Translation. 
+               Will duplicate things if called twice.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               throw if provided Translation is not stored in this database
+  Caller     : general, TranslationAdaptor
+
+=cut
+
+sub store_on_Translation {
+  my $self        = shift;
+  my $translation = shift;
+  my $attributes  = shift;
+
+  if(!ref($translation) || !$translation->isa('Bio::EnsEMBL::Translation')) {
+    throw("Translation argument expected");
+  }
+
+  if(ref($attributes) ne 'ARRAY') {
+    throw("Reference to list of Bio::EnsEMBL::Attribute objects argument " .
+          "expected");
+  }
+
+  my $db = $self->db();
+  if(!$translation->is_stored($db)) {
+    throw("Translation is not stored in this DB - cannot store attributes.");
+  }
+
+  my $translation_id = $translation->dbID();
+
+  my $sth = $self->prepare( "INSERT into translation_attrib ".
+			    "SET translation_id = ?, attrib_type_id = ?, ".
+			    "value = ? " );
+
+  for my $attrib ( @$attributes ) {
+    if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
+      throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
+            "argument expected.");
+    }
+    my $atid = $self->_store_type( $attrib );
+    $sth->execute( $translation_id, $atid, $attrib->value() );
+  }
+
+  return;
+}
 
 
 =head2 remove_from_Slice
