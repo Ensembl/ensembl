@@ -105,9 +105,6 @@ sub _straight_join {
                as they are retrieved from the database
   Arg [3]    : (optional) Bio::EnsEMBL::Slice $slice
                A slice that features should be remapped to
-  Arg [4]    : (optional) boolean $keep_all
-               Set to 1 if all features, even ones entirely off slice,
-               should be kept
   Example    : $fts = $a->generic_fetch('contig_id in (1234, 1235)', 'Swall');
   Description: Performs a database fetch and returns feature objects in
                contig coordinates.
@@ -118,7 +115,7 @@ sub _straight_join {
 =cut
 
 sub generic_fetch {
-  my ($self, $constraint, $mapper, $slice, $keep_all) = @_;
+  my ($self, $constraint, $mapper, $slice) = @_;
 
   my @tabs = $self->_tables;
   my $columns = join(', ', $self->_columns());
@@ -174,15 +171,12 @@ sub generic_fetch {
 
   #append additional clauses which may have been defined
   $sql .= "\n$final_clause";
-#  (my $sql_debug = $sql ) =~s/\n/\n$$   /gm;
-  my $START = time();
-#  print STDERR "$$    $sql_debug\n";
+
   my $sth = $db->prepare($sql);
      $sth->execute;
-#  print STDERR "$$    ".(time()-$START)."\n";
-  my $res = $self->_objs_from_sth($sth, $mapper, $slice, $keep_all);
-#  print STDERR "$$    ".(time()-$START)."\n\n";
-#  warn( $$,"    ", $self->db->dbname );
+
+  my $res = $self->_objs_from_sth($sth, $mapper, $slice);
+
 
   return $res;
 }
@@ -717,7 +711,8 @@ sub _remap {
     }
 
     # maps to region outside desired area
-    next if ($start > $slice_end) || ($end < $slice_start) || ($slice_seq_region ne $seq_region);
+    next if ($start > $slice_end) || ($end < $slice_start) || 
+      ($slice_seq_region ne $seq_region);
 
     #shift the feature start, end and strand in one call
     if($slice_strand == -1) {
