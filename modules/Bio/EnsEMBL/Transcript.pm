@@ -81,7 +81,6 @@ sub new {
     $self->add_Exon($a);
   }
 
-  #$self->is_partial(0);
 
   return $self; # success - we hope!
 }
@@ -326,6 +325,77 @@ sub end {
 }
 
 
+=head2 spliced_seq
+
+  Args       : none
+  Example    : none
+  Description: retrieves all Exon sequences and concats them together. No phase padding magic is 
+               done, even if phases dont align.
+  Returntype : txt
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub spliced_seq {
+  my ( $self ) = @_;
+  
+  my $seq_string = "";
+  for my $ex ( @{$self->get_all_Exons()} ) {
+    $seq_string .= $ex->seq()->seq();
+  }
+
+  return $seq_string;
+}
+
+
+=head2 translateable_seq
+
+  Args       : none
+  Example    : none
+  Description: returns a string with the translateable part of the
+               Sequence. It magically pads the exon sequences with
+               N if the phases of the Exons dont align
+  Returntype : txt
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub translateable_seq {
+  my ( $self ) = @_;
+
+  my $mrna = "";
+  my $prev = undef;
+  my $lastphase;
+
+  foreach my $exon (@{$self->get_all_translateable_Exons()}) {
+
+    my $phase = 0;
+    if (defined($exon->phase)) {
+      $phase = $exon->phase;
+    }
+
+    if( $phase != $lastphase ) {
+
+      # endpadding for the last exon
+      if( $lastphase == 1 ) {
+	$mrna .= 'NN';
+      } elsif( $lastphase == 2 ) {
+	$mrna .= 'N';
+      }
+
+      #startpadding for this exon
+      $mrna .= 'N' x $phase;
+    }
+    
+    $mrna .= $exon->seq->seq();
+    $lastphase = $exon->end_phase();
+  }
+
+  return $mrna;
+}
+
 
 
 sub coding_start {
@@ -415,7 +485,7 @@ sub add_Exon{
   Arg [1]    : none
   Example    : my @exons = @{$transcript->get_all_Exons()};
   Description: Returns an listref of the exons in this transcipr in order.
-               i.e. the first exon in the listref is the 5' most exon in 
+               i.e. the first exon in the listref is the 5 most exon in 
                the transcript.
   Returntype : a list reference to Bio::EnsEMBL::Exon objects
   Exceptions : none
@@ -454,7 +524,7 @@ sub length {
 
 =head2 get_all_Introns
 
-  Arg [1]    : none
+  Args       : none
   Example    : @introns = @{$transcript->get_all_Introns()};
   Description: Returns an listref of Bio::EnsEMBL::Intron objects.  The result 
                is not cached in any way, so calling each_Intron multiple times
@@ -480,9 +550,6 @@ sub get_all_Introns {
     }
     return \@int;
 }
-
-
-
 
 
 =head2 flush_Exon
@@ -617,289 +684,145 @@ sub three_prime_utr {
     }
 }
 
-=head2 translatable_exons
 
-    @exons = $transcript->translateable_exons
+=head2 get_all_translateable_Exons
 
-Returns a list of exons that translate with the
-start and end exons truncated to the CDS regions.
-
-Throws an exception if there is no translation
-attached to the transcript object.
+  Args       : none
+  Example    : none
+  Description: Returns a list of exons that translate with the
+               start and end exons truncated to the CDS regions.
+               Will not work correctly if Exons are Sticky. 
+  Returntype : listref Bio::EnsEMBL::Exon
+  Exceptions : If there is no Translation object
+  Caller     : Genebuild, $self->translate()
 
 =cut
+
+
+sub get_all_translateable_Exons {
+  my ( $self ) = @_;
+
+  my $translation = $self->translation
+    or $self->throw("No translation attached to transcript object");
+  my $start_exon      = $translation->start_Exon;
+  my $end_exon        = $translation->end_Exon;
+  my $t_start         = $translation->start;
+  my $t_end           = $translation->end;
+
+  my( @translateable );
+
+  foreach my $ex (@{$self->get_all_Exons}) {
+    my $ex_id   = $ex->dbID;
+
+    if ($ex ne $start_exon and ! @translateable) {
+      next;   # Not yet in translated region
+    }
+        
+    my $start   = $ex->start;
+    my $end     = $ex->end;
+    my $length  = $ex->length;
+    my $strand  = $ex->strand;
+        
+    my $trunc_start = $start;
+    my $trunc_end   = $end;
+        
+    # Adjust to translation start if this is the start exon
+    if ($ex eq $start_exon ) {
+      if ($t_start < 1 or $t_start > $length) {
+	$self->throw("Translation start '$t_start' is outside exon $ex length=$length");
+      }
+      if ($strand == 1) {
+	$trunc_start = $start + $t_start - 1;
+      } else {
+	$trunc_end   = $end   - $t_start + 1;
+      }
+    }
+        
+    # Adjust to translation end if this is the end exon
+    if ($ex eq $end_exon) {
+      if ($t_end < 1 or $t_end > $length) {
+	$self->throw("Translation end '$t_end' is outside exon $ex length=$length");
+      }
+      if ($strand == 1) {
+	$trunc_end   = $end   - $length + $t_end;
+      } else {
+	$trunc_start = $start + $length - $t_end;
+      }
+    }
+        
+    # Make a truncated exon if the translation start or
+    # end causes the coordinates to be altered.
+    if ($trunc_start != $start or $trunc_end != $end) {
+      my $new_exon = Bio::EnsEMBL::Exon->new;
+      # ARNE: I doubt this is advisable, modified Exons is not in the DB
+      $new_exon->dbID($ex_id);
+      
+      # Use the new start and end
+      $new_exon->start($trunc_start);
+      $new_exon->end  ($trunc_end);
+      $new_exon->strand($strand);
+
+      $new_exon->phase($ex->phase);
+      $new_exon->end_phase($ex->end_phase);
+      $new_exon->contig($ex->contig);
+
+      push(@translateable, $new_exon);
+    } else {
+      # Its just an ordinary internal exon
+      push(@translateable, $ex);
+    }
+        
+    # Exit the loop when we've found the last exon
+    last if $ex eq $end_exon;
+  }
+  return \@translateable;
+}
+
 
 sub translateable_exons {
     my( $self ) = @_;
+  
+    $self->warn( "Please use get_all_translateable_Exons(). Careful as it returns listref." );
     
-    my $translation = $self->translation
-        or $self->throw("No translation attached to transcript object");
-    my $start_exon      = $translation->start_Exon;
-    my $end_exon        = $translation->end_Exon;
-    my $t_start         = $translation->start;
-    my $t_end           = $translation->end;
-
-    my( @translateable );
-    foreach my $ex (@{$self->get_all_Exons}) {
-        my $ex_id   = $ex->dbID;
-
-#	print STDERR $ex->contig() . "\n";
-        if ($ex ne $start_exon and ! @translateable) {
-            next;   # Not yet in translated region
-        }
-        
-        my $start   = $ex->start;
-        my $end     = $ex->end;
-        my $length  = $ex->length;
-        my $strand  = $ex->strand;
-        
-        my $trunc_start = $start;
-        my $trunc_end   = $end;
-        
-        # Adjust to translation start if this is the start exon
-        if ($ex eq $start_exon ) {
-            if ($t_start < 1 or $t_start > $length) {
-                $self->throw("Translation start '$t_start' is outside exon $ex length=$length");
-            }
-            if ($strand == 1) {
-                $trunc_start = $start + $t_start - 1;
-            } else {
-                $trunc_end   = $end   - $t_start + 1;
-            }
-        }
-        
-        # Adjust to translation end if this is the end exon
-        if ($ex eq $end_exon) {
-            if ($t_end < 1 or $t_end > $length) {
-                $self->throw("Translation end '$t_end' is outside exon $ex length=$length");
-            }
-            if ($strand == 1) {
-                $trunc_end   = $end   - $length + $t_end;
-            } else {
-                $trunc_start = $start + $length - $t_end;
-            }
-        }
-        
-        # Make a truncated exon if the translation start or
-        # end causes the coordinates to be altered.
-        if ($trunc_start != $start or $trunc_end != $end) {
-            my $new_exon = Bio::EnsEMBL::Exon->new;
-            $new_exon->dbID($ex_id);
-            
-            # Use the new start and end
-            $new_exon->start($trunc_start);
-            $new_exon->end  ($trunc_end);
-            
-            $new_exon->strand($strand);
-	    # $new_exon->clone_id($ex->clone_id);
-	    # $new_exon->contig_id($ex->contig_id);
-            $new_exon->phase($ex->phase);
-	    $new_exon->end_phase($ex->end_phase);
-	    $new_exon->contig($ex->contig);
-            # $new_exon->attach_seq($ex->entire_seq);
-
-            push(@translateable, $new_exon);
-        } else {
-            # It's just an ordinary internal exon
-            push(@translateable, $ex);
-        }
-        
-        # Exit the loop when we've found the last exon
-        last if $ex eq $end_exon;
-    }
-    
-    return @translateable;
+    return @{$self->get_all_translateable_Exons()};
 }
 
-=head2 split_Transcript_to_Partial
-
- Title   : split_Transcript_to_Partial
- Usage   : @trans = $trans->split_Transcript_to_Partial
- Function: splits a transcript with potential non spliceable
-           exons into a set of partial transcripts, from start/end
-           of the Translation if the second argument is true
- Example :
- Returns : an array of Bio::EnsEMBL::Transcript objects
- Args    :
 
 
-=cut
-
-sub split_Transcript_to_Partial {
-   my ($self,$on_translate) = @_;
-
-
-   if( $on_translate == 1 && ! defined $self->translation ) {
-       $self->throw("Attempting to split Transcript on translation, but no translation...");
-   }
-   # should we check here if the Exons know their entire_seq?
-
-   my @exons;
-   if( $on_translate == 1 ) {
-       @exons = $self->translateable_exons();
-   } else {
-       @exons = @{$self->get_all_Exons};
-   }
-
-   # one exon genes - easy to handle. (unless of course they have UTRs ...)
-   if (@exons == 1) {
-      # can't just return self - spliced UTR exons should not be returned or they'll be translated ...
-     # return $self;
-     
-     my $t = $self->new();
-     $t->dbID($self->dbID);
-     
-     $t->add_Exon($exons[0]);
-     return $t;
-   }
-
-   # find the start exon;
-
-   my $prev = shift @exons;
-
-   my $t;
-   my @out;
-
-
-   TRANSCRIPT :
-   while (@exons) {
-
-       # make a new transcript, add the old exon
-       $t = $self->new();
-       $t->dbID($self->dbID);
-
-       $t->add_Exon($prev);
-       $t->is_partial(1);
-
-       push(@out,$t);
-
-       while( my $exon = shift @exons ) {
-#	   print STDERR "Looking at exon ",$exon->dbID," with phase ",$exon->phase," vs ",$prev->dbID," ",$prev->end_phase,"\n";
-	   if( $exon->phase == $prev->end_phase) {
-	       # add it
-	       $t->add_Exon($exon);
-	       $prev = $exon;
-	   } else {
-	       $prev = $exon;
-	       if( $#exons < 0 ) {
-		   # this was the last exon!
-		   $t = $self->new();
-		   $t->dbID($self->dbID);
-		   $t->add_Exon($prev);
-		   $t->is_partial(1);
-		   push(@out,$t);
-		   last TRANSCRIPT;
-	       } else {
-		   next TRANSCRIPT;
-	       }
-	   }
-       }
-   }
-
-   if (@out == 1) {
-       $t->is_partial(0);
-   }
-
-   return @out;
-}                                       # split_Transcript_to_Partial
 
 =head2 translate
 
- Title   : translate
- Usage   : $pep = $feat->translate()
-
- Function: returns the peptide translation of the gene - in the correct phase. 
-           This method now requires that the Transcript has a valid Translation
-           object.
-
- Returns : Bio::Seq
- Args    : none
+  Args       : none
+  Example    : none
+  Description: return the peptide (plus eventuel stop codon) for this transcript.
+               Does N padding of non phase matching exons. It uses translateable_seq
+               internally. 
+  Returntype : Bio::Seq
+  Exceptions : If no Translation is set in this Transcript
+  Caller     : general
 
 =cut
 
 sub translate {
-    my ($self) = @_;
+  my ($self) = @_;
 
-    my $debug;
+  my $mrna = $self->translateable_seq();
+  my $display_id;
 
-
-    if ( ! defined $self->translation ) {
-        $self->throw("You have to have a translation now to make a translation. Doh!");
-    }
-
-    my @trans = $self->split_Transcript_to_Partial(1);
-    #print "there are ".scalar(@trans)." spilt transcripts\n";
-    unless (@trans) {
-        $self->throw("Bad internal error - split a transcript to zero transcripts! Doh!");
-    }  
-
-    my $seqstr;
-    my $prevtrans;
-    my $seen_start = 0;
-
-    foreach my $ptrans ( @trans ) {
-
-        my $tseq = $ptrans->_translate_coherent($debug);
-
-        # to be consistent with our EMBL dumping, we need to make the actual join
-        # with fill-in N's and then pass into translate so that ambiguous codons
-        # which still have a translation happen! This has to be the weirdest piece
-        # of manipulation I have done in a long time. What we do is take the last
-        # exon of the old transcript and the first exon of the current transcript,
-        # fill both sides in so that they make nice reading frames and then translate
-        # the 6 bases which this makes. Phase 0 exons are filled in by 3 to make sure
-        # that there is some filler.
-
-        if( defined $prevtrans ) {
-	    my $last_exon  = $prevtrans->end_Exon();
-	    my $first_exon = $ptrans   ->start_Exon();
-	    my $filler;
-
-	    # last exon
-	    if( $last_exon->end_phase != 0 ) {
-	        $filler = substr($last_exon->seq->seq, $last_exon->seq->length - $last_exon->end_phase);
-	    } 
-	    $filler .= 'N' x (3 - $last_exon->end_phase);
-
-	    # do first exon now.
-
-	    if( $first_exon->phase == 0 ) {
-	        $filler .= 'NNN';
-	    } else {
-	        $filler .= 'N' x $first_exon->phase;
-	    }
-#	    $filler .= substr($first_exon->seq->seq, 0, (3 - $first_exon->phase) % 3);
-	    $filler .= substr($first_exon->seq, 0, (3 - $first_exon->phase) % 3);
-
-	    # translate it.
-	    if( CORE::length($filler) != 6 ) {
-	        my $lphase = $last_exon->end_phase;
-	        my $fphase = $first_exon->phase;
-	        $self->throw("Wrong length of filler seq. Error in coding [$filler] $lphase:$fphase\n");
-	    }
-	    my $fillerseq = Bio::Seq->new( -seq => $filler, -moltype => 'dna');
-	    my $tfillerseq = $fillerseq->translate();
-	    $seqstr .= $tfillerseq->seq;
-        } 
-        $seqstr .= $tseq->seq;
-        $prevtrans = $ptrans;
-    }
-
-    $seqstr =~ s/\*$//;
-    my $display_id;
-
-    if( defined $self->translation->stable_id ) {
-	$display_id = $self->translation->stable_id;
-    } elsif ( defined $self->temporary_id ) {
-	$display_id = $self->temporary_id;
-    } else {
-	$display_id = $self->translation->dbID;
-    }
+  if( defined $self->translation->stable_id ) {
+    $display_id = $self->translation->stable_id;
+  } elsif ( defined $self->temporary_id ) {
+    $display_id = $self->temporary_id;
+  } else {
+    $display_id = $self->translation->dbID;
+  }
 	
-    my $trans_seq = Bio::Seq->new( -seq => $seqstr , '-id' => $display_id ) ;
-
-
-    return $trans_seq;
+  my $peptide = Bio::Seq->new( -seq => $mrna,
+			       -moltype => "dna",
+			       -id => $display_id );
+  $peptide->translate();
+  
+  return $peptide;
 }
 
 =head2 seq
@@ -929,78 +852,6 @@ sub seq {
     return $seq;
 }
 
-#PL: prolly should read 'cDNA' for 'mRNA' below:
-
-=head2 dna_seq
-
-  Title   : dna_seq
-  Usage   : $dna = $feat->dna_seq
-  Function: Returns the dna sequence of the gene, ie the mRNA
-            sequence
-  Returns : Bio::Seq
-  Args    : none
-
-=cut
-
-sub dna_seq {
-  my ($self) = @_;
-
-  my $mrna = "";
-  
-  # JGRG - $strand unused, so commented out
-  #my $strand = $self->{_trans_exon_array}[0]->strand;
-
-  my $prev = undef;
-  foreach my $exon (@{$self->get_all_Exons}) {
-
-    # the seq call automatically truncates to the correct 
-    # coordinates (handily) in SeqFeature
-
-    my $tmp = $exon->seq->seq();
-
-    # we now have to figure out if the phase is compatible. If it
-    # is not, we need to add some stuff in...
-
-    if( $prev ) {
-	if( $prev->end_phase != $exon->phase ) {
-	    if( $prev->end_phase == 0 ) {
-		if( $exon->phase == 1 ) {
-		    $mrna .= "N" x 2;
-		}
-
-		if( $exon->phase == 2 ) {
-		    $mrna .= "N" x 1;
-		}
-	    } elsif ( $prev->end_phase == 1 ) {
-		if( $exon->phase == 0 ) {
-		    $mrna .= "N" x 2;
-		}
-		
-		if( $exon->phase == 2 ) {
-		    $mrna .= "N" x 1;
-		}
-	    } elsif ( $prev->end_phase == 2 ) {
-		if( $exon->phase == 0 ) {
-		    $mrna .= "N" x 1;
-		}
-		
-		if( $exon->phase == 1 ) {
-		    $mrna .= "N" x 2;
-		}
-	    } else {
-		$self->warn("Impossible phases in calculating fixing stuff "  . $prev->end_phase . " " . $exon->phase);
-	    }
-	}
-    } # end of if previous is there
-
-    $prev = $exon;  #heikki: this line was missing!  
-    $mrna  .= $tmp; 
-  }
-
-  my $seq = new Bio::PrimarySeq(-SEQ => $mrna,-ID => $self->stable_id);
-
-  return $seq;
-}
 
 
 
@@ -1038,155 +889,6 @@ sub sort {
   }
 }
 
-=head2 _translate_coherent
-
- Title   : _translate_coherent
-
- Usage : <internal function> translates a coherent transcript.  Uncoherent
-           transcripts need to be broken up with split to partial first.
-           (coherent means: having the same intron phase, i.e., all
-           contiguous exon pairs that do not have phase differences).
-
- Function: 
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _translate_coherent{
-   my ($self,$debug) = @_;
-   
-   my $prev;
-   my $tstr;
-
-   #$self->sort();
-   my @exons = @{$self->get_all_Exons};
-   my $exon_start = $exons[0];
-   #print "there are ".@exons." exons\n";
-   foreach my $exon ( @exons ) {
-
-       # trim down start ends on the basis of phase.
-       if( $prev && $prev->end_phase != $exon->phase ) {
-	   $self->throw("Called coherent translate but exon phases don't match. Yuk!");
-       }
-
-       # warn about non DNA passed in. 
-
-       #       my $seq = $exon->seq();
-       my $str = $exon->seq->seq();
-       #       my $str = $seq->seq();
-       
-       #print STDERR "Exon " . $exon->seqname . " has length ",$exon->length," and sequence length ",length($str)," and strand ".$exon->strand."\n";
-
-       if( CORE::length( $str ) == 0 ) {
-	   $self->throw("Bad internal error - got a 0 length rstring...");
-       }
-
-       $tstr .= $str;
-   }
-
-
-   if ( $debug ) {
-       print STDERR "Bstr is $tstr\n";
-       print STDERR "Exon phase is " . $exon_start->phase . "\n";
-       my @trans;
-       my $exseq = new Bio::PrimarySeq(-SEQ => $tstr , '-id' => 'dummy' , -moltype => 'dna');
-       	$trans[0] = $exseq->translate();
-
-	# this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
-	# intron leaves one base pair.
-
-	$trans[1] = $exseq->translate('*','X',2);
-	$trans[2] = $exseq->translate('*','X',1);
-
-       print(STDERR "Exon start end " . $exon_start->start . " " . $exon_start->end . " " . $exon_start->phase . " " . $exon_start->strand ."\n");
-       print(STDERR "Translation 0 " . $trans[0]->seq . "\n");
-       print(STDERR "Translation 1 " . $trans[1]->seq . "\n");
-       print(STDERR "Translation 2 " . $trans[2]->seq . "\n");
-   }
-
-
-   if( $exon_start->phase == 1 ) {
-       $tstr = substr $tstr, 2;
-   } elsif ( $exon_start->phase == 2 ) {
-       $tstr = substr $tstr, 1;
-   } 
-
-   if ( $debug ) {
-       print STDERR "Exon start phase is " . $exon_start->phase . "\n";
-       print STDERR "Tstr is $tstr\n";
-   }
-
-   # phase 0 - no need.
-
-   #print "sequence = ".$tstr."\n";
-   my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -moltype => 'dna' );
-   #print "transcript seq ".$temp_seq->seq."\n";
-   return $temp_seq->translate();
-}
-
-=head2 translateable_dna
-
- Title   : translateable_dna
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub translateable_dna{
-   my ($self) = @_;
-
-      my $prev;
-   my $tstr;
-
-   #$self->sort();
-   my @exons = @{$self->get_all_Exons};
-   my $exon_start = $exons[0];
-
-
-   foreach my $exon ( @exons ) {
-
-
-       # trim down start ends on the basis of phase.
-       if( $prev && $prev->end_phase != $exon->phase ) {
-	   $self->throw("Called coherent translate but exon phases don't match. Yuk!");
-       }
-
-       # warn about non DNA passed in. 
-
-       if( $exon->entire_seq()->moltype ne 'dna' ) {
-	   #$self->warn("Error. Whoever implemented this databases did not set type to Dna. Setting now!");
-	   $exon->entire_seq()->moltype('dna');
-       }
-#       print STDERR "Exon phase " . $exon->id ." " . $exon->phase . "\t" . $exon->start . "\t" . $exon->end . " " .$exon->strand. " ".$exon->entire_seq->id ."\n";
-#       print STDERR "Exon sequence is " . $exon->seq->seq . "\n";
-
-       my $seq = $exon->seq();
-       my $str = $seq->seq();
-       
-
-       if( CORE::length( $str ) == 0 ) {
-	   $self->throw("Bad internal error - got a 0 length rstring...");
-       }
-
-       $tstr .= $str;
-   }
-
-   if( $exon_start->phase == 1 ) {
-       $tstr = substr $tstr, 2;
-   } elsif ( $exon_start->phase == 2 ) {
-       $tstr = substr $tstr, 1;
-   } 
-
-   my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -moltype => 'dna' );
-   return $temp_seq;
-}
 
 
 
@@ -1391,26 +1093,6 @@ sub find_coord {
 }
 
 
-=head2 is_partial
-
- Title   : is_partial
- Usage   : $obj->is_partial($newval)
- Function: 
- Example : 
- Returns : value of is_partial
- Args    : newvalue (optional)
-
-
-=cut
-
-sub is_partial{
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'is_partial'} = $value;
-    }
-    return $obj->{'is_partial'};
-
-}
 
 =head2 start_Exon
 
@@ -1491,6 +1173,7 @@ sub modified{
   Title   : rna_pos
   Usage   : $loc = $feat->dna_seq(23456)
   Function: Translates genomic coordinates into mRNA coordinates
+            ARNE: padding probably not correct
   Returns : integer
   Args    : integer, genomic location
 
@@ -1816,10 +1499,99 @@ sub transform {
 
 ##########################################################
 #
-# DEPRECATED METHODS FOLLOW
+# sub DEPRECATED METHODS FOLLOW
 #
 ##########################################################
 
+sub translateable_dna {
+   my ($self) = @_;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l translateable_dna isdeprecated. Please use translateable_seq (returns string)");
+
+   my $tstr = $self->translateable_seq();
+   my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -moltype => 'dna' );
+
+   return $temp_seq;
+}
+
+
+=head2 dna_seq
+
+  Title   : dna_seq
+  Usage   : $dna = $feat->dna_seq
+  Function: Returns the dna sequence of the gene, ie the mRNA
+            sequence
+  Returns : Bio::Seq
+  Args    : none
+
+=cut
+
+sub dna_seq {
+  my ($self) = @_;
+
+  $self->warn( "dna_seq is deprecated. Use spliced_seq to get concat off exon sequences as string." );
+
+  my $mrna = $self->spliced_seq();
+  my $seq = new Bio::PrimarySeq(-SEQ => $mrna,-ID => $self->stable_id);
+
+  return $seq;
+}
+
+sub _translate_coherent{
+   my ($self,$debug) = @_;
+   
+  $self->throw( "_translate_coherent is gone" );
+}
+
+
+=head2 split_Transcript_to_Partial
+
+ Title   : split_Transcript_to_Partial
+ Usage   : @trans = $trans->split_Transcript_to_Partial
+ Function: splits a transcript with potential non spliceable
+           exons into a set of partial transcripts, from start/end
+           of the Translation if the second argument is true
+ Example :
+ Returns : an array of Bio::EnsEMBL::Transcript objects
+ Args    :
+
+
+=cut
+
+sub split_Transcript_to_Partial {
+  my ( $self ) = @_;
+  my ($p,$f,$l) = caller;
+
+  $self->warn( "$f:$l split_transcript_to_Partial deprecated, no replacement" );
+  
+}                                       # split_Transcript_to_Partial
+
+
+=head2 is_partial
+
+ Title   : is_partial
+ Usage   : $obj->is_partial($newval)
+ Function: 
+ Example : 
+ Returns : value of is_partial
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub is_partial{
+   my ($self,$value) = @_;
+   my ($p,$f,$l) = caller;
+
+   $self->warn( "$f:$l is_partial definatly completely deprecated, just dont use it" );
+
+   if( defined $value) {
+      $self->{'is_partial'} = $value;
+    }
+    return $self->{'is_partial'};
+
+}
 
 =head2 id
 
