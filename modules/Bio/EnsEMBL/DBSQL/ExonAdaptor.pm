@@ -16,7 +16,7 @@ Bio::EnsEMBL::DBSQL::ExonAdaptor - MySQL Database queries to generate and store 
 =head1 SYNOPSIS
 
 $exon_adaptor = $database_adaptor->get_ExonAdaptor();
-$exons = $exon_adaptor->fetch_by
+$exon = $exon_adaptor->fetch_by_dbID
 
 =head1 CONTACT
 
@@ -43,17 +43,18 @@ use Bio::EnsEMBL::StickyExon;
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
+
 =head2 fetch_by_dbID
 
- Title   : fetch_by_dbID
- Usage   : $exonAdaptor->fetch_by_dbID($exon_id)
- Function: 
- Example : $obj->remove_by_dbID(ENSE000034)
- Returns : nothing
- Args    : $exon_id
+  Arg [1]    : int $exon_id
+               the unique internal id of the exon to retrieve
+  Example    : $exon = $exon_adaptor->fetch_by_dbID($exon_id);
+  Description: Retrieves an exon from the database via its internal id
+  Returntype : Bio::EnsEMBL::Exon in contig coordinates
+  Exceptions : none
+  Caller     : general
 
 =cut
-
 
 sub fetch_by_dbID {
   my $self = shift;
@@ -89,14 +90,16 @@ sub fetch_by_dbID {
   return $exon;
 }
 
+
 =head2 fetch_by_stable_id
 
- Title   : fetch_by_stable_id
- Usage   : $exonAdaptor->fetch_by_stable_id( $exon_stable_id )
- Function: gets an exon by its stable_id
- Example : 
- Returns : exon Object or undef if none is found
- Args    : stable_id of an exon
+  Arg [1]    : string $stable_id
+               the stable id of the exon to retrieve
+  Example    : $exon = $exon_adaptor->fetch_by_stable_id('ENSE0000988221');
+  Description: Retrieves an Exon from the database via its stable id
+  Returntype : Bio::EnsEMBL::Exon in contig coordinates
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -117,7 +120,19 @@ sub fetch_by_stable_id {
 }
 
 
-# returns list of exons or maybe empty list (gene not known)
+
+=head2 fetch_by_geneId
+
+  Arg [1]    : int $geneId 
+               the unique internal identifier for the gene whose exons will be
+               retrieved 
+  Example    : @exons = $exon_adaptor->fetch_by_geneId(); 
+  Description: Retrieves all exons from the gene specified by gene_id
+  Returntype : list of Bio::EnsEMBL::Exon in contig coordinates
+  Exceptions : thrown if $geneId is not defined
+  Caller     : general
+
+=cut
 
 sub fetch_by_geneId {
   my ( $self, $geneId ) = @_;
@@ -167,6 +182,25 @@ sub fetch_by_geneId {
   return values %exons;
 }
 
+
+=head2 _exon_from_sth
+
+  Arg [1]    : DBI statement handle $sth
+               the prepared SQL statement used to generate the hashref
+               this arg is required to retrieve component exons from
+               the database if the exon happens to be a sticky exon 
+  Arg [2]    : DBI row hashref $hashRef
+               a hash reference representing a single exon or a portion
+               of a sticky exon
+  Example    : my $exon = $self->_exon_from_sth($sth, $hashref); 
+  Description: PROTECTED
+               Creates an exon (normal or sticky) from its statement handle
+               and hashreference.  
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::ExonAdaptor
+
+=cut
 
 
 # build an exon (possibly sticky exon) from given statement handle and
@@ -251,6 +285,19 @@ sub _exon_from_sth {
 }
 
 
+
+=head2 _new_Exon_from_hashref
+
+  Arg [1]    : DBI row hashref $hashRef
+  Example    : my $exon = $hashref
+  Description: PROTECTED
+               creates a normal (non-sticky) exon from a row hash reference 
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : none
+  Caller     : _exon_from_sth
+
+=cut
+
 sub _new_Exon_from_hashRef {
    my $self = shift;
    my $hashRef = shift;
@@ -275,13 +322,18 @@ sub _new_Exon_from_hashRef {
 }
 
 
+
 =head2 fetch_evidence_by_Exon
 
- Title   : fetch_evidence_by_Exon
- Usage   : $exonAdaptor->fetch_evidence_by_Exon($exon)
- Function: Fetch evidence for this Exon.
- Returns : nothing
- Args    : 
+  Arg [1]    : Bio::EnsEMBL::Exon - the exon to fetch evidence for
+  Example    : $exon_adaptor->fetch_evidence_by_Exon($exon);
+  Description: Currently appears to be broken, and supporting features are
+               being reworked as I write this.  Not sure what the fate of
+               this method will be.  Should retrieves supporting evidence 
+               for an exon.
+  Returntype : none
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Exon
 
 =cut
 
@@ -290,7 +342,7 @@ sub fetch_evidence_by_Exon {
   # if exon is sticky, get supporting from components
   if( $exon->isa( 'Bio::EnsEMBL::StickyExon' )) {
     # sticky storing. Sticky exons contain normal exons ...
-
+    
     my @componentExons = $exon->each_component_Exon();
     for my $componentExon ( @componentExons ) {
       $self->fetch_evidence_by_Exon( $componentExon );
@@ -299,7 +351,9 @@ sub fetch_evidence_by_Exon {
   }
 
   
-
+  #
+  # This looks broken...
+  #
   my $sql = "select type, feature_id from supporting feature where exon_id = ".$exon->dbID;
 
   my $sth->prepare($sql);
@@ -318,14 +372,7 @@ sub fetch_evidence_by_Exon {
       my $f = $dna_adp->fetch_by_dbID($feature_id);
       $exon->add_Supporting_Feature($f);
     }
-
-    
-
   }
-
- 
-  
-
   return 1;
 }
 
@@ -333,41 +380,45 @@ sub fetch_evidence_by_Exon {
 
 =head2 store
 
- Title   : store
- Usage   : $exonAdaptor->store($exonObject)
- Function: Stores the exon.
- Example : $exonAdaptor->store( $exon );
- Returns : nothing
- Args    : Exon or StickyExon
+  Arg [1]    : Bio::EnsEMBL::Exon $exon
+               the exon to store in this database
+  Example    : $exon_adaptor->store($exon);
+  Description: Stores an exon in the database
+  Returntype : none
+  Exceptions : thrown if exon (or component exons) do not have a contig_id
+               or if $exon->start, $exon->end, $exon->strand, or $exon->phase 
+               are not defined or if $exon is not a Bio::EnsEMBL::Exon 
+  Caller     : general
 
 =cut
 
 sub store {
   my ( $self, $exon ) = @_;
 
-  #print STDERR "storing exon\n";
   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
     $self->throw("$exon is not a EnsEMBL exon - not dumping!");
   }
-  #print STDERR "storing exon ".$exon->start."-".$exon->end."\n";
+
   if( $exon->dbID && $exon->adaptor == $self ) {
-      $self->warn("Exon with dbID ".$exon->dbID." has already got a dbID and is attached to this adaptor. No need therefore to store");
-      return $exon->dbID();
+    $self->warn("Exon with dbID " . $exon->dbID . " has already got a dbID" .
+		"and is attached to this adaptor. No need therefore to store");
+    return $exon->dbID();
   }
 
-  if( !defined $exon->start || !defined $exon->end || !defined $exon->strand || !defined $exon->phase ) {
-      $self->throw("Exon does not have all attributes to store");
+  if( !defined $exon->start || !defined $exon->end || 
+      !defined $exon->strand || !defined $exon->phase ) {
+    $self->throw("Exon does not have all attributes to store");
   }
 
   # trap contig_id separately as it is likely to be a common mistake
 
   my $exon_sql = q{
-       INSERT into exon ( exon_id, contig_id, contig_start, contig_end, contig_strand, phase, 
-			  end_phase, sticky_rank)
-		 VALUES ( ?, ?, ?, ?, ?, ?, ?,? )
-		};
+    INSERT into exon ( exon_id, contig_id, contig_start, 
+		       contig_end, contig_strand, phase, 
+		       end_phase, sticky_rank )
+    VALUES ( ?, ?, ?, ?, ?, ?, ?,? ) 
+  };
   my $exonst = $self->prepare($exon_sql);
-
 
   my $exonId = undef;
 
@@ -378,7 +429,8 @@ sub store {
     for my $componentExon ( @componentExons ) {
 
       if( !defined $componentExon->contig_id ) {
-	$self->throw("Component Exon does not have a contig_id set. Needs to have one set");
+	$self->throw("Component Exon does not have a contig_id set. " .
+		     "Needs to have one set");
       }
 
       $exonst->execute( $exonId, $componentExon->contig_id,
@@ -396,9 +448,10 @@ sub store {
     }
   } else {
     # normal storing
-
+    
     if( !defined $exon->contig_id ) {
-      $self->throw("Exon does not have a contig_id set. Needs to have one set");
+      $self->throw("Exon does not have a contig_id set." . 
+		   "Needs to have one set");
     }
 
     $exonst->execute( undef,$exon->contig_id,
@@ -409,31 +462,24 @@ sub store {
 		      $exon->end_phase(),
 		      $exon->sticky_rank() );
     $exon->dbID($exonst->{'mysql_insertid'});
-#    print STDERR "Assigning $exon with ",$exon->dbID,"\n";
-
     $exon->adaptor( $self );
   }
 
   # Now the supporting evidence
   # should be stored from featureAdaptor
-
- 
-
   my $sql = "insert into supporting_feature (exon_id, feature_id, feature_type)
-           values(?, ?, ?)";  
+             values(?, ?, ?)";  
   
   my $sf_sth = $self->db->prepare($sql);
-
 
   my $anaAdaptor = $self->db->get_AnalysisAdaptor();
   my $dna_adaptor = $self->db->get_DnaAlignFeatureAdaptor();
   my $pep_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
   my $type;
  FEATURE: foreach my $sf ($exon->each_Supporting_Feature) {
-    #print STDERR "Writing supporting feature ".$f->start."-".$f->end."\n";
-    #print STDERR "have ".$sf." as supporting feature\n"; 
     if(!$sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
-      $self->throw("$sf must be an align feature otherwise is can't be stored");
+      $self->throw("$sf must be an align feature" .
+		   "otherwise it can't be stored");
     }
     eval {
       $sf->validate();
@@ -453,9 +499,6 @@ sub store {
     }
     
     $sf_sth->execute($exon->dbID, $sf->dbID, $type);
-    
-	   
-	   
   }
 
   # Commented out until fully integrated into codebase
@@ -482,14 +525,17 @@ sub store {
 
 }
 
+
 =head2 get_stable_entry_info
 
- Title   : get_stable_entry_info
- Usage   : $exonAdptor->get_stable_entry_info($exon)
- Function: gets stable info for exon and places it into the hash
- Returns : 
- Args    : 
-
+  Arg [1]    : Bio::EnsEMBL::Exon $exon
+  Example    : $exon_adaptor->get_stable_entry_info($exon);
+  Description: gets stable info for an exon. this is not usually done at
+               creation time for speed purposes, and can be lazy-loaded later
+               if it is needed..
+  Returntype : none
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Exon
 
 =cut
 
@@ -500,7 +546,11 @@ sub get_stable_entry_info {
      $self->throw("Needs a exon object, not a $exon");
   }
 
-  my $sth = $self->prepare("select stable_id,UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified),version from exon_stable_id where exon_id = ".$exon->dbID);
+  my $sth = $self->prepare("SELECT stable_id, UNIX_TIMESTAMP(created),
+                                   UNIX_TIMESTAMP(modified), version 
+                            FROM   exon_stable_id 
+                            WHERE  exon_id = " . $exon->dbID);
+
   $sth->execute();
 
   my @array = $sth->fetchrow_array();
@@ -512,6 +562,19 @@ sub get_stable_entry_info {
 
   return 1;
 }
+
+
+=head2 remove
+
+  Arg [1]    : Bio::EnsEMBL::Exon $exon
+               the exon to remove from the database 
+  Example    : $exon_adaptor->remove($exon);
+  Description: Removes an exon from the database
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub remove {
   my $self = shift;
@@ -535,33 +598,38 @@ sub remove {
 }
 
 
+
 =head2 fetch_frameshifts
 
- Title   : fetch_frameshifts
- Usage   : exonAdaptor->fetch_frameshifts{exonObject)
- Function: populates the _frameshifts list with frameshift data
- Returns : populated _frameshifts list in exon object
- Args    : Exon
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub fetch_frameshifts {
   my ( $self, $exon ) = @_;
 
-  my @frameshifts;
+  $self->throw("call to deprecated method fetch_frameshifts");
 
-  my $frameshift_sql = "
-    SELECT    frameshift_start, length
-    FROM      exon_frameshift 
-    WHERE     exon_id = " . $exon->dbID;
+  return undef;
+#  my @frameshifts;
 
-  my $sth = $self->prepare($frameshift_sql);
+#  my $frameshift_sql = "
+#    SELECT    frameshift_start, length
+#    FROM      exon_frameshift 
+#    WHERE     exon_id = " . $exon->dbID;
 
-  $sth->execute || $self->throw("Execute failed for getting frameshifts in ExonAdaptor.pm!");
+#  my $sth = $self->prepare($frameshift_sql);
 
-  while( my @arr = $sth->fetchrow_array() ) {
-   push @{$exon->{'_frameshifts'}}, [$arr[0], $arr[1]];
-  }
+#  $sth->execute || $self->throw("Execute failed for getting frameshifts in ExonAdaptor.pm!");
+
+#  while( my @arr = $sth->fetchrow_array() ) {
+#   push @{$exon->{'_frameshifts'}}, [$arr[0], $arr[1]];
+#  }
 }
 
 

@@ -15,6 +15,8 @@ Bio::EnsEMBL::DBSQL::GeneAdaptor - MySQL Database queries to generate and store 
 
 =head1 SYNOPSIS
 
+$gene_adaptor = $db_adaptor->get_GeneAdaptor();
+
 =head1 CONTACT
 
   Arne Stabenau: stabenau@ebi.ac.uk
@@ -42,14 +44,15 @@ use vars '@ISA';
 
 use implements qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI);
 
+
 =head2 list_geneIds
 
- Title   : list_geneIds
- Usage   : $geneAdaptor->list_geneIds
- Function: Gets an array of internal ids for all genes in the current db
- Example : 
- Returns : array of ids
- Args    : none
+  Arg [1]    : none
+  Example    : @gene_ids = $gene_adaptor->list_geneIds();
+  Description: Gets an array of internal ids for all genes in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
 
 =cut
 
@@ -67,14 +70,16 @@ sub list_geneIds {
    return @out;
 }
 
+
+
 =head2 list_stable_geneIds
 
- Title   : list_stable_geneIds
- Usage   : $geneAdaptor->list_stable_geneIds
- Function: Gets an array of stable ids for all genes in the current db
- Example : 
- Returns : array of ids
- Args    : none
+  Arg [1]    : list_stable_gene_ids
+  Example    : @stable_ids = $gene_adaptor->list_stable_gene_ids();
+  Description: Returns a list stable ids for all genes in the current db
+  Returntype : list of strings
+  Exceptions : none
+  Caller     : ?
 
 =cut
 
@@ -95,15 +100,16 @@ sub list_stable_geneIds {
 
 =head2 fetch_by_dbID
 
- Title   : fetch_by_dbID
- Usage   : $geneobj->fetch_by_dbID( $geneid)
- Function: gets one gene out of the db
- Example : $obj->get($dbID)
- Returns : gene object (with transcripts, exons and supp.evidence if wanted)
- Args    : gene id and supporting tag
+  Arg [1]    : int $geneId 
+               the unique internal database id of the Gene to be retrieved
+  Example    : $gene = $gene_adaptor->fetch_by_dbID
+  Description: Retrieves a gene object from the database using its unique
+               internal identifier.
+  Returntype : Bio::EnsEMBL::Gene in contig coordinates
+  Exceptions : thrown if no exons exist for the gene with dbID $geneId
+  Caller     : general
 
 =cut
-
 
 sub fetch_by_dbID {
   my ( $self, $geneId ) = @_;
@@ -201,21 +207,22 @@ sub fetch_by_dbID {
 
 =head2 fetch_by_stable_id
 
- Title   : fetch_by_stable_id
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : string $id 
+               The stable id of the gene to retrieve
+  Example    : $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000148944');
+  Description: Retrieves a gene object from the database via its stable id
+  Returntype : Bio::EnsEMBL::Gene in contig coordinates
+  Exceptions : thrown if no gene of stable_id $id exists in the database
+  Caller     : general
 
 =cut
 
 sub fetch_by_stable_id{
    my ($self,$id) = @_;
-   print STDERR "CoreGeneAdaptor fetch by stable id called.\n";
 
-   my $sth = $self->prepare("select gene_id from gene_stable_id where stable_id = '$id'");
+   my $sth = $self->prepare("SELECT gene_id 
+                             FROM gene_stable_id 
+                             WHERE stable_id = '$id'");
    $sth->execute;
 
    my ($dbID) = $sth->fetchrow_array();
@@ -227,15 +234,17 @@ sub fetch_by_stable_id{
    return $self->fetch_by_dbID($dbID);
 }
 
+
 =head2 fetch_by_contig_list
 
- Title   : fetch_by_contig_list
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : list of ints @list
+               the contigs to retrieve genes from
+  Example    : @genes = $gene_adaptor->fetch_by_contig_list(1, 2, 3, 4);
+  Description: Retrieves all genes which are present on list of contigs
+               denoted by their unique database ids
+  Returntype : list of Bio::EnsEMBL::Genes in contig coordinates
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -255,7 +264,13 @@ sub fetch_by_contig_list{
    # trips to the database. should fix here
    #
 
-   my $sth = $self->prepare("select distinct(t.gene_id) from transcript t,exon_transcript et,exon e,contig c where c.name in $str and c.contig_id = e.contig_id and et.exon_id = e.exon_id and et.transcript_id = t.transcript_id");
+   my $sth = $self->prepare("SELECT distinct(t.gene_id) 
+                             FROM transcript t,exon_transcript et,
+                                  exon e,contig c 
+                             WHERE c.name IN $str 
+                             AND c.contig_id = e.contig_id 
+                             AND et.exon_id = e.exon_id 
+                             AND et.transcript_id = t.transcript_id");
    $sth->execute;
 
    my @out;
@@ -265,20 +280,18 @@ sub fetch_by_contig_list{
    }
 
    return @out;
-	    
 }
 
 
 =head2 fetch_by_Slice
 
-  Arg  1    : Bio::EnsEMBL::Slice $slice
-              The slice we want genes on
-  Function  : retrieve all the genes on this slice. Uses contig list from
-              Assembly Mapper and Gene->transform. Uses fetch_by_dbID to find
-              Genes initially and then makes transformed versions.
-  Returntype: list of Bio::EnsEMBL::Gene
-  Exceptions: none
-  Caller    : Bio::EnsEMBL::Slice
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               the slice to fetch genes from
+  Example    : $genes = $gene_adaptor->fetch_by_slice($slice);
+  Description: Retrieves all genes which are present on a slice
+  Returntype : list of Bio::EnsEMBL::Genes in slice coordinates
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Slice
 
 =cut
 
@@ -326,14 +339,15 @@ sub fetch_by_Slice {
 
 =head2 fetch_by_Transcript_id
 
- Title   : fetch_by_Transcript_id
- Usage   : $gene_obj->get_Gene_by_Transcript_id($transid, $supporting)
- Function: gets one gene out of the db with or without supporting evidence
- Returns : gene object (with transcripts, exons and supp.evidence if wanted)
- Args    : transcript id and supporting tag (if latter not specified,
-assumes without
-           Note that it is much faster to get genes without supp.evidence!
-
+  Arg [1]    : int $transid 
+               unique database identifier for the transcript whose gene should
+               be retrieved.
+  Example    : $gene = $gene_adaptor->fetch_by_transcript_id($transcript);
+  Description: Retrieves a gene from the database via the database identifier
+               of one of its transcripts
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : ?
 
 =cut
 
@@ -342,8 +356,7 @@ sub fetch_by_Transcript_id {
     my $transid = shift;
 
     # this is a cheap SQL call
-    #my $sth = $self->prepare("select gene_id from transcript where transcript_id = '$transid'");
-    my $sth = $self->prepare("	SELECT	tr.gene_id 
+     my $sth = $self->prepare("	SELECT	tr.gene_id 
 				FROM	transcript as tr 
 				WHERE	tr.transcript_id = $transid");
     $sth->execute;
@@ -358,16 +371,17 @@ sub fetch_by_Transcript_id {
 
 
 
-=head2 fetch_by_Peptide_id 
+=head2 fetch_by_Peptide_id
 
- Title   : fetch_by_Peptide_id
- Usage   : $geneAdaptor->fetch_by_Peptide_id($peptideid)
- Function: gets one gene out of the db with or without supporting evidence
- Returns : gene object (with transcripts, exons and supp.evidence if wanted)
- Args    : peptide id and supporting tag (if latter not specified,
-assumes without
-           Note that it is much faster to get genes without supp.evidence!
-
+  Arg [1]    : string $peptideid
+               the stable id of a translation of the gene that should
+               be obtained
+  Example    : $gene = $gene_adaptor->fetch_by_Peptide_id('ENSP00000278194');
+  Description: retrieves a gene via the stable id of one of its translations
+               this method should be renamed, but for now it stays
+  Returntype : Bio::EnsEMBL::Gene in contig coordinates
+  Exceptions : none
+  Caller     : geneview
 
 =cut
 
@@ -390,6 +404,20 @@ sub fetch_by_Peptide_id {
     }
     return $self->fetch_by_dbID($geneid);
 }
+
+
+=head2 fetch_by_maximum_DBLink
+
+  Arg [1]    : int $external_id
+               the unique identifier of the DBEntry of the gene to retrieve
+  Example    : my $gene = $gene_adaptor->fetch_by_maximum_DBLink($ext_id);
+  Description: retrieves the gene with the  most most exons with the external 
+               database link identified by $external_id
+  Returntype : Bio::EnsEMBL::Gene in contig coordinates
+  Exceptions : none
+  Caller     : ?
+
+=cut
 
 
 =head2 fetch_by_maximum_DBLink
@@ -426,38 +454,16 @@ sub fetch_by_maximum_DBLink {
 }
 
 
-=head2 get_description
-
- Title   : get_description
- Usage   : $geneAdptor->get_description($dbID)
- Function: gets gene description line 
- Returns : a string
- Args    : 
-
-
-=cut
-
-sub get_description {
-  my ($self,$dbID) = @_;
-
-  if( !defined $dbID ) {
-      $self->throw("must call with dbID");
-  }
-
-  my $sth = $self->prepare("select description from gene_description where gene_id = $dbID");
-  $sth->execute;
-  my @array = $sth->fetchrow_array();
-  return $array[0];
-}
-
 =head2 get_stable_entry_info
 
- Title   : get_stable_entry_info
- Usage   : $geneAdptor->get_stable_entry_info($gene)
- Function: gets stable info for gene and places it into the hash
- Returns : 
- Args    : 
-
+  Arg [1]    : Bio::EnsEMBL::Gene $gene
+  Example    : $gene_adaptor->get_stable_entry_info($gene);
+  Description: gets stable info for a gene. this is not usually done at
+               creation time for speed purposes, and can be lazy-loaded later
+               if it is needed..
+  Returntype : none
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Gene
 
 =cut
 
@@ -468,7 +474,10 @@ sub get_stable_entry_info {
      $self->throw("Needs a gene object, not a $gene");
   }
 
-  my $sth = $self->prepare("select stable_id,UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified),version from gene_stable_id where gene_id = ".$gene->dbID);
+  my $sth = $self->prepare("SELECT stable_id, UNIX_TIMESTAMP(created),
+                                   UNIX_TIMESTAMP(modified), version 
+                            FROM gene_stable_id 
+                            WHERE gene_id = ".$gene->dbID);
   $sth->execute();
 
   my @array = $sth->fetchrow_array();
@@ -481,16 +490,17 @@ sub get_stable_entry_info {
   return 1;
 }
 
+
 =head2 fetch_by_DBEntry
 
- Title   : fetch_by_DBLink
- Usage   : $geneAdptor->fetch_by_DBLink($ext_id)
- Function: gets one gene out of the db with or without supporting evidence
- Returns : gene object (with transcripts, exons and supp.evidence if wanted)
- Args    : transcript id and supporting tag (if latter not specified,
-assumes without
-           Note that it is much faster to get genes without supp.evidence!
-
+  Arg [1]    : in $external_id
+               the external identifier for the gene to be obtained
+  Example    : @genes = $gene_adaptor->fetch_by_DBEntry($ext_id)
+  Description: retrieves a list of genes with an external database 
+               idenitifier $external_id
+  Returntype : list of Bio::EnsEMBL::DBSQL::Gene in contig coordinates
+  Exceptions : none
+  Caller     : ?
 
 =cut
 
@@ -513,37 +523,34 @@ sub fetch_by_DBEntry {
 }
 
 
-
-
 =head2 store
 
- Title   : store
- Usage   : $geneAdaptor->store($gene)
- Function: writes a particular gene into the database. Assumes that everything 
-           has dbIDs ....
- Example :
- Returns : nothing
- Args    : $gene object
-
+  Arg [1]    : Bio::EnsEMBL::Gene
+  Example    : $gene_adaptor->store($gene);
+  Description: Stores a gene in the database
+  Returntype : the database identifier of the newly stored gene
+  Exceptions : thrown if the $gene is not a Bio::EnsEMBL::Gene or if 
+               $gene does not have an analysis object
+  Caller     : general
 
 =cut
 
 sub store {
    my ($self,$gene) = @_;
    my %done;
-   #print STDERR "storing gene\n";
+
    my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
-   #print STDERR "have transcript adaptor\n";
+
    if( !defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("Must store a gene object, not a $gene");
    }
-
    if( !defined $gene->analysis ) {
        $self->throw("Genes must have an analysis object!");
    }
-   #print STDERR "storing analysis_object\n";
+
    my $aA = $self->db->get_AnalysisAdaptor();
    my $analysisId = $aA->exists( $gene->analysis() );
+
    if( defined $analysisId ) {
      $gene->analysis()->dbID( $analysisId );
    } else {
@@ -555,24 +562,21 @@ sub store {
    }
  
    my $trans_count = scalar($gene->get_all_Transcripts);
-   print $trans_count."\n";
-   print $gene->type()."\n";
    my $type = $gene->type;
-   #print STDERR "inserting into genetable\n";
-   my $sth2 = $self->prepare("insert into gene(type, analysis_id, transcript_count) values('$type', $analysisId, $trans_count)" );
+   my $sth2 = $self->prepare("INSERT INTO gene(type, analysis_id, 
+                                               transcript_count) 
+                              VALUES('$type', $analysisId, $trans_count)" );
    $sth2->execute();
    
    $gene->adaptor( $self );
    $gene->dbID( $sth2->{'mysql_insertid'} );
-   #print STDERR "have gene dbID\n";
+
    my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
-   #print STDERR "have dbEntryAdaptor\n";
-  
+
    foreach my $dbl ( $gene->each_DBLink ) {
-     #print STDERR $dbl."\n";
      $dbEntryAdaptor->store( $dbl, $gene->dbID, "Gene" );
    }
-   #print "have stored all dbLinks\n";
+
    # write exons at this level to avoid duplicates
    my $exonAdaptor = $self->db->get_ExonAdaptor();
    my @ex = $gene->get_all_Exons;
@@ -580,7 +584,6 @@ sub store {
    foreach my $exon($gene->get_all_Exons){
      $exonAdaptor->store( $exon );
    }
-
 
    # write exons transcripts and exon_transcript table
    foreach my $trans ( $gene->get_all_Transcripts() ) {
@@ -590,6 +593,18 @@ sub store {
    return $gene->dbID;
 }
 
+
+=head2 remove
+
+  Arg [1]    : Bio::EnsEMBL::Gene $gene 
+               the gene to remove from the database 
+  Example    : $gene_adaptor->remove($gene);
+  Description: Removes a gene from the database
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub remove {
   my $self = shift;
@@ -604,7 +619,6 @@ sub remove {
   $sth= $self->prepare( "delete from gene_stable_id where gene_id = ? " );
   $sth->execute( $gene->dbID );
   my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
-  # my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
   foreach my $trans ( $gene->get_all_Transcripts() ) {
     $transcriptAdaptor->remove($trans,$gene);
   }
@@ -613,16 +627,18 @@ sub remove {
 }
 
 
+
 =head2 get_Interpro_by_geneid
 
- Title   : get_Interpro_by_geneid
- Usage   : @interproid = $geneAdaptor->get_Interpro_by_geneid($gene->id);
- Function: gets interpro accession numbers by geneid. A hack really -
-           we should have a much more structured system than this
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : string $gene
+               the stable if of the gene to obtain
+  Example    : @i = $gene_adaptor->get_Interpro_by_geneid($gene->stable_id()); 
+  Description: gets interpro accession numbers by gene stable id.
+               A hack really - we should have a much more structured 
+               system than this
+  Returntype : list of strings 
+  Exceptions : none 
+  Caller     : domainview?
 
 =cut
 
@@ -661,12 +677,33 @@ sub get_Interpro_by_geneid {
 
 
 
+=head2 get_description
 
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
-sub create_tables {
-# read sql from geneAdaptor.sql
+=cut
+
+sub get_description {
+  my ($self, $dbID) = @_;
+
+  $self->throw("call to deprecated method get_description");
+
+  return undef;
+
+#  if( !defined $dbID ) {
+#      $self->throw("must call with dbID");
+#  }
+
+#  my $sth = $self->prepare("select description from gene_description where gene_id = $dbID");
+#  $sth->execute;
+#  my @array = $sth->fetchrow_array();
+#  return $array[0];
 }
-
 
 
 1;
