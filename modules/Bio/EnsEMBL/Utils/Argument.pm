@@ -131,7 +131,7 @@ sub rearrange {
   # What we intend to do is loop through the @{$order} variable,
   # and for each value, we use that as a key into our associative
   # array, pushing the value at that key onto our return array.
-  return map {$param{uc("-$_")} || $param{uc($_)}} @$order;
+  return map {$param{uc("-$_")}} @$order;
 }
 
 1;
