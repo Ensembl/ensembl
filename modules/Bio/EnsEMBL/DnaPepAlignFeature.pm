@@ -1,4 +1,4 @@
-package Bio::EnsEMBL::DnapepAlignFeature;
+package Bio::EnsEMBL::DnaPepAlignFeature;
 
 # EnsEMBL module for storing dna-protein pairwise alignments
 #
@@ -303,6 +303,8 @@ sub _parse_cigar {
 
                If there are no elements in the array
 
+               If the hit length is not exactly 3 times the query length
+
     Caller   : Called internally to the module by the constructor
 
 =cut
@@ -402,6 +404,11 @@ sub _parse_features {
 
     }
     my $length = ($f->end - $f->start + 1)*$hstrand;
+    my $hlength = ($f->hend - $f->hstart + 1)*$hstrand;
+
+    if ($hlength/$length != 3) {
+       $self->throw("Hit length must be exactly 3 times the query length for a DnaPepAlignFeature");
+    }
 
     $string = $string . $start1 . "," . $start2 . "," . $length . ":";
 

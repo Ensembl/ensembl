@@ -303,6 +303,8 @@ sub _parse_cigar {
 
                If there are no elements in the array
 
+               If the hit length is not equal to the query length
+
     Caller   : Called internally to the module by the constructor
 
 =cut
@@ -360,7 +362,6 @@ sub _parse_features {
     if ($f->strand != $hstrand) {
       $self->throw("Inconsistent strands in feature array");
     }
-
     if ($name ne $f->seqname) {
       $self->throw("Inconsistent names in feature array [$name - " . $f->seqname . "]");
     }
@@ -402,6 +403,11 @@ sub _parse_features {
 
     }
     my $length = ($f->end - $f->start + 1)*$hstrand;
+    my $hlength = ($f->hend - $f->hstart + 1)*$hstrand;
+
+    if ($length != $hlength) {
+      $self->throw("Hit length is different to the query length in DnaDnaAlignFeature");
+    }
 
     $string = $string . $start1 . "," . $start2 . "," . $length . ":";
 
