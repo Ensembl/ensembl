@@ -78,11 +78,11 @@ if ($organism = "human") {
     open (REFSEQPRED,"$refseq_pred") || die "Can't open $refseq_pred\n";
     #Read the file by genbank entries (separated by //) 
     $/ = "\/\/\n";
-    while (<REFSEQ>) {
+    while (<REFSEQPRED>) {
 #This subroutine store for each NP (refseq protein accession number) its corresponding NM (DNA accession number)
 	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
 	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
-
+	#print STDERR "PROT: $prot_ac\t$dna_ac\n";
 	$ref_map_pred{$prot_ac} = $dna_ac;
     }
 #Put back the default (new line) for reading file
@@ -99,8 +99,6 @@ while (<XMAP>) {
     
     chomp;
     my ($targetid,$targetdb,$xac,$xdb,$xid,$xsyn,$status) = split (/\t/,$_);
-
-    #print STDERR "STATUS: $status\n";
 
     if ($check eq "yes") {
 #Get the all of the EMBL accessions for a given SP
@@ -140,6 +138,7 @@ while (<XMAP>) {
 	
 	    ($xac) = $xac =~ /^(XP_\d+)/;
 	    $xac = $ref_map_pred{$xac};
+	    #print STDERR "XAC: $xac\n";
 	}
 
     if ($xid =~ /^XP_\d+/) {
@@ -147,13 +146,6 @@ while (<XMAP>) {
 	($xid) = $xid =~ /^(XP_\d+)/;
 	$xid = $ref_map_pred{$xid};
     }
-
-
-
-
-
-        #print STDERR "TARGETID: $targetid\t$xdb\n";
-    
 
     my $p= Desc->new;
     $p->targetDB($targetdb);
@@ -190,7 +182,7 @@ MAPPING: while (<MAP>) {
     
     my $m = $tid; 
     
-    print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";
+    #print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";
 
     if ($tid =~ /^NP_\d+/) {
 	
@@ -207,7 +199,9 @@ MAPPING: while (<MAP>) {
     if ($tid =~ /^(\w+-\d+)/) {
 	($tid) = $tid =~ /^(\w+)-\d+/;
     }
-    
+ 
+    #print STDERR "TID: $tid\n";
+   
     if ((defined $tid) && (defined $map{$tid})) {
 	
 	
@@ -250,8 +244,6 @@ MAPPING: while (<MAP>) {
 		    }
 		}
 
-		#print STDERR $a->xAC,"\t",$a->xID,"\t",$a->xDB,"\n";
-
 		$dbentry->query_identity($queryperc);
 		$dbentry->target_identity($targetperc);
 		
@@ -264,7 +256,6 @@ MAPPING: while (<MAP>) {
 		    }
 			}
 
-		#print STDERR "Calling store on $queryid\n";
 		$adaptor->store($dbentry,$queryid,"Translation");
 	    }
 	    
@@ -288,7 +279,6 @@ MAPPING: while (<MAP>) {
 			$dbentry->add_synonym($syn);
 		    }
 		}
-		#print STDERR "Calling store1 on $queryid\n";
 		$adaptor->store($dbentry,$queryid,"Translation");
 		    
 	    }

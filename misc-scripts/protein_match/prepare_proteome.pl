@@ -104,7 +104,7 @@ sub parse_sptr {
 sub parse_refseq {
 
   open (IN, "<$refseq") or die "Can't open $refseq\n";
-  open (OUT, ">$protfile") or die "Can't open $protfile\n";
+  open (OUT, ">>$protfile") or die "Can't open $protfile\n";
 
   while(<IN>){
     # eg >gi|4501893|ref|NP_001094.1| actinin, alpha 2 [Homo sapiens]
@@ -130,7 +130,7 @@ sub parse_refseq {
 sub parse_refseq_pred {
     
   open (IN, "<$refseq_pred") or die "Can't open $refseq_pred\n";
-  open (OUT, ">$protfile") or die "Can't open $protfile\n";
+  open (OUT, ">>$protfile") or die "Can't open $protfile\n";
 
   while(<IN>){
     # eg >gi|4501893|ref|NP_001094.1| actinin, alpha 2 [Homo sapiens]
