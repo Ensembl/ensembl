@@ -408,7 +408,7 @@ sub _make_homol {
     
     my $newh   = new Bio::EnsEMBL::SeqFeature(-start  => $g1,
 					      -end    => $g2,
-					      -strand => 1,
+					      -strand => $pep_exon->strand,
 					      );
 
     $newh->primary_tag($pep_homol->primary_tag);
@@ -483,7 +483,7 @@ sub _make_dna_homol {
 
     my $newh   = new Bio::EnsEMBL::SeqFeature(-start  => $g1,
 					      -end    => $g2,
-					      -strand => 1);
+					      -strand => $pep_exon->strand * $pep_homol2->strand);
 
     $newh->primary_tag($pep_homol2->primary_tag);
     $newh->source_tag ($pep_homol2->source_tag);
