@@ -374,12 +374,38 @@ sub get_array_supporting {
     }
    
     my (@out, @sup_exons);
+    my @inlist;
+
+    my $count = 0;
+    my $count2 = 0;
+
+
+    # The gene list is split into chunks of 11 as mysql grinds
+    # to a halt over this number
+
+    foreach my $in (@geneid) {
+        if (!defined($inlist[$count])) {
+            $inlist[$count] = [];
+        }
+
+        push(@{$inlist[$count]},$in);
+
+        $count2++;
+   
+        if ($count2 > 5) {
+           $count++;
+           $count2 = 0;
+        }
+    }
+	
     
-    my $inlist = join(',', map "'$_'", @geneid);
-    
+   # my $inlist = join(',', map "'$_'", @geneid);
+   
+    foreach my $inarray (@inlist)   {
+    my $inlist = join(',', map "'$_'", @$inarray);
     # I know this SQL statement is silly.
     #    
-     
+    #print STDERR "Inlist = $inlist\n"; 
     my $query = qq{
         SELECT tscript.gene
           , con.id
@@ -558,7 +584,7 @@ sub get_array_supporting {
     foreach my $g ( @out) {
 	$self->_get_dblinks($g);
     }
-
+    }
     
     return @out;
 }

@@ -122,7 +122,7 @@ sub fetch_RawContigs_by_fpc_name{
    my $type = $self->dbobj->static_golden_path_type();
 
    # very annoying. DB obj wont make contigs by internalid. doh!
-   my $sth = $self->dbobj->prepare("SELECT  c.id 
+   my $sth = $self->dbobj->prepare("SELECT  c.id
 				    FROM    static_golden_path st,
 					    contig c 
 				    WHERE c.internal_id = st.raw_id 
@@ -135,8 +135,9 @@ sub fetch_RawContigs_by_fpc_name{
    my $cid;
 
    while( ( my $cid = $sth->fetchrow_arrayref) ) {
-       my $rc = $self->dbobj->get_Contig($cid->[0]);
+       my $rc  = $self->dbobj->get_Contig($cid->[0]);
        push(@out,$rc);
+
    }
    if ($sth->rows == 0) {
        $self->throw("Could not find rawcontigs for fpc contig $fpc!");
@@ -791,15 +792,25 @@ sub fetch_VirtualContig_list_sized{
    if( !defined $gap2 ) {
        $self->throw("Must fetch Virtual Contigs in sized lists");
    }
+
    my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
 
+   my $chr;
+   if ($#fpc >= 0) {
+       $chr = $fpc[0]->chromosome;
+       print STDERR "Chromosome " . $chr . "\n";
+   }
    my @finalfpc;
    my @vclist;
 
    my $current_start = 1;
    my $prev = shift @fpc;
+
    push(@finalfpc,$prev);
+
    foreach my $fpc ( @fpc ) {
+       $fpc->dbobj($self->dbobj);
+
        if( ( ($fpc->fpc_contig_end - $current_start+1) > $length1 && ($fpc->fpc_contig_start - $prev->fpc_contig_end -1) >= $gap1) ||
 	   ( ($fpc->fpc_contig_end -$current_start+1) > $length2 && ($fpc->fpc_contig_start - $prev->fpc_contig_end -1) >= $gap2) ) {
 	   # build new vc and reset stuff
@@ -808,16 +819,21 @@ sub fetch_VirtualContig_list_sized{
 
 	   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
 	   $vc->id($name);
-           $vc->dbobj($self->dbobj);
+	   $vc->dbobj($self->dbobj);
+	   $vc->_chr_name($chr);
+
 	   push(@vclist,$vc);
 	   
-	   $prev = $fpc;
+	   $prev          = $fpc;
 	   $current_start = $prev->fpc_contig_start;
+
 	   @finalfpc = ();
 	   push(@finalfpc,$prev);
+	   $prev->dbobj($self->dbobj);
        } else {
 	   push(@finalfpc,$fpc);
 	   $prev = $fpc;
+	   $fpc->dbobj($self->dbobj);
        }
    }
    # last contig
@@ -825,6 +841,7 @@ sub fetch_VirtualContig_list_sized{
    my $start = $finalfpc[0];
    my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
    $vc->dbobj($self->dbobj);
+   $vc->_chr_name($chr);
    push(@vclist,$vc);
 
    return @vclist;
@@ -887,6 +904,25 @@ sub get_all_fpc_ids{
 }
 
 
+sub get_chromosome_length {
+    my ($self,$chrname) = @_;
+
+    $self->throw("No chromosome name entered") unless defined($chrname);
+
+    my $sth = $self->dbobj->prepare("SELECT max(chr_end)
+                                     FROM   static_golden_path
+                                     WHERE  chr_name = \'$chrname\'");
+
+    $sth->execute;
+
+    my $rowhash = $sth->fetchrow_hashref;
+
+    if (defined($rowhash)) {
+	my $len = $rowhash->{'max(chr_end)'};
+	return $len;
+    }
+}
+	
 
 =head2 dbobj
 
