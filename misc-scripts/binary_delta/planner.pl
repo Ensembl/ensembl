@@ -64,7 +64,6 @@ if [ ! -f deltas/$d.txt ]; then
     $pair[0][0] $pair[0][1] $pair[1][1] 2>&1 | \\
     tee deltas/$d.txt
   rm -rf databases/$p0
-  touch databases/$p0.done
 fi
 EOT
     }
