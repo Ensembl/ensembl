@@ -21,8 +21,6 @@
 
 =head1 OPTIONS
 
-    -dbtype    database type (only needed for TimDB)
-
     -host      host name for the database (gets put as host= in locator) 
 
     -port      for RDBs, what port to connect to for the "to" database (port= in locator)
@@ -57,14 +55,27 @@ use strict;
 use Getopt::Long;
 use Bio::EnsEMBL::GeneComparison::GeneComparisonStats;
 
-#Database options
-my $dbtype = 'rdb';
+use Bio::EnsEMBL::DBSQL::Gene_ObjForeign; 
+
+
+# Database options this is the database that the genes will be written
+# into. It makes use of the ForeignDB adaptor, which does translations of
+# table names on the fly.
+
 my $host   = 'localhost';
-my $port   = '410000';
+my $port   = undef;
 my $dbname = 'ensembl_freeze17_michele';
 my $dbuser = 'root';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
+
+# For the static golden path adaptor, we need to read the stuff from a
+# real database (even though the 
+my $read_host   = undef;
+my $read_port   = undef;
+my $read_dbname = undef;
+my $read_dbuser = undef;
+my $read_dbpass = undef;
 
 #Other options
 my $parse;
@@ -77,12 +88,18 @@ my $compare;
 my $longest;
 
 &GetOptions( 
-	     'dbtype:s'   => \$dbtype,
 	     'host:s'     => \$host,
 	     'port:n'     => \$port,
 	     'dbname:s'   => \$dbname, 
 	     'dbuser:s'   => \$dbuser,
 	     'dbpass:s'   => \$dbpass,
+
+	     'read_host:s'     => \$read_host,
+	     'read_port:n'     => \$read_port,
+	     'read_dbname:s'   => \$read_dbname, 
+	     'read_dbuser:s'   => \$read_dbuser,
+	     'read_dbpass:s'   => \$read_dbpass,
+
 	     'module:s'   => \$module,
        	     'parse:s'    => \$parse,
 	     'parse2:s'   => \$parse2,
@@ -93,6 +110,25 @@ my $longest;
 	     'longest'    => \$longest,
 	     'h|help'     => \$help
 	     );
+
+### set defaults:
+$read_host   =  $host   unless $read_host  ;
+$read_port   =  $port   unless $read_port  ;
+$read_dbname =  $dbname unless $read_dbname;
+$read_dbuser =  $dbuser unless $read_dbuser;
+$read_dbpass =  $dbpass unless $read_dbpass;
+
+### table names that we 'import' (readonly) from ensembl080:
+my @translated_tables  = qw(static_golden_path
+                            contig
+                            chromosome
+                            dna
+                           );
+
+my $table_name_translations = undef;
+foreach my $table  ( @translated_tables )  {
+    $table_name_translations->{$table} = "$read_dbname.$table";
+}
 
 my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
 open (PARSE,"$parse") || die("Could not open $parse for gtf reading$!");
@@ -106,7 +142,8 @@ if ($print) {
 #DB writing option not yet implemented
 #Mapping of coordinates still needs to be done
 elsif ($check) {
-    my $inputstream = Bio::SeqIO->new(-file => "ctg12382.fa",-format => 'Fasta');
+    my $inputstream = Bio::SeqIO->new('-file' => "ctg12382.fa",
+                                      '-format' => 'Fasta');
     my $seq = $inputstream->next_seq();
     
     foreach my $gene (@gtf_genes) {
@@ -115,8 +152,8 @@ elsif ($check) {
 	    print STDERR "Translation end is ".$trans->translation->end." in exon ".$trans->translation->end_exon_id."\n";
 		
 	    foreach my $exon ($trans->each_Exon) {
-		my $start=$exon->start;
-		my $end=$exon->end;
+		# my $start=$exon->start;
+		# my $end=$exon->end;
 		$exon->attach_seq($seq);
 		my $eseq=$exon->seq;
 		
@@ -193,8 +230,8 @@ elsif ($longest) {
     
     open (PEP_FILE,"ens_sept25.pep") || die("Could not open ens_sept25.pep for ensembl pep length reading$!");
     print STDERR "Reading ensembl pep file\n";
-    my $in = Bio::SeqIO->new(-fh   => \*PEP_FILE, -format=> 'Fasta');
-    my $out = Bio::SeqIO->new(-fh => \*STDERR, -format => 'Fasta');
+    my $in = Bio::SeqIO->new(-fh   => \*PEP_FILE, '-format' => 'Fasta');
+    my $out = Bio::SeqIO->new(-fh => \*STDERR, '-format' => 'Fasta');
     while ( my $seq = $in->next_seq() ) {
 	my $seqid=$seq->id;
 	$seqid =~ s/TMPP\_/SEPT20T\./g;
@@ -209,12 +246,13 @@ elsif ($longest) {
 		$out->write_seq($seq);
 	    }
 	}
-    }
+   } 
 
+    # messy, does nearly same as thing above
     open (PEP_FILE,"neo_pred.pep") || die("Could not open neo_pred.pep for ensembl pep length reading$!");
     print STDERR "Reading neomorphic pep file\n";
-    my $in = Bio::SeqIO->new(-fh   => \*PEP_FILE, -format=> 'Fasta');
-    my $out = Bio::SeqIO->new(-fh => \*STDOUT, -format => 'Fasta');
+    $in = Bio::SeqIO->new(-fh   => \*PEP_FILE, '-format'=> 'Fasta');
+    $out = Bio::SeqIO->new(-fh => \*STDOUT, '-format' => 'Fasta');
     while ( my $seq = $in->next_seq() ) {
 	foreach my $trans_id (keys (%neo_long)) {
 	    #print STDERR "Seq id: ".$seq->id." trans_id: $trans_id\n";
@@ -265,17 +303,34 @@ elsif ($display) {
     
 else {
     my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
-        
     my $db =  Bio::EnsEMBL::DBLoader->new($locator);
-    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
+    $locator = "$module/host=$read_host;port=$read_port;dbname=$read_dbname;user=$read_dbuser;pass=$read_dbpass";
+    
+    my $read_db =  Bio::EnsEMBL::DBLoader->new($locator);
+
+#    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
+    my $gene_obj=
+      Bio::EnsEMBL::DBSQL::Gene_ObjForeign->new(-dbobj =>$db, 
+                                                -table_name_translations 
+                                                => $table_name_translations,
+                                                -read_dbobj => $read_db
+                                                );
+    
     foreach my $gene (@gtf_genes) {
 	print STDERR "Gene id: ".$gene->id."\n";
 	my @exons=$gene->each_unique_Exon;
 	my $fpc=$exons[0]->contig_id;
 	print STDERR "Got seqname $fpc\n";
-	$db->static_golden_path_type('UCSC');
-	my $sgp_adaptor = $db->get_StaticGoldenPathAdaptor();
+	$read_db->static_golden_path_type('UCSC');
+
+        use Bio::EnsEMBL::Utils::Eprof('eprof_start','eprof_end','eprof_dump');
+	my $sgp_adaptor = $read_db->get_StaticGoldenPathAdaptor();
+
+#        &eprof_start('fetch_VirtualContig_by_fpc_name');
 	my $vc = $sgp_adaptor->fetch_VirtualContig_by_fpc_name($fpc);
+#        &eprof_end('fetch_VirtualContig_by_fpc_name');
+#        &eprof_dump(\*STDERR);
+
 	foreach my $exon ($gene->each_unique_Exon) {
 	    $exon->contig_id($vc->id);
 	}
