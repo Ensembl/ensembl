@@ -1314,6 +1314,7 @@ sub get_all_ExternalFeatures{
    my $embl_offset = $self->embl_offset();
 
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
+	
        push(@out,$extf->get_Ensembl_SeqFeatures_contig($self->id,$self->seq_version,1,$self->length));
        
        foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($acc,$self->seq_version,$self->embl_offset,$self->embl_offset+$self->length()) ) {
@@ -1325,6 +1326,7 @@ sub get_all_ExternalFeatures{
        }
    }
    my $id = $self->id();
+
    foreach my $f ( @out ) {
        $f->seqname($id);
    }
