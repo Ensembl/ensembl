@@ -101,7 +101,7 @@ debug('fetching by chromosomal slice---');
 debug("Got " . scalar(@$feats) . " features back");
 # print_features($feats);
 
-$feats = $repeat_f_ad->fetch_all_by_Slice_and_type( $slice, "LTR" );
+$feats = $repeat_f_ad->fetch_all_by_Slice( $slice, undef, "LTR" );
 debug( "fetching by type LTR" );
 debug( "Got ".scalar( @$feats ). " back" );
 
