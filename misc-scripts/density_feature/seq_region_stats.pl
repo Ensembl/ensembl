@@ -4,14 +4,16 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Lite::DBAdaptor;
 use Getopt::Long;
 
-my ( $host, $user, $pass, $port, $dbname  );
+my ( $host, $user, $pass, $port, $dbname, $genestats, $snpstats  );
 
 
 GetOptions( "host=s", \$host,
 	    "user=s", \$user,
 	    "pass=s", \$pass,
 	    "port=i", \$port,
-	    "dbname=s", \$dbname
+	    "dbname=s", \$dbname,
+      "genestats", \$genestats,
+      "snpstats", \$snpstats
 	  );
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -user => $user,
@@ -19,23 +21,32 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -pass => $pass,
 					    -dbname => $dbname);
 
+
+# do both genestats and snpstats by default
+$genestats = $snpstats = 1 if(!$genestats && !$snpstats);
+
+
 #
 # Only run on database with genes
 #
-my $sth = $db->prepare( "select count(*) from gene" );
-$sth->execute();
 
-my ( $gene_count )  = $sth->fetchrow_array();
+my $genes_present;
 
-if( ! $gene_count ) {
-  print STDERR "No gene density for $dbname.\n";
-  exit();
+if($genestats) {
+  my $sth = $db->prepare( "select count(*) from gene" );
+  $sth->execute();
+
+  my ( $gene_count )  = $sth->fetchrow_array();
+
+  $genes_present = ($gene_count) ? 1 : 0;
+} else {
+  $genes_present = 0;
 }
 
 #
 # and seq_regions
 #
-$sth = $db->prepare( "select count(*) from seq_region" );
+my $sth = $db->prepare( "select count(*) from seq_region" );
 $sth->execute();
 my ( $seq_region_count ) = $sth->fetchrow_array();
 if( ! $seq_region_count ) {
@@ -43,8 +54,7 @@ if( ! $seq_region_count ) {
   exit();
 }
 
-
-my $snps_present = lite_attach( $db );
+my $snps_present = $snpstats && lite_attach( $db );
 
 
 my $slice_adaptor = $db->get_SliceAdaptor();
@@ -54,44 +64,45 @@ my $top_slices = $slice_adaptor->fetch_all( "toplevel" );
 
 
 foreach my $slice (@$top_slices) {
-  my $num_known_genes  = 0;
-  my $num_genes        = 0;
-  my $num_pseudo_genes = 0;
-
   print STDERR "Processing seq_region ", $slice->seq_region_name(), "\n";
-
-  my @genes = @{$slice->get_all_Genes()};
-
-  foreach my $gene (@genes) {
-    if(uc($gene->type()) eq uc('pseudogene')) {
-      $num_pseudo_genes++;
-    } else {
-      $num_genes++;
-      if($gene->is_known()) {
-        $num_known_genes++;
-      }
-    }
-  }
 
   my @attribs;
 
-  push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Gene Count',
-     -CODE => 'GeneCount',
-     -VALUE => $num_genes,
-     -DESCRIPTION => 'Total Number of Genes');
+  if($genes_present) {
+    my $num_known_genes  = 0;
+    my $num_genes        = 0;
+    my $num_pseudo_genes = 0;
 
-  push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Known Gene Count',
-     -CODE => 'KnownGeneCount',
-     -VALUE => $num_known_genes,
-     -DESCRIPTION => 'Total Number of Known Genes');
+    my @genes = @{$slice->get_all_Genes()};
 
-  push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'PseudoGene Count',
-     -CODE => 'PseudoGeneCount',
-     -VALUE => $num_pseudo_genes,
-     -DESCRIPTION => 'Total Number of PseudoGenes');
+    foreach my $gene (@genes) {
+      if(uc($gene->type()) eq uc('pseudogene')) {
+        $num_pseudo_genes++;
+      } else {
+        $num_genes++;
+        if($gene->is_known()) {
+          $num_known_genes++;
+        }
+      }
+    }
+    push @attribs, Bio::EnsEMBL::Attribute->new
+      (-NAME => 'Gene Count',
+       -CODE => 'GeneCount',
+       -VALUE => $num_genes,
+       -DESCRIPTION => 'Total Number of Genes');
+
+    push @attribs, Bio::EnsEMBL::Attribute->new
+      (-NAME => 'Known Gene Count',
+       -CODE => 'KnownGeneCount',
+       -VALUE => $num_known_genes,
+       -DESCRIPTION => 'Total Number of Known Genes');
+
+    push @attribs, Bio::EnsEMBL::Attribute->new
+      (-NAME => 'PseudoGene Count',
+       -CODE => 'PseudoGeneCount',
+       -VALUE => $num_pseudo_genes,
+       -DESCRIPTION => 'Total Number of PseudoGenes');
+  }
 
   if( $snps_present ) {
     my $snps = $slice->get_all_SNPs();

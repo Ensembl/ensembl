@@ -22,16 +22,18 @@ my %density_scripts =
 
 my @density_scripts = ();
 
-my ( $host, $user, $pass, $port, $dbpattern );
+my ( $host, $user, $pass, $port, $dbpattern, $snpstats, $genestats, $stats );
 
 GetOptions( "host=s", \$host,
 	    "user=s", \$user,
 	    "pass=s", \$pass,
 	    "port=i", \$port,
+      "genestats", \$genestats,
+      "snpstats", \$snpstats,
 	    "gene", sub { push( @density_scripts, $density_scripts{'gene'} ); },
 	    "gc", sub { push( @density_scripts, $density_scripts{'gc'} ); },
 	    "repeat", sub { push( @density_scripts, $density_scripts{'repeat'} ); },
-	    "stats", sub { push( @density_scripts, $density_scripts{'stats'} ); },
+	    "stats", \$stats,
 	    "snp", sub { push( @density_scripts, $density_scripts{'snp'} ); },
 	    "dbpattern=s", \$dbpattern
 	  );
@@ -39,6 +41,22 @@ GetOptions( "host=s", \$host,
 if( !$host || !$user ) {
   usage();
 }
+
+
+if($stats) {
+  if($genestats || $snpstats) {
+    print STDERR "Only specify one of -stats,  -snpstats or -genestats\m";
+    usage();
+  }
+  push @density_scripts, $density_scripts{'stats'};
+} elsif($genestats || $snpstats) {
+  my $arg = '';
+  $arg .= ' -genestats ' if($genestats);
+  $arg .= ' -snpstats ' if($snpstats);
+  my $line = $density_scripts{'stats'} . $arg;
+  push @density_scripts, $line;
+}
+
 
 my $dsn = "DBI:mysql:host=$host";
 my $args = "-host $host ";
@@ -92,7 +110,7 @@ sub usage {
  with parameters -host [hostname] -user [username with write permit] 
                  -pass [password] -port [portnumber]
  on all databases that match -dbpattern [some_db_regexp]
- on -gene, -repeat, -stats, -gc.
+ on -gene, -repeat, -stats/-genestats/-snpstats, -gc.
 
  Without -dbpattern it lists all available databases and does nothing.
 
