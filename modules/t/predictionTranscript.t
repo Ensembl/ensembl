@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 30;
+	plan tests => 32;
 }
 
 use MultiTestDB;
@@ -37,7 +37,7 @@ ok( scalar( @$p_transs ) );
 
 
 foreach my $pt (@$p_transs) {
-  debug( "dbID: ".$pt->dbID()." Start: ".$pt->start." End: ".$pt->end() , "\n" );
+  debug( "Stable_id: ".$pt->stable_id()." Start: ".$pt->start." End: ".$pt->end() , "\n" );
 }
 
 my $pt = $p_transs->[0];
@@ -59,7 +59,8 @@ ok(scalar @{$new_pt->get_all_Exons});
 #
 # 5 test stable_id
 #
-# ok($pt->stable_id =~ /.*/ );
+debug( "stable_id: ".$pt->stable_id() );
+ok($pt->stable_id =~ /.*/ );
 
 
 #
@@ -241,10 +242,10 @@ ok(&TestUtils::test_getter_setter($pt, 'type', 'test'));
 # 31 test fetch_by_stable_id
 #
 
-#my $stable_id = 'AL031658.11.1.162976.122801.143660';
+my $stable_id = 'GENSCAN00000011401';
 
-#$pt = $pta->fetch_by_stable_id($stable_id);
-#ok($pt->stable_id eq $stable_id);
+$pt = $pta->fetch_by_stable_id($stable_id);
+ok($pt->stable_id eq $stable_id);
 
 # 32 list_dbIDs
 my $ids = $pta->list_dbIDs();
