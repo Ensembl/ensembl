@@ -1,8 +1,8 @@
 # MySQL dump 5.13
 #
-# Host: localhost    Database: ensembl
+# Host: localhost    Database: small
 #--------------------------------------------------------
-# Server version	3.22.27
+# Server version	3.22.22
 
 #
 # Table structure for table 'analysis'
@@ -16,15 +16,6 @@ CREATE TABLE analysis (
   gff_feature varchar(40),
   id int(11) DEFAULT '0' NOT NULL auto_increment,
   PRIMARY KEY (id)
-);
-
-#
-# Table structure for table 'analysis_history'
-#
-CREATE TABLE analysis_history (
-  contig varchar(40),
-  analysis varchar(40),
-  created date
 );
 
 #
@@ -129,14 +120,6 @@ CREATE TABLE exon (
 );
 
 #
-# Table structure for table 'exon_feature'
-#
-CREATE TABLE exon_feature (
-  feature varchar(40),
-  exon varchar(40)
-);
-
-#
 # Table structure for table 'exon_transcript'
 #
 CREATE TABLE exon_transcript (
@@ -146,8 +129,7 @@ CREATE TABLE exon_transcript (
   PRIMARY KEY (exon,transcript,rank),
   KEY idx1 (exon,transcript),
   KEY exon_index (exon),
-  KEY transcript_index (transcript),
-  KEY et_index (exon,transcript)
+  KEY transcript_index (transcript)
 );
 
 #
@@ -175,19 +157,18 @@ CREATE TABLE feature (
 # Table structure for table 'fset'
 #
 CREATE TABLE fset (
-  id varchar(40) DEFAULT '' NOT NULL auto_increment,
+  id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
   score double(16,4) DEFAULT '0.0000' NOT NULL,
-  KEY feature_id (id)
+  PRIMARY KEY (id)
 );
 
 #
 # Table structure for table 'fset_feature'
 #
 CREATE TABLE fset_feature (
-  fset varchar(40) DEFAULT '' NOT NULL,
   feature int(10) unsigned DEFAULT '0' NOT NULL,
+  fset int(10) unsigned DEFAULT '0' NOT NULL,
   rank int(11) DEFAULT '0' NOT NULL,
-  KEY ff_index (fset,feature),
   KEY feature_index (feature),
   KEY fset_index (fset),
   KEY feature_fset_index (feature,fset),
@@ -263,7 +244,8 @@ CREATE TABLE repeat_feature (
   hid varchar(40) DEFAULT '' NOT NULL,
   KEY overlap (id,contig,seq_start,seq_end,analysis),
   PRIMARY KEY (id),
-  KEY contig_index (contig)
+  KEY contig_index (contig),
+  KEY hid_index (hid)
 );
 
 #
@@ -277,16 +259,17 @@ CREATE TABLE supporting_feature (
   score int(10) DEFAULT '0' NOT NULL,
   strand int(1) DEFAULT '1' NOT NULL,
   analysis varchar(40) DEFAULT '' NOT NULL,
-  name varchar(40),
+  name varchar(40) DEFAULT '' NOT NULL,
   hstart int(11) DEFAULT '0' NOT NULL,
   hend int(11) DEFAULT '0' NOT NULL,
   hid varchar(40) DEFAULT '' NOT NULL,
+  PRIMARY KEY (id),
   KEY overlap (id,seq_start,seq_end,analysis),
   KEY exon_id (id,exon),
-  PRIMARY KEY (id),
   KEY exon_index (exon),
   KEY analysis_index (analysis),
-  KEY hid_index (hid)
+  KEY hid_index (hid),
+  KEY name_index (name)
 );
 
 #
