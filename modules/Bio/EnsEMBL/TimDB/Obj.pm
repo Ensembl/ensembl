@@ -89,9 +89,9 @@ sub _initialize {
 	  $UNFIN_ROOT="/net/nfs0/vol0/home/elia/unfinished_ana";
 	  $UNFIN_DATA_ROOT=$UNFIN_ROOT;
       # ADD NEW MACHINES HERE
-      #}elsif($ENV{'HOST'} eq ''){
-      #	  $UNFIN_ROOT="/net/nfs0/vol0/home/elia/unfinished_ana";
-      #   $UNFIN_DATA_ROOT=$UNFIN_ROOT;
+      }elsif($ENV{'HOST'} eq 'croc'){
+      	  $UNFIN_ROOT="/nfs/disk89/michele/pogdir/timdb/";
+         $UNFIN_DATA_ROOT=$UNFIN_ROOT;
       }elsif($ENV{'HOST'} eq 'humsrv1'){
       	  $UNFIN_ROOT="/nfs/disk100/humpub/th/unfinished_ana/tmp1";
 	  $UNFIN_DATA_ROOT=$UNFIN_ROOT;
