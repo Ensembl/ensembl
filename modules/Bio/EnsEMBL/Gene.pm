@@ -812,7 +812,7 @@ sub each_Transcript {
    my ($self) = @_;
 
    $self->warn("Gene->each_Transcript is deprecated.  " .
-	       "Use get_all_Transcripts()." . $self->stack_trace_dump() ."\n");
+	     "Use get_all_Transcripts().\n" . $self->stack_trace_dump() ."\n");
    
    
 
