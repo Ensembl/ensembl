@@ -94,9 +94,18 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
+  $self->name("Virtual Contig Module"); # set the exception context (does this work?)
+
   my ($focuscontig,$focusposition,$ori,$leftsize,$rightsize,$clone) = $self->_rearrange([qw( FOCUSCONTIG FOCUSPOSITION ORI LEFT RIGHT CLONE)],@args);
 
-  $self->name("Virtual Contig Module"); # set the exception context
+
+  if (defined $clone){
+      $VC_UNIQUE_NUMBER = $clone->id;
+  } else{
+      $VC_UNIQUE_NUMBER = $focuscontig->id.".$focusposition.$ori.$leftsize.$rightsize";
+  }
+  
+  $self->_unique_number($VC_UNIQUE_NUMBER);
 
   # set up hashes for the map
   $self->{'start'} = {};
@@ -121,17 +130,12 @@ sub _initialize {
 	  $self->throw("Have to provide all arguments to virtualcontig: focuscontig, focusposition, ori, left and right");
       }
       
-      
       # build the map of how contigs go onto the vc coorindates
       $self->_build_contig_map($focuscontig,$focusposition,$ori,$leftsize,$rightsize);
       $self->dbobj($focuscontig->dbobj);
   }
   
 
-  #srand (time() ^ ($$+($$<<15)));  # seed the number generator
-  #$VC_UNIQUE_NUMBER = int(rand(time()));
-  $VC_UNIQUE_NUMBER = "${focuscontig}_${focusposition}_${ori}_${leftsize}_${rightsize}";
-  $self->_unique_number($VC_UNIQUE_NUMBER);
 
 # set stuff in self from @args
   return $make; # success - we hope!
@@ -174,11 +178,11 @@ sub primary_seq {
        my $tseq = $c->primary_seq();
        if( $self->{'start'}->{$cid} != ($last_point+1) ) {
        
-           # Tony: added a throw here - we get nagative numbers of inserted N's
-	   my $no = $self->{'start'}->{$cid} - $last_point -1;
-	   #my $no = $self->{'start'}->{$cid} - $last_point;
+           # Tony: added a throw here - if we get nagative numbers of inserted N's
+	   #my $no = $self->{'start'}->{$cid} - $last_point -1;
+	   my $no = $self->{'start'}->{$cid} - $last_point;
            if ($no < 0){
-                $self->throw("Error. Trying to insert negative number ($no)\n of N\'s into contig sequence");
+                $self->throw("Error. Trying to insert negative number ($no) of N\'s into contig sequence");
            }
 	   print STDERR "Putting in $no x N\n";
 	   $seq_string .= 'N' x $no;
@@ -775,7 +779,7 @@ sub _build_contig_map{
    
    # put away the focus/size info etc
 
-   $self->_focus($focuscontig);
+   $self->_focus_contig($focuscontig);
    $self->_focus_position($focusposition);
    $self->_focus_orientation($ori);
    $self->_left_size($left);
@@ -946,24 +950,24 @@ sub _dump_map{
 }
 
 
-=head2 _focus
+=head2 _focus_contig
 
- Title   : _focus
- Usage   : $obj->_focus($newval)
+ Title   : _focus_contig
+ Usage   : $obj->_focus_contig($newval)
  Function: 
  Example : 
- Returns : value of _focus
+ Returns : value of _focus_contig
  Args    : newvalue (optional)
 
 
 =cut
 
-sub _focus{
+sub _focus_contig {
    my ($obj,$value) = @_;
    if( defined $value) {
-      $obj->{'_focus'} = $value;
+      $obj->{'_focus_contig'} = $value;
     }
-    return $obj->{'_focus'};
+    return $obj->{'_focus_contig'};
 
 }
 
