@@ -21,10 +21,10 @@ Bio::EnsEMBL::DBSQL::BaseAdaptor - Base Adaptor for DBSQL adaptors
     # SQL prepare function
     $adaptor->prepare("sql statement");
 
-    # get of root db object
+    # get of root DBAdaptor object
     $adaptor->db();
 
-    # delete memory cycles
+    # delete memory cycles, called automatically
     $adaptor->deleteObj();
 
     # constructor, ok for inheritence
@@ -60,26 +60,28 @@ correctly and attach the adaptor.
 
 Other fetch functions go by the convention of
 
-    @object_array = $adaptor->fetch_by_XXXX($arguments_for_XXXX)
+    @object_array = @{$adaptor->fetch_all_by_XXXX($arguments_for_XXXX)};
 
-sometimes it returns an array, sometimes an individual object depending on the
-semantics to XXXX. For example
+sometimes it returns an array ref denoted by the 'all' in the name of the 
+method, sometimes an individual object. For example
 
     $gene = $gene_adaptor->fetch_by_stable_id($stable_id);
 
 or
 
-    @fp  = $simple_feature_adaptor->fetch_by_contig($contig_internal_id);
+    @fp  = @{$simple_feature_adaptor->fetch_all_by_RawContig($contig)};
 
 
 Occassionally adaptors need to provide access to lists of ids. In this case the
 convention is to go list_XXXX, such as
 
-    @gene_ids = $gene_adaptor->list_geneIds();
+    @gene_ids = @{$gene_adaptor->list_geneIds()};
+
+(note: this method is poorly named)
 
 =head1 CONTACT
 
-Describe contact details here
+Post questions to the EnsEMBL developer mailing list: <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
@@ -121,6 +123,14 @@ sub new {
 
     if( !defined $dbobj || !ref $dbobj ) {
         $self->throw("Don't have a db [$dbobj] for new adaptor");
+    }
+
+    if($dbobj->isa('Bio::EnsEMBL::Container')) {
+	$self->throw("The base adaptor constructor argument should not be " .
+		     "a Bio::EnsEMBL::Container. This will create a circular ".
+		     "reference loop and result in memory leaks.  You should ".
+		     "use the DBAdaptor::get_XxxxAdaptor methods to create " .
+		     "your object adaptors instead");
     }
 
     $self->db($dbobj);

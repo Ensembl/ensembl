@@ -116,23 +116,26 @@ sub fetch_by_chr_start_end {
 
 =head2 fetch_by_contig_name
 
- Title   : fetch_by_contig_name
- Usage   : $slice = $slice_adptr->fetch_by_contig_name('AC000012.00001',1000);
- Function: Creates a slice around the the specified contig.  If a context 
-           size is given, the slice is extended by that number of basepairs 
-           on either side of the contig.
- Returns : Bio::EnsEMBL::Slice object 
- Args    : contig id, [context size in bp]
-
+  Arg [1]    : string $name
+               the name of the contig to obtain a slice for
+  Arg [2]    : (optional) int $size
+               the size of the flanking regions to obtain (aka context size)
+  Example    : $slc = $slc_adaptor->fetch_by_contig_name('AB000878.1.1.33983');
+  Description: Creates a slice object around the specified contig.  
+               If a context size is given, the slice is extended by that 
+               number of basepairs on either side of the contig.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub fetch_by_contig_name {
-   my ($self,$contigid,$size) = @_;
+   my ($self,$name, $size) = @_;
 
    if( !defined $size ) {$size=0;}
 
-   my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_contig($contigid);
+   my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_contig($name);
 
    $start -= $size;
    $end += $size;
@@ -145,15 +148,16 @@ sub fetch_by_contig_name {
  }
 
 
+
 =head2 fetch_by_fpc_name
 
- Title   : fetch_by_fpc_name
- Usage   :
- Function: create a Slice representing a complete FPC contig
- Example :
- Returns : 
- Args    : the FPC contig id.
-
+  Arg [1]    : string $fpc_name
+  Example    : my $slice = $slice_adaptor->fetch_by_fpc_name('NT_004321');
+  Description: Creates a Slice on the region of the assembly where 
+               the specified FPC (super) contig lies.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -193,13 +197,17 @@ sub fetch_by_fpc_name {
 
 =head2 fetch_by_clone_accession
 
- Title   : fetch_by_clone_accession
- Usage   : $slice = $slice_adaptor->fetch_by_clone_accession('AC000012',1000);
- Function: Creates a Slice around the specified clone.  If a context size is 
-           given, the Slice is extended by that number of basepairs on either 
-           side of the clone.  Throws if the clone is not golden.
- Returns : Slice object 
- Args    : clone id, [context size in bp]
+  Arg [1]    : string $clone 
+               the embl accession of the clone object to retrieve
+  Arg [2]    : (optional) int $size
+               the size of the flanking regions to obtain around the clone 
+  Example    : $slc = $slc_adaptor->fetch_by_clone_accession('AC000012',1000);
+  Description: Creates a Slice around the specified clone.  If a context size 
+               is given, the Slice is extended by that number of basepairs on 
+               either side of the clone.  Throws if the clone is not golden.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : thrown if the clone is not in the assembly 
+  Caller     : general
 
 =cut
 
@@ -259,16 +267,20 @@ sub fetch_by_clone_accession{
 
 =head2 fetch_by_transcript_stable_id
 
- Title   : fetch_by_transcript_stable_id
- Usage   : $slice = $slice_adaptor->fetch_by_transcript_stable_id(
-                                       'ENST00000302930',1000);
- Function: Creates a slice of the specified object.  If a context
-           size is given, the slice is extended by that number of
-	   basepairs on either side of the transcript.  Throws if
-	   the transcript is not golden.
- Returns : Slice object 
- Args    : transcript stable ID, [context size in bp]
-
+  Arg [1]    : string $transcriptid
+               The stable id of the transcript around which the slice is 
+               desired
+  Arg [2]    : (optional) int $size
+               The length of the flanking regions the slice should encompass 
+               on either side of the transcript (0 by default)
+  Example    : $slc = $sa->fetch_by_transcript_stable_id('ENST00000302930',10);
+  Description: Creates a slice around the region of the specified transcript. 
+               If a context size is given, the slice is extended by that 
+               number of basepairs on either side of the 
+               transcript.  Throws if the transcript is not golden.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -284,26 +296,36 @@ sub fetch_by_transcript_stable_id{
 }
 
 
+
+
 =head2 fetch_by_transcript_id
 
- Title   : fetch_by_transcript_id
- Usage   : $slice = $slice_adaptor->fetch_by_transcript_id(24,1000);
- Function: Creates a slice of the specified object.  If a context
-           size is given, the slice is extended by that number of
-	   basepairs on either side of the transcript.  Throws if
-	   the transcript is not golden.
- Returns : Slice object 
- Args    : transcript dbID, [context size in bp]
+  Arg [1]    : int $transcriptid
+               The unique database identifier of the transcript around which 
+               the slice is desired
+  Arg [2]    : (optional) int $size
+               The length of the flanking regions the slice should encompass 
+               on either side of the transcript (0 by default)
+  Example    : $slc = $sa->fetch_by_transcript_id(24, 1000);
+  Description: Creates a slice around the region of the specified transcript. 
+               If a context size is given, the slice is extended by that 
+               number of basepairs on either side of the 
+               transcript. 
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : thrown on incorrect args
+  Caller     : general
 
 =cut
 
 sub fetch_by_transcript_id {
   my ($self,$transcriptid,$size) = @_;
-  if( !defined $transcriptid ) {
+
+  unless( defined $transcriptid ) {
     $self->throw("Must have transcriptid id to fetch Slice of transcript");
   }
-  if( !defined $size ) {$size=0;}
-  
+
+  $size = 0 unless(defined $size);
+   
   my $ta = $self->db->get_TranscriptAdaptor;
   my $transcript_obj = $ta->fetch_by_dbID($transcriptid);
   
@@ -334,16 +356,22 @@ sub fetch_by_transcript_id {
 }
 
 
-=head2 fetch_by_gene_stable_id
 
- Title   : fetch_by_gene_stable_id
- Usage   : $slice = $slc_adptr->fetch_by_gene_stable_id('ENSG00000012123',100);
- Function: Creates a slice around the specified gene.  If a context size is 
-           given, the slice is extended by that number of basepairs on either 
-           side of the gene.  Throws if the gene is not golden.
- Returns : Slice object 
- Args    : gene id, [context size in bp]
+=head2 fetch_by_transcript_stable_id
 
+  Arg [1]    : string $geneid
+               The stable id of the gene around which the slice is 
+               desired
+  Arg [2]    : (optional) int $size
+               The length of the flanking regions the slice should encompass 
+               on either side of the gene (0 by default)
+  Example    : $slc = $sa->fetch_by_transcript_stable_id('ENSG00000012123',10);
+  Description: Creates a slice around the region of the specified gene. 
+               If a context size is given, the slice is extended by that 
+               number of basepairs on either side of the gene. 
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -375,17 +403,15 @@ sub fetch_by_gene_stable_id{
 }
 
 
+
 =head2 fetch_by_chr_name
 
- Title   : fetch_by_chr_name
- Usage   : $slice = $slice_adaptor->fetch_by_chr_name('20');
- Function: Creates a slice of an entire chromosome. Note that is the start coordinate
-           of the chromosome is > 1 ( see assembly table, e.g.: 'select min(chr_start) 
-           from assembly where chromosome_id =?') this will put Ns at the beginning of the
-           slice sequence.
- Returns : Slice object 
- Args    : chromosome name
-
+  Arg [1]    : string $chr_name
+  Example    : $slice = $slice_adaptor->fetch_by_chr_name('20'); 
+  Description: Retrieves a slice on the region of an entire chromosome
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : thrown if $chr_name arg is not supplied
+  Caller     : general
 
 =cut
 
@@ -416,6 +442,8 @@ sub fetch_by_chr_name{
 
    return $slice;
 }
+
+
 
 =head2 fetch_by_mapfrag
 
@@ -567,3 +595,10 @@ sub _get_chr_start_end_of_gene {
 
    return ($chr,$start,$end);      
 }
+
+
+
+
+
+
+
