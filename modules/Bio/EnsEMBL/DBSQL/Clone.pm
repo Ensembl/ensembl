@@ -152,6 +152,12 @@ sub get_all_Genes{
 
 	       $gene = Bio::EnsEMBL::Gene->new();
 	       $gene->id($geneid);
+	       
+	       $sth = $self->_dbobj->prepare("select version from gene where id='".$gene->id."'");
+	       $sth->execute();
+	       my $rowhash = $sth->fetchrow_arrayref();
+	       $gene->version($rowhash->{'version'});
+	       
 	       $gene->add_cloneid_neighbourhood($id);
 
 	       $current_gene_id = $geneid;
