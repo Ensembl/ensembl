@@ -32,6 +32,8 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::ProxyAdaptor;
 use Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor;
+use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
+use Bio::EnsEMBL::Utils::Cache;
 
 package Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor;
 
@@ -45,6 +47,39 @@ use vars qw(@ISA);
 #to be made too early anotherwards...
 @ISA = qw(Bio::EnsEMBL::DBSQL::ProxyAdaptor 
 	  Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor);
+
+
+
+
+=head2 new
+
+  Arg [1]    : @args passed to ProxyAdaptor::new
+  Example    : none
+  Description: This is needed to initialise the tied hash correctly which
+               is present in the DnaAlignFeatureAdaptor
+  Returntype : Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub new {
+  my $caller = shift;
+
+  my $class = ref $caller || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  #initialize caching data structures
+  $self->{'_slice_feature_cache'} = {};
+
+  tie(%{$self->{'_slice_feature_cache'}}, 
+      'Bio::EnsEMBL::Utils::Cache',
+      $Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor::SLICE_FEATURE_CACHE_SIZE);
+
+  return $self;
+}
+
 
 #override generic_fetch_method to call appropriate db
 

@@ -662,6 +662,42 @@ sub get_SupportingFeatureAdaptor {
 
 
 
+=head2 get_MarkerFeatureAdaptor
+
+  Arg [1]    : none
+  Example    : $mfa = $db_adaptor->get_MarkerFeatureAdaptor;
+  Description: Gets a MarkerFeatureAdaptor for this database
+  Returntype : Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_MarkerFeatureAdaptor {
+  my $self = shift;
+
+  return $self->_get_adaptor('Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor');
+}
+
+
+=head2 get_MarkerAdaptor
+
+  Arg [1]    : none
+  Example    : $ma = $db_adaptor->get_MarkerAdaptor;
+  Description: Gets a MarkerAdaptor for this database
+  Returntype : Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_MarkerAdaptor {
+  my $self = shift;
+
+  return $self->_get_adaptor('Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor');
+}
+
+
 =head2 list_supported_assemblies
 
   Args       : none

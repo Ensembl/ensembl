@@ -42,7 +42,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
-use vars qw(@ISA);
+use vars qw(@ISA $SLICE_FEATURE_CACHE_SIZE);
 use strict;
 
 # Object preamble - inherits from Bio::EnsEMBL::Root
@@ -52,7 +52,7 @@ use Bio::EnsEMBL::Utils::Cache;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-my $SLICE_FEATURE_CACHE_SIZE = 12;
+$SLICE_FEATURE_CACHE_SIZE = 4;
 
 
 =head2 new
@@ -73,6 +73,8 @@ sub new {
   my $self = $class->SUPER::new(@args);
 
   #initialize caching data structures
+  $self->{'_slice_feature_cache'} = {};
+
   tie(%{$self->{'_slice_feature_cache'}}, 
       'Bio::EnsEMBL::Utils::Cache',
       $SLICE_FEATURE_CACHE_SIZE);
