@@ -28,7 +28,7 @@ my $db    = $multi->get_DBAdaptor('core');
 #
 # SliceAdaptor::new
 #
-my $slice_adaptor = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($db->_obj);
+my $slice_adaptor = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($db);
 ok($slice_adaptor->isa('Bio::EnsEMBL::DBSQL::SliceAdaptor'));
 ok($slice_adaptor->db);
 
@@ -406,7 +406,7 @@ ok($slice->seq_region_name =~ /$clone_name\.\d+/);
 # highest (lowest-numbered) ranked comes out first
 $multi->hide('core', 'seq_region');
 
-my $sth = $db->prepare(qq{INSERT INTO seq_region (coord_system_id, name,
+my $sth = $db->db->prepare(qq{INSERT INTO seq_region (coord_system_id, name,
                                                   length)
                 SELECT cs.coord_system_id, 'TESTREGION', 1000000
                 FROM coord_system cs

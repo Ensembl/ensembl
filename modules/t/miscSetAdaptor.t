@@ -8,7 +8,6 @@ BEGIN { $| = 1;
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::MiscSet;
 use Bio::EnsEMBL::Test::TestUtils;
-
 our $verbose = 0; #set to 1 to turn on debug printouts
 
 
@@ -74,7 +73,7 @@ $msa->store($misc_set);
 ok($misc_set->dbID());
 ok($misc_set->adaptor() == $msa);
 
-my $count = $db->db_handle->selectall_arrayref
+my $count = $db->db->db_handle->selectall_arrayref
   ("SELECT COUNT(*) FROM misc_set WHERE code = 'code'")->[0]->[0];
 
 ok($count == 1);
@@ -100,7 +99,7 @@ $msa->store($misc_set);
 
 ok($misc_set->dbID && $misc_set->adaptor);
 
-$count = $db->db_handle->selectall_arrayref
+$count = $db->db->db_handle->selectall_arrayref
   ("SELECT COUNT(*) FROM misc_set WHERE code = 'code'")->[0]->[0];
 ok($count == 1);
 
