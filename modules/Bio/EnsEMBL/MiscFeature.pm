@@ -229,7 +229,7 @@ sub get_attribute {
   throw('Type arg is required.') if(!$type);
 
   if(exists $self->{'attributes'}->{$type}) {
-    return @{$self->{'attributes'}->{$type}};
+    return wantarray() ? @{$self->{'attributes'}->{$type}} : $self->{'attributes'}->{$type}->[0];
   }
 
   return ();
