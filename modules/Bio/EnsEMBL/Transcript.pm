@@ -57,9 +57,10 @@ use strict;
 use Bio::Root::Object;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Translation;
+use Bio::DBLinkContainerI;
 
 
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::Object Bio::DBLinkContainerI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -68,6 +69,7 @@ sub _initialize {
   my($self,@args) = @_;
 
   $self->{'_trans_exon_array'} = [];
+  $self->{'_db_link'} = [];
   my $make = $self->SUPER::_initialize;
 
   # set stuff in self from @args
@@ -77,6 +79,47 @@ sub _initialize {
   $self->is_partial(0);
 
   return $self; # success - we hope!
+}
+
+
+=head2 each_DBLink
+
+ Title   : each_DBLink
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_DBLink {
+   my ($self,@args) = @_;
+
+   return @{$self->{'_db_link'}}
+}
+
+=head2 add_DBLink
+
+ Title   : add_DBLink
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_DBLink{
+   my ($self,$value) = @_;
+
+   if( !defined $value || !ref $value || ! $value->isa('Bio::Annotation::DBLink') ) {
+       $self->throw("This [$value] is not a DBLink");
+   }
+
+   push(@{$self->{'_db_link'}},$value);
 }
 
 =head2 id

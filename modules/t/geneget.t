@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..13\n"; 
+BEGIN { $| = 1; print "1..8\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -89,6 +89,29 @@ print "ok 5\n";
 $gene = $db->get_Gene('gene-id-1');
 
 print "ok 6\n";
+
+@dblink = $gene->each_DBLink();
+$dbl = shift @dblink;
+
+if( !defined $dbl || $dbl->database ne 'swissprot' ) {
+    print "not ok 7\n";
+} else {
+  print "ok 7\n";
+}
+
+@trans = $gene->each_Transcript();
+$trans = shift @trans;
+
+
+@dblink = $trans->each_DBLink();
+$dbl = shift @dblink;
+
+if( !defined $dbl || $dbl->database ne 'embl' ) {
+    print "not ok 8\n";
+}    else {
+  print "ok 8\n";
+}
+
 
 END {
     my $drop_overlap        = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{overlap}";

@@ -44,9 +44,10 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::EnsEMBL::Transcript;
+use Bio::DBLinkContainerI;
 
 
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::Object Bio::DBLinkContainerI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -58,9 +59,54 @@ sub _initialize {
 
   $self->{'_transcript_array'} = [];
   $self->{'_clone_neighbourhood'} = [];
+  $self->{'_db_link'} = [];
+
 # set stuff in self from @args
   return $make; # success - we hope!
 }
+
+
+=head2 each_DBLink
+
+ Title   : each_DBLink
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_DBLink {
+   my ($self,@args) = @_;
+
+   return @{$self->{'_db_link'}}
+}
+
+=head2 add_DBLink
+
+ Title   : add_DBLink
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_DBLink{
+   my ($self,$value) = @_;
+
+   if( !defined $value || !ref $value || ! $value->isa('Bio::Annotation::DBLink') ) {
+       $self->throw("This [$value] is not a DBLink");
+   }
+
+   push(@{$self->{'_db_link'}},$value);
+}
+
+
 
 =head2 each_unique_Exon
 

@@ -32,6 +32,9 @@ INSERT INTO transcript (id,gene,translation) VALUES ('transcript-1','gene-id-1',
 INSERT INTO gene (id) VALUES ('gene-id-1');
 INSERT INTO translation (id,start_exon,seq_start,end_exon,seq_end) VALUES ('trl-1','exon-1',2,'exon-2',6);
 
+INSERT INTO genedblink (gene_id,external_db,external_id) VALUES ('gene-id-1','swissprot','P000123');
+INSERT INTO transcriptdblink (transcript_id,external_db,external_id) VALUES ('transcript-1','embl','AC000012');
+
 
 INSERT INTO dna (id, sequence, created) 
 VALUES (1, 'AAAAA', '2000-04-27 08:31:59');

@@ -521,6 +521,11 @@ sub get_array_supporting {
     if ($supporting && $supporting eq 'evidence') {
 	$self->get_supporting_evidence(@sup_exons);
     }
+
+    foreach my $g ( @out) {
+	$self->_get_dblinks($g);
+    }
+
     
     return @out;
 }
@@ -624,6 +629,55 @@ sub _make_sticky_exon{
 
 }
 
+=head2 _get_dblinks
+
+ Title   : _get_dblinks
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _get_dblinks{
+   my ($self,$gene) = @_;
+
+   if( !defined $gene || ! ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
+       $self->throw("no gene passed to get_dblinks");
+   }
+   my $geneid = $gene->id;
+
+   my $query = "select external_db,external_id from genedblink where gene_id = '$geneid'";
+   my $sth = $self->_db_obj->prepare($query);
+   my $res = $sth ->execute();
+   while( (my $hash = $sth->fetchrow_hashref()) ) {
+       my $dblink = Bio::Annotation::DBLink->new();
+       $dblink->database($hash->{'external_db'});
+       $dblink->primary_id($hash->{'external_id'});
+       $gene->add_DBLink($dblink);
+   }
+
+   foreach my $trans ( $gene->each_Transcript ) {
+       my $transid = $trans->id;
+       
+       $query = "select external_db,external_id from transcriptdblink where transcript_id = '$transid'";
+       $sth = $self->_db_obj->prepare($query);
+       $res = $sth ->execute();
+       while( (my $hash = $sth->fetchrow_hashref()) ) {
+	   
+	   my $dblink = Bio::Annotation::DBLink->new();
+	   $dblink->database($hash->{'external_db'});
+	   $dblink->primary_id($hash->{'external_id'});
+	   $trans->add_DBLink($dblink);
+       }
+   }
+
+}
+
+
+
 
 =head2 get_Gene_by_Transcript_id
 
@@ -653,6 +707,8 @@ sub get_Gene_by_Transcript_id {
     }
     return $self->get($geneid,$supporting);
 }
+
+
 
 
 
