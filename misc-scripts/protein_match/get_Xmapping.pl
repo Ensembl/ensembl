@@ -1,3 +1,4 @@
+#Contact Emmanuel Mongin (mongin@ebi.ac.uk)
 use strict;
 use Getopt::Long;
 use Bio::SeqIO;
@@ -13,6 +14,8 @@ my %conf =  %::mapping_conf; # configuration options
 
 # global vars
 
+
+my $organism   = $conf{'organism'};
 my $sptr_swiss = $conf{'sptr_swiss'};
 my $refseq_gnp = $conf{'refseq_gnp'};
 my $ens1       = $conf{'ens1'};
@@ -75,78 +78,79 @@ while ( my $seq = $in->next_seq() ) {
 }
 
 
+if ($organism eq "human") {
 #Read the refseq file in gnp format
-print STDERR "Reading REFSEQ File\n";
-
-open (REFSEQ,"$refseq_gnp") || die "Can't open $refseq_gnp\n";
-
-$/ = "\/\/\n";
-
-while (<REFSEQ>) {
-    my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
-    my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
-
-    $refseq_map{$dna_ac} = $prot_ac; 
+    print STDERR "Reading REFSEQ File\n";
     
-    print OUT "$prot_ac\tRefSeq\t$prot_ac\tRefSeq\t$prot_ac\t\n";
+    open (REFSEQ,"$refseq_gnp") || die "Can't open $refseq_gnp\n";
+    
+    $/ = "\/\/\n";
+    
+    while (<REFSEQ>) {
+	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
+	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
+	
+	$refseq_map{$dna_ac} = $prot_ac; 
+	
+	print OUT "$prot_ac\tRefSeq\t$prot_ac\tRefSeq\t$prot_ac\t\n";
        
-    my ($mim) = $_ =~ /\/db_xref=\"MIM:(\d+)/;
-    my ($locus) = $_ =~ /\/db_xref=\"LocusID:(\d*)/;
-
-    if ($mim) {
-	print OUT "$prot_ac\tRefSeq\t$mim\tMIM\t$mim\t\n";
+	my ($mim) = $_ =~ /\/db_xref=\"MIM:(\d+)/;
+	my ($locus) = $_ =~ /\/db_xref=\"LocusID:(\d*)/;
+	
+	if ($mim) {
+	    print OUT "$prot_ac\tRefSeq\t$mim\tMIM\t$mim\t\n";
+	}
+	
+	if ($locus) {
+	    print OUT "$prot_ac\tRefSeq\t$locus\tLocusLink\t$locus\t\n";
+	}
     }
-
-    if ($locus) {
-	print OUT "$prot_ac\tRefSeq\t$locus\tLocusLink\t$locus\t\n";
-    }
-}
-close (REFSEQ);
-
-$/ = "\n";
-
-
+    close (REFSEQ);
+    
+    $/ = "\n";
+    
+    
 #Read the Hugo files
-print STDERR "Reading Hugo files\n";
-
-open (ENS4,"$ens4") || die "Can't open $ens4\n";;
-
-while (<ENS4>) {
-    chomp;
-    my @array = split(/\t/,$_);
-    my $hgnc = $array[0];
-    my $id = $array[1];
-    #my $syn1 = $array[2];
-    #my $syn2 = $array[3];
+    print STDERR "Reading Hugo files\n";
     
-    my $syn1 = join (';',split (/,\s/,$array[2]));
-    my $syn2 = join (';',split (/,\s/,$array[3]));
+    open (ENS4,"$ens4") || die "Can't open $ens4\n";;
     
-    my $syn = "$syn1;$syn2";
-    
-    $hugo_id{$hgnc} = $id;
-    $hugo_syn{$hgnc} = $syn;
-    #print $hugo_syn{$hgnc};
-}
-close (ENS4);
-
-open (ENS1,"$ens1") || die "Can't open $ens1\n";
-
-while (<ENS1>) {
-    chomp;
-    my @array = split(/\t/,$_);
-    my $hgnc = $array[0];
-    
-    if ($array[1]) {
-	#my $db = $sp_db{$array[1]};
-	print OUT "$array[1]\tSPTR\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\n";
+    while (<ENS4>) {
+	chomp;
+	my @array = split(/\t/,$_);
+	my $hgnc = $array[0];
+	my $id = $array[1];
+	#my $syn1 = $array[2];
+	#my $syn2 = $array[3];
+	
+	my $syn1 = join (';',split (/,\s/,$array[2]));
+	my $syn2 = join (';',split (/,\s/,$array[3]));
+	
+	my $syn = "$syn1;$syn2";
+	
+	$hugo_id{$hgnc} = $id;
+	$hugo_syn{$hgnc} = $syn;
+	#print $hugo_syn{$hgnc};
     }
+    close (ENS4);
     
-    if ($array[2]) {
-	#my $db = $sp_db{$array[1]};
-	print OUT "$array[2]\tRefSeq\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\n";
+    open (ENS1,"$ens1") || die "Can't open $ens1\n";
+    
+    while (<ENS1>) {
+	chomp;
+	my @array = split(/\t/,$_);
+	my $hgnc = $array[0];
+	
+	if ($array[1]) {
+	    #my $db = $sp_db{$array[1]};
+	    print OUT "$array[1]\tSPTR\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\n";
+	}
+	
+	if ($array[2]) {
+	    #my $db = $sp_db{$array[1]};
+	    print OUT "$array[2]\tRefSeq\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\n";
+	}
     }
+    close (ENS1);
 }
-close (ENS1);
-
 

@@ -2,17 +2,13 @@
 
 =head2 Description
 
-This script gives the basic configuration needed by the mapping. This configuration script will be used by each script of the mapping. Each field is described bellow.
+This script gives the basic configuration needed by the mapping. This configuration script will be used by each script of the mapping. 
 
-    + organism: The name of the organism which has to be mapped. eg: human, mouse, worm
+For some documentatio, see below.
 
-    + sptr:     Location of the SPTR file
+=head2 Contact
 
-    + refseq:   Location of the Refseq file (only valide for the human organism)
-
-    + (ens1, ens2, ens5) : Various files produced by Hugo (http://www.gene.ucl.ac.uk/public-files/nomen/) which would be used to map SP to hugo and refseq to Hugo (only valide for the human organism)
-
-    
+Emmanuel Mongin (mongin@ebi.ac.uk)
 
 =cut
 
@@ -24,28 +20,37 @@ BEGIN {
 package main;
 
 %mapping_conf = ( 
-	     # Files location (Input/Output)
 
+             ################################ 
+	     # Files location (Input/Output)#
+             ################################
+
+
+             #Location of the query peptide file (eg: Ensembl predicted protein) 
              #'query'        => '/work1/mongin/mapping/primary/ensembl110.pep',
              'query'       => '',   
-        
+             
+             #Location of the sptr file in fasta format
 	     #'sptr_fa'      => '/work1/mongin/mapping/primary/HS.f',
 	     'sptr_fa'      => '',
 	     
+             #Location of the sptr file in Swiss-Prot format
 	     #'sptr_swiss'      => '/work1/mongin/mapping/primary/HS.SPTR',
 	     'sptr_swiss'      => '',
 	     
+             #Location of the Refseq (proteins) file in fasta format
 	     #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
 	     'refseq'    => '',
 	     
+             #Location of the Refseq (proteins) file in Genbank format
 	     #'refseq_gnp'    => '/work1/mongin/mapping/primary/refseq.gnp',
 	     'refseq_gnp'    => '',
-	    
-             #File containing all refseq and all SP in fasta format
+	     
+             #Location of the file containing all refseq and all SP in fasta format (This file will be produced by runni             ng prepare_proteome.pl)
              #'human_fa'    => '/work1/mongin/mapping/kate/refseq_p.fa',
 	     'human_fa'    => '',
 
-             
+             #ens1 and ens4, location of files used for Hugo mapping (http://www.gene.ucl.ac.uk/public-files/nomen/), th             is files will be used only for human
 	     #'ens1'      => '/work1/mongin/mapping/primary/ens1.txt',
 	     'ens1'      => '',
 
@@ -61,7 +66,9 @@ package main;
              #'human_map'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
              'x_map_out'  => '',
 
-             #Database handling
+             ###################
+             #Database handling#
+             ###################
 
              #DB name
              #'db' => 'proteintest',
@@ -71,10 +78,28 @@ package main;
              #'host' => 'ecs1d',
              'host' => '',
 
+             #User
+             'dbuser' => '',
 
-             #Location for pmatch
+             #Password
+             'password' => '',
+             
+             #####################
+             #Executable location#
+             #####################
+
+             #Location for pmatch binaries
              #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
-             'pmatch' => ' '
+             'pmatch' => ' ',
+
+             ##############################
+             #Organism related information#
+             ##############################
+
+             #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse
+             #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
+             'organism' => ''
+             
 
  );
 

@@ -1,8 +1,9 @@
+#Contact: Emmanuel Mongin (mongin@ebi.ac.uk)
+
 use strict;
 use DBI;
 use Getopt::Long;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 use Bio::EnsEMBL::DBEntry;
 use Bio::SeqIO;
@@ -23,43 +24,50 @@ my $xmap       = $conf{'x_map'};
 my $map        = $conf{'human_map'};
 my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
+my $user       = $conf{'dbuser'};
+my $pass       = $conf{'pass'};
+my $organism   = $conf{'organism'};
 
 my %map;
 my %ref_map;
 
 print STDERR "Connecting to the database...\n";
-my $enslocator = "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$host;dbname=$dbname;user=ensadmin;perlonlyfeatures=1";
-print STDERR "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$host;dbname=$dbname;user=ensadmin;perlonlyfeatures=1\n";
-my $db =  Bio::EnsEMBL::DBLoader->new($enslocator);
 
-my $adaptor = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($db);
+$db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+        -user   => $user,
+        -dbname => $dbname,
+        -host   => $host,
+        -driver => 'mysql',
+	-pass   => $pass,
+        );
 
-open (REFSEQ,"$refseq_gnp") || die "Can't open $refseq_gnp\n";
+my $adaptor = $db->get_DBEntryAdaptor();
+
+if ($organism eq "human") {
+    open (REFSEQ,"$refseq_gnp") || die "Can't open $refseq_gnp\n";
 #Read the file by genbank entries (separated by //) 
-$/ = "\/\/\n";
-while (<REFSEQ>) {
+    $/ = "\/\/\n";
+    while (<REFSEQ>) {
 #This subroutine store for each NP (refseq protein accession number) its corresponding NM (DNA accession number)
-    my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
-    my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
+	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
+	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
 
-    #print STDERR "$prot_ac\n";
-    $ref_map{$prot_ac} = $dna_ac;
-}
+	$ref_map{$prot_ac} = $dna_ac;
+    }
 #Put back the default (new line) for reading file
-$/ = "\n"; 
+    $/ = "\n"; 
+}
+
 
 open (XMAP,"$xmap") || die "Can't open $xmap\n";
 
 while (<XMAP>) {
     chomp;
     my ($targetid,$targetdb,$xac,$xdb,$xid,$xsyn) = split (/\t/,$_);
-    
-    #print STDERR "$targetid,$targetdb,$xac,$xdb,$xid,$xsyn\n";
 
     if ($targetid =~ /^NP_\d+/) {
 	
 	    ($targetid) = $targetid =~ /^(NP_\d+)/;
-	    #print STDERR "$tid\n";
 	    $targetid = $ref_map{$targetid};
 	}
 
@@ -67,14 +75,12 @@ while (<XMAP>) {
     if ($xac =~ /^NP_\d+/) {
 	
 	    ($xac) = $xac =~ /^(NP_\d+)/;
-	    #print STDERR "$tid\n";
 	    $xac = $ref_map{$xac};
 	}
 
     if ($xid =~ /^NP_\d+/) {
 	
 	($xid) = $xid =~ /^(NP_\d+)/;
-	#print STDERR "$tid\n";
 	$xid = $ref_map{$xid};
     }
 
@@ -90,37 +96,20 @@ while (<XMAP>) {
 
 close (XMAP);
 
-my %missing;
 
-open (MISSING,"/work1/mongin/mapping/primary/missing.txt") || die;
-
-while (<MISSING>) {
-    chomp;
-    #print STDERR $_;
-    my ($hugo,$refseq) = split /\t/;
-    #print STDERR "$refseq\n";
-    $missing{$refseq} = $hugo;
-}
 
 open (MAP,"$map") || die "Can't open $map\n";
 
 while (<MAP>) {
     my $target;
-    #print STDERR "Loading data in the database\n";
     chomp;
     my ($queryid,$tid,$tag,$queryperc,$targetperc) = split (/\t/,$_);
-    #print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";
     
     my $m = $tid; 
-    
-    #print STDERR "$tid\n";
 
-    #print STDERR "TARGETID0: $tid\n";
-    #if ($tid ne "orphan") {
     if ($tid =~ /^NP_\d+/) {
 	
 	($tid) = $tid =~ /^(NP_\d+)/;
-	#print STDERR "$tid\n";
 	$tid = $ref_map{$tid};
     }
     
@@ -128,20 +117,13 @@ while (<MAP>) {
 	($tid) = $tid =~ /^(\w+)-\d+/;
     }
     
-    #if ($missing{$tid}) {
-    #   print "$m\t$tid\t$missing{$tid}\n";
-    #}
-    
-    #print STDERR "TARGETID1: $tid\n";
+
     if (defined $tid) {
 	
 	my @array = @{$map{$tid}};
 	
 	foreach my $a(@array) {
-	    #print STDERR $a->xDB."\n"; 
-	    
 	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT") || ($a->xDB eq "RefSeq")) {
-		#print STDERR "IDT: $queryperc\t$targetperc\n";
 		my $dbentry = Bio::EnsEMBL::IdentityXref->new
 		    ( -adaptor => $adaptor,
 		      -primary_id => $a->xAC,
@@ -153,8 +135,6 @@ while (<MAP>) {
 		$dbentry->query_identity($queryperc);
 		$dbentry->target_identity($targetperc);
 		
-		print STDERR $a->xID,"\t\n";
-		
 		my @synonyms = split (/;/,$a->xSYN);
 		
 		
@@ -163,7 +143,6 @@ while (<MAP>) {
 			$dbentry->add_synonym($syn);
 		    }
 			}
-		print STDERR "STORE1: ".$dbentry->display_id."\t".$queryid."\n";
 		$adaptor->store($dbentry,$queryid,"Translation");
 	    }
 	    
@@ -187,8 +166,6 @@ while (<MAP>) {
 			$dbentry->add_synonym($syn);
 		    }
 		}
-print STDERR "STORE1: ".$dbentry->display_id,"\t".$queryid."\n";
-#print STDERR "STORE2: $dbentry,$queryid\n";
 		$adaptor->store($dbentry,$queryid,"Translation");
 		    
 	    }
@@ -199,14 +176,7 @@ print STDERR "STORE1: ".$dbentry->display_id,"\t".$queryid."\n";
     else  {
 	print STDERR " not defined\n";
     }  
-	#}
-    
-    #}
-    
-    
 }
-
-
 
 
 package Desc;
