@@ -427,6 +427,10 @@ sub prepare {
 sub add_db_adaptor {
   my ($self, $name, $adaptor) = @_;
 
+  unless($name && $adaptor && ref $adaptor) {
+    $self->throw('adaptor and name arguments are required');
+  } 
+				   
   #avoid circular references and memory leaks
   if($adaptor->isa('Bio::EnsEMBL::Container')) {
       $adaptor = $adaptor->_obj;
