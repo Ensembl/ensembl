@@ -265,7 +265,7 @@ sub set_split_phases {
       $sphase = $first_exon->start_phase();
     }
 
-    $phase = $first_exon->length() % 3 + $sphase;
+    $phase = ($first_exon->length() + $sphase) % 3;
   }
 
   $first_exon->end_phase($phase);
