@@ -303,7 +303,7 @@ elsif ($display) {
     
     my $contig = Bio::EnsEMBL::PerlDB::Contig->new();
     $contig->id($fpc);
-    $contig->length(500000);
+    $contig->length(1600000);
     foreach my $gene (@gtf_genes) {
 	print STDERR "Adding gene ".$gene->id."\n";
 	$contig->add_Gene($gene);
