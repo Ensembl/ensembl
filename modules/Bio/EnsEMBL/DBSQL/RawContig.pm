@@ -119,7 +119,12 @@ sub direct_new {
 	$seq_version,
 	$cloneid,
 	$chr_start,
-	$chr_end
+	$chr_end,
+        $raw_start,
+        $raw_end,
+        $raw_ori,
+        $offset,
+        $contig_length
         ) = $self->_rearrange([qw(
 				  DBOBJ
 				  ID
@@ -131,6 +136,11 @@ sub direct_new {
 				  CLONEID
 				  CHR_START
 				  CHR_END
+                                  RAW_START
+                                  RAW_END
+                                  RAW_ORI
+                                  OFFSET
+                                  CONTIG_LENGTH
 	    )], @args);
 
     $id    || $self->throw("Cannot make contig db object without id");
@@ -155,6 +165,11 @@ sub direct_new {
     $self->overlap_distance_cutoff($overlap_distance_cutoff);
     $self->_chr_start($chr_start);
     $self->_chr_end($chr_end);
+    $self->static_golden_start($raw_start);
+    $self->static_golden_end($raw_end);
+    $self->static_golden_ori($raw_ori);
+    $self->embl_offset($offset);
+    $self->length($contig_length);
 
     return $self;
 }
@@ -1505,20 +1520,25 @@ sub get_all_ExternalGenes {
 =cut
 
 sub length{
-   my ($self,@args) = @_;
+   my ($self,$length) = @_;
+
+   if( defined $length ) {
+       $self->{'_length'} = $length;
+       return $length;
+   }
 
    my $id= $self->internal_id();
     $self->throw("Internal ID not set") unless $id;
-   if (! defined ($self->{_length})) {
+   if (! defined ($self->{'_length'})) {
        my $sth = $self->dbobj->prepare("select length from contig where internal_id = \"$id\" ");
        $sth->execute();
        
        my $rowhash = $sth->fetchrow_hashref();
        
-       $self->{_length} = $rowhash->{'length'};
+       $self->{'_length'} = $rowhash->{'length'};
    }
 
-   return $self->{_length};
+   return $self->{'_length'};
 }
 
 sub cloneid {
