@@ -16,7 +16,7 @@ Bio::EnsEMBL::AssemblyMapper - Handles mapping from raw contigs to assembly coor
 
 =head1 SYNOPSIS
 
-    $map_adaptor = $dbadaptor->get_AssmeblyMapperAdaptor();
+    $map_adaptor = $dbadaptor->get_AssemblyMapperAdaptor();
     $mapper = $map_adaptor->fetch_by_type('UCSC');
 
     $mapper->register_region('chr1', 1, 100000);
@@ -305,7 +305,23 @@ sub register_region_around_contig {
    }
 
    
-   $self->adaptor->register_region_around_contig($self, $self->_type, $contig_id, $left, $right);
+   if( $self->_have_registered_contig( $contig_id ) && $left == 0 && $right==0 ) {
+     if( $self->_mapper->list_pairs( $contig_id, -1, -1, "rawcontig" )) {
+       return 1;
+     } else {
+       return 0;
+     }
+   }
+   
+   my ( $chr_name, $chr_start, $chr_end ) = $self->adaptor()->register_contig
+     ( $self, $self->_type, $contig_id );
+
+   if( defined $chr_name ) {
+     $self->register_region( $chr_name, $chr_start-$left, $chr_end+$right );
+     return 1;
+   } else {
+     return 0;
+   }
 }
 
 
@@ -483,9 +499,8 @@ sub in_assembly {
 
   #verify at least one of these contigs is mapped to the assembly
   foreach my $contig (@contigs) {
-    if($self->adaptor()->register_region_around_contig($self, $self->_type(),
-						       $contig->dbID(),
-						       0, 0)) {
+    if($self->register_region_around_contig( $contig->dbID(),
+					     0, 0)) {
       return 1;
     }
   }
