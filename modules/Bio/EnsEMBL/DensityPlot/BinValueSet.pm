@@ -101,8 +101,8 @@ sub add_binvalue{
 
 sub get_binvalues{
     my $self = shift;
-    my $biggest_value   = $self->{'_biggest_value'};
-    my $smallest_value  = $self->{'_smallest_value'};
+    my $biggest_value   = $self->{'_biggest_value'} || 0;
+    my $smallest_value  = $self->{'_smallest_value'} || 0;
    
     if (!defined ($biggest_value)||!defined($smallest_value)){
     	$self->throw("Cannot scale - no values to scale against");  
@@ -126,7 +126,7 @@ sub get_binvalues{
 	    }
     }
 
-   return ( @{ $self->{'_bin_array'}} );  
+   return ( @{ $self->{'_bin_array'}}      );  
 
 }
 
