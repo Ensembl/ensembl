@@ -150,7 +150,7 @@ These functions are to implement the ContigI interface
 
  Title   : extend
  Usage   : $new_vc = $vc->extend(100,100);
- Function: Make a new vc by entending an existing one
+ Function: Make a new vc by extending an existing one
  Example :
  Returns : Bio::EnsEMBL::DB::VirtualContig
  Args    :
@@ -178,6 +178,78 @@ sub extend {
 					       -right           => $self->_right_size + $right,
 					       );
 
+   return $nvc;
+}
+
+
+=head2 extend_maximally
+
+ Title   : extend_maximally
+ Usage   : $new_vc = $vc->extend_maximally();
+ Function: Extends an existing vc as far as possible in both directions
+ Example :
+ Returns : Bio::EnsEMBL::DB::VirtualContig
+ Args    :
+
+
+=cut
+
+sub extend_maximally {
+   my ($self) = @_;
+
+   if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+       $self->throw("Can only extend a VirtualContigI, Bailing out...");
+   }
+   # based on an original idea by Ewan Birney. ;)
+   my $nvc = $self->extend(100000000000,100000000000);
+   return $nvc;
+}
+
+
+=head2 extend_maximally_left
+
+ Title   : extend_maximally_left
+ Usage   : $new_vc = $vc->extend_maximally_left();
+ Function: Extends an existing vc as far as possible in both directions
+ Example :
+ Returns : Bio::EnsEMBL::DB::VirtualContig
+ Args    :
+
+
+=cut
+
+sub extend_maximally_left {
+   my ($self) = @_;
+
+   if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+       $self->throw("Can only extend a VirtualContigI, Bailing out...");
+   }
+   # based on an original idea by Ewan Birney. ;)
+   my $nvc = $self->extend(100000000000,0);
+   return $nvc;
+}
+
+
+=head2 extend_maximally_right
+
+ Title   : extend_maximally_right
+ Usage   : $new_vc = $vc->extend_maximally_right();
+ Function: Extends an existing vc as far as possible in both directions
+ Example :
+ Returns : Bio::EnsEMBL::DB::VirtualContig
+ Args    :
+
+
+=cut
+
+sub extend_maximally_right {
+   my ($self) = @_;
+
+   if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+       $self->throw("Can only extend a VirtualContigI, Bailing out...");
+   }
+   # based on an original idea by Ewan Birney. ;)
+   my $nvc = $self->extend(0,100000000000);
    return $nvc;
 }
 
