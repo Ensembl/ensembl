@@ -1,4 +1,4 @@
-#!/Volumes/External/ensembl_dist/llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllloooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong/bin/perl -w
+#!/usr/local/bin/perl
 
 # This file is the companion script to the ensembl_tutorial and has been 
 # tested with the homo_sapiens_core_9_30 database on ecs1d and the main trunk 
