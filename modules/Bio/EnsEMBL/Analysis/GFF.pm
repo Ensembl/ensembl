@@ -47,6 +47,7 @@ use Bio::Root::Object;
 use Bio::SeqFeature::Homol;
 use Bio::SeqFeature::Generic;
 use Bio::EnsEMBL::Analysis::Repeat;
+use FileHandle;
 
 # Inherits from the base bioperl object
 @ISA = qw(Bio::Root::Object);
@@ -65,9 +66,9 @@ sub _initialize {
 
   # The array to store all the feature objects
   $self->{_features} = [];
-
-  $self->GFFFile($file);
   $self->type($type);
+  $self->GFFFile($file);
+
 
   return $self; # success - we hope!
 }
@@ -127,6 +128,7 @@ sub add_Feature {
 sub type {
     my ($self,$arg) = @_;
 
+
     if (defined($arg)) {
 	$self->{_type} = $arg;
     }
@@ -155,8 +157,10 @@ sub _parse {
     
     $self->_make_analysis;
     
-    open(IN,"<$file") || $self->throw("Can't open $file");
-    my $fh = \*IN;
+    my $fh = new FileHandle;
+
+    $fh->open("<$file") || $self->throw("Can't open $file");
+
     while (my $line = <$fh>) {
 	if ($line !~ /^\#/) {
 	    my $feature = $self->_parse_line($line);
@@ -164,7 +168,7 @@ sub _parse {
 	}
     }
     
-    close(IN);
+    $fh->close;
 }
 
 
@@ -240,7 +244,7 @@ sub _parse_attrib {
 	my $hend   = $attrib[3];
 	my $homol;
 
-	if ($self->type eq 'Repeat') {
+	if ($self->type eq "Repeat") {
 	    $homol = new Bio::EnsEMBL::Analysis::Repeat(-start       => $feature->start,
 						 -end         => $feature->end,
 						 -strand      => $feature->strand,
