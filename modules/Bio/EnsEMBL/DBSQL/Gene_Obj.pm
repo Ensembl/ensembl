@@ -635,6 +635,11 @@ sub get_array_supporting {
 	$exon->version  ($exonversion);
 	$exon->seqname  ($contigid);
 	$exon->sticky_rank($exon_rank);
+
+	#Ori methods for caching...
+	$exon->ori_start($start);
+	$exon->ori_end($end);
+	$exon->ori_strand($strand);
         
 	#
 	# Attach the sequence, cached if necessary...

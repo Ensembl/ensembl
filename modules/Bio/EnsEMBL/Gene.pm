@@ -186,6 +186,29 @@ sub each_unique_Exon{
    return values %{$self->{_unique_exons}};
 }
 
+=head2 refresh
+
+ Title   : refresh
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub refresh{
+   my ($self) = @_;
+
+   foreach my $e ($self->all_Exon_objects) {
+       $e->start($e->ori_start);
+       $e->end($e->ori_end);
+       $e->strand($e->ori_strand);
+   }
+}
+
+
 =head2 get_Exon_by_id
 
  Title   : get_Exon_by_id

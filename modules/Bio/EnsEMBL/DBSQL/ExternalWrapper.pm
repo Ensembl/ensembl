@@ -47,7 +47,7 @@ use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheriets from Bio::Root::RootI
-
+use Bio::EnsEMBL::Gene;
 use Bio::Root::RootI;
 use Bio::EnsEMBL::DB::ExternalFeatureFactoryI;
 
@@ -127,46 +127,67 @@ sub get_Ensembl_Genes_contig_list{
    }
    #Hash of contigs by gene id
    my %gc;
-   my $list;
-   foreach my $c ( @contigs ) {
-       $list .= "'$c',";
-   }
-   chop $list;
-   $list = "($list)";
-
-   my $sth = $self->dbobj->prepare("select t.gene,c.id from transcript t,exon_transcript et,exon e,contig c where c.id in $list and c.internal_id = e.contig and e.id = et.exon and t.id = et.transcript");
-   
-   $sth->execute();
-   my @geneids;
-
-   my %seen;
-   while( my ($id,$contig) = $sth->fetchrow_array ) {
-       if (!$seen{$id}) {
-	   $gc{$id}=$contig;
-	   $seen{$id}++;
-       }
-   }
-   push(@geneids,keys(%gc));
-   if( scalar(@geneids) == 0 ) {
-       print STDERR "No ids here...\n";
-     return();
-   }
-   my @genes;
 
    #Hash of array of gene objects by contig
+   my %cg;
+   my $list;
+   my @genes;
+   my @todocontigs;
    if (my $cgr = $self->cg) {
        #Get them from the cache
-       print STDERR "Getting them from the cache\n";
-       my %cg = %$cgr;
+       print STDERR "Getting external genes from the cache\n";
+       my %cgh = %$cgr;
        foreach my $c (@contigs) {
-	   if ($cg{$c}) {
-	       push (@genes,@{$cg{$c}});
+	   if ($cgh{$c}) {
+	       foreach my $g (@{$cgh{$c}}) {
+		   $g->refresh();
+	       }
+	       push (@genes,@{$cgh{$c}});
+	   }
+	   else {
+	       push (@todocontigs,$c);
 	   }
        }
+       @genes;
    }
    else {
-       my %cg;
-       print STDERR "Getting them normally\n";
+       foreach my $c (@contigs) {
+	   $cg{$c}=[];
+       }
+       push (@todocontigs,@contigs);
+   }
+   if( scalar @todocontigs == 0 ) {
+       print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
+       return @genes;
+   }
+   else {
+       foreach my $c ( @todocontigs ) {
+	   $list .= "'$c',";
+       }
+       chop $list;
+       $list = "($list)";
+       
+       my $sth = $self->dbobj->prepare("select t.gene,c.id from transcript t,exon_transcript et,exon e,contig c where c.id in $list and c.internal_id = e.contig and e.id = et.exon and t.id = et.transcript");
+   
+       $sth->execute();
+       my @geneids;
+       
+       my %seen;
+       while( my ($id,$contig) = $sth->fetchrow_array ) {
+	   if (!$seen{$id}) {
+	       $gc{$id}=$contig;
+	       $seen{$id}++;
+	   }
+       }
+       push(@geneids,keys(%gc));
+       if( scalar(@geneids) == 0 ) {
+	   print STDERR "No ids here...\n";
+	   return();
+       }
+           
+      
+       
+       print STDERR "Getting external genes normally\n";
        @genes = $self->dbobj->gene_Obj->get_array_supporting('none',@geneids);
        foreach my $gene (@genes) {
 	   if (my $contig = $gc{$gene->id}) {
@@ -174,9 +195,10 @@ sub get_Ensembl_Genes_contig_list{
 	   }
        }
        $self->cg(\%cg);
+       
+       print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
+       return @genes;
    }
-   print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
-   return @genes;
 }
 
 =head2 cg

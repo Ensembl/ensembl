@@ -743,6 +743,69 @@ sub find_supporting_evidence {
       }
 }
 
+=head2 ori_start
+
+ Title   : ori_start
+ Usage   : $obj->ori_start($newval)
+ Function: Getset for ori_start value
+ Returns : value of ori_start
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub ori_start{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'ori_start'} = $value;
+    }
+    return $obj->{'ori_start'};
+
+}
+
+=head2 ori_end
+
+ Title   : ori_end
+ Usage   : $obj->ori_end($newval)
+ Function: Getset for ori_end value
+ Returns : value of ori_end
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub ori_end{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'ori_end'} = $value;
+    }
+    return $obj->{'ori_end'};
+
+}
+
+=head2 ori_strand
+
+ Title   : ori_strand
+ Usage   : $obj->ori_strand($newval)
+ Function: Getset for ori_strand value
+ Returns : value of ori_strand
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub ori_strand{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'ori_strand'} = $value;
+    }
+    return $obj->{'ori_strand'};
+
+}
+
 
 # Inherited methods
 # but you do have all the SeqFeature documentation: reproduced here
