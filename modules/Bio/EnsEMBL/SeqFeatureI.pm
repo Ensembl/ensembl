@@ -62,30 +62,11 @@ use Bio::SeqFeatureI;
 
 @ISA = qw(Bio::SeqFeatureI Exporter);
 
-sub _abstractDeath {
-    my $self = shift;
-    my $package = ref $self;
-    my $caller = (caller)[1];
-    
-    confess "Abstract method '$caller' defined in interface Bio::SeqFeatureI not implemented by package $package";
-}
-
 
 =head1 Abstract methods
 
 These methods must be implemented in all subclasses.
 
-=head2
-
-  Title   : new
-  Function: confesses if you try to instantiate a SeqFeatureI
-
-=cut
-
-sub new {
-    my ($self,@args) = @_;
-    $self->_abstractDeath();
-}
 
 =head2 analysis
 

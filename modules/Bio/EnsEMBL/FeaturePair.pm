@@ -92,8 +92,8 @@ use strict;
 use Bio::EnsEMBL::SeqFeatureI;
 use Bio::SeqFeature::FeaturePair;
 
-@ISA = qw(Bio::SeqFeature::FeaturePair
-	  Bio::EnsEMBL::SeqFeatureI);
+@ISA = qw(Bio::SeqFeature::FeaturePair 
+	Bio::EnsEMBL::SeqFeatureI);
 
 # new() is inherited from Bio::Root::Object
 
@@ -105,11 +105,11 @@ sub _initialize {
   my $make = $self->SUPER::_initialize;
 
   # set stuff in self from @args
- return $make; # success - we hope!
+  return $make; # success - we hope!
 }
 
 =head2 feature1
-
+    
  Title   : feature1
  Usage   : $feat->feature1($feat);
  Function: Get/set method for the first feature in the pair
@@ -120,17 +120,11 @@ sub _initialize {
 
 =cut
 
-sub feature1 {
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	print("Arg :$arg:\n");
-	$self->throw("Feature is not a Bio::EnsEMBL::SeqFeatureI") unless 
-	    $arg->isa("Bio::EnsEMBL::SeqFeatureI");
-	$self->{_feature1} = $arg;
-    }
-    return $self->{_feature1};
-}
+#sub feature1 {
+#    my ($self,$arg) = @_;
+#    print("arg is $arg\n");
+#    return $self->SUPER::feature1($arg);
+#}
 
 =head2 feature2
 
@@ -144,16 +138,12 @@ sub feature1 {
 
 =cut
 
-sub feature2 {
-    my ($self,$arg) = @_;
+#sub feature2 {
+#    my ($self,$arg) = @_;
 
-    if (defined($arg)) {
-	$self->throw("Feature is no a Bio::EnsEMBL::SeqFeatureI") unless 
-	    $arg->isa("Bio::EnsEMBL::SeqFeatureI");
-	$self->{_feature2} = $arg;
-    }
-    return $self->{_feature2};
-}
+#    return $self->SUPER::feature2($arg);
+
+#}
 
 
 =head2 analysis
