@@ -240,7 +240,7 @@ sub new {
               "coord systems $key1 and $key2.\n" .
               "Choosing shorter path arbitrarily.");
 
-      next MAPPING_PATH if(@{$mapping_paths{"$key1|$key2"}} < @coord_systems);
+      next MAP_PATH if(@{$mapping_paths{"$key1|$key2"}} < @coord_systems);
     }
 
     $mapping_paths{"$key1|$key2"} = \@coord_systems;
