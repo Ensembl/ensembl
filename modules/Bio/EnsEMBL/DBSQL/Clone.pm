@@ -337,6 +337,7 @@ sub get_all_Contigs{
 
        $contig->internal_id($rowhash->{internal_id});
        $contig->seq_version($version);
+       $contig->internal_id($rowhash->{'internal_id'});
        push(@res,$contig);
        $seen = 1;
    }

@@ -545,8 +545,8 @@ sub length{
    my ($self,@args) = @_;
    my $id= $self->internal_id();
 
-   if (!defined($self->{_length})) {
-       my $sth = $self->_dbobj->prepare("select length from contig where id = \"$id\" ");
+   if (! defined ($self->{_length})) {
+       my $sth = $self->_dbobj->prepare("select length from contig where internal_id = \"$id\" ");
        $sth->execute();
        
        my $rowhash = $sth->fetchrow_hashref();
@@ -555,7 +555,6 @@ sub length{
    }
 
    return $self->{_length};
-       
 }
 
 
