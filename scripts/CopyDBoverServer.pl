@@ -6,7 +6,7 @@ use Cwd 'chdir';
 
 $| = 1;
 
-my $usage = "\nUsage: $0 -pass XXXXX input_file
+my $usage = "\nUsage: $0 -pass XXXXX [-noflush] input_file
 
 Copy mysql databases between different servers and run myisamchk on the indices when copied.
 
@@ -17,29 +17,32 @@ source_server\\tsource_port\\tsource_db\\tdestination_server\\tdestination_port\
 e.g.
 
 #source_server\\tsource_port\\tsource_db\\tdestination_server\\tdestination_port\\tdestination_db
-ecs3d.internal.sanger.ac.uk 3306 homo_sapiens_core_13_31 ecs2d.internal.sanger.ac.uk 3306 homo_sapiens_core_14_31
+ecs3.internal.sanger.ac.uk 3307 homo_sapiens_core_13_31 ecs2.internal.sanger.ac.uk 3364 homo_sapiens_core_14_31
 
 Lines starting with # are ignored and considered as comments.
 
 RESTRICTIONS:
 ============
 1- The destination_server has to match the generic server you are running the script on,
-   either ecs1, ecs2 or ecs3, otherwise the copying process for the corresponding database
+   either ecs1, ecs2, ecs3, ecs4 or ia64[ef] otherwise the copying process for the corresponding database
    is skipped
-2- This script works only for copy processes from and to ecs nodes, namely
-   ecs1[abcdefgh]
-   ecs2[abcdef]
-   ecs4
-   ecs3d only
+2- This script works only for copy processes from and to ecs/ia64 nodes, namely
+   ecs1[abcdefgh] port 3306
+   ecs2 port: 336[1-6]
+   ecs3 port: 300[47]
+   ecs4 port: 335[0-3]
+   ia64[ef] port: 3306
 3- -pass is compulsory and is expected to be the mysql password to connect as ensadmin
 
 ";
 
 my $help = 0;
 my $pass;
+my $noflush = 0;
 
 GetOptions('h' => \$help,
-	   'pass=s' => \$pass);
+	   'pass=s' => \$pass,
+           'noflush' => \$noflush);
 
 if ($help || scalar @ARGV == 0 || ! defined $pass) {
   print $usage;
@@ -64,6 +67,7 @@ my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/current/var",
 			       'ecs2:3365' => "/mysql/data_3365/databases",
 			       'ecs2:3366' => "/mysql/data_3366/databases",
 			       'ecs3d:3307' => "/mysqld/current/var",
+			       'ecs3:3307' => "/mysqld/current/var",
 			       'ecs3:3304' => "/mysqld/current/var",
 			       'ecs4:3350' => "/mysql-3350/databases",
 			       'ecs4:3351' => "/mysql-3351/databases",
@@ -77,7 +81,6 @@ my $generic_working_host = $working_host;
 $generic_working_host =~ s/(ecs[1234]).*/$1/;
 my $working_dir = $ENV{'PWD'};
 my %already_flushed;
-#$already_flushed{'ecs3.internal.sanger.ac.uk'} = 1;
 
 # parsing/checking the input file
 
@@ -187,7 +190,7 @@ foreach my $db_to_copy (@dbs_to_copy) {
   $destination_srv = undef;
 
   # flush tables; in the source server
-  unless (defined $already_flushed{$db_to_copy->{src_srv}}) {
+  unless (defined $already_flushed{$db_to_copy->{src_srv}} || $noflush) {
     print STDERR "// flushing tables in $db_to_copy->{src_srv}...";
     my $flush_cmd = "echo \"flush tables;\" | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port";
     if (system($flush_cmd) == 0) {
