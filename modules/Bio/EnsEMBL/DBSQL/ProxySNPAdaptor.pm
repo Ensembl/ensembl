@@ -28,7 +28,7 @@ use strict;
 
 package Bio::EnsEMBL::DBSQL::ProxySNPAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 use vars ('@ISA', '$AUTOLOAD');
 
