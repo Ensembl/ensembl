@@ -91,9 +91,6 @@ sub _initialize {
 
   $self->{_homols} = [];
 
-  # Parse the mspfile
-  $self->_parse;
-
   return $self; # success - we hope!
 }
 
