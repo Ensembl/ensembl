@@ -766,6 +766,64 @@ sub expand {
 
 
 
+=head2 sub_Slice
+
+  Arg   1    : int $start
+  Arg   2    : int $end
+  Arge [3]   : int $strand
+  Example    : none
+  Description: makes another Slice that covers only part of this slice
+  Returntype : Bio::EnsEMBL::Slice or undef if arguments are wrong
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub sub_Slice {
+  my ( $self, $start, $end, $strand ) = @_;
+
+  if( $start < 1 || $start > $self->{'end'} ) {
+    # throw( "start argument not valid" );
+    return undef;
+  }
+
+  if( $end < $start || $end > $self->{'end'} ) {
+    # throw( "end argument not valid" )
+    return undef;
+  }
+
+  my ( $new_start, $new_end, $new_strand, $new_seq );
+  if( ! defined $strand ) {
+    $strand = 1;
+  }
+
+  if( $self->{'strand'} == 1 ) {
+    $new_start = $self->{'start'} + $start - 1;
+    $new_end = $self->{'start'} + $end - 1;
+    $new_strand = $strand;
+  } else {
+    $new_start = $self->{'end'} - $end + 1;;
+    $new_end = $self->{'end'} - $start + 1;
+    $new_strand = -$strand;
+  }
+
+  if( defined $self->{'seq'} ) {
+    $new_seq = $self->subseq( $start, $end, $strand );
+  }
+
+  #fastest way to copy a slice is to do a shallow hash copy
+  my %new_slice = %$self;
+  $new_slice{'start'} = $new_start;
+  $new_slice{'end'}   = $new_end;
+  $new_slice{'strand'} = $new_strand;
+  if( $new_seq ) {
+    $new_slice{'seq'} = $new_seq;
+  }
+
+  return bless \%new_slice, ref($self);
+}
+
+
 =head2 get_seq_region_id
 
   Arg [1]    : none
