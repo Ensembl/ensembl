@@ -101,7 +101,7 @@ for my $species ( @all_species ) {
   $species->xref($xref); # attach xref object to species object
   $species->dump_seqs();
   $species->build_list_and_map();
-  $species->generate_core_xrefs();
+  $species->parse_mappings();
 }
 
  
