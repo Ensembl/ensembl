@@ -72,7 +72,7 @@ while (@row = $sth->fetchrow_array) {
 }
 
 my $sth = $src->prepare(qq{
-    SELECT *
+    SELECT dna.*
     FROM   dna, contig
     WHERE  contig.internal_id in $where
     AND    dna.id = contig.dna
