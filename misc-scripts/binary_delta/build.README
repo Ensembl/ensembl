@@ -78,7 +78,9 @@ Usage
 
     This   creates    a   third   directory   called,    in   this   case,
     homo_sapiens_core_11_31_delta_12_31  (in the  current directory)  into
-    which the  generated delta files will  be put.
+    which  the generated  delta files  will be  put.  In  this case  it is
+    assumed that  the older revision is  kept in ./homo_sapiens_core_11_31
+    and the newer revision is kept in ./homo_sapiens_core_12_31.
 
     The "|  tee build.out" bit  ensures that  the output that  the program
     produces  (which includes  statistics about  how much  space that  was

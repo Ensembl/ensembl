@@ -83,7 +83,10 @@ Usage
     Note  that  the three  non-optional  arguments  are exactly  the  same
     as  those  used  with  build.pl   to  create  the  delta  files.   The
     delta  files for  this  example are  assumed to  be  available in  the
-    homo_sapiens_core_11_31_delta_12_31 directory.
+    ./homo_sapiens_core_11_31_delta_12_31  directory.   Release  11_31  is
+    assumend to  be available as ./homo_sapiens_core_11_31  and the result
+    will  go  in  ./homo_sapiens_core_12_31  (if  that  directory  doesn't
+    already exist).
 
     The "| apply.out" bit  is only needed if you want  to store the output
     of the apply.pl in a separate file, "apply.out" in this case.
