@@ -215,8 +215,8 @@ sub translation {
   if($self->adaptor()) {
     $pta = $self->adaptor()->db()->get_TranslationAdaptor();
   } else {
-    warning("PredictionTranscript has no adaptor, may not be able to obtain " .
-            "translation");
+    #warning("PredictionTranscript has no adaptor, may not be able to obtain " .
+           # "translation");
   }
 
   my $tmpSeq = new Bio::Seq( -id => "dummy",
@@ -250,7 +250,9 @@ sub translate {
   my ($self) = @_;
 
   my $dna = $self->translateable_seq();
-  $dna    =~ s/TAG$|TGA$|TAA$//i;
+  if( CORE::length( $dna ) % 3 == 0 ) {
+    $dna =~ s/TAG$|TGA$|TAA$//i;
+  }
   # the above line will remove the final stop codon from the mrna
   # sequence produced if it is present, this is so any peptide produced
   # won't have a terminal stop codon
