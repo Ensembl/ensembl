@@ -79,7 +79,7 @@ $USE_PERL_ONLY = 0;
 
 BEGIN {
     
-    my $load_ext = 1;
+    my $load_ext = 0;
     #$ENV{'ENSEMBL_C_EXTENSION'} || 0;
     
     if( $load_ext == 0 ) {
