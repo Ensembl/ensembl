@@ -162,6 +162,90 @@ sub dna_seq {
 
 =pod 
 
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id{
+   my ($self) = shift;
+   if( @_ ) {
+       $self->{'id'} = shift;
+   }
+   return $self->{'id'};
+   
+}
+
+=head2 contigid
+
+ Title   : contigid
+ Usage   : $obj->contigid($newval)
+ Function: 
+ Returns : value of contigid
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub contigid{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'contigid'} = $value;
+    }
+    return $self->{'contigid'};
+
+}
+
+=head2 created
+
+ Title   : created
+ Usage   : $obj->created($newval)
+ Function: 
+ Returns : value of created
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub created{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'created'} = $value;
+    }
+    return $self->{'created'};
+
+}
+
+=head2 modified
+
+ Title   : modified
+ Usage   : $obj->modified($newval)
+ Function: 
+ Returns : value of modified
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub modified{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'modified'} = $value;
+    }
+    return $self->{'modified'};
+
+}
+
 =head2 pep_seq
 
   Title   : pep_seq

@@ -76,6 +76,27 @@ sub _initialize {
   return $self; # success - we hope!
 }
 
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'id'} = $value;
+    }
+    return $self->{'id'};
+
+}
+
 =head2 add_Exon
 
  Title   : add_Exon

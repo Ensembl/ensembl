@@ -106,5 +106,57 @@ sub each_Transcript {
 
 }
 
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'id'} = $value;
+    }
+    return $obj->{'id'};
+
+}
+
+=head2 _dump
+
+ Title   : _dump
+ Usage   : dump data structure for debugging
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _dump{
+   my ($self,$fh) = @_;
+
+   if( ! $fh ) {
+       $fh = \*STDOUT;
+   }
+
+   print $fh "Gene ", $self->id(), "\n";
+   foreach my $t ( $self->each_Transcript ) {
+       print $fh "  Trans ", $t->id(), " :";
+       foreach my $e ( $t->each_Exon ) {
+	   print $fh " ",$e->id(),",";
+       }
+       print "\n";
+   }
+
+
+}
+
 
 1;
