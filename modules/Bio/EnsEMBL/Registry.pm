@@ -584,6 +584,48 @@ sub get_alias{
   return $registry_register{'_ALIAS'}{$key};
 }
 
+=head2 change_access
+
+  Will change the username and password for a set of databases.
+  if host,user or database names are missing then these are not checked.
+  So for example if you do not specify a database then ALL databases on
+  the specified  host and port will be changed.
+
+  Arg [1]    : name of the host to change access on
+  Arg [2]    : port number to change access on
+  Arg [3]    : name of the user to change access on
+  Arg [4]    : name of the database to change access on
+  Arg [5]    : name of the new user
+  Arg [6]    : new password
+
+  Example    : Bio::EnsEMBL::Registry->get_alias("Human");
+  Description: change username and password on one or more databases
+  Returntype : none
+  Exceptions : none
+
+=cut
+
+sub change_access{
+  my ($host,$port,$user,$dbname,$new_user,$new_pass) = @_;
+
+  foreach my $dba ( @{get_all_DBAdaptors()}){
+    my $dbc = $dba->dbc;
+    if((!defined($host) or $host eq $dbc->host) and
+      (!defined($port) or $port eq $dbc->port) and
+      (!defined($user) or $user eq $dbc->username) and
+	(!defined($dbname) or $host eq $dbc->dbname)){
+      #disconnect if connected
+      if($dbc->connected()){
+	$dbc->disconnect();
+	$dbc->connected(undef);
+      }
+      # over write the username and password
+      $dbc->username($new_user);
+      $dbc->password($new_pass);
+    }
+  }
+}
+
 #
 # Web specific routines
 #
