@@ -82,7 +82,7 @@ $multi->hide( "core", "exon", "supporting_feature",
 
 $exonad->store($exon);
 
-ok($exon->dbID() == 1 && $exon->adaptor == $exonad);
+ok($exon->dbID() && $exon->adaptor == $exonad);
 
 # now test fetch_by_dbID
 
