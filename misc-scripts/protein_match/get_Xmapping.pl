@@ -88,6 +88,11 @@ while ( my $seq = $in->next_seq() ) {
 	if  ($link->database eq "MIM") {
 	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\n";
 	}
+
+	if  ($link->database eq "PDB") {
+	    print STDERR "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\n";
+	}
+
     }
 
 
