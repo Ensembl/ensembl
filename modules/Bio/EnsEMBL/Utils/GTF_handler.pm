@@ -147,7 +147,7 @@ sub parse_file {
 	    next;
 	}
 
-	if (/exon_number (\d)/) { $exon_num = $1;}
+	if (/exon_number (\d+)/) { $exon_num = $1;}
 	
 	#print STDERR "Contig: $contig\nSource: $source\nFeature: $feature\nStart: $start\nEnd: $end\nScore: $score\nStrand: $strand\nGene name: $gene_name\nGene id: $gene_id\nExon number: $exon_num\n\n";
 	if ($flag == 1) {
