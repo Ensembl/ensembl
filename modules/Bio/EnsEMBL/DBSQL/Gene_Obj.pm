@@ -1001,7 +1001,6 @@ sub get_supporting_evidence_direct {
     }
 
     foreach my $exon (@exons) {
-	print STDERR "Preparing select contig,seq_start,seq_end,strand from exon where id = '".$exon->id."'\n";
 
 	my $sth=$self->_db_obj->prepare("select contig,seq_start,seq_end,strand from exon where id = '".$exon->id."'");
 	$sth->execute;
