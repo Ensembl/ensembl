@@ -234,7 +234,7 @@ sub check_and_register {
   }
 
   #do we have to make another gap?
-  if($gap_start < $rend) {
+  if($gap_start <= $rend) {
     push @gap_pairs, [$gap_start, $rend];
   }
 
