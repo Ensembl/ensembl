@@ -65,8 +65,8 @@ sub fetch_all {
   my( $marker_id, $priority, $left_primer, $right_primer, $type,
       $min_pdist, $max_pdist, $ms_id, $ms_name, $ms_src);
 
-  $sth->bind_columns(\$marker_id, \$priority, \$type,
-		     \$left_primer, \$right_primer, \$min_pdist, \$max_pdist,
+  $sth->bind_columns(\$marker_id, \$priority, \$left_primer,
+		     \$right_primer, \$type, \$min_pdist, \$max_pdist,
 		     \$ms_id, \$ms_name, \$ms_src);
 
   my @out;
