@@ -79,7 +79,7 @@ foreach my $sv (keys %golden_clones) {
     # store contigs for ensembl clone as list of start, end
     my @ens_contigs = map {
 	[ $_->embl_offset, $_->embl_offset + $_->length - 1 ]
-    } $ens_clone->get_all_Contigs();
+    } @{$ens_clone->get_all_Contigs};
 
     # retrieve list of start,end for golden clones
     my @golden_contigs = @{$golden_clones{$sv}};
