@@ -756,7 +756,7 @@ sub parse_mappings {
   $row = @{$self->dbi->selectall_arrayref("SELECT MAX(xref_id) FROM xref")}[0];
   my $max_xref_id = @$row[0];
   if (!defined $max_xref_id) {
-    print "Can't get highest existing xref_id, using 0\n)";
+    print "Can't get highest existing xref_id, using 1\n)";
     $max_xref_id = 1;
   } else {
     print "Maximum existing xref_id = $max_xref_id\n";
