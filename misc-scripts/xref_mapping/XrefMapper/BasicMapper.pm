@@ -1001,15 +1001,6 @@ sub dump_direct_xrefs {
 
       my $ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$ensembl_stable_id};
 
-      # horrible hack to deal with UTR transcripts in Elegans
-      my $postfix = 1;
-      while (!$ensembl_internal_id && $postfix < 5) {
-	my $utr_stable_id = $ensembl_stable_id . ".$postfix" ;
-	$ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$utr_stable_id};
-	$postfix++;
-      }
-      # end horrible hack
-
       if ($ensembl_internal_id) {
 
 	if (!$xrefs_written{$xref_id}) {
@@ -1022,9 +1013,38 @@ sub dump_direct_xrefs {
 
       } else {
 
-	print STDERR "Can't find $type corresponding to stable ID $ensembl_stable_id in ${type}_stable_id, not writing record for xref $accession\n";
+	# deal with UTR transcripts in Elegans and potentially others
+	# Need to link xrefs that are listed as linking to e.g. ZK829.4
+	# to each of ZK829.4.1, ZK829.4.2, ZK829.4.3
+	my $old_object_xref_id = $object_xref_id;
+	if ($source_id == get_source_id_from_source_name($self->xref(), "wormpep_id")) {
+
+	  # search for matching stable IDs
+	  my $pat = $ensembl_stable_id .  '\..+';
+	  foreach my $stable_id (keys %{$stable_id_to_internal_id->{$type}}) {
+
+	    if ($stable_id =~ /$pat/) {
+
+	      if (!$xrefs_written{$xref_id}) {
+		print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+		$xrefs_written{$xref_id} = 1;
+	      }
+	      $ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$stable_id};
+	      print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
+	      $object_xref_id++;
+
+	    }
+
+	  } # foreach stable_id
+
+	} # if source_id
+
+	# if we haven't changed $object_xref_id, nothing was written
+	print STDERR "Can't find $type corresponding to stable ID $ensembl_stable_id in ${type}_stable_id, not writing record for xref $accession\n" if ($object_xref_id == $old_object_xref_id);
 
       }
+
+     
 
     }
 
@@ -2041,3 +2061,4 @@ sub upload_external_db {
 }
 
 1;
+
