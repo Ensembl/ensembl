@@ -1,53 +1,86 @@
 use strict;
 
-# ncbi assembl -> ensembl static golden path
-# author: simon potter, 09/01
+# ncbi assembly -> ensembl static golden path
+# author: simon potter, 09/02
 # based loosely on the ucsc assembly parser
 # (c) ebi/grl 2001
 
 # takes 3 file names from cmd line:
-# 1. loc of nt_contigs on chromosome (seq_contig.md)
-# 2. agp - clones in nt_contigs (allcontig.agp.build25)
-# 3. ensembl raw_contigs (contig.txt).
+#
+#  1. loc of nt contigs on chromosome (e.g. seq_contig.md)
+#  2. agp - clones in nt_contigs (e.g. build_xx.agp)
+#  3. ensembl raw_contigs (e.g. contig.txt)
+# 1. and 2. are given with the assembly; 3. must be dumped out
+# It might be a good idea to sort 1. by chromosome name, so that
+# the chromosome_id and name match for chr 1 to 22
+#
 # [examples at end of file]
+#
+# outputs 3 files:
+#
+# static.txt - tab delimited assembly table
+# chrom.txt  - tab delimited chromosome table
+# idlist.txt - list of contig names and internal IDs used
 
-# "stategy":
+# "strategy":
+#
 # read nt_contig/chromosome file and store start/end/orientation
 # of nt_contigs on the chromosome;
 # parse list of ensembl raw contig coords and store in uberhash;
 # go through agp linewise and look for matching raw contigs
+#
+# does some checks, e.g. that contig_id is unique
+
+# Note: the chromosome_id in assembly and chromosome tables starts
+# from 1. Care is needed if loading these tables into a database
+# where another assembly is already stored.
 
 
-my($chrom, $agp, $raw) = @ARGV or die "horribly";
-my @chr_len;
+my($nt, $agp, $raw, $chr);
+
+($nt, $agp, $raw) = @ARGV or die "horribly";
+$chr = shift or undef;
+
+my %chr_len;
+my $chr_id = 1;
 my %nt_contig;
 my %clone;
+my %used_chr_ids;
+my %used_ctg_ids;
 
 my $default_ori = 1;
 my $chr_offset = 0;	# chr coordinates may be off by 1
 			# but depends on the assembly version...
-my $gptype = 'NCBI_28';
+my $gptype = 'NCBI_30';
 my $allow_pipe = 0;	# convert '|' to '_'
 
 
-open CHR, "< $chrom" or die "Can't open chromosome file $chrom";
-open AGP, "< $agp"   or die "Can't open agp file $agp";
-open CTG, "< $raw"   or die "Can't open raw contig file $raw";
+open NT,  "< $nt"  or die "Can't open nt_contig file $nt";
+open AGP, "< $agp" or die "Can't open agp file $agp";
+open CTG, "< $raw" or die "Can't open raw contig file $raw";
+open CHR, "< $chr" or die "Can't open chromosome file $chr";
 
 open SGP, "> static.txt" or die "Can't open static.txt for output";
 open INF, "> idlist.txt" or die "Can't open idlist.txt for output";
 
 
-while (<CHR>) {
-    my ($chr, $start, $end, $ori, $nt_ctg, $obj) = (split)[1, 2, 3, 4, 5, 7];
+while (<NT>) {
+    my ($chr, $start, $end, $ori, $nt_ctg) = (split)[1, 2, 3, 4, 5];
 
-    if ($obj eq 'start') {
-	$chr_len[$chr]->[0] = $start;
-	next;
+    $chr =~ s!\|!_! unless $allow_pipe;	# "we" don't want |'s in chr name ...
+
+    unless (defined $chr_len{$chr}) {
+        $chr_len{$chr}->{'id'}    = $chr_id;
+        $chr_len{$chr}->{'start'} = undef;
+        $chr_len{$chr}->{'end'}   = undef;
+	$chr_id++;
+    };
+    unless (defined $chr_len{$chr}->{'start'} && $chr_len{$chr}->{'start'} < $start) {
+	$chr_len{$chr}->{'start'} = $start;
     }
-    if ($obj eq 'end') {
-	$chr_len[$chr]->[1] = $end;
-	next;
+
+    unless (defined $chr_len{$chr}->{'end'} && $chr_len{$chr}->{'end'} > $end) {
+	$chr_len{$chr}->{'end'} = $end;
     }
 
     if    ($ori eq '+') { $ori = 1;  }
@@ -60,7 +93,7 @@ while (<CHR>) {
     $nt_contig{$nt_ctg}->{'end'}   = $end + $chr_offset;
     $nt_contig{$nt_ctg}->{'ori'}   = $ori;
 }
-close CHR;
+close NT;
 
 
 while (<CTG>) {
@@ -98,7 +131,7 @@ while (<AGP>) {
     my $nt_ori = $nt_contig{$nt_ctg}->{'ori'};
     my $chr    = $nt_contig{$nt_ctg}->{'chr'};
     my ($chr_start, $chr_end);
-    $chr =~ s!\|!_! unless $allow_pipe;	# "we" don't want |'s in chr name ...
+    $chr =~ s!\|!_! unless $allow_pipe;
 
     if ($nt_ori == 1) {
 	# forward oriented nt contig: raw contigs forward from nt contig start
@@ -129,10 +162,30 @@ while (<AGP>) {
 		$seen = 1;
 		$raw_start = $raw_start - $start + 1;
 		$raw_end   = $raw_end   - $start + 1;
+		$used_chr_ids{$chr_len{$chr}->{'id'}} = 1;
 
-		print SGP "$nt_ctg\t$chr\t", $raw_ctg->{'iid'};
-		print SGP "\t$chr_start\t$chr_end\t$nt_start\t$nt_end\t$nt_ori";
-		print SGP "\t$raw_start\t$raw_end\t$raw_ori\t$gptype\n";
+                if (defined $used_ctg_ids{$raw_ctg->{'iid'}}) {
+		    print STDERR "Warning: ", $raw_ctg->{'id'},
+		     " used more than once\n";
+		}
+		else {
+		    $used_ctg_ids{$raw_ctg->{'iid'}} = 1;
+		}
+
+		print SGP join("\t",
+		    $chr_len{$chr}->{'id'},
+		    $chr_start,
+		    $chr_end,
+		    $nt_ctg,
+		    $nt_start,
+		    $nt_end,
+		    $nt_ori,
+		    $raw_ctg->{'iid'},
+		    $raw_start,
+		    $raw_end,
+		    $raw_ori,
+		    $gptype
+		), "\n";
 
 		print INF $raw_ctg->{'id'}, "\t", $raw_ctg->{'iid'}, "\n";
 
@@ -151,6 +204,22 @@ while (<AGP>) {
 close AGP;
 
 
+open CHR, "> chrom.txt" or die "Can't open chrom.txt for output";
+
+foreach my $chr (keys %chr_len) {
+    print CHR join("\t",
+	$chr_len{$chr}->{'id'},
+        $chr,
+	0,
+	0,
+	0,
+	$chr_len{$chr}->{'end'} - $chr_len{$chr}->{'start'} + 1
+    ), "\n" if $used_chr_ids{$chr_len{$chr}->{'id'}};
+}
+
+close CHR;
+
+
 __END__
 
 seq_contig.md:
@@ -160,7 +229,7 @@ seq_contig.md:
 9606    1       694776  1755501 -       NT_004350.5     4350    contig  1
 9606    1       1805502 2002021 -       NT_028057.1     28057   contig  1
 
-allcontig.agp.build25:
+build_xx.agp:
 
 NT_004615.5          1       4637   1  D  AL390868.5     144054   148690  -
 NT_004615.5       4638       4737   2  N       100 fragment no
