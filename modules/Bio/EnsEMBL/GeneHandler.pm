@@ -475,32 +475,8 @@ sub _generate_missing_exon{
 sub _deduce_exon_location{
    my ($self,$exon,$contig) = @_;
 
-   my ($locstart,$locend,$loc_comp);
+   return $contig->_convert_coords_contig_clone($exon->start,$exon->end,$exon->strand);
 
-   if( $contig->orientation == 1 ) {
-       $loc_comp = $exon->strand;
-       if( $loc_comp == 1 ) {
-	   $locstart = $contig->offset + $exon->start -1;
-	   $locend   = $contig->offset + $exon->end -1;
-       } else {
-	   $locstart = $contig->offset + $exon->start -1;
-	   $locend   = $contig->offset + $exon->end -1;
-       }
-   } else {
-       my $tseq = $contig->seq(); # this is bad news to get out the length
-       my $pos  = $contig->offset();
-
-       if( $exon->strand == -1 ) {
-	   $locstart = $pos-1 + ($tseq->seq_len() - $exon->end +1);
-	   $locend   = $pos-1 + ($tseq->seq_len() - $exon->start +1);
-	   $loc_comp = 1;
-       } else {
-	   $locstart   = $pos-1 + ($tseq->seq_len() - $exon->end +1);
-	   $locend     = $pos-1 + ($tseq->seq_len() - $exon->start +1);
-	   $loc_comp = -1;
-       }
-   }
-   return ($locstart,$locend,$loc_comp);
 }
 
 =head2 _oldstyle
