@@ -426,6 +426,10 @@ sub spliced_seq {
 sub translateable_seq {
   my ( $self ) = @_;
 
+  if(!$self->translation()) {
+    return '';
+  }
+
   my $mrna = $self->spliced_seq();
   my $start = $self->cdna_coding_start();
   my $end = $self->cdna_coding_end();
@@ -1099,8 +1103,10 @@ sub get_all_translateable_Exons {
   Example    : none
   Description: return the peptide (plus eventuel stop codon) for this 
                transcript. Does N padding of non phase matching exons. 
-               It uses translateable_seq internally. 
-  Returntype : Bio::Seq
+               It uses translateable_seq internally.
+               Returns undef if this Transcript does not have a translation
+               (i.e. pseudogene).
+  Returntype : Bio::Seq or undef
   Exceptions : If no Translation is set in this Transcript
   Caller     : general
 
@@ -1108,6 +1114,10 @@ sub get_all_translateable_Exons {
 
 sub translate {
   my ($self) = @_;
+
+  if(!$self->translation()) {
+    return undef;
+  }
 
   my $mrna = $self->translateable_seq();
   my $display_id;
