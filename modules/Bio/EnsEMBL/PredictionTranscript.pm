@@ -304,7 +304,7 @@ sub translate {
   Args      : none
   Function  : Give a concat cdna of all exons currently in
               the PT. Gives empty string when none is in. Pads between not  
-              phase matching exons.
+              phase matching exons. Builds internal coord translation table.
   Returntype: txt
   Exceptions: if the exons come in two or more groups, with an undef exon
               in the middle, only the first groups cdna is returned.
@@ -320,7 +320,15 @@ sub get_cdna {
   my $cdna = undef;
   my $lastphase = 0;
 
+  my ( $cdna_start, $cdna_end );
+  my ( $pep_start, $pep_end );
+  my ( $new_cdna, $pep_count );
+
+  $cdna_start = 1;
+  $pep_start = 1;
+
   for my $exon ( @exons ) {
+    my $exon_align = {};
     if( ! defined $exon ) {
       if( ! defined $cdna ) {
 	next;
@@ -328,19 +336,53 @@ sub get_cdna {
 	last;
       }
     } 
+
+    if( ! defined $self->{'_exon_align'} ) {
+      $self->{'_exon_align'} = [];
+    }
     
+    push( @{$self->{'_exon_align'}}, $exon_align );
+
     if( $exon->phase() != $lastphase ) {
 
       if( $lastphase == 1 ) {
 	$cdna .= 'NN';
+	$cdna_start += 2;
+	$pep_start++;
       } elsif( $lastphase == 2 ) {
 	$cdna .= 'N';
+	$cdna_start += 1;
+	$pep_start++;
       }
+
       #startpadding for this exon
       $cdna .= 'N' x $exon->phase();
+      $cdna_start += $exon->phase();
     }
-    $cdna .= $exon->seq()->seq();
+    
+    $new_cdna = $exon->seq()->seq();
+    $cdna .= $new_cdna;
+    $cdna_end = $cdna_start + length( $new_cdna ) - 1;
+
+    # how many peptides are added by this exon??
+    $pep_count = int( ( length( $new_cdna ) + $exon->phase() + 2 ) / 3 );
+
+    $pep_end = $pep_start + $pep_count - 1; 
     $lastphase = $exon->end_phase();
+      
+    $exon_align->{ cdna_start => $cdna_start,
+		   cdna_end => $cdna_end,
+		   pep_start => $pep_start,
+		   pep_end => $pep_end,
+		   exon => $exon };
+
+    if( $lastphase == 0 ) { 
+      $pep_start = $pep_end + 1;
+    } else {
+      $pep_start = $pep_end;
+    }
+    $cdna_start = $cdna_end+1;
+
   }
 
   if( ! defined $cdna ) { $cdna = '' };
@@ -348,16 +390,29 @@ sub get_cdna {
 }
 
 
- 
+
 sub pep_coords {
     my $self = shift;
     $self->throw( "Not implemented yet" )
 }
 
 
+=head2 find_coord
+
+  Arg  1    : int $start_amino
+  Arg  2    : int $end_amino
+  Function  : computes a list of genomic location covering the given range 
+              of amino_acids. Exons do part of calculation. 
+  Returntype: list [ start, end, strand, Contig_object ]
+  Exceptions: none
+  Caller    : Runnables mapping blast hits to genomic coords
+
+=cut
+
 sub find_coord {
-  my ($self,$coord,$type) = @_;
-  $self->throw( "Not implemented yet" );
+   my $self = shift;
+   my $start_amino = shift;
+   my $end_amino = shift;
 }
 
 
