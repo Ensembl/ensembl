@@ -225,7 +225,7 @@ sub _parse_attrib {
 					       );
 	$homol->seqname($feature->seqname);
 
-	my $newf = new Bio::SeqFeature::Generic(-start       => $hstart,
+	my $newf = new Bio::SeqFeature::Homol  (-start       => $hstart,
 						-end         => $hend,
 						-strand      => $feature->strand,
 						-frame       => $feature->frame,

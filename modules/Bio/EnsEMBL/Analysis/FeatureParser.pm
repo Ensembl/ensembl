@@ -51,6 +51,8 @@ use Bio::SeqFeature::Homol;
 use Bio::EnsEMBL::Analysis::GenscanPeptide;
 use Bio::EnsEMBL::Analysis::MSPcrunch;
 
+use Bio::Tools::HMMER::Results;
+
 use FileHandle;
 
 # Object preamble - inheriets from Bio::Root::Object
@@ -81,6 +83,8 @@ sub _initialize {
 
     $self->{_features} = [];   # This stores the features.
 
+    $self->id($id);
+
     # read 2 types of features
     # 1. features aligned against contigs (no remapping required)
     # 2. features aligned against transcripts (remapping required)
@@ -95,7 +99,7 @@ sub _initialize {
 		   ['vert_p',  'tblastn', 'vert',     'dna', '.tblastn_vert.msptmp',  'msp'  ,'PEP-DNA' ],
 		   ['sh_p',    'tblastn', 'sh',       'dna', '.tblastn_sh.msptmp',    'msp'  ,'PEP-DNA' ],
 		   ['dbest_p', 'tblastn', 'dbest',    'dna', '.tblastn_dbest.msptmp', 'msp'  ,'PEP-DNA' ],
-		   ['pfam_p',  'hmmpfam', 'PfamFrag', 'pep', '.hmmpfam_frag',         'pfam' ,'DNA-PEP' ],
+		   ['pfam_p',  'hmmpfam', 'PfamFrag', 'pep', '.hmmpfam_frag',         'pfam' ,'PEP-PEP' ],
 		   ['repeat',  'RepeatMasker', '',    'dna', '.RepMask.out.gff',      'gff'  ,'DNA-DNA'],
 		   ];
 
@@ -104,10 +108,19 @@ sub _initialize {
     #        2. The feature reading is being rewritten in as slightly different way
     #        3. We're only reading repeats at the moment.
 
-  
+    $self->read_Genscan($gs);
     $self->read_Repeats($clone_dir,$disk_id,$msptype->[6]);
 
-#    return $self;
+    my $count = 0;
+    foreach my $g ($gs->each_Transcript) {
+	$count++;
+	my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
+	print_gene_details($g,$count) if $self->_debug;
+
+	$self->read_Pfam   ($genpep,$clone_dir,$disk_id,$count,$msptype->[5]);
+    }
+
+    return $self;
 
     # loop over transcripts
     my $count = 1;
@@ -144,16 +157,26 @@ sub _initialize {
     return $make;
 }
 
+sub id {
+    my ($self,$id) = @_;
+
+    if (defined($id)) {
+	$self->{_id} = $id;
+    }
+    return $self->{_id};
+}
+
 sub read_Repeats {
     my ($self,$clone_dir,$disk_id,$msp) = @_;
 
     my $gfffile    = "$clone_dir/$disk_id".$msp->[4];    
 
     if (! -e $gfffile) {
-	$self->warn("No repeat file $gfffile  exists");
+	print("   - No repeat file $gfffile  exists - Skipping repeats\n");
 	return;
+    } else {
+	print("   - Reading RepeatMasker file $gfffile\n");
     }
-
     my $GFF        = new Bio::EnsEMBL::Analysis::GFF(-file => $gfffile);
 	    
     foreach my $f ($GFF->each_Feature) {
@@ -161,7 +184,90 @@ sub read_Repeats {
     }
 }
 
+sub read_Pfam {
+    my ($self,$genscan_peptide,$clone_dir,$disk_id,$count,$pfam) = @_;
 
+    my $pfamfile  = "$clone_dir/$disk_id.$count". $pfam->[4];    
+
+    if (! -e $pfamfile) {
+	print("   - No pfam file $pfamfile exists - Skipping pfam\n");
+	return;
+    } else {
+	print("   - Reading pfam file $pfamfile\n");
+	open(IN,"<$pfamfile");
+    }
+    
+    my $pfam = new Bio::Tools::HMMER::Results(-file => $pfamfile,
+					      -type => 'hmmpfam');
+
+    my @homols;
+
+    foreach my $dom ($pfam->each_Domain) {
+	my $align     = new Bio::EnsEMBL::Analysis::PairAlign;
+	
+	$dom->source_tag ('hmmpfam');
+	$dom->primary_tag('similarity');
+	$dom->strand    (1);
+
+#	print("DEBUG: Pfam domain homol1 " . $dom->seqname . "\t:" . 
+#	      $dom->start       . "\t:" .
+#	      $dom->end         . "\t:" .
+#	      $dom->source_tag  . "\t:" . 
+#	      $dom->primary_tag . "\t:" . 
+#	      $dom->score       . "\t:" . 
+#	      $dom->strand      . "\n");
+
+	my $dom2 = $dom->homol_SeqFeature;
+
+	$dom2->source_tag('hmmpfam');
+	$dom2->primary_tag('similarity');
+	$dom2->strand(1);
+
+#	print("DEBUG: Pfam domain homol2 " . $dom2->seqname . "\t:" . 
+#	      $dom2->start       . "\t:" .
+#	      $dom2->end         . "\t:" .
+#	      $dom2->source_tag  . "\t:" . 
+#	      $dom2->primary_tag . "\t:" . 
+#	      $dom2->score       . "\t:" . 
+#	      $dom2->strand      . "\n");
+
+	$genscan_peptide->add_pepHit($dom);
+
+    }
+    my @newh = $genscan_peptide->each_Homol;
+
+    foreach my $h (@newh) {
+	$self->add_Feature($h);
+    }
+
+#	print("DEBUG : " . $h->seqname . " : " . $h->start . " : " . $h->end . " : " . $h->source_tag . " : " . $h->primary_tag . " : " . $h->score . "\n");	
+#	my $h2 = $h->homol_SeqFeature;
+#	print("DEBUG : " . $h2->seqname . " : " . $h2->start . " : " . $h2->end . " : " . $h2->source_tag . " : " . $h2->primary_tag . " : " . $h2->score . "\n");
+#    }
+    return @newh;
+}
+sub read_Genscan {
+    my ($self,$genscan) = @_;
+
+    foreach my $trans($genscan->each_Transcript) {
+	foreach my $ex ($trans->each_Exon) {
+	    my $f = new Bio::SeqFeature::Homol(-start  => $ex->start,
+					       -end    => $ex->end,
+					       -strand => $ex->strand);
+
+	    $f->source_tag($ex->source_tag);
+	    $f->primary_tag($ex->primary_tag);
+	    $f->seqname($ex->seqname);
+
+	    if (defined($ex->score)) {
+		$f->score($ex->score);
+	    }
+
+	    $self->add_Feature($f);
+	}
+    }
+}
+	
 sub add_Feature {
     my ($self,$f) = @_;
 

@@ -301,6 +301,7 @@ sub pep2cDNA {
     my ($self,$coord,$frac) = @_;
 
     my @homols = $self->eachHomol;
+    my $debug = 1;
 
     $frac = 1 unless $frac;
 
@@ -308,10 +309,15 @@ sub pep2cDNA {
   HOMOL: while (my $sf1 = shift(@homols)) {
       # This is the peptide homol
       my $sf2 = $sf1->homol_SeqFeature();
+
+#      print("Homol is " . $sf2->start . " " . $sf2->end . " " . $sf2->seqname . "\n");
+#      print("Pep   is " . $sf1->start . " " . $sf1->end . " " . $sf1->seqname ."\n");
       
       next HOMOL unless ($coord >= $sf2->start && $coord <= $sf2->end);
       next HOMOL if     ($coord == $sf2->start && $frac  < $sf2->start_frac);
       next HOMOL if     ($coord == $sf2->end   && $frac  > $sf2->end_frac);
+
+#      print("DEBUG: found matching exon\n");
 
       # We have found the homol our coordinate is in - we need
       # to now find the cDNA coord corresponding to our peptide coord
@@ -381,7 +387,7 @@ sub pep2cDNA {
 	  my $codon_start = $sf1->start + (4-$sf2->start_frac)%3;
 	  my $codon_end   = $sf1->end   - (  $sf2->end_frac  )%3;
 
-
+	  
 	  # pep_start is the peptide coordinate of the first
 	  # FULL peptide residue
 	  my $pep_start   = $sf2->start;

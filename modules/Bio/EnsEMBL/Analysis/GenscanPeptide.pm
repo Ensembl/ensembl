@@ -166,9 +166,9 @@ sub _make_pepAlign {
 	$pepaln->addHomol($dnah);
 
 	# A bit of printing
-	print("\n" . $ex->id . " coord\t" .$ex->start . "\t" . $ex->end . "\n");
-	print("Pep start\t$pepstart\t$pep_startphase\n");
-	print("Pep end  \t$pepend\t$pep_endphase\n");
+#	print("\n" . $ex->id . " coord\t" .$ex->start . "\t" . $ex->end . "\n");
+#	print("Pep start\t$pepstart\t$pep_startphase\n");
+#	print("Pep end  \t$pepend\t$pep_endphase\n");
 
 
 	# These store the previous coords for the peptide
@@ -251,7 +251,7 @@ sub _pepHit2homol {
     my @homols;
 
 
-    print "Debug: looking at peptide",$pephit->seqname,"\n";
+#    print "Debug: looking at peptide",$pephit->seqname,"\n";
 
     # This is dodgy
 
@@ -284,6 +284,8 @@ sub _pepHit2homol {
 		    $end_frac = $pep_exon->end_frac;
 		}
 		
+#		print("DEBUG:: $pstart $pend :" .  $pep_homol->start . " " . $pep_homol->end . "\n");
+
 		# We know whereabouts on the peptide we want the homol to lie
 		# We need to convert these coords into genomic coords and 
 		# also homol coords.
@@ -359,7 +361,7 @@ sub each_Homol {
 	my @newh = $self->_dnaHit2homol($dna);
 	push(@homols,@newh);
     }
-    print("number of homols is $#homols\n");
+#    print("number of homols is $#homols\n");
     return @homols;
 }
 
@@ -406,6 +408,7 @@ sub _make_homol {
 					    -strand => 1);
 
     $newh->primary_tag($pep_homol->primary_tag);
+    $newh->source_tag($pep_homol->source_tag);
     $newh->seqname    ($pep_homol->seqname);
     $newh->score      ($pep_homol->score);
 
@@ -414,6 +417,7 @@ sub _make_homol {
 							   -end    => $h2,
 							   -strand => $pep_exon->strand);
     $peph->primary_tag($pep_homol2->primary_tag);
+    $peph->source_tag($pep_homol2->source_tag);
     $peph->seqname    ($pep_homol2->seqname);
     $peph->start_frac ($start_frac);
     $peph->end_frac   ($end_frac);
@@ -437,16 +441,25 @@ sub _make_homol {
 
 sub _make_dna_homol {
     my ($self,$pairaln,$gen_exon,$pep_exon,$pep_homol,$pep_homol2,$pstart,$start_frac,$pend,$end_frac) = @_;
+    my $debug = 0;
 
+    if ($debug) {
+#	print("DEBUG: in make_dna_homol with $pstart:$start_frac $pend:$end_frac\n");
+    }
     my $pepaln = $self->{_pepaln};
 
+#    print("DEBUG: converting peptide2genomic\n");
     my $g1  = $pepaln->pep2cDNA($pstart,$start_frac);
     my $g2  = $pepaln->pep2cDNA($pend,  $end_frac);
     
+#    print("DEBUG: converting peptide to homol\n");
     my $h1 = $pairaln->pep2cDNA($pstart,$start_frac);
     my $h2 = $pairaln->pep2cDNA($pend,  $end_frac);
 
-
+    if ($debug) {
+#	print("DEBUG: new homol coords are $h1 $h2\n");
+    }
+       
     if ($g1 > $g2) {
 	my $tmp = $g1;
 	$g1 = $g2;
@@ -465,15 +478,17 @@ sub _make_dna_homol {
 					    -strand => 1);
 
     $newh->primary_tag($pep_homol2->primary_tag);
+    $newh->source_tag($pep_homol2->source_tag);
     $newh->seqname    ($pep_homol2->seqname);
     $newh->score      ($pep_homol->score);                # This is wrong - this score is for the whole hit
 
     # Create the peptide homol
-    my $peph  = new Bio::SeqFeature::Generic(-start  => $h1,
+    my $peph  = new Bio::SeqFeature::Homol  (-start  => $h1,
 					     -end    => $h2,
 					     -strand => $pep_exon->strand * $pep_homol2->strand);
 
     $peph->primary_tag($pep_homol->primary_tag);
+    $peph->source_tag($pep_homol->source_tag);
     $peph->seqname    ($pep_homol->seqname);
     
     # Add the peptide homol to the dna homol
@@ -494,7 +509,7 @@ sub _make_dna_homol {
 
 sub _dnaHit2homol {
     my ($self,$dnahit) = @_;
-    my $debug =0;
+    my $debug =1;
 
     my $pepaln  = $self->{_pepaln};
     my $pairaln = new Bio::EnsEMBL::Analysis::PepAlign;
@@ -510,10 +525,14 @@ sub _dnaHit2homol {
 
     # Also for the dna hit the dna homol must be the 'parent' homol
     # so we swap these as well
+   
 
-    
+    print("in dnahit2 Homol is " . $dnahit->homol_SeqFeature->start . " " . 
+	  $dnahit->homol_SeqFeature->end . " " . 
+	  $dnahit->homol_SeqFeature->seqname . "\n");
+    print("in dnahit2 Pep   is " . $dnahit->start . " " . $dnahit->end . " " . $dnahit->seqname ."\n");
+
     $dnahit = Bio::EnsEMBL::Analysis::MSPcrunch->swaphomols($dnahit);
-    print("Hit types are $dnahit " . $dnahit->homol_SeqFeature . "\n");
     $pairaln->addHomol($dnahit);
 
     my @pep     = $pepaln->eachHomol;
@@ -531,7 +550,7 @@ sub _dnaHit2homol {
 	    my $pep_exon= $gen_exon->homol_SeqFeature;
 
 	    if( $debug == 1 ) {
-		print STDOUT "Debug: Before start: looking at exon in peptide coordinates of",$pep_exon->start," to ",$pep_exon->end,"dna",$gen_exon->start," to ",$gen_exon->end,"\n";
+		print STDOUT "Debug: Before start: looking at exon in peptide coordinates of ",$pep_exon->start," to ",$pep_exon->end," dna ",$gen_exon->start," to ",$gen_exon->end,"\n";
 	    }
 
 	    if ($pep_homol->start >= $pep_exon->start && $pep_homol->start <= $pep_exon->end) {

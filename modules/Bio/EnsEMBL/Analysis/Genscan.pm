@@ -336,7 +336,7 @@ sub _set_exon_phases {
 	    # If we have a stop codon at the end of the translation
 	    # chop it off before comparing
 	    my $tmp = $trans[$i]->seq();
-	    print("Trans : $i : " . $trans[$i]->seq . "\n");
+#	    print("Trans : $i : " . $trans[$i]->seq . "\n");
 	    
 	    if (substr($tmp,-1) eq "*") {
 		$tmp = substr($tmp,0,-1);
@@ -448,6 +448,9 @@ sub _exons {
 
   my $exon = new Bio::EnsEMBL::Exon($start,$stop,$strand);
 
+  $exon->seqname($self->id);
+  $exon->source_tag('GENSCAN');
+  $exon->primary_tag('exon');
   # Set the other variables
   $exon->type     ($type);
   $exon->phase    ($phase);  # This will get overwritten if the dna seq. is input

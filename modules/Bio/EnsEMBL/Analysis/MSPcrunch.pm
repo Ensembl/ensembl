@@ -182,8 +182,8 @@ sub _read_Homol {
 	$sf2->end_frac(3);
 
     } else {
-	$sf2 = new Bio::SeqFeature::Homol(-start  => $qstart,
-					  -end    => $qend,
+	$sf2 = new Bio::SeqFeature::Homol(-start  => $hstart,
+					  -end    => $hend,
 					  -strand => $strand1);
     }
 
@@ -198,6 +198,10 @@ sub _read_Homol {
 
     $sf1->primary_tag('similarity');
     $sf2->primary_tag('similarity');
+
+
+    print("DEBUG : in MSPCrunch : " . $sf1->seqname . " " . $sf1->start . " " . $sf1->end . "\n");
+    print("DEBUG : in MSPCrunch : " . $sf2->seqname . " " . $sf2->start . " " . $sf2->end . "\n");
 
     $sf1->homol_SeqFeature($sf2);
 
