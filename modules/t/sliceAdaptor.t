@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 53;
+	plan tests => 55;
 }
 
 use MultiTestDB;
@@ -13,7 +13,7 @@ use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::Slice;
 use TestUtils qw(test_getter_setter debug);
 
-our $verbose = 0;
+our $verbose = 1;
 
 my ($CHR, $START, $END, $FLANKING) = ("20", 30_252_000, 31_252_001, 1000);
 
@@ -42,6 +42,7 @@ ok($slice->start == $START);
 ok($slice->end   == $END);
 ok($slice->seq_region_length == 62842997);
 debug("slice seq_region length = " . $slice->seq_region_length());
+
 
 #
 # fetch_by_contig_name
@@ -350,11 +351,27 @@ ok(@$slices == 26);
 
 print_slices($slices);
 
+#
+# test the fuzzy matching of clone accessions
+#
+my $clone_name = 'AL031658';
+$slice = $slice_adaptor->fetch_by_region('clone', $clone_name);
+
+debug("Fuzzy matched clone name $clone_name Got " . 
+     $slice->seq_region_name);
+
+ok($slice->seq_region_name =~ /$clone_name\.\d+/);
+
+#make sure that it does not fuzzy match too much
+$slice = $slice_adaptor->fetch_by_region('contig', $clone_name);
+ok(!defined($slice));
+print_slices([$slice]);
+
 
 sub print_slices {
   my $slices = shift;
   foreach my $slice (@$slices) {
-    debug($slice->name());
+    debug(($slice) ? $slice->name() : "UNDEF");
   } 
   debug( "Got ". scalar(@$slices));
 }
