@@ -149,23 +149,19 @@ sub _initialize {
 	  $self->add_ExternalFeatureFactory($external_f);
       }
   }
-  $mapdbname || ( $mapdbname = 'maps' );
-
-  eval q
-   ( use Bio::EnsEMBL::Map::DBSQL::Obj;
-     my $mapdb = Bio::EnsEMBL::Map::DBSQL::Obj->new
-     ( -DBNAME => $mapdbname,
-       -HOST => $host,
-       -DRIVER => $driver,
-       -USER => $user,
-       -PASS => $password,
-       -ENSDB => $db );
-     $self->mapdb( $mapdb );
-  );
- 
-  if( $@ ) {
-    print STDERR ( "No connection to Map database.\n" );
-  }                                                                             
+  
+  # Store info for connecting to a mapdb.
+  {
+    $mapdbname ||= 'maps';
+    $self->{'_mapdb'} = {
+        -DBNAME => $mapdbname,
+        -HOST   => $host,
+        -DRIVER => $driver,
+        -USER   => $user,
+        -PASS   => $password,
+        -ENSDB  => $db,
+        };
+  }
 
   return $make; # success - we hope!
 
@@ -403,13 +399,43 @@ sub write_Chromosome {
     return $chromosome_id;
 }
 
-# get/set a possible mapdb connection
+=head2 mapdb
+
+    $obj->mapdb($mapdb);
+    my $mapdb = $obj->mapdb;
+
+Sets or gets a mapdb connection, which is a
+C<Bio::EnsEMBL::Map::DBSQL::Obj> object.
+
+If a mapdb connection doesn't exist, a new
+connection is made using the information provided
+to the C<_initialize> method.  This will produce
+an exception if the
+C<Bio::EnsEMBL::Map::DBSQL::Obj> module can't be
+found.
+
+=cut
+
 sub mapdb {
-  my $self = shift;
-  my $mapdb = shift;
-  $mapdb &&
-    ( $self->{_mapdb} = $mapdb );
-  $self->{_mapdb};
+    my( $self, $value ) = @_;
+    
+    if ($value) {
+        $self->throw("$value is not a valid mapdb object")
+            unless $value->isa("Bio::EnsEMBL::Map::DBSQL::Obj");
+        $self->{'_mapdb'} = $value;
+    }
+    else {
+        my $map = $self->{'_mapdb'}
+            or $self->throw("No mapdb information");
+
+        # If $map is just an unblessed hash (first time
+        # mapdb is called), connect to the map database.
+        if (ref($map) eq 'HASH') {
+            require Bio::EnsEMBL::Map::DBSQL::Obj;
+            $self->{'_mapdb'} = Bio::EnsEMBL::Map::DBSQL::Obj->new(%$map);
+        }
+    }
+    return $self->{'_mapdb'};
 }
 
 
@@ -507,11 +533,11 @@ sub write_ContigOverlap {
         } 
     }
     
-    print(STDERR "contiga "         . $contiga->id . "\t" . $contiga->internal_id . "\n");
-    print(STDERR "contigb "         . $contigb->id . "\t" . $contigb->internal_id . "\n");
-    print(STDERR "contigaposition " . $contig_a_position . "\n");
-    print(STDERR "contigbposition " . $contig_b_position . "\n");
-    print(STDERR "overlap type "    . $overlap_type . "\n");
+    #print(STDERR "contiga "         . $contiga->id . "\t" . $contiga->internal_id . "\n");
+    #print(STDERR "contigb "         . $contigb->id . "\t" . $contigb->internal_id . "\n");
+    #print(STDERR "contigaposition " . $contig_a_position . "\n");
+    #print(STDERR "contigbposition " . $contig_b_position . "\n");
+    #print(STDERR "overlap type "    . $overlap_type . "\n");
 
     # Get dna_id's
     my( $dna_a_id, $dna_b_id ) = map $_->dna_id, ($contiga, $contigb);
@@ -523,7 +549,7 @@ sub write_ContigOverlap {
     my $type     = $overlap->source;
     my $distance = $overlap->distance;
 
-    print(STDERR "DNA ids are $dna_a_id : $dna_b_id\n");
+    #print(STDERR "DNA ids are $dna_a_id : $dna_b_id\n");
 
     # Insert data into table
     my $insert = $self->prepare(q{
