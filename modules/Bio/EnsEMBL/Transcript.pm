@@ -44,34 +44,29 @@ package Bio::EnsEMBL::Transcript;
 use vars qw(@ISA);
 use strict;
 
-
-use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Translation;
-use Bio::EnsEMBL::TranscriptI;
 use Bio::Tools::CodonTable;
 use Bio::EnsEMBL::Mapper;
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::TranscriptI);
+@ISA = qw(Bio::EnsEMBL::Feature Bio::EnsEMBL::TranscriptI);
 
 sub new {
-  my($class,@args) = @_;
+  my($class) = shift;
 
   if( ref $class ) { 
       $class = ref $class;
   }
 
-  my $self = {};
-  bless $self,$class;
+  my $self = $class->SUPER::new(@_);
 
-  $self->{'_trans_exon_array'} = [];
-
-  # set stuff in self from @args
-  foreach my $a (@args) {
-    $self->add_Exon($a);
+  my $exons = rearrange( [ "EXONS" ], @_ );
+  
+  $self->{'_trans_exon_array'} = ( $exons || [] );
+  if( $exons ) {
+    $self->_recalculate_cordinates();
   }
-
-
   return $self;
 }
 
@@ -207,11 +202,11 @@ sub external_db {
   my ( $self, $ext_dbname ) = @_;
 
   if(defined $ext_dbname) { 
-    return ( $self->{'_ext_dbname'} = $ext_dbname );
+    return ( $self->{'external_db'} = $ext_dbname );
   } 
 
-  if( exists $self->{'_ext_dbname'} ) {
-    return $self->{'_ext_dbname'};
+  if( exists $self->{'external_db'} ) {
+    return $self->{'external_db'};
   }
 
   my $display_xref = $self->display_xref();
@@ -239,11 +234,11 @@ sub external_status {
   my ( $self, $ext_status ) = @_;
 
   if(defined $ext_status) {
-    return ( $self->{'_ext_status'} = $ext_status );
+    return ( $self->{'external_status'} = $ext_status );
   }
 
-  if( exists $self->{'_ext_status'} ) {
-    return $self->{'_ext_status'};
+  if( exists $self->{'external_status'} ) {
+    return $self->{'external_status'};
   }
 
   my $display_xref = $self->display_xref();
@@ -273,11 +268,11 @@ sub external_name {
   my ($self, $ext_name) = @_;
 
   if(defined $ext_name) { 
-    return ( $self->{'_ext_name'} = $ext_name );
+    return ( $self->{'external_name'} = $ext_name );
   } 
 
-  if( exists $self->{'_ext_name'} ) {
-    return $self->{'_ext_name'};
+  if( exists $self->{'external_name'} ) {
+    return $self->{'external_name'};
   }
 
   my $display_xref = $self->display_xref();
@@ -300,13 +295,10 @@ sub is_known {
 
 
 sub type {
-  my ($self, $type) = @_;
+  my $self = shift;
 
-  if(defined $type) {
-    $self->{'_type'} = $type;
-  }
-
-  return $self->{'_type'};
+  $self->{'type'} = shift if( @_ );
+  return $self->{'type'};
 }
 
 sub adaptor {
@@ -325,7 +317,7 @@ sub adaptor {
 
   Arg [1]    : Bio::EnsEMBL::DBEntry $display_xref
   Example    : $transcript->display_xref(Bio::EnsEMBL::DBEntry->new(...));
-  Description: get/set/lazy_loaded display_xref for this transcript
+  Description: getter setter for display_xref for this transcript
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
@@ -339,37 +331,12 @@ sub display_xref {
       $self->{'display_xref'} = shift;
     } elsif( exists $self->{'display_xref'} ) {
       return $self->{'display_xref'};
-    } elsif ( defined $self->adaptor() ) {
-      $self->{'display_xref'} = $self->adaptor->get_display_xref( $self );
     } 
-
     return $self->{'display_xref'};
 }
 
 
 
-
-=head2 _translation_id
-
- Title   : _translation_id
- Usage   : $obj->_translation_id($newval)
- Function: 
- Returns : translation objects dbID
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _translation_id {
-   my $self = shift;
-   
-   if( @_ ) {
-      my $value = shift;
-      $self->{'_translation_id'} = $value;
-    }
-    return $self->{'_translation_id'};
-
-}
 
 
 =head2 translation
@@ -391,69 +358,10 @@ sub translation {
       $self->throw("This [$value] is not a translation");
     }
     $self->{'translation'} = $value;
-  } else {
-    if( ! defined $self->{'translation'} &&
-	defined $self->_translation_id() ) {
-      $self->{'translation'} = 
-	$self->adaptor->db->get_TranslationAdaptor->fetch_by_dbID( 
-					    $self->_translation_id(), $self );
-    }
-  }
+  }   
   return $self->{'translation'};
 }
 
-=head2 start
-
- Description: it returns the start coordinate of the lef-most exon, i.e.
-              the 5prime exon in the forward strand and the 3prime exon in the reverse strand
-
-=cut
-
-
-sub start {
-  my $self = shift;
-  my $arg = shift;
-  
-  my $strand;
-  my $start;
-  if( defined $arg ) {
-    $self->{'_start'} = $arg;
-  } elsif(!  defined $self->{'_start'} ) {
-
-    $strand = $self->start_Exon->strand();
-    if( $strand == 1 ) {
-      $start = $self->start_Exon->start();
-    } else {
-      $start = $self->end_Exon->start();
-    }
-    $self->{'_start'} = $start;
-  }
-  
-  return $self->{'_start'};
-}
-
-
-sub end {
-  my $self = shift;
-  my $arg = shift;
-
-  my $strand;
-  my $end
-;
-  if( defined $arg ) {
-    $self->{'_end'} = $arg;
-  } elsif( ! defined $self->{'_end'} ) {
-    $strand = $self->start_Exon->strand();
-    if( $strand == 1 ) {
-      $end = $self->end_Exon->end();
-    } else {
-      $end = $self->start_Exon->end();
-    }
-    $self->{'_end'} = $end;
-  }
-  
-  return $self->{'_end'};
-}
 
 
 =head2 spliced_seq
@@ -721,12 +629,9 @@ sub add_Exon{
      $self->throw("[$exon] is not a Bio::EnsEMBL::Exon!");
    }
 
-   #invalidate the start, end and strand - they may need to be recalculated
-   $self->{'_start'} = undef;
-   $self->{'_end'} = undef;
-   $self->{'_strand'} = undef;
-
    push(@{$self->{'_trans_exon_array'}},$exon);
+   # recalculate start, end, slice, strand
+   $self->_recalculate_cordinates();
 }
 
 
@@ -926,19 +831,10 @@ sub get_all_SNPs {
   my $sa = $self->adaptor->db->get_SliceAdaptor;
 
   #retrieve a slice in the region of the transcript
-  my $slice = $sa->fetch_by_transcript_id($self->dbID);
+  my $slice = $sa->fetch_by_transcript_id($self->dbID, "coord system name?" );
 
   #copy this transcript, so we can work in coord system we are interested in
-  my $transcript = Bio::EnsEMBL::Transcript->new;
-  %$transcript = %$self;
-
-  #transform transcript to same coord system we will get snps in
-  my %exon_transforms;
-  foreach my $exon (@{$transcript->get_all_Exons}) {
-    my $new_exon = $exon->transform($slice);
-    $exon_transforms{$exon} = $new_exon;
-  }
-  $transcript->transform(\%exon_transforms);
+  my $transcript = $self->transfer( $slice );
 
   #get all of the snps in the transcript region
   my $snps = $slice->get_all_SNPs;
@@ -1634,50 +1530,6 @@ sub end_Exon{
 }
 
 
-=head2 created
-
- Title   : created
- Usage   : $obj->created($newval)
- Function: 
- Returns : value of created
- Args    : newvalue (optional)
-
-
-=cut
-
-sub created{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'created'} = $value;
-    }
-    return $obj->{'created'};
-
-}
-
-
-=head2 modified
-
- Title   : modified
- Usage   : $obj->modified($newval)
- Function: 
- Returns : value of modified
- Args    : newvalue (optional)
-
-
-=cut
-
-sub modified{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'modified'} = $value;
-    }
-    return $obj->{'modified'};
-
-}
-
-
 
 
 =head2 description
@@ -1713,22 +1565,12 @@ sub description{
 =cut
 
 sub version{
-
-    my ($self,$value) = @_;
+    my $self = shift;
     
+    $self->{'version'} = shift if( @_ );
 
-    if( defined $value ) {
-      $self->{'_version'} = $value;
-    }
-
-    if( exists $self->{'_version'} ) {
-      return $self->{'_version'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_version'};
-
+    return $self->{'version'};
+  
 }
 
 
@@ -1744,35 +1586,15 @@ sub version{
 =cut
 
 sub stable_id{
-
-    my ($self,$value) = @_;
+    my $self = shift;
     
 
-    if( defined $value ) {
-      $self->{'_stable_id'} = $value;
-      return;
-    }
+    $self->{'stable_id'} = shift if( @_ );
 
-    if( exists $self->{'_stable_id'} ) {
-      return $self->{'_stable_id'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_stable_id'};
+    return $self->{'stable_id'};
 
 }
 
-sub _get_stable_entry_info {
-   my $self = shift;
-
-   if( !defined $self->adaptor ) {
-     return undef;
-   }
-
-   $self->adaptor->get_stable_entry_info($self);
-
-}
 
 =head2 temporary_id
 
@@ -1798,124 +1620,189 @@ sub temporary_id{
 
 
 
+=head2 swap_exons
 
+  Arg [1]    : Bio::EnsEMBL::Exon $old_Exon
+               An exon that should be replaced
+  Arg [2]    : Bio::EnsEMBL::Exon $new_Exon
+               The replacement Exon
+  Example    : none
+  Description: exchange an exon in the current Exon list with a given one.
+               Usually done before storing of Gene, so the Exons can
+               be shared between Transcripts.
+  Returntype : none
+  Exceptions : none
+  Caller     : GeneAdaptor->store()
+
+=cut
+
+sub swap_exons {
+  my ( $self, $old_exon, $new_exon ) = @_;
+
+  map { if( $_ == $old_exon ) { $_ = $new_exon } } 
+  @{$self->{'_trans_exon_array'}};
+}      
 
 =head2 transform
 
-  Arg  1    : hashref $old_new_exon_map
-              a hash that maps old to new exons for a whole gene
-  Function  : maps transcript in place to different coordinate system,
-              It does so by replacing its old exons with new ones.
-  Returntype: none
-  Exceptions: none
-  Caller    : Gene->transform()
+  Arg  1     : String $coordinate_system_name
+  Arg [2]    : String $coordinate_system_version
+  Description: moves this gene to the given coordinate system. If this gene has Transcripts
+               attached, they move as well.
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : wrong parameters
+  Caller     : general
 
 =cut
 
 
 sub transform {
   my $self = shift;
-  my $href_exons = shift;
-  my @mapped_list_of_exons;
 
-  foreach my $exon (@{$self->get_all_Exons()}) {
-    # the old exon was successfully remapped then store the new exon
-    if ( exists $$href_exons{$exon} ) {
-      push @mapped_list_of_exons, $$href_exons{$exon};
-    }
-    # but for the case where the exon was unable to be mapped, as it
-    # was outside the bounds of the slice, include the original exon.
-    else {
-      push @mapped_list_of_exons, $exon;
-    }
+  # catch for old style transform calls
+  if( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" )) {
+    throw( "transform needs coordinate systems details now, please use transfer" );
   }
 
-  #flush the exons and all related internal caches
-  $self->flush_Exons();
+  my $new_transcript = $self->SUPER::transform( @_ );
 
-  # attach the new list of exons to the transcript
-  push @{$self->{'_trans_exon_array'}},@mapped_list_of_exons;
-
-  if( defined $self->{'translation'} ) {
-    $self->translation->transform( $href_exons );
+  if( exists $self->{'_trans_exon_array'} ) {
+    my @new_exon_array;
+    for my $old_exon ( @{$self->{'_trans_exon_array'}} ) {
+      my $new_exon = $old_exon->transform( @_ );
+      push( @{$new_transcript->{'_trans_exon_array'}}, $new_exon );
+    }
+    $self->_recalculate_cordinates();
   }
 }
 
 
-=head2 coding_start
+=head2 _translation_id
 
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use coding_region_start instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
+ Title   : _translation_id
+ Usage   : $obj->_translation_id($newval)
+ Function: 
+ Returns : translation objects dbID
+ Args    : newvalue (optional)
+
 
 =cut
 
-sub coding_start {
-  my ($self, @args) = @_;
+sub _translation_id {
+   my $self = shift;
+   deprecated( "This method shouldnt be necessary any more" );
 
-  $self->warn("coding_start has been renamed coding_region_start\n" . 
-	      join(':'. caller));
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_translation_id'} = $value;
+    }
+    return $self->{'_translation_id'};
 
-  return $self->coding_region_start(@args);
+}
+
+=head2 created
+
+ Title   : created
+ Usage   : $obj->created($newval)
+ Function: 
+ Returns : value of created
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub created{
+   my $obj = shift;
+   deprecate( "This attribute is no longer supported" );
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'created'} = $value;
+    }
+    return $obj->{'created'};
+
 }
 
 
-=head2 coding_end
+=head2 modified
 
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use coding_region_end instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
+ Title   : modified
+ Usage   : $obj->modified($newval)
+ Function: 
+ Returns : value of modified
+ Args    : newvalue (optional)
+
 
 =cut
 
-sub coding_end {
-  my ($self, @args) = @_;
+sub modified{
+   my $obj = shift;
+   deprecated( "This attribute is no longer supported" );
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'modified'} = $value;
+    }
+    return $obj->{'modified'};
 
-  $self->warn("coding_end has been renamed coding_region_end\n" . 
-	      join(':',caller));
-
-  return $self->coding_region_end(@args);
 }
 
 
 
-=head2 DEPRECATED add_DBLink
+=head2 _recalculate_cordinates
 
-  Arg [1]    : DEPRECATED Bio::Annotation::DBLink $link
-               a link is a database entry somewhere else.
-               Usually this is a Bio::EnsEMBL::DBEntry.
-  Example    : DEPRECATED 
-  Description: This method has been deprecated in favor of the add_DBEntry
-               method.  Objects are responible for holding only xrefs directly
-               associated with themselves now.
+  Args       : none
+  Example    : none
+  Description: called when exon coordinate change happened to recalculate the
+               coords of the transcript.
   Returntype : none
   Exceptions : none
-  Caller     : general
+  Caller     : internal
 
 =cut
 
 
-sub add_DBLink{
-   my ($self,$value) = @_;
 
-   $self->throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
+sub _recalculate_cordinates {
+  my $self = shift;
+  
+  if( $self->{'_trans_exon_array'} ) {
+    warning( "Cant recalculate position without exons" );
+  }
+  
+  my $exons = $self->{'_trans_exon_array'};
 
-#   unless(defined $value && ref $value && 
-#	  $value->isa('Bio::Annotation::DBLink') ) {
-#     $self->throw("This [$value] is not a DBLink");
-#   }
+  my ( $slice, $start, $end, $strand );
+  $slice = $exons->[0]->slice();
+  $strand = $exons->[0]->strand();
+  $start = $exons->[0]->start();
+  $end = $exons->[0]->end();
 
-#   if( !defined $self->{'_db_link'} ) {
-#     $self->{'_db_link'} = [];
-#   }
+  my $transsplicing = 0;
 
-#   push(@{$self->{'_db_link'}},$value);
+  for my $e ( @$exons ) {
+    if( $e->start() < $start ) {
+      $start = $e->start();
+    }
+  
+    if( $e->end() < $end ) {
+      $end = $e->end();
+    }
+  
+    if( $e->slice()->name() ne $slice->name() ) {
+      throw( "Exons with different slices not allowed on one Transcript" );
+    }
+    
+    if( $e->strand() != $strand ) {
+      $transsplicing = 1;
+    }
+  }
+  if( $transsplicing ) {
+    warning( "Transcript contained trans splicing event" );
+  }
+
+  $self->start( $start );
+  $self->end( $end );
+  $self->strand( $strand );
+  $self->slice( $slice );
 }
 
 

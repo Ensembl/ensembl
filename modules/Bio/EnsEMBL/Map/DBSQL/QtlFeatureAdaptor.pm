@@ -81,7 +81,7 @@ sub _tables {
 }
 
 sub _left_join {
-  return ('qtl_synonym', 'ON q.qtl_id = qs.qtl_id');
+  return ( [ 'qtl_synonym', 'q.qtl_id = qs.qtl_id' ] );
 }
           
 sub _default_where_clause {

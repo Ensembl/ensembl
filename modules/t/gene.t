@@ -37,17 +37,13 @@ debug ("Gene->list_stable_ids");
 my $stable_ids = $ga->list_stable_ids();
 ok (@{$stable_ids});
 
-$gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
+$gene = $ga->fetch_by_stable_id( "ENSG00000171456", "supercontig" );
 
 debug( "Gene->fetch_by_stable_id()" );
 ok( $gene );
 
-my $e_slice = Bio::EnsEMBL::Slice->new
-  ( -empty => 1,
-    -adaptor => $db->get_SliceAdaptor() 
-  );
 
-$gene->transform( $e_slice );
+$gene->transform( "chromosome" );
 
 debug( "Gene dbID: ". $gene->dbID());
 ok( $gene->dbID() == 18267 );

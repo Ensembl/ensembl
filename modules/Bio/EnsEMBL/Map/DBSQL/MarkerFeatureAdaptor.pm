@@ -140,8 +140,8 @@ sub _tables {
 sub _left_join {
   my $self = shift;
 
-  return ('marker_synonym', 
-	  'ON m.display_marker_synonym_id = ms.marker_synonym_id');
+  return ( [ 'marker_synonym', 
+	     'm.display_marker_synonym_id = ms.marker_synonym_id' ] );
 }
 
 sub _default_where_clause {

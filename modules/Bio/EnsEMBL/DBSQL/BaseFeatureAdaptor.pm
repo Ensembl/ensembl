@@ -118,16 +118,16 @@ sub generic_fetch {
   # Construct a left join statement if one was defined, and remove the
   # left-joined table from the table list
   #
-  my ($tablename, $condition) = $self->_left_join;
+  my @left_join_list = $self->_left_join();
+  my %left_join_hash = map { $_->[0], $_->[1] } @left_join_list;
   my $left_join = '';
   my @tables;
-  if($tablename && $condition) {
+  if(@left_join_list) {
     while(my $t = shift @tabs) {
-      if($tablename eq $t->[0]) {
+      if( exists $left_join_hash{ $t->[0] } ) {
+	my $condition = $left_join_hash{ $t->[0] };
         my $syn = $t->[1];
-        $left_join =  "LEFT JOIN $tablename $syn $condition";
-        push @tables, @tabs;
-        last;
+        $left_join .=  "LEFT JOIN ".$t->[0]." $syn ON $condition ";
       } else {
         push @tables, $t;
       }

@@ -58,6 +58,11 @@ sub new {
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
 
+  my ( $stable_id, $version ) = rearrange( [ 'STABLE_ID', 'VERSION' ], @_ );
+  
+  $self->stable_id( $stable_id );
+  $self->version( $version );
+
   return $self;
 }
 
@@ -297,28 +302,19 @@ sub external_status {
 
   Arg [1]    : (optional) string $description
   Example    : none
-  Description: you can set get this argument. If not set its lazy loaded
-               from attached adaptor.
+  Description: getter setter for gene description
   Returntype : string
-  Exceptions : if no GeneAdaptor is set and no description is there
+  Exceptions : none
   Caller     : general
 
 =cut
 
 
 sub description {
-    my ($self, $arg) = @_;
-    
-    if( defined $arg ) {
-      $self->{'_description'} = $arg;
-      return $arg;
-    }
-
-    if( exists $self->{'_description'} ) {
-      return $self->{'_description'};
-    }
-    $self->{'_description'} = $self->adaptor->get_description($self->dbID);
-    return $self->{'_description'};
+    my ( $self ) = shift;
+    $self->{'description'} = shift if( @_ );
+  
+    return $self->{'description'};
 }
 
 
@@ -547,7 +543,7 @@ sub get_all_Transcripts {
                The time the stable id for this gene was created. Not very well
                maintained data (at release 9)
   Example    : none
-  Description: get/set/lazy_load for the created timestamp
+  Description: DEPRECATED
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -561,17 +557,10 @@ sub created{
     deprecated( "The created attribute isnt available any more" );
 
     if(defined $value ) {
-      $self->{'_created'} = $value;
+      $self->{'created'} = $value;
     }
 
-
-    if( exists $self->{'_created'} ) {
-      return $self->{'_created'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_created'};
+    return $self->{'created'};
 
 }
 
@@ -582,7 +571,7 @@ sub created{
                The time the gene with this stable_id was last modified.
                Not well maintained data (release 9)
   Example    : none
-  Description: get/set/lazy_load of modified timestamp
+  Description: DEPRECATED
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -590,22 +579,17 @@ sub created{
 =cut
 
 
-sub modified{
+sub modified {
     my ($self,$value) = @_;
 
     deprecate( "The modified item isnt available any more" );
 
     if( defined $value ) {
-      $self->{'_modified'} = $value;
+      $self->{'modified'} = $value;
     }
 
-    if( exists $self->{'_modified'} ) {
-      return $self->{'_modified'};
-    }
 
-    $self->_get_stable_entry_info();
-
-    return $self->{'_modified'};
+    return $self->{'modified'};
 }
 
 
@@ -615,7 +599,7 @@ sub modified{
   Arg [1]    : int $version
                A version number for the stable_id
   Example    : nonen
-  Description: get/set/lazy_load for the version number
+  Description: getter/setter for version number
   Returntype : int
   Exceptions : none
   Caller     : general
@@ -629,17 +613,10 @@ sub version{
     
 
     if( defined $value ) {
-      $self->{'_version'} = $value;
+      $self->{'version'} = $value;
     }
 
-    if( exists $self->{'_version'} ) {
-      return $self->{'_version'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_version'};
-
+    return $self->{'version'};
 }
 
 
@@ -648,7 +625,7 @@ sub version{
 
   Arg [1]    : string $stable_id
   Example    : ("ENSG0000000001")
-  Description: get/set/lazy_loaded stable id for this gene
+  Description: getter/setter for stable id for this gene
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -661,44 +638,15 @@ sub stable_id{
     
 
     if( defined $value ) {
-      $self->{'_stable_id'} = $value;
+      $self->{'stable_id'} = $value;
       return;
     }
 
-    if( exists $self->{'_stable_id'} ) {
-      return $self->{'_stable_id'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_stable_id'};
+    return $self->{'stable_id'};
 
 }
 
 
-
-=head2 _get_stable_entry_info
-
-  Args       : none
-  Example    : none
-  Description: does the lazy loading for all stable id related information
-  Returntype : none
-  Exceptions : none
-  Caller     : internal
-
-=cut
-
-
-sub _get_stable_entry_info {
-   my $self = shift;
-
-   if( !defined $self->adaptor ) {
-     return undef;
-   }
-
-   $self->adaptor->get_stable_entry_info($self);
-
-}
 
 
 
@@ -786,7 +734,7 @@ sub temporary_id {
 
   Arg [1]    : Bio::EnsEMBL::DBEntry $display_xref
   Example    : $gene->display_xref($db_entry);
-  Description: get/set/lazy_loaded display_xref for this gene
+  Description: get/set display_xref for this gene
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
@@ -800,8 +748,8 @@ sub display_xref {
       $self->{'display_xref'} = shift;
     } elsif( exists $self->{'display_xref'} ) {
       return $self->{'display_xref'};
-    } elsif ( defined $self->adaptor() ) {
-      $self->{'display_xref'} = $self->adaptor->get_display_xref( $self );
+    } else {
+      return undef;
     }
 
     return $self->{'display_xref'};
