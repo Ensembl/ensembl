@@ -237,7 +237,7 @@ sub create_MapContig{
    my ($self,$rawcontig,$start,$end,$start_in_rawcontig,$orientation) = @_;
 
    if( !defined $orientation || $start > $end ||
-       !ref $rawcontig || !$rawcontig->isa('Bio::EnsEMBL::DB::RawContigI') ) {
+       !ref $rawcontig || !$rawcontig->isa('Bio::EnsEMBL::DB::ContigI') ) {
        $self->throw("Invalid arguments passed into create_MapContig ($rawcontig)");
    }
 

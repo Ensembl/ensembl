@@ -114,6 +114,22 @@ sub _make_datastructures {
     return $self;
 }
 
+sub new_from_one {
+    my ($class,$contig) = @_;
+
+    my $self = {};
+    bless $self,$class;
+    $self->_make_datastructures();
+
+    if (! $contig->isa('Bio::EnsEMBL::DB::ContigI') ) {
+	$self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI object, cannot make Virtual Contig!");
+    }
+    
+    $self->_vmap->create_MapContig($contig,1,$contig->length,1,1);
+    $self->id($contig->id);
+    return $self;
+}
+
 sub new {
     my ($class,@args) = @_;
     

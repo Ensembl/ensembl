@@ -218,7 +218,7 @@ sub orientation{
 sub contig{
    my ($obj,$value) = @_;
    if( defined $value) {
-       if( !ref $value || !$value->isa('Bio::EnsEMBL::DB::RawContigI') ) {
+       if( !ref $value || !$value->isa('Bio::EnsEMBL::DB::ContigI') ) {
 	   $obj->throw("Value [$value] is not appropiate");
        }
 
