@@ -28,6 +28,7 @@ package Bio::EnsEMBL::Lite::GeneAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Gene;
 
 
@@ -161,7 +162,6 @@ sub fetch_by_Slice {
     $transcript->external_name( $hr->{'external_name'} );
     $transcript->external_db( $hr->{'external_db' } );
 
-
     # Add the exons
     if( $hr->{'chr_strand'} != 1 ) {
       @exons = reverse( @exons );
@@ -183,12 +183,6 @@ sub fetch_by_Slice {
     # we need start and end Exon
     # hope they are lazy loaded ... nope they are not!!!
     
-    #Right now, just add the first exon as the start, and last exon
-    # as the end...
-#    if(scalar @exons) {
-#      $translation->start_exon(@exons[0]);
-#      $translation->end_exon( $exons[$#exons]);
-#    }
   }
 
   my @out = values( %gene_cache );

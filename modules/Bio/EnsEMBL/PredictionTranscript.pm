@@ -61,9 +61,10 @@ use strict;
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Exon;
 use Bio::Seq;
+use Bio::EnsEMBL::TranscriptI;
 
 
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::TranscriptI);
 
 
 =head2 new
@@ -92,18 +93,118 @@ sub new {
 
   
   # set stuff in self from @args
-  foreach my $a (@optional_exons) {
+  foreach my $exon (@optional_exons) {
     if( ! defined $self->{'exons'} ) {
       $self->{'exons'} = [];
     }
-
-    $self->add_Exon($a);
+    
+    $self->add_Exon($exon);
   }
-
-
+  
   return $self;
 }
 
+
+=head2 coding_start
+
+  Arg [1]  :  The new coding start of this prediction transcript in slice 
+              coords.
+  Function  : Getter/Setter for the coding start of this transcript.
+              Implemented to satisfy requirements of TranscriptI interface
+              and so that it can be drawn as a Transcript.
+  Returntype: scalar int
+  Exceptions: none
+  Caller    : GlyphSet_transcript
+
+=cut
+
+sub coding_start {
+  my ($self, $arg) = @_;
+
+  if(defined $arg) {
+    $self->{'coding_start'} = $arg;
+  } elsif(!defined $self->{'coding_start'}) {
+    #if the coding start is not defined, use the start of the transcript
+    return $self->start();
+  }
+
+  return $self->{'coding_start'};
+}
+
+
+=head2 coding_end
+
+  Arg [1]  :  (optional) The new coding end of this prediction transcript 
+              in slice coords.
+  Function  : Getter/Setter for the coding end of this transcript.
+              Implemented to satisfy requirements of TranscriptI interface
+              and so that it can be drawn as a Transcript.
+  Returntype: scalar int
+  Exceptions: none
+  Caller    : GlyphSet_transcript
+
+=cut
+
+sub coding_end {
+  my ($self, $arg) = @_;
+
+  if(defined $arg) {
+    $self->{'coding_end'} = $arg;
+  } elsif(!defined $self->{'coding_end'}) {
+    #if the coding end is not defined, use the end of the transcript
+    return $self->end();
+  }
+  return $self->{'coding_end'};
+}
+
+
+=head2 start
+
+  Arg [1]  :  The new start of this prediction transcript in slice 
+              coords.
+  Function  : Getter/Setter for the start of this transcript.
+              Implemented to satisfy requirements of TranscriptI interface
+              and so that it can be drawn as a Transcript.
+  Returntype: scalar int
+  Exceptions: none
+  Caller    : GlyphSet_transcript
+
+=cut
+
+sub start {
+  my ($self, $arg) = @_;
+
+  if(defined $arg) {
+    $self->{'start'} = $arg;
+  } 
+
+  return $self->{'start'};
+}
+
+=head2 end
+
+  Arg [1]  :  The new end of this prediction transcript in slice coords.
+  Function  : Getter/Setter for the end of this transcript.
+              Implemented to satisfy requirements of TranscriptI interface
+              and so that it can be drawn as a Transcript.
+  Returntype: scalar int
+  Exceptions: none
+  Caller    : GlyphSet_transcript
+
+=cut
+
+sub end {
+  my ($self, $arg) = @_;
+
+  if(defined $arg) {
+    $self->{'end'} = $arg;
+  }
+
+  return $self->{'end'};
+}
+
+
+ 
 
 ## Attribute section ##
 
@@ -161,6 +262,15 @@ sub add_Exon {
     $self->{'exons'}[$position-1] = $exon;
   } else {
     push( @{$self->{'exons'}}, $exon );
+  }
+
+  if(defined $exon && (!defined $self->{'start'} ||
+		       $exon->start() < $self->{'start'})) {
+    $self->start($exon->start());
+  }
+  if(defined $exon && (!defined $self->{'exon'} ||
+		       $exon->end() > $self->{'end'})) {
+    $self->end($exon->end());
   }
 }
 
@@ -271,6 +381,8 @@ sub flush_Exon{
    my ($self,@args) = @_;
 
    $self->{'exons'} = [];
+   $self->{'start'} = undef;
+   $self->{'end'} = undef;
 }
 
 

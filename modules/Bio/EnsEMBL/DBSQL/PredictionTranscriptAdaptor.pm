@@ -165,7 +165,14 @@ sub fetch_by_Slice{
   my $constraint = undef;
 
   if($logic_name){
-    my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+    my $analysis  = 
+      $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+
+    unless($analysis->dbID()) {
+      $self->warn("PredictionTranscriptAdaptor->fetch_by_slice: " .
+		  "no analysis with logic name $logic_name exists\n");
+      return ();
+    }
     $constraint = " analysis_id = ".$analysis->dbID;
   }
   
@@ -198,7 +205,6 @@ sub fetch_by_Slice{
     push(@out, $pred_t);
   }
   
-
   return @out;
 }
 

@@ -142,15 +142,15 @@ sub get_all_SimilarityFeatures_above_score {
   $self->warn("Call to Slice->get_all_SimilarityFeatures_above_score.");
 
   my @prot_feats = 
-    $self->get_ProteinAlignFeatures_above_score($logic_name, $score);
+    $self->get_all_ProteinAlignFeatures_above_score($logic_name, $score);
   my @dna_feats = 
-    $self->get_DnaAlignFeatures_above_score($logic_name, $score);
+    $self->get_all_DnaAlignFeatures_above_score($logic_name, $score);
 
   return (@prot_feats, @dna_feats);
 }
   
 
-=head2 get_DnaAlignFeatures_above_score
+=head2 get_all_DnaAlignFeatures_above_score
 
   Args      : $logic_name, $score
   Function  : returns all DnaAlignFeatures of type logic_name and above score
@@ -160,7 +160,7 @@ sub get_all_SimilarityFeatures_above_score {
 
 =cut
 
-sub get_DnaAlignFeatures_above_score{
+sub get_all_DnaAlignFeatures_above_score{
    my ($self,$logic_name, $score) = @_;
 
    $self->warn("Slice: get_all_SimilarityFeatures_above_score\n");
@@ -174,7 +174,7 @@ sub get_DnaAlignFeatures_above_score{
    return $dafa->fetch_by_Slice_and_score($self,$score, $logic_name);
 }
 
-=head2 get_ProteinAlignFeatures_above_score
+=head2 get_all_ProteinAlignFeatures_above_score
 
   Args      : $logic_name, $score
   Function  : getss all ProteinAlignFeatures of type logic_name and above score
@@ -184,7 +184,7 @@ sub get_DnaAlignFeatures_above_score{
   
 =cut
 
-sub get_ProteinAlignFeatures_above_score {
+sub get_all_ProteinAlignFeatures_above_score {
   my ($self, $logic_name, $score) = @_;
 
   my $pafa = $self->adaptor->db->get_ProteinAlignFeatureAdaptor();
@@ -295,26 +295,24 @@ sub get_all_RepeatFeatures{
 
 
 
-=head2 get_all_PredictionFeatures
+=head2 get_all_PredictionTranscripts
 
- Title   : get_all_PredictionFeatures
- Usage   : $obj->get_all_PredictionFeatures
- Function: Use to derive a list of prediction features specific to the analysis type specified by the logic name.
- Example : my @pred_rm_feat = $obj->get_all_PredictionFeatures('RepeatMasker');
+ Title   : get_all_PredictionTranscripts
+ Usage   : $obj->get_all_PredictionTranscripts
+ Function: Use to derive a list of prediction transcripts specific to the analysis type specified by the logic name.
+ Example : my @pred_rm_trans = $obj->get_all_PredictionTranscripts('RepeatMasker');
  Returns : a list of Bio::EnsEMBL::PredictionTranscript objects
  Args    : a logic name - the name of the analysis that created or returned the prediction feature.
 
 
 =cut
 
-sub get_all_PredictionFeatures{
-   my ($self,@args) = @_;
+sub get_all_PredictionTranscripts{
+   my ($self,$logic_name) = @_;
 
-   $self->warn("Slice: get_all_PredictionFeatures");
-   
-   my @pred_feat = $self->adaptor->fetch_all_prediction_transcripts($self);
-   
-   return @pred_feat;
+   my $pta = $self->adaptor()->db()->get_PredictionTranscriptAdaptor();
+
+   return $pta->fetch_by_Slice($self, $logic_name);
 }
 
 

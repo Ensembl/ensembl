@@ -58,10 +58,11 @@ use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::Translation;
+use Bio::EnsEMBL::TranscriptI;
 use Bio::DBLinkContainerI;
 
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::DBLinkContainerI);
+@ISA = qw(Bio::EnsEMBL::TranscriptI Bio::EnsEMBL::Root Bio::DBLinkContainerI );
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -358,6 +359,7 @@ sub coding_start {
 
   my $strand;
   my $start;
+
   
   if( defined $arg ) {
     $self->{'coding_start'} = $arg;
@@ -373,7 +375,7 @@ sub coding_start {
     }
     $self->{'coding_start'} = $start;
   }
-  
+
   return $self->{'coding_start'};
 }
 
@@ -828,8 +830,6 @@ sub split_Transcript_to_Partial {
    } else {
        @exons = $self->get_all_Exons;
    }
-
-   print STDERR "Got ",scalar(@exons)," from translateable exons\n";
 
    # one exon genes - easy to handle. (unless of course they have UTRs ...)
    if (@exons == 1) {

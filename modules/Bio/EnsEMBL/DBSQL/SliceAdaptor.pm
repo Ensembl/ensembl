@@ -132,18 +132,7 @@ sub fetch_all_simple_features{
 
 }
 
-sub fetch_all_prediction_transcripts{
-  my($self, $slice, $logic_name) = @_;
 
-  if(!$slice){
-    $self->throw("can't fetch all simple features if con't have a slice to fetch them for\n");
-  }
-
-  my @prediction = $self->db->get_PredictionTranscriptAdaptor->fetch_by_Slice($slice, $logic_name);
-
-  return @prediction;
-
-}
 
 
 sub fetch_all_similarity_features{
@@ -475,3 +464,22 @@ sub fetch_Slice_by_gene{
 }
 
 
+
+#
+# Deprecated, Just use the slice method get_all_PredictionTranscripts instead
+#
+sub fetch_all_prediction_transcripts{
+  my($self, $slice, $logic_name) = @_;
+
+  $self->throw("SliceAdaptor->fetch_all_predication_transcripts deprecated");
+  
+  return ();
+
+#  if(!$slice){
+#    $self->throw("can't fetch all simple features if con't have a slice to fetch them for\n");
+#  }
+
+#  my @prediction = $self->db->get_PredictionTranscriptAdaptor->fetch_by_Slice($slice, $logic_name);
+
+#  return @prediction;
+}

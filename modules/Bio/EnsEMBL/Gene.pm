@@ -43,7 +43,7 @@ use strict;
 # Object preamble - inheriets from Bio::SeqFeature::Generic
 
 use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::Transcript;
+use Bio::EnsEMBL::TranscriptI;
 use Bio::DBLinkContainerI;
 use Bio::Annotation::DBLink;
 use Bio::EnsEMBL::DBEntry;
@@ -492,8 +492,8 @@ sub type {
 sub add_Transcript{
    my ($self,$trans) = @_;
 
-   if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::Transcript") ) {
-       $self->throw("$trans is not a Bio::EnsEMBL::Transcript!");
+   if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::TranscriptI") ) {
+       $self->throw("$trans is not a Bio::EnsEMBL::TranscriptI!");
    }
 
    # at the moment, use the SeqFeature sub hash. But in the future,
