@@ -43,7 +43,7 @@ use vars qw($AUTOLOAD @ISA);
 use strict;
 use Bio::EnsEMBL::DB::ContigI;
 use Bio::Seq;
-use Bio::SeqIO::Fasta;
+use Bio::SeqIO::fasta;
 use Bio::EnsEMBL::Analysis::Genscan;
 use FileHandle;
 
