@@ -27,7 +27,7 @@ Bio::EnsEMBL::DBSQL::FeatureAdaptor - MySQL database adapter class for EnsEMBL F
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are 
+The rest of the documentation details each of the object methods. Internal methods are
 usually preceded with a _
 
 =cut
@@ -44,14 +44,8 @@ use strict;
 
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Gene;
-use Bio::EnsEMBL::Exon;
-use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::FeatureFactory;
-use Bio::EnsEMBL::DBSQL::RawContigAdaptor;
-use DBI;
 use Bio::EnsEMBL::TranscriptFactory;
-use Bio::EnsEMBL::DBSQL::DummyStatement;
 
 
 
@@ -77,7 +71,7 @@ use Bio::EnsEMBL::DBSQL::DummyStatement;
 sub delete_by_RawContig {
     my ($self,$contig) = @_;
     my $contig_internal_id;
-    $self->throw("$contig is not a Bio::EnsEMBL::DB::RawContigI") 
+    $self->throw("$contig is not a Bio::EnsEMBL::DB::RawContigI")
         unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::RawContigI"));
     $contig_internal_id = $contig->internal_id;
     $self->delete_by_RawContig_internal_id($contig_internal_id);
@@ -100,31 +94,11 @@ sub delete_by_RawContig_internal_id {
     my ($self,$contig_internal_id) = @_;
     $contig_internal_id || $self->throw("I need contig internal id");
     $contig_internal_id =~ /^\d+$/ or $self->warn("[$contig_internal_id] does not look like internal id.");
-    my $sth = $self->db->prepare("select fs.fset " .
-			     "from   fset_feature as fs, " .
-			     "       feature as f " .
-			     "where  fs.feature = f.id " .
-			     "and    f.contig = '$contig_internal_id'");
+
+    #print(STDERR "Deleting features for contig $contig\n");
+    my $sth = $self->db->prepare("delete from feature where contig = '$contig_internal_id'");
     my $res = $sth->execute;
 
-    my $fsstr = "";
-    while (my $rowhash = $sth->fetchrow_hashref) {
-	$fsstr .= $rowhash->{fset} . ",";
-    }
-
-    if ($fsstr) {
-	chop($fsstr);
-	$sth = $self->db->prepare("delete from fset where id in ($fsstr)");
-	$res = $sth->execute;
-	
-	$sth = $self->db->prepare("delete from fset_feature where fset in ($fsstr)");
-	$res = $sth->execute;
-    }
-    
-    #print(STDERR "Deleting features for contig $contig\n");
-    $sth = $self->db->prepare("delete from feature where contig = '$contig_internal_id'");
-    $res = $sth->execute;
-    
     #print(STDERR "Deleting repeat features for contig $contig\n");
     $sth = $self->db->prepare("delete from repeat_feature where contig = '$contig_internal_id'");
     $res = $sth->execute;
@@ -159,11 +133,11 @@ sub delete_by_RawContig_id {
 =head2 write
 
  Title   : write
- Usage   : 
+ Usage   :
  Function: deprecates
  Example :
- Returns : 
- Args    : 
+ Returns :
+ Args    :
 
 =cut
 
@@ -208,7 +182,7 @@ sub store {
 
 
     # Check for contig
-    $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI") 
+    $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")
         unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
     my $contig_internal_id = $contig->dbID();
 
@@ -235,8 +209,8 @@ sub store {
 # 	# Check that we have Analysis
 # 	my $analysisid;
 # 	if (!defined($feature->analysis)) {
-# 	    $self->throw("Feature " . $feature->seqname . " " . 
-# 			              $feature->source_tag . 
+# 	    $self->throw("Feature " . $feature->seqname . " " .
+# 			              $feature->source_tag .
 # 			 " doesn't have analysis. Can't write to database");
 # 	} else {
 # 	    # Get AnalysisAdaptor if we haven't got one
@@ -248,7 +222,7 @@ sub store {
 
 	#
 	# Retarget to new adaptor scheme
-	# 
+	#
 
 	if( $feature->isa('Bio::EnsEMBL::DnaPepAlignFeature') ) {
 	    $protein_align_adaptor->store($contig_internal_id,$feature);
@@ -302,7 +276,7 @@ sub _store_FeaturePair {
 	 ((defined $feature->phase)        ? $feature->phase       : 'NULL'),
 	 ((defined $feature->end_phase)    ? $feature->end_phase   : 'NULL')
     );
-        
+
 }
 
 
@@ -337,7 +311,7 @@ sub _store_single_feature
 	 'NULL',
 	 'NULL',
 	 'NULL',
-	 'NULL' 
+	 'NULL'
    )
 }
 
@@ -382,13 +356,7 @@ sub _store_PredictionFeature {
     my ($self,$contig_internal_id,$analysisid,@features) = @_;
     foreach my $feature ( @features ) {
 
-	my $score = defined($feature->score) ? $feature->score : "-1000";
-	my $sth = $self->db->prepare("insert into fset(id,score) values ('NULL',$score)");
-	$sth->execute();
-	my $fset_id = $sth->{mysql_insertid};
-
 	# now write each sub feature
-	my $rank = 1;
 
 	foreach my $sub ( $feature->sub_SeqFeature ) {
 	    my $last_insert_id = $self->_store
@@ -399,7 +367,7 @@ sub _store_PredictionFeature {
 		 $sub->end,
 		 (defined($sub->score) ? $sub->score : -1000),
 		 $sub->strand,
-		 $analysisid, 
+		 $analysisid,
 		 $sub->source_tag,
 		 -1,
 		 -1,
@@ -409,10 +377,6 @@ sub _store_PredictionFeature {
                  ((defined $sub->phase)       ?   $sub->phase         : 'NULL'),
                  ((defined $sub->end_phase)   ?   $sub->end_phase     : 'NULL')
 	    );
-	    my $query = "insert into fset_feature(fset,feature,rank) values ($fset_id,$last_insert_id,$rank)";
-	    my $sth2 = $self->db->prepare($query);
-	    $sth2->execute();
-	    $rank++;
 	}
     }
 }
@@ -464,14 +428,14 @@ sub _store_Repeat {
 }
 
 
-=head2 find_GenomeHits 
+=head2 find_GenomeHits
 
  Title   : find_GenomeHits
- Usage   : 
+ Usage   :
  Function: deprecated
- Example : 
- Returns : 
- Args    : 
+ Example :
+ Returns :
+ Args    :
 
 =cut
 
@@ -500,8 +464,8 @@ sub fetch_by_hid {
 
     $self->throw("No hit id input") unless defined($arg);
     my $query = "select c.id, " .
-	                "f.seq_start, " . 
-			"f.seq_end, "   . 
+	                "f.seq_start, " .
+			"f.seq_end, "   .
 			"f.score, "     .
 			"f.strand, "    .
 			"f.analysis, "  .
@@ -514,7 +478,7 @@ sub fetch_by_hid {
 			"f.phase, "     .
 			"f.end_phase "   .
 	        "from   feature as f,contig as c " .
-		"where  f.hid = '$arg' and " . 
+		"where  f.hid = '$arg' and " .
 		        "c.internal_id = f.contig";
 
     my $sth   = $self->db->prepare($query);
@@ -524,7 +488,7 @@ sub fetch_by_hid {
     $sth->bind_columns(undef,\$contig,\$start,\$end,\$score,\$strand,\$analysisid,
 		       \$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,
 		       \$end_phase);
-    
+
     my @features;
     my $analysisadaptor = $self->db->get_AnalysisAdaptor;
     while($sth->fetch) {
@@ -543,14 +507,14 @@ sub fetch_by_hid {
 }
 
 
-=head2 get_PredictionFeature_by_id 
+=head2 get_PredictionFeature_by_id
 
  Title   : get_PredictionFeature_by_id
- Usage   : 
+ Usage   :
  Function: deprecated
- Example : 
- Returns : 
- Args    : 
+ Example :
+ Returns :
+ Args    :
 
 =cut
 
@@ -562,7 +526,7 @@ sub get_PredictionFeature_by_id {
 }
 
 
-=head2 fetch_PredictionFeature_by_id 
+=head2 fetch_PredictionFeature_by_id
 
  Title   : get_PredictionFeature_by_id
  Usage   : $fa->get_PredictionFeature_by_id($genscan_id)
@@ -576,15 +540,15 @@ sub get_PredictionFeature_by_id {
 
 
 sub fetch_PredictionFeature_by_id {
-    
+
     my ($self,$genscan_id) = @_;
- 
+
     $genscan_id || $self->throw("I need a genscan id");
-   
+
 #    my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,f.name,f.hid,fset.id,c.id,f.phase " .
 #       "from feature f, fset fset,fset_feature ff,contig c where ff.feature = f.id and fset.id = ff.fset ".
 #        " and c.internal_id=f.contig and ff.fset ='$genscan_id' and name = 'genscan'";
-#    my $sth = $self->db->prepare($query);   
+#    my $sth = $self->db->prepare($query);
 #    $sth->execute();
 #    my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hid,$fsetid,$contig,$phase);
 #    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hid,\$fsetid,\$contig,\$phase);
@@ -646,14 +610,14 @@ sub fetch_PredictionFeature_by_id {
 
 
 
-=head2 get_PredictionFeature_as_Transcript 
+=head2 get_PredictionFeature_as_Transcript
 
  Title   : get_PredictionFeature_as_Transcript
- Usage   : 
+ Usage   :
  Function: depredated
- Example : 
- Returns : 
- Args    : 
+ Example :
+ Returns :
+ Args    :
 
 
 =cut
@@ -684,7 +648,7 @@ sub fetch_PredictionFeature_as_Transcript{
 
     my $ft=$self->fetch_PredictionFeature_by_id($genscan_id);
     my $contig=$self->db->get_Contig($ft->seqname);
- 
+
     return &Bio::EnsEMBL::TranscriptFactory::fset2transcript($ft,$contig);
 }
 
@@ -703,7 +667,7 @@ sub exponent {
  Usage   :
  Function: deletes all features from a contig;
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -721,7 +685,7 @@ sub delete {
  Title   : fetch_RepeatFeatures_by_RawContig
  Usage   : foreach my $rf ($fa->fetch_all_RepeatFeatures($contig))
  Function: Gets all the repeat features on a contig.
-           If the thingy passed in is Bio::EnsEMBL::DB::ContigI, gets the internal_id from 
+           If the thingy passed in is Bio::EnsEMBL::DB::ContigI, gets the internal_id from
            there. Otherwise assumes that the thingy is contig id, which is used to get
            contig internal_id via RawContigAdaptor.
  Example :
@@ -746,11 +710,11 @@ sub fetch_RepeatFeatures_by_RawContig {
    }
 
    my @array;
-   
+
    # make the SQL query
-   my $statement = "select id,seq_start,seq_end,strand,score,analysis,hstart,hend,hid " . 
+   my $statement = "select id,seq_start,seq_end,strand,score,analysis,hstart,hend,hid " .
 		   "from repeat_feature where contig = '$contig_internal_id'";
-                                    
+
    my $sth = $self->db->prepare($statement);
 
    $sth->execute();
@@ -784,16 +748,4 @@ sub fetch_RepeatFeatures_by_RawContig {
 }                                       # get_all_RepeatFeatures
 
 
-
 1;
-
-
-
-
-
-
-
-
-
-
-
