@@ -67,6 +67,15 @@ sub _feature_obj {
     return $self->{'feature_obj'};
 }
 
+sub analysis_adaptor {
+    my($self,$dbobj) = @_;
+    if( !defined $self->{'analysis_adaptor'}) {
+	my $anal_adapt = $self->db->get_AnalysisAdaptor();
+	$self->{'analysis_adaptor'} = $anal_adapt;
+    }
+    return $self->{'analysis_adaptor'};
+}
+
 =head2 fetch_by_translationID
 
  Title   : fetch_by_translationID
@@ -98,7 +107,7 @@ sub fetch_by_translationID {
     
 	my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
 	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->_feature_obj->get_Analysis($analysisid);
+	    my $analysis = $self->analysis_adaptor->fetch_by_dbID($analysisid);
 	    $anahash{$analysisid} = $analysis;
 	}
 
@@ -134,7 +143,7 @@ sub fetch_by_translationID {
 	my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
 	
 	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->_feature_obj->get_Analysis($analysisid);
+	    my $analysis = $self->analysis_adaptor->fetch_by_dbID($analysisid);
 	    $anahash{$analysisid} = $analysis;
 	}
 
@@ -211,7 +220,7 @@ sub fetch_by_feature_and_dbID{
     my %anahash;
 
     if (($feature eq "PRINTS") || ($feature eq "Pfam") || ($feature eq "PROSITE")) {
-	my $sth = $self->prepare ("select p.seq_start, p.seq_end, p.analysis, p.score, p.perc_id, p.evalue, p.hstart, p.hend, p.hid, x.display_id from protein_feature p,interpro i,analysis a, Xref x  where p.translation = $transl and i.id = p.hid and i.interpro_ac = x.dbprimary_id and p.analysis = a.id and a.gff_feature = 'domain' and a.db = '$feature'");
+	my $sth = $self->prepare ("select p.seq_start, p.seq_end, p.analysis, p.score, p.perc_id, p.evalue, p.hstart, p.hend, p.hid, x.display_id from protein_feature p,interpro i,analysisprocess a, Xref x  where p.translation = $transl and i.id = p.hid and i.interpro_ac = x.dbprimary_id and p.analysis = a.analysisId and a.gff_feature = 'domain' and a.db = '$feature'");
 
 	$sth->execute();
 	
@@ -224,7 +233,7 @@ sub fetch_by_feature_and_dbID{
 
 
 	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->_feature_obj->get_Analysis($analysisid);
+	    my $analysis = $self->analysis_adaptor->fetch_by_dbID($analysisid);
 	    $anahash{$analysisid} = $analysis;
 	}
 
@@ -254,7 +263,7 @@ sub fetch_by_feature_and_dbID{
     }
 
     elsif ($feature eq "superfamily") {
-	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,x.display_id from protein_feature as p, analysis as a, Xref as x where a.gff_source = '$feature' and p.translation = '$transl' and a.id = p.analysis and x.dbprimary_id = p.hid");
+	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,x.display_id from protein_feature as p, analysisprocess as a, Xref as x where a.gff_source = '$feature' and p.translation = '$transl' and a.analysisId = p.analysis and x.dbprimary_id = p.hid");
 	$sth->execute();
 	
 	
@@ -262,7 +271,7 @@ sub fetch_by_feature_and_dbID{
 	    
 	    my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
 	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->_feature_obj->get_Analysis($analysisid);
+	    my $analysis = $self->analysis_adaptor->fetch_by_dbID($analysisid);
 	    $anahash{$analysisid} = $analysis;
 	}
 
@@ -293,7 +302,7 @@ sub fetch_by_feature_and_dbID{
 
 
     else {
-	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid from protein_feature p,analysis a where a.id = p.analysis and p.translation = '$transl' and a.gff_feature != 'domain' and a.db = '$feature'");
+	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid from protein_feature p,analysisprocess a where a.analysisId = p.analysis and p.translation = '$transl' and a.gff_feature != 'domain' and a.db = '$feature'");
 	
 	$sth->execute();
 	my @a = $sth->fetchrow();
@@ -303,7 +312,7 @@ sub fetch_by_feature_and_dbID{
 	    my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid) = @{$arrayref};
 
 	    if( !defined $anahash{$analysisid} ) {
-		my $analysis = $self->_feature_obj->get_Analysis($analysisid);
+		my $analysis = $self->analysis_adaptor->fetch_by_dbID($analysisid);
 		$anahash{$analysisid} = $analysis;
 	    }
 	    
