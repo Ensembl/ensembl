@@ -422,6 +422,10 @@ sub validate {
     $self->vthrow("source_tag not defined in feature")  unless defined($self->source_tag);
     $self->vthrow("primary_tag not defined in feature") unless defined($self->primary_tag);
     $self->vthrow("analysis not defined in feature")    unless defined($self->analysis);
+
+    if ($self->end < $self->start) {
+      $self->vthrow("End coordinate < start coordinate");
+    }
     
 }
 
