@@ -172,8 +172,8 @@ if ($use_graphics) {
 }
 
 if ($use_mapping) {
-    #require Storable;
-    #import Storable 'dclone';	    # Not just yet...
+    require Storable;
+    import Storable 'dclone';
 
     require Bio::EnsEMBL::Mapper;
 }
@@ -288,9 +288,9 @@ sub do_query
             # 5. Tag all occurances of the target ID in the
             #    reply with the query ID.
 	    #
-            # 6. TODO: Map the features back to the query
-            #    coordinate system.
-	    #
+            # 6. Map the features back to the query coordinate
+            #    system.
+            #
 
 	    open(IN, $source->{MAPFILE}) or
 		die "Can't open map data file '" .
@@ -384,20 +384,46 @@ sub do_query
                 # system.  This will yield an array of "gaps"
                 # and "coordinates".  If a range is mapped as a
                 # whole (no holes) then just change the start
-                # and stop coodinates.  Mark it as a "gap" if
-                # neccesary.  Use the undocumented add_object()
-                # method of Bio::Das::Request to add ranges that
-                # were split into two or more ranges.
-
-                # FIXME:  For now, just drop anyhting which
-                # doesn't map cleanly (that splits, contracts,
-                # or maps to a gap).
+                # and stop coodinates.  Tag the result with
+                # "mapped", "fragmented", and "unmappable" as
+                # neccesary.
 
 		my @mapped = $query->{MAPPER}->map_coordinates(
 		    'targetID', $result->start, $result->stop, 1,
 		    'targetCOORD');
+
 		if (scalar @mapped > 1) {
-		    $result->group($result->group . " [fragmented in $seqid]");
+		    for my $i (0 .. (scalar @mapped - 1)) {
+
+			my $resultcopy = dclone($result);
+
+			$resultcopy->start($mapped[$i]->start);
+			$resultcopy->stop($mapped[$i]->end);
+
+			$resultcopy->group($result->group .
+			    " [fragmented in $seqid]");
+
+                        # The following if-statment and
+                        # push-call breaks the OO badly since
+                        # it assumes that the underlying
+                        # representation of the objects are
+                        # known, but it was the only way I could
+                        # make it work.
+
+			$resultcopy->{segment} = $result->{segment};
+
+			if ($mapped[$i]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+			    $resultcopy->{type}{label} .= " [fragment " .
+				(1 + $i) . " (GAP)]";
+			} else {
+			    $resultcopy->{type}{label} .= " [fragment " .
+				(1 + $i) . "]";
+			}
+
+			push(@{ $reply->{results}[1] }, $resultcopy);
+		    }
+		    $result->group('NOSHOW'); # Will take it off the display
+
 		} elsif ($mapped[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
 		    $result->group($result->group . " [unmappable in $seqid]");
 		} else {
@@ -406,7 +432,6 @@ sub do_query
 		    $result->stop($mapped[0]->end);
 		}
 	    }
-	    #print $cgi->pre(Dumper($reply));
 	}
 	push(@replies, $reply);
     }
@@ -480,24 +505,24 @@ sub create_graphics
 	my $tag	    = $table_row->{COLUMNS}[0];
 	my $source  = $table_row->{COLUMNS}[1];
 
-	if ($feature->group =~ /^Sequence:/) {
-	    if (!defined $full_seq) {
-		$full_seq = new Bio::SeqFeature::Generic(
-		    -start	=> $feature->start,
-		    -end	=> $feature->end );
+	if ($feature->group ne 'NOSHOW') {
+	    if ($feature->group =~ /^Sequence:/) {
+		if (!defined $full_seq) {
+		    $full_seq = new Bio::SeqFeature::Generic(
+			-start	=> $feature->start,
+			-end	=> $feature->end );
+		}
+	    } else {
+		push(@{ $all{$source}->{$tag} },
+		    new Bio::SeqFeature::Generic(
+			-start	    => $feature->start,
+			-end	    => $feature->end,
+			-primary    => $feature->group,
+			-source_tag => $feature->type->label,
+			-tag	    => {
+			    colour  => $table_row->{COLOUR}
+			} ));
 	    }
-	} else {
-	    push(@{ $all{$source}->{$tag} },
-		new Bio::SeqFeature::Generic(
-		    -start	=> $feature->start,
-		    -end	=> $feature->end,
-		    -primary	=> $feature->group,
-		    -source_tag	=> $feature->type->label,
-		    -tag	=> {
-			colour	=>
-			    ($feature->label eq 'GAP' ?
-				'white' : $table_row->{COLOUR})
-		    } ));
 	}
     }
 
@@ -522,12 +547,6 @@ sub create_graphics
 	-fgcolor    => 'black',
 	-double	    => 1);
 
-    # (don't show the track for the whole sequence, it's not
-    # interesting)
-    #if (defined $full_seq) {
-	#$panel->add_track($full_seq);
-    #}
-	
     # Populate the panel.
     foreach my $source (values %all) {
 	foreach my $tag (keys %{ $source }) {
@@ -938,6 +957,8 @@ sub result_page
     foreach my $table_row (@{ $table }) {
 	# Don't display the full sequence reply (good/bad?)
 	next if ($table_row->{COLUMNS}[0] =~ /^Sequence:/);
+	# ... or if it is set to 'NOSHOW'
+	next if ($table_row->{COLUMNS}[0] eq 'NOSHOW');
 
 	# Make the first column the link.
 	$table_row->{COLUMNS}[0] = $cgi->a({
