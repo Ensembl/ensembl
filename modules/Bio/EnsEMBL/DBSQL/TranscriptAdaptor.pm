@@ -236,7 +236,18 @@ sub remove {
   $sth->execute( $transcript->dbID );
 
   foreach my $exon ( $transcript->get_all_Exons() ) {
-    $exonAdaptor->remove( $exon );
+    
+    my $sth = $self->prepare( "select count(*) from exon_transcript where exon_id = ?" );
+    $sth->execute( $exon->dbID );
+    my ($count) = $sth->fetchrow_array;
+    if($count == 0){ 
+      $exonAdaptor->remove( $exon );
+    }
+    else{
+      $self->warn("exon " . $exon->dbID . " is not exclusive to transcript " . 
+                   $transcript->dbID . "\n");
+    }
+
   }
   
 
