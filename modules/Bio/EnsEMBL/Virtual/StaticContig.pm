@@ -253,145 +253,173 @@ sub get_all_SimilarityFeatures {
 =cut
 
 sub get_all_SimilarityFeatures_above_score{
-    my ($self, $analysis_type, $score, $bp) = @_;
+  my ($self, $analysis_type, $score, $bp) = @_;
 
+  $self->throw("Must supply analysis_type parameter") unless $analysis_type;
+  $self->throw("Must supply score parameter") unless $score;
+
+  if( $self->_use_cext_get() ) {
+    return $self->_cext_get_all_SimilarityFeatures_type($analysis_type);
+  }
     
-    $self->throw("Must supply analysis_type parameter") unless $analysis_type;
-    $self->throw("Must supply score parameter") unless $score;
+  my $glob_start = $self->_global_start;
+  my $chr_name   = $self->_chr_name;
+  my $idlist     = $self->_raw_contig_id_list;
+  my $type       = $self->dbobj->static_golden_path_type;
+  my $count = 0;
+    
+  unless ($idlist){
+    return ();
+  }
 
-    if( $self->_use_cext_get() ) {
-    	return $self->_cext_get_all_SimilarityFeatures_type($analysis_type);
+  #print STDERR "SIMI: got bump factor ",$bp,"\n";
+
+  if( ! defined $self->{'_feature_cache'} || 
+      $score < $self->{'_feature_cache_score'} ) {
+
+    &eprof_start('similarity-query');
+
+    #
+    # EB. DO NOT remove the sort by hid as it is crucial for the 
+    # glob factor below. Tony will have your testicles (unless you
+    # are a lady in which case lets not talk about it)
+    #
+
+    # SMJS. Remove hit,start ordering if bp is undefined (no globbing should 
+    # occur so hid and start ordering not needed). 
+    # Note that the globbing code previously did combine features when $bp was 
+    # undefined (see NOTES below), but I've fixed this.
+
+    my $order_cols = defined($bp)  ? "hid, start" : "";
+
+    # SMJS Added check for whether feature is at least partly within the
+    # golden part of the contig - AND (f.seq_end <= sgp.raw_end) 
+    # AND (f.seq_start >= sgp.raw_start). I haven't done this.
+
+    # SMJS Strand used to be got with  IF (sgp.raw_ori=1,f.strand,(-f.strand)),
+
+    my $statement = "SELECT f.id,
+        IF (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+            (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,
+        IF (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+            (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
+        sgp.raw_ori*f.strand,
+        f.score,f.analysis, f.name, f.hstart, f.hend, f.hid, f.contig
+        FROM   feature f, static_golden_path sgp
+        WHERE  sgp.raw_id = f.contig
+        AND    f.contig in $idlist
+        AND    sgp.type = '$type'
+        AND    sgp.chr_name = '$chr_name'
+        AND    f.score > $score
+        AND    f.seq_start >= sgp.raw_start
+        AND    f.seq_end <= sgp.raw_end
+        ";
+    if ($order_cols) {
+      $statement .= "ORDER  by $order_cols";
     }
+
+    # PLEASE READ THE COMMENT ABOVE if you want to remove the sort by hid
+
+    #open(T,">>/tmp/stat2.sql");
+    #print T $statement,"\n";
+    #close(T);
+    # print STDERR $statement . "\n";
+
+    my  $sth = $self->dbobj->prepare($statement);    
+    $sth->execute(); 
     
-    my $glob_start = $self->_global_start;
-    my $chr_name   = $self->_chr_name;
-    my $idlist     = $self->_raw_contig_id_list;
-    my $type       = $self->dbobj->static_golden_path_type;
-    my $count = 0;
-    
-    unless ($idlist){
-	return ();
-    }
-
-    #print STDERR "SIMI: got bump factor ",$bp,"\n";
-
-    if( ! defined $self->{'_feature_cache'} || $score < $self->{'_feature_cache_score'} ) {
-      &eprof_start('similarity-query');
-
-
-      #
-      # EB. DO NOT remove the sort by hid as it is crucial for the 
-      # glob factor below. Tony will have your testicles (unless you
-      # are a lady in which case lets not talk about it)
-      #
-
-      my    $statement = "SELECT f.id, 
-                        IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
-                                 (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,  
-                        IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
-                                 (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
-                        IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
-                                f.score,f.analysis, f.name, f.hstart, f.hend, f.hid, f.contig 
-		        FROM   feature f, analysisprocess a,static_golden_path sgp
-                        WHERE  sgp.raw_id = f.contig
-                        AND    f.contig in $idlist
-                        AND    sgp.type = '$type'
-		        AND    sgp.chr_name = '$chr_name'
-                        AND    a.analysisId = f.analysis
-                        AND    f.score > $score
-                        ORDER  by hid,start";
-      # PLEASE READ THE COMMENT ABOVE if you want to remove the sort by hid
-
-
-      #open(T,">>/tmp/stat2.sql");
-      #print T $statement,"\n";
-      #close(T);
-
-      my  $sth = $self->dbobj->prepare($statement);    
-      $sth->execute(); 
-    
-      &eprof_end('similarity-query');
+    &eprof_end('similarity-query');
    
-      &eprof_start('similarity-obj');
+    &eprof_start('similarity-obj');
 
-      my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
-	  $hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+        $hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
     
-      $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
-			 \$analysisid,\$name,\$hstart,\$hend,\$hid,\$contig);
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
+        	       \$analysisid,\$name,\$hstart,\$hend,\$hid,\$contig);
     
     
-      $self->{'_feature_cache'} = {};
-      $self->{'_feature_cache_score'} = $score;
+    $self->{'_feature_cache'} = {};
+    $self->{'_feature_cache_score'} = $score;
 
-      my $out;
-      my $length=$self->length;
+    my $out;
+    my $length=$self->length;
   FEATURE: 
-      my $prev = undef;
+    my $prev = undef;
       
-      while($sth->fetch) {
-	  
-	  
-	  my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
-	  
-	  if (($end > $length) || ($start < 1)) {
-	      next;
-	  }
+    while($sth->fetch) {
 
-	  if( defined $prev && $prev->hseqname eq $hid && $prev->end+$bp > $start ) {
-	      $prev->end($end);
-	      next;
-	  }
+      my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+                $hstart,$hend,$hid);
 
-	  &eprof_start('similarity-obj-creation');
-	  
-	  my $analysis=$self->_get_analysis($analysisid);
-	  
-	  if( !defined $name ) {
-	      $name = 'no_source';
-	  }
-	  
-	  $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
-	  $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
-			       $hstart,$hend,1,$f_score,$name,'similarity',$hid);
-
-	  $out->analysis($analysis);
-	  $out->id      ($hid);
-
-	  if( !defined $self->{'_feature_cache'}->{$analysis->db()} ) {
-	      $self->{'_feature_cache'}->{$analysis->db()} = [];
-	  }
-	  
-	  push( @{$self->{'_feature_cache'}->{$analysis->db()}}, $out );
-	  $prev = $out;
-	  $count++;
-	  &eprof_end('similarity-obj-creation');
+      if (($end > $length) || ($start < 1)) {
+        next;
       }
+
+# NOTE 1 Without the if (defined($bp)), even when $bp was undefined features 
+# were being merged if $prev->end > $start. This is undesirable for gene 
+# building as it will lead to incorrect hstart and hend values.
+
+      if (defined($bp)) {
+
+# NOTE 2 Without the ORDER BY hid, start above this will discard features which
+# should be retained so protect with the if (defined($bp)) condition (because 
+# when $bp is undefined no sorting on start is done [to speed up the query for 
+# gene building]).
+
+        if (defined $prev && $prev->hseqname eq $hid && 
+            $prev->end+$bp > $start ) {
       
-      #print STDERR "FEATURE: got $count in entire call\n";
-      &eprof_end('similarity-obj');
+          $prev->end($end);
+          next;
+        }
+      } 
+
+      # &eprof_start('similarity-obj-creation');
+      my $analysis=$self->_get_analysis($analysisid);
+          
+      if( !defined $name ) {
+        $name = 'no_source';
+      }
+          
+      $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+      $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',
+                           $contig, $hstart,$hend,1,$f_score,$name,
+                           'similarity',$hid);
+
+      $out->analysis($analysis);
+      $out->id      ($hid);
+
+      if( !defined $self->{'_feature_cache'}->{$analysis->db()} ) {
+        $self->{'_feature_cache'}->{$analysis->db()} = [];
+      }
+          
+      push( @{$self->{'_feature_cache'}->{$analysis->db()}}, $out );
+      $prev = $out;
+      $count++;
+      # &eprof_end('similarity-obj-creation');
+    }
+      
+    #print STDERR "FEATURE: got $count in entire call\n";
+    &eprof_end('similarity-obj');
       
   }
 
-    # now extract requested features
+  # now extract requested features
     
-    my @features;
-    foreach my $feature ( @{$self->{_feature_cache}->{$analysis_type}} ) {
-	
-	if( $feature->score() > $score ) {
-	    push( @features, $feature );
-	} 
-   }
+  my @features;
+  foreach my $feature ( @{$self->{_feature_cache}->{$analysis_type}} ) {
+    if( $feature->score() > $score ) {
+      push( @features, $feature );
+    } 
+  }
     
-    return @features;
-
-   #return @{$self->{_feature_cache}->{$analysis_type}};
-
+  return @features;
 }
 
-=head2 get_all_Similarity_Features_by_strand
+=head2 get_all_SimilarityFeatures_by_strand
 
- Title   : get_all_Similarity_Features_by_strand
+ Title   : get_all_SimilarityFeatures_by_strand
  Usage   :
  Function:
  Example :
@@ -524,111 +552,142 @@ sub get_all_unigene_features {
 =cut
 
 sub get_all_SimilarityFeatures_above_pid{
-    my ($self, $pid) = @_;
+  my ($self, $pid) = @_;
     
-    $self->throw("Must supply pid parameter") unless $pid;
+  $self->throw("Must supply pid parameter") unless $pid;
     
-    my $glob_start=$self->_global_start;
-    my $glob_end=$self->_global_end;
-    my $chr_name=$self->_chr_name;
+  my $glob_start = $self->_global_start;
+  my $glob_end   = $self->_global_end;
+  my $chr_name   = $self->_chr_name;
     
-    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
-	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
+  my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+      $hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,
+      $raw_ori);
     
 
-    # this needs to be rewritten properely EB
+  # this needs to be rewritten properely EB
+
+  my $type = $self->dbobj->static_golden_path_type;
+
+#    my $statement = "SELECT f.id,
+#         if(s.raw_ori=1,(f.seq_start-s.raw_start+s.chr_start),(s.chr_start+s.raw_end-f.seq_start)),
+#         if(s.raw_ori=1,(f.seq_end  -s.raw_start+s.chr_start),(s.chr_start+s.raw_end-f.seq_end)),
+#         f.strand * s.raw_ori,
+#         f.score,f.analysis, f.name, f.hstart, f.hend, f.hid
+#      FROM feature f, static_golden_path s 
+#      WHERE f.perc_id > $pid 
+#      AND   s.raw_id  = f.contig
+#      AND NOT (s.chr_start > $glob_end) 
+#      AND NOT (s.chr_end < $glob_start) 
+#      AND   f.seq_start > s.raw_start 
+#      AND   f.seq_end   < s.raw_end
+#      AND   s.chr_name  = '$chr_name'
+#      AND   s.type = '$type'";
+
+  my $idlist     = $self->_raw_contig_id_list;
+  unless ($idlist){
+    return ();
+  } 
+
+  my $statement = "SELECT f.id,
+        IF (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start),
+            (sgp.chr_start+sgp.raw_end-f.seq_end)) as start,
+        IF (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
+            (sgp.chr_start+sgp.raw_end-f.seq_start)), 
+        f.strand * sgp.raw_ori,
+        f.score,f.analysis, f.name, f.hstart, f.hend, f.hid, f.contig
+        FROM   feature f, static_golden_path sgp
+        WHERE  sgp.raw_id = f.contig
+        AND    f.contig in $idlist
+        AND    sgp.type = '$type'
+        AND    sgp.chr_name = '$chr_name'
+        AND    f.seq_start >= sgp.raw_start 
+        AND    f.seq_end   <= sgp.raw_end
+        AND    f.perc_id > $pid
+        ORDER  by hid
+       ";
+   
+
+  # print $statement . "\n";
+
     
-    my $type = $self->dbobj->static_golden_path_type;
+  my  $sth = $self->dbobj->prepare($statement);    
+  $sth->execute(); 
 
-    my $statement = "SELECT ".
-      "f.id,
-   if(s.raw_ori=1,(f.seq_start-s.raw_start+s.chr_start),(s.chr_start+s.raw_end-f.seq_start)),
-   if(s.raw_ori=1,(f.seq_end  -s.raw_start+s.chr_start),(s.chr_start+s.raw_end-f.seq_end)),
-   f.strand * s.raw_ori,
-   f.score,f.analysis, f.name, f.hstart, f.hend, f.hid
-               FROM feature f, static_golden_path s 
-               WHERE f.perc_id > $pid 
-               AND   s.raw_id  = f.contig
-               AND NOT (s.chr_start > $glob_end) 
-               AND NOT (s.chr_end < $glob_start) 
-               AND   f.seq_start > s.raw_start 
-               AND   f.seq_end   < s.raw_end
-               AND   s.chr_name  = '$chr_name'
-               AND   s.type = '$type'";
+  $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,
+		     \$name,\$hstart,\$hend,\$hid,\$contig);
 
 
-    #my    $statement = "SELECT f.id, f.seq_start+s.chr_start,f.seq_end+s.chr_start, 
-    #                           f.strand, f.score,f.analysis, f.name, f.hstart, f.hend, f.hid,
-    #                           s.chr_start,s.chr_end,s.raw_ori
-#		        FROM   feature f, static_golden_path s
-#                        WHERE  f.perc_id > $pid  
-#                        AND    s.raw_id = f.contig
-#                        AND    s.chr_end >= $glob_start 
-#		        AND    s.chr_start <=$glob_end 
-#		        AND    s.chr_name='$chr_name'";
+  my @array;
+  my %analhash;
+  my $out;
     
-    my  $sth = $self->dbobj->prepare($statement);    
-    $sth->execute(); 
 
-    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,
-		       \$name,\$hstart,\$hend,\$hid);
-
-
-    my @array;
-    my %analhash;
-    my $out;
-    
   FEATURE: while($sth->fetch) {
-      my $out;
-      my $analysis;
+    my $out;
+    my $analysis;
 
-      # clip and map to vc coordinates
+    # clip and map to vc coordinates
 
-      if ($start>=$glob_start && $end<=$glob_end){
+    if ($start >= $glob_start && $end <= $glob_end) {
 
-    	$start=$start-$glob_start;
-    	$end=$end-$glob_start;
+      $start = $start-$glob_start;
+      $end   = $end-$glob_start;
 
-	# create features
+      # create features
 
-	  if (!$analhash{$analysisid}) 
-	  {
-	    my $analysis_adp = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
-	    $analysis = $analysis_adp->fetch_by_dbID($analysisid);
-	    $analhash{$analysisid} = $analysis;	   
-	  } 
-	  else {$analysis = $analhash{$analysisid};}
-	  
-	  if( !defined $name ) {
-	      $name = 'no_source';
-	  }
-	  $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
-	  $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
-				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
-	  $out->analysis    ($analysis);
-	  $out->id          ($hid);              
-	   
-#	  $out = new Bio::EnsEMBL::SeqFeature;
-	  $out->seqname   ($self->id);
-	  $out->start     ($start);
-	  $out->end       ($end);
-	  $out->strand    ($strand);
-	  $out->source_tag($name);
-	  $out->primary_tag('similarity');
-	  $out->id         ($hid);
-	  
-	  if( defined $f_score ) {
-	      $out->score($f_score);
-	  }
-	  $out->analysis($analysis);
-	  
-	  $out->validate();
-
-	  push(@array,$out);       
+      if (!$analhash{$analysisid}) {
+        my $analysis_adp=new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
+        $analysis = $analysis_adp->fetch_by_dbID($analysisid);
+        $analhash{$analysisid} = $analysis;           
+      } 
+      else {$analysis = $analhash{$analysisid};}
+          
+      if( !defined $name ) {
+        $name = 'no_source';
       }
+
+      # These conditions should not be needed, but incorrect data in the 
+      # human_live database at one time lead to their inclusion
+      if ($start > $end) {
+        my $tmp = $start;
+        $start = $end;
+        $end = $tmp;
+      }
+      if ($hstart > $hend) {
+        my $tmp = $hstart;
+        $hstart = $hend;
+        $hend = $tmp;
+      }
+
+      $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+      $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',
+                           $contig,$hstart,$hend,1,$f_score,$name,'similarity',
+                           $hid);
+
+      $out->analysis    ($analysis);
+      $out->id          ($hid);              
+      $out->seqname     ($self->id);
+      $out->start       ($start);
+      $out->end         ($end);
+      $out->strand      ($strand);
+      $out->source_tag  ($name);
+      $out->primary_tag ('similarity');
+      $out->id          ($hid);
+          
+      if( defined $f_score ) {
+        $out->score($f_score);
+      }
+
+      $out->analysis($analysis);
+	  
+      $out->validate();
+
+      push(@array,$out);       
+    }
   }
 
-    return @array;
+  return @array;
 }
 
 =head2 get_all_SNPFeatures
@@ -798,9 +857,9 @@ sub get_all_PredictionFeatures {
    my $previous;
    my $previous_contig;
    my %analhash;
-   my $analysis_type="('genscan', 'fgenesh')";
+   my $analysis_types="('genscan', 'fgenesh')";
    
-    my $type = $self->dbobj->static_golden_path_type;
+   my $type = $self->dbobj->static_golden_path_type;
     
    my $query = "SELECT f.id,sgp.raw_start,sgp.raw_end,f.seq_start,f.seq_end,
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -809,16 +868,15 @@ sub get_all_PredictionFeatures {
                                  (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
                         IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
                         f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid,f.contig,f.name 
-                        FROM   feature f, analysisprocess a,static_golden_path sgp 
-                        WHERE    f.analysis = a.analysisId 
-                        AND    sgp.raw_id = f.contig
+                        FROM   feature f, static_golden_path sgp 
+                        WHERE  sgp.raw_id = f.contig
                         AND    f.contig in $idlist
-		        AND    a.gff_source in $analysis_type  
+		        AND    f.name in $analysis_types 
                         AND    sgp.type = '$type'
 		        AND    sgp.chr_name='$chr_name' 
                         ORDER BY f.contig,f.strand*f.seq_start
                         ";
-   
+
    my $sth = $self->dbobj->prepare($query);
    
    $sth->execute();
@@ -912,7 +970,7 @@ sub get_all_PredictionFeatures {
        
        if( defined $score ) {
 	   $out->score($score);
-	 }
+       }
 
        $out->analysis($analysis);
 
@@ -1104,7 +1162,6 @@ sub _fetch_SimpleFeatures_SQL_clause {
     }
     return @features;
 }
-
 
 =head2 get_all_DASFeatures
 
@@ -1910,146 +1967,147 @@ return $markers[0];
  Returns : Array of Bio::EnsEMBL::Gene
  Args    :
 
-
 =cut
 
 sub get_all_Genes_exononly{
-   my ($self) = @_;
+  my ($self) = @_;
 
+  my $glob_start = $self->_global_start;
+  my $glob_end   = $self->_global_end;
+  my $chr_name   = $self->_chr_name;
+  my $idlist     = $self->_raw_contig_id_list();
+  my $type       = $self->dbobj->static_golden_path_type;
    
-   my $glob_start=$self->_global_start;
-   my $glob_end=$self->_global_end;
-   my $chr_name=$self->_chr_name;
-   my $idlist  = $self->_raw_contig_id_list();
-   my $type = $self->dbobj->static_golden_path_type;
-   
-   unless ($idlist){
-       return ();
-   }
+  unless ($idlist){
+    return ();
+  }
 
-   if( exists $self->{'_all_Genes_exononly'} ) {
-       return @{$self->{'_all_Genes_exononly'}};
-   }
+  if( exists $self->{'_all_Genes_exononly'} ) {
+    return @{$self->{'_all_Genes_exononly'}};
+  }
 
-   my $query = "
-        SELECT e.exon_id,e.sticky_rank,e.phase,et.rank,et.transcript_id,t.gene_id, 
-        IF     (sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
-                 (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start)) as start,  
-        IF     (sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
-                 (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start)), 
-        IF     (sgp.raw_ori=1,e.strand,(-e.strand))
-        FROM   exon e,static_golden_path sgp,exon_transcript et,transcript t
-        WHERE  t.transcript_id = et.transcript_id
-        AND    et.exon_id = e.exon_id 
-        AND    sgp.raw_id = e.contig_id
-	AND    sgp.chr_name = '$chr_name'
-        AND    sgp.type = '$type'
-        AND    e.contig_id in $idlist
-        AND    sgp.chr_end >= $glob_start
-	AND    sgp.chr_start <= $glob_end
-        ORDER  BY t.gene_id, t.transcript_id, et.rank, e.sticky_rank";
+  #  IF     (sgp.raw_ori=1,e.strand,(-e.strand))
+  my $query = "
+    SELECT e.exon_id,e.sticky_rank,e.phase,et.rank,et.transcript_id,t.gene_id, 
+    IF     (sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+           (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start)) as start,  
+    IF     (sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+           (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start)), 
+    sgp.raw_ori*e.strand
+    FROM   exon e,static_golden_path sgp,exon_transcript et,transcript t
+    WHERE  t.transcript_id = et.transcript_id
+    AND    et.exon_id = e.exon_id 
+    AND    sgp.raw_id = e.contig_id
+    AND    sgp.chr_name = '$chr_name'
+    AND    sgp.type = '$type'
+    AND    e.contig_id in $idlist
+    AND    sgp.chr_end >= $glob_start
+    AND    sgp.chr_start <= $glob_end
+    ORDER  BY t.gene_id, t.transcript_id, et.rank, e.sticky_rank";
 
-    my $sth = $self->dbobj->prepare($query);
-    $sth->execute();
+  my $sth = $self->dbobj->prepare($query);
+  $sth->execute();
 
-    my ($exonid,$stickyrank,$phase,$rank,$transcriptid,$geneid,$start,$end,$strand);
-    $sth->bind_columns(undef,\$exonid,\$stickyrank,\$phase,\$rank,\$transcriptid,\$geneid,\$start,\$end,\$strand);
+  my ($exonid,$stickyrank,$phase,$rank,$transcriptid,$geneid,
+      $start,$end,$strand);
+  $sth->bind_columns(undef,\$exonid,\$stickyrank,\$phase,\$rank,
+                     \$transcriptid,\$geneid,\$start,\$end,\$strand);
   
-    my $current_transcript;
-    my $current_gene;
-    my $current_transcript_id='';
-    my $current_gene_id='';
-    my $previous_exon;
+  my $current_transcript;
+  my $current_gene;
+  my $current_transcript_id='';
+  my $current_gene_id='';
+  my $previous_exon;
 
-    my @out;
-    my @trans;
-    my $length = $glob_end - $glob_start;
-    my %exon_already_seen;
+  my @out;
+  my @trans;
+  my $length = $glob_end - $glob_start;
+  my %exons;
 
-    while( $sth->fetch ) {
-        next if (($end > $length) || ($start < 1));
+  $query = "SELECT type FROM gene WHERE gene.gene_id = ?"; 
+  my $sth_gene = $self->dbobj->prepare($query);
 
-        if( $geneid ne $current_gene_id ) {
-	   # make a new gene
-    	    $current_gene = Bio::EnsEMBL::Gene->new;
-    	    $current_gene->dbID($geneid);
-    	    $current_gene->adaptor($self->dbobj->get_GeneAdaptor);
-                $query = "SELECT type FROM gene WHERE gene.gene_id=$geneid"; 
-                my $sth2 = $self->dbobj->prepare($query);
-                $sth2->execute;
-                my $rowhash = $sth2->fetchrow_hashref;
-                my $type = $rowhash->{'type'};
-                $current_gene->type($type);
-        	    push(@out,$current_gene);
-    	        $current_gene_id = $geneid;
-            }
+  while( $sth->fetch ) {
+    next if (($end > $length) || ($start < 1));
 
-            if( $transcriptid ne $current_transcript_id ) {
-    	   # make a new transcript
-        	    $current_transcript = Bio::EnsEMBL::WebTranscript->new();
-    	        $current_transcript->dbID($current_transcript_id);
-	            $current_transcript->adaptor($self->dbobj->get_TranscriptAdaptor);
-                
-	            $current_gene->add_Transcript($current_transcript);
-	            push(@trans,$current_transcript);
-	            if( $rank == 1 ) {
-	                $current_transcript->is_start_exon_in_context('dummy',1);
-	            } else {
-	                $current_transcript->is_start_exon_in_context('dummy',0);
-	            }
+    if( $geneid ne $current_gene_id ) {
+      # make a new gene
+      $current_gene = Bio::EnsEMBL::Gene->new;
+      $current_gene->dbID($geneid);
+      $current_gene->adaptor($self->dbobj->get_GeneAdaptor);
+      $sth_gene->execute($geneid);
 
-        	   $current_transcript_id = $transcriptid;
-        	   $current_transcript->dbID($transcriptid);
-        	   $current_transcript->adaptor( $self->dbobj->get_TranscriptAdaptor );
-        }
-        if( $stickyrank > 1 && defined $previous_exon && $previous_exon->dbID() == $exonid ) { # This is the same EXON so amend its length
-	        $previous_exon->end($end);
-            next;            ##  else we can't do anything else so create the sticky exon anyway! {but this will possibly only return part of the sticky exon}
-        } 
-#	        if( !defined $previous_exon ) {
-#    	        $self->warn("Really bad news - half-on-half off Sticky Exon. Faking it");
-#            } elsif( $previous_exon->end < $end ) {
-#	            next;
-#	        }
-#        }
+      my ($type) = $sth_gene->fetchrow_array;
 
-	next if (exists $exon_already_seen{$exonid}); # just to make sure there is no redundant exons.
-        my $exon = Bio::EnsEMBL::Exon->new();
-            $exon->start($start);
-            $exon->end($end);
-            $exon->strand($strand);
-            $exon->dbID($exonid);
-            $exon->adaptor( $self->dbobj->get_ExonAdaptor() );
-            $exon->seqname($self->id);
-            $exon->phase($phase);
-            $previous_exon = $exon;
-            $current_transcript->add_Exon($exon);
-            $current_transcript->end_exon_rank($rank);
-            $exon_already_seen{$exonid} = 1;
-   }
+      $current_gene->type($type);
+      push(@out,$current_gene);
+      $current_gene_id = $geneid;
+    }
 
-   #
-   # We need to make another quick trip to the database for each
-   # transcript to discover whether we have all of it or not
-   #
+    if( $transcriptid ne $current_transcript_id ) {
+      # make a new transcript
+      $current_transcript = Bio::EnsEMBL::WebTranscript->new();
+      $current_transcript->dbID($current_transcript_id);
+      $current_transcript->adaptor($self->dbobj->get_TranscriptAdaptor);
 
-   foreach my $trans ( @trans ) {
-     my $sth2 = $self->dbobj->prepare("select max(rank) from exon_transcript where transcript_id = '".$trans->dbID."'");
-     $sth2->execute;
-     my ($rank) = $sth2->fetchrow_array();
-     if( $rank == $trans->end_exon_rank) {
-       $trans->is_end_exon_in_context('dummy',1);
-     } else {
-       $trans->is_end_exon_in_context('dummy',0);
-     }
-                                                              
-   }
+      $current_gene->add_Transcript($current_transcript);
+      push(@trans,$current_transcript);
+      if( $rank == 1 ) {
+        $current_transcript->is_start_exon_in_context('dummy',1);
+      } else {
+        $current_transcript->is_start_exon_in_context('dummy',0);
+      }
+
+      $current_transcript_id = $transcriptid;
+      $current_transcript->dbID($transcriptid);
+      $current_transcript->adaptor( $self->dbobj->get_TranscriptAdaptor );
+    }
+    if( $stickyrank > 1 && defined $previous_exon && 
+        $previous_exon->dbID() == $exonid ) { 
+      # This is the same EXON so amend its length
+      $previous_exon->end($end);
+      next;            ## else we can't do anything else so create the sticky 
+                       ## exon anyway! (but this will possibly only return 
+                       ## part of the sticky exon)
+    } 
+        
+    unless( exists $exons{$exonid} ) { 
+      my $exon = Bio::EnsEMBL::Exon->new();
+      $exon->start($start);
+      $exon->end($end);
+      $exon->strand($strand);
+      $exon->dbID($exonid);
+      $exon->adaptor( $self->dbobj->get_ExonAdaptor() );
+      $exon->seqname($self->id);
+      $exon->phase($phase);
+      $previous_exon = $exon;
+      $exons{$exonid} = $exon;
+    }
+    $current_transcript->add_Exon($exons{$exonid});
+    $current_transcript->end_exon_rank($rank);
+  }
+
+  #
+  # We need to make another quick trip to the database for each
+  # transcript to discover whether we have all of it or not
+  #
+
+  my $sth_trans = $self->dbobj->prepare("select max(rank) from exon_transcript where transcript_id = ?");
+
+  foreach my $trans ( @trans ) {
+    $sth_trans->execute($trans->dbID);
+    my ($rank) = $sth_trans->fetchrow_array();
+    if( $rank == $trans->end_exon_rank) {
+      $trans->is_end_exon_in_context('dummy',1);
+    } else {
+      $trans->is_end_exon_in_context('dummy',0);
+    }
+  }
 
 
-   $self->{'_all_Genes_exononly'} = \@out;
+  $self->{'_all_Genes_exononly'} = \@out;
 
-   return @out;
-
+  return @out;
 }
 
 
@@ -2104,12 +2162,12 @@ sub get_all_EMBLGenes_startend_lite {
 }
 
 sub get_all_SangerGenes_startend_lite {
-	my  $self = shift;
-	return $self->dbobj->get_LiteAdaptor->fetch_SangerGenes_start_end(
-        $self->_chr_name, 
-        $self->_global_start, 
+      my  $self = shift;
+      return $self->dbobj->get_LiteAdaptor->fetch_SangerGenes_start_end(
+        $self->_chr_name,
+        $self->_global_start,
         $self->_global_end
-    ); 
+    );
 }
 
 sub get_all_VirtualGenes_startend
@@ -2399,6 +2457,7 @@ sub get_all_Genes {
     my $idlist  = $self->_raw_contig_id_list();
     
     if( $idlist !~ /\w/ ) { 
+        &eprof_end("total-static-gene-get");
         return ();
     }
 
