@@ -125,12 +125,13 @@ sub new {
     throw("CIGAR_STRING or FEATURES argument is required - not both.");
   } elsif (defined($features)) {
     $self->_parse_features($features);
+    
   } elsif (defined($cigar_string)) {
     $self->{'cigar_string'} = $cigar_string;
   } else {
     throw("CIGAR_STRING or FEATURES argument is required");
   }
-
+  
   return $self;
 }
 
@@ -427,7 +428,7 @@ sub _parse_features {
   my $percent     = $f[0]->percent_id;
   my $analysis    = $f[0]->analysis;
   my $pvalue      = $f[0]->p_value();
-
+  my $seqname = $f[0]->seqname;
   # implicit strand 1 for peptide sequences
   $strand  ||= 1;
   $hstrand ||= 1;
@@ -501,7 +502,10 @@ sub _parse_features {
       throw("Inconsistant p_values in feature arraw [$pvalue " .
             $f->p_value() . "]");
     }
-
+    if($seqname && $seqname ne $f->seqname){
+      throw("Inconsistent seqname in feature array [$seqname - ".
+            $f->seqname . "]");
+    }
     my $start1 = $f->start;      #source sequence alignment start
     my $start2 = $f->hstart();   #hit sequence alignment start
 
@@ -652,6 +656,7 @@ sub _parse_features {
 
   $self->{'start'}      = $f1start;
   $self->{'end'}        = $f1end;
+  $self->{'seqname'}    = $seqname;
   $self->{'strand'}     = $strand;
   $self->{'score'}      = $score;
   $self->{'percent_id'} = $percent;

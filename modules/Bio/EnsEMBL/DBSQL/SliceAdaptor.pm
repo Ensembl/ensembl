@@ -159,13 +159,13 @@ sub fetch_by_region {
     my $sth = $self->prepare("SELECT seq_region_id, length " .
                              "FROM seq_region " .
                              "WHERE name = ? AND coord_system_id = ?");
-
+ 
     #force seq_region_name cast to string so mysql cannot treat as int
     $sth->execute("$seq_region_name", $coord_system->dbID());
 
     if($sth->rows() == 0) {
       $sth->finish();
-
+ 
       #do fuzzy matching, assuming that we are just missing a version on 
       #the end of the seq_region name
    
@@ -269,11 +269,10 @@ sub fetch_by_name {
 
   if(@array != 6) {
     throw("Malformed slice name [$name].  Format is " .
-        "coord_system:version:start:end:strand");
+        "coord_system:version:name:start:end:strand");
   }
 
   my ($cs_name, $cs_version, $seq_region, $start, $end, $strand) = @array;
-
 
   return $self->fetch_by_region($cs_name,$seq_region, $start,
                                 $end, $strand, $cs_version);
