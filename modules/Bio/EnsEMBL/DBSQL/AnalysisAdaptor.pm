@@ -310,7 +310,7 @@ sub exists {
     $self->throw("Object is not a Bio::EnsEMBL::Analysis") unless $anal->isa("Bio::EnsEMBL::Analysis");
     
     # objects with already have this adaptor are store here.
-    if( $anal->can("adaptor") && 
+    if( $anal->can("adaptor") && defined $anal->adaptor &&
       $anal->adaptor == $self ) {
       return 1;
     }
