@@ -644,6 +644,12 @@ sub store {
    $original->dbID( $transc_dbID );
    $original->adaptor( $self );
 
+   # store transcript attributes if there are any
+   my $attr_adaptor = $db->get_AttributeAdaptor();
+   $attr_adaptor->store_on_Transcript($transcript,
+                                      $transcript->get_all_Attributes);
+
+
    return $transc_dbID;
 }
 

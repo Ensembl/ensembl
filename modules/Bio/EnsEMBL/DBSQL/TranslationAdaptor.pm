@@ -248,6 +248,12 @@ sub store {
   $translation->dbID( $transl_dbID );
   $translation->adaptor( $self );
 
+  # store any translation attributes that are defined
+  my $attr_adaptor = $self->db->get_AttributeAdaptor();
+  $attr_adaptor->store_on_Translation($translation,
+                                      $translation->get_all_Attributes());
+
+
   return $transl_dbID;
 }
 
