@@ -81,13 +81,13 @@ sub fetch_all {
   $self->{_cache} = {};
   
   my $sth = $self->prepare( q {
-    SELECT analysisId, logic_name,
-           program,program_version,program_file,
-           db,db_version,db_file,
-           module,module_version,
-           gff_source,gff_feature,
+    SELECT analysis_id, logic_name,
+           program, program_version, program_file,
+           db, db_version, db_file,
+           module, module_version,
+           gff_source, gff_feature,
            created, parameters
-    FROM analysisprocess } );
+    FROM   analysis } );
   $sth->execute;
 
   while( $rowHashRef = $sth->fetchrow_hashref ) {
@@ -119,14 +119,14 @@ sub fetch_by_dbID {
 
 
   my $query = q{
-    SELECT analysisId, logic_name,
-           program,program_version,program_file,
-           db,db_version,db_file,
-           module,module_version,
-           gff_source,gff_feature,
+    SELECT analysis_id, logic_name,
+           program, program_version, program_file,
+           db, db_version, db_file,
+           module, module_version,
+           gff_source, gff_feature,
            created, parameters
-    FROM analysisprocess
-      WHERE analysisId = ? };
+    FROM   analysis
+    WHERE  analysis_id = ? };
 
   my $sth = $self->prepare($query);  
   $sth->execute( $id );
@@ -145,14 +145,14 @@ sub fetch_by_newest_logic_name {
   my $logic_name = shift;
 
   my $sth = $self->prepare( q{
-    SELECT analysisId, logic_name,
-           program,program_version,program_file,
-           db,db_version,db_file,
-           module,module_version,
-           gff_source,gff_feature,
+    SELECT analysis_id, logic_name,
+           program, program_version, program_file,
+           db, db_version, db_file,
+           module, module_version,
+           gff_source, gff_feature,
            created, parameters
-    FROM analysisprocess
-    WHERE logic_name = ?
+    FROM   analysis
+    WHERE  logic_name = ?
     ORDER BY created DESC } );
   
   $sth->execute( $logic_name );
@@ -173,14 +173,14 @@ sub fetch_by_logic_name {
   my $rowHash;
 
   my $sth = $self->prepare( q{
-    SELECT analysisId, logic_name,
-           program,program_version,program_file,
-           db,db_version,db_file,
-           module,module_version,
-           gff_source,gff_feature,
+    SELECT analysis_id, logic_name,
+           program, program_version, program_file,
+           db, db_version, db_file,
+           module, module_version,
+           gff_source, gff_feature,
            created, parameters
-    FROM analysisprocess
-    WHERE logic_name = ?
+    FROM   analysis
+    WHERE  logic_name = ?
     ORDER BY created DESC } );
   
   $sth->execute( $logic_name );
@@ -215,7 +215,7 @@ sub store {
  
   if( defined $analysis->created ) {
     my $sth = $self->prepare( q{
-      INSERT INTO analysisprocess
+      INSERT INTO analysis
       SET created = ?,
           logic_name = ?,
 	  db = ?,
@@ -248,7 +248,7 @@ sub store {
   } else {
     my $sth = $self->prepare( q{
 
-      INSERT INTO analysisprocess
+      INSERT INTO analysis
       SET created = now(),
           logic_name = ?,
 	  db = ?,
@@ -283,8 +283,8 @@ sub store {
     if( defined $dbID ) {
       $sth = $self->prepare( q{
 	SELECT created 
-	FROM analysisprocess
-	WHERE analysisId = ? } );
+	FROM   analysis
+	WHERE  analysis_id = ? } );
       $sth->execute( $dbID );
       $analysis->created( ($sth->fetchrow_array)[0] );
     }
@@ -358,21 +358,21 @@ sub _objFromHashref {
   my $self = shift;
   my $rowHash = shift;
 
-  my $analysis = Bio::EnsEMBL::Analysis->new
-    ( -id => $rowHash->{analysisId},
-      -db => $rowHash->{db},
-      -db_file => $rowHash->{db_file},
-      -db_version => $rowHash->{db_version},
-      -program => $rowHash->{program},
+  my $analysis = Bio::EnsEMBL::Analysis->new(
+      -id              => $rowHash->{analysis_id},
+      -db              => $rowHash->{db},
+      -db_file         => $rowHash->{db_file},
+      -db_version      => $rowHash->{db_version},
+      -program         => $rowHash->{program},
       -program_version => $rowHash->{program_version},
-      -program_file => $rowHash->{program_file},
-      -gff_source => $rowHash->{gff_source},
-      -gff_feature => $rowHash->{gff_feature},
-      -module => $rowHash->{module},
-      -module_version => $rowHash->{module_version},
-      -parameters => $rowHash->{parameters},
-      -created => $rowHash->{created},
-      -logic_name => $rowHash->{logic_name}
+      -program_file    => $rowHash->{program_file},
+      -gff_source      => $rowHash->{gff_source},
+      -gff_feature     => $rowHash->{gff_feature},
+      -module          => $rowHash->{module},
+      -module_version  => $rowHash->{module_version},
+      -parameters      => $rowHash->{parameters},
+      -created         => $rowHash->{created},
+      -logic_name      => $rowHash->{logic_name}
     );
   
   return $analysis;
@@ -409,18 +409,18 @@ sub deleteObj {
 sub create_tables {
   my $self = shift;
 
-  my $sth = $self->prepare( "drop table if exists analysisprocess" );
+  my $sth = $self->prepare( "drop table if exists analysis" );
   $sth->execute();
 
   $sth = $self->prepare( qq{
-    CREATE TABLE analysisprocess (
-      analysisId int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
+    CREATE TABLE analysis (
+      analysis_id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
       created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
       logic_name varchar(40) not null,
-      db varchar(40),
+      db varchar(120),
       db_version varchar(40),
-      db_file varchar(80),
-      program varchar(40),
+      db_file varchar(120),
+      program varchar(80),
       program_version varchar(40),
       program_file varchar(40),
       parameters varchar(80),
@@ -428,66 +428,11 @@ sub create_tables {
       module_version varchar(40),
       gff_source varchar(40),
       gff_feature varchar(40),
-      PRIMARY KEY (analysisId)
+      PRIMARY KEY (analysis_id)
     )
   } );
   $sth->execute();
 }
 
-=head2 update
-
-  Title   : update
-  Usage   : $adaptor->update(1, 'db => "swall"');
-  Function: updates a variable in an Analysis object
-  Returns : -
-  Args    : dbID, update string (col => 'newvalue')
-
-=cut
-
-sub update {
-  my ($self, $dbID, $update) = @_;
-  my ($str, $col, $val);
-
-  my @cols = split /,/, $update;
-  $self->throw("Must specify an update 'a => b'") unless (@cols);
-
-  my %allowed_variables = map { $_, 1 } qw{
-    analysisId
-    created
-    logic_name
-    db
-    db_version
-    db_file
-    program
-    program_version
-    program_file
-    parameters
-    module
-    module_version
-    gff_source
-    gff_feature
-  };
-
-  foreach (@cols) {
-    ($col, $val) = $_ =~ /(\S+)\s+=>\s+(.*)/;
-    $self->throw("Must specify an update 'a => b'")
-     unless ($col && $val =~ /\S/);
-    $self->throw("$col is not a Bio::EnsEMBL::Analysis variable")
-     unless (defined $allowed_variables{$col});
-    $str .= qq{ $col = $val,};
-  }
-  chop $str;
-
-  my $query  = qq{ UPDATE analysisprocess SET };
-  $query .= $str;
-  $query .= qq{ WHERE  analysisId = $dbID };
-
-  my $sth = $self->prepare($query);
-  my $rv  = $sth->execute();
-  $sth->finish;
-
-}
 
 1;
-
-
