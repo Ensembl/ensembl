@@ -260,7 +260,7 @@ sub get_all_Genes {
     my ($self) = @_;
     
     # Create a hash of methods we're interested in
-    my %methods = map{$_, 1} ('supported_CDS', 'curated');
+    my %methods = map{$_, 1} ('supported_CDS', 'curated', 'GD_in_progress');
     
     my $id = $self->id();        
     my $seq = $self->ace_seq();
