@@ -54,6 +54,9 @@ use strict;
 use Bio::Root::RootI;
 use DBI;
 use Bio::EnsEMBL::DBSQL::SQL;
+use Bio::EnsEMBL::Archive::DBSQL::VersionedSeqAdaptor;
+use Bio::EnsEMBL::Archive::DBSQL::SeqAdaptor;
+
 
 @ISA = qw(Bio::Root::RootI);
 

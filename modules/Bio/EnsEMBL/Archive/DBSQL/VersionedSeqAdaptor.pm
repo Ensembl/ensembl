@@ -36,7 +36,7 @@ Internal methods are usually preceded with a _
 
 
 # Let the code begin...
-package Bio::EnsEMBL::Overlap::DBSQL::VersionedSeqAdaptor;
+package Bio::EnsEMBL::Archive::DBSQL::VersionedSeqAdaptor;
 
 use vars qw(@ISA);
 use strict;
@@ -44,7 +44,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Archive::VersionedSeq;
 
 #The method ->new is inherited from the BaseAdaptor
-@ISA = qw(Bio::EnsEMBL::Archive::DBSQL::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 =head2 fetch_by_dbID
 
@@ -62,7 +62,7 @@ sub fetch_by_dbID {
     my ($self,$id) = @_;
 
     $self->throw("I need a dbID") unless $id;
-    my $statement = "SELECT seq_id,version,start_clone,start_coord,end_clone,end_coord,modified,release_version from versioned_seq where versioned_seq_id = $id";
+    my $statement = "SELECT seq_id,version,start_clone,start_coord,end_clone,end_coord,modified,release_number from versioned_seq where versioned_seq_id = $id";
     my $sth = $self->db->execute($statement);
     my($seq_id,$v,$start_c,$start,$end_c,$end,$mod,$rel) = $sth->fetchrow_array;
     my $sad = $self->db->get_SeqAdaptor;

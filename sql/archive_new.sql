@@ -19,12 +19,12 @@ CREATE TABLE versioned_seq (
 	end_clone varchar(40),
 	end_coord int(10),
 	modified datetime NOT NULL DEFAULT 'now()',
-	release_version int(10),
+	release_number int(10),
 
 	PRIMARY KEY(versioned_seq_id),
 	UNIQUE(seq_id,version),
 	KEY(modified),
-	KEY(release_version)
+	KEY(release_number)
 );
 
 CREATE TABLE versioned_seq_history (

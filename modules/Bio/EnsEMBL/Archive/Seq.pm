@@ -28,7 +28,7 @@ Bio::EnsEMBL::Archive::Seq - Simple archive seq object
                                      -seq_start => 23423,
 				     -end_clone => 'AC123132',
 				     -seq_end => 1243,
-				     -release_version => 100,
+				     -release_number => 100,
 				     );
 
 =head1 DESCRIPTION
@@ -49,7 +49,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
-package Bio::EnsEMBL::Bio::EnsEMBL::Archive::Seq;
+package Bio::EnsEMBL::Archive::Seq;
 use vars qw(@ISA);
 use strict;
 

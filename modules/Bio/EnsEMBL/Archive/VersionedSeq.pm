@@ -28,7 +28,7 @@ Bio::EnsEMBL::Archive::VersionedSeq - Simple archive VersionedSeq object
                                      -seq_start => 23423,
 				     -end_clone => 'AC123132',
 				     -seq_end => 1243,
-				     -release_version => 100,
+				     -release_number => 100,
 				     );
 
 =head1 DESCRIPTION
@@ -51,7 +51,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
-package Bio::EnsEMBL::Bio::EnsEMBL::Archive::VersionedSeq;
+package Bio::EnsEMBL::Archive::VersionedSeq;
 use vars qw(@ISA);
 use strict;
 
@@ -69,17 +69,18 @@ sub new {
   
    my ($dbid,$archive_seq,$version,$start_clone,
        $seq_start,$end_clone,$seq_end,$sequence,
-       $release,$adaptor) = 
+       $release,$modified,$adaptor) = 
        $self->_rearrange([qw(
 	DBID
 	ARCHIVE_SEQ
 	VERSION
 	START_CLONE
-	SEQ_START
+	START
 	END_CLONE
-	SEQ_END
+	END
 	SEQUENCE
-	RELEASE_VERSION			           
+	RELEASE_NUMBER			           
+	MODIFIED		     
 	ADAPTOR
         )],@args);
 
@@ -104,10 +105,10 @@ sub new {
   $self->version($version);
   $self->start_clone($start_clone);
   $self->end_clone($end_clone);
-  $self->seq_start($seq_start);
-  $self->seq_end($seq_end);
-  $self->release_version($release);
-
+  $self->start($seq_start);
+  $self->end($seq_end);
+  $self->release_number($release);
+  $self->modified($modified);
   return $self;
 }
 
@@ -426,26 +427,46 @@ sub end{
 
 }
 
-=head2 release_version
+=head2 release_number
 
- Title   : release_version
- Usage   : $obj->release_version($newval)
- Function: Getset for release_version value
- Returns : value of release_version
+ Title   : release_number
+ Usage   : $obj->release_number($newval)
+ Function: Getset for release_number value
+ Returns : value of release_number
  Args    : newvalue (optional)
 
 
 =cut
 
-sub release_version{
+sub release_number{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'release_version'} = $value;
+      $obj->{'release_number'} = $value;
     }
-    return $obj->{'release_version'};
+    return $obj->{'release_number'};
 }
 
+=head2 modified
+
+ Title   : modified
+ Usage   : $obj->modified($newval)
+ Function: Getset for modified value
+ Returns : value of modified
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub modified{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'modified'} = $value;
+    }
+    return $obj->{'modified'};
+
+}
 
 =head2 adaptor
 
