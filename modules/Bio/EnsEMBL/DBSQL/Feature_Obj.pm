@@ -211,6 +211,8 @@ sub write {
 
 	    if ( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
 		my $homol = $feature->feature2;
+#scp - hack to make p_value look like a float
+            $feature->p_value(&exponent($feature->p_value));
 	    my $sth = $self->_db_obj->prepare(  
                   "insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue,phase,end_phase) ".
                   "values ('NULL',"
@@ -225,7 +227,7 @@ sub write {
                   .$homol->end              .","
                   ."'".$homol->seqname      ."',"
                   .((defined $feature->percent_id)   ? $feature->percent_id  : 'NULL')  .","    
-                  .((defined $feature->p_value)      ? &exponent($feature->p_value)     : 'NULL')  .","
+                  .((defined $feature->p_value)      ? ("\'".$feature->p_value."\'") : 'NULL')  .","
                   .((defined $feature->phase)        ? $feature->phase       : 'NULL')  .","
                   .((defined $feature->end_phase)    ? $feature->end_phase   : 'NULL')  .")");
         
@@ -315,6 +317,8 @@ sub write {
 	my $rank = 1;
 
 	foreach my $sub ( $feature->sub_SeqFeature ) {
+#scp - hack to make p_value look like a float
+            $feature->p_value(&exponent($feature->p_value));
 	    my $sth5 = $self->_db_obj->prepare("insert into feature "
                       ."(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid,evalue,perc_id,phase,end_phase) "
                       ."values('NULL','"
@@ -327,7 +331,7 @@ sub write {
 				      ."'".$sub->source_tag ."',"
                       ."-1,-1,"
                       ."'".($sub->primary_tag || "__NONE__")."',"
-                      . ((defined $sub->p_value)     ?   &exponent($sub->p_value)       : 'NULL')  .","
+                      . ((defined $sub->p_value)     ?   "\'".$sub->p_value."\'"      : 'NULL')  .","
                       . ((defined $sub->percent_id)  ?   $sub->percent_id    : 'NULL')  .","
                       . ((defined $sub->phase)       ?   $sub->phase         : 'NULL')  .","
                       . ((defined $sub->end_phase)   ?   $sub->end_phase     : 'NULL')  .")");
@@ -824,7 +828,6 @@ sub _db_obj{
     return $self->{'_db_obj'};
 
 }
-
 
 
 
