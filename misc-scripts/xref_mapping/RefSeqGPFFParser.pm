@@ -64,29 +64,29 @@ sub create_xrefs {
   local $/ = "\/\/\n";
 
   while (<REFSEQ>) {
-
+    
     my $xref;
-
+    
     my $entry = $_;
     chomp $entry;
-
+    
     my ($species) = $entry =~ /\s+ORGANISM\s+(.*)\n/;
     $species = lc $species;
     $species =~ s/^\s*//g;
     $species =~ s/\s+/_/g;
     $species =~ s/\n//g;
     my $species_id = $name2species_id{$species};
-
+    
     # skip xrefs for species that aren't in the species table
     if (defined $species_id) {
-
+      
       my ($acc) = $entry =~ /ACCESSION\s+(\S+)/;
       my ($description) = $entry =~ /DEFINITION\s+([^[]*)/s;
       print $entry if (length($description) == 0);
       $description =~ s/\n//g;
       $description =~ s/\s+/ /g;
       $description = substr($description, 0, 255) if (length($description) > 255);
-
+      
       my ($seq) = $_ =~ /ORIGIN\s+(.+)/s; # /s allows . to match newline
       my @seq_lines = split /\n/, $seq;
       my $parsed_seq = "";
@@ -110,7 +110,21 @@ sub create_xrefs {
       # pubmed & medline are simple dependent xrefs; may be several of each
       my @medline = $entry =~ /\s+MEDLINE\s+(\d+)/g;
       my @pubmed = $entry =~ /\s+PUBMED\s+(\d+)/g;
+      my @LocusIDline = $entry =~ /db_xref=.LocusID:(\d+)/g;
+      my @mimline = $entry =~ /db_xref=.MIM:(\d+)/g;
 
+      foreach my $ll (@LocusIDline) {
+	my %dep;
+	$dep{SOURCE_ID} = $dependent_sources{LocusLink};
+	$dep{ACCESSION} = $ll;
+	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
+      }
+      foreach my $mim (@mimline) {
+	my %dep;
+	$dep{SOURCE_ID} = $dependent_sources{MIM};
+	$dep{ACCESSION} = $mim;
+	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
+      }
       foreach my $med (@medline) {
 	my %dep;
 	$dep{SOURCE_ID} = $dependent_sources{MEDLINE};
