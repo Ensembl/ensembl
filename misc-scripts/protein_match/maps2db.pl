@@ -56,6 +56,20 @@ while (<XMAP>) {
     
     #print STDERR "$targetid,$targetdb,$xac,$xdb,$xid,$xsyn\n";
 
+    if ($xac =~ /^NP_\d+/) {
+	
+	    ($xac) = $xac =~ /^(NP_\d+)/;
+	    #print STDERR "$tid\n";
+	    $xac = $ref_map{$xac};
+	}
+
+    if ($xid =~ /^NP_\d+/) {
+	
+	($xid) = $xac =~ /^(NP_\d+)/;
+	#print STDERR "$tid\n";
+	$xac = $ref_map{$xid};
+    }
+
     my $p= Desc->new;
     $p->targetDB($targetdb);
     $p->xAC($xac);
@@ -76,9 +90,8 @@ while (<MAP>) {
     chomp;
     my ($queryid,$tid,$tag,$queryperc,$targetperc) = split (/\t/,$_);
     #print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";
-
-    
-    #print STDERR "TARGETID0: $tid\n";
+        
+    print STDERR "TARGETID0: $tid\n";
     if ($tid ne "orphan") {
 	if ($tid =~ /^NP_\d+/) {
 	    
@@ -86,9 +99,12 @@ while (<MAP>) {
 	    #print STDERR "$tid\n";
 	    $tid = $ref_map{$tid};
 	}
-	
+
+	if ($tid =~ /^(\w+-\d+)/) {
+	    ($tid) = $tid =~ /^(\w+)-\d+/;
+	}
+
 	#print STDERR "TARGETID1: $tid\n";
-	
 	if (defined $tid) {
 	    
 	    my @array = @{$map{$tid}};
@@ -96,7 +112,7 @@ while (<MAP>) {
 	    foreach my $a(@array) {
 		#print STDERR $a->xDB."\n"; 
 		
-		if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SPTR") || ($a->xDB eq "REFSEQ")) {
+		if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT") || ($a->xDB eq "RefSeq")) {
 		    #print STDERR "IDT: $queryperc\t$targetperc\n";
 		    my $dbentry = Bio::EnsEMBL::IdentityXref->new
 			( -adaptor => $adaptor,

@@ -63,11 +63,13 @@ while ( my $seq = $in->next_seq() ) {
 	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\n";
 
 	    my ($protac) = $link->optional_id =~ /^(\w+).\S+/;
-	    print OUT "$ac\tSPTR\t".$protac."\tEMBL_PROT_AC\t$protac\t\n";
+	    if ($protac) {
+		print OUT "$ac\tSPTR\t".$protac."\tprotein_id\t$protac\t\n";
+	    }
 	}
 
 	if  ($link->database eq "MIM") {
-	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t\t\n";
+	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\n";
 	}
     }
 }
@@ -86,7 +88,7 @@ while (<REFSEQ>) {
 
     $refseq_map{$dna_ac} = $prot_ac; 
     
-    print OUT "$dna_ac\tRefSeq\t$prot_ac\tRefSeq\t$prot_ac\t\n";
+    print OUT "$prot_ac\tRefSeq\t$prot_ac\tRefSeq\t$prot_ac\t\n";
        
     my ($mim) = $_ =~ /\/db_xref=\"MIM:(\d+)/;
     my ($locus) = $_ =~ /\/db_xref=\"LocusID:(\d*)/;
