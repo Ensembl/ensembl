@@ -341,10 +341,6 @@ WHERE  lg.chr_name = '$chr'
 
 }                                       # snp
 
-
-
-
-
 sub dump_est  {
     my ($satdb) = @_;
     warn "no written, doing nohting";
