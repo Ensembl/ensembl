@@ -1,7 +1,6 @@
 #
 # Ensembl module for Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor
 #
-# Cared for by James Stalker <jws@sanger.ac.uk>
 #
 # Copyright James Stalker
 #
@@ -16,9 +15,16 @@ Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor
 =head1 SYNOPSIS
 
 $kary_adaptor = $db_adaptor->get_KaryotypeBandAdaptor();
-foreach $band ( $kary_adaptor->fetch_by_Slice($slice) ) {
+foreach $band ( @{$kary_adaptor->fetch_all_by_Slice($slice)} ) {
   #do something with band
 }
+
+$band = $kary_adaptor->fetch_by_dbID($id);
+
+my @bands = @{$kary_adaptor->fetch_all_by_chr_name('X')};
+
+my $band = $kary_adaptor->fetch_by_chr_band('4','q23');
+
 
 =head1 DESCRIPTION
 
@@ -42,79 +48,91 @@ methods are usually preceded with a _
 =cut
 
 
-# Let the code begin...
-
-
 package Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor;
-use vars qw(@ISA);
-use Bio::EnsEMBL::KaryotypeBand;
+
 use strict;
 
-# Object preamble - inherits from Bio::EnsEMBL::BaseAdaptor
+use vars qw(@ISA);
 
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::KaryotypeBand;
+use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
+
+#_tables
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED Implementation of abstract superclass method to
+#               provide the name of the tables to query
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : internal
 
 
-# inherit new from BaseAdaptor
+sub _tables {
+  my $self = shift;
+
+  return (['karyotype','k'])
+}
 
 
-=head2 fetch_all_by_Slice
+#_columns
 
-  Arg [1]    : Bio::EnsEMBL::Slice $slice
-               The slice object covering the region to retrieve bands from 
-  Example    : @bands = @{$karyotype_band_adaptor->fetch_all_by_Slice($slice)};
-  Description: Fetches karyotype band object from the database for the
-               region given by the slice.
-  Returntype : listref of Bio::EnsEMBL::KaryotypeBand objects in 
-               Slice coordinates
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::Slice::get_KarytypeBands 
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED Implementation of abstract superclass method to 
+#               provide the name of the columns to query 
+#  Returntype : list of strings
+#  Exceptions : none
+#  Caller     : internal
 
-=cut
+sub _columns {
+  my $self = shift;
 
-sub fetch_all_by_Slice {
-  my ($self,$slice) = @_;
-  
-  my $start = $slice->chr_start();
-  my $end = $slice->chr_end();
-  my $chr_name = $slice->chr_name();
+  #warning _objs_from_sth implementation depends on ordering
+  return qw (
+       k.karyotype_id
+       k.seq_region_id
+       k.seq_region_start
+       k.seq_region_end
+       k.band
+       k.stain );
+}
 
-  my $chr_adaptor = $self->db()->get_ChromosomeAdaptor();
-  my $chr_id = $chr_adaptor->fetch_by_chr_name($chr_name)->dbID();
 
-  my $sth = $self->prepare("	SELECT	chr_start,
-					chr_end,
-					band,
-					stain
-				FROM	karyotype 
-				WHERE	chromosome_id = $chr_id
-				AND	$start <= chr_end 
-				AND	$end > chr_start 
-                                order   by chr_start
-			     ");
+sub _objs_from_sth {
+  my ($self, $sth) = @_;
+  my $db = $self->db();
+  my $slice_adaptor = $db->get_SliceAdaptor();
 
-  $sth->execute;
-  my @bands = ();
-  my ($chr_start,$chr_end,$band,$stain) = ();
-  
-  while (($chr_start,$chr_end,$band,$stain) = $sth->fetchrow_array()){
-    last unless defined $band;
-    my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
-    $band_obj->name($band);
-    $band_obj->chr_name($chr_name);
+  my @features;
+  my %slice_cache;
 
-    #convert to slice coordinates
-    $band_obj->start($chr_start - $start + 1);
-    $band_obj->end($chr_end - $start + 1);
+  my($karyotype_id,$seq_region_id,$seq_region_start,$seq_region_end,
+     $band,$stain);
 
-    $band_obj->stain($stain);
-    push (@bands, $band_obj);
+  $sth->bind_columns(\$karyotype_id, \$seq_region_id, \$seq_region_start,
+                     \$seq_region_end, \$band, \$stain);
+
+  while($sth->fetch()) {
+    my $slice = $slice_cache{$seq_region_id} ||=
+      $slice_adaptor->fetch_by_seq_region_id($seq_region_id);
+
+    push @features, Bio::EnsEMBL::KaryotypeBand->new
+      (-START   => $seq_region_start,
+       -END     => $seq_region_end,
+       -SLICE   => $slice,
+       -ADAPTOR => $self,
+       -DBID    => $karyotype_id,
+       -BAND    => $band,
+       -STAIN   => $stain);
   }
 
-  return \@bands;
+  return \@features;
 }
+
 
 
 =head2 fetch_all_by_chr_name
@@ -134,36 +152,12 @@ sub fetch_all_by_Slice {
 sub fetch_all_by_chr_name {
     my ($self,$chr_name) = @_;
 
-    my $chr_adaptor = $self->db()->get_ChromosomeAdaptor();
-    my $chr_id = $chr_adaptor->fetch_by_chr_name($chr_name)->dbID();
+    throw('Chromosome name argument expected') if(!$chr_name);
 
-    my $sth = $self->prepare(
-        "SELECT	chr_start, chr_end, stain, band
-         FROM karyotype 
-         WHERE chromosome_id = ?
-         ORDER BY chr_start"
-    );
-    $sth->execute( $chr_id );
-    
-    my ($chr_start,$chr_end,$stain, $band) = ();
-    my @out = ();
-
-    while(($chr_start, $chr_end, $stain, $band) = $sth->fetchrow_array()) {
-      last unless defined $chr_start;
-      
-      my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
-      $band_obj->name($band);
-      $band_obj->chr_name($chr_name);
-      $band_obj->start($chr_start);
-      $band_obj->end($chr_end);
-      $band_obj->stain($stain);
-      
-      push @out, $band_obj;
-    }
-    
-    return \@out;
+    my $slice =
+      $self->db->get_SliceAdaptor->fetch_by_region('chromosome', $chr_name);
+    return $self->fetch_by_Slice($slice);
 }
-
 
 
 =head2 fetch_by_chr_band
@@ -172,46 +166,32 @@ sub fetch_all_by_chr_name {
                Name of the chromosome from which to retrieve the band
   Arg  [2]   : string $band
                The name of the band to retrieve from the specified chromosome
-  Example    : $band = $kary_adaptor->fetch_all_by_chr_band('4', 'q23'); 
-  Description: Fetches the karyotype band object from the database 
-               for the given chromosome and band name.
-  Returntype : Bio::EnsEMBL::KaryotypeBand in 
-               chromosomal (assembly) coordinates
+  Example    : $band = $kary_adaptor->fetch_all_by_chr_band('4', 'q23');
+  Description: Fetches the karyotype band object from the database
+               for the given chromosome and band name.  If no such band
+               exists, undef is returned instead.
+  Returntype : Bio::EnsEMBL::KaryotypeBand in chromosomal coordinates.
   Exceptions : none
   Caller     : general
 
 =cut
 
 sub fetch_by_chr_band {
-    my ($self,$chr_name, $band) = @_;
+  my ($self, $chr_name, $band) = @_;
 
-    $self->throw("Need band name") unless defined $band;
+  throw('Chromosome name argument expected') if(!$chr_name);
+  throw('Band argument expected') if(!$band);
 
-    my $chr_adaptor = $self->db()->get_ChromosomeAdaptor();
-   
-    my $chr_id = $chr_adaptor->fetch_by_chr_name($chr_name)->dbID();
+  my $slice = $self->db->get_SliceAdaptor->fetch_by_region('chromosome',
+                                                           $chr_name);
 
-    my $sth = $self->prepare(
-        "SELECT	chr_start, chr_end, stain
-         FROM karyotype 
-         WHERE band = ? AND chromosome_id = ?");
+  my $constraint = "k.band = '$band'";
+  my $result = $self->fetch_by_Slice_constraint($slice,$constraint);
 
-    $sth->execute( $band, $chr_id );
+  return undef if(!@$result);
+  my ($kb) = @$result;
 
-    my ($chr_start,$chr_end,$stain) = $sth->fetchrow_array;
-
-    return undef unless defined $chr_start;
-
-    my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
-    $band_obj->name($band);
-    $band_obj->chr_name($chr_name);
-    $band_obj->start($chr_start);
-    $band_obj->end($chr_end);
-    $band_obj->stain($stain);
-
-    return $band_obj;
+  return $kb;
 }
-
-
 
 1;
