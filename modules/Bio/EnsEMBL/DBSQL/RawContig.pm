@@ -683,6 +683,7 @@ sub get_MarkerFeatures {
           $hstart,$hend,1,$score,$name,'similarity',$hid);
           $out->analysis($analysis);
       $out->mapdb( $self->dbobj->mapdb );
+      $out->id ($hid);
       push( @result, $out );
     }
   };
