@@ -76,7 +76,7 @@ sub new {
     }
 
     # needs to handle overhangs...
-    my @contigs = $self->_vmap->each_MapContig;
+    @contigs = $self->_vmap->each_MapContig;
     my $last = pop @contigs;
     $self->_vmap->length($last->end);
     
