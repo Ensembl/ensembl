@@ -74,6 +74,7 @@ sub fset2transcript {
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);
 	$exon->phase    ($f->phase);
+	$exon->end_phase($f->end_phase);
 
 	$exon->attach_seq($contig->primary_seq);
 	
@@ -103,14 +104,16 @@ sub fset2transcript {
     $translation->start_exon($exons[0]);
     $translation->end_exon($exons[$#exons]);
     
-    my $endphase = $exons[0]->phase;
+    my $endphase = $exons[0]->end_phase;
     
     foreach my $exon (@exons) {
 	
-	$exon->phase         ($endphase);
-	$transcript->add_Exon($exon);
-	$endphase = $exon->end_phase;
-	
+      if ( $exon == $exons[0] ){
+	next;
+      }
+      $exon->phase         ($endphase);
+      $transcript->add_Exon($exon);
+      $endphase = $exon->end_phase;
     }
     
     $transcript->translation($translation);
