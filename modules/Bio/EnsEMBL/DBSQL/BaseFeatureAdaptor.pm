@@ -40,7 +40,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 our $SLICE_FEATURE_CACHE_SIZE = 4;
-
+my $MAX_SPLIT_QUERY_SEQ_REGIONS = 3;
 
 =head2 new
 
@@ -390,9 +390,9 @@ sub fetch_all_by_Slice_constraint {
 	#wanted. The easy approach is just to limit the queries if there are less
 	#than a certain number of regions. As well seperate queries are needed
 	#otherwise the indices will not be useful
-	if(@coords > 3) {
-	  my $constraint = $original_constraint;
+	if(@coords > $MAX_SPLIT_QUERY_SEQ_REGIONS) {
 	  #do one query, and do not limit with start / end constraints
+	  my $constraint = $original_constraint;
 	  my $id_str = join(',', @ids);
 	  $constraint .= " AND " if($constraint);
 	  $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
@@ -405,7 +405,7 @@ sub fetch_all_by_Slice_constraint {
 	  push @features, @$fs;
 
 	} else {
-	  #do multiple queries using start / end constraints
+	  #do multiple split queries using start / end constraints
 	  my $len = @coords;
 	  for(my $i = 0; $i < $len; $i++) {
 	    my $constraint = $original_constraint;
