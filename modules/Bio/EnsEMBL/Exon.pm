@@ -305,13 +305,15 @@ sub _transform_between_Slices {
 
   #copy the attached supporting features and transform them
   my @feats;
-  foreach my $sf (@{$self->get_all_supporting_features()}) {
-    #my $f = $sf->new();
-    #%$f = %$sf;
-    ###(mcvicker) this would be better if the feature was copied
-    push @feats, $sf->transform($to_slice);
+  if( exists $self->{_supporting_evidence} ) {
+    foreach my $sf (@{$self->get_all_supporting_features()}) {
+      #my $f = $sf->new();
+      #%$f = %$sf;
+      ###(mcvicker) this would be better if the feature was copied
+      push @feats, $sf->transform($to_slice);
+    }
+    $new_exon->add_supporting_features(@feats);
   }
-  $new_exon->add_supporting_features(@feats);
 
   return $new_exon;
 }
@@ -384,14 +386,15 @@ sub _transform_to_Slice {
 
   #copy the attached supporting features and transform them
   my @feats;
-  foreach my $sf (@{$self->get_all_supporting_features()}) {
-   #my $f = $sf->new();
-   #%$f = %$sf;
-    #(mcvicker) this would be better if the feature was copied
-   push @feats, $sf->transform($slice);
+  if( exists $self->{_supporting_evidence} ) {
+    foreach my $sf (@{$self->get_all_supporting_features()}) {
+      #my $f = $sf->new();
+      #%$f = %$sf;
+      #(mcvicker) this would be better if the feature was copied
+      push @feats, $sf->transform($slice);
+    }
+    $newexon->add_supporting_features(@feats);
   }
-  $newexon->add_supporting_features(@feats);
-    
   return $newexon;
 }
 
@@ -446,15 +449,18 @@ sub _transform_to_RawContig {
 
   #transform the supporting features to raw contig coords (hashed on contig)
   my %sf_hash;
-  my $sfs = $self->get_all_supporting_features();
-  foreach my $sf (@$sfs) {
-    foreach my $mapped_feat ($sf->transform()) {
-      unless(exists $sf_hash{$mapped_feat->contig->name}) {
-	$sf_hash{$mapped_feat->contig->name} = [];
+  
+  if( exists $self->{_supporting_evidence} ) {
+    my $sfs = $self->get_all_supporting_features();
+    foreach my $sf (@$sfs) {
+      foreach my $mapped_feat ($sf->transform()) {
+	unless(exists $sf_hash{$mapped_feat->contig->name}) {
+	  $sf_hash{$mapped_feat->contig->name} = [];
+	}
+	#print STDERR "transform has returned ".$mapped_feat." on contig ".$mapped_feat->contig->name."\n";
+	push @{$sf_hash{$mapped_feat->contig->name}}, $mapped_feat;
+	#print STDERR "array for ".$mapped_feat->contig->name." contig has ".@{$sf_hash{$mapped_feat->contig->name}}." features\n";
       }
-      #print STDERR "transform has returned ".$mapped_feat." on contig ".$mapped_feat->contig->name."\n";
-      push @{$sf_hash{$mapped_feat->contig->name}}, $mapped_feat;
-      #print STDERR "array for ".$mapped_feat->contig->name." contig has ".@{$sf_hash{$mapped_feat->contig->name}}." features\n";
     }
   }
       
