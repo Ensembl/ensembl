@@ -2,7 +2,7 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 8;
+	plan tests => 9;
 }
 
 my $loaded = 0;
