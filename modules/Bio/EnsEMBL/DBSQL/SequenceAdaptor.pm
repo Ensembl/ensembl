@@ -67,7 +67,7 @@ sub fetch_by_RawContig_start_end_strand {
   Arg  [2]   : int startBasePair 
                count from 1
   Arg  [3]   : int endBasePair 
-               count from 1, -1 is last one
+               count from 1, undef is last one
   Arg  [4]   : int strand 
                1, -1
   Example    : $dna = $seq_adptr->fetch_by_Slice_start_end_strand($slice, 1, 
@@ -87,7 +87,7 @@ sub fetch_by_Slice_start_end_strand {
      throw("Slice argument is required.");
    }
 
-   if( $end == -1 ) {
+   if( !defined($end) ) {
      $end = $slice->end() - $slice->start() + 1;
    }
 
@@ -103,13 +103,35 @@ sub fetch_by_Slice_start_end_strand {
 
    $slice = $slice->expand($left_expand, $right_expand);
 
+   #retrieve normalized 'non-symlinked' slices
+   #this allows us to support haplotypes and PARs
+   my $slice_adaptor = $slice->adaptor();
+   my @symproj=@{$slice_adaptor->fetch_normalized_slice_projection($slice)};
+
+   if(@symproj == 0) {
+     throw('Could not retrieve normalized Slices. Database contains ' .
+           'incorrect assembly_exception information.');
+   }
+
+   #no projection is necessary if there was no symlink
+   if(@symproj != 1 || $symproj[0]->[2] != $slice) {
+     my $seq;
+     foreach my $segment (@symproj) {
+       my $symlink_slice = $segment->[2];
+       #get sequence from each symlinked area
+       $seq .= ${$self->fetch_by_Slice_start_end_strand($symlink_slice,
+                                                        1,undef,1)};
+     }
+     if($strand == -1) {
+       _reverse_comp(\$seq);
+     }
+     return \$seq;
+   }
+
    # we need to project this slice onto the sequence coordinate system
    # if it is not already in it
-
    my $csa = $self->db->get_CoordSystemAdaptor();
    my $seqlevel = $csa->fetch_sequence_level();
-
-   my $slice_adaptor = $self->db()->get_SliceAdaptor();
 
    my @projection;
    if($slice->coord_system->equals($seqlevel)) {
@@ -146,7 +168,7 @@ sub fetch_by_Slice_start_end_strand {
 
      #reverse compliment on negatively oriented slices
      if($seq_slice->strand == -1) {
-       $self->_reverse_comp(\$tmp_seq);
+       _reverse_comp(\$tmp_seq);
      }
 
      $seq .= $tmp_seq;
@@ -171,7 +193,7 @@ sub fetch_by_Slice_start_end_strand {
    }
 
    #if they asked for the negative slice strand revcomp the whole thing
-   $self->_reverse_comp(\$seq) if($strand == -1);
+   _reverse_comp(\$seq) if($strand == -1);
 
    return \$seq;
 }
@@ -254,7 +276,6 @@ sub store {
 =cut
 
 sub _reverse_comp {
-  my $self = shift;
   my $seqref = shift;
 
   $$seqref = reverse( $$seqref );
