@@ -261,6 +261,9 @@ sub strands_reversed {
    if ( defined $arg ) {
       $self->{'strands_reversed'} = $arg ;
    }
+
+   $self->{'strands_reversed'} = 0 unless (defined $self->{'strands_reversed'});
+
    return $self->{'strands_reversed'};
 }
 
@@ -290,6 +293,14 @@ sub reverse_complement {
   $cigar_string = "";
   while (my $piece = pop @cigar_pieces) {
     $cigar_string .= $piece;
+  }
+  
+  $self->{'strands_reversed'} = 0 unless (defined $self->{'strands_reversed'});
+
+  if ($self->strands_reversed) {
+    $self->strands_reversed(0)
+  } else {
+    $self->strands_reversed(1);
   }
 
   $self->cigar_string($cigar_string);
@@ -395,6 +406,7 @@ sub _parse_cigar {
 
       push @features, Bio::EnsEMBL::FeaturePair->new
         (-SLICE      => $self->{'slice'},
+         -SEQNAME   => $self->{'seqname'},
          -START      => $qstart,
          -END        => $qend,
          -STRAND     => $strand1,
@@ -405,7 +417,10 @@ sub _parse_cigar {
          -SCORE      => $self->{'score'},
          -PERCENT_ID => $self->{'percent_id'},
          -ANALYSIS   => $self->{'analysis'},
-         -P_VALUE    => $self->{'p_value'});
+         -P_VALUE    => $self->{'p_value'},
+         -GROUP_ID    => $self->{'group_id'},
+         -LEVEL_ID    => $self->{'level_id'});
+      
 
       # end M cigar bits 
     } elsif( $piece =~ /I$/ ) {
@@ -484,6 +499,10 @@ sub _parse_features {
   my $percent     = $f[0]->percent_id;
   my $analysis    = $f[0]->analysis;
   my $pvalue      = $f[0]->p_value();
+
+  my $group_id    = $f[0]->group_id;
+  my $level_id    = $f[0]->level_id;
+
   my $seqname = $f[0]->seqname;
   # implicit strand 1 for peptide sequences
   $strand  ||= 1;
@@ -724,6 +743,8 @@ sub _parse_features {
   $self->{'hseqname'}   = $hname;
   $self->{'cigar_string'} = $string;
   $self->{'p_value'}      = $pvalue;
+  $self->{'group_id'}     = $group_id;
+  $self->{'level_id'}     = $level_id;
 }
 
 
