@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DB::WriteableVirtualContig - Virtual Contig which has write_Gene methods
+Bio::EnsEMBL::DB::ConvertibleVirtualContig - Virtual Contig which has convert_Gene methods
 
 =head1 SYNOPSIS
 
@@ -20,18 +20,17 @@ Bio::EnsEMBL::DB::WriteableVirtualContig - Virtual Contig which has write_Gene m
 
     $gene_obj= $obj->gene_Obj;
 
-    $wvc= Bio::EnsEMBL::DB::WriteableVirtualContig->new( -focuscontig => $rawcontig,
+    $cvc= Bio::EnsEMBL::DB::ConvertibleVirtualContig->new( -focuscontig => $rawcontig,
 					      -focusposition => 2,
 					      -ori => 1,
 					      -left => 5000,
 					      -right => 5000,
-					      -gene_obj => $gene_obj,
-					      );
+							   );
 
     # build a gene somehow
     # This call writes the gene to the database, mapping coordinates back to
     # rawcontig coordinates
-    $wvc->write_Gene($gene);
+    $newgene = $cvc->convert_Gene_to_raw_contig($gene);
 
 
 
@@ -56,7 +55,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DB::WriteableVirtualContig;
+package Bio::EnsEMBL::DB::ConvertibleVirtualContig;
 use vars qw(@ISA);
 use strict;
 
@@ -71,31 +70,22 @@ use Bio::EnsEMBL::DB::VirtualContig;
 
 sub _initialize {
   my($self,@args) = @_;
-  
-  my ($gene_obj) = $self->_rearrange([qw( GENE_OBJ )],@args);
-  
-  if( !ref $gene_obj || !$gene_obj->isa('Bio::EnsEMBL::DBSQL::Gene_Obj') ) {
-      $self->throw("must pass gene_obj argument to WriteableVirtualContig, got a [$gene_obj]");
-  }
-
   my $make = $self->SUPER::_initialize(@args);
-  $self->_gene_obj($gene_obj);
-
-  
- 
   return $make; # success - we hope!
 }
 
-=head2 write_Gene
+=head2 convert_Gene_to_raw_contig
 
- Title   : write_Gene
- Usage   : $wvc->write_Gene($gene)
- Function: Writes a gene built on this VirtualContig back to a set of 
-           raw contig positions
+ Title   : convert_Gene_to_raw_contig
+ Usage   : $newgene = $cvc->convert_Gene_to_raw_contig($gene)
+ Function: Converts a gene built on this VirtualContig back to being
+           a gene built on raw contig positions, read to be written back 
+           
 
            Internally this builds a copy of the genes,transcripts and translations
-           in RC coordinate space, making heavy use of VirtualMap vcpos_to_rcpos
-           function. Exons could be split into 
+           in RC coordinate space, making heavy use of VirtualMap raw_contig_position
+           function. Exons could be split into sub exons across boundaries.
+
  Example :
  Returns : 
  Args    :
@@ -103,7 +93,7 @@ sub _initialize {
 
 =cut
 
-sub write_Gene{
+sub convert_Gene_to_raw_contig {
    my ($self,$gene) = @_;
 
    if( !ref $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
@@ -172,7 +162,8 @@ sub write_Gene{
        }
    }
 
-   $self->_gene_obj->write($clonedgene);
+   return $clonedgene;
+
 }
 
 =head2 _reverse_map_Exon
@@ -425,24 +416,3 @@ sub _sanity_check{
 
 }
 
-
-=head2 _gene_obj
-
- Title   : _gene_obj
- Usage   : $obj->_gene_obj($newval)
- Function: 
- Returns : value of _gene_obj
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _gene_obj{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_gene_obj'} = $value;
-    }
-    return $obj->{'_gene_obj'};
-
-}

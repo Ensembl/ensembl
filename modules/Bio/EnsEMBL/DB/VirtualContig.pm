@@ -367,7 +367,8 @@ sub primary_seq {
 	   $seq_string .= $str;
        } else {
 	   # exact overlap - chew back the switch base
-	   $seq_string = substr($seq_string,0,-1);
+	   #$seq_string = substr($seq_string,0,-1);
+	   # chew back no longer required...
        }
 
        # now add in the actual sequence.

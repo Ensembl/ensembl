@@ -27,7 +27,7 @@ END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBLoader;
-use Bio::EnsEMBL::DB::WriteableVirtualContig;
+use Bio::EnsEMBL::DB::ConvertibleVirtualContig;
 use Bio::EnsEMBL::FeaturePair;
 $loaded=1;
 print "ok \n";    # 1st test passed, loaded needed modules
@@ -95,16 +95,17 @@ die "$0\nError fetching contig1 : $!" unless defined ($contig);
 
 print "ok 6\n";
 
-my $wvc     = new Bio::EnsEMBL::DB::WriteableVirtualContig(-focuscontig   => $contig,
+my $wvc     = new Bio::EnsEMBL::DB::ConvertibleVirtualContig(-focuscontig   => $contig,
 						 -focusposition => 1,
 						 -ori           => 1,
 						 -left          => 30,
 						 -right         => 30,
-                                                 -gene_obj      => $db->gene_Obj);
+                                                 );
 
 die ("$0\nCan't create virtual contig :$!") unless defined ($wvc);
 
 $wvc->_dump_map(\*STDERR);
+print "...seq",$wvc->primary_seq->seq,"\n";
 
 
 print "ok 7\n";
@@ -195,8 +196,8 @@ $trans->add_Exon($exon);
 $exon{'exon-2'} = $exon;
 $exon->attach_seq($wvc->primary_seq);
 
-$wvc->write_Gene($gene);
-
+$newgene = $wvc->convert_Gene_to_raw_contig($gene);
+$db->write_Gene($newgene);
 print "ok 8\n";
 
 ($newgene) = $db->gene_Obj->get_array_supporting('evidence','gene-id-1');
@@ -237,7 +238,7 @@ if( !defined $newgene ) {
 }
 
 
-$wvc     = new Bio::EnsEMBL::DB::WriteableVirtualContig(-focuscontig   => $contig,
+$wvc     = new Bio::EnsEMBL::DB::ConvertibleVirtualContig(-focuscontig   => $contig,
 						 -focusposition => 1,
 						 -ori           => -1,
 						 -left          => 30,
@@ -295,8 +296,8 @@ $trans->add_Exon($exon);
 $exon{'rexon-2'} = $exon;
 $exon->attach_seq($wvc->primary_seq);
 
-$wvc->write_Gene($gene);
-
+$newgene = $wvc->convert_Gene_to_raw_contig($gene);
+$db->write_Gene($newgene);
 
 
 
