@@ -346,6 +346,84 @@ sub store {
 
 
 
+=head2 update
+
+  Arg [1]    : Bio::EnsEMBL::Analysis $anal
+  Example    : $adaptor->update($anal)
+  Description: Updates this analysis in the database
+  Returntype :
+  Exceptions : thrown if $anal arg is not an analysis object
+  Caller     : ?
+
+=cut
+
+sub update {
+  my ($self, $analysis) = @_;
+  
+  if (!defined $analysis || !ref $analysis) {
+    $self->throw("called update on AnalysisAdaptor with a [$analysis]");
+  }
+
+  $analysis->dbID && ($analysis->adaptor() == $self) or
+    return undef;
+
+  my $dbID;
+
+  unless ($dbID = $self->exists($analysis)) {
+    return undef;
+  }
+
+  my $query = "UPDATE analysis SET ";
+
+  foreach my $m (qw/
+    created         logic_name
+    db              db_version      db_file
+    program         program_version program_file
+    parameters      module          module_version
+    gff_source      gff_feature/) {
+    $query .= " $m = '" . $analysis->$m . "'," if defined $analysis->$m;
+  };
+  chop $query;
+  $query .= " WHERE analysis_id = $dbID";
+
+  my $sth = $self->db->db_handle->do($query);
+
+  return 1;
+}
+
+
+
+=head2 remove
+
+  Arg [1]    : Bio::EnsEMBL::Analysis $anal
+  Example    : $adaptor->remove($anal)
+  Description: Removes this analysis from the database
+  Returntype :
+  Exceptions : thrown if $anal arg is not an analysis object
+  Caller     : ?
+
+=cut
+
+sub remove {
+  my ($self, $analysis) = @_;
+  my $dbID;
+  
+  if (!defined $analysis || !ref $analysis) {
+    $self->throw("called remove on AnalysisAdaptor with a [$analysis]");
+  }
+
+  unless ($dbID = $self->exists($analysis)) {
+    return undef;
+  }
+
+  my $res = $self->db->db_handle->do(qq{
+    DELETE from analysis
+    WHERE  analysis_id = $dbID
+  });
+}
+
+
+
 =head2 exists
 
   Arg [1]    : Bio::EnsEMBL::Analysis $anal
