@@ -5,6 +5,9 @@ use Apache::Constants qw(:response :methods :http);
 use Apache::File ();
 use Apache::Log ();
 
+#############################################################
+# Mod_perl request handler for Location /test2
+#############################################################
 sub handler {
     my $r = shift;
     my ($header, $footer);
@@ -23,7 +26,7 @@ sub handler {
     }
 
     if ($r->method_number == M_OPTIONS) {
-        return DECLINED;                     #pass to http core default_handler()
+        return DECLINED;
     }
 
     if ($r->method_number == M_PUT) {
@@ -31,9 +34,7 @@ sub handler {
     }
 
     if (-d $r->finfo) {
-        # Need to add a method here to make sure dir parsing is solid
-        # ie. directory path: /test -> /test/index.html
-        return DECLINED;                    #pass to http core default_handler()
+        return DECLINED;
     }
 
     unless (-e $r->finfo) {
@@ -68,31 +69,223 @@ sub handler {
         $r->send_http_header;
     }
     
-    my $trail;
+    my ($title, $gif);  # currently unused
+    my ($trail, $nav_start, $nav_end, $nav_menu);
     
-    &make_nav_trail (\$r, \$trail);
+    &make_nav_trail(\$r, \$trail);
+    &make_nav_menu (\$r, \$nav_menu);
+    #$r->log->error("Printed Nav: $nav_menu");
+    &make_nav_start(\$r, \$nav_start, \$nav_menu);
+    &make_nav_end  (\$r, \$nav_end);
+
+    #$r->log->error("Top Nav: $nav_start");
+    #$r->log->error("Bottom Nav: $nav_end");
+
     &make_ensembl_header(\$r, \$header);
     &make_ensembl_footer(\$r, \$footer);
-    my ($title, $gif);
     
     unless ($r->header_only) {
         $r->print($header);
         $r->print($trail);
+
+        $r->print($nav_start);
         while (<$fh>){
             $r->print($_);
         }
+        $r->print($nav_end);
+
         $r->print($footer);
     }
 
     
     close $fh;
+
+    my $http_header = $r->headers_in->{'X-Forwarded-For'};
+        if( my $ip = (split /,\s*/, $http_header)[-1] ) {
+            $r->connection->remote_ip($ip);
+        }
+        
+    #$r->warn("HTTP dump:\n", $r->as_string);
+    
+    
     return OK;
-}
+} # end of handler
+
+#############################################################
+# Make menu HTML
+#############################################################
+sub make_menu {
+
+    my ($req_ref, $file) = @_;
+    my %menu =();
+    my @menu_order;
+    my $html;
+    
+    my $oldRS = $/;
+    $/ = "";
+    open (MENU, $file) or $$req_ref->log->error("Can't open nav menu conf file [$file]: $!");
+    #$$req_ref->log->error("Opened $file!");
+    my @menus = <MENU>;
+    
+    
+    foreach my $m (@menus){
+        chomp ($m);
+        next if (/^#/);
+        #$$req_ref->log->error("Full Menu: $m");
+        
+        my @this_menu = reverse(split (/\n/,$m));
+        #foreach my $tm(@this_menu){
+        #    $$req_ref->log->error("\tMenu items: $tm");
+        #}
+        my $header = pop(@this_menu);
+        my ($h,$u) = split (/;/,$header);
+        
+        $html .=<<EOH;
+<TR>
+ <TD>&nbsp;</TD>
+ <TD CLASS="navbarhead"><A HREF="$u">$h</A></TD>
+ <TD>&nbsp;</TD>
+</TR>
+EOH
+
+        foreach my $item (reverse(@this_menu)){
+            my ($h,$u) = split (/;/,$item);
+            $html .=<<EOI;
+<TR>
+ <TD>&nbsp;</TD>
+ <TD CLASS="navbar"><A HREF="$u">$h</A></TD>
+ <TD>&nbsp;</TD>
+</TR>
+EOI
+
+        } # end of foreach my $item
+
+        $html .=<<EOH;
+<TR>
+ <TD COLSPAN="3"><IMG HEIGHT="3" WIDTH="1" SRC="/icons/nothing.gif" ALT=""></TD>
+</TR>
+EOH
+
+    } # end of foreach my $m
+    
+
+
+
+    #$$req_ref->log->error("NAVBAR HTML: $html");
+    
+    $/ = $oldRS;
+
+    close (MENU) or $$req_ref->log->error("Can't close nav menu conf file [$file]: $!");
+
+    return ($html)
+    
+} # end of sub
+
+#############################################################
+# Construct the nav menu bar
+#############################################################
+sub make_nav_menu {
+
+my ($req_ref, $navmenu_ref) = @_;
+
+    my $default_filename = '/def_nav.conf';
+    my $local_filename = 'nav.conf';
+    my $menufile;
+    my %nav = ();
+    my $uri = $$req_ref->filename;
+    
+    #$$req_ref->log->error("Full URL: $uri");
+    $uri =~ s/\w+\.*\w+$//;
+    #$$req_ref->log->error("DIR: $uri");
+    #$$req_ref->log->error("Looking for: $uri$local_filename");
+    if (-e "$uri$local_filename"){
+        $menufile = "$uri$local_filename";
+        #$$req_ref->log->error("Menufile: $menufile");
+        $$navmenu_ref = &make_menu($req_ref, $menufile);
+    }
+    else{
+        $menufile = $$req_ref->document_root.$default_filename;
+        #$$req_ref->log->error("Menufile: $menufile");
+        $$navmenu_ref = &make_menu($req_ref, $menufile);
+    }
+
+    
+} # end of sub
+
+#############################################################
+# Construct the nav bar top
+#############################################################
+sub make_nav_start {
+
+my ($req_ref, $start_ref, $menu_ref) = @_;
+
+$$start_ref=<<EOS;
+
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
+    <TR>
+        <!-- <TD VALIGN="TOP" ROWSPAN=2 BGCOLOR="#FFFFCC"> -->
+        <!-- <TD VALIGN="TOP" ROWSPAN=2 BGCOLOR="#5A85D6"> -->
+        <TD VALIGN="TOP" ROWSPAN=2 BGCOLOR="#EFEFFF">
+            <!-- table cell for left navbar -->
+            <!-- navbar items begin here -->
+            <TABLE WIDTH="90" BORDER="0" CELLPADDING="0" CELLSPACING="5">
+
+<!--
+                <TR>
+                    <TD COLSPAN="3"><IMG HEIGHT="1" WIDTH="1" SRC="/icons/nothing.gif" ALT=""></TD>
+                </TR>
+-->
+
+$$menu_ref               
+
+            </TABLE>
+            
+            <!-- navbar items end here -->
+            <!-- end of table cell for left navbar -->
+        </TD>
+
+        <TD ROWSPAN="2" WIDTH="30">&nbsp;</TD>
+        <!-- margin between navbar and main-page -->
+        <TD WIDTH="80%"><IMG WIDTH="1" HEIGHT="10" SRC="/icons/nothing.gif" ALT=""></TD>
+        <!-- cell just above main page to keep distance from top header -->
+        <TD ROWSPAN="2" WIDTH="5%">&nbsp;</TD>
+        <!-- right margin -->
+    </TR>
+
+    <TR>
+        <TD ALIGN="LEFT" VALIGN="TOP">
+
+        <!-- table cell for main page -->
+<!-- ---------------page content starts here--------------- -->
+        
+EOS
+
+} # end of sub"
+
+#############################################################
+# Construct the nav bar top
+#############################################################
+sub make_nav_end {
+
+my ($req_ref, $end_ref) = @_;
+
+$$end_ref=<<EOS;
+
+<!-- ---------------page content ends here--------------- -->
+        <!-- end of table cell for main page -->
+        </TD>
+    </TR>
+
+</TABLE>
+
+<!-- close table for page content -->
+EOS
+
+}# end of sub"
 
 #############################################################
 # Construct the navigation trail
 #############################################################
-
 sub make_nav_trail {
 
     my ($req_ref, $trail_ref) = @_;
@@ -112,7 +305,6 @@ sub make_nav_trail {
         $$req_ref->log->error("Cannot open URL map file: $!");
         return;
     }
-
     my @lines = <MAP>;
     foreach my $l (@lines){
         chomp ($l);
@@ -126,7 +318,7 @@ sub make_nav_trail {
     #}
     
     my $path_tmp ="";
-    $$trail_ref = "<B CLASS=\"navbar\">You are here:</B> <A HREF=\"/\">Home</A>";
+    $$trail_ref = "<B CLASS=\"trailbar\">You are here:</B> <A HREF=\"/\">Home</A>";
     
     for (my $i=0;$i<(scalar(@dirs));$i++){
         $path_tmp .= "$dirs[$i]/";
@@ -155,7 +347,7 @@ sub make_nav_trail {
     $$trail_ref=<<EOS; 
 <TABLE WIDTH="100%" BORDER="0">
  <TR>
-  <TD CLASS="navbar">
+  <TD CLASS="trailbar">
     $$trail_ref
   </TD>
  </TR>
@@ -169,7 +361,6 @@ EOS
 #############################################################
 # Construct the standard EnsEMBL page header
 #############################################################
-
 sub make_ensembl_header {
 
     my ($req_ref, $header_ref) = @_;
@@ -192,7 +383,7 @@ sub make_ensembl_header {
   </TD>
  </TR>
 </TABLE>
-<P>
+<!P>
 EOS
 
     return;
@@ -202,7 +393,6 @@ EOS
 #############################################################
 # Construct the standard EnsEMBL page header
 #############################################################
-
 sub make_ensembl_footer {
 
     my ($req_ref, $footer_ref) = @_;
@@ -210,13 +400,21 @@ sub make_ensembl_footer {
     
     $$footer_ref=<<EOS;
 <P>
+<TABLE WIDTH="100%" BORDER="0">
+ <TR>
+  <TD CLASS="trailbar">
+    &nbsp;
+  </TD>
+ </TR>
+</TABLE>
 <HR>
+<!P>
 <TABLE BORDER="0" WIDTH="100%">
   <TR>
-    <TD ALIGN="LEFT" HALIGN="TOP"><I>
+    <TD CLASS="lfooter"><I>
          last modified : $modtime </I>
     </TD>
-    <TD ALIGN="RIGHT" HALIGN="TOP">
+    <TD CLASS="rfooter" ALIGN="RIGHT">
         <I><A HREF=mailto:webmaster\@sanger.ac.uk>webmaster\@sanger.ac.uk</A></I>
     </TD>
   </TR>
@@ -254,29 +452,30 @@ Apache::EnsEMBL::SendDecPage - Apache Mod_perl module to serve decorated HTML fi
 This mod_perl module is used to take a skeleton HTML file and wrap it in a header,
 footer and side navigation bar.
 
-=head1 DESCRIPTION (most not yet implemented)
+=head1 DESCRIPTION (some features not yet implemented)
 
 This module takes standard HTTP GET requests received by Apache and locates the
 corresponding HTML file which is then returned wrapped suitably. It is fully 
 HTTP/1.1 compliant. 
 
-The header includes a "bread crumb" trail to show (roughly) where the page lies in
-the server document tree structure and also a reference to a CSS which will be 
-used later. The footer shows last modification date of the HTML file and a 
-contact email address.
+The header includes a "bread crumb" trail to show (roughly) where the current page 
+lies in the server document tree structure and a reference to a CSS which is 
+used to apply a style. 
 
 The navigation bar is created dynamically by incorporating the contents of a 
 "nav.conf" file in the same directory as the HTML file (if it exists). This contains
 a list of navigation options that will be written to the side bar. 
 If the config file
-does not exist the default navigation bar is used (read from /def_nav.conf) 
+does not exist the default navigation bar is used (/def_nav.conf).
+
+The footer shows last modification date of the HTML file and a contact email address.
 
 This module includes an optimization which checks whether the browser already
 has the page in its disk cache and is only requesting the page if it has changed.
 
 =head1 RELATED MODULES
 
-See also: Apache::EnsEMBL::SendDecPage, nav.conf, def_nav.conf
+See also: Apache::EnsEMBL::SendPage, nav.conf, def_nav.conf
 
 =head1 FEED_BACK
 
