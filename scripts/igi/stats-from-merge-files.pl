@@ -279,7 +279,8 @@ for(my $i = 1; $i<=$n_sources; $i++) {
     gene_stats($igis_of_n_sources[$i]) ;
 }
 
-### see to what extent native gene_ids get lumped together by the igi clustering
+### see to what extent native gene_ids get chained together by the igi
+### clustering
 print "----\n";
 my @histo = undef;
 foreach my $source ('ALL', @all_sources) { 
@@ -289,7 +290,7 @@ foreach my $source ('ALL', @all_sources) {
         $histo[ int(@gene_ids) ]{$source} ++;
     }
 }
-print "gene id lumping: histogram of number of native gene_ids per igi:\n";
+print "gene id chaining: histogram of number of native gene_ids per igi:\n";
 foreach my $source ('ALL', @all_sources) { 
     print "source $source:\n";
     for (my $i=0;  $i< int(@histo); $i++ ) {
