@@ -69,7 +69,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 sub new {
   my($class,@args) = @_;
-  
+
   #invoke the superclass (BaseAdaptor) constructor
   my $self = $class->SUPER::new(@args);
   
@@ -108,45 +108,49 @@ sub get_Gene_chr_MB {
 
 sub get_Gene_chr_bp {
     my ($self,$geneid) =  @_;
-   
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
 
-   my $sth = $self->db->prepare("SELECT  
-   if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.contig_end)),
-   if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.contig_start)),
-     a.chromosome_id
+
+    $self->throw("StaticGoldenPathAdaptor::get_Gene_chr_bp is deprecated. " .
+		 "the replacement method is private to SliceAdaptor\n");
+   
+  # my $type = $self->db->assembly_type()
+#    or $self->throw("No assembly type defined");
+
+#   my $sth = $self->db->prepare("SELECT  
+#   if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
+#                    (a.chr_start+a.contig_end-e.contig_end)),
+#   if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
+#                    (a.chr_start+a.contig_end-e.contig_start)),
+#     a.chromosome_id
   
-                    FROM    exon e,
-                        transcript tr,
-                        exon_transcript et,
-                        assembly a,
-                        gene_stable_id gsi
-                    WHERE e.exon_id=et.exon_id 
-                    AND et.transcript_id =tr.transcript_id 
-                    AND a.contig_id=e.contig_id 
-                    AND a.type = '$type' 
-                    AND tr.gene_id = gsi.gene_id
-                    AND gsi.stable_id = '$geneid';" 
-                    );
-   $sth->execute();
+#                    FROM    exon e,
+#                        transcript tr,
+#                        exon_transcript et,
+#                        assembly a,
+#                        gene_stable_id gsi
+#                    WHERE e.exon_id=et.exon_id 
+#                    AND et.transcript_id =tr.transcript_id 
+#                    AND a.contig_id=e.contig_id 
+#                    AND a.type = '$type' 
+#                    AND tr.gene_id = gsi.gene_id
+#                    AND gsi.stable_id = '$geneid';" 
+#                    );
+#   $sth->execute();
 
-   my ($start,$end,$chr);
-   my @start;
-   while ( my @row=$sth->fetchrow_array){
-      ($start,$end,$chr)=@row;
-       push @start,$start;
-       push @start,$end;
-   }   
+#   my ($start,$end,$chr);
+#   my @start;
+#   while ( my @row=$sth->fetchrow_array){
+#      ($start,$end,$chr)=@row;
+#       push @start,$start;
+#       push @start,$end;
+#   }   
    
-   my @start_sorted=sort { $a <=> $b } @start;
+#   my @start_sorted=sort { $a <=> $b } @start;
 
-   $start=shift @start_sorted;
-   $end=pop @start_sorted;
+#   $start=shift @start_sorted;
+#   $end=pop @start_sorted;
 
-   return ($chr,$start,$end); 
+#   return ($chr,$start,$end); 
         
 }
 
@@ -165,30 +169,33 @@ sub get_Gene_chr_bp {
 sub get_chr_start_end_of_contig {
     my ($self,$contigid) = @_;
 
-   if( !defined $contigid ) {
-       $self->throw("Must have contig id to fetch VirtualContig of contig");
-   }
+    $self->throw("StaticGoldenPathAdaptor::get_chr_start_end_of_contig"
+	 . "is deprecated. The replacement method is private to SliceAdaptor\n");
+
+#   if( !defined $contigid ) {
+#       $self->throw("Must have contig id to fetch VirtualContig of contig");
+#   }
    
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
+#   my $type = $self->db->assembly_type()
+#    or $self->throw("No assembly type defined");
 
-   my $sth = $self->db->prepare("SELECT  c.id,
-                        a.chr_start,
-                        a.chr_end,
-                        a.chromosome_id 
-                    FROM assembly a, contig c 
-                    WHERE c.id = '$contigid' 
-                    AND c.internal_id = a.contig_id 
-                    AND a.type = '$type'"
-                    );
-   $sth->execute();
-   my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
+#   my $sth = $self->db->prepare("SELECT  c.id,
+#                        a.chr_start,
+#                        a.chr_end,
+#                        a.chromosome_id 
+#                    FROM assembly a, contig c 
+#                    WHERE c.id = '$contigid' 
+#                    AND c.internal_id = a.contig_id 
+#                    AND a.type = '$type'"
+#                    );
+#   $sth->execute();
+#   my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
 
-   if( !defined $contig ) {
-     $self->throw("Contig $contigid is not on the golden path of type $type");
-   }
+#   if( !defined $contig ) {
+#     $self->throw("Contig $contigid is not on the golden path of type $type");
+#   }
 
-   return ($chr_name,$start,$end);
+#   return ($chr_name,$start,$end);
 }
 
 
@@ -526,35 +533,41 @@ sub fetch_RawContigs_by_chr_start_end {
 sub fetch_VirtualContig_by_chr_start_end {
     my ($self,$chr,$start,$end) = @_;
 
-    if( !defined $end ) {   # Why defined?  Is '0' a valid end?
-        $self->throw("must provide chr, start and end");
-    }
+    $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_by_chr_start_end"
+	 . "is deprecated. use SliceAdaptor::fetch_by_chr_start_end instead\n"); 
 
-    if( $start > $end ) {
-        $self->throw("start must be less than end: parameters $chr:$start:$end");
-    }
+    return $self->db()->get_SliceAdaptor()->fetch_by_chr_start_end($self, $chr, 
+								   $start, $end);
 
-    my $slice;
+  #  if( !defined $end ) {   # Why defined?  Is '0' a valid end?
+#        $self->throw("must provide chr, start and end");
+#    }
 
-    &eprof_start('Slice: staticcontig build');
+#    if( $start > $end ) {
+#        $self->throw("start must be less than end: parameters $chr:$start:$end");
+#    }
 
-    my $type = $self->db->assembly_type();
+#    my $slice;
 
-    eval {
-      $slice = Bio::EnsEMBL::Slice->new(
-          -chr_name      => $chr,
-          -chr_start     => $start,
-          -chr_end       => $end,
-          -assembly_type => $type,
-          -adaptor       => $self->db->get_SliceAdaptor
-      );
-    } ;
-    if( $@ ) {
-      $self->throw("Unable to build a slice for $chr, $start,$end\n\nUnderlying exception $@\n");
-    }
-    &eprof_end('Slice: staticcontig build');
+#    &eprof_start('Slice: staticcontig build');
 
-    return $slice;
+#    my $type = $self->db->assembly_type();
+
+#    eval {
+#      $slice = Bio::EnsEMBL::Slice->new(
+#          -chr_name      => $chr,
+#          -chr_start     => $start,
+#          -chr_end       => $end,
+#          -assembly_type => $type,
+#          -adaptor       => $self->db->get_SliceAdaptor
+#      );
+#    } ;
+#    if( $@ ) {
+#      $self->throw("Unable to build a slice for $chr, $start,$end\n\nUnderlying exception $@\n");
+#    }
+#    &eprof_end('Slice: staticcontig build');
+
+#    return $slice;
 }
 
 
@@ -572,49 +585,56 @@ sub fetch_VirtualContig_by_chr_start_end {
 sub fetch_VirtualContig_of_clone{
    my ($self,$clone,$size) = @_;
 
-   if( !defined $clone ) {
-       $self->throw("Must have clone to fetch VirtualContig of clone");
-   }
-   if( !defined $size ) {$size=0;}
 
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
+    $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_of_clone"
+       . "is deprecated. use SliceAdaptor::fetch_by_clone_accession instead\n"); 
 
-   my $sth = $self->db->prepare("SELECT  c.id,
-                        a.chr_start,
-                        a.chr_end,
-                        a.chromosome_id 
-                    FROM    assembly a, 
-                        contig c, 
-                        clone  cl
-                    WHERE c.clone = cl.internal_id
-                    AND cl.id = '$clone'  
-                    AND c.internal_id = ass.contig_id 
-                    AND a.type = '$type' 
-                    ORDER BY a.chr_start"
-                    );
-   $sth->execute();
+   return 
+     $self->db()->get_SliceAdaptor()->fetch_by_clone_accession($clone, $size);
+
+
+#   if( !defined $clone ) {
+#       $self->throw("Must have clone to fetch VirtualContig of clone");
+#   }
+#   if( !defined $size ) {$size=0;}
+
+#   my $type = $self->db->assembly_type()
+#    or $self->throw("No assembly type defined");
+
+#   my $sth = $self->db->prepare("SELECT  c.id,
+#                        a.chr_start,
+#                        a.chr_end,
+#                        a.chromosome_id 
+#                    FROM    assembly a, 
+#                        contig c, 
+#                        clone  cl
+#                    WHERE c.clone = cl.internal_id
+#                    AND cl.id = '$clone'  
+#                    AND c.internal_id = ass.contig_id 
+#                    AND a.type = '$type' 
+#                    ORDER BY a.chr_start"
+#                    );
+#   $sth->execute();
  
-   my ($contig,$start,$end,$chr_name); 
-   my $counter; 
-   my $first_start;
-   while ( my @row=$sth->fetchrow_array){
-       $counter++;
-       ($contig,$start,$end,$chr_name)=@row;
-       if ($counter==1){$first_start=$start;}      
-   }
+#   my ($contig,$start,$end,$chr_name); 
+#   my $counter; 
+#   my $first_start;
+#   while ( my @row=$sth->fetchrow_array){
+#       $counter++;
+#       ($contig,$start,$end,$chr_name)=@row;
+#       if ($counter==1){$first_start=$start;}      
+#   }
 
-   if( !defined $contig ) {
-       $self->throw("Clone is not on the golden path. Cannot build VC");
-   }
+#   if( !defined $contig ) {
+#       $self->throw("Clone is not on the golden path. Cannot build VC");
+#   }
      
-   my $vc = $self->fetch_VirtualContig_by_chr_start_end(    $chr_name,
-                            $first_start-$size,
-                            $end+$size
-                            );
-   $vc->db($self->db);
-   return $vc;
-
+#   my $vc = $self->fetch_VirtualContig_by_chr_start_end(    $chr_name,
+#                            $first_start-$size,
+#                            $end+$size
+#                            );
+#   $vc->db($self->db);
+#   return $vc;
 }
 
 
@@ -638,14 +658,20 @@ sub fetch_VirtualContig_of_clone{
 sub fetch_VirtualContig_of_contig{
    my ($self,$contigid,$size) = @_;
 
-   if( !defined $size ) {$size=0;}
 
-   my ($chr_name,$start,$end) = $self->get_chr_start_end_of_contig($contigid); 
+   $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_of_contig "
+       . "is deprecated. use SliceAdaptor::fetch_by_contig_id instead\n"); 
 
-   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
-                            $start-$size,
-                            $end+$size
-                            );
+   return $self->db()->get_SliceAdaptor()->fetch_by_contig_id($contigid, $size);
+
+#   if( !defined $size ) {$size=0;}
+
+#   my ($chr_name,$start,$end) = $self->get_chr_start_end_of_contig($contigid); 
+
+#   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
+#                            $start-$size,
+#                            $end+$size
+#                            );
   
 }
 
@@ -666,23 +692,30 @@ sub fetch_VirtualContig_of_contig{
 sub fetch_VirtualContig_of_gene{
    my ($self,$geneid,$size) = @_;
 
-   if( !defined $geneid ) {
-       $self->throw("Must have gene id to fetch VirtualContig of gene");
-   }
-   if( !defined $size ) {$size=0;}
 
-   my ($chr_name,$start,$end) = $self->get_Gene_chr_bp($geneid);
+    $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_of_gene "
+       . "is deprecated. use SliceAdaptor::fetch_by_gene_stable_id instead\n"); 
 
-   if( !defined $start ) {
-       my $type = $self->db->assembly_type()
-        or $self->throw("No assembly type defined");
-       $self->throw("Gene is not on the golden path '$type'. Cannot build VC");
-   }
+   return 
+     $self->db()->get_SliceAdaptor()->fetch_by_gene_stable_id($geneid, $size);
+
+#   if( !defined $geneid ) {
+#       $self->throw("Must have gene id to fetch VirtualContig of gene");
+#   }
+#   if( !defined $size ) {$size=0;}
+
+#   my ($chr_name,$start,$end) = $self->get_Gene_chr_bp($geneid);
+
+#   if( !defined $start ) {
+#       my $type = $self->db->assembly_type()
+#        or $self->throw("No assembly type defined");
+#       $self->throw("Gene is not on the golden path '$type'. Cannot build VC");
+#   }
      
-   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
-                            $start-$size,
-                            $end+$size
-                            );
+#   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
+#                            $start-$size,
+#                            $end+$size
+#                            );
 }
 
 
@@ -789,55 +822,61 @@ sub get_location_of_feature {
 sub fetch_VirtualContig_of_transcript{
    my ($self,$transcriptid,$size) = @_;
 
-   if( !defined $transcriptid ) {
-       $self->throw("Must have transcript id to fetch VirtualContig of transcript");
-   }
-   if( !defined $size ) {$size=0;}
+
+  $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_of_transcript "
+  . "is deprecated. use SliceAdaptor::fetch_by_transcript_stable_id instead\n"); 
+
+   return $self->db()->get_SliceAdaptor()->fetch_by_transcript_stable_id($transcriptid, $size);
+
+#   if( !defined $transcriptid ) {
+#       $self->throw("Must have transcript id to fetch VirtualContig of transcript");
+#   }
+#   if( !defined $size ) {$size=0;}
 
 
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
+#   my $type = $self->db->assembly_type()
+#    or $self->throw("No assembly type defined");
 
-   my $sth = $self->db->prepare("SELECT  
-   if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.contig_end)),
-   if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.contig_start)),
-     a.chromosome_id
+#   my $sth = $self->db->prepare("SELECT  
+#   if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
+#                    (a.chr_start+a.contig_end-e.contig_end)),
+#   if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
+#                    (a.chr_start+a.contig_end-e.contig_start)),
+#     a.chromosome_id
   
-                    FROM    exon e,
-                        exon_transcript et,
-                        assembly a,
-                        transcript_stable_id tsi
-                    WHERE tsi.stable_id = '$transcriptid'  
-                    AND et.transcript_id = tsi.transcript_id
-                    AND e.exon_id=et.exon_id 
-                    AND a.contig_id=e.contig_id 
-                    AND a.type = '$type' 
-                    ");
-   $sth->execute();
+#                    FROM    exon e,
+#                        exon_transcript et,
+#                        assembly a,
+#                        transcript_stable_id tsi
+#                    WHERE tsi.stable_id = '$transcriptid'  
+#                    AND et.transcript_id = tsi.transcript_id
+#                    AND e.exon_id=et.exon_id 
+#                    AND a.contig_id=e.contig_id 
+#                    AND a.type = '$type' 
+#                    ");
+#   $sth->execute();
 
-   my ($start,$end,$chr_name);
-   my @start;
-   while ( my @row=$sth->fetchrow_array){
-      ($start,$end,$chr_name)=@row;
-       push @start,$start;
-       push @start,$end;
-   }   
+#   my ($start,$end,$chr_name);
+#   my @start;
+#   while ( my @row=$sth->fetchrow_array){
+#      ($start,$end,$chr_name)=@row;
+#       push @start,$start;
+#       push @start,$end;
+#   }   
    
-   my @start_sorted=sort { $a <=> $b } @start;
+#   my @start_sorted=sort { $a <=> $b } @start;
 
-   $start=shift @start_sorted;
-   $end=pop @start_sorted;
+#   $start=shift @start_sorted;
+#   $end=pop @start_sorted;
 
-   if( !defined $start ) {
-       $self->throw("Transcript is not on the golden path. Cannot build VC");
-   }
+#   if( !defined $start ) {
+#       $self->throw("Transcript is not on the golden path. Cannot build VC");
+#   }
      
-   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
-                            $start-$size,
-                            $end+$size
-                            );
+#   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
+#                            $start-$size,
+#                            $end+$size
+#                            );
    
 }
 
@@ -858,53 +897,61 @@ sub fetch_VirtualContig_of_transcript{
 sub fetch_VirtualContig_of_transcript_by_dbID{
    my ($self,$transcriptid,$size) = @_;
 
-   if( !defined $transcriptid ) {
-       $self->throw("Must have transcript id to fetch VirtualContig of transcript");
-   }
-   if( !defined $size ) {$size=0;}
+$self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_of_transcript_by_dbID "
+	 . "is deprecated. use SliceAdaptor::fetch_by_transcript_id instead\n"); 
+
+   return 
+     $self->db()->get_SliceAdaptor()->fetch_by_transcript_id($transcriptid, 
+							     $size);
 
 
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
+#   if( !defined $transcriptid ) {
+#       $self->throw("Must have transcript id to fetch VirtualContig of transcript");
+#   }
+#   if( !defined $size ) {$size=0;}
 
-   my $sth = $self->db->prepare("SELECT  
-   if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.contig_end)),
-   if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.contig_start)),
-     a.chromosome_id
+
+#   my $type = $self->db->assembly_type()
+#    or $self->throw("No assembly type defined");
+
+#   my $sth = $self->db->prepare("SELECT  
+#   if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
+#                    (a.chr_start+a.contig_end-e.contig_end)),
+#   if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
+#                    (a.chr_start+a.contig_end-e.contig_start)),
+#     a.chromosome_id
   
-                    FROM    exon e,
-                        exon_transcript et,
-                        assembly a
-                    WHERE et.transcript_id=$transcriptid
-                    AND e.exon_id=et.exon_id 
-                    AND a.contig_id=e.contig_id 
-                    AND a.type = '$type' 
-                    ");
-   $sth->execute();
+#                    FROM    exon e,
+#                        exon_transcript et,
+#                        assembly a
+#                    WHERE et.transcript_id=$transcriptid
+#                    AND e.exon_id=et.exon_id 
+#                    AND a.contig_id=e.contig_id 
+#                    AND a.type = '$type' 
+#                    ");
+#   $sth->execute();
 
-   my ($start,$end,$chr_name);
-   my @start;
-   while ( my @row=$sth->fetchrow_array){
-      ($start,$end,$chr_name)=@row;
-       push @start,$start;
-       push @start,$end;
-   }   
+#   my ($start,$end,$chr_name);
+#   my @start;
+#   while ( my @row=$sth->fetchrow_array){
+#      ($start,$end,$chr_name)=@row;
+#       push @start,$start;
+#       push @start,$end;
+#   }   
    
-   my @start_sorted=sort { $a <=> $b } @start;
+#   my @start_sorted=sort { $a <=> $b } @start;
 
-   $start=shift @start_sorted;
-   $end=pop @start_sorted;
+#   $start=shift @start_sorted;
+#   $end=pop @start_sorted;
 
-   if( !defined $start ) {
-       $self->throw("Transcript is not on the golden path. Cannot build VC");
-   }
+#   if( !defined $start ) {
+#       $self->throw("Transcript is not on the golden path. Cannot build VC");
+#   }
      
-   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
-                            $start-$size,
-                            $end+$size
-                            );
+#   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
+#                            $start-$size,
+#                            $end+$size
+#                            );
    
 }
 
@@ -925,38 +972,46 @@ sub fetch_VirtualContig_of_transcript_by_dbID{
 sub fetch_VirtualContig_by_clone {
    my ($self,$clone,$size) = @_;
 
-   if( !defined $size ) {
-       $self->throw("Must have clone and size to fetch VirtualContig by clone");
-   }
 
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
+    $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_of_clone"
+       . "is deprecated. use SliceAdaptor::fetch_by_clone_accession instead\n"); 
 
-
-   my $sth = $self->db->prepare("SELECT  c.id,
-                        a.chr_start,
-                        a.chromosome_id 
-                    FROM assembly a,contig c,clone cl 
-                    WHERE c.clone = cl.internal_id
-                    AND cl.id = '$clone' 
-                    AND c.internal_id = st.raw_id 
-                    AND a.type = '$type' 
-                    ORDER BY a.chr_start"
-                    );
-   $sth->execute();
-   my ($contig,$start,$chr_name) = $sth->fetchrow_array;
-
-   if( !defined $contig ) {
-       $self->throw("Clone is not on the golden path. Cannot build VC");
-   }
+   return 
+     $self->db()->get_SliceAdaptor()->fetch_by_clone_accession($clone, $size);
 
 
-   my $halfsize = int($size/2);
+#   if( !defined $size ) {
+#       $self->throw("Must have clone and size to fetch VirtualContig by clone");
+#   }
 
-   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
-                            $start-$halfsize,
-                            $start+$size-$halfsize
-                            );
+#   my $type = $self->db->assembly_type()
+#    or $self->throw("No assembly type defined");
+
+
+#   my $sth = $self->db->prepare("SELECT  c.id,
+#                        a.chr_start,
+#                        a.chromosome_id 
+#                    FROM assembly a,contig c,clone cl 
+#                    WHERE c.clone = cl.internal_id
+#                    AND cl.id = '$clone' 
+#                    AND c.internal_id = st.raw_id 
+#                    AND a.type = '$type' 
+#                    ORDER BY a.chr_start"
+#                    );
+#   $sth->execute();
+#   my ($contig,$start,$chr_name) = $sth->fetchrow_array;
+
+#   if( !defined $contig ) {
+#       $self->throw("Clone is not on the golden path. Cannot build VC");
+#   }
+
+
+#   my $halfsize = int($size/2);
+
+#   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
+#                            $start-$halfsize,
+#                            $start+$size-$halfsize
+#                            );
 }
 
 
@@ -965,7 +1020,7 @@ sub fetch_VirtualContig_by_clone {
 =head2 fetch_VirtualContig_by_contig
 
  Title   : fetch_VirtualContig_by_contig
- Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('AC000012.00001',40000);
+ Usage   : $vc = $stadp->fetch_VirtualContig_by_contig('AC000012.00001',40000);
  Function: create a VirtualContig based on a RawContig, and of a
            given length. The VC is centered around the start of the clone.
  Example :
@@ -977,33 +1032,40 @@ sub fetch_VirtualContig_by_clone {
 sub fetch_VirtualContig_by_contig {
    my ($self,$contigid,$size) = @_;
 
-   if( !defined $size ) {
-       $self->throw("Must have contig id and size to fetch VirtualContig by contig");
-   }
+   $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_by_contig is " . 
+    "deprecated. Use SliceAdaptor::fetch_Slice_by_contig_name instead\n");
 
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
+   return 
+     $self->db()->get_SliceAdaptor()->fetch_Slice_by_contig_name($contigid,
+								 $size);
 
-   my $sth = $self->db->prepare("SELECT  c.id,
-                        a.chr_start,
-                        a.chromosome_id 
-                    FROM assembly a,contig c 
-                    WHERE c.id = '$contigid' 
-                    AND c.internal_id = a.contig_id 
-                    AND a.type = '$type'"
-                    );
-   $sth->execute();
-   my ($contig,$start,$chr_name) = $sth->fetchrow_array;
+#   if( !defined $size ) {
+#       $self->throw("Must have contig id and size to fetch VirtualContig by contig");
+#   }
 
-   if( !defined $contig ) {
-     $self->throw("Contig $contigid is not on the golden path of type $type");
-   }
+#   my $type = $self->db->assembly_type()
+#    or $self->throw("No assembly type defined");
 
-   my $halfsize = int($size/2);
-       return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
-                                $start-$halfsize,
-                            $start+$size-$halfsize
-                            );
+#   my $sth = $self->db->prepare("SELECT  c.id,
+#                        a.chr_start,
+#                        a.chromosome_id 
+#                    FROM assembly a,contig c 
+#                    WHERE c.id = '$contigid' 
+#                    AND c.internal_id = a.contig_id 
+#                    AND a.type = '$type'"
+#                    );
+#   $sth->execute();
+#   my ($contig,$start,$chr_name) = $sth->fetchrow_array;
+
+#   if( !defined $contig ) {
+#     $self->throw("Contig $contigid is not on the golden path of type $type");
+#   }
+
+#   my $halfsize = int($size/2);
+#       return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
+#                                $start-$halfsize,
+#                            $start+$size-$halfsize
+#                            );
 }
 
 
@@ -1024,23 +1086,29 @@ sub fetch_VirtualContig_by_contig {
 sub fetch_VirtualContig_by_gene{
    my ($self,$geneid,$size) = @_;
 
-   if( !defined $geneid ) {
-       $self->throw("Must have gene id to fetch VirtualContig of gene");
-   }
-   if( !defined $size ) {$size=0;}
+   $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_by_gene is " . 
+	"deprecated. Use SliceAdaptor::fetch_Slice_by_gene_stable_id instead\n");
 
-   my ($chr_name,$start) = $self->get_Gene_chr_bp($geneid);
+   return $self->db()->get_SliceAdaptor()->fetch_Slice_by_gene_stable_id($geneid,
+									 $size);
+   
+#   if( !defined $geneid ) {
+#       $self->throw("Must have gene id to fetch VirtualContig of gene");
+#   }
+#   if( !defined $size ) {$size=0;}
 
-   if( !defined $start ) {
-       $self->throw("Gene is not on the golden path. Cannot build VC");
-   }
+#   my ($chr_name,$start) = $self->get_Gene_chr_bp($geneid);
+
+#   if( !defined $start ) {
+#       $self->throw("Gene is not on the golden path. Cannot build VC");
+#   }
      
-   my $halfsize = int($size/2);
+#   my $halfsize = int($size/2);
 
-   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
-                            $start-$halfsize,
-                            $start+$size-$halfsize
-                            );
+#   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
+#                            $start-$halfsize,
+#                            $start+$size-$halfsize
+#                            );
 }
 
 
@@ -1059,33 +1127,38 @@ sub fetch_VirtualContig_by_gene{
 sub fetch_VirtualContig_by_fpc_name{
     my ($self,$fpc_name) = @_;
 
-    my $type = $self->db->assembly_type();
+    $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_by_fpc_name " .
+		"is deprecated use SliceAdaptor::fetch_by_fpc_name instead\n");
 
-    my $sth = $self->db->prepare("
-        SELECT chromosome_id, superctg_ori, MIN(chr_start), MAX(chr_end)
-        FROM assembly
-        WHERE superctg_name = '$fpc_name'
-        AND type = '$type'
-        GROUP by superctg_name
-        ");
+    return $self->db()->get_SliceAdaptor()->fetch_by_fpc_name($fpc_name);
 
-    $sth->execute;
+ #   my $type = $self->db->assembly_type();
 
-    my ($chr, $strand, $slice_start, $slice_end) = $sth->fetchrow_array;
+#    my $sth = $self->db->prepare("
+#        SELECT chromosome_id, superctg_ori, MIN(chr_start), MAX(chr_end)
+#        FROM assembly
+#        WHERE superctg_name = '$fpc_name'
+#        AND type = '$type'
+#        GROUP by superctg_name
+#        ");
 
-    my $slice;
+#    $sth->execute;
 
-    &eprof_start('Slice: staticcontig build');
+#    my ($chr, $strand, $slice_start, $slice_end) = $sth->fetchrow_array;
 
-    eval {
-      $slice = Bio::EnsEMBL::Slice->new($chr,$slice_start,$slice_end,$strand,$type);
-    } ;
-    if( $@ ) {
-      $self->throw("Unable to build a slice using its fpc_name for for $chr, $slice_start,$slice_end\n\nUnderlying exception $@\n");
-    }
-    &eprof_end('Slice: staticcontig build');
+#    my $slice;
 
-    return $slice;
+#    &eprof_start('Slice: staticcontig build');
+
+#    eval {
+#      $slice = Bio::EnsEMBL::Slice->new($chr,$slice_start,$slice_end,$strand,$type);
+#    } ;
+#    if( $@ ) {
+#      $self->throw("Unable to build a slice using its fpc_name for for $chr, $slice_start,$slice_end\n\nUnderlying exception $@\n");
+#    }
+#    &eprof_end('Slice: staticcontig build');
+
+#    return $slice;
 }
 
 
@@ -1130,12 +1203,17 @@ sub fetch_VirtualContig_list_sized {
 sub fetch_VirtualContig_by_chr_name{
    my ($self,$name) = @_;
 
-   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new(1,1,-1,
-                    $self->fetch_RawContigs_by_chr_name($name));
+   $self->warn("StaticGoldenPathAdaptor::fetch_VirtualContig_by_chr_name is " .
+	       "deprecated");
+
+   return undef;
+
+ #  my $vc = Bio::EnsEMBL::Virtual::StaticContig->new(1,1,-1,
+#                    $self->fetch_RawContigs_by_chr_name($name));
   
-   $vc->db($self->db);
-   $vc->_chr_name($name);
-   return $vc; 
+#   $vc->db($self->db);
+#   $vc->_chr_name($name);
+#   return $vc; 
 }
 
 

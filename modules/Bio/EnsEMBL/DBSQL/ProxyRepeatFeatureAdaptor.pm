@@ -53,7 +53,6 @@ sub new {
   return $self;
 }
 
-
 sub fetch_by_Slice {
   my ($self, @args) = @_;
 
@@ -68,4 +67,39 @@ sub fetch_by_Slice {
   return $self->{'_core_adaptor'}->fetch_by_Slice(@args);
 }
   
+sub fetch_by_RawContig {
+  my ($self, @args) = @_;
+
+  return $self->{'_core_adaptor'}->fetch_by_RawContig(@args);
+}
+
+sub fetch_by_contig_id {
+  my ($self, @args) = @_;
+
+  return $self->{'_core_adaptor'}->fetch_by_contig_id(@args);
+}
+
+sub fetch_by_dbID {
+  my ($self, @args) = @_;
+
+  return $self->{'_core_adaptor'}->fetch_by_dbID(@args);
+}
+
+sub fetch_by_assembly_location {
+  my ($self, @args) = @_;
+
+  return $self->{'_core_adaptor'}->fetch_by_assembly_location(@args);
+}
+
+sub fetch_by_assembly_location_constraint {
+  my ($self, @args) = @_;
+
+ return $self->{'_core_adaptor'}->fetch_by_assembly_location_constraint(@args);
+}
+
+sub store {
+  my ($self, @args) = @_;
+
+  return $self->{'_core_adaptor'}->store(@args);
+}
 

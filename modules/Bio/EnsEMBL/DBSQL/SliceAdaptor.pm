@@ -44,7 +44,6 @@ methods. Internal methods are usually preceded with a _
 
 
 package Bio::EnsEMBL::DBSQL::SliceAdaptor;
-use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
 use vars qw(@ISA);
 use strict;
 
@@ -58,190 +57,12 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
 
-# new is inherieted from BaseAdaptor
-
-=head2 new_slice
-
- Title   : new_slice
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+# new is inherited from BaseAdaptor
 
 
-=cut
+=head2 fetch_by_chr_start_end
 
-sub new_slice{
-    my ($self,$chr,$start,$end,$strand,$type) = @_;
-
-
-    my $slice = Bio::EnsEMBL::Slice->new( -chr_name  => $chr,
-					  -chr_start => $start,
-					  -chr_end   => $end,
-					  -strand    => $strand,
-					  -assembly_type      => $type,
-					-adaptor => $self);
-
-    return $slice;
-}
-
-
-=head2 new_web_slice
-
- Title   : new_web_slice
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub new_web_slice{
-    my ($self,$chr,$start,$end,$strand,$type) = @_;
-    
-    die "Not implemented new slice yet";
-    
-}
-
-
-sub fetch_all_repeat_features{
-  my($self, $slice, $logic_name) = @_;
-
-  if(!$slice){
-    $self->throw("can't fetch all repeat features if con't have a slice to fetch them for\n");
-  }
-
-  my @repeats = $self->db->get_RepeatFeatureAdaptor->fetch_by_Slice($slice, $logic_name);
-
-  return @repeats;
-
-}
-
-sub fetch_all_simple_features{
-  my($self, $slice, $logic_name) = @_;
-
-  if(!$slice){
-    $self->throw("can't fetch all simple features if con't have a slice to fetch them for\n");
-  }
-
-  my @simple = $self->db->get_SimpleFeatureAdaptor->fetch_by_Slice($slice, $logic_name);
-
-  return @simple;
-
-}
-
-
-
-
-sub fetch_all_similarity_features{
-  my($self, $slice, $logic_name) = @_;
-
-  if(!$slice){
-    $self->throw("can't fetch all simple features if con't have a slice to fetch them for\n");
-  }
-  
-  my @out;
-
-  my @dnaalign = $self->db->get_DnaAlignFeatureAdaptor->fetch_by_Slice($slice, $logic_name);
-  my @pepalign = $self->db->get_ProteinAlignFeatureAdaptor->fetch_by_Slice($slice, $logic_name);
-
-  push(@out, @dnaalign);
-  push(@out, @pepalign);
-
-  return @out;
-}
-
-
-sub fetch_all_similarity_features_above_score{
-  my($self, $slice, $score, $logic_name) = @_;
-
-  if(!$slice){
-    $self->throw("can't fetch all simple features if con't have a slice to fetch them for\n");
-  }
-  if(!$score){
-    $self->throw("need score even if it 0\n");
-  }
-  my @out;
-
-  my @dnaalign = $self->db->get_DnaAlignFeatureAdaptor->fetch_by_Slice_and_score($slice, $score, $logic_name);
-  my @pepalign = $self->db->get_ProteinAlignFeatureAdaptor->fetch_by_Slice_and_score($slice, $score, $logic_name);
-
-  push(@out, @dnaalign);
-  push(@out, @pepalign);
-
-  return @out;
-}
-
-
-sub fetch_all_similarity_features_above_pid{
-  my($self, $slice, $pid, $logic_name) = @_;
-
-  if(!$slice){
-    $self->throw("can't fetch all simple features if con't have a slice to fetch them for\n");
-  }
-  if(!$pid){
-    $self->throw("need percent_id even if it 0\n");
-  }
-  my @out;
-
-  my @dnaalign = $self->db->get_DnaAlignFeatureAdaptor->fetch_by_Slice_and_pid($slice, $pid, $logic_name);
-  my @pepalign = $self->db->get_ProteinAlignFeatureAdaptor->fetch_by_Slice_and_pid($slice, $pid, $logic_name);
-
-  push(@out, @dnaalign);
-  push(@out, @pepalign);
-
-  return @out;
-}
-
-
-
-=head2 get_chr_start_end_of_contig
-
- Title   : get_chr_start_end_of_contig
- Usage   :
- Function: returns the chromosome name, absolute start and absolute end of the 
-           specified contig
- Returns : returns chr,start,end
- Args    : contig id
-
-=cut
-
-sub get_chr_start_end_of_contig {
-    my ($self,$contigid) = @_;
-
-   if( !defined $contigid ) {
-       $self->throw("Must have contig id to fetch Slice of contig");
-   }
-   
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
-
-   my $sth = $self->db->prepare("SELECT  c.name,
-                        a.chr_start,
-                        a.chr_end,
-                        a.chromosome_id 
-                    FROM assembly a, contig c 
-                    WHERE c.name = '$contigid' 
-                    AND c.contig_id = a.contig_id 
-                    AND a.type = '$type'"
-                    );
-   $sth->execute();
-   my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
-
-   if( !defined $contig ) {
-     $self->throw("Contig $contigid is not on the golden path of type $type");
-   }
-
-   return ($chr_name,$start,$end);
-}
-
-
-=head2 fetch_Slice_by_chr_start_end
-
- Title   : fetch_Slice_by_chr_start_end
+ Title   : fetch_by_chr_start_end
  Usage   :
  Function: create a Slice based on a segment of a chromosome and
            start/end
@@ -252,7 +73,7 @@ sub get_chr_start_end_of_contig {
 
 =cut
 
-sub fetch_Slice_by_chr_start_end {
+sub fetch_by_chr_start_end {
     my ($self,$chr,$start,$end) = @_;
 
     if( !defined $end ) {   # Why defined?  Is '0' a valid end?
@@ -264,34 +85,25 @@ sub fetch_Slice_by_chr_start_end {
     }
 
     my $slice;
-
-    &eprof_start('Slice: staticcontig build');
-
     my $type = $self->db->assembly_type();
 
-    eval {
-      $slice = Bio::EnsEMBL::Slice->new(
+    $slice = Bio::EnsEMBL::Slice->new(
           -chr_name      => $chr,
           -chr_start     => $start,
           -chr_end       => $end,
           -assembly_type => $type,
-          -adaptor       => $self->db->get_SliceAdaptor
-      );
-    } ;
-    if( $@ ) {
-      $self->throw("Unable to build a slice for $chr, $start,$end\n\nUnderlying exception $@\n");
-    }
-    &eprof_end('Slice: staticcontig build');
+          -adaptor       => $self->db->get_SliceAdaptor()
+	 );
 
     return $slice;
 }
 
 
 
-=head2 fetch_Slice_by_contig
+=head2 fetch_by_contig_accession
 
- Title   : fetch_Slice_by_contig
- Usage   : $slice = $slice_adaptor->fetch_Slice_by_contig('AC000012.00001',1000);
+ Title   : fetch_by_contig_accession
+ Usage   : $slice = $slice_adaptor->fetch_by_contig_id('AC000012.00001',1000);
  Function: Creates a slice of the specified slice adaptor object.  If a context size is given, the slice is extended by that number of basepairs on either side of the contig.  Throws if the contig is not golden.
  Returns : Slice object 
  Args    : contig id, [context size in bp]
@@ -299,25 +111,62 @@ sub fetch_Slice_by_chr_start_end {
 
 =cut
 
-sub fetch_Slice_by_contig{
+sub fetch_by_contig_accession {
    my ($self,$contigid,$size) = @_;
 
    if( !defined $size ) {$size=0;}
 
-   my ($chr_name,$start,$end) = $self->get_chr_start_end_of_contig($contigid); 
+   my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_contig($contigid); 
 
-   return $self->fetch_Slice_by_chr_start_end(  $chr_name,
-                            $start-$size,
-                            $end+$size
-                            );
-  
+   return $self->fetch_Slice_by_chr_start_end($chr_name,
+					      $start-$size,
+					      $end+$size);
+ }
+
+
+=head2 fetch_by_fpc_name
+
+ Title   : fetch_by_fpc_name
+ Usage   :
+ Function: create a Slice representing a complete FPC contig
+ Example :
+ Returns : 
+ Args    : the FPC contig id.
+
+
+=cut
+
+sub fetch_by_fpc_name {
+    my ($self,$fpc_name) = @_;
+
+    my $type = $self->db->assembly_type();
+
+    my $sth = $self->db->prepare("
+        SELECT chromosome_id, superctg_ori, MIN(chr_start), MAX(chr_end)
+        FROM assembly
+        WHERE superctg_name = '$fpc_name'
+        AND type = '$type'
+        GROUP by superctg_name
+        ");
+
+    $sth->execute;
+
+    my ($chr, $strand, $slice_start, $slice_end) = $sth->fetchrow_array;
+
+    my $slice;
+
+    $slice = new Bio::EnsEMBL::Slice($chr,$slice_start,$slice_end,
+                                     $strand,$type);
+
+    return $slice;
 }
 
 
-=head2 fetch_Slice_by_clone
 
- Title   : fetch_Slice_by_clone
- Usage   : $slice = $slice_adaptor->fetch_Slice_by_clone('AC000012',1000);
+=head2 fetch_by_clone_accession
+
+ Title   : fetch_by_clone_accession
+ Usage   : $slice = $slice_adaptor->fetch_by_clone_accession('AC000012',1000);
  Function: Creates a Slice of the specified object.  If a context size is given, the Slice is extended by that number of basepairs on either side of the clone.  Throws if the clone is not golden.
  Returns : Slice object 
  Args    : clone id, [context size in bp]
@@ -325,11 +174,11 @@ sub fetch_Slice_by_contig{
 
 =cut
 
-sub fetch_Slice_by_clone{
+sub fetch_by_clone_accession{
    my ($self,$clone,$size) = @_;
 
    if( !defined $clone ) {
-       $self->throw("Must have clone to fetch Slice of clone");
+     $self->throw("Must have clone to fetch Slice of clone");
    }
    if( !defined $size ) {$size=0;}
 
@@ -364,17 +213,183 @@ sub fetch_Slice_by_clone{
        $self->throw("Clone is not on the golden path. Cannot build Slice");
    }
      
-   my $slice = $self->fetch_Slice_by_chr_start_end(    $chr_name,
-                            $first_start-$size,
-                            $end+$size
-                            );
-   $slice->adaptor->db($self->db);
+   my $slice = $self->fetch_by_chr_start_end( $chr_name,
+					      $first_start-$size,
+					      $end+$size );
    return $slice;
-
 }
 
 
-=head2 get_Gene_chr_bp
+
+=head2 fetch_by_transcript_stable_id
+
+ Title   : fetch_by_transcript_stable_id
+ Usage   : $slice = $slice_adaptor->fetch_by_transcript_stable_id(
+                                       'ENST00000302930',1000);
+ Function: Creates a slice of the specified object.  If a context
+           size is given, the slice is extended by that number of
+	   basepairs on either side of the transcript.  Throws if
+	   the transcript is not golden.
+ Returns : Slice object 
+ Args    : transcript stable ID, [context size in bp]
+
+
+=cut
+
+sub fetch_by_transcript_stable_id{
+  my ($self,$transcriptid,$size) = @_;
+
+  # Just get the dbID, then fetch slice by that
+  my $ta = $self->db->get_TranscriptAdaptor;
+  my $transcript_obj = $ta->fetch_by_stable_id($transcriptid);
+  my $dbID = $transcript_obj->dbID;
+  
+  return $self->fetch_by_transcript_id($dbID, $size);
+}
+
+
+=head2 fetch_by_transcript_id
+
+ Title   : fetch_by_transcript_id
+ Usage   : $slice = $slice_adaptor->fetch_by_transcript_id(24,1000);
+ Function: Creates a slice of the specified object.  If a context
+           size is given, the slice is extended by that number of
+	   basepairs on either side of the transcript.  Throws if
+	   the transcript is not golden.
+ Returns : Slice object 
+ Args    : transcript dbID, [context size in bp]
+
+=cut
+
+sub fetch_by_transcript_id {
+  my ($self,$transcriptid,$size) = @_;
+     if( !defined $transcriptid ) {
+       $self->throw("Must have transcriptid id to fetch Slice of transcript");
+   }
+   if( !defined $size ) {$size=0;}
+   my $emptyslice = Bio::EnsEMBL::Slice->new( '-empty'   => 1,
+                                              '-adaptor' => $self,
+					      '-ASSEMBLY_TYPE' =>
+					      $self->db->assembly_type);
+   my $ta = $self->db->get_TranscriptAdaptor;
+   my $transcript_obj = $ta->fetch_by_dbID($transcriptid);
+
+   my %exon_transforms;
+   for my $exon ( $transcript_obj->get_all_Exons() ) {
+     my $newExon = $exon->transform( $emptyslice );
+     $exon_transforms{ $exon } = $newExon;
+   }
+   $transcript_obj->transform( \%exon_transforms );
+   my $slice = $self->fetch_by_chr_start_end(
+					     $emptyslice->chr_name,
+					     $transcript_obj->start-$size,
+					     $transcript_obj->end+$size);
+   return $slice;
+}
+
+
+=head2 fetch_by_gene_stable_id
+
+ Title   : fetch_by_gene_stable_id
+ Usage   : $slice = $slice_adaptor->fetch_by_gene_stable_id('ENSG00000012123',1000);
+ Function: Creates a slice of the specified object.  If a context size is given, the slice is extended by that number of basepairs on either side of the gene.  Throws if the gene is not golden.
+ Returns : Slice object 
+ Args    : gene id, [context size in bp]
+
+
+=cut
+
+sub fetch_by_gene_stable_id{
+   my ($self,$geneid,$size) = @_;
+
+   if( !defined $geneid ) {
+       $self->throw("Must have gene id to fetch Slice of gene");
+   }
+   if( !defined $size ) {$size=0;}
+
+   my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_gene($geneid);
+
+   if( !defined $start ) {
+     my $type = $self->adaptor->db->assembly_type()
+       or $self->throw("No assembly type defined");
+     $self->throw("Gene is not on the golden path '$type'. Cannot build Slice.");
+   }
+     
+   return $self->fetch_by_chr_start_end($chr_name, $start-$size, $end+$size);
+}
+
+
+=head2 fetch_by_chr_name
+
+ Title   : fetch_by_chr_name
+ Usage   : $slice = $slice_adaptor->fetch_by_chr_name('20');
+ Function: Creates a slice of an entire chromosome 
+ Returns : Slice object 
+ Args    : chromosome name
+
+
+=cut
+
+sub fetch_by_chr_name{
+   my ($self,$chr_name) = @_;
+
+   unless( $chr_name ) {
+       $self->throw("Chromosome name argument required");
+   }
+
+   my $chr_start = 1;
+   
+   #set the end of the slice to the end of the chromosome
+   my $ca = $self->db()->get_ChromosomeAdaptor();
+   my $chromosome = $ca->fetch_by_chr_name($chr_name);
+   my $chr_end = $chromosome->length();
+
+   return $self->fetch_by_chr_start_end($chr_name, $chr_start, $chr_end);
+}
+
+
+
+=head2 _get_chr_start_end_of_contig
+
+ Title   : _get_chr_start_end_of_contig
+ Usage   :
+ Function: returns the chromosome name, absolute start and absolute end of the 
+           specified contig
+ Returns : returns chr,start,end
+ Args    : contig id
+
+=cut
+
+sub _get_chr_start_end_of_contig {
+    my ($self,$contigid) = @_;
+
+   if( !defined $contigid ) {
+       $self->throw("Must have contig id to fetch Slice of contig");
+   }
+   
+   my $type = $self->db->assembly_type()
+    or $self->throw("No assembly type defined");
+
+   my $sth = $self->db->prepare("SELECT  c.name,
+                        a.chr_start,
+                        a.chr_end,
+                        a.chromosome_id 
+                    FROM assembly a, contig c 
+                    WHERE c.name = '$contigid' 
+                    AND c.contig_id = a.contig_id 
+                    AND a.type = '$type'"
+                    );
+   $sth->execute();
+   my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
+
+   if( !defined $contig ) {
+     $self->throw("Contig $contigid is not on the golden path of type $type");
+   }
+
+   return ($chr_name,$start,$end);
+}
+
+=head2 _get_chr_start_end_of_gene
 
  Title   : get_Gene_chr_bp
  Usage   : 
@@ -386,13 +401,13 @@ sub fetch_Slice_by_clone{
 =cut
 
 
-sub get_Gene_chr_bp {
-    my ($self,$geneid) =  @_;
-   
-   my $type = $self->db->assembly_type()
+sub _get_chr_start_end_of_gene {
+  my ($self,$geneid) =  @_;
+  
+  my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
-
-   my $sth = $self->db->prepare("SELECT  
+  
+  my $sth = $self->db->prepare("SELECT  
    if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
                     (a.chr_start+a.contig_end-e.contig_end)),
    if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
@@ -426,134 +441,5 @@ sub get_Gene_chr_bp {
    $start=shift @start_sorted;
    $end=pop @start_sorted;
 
-   return ($chr,$start,$end); 
-        
-}
-
-=head2 fetch_Slice_by_transcript
-
- Title   : fetch_Slice_by_transcript_dbID
- Usage   : $slice = $slice_adaptor->fetch_Slice_by_transcript(
-                                       'ENST00000302930',1000);
- Function: Creates a slice of the specified object.  If a context
-           size is given, the slice is extended by that number of
-	   basepairs on either side of the transcript.  Throws if
-	   the transcript is not golden.
- Returns : Slice object 
- Args    : transcript stable ID, [context size in bp]
-
-
-=cut
-
-sub fetch_Slice_by_transcript{
-  my ($self,$transcriptid,$size) = @_;
-
-  # Just get the dbID, then fetch slice by that
-  
-  my $ta = $self->db->get_TranscriptAdaptor;
-  my $transcript_obj = $ta->fetch_by_stable_id($transcriptid);
-  my $dbID = $transcript_obj->dbID;
-  if (defined $size) {
-    return $self->fetch_Slice_by_transcript_dbID($dbID, $size);
-  } else {
-    return $self->fetch_Slice_by_transcript_dbID($dbID);
-  } 
-
-}
-
-=head2 fetch_Slice_by_transcript_dbID
-
- Title   : fetch_Slice_by_transcript_dbID
- Usage   : $slice = $slice_adaptor->fetch_Slice_by_transcript_dbID(
-                                       24,1000);
- Function: Creates a slice of the specified object.  If a context
-           size is given, the slice is extended by that number of
-	   basepairs on either side of the transcript.  Throws if
-	   the transcript is not golden.
- Returns : Slice object 
- Args    : transcript dbID, [context size in bp]
-
-
-=cut
-
-sub fetch_Slice_by_transcript_dbID{
-  my ($self,$transcriptid,$size) = @_;
-     if( !defined $transcriptid ) {
-       $self->throw("Must have transcriptid id to fetch Slice of transcript");
-   }
-   if( !defined $size ) {$size=0;}
-   my $emptyslice = Bio::EnsEMBL::Slice->new( '-empty'   => 1,
-                                              '-adaptor' => $self,
-					      '-ASSEMBLY_TYPE' =>
-					      $self->db->assembly_type);
-   my $ta = $self->db->get_TranscriptAdaptor;
-   my $transcript_obj = $ta->fetch_by_dbID($transcriptid);
-
-   my %exon_transforms;
-   for my $exon ( $transcript_obj->get_all_Exons() ) {
-     my $newExon = $exon->transform( $emptyslice );
-     $exon_transforms{ $exon } = $newExon;
-   }
-   $transcript_obj->transform( \%exon_transforms );
-   my $slice = $self->fetch_Slice_by_chr_start_end(
-                                            $emptyslice->chr_name,
-                                            $transcript_obj->start-$size,
-					    $transcript_obj->end+$size);
-   return $slice;
-
-}
-
-
-=head2 fetch_Slice_by_gene
-
- Title   : fetch_Slice_by_gene
- Usage   : $slice = $slice_adaptor->fetch_Slice_by_gene('ENSG00000012123',1000);
- Function: Creates a slice of the specified object.  If a context size is given, the slice is extended by that number of basepairs on either side of the gene.  Throws if the gene is not golden.
- Returns : Slice object 
- Args    : gene id, [context size in bp]
-
-
-=cut
-
-sub fetch_Slice_by_gene{
-   my ($self,$geneid,$size) = @_;
-
-   if( !defined $geneid ) {
-       $self->throw("Must have gene id to fetch Slice of gene");
-   }
-   if( !defined $size ) {$size=0;}
-
-   my ($chr_name,$start,$end) = $self->get_Gene_chr_bp($geneid);
-
-   if( !defined $start ) {
-       my $type = $self->adaptor->db->assembly_type()
-        or $self->throw("No assembly type defined");
-       $self->throw("Gene is not on the golden path '$type'. Cannot build Slice.");
-   }
-     
-   return $self->fetch_Slice_by_chr_start_end(  $chr_name,
-                            $start-$size,
-                            $end+$size
-                            );
-}
-
-
-
-#
-# Deprecated, Just use the slice method get_all_PredictionTranscripts instead
-#
-sub fetch_all_prediction_transcripts{
-  my($self, $slice, $logic_name) = @_;
-
-  $self->throw("SliceAdaptor->fetch_all_predication_transcripts deprecated");
-  
-  return ();
-
-#  if(!$slice){
-#    $self->throw("can't fetch all simple features if con't have a slice to fetch them for\n");
-#  }
-
-#  my @prediction = $self->db->get_PredictionTranscriptAdaptor->fetch_by_Slice($slice, $logic_name);
-
-#  return @prediction;
+   return ($chr,$start,$end);      
 }

@@ -291,12 +291,19 @@ sub get_rawcontig_by_position {
 sub is_golden{
    my ($self,@args) = @_;
    
-   foreach my $contig ($self->get_all_Contigs) {
-       if ($contig->is_golden) {
-	   return 1;
-       }
-   }
-   return 0;
+   $self->warn("Clone::is_golden is deprecated. " .
+	       "Use \$assembly_mapper->in_assembly(\$clone)");
+
+   my $asma = $self->adaptor()->db()->get_AssemblyMapperAdaptor();
+   my $am = $asma->fetch_by_type($self->db()->assembly_type());
+   return $am->in_assembly($self);
+
+#   foreach my $contig ($self->get_all_Contigs) {
+#       if ($contig->is_golden) {
+#	   return 1;
+#       }
+#   }
+#   return 0;
 }
 
 

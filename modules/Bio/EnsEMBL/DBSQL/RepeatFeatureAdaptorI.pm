@@ -31,6 +31,18 @@ package Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptorI;
 
 sub fetch_by_Slice {}
 
+sub fetch_by_RawContig {}
+
+sub fetch_by_contig_id {}
+
+sub fetch_by_dbID {}
+
+sub fetch_by_assembly_location {}
+
+sub fetch_by_assembly_location_constraint {}
+
+sub store {}
+
 1;
 
 __END__
