@@ -91,7 +91,7 @@ CREATE TABLE dna (
 #
 # Contains equivalent data to dna table, but 4 letters of DNA code are represented
 # by a single binary character, based on 2 bit encoding
-# don't need to worry about ambiguity of length, since this is stored in contig.length
+# do not need to worry about ambiguity of length, since this is stored in contig.length
 # n_line column contains start-end pairs of coordinates in the string that are really Ns
 
 CREATE TABLE dnac (
@@ -108,7 +108,7 @@ CREATE TABLE dnac (
 #
 # Note seq_region_start always less that seq_region_end, i.e.
 # when the exon is on the other strand the seq_region_start
-# is specifying the 3' end of the exon.
+# is specifying the 3prime end of the exon.
 
 CREATE TABLE exon (
  
@@ -146,9 +146,9 @@ CREATE TABLE exon_stable_id (
 #
 # Table structure for table 'exon_transcript'
 #
-# Note that the rank column indicates the 5' to 3' position of the exon within 
-# the transcript ie rank of 1 means the exon is the 5' most within this 
-# transcript
+# Note that the rank column indicates the 5prime to 3prime position of the 
+# exon within the transcript ie rank of 1 means the exon is the 5prime most 
+# within this transcript
 
 CREATE TABLE exon_transcript (
 
@@ -777,28 +777,46 @@ CREATE TABLE misc_feature (
 #
 
 CREATE TABLE misc_attrib (
-
   misc_feature_id             int(10) unsigned NOT NULL default '0',
-  misc_attrib_type_id         smallint(5) unsigned NOT NULL default '0',
+  attrib_type_id              smallint(5) unsigned NOT NULL default '0',
   value                       varchar(255) NOT NULL default '',
 
-  KEY type_val_idx( misc_attrib_type_id, value ),
+  KEY type_val_idx( attrib_type_id, value ),
   KEY misc_feature_idx( misc_feature_id )
 ) TYPE=MyISAM;
 
+
+
+
 ################################################################################
 #
-# Table structure for table 'misc_attrib_type'
+# Table structure for table 'seq_region_attrib'
 #
 
-CREATE TABLE misc_attrib_type (
+CREATE TABLE seq_region_attrib (
+  seq_region_id               int(10) unsigned NOT NULL default '0',
+  attrib_type_id              smallint(5) unsigned NOT NULL default '0',
+  value                       varchar(255) NOT NULL default '',
 
-  misc_attrib_type_id         smallint(5) unsigned NOT NULL auto_increment,
+  KEY type_val_idx( attrib_type_id, value),
+  KEY seq_region_idx (seq_region_id)
+
+) TYPE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'attrib_type'
+#
+
+CREATE TABLE attrib_type (
+
+  attrib_type_id              smallint(5) unsigned NOT NULL auto_increment,
   code                        varchar(15) NOT NULL default '',
   name                        varchar(255) NOT NULL default '',
   description                 text NOT NULL,
 
-  PRIMARY KEY ( misc_attrib_type_id),
+  PRIMARY KEY ( attrib_type_id),
   UNIQUE KEY c(code)
 
 ) TYPE=MyISAM;
@@ -988,20 +1006,6 @@ CREATE TABLE seq_region (
 
 ) TYPE=MyISAM;
 
-################################################################################
-#
-# Table structure for table 'seq_region_annotation'
-#
-
-CREATE TABLE seq_region_annotation (
-
-  seq_region_id               INT,
-  value                       VARCHAR(40),
-  attrib                      VARCHAR(40),
-
-  INDEX annotation_idx (seq_region_id)
-
-) TYPE=MyISAM;
 
 ################################################################################
 #
