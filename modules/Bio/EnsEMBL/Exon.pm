@@ -92,29 +92,26 @@ use strict;
 # Object preamble - inherits from Bio::SeqFeature::Generic
 
 use Bio::EnsEMBL::SeqFeature;
-use Bio::EnsEMBL::FeaturePair;
-use Bio::EnsEMBL::Slice;
 use Bio::Seq; # exons have to have sequences...
 
 @ISA = qw(Bio::EnsEMBL::SeqFeature);
 
+=head2 new
+
+  Args       : see SUPERCLASS Bio::EnsEMBL::SeqFeature
+  Example    : none
+  Description: create an Exon object
+  Returntype : Bio::EnsEMBL::Exon 
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-
-  # Array to store supporting evidence for this exon
-
-  # add in EnsEMBL tag as 1.
-
-  #$self->primary_tag('exon');
-  #$self->source_tag('EnsEMBL');
-
-  # Parse the input paramters (start,end,strand)
-  if ($#args == 2) {
-      $self->_parse_args(@args);
-  }
+  
   # set exon rank to be 1 be default
   $self->sticky_rank(1);
 
@@ -122,12 +119,24 @@ sub new {
   return $self; # success - we hope!
 }
 
-# Parse routine called from the constructor to
-# set the basic variables start,end and strand
+=head2 new_fast
 
-sub _parse_args {
+  Arg [1]    : Bio::EnsEMBL::RawContig/Bio::EnsEMBL::Slice $contig
+  Arg [2]    : int $start
+  Arg [3]    : int $end
+  Arg [4]    : int $strand (1 or -1)
+  Example    : none
+  Description: create an Exon object
+  Returntype : Bio::EnsEMBL::Exon 
+  Exceptions : none
+  Caller     : general, creation in Bio::EnsEMBL::Lite::GeneAdaptor
 
-  my ($self,$start,$end,$strand) = @_;
+=cut
+
+sub new_fast {
+  my ($class,$contig,$start,$end,$strand) = @_;
+
+  my $self = bless {}, $class;
 
   # Swap start and end if they're in the wrong order
   # We assume that the strand is correct and keep the input value.
@@ -137,12 +146,13 @@ sub _parse_args {
     $end    = $start;
     $start  = $tmp;
   }
-
   
   $self->start ($start);
   $self->end   ($end);
   $self->strand($strand);
-
+  $self->contig($contig);
+  
+  return $self;
 }
 
 =pod 
@@ -221,65 +231,13 @@ sub adaptor {
 
 }
 
+=head2 _transform_between_Slices
 
-=head2 transform
-
-  Arg  1    : Bio::EnsEMBL::Slice $slice
-              make this slice coords
-              if no slice, back to raw contig
-  Function  : make slice coords from raw contig coords or vice versa
-  Returntype: Bio::EnsEMBL::Exon (Bio::EnsEMBL::StickyExon)
-  Exceptions: none
-  Caller    : Gene::transform()
-
-=cut
-
-# could be used to transform from one slice to another ...
-sub transform {
-  my $self = shift;
-  my $slice = shift;
-  my $mapper;
-
-  if( ! defined $slice ) {
-    #Since slice arg is not defined -  we want raw contig coords
-    if(( defined  $self->contig ) && 
-       ( $self->contig->isa( "Bio::EnsEMBL::RawContig" )) ) {
-      #we are already in rawcontig coords, nothing needs to be done
-      return $self;
-    } else {
-      #transform to raw_contig coords from Slice coords
-      return $self->_transform_to_rawcontig();
-    }
-  }
-
-  #slice arg is defined - we want slice coords
-  if( defined $self->contig ) {  
-    if($self->contig->isa( "Bio::EnsEMBL::RawContig" ))  {
-      #transform to slice coords from raw contig coords
-      return $self->_transform_to_slice( $slice );
-    } elsif($self->contig->isa( "Bio::EnsEMBL::Slice" )) {
-      #transform to slice coords from other slice coords
-      return $self->_transform_between_slices( $slice );
-    } else {
-      #Unknown contig type - throw an exception
-      return $self->throw("Exon's 'contig' is of unknown type " 
-		   . $self->contig() . " - cannot transform to Slice coords");
-    }
-  } else {
-    #Can't convert to slice coords without a contig to work with
-    return $self->throw("Exon's contig is not defined - cannot transform to " .
-			"Slice coords");
-  }
-}
-
-
-
-=head2 _transform_between_slices
-
-  Arg  1     : Bio::EnsEMBL::Slice $new_slice
+  Arg [1]    : Bio::EnsEMBL::Slice $new_slice
   Example    : none
   Description: Transforms the exons from one Slice to the given Slice, that needs to be
-               on the same Chromosome
+               on the same Chromosome. The method overwrites the same method in
+               Bio::EnsEMBL::SeqFeature
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : Checks if Slice is attached and argument is Slice on same chromosome
   Caller     : transform
@@ -288,7 +246,7 @@ sub transform {
 
 
 
-sub _transform_between_slices {
+sub _transform_between_Slices {
   my ($self, $to_slice) = @_;
 
   my $from_slice = $self->contig();
@@ -335,11 +293,12 @@ sub _transform_between_slices {
 
 
 
-=head2 _transform_to_slice
+=head2 _transform_to_Slice
 
-  Arg  1     : Bio::EnsEMBL::Slice $slice
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
   Example    : none
-  Description: Transforms this Exon from RawContig coord to given Slice coord
+  Description: Transforms this Exon from RawContig coord to given Slice coord. 
+               The method overwrites the same method in Bio::EnsEMBL::SeqFeature
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : If the RawContig coords dont map
   Caller     : transform
@@ -349,10 +308,8 @@ sub _transform_between_slices {
 
 
 
-sub _transform_to_slice {
-  my $self = shift;
-  my $slice = shift;
-
+sub _transform_to_Slice {
+  my ($self,$slice) = @_;
   
   my $mapper = $slice->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
     ( $slice->assembly_type() );
@@ -390,11 +347,15 @@ sub _transform_to_slice {
   my $newexon = Bio::EnsEMBL::Exon->new();
   %$newexon = %$self;
   
-  $newexon->start( $mapped[0]->start() - $slice->chr_start() + 1);
-  $newexon->end( $mapped[0]->end() - $slice->chr_start() + 1);
-  $newexon->strand( $mapped[0]->strand() * $slice->strand() );
- 
+  if ($slice->strand == 1) {
+    $newexon->start( $mapped[0]->start() - $slice->chr_start() + 1);
+    $newexon->end( $mapped[0]->end() - $slice->chr_start() + 1);
+  } else {
+    $newexon->start( $slice->chr_end() - $mapped[0]->end() + 1);
+    $newexon->end( $slice->chr_end() - $mapped[0]->start() + 1);
+  }
 
+  $newexon->strand( $mapped[0]->strand() * $slice->strand() );
   $newexon->contig( $slice );
 
   return $newexon;
@@ -402,7 +363,7 @@ sub _transform_to_slice {
 
 
 
-=head2 _transform_to_rawcontig
+=head2 _transform_to_RawContig
 
   Args       : none
   Example    : none
@@ -415,22 +376,33 @@ sub _transform_to_slice {
 
 
 
-sub _transform_to_rawcontig {
+sub _transform_to_RawContig {
   my $self = shift;
 
   my $mapper = $self->contig()->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
     ( $self->contig()->assembly_type() );
   my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
-  my $global_start = $self->contig->chr_start();
+  my $slice_chr_start = $self->contig->chr_start();
+  my $slice_chr_end = $self->contig->chr_end();
 
   
   $self->_transform_features_to_rawcontig();
 
+  my ($exon_chr_start,$exon_chr_end);
+
+  if ($self->contig()->strand() == 1) {
+    $exon_chr_start = $self->start() + $slice_chr_start - 1;
+    $exon_chr_end = $self->end() + $slice_chr_start - 1;
+  } else {
+    $exon_chr_end = $slice_chr_end - $self->start() + 1,
+    $exon_chr_start = $slice_chr_end - $self->end() + 1,
+  }
+
   my @mapped = $mapper->map_coordinates_to_rawcontig
     (
      $self->contig()->chr_name(),
-     $self->start()+$global_start-1,
-     $self->end()+$global_start-1,
+     $exon_chr_start,
+     $exon_chr_end,
      $self->strand()*$self->contig()->strand()
     );
 
