@@ -657,6 +657,39 @@ sub display_id {
 }
 
 
+=head2 feature_Slice
+
+  Args       : none
+  Example    : $slice = $feature->feature_Slice()
+  Description: This is a convenience method to return a slice that covers the
+               Area of this feature. The feature start will be at 1 on it, and
+               it will have the length of this feature.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub feature_Slice {
+  my $self = shift;
+  
+  my $slice = $self->slice();
+
+  return Bio::EnsEMBL::Slice->new
+    (-seq_region_name   => $slice->seq_region_name,
+     -seq_region_length => $slice->seq_region_length,
+     -coord_system      => $slice->coord_system,
+     -start             => $self->seq_region_start(),
+     -end               => $self->seq_region_end(),
+     -strand            => $self->seq_region_strand(),
+     -adaptor           => $slice->adaptor());
+
+  
+}
+
+
+
+
 
 =head2 seq_region_name
 
