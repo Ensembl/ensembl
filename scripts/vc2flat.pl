@@ -210,6 +210,7 @@ foreach my $vc_list_ref ( @vcs ) {
 	       				       -left => $vc_list_ref->[3], 
 	       				       -right => $vc_list_ref->[4] 
 						       );
+	$vc->id( "virtual_contig_".$vc->_unique_number);
 	$vc->sv(1);
         # debug tests by contig
 	print(STDERR "Format is $format\n");
