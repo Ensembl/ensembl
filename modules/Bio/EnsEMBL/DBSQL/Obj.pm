@@ -2352,7 +2352,7 @@ sub get_StaticGoldenPathAdaptor{
 sub get_KaryotypeAdaptor{
    my ($self,@args) = @_;
 
-   return Bio::EnsEMBL::DBSQL::KaryotypeAdaptor->new(-dbobj => $self);
+   return Bio::EnsEMBL::DBSQL::KaryotypeAdaptor->new($self);
 }
 
 
