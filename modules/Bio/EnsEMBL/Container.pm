@@ -83,6 +83,35 @@ sub _obj {
 }
 
 
+=head2 isa
+
+  Arg [1]    : string $module
+  Example    : none
+  Description: Overrides the base perl object isa so that this object is
+               also considered to be the contained object. Very sneaky
+               and a bit of a hack, but necessary to make this container
+               completely transparent.  
+  Returntype : boolean
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub isa {
+  my ($self, $module) = @_;
+  
+  if($module eq ref $self) {
+    return 1;
+  } 
+  
+  if($module eq ref($self->_obj())) {
+    return 1;
+  }
+
+  return $self->SUPER::isa($module);
+}
+
+
 =head2 AUTOLOAD
 
   Arg [1]    : @args list of arguments
