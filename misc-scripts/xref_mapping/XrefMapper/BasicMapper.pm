@@ -224,6 +224,23 @@ sub dump_xref{
   my @lists =@{$self->get_set_lists()};
   
   my $i=0;
+  if(defined($self->dumpcheck())){
+    my $skip = 1;
+    foreach my $list (@lists){
+      if(!-e $xref->dir()."/xref_".$i."_dna.fasta"){ 
+	$skip = 0;
+      }
+      if(!-e $xref->dir()."/xref_".$i."_prot.fasta"){ 
+	$skip = 0;
+      }
+      $i++;
+    }
+    if($skip){
+      return;
+    }
+  }
+
+  $i=0;
   foreach my $list (@lists){
     print "method->".@$list[0]."\n";
     $method[$i] = shift @$list;
@@ -407,6 +424,9 @@ sub fetch_and_dump_seq{
   # store ensembl protein file name and open it
   #
   $self->ensembl_protein_file($self->dir."/".$self->species."_protein.fasta");
+  if(defined($self->dumpcheck()) and -e $self->ensembl_protein_file() and -e $self->ensembl_dna_file()){
+    return;
+  }
   open(PEP,">".$self->ensembl_protein_file()) 
     || die("Could not open dna file for writing: ".$self->ensembl_protein_file."\n");
 

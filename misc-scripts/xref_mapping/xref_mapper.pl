@@ -15,10 +15,11 @@ $dir = join('/', @d);
 unshift @INC, $dir;
  
  
-my ($file, $verbose, $help);
+my ($file, $verbose, $dumpcheck, $help);
  
 GetOptions ('file=s'      => \$file,
             'verbose'     => \$verbose,
+	    'dumpcheck'    => \$dumpcheck,
             'help'        => sub { &show_help(); exit 1;} );
  
 usage("-file option is required")   if(!$file);
@@ -44,9 +45,6 @@ while( my $line = <FILE> ) {
       if($type eq "species"){
 	push @all_species, $new;
       }
-#      elsif($type eq "output"){
-#	$output = $new;
-#      }
       else{
 	$xref = $new;
       }
@@ -70,11 +68,10 @@ while( my $line = <FILE> ) {
 	$new = "XrefMapper::$module"->new();
 	$new->species($value);
       }
+      if(defined($dumpcheck) and $dumpcheck){
+	$new->dumpcheck("yes");
+      }
     }
-#    elsif($key eq "output"){
-#      $type= "output";
-#      $new = new XrefMapper::db();
-#    }
     else{
       $type= "xref";
       $new = new XrefMapper::db();
@@ -89,9 +86,6 @@ if(defined($new)){ #save last one
   if($type eq "species"){
     push @all_species, $new;
   }
-#  elsif($type eq "output"){
-#    $output= $new;
-#  }
   else{
     $xref = $new;
   }
@@ -116,9 +110,8 @@ sub usage {
   print STDERR <<EOF;
 usage:   perl xref_mapper <options>
                                                                                     
-options: -file <input_file>     input file with tab delimited 'species',
+options: -file <input_file>     input file with keyword pairs for  'species',
                                 'host', 'port', 'dbname' ,'user', 'password' and 'directory'
-                                values on each line
                           
          -verbose               print out debug statements
  

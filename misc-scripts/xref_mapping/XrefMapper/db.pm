@@ -183,6 +183,15 @@ sub dir {
 
 }
 
+sub dumpcheck {
+  my ($self, $arg) = @_;
+  
+  (defined $arg) &&
+    ($self->{_dumpcheck} = $arg );
+  return $self->{_dumpcheck};
+}
+
+
 sub process_dir {
   my ($dir) = @_;
 
