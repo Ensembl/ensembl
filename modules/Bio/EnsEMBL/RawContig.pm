@@ -175,7 +175,7 @@ sub name {
   } else {
     if( ! defined $self->{_name} &&
       defined $self->adaptor() ) {
-      $self->adaptor->fetch( $self );
+      $self->adaptor->fetch_attributes( $self );
     }
   }
   
@@ -204,7 +204,7 @@ sub international_name {
   } else {
     if( ! defined $self->{_international_name} &&
       defined $self->adaptor() ) {
-      $self->adaptor->fetch( $self );
+      $self->adaptor->fetch_attributes( $self );
     }
   }
   
@@ -220,7 +220,7 @@ sub offset {
   } else {
     if( ! defined $self->{_offset} &&
       defined $self->adaptor() ) {
-      $self->adaptor->fetch( $self );
+      $self->adaptor->fetch_attributes( $self );
     }
   }
   
@@ -236,7 +236,7 @@ sub corder {
   } else {
     if( ! defined $self->{_corder} &&
       defined $self->adaptor() ) {
-      $self->adaptor->fetch( $self );
+      $self->adaptor->fetch_attributes( $self );
     }
   }
   
@@ -282,7 +282,7 @@ sub length {
   } else {
     if( ! defined $self->{_length} &&
       defined $self->adaptor() ) {
-      $self->adaptor->fetch( $self );
+      $self->adaptor->fetch_attributes( $self );
     }
   }
   
@@ -338,7 +338,7 @@ sub seq_old {
     if( ! defined $self->{_seq} &&
       defined $self->adaptor() ) {
 	 print STDERR "Fetching sequence\n";
-      $self->adaptor->fetch( $self );
+      $self->adaptor->fetch_attributes( $self );
     }
   }
 #   print STDERR "Returning...\n";
