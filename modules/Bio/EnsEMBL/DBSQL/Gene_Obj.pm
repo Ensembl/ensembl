@@ -1749,7 +1749,7 @@ sub write_Transcript{
    my $translation = $trans->translation;
    my $translation_id = $translation ? $translation->id : '';
    
-   print STDERR "Translation id " . $translation->id . "\n";
+   #print STDERR "Translation id $translation_id\n";
 
    # Insert the transcript
    my $tst = $self->_db_obj->prepare("

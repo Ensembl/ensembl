@@ -396,4 +396,11 @@ sub desc {
    return $self->{'desc'} || '';
 }
 
+
+sub alphabet {
+    return 'dna';
+}
+
+
+
 1;

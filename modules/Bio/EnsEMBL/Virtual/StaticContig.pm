@@ -2639,25 +2639,27 @@ sub top_SeqFeatures{
 =cut
 
 sub _raw_contig_id_list {
-   my ($self,@args) = @_;
+    my ($self, @args) = @_;
     
-   my $string;
+    my $string = $self->{'_raw_contig_id_list'};
 
-   if( defined $self->{'_raw_contig_id_list'} ) {
-       return $self->{'_raw_contig_id_list'};
-   }
+    # Make the string if we haven't got it
+    unless ($string) {
+        $string = join(',',
+            map $_->internal_id,
+            $self->_vmap->get_all_RawContigs);
 
-   foreach my $c ( $self->_vmap->get_all_RawContigs) {
-       $string .= $c->internal_id . ",";
-   }
+        if ($string) {
+            $string = "($string)";
+        } else {
+            # Setting to __NONE__ ensures that we only
+            # get_all_RawContigs once.
+            $string = '__NONE__';
+        }
+        $self->{'_raw_contig_id_list'} = $string;
+    }
 
-   chop $string;
-
-   if ($string) { $string = "($string)";}
-
-   $self->{'_raw_contig_id_list'} = $string;
-   return $string;
-		   
+    return ($string eq '__NONE__') ? undef : $string;
 }
 
 
