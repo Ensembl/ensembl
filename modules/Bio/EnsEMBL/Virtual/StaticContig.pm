@@ -177,8 +177,12 @@ sub get_all_SimilarityFeatures_above_score{
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
-    
     my $idlist  = $self->_raw_contig_id_list();
+    
+    unless ($idlist){
+	print STDERR "NO IDS\n";
+	return ();
+    }
 
     my    $statement = "SELECT f.id, 
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -274,6 +278,11 @@ sub get_all_RepeatFeatures {
     my $chr_name=$self->_chr_name;
     my $length=$self->length;
     my $idlist  = $self->_raw_contig_id_list();
+
+    unless ($idlist){
+	print STDERR "NO IDS\n";
+	return ();
+    }
 
     my $statement = "SELECT rf.id,
                      IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -783,10 +792,16 @@ my $glob_start=$self->_global_start;
 my $glob_end=$self->_global_end;
 my $chr_name=$self->_chr_name;
 my $idlist  = $self->_raw_contig_id_list();
+    
 
-$self->throw ("I need a chromsome name") unless defined $chr_name;
+unless ($idlist){
+    print STDERR "NO IDS\n";
+    return ();
+}
+
+$self->throw ("I need a chromosome name") unless defined $chr_name;
 $self->throw ("I need a chromosome end") unless defined $glob_end;
-$self->throw ("I need a chromsome start") unless defined $glob_start;
+$self->throw ("I need a chromosome start") unless defined $glob_start;
 
 my $query ="SELECT     STRAIGHT_JOIN t.gene,
                        MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -1263,17 +1278,20 @@ sub top_SeqFeatures{
 
 sub _raw_contig_id_list {
    my ($self,@args) = @_;
+    
+   my $string;
 
    if( defined $self->{'_raw_contig_id_list'} ) {
        return $self->{'_raw_contig_id_list'};
    }
-   my $string = "(";
 
    foreach my $c ( $self->_vmap->get_all_RawContigs) {
        $string .= $c->internal_id . ",";
    }
-   $string =~ s/\,$//g;
-   $string .= ")";
+
+   chop $string;
+
+   if ($string) { $string = "($string)";}
 
    $self->{'_raw_contig_id_list'} = $string;
    return $string;
