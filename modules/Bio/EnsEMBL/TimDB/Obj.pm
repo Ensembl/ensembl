@@ -171,10 +171,20 @@ sub _initialize {
   my $p=Bio::EnsEMBL::Analysis::LegacyParser->new($gene_file,$transcript_file,
 						  $exon_file,$contig_order_file);
 
-  # need a full list if $raclones not set
+  # need a full list if $raclones not set,
+  # but also need to check clones in list provided to see if they are valid
+  my @clones=$self->get_all_Clone_id();
   if(!$raclones){
-      my @clones=$self->get_all_Clone_id();
       $raclones=\@clones;
+  }else{
+      my %clones=map {$_,1} @clones;
+      my @okclones;
+      foreach my $clone (@$raclones){
+	  if($clones{$clone}){
+	      push(@okclones,$clone);
+	  }
+      }
+      $raclones=\@okclones;
   }
 
   # doing conversion acc->id->acc or id->acc, need it here too
@@ -271,6 +281,7 @@ Note: for speed this does not return the ensembl_id but the disk_id
 
 sub get_updated_Clone_id{
    my ($self,$date,$fall) = @_;
+   # get list of valid clones by date
    my @clones;
    my($val,$key);
    while(($key,$val)=each %{$self->{'_clone_update_dbm'}}){
@@ -280,6 +291,7 @@ sub get_updated_Clone_id{
 	   push(@clones,$key);
        }
    }
+   # check validity of clones selected
    return &_get_Clone_id($self,$fall,\@clones);
 }
 
