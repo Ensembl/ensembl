@@ -136,21 +136,48 @@ sub gen_load{
   }
   else{
     # none standard DBA adaptor 
+    if(!defined($dba->group())){
+      $dba->group('none_standard');
+    }
     $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_and_attach_dnadb_to_core;
     #    throw("Unknown DBAdaptor type $dba\n");
   }
 
 
   # return if the connection and species, group are the same
-  my $db_reg = $reg->get_DBAdaptor($dba->species,$dba->group);
-  if(defined($db_reg)){
-    if($dba->dbc->equals($db_reg->dbc)){
-      return $db_reg;
-    }
-    else{ # diff conn details
-      $dba->species(find_unique_species($dba->species,$dba->group));
+
+
+  if(defined($dba->species)){
+    my $db_reg = $reg->get_DBAdaptor($dba->species,$dba->group);
+    if(defined($db_reg)){
+      if($dba->dbc->equals($db_reg->dbc)){
+	return $db_reg;
+      }
+      else{
+	warn "WARN: Species and group same for two seperate databases\nModify species name for one of these\n";
+	$dba->species(find_unique_species($dba->species,$dba->group));
+      }
     }
   }
+  else{  # no species 
+    my @db_reg = @{$reg->get_all_DBAdaptors_by_connection($dba->dbc)};
+    foreach my $db_adaptor (@db_reg){
+      if($db_adaptor->group eq $dba->group){ # found same db connection and group
+	return $db_adaptor;
+      }
+    }
+    if(@db_reg){
+      $dba->dbc($db_reg[0]->dbc);
+      $dba->species($db_reg[0]->species);
+    }
+    else{
+      $dba->species(find_unique_species("DEFAULT",$dba->group));      
+      if($dba->species ne "DEFAULT"){
+	warn "WARN: For multiple species use species attribute in DBAdaptor->new\n" 
+      }
+    }
+  }
+
 
   Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species(), $dba->group(), $dba);
 

@@ -660,6 +660,25 @@ my $self = shift;
     }
 }
 
+
+sub get_all_DBAdaptors_by_connection{
+  my ($self, $dbc_orig) = @_;
+  my @return;
+
+  foreach my $dba ( @{$registry_register{'_DBA'}}){
+    my $dbc = $dba->dbc;
+    if($dbc->equals($dbc_orig)){
+      push @return, $dba;
+    }
+  }
+  return \@return;
+}
+
+
+
+
+
+
 #
 # Web specific routines
 #

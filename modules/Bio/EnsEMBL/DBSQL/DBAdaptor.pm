@@ -86,8 +86,6 @@ sub new {
   bless $self,$class;
 
   
-  $self->dbc(new Bio::EnsEMBL::DBSQL::DBConnection(@args));
-
   my ($species, $group, $con, $dnadb) =
     rearrange([qw(SPECIES GROUP DBCONN DNADB)], @args);
 
@@ -102,9 +100,9 @@ sub new {
   if(defined($species)){
     $self->species($species);
   }
-  else{
-    $self->species("DEFAULT");
-  }
+#  else{
+#    $self->species("DEFAULT");
+#  }
   if(defined($group)){
     $self->group($group);
   }
