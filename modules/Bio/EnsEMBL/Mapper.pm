@@ -120,7 +120,8 @@ sub map_coordinates{
 
    #&eprof_start('map_coordinates');
 
-   if( !defined $type ) {
+   unless(defined($id) && defined($start) && defined($end) && 
+	  defined($strand) && defined($type) ) {
        $self->throw("Must start,end,strand,id,type as coordinates");
    }
 
