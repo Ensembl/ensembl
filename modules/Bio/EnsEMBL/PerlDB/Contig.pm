@@ -61,15 +61,17 @@ sub new {
   my $self = bless {
       _repeat_array  => [],
       _gene_array    => [],
-      _id            => '',
-      _version       => '',
-      _internal_id   => '',
+      _id            => undef,
+      _version       => undef,
+      _internal_id   => undef,
       _seq_date      => '',
       _embl_offset   => 0,
       _offset        => 0,
-      _orientation   => '',
+      _orientation   => undef,
       _order         => 1,
       _embl_order    => 1,
+      _chromosome    => undef,
+      _species       => undef,
   }, $class;
 
   return $self;
@@ -419,6 +421,46 @@ sub embl_order {
 	$self->{'_embl_order'} = $value;
     }
     return $self->{'_embl_order'};
+}
+
+
+=head2 species
+
+ Title   : species
+ Usage   : $obj->species($newval)
+ Function: 
+ Returns : value of species
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub species{
+    my ($self,$value) = @_;
+    if( defined $value && $value ne '' ) {
+	$self->{'_species'} = $value;
+    }
+    return $self->{'_species'};
+}
+
+=head2 chromosome
+
+ Title   : chromosome
+ Usage   : $obj->chromosome($newval)
+ Function: 
+ Returns : value of chromosome
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub chromosome{
+   my ($self,$value) = @_;
+   if( defined $value && $value ne '' ) {
+	$self->{'_chromosome'} = $value;
+    }
+    return $self->{'_chromosome'};
+    
 }
 
 1;

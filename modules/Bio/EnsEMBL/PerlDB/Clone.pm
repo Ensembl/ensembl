@@ -56,9 +56,9 @@ sub new {
 
   my $self = bless {
       _contig_hash     => {},
-      _id              => 0,
-      _embl_id         => 1,
-      _embl_version    => 1,
+      _id              => undef,
+      _embl_id         => undef,
+      _embl_version    => undef,
       _htg_phase       => 1,
       _created         => time,
       _modified        => time,
