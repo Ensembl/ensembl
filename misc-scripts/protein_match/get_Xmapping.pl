@@ -40,7 +40,7 @@ while ( my $seq = $in->next_seq() ) {
     my ($displ_id,$tag) = split(/:/,$id);
 
     if ($tag eq "STANDARD") {
-	$db = "SP";
+	$db = "SWISS-PROT";
     }
     elsif ($tag eq "PRELIMINARY") {
 	$db = "SPTREMBL";
@@ -86,17 +86,17 @@ while (<REFSEQ>) {
 
     $refseq_map{$dna_ac} = $prot_ac; 
     
-    print OUT "$dna_ac\tREFSEQ\t$prot_ac\tREFSEQ\t$prot_ac\t\n";
+    print OUT "$dna_ac\tRefSeq\t$prot_ac\tRefSeq\t$prot_ac\t\n";
        
     my ($mim) = $_ =~ /\/db_xref=\"MIM:(\d+)/;
     my ($locus) = $_ =~ /\/db_xref=\"LocusID:(\d*)/;
 
     if ($mim) {
-	print OUT "$dna_ac\tREFSEQ\t$mim\tOMIM\t$mim\t\n";
+	print OUT "$dna_ac\tRefSeq\t$mim\tMIM\t$mim\t\n";
     }
 
     if ($locus) {
-	print OUT "$dna_ac\tREFSEQ\t$locus\tLOCUS\t$locus\t\n";
+	print OUT "$dna_ac\tRefSeq\t$locus\tLocusLink\t$locus\t\n";
     }
 }
 close (REFSEQ);
@@ -142,7 +142,7 @@ while (<ENS1>) {
     
     if ($array[2]) {
 	#my $db = $sp_db{$array[1]};
-	print OUT "$array[2]\tREFSEQ\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\n";
+	print OUT "$array[2]\tRefSeq\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\n";
     }
 }
 close (ENS1);
