@@ -67,7 +67,7 @@ my $nodna  = 0;
 my $help;
 my $noacc  = 0;
 my $aceseq;
-
+my $fromfile = 0;
 my $pepformat = 'Fasta';
 
 # this doesn't have genes (finished)
@@ -86,6 +86,7 @@ my $pepformat = 'Fasta';
 	     'noacc'     => \$noacc,
 	     'aceseq:s'  => \$aceseq,
 	     'pepform:s' => \$pepformat,
+	     'fromfile'  => \$fromfile,
 	     );
 
 if($help){
@@ -116,8 +117,20 @@ if( $dbtype =~ 'ace' ) {
     die("$dbtype is not a good type (should be ace, rdb or timdb)");
 }
 
+my @clones;
 
-foreach my $clone_id ( @ARGV ) {
+if( $fromfile == 1 ) {
+    while( <> ) {
+	my ($cloneid) = split;
+	push(@clones,$cloneid);
+    }
+} else {
+    @clones = @ARGV;
+}
+
+
+foreach my $clone_id ( @clones ) {
+
     my $clone = $db->get_Clone($clone_id);
     my $as = $clone->get_AnnSeq();
     # choose output mode

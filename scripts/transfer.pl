@@ -17,7 +17,7 @@ my $tdbtype = 'rdb';
 my $thost   = 'croc';
 my $tport   = '410000';
 
-
+my $usefile = 0;
 &GetOptions( 
 	     'fdbtype:s' => \$fdbtype,
 	     'fhost:s'   => \$fhost,
@@ -25,11 +25,24 @@ my $tport   = '410000';
 	     'tdbtype:s' => \$tdbtype,
 	     'thost:s'   => \$thost,
 	     'tport:n'   => \$tport,
+	     'usefile'   => \$usefile,
 	     );
 
 my $from_db;
 my $to_db;
 
+my @clone;
+
+if( $usefile == 1 ) {
+    while( <> ) {
+	my ($en) = split;
+	push(@clone,$en);
+    }
+} else {
+    @clone = @ARGV;
+}
+
+open(ERROR,">transfer.error\n");
 
 if( $fdbtype =~ 'ace' ) {
     $from_db = Bio::EnsEMBL::AceDB::Obj->new( -host => $fhost, -port => $fport);
@@ -46,17 +59,24 @@ if( $tdbtype =~ 'ace' ) {
 } elsif ( $tdbtype =~ 'rdb' ) {
     $to_db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'ensdev' , -host => $thost );
 } else {
-    die("$tdbtype is not a good type (should be ace, rdb or timdb)");
+    die("$tdbtype is not a good type (should be ace, rdb)");
 }
 
-foreach my $clone_id ( @ARGV ) {
-    my $clone = $from_db->get_Clone($clone_id);
+foreach my $clone_id ( @clone ) {
+    print STDERR "Loading $clone_id\n";
+    eval {
+	my $clone = $from_db->get_Clone($clone_id);
     
-    $to_db->write_Clone($clone);
+	$to_db->write_Clone($clone);
     
-    foreach my $gene ( $clone->get_all_Genes() ) {
-	$to_db->write_Gene($gene);
+	foreach my $gene ( $clone->get_all_Genes() ) {
+	    $to_db->write_Gene($gene);
+	}
+    };
+    if ( $@ ) {
+	print ERROR "$@\n";
     }
 }
 
+close(ERROR);
 
