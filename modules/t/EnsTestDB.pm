@@ -145,6 +145,17 @@ sub dbname {
     return $self->{'_dbname'};
 }
 
+# convenience method: by calling it, you get the name of the database,
+# which  you can cut-n-paste into another window for doing some mysql
+# stuff interactively
+sub pause {
+    my ($self) = @_;
+    my $db = $self->{'_dbname'};
+    print STDERR "pausing to inspect database; name of databse is:  $db\n";
+    print STDERR "press ^D to continue\n";
+    `cat `;
+}
+
 sub module {
     my ($self, $value) = @_;
     $self->{'module'} = $value if ($value);
