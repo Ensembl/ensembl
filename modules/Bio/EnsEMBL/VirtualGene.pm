@@ -528,6 +528,9 @@ sub to_FTHelper {
     my $id = $self->gene->id();
     my $cid = $self->contig_id();
 
+
+    my @dblinks = $self->gene->each_DBLink();
+
     foreach my $trans ( $self->gene->each_Transcript ) {
 	foreach my $ptrans ( $trans->split_Transcript_to_Partial(1) ) {
 	    # sneaky call 
@@ -573,6 +576,11 @@ sub to_FTHelper {
 
 	    $ft->add_field('translate',$translated_seq->seq);
 	    $ft->add_field('cds',$trans->translation->id);
+	    $ft->add_field('gene',$self->gene->id);
+	    $ft->add_field('transcript',$trans->id);
+	    foreach my $dbl ( @dblinks ) {
+		$ft->add_field('dbxref',$dbl->database.":".$dbl->primary_id);
+	    }
 	    push(@out,$ft);
 	}
     }
@@ -591,8 +599,8 @@ sub to_FTHelper {
 	if ($self->strict_EMBL_dumping) {
 	    $ft->add_field('db_xref', 'ENSEMBL:HUMAN-Exon-'. $exon->id);
 	} else {
-	    $ft->add_field('created',     scalar(gmtime($exon->created())));
-	    $ft->add_field('modified',    scalar(gmtime($exon->modified())));
+	    #$ft->add_field('created',     scalar(gmtime($exon->created())));
+	    #$ft->add_field('modified',    scalar(gmtime($exon->modified())));
 	    $ft->add_field('exon_id',     $exon->id());
 	    $ft->add_field('start_phase', $exon->phase());
 	    $ft->add_field('end_phase',   $exon->end_phase());
