@@ -17,11 +17,11 @@ use strict;
 use Getopt::Std;
 use vars qw($opt_h $opt_T $opt_i 
 	    $opt_U $opt_D $opt_P $opt_H $opt_p
-	    $opt_s $opt_c $opt_C $opt_l $opt_d);
+	    $opt_s $opt_c $opt_C $opt_l $opt_d $opt_r);
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-getopts("hTi:U:D:P:H:p:s:cCl:d");
+getopts("hTi:U:D:P:H:p:s:cCl:dr:");
 
 $|=1;
 
@@ -30,6 +30,7 @@ my $def_U='ensadmin';
 my $def_D='testdna';
 my $def_P='3307';
 my $def_H='127.0.0.1';
+my $def_r=5;
 
 if($opt_h){
     &help;
@@ -46,6 +47,7 @@ dna_compress.pl
   -l char  label of clone, contig (for writing)
   -c       convert
   -C       compare
+  -r num   number of randomisation subsequence selections [$def_r]
   -i id    clone_dbid (for comparing, converting, extracting DNA)
   -d       delete clone
 
@@ -68,6 +70,7 @@ $opt_U=$def_U unless $opt_U;
 $opt_D=$def_D unless $opt_D;
 $opt_P=$def_P unless $opt_P;
 $opt_H=$def_H unless $opt_H;
+$opt_r=$def_r unless $opt_r;
 
 # db connection
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   => $opt_H,
@@ -157,7 +160,7 @@ if($opt_C || $opt_c){
 
 	# now test a subsequence
 	my $lenr=$len-1;
-	for(my $i=0;$i<5;$i++){
+	for(my $i=0;$i<$opt_r;$i++){
 	  my $r=rand;
 	  my $st=int($r*$lenr)+1;
 	  $r=rand;

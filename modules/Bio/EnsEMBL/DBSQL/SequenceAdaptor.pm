@@ -391,15 +391,29 @@ sub store_compressed {
   my $len=length($sequence);
   #print "DEBUG $sequence ($len)\n";
   {
-      if($sequence=~/^([^N]*)([N]+)(.*)$/){
+      if($sequence=~/^([ACGT]*)([^ACGT]+)(.*)$/){
 	  my $l1=length($1);
 	  my $l2=length($2);
 	  my $start=$l1+1;
 	  my $end=$l1+$l2;
 	  $sequence=$1.('A' x $l2).$3;
-	  $n_line.=" " if $n_line;
-	  $n_line.="$start-$end";
-	  #print "DEBUG: Ns from $start-$end\n";
+	  # might be more than one letter
+	  my $insert=$2;
+	  #print "DEBUG: $insert ($start,$end)\n";
+	  {
+	    if($insert=~/^(\w)(\1*)(.*)$/){
+	      my $insert2=$1.$2;
+	      my $end2=$start+length($insert2)-1;
+	      $n_line.=" " if $n_line;
+	      my $modifier='';
+	      if($1 ne 'N'){$modifier=":$1";}
+	      $n_line.="$start-$end2$modifier";
+	      #print "DEBUG: write $start-$end2$modifier\n";
+	      $insert=$3;
+	      $start=$end2+1;
+	      redo if $insert;
+	    }
+	  }
 	  redo;
       }
   }
@@ -538,6 +552,11 @@ sub store_compressed {
     # mask with N's
     foreach my $range (split(/ /,$n_line)){
       my($st,$ed)=split(/\-/,$range);
+      my $char='N';
+      if($ed=~/(\d+):(\w)/){
+	$ed=$1;
+	$char=$2;
+      }
       #print "before: $st-$ed $start-$end\n";
       # check in range
       next if($ed<$start || $st>$end);
@@ -546,7 +565,7 @@ sub store_compressed {
       #print "after: $st-$ed\n";
       my $len=$ed-$st+1;
       $st-=$start;
-      substr($seq,$st,$len)='N'x$len;
+      substr($seq,$st,$len)=$char x $len;
     }
 
     return $seq;
