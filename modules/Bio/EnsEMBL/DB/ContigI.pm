@@ -135,10 +135,10 @@ sub get_all_SeqFeatures{
 
 }
 
-=head2 get_all_FeaturesByScore
+=head2 get_all_SimilarityFeatures_above_score
 
- Title   : get_all_FeaturesByScore
- Usage   : foreach my $sf ( $contig->get_all_FeaturesByScore(score, feature_type) ) 
+ Title   : get_all_SimilarityFeatures_above_score
+ Usage   : foreach my $sf ( $contig->get_all_SimilarityFeatures_above_score(analysis_type, score) ) 
  Function:
  Example :
  Returns : 
@@ -147,10 +147,10 @@ sub get_all_SeqFeatures{
 
 =cut
 
-sub get_all_FeaturesByScore{
+sub get_all_SimilarityFeatures_above_score{
    my ($self) = @_;
 
-   $self->throw("Object did not provide the get_all_FeaturesByScore method in ContigI abstract class!");
+   $self->throw("Object did not provide the get_all_SimilarityFeatures_above_score method in ContigI abstract class!");
 
 }
 
