@@ -419,12 +419,14 @@ sub length {
 sub invert {
   my $self = shift;
 
-  #make a shallow copy of the slice via a hash copy,
-  my %s = %$self;
-  if(!$self->adaptor){
-    warning("You can't invert a Slice which isn't attached to a database");
+  if($self->{'seq'}){
+    warning("Cannot invert a slice which has a manually attached sequence ");
     return;
   }
+
+  #make a shallow copy of the slice via a hash copy,
+  my %s = %$self;
+
   #flip the strand,
   $s{'strand'} = $self->{'strand'} * -1;
   #bless and return the copy
@@ -768,10 +770,9 @@ sub expand {
   my $self = shift;
   my $five_prime_shift = shift || 0;
   my $three_prime_shift = shift || 0;
-  
+
   if($self->{'seq'}){
-    warning("You can't expand a slice which already has an attached ".
-            "sequence ");
+    warning("Cannot expand a slice which has a manually attached sequence ");
     return;
   }
 
@@ -816,6 +817,12 @@ sub expand {
 sub sub_Slice {
   my ( $self, $start, $end, $strand ) = @_;
 
+  if($self->{'seq'}){
+    warning("Cannot get a sub_Slice of a slice which has manually attached ".
+            "sequence ");
+    return;
+  }
+
   if( $start < 1 || $start > $self->{'end'} ) {
     # throw( "start argument not valid" );
     return undef;
@@ -858,6 +865,45 @@ sub sub_Slice {
 }
 
 
+
+=head2 seq_region_Slice
+
+  Arg [1]    : none
+  Example    : $slice = $slice->seq_region_Slice();
+  Description: Returns a slice which spans the whole seq_region which this slice
+               is on.  For example if this is a slice which spans a small region
+               of chromosome X, this method will return a slice which covers the
+               entire chromosome X. The returned slice will always have strand
+               of 1 and start of 1.  This method cannot be used if the sequence
+               of the slice has been set manually.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : warning if called when sequence of Slice has been set manually.
+  Caller     : general
+
+=cut
+
+sub seq_region_Slice {
+  my $self = shift;
+
+  if($self->{'seq'}){
+    warning("Cannot get a seq_region_Slice of a slice which has manually ".
+            "attached sequence ");
+    return;
+  }
+
+  # quick shallow copy
+  my $slice;
+  %{$slice} = %{$self};
+  bless $slice, ref($self);
+
+  $slice->{'start'}  = 1;
+  $slice->{'end'}    = $slice->{'seq_region_length'};
+  $slice->{'strand'} = 1;
+
+  return $slice;
+}
+
+
 =head2 get_seq_region_id
 
   Arg [1]    : none
@@ -877,12 +923,12 @@ sub sub_Slice {
 
 sub get_seq_region_id {
   my ($self) = @_;
-  
+
   if($self->adaptor) {
     return $self->adaptor->get_seq_region_id($self);
   } else {
     warning('Cannot retrieve seq_region_id without attached adaptor.');
-    return 0;                                                            
+    return 0;
   }
 }
 
