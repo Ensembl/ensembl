@@ -344,7 +344,7 @@ sub fetch_all_by_Slice_constraint {
   my @result_features;
 
   if(!ref($orig_slice) || !$orig_slice->isa("Bio::EnsEMBL::Slice")) {
-    throw("Slice arg must be a Bio::EnsEMBL::Slice not a [$orig_slice]\n");
+    throw("Bio::EnsEMBL::Slice argument expected.");
   }
 
   $original_constraint ||= '';
