@@ -1167,7 +1167,11 @@ sub get_MarkerFeatures {
       my ( $out, $seqf1, $seqf2 );
       
       if (!$analhash{$analysisid}) {
-        $analysis = $self->dbobj->get_Analysis($analysisid);
+		
+		my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	    $analysis = $feature_obj->get_Analysis($analysisid);
+
+        #$analysis = $self->dbobj->get_Analysis($analysisid);
         $analhash{$analysisid} = $analysis;
         
       } else {
