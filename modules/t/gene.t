@@ -33,8 +33,8 @@ debug ("Gene->list_dbIDs");
 my $ids = $ga->list_dbIDs();
 ok (@{$ids});
 
-debug ("Gene->list_stable_dbIDs");
-my $stable_ids = $ga->list_stable_dbIDs();
+debug ("Gene->list_stable_ids");
+my $stable_ids = $ga->list_stable_ids();
 ok (@{$stable_ids});
 
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
