@@ -7,6 +7,12 @@ cd merges
 outdir=../stats
 mappingoutdir=../mapping
 
+[ -d $outdir ] && echo "Found $outdir, not doing stats">&2 && exit 1
+[ -d $mappingoutdir ] && echo "Found $mappingoutdir, not doing stats">&2 && exit 1
+
+mkdir $outdir
+mkdir $mappingoutdir
+
 for m in *.merge; do
   stats-from-merge-files.pl < $m -stats -chaining 5  \
          -igi2native $mappingoutdir/$m-i2            \
