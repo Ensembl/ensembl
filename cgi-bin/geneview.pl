@@ -33,9 +33,7 @@ eval {
 if( $@ ) {
     print(STDERR "Error $@\n");
 } else {
-
-
-
+    
     foreach my $transcript ($gene->each_Transcript) {
 
 	$db->get_supporting_evidence($transcript->each_Exon);
@@ -59,29 +57,27 @@ if( $@ ) {
 	print("Below is a table showing which database hits have overlaps\n");
 	print("with each exon in the transcript.  The database hits are the results of a series of blast runs against genscan predicted peptides.<p>\n");
 
-	    
-
 	# Hash the evidence by feature hid
 	my %hid;
 	my %type;
 	my @features;
-
+	
 	foreach my $exon ($transcript->each_Exon) {
 	    foreach my $f ($exon->each_Supporting_Feature) {
 		if (!defined($hid{$f->hseqname})) {
 		    $hid{$f->hseqname} = [];
 		}
+
 		$type{$f->hseqname} = $f->analysis->db;
 		push(@{$hid{$f->hseqname}},$exon);
 		push(@features,$f);
 	    }
 	}
-
+	
 	# Now do some sorting on the features;
-	@features = sort { $a->hseqname <=> $b->hseqname ||
-			       $a->analysis->db <= $b->analysis->db ||
-			       $#{$hid{$b->hseqname}} <=> $#{$hid{$a->hseqname}} } @features;
-
+	@features = sort { $a->hseqname           cmp $b->hseqname     ||
+			       $#{$hid{$b->hseqname}} <=> $#{$hid{$a->hseqname}} ||
+			   $a->analysis->db       cmp $b->analysis->db  } @features;
 	# now rank the hid
 	my $prev;
 	my @hid;
@@ -92,7 +88,6 @@ if( $@ ) {
 		$prev = $f->hseqname;
 	    }
 	}
-
 	print("<pre>\n");
 	# First the top line for the exons
 	printf("%25s","Exon number =>");
