@@ -446,18 +446,6 @@ sub add_map_coordinates{
       }
 	      
       
-      $cmp = $pair->{'to'}->{'start'} <=> $current_pair->{'to'}->{'start'};
-
-      # normal case. Insertion in the right place in the list ...
-      if( $cmp == -1 ) {
-	last;
-      } 
-
-      # duplicate or overlapping pair, just reject it
-      if( $cmp == 0 ) {
-	return 0;
-      }
-
       # check a merge with directly after,
       # now check a merge pair directly before $lr->[$i]
       # no threesome check necessary !
@@ -483,6 +471,19 @@ sub add_map_coordinates{
 	  }
 	}	  
       }
+
+      $cmp = $pair->{'to'}->{'start'} <=> $current_pair->{'to'}->{'start'};
+
+      # normal case. Insertion in the right place in the list ...
+      if( $cmp == -1 ) {
+	last;
+      } 
+
+      # duplicate or overlapping pair, just reject it
+      if( $cmp == 0 ) {
+	return 0;
+      }
+
     } # end of insertion sort while loop
 
     # we might have actually merged two pairs in the mapper, thus one pair
