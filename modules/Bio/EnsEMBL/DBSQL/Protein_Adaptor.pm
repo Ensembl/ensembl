@@ -23,14 +23,6 @@ my $protein_adaptor=Bio::EnsEMBL::Protein_Adaptor->new($obj);
 
 my $protein = $protein_adaptor->fetch_Protein_by_dbid;
 
-If the SNPs are wanted:
-
-my $snpdb = Bio::EnsEMBL::ExternalData::SNPSQL::DBAdapter->new(
-							       -dbname=>$snpdbname,
-							       -user=>$dbuser,
-							       -host=>$host);    
- 
-$protein_adaptor->snp_obj($snpdb);
 
 
 =head1 DESCRIPTION
@@ -83,55 +75,6 @@ sub _gene_obj {
     return $self->{'gene_obj'};
 }
 
-sub _protfeat_obj {
-    my($self) = @_;
-    if( !defined $self->{'protfeat_obj'}) {
-	my $feat_obj = $self->db->get_Protfeat_Adaptor;
-	$self->{'protfeat_obj'} = $feat_obj;
-    }
-    
-    return $self->{'protfeat_obj'};
-}
-
-sub _familyAdaptor {
-   my($self) = @_;
-    if( !defined $self->{'familyAdaptor'}) {
-	my $feat_obj = $self->db->get_FamilyAdaptor;
-	$self->{'familyAdaptor'} = $feat_obj;
-    }
-    
-    return $self->{'familyAdaptor'};
-}
- 
-sub _dbEntryAdaptor {
-     my($self) = @_;
-     if( !defined $self->{'dbEntryAdaptor'}) {
-	 my $dbentryadaptor = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($self);
-	 $self->{'dbEntryAdaptor'} = $dbentryadaptor;
-    }
-     return $self->{'dbEntryAdaptor'};
-}
-   
-=head2 snp_obj
-
- Title   : snp_obj
- Usage   : $obj->snp_obj($newval)
- Function: 
- Returns : value of snp_obj
- Args    : newvalue (optional)
-
-
-=cut
-
-sub snp_obj{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'snp_obj'} = $value;
-    }
-    return $obj->{'snp_obj'};
-
-}
 
 =head2 fetch_Protein_by_transcriptId
 
@@ -206,11 +149,6 @@ sub fetch_Protein_by_dbid{
 #Get the transcript object (this will allow us to get the aa sequence of the protein
    my $transcript = $self->fetch_Transcript_by_dbid($transid);
 
-#Get all of the Dblink for the given Peptide id
-   my @dbentry = $self->fetchDBentry_by_dbID($id);
-
-#Get all of the Protein Features for the given Protein
-   my @prot_feat = $self->fetch_Protein_features_by_dbid($id);
 
 #Get all of the family (at the Transcript level), not implemented yet
    #my $family = $self->fetch_Family_by_dbid($id);
@@ -231,20 +169,10 @@ sub fetch_Protein_by_dbid{
   
 #Define the moltype
    my $moltype = "protein";
-
-#Define the specie (here by default human, but will have to find something else when other organisms come into Ensembl) 
-   my @class = ( "Eukaryota", "Metazoa", "Chordata", "Craniata", "Vertebrata", "Euteleostomi", "Mammalia", "Eutheria", "Primates", "Catarrhini", "Hominidae","Homo" ,"sapiens (human)");
-   @class = reverse(@class);
-   my $common;
-   my $sub_species;
-   my $org;
-
-   my $species = Bio::Species->new();
-   $species->classification( @class );
-   $species->common_name( $common      ) if $common;
-   $species->sub_species( $sub_species ) if $sub_species;
-   $species->organelle  ( $org         ) if $org;
-
+   
+   my $meta_obj = $self->db->get_MetaContainer();
+   my $species = $meta_obj->get_Species();
+   
    #This has to be changed, the description may be take from the protein family description line
    my $desc = "Protein predicted by Ensembl";
   
@@ -258,12 +186,17 @@ sub fetch_Protein_by_dbid{
 
 					      );
 
-   $protein->transcriptac($transid);                                              
-   $protein->geneac($geneid);    
-   $protein->adaptor($self);	
-
-#Add the species object to protein object
+   #Add the species object to protein object
    $protein->species($species);
+
+   $protein->transcriptac($transid);                                              
+   $protein->geneac($geneid);
+   
+#Cache the different adaptors which will be used by the protein Object
+   $protein->adaptor($self);
+   $protein->protfeat_adaptor($self->db->get_Protfeat_Adaptor);
+   $protein->dbEntry_adaptor(Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($self));
+   #$protein->family_adaptor($self->db->get_FamilyAdaptor);
 
 #Add the date of creation of the protein to the annotation object
    my $ann  = Bio::Annotation->new;
@@ -272,77 +205,6 @@ sub fetch_Protein_by_dbid{
    $protein->add_date($created);
    $protein->add_date($modified);
 
-#Give a gene name to the peptide, here , its Ensembl gene id   
-#$ann->gene_name($geneid); 
-
-#Add the DBlinks to the annotation object
-   foreach my $link (@dbentry) {
-       if ($link){
-	   $protein->annotation->add_DBLink($link);
-       }
-   }
-   my %seen1;
-   my %seen2;
-
-#Get Protein feature data and creat a DBlink object
-   foreach my $feat (@prot_feat) {
-       
-#Get the the accession number of the feature matching to the given Protein
-       my $featid = $feat->hseqname;
-
-#This is supposed to be the rigth way 
-       my $dbdesc = $feat->analysis->db;
-
-
-#In the case of a protein feature being an Interpro signature (eg: Pfam, Prints,...) this  signature will also be added to the object as a dblink (this is a requirement to dump peptides in SP format and to use their automatic annotation)
-
-#If protein feature is an Interpro signature and has not been already put into DBlink, add it.       
-       if ((! defined ($seen1{$featid})) && (($dbdesc eq "Pfam") || ($dbdesc eq "PRINTS") || ($dbdesc eq "PROSITE"))) {
-	   my $newdbentry = Bio::EnsEMBL::DBEntry->new();
-	   $newdbentry->primary_id($featid);
-	   $newdbentry->dbname($dbdesc);
-	   
-#To work with SP dump the signature id has to be given, because we don't store it, an X is given instead
-	   $newdbentry->optional_id("X");
-	   $protein->annotation->add_DBLink($newdbentry);
-	   $seen1{$featid} = 1;
-       }
-
-#Get the Interpro AC for the given signature
-	    my $query2 = "select interpro_ac from interpro where id = '$featid'";
-	    my $sth2 = $self->prepare($query2);
-	    $sth2 ->execute();
-	    my $interpro = $sth2->fetchrow;
-       
-       if (!defined $interpro) {
-	   #$self->throw("$featid does not have Interpro accession number");
-       }
-
-#If the Interpro accession number has not already been put into DBlink, add it 
-       if (! defined ($seen2{$interpro}) && defined $interpro) {
-	   my $dblink = Bio::EnsEMBL::DBEntry->new();
-	   $dblink->dbname('InterPro');
-	   $dblink->primary_id($interpro);
-	   $protein->annotation->add_DBLink($dblink);
-	   $seen2{$interpro} = 1;
-	   
-       }
-   }
-   
-
-
-#Add the Ensembl gene id (ENSG) as a DBlink to the object
-   my $dblink = Bio::EnsEMBL::DBEntry->new();
-   $dblink->dbname('EnsEMBL');
-   $dblink->primary_id($geneid);
-   $protein->annotation->add_DBLink($dblink);
-
-#Add each protein features to the protein object
-   foreach my $feat (@prot_feat) {
-       if ($feat) {
-	   $protein->add_Protein_feature($feat);
-       }
-   }
    return $protein;
 }
 
@@ -367,25 +229,6 @@ sub fetch_Transcript_by_dbid{
    return $transcript;
 
 }
-
-=head2 fetchDBentry_by_dbid
-
- Title   : fetchDBentry_by_dbid
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub fetchDBentry_by_dbID{
-   my ($self,$protein_id) = @_;
-   my @entries = $self->_dbEntryAdaptor->fetch_by_translation($protein_id);
-   return @entries;
-}
-
 
 =head2 fetch_DBlinks_by_dbid
 
@@ -443,61 +286,6 @@ sub fetch_Protein_features_by_dbid{
 
 }
 
-=head2 fetch_Family_by_dbid
-
- Title   : fetch_Family_by_dbid
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub fetch_Family_by_dbid{
-   my ($self,$protein_id) = @_;
-   
-
-   #This call a method contained in FamilyAdaptor, perhaps we should one day put all of these objects together; a big protein object
-
-   my $family = $self->_familyAdaptor->get_Family_of_Ensembl_pep_id($protein_id);
-
-   if( !$family->isa('Bio::EnsEMBL::ExternalData::Family::Family') ) {
-       $self->throw(" $family is not a family object");
-   }
-
-   return $family;
-
-}
-
-
-
-=head2 fetch_by_DBlink
-
- Title   : fetch_by_DBlink
- Usage   :my @proteins = $obj->fetch_by_DBlink($dblinkid)
- Function:Get the proteins corresponding to the given DBlink. In most of the case only one protein will be returned
- Example :
- Returns : an array of protein objects being linked to this given DBlink
- Args    :Dblink id (external_id in transcriptdblink table)
-
-
-=cut
-
-sub fetch_by_DBlink{
-   my ($self,$dblink) = @_;
-   my @proteins;
-   my $query = "select t.translation from transcript as t, transcriptdblink as tdb where tdb.external_id = '$dblink' and tdb.transcript_id = t.id";
-    my $sth = $self->prepare($query);
-    $sth ->execute();
-    while( (my $pepid = $sth->fetchrow) ) {
-	my $pep = $self->fetch_Protein($pepid);
-
-	push(@proteins,$pep);
-    }
-   return @proteins;
-}
 
 =head2 fetch_by_feature
 
@@ -614,15 +402,27 @@ sub get_Introns{
 	    my $intron_start = $previous_ex_end;
 	    my $intron_end = $ex_start;
 
+#Create an analysis object
+	    my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
+	
+	    $anal->program        ('NULL');
+	    $anal->program_version('NULL');
+	    $anal->gff_source     ('Intron');
+	    $anal->gff_feature    ('Intron');
+	    #$anal->dbID(2);
+
+
 	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
 						       -start => $starts->[$count],
 						       -end => $starts->[$count],
 						       -score => 0, 
 						       -percent_id => "NULL",
+						       -analysis => $anal,
 						       -p_value => "NULL");
 	    
 	    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $intron_start,
 						      -end => $intron_end,
+						      -analysis => $anal,
 						      -seqname => "Intron");
 	    
 	    my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
@@ -693,85 +493,94 @@ sub get_exon_global_coordinates{
 =cut
     
 sub get_snps {
-    my ($self,$protein) = @_;
-    my $db = $self->db;
-    my $transcript;
-    my @ex_snps;
-    my $count = 0;
-    my @array_features;
+    my ($self,$protein,$sndb,$gbd) = @_;
+
     
-#Get the transcript, gene accession numbers for the given peptide
     my $transid = $protein->transcriptac();
-    my $geneid = $protein->geneac();
-    my $protid = $protein->id();
 
-#For now a static golden path is built (this is not the fastest solution but the easiest one). Should be changed to direct sql statements.
-    $db->add_ExternalFeatureFactory($self->snp_obj()); 
-    $db->static_golden_path_type('UCSC');
+    my @exons;
+    my @snps;
+    my $count = 0;
+    my $ex;
+    my $snp;
+    my %expos;
+    my @array_snp;
+    my @features;
 
-    my $virtual = $db->get_StaticGoldenPathAdaptor();
+    #Get the exon information for this given transcript
+    my $sth = $gbd->prepare("select exon,exon_chrom_start,exon_chrom_end from exon where transcript='$transid'");
+    $sth->execute;
     
-#Fetch a virtual contig for the given transcript. All of the external are retrieved for this virtual contig as well as all genes.   
-
-    &eprof_start('snp_vc_build');
-
-    my $vc = $virtual->fetch_VirtualContig_of_transcript($transid,0);
-
-    &eprof_end('snp_vc_build');
-
-    my @snips = $vc->get_all_ExternalFeatures();
-    my ($gene) = $vc->get_Genes($geneid);
-
-
+    while (my @loc = $sth->fetchrow) {
+	my $loc;
+	$count++;
+	$expos{$loc[0]} = $count;
+	
+	$$loc[0]->{id} = $loc[0];
+	$$loc[0]->{pos} = $count;
+	$$loc[0]->{start} = $loc[1];
+	$$loc[0]->{end} = $loc[2];
+	$$loc[0]->{length} = ($loc[2] - $loc[1]);
+	push (@exons,$$loc[0]);
+    }
+	
+    #Now, get information about the snps on this transcript    
+    my $sth1 = $gbd->prepare("select exon,s.refsnpid,s.snp_chrom_start from exon e, gene_snp s where s.gene=e.gene and s.snp_chrom_start>e.exon_chrom_start and s.snp_chrom_start<e.exon_chrom_end and e.transcript='$transid'");
+    $sth1->execute;
+  
+    while (@array_snp = $sth1->fetchrow) {
+	my $array_snp;
+	$$array_snp[1]->{exon} = $array_snp[0];
+	$$array_snp[1]->{id} = $array_snp[1];
+	$$array_snp[1]->{pos} = $array_snp[2];
+	push (@snps,$$array_snp[1]);
+    }
     
-#Get which virtual transcript holds the transcript we want to study   
+    foreach my $s(@snps) {
+	my $e;
+	my $exid = $s->{exon};
+	
+	my $pos = $expos{$exid};
+	
+	my $previous_exons_length = 0;
 
-
-   my @transcripts = $gene->each_Transcript();
-
-   foreach my $trans  (@transcripts) {
-       if ($trans->id eq $transid) {
-	   $transcript = $trans;
-       }
-   }
-
-
-   my $genesnp;
-   eval {
-       require Bio::EnsEMBL::ExternalData::GeneSNP;
-       $genesnp = new Bio::EnsEMBL::ExternalData::GeneSNP
-	   (-gene => $gene,
-	    -contig => $vc
-	    );
-   };
-   if( $@ ) {
-       $self->throw("Unable to build GeneSNP object. Probably don't have ensembl-external code in your PERL5LIB. Download ensembl-external and either install or move to PERL5LIB\n\nReal Exception $@");
-   }
-       
-
-   $genesnp->transcript($transcript);
-   
-   my @seq_diff = $genesnp->snps2transcript(@snips);
-       
-    foreach my $diff (@seq_diff) {
-	foreach my $var ($diff->each_Variant) {
-	    if($var->isa('Bio::Variation::AAChange') ) {
-		print STDERR $var->label, "\n";
-		print STDERR $var->trivname, "\n";
-		print STDERR $var->allele_ori->seq, "\n";
-		print STDERR $var->allele_mut->seq, "\n";
-		foreach my $all ($var->each_Allele) {
-		    print STDERR $all->seq, "\n";
-		}
+	foreach my $exs(@exons) {
+	    if ($exs->{pos} < $pos) {
+		$previous_exons_length =+ $exs->{length};
+	    }
+	    if ($exs->{pos} == $pos) {
+		$e = $exs;
 	    }
 	}
+	#Get the location of the snp in aa coordinates      
+        my $aa_pos = int (($s->{pos} - $e->{start} + $previous_exons_length)/3) + 1;
+	
+	my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
+	
+	    $anal->program        ('NULL');
+	    $anal->program_version('NULL');
+	    $anal->gff_source     ('SNP');
+	    $anal->gff_feature    ('SNP');
+	    #$anal->dbID(2);
+
+
+	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protein->id,
+						       -start => $aa_pos,
+						       -end => $aa_pos,
+						       -score => 0, 
+						       -percent_id => "NULL",
+						       -analysis => $anal,
+						       -p_value => "NULL");
+	    
+	    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => 0,
+						      -end => 0,
+						      -analysis => $anal,
+						      -seqname => "Variant");
+	    
+	    my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
+								-feature2 => $feat2,);
+	push(@features,$feature);
+	
     }
-
-    push(@array_features,@seq_diff);
-   
-    return @array_features;
+    return @features;
 }
-
-
-
-

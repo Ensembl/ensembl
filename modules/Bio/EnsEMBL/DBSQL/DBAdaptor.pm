@@ -355,17 +355,6 @@ sub get_Protfeat_Adaptor {
     return $pfa;
 }
 
-sub get_Protfeat_Adaptor2 {
-    my( $self ) = @_;
-    
-    my( $pfa );
-    unless ($pfa = $self->{'_protein_feature_adaptor2'}) {
-        require Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor2;
-        $pfa = Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor2->new($self);
-    }
-    return $pfa;
-}
-
 =head2 get_all_fpcctg_ids
 
  Title   : get_all_fpcctg_ids
