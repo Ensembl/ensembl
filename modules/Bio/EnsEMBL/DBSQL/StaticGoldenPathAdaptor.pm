@@ -121,6 +121,58 @@ sub fetch_RawContigs_by_fpc_name{
    return @out;
 }
 
+=head2 convert_chromosome_to_fpc
+ 
+  Title   : convert_chromosome_to_fpc
+  Usage   : ($fpcname,$start,$end) = $stadp->convert_chromosome_to_fpc('chr1',10000,10020)
+  Function:
+  Example :
+  Returns : 
+  Args    :
+ 
+ 
+=cut
+ 
+sub convert_chromosome_to_fpc{
+    my ($self,$chr,$start,$end) = @_;
+ 
+    my $type = $self->dbobj->static_golden_path_type();
+ 
+    my $sth = $self->dbobj->prepare("select fpcctg_name,chr_start from static_golden_path where chr_name = '$chr' AND fpcctg_start = 1 AND chr_start <= $start ORDER BY chr_start desc");
+    $sth->execute;
+    my ($fpc,$startpos) = $sth->fetchrow_array;
+ 
+    return ($fpc,$start-$startpos,$end-$startpos);
+}
+
+=head2 convert_fpc_to_chromosome
+ 
+  Title   : convert_chromosome_to_fpc
+  Usage   : ($chrname,$start,$end) = $stadp->convert_fpc_to_chromosome('ctg1234',10000,10020)
+  Function:
+  Example :
+  Returns : 
+  Args    :
+ 
+ 
+=cut
+ 
+sub convert_fpc_to_chromosome {
+    my ($self,$fpc,$start,$end) = @_;
+ 
+    my $type = $self->dbobj->static_golden_path_type();
+ 
+    my $sth = $self->dbobj->prepare("select chr_name,chr_start from static_golden_path where fpcctg_name = '$fpc' AND fpcctg_start = 1");
+    $sth->execute;
+    my ($chr,$startpos) = $sth->fetchrow_array;
+
+   	unless ($chr) {
+   		$self->throw("Could not find fpc contig $fpg in the database!");
+   	}
+	return ($chr,$start+$startpos,$end+$startpos);
+}
+
+
 =head2 fetch_RawContigs_by_chr_name
 
  Title   : fetch_RawContigs_by_chr_name
@@ -189,6 +241,7 @@ sub fetch_RawContigs_by_chr_start_end{
 
 }
 
+
 =head2 fetch_VirtualContig_by_chr_start_end
 
  Title   : fetch_VirtualContig_by_chr_start_end
@@ -209,18 +262,26 @@ sub fetch_VirtualContig_by_chr_start_end{
    }
 
    if( $start > $end ) {
-       $self->throw("start must be less than end");
+       $self->throw("start must be less than end: parameters $chr:$start:$end");
    }
 
    
    my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end);
+   my $vc;
+   print STDERR "calling $chr,$start,$end\n";
 
-   
-   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start,1,$end,@rc);
+   eval {
+     $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start,1,$end,@rc);
+   } ;
+   if( $@ ) {
+     $self->throw("Unable to build a virtual contig at $chr, $start,$end\n\nUnderlying exception $@\n");
+   }
 
    $vc->_chr_name($chr);
+   $vc->dbobj($self->dbobj);
    return $vc;
 }
+
 
 =head2 fetch_VirtualContig_by_clone
 
@@ -243,7 +304,8 @@ sub fetch_VirtualContig_by_clone{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c,clone cl where cl.id = '$clone' AND cl.internal_id = c.clone AND c.internal_id = st.raw_id AND st.type = '$type' ORDER BY st.fpcctg_start");
+
+   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c where c.clone = '$clone' AND c.internal_id = st.raw_id AND st.type = '$type' ORDER BY st.fpcctg_start");
    $sth->execute();
    my ($contig,$start,$chr_name) = $sth->fetchrow_array;
 
@@ -253,7 +315,9 @@ sub fetch_VirtualContig_by_clone{
 
 
    my $halfsize = int($size/2);
-   if( $start > $size/2 ) {       
+   if( $start > $size/2 ) {    
+       print STDERR "Going to return a vc at $chr_name and $start";
+   
        return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$halfsize,$start+$size-$halfsize);
    } else {
        return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
@@ -285,10 +349,17 @@ sub fetch_VirtualContig_by_contig{
    $sth->execute();
    my ($contig,$start,$chr_name) = $sth->fetchrow_array;
 
+   if( !defined $contig ) {
+     $self->throw("Contig $contigid is not on the golden path of type $type");
+   }
+
    my $halfsize = int($size/2);
    if( $start > $size/2 ) {       
+       print STDERR "Going to return a vc at $chr_name and $start";
+
        return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$halfsize,$start+$size-$halfsize);
    } else {
+       print STDERR "Going to return a vc at $chr_name and $start near start point... hmmm...\n";
        return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
    }
 }
