@@ -273,7 +273,7 @@ sub extend_maximally_right {
            on the old vc. 
  Example :
  Returns : 
- Args    : position in vc, right distance, left distance.
+ Args    : focus position in vc For wvc, left distance to extend, right distance to extend.
 
 
 =cut
