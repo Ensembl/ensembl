@@ -62,12 +62,13 @@ use Bio::Root::RootI;
 
     Title   :   new
     Usage   :   my $tr_ea   = Bio::EnsEMBL::EvidenceAlignment->new(
-                                -DBADAPTOR    => $dba,
-                                -TRANSCRIPTID => $transcript_id,
-				-SEQFETCHER   => $seqfetcher);
+                      -DBADAPTOR               => $dba,
+                      -TRANSCRIPTID            => $transcript_id,
+		      -SEQFETCHER              => $seqfetcher,
+		      -USE_SUPPORTING_EVIDENCE => 1);
 		my $cont_ea = Bio::EnsEMBL::EvidenceAlignment->new(
-                                -DBADAPTOR => $dba,
-                                -CONTIGID  => $contig_stable_id);
+                      -DBADAPTOR               => $dba,
+                      -CONTIGID                => $contig_stable_id);
     Function:   Initialises EvidenceAlignment object
     Returns :   An EvidenceAlignment object
     Args    :   Database adaptor object and an ID string (-CONTIGID
@@ -75,10 +76,13 @@ use Bio::Root::RootI;
 		ID, which may be either the transcript stable ID or
 		the transcript dbID); optional full path of pfetch
 		executable (-PFETCH), defaulting to whatever is in the
-		user's search path; optional SeqFetcher (-SEQFETCHER),
-		which, if present, will be used instead of the pfetch
-		executable. The seqfetcher, if supplied, must have a
-		get_Seqs_by_accs method.
+		user's search path; USE_SUPPORTING_EVIDENCE which, if
+		true, causes retrieval of supporting evidence rather
+		than similarity features for transcripts (and has no
+		effect for contigs), defaulting to undef; optional
+		SeqFetcher (-SEQFETCHER), which, if present, will be
+		used instead of the pfetch executable. The seqfetcher,
+		if supplied, must have a get_Seqs_by_accs method.
 
 =cut
 
@@ -86,13 +90,15 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($transcriptid, $contigid, $dbadaptor, $seqfetcher, $pfetch)
-    = $self->_rearrange(['TRANSCRIPTID',
-			 'CONTIGID',
-                         'DBADAPTOR',
-			 'SEQFETCHER',
-			 'PFETCH'],
-		         @args);
+  my ($transcriptid, $contigid, $dbadaptor, $seqfetcher, $pfetch,
+    $use_supporting_evidence) =
+    $self->_rearrange(['TRANSCRIPTID',
+		       'CONTIGID',
+                       'DBADAPTOR',
+		       'SEQFETCHER',
+		       'PFETCH',
+	               'USE_SUPPORTING_EVIDENCE'],
+	               @args);
   if (defined $transcriptid and defined $contigid) {
     $self->throw("may have a transcript ID or a contig ID but not both");
   }
@@ -106,6 +112,7 @@ sub new {
     $pfetch = 'pfetch';
   }
   $self->pfetch($pfetch);
+  $self->use_supporting_evidence($use_supporting_evidence);
   $self->dbadaptor($dbadaptor);
 
   # If seqfetcher not specified, we leave it undefined, and pfetch
@@ -188,6 +195,28 @@ sub transcriptid {
   return $obj->{evidencealignment_transcript_id};
 }
 
+=head2 use_supporting_evidence
+
+    Title   :   use_supporting_evidence
+    Usage   :   $ea->use_supporting_evidence(1);
+    Function:   Get/set for use_supporting_evidence. True
+                means that, for transcripts, we obtain
+		supporting evidence for each exon.
+		Otherwise, we obtain all similarity features
+		that overlap any exon on the same strand.
+		For contigs, this option has no effect.
+
+=cut
+
+sub use_supporting_evidence {
+  my $obj = shift;
+  if( @_ ) {
+    my $value = shift;
+    $obj->{evidencealignment_use_supporting_evidence} = $value;
+  }
+  return $obj->{evidencealignment_use_supporting_evidence};
+}
+
 =head2 contigid
 
     Title   :   contigid
@@ -207,25 +236,81 @@ sub contigid {
   return $obj->{evidencealignment_contig_id};
 }
 
-=head2 _get_features_from_transcript
+=head2 _get_evidence_from_transcript
 
-    Title   :   _get_features_from_transcript
-    Usage   :   $ea->_get_features_from_transcript($transcript_obj, $vc);
-                $ea->_get_features_from_transcript($transcript_obj, $vc, $hid);
-    Function:   use SGP adaptor supplied to get evidence off a VC
-                of the transcript supplied; features not overlapping
-		any exon are cut; if a list of hit accession numbers
-		are given, features not involving those accession
-		numbers are cut; genomic start and end are always
-		modified by VC_HACK_BP; duplicate features are
-		removed
+    Title   :   _get_evidence_from_transcript
+    Usage   :   $ea->_get_evidence_from_transcript($transcript_obj);
+                $ea->_get_evidence_from_transcript($transcript_obj,
+		                                              $hid);
+    Function:   use SGP adaptor supplied to get supporting
+                evidence for the transcript supplied; features
+		not overlapping any exon are cut; if a list of hit
+		accession numbers are given, features not involving
+		those accession numbers are cut; duplicate features
+		are removed
     Returns :   array of featurepairs
 
 =cut
 
-sub _get_features_from_transcript {
+sub _get_evidence_from_transcript {
+  my ($self, $transcript_obj) = splice @_, 0, 2;
+  $self->throw('interface fault') if (!$self or !$transcript_obj);
+  my @wanted_arr = @_;
+
+  my @exons = $transcript_obj->get_all_Exons;
+  my $strand = $exons[0]->strand;
+  my @features = ();
+  foreach my $exon (@exons) {
+    my @exon_features = $exon->each_Supporting_Feature;
+    foreach my $feature (@exon_features) {
+      next unless $feature->primary_tag =~ /similarity/i;
+      # store on overlap, unless we're not interested in this hit seq.
+      if ($exon->overlaps($feature)) {	# which it should (evidence)!
+        my $hid = $feature->hseqname;
+	my $wanted = 0;
+	if (@wanted_arr) {
+	  foreach (@wanted_arr) {	# we only want some hits
+	    if ($_ eq $hid) {
+	      $wanted = 1;
+	    }
+	  }
+        } else {			# we want all hits
+          $wanted = 1;
+	}
+	if ($wanted) {
+	  push @features, $feature;
+        }
+      }
+    }
+  }
+
+  my $nonredundant_f_arr_ref = $self->_remove_duplicate_features(
+                                                      \@features);
+  return @$nonredundant_f_arr_ref;
+}
+
+=head2 _get_similarity_features_from_transcript
+
+    Title   :   _get_similarity_features_from_transcript
+    Usage   :   $ea->_get_similarity_features_from_transcript(
+                                         $transcript_obj, $vc);
+                $ea->_get_similarity_features_from_transcript(
+		        $transcript_obj, $vc, $hid);
+    Function:   use SGP adaptor supplied to get similarity features
+                off a VC of the transcript supplied; features not
+		overlapping any exon are cut; if a list of hit
+		accession numbers are given, features not involving
+		those accession numbers are cut; genomic start and
+		end are always modified by VC_HACK_BP; duplicate
+		features are removed
+    Returns :   array of featurepairs
+
+=cut
+
+sub _get_similarity_features_from_transcript {
   my ($self, $transcript_obj, $vc) = splice @_, 0, 3;
-  $self->throw('interface fault') if (!$self or !$transcript_obj or !$vc);
+  $self->throw('interface fault')
+    if (!$self or !$transcript_obj or !$vc);
   my @wanted_arr = @_;
 
   my @exons = $transcript_obj->get_all_Exons;
@@ -263,8 +348,9 @@ sub _get_features_from_transcript {
     }
   }
 
-  my $sorted_features_arr_ref = $self->_remove_duplicate_features(\@features);
-  return @$sorted_features_arr_ref;
+  my $nonredundant_f_arr_ref = $self->_remove_duplicate_features(
+                                                      \@features);
+  return @$nonredundant_f_arr_ref;
 }
 
 # _remove_duplicate_features: takes ref to an array of features,
@@ -943,7 +1029,14 @@ sub _get_aligned_evidence_for_transcript {
   }
   my @all_exons = $transcript_obj->get_all_Exons;
 
-  my @features = $self->_get_features_from_transcript($transcript_obj, $vc, @_);
+  my @features;
+  if ($self->use_supporting_evidence) {
+    @features = $self->_get_evidence_from_transcript(
+                                 $transcript_obj, @_);
+  } else {
+    @features = $self->_get_similarity_features_from_transcript(
+                                       $transcript_obj, $vc, @_);
+  }
   my $per_hid_effective_scores_hash_ref =
     $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
