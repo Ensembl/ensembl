@@ -1,0 +1,102 @@
+### $Id: stats-from-merge-files.pl,v 1.11 2001/03/21 19:00:49 lijnzaad Exp
+### run on Thu Mar 22 14:24:18 GMT 2001 by lijnzaad @ ecs1d
+### argument(s): ens_affy_fgenesh.merge
+### -rw-rw-r--   1 lijnzaad ensembl  104089688 Mar 16 17:21 ens_affy_fgenesh.merge
+Sources: AFFY ENS FGENH // i.e., this was a merge of gene predictions from
+                        // two sources, AFFY ENS note: if the merge is done
+                        // on AFFY, ENS + another source, statistics will be
+                        // different, since the other source will link more
+                        // native features into bigger igi's
+number of igi's per source: // one 'igi' is a  gene merged from all different predictions
+ALL: 42854
+AFFY: 19087   //
+ENS: 22467    // the numbers don't add up, because of overlaps. The closer these numbers are
+FGENH: 32832  // to the ALL numbers, the better.
+----
+number of igis shared with other source; sharing multiplicity
+// (sorry about any misalignments ...)
+        Affyme        ENS           FGENH          >= 3          >= 2      unshared         total
+
+   ALL   19087 (44%)   22467 (52%)   32832 (76%)   11484 (26%)   20048 (46%)   22806 (53%)   42854
+// AFFY has 44% of all igi's, ENS 52%, etc. 26% of all igi's is found in
+// three sources, 46% in two or three sources, 53% is unique too it's
+// source. There's a total of 42854 igi's.
+
+  AFFY      --         12387 (64%)   13216 (69%)   11484 (60%)   14119 (73%)    4968 (26%)   19087
+// 64% of AFFY igi's is shared with ENS, 69% with FGENH,etc. 60% of the AFFY
+// igi's are also found in two other sources, 73% in at least one other
+// source, 26% are unique to AFFY. 
+
+   ENS   12387 (55%)      --         17413 (77%)   11484 (51%)   18316 (81%)    4151 (18%)   22467
+// 55% of ENS igis is shared with AFFY, etc.
+
+ FGENH   13216 (40%)   17413 (53%)      --         11484 (34%)   19145 (58%)   13687 (41%)   32832
+//
+----
+igi stats on ALL:
+	minl=102, maxl=63879900, avgl=3382718 // minimum length of an igi, maximum, average
+	minfeats=1, maxfeats=762, avgfeats=16 // number of features per igi: min, max, avg.
+	minexons=0, maxexons=190, avgexons=5  // number of exons per igi: min, max
+igi stats on AFFY: // same statistics, but the igi's of a particular source
+	minl=102, maxl=11703845, avgl=42129
+	minfeats=1, maxfeats=193, avgfeats=9
+	minexons=0, maxexons=190, avgexons=6
+igi stats on ENS:
+	minl=638, maxl=63879900, avgl=6382696
+	minfeats=3, maxfeats=408, avgfeats=10
+	minexons=1, maxexons=138, avgexons=5
+igi stats on FGENH:
+	minl=141, maxl=40655289, avgl=72536
+	minfeats=1, maxfeats=307, avgfeats=8
+	minexons=1, maxexons=109, avgexons=6
+----
+igi stats per cluster group: // same statistics, but now for igi sets that correspond
+                              // to the membership multiplicity
+those in 1 sources: // i.e., those unique to a source
+	minl=102, maxl=63879900, avgl=3382718
+	minfeats=1, maxfeats=762, avgfeats=16
+	minexons=0, maxexons=190, avgexons=5
+those in 2 sources: // i.e., igi's shared between 2 or more sources
+	minl=381, maxl=63879900, avgl=5920848
+	minfeats=3, maxfeats=762, avgfeats=29
+	minexons=1, maxexons=190, avgexons=8
+those in 3 sources: // igi's shared between all sources
+	minl=3308, maxl=63721433, avgl=6688290
+	minfeats=6, maxfeats=762, avgfeats=40
+	minexons=1, maxexons=190, avgexons=10
+----
+gene id chaining: histogram of native gene_ids per igi, and igi statistics on this:
+source ALL:
+	1: 22527 // i.e., 22527 igi's correspond to exactly one native gene
+	minl=102, maxl=63478426, avgl=1156023 // igi statistics of this group
+	minfeats=1, maxfeats=62, avgfeats=5   
+	minexons=0, maxexons=55, avgexons=3
+	2: 7340                               // This many igi's consist of 2 different 
+	minl=172, maxl=63879900, avgl=4843376 // native genes. The average   
+	minfeats=3, maxfeats=235, avgfeats=12 // igi gene length goes up the 
+	minexons=1, maxexons=78, avgexons=4   // more native genes it has (of course)
+	3: 8635
+        .
+        .
+        .
+	26: 1
+	minl=2114986, maxl=2114986, avgl=2114986
+	minfeats=113, maxfeats=113, avgfeats=113
+	minexons=13, maxexons=13, avgexons=13
+source AFFY: // same thing, but now per source. 
+	1: 18146
+	minl=102, maxl=63721433, avgl=4277470
+	minfeats=1, maxfeats=762, avgfeats=26
+	minexons=0, maxexons=190, avgexons=7
+	2: 787
+        .
+        .
+        .
+source FGENH:
+	1: 28877
+	minl=149, maxl=63879900, avgl=3177104
+	minfeats=1, maxfeats=295, avgfeats=15
+	minexons=1, maxexons=117, avgexons=5
+        .
+        .
+        .
