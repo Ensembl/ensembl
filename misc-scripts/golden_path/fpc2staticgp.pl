@@ -29,7 +29,7 @@ open(L,">parse.log");
 open(D,$dump) || die "Could not open $dump\n";
 while(<D>) {
     ($id,$internal_id,$start,$end) = split;
-    $id =~ /(\S+)\./ || die "Bad id $id";
+    $id =~ /([^.]+)\./ || die "Bad id $id";
     $clone = $1;
     if( !defined $h{$clone} ) {
 	$h{$clone} = [];
@@ -55,6 +55,10 @@ foreach my $f ( @ARGV ) {
 	($clone) = $id =~ /(\S+)\./;
 	#print STDERR "Looking at $clone $id\n";
 	$seen = 0;
+	if( !exists $h{$clone} ) {
+	  print STDERR "No clone loaded with $clone\n";
+	}
+
 	foreach $iid ( @{$h{$clone}} ) {
 	    #print STDERR "Looking at $iid $rstart:$rend ",$start{$iid}," ",$end{$iid},"\n";
 
