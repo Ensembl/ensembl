@@ -43,7 +43,7 @@ my ($clone1,$clone2) = get_cloneids($infile,@ARGV);
 my $i = 0;
 
 for ($i = 0; $i <= $#$clone1; $i++) {
-    print("Processing clone " . $clone1->[$i] . "\n");
+    print("Processing clone " . $clone1->[$i] . " " . $clone2->[$i] . "\n");
     eval {
     my $cl1    = $db1->get_Clone($clone1->[$i]);
     my $cl2    = $db2->get_Clone($clone2->[$i]);
@@ -55,10 +55,10 @@ for ($i = 0; $i <= $#$clone1; $i++) {
     my $count = 1;
 
     foreach my $gene1 (@genes1) {
-	my ($over,$exact) = find_overlaps($gene1,@genes2);
-	my $numexons      = scalar($gene1->each_unique_Exon);
+	my ($over,$exact,$link,$miss) = find_overlaps($gene1,@genes2);
+	my $numexons                  = scalar($gene1->each_unique_Exon);
 
-	print($gene1->id . " Gene2 $count :\t$numexons\t$over\t$exact\n");
+	print(" Gene2 $count :\t$numexons\t$over\t$exact\t$link\t$miss\n");
 	$count++;
     }
     };
@@ -71,31 +71,59 @@ sub find_overlaps {
     my ($gene1,@genes2) = @_;
 
     my @exons1 = $gene1->each_unique_Exon;
+       @exons1 = sort { $a->start <=> $b->start } @exons1;
 
- 
-    my $overlap_num;
-    my $exact_num;
+    my $overlap_num       = 0;
+    my $exact_num         = 0;
+    my $confirmedlinks    = 0;
+    my $missedlinks       = 0;
 
     my %exonoverhash;
     my %exonexacthash;
+    my %linkhash;
 
-    foreach my $ex1 (@exons1) {
-	foreach my $gene2 (@genes2) {
-	    my @exons2 = $gene2->each_unique_Exon;
+    my @matcharray;
+
+    foreach my $gene2 (@genes2) {
+	my @exons2 = $gene2->each_unique_Exon;
+ 	   @exons2 = sort { $a->start <=> $b->start } @exons2;
+
+	my $count1 = 0;
+	foreach my $ex1 (@exons1) {
+	    my $count2 = 0;
 	    foreach my $ex2 (@exons2) {
 		my (@overlap) = overlap($ex1,$ex2);
 		
 		if ($overlap[0] == 1) {
 		    $exonoverhash{$ex1}++;
-		    
+
 		    if ($overlap[1] == 0 && $overlap[2] == 0) {
 			$exonexacthash{$ex1}++;
 		    }
+		    
+		    $matcharray[$count1] = $count2;
 		}
+		$count2++;
+	    }
+	    $count1++;
+	}
+
+	# Tot up the matcharray to find confirmed links
+	for (my $i = 0; $i < scalar(@exons1); $i++) {
+	    if ($matcharray[$i] != -1 && 
+		$matcharray[$i+1] != -1) {
+
+		if (($matcharray[$i+1] - $matcharray[$i]) == 1) {
+		    $linkhash{$exons1[$i]} = 1;
+		}
+		
 	    }
 	}
+	
     }
-    
+
+    # Now do the totting up over all gene2 genes
+    my $count = 0;
     foreach my $ex1 (@exons1) {
 	if ($exonoverhash{$ex1} > 0) {
 	    $overlap_num++;
@@ -103,9 +131,21 @@ sub find_overlaps {
 	if ($exonexacthash{$ex1} > 0) {
 	    $exact_num++;
 	}
+
+	if ($linkhash{$ex1} == 1) {
+	    $confirmedlinks++;
+	} else {
+	    if ($count < $#exons1) {
+		if ($exonoverhash{$exons1[$count]} > 0 &&
+		    $exonoverhash{$exons1[$count+1]} > 0) {
+		    $missedlinks++;
+		}
+	    }
+	}
+	$count++;
     }
 
-    return ($overlap_num,$exact_num);
+    return ($overlap_num,$exact_num,$confirmedlinks,$missedlinks);
 }    
 
 sub overlap {

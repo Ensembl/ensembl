@@ -28,7 +28,7 @@
     
     -dbtype    Database type (valid types are timdb, ace)
 
-    -dbhost    host name for database (gets put as host= in locator)
+    -host    host name for database (gets put as host= in locator)
 			      
     -dbname    For RDBs, what name to connect to (dbname= in locator)
 

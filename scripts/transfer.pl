@@ -68,7 +68,7 @@ use strict;
 
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::TimDB::Obj;
-#use Bio::AnnSeqIO;
+use Bio::EnsEMBL::DBSQL::Obj;
 use Getopt::Long;
 
 $| = 1;
@@ -86,8 +86,8 @@ my $fdbpass = undef;
 my $tdbtype = 'rdb';
 my $thost   = 'localhost';
 my $tport   = '410000';
-my $tdbname = 'test100';
-my $tdbuser = 'ensro';
+my $tdbname = 'pogtest';
+my $tdbuser = 'root';
 my $tdbpass = undef;
 
 my $usefile = 0;
