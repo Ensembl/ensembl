@@ -134,11 +134,11 @@ sub write_Gene{
    $self->throw("Not implemented in the object!");
 }
 
-=head2 write_Contig
+=head2 write_Clone
 
- Title   : write_Contig
- Usage   : $obj->write_Contig($contigid,$dna)
- Function: writes a contig and its dna into the database
+ Title   : write_Clone
+ Usage   : $obj->write_Clone($cloneid,$dna)
+ Function: writes a Clone and its dna into the database
  Example :
  Returns : 
  Args    :
@@ -146,7 +146,7 @@ sub write_Gene{
 
 =cut
 
-sub write_Contig {
+sub write_Clone {
    my ($self) = @_;
 
    $self->throw("Not implemented in the object!");
