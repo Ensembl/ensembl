@@ -466,7 +466,6 @@ sub write_Protein_feature {
 
 sub get_Analysis {
     my ($self,$id) = @_;
-    print STDERR "Id is $id\n";
     my $sth = $self->_db_obj->prepare("select db,db_version,program,program_version,gff_source,gff_feature,id from analysis where id = $id");
     my $rv  = $sth->execute;
     my $rh  = $sth->fetchrow_hashref;
