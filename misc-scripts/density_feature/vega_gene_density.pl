@@ -222,49 +222,49 @@ foreach my $slice (@$top_slices){
     ## stats
     my @attribs;
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Known genes',
+    (-NAME => '12:Known genes',
      -CODE => 'KnownGeneCount',
      -VALUE => $total{'Known'} || 0,
      -DESCRIPTION => 'Total Number of Known genes');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Novel CDS',
+    (-NAME => '14:Novel CDS',
      -CODE => 'NovelCDSCount',
      -VALUE => $total{'Novel_CDS'} || 0,
      -DESCRIPTION => 'Total Number of Novel CDSs');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Novel transcripts',
+    (-NAME => '16:Novel transcripts',
      -CODE => 'NovelTransCount',
      -VALUE => $total{'Novel_Transcript'} || 0,
      -DESCRIPTION => 'Total Number of Novel transcripts');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Putative transcripts',
+    (-NAME => '24:Putative transcripts',
      -CODE => 'PutTransCount',
      -VALUE => $total{'Putative'} || 0,
      -DESCRIPTION => 'Total Number of Putative transcripts');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Predicted transcripts',
+    (-NAME => '30:Predicted transcripts',
      -CODE => 'PredTransCount',
      -VALUE => $total{'Predicted_Gene'} || 0,
      -DESCRIPTION => 'Total Number of Predicted transcripts');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Ig segments',
+    (-NAME => '26:Ig segments',
      -CODE => 'IgSegCount',
      -VALUE => $total{'Ig_Segment'} || 0,
      -DESCRIPTION => 'Total Number of Ig Segments');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Ig pseudogene Segments',
+    (-NAME => '28:Ig pseudogene Segments',
      -CODE => 'IgPsSegCount',
      -VALUE => $total{'Ig_Pseudogene_Segment'} || 0,
      -DESCRIPTION => 'Total Number of Ig Pseudogene Segments');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Total pseudogenes',
+    (-NAME => '18:Total pseudogenes',
      -CODE => 'TotPsCount',
      -VALUE => $total{'Pseudogene'}
                + $total{'Processed_pseudogene'}
@@ -272,31 +272,31 @@ foreach my $slice (@$top_slices){
      -DESCRIPTION => 'Total Number of Pseudogenes');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Unclassified pseudogenes',
+    (-NAME => '23:Unclassified pseudogenes',
      -CODE => 'UnclassPsCount',
      -VALUE => $total{'Pseudogene'} || 0,
      -DESCRIPTION => 'Number of Unclassified pseudogenes');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Processed pseudogenes',
+    (-NAME => '20:Processed pseudogenes',
      -CODE => 'ProcPsCount',
      -VALUE => $total{'Processed_pseudogene'} || 0,
      -DESCRIPTION => 'Number of Processed pseudogenes');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Unprocessed pseudogenes',
+    (-NAME => '22:Unprocessed pseudogenes',
      -CODE => 'UnprocPsCount',
      -VALUE => $total{'Unprocessed_pseudogene'} || 0,
      -DESCRIPTION => 'Number of Unprocessed pseudogenes');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Known genes (in progress)',
+    (-NAME => '13:Known genes (in progress)',
      -CODE => 'KnwnprogCount',
      -VALUE => $total{'Known_in_progress'} || 0,
      -DESCRIPTION => 'Number of Known Genes in progress');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Novel CDS (in progress)',
+    (-NAME => '15:Novel CDS (in progress)',
      -CODE => 'NovCDSprogCount',
      -VALUE => $total{'Novel_CDS_in_progress'} || 0,
      -DESCRIPTION => 'Number of novel CDS in progress');
