@@ -170,7 +170,7 @@ sub _objs_from_sth {
 
   while($sth->fetch()) {
     my $slice = $slice_cache{$seq_region_id} ||=
-      $slice_adaptor->fetch_by_dbID($seq_region_id);
+      $slice_adaptor->fetch_by_seq_region_id($seq_region_id);
 
     my $analysis = $analysis_cache{$analysis_id} ||=
       $aa->fetch_by_dbID($analysis_id);

@@ -340,7 +340,7 @@ sub fetch_all_by_Slice_constraint {
       next COORD_SYSTEM if(!@coords);
 
       @ids = map {$_->id()} @coords;
-      @ids = @{$asma->seq_regions_to_ids(\@ids, $feat_cs)};
+      @ids = @{$asma->seq_regions_to_ids($feat_cs, \@ids)};
 
     }
 
