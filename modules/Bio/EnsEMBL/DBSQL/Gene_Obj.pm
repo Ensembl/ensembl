@@ -725,6 +725,8 @@ sub write{
        foreach my $exon ( $trans->each_Exon() ) {
 	   my $sth = $self->_db_obj->prepare("insert into exon_transcript (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
 	   $sth->execute();
+	   $c++;
+
 	   if( $done{$exon->id()} ) { next; }
 	   $done{$exon->id()} = 1;
 
@@ -738,7 +740,6 @@ sub write{
 	   $self->write_Exon($exon);
 	   $exon->contig_id($tmpid);
 	   
-	   $c++;
        }
    }
 
