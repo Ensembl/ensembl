@@ -499,26 +499,26 @@ sub remove {
 
 
 
-=head2 delete_by_RawContig_id
+=head2 remove_RawContig
 
-  Arg [1]    : string $contig_id 
-  Example    : $feature_adaptor->delete_by_RawContig_id($contig_id);
-  Description: This removes a feature from the database.  The table the
-               feature is removed from is defined by the abstract method
-               _tablename, and the primary key of the table is assumed
-               to be contig_id.
+  Arg [1]    : Bio::Ensembl::RawContig $contig 
+  Example    : $feature_adaptor->remove_RawContig($contig);
+  Description: This removes features from the database which lie on a removed
+               contig.  The table the features are removed from is defined by 
+               the abstract method_tablename, and the primary key of the table
+               is assumed to be contig_id.
   Returntype : none
-  Exceptions : thrown if no contig_id is supplied
+  Exceptions : thrown if no contig is supplied
   Caller     : general
 
 =cut
 
-sub delete_by_RawContig_id {
-  my ($self, $contig_id) = @_;
+sub remove_RawContig {
+  my ($self, $contig) = @_;
 
-  unless($contig_id) {
-    $self->throw("BaseFeatureAdaptor::delete_by_RawContig_id - no contig_id defined: ".
-		 "Deletion of feature failed.");
+  unless($contig) {
+    $self->throw("BaseFeatureAdaptor::remove - no contig supplied: ".
+		 "Deletion of features failed.");
   }
 
   my $table = $self->_tablename();
@@ -537,7 +537,7 @@ sub delete_by_RawContig_id {
     my ($actual_table) = $table_name =~ /(^\w+)/;  # lose the table alias, if there is one
 
     my $sth = $self->prepare("DELETE FROM $actual_table WHERE contig_id = ?");
-    $sth->execute($contig_id);
+    $sth->execute($contig->dbID);
   }
 
   return;
