@@ -175,7 +175,7 @@ sub description {
     if( exists $self->{'_description'} ) {
       return $self->{'_description'};
     }
-
+    print STDERR "GOnna Get Descripted!\n"; 
     $self->{'_description'} = $self->adaptor->get_description($self->dbID);
     return $self->{'_description'};
 }
