@@ -168,7 +168,7 @@ while (<>) {
 my @all_sources = sort keys %igis_of_source;
 
 # OK, time to print stuff. Start with some fluff:
-print '### $Id$  $Revision$ ',  "\n";
+print '### $Id$  ', "\n";
 my (@stuff)  = ("on", `date`, "by", `whoami`, "@",  `hostname`);
 foreach (@stuff) {chomp};
 print "### run ", join(' ',@stuff), "\n";
@@ -193,33 +193,36 @@ print "----\n";
 # compare igi's per source
 print "pairwise overlaps:\n";
 my %h = undef;
-print "\t", join("\t\t", @all_sources) ,"\n";
+print '  ', map (do {sprintf "%12s  ", substr($_,0,6) }, 
+                       (@all_sources, 'unshared', 'total')) ,"\n";
+
 SOURCE1:
-foreach my $source1 (@all_sources) {
-    my @igis_of_source1 = keys %{$igis_of_source{$source1}};
-    my $source2;
-
-    print "$source1\t";
-  SOURCE2:
-    foreach $source2 (@all_sources) {
-        ## uncomment the undef for smaller output
-        if ( $source2 gt $source1) { 
-            print "-\t";
-            next SOURCE2;
-        }
-
-        my ($shared, $tot) = (0,0); 
-        my @igis_of_source2 = keys %{$igis_of_source{$source2}};
-        foreach my $elt (@igis_of_source1) {
-            if (defined $igis_of_source{$source2}{$elt}) {
-                $shared++;
-            }
-            $tot++;
-        }
-        printf "%d/%d (%3d%%)\t", $shared, $tot, 100.0*$shared/$tot;
-    }
-    print "\n"; 
-}
+  foreach my $source1 (@all_sources) {
+      my @igis_of_source1 = keys %{$igis_of_source{$source1}};
+      my $source2;
+      
+      printf "%6s  ", $source1;
+      SOURCE2:
+      my ($shared, $tot, $unshared);
+      $unshared = int(@igis_of_source1);
+      foreach $source2 (@all_sources) {
+          my @igis_of_source2 = keys %{$igis_of_source{$source2}};
+          ($shared, $tot) = (0,0);
+          foreach my $elt (@igis_of_source1) {
+              if (defined $igis_of_source{$source2}{$elt}) {
+                  $shared++;
+                  $unshared-- if $source1 ne $source2;
+              }
+              $tot++;
+          }
+          if ($source1 eq $source2) {
+              print "    --        ";
+          } else { 
+              printf "%6d (%2d%%)  ", $shared, 100.0*$shared/$tot;
+          }
+      }
+      printf "%6d (%2d%%)  %6d\n", $unshared, 100.0*$unshared/$tot, $tot; 
+  }
 print "----\n";
 ### sizes:
 foreach my $source ('ALL', @all_sources) {
@@ -267,7 +270,7 @@ foreach my $igi (@all_igis) {
 print "overlap totals (histogram)\n" ;
 for(my $i = 1; $i<=$n_sources; $i++) {
     my $n=int(keys %{$igis_of_n_sources[$i]});
-    printf "numbers of igis in found in $i sources: %d/%d(%3d%%)\n",
+    printf "numbers of igis in found in $i sources: %d/%d(%d%%)\n",
       $n, $n_igis, 100.0*$n/$n_igis;
 }
 
