@@ -246,7 +246,7 @@ sub length{
 sub strand{
     my ($self,$value) = @_;
     
-    if (defined($value) && $value ne '') {
+    if (defined($value) ) {
 	if( $value eq '+' ) { $value = 1; }
 	if( $value eq '-' ) { $value = -1; }
 	if( $value eq '.' ) { $value = 0; }
@@ -275,7 +275,7 @@ sub strand{
 sub score {
     my ($self,$value) = @_;
   
-    if(defined ($value) && $value ne '') {
+    if(defined ($value) ) {
       if( $value !~ /^[+-]?\d+\.?\d*(e-\d+)?/ ) {
 	  $self->throw("'$value' is not a valid score");
       }
@@ -761,7 +761,7 @@ sub p_value {
 sub phase {
     my ($self, $value) = @_;
     
-    if (defined($value) && $value ne '') 
+    if (defined($value) ) 
     {
         $self->throw("Valid values for Phase are [0,1,2] \n") if ($value < 0 || $value > 2);
 	    $self->{_phase} = $value;
