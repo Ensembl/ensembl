@@ -161,7 +161,7 @@ sub subseq{
    if( $start <= 0) {
        $self->throw("In subseq start must be positive");
    }
-   my @mapcontigs=$self->_vmap->get_all_MapContigs();
+   my @mapcontigs=$self->_vmap->each_MapContig();
    my $start_contig=shift(@mapcontigs);
    print STDERR "Got map contig with start ".$start_contig->rawcontigstart."\n";
    while ($start_contig->rawcontigstart < $start) {

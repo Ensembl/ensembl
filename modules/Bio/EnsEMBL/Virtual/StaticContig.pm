@@ -54,7 +54,7 @@ use Bio::EnsEMBL::Virtual::Contig
 # new() is written here 
 
 sub new {
-    my ($class,@contigs) = @_;
+    my ($class,$global_start,$global_end,@contigs) = @_;
     
     my $self = {};
     bless $self,$class;
@@ -68,7 +68,7 @@ sub new {
 
     # assumme sorted I guess ;)
     # waaaaaay too easy
-    my $global_start = $contigs[0]->chr_start;
+
     foreach my $rc ( @contigs ) {
 	$self->_vmap->create_MapContig($rc,$rc->chr_start - $global_start+1,$rc->chr_end - $global_start +1,$rc->static_golden_start,$rc->static_golden_ori);
     }

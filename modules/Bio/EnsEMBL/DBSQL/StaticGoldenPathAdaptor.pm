@@ -166,15 +166,17 @@ sub fetch_RawContigs_by_chr_name{
 
 =cut
 
-sub VirtualContig_by_fpc_name{
+sub fetch_VirtualContig_by_fpc_name{
    my ($self,$name) = @_;
    
-   return Bio::EnsEMBL::Virtual::StaticContig->new($self->fetch_RawContigs_by_fpc_name($name));
+   my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
+   my $start = $fpc[0];
+   return Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,-1,@fpc);
 }
 
-=head2 VirtualContig_by_chr_name
+=head2 fetch_VirtualContig_by_chr_name
 
- Title   : VirtualContig_by_chr_name
+ Title   : fetch_VirtualContig_by_chr_name
  Usage   :
  Function:
  Example :
@@ -184,10 +186,10 @@ sub VirtualContig_by_fpc_name{
 
 =cut
 
-sub VirtualContig_by_chr_name{
+sub fetch_VirtualContig_by_chr_name{
    my ($self,$name) = @_;
 
-   return Bio::EnsEMBL::Virtual::StaticContig->new($self->fetch_RawContigs_by_chr_name($name));
+   return Bio::EnsEMBL::Virtual::StaticContig->new(1,-1,$self->fetch_RawContigs_by_chr_name($name));
 
 
 }

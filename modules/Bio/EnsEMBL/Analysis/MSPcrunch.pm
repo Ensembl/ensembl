@@ -371,8 +371,8 @@ BEGIN {
         }
         
         use Carp;
-        use Data::Dumper;
-        confess("No type", Dumper($self)) unless defined $self->{_type};
+        #use Data::Dumper;
+        confess("No type", $self) unless defined $self->{_type};
         
         return $self->{_type};
     }

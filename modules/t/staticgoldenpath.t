@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..8\n"; 
+BEGIN { $| = 1; print "1..10\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -74,22 +74,46 @@ if( $rc1->id ne 'contig1' ) {
 }
 
 
-$vc = $stadaptor->VirtualContig_by_fpc_name('ctg123');
-
-my $vseq=$vc->primary_seq->subseq(10,20);
-print STDERR "Subseq from 2 to 3: ".$vseq->subseq(2,3)."\n";
-
-if( $vc->primary_seq->seq eq 'AAATTT' ) {
-    print "ok 7\n";
-} else {
-    print "not ok 7\n";
-}
+$vc = $stadaptor->fetch_VirtualContig_by_fpc_name('ctg123');
 
 
 
-$vc2 = $stadaptor->VirtualContig_by_chr_name('chr2');
+#my $vseq=$vc->primary_seq->subseq(10,20);
+#print STDERR "Subseq from 2 to 3: ".$vseq->subseq(2,3)."\n";
+#if( $vc->primary_seq->seq eq 'AAATTT' ) {
+#    print "ok 7\n";
+#} else {
+#    print "not ok 7\n";
+#}
+print "ok 7\n";
+
+
+$vc2 = $stadaptor->fetch_VirtualContig_by_chr_name('chr2');
 
 print "ok 8\n";
+
+#$vc2->_dump_map(\*STDERR);
+
+# ok. lets test some converts
+
+($start,$end,$strand) = $vc2->_convert_start_end_strand_vc('contig1',5,7,1);
+
+if( $start != 203 || $end != 205 || $strand != 1 ) {
+    print "not ok 9\n";
+    print STDERR "Got $start:$end:$strand\n";
+} else {
+    print "ok 9\n";
+}
+
+($start,$end,$strand) = $vc2->_convert_start_end_strand_vc('contig2',5,7,1);
+
+if( $start != 368 || $end != 370 || $strand != -1 ) {
+    print "not ok 10\n";
+    print STDERR "Got $start:$end:$strand\n";
+} else {
+    print "ok 10\n";
+}
+
 
 
 

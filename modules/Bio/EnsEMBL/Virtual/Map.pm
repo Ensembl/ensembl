@@ -273,6 +273,15 @@ sub get_MapContig_by_id {
    return $self->{'_contig_map'}->{$name};
 }
 
+sub get_MapContig {
+   my ($self,$name) = @_;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l:get_MapContig a deprecated method. use get_MapContig_by_id instead");
+   return $self->get_MapContig_by_id($name);
+}
+
+
 =head2 each_MapContig
 
  Title   : each_MapContig
@@ -299,6 +308,16 @@ sub each_MapContig{
 
    return (@mapcontigs);
 }
+
+sub get_all_MapContigs {
+    my ($self) = @_;
+
+    my ($p,$f,$l) = caller;
+    $self->warn("$f:$l:get_all_MapContigs a deprecated method. use each_MapContig instead");
+
+    return $self->each_MapContig;
+}
+
 
 =head2 right_overhang
 
