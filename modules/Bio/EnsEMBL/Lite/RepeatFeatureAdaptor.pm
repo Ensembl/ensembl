@@ -95,6 +95,23 @@ sub fetch_by_Slice {
 }
 
 
+#
+# Unimplemented methods - part of interface...
+#
+sub fetch_by_RawContig {}
+
+sub fetch_by_contig_id {}
+
+sub fetch_by_dbID {}
+
+sub fetch_by_assembly_location {}
+
+sub fetch_by_assembly_location_constraint {}
+
+sub store {}
+
+
+
 __END__
 
 
