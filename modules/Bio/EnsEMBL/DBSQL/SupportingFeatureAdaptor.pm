@@ -98,28 +98,5 @@ sub fetch_all_by_Exon {
   return $out;
 }
 
-
-
-=head2 fetch_by_Exon
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_Exon instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_Exon {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_Exon has been renamed fetch_all_by_Exon\n" . caller);
-
-  return $self->fetch_all_by_Exon(@args);
-}
-
-
-
-
 1;
+

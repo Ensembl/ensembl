@@ -522,32 +522,6 @@ sub compare {
   return 0;
 }
 
-  
-
-=head2 id
-
-  Arg        : none
-  Example    : none
-  Description: deprecated function, use dbID instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub id {
-    my ($self,$arg) = @_;
-    $self->warn( "Analysis->id is deprecated. Use dbID!" );
-    print STDERR caller;
-    
-    if (defined($arg)) {
-	$self->{_dbid} = $arg;
-    }
-    return $self->{_dbid};
-}
-  
-
-
 
 1;
 
