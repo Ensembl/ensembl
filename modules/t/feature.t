@@ -243,6 +243,7 @@ ok($feature->strand() == 1);
 #
 $slice  = $db->get_SliceAdaptor->fetch_by_region('supercontig',
                                                  'NT_028392');
+debug( "----------------------------" );
 
 $feature = $feature->transfer($slice);
 debug("\ntransfer to supercontig slice");
@@ -262,20 +263,34 @@ ok($feature->strand() == 1);
 
 $feature->move(671600,671800);
 
+debug( "Before projection to contig" );
+debug("start  = " . $feature->start());
+debug("end    = " . $feature->end());
+debug("strand = " . $feature->strand());
+debug("seq_region = " . $feature->slice->seq_region_name());
+
 my @projection = @{$feature->project('contig')};
+
+debug( "After project to contig" );
+foreach my $segment (@projection) {
+  ($start, $end, $slice) = @$segment;
+  debug("[$start-$end] -> " . $slice->seq_region_name
+        . ' ' . $slice->start . '-' . $slice->end . '('.$slice->strand().')');
+}
+debug( "-----------------------" );
 
 ok(@projection == 2);
 
 my ($seg1, $seg2) = @projection;
 
-ok($seg1 && $seg1->[0] == 671600);
-ok($seg1 && $seg1->[1]   == 671649);
+ok($seg1 && $seg1->[0] == 1);
+ok($seg1 && $seg1->[1]   == 50);
 ok($seg1 && $seg1->[2]->start == 13731);
 ok($seg1 && $seg1->[2]->end   == 13780);
 ok($seg1 && $seg1->[2]->seq_region_name eq 'AL359765.6.1.13780');
 
-ok($seg2 && $seg2->[0] == 671650);
-ok($seg2 && $seg2->[1] == 671800);
+ok($seg2 && $seg2->[0] == 51);
+ok($seg2 && $seg2->[1] == 201);
 ok($seg2 && $seg2->[2]->start == 101);
 ok($seg2 && $seg2->[2]->end   == 251);
 ok($seg2 && $seg2->[2]->seq_region_name eq 'AL031658.11.1.162976');
@@ -301,14 +316,14 @@ ok(@projection == 2);
 
 ($seg1, $seg2) = @projection;
 
-ok($seg1 && $seg1->[0] == 4_391_950);
-ok($seg1 && $seg1->[1]   == 4_391_957);
+ok($seg1 && $seg1->[0] == 1 );
+ok($seg1 && $seg1->[1]   ==  8 );
 ok($seg1 && $seg1->[2]->start == 101);
 ok($seg1 && $seg1->[2]->end   == 108);
 ok($seg1 && $seg1->[2]->seq_region_name eq 'AL031658.11.1.162976');
 
-ok($seg2 && $seg2->[0] == 4_391_958);
-ok($seg2 && $seg2->[1] == 4_392_150);
+ok($seg2 && $seg2->[0] == 9);
+ok($seg2 && $seg2->[1] == 201);
 ok($seg2 && $seg2->[2]->start == 13588);
 ok($seg2 && $seg2->[2]->end   == 13780);
 ok($seg2 && $seg2->[2]->seq_region_name eq 'AL359765.6.1.13780');
@@ -331,8 +346,8 @@ ok(@projection == 1);
 
 ($seg1) = @projection;
 $slice = $feature->slice();
-ok($seg1 && $seg1->[0] == $feature->start());
-ok($seg1 && $seg1->[1]   == $feature->end());
+ok($seg1 && $seg1->[0] == 1 );
+ok($seg1 && $seg1->[1]   == $feature->length() );
 ok($seg1 && $seg1->[2]->start == $slice->end - $feature->end() + 1);
 ok($seg1 && $seg1->[2]->end   == $slice->end - $feature->start() + 1);
 ok($seg1 && $seg1->[2]->strand == $slice->strand * $feature->strand());
