@@ -85,8 +85,6 @@ sub _initialize {
 
   $self->{_homols} = [];
 
-  print("Creating new MSPfile $mspfile\n");
-
   $self->source_tag($source_tag);
   $self->type      ($type);
   $self->mspfile   ($mspfile);
