@@ -208,12 +208,15 @@ sub get_all_SimilarityFeatures_above_score{
       my $out;
       my $analysis;
    
+      # exclude overlaping features
+
       foreach my $arrayref(@distinct_features){
 	  if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
       }
       my @list=($start,$end,$analysisid);
       push @distinct_features,\@list;
 
+      # flip contigs
       my $vc_start;
       my $vc_end;
 	if ($raw_ori == -1){         
@@ -226,11 +229,14 @@ sub get_all_SimilarityFeatures_above_score{
 	  $vc_end=$end;
       }
      
+      # clip and map to vc coordinates
 
       if ($vc_start>=$glob_start && $vc_end<=$glob_end){
 
     	$start=$vc_start-$glob_start;
     	$end=$vc_end-$glob_start;
+
+	# create features
 
 	  if (!$analhash{$analysisid}) 
 	  {
@@ -298,8 +304,6 @@ sub get_all_RepeatFeatures {
   my $chr_name=$self->_chr_name;
   
 
-  print STDERR "version 1\n";
-  
   my $statement = "SELECT rf.id,rf.seq_start+sgp.chr_start,rf.seq_end+sgp.chr_start,
                           rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
                           sgp.raw_ori,sgp.chr_start,sgp.chr_end 
@@ -322,39 +326,43 @@ sub get_all_RepeatFeatures {
  
 
 
- my @distinct_features;  
+  my @distinct_features;  
 
  FEATURE:  while( $sth->fetch ) {
      
      my $out;
      my $analysis;
-          
+
+     # exclude overlapping features
+     
      foreach my $arrayref(@distinct_features){
 	 if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
      }
      my @list=($start,$end,$analysisid);
      push @distinct_features,\@list;
-      
+     
+    # flip contigs
+
      my $vc_start;
      my $vc_end;
-
+     
      if ($raw_ori == -1){    
 	 $vc_start=$chr_end+$chr_start-$end;
 	 $vc_end=$chr_end+$chr_start-$start;
 	 $strand=-1*$strand;
+     } else {
+	 $vc_start=$start;
+	 $vc_end=$end;
      }
-
- else {
-          $vc_start=$start;
-          $vc_end=$end;
-      }
       
-      
-      if ($vc_start>=$glob_start && $vc_end<=$glob_end){
-
+    # clip and map to vc coordinates  
+     
+     if ($vc_start>=$glob_start && $vc_end<=$glob_end){
+	  
 	  $start=$vc_start-$glob_start;
 	  $end=$vc_end-$glob_start;
-	  
+
+	  # create features
 	  
 	  if (!$analhash{$analysisid}) {
 	      
