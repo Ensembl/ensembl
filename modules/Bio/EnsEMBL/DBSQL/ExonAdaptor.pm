@@ -345,7 +345,7 @@ sub fetch_evidence_by_Exon {
 sub store {
   my ( $self, $exon ) = @_;
 
-
+  #print STDERR "storing exon\n";
   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
     $self->throw("$exon is not a EnsEMBL exon - not dumping!");
   }
@@ -414,10 +414,22 @@ sub store {
  
 
   my $sth  = $self->prepare("
-     INSERT INTO supporting_feature( 
-        exon_id,contig_id,seq_start,seq_end,score,
-        strand,analysis,name,hstart,hend,hid,hstrand) 
-     VALUES(?,?,?,?,?,?,?,?,?,?,?,?) 
+     INSERT INTO supporting_feature(exon_id,
+                                    contig_id,
+                                    contig_start,
+                                    contig_end,
+                                    score,
+                                    strand,
+                                    analysis_id,
+                                    hit_start,
+                                    hit_end,
+                                    hit_id,
+                                    hit_strand, 
+                                    evalue,  
+                                    perc_ident, 
+                                    phase, 
+                                    end_phase) 
+     VALUES(?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?) 
    ");
 
 
@@ -451,11 +463,14 @@ sub store {
 			  $f->score,
 			  $f->strand,
 			  $analysisid,
-			  $f->source_tag,
 			  $f->hstart,
 			  $f->hend,
 			  $f->hseqname,
-			  $f->hstrand
+			  $f->hstrand,
+			  $f->p_value,
+			  $f->percent_id,
+			  $f->phase,
+			  $f->end_phase,
 			  );
 	} else {
 	    #$self->warn("Feature is not a Bio::EnsEMBL::FeaturePair");

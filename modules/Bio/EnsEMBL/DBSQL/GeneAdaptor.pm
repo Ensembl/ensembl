@@ -30,7 +30,7 @@ package Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-
+use Bio::EnsEMBL::Gene;
 
 
 use vars '@ISA';
@@ -472,9 +472,9 @@ sub fetch_by_DBEntry {
 sub store {
    my ($self,$gene) = @_;
    my %done;
-
+   #print STDERR "storing gene\n";
    my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
-
+   #print STDERR "have transcript adaptor\n";
    if( !defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("Must store a gene object, not a $gene");
    }
@@ -482,28 +482,33 @@ sub store {
    if( !defined $gene->analysis ) {
        $self->throw("Genes must have an analysis object!");
    }
-
+   #print STDERR "storing analysis_object\n";
    my $analysisId = $self->db->get_AnalysisAdaptor()->store( $gene->analysis );
 
 
    if ( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("$gene is not a EnsEMBL gene - not writing!");
    }
-
  
-   my $sth2 = $self->prepare("insert into gene set analysisId=$analysisId, type='".
-			    $gene->type()."'" );
+   my $trans_count = scalar($gene->each_Transcript);
+   print $trans_count."\n";
+   print $gene->type()."\n";
+   my $type = $gene->type;
+   #print STDERR "inserting into genetable\n";
+   my $sth2 = $self->prepare("insert into gene(type, analysis_id, transcript_count) values('$type', $analysisId, $trans_count)" );
    $sth2->execute();
    
    $gene->adaptor( $self );
    $gene->dbID( $sth2->{'mysql_insertid'} );
-
+   #print STDERR "have gene dbID\n";
    my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
-
+   #print STDERR "have dbEntryAdaptor\n";
+  
    foreach my $dbl ( $gene->each_DBLink ) {
+     #print STDERR $dbl."\n";
      $dbEntryAdaptor->store( $dbl, $gene->dbID, "Gene" );
    }
-
+   #print "have stored all dbLinks\n";
    # write exons at this level to avoid duplicates
    my $exonAdaptor = $self->db->get_ExonAdaptor();
    my @ex = $gene->get_all_Exons;

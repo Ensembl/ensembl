@@ -81,10 +81,10 @@ sub fetch_by_dbID{
        $self->throw("fetch_by_dbID must have an id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line,p.analysis_id from protein_align_feature p where p.protein_align_feature_id = $id");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line,p.analysis_id, p.score from protein_align_feature p where p.protein_align_feature_id = $id");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id) = $sth->fetchrow_array();
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id, $score) = $sth->fetchrow_array();
 
    if( !defined $contig_id ) {
        $self->throw("No simple feature with id $id");
@@ -96,7 +96,7 @@ sub fetch_by_dbID{
    $out->start($start);
    $out->end($end);
    $out->strand($strand);
-
+   $out->score($score);
    $out->hstart($hstart);
    $out->hend($hend);
    $out->hseqname($hname);
@@ -130,12 +130,12 @@ sub fetch_by_contig_id{
        $self->throw("fetch_by_contig_id must have an contig id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from protein_align_feature p where p.contig_id = $cid");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p where p.contig_id = $cid");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
    my @f;
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
@@ -151,7 +151,7 @@ sub fetch_by_contig_id{
        $out->start($start);
        $out->end($end);
        $out->strand($strand);
-
+       $out->score($score);
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hseqname($hname);
@@ -180,12 +180,12 @@ sub fetch_by_contig_id_and_logic_name{
      $self->throw("must provide a logic_name to fetch by logic name: $!\n");
    } 
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from protein_align_feature p, analysis a where p.contig_id = $cid and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p, analysis a where p.contig_id = $cid and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
    my @f;
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
@@ -201,7 +201,7 @@ sub fetch_by_contig_id_and_logic_name{
        $out->start($start);
        $out->end($end);
        $out->strand($strand);
-
+       $out->score($score);
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hseqname($hname);
@@ -241,12 +241,12 @@ sub fetch_by_contig_id_and_dbname{
         push(@analysis_ids, $analysis_id);
    }
    my $analysis_idlist = join(',', @analysis_ids);
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from protein_align_feature p where p.contig_id = $cid and p.analysis_id in($analysis_idlist)");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p where p.contig_id = $cid and p.analysis_id in($analysis_idlist)");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
    my @f;
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
@@ -262,7 +262,7 @@ sub fetch_by_contig_id_and_dbname{
        $out->start($start);
        $out->end($end);
        $out->strand($strand);
-
+       $out->score($score);
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hseqname($hname);
@@ -310,13 +310,13 @@ sub fetch_by_assembly_location{
    # build the SQL
 
    my $cid_list = join(',',@cids);
-   my $sth = $self->prepare("select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line,a.gff_source,a.gff_feature from protein_align_feature p where p.contig_id in ($cid_list)");
+   my $sth = $self->prepare("select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line,p.score from protein_align_feature p where p.contig_id in ($cid_list)");
    $sth->execute();
 
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
 
    my @f;
@@ -342,7 +342,7 @@ sub fetch_by_assembly_location{
        $out->end($coord_list[0]->end);
        $out->strand($coord_list[0]->strand);
        $out->seqname($coord_list[0]->seqname);
-
+       $out->score($score);
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hseqname($hname);
@@ -397,12 +397,12 @@ sub fetch_by_assembly_location_and_dbname{
         push(@analysis_ids, $analysis_id);
    }
    my $analysis_idlist = join(',', @analysis_ids);
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from protein_align_feature p where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and p.analysis_id in($analysis_idlist)");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and p.analysis_id in($analysis_idlist)");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
    my @f;
     my %ana;
@@ -427,7 +427,7 @@ sub fetch_by_assembly_location_and_dbname{
        $out->end($coord_list[0]->end);
        $out->strand($coord_list[0]->strand);
        $out->seqname($coord_list[0]->seqname);
-
+       $out->score($score);
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hseqname($hname);
@@ -467,12 +467,12 @@ sub fetch_by_assembly_location_and_logic_name{
 
    my $cid_list = join(',',@cids);
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from protein_align_feature p, analysis a where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p, analysis a where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
    my @f;
    
@@ -498,7 +498,7 @@ sub fetch_by_assembly_location_and_logic_name{
        $out->end($coord_list[0]->end);
        $out->strand($coord_list[0]->strand);
        $out->seqname($coord_list[0]->seqname);
-
+       $out->score($score);
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hseqname($hname);

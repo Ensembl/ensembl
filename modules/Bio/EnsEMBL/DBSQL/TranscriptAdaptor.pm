@@ -125,7 +125,7 @@ sub fetch_by_stable_id {
 sub store {
    my ($self,$transcript,$gene) = @_;
    my $exonAdaptor = $self->db->get_ExonAdaptor();
-
+   #'print STDERR "storing transcript\n";
    if( ! ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
        $self->throw("$transcript is not a EnsEMBL transcript - not dumping!");
    }
@@ -146,19 +146,21 @@ sub store {
 
 
    my $translation = $transcript->translation();
+   my $exon_count;
    if( defined $translation ) {
      $self->db->get_TranslationAdaptor()->store( $translation );
    }
+   $exon_count = scalar($transcript->get_all_Exons());
    # ok - now load this line in
    my $tst = $self->prepare("
-        insert into transcript ( gene_id, translation_id )
-        values ( ?, ?)
+        insert into transcript ( gene_id, translation_id, exon_count )
+        values ( ?, ?, ?)
         ");
 
    if( defined $translation ) {
-     $tst->execute( $gene->dbID(), $translation->dbID() );
+     $tst->execute( $gene->dbID(), $translation->dbID(), $exon_count );
    } else {
-     $tst->execute( $gene->dbID(), 0 );
+     $tst->execute( $gene->dbID(), 0, $exon_count );
    }
 
    $transcript->dbID( $tst->{'mysql_insertid'});

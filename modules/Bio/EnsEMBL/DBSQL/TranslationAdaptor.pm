@@ -91,7 +91,7 @@ sub fetch_by_dbID {
 
 sub store {
   my ( $self, $translation )  = @_;
-
+  #print STDERR "storing translation\n";
 
   if( !defined $translation->start_exon->dbID || !defined $translation->end_exon->dbID ) {
     $self->throw("Attempting to write a translation where the dbIDs to the start and exons are not set. This is most likely to be because you assigned the exons for translation start_exon and translation end_exon to be different in memory objects from your trnascript exons - although it could also be an internal error in the adaptors. For your info the exon memory locations are ".$translation->start_exon." and ".$translation->end_exon());

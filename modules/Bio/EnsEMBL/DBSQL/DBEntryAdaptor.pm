@@ -91,7 +91,7 @@ sub fetch_by_dbID {
 
 sub store {
     my ( $self, $exObj, $ensObject, $ensType ) = @_;
-
+    #print STDERR"storing DBEntryAdaptor\n";
     # $self->throw( "Sorry, store not yet supported" );
     my $dbJustInserted;
     
@@ -344,13 +344,13 @@ sub _fetch_by_EnsObject_type {
   my @out;
   
   my $sth = $self->prepare("
-    SELECT Xref.xrefId, Xref.dbprimary_id, Xref.display_id,
-          Xref.version, Xref.description,
-          exDB.db_name, exDB.release, oxr.objectxrefId, es.synonym, idt.query_identity, idt.target_identity
-    FROM Xref, externalDB exDB, objectXref oxr LEFT JOIN externalSynonym es on es.xrefId = Xref.xrefId 
-                                               LEFT JOIN identityXref idt on idt.objectxrefId = oxr.objectxrefId
-    WHERE Xref.xrefId = oxr.xrefId
-      AND Xref.externalDBId = exDB.externalDBId 
+    SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
+          xref.version, xref.description,
+          exDB.db_name, exDB.release, oxr.object_xref_id, es.synonym, idt.query_identity, idt.target_identity
+    FROM xref, external_db exDB, object_xref oxr LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
+                                               LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
+    WHERE xref.xref_id = oxr.xref_id
+      AND xref.external_db_id = exDB.external_db_id 
       AND oxr.ensembl_id = '$ensObj'
       AND oxr.ensembl_object_type = '$ensType'
   ");
@@ -367,7 +367,7 @@ sub _fetch_by_EnsObject_type {
     
     my $exDB;
     
-    # using an outer join on the synonyms as well as on identityXref, we
+    # using an outer join on the synonyms as well as on identityxref, we
     # now have to filter out the duplicates (see v.1.18 for
     # original). Since there is at most one identityXref row per Xref,
     # this is easy enough; all the 'extra' bits are synonyms
