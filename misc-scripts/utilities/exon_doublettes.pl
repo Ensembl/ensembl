@@ -173,12 +173,14 @@ while ( @sortedExons ) {
       print STDERR "Same Transcript error ",$ex->{name}, " ", $lastExon->{name},"\n";
     } elsif( $ex->{gene} == $lastExon->{gene} ) {
       rename_Exon( $ex, $lastExon );
+      next;
     } else {
       rename_Exon( $ex, $lastExon );
       if( gene_rep( $ex ) ne gene_rep( $lastExon ) ) {
 	merge_Gen( gene_rep( $ex ), gene_rep( $lastExon) );
 	gene_rep( $ex, $lastExon->{gene}{name} );
       }
+      next;
     }
   }
   $lastExon = $ex;
@@ -217,6 +219,10 @@ sub rename_Exon {
   my ( $e1, $e2 ) = @_;
   print "DELETE FROM exon WHERE id=\"",$e1->{name},"\";\n";
   print "UPDATE exon_transcript SET exon=\"",$e2->{name},"\" WHERE exon=\"",
+  $e1->{name},"\";\n";
+  print "UPDATE translation SET start_exon=\"",$e2->{name},"\" WHERE start_exon=\"",
+  $e1->{name},"\";\n";
+  print "UPDATE translation SET end_exon=\"",$e2->{name},"\" WHERE end_exon=\"",
   $e1->{name},"\";\n";
   print "UPDATE supporting_feature SET exon=\"",$e2->{name},"\" WHERE exon=\"",
   $e1->{name},"\";\n";
