@@ -225,7 +225,12 @@ sub fetch_by_dbID {
     my $transcript = Bio::EnsEMBL::Transcript->new();
     $transcript->dbID( $transcriptId );
     $transcript->adaptor( $self->db->get_TranscriptAdaptor() );
-    $transcript->_translation_id($transcripts{$transcriptId} );
+    
+    # Test for truth because translation_id will be 0 if not set
+    # because column is NOT NULL in schema.
+    if (my $translation_id = $transcripts{$transcriptId}) {
+        $transcript->_translation_id($translation_id);
+    }
 
     foreach my $exonId ( @{$transcriptExons{$transcriptId}} ) {
       
