@@ -190,9 +190,9 @@ if($list){
 	my $version=$clone->embl_version;
 
 	# is clone in output database?
-	#eval{
-	    my $clone=$db->get_Clone($clone_id);
-	#};
+#	eval{
+#	    my $clone=$db->get_Clone($clone_id);
+#	};
 	#if($@){
 	    print "[$nclone] $clone_id not yet parsed ".
 		"[$nunfin; $nnoembl; $nwrongsv; $nclonefail; ".
