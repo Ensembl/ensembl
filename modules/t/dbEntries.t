@@ -288,3 +288,29 @@ ok($features->[0]->start == 19 &&
    $features->[2]->start == 35 &&
    $features->[2]->end   == 44);
 
+
+#
+# test DBEntryAdaptor::fetch_by_db_accession and
+#      DBEntryAdaptor::fetch_by_dbID
+#
+
+$xref = $dbEntryAdaptor->fetch_by_dbID(152202);
+
+ok($xref->dbID == 152202);
+ok($xref->display_id() eq 'C20orf125');
+ok($xref->dbname() eq 'HUGO');
+ok($xref->primary_id() eq '16118');
+
+
+$xref = $dbEntryAdaptor->fetch_by_db_accession('Interpro', 'IPR000010');
+ok($xref->dbID == 999999);
+ok($xref->description eq 'Test interpro desc2');
+
+$multi->hide('core', 'xref');
+
+#make sure this still works when interpro entries missing in xref table
+$xref = $dbEntryAdaptor->fetch_by_db_accession('Interpro', 'IPR000010');
+ok($xref);
+ok($xref->primary_id() eq 'IPR000010');
+
+$multi->restore('core', 'xref');
