@@ -255,7 +255,7 @@ CREATE TABLE fset_feature (
 CREATE TABLE gene (
   gene_id   int unsigned not null auto_increment,
   type VARCHAR(40) not null,
-  analysisId int unsigned not null,
+  analysisId int unsigned not null,	# foregin key analysisprocess:analysisId
      
   PRIMARY KEY (gene_id)
 );
@@ -304,7 +304,7 @@ CREATE TABLE supporting_feature (
   seq_end       int(10) NOT NULL,
   score         int(10) NOT NULL,
   strand        int(1) DEFAULT '1' NOT NULL,
-  analysis      int(10) unsigned NOT NULL,
+  analysis      int(10) unsigned NOT NULL,	# foregin key analysisprocess:analysisId
   name          varchar(40) NOT NULL,
   hstart        int(11) NOT NULL,
   hend          int(11) NOT NULL,
@@ -419,10 +419,10 @@ CREATE TABLE static_golden_path (
 
 CREATE TABLE protein_feature (
   id            int(10) unsigned NOT NULL auto_increment,
-  translation   varchar(40) NOT NULL,	
+  translation   varchar(40) NOT NULL,	 # foreign key translation_stable_id:stable_id
   seq_start     int(10) NOT NULL,
   seq_end       int(10) NOT NULL,
-  analysis      int(10) unsigned NOT NULL,
+  analysis      int(10) unsigned NOT NULL,	# foreign key analysisprocess:analysisId
   hstart        int(10) NOT NULL,
   hend          int(10) NOT NULL,
   hid           varchar(40) NOT NULL,
@@ -440,14 +440,14 @@ CREATE TABLE protein_feature (
 #
 
 CREATE TABLE interpro (
-  interpro_ac	varchar(40) NOT NULL,
+  interpro_ac	varchar(40) NOT NULL, # foreign key interpro_description:interpro_ac
   id		varchar(40) NOT NULL,
   KEY (interpro_ac),
   KEY (id)
 );
 
 CREATE TABLE interpro_description (
-  interpro_ac varchar(40) DEFAULT '' NOT NULL,
+  interpro_ac varchar(40) DEFAULT '' NOT NULL, 
   description varchar(255),
   short_description varchar(255),
   PRIMARY KEY (interpro_ac)
@@ -458,7 +458,7 @@ CREATE TABLE interpro_description (
 #
 
 CREATE TABLE gene_description (
-  gene_id     int unsigned NOT NULL,
+  gene_id     int unsigned NOT NULL, # foreign key gene:gene_id
   description varchar(255),
   PRIMARY KEY (gene_id)
 );
@@ -479,9 +479,12 @@ CREATE TABLE karyotype (
 
 CREATE TABLE objectXref(
        objectxrefId INT unsigned not null auto_increment,
-       ensembl_id VARCHAR(40) not null, 
+       ensembl_id VARCHAR(40) not null, 	# foreign key transcript_stable_id:stable_id
+                                            # foreign key translation_stable_id:stable_id
+                                            # foreign key gene_stable_id:stable_id
+                                            # foreign key contig:id
        ensembl_object_type ENUM( 'RawContig', 'Transcript', 'Gene', 'Translation' ) not null,
-       xrefId INT unsigned not null,
+       xrefId INT unsigned not null, # foreign key Xref:xrefId
 
        UNIQUE ( ensembl_object_type, ensembl_id, xrefId ),
        PRIMARY KEY (objectxrefId)
@@ -491,7 +494,7 @@ CREATE TABLE objectXref(
 #Table structure for identityXref
 #
 CREATE TABLE identityXref(
-        objectxrefId INT unsigned not null ,
+        objectxrefId INT unsigned not null ,	# foreign key objectXref:objectxrefId
 	query_identity 	int(5),
         target_identity int(5),
         PRIMARY KEY (objectxrefId)
@@ -504,7 +507,7 @@ CREATE TABLE identityXref(
 
 CREATE TABLE Xref(
          xrefId INT unsigned not null auto_increment,
-         externalDBId int unsigned not null,
+         externalDBId int unsigned not null,	# foreign key externalDB:externalDBId
          dbprimary_id VARCHAR(40) not null,
 	 display_id VARCHAR(40) not null,
          version VARCHAR(10) DEFAULT '' NOT NULL,
@@ -522,7 +525,7 @@ CREATE TABLE Xref(
 #
 
 CREATE TABLE externalSynonym(
-         xrefId INT unsigned not null,
+         xrefId INT unsigned not null,	# foreign key Xref:xrefId
          synonym VARCHAR(40) not null,
          PRIMARY KEY( xrefId, synonym ),
 	 KEY name_index( synonym )
