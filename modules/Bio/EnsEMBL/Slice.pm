@@ -1299,16 +1299,22 @@ sub get_all_SNPs_transcripts {
 =cut
 
 sub get_all_Genes{
-   my ($self, $logic_name, $dbtype, $load_transcripts) = @_;
-
+  my ($self, $logic_name, $dbtype, $load_transcripts) = @_;
+  
   if(!$self->adaptor()) {
     warning('Cannot get Genes without attached adaptor');
     return [];
   }
-
+  
   my $ga;
    if($dbtype) {
-   $ga = $reg->get_adaptor( $self->adaptor()->db()->species(), $dbtype, "Gene" );
+     my $db = $reg->get_db($self->adaptor()->db(), $dbtype);
+     if(defined($db)){
+       $ga = $reg->get_adaptor( $db->species(), $db->group(), "Gene" );
+     }
+     else{
+       $ga = $reg->get_adaptor( $self->adaptor()->db()->species(), $dbtype, "Gene" );
+     }
      if(!defined $ga) {
        warning( "$dbtype genes not available" );
        return [];
