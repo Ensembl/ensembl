@@ -10,7 +10,7 @@ use vars qw(@ISA);
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBConnection;
-use Bio::Search::HSP::EnsemblHSP; # This is a web module
+#use Bio::Search::HSP::EnsemblHSP; # This is a web module
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 #@ISA = qw( Bio::EnsEMBL::DBSQL::DBConnection );
@@ -107,11 +107,26 @@ AND    chr_end   >= ? );
 sub get_all_SearchFeatures {
   my $self = shift;
   my $hsps = $self->get_all_HSPs(@_);
+  $self->dynamic_use( ref($hsps->[0] ) );
   my @feats = grep{ $_ } map{ $_->ens_genomic_align } @$hsps;
   return [ @feats ];
 }
 
+#----------------------------------------------------------------------
 
+sub dynamic_use {
+  my( $self, $classname ) = @_;
+  my( $parent_namespace, $module ) = $classname =~/^(.*::)(.*?)$/;
+  no strict 'refs';
+  return 1 if $parent_namespace->{$module.'::'}; # return if already used
+  eval "require $classname";
+  if($@) {
+    warn "DrawableContainer: failed to use $classname\nDrawableContainer: $@";
+    return 0;
+  }
+  $classname->import();
+  return 1;
+}
 
 
 #----------------------------------------------------------------------
