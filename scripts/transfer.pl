@@ -210,7 +210,7 @@ if ($update) {
 	}
 	
 	#Delete clone from $to_db
-	my $clone = $to_db->delete_Clone($clone,$arc_db);
+        $clone = $to_db->delete_Clone($clone,$arc_db);
     }
 
     #Finally we proceed as normal, transferring the clone from from_db to to_db (out of the update loop)
@@ -247,9 +247,6 @@ foreach my $clone_id ( @clone ) {
 	print STDERR "Could not transfer clone $clone_id\n$@\n";
     }
 }
-
-close(ERROR);
-
 
 
 

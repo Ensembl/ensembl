@@ -106,7 +106,7 @@ foreach my $clone_id ($db->get_all_Clone_id()) {
 		print "  <type>translation</type>\n";
 		print "   <seq_relationship seq=\"",$contig->id,"\">\n";
 		print "    <span>\n";
-		my $switch = 1;
+		$switch = 1;
 		my $tr_start;
 		my $tr_end;
 		foreach my $tr_exon ($trans->translateable_exons) {

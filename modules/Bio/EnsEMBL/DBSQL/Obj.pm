@@ -146,47 +146,56 @@ sub _initialize {
 =cut
 
 sub get_Gene{
-   my ($self,$geneid) = @_;
+    my ($self,$geneid) = @_;
 
-   $geneid || $self->throw("Attempting to create gene with no id");
+    $geneid || $self->throw("Attempting to create gene with no id");
+    
+    my $gene = Bio::EnsEMBL::Gene->new();
+    
+    # check the database is sensible before we yank out this gene. Yes this is
+    # paranoid.
+    
+    my $sth1 = $self->prepare("select p1.contig from exon as p1, transcript as p2, exon_transcript as p3 where p2.gene = '$geneid' and p2.id = p3.transcript and p3.exon = p1.id");
 
-   my $gene = Bio::EnsEMBL::Gene->new();
+    $sth1->execute();
 
-   # check the database is sensible before we yank out this gene. Yes this is
-   # paranoid.
-
-   my $sth1 = $self->prepare("select p1.contig from exon as p1, transcript as p2, exon_transcript as p3 where p2.gene = '$geneid' and p2.id = p3.transcript and p3.exon = p1.id");
-
-   $sth1->execute();
-
-   while( my $rowhash = $sth1->fetchrow_hashref) {
-       # get a contig object, which checks that this exists. 
-
-       my $contig = $self->get_Contig($rowhash->{'contig'});
-       # if there is no exception then it is there. Get rid of it
-       $contig = 0;
-   }
-
+    while( my $rowhash = $sth1->fetchrow_hashref) {
+	# get a contig object, which checks that this exists. 
+	print("Contig is " . $rowhash->{contig} . "\n");
+	my $contig = $self->get_Contig($rowhash->{'contig'});
+	# if there is no exception then it is there. Get rid of it
+	$contig = 0;
+    }
+   
+    my $sth2 = $self->prepare("select version,created,modified from gene where id = '$geneid'");
+    $sth2->execute();
+    my $rowhash= $sth2->fetchrow_hashref;
+    $gene->version($rowhash->{'version'});
+    $self->warn("Got gene version ".$gene->version." in get_Gene");
+    $gene->created($rowhash->{'created'});
+    $gene->modified($rowhash->{'modified'});
 
    # go over each Transcript
-   my $sth = $self->prepare("select id,translation from transcript where gene = '$geneid'");
-   my $res = $sth->execute();
-   my $seen =0;
+    my $sth = $self->prepare("select id,translation,version from transcript where gene = '$geneid'");
+
+    my $res = $sth->execute();
+    my $seen =0;
+
+
+    while( my $rowhash = $sth->fetchrow_hashref) {
+
+	my $trans       = $self->get_Transcript($rowhash->{'id'});
+	my $translation = $self->get_Translation($rowhash->{'translation'});
+	
+	$trans->translation($translation);
+	$trans->version($rowhash->{'version'});
+	$gene->add_Transcript($trans);
+	$seen = 1;
+    }
    
-   while( my $rowhash = $sth->fetchrow_hashref) {
-
-       my $trans       = $self->get_Transcript($rowhash->{'id'});
-       my $translation = $self->get_Translation($rowhash->{'translation'});
-
-       $trans->translation($translation);
-       $gene ->add_Transcript($trans);
-
-       $seen = 1;
-   }
-   
-   if( $seen == 0 ) {
-       $self->throw("No gene with $geneid as a name! - Sorry!");
-   }
+    if( $seen == 0 ) {
+	$self->throw("No gene with $geneid as a name! - Sorry!");
+    }
 
    # Fetch the geneclone_neighbourhood
 
@@ -205,7 +214,7 @@ sub get_Gene{
 }
 
 =head2 donor_locator
-
+    
  Title   : get_donor_locator
  Usage   : $obj->get_donor_locator; 
  Function: Reads the meta table of the database to get the donor_database_locator
@@ -424,15 +433,15 @@ sub get_Transcript{
     my $trans = Bio::EnsEMBL::Transcript->new();
     # go over each Transcript
     my $sth = $self->prepare("select exon from exon_transcript where transcript = '$transid'");
+    
+    my $res = $sth->execute();
+    while( my $rowhash = $sth->fetchrow_hashref) {
+	my $exon = $self->get_Exon($rowhash->{'exon'});
+	$trans->add_Exon($exon);
+    }
+    $trans->id($transid);
 
-   my $res = $sth->execute();
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       my $exon = $self->get_Exon($rowhash->{'exon'});
-       $trans->add_Exon($exon);
-   }
-   $trans->id($transid);
-
-   return $trans;
+    return $trans;
 }
 
 =head2 get_Translation
@@ -450,10 +459,11 @@ sub get_Transcript{
 sub get_Translation{
    my ($self,$translation_id) = @_;
 
-   my $sth = $self->prepare("select seq_start,start_exon,seq_end,end_exon from translation where id = '$translation_id'");
+   my $sth = $self->prepare("select version,seq_start,start_exon,seq_end,end_exon from translation where id = '$translation_id'");
    my $res = $sth->execute();
    my $rowhash = $sth->fetchrow_hashref;
    my $out = Bio::EnsEMBL::Translation->new();
+   $out->version($rowhash->{'version'});
    $out->start($rowhash->{'seq_start'});
    $out->end($rowhash->{'seq_end'});
    $out->start_exon_id($rowhash->{'start_exon'});
@@ -1134,13 +1144,25 @@ sub write_Gene{
        }
    }
 
-   my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
-			     $gene->id()     . "','".
-			     $gene->version  . "','".
-			     $gene->created  . "','".
-			     $gene->modified . "',now())");
-   $sth2->execute();
+   $self->warn("Got gene version ".$gene->version." in write_Gene");
 
+    eval {
+       $old_gene=$self->get_Gene($gene->id);
+   };
+    
+
+   if ( $@ || $gene->version > $old_gene->version) {
+
+       my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
+				 $gene->id()     . "','".
+				 $gene->version  . "','".
+				 $gene->created  . "','".
+				 $gene->modified . "',now())");
+       $sth2->execute();
+   }
+   else {
+       $self->warn ("Got this gene with this version already, no need to write in db");
+   }
    foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
        print STDERR "Using $cloneid and ",$gene->id,"\n";
        print STDERR "Calling [","insert into geneclone_neighbourhood (gene,clone) values ('" . 
@@ -1497,7 +1519,7 @@ sub exists_Analysis {
 
 sub write_Transcript{
    my ($self,$trans,$gene) = @_;
-   
+   my $old_trans;
 
    if( ! $trans->isa('Bio::EnsEMBL::Transcript') ) {
        $self->throw("$trans is not a EnsEMBL transcript - not dumping!");
@@ -1509,10 +1531,20 @@ sub write_Transcript{
 
    # ok - now load this line in
 
-   my $tst = $self->prepare("insert into transcript (id,gene,translation,version) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "','".$trans->version."')");
-   $tst->execute();
-   $self->write_Translation($trans->translation());
-   
+   eval {
+       $old_trans=$self->get_Transcript($trans->id);
+   };
+    
+
+   if ( $@ || $trans->version > $old_trans->version) {
+
+       my $tst = $self->prepare("insert into transcript (id,gene,translation,version) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "',".$trans->version.")");
+       $tst->execute();
+       $self->write_Translation($trans->translation());
+   }
+   else {
+       $self->warn ("Transcript already present in the database with the same version number, no need to write it in");
+   }
    return 1;
 }
 
@@ -1529,23 +1561,32 @@ sub write_Transcript{
 =cut
 
 sub write_Translation{
-   my ($self,$translation) = @_;
-   
-   if( !$translation->isa('Bio::EnsEMBL::Translation') ) {
-       $self->throw("Is not a translation. Cannot write!");
-   }
+    my ($self,$translation) = @_;
+    my $old_transl;
+    
+    if( !$translation->isa('Bio::EnsEMBL::Translation') ) {
+	$self->throw("Is not a translation. Cannot write!");
+    }
+    
+    eval {
+	$old_transl=$self->get_Translation($translation->id);
+    };
+    
 
-   
-   my $tst = $self->prepare("insert into translation (id,seq_start,start_exon,seq_end,end_exon) values ('" 
-			    . $translation->id . "',"
-			    . $translation->start . ",'"  
-			    . $translation->start_exon_id. "',"
-			    . $translation->end . ",'"
-			    . $translation->end_exon_id . "')");
-   $tst->execute();
-   
+    if ( $@ || $translation->version > $old_transl->version) {
+	my $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
+				 . $translation->id . "',"
+				 . $translation->version . ","
+				 . $translation->start . ",'"  
+				 . $translation->start_exon_id. "',"
+				. $translation->end . ",'"
+				 . $translation->end_exon_id . "')");
+	$tst->execute();
+    }
+    else {
+	$self->warn ("Translation already present in the database with the same version number, no need to write it in");
+    }
 }
-   
 
 =head2 write_Exon
 
@@ -1916,3 +1957,9 @@ sub DESTROY{
 
 
 				# 
+
+
+
+
+
+
