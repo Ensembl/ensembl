@@ -259,10 +259,9 @@ sub store {
 
 sub fetch_by_gene {
   my ( $self, $gene ) = @_;
-  my $query1 = "SELECT tlsi.stable_id 
-                FROM transcript t, translation_stable_id tlsi
-                WHERE t.gene_id = ?
-                AND t.translation_id = tlsi.translation_id";
+  my $query1 = "SELECT t.translation_id 
+                FROM transcript t
+                WHERE t.gene_id = ?";
 
   my $sth1 = $self->prepare($query1);
   $sth1->execute( $gene->dbID );
@@ -288,10 +287,9 @@ sub fetch_by_rawContig {
 sub fetch_by_transcript {
   my ( $self, $trans ) = @_;
 
-  my $query1 = "SELECT tlsi.stable_id 
-                FROM transcript t, translation_stable_id tlsi
-                WHERE t.transcript_id = ?
-                AND t.translation_id = tlsi.translation_id";
+  my $query1 = "SELECT t.translation_id 
+                FROM transcript t
+                WHERE t.transcript_id = ?";
 
   my $sth1 = $self->prepare($query1);
   $sth1->execute( $trans->dbID );
