@@ -488,10 +488,10 @@ As an alternative approach we can go directly to the object adaptor for a featur
 my $simple_feature_adaptor = $db->get_SimpleFeatureAdaptor;
 
 #get all of the Eponine hits on a Contig
-my @eponine_hits = @{$simple_feature_adaptor->fetch_all_by_Contig($contig, 'Eponine')};
+my @eponine_hits = @{$simple_feature_adaptor->fetch_all_by_RawContig($contig, 'Eponine')};
 
 #get all CpG islands on a Slice with score greater than 500
-my $cpg_islands  = $simple_feature_adaptor->fetch_all_by_Slice_and_score($slice, 500, 'CpG);
+my $cpg_islands  = $simple_feature_adaptor->fetch_all_by_Slice_and_score($slice, 500, 'CpG');
 
 #get the simple feature with the database identifier 1
 my $simple_feature = $simple_feature_adaptor->fetch_by_dbID(1);
@@ -660,7 +660,7 @@ foreach my $predicted_transcript (@$predicted_transcripts) {
 
 As these predictions should translate there you can get the predicted peptide sequence by using the translate method on a genscan prediction.
 
-print "Genscan peptide is " . $predicted_transcript->translate . "\n";
+print "Genscan peptide is " . $predicted_transcript->translate->seq . "\n";
 
 Translation
 

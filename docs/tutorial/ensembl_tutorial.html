@@ -6,7 +6,7 @@
 	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.0.1  (Linux)">
 	<META NAME="AUTHOR" CONTENT="Michele Clamp">
 	<META NAME="CREATED" CONTENT="19951121;19410000">
-	<META NAME="CHANGED" CONTENT="20021028;13411200">
+	<META NAME="CHANGED" CONTENT="20021029;10101500">
 	<STYLE>
 	<!--
 		@page { size: 20.99cm 29.71cm; margin-left: 0.63cm; margin-right: 0.63cm; margin-top: 2.54cm; margin-bottom: 2.54cm }
@@ -1410,7 +1410,7 @@ $simple_feature_adaptor = $db-&gt;get_SimpleFeatureAdaptor;</FONT></FONT></P>
 all of the Eponine hits on a Contig</FONT></FONT></P>
 <P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
 @eponine_hits =
-@{$simple_feature_adaptor-&gt;fetch_all_by_Contig($contig,
+@{$simple_feature_adaptor-&gt;fetch_all_by_<SPAN STYLE="background: transparent">RawContig</SPAN>($contig,
 'Eponine')};</FONT></FONT></P>
 <P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
 </P>
@@ -1419,7 +1419,7 @@ all CpG islands on a Slice with score greater than 500</FONT></FONT></P>
 <P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
 $cpg_islands  =
 $simple_feature_adaptor-&gt;fetch_all_by_Slice_and_score($slice, 500,
-'CpG);</FONT></FONT></P>
+'CpG<SPAN STYLE="background: transparent">');</SPAN></FONT></FONT></P>
 <P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
 </P>
 <P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>#get
@@ -1876,8 +1876,8 @@ on a genscan prediction.</FONT></FONT></SPAN></FONT></P>
 <P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
 </P>
 <P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">print
-&quot;Genscan peptide is &quot; . $predicted_transcript-&gt;translate
-. &quot;\n&quot;;</SPAN></FONT></FONT></P>
+&quot;Genscan peptide is &quot; .
+$predicted_transcript-&gt;translate-&gt;seq . &quot;\n&quot;;</SPAN></FONT></FONT></P>
 <P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
 </P>
 <OL>
