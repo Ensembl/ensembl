@@ -11,7 +11,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::TimDB::Contig - Perl wrapper over Tim's directories for Contigs
+Bio::EnsEMBL::TimDB::Contig - Perl wrapper over Tim\'s directories for Contigs
 
 =head1 SYNOPSIS
 
@@ -24,7 +24,7 @@ Bio::EnsEMBL::TimDB::Contig - Perl wrapper over Tim's directories for Contigs
 
 =head1 DESCRIPTION
 
-Tim's contigs
+Tim\'s contigs
 
 =head1 CONTACT
 
@@ -44,7 +44,7 @@ use strict;
 use Bio::EnsEMBL::DB::ContigI;
 use Bio::Seq;
 use Bio::SeqIO;
-use Bio::EnsEMBL::Analysis::Genscan;
+use Bio::EnsEMBL::Analysis::GenscanMC;
 use Bio::EnsEMBL::Analysis::FeatureParser;
 use FileHandle;
 
@@ -70,32 +70,32 @@ sub _initialize {
 			    ORIENTATION
 			    LENGTH
 			    )],@args);
-  $id || $self->throw("Cannot make contig object without id");
+  $id      || $self->throw("Cannot make contig object without id");
   $disk_id || $self->throw("Cannot make contig object without disk_id");
-  $dbobj || $self->throw("Cannot make contig object without db object");
-  $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') || 
-      $self->throw("Cannot make contig object with a $dbobj object");
-  $order || $self->throw("Cannot make contig object without order");
-  $offset || $self->throw("Cannot make contig object without offset");
+  $dbobj   || $self->throw("Cannot make contig object without db object");
+  $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') ||   $self->throw("Cannot make contig object with a $dbobj object");
+  $order   || $self->throw("Cannot make contig object without order");
+  $offset  || $self->throw("Cannot make contig object without offset");
   $orientation || $self->throw("Cannot make contig object without orientation");
-  $length || $self->throw("Cannot make contig object without length");
+  $length  || $self->throw("Cannot make contig object without length");
   
   # id of contig
-  $self->id($id);
-  $self->disk_id($disk_id);
+  $self->id         ($id);
+  $self->disk_id    ($disk_id);
   # db object
-  $self->_dbobj($dbobj);
+  $self->_dbobj     ($dbobj);
   # clone object
-  $self->_clone_dir($clone_dir);
-  $self->order($order);
-  $self->offset($offset);
+  $self->_clone_dir ($clone_dir);
+  $self->order      ($order);
+  $self->offset     ($offset);
   $self->orientation($orientation);
-  $self->length($length);
+  $self->length     ($length);
 
   # ok. Hell. We open the Genscan file using the Genscan object.
   # this is needed to remap the exons lower down
-  my $gs = Bio::EnsEMBL::Analysis::Genscan->new($self->_clone_dir . "/" . 
-						$self->disk_id . ".gs",$self->seq());
+  my $gs = Bio::EnsEMBL::Analysis::GenscanMC->new($self->_clone_dir . "/" . 
+						$self->disk_id . ".gs",
+						$self->seq());
   # save for later
   $self->_gs($gs);
 
@@ -209,14 +209,15 @@ sub get_all_SeqFeatures{
     # not clear if this load step should be here or in init
     {
 	# get sf object
-	my $debug=1;
+	my $debug=0;
 	my $sfobj=Bio::EnsEMBL::Analysis::FeatureParser->new($self->id,
 							     $self->_clone_dir,
 							     $self->disk_id,
 							     $self->_gs,
 							     $self->seq,
 							     $debug);
-	@{$self->{'_sf_array'}}=($sfobj->each_feature);
+	push(@{$self->{'_sf_array'}},$sfobj->each_Feature);
+
     }
 
     # return array of objects
