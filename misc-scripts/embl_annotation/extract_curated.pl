@@ -349,12 +349,12 @@ sub _process_file{
 		eval{
 		    $db->write_Gene($gene);
 		    foreach  my $transcript ($gene->each_Transcript){
-			my $transcript_id=$transcript->id;
+			my $tl_id=$transcript->translation->id;
 			foreach my $dbentry ($transcript->each_DBLink){
 			    # attach adapter
 			    $dbentry->adaptor($adx);
-			    print STDERR "Storing ",$transcript_id," ",$dbentry->primary_id,"\n";
-			    $adx->store($dbentry,$transcript_id,'Transcript');
+			    print STDERR "Storing ",$tl_id," ",$dbentry->primary_id,"\n";
+			    $adx->store($dbentry,$tl_id,'Translation');
 			}
 		    }
 		};
