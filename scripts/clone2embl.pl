@@ -20,18 +20,35 @@
 
 =head1 OPTIONS
 
+    -verbose   print to STDERR on each clone to dump
+
     -dbtype    database type (rdb, ace, timdb)
+
+    -dbhost    host name for database
+
+    -dbname    For RDBs, what name to connect to
 
     -nodna     don't write dna part of embl file (for testing)
 
     -format    [gff/ace/pep] dump in gff/ace/peptides format, not EMBL
 
-    -noacc     by default, regardless of specifing the accession for a sanger clone 
-               or its clonename, it will dump as its accession.  Use -noacc to 
-               dump by clonename
+    -pepformat What format output to dump to. NB gene2flat is a better
+               script now for dumping translations.
+
+    -noacc     [only timdb] by default, regardless of specifing the
+               accession for a sanger clone or its clonename, it will
+               dump as its accession.  Use -noacc to dump by clonename
 
     -test      use test database rather than live [currently only timdb]
                clones in testdb are listed with a T below
+
+    -getall    all clones from the database [no applicable to timdb]
+
+    -usefile   read in on stdin a list of clones, one clone per line
+
+    -start     start point in list of clones (useful with -getall)
+
+    -end       end point in list of clones (useful with -getall)
 
 =head1 EXAMPLE CLONES
 
@@ -56,6 +73,8 @@
 
 use strict;
 
+# comment out ace as most people don't have aceperl.
+# need a run-time loader really.
 #use Bio::EnsEMBL::AceDB::Obj;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::TimDB::Obj;
@@ -81,6 +100,9 @@ my $pepformat = 'Fasta';
 my $test;
 my $part;
 my $dbname = 'ensdev';
+my $verbose = 0;
+my $cstart = 0;
+my $cend   = undef;
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
@@ -99,10 +121,14 @@ my $dbname = 'ensdev';
 	     'noacc'     => \$noacc,
 	     'aceseq:s'  => \$aceseq,
 	     'pepform:s' => \$pepformat,
-	     'fromfile'  => \$fromfile,
+	     # usefile to be consistent with other scripts
+	     'usefile'  => \$fromfile,
 	     'getall'    => \$getall,
 	     'test'      => \$test,
 	     'part'      => \$part,
+	     'verbose'   => \$verbose,
+	     'start:i'     => \$cstart,
+	     'end:i'       => \$cend,
 	     );
 
 if($help){
@@ -157,8 +183,27 @@ if ( $getall == 1 ) {
     @clones = $db->get_all_Clone_id();
 }
 
+if( defined $cend ) {
+    print STDERR "splicing $cstart to $cend\n";
+
+    my @temp = splice(@clones,$cstart,($cend-$cstart));
+    @clones = @temp;
+}
+
 
 foreach my $clone_id ( @clones ) {
+
+    if( $verbose >= 1 ) {
+	print STDERR "Dumping $clone_id\n";
+    }
+
+
+    #
+    # wrap in eval to protect from exceptions being
+    # thrown. One problem here is that if the exception
+    # is thrown during the feature table dumping, then it
+    # has still dumped part of the entry. Bad news.
+    #
 
     eval {
 	my $clone = $db->get_Clone($clone_id);
@@ -191,10 +236,11 @@ foreach my $clone_id ( @clones ) {
 	    $emblout->write_annseq($as);
 	} elsif ( $format =~ /pep/ ) {
 	    my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => \*STDOUT ) ;
-	    
+	    my $cid = $clone->id();
 	    foreach my $gene ( $clone->get_all_Genes() ) {
 		foreach my $trans ( $gene->each_Transcript ) {
 		    my $tseq = $trans->translate();
+		    $tseq->desc("Clone:$cid");
 		    $seqout->write_seq($tseq);
 		}
 	    }

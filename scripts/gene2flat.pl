@@ -12,6 +12,7 @@ my $tport   = '410000';
 my $tdbname = 'ensdev';
 my $format  = 'pep';
 my $usefile = 0;
+my $getall  = 0;
 
 &GetOptions( 
 	     'dbtype:s' => \$tdbtype,
@@ -20,6 +21,7 @@ my $usefile = 0;
 	     'usefile'  => \$usefile,
 	     'dbname:s' => \$tdbname,
 	     'format:s'   => \$format,
+	     'getall'   => \$getall,
 	     );
 my $db;
 
@@ -38,6 +40,8 @@ if( $usefile ) {
 	my ($g) = split;
 	push(@gene_id,$g);
     }
+} elsif ( $getall == 1 ) {
+    @gene_id = $db->get_all_Gene_id();
 } else {
     @gene_id = @ARGV;
 }
