@@ -212,27 +212,9 @@ sub get_all_Genes{
     return values %h;
 }
 
-
-=head2 seq
-
- Title   : seq
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub seq {
-    my ($self) = @_;
-    my @c;
-    @c = $self->get_all_Contigs($self->id());
-    if(scalar(@c)>1){
-	$self->throw("More than one contig: sequence processing not implemented");
-    }
-    return $c[0]->seq;
-}
+#
+# Seq method from the cloneI object now
+#
 
 
 =head2 id
