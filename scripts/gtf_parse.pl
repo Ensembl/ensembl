@@ -67,6 +67,7 @@ my $print;
 my $help;
 my $check;
 my $compare;
+my $longest;
 
 &GetOptions( 
 	     'dbtype:s'   => \$dbtype,
@@ -81,6 +82,7 @@ my $compare;
 	     'print'      => \$print,
 	     'check'      => \$check,
 	     'compare'    => \$compare,
+	     'longest'    => \$longest,
 	     'h|help'     => \$help
 	     );
 
@@ -88,9 +90,7 @@ my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
 open (PARSE,"$parse") || die("Could not open $parse for gtf reading$!");
 my @gtf_genes=$gtfh->parse_file(\*PARSE);
 my $g_n=scalar @gtf_genes;
-$parse =~/ctg(\d+).gtf/;
-print STDERR "Comparing genes for fpc contig $1\n";
-print STDERR "Got $g_n genes from EnsEMBL file $parse\n";
+print STDERR "Got $g_n genes from file $parse\n";
 if ($print) {
     $gtfh->print_genes;
 }
@@ -133,42 +133,20 @@ elsif ($check) {
     
 }
 elsif ($compare) {
-    #my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
-    #my $db =  Bio::EnsEMBL::DBLoader->new($locator);
-    #my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
-
-    #$db->static_golden_path_type('UCSC');
-    #my $sgp_adaptor = $db->get_StaticGoldenPathAdaptor();
-    #my @ensembl_genes;
-    #print STDERR "Getting EnsEMBL genes in fpc cooridnates\n";
-    #foreach my $fpc ($sgp_adaptor->get_all_fpc_ids()){
-	#print STDERR "Getting genes for fpc contig $fpc\n";
-	#my $vc;
-	#eval {
-	#$vc = $sgp_adaptor->fetch_VirtualContig_by_fpc_name($fpc);
-    #};
-	#if ($@) {
-	    #print STDERR "Could not build virtual Contig for $fpc because $@\n";
-	    #next;
-	#}
-	#my @vc_genes=$vc->get_all_Genes;
-	#push @ensembl_genes,@vc_genes;
-    #}
-    
     $parse =~/ctg(\d+).gtf/;
-    my $parse2 = "../neomorphic/ctg$1.mrg.gtf";
+    my $parse2 = "../neomorphic_known/ctg$1.mrg.gtf";
     my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
     open (PARSE2,"$parse2") || die("Could not open $parse2 for ensembl gtf reading$!");
     
-    my @ensembl_genes=$gtfh->parse_file(\*PARSE2);
-    my $n=scalar @ensembl_genes;
+    my @standard_genes=$gtfh->parse_file(\*PARSE2);
+    my $n=scalar @standard_genes;
     print STDERR "Got $n genes from Neomoprhic file $parse2\n";
-    foreach my $gene (@ensembl_genes) {
-	foreach my $exon ($gene->each_unique_Exon) {
-	    #print STDERR "EnsEMBL gene has exon: ".$exon->id."\n";
-	}
-    }
-    my $stats=Bio::EnsEMBL::GeneComparison::GeneComparisonStats->new(-standard=>\@ensembl_genes, -predictor=>\@gtf_genes);
+    #foreach my $gene (@standard_genes) {
+	#foreach my $exon ($gene->each_unique_Exon) {
+	    #print STDERR "Neomorphic gene has exon: ".$exon->id."\n";
+	#}
+    #}
+    my $stats=Bio::EnsEMBL::GeneComparison::GeneComparisonStats->new(-standard=>\@standard_genes, -predictor=>\@gtf_genes);
  my %genes=$stats->get_OverlapMap;
     my $knownoverlap=0;
     foreach my $gene_id (keys(%genes)){
@@ -209,12 +187,103 @@ elsif ($compare) {
     foreach my $overlap (keys %overlaps) {
 	print STDERR "Gene overlap: ". $overlap. " Proportion of bases ".
 	    $overlaps{$overlap}. "\n";                    
+	
     }
-
+    #$stats->make_merges;
+    
     my $string=$stats->getGeneComparisonStats;
     print STDERR "Gene comparison stats:\n";
     print STDERR $string;
    
+}
+
+elsif ($longest) {
+    my (%ens_long,%neo_long);
+    my %length;
+    open (LENGTH_FILE,"ens.length") || die("Could not open ens.length for ensembl pep length reading$!");
+    while (<LENGTH_FILE>) {
+	if (/(\w+\.\w+)\t(\d+)/) {
+	    my $length=$2;
+	    my $pep=$1;
+	    $pep =~ s/TMPP\_/SEPT20T\./g;
+	    $length{$pep}=$length;
+	}
+    }
+    open (LENGTH_FILE,"neo.length") || die("Could not open neo.length for ensembl pep length reading$!");
+    while (<LENGTH_FILE>) {
+	if (/(.+)\t(\d+)/) {
+	    $length{$1}=$2;
+	}
+    }
+    foreach my $gene (@gtf_genes) {
+	my $longest=0;
+	my $start;
+	my $end;
+	my $fpc;
+	my $trans_id;
+	my $gene_id=$gene->id;
+	print STDERR "Analysing gene ".$gene->id."\n";
+	foreach my $trans ($gene->each_Transcript) {
+	    
+	    my $pep_length=$length{$trans->id};
+	    print STDERR "           transcript ".$trans->id." length: $pep_length\n";
+	    if ($pep_length > $longest) {
+		$longest=$pep_length;
+		$trans_id=$trans->id;
+	    }
+	    $start=$trans->first_exon->start;
+	    $end=$trans->last_exon->end;
+	    $fpc=$trans->first_exon->contig_id;
+	}
+	print STDERR "Longest transcript is $trans_id, and is $longest long\n";
+
+	if ($trans_id =~ /TMPP/) {
+	    my $type='ENS';
+	    $ens_long{$trans_id}=[$gene_id,$type,$fpc,$start,$end];
+	}
+	elsif ($trans_id =~ /\w+\.ctg/) {
+	    my $type='NEO';
+	    $neo_long{$trans_id}=[$gene_id,$type,$fpc,$start,$end];
+	}
+    }
+    
+    open (PEP_FILE,"ens_sept25.pep") || die("Could not open ens_sept25.pep for ensembl pep length reading$!");
+    print STDERR "Reading ensembl pep file\n";
+    my $in = Bio::SeqIO->new(-fh   => \*PEP_FILE, -format=> 'Fasta');
+    my $out = Bio::SeqIO->new(-fh => \*STDERR, -format => 'Fasta');
+    while ( my $seq = $in->next_seq() ) {
+	my $seqid=$seq->id;
+	$seqid =~ s/TMPP\_/SEPT20T\./g;
+	foreach my $trans_id (keys (%ens_long)) {
+	    print STDERR "Trans id $trans_id - Seq id $seqid\n";
+	    if ($seqid eq $trans_id) {
+		my @string = @{$neo_long{$trans_id}};
+		my $id=$string[0];
+		$seq->display_id($id);
+		my $desc=$string[1].": $trans_id FPC:".$string[2]." FPC_start: ".$string[3]." FPC_end: ".$string[4];
+		$seq->desc($desc);
+		$out->write_seq($seq);
+	    }
+	}
+    }
+
+    open (PEP_FILE,"neo_pred.pep") || die("Could not open neo_pred.pep for ensembl pep length reading$!");
+    print STDERR "Reading neomorphic pep file\n";
+    my $in = Bio::SeqIO->new(-fh   => \*PEP_FILE, -format=> 'Fasta');
+    my $out = Bio::SeqIO->new(-fh => \*STDOUT, -format => 'Fasta');
+    while ( my $seq = $in->next_seq() ) {
+	foreach my $trans_id (keys (%neo_long)) {
+	    #print STDERR "Seq id: ".$seq->id." trans_id: $trans_id\n";
+	    if ($seq->id =~ /$trans_id/) {
+		my @string = @{$neo_long{$trans_id}};
+		my $id=$string[0];
+		$seq->display_id($id);
+		my $desc=$string[1].": $trans_id FPC:".$string[2]." FPC_start: ".$string[3]." FPC_end: ".$string[4];
+		$seq->desc($desc);
+		$out->write_seq($seq);
+	    }
+	}
+    }
 }
     
 else {
