@@ -82,7 +82,6 @@ use Bio::Root::Object;
 use Bio::EnsEMBL::DB::VirtualContigI;
 
 my $VC_UNIQUE_NUMBER = 0;
-# ouch - nightmare on mod_perl street! (need to generate a  per-instance uniqe id)
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::VirtualContigI);
 
@@ -126,8 +125,10 @@ sub _initialize {
       $self->_build_contig_map($focus,$focusposition,$ori,$leftsize,$rightsize);
       $self->dbobj($focus->dbobj);
   }
-
-  $self->_unique_number($VC_UNIQUE_NUMBER++);
+  
+  srand (time() ^ ($$+($$<<15)));  # seed the number generator
+  $VC_UNIQUE_NUMBER = int(rand(time())+1);
+  $self->_unique_number($VC_UNIQUE_NUMBER);
 
 # set stuff in self from @args
   return $make; # success - we hope!
