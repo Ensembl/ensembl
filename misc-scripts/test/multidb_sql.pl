@@ -51,7 +51,7 @@ for my $dbname ( @dbnames ) {
   $db->do( "use $dbname" );
   if( $expression =~ /^\s*select/i ||
       $expression =~ /^\s*show/i ||
-      $expression =~ /^\s*describe/i ) {
+      $expression =~ /^\s*desc/i ) {
     my $res = $db->selectall_arrayref( $expression );
     my @results = map { join( " ", @$_ ) } @$res ;
     for my $result ( @results ) {
