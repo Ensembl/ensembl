@@ -114,7 +114,7 @@ sub fetch_by_Transcript {
   }
 
   unless($start_exon && $end_exon) {
-     throw("Could not find start or end exon in transcript\n");
+     throw("Could not find start or end exon in transcript_id=".$transcript->dbID."\n");
   }
 
   my $translation = Bio::EnsEMBL::Translation->new
