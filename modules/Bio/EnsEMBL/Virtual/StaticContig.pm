@@ -257,7 +257,7 @@ sub get_all_SimilarityFeatures_above_score{
   my ($self, $analysis_type, $score, $bp) = @_;
 
   $self->throw("Must supply analysis_type parameter") unless $analysis_type;
-  $self->throw("Must supply score parameter") unless $score;
+  $self->throw("Must supply score parameter") unless defined($score);
 
   if( $self->_use_cext_get() ) {
     return $self->_cext_get_all_SimilarityFeatures_type($analysis_type);
@@ -311,8 +311,8 @@ sub get_all_SimilarityFeatures_above_score{
         WHERE  sgp.raw_id = f.contig
         AND    f.contig in $idlist
         AND    sgp.type = '$type'
-        AND    sgp.chr_name = '$chr_name'
         AND    f.score > $score
+        AND    sgp.chr_name = '$chr_name'
         AND    f.seq_start >= sgp.raw_start
         AND    f.seq_end <= sgp.raw_end
         ";
@@ -322,16 +322,10 @@ sub get_all_SimilarityFeatures_above_score{
 
     # PLEASE READ THE COMMENT ABOVE if you want to remove the sort by hid
 
-    #open(T,">>/tmp/stat2.sql");
-    #print T $statement,"\n";
-    #close(T);
-#    print STDERR $statement . "\n";
-
     my  $sth = $self->dbobj->prepare($statement);    
     $sth->execute(); 
-    
+
     &eprof_end('similarity-query');
-   
     &eprof_start('similarity-obj');
 
     my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
@@ -395,8 +389,9 @@ sub get_all_SimilarityFeatures_above_score{
       if( !defined $self->{'_feature_cache'}->{$analysis->db()} ) {
         $self->{'_feature_cache'}->{$analysis->db()} = [];
       }
-          
+
       push( @{$self->{'_feature_cache'}->{$analysis->db()}}, $out );
+
       $prev = $out;
       $count++;
       # &eprof_end('similarity-obj-creation');
@@ -408,8 +403,6 @@ sub get_all_SimilarityFeatures_above_score{
   }
 
   # now extract requested features
-## Why use loads of lines when you can use just one...    
-#  return grep { $_->score() > $score } @{$self->{_feature_cache}->{$analysis_type}};
 
   my @features;
   foreach my $feature ( @{$self->{_feature_cache}->{$analysis_type}} ) {
@@ -1393,7 +1386,7 @@ sub get_all_ExternalFeatures{
    ## Note that they should always return lists (possible empty) or bad things happen.
    
     foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
-#	    print STDERR "EXTFEATFACT: $extf\n";
+	#  print STDERR "EXTFEATFACT: $extf\n";
         if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
 	        push(@web,$extf);
         } elsif( $extf->isa('Bio::EnsEMBL::ExternalData::DAS::DAS') ) {
@@ -1472,7 +1465,12 @@ sub get_all_ExternalFeatures{
 	   &eprof_start("external_get_contig_list".$extf);
 
 	   if ( $extf->can('get_Ensembl_SeqFeatures_contig_list') ) {
-	       push(@contig_features,$extf->get_Ensembl_SeqFeatures_contig_list(\%int_ext,@cintidlist));
+               if (scalar(@cintidlist) == 1) {
+                  my ($contig) = $self->_vmap->each_MapContig;
+	          push(@contig_features,$extf->get_Ensembl_SeqFeatures_contig_list(\%int_ext,\@cintidlist,$contig->rawcontig_start, $contig->rawcontig_start + $self->_vmap->length));
+                } else {
+	          push(@contig_features,$extf->get_Ensembl_SeqFeatures_contig_list(\%int_ext,\@cintidlist));
+                }
 	   }
 	   &eprof_end("external_get_contig_list".$extf);
        }
@@ -1734,7 +1732,6 @@ sub get_landmark_MarkerFeatures{
         $glob = 500000;
     }
 
-
     my $glob_start = $self->_global_start;
     my $glob_end   = $self->_global_end;
     my $length     = $self->length;
@@ -1755,7 +1752,7 @@ sub get_landmark_MarkerFeatures{
    
    my $sth = $self->dbobj->prepare($statement);
    $sth->execute;
-   
+
    my ($start, $end, $strand, $name);
    
    my $analysis;
@@ -1786,7 +1783,6 @@ sub get_landmark_MarkerFeatures{
        push(@out,$sf);
        $prev = $sf;
    } 
-
    return @out;
 }
 
@@ -1823,7 +1819,6 @@ my $mapsdbname=$self->dbobj->mapdbname;
 my $type = $self->dbobj->static_golden_path_type;
 
 my @markers;
-
 eval {
     require Bio::EnsEMBL::Map::MarkerFeature;
 
@@ -2700,8 +2695,10 @@ sub _get_analysis {
     my $analysis;
     my $analhash=$self->{_anal_hash};
     if (!$analhash->{$analysisid}) {
-	  my $analysis_adp = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
-	  $analysis = $analysis_adp->fetch_by_dbID($analysisid);
+          if (!defined($self->{_analysis_adp})) {
+	   $self->{_analysis_adp} = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
+          }
+	  $analysis = $self->{_analysis_adp}->fetch_by_dbID($analysisid);
 	  $self->{_anal_hash}->{$analysisid} = $analysis;
 	
     } else {
