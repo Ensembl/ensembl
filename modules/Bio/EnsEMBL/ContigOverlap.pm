@@ -166,5 +166,26 @@ sub self_position{
    
 }
 
+=head2 distance
+
+ Title   : distance
+ Usage   : $obj->distance($newval)
+ Function: 
+ Example : 
+ Returns : value of distance
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub distance{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'distance'} = $value;
+    }
+    return $obj->{'distance'};
+
+}
+
 
 1;

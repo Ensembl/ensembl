@@ -30,6 +30,7 @@ use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::DBSQL::RawContig;
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::DB::VirtualContig;
+use Bio::SeqIO;
 
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
@@ -98,7 +99,7 @@ print "ok 7\n";
 
 
 eval {
-    $contig = $db->get_Contig('test-contig-1');
+    $contig = $db->get_Contig('AC008170.00001');
 };
 
 if( $@ ) {
@@ -106,39 +107,41 @@ if( $@ ) {
     print "ok 8\n";
     print "ok 9\n";
 } else {
-    $overlap = $contig->get_right_overlap();
-    print "ok 8\n";
-
-
-    $contig2 = $overlap->sister;
-    $lefto = $contig2->get_left_overlap();
-    
+    print "ok 8\n";    
     print "ok 9\n";
 
 
-    $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focus => $contig2,
-						-focusposition => 3,
+    $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focus => $contig,
+						-focusposition => 10,
 						-ori => 1,
-						-left => 6,
-						-right => 9 );
+						-left => 1000000,
+						-right => 1000000 );
 
     $vc->_dump_map();
 
     $seq = $vc->seq();
     if( $seq->isa('Bio::PrimarySeqI') ) {
 	print "ok 10\n";
-	print STDERR "Seq is ".$seq->seq."\n";
+	#print STDERR "Seq is ".$seq->seq."\n";
+	$eout = Bio::SeqIO->new( -format => 'EMBL', -fh => \*STDERR ) ;
+	$eout->write_seq($seq);
     } else {
 	print "not ok 10\n";
     }
 
     @sf = $vc->get_all_SeqFeatures();
     foreach $sf ( @sf ) {
-	print STDERR "Feature starts on ",$sf->start," ends ",$sf->end, "\n";
+#	print STDERR "Feature starts on ",$sf->start," ends ",$sf->end, "\n";
     }
 
 
     print "ok 11\n";
+
+   @genes = $vc->get_all_Genes();
+   @trans = $genes[0]->each_Transcript;
+
+   $pep = $trans[0]->translate();
+   print STDERR "Translation ".$pep->seq()."\n";
 
 }
     

@@ -210,7 +210,7 @@ sub get_all_Genes{
 	       $seq = $self->_dbobj->_contig_seq_cache($exon->contig_id);
 	   } else {
 	       my $contig = $self->_dbobj->get_Contig($exon->contig_id());
-	       $seq = $contig->seq();
+	       $seq = $contig->primary_seq();
 	       $self->_dbobj->_contig_seq_cache($exon->contig_id,$seq);
 	   }
 	   
@@ -303,12 +303,13 @@ sub get_all_Contigs{
 
    my $count = 0;
    my $total = 0;
+   my $version = $self->embl_version();
 
    while( my $rowhash = $sth->fetchrow_hashref) {
        my $contig = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_dbobj,
 						      -id => $rowhash->{'id'} );
-       #$contig->order($count++);
 
+       $contig->seq_version($version);
        push(@res,$contig);
        $seen = 1;
    }

@@ -314,7 +314,7 @@ sub get_Gene_array_supporting {
 	    $seq = $self->_contig_seq_cache($exon->contig_id);
 	} else {
 	    my $contig = $self->get_Contig($exon->contig_id());
-	    $seq = $contig->seq();
+	    $seq = $contig->primary_seq();
 	    $self->_contig_seq_cache($exon->contig_id,$seq);
 	}
 	
@@ -664,7 +664,7 @@ sub get_Exon{
        $seq = $self->_contig_seq_cache($exon->contig_id);
    } else {
        my $contig = $self->get_Contig($exon->contig_id());
-       $seq = $contig->seq();
+       $seq = $contig->primary_seq();
        $self->_contig_seq_cache($exon->contig_id,$seq);
    }
 
@@ -720,7 +720,7 @@ sub get_Clone{
 sub get_Contig{
    my ($self,$id) = @_;
 
-   my $sth = $self->prepare("select p1.id,p2.id from dna as p1,contig as p2 where p2.id = '$id'");
+   my $sth = $self->prepare("select p1.id,p2.id,p3.embl_version from dna as p1,contig as p2,clone as p3 where p2.id = '$id' and p2.clone = p3.id");
    my $res = $sth ->execute;
    my $row = $sth->fetchrow_arrayref;
    
@@ -730,7 +730,7 @@ sub get_Contig{
 
    my $contig = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
 						     -id    => $id );
-
+   $contig->seq_version($row->[2]);
    return $contig;
 }
 =head2 get_all_Clone_id

@@ -113,7 +113,7 @@ sub get_all_Genes{
 
    my $res = $sth->execute();
    while( my $rowhash = $sth->fetchrow_hashref) {
-       if( $got{$rowhash->{'gene'}} != 1 ) {
+       if( ! exists $got{$rowhash->{'gene'}}  ) {
 	   if ($supporting && $supporting eq 'evidence') {
 	       $gene = $self->_dbobj->get_Gene($rowhash->{'gene'},'evidence');
 	   }
@@ -132,19 +132,19 @@ sub get_all_Genes{
 }
 
 
-=head2 seq
+=head2 primary_seq
 
  Title   : seq
- Usage   : $seq = $contig->seq();
- Function: Gets a Bio::Seq object out from the contig
+ Usage   : $seq = $contig->primary_seq();
+ Function: Gets a Bio::PrimarySeqI object out from the contig
  Example :
- Returns : Bio::Seq object
+ Returns : Bio::PrimarySeqI object
  Args    :
 
 
 =cut
 
-sub seq{
+sub primary_seq {
    my ($self) = @_;
    my $id = $self->id();
 
@@ -743,6 +743,8 @@ sub _load_overlaps{
    my ($self,@args) = @_;
    my $id = $self->id();
    my $version = $self->seq_version();
+
+   print STDERR "select contig_a,contig_b,contig_a_position,contig_b_position,overlap_type from contigoverlap where (contig_a = '$id' and contig_a_version = $version ) or (contig_b = '$id' and contig_b_version = $version )\n";
 
    my $sth = $self->_dbobj->prepare("select contig_a,contig_b,contig_a_position,contig_b_position,overlap_type from contigoverlap where (contig_a = '$id' and contig_a_version = $version ) or (contig_b = '$id' and contig_b_version = $version )");
    

@@ -69,19 +69,16 @@ sub _initialize {
     my($self,@args) = @_;
 
     my $make = $self->SUPER::_initialize;
-    my ($clone, $gene, $strict_embl) = $self->_rearrange([qw(
-					                     CLONE
-					                     GENE
-                                                             STRICT_EMBL
-                                                             )],@args);
+    my ($gene, $strict_embl) = $self->_rearrange([qw(
+						     GENE
+						     STRICT_EMBL
+						     )],@args);
 
     # ok
 
-    $clone || $self->throw("Cannot make a gene handler without a clone");
     $gene  || $self->throw("Cannot make a gene handler without a gene");
 
 
-    $clone->isa("Bio::EnsEMBL::DB::CloneI") || $self->throw("You haven't given me a valid clone object for this gene!");
     $gene->isa("Bio::EnsEMBL::Gene") || $self->throw("You haven't given me a valid gene object for this gene!");
 
 
@@ -90,7 +87,6 @@ sub _initialize {
     # print STDERR "Dumping in GeneHandler!\n";
     # $gene->_dump(\*STDERR);
 
-    $self->clone($clone);
     $self->gene($gene);
     $self->strict_EMBL_dumping(1) if $strict_embl;
     return $make; # success - hope!
@@ -223,21 +219,10 @@ sub _process_Transcript {
    my @fth;
 
    ($firstexon) = $trans->each_Exon();
-   my $contig = $self->clone()->get_Contig($firstexon->contig_id());
-   
-
-   if( $contig->orientation == 1 ) {
-       if( $firstexon->strand == 1 ) {
-	   $ori = 1;
-       } else {
-	   $ori = -1;
-       }
+   if( $firstexon->strand == 1 ) {
+       $ori = 1;
    } else {
-       if( $firstexon->strand == 1 ) {
-	   $ori = -1;
-       } else {
-	   $ori = 1;
-       }
+       $ori = -1;
    }
 
 
@@ -252,8 +237,10 @@ sub _process_Transcript {
     foreach my $exon ( $trans->each_Exon ) {
 
         unless ( $exon_hash_ref->{$exon->id()} ) {
-            $contig = $self->clone()->get_Contig($exon->contig_id());
-            my ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
+             my ($locstart,$locend,$loc_comp);
+	    $locstart = $exon->start();
+	    $locend   = $exon->end();
+	    $loc_comp = $exon->strand();
 
             # add this exon
             # make an Exon FTHelper and add them
@@ -286,34 +273,14 @@ sub _process_Transcript {
    # now build the CDS lines.
 
    @exons = $trans->translateable_exons();
-
+   my $loc_comp;
    foreach my $exon ( @exons ) {
        # get out the clone
 
-       if( $exon->clone_id() ne $self->clone->id() ) {
-	   $self->throw("Cannot currently dump exons across clones");
-       }
-
-       $contig = $self->clone()->get_Contig($exon->contig_id());
-       $contig->isa("Bio::EnsEMBL::DB::ContigI") || $self->throw("Expecting to get a contig. Instead got a '$contig'. Not ideal!");
-
        my ($locstart,$locend);
-       ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
-       
-
-
-       # check to see whether we are jumping contigs or not
-
-       if( $prev && $prev->contig_id ne $exon->contig_id ) {
-	   my $loc_exon = $self->_generate_missing_exon($self->clone->get_Contig($prev->contig_id),
-						 $self->clone->get_Contig($exon->contig_id),
-						 (3-$prev->end_phase) + (3-((3-$exon->phase)%3)),$exon->strand); 
-	   # generate missing exon now, in CDS line
-
-	   print STDERR "Adding $loc_exon\n";
-
-	   $trans_loc .= ",$loc_exon";
-       }
+       $locstart = $exon->start();
+       $locend   = $exon->end();
+       $loc_comp = $exon->strand();
 
 
        # add the information to the Transcript object whatever.
@@ -377,12 +344,7 @@ sub _process_Transcript {
         
         $t_fth->add_field('gene_id',$self->gene->id());
     }
-    
-
-
-   # map phase1 -> 2, phase 2 -> 1, phase 0 -> 0 and then add 1. Easy huh?
-   #$t_fth->add_field('codon_start',((3 -$firstexon->phase) %3)+1);
-
+   
    if( $trans->is_partial() == 1 ) {
        ### There is acutally a /partial qualifier ###
        $t_fth->add_field('note',"transcript is a partial transcript");
@@ -462,25 +424,6 @@ sub _generate_missing_exon{
    print STDERR "Generating $ret\n";
 
    return $ret;
-}
-
-=head2 _deduce_exon_location
-
- Title   : _deduce_exon_location
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _deduce_exon_location{
-   my ($self,$exon,$contig) = @_;
-
-   return $contig->_convert_coords_contig_clone($exon->start,$exon->end,$exon->strand);
-
 }
 
 =head2 _oldstyle

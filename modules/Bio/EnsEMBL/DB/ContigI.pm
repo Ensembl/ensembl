@@ -42,10 +42,10 @@ package Bio::EnsEMBL::DB::ContigI;
 use strict;
 
 
-=head2 seq
+=head2 primary_seq
 
  Title   : seq
- Usage   : $seq = $contig->seq();
+ Usage   : $seq = $contig->primary_seq();
  Function: Gets a Bio::PrimarySeqI object out from the contig
  Example :
  Returns : Bio::PrimarySeqI object
@@ -54,9 +54,9 @@ use strict;
 
 =cut
 
-sub seq{
+sub pimary_seq {
    my ($self) = @_;
-   $self->throw("Object did not provide the seq method on a contig interface");
+   $self->throw("Object did not provide the primary_seq method on a contig interface");
 }
 
 =head2 id
@@ -181,33 +181,100 @@ They are work on top of the interface defined above
 
 =cut
 
-=head2 annseq
 
- Title   : annseq
- Usage   : $annseq = $contig->annseq();
- Function: Gets Bio::AnnSeq object, for example, 
-           ready for EMBL dumping
- Returns : Bio::AnnSeq object
- Args    :
+=head2 seq
 
+ Title   : seq
+ Usage   : $annseq = $contig->seq();
+ Function: Gets a Bio::Seq which can be used as standard a
+           Bio::Seq object complete with sequence features (eg genes)
+ Example :
+ Returns : 
+ Args    : Has ref can have a number of attributes to control
+           how this call is used.
+
+           $hash->{'strict_EMBL'} = 1; #
+
+           causes EMBL dumping with only EMBL-
+           allowed feature qualfiers if true.  Set when
+           generating files for submission to the EMBL database.
+
+           $hash->{'seqfeature_filter'} = \&feature_filter_function;
+
+           provides a filter on the sequence features which are attached
 
 =cut
 
-sub annseq {
-   my ($self) = @_;
+my $global_warn = 0;
 
-   my $seq = $self->seq();
-   my $annseq = Bio::AnnSeq->new();
-   
-   foreach my $sf ( $self->get_all_SeqFeatures() ) {
-       $annseq->add_SeqFeature($sf);
-   }
-   $annseq->seq($seq);
+sub seq {
+    my ($self, $hash_ref) = @_;
+    my (@contigs,@genes,$as,$seq);
 
-   return $annseq;
+    if( $global_warn == 1 ) {
+	$self->throw("Bad - reentering seq call");
+    }
+
+    $global_warn = 1;
+
+    if( defined $hash_ref && ! ref $hash_ref ) {
+	$self->throw("Semantics to parameterisation of get_AnnSeq has changed - now pass in a hash");
+    }
+
+    if( ! defined $hash_ref ) {
+	$hash_ref = {};
+    }
+
+    #print STDERR "Starting on the annseq build\n";
+
+    @genes = $self->get_all_Genes();
+
+    #print STDERR "Built genes\n";
+    
+    $seq = $self->primary_seq();
+    
+    $as = Bio::Seq->new();
+    $as->primary_seq($seq);
+    
+    # we expect the contigI object to know what id to give ;)
+    $as->id($self->id());
+    if( $self->can('embl_version') && defined $self->embl_verison ) {
+	$as->sv($self->embl_version());
+    }
+    if( $self->can('htg_phase') && defined $self->htg_phase ) {
+	$as->htg_phase($self->htg_phase());
+    }
+
+    if( $self->can('seq_date') && defined $self->seq_date ) {
+	my $str = POSIX::strftime( "%d-%B-%Y", gmtime($self->seq_date) );
+	$as->add_date($str);
+    }
+
+
+
+    foreach my $gene ( @genes ) {
+	print STDERR "got a $gene\n";
+        my $gh = new Bio::EnsEMBL::GeneHandler( -gene => $gene,
+                                                -strict_embl => $hash_ref->{'strict_EMBL'},
+                                                );
+        $as->add_SeqFeature($gh);
+    }
+
+    #print STDERR "Attached genes\n";
+
+    foreach my $feature ($self->get_all_RepeatFeatures ) {
+	$as->add_SeqFeature( $feature );
+    }
+
+    return $as;
 
 }
 
+
+sub get_AnnSeq {
+    my $self = shift;
+    $self->throw("You should use seq function on the ContigI interface");
+}
 
 =head2 write_acedb
 
@@ -366,52 +433,6 @@ sub find_supporting_evidence {
 	}
     }
 }
-
-#
-# This function should eventually disappear...
-#
-#
-#
-
-sub _convert_coords_contig_clone {
-    my $self = shift;
-    my $start = shift;
-    my $end = shift;
-    my $strand = shift;
-
-    my ($out_start,$out_end,$out_strand);
-
-    if( !defined $strand ) {
-	$self->throw("_convert_coords_contig_clone(start,end,strand)");
-    }
-
-    my $offset = $self->offset;
-
-    if( $self->orientation == 1 ) {
-       $out_strand = $strand;
-       if( $out_strand == 1 ) {
-	   $out_start = $offset + $start -1;
-	   $out_end   = $offset + $end -1;
-       } else {
-	   $out_start = $offset + $start -1;
-	   $out_end   = $offset + $end -1;
-       }
-   } else {
-       my $length = $self->length(); 
-       if( $strand == -1 ) {
-	   $out_start = $offset-1 + ($length - $end +1);
-	   $out_end   = $offset-1 + ($length - $start +1);
-	   $out_strand = 1;
-       } else {
-	   $out_start   = $offset-1 + ($length - $end +1);
-	   $out_end     = $offset-1 + ($length - $start +1);
-	   $out_strand = -1;
-       }
-   }
-
-   return ($out_start,$out_end,$out_strand);
-}
-
     
 
 1;

@@ -510,8 +510,8 @@ sub all_tags{
 
  Title   : attach_seq
  Usage   : $sf->attach_seq($seq)
- Function: Attaches a Bio::Seq object to this feature. This
-           Bio::Seq object is for the *entire* sequence: ie
+ Function: Attaches a Bio::PrimarySeqI object to this feature. This
+           Bio::PrimarySeqI object is for the *entire* sequence: ie
            from 1 to 10000
  Example :
  Returns : 
@@ -523,8 +523,8 @@ sub all_tags{
 sub attach_seq{
    my ($self,$seq) = @_;
 
-   if( !defined $seq  || !ref $seq || ! $seq->isa("Bio::Seq") ) {
-       $self->throw("Must attach Bio::Seq objects to SeqFeatures");
+   if( !defined $seq  || !ref $seq || ! $seq->isa("Bio::PrimarySeqI") ) {
+       $self->throw("Must attach Bio::PrimarySeqI objects to SeqFeatures");
    }
 
    $self->{'_gsf_seq'} = $seq;

@@ -117,10 +117,10 @@ sub _initialize {
 These functions are to implement the ContigI interface
 
 
-=head2 seq
+=head2 primary_seq
 
  Title   : seq
- Usage   : $seq = $contig->seq();
+ Usage   : $seq = $contig->primary_seq();
  Function: Gets a Bio::PrimarySeqI object out from the contig
  Example :
  Returns : Bio::PrimarySeqI object
@@ -129,7 +129,7 @@ These functions are to implement the ContigI interface
 
 =cut
 
-sub seq{
+sub primary_seq {
    my ($self) = @_;
 
    my $seq = $self->_seq_cache();
@@ -144,7 +144,7 @@ sub seq{
    my $seq_string;
    foreach my $cid ( @contig_id ) {
        my $c = $self->{'contighash'}->{$cid};
-       my $tseq = $c->seq();
+       my $tseq = $c->primary_seq();
 
        my $trunc;
        my $end;
@@ -169,7 +169,7 @@ sub seq{
        } else {
 	   $trunc = $tseq->trunc($end,$self->{'startincontig'}->{$cid})->revcom->seq;
        }
-       print STDERR "Got $trunc\n";
+    #   print STDERR "Got $trunc\n";
        $seq_string .= $trunc;
    }
 
@@ -280,9 +280,42 @@ sub get_all_RepeatFeatures{
 
 sub get_all_Genes{
    my ($self) = @_;
+   my (%gene,%trans,%exon);
 
-   $self->throw("get_all_Genes on virtual contigs not implemented yet!");
+   foreach my $c ( values %{$self->{'contighash'}} ) {
+       foreach my $gene ( $c->get_all_Genes() ) {
+	   $gene{$gene->id()} = $gene;
+       }
+   }
 
+   # get out unique set of translation objects
+   foreach my $gene ( values %gene ) {
+       foreach my $transcript ( $gene->each_Transcript ) {
+	   my $translation = $transcript->translation;
+	   $trans{"$translation"} = $translation;
+	   
+       }
+   }
+
+   foreach my $gene ( values %gene ) {
+       foreach my $exon ( $gene->all_Exon_objects() ) {
+	   # hack to get things to behave
+	   print STDERR "Exon was ",$exon->start,":",$exon->end,":",$exon->strand,"\n";
+	   $exon->seqname($exon->contig_id);
+	   $exon{$exon->id} = $exon;
+	   $self->_convert_seqfeature_to_vc_coords($exon);
+	   print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand,"\n";
+       }
+   }
+   
+   foreach my $t ( values %trans ) {
+       my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->start_exon_id}->contig_id,$t->start,$t->start,1);
+       $t->start($start);
+       ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->end_exon_id}->contig_id,$t->end,$t->end,1);
+       $t->end($start);
+   }
+
+   return values %gene;
 }
 
 
@@ -586,7 +619,7 @@ sub _get_all_SeqFeatures_type{
        $sf = []; # will be destroyed when drops out of scope
    }
 
-   print STDERR "About enter the hash call\n";
+#   print STDERR "About enter the hash call\n";
 
    foreach my $c ( values %{$self->{'contighash'}} ) {
        print STDERR "Looking at ",$c->id,"\n";
@@ -626,36 +659,61 @@ sub _convert_seqfeature_to_vc_coords{
    my ($self,$sf) = @_;
 
    my $cid = $sf->seqname();
-   if( !exists $self->{'contighash'}->{$cid} ) {
-       $self->throw("Attempting to map a sequence feature with $cid on a virtual contig with no $cid");
-   }
-   my $seq = $self->seq();
-   if( $self->{'contigori'}->{$cid} == 1 ) {
-       # ok - forward with respect to vc. Only need to add offset
-       my $offset = $self->{'start'}->{$cid} - $self->{'startincontig'}->{$cid};
-       $sf->start($sf->start + $offset);
-       $sf->end($sf->end + $offset);
-       # strand stays the same
-   } else {
-       my $offset = $self->{'start'}->{$cid} + $self->{'startincontig'}->{$cid};
-       # flip strand
-       $sf->strand($sf->strand * -1);
-       
-       # yup. A number of different off-by-one errors possible here
 
-       my $tstart = $sf->start;
-       my $tend   = $sf->end;
-
-       $sf->start($offset - $tend);
-       $sf->end($offset - $tstart);
-
-   }
+   my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($sf->seqname,$sf->start,$sf->end,$sf->strand);
+   
+   $sf->start($rstart);
+   $sf->end($rend);
+   $sf->strand($rstrand);
 
    if( $sf->can('attach_seq') ) {
-       $sf->attach_seq($seq);
+       $sf->attach_seq($self->primary_seq);
    }
 
 }
+
+=head2 _convert_start_end_strand_vc
+
+ Title   : _convert_start_end_strand_vc
+ Usage   : Essentially an internal for _convert_seqfeature,
+           but sometimes we have coordiates  not on seq features
+ Function:
+ Example : ($start,$end,$strand) = $self->_convert_start_end_strand_vc($contigid,$start,$end,$strand)
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _convert_start_end_strand_vc {
+   my ($self,$contig,$start,$end,$strand) = @_;
+   my ($rstart,$rend,$rstrand);
+
+   if( !exists $self->{'contighash'}->{$contig} ) {
+       $self->throw("Attempting to map a sequence feature with $contig on a virtual contig with no $contig");
+   }
+   if( $self->{'contigori'}->{$contig} == 1 ) {
+       # ok - forward with respect to vc. Only need to add offset
+       my $offset = $self->{'start'}->{$contig} - $self->{'startincontig'}->{$contig};
+       $rstart = $start + $offset;
+       $rend   = $end + $offset;
+       $rstrand = $strand;
+   } else {
+       my $offset = $self->{'start'}->{$contig} + $self->{'startincontig'}->{$contig};
+       # flip strand
+       $rstrand = $strand * -1;
+       
+       # yup. A number of different off-by-one errors possible here
+
+
+       $rstart  = $offset - $end;
+       $rend    = $offset - $start;
+
+   }
+
+   return ($rstart,$rend,$rstrand);
+}
+
 
 
 =head2 _dump_map

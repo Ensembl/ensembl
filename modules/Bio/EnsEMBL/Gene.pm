@@ -67,7 +67,7 @@ sub _initialize {
  Title   : each_unique_Exon
  Usage   : foreach my $exon ( $gene->each_unique_Exon )
  Function: retrieves an array of exons associated with this
-           gene, made nonredudant
+           gene, made nonredudant on the basis of $exon->id
  Example :
  Returns : 
  Args    :
@@ -87,6 +87,36 @@ sub each_unique_Exon{
 
    return values %h;
    
+}
+
+=head2 all_Exon_objects
+
+ Title   : all_Exon_objects
+ Usage   : foreach $e ( $gene->all_Exon_objects() ) 
+ Function: Gives an array of all the exon objects, with each
+           object represented only once. This is non redundant
+           on the basis of object location, not on id
+           (see each_unique_Exon for a difference)
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub all_Exon_objects{
+   my ($self,@args) = @_;
+   my %h;
+
+   foreach my $trans ( $self->each_Transcript ) {
+       foreach my $exon ( $trans->each_Exon ) {
+	   $h{"$exon"} = $exon;
+       }
+   }
+
+   return values %h;
+
+
 }
 
 =head2 unique_contig_ids
