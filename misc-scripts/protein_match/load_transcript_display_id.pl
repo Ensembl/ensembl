@@ -40,6 +40,8 @@ $priority{'SWISSPROT'} = 900;
 $priority{'RefSeq'} = 800;
 $priority{'SPTREMBL'} = 700;
 $priority{'LocusLink'} = 100;
+$priority{'Anopheles_paper'} = 50;
+$priority{'Celera_Gene'} = 50;
 
 if (!defined $organism) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\n\n";
