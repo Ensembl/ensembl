@@ -5,16 +5,20 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 7;
+	plan tests => 9;
 }
 
 use TestUtils qw( debug );
 
-use Bio::EnsEMBL::Utils::Exception qw(warning verbose throw 
+use Bio::EnsEMBL::Utils::Exception qw(warning verbose throw info
                                       deprecate stack_trace_dump stack_trace);
 
 our $verbose= 0;
 
+
+if(!$verbose) {
+  verbose('NONE');
+}
 
 #
 #1 - test throw
@@ -32,18 +36,27 @@ debug($@);
 #2-4 - Test verbosity, warnings
 #
 
-verbose(-1);
+$verbose && verbose('EXCEPTION');
 
-ok(verbose() == -1);
+ok(verbose() == 1000 || (!$verbose && verbose() == 0));
 
 warning('This warn should not appear');
 
 ok(1);
 
-warning('This warn should appear');
+warning('This warn should appear', 1000);
 
 ok(1);
 
+info("This info should not appear");
+
+ok(1);
+
+$verbose && verbose('ALL');
+
+info("This info should appear");
+
+ok(1);
 
 #
 # 5-6 Test stack trace
@@ -69,5 +82,5 @@ sub test_deprecate {
   deprecate('This deprecate warning should appear');
 }
 
+verbose('DEPRECATE');
 
-verbose(0);
