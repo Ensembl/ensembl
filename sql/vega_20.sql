@@ -613,8 +613,7 @@ CREATE TABLE external_synonym (
 
 );
 
-################################################################################
-#
+#################################################################################
 # Table structure for table 'external_db' 
 #
 
@@ -629,7 +628,9 @@ CREATE TABLE external_db (
 
 );
 
-
+#################################################################################
+# Table structure for table 'prediction_exon' 
+#
 
 CREATE TABLE prediction_exon (
     prediction_exon_id int unsigned not null auto_increment,
@@ -648,6 +649,9 @@ CREATE TABLE prediction_exon (
     KEY ( seq_region_id, seq_region_start )
 );
 
+#################################################################################
+# Table structure for table 'prediction_transcript' 
+#
 
 CREATE TABLE prediction_transcript (
     prediction_transcript_id int unsigned not null auto_increment,
@@ -874,6 +878,32 @@ CREATE TABLE misc_feature_misc_set (
   KEY reverse_idx( misc_set_id, misc_feature_id )
 
 ) TYPE=MyISAM;
+
+
+################################################################################
+# Table structure for table 'transcript_attrib'
+#
+ 
+CREATE TABLE transcript_attrib (
+  transcript_id int(10) unsigned NOT NULL default '0',
+  attrib_type_id smallint(5) unsigned NOT NULL default '0',
+  value varchar(255) NOT NULL default '',
+  KEY type_val_idx (attrib_type_id,value),
+  KEY transcript_idx (transcript_id)
+) TYPE=MyISAM;
+
+################################################################################
+#  Table structure for table 'translation_attrib'
+#
+ 
+CREATE TABLE translation_attrib (
+  translation_id int(10) unsigned NOT NULL default '0',
+  attrib_type_id smallint(5) unsigned NOT NULL default '0',
+  value varchar(255) NOT NULL default '',
+  KEY type_val_idx (attrib_type_id,value),
+  KEY translation_idx (translation_id)
+) TYPE=MyISAM;
+
 
 ################################################################################
 #
