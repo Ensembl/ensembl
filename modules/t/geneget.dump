@@ -87,7 +87,7 @@ INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) 
 INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 1,'Gene', 2);
 INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (3, 1,'Transcript', 1);
 INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (4, 1,'Transcript', 2);
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (5, 'trl-1','Translation', 2);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (5, '1','Translation', 2);
 
 #
 #Dumping data for identityXref
