@@ -20,26 +20,31 @@ my %conf =  %::mapping_conf; # configuration options
 # global vars
 
 my $refseq_gnp = $conf{'refseq_gnp'};
-my $xmap       = $conf{'x_map'};
-my $map        = $conf{'human_map'};
+my $xmap       = $conf{'x_map_out'};
+my $map        = $conf{'pmatch_out'};
 my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
 my $user       = $conf{'dbuser'};
-my $pass       = $conf{'pass'};
+my $pass       = $conf{'password'};
 my $organism   = $conf{'organism'};
 
 my %map;
 my %ref_map;
 
+if ((!defined $organism) || (!defined $xmap) || (!defined $map) || (!defined $dbname) || (!defined $host)) {
+    die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $map\ndb: $dbname\nhost: $host\n\n";
+}
+
 print STDERR "Connecting to the database...\n";
 
-$db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+
+my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -user   => $user,
         -dbname => $dbname,
         -host   => $host,
+	-pass   => $pass,			     
         -driver => 'mysql',
-	-pass   => $pass,
-        );
+	);
 
 my $adaptor = $db->get_DBEntryAdaptor();
 
@@ -118,11 +123,13 @@ while (<MAP>) {
     }
     
 
-    if (defined $tid) {
+    if ((defined $tid) && (defined $map{$tid})) {
+	
 	
 	my @array = @{$map{$tid}};
 	
 	foreach my $a(@array) {
+#If the target sequence is either an SPTR or RefSeq accession number, we have some information concerning the percentage of identity (that the sequences we directly used for the pmatch mapping) 
 	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT") || ($a->xDB eq "RefSeq")) {
 		my $dbentry = Bio::EnsEMBL::IdentityXref->new
 		    ( -adaptor => $adaptor,
@@ -131,7 +138,9 @@ while (<MAP>) {
 		      -version => 1,
 		      -release => 1,
 		      -dbname => $a->xDB);
-		
+
+		print STDERR $a->xAC,"\t",$a->xID,"\t",$a->xDB,"\n";
+
 		$dbentry->query_identity($queryperc);
 		$dbentry->target_identity($targetperc);
 		
@@ -143,6 +152,8 @@ while (<MAP>) {
 			$dbentry->add_synonym($syn);
 		    }
 			}
+
+		print STDERR "Calling store on $queryid\n";
 		$adaptor->store($dbentry,$queryid,"Translation");
 	    }
 	    
@@ -166,6 +177,7 @@ while (<MAP>) {
 			$dbentry->add_synonym($syn);
 		    }
 		}
+		print STDERR "Calling store1 on $queryid\n";
 		$adaptor->store($dbentry,$queryid,"Translation");
 		    
 	    }
@@ -174,7 +186,7 @@ while (<MAP>) {
     
 	
     else  {
-	print STDERR " not defined\n";
+	#print STDERR " $tid not defined in x_map...hum, not good\n";
     }  
 }
 

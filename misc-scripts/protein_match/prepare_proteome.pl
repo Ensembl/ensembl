@@ -53,7 +53,7 @@ my %conf     = %::mapping_conf;
 
 my $refseq   = $conf{'refseq_fa'};
 my $sptr     = $conf{'sptr_fa'};
-my $protfile = $conf{'human_fa'};
+my $protfile = $conf{'pmatch_input_fa'};
 my $pmatch   = $conf{'pmatch'};
 my $organism = $conf{'organism'};
 

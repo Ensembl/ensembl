@@ -48,7 +48,7 @@ package main;
 	     
              #Location of the file containing all refseq and all SP in fasta format (This file will be produced by runni             ng prepare_proteome.pl)
              #'human_fa'    => '/work1/mongin/mapping/kate/refseq_p.fa',
-	     'human_fa'    => '',
+	     'pmatch_input_fa'    => '',
 
              #ens1 and ens4, location of files used for Hugo mapping (http://www.gene.ucl.ac.uk/public-files/nomen/), th             is files will be used only for human
 	     #'ens1'      => '/work1/mongin/mapping/primary/ens1.txt',
@@ -64,7 +64,7 @@ package main;
 
              #Output file from pmatch.pl and input file for maps2db.pl
              #'human_map'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
-             'x_map_out'  => '',
+             'pmatch_out'  => '',
 
              ###################
              #Database handling#
@@ -90,7 +90,7 @@ package main;
 
              #Location for pmatch binaries
              #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
-             'pmatch' => ' ',
+             'pmatch' => '',
 
              ##############################
              #Organism related information#

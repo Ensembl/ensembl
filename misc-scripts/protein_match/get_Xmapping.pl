@@ -20,7 +20,11 @@ my $sptr_swiss = $conf{'sptr_swiss'};
 my $refseq_gnp = $conf{'refseq_gnp'};
 my $ens1       = $conf{'ens1'};
 my $ens4       = $conf{'ens4'};
-my $out        = $conf{'x_map'};
+my $out        = $conf{'x_map_out'};
+
+if ((!defined $organism) || (!defined $sptr_swiss) || (!defined $out)) {
+    die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nsptr_swiss: $sptr_swiss\nx_map: $out\n";
+}
 
 my %refseq_map;
 my %sp_db;
@@ -153,4 +157,6 @@ if ($organism eq "human") {
     }
     close (ENS1);
 }
+
+print STDERR "The output has been written there: $out\n";
 

@@ -28,11 +28,15 @@ my %conf =  %::mapping_conf;
 my $sptr_fa = $conf{'sptr_fa'};
 my $refseq_fa = $conf{'refseq_fa'};
 
+#Set the default percentage of idt
 $opt_p = 66;
 
+my $organism = $conf{'organism'};
+
 $opt_q = $conf{'query'};
-$opt_t = $conf{'human_fa'};
-$opt_o = $conf{'human_map'};
+$opt_t = $conf{'pmatch_input_fa'};
+$opt_o = $conf{'pmatch_out'};
+
 
 getopts ("q:t:l:o:p:wsc:d");
 
@@ -49,7 +53,7 @@ $usage .= "-p minimum percentage off identity accepted OPTIONAL (default value 6
 #    die "$usage";
 #}
 
-print STDERR "Running $opt_q against $opt_t.\n The output will be there: $opt_o\n"; 
+print STDERR "\nRunning $opt_q against $opt_t.\n The output will be there: $opt_o\n\n"; 
 
 #################################
 
@@ -60,11 +64,13 @@ my %hash2;
 #################################
 # make worm-specific protein set from SWALL if ($opt_w)
 
-if ($opt_w) {
-    print STDERR "extract worm sequences from SWALL...\n";
-    my $getz = "getz -f seq -sf fasta \'[swall-org:Caenorhabditis elegans]\' > $$.swall";
-    system "$getz";
-    $target = "$$.swall";
+if ($organism eq "worm") {
+    if ($opt_w) {
+	print STDERR "extract worm sequences from SWALL...\n";
+	my $getz = "getz -f seq -sf fasta \'[swall-org:Caenorhabditis elegans]\' > $$.swall";
+	system "$getz";
+	$target = "$$.swall";
+    }
 }
 
 #################################
