@@ -1476,6 +1476,51 @@ sub accession_number {
 =head2 sub DEPRECATED methods
 =cut
 
+###############################################################################
+
+# GENERIC FEATURES (See DBAdaptor.pm)
+
+=head2 get_generic_features
+
+  Arg [1]    : (optional) List of names of generic feature types to return. If no feature
+	             names are given, all generic features are returned.
+  Example    : my %features = $slice->get_generic_features()
+  Description: Gets generic features via the generic feature adaptors that have been added
+               via DBAdaptor->add_GenericFeatureAdaptor (if any)
+  Returntype : Hash of named features.
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_generic_features() {
+
+  my ($self, @names) = @_;
+
+	my $db = $self->adaptor()->db();
+
+	my %features = {};   # this will hold the results
+
+	# get the adaptors for each feature
+	my %adaptors = $db->get_GenericFeatureAdaptors(@names);
+
+	foreach my $adaptor_name (keys(%adaptors)) {
+		
+		my $adaptor_obj = %adaptors->{$adaptor_name};
+		# get the features and add them to the hash
+		my $features_ref = $adaptor_obj->fetch_all_by_Slice($self);
+		# add each feature to the hash to be returned
+		foreach my $feature (@$features_ref) {
+			%features->{$adaptor_name} = $feature;
+		}
+	}
+
+	return %features;
+
+}
+
+
+
 # sub DEPRECATED METHODS #
 ###############################################################################
 
