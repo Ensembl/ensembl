@@ -52,7 +52,7 @@ INSERT INTO source VALUES (1300, 'Interpro', 1, 'Y', 2);
 INSERT INTO source VALUES (1400, 'ZFIN_ID', 1, 'Y', 2);
 INSERT INTO source VALUES (1500, 'MIM2', 1, 'Y', 3);
 
-INSERT INTO source VALUES (2000, 'CCDS', 1, 'N', 4);
+INSERT INTO source VALUES (2000, 'CCDS', 1, 'Y', 4);
 
 ################################################################################
 # Files to fetch data from
@@ -87,6 +87,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##      IPI
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.HUMAN.fasta.gz', '', now(), now(), "IPIParser");
+
+##      CCDS
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2000, 9606,'CCDS.txt', '', now(), now(), "CCDSParser");
+
 
 ###MOUSE
 ##      uniprot
