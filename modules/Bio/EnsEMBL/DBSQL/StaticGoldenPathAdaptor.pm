@@ -171,7 +171,9 @@ sub fetch_VirtualContig_by_fpc_name{
    
    my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
    my $start = $fpc[0];
-   return Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,-1,@fpc);
+   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,-1,@fpc);
+   $vc->id($name);
+   return $vc;
 }
 
 =head2 fetch_VirtualContig_by_chr_name
