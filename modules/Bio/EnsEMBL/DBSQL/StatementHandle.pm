@@ -32,7 +32,7 @@ use Bio::EnsEMBL::Utils::Exception qw(warning stack_trace_dump);
 use DBD::mysql;
 use DBI;
 
- use Time::HiRes qw(time);
+# use Time::HiRes qw(time);
 
 @ISA = qw(DBI::st);
 
@@ -76,32 +76,32 @@ sub sql {
 #
 # uncomment this for printing out handy debug information (every query)
 #
- sub execute {
-   my $self = shift;
+# sub execute {
+#   my $self = shift;
 
-   my $sql = $self->sql();
+#   my $sql = $self->sql();
 
 
-   my @chrs = split(//, $sql);
+#   my @chrs = split(//, $sql);
 
-   my $j = 0;
-   for(my $i =0; $i < @chrs; $i++) {
-     $chrs[$i] = $_[$j++] if($chrs[$i] eq '?' && defined($_[$j]));
-   }
+#   my $j = 0;
+#   for(my $i =0; $i < @chrs; $i++) {
+#     $chrs[$i] = $_[$j++] if($chrs[$i] eq '?' && defined($_[$j]));
+#   }
 
-   my $str = join('', @chrs);
+#   my $str = join('', @chrs);
 
 #   my $time = time;
 #   print STDERR "\nSQL:\n$str\n\n";
 
- #  print STDERR stack_trace_dump(), "\n";
+# #  print STDERR stack_trace_dump(), "\n";
 
-   my $res = $self->SUPER::execute(@_);
+#   my $res = $self->SUPER::execute(@_);
 #   $time = time - $time;
 #   print STDERR "DONE ($time)\n";
 
-   return $res;
- }
+#   return $res;
+# }
 
 
 sub DESTROY {
