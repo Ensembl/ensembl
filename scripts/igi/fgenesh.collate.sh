@@ -6,7 +6,7 @@
 convert=fgenesh-chromo2fpc.pl # in your src/ensembl/scripts dir
 
 infiles=*.sgp.gff
-outfile=./all.gff
+outfile=./all.gtf
 rm $outfile
 
 # $sort="sort -k1,1 -k7,7 -k4,4n "
