@@ -8,6 +8,7 @@ BEGIN { $| = 1;
 
 use MultiTestDB;
 use Bio::EnsEMBL::Map::MarkerFeature;
+use Bio::EnsEMBL::Map::MarkerSynonym;
 use Bio::EnsEMBL::Analysis;
 use TestUtils qw(debug test_getter_setter);
 
@@ -89,4 +90,8 @@ ok($mf->strand == 0);
 ok($mapweight == $mf->map_weight);
 
 
-ok($mf->display_id eq $mf->marker->display_MarkerSynonym());
+
+my $ms = Bio::EnsEMBL::Map::MarkerSynonym->new(1234, 'unists', 'a marker');
+
+$mf->marker()->display_MarkerSynonym($ms);
+ok($mf->display_id() eq $mf->marker()->display_MarkerSynonym()->name());
