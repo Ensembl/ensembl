@@ -884,8 +884,8 @@ sub gffstring {
    $str .= (defined $self->primary_tag) ?   $self->primary_tag."\t"  :  "\t";
    $str .= (defined $self->start)       ?   $self->start."\t"        :  "\t";
    $str .= (defined $self->end)         ?   $self->end."\t"          :  "\t";
-   $str .= (defined $self->strand)      ?   $strand."\t"             :  ".\t";
    $str .= (defined $self->score)       ?   $self->score."\t"        :  "\t";
+   $str .= (defined $self->strand)      ?   $strand."\t"             :  ".\t";
    $str .= (defined $self->phase)       ?   $self->phase."\t"        :  ".\t";
    eval{
      $str .= (defined $self->end_phase)   ?   $self->end_phase."\t"        :  ".\t";
