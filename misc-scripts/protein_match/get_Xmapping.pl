@@ -308,8 +308,20 @@ if($organism eq "elegans") {
     
     while (<ELEGNOM>) {
 	chomp;
-	my ($name,$ac,$a,$b,$sp) = split;
-	print OUT "$sp\tSPTR\t$ac\tWORMBASE\t$name\t\tXREF\n";
+	my $sp;
+	my ($name,$ac) = split;
+		
+	if ($_ =~ /TR:/) {
+	    ($sp) = $_ =~ /TR:(\S+)/;
+	}
+	
+	if ($_ =~ /SW:/) {
+	    ($sp) = $_ =~ /SW:(\S+)/;
+	}
+
+	if ($sp) {
+	    print OUT "$sp\tSPTR\t$ac\tWORMBASE\t$name\t\tXREF\n";
+	}
     }
     close(ELEGNOM);
 }
@@ -320,11 +332,12 @@ if($organism eq "zebrafish") {
     open (ZEBGENE,"$zeb_gene") || die "Can't open $zeb_gene";
     open (ZEBLINK,"$zeb_dblink") || die "Can't open $zeb_dblink";
     
-    %map;
+    my %map;
     
      while (<ZEBLINK>) {
 	chomp;
 	my ($ac,$db,$ext_ac) = split;
+
 	if (($db eq "SWISS-PROT") || ($db eq "RefSeq")) {
 	    $map{$ac} = "$db:$ext_ac";
 	}
