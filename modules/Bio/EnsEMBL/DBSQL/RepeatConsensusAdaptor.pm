@@ -86,6 +86,32 @@ sub fetch_by_name {
 }
 
 
+=head2 fetch_by_name_class
+
+  Arg [1]    : string $name
+               the name of the repeat consensus to obtain
+  Arg [2]    : string $class
+               the class of the repeat consensus to obtain
+  Example    : $rc = $repeat_consensus_adaptor->
+                 fetch_by_name_class('AluSx', 'SINE/Alu');
+  Description: Obtains a repeat consensus from the database
+               via its name and class
+  Returntype : list of Bio::EnsEMBL::RepeatConsensus
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub fetch_by_name_class {
+    my( $self, $name, $class ) = @_;
+
+    return $self->_generic_fetch(qq{
+            repeat_name  = '$name'
+	AND repeat_class = '$class'
+    });
+}
+
+
 =head2 _generic_fetch
 
   Arg [1]    : string $where_clause
