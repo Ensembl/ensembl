@@ -344,11 +344,11 @@ sub get_all_RepeatFeatures{
 =cut
 
 sub get_all_Genes{
-   my ($self,@args) = @_;
+   my ($self, $empty_flag) = @_;
    
    #caching is performed on a per slice basis in the GeneAdaptor
    my $gene_adaptor = $self->adaptor->db->get_GeneAdaptor();
-   return $gene_adaptor->fetch_by_Slice($self);
+   return $gene_adaptor->fetch_by_Slice($self, $empty_flag);
 }
 
 
@@ -365,8 +365,8 @@ sub get_all_Genes{
 =cut
 
 sub get_Genes_by_source{
-   my ($self,$source) = @_;
-   my @genes = $self->get_all_Genes();
+   my ($self, $source, $empty_flag) = @_;
+   my @genes = $self->get_all_Genes($empty_flag);
    
    my @out = ();
 
@@ -392,12 +392,12 @@ sub get_Genes_by_source{
 =cut
 
 sub get_Genes_by_type{
-   my ($self,$type) = @_;
+   my ($self, $type, $empty_flag) = @_;
    
    # Possibly this can be improved by selecting genes a query,
    # we expect that most times there will not be many genes in a region
    # however
-   my @genes = $self->get_all_Genes();
+   my @genes = $self->get_all_Genes($empty_flag);
    
    my @out = ();
 

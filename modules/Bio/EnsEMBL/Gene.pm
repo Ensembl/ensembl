@@ -162,7 +162,11 @@ sub strand {
   if( defined $arg ) {
     $self->{'strand'} = $arg;
   } elsif( ! defined $self->{strand} ) {
-    $self->warn( "Gene strand not set, difficult to calculate..." );
+    my @exons = $self->get_all_Exons();
+    if(@exons) {
+      $self->{'strand'} = $exons[0]->strand();
+    }      
+    #$self->warn( "Gene strand not set, difficult to calculate..." );
   }
   return $self->{'strand'};
 

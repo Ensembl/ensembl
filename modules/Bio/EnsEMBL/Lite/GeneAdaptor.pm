@@ -60,8 +60,12 @@ sub new {
   #initialize tie hash cache
   tie (%{$self->{'_slice_gene_cache'}}, 
        'Bio::EnsEMBL::Utils::Cache', 
-       $SLICE_GENE_CACHE_SIZE,
-       {Debug => 0});
+       $SLICE_GENE_CACHE_SIZE);
+
+  #use another cache for 'empty' genes
+  tie (%{$self->{'_slice_empty_gene_cache'}},
+       'Bio::EnsEMBL::Utils::Cache',
+       $SLICE_GENE_CACHE_SIZE);
 
   return $self;
 }
@@ -69,19 +73,34 @@ sub new {
 
 =head2 fetch_by_Slice
 
-  Arg  1    : Bio::EnsEMBL::Slice $slice
-              The slice we want genes on
-  Function  : retrieve all the genes on this slice. 
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice we want genes on
+  Arg [2]    : boolean $empty_flag
+               A flag as to whether or not empty gene objects should be 
+               obtained.  Empty gene objects are light weight and only 
+               contain the start, end, source, and name of the gene object
+  Function   : retrieve all the genes on this slice. 
               uses www_transcript to get info
-  Returntype: list of Bio::EnsEMBL::Gene
-  Exceptions: none
-  Caller    : Bio::EnsEMBL::Slice
+  Returntype : list of Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Slice
 
 =cut
 
 sub fetch_by_Slice {
-  my ( $self, $slice ) = @_;
+  my ( $self, $slice, $empty_flag ) = @_;
   my @out;
+
+  if($empty_flag) {
+    #check cache of empty genes
+    if($self->{'_slice_empty_gene_cache'}{$slice->name()}) {
+      return @{$self->{'_slice_empty_gene_cache'}{$slice->name()}};
+    }
+    
+    @out = $self->_get_empty_Genes($slice);
+    $self->{'_slice_empty_gene_cache'}{$slice->name()} = \@out;
+    return @out;
+  }
 
   #check the cache which uses the slice name as it key
   if($self->{'_slice_gene_cache'}{$slice->name()}) {
@@ -104,15 +123,10 @@ sub fetch_by_Slice {
               t.chr_end >= ?"
     );
 
-  eval {
     $sth->execute( $slice->chr_name, $slice->chr_end, 
 		   $slice->chr_start - $MAX_TRANSCRIPT_LENGTH, 
 		   $slice->chr_start );
-  };
-  
-  return () if($@);
-
-
+ 
   @out = $self->_objects_from_sth( $sth, $slice );
 
   #place the results in an LRU cache
@@ -327,6 +341,67 @@ sub _objects_from_sth {
   return @out;
 }
 
+
+=head2 _get_empty_Genes
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+  Example    : none
+  Description: PRIVATE retrieves a list of 'empty' (partially populated) gene
+               objects from the lite database.  Designed for swift retrieval
+               for the web.
+  Returntype : list of Bio::EnsEMBL::Gene objects
+  Exceptions : none
+  Caller     : fetch_by_Slice
+
+=cut
+
+sub _get_empty_Genes {
+  my ($self, $slice) = @_;
+
+  
+
+  my $chr_start = $slice->chr_start();
+  my $chr_end = $slice->chr_end();
+  my $chr_name = $slice->chr_name();
+  
+  my $sth = $self->prepare
+    ( "SELECT g.db, g.gene_id, g.gene_name, g.chr_name, g.chr_start, 
+              g.chr_end, g.chr_strand, g.type, g.external_name, g.external_db
+       FROM   gene g
+       WHERE  g.chr_name = ? AND g.chr_start <= ? AND 
+              g.chr_start >= ? AND g.chr_end >= ?" );
+
+  $sth->execute( $chr_name, $chr_end,
+		 $chr_start - $MAX_TRANSCRIPT_LENGTH,
+		 $chr_start );
+  
+  my @out;
+
+  my $core_gene_adaptor = $self->db->get_db_adaptor('core')->get_GeneAdaptor;
+
+  my $hashref;
+
+  while($hashref = $sth->fetchrow_hashref()) {
+    my $gene = new Bio::EnsEMBL::Gene();
+    $gene->start($hashref->{'chr_start'} - $chr_start);
+    $gene->end($hashref->{'chr_end'} - $chr_start);
+    $gene->stable_id( $hashref->{'gene_name'} );
+    $gene->dbID( $hashref->{'gene_id'} );
+    $gene->adaptor( $core_gene_adaptor );
+    $gene->source( $hashref->{'db'} );
+    $gene->strand( $hashref->{'chr_strand'} );
+
+    if( defined $hashref->{'type' } ) {
+      $gene->external_name( $hashref->{'external_name'} );
+      $gene->external_db( $hashref->{'external_db'} );
+      $gene->type( $hashref->{'type'} );
+    }
+    push @out, $gene;
+  }
+
+  return @out;
+}
+     
 
 =head2 deleteObj
 
