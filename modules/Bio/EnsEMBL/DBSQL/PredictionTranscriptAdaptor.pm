@@ -495,8 +495,7 @@ sub _new_Exon_from_hashRef {
   my $exon = Bio::EnsEMBL::Exon->new();
   my $contig_adaptor = $self->db()->get_RawContigAdaptor();
   
-  my $contig = Bio::EnsEMBL::RawContig->new
-    ( $hashRef->{'contig_id'}, $contig_adaptor );
+  my $contig = $contig_adaptor->fetch_by_dbID($hashRef->{'contig_id'});
   
   $exon->start( $hashRef->{'contig_start'} );
   $exon->end( $hashRef->{'contig_end'} );

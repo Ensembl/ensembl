@@ -586,10 +586,6 @@ sub attach_seq{
 
    $self->{'_gsf_seq'} = $seq;
 
-   #update the seqname accordingly if the attached sequence has one
-   if($seq->can('name') && $seq->name()) {
-     $self->{'_seqname'} = $seq->name();
-   }
 
    # attach to sub features if they want it
 
