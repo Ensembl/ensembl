@@ -9,15 +9,15 @@ my $iprgo = shift(@ARGV);
 open (IPRGO,"<$iprgo");
 while (<IPRGO>) {
     chomp();
-    my ($ipr,$go) = split (/\t/);
+    my ($ipr,$go) = $_ =~ /(IPR\S+)\|GO\:(\d+)/;
     $go_map{$ipr}=$go;
 }
 
 #DB parameters
 my $dbtype = 'rdb';
-my $host   = 'ecs1c';
+my $host   = 'ecs1b';
 my $port   = '';
-my $dbname = 'ensembl080';
+my $dbname = 'ensembl100';
 my $dbuser = 'ensadmin';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
@@ -48,7 +48,7 @@ foreach my $domain (@domains) {
     while (my $rowhash = $sth->fetchrow_hashref) {
 	my $geneid = $rowhash->{'gene'};
 	if ($go_map{$domain}) {
-	    print "$geneid\tGO\t".$go_map{$domain}."\n";
+	    print "$geneid\t".$go_map{$domain}."\n";
 	}
     }
 }

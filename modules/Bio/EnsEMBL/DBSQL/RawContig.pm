@@ -1279,10 +1279,10 @@ sub get_all_PredictionFeatures {
    
    # bind the columns
    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid);
-  
+
    $previous = -1;
    my $current_fset;
-   my $count;
+   my $count=1;
 
    while( $sth->fetch ) {
        my $out;

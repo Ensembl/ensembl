@@ -1077,29 +1077,26 @@ sub _get_all_SeqFeatures_type {
    my $count = 0;
    foreach $sf ( @$sf ) {
        $sf = $self->_convert_seqfeature_to_vc_coords($sf);
-
+       
        if( !defined $sf ) {      
 	   next;
        }
-
-	
+       
+       
        if($sf->start < 0 ){
 	   $count++;
-        }
-        elsif ($sf->end > $self->length){
-	    $count++;
-        }
-        else{
-
-     if( $type eq 'prediction' ) {
-       foreach my $sub ( $sf->sub_SeqFeature ) {
        }
-     }
-
-     
-	  
-	    push (@vcsf, $sf);
-        }
+       elsif ($sf->end > $self->length){
+	   $count++;
+       }
+       else{
+	   
+	   if( $type eq 'prediction' ) {
+	       foreach my $sub ( $sf->sub_SeqFeature ) {
+	       }
+	   }
+	   push (@vcsf, $sf);
+       }
    }
    
    return @vcsf;

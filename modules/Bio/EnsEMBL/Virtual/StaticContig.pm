@@ -502,7 +502,7 @@ sub get_all_RepeatFeatures {
 
 =cut
 
-sub get_all_PredictionFeatures {
+sub aget_all_PredictionFeatures {
    my ($self) = @_;
 
    my @array;
@@ -516,29 +516,29 @@ sub get_all_PredictionFeatures {
    }
 
 
-  my $glob_start=$self->_global_start;
-    my $glob_end=$self->_global_end;
-    my $chr_name=$self->_chr_name;
-    my $idlist  = $self->_raw_contig_id_list();
-    
-    unless ($idlist){
-	return ();
-    }
-
-
-
+   my $glob_start=$self->_global_start;
+   my $glob_end=$self->_global_end;
+   my $chr_name=$self->_chr_name;
+   my $idlist  = $self->_raw_contig_id_list();
+   
+   unless ($idlist){
+       return ();
+   }
+   
+   
+   
    my $fsetid;
    my $previous;
    my %analhash;
    my $analysis_type='genscan';
-
+   
    my $query = "SELECT f.id, 
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,  
                         IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
                         IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
-                        f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid  
+                        f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid,f.contig 
                         FROM   feature f, analysis a,static_golden_path sgp 
                         WHERE    f.analysis = a.id 
                         AND    sgp.raw_id = f.contig
@@ -547,43 +547,44 @@ sub get_all_PredictionFeatures {
                         AND    sgp.chr_end >= $glob_start 
 		        AND    sgp.chr_start <=$glob_end 
 		        AND    sgp.chr_name='$chr_name' 
-                        ORDER  by start";
-
+                        ";
+   
    my $sth = $self->dbobj->prepare($query);
    
    $sth->execute();
    
-   my ($fid,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid);
+   my ($fid,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid,$contig);
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid);
-  
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid,\$contig);
+   
    $previous = -1;
    my $current_fset;
    my $count;
-
+   
    while( $sth->fetch ) {
        
        if (($end > $length) || ($start < 1)) {
-	    next;
-	}
-
+	   print STDERR "Globbing..\n";
+	   next;
+       }
+       
        my $out;
        
        my $analysis;
-	   
+       
        if (!$analhash{$analysisid}) {
-
+	   
 	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
 	   $analysis = $feature_obj->get_Analysis($analysisid);
-
+	   
 	   $analhash{$analysisid} = $analysis;
 	   
        } else {
 	   $analysis = $analhash{$analysisid};
        }
 
-
+       
        if( $hid eq "Initial Exon" || $hid eq "Single Exon" || $previous eq "Single Exon" || $previous eq "Terminal Exon" || $previous eq -1) {
 	   $count++;
 	   $current_fset = Bio::EnsEMBL::SeqFeature->new();
@@ -593,7 +594,7 @@ sub get_all_PredictionFeatures {
 	   $current_fset->seqname($self->id);
 	   $current_fset->id($count);
 	   $current_fset->score(0.0);
-	  
+	   
 	   $current_fset->raw_seqname($self->id);
 	   push(@array,$current_fset);
        }

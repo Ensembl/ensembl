@@ -7,7 +7,7 @@ use Bio::SeqIO;
 
 my $chr=shift(@ARGV);
 
-my $ensembldb=Bio::EnsEMBL::DBSQL::DBAdaptor->new(-dbname=>'ensembl100',-host=>'kaka.sanger.ac.uk',-user=>'anonymous');
+my $ensembldb=Bio::EnsEMBL::DBSQL::DBAdaptor->new(-dbname=>'ensembl100',-host=>'ecs1b',-user=>'ensro');
 $ensembldb->static_golden_path_type('UCSC');
 
 my $st=$ensembldb->get_StaticGoldenPathAdaptor;
