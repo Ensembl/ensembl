@@ -571,7 +571,7 @@ AND    chr_end   >= ? );
        push @binded, $chr_end, $chr_start;
      }
    }
-   warn( "$q: ", join( ', ',@binded ) ); 
+#   warn( "$q: ", join( ', ',@binded ) ); 
 
    my $sth = $self->db->db_handle->prepare($q);
    my $rv = $sth->execute( @binded ) || $self->throw( $sth->errstr );
