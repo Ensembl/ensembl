@@ -78,32 +78,50 @@ sub gene_name_2_xref_from_hugo{
 
 
   my $source_id_for_hugo=0;
-  my $sth2 = $dbi->prepare("select * from source where name like 'HUGO'");
-  $sth2->execute() || die $dbi->errstr;
+  my $sth2 = $dbi->prepare("select * from source where name like ?");
+  $sth2->execute('HUGO') || die $dbi->errstr;
   while(my @row = $sth2->fetchrow_array()) {
     $source_id_for_hugo = $row[0];
   }
-  $sth2->finish;
-
   if(! $source_id_for_hugo){
     die "Could not find source id for HUGO.\n";
   }
+
+
+  my @source_list=();
+
+  $sth2->execute('Refseq') || die $dbi->errstr;
+  while(my @row = $sth2->fetchrow_array()) {
+    push  @source_list, $row[0];
+  }
+
+  $sth2->execute('Uniprot') || die $dbi->errstr;
+  while(my @row = $sth2->fetchrow_array()) {
+    push  @source_list, $row[0];
+  }
+
+
+  $sth2->finish;
+
 
   my $sql = "select y.label, x.xref_id ";
   $sql   .= "  from dependent_xref d, xref x, xref y ";
   $sql   .= "  where d.source_id = $source_id_for_hugo and ";
   $sql   .= "        x.xref_id = d.master_xref_id and ";
   $sql   .= "        y.xref_id = d.dependent_xref_id and ";
-  $sql   .= "        x.source_id = 1";
-
-
+  $sql   .= "        x.source_id = ?";
+  
+    
   my $sth = $dbi->prepare($sql);
-  $sth->execute() || die $dbi->errstr;
-  while(my @row = $sth->fetchrow_array()) {
-    my $gene_name = $row[0];
-    my $xref = $row[1];
-    $gene_name2xref{$gene_name} = $xref;
-  }
+
+  foreach my $id (@source_list){
+    $sth->execute($id) || die $dbi->errstr;
+    while(my @row = $sth->fetchrow_array()) {
+      my $gene_name = $row[0];
+      my $xref = $row[1];
+      $gene_name2xref{$gene_name} = $xref;
+    }
+  } 
   $sth->finish;
   return %gene_name2xref;
 }
