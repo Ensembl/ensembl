@@ -645,6 +645,111 @@ sub display_id {
 }
 
 
+
+=head2 seq_region_name
+
+  Arg [1]    : none
+  Example    : print $feature->seq_region_name();
+  Description: Gets the name of the seq_region which this feature is on.
+               Returns undef if this Feature is not on a slice.
+  Returntype : string or undef
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub seq_region_name {
+  my $self = shift;
+  my $slice = $self->{'slice'};
+
+  return ($slice) ? $slice->seq_region_name() : undef;
+}
+
+
+=head2 seq_region_strand
+
+  Arg [1]    : none
+  Example    : print $feature->seq_region_strand();
+  Description: Returns the strand of the seq_region which this feature is on 
+               (i.e. feature_strand * slice_strand)
+               Returns undef if this Feature is not on a slice.
+  Returntype : 1,0,-1 or undef
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+sub seq_region_strand {
+  my $self = shift;
+  my $slice = $self->{'slice'};
+
+  return ($slice) ? $slice->strand() * $self->{'strand'} : undef;
+}
+
+
+=head2 seq_region_start
+
+  Arg [1]    : none
+  Example    : print $feature->seq_region_start();
+  Description: Convenience method which returns the absolute start of this
+               feature on the seq_region, as opposed to the relative (slice) 
+               position.
+
+               Returns undef if this feature is not on a slice.
+  Returntype : int or undef
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub seq_region_start {
+  my $self = shift;
+  my $slice = $self->{'slice'};
+
+  return undef if(!$slice);
+  return undef if(!defined($self->{'start'}));
+  return undef if(!defined($self->{'end'}));
+
+  if($slice->strand == 1) {
+    return $slice->start() + $self->{'start'} - 1;
+  } else {
+    return $slice->end() - $self->{'end'} + 1;
+  }
+}
+
+
+=head2 seq_region_end
+
+  Arg [1]    : none
+  Example    : print $feature->seq_region_end();
+  Description: Convenience method which returns the absolute end of this
+               feature on the seq_region, as opposed to the relative (slice) 
+               position.
+
+               Returns undef if this feature is not on a slice.
+  Returntype : int or undef
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub seq_region_end {
+  my $self = shift;
+  my $slice = $self->{'slice'};
+
+  return undef if(!$slice);
+  return undef if(!defined($self->{'start'}));
+  return undef if(!defined($self->{'end'}));
+
+  if($slice->strand == 1) {
+    return $slice->start() + $self->{'end'} - 1;
+  } else {
+    return $slice->end() - $self->{'start'} + 1;
+  }
+}
+
+
 ##############################################
 # Methods included for backwards compatibility
 ##############################################
