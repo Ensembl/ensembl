@@ -216,7 +216,23 @@ sub _reverse_map_Exon{
        $rmexon->version($exon->version);
        $rmexon->phase($exon->phase);
        $rmexon->sticky_rank(1);
+       foreach my $se ( $exon->each_Supporting_Feature ) {
+	   my ($secontig,$sestart,$sestrand) = $self->_vmap->raw_contig_position($se->start,$se->strand);
+	   my ($sncontig,$seend,$snstrand) = $self->_vmap->raw_contig_position($se->start,$se->strand);
+	   if( !ref $secontig || !ref $sncontig || $secontig->id ne $sncontig->id ) {
+	       $self->warn("supporting evidence spanning contigs. Cannot write");
+	       next;
+	   }
+	   if( $sestart < $seend ) {
+	       $se->start($sestart);
+	       $se->end($seend);
+	   } else {
+	       $se->start($sestart);
+	       $se->end($seend);
+	   }
+       }
 
+       #$rmexon->add_Supporting_Feature
        # we could test on strand changes. This just assummes everything works
        # as it says on the tin ;)
        if( $start < $end ) {
