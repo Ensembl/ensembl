@@ -21,10 +21,13 @@ sub create_coord_systems {
   my $ass_def = $self->get_default_assembly();
 
   my @coords =
-    (["chromosome", $ass_def, "default_version", 1 ],
-     ["contig"     , undef   , "default_version,sequence_level", 2]);
+    (["chromosome" ,  $ass_def, "default_version", 1 ],
+     ["supercontig",  $ass_def, "default_version", 2 ],
+     ["contig"     ,  undef   , "default_version,sequence_level", 3]);
 
-  my @assembly_mappings =  ("chromosome|contig");
+  my @assembly_mappings =  ("chromosome:$ass_def|contig",
+                            "supercontig:$ass_def|contig",
+                            "chromosome:$ass_def|contig|supercontig:$ass_def");
 
   my %cs = (gene                  => 'chromosome',
             transcript            => 'chromosome',
@@ -84,6 +87,7 @@ sub create_seq_regions {
 
   $self->contig_to_seq_region();
   $self->chromosome_to_seq_region();
+  $self->supercontig_to_seq_region();
 }
 
 #
@@ -167,6 +171,7 @@ sub create_assembly {
 
   $self->debug("GallusGallus Specific: loading assembly data");
   $self->assembly_contig_chromosome();
+  $self->assembly_contig_supercontig();
 }
 
 
