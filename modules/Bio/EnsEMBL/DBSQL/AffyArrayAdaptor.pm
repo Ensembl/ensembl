@@ -228,7 +228,7 @@ sub store {
 sub list_dbIDs {
    my ($self) = @_;
 
-   return $self->_list_dbIDs("affy_probe");
+   return $self->_list_dbIDs("affy_array");
 }
 
 1;
