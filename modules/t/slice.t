@@ -10,7 +10,6 @@ BEGIN { $| = 1;
 
 
 use MultiTestDB;
-use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::Slice;
 
 
