@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 # -*- mode: sh; -*-
 # $Id$
 
@@ -7,18 +7,33 @@
 # complete replacement for the old table.  The script assumes that the family
 # and ensembl-core database live in the same server (so you can do joins).
 
-usage="Usage: $0 ens_core_database -h host -u user family_database"
+usage="Usage: $0 ens_core_database MUSG -h host -u user family_database"
 if [ $# -lt 6 ] ; then
     echo $usage
     exit 1
 fi
 
 # where mysql lives (or how it can be found, provided PATH is ok):
-mysql=mysql
-mysql_extra_flags='--batch'
+mysql=mysql; mysql_extra_flags='--batch'
+# mysql=cat  # for debugging
+
 
 # Database to read existing descriptions from:
 read_database=$1; shift
+
+# inside the family database, which database to read additional descriptions
+# from:
+db_name=$1; shift;
+
+# check this:
+should_match='^[A-Z][A-Z][A-Z]G$'
+if echo "$db_name" | grep -s $should_match > /dev/null 2>&1 ; then
+    : # OK
+else
+    echo "arg 2: database name to use: '$db_name' does not match $should_match" >&2
+    exit 2
+fi
+
 
 # Name of the table having the existing descriptions (only changes when the
 # schema does, really, but also useful during testing/debugging)
@@ -42,6 +57,8 @@ FROM  $read_database.$read_gene_desc_table gd
 WHERE gd.gene_id IS NULL;
 
 ALTER TABLE $new_gene_description ADD PRIMARY KEY(gene_id);
+# (to avoid duplicates)
+
 # inserting existing desc's:
 INSERT INTO $new_gene_description 
   SELECT *
@@ -71,7 +88,7 @@ CREATE TEMPORARY TABLE tmp_new_descriptions
   SELECT gd.gene_id, f.description
   FROM family f, family_members fm, $new_gene_description gd
   WHERE gd.description ='unknown'
-    AND fm.db_name ='ENSEMBLGENE'
+    AND fm.db_name ='$db_name'
     AND fm.db_id = gd.gene_id
     AND fm.family = f.internal_id
     AND f.description <> 'UNKNOWN';
