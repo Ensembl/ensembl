@@ -1,8 +1,11 @@
-# Convert release 18-era schemas to use new non-clone/contig schema
+# Convert release 18/19-era schemas to use new non-clone/contig schema
 
 use strict;
 use warnings;
 use DBI;
+
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use POSIX qw(ceil);
 
 package SeqStoreConverter::BasicConverter;
 
@@ -20,8 +23,14 @@ sub new {
   ($host, $port) = split(/:/, $host);
   $port ||= 3306;
 
-  my $dbh = DBI->connect( "DBI:mysql:host=$host:port=$port", $user, $pass,
-                          {'RaiseError' => 1});
+  my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+    (-host => $host,
+     -port => $port,
+     -user => $user,
+     -pass => $pass,
+     -driver => 'mysql');
+
+  my $dbh = $db->db_handle();
 
 
   $self->verbose( $verbose );
@@ -30,11 +39,8 @@ sub new {
   $self->source( $source );
   $self->target( $target );
   $self->schema( $schema );
-  $self->host( $host );
-  $self->password( $pass);
-  $self->user($user);
-  $self->port($port);
   $self->limit($limit);
+  $self->db($db);
 
 
   #check to see if the destination and source databases exist already.
@@ -97,28 +103,10 @@ sub dbh {
   return $self->{'dbh'};
 }
 
-sub user {
+sub db {
   my $self = shift;
-  $self->{'user'} = shift if(@_);
-  return $self->{'user'};
-}
-
-sub host {
-  my $self = shift;
-  $self->{'host'} = shift if(@_);
-  return $self->{'host'};
-}
-
-sub port {
-  my $self = shift;
-  $self->{'port'} = shift if(@_);
-  return $self->{'port'};
-}
-
-sub password {
-  my $self = shift;
-  $self->{'password'} = shift if(@_);
-  return $self->{'password'};
+  $self->{'db'} = shift if(@_);
+  return $self->{'db'};
 }
 
 
@@ -1054,5 +1042,109 @@ sub create_attribs {
   return;
 }
 
+
+
+sub set_top_level {
+  my $self = shift;
+
+  my $target = $self->target();
+  my $db = $self->db();
+
+  my $csa = $db->get_CoordSystemAdaptor();
+  my $slice_adaptor = $db->get_SliceAdaptor();
+
+  my $attrib_type_id = $self->add_attrib_code();
+
+  $self->debug("Setting toplevel attributes of seq_regions");
+  $self->debug("  Deleting old toplevel attributes");
+
+  my $sth = $db->prepare("DELETE FROM $target.seq_region_attrib " .
+                         "WHERE attrib_type_id = ?");
+  $sth->execute($attrib_type_id);
+  $sth->finish();
+
+  $sth = $db->prepare("INSERT INTO $target.seq_region_attrib " .
+                      'SET seq_region_id = ?,' .
+                      '    attrib_type_id = ?,' .
+                      '    value = ?');
+
+  #get all of the seqlevel sequence regions and project them to 'toplevel'
+  my $seqlevel_cs = $csa->fetch_by_name('seqlevel');
+
+  if(!$seqlevel_cs) {
+    die("No 'seqlevel' CoordSystem has been defined.");
+  }
+
+  my $slices = $slice_adaptor->fetch_all($seqlevel_cs->name(),
+                                         $seqlevel_cs->version);
+
+  my %already_seen;
+
+  my $total_number = @$slices;
+  my $total_processed = 0;
+  my $five_percent = int($total_number/20);
+
+  $self->debug("  Adding new toplevel attributes");
+
+  foreach my $slice (@$slices) {
+    my $projection = $slice->project('toplevel');
+    foreach my $segment (@$projection) {
+      my $proj_slice = $segment->[2];
+      my $seq_region_id = $proj_slice->get_seq_region_id();
+
+      if(!$already_seen{$seq_region_id}) {
+
+        my $string = $proj_slice->coord_system->name();
+        $string .= " " . $proj_slice->seq_region_name();
+        $self->debug("  Adding $string to toplevel");
+
+        $sth->execute($seq_region_id,$attrib_type_id, 1);
+        $already_seen{$seq_region_id} = 1;
+      }
+    }
+
+    # print out progress periodically
+    $total_processed++;
+    if($total_processed % $five_percent == 0) {
+      $self->debug("  " . ceil($total_processed/$total_number*100) .
+                   "% complete");
+    }
+  }
+
+  $sth->finish();
+}
+
+sub add_attrib_code {
+  my $self = shift;
+  my $db = $self->db();
+  my $target = $self->target();
+
+  # add a toplevel code to the attrib_type table if it is not there already
+
+  my $sth = $db->prepare("SELECT attrib_type_id " .
+                         "FROM $target.attrib_type " .
+                         "WHERE code = 'toplevel'");
+
+  $sth->execute();
+
+  if($sth->rows()) {
+    my ($attrib_type_id) = $sth->fetchrow_array();
+    $sth->finish();
+    return $attrib_type_id;
+  }
+  $sth->finish();
+
+
+  $sth = $db->prepare("INSERT INTO $target.attrib_type " .
+                    "SET code = 'toplevel', " .
+                    "name = 'Top Level', " .
+                    "description = 'Top Level Non-Redundant Sequence Region'");
+
+  $sth->execute();
+  my $attrib_type_id = $sth->{'mysql_insertid'};
+  $sth->finish();
+
+  return $attrib_type_id;
+}
 
 1;
