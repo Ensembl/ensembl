@@ -972,80 +972,90 @@ sub has_MapSet {
 
 
 
+
+
 =head2 get_tiling_path
 
-  Arg [1]    : none
-  Example    : @tiles = @{$slice->get_tiling_path()};
-  Description: Retrieve a listref of Bio::EnsEMBL::Tile objects representing
-               the tiling path used to construct the contiguous slice sequence.
-  Returntype : list reference of Bio::EnsEMBL::Tile objects
+  Arg [1]    : string $name
+              The name of the coordinate system to get a tiling path of
+  Arg [2]    : string $version
+              The version of the requested coordinate system (such as 'NCBI34')
+  Example    :
+    my $clone_path = $slice->get_tiling_path('clone');
+
+    foreach my $tile (@$clone_path) {
+      my ($start, $end, $clone) = @$tile;
+      print $slice->seq_region_name, ':', $start, '-', $end , ' -> ',
+            $clone->seq_region_name, ':', $clone->start, '-', $clone->end,
+            $clone->strand, "\n";
+    }
+  Description: Retrieves a 'tiling path' to another coordinate system.
+               This method returns a list of triplets [start,end,slice]
+               which represent the path.  The start and end refer to the
+               part of this slice which is made up of the the third
+               value: a slice of the requested coordinate system.
+  Returntype : list reference [$start,$end,$slice] triplets
   Exceptions : none
   Caller     : general
 
 =cut
 
 sub get_tiling_path {
-  my ($self) = @_;
+  my $self = shift;
+  my $cs_name = shift;
+  my $cs_version = shift;
 
-  my $mapper = $self->adaptor()->db->get_AssemblyMapperAdaptor()->
-    fetch_by_type($self->assembly_type());
+  throw('Coord_system name argument is required') if(!$cs_name);
 
-  # Get the ids of the raw_contigs in this region specified in chrmsml coords 
+  #obtain a mapper between this coordinate system and the requested one
 
-  my @mapped = $mapper->map_coordinates_to_rawcontig
-    (
-     $self->chr_name(),
-     $self->chr_start(),
-     $self->chr_end(),
-     $self->strand()
-    );
+  my $db = $self->adaptor()->db();
+  my $csa = $db->get_CoordSystemAdaptor();
+  my $cs = $csa->fetch_by_name($cs_name, $cs_version);
+  my $asma = $db->get_AssemblyMapperAdaptor();
+  my $asm_mapper = $asma->fetch_by_CoordSystems($self->coord_system, $cs);
 
-  # Extract the IDS of the Coordinates, ommitting Gaps
-  my @raw_contig_ids = ();
-  foreach my $map_item (@mapped) {
-    if($map_item->isa("Bio::EnsEMBL::Mapper::Coordinate" )) {
-       push @raw_contig_ids, $map_item->id();
-     } 
-  }
+  # perform the mapping between this slice and the requested system
 
-  #Fetch filled raw contigs (non lazy-loaded) containing filled clone objects
-  my $rca = $self->adaptor->db->get_RawContigAdaptor();
-  my $raw_contigs = $rca->fetch_filled_by_dbIDs(@raw_contig_ids);
+  my @coords =
+    $asm_mapper->map($self->seq_region_name(), $self->start(),
+                     $self->end(), $self->strand(), $cs);
 
-  my @tiling_path = ();
+
+  #construct a path from the mapping results and return it
+
+  my @tiling_path;
+
   my $current_start = 1;
 
-  my($length, $slice_start, $slice_end, 
-     $contig, $contig_start, $contig_end, $contig_ori);  
+  foreach my $coord (@coords) {
+    my $coord_start  = $coord->start();
+    my $coord_end    = $coord->end();
+    my $length = $coord_end - $coord_start;
 
-  foreach my $coord ( @mapped ) {
-    $contig_start = $coord->start();
-    $contig_end   = $coord->end();
-    $length       = $contig_end - $contig_start + 1; 
+    #skip gaps
+    if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+      #create slices for the mapped-to coord system
+      my $slice = Bio::EnsEMBL::Slice->new
+        (-COORD_SYSTEM    => $cs,
+         -START           => $coord_start,
+         -END             => $coord_end,
+         -STRAND          => $coord->strand(),
+         -SEQ_REGION_NAME => $coord->id(),
+         -ADAPTOR         => $self->adaptor());
 
-    if ( $coord->isa("Bio::EnsEMBL::Mapper::Coordinate" ) ) {
-      # create a tile for each coordinate
-      $contig_ori  =  $coord->strand();
-      $slice_start = $current_start;
-      $slice_end   = $current_start + $length - 1;
-      $contig      = $raw_contigs->{ $coord->id() };
+      my $current_end = $current_start + $length - 1;
 
-      push @tiling_path, Bio::EnsEMBL::Tile->new_fast($self,
-						      $slice_start,
-						      $slice_end,
-						      $contig,
-						      $contig_start,
-						      $contig_end,
-						      $contig_ori);
-						
-      $current_start += $length;
-    } else {
-      # this is a gap, just add the length and discard it
-      $current_start += $length;
+      push @tiling_path, [$current_start, $current_end, $slice];
     }
+
+    $current_start += $length;
   }
+
   return \@tiling_path;
 }
+
+
 
 
 
