@@ -781,3 +781,26 @@ CREATE TABLE qtl_feature (
   key loc_idx( chromosome_id, start )
 );
 
+
+#
+# tables for stable id mapping tracking
+#
+
+CREATE TABLE mapping_session (
+  mapping_session_id int(11) NOT NULL auto_increment,
+  old_db_name varchar(80) NOT NULL default '',
+  new_db_name varchar(80) NOT NULL default '',
+  created timestamp(14) NOT NULL,
+  rank int(10) default NULL,
+  PRIMARY KEY  (mapping_session_id),
+  UNIQUE KEY rank (rank)
+) TYPE=MyISAM;
+
+CREATE TABLE stable_id_event (
+  old_stable_id varchar(40) NOT NULL default '',
+  new_stable_id varchar(40) NOT NULL default '',
+  mapping_session_id int(11) NOT NULL default '0',
+  UNIQUE KEY tpl_idx (old_stable_id,new_stable_id,mapping_session_id),
+  KEY new_idx (new_stable_id)
+) TYPE=MyISAM;
+
