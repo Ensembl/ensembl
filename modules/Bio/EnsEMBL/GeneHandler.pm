@@ -213,6 +213,8 @@ sub _process_Transcript{
    # ok. Now - get into the major loop, and start processing
    # the exons
 
+   # we want to know whether the last exon is forward or backward first.
+   my $loc_comp; 
    foreach my $exon ( $trans->each_Exon() ) {
        # get out the clone
        if( $exon->clone_id() ne $self->clone->id() ) {
@@ -223,7 +225,7 @@ sub _process_Transcript{
        $contig->isa("Bio::EnsEMBL::DB::ContigI") || $self->throw("Expecting to get a conting. Instead got a $contig. Not ideal!");
 
 	          
-       my ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
+       my ($locstart,$locend) = $self->_deduce_exon_location($exon,$contig);
 
        if( ! $exon_hash_ref->{$exon->id()}  ) {
 	   # add this exon
@@ -236,7 +238,7 @@ sub _process_Transcript{
 	   $ft->add_field('modified',$exon->modified());
 	   $ft->add_field('exon_id',$exon->id());
 	   $ft->add_field('phase',$exon->phase());
-	   # $ft->add_field('end_phase',$exon->end_phase());
+	   $ft->add_field('end_phase',$exon->end_phase());
 
 
 	   if( $loc_comp == -1 ) {
@@ -267,10 +269,18 @@ sub _process_Transcript{
    }
 
    # the last *f^%$%ing* location needs to have a '>' (would you
-   # believe it). So annoying. This is HORRIBLE
+   # believe it). So annoying. This is ..HORRIBLE..
+
+   # FIXME:
+   # better solution to deal with the last exon separately
 
    # puts a > on the last location line
-   $trans_loc =~ s/\.\.(\d+)(\)?)$/..$1>$2/;
+   if( $loc_comp == 1 ) {
+       $trans_loc =~ s/\.\.(\d+)(\)?)$/..$1>$2/;
+   } else {
+       $trans_loc =~ s/\.\.(\d+)(\)?)$/..>$1$2/;
+   }
+ 
 
    my $t_fth = new Bio::AnnSeqIO::FTHelper->new();
    $t_fth->key("CDS");
@@ -281,8 +291,12 @@ sub _process_Transcript{
    if( $trans->is_partial() == 1 ) {
        $t_fth->add_field('note',"transcript is a partial transcript");
    }
-   
-   $t_fth->loc("join($trans_loc)");
+
+   # hacky way of figuring out whether we need to "join" or not
+   if( $trans_loc =~ /,/ ) {
+       $t_fth->loc("join($trans_loc)");
+   }
+
 
    push(@fth,$t_fth);
    return @fth;

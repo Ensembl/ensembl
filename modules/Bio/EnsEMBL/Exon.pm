@@ -283,9 +283,11 @@ sub end_phase {
   
   my $len   = $self->end() - $self->start() + 1;
   my $phase = $self->phase();
+  my $left_overhang = (3 - $phase)%3;
+  
+  my $end_phase = ($len - $left_overhang)%3;
 
-  my $end = ($len - $phase) % 3;        # Jiggery pokery to find end phase
-  $self->{'end_phase'} = (3 - $end)%3;  # Make sure only 0,1,2
+  $self->{'end_phase'} = $end_phase;
   
   return $self->{'end_phase'};
 }
@@ -444,6 +446,98 @@ sub strand {
     }
     return $self->{'strand'};
 }
+
+=head2 _rephase_exon_genscan
+
+ Title   : _rephase_exon_genscan
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _rephase_exon_genscan{
+   my ($self) = @_;
+
+   my $dna = $self->seq();
+   my $phase;
+   my $pep = $self->_genscan_peptide();
+
+   # trim top and bottem
+   my $dnaseq = $dna->seq();
+
+   LOOP : {
+
+       $dna->setseq(substr($dnaseq,3,-3));
+       
+       my $tr1 = $dna->translate();
+       my $tr1pep = $tr1->str();
+       chop $tr1pep;
+
+       print STDERR "[$tr1pep] to\n[$pep]\n";
+       if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
+	   $phase = 0;
+	   last LOOP;
+       }
+       
+       $dna->setseq(substr($dnaseq,4,-3));
+       
+       $tr1 = $dna->translate();
+       $tr1pep = $tr1->str();
+       chop $tr1pep;
+
+       print STDERR "[$tr1pep] to\n[$pep]\n";
+       if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
+	   $phase = 1;
+	   last LOOP;
+       }
+       
+       $dna->setseq(substr($dnaseq,5,-3));
+       
+       $tr1 = $dna->translate();
+       $tr1pep = $tr1->str();
+       chop $tr1pep;
+
+       print STDERR "[$tr1pep] to\n[$pep]\n";
+       if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
+	   $phase = 2;
+	   last LOOP;
+       }
+       
+   }
+
+   
+
+   print STDERR "For exon ",$self->strand," ",$self->phase," ",$phase,"\n";
+   $self->phase($phase);
+   
+
+}
+
+=head2 _genscan_peptide
+
+ Title   : _genscan_peptide
+ Usage   : $obj->_genscan_peptide($newval)
+ Function: 
+ Returns : value of _genscan_peptide
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _genscan_peptide{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_genscan_peptide'} = $value;
+    }
+    return $obj->{'_genscan_peptide'};
+
+}
+
 
 # Inherited methods
 # but you do have all the SeqFeature documentation: reproduced here

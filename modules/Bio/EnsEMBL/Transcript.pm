@@ -260,10 +260,6 @@ sub translate {
       $self->throw("Bad internal error - split a transcript to zero transcripts! Doh!");
   }
 
-  if( $self->id() eq "HT0030651" ) {
-      print STDERR "translating HT0030651\n";
-      $debug = 1;
-  }
 
   my $seqstr;
   foreach my $ptrans ( @trans ) {
@@ -272,11 +268,10 @@ sub translate {
       $seqstr .= $tseq->str;
   }
   
+  $seqstr =~ s/\*$//g;
+
   my $trans_seq = Bio::Seq->new( -seq => $seqstr , -id => $self->id() ) ;
 
-  if( $self->id() eq "HT0030651" ) {
-      print STDERR "finished translating HT0030651\n";
-  }
 
   return $trans_seq;
 }
@@ -427,7 +422,10 @@ sub _translate_coherent{
 #   my $debug;
 
    $self->sort();
-   foreach my $exon ( $self->each_Exon ) {
+   my @exons = $self->each_Exon;
+   my $exon_start = $exons[0];
+
+   foreach my $exon ( @exons ) {
       # if( $exon->id eq 'HE000030314' ) {
 #	   print STDERR "setting debug to 1\n";
 	#   $debug = 1;
@@ -445,50 +443,32 @@ sub _translate_coherent{
 	   $exon->entire_seq()->type('Dna');
        }
 
-       
-       
-       # trim start point and end point.
-
        my $seq = $exon->seq();
-       
        my $str = $seq->str();
        
-       # trims off 1,2 either end. The start phase converts 1 to 2 and 2 to 1 ;)
-       my $rstr;
-       if( $exon->end_phase != 0 ) {
-	   $rstr = substr $str, (3 - $exon->phase)%3, -$exon->end_phase ;
-       } else {
-	   $rstr = substr $str, (3 - $exon->phase)%3;
-       }
 
-       if( $debug ) {
-	   my $test_seq = $exon->entire_seq->trunc($exon->start,$exon->end);
-	   my $pre_r = $test_seq->str();
-	   if( $exon->strand == -1 ) {
-	       $test_seq = $test_seq->revcom();
-	   }
-	   my $test_str = $test_seq->str;
-	   print STDERR "Pre $pre_r\nAft $test_str\nStr $str\nRel $rstr\n";
-       }
-
-       if( length $rstr == 0 ) {
+       if( length $str == 0 ) {
 	   $self->throw("Bad internal error - got a 0 length rstring...");
        }
 
-       $tstr .= $rstr;
+       $tstr .= $str;
    }
+
+   if( $exon_start->phase == 1 ) {
+       $tstr = substr $tstr, 2;
+   } elsif ( $exon_start->phase == 2 ) {
+       $tstr = substr $tstr, 1;
+   } 
 
    if ( $debug ) {
        print STDERR "Tstr is $tstr\n";
    }
 
+   # phase 0 - no need.
+
+
    my $temp_seq = Bio::Seq->new( -seq => $tstr , -id => 'temp', -type => 'Dna' );
    my $trans_seq = $temp_seq->translate();
-
-   if( $debug ) {
-       print STDERR "translated " . $trans_seq->str . "\n";
-   }
-
 
    return $temp_seq->translate();
 }
