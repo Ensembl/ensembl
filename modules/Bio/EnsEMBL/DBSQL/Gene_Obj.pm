@@ -820,17 +820,21 @@ sub _get_dblinks{
         my $transid;
         if($trans->isa('Bio::EnsEMBL::WebTranscript')) { # We don't have
            $transid = $trans->id;       # a translation object so we have
-           $transid =~ s/T(\d)/P\1/;    # to fudge this but {ENS}Tx -> {ENS}Px
+           $transid =~ s/T(\d)/P$1/;    # to fudge this but {ENS}Tx -> {ENS}Px
         } else {
-            $transid = $trans->translation->id;
+            if (my $t = $trans->translation) {
+                $transid = $t->id;
+            }
         }
 
-        my @transcript_xrefs = $entryAdaptor->fetch_by_translation($transid);
-    
-        foreach my $translink(@transcript_xrefs) {
-            $trans->add_DBLink($translink);
-            $gene->add_DBLink($translink);
+        if ($transid) {
+            my @transcript_xrefs = $entryAdaptor->fetch_by_translation($transid);
+            foreach my $translink(@transcript_xrefs) {
+                $trans->add_DBLink($translink);
+                $gene->add_DBLink($translink);
+            }
         }
+    
     }
 } # _get_dblinks
 
