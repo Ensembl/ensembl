@@ -131,13 +131,6 @@ sub add_ensembl_comments {
 
    $aseq->annotation->add_Comment($comment); 
   
-   my $sf = Bio::SeqFeature::Generic->new();
-   $sf->start(1);
-   $sf->end($aseq->length());
-   $sf->strand(1);
-   $sf->primary_tag('source');
-   $sf->add_tag_value('organism',$aseq->species->binomial);
-   $aseq->add_SeqFeature($sf);
    # done!
 }
 

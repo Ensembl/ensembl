@@ -2306,62 +2306,6 @@ sub project_name{
 
 }
 
-=head2 add_date
-
- Title   : add_date
- Usage   : $self->add_domment($ref)
- Function: adds a date
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub add_date {
-   my ($self) = shift;
-   foreach my $dt ( @_ ) {
-       push(@{$self->{'date'}},$dt);
-   }
-}
-
-=head2 each_date
-
- Title   : each_date
- Usage   : foreach $dt ( $self->each_date() )
- Function: gets an array of dates
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub each_date {
-   my ($self) = @_;
-   return @{$self->{'date'}}; 
-}
-
-=head2 annotation
-
- Title   : annotation
- Usage   : $obj->annotation($newval)
- Function: 
- Example : 
- Returns : value of annotation
- Args    : newvalue (optional)
-
-
-=cut
-
-sub annotation{
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'annotation'} = $value;
-    }
-    return $obj->{'annotation'};
-
-}
 
 =head2 add_SeqFeature
 

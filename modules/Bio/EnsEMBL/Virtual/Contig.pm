@@ -111,6 +111,7 @@ sub _make_datastructures {
     $self->{'_skip_feature'} = {};
     my $vmap=Bio::EnsEMBL::Virtual::Map->new();
     $self->_vmap($vmap);
+
     return $self;
 }
 
@@ -318,7 +319,16 @@ sub top_SeqFeatures {
 	push(@f,$self->_vmap->each_MapContig);
     }
 
-    
+    if( !$self->skip_SeqFeature('meta') ) {
+	my $sf = Bio::SeqFeature::Generic->new();
+	$sf->start(1);
+	$sf->end($self->length());
+	$sf->strand(1);
+	$sf->primary_tag('source');
+	$sf->add_tag_value('organism',$self->species->binomial);
+	push(@f,$sf);
+    }
+
     return @f;
 }
 
@@ -2120,6 +2130,64 @@ sub noseq{
 }
 
 
+=head2 add_date
+
+ Title   : add_date
+ Usage   : $self->add_domment($ref)
+ Function: adds a date
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_date {
+   my ($self) = shift;
+   foreach my $dt ( @_ ) {
+       push(@{$self->{'date'}},$dt);
+   }
+}
+
+=head2 each_date
+
+ Title   : each_date
+ Usage   : foreach $dt ( $self->each_date() )
+ Function: gets an array of dates
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_date {
+   my ($self) = @_;
+   return @{$self->{'date'}}; 
+}
+
+=head2 sv
+
+ Title   : sv
+ Usage   : $obj->sv($newval)
+ Function: 
+ Returns : value of sv
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub sv{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'sv'} = $value;
+    }
+    return $obj->{'sv'};
+
+}
+
+
 =head2 species
 
  Title   : species
@@ -2143,6 +2211,32 @@ sub species{
        $self->{'_species_cache'} = $self->dbobj->get_MetaContainer->get_Species();
    }
    return $self->{'_species_cache'};
+}
+
+=head2 annotation
+
+ Title   : annotation
+ Usage   : $obj->annotation($newval)
+ Function: 
+ Example : 
+ Returns : value of annotation
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub annotation{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'annotation'} = $value;
+    } else {
+	if( !defined $self->{'annotation'} ) {
+	    my $annotation = Bio::Annotation->new();
+	    $self->{'annotation'} = $annotation;
+	}
+    }
+
+    return $self->{'annotation'};
 }
 
 
