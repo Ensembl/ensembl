@@ -112,8 +112,11 @@ my $embldb;
 my $estdb;
 my $mousedb;
 
-# this one is not settable (used during embl dump)
-my $tmpdb = "__embl_dump_tmpdb_$$";
+# this one is not settable (used during embl dump and may elsewhere). 
+# There is at most one $tmpdb.
+my $tmpdb = undef;
+# (yes, global, naughtynaughty ...)
+
 # sorry, but this has to be on the production server, otherwise I can't do
 # the joins ... 
 
@@ -423,7 +426,9 @@ SELECT trlsi.*
 ";
     dump_data($sql, $satdb, 'translation_stable_id');
 
-### bug here: joining  int(10) to varchar(40), works bht looses index : slow
+### bug here: joining  int(10) to varchar(40), works but looses index : slow
+### therefore, create a tmp table containing the mapping and indexes. 
+
     $sql="
 SELECT distinct pf.*
   FROM $litedb.gene lg,
@@ -858,7 +863,7 @@ SELECT distinct ctg.internal_id as internal_id, ctg.clone as clone, dna as dna
 ALTER TABLE tmp_contig ADD KEY(internal_id);
 ALTER TABLE tmp_contig ADD KEY(clone);
 ";
-    create_tmp_db($tmpdb, $sql, 'tmp_contig');
+    create_tmp_table($sql, 'tmp_contig');
 ##   die "DEBUG: I only wanted this tmptable ...";
 
     # now for the real tables:
@@ -1051,7 +1056,7 @@ WHERE  ctg.internal_id = e.contig_id
 ";
     dump_data($sql, $satdb, 'Xref');
 
-    drop_tmp_db($tmpdb);
+    &drop_tmp_db();
     return;
 }                                       # dump_embl
 
@@ -1138,52 +1143,98 @@ sub dump_schema {
     }
 }                                       # dump_schema
 
-sub create_tmp_db {
-    # create a (temporay) database
-    my ($db, $sql, $table) = @_;
-    warn "Creating $db with table $table\n";
 
-    my ($cmd)="$mysqladmin -u $user -h $host $pass_arg create $db";
+sub make_tmp_name { 
+    return "__embl_dump_tmpdb_$$";
+}
+
+sub create_tmp_db {
+    # create a (temporary) database 
+    if (defined $tmpdb) {
+        return;
+    }
+
+    $tmpdb = make_tmp_name;
+    warn "Creating temporary database '$tmpdb'\n";
+
+    my ($cmd)="$mysqladmin -u $user -h $host $pass_arg create $tmpdb";
     my ($out)= `$cmd 2>&1`;
     if ( $? || $out )  {
-        drop_tmp_db($db);            # just in case
+        &drop_tmp_db;                   # in case it was created
         die "``$cmd'' exited with exit status $? and stdout/err: $out";
     }
-
-    if ($check_sql) { 
-## NOTE: this is very hackish, I expect an SQL string that looks like
-## "create ... select ; alter ...", containing stuff for a single table.
-        $sql =~ s/distinct//gi;
-        $sql =~ s/;/ limit 1;/;          # just so we have *something*
-#        warn "SQL\n\n$sql\n\n";
-    }
-
-    # now create and populate the table
-    $cmd = "echo \"$sql\" | $mysql -N -q --batch -h $host -u $user $pass_arg $tmpdb";
-
-    $out = `$cmd 2>&1`;
-
-    if ( $? || $out )  {
-#        drop_tmp_db($db);            ? prolly too harsh
-        warn "``$cmd'' exited with exit status $? and stdout/err: $out";
-    }
     return;
-}                                       # create_tmp_db
+}
 
 sub drop_tmp_db {
-    my ($db)= @_;
+    if (!defined $tmpdb) {
+        warn "Can't drop temporary db, it's not defined"
+          ."(although it might exist and would be called " . &make_tmp_name .") ";
+        return;
+    }
 
 #    warn "DEBUG: NOT Dropping $db\n";
 #    return;
-    warn "Dropping $db\n";
+    warn "Dropping $tmpdb\n";
 
-    my ($cmd)="$mysqladmin --force -u $user -h $host $pass_arg drop $db";
+    my ($cmd)="$mysqladmin --force -u $user -h $host $pass_arg drop $tmpdb";
     my ($out)= `$cmd 2>&1`;
     if ( $? || $out ne "Database \"$tmpdb\" dropped\n" )  {
         warn "``$cmd'' exited with exit status $? and unexpected stdout/err: $out";
     }
+    $tmpdb=undef;
     return;
 }                                       # drop_tmp_db
+
+sub create_tmp_table {
+    my ($sql, $table) = @_;
+
+    if (! defined($tmpdb) )  {
+        &create_tmp_db();
+    }
+    
+    if ( $sql !~ /$table/i ) { 
+        confess "table name '$table' not found in SQL statement: $sql";
+    } 
+
+    if ($check_sql) { 
+## NOTE: this is very hackish, I expect an SQL string that looks like
+## "create ... select ; alter ...", containing stuff for a single table.
+## To speed it up, get rid of any DISTINCTs and add LIMIT 1
+        $sql =~ s/distinct//gi;         # makes it slow, so get rid of it
+        $sql =~ s/;/ limit 1;/;         # just get the first line
+#        warn "SQL\n\n$sql\n\n";
+    }
+
+    # now create/populate the table
+    my $cmd = "echo \"$sql\" | $mysql -N -q --batch -h $host -u $user $pass_arg $tmpdb";
+
+    my $out = `$cmd 2>&1`;
+
+    if ( $? || $out )  {
+        drop_tmp_table($table);    # that's why we needed the $table arg.
+        warn "``$cmd'' exited with exit status $? or (unexpected) stdout/err: $out";
+    }
+    return;
+}                                       # create_tmp_db
+
+sub drop_tmp_table {
+    my ($table)= @_;
+
+    if (! defined($tmpdb) )  {
+        confess "Can't drop table $table: tmpdb not defined "
+          ."(although if it exists, it would be called " . &make_tmp_name . ")";
+    }
+
+    warn "Dropping $table from $tmpdb\n";
+
+    my ($cmd)="echo 'DROP TABLE $table' | $mysql -u $user -h $host $pass_arg $tmpdb";
+    my ($out)= `$cmd 2>&1`;
+    if ( $? || $out ne "" )  {
+        confess "``$cmd'' exited with exit status $? or (unexpected) stdout/err: $out";
+    }
+    return;
+}                                       # drop_tmp_table
 
 sub dump_data {
     my($sql, $satdb, $tablename) = @_;
@@ -1212,7 +1263,7 @@ sub dump_data {
     warn "dumping $tablename ...\n";
 
     if ( system($cmd) ) { 
-        drop_tmp_db($tmpdb);         # might be needed
+        &drop_tmp_db($tmpdb);         # might be needed
         die "``$cmd'' exited with exit-status $?";
     }
 }                                       # dump_data
