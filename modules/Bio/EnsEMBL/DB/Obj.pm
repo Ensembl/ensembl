@@ -16,9 +16,11 @@ Bio::EnsEMBL::DB::Obj - Object representing an instance of an EnsEMBL DB
 
 =head1 SYNOPSIS
 
-    $db = new Bio::EnsEMBL::DB::Obj( -host => 'caldy', -dbi => 'mySQL');
+    $db = new Bio::EnsEMBL::DB::Obj( -user => 'root', -db => 'pog' );
 
     $clone = $db->get_clone('X45667');
+
+    $contig = $db->get_Contig("dJ52N12.02793");
 
     $gene  = $db->get_Gene('HG45501');
 
@@ -46,14 +48,15 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package EnsEMBL::DB::Obj;
+package Bio::EnsEMBL::DB::Obj;
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-
+use Bio::EnsEMBL::DB::Contig;
+use DBI;
 
 @ISA = qw(Bio::Root::Object);
 # new() is inherited from Bio::Root::Object
@@ -65,8 +68,23 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
+  my ($db,$host,$user) = $self->_rearrange([qw(DB
+					       HOST
+					       USER
+					       )],@args);
+
+  $db || $self->throw("Database object must have a database name");
+  #$host || $self->throw("Database object must have a host name");
+  $user || $self->throw("Database object must have a user");
+  
+  my $dbh = DBI->connect("DBI:mysql:$db","$user",'');
+
+  $dbh || $self->throw("Could not connect to database $db user $user");
+
+  $self->_db_handle($dbh);
+
 # set stuff in self from @args
- return $make; # success - we hope!
+  return $make; # success - we hope!
 }
 
 
@@ -106,5 +124,71 @@ sub get_Gene{
 
 }
 
+=head2 get_Contig
+
+ Title   : get_Contig
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Contig{
+   my ($self,$id) = @_;
+
+   # FIXME: should check that this id is correct in this db.
+
+   my $contig = new Bio::EnsEMBL::DB::Contig ( -dbobj => $self,
+					       -id => $id );
+
+   return $contig;
+}
+
+
+
+=head2 _db_handle
+
+ Title   : _db_handle
+ Usage   : $obj->_db_handle($newval)
+ Function: 
+ Example : 
+ Returns : value of _db_handle
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _db_handle{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'_db_handle'} = $value;
+    }
+    return $self->{'_db_handle'};
+
+}
+
+=head2 DESTROY
+
+ Title   : DESTROY
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub DESTROY{
+   my ($obj) = @_;
+
+   if( $obj->{'_db_handle'} ) {
+       $obj->{'_db_handle'}->disconnect;
+       $obj->{'_db_handle'} = undef;
+   }
+}
 
 
