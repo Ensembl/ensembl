@@ -1041,19 +1041,19 @@ CREATE TABLE seq_region (
 CREATE TABLE assembly_exception (
 
   assembly_exception_id       INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT,
-  seq_region_start            INT,
-  seq_region_end              INT, 
-  exc_type                    ENUM('HAP', 'PAR'),
-  exc_seq_region_id           INT, 
-  exc_seq_region_start        INT, 
-  exc_seq_region_end          INT,
-  ori                         INT,
+  seq_region_id               INT NOT NULL,
+  seq_region_start            INT NOT NULL,
+  seq_region_end              INT NOT NULL, 
+  exc_type                    ENUM('HAP', 'PAR') NOT NULL,
+  exc_seq_region_id           INT NOT NULL, 
+  exc_seq_region_start        INT NOT NULL, 
+  exc_seq_region_end          INT NOT NULL,
+  ori                         INT NOT NULL,
 
   PRIMARY KEY (assembly_exception_id),
 
-  INDEX sr_idx (seq_region_id, seq_region_start),
-  INDEX ex_idx (exc_seq_region_id, exc_seq_region_start)
+  KEY sr_idx (seq_region_id, seq_region_start),
+  KEY ex_idx (exc_seq_region_id, exc_seq_region_start)
 
 ) TYPE=MyISAM;
 
@@ -1065,7 +1065,7 @@ CREATE TABLE assembly_exception (
 CREATE TABLE coord_system (
 
   coord_system_id             INT NOT NULL auto_increment,
-  name                        VARCHAR(40),
+  name                        VARCHAR(40) NOT NULL,
   version                     VARCHAR(40),
   attrib                      SET ('top_level', 'default_version', 'sequence_level'),
 
@@ -1081,7 +1081,37 @@ CREATE TABLE coord_system (
 
 CREATE TABLE meta_coord (
 
-  table_name                  VARCHAR(40),
-  coord_system_id             INT
+  table_name                  VARCHAR(40) NOT NULL,
+  coord_system_id             INT NOT NULL,
+
+  UNIQUE(table_name, coord_system_id)
+
+) TYPE=MyISAM;
+
+
+
+CREATE TABLE density_feature (
+  density_feature_id    INT NOT NULL auto_increment,
+  density_type_id       INT NOT NULL, #FK refs density_type
+  seq_region_id         INT NOT NULL, #FK refs seq_region
+  seq_region_start      INT NOT NULL,
+  seq_region_end        INT NOT NULL,
+  density_value         FLOAT NOT NULL,
+
+  PRIMARY KEY(density_feature_id),
+  KEY seq_region_idx (density_type_id, seq_region_id, seq_region_start)
+
+) TYPE=MyISAM;
+
+
+
+CREATE TABLE density_type (
+  density_type_id       INT NOT NULL auto_increment,
+  analysis_id           INT NOT NULL, #FK refs analysis
+  block_size            INT NOT NULL,
+  value_type            ENUM('sum','ratio') NOT NULL,
+
+  PRIMARY KEY(density_type_id),
+  KEY analysis_idx (analysis_id, block_size)
 
 ) TYPE=MyISAM;
