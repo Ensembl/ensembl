@@ -434,6 +434,10 @@ sub remove_db_adaptor {
 sub get_all_db_adaptors {
   my ($self) = @_;   
 
+  unless(defined $self->{'_db_adaptors'}) {
+    return {};
+  }
+
   return $self->{'_db_adaptors'};
 }
 
