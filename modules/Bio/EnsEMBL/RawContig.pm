@@ -346,24 +346,11 @@ sub seq_old {
 }
 
 sub primary_seq {
-
   my $self = shift;
-  my $arg = shift;
 
-#   print STDERR "Sequence with $arg\n";
+  $self->warn("Bio::EnsEMBL::RawContig is now a primary seq object use it directly or use the seq method to return a sequence string\n");
 
-  if( defined $arg ) {
-    $self->{_seq} = $arg ;
-  } else {
-    if( ! defined $self->{_seq} &&
-      defined $self->adaptor() ) {
-#	 print STDERR "Fetching sequence\n";
-      $self->adaptor->fetch( $self );
-    }
-  }
-#   print STDERR "Returning...\n";
-#  return $self->{_seq};
-
+  return $self;
 }
 
 
@@ -383,8 +370,7 @@ sub get_repeatmasked_seq {
     my ($self) = @_;
     my @repeats = $self->get_all_RepeatFeatures();
 
-    my $seq = $self->primary_seq();
-    my $dna = $seq->seq();
+    my $dna = $self->seq();
     my $masked_dna = $self->_mask_features($dna, @repeats);
     my $masked_seq = Bio::PrimarySeq->new(   '-seq'        => $masked_dna,
                                              '-display_id' => $self->name,
