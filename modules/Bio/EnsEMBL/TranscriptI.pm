@@ -54,4 +54,6 @@ sub start {}
 
 sub end {}
 
+sub stable_id {}
+
 1;
