@@ -130,7 +130,7 @@ sub flush {
 
 =head2 map_coordinates
 
-    Arg  1      int $id
+    Arg  1      string $id
                 id of 'source' sequence
     Arg  2      int $start
                 start coordinate of 'source' sequence
@@ -157,6 +157,10 @@ sub map_coordinates{
        throw("Must start,end,strand,id,type as coordinates");
    }
 
+   # special case for handling inserts:
+   if($start == $end + 1) {
+     return $self->map_insert($id, $start, $end, $strand, $type);
+   }
 
    if( ! $self->{'_is_sorted'} ) { $self->_sort() }
 
@@ -290,12 +294,85 @@ sub map_coordinates{
        @result = reverse ( @result);
    }
 
+
    return @result;
 }
 
+
+
+=head2 map_insert
+
+  Arg [1]    : string $id
+  Example    : 
+  Description: This is in internal function which handles the special mapping
+               case for inserts (start = end +1).  This function will be called
+               automatically by the map function so there is no reason to
+               call it directly.
+  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and/or Gap objects
+  Exceptions : none
+  Caller     : map_coordinates()
+
+=cut
+
+sub map_insert {
+  my ($self, $id, $start, $end, $strand, $type) = @_;
+
+  # swap start/end and map the resultant 2bp coordinate
+  ($start, $end) =($end,$start);
+
+  my @coords = $self->map_coordinates($id, $start, $end, $strand, $type);
+
+  if(@coords == 1) {
+    my $c = $coords[0];
+    # swap start and end to convert back into insert
+    ($c->{'start'}, $c->{'end'}) = ($c->{'end'}, $c->{'start'});
+  } else {
+    throw("Unexpected: Got ",scalar(@coords)," expected 2.") if(@coords != 2);
+
+    # adjust coordinates, remove gaps
+    my ($c1, $c2);
+    if($strand == -1) {
+      ($c2,$c1) = @coords;
+    } else {
+      ($c1, $c2) = @coords;
+    }
+    @coords = ();
+
+    if(ref($c1) eq 'Bio::EnsEMBL::Mapper::Coordinate') {
+      # insert is after first coord
+      if($c1->{'strand'} * $strand == -1) {
+        $c1->{'end'}--;
+      } else {
+        $c1->{'start'}++;
+      }
+      @coords = ($c1);
+    }
+    if(ref($c2) eq 'Bio::EnsEMBL::Mapper::Coordinate') {
+      # insert is before second coord
+      if($c2->{'strand'} * $strand == -1) {
+        $c2->{'start'}++;
+      } else {
+        $c2->{'end'}--;
+      }
+      if($strand == -1) {
+        unshift @coords, $c2;
+      } else {
+        push @coords, $c2;
+      }
+    }
+  }
+
+  return @coords;
+}
+
+
+
+
+
+
 =head2 fastmap
 
-    Arg  1      int $id
+    Arg  1      string $id
                 id of 'source' sequence
     Arg  2      int $start
                 start coordinate of 'source' sequence
