@@ -65,6 +65,24 @@ sub _tables {
 }
 
 
+
+=head2 _default_where_clause
+
+  Arg [1]    : none
+  Example    : none
+  Description: PROTECTED implementation of superclass abstract method
+               Makes join between et and e table
+  Returntype : string
+  Exceptions : none
+  Caller     : generic_fetch
+
+=cut
+
+sub _default_where_clause {
+  return "et.exon_id = e.exon_id";
+}
+
+
 =head2 _columns
 
   Arg [1]    : none
@@ -138,6 +156,31 @@ sub fetch_by_stable_id {
 }
 
 
+=head2 fetch_all_by_Transcript
+
+  Arg [1]    : Bio::EnsEMBL::Transcript $transcript
+  Example    : none
+  Description: Retrieves all Exons for the Transcript in 5-3 order
+  Returntype : listref Bio::EnsEMBL::Exon on Transcript slice 
+  Exceptions : none
+  Caller     : Transcript->get_all_Exons()
+
+=cut
+
+sub fetch_all_by_Transcript {
+  my ( $self, $transcript ) = @_;
+
+  my $constraint = "et.transcript_id = ".$transcript->dbID();
+
+  my $exons = $self->SUPER::generic_fetch( $constraint );
+
+  if( ! @$exons ) { return [] }
+
+  my @new_exons = map { $_->transfer( $transcript->slice() ) } @$exons;
+
+  return \@new_exons;
+}
+
 
 
 
@@ -175,10 +218,10 @@ sub store {
   # trap contig_id separately as it is likely to be a common mistake
   
   my $exon_sql = q{
-    INSERT into exon ( exon_id, seq_region_id, seq_region_start, 
+    INSERT into exon ( seq_region_id, seq_region_start, 
 		       seq_region_end, seq_region_strand, phase, 
 		       end_phase )
-    VALUES ( ?, ?, ?, ?, ?, ?, ? ) 
+    VALUES ( ?, ?, ?, ?, ?, ? ) 
   };
   my $exonst = $self->prepare($exon_sql);
 
@@ -187,12 +230,19 @@ sub store {
 
   my $slice = $exon->slice();
 
-  unless( $slice && ref $slice && $slice->seq_region_id() ) {
+  unless( $slice && ref $slice ) {
     $self->throw("Exon does not have an attached slice with a valid " . 
 		 "database id.  Needs to have one set");
   }
 
-  $exonst->execute( undef,$slice->seq_region_id(),
+  my $seq_region_id = $self->db()->get_SliceAdaptor()->
+    get_seq_region_id( $exon->slice() );
+
+  if( ! $seq_region_id ) {
+    throw( "Attached slice is not valid in database" );
+  }
+
+  $exonst->execute( $seq_region_id,
 		    $exon->start(),
 		    $exon->end(),
 		    $exon->strand(),
@@ -233,11 +283,6 @@ sub store {
     }
 
     #sanity check
-    eval { $sf->validate(); };
-    if ($@) {
-      $self->warn("Supporting feature invalid. Skipping feature\n");
-      next;
-    }
     
     $sf->slice($exon->slice());
 
@@ -426,7 +471,6 @@ sub _objs_from_sth {
   }
 
   FEATURE: while($sth->fetch()) {
-    #get the analysis object
     my $slice = $slice_hash{$seq_region_id};
 
     if(!$slice) {

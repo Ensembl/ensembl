@@ -32,6 +32,9 @@ package Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 use strict;
 
+
+use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -148,17 +151,19 @@ sub list_stable_ids {
 sub fetch_by_stable_id {
    my ($self,$id, $cs_name, $cs_version) = @_;
 
+   if( ! $cs_name ) {
+     deprecate( "Please call this method with coordinate system name argument" );
+     $cs_name = "toplevel";
+   }
    my $constraint = "gsi.stable_id = \"$id\"";
 
    # should be only one :-)
-   my $genes = $self->SUPER::generic_fetch( $constraint );
+   my ($gene) = @{$self->SUPER::generic_fetch( $constraint )};
 
-   if( ! @$genes ) { return undef }
+   if( !$gene ) { return undef }
 
-   my @new_genes = map { $_->transform( $cs_name, $cs_version ) } @$genes;
-
-
-   return $new_genes[0];
+   
+   return $gene->transform( $cs_name, $cs_version );
  }
 
 
@@ -494,12 +499,16 @@ sub store {
    if (defined($gene->type)) {
        $type = $gene->type;
    }
+   my $seq_region_id = $self->db()->get_SliceAdaptor()->
+     get_seq_region_id( $gene->slice() );
+   if( ! $seq_region_id ) {
+     throw( "Attached slice is not valid in database" );
+   }
 
    my $store_gene_sql = "
         INSERT INTO gene
            SET type = ?,
                analysis_id = ?,
-               display_xref_id = ?,
                seq_region_id = ?,
                seq_region_start = ?,
                seq_region_end = ?,
@@ -509,8 +518,7 @@ sub store {
    $sth2->execute(
 		  "$type", 
 		  $analysisId, 
-		  $gene->display_xref()->dbID(),
-		  $gene->slice->seq_region_id(),
+		  $seq_region_id,
 		  $gene->start(),
 		  $gene->end(),
 		  $gene->strand()
@@ -548,9 +556,9 @@ sub store {
    # stable ids. So we need to have a step to merge exons together before store.
    my %exons;
 
-   foreach my $trans ( @{$self->get_all_Transcripts} ) {
+   foreach my $trans ( @{$gene->get_all_Transcripts} ) {
      foreach my $e ( @{$trans->get_all_Exons} ) {
-       my $key = $e->start()."-".$e->end()."-".$e->strand()."-".$e->phase();
+       my $key = $e->start()."-".$e->end()."-".$e->strand()."-".$e->phase()."-".$e->end_phase();
 
        if( exists $exons{ $key } ) {
 	 $trans->swap_exons( $e, $exons{$key} );
@@ -560,7 +568,7 @@ sub store {
      }
    }
 
-   foreach my $t ( @{$self->get_all_Transcripts()} ) {
+   foreach my $t ( @{$gene->get_all_Transcripts()} ) {
      $transcriptAdaptor->store($t,$gene_dbID );
    }
 
@@ -717,11 +725,7 @@ sub update {
         UPDATE gene
            SET type = ?,
                analysis_id = ?,
-               display_xref_id = ?,
-               seq_region_id = ?,
-               seq_region_start = ?,
-               seq_region_end = ?,
-               seq_region_strand = ?
+               display_xref_id = ?
          WHERE gene_id = ?";
 
    my $display_xref = $gene->display_xref();
@@ -734,15 +738,9 @@ sub update {
    }
 
    my $sth = $self->prepare( $update_gene_sql );
-   $sth->execute(
-	         $gene->type(), 
+   $sth->execute($gene->type(), 
 		 $gene->analysis->dbID(),
 		 $display_xref_id,
-		 $gene->slice->seq_region_id(),
-		 $gene->start(),
-		 $gene->end(),
-		 $gene->strand(),
-		 
 		 $gene->dbID()
 		);
    
@@ -896,6 +894,7 @@ sub _objs_from_sth {
     #finally, create the new repeat feature
     push @genes, Bio::EnsEMBL::Gene->new
       ( '-analysis'      =>  $analysis,
+	'-type'          =>  $type,
 	'-start'         =>  $seq_region_start,
 	'-end'           =>  $seq_region_end,
 	'-strand'        =>  $seq_region_strand,

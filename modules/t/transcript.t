@@ -46,8 +46,8 @@ for my $gene ( @$genes ) {
     }
   }
 
-  $gene->transform();
-
+  $gene = $gene->transform( "contig" );
+  next if( ! $gene );	
   for my $trans ( @{$gene->get_all_Transcripts()} ) {
     if( $trans->translate()->seq() =~ /\*./ ) {
       $translates = 0;

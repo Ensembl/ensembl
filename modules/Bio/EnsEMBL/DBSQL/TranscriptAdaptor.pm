@@ -158,7 +158,7 @@ sub fetch_by_translation_stable_id {
 } 
                              
 
-=head2 fetch_by_Gene
+=head2 fetch_all_by_Gene
 
   Arg [1]    : Bio::EnsEMBL::Gene $gene
   Example    : none
@@ -171,7 +171,7 @@ sub fetch_by_translation_stable_id {
 =cut
 
 
-sub fetch_by_Gene {
+sub fetch_all_by_Gene {
   my $self = shift;
   my $gene = shift;
 
@@ -288,15 +288,17 @@ sub store {
    # then store the exon_transcript table
 
    my $translation = $transcript->translation();
-
    my $exons = $transcript->get_all_Exons();
-
    my $exonAdaptor = $self->db->get_ExonAdaptor();
    foreach my $exon ( @{$exons} ) {
      $exonAdaptor->store( $exon );
    }
 
-
+   my $seq_region_id = $self->db()->get_SliceAdaptor()->
+     get_seq_region_id( $transcript->slice() );
+   if( ! $seq_region_id ) {
+     throw( "Attached slice is not valid in database" );
+   }
 
    # first store the transcript w/o a display xref
    # the display xref needs to be set after xrefs are stored which needs to 
@@ -306,11 +308,13 @@ sub store {
 
    # ok - now load this line in
    my $tst = $self->prepare("
-        insert into transcript ( gene_id )
-        values ( ? )
+        insert into transcript ( gene_id, seq_region_id, seq_region_start,
+                                 seq_region_end, seq_region_strand )
+        values ( ?, ?, ?, ?, ? )
         ");
 
-   $tst->execute( $gene_dbID );
+   $tst->execute( $gene_dbID, $seq_region_id, $transcript->start(), 
+		  $transcript->end(), $transcript->strand() );
 
    my $transc_dbID = $tst->{'mysql_insertid'};
 
@@ -524,11 +528,7 @@ sub update {
 
    my $update_transcript_sql = "
         UPDATE transcript
-           SET display_xref_id = ?,
-               seq_region_id = ?,
-               seq_region_start = ?,
-               seq_region_end = ?,
-               seq_region_strand = ?
+           SET display_xref_id = ?
          WHERE transcript_id = ?";
 
    my $display_xref = $transcript->display_xref();
@@ -541,9 +541,7 @@ sub update {
    }
 
    my $sth = $self->prepare( $update_transcript_sql );
-   $sth->execute( $display_xref_id, $transcript->slice()->seq_region_id(),
-   		  $transcript->start(), $transcript->end(),
-		  $transcript->strand(), $transcript->dbID() );
+   $sth->execute( $display_xref_id, $transcript->dbID() );
  }
 
 =head2 list_dbIDs

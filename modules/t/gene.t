@@ -9,12 +9,16 @@ BEGIN { $| = 1;
 
 use MultiTestDB;
 use TestUtils qw ( debug test_getter_setter );
-
+use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::FeaturePair;
+use Bio::EnsEMBL::Transcript;
+use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Gene;
+use Bio::EnsEMBL::DnaDnaAlignFeature;
 
 # switch on the debug prints
 
-our $verbose = 1;
+our $verbose = 0;
 
 debug( "Startup test" );
 ok(1);
@@ -79,7 +83,7 @@ ok( scalar @$links == 6 );
 
 my $sa = $db->get_SliceAdaptor();
 
-my $slice = $sa->fetch_by_chr_start_end( "20", 30_249_935, 31_254_640 );
+my $slice = $sa->fetch_by_region( "chromosome", "20", 30_249_935, 31_254_640 );
 
 debug( "Slice from SliceAdaptor" );
 ok($slice);
@@ -135,7 +139,6 @@ $fp->end  (13735);
 $fp->strand(1);
 $fp->score(10);
 $fp->slice($slice);
-$fp->seqname(1);
 
 $fp->hstart  (220);
 $fp->hend    (248);
@@ -184,7 +187,7 @@ $fp->end  (201571);
 $fp->strand(1);
 $fp->score(10);
 $fp->slice( $slice );
-$fp->seqname(1);
+
 
 $fp->hstart  (201);
 $fp->hend    (300);
@@ -244,9 +247,9 @@ my $translates  = 1;
 foreach my $tr( @{$gene->get_all_Transcripts()} ) {
   if( $tr->translate()->seq() =~ /\*./ ) {
     $translates = 0;
-    debug( "Translate failed.".$tr->translate()->seq() );
+    debug( "Translate failed." );
   }
-
+  debug( "Translation: ".$tr->translate()->seq() );
   foreach my $exon ( @{$tr->get_all_Exons()} ) {
     debug( "  Exon start: ". $exon->start());
     debug( "  Exon end:   ". $exon->end() );
@@ -260,8 +263,10 @@ ok( $translates );
 
 ok( scalar(@{$gene->get_all_Exons()} ) == 3);
 
-$gene->transform();
+$gene = $gene->transform( "chromosome" );
+
 $multi->hide( "core", "gene", "transcript", "exon", "exon_transcript", "gene_description", "translation", "gene_stable_id", "transcript_stable_id", "exon_stable_id", "translation_stable_id", "supporting_feature", "dna_align_feature" );
+
 
 my $gene_ad = $db->get_GeneAdaptor();
 debug( "Storing the gene" );
@@ -319,13 +324,12 @@ my $e = $t->get_all_Exons()->[0];
 my $se = $e->get_all_supporting_features();
 
 debug( "Got ".scalar( @$se )." supporting features." );
-ok( scalar( @$se ) == 2 );
+ok( scalar( @$se ) == 1 );
 
-my $se_start = $se->[0]->start() < $se->[1]->start() ? 
-  $se->[0]->start() : $se->[1]->start();
+my $se_start = $se->[0]->start(); 
 
-my $se_end = $se->[0]->end() > $se->[1]->end() ? 
-  $se->[0]->end() : $se->[1]->end();
+
+my $se_end = $se->[0]->end();
 
 
 debug( "Supporting start $se_start, end $se_end" );
@@ -348,7 +352,8 @@ debug( "checking external references" );
 
 $multi->restore();
 
-$slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end("20", 30_252_000, 31_252_001 );
+$slice = $db->get_SliceAdaptor()->fetch_by_region
+  ( "toplevel", "20", 30_252_000, 31_252_001 );
 
 my $known = 0;
 my $unknown = 0;
@@ -378,12 +383,12 @@ ok( $known==17 );
 
 # tests for update method
 # go get a fresh gene again
-$gene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
+$gene = $ga->fetch_by_stable_id( "ENSG00000171456", "toplevel" ); 
 
 # the first update should no effect
 $ga->update($gene);
 
-my $newgene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
+my $newgene = $ga->fetch_by_stable_id( "ENSG00000171456", "chromosome" ); 
 ok ( $newgene->display_xref->dbID() == 128324 );
 ok ( $newgene->type eq 'ensembl' );
 
@@ -394,6 +399,6 @@ $gene->display_xref( $dbEntryAdaptor->fetch_by_dbID( 614 ));
 $gene->type('dummy');
 $ga->update($gene);
 
-$newgene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
+$newgene = $ga->fetch_by_stable_id( "ENSG00000171456", "chromosome" ); 
 ok ( $newgene->display_xref->dbID() == 614 );
 ok ( $newgene->type eq 'dummy' );

@@ -58,9 +58,9 @@ sub new {
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
 
-  my ( $stable_id, $version, $external_name, $external_db, 
+  my ( $stable_id, $version, $external_name, $type, $external_db, 
        $external_status, $display_xref ) = 
-    rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
+    rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
 		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF' ], @_ );
   
   $self->stable_id( $stable_id );
@@ -69,6 +69,7 @@ sub new {
   $self->external_db( $external_db ) if( defined $external_db );
   $self->external_status( $external_status ) if( defined $external_status );
   $self->display_xref( $display_xref ) if( defined $display_xref );
+  $self->type( $type ) if( defined $type );
   return $self;
 }
 
@@ -512,6 +513,7 @@ sub add_Transcript{
 
    $self->{'_transcript_array'} ||= [];
    push(@{$self->{'_transcript_array'}},$trans);
+   $self->_recalculate_cordinates();
 }
 
 
@@ -534,7 +536,7 @@ sub get_all_Transcripts {
   if( ! exists $self->{'_transcript_array'} ) {
     if( defined $self->adaptor() ) {
       my $ta = $self->adaptor()->db()->get_TranscriptAdaptor();
-      my $transcripts = $ta->fetch_by_Gene( $self );
+      my $transcripts = $ta->fetch_all_by_Gene( $self );
       $self->{'_transcript_array'} = $transcripts;
     }
   }
@@ -692,18 +694,51 @@ sub transform {
   my $self = shift;
 
   # catch for old style transform calls
-  if( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" )) {
+  if( !@_ || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
     throw( "transform needs coordinate systems details now, please use transfer" );
   }
 
   my $new_gene = $self->SUPER::transform( @_ );
+  return undef unless $new_gene;
 
   if( exists $self->{'_transcript_array'} ) {
-    my @new_transcript_array;
+    my @new_transcripts;
     for my $old_transcript ( @{$self->{'_transcript_array'}} ) {
       my $new_transcript = $old_transcript->transform( @_ );
-      push( @{$new_gene->{'_transcript_array'}}, $new_transcript );
+      push( @new_transcripts, $new_transcript );
     }
+    $new_gene->{'_transcript_array'} = \@new_transcripts;
+  }
+  return $new_gene;
+}
+
+
+
+=head2 transfer
+
+  Arg [1]    : Bio::EnsEMBL::Slice $destination_slice
+  Example    : none
+  Description: MOves this Gene to given target slice coordinates. If Transcripts
+               are attached they are moved as well. Returns a new gene.
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub transfer {
+  my $self  = shift;
+  
+  my $new_gene = $self->SUPER::transfer( @_ );
+  return undef unless $new_gene;
+
+  if( exists $self->{'_transcript_array'} ) {
+    my @new_transcripts;
+    for my $old_transcript ( @{$self->{'_transcript_array'}} ) {
+      my $new_transcript = $old_transcript->transfer( @_ );
+      push( @new_transcripts, $new_transcript );
+    }
+    $new_gene->{'_transcript_array'} = \@new_transcripts;
   }
   return $new_gene;
 }
@@ -759,6 +794,66 @@ sub display_xref {
     } 
 
     return $self->{'display_xref'};
+}
+
+
+=head2 _recalculate_cordinates
+
+  Args       : none
+  Example    : none
+  Description: called when transcript added to the gene
+               tries to set coords for the gene.
+  Returntype : none
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+
+
+sub _recalculate_cordinates {
+  my $self = shift;
+  
+  if( ! defined $self->{'_transcript_array'} ) {
+    warning( "Cant recalculate position without transcripts" );
+    return;
+  }
+  
+  my $transcripts = $self->{'_transcript_array'};
+
+  my ( $slice, $start, $end, $strand );
+  $slice = $transcripts->[0]->slice();
+  $strand = $transcripts->[0]->strand();
+  $start = $transcripts->[0]->start();
+  $end = $transcripts->[0]->end();
+
+  my $transsplicing = 0;
+
+  for my $t ( @$transcripts ) {
+    if( $t->start() < $start ) {
+      $start = $t->start();
+    }
+  
+    if( $t->end() < $end ) {
+      $end = $t->end();
+    }
+  
+    if( $t->slice()->name() ne $slice->name() ) {
+      throw( "Transcripts with different slices not allowed on one Gene" );
+    }
+    
+    if( $t->strand() != $strand ) {
+      $transsplicing = 1;
+    }
+  }
+  if( $transsplicing ) {
+    warning( "Gene contained trans splicing event" );
+  }
+
+  $self->start( $start );
+  $self->end( $end );
+  $self->strand( $strand );
+  $self->slice( $slice );
 }
 
 

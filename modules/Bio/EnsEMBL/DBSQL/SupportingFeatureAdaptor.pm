@@ -54,12 +54,6 @@ sub fetch_all_by_Exon {
 
   my $out = [];
 
-  #throw if this is a sticky exon
-  if($exon->isa('Bio::EnsEMBL::StickyExon')) {
-    $self->throw('Expected Exon but got StickyExon. ' .
-		 'Call get_all_component_Exons first');
-  }
-
   unless($exon->dbID) {
     $self->warn("exon has no dbID can't fetch evidence from db " .
 		"no relationship exists\n");
@@ -86,14 +80,8 @@ sub fetch_all_by_Exon {
       $self->throw("Unknown feature type [$type]\n");
     }
 
-    if($exon->contig()->isa("Bio::EnsEMBL::Slice")) {
-      #tranform to slice coords
-      $feature->transform($exon->contig());
-    } else {
-      #we might have to convert the features coordinate system
-      next unless($feature->contig->dbID == $exon->contig->dbID);
-    }
-    push @$out, $feature;
+    my $new_feature = $feature->transfer($exon->slice());
+    push @$out, $new_feature if( $new_feature );
   }
   return $out;
 }

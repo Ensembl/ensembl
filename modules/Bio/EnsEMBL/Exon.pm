@@ -89,23 +89,28 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 =cut
 
 sub new {
-  my($class,@args) = @_;
+  my $class = shift;
 
   $class = ref $class || $class;
 
   my $self = $class->SUPER::new( @_ );
   
-  my ( $phase, $end_phase ) = rearrange( [ "PHASE", "ENDPHASE" ], @_ );
+  my ( $phase, $end_phase, $stable_id, $version ) = 
+    rearrange( [ "PHASE", "END_PHASE", "STABLE_ID", "VERSION" ], @_ );
 
-  $self->phase( $phase );
-  $self->end_phase( $end_phase );
+  $self->{'phase'} = $phase;
+  $self->{'end_phase'} = $end_phase;
+  $self->{'stable_id'} = $stable_id;
+  $self->{'version'} = $version;
+
+  return $self;
 }
 
 
 
 =head2 new_fast
 
-  Arg [1]    : Bio::EnsEMBL::RawContig/Bio::EnsEMBL::Slice $contig
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
   Arg [2]    : int $start
   Arg [3]    : int $end
   Arg [4]    : int $strand (1 or -1)
@@ -118,7 +123,7 @@ sub new {
 =cut
 
 sub new_fast {
-  my ($class,$contig,$start,$end,$strand) = @_;
+  my ($class,$slice,$start,$end,$strand) = @_;
 
   my $self = bless {}, $class;
 
@@ -126,15 +131,13 @@ sub new_fast {
   # We assume that the strand is correct and keep the input value.
 
   if ($start > $end) {
-    my $tmp = $end;
-    $end    = $start;
-    $start  = $tmp;
+    throw( "End smaller than start not allowed" );
   }
   
   $self->start ($start);
   $self->end   ($end);
   $self->strand($strand);
-  $self->contig($contig);
+  $self->slice($slice);
   
   return $self;
 }
@@ -228,17 +231,20 @@ sub adaptor {
 
 =cut
 
+
+
 sub end_phase {
-  my ($self,$endphase) = @_;
-  if ( defined($endphase) ){
-    $self->{_end_phase} = $endphase;
+  my $self = shift;
+  if( @_ ) { 
+    $self->{'end_phase'} = shift;
+  } else {
+    if( ! defined ( $self->{'end_phase'} )) {
+      warning( "No end phase set in Exon. You must set it explicitly. $!" );
+    }
   }
-  if ( !defined( $self->{_end_phase} ) ){
-    $self->throw("No end phase set in Exon. You must set it explicitly. $!" .
-	      "Caller: ".caller);
-  }
-  return $self->{_end_phase};
+  return $self->{'end_phase'};
 }
+
 
 
 
@@ -361,6 +367,75 @@ sub type {
 
 
 
+=head2 transform
+
+  Arg  1     : String $coordinate_system_name
+  Arg [2]    : String $coordinate_system_version
+  Description: moves this exon to the given coordinate system. If this exon has 
+               attached supporting evidence, they move as well.
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : wrong parameters
+  Caller     : general
+
+=cut
+
+
+sub transform {
+  my $self = shift;
+
+  # catch for old style transform calls
+  if( !@_ || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
+    throw( "transform needs coordinate systems details now, please use transfer" );
+  }
+
+  my $new_exon = $self->SUPER::transform( @_ );
+  return undef unless $new_exon;
+
+  if( exists $self->{'_supporting_evidence'} ) {
+    my @new_features;
+    for my $old_feature ( @{$self->{'_supporting_evidence'}} ) {
+      my $new_feature = $old_feature->transform( @_ );
+      push( @new_features, $new_feature );
+    }
+    $new_exon->{'_supporting_evidence'} = \@new_features;
+  }
+  return $new_exon;
+}
+
+
+
+=head2 transfer
+
+  Arg [1]    : Bio::EnsEMBL::Slice $destination_slice
+  Example    : none
+  Description: Moves this Exon to given target slice coordinates. If Features
+               are attached they are moved as well. Returns a new exon.
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub transfer {
+  my $self  = shift;
+  
+  my $new_exon = $self->SUPER::transfer( @_ );
+  return undef unless $new_exon;
+
+  if( exists $self->{'_supporting_evidence'} ) {
+    my @new_features;
+    for my $old_feature ( @{$self->{'_supporting_evidence'}} ) {
+      my $new_feature = $old_feature->transfer( @_ );
+      push( @new_features, $new_feature );
+    }
+    $new_exon->{'_supporting_evidence'} = \@new_features;
+  }
+  return $new_exon;
+}
+
+
+
+
 
 
 =head2 add_supporting_features
@@ -386,22 +461,21 @@ sub add_supporting_features {
   #print STDERR "calling add supporting features\n\n";
   return unless @features;
 
-  $self->{_supporting_evidence} = [] 
-    unless defined($self->{_supporting_evidence});
+  $self->{_supporting_evidence} ||= []; 
   
   # check whether this feature object has been added already
  FEATURE: foreach my $feature (@features) {
     #print STDERR "have ".$feature." to add to exon\n\n";
-    unless($feature && $feature->isa("Bio::EnsEMBL::SeqFeatureI")) {
+    unless($feature && $feature->isa("Bio::EnsEMBL::Feature")) {
       $self->throw("Supporting feat [$feature] not a " . 
-		   "Bio::EnsEMBL::SeqFeatureI");
+		   "Bio::EnsEMBL::Feature");
     } 
     
-    if ((defined $self->contig() && defined $feature->contig())&&
-	    ( $self->contig()->name() ne $feature->contig()->name())){
+    if ((defined $self->slice() && defined $feature->slice())&&
+	    ( $self->slice()->name() ne $feature->slice()->name())){
       $self->throw("Supporting feat not in same coord system as exon\n" .
-		   "exon is attached to [".$self->contig->name()."]\n" .
-		   "feat is attached to [".$feature->contig->name()."]");
+		   "exon is attached to [".$self->slice()->name()."]\n" .
+		   "feat is attached to [".$feature->slice()->name()."]");
     }
 
     foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
@@ -466,7 +540,7 @@ sub get_all_supporting_features {
 
 sub find_supporting_evidence {
   my ($self,$features,$sorted) = @_;
-  
+
   foreach my $f (@$features) {
     # return if we have a sorted feature array
     if ($sorted == 1 && $f->start > $self->end) {
@@ -535,6 +609,42 @@ sub modified{
 
 
     return $self->{'_modified'};
+}
+
+
+=head2 stable_id
+
+  Arg [1]    : string $stable_id
+  Example    : none
+  Description: get/set for attribute stable_id
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub stable_id {
+   my $self = shift;
+  $self->{'stable_id'} = shift if( @_ );
+  return $self->{'stable_id'};
+}
+
+
+=head2 version
+
+  Arg [1]    : string $version
+  Example    : none
+  Description: get/set for attribute version
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub version {
+   my $self = shift;
+  $self->{'version'} = shift if( @_ );
+  return $self->{'version'};
 }
 
 
@@ -633,7 +743,7 @@ sub peptide {
 
   #convert exons coordinates to peptide coordinates
   my @coords = 
-    $tr->genomic2pep($self->start, $self->end, $self->strand, $self->contig);
+    $tr->genomic2pep($self->start, $self->end, $self->strand, $self->slice);
   
   #filter out gaps
   @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
@@ -692,13 +802,13 @@ sub seq {
 
   my $seq;
 
-  if ( ! defined $self->contig ) {
-    $self->warn(" this exon doesn't have a contig you won't get a seq \n");
+  if ( ! defined $self->slice ) {
+    $self->warn(" this exon doesn't have a slice you won't get a seq \n");
     return undef;
   }
   else {
       
-    $seq = $self->contig()->subseq($self->start, $self->end);
+    $seq = $self->slice()->subseq($self->start, $self->end);
 
     if($self->strand == -1){
       $seq =~ tr/ATGCatgc/TACGtacg/;

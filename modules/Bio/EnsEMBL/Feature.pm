@@ -269,7 +269,7 @@ sub move {
 
 sub length {
   my $self = shift;
-  return $self->{'start'} - $self->{'end'} + 1;
+  return $self->{'end'} - $self->{'start'} + 1;
 }
 
 

@@ -71,7 +71,6 @@ sub new {
 	 rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
 		      'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF' ], @_ );
   
-  $self->{'_trans_exon_array'} = ( $exons || [] );
   if( $exons ) {
     $self->_recalculate_cordinates();
   }
@@ -671,7 +670,10 @@ sub add_Exon{
 
 sub get_all_Exons {
    my ($self) = @_;
-
+   if( ! defined $self->{'_trans_exon_array'} && defined $self->adaptor() ) {
+     $self->{'_trans_exon_array'} = $self->adaptor()->db()->
+       get_ExonAdaptor()->fetch_all_by_Transcript( $self );
+   }
    return $self->{'_trans_exon_array'};
 }
 
@@ -1462,7 +1464,7 @@ sub cdna2genomic {
 =cut
 
 sub genomic2cdna {
-  my ($self, $start, $end, $strand, $contig) = @_;
+  my ($self, $start, $end, $strand, $slice) = @_;
 
   unless(defined $start && defined $end && defined $strand) {
     $self->throw("start, end and strand arguments are required\n");
@@ -1470,14 +1472,23 @@ sub genomic2cdna {
 
   #"ids" in mapper are contigs of exons, so use the same contig that should
   #be attached to all of the exons...
-  $contig = $self->get_all_Exons->[0]->contig unless(defined $contig);
+  if( $slice ) {
+    throw( "Arbitrary coordinates not supported yet" );
+    if( ! $self->adaptor() ) {
+      throw( "Cant do genomic2cdna without database connection" );
+    }
+
+    my $asm_mapper_adaptor = $self->adaptor()->db()->get_AssemblyMapperAdaptor();
+    # map from given slice coord system into $self->slice() ...
+  }
+
   my $mapper = $self->_get_cdna_coord_mapper;
 
-
+  
   #print "MAPPING $start - $end ($strand)\n";
   #print $contig->name . "=" . $self->get_all_Exons->[0]->contig->name . "\n";
-
-  return $mapper->map_coordinates($contig, $start, $end, $strand, "genomic");
+  $slice = $self->slice();
+  return $mapper->map_coordinates($slice, $start, $end, $strand, "genomic");
 }
 
 
@@ -1658,18 +1669,35 @@ sub temporary_id{
 
 sub swap_exons {
   my ( $self, $old_exon, $new_exon ) = @_;
+  
+  my $arref = $self->{'_trans_exon_array'};
+  for(my $i = 0; $i < @$arref; $i++) {
+    if($arref->[$i] == $old_exon) {
+      $arref->[$i] = $new_exon;
+      last;
+    }
+  }
 
-  map { if( $_ == $old_exon ) { $_ = $new_exon } } 
-  @{$self->{'_trans_exon_array'}};
+#map { if( $_ == $old_exon ) { $_ = $new_exon } } 
+#  @{$self->{'_trans_exon_array'}};
+  if( defined $self->{'translation'} ) {
+    if( $self->translation()->start_Exon() == $old_exon ) {
+      $self->translation()->start_Exon( $new_exon );
+    }
+    if( $self->translation()->end_Exon() == $old_exon ) {
+      $self->translation()->end_Exon( $new_exon );
+    }
+  }
 }      
 
 =head2 transform
 
   Arg  1     : String $coordinate_system_name
   Arg [2]    : String $coordinate_system_version
-  Description: moves this gene to the given coordinate system. If this gene has Transcripts
-               attached, they move as well.
-  Returntype : Bio::EnsEMBL::Gene
+  Description: moves this Transcript to the given coordinate system. 
+               If this Transcript has Exons attached, they move as well.
+               A new Transcript is returned.
+  Returntype : Bio::EnsEMBL::Transcript
   Exceptions : wrong parameters
   Caller     : general
 
@@ -1685,15 +1713,80 @@ sub transform {
   }
 
   my $new_transcript = $self->SUPER::transform( @_ );
+  return undef unless $new_transcript;
+
+  if( defined $self->{'translation'} ) {
+    my $new_translation;
+    %$new_translation = %{$self->{'translation'}};;
+    bless $new_translation, ref( $self->{'translation'} );
+    $new_transcript->{'translation'} = $new_translation;
+  }
 
   if( exists $self->{'_trans_exon_array'} ) {
-    my @new_exon_array;
+    my @new_exons;
     for my $old_exon ( @{$self->{'_trans_exon_array'}} ) {
       my $new_exon = $old_exon->transform( @_ );
-      push( @{$new_transcript->{'_trans_exon_array'}}, $new_exon );
+      if( defined $new_transcript->{'translation'} ) {
+        if( $new_transcript->translation()->start_Exon() == $old_exon ) {
+          $new_transcript->translation()->start_Exon( $new_exon );
+        }
+        if( $new_transcript->translation()->end_Exon() == $old_exon ) {
+          $new_transcript->translation()->end_Exon( $new_exon );
+        }
+      }
+      push( @new_exons, $new_exon );
     }
-    $self->_recalculate_cordinates();
+    $new_transcript->{'_trans_exon_array'} = \@new_exons;
   }
+  return $new_transcript;
+}
+
+
+=head2 transfer
+
+  Arg  1     : Bio::EnsEMBL::Slice $destination_slice
+  Description: moves this transcript to the given slice. If this Transcripts has
+               Exons attached, they move as well.
+  Returntype : Bio::EnsEMBL::Transcript
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+sub transfer {
+  my $self = shift;
+
+  my $new_transcript = $self->SUPER::transfer( @_ );
+  return undef unless $new_transcript;
+
+  if( defined $self->{'translation'} ) {
+    my $new_translation;
+    %$new_translation = %{$self->{'translation'}};;
+    bless $new_translation, ref( $self->{'translation'} );
+    $new_transcript->{'translation'} = $new_translation;
+  }
+
+  if( exists $self->{'_trans_exon_array'} ) {
+    my @new_exons;
+    for my $old_exon ( @{$self->{'_trans_exon_array'}} ) {
+      my $new_exon = $old_exon->transfer( @_ );
+      if( defined $new_transcript->{'translation'} ) {
+        if( $new_transcript->translation()->start_Exon() == $old_exon ) {
+          $new_transcript->translation()->start_Exon( $new_exon );
+        }
+        if( $new_transcript->translation()->end_Exon() == $old_exon ) {
+          $new_transcript->translation()->end_Exon( $new_exon );
+        }
+      }
+      push( @new_exons, $new_exon );
+    }
+      
+
+    $new_transcript->{'_trans_exon_array'} = \@new_exons;
+  }
+
+  return $new_transcript;
 }
 
 
@@ -1784,8 +1877,9 @@ sub modified{
 sub _recalculate_cordinates {
   my $self = shift;
   
-  if( $self->{'_trans_exon_array'} ) {
+  if( ! defined $self->{'_trans_exon_array'} ) {
     warning( "Cant recalculate position without exons" );
+    return;
   }
   
   my $exons = $self->{'_trans_exon_array'};
