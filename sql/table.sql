@@ -446,7 +446,7 @@ CREATE TABLE Xref(
          externalDBId int not null,
          dbprimary_id VARCHAR(40) not null,
 	 display_id VARCHAR(40) not null,
-         version VARCHAR(10),
+         version VARCHAR(10) DEFAULT '' NOT NULL,
 	 description VARCHAR(255),
 
          PRIMARY KEY( xrefId ),
@@ -474,7 +474,7 @@ CREATE TABLE externalSynonym(
 CREATE TABLE externalDB(
          externalDBId INT not null auto_increment,
          db_name VARCHAR(40) not null,
-	 release VARCHAR(40),
+	 release VARCHAR(40) DEFAULT '' NOT NULL,
          PRIMARY KEY( externalDBId ) 
    	);
 
