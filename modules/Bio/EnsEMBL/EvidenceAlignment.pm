@@ -132,7 +132,7 @@ sub fetch_alignment {
 sub _get_seq {
   my ($self, $seqfetcher, $cache_arr_ref, $name) = @_;
   $self->throw("interface fault") if (@_ != 4);
-  
+
   foreach my $cache_entry (@$cache_arr_ref) {
     if ($$cache_entry{'name'} eq $name) {
       return $$cache_entry{'seqobj'};
@@ -196,6 +196,7 @@ sub _get_aligned_evidence {
   my $ga = $db->get_GeneAdaptor;
   my $ea = $db->get_ExonAdaptor;
   my $seqfetcher = Bio::EnsEMBL::Pipeline::SeqFetcher->new();
+  $seqfetcher->pfetch("/usr/local/pubseq/bin/pfetch");
 
   # get all exons off a VC
   my $gene = $ga->fetch_by_transcript_stable_id($transcript_id);
@@ -381,43 +382,30 @@ sub _get_aligned_evidence {
     } else {
       $seq_str = "\L$seq_str";
     }
-    if ($$hit{'hseqname'} ne $prev_hseqname) {	# not same source as previous
-      if ($evidence_line ne "") {
-	while (length($evidence_line) < $prot_tran_len) {
-	  $evidence_line .= "-";
-        }
-	$evidence_obj = Bio::PrimarySeq->new(
-	                  -seq              => $evidence_line,
-	                  -id               => 0,
-			  -accession_number => $$hit{'hseqname'},
-			  -moltype          => $$hit{'moltype'}
-			);
-	push @evidence_arr, $evidence_obj;
-      }
-      $evidence_line = "-" x $$hit{'hindent'};
-      $evidence_line .= $seq_str;
-    } else {	# same source as previous
-      while (length($evidence_line) > ($$hit{'hindent'})) {
-        chop $evidence_line;
-      }
-      while (length($evidence_line) < ($$hit{'hindent'})) {
-        $evidence_line .= "-";
-      }
-      $evidence_line .= $seq_str;
+    
+    if ($$hit{'hseqname'} ne $prev_hseqname) {	# make new evidence line
+      $evidence_line = "-" x $prot_tran_len;
     }
-    $prev_hseqname = $$hit{'hseqname'};
-  }
-  if (length($evidence_line) > 0) {
-    while (length($evidence_line) < $prot_tran_len) {
-      $evidence_line .= "-";
-    }
-    $evidence_obj = Bio::PrimarySeq->new(
+
+    # splice in the evidence fragment
+    substr $evidence_line, $$hit{hindent}, length $seq_str, $seq_str;
+
+    # store if end of evidence line
+    if (($i == $#sorted_pep_evidence_arr) ||
+        ($sorted_pep_evidence_arr[$i+1]{'hseqname'} ne $$hit{'hseqname'}))
+    {
+      $evidence_line = substr $evidence_line, 0, $prot_tran_len;
+      $evidence_obj = Bio::PrimarySeq->new(
                       -seq              => $evidence_line,
                       -id               => 0,
   		      -accession_number => $$hit{'hseqname'},
 		      -moltype          => $$hit{'moltype'}
 		    );
-    push @evidence_arr, $evidence_obj;
+      push @evidence_arr, $evidence_obj;
+      $uppercase = 0;	# force next line to start uppercase
+    }
+    $prev_hseqname = $$hit{'hseqname'};
+    $prev_exon = $$hit{'exon'};
   }
 
   # nucleic acid evidence
@@ -501,14 +489,13 @@ sub _get_aligned_evidence {
     $total_exon_len += $all_exons[$i]->end - $start + 1;
   }
 
-   my @sorted_nuc_evidence_arr = sort {   ( $$a{'hseqname'} =~ /^ENST/
+  my @sorted_nuc_evidence_arr = sort {   ( $$a{'hseqname'} =~ /^ENST/
                                            ? -1 : 0 )
-                                      || ( $$b{'hseqname'} =~ /^ENST/
-                                          ? 1 : 0 )
-                                      || ( $$a{'hseqname'} cmp $$b{'hseqname'} )
-                                      || ( $$a{'hindent'} <=> $$b{'hindent'} )
-                                } @nuc_evidence_arr;
-
+			              || ( $$b{'hseqname'} =~ /^ENST/
+                                           ? 1 : 0 )
+				      || ( $$a{'hseqname'} cmp $$b{'hseqname'} )
+				      || ( $$a{'hindent'} <=> $$b{'hindent'} )
+ 			        } @nuc_evidence_arr;
 
   $evidence_line = "";
   $uppercase = 1;	# case of sequence for output
@@ -526,43 +513,30 @@ sub _get_aligned_evidence {
     } else {
       $seq_str = "\L$seq_str";
     }
-    if ($$hit{'hseqname'} ne $prev_hseqname) {	# not same source as previous
-      if ($evidence_line ne "") {
-        while (length($evidence_line) < $nuc_tran_len) {
-          $evidence_line .= "-";
-        }
-	$evidence_obj = Bio::PrimarySeq->new(
-	                  -seq              => $evidence_line,
-	                  -id               => 0,
-			  -accession_number => $$hit{'hseqname'},
-			  -moltype          => $$hit{'moltype'}
-			);
-	push @evidence_arr, $evidence_obj;
-      }
-      $evidence_line = "-" x $$hit{'hindent'};
-      $evidence_line .= $seq_str;
-    } else {	# same source as previous
-      while (length($evidence_line) > ($$hit{'hindent'})) {
-        chop $evidence_line;
-      }
-      while (length($evidence_line) < ($$hit{'hindent'})) {
-        $evidence_line .= "-";
-      }
-      $evidence_line .= $seq_str;
+    
+    if ($$hit{'hseqname'} ne $prev_hseqname) {	# make new evidence line
+      $evidence_line = "-" x $nuc_tran_len;
     }
-    $prev_hseqname = $$hit{'hseqname'};
-  }
-  if (length($evidence_line) > 0) {
-    while (length($evidence_line) < $nuc_tran_len) {
-      $evidence_line .= "-";
-    }
-    $evidence_obj = Bio::PrimarySeq->new(
+
+    # splice in the evidence fragment
+    substr $evidence_line, $$hit{hindent}, length $seq_str, $seq_str;
+
+    # store if end of evidence line
+    if (($i == $#sorted_nuc_evidence_arr) ||
+        ($sorted_nuc_evidence_arr[$i+1]{'hseqname'} ne $$hit{'hseqname'}))
+    {
+      $evidence_line = substr $evidence_line, 0, $nuc_tran_len;
+      $evidence_obj = Bio::PrimarySeq->new(
                       -seq              => $evidence_line,
                       -id               => 0,
-    		      -accession_number => $$hit{'hseqname'},
+  		      -accession_number => $$hit{'hseqname'},
 		      -moltype          => $$hit{'moltype'}
 		    );
-  push @evidence_arr, $evidence_obj;
+      push @evidence_arr, $evidence_obj;
+      $uppercase = 0;	# force next line to start uppercase
+    }
+    $prev_hseqname = $$hit{'hseqname'};
+    $prev_exon = $$hit{'exon'};
   }
 
   return \@evidence_arr;
