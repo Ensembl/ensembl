@@ -213,6 +213,13 @@ CREATE TABLE gene (
   PRIMARY KEY (id)
 );
 
+CREATE TABLE genetype (
+   gene_id      varchar(40) NOT NULL,
+   type  varchar(40) NOT NULL,
+      
+   PRIMARY KEY(gene_id,type)
+);
+
 #
 # Table structure for table 'geneclone_neighbourhood'
 #

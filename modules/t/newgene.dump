@@ -87,6 +87,7 @@ INSERT INTO exon_transcript VALUES ('test_exon_3','test_transcript_2',2);
 
 INSERT INTO gene VALUES ('test_gene',1,'2000-07-03 16:30:06','2000-07-03 16:30:06','2000-07-03 16:30:06');
 
+INSERT INTO genetype VALUES ('test_gene','test');
 #
 # Dumping data for table 'geneclone_neighbourhood'
 #

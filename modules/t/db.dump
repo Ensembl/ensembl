@@ -733,6 +733,8 @@ INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, na
 
 INSERT INTO gene (id, version, created, modified, stored) VALUES ('ENSG00000019419',1,'1970-01-01 01:00:00','1970-01-01 01:00:00','2000-04-19 13:43:58');
 
+INSERT INTO genetype (gene_id,type) VALUES ('ENSG00000019419','silly');
+
 INSERT INTO transcript (id, version, gene, translation) VALUES ('ENST00000021073',1,'ENSG00000019419','ENSP00000021073');
 
 #

@@ -330,19 +330,22 @@ sub get_array_supporting {
           , exon.version
           , transl.version
           , con.clone
+	  , genetype.type
         FROM contig con
           , gene
           , transcript tscript
           , exon_transcript e_t
           , exon
           , translation transl
+          , genetype genetype
         WHERE gene.id = tscript.gene
           AND tscript.id = e_t.transcript
           AND e_t.exon = exon.id
           AND exon.contig = con.internal_id
           AND tscript.translation = transl.id
+          AND genetype.gene_id = gene.id
           AND gene.id IN ($inlist)
-
+ 
         ORDER BY tscript.gene
           , tscript.id
           , e_t.rank
@@ -351,48 +354,6 @@ sub get_array_supporting {
        LIMIT 2500
         };
 
-    #print STDERR "query [$query]\n"; 
-
-    # This should work as but I couldn't test it because
-    # the exon.contig was the wrong column type.
-    # (NOTE: geneclone_neighbourhood table not needed)
-    #
-    #                       JGRG
-    #
-    #my $query = qq{
-    #    SELECT tscript.gene
-    #      , con.id
-    #      , tscript.id
-    #      , e_t.exon, e_t.rank
-    #      , exon.seq_start, exon.seq_end
-    #      , UNIX_TIMESTAMP(exon.created)
-    #      , UNIX_TIMESTAMP(exon.modified)
-    #      , exon.strand
-    #      , exon.phase
-    #      , transl.seq_start, transl.start_exon
-    #      , transl.seq_end, transl.end_exon
-    #      , transl.id
-    #      , gene.version
-    #      , tscript.version
-    #      , exon.version
-    #      , transl.version
-    #      , con.clone
-    #    FROM contig con
-    #      , gene
-    #      , transcript tscript
-    #      , exon_transcript e_t
-    #      , exon
-    #      , translation transl
-    #    WHERE con.internal_id = exon.contig
-    #      AND exon.id = e_t.exon
-    #      AND e_t.transcript = tscript.id
-    #      AND tscript.translation = transl.id
-    #      AND tscript.gene = gene.id
-    #      AND gene.id IN ('ENSG00000019144','ENSG00000019009','ENSG00000019031','ENSG00000019032','ENSG00000019123')
-    #    ORDER BY tscript.gene
-    #      , tscript.id
-    #      , e_t.rank
-    #    };
 
     my $sth = $self->_db_obj->prepare($query);
     my $res = $sth ->execute();
@@ -406,12 +367,10 @@ sub get_array_supporting {
     my @transcript_exons;
     
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
-	#print STDERR "Getting into this row now....\n";
-
 	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
 	    $exoncreated,$exonmodified,$strand,$phase,$exon_rank,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
-	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
+	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid,$genetype) = @{$arr};
 
  	
 	if( ! defined $phase ) {
@@ -436,6 +395,8 @@ sub get_array_supporting {
 	    
 	    $gene->id                       ($geneid);
 	    $gene->version                  ($geneversion);
+	    $gene->type                     ($genetype);
+
 	    $gene->add_cloneid_neighbourhood($cloneid);
 	    
 	    $current_gene_id = $geneid;
@@ -1260,6 +1221,14 @@ sub write{
 			     $dbl->database   . "')");
        $sth3->execute();
    }
+
+   my $id=$gene->id;
+   my $type=$gene->type;
+
+   my $sth4 = $self->_db_obj->prepare("insert into genetype (gene_id,type) values ('$id','$type')");
+
+   $sth4->execute();
+
        
    return 1;
 }
