@@ -208,7 +208,7 @@ sub delete {
 sub get_all_Genes {
    my ($self, $supporting) = @_;
    my @out;
-   my $clone_id = $self->_internal_id();   
+   my $clone_id = $self->id();   
    my %got;
     # prepare the SQL statement
    my $sth = $self->_db_obj->prepare("
@@ -220,9 +220,9 @@ sub get_all_Genes {
         WHERE e.contig = c.internal_id
           AND et.exon = e.id
           AND t.id = et.transcript
-          AND c.clone = $clone_id
+          AND c.clone = '$clone_id'
         ");
-
+ 
     my $res = $sth->execute();
    
     while (my $rowhash = $sth->fetchrow_hashref) { 

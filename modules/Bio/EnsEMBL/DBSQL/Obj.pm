@@ -2305,4 +2305,26 @@ sub overlap_distance_cutoff {
 }
 
 
+=head2 extension_tables
+
+ Title   : extension_tables
+ Usage   : $obj->extension_tables($newval)
+ Function: 
+ Returns : value of extension_tables
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub extension_tables{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'extension_tables'} = $value;
+    }
+    return $obj->{'extension_tables'};
+
+}
+
+
 1;
