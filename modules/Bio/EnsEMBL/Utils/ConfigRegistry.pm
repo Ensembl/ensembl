@@ -522,6 +522,7 @@ sub load_hive{
   my ($dba) = @_;
 
   my %pairs =  (
+        "MetaContainer"    => 'Bio::EnsEMBL::DBSQL::MetaContainer',
 	      "Analysis"         => "Bio::EnsEMBL::DBSQL::AnalysisAdaptor",
 	      "Queen"            => "Bio::EnsEMBL::Hive::Queen",
 	      "AnalysisJob"      => "Bio::EnsEMBL::Hive::DBSQL::AnalysisJobAdaptor",
