@@ -113,20 +113,21 @@ sub fetch_all_by_Slice {
 sub fetch_attributes_only{
   my $self = shift;
 
+  warn "LITE SNP";
   my $refsnp_id = shift;
   my $source = shift || 'dbSNP';
 
+  my $WHERE = $source eq 'dbSNP' ? "id_refsnp = ? and source='dbSNP'" : "id_ano=? and source='non-dbSNP'";
   my %SNPS = qw( 12 dbSNP 13 WI 14 HGBASE 15 TSC-CSHL 16 ANO );
   my $QUERY = "select internal_id, chr_start, chr_end, chr_strand, type, range_type,
                       validated, alleles, snpclass, mapweight, ambiguity, source,
                       id_refsnp, id_wi, id_hgbase, id_tsc, id_ano, chr_name
                  FROM snp
-                WHERE internal_id = ? and source = ?";
+                WHERE $WHERE";
 
   my $sth = $self->prepare( $QUERY );
-  eval {
-  $sth->execute($refsnp_id, $source );
-  };
+  eval { $sth->execute($refsnp_id);};
+  warn $@;
   return [] if $@;
   my @snps = ();
 
