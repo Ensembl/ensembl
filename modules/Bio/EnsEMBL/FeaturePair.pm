@@ -287,6 +287,108 @@ sub hslice {
   return $self->{'hslice'};
 }
 
+=head2 hseq_region_name
+
+  Arg [1]    : none
+  Example    : print $feature->hseq_region_name();
+  Description: Gets the name of the hseq_region which this feature is on.
+               Returns undef if this Feature is not on a hslice.
+  Returntype : string or undef
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub hseq_region_name {
+  my $self = shift;
+  my $slice = $self->{'hslice'};
+
+  return ($slice) ? $slice->seq_region_name() : undef;
+}
+
+
+=head2 hseq_region_strand
+
+  Arg [1]    : none
+  Example    : print $feature->hseq_region_strand();
+  Description: Returns the strand of the hseq_region which this feature is on 
+               (i.e. feature_strand * slice_strand)
+               Returns undef if this Feature is not on a hslice.
+  Returntype : 1,0,-1 or undef
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+sub hseq_region_strand {
+  my $self = shift;
+  my $slice = $self->{'hslice'};
+
+  return ($slice) ? $slice->strand() * $self->{'hstrand'} : undef;
+}
+
+=head2 hseq_region_start
+
+  Arg [1]    : none
+  Example    : print $feature->hseq_region_start();
+  Description: Convenience method which returns the absolute start of this
+               feature on the hseq_region, as opposed to the relative (hslice) 
+               position.
+
+               Returns undef if this feature is not on a hslice.
+  Returntype : int or undef
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub hseq_region_start {
+  my $self = shift;
+  my $slice = $self->{'hslice'};
+
+  return undef if(!$slice);
+
+  if($slice->strand == 1) {
+    return undef if(!defined($self->{'hstart'}));
+    return $slice->start() + $self->{'hstart'} - 1;
+  } else {
+    return undef if(!defined($self->{'hend'}));
+    return $slice->end() - $self->{'hend'} + 1;
+  }
+}
+
+
+=head2 hseq_region_end
+
+  Arg [1]    : none
+  Example    : print $feature->hseq_region_end();
+  Description: Convenience method which returns the absolute end of this
+               feature on the hseq_region, as opposed to the relative (hslice)
+               position.
+
+               Returns undef if this feature is not on a hslice.
+  Returntype : int or undef
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub hseq_region_end {
+  my $self = shift;
+  my $slice = $self->{'hslice'};
+
+  return undef if(!$slice);
+
+  if($slice->strand == 1) {
+    return undef if(!defined($self->{'hend'}));
+    return $slice->start() + $self->{'hend'} - 1;
+  } else {
+    return undef if(!defined($self->{'hstart'}));
+    return $slice->end() - $self->{'hstart'} + 1;
+  }
+}
+
 =head2 score
 
   Arg [1]    : float $score (optional)
