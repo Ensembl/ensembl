@@ -801,7 +801,7 @@ sub get_all_SNPs {
 
   #transform transcript same coord system we will get snps in
   my %exon_transforms;
-  foreach my $exon ($transcript->get_all_Exons) {
+  foreach my $exon (@{$transcript->get_all_Exons}) {
     my $new_exon = $exon->transform($slice);
     $exon_transforms{$exon} = $new_exon;
   }
@@ -815,7 +815,7 @@ sub get_all_SNPs {
   my $trans_strand = $transcript->get_all_Exons->[0]->strand;
 
   #classify each snp
-  foreach my $snp ($snps) {
+  foreach my $snp (@$snps) {
     my $key;
 
     if(($trans_strand == 1 && $snp->end < $trans_start) ||
@@ -861,7 +861,11 @@ sub get_all_SNPs {
       next;
     }
 
-    $snp_hash{$key} = $snp;
+    if(exists $snp_hash{$key}) {
+      push @{$snp_hash{$key}}, $snp;
+    } else {
+      $snp_hash{$key} = [$snp];
+    }
   }
 
   return \%snp_hash;
