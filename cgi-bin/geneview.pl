@@ -23,8 +23,8 @@ printHeader($geneid);
 
 eval {
     $db = new Bio::EnsEMBL::DBSQL::Obj( -user   => 'ensro', 
-				       -dbname => 'ensembl' , 
-				       -host   => 'localhost');
+ 				        -dbname => 'ensembl' , 
+				        -host   => 'obi-wan');
 
 
     $gene = $db->get_Gene($geneid);

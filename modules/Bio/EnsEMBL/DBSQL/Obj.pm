@@ -1435,26 +1435,34 @@ sub write_Feature {
     # we can't block do these as we need to get out the id wrt to the features
     foreach my $feature ( @fset ) {
 	print STDERR "Adding in a fset feature ",$feature->gff_string,"\n";
+
 	if (!defined($feature->analysis)) {
-	    $self->throw("Feature " . $feature->seqname . " " . $feature->source_tag ." doesn't have analysis. Can't write to database");
+
+	    $self->throw("Feature " . $feature->seqname . " " . 
+			              $feature->source_tag . 
+			 " doesn't have analysis. Can't write to database");
 	} else {
 	    $analysis = $feature->analysis;
 	}
 
 	my $analysisid = $self->write_Analysis($analysis);
-	my $score = $feature->score();
+	my $score      = $feature->score();
+
 	if( !defined $score ) { $score = "-1000"; }
 
 	my $sth3 = $self->prepare("insert into fset(id,score) values ('NULL',$score)");
-	$sth3->execute();
+	   $sth3->execute();
+
 	# get out this id. This looks really clunk I know. Any better ideas... ?
 
 	my $sth4 = $self->prepare("select LAST_INSERT_ID()");
-	$sth4->execute();
+	   $sth4->execute();
 	my $arr = $sth4->fetchrow_arrayref();
 	my $fset_id = $arr->[0];
+
 	# now write each sub feature
 	my $rank = 1;
+
 	foreach my $sub ( $feature->sub_SeqFeature ) {
 	    my $sth5 = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,hstart,hend,hid) values('NULL','".$contig->id."',"
 				      .$sub->start.","
@@ -1468,7 +1476,7 @@ sub write_Feature {
 	    $rank++;
 	}
     }
-
+    
     return 1;
 }
 
@@ -1543,14 +1551,13 @@ sub get_supporting_evidence {
     my $instring = "'";
     my %exhash;
     foreach my $exon (@exons) {
-	print(STDERR " Exonid " . $exon->id . "\n");
+
 	$exhash{$exon->id} = $exon;
 
 	$instring = $instring . $exon->id . "','";
     }
     
     $instring = substr($instring,0,-2);
-    print(STDERR $instring . "\n");
 
 
 
