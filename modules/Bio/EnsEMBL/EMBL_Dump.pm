@@ -136,7 +136,7 @@ sub add_ensembl_comments {
    $sf->end($aseq->length());
    $sf->strand(1);
    $sf->primary_tag('source');
-   $sf->add_tag_value('organism','Homo sapiens');
+   $sf->add_tag_value('organism',$aseq->species->binomial);
    $aseq->add_SeqFeature($sf);
    # done!
 }
