@@ -70,7 +70,6 @@ sub fset2transcript {
 	$exon->contig($contig);
 	$exon->stable_id($f->id);
 	$exon->start    ($f->start);
-	$exon->start    ($f->start);
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);
 	$exon->phase    ($f->phase);
