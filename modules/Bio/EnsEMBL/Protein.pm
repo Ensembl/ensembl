@@ -432,7 +432,7 @@ sub get_all_ProfileFeatures{
     }
    else {
        my $proteinid = $self->id();
-       my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
+       my $pfa = $self->adaptor->db()->get_ProteinFeatureAdaptor;
        my @array_features = 
 	 $pfa->fetch_by_feature_and_dbID('PROFILE',$proteinid);
        foreach my $in (@array_features) {
