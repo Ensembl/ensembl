@@ -1,6 +1,6 @@
 
 #
-# Ensembl module for Bio::EnsEMBL::Assembly::SliceFactory
+# Ensembl module for Bio::EnsEMBL::DBSQL::SliceAdaptor
 #
 # Cared for by Ewan Birney <ensembl-dev@ebi.ac.uk>
 #
