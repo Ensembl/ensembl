@@ -205,11 +205,12 @@ sub _read_Homol {
     $sf2->primary_tag('similarity');
 
 
-#    print("DEBUG : in MSPCrunch : " . $sf1->seqname . " " . $sf1->start . " " . $sf1->end . "\n");
-#    print("DEBUG : in MSPCrunch : " . $sf2->seqname . " " . $sf2->start . " " . $sf2->end . "\n");
-
     $sf1->homol_SeqFeature($sf2);
-    $sf1->add_tag_value('Analysis',$self->analysis);
+
+    my $anal = $self->analysis;
+
+    $sf1->add_tag_value('Analysis',$anal);
+    $sf2->add_tag_value('Analysis',$anal);
 
     return ($sf1);
 }
@@ -437,7 +438,6 @@ sub analysis {
 
 	$self->{_analysis} = $arg;
     }
-
     return $self->{_analysis};
 }
 
