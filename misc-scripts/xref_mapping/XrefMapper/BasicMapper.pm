@@ -80,7 +80,7 @@ sub run_matching{
     push @list, \@dna;
     my @pep=();
     push @pep, $method;
-    push @pep, $self->xref->dir."/xref_".$i."_prot.fasta";
+    push @pep, $self->xref->dir."/xref_".$i."_peptide.fasta";
     push @pep, $self->ensembl_protein_file();
     push @list, \@pep;
     $i++;
@@ -231,7 +231,7 @@ sub dump_xref{
       if(!-e $xref->dir()."/xref_".$i."_dna.fasta"){ 
 	$skip = 0;
       }
-      if(!-e $xref->dir()."/xref_".$i."_prot.fasta"){ 
+      if(!-e $xref->dir()."/xref_".$i."_peptide.fasta"){ 
 	$skip = 0;
       }
       $i++;
