@@ -44,7 +44,7 @@ t_fa='/acari/work4/mongin/anopheles_mai/qc/submitted_genes.fa'
 e_cmd='/acari/work2/gs2/gs2/local/OSF1/bin/exonerate'
 q_min=25
 t_min=25
-s_min=95
+s_min=99
 
 function usage
 {
@@ -147,6 +147,8 @@ perl -ne '
 	$q_min = '$q_min';
 	$t_min = '$t_min';
 	$s_min = '$s_min' / 100;
+
+	%r = ();
     }
 
     next if (/^Message:/ || /^--/);
@@ -173,30 +175,42 @@ perl -ne '
 	$r{$qi}{BS} = $s;
     }
     if ($s >= $s_min * $r{$qi}{BS}) {
-	# This is a good enough score, as far as we know now.
+	# This is a good enough score, as far as we know now.  The
+	# alignment will not be output at the end if it is found to have
+	# a too low score after all.
 
-	# Reformat the cigar line.
-	$C =~ s/([MDI]+) ([0-9]+) ?/$2$1/g;  # flip
-	$C =~ s/([MDI])1([MDI])/$1$2/g;      # no lone 1
-	$C =~ s/^1([MDI])/$1/;               # no lone 1 at start of line
+	# If this query-target pair has been seen before.  Replace
+	# the previous pair only if the new score is better.  If this
+	# query-target pair has not been seen before, store the data.
 
-	push @{ $r{$qi}{ALGN} }, {
-	    qi => $qi, qp => $qp, qab => $qab, qae => $qae,
-	    ti => $ti, tp => $tp, tab => $tab, tae => $tae,
-	    s  => $s,  C  => $C };
+	if ((!exists $r{$qi}{ALGN}{$ti}) ||
+	    (exists $r{$qi}{ALGN}{$ti} && $r{$qi}{ALGN}{$ti}{s} < $s)) {
+	    $r{$qi}{ALGN}{$ti} = {
+		qi => $qi, qp => $qp, qab => $qab, qae => $qae,
+		ti => $ti, tp => $tp, tab => $tab, tae => $tae,
+		s  => $s,  C  => $C };
+	}
 
 	if ($s > $r{$qi}{BS}) {
-	    # This score was better than the best score so far.
+	    # This score was better than the best score so far for this
+	    # query.  Do not try to delete bad alignments now (those that
+	    # does not fulfill the new requirements), that would be too
+	    # slow.
 	    $r{$qi}{BS} = $s;
 	}
     }
 
     END {
-	# Stuff to do at the end (output).
+	# Stuff to do at the end.
 
-	foreach $qi (sort keys %r) {
-	    foreach $t (@{ $r{$qi}{ALGN} }) {
-		next if ($t->{s} < $s_min * $r{$qi}{BS});
+	foreach $q (values %r) {
+	    foreach $t (values %{ $q->{ALGN} }) {
+		next if ($t->{s} < $s_min * $q->{BS});
+
+		# Reformat the cigar line.
+		$t->{C} =~ s/([MDI]+) ([0-9]+) ?/$2$1/g;  # flip
+		$t->{C} =~ s/([MDI])1([MDI])/$1$2/g;      # no lone 1
+		$t->{C} =~ s/^1([MDI])/$1/;               # no lone 1 at start
 
 		printf "\"%s\",%g,%d,%d,\"%s\",%g,%d,%d,%d,\"%s\"\n",
 		    $t->{qi}, $t->{qp}, $t->{qab}, $t->{qae},
