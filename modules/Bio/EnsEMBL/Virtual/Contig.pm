@@ -175,7 +175,6 @@ sub new {
       $VC_UNIQUE_NUMBER = $focuscontig->id.".$focusposition.$ori.$leftsize.$rightsize";
     }
     my $length=$leftsize+$rightsize;
-    print STDERR "CHECK!!!Got length $length\n";
     $self->length($length);
     $self->_unique_number($VC_UNIQUE_NUMBER);
 
@@ -496,7 +495,6 @@ sub get_all_VirtualGenes_startend{
        }
    }
    
-   print STDERR "version 10\n";
    
  GENE:
    foreach my $gene ( values %gene ) {
@@ -733,7 +731,7 @@ sub get_all_SimilarityFeatures_above_score{
     
     my $sf = [];
     
-    print STDERR "Contigs are " . $self->_vmap->get_all_RawContigs . "\n";
+    #print STDERR "Contigs are " . $self->_vmap->get_all_RawContigs . "\n";
     foreach my $c ($self->_vmap->get_all_RawContigs) {
 	
 	push(@$sf,$c->get_all_SimilarityFeatures_above_score($analysis_type,$score));
@@ -1141,7 +1139,7 @@ sub _get_all_SeqFeatures_type {
 		}
 	}
    
-	print STDERR "\tVirtual::Contig has ",scalar(@vcsf)," $type objects\n";
+	#print STDERR "\tVirtual::Contig has ",scalar(@vcsf)," $type objects\n";
 	return @vcsf;
 }
 

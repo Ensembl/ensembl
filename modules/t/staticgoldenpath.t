@@ -77,7 +77,7 @@ if( $rc1->id ne 'contig1' ) {
 
 $vc = $stadaptor->fetch_VirtualContig_by_fpc_name('ctg123');
 
-$vc->_dump_map(\*STDERR);
+#$vc->_dump_map(\*STDERR);
 
 
 my $vseq=$vc->primary_seq;
@@ -248,7 +248,7 @@ $trans->add_Exon($exon);
 $newgene = $vc2->convert_Gene_to_raw_contig($gene);
 print "ok 15\n";
 
-$db->write_Gene($newgene);
+$db->gene_Obj->write($newgene);
 
 print "ok 16\n";
 

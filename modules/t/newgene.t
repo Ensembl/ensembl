@@ -91,28 +91,28 @@ else {
     print STDERR "gene->version does not give the expected value!\n";
 }
 
-if ($gene->created == 962638206) {
-    print "ok 8\n";
-}
-else {
+#if ($gene->created == 962638206) {
+#    print "ok 8\n";
+#}
+#else {
     print "ok 8\n";
     print STDERR "*** skipping gene created test\n";
-}  
+#}  
 
-if ($gene->modified == 962638206) {
-    print "ok 9\n";
-}
-else {
+#if ($gene->modified == 962638206) {
+#    print "ok 9\n";
+#}
+#else {
     print "ok 9\n"; 
     print STDERR "*** skipping gene modified test\n";
-}  
-if ($gene->_stored == 962638206) {
-    print "ok 10\n";
-}
-else {
+#}  
+#if ($gene->_stored == 962638206) {
+#    print "ok 10\n";
+#}
+#else {
     print "ok 10\n";
     print STDERR "*** skipping gene stored test\n"; 
-} 
+#} 
 
 #Not checking clone neighbourhood because they are on their way out of the schema
 my $dblink=Bio::Annotation::DBLink->new();
@@ -208,9 +208,8 @@ if ($ok == 2) {
 else {
     print "not ok 17\n";
 }
-$gene=$gene_obj->get_Gene_by_Transcript_id('bla_bla');
 
-if ($gene == undef) {
+if ($gene_obj->get_Gene_by_Transcript_id('bla_bla') == undef) {
     print "ok 18\n";
 }
 else {
@@ -311,7 +310,8 @@ else {
     print STDERR "Trying to get genes by a non-exisiting supporting feature hid, and still getting this: $geneids[0]!\nSomething is wrong with get_geneids_by_hids\n";
 }
 
-my @geneids=$gene_obj->get_geneids_by_hids('TR:P78310');
+;
+@geneids=$gene_obj->get_geneids_by_hids('TR:P78310');
 if ($geneids[0] eq 'test_gene') {
     print "ok 28\n";
 }
@@ -329,8 +329,7 @@ else {
     print STDERR "Could not get test_gene id using get_geneids_by_DBLink! Got $gene_by_link\n";
 }
 
-$gene_by_link=$gene_obj->get_Gene_by_DBLink('paranoya_is_good');
-if ($gene_by_link == undef) {
+if ($gene_obj->get_Gene_by_DBLink('paranoya_is_good') == undef) {
     print "ok 30\n";
 }
 else {
