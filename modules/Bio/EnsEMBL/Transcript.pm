@@ -1678,6 +1678,15 @@ sub transform {
     }
     $new_transcript->{'_trans_exon_array'} = \@new_exons;
   }
+
+  #flush internal values that depend on the exon coords that may have been
+  #cached
+  $new_transcript->{'_exon_coord_mapper'} = undef;
+  $new_transcript->{'coding_region_start'} = undef;
+  $new_transcript->{'coding_region_end'} = undef;
+  $new_transcript->{'cdna_coding_start'} = undef;
+  $new_transcript->{'cdna_coding_end'} = undef;
+
   return $new_transcript;
 }
 
@@ -1725,6 +1734,14 @@ sub transfer {
 
     $new_transcript->{'_trans_exon_array'} = \@new_exons;
   }
+
+  #flush internal values that depend on the exon coords that may have been
+  #cached
+  $new_transcript->{'_exon_coord_mapper'} = undef;
+  $new_transcript->{'coding_region_start'} = undef;
+  $new_transcript->{'coding_region_end'} = undef;
+  $new_transcript->{'cdna_coding_start'} = undef;
+  $new_transcript->{'cdna_coding_end'} = undef;
 
   return $new_transcript;
 }
