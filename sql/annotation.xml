@@ -1,0 +1,219 @@
+<annotation>
+  <table name="contig">
+    <column name="clone">
+	  <foreign_key table="clone" column="internal_id" />
+	</column>
+    <column name="dna">
+	  <foreign_key table="dna" column="id" />
+	</column>
+  </table>
+  
+  <table name="dna">
+	<p>
+      This table holds the sequence of the contigs from the contig table.
+      The sequence is that of the contig, not that of the golden
+      path. i.e. to construct the golden path from the dna entries,
+      the sequence of contigs with an orientation of -1 must be
+      reversed and bases complemented. The static_golden_path
+      table has the contig orientation (raw_ori).
+	</p>
+	<p>
+      Note the length of the dna.sequence field is always equal
+      to the appropriate length field in the contig table
+      (probably a violation of some form of normal form since contig.length
+      is an attibute of the dna.sequence field)
+    </p>
+  </table>
+  
+  <table name="exon">
+    <p>
+	  Note seq_start always less that seq_end, i.e.
+      when the exon is on the other strand the seq_start
+      is specifying the 3' end of the exon.
+	</p>
+	<p>
+	  The Sticky Rank differentiates between fragments of
+      the same exon. I.e for exons that
+      span multiple contigs, all the fragments
+      are in this table with the same id,
+      but different sticky_rank values
+	</p>
+    <column name="contig_id">
+	  <foreign_key table="contig" column="internal_id" />
+	</column>
+	<column name="seq_start">
+	  <p>start of exon within contig</p>
+	</column>
+	<column name="seq_start">
+	  <p>end of exon within specified contig</p>
+	</column>
+	<column name="seq_start">
+      <p>1 or -1 depending on the strand of the exon</p>	  
+	</column>
+	<column name="sticky_rank">
+      <p>See note above</p>	  
+	</column>
+  </table>
+  <table name="exon_stable_id">
+  	<column name="exon_id">
+	  <foreign_key table="exon" column="exon_id"/>
+	</column>
+  </table>
+  <table name="exon_transcript">
+  	<column name="exon_id">
+	  <foreign_key table="exon" column="exon_id"/>
+	</column>
+  	<column name="transcript_id">
+	  <foreign_key table="transcript" column="transcript_id" />
+	</column>
+	<column name="rank">
+	  <p>
+        Indicates the 5' to 3' position of the exon
+        within the transcript ie rank of 1 means
+        the exon is the 5' most within this transcript
+	  </p>
+	</column>
+  </table>
+  <table name="feature">
+  	<column name="contig">
+	  <foreign_key table="contig" column="internal_id" />
+	</column>
+  	<column name="analysis">
+	  <foreign_key table="analysisprocess" column="analysisId" />
+	</column>
+  </table>
+  <table name="fset">
+    <p>The fset and fset_feature are not actively used and will be dropped in
+	the future</p>
+  </table>
+  <table name="fset_feature">
+    <p>The fset and fset_feature are not actively used and will be dropped in
+	the future</p>
+  </table>
+  <table name="gene">
+  	<column name="analysisId">
+	  <foreign_key table="analysisprocess" column="analysisId" />
+	</column>
+  </table>
+  <table name="gene_stable_id">
+  	<column name="gene_id">
+	  <foreign_key table="gene" column="gene_id" />
+	</column>
+  </table>
+  <table name="repeat_feature">
+  	<column name="contig">
+	  <foreign_key table="contig" column="internal_id" />
+	</column>
+  	<column name="analysis">
+	  <foreign_key table="analysisprocess" column="analysisId" />
+	</column>
+  </table>
+  <table name="supporing_feature">
+  	<column name="exon_id">
+	  <foreign_key table="exon" column="exon_id" />
+	</column>
+  	<column name="analysis">
+	  <foreign_key table="analysisprocess" column="analysisId" />
+	</column>
+  </table>
+  <table name="transcript_stable_id">
+  	<column name="transcript_id">
+	  <foreign_key table="transcript" column="transcript_id" />
+	</column>
+  </table>
+  <table name="transcript">
+  	<column name="gene_id">
+	  <foreign_key table="gene" column="gene_id"/>
+	</column>
+  	<column name="translation_id">
+	  <foreign_key table="translation" column="translation_id" />
+	</column>
+  </table>
+  <table name="translation">
+      <p>
+	  The seq_start and seq_end are 1-based offsets into the
+      *relative* coordinate system of start_exon_id and end_exon_id.
+      i.e., if the translation starts at the first base of the exon, seq_start 
+      would be 1
+	</p>
+  </table>
+  <table name="translation_stable_id">
+  	<column name="translation_id">
+	  <foreign_key table="translation" columnme="translation_id" />
+	</column>
+  </table>
+	
+  <table name="static_golden_path">
+    <p>
+      this is a denormalised golden path
+    </p>
+    <p>
+      The data in this table defines the "static golden path", i.e. the
+      best effort draft full genome sequence as determined by the UCSC or NCBI
+      (depending which assembly you are using)
+    </p>
+    <p>
+      Each row represents a contig (raw_id, FK from contig table) at least part of
+      which is present in the golden path. The part of the contig that is
+      in the path is delimited by fields raw_start and raw_end (start &lt; end), and
+      the absolute position within the golden path chromosome (chr_name) is given
+      by chr_start and chr_end. Each contig is in some "fingerprint clone contig"
+      and the fpc contig is identified by field fpcctg_name and the position of
+      the specified bit of the contig within its FPC contig is given by fields
+      fpcctg_start and fpcctg_end.
+	</p>
+	<p>
+      With the data set at time of this writing, field type is always "UCSC".
+    </p>
+	<p>
+     NB, chr_start &lt;= chr_end, raw_start &lt;= raw_end, and fpcctg_start &lt;= fpcctg_end.
+	</p>
+  	<column name="raw_id">
+	  <foreign_key table="contig" column="internal_id" />
+	</column>
+  </table>
+  <table name="supporing_feature">
+  	<column name="translation">
+	  <foreign_key table="translation_stable_id" column="stable_id" />
+	</column>
+  	<column name="analysis">
+	  <foreign_key table="analysisprocess" column="analysisId" />
+	</column>
+  </table>
+  <table name="interpro">
+  	<column name="interpro_ac">
+	  <foreign_key table="interpro_descrption" column="interpro_ac" />
+	</column>
+  </table>
+  <table name="gene_description">
+  	<column name="gene_id">
+	  <foreign_key table="gene" column="gene_id" />
+	</column>
+  </table>
+  <table name="objectXref">
+  	<column name="ensembl_id">
+	  <foreign_key table="transcript_stable_id" column="stable_id" />
+	  <foreign_key table="translation_stable_id" column="stable_id" />
+	  <foreign_key table="gene_stable_id" column="stable_id" />
+	  <foreign_key table="contig" column="id" />
+	</column>
+  	<column name="xrefId">
+	  <foreign_key table="Xref" column="xrefId" />
+	</column>
+  </table>
+  <table name="identityXref">
+  	<column name="objectxrefId">
+	  <foreign_key table="objectXref" column="objectxrefId" />
+	</column>
+  </table>
+  <table name="Xref">
+  	<column name="externalDBId">
+	  <foreign_key table="externalDB" column="externalDBId" />
+	</column>
+  </table>
+  <table name="externalSynonym">
+  	<column name="objectxrefId">
+	  <foreign_key table="objectXref" column="objectxrefId" />
+	</column>
+  </table>
+</annotation>
