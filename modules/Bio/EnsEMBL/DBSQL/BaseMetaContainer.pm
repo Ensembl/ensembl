@@ -155,3 +155,5 @@ sub delete_key {
 
   return;
 }
+
+1;
