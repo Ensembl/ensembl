@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..29\n"; 
+BEGIN { $| = 1; print "1..37\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -133,8 +133,8 @@ foreach my $link ($gene->each_DBLink) {
     }
     if ($link->optional_id eq 'ACC_optional') {
 	$ok++;
-    }
-    if ($dblink->comment eq 'This is a fake dblink object') {
+    } 
+    if ($link->comment eq 'This is a fake dblink object') {
 	$ok++;
     }
 }
@@ -144,7 +144,7 @@ if ($ok == 4) {
 else {
     print "not ok 12\n";
     print STDERR "DBLink object added to gene, but when 
-retrieving it with $gene->each_DBLink, the object is not filled properly\n";
+retrieving it with gene->each_DBLink, the object is not filled properly\n";
 }
 
 if ($gene->is_known == 1) {
@@ -302,6 +302,43 @@ else {
     print STDERR "Could not get the test translation from the database!\n";
 }
 
+my @geneids=$gene_obj->get_geneids_by_hids('boring_but_useful_I_guess');
+if (scalar @geneids == 0) {
+    print "ok 27\n";
+}
+else {
+    print "not ok 27\n";
+    print STDERR "Trying to get genes by a non-exisiting supporting feature hid, and still getting this: $geneids[0]!\nSomething is wrong with get_geneids_by_hids\n";
+}
+
+my @geneids=$gene_obj->get_geneids_by_hids('TR:P78310');
+if ($geneids[0] eq 'test_gene') {
+    print "ok 28\n";
+}
+else {
+    print "not ok 28\n";
+    print STDERR "Could not get test_gene id using get_geneids_by_hids!\n";
+}
+
+my $gene_by_link=$gene_obj->get_Gene_by_DBLink('MC1R');
+if ($gene_by_link->id eq 'test_gene') {
+    print "ok 29\n";
+}
+else {
+    print "not ok 29\n";
+    print STDERR "Could not get test_gene id using get_geneids_by_DBLink! Got $gene_by_link\n";
+}
+
+$gene_by_link=$gene_obj->get_Gene_by_DBLink('paranoya_is_good');
+if ($gene_by_link == undef) {
+    print "ok 30\n";
+}
+else {
+    print "not ok 30\n";
+     print STDERR "Trying to get genes by a non-exisiting dblink, and still getting this: $gene_by_link!\nSomething is wrong with get_gene_by_DBLink!\n";
+}
+
+
 $gene_obj->delete_Exon('test_exon_1');
 #Checking if the exon has been really deleted
 my $exon;
@@ -309,10 +346,10 @@ eval {
     $exon = $gene_obj->get_Exon('test_exon_1');
 };
 if ($@ =~ /No\sexon\sof\sthis\sid\stest_exon_1/) {
-    print "ok 27\n";
+    print "ok 31\n";
 }
 else {
-    print "not ok 27\n";
+    print "not ok 31\n";
     print STDERR "Exon still present after deleting!\n";
 }
 
@@ -320,10 +357,10 @@ $gene_obj->delete_Supporting_Evidence('test_exon_2');
 $exon=$gene_obj->get_Exon('test_exon_2');
 $gene_obj->get_supporting_evidence($exon);
 if (scalar $exon->each_Supporting_Feature == 0) {
-    print "ok 28\n";
+    print "ok 32\n";
 }
 else {
-    print "not ok 28\n";
+    print "not ok 32\n";
     print STDERR "Exon supporting evidence still present after deleting!\n";
 }
 $gene_obj->delete('test_gene');
@@ -335,20 +372,47 @@ eval {
 };
 
 if ($@ =~ /Error\sretrieving\sgene\swith\sID\:\stest_gene/) {
-    print "ok 29\n";
+    print "ok 33\n";
 }
 else {
-    print "not ok 29\n";
+    print "not ok 33\n";
     print STDERR "Gene still present after deleting!\n";
 } 
+my $newgeneid = $gene_obj->get_new_GeneID;
+if ($newgeneid eq 'ENSG00000000001') {
+    print "ok 34\n";
+}
+else {
+    print "not ok 34\n";
+    print STDERR "New gene id does not look right!\n";
+}
+
+my $newtransid = $gene_obj->get_new_TranscriptID;
+if ($newtransid eq 'ENST00000000001') {
+    print "ok 35\n";
+}
+else {
+    print "not ok 35\n";
+    print STDERR "New transcript id does not look right!\n";
+}
+my $newexonid = $gene_obj->get_new_ExonID;
+if ($newexonid eq 'ENSE00000000001') {
+    print "ok 36\n";
+}
+else {
+    print "not ok 36\n";
+    print STDERR "New exon id does not look right!\n";
+}
+my $newtranslid = $gene_obj->get_new_TranslationID;
+if ($newtranslid eq 'ENSP00000000001') {
+    print "ok 37\n";
+}
+else {
+    print "not ok 37\n";
+    print STDERR "New protein id does not look right!\n";
+}
 
 #Methods still needed to test:
-
-#$gene_obj->delete_Supporting_Evidence;
-
-#$gene_obj->get_geneids_by_hids;
-#$gene_obj->get_Gene_by_DBLink; 
-#$gene_obj->get_supporting_evidence;
 #$gene_obj->get_Virtual_Contig;
 #$gene_obj->get_Transcript_in_VC_coordinates;
 #$gene_obj->write;
@@ -356,9 +420,6 @@ else {
 #$gene_obj->write_supporting_evidence;
 #$gene_obj->write_Transcript;
 #$gene_obj->write_Translation;
-#$gene_obj->get_NewId;
-#$gene_obj->get_new_GeneID;
-#$gene_obj->get_new_TranscriptID;
-#$gene_obj->get_new_ExonID;
-#$gene_obj->get_new_TranslationID;
+
+
 
