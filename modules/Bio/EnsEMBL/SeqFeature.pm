@@ -61,12 +61,11 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::SeqFeature;
-
+				
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::Object
-
 use Bio::EnsEMBL::SeqFeatureI;
 use Bio::Root::Object;
 
@@ -78,6 +77,10 @@ sub _initialize {
   my($self,@args) = @_;
 
   my $make = $self->SUPER::_initialize;
+
+  $self->{'_gsf_tag_hash'} = {};
+  $self->{'_gsf_sub_array'} = [];
+  $self->{'_parse_h'} = {};
 
   my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname) = 
       $self->_rearrange([qw(START
@@ -405,12 +408,14 @@ sub vthrow {
 # people to store data in them.  These are just here in order to keep
 # existing code working
 
+
 =head2 has_tag
 
  Title   : has_tag
  Usage   : $value = $self->has_tag('some_tag')
- Function: 
- Returns : 0 - not implemented
+ Function: Returns the value of the tag (undef if 
+           none)
+ Returns : 
  Args    :
 
 
@@ -419,14 +424,13 @@ sub vthrow {
 sub has_tag{
    my ($self,$tag) = (shift, shift);
 
-   return 0;
+   return exists $self->{'_gsf_tag_hash'}->{$tag};
 }
 
 =head2 add_tag_value
 
  Title   : add_tag_value
  Usage   : $self->add_tag_value('note',"this is a note");
- Function: Does nothing - throws a warning
  Returns : nothing
  Args    : tag (string) and value (any scalar)
 
@@ -436,7 +440,11 @@ sub has_tag{
 sub add_tag_value{
    my ($self,$tag,$value) = @_;
 
-   $self->warn("add_tag_value not implemented in Bio::EnsEMBL::SeqFeature");
+   if( !defined $self->{'_gsf_tag_hash'}->{$tag} ) {
+       $self->{'_gsf_tag_hash'}->{$tag} = [];
+   }
+
+   push(@{$self->{'_gsf_tag_hash'}->{$tag}},$value);
 }
 
 =head2 each_tag_value
@@ -453,11 +461,11 @@ sub add_tag_value{
 
 sub each_tag_value {
    my ($self,$tag) = @_;
+   if( ! exists $self->{'_gsf_tag_hash'}->{$tag} ) {
+       $self->throw("asking for tag value that does not exist $tag");
+   }
 
-   $self->warn("each_tag_value not implemented in Bio::EnsEMBL::SeqFeature");
-
-   return;
-
+   return @{$self->{'_gsf_tag_hash'}->{$tag}};
 }
 
 
@@ -475,8 +483,186 @@ sub each_tag_value {
 sub all_tags{
    my ($self,@args) = @_;
 
-   $self->warn("all_tags not implemented in Bio::EnsEMBL::SeqFeature");
-   return;
+   return keys %{$self->{'_gsf_tag_hash'}};
 }
+
+=head2 attach_seq
+
+ Title   : attach_seq
+ Usage   : $sf->attach_seq($seq)
+ Function: Attaches a Bio::Seq object to this feature. This
+           Bio::Seq object is for the *entire* sequence: ie
+           from 1 to 10000
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub attach_seq{
+   my ($self,$seq) = @_;
+
+   if( !defined $seq  || !ref $seq || ! $seq->isa("Bio::Seq") ) {
+       $self->throw("Must attach Bio::Seq objects to SeqFeatures");
+   }
+
+   $self->{'_gsf_seq'} = $seq;
+
+   # attach to sub features if they want it
+
+   foreach my $sf ( $self->sub_SeqFeature() ) {
+       if( $sf->can("attach_seq") ) {
+	   $sf->attach_seq($seq);
+       }
+   }
+}
+
+=head2 seq
+
+ Title   : seq
+ Usage   : $tseq = $sf->seq()
+ Function: returns the truncated sequence (if there) for this
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub seq{
+   my ($self,$arg) = @_;
+
+   if( defined $arg ) {
+       $self->throw("Calling SeqFeature::Generic->seq with an argument. You probably want attach_seq");
+   }
+
+   if( ! exists $self->{'_gsf_seq'} ) {
+       return undef;
+   }
+
+   # assumming our seq object is sensible, it should not have to yank
+   # the entire sequence out here.
+
+   my $seq = $self->{'_gsf_seq'}->trunc($self->start(),$self->end());
+
+
+   if( $self->strand == -1 ) {
+
+       # ok. this does not work well (?)
+       #print STDERR "Before revcom", $seq->str, "\n";
+       $seq = $seq->revcom;
+       #print STDERR "After  revcom", $seq->str, "\n";
+   }
+
+   return $seq;
+}
+
+=head2 entire_seq
+
+ Title   : entire_seq
+ Usage   : $whole_seq = $sf->entire_seq()
+ Function: gives the entire sequence that this seqfeature is attached to
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub entire_seq{
+   my ($self) = @_;
+
+   return $self->{'_gsf_seq'};
+}
+
+
+=head2 sub_SeqFeature
+
+ Title   : sub_SeqFeature
+ Usage   : @feats = $feat->sub_SeqFeature();
+ Function: Returns an array of sub Sequence Features
+ Returns : An array
+ Args    : none
+
+
+=cut
+
+sub sub_SeqFeature{
+   my ($self) = @_;
+
+
+   return @{$self->{'_gsf_sub_array'}};
+}
+
+=head2 add_sub_SeqFeature
+
+ Title   : add_sub_SeqFeature
+ Usage   : $feat->add_sub_SeqFeature($subfeat);
+           $feat->add_sub_SeqFeature($subfeat,'EXPAND')
+ Function: adds a SeqFeature into the subSeqFeature array.
+           with no 'EXPAND' qualifer, subfeat will be tested
+           as to whether it lies inside the parent, and throw
+           an exception if not.
+
+           If EXPAND is used, the parent's start/end/strand will
+           be adjusted so that it grows to accommodate the new
+           subFeature
+ Returns : nothing
+ Args    : An object which has the SeqFeatureI interface
+
+
+=cut
+
+sub add_sub_SeqFeature{
+   my ($self,$feat,$expand) = @_;
+
+   if( !$feat->isa('Bio::SeqFeatureI') ) {
+       $self->warn("$feat does not implement Bio::SeqFeatureI. Will add it anyway, but beware...");
+   }
+
+   if( $expand eq 'EXPAND' ) {
+       # if this doesn't have start/end set - forget it!
+       if( !defined $self->start && !defined $self->end ) {
+	   $self->start($feat->start());
+	   $self->end($feat->end());
+	   $self->strand($feat->strand);
+       } else {
+	   my ($start,$end,$strand) = $self->union($feat);
+	   $self->start($start);
+	   $self->end($end);
+	   $self->strand($strand);
+       }
+   } else {
+       if( !$self->contains($feat) ) {
+	   $self->throw("$feat is not contained within parent feature, and expansion is not valid");
+       }
+   }
+   
+   push(@{$self->{'_gsf_sub_array'}},$feat);
+   
+}
+
+=head2 flush_sub_SeqFeature
+
+ Title   : flush_sub_SeqFeature
+ Usage   : $sf->flush_sub_SeqFeature
+ Function: Removes all sub SeqFeature
+           (if you want to remove only a subset, take
+	    an array of them all, flush them, and add
+            back only the guys you want)
+ Example :
+ Returns : none
+ Args    : none
+
+
+=cut
+
+sub flush_sub_SeqFeature {
+   my ($self) = @_;
+
+   $self->{'_gsf_sub_array'} = []; # zap the array implicitly.
+}
+
 
 1;
