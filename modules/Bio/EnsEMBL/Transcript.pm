@@ -370,7 +370,8 @@ sub translateable_exons{
 	       }
 
 	       $stexon->start($self->translation->start());
-	       $stexon->phase(0);             # MC translation is always phase 0.
+           #commented out by MAQ - this was breaking genscan parsing
+	       #$stexon->phase(0);             # MC translation is always phase 0.
 	       $stexon->end($exon->end);
 
 	       #print STDERR "Setting start end to " . $stexon->start   . "\t" . $stexon->end  ."\n";
@@ -382,7 +383,8 @@ sub translateable_exons{
 	       }
 	       $stexon->end($self->translation->start());
 	       $stexon->start($exon->start);
-	       $stexon->phase(0);             # MC translation is always phase 0.
+	       #commented out by MAQ - this was breaking genscan parsing
+           #$stexon->phase(0);             # MC translation is always phase 0.
 	   }
 	   push(@out,$stexon);
 	   last;
