@@ -96,13 +96,15 @@ sub fetch_all {
   $self->{_logic_name_cache} = {};
 
   my $sth = $self->prepare( q {
-    SELECT analysis_id, logic_name,
+    SELECT analysis.analysis_id, logic_name,
            program, program_version, program_file,
            db, db_version, db_file,
            module, module_version,
            gff_source, gff_feature,
-           created, parameters
-    FROM   analysis } );
+           created, parameters, description, display_label
+    FROM   analysis
+    LEFT JOIN analysis_description
+    ON analysis.analysis_id = analysis_description.analysis_id } );
   $sth->execute;
 
   while( $rowHashRef = $sth->fetchrow_hashref ) {
@@ -209,14 +211,16 @@ sub fetch_by_dbID {
   }
 
   my $query = q{
-    SELECT analysis_id, logic_name,
+    SELECT analysis.analysis_id, logic_name,
            program, program_version, program_file,
            db, db_version, db_file,
            module, module_version,
            gff_source, gff_feature,
-           created, parameters
+           created, parameters, description, display_label
     FROM   analysis
-    WHERE  analysis_id = ? };
+    LEFT JOIN analysis_description
+    ON analysis.analysis_id = analysis_description.analysis_id
+    WHERE  analysis.analysis_id = ? };
 
   my $sth = $self->prepare($query);
   $sth->execute( $id );
@@ -256,13 +260,15 @@ sub fetch_by_logic_name {
   }
 
   my $sth = $self->prepare( "
-    SELECT analysis_id, logic_name,
+    SELECT analysis.analysis_id, logic_name,
            program, program_version, program_file,
            db, db_version, db_file,
            module, module_version,
            gff_source, gff_feature,
-           created, parameters
+           created, parameters, description, display_label
     FROM   analysis
+    LEFT JOIN analysis_description
+    ON analysis.analysis_id = analysis_description.analysis_id
     WHERE  logic_name = ?" );
 
   $sth->execute($logic_name);
@@ -339,7 +345,9 @@ sub store {
           module = ?,
           module_version = ?,
           gff_source = ?,
-          gff_feature = ? } );
+          gff_feature = ?
+
+			    } );
     $rows_inserted = $sth->execute
       ( $analysis->created,
         $analysis->logic_name,
@@ -371,7 +379,8 @@ sub store {
           module = ?,
           module_version = ?,
           gff_source = ?,
-          gff_feature = ? } );
+          gff_feature = ?
+	 } );
 
     $rows_inserted = $sth->execute
       ( $analysis->logic_name,
@@ -385,7 +394,7 @@ sub store {
         $analysis->module,
         $analysis->module_version,
         $analysis->gff_source,
-        $analysis->gff_feature
+        $analysis->gff_feature,
       );
   }
 
@@ -405,11 +414,22 @@ sub store {
 
     $dbID = $new_analysis->dbID();
     $analysis->created($new_analysis->created());
+    $sth->finish();
   } else {
     $dbID = $sth->{'mysql_insertid'};
+    $sth->finish();
+
+    # store desccription and display_label so they are there 
+    if( defined( $analysis->description() ) ||
+	defined( $analysis->display_label() )) {
+      $sth = $self->prepare( "INSERT IGNORE INTO TABLE analysis_description ".
+			     "SET analysis_id = ?, display_label = ?, ".
+			     "    description = ? " );
+      $sth->execute( $dbID, $analysis->display_label(), $analysis->description() );
+      $sth->finish();
+    }
   }
 
-  $sth->finish();
 
   $self->{_cache}->{$dbID} = $analysis;
   $self->{_logic_name_cache}{lc($analysis->logic_name)} = $analysis;
@@ -450,14 +470,14 @@ sub update {
      "SET created = ?, logic_name = ?, db = ?, db_version = ?, db_file = ?, ".
      "    program = ?, program_version = ?, program_file = ?,  ".
      "    parameters = ?, module = ?, module_version = ?, ".
-     "    gff_source = ?, gff_feature = ? " .
+     "    gff_source = ?, gff_feature = ?, description = ? " .
      "WHERE analysis_id = ?");
 
   $sth->execute
     ($a->created, $a->logic_name, $a->db, $a->db_version, $a->db_file,
      $a->program, $a->program_version, $a->program_file,
      $a->parameters, $a->module, $a->module_version,
-     $a->gff_source, $a->gff_feature,
+     $a->gff_source, $a->gff_feature,$a->description,
      $a->dbID);
 
   $sth->finish();
@@ -586,7 +606,9 @@ sub _objFromHashref {
       -module_version  => $rowHash->{module_version},
       -parameters      => $rowHash->{parameters},
       -created         => $rowHash->{created},
-      -logic_name      => $rowHash->{logic_name}
+      -logic_name      => $rowHash->{logic_name},
+      -description     => $rowHash->{description},
+      -display_label   => $rowHash->{display_label}
     );
 
   return $analysis;

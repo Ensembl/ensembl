@@ -31,7 +31,9 @@ Bio::EnsEMBL::Analysis.pm - Stores details of an analysis run
         -module          => $module,
         -module_version  => $module_version,
         -parameters      => $parameters,
-        -created         => $created
+        -created         => $created,
+        -desccription    => 'some warm words about this analysis'
+	-display_label   => 'UNIprot alignment'
         );
 
 =head1 DESCRIPTION
@@ -91,7 +93,7 @@ sub new {
    
   my ($id, $adaptor, $db, $db_version, $db_file, $program, $program_version,
       $program_file, $gff_source, $gff_feature, $module, $module_version,
-      $parameters, $created, $logic_name ) = 
+      $parameters, $created, $logic_name, $description, $display_label ) = 
 
 	  rearrange([qw(ID
 	  			ADAPTOR
@@ -108,6 +110,8 @@ sub new {
 				PARAMETERS
 				CREATED
 				LOGIC_NAME
+			        DESCRIPTION
+                                DISPLAY_LABEL
 				)],@args);
 
   $self->dbID             ($id);
@@ -125,7 +129,8 @@ sub new {
   $self->parameters     ($parameters);
   $self->created        ($created);
   $self->logic_name ( $logic_name );
-
+  $self->description( $description );
+  $self->display_label( $display_label );
   return $self; # success - we hope!
 }
 
@@ -436,6 +441,49 @@ sub has_database{
    return 0;
 }
 
+
+=head2 description
+
+  Arg [1]    : string $description
+  Example    : none
+  Description: get/set for attribute description
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub description {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_description} = $arg;
+    }
+
+    return $self->{_description};
+}
+
+
+=head2 display_label
+
+  Arg [1]    : string $display_label
+  Example    : none
+  Description: get/set for attribute display_label
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub display_label {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_display_label} = $arg;
+    }
+
+    return $self->{_display_label};
+}
 
 =head2 compare
 
