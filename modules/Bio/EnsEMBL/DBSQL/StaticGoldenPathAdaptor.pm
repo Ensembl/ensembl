@@ -58,32 +58,25 @@ use strict;
 
 # Object preamble - inherits from Bio::EnsEMBL::Root
 
-use Bio::EnsEMBL::Root;
-#use Bio::EnsEMBL::Virtual::StaticContig;
 use Bio::EnsEMBL::RawContig;
 use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
 use Bio::EnsEMBL::Slice;
+use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 # new() is written here 
 
 sub new {
   my($class,@args) = @_;
   
-  my $self = {};
-  bless $self,$class;
+  #invoke the superclass (BaseAdaptor) constructor
+  my $self = $class->SUPER::new(@args);
   
-  my ($db) = $self->_rearrange([qw(DB)],@args);
-
-  if( !defined $db) {
-      $self->throw("got no db. Aaaaah!");
-  }
-
-  $self->db($db);
+  my $ass;
 
   eval {
-    $ass = $self->get_MetaContainer->get_default_assembly
+    $ass = $self->db()->get_MetaContainer()->get_default_assembly()
   };
 
   if ( $@ ) {
@@ -96,7 +89,7 @@ sub new {
     $self->db->assembly_type($ass);
   }
 
-# set stuff in self from @args
+  # set stuff in self from @args
   return $self;
 }
 
@@ -1128,29 +1121,6 @@ sub get_chromosome_length {
     my ($len) = $sth->fetchrow;
 
     return $len;
-}
-
-
-=head2 db
-
- Title   : db
- Usage   : $obj->db($newval)
- Function: 
- Example : 
- Returns : value of db (i.e., the database handle)
- Args    : newvalue (optional)
-
-
-=cut
-
-sub db{
-   my ($obj,$value) = @_;
-
-   if( defined $value) {
-      $obj->{'db'} = $value;
-    }
-    return $obj->{'db'};
-
 }
 
 

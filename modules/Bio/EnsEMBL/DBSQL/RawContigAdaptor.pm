@@ -193,15 +193,20 @@ sub fetch_filled_by_dbIDs {
   $sth->execute();
   
   while( my $aref = $sth->fetchrow_arrayref() ) {
-    my $contig = Bio::EnsEMBL::RawContig->new( $aref->[0], $self );
-    $self->_fill_contig_from_arrayref( $contig, $aref );
+    my($contig_id, $contig_name, $contig_clone_id, $contig_length, 
+       $contig_embl_offset, $contig_dna_id, $clone_embl_acc, 
+       $clone_embl_version, $clone_name, $clone_version, $clone_htg_phase, 
+       $clone_created, $clone_modified) = @$aref;
+
+    my $contig = Bio::EnsEMBL::RawContig->new( $contig_id, $self );
+    $self->_fill_contig_from_arrayref( $contig,$aref );
     my $clone = Bio::EnsEMBL::Clone->new
       (
        $self->db->get_CloneAdaptor(),
-       $aref->[2], $aref->[8],
-       $aref->[9], $aref->[7],
-       $aref->[10], $aref->[11],
-       $aref->[12]
+       $contig_clone_id, $clone_name,
+       $clone_embl_acc, $clone_version, ,
+       $clone_embl_version, $clone_htg_phase,
+       $clone_created, $clone_modified
       );
     $contig->clone( $clone );
 
