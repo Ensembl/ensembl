@@ -775,7 +775,7 @@ sub get_all_SimpleFeatures_by_analysis_id {
     $self->throw("No analysis ID given") unless $analysis_id;
     
     return $self->_fetch_SimpleFeatures_SQL_clause(qq{
-        AND a.type = $analysis_id
+        AND a.id = $analysis_id
         });
 }
 
@@ -892,7 +892,7 @@ sub get_all_ExternalFeatures{
        $glob=50;
    }
 
-   if( $self->_external_feature_cache == 1 ) {
+   if( $self->_external_feature_cache ) {
        return @{$self->{'_external_feature_cache_array'}};
    }
    
