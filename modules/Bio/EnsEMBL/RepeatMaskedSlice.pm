@@ -51,6 +51,7 @@ use warnings;
 
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 
 
 use vars qw(@ISA);
@@ -270,12 +271,16 @@ sub subseq {
   #
   # get the dna
   #
-  my $dna = $self->SUPER::subseq($start, $end, $strand);
+  my $dna = $self->SUPER::subseq($start, $end, 1 );
 
   #
   # mask the dna
   #
   $self->_mask_features(\$dna,$repeats,$soft_mask,$not_default_masking_cases);
+  if( $strand && $strand == -1 ) {
+    reverse_comp( \$dna );
+  }
+
   return $dna;
 }
 
