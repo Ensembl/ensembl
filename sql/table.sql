@@ -58,7 +58,6 @@ CREATE TABLE analysis (
 CREATE TABLE chromosome (
   chromosome_id     tinyint unsigned NOT NULL auto_increment,
   name              varchar(40) NOT NULL,
-  id                int(11) NOT NULL,
   known_genes       int(11) NULL,
   unknown_genes     int(11) NULL,
   snps              int(11) NULL,
