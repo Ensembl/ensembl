@@ -1,5 +1,6 @@
 
 #
+#
 # BioPerl module for Bio::EnsEMBL::SeqFeature
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
@@ -17,14 +18,14 @@ Bio::EnsEMBL::SeqFeature - Ensembl specific sequence feature.
 =head1 SYNOPSIS
 
     my $feat = new Bio::EnsEMBL::SeqFeature(-seqname => 'pog',
-					    -start   => 100,
-					    -end     => 220,
-					    -strand  => -1,
-					    -frame   => 1,
-					    -source_tag  => 'tblastn_vert',
-					    -primary_tag => 'similarity',
-					    -analysis => $analysis
-					    );
+                                            -start   => 100,
+                                            -end     => 220,
+                                            -strand  => -1,
+                                            -frame   => 1,
+                                            -source_tag  => 'tblastn_vert',
+                                            -primary_tag => 'similarity',
+                                            -analysis => $analysis
+                                            );
 
     # $analysis is a Bio::EnsEMBL::Analysis object
     
@@ -61,7 +62,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::SeqFeature;
-	       		
+                               
 use vars qw(@ISA $ENSEMBL_EXT_LOADED $ENSEMBL_EXT_USED );
 use strict;
 
@@ -84,26 +85,26 @@ sub new {
 
   bless $self,$caller;
 
-my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value, $phase, $end_phase); 
+my($start,$end,$strand,$frame,$score,$analysis,$seqname,$source_tag, $primary_tag, $percent_id, $p_value, $phase, $end_phase); 
 
   eval {
 
-  ($start,$end,$strand,$frame,$score,$analysis,$seqname, $percent_id, $p_value, $phase, $end_phase) = 
+  ($start,$end,$strand,$frame,$score,$analysis,$seqname, $source_tag, $primary_tag, $percent_id, $p_value, $phase, $end_phase) = 
 
       $self->_rearrange([qw(START
-			    END
-			    STRAND
-			    FRAME
-			    SCORE
-			    ANALYSIS
-			    SEQNAME
-			    SOURCE_TAG
-			    PRIMARY_TAG
-			    PERCENT_ID
-			    P_VALUE
-			    PHASE
-			    END_PHASE
-			    )],@args);
+                            END
+                            STRAND
+                            FRAME
+                            SCORE
+                            ANALYSIS
+                            SEQNAME
+                            SOURCE_TAG
+                            PRIMARY_TAG
+                            PERCENT_ID
+                            P_VALUE
+                            PHASE
+                            END_PHASE
+                            )],@args);
   };
   
   if( $@ ) {
@@ -202,8 +203,8 @@ sub start{
     my ($self,$value) = @_;
 
     if (defined($value)) {
-	if ($value !~ /^\-?\d+/ ) {
-	$self->throw("$value is not a valid start");
+        if ($value !~ /^\-?\d+/ ) {
+        $self->throw("$value is not a valid start");
     }
     $self->{'_gsf_start'} = $value
    } 
@@ -228,10 +229,10 @@ sub end{
     my ($self,$value) = @_;
 
     if (defined($value)) {
-	if( $value !~ /^\-?\d+/ ) {
-	    $self->throw("[$value] is not a valid end");
-	}
-	$self->{'_gsf_end'} = $value;
+        if( $value !~ /^\-?\d+/ ) {
+            $self->throw("[$value] is not a valid end");
+        }
+        $self->{'_gsf_end'} = $value;
     }
     
    return $self->{'_gsf_end'};
@@ -272,14 +273,14 @@ sub strand {
     my ($self,$value) = @_;
     
     if (defined($value)) {
-	if( $value eq '+' ) { $value = 1; }
-	if( $value eq '-' ) { $value = -1; }
-	if( $value eq '.' ) { $value = 0; }
-	
-	if( $value != -1 && $value != 1 && $value != 0 ) {
-	    $self->throw("$value is not a valid strand info");
-	}
-	$self->{'_gsf_strand'} = $value;
+        if( $value eq '+' ) { $value = 1; }
+        if( $value eq '-' ) { $value = -1; }
+        if( $value eq '.' ) { $value = 0; }
+        
+        if( $value != -1 && $value != 1 && $value != 0 ) {
+            $self->throw("$value is not a valid strand info");
+        }
+        $self->{'_gsf_strand'} = $value;
     } 
     
     return $self->{'_gsf_strand'};
@@ -302,7 +303,7 @@ sub score {
   
     if(defined ($value) ) {
       if( $value !~ /^[+-]?\d+\.?\d*(e-\d+)?/ ) {
-	  $self->throw("'$value' is not a valid score");
+          $self->throw("'$value' is not a valid score");
       }
       $self->{'_gsf_score'} = $value;
   }
@@ -326,10 +327,10 @@ sub frame {
     my ($self,$value) = @_;
   
     if (defined($value)) {
-	if( $value != 1 && $value != 2 && $value != 3 ) {
-	    $self->throw("'$value' is not a valid frame");
+        if( $value != 1 && $value != 2 && $value != 3 ) {
+            $self->throw("'$value' is not a valid frame");
        }
-	$self->{'_gsf_frame'} = $value;
+        $self->{'_gsf_frame'} = $value;
     }
   
     return $self->{'_gsf_frame'};
@@ -352,9 +353,9 @@ sub primary_tag{
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	# throw warnings about setting primary tag
-	my ($p,$f,$l) = caller;
-	$self->warn("$f:$l setting primary_tag now deprecated. Primary tag is delegated to analysis object");
+        # throw warnings about setting primary tag
+        my ($p,$f,$l) = caller;
+        $self->warn("$f:$l setting primary_tag now deprecated. Primary tag is delegated to analysis object");
    }
    return $self->analysis->gff_feature();
 }
@@ -376,9 +377,9 @@ sub source_tag{
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	# throw warnings about setting primary tag
-	my ($p,$f,$l) = caller;
-	$self->warn("$f:$l setting source_tag now deprecated. Source tag is delegated to analysis object");
+        # throw warnings about setting primary tag
+        my ($p,$f,$l) = caller;
+        $self->warn("$f:$l setting source_tag now deprecated. Source tag is delegated to analysis object");
     }
 
    return $self->analysis->gff_source();
@@ -404,7 +405,7 @@ sub analysis {
 
    if (defined($value)) {
        $self->throw("Analysis is not a Bio::EnsEMBL::AnalysisI object but a $value object") unless 
-	   (ref($value) && $value->isa("Bio::EnsEMBL::AnalysisI"));
+           (ref($value) && $value->isa("Bio::EnsEMBL::AnalysisI"));
        $self->{_analysis} = $value;
    }
    return $self->{_analysis};
@@ -481,9 +482,9 @@ sub validate_prot_feature{
     $self->throw("start not defined in feature")       unless defined($self->start);
     $self->throw("end not defined in feature")         unless defined($self->end);
     if ($num == 1) {
-	$self->throw("score not defined in feature")       unless defined($self->score);
-	$self->throw("percent_id not defined in feature") unless defined($self->percent_id);
-	$self->throw("evalue not defined in feature") unless defined($self->p_value);
+        $self->throw("score not defined in feature")       unless defined($self->score);
+        $self->throw("percent_id not defined in feature") unless defined($self->percent_id);
+        $self->throw("evalue not defined in feature") unless defined($self->p_value);
     }
     $self->throw("analysis not defined in feature")    unless defined($self->analysis);    
 }
@@ -599,7 +600,7 @@ sub attach_seq{
 
    foreach my $sf ( $self->sub_SeqFeature() ) {
        if( $sf->can("attach_seq") ) {
-	   $sf->attach_seq($seq);
+           $sf->attach_seq($seq);
        }
    }
 }
@@ -710,26 +711,26 @@ sub add_sub_SeqFeature{
    if( $expand eq 'EXPAND' ) {
        # if this doesn't have start/end set - forget it!
        if( !defined $self->start && !defined $self->end ) {
-	   $self->start($feat->start());
-	   $self->end($feat->end());
-	   $self->strand($feat->strand);
+           $self->start($feat->start());
+           $self->end($feat->end());
+           $self->strand($feat->strand);
        } else {
-	   my ($start,$end);
-	   if( $feat->start < $self->start ) {
-	       $start = $feat->start;
-	   }
+           my ($start,$end);
+           if( $feat->start < $self->start ) {
+               $start = $feat->start;
+           }
 
-	   if( $feat->end > $self->end ) {
-	       $end = $feat->end;
-	   }
+           if( $feat->end > $self->end ) {
+               $end = $feat->end;
+           }
 
-	   $self->start($start);
-	   $self->end($end);
+           $self->start($start);
+           $self->end($end);
 
        }
    } else {
        if( !$self->contains($feat) ) {
-	   $self->throw("$feat is not contained within parent feature, and expansion is not valid");
+           $self->throw("$feat is not contained within parent feature, and expansion is not valid");
        }
    }
    
@@ -743,7 +744,7 @@ sub add_sub_SeqFeature{
  Usage   : $sf->flush_sub_SeqFeature
  Function: Removes all sub SeqFeature
            (if you want to remove only a subset, take
-	    an array of them all, flush them, and add
+            an array of them all, flush them, and add
             back only the guys you want)
  Example :
  Returns : none
@@ -763,7 +764,7 @@ sub id {
     my ($self,$value) = @_;
 
     if (defined($value)) {
-	$self->{_id} = $value;
+        $self->{_id} = $value;
     }
 
     return $self->{_id};
@@ -786,7 +787,7 @@ sub percent_id {
 
     if (defined($value)) 
     {
-	    $self->{_percent_id} = $value;
+            $self->{_percent_id} = $value;
     }
 
     return $self->{_percent_id};
@@ -808,7 +809,7 @@ sub p_value {
 
     if (defined($value)) 
     {
-	    $self->{_p_value} = $value;
+            $self->{_p_value} = $value;
     }
 
     return $self->{_p_value};
@@ -831,7 +832,7 @@ sub phase {
     if (defined($value) ) 
     {
         $self->throw("Valid values for Phase are [0,1,2] \n") if ($value < 0 || $value > 2);
-	    $self->{_phase} = $value;
+            $self->{_phase} = $value;
     }
 
     return $self->{_phase};
@@ -894,7 +895,7 @@ sub external_db {
     
     if (defined($value)) 
     {
-	    $self->{'_external_db'} = $value;
+            $self->{'_external_db'} = $value;
     }
 
     return $self->{'_external_db'};
