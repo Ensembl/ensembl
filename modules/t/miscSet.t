@@ -23,17 +23,16 @@ my $max_len = 1e7;
 #
 # Test constructor
 #
-my $ms = Bio::EnsEMBL::MiscSet->new($misc_set_id,
-                                    undef,
-                                   $code,
-                                   $name,
-                                   $desc,
-                                   $max_len);
+my $ms = Bio::EnsEMBL::MiscSet->new('-DBID' => $misc_set_id,
+                                    '-CODE' => $code,
+                                    '-NAME' => $name,
+                                    '-DESCRIPTION' => $desc,
+                                    '-LONGEST_FEATURE' => $max_len);
 
 ok($ms->dbID == $misc_set_id);
 ok($ms->code eq $code);
 ok($ms->description eq $desc);
-ok($ms->longest_feature eq $max_len);
+ok($ms->longest_feature == $max_len);
 ok($ms->name eq $name);
 
 ok(test_getter_setter($ms, 'dbID', 12));
