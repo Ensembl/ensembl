@@ -1474,7 +1474,9 @@ sub get_all_ExternalFeatures {
 
    if($track_name) {
      #use a specific adaptor
-     push @xf_adaptors, $xfa_hash->{$track_name};
+     if(exists $xfa_hash->{$track_name}) {
+       push @xf_adaptors, $xfa_hash->{$track_name};
+     }
    } else {
      #use all of the adaptors
      push @xf_adaptors, values %$xfa_hash;
@@ -1516,7 +1518,9 @@ sub get_all_ExternalLiteFeatures {
 
    if($track_name) {
      #use a specific adaptor
-     push @xf_adaptors, $xfa_hash->{$track_name};
+     if(exists $xfa_hash->{$track_name}) {
+       push @xf_adaptors, $xfa_hash->{$track_name};
+     }
    } else {
      #use all of the adaptors
      push @xf_adaptors, values %$xfa_hash;
