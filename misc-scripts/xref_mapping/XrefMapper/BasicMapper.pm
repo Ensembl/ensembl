@@ -149,13 +149,8 @@ sub get_species_id_from_species_name{
 sub get_set_lists{
   my ($self) = @_;
 
-#  return [["method1",["homo_sapiens","RefSeq"],["homo_sapiens","Uniprot/SWISSPROT"]],
-#	  ["method2",[$self->species,"*"]],
-#	  ["method3",["*","*"]]];
-
-  return [["ExonerateGappedBest1", ["homo_sapiens","Uniprot/SWISSPROT"]]];
-#return [["ExonerateGappedBest1", ["homo_sapiens","RefSeq"]]];
-#  return [["ExonerateBest1",["*","*"]]];
+#  return [["ExonerateGappedBest1", ["homo_sapiens","Uniprot/SWISSPROT"]]];
+return [["ExonerateGappedBest1", ["homo_sapiens","*"]]];
 
 }
 
@@ -1017,6 +1012,7 @@ sub dump_xrefs {
   }
 
   # get source names; 
+ #print STDERR $source_sql."\n";
   my $source_sql = "SELECT name, release, source_id FROM source WHERE source_id $source_id_str";
   my $source_sth = $xref_dbi->prepare($source_sql);
   #print STDERR $source_sql."\n";
