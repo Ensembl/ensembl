@@ -1692,14 +1692,23 @@ sub recalculate_coordinates {
   return if(!$exons || !@$exons);
 
   my ( $slice, $start, $end, $strand );
-  $slice = $exons->[0]->slice();
-  $strand = $exons->[0]->strand();
-  $start = $exons->[0]->start();
-  $end = $exons->[0]->end();
+  my $e_index;
+  for ($e_index=0; $e_index<@$exons; $e_index++) {
+    my $e = $exons->[$e_index];
+    next if (!defined($e) or !defined($e->start)); # Skip missing or unmapped exons!
+    $slice = $e->slice();
+    $strand = $e->strand();
+    $start = $e->start();
+    $end = $e->end();
+    last;
+  }
 
   my $transsplicing = 0;
 
-  for my $e ( @$exons ) {
+  # Start loop after first exon with coordinates
+  for (; $e_index<@$exons; $e_index++) {
+    my $e = $exons->[$e_index];
+    next if (!defined($e) or !defined($e->start)); # Skip missing or unmapped exons!
     if( $e->start() < $start ) {
       $start = $e->start();
     }
