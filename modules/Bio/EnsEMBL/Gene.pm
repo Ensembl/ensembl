@@ -212,7 +212,13 @@ sub unique_contig_ids{
    my %h;
 
    foreach my $exon ( $self->all_Exon_objects ) {
-       $h{$exon->contig_id()} = 1;
+       if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
+	   foreach my $se ( $exon->each_component_Exon ) {
+	       $h{$se->contig_id()} = 1;
+	   }
+       } else {
+	   $h{$exon->contig_id()} = 1;
+       }
    }
 
    return keys %h;

@@ -13,7 +13,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::#StickyExon - A Confirmed Exon which spans two contigs internally
+Bio::EnsEMBL::StickyExon - A Confirmed Exon which spans two contigs internally
 
 =head1 SYNOPSIS
 

@@ -671,6 +671,8 @@ sub _get_dblinks{
        }
    }
 
+
+
 }
 
 
@@ -1220,29 +1222,23 @@ sub write{
        $self->write_Transcript($trans,$gene);
        my $c = 1;
        foreach my $exon ( $trans->each_Exon() ) {
-	   if( ! defined $exon->contig_id ) {
-	       $self->throw("Bad error - got an exon with no contig id!");
+
+	   my $sth = $self->_db_obj->prepare("insert into exon_transcript (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
+	   $sth->execute();
+	   $c++;
+
+
+	   if( $done{$exon->id()} ) { 
+	       next; 
 	   }
-	   #print STDERR "Exon has contig id ".$exon->contig_id."\n";
-	   if( $exon->sticky_rank == 1 ) {
-	       my $sth = $self->_db_obj->prepare("insert into exon_transcript (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
-	       $sth->execute();
-	       $c++;
+	   $done{$exon->id()} = 1;
+
+	   if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
+	       $self->write_StickyExon($exon); 
+	   } else {
+	       $self->write_Exon($exon);
 	   }
 
-	   if( $done{$exon->id().$exon->sticky_rank()} ) { next; }
-	   $done{$exon->id().$exon->sticky_rank()} = 1;
-	  
-	   my $internal_contig_id = $contighash{$exon->contig_id}->internal_id;
-
-	   if (!defined($internal_contig_id)) {
-	       $self->throw("Internal id not found for contig [" . $exon->contig_id . "]");
-	   }
-	   my $tmpid = $exon->contig_id;
-	   $exon->contig_id($internal_contig_id);
-	   $self->write_Exon($exon);
-	   $exon->contig_id($tmpid);
-	   
        }
    }
 
@@ -1292,7 +1288,7 @@ sub write{
 =cut
 
 sub write_Exon {
-    my ($self,$exon) = @_;
+    my ($self,$exon,$no_supporting) = @_;
     my $old_exon;
     
     if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
@@ -1306,6 +1302,10 @@ sub write_Exon {
     $exon->created || $self->throw("Missing exon created time");
     $exon->modified || $self->throw("Missing exon modified time");
 
+    # got to convert contig_id to internal_id
+
+    my $contig = $self->_db_obj->get_Contig($exon->contig_id);
+    
     if( $exon->start > $exon->end ) {
 	$self->throw("Start is greater than end for exon. Not writing it!");
     }
@@ -1320,7 +1320,7 @@ sub write_Exon {
     $sth->execute(
         $exon->id(),
         $exon->version(),
-        $exon->contig_id(),
+        $contig->internal_id,
         $exon->created(),
         $exon->modified(),
         $exon->start,
@@ -1333,9 +1333,41 @@ sub write_Exon {
     
     # Now the supporting evidence
     
-    $self->write_supporting_evidence($exon);
+    if( !defined $no_supporting || !$no_supporting ) {
+	$self->write_supporting_evidence($exon);
+    }
+
     return 1;
 }
+
+
+=head2 write_StickyExon
+
+ Title   : write_StickyExon
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_StickyExon{
+   my ($self,$exon) = @_;
+
+   if( ! $exon->isa('Bio::EnsEMBL::StickyExon') ) {
+       $self->throw("$exon is not a EnsEMBL exon - not dumping!");
+   }
+
+   foreach my $e ( $exon->each_component_Exon() ) {
+       $self->write_Exon($e,1);
+   }
+   my ($f) = $exon->each_component_Exon();
+   $self->write_supporting_evidence($f);
+}
+
+
 
 =head2 write_supporting_evidence
 

@@ -1215,6 +1215,19 @@ sub convert_Gene_to_raw_contig {
        $clonedgene->add_DBLink($dbl);
    }
 
+   # 
+   # convert exons first, as unique exons. In particular this is to 
+   # handle alternative splicing. Exons crossing boundaries become
+   # sticky exons
+   #
+   my %convertedexon;
+
+   foreach my $exon ( $gene->each_unique_Exon ) {
+       $convertedexon{$exon->id} = $self->_reverse_map_Exon($exon);
+   }
+
+
+
    foreach my $trans ( $gene->each_Transcript ) {
        my $clonedtrans = Bio::EnsEMBL::Transcript->new();
        $clonedtrans->id($trans->id);
@@ -1228,11 +1241,8 @@ sub convert_Gene_to_raw_contig {
        $clonedgene->add_Transcript($clonedtrans);
 
        foreach my $exon ( $trans->each_Exon ) {
-	   my @clonedexons = $self->_reverse_map_Exon($exon);
-	   foreach my $ce ( @clonedexons ) {
-	       $clonedtrans->add_Exon($ce);
-	   }
-	   
+	   $clonedtrans->add_Exon($convertedexon{$exon->id});
+
 	   # translations
 	   if( exists $translation{$trans->translation->id} ) {
 	       $clonedtrans->translation($translation{$trans->translation->id});
@@ -1262,10 +1272,10 @@ sub convert_Gene_to_raw_contig {
 =head2 _reverse_map_Exon
 
  Title   : _reverse_map_Exon
- Usage   : (@exons) = $self->_reverse_map_Exon($exon)
+ Usage   : $exon = $self->_reverse_map_Exon($exon)
  Function: Makes exons in RawContig coordinates from exon in VC coordinates.
-           Multiple Exons might be returned when the Exons are made sticky
-           due to exon crossing clone boundaries.
+           When an exon crosses a contig boundary, it makes a sticky exon
+           
  Example :
  Returns : 
  Args    :
@@ -1419,8 +1429,14 @@ sub _reverse_map_Exon{
 	   }
 	   $vcstart = $vcend+1;
        }
+       my $sticky_exon = Bio::EnsEMBL::StickyExon->new();
+       $sticky_exon->id($exon->id);
 
-       return @exported_exons;
+       foreach my $e ( @exported_exons) {
+	   $sticky_exon->add_component_Exon($e);
+       }
+
+       return $sticky_exon;
    }
        
    $self->throw("Internal error. Should not reach here!");

@@ -84,6 +84,10 @@ sub build_map{
    my ($self,$rawcontig,$focusposition,$ori,$left,$right) = @_;
 
 
+
+   $self->throw("Not implemented! Virtual Contigs from ContigOverlaps are currently broken!");
+
+
    # pseudo-code
    # 1) calculate first offset
    # 2) walk left until left end condition met
