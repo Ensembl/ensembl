@@ -694,6 +694,7 @@ sub _gene_query{
 
 		if( $mapped_sticky == 1 ) {
 		    $exon->attach_seq($self->primary_seq);
+		    $exon->seqname($self->id);
 		    $exon->start($st_start);
 		    $exon->end($st_end);
 		    $exon->strand($st_strand);
@@ -916,17 +917,16 @@ sub _convert_seqfeature_to_vc_coords {
     #print STDERR "got through clipping\n";
 
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
-    
-    $sf->start ($rstart);
-    $sf->end   ($rend);
-    $sf->strand($rstrand);
+
     
     if( $sf->can('attach_seq') ) {
 	if (!$self->noseq) {
 	    $sf->attach_seq($self->primary_seq);
 	}
     }
-    
+    $sf->start ($rstart);
+    $sf->end   ($rend);
+    $sf->strand($rstrand);
     $sf->seqname($self->id);
     return $sf;
 }

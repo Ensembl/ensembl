@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..23\n"; 
+BEGIN { $| = 1; print "1..24\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -324,6 +324,28 @@ if( $fp->start != 176 || $fp->end != 186 ) {
     print STDERR "Feature ",$fp->start," ",$fp->end,"\n";
 } else {
     print "ok 23\n";
+}
+
+# testing get on vc is good
+
+@genes = $vc2->get_all_Genes();
+$gene = shift @genes;
+if( !defined $gene ) {
+    print "not ok 24\n";
+} else {
+    $error = 0;
+    foreach $exon ( $gene->each_unique_Exon ) {
+	if( $exon->seqname ne $vc2->id ) {
+	    print STDERR "Got exon on ",$exon->seqname," not ",$vc2->id,"\n";
+	    $error = 1;
+	}
+	#print STDERR "Got exon [$exon] on ",$exon->seqname," not ",$vc2->id,"\n";
+    }
+    if( $error == 0 ) {
+	print "ok 24\n";
+    } else {
+	print "not ok 24\n";
+    }
 }
 
 
