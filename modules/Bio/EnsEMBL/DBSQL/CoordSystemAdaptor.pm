@@ -665,6 +665,12 @@ sub get_mapping_path {
   my $cs1 = shift;
   my $cs2 = shift;
 
+  if(!ref($cs1) || !ref($cs2) ||
+     !$cs1->isa('Bio::EnsEMBL::CoordSystem') ||
+     !$cs2->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw('Two Bio::EnsEMBL::CoordSystem arguments expected.');
+  }
+
   my $key1 = $cs1->name() . ":" . $cs1->version();
   my $key2 = $cs2->name() . ":" . $cs2->version();
 
