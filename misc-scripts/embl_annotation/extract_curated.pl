@@ -173,7 +173,10 @@ if($list){
 
 	# is clone in one contig (finished)?
 	my @contig;
-	my $clone=$dbi->get_Clone($clone_id);
+	my $clone;
+	eval {
+	$clone=$dbi->get_Clone($clone_id);
+    };
 	eval{
 	    (@contig)=$clone->get_all_Contigs;
 	};
