@@ -2,15 +2,14 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 18;
+	plan tests => 19;
 }
 
-my $loaded = 0;
-END {print "not ok 1\n" unless $loaded;}
-
 use MultiTestDB;
+use TestUtils qw(debug);
 
-my $verbose = 0;
+
+our $verbose = 0; #set to 1 for debug printing
 
 $loaded = 1;
 
@@ -90,12 +89,18 @@ my $extFeatures = $contig->get_all_ExternalFeatures();
 debug( "External Features: ".@{$extFeatures} );
 ok( @$extFeatures == 0 );
 
-sub debug {
-  my $txt = shift;
-  if( $verbose ) {
-    print STDERR $txt,"\n";
-  }
-}
-
-
-
+my $base_count = $contig->get_base_count();
+debug( "BaseCount: ". 
+       join(' ', map({"$_ => $base_count->{$_}\n"} keys(%$base_count))));
+my $a = $base_count->{'a'};
+my $c = $base_count->{'c'};
+my $t = $base_count->{'t'};
+my $g = $base_count->{'g'};
+my $gc_content = $base_count->{'%gc'};
+ok( $a == 6395 &&
+    $c == 6070 &&
+    $t == 6539 &&
+    $g == 6006 &&
+    $n == 0 &&
+    $gc_content == 48.28 && 
+    $a + $t + $c + $g + $n == $contig->length());
