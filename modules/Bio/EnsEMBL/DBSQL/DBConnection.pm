@@ -151,24 +151,6 @@ sub new {
     $self->port($port);
     $self->driver($driver);
 
-
-#    $self->connect();
-
-    
-#    if($species){
-#      print "setting species to $species\n";
-#      Bio::EnsEMBL::Registry->add_alias($species,$species);
-#      $self->species($species);
-##      print "setting species to $species\n";
-#    }
-#    else{
-#      throw("No species specified\n");
-#    }
-#    if($group){
-#      $self->group($group);
-#    }
-
-
     if($inactive_disconnect) {
       $self->disconnect_when_inactive($inactive_disconnect);
     }
@@ -208,9 +190,7 @@ sub connect {
             ";port=" . $self->port();
 
   my $dbh;
-  eval{
-    $dbh = DBI->connect($dsn, $self->username(), $self->password(), {'RaiseError' => 1});
-  };
+  eval{ $dbh = DBI->connect($dsn, $self->username(), $self->password(), {'RaiseError' => 1}); };
 
   if(!$dbh || $@ || !$dbh->ping()) {
     warn("Could not connect to database " . $self->dbname() .
@@ -533,7 +513,7 @@ sub db_handle {
    return $self->{'db_handle'.$$} = shift if(@_);
    return $self->{'db_handle'.$$} if($self->connected);
 
-   $self->connect();
+#  $self->connect();
    return $self->{'db_handle'.$$};
 }
 
