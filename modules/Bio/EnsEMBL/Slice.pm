@@ -88,10 +88,9 @@ sub new {
     $self->id("$chr.$start-$end");
     
     #set strand to a default of 1 if it is not set
-    if ( undef $strand) {
+    if ( defined $strand) {
       $self->strand($strand);
-    }
-    else {
+    } else {
       $self->strand('1');
     }
 
@@ -126,38 +125,30 @@ are the methods to implement
 
 =cut
 
-=head2 get_all_SimilarityFeatures_above_score
 
-  Args      : $logic_name, $score
-  Function  : Retrieves all of the DnaDnaAlignFeatures and all of the
-              ProteinDnaAlignFeatures on this slice.
-  Returntype: @Bio::EnsEMBL::BaseAlignFeature
-  Exceptions: none
-  Caller    : general
+
+=head2 get_all_PredictionTranscripts
+
+ Title   : get_all_PredictionTranscripts
+ Usage   : $obj->get_all_PredictionTranscripts
+ Function: Use to derive a list of prediction transcripts specific to the analysis type specified by the logic name.
+ Example : my @pred_rm_trans = $obj->get_all_PredictionTranscripts('RepeatMasker');
+ Returns : a list of Bio::EnsEMBL::PredictionTranscript objects
+ Args    : a logic name - the name of the analysis that created or returned the prediction feature.
+
 
 =cut
 
-sub get_all_SimilarityFeatures_above_score {
-  my ($self, $logic_name, $score) = @_;
+sub get_all_PredictionTranscripts{
+   my ($self,$logic_name) = @_;
 
-  #
-  # To deprecate, or not deprecate...
-  # It seems to me that this function isn't very useful in that it's task
-  # could be performed much faster through a call to either
-  # get_DnaAlignFeatures_above_score or
-  # get_ProteinAlignFeatures_above_score.  
-  # Reminder Warning follows:
-  #
-  $self->warn("Call to Slice->get_all_SimilarityFeatures_above_score." .
-	     "logic name = $logic_name");
+   my $pta = $self->adaptor()->db()->get_PredictionTranscriptAdaptor();
 
-  my @prot_feats = 
-    $self->get_all_ProteinAlignFeatures_above_score($logic_name, $score);
-  my @dna_feats = 
-    $self->get_all_DnaAlignFeatures_above_score($logic_name, $score);
-
-  return (@prot_feats, @dna_feats);
+   return $pta->fetch_by_Slice($self, $logic_name);
 }
+
+
+
   
 
 =head2 get_all_SNPs
@@ -318,9 +309,6 @@ sub get_all_SimilarityFeatures_above_pid{
 
 
 
-  
-
-
 =head2 get_all_RepeatFeatures
 
  Title   : get_all_RepeatFeatures
@@ -343,117 +331,6 @@ sub get_all_RepeatFeatures{
 
 
 
-=head2 get_all_PredictionTranscripts
-
- Title   : get_all_PredictionTranscripts
- Usage   : $obj->get_all_PredictionTranscripts
- Function: Use to derive a list of prediction transcripts specific to the analysis type specified by the logic name.
- Example : my @pred_rm_trans = $obj->get_all_PredictionTranscripts('RepeatMasker');
- Returns : a list of Bio::EnsEMBL::PredictionTranscript objects
- Args    : a logic name - the name of the analysis that created or returned the prediction feature.
-
-
-=cut
-
-sub get_all_PredictionTranscripts{
-   my ($self,$logic_name) = @_;
-
-   my $pta = $self->adaptor()->db()->get_PredictionTranscriptAdaptor();
-
-   return $pta->fetch_by_Slice($self, $logic_name);
-}
-
-
-=head2 get_all_ExternalFeatures
-
- Title   : get_all_ExternalFeatures
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_ExternalFeatures{
-   my ($self) = @_;
-
-  $self->warn("Slice: get_all_ExternalFeatures");
-  
-
-   return $self->_get_all_SeqFeatures_type('external');
-
-}
-
-=head2 _get_all_SeqFeatures_type
-
- Title   : _get_all_SeqFeatures_type
- Usage   : Internal function which encapsulates getting
-           features of a particular type and returning
-           them in the slice coordinates.
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _get_all_SeqFeatures_type {
-   my ($self,$type) = @_;
-   $self->throw('interface fault') if @_ != 2;
-
-  $self->warn("Slice: get_all_SeqFeatures_type");
-  
-   my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
-                                    ( $self->assembly_type );
-
-   # register the VC
-   $mapper->register_region( $self->chr_name,
-			     $self->chr_start,
-			     $self->chr_end );
-  
-   # get contig IDs for the VC
-   my @cids = $mapper->list_contig_ids( $self->chr_name,
-				        $self->chr_start,
-				        $self->chr_end );
-   
-   my $rca = $self->adaptor->db->get_RawContigAdaptor;
-   my @vcsf = ();
-   foreach my $id (@cids) {
-     my $c = $rca->fetch_by_dbID($id);
-
-     # get start and end of the golden path fragment of the raw contig
-     my ($chr, $start, $end) = $self->adaptor->get_chr_start_end_of_contig(
-                                                                  $c->name);
-
-     if ($type eq 'external') {
-       foreach my $f ($c->get_all_ExternalFeatures) {
-         my @feature_mapped_to_assembly = $mapper->map_coordinates_to_assembly
-                         ($id, $f->start, $f->end, $f->strand);
-         if($feature_mapped_to_assembly[0]->isa("Bio::EnsEMBL::Mapper::Gap")) {
-           next;
-	 }
-	 my $newstrand = $feature_mapped_to_assembly[0]->strand
-	                                       * $self->strand;
-	 my $newstart = $feature_mapped_to_assembly[0]->start
-	                                  - $self->chr_start + 1;
-	 my $newend = $newstart + $f->end - $f->start;
-	 my $newf = Bio::EnsEMBL::SeqFeature->new();
-	 %$newf = %$f;
-	 $newf->start($newstart);
-         $newf->end($newend);
-         $newf->strand($newstrand);
-	 push @vcsf, $newf;
-       }
-     } else {
-       $self->throw("Type $type not recognised");
-     }
-   }
-
-   return @vcsf;
-}
 
 
 =head2 get_all_Genes
@@ -1191,6 +1068,137 @@ sub fetch_karyotype_band_start_end {
 	       $self->stack_trace_dump());
 
    return $self->get_KaryotypeBands();
+}
+
+
+
+
+=head2 get_all_ExternalFeatures
+
+ Title   : get_all_ExternalFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ExternalFeatures{
+   my ($self) = @_;
+
+  $self->warn("Slice->get_all_ExternalFeatures is not currently implemented, and will either be implemented or removed completely in the future\n");
+  
+   return ();
+
+   #return $self->_get_all_SeqFeatures_type('external');
+}
+
+=head2 _get_all_SeqFeatures_type
+
+ Title   : _get_all_SeqFeatures_type
+ Usage   : Internal function which encapsulates getting
+           features of a particular type and returning
+           them in the slice coordinates.
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _get_all_SeqFeatures_type {
+   my ($self,$type) = @_;
+   $self->throw('interface fault') if @_ != 2;
+
+  $self->warn("Slice->get_all_SeqFeatures_type is not currently correctly implemented.  This may arrive in the future, or may be removed completely");
+ 
+   return ();
+ 
+#   my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
+#                                    ( $self->assembly_type );
+
+#   # register the VC
+#   $mapper->register_region( $self->chr_name,
+#			     $self->chr_start,
+#			     $self->chr_end );
+  
+#   # get contig IDs for the VC
+#   my @cids = $mapper->list_contig_ids( $self->chr_name,
+#				        $self->chr_start,
+#				        $self->chr_end );
+   
+#   my $rca = $self->adaptor->db->get_RawContigAdaptor;
+#   my @vcsf = ();
+#   foreach my $id (@cids) {
+#     my $c = $rca->fetch_by_dbID($id);
+
+#     # get start and end of the golden path fragment of the raw contig
+#     my ($chr, $start, $end) = $self->adaptor->get_chr_start_end_of_contig(
+#                                                                  $c->name);
+
+#     if ($type eq 'external') {
+#       foreach my $f ($c->get_all_ExternalFeatures) {
+#         my @feature_mapped_to_assembly = $mapper->map_coordinates_to_assembly
+#                         ($id, $f->start, $f->end, $f->strand);
+#         if($feature_mapped_to_assembly[0]->isa("Bio::EnsEMBL::Mapper::Gap")) {
+#           next;
+#	 }
+#	 my $newstrand = $feature_mapped_to_assembly[0]->strand
+#	                                       * $self->strand;
+#	 my $newstart = $feature_mapped_to_assembly[0]->start
+#	                                  - $self->chr_start + 1;
+#	 my $newend = $newstart + $f->end - $f->start;
+#	 my $newf = Bio::EnsEMBL::SeqFeature->new();
+#	 %$newf = %$f;
+#	 $newf->start($newstart);
+#         $newf->end($newend);
+#         $newf->strand($newstrand);
+#	 push @vcsf, $newf;
+#       }
+#     } else {
+#       $self->throw("Type $type not recognised");
+#     }
+#   }
+
+#   return @vcsf;
+}
+
+
+
+=head2 get_all_SimilarityFeatures_above_score
+
+  Args      : $logic_name, $score
+  Function  : Retrieves all of the DnaDnaAlignFeatures and all of the
+              ProteinDnaAlignFeatures on this slice.
+  Returntype: @Bio::EnsEMBL::BaseAlignFeature
+  Exceptions: none
+  Caller    : general
+
+=cut
+
+sub get_all_SimilarityFeatures_above_score {
+  my ($self, $logic_name, $score) = @_;
+
+  #
+  # To deprecate, or not deprecate...
+  # It seems to me that this function isn't very useful in that it's task
+  # could be performed much faster through a call to either
+  # get_DnaAlignFeatures_above_score or
+  # get_ProteinAlignFeatures_above_score.  
+  # Reminder Warning follows:
+  #
+  $self->warn("Call to Slice->get_all_SimilarityFeatures_above_score." .
+	     "logic name = $logic_name.  Should this be deprecated??");
+
+  my @prot_feats = 
+    $self->get_all_ProteinAlignFeatures_above_score($logic_name, $score);
+  my @dna_feats = 
+    $self->get_all_DnaAlignFeatures_above_score($logic_name, $score);
+
+  return (@prot_feats, @dna_feats);
 }
 
 

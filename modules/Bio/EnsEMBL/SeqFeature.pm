@@ -117,7 +117,6 @@ my($start,$end,$strand,$frame,$score,$analysis,$seqname,$source_tag, $primary_ta
 #  $gff_string && $self->_from_gff_string($gff_string);
 
   if ( defined $analysis  && $analysis ne "")   { $self->analysis($analysis)};
-  if( ! defined $analysis ) { $self->analysis( Bio::EnsEMBL::Analysis->new() ) };
   if ( defined ($start) && $start ne "" )       { $self->start($start)};
   if ( defined ($end )  && $end   ne "" )       { $self->end($end)}
   if ( defined $strand  && $strand ne "")       { $self->strand($strand)}
@@ -405,12 +404,20 @@ sub analysis {
    my ($self,$value) = @_;
 
    if (defined($value)) {
-       $self->throw("Analysis is not a Bio::EnsEMBL::AnalysisI object but a $value object") unless 
-           (ref($value) && $value->isa("Bio::EnsEMBL::AnalysisI"));
-       $self->{_analysis} = $value;
-   }
-   return $self->{_analysis};
+     unless(ref($value) && $value->isa('Bio::EnsEMBL::AnalysisI')) {
+       $self->throw("Analysis is not a Bio::EnsEMBL::AnalysisI object "
+		    . "but a $value object"); 
+     }
 
+     $self->{_analysis} = $value;
+   } else {
+     #if _analysis is not defined, create a new analysis object
+     unless(defined $self->{_analysis}) {
+       $self->{_analysis} = new Bio::EnsEMBL::Analysis();
+     }
+   }
+
+   return $self->{_analysis};
 }
 
 =head2 validate
