@@ -645,7 +645,7 @@ sub get_all_Genes {
         my $internalExon = 0;
 	foreach my $exon ( $gene->all_Exon_objects() ) {
 	    # hack to get things to behave
-	    #print STDERR "Exon was ",$exon->start,":",$exon->end,":",$exon->strand,"\n";
+	    print STDERR "Exon: ", $exon->id, " was ",$exon->start,":",$exon->end,":",$exon->strand,"\n";
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
                 
@@ -653,7 +653,7 @@ sub get_all_Genes {
                 $internalExon = 1;
             }                           
 
-	    #print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand," ,",$exon->seqname,"\n";
+	    print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand," ,",$exon->seqname,"\n";
 	}
         
         unless ($internalExon) {    
@@ -1474,11 +1474,17 @@ sub _convert_seqfeature_to_vc_coords {
        
        if ( $self->ori_in_vc($cid) == 1) {
 	   
-           # If end is less than startincontig or start is > start in contig - a no-go
-	   if (($sf->end < $self->{'startincontig'}->{$cid}) || ($sf->start > $self->{'startincontig'}->{$cid})) {  
+           # If end < startincontig contig for orientation 1 
+ 	   if ($sf->end < $self->{'startincontig'}->{$cid}) {  
                return undef;              
 	   }
-       }
+           
+       } else {
+            # If start > startincontig for orientation <> 1
+	   if ($sf->start > $self->{'startincontig'}->{$cid}) {  
+               return undef;              
+	   }
+        }
    }
 
 
