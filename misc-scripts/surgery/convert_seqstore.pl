@@ -358,7 +358,7 @@ sub show_help {
   print "  --target {schema} The name of the target schema\n";
   print "  --clean           Remove target schema, which must have been specified with --target\n";
   print "  --create {file}   Create target schema, which must have been specified with --target, from SQL file\n";
-  print "  --check           Check target schema for empty tables at end od run\n";
+  print "  --check           Check target schema for empty tables at end of run\n";
   print "  --verbose         Print extra output information\n";
 
 }
