@@ -79,7 +79,8 @@ sub _columns {
              pt.seq_region_start
              pt.seq_region_end
              pt.seq_region_strand
-             pt.analysis_id);
+             pt.analysis_id
+             pt.display_label);
 }
 
 
@@ -88,11 +89,12 @@ sub _columns {
 Arg [1]    : string $stable_id
              The stable id of the transcript to retrieve
 Example    : $trans = $trans_adptr->fetch_by_stable_id('GENSCAN00000001234');
-Description: Retrieves a prediction transcript via its stable id.  Note that
-             the stable id is not actually stored in the database and is
-             calculated upon retrieval as the logic_name of the transcripts
-             analysis concatted with the '0'-left-padded internal identifier.
-             prediction transcript
+Description: Retrieves a prediction transcript via its display_label.
+             This method is called fetch_by_stable_id for polymorphism with
+             the TranscriptAdaptor.  Prediction transcript display_labels are
+             not necessarily stable in that the same identifier may be reused
+             for a completely different prediction transcript in a subsequent
+             database release.
 Returntype : Bio::EnsEMBL::PredictionTranscript
 Caller     : general
 
@@ -104,13 +106,11 @@ sub fetch_by_stable_id {
 
   throw('Stable_id argument expected') if(!$stable_id);
 
-  #take the last 11 digits
-  my $dbID = substr($stable_id, -11);
+  my $syn = $self->_tables()->[1];
 
-  #cast to an integer (remove lpadded 0s):
-  $dbID += 0;
+  my $pts = $self->generic_fetch("$syn.display_label = '$stable_id'");
 
-  return $self->fetch_by_dbID($dbID);
+  return (@$pts) ? $pts->[0] : undef;
 }
 
 
@@ -270,14 +270,16 @@ sub _objs_from_sth {
       $seq_region_start,
       $seq_region_end,
       $seq_region_strand,
-      $analysis_id );
+      $analysis_id,
+      $display_label);
 
   $sth->bind_columns(\$prediction_transcript_id,
                      \$seq_region_id,
                      \$seq_region_start,
                      \$seq_region_end,
                      \$seq_region_strand,
-                     \$analysis_id );
+                     \$analysis_id,
+                     \$display_label);
 
   my $asm_cs;
   my $cmp_cs;
@@ -380,7 +382,8 @@ sub _objs_from_sth {
         '-adaptor'       =>  $self,
         '-slice'         =>  $slice,
         '-analysis'      =>  $analysis,
-        '-dbID'          =>  $prediction_transcript_id );
+        '-dbID'          =>  $prediction_transcript_id,
+        '-display_label' =>  $display_label);
   }
 
   return \@ptranscripts;
@@ -404,9 +407,14 @@ sub store {
   my ( $self, @pre_transcripts ) = @_;
 
   my $ptstore_sth = $self->prepare
-    ("INSERT INTO prediction_transcript (seq_region_id, seq_region_start, " .
-     "                    seq_region_end, seq_region_strand, analysis_id) " .
-     "VALUES( ?, ?, ?, ?, ?)");
+    (qq{INSERT INTO prediction_transcript (seq_region_id, seq_region_start,
+                                           seq_region_end, seq_region_strand, 
+                                           analysis_id, display_label)
+        VALUES( ?, ?, ?, ?, ?, ?)});
+
+  my $ptupdate_sth = $self->prepare
+    (qq{UPDATE prediction_transcript SET display_label = ?
+        WHERE  prediction_transcript_id = ?});
 
   my $db = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
@@ -446,7 +454,8 @@ sub store {
                           $pt->start(),
                           $pt->end(),
                           $pt->strand(),
-                          $analysis->dbID());
+                          $analysis->dbID(),
+                          $pt->display_label());
 
     my $pt_id = $ptstore_sth->{'mysql_insertid'};
     $original->dbID($pt_id);
@@ -456,6 +465,14 @@ sub store {
     my $rank = 1;
     foreach my $pexon (@{$original->get_all_Exons}) {
       $pexon_adaptor->store($pexon, $pt_id, $rank++);
+    }
+
+    # if a display label was not defined autogenerate one
+    if(!defined($pt->display_label())) {
+      my $zeros = '0' x (11 - length($pt_id));
+      my $display_label = uc($analysis->logic_name()) . $zeros . $pt_id;
+      $ptupdate_sth->execute($display_label, $pt_id);
+      $original->display_label($display_label);
     }
   }
 }

@@ -59,6 +59,40 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 @ISA = qw(Bio::EnsEMBL::Transcript);
 
 
+=head2 new
+
+  Arg [-DISPLAY_LABEL]
+    string - a displayable identifier for this prediction
+  Arg [...]  : See Bio::EnsEMBL::Transcript superclass constructor
+  Example    : $pt = Bio::EnsEMBL::PredictionTranscript->new
+                  ( '-start'         =>  $seq_region_start,
+                    '-end'           =>  $seq_region_end,
+                    '-strand'        =>  $seq_region_strand,
+                    '-adaptor'       =>  $self,
+                    '-slice'         =>  $slice,
+                    '-analysis'      =>  $analysis,
+                    '-dbID'          =>  $prediction_transcript_id,
+                    '-display_label' =>  $display_label);
+  Description: Constructor. Creates a new Bio::EnsEMBL::PredictionTranscript
+               object
+  Returntype : Bio::EnsEMBL::PredictionTranscript
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub new {
+  my $class = shift;
+
+  my $self = $class->SUPER::new(@_);
+
+  my ($display_label) = rearrange(['DISPLAY_LABEL'], @_);
+
+  $self->{'display_label'} = $display_label;
+
+  return $self;
+}
+
 
 =head2 coding_region_start
 
@@ -128,40 +162,43 @@ sub get_all_translateable_Exons {
 }
 
 
+=head2 display_label
+
+  Arg [1]    : string $newval (optional)
+               The new value to set the display_label attribute to
+  Example    : $display_label = $pt->display_label()
+  Description: Getter/Setter for a displayable identifier for this
+               prediction transcript.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub display_label{
+  my $self = shift;
+  return $self->{'display_label'} = shift if(@_);
+  return $self->{'display_label'};
+}
+
+
 
 =head2 stable_id
 
   Arg [1]    : none
   Example    : print $pt->stable_id();
   Description: Gets a 'stable' identifier for this prediction transcript.  Note
-               that prediction transcripts do not have real stable
-               identifiers (i.e. identifiers maintained between releases and
-               stored in the database) and this method is provided to be
-               polymorphic with the Transcript class.
-               The stable identifer returned returned is formed by concating
-               the logic-name of the prediction transcripts analysis with
-               the transcripts  dbID (0 Left padded to 11digits).
+               that prediction transcripts do not have true *stable*
+               identifiers (i.e. identifiers maintained between releases).
+               This method chains to the display_label method and is intended
+               to provide polymorphism with the Transcript class.
   Returntype : string
-  Exceptions : 
-  Caller     : 
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub stable_id {
-  my $self = shift;
-
-  my $id = $self->dbID();
-  return '' if(!$id);
-
-  my $analysis = $self->analysis();
-  my $logic_name = uc($analysis->logic_name()) if($analysis);
-  $logic_name ||= 'PTRANS';
-
-  my $pad = 11;
-  $pad -= length($id);
-
-  return $logic_name . ('0' x $pad) . $id;
-}
+sub stable_id { return display_label(@_); }
 
 
 sub get_all_DBEntries { return []; }
