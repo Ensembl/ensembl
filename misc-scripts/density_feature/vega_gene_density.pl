@@ -59,9 +59,10 @@ use POSIX;
 
 use Data::Dumper;
 
-my ($species, $dry, $help);
+my ($species, $chr, $dry, $help);
 &GetOptions(
     "species=s" => \$species,
+    "chr=s"     => \$chr,
     "dry-run"   => \$dry,
     "n"         => \$dry,
     "help"      => \$help,
@@ -72,6 +73,7 @@ if($help || !$species){
     print qq(Usage:
     ./vega_gene_density.pl
         --species=Homo_sapiens
+        [--chr=1,2]
         [--dry-run|-n]
         [--help|-h]\n\n);
     exit;
@@ -79,27 +81,27 @@ if($help || !$species){
 
 $ENV{'ENSEMBL_SPECIES'} = $species;
 
+#get the adaptors needed
+my $slice_adaptor = Bio::EnsEMBL::Registry->get_adaptor($species,"vega","Slice") or die "can't load slice adaptor - is the species name correct?";
+my $dfa =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","DensityFeature") or die;
+my $dta =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","DensityType") or die;
+my $aa  =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","Analysis") or die;
+my $attrib_adaptor =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","Attribute");
+
 ## set db user/pass to allow write access
-my $db_ref = $EnsWeb::species_defs->databases;
-$db_ref->{'ENSEMBL_DB'}{'USER'} = $EnsWeb::species_defs->ENSEMBL_WRITE_USER;
-$db_ref->{'ENSEMBL_DB'}{'PASS'} = $EnsWeb::species_defs->ENSEMBL_WRITE_PASS;
+$EnsWeb::species_defs->set_write_access('ENSEMBL_DB',$species);
 
-## connect to databases
-my $databases = &EnsEMBL::DB::Core::get_databases(qw(core));
-my $db = $databases->{'core'};
-
-die "Problem connecting to databases: $databases->{'error'}\n"
-    if  $databases->{'error'} ;
-warn "Database error: $databases->{'non_fatal_error'}\n"
-    if $databases->{'non_fatal_error'};
-
-## get adaptors
-my $dfa = $db->get_DensityFeatureAdaptor;
-my $dta = $db->get_DensityTypeAdaptor;
-my $aa  = $db->get_AnalysisAdaptor;
-my $attrib_adaptor = $db->get_AttributeAdaptor;
-my $slice_adaptor = $db->get_SliceAdaptor;
-my $top_slices = $slice_adaptor->fetch_all('toplevel');
+## which chromosomes do we run?
+my @top_slices;
+if ($chr) {
+    ## run chromosomes specified on commandline
+    foreach (split(",", $chr)) {
+        push @top_slices, $slice_adaptor->fetch_by_region("toplevel", $_);
+    }
+} else {
+    ## run all chromosomes for this species
+    @top_slices = @{$slice_adaptor->fetch_all("toplevel")};
+}
 
 ## determine blocksize, assuming you want 150 blocks for the smallest
 ## chromosome over 5Mb in size. Use an extra, smaller bin size for chromosomes smaller than 5Mb
@@ -107,7 +109,7 @@ my $big_chr = [];
 my $small_chr = [];
 my (@big_chr_names, $big_block_size, $min_big_chr);
 my (@small_chr_names, $small_block_size, $min_small_chr);
-for my $slice ( @$top_slices ) {
+for my $slice ( @top_slices ) {
     if ($slice->length < 5000000) {
 	if (! $min_small_chr or ($min_small_chr > $slice->length)) {
 	    $min_small_chr = $slice->length;
