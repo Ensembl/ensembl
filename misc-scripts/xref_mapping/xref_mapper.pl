@@ -15,15 +15,23 @@ $dir = join('/', @d);
 unshift @INC, $dir;
  
  
-my ($file, $verbose, $dumpcheck, $help);
+my $file;
+my $verbose;
+my $dumpcheck=undef;
+my $maxdump=undef;
+my $help;
  
 GetOptions ('file=s'      => \$file,
             'verbose'     => \$verbose,
-	    'dumpcheck'    => \$dumpcheck,
+	    'dumpcheck'   => \$dumpcheck,
+	    'maxdump=n'     => \$maxdump,
             'help'        => sub { &show_help(); exit 1;} );
  
 usage("-file option is required")   if(!$file);
 usage() if($help);
+if(defined($dumpcheck) && defined($maxdump)){
+  die "both dumpcheck and maxdump cannot both be specified\n";
+}
  
 open(FILE, $file) or die("Could not open input file '$file'");
  
@@ -37,7 +45,7 @@ while( my $line = <FILE> ) {
   next if $line =~ /^#/;
   next if !$line;
 
-  print $line."\n";
+#  print $line."\n";
   my ($key, $value) = split("=",$line);
 
   if($key eq "species" || $key eq "xref"){
@@ -68,8 +76,11 @@ while( my $line = <FILE> ) {
 	$new = "XrefMapper::$module"->new();
 	$new->species($value);
       }
-      if(defined($dumpcheck) and $dumpcheck){
+      if(defined($dumpcheck)){
 	$new->dumpcheck("yes");
+      }
+      if(defined($maxdump)){
+	$new->maxdump($maxdump);
       }
     }
     else{
@@ -94,7 +105,6 @@ if(defined($new)){ #save last one
 
 for my $species ( @all_species ) {
   $species->xref($xref);
-#  $species->output($output);
   $species->dump_seqs();
   $species->run_matching();
   $species->store();
@@ -115,6 +125,10 @@ options: -file <input_file>     input file with keyword pairs for  'species',
                           
          -verbose               print out debug statements
  
+         -maxdump <int>         dump out only int number of seqs.
+
+         -dumpcheck             only dump if files do not exist.
+
          -help                  display this message
  
 example: perl xref_mapper.pl -file mapper.input \\
