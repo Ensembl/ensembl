@@ -1395,7 +1395,7 @@ sub get_landmark_MarkerFeatures {
 
   $self->warn("get_landmark_MarkerFeatures has been renamed get_all_landmarkMarkerFeatures\n" . caller);
 
-  return $self->get_all_landmarkMarkerFeatures(@args);
+  return $self->get_all_landmark_MarkerFeatures(@args);
 }
 
 
