@@ -32,10 +32,7 @@ Email jgrg@ebi.ac.uk
 
 Post questions to the EnsEMBL developer list ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -44,7 +41,7 @@ package Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor;
 use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::RepeatConsensus;
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
 use vars qw(@ISA);
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
