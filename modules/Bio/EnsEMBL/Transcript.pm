@@ -775,11 +775,21 @@ sub get_all_Introns {
 
   Arg [1]    : (optional) int $flanking
                The number of basepairs of transcript flanking sequence to 
-               retrieve snps from 
+               retrieve snps from (default 0) 
   Example    : $snp_hashref = $transcript->get_all_SNPs;
-  Description: Retrieves a hasref of SNPs in the cdna coords of this
-               transcript.
-  Returntype : none
+  Description: Retrieves all snps found within the region of this transcript. 
+               The snps are returned in a hash with keys corresponding
+               to the region the snp was found in.  Possible keys are:
+               'three prime UTR', 'five prime UTR', 'coding', 'intronic',
+               'three prime flanking', 'five prime flanking'
+               If no flanking argument is provided no flanking snps will be
+               obtained.
+               The listrefs which are the values of the returned hash
+               contain snps in coordinates of the transcript region 
+               (i.e. first base = first base of the first exon on the
+               postive strand - flanking bases + 1) 
+  Returntype : hasref with string keys and listrefs of Bio::EnsEMBL::SNPs for 
+               values
   Exceptions : none
   Caller     : general
 
@@ -799,7 +809,7 @@ sub get_all_SNPs {
   my $transcript = Bio::EnsEMBL::Transcript->new;
   %$transcript = %$self;
 
-  #transform transcript same coord system we will get snps in
+  #transform transcript to same coord system we will get snps in
   my %exon_transforms;
   foreach my $exon (@{$transcript->get_all_Exons}) {
     my $new_exon = $exon->transform($slice);
@@ -830,28 +840,33 @@ sub get_all_SNPs {
       $key = 'three prime flanking';
     }
 
-    elsif(($trans_strand == 1 && $snp->end < $transcript->coding_start) ||
-	  ($trans_strand == -1 && $snp->start > $transcript->coding_end)) {
-      #this snp is in the 5' UTR
-      $key = 'five prime UTR';
-    }
-
-    elsif(($trans_strand == 1 && $snp->start > $transcript->coding_end) ||
-	  ($trans_strand == -1 && $snp->end < $transcript->coding_start)) {
-      #this snp is in the 3' UTR
-      $key = 'three prime UTR';
-    }
-
     else {
-      #check if the snp overlaps an exon
+      #snp is inside transcript region check if it overlaps an exon
       foreach my $e (@{$transcript->get_all_Exons}) {
 	if($snp->end >= $e->start && $snp->start <= $e->end) {
-	  #snp overlaps an exon - it is coding
-	  $key = 'coding';
+	  #this snp is in an exon
+
+	  if(($trans_strand == 1 && $snp->end < $transcript->coding_start) ||
+	  ($trans_strand == -1 && $snp->start > $transcript->coding_end)) {
+	    #this snp is in the 5' UTR
+	    $key = 'five prime UTR';
+	  } 
+
+	  elsif(($trans_strand == 1 && $snp->start > $transcript->coding_end)||
+	     ($trans_strand == -1 && $snp->end < $transcript->coding_start)) {
+	    #this snp is in the 3' UTR
+	    $key = 'three prime UTR';
+	  } 
+
+	  else {
+	    #snp is coding
+	    $key = 'coding';
+	  }
+	  last;
 	}
       }
       unless($key) {
-	#snp is intronic
+	#snp was not in an exon and is therefore intronic
 	$key = 'intronic';
       }
     }
@@ -869,6 +884,88 @@ sub get_all_SNPs {
   }
 
   return \%snp_hash;
+}
+
+
+
+=head2 get_all_cdna_snps
+
+  Arg [1]    : none 
+  Example    : $cdna_snp_hasref = $transcript->get_all_cdna_SNPs;
+  Description: Retrieves all snps found within exons of this transcript. 
+               The snps are returned in a hash with three keys corresponding
+               to the region the snp was found in.  Valid keys are:
+               'three prime UTR', 'five prime UTR', 'coding'
+               The listrefs which are the values of the returned hash
+               contain snps in CDNA coordinates.
+  Returntype : hasref with string keys and listrefs of Bio::EnsEMBL::SNPs for 
+               values
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_cdna_SNPs {
+  my ($self) = shift;
+
+  #retrieve all of the snps from this transcript
+  my $all_snps = $self->get_all_SNPs;
+  my %snp_hash;
+
+  my @cdna_types = ('three prime UTR', 
+		    'five prime UTR',
+		    'coding');
+
+  my $sa = $self->adaptor->db->get_SliceAdaptor;
+  my $slice = $sa->fetch_by_transcript_id($self->dbID);
+ 
+  #copy this transcript, so we can work in coord system we are interested in
+  my $transcript = Bio::EnsEMBL::Transcript->new;
+  %$transcript = %$self;
+
+  #transform transcript to same coord system we will get snps in
+  my %exon_transforms;
+  foreach my $exon (@{$transcript->get_all_Exons}) {
+    my $new_exon = $exon->transform($slice);
+    $exon_transforms{$exon} = $new_exon;
+  }
+  $transcript->transform(\%exon_transforms);
+  
+  
+  foreach my $type (@cdna_types) {
+    $snp_hash{$type} = [];
+    foreach my $snp (@{$all_snps->{$type}}) {
+      my @coords = 
+	$transcript->genomic2cdna($snp->start, 
+				  $snp->end, 
+				  $snp->strand, 
+				  $slice);
+
+      #skip snps that don't map cleanly (possibly an indel...)
+      if(scalar(@coords) != 1) {
+	#$self->warn("snp of type $type does not map cleanly\n");
+	next;
+      }
+
+      my ($coord) = @coords;
+
+      unless($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+	#$self->warn("snp of type $type maps to gap\n");
+	next;
+      }
+
+      #copy the snp and convert to cdna coords...
+      my $new_snp;
+      %$new_snp = %$snp;
+      bless $new_snp, ref $snp;
+      $new_snp->start($coord->start);
+      $new_snp->end($coord->end);
+      $new_snp->strand($coord->strand);
+      push @{$snp_hash{$type}}, $new_snp;
+    }
+  }
+
+  return \%snp_hash; 
 }
 
 
@@ -1218,6 +1315,10 @@ sub genomic2cdna {
   #be attached to all of the exons...
   $contig = $self->get_all_Exons->[0]->contig unless(defined $contig);
   my $mapper = $self->_get_cdna_coord_mapper;
+
+
+  print "MAPPING $start - $end ($strand)\n";
+  #print $contig->name . "=" . $self->get_all_Exons->[0]->contig->name . "\n";
 
   return $mapper->map_coordinates($contig, $start, $end, $strand, "genomic");
 }
