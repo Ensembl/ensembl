@@ -117,7 +117,12 @@ sub fetch_all_by_Slice {
   #
 
   my $dta = $self->db()->get_DensityTypeAdaptor();
+
   my @dtypes = @{$dta->fetch_all_by_logic_name($logic_name)};
+  if( ! @dtypes ){
+    $self->warn( "No DensityTypes for logic name $logic_name" );
+    return [];
+  }
 
   my $best_ratio   = undef;
   my $density_type = undef;
