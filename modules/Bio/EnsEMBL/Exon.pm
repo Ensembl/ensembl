@@ -1457,54 +1457,6 @@ sub get_cdna {
 }
 
 
-
-=head2 cdna2genomic
-
-  Arg  1    : int $start_cdna
-  Arg  2    : int $end_cdna
-              relative to first nucleotide in this exon which is 1.
-  Function  : calculates genomic coordinate for this range of cdna
-              returns a list of [ $start, $end, $strand, $contig, start_pep, end_pep ]
-  Returntype: list
-  Exceptions: none
-  Caller    : Transcript, PredictionTranscript
-
-=cut
-
-sub cdna2genomic {
-  my $self = shift;
-  my $start_cdna = shift;
-  my $end_cdna = shift;
- 
-  my $phase = 0;
-
-  if (defined($self->phase)) {
-     $phase = $self->phase;
-  } 
-  my $phase_start_cdna = $start_cdna + $phase;
-  my $phase_end_cdna = $end_cdna + $phase;
-
-  my $pep_start = int(($phase_start_cdna+2)/3);
-  my $pep_end = int (($phase_end_cdna+2)/3);
-
-  if( $self->strand == 1 ) {
-    return ([ $self->start + $start_cdna - 1,
-	     $self->start + $end_cdna - 1,
-	     $self->strand,
-	     $self->contig,
-	     $pep_start,
-	     $pep_end ] );
-  } else {
-    return ( [ $self->end()- $end_cdna + 1,
-	     $self->end() - $start_cdna + 1 ,
-	     $self->strand(),
-	     $self->contig,
-	     $pep_start,  
-	     $pep_end ] );
-  }
-}
-
-
 =Head1 load_genomic_mapper
 
   Arg  1   : Bio::EnsEMBL::Mapper $mapper
