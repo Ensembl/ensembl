@@ -375,8 +375,13 @@ sub _get_all_SeqFeatures_type {
        foreach my $f ($c->get_all_ExternalFeatures()) {
          my @feature_mapped_to_assembly = $mapper->map_coordinates_to_assembly
                          ($id, $f->start, $f->end, $f->strand);
-	 my $newstrand = $feature_mapped_to_assembly[0]->strand * $f->strand;
-	 my $newstart = $feature_mapped_to_assembly[0]->start - $self->chr_start;
+         if($feature_mapped_to_assembly[0]->isa("Bio::EnsEMBL::Mapper::Gap")) {
+           next;
+	 }
+
+	 my $newstrand = $feature_mapped_to_assembly[0]->strand * $self->strand;
+	 my $newstart = $feature_mapped_to_assembly[0]->start
+	                - $self->chr_start;
 	 my $newend = $newstart + $f->end - $f->start + 1;
 	 my $newf = Bio::EnsEMBL::SeqFeature->new();
 	 %$newf = %$f;
