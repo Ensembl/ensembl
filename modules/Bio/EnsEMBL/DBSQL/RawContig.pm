@@ -1328,7 +1328,7 @@ sub get_all_PredictionFeatures {
        }
 
 
-       if( $hid eq "Initial Exon" || $hid eq "Single Exon" || $previous eq "Single Exon" || $previous eq "Terminal Exon" || $previous eq -1) {
+       if( $hid =~ /Initial/ || $hid =~ /Single Exon/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 ) {
 	   $current_fset = new Bio::EnsEMBL::SeqFeature;
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
