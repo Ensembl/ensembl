@@ -99,22 +99,24 @@ sub get_Transcripts {
 
 #########################################################################
 
-=head2 string()
+=head2 to_String()
 
-  it returns a string containing the information from a TranscriptCluster object,
-  i.e. the transcriptID, the start position and the end position.
+  it returns a string containing the information about the transcripts in the TranscriptCluster object
 
 =cut
 
-sub string {
+sub to_String {
   my $self = shift @_;
   my $data='';
-  foreach my $transcript ( @{ $self->{'_transcript_array'} } ){
-    my $id = $transcript->id;
-    while (length($id)<16){
-      $id .=' ';
-    }
-    $data .= $id."  "._get_start($transcript)."\t"._get_end($transcript)."\n";
+  foreach my $tran ( @{ $self->{'_transcript_array'} } ){
+    my @exons = $tran->each_Exon;
+     
+    $data .= sprintf "Id: %-16s"      , $tran->id;
+    $data .= sprintf "Contig: %-20s"  , $exons[0]->contig_id;
+    $data .= sprintf "Exons: %-3d"    , scalar(@exons);
+    $data .= sprintf "Start: %-9d"    , _get_start($tran);
+    $data .= sprintf "End: %-9d"      , _get_end  ($tran);
+    $data .= sprintf "Strand: %-2d\n" , $exons[0]->strand;
   }
   return $data;
 }
