@@ -1283,7 +1283,6 @@ sub get_all_ExternalFeatures{
        return @{$self->{'_external_feature_cache_array'}};
    }
    
-   &eprof_start("External-feature-get");
    
    my @web;
    my @das;
@@ -1295,6 +1294,7 @@ sub get_all_ExternalFeatures{
    if( scalar(@rawcontigs) == 0) {
        return();
    }
+   &eprof_start("External-feature-get");
    ## Loop over the currently config'd EFFs and sort them onto lists that
    ## are 1. Lightweigth for the web, 2. normal or 3. those that don't know about
    ## Ensembl internal clone/contig IDs. 
