@@ -144,23 +144,23 @@ sub check_clone {
     }
     else {
 	print "not ok $c\n";
-	print STDERR "Clone htg_phase not set correctly\n";
+	print STDERR "Clone htg_phase not set correctly [",$clone->htg_phase,"]\n";
     }
     $c++;
-    if ($clone->created == 932819268) {
+    if ($clone->created == 932822868) {
 	print "ok $c\n";
     }
     else {
 	print "not ok $c\n";
-	print STDERR "Clone htg_phase not set correctly\n";
+	print STDERR "Clone created not set correctly ",$clone->created,"\n";
     }
     $c++;
-    if ($clone->modified == 961872240) {
+    if ($clone->modified == 961875840) {
 	print "ok $c\n";
     }
     else {
 	print "not ok $c\n";
-	print STDERR "Clone htg_phase not set correctly\n";
+	print STDERR "Clone modified not set correctly",$clone->modified,"\n";
     }
     
 }

@@ -450,12 +450,17 @@ sub get_all_ContigOverlaps {
 
 sub htg_phase {
    my $self = shift;
+   if( defined $self->{'_htg_phase'} ) {
+       return $self->{'_htg_phase'};
+   }
+
    my $internal_id = $self->_internal_id();
 
    my $sth = $self->_db_obj->prepare("select htg_phase from clone where internal_id = $internal_id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
-   return $rowhash->{'htg_phase'};
+   $self->{'_htg_phase'} = $rowhash->{'htg_phase'};
+   return $self->{'_htg_phase'};
 }
 
 =head2 created
