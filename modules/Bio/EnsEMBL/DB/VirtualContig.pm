@@ -81,6 +81,7 @@ use strict;
 use Bio::Root::Object;
 use Bio::EnsEMBL::DB::VirtualContigI;
 use Bio::EnsEMBL::DB::VirtualMap;
+use Bio::EnsEMBL::DB::VirtualSeq;
 
 my $VC_UNIQUE_NUMBER = 0;
 
@@ -314,6 +315,27 @@ sub windowed_VirtualContig {
 					        -left          => $left,
 					        -right         => $right
 					        );
+}
+
+=head2 virtual_seq
+
+ Title   : virtual_seq
+ Usage   : $seq = $contig->virtual_seq();
+ Function: Gets a Bio::EnsEMBL::DB::VirtualSeq object out from the contig
+ Returns : Bio::EnsEMBL::VirtualSeq object
+ Args    : none
+
+=cut
+
+sub virtual_seq {
+    my ($self) = @_;
+    
+    my $vseq = Bio::EnsEMBL::DB::VirtualSeq->new(-vmap =>$self->_vmap,
+						 -un =>$self->_unique_number,
+						 -clone =>$self->_clone_map,
+						 -length =>$self->length
+						 );
+    return $vseq;
 }
 
 =head2 primary_seq
