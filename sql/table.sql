@@ -27,7 +27,6 @@ CREATE TABLE affy_feature (
        KEY seq_region_idx( seq_region_id, seq_region_start ),
        KEY probe_idx( affy_probe_id )
 );		
-		
 
 CREATE TABLE affy_probe (
        affy_probe_id INT NOT NULL auto_increment,
@@ -634,7 +633,7 @@ CREATE TABLE xref (
 
    xref_id 		      INT unsigned not null auto_increment,
    external_db_id             int not null,
-   dbprimary_acc              VARCHAR(40) not null,
+   dbprimary_acc              VARCHAR(40) binary not null,
    display_label              VARCHAR(40) not null,
    version                    VARCHAR(10) DEFAULT '' NOT NULL,
    description                VARCHAR(255),
