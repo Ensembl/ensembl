@@ -13,6 +13,7 @@ use warnings;
 use Data::Dumper;	# For debugging output
 
 use Getopt::Std;
+use File::Temp qw(tempfile);
 
 sub overlap
 {
@@ -39,7 +40,8 @@ sub overlap
 
 my $pmatch_cmd	= '/nfs/disk5/ms2/bin/pmatch';
 my $pmatch_opt	= '-T 14';
-my $pmatch_out	= '/tmp/pmatch_out.' . $$;	# Will be unlinked
+my ($unused_fh, $pmatch_out) = tempfile("pmatch_XXXXX",
+	DIR => '/tmp', UNLINK => 0);
 
 my $datadir	= '/acari/work4/mongin/final_build/release_mapping/Primary';
 my $target	= $datadir . '/final.fa';
@@ -49,15 +51,18 @@ my $query	= $datadir . '/sptr_ano_gambiae_19_11_02_formated.fa';
 my %opts = (
 	'b'	=> '0',
 	'c'	=> $pmatch_cmd,
+	'k'	=> '0',
 	'q'	=> $query,
 	't'	=> $target );
 
-if (!getopts('bc:q:t:', \%opts)) {
-	print(STDERR "Usage: $0 [-b] [-c path] [-q path] [-t path]\n\n");
+if (!getopts('bc:kq:t:', \%opts)) {
+	print(STDERR "Usage: $0 [-b] [-c path] [-k] [-q path] [-t path]\n\n");
 	print(STDERR "-b\tDisplay header\n\n");
 	print(STDERR "-c path\tUse the pmatch executable located " .
 		"at 'path' rather than at\n");
 	print(STDERR "\t$pmatch_cmd\n\n");
+	print(STDERR "-k\tKeep the pmatch output file\n");
+	print(STDERR "\t(the name of the file will be printed on stderr)\n\n");
 	print(STDERR "-q path\tTake query FastA file from 'path' rather " .
 		"than from\n");
 	print(STDERR "\t$query\n\n");
@@ -104,7 +109,11 @@ while (defined(my $line = <PMATCH>)) {
 
 close(PMATCH);
 
-unlink($pmatch_out);	# Get rid of pmatch output file
+if (!$opts{'k'}) {
+	unlink($pmatch_out);	# Get rid of pmatch output file
+} else {
+	print(STDERR "$pmatch_out\n");
+}
 
 foreach my $query (values(%hits)) {
 	foreach my $target (values(%{ $query })) {
