@@ -30,6 +30,8 @@ $gene_adaptor = $db_adaptor->get_GeneAdaptor();
 
 package Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
+use strict;
+
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -185,6 +187,8 @@ sub fetch_by_dbID {
   $sth->execute();
   my $ana;
   my $first = 1;
+  my $gene;
+
   while( my @arr = $sth->fetchrow_array() ) {
     # building a gene
     if( $first ) {
@@ -1077,7 +1081,7 @@ sub update {
 
    my $tcount = scalar @{$gene->get_all_Transcripts};
 
-   $sth = $self->prepare("UPDATE gene
+   my $sth = $self->prepare("UPDATE gene
                           SET    type = ?,
                                  analysis_id = ?,
                                  display_xref_id = ?,
