@@ -128,8 +128,22 @@ sub fetch {
 
     # test if clone is not locked (for safety); don't check for valid SV's
     # (probably overkill, as locking at Obj.pm level)
-    my($flock,$fsv,$facc)=$self->_dbobj->_check_clone_entry($disk_id);
-    if($flock){
+    my($flock,$fsv,$facc,$species1,$freeze1,$fdlock)=
+	$self->_dbobj->_check_clone_entry($disk_id);
+    # check freeze
+    unless($self->_dbobj->_check_freeze($freeze1)){
+	$self->throw("$id not valid for freeze load requested");
+    }
+    # check species
+    unless($self->_dbobj->_check_species($species1)){
+	$self->throw("$id not valid for species requested");
+    }
+    # check for nogene lock or lock
+    if($self->_dbobj->{'_nogene'}){
+	if($fdlock){
+	    $self->throw("$id is locked by TimDB");
+	}
+    }elsif($flock){
 	$self->throw("$id is locked by TimDB");
     }
     if($facc){
