@@ -157,6 +157,7 @@ options:
                           chromosome:NCBI34:X:1000000:2000000:1
                         start, end, strand are optional
                         coord_system can also be 'seqlevel' or 'toplevel'
+                        USE WITH CAUTION - MAY GIVE CONFLICTING RESULTS!
 
   -useexistingmapping   use existing *.map files
 
