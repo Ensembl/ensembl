@@ -91,7 +91,6 @@ CREATE TEMPORARY TABLE $destDB.tmp1(
 ") or die "Could create tmp1 table " . $dbh->errstr;
 
 
-print STDERR "Grabbing clones \n";
 # Find clones present in a central, exciting 1Mb region of Chromosome 20
 $dbh->do("
 INSERT INTO $destDB.tmp1
@@ -100,12 +99,11 @@ FROM   $srcDB.contig c, $srcDB.assembly a, $srcDB.chromosome chr
 WHERE  a.contig_id = c.contig_id
 AND    a.chromosome_id = chr.chromosome_id
 AND    chr.name  = '20'
-AND    a.chr_start >= 30252000
-AND    a.chr_end < 31252001
+AND    a.chr_end >= 30252000
+AND    a.chr_start < 31252001
 ") or die "Could not do tmp1 chr2 clones insert statement:" . $dbh->errstr;
 
 
-print STDERR "Inserting clones \n";
 #Select relevant clones from the source database for the new database
 $dbh->do("
 INSERT INTO $destDB.clone
@@ -195,8 +193,8 @@ CREATE TABLE $destDB.gene_list
 SELECT gene_id
 FROM $destDB.gene_global_start_end g
 WHERE g.chromosome = '20'
-AND g.start >= 30252000
-AND g.end < 31252001
+AND g.end >= 30252000
+AND g.start < 31252001
 ") or die "Could not do gene_list table insertion from chr2: " . $dbh->errstr;
 
 $dbh->do("
@@ -419,11 +417,105 @@ WHERE econ.repeat_consensus_id = dr.repeat_consensus_id
 ") or die "Could not do repeat_consensus insertion: $dbh->errstr\n";
 
 
+# copy across associated karyotype info
+$dbh->do("
+INSERT INTO $destDB.karyotype
+SELECT ek.*
+FROM $srcDB.karyotype ek
+WHERE ek.chromosome_id = '20'
+AND ek.chr_end >= 30252000
+AND ek.chr_start < 31252001
+") or die "Could not do karyotype insertion: $dbh->errstr\n";
 
-# finally, drop the temporary table
+
+#
+# Create a temp table to store superctg_name we are interested in
+#
+$dbh->do("
+CREATE TEMPORARY TABLE $destDB.tmp2(
+       superctg_name VARCHAR(20) NOT NULL)
+") or die "Could create tmp2 table " . $dbh->errstr;
+
+
+# grab the unique superctg_names
+$dbh->do("
+INSERT INTO $destDB.tmp2
+SELECT distinct(superctg_name) 
+FROM $destDB.assembly
+") or die "Could not select the unique superctg_names: $dbh->errstr\n";
+
+
+# copy across mapfrag
+$dbh->do("
+INSERT INTO $destDB.mapfrag
+SELECT emf.*
+FROM $srcDB.mapfrag emf, $destDB.tmp2 sctg
+WHERE emf.name = sctg.superctg_name
+") or die "Could not do mapfrag insertion: $dbh->errstr\n";
+
+
+# copy across mapset
+$dbh->do("
+INSERT INTO $destDB.mapset
+SELECT ems.*
+FROM $srcDB.mapset ems
+") or die "Could not do mapset insertion: $dbh->errstr\n";
+
+
+# copy across map_density
+$dbh->do("
+INSERT INTO $destDB.map_density
+SELECT emd.*
+FROM $srcDB.map_density emd
+WHERE emd.chromosome_id = '20'
+AND emd.chr_start < 31252001
+AND emd.chr_end >= 30252000
+") or die "Could not do map_density insertion: $dbh->errstr\n";
+
+
+# copy across mapannotation
+$dbh->do("
+INSERT INTO $destDB.mapannotation
+SELECT ema.*
+FROM $srcDB.mapannotation ema, $destDB.tmp2 sctg
+WHERE ema.value = sctg.superctg_name
+") or die "Could not do mapannotation insertion: $dbh->errstr\n";
+
+
+# copy across mapannotationtype
+$dbh->do("
+INSERT INTO $destDB.mapannotationtype
+SELECT emt.*
+FROM $srcDB.mapannotationtype emt
+") or die "Could not do mapannotationtype insertion: $dbh->errstr\n";
+
+
+# copy across mapfrag_mapset
+$dbh->do("
+INSERT INTO $destDB.mapfrag_mapset
+SELECT emfms.*
+FROM $srcDB.mapfrag_mapset emfms, $destDB.mapfrag dmf
+WHERE emfms.mapfrag_id = dmf.mapfrag_id
+") or die "Could not do mapfrag_mapset insertion: $dbh->errstr\n";
+
+
+# copy across dnafrag
+$dbh->do("
+INSERT INTO $destDB.dnafrag
+SELECT edf.*
+FROM $srcDB.dnafrag edf
+") or die "Could not do dnafrag insertion: $dbh->errstr\n";
+
+
+# finally, drop the temporary tables
 $dbh->do("
 DROP TABLE $destDB.tmp1
 ") or die "Could not drop temporary table tmp1: $dbh->errstr\n";
+
+$dbh->do("
+DROP TABLE $destDB.tmp2
+") or die "Could not drop temporary table tmp2: $dbh->errstr\n";
+
 
 #disconnect from the DB
 $dbh->disconnect();
