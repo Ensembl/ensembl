@@ -50,18 +50,14 @@ Internal methods are usually preceded with a _
 =cut
 
 package Bio::EnsEMBL::Mapper;
-use vars qw(@ISA);
 use strict;
 
-
-use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Mapper::Pair;
 use Bio::EnsEMBL::Mapper::Unit;
 use Bio::EnsEMBL::Mapper::Coordinate;
 use Bio::EnsEMBL::Mapper::Gap;
 
-
-@ISA = qw(Bio::EnsEMBL::Root);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 
 sub new {
@@ -74,7 +70,7 @@ sub new {
   bless $self,$class;
 
   if( !defined $to ) {
-      $self->throw("Must supply from and to tags");
+    throw("Must supply from and to tags");
   }
 
   $self->{"_pair_$from"} = {};
@@ -116,7 +112,7 @@ sub map_coordinates{
 
    unless(defined($id) && defined($start) && defined($end) && 
 	  defined($strand) && defined($type) ) {
-       $self->throw("Must start,end,strand,id,type as coordinates");
+       throw("Must start,end,strand,id,type as coordinates");
    }
 
 
@@ -133,7 +129,7 @@ sub map_coordinates{
    }
 
    unless(defined $hash) {
-       $self->throw("Type $type is neither to or from coordinate systems");
+       throw("Type $type is neither to or from coordinate systems");
    }
 
    if( !defined $hash->{uc($id)} ) {
@@ -267,7 +263,7 @@ sub fastmap {
    }
 
    my $hash = $self->{"_pair_$type"} or
-       $self->throw("Type $type is neither to or from coordinate systems");
+       throw("Type $type is neither to or from coordinate systems");
 
 
    my $pairs = $hash->{uc($id)};
@@ -333,11 +329,11 @@ sub add_map_coordinates{
   unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
 	 && defined($contig_ori) && defined($chr_name) && defined($chr_start)
 	 && defined($chr_end)) {
-    $self->throw("7 arguments expected");
+    throw("7 arguments expected");
   }
 
   if( ($contig_end - $contig_start)  != ($chr_end - $chr_start) ) {
-    $self->throw("Cannot deal with mis-lengthed mappings so far");
+    throw("Cannot deal with mis-lengthed mappings so far");
   }
 
   my $pair = Bio::EnsEMBL::Mapper::Pair->new();
@@ -538,15 +534,12 @@ sub list_pairs{
 
 
    if( !defined $type ) {
-       $self->throw("Must start,end,id,type as coordinates");
+       throw("Must start,end,id,type as coordinates");
    }
 
    if( $start > $end ) {
-     $self->throw("Start is greater than end for id $id, start $start, end $end\n");
+     throw("Start is greater than end for id $id, start $start, end $end\n");
    }
-
-   # perhaps a little paranoid/excessive
-
 
    my $hash = $self->{"_pair_$type"};
 
@@ -561,7 +554,7 @@ sub list_pairs{
    }
      
    unless(defined $hash) {
-       $self->throw("Type $type is neither to or from coordinate systems");
+     throw("Type $type is neither to or from coordinate systems");
    }
 
    my @list;
