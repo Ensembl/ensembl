@@ -92,7 +92,7 @@ sub submit_exonerate {
 
   my $output = $self->get_class_name() . "_" . $ensembl_type . "_" . "\$LSB_JOBINDEX.map";
 
-  my @main_bsub = ( 'bsub', '-J', $unique_name . "[1-$num_jobs]", '-o', "$prefix.%I.out", '-e', "$prefix.%I.err");
+  my @main_bsub = ( 'bsub', '-J', $unique_name . "[1-$num_jobs]", '-o', "$prefix.%J-%I.out", '-e', "$prefix.%J-%I.err");
 
   #print "bsub command: " . join(" ", @main_bsub) . "\n\n";
 
