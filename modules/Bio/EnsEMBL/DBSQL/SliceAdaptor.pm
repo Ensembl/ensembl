@@ -99,7 +99,7 @@ sub new {
                'toplevel'.
   Arg [2]    : string $seq_region_name
                The name of the sequence region that the slice will be
-               created on
+               created on.                
   Arg [3]    : int $start (optional, default = 1)
                The start of the slice on the sequence region
   Arg [4]    : int $end (optional, default = seq_region length)
@@ -108,10 +108,25 @@ sub new {
                The orientation of the slice on the sequence region
   Arg [6]    : string $version (optional, default = default version)
                The version of the coordinate system to use (e.g. NCBI33)
-  Example    : $slice = $slice_adaptor->fetch_by_region('chromosome');
-  Description: Creates a slice object on the given chromosome and coordinates.
-  Returntype : Bio::EnsEMBL::Slice
-  Exceptions : none
+  Example    : $slice = $slice_adaptor->fetch_by_region('chromosome', 'X');
+               $slice = $slice_adaptor->fetch_by_region('clone', 'AC008066.4');
+  Description: Retrieves a slice on the requested region.  At a minimum the
+               name of the coordinate system and the name of the seq_region to
+               fetch must be provided.
+
+               Some fuzzy matching is performed if no exact match for
+               the provided name is found.  This allows clones to be
+               fetched even when their version is not known.  For
+               example fetch_by_region('clone', 'AC008066') will
+               retrieve the sequence_region with name 'AC008066.4'.
+
+               If the requested seq_region is not found in the database undef
+               is returned.
+
+  Returntype : Bio::EnsEMBL::Slice or undef
+  Exceptions : throw if no seq_region_name is provided
+               throw if invalid coord_system_name is provided
+               throw if start > end is provided
   Caller     : general
 
 =cut
@@ -120,7 +135,10 @@ sub fetch_by_region {
   my ($self, $coord_system_name, $seq_region_name,
       $start, $end, $strand, $version) = @_;
 
-  throw('seq_region_name argument is required') if(!$seq_region_name);
+  $start  = 1 if(!defined($start));
+  $strand = 1 if(!defined($strand));
+
+  throw('seq_region_name argument is required') if(!defined($seq_region_name));
 
   my $csa = $self->db()->get_CoordSystemAdaptor();
   my $coord_system = $csa->fetch_by_name($coord_system_name,$version);
@@ -143,29 +161,63 @@ sub fetch_by_region {
     #force seq_region_name cast to string so mysql cannot treat as int
     $sth->execute("$seq_region_name", $coord_system->dbID());
 
-    if($sth->rows() != 1) {
-      $version ||= '';
-      $seq_region_name ||= '';
-      $coord_system_name ||= '';
-      throw("Cannot create slice on non-existant or ambigous seq_region:\n" .
-            "  coord_system=[$coord_system_name],\n" .
-            "  name=[$seq_region_name],\n" .
-            "  version=[$version]");
+    if($sth->rows() == 0) {
+      $sth->finish();
+
+      #do fuzzy matching, assuming that we are just missing a version on 
+      #the end of the seq_region name
+   
+      $sth = $self->prepare("SELECT name, seq_region_id, length " .
+                            "FROM   seq_region " .
+                            "WHERE  name LIKE ?" .
+                            "AND    coord_system_id = ?");
+
+      $sth->execute("$seq_region_name.%", $coord_system->dbID());
+
+      my $prefix_len = length($seq_region_name) + 1;
+      my $highest_version = undef;
+
+      # find the fuzzy-matched seq_region with the highest postfix (which ought
+      # to be a version)
+
+      my ($tmp_name, $id, $tmp_length);
+
+      while(($tmp_name, $id, $tmp_length) = $sth->fetchrow_array()) {
+        $key = lc(join(':',$tmp_name,
+                       $coord_system->name(),
+                       $coord_system->version));
+        $name_cache->{$key}         = [$id,$tmp_length];
+        $self->{'_id_cache'}->{$id} = [$tmp_name,$tmp_length,$coord_system];
+        
+        my $version = substr($tmp_name, $prefix_len);
+
+        #skip versions which are non-numeric and apparently not versions
+        next if($version !~ /^\d+$/);
+
+        if(!defined($highest_version) || ($version <=> $highest_version) > 0) {
+          $seq_region_name = $tmp_name;
+          $length          = $tmp_length;
+          $highest_version = $version;
+        } 
+      } 
+      $sth->finish();
+
+      #return if we did not find any appropriate match:
+      return undef if(!defined($highest_version));
+    } else {
+
+      my $id;
+      ($id, $length) = $sth->fetchrow_array();
+      $sth->finish();
+
+      #cache results to speed up future queries
+      $name_cache->{$key}         = [$id,$length];
+      $self->{'_id_cache'}->{$id} = [$seq_region_name, $length, $coord_system];
     }
-
-    my $id;
-    ($id, $length) = $sth->fetchrow_array();
-    $sth->finish();
-
-    #cache results to speed up future queries
-    $name_cache->{$key} = [$id,$length];
-    $self->{'_id_cache'}->{$id} = [$seq_region_name, $length, $coord_system];
   }
 
-  $start = 1 if(!defined($start));
-  $strand = 1 if(!defined($strand));
   $end = $length if(!defined($end));
-
+  
   if($end < $start) {
     throw('start [$start] must be less than or equal to end [$end]');
   }
@@ -193,7 +245,11 @@ sub fetch_by_region {
                pass a slice over a network.
                Slice::name allows you to serialise/marshall a slice and this
                method allows you to deserialise/unmarshal it.
-  Returntype : Bio::EnsEMBL::Slice
+                
+               Returns undef if no seq_region with the provided name exists in
+               the database.
+
+  Returntype : Bio::EnsEMBL::Slice or undef
   Exceptions : throw if incorrent arg provided
   Caller     : Pipeline
 
@@ -218,7 +274,7 @@ sub fetch_by_name {
 
 
   return $self->fetch_by_region($cs_name,$seq_region, $start,
-                               $end, $strand, $cs_version);
+                                $end, $strand, $cs_version);
 }
 
 
@@ -231,7 +287,8 @@ sub fetch_by_name {
   Example    : $slice = $slice_adaptor->fetch_by_seq_region_id(34413);
   Description: Creates a slice object of an entire seq_region using the
                seq_region internal identifier to resolve the seq_region.
-  Returntype : Bio::EnsEMBL::Slice
+               Returns undef if no such slice exists.
+  Returntype : Bio::EnsEMBL::Slice or undef
   Exceptions : none
   Caller     : general
 
@@ -253,10 +310,7 @@ sub fetch_by_seq_region_id {
 
     $sth->execute($seq_region_id);
 
-    if($sth->rows() != 1) {
-      throw("Cannot create slice on non-existant or ambigous seq_region:" .
-            "  seq_region_id=[$seq_region_id],\n");
-    }
+    return undef if($sth->rows() == 0);
 
     my $cs_id;
     ($name, $length, $cs_id) = $sth->fetchrow_array();
