@@ -1225,31 +1225,27 @@ sub seq {
     $self->{'_seq_cache'} = $arg->seq();
   }
 
-  if( defined $self->{'_seq_cache'} ) {
-    return Bio::Seq->new(-seq=> $self->{'_seq_cache'});
-  }
+  if(!defined($self->{'_seq_cache'})) {
+    my $seq;
 
-  my $seq;
-
-  if ( ! defined $self->contig ) {
-    $self->warn(" this exon doesn't have a contig you won't get a seq \n");
-    return undef;
-  }
-  else {
-      
-    $seq = $self->contig()->subseq($self->start, $self->end);
-
-    if($self->strand == -1){
-      $seq =~ tr/ATGCatgc/TACGtacg/;
-      $seq = reverse($seq);
+    if ( ! defined $self->contig ) {
+      $self->warn(" this exon doesn't have a contig you won't get a seq \n");
+      return undef;
     }
-      
-   }
-  $self->{'_seq_cache'} = $seq;
+    else {
+      $seq = $self->contig()->subseq($self->start, $self->end);
+
+      if($self->strand == -1){
+        $seq =~ tr/ATGCatgc/TACGtacg/;
+        $seq = reverse($seq);
+      }
+    }
+    $self->{'_seq_cache'} = $seq;
+  }
 
   return Bio::Seq->new(-seq     => $self->{'_seq_cache'},
-		       -id      => $self->stable_id,
-		       -moltype => 'dna');
+                       -id      => $self->stable_id,
+                       -moltype => 'dna');
 }
 
 
