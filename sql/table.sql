@@ -287,7 +287,9 @@ CREATE TABLE repeat_consensus (
                                                 # Retroviral LTR, Satellite,Tandem
     repeat_consensus    text,   # Or dna_id with entry in DNA table?
     
-    PRIMARY KEY( repeat_id )
+    PRIMARY KEY( repeat_id ),
+    KEY name (repeat_name),
+    KEY class (repeat_class)
 );
 
 
