@@ -86,6 +86,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
                1MB.  When fetching for an entire chromosome the 1MB density
                chunks will be used if the requested number of blocks is not
                very high.
+               Note that features which have been interpolated are not stored
+               in the database and as such will have no dbID or adaptor set.
   Returntype : Bio::EnsEMBL::DensityFeature
   Exceptions : warning on invalid $num_blocks argument
                warning if no features with logic_name $logic_name exist
@@ -106,48 +108,30 @@ sub fetch_all_by_Slice {
   $num_blocks ||= 50;
   my $length = $slice->length();
 
-
-#  my $wanted_block_size = int($length/$num_blocks);
   my $wanted_block_size = POSIX::ceil($length/$num_blocks);
 
-  my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
-  my $analysis = $analysis_adaptor->fetch_by_logic_name($logic_name);
+  #
+  # get out all of the density types and choose the one with the
+  # block size closest to our desired block size
+  #
 
-  if(!$analysis) {
-    warning("No Analysis with logic_name=[$logic_name] found.\n" .
-            'Returning empty list.');
-    return [];
-  }
+  my $dta = $self->db()->get_DensityTypeAdaptor();
+  my @dtypes = @{$dta->fetch_all_by_logic_name($logic_name)};
 
-  my $sth = $self->prepare
-    ("SELECT density_type_id, block_size, analysis_id, value_type  ".
-     "FROM   density_type " .
-     "WHERE  analysis_id = ?");
-  $sth->execute($analysis->dbID());
+  my $best_ratio   = undef;
+  my $density_type = undef;
 
-  my $best_ratio = undef;
-  my ($density_type_id, $density_value_type, $new_block_size, $row);
-
-  while($row = $sth->fetchrow_arrayref) {
-    my $block_size = $row->[1];
-
-    if($block_size < 1) {
-      warning("density_type table contains invalid block_size=$block_size.");
-      next;
-    }
-
+  foreach my $dt (@dtypes) {
     my $ratio;
-    if($block_size < $wanted_block_size) {
-      $ratio = $wanted_block_size/$block_size;
+    if($dt->block_size() < $wanted_block_size) {
+      $ratio = $wanted_block_size/$dt->block_size();
     } else {
-      $ratio = $block_size/$wanted_block_size;
+      $ratio = $dt->block_size()/$wanted_block_size;
     }
 
     if(!defined($best_ratio) || $ratio < $best_ratio) {
       $best_ratio = $ratio;
-      $density_type_id = $row->[0];
-      $new_block_size = $row->[1];
-      $density_value_type = $row->[3];
+      $density_type = $dt;
     }
   }
 
@@ -158,15 +142,10 @@ sub fetch_all_by_Slice {
     return [];
   }
 
-
-  my $density_type = Bio::EnsEMBL::DensityType->new(-analysis => $analysis,
-						    -block_size =>  $new_block_size,
-						    -value_type => $density_value_type);
-
-  $density_type->dbID($density_type_id);
+  my $constraint = "df.density_type_id = " . $density_type->dbID();
 
   my @features =
-    @{$self->fetch_all_by_slice_and_density_type($slice,$density_type)};
+    @{$self->fetch_all_by_Slice_constraint($slice,$constraint)};
 
   #we don't want to interpolate if the ratio was very close
   $interpolate = 0 if($best_ratio < 1.05);
@@ -181,6 +160,15 @@ sub fetch_all_by_Slice {
   #resize the features that were returned
   my $start = 1;
   my $end   = $start+$wanted_block_size-1;
+
+  my $value_type = $density_type->value_type();
+
+  # create a new density type object for the interpolated features that
+  # is not stored in the database
+  $density_type = Bio::EnsEMBL::DensityType->new
+    (-VALUE_TYPE => $value_type,
+     -ANALYSIS   => $density_type->analysis(),
+     -BLOCK_SIZE => $wanted_block_size);
 
   while($start < $length) {
 #    $end = $length if($end > $length);
@@ -198,7 +186,7 @@ sub fetch_all_by_Slice {
       $fend   = ($f->{'end'}   > $end  ) ? $end   : $f->{'end'};
       $fend   = $length if($fend > $length);
 
-      if($density_value_type eq 'sum') {
+      if($value_type eq 'sum') {
 
         $portion = ($fend-$fstart+1)/$f->length();
 
@@ -206,14 +194,14 @@ sub fetch_all_by_Slice {
         #feature we overlapped
         $density_value += $portion * $f->{'density_value'};
 
-      } elsif($density_value_type eq 'ratio') {
+      } elsif($value_type eq 'ratio') {
 
         #maintain a running total of the length used from each feature
         #and its value
         push(@dvalues,[$fend-$fstart+1,$f->{'density_value'}]);
 
       } else {
-        throw("Unknown density value type [$density_value_type].");
+        throw("Unknown density value type [$value_type].");
       }
 
       #do not want to look at next feature if we only used part of this one:
@@ -226,7 +214,7 @@ sub fetch_all_by_Slice {
       unshift(@features, $f);
     }
 
-    if($density_value_type eq 'ratio') {
+    if($value_type eq 'ratio') {
       #take a weighted average of the all the density values of the features
       #used to construct this one
       my $total_len = $end - $start + 1;
@@ -238,11 +226,13 @@ sub fetch_all_by_Slice {
       }
     }
 
+    # interpolated features are not stored in the db so do not set the dbID
+    # or the adaptor
     push @out, Bio::EnsEMBL::DensityFeature->new
       (-seq_region    => $slice,
        -start         => $start,
        -end           => $end,
-       -density_type  => $density_value_type,
+       -density_type  => $density_type,
        -density_value => $density_value);
 
     $start = $end + 1;
@@ -256,7 +246,7 @@ sub fetch_all_by_Slice {
 sub _tables {
   my $self = shift;
 
-  return (['density_feature', 'df'], ['density_type', 'dt']);
+  return (['density_feature', 'df']);
 }
 
 
@@ -265,15 +255,9 @@ sub _columns {
 
   return qw( df.density_feature_id
              df.seq_region_id df.seq_region_start df.seq_region_end
-             df.density_value dt.analysis_id dt.value_type);
+             df.density_value df.density_type_id );
 }
 
-
-sub _default_where_clause {
-  my $self = shift;
-
-  return 'df.density_type_id = dt.density_type_id';
-}
 
 
 sub _objs_from_sth {
@@ -286,20 +270,19 @@ sub _objs_from_sth {
   #
 
   my $sa = $self->db()->get_SliceAdaptor();
-  my $aa = $self->db()->get_AnalysisAdaptor();
+  my $dta = $self->db()->get_DensityTypeAdaptor();
 
   my @features;
-  my %analysis_hash;
+  my %dtype_hash;
   my %slice_hash;
   my %sr_name_hash;
   my %sr_cs_hash;
 
   my($density_feature_id, $seq_region_id, $seq_region_start, $seq_region_end,
-     $density_value, $analysis_id, $density_value_type );
+     $density_value, $density_type_id );
 
   $sth->bind_columns(\$density_feature_id, \$seq_region_id, \$seq_region_start,
-                     \$seq_region_end, \$density_value, \$analysis_id, 
-                     \$density_value_type);
+                     \$seq_region_end, \$density_value, \$density_type_id);
 
   my $asm_cs;
   my $cmp_cs;
@@ -328,9 +311,9 @@ sub _objs_from_sth {
   }
 
   FEATURE: while($sth->fetch()) {
-    #get the analysis object
-    my $analysis = $analysis_hash{$analysis_id} ||=
-      $aa->fetch_by_dbID($analysis_id);
+    #get the density type object
+    my $density_type = $dtype_hash{$density_type_id} ||=
+      $dta->fetch_by_dbID($density_type_id);
 
     #get the slice object
     my $slice = $slice_hash{"ID:".$seq_region_id};
@@ -365,7 +348,7 @@ sub _objs_from_sth {
       $seq_region_end    = $coords[0]->{'end'};
       $sr_name           = $coords[0]->{'id'};
 
-      if($density_value_type eq 'sum') {
+      if($density_type->value_type() eq 'sum') {
         #adjust density value so it reflects length of feature actually used
         my $newlen = $seq_region_end - $seq_region_start +1;
         $density_value *= $newlen/$len if($newlen != $len);
@@ -407,12 +390,13 @@ sub _objs_from_sth {
     }
 
     push @features, Bio::EnsEMBL::DensityFeature->new
-      (-start    => $seq_region_start,
-       -end      => $seq_region_end,
+      (-dbID          => $density_feature_id,
+       -adaptor       => $self,
+       -start         => $seq_region_start,
+       -end           => $seq_region_end,
        -seq_region    => $slice,
-       #	-adaptor  => $self,
-       -density_value      => $density_value,
-       -density_type => $density_value_type); 
+       -density_value => $density_value,
+       -density_type  => $density_type);
   }
   return \@features;
 }
@@ -496,9 +480,10 @@ sub store{
     }
 
     #store the density_type if it has not been stored yet
-    
+
     if(!$df->density_type->is_stored($db)) {
-      $df->density_type->store($df->density_type_id);
+      my $dta = $db->get_DensityTypeAdaptor();
+      $dta->store($df->density_type());
     }
 
     my $original = $df;
@@ -513,36 +498,6 @@ sub store{
   }
 }
 
-sub fetch_all_by_slice_and_density_type{
-  my ($self,$slice,$density_type) = @_;
-
-  my $sth = $self->prepare
-    ("SELECT density_feature_id, seq_region_start, seq_region_end, density_value  ".
-     "FROM density_feature ".
-     "WHERE seq_region_id=".$slice->get_seq_region_id." and ".
-     "density_type_id = ".$density_type->dbID);
-  
-  my @out=();
-  my ($id, $start, $end, $value);
-  $sth->execute();
-  $sth->bind_columns(\$id, \$start, \$end, \$value);
-
-
-  while($sth->fetch()) {
-
-    push @out, Bio::EnsEMBL::DensityFeature->new
-      (-start    => $start,
-       -end      => $end,
-       -seq_region    => $slice,
-       #	-adaptor  => $self,
-       -density_value      => $value,
-       -density_type => $density_type); 
-}
-  
-  return \@out;
-}
-
- 
 
 
 1;
