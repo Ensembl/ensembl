@@ -14,13 +14,19 @@ my %conf =  %::mapping_conf; # configuration options
 
 # global vars
 
-
+#Get general options
 my $organism   = $conf{'organism'};
 my $sptr_swiss = $conf{'sptr_swiss'};
+my $out        = $conf{'x_map_out'};
+
+#Get specific options for human
 my $refseq_gnp = $conf{'refseq_gnp'};
 my $ens1       = $conf{'ens1'};
 my $ens4       = $conf{'ens4'};
-my $out        = $conf{'x_map_out'};
+
+#Get specific options for the mouse
+my $mgi_sp     = $conf{'mgi_sp'};
+my $mgi_locus  = $conf{'mgi_locus'};
 
 if ((!defined $organism) || (!defined $sptr_swiss) || (!defined $out)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nsptr_swiss: $sptr_swiss\nx_map: $out\n";
@@ -36,6 +42,7 @@ open (OUT,">$out") || die "Can't open $out\n";;
 #First read the SPTR file in swiss format
 print STDERR "Reading SPTR file\n";
 
+
 my $in  = Bio::SeqIO->new(-file => $sptr_swiss, '-format' =>'swiss');
 
 while ( my $seq = $in->next_seq() ) {
@@ -44,6 +51,9 @@ while ( my $seq = $in->next_seq() ) {
     my $db;
     my $ac = $seq->accession;
     my $id = $seq->display_id;
+
+    #print STDERR "ID: $id\n";
+
     my ($displ_id,$tag) = split(/:/,$id);
 
     if ($tag eq "STANDARD") {
@@ -81,7 +91,7 @@ while ( my $seq = $in->next_seq() ) {
     }
 }
 
-
+#Get Xref mapping specifically for human
 if ($organism eq "human") {
 #Read the refseq file in gnp format
     print STDERR "Reading REFSEQ File\n";
@@ -158,5 +168,28 @@ if ($organism eq "human") {
     close (ENS1);
 }
 
+#Get Xref mapping specifically for mouse.
+if ($organism eq "mouse") {
+    print STDERR "Getting Xrefs specifically for mouse\n";
+    open (MGISP, "$mgi_sp") || die "Can't open $mgi_sp\n";
+    while (<MGISP>) {
+	chomp;
+	my ($mgi,$rik,$a,$b,$c,$sps) = split (/\t/,$_);
+      	
+	my @sp = split(/\s/,$sps);
+	foreach my $s(@sp) {
+	    print OUT "$s\tSPTR\t$mgi\tMGI\t$mgi\t\n";
+	}
+    }
+    open (MGILOC, "$mgi_locus") || die "Can't open $mgi_locus\n";
+ 
+    while (<MGILOC>) {
+	chomp;
+	my ($mgi,$hugo) = split (/\t/,$_);
+	print OUT "$mgi\tMGI\t$hugo\tHUGO\t$hugo\t\n";
+    }
+}
+
 print STDERR "The output has been written there: $out\n";
+
 
