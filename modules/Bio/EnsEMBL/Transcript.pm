@@ -1801,6 +1801,27 @@ sub recalculate_coordinates {
 }
 
 
+
+
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $transcript->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For transcripts this is the 
+               stable id if it is available otherwise it is an empty string.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->{'stable_id'} || '';
+}
+
+
 ###########################
 # DEPRECATED METHODS FOLLOW
 ###########################
@@ -1812,18 +1833,13 @@ sub recalculate_coordinates {
 
 =head2 sort
 
- Title   : sort
- Usage   : $feat->sort()
- Function: Sorts the exon features by start coordinate
-           Sorts forward for forward strand and reverse for reverse strand
- Returns : none
- Args    : none
+  Description: DEPRECATED.  This method is no longer needed.  Exons are sorted
+               automatically when added to the transcript.
 
 =cut
 
 sub sort {
   my $self = shift;
-
 
   deprecate( "Exons are kept sorted, you dont have to call sort any more" );
   # Fetch all the features

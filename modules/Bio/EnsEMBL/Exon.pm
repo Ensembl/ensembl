@@ -870,6 +870,25 @@ sub hashkey {
   return "$slice_name-$start-$end-$strand-$phase-$end_phase";
 }
 
+
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $exons->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For exons this is the stable id if
+               it is available otherwise it is an empty string.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->{'stable_id'} || '';
+}
+
 #####################
 # DEPRECATED METHODS
 #####################

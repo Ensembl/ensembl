@@ -180,6 +180,24 @@ sub move {
 }
 
 
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $kb->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For karyotype bands this is the
+               name of the karyotype band or '' if no name is defined.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->{'name'} || '';
+}
+
 
 =head2 chr_name
 

@@ -235,4 +235,29 @@ sub get_attribute {
   return ();
 }
 
+
+
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $kb->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For misc_features this is the first
+               name or synonym attribute or '' if neither are defined.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  my ($attrib) = $self->get_attribute('name');
+  ($attrib) =  $self->get_attribute('synonym') if(!$attrib);
+  return $attrib || '';
+}
+
+
+
+
 1;

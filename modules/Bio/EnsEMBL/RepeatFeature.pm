@@ -239,6 +239,33 @@ sub hstrand {
 }
 
 
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $rf->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For repeat_features this is the 
+               name of the repeat consensus if it is available otherwise it is
+               an empty string.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+
+  my $id = '';
+
+  my $rc = $self->{'repeat_consensus'};
+  if($rc) {
+    $id = $rc->name();
+  }
+
+  return $id;
+}
+
 
 1;
 

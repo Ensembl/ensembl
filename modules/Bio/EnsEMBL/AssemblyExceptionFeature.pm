@@ -140,4 +140,29 @@ sub alternate_slice {
   return $self->{'alternate_slice'};
 }
 
+
+
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $aef->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For assembly exception features
+               this is the name of the alternate seqregion or '' if the 
+               alternate slice is not defined.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  my $slice = $self->{'alternate_slice'};
+  return '' if(!$slice);
+  return $slice->seq_region_name();
+}
+
+
+
 1;

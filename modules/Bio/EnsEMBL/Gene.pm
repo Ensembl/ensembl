@@ -603,22 +603,25 @@ sub recalculate_coordinates {
 }
 
 
-sub _dump{
-   my ($self,$fh) = @_;
 
-   if( ! $fh ) {
-       $fh = \*STDOUT;
-   }
+=head2 display_id
 
-   print $fh "Gene ", $self->dbID(), "\n";
-   foreach my $t ( @{$self->get_all_Transcripts()} ) {
-       print $fh "  Trans ", $t->dbID(), " :";
-       foreach my $e ( @{$t->get_all_Exons} ) {
-	   print $fh " ",$e->dbID(),",";
-       }
-       print "\n";
-   }
+  Arg [1]    : none
+  Example    : print $gene->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For genes this is the stable id if
+               it is available otherwise it is an empty string.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->{'stable_id'} || '';
 }
+
 
 
 ###########################

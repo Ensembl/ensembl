@@ -397,6 +397,25 @@ sub get_all_Exons {
    return $self->{'_trans_exon_array'};
 }
 
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $rf->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For prediction transcripts this is 
+               the stable_id if it is available otherwise it is an empty 
+               string.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->stable_id() || '';
+}
+
 
 =head2 get_exon_count
 

@@ -420,6 +420,25 @@ sub get_all_DomainFeatures{
  return \@features;
 }
 
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $translation->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For translations this is the 
+               stable id if it is available otherwise it is an empty string.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->{'stable_id'} || '';
+}
+
+
 
 
 =head2 temporary_id

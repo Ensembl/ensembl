@@ -152,4 +152,30 @@ sub map_weight {
   return $self->{'map_weight'};
 }
 
+
+
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $mf->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For marker features this is the
+               name of the display synonym or '' if it is not defined.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  my $marker = $self->{'marker'};
+
+  return '' if(!$marker);
+  my $ms = $marker->display_MarkerSynonym();
+  return '' if(!$ms);
+  return $ms->name() || '';
+}
+
+
 1;

@@ -355,7 +355,23 @@ sub p_value{
 
 
 
+=head2 display_id
 
+  Arg [1]    : none
+  Example    : print $fp->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For feature pairs this is the 
+               hseqname if it is available otherwise it is an empty string.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->{'hseqname'} || '';
+}
 
 
 ###########################

@@ -621,6 +621,29 @@ sub seqname {
 }
 
 
+
+
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $f->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  It is overridden by subclasses to
+               return an appropriate value for objects of that particular 
+               class.  If no appropriate display id is available an empty
+               string is returned instead.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return '';
+}
+
+
 ##############################################
 # Methods included for backwards compatibility
 ##############################################
@@ -733,7 +756,8 @@ sub _deprecated_transform {
 #
 sub id {
   my $self = shift;
-  deprecate("id method is not used - use dbID or hseqname instead");
+  deprecate("id method is not used - use display_id instead");
+  return $self->{'stable_id'} if($self->{'stable_id'});
   return $self->{'hseqname'} if($self->{'hseqname'});
   return $self->{'seqname'}  if($self->{'seqname'});
   return $self->{'dbID'};

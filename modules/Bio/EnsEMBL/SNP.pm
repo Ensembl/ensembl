@@ -146,4 +146,25 @@ sub source_tag {
 }
 
 
+
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : print $snp->id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier.  For snps this is the
+               returns the same thing as the id method.
+  Returntype : string
+  Exceptions : none
+  Caller     : web drawing code
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->id();
+}
+
+
+
 1;
