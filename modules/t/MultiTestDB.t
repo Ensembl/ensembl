@@ -17,7 +17,7 @@ my $dba = $ens_test->get_DBAdaptor("core");
 
 ok($dba);
 
-my $sth = $dba->db->prepare("select * from gene");
+my $sth = $dba->dbc->prepare("select * from gene");
 $sth->execute;
 
 ok(scalar($sth->rows) == 20);
@@ -42,10 +42,10 @@ ok(scalar($sth->rows) == 20);
 
 
 # delete 9 genes from the db
-$sth = $dba->db->prepare("delete from gene where gene_id >= 18266");
+$sth = $dba->dbc->prepare("delete from gene where gene_id >= 18266");
 $sth->execute;
 
-$sth = $dba->db->prepare("select * from gene");
+$sth = $dba->dbc->prepare("select * from gene");
 $sth->execute;
 
 ok(scalar($sth->rows) == 10);

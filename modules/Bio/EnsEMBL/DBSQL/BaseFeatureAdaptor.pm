@@ -170,7 +170,7 @@ sub generic_fetch {
   #append additional clauses which may have been defined
   $sql .= "\n$final_clause";
 
-  my $sth = $db->db->prepare($sql);
+  my $sth = $db->dbc->prepare($sql);
      $sth->execute;
 
   my $res = $self->_objs_from_sth($sth, $mapper, $slice);

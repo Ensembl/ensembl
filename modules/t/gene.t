@@ -603,7 +603,7 @@ debug( "Storing gene" );
 $gene_ad->store($gene);
 
 
-my $dbe_id = $db->db->db_handle->selectall_arrayref("SELECT display_xref_id FROM gene")->[0]->[0];
+my $dbe_id = $db->dbc->db_handle->selectall_arrayref("SELECT display_xref_id FROM gene")->[0]->[0];
 
 ok($dbe_id && $dbe_id == $dbe->dbID());
 

@@ -130,7 +130,7 @@ sub is_stored {
   my $db = shift;
 
   if($db and $db->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')) {
-    $db = $db->db();
+    $db = $db->dbc();
   }
   if(!$db || !ref($db) || !$db->isa('Bio::EnsEMBL::DBSQL::DBConnection')) {
     throw('db argument must be a Bio::EnsEMBL::DBSQL::DBConnection');

@@ -126,7 +126,7 @@ sub new {
 
   if( ref($dbobj) =~ /DBAdaptor$/){
     $self->db($dbobj);
-    $self->dbc($dbobj->db);
+    $self->dbc($dbobj->dbc);
   }
   else{
     throw("Don't have a DBAdaptor [$dbobj] for new adaptor");

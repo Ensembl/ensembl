@@ -203,7 +203,7 @@ sub new_fast{
 	 $con->isa('Bio::EnsEMBL::DBSQL::DBConnection')) {
     throw("$con passed is not of type Bio::EnsEMBL::DBSQL::DBConnection");
   }
-  $self->db($con);
+  $self->dbc($con);
   $self->species($con->species());
   $self->group($con->group());
 
@@ -225,11 +225,11 @@ sub new_merged{
 
 
 
-=head2 db
+=head2 dbc
 
   Arg[1]    : (optional) Bio::EnsEMBL::DBSQL::DBConnection
 
-  Exmaple    : $dbc = $dba->db();
+  Exmaple    : $dbc = $dba->dbc();
   Description: Getter/Setter for DBConnection.
   Returntype : Bio::EnsEMBL::DBSQL::DBConnection
   Exceptions : none
@@ -237,11 +237,22 @@ sub new_merged{
 
 =cut
 
-sub db{
+sub dbc{
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
-    ( $self->{_db} = $arg );
-  $self->{_db};
+    ( $self->{_dbc} = $arg );
+  $self->{_dbc};
+}
+
+=head2 db
+
+
+=cut
+
+sub db{
+  my ($self, $arg ) = @_;
+ deprecate("db Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ return $self->dbc($arg);
 }
 
 

@@ -529,7 +529,7 @@ sub remove_from_MiscFeature {
     throw("MiscFeature is not stored in this database.");
   }
 
-  my $sth = $db->db->prepare("DELETE FROM misc_attrib " .
+  my $sth = $db->dbc->prepare("DELETE FROM misc_attrib " .
                          "WHERE misc_feature_id = ?");
 
   $sth->execute($mf->dbID());

@@ -802,7 +802,7 @@ sub store {
   # store the coordinate system in the database
   #
 
-  my $sth = $db->db->prepare('INSERT INTO coord_system ' .
+  my $sth = $db->dbc->prepare('INSERT INTO coord_system ' .
                          'SET name    = ?, ' .
                              'version = ?, ' .
                              'attrib  = ?,' .

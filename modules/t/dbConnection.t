@@ -30,12 +30,12 @@ my $db    = $multi->get_DBAdaptor('core');
 #
 my $dbc;
 {
-  my $db_name = $db->db->dbname;
-  my $port    = $db->db->port;
-  my $user    = $db->db->username;
-  my $pass    = $db->db->password;
-  my $host    = $db->db->host;
-  my $driver  = $db->db->driver;
+  my $db_name = $db->dbc->dbname;
+  my $port    = $db->dbc->port;
+  my $user    = $db->dbc->username;
+  my $pass    = $db->dbc->password;
+  my $host    = $db->dbc->host;
+  my $driver  = $db->dbc->driver;
 
   $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbname => $db_name,
 						-user   => $user,
