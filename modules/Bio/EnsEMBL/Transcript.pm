@@ -80,7 +80,7 @@ sub new {
 
   # set stuff in self from @args
   foreach my $a (@args) {
-    $self->add_Exon($a);
+        $self->add_Exon($a);
   }
 
   #$self->is_partial(0);
