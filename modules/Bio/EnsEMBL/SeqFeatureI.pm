@@ -105,14 +105,14 @@ sub analysis {
 sub validate {
    my ($self,$value) = @_;
 
-   $self->throw("Seqname not defined in feature")     unless defined($feature->seqname);
-   $self->throw("start not defined in feature")       unless defined($feature->start);
-   $self->throw("end not defined in feature")         unless defined($feature->end);
-   $self->throw("strand not defined in feature")      unless defined($feature->strand);
-   $self->throw("score not defined in feature")       unless defined($feature->score);
-   $self->throw("source_tag not defined in feature")  unless defined($feature->source_tag);
-   $self->throw("primary_tag not defined in feature") unless defined($feature->primary_tag);
-   $self->throw("analysis not defined in feature")    unless defined($feature->analysis);
+   $self->throw("Seqname not defined in feature")     unless defined($self->seqname);
+   $self->throw("start not defined in feature")       unless defined($self->start);
+   $self->throw("end not defined in feature")         unless defined($self->end);
+   $self->throw("strand not defined in feature")      unless defined($self->strand);
+   $self->throw("score not defined in feature")       unless defined($self->score);
+   $self->throw("source_tag not defined in feature")  unless defined($self->source_tag);
+   $self->throw("primary_tag not defined in feature") unless defined($self->primary_tag);
+   $self->throw("analysis not defined in feature")    unless defined($self->analysis);
 
 }
 
