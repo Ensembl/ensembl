@@ -52,6 +52,7 @@ use strict;
 # Object preamble - inherits from Bio::EnsEMBL::Root
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Slice;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
@@ -427,6 +428,49 @@ sub get_Gene_chr_bp {
 
    return ($chr,$start,$end); 
         
+}
+
+=head2 fetch_Slice_by_transcript_dbID
+
+ Title   : fetch_Slice_by_transcript_dbID
+ Usage   : $slice = $slice_adaptor->fetch_Slice_by_transcript_dbID(
+                                       24,1000);
+ Function: Creates a slice of the specified object.  If a context
+           size is given, the slice is extended by that number of
+	   basepairs on either side of the transcript.  Throws if
+	   the transcript is not golden.
+ Returns : Slice object 
+ Args    : transcript dbID, [context size in bp]
+
+
+=cut
+
+sub fetch_Slice_by_transcript_dbID{
+  my ($self,$transcriptid,$size) = @_;
+     if( !defined $transcriptid ) {
+       $self->throw("Must have transcriptid id to fetch Slice of transcript");
+   }
+   if( !defined $size ) {$size=0;}
+   my $emptyslice = Bio::EnsEMBL::Slice->new( '-empty'   => 1,
+                                              '-adaptor' => $self,
+					      '-ASSEMBLY_TYPE' =>
+					      $self->db->assembly_type);
+   my $ta = $self->db->get_TranscriptAdaptor;
+   my $transcript_obj;
+   $transcript_obj = $ta->fetch_by_dbID($transcriptid);
+
+   my %exon_transforms;
+   for my $exon ( $transcript_obj->get_all_Exons() ) {
+     my $newExon = $exon->transform( $emptyslice );
+     $exon_transforms{ $exon } = $newExon;
+   }
+   $transcript_obj->transform( \%exon_transforms );
+   my $slice = $self->fetch_Slice_by_chr_start_end(
+                                            $emptyslice->chr_name,
+                                            $transcript_obj->start-$size,
+					    $transcript_obj->end+$size);
+   return $slice;
+
 }
 
 
