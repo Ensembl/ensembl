@@ -1,7 +1,7 @@
 use strict;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::Lite::DBAdaptor;
+use Bio::EnsEMBL::Variation::DBSQL::DBAdaptor;
 use Getopt::Long;
 
 my ( $host, $user, $pass, $port, $dbname, $genestats, $snpstats  );
@@ -54,7 +54,7 @@ if( ! $seq_region_count ) {
   exit();
 }
 
-my $snps_present = $snpstats && lite_attach( $db );
+my $snps_present = $snpstats && variation_attach( $db );
 
 
 my $slice_adaptor = $db->get_SliceAdaptor();
@@ -105,7 +105,7 @@ foreach my $slice (@$top_slices) {
   }
 
   if( $snps_present ) {
-    my $snps = $slice->get_all_SNPs();
+    my $snps = $slice->get_all_VariationFeatures();
     push @attribs, Bio::EnsEMBL::Attribute->new
       (-NAME => 'SNP Count',
        -CODE => 'SNPCount',
@@ -132,10 +132,10 @@ sub print_chromo_stats {
 
 
 #
-# tries to attach lite.
+# tries to attach variation database.
 #
 
-sub lite_attach {
+sub variation_attach {
   my $db = shift;
 
   my $core_db_name;
@@ -146,25 +146,30 @@ sub lite_attach {
   #
   # get a lost of all databases on that server
   #
-  my $sth = $db->dbc()->prepare( "show databases" );
+  my $sth = $db->dbc->prepare( "show databases" );
   $sth->execute();
   my $all_db_names = $sth->fetchall_arrayref();
   my %all_db_names = map {( $_->[0] , 1)} @$all_db_names;
   my $snp_db_name = $core_db_name;
-  $snp_db_name =~ s/_core_/_lite_/;
+  $snp_db_name =~ s/_core_/_variation_/;
   if( ! exists $all_db_names{ $snp_db_name } ) {
     return 0;
   }
 
-  my $snp_db = Bio::EnsEMBL::Lite::DBAdaptor->new
+  # this should register the dbadaptor with the Registry
+  my $snp_db = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new
     ( -host => $db->host(),
       -user => $db->username(),
       -pass => $db->password(),
       -port => $db->port(),
-      -dbname => $snp_db_name );
-  $db->add_db_adaptor( "lite", $snp_db );
+      -dbname => $snp_db_name,
+      -group => "variation",
+      -species => "DEFAULT"
+    );
+
   return 1;
 }
+
 
 
 1;
