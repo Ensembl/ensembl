@@ -1222,7 +1222,7 @@ sub store {
 
   #store the seq_region
 
-  my $sth = $db->prepare("INSERT INTO seq_region " .
+  my $sth = $self->prepare("INSERT INTO seq_region " .
                          "SET    name = ?, " .
                          "       length = ?, " .
                          "       coord_system_id = ?" );
@@ -1265,7 +1265,7 @@ sub prepare {
   my $self = shift;
   my $sql = shift;
 
-  return $self->db()->dnadb()->prepare( $sql );
+  return $self->db()->dnadb()->db->prepare( $sql );
 }
 
 sub _build_exception_cache {

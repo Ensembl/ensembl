@@ -95,7 +95,7 @@ use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::Root;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
@@ -115,23 +115,28 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 =cut
 
 sub new {
-    my ($class,$dbobj) = @_;
+  my ($class,$dbobj) = @_;
 
-    my $self = {};
-    bless $self,$class;
+  my $self = {};
+  bless $self,$class;
 
-    if( !defined $dbobj || !ref $dbobj ) {
-        throw("Don't have a db [$dbobj] for new adaptor");
-    }
+  if(!defined($dbobj)){
+    throw("Don't have a DBAdaptor [$dbobj] for new adaptor");
+  }
+  
+#
+# Need to check that it is a DBAdaptor but no prefixes
+#
 
-    if($dbobj->isa('Bio::EnsEMBL::Container')) {
-      #avoid a circular reference loop!
-      $self->db($dbobj->_obj);
-    } else {
-      $self->db($dbobj);
-    }
+  if( ref($dbobj) =~ /DBAdaptor$/){
+    $self->db($dbobj);
+    $self->dbc($dbobj->db);
+  }
+  else{
+    throw("Don't have a DBAdaptor [$dbobj] for new adaptor");
+  }
 
-    return $self;
+  return $self;
 }
 
 
@@ -152,9 +157,9 @@ sub new {
 sub prepare{
    my ($self,$string) = @_;
 
-   return $self->db->prepare($string);
-}
+   return $self->dbc->prepare($string);
 
+ }
 
 =head2 db
 
@@ -169,14 +174,21 @@ sub prepare{
 
 =cut
 
-sub db{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'db'} = $value;
-    }
-    return $obj->{'db'};
+##
 
+
+sub db{
+  my $self = shift;
+  $self->{'db'} = shift if(@_);
+
+  return $self->{'db'};
+}
+
+sub dbc{
+  my $self = shift;
+  $self->{'dbc'} = shift if(@_);
+
+  return $self->{'dbc'};
 }
 
 
@@ -196,9 +208,9 @@ sub db{
 sub deleteObj {
   my $self = shift;
 
-  #print STDERR "\t\tBaseAdaptor::deleteObj\n";
+#  print STDERR "\t\tBaseAdaptor::deleteObj\n";
 
-  #remove reference to the database adaptor
+  #remove reference to the database connection
   $self->{'db'} = undef;
 }
 
@@ -227,5 +239,11 @@ sub _list_dbIDs {
 
   return \@out;
 }
+
+#sub DESTROY {
+#  my ($obj) = @_;
+#  
+#  print "DESTROYING Base Adaptor $obj\n";
+#}
 
 1;
