@@ -201,7 +201,7 @@ sub get_all_SimilarityFeatures_above_score{
                         AND    f.analysis = a.id 
                         AND    sgp.raw_id = f.contig
                         AND    f.contig in $idlist
-		        AND    a.db = '$analysis_type'  
+		        AND    a.program = '$analysis_type'  
                         AND    sgp.chr_end >= $glob_start 
 		        AND    sgp.chr_start <=$glob_end 
 		        AND    sgp.chr_name='$chr_name' 
