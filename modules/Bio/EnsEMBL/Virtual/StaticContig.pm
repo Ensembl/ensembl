@@ -56,11 +56,11 @@ use Bio::Annotation;
 
 @ISA = qw(Bio::EnsEMBL::Virtual::Contig);
 
-# new() is written here 
 
 my $static_number = 0;
 
-sub new {
+# overrides Bio::EnsEMBL::Virtual::Contig::new
+sub new {                               
     my ($class,$global_start,$vc_start_position,$global_end,@contigs) = @_;
     
     my $self = {};
@@ -150,7 +150,7 @@ sub new {
     $self->id("static".$static_number++);
     
     return $self;
-}
+}                                       # new
 
 
 =head2 get_all_SimilarityFeatures_above_score
