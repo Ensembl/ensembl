@@ -58,6 +58,8 @@ while (<ENS1>) {
     #Get rid of the annoying carriage return!
     $_ =~ s/\r//g;
     my ($hgnc,$sp,$refseq) = split(/\t/,$_);
+
+
     
     if ($sp) {
 	$en1{$sp} = $hgnc;
@@ -108,10 +110,14 @@ while (<DBMAP>) {
 	    
 	    foreach my $sol (@syn) {
 #print the HUGOs aliases
-		print OUT "$mapdb\t$mapac\tALIAS\t$sol\n";
+		print OUT "$mapdb\t$mapac\tHUGO\t$sol\n";
 	    }
 	    
 	}
+	#if (!defined $en2{$en1{$mapac}}) {
+	 #   print STDERR "$mapac\n";
+	#}
+
     }
 }
 

@@ -4,7 +4,7 @@ use strict;
 
 use Getopt::Long;
 
-my ($refseq,$dbmap);
+my ($refseq,$dbmap,$out);
 
 my %map;
 
@@ -19,6 +19,8 @@ open (DBMAP,"$dbmap") || die "Can't open file $dbmap\n";
 open (REFSEQ,"$refseq") || die "Can't open file $refseq\n";
 open (OUT,">$out") || die "Can't open file $out";
 
+print STDERR "Reading dbmap\n";
+
 while (<DBMAP>) {
     chomp;
     my ($mapac,$mapdb) = split(/\t/,$_);
@@ -27,8 +29,10 @@ while (<DBMAP>) {
 }
 
 
-
+#Separate by entry (each entry goes into $_)
 $/ = "\/\/\n";
+
+print STDERR "Reading Refseq file\n";
 
 while (<REFSEQ>) {
     my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
@@ -39,13 +43,21 @@ while (<REFSEQ>) {
     my ($locus) = $_ =~ /\/db_xref=\"LocusID:(\d*)/;
 
     if ($mim) {
+	if (!defined $map{$dna_ac}) {
+	    die "can't map $dna_ac\n";
+	}
 	print OUT "$map{$dna_ac}\t$dna_ac\tOMIM\t$mim\n";
     }
 
     if ($locus) {
+	if (!defined $map{$dna_ac}) {
+	    die "can't map $dna_ac\n";
+	}
 	print OUT "$map{$dna_ac}\t$dna_ac\tLOCUS\t$locus\n";
     }
 }
+
+
 
 
 

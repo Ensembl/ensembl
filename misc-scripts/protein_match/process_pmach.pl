@@ -57,13 +57,13 @@ sub postprocesspmatch {
 #Post process the raw data from pmatch
     if ($db eq $sp) {
 	print STDERR "Postprocessing pmatch for SP mapping\n";
-	open (OUT, ">ens_sp.processed");
-	open (PROC, "ens_sp_rawpmatch");
+	open (OUT, ">ens_sp.processed") || die "Can't open File\n";
+	open (PROC, "ens_sp_rawpmatch") || die "Can't open File\n";
     }
     
     else {
 	print STDERR "Postprocessing pmatch for REFSEQ mapping\n"; 
-	open (OUT, ">ens_refseq.processed");
+	open (OUT, ">ens_refseq.processed") || die "Can't open File\n";;
 	open (PROC, "ens_refseq_rawpmatch") || die "Can't open file ens_refseq_rawpmatch\n";
     }
     
