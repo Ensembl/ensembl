@@ -345,8 +345,12 @@ sub translateable_exons {
 	   $retexon->start($exon->start + $self->translation->start() -1);
 	   $retexon->end  ($exon->start + $self->translation->end() -1);
        } else {
-	   $retexon->end  ($exon->end - ($self->translation->start -1));
-	   $retexon->start($exon->end - ($self->translation->end -1));
+	 # reverse strand is just as easy
+	   $retexon->start($exon->start + $self->translation->start -1);
+	   $retexon->end($exon->start + $self->translation->end -1);
+
+#	   $retexon->end  ($exon->end - ($self->translation->start -1));
+#	   $retexon->start($exon->end - ($self->translation->end -1));
        }
        
 
@@ -354,8 +358,11 @@ sub translateable_exons {
    }
 
    my $exon;
-   while( $exon = shift @exons ) {
+   my $found_start = 0;
+
+ EXON:   while( $exon = shift @exons ) {
        if( $exon->id eq $self->translation->start_exon_id() ) { #start exon
+	 $found_start = 1;
            # see if endpoints are sane:
            if( $self->translation->start <  1) {
                $self->throw("In exon ".$exon->id." translation start "
@@ -385,6 +392,22 @@ sub translateable_exons {
 	   }
 	   $stexon->phase(0);
 	   push(@out,$stexon);
+
+	 # unspliced 3' UTRs of single exon genes make this more complex.
+	 # to avoid problems caused by 3' UTRs of single exon genes
+	 if ($self->translation->start_exon_id() eq $self->translation->end_exon_id()){
+	   if( $exon->strand == 1 ) {
+	     $stexon->end($exon->start + $self->translation->end -1 );
+	   } else {
+	     
+	     # single exon genes with UTRs are slightly wacky
+	     $stexon->start($exon->start + $self->translation->start -1);
+	     $stexon->end($exon->start + $self->translation->end -1);
+	     
+	   }
+	   
+	   last EXON;
+	 }
        } elsif ( $exon->id eq $self->translation->end_exon_id()) { # end exon
            # see if end points are sane:
            if( $self->translation->end <  1) {
@@ -417,7 +440,7 @@ sub translateable_exons {
 	   push(@out,$endexon);
 	   last;
        } else {                         # ordinary, intermediate exon
-	   push(@out,$exon);
+	   push(@out,$exon) if $found_start; # so we don't translate nasty horrible spliced 5' UTR exons
        }
    }                                    # while @exons
 
@@ -459,9 +482,16 @@ sub split_Transcript_to_Partial {
        @exons = $self->each_Exon;
    }
 
-   # one exon genes - easy to handle.
+   # one exon genes - easy to handle. (unless of course they have UTRs ...)
    if( $#exons == 0 ) {
-       return $self;
+      # can't just return self - spliced UTR exons should not be returned or they'll be translated ...
+     # return $self;
+     
+     my $t = $self->new();
+     $t->id($self->id);
+     
+     $t->add_Exon($exons[0]);
+     return $t;
    }
 
    # find the start exon;
