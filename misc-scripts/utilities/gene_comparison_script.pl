@@ -26,11 +26,11 @@
 
  we can specify the gene types we want to compare, e.g.
  
-   gene_comparison_script.pl -chr chr20 -type1 ensembl -type2 HUMACE-Novel_CDS
+   gene_comparison_script.pl -chr chr20 -type1 HUMACE-Novel_CDS -type2 ensembl 
   
  also we can include more than two types, e.g.
 
-   gene_comparison_script.pl -chr chr20 -type1 ensembl -type2 HUMACE-Novel_CDS -type2 HUMACE-Known
+   gene_comparison_script.pl -chr chr20 -type1 HUMACE-Novel_CDS -type1 HUMACE-Known -type2 ensembl 
 
  Other things that can be especified are: databases for each gene set to be compared ('dbname1' and 'dbname2')
  or one single database for both ('dbname'), golden-paths for each database ('path1' and 'path2') or a single one
@@ -45,8 +45,8 @@ use Bio::EnsEMBL::Utils::GeneComparison;
 use Getopt::Long;
 
 
-my $host1  = 'ensrv3';
-my $host2  = 'ecs1b';
+my $host1  = 'ecs1b';
+my $host2  = 'ensrv3';
 my $user   = 'ensro';
 my $host;
 my $dbname;
@@ -56,12 +56,12 @@ my $path;
 
 # the default behaviour is to compare ensembl built genes with human-annotated genes in chr20
 
-my $dbname1 = 'homo_sapiens_core_110';
-my $dbname2 = 'chr20';
-my $path1  = 'UCSC';
-my $path2  = 'Sanger_02';
-my $type1  = ['ensembl'];
-my $type2  = ['HUMACE-Novel_CDS','HUMACE-Known'];
+my $dbname1 = 'chr20';
+my $dbname2 = 'homo_sapiens_core_110';
+my $path1  = 'Sanger_02';
+my $path2  = 'UCSC';
+my $type1  = ['HUMACE-Novel_CDS','HUMACE-Known'];
+my $type2  = ['ensembl'];
 my (@type1,@type2);
 
 # if one only provides $chr of these variables, the whole chromosome is taken #
@@ -69,7 +69,6 @@ my (@type1,@type2);
 my ($chrstart,$chrend);
 my $chr;
 my (@opt_type1,@opt_type2);
-
 
 
 #change it so that using -type does not add up on top of the definitions above but
@@ -118,7 +117,7 @@ if (@opt_type2){
 }
 
 
-# connect to the database
+# connect to the database 
 my $db1= new Bio::EnsEMBL::DBSQL::DBAdaptor(-host  => $host1,
 					    -user  => $user,
 					    -dbname=> $dbname1);
@@ -171,7 +170,9 @@ foreach my $type ( @{ $type2 } ){
 }
 
 # get a GeneComparison object 
-my $gene_comparison = Bio::EnsEMBL::Utils::GeneComparison->new(\@genes1,\@genes2);
+my $gene_comparison = Bio::EnsEMBL::Utils::GeneComparison->new(\@genes1, \@genes2);
+# as convention, we put first the annotated (or benchmark) genes and second the predicted genes
+# and the comparison methods refer to the second list with respect to the first one
 
 ## As an example, we get the number of exons per percentage overlap using coding exons only
 #my %coding_statistics =  $gene_comparison->get_Coding_Exon_Statistics;
@@ -221,30 +222,30 @@ my @clusters    = $gene_comparison->cluster_Genes;
 
 my @unclustered = $gene_comparison->unclustered_Genes;
 
-
 # print the clusters 
+print "Number of clusters: ".scalar( @clusters )."\n";
 
- my $count=1;
- foreach my $cluster (@clusters){
-   print "Cluster $count:\n";
-   print $cluster->string."\n";
-   $count++;
- }
+# my $count=1;
+# foreach my $cluster (@clusters){
+#   print "Cluster $count:\n";
+#   print $cluster->to_String."\n";
+#   $count++;
+# }
 
-$count=1;
+#$count=1;
 print "Unmatched genes: ".scalar( @unclustered )."\n";
-foreach my $cluster (@unclustered){
-print "Unclustered $count:\n";
-print $cluster->string."\n";
-$count++;
-}
 
-# get the missing exons
+#foreach my $cluster (@unclustered){
+#print "Unclustered $count:\n";
+#print $cluster->to_String."\n";
+#$count++;
+#}
 
-# $gene_comparison->find_missing_Exons(\@clusters);
+# get the missing exons ( those in @genes1 which are missing in @genes2 )
+$gene_comparison->find_missing_Exons(\@clusters);
 
-
-
+# get the overpredicted exons ( those in @genes2 which are missing in @genes2 )
+$gene_comparison->find_overpredicted_Exons(\@clusters);
 
 ## get the list of unmatched genes
 # 
