@@ -284,7 +284,7 @@ sub get_all_RepeatFeatures {
                             rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid  
                      FROM   repeat_feature rf,static_golden_path sgp
                      WHERE  sgp.raw_id = rf.contig
-                     AND    f.contig in $idlist
+                     AND    rf.contig in $idlist
                      AND    sgp.chr_end >= $glob_start 
                      AND    sgp.chr_start <=$glob_end
 		     AND    sgp.chr_name='$chr_name' 
@@ -1269,7 +1269,7 @@ sub _raw_contig_id_list {
    }
    my $string = "(";
 
-   foreach my $c ( $self->_vmap->each_RawContig ) {
+   foreach my $c ( $self->_vmap->get_all_RawContigs) {
        $string .= $c->internal_id . ",";
    }
    $string =~ s/\,$//g;
