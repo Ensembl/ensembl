@@ -96,7 +96,10 @@ sub new {
     if( $self->rawcontig_end > $self->contig->length ) {
 	$self->throw("Attempting to build a mapcontig $start:$end starting at ". $self->rawcontig_end. " which is greater than the length of the contig ".$self->contig->length." on ".$self->contig->id);
     }
-
+    
+    if ($start > $end) {
+      $self->throw("start: $start > end: $end");
+    }
     return $self;
 }
 
@@ -290,7 +293,6 @@ sub _actual_sequence_as_string{
    if( $self->orientation == 1 ) {
        return $temp;
    }
-
    $temp =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
    $temp = reverse $temp;
    return $temp;
