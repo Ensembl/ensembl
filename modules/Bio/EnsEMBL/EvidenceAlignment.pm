@@ -368,7 +368,9 @@ sub _get_aligned_evidence {
     PEP_FEATURE_LOOP:
     foreach my $feature(@features) {
       next PEP_FEATURE_LOOP unless ($exons_to_display[$i]->overlaps($feature));
-      next PEP_FEATURE_LOOP if (($feature->start < $exons_to_display[$i]->start) || ($feature->end > $exons_to_display[$i]->end));
+      next PEP_FEATURE_LOOP
+        if (($feature->start < $exons_to_display[$i]->start)
+	|| ($feature->end > $exons_to_display[$i]->end));
       next PEP_FEATURE_LOOP if ($last_feat
       && ($last_feat->start == $feature->start)
       && ($last_feat->end == $feature->end)
@@ -508,14 +510,17 @@ sub _get_aligned_evidence {
 
   $total_exon_len = 0;
   my @nuc_evidence_arr = ();
-  my @features = $self->get_features($transcript_obj, $vc);
+  @features = ();
+  @features = $self->get_features($transcript_obj, $vc);
   for (my $i = 0; $i <= $#all_exons; $i++) {
     my $start = $all_exons[$i]->start;
     my $last_feat = undef;
     NUC_FEATURE_LOOP:
     foreach my $feature(@features) {
       next NUC_FEATURE_LOOP unless ($all_exons[$i]->overlaps($feature));
-      next NUC_FEATURE_LOOP if (($feature->start < $all_exons[$i]->start) || ($feature->end > $all_exons[$i]->end));
+      next NUC_FEATURE_LOOP
+        if (($feature->start < $all_exons[$i]->start)
+	|| ($feature->end > $all_exons[$i]->end));
       next NUC_FEATURE_LOOP if ($last_feat
       && ($last_feat->start == $feature->start)
       && ($last_feat->end == $feature->end)
