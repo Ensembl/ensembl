@@ -34,8 +34,7 @@ INSERT INTO genetype (gene_id,type) VALUES ('gene-id-1','type');
 
 INSERT INTO translation (id,start_exon,seq_start,end_exon,seq_end) VALUES ('trl-1','exon-1',2,'exon-2',6);
 
-INSERT INTO genedblink (gene_id,external_db,external_id) VALUES ('gene-id-1','swissprot','P000123');
-INSERT INTO transcriptdblink (transcript_id,external_db,external_id) VALUES ('transcript-1','embl','AC000012');
+
 
 
 #
@@ -72,8 +71,31 @@ VALUES (1, 'swissprot', 12, 'blast', 12,  'blast', 'similarity');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
 VALUES (2, 'genscan', 12, 'blast', 12, 'blast', 'similarity');
 
+#
+# Dumping data for table 'objectXref'
+#
 
+INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('gene-id-1','Gene', 1);
+INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('transcript-1','Transcript', 2);
+#
+# Dumping data for table 'Xref'
+#
 
+INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, display_id,version, description) VALUES (1, 1, 'P000123', 'DISPLAY1',01, 'blablaou');
+INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, display_id, version, description) VALUES (2, 2, 'AC000012', 'DISPLAY2', 02, 'tremblannot');
 
+#
+# Dumping data for table 'externalSynonym'
+#
+
+INSERT INTO externalSynonym (xrefId, synonym) VALUES (1, 'EMBL_SYNONYME1');
+INSERT INTO externalSynonym (xrefId, synonym) VALUES (2, 'SPTREMBL_SYNONYME2');
+
+#
+# Dumping data for table 'externalDB'
+#
+
+INSERT INTO externalDB (externalDBId, db_name, release, url_pattern) VALUES (1, 'swissprot', 23, 'http//');
+INSERT INTO externalDB (externalDBId, db_name, release, url_pattern) VALUES (2, 'embl', 2, 'http//');
 
 

@@ -93,12 +93,7 @@ INSERT INTO gene (id,version,created,modified,stored) VALUES ('test_gene',1,'200
 #
 
 
-#
-# Dumping data for table 'genedblink'
-#
 
-
-INSERT INTO genedblink (gene_id, external_db, external_id) VALUES ('test_gene','sptrembl','MC1R');
 
 #
 # Dumping data for table 'genedescription'
@@ -169,4 +164,29 @@ INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) 
 #
 
 INSERT INTO genetype (gene_id, type) VALUES ('test_gene','ensembl');
+
+
+#
+# Dumping data for table 'objectXref'
+#
+
+INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('test_gene','Gene', 1);
+
+#
+# Dumping data for table 'Xref'
+#
+
+INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, display_id,version, description) VALUES (1, 1, 'MC1R', 'DISPLAY1',01, 'blablaou');
+
+#
+# Dumping data for table 'externalSynonym'
+#
+
+INSERT INTO externalSynonym (xrefId, synonym) VALUES (1, 'SPTREMBL_SYNONYME1');
+
+#
+# Dumping data for table 'externalDB'
+#
+
+INSERT INTO externalDB (externalDBId, db_name, release, url_pattern) VALUES (1, 'sptrembl', 23, 'http//');
 

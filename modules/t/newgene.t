@@ -125,15 +125,20 @@ else {
 } 
 
 #Not checking clone neighbourhood because they are on their way out of the schema
-my $dblink=Bio::Annotation::DBLink->new();
-$dblink->database('EMBL_dummy');
-$dblink->primary_id('ACC_test');
-$dblink->optional_id('ACC_optional');
-$dblink->comment('This is a fake dblink object');
-$gene->add_DBLink($dblink);
+
+my $exDB = Bio::EnsEMBL::DBEntry->new
+    ( -primary_id => 'ACC_test',
+      -display_id => 'ACC_optional',
+      -version => 1,
+      -release => 2,
+      -dbname => 'EMBL_dummy' );
+$gene->add_DBLink($exDB);
+
 print "ok 12\n";
 
 $ok=0;
+
+
 foreach my $link ($gene->each_DBLink) {
     if ($link->database eq 'EMBL_dummy') {
 	$ok++;
@@ -144,11 +149,9 @@ foreach my $link ($gene->each_DBLink) {
     if ($link->optional_id eq 'ACC_optional') {
 	$ok++;
     } 
-    if ($link->comment eq 'This is a fake dblink object') {
-	$ok++;
-    }
+   
 }
-if ($ok == 4) {
+if ($ok == 3) {
     print "ok 13\n";
 }
 else {

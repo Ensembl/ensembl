@@ -63,6 +63,7 @@ $trans = shift @trans;
 
 
 @dblink = $trans->each_DBLink();
+
 $dbl = shift @dblink;
 
 if( !defined $dbl || $dbl->database ne 'embl' ) {

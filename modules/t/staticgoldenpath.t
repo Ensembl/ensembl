@@ -155,15 +155,32 @@ $trans = Bio::EnsEMBL::Transcript->new();
 $trans->id('trans-id-1');
 $trans->version(1);
 
-$dbl = Bio::Annotation::DBLink->new();
-$dbl->database('embl');
-$dbl->primary_id('AC000012');
-$trans->add_DBLink($dbl);
+#$dbl = Bio::Annotation::DBLink->new();
+#$dbl->database('embl');
+#$dbl->primary_id('AC000012');
+$exDB = Bio::EnsEMBL::DBEntry->new
+    ( -primary_id => 'AC000012',
+      -display_id => 'ACC_optional',
+      -version => 1,
+      -release => 2,
+      -dbname => 'embl' );
 
-$dbl = Bio::Annotation::DBLink->new();
-$dbl->database('swissprot');
-$dbl->primary_id('P000012');
-$gene->add_DBLink($dbl);
+
+$trans->add_DBLink($exDB);
+
+#$dbl = Bio::Annotation::DBLink->new();
+#$dbl->database('swissprot');
+#$dbl->primary_id('P000012');
+
+$exDB = Bio::EnsEMBL::DBEntry->new
+    ( -primary_id => 'P000012',
+      -display_id => 'ACC_optional',
+      -version => 1,
+      -release => 2,
+      -dbname => 'swissprot' );
+
+
+$gene->add_DBLink($exDB);
 
 $trl = Bio::EnsEMBL::Translation->new();
 $trl->start_exon_id('exon-1');
