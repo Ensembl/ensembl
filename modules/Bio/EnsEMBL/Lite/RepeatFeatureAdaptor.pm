@@ -32,7 +32,6 @@ use strict;
 
 package Bio::EnsEMBL::Lite::RepeatFeatureAdaptor;
 
-use Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptorI;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::RepeatFeature;
 use Bio::EnsEMBL::RepeatConsensus;
@@ -40,13 +39,7 @@ use Bio::EnsEMBL::RepeatConsensus;
 
 use vars '@ISA';
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptorI 
-	  Bio::EnsEMBL::DBSQL::BaseAdaptor);
-
-
-#implement the interface ProxyRepeatFeatureAdaptorI
-use implements qw(Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptorI);
-
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 my $MAX_REPEAT_LENGTH = 100000;
 
@@ -74,7 +67,9 @@ sub fetch_by_Slice {
 
       #create a partially filled repeat consensus object
       my $rc = new Bio::EnsEMBL::RepeatConsensus;
-      $rc->adaptor($self->db()->core_DBAdaptor()->get_RepeatConsensusAdaptor());
+      my $core = $self->db()->get_db_adaptor('core');
+
+      $rc->adaptor($core->get_RepeatConsensusAdaptor());
       $rc->name($hid);
       $rc->dbID($id);
 
@@ -83,7 +78,7 @@ sub fetch_by_Slice {
             $rc->name($hid);
       $r->repeat_id($id);
       #set the adaptor to be the proxy repeat feature adaptor
-      $r->adaptor($self->db()->core_DBAdaptor()->get_RepeatFeatureAdaptor());
+      $r->adaptor($core->get_RepeatFeatureAdaptor());
       $r->start($start - $slice->chr_start() + 1);
       $r->end($end - $slice->chr_start() + 1);
       $r->strand($strand);
@@ -94,23 +89,7 @@ sub fetch_by_Slice {
     return @repeats;
 }
 
-
-#
-# Unimplemented methods - part of interface...
-#
-sub fetch_by_RawContig {}
-
-sub fetch_by_contig_id {}
-
-sub fetch_by_dbID {}
-
-sub fetch_by_assembly_location {}
-
-sub fetch_by_assembly_location_constraint {}
-
-sub store {}
-
-
+1;
 
 __END__
 

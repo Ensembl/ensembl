@@ -31,32 +31,19 @@ database (such as the lite database if it is available).
 
 use strict;
 
-use Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptorI;
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+
 
 package Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor;
 
+use Bio::EnsEMBL::DBSQL::ProxyAdaptor;
 use vars '@ISA';
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptorI 
-	  Bio::EnsEMBL::DBSQL::BaseAdaptor);
-
-#implement the interface ProxyRepeatFeatureAdaptorI
-use implements qw(Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptorI);
-
-sub new {
-  my($class, $db, $core_adaptor) = @_;
-
-  #call superclass constructor
-  my $self = $class->SUPER::new($db);
-  $self->{'_core_adaptor'} = $core_adaptor;
-  return $self;
-}
+@ISA = qw(Bio::EnsEMBL::DBSQL::ProxyAdaptor);
 
 sub fetch_by_Slice {
   my ($self, @args) = @_;
 
-  my $lite_db = $self->db()->lite_DBAdaptor();
+  my $lite_db = $self->db()->get_db_adaptor('lite');
 
   if(defined $lite_db) {
     #use the lite database if it is available
@@ -64,42 +51,6 @@ sub fetch_by_Slice {
   } 
 
   #otherwise use the core database
-  return $self->{'_core_adaptor'}->fetch_by_Slice(@args);
-}
-  
-sub fetch_by_RawContig {
-  my ($self, @args) = @_;
-
-  return $self->{'_core_adaptor'}->fetch_by_RawContig(@args);
-}
-
-sub fetch_by_contig_id {
-  my ($self, @args) = @_;
-
-  return $self->{'_core_adaptor'}->fetch_by_contig_id(@args);
-}
-
-sub fetch_by_dbID {
-  my ($self, @args) = @_;
-
-  return $self->{'_core_adaptor'}->fetch_by_dbID(@args);
-}
-
-sub fetch_by_assembly_location {
-  my ($self, @args) = @_;
-
-  return $self->{'_core_adaptor'}->fetch_by_assembly_location(@args);
-}
-
-sub fetch_by_assembly_location_constraint {
-  my ($self, @args) = @_;
-
- return $self->{'_core_adaptor'}->fetch_by_assembly_location_constraint(@args);
-}
-
-sub store {
-  my ($self, @args) = @_;
-
-  return $self->{'_core_adaptor'}->store(@args);
+  return $self->{'_primary_adaptor'}->fetch_by_Slice(@args);
 }
 

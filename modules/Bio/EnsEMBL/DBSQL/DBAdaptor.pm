@@ -193,8 +193,25 @@ sub get_ProteinAdaptor {
 sub get_SNPAdaptor {
   my ($self)  = @_;
 
+  my $lite = $self->get_db_adaptor('lite');
+  my $primary_adaptor;
+
+  if($lite) {
+    $primary_adaptor = $lite->get_SNPAdaptor();
+  } else {
+    my $snp = $self->get_db_adaptor('snp');
+    
+    unless($snp) {
+      warn("No lite or SNP database, cannot get snp adaptor\n");
+      return undef;
+    }
+
+    $primary_adaptor = $snp->get_SNPAdaptor();
+  }
+  
   #return a proxy adaptor which can use the lite or the core database
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxySNPAdaptor");
+  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxySNPAdaptor",
+			     $primary_adaptor);
 }
 
 
@@ -249,8 +266,10 @@ sub get_CloneAdaptor {
 sub get_LandmarkMarkerAdaptor {
   my $self = shift;
 
-  if( defined $self->lite_DBAdaptor() ) {
-    return $self->lite_DBAdaptor()->get_LandmarkMarkerAdaptor();
+  my $lite = $self->get_db_adaptor('lite');
+
+  if( defined $lite ) {
+    return $lite->get_LandmarkMarkerAdaptor();
   } else {
     return undef;
   }
@@ -768,100 +787,6 @@ sub dnadb {
 }
 
 
-=head2 lite_DBAdaptor
-
-  Arg [1]    : (optional) Bio::EnsEMBL::Lite::DBAdaptor $liteDBConnection
-               A denormalized Lite database to attach to this database
-  Example    : $lite_db = $db_adaptor->lite_DBAdaptor();
-  Description: A Getter/Setter for the lite database adaptor attached to this
-               database
-  Returntype : Bio::EnsEMBL::Lite::DBAdaptor
-  Exceptions : none
-  Caller     : EnsWeb
-
-=cut
-
-sub lite_DBAdaptor {
-  my ($self, $arg ) = @_;
-  if ( defined $arg ) {
-    $self->{_liteDB} = $arg;
-
-  }
-
-  return $self->{_liteDB};
-}
-
-
-=head2 SNP_DBAdaptor
-
-  Arg [1]    : (optional) Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor $arg
-               An external SNP database to be attached to this database
-  Example    : $db_adaptor->SNP_DBAdaptor($snp_database_adaptor);
-  Description: A Getter/Setter for the external SNP database adaptor 
-               attached to this database
-  Returntype : Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor
-  Exceptions : none
-  Caller     : EnsWeb
-
-=cut
-
-sub SNP_DBAdaptor {
-  my ($self, $arg) = @_;
-
-  if(defined $arg) {
-    $self->{_SNP_db} = $arg;
-  }
-
-  return $self->{_SNP_db};
-}
-
-
-=head2 map_DBAdaptor
-
-  Arg [1]    : (optional) Bio::EnsEMBL::Map::DBSQL::DBAdaptor $arg
-               A Map database to attach to this database
-  Example    : $db_adaptor->lite_db($map_db_adaptor);
-  Description: A Getter/Setter for the Map database adaptor attached to this
-               database
-  Returntype : Bio::EnsEMBL::Map::DBSQL::DBAdaptor
-  Exceptions : none
-  Caller     : EnsWeb
-
-=cut
-
-sub map_DBAdaptor {
-  my ($self, $arg ) = @_;
-  if ( defined $arg ) {
-    $self->{_mapDB} = $arg;
-  }
-
-  return $self->{_mapDB};
-}
-
-
-=head2 est_DBAdaptor
-
-  Arg [1]    : (optional) Bio::EnsEMBL::ExternalData::ESTSQL::DBAdaptor $arg
-               An external EST database to attach to this database
-  Example      $db_adaptor->est_DBAdaptor();
-  Description: A Getter/Setter for the EST database adaptor attached to this
-               database
-  Returntype : Bio::EnsEMBL::ExternalData::ESTSQL::DBAdator
-  Exceptions : none
-  Caller     : EnsWeb
-
-=cut
-
-sub est_DBAdaptor {
-  my ($self, $arg) = @_;
-  
-  if(defined $arg) {
-    $self->{_estDB} = $arg;
-  }
-
-  return $self->{_estDB};
-}
-
 =head2 add_DASFeatureFactory
 
   Arg [1]    : Bio::EnsEMBL::DB::ExternalFeatureFactoryI $value 
@@ -1124,76 +1049,6 @@ sub _ext_adaptor {
 }
 
 
-=head2 add_db_adaptor
-
-  Arg [1]    : none
-  Example    : none
-  Description: NOT CURRENTLY USED
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub add_db_adaptor {
-  my ($self, $name, $adaptor) = @_;
-
-  $self->{'_db_adaptors'}->{$name} = $adaptor;
-}
-
-=head2 remove_db_adaptor
-
-  Arg [1]    : none
-  Example    : none
-  Description: NOT CURRENTLY USED
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub remove_db_adaptor {
-  my ($self, $name) = @_;
-
-  my $adaptor = $self->{'_db_adaptors'}->{$name};
-  delete $self->{'_db_adaptors'}->{$name};
-
-  return $adaptor;
-}
-
-=head2 get_all_db_adaptors
-
-  Arg [1]    : none
-  Example    : none
-  Description: NOT CURRENTLY USED
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub get_all_db_adaptors {
-  my ($self, $name) = @_;   
-
-  return $self->{'_db_adaptors'};
-}
-
-=head2 get_db_adaptor
-
-  Arg [1]    : none
-  Example    : none
-  Description: NOT CURRENTLY USED
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub get_db_adaptor {
-  my ($self, $name) = @_;
-
-  return $self->{'_db_adaptors'}->{$name};
-}
 
 
 
@@ -1233,7 +1088,7 @@ sub get_LiteAdaptor {
     $self->throw("The lite adaptor is deprecated. Use the " .
 		"Bio::EnsEMBL::Lite::DBAdaptor instead.\n" .
 		 "This may be attached to the core DBAdaptor using the" .
-		"lite_DBAdaptor method\n");
+		"add_db_adaptor method\n");
 
     return undef;
 }

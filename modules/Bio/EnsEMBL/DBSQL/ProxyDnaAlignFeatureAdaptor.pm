@@ -13,15 +13,16 @@ Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor
 
 =head1 SYNOPSIS
 
-Designed as an abstraction over the database specific DnaAlignFeatureAdaptors. The proxy gene adaptor normally behaves just as a normal core GeneAdaptor, 
-however, for certain requests it may decide to instead forward
-the request to another database (such as the EST database if it is available).
+Designed as an abstraction over the database specific DnaAlignFeatureAdaptors. The proxy gene adaptor normally behaves just as a normal core 
+DnaAlignFeatureAdaptor, however, for certain requests it may decide to 
+instead forward the request to another database (such as the EST database 
+if it is available).
 
 =head1 CONTACT
 
+  Graham McVicker : mcvicker@ebi.ac.uk
   Arne Stabenau: stabenau@ebi.ac.uk
   Ewan Birney  : birney@ebi.ac.uk
-  Graham McVicker : mcvicker@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -31,39 +32,35 @@ use strict;
 
 package Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor;
 
-use Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor;
-
 use vars qw(@ISA);
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor);
-
-
-#override super class constructor
-sub new {
-  my($class, $db, $core_adaptor) = @_;
-
-  #call superclass constructor
-  my $self = $class->SUPER::new($db);
-
-  $self->{'_core_adaptor'} = $core_adaptor;
-  return $self;
-}
+#for most methods we want to go through the DnaAlignFeatureAdaptor 
+#implementation. We want to make a decision at the lower level however,
+#and since most calls to the adaptor chain through other methods without
+#going back through the proxy, we have to extend the DnaAlignFeatureAdaptor
+#for this proxy to correctly function.  We don't want the proxy decision
+#to be made too early anotherwards...
+@ISA = qw(Bio::EnsEMBL::DBSQL::ProxyAdaptor 
+	  Bio::EnsEMBL::DBSQL::DNAAlignFeatureAdaptor);
 
 #override generic_fetch_method to call appropriate db
 sub generic_fetch {
   my($self, $constraint, $logic_name) = @_;
 
-  my $est_db = $self->db()->est_DBAdaptor();
 
 
-  if(defined $est_db && $logic_name eq 'ex_e2g_feat') {
-    #forward request to the EST database
-    my $est_adaptor = $est_db->get_DnaAlignFeatureAdaptor();
-    return $est_adaptor->generic_fetch($constraint, $logic_name);
+  if($logic_name eq 'ex_e2g_feat') {
+    my $est_db = $self->db()->get_db_adaptor('est');
+    
+    if(defined $est_db) {
+      #forward request to the EST database
+      my $est_adaptor = $est_db->get_DnaAlignFeatureAdaptor();
+      return $est_adaptor->generic_fetch($constraint, $logic_name);
+    }
   }
-  
+    
   #use the core adaptor
-  return $self->{'_core_adaptor'}->generic_fetch($constraint, $logic_name);
+  return $self->{'_primary_adaptor'}->generic_fetch($constraint, $logic_name);
 }
 
 

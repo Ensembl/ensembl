@@ -27,14 +27,10 @@ use strict;
 package Bio::EnsEMBL::Lite::SNPAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::DBSQL::SNPAdaptorI;
 
 use vars '@ISA';
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::EnsEMBL::SNPAdaptorI);
-
-#implement the SNPAdaptorI interface
-use implements qw(Bio::EnsEMBL::DBSQL::SNPAdaptorI);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
 =head2 fetch_by_Slice

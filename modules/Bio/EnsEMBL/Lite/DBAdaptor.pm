@@ -78,22 +78,4 @@ sub get_SNPAdaptor {
 }
 
 
-=head2 core_DBAdaptor
-
-  Arg  [1]  : Bio::EnsEMBL::DBSQL::DBAdaptor $db
-              The link to the core db
-  Function  : Makes the link to coredb available. Objects can attach
-              with this to the core db Adaptors for lazy loading
-  Returntype: Bio::EnsEMBL::DBSQL::DBAdaptor
-  Exceptions: none
-  Caller    : GeneAdaptor->fetch_by_Slice()
-
-=cut
-
-sub core_DBAdaptor {
-  my($self, $arg ) = @_;
-
-  (defined $arg) &&
-    ($self->{_coreDBAdaptor} = $arg );
-  return $self->{_coreDBAdaptor};
-}
+1;

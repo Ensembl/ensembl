@@ -6,14 +6,10 @@ package Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor;
 use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::RepeatFeature;
-use Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptorI;
-use Bio::LocationI;
+
 use vars qw(@ISA);
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor
-	  Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptorI);
-
-use implements qw(Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptorI);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 sub fetch_by_RawContig {
     my( $self, $contig, $logic_name ) = @_;

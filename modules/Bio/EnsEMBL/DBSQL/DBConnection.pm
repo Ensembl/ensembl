@@ -373,6 +373,90 @@ sub prepare {
 } 
 
 
+=head2 add_db_adaptor
+
+  Arg [1]    : string $name
+               the name of the database to attach to this database
+  Arg [2]    : Bio::EnsEMBL::DBSQL::DBConnection
+               the db adaptor to attach to this database
+  Example    : $db->add_db_adaptor('lite', $lite_db_adaptor);
+  Description: Attaches another database instance to this database so 
+               that it can be used in instances where it is required.
+  Returntype : none
+  Exceptions : none
+  Caller     : EnsWeb
+
+=cut
+
+sub add_db_adaptor {
+  my ($self, $name, $adaptor) = @_;
+
+  $self->{'_db_adaptors'}->{$name} = $adaptor;
+}
+
+
+=head2 remove_db_adaptor
+
+  Arg [1]    : string $name
+               the name of the database to detach from this database.
+  Example    : $lite_db = $db->remove_db_adaptor('lite');
+  Description: Detaches a database instance from this database and returns
+               it.
+  Returntype : none
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub remove_db_adaptor {
+  my ($self, $name) = @_;
+
+  my $adaptor = $self->{'_db_adaptors'}->{$name};
+  delete $self->{'_db_adaptors'}->{$name};
+
+  return $adaptor;
+}
+
+
+=head2 get_all_db_adaptors
+
+  Arg [1]    : none
+  Example    : @attached_dbs = values %{$db->get_all_db_adaptors()};
+  Description: returns all of the attached databases as 
+               a hash reference of key/value pairs where the keys are
+               database names and the values are the attached databases  
+  Returntype : hash reference with Bio::EnsEMBL::DBSQL::DBConnection values
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::ProxyAdaptor
+
+=cut
+
+sub get_all_db_adaptors {
+  my ($self) = @_;   
+
+  return $self->{'_db_adaptors'};
+}
+
+=head2 get_db_adaptor
+
+  Arg [1]    : string $name
+               the name of the attached database to retrieve
+  Example    : $lite_db = $db->get_db_adaptor('lite');
+  Description: returns an attached db adaptor of name $name or undef if
+               no such attached database exists
+  Returntype : Bio::EnsEMBL::DBSQL::DBConnection
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub get_db_adaptor {
+  my ($self, $name) = @_;
+
+  return $self->{'_db_adaptors'}->{$name};
+}
+
+
 =head2 DESTROY
 
   Arg [1]    : none

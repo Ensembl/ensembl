@@ -36,23 +36,18 @@ use strict;
 
 package Bio::EnsEMBL::DBSQL::ProxySNPAdaptor;
 
-use Bio::EnsEMBL::DBSQL::SNPAdaptorI;
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::DBSQL::ProxyAdaptor;
 
 use vars '@ISA';
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::EnsEMBL::SNPAdaptorI);
-
-#implement the SNPAdaptorI interface 
-use implements qw(Bio::EnsEMBL::DBSQL::SNPAdaptorI);
-
+@ISA = qw(Bio::EnsEMBL::DBSQL::ProxyAdaptor);
 
 
 sub fetch_by_Slice {
   my ($self, @args) = @_;
 
-  my $lite_db = $self->db()->lite_DBAdaptor();
-  my $snp_db = $self->db()->SNP_DBAdaptor();
+  my $lite_db = $self->db()->get_db_adaptor('lite');
+  my $snp_db = $self->db()->get_db_adaptor('SNP');
 
   if(defined $lite_db) {
     #use the Lite database if it is available
@@ -64,7 +59,8 @@ sub fetch_by_Slice {
 
   #There is no core SNPAdaptor so throw an exception if lite and SNP
   #databases are unavailable
-  $self->throw("Lite database unavailable. Unable to create SNP adaptor");
+  $self->throw("Lite and SNP databases are unavailable. " .
+	       "Unable to create SNP adaptor");
 
   return undef;
 }
@@ -72,7 +68,7 @@ sub fetch_by_Slice {
 sub fetch_by_SNP_id {
   my ($self, @args) = @_;
 
-  my $snp_db = $self->db()->SNP_DBAdaptor();
+  my $snp_db = $self->db()->get_db_adaptor->{'SNP'};
 
   if(defined $snp_db) {
     return $snp_db->get_SNPAdaptor()->fetch_by_SNP_id(@args);
