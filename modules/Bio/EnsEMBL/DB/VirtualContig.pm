@@ -285,10 +285,10 @@ sub windowed_VirtualContig {
 	$self->throw("Attempting to build a new virtual contig out of length bounds!");
     }
     
-    my ($map_contig,$position,$ori) = $self->raw_contig_position($position,1);
+    my ($map_contig,$f_position,$ori) = $self->raw_contig_position($position,1);
     
     return Bio::EnsEMBL::DB::VirtualContig->new(-focuscontig   => $map_contig,
-					        -focusposition => $position,
+					        -focusposition => $f_position,
 					        -ori           => $ori,
 					        -left          => $left,
 					        -right         => $right
