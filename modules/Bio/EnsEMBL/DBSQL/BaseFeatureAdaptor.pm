@@ -386,7 +386,7 @@ sub fetch_by_Slice_constraint {
   my $features = 
     $self->generic_fetch($constraint, $logic_name, $mapper, $slice); 
   
-  if(@$features && $features->[0]->$contig == $slice) {
+  if(@$features && $features->[0]->contig == $slice) {
     #features have been converted to slice coords already, cache and return
     $self->{'_slice_feature_cache'}{$key} = $features;
     return @$features;
