@@ -16,7 +16,7 @@ our $verbose = 0; #set to 1 to turn on debug printouts
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 6;
+	plan tests => 7;
 }
 
 use TestUtils qw( debug );
@@ -28,12 +28,14 @@ my $analysis = Bio::EnsEMBL::Analysis->new(-DBID => 1,
 my $start = 10;
 my $end   = 102;
 my $density_value = 123;
+my $density_value_type = 'ratio';
 
 my $df = Bio::EnsEMBL::DensityFeature->new
   (-start    => $start,
    -end      => $end,
    -analysis => $analysis,
-   -density_value => $density_value);
+   -density_value => $density_value,
+   -density_value_type => $density_value_type);
 
 ok($df->start == $start && $df->analysis == $analysis && $df->end == $end);
 ok($df->strand == 0);
@@ -44,11 +46,12 @@ $df = Bio::EnsEMBL::DensityFeature->new_fast
   ({'start'    => $start,
     'end'      => $end,
     'analysis' => $analysis,
-    'density_value' => $density_value});
+    'density_value' => $density_value,
+    'density_value_type' => $density_value_type});
 
 ok($df->start == $start && $df->analysis == $analysis && $df->end == $end);
 ok($df->strand == 0);
 ok($df->density_value == $density_value);
-
+ok($df->density_value_type eq $density_value_type);
 
 
