@@ -431,7 +431,7 @@ CREATE TABLE Xref(
 	 description VARCHAR(255),
 
          PRIMARY KEY( xrefId ),
-         KEY id_index( dbprimary_id ),
+         UNIQUE KEY id_index( dbprimary_id, externalDBId ),
          KEY display_index ( display_id )
 
    	);
