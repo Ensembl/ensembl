@@ -752,7 +752,10 @@ sub get_all_SimilarityFeatures{
        }
        # Final check that everything is ok.
        $out->validate();
-       
+       if( $out->can('attach_seq') ) {
+	   $out->attach_seq($self->primary_seq);
+       }
+
       push(@array,$out);
       
    }
@@ -1009,6 +1012,7 @@ sub get_all_ExternalFeatures{
 
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
        push(@out,$extf->get_Ensembl_SeqFeatures_contig($self->id,$self->seq_version,1,$self->length));
+       
        foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($acc,$self->seq_version,$self->embl_offset,$self->embl_offset+$self->length()) ) {
 	   my $start = $sf->start - $embl_offset;
 	   my $end   = $sf->end   - $embl_offset;
@@ -1016,6 +1020,10 @@ sub get_all_ExternalFeatures{
 	   $sf->end($end);
 	   push(@out,$sf);
        }
+   }
+   my $id = $self->id();
+   foreach my $f ( @out ) {
+       $f->seqname($id);
    }
 
    return @out;

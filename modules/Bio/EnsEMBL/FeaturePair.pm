@@ -633,6 +633,92 @@ sub analysis{
    return $self->{_analysis};
 }
 
+
+
+=head2 seq
+
+ Title   : seq
+ Usage   : $tseq = $sf->seq()
+ Function: returns the truncated sequence (if there) for this
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub seq{
+   my ($self,$arg) = @_;
+
+   if( defined $arg ) {
+       $self->throw("Calling SeqFeature::Generic->seq with an argument. You probably want attach_seq");
+   }
+
+   if( ! exists $self->{'_gsf_seq'} ) {
+       return undef;
+   }
+
+   # assumming our seq object is sensible, it should not have to yank
+   # the entire sequence out here.
+
+   my $seq = $self->{'_gsf_seq'}->trunc($self->start(),$self->end());
+
+
+   if( $self->strand == -1 ) {
+
+       # ok. this does not work well (?)
+       #print STDERR "Before revcom", $seq->str, "\n";
+       $seq = $seq->revcom;
+       #print STDERR "After  revcom", $seq->str, "\n";
+   }
+
+   return $seq;
+}
+
+
+=head2 attach_seq
+
+ Title   : attach_seq
+ Usage   : $sf->attach_seq($seq)
+ Function: Attaches a Bio::PrimarySeqI object to this feature. This
+           Bio::PrimarySeqI object is for the *entire* sequence: ie
+           from 1 to 10000
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub attach_seq{
+   my ($self,$seq) = @_;
+
+   if( !defined $seq  || !ref $seq || ! $seq->isa("Bio::PrimarySeqI") ) {
+       $self->throw("Must attach Bio::PrimarySeqI objects to SeqFeatures");
+   }
+
+   $self->{'_gsf_seq'} = $seq;
+}
+
+=head2 entire_seq
+
+ Title   : entire_seq
+ Usage   : $whole_seq = $sf->entire_seq()
+ Function: gives the entire sequence that this seqfeature is attached to
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub entire_seq{
+   my ($self) = @_;
+
+   return $self->{'_gsf_seq'};
+}
+
+
 =head2 validate
 
  Title   : validate

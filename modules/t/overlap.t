@@ -158,7 +158,31 @@ if( $#sf == -1 ) {
   print "ok 13\n";
 }
 
+my $contig = $db->get_Contig('contig6');
+my $contig2 = $db->get_Contig('contig7');
 
+
+
+my $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
+						 -focusposition => 4,
+						 -ori           => 1,
+						 -left          => 30,
+						 -right         => 30);
+
+$vc->_dump_map(\*STDOUT);
+
+@sf = $vc->get_all_SimilarityFeatures();
+$sf = shift @sf;
+@sf = $sf->sub_SeqFeature();
+$sf = shift @sf;
+
+print "On vc, sequence is ",$sf->seq->seq,"\n";
+
+@sf = $contig2->get_all_SimilarityFeatures();
+$sf = shift @sf;
+@sf = $sf->sub_SeqFeature();
+$sf = shift @sf;
+print "On contig, sequence is ",$sf->seq->seq,"\n";
 
 END {
     my $drop_overlap        = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{overlap}";

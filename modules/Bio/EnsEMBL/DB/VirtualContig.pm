@@ -990,35 +990,43 @@ sub _convert_seqfeature_to_vc_coords {
 	return undef;
     }
 
+    #print STDERR "starting $sf ",$sf->seqname,":",$sf->start,":",$sf->end,":",$sf->strand,"\n";
+    
+    
     # if this is something with subfeatures, then this is much more complex
     my @sub = $sf->sub_SeqFeature();
-    
+
+   # print STDERR "Got ",scalar(@sub),"sub features\n";
+
     if( $#sub >=  0 ) {
 	# chain to constructor of the object. Not pretty this.
-	
-	my $new = Bio::EnsEMBL::SeqFeature->new();
-	$new->primary_tag($sf->primary_tag);
-	$new->source_tag($sf->source_tag);
-	
-	if( $new->can('attach_seq') ) {
-	    $new->attach_seq($self->primary_seq);
-	}
-	
+	$sf->flush_sub_SeqFeature();
+
 	my $seen = 0;
 	my $strand;
 	foreach my $sub ( @sub ) {
+	    print STDERR "Converting ",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
 	    $sub = $self->_convert_seqfeature_to_vc_coords($sub);
+	    print STDERR "To: ",$sub->start,":",$sub->end,":",$sub->strand,"\n";
 	    if( !defined $sub ) {        
 		next;
 	    }
+	    if( $seen == 0 ){
+		$sf->start($sub->start);
+		$sf->end($sub->end);
+	    }
+
 	    $seen =1;
 	    $strand = $sub->strand;
-	    $new->add_sub_SeqFeature($sub,'EXPAND');
+	    $sf->add_sub_SeqFeature($sub,'EXPAND');
 	}
 	if( $seen == 1 ) {       
 	    # we assumme that the mapping was unambiguous wrt to the strand
-	    $new->strand($strand);
-	    return $new;
+
+	    $sf->strand($strand);
+	    
+	    print STDERR "Giving back a new guy with start",$sf->start,":",$sf->end,":",$sf->strand," id ",$sf->id,"\n";
+	    return $sf;
 	} else {        
 	    return undef;
 	}
