@@ -49,13 +49,13 @@ sub compare_compliments {
   my $slice = shift;
   my $seq_adaptor = shift;
 
-  my $seq = ${$seq_adaptor->fetch_by_Slice_start_end_strand($slice,1,-1,1)};
+  my $seq = ${$seq_adaptor->fetch_by_Slice_start_end_strand($slice,1,undef,1)};
 
   debug('FORWARD STRAND SLICE SEQ for ' . $slice->name());
   debug($seq);
 
   my $invert_seq = 
-    ${$seq_adaptor->fetch_by_Slice_start_end_strand($slice->invert,1,-1,1)};
+    ${$seq_adaptor->fetch_by_Slice_start_end_strand($slice->invert,1,undef,1)};
 
   debug('REVERSE STRAND SLICE SEQ for ' . $slice->name());
   debug($invert_seq);
