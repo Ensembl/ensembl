@@ -1540,6 +1540,7 @@ sub write_Transcript{
 
    # ok - now load this line in
 
+   
    eval {
        $old_trans=$self->get_Transcript($trans->id);
    };
@@ -1552,7 +1553,7 @@ sub write_Transcript{
        $self->write_Translation($trans->translation());
    }
    else {
-       print "Transcript already present in the database with the same version number [",$oldtrans->version,"], no need to write it in\n";
+       print "Transcript already present in the database with the same version number [",$old_trans->version,"], no need to write it in\n";
    }
    return 1;
 }
