@@ -170,11 +170,27 @@ sub warning {
     $i++;
     $file = pop(@path) ."/$file";
   }
+
+  @caller = caller(1);
+  my $caller_line;
+  my $caller_file;
+  $i=0;
+  if(@caller) {
+     @path = split(/\//, $caller[1]);
+     $caller_line = $caller[2];
+     $caller_file = pop(@path);
+     while(@path && $i < 2) {
+       $i++;
+       $caller_file = pop(@path) ."/$caller_file";
+     }
+  }
+
   
   my $out = "\n-------------------- WARNING ----------------------\n".
               "MSG: $string\n".
-              "FILE: $file LINE: $line\n" .
-              "---------------------------------------------------\n";
+              "FILE: $file LINE: $line\n";
+  $out .=     "CALLED BY: $caller_file  LINE: $caller_line\n" if($caller_file);
+  $out .=     "---------------------------------------------------\n";
   print STDERR $out;
 }
 
