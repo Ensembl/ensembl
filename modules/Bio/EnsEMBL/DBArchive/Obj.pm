@@ -449,6 +449,106 @@ sub _create_seq_obj{
     return @out;
 }
 
+
+=head2
+
+ Title   : get_new_stable_ids
+ Usage   : @ids = $obj->get_new_stable_ids('exon',6);
+ Function: 
+ Example : 
+ Returns : new id, ENS-style, as an array
+ Args    : id type, one of 'exon','transcript','gene','translation'
+
+
+=cut
+
+my %stubhash = ( 'exon' => 'ENSE', 'transcript' => 'ENST','gene' => 'ENSG','translation' => 'ENSP' );
+
+sub get_new_stable_ids {
+    my ($self,$table,$number) = @_;
+
+    if( !defined $number ) {
+	$self->throw("Must call as table,number");
+    }
+
+    if( !defined $stubhash{$table} ) {
+	$self->throw("Does not have $table as a valid stable id table");
+    }
+    
+    my $stub= $stubhash{$table};
+    $table .= "_stable";
+    my @out;
+
+
+    my $lsth   = $self->prepare("lock table $table write");
+    $lsth->execute;
+
+    # wrap critical region in an eval so we can catch errors and release table
+
+    eval {
+
+	my $query = "select max(external_id) as id from $table where 1";
+	
+	my $sth   = $self->prepare($query);
+	my $res   = $sth->execute;
+	my $row   = $sth->fetchrow_hashref;
+	my $id    = $row->{id};
+	
+	if (!defined($id) || $id eq "") {
+	    $id = $stub . "00000000000";
+	}
+	
+	if ($id =~ /\D+(\d+)$/) {
+	    
+	    my $newid  = $1;
+	    my $i;
+	    
+	    foreach $i ( 1..$number ) {
+
+		$newid++;
+		
+		
+		if (length($newid) > 11) {
+		    if ($newid =~ /^0/) {
+			$newid =~ s/^0//;
+		    } else {
+			$self->throw("Can't truncate number string to generate new id [$newid]");
+		    }
+		}
+		my $c = $stub . $newid;
+		my $query = "insert into $table (internal_id,external_id,created) values (NULL,'$c',NOW())";
+		my $sth   = $self->prepare($query);
+		my $res   = $sth->execute;
+		
+		push(@out,$c);
+	    }
+	    
+	    
+	} else {
+	    $self->throw("[$id] does not look like an object id (e.g. ENST00000019784)");
+	}
+    };
+
+    my $error = undef;
+
+    if( $@ ) {
+	$error = $@;
+    }
+
+
+    my $usth   = $self->prepare("unlock tables");
+    $usth->execute;
+
+
+    if( defined $error ) {
+	$self->throw("Problem in making IDs. Unlocked tables. \n\n Error $@");
+    }
+
+    return @out;
+    
+}
+
+
 =head2 DESTROY
 
  Title   : DESTROY

@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..5\n"; 
+BEGIN { $| = 1; print "1..10\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -72,6 +72,47 @@ if( $new_id ne 'ENSG0000019' ) {
     print STDERR "Got $new_id for new id\n";
 } else {
   print "ok 5\n";
+}
+
+
+@newids = $archive->get_new_stable_ids('exon',2);
+
+if( $newids[0] ne 'ENSE00000000001' || $newids[1] ne 'ENSE00000000002' ) {
+    print "not ok 6\n";
+} else {
+    print "ok 6\n";
+}
+
+@newids = $archive->get_new_stable_ids('exon',2);
+
+if( $newids[0] ne 'ENSE00000000003' || $newids[1] ne 'ENSE00000000004' ) {
+    print "not ok 7\n";
+} else {
+    print "ok 7\n";
+}
+
+@newids = $archive->get_new_stable_ids('gene',2);
+
+if( $newids[0] ne 'ENSG00000000001' || $newids[1] ne 'ENSG00000000002' ) {
+    print "not ok 8\n";
+} else {
+    print "ok 8\n";
+}
+
+@newids = $archive->get_new_stable_ids('transcript',2);
+
+if( $newids[0] ne 'ENST00000000001' || $newids[1] ne 'ENST00000000002' ) {
+    print "not ok 9\n";
+} else {
+    print "ok 9\n";
+}
+
+@newids = $archive->get_new_stable_ids('translation',2);
+
+if( $newids[0] ne 'ENSP00000000001' || $newids[1] ne 'ENSP00000000002' ) {
+    print "not ok 10\n";
+} else {
+    print "ok 10\n";
 }
 
 
