@@ -40,7 +40,7 @@ use vars qw(@ISA $AUTOLOAD);
 use strict;
 
 
-@ISA = qw( Bio::Root::RootI );
+@ISA = qw( Bio::Root::RootI Bio::Annotation::DBLink );
 
 
 sub new {
@@ -203,6 +203,14 @@ sub dump {
   while( ($k,$v) = each %$self ) {
     print $k," ",$v,"\n";
   }
+}
+
+#Cheat to comply with bioperl
+sub comment {
+    my ($self) = @_;
+    if ($self) {
+	return $self->description();
+    }
 }
 
 1;
