@@ -249,8 +249,8 @@ if ($opts{'d'} == 1) {
 	foreach my $query (values(%goodhits)) {
 		foreach my $target (values(%{ $query })) {
 
-			if ($target->{'QIDENT'} >= 50 &&
-			    $target->{'TIDENT'} >= 50) {
+			if ($target->{'QIDENT'} >= $q_thr &&
+			    $target->{'TIDENT'} >= $t_thr) {
 
 				printf "%s\t%s\t%.1f\t%.1f\n",
 					$target->{'QID'},
