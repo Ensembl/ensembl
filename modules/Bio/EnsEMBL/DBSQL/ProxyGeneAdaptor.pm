@@ -32,15 +32,12 @@ use strict;
 
 package Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor;
 
-use Bio::EnsEMBL::DBSQL::GeneAdaptor;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::DBSQL::GeneAdaptorI;
+use Bio::EnsEMBL::BaseAdaptor;
 
 use vars '@ISA';
 
-@ISA = ('Bio::EnsEMBL::DBSQL::GeneAdaptor');
-
-
-#use inherited superclass constructor
+@ISA = qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
 sub fetch_by_Slice {
@@ -54,8 +51,133 @@ sub fetch_by_Slice {
   }
 
   #otherwise use the core database
-  return $self->SUPER::fetch_by_Slice(@args);
+  return $self->db()->get_GeneAdaptor()->fetch_by_Slice(@args);
 }
 
+sub list_geneIds {
+   my ($self, @args) = @_;
+
+   #use core db
+   return $self->db()->get_GeneAdaptor()->list_geneIds(@args);
+}
+
+sub list_stable_geneIds {
+   my ($self, @args) = @_;
+
+   #use core db
+   return $self->db()->get_GeneAdaptor()->list_stable_geneIds(@args);
+}
+
+sub fetch_by_dbID {
+  my ( $self, @args) = @_;
+
+  #use core db
+  return $self->db()->fetch_by_dbID(@args);
+}
+
+sub fetch_by_stable_id{
+  my ($self, @args) = @_;
+
+  #use core db
+  return $self->db()->fetch_by_stable_id(@args);
+}
+
+sub fetch_by_contig_list{
+  my ($self, @args) = @_;
+
+  #use core db
+  return $self->db()->fetch_by_stable_id(@args);
+}
+
+
+sub fetch_by_Transcript_id {
+    my ($self, @args) = @_;
+
+    #use core db
+    return $self->db()->fetch_by_Transcript_id(@args);
+}
+
+sub fetch_by_Peptide_id {
+    my ($self, @args) = @_;
+    
+    #use core db
+    return $self->db()->fetch_by_Peptise_id(@args);
+}
+
+sub fetch_by_maximum_DBLink {
+    my ($self, @args) = @_;
+
+    #use core db
+    return $self->db()->fetch_by_maximum_DBLink(@args);
+}
+
+
+sub get_description {
+    my ($self, @args) = @_;
+
+    #use core db
+    return $self->db()->get_description(@args);
+}
+
+
+sub get_stable_entry_info {
+    my ($self, @args) = @_;
+
+    #use core db
+    return $self->db()->get_stable_entry_info(@args);
+}
+
+
+sub fetch_by_DBEntry {
+    my $self = shift;
+
+    #use core db
+    return $self->db()->get_stable_entry_info(@args);
+}
+
+
+sub store {
+    my $self = shift;
+
+    return $self->db()->get_store(@args);
+}
+
+
+sub remove {
+    my $self = shift;
+
+    $self->throw("remove not defined by implementing sub class");
+
+    return undef;
+}
+
+
+=head2 get_Interpro_by_geneid
+
+ Title   : get_Interpro_by_geneid
+ Usage   : @interproid = $geneAdaptor->get_Interpro_by_geneid($gene->id);
+ Function: gets interpro accession numbers by geneid. A hack really -
+           we should have a much more structured system than this
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Interpro_by_geneid {
+    my $self = shift;
+
+    $self->throw("get_Interpro_by_geneid not defined by implementing sub class");
+
+    return undef;
+}
+
+
+sub create_tables {
+  my $self = shift;
+
+  $self->throw("create_tables not defined by implementing sub class");
+}
 
 

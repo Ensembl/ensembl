@@ -65,6 +65,13 @@ sub get_LandmarkMarkerAdaptor {
       $self->_get_adaptor("Bio::EnsEMBL::Lite::LandmarkMarkerAdaptor");
 }
 
+sub get_SNPAdaptor {
+  my $self = shift;
+
+  return $self->_get_adaptor("Bio::EnsEMBL::Lite::SNPAdaptor");
+}
+
+
 =head2 core_DBAdaptor
 
   Arg  [1]  : Bio::EnsEMBL::DBSQL::DBAdaptor $db

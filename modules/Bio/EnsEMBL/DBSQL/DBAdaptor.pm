@@ -57,7 +57,6 @@ The rest of the documentation details each of the object methods. Internal metho
 
 # Let the code begin...
 
-
 package Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 use vars qw(@ISA);
@@ -412,6 +411,14 @@ sub get_ProteinAdaptor {
     my( $self ) = @_;
  
     return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinAdaptor");
+}
+
+
+sub get_SNPAdaptor {
+  my ($self)  = @_;
+
+  #return a proxy adaptor which can use the lite or the core database
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SNPProxyAdaptor");
 }
 
 

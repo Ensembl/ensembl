@@ -39,6 +39,8 @@ use vars '@ISA';
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
 
+use implements qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI);
+
 =head2 list_geneIds
 
  Title   : list_geneIds
