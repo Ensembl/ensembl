@@ -45,14 +45,16 @@ my  @all_species;
 my $xref=undef;
 my $species=undef;
 my $type;
+
 while( my $line = <FILE> ) {
+
   chomp($line);
   next if $line =~ /^#/;
   next if !$line;
 
-#  print $line."\n";
+  #  print $line."\n";
   my ($key, $value) = split("=",$line);
-   if($key eq "species"){
+  if($key eq "species"){
     $type = "species";
     if(defined($species)){
       push @all_species, $species;
@@ -62,18 +64,17 @@ while( my $line = <FILE> ) {
     my $module;
     if($@) {
       warn("Could not require mapper module XrefMapper::$value\n" .
-	   "Using XrefMapper::BasicMapper instead:\n$@");
+	   "Using XrefMapper::BasicMapper instead\n");
       require XrefMapper::BasicMapper;
       $module = "BasicMapper";
-    }
-    else{
+    } else{
       $module = $value;
     }
-    {
-      no strict 'refs';
-      $species = "XrefMapper::$module"->new();
-      $species->species($value);
-    }
+
+    no strict 'refs';
+    $species = "XrefMapper::$module"->new();
+    $species->species($value);
+
     if(defined($dumpcheck)){
       $species->dumpcheck("yes");
     }
