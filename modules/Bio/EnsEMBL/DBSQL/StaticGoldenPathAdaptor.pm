@@ -1229,7 +1229,25 @@ sub get_all_fpc_ids {
    }
    return @out;
 }
+sub get_all_chromosome_name {
+    my ($self) = @_;
 
+    my $type = $self->dbobj->static_golden_path_type()
+     or $self->throw("No assembly type defined");
+
+    my $query = "select distinct chr_name from static_golden_path where type = '$type'";
+
+    my $sth = $self->dbobj->prepare($query);
+
+    my $res = $sth->execute;
+
+    my @chrname;
+
+    while (my $row = $sth->fetchrow_hashref) {
+        push(@chrname,$row->{'chr_name'});
+    }
+    return @chrname;
+}     
 sub get_chromosome_length {
     my ($self,$chrname) = @_;
 
