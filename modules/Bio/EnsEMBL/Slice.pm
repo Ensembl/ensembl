@@ -1096,7 +1096,6 @@ sub get_all_landmark_MarkerFeatures {
   }
 }
 
-
 =head2 get_all_compara_DnaAlignFeatures
 
   Arg [1]    : string $qy_species
@@ -1187,19 +1186,9 @@ sub get_all_Haplotypes {
 
 sub get_all_DASFeatures{
    my ($self,@args) = @_;
-
-
-   if( defined $self->{'_das_cached_features'} ) {
-       return $self->{'_das_cached_features'};
-   }
-
-   my %genomic_features;
-   foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
-       my $dsn = $extf->_dsn();
-       $genomic_features{$dsn} = $extf->fetch_all_by_Slice($self);
-   }
-
-   $self->{'_das_cached_features'} = \%genomic_features;
+   my %genomic_features =
+      map { ( $_->_dsn => $_->fetch_all_by_Slice($self) ) }
+         $self->adaptor()->db()->_each_DASFeatureFactory;
    return \%genomic_features;
 
 }
