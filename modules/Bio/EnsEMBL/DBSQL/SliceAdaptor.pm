@@ -429,11 +429,11 @@ sub fetch_by_chr_name{
 =cut
 
 sub fetch_by_mapfrag{
-   my ($self,$mapfrag,$flag,$size) = @_;
+   my ($self,$mymapfrag,$flag,$size) = @_;
 
    $flag ||= 'fixed-width'; # alt.. 'context'
    $size ||= $flag eq 'fixed-width' ? 200000 : 0;
-   unless( $mapfrag ) {
+   unless( $mymapfrag ) {
        $self->throw("Mapfrag name argument required");
    }
 
@@ -441,7 +441,7 @@ sub fetch_by_mapfrag{
   
    #set the end of the slice to the end of the chromosome
    my $ca = $self->db()->get_MapFragAdaptor();
-   my $mapfrag = $ca->fetch_by_synonym($mapfrag);
+   my $mapfrag = $ca->fetch_by_synonym($mymapfrag);
    return undef unless defined $mapfrag;
 
    if( $flag eq 'fixed-width' ) {
