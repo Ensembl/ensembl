@@ -130,27 +130,18 @@ sub _dump{
 =cut
 
 sub _parse_exon{
-    my ($self,$raclones,$obj) = @_;
+    my ($self,$raclones,$obj,$disk_id) = @_;
 
     # have now!
     #$self->warn("Have not calculated phases yet!");
     
-    my %disk_id;
-    # do clone->disk_id lookups
-    if($raclones){
-	foreach my $clone (@$raclones){
-	    my($id,$disk_id)=$obj->get_id_acc($clone);
-	    $disk_id{$disk_id}=$id;
-	}
-    }
-
     my $fh = new FileHandle;
     $fh->open($self->exon_file) || $self->throw("Could not open exon file [", $self->exon_file, "]");
     
     my $is = $fh->input_record_separator('>');
     my $dis = <$fh>; # skip first record (dull!)
     while( <$fh> ) {
-	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):*(\d*)\s.*(1999-\d\d-\d\d)_[\d:]+\s+(1999-\d\d-\d\d)_[\d:]+.*\n(.*)/  ) {
+	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):*(\d*)\s.*(\d{4}-\d\d-\d\d)_[\d:]+\s+(\d{4}-\d\d-\d\d)_[\d:]+.*\n(.*)/  ) {
 	    my $e = $1;
 	    my $contigid = $2;
 	    my $start = $3;
@@ -178,13 +169,16 @@ sub _parse_exon{
 	    my $cloneid2;
 	    if($raclones){
 		# already know correct name
-		if($cloneid2=$disk_id{$cloneid}){
+		if($cloneid2=$disk_id->{$cloneid}){
 		}else{
 		    next;
 		}
 	    }else{
-		# need to do lookup
-		($cloneid2)=$obj->get_id_acc($cloneid);
+		# may need to do lookup
+		if(!$disk_id->{$cloneid}){
+		    $disk_id->{$cloneid}=get_id_acc($cloneid);
+		}
+		($cloneid2)=$disk_id->{$cloneid};
 	    }
 
 	    #print STDOUT "Exon $eid - $pep\n";
@@ -280,16 +274,7 @@ sub _convert_phase {
 =cut
 
 sub _parse_contig_order{
-    my ($self,$raclones,$obj) = @_;
-
-    my %disk_id;
-    # do clone->disk_id lookups
-    if($raclones){
-	foreach my $clone (@$raclones){
-	    my($id,$disk_id)=$obj->get_id_acc($clone);
-	    $disk_id{$disk_id}=$id;
-	}
-    }
+    my ($self,$raclones,$obj,$disk_id) = @_;
 
     my $fh = new FileHandle;
     my $cof = $self->contig_order_file;
@@ -302,13 +287,16 @@ sub _parse_contig_order{
 	    my $cloneid2;
 	    if($raclones){
 		# already know correct name
-		if($cloneid2=$disk_id{$cloneid}){
+		if($cloneid2=$disk_id->{$cloneid}){
 		}else{
 		    next;
 		}
 	    }else{
-		# need to do lookup
-		($cloneid2)=$obj->get_id_acc($cloneid);
+		# may need to do lookup
+		if(!$disk_id->{$cloneid}){
+		    $disk_id->{$cloneid}=get_id_acc($cloneid);
+		}
+		($cloneid2)=$disk_id->{$cloneid};
 	    }
 	    # at this point, $contigid could be the disk_id where acc_id is required
 	    # (diskname->$ensembl name translation required)
@@ -425,10 +413,20 @@ sub list_exons{
 
 sub map_all{
     my($self,$obj,$raclones) = @_;
-    $self->_parse_exon($raclones,$obj);
+
+    my $disk_id={};
+    # do clone->disk_id lookups
+    if($raclones){
+	foreach my $clone (@$raclones){
+	    my($id,$disk_id2)=$obj->get_id_acc($clone);
+	    $disk_id->{$disk_id2}=$id;
+	}
+    }
+
+    $self->_parse_exon($raclones,$obj,$disk_id);
     $self->_parse_trans;
     $self->_parse_gene;
-    $self->_parse_contig_order($raclones,$obj);
+    $self->_parse_contig_order($raclones,$obj,$disk_id);
 
     # contig->exons
     my %contig2exon;
@@ -505,6 +503,7 @@ sub map_all{
     
     # transcript2gene
     my %transcript2gene;
+    my %clone_neighbourhood;
     foreach my $g (keys %{$self->{'_gene_hash'}}){
 	my $gene=new Bio::EnsEMBL::Gene;
 
@@ -519,6 +518,18 @@ sub map_all{
 
 	$gene->id($gene_id);
 	foreach my $t (@{$self->{'_gene_hash'}->{$g}}){
+
+	    # FIXME FIXME
+	    # need to look at exons to get cloneid for neighbourhood
+	    # note: won't always find exon object, as when loading a subset of
+	    # clones from TimDB, only exons on those clones are loaded, but 
+	    # all transcripts and genes are loaded
+	    foreach my $e (@{$self->{'_trans_hash'}->{$t}}){
+		my $exon;
+		if($exon=$self->{'_exon_hash'}->{$e}){
+		    $clone_neighbourhood{$exon->clone_id}=1;
+		}
+	    }
 
 	    # FIXME
 	    # parse versions at this point
@@ -537,6 +548,13 @@ sub map_all{
 	    $gene->add_Transcript($transcripts{$transcript_id});
 	    push(@{$transcript2gene{$transcript_id}},$gene);
 	}
+	
+	# save neighbourhood of a gene
+	# (will only be a subset when loading a subset of TimDB)
+	if(keys %clone_neighbourhood){
+	    $gene->add_cloneid_neighbourhood((keys %clone_neighbourhood));
+	}
+
     }
     # DEBUG
     print STDERR scalar(keys %transcript2gene)." transcripts have genes\n";

@@ -59,6 +59,9 @@ use Fcntl qw( O_RDONLY );
 sub _initialize {
   my($self,$raclones,$noacc,$test,$part,$live,@args) = @_;
 
+  # DEFAULT IS NOW LIVE
+  $live=1;
+
   # DEBUG
   # second parameter is for debugging to avoid reading entire list of objects
   if($raclones){
