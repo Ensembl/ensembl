@@ -312,7 +312,7 @@ sub clone_id{
 
  Title   : contig
  Usage   : 
- Function: stores a RawContig
+ Function: stores a RawContig or Slice
  Returns : 
  Args    : 
 
@@ -320,14 +320,15 @@ sub clone_id{
 =cut
 
 sub contig {
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      #print "setting exons contig to ".$value." \n";
-      $self->{'contig'} = $value;
-    }
-    return $self->{'contig'};
-
+  my $self = shift;
+  if( @_ ) {
+    my $value = shift;
+    #print "setting exons contig to ".$value." \n";
+    $self->attach_seq($value);
+  }
+  else {
+    return $self->entire_seq();
+  }
 }
 
 
