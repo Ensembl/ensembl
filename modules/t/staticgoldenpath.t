@@ -22,13 +22,15 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..32\n"; 
+BEGIN { $| = 1; print "1..34\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBLoader;
+use EnsemblExt;
+
 use lib 't';
 use EnsTestDB;
 $loaded = 1;
@@ -427,5 +429,31 @@ else {print "not ok 31\n";}
 if( scalar(@genes) == 2 ) {
 	print "ok 32\n";
 }
+
+# testing C-extensions
+
+#$vcsave->_use_cext_get(1);
+#@f = $vcsave->get_all_SimilarityFeatures_above_score('swir',80);
+#
+#foreach $f ( @f ) {
+#   print "Got $f ",$f->start," ",$f->end,"\n";
+#}
+
+
+$chadp = $db->get_ChromosomeAdaptor();
+
+$chr = $chadp->fetch_by_chrname('chr2');
+
+print "ok 33\n";
+
+my @m = $chr->get_landmark_MarkerFeatures();
+
+if( scalar(@m) > 0 ) {
+   print "ok 34\n";
+}
+
+
+
+
 
 

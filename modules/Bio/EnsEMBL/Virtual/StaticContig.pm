@@ -1651,9 +1651,9 @@ sub fetch_karyotype_band_by_name {
    my ($self,$chr, $band) = @_;
 
    my $kadp = $self->dbobj->get_KaryotypeBandAdaptor();
-   my $band = $kadp->fetch_by_chromosome_name($chr, $band);
+   my $kband = $kadp->fetch_by_chromosome_name($chr, $band);
 
-   return $band; 
+   return $kband; 
 }
 
 

@@ -73,8 +73,8 @@ use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 use Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor;
 use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
+use Bio::EnsEMBL::DBSQL::ChromosomeAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
-use Bio::EnsEMBL::Chromosome;
 use Bio::EnsEMBL::DBSQL::CloneAdaptor;
 
 use DBI;
@@ -174,6 +174,8 @@ sub new {
     $self->username( $user );
     $self->host( $host );
     $self->dbname( $db );
+    $self->password( $password);
+  
     # following was added on branch; unclear if it is needed:
     $self->mapdbname( $mapdbname );
 
@@ -254,6 +256,13 @@ sub host {
   ( defined $arg ) &&
     ( $self->{_host} = $arg );
   $self->{_host};
+}
+
+sub password {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_password} = $arg );
+  $self->{_password};
 }
 
 
@@ -2484,6 +2493,24 @@ sub get_KaryotypeBandAdaptor{
    my ($self,@args) = @_;
 
    return Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor->new($self);
+}
+
+=head2 get_ChromosomeAdaptor
+
+ Title   : get_ChromosomeAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_ChromosomeAdaptor{
+   my ($self,@args) = @_;
+
+   return Bio::EnsEMBL::DBSQL::ChromosomeAdaptor->new($self);
 }
 
 
