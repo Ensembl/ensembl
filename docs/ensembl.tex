@@ -51,7 +51,7 @@ bioinformatics; if the words ``BLAST'', ``STS Marker'' or ``reverse
 strand'' confuse you then the rest of this document probably will be
 indecipherable. As well as being a reasonably complex (but only where
 it has to be), Ensembl is both a large database system and a
-largesoftware project. The entire database (with all the additional
+large software project. The entire database (with all the additional
 tables) runs to about 30 tables: about 10 are heavily used by someone
 external to the project. The total data size is around 12GB. 
 
@@ -560,7 +560,7 @@ $sadp = $db->get_StaticGoldenPathAdaptor();
 
 # A virtualcontig is a slice of the assembly.
 
-my $vc = $sadp->fetch_VirtualContig_chr_start_end('chr12',10000,20000);
+my $vc = $sadp->fetch_VirtualContig_by_chr_start_end('chr12',10000,20000);
 
 my $seqout = Bio::SeqIO->new( -format => 'fasta',-fh => \*STDOUT);
 
@@ -606,7 +606,6 @@ next. We have to get a gene out in the context of an assembly.
 
 
 \begin{verbatim}
-
 
 $db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=kaka.sanger.ac.uk;user=anonymous;dbname=current');
 
