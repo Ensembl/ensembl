@@ -153,7 +153,7 @@ EOH
             $html .=<<EOI;
 <TR>
  <TD>&nbsp;</TD>
- <TD CLASS="navbar"><A HREF="$u">$h</A></TD>
+ <TD CLASS="navbar"><A HREF="$u">$h</A>&nbsp;&nbsp;&nbsp;</TD>
  <TD>&nbsp;</TD>
 </TR>
 EOI
@@ -162,7 +162,7 @@ EOI
 
         $html .=<<EOH;
 <TR>
- <TD COLSPAN="3"><IMG HEIGHT="3" WIDTH="1" SRC="/icons/nothing.gif" ALT=""></TD>
+ <TD COLSPAN="3"><IMG HEIGHT="10" WIDTH="1" SRC="/icons/nothing.gif" ALT=""></TD>
 </TR>
 EOH
 
@@ -223,18 +223,10 @@ $$start_ref=<<EOS;
 
 <TABLE BORDER="0" CELLPADDING="0" CELLSPACING="0">
     <TR>
-        <!-- <TD VALIGN="TOP" ROWSPAN=2 BGCOLOR="#FFFFCC"> -->
-        <!-- <TD VALIGN="TOP" ROWSPAN=2 BGCOLOR="#5A85D6"> -->
         <TD VALIGN="TOP" ROWSPAN=2 BGCOLOR="#EFEFFF">
             <!-- table cell for left navbar -->
             <!-- navbar items begin here -->
-            <TABLE WIDTH="90" BORDER="0" CELLPADDING="0" CELLSPACING="5">
-
-<!--
-                <TR>
-                    <TD COLSPAN="3"><IMG HEIGHT="1" WIDTH="1" SRC="/icons/nothing.gif" ALT=""></TD>
-                </TR>
--->
+            <TABLE WIDTH="90" BORDER="0" CELLPADDING="0" CELLSPACING="3">
 
 $$menu_ref               
 
@@ -365,11 +357,13 @@ sub make_ensembl_header {
 
     my ($req_ref, $header_ref) = @_;
 
+# need to be able to change TITLE and header gif
+
     $$header_ref=<<EOS;
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <HTML>
  <HEAD>
-  <TITLE>EnsEMBL Genome Views Server</TITLE>
+  <TITLE>EnsEMBL Genome Views Server</TITLE>    
   <LINK REL="stylesheet" HREF="/EnsEMBL.css">
  </HEAD>
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF">
@@ -378,7 +372,7 @@ sub make_ensembl_header {
  <TR>
   <TD>
    <A HREF="http://ensembl.ebi.ac.uk/">
-   <IMG SRC="/icons/humembl.gif" ALIGN="center" BORDER="0">
+   <IMG SRC="/icons/humembl.gif" ALIGN="CENTER" BORDER="0">
    </A>
   </TD>
  </TR>
