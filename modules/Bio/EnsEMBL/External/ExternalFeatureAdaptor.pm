@@ -7,7 +7,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::External::ExternalFeatureAdaptor - Allows features created externally from EnsEMBL in a single coordinate system to be retrieved in several other (EnsEMBL-style) coordinate systems. 
+Bio::EnsEMBL::External::ExternalFeatureAdaptor - Allows features created externally from EnsEMBL in a single coordinate system to be retrieved in several other (EnsEMBL-style) coordinate systems. This is intended to be a replacement for the old Bio::EnsEMBL::DB::ExternalFeatureFactoryI interface.
 
 =head1 SYNOPSIS
 
@@ -16,7 +16,10 @@ Bio::EnsEMBL::External::ExternalFeatureAdaptor - Allows features created externa
                                         -dbname => 'homo_sapiens_core_9_30',
                                         -pass   => 'anonymous' );
 
-  $xf_adaptor = new ExternalFeatureAdaptorSubClass($database_adaptor);
+  $xf_adaptor = new ExternalFeatureAdaptorSubClass;
+
+  #explicitly add db, (can be done automatically by add_ExternalFeatureAdaptor)
+  $xf_adaptor->db($database_adaptor);
 
   #get some features in RawContig coords
   @feats = @{$xf_adaptor->fetch_all_by_contig_name('AC000087.2.1.42071')};
@@ -41,6 +44,15 @@ Bio::EnsEMBL::External::ExternalFeatureAdaptor - Allows features created externa
   $slice_adaptor = $database_adaptor->get_SliceAdaptor;
   $slice = $slice_adaptor->fetch_by_chr_start_end(1,100000,200000);
   @feats = @{$xf_adaptor->fetch_all_by_Slice($slice)};
+
+  #Add the external adaptor to the EnsEMBL system
+  #this also implicitly adds the dbadaptor so you don't have to call 'db'
+  $database_adaptor->add_ExternalFeatureAdaptor($xf_adaptor);
+
+  #now features can be retrieved directly from slice or RawContig
+  @feats = @{$slice->get_all_ExternalFeatures};
+  @feats = @{$contig->get_all_ExternalFeatures};
+  
 
 =head1 DESCRIPTION
 
@@ -73,6 +85,20 @@ internal dependencies the fetch_all_by_contig_name and
 fetch_all_by_clone_accession must also be overridden if these methods are
 altered.  See the method descriptions for more detail.
 
+The objects returned by the fetch methods should be Bio::SeqFeature object,
+though only the start, end, strand and attach_seq methods are actually used
+by the ExternalFeatureAdaptor.  The objects which are returned by the 
+ExternalFeature adaptor will be altered by the functions called.
+
+Before the non-overridden ExternalFeatureAdaptor fetch methods may be called
+an EnsEMBL core database adaptor must be attached to the ExternalFeatureAdaptor
+.  This database adaptor is required to perform the remappings between various
+coordinate system.  This may be done explicitly through a call to the db 
+accessor method, or implicitly by adding the ExternalFeatureAdaptor to the 
+database adaptor through a call to the DBAdaptor add_ExternalFeatureAdaptor 
+method. 
+
+
 =head1 CONTACT
 
 Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
@@ -94,9 +120,56 @@ package Bio::EnsEMBL::External::ExternalFeatureAdaptor;
 
 use vars qw(@ISA);
 
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::Root);
+
+
+=head2 new
+
+  Arg [1]    : none
+  Example    : $xfa = new Bio::EnsEMBL::External::ExternalFeatureAdaptor;
+  Description: Creates a new ExternalFeatureAdaptor object.  You may wish to
+               extend this constructor and provide your own set of paremeters.
+  Returntype : Bio::EnsEMBL::External::ExternalFeatureAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub new {
+  my $class = shift;
+
+  if(ref $class) {
+    return bless {}, ref $class;
+  }
+
+  return bless {}, $class;
+}
+
+
+
+=head2 db
+
+  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor
+  Example    : $external_feature_adaptor->db($new_val);
+  Description: none
+  Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+sub db {
+  my ($self, $value) = @_;
+
+  if($value) {
+    $self->{'db'} = $value;
+  }     
+
+  return $self->{'db'};
+}
+
 
 
 =head2 coordinate_systems
@@ -121,6 +194,56 @@ sub coordinate_systems {
   $self->throw("abstract method coordinate_systems not implemented\n");
 
   return '';
+}
+
+
+=head2 track_name
+
+  Arg [1]    : none
+  Example    : $track_name = $xf_adaptor->track_name;
+  Description: Currently this is not really used.  In the future it may be 
+               possible to have ExternalFeatures automatically displayed by
+               the EnsEMBL web code.  By default this method returns 
+               'External features' but you are encouraged to override this 
+               method and provide your own meaningful name for the features
+               your adaptor provides.  This also allows you to distinguish the
+               type of features retrieved from RawContigs or Slices.  See
+               the PODs for Bio::EnsEMBL::Slice::get_all_ExternalFeatures and 
+               Bio::EnsEMBL::DBSQL::DBAdaptor::add_ExternalFeatureAdaptor 
+               methods. 
+  Returntype : string
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor::add_ExternalFeatureAdaptor
+
+=cut
+
+sub track_name {
+  my $self = shift;
+
+  return 'External features';
+}
+
+
+
+=head2 feature_type
+
+  Arg [1]    : none
+  Example    : $feature_type = $xf_adaptor->track_name
+  Description: Currently this is not used.  In the future it may be possible
+               to have ExternalFeatures automatically displayed by the EnsEMBL
+               web code.  This method would then be used do determine the 
+               type of glyphs used to draw the features which are returned
+               from this external adaptor.
+  Returntype : string
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub feature_type {
+  my $self = shift;
+  
+  return qw(SIMPLE);
 }
 
 
@@ -258,6 +381,10 @@ sub fetch_all_by_RawContig {
     $self->_no_valid_coord_system;
   }
 
+  unless($self->db) {
+    $self->throw('DB attribute not set.  This value must be set for the ' .
+		 'ExternalFeatureAdaptor to function correctly');
+  }
 
   my $asma = $self->db->get_AssemblyMapperAdaptor;
   my $mapper = $asma->fetch_by_type($self->db->assembly_type);
@@ -343,8 +470,20 @@ sub fetch_all_by_contig_name {
 		 " but fetch_all_by_contig_name is not implemented");
   }
 
+  unless($self->db) {
+    $self->throw('DB attribute not set.  This value must be set for the ' .
+		 'ExternalFeatureAdaptor to function correctly');
+  }
+
   my $contig_adaptor = $self->db->get_RawContigAdaptor; 
   my $contig = $contig_adaptor->fetch_by_name($contig_name);
+
+  unless($contig) {
+    $self->warn("ExternalFeatureAdaptor::fetch_all_by_contig_name: Contig " .
+		"[$contig_name] not found\n");
+    return [];
+  }
+    
 
   return $self->fetch_all_by_RawContig($contig);
 }
@@ -407,6 +546,7 @@ sub fetch_all_by_Clone {
       #convert each feature to clone coordinates
       $f->start($f->start - $offset + 1);
       $f->end($f->end - $offset + 1);
+      #$f->attach_seq($clone); #this might work in future...
       push @$out, $f;
     }
   }
@@ -457,8 +597,22 @@ sub fetch_all_by_clone_accession {
 		 'but does not implement fetch_all_by_clone_accession');
   }
 
+  unless($self->db) {
+    $self->throw('DB attribute not set.  This value must be set for the ' .
+		 'ExternalFeatureAdaptor to function correctly');
+  }
+
+
   my $clone_adaptor = $self->db->get_CloneAdaptor;
   my $clone = $clone_adaptor->fetch_by_accession($acc);
+
+
+  unless($clone) {
+    $self->warn("ExternalFeatureAdaptor::fetch_all_by_clone_accession: Clone "
+		. "[$acc] not found\n");
+    return [];
+  }
+    
 
   return $self->fetch_all_by_Clone($clone);
 }
@@ -499,6 +653,11 @@ sub fetch_all_by_chr_start_end {
     $self->throw("Incorrect start [$start] end [$end] or chr [$chr_name] arg");
   }
 
+  unless($self->db) {
+    $self->throw('DB attribute not set.  This value must be set for the ' .
+		 'ExternalFeatureAdaptor to function correctly');
+  }
+
   my $out = [];
 
   my $asma = $self->db->get_AssemblyMapperAdaptor;
@@ -511,15 +670,20 @@ sub fetch_all_by_chr_start_end {
 
   } 
 
+  my $slice_adaptor = $self->db->get_SliceAdaptor;
+  #get a slice of the whole chromosome
+  my $chrom_slice = $slice_adaptor->fetch_by_chr_name($chr_name);
+
   if($self->_supported('SLICE')) {
 
     #fetch by slice and convert to assembly coords
-    my $slice_adaptor = $self->db->get_SliceAdaptor;
     my $slice = $slice_adaptor->fetch_by_chr_start_end($chr_name,$start,$end);
     $out = $self->fetch_all_by_Slice($slice);
+    
     foreach my $f (@$out) {
       $f->start($start + $f->start - 1);
       $f->end  ($start + $f->end   - 1);
+      $f->attach_seq($chrom_slice);
     }
 
     return $out;
@@ -558,6 +722,7 @@ sub fetch_all_by_chr_start_end {
       $f->start($m_start);
       $f->end($m_end);
       $f->strand($m_strand);
+      $f->attach_seq($chrom_slice);
 
       push @$out, $f;
     }

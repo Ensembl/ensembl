@@ -12,8 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DB::ExternalFeatureFactoryI - Abstract interface for
-External Feature Factories
+Bio::EnsEMBL::DB::ExternalFeatureFactoryI - Legacy Abstract interface for External Feature Factories. Bio::EnsEMBL::External::ExternalFeatureAdaptor should be used instead if possible. 
 
 
 =head1 SYNOPSIS
@@ -41,15 +40,11 @@ External Feature Factories
    
 =head1 DESCRIPTION
 
-
-Currently this is included for legacy purposes.  Presumably numerous
-external installations use external feature factories as a method
-of adding features to ensembl.  The rest of the DB directory has
-been removed from the main trunk but this files remains to allow
-external feature factories to continue to work. 
-
-If you are an internal EnsEMBL developer you should probably think twice
-before using this modules since there is probably a better alternative.
+This is a legacy class.  It is included only for backwards compatibility with
+ExternalFeatureFactories which are presumably still used to place data into 
+ensembl.  It is recommended that if you wish to create EnsEMBL features 
+externally that you use the Bio::EnsEMBL::External::ExternalFeatureAdaptor 
+instead.
 
 This object defines the abstract interface for External Database
 access inside Ensembl. The aim is that one can attach an External
@@ -120,34 +115,13 @@ using unique internal identifiers in that database. The method is:
 It should return exactly one Sequence Feature object of the same type
 as above.
 
-
-=head1 FEEDBACK
-
-=head2 Mailing Lists
-
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
-
-  vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-  vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
-
-=head2 Reporting Bugs
-
-Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
-
-  bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
-
 =head1 AUTHOR - Ewan Birney
 
 Email birney@ebi.ac.uk
 
-Describe contact details here
+=head1 CONTACT 
+
+Email questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
@@ -158,12 +132,91 @@ The rest of the documentation details each of the object methods. Internal metho
 
 # Let the code begin...
 
-
 package Bio::EnsEMBL::DB::ExternalFeatureFactoryI;
-use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::External::ExternalFeatureAdaptor;
 use vars qw(@ISA);
 
-@ISA = ( 'Bio::EnsEMBL::Root');
+@ISA = ( 'Bio::EnsEMBL::External::ExternalFeatureAdaptor' );
+
+
+=head2 coordinate_systems
+
+  Arg [1]    : none
+  Example    : none
+  Description: This method is present to make the ExternalFeatureFactory 
+               interface behave as an ExternalFeatureAdaptor. It is for
+               backwards compatibility.
+  Returntype : none
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+sub coordinate_systems {
+  my $self = shift;
+  return qw(CONTIG);
+}
+
+
+=head2 fetch_all_by_contig_name
+
+  Arg [1]    : none
+  Example    : none
+  Description: This method is present to make the ExternalFeatureFactory 
+               interface behave as an ExternalFeatureAdaptor. It is for
+               backwards compatibility.
+  Returntype : none
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+sub fetch_all_by_contig_name {
+   my ($self, $contig_name) = @_;
+
+   unless($self->db) {
+     $self->throw('DB attribute not set.  This value must be set for the ' .
+		  'ExternalFeatureFactory to function correctly');
+   }
+
+   my @features = ();
+
+   my $ctg = $self->db->get_RawContigAdaptor->fetch_by_name($contig_name);
+   my $clone = $ctg->clone;
+   my $version = $clone->version;
+   my $ctg_length = $ctg->length;
+   
+   #get contig features
+   push @features, $self->get_Ensembl_SeqFeatures_contig($ctg->name, 
+							 $version, 
+							 1,
+							 $ctg_length);
+
+   #get clone features
+   my $clone_start = $ctg->embl_offset;
+   my $clone_end   = $clone_start + $ctg_length - 1;
+   my @clone_features = $self->get_Ensembl_SeqFeatures_clone($clone->id,
+							     $version,
+							     $clone_start,
+							     $clone_end);
+
+   #change clone coordinates to contig coordinates
+   my ($start, $end); 
+   foreach my $f (@clone_features) {
+     $start = $f->start - $clone_start + 1;
+     $end   = $f->end   - $clone_start + 1;
+
+     #skip features outside the contig
+     next if($end < 1 || $start > $ctg_length);
+
+     $f->start($start);
+     $f->end($end);
+
+     push @features, $f;
+   }
+
+   return \@features;
+}
 
 =head2 get_Ensembl_SeqFeatures_contig
 

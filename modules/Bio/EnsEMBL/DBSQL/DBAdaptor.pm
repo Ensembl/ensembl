@@ -829,17 +829,105 @@ sub _each_DASFeatureFactory{
 ##################################################################
 
 
+
+=head2 add_ExternalFeatureAdaptor
+
+  Arg [1]    : Bio::EnsEMBL::External::ExternalFeatureAdaptor
+  Example    : $db_adaptor->add_ExternalFeatureAdaptor($xfa);
+  Description: Adds an external feature adaptor to this database adaptor.
+               Adding the external adaptor in this way allows external
+               features to be obtained from Slices and from RawContigs.
+
+               The external feature adaptor which is passed to this method
+               will have its db attribuite set to this DBAdaptor object via 
+               the db accessor method. 
+
+               ExternalFeatureAdaptors passed to this method are stored 
+               internally in a hash keyed on the string returned by the 
+               ExternalFeatureAdaptors track_name method.
+               
+               If the track name method is not implemented then the 
+               a default key named 'External features' is assigned.  In the
+               event of duplicate key names, a number is appended to the
+               key name, and incremented for each subsequent adaptor with the
+               same track name.  For example, if no track_names are specified 
+               then the the external feature adaptors will be stored under the
+               keys 'External features', 'External features2' 
+               'External features3' etc.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub add_ExternalFeatureAdaptor {
+  my ($self, $adaptor) = @_;
+
+  unless($adaptor && ref $adaptor && 
+	 $adaptor->isa('Bio::EnsEMBL::External::ExternalFeatureAdaptor')) {
+    $self->throw("[$adaptor] is not a " .
+                 "Bio::EnsEMBL::External::ExternalFeatureAdaptor");
+  }
+
+  unless(exists $self->{'_xf_adaptors'}) {
+    $self->{'_xf_adaptors'} = {};
+  }
+
+  my $track_name = $adaptor->{'_track_name'};
+
+  #use a generic track name if one hasn't been defined
+  unless(defined $track_name) {
+    $track_name = "External features";
+  }
+
+  #if the track name exists add numbers to the end until a free name is found
+  if(exists $self->{'_xf_adaptor'}->{"$track_name"}) {
+    my $num = 2;
+    $num++ while(exists $self->{'_xf_adaptor'}->{"$track_name$num"});
+    $self->{'_xf_adaptors'}->{"$track_name$num"} = $adaptor;
+  } else {
+    $self->{'_xf_adaptors'}->{"$track_name"} = $adaptor;
+  }
+
+  $adaptor->db($self);
+}
+
+
+
+=head2 get_ExternalFeatureAdaptors
+
+  Arg [1]    : none
+  Example    : @xfas = values %{$db_adaptor->get_ExternalFeatureAdaptors}; 
+  Description: Retrieves all of the ExternalFeatureAdaptors which have been
+               added to this DBAdaptor.  The ExternalFeatureAdaptors are 
+               returned in a reference to a hash keyed on the track names
+               of the external adaptors
+  Returntype : Reference to a hash of ExternalFeatureAdaptors keyed on 
+               their track names.
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_ExternalFeatureAdaptors {
+  my $self = shift;
+
+  return $self->{'_xf_adaptors'};
+}
+
+
 =head2 add_ExternalFeatureFactory
 
   Arg [1]    : Bio::EnsEMBL::DB::ExternalFeatureFactoryI $value
   Example    : $db_adaptor->add_ExternalFeatureFactory
-  Description: Adds an external feature factory to the core database
+  Description: It is recommended that add_ExternalFeatureAdaptor be used 
+               instead.  See documentation for 
+               Bio::EnsEMBL::External::ExternalFeatureAdaptor
+
+               Adds an external feature factory to the core database
                so that features from external sources can be displayed in 
                ensembl. This method is still available mainly for legacy
-               support for external EnsEMBL installations.  It should 
-               probably not be used by internal EnsEMBL developers as
-               there is likely a better way to integrate your data with
-               the system.
+               support for external EnsEMBL installations.
   Returntype : none
   Exceptions : none
   Caller     : external
@@ -848,34 +936,8 @@ sub _each_DASFeatureFactory{
 
 sub add_ExternalFeatureFactory{
    my ($self,$value) = @_;
-   
-   unless( ref $value && 
-	   $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
-     $self->throw("[$value] is not a " .
-		  "Bio::EnsEMBL::DB::ExternalFeatureFactoryI " .
-		  "but it should be!");
-   }
 
-   push(@{$self->{'_external_ff'}},$value);
-}
-
-
-=head2 _each_ExternalFeatureFactory
-
-  Arg [1]    : none
-  Example    : none
-  Description: PRIVATE included for support of ExternalFeature Factories.
-               Returns list of external feature factories currently attached.
-  Returntype : list of Bio::EnsEMBL::DB::ExternalFeatureFactory objects
-  Exceptions : none
-  Caller     : internal
-
-=cut
-
-sub _each_ExternalFeatureFactory{
-   my ($self) = @_;
-
-   return @{$self->{'_external_ff'}}
+   $self->add_ExternalFeatureAdaptor($value);
 }
 
 
