@@ -1738,8 +1738,6 @@ sub finex_string {
 
    my @exons = $self->get_all_Exons;
 
-   $finex .= scalar(@exons) . " ";
-
    if ($exons[0]->strand == 1) {
       @exons = sort {$a->start <=> $b->start} @exons;
    } else {
@@ -1750,10 +1748,46 @@ sub finex_string {
    my $found_start = 0;
    my $found_end   = 0;
 
-   foreach my $exon (@exons) {
-     my $length = $exon->length;
+   my $count;
 
+   foreach my $exon (@exons) {
      
+     if ($exon == $self->translation->start_exon &&
+	 $exon == $self->translation->end_exon) {
+
+       $found_start = 1;
+       $found_end   = 1;
+
+       $count++;
+
+     } elsif ($exon == $self->translation->start_exon) {
+       $found_start = 1;
+
+
+       $count++;
+
+     } elsif ($exon == $self->translation->end_exon) {
+
+       $found_end = 1;
+
+       $count++;
+       
+     } elsif ($found_start == 1 && $found_end == 0) {
+
+       $count++;
+     }
+   }
+
+   $finex .= $count . " ";
+
+   $found_start = 0;
+   $found_end   = 0;
+
+   foreach my $exon (@exons) {
+     my $length    = $exon->length;
+     my $phase     = $exon->phase;
+     my $end_phase = $exon->end_phase;
+
      if ($exon == $self->translation->start_exon &&
 	 $exon == $self->translation->end_exon) {
        $length = $self->translation->end - $self->translation->start + 1;
@@ -1761,26 +1795,35 @@ sub finex_string {
        $found_start = 1;
        $found_end   = 1;
 
-       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+       $end_phase = ($length + $phase) % 3;
+
+       $finex .= $exon->phase . ":" . $end_phase . ":" . $length . " ";
 
      } elsif ($exon == $self->translation->start_exon) {
        $length = $exon->length - $self->translation->start + 1;
        $found_start = 1;
 
-       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+       $end_phase = ($length + $phase) % 3;
+
+       $finex .= $exon->phase . ":" . $end_phase . ":" . $length . " ";
 
      } elsif ($exon == $self->translation->end_exon) {
        $length = $self->translation->end;
        $found_end = 1;
 
-       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+       $end_phase = ($length + $phase) % 3;
+
+       $finex .= $exon->phase . ":" . $end_phase . ":" . $length . " ";
        
      } elsif ($found_start == 1 && $found_end == 0) {
        $length = $exon->length;
 
-       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+       $end_phase = ($length + $phase) % 3;
+
+       $finex .= $exon->phase . ":" . $end_phase . ":" . $length . " ";
      }
    }
+
 
    $finex =~ s/\ $//;
 
