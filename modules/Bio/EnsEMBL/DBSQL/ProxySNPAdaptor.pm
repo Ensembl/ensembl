@@ -68,7 +68,7 @@ sub fetch_by_Slice {
 sub fetch_by_SNP_id {
   my ($self, @args) = @_;
 
-  my $snp_db = $self->db()->get_db_adaptor->{'SNP'};
+  my $snp_db = $self->db()->get_db_adaptor('SNP');
 
   if(defined $snp_db) {
     return $snp_db->get_SNPAdaptor()->fetch_by_SNP_id(@args);
