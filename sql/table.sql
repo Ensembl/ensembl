@@ -315,12 +315,14 @@ CREATE TABLE repeat_feature (
 # Table structure for table 'gene'
 #
 CREATE TABLE gene (
-  gene_id   int unsigned not null auto_increment,
-  type VARCHAR(40) not null,
+  gene_id   int unsigned NOT NULL auto_increment,
+  type VARCHAR(40) NOT NULL,
   analysis_id int,
-  transcript_count int not null,
+  transcript_count int NOT NULL,
+  relevant_xref_id int unsigned NOT NULL,
 
-  PRIMARY KEY (gene_id)
+  PRIMARY KEY (gene_id),
+  KEY xref_id_index ( relevant_xref_id )
 );
 
 
@@ -357,11 +359,14 @@ CREATE TABLE transcript (
   transcript_id    INT UNSIGNED NOT NULL auto_increment,  
   gene_id          INT UNSIGNED NOT NULL,          # foreign key gene:gene_id
   translation_id   INT UNSIGNED NOT NULL,          # foreign key translation:translation_id
-  exon_count int not null,
+  exon_count int NOT NULL,
+  relevant_xref_id int unsigned NOT NULL,
 
   PRIMARY KEY (transcript_id),
   KEY gene_index (gene_id),
-  KEY translation_index ( translation_id )		
+  KEY translation_index ( translation_id ),
+  KEY xref_id_index ( relevant_xref_id )
+
 );
 
 CREATE TABLE transcript_stable_id (
