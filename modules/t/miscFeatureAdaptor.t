@@ -5,10 +5,14 @@ use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 11;
+	plan tests => 17;
 }
 
 use MultiTestDB;
+
+use Bio::EnsEMBL::Attribute;
+use Bio::EnsEMBL::MiscSet;
+
 
 our $verbose = 0;
 
@@ -80,6 +84,55 @@ debug("--- fetch by attribute (embl_acc) ---");
 $features = $mfa->fetch_all_by_attribute_type_value('embl_acc');
 ok(@$features == 1);
 print_features($features);
+
+
+$multi->hide('core', 'misc_feature', 'misc_feature_misc_set', 
+            'misc_attrib', 'attrib_type', 'misc_set');
+
+#
+# test store method
+#
+my $misc_set = Bio::EnsEMBL::MiscSet->new
+  (-NAME => 'setname',
+   -CODE => 'setcode',
+   -DESCRIPTION => 'setdescription',
+   -LONGEST_FEATURE => 10000);
+
+my $attrib = Bio::EnsEMBL::Attribute->new
+  (-NAME => 'attribute',
+   -CODE => 'attribcode',
+   -DESCRIPTION => 'attribdescription',
+   -VALUE => 'testvalue');
+
+my $mf = Bio::EnsEMBL::MiscFeature->new
+  (-START  => 100,
+   -END    => 200,
+   -STRAND => 1,
+   -SLICE  => $chr_slice);
+
+
+$mf->add_MiscSet($misc_set);
+$mf->add_Attribute($attrib);
+$mfa->store($mf);
+
+ok($mf->dbID() && $mf->adaptor());
+ok($misc_set->dbID() && $misc_set->adaptor());
+
+my $mf = $mfa->fetch_by_dbID($mf->dbID());
+
+my @attribs = @{$mf->get_all_Attributes()};
+ok(@attribs == 1);
+ok($attribs[0]->code eq 'attribcode');
+
+my @sets = @{$mf->get_all_MiscSets()};
+ok(@sets == 1);
+ok($sets[0]->code eq 'setcode');
+
+
+$multi->restore('core', 'misc_feature', 'misc_feature_misc_set', 
+                'misc_attrib', 'attrib_type', 'misc_set');
+
+
 
 
 
