@@ -228,24 +228,29 @@ sub _get_hits {
   my %hits_hash = ();
   my @hseqnames = ();
   for (my $i = 0; $i < @$features_arr_ref; $i++) {
-    push @hseqnames, $$features_arr_ref[$i]->hseqname;
-    if (($i % $clump_size) == 0) {
-      open (EVIDENCEALIGNMENT_PFETCH_IN_FH, "$pfetch -q @hseqnames |")
-        or $self->throw("error running pfetch");
-      my $seq_no = 0;
-      while (<EVIDENCEALIGNMENT_PFETCH_IN_FH>) {
-        chomp;
-	my $seq_obj;
-	if ($_ ne "no match") {
-	   my $seq_obj = Bio::Seq->new( -seq => $_,
-	                                -id  => 'fake_id',
-				        -accession_number =>$hseqnames[$seq_no]
-				      );
- 	  $hits_hash{$hseqnames[$seq_no]} = $seq_obj;
-	}
-	$seq_no++;
-      }
+    my $hseqname = $$features_arr_ref[$i]->hseqname;
+    if (! exists $hits_hash{$hseqname})
+    {
+      push @hseqnames, $$features_arr_ref[$i]->hseqname;
+      if (($i % $clump_size) == 0) {
+        open (EVIDENCEALIGNMENT_PFETCH_IN_FH, "$pfetch -q @hseqnames |")
+          or $self->throw("error running pfetch");
+        my $seq_no = 0;
+        while (<EVIDENCEALIGNMENT_PFETCH_IN_FH>) {
+          chomp;
+	  my $seq_obj;
+	  if ($_ ne "no match") {
+	     my $seq_obj = Bio::Seq->new(
+	                     -seq => $_,
+	                     -id  => 'fake_id',
+	 		     -accession_number =>$hseqnames[$seq_no]
+	                   );
+   	    $hits_hash{$hseqnames[$seq_no]} = $seq_obj;
+	  }
+	  $seq_no++;
+        }
       @hseqnames = ();
+      }
     }
   }
 
