@@ -875,7 +875,7 @@ sub deleteObj {
     }
   }
 
-
+  $self->{'_meta_container'} = undef;
   $self->{'dnadb'} = undef;
 
   #call the superclass deleteObj method

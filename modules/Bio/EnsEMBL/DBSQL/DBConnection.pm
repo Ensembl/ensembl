@@ -523,19 +523,21 @@ sub deleteObj {
   
 #  print STDERR "DBConnection::deleteObj : Breaking circular references:\n";
 
-  foreach my $adaptor_name (keys %{$self->{'_adaptors'}}) {
+    foreach my $key (qw{ current_objects _adaptors }) {
+      foreach my $adaptor_name (keys %{$self->{$key}}) {
 
-    my $adaptor = $self->{'_adaptors'}->{$adaptor_name};
+        my $adaptor = $self->{$key}->{$adaptor_name};
 
-    #call each of the adaptor deleteObj methods
-    if($adaptor && $adaptor->can('deleteObj')) {
-      #print STDERR "\t\tdeleting adaptor\n";
-      $adaptor->deleteObj();
+        #call each of the adaptor deleteObj methods
+        if($adaptor && $adaptor->can('deleteObj')) {
+          #print STDERR "\t\tdeleting adaptor\n";
+          $adaptor->deleteObj();
+        }
+
+        #break dbadaptor -> object adaptor references
+        $self->{$key}->{$adaptor_name} = undef;
+      }
     }
-
-    #break dbadaptor -> object adaptor references
-    $self->{'_adaptors'}->{$adaptor_name} = undef;
-  }
 
   #print STDERR "Cleaning up attached databases\n";
 
@@ -571,6 +573,7 @@ sub DESTROY {
      #don't disconnect if the InactiveDestroy flag has been set
      #this can really screw up forked processes
      if(!$dbh->{'InactiveDestroy'}) {
+       #print STDERR "Disconnecting db\n";
        $dbh->disconnect;
      } 
 
