@@ -810,7 +810,7 @@ sub _transform_to_rawcontig{
     $self->throw("can't transform coordinates of ".$self." without some sort of contig defined");
   }
   #my $mapper = $self->contig->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type( $self->contig()->assembly_type() );
-  #print STDERR "\t\ttransforming align feature to rawcontig \n\n";
+  #print STDERR "transforming align feature to rawcontig \n\n";
   my $rcAdaptor = $self->contig->adaptor()->db()->get_RawContigAdaptor();
   #my $global_start = $self->contig->chr_start();
   my @out;
@@ -839,9 +839,11 @@ sub _transform_to_rawcontig{
     $outputf->score( $self->score() );
     $outputf->percent_id( $self->percent_id() );
     $outputf->p_value( $self->p_value());
-    $outputf->contig($self->contig);
+    my $contig = $rcAdaptor->fetch_by_dbID($contig_id);
+    $outputf->contig($contig);
     push(@out, $outputf);
   }
+  #print STDERR "returning ".@out." feature from basealignfeature\n";
   return @out;
 
 }
@@ -1018,9 +1020,9 @@ sub _transform_feature_to_rawcontig{
     push(@out, $new_feature);
   }
 
-  foreach my $sf(@out){
+  #foreach my $sf(@out){
     #print STDERR "returning gff ".$sf->gffstring."\n";
-  }
+  #}
 
   return @out;
 

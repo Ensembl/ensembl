@@ -395,15 +395,15 @@ sub _transform_to_Slice {
 
 sub _transform_to_RawContig {
   my $self = shift;
-
+  #print STDERR "\tTransforming exons to rawcontig coords\n";
   my $asma = $self->contig()->adaptor()->db->get_AssemblyMapperAdaptor();
 
   my $mapper = $asma->fetch_by_type( $self->contig()->assembly_type() );
-  my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
+  my $rcAdaptor = $self->contig->adaptor()->db()->get_RawContigAdaptor();
   my $slice_chr_start = $self->contig->chr_start();
   my $slice_chr_end = $self->contig->chr_end();
 
-  
+  #print STDERR "exon has ".$self->get_all_supporting_features." supporting features before transformation\n";
   my ($exon_chr_start,$exon_chr_end);
 
   if ($self->contig()->strand() == 1) {
@@ -435,8 +435,9 @@ sub _transform_to_RawContig {
       unless(exists $sf_hash{$mapped_feat->contig->name}) {
 	$sf_hash{$mapped_feat->contig->name} = [];
       }
-      print STDERR "transform has returned ".$mapped_feat."\n";
+      #print STDERR "transform has returned ".$mapped_feat." on contig ".$mapped_feat->contig->name."\n";
       push @{$sf_hash{$mapped_feat->contig->name}}, $mapped_feat;
+      #print STDERR "array for ".$mapped_feat->contig->name." contig has ".@{$sf_hash{$mapped_feat->contig->name}}." features\n";
     }
   }
       
@@ -499,10 +500,7 @@ sub _transform_to_RawContig {
     # thats a simple exon
     if($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
       
-      $self->throw(" exon [". $self->stable_id ."]". $self->start().
-		   " ". $self->end(). " ".
-		   $self->contig()->chr_name().
-		   " lies on a gap cannot be mapped\n");
+      $self->throw(" exon lies on a gap cannot be mapped\n");
     }
     my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[0]->id() );
     my $new_exon = new Bio::EnsEMBL::Exon();
@@ -520,8 +518,7 @@ sub _transform_to_RawContig {
     $new_exon->contig( $rawContig );
     
     #replace old supporting feats with transformed supporting feats
-    $new_exon->add_supporting_features(@{$sf_hash{$rawContig->name()}});
-    
+    $new_exon->add_supporting_features(@{$sf_hash{$rawContig->name}});
     return $new_exon;
   }
 }
@@ -947,13 +944,13 @@ sub _genscan_peptide{
 
 sub add_supporting_features {
   my ($self,@features) = @_;
-  
+  #print STDERR "calling add supporting features\n\n";
   $self->{_supporting_evidence} = [] 
     unless defined($self->{_supporting_evidence});
   
   # check whether this feature object has been added already
  FEATURE: foreach my $feature (@features) {
-    print STDERR "have ".$feature." to add to exon\n";
+    #print STDERR "have ".$feature." to add to exon\n\n";
     unless($feature && $feature->isa("Bio::EnsEMBL::SeqFeatureI")) {
       $self->throw("Supporting feat [$feature] not a " . 
 		   "Bio::EnsEMBL::SeqFeatureI");
