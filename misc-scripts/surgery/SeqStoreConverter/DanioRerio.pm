@@ -189,6 +189,14 @@ sub transfer_dna {
 
   $self->debug("DanioRerio Specific: building dna table");
 
+  #in danio rerio est/estgene databases there is no dna so we may want to 
+  #skip this function
+  
+  my $count_sth = $dbh->prepare("SELECT count(*) from $source.dna");
+  $count_sth->execute();
+  my ($count) = $count_sth->fetchrow_array();
+  return if(!$count);
+
   my $dna_mappings = $self->dna_mappings();
 
   my $get_seq_sth = $dbh->prepare
@@ -210,6 +218,10 @@ sub transfer_dna {
       my ($old_id, $length) = @$row;
       $get_seq_sth->execute($length, $old_id);
 
+      if(!$get_seq_sth->rows() == 1) {
+        warn("Missing dna sequence for dna id $old_id");
+        next;
+      }
       my $seq = $get_seq_sth->fetchrow_arrayref->[0];
 
       if($first) {
