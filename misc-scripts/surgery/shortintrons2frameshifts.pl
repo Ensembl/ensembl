@@ -4,7 +4,7 @@ use warnings;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 use Getopt::Long;
-
+use POSIX qw(ceil);
 
 my ($host, $port, $user, $pass, $dbname);
 
@@ -27,292 +27,204 @@ my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
    -port => $port);
 
 
+# algorithm:
+# - find genes with transcripts that have short (1-2bp) introns)
+# - remember the exon positions of the exons of each transcript
+# - loop through each transcript:
+#      * merge exons seperated by short introns
+#      * store frameshifts as attributes for transcripts
+# - compare set of exons now used by updated transcripts
+#      * exons which have same positions as before as left alone
+#      * old exons which are no longer used are deleted
+#      * new exons are given new stable ids and stored
+# - update the exon_transcript table with new transcript exon composition
+
+
 print STDERR "Finding short introns\n";
 
-my $find_introns_sth = $db->dbc()->prepare
-  (qq{SELECT e1.exon_id as exon1_id, e2.exon_id as exon2_id,
-             IF(e1.seq_region_strand = 1,
+
+my $del_et_sth = $db->dbc->prepare(qq{DELETE FROM exon_transcript
+                                      WHERE transcript_id = ?});
+
+my $ins_et_sth = $db->dbc->prepare(qq{INSERT INTO exon_transcript
+                                      SET exon_id = ?,
+                                      transcript_id = ?,
+                                      rank = ?});
+
+my $sth = $db->dbc->prepare(qq{SELECT max(stable_id) FROM exon_stable_id});
+$sth->execute();
+my $ex_stable_id  = $sth->fetchall_arrayref->[0]->[0];
+$ex_stable_id++;
+$sth->finish();
+
+$sth = $db->dbc()->prepare
+  (qq{SELECT t.gene_id,
+             MIN(IF(e1.seq_region_strand = 1,
                 e2.seq_region_start - e1.seq_region_end - 1,
-                e1.seq_region_start - e2.seq_region_end - 1) AS intron_len
-      FROM exon e1, exon e2, exon_transcript et1, exon_transcript et2
+                e1.seq_region_start - e2.seq_region_end - 1)) AS intron_len
+      FROM exon e1, exon e2, exon_transcript et1, exon_transcript et2,
+           transcript t
       WHERE et1.exon_id = e1.exon_id
       AND et2.exon_id = e2.exon_id
       AND et1.transcript_id = et2.transcript_id
       AND et1.rank = et2.rank - 1
-      GROUP BY exon1_id, exon2_id
+      AND et1.transcript_id = t.transcript_id
+      GROUP BY t.gene_id
       HAVING intron_len < 3});
 
-$find_introns_sth->execute();
+$sth->execute();
 
-my %DELETED_EXONS;
-my %MULT_FRAMESHIFTS;
+my $total_rows = $sth->rows();
+my $cur_row = 0;
+my $last_percent = undef;
 
-my $BAD_COUNT = 0;
+my $ga = $db->get_GeneAdaptor();
+my $ea = $db->get_ExonAdaptor();
+my $aa = $db->get_AttributeAdaptor();
 
-print STDERR "Processing frameshifts";
-process_frameshifts($find_introns_sth);
+print STDERR "Merging exons and storing frameshifts\n";
+while(my $array = $sth->fetchrow_arrayref()) {
 
-$find_introns_sth->finish();
-
-
-# keep reprocessing the transcripts that had multiple frameshifts
-# until there are no transcripts with frameshifts left
-
-while(keys %MULT_FRAMESHIFTS) {
-  my $id_list = join(',',keys %MULT_FRAMESHIFTS);
-
-  print STDERR "\nReprocessing transcripts which had multiple frameshifts\n";
-
-  %DELETED_EXONS    = ();
-  %MULT_FRAMESHIFTS = ();
-
-  $find_introns_sth = $db->dbc()->prepare
-    (qq{SELECT e1.exon_id as exon1_id, e2.exon_id as exon2_id,
-             IF(e1.seq_region_strand = 1,
-                e2.seq_region_start - e1.seq_region_end - 1,
-                e1.seq_region_start - e2.seq_region_end - 1) AS intron_len
-      FROM exon e1, exon e2, exon_transcript et1, exon_transcript et2
-      WHERE et1.exon_id = e1.exon_id
-      AND et2.exon_id = e2.exon_id
-      AND et1.transcript_id = et2.transcript_id
-      AND et1.rank = et2.rank - 1
-      AND et2.exon_id in ($id_list)
-      GROUP BY exon1_id, exon2_id
-      HAVING intron_len < 3});
-
-  $find_introns_sth->execute();
-
-  process_frameshifts($find_introns_sth);
-
-  $find_introns_sth->finish();
-}
-
-
-print STDERR "\nFound $BAD_COUNT bad introns\n";
-print STDERR "\ndone\n";
-
-
-
-#
-# takes an executed statement handle and processes the frameshifts
-# (short introns) which are the results
-#
-sub process_frameshifts {
-  my $sth = shift;
-
-  my ($ex1_id, $ex2_id, $intron_len);
-  $find_introns_sth->bind_columns(\$ex1_id, \$ex2_id, \$intron_len);
-
-  while($find_introns_sth->fetch()) {
-    if($intron_len < 1) {
-      die("Unexpected: intron_len less than 1 between exons " .
-          "$ex1_id and $ex2_id");
-    }
-
-    print STDERR ".";
-
-    if($DELETED_EXONS{$ex1_id}) {
-      # multiple frameshift transcript, first exon already merged
-      # with another...
-      $MULT_FRAMESHIFTS{$ex2_id} = 1;
-      next;
-    }
-
-    next if(!check_introns($db, $ex1_id, $ex2_id));
-    add_rna_edits($db, $ex1_id, $ex2_id, $intron_len);
-    merge_exon($db, $ex1_id, $ex2_id);
+  my $percent = ceil(($cur_row++ / $total_rows) * 100);
+  if(($percent % 5) == 0 && 
+     (!defined($last_percent) || $percent != $last_percent)) {
+    $last_percent = $percent;
+    print STDERR "$percent% complete\n";
   }
-}
 
+  my $g = $ga->fetch_by_dbID($array->[0]);
 
-#
-# stores frameshifts as TranscriptAttribs in the database
-#
-sub add_rna_edits {
-  my $db = shift;
-  my $ex1_id = shift;
-  my $ex2_id = shift;
-  my $intron_len = shift;
+  my %old_exons = map {$_->hashkey() => $_} @{$g->get_all_Exons()};
+  my %new_exons = ();
 
-  my $sth = $db->dbc->prepare(qq{SELECT et1.transcript_id
-                                 FROM  exon_transcript et1, exon_transcript et2
-                                 WHERE et1.transcript_id = et2.transcript_id
-                                 AND   et1.exon_id = ?
-                                 AND   et2.exon_id = ?});
+  foreach my $tr (@{$g->get_all_Transcripts}) {
+    my @frameshifts;
 
-  $sth->execute($ex1_id, $ex2_id);
+    foreach my $intron (@{$tr->get_all_Introns()}) {
+      push(@frameshifts, $intron) if($intron->length() < 3);
+    }
 
-  my @tr_ids = map {$_->[0]} @{$sth->fetchall_arrayref()};
+    my $fs = shift(@frameshifts);
 
-  my $tra = $db->get_TranscriptAdaptor();
-  my $aa = $db->get_AttributeAdaptor();
-
-  foreach my $tr_id (@tr_ids) {
-    my $tr = $tra->fetch_by_dbID($tr_id,1);
-
-    my $exons = $tr->get_all_Exons();
-
+    my $merging_exon;
     my $cdna_start = 1;
+    my @exons;
+    my %seen_evidence;
 
-    my $prev_was_ex1 = 0;
-    foreach my $ex (@$exons) {
+    my @old_exons = @{$tr->get_all_Exons()};
 
-      if($ex->dbID() == $ex2_id) {
-        if(!$prev_was_ex1) {
-          die("Unexpected: exon1 $ex1_id was not exon before exon2 $ex2_id\n");
+    while(@old_exons) {
+      my $ex = shift(@old_exons);
+      $cdna_start += $ex->length();
+
+      if($fs && $fs->prev_Exon->stable_id() eq $ex->stable_id()) {
+        $merging_exon = undef;
+
+        while($fs && $fs->prev_Exon->stable_id() eq $ex->stable_id()) {
+          # this exon has a frameshift, so merge it with next exon
+          # and any subsequent exons serperated only by frameshifts
+
+          if(!$merging_exon) {
+            $merging_exon = {};
+            %{$merging_exon} = %$ex;
+            bless $merging_exon, ref($ex);
+            push @exons, $merging_exon;
+
+            %seen_evidence = ();
+          }
+
+          if($merging_exon->strand() == 1) {
+            $merging_exon->end($fs->next_Exon()->end());
+          } else {
+            $merging_exon->start($fs->next_Exon()->start());
+          }
+
+          # merge supporting evidence
+          foreach my $ev (@{$ex->get_all_supporting_features()}) {
+            if(!$seen_evidence{$ev->dbID()}) {
+              $merging_exon->add_supporting_features($ev);
+              $seen_evidence{$ev->dbID()} = 1;
+            }
+          }
+
+          # store frameshift as transcript attrib
+          my $seqed = Bio::EnsEMBL::SeqEdit->new
+            (-CODE    => '_rna_edit',
+             -NAME    => 'RNA Edit',
+             -DESC    => 'Post transcriptional RNA edit',
+             -START   => $cdna_start,
+             -END     => $cdna_start + $fs->length() - 1,
+             -ALT_SEQ => '');
+          $aa->store_on_Transcript($tr, [$seqed->get_Attribute]);
+
+          # take this frameshift and the next exon
+          # (which was merged into the current exon) off the list
+          $fs = shift(@frameshifts);
+          $ex = shift(@old_exons);
+          $cdna_start += $ex->length();
         }
+      } else {
+        # this exon does not have a frameshift so just add it to the list
 
-        my $seqed = Bio::EnsEMBL::SeqEdit->new
-          (-CODE    => '_rna_edit',
-           -NAME    => 'RNA Edit',
-           -DESC    => 'Post transcriptional RNA edit',
-           -START   => $cdna_start,
-           -END     => $cdna_start + $intron_len - 1,
-           -ALT_SEQ => '');
+        push @exons, $ex;
+      }
+    }
 
-        $aa->store_on_Transcript($tr, [$seqed->get_Attribute]);
+    $tr->flush_Exons();
 
-        last;
+    foreach my $ex (@exons) {
+      $new_exons{$ex->hashkey} = $ex;
+      $tr->add_Exon($ex);
+    }
+  }
+
+  # determine which exons can be deleted
+  foreach my $old_key (keys %old_exons) {
+    if(!$new_exons{$old_key}) {
+      $ea->remove($old_exons{$old_key});
+      delete $old_exons{$old_key};
+    }
+  }
+
+  # determine which exons are brand new and need storing
+  foreach my $new_key (keys %new_exons) {
+    if(!$old_exons{$new_key}) {
+      my $new_ex = $new_exons{$new_key};
+      # "unstore" the merged exon by unsetting adaptor and dbID
+      $new_ex->dbID(undef);
+      $new_ex->adaptor(undef);
+
+      # assign a new stable id
+      $new_ex->stable_id($ex_stable_id++); 
+      $ea->store($new_exons{$new_key});
+    }
+  }
+
+  foreach my $tr (@{$g->get_all_Transcripts()}) {
+    $del_et_sth->execute($tr->dbID());
+
+    my $rank = 1;
+    foreach my $ex (@{$tr->get_all_Exons()}) {
+      my $ex_id;
+
+      if($old_exons{$ex->hashkey()}) {
+        $ex_id = $old_exons{$ex->hashkey()}->dbID();
+      } else {
+        $ex_id = $new_exons{$ex->hashkey()}->dbID();
       }
 
-      $cdna_start += $ex->length();
-      $prev_was_ex1 = ($ex->dbID() == $ex1_id) ? 1 : 0;
+      $ins_et_sth->execute($ex_id, $tr->dbID(), $rank);
+
+      $rank++;
     }
   }
-
-  return;
 }
 
+$del_et_sth->finish();
+$ins_et_sth->finish();
+$sth->finish();
 
-#
-# makes sure that all transcripts that have one of the exons have
-# both of the exons that are on either side of the short intron
-#
-sub check_introns {
-  my $db = shift;
-  my $ex1_id = shift;
-  my $ex2_id = shift;
-
-  my $sth = $db->dbc()->prepare
-    (qq{SELECT count(*)
-        FROM   exon_transcript et
-        WHERE  et.exon_id = ?});
-
-  $sth->execute($ex1_id);
-  my $ex1_count = $sth->fetchall_arrayref()->[0]->[0];
-  $sth->execute($ex2_id);
-  my $ex2_count = $sth->fetchall_arrayref()->[0]->[0];
-
-  $sth->finish();
-
-  $sth = $db->dbc()->prepare
-    (qq{SELECT count(*)
-        FROM exon_transcript et1, exon_transcript et2
-        WHERE et1.transcript_id = et2.transcript_id
-        AND   et1.exon_id = ?
-        AND   et2.exon_id = ?});
-
-  $sth->execute($ex1_id, $ex2_id);
-
-  my $both_count = $sth->fetchall_arrayref()->[0]->[0];
-
-  if($ex1_count != $ex2_count || $ex1_count != $both_count) {
-    warn("Exons $ex1_id and $ex2_id define a small intron but are not " .
-        "both shared by all transcripts. Skipping transcript.");
-    $BAD_COUNT++;
-    return 0;
-  }
-
-
-  return 1;
-}
-
-
-#
-# Removes the short intron from the database by enlarging the first exon
-# and deleting the second exon.
-#
-sub merge_exon {
-  my $db = shift;
-  my $ex1_id = shift;
-  my $ex2_id = shift;
-
-  my $exa = $db->get_ExonAdaptor();
-
-  my $ex1 = $exa->fetch_by_dbID($ex1_id);
-  my $ex2 = $exa->fetch_by_dbID($ex2_id);
-
-
-  # update the size of the first exon
-
-  my $new_start = ($ex1->strand() == 1) ? $ex1->start() : $ex2->start();
-  my $new_end   = ($ex1->strand() == 1) ? $ex2->end()   : $ex2->end();
-
-  my $new_end_phase = $ex2->end_phase();
-
-  my $sth = $db->dbc->prepare(qq{UPDATE exon
-                                 SET seq_region_start = ?,
-                                     seq_region_end = ?,
-                                     end_phase = ?
-                                 WHERE exon_id = ?});
-
-  $sth->execute($new_start, $new_end, $new_end_phase, $ex1->dbID());
-  $sth->finish();
-
-  # delete the second exon
-
-  $DELETED_EXONS{$ex2->dbID()} = 1;
-
-  $sth = $db->dbc->prepare(qq{DELETE FROM exon WHERE exon_id = ?});
-  $sth->execute($ex2->dbID());
-  $sth->finish();
-
-  ### should supporting evidence be deleted or merged???
-  $sth = $db->dbc->prepare(qq{DELETE FROM supporting_feature
-                              WHERE exon_id = ?});
-  $sth->execute($ex2->dbID());
-  $sth->finish();
-
-  $sth = $db->dbc->prepare(qq{DELETE FROM exon_stable_id
-                              WHERE exon_id = ?});
-  $sth->execute($ex2->dbID());
-  $sth->finish();
-
-  # update the rank of other exons in these transcripts
-
-  my $update_rank_sth = $db->dbc->prepare(qq{UPDATE exon_transcript
-                                             SET rank = rank-1
-                                             WHERE exon_id = ?
-                                             AND   transcript_id = ?});
-
-
-  $sth = $db->dbc->prepare(qq{SELECT et1.exon_id, et1.transcript_id
-                              FROM exon_transcript et1, exon_transcript et2
-                              WHERE et1.transcript_id = et2.transcript_id
-                              AND et2.exon_id = ?
-                              AND et1.rank > et2.rank});
-
-  $sth->execute($ex2->dbID());
-
-  while(my @array = $sth->fetchrow_array()) {
-    $update_rank_sth->execute(@array);
-  }
-
-  $update_rank_sth->finish();
-  $sth->finish();
-
-
-  $sth = $db->dbc->prepare(qq{DELETE FROM exon_transcript
-                              WHERE exon_id = ?});
-
-  $sth->execute($ex2->dbID());
-
-  $sth->finish();
-
-  return;
-}
-
-
+print STDERR "\nAll Done.\n";
 
 
 sub usage {
