@@ -1,8 +1,9 @@
 #!/usr/bin/perl -w
 
 #
-# Ignore file anme this should calculate the gene count for a chromosome (X)
-#
+# Calculate the GC content for top level seq_regions
+#   small regions 500bp to be able to display on contigview
+#   big regions genomesize / 4000 for 4000 features on the genome
 
 
 use strict;
@@ -16,12 +17,18 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
+use Getopt::Long;
 
-my $host = '127.0.0.1';
-my $user = 'ensadmin';
-my $pass = 'ensembl';
-my $dbname = 'homo_sapiens_core_20_34';
-my $port = '5050';
+my ( $host, $user, $pass, $port, $dbname  );
+
+GetOptions( "host=s", \$host,
+	    "user=s", \$user,
+	    "pass=s", \$pass,
+	    "port=i", \$port,
+	    "dbname=s", \$dbname
+	  );
+
+
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -user => $user,
@@ -30,8 +37,19 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -dbname => $dbname);
 
 
+my $small_blocksize = 500;
 
-my $block_size = 1e6;
+
+#
+# Check wether the script should run on given database
+#
+my $sth = $db->prepare( "select count(*) from dna" );
+$sth->execute();
+my ( $dna_count )  = $sth->fetchrow_array();
+if( ! $dna_count ) {
+  print STDERR "No dna, no gc content for $dbname.\n";
+  exit();
+}
 
 
 #
@@ -43,6 +61,15 @@ my $dfa = $db->get_DensityFeatureAdaptor();
 my $dta = $db->get_DensityTypeAdaptor();
 my $aa  = $db->get_AnalysisAdaptor();
 
+my $slices = $slice_adaptor->fetch_all( "toplevel" );
+
+my ( $large_blocksize, $genome_size );
+for my $slice ( @$slices ) {
+  $genome_size += $slice->length();
+}
+
+$large_blocksize = int( $genome_size / 4000 );
+
 
 #
 # Create new analysis object for density calculation.
@@ -53,50 +80,68 @@ my $analysis = new Bio::EnsEMBL::Analysis (-program     => "percent_gc_calc.pl",
 					   -gff_source  => "percent_gc_calc.pl",
 					   -gff_feature => "density",
 					   -logic_name  => "PercentGC");
- 
+
 $aa->store($analysis);
 
-print "New analysis : ".$analysis->dbID." at ".$analysis->created."\n";
 
 #
 # Create new density type.
 #
 
-my $dt = Bio::EnsEMBL::DensityType->new(-analysis   => $analysis,
-					-block_size => $block_size,
-					-value_type => 'ratio');
+my $small_density_type = Bio::EnsEMBL::DensityType->new
+  (-analysis   => $analysis,
+   -block_size => $small_blocksize,
+   -value_type => 'ratio');
 
-$dta->store($dt);
+my $large_density_type = Bio::EnsEMBL::DensityType->new
+  (-analysis   => $analysis,
+   -block_size => $large_blocksize,
+   -value_type => 'ratio');
 
-print "New density type : ".$dt->dbID."\n";
+$dta->store($small_density_type);
+$dta->store($large_density_type);
 
-foreach my $chrom (qw(X Y)){
-  print "creating density feature for chromosome $chrom with block size of $block_size\n";
 
-  my $slice = $slice_adaptor->fetch_by_region('chromosome',$chrom);
-  
-  my $start = $slice->start();
-  my $end = ($start + $block_size)-1;
-  my $term = $slice->start+$slice->length;
-  
-  my @density_features=();
-  while($start < $term){
-    my $sub_slice = $slice_adaptor->fetch_by_region('chromosome',$chrom,$start,$end);
+my ( $current_start, $current_end );
 
-    my $gc = $sub_slice->get_base_count()->{'%gc'};
-    print STDERR $start."\n";
-    push @density_features, Bio::EnsEMBL::DensityFeature->new(-seq_region    => $slice,
-							     -start         => $start,
-							     -end           => $end,
-							     -density_type  => $dt,
-							     -density_value => $gc);
+foreach my $slice ( @$slices ) {
 
-    $start = $end+1;
-    $end   = ($start + $block_size)-1;
+#
+# do it for small and large blocks
+#
+
+  for my $density_type ( $large_density_type, $small_density_type ) {
+
+    my $blocksize = $density_type->block_size();
+    $current_start = 1;
+
+    my @density_features=();
+
+    while($current_start <= $slice->end()) {
+      $current_end = $current_start+$blocksize-1;
+      if( $current_end > $slice->end() ) {
+	$current_end = $slice->end();
+      }
+
+      my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
+
+      my $gc = $sub_slice->get_base_count()->{'%gc'};
+      push @density_features, Bio::EnsEMBL::DensityFeature->new
+	(-seq_region    => $slice,
+	 -start         => $current_start,
+	 -end           => $current_end,
+	 -density_type  => $density_type,
+	 -density_value => $gc);
+
+      $current_start = $current_end+1;
+    }
+
+    $dfa->store(@density_features);
+    print "Created ",scalar @density_features, " %GC density features ";
+    print "for seq_region ", $slice->seq_region_name(),"\n";
+
+    # print_features(\@density_features);
   }
-  $dfa->store(@density_features);
-  print scalar @density_features;
-  print_features(\@density_features);
 }
 
 

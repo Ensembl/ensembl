@@ -1,6 +1,11 @@
 #!/usr/bin/perl -w
+#
+# Calculate the repeat coverage for given database.
+# condition: 1k blocks to show contigview displays
+#  4000 blocks for a whole genome
+#
+# checks wether database contains repeats before doing anything
 
-#use dbi;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor;
@@ -11,12 +16,19 @@ use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 use strict;
+use Getopt::Long;
 
-my $host = '127.0.0.1';
-my $user = 'ensadmin';
-my $pass = 'ensembl';
-my $dbname = 'homo_sapiens_core_20_34';
-my $port = '5050';
+my ( $host, $user, $pass, $port, $dbname  );
+
+GetOptions( "host=s", \$host,
+	    "user=s", \$user,
+	    "pass=s", \$pass,
+	    "port=i", \$port,
+	    "dbname=s", \$dbname
+	  );
+
+
+my $small_blocksize = 1_000;
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -user => $user,
@@ -26,8 +38,15 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 
 
 
-my $block_size = 1e6;
+my $sth = $db->prepare( "select count(*) from repeat_feature" );
+$sth->execute();
 
+my ( $repeat_count )  = $sth->fetchrow_array();
+
+if( ! $repeat_count ) {
+  print STDERR "No repeat density for $dbname.\n";
+  exit();
+}
 
 #
 # Get the adaptors needed;
@@ -37,7 +56,6 @@ my $slice_adaptor = $db->get_SliceAdaptor();
 my $dfa = $db->get_DensityFeatureAdaptor();
 my $dta = $db->get_DensityTypeAdaptor();
 my $aa  = $db->get_AnalysisAdaptor();
-
 
 
 #
@@ -52,59 +70,90 @@ my $analysis = new Bio::EnsEMBL::Analysis (-program     => "repeat_coverage_calc
  
 $aa->store($analysis);
 
-print "New analysis : ".$analysis->dbID." at ".$analysis->created."\n";
+my $slices = $slice_adaptor->fetch_all( "toplevel" );
 
-#
-# Create new density type.
-#
-
-my $dt = Bio::EnsEMBL::DensityType->new(-analysis   => $analysis,
-					-block_size => $block_size,
-					-value_type => 'ratio');
-
-$dta->store($dt);
-
-print "New density type : ".$dt->dbID."\n";
-
-foreach my $chrom (qw(X Y)){
-  print "creating density feature for chromosome $chrom with block size of $block_size\n";
-
-  my $slice = $slice_adaptor->fetch_by_region('chromosome',$chrom);
-  
-  my $start = $slice->start();
-  my $end = ($start + $block_size)-1;
-  my $term = $slice->start+$slice->length;
-  
-  my @density_features=();
-  while($start < $term){
-    my $sub_slice = $slice_adaptor->fetch_by_region('chromosome',$chrom,$start,$end);
-    
-    my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
-
-    foreach my $repeat (@{$sub_slice->get_all_RepeatFeatures()}){
-      $rr->check_and_register("1",$repeat->start,$repeat->end);
-    }
-    
-    my $count = 0;
-    foreach my $non_repeat (@{$rr->check_and_register("1",1,$block_size)}){
-      $count += ($non_repeat->[1]-$non_repeat->[0])+1;
-    }
-
-    print "repeat-> ".$count." are none repeat regions out of $block_size\n";
-    my $percentage_repeat = (($block_size-$count)/$block_size)*100;
-    push @density_features, Bio::EnsEMBL::DensityFeature->new(-seq_region    => $slice,
-							      -start         => $start,
-							      -end           => $end,
-							      -density_type  => $dt,
-							      -density_value => $percentage_repeat);
-    
-    $start = $end+1;
-    $end   = ($start + $block_size)-1;
-  }
-  $dfa->store(@density_features);
-  print scalar @density_features;
-  print_features(\@density_features);
+my ( $large_blocksize, $genome_size );
+for my $slice ( @$slices ) {
+  $genome_size += $slice->length();
 }
+
+$large_blocksize = int( $genome_size / 4000 );
+
+
+my $small_density_type = Bio::EnsEMBL::DensityType->new
+  (-analysis   => $analysis,
+   -block_size => $small_blocksize,
+   -value_type => 'ratio');
+
+my $large_density_type = Bio::EnsEMBL::DensityType->new
+  (-analysis   => $analysis,
+   -block_size => $large_blocksize,
+   -value_type => 'ratio');
+
+$dta->store($small_density_type);
+$dta->store($large_density_type);
+
+
+my ( $current_start, $current_end );
+
+foreach my $slice ( @$slices ) {
+
+  #
+  # do it for small and large blocks
+  #
+
+  for my $density_type ( $large_density_type, $small_density_type ) {
+
+    my $blocksize = $density_type->block_size();
+    $current_start = 1;
+
+    my @density_features=();
+
+    while($current_start <= $slice->end()) {
+      $current_end = $current_start+$blocksize-1;
+      if( $current_end > $slice->end() ) {
+	$current_end = $slice->end();
+      }
+      my $this_block_size = $current_end - $current_start + 1;
+
+      my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
+
+
+      my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
+
+      foreach my $repeat (@{$sub_slice->get_all_RepeatFeatures()}){
+	$rr->check_and_register("1",$repeat->start,$repeat->end);
+      }
+
+      my $count = 0;
+      my $non_repeats = $rr->check_and_register("1",1,$this_block_size);
+      if( defined $non_repeats ) {
+	foreach my $non_repeat ( @$non_repeats ) {
+	  $count += ($non_repeat->[1]-$non_repeat->[0])+1;
+	}
+      } 
+	
+
+      print "repeat-> ".$count." are none repeat regions out of $this_block_size\n";
+      my $percentage_repeat = (($this_block_size-$count)/$this_block_size)*100;
+      push @density_features, Bio::EnsEMBL::DensityFeature->new
+	(-seq_region    => $slice,
+	 -start         => $current_start,
+	 -end           => $current_end,
+	 -density_type  => $density_type,
+	 -density_value => $percentage_repeat);
+
+      $current_start = $current_end + 1;
+    }
+
+    $dfa->store(@density_features);
+    print STDERR "Created ",scalar @density_features," repeat density features ";
+    print STDERR "for ",$slice->seq_region_name(),"\n";
+
+#    print_features(\@density_features);
+  }
+}
+
 
 
 
