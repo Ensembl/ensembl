@@ -17,15 +17,17 @@ function getdb
 
     typeset dbver=${db}_${ver}
 
-    path=${path#/}
-    typeset url='ftp://ftp.ensembl.org/'${path}/${dbver}.tar
-
-    if [[ ! -d databases ]]; then
-	mkdir databases
-    fi
-    if [[ ! -d databases/${db}_${ver} ]]; then
-	trap "rm -rf databases/${db}_${ver}; exit 1" INT
-	lynx -source $url | (cd databases; tar -x -v -f- -P"${path}/")
+    if [[ ! -d databases/${dbver} ]]; then
+	trap "rm -rf databases/${dbver}; exit 1" INT
+	mkdir -p databases/${dbver}
+	( cd databases/${dbver}
+	  ftp -i -n -v ftp.ensembl.org <<EOT
+user anonymous ak@ebi.ac.uk
+cd ${path}/${dbver}
+mget *
+bye
+EOT
+	)
 	trap - INT
     fi
 }
@@ -90,7 +92,7 @@ typeset -ft cleandb
 avoid_re='mart'
 
 # A regular expression that should be required
-require_re='1[45]_'
+require_re='1[0-5]_'
 
 version_re='[0-9][0-9]*_[0-9][0-9]*'
 
