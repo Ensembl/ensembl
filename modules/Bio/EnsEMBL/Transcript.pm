@@ -71,6 +71,7 @@ sub new {
 		      'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF' ], @_ );
   
   if( $exons ) {
+    $self->{'_trans_exon_array'} = $exons;
     $self->recalculate_coordinates();
   }
 
@@ -612,9 +613,41 @@ sub add_Exon{
      throw("[$exon] is not a Bio::EnsEMBL::Exon!");
    }
 
-   push(@{$self->{'_trans_exon_array'}},$exon);
+   
+   $self->{'_trans_exon_array'} ||= [];
+   
+   my $ea = $self->{'_trans_exon_array'};
+   if( @$ea ) {
+     if( $exon->strand() == 1 ) {
+       if( $exon->start() > $ea->[$#$ea]->end() ) {
+	 push(@{$self->{'_trans_exon_array'}},$exon);
+       } else {
+	 # insert it at correct place
+	 for( my $i=0; $i <= $#$ea; $i++ ) {
+	   if( $exon->end() < $ea->[$i]->start() ) {
+	     splice( @$ea, $i, 0, $exon );
+	     last;
+	   }
+	 }
+       }
+     } else {
+       if( $exon->end() < $ea->[$#$ea]->start() ) {
+	 push(@{$self->{'_trans_exon_array'}},$exon);
+       } else {
+	 # insert it at correct place
+	 for( my $i=0; $i <= $#$ea; $i++ ) {
+	   if( $exon->start() > $ea->[$i]->end() ) {
+	     splice( @$ea, $i, 0, $exon );
+	     last;
+	   }
+	 }
+       }
+     }    
+   } else {
+     push( @$ea, $exon );
+   }
    # recalculate start, end, slice, strand
-   $self->_recalculate_coordinates();
+   $self->recalculate_coordinates();
 }
 
 
@@ -996,9 +1029,9 @@ sub flush_Exons{
    $self->{'coding_region_end'} = undef;
    $self->{'cdna_coding_start'} = undef;
    $self->{'cdna_coding_end'} = undef;
-   $self->{'_start'} = undef;
-   $self->{'_end'} = undef;
-   $self->{'_strand'} = undef;
+   $self->{'start'} = undef;
+   $self->{'end'} = undef;
+   $self->{'strand'} = undef;
 
    $self->{'_trans_exon_array'} = [];
 }
@@ -1185,43 +1218,6 @@ sub seq {
         );
 
     return $seq;
-}
-
-
-
-
-=head2 sort
-
- Title   : sort
- Usage   : $feat->sort()
- Function: Sorts the exon features by start coordinate
-           Sorts forward for forward strand and reverse for reverse strand
- Returns : none
- Args    : none
-
-=cut
-
-sub sort {
-  my $self = shift;
-
-  # Fetch all the features
-  my @exons = @{$self->get_all_Exons()};
-  
-  # Empty the feature table
-  $self->flush_Exons();
-
-  # Now sort the exons and put back in the feature table
-  my $strand = $exons[0]->strand;
-
-  if ($strand == 1) {
-    @exons = sort { $a->start <=> $b->start } @exons;
-  } elsif ($strand == -1) {
-    @exons = sort { $b->start <=> $a->start } @exons;
-  }
-
-  foreach my $e (@exons) {
-    $self->add_Exon($e);
-  }
 }
 
 
@@ -1770,7 +1766,7 @@ sub recalculate_coordinates {
       $start = $e->start();
     }
   
-    if( $e->end() < $end ) {
+    if( $e->end() > $end ) {
       $end = $e->end();
     }
   
@@ -1807,6 +1803,45 @@ sub recalculate_coordinates {
 
 # _translation_id
 # Usage   : DEPRECATED - not needed anymore
+
+
+
+=head2 sort
+
+ Title   : sort
+ Usage   : $feat->sort()
+ Function: Sorts the exon features by start coordinate
+           Sorts forward for forward strand and reverse for reverse strand
+ Returns : none
+ Args    : none
+
+=cut
+
+sub sort {
+  my $self = shift;
+
+
+  deprecate( "Exons are kept sorted, you dont have to call sort any more" );
+  # Fetch all the features
+  my @exons = @{$self->get_all_Exons()};
+  
+  # Empty the feature table
+  $self->flush_Exons();
+
+  # Now sort the exons and put back in the feature table
+  my $strand = $exons[0]->strand;
+
+  if ($strand == 1) {
+    @exons = sort { $a->start <=> $b->start } @exons;
+  } elsif ($strand == -1) {
+    @exons = sort { $b->start <=> $a->start } @exons;
+  }
+
+  foreach my $e (@exons) {
+    $self->add_Exon($e);
+  }
+}
+
 
 sub _translation_id {
    my $self = shift;
