@@ -1171,6 +1171,49 @@ sub get_supporting_evidence_direct {
 	#$out->validate();
 	$exhash{$exonid}->add_Supporting_Feature($out);
     }
+    $query = qq{
+         SELECT sf.seq_start,sf.seq_end,
+            sf.score,sf.strand,
+            sf.analysis,sf.name,
+            sf.hstart,sf.hend,sf.hid,
+            sf.evalue,sf.perc_id,sf.exon 
+         FROM supporting_feature sf ,
+              exon e
+         WHERE e.id  = sf.exon 
+           AND e.id in ($list) 
+           AND !(sf.seq_end < e.seq_start OR sf.seq_start > e.seq_end) 
+	       AND sf.strand = e.strand
+              AND sf.analysis != 3}; #hack for genscan
+
+ # PL: query not checked thoroughly
+    $sth2=$self->_db_obj->prepare($query);
+    $sth2->execute;
+
+    while (my $arrayref = $sth2->fetchrow_arrayref) {
+	my ($start,$end,$f_score,$strand,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$exonid) = @{$arrayref};
+	my $analysis;
+	if (!$analhash{$analysisid}) {
+	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+	    $analysis = $feature_obj->get_Analysis($analysisid);
+	    $analhash{$analysisid} = $analysis;	   
+	} 
+	else {
+	    $analysis = $analhash{$analysisid};
+	}
+	
+	
+	if( !defined $name ) {
+	    $name = 'no_source';
+	}
+	
+	my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+	$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',1,$hstart,$hend,1,$f_score,$name,'similarity',$hid);
+	$out->analysis($analysis);
+
+	#$out->validate(); 
+	$exhash{$exonid}->add_Supporting_Feature($out);
+    }
+
 }                                       # get_supporting_evidence_direct
 
 
