@@ -68,10 +68,12 @@ sub list_value_by_key {
   my $sth = $self->prepare( "SELECT meta_value 
                              FROM meta 
                              WHERE meta_key = ? ORDER BY meta_id" );
-  $sth->execute( $key );
-  while( my $arrRef = $sth->fetchrow_arrayref() ) {
-    push( @result, $arrRef->[0] );
-  }
+  eval {
+    $sth->execute( $key );
+    while( my $arrRef = $sth->fetchrow_arrayref() ) {
+      push( @result, $arrRef->[0] );
+    }
+  };
   $self->{'cache'}->{$key} = \@result;
 
   return \@result;
