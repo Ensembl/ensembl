@@ -59,5 +59,5 @@ foreach my $f (@features) {
         $as->start . " " . $as->end);
 }
 
-my $f = (@features);
+my ($f) = @features;
 ok($f->display_id eq $f->alternate_slice->seq_region_name);
