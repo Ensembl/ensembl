@@ -11,9 +11,14 @@
 
 Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor
 
-=head1 SYNOPSIS
+=head1 
 
-$repeat_consensus_adaptor = $database_adaptor->get_RepeatConsensusAdaptor();
+$rca = $database_adaptor->get_RepeatConsensusAdaptor();
+
+$repeat_consensus = $rca->fetch_by_dbID(132);
+$repeat_consensus = $rca->fetch_by_name_class('AluSx', 'SINE/Alu');
+
+$rca->store($rc1, $rc2, $rc3);
 
 =head1 DESCRIPTION
 
@@ -25,9 +30,7 @@ Email jgrg@ebi.ac.uk
 
 =head1 CONTACT
 
-Arne Stabenau - stabenau@ebi.ac.uk
-Graham McVicker - mcvicker@ebi.ac.uk
-Ewan Birney - birney@ebi.ac.uk
+Post questions to the EnsEMBL developer list ensembl-dev@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -41,8 +44,9 @@ package Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor;
 use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::RepeatConsensus;
-use vars qw(@ISA);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
+use vars qw(@ISA);
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
 
@@ -62,9 +66,9 @@ use vars qw(@ISA);
 sub fetch_by_dbID {
     my( $self, $db_id ) = @_;
 
-    my ($rc) = @{$self->_generic_fetch("repeat_consensus_id = $db_id")}; 
+    my ($rc) = @{$self->_generic_fetch("repeat_consensus_id = $db_id")};
 
-    return $rc;   
+    return $rc;
 }
 
 
@@ -84,7 +88,7 @@ sub fetch_by_dbID {
 sub fetch_by_name {
     my( $self, $name ) = @_;
 
-    my ($rc) = @{$self->_generic_fetch("repeat_name = '$name'")};   
+    my ($rc) = @{$self->_generic_fetch("repeat_name = '$name'")};
 
     return $rc;
 }
@@ -119,14 +123,14 @@ sub fetch_by_name_class {
 }
 
 
-=head2 fetch_by_class_seq
+=head2 fetch_all_by_class_seq
 
   Arg [1]    : string $class
                the class of the repeat consensus to obtain
   Arg [2]    : string $seq
                the sequence of the repeat consensus to obtain
   Example    : $rc = $repeat_consensus_adaptor->
-                 fetch_by_name_class('trf', 'ATGGTGTCA');
+                 fetch_all_by_class_seq('trf', 'ATGGTGTCA');
   Description: Obtains a repeat consensus from the database
                via its class and sequence
   Returntype : listREF of Bio::EnsEMBL::RepeatConsensus
@@ -135,13 +139,19 @@ sub fetch_by_name_class {
 
 =cut
 
-sub fetch_by_class_seq {
+sub fetch_all_by_class_seq {
     my( $self, $class, $seq ) = @_;
 
     return $self->_generic_fetch(qq{
             repeat_class     = '$class'
         AND repeat_consensus = '$seq'
     });
+}
+
+
+sub fetch_by_class_seq {
+  deprecate('Use fetch_all_by_class_seq instead');
+  fetch_all_by_class_seq(@_);
 }
 
 
@@ -159,37 +169,37 @@ sub fetch_by_class_seq {
 
 sub _generic_fetch {
     my( $self, $where_clause ) = @_;
-    
-    my( $repeat_consensus_id,
-        $repeat_name,
-        $repeat_class,
-        $repeat_length,
-        );
-    
+
+    my( $repeat_consensus_id, $repeat_name, $repeat_class,$repeat_length,
+        $repeat_consensus );
+
     my $sth = $self->prepare(qq{
         SELECT repeat_consensus_id
           , repeat_name
           , repeat_class
           , LENGTH(repeat_consensus)
+          , repeat_consensus
         FROM repeat_consensus
         WHERE }. $where_clause);
+
     $sth->execute;
     $sth->bind_columns(
         \$repeat_consensus_id,
         \$repeat_name,
         \$repeat_class,
         \$repeat_length,
+        \$repeat_consensus
         );
-    
-    my( @consensi );
+
+    my @consensi;
     while ($sth->fetch) {
-        my $rc = Bio::EnsEMBL::RepeatConsensus->new;
-        $rc->dbID($repeat_consensus_id);
-        $rc->name($repeat_name);
-        $rc->repeat_class($repeat_class);
-        $rc->length($repeat_length);
-        $rc->adaptor($self);
-        push(@consensi, $rc);
+        push @consensi, Bio::EnsEMBL::RepeatConsensus->new
+          (-DBID => $repeat_consensus_id,
+           -NAME => $repeat_name,
+           -REPEAT_CLASS => $repeat_class,
+           -LENGTH => $repeat_length,
+           -ADAPTOR => $self,
+           -REPEAT_CONSENSUS => $repeat_consensus);
     }
     return \@consensi;
 }
@@ -208,7 +218,7 @@ sub _generic_fetch {
 
 sub store {
   my( $self, @consensi ) = @_;
-  
+
   my $sth = $self->prepare(q{
     INSERT into repeat_consensus( repeat_consensus_id
           , repeat_name
@@ -216,20 +226,20 @@ sub store {
           , repeat_consensus )
       VALUES (NULL, ?,?,?)
     });
-    
+
   foreach my $rc (@consensi) {
     my $name  = $rc->name
-      or $self->throw("name not set");
+      or throw("name not set");
     my $class = $rc->repeat_class
-      or $self->throw("repeat_class not set");
+      or throw("repeat_class not set");
     my $seq   = $rc->repeat_consensus
-      or $self->throw("repeat_consensus not set");
-    
+      or throw("repeat_consensus not set");
+
     $sth->execute($name, $class, $seq);
-    
+
     my $db_id = $sth->{'mysql_insertid'}
-    or $self->throw("Didn't get an insertid from the INSERT statement");
-    
+    or throw("Didn't get an insertid from the INSERT statement");
+
     $rc->dbID($db_id);
     $rc->adaptor($self);
   }
