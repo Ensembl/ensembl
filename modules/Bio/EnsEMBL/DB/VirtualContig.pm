@@ -45,27 +45,6 @@ RawContigI compliant object. For that reason I have put it
 in Bio::EnsEMBL::DB scope, indicating that other database
 implementations can use this object if they so wish.
 
-=head1 FEEDBACK
-
-=head2 Mailing Lists
-
-User feedback is an integral part of the evolution of this
-and other Bioperl modules. Send your comments and suggestions preferably
- to one of the Bioperl mailing lists.
-Your participation is much appreciated.
-
-  vsns-bcd-perl@lists.uni-bielefeld.de          - General discussion
-  vsns-bcd-perl-guts@lists.uni-bielefeld.de     - Technically-oriented discussion
-  http://bio.perl.org/MailList.html             - About the mailing lists
-
-=head2 Reporting Bugs
-
-Report bugs to the Bioperl bug tracking system to help us keep track
- the bugs and their resolution.
- Bug reports can be submitted via email or the web:
-
-  bioperl-bugs@bio.perl.org
-  http://bio.perl.org/bioperl-bugs/
 
 =head1 AUTHOR - Ewan Birney
 
@@ -92,6 +71,7 @@ use strict;
 use Bio::Root::Object;
 use Bio::EnsEMBL::DB::VirtualContigI;
 
+my $VC_UNIQUE_NUMBER = 0;
 
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::VirtualContigI);
@@ -125,9 +105,192 @@ sub _initialize {
   # build the map of how contigs go onto the vc coorindates
   $self->_build_contig_map($focus,$focusposition,$ori,$leftsize,$rightsize);
 
+  $self->_unique_number($VC_UNIQUE_NUMBER++);
+
 # set stuff in self from @args
   return $make; # success - we hope!
 }
+
+
+=head1 Implementations for the ContigI functions
+
+These functions are to implement the ContigI interface
+
+
+=head2 seq
+
+ Title   : seq
+ Usage   : $seq = $contig->seq();
+ Function: Gets a Bio::PrimarySeqI object out from the contig
+ Example :
+ Returns : Bio::PrimarySeqI object
+ Args    :
+
+
+=cut
+
+sub seq{
+   my ($self) = @_;
+
+   my $seq = $self->_seq_cache();
+   if( defined $seq ) {
+       return $seq;
+   }
+
+   # we have to move across the map, picking up the sequences,
+   # truncating them and then adding them into the final product.
+
+   my @contig_id = sort { $self->{'start'}->{$a} <=> $self->{'start'}->{$b} } keys %{$self->{'start'}};
+   my $seq_string;
+   foreach my $cid ( @contig_id ) {
+       my $c = $self->{'contighash'}->{$cid};
+       my $tseq = $c->seq();
+
+       my $trunc;
+
+       if( $self->{'contigori'}->{$c} == 1 ) {
+	   $trunc = $tseq->subseq($self->{'start'}->{$cid},$c->golden_right);
+       } else {
+	   $trunc = $tseq->trunc($c->golden_left,$self->{'start'}->{$cid})->revcom->seq;
+       }
+
+       $seq_string .= $trunc;
+   }
+
+   $seq = Bio::PrimarySeq->new( -id => "virtual_contig_".$self->_unqiue_number,
+				-seq => $seq_string,
+				-moltype => 'dna'
+				);
+
+
+   $self->_seq_cache($seq);
+  
+   return $seq;
+}
+
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id{
+    my ($self) = @_;
+
+    return "virtual_contig_".$self->_unique_number;
+}
+
+=head2 get_all_SeqFeatures
+
+ Title   : get_all_SeqFeatures
+ Usage   : foreach my $sf ( $contig->get_all_SeqFeatures ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_SeqFeatures{
+   my ($self) = @_;
+   my @out;
+   push(@out,$self->get_all_SimilarityFeatures());
+   push(@out,$self->get_all_RepeatFeatures());
+  # push(@out,$self->
+
+   return @out;
+
+}
+
+=head2 get_all_SimilarityFeatures
+
+ Title   : get_all_SimilarityFeatures
+ Usage   : foreach my $sf ( $contig->get_all_SimilarityFeatures ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_SimilarityFeatures{
+   my ($self) = @_;
+   
+   return $self->_get_all_SeqFeatures_type('similarity');
+
+}
+
+=head2 get_all_RepeatFeatures
+
+ Title   : get_all_RepeatFeatures
+ Usage   : foreach my $sf ( $contig->get_all_RepeatFeatures ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_RepeatFeatures{
+   my ($self) = @_;
+   
+   return $self->_get_all_SeqFeatures_type('repeat');
+
+
+}
+
+
+
+=head2 get_all_Genes
+
+ Title   : get_all_Genes
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Genes{
+   my ($self) = @_;
+
+   $self->throw("get_all_Genes on virtual contigs not implemented yet!");
+
+}
+
+
+=head2 length
+
+ Title   : length
+ Usage   : 
+ Function: Provides the length of the contig
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub length {
+   my ($self,@args) = @_;
+
+   return $self->_left_size + $self->_right_size +1;
+
+}
+
+
+
 
 =head2 _build_contig_map
 
@@ -221,6 +384,7 @@ sub _build_contig_map{
    my $total = $left + $right;
 
    print STDERR "leftmost contig is ",$current_contig->id,"with $total to account for\n";
+   $self->{'leftmostcontig_id'} = $current_contig->id;
 
    # the first contig will need to be trimmed at a certain point
    my $startpos;
@@ -336,7 +500,7 @@ sub _build_contig_map{
 
    # need to store end point for last contig
 
-   $self->{'rightmostcontig'} = $current_contig->id();
+   $self->{'rightmostcontig_id'} = $current_contig->id();
    if( $current_orientation == 1 ) {
        $self->{'rightmostend'}    = $current_contig->golden_end - ($total - $current_length);
    } else {
@@ -355,6 +519,9 @@ sub _build_contig_map{
    # ready to rock and roll. Woo-Hoo!
 
 }
+
+
+
 
 
 =head2 _get_all_SeqFeatures_type
@@ -668,6 +835,48 @@ sub _get_cache{
 
    return $self->{'_sf_cache'}->{$type};
    
+}
+
+=head2 _unique_number
+
+ Title   : _unique_number
+ Usage   : $obj->_unique_number($newval)
+ Function: 
+ Returns : value of _unique_number
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _unique_number{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_unique_number'} = $value;
+    }
+    return $obj->{'_unique_number'};
+
+}
+
+=head2 _seq_cache
+
+ Title   : _seq_cache
+ Usage   : $obj->_seq_cache($newval)
+ Function: 
+ Returns : value of _seq_cache
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _seq_cache{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_seq_cache'} = $value;
+    }
+    return $obj->{'_seq_cache'};
+
 }
 
 

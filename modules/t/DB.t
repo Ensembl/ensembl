@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..9\n"; 
+BEGIN { $| = 1; print "1..11\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -128,6 +128,18 @@ if( $@ ) {
 						-right => 1000 );
 
     $vc->_dump_map();
+
+    $seq = $vc->seq();
+    if( $seq->isa('Bio::PrimarySeqI') ) {
+	print "ok 10\n";
+    } else {
+	print "not ok 10\n";
+    }
+
+    @sf = $vc->get_all_SeqFeatures();
+
+    print "ok 11\n";
+
 }
     
 
