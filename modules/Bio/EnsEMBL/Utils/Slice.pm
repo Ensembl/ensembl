@@ -33,7 +33,7 @@ Bio::EnsEMBL::Utils::Slice - Utility functions for slices
 use strict;
 use warnings;
 
-package Bio::EnsEMBL::Utils::SliceUtils;
+package Bio::EnsEMBL::Utils::Slice;
 
 use Exporter;
 
