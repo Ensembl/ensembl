@@ -59,7 +59,6 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::Root; # included for backwards compatibility
-use Bio::EnsEMBL::Tile; # included for backwards compatibility
 use Bio::EnsEMBL::Chromosome; # included for backwards compatibility
 use Bio::EnsEMBL::RawContig; # included for backwards compatibility
 
@@ -2220,43 +2219,8 @@ sub assembly_type{
 
 sub get_tiling_path {
   my $self = shift;
-
   deprecate('Use $slice->project("seqlevel") instead.');
-
-  my $csa = $self->adaptor()->db()->get_CoordSystemAdaptor();
-
-  #assume that they want the tiling path to the sequence coord system
-  #this might not work well if this isn't a chromosomal slice
-  my $projection = $self->project('seqlevel');
-
-  my @tiling_path;
-
-  foreach my $segment (@$projection) {
-
-    my ($slice_start, $slice_end, $contig) = @$segment;
-    my $contig_ori   = $contig->strand();
-    my $contig_start = $contig->start();
-    my $contig_end   = $contig->end();
-
-    #the old get_tiling_path always gave back entire contigs in the forward
-    #strand
-    $contig = $contig->adaptor->fetch_by_region('seqlevel',
-                                                $contig->seq_region_name());
-
-    #bless contigs into contigs
-    $contig = bless($contig, 'Bio::EnsEMBL::RawContig');
-
-
-    push @tiling_path, Bio::EnsEMBL::Tile->new_fast($self,
-                                                    $slice_start,
-                                                    $slice_end,
-                                                    $contig,
-                                                    $contig_start,
-                                                    $contig_end,
-                                                    $contig_ori);
-  }
-
-  return \@tiling_path;
+  return [];
 }
 
 
