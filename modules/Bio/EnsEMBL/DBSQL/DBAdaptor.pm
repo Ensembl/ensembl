@@ -933,7 +933,7 @@ sub get_LiteAdaptor {
     $self->throw("The lite adaptor is deprecated. Use the " .
 		"Bio::EnsEMBL::Lite::DBAdaptor instead.\n" .
 		 "This may be attached to the core DBAdaptor using the" .
-		."lite_DBAdaptor method\n");
+		"lite_DBAdaptor method\n");
 
     return undef;
 }
