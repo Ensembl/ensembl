@@ -266,7 +266,7 @@ sub _convert_phase {
     if($strand==1){
 	$phase=((2+($start%3)-$phase)%3);
     }else{
-	$phase=((2+($end%3)-$phase)%3);
+	$phase=(2-((3+($end%3)-$phase)%3));
     }
 
     #if($phase==2){
