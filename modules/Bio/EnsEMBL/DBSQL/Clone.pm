@@ -157,7 +157,10 @@ sub delete {
        $sth = $self->_db_obj->prepare("delete from dna where id = $dna");
        $res = $sth->execute;
 
-       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_a_id = $dna or dna_b_id = $dna");
+       # Mysql does not optimise or statements in where clauses
+       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_a_id = $dna");
+       $res = $sth ->execute;
+       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_b_id = $dna");
        $res = $sth ->execute;
 
    }
