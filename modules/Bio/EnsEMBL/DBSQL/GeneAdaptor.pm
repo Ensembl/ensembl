@@ -128,6 +128,7 @@ sub fetch_by_dbID {
   # adding the exons
   # adding the transcripts
   my %transcriptExons;
+  my %transcripts;
 
   my $query = qq{
     SELECT tscript.gene_id
@@ -190,7 +191,6 @@ sub fetch_by_dbID {
     $gene->add_Transcript( $transcript );
   }
   
-
   return $gene;
 }
 
