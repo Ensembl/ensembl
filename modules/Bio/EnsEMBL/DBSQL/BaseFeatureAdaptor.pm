@@ -144,8 +144,6 @@ sub generic_fetch {
   $sql .= "\n$final_clause";
 
   ###print STDERR "\n\n$sql\n\n";
-
-  warn "JS5 misc set queries======================\n$sql\n ";
   
   my $sth = $db->prepare($sql);
 
