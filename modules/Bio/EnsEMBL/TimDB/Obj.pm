@@ -187,6 +187,12 @@ sub _initialize {
       foreach my $clone (@$raclones){
 	  if($clones{$clone}){
 	      push(@okclones,$clone);
+	  }else{
+	      my $disk_id;
+	      ($clone)=$self->get_id_acc($clone);
+	      if($clones{$clone}){
+		  push(@okclones,$clone);
+	      }
 	  }
       }
       $raclones=\@okclones;
@@ -237,6 +243,10 @@ sub get_Gene{
 sub get_Clone {
     my ($self,$id) = @_;
 
+    # translate incoming id to ensembl_id, taking into account nacc flag
+    my($disk_id,$cgp,$sv,$emblid,$htgsp);
+    ($id,$disk_id,$cgp,$sv,$emblid,$htgsp)=$self->get_id_acc($id);
+
     # if its already been created, get it from the hash
     if($self->{'_clone_array'}->{$id}){
 	return $self->{'_clone_array'}->{$id};
@@ -245,13 +255,13 @@ sub get_Clone {
     # else, have to build it
 
     # test if clone is not locked (for safety); don't check for valid SV's
-    my($flock,$fsv)=$self->_check_clone_entry($id);
+    my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id);
     if($flock){
 	$self->throw("$id is locked by TimDB");
     }
-
-    my($disk_id,$cgp,$sv,$emblid,$htgsp);
-    ($id,$disk_id,$cgp,$sv,$emblid,$htgsp)=$self->get_id_acc($id);
+    if($facc){
+	$self->throw("$id does not have an accession number");
+    }
 
     # create clone object
     my $clone = new Bio::EnsEMBL::TimDB::Clone(-id => $id,
@@ -351,19 +361,30 @@ sub _get_Clone_id{
    my $nsid=0;
    my $nlock=0;
    if($ralist){
-       # loop over list of clones supplied
+       # loop over list of clones supplied [unknown]
        foreach my $id (@$ralist){
-	   my($flock,$fsv)=$self->_check_clone_entry($id,\$nc,\$nsid,\$nisv,\$nlock);
-	   if(!$flock && ($fall || !$fsv)){
+
+	   # translate incoming id to ensembl_id, taking into account nacc flag
+	   my $disk_id;
+	   ($id,$disk_id)=$self->get_id_acc($id);
+
+	   my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id,\$nc,\$nsid,\$nisv,\$nlock);
+	   if(!$flock && ($fall || !$fsv) && !$facc){
+
 	       push(@list,$id);
 	   }
        }
    }else{
-       # loop over whole dbm file
-       my($id,$val);
-       while(($id,$val)=each %{$self->{'_clone_dbm'}}){
-	   my($flock,$fsv)=$self->_check_clone_entry($id,\$nc,\$nsid,\$nisv,\$nlock);
-	   if(!$flock && ($fall || !$fsv)){
+       # loop over whole dbm file [disk_id]
+       my($id,$val,$disk_id);
+       while(($disk_id,$val)=each %{$self->{'_clone_dbm'}}){
+
+	   my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id,\$nc,\$nsid,\$nisv,\$nlock);
+	   if(!$flock && ($fall || !$fsv) && !$facc){
+
+	       # translate incoming id to ensembl_id, taking into account nacc flag
+	       ($id)=$self->get_id_acc($disk_id);
+
 	       push(@list,$id);
 	   }
        }
@@ -392,6 +413,7 @@ sub _get_Clone_id{
 # posibilities are:
 # - clone is locked/unlocked
 # - clone has SV/no SV
+# - clone has no ACC
 # - clone different from accession (information only)
 # returns lock and sv state to allow external decision about accepting clone
 # can increment counters
@@ -407,6 +429,12 @@ sub _check_clone_entry{
     # count cases where cloneid is not accession (for information purposes)
     if($id ne $acc){
 	$$rnsid++;
+    }
+
+    # flag where accession missing - not to go to ensembl
+    my $facc;
+    if(!$acc && $self->{'_byacc'}){
+	$facc=1;
     }
 
     # count where sv is invalid
@@ -426,7 +454,7 @@ sub _check_clone_entry{
 	    $flock=1;
 	}
     }
-    return($flock,$fsv);
+    return($flock,$fsv,$facc);
 }
 
 
