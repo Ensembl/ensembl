@@ -238,7 +238,7 @@ sub get_geneids_by_hids{
     my $inlist = join(',',map "'$_'", @hids);
        $inlist = "($inlist)";
 
-   my $sth = $self->prepare("select transcript.gene from transcript as transcript, exon_transcript as exon_transcript, exon as exon, supporting_feature as supporting_feature where exon.id = supporting_feature.exon and exon_transcript.exon = exon.id and exon_transcript.transcript = transcript.id and supporting_feature.hid in $inlist");
+   my $sth = $self->_db_obj->prepare("select transcript.gene from transcript as transcript, exon_transcript as exon_transcript, exon as exon, supporting_feature as supporting_feature where exon.id = supporting_feature.exon and exon_transcript.exon = exon.id and exon_transcript.transcript = transcript.id and supporting_feature.hid in $inlist");
 
    $sth->execute();
    my %gene;
@@ -628,6 +628,7 @@ sub _make_sticky_exon{
    $sticky->start    (1);
    $sticky->end      ($seq->length);
    $sticky->strand   (1);
+   $sticky->attach_seq($seq);
 
    return $sticky;
 

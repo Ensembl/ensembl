@@ -72,6 +72,8 @@ use Bio::EnsEMBL::Chromosome;
 use DBI;
 use Bio::EnsEMBL::DB::ObjI;
 
+use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
+
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
 @ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::RootI);
@@ -2324,6 +2326,45 @@ sub extension_tables{
     }
     return $obj->{'extension_tables'};
 
+}
+
+=head2 static_golden_path_type
+
+ Title   : static_golden_path_type
+ Usage   : $obj->static_golden_path_type($newval)
+ Function: 
+ Example : 
+ Returns : value of static_golden_path_type
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub static_golden_path_type{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'static_golden_path_type'} = $value;
+    }
+    return $obj->{'static_golden_path_type'};
+
+}
+
+=head2 get_StaticGoldenPathAdaptor
+
+ Title   : get_StaticGoldenPathAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_StaticGoldenPathAdaptor{
+   my ($self,@args) = @_;
+
+   return Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor->new(-dbobj => $self);
 }
 
 

@@ -1823,138 +1823,493 @@ sub get_attribute{
    return $value;
 }
 
+#
+# Static golden path tables
+#
 
+
+=head2 chromosome
+
+ Title   : chromosome
+ Usage   : $self->chromosome($newval)
+ Function: 
+ Returns : value of chromosome
+ Args    :
+
+
+=cut
+
+sub chromosome{
+    my $self = shift;
+
+    if( defined $self->_chromosome) { return $self->_chromosome;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select chr_name from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_chromosome($value);
+    return $value;
+
+}
+
+=head2 _chromosome
+
+ Title   : chromosome
+ Usage   : $self->_chromosome($newval)
+ Function: 
+ Returns : value of _chromosome
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _chromosome{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_chromosome'} = $value;
+    }
+    return $self->{'_chromosome'};
+
+}
+
+=head2 fpc_contig_name
+
+ Title   : fpc_contig_name
+ Usage   : $self->fpc_contig_name()
+ Function: 
+ Returns : value of fpc_contig
+ Args    :
+
+
+=cut
+
+sub fpc_contig_name {
+    my $self = shift;
+
+    if( defined $self->_fpc_contig) { return $self->_fpc_contig;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select fpcctg_name from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_fpc_contig($value);
+    return $value;
+
+
+}
+
+=head2 _fpc_contig
+
+ Title   : fpc_contig
+ Usage   : $self->_fpc_contig($newval)
+ Function: 
+ Returns : value of _fpc_contig
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _fpc_contig{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_fpc_contig'} = $value;
+    }
+    return $self->{'_fpc_contig'};
+
+}
+
+=head2 chr_start
+
+ Title   : chr_start
+ Usage   : $self->chr_start($newval)
+ Function: 
+ Returns : value of chr_start
+ Args    :
+
+
+=cut
+
+sub chr_start{
+    my $self = shift;
+
+    if( defined $self->_chr_start) { return $self->_chr_start;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select chr_start from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_chromosome($value);
+    return $value;
+
+
+}
+
+=head2 _chr_start
+
+ Title   : chr_start
+ Usage   : $self->_chr_start($newval)
+ Function: 
+ Returns : value of _chr_start
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _chr_start{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_chr_start'} = $value;
+    }
+    return $self->{'_chr_start'};
+
+}
+
+=head2 chr_end
+
+ Title   : chr_end
+ Usage   : $self->chr_end($newval)
+ Function: 
+ Returns : value of chr_end
+ Args    :
+
+
+=cut
+
+sub chr_end{
+    my $self = shift;
+
+    if( defined $self->_chr_end) { return $self->_chr_end;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select chr_end from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_chr_end($value);
+    return $value;
+
+}
+
+=head2 _chr_end
+
+ Title   : chr_end
+ Usage   : $self->_chr_end($newval)
+ Function: 
+ Returns : value of _chr_end
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _chr_end{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_chr_end'} = $value;
+    }
+    return $self->{'_chr_end'};
+
+}
+
+
+=head2 fpc_contig_start
+
+ Title   : fpc_contig_start
+ Usage   : $self->fpc_contig_start($newval)
+ Function: 
+ Returns : value of fpc_contig_start
+ Args    :
+
+
+=cut
+
+sub fpc_contig_start{
+    my $self = shift;
+
+    if( defined $self->_fpc_contig_start) { return $self->_fpc_contig_start;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select fpcctg_start from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_chromosome($value);
+    return $value;
+
+
+}
+
+=head2 _fpc_contig_start
+
+ Title   : fpc_contig_start
+ Usage   : $self->_fpc_contig_start($newval)
+ Function: 
+ Returns : value of _fpc_contig_start
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _fpc_contig_start{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_fpc_contig_start'} = $value;
+    }
+    return $self->{'_fpc_contig_start'};
+
+}
+
+=head2 fpc_contig_end
+
+ Title   : fpc_contig_end
+ Usage   : $self->fpc_contig_end($newval)
+ Function: 
+ Returns : value of fpc_contig_end
+ Args    :
+
+
+=cut
+
+sub fpc_contig_end{
+    my $self = shift;
+
+    if( defined $self->_fpc_contig_end) { return $self->_fpc_contig_end;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select fpcctg_end from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_fpc_contig_end($value);
+    return $value;
+
+}
+
+=head2 _fpc_contig_end
+
+ Title   : fpc_contig_end
+ Usage   : $self->_fpc_contig_end($newval)
+ Function: 
+ Returns : value of _fpc_contig_end
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _fpc_contig_end{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_fpc_contig_end'} = $value;
+    }
+    return $self->{'_fpc_contig_end'};
+
+}
+
+
+
+=head2 static_golden_start
+
+ Title   : static_golden_start
+ Usage   : $self->static_golden_start($newval)
+ Function: 
+ Returns : value of static_golden_start
+ Args    :
+
+
+=cut
+
+sub static_golden_start{
+    my $self = shift;
+
+    if( defined $self->_static_golden_start) { return $self->_static_golden_start;}
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select raw_start from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_static_golden_start($value);
+    return $value;
+
+
+}
+
+=head2 _static_golden_start
+
+ Title   : static_golden_start
+ Usage   : $self->_static_golden_start($newval)
+ Function: 
+ Returns : value of _static_golden_start
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _static_golden_start{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_static_golden_start'} = $value;
+    }
+    return $self->{'_static_golden_start'};
+
+}
+
+=head2 static_golden_end
+
+ Title   : static_golden_end
+ Usage   : $self->static_golden_end($newval)
+ Function: 
+ Returns : value of static_golden_end
+ Args    :
+
+
+=cut
+
+sub static_golden_end{
+    my $self = shift;
+
+    if( defined $self->_static_golden_end) { return $self->_static_golden_end;}
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select raw_end from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_static_golden_end($value);
+    return $value;
+
+
+}
+
+=head2 _static_golden_end
+
+ Title   : static_golden_end
+ Usage   : $self->_static_golden_end($newval)
+ Function: 
+ Returns : value of _static_golden_end
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _static_golden_end{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_static_golden_end'} = $value;
+    }
+    return $self->{'_static_golden_end'};
+
+}
+
+=head2 static_golden_ori
+
+ Title   : static_golden_ori
+ Usage   : $self->static_golden_ori($newval)
+ Function: 
+ Returns : value of static_golden_ori
+ Args    :
+
+
+=cut
+
+sub static_golden_ori{
+    my $self = shift;
+
+    if( defined $self->_static_golden_ori) { return $self->_static_golden_ori;}
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select raw_ori from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_static_golden_ori($value);
+    return $value;
+
+
+}
+
+=head2 _static_golden_ori
+
+ Title   : static_golden_ori
+ Usage   : $self->_static_golden_ori($newval)
+ Function: 
+ Returns : value of _static_golden_ori
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _static_golden_ori{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_static_golden_ori'} = $value;
+    }
+    return $self->{'_static_golden_ori'};
+
+}
+
+=head2 static_golden_type
+
+ Title   : static_golden_type
+ Usage   : $self->static_golden_type($newval)
+ Function: 
+ Returns : value of static_golden_type
+ Args    :
+
+
+=cut
+
+sub static_golden_type{
+    my $self = shift;
+
+    return $self->dbobj->static_golden_path_type();
+
+}
+
+
+=head2 is_static_golden
+
+ Title   : is_static_golden
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_static_golden{
+   my ($self,@args) = @_;
+
+   if( defined $self->fpc_contig_name ) {
+       return 1;
+   }
+
+}
 
 1;
 
 
 
 
-#{
-#    # Certainly worth explaining here.
-#    #
-#    # The overlap type indicates which end on the two contigs this overlap is.
-#    # left means 5', right means 3'. There are four options. From these four
-#    # options we can figure out
-#    #    a) whether this overlap is on the 5' or the 3' of our contig
-#    #    b) which polarity the overlap on the next contig is 
-#    #
-#    # Polarity indicates whether the sequence is being read in the same 
-#    # direction as this contig. 
-#    # 
-#    # The sequence has to be appropiately versioned otherwise this gets complicated
-#    # in the update scheme.
-#    
-#    # The polarity look up tables in this array belong
-#    # with the respective queries in the queries array below.
-#    my @polarity_lut = (
-#            {
-#              'right2left'   => ['right',  1],
-#              'right2right'  => ['right', -1],
-#              'left2right'   => ['left',   1],
-#              'left2left'    => ['left',  -1],
-#            },
-#            {
-#              'right2left'   => ['left',   1],
-#              'right2right'  => ['right', -1],
-#              'left2right'   => ['right',  1],
-#              'left2left'    => ['left',  -1],
-#            },
-#        );
-#
-    #my @queries = (
-    #   q{SELECT c.id sister_id
-    #      , o.contig_b_position sister_pos
-    #      , o.contig_a_position self_pos
-    #      , o.overlap_type
-    #      , o.overlap_size
-    #      , o.type
-    #    FROM contigoverlap o
-    #      , contig c
-    #    WHERE c.dna = o.dna_b_id
-    #      AND dna_a_id = ?
-    #      AND o.type like ?},
 
-       #q{SELECT c.id sister_id
-       #   , o.contig_a_position sister_pos
-       #   , o.contig_b_position self_pos
-       #   , o.overlap_type
-       #   , o.overlap_size
-       #   , o.type
-       # FROM contigoverlap o
-       #   , contig c
-       # WHERE c.dna = o.dna_a_id
-       #   AND dna_b_id = ?
-       #   AND o.type like ?},
-       # );
-
-    #sub _load_overlaps {
-    #    my ($self) = @_;
-
-        #my $id      = $self->dna_id();
-        #my $version = $self->seq_version();
-        #my $overlap_source_like = $self->contig_overlap_source() .'%';
-
-        ## Doing two queries seems to be quickest
-        ## Statements like:
-        ##   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
-        ## seem to make queries inordinately slow.
-        #foreach my $i (0,1) {
-        #    my $query_str = $queries[$i];
-        #    my $pol_lut = $polarity_lut[$i];
-
-            #my $sth = $self->dbobj->prepare($query_str);
-            #$sth->execute($id, $overlap_source_like);
-
-        #    while (my $row = $sth->fetchrow_arrayref) {
-        #        
-        #        my( $sister_id, 
-        #            $sister_pos,
-        #            $self_pos,
-        #            $type,
-        #            $size,
-        #            $source,
-        #            ) = @$row;
-        #        
-        #        # Must have a way to choose right overlap types
-        #        #next unless $source eq 'ucsc';
-        #        
-        #        # Make the sister contig object
-        #my $sis = $self->dbobj->get_Contig($sister_id);
-        #        
-        #        # Get the overlap end, and sister polarity
-        #        # (Will cause an exception if $type is 
-        #        my( $end, $sister_pol ) = @{$pol_lut->{$type}};
-        #        
-        #        # Make a new ContigOverlapHelper object
-        #        my $co = Bio::EnsEMBL::ContigOverlapHelper->new(
-        #        -sister         => $sis,
-        #        -sisterposition => $sister_pos, 
-        #        -selfposition   => $self_pos,
-        #        -sisterpolarity => $sister_pol,
-        #        -distance       => $size,
-        #        -source         => $source,
-        #    );
-        #        
-        #        # Save as left or right overlap depending upon the end
-        #    if ($end eq 'left') {
-        #        $self->_left_overlap($co);
-        #    } else {
-        #        $self->_right_overlap($co);
-        #    }
-        #    }
-        #}
-        ## Flag that we've visited the database to get overlaps
-        #$self->_got_overlaps(1);
-
-    ## sanity check ourselves
-    #if( $self->golden_start > $self->golden_end ) {
-    #    $self->throw("This contig ".$self->id." has dodgy golden start/ends with start:".$self->golden_start." end:".$self->golden_end);
-    #}
-    #}
-
-## this brace is the end-of-scope flag to statically compile the
-## SQL queries.
-#} 
-#
 

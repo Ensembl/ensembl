@@ -357,3 +357,22 @@ CREATE table contigext (
        KEY (contig_id,tag),
        KEY (tag)
        );
+
+
+CREATE TABLE static_golden_path (
+    fpcctg_name    varchar(20) NOT NULL,
+    chr_name       varchar(5)  NOT NULL,
+    raw_id         int(10) NOT NULL,
+    chr_start      int(10) NOT NULL,
+    chr_end        int(10) NOT NULL,
+    fpcctg_start   int(10) NOT NULL,
+    fpcctg_end     int(10) NOT NULL,
+    raw_start      int(10) NOT NULL,
+    raw_end        int(10) NOT NULL,
+    raw_ori        int(2)  NOT NULL, 
+    type           varchar(20) NOT NULL,
+    
+    PRIMARY KEY(raw_id,type),
+    KEY(fpcctg_name),
+    KEY(chr_name) 
+);
