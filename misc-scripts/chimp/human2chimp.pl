@@ -130,7 +130,14 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
 
         foreach my $ftrans (@$finished_transcripts) {
           if($ftrans->translation()) {
-            print STDERR "\n\n", $ftrans->translate->seq(), "\n\n";
+            my $pep = $ftrans->translate->seq();
+            print STDERR "\n\n$pep\n\n";
+
+            # sanity check, if translation is defined we expect a peptide
+            if(!$pep) {
+              dump_translation($ftrans->translation());
+              throw("Unexpected Translation but no peptide");
+            }
           } else {
             print STDERR "NO TRANSLATION LEFT\n";
           }
@@ -138,6 +145,44 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
       }
     }
   }
+}
+
+sub dump_translation {
+  my $tl = shift;
+
+  print STDERR "TRANSLATION\n";
+
+  if(!$tl) {
+    print STDERR "  undef\n";
+    return;
+  }
+
+  if($tl->start_Exon()) {
+    print STDERR "  start exon = ", $tl->start_Exon->stable_id, "\n";
+  } else {
+    print STDERR "  start exon = undef\n";
+  }
+
+  if($tl->end_Exon()) {
+    print STDERR "  end exon = ", $tl->end_Exon->stable_id, "\n";
+  } else {
+    print STDERR "  end exon = undef\n";
+  }
+
+  if(defined($tl->start())) {
+    print STDERR "  start = ", $tl->start(), "\n";
+  } else {
+    print STDERR "  start = undef\n";
+  }
+
+  if(defined($tl->end())) {
+    print STDERR "  end = ", $tl->end(), "\n";
+  } else {
+    print STDERR "  end = undef\n";
+  }
+
+
+  return;
 }
 
 
@@ -242,8 +287,6 @@ sub transfer_transcript {
 
         my $num = scalar(@coords);
 
-        # save exon length before we go splitting exons etc.:
-       
         for (my $i=0; $i < $num; $i++) {
           my $c = $coords[$i];
 
@@ -297,7 +340,7 @@ sub transfer_transcript {
             $chimp_cdna_pos += $c->length();
           }
         }  # foreach coord
-      } 
+      }
     }
 
     $cdna_exon_start = $chimp_cdna_pos + 1; 
