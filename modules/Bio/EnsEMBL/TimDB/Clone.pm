@@ -289,15 +289,30 @@ sub add_Contig{
 =cut
 
 sub get_all_Genes{
-    my ($self) = @_;
+    my ($self,$evidence) = @_;
     my %h;
     
-    # loop over contigs, then loop over genes
+    my @features;
+
     foreach my $contig ($self->get_all_Contigs) {
+
+	if ($evidence eq 'evidence') {
+	    push(@features,$contig->get_all_SimilarityFeatures);
+	}
+
 	foreach my $gene ($contig->get_all_Genes){
 	    # read into a hash to make unique
 	    $h{$gene->id()} = $gene;
-       }
+	}
+    }
+
+    # Now attach the evidence if necessary
+    if ($evidence eq 'evidence') {
+	foreach my $gene (values %h) {
+	    foreach my $exon ($gene->each_unique_Exon) {
+		$exon ->find_supporting_evidence (\@features);
+	    }
+	}
     }
     # DEBUG
     print STDERR "Clone contains ".scalar(keys %h)." genes\n";
