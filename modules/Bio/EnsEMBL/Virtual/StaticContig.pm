@@ -798,7 +798,7 @@ sub get_all_PredictionFeatures {
    my $previous;
    my $previous_contig;
    my %analhash;
-   my $analysis_type='genscan';
+   my $analysis_type="('genscan', 'fgenesh')";
    
     my $type = $self->dbobj->static_golden_path_type;
     
@@ -808,12 +808,12 @@ sub get_all_PredictionFeatures {
                         IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
                         IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
-                        f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid,f.contig 
+                        f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid,f.contig,f.name 
                         FROM   feature f, analysisprocess a,static_golden_path sgp 
                         WHERE    f.analysis = a.analysisId 
                         AND    sgp.raw_id = f.contig
                         AND    f.contig in $idlist
-		        AND    a.gff_source = '$analysis_type'  
+		        AND    a.gff_source in $analysis_type  
                         AND    sgp.type = '$type'
 		        AND    sgp.chr_name='$chr_name' 
                         ORDER BY f.contig,f.strand*f.seq_start
@@ -823,10 +823,10 @@ sub get_all_PredictionFeatures {
    
    $sth->execute();
    
-   my ($fid,$rawstart,$rawend,$seqstart,$seqend,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid,$contig);
+   my ($fid,$rawstart,$rawend,$seqstart,$seqend,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid,$contig,$name);
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$rawstart,\$rawend,\$seqstart,\$seqend,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid,\$contig);
+   $sth->bind_columns(undef,\$fid,\$rawstart,\$rawend,\$seqstart,\$seqend,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid,\$contig,\$name);
    
    $previous = -1;
    my $current_fset;
@@ -866,7 +866,7 @@ sub get_all_PredictionFeatures {
 #        if($phase != $previous || $previous_contig != $contig $previous == -1) {
 	   $count++;
 	   $current_fset = Bio::EnsEMBL::SeqFeature->new();
-	   $current_fset->source_tag('genscan');
+	   $current_fset->source_tag($name);
 	   $current_fset->primary_tag('prediction');
 	   $current_fset->analysis($analysis);
 	   $current_fset->seqname($self->id);
@@ -907,12 +907,12 @@ sub get_all_PredictionFeatures {
 
        $out->id($fsetid); # to make genscan peptide work
 
-       $out->source_tag('genscan');
+       $out->source_tag($name);
        $out->primary_tag('prediction');
        
        if( defined $score ) {
 	   $out->score($score);
-       }
+	 }
 
        $out->analysis($analysis);
 
