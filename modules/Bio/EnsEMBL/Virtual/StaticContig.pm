@@ -2147,16 +2147,17 @@ sub get_all_VirtualTranscripts_startend {
     $self->throw ("I need a chromosome end") unless defined $glob_end;
     $self->throw ("I need a chromosome start") unless defined $glob_start;
 
-    my $query ="SELECT     STRAIGHT_JOIN t.id,
+    my $query ="SELECT     STRAIGHT_JOIN ts.stable_id,
                            MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                       (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
                            MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                                       (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end 
-                FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t 
+                FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t,transcript_stable_id ts  
                 WHERE      sgp.raw_id=e.contig
                 AND        e.contig in $idlist 
+                AND        ts.transcript_id=t.transcript_id 
                 AND        e.id=et.exon 
-                AND        t.id=et.transcript 
+                AND        t.transcript_id=et.transcript_id  
                 AND        sgp.chr_end >= $glob_start   
                 AND        sgp.chr_start <=$glob_end 
                 AND        sgp.chr_name='$chr_name'
