@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 28;
+	plan tests => 30;
 }
 
 use MultiTestDB;
@@ -167,5 +167,21 @@ $tr->flush_Exons();
 
 ok( scalar( @{$tr->get_all_Exons()} ) == 0 );
 
+
+# get a fresh tr to check the update method
+$tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+
+# the first update should have no effect
+$ta->update($tr);
+
+my $up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+ok ( $up_tr->display_xref == 97759 );
+
+
+$tr->display_xref(42);
+$ta->update($tr);
+
+$up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+ok ( $up_tr->display_xref == 42 );
 
 
