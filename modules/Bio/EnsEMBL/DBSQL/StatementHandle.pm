@@ -37,6 +37,7 @@ use DBI;
 # As DBD::mysql::st is a tied hash can't store things in it,
 # so have to have parallel hash
 my %dbchash;
+my %dbc_sql_hash;
 sub dbc {
   my $self = shift;
 
@@ -47,12 +48,24 @@ sub dbc {
   return $dbchash{$self};
 }
 
+sub sql {
+  my $self = shift;
+
+  if (@_) {
+    $dbc_sql_hash{$self} = shift;
+  }
+
+  return $dbc_sql_hash{$self};
+}
+
 
 sub DESTROY {
   my ($obj) = @_;
 
   my $dbc = $obj->dbc;
   $obj->dbc(undef);
+  my $sql = $obj->sql;
+  $obj->sql(undef);
 
   # rebless into DBI::st so that superclass destroy method is called
   # if it exists (it does not exist in all DBI versions)
@@ -62,7 +75,12 @@ sub DESTROY {
   # function is complete. Disconnect if there is 1 kid (this one) remaining.
   if($dbc  && $dbc->disconnect_when_inactive() &&
      $dbc->db_handle->{Kids} == 1) {
-    $dbc->db_handle->disconnect();
+     if($dbc->db_handle->{ActiveKids} == 0) { $dbc->db_handle->disconnect(); }
+     else {
+       warn("Problem disconnect $obj : kids=",$dbc->db_handle->{Kids},
+            " activekids=",$dbc->db_handle->{ActiveKids},"\n",
+            "  around sql = $sql\n");
+     }
   }
 }
 

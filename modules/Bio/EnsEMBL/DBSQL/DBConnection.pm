@@ -450,6 +450,7 @@ sub prepare {
    # the means to disconnect inactive statement handles automatically
    bless $sth, "Bio::EnsEMBL::DBSQL::StatementHandle";
    $sth->dbc($self);
+   $sth->sql($string);
 
    return $sth;
 }
