@@ -90,13 +90,18 @@ sub get_all_Genes{
    my @out;
    my $contig_id = $self->id();
    # prepare the SQL statement
-
+   my %got;
 
    my $sth = $self->_dbobj->prepare("select p3.gene from transcript as p3, exon_transcript as p1, exon as p2 where p2.contig = '$contig_id' and p1.exon = p2.id and p3.id = p1.transcript");
 
    my $res = $sth->execute();
    while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$self->_dbobj->get_Gene($rowhash->{'id'}));
+       if( $got{$rowhash->{'id'}} != 1 ) {
+          my $gene = $self->_dbobj->get_Gene($rowhash->{'id'});
+	  push(@out,$gene);
+	  $got{$rowhash->{'id'}} = 1;
+       }
+       
    }
    
 
@@ -121,6 +126,10 @@ sub seq{
    my ($self) = @_;
    my $id = $self->id();
 
+   if( $self->_seq_cache() ) {
+       return $self->_seq_cache();
+   }
+
    my $sth = $self->_dbobj->prepare("select sequence from dna where contig = \"$id\"");
    my $res = $sth->execute();
 
@@ -131,11 +140,39 @@ sub seq{
      if( ! $str) {
        $self->throw("No DNA sequence in contig $id");
      } 
-     return Bio::Seq->new ( -seq => $str, -id => $id, -type => 'Dna' );
+     $str =~ /[^ATGCNRY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
+     $str =~ s/\s//g;
+     $str =~ s/[^ATGCNRY]/N/g;
+
+     my $ret =Bio::Seq->new ( -seq => $str, -id => $id, -type => 'Dna' );
+     $self->_seq_cache($ret);
+     
+     return $ret;
    }
 
    $self->throw("No dna sequence associated with $id!");
    
+}
+
+=head2 _seq_cache
+
+ Title   : _seq_cache
+ Usage   : $obj->_seq_cache($newval)
+ Function: 
+ Returns : value of _seq_cache
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _seq_cache{
+   my $obj = shift;
+   if( @_ ) {
+       my $value = shift;
+       $obj->{'_seq_cache'} = $value;
+   }
+   return $obj->{'_seq_cache'};
+
 }
 
 =head2 get_all_SeqFeatures

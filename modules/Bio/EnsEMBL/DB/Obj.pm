@@ -83,6 +83,12 @@ sub _initialize {
 
   $db || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
+
+  #
+  # This needs to be rethought. We are caching sequences
+  # here to allow multiple exons to be retrieved fine
+  #
+  $self->{'_contig_seq_cache'} = {};
   
   if( $debug ) {
      $self->_debug($debug);
@@ -151,6 +157,7 @@ sub get_Gene{
    if( $seen == 0 ) {
        $self->throw("No gene with $geneid as a name! - Sorry!");
    }
+   $gene->id($geneid);
 
    return $gene;
 }
@@ -221,8 +228,27 @@ sub get_Exon{
    $exon->start($rowhash->{'start'});
    $exon->end($rowhash->{'end'});
    $exon->strand($rowhash->{'strand'});
-   $exon->phase($rowhash->{'phase'});
+   if( $exon->strand == 1 ) {
+       $exon->phase(($rowhash->{'phase'}+2)%3);
+   } else {
+       $exon->phase(($rowhash->{'phase'}+$exon->length+2)%3);
+   }
    
+   # we need to attach this to a sequence. For the moment, do it the stupid
+   # way perhaps?
+
+   my $seq;
+
+   if( $self->_contig_seq_cache($exon->contig_id) ) {
+       $seq = $self->_contig_seq_cache($exon->contig_id);
+   } else {
+       my $contig = $self->get_Contig($exon->contig_id());
+       $seq = $contig->seq();
+       $self->_contig_seq_cache($exon->contig_id,$seq);
+   }
+
+   $exon->attach_seq($seq);
+
    return $exon;
 }
 
@@ -438,6 +464,28 @@ sub prepare{
    # should we try to verify the string?
 
    return $self->_db_handle->prepare($string);
+}
+
+=head2 _contig_seq_cache
+
+ Title   : _contig_seq_cache
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _contig_seq_cache{
+   my ($self,$id,$seq) = @_;
+
+   if( $seq ) {
+       $self->{'_contig_seq_cache'}->{$id} = $seq;
+   }
+
+   return $self->{'_contig_seq_cache'}->{$id};
 }
 
 

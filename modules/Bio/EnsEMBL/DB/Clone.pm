@@ -133,6 +133,7 @@ sub get_all_Genes{
    my ($self,@args) = @_;
    my @out;
    my $id = $self->id();
+   my %got;
    # prepare the SQL statement
 
 
@@ -140,7 +141,13 @@ sub get_all_Genes{
 
    my $res = $sth->execute();
    while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$self->_dbobj->get_Gene($rowhash->{'gene'}));
+
+       if( $got{$rowhash->{'gene'}} != 1 ) {
+          my $gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
+	  push(@out,$gene);
+	  $got{$rowhash->{'gene'}} = 1;
+       }
+
    }
    
 
