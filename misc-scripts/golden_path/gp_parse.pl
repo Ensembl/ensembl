@@ -82,7 +82,7 @@ sub read_agp {
       $thisFrag->{start} = $contig_start;
       $thisFrag->{end} = $contig_end;
       $thisFrag->{strand} = $list[8];
-      $thisFrag->{gap} = 0;
+      $thisFrag->{gap} = 1;
 
       if( !$firstFrag ) {
 	build_overlap( $lastFrag, $thisFrag );
