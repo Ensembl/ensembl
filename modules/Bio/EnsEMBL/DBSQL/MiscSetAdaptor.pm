@@ -45,6 +45,8 @@ package Bio::EnsEMBL::DBSQL::MiscSetAdaptor;
 use Bio::EnsEMBL::MiscSet;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+
 use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
@@ -113,6 +115,7 @@ sub fetch_all {
       (-DBID     => $dbID,
        -ADAPTOR  => $self,
        -CODE     => $code,
+       -NAME     =>  $name,
        -DESCRIPTION => $desc,
        -LONGEST_FEATURE => $max_len);
 
@@ -212,8 +215,8 @@ sub store {
 
  SET:
   foreach my $ms (@misc_sets) {
-    if(!ref($ms) || !$ms->isa('Bio::EnsEMBL::DBSQL::MiscSet')) {
-      throw("List of MiscSets arguments expected.");
+    if(!ref($ms) || !$ms->isa('Bio::EnsEMBL::MiscSet')) {
+      throw("List of MiscSet arguments expected.");
     }
 
     if($ms->is_stored($db)) {
@@ -230,20 +233,24 @@ sub store {
       # insert failed because set with this code already exists
       my $sth2 = $self->prepare("SELECT misc_set_id from misc_set " .
                                 "WHERE code = ?");
-      $sth2->execute();
+      $sth2->execute($ms->code());
 
-      if(!$sth2->rows() == 1) {
+      if($sth2->rows() != 1) {
         throw("Could not retrieve or store MiscSet, code=[".$ms->code."]\n".
               "Wrong database user/permissions?");
       }
 
-      ($dbID) = @{$sth->fetchrow_array()};
+      ($dbID) = $sth2->fetchrow_array();
     } else {
       $dbID = $sth->{'mysql_insertid'};
     }
 
     $ms->dbID($dbID);
     $ms->adaptor($self);
+
+    # update the internal caches
+    $self->{'_id_cache'}->{$dbID} = $ms;
+    $self->{'_code_cache'}->{lc($ms->code())} = $ms;
   }
 
   return;
