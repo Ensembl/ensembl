@@ -1,9 +1,9 @@
 #
 # BioPerl module for Bio::EnsEMBL::Analysis::ensConf;
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
+# Cared for by Tim Hubbard <th@sanger.ac.uk>
 #
-# Copyright Ewan Birney
+# Copyright Tim Hubbard, James Gilbert
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -63,6 +63,7 @@ my $ftp    = ( getpwnam('ftp')    )[7];
 %ensConf = (
 	    UNFIN_ROOT => "$humpub/th/unfinished_ana",
 	    UNFIN_DATA_ROOT => "/nfs/disk100/humpub1/unfinished_ana",
+            CONFIRMED_EXON_FASTA => "$humpub/blast/confirmed_exon",
 	    EXON_ID_SUBSCRIPT => 'ENSE',
 	    EXON_ID_DIGITS => 11,
 	    TRANSCRIPT_ID_SUBSCRIPT => 'ENST',

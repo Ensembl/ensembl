@@ -30,17 +30,24 @@
                or its clonename, it will dump as its accession.  Use -noacc to 
                dump by clonename
 
+    -test      use test database rather than live [currently only timdb]
+               clones in testdb are listed with a T below
+
 =head1 EXAMPLE CLONES
 
-    dJ271M21   single contig, forward strand genes only (default)
+    dJ271M21/AL031983   T  single contig, mainly forward strand genes, but one reverse
 
-    dJ718J7    single contig, single reverse strand gene with partial transcripts
+    dJ718J7                single contig, single reverse strand gene with partial transcripts
 
-    AP000228   External finished clone
+    C361A3/AL031717     T  unfinished sanger, 3 contigs, 2 ordered by gene predictions
 
-    AC005776   External finished clone
+    C367G8/Z97634       T  unfinished sanger, 2 contigs, not ordered by gene predictions
 
-    AC010144   External unfinished clone
+    AP000228               External finished clone
+
+    AC005776               External finished clone
+
+    AC010144               External unfinished clone
 
 =cut
 
@@ -69,6 +76,7 @@ my $noacc  = 0;
 my $aceseq;
 my $fromfile = 0;
 my $pepformat = 'Fasta';
+my $test;
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
@@ -87,6 +95,7 @@ my $pepformat = 'Fasta';
 	     'aceseq:s'  => \$aceseq,
 	     'pepform:s' => \$pepformat,
 	     'fromfile'  => \$fromfile,
+	     'test'      => \$test,
 	     );
 
 if($help){
@@ -104,15 +113,14 @@ if( $dbtype =~ 'ace' ) {
     $host=$host1 unless $host;
     $db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'ensdev' , -host => $host );
 } elsif ( $dbtype =~ 'timdb' ) {
-    if( $#ARGV != 0 && $#ARGV != -1 ) {
-	die "When using timdb - can only load one clone!";
-    } 
+
+    # EWAN: no more - you should be able to load as many clones as you like!
     if( $#ARGV == -1 ) {
 	push(@ARGV,'dJ271M21');
     }
 
-    # clone_id is passed to speed things up - cuts down on parsing of flag files
-    $db = Bio::EnsEMBL::TimDB::Obj->new($ARGV[0],$noacc);
+    # clones required are passed to speed things up - cuts down on parsing of flat files
+    $db = Bio::EnsEMBL::TimDB::Obj->new(\@ARGV,$noacc,$test);
 } else {
     die("$dbtype is not a good type (should be ace, rdb or timdb)");
 }

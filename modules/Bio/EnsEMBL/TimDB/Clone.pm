@@ -83,6 +83,7 @@ sub _initialize {
 
   # construct and test the directory of the clone
   my $clone_dir=$dbobj->{'_unfinished_root'}."/$cgp/data/$disk_id";
+  my $contig_dbm_file=$dbobj->{'_unfinished_root'}."/$cgp/unfinished_ana.dbm";
   unless(-d $clone_dir){
       $self->throw("Cannot find directory for $disk_id");
   }
@@ -104,30 +105,86 @@ sub _initialize {
   # absent.  There should be a .gs file for each contig.
 
   # open dbm for this clone (to check contigs are listed there)
-  my $contig_dbm_file=$dbobj->{'_unfinished_root'}."/$cgp/unfinished_ana.dbm";
+  # NOTE: data stored here, is by disk_id
   my %unfin_contig;
   unless(dbmopen(%unfin_contig,$contig_dbm_file,0666)){
       $self->throw("Error opening contig dbm file");
   }
   my($key,$val);
-  my @contig_id;
+  my %contig_len;
+  my %id2disk;
   while(($key,$val)=each %unfin_contig){
       if($key=~/^$disk_id/){
-	  push(@contig_id,$key);
+	  my($len)=split(/,/,$val);
+	  my $disk_key=$key;
+	  $key=~s/^$disk_id/$id/;
+	  # save by id rather than disk_id, but keep mapping
+	  $contig_len{$key}=$len;
+	  $id2disk{$key}=$disk_key;
 	  # check for gs file
-	  if(!-e "$clone_dir/$key.gs"){
+	  if(!-e "$clone_dir/$disk_key.gs"){
 	      $self->throw("Error: no gs file for contig $key");
 	  }
       }
   }
+
+  # now build order/orientation information and create @contig_id
+  # ordered correctly for next step
+  # NOTE: data stored in '_contig_order_hash' has already been converted to id
+  my @contig_id;
+  my $clone_order=$dbobj->{'_contig_order_hash'}->{$id};
+  print STDERR "Order string for $id is: $clone_order\n";
+  my $spacing=$Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING;
+  my $offset=1;
+  if($clone_order){
+      # have order information, so use thi
+      # (checking that all contigs exist and are used)
+      my $ncontig=scalar(keys %contig_len);
+      my $ncontig2;
+      foreach my $ocontig (split(/[:;]/,$clone_order)){
+	  $ncontig2++;
+	  my($contig,$fr)=($ocontig=~/(.*)\.([FR])$/);
+	  $self->{_contig_order}->{$contig}=$ncontig2;
+	  $self->{_contig_offset}->{$contig}=$offset;
+	  # forward or reverse
+	  if($fr eq 'F'){
+	      $self->{'_contig_orientation'}->{$contig}=1;
+	  }else{
+	      $self->{'_contig_orientation'}->{$contig}=-1;
+	  }
+	  # offset is length + separation
+	  if($contig_len{$contig}){
+	      $offset+=$contig_len{$contig}+$spacing;
+	  }else{
+	      $self->throw("Contig in contigorder $contig not in DBM file");
+	  }
+	  push(@contig_id,$contig);
+      }
+      if($ncontig!=$ncontig2){
+	  $self->throw("More contigs in DBM file ($ncontig) than in contigorder file ($ncontig2)");
+      }
+  }else{
+      # no order information, order contigs by length
+      # FIXME?
+      # (perhaps should keep EMBL order in such cases, but don't have that data
+      #  unless order by contig number (ok for non sanger clones))
+      my $ncontig2;
+      foreach my $contig (sort {$contig_len{$a}<=>$contig_len{$b}} keys %contig_len){
+	  $ncontig2++;
+	  $self->{_contig_order}->{$contig}=$ncontig2;
+	  $self->{_contig_offset}->{$contig}=$offset;
+	  # always forward
+	  $self->{_contig_orientation}->{$contig}=1;
+	  # offset is length + separation
+	  $offset+=$contig_len{$contig}+$spacing;
+	  push(@contig_id,$contig);
+      }
+  }
+
   my @res;
   foreach my $contig_id (@contig_id){
-      my $disk_contig_id=$contig_id;
-      print STDERR "Attempting to retrieve contig with $disk_contig_id\n";
-      if($self->byacc == 1){
-	  $contig_id=~s/^$disk_id/$id/;
-	  print STDERR "Mapping contig id $contig_id\n";
-      }
+      my $disk_contig_id=$id2disk{$contig_id};
+      print STDERR "Attempting to retrieve contig with $disk_contig_id [$contig_id]\n";
       my $contig = new Bio::EnsEMBL::TimDB::Contig ( -dbobj => $self->_dbobj,
 						     -cloneobj => $self,
 						     -id => $contig_id,

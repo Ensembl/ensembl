@@ -217,6 +217,29 @@ sub add_Gene{
 }
 
 
+=head2 order
+
+ Title   : order
+ Usage   : $obj->order($newval)
+ Function: 
+ Returns : value of order
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub order{
+    my $self = shift;
+    if( @_ ) {
+	$self->throw("Can't set order on a TimDB database");
+    }
+    my $id = $self->id();
+    my $order=$self->_cloneobj()->{'_contig_order'}->{$id};
+    print STDERR "Order for $id is $order\n";
+    return $order;
+}
+
+
 =head2 offset
 
  Title   : offset
@@ -229,12 +252,13 @@ sub add_Gene{
 
 sub offset{
     my $self = shift;
-
-    # for now this only works if there is only one contig
-    if(scalar($self->_cloneobj()->get_all_Contigs())!=1){
-	$self->throw("Tim has not reimplemented this function for >1 contig");
+    if( @_ ) {
+	$self->throw("Can't set offset on a TimDB database");
     }
-    1;
+    my $id=$self->id;
+    my $offset=$self->_cloneobj()->{'_contig_offset'}->{$id};
+    print STDERR "Offset for $id is $offset\n";
+    return $offset;
 }
 
 
@@ -250,11 +274,13 @@ sub offset{
 
 sub orientation{
     my $self = shift;
-    # for now this only works if there is only one contig
-    if(scalar($self->_cloneobj()->get_all_Contigs())!=1){
-	$self->throw("Tim has not reimplemented this function for >1 contig");
+    if( @_ ) {
+	$self->throw("Can't set offset on a TimDB database");
     }
-    1;
+    my $id=$self->id;
+    my $orientation=$self->_cloneobj()->{'_contig_orientation'}->{$id};
+    print STDERR "Orientation for $id is $orientation\n";
+    return $orientation;
 }
 
 
@@ -286,7 +312,20 @@ sub seq{
     my $file=$cloneobj->{'_clone_dir'}."/$clonediskid.seq";
 
     my $seqin = Bio::SeqIO::Fasta->new( -file => $file);
-    $self->{'seq'} = $seqin->next_seq();
+    my($seq,$seqid,$ffound);
+    while($seq=$seqin->next_seq()){
+	$seqid=$seq->id;
+	#print STDERR "Read $seqid from $file\n";
+	if($seqid eq $disk_id){
+	    $ffound=1;
+	    last;
+	}
+    }
+    if(!$ffound){
+	$self->throw("Cannot find contig $id in $file");
+    }
+    
+    $self->{'seq'}=$seq;
     $self->{'seq'}->type('Dna');
     $self->{'seq'}->id($self->id());
     if( ! $self->{'seq'} ) {

@@ -18,7 +18,7 @@ Bio::EnsEMBL::Analysis::LegacyParser - Parses exons/transcripts/genes out of Tim
     $p = Bio::EnsEMBL::Analysis::LegacyParser->new($gene_file_name,
                                                    $transcript_file_name,$exon_file_name);
 
-    @genes = $p->get_Genes();
+    @genes = $p->map_all();
 
 =head1 DESCRIPTION
 
@@ -63,7 +63,7 @@ use FileHandle;
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,$genef,$trf,$exonf) = @_;
+  my($self,$genef,$trf,$exonf,$cof) = @_;
   
   my $make = $self->SUPER::_initialize;
 
@@ -78,6 +78,7 @@ sub _initialize {
   $self->gene_file($genef);
   $self->trans_file($trf);
   $self->exon_file($exonf);
+  $self->contig_order_file($cof);
 
   $self->{'_trans_hash'} = {};
   $self->{'_gene_hash'} = {};
@@ -85,59 +86,6 @@ sub _initialize {
 
   # set stuff in self from @args
   return $make; # success - we hope!
-}
-
-
-=head2 get_Genes
-
- Title   : get_Genes
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub get_Genes{
-    my ($self) = @_;
-
-    $self->_parse_gene;
-    $self->_parse_trans;
-    $self->_parse_exon;
-    
-    # put them together...
-    
-    my @genes;
-
-    foreach my $g ( keys %{$self->{'_gene_hash'}} ) {
-	my $gene = new Bio::EnsEMBL::Gene;
-	push(@genes,$gene);
-	$g =~ /$GENE_ID_SUBSCRIPT(\d+)/ || $self->throw("Cannot parse $g as a gene thingy");
-	my $gid = $GENE_ID_SUBSCRIPT . $1;
-	$gene->id($gid);
-	
-	foreach my $t ( @{$self->{'_gene_hash'}->{$g}} ) {
-	    
-	    print STDERR "  Doing $t\n";
-	    my $trans = new Bio::EnsEMBL::Transcript;
-	    
-	    $t =~ /$TRANSCRIPT_ID_SUBSCRIPT(\d+)/ || $self->throw("Cannot parse $t as a gene thingy");
-	    my $tid = $TRANSCRIPT_ID_SUBSCRIPT . $1;
-	    $trans->id($tid);
-	    
-	    $gene->add_Transcript($trans);
-	    foreach my $e ( @{$self->{'_trans_hash'}->{$t}} ) {
-		if( ! exists $self->{'_exon_hash'}->{$e} ) {
-		    $self->warn("No exon of $e!");
-		    next;
-		}
-		
-		$trans->add_Exon($self->{'_exon_hash'}->{$e});
-	    }
-	}
-    }
-    return @genes;
 }
 
 
@@ -179,10 +127,17 @@ sub _dump{
 =cut
 
 sub _parse_exon{
-    my ($self,$clone,$disk_id,$obj) = @_;
+    my ($self,$raclones,$obj) = @_;
 
     # have now!
     #$self->warn("Have not calculated phases yet!");
+    
+    my %disk_id;
+    # do clone->disk_id lookups
+    foreach my $clone (@$raclones){
+	my($id,$disk_id)=$obj->get_id_acc($clone);
+	$disk_id{$disk_id}=$id;
+    }
 
     my $fh = new FileHandle;
     $fh->open($self->exon_file) || $self->throw("Could not open exon file [", $self->exon_file, "]");
@@ -190,7 +145,7 @@ sub _parse_exon{
     my $is = $fh->input_record_separator('>');
     my $dis = <$fh>; # skip first record (dull!)
     while( <$fh> ) {
-	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):(\d+).*(1999-\d\d-\d\d)_[\d:]+\s+(1999-\d\d-\d\d)_[\d:]+.*\n(.*)/  ) {
+	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):*(\d*)\s.*(1999-\d\d-\d\d)_[\d:]+\s+(1999-\d\d-\d\d)_[\d:]+.*\n(.*)/  ) {
 	    my $eid = $1;
 	    my $contigid = $2;
 	    my $start = $3;
@@ -204,7 +159,19 @@ sub _parse_exon{
 	    
 
 	    # skip if not from $clone (if defined)
-	    next if($disk_id && $contigid!~/^$disk_id/);
+	    my $cloneid=$contigid;
+	    $cloneid=~s/\.\d+$//;
+	    my $cloneid2;
+	    if($raclones){
+		# already know correct name
+		if($cloneid2=$disk_id{$cloneid}){
+		}else{
+		    next;
+		}
+	    }else{
+		# need to do lookup
+		($cloneid2)=$obj->get_id_acc($cloneid);
+	    }
 
 	    #print STDOUT "Exon $eid - $pep\n";
 	    # ok. Get out the Dna sequence object
@@ -215,10 +182,8 @@ sub _parse_exon{
 	    $exon->id($eid);
 
 	    # at this point, $contigid could be the disk_id where acc_id is required
-	    my $cloneid=$contigid;
-	    $cloneid=~s/\.\d+$//;
+	    # (diskname->$ensembl name translation required)
 	    if($obj->{'_byacc'}){
-		my($cloneid2)=$obj->get_id_acc($cloneid);
 		$contigid=~s/^$cloneid/$cloneid2/;
 		$cloneid=$cloneid2;
 	    }
@@ -289,6 +254,62 @@ sub _convert_phase {
 }
 
 
+=head2 _parse_contig_order
+
+ Title   : _parse_contig_order
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub _parse_contig_order{
+    my ($self,$raclones,$obj) = @_;
+
+    my %disk_id;
+    # do clone->disk_id lookups
+    foreach my $clone (@$raclones){
+	my($id,$disk_id)=$obj->get_id_acc($clone);
+	$disk_id{$disk_id}=$id;
+    }
+
+    my $fh = new FileHandle;
+    my $cof = $self->contig_order_file;
+    $fh->open($cof) || 
+	$self->throw("Could not open exon file [$cof]");
+    while(<$fh>){
+	if(/^(\S+):\s+(.*)/){
+	    my $cloneid=$1;
+	    my $string=$2;
+	    my $cloneid2;
+	    if($raclones){
+		# already know correct name
+		if($cloneid2=$disk_id{$cloneid}){
+		}else{
+		    next;
+		}
+	    }else{
+		# need to do lookup
+		($cloneid2)=$obj->get_id_acc($cloneid);
+	    }
+	    # at this point, $contigid could be the disk_id where acc_id is required
+	    # (diskname->$ensembl name translation required)
+	    if($obj->{'_byacc'}){
+		$string=~s/$cloneid/$cloneid2/g;
+		$cloneid=$cloneid2;
+	    }
+	    $obj->{'_contig_order_hash'}->{$cloneid} = $string;
+	} else {
+	    chomp;
+	    $self->throw("Yikes. Line not parsed! [$_]");
+	}
+    }
+    $fh->close();
+}
+
+
 =head2 _parse_trans
 
  Title   : _parse_trans
@@ -314,6 +335,8 @@ sub _parse_trans {
 	$self->{'_trans_hash'}->{$trans} = [];
 	my @exons = split(/:/,$elist);
 	foreach my $t ( @exons ) {
+	    # skip pairtype information in transcript file
+	    next if($t=~/^\d+$/);
 	    push(@{$self->{'_trans_hash'}->{$trans}},$t);
 	}
     }
@@ -385,20 +408,23 @@ sub list_exons{
 =cut
 
 sub map_all{
-    my($self,$obj,$clone,$disk_id) = @_;
-    $self->_parse_exon($clone,$disk_id,$obj);
+    my($self,$obj,$raclones) = @_;
+    $self->_parse_exon($raclones,$obj);
     $self->_parse_trans;
     $self->_parse_gene;
+    $self->_parse_contig_order($raclones,$obj);
 
     # contig->exons
     my %contig2exon;
+    my $n;
     foreach my $exon (values %{$self->{'_exon_hash'}}){
 	my $contig_id=$exon->contig_id;
 	# mapping of contig->exon(s)
 	push(@{$contig2exon{$contig_id}},$exon);
+	$n++;
     }
     # DEBUG
-    print STDERR scalar(keys %contig2exon)." contigs have exons\n";
+    print STDERR scalar(keys %contig2exon)." contigs have $n exons\n";
     $obj->{'_contig2exon'}=\%contig2exon;
 
     # exons->transcripts
@@ -427,7 +453,7 @@ sub map_all{
 	}
     }
     # report missing exons, provided $clone not specified for speed.
-    if($n_missed_exons && !$clone){
+    if($n_missed_exons && !$raclones){
 	$self->warn("$n_missed_exons exons missing: $missed_exons");
     }
     # DEBUG
@@ -512,6 +538,26 @@ sub trans_file{
 	$self->{'trans_file'} = $value;
     }
     return $self->{'trans_file'};
+}
+
+
+=head2 contig_order_file
+
+ Title   : contig_order_file
+ Usage   : $self->contig_order_file($newval)
+ Function: 
+ Example : 
+ Returns : value of contig_order_file
+ Args    : newvalue (optional)
+
+=cut
+
+sub contig_order_file{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'contig_order_file'} = $value;
+    }
+    return $self->{'contig_order_file'};
 }
 
 

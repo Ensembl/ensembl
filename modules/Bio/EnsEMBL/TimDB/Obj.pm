@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Bio::EnsEMBL::TimDB::Obj
 #
@@ -12,7 +11,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::TimDB::Obj - Object representing Tim's directory structure
+Bio::EnsEMBL::TimDB::Obj - Object representing Tims directory structure
 
 =head1 SYNOPSIS
 
@@ -45,6 +44,10 @@ use Bio::Root::Object;
 use Bio::EnsEMBL::DB::ObjI;
 use Bio::EnsEMBL::TimDB::Clone;
 use Bio::EnsEMBL::Analysis::LegacyParser;
+use Bio::EnsEMBL::Analysis::ensConf qw(UNFIN_ROOT
+				       UNFIN_DATA_ROOT
+				       CONFIRMED_EXON_FASTA
+				       );
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ObjI);
 # new() is inherited from Bio::Root::Object
@@ -52,12 +55,12 @@ use Bio::EnsEMBL::Analysis::LegacyParser;
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,$noacc,$clone,@args) = @_;
+  my($self,$raclones,$noacc,$test,@args) = @_;
 
   # DEBUG
   # second parameter is for debugging to avoid reading entire list of objects
-  if($clone){
-      $self->warn("DEBUG: only exon/transcript/gene objects associated with $clone are read");
+  if($raclones){
+      $self->warn("DEBUG: only exon/transcript/gene objects associated with clone list are read");
   }
 
   my $make = $self->SUPER::_initialize;
@@ -71,20 +74,22 @@ sub _initialize {
   # set stuff in self from @args
   # (nothing)
 
-  # unfinished analysis is in humpub, so use humconf to get location
-  #use humConf qw(HUMPUB_ROOT);
-  # NO - should hard code it here or provide it as a paramter. Not a humConf thing...
-
-  my $HUMPUB_ROOT = '/nfs/disk100/humpub/';
-  
   # in order to access the flat file db, check that we can see the master dbm file
   # that will tell us where the relevant directory is
   # NOTE FIXME it is not very clever to have this open DBM file hanging, even if 
   # it is only for reading (cannot open readonly) since to certainly of locking
   # or dataconsistency
-  my $unfinished_root="$HUMPUB_ROOT/th/unfinished_ana";
+  my $unfinished_root="$UNFIN_ROOT";
+  my $exon_file;
+  if($test){
+      $unfinished_root.="/test";
+      $self->{'_test'}=1;
+      $exon_file="$unfinished_root/test_confirmed_exon";
+  }else{
+      $exon_file="$CONFIRMED_EXON_FASTA";
+  }
   $self->{'_unfinished_root'}=$unfinished_root;
-  my $clone_dbm_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_clone.dbm";
+  my $clone_dbm_file="$unfinished_root/unfinished_clone.dbm";
   my %unfin_clone;
   unless(dbmopen(%unfin_clone,$clone_dbm_file,0666)){
       $self->throw("Error opening clone dbm file");
@@ -93,7 +98,7 @@ sub _initialize {
 
   # if going to do things !$noacc then need to open this dbm file too
   if(!$noacc){
-      my $accession_dbm_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_accession.dbm";
+      my $accession_dbm_file="$unfinished_root/unfinished_accession.dbm";
       my %unfin_accession;
       unless(dbmopen(%unfin_accession,$accession_dbm_file,0666)){
 	  $self->throw("Error opening accession dbm file");
@@ -102,9 +107,9 @@ sub _initialize {
   }
 
   # define a few other important files
-  my $exon_file="$HUMPUB_ROOT/blast/confirmed_exon";
-  my $transcript_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_ana.transcript.lis";
-  my $gene_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_ana.gene.lis";
+  my $transcript_file="$unfinished_root/unfinished_ana.transcript.lis";
+  my $gene_file="$unfinished_root/unfinished_ana.gene.lis";
+  my $contig_order_file="$unfinished_root/unfinished_ana.contigorder.lis";
   if(!-e $exon_file){
       $self->throw("Could not access exon file");
   }
@@ -121,14 +126,11 @@ sub _initialize {
   # (better to do it here once than each time we need the information!)
   # FIXME - should this be moved to the pipeline so that this information
   # is stored in DBM files - currently in legacy parser
-  my $p=Bio::EnsEMBL::Analysis::LegacyParser->new($gene_file,$transcript_file,$exon_file);
+  my $p=Bio::EnsEMBL::Analysis::LegacyParser->new($gene_file,$transcript_file,
+						  $exon_file,$contig_order_file);
 
   # doing conversion acc->id->acc or id->acc, need it here too
-  my($disk_id,$id);
-  if($clone){
-      ($id,$disk_id)=$self->get_id_acc($clone);
-  }
-  $p->map_all($self,$id,$disk_id);
+  $p->map_all($self,$raclones);
 
   return $make; # success - we hope!
 }
@@ -214,6 +216,7 @@ sub get_id_acc{
     if(!$fok){
 	$self->throw("$id is not a valid sequence in this database");
     }
+    # return $id = name in ensembl (determined by _byacc); $id2 = name on disk
     return $id,$id2,$cgp,$sv,$emblid,$htgsp;
 }
     

@@ -55,7 +55,7 @@ use Bio::EnsEMBL::AnnSeq;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-$CONTIG_SPACING = 400;
+$CONTIG_SPACING = 800;
 
 @ISA = qw();
 # new() is inherited from Bio::Root::Object
@@ -225,7 +225,8 @@ sub seq{
    foreach my $contig ( $self->get_all_Contigs ) {
        my $nlen = $contig->offset - $current_end;
        if( $nlen < 0 ) {
-	   $self->throw("I am sorry - we have a clone whoses offsets of contigs do not make sense! Contig" . $contig->id() . "at $current_end");
+	   $self->throw("ERROR: offsets of contigs do not make sense! Contig " . 
+			$contig->id() . " at $current_end");
        }
 
        $seqstr .= 'N' x $nlen;
