@@ -157,6 +157,7 @@ VALUES                  ( ? , ? , ? , ? , ? )";
 our $SQL_HSP_UPDATE = "
 UPDATE  blast_hsp%s
 SET     object    = ?,
+        ticket    = ?,
         chr_name  = ?,
         chr_start = ?,
         chr_end   = ?
@@ -463,19 +464,19 @@ sub store_hsp{
     $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
     $sth->finish;
   }
-  if( $rv > 0 ){ # Update
-    my $sth = $dbh->prepare( sprintf $SQL_HSP_UPDATE, $use_date );
-    my @bound = ( $frozen, $ticket, $chr_name,  $chr_start, $chr_end, $id );
-    $sth->execute( @bound ) || $self->throw( $sth->errstr );
-    $sth->finish;
-  }
-  else{ # Insert
+  if( $rv < 1 ){ # Insert
     my $use_date = $self->use_date('HSP') || '';
     my $sth = $dbh->prepare( sprintf $SQL_HSP_STORE, $use_date );
     my @bound = ( $frozen, $ticket, $chr_name,  $chr_start, $chr_end );
     $sth->execute( @bound ) || $self->throw( $sth->errstr );
     my $id = $dbh->{mysql_insertid};
     $hsp->token( join( '!!', $id, $use_date ) );
+    $sth->finish;
+  }
+  else{ # Update
+    my $sth = $dbh->prepare( sprintf $SQL_HSP_UPDATE, $use_date );
+    my @bound = ( $frozen, $ticket, $chr_name,  $chr_start, $chr_end, $id );
+    $sth->execute( @bound ) || $self->throw( $sth->errstr );
     $sth->finish;
   }
   return $hsp->token();
