@@ -411,7 +411,35 @@ sub get_Protein_Adaptor {
     return $pa;
 }
 
+=head2 get_all_chr_ids
 
+ Title   : get_all_chr_ids
+ Usage   : @cloneid = $obj->get_all_chr_ids
+ Function: returns all the valid FPC contigs from given golden path
+ Example :
+ Returns : 
+ Args    : static golden path type (typically, 'UCSC')
+
+
+=cut
+
+sub get_all_chr_ids {
+   my ($self, $type) = @_;
+
+   $self->throw("no static_gold_path given") unless defined $type;
+   my @out;
+
+   my $q= "SELECT DISTINCT chr_name 
+           FROM static_golden_path sgp
+           WHERE type = '$type'";
+   my $sth = $self->prepare($q) || $self->throw("can't prepare: $q");
+   my $res = $sth->execute || $self->throw("can't prepare: $q");
+
+   while( my ($id) = $sth->fetchrow_array) {
+       push(@out, $id);
+   }
+   return @out;
+}
 
 =head2 get_all_fpcctg_ids
 
