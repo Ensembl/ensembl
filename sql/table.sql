@@ -109,7 +109,7 @@ CREATE TABLE map_density (
 CREATE TABLE contig (
   contig_id         int(10) unsigned NOT NULL auto_increment,
   name              varchar(40) NOT NULL,
-  clone_id          int(10) NOT NULL,
+  clone_id          int(10) unsigned NOT NULL,
   length            int(10) unsigned NOT NULL,   # foreign key clone:internal_id
   embl_offset       int(10) unsigned,
   dna_id            int(10) NOT NULL,            # foreign key dna:id

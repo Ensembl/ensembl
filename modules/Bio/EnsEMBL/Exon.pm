@@ -1079,7 +1079,7 @@ sub _get_stable_entry_info {
 
 
 
-=Head1 load_genomic_mapper
+=head1 load_genomic_mapper
 
   Arg  1   : Bio::EnsEMBL::Mapper $mapper
              a mapper that will know how to go from cdna to genomic,
