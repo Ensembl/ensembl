@@ -1900,5 +1900,64 @@ sub temporary_id{
 }
 
 
+=head2 get_all_DASFactories
+
+  Arg [1]   : none
+  Function  : Retrieves a listref of registered DAS objects
+  Returntype: [ DAS_objects ]
+  Exceptions:
+  Caller    :
+  Example   : $dasref = $prot->get_all_DASFactories
+
+=cut
+
+sub get_all_DASFactories {
+   my $self = shift;
+   return [ $self->adaptor()->db()->_each_DASFeatureFactory ];
+}
+
+=head2 get_all_DAS_Features
+
+  Arg [1]    : none
+  Example    : $features = $prot->get_all_DAS_Features;
+  Description: Retreives a hash reference to a hash of DAS feature
+               sets, keyed by the DNS, NOTE the values of this hash
+               are an anonymous array containing:
+                (1) a pointer to an array of features;
+                (2) a pointer to the DAS stylesheet
+  Returntype : hashref of Bio::SeqFeatures
+  Exceptions : ?
+  Caller     : webcode
+
+
+=cut
+
+sub get_all_DAS_Features{
+  my ($self,@args) = @_;
+  $self->{_das_features} ||= {}; # Cache
+  my %das_features;
+
+  my $db = $self->adaptor->db;
+  my $GeneAdaptor = $db->get_GeneAdaptor;
+  my $Gene = $GeneAdaptor->fetch_by_transcript_stable_id($self->stable_id);	
+  my $slice = $Gene->feature_Slice;
+
+  foreach my $dasfact( @{$self->get_all_DASFactories} ){
+    my $dsn = $dasfact->adaptor->dsn;
+    my $type = $dasfact->adaptor->type;
+    my $key = defined($dasfact->adaptor->url) ? $dasfact->adaptor->url .'/'. $dsn : $dasfact->adaptor->protocol .'://'.$dasfact->adaptor->domain.'/'. $dsn;
+    if( $self->{_das_features}->{$key} ){ # Use cached
+		  $das_features{$key} = $self->{_das_features}->{$key};
+		  next;
+    } else{ # Get fresh data
+		  my @featref = ($type eq 'ensembl_location') ?  ($key, ($dasfact->fetch_all_by_Slice( $slice ))[0]) : $dasfact->fetch_all_by_DBLink_Container( $self );
+		  $self->{_das_features}->{$key} = [@featref];
+		  $das_features{$key} = [@featref];
+	 }
+  }
+  return \%das_features;
+}
+
+
 
 1;

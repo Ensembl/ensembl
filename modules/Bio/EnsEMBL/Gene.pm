@@ -838,5 +838,43 @@ sub get_all_DASFeatures_by_slice{
   }
   return \%das_features;
 }
+=head2 get_all_DAS_Features
+
+  Arg [1]    : none
+  Example    : $features = $prot->get_all_DAS_Features;
+  Description: Retreives a hash reference to a hash of DAS feature
+               sets, keyed by the DNS, NOTE the values of this hash
+               are an anonymous array containing:
+                (1) a pointer to an array of features;
+                (2) a pointer to the DAS stylesheet
+  Returntype : hashref of Bio::SeqFeatures
+  Exceptions : ?
+  Caller     : webcode
+
+
+=cut
+
+sub get_all_DAS_Features{
+  my ($self,@args) = @_;
+  $self->{_das_features} ||= {}; # Cache
+  my %das_features;
+
+  my $slice = $self->feature_Slice;
+
+  foreach my $dasfact( @{$self->get_all_DASFactories} ){
+    my $dsn = $dasfact->adaptor->dsn;
+    my $type = $dasfact->adaptor->type;
+    my $key = defined($dasfact->adaptor->url) ? $dasfact->adaptor->url .'/'. $dsn : $dasfact->adaptor->protocol .'://'.$dasfact->adaptor->domain.'/'. $dsn;
+    if( $self->{_das_features}->{$key} ){ # Use cached
+		  $das_features{$key} = $self->{_das_features}->{$key};
+		  next;
+    } else{ # Get fresh data
+		  my @featref = ($type eq 'ensembl_location') ?  ($key, ($dasfact->fetch_all_by_Slice( $slice ))[0]) : $dasfact->fetch_all_by_DBLink_Container( $self );
+		  $self->{_das_features}->{$key} = [@featref];
+		  $das_features{$key} = [@featref];
+	 }
+  }
+  return \%das_features;
+}
 
 1;
