@@ -573,6 +573,24 @@ sub get_all_ExternalFeatures {
    return $self->_get_all_SeqFeatures_type('external');
 }
 
+=head2 get_all_PredictionFeatures
+
+ Title   : get_all_PredictionFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_PredictionFeatures {
+   my ($self) = @_;
+
+   return $self->_get_all_SeqFeatures_type('prediction');
+}
+
 
 
 =head2 get_all_Genes
@@ -1310,8 +1328,12 @@ sub _get_all_SeqFeatures_type {
 
    my $count = 0;
    foreach $sf ( @$sf ) {
-       $self->_convert_seqfeature_to_vc_coords($sf);
-       
+       $sf = $self->_convert_seqfeature_to_vc_coords($sf);
+       if( !defined $sf ) {
+	   next;
+       }
+
+	
        if($sf->start < 0 ){
             #print STDERR "Discarding (L) vc feature: ",$sf->seqname," at start: ",$sf->start," end: ",$sf->end,"\n";
             $count++;
@@ -1352,8 +1374,31 @@ sub _convert_seqfeature_to_vc_coords {
    }
 
    if( !exists $self->{'contig'}->{$cid} ) {
-       return 0;
+       return undef;
    }
+
+   # if this is something with subfeatures, then this is much more complex
+   my @sub = $sf->sub_SeqFeatures();
+
+   if( $#sub >=  0 ) {
+       # chain to constructor of the object. Not pretty this.
+       my $new = $sf->new();
+       my $seen = 0;
+       foreach my $sub ( @sub ) {
+	   $sub = $self->_convert_seqfeature_to_vc_coords($sub);
+	   if( !defined $sub ) {
+	       next;
+	   }
+	   $seen =1;
+	   $new->add_SeqFeature($sub);
+       }
+       if( $seen == 1 ) {
+	   return $new;
+       } else {
+	   return undef;
+       }
+   }
+
 
 
    # might be clipped left/right
