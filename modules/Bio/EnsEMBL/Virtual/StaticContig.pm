@@ -502,7 +502,7 @@ sub get_all_RepeatFeatures {
 
 =cut
 
-sub aget_all_PredictionFeatures {
+sub get_all_PredictionFeatures {
    my ($self) = @_;
 
    my @array;
