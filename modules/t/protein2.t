@@ -20,7 +20,7 @@
 #-----------------------------------------------------------------------
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..22\n"; 
+BEGIN { $| = 1; print "1..29\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -37,7 +37,7 @@ print "ok 1\n";    # 1st test passes.
 my $ens_test = EnsTestDB->new();
     
 # Load some data into the db
-$ens_test->do_sql_file("t/protein.dump");
+$ens_test->do_sql_file("t/protein2.dump");
     
 # Get an EnsEMBL db object for the test db
 my $db = $ens_test->get_DBSQL_Obj;
@@ -49,8 +49,6 @@ eval {
     $protein = $protein_adaptor->fetch_Protein_by_dbid('ENSP00000216167');
 };
 
-print STDERR $@,"\n";
-
 if ($@) {
     print "not ok 3\n";
 }
@@ -61,7 +59,9 @@ else {
 
 my @features = $protein->get_all_DomainFeatures;
 
-if (scalar @features == 3) {
+my @f;
+
+if (scalar @features == 2) {
     print "ok 4\n";
 }
 else {
@@ -143,7 +143,7 @@ else {
 
 my @seq_features = $protein->top_SeqFeatures();
 
-if (scalar(@seq_features) == 9) {
+if (scalar(@seq_features) == 4) {
     print "ok 14\n";
 }
 else {
@@ -215,6 +215,69 @@ if ($seq_features[0]->idesc eq "petit") {
 else {
     print "not ok 22\n";
 }
+
+my @dblinks = $protein->get_all_DBLinks();
+
+my @synonyms = $dblinks[0]->get_synonyms();
+
+    
+if ($dblinks[0]->release == 23) {
+    print "ok 23\n";
+}
+else {
+    print "not ok 23\n";
+}
+
+if ($synonyms[0] eq "EMBL_SYNONYME1") {
+    print "ok 24\n";
+}
+else {
+    print "not ok 24\n";
+}
+
+if ($dblinks[1]->description eq "tremblannot") {
+     print "ok 25\n";
+}
+else {
+    print "not ok 25\n";
+}
+
+if (scalar @dblinks == 2) {
+     print "ok 26\n";
+}
+else {
+    print "not ok 26\n";
+}
+
+my @domains = $protein->get_all_DomainFeatures();
+
+
+
+if (scalar @domains == 2) {
+     print "ok 27\n";
+}
+else {
+    print "not ok 27\n";
+}
+
+my @transmembrane = $protein->get_all_TransmembraneFeatures();
+
+if (scalar @transmembrane == 1) {
+     print "ok 28\n";
+}
+else {
+    print "not ok 28\n";
+}
+
+my @sigp = $protein->get_all_SigpFeatures();
+
+if (scalar @sigp == 0) {
+     print "ok 29\n";
+}
+else {
+    print "not ok 29\n";
+}
+
 
 
 

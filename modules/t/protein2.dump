@@ -16,7 +16,7 @@ INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, 
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (5,NULL,NULL,'RepeatMasker','1','RepeatMasker','repeat');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (6,'Pfam',3,'hmm','1','Fasta','domain');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (7,'PRINTS',3,'hmm','1','Fasta','domain');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,'transm',3,'hmm','1','transm','transm');
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,'transmembrane',3,'hmm','1','transmembrane','transmembrane');
 
 #
 # Dumping data for table 'analysisprocess'
