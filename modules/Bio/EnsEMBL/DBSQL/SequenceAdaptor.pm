@@ -151,10 +151,11 @@ sub fetch_by_RawContig_start_end_strand {
 	$seq=$self->_dna_uncompress($length,$n_line,$start,$end,\$seq);
       }
       $seq =~ s/\s//g;
+      $seq = uc($seq);
       if( $strand == -1 ) {
 	return $self->_reverse_comp( $seq );
       } else {
-	return $seq;
+	return uc($seq);
       }
     } else {
 
