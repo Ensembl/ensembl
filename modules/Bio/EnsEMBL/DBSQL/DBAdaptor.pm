@@ -262,9 +262,28 @@ sub get_db_adaptor {
 sub get_SNPAdaptor {
   my ($self)  = @_;
  
+  my $primary_adaptor;
+  # try new method
+  my $new = 0;
+  $primary_adaptor = $reg->get_adaptor($self->species(),'lite','SNP');
+  if(defined($primary_adaptor)){
+    $new = 1;
+  }
+  else{
+    $primary_adaptor = $reg->get_adaptor($self->species(),'SNP','SNP');
+    if(defined($primary_adaptor)){
+      $new = 1;
+      $primary_adaptor->ensembl_db( $self );
+    }
+  }
+  if($new){ # found a primary adaptor
+    my $ret = $self->get_adaptor("ProxySNP");
+    $ret->set_primary($primary_adaptor);
+    return $ret;
+ }
+
   my $lite = $self->get_db_adaptor('lite'); #### use register directly here
 
-  my $primary_adaptor;
 
   if($lite) {
     $primary_adaptor = $lite->get_SNPAdaptor();
