@@ -151,9 +151,8 @@ sub hasOverlap {
     
     foreach my $exon2 ($self->_getPredictorExons()) {  
               
-         if (($exon2->end   > $exon1->start && $exon2->start < $exon1->end) ||
-             ($exon2->start < $exon1->end   && $exon2->end   > $exon1->start)) {                
-                 return 1;
+         if ($exon2->end   > $exon1->start && $exon2->start < $exon1->end) {                
+            return 1;
         }
     }
     
@@ -210,8 +209,7 @@ sub getOverlaps {
     my $exon1 = $self->_getStandardExon();
     
     foreach my $exon2 ($self->_getPredictorExons()) { 
-         if (($exon2->end   > $exon1->start && $exon2->start < $exon1->end) ||
-             ($exon2->start < $exon1->end   && $exon2->end   > $exon1->start)) {   
+         if ($exon2->end   > $exon1->start && $exon2->start < $exon1->end) {   
                  push @overlaps, $exon2;
         }
     }
@@ -249,8 +247,7 @@ sub getBaseOverlaps {
     
     # Find all the predictor exons with overlaps 
     foreach my $exon2 ($self->_getPredictorExons()) { 
-        if (($exon2->end   > $exon1->start && $exon2->start < $exon1->end) ||
-            ($exon2->start < $exon1->end   && $exon2->end   > $exon1->start)) {
+        if ($exon2->end   > $exon1->start && $exon2->start < $exon1->end) {
                 push @overlaps, $exon2;        
         }
     }
