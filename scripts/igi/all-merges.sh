@@ -14,7 +14,8 @@ ens=ensembl/all.gtf
 affy=affymetrix/all.gtf
 fgenesh=fgenesh/chr_gff/all.gtf 
 outdir=merges
-
+[ -d $outdir ]  && echo "Found dir $outdir, not merging" >&2  && exit 1
+mkdir $outdir
 prefix=igi3
 
 gtf_merge.pl -p $prefix $ens $affy > $outdir/ens_affy.merge  2> ens_affy.log
