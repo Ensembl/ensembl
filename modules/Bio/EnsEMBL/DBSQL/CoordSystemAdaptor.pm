@@ -453,7 +453,7 @@ sub fetch_all_by_feature_table {
 
   throw('Name argument is required') unless $table;
 
-  return $self->{'_feature_cache'}->{$table};
+  return $self->{'_feature_cache'}->{$table} || [];
 }
 
 
