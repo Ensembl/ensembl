@@ -569,52 +569,52 @@ sub prepare{
   my ($self, @args) = @_;
 
  deprecate("prepare Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->db->prepare(@args);
+  $self->dbc->prepare(@args);
 }
 
 sub dbname{
   my ($self, @args) = @_;
 
  deprecate("dbname Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->db->dbname(@args);
+  $self->dbc->dbname(@args);
 }
 
 sub disconnect_when_inactive{
   my ($self, @args) = @_;
 
  deprecate("disconnect_when_inactive Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->db->disconnect_when_inactive(@args);
+  $self->dbc->disconnect_when_inactive(@args);
 }
 
 sub host{
   my ($self, @args) = @_;
 
  deprecate("host Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->db->host(@args);
+  $self->dbc->host(@args);
 }
 sub username{
   my ($self, @args) = @_;
 
  deprecate("username Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->db->username(@args);
+  $self->dbc->username(@args);
 }
 sub password{
   my ($self, @args) = @_;
 
  deprecate("password Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->db->password(@args);
+  $self->dbc->password(@args);
 }
 sub driver{
   my ($self, @args) = @_;
 
  deprecate("driver Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->db->driver(@args);
+  $self->dbc->driver(@args);
 }
 sub port{
   my ($self, @args) = @_;
 
  deprecate("port Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->db->port(@args);
+  $self->dbc->port(@args);
 }
 
 sub db_handle{
@@ -622,7 +622,7 @@ sub db_handle{
 
 
  deprecate("db_handle Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->db->db_handle(@args);
+  $self->dbc->db_handle(@args);
 }
 
 =head2 set_adaptor
