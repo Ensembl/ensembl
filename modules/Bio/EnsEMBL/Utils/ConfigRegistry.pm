@@ -188,48 +188,9 @@ sub load_core{
   my ($dba) = @_;
 
 
-  my %pairs =  ( 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
-		 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
-		 'Attribute'            => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
-		 'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
-		 'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
-		 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
-		 'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
-		 'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
-		 'CompressedSequence' => 'Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor',
-		 'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
-		 'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
-		 'DensityFeature'       => 'Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor',
-		 'DensityType'          => 'Bio::EnsEMBL::DBSQL::DensityTypeAdaptor',
-		 'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
-		 'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
-		 'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
-		 'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
-		 'MarkerFeature'        =>
-		 'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
-		 'MetaCoordContainer'   => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
-		 'MiscSet'              => 'Bio::EnsEMBL::DBSQL::MiscSetAdaptor',
-		 'MiscFeature'          => 'Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor',
-		 'PredictionTranscript' => 'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
-		 'PredictionExon'       => 'Bio::EnsEMBL::DBSQL::PredictionExonAdaptor',
-		 'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
-		 'ProteinAlignFeature'  =>
-		 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
-		 'SNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
-		 'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
-		 'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
-		 'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
-		 'RepeatFeature'        => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
-		 'Sequence'             => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
-		 'SimpleFeature'        => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
-		 'Slice'                => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
-		 'SupportingFeature'    =>
-		 'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
-		 'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
-		 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor');
+  my %pairs = $dba->get_available_adaptors();
 
   foreach my $key (keys %pairs){
-
     Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
 
@@ -314,46 +275,7 @@ sub add_blast_link{
 sub load_estgene{
   my ($dba) = @_;
 
-  my %pairs =  ( 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
-		 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
-		 'Attribute'            => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
-		 'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
-		 'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
-		 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
-		 'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
-		 'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
-		 'CompressedSequence' => 'Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor',
-		 'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
-		 'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
-		 'DensityFeature'       => 'Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor',
-		 'DensityType'          => 'Bio::EnsEMBL::DBSQL::DensityTypeAdaptor',
-		 'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
-		 'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
-		 'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
-		 'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
-		 'MarkerFeature'        =>
-		 'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
-		 'MetaCoordContainer'   => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
-		 'MiscSet'              => 'Bio::EnsEMBL::DBSQL::MiscSetAdaptor',
-		 'MiscFeature'          => 'Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor',
-		 'PredictionTranscript' =>
-		 'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
-		 'PredictionExon'       => 'Bio::EnsEMBL::DBSQL::PredictionExonAdaptor',
-		 'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
-		 'ProteinAlignFeature'  =>
-		 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
-		 'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
-		 'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
-		 'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
-		 'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
-		 'RepeatFeature'        => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
-		 'Sequence'             => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
-		 'SimpleFeature'        => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
-		 'Slice'                => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
-		 'SupportingFeature'    =>
-		 'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
-		 'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
-		 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor' );
+  my %pairs = $dba->get_available_adaptors();  #calls SUPER class so same as core adaptors
 
 
   foreach my $key (keys %pairs){
@@ -376,47 +298,7 @@ sub load_estgene{
 sub load_est{
   my ($dba) = @_;
 
-  my %pairs =  ( 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
-		 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
-		 'Attribute'            => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
-		 'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
-		 'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
-		 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
-		 'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
-		 'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
-		 'CompressedSequence' => 'Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor',
-		 'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
-		 'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
-		 'DensityFeature'       => 'Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor',
-		 'DensityType'          => 'Bio::EnsEMBL::DBSQL::DensityTypeAdaptor',
-		 'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
-		 'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
-		 'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
-		 'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
-		 'MarkerFeature'        =>
-		 'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
-		 'MetaCoordContainer'   => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
-		 'MiscSet'              => 'Bio::EnsEMBL::DBSQL::MiscSetAdaptor',
-		 'MiscFeature'          => 'Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor',
-		 'PredictionTranscript' =>
-		 'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
-		 'PredictionExon'       => 'Bio::EnsEMBL::DBSQL::PredictionExonAdaptor',
-		 'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
-		 'ProteinAlignFeature'  =>
-		 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
-		 'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
-		 'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
-		 'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
-		 'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
-		 'RepeatFeature'        => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
-		 'Sequence'             => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
-		 'SimpleFeature'        => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
-		 'Slice'                => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
-		 'SupportingFeature'    =>
-		 'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
-		 'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
-		 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor' );
-
+  my %pairs = $dba->get_available_adaptors();  #calls SUPER class so same as core adaptors
 
   foreach my $key (keys %pairs){
     Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
@@ -436,46 +318,7 @@ sub load_est{
 sub load_vega{
   my ($dba) = @_;
 
-  my %pairs =  ( 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
-		 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
-		 'Attribute'            => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
-		 'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
-		 'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
-		 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
-		 'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
-		 'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
-		 'CompressedSequence' => 'Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor',
-		 'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
-		 'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
-		 'DensityFeature'       => 'Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor',
-		 'DensityType'          => 'Bio::EnsEMBL::DBSQL::DensityTypeAdaptor',
-		 'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
-		 'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
-		 'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
-		 'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
-		 'MarkerFeature'        =>
-		 'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
-		 'MetaCoordContainer'   => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
-		 'MiscSet'              => 'Bio::EnsEMBL::DBSQL::MiscSetAdaptor',
-		 'MiscFeature'          => 'Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor',
-		 'PredictionTranscript' =>
-		 'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
-		 'PredictionExon'       => 'Bio::EnsEMBL::DBSQL::PredictionExonAdaptor',
-		 'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
-		 'ProteinAlignFeature'  =>
-		 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
-		 'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
-		 'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
-		 'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
-		 'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
-		 'RepeatFeature'        => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
-		 'Sequence'             => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
-		 'SimpleFeature'        => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
-		 'Slice'                => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
-		 'SupportingFeature'    =>
-		 'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
-		 'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
-		 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor' );
+  my %pairs = $dba->get_available_adaptors();  #calls SUPER class so same as core adaptors
 
   foreach my $key (keys %pairs){
     Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
@@ -490,23 +333,7 @@ sub load_vega{
 sub load_compara{
   my ($dba) = @_;
 
-  my %pairs =  ( "MetaContainer" => "Bio::EnsEMBL::DBSQL::MetaContainer",
-	      'SyntenyRegion'   => 'Bio::EnsEMBL::Compara::DBSQL::SyntenyRegionAdaptor',
-	      "DnaAlignFeature" => "Bio::EnsEMBL::Compara::DBSQL::DnaAlignFeatureAdaptor",
-	      "Synteny"         => "Bio::EnsEMBL::Compara::DBSQL::SyntenyAdaptor",
-	      "GenomeDB"        => "Bio::EnsEMBL::Compara::DBSQL::GenomeDBAdaptor",
-	      "DnaFrag" => "Bio::EnsEMBL::Compara::DBSQL::DnaFragAdaptor",
-	      "GenomicAlign" => "Bio::EnsEMBL::Compara::DBSQL::GenomicAlignAdaptor",
-	      "Homology" => "Bio::EnsEMBL::Compara::DBSQL::HomologyAdaptor",
-	      "Family" => "Bio::EnsEMBL::Compara::DBSQL::FamilyAdaptor",
-	      "Domain" => "Bio::EnsEMBL::Compara::DBSQL::DomainAdaptor",
-	      "Subset" => "Bio::EnsEMBL::Compara::DBSQL::SubsetAdaptor",
-	      "Member" => "Bio::EnsEMBL::Compara::DBSQL::MemberAdaptor",
-	      "Attribute" => "Bio::EnsEMBL::Compara::DBSQL::AttributeAdaptor",
-	      "Taxon" => "Bio::EnsEMBL::Compara::DBSQL::TaxonAdaptor",
-	      "PeptideAlignFeature" => "Bio::EnsEMBL::Compara::DBSQL::PeptideAlignFeatureAdaptor",
-	      "Analysis" => "Bio::EnsEMBL::DBSQL::AnalysisAdaptor"
-        );
+  my %pairs = $dba->get_available_adaptors();
 
   foreach my $key (keys %pairs){
 
@@ -518,15 +345,7 @@ sub load_compara{
 sub load_hive{
   my ($dba) = @_;
 
-  my %pairs =  (
-        "MetaContainer"    => 'Bio::EnsEMBL::DBSQL::MetaContainer',
-	      "Analysis"         => "Bio::EnsEMBL::DBSQL::AnalysisAdaptor",
-	      "Queen"            => "Bio::EnsEMBL::Hive::Queen",
-	      "AnalysisJob"      => "Bio::EnsEMBL::Hive::DBSQL::AnalysisJobAdaptor",
-	      "AnalysisStats"    => "Bio::EnsEMBL::Hive::DBSQL::AnalysisStatsAdaptor",
-	      "AnalysisCtrlRule" => "Bio::EnsEMBL::Hive::DBSQL::AnalysisCtrlRuleAdaptor",
-	      "DataflowRule"     => "Bio::EnsEMBL::Hive::DBSQL::DataflowRuleAdaptor",
-	      "SimpleRule"       => "Bio::EnsEMBL::Hive::DBSQL::SimpleRuleAdaptor");
+  my %pairs = $dba->get_available_adaptors();
 
   foreach my $key (keys %pairs){
 
@@ -560,48 +379,13 @@ sub load_haplotype{
 sub load_pipeline{
   my ($dba) = @_;
 
-  my %pairs =  ( 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
-		 'Attribute'            => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
-		 'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
-		 'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
-		 'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
-		 'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
-		 'CompressedSequence' => 'Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor',
-		 'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
-		 'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
-		 'DensityFeature'       => 'Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor',
-		 'DensityType'          => 'Bio::EnsEMBL::DBSQL::DensityTypeAdaptor',
-		 'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
-		 'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
-		 'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
-		 'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
-		 'MarkerFeature'        =>
-		 'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
-		 'MetaCoordContainer'   => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
-		 'MiscSet'              => 'Bio::EnsEMBL::DBSQL::MiscSetAdaptor',
-		 'MiscFeature'          => 'Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor',
-		 'PredictionTranscript' => 'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
-		 'PredictionExon'       => 'Bio::EnsEMBL::DBSQL::PredictionExonAdaptor',
-		 'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
-		 'ProteinAlignFeature'  =>
-		 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
-		 'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
-		 'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
-		 'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
-		 'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
-		 'RepeatFeature'        => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
-		 'Sequence'             => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
-		 'SimpleFeature'        => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
-		 'Slice'                => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
-		 'SupportingFeature'    =>
-		 'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
-		 'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
-		 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor',
-		 'Analysis'           => 'Bio::EnsEMBL::Pipeline::DBSQL::AnalysisAdaptor',
-		 'Job'                => 'Bio::EnsEMBL::Pipeline::DBSQL::JobAdaptor',
-		 'PmatchFeature'      => 'Bio::EnsEMBL::Pipeline::DBSQL::PmatchFeatureAdaptor',
-		 'Rule'               => 'Bio::EnsEMBL::Pipeline::DBSQL::RuleAdaptor',
-		 'StateInfoContainer' => 'Bio::EnsEMBL::Pipeline::DBSQL::StateInfoContainer');
+  my %pairs = $dba->get_available_adaptors();  #calls pipeline DBAdaptor (NOT implementred yet)
+# core + these ones:-
+#		 'Analysis'           => 'Bio::EnsEMBL::Pipeline::DBSQL::AnalysisAdaptor',
+#		 'Job'                => 'Bio::EnsEMBL::Pipeline::DBSQL::JobAdaptor',
+#		 'PmatchFeature'      => 'Bio::EnsEMBL::Pipeline::DBSQL::PmatchFeatureAdaptor',
+#		 'Rule'               => 'Bio::EnsEMBL::Pipeline::DBSQL::RuleAdaptor',
+#		 'StateInfoContainer' => 'Bio::EnsEMBL::Pipeline::DBSQL::StateInfoContainer');
 
   foreach my $key (keys %pairs){
     Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
