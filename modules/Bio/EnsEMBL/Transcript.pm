@@ -715,11 +715,26 @@ sub get_all_Introns {
 
   Arg [1]    : (optional) $snps listref of coding snps in cdna coordinates
   Example    : $pep_hash = $trans->get_all_peptide_variations;
-  Description: Takes a list of coding snps on this transcript in which are in 
-               cdna coordinates and returns a hash with peptide coordinate keys
-               and listrefs of alternative amino acids as values.  If no
-               argument all of the coding snps on this transcript are used
-               by default
+  Description: Takes an optional list of coding snps on this transcript in 
+               which are in cdna coordinates and returns a hash with peptide 
+               coordinate keys and listrefs of alternative amino acids as 
+               values.  If no argument is provided all of the coding snps on 
+               this transcript are used by default. Note that the peptide 
+               encoded by the reference sequence is also present in the results
+               and that duplicate peptides (e.g. resulting from synonomous 
+               mutations) are discarded.  It is possible to have greated than
+               two peptides variations at a given location given
+               adjacent or overlapping snps. Insertion/deletion variations
+               are ignored by this method. 
+               Example of a data structure that could be returned:
+               {  1  => ['I', 'M'], 
+                 10  => ['I', 'T'], 
+                 37  => ['N', 'D'], 
+                 56  => ['G', 'E'], 
+                 118 => ['R', 'K'], 
+                 159 => ['D', 'E'], 
+                 167 => ['Q', 'R'], 
+                 173 => ['H', 'Q'] } 
   Returntype : hashref
   Exceptions : none
   Caller     : general
@@ -757,13 +772,6 @@ sub get_all_peptide_variations {
     #retrieve the codon
     my $codon = substr($cdna, $start - $codon_pos-1, $codon_length);
 
-#    {
-#      my $context = substr($cdna, $start - 6, 11);
-#	print "CONTEXT (".$snp->alleles."): $context\n";
-#      print "START:$start CODON_POS:$codon_pos" .
-#	" PEPTIDE:$peptide CODON:$codon\n";
-#    }
-   	
     #store each alternative allele by its location in the peptide
     my @alleles = split('/', lc($snp->alleles));
     foreach my $allele (@alleles) {
@@ -772,7 +780,7 @@ sub get_all_peptide_variations {
       
       if($strand == -1) {
 	#complement the allele if the snp is on the reverse strand
-	$allele = $allele =~ 
+	$allele =~ 
 	 tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
       }
 
@@ -925,7 +933,7 @@ sub get_all_SNPs {
     }
 
     unless($key) {
-      $self->warn('SNP could not be mapped. In/Dels not supported yet...');
+      #$self->warn('SNP could not be mapped. In/Dels not supported yet...');
       next;
     }
 
@@ -987,7 +995,6 @@ sub get_all_cdna_SNPs {
   foreach my $type (@cdna_types) {
     $snp_hash{$type} = [];
     foreach my $snp (@{$all_snps->{$type}}) {
-      #print "SNP CONTEXT:". $slice->subseq($snp->start - 5, $snp->start + 5). "\n";
       my @coords = 
 	$transcript->genomic2cdna($snp->start, 
 				  $snp->end, 
@@ -1015,7 +1022,6 @@ sub get_all_cdna_SNPs {
       $new_snp->end($coord->end);
       $new_snp->strand($coord->strand);
       push @{$snp_hash{$type}}, $new_snp;
-      #print "SNP CONTEXT AFTER(".$new_snp->id."):". substr($transcript->spliced_seq, $new_snp->start - 6,11). "\n";
     }
   }
 
