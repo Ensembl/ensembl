@@ -48,8 +48,8 @@ ALTER TABLE tmp_prediction_transcript RENAME prediction_transcript;
 
 ALTER TABLE dna_align_feature DROP INDEX seq_region_idx;
 ALTER TABLE protein_align_feature DROP INDEX seq_region_idx;
-ALTER TABLE dna_align_feature ADD INDEX seq_region_idx(analysis_id, seq_region_id, seq_region_start, score);
-ALTER TABLE protein_align_feature ADD INDEX seq_region_idx(analysis_id, seq_region_id, seq_region_start, score);
+ALTER TABLE dna_align_feature ADD INDEX seq_region_idx( seq_region_id, analysis_id, seq_region_start, score);
+ALTER TABLE protein_align_feature ADD INDEX seq_region_idx( seq_region_id, analysis_id, seq_region_start, score);
 
 
 # reconstruct the meta coord table with the addition of a 
