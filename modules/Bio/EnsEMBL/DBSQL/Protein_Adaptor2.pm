@@ -494,85 +494,62 @@ sub get_exon_global_coordinates{
 =cut
     
 sub get_snps {
-    my ($self,$protein,$sndb,$gbdb) = @_;
-    my $db = $self->db;
-    my $transcript;
-    my @ex_snps;
-    my $count = 0;
-    my @array_features;
-    
-#Get the transcript, gene accession numbers for the given peptide
+    my ($self,$protein,$sndb,$gbd) = @_;
+
     my $transid = $protein->transcriptac();
-    my $geneid = $protein->geneac();
-    my $protid = $protein->id();
 
-#For now a static golden path is built (this is not the fastest solution but the easiest one). Should be changed to direct sql statements.
-    $db->add_ExternalFeatureFactory($self->snp_obj()); 
-    $db->static_golden_path_type('UCSC');
+    my @exons;
+    my @snps;
+    my $count = 0;
+    my $ex;
+    my $snp;
+    my %expos;
+    my @array_snp;
 
-    my $virtual = $db->get_StaticGoldenPathAdaptor();
+#Get the exon information for this given transcript
+    my $sth = $gbd->prepare("select exon,exon_chrom_start,exon_chrom_end from exon where transcript='$transid'");
+    $sth->execute;
     
-#Fetch a virtual contig for the given transcript. All of the external are retrieved for this virtual contig as well as all genes.   
-
-    &eprof_start('snp_vc_build');
-
-    my $vc = $virtual->fetch_VirtualContig_of_transcript($transid,0);
-
-    &eprof_end('snp_vc_build');
-
-    my @snips = $vc->get_all_ExternalFeatures();
-    my ($gene) = $vc->get_Genes($geneid);
-
-
+    while (my @loc = $sth->fetchrow) {
+	$count++;
+	$expos{$loc[0]} = $count;
+	$ex->{id} = $loc[0];
+	$ex->{pos} = $count;
+	$ex->{start} = $loc[1];
+	$ex->{end} =$loc[2];
+	$ex->{length} = ($loc[2] - $loc[1]);
+	push (@exons,$ex);
+    }
+	
+#Now, get information about the snps on this transcript    
+    my $sth1 = $gbd->prepare("select exon,s.refsnpid,s.snp_chrom_start from exon e, gene_snp s where s.gene=e.gene and s.snp_chrom_start>e.exon_chrom_start and s.snp_chrom_start<e.exon_chrom_end and e.transcript='$transid'");
+    $sth1->execute;
+  
+    while (@array_snp = $sth1->fetchrow) {
+	$snp->{id} = $array_snp[1];
+	$snp->{exon} = $array_snp[0];
+	$snp->{pos} = $array_snp[2];
+	push (@snps,$snp);
+    }
     
-#Get which virtual transcript holds the transcript we want to study   
+    foreach my $s(@array_snp) {
+	my $e;
+	my $exid = $s->{id};
+	my $pos = $expos{$exid};
+	
+	my $previous_exons_length = 0;
 
-
-   my @transcripts = $gene->each_Transcript();
-
-   foreach my $trans  (@transcripts) {
-       if ($trans->id eq $transid) {
-	   $transcript = $trans;
-       }
-   }
-
-
-   my $genesnp;
-   eval {
-       require Bio::EnsEMBL::ExternalData::GeneSNP;
-       $genesnp = new Bio::EnsEMBL::ExternalData::GeneSNP
-	   (-gene => $gene,
-	    -contig => $vc
-	    );
-   };
-   if( $@ ) {
-       $self->throw("Unable to build GeneSNP object. Probably don't have ensembl-external code in your PERL5LIB. Download ensembl-external and either install or move to PERL5LIB\n\nReal Exception $@");
-   }
-       
-
-   $genesnp->transcript($transcript);
-   
-   my @seq_diff = $genesnp->snps2transcript(@snips);
-       
-    foreach my $diff (@seq_diff) {
-	foreach my $var ($diff->each_Variant) {
-	    if($var->isa('Bio::Variation::AAChange') ) {
-		print STDERR $var->label, "\n";
-		print STDERR $var->trivname, "\n";
-		print STDERR $var->allele_ori->seq, "\n";
-		print STDERR $var->allele_mut->seq, "\n";
-		foreach my $all ($var->each_Allele) {
-		    print STDERR $all->seq, "\n";
-		}
+	foreach my $exs(@exons) {
+	    if ($exs->{pos} < $pos) {
+		$previous_exons_length =+ $exs->{length};
+	    }
+	    if ($exs->{pos} == $pos) {
+		$e = $exs;
 	    }
 	}
+	
+	#Get the location of the snp in aa coordinates      
+        my $aa_pos = int (($s->{start} - $e->{start} + $previous_exons_length)/3) + 1;
+	
     }
-
-    push(@array_features,@seq_diff);
-   
-    return @array_features;
 }
-
-
-
-
