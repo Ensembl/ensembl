@@ -1151,7 +1151,7 @@ sub _missed_exon_Evidence{
 					      -dbname           => $dbname,
 					     );
 
-  $db->static_golden_path_type($path);
+  $db->assembly_type($path);
   my $sgp = $db->get_StaticGoldenPathAdaptor;
   
   # get info of where we are sitting:

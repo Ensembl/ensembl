@@ -215,7 +215,7 @@ sub get_chr_start_end_of_contig {
        $self->throw("Must have contig id to fetch Slice of contig");
    }
    
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("SELECT  c.name,
@@ -266,7 +266,7 @@ sub fetch_Slice_by_chr_start_end {
 
     &eprof_start('Slice: staticcontig build');
 
-    my $type = $self->db->static_golden_path_type();
+    my $type = $self->db->assembly_type();
 
     eval {
       $slice = Bio::EnsEMBL::Slice->new(
@@ -332,7 +332,7 @@ sub fetch_Slice_by_clone{
    }
    if( !defined $size ) {$size=0;}
 
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("SELECT  c.name,
@@ -388,7 +388,7 @@ sub fetch_Slice_by_clone{
 sub get_Gene_chr_bp {
     my ($self,$geneid) =  @_;
    
-   my $type = $self->db->static_golden_path_type()
+   my $type = $self->db->assembly_type()
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("SELECT  
@@ -452,7 +452,7 @@ sub fetch_Slice_by_gene{
    my ($chr_name,$start,$end) = $self->get_Gene_chr_bp($geneid);
 
    if( !defined $start ) {
-       my $type = $self->adaptor->db->static_golden_path_type()
+       my $type = $self->adaptor->db->assembly_type()
         or $self->throw("No assembly type defined");
        $self->throw("Gene is not on the golden path '$type'. Cannot build Slice.");
    }
