@@ -61,7 +61,7 @@ my $dbtype = 'rdb';
 my $host   = 'localhost';
 my $port   = '410000';
 my $dbname = 'ensembl';
-my $dbuser = 'ensembl';
+my $dbuser = 'ensro';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 
@@ -160,7 +160,7 @@ while ( @gene_id > 0 ) {
 			print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
 			next;
 		    }
-		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
 		    $seqio->write_seq($tseq);
 		}
 	    } elsif ( $format eq 'dump' ) {
@@ -181,7 +181,7 @@ while ( @gene_id > 0 ) {
 		    $seq->id($trans->id);
 		    my @exon = $trans->each_Exon;
 		    my $fe = $exon[0];
-		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
 		    $seqio->write_seq($seq);
 		}
 	    }
@@ -193,7 +193,7 @@ while ( @gene_id > 0 ) {
 		    $seq->id($trans->id);
 		    my @exon = $trans->each_Exon;
 		    my $fe = $exon[0];
-		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
 		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*TRANS ) ;
 		    $seqio->write_seq($seq);
 		}
@@ -208,7 +208,7 @@ while ( @gene_id > 0 ) {
 			print STDERR "Skipping peptide dumping of ".$gene->id.", translation has stop codons. (in clone ". $fe->clone_id .")\n\n";
 			next;
 		    }
-		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig: " . $fe->contig_id);
 		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*PEP) ;
 		    $seqio->write_seq($tseq);
 		}
