@@ -75,7 +75,7 @@ Exon object.
 
 =head1 CONTACT
 
-Describe contact details here
+Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
@@ -99,6 +99,8 @@ use Bio::Seq; # exons have to have sequences...
 
 @ISA = qw(Bio::EnsEMBL::SeqFeature);
 
+
+
 =head2 new
 
   Args       : see SUPERCLASS Bio::EnsEMBL::SeqFeature
@@ -121,6 +123,8 @@ sub new {
   # set stuff in self from @args
   return $self; # success - we hope!
 }
+
+
 
 =head2 new_fast
 
@@ -159,6 +163,7 @@ sub new_fast {
 }
 
 
+
 =head2 dbID
 
   Arg [1]    : int $dbID
@@ -179,6 +184,7 @@ sub dbID {
     return $self->{'dbID'};
 
 }
+
 
 
 =head2 temporary_id
@@ -426,8 +432,6 @@ sub _transform_to_Slice {
 
 =cut
 
-
-
 sub _transform_to_RawContig {
   my $self = shift;
   #print STDERR "\tTransforming exons to rawcontig coords\n";
@@ -572,11 +576,12 @@ sub _transform_to_RawContig {
 
 =head2 pep_seq
 
-  Title   : pep_seq
-  Usage   : @pep = $feat->pep_seq
-  Function: Returns the 3 frame peptide translations of the exon
-  Returns : @Bio::Seq
-  Args    : none
+  Arg [1]    : none
+  Example    : @pep = $feat->pep_seq
+  Description: Returns the 3 frame peptide translations of the exon
+  Returntype : list of Bio::Seq objects
+  Exceptions : none
+  Caller     : ?
 
 =cut
 
@@ -586,14 +591,20 @@ sub pep_seq {
     return @$pep;
 }
 
+
+
 =head2 sticky_rank
 
- Title   : sticky_rank
- Usage   : $obj->sticky_rank($newval)
- Function: 
- Returns : value of sticky_rank
- Args    : newvalue (optional)
-
+  Arg [1]    : (optional) int $value
+  Example    : $sticky_rank = $exon->sticky_rank
+  Description: Returns the position of a component exon in its assembled sticky
+               exon.  Normal exons all have sticky_rank = 1 as do exons in
+               slice coordinates. Exons in RawContig coordinates which span 
+               multiple contigs are 'sticky' and are made of component exons
+               whose order are denoted by this attribute.
+  Returntype : int
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::StickyExon
 
 =cut
 
@@ -609,18 +620,20 @@ sub sticky_rank{
 
 
 
-
-
 =head2 end_phase
 
-  Title   : end_phase
-  Usage   : $end_phase = $feat->end_phase
-  Function: Returns the end phase of the exon
-            end_phase = number of bases from the last incomplete codon of this exon.
-            Usually, end_phase = (phase + exon_length)%3
-            but end_phase could be -1 if the exon is half-coding and its 3prime end is UTR.
-  Returns : int
-  Args    : none
+  Arg [1]    : (optional) int $end_phase
+  Example    : $end_phase = $feat->end_phase;
+  Description: Gets/Sets the end phase of the exon.
+               end_phase = number of bases from the last incomplete codon of 
+               this exon.
+               Usually, end_phase = (phase + exon_length)%3
+               but end_phase could be -1 if the exon is half-coding and its 3 
+               prime end is UTR.
+  Returntype : int
+  Exceptions : warning if end_phase is called without an argument and the
+               value is not set.
+  Caller     : general
 
 =cut
 
@@ -630,11 +643,11 @@ sub end_phase {
     $self->{_end_phase} = $endphase;
   }
   if ( !defined( $self->{_end_phase} ) ){
-    $self->warn("No end phase set in Exon. You must set it explicitly. Caller: ".caller);
+    $self->warn("No end phase set in Exon. You must set it explicitly. " .
+	      "Caller: ".caller);
   }
   return $self->{_end_phase};
 }
-
 
 
 
@@ -683,21 +696,24 @@ sub phase {
 #	print STDERR "Setting phase for " . $self->id . " to $value\n";
       $self->{'phase'} = $value;
     } else {
-      $self->throw("Bad value ($value) for exon phase. Should only be -1,0,1,2\n");
+      $self->throw("Bad value ($value) for exon phase. Should only be" .
+		   " -1,0,1,2\n");
     }
   }
   return $self->{'phase'};
 }
 
-=pod
+
 
 =head2 frame
 
-  Title   : frame
-  Usage   : $frame = $feat->frame
-  Function: Returns the frame of the exon in the parent DNA
-  Returns : int
-  Args    : none
+  Arg [1]    : none
+  Example    : $frame = $exon->frame
+  Description: Gets the frame of this exon
+  Returntype : int
+  Exceptions : thrown if an arg is passed
+               thrown if frame cannot be calculated due to a bad phase value
+  Caller     : general
 
 =cut
 
@@ -729,15 +745,16 @@ sub frame {
 
 }
 
-=pod
+
 
 =head2 type
 
-  Title   : type
-  Usage   : $type = $feat->type
-  Function: Returns the type of the exon (Init,Intr,Term)
-  Returns : String
-  Args    : none
+  Arg [1]    : (optional) $value
+  Example    : Gets/Sets th etype of this exon
+  Description: Returns the type of the exon (Init, Intr, Term)
+  Returntype : string
+  Exceptions : none
+  Caller     : ?
 
 =cut
 
@@ -751,15 +768,15 @@ sub type {
 }
 
 
-=pod
 
 =head2 _translate
 
-  Title   : _translate
-  Usage   : @pep = $feat->_translate()
-  Function: Returns the 3 frame translations of the exon
-  Returns : @Bio::Seq
-  Args    : none
+  Arg [1]    : none
+  Example    : none
+  Description: PRIVATE method Returns the 3 frame translations of the exon
+  Returntype : listref of Bio::Seq objects
+  Exceptions : thrown if exon length is less than 3
+  Caller     : ?
 
 =cut
 
@@ -792,15 +809,16 @@ sub _translate {
     return $pep;
 }
 
-=pod
+
 
 =head2 translate
 
-  Title   : translate
-  Usage   : $pep = $feat->translate()
-  Function: Returns the translation of the exon in the defined phase
-  Returns : Bio::Seq
-  Args    : none
+  Arg [1]    : none
+  Example    : $pep = $feat->translate;
+  Description: Returns the translation of the exon in the defined phase
+  Returntype : Bio::Seq
+  Exceptions : thrown if the exon cannot be translated
+  Caller     : ?
 
 =cut
 
@@ -822,13 +840,16 @@ sub translate {
     return $pep->[$phase];
 }
 
+
+
 =head2 strand
 
- Title   : strand
- Usage   : $strand = $feat->strand()
- Function: Returns strand information, being 1,-1 or 0
- Returns : -1,1 or 0
- Args    : + or 1, - or -1, . or 0
+  Arg [1]    : int $strand
+  Example    : $strand = $exon->strand;
+  Description: Gets/Sets strand of exon 
+  Returntype : int
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -845,6 +866,7 @@ sub strand {
     }
     return $self->{'strand'};
 }
+
 
 =head2 start_translation
 
@@ -1654,7 +1676,9 @@ can use a feature ($r in the below documentation).
 These methods do things to the geometry of ranges, and return
 triplets (start, stop, strand) from which new ranges could be built.
 
-=head2
+=cut
+
+=head2 intersection
 
   Title   : intersection
   Usage   : ($start, $stop, $strand) = $feat->intersection($r)
@@ -1678,8 +1702,11 @@ triplets (start, stop, strand) from which new ranges could be built.
 
 
 =head1 Deprecated Methods
+
 =cut
+
 ###############################################################################
+
 =head2 id
 
   Arg [1]    : none

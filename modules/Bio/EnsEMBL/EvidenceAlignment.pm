@@ -77,7 +77,7 @@ use Bio::EnsEMBL::Root;
 		ID, which may be either the transcript stable ID or
 		the transcript dbID); optional full path of pfetch
 		executable (-PFETCH), defaulting to whatever is in the
-		user's search path; USE_SUPPORTING_EVIDENCE which, if
+		users search path; USE_SUPPORTING_EVIDENCE which, if
 		true, causes retrieval of supporting evidence rather
 		than similarity features for transcripts (and has no
 		effect for contigs), defaulting to undef; optional
