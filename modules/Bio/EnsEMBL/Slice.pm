@@ -1653,9 +1653,8 @@ sub get_tiling_path {
     #the old get_tiling_path always gave back entire contigs in the forward
     #strand
     $contig = $contig->adaptor->fetch_by_region('seqlevel',
-                                                $contig->seq_region_name(),
-                                                $contig->start(),
-                                                $contig->end());
+                                                $contig->seq_region_name());
+
     #bless contigs into contigs
     $contig = bless($contig, 'Bio::EnsEMBL::RawContig');
 
