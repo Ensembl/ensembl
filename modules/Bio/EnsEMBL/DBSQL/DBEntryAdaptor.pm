@@ -226,11 +226,12 @@ sub store {
 	}
     } else {
 	$sth = $self->prepare ( "
+
               SELECT xrefId
               FROM objectXref
-              WHERE xrefId = $dbX,
-              AND   ensembl_object_type = $ensType,
-              AND   ensembl_id = $ensObject ");
+              WHERE xrefId = $dbX
+              AND   ensembl_object_type = '$ensType'
+              AND   ensembl_id = '$ensObject'");
 	
 	$sth->execute;
 	my ($tst) = $sth->fetchrow_array;
