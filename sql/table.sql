@@ -23,7 +23,7 @@ CREATE TABLE analysis (
   program varchar(80),
   program_version varchar(40),
   program_file varchar(80),
-  parameters varchar(80),
+  parameters varchar(255),
   module varchar(80),
   module_version varchar(40),
   gff_source varchar(40),
