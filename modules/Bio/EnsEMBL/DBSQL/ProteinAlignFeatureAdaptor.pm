@@ -156,9 +156,11 @@ sub _objs_from_sth {
 
   my($analysis, $contig);
 
-  while($sth->fetch) { 
-    $analysis = $aa->fetch_by_dbID($analysis_id);
-    $contig = $rca->fetch_by_dbID($contig_id);
+  my %a_hash;
+  my %c_hash;
+  while($sth->fetch) {
+    $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
+    $contig   = $c_hash{$contig_id}   ||= $rca->fetch_by_dbID($contig_id);
 
     #use a very fast (hack) constructor - normal object construction is too
     #slow for the number of features we are potentially dealing with

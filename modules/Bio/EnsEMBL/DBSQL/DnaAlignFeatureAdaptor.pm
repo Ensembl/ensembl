@@ -196,9 +196,11 @@ sub _objs_from_sth {
 
   my ($analysis, $contig);
 
+  my %a_hash;
+  my %c_hash;
   while($sth->fetch) {
-    $analysis = $aa->fetch_by_dbID($analysis_id);
-    $contig = $rca->fetch_by_dbID($contig_id);
+    $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
+    $contig   = $c_hash{$contig_id}   ||= $rca->fetch_by_dbID($contig_id);
     #use a very fast (hack) constructor since we may be creating over 10000
     #features at a time and normal object construction is too slow.
     push @features, Bio::EnsEMBL::DnaDnaAlignFeature->new_fast(
