@@ -13,7 +13,7 @@ use vars qw($opt_h $opt_i $opt_d $opt_v $opt_o $opt_n);
 my $dflt_i = "[A-Z]{3,6}[PGET]\\d{11}";
 my $dflt_d = "[-\\\\> \t:.;,/]+";
 
-my ($prog) = ( $0 =~ m|/([^/]*)$| );               # ; this screws up emacs big time ...
+my ($prog) = ( $0 =~ m|/([^/]*)$| );
 
 my $Usage=<<END_USAGE;
 
