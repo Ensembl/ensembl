@@ -87,7 +87,7 @@ my $tdbtype = 'rdb';
 my $thost   = 'localhost';
 my $tport   = '410000';
 my $tdbname = 'ensembl';
-my $tdbuser = 'ensdev';
+my $tdbuser = 'root';
 my $tdbpass = undef;
 
 my $usefile = 0;

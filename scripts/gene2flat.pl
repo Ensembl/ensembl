@@ -61,7 +61,7 @@ my $dbtype = 'rdb';
 my $host   = 'localhost';
 my $port   = '410000';
 my $dbname = 'ensembl';
-my $dbuser = 'ensro';
+my $dbuser = 'root';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 
@@ -144,10 +144,6 @@ $db=undef;
 while ( @gene_id > 0 ) {
     my @chunk_list = splice(@gene_id,0,$chunk);
 
-    if( $verbose ) {
-	print STDERR "Fetching @chunk_list\n";
-    }
-
     eval {
 	if ( $dbtype =~ 'timdb' ) {
 	    $db = Bio::EnsEMBL::TimDB::Obj->new('',$noacc,$test);
@@ -157,6 +153,7 @@ while ( @gene_id > 0 ) {
 	}
 	my @genes = $db->get_Gene_array(@chunk_list);
 	foreach my $gene ( @genes ) {
+	    print STDERR "Dumping ".$gene->id."\n";
 	    my $gene_id = $gene->id();
 	    if( $format eq 'pep' ) {
 		foreach my $trans ( $gene->each_Transcript ) {

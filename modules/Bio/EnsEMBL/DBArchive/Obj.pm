@@ -70,7 +70,7 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  print "Got",join(',',@args),"\n";
+  print STDERR "Got",join(',',@args),"\n";
   my ($db,$host,$driver,$user,$password,$debug) = 
       $self->_rearrange([qw(DBNAME
 			    HOST
@@ -79,7 +79,7 @@ sub _initialize {
 			    PASS
 			    DEBUG
 			    )],@args);
-  print "Got $db as db and $user as user\n";
+  print STDERR "Got $db as db and $user as user\n";
 
   $db || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
@@ -270,6 +270,7 @@ sub write_seq{
    $version || $self->throw("Attempting to write a sequence without a sequence version number!");
    $gene_id || $self->throw("Attempting to write a sequence without a gene id!");
    $gene_version || $self->throw("Attempting to write a sequence without a gene version number!");
+
    my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."')");
    $sth->execute();
 }

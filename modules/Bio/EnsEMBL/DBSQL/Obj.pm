@@ -148,7 +148,6 @@ sub _initialize {
  
   if( $@ ) {
     print STDERR ( "No connection to Maps database.\n" );
-    print "Error was following:\n$@";
   }                                                                             
   return $make; # success - we hope!
 
@@ -1622,10 +1621,10 @@ sub write_Gene{
        foreach my $exon ( $trans->each_Exon() ) {
 	   my $sth = $self->prepare("insert into exon_transcript (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
 	   $sth->execute();
+	   $c++;
 	   if( $done{$exon->id()} ) { next; }
 	   $done{$exon->id()} = 1;
 	   $self->write_Exon($exon);
-	   $c++;
        }
    }
 

@@ -296,9 +296,10 @@ sub translateable_exons{
        return $retexon;
    }
 
+   print "Start exon id ".$self->translation->start_exon_id()."\n";
+
    while( my $exon = shift @exons ) {
        if( $exon->id eq $self->translation->start_exon_id() ) {
-	   
 	   my $stexon = new Bio::EnsEMBL::Exon;
 
 	   $stexon->contig_id ($exon->contig_id);
@@ -330,11 +331,11 @@ sub translateable_exons{
 	   last;
        }
    }
-
+   my $n=@exons+0;
    my $exon;
    while( $exon = shift @exons ) {
        if( $exon->id eq $self->translation->end_exon_id()) {
-	   
+
 	   my $endexon = new Bio::EnsEMBL::Exon;
 	   
 	   $endexon->contig_id($exon->contig_id);
@@ -364,7 +365,11 @@ sub translateable_exons{
 	   push(@out,$exon);
        }
    }
-
+   
+   if( !defined $exon ) {
+       $self->throw("End translation exon (".$self->translation->end_exon_id.") does not seem to exist ");
+   }
+   
    if( $exon->id ne $self->translation->end_exon_id()) {
        $self->throw("Unable to find end translation exon");
    }
@@ -487,9 +492,8 @@ sub translate {
   if ( ! defined $self->translation ) {
       $self->throw("You have to have a translation now to make a translation. Doh!");
   }
-
-  my @trans = $self-> split_Transcript_to_Partial(1);
-
+  my @trans = $self->split_Transcript_to_Partial(1);
+  
   if( $#trans == -1 ) {
       $self->throw("Bad internal error - split a transcript to zero transcripts! Doh!");
   }
