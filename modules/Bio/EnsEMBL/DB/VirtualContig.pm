@@ -176,7 +176,9 @@ sub extend {
 	$self->throw("Must supply a left and right value when extending a VirtualContig");
     }
     
-    my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $self->_vmap->focus_contig,
+    # checky $self call to make sure we get the original type of object...
+
+    my $nvc = $self->new( -focuscontig => $self->_vmap->focus_contig,
 						    -focusposition   => $self->_vmap->focus_position,
 						    -ori             => $self->_vmap->focus_orientation,
 						    -left            => $self->_vmap->left_size - $left,
