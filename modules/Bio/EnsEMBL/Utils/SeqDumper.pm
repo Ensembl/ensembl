@@ -428,7 +428,7 @@ sub dump_genbank {
 
   $self->write_genbank_seq($FH, \$SEQ);
 
-  print "//\n";
+  print $FH "//\n";
 
   # Set formatting back to normal
   $: = " \n-";
