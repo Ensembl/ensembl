@@ -153,8 +153,8 @@ sub get_set_lists{
 #	  ["method2",[$self->species,"*"]],
 #	  ["method3",["*","*"]]];
 
-  #return [["ExonerateGappedBest1", ["homo_sapiens","Uniprot/SWISSPROT"]]];
-return [["ExonerateGappedBest1", ["homo_sapiens","RefSeq"]]];
+  return [["ExonerateGappedBest1", ["homo_sapiens","Uniprot/SWISSPROT"]]];
+#return [["ExonerateGappedBest1", ["homo_sapiens","RefSeq"]]];
 #  return [["ExonerateBest1",["*","*"]]];
 
 }
@@ -1036,7 +1036,9 @@ sub dump_xrefs {
   print "Before calling display_xref, object_xref_mappings size " . scalar (keys %{$object_xref_mappings}) . "\n";
 
   # calculate display_xref_ids for transcripts and genes
-  $self->build_transcript_display_xrefs($object_xref_mappings, $xref_id_offset);
+  my $transcript_display_xrefs = $self->build_transcript_display_xrefs($object_xref_mappings, $xref_id_offset);
+
+  $self->build_gene_display_xrefs($transcript_display_xrefs);
 
 }
 
@@ -1098,30 +1100,49 @@ sub build_transcript_display_xrefs {
 
   print "Got " . scalar(keys %xref_to_source) . " xref-source mappings\n";
 
+  # Cache the list of translation->transcript mappings
+  print "Building translation to transcript mappings\n";
+  my %translation_to_transcript;
+  my $sth = $self->dbi()->prepare("SELECT translation_id, transcript_id FROM translation");
+  $sth->execute();
+
+  my ($translation_id, $transcript_id);
+  $sth->bind_columns(\$translation_id, \$transcript_id);
+
+  while (my @row = $sth->fetchrow_array()) {
+    $translation_to_transcript{$translation_id} = $transcript_id;
+  }
+
   print "Building transcript display_xrefs\n";
   my @priorities = $self->transcript_display_xref_sources();
 
   open (TRANSCRIPT_DX, ">transcript_display_xref.sql");
 
-  my $n;
-  # go through each transcript/xref mapping
- foreach my $key (keys %{$object_xref_mappings}) {
+  my $n = 0;
+  # go through each object/xref mapping
+  # store the best ones as we go along
+  # hash keyed on transcript id, value is xref_id:source prioirity index
+  # xref is stored with offset added
+  # Note xrefs to translations are also considered; transcript ID is always stored
+  my %transcript_display_xrefs;
+  foreach my $key (keys %{$object_xref_mappings}) {
 
     my ($type, $obj) = split /:/, $key;
-    next if ($type !~ /Transcript/i);
+
+    next if ($type !~ /(Transcript|Translation)/i);
 
     # if a transcript has more than one associated xref,
     # use the one with the highest priority, i.e. lower list position in @priorities
     my @xrefs = @{$object_xref_mappings->{$key}};
-    my ($best_xref, $best_xref_idx);
-    $best_xref_idx = 99999;
+    my ($best_xref, $best_xref_priority_idx);
+    $best_xref_priority_idx = 99999;
     foreach my $xref (@xrefs) {
       my $source = $xref_to_source{$xref};
       if ($source) {
 	my $i = find_in_list($source, @priorities);
-	if ($i > -1 && $i < $best_xref_idx) {
+	if ($i > -1 && $i < $best_xref_priority_idx) {
 	  $best_xref = $xref;
-	  $best_xref_idx = $i;
+	  $best_xref_priority_idx = $i;
 	}
       } else {
 	warn("Couldn't find a source for xref $xref \n");
@@ -1131,15 +1152,117 @@ sub build_transcript_display_xrefs {
     if (!$best_xref) {
       warn("Couldn't find a display xref for transcript id $obj\n");
     } else {
+
+      # If transcript, store directly
+      # If translation, lookup transcript id
+      my $object_id;
+      if ($type =~ /Transcript/i) {
+	$object_id = $obj;
+      } elsif ($type =~ /Translation/i) {
+	$object_id = $translation_to_transcript{$obj};
+      }
       # Write record with xref_id_offset
-      print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE transcript_id=" . $obj . "\n";
+      print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE transcript_id=" . $object_id . ";\n";
       $n++;
+      my $value = ($best_xref+$xref_id_offset) . ":" . $best_xref_priority_idx;
+      $transcript_display_xrefs{$object_id} = $value;
     }
+
   }
 
   close(TRANSCRIPT_DX);
 
   print "Wrote $n transcript display_xref entries to transcript_display_xref.sql\n";
+
+  return \%transcript_display_xrefs;
+
+}
+
+
+# Assign display_xrefs to genes based on transcripts
+# Gene gets the display xref of the highest priority of all of its transcripts
+# If more than one transcript with the same priority, longer transcript is used
+
+sub build_gene_display_xrefs {
+
+  my ($self, $transcript_display_xrefs) = @_;
+
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-species => $self->species(),
+					      -dbname  => $self->dbname(),
+					      -host    => $self->host(),
+					      -port    => $self->port(),
+					      -password => $self->password(),
+					      -user     => $self->user(),
+					      -group    => 'core');
+  my $ta = $db->get_TranscriptAdaptor();
+
+  print "Building gene display_xrefs\n";
+  print "Getting transcripts for all genes\n";
+
+  my $sql = "SELECT gene_id, transcript_id FROM transcript";
+  my $sth = $self->dbi()->prepare($sql);
+  $sth->execute();
+
+  my ($gene_id, $transcript_id);
+  $sth->bind_columns(\$gene_id, \$transcript_id);
+
+  my %genes_to_transcripts;
+  while (my @row = $sth->fetchrow_array()) {
+    push @{$genes_to_transcripts{$gene_id}}, $transcript_id;
+  }
+
+  print "Got " . scalar keys(%genes_to_transcripts) . " genes\n";
+
+  print "Assigning display_xrefs to genes\n";
+
+  open (GENE_DX, ">gene_display_xref.sql");
+  my $hit = 0;
+  my $miss = 0;
+  foreach my $gene_id (keys %genes_to_transcripts) {
+
+    my @transcripts = @{$genes_to_transcripts{$gene_id}};
+
+    my $best_xref;
+    my $best_xref_priority_idx = 99999;
+    my $best_transcript_length = -1;
+    foreach my $transcript_id (@transcripts) {
+      next if (!$transcript_display_xrefs->{$transcript_id});
+      my ($xref_id, $priority) = split (/:/, $transcript_display_xrefs->{$transcript_id});
+      #print "gene $gene_id orig:" . $transcript_display_xrefs->{$transcript_id} . " xref id: " . $xref_id . " pri " . $priority . "\n";
+      my $transcript = $ta->fetch_by_dbID($transcript_id);
+      my $transcript_length = $transcript->length();
+      if ($priority lt $best_xref_priority_idx) {
+	#print "greater for gene $gene_id ts length $transcript_length best $best_transcript_length\n";
+	$best_transcript_length = $transcript_length;
+	$best_xref_priority_idx = $priority;
+	$best_xref = $xref_id;
+      } elsif ($priority eq $best_xref_priority_idx) {
+	#print "equal for gene $gene_id ts length $transcript_length best $best_transcript_length\n";
+	if ($transcript_length gt $best_transcript_length) {
+	  $best_transcript_length = $transcript_length;
+	  $best_xref_priority_idx = $priority;
+	  $best_xref = $xref_id;
+	  #print "here, gene $gene_id best xref now $best_xref\n";
+	}
+      }
+    }
+
+    if (!$best_xref) {
+      #XXXwarn("Couldn't find a display xref for gene id $gene_id\n");
+      $miss++;
+    } else {
+      # Write record 
+      print GENE_DX "UPDATE gene SET display_xref_id=" . $best_xref . " WHERE gene_id=" . $gene_id . ";\n";
+      $hit++;
+    }
+
+  }
+
+  close (GENE_DX);
+
+  print "Wrote $hit gene display_xref entries to gene_display_xref.sql\n";
+  print "Couldn't find display_xrefs for $miss genes\n";
+
 }
 
 # Display xref sources to be used for transcripts *in order of priority*
