@@ -786,7 +786,7 @@ sub _transform_to_slice{
 
 
 sub _transform_to_rawcontig{
-  my ($self, $rc) = @_;
+  my ($self) = @_;
   #print STDERR "transforming to raw contig coord\n\n";
   if(!$self->contig){
     $self->throw("can't transform coordinates of ".$self." without some sort of contig defined");
