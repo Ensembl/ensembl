@@ -27,12 +27,12 @@ use Bio::SeqIO;
 use Getopt::Long;
 
 my $tdbtype = 'rdb';
-my $thost   = 'croc';
+my $thost   = 'sol28';
 my $tport   = '410000';
 my $tdbname = 'ensdev';
-my $format  = 'pep';
+my $format  = 'transcript';
 my $usefile = 0;
-my $getall  = 0;
+my $getall  = 1;
 my $verbose = 0;
 my $noacc   = 0;
 my $test    = 0;
@@ -124,7 +124,14 @@ foreach my $gene_id ( @gene_id ) {
 		}
 	    }
 
-	} else {
+	} 
+	elsif ($format eq 'transcript') {
+	    foreach my $trans ( $gene->each_Transcript ) {
+		print "Transcript ",$trans->id,"\n";
+		print $trans->dna_seq->seq,"\n";
+	    }
+	}
+	else {
 	    die "No valid format!";
 	}
     };
