@@ -27,8 +27,6 @@ package Bio::EnsEMBL::DBSQL::StatementHandle;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Utils::Exception qw(warning);
-
 use DBD::mysql;
 
 @ISA = qw(DBI::st);
@@ -36,7 +34,7 @@ use DBD::mysql;
 # As DBD::mysql::st is a tied hash can't store things in it,
 # so have to have parallel hash
 my %dbchash;
-sub dbc {
+sub dbc { 
   my $self = shift;
 
   if (@_) {
@@ -49,7 +47,6 @@ sub dbc {
 
 sub DESTROY {
   my ($obj) = @_;
-
   my $dbc = $obj->dbc;
   $obj->dbc(undef);
 
@@ -57,10 +54,13 @@ sub DESTROY {
 
   # The count for the number of kids is decremented only after this
   # function is complete. Disconnect if there is 1 kid (this one) remaining.
-  if($dbc  && $dbc->disconnect_when_inactive() &&
-     $dbc->db_handle->{Kids} == 1) {
+  if(
+    $dbc  && $dbc->disconnect_when_inactive()
+    && $dbc->db_handle->{Kids} == 1
+    && !$dbc->db_handle()->{'InactiveDestroy'}
+  ){
+    # print STDERR "disconnecting statement handle ".scalar($dbc->db_handle)." \n";
     $dbc->db_handle->disconnect();
   }
 }
-
 1;
