@@ -361,7 +361,7 @@ sub get_SNPAdaptor {
   my ($self)  = @_;
 
   #return a proxy adaptor which can use the lite or the core database
-  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SNPProxyAdaptor");
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProxySNPAdaptor");
 }
 
 

@@ -57,8 +57,6 @@ use Bio::PrimarySeqI;
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
 
 
-
-
 # new() is written here 
 
 sub new {
@@ -156,6 +154,26 @@ sub get_all_SimilarityFeatures_above_score {
   return (@prot_feats, @dna_feats);
 }
   
+
+=head2 get_all_SNPs
+
+  Args      : none
+  Function  : returns all SNPs on this slice
+  Returntype: @Bio::EnsEMBL::External::Variation
+  Exceptions: none
+  Caller    : GlyphSet_feature inherited objects
+
+=cut
+
+sub get_all_SNPs {
+  my $self = shift;
+
+  my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
+
+  return $snpa->fetch_by_Slice($self);
+}
+
+
 
 =head2 get_all_DnaAlignFeatures_above_score
 

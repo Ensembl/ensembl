@@ -54,12 +54,12 @@ sub fetch_by_Slice {
 
   
   my $sql = 
-      "SELECT snp_chrom_start, chrom_strand, 
-              refsnpid, anosnpid, tscid, hgbaseid, type, clone
+      "SELECT chr_start, chr_strand, 
+              refsnpid, tscid, hgbaseid, type
        FROM snp
        WHERE chr_name = '"  . $slice->chr_name() . "'
-       AND   snp_chrom_start > " . $slice->chr_start() . "
-       AND   snp_chrom_start < " . $slice->chr_end();
+       AND   chr_start > " . $slice->chr_start() . "
+       AND   chr_start < " . $slice->chr_end();
 
   my $sth = $self->prepare($sql);
   
@@ -73,17 +73,18 @@ sub fetch_by_Slice {
   
   while(my $arr = $sth->fetchrow_arrayref()) {
     my ($snp_start, $strand, $refsnp_id, 
-	$tscid, $hgbaseid, $type, $acc) = @{$arr};
+	$tscid, $hgbaseid, $type) = @{$arr};
 
 
 
     # this snp has not been seen before, create a new snp object
-    my $snp = Bio::EnsEMBL::External::Variation->new(
-			  -start      => $snp_start - $slice->chr_start() + 1
-			  -end        => $snp_start - $slice->chr_start() + 1
-			  -strand     => $strand
+    my $snp = Bio::EnsEMBL::ExternalData::Variation->new(
+			  -start      => $snp_start - $slice->chr_start() + 1,
+			  -end        => $snp_start - $slice->chr_start() + 1,
+			  -strand     => $strand,
                           -score      => 1,
-			  -source_tag => 'dbSNP' );
+			  -source_tag => 'dbSNP',
+			  -type       => $type);
 
     #Add db links to the snp variation object
     my $link = new Bio::Annotation::DBLink;
@@ -107,6 +108,9 @@ sub fetch_by_Slice {
     push @snps, $snp;
   }
 	
+
+  print STDERR "Returning " . scalar @snps . " snps\n";
+
   return @snps;
 }
     
