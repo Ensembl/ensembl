@@ -10,10 +10,15 @@
 \begin{document}
 
 \title{Ensembl. Open Genome Annotation}
-\author{Ewan Birney, Michele Clamp, Tim Hubbard and others\\www.ensembl.org}
+\author{ensembl-dev@ebi.ac.uk\\www.ensembl.org}
 
 
 \maketitle
+
+\newpage
+\tableofcontents
+\newpage
+
  
 \newpage
 
@@ -49,26 +54,34 @@ jump into the first steps, a quick answer of some often asked
 questions:
 
 \begin{description}
-\item[Why Perl? Why not Python or Java?] We have a love-hate relationship
-with Perl, but the basic answer is threefold: (a) we knew it would work
-as we had experience in writing systems that scaled to this level in Perl
-(b) We had Bioperl as a basic starting point (Biojava was not mature when we
-started and is still someway from what we need) (c) we knew we could hire people
-with Perl and molecular biology knowledge. More about this later (section \ref{future})
-\item[Why MySQL? Why not Oracle? or AceDB?] We have been very happy with MySQL.
-For us it was an easy RDB to learn (light on the DBA aspects) and has scaled well
-to very large loads and tables. We have not found the lack of transactions or views
-showstoppers for our work. With AceDB we did not have confidence in to scale to the
-sort of problems we expected to have.
-\item[Does it really have to be this complex?] Mainly yes. There are a number of places
-where we don't help ourselves because the code is old and in light of a better
-understanding, sometimes somewhat off the mark. This is what you expect in large
-projects
-\item[Are you sure? I have run BLAST and Genscan myself...] Honestly, if we can make it
-simpler, we will! Running BLAST and Genscan yourself and doing small
-stuff is pretty easy. Alot of what Ensembl does at the basic end is
-this easy, but there are one or two areas where things get much more complex and
-the scale of the problem makes even doing simple things hard.
+
+\item[Why Perl? Why not Python or Java?] We have a love-hate
+relationship with Perl, but the basic answer is threefold: (a) we knew
+it would work as we had experience in writing systems that scaled to
+this level in Perl (b) We had Bioperl as a basic starting point
+(Biojava was not mature when we started and is still someway from what
+we need) (c) we knew we could hire people with Perl and molecular
+biology knowledge.
+
+\item[Why MySQL? Why not Oracle? or AceDB?] We have been very happy
+with MySQL.  For us it was an easy RDB to learn (light on the DBA
+aspects) and has scaled well to very large loads and tables. We have
+not found the lack of transactions or views showstoppers for our work
+- so far. With AceDB we did not have confidence that it would scale to
+the sort of problems we expected to have.
+
+\item[Does it really have to be this complex?] Mainly yes. There are a
+number of places where we don't help ourselves because the code is old
+and in light of a better understanding, sometimes somewhat off the
+mark. This is what you expect in large projects
+
+\item[Are you sure? I have run BLAST and Genscan myself...] Honestly,
+if we can make it simpler, we will! Running BLAST and Genscan yourself
+and doing small stuff is pretty easy. Alot of what Ensembl does at the
+basic end is this easy, but there are one or two areas where things
+get much more complex and the scale of the problem makes even doing
+simple things hard.
+
 \end{description}
 
 Enough waffle! Let's get to the code
@@ -186,7 +199,7 @@ use Bio::SeqIO;
 
 
 # this will die if if can't load this database
-$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::Obj/host=localhost;user=read_only_user;dbname=test_ensembl');
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;user=read_only_user;dbname=test_ensembl');
 
 # build seqio output stream
 
@@ -251,18 +264,298 @@ foreach $clone_id ( @clones ) {
 }
 \end{verbatim}
 
-This is the real guts of the system. For each id, it is making a Clone object with the call
-``\$db->get\_Clone''. In Ensembl a Clone is really a single sequence entry from EMBL/GenBank. For
-draft (unfinished) cases, these are split up into a series of pieces of contiguous DNA, called ``RawContigs''
-in Ensembl terminology. Each ``RawContig'' implements the Bio::SeqI interface of bioperl, meaning that standard
-bioperl methods (including dump to flat files) work fine. 
+This is the real guts of the system. For each id, it is making a Clone
+object with the call ``\$db->get\_Clone''. In Ensembl a Clone is
+really a single sequence entry from EMBL/GenBank. For draft
+(unfinished) cases, these are split up into a series of pieces of
+contiguous DNA, called ``RawContigs'' in Ensembl terminology. Each
+``RawContig'' implements the Bio::SeqI interface of bioperl, meaning
+that standard bioperl methods (including dump to flat files) work
+fine.
 
 
 It is a pretty simple case to do a pretty simple task. 
 
 \section{Ensembl Cookbook}
 
-To be continued.
+
+It is probably easier to explain how to use Ensembl by example than going
+through the objects first off. Hence the Ensembl cookbook first, followed by 
+a more in depth explanation of the objects.
+
+Nearly all scripts follow the same basic pattern
+
+\begin{itemize}
+\item get hold of the root dbadaptor 
+\item get hold of the Ensembl objects 
+\item manipulate them and/or dump them
+\end{itemize} 
+
+
+\subsection{Dump all Protein translations of genes}
+
+\begin{verbatim}
+
+use Bio::EnsEMBL::DBLoader;
+use Bio::SeqIO;
+
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;user=read_only_user;dbname=test_ensembl');
+
+# build seqio output stream
+
+$seqout = Bio::SeqIO->new( '-format' => fasta, '-fh' => \*STDOUT);
+
+@genes = $db->get_all_Gene_id()
+
+foreach $geneid ( @genes ){
+      $gene = $db->get_Gene($geneid);
+      foreach $trans ( $gene->each_Transcript ) {
+          my $pep = $trans->translate();
+          # pep is a SeqI compliant object
+          $seqout->write_seq($pep);
+      }
+}
+
+\end{verbatim}
+
+Genes are collections of Transcripts. Each Transcript has one unique
+translation. Inside the schema, two Transcripts can share the same
+peptide (translation), but the object model does not nicely handle
+this. At the moment, Transcripts are only predicted when they have
+different peptides (translations).
+
+Notice that getting out these gene objects does not require any
+assembly information - we just get the genes out ``directly'' from the
+database, irregardless about how the assembly works.
+
+At the moment this is working through the old-style ``central
+DBAdaptor'' scheme. In the future we will get out the GeneAdaptor
+object and then get the genes out from there. See section \ref{new_adaptor}
+for more information about the new adaptor scheme.
+
+
+\subsection{Dump a region of a chromosome}
+
+This requires access to assembly information. Ensembl can switch
+between different assemblies from the same set of underlying DNA
+fragments - however in general Ensembl is only distributed with
+one assembly. With the object layer one has still indicate which
+assembly ``type'' is used - generally this is ``UCSC'' as we use
+the assemblies from UCSC.
+
+
+\begin{verbatim}
+
+use Bio::EnsEMBL::DBLoader;
+use Bio::SeqIO;
+
+
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;user=read_only_user;dbname=test_ensembl');
+
+# set the assembly type. Ensembl can store multiple assemblies
+# concurrently, although in general the gene prediction data will
+# only be in sync with one of the assemblies
+
+$db->static_golden_path_type('UCSC');
+
+# get out the staticgoldenpathadaptor. This might be better called
+# the virtual contig adaptor
+
+$sadp = $db->get_StaticGoldenPathAdaptor();
+
+# A virtualcontig is a slice of the assembly.
+
+my $vc = $sadp->fetch_VirtualContig_chr_start_end('chr12',10000,20000);
+
+my $seqout = Bio::SeqIO->new( -format => 'fasta',-fh => \*STDOUT);
+
+# write out the virtual contig. $vc is a Bio::SeqI compliant object
+# so we can write out it out to a SeqIO stream
+
+$seqout->write_seq($vc);
+
+# alternatively we can get the sequence as a string
+
+$seqstring = $vc->seq();
+
+\end{verbatim}
+
+This script introduces the idea of ``VirtualContigs''. A virtual contig is a
+slice of an assembly. A virtual contig can be anything from one tiny piece
+of an assembly through to an entire chromosome. (Virtual Contigs are also used
+for weirder dumping, including dumping regions via ``clone'' coordinates).
+
+Whatever route to get a virtual contig, one always get the same sort
+of object.  The Virtual Contig is-a sequence, with coordinates
+starting at one. All the Sequence features (but for genes) you get out
+on it are converted to the coordinates of the virtual contig, for example,
+starting from one. 
+
+As Virtual Contigs inheriet from Bio::SeqI anything which you can do
+with ``standard'' bioperl objects you can do with a virtual contig. In
+general you'll wont want to do so much with standard bioperl calls
+(such as \$seq->top\_SeqFeatures), but use the more specific Ensembl
+calls (such as \$vc->get\_all\_SimilarityFeatures).
+
+One thing which is very different to get are Genes, as Gene does
+not inheriet from SeqFeatureI.
+
+
+\subsection{Dump 50bp around exons of a gene}
+
+This is a more complex operation as the 50bp is now dependent on the
+assembly of the genome - a particular exon could be right near a
+``switch point'' where the assembly changes from one fragment to the
+next (see section \ref{assembly_info} for more information about
+assemblies). We have to get a gene out in the context of an assembly.
+
+
+
+\begin{verbatim}
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;user=read_only_user;dbname=test_ensembl');
+
+# we expect a gene id as the argument to this script
+my $geneid = shift;
+
+
+# set the assembly type. Ensembl can store multiple assemblies
+# concurrently, although in general the gene prediction data will
+# only be in sync with one of the assemblies
+
+$db->static_golden_path_type('UCSC');
+
+# get out the staticgoldenpathadaptor. This might be better called
+# the virtual contig adaptor
+
+$sadp = $db->get_StaticGoldenPathAdaptor();
+
+# get a VirtualContig around this gene. The 100 is how much
+# upstream and downstream from the first and last exons we
+# should take
+
+$vc = $sadp->fetch_VirtualContig_of_gene($geneid,100);
+
+# frustratingly here we have now a slice of the genome with our gene
+# of interest on it - however there may well be other genes in this
+# region, including nested genes inside introns, etc etc.
+
+# need to find ``our'' gene
+
+my $found_gene;
+
+foreach $gene ( $vc->get_all_Genes() ) {
+	if( $gene->id eq $geneid ) {
+            $found_gene = $gene;
+        }
+}
+
+if( !defined $found_gene ) {
+   die('no gene of interest... on vc. Bad error');
+}
+
+# when we get genes on a virtualcontig, the coordinates of the exon are
+# magically converted to be relevant to this virtual contig.
+
+foreach $trans ( $found_gene->each_Transcript ) {
+ foreach $exon ( $trans->each_Exon ) {
+
+  # there is the theoretical chance that an exon
+  # does not lie on this virtualcontig. This would happen
+  # when the gene was built on a different assembly from
+  # the asembly used to extract them.
+
+  # if the exon is not on the virtual contig, the seqname
+  # will not be the same as the virtual contig id
+
+  if( $exon->seqname ne $vc->id ) {
+    next;
+  }
+
+  if( $exon->strand == 1 ) {
+    print " exon ",$exon->id,"  ",$vc->subseq($exon->start-50,$exon->end+50),"\n";
+  } else {
+    # if we wanted just the sequence of the exon, 
+    # $exon->seq would give it to us fine. However we want 50bp each
+    # way around
+
+    # no easy way to dump reverse complement. trunc gives us back a Bio::PrimarySeqI
+    # object of this region, revcom reverse complements it and seq is the actual sequence
+    # this is a little convoluted. 
+    print " exon ",$exon->id,"  ",
+          $vc->trunc($exon->start-50,$exon->end+50)->revcom->seq,
+          "\n";
+  }
+ }
+}
+
+\end{verbatim}
+
+\subsection{Dump rich tab delimited format for one chromosome}
+
+\begin{verbatim}
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;user=read_only_user;dbname=test_ensembl');
+
+# set the assembly type. Ensembl can store multiple assemblies
+# concurrently, although in general the gene prediction data will
+# only be in sync with one of the assemblies
+
+$db->static_golden_path_type('UCSC');
+
+# get out the staticgoldenpathadaptor. This might be better called
+# the virtual contig adaptor
+
+$sadp = $db->get_StaticGoldenPathAdaptor();
+
+# get a virtual contig of the chromosome. This call will take
+# a while (30 seconds or so) to complete
+
+$vc = $sadp->fetch_VirtualContig_by_chr_name('chr10');
+
+# dump start,end,strand,type,score,external-identifier
+
+# dump similarity features - mainly BLAST results
+
+foreach $sim ( $vc->get_all_SimilarityFeatures ) {
+  print STDOUT join('\t',$sim->start,$sim->end,$sim->strand,$sim->score,$sim->hseqname),"\n";
+}
+
+# dump repeats
+
+foreach $rep ( $vc->get_all_RepeatFeatures ) {
+  print STDOUT join('\t',$rep->start,$rep->end,$rep->strand,$rep->score,$rep->hseqname),"\n";
+}
+
+# dump genes. We'll dump as exons with Transcript id's as the external-identifier
+
+foreach $gene ( $vc->get_all_Genes ) {
+  foreach $trans ( $gene->each_Transcript ) {
+     foreach $exon ( $trans->each_Exon ) {
+       print STDOUT join('\t',$exon->start,$exon->end,$exon->strand,$exon->score,$trans->id),"\n";
+     }
+  }
+}
+
+\end{verbatim}
+
+\section{Ensembl and Bioperl objects}
+
+Many Ensembl objects inheriet from Bioperl Interface definitions; they
+therefore comply to those interfaces and then extend them in Ensembl
+specific ways. The implementation of the objects in general is
+\emph{radically} different - most bioperl objects for example just
+store everything in a Perl hash, whereas many Ensembl objects are a
+Perl hash with minimal information (mainly the primary key of object
+in the database) and also access to the underlying database. In these
+cases, methods trigger a quick trip to the database to retrieve the
+objects of interest.
+
+This section has been grouped by the type of Bioperl object the Ensembl
+object extends and gives you a quick overview of how to use the methods
+
+\subsection{Bio::SeqI compliant objects}
+
+Bio::SeqI is the bioperl ``heavy'' sequence object, containing the
+sequence, identifiers and 
 
 \end{document}
 
