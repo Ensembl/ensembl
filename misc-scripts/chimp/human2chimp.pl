@@ -100,6 +100,8 @@ my $verbose;
 
   my %err_count;
   my %err_descs;
+  my %ok_err_count;
+
   my $total_transcripts = 0;
   my $mapped_transcripts = 0;
   my $total_known   = 0;
@@ -131,9 +133,16 @@ my $verbose;
           }
           $mapped_known++ if($transcript->is_known());
           $mapped_transcripts++;
+
+          while(my ($ec, $edesc) = pop_err()) {
+            $ok_err_count{$ec}++;
+          }
+
         } else {
           debug("Transcript failed to map\n");
           while(my ($ec, $edesc) = pop_err()) {
+            next if($ec == ErrCode::SHORT_FRAMESHIFT_DELETE);
+            next if($ec == ErrCode::SHORT_FRAMESHIFT_INSERT);
             $err_count{$ec}++;
             if($edesc) {
               $err_descs{$ec} ||= [];
@@ -151,7 +160,7 @@ my $verbose;
     }
   }
 
-  print STDERR "==Error Report==\n";
+  print STDERR "Mapping Failure Summary\n";
   print STDERR "#Occurances\tDescription\n";
   print STDERR "-----------\t----------------\n";
 
@@ -161,6 +170,13 @@ my $verbose;
     #  print STDERR "\t\t  ", $desc, "\n";
     #}
   }
+
+  print STDERR "Other Info\n";
+    foreach my $ec (sort {$ok_err_count{$a} <=> $ok_err_count{$b}} 
+                    keys %ok_err_count) {
+    print STDERR $ok_err_count{$ec}, "\t\t", ec2str($ec), "\n";
+  }
+
 }
 
 
@@ -183,9 +199,13 @@ sub transfer_transcript {
   my $asmap_adaptor   = $human_db->get_AssemblyMapperAdaptor();
 
   my $chimp_cs = $cs_adaptor->fetch_by_name('scaffold',  $cassembly);
+  my $chimp_ctg_cs = $cs_adaptor->fetch_by_name('contig');
   my $human_cs = $cs_adaptor->fetch_by_name('chromosome', $hassembly);
 
   my $mapper = $asmap_adaptor->fetch_by_CoordSystems($chimp_cs, $human_cs);
+  my $scaf2ctg_mapper = $asmap_adaptor->fetch_by_CoordSystems($chimp_cs,
+                                                              $chimp_ctg_cs);
+
   my $exons = $transcript->get_all_Exons();
 
   if(!$transcript->translation()) { #watch out for pseudogenes
@@ -474,6 +494,8 @@ sub process_deletion {
       debug("shifting cds start to restore reading frame");
       $$cdna_coding_start_ref += 3 - $frameshift;
 
+      push_err(ErrCode::SHORT_FRAMESHIFT_DELETE);
+
       if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
         push_err(ErrCode::NO_CDS_LEFT);
         return undef;
@@ -513,10 +535,13 @@ sub process_deletion {
       debug("shifting cds end to restore reading frame");
       $$cdna_coding_end_ref -= 3 - $frameshift;
 
+      push_err(ErrCode::SHORT_FRAMESHIFT_DELETE);
+
       if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
         push_err(ErrCode::NO_CDS_LEFT);
         return undef;
       }
+
     }
   }
 
@@ -546,6 +571,8 @@ sub process_deletion {
       # move down CDS start to put reading frame back (shrink CDS)
       debug("shifting cds start to restore reading frame");
       $$cdna_coding_start_ref += 3 - $frameshift;
+
+      push_err(ErrCode::SHORT_FRAMESHIFT_DELETE);
 
       if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
         push_err(ErrCode::NO_CDS_LEFT);
@@ -580,6 +607,8 @@ sub process_deletion {
       # move up CDS end to put reading frame back (shrink CDS)
       $$cdna_coding_end_ref -= 3 - $frameshift;
 
+      push_err(ErrCode::SHORT_FRAMESHIFT_DELETE);
+
       if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
         push_err(ErrCode::NO_CDS_LEFT);
         return undef;
@@ -609,6 +638,8 @@ sub process_deletion {
         push_err(ErrCode::PART_EXON_CDS_DELETE_TOO_LONG, "del_len=$del_len");
         return undef;
       }
+
+      push_err(ErrCode::SHORT_FRAMESHIFT_DELETE);
 
       # this is going to require splitting the exon
       # to make a frameshift deletion
@@ -783,6 +814,7 @@ sub process_insertion {
         push_err(ErrCode::PART_EXON_CDS_FRAMESHIFT_INSERT_TOO_LONG);
         return undef;
       }
+      push_err(ErrCode::SHORT_FRAMESHIFT_INSERT);
 
       # need to create frameshift intron to get reading frame back on track
       # exon needs to be split into two
@@ -1102,6 +1134,16 @@ sub trans_ex_str {
   }
 
   return $str;
+}
+
+
+sub near_contig_end {
+  my $chimp_db    = shift;
+  my $scaffold    = shift;
+  my $start       = shift;
+  my $end         = shift;
+
+
 }
 
 

@@ -38,6 +38,8 @@ use constant PART_EXON_CDS_DELETE_FIVE_PRIME_TOO_LONG  => 40;
 use constant PART_EXON_CDS_DELETE_THREE_PRIME_TOO_LONG => 41;
 use constant PART_EXON_CDS_DELETE_MIDDLE_TOO_LONG      => 42;
 
+use constant SHORT_FRAMESHIFT_DELETE => 50;
+use constant SHORT_FRAMESHIFT_INSERT => 51;
 
 my @ERR_STACK = ();
 
@@ -118,6 +120,12 @@ sub ec2str {
   }
   elsif($ec == PART_EXON_CDS_DELETE_MIDDLE_TOO_LONG) {
     $str = "CDS deletion in middle of exon too long.";
+  }
+  elsif($ec == SHORT_FRAMESHIFT_DELETE) {
+    $str = "Short frameshifting deletion in exon (ok).";
+  }
+  elsif($ec == SHORT_FRAMESHIFT_INSERT) {
+    $str = "Short frameshifting insert in exon (ok).";
   }
 
   return $str;
