@@ -192,14 +192,18 @@ sub create_xrefs {
 	  $dep{SOURCE_NAME} = $source;
 	  $dep{SOURCE_ID} = $dependent_sources{$source};
 	  $dep{ACCESSION} = $acc;
+	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 	  if($dep =~ /EMBL/){
 #	    print "prtein_id is ".$extra[0]."\n";
 	    my ($protein_id) = $extra[0];
 	    if($protein_id ne "-"){
-	      $dep{PROTEIN_ID} = $protein_id;
+	      my %dep2;
+	      $dep2{SOURCE_NAME} = $source;
+	      $dep2{SOURCE_ID} = $dependent_sources{protein_id};
+	      $dep2{ACCESSION} = $protein_id;
+	      push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
 	    }
 	  }
-	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 	}
       }
     }
