@@ -20,16 +20,16 @@ if [ $# -le 1 ]; then
 fi
 
 (cat <<EOF
-SELECT tsc.translation, tsc.gene, xdb.db_name, x.dbprimary_id
+SELECT tsc.translation_id, tsc.gene_id, xdb.db_name, x.dbprimary_id
 FROM transcript tsc, 
      objectXref ox,
      Xref x,
      externalDB xdb
-WHERE tsc.translation = ox.ensembl_id 
+WHERE tsc.translation_id = ox.ensembl_id 
   AND ox.xrefId = x.xrefId
   AND x.externalDBId = xdb.externalDBId
   AND xdb.db_name in ('SWISS-PROT', 'SPTREMBL')
-order by tsc.gene asc, xdb.db_name desc, x.dbprimary_id asc
+order by tsc.gene_id asc, xdb.db_name desc, x.dbprimary_id asc
 into outfile '$outfile'
 EOF
 ) | $mysql "$@" > $logfile 2>&1
