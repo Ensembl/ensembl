@@ -124,11 +124,13 @@ to download.
 Apologies for the number of external packages to install. This is I'm afraid to say 
 par for the course for this sort of project.
 
-You are now ready to download Ensembl. You have two basic options of what to download.
-(a) Download a tar file of the code which is synchronised with an Ensembl data release.
-You will find this in ftp://ftp.ensembl.org/pub/current/software/ (b) Download the leading edge
-version using anonymous cvs. The cvs repository is cvs.sanger.ac.uk, username cvs, password
-CVSUSER (case important). You want to check out the ensembl module 
+You are now ready to download Ensembl. You have two basic options of
+what to download.  (a) Download a tar file of the code which is
+synchronised with an Ensembl data release.  You will find this in
+ftp://ftp.ensembl.org/pub/current/software/ (b) Download the leading
+edge version using anonymous cvs. The cvs repository is
+cvs.sanger.ac.uk, username cvs, password CVSUSER (case important). You
+want to check out the ensembl module
 
 If anonymous cvs makes no sense to you, go for the tar ball.
 
@@ -151,10 +153,11 @@ found.
 
 \end{description} 
 
-The first two is just your error. The third is more understandable. Ensembl needs to connect to 
-a local mysql to run tests (it loads and dumps mini mysql databases for testing purposes). By
-default it connects to localhost mysql as user root with no password. This is a bad - but default -
-connection protocol!
+The first two is just your error. The third is more
+understandable. Ensembl needs to connect to a local mysql to run tests
+(it loads and dumps mini mysql databases for testing purposes). By
+default it connects to localhost mysql as user root with no
+password. This is a bad - but default - connection protocol!
 
 To change this copy the file in modules/t called
 EnsTestDB.conf.example to EnsTestDB.conf (also in modules/t), and edit
@@ -170,11 +173,13 @@ will be confident that Ensembl actually works on your system as you embark on mo
 
 \section{First script}
 
-The first script we'll write is to dump the underlying DNA fragments which make an assembly out
-as fasta format. What we'll use as a database is one of the mini-tests databases used by the testing
-system. The good thing about this is that (a) they are small (b) they are present in the source
-distribution - no need to worry about downloading additional information and (c) they are guarenteed
-to be working with the source code you have.
+The first script we'll write is to dump the underlying DNA fragments
+which make an assembly out as fasta format. What we'll use as a
+database is one of the mini-tests databases used by the testing
+system. The good thing about this is that (a) they are small (b) they
+are present in the source distribution - no need to worry about
+downloading additional information and (c) they are guarenteed to be
+working with the source code you have.
 
 First we need to build the database, which we will call test\_ensembl
 
@@ -242,10 +247,12 @@ DBLoader will at run time load up the modules required for loading the database 
 $db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::Obj/host=localhost;user=read_only_user;dbname=test_ensembl');
 \end{verbatim}
 
-This connects to the actual database. The string used for DBLoader is a sort of combined software+location
-string. The first part indicates that the Bio::EnsEMBL::DBSQL::Obj is the software module which will
-negotiate the Ensembl objects from the database. The remainder are parameters used in that modules
-construction, in this case the host, user and dbname of the database
+This connects to the actual database. The string used for DBLoader is
+a sort of combined software+location string. The first part indicates
+that the Bio::EnsEMBL::DBSQL::Obj is the software module which will
+negotiate the Ensembl objects from the database. The remainder are
+parameters used in that modules construction, in this case the host,
+user and dbname of the database
 
 \begin{verbatim}
 $seqout = Bio::SeqIO->new( '-format' => fasta, '-fh' => \*STDOUT);
@@ -589,12 +596,173 @@ via the SeqIO system. The calls go
 One of the key Ensembl objects which inheriet from Bio::SeqI is a
 Virtual Contig, generally the class
 Bio::EnsEMBL::Virtual::StaticContig (the Static means that the golden
-path, ie, assembly information is stored in a denormalised manner in
-the database). If you are looking at for the code for StaticContig is
-split between itself and its direct base class,
+path, ie, assembly information is stored in a semi denormalised manner
+in the database). If you are looking at for the code for StaticContig
+is split between itself and its direct base class,
 Bio::EnsEMBL::Virtual::Contig.
 
-Virtual Contigs represented a slice of a chromosome - anything from about
+Virtual Contigs represented a slice of a chromosome - anything from 
+100 Kb through to a entire chromosome. A good example of the use of
+a virtual contig is the main ``sequence'' web display, contigview. The web 
+script first makes a virtual contig of the region of the chromosome.
+
+
+The virtual contig presents to the user a Bio::SeqI implementing
+object where the sequence starts from 1 and where all the features got
+from the virtual contig start are transformed to fit this slice - for
+example, if you make a virtual contig from chr2, base pair start
+30,000 to 40,000 the first feature, say starting from 30,005 in
+chromosome coordinates will come out as start position 5. In general
+using this relative coordinate system (ie, virtual contigs always
+start at 1) makes coding with virtual contig easier. If you want to go
+to global coordinates then you'll have to remember to add the start
+position of the virtual contig (in extremis, see if the function
+\$vc->\_global\_start is set if you have a virtual contig without
+knowing where on the genome it is. This is definitely cheating - some
+virtual contigs will \emph{not} have the \_global\_start position set)
+
+
+One makes a virtual contig from the StaticGoldenPathAdaptor, which should
+have really been called VirtualContigAdaptor. The StaticGoldenPathAdaptor 
+provides factory functions to make virtual contigs. The only gotcha here is
+that you have to set the ``type'' of golden path (assembly) you are using
+first - in general Ensembl is only distributed with one assembly and parts
+of the data will only make sense with one assembly. The golden path type
+has to be set on the root ``DBAdaptor'' globally for your database session.
+
+A snippet of code for making a virtual contig is as follows:
+
+\begin{verbatim}
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;user=read_only_user;dbname=test_ensembl');
+
+$db->static_golden_path_type('UCSC');
+
+# get out the staticgoldenpathadaptor. This might be better called
+# the virtual contig adaptor
+
+$sadp = $db->get_StaticGoldenPathAdaptor();
+
+$vc = $sadp->fetch_VirtualContig_by_chr_start_end('chr2',30000,40000);
+\end{verbatim}
+
+Of course this access point assumes you know where you want to look
+first off. There are a couple of other useful entry points, in
+parituclar fetch\_VirtualContig\_of\_gene and
+fetch\_VirtualContig\_of\_clone (notice that the clone has to be
+``golden'', ie that part of the clone is used in the golden
+path. Completely redundant clones are not accessible via this call)
+
+
+Once you have got the VirtualContig, all the standard Bio::SeqI calls are available.
+Just to list them here:
+
+\begin{description}
+\item[id] provides an auto-generated id for this VirtualContig unique
+for the session. This is not meaningful but does comply to Bio::SeqI interface
+\item[subseq(start,end)] provides the sequence from start to end. This is executed
+efficiently so that if you ask for a small region (say 400bp in a 4MB virtual contig)
+only those precise regions are retrieved.
+\item[seq] provides the entire sequence. Please try not to use this - subseq is much more
+efficient (in fact seq is just a call of subseq(1,length))
+\item[top\_SeqFeatures] provides all sequence features - this is rarely used - instead the
+methods listed below are more likely to be used.
+\end{description}
+
+VirtualContigs also have a number of Ensembl specific calls, which are
+shared also by the RawContigs (section \ref{RawContig}). These are
+more useful ways to retrieve sequence features. All Sequence features
+comply to the Bio::SeqFeatureI interface, so the following methods are
+always available on them
+
+\begin{description}
+\item[start] start position of a sequence feature
+\item[end] end position (inclusive coordinates) of a sequence
+feature. ie, a sequence feature 1,2 is the first two bases of a
+sequence. (this coordinate system is the ``standard'' bioinformatics coordinate system
+and although it would be nicer to have a C-style coordinate system, far too much existing data
+has been written in this coordinate system for us to buck the trend)
+\item[strand] 1,-1 or 0 - 0 means strand is meaningless, eg in a low complexity repeat
+\item[length] self explanatory
+\item[seq] returns a Bio::PrimarySeqI object of this SeqFeature's sequence, automatically reverse complemented if
+needed. \$seqfeature->seq->seq is therefore the sequence as string of a SeqFeature
+\item[entire\_seq] returns a Bio::PrimarySeqI object of this SeqFeature's underlying sequence, ie where the
+seq string starts at 1
+\end{description}
+ 
+When sequence features are retrieved from a VirtualContig the sequence features are presented
+in the VirtualContig coordinate system. When a feature is half-on/half-off a VirtualContig it
+is simply not reported (which might be a mistake)
+
+\begin{description}
+
+\item[get\_all\_SimilarityFeatures] provides all BLAST hits and other
+database hits, including other features which we can't
+classify. SimilarityFeatures are FeaturePairs (See section
+\ref{FeaturePairs}).
+
+\item[get\_all\_RepeatFeatures] provides all repeats - generally the
+output of repeatmasker. RepeatFeatures are also FeaturePairs (See
+section \ref{FeaturePairs}).
+
+\item[get\_all\_PredictionFeatures] provides all a series of ab-initio
+features - general GenScan results, which is given back a SeqFeature
+with a list of sub\_SeqFeatures
+
+\end{description}
+
+It is likely that in the next generation of the object layer these
+series of ``canned queries'' will end up being a more dynamic query
+interface. Stay tuned on ensembl-dev if you are interested.
+
+
+\subsubsection{RawContigs}
+
+Genomes are made from underlying clone-based sequences which are
+deterimined in a number of ways. In the case of the human genome, one
+natural data representation are the fragments made from Phrap (or
+another clone-orientated assembler) which are then deposited inside
+EMBL/GenBank. Inside Ensembl each of these fragments is called a
+``RawContig''. For a rough draft clone there will be multiple
+RawContigs per clone. For a finished clone there will be one
+RawContig per clone.
+
+Ensembl has an almost identical interface to RawContigs as VirtualContigs:
+all the methods listed above except for the \_global\_start methods are valid.
+They are listed to be complete below:
+
+
+\begin{description}
+
+\item[id] provides the Ensembl stringified id for the RawContig,
+currently Accession.uniquenumber but about to change to something
+like accession.verison.start.end
+
+
+\item[subseq(start,end)] provides the sequence from start to end. Like in VirtualContigs,
+this is executed efficiently, so that only this region is retrieved from the database.
+
+\item[seq] provides the entire sequence. Please try not to use this - subseq is much more
+efficient (in fact seq is just a call of subseq(1,length))
+
+\item[top\_SeqFeatures] provides all sequence features - this is rarely used - instead the
+methods listed below are more likely to be used.
+
+\item[get\_all\_SimilarityFeatures] provides all BLAST hits and other
+database hits, including other features which we can't
+classify. SimilarityFeatures are FeaturePairs (See section
+\ref{FeaturePairs}).
+
+\item[get\_all\_RepeatFeatures] provides all repeats - generally the
+output of repeatmasker. RepeatFeatures are also FeaturePairs (See
+section \ref{FeaturePairs}).
+
+\item[get\_all\_PredictionFeatures] provides all a series of ab-initio
+features - general GenScan results, which is given back a SeqFeature
+with a list of sub\_SeqFeatures
+
+\end{description}
+
+
 
 
 
