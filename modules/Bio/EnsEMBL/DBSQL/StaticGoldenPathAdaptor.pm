@@ -104,7 +104,14 @@ sub fetch_RawContigs_by_fpc_name{
    my $type = $self->dbobj->static_golden_path_type();
    
    # very annoying. DB obj wont make contigs by internalid. doh!
-   my $sth = $self->dbobj->prepare("select c.id from static_golden_path st,contig c where c.internal_id = st.raw_id AND st.fpcctg_name = '$fpc' AND  st.type = '$type' ORDER BY st.fpcctg_start");
+   my $sth = $self->dbobj->prepare("SELECT  c.id 
+				    FROM    static_golden_path st,
+					    contig c 
+				    WHERE c.internal_id = st.raw_id 
+				    AND st.fpcctg_name = '$fpc' 
+				    AND  st.type = '$type' 
+				    ORDER BY st.fpcctg_start"
+				    );
    $sth->execute;
    my @out;
    my $cid;
@@ -135,7 +142,14 @@ sub convert_chromosome_to_fpc{
  
     my $type = $self->dbobj->static_golden_path_type();
  
-    my $sth = $self->dbobj->prepare("select fpcctg_name,chr_start from static_golden_path where chr_name = '$chr' AND fpcctg_start = 1 AND chr_start <= $start ORDER BY chr_start desc");
+    my $sth = $self->dbobj->prepare("SELECT fpcctg_name,
+					    chr_start 
+				    FROM static_golden_path 
+				    WHERE chr_name = '$chr' 
+				    AND	fpcctg_start = 1 
+				    AND	chr_start <= $start 
+				    ORDER BY chr_start DESC"
+				    );
     $sth->execute;
     my ($fpc,$startpos) = $sth->fetchrow_array;
  
@@ -158,7 +172,12 @@ sub convert_fpc_to_chromosome {
  
     my $type = $self->dbobj->static_golden_path_type();
  
-    my $sth = $self->dbobj->prepare("select chr_name,chr_start from static_golden_path where fpcctg_name = '$fpc' AND fpcctg_start = 1");
+    my $sth = $self->dbobj->prepare("SELECT chr_name,
+					    chr_start 
+				    FROM static_golden_path 
+				    WHERE fpcctg_name = '$fpc' 
+				    AND fpcctg_start = 1"
+				    );
     $sth->execute;
     my ($chr,$startpos) = $sth->fetchrow_array;
  
@@ -186,7 +205,14 @@ sub fetch_RawContigs_by_chr_name{
    my $type = $self->dbobj->static_golden_path_type();
    
    # very annoying. DB obj wont make contigs by internalid. doh!
-   my $sth = $self->dbobj->prepare("select c.id from static_golden_path st,contig c where c.internal_id = st.raw_id AND st.chr_name = '$chr' AND  st.type = '$type' ORDER BY st.fpcctg_start");
+   my $sth = $self->dbobj->prepare("SELECT  c.id 
+				    FROM    static_golden_path st,
+					    contig c 
+				    WHERE c.internal_id = st.raw_id 
+				    AND st.chr_name = '$chr' 
+				    AND  st.type = '$type' 
+				    ORDER BY st.fpcctg_start"
+				    );
    $sth->execute;
    my @out;
    my $cid;
@@ -220,7 +246,16 @@ sub fetch_RawContigs_by_chr_start_end{
    my $type = $self->dbobj->static_golden_path_type();
    
    # very annoying. DB obj wont make contigs by internalid. doh!
-   my $sth = $self->dbobj->prepare("select c.id from static_golden_path st,contig c where c.internal_id = st.raw_id AND st.chr_name = '$chr' AND  st.type = '$type' AND st.chr_end > $start AND st.chr_start < $end ORDER BY st.fpcctg_start");
+   my $sth = $self->dbobj->prepare("SELECT  c.id 
+				    FROM    static_golden_path st,
+					    contig c 
+				    WHERE c.internal_id = st.raw_id 
+				    AND st.chr_name = '$chr' 
+				    AND  st.type = '$type' 
+				    AND st.chr_end > $start 
+				    AND st.chr_start < $end 
+				    ORDER BY st.fpcctg_start"
+				    );
 
    $sth->execute;
    my @out;
@@ -297,16 +332,17 @@ sub fetch_VirtualContig_of_clone{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("SELECT 	c.id,
-   											st.chr_start,
-											st.chr_end,
-											st.chr_name 
-                                    FROM static_golden_path st, contig c 
-									WHERE c.clone = '$clone' 
+   my $sth = $self->dbobj->prepare("SELECT  c.id,
+   					    st.chr_start,
+					    st.chr_end,
+					    st.chr_name 
+				    FROM    static_golden_path st, 
+					    contig c 
+				    WHERE c.clone = '$clone' 
                                     AND c.internal_id = st.raw_id 
-									AND st.type = '$type' 
+				    AND st.type = '$type' 
                                     ORDER BY st.fpcctg_start"
-				   					);
+		   		    );
    $sth->execute();
  
    my ($contig,$start,$end,$chr_name); 
@@ -323,9 +359,9 @@ sub fetch_VirtualContig_of_clone{
    }
      
    return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
-   														$first_start-$size,
-														$end+$size
-														);
+   							$first_start-$size,
+							$end+$size
+							);
 
 }
 
@@ -353,15 +389,15 @@ sub fetch_VirtualContig_of_contig{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("SELECT 	c.id,
-   											st.chr_start,
-											st.chr_end,
-											st.chr_name 
+   my $sth = $self->dbobj->prepare("SELECT  c.id,
+   					    st.chr_start,
+					    st.chr_end,
+					    st.chr_name 
                                     FROM static_golden_path st,contig c 
-									WHERE c.id = '$contigid' 
+				    WHERE c.id = '$contigid' 
                                     AND c.internal_id = st.raw_id 
-									AND st.type = '$type'"
-				   					);
+				    AND st.type = '$type'"
+		   		    );
    $sth->execute();
    my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
 
@@ -370,9 +406,9 @@ sub fetch_VirtualContig_of_contig{
    }
    
    return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
-   														$start-$size,
-														$end+$size
-													);
+   							$start-$size,
+							$end+$size
+							);
   
 }
 
@@ -401,18 +437,18 @@ sub fetch_VirtualContig_of_gene{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("SELECT 	(e.seq_start+sgp.chr_start),
-   											(e.seq_end+sgp.chr_end),
-											sgp.chr_name 
-									FROM 	exon e,
-                                    		transcript tr,
-											exon_transcript et,
-											static_golden_path sgp 
-									WHERE e.id=et.exon 
-                                    AND et.transcript=tr.id 
-									AND sgp.raw_id=e.contig 
-									AND tr.gene = '$geneid';" 
-				   					);
+   my $sth = $self->dbobj->prepare("SELECT  (e.seq_start+sgp.chr_start),
+   					    (e.seq_end+sgp.chr_end),
+					    sgp.chr_name 
+				    FROM    exon e,
+					    transcript tr,
+					    exon_transcript et,
+					    static_golden_path sgp 
+				    WHERE e.id=et.exon 
+				    AND et.transcript=tr.id 
+				    AND sgp.raw_id=e.contig 
+				    AND tr.gene = '$geneid';" 
+		   		    );
    $sth->execute();
 
 
@@ -467,14 +503,15 @@ sub fetch_VirtualContig_by_clone{
    my $type = $self->dbobj->static_golden_path_type();
 
 
-   my $sth = $self->dbobj->prepare("SELECT 	c.id,
-   											st.chr_start,
-											st.chr_name 
-									FROM static_golden_path st,contig c 
-									WHERE c.clone = '$clone' 
-									AND c.internal_id = st.raw_id 
-									AND st.type = '$type' 
-									ORDER BY st.fpcctg_start");
+   my $sth = $self->dbobj->prepare("SELECT  c.id,
+   					    st.chr_start,
+					    st.chr_name 
+				    FROM static_golden_path st,contig c 
+				    WHERE c.clone = '$clone' 
+				    AND c.internal_id = st.raw_id 
+				    AND st.type = '$type' 
+				    ORDER BY st.fpcctg_start"
+				    );
    $sth->execute();
    my ($contig,$start,$chr_name) = $sth->fetchrow_array;
 
@@ -514,14 +551,14 @@ sub fetch_VirtualContig_by_contig{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("SELECT 	c.id,
-   											st.chr_start,
-											st.chr_name 
-									FROM static_golden_path st,contig c 
-									WHERE c.id = '$contigid' 
-									AND c.internal_id = st.raw_id 
-									AND st.type = '$type'"
-									);
+   my $sth = $self->dbobj->prepare("SELECT  c.id,
+   					    st.chr_start,
+					    st.chr_name 
+				    FROM static_golden_path st,contig c 
+				    WHERE c.id = '$contigid' 
+				    AND c.internal_id = st.raw_id 
+				    AND st.type = '$type'"
+				    );
    $sth->execute();
    my ($contig,$start,$chr_name) = $sth->fetchrow_array;
 
@@ -530,14 +567,10 @@ sub fetch_VirtualContig_by_contig{
    }
 
    my $halfsize = int($size/2);
-   #if( $start > $size/2 ) {       
-       return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
-	   													$start-$halfsize,
-														$start+$size-$halfsize
-														);
-   #} else {
-   #    return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
-   #}
+       return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
+	   						    $start-$halfsize,
+							$start+$size-$halfsize
+							);
 }
 
 
@@ -566,17 +599,17 @@ sub fetch_VirtualContig_by_gene{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("SELECT 	(e.seq_start+sgp.chr_start),
-											sgp.chr_name 
-									FROM 	exon e,
-                                    		transcript tr,
-											exon_transcript et,
-											static_golden_path sgp 
-									WHERE e.id=et.exon 
+   my $sth = $self->dbobj->prepare("SELECT  (e.seq_start+sgp.chr_start),
+					    sgp.chr_name 
+				    FROM    exon e,
+					    transcript tr,
+					    exon_transcript et,
+					    static_golden_path sgp 
+				    WHERE e.id=et.exon 
                                     AND et.transcript=tr.id 
-									AND sgp.raw_id=e.contig 
-									AND tr.gene = '$geneid';" 
-				   					);
+				    AND sgp.raw_id=e.contig 
+				    AND tr.gene = '$geneid';" 
+		   		    );
    $sth->execute();
 
 
@@ -621,7 +654,11 @@ sub fetch_VirtualContig_by_fpc_name{
    
    my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
    my $start = $fpc[0];
-   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,1,-1,@fpc);
+   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new(	$start->chr_start,
+							1,
+							-1,
+							@fpc
+						    );
    $vc->id($name);
    return $vc;
 }
@@ -657,7 +694,11 @@ sub fetch_VirtualContig_by_fpc_name_slice{
    }
 
    $start = $finalfpc[0];
-   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
+   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new(	$start->chr_start,
+						    $start->fpc_contig_start,
+						    -1,
+						    @finalfpc
+						    );
    $vc->id("$name-$start-$end");
    return $vc;
 }
@@ -693,13 +734,11 @@ sub fetch_VirtualContig_list_sized{
    my $prev = shift @fpc;
    push(@finalfpc,$prev);
    foreach my $fpc ( @fpc ) {
-       #print STDERR "Looking at ",$fpc->id," ",$fpc->fpc_contig_start," ",$fpc->fpc_contig_end," ",($fpc->fpc_contig_start - $prev->fpc_contig_end -1),"\n";
        if( ( ($fpc->fpc_contig_end - $current_start+1) > $length1 && ($fpc->fpc_contig_start - $prev->fpc_contig_end -1) >= $gap1) ||
 	   ( ($fpc->fpc_contig_end -$current_start+1) > $length2 && ($fpc->fpc_contig_start - $prev->fpc_contig_end -1) >= $gap2) ) {
 	   # build new vc and reset stuff
 
 	   my $start = $finalfpc[0];
-	   #print STDERR "Building with ",$start->id," ",$start->fpc_contig_start,"\n";
 
 	   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
 	   $vc->id($name);
@@ -739,7 +778,8 @@ sub fetch_VirtualContig_list_sized{
 sub fetch_VirtualContig_by_chr_name{
    my ($self,$name) = @_;
 
-   return Bio::EnsEMBL::Virtual::StaticContig->new(1,1,-1,$self->fetch_RawContigs_by_chr_name($name));
+   return Bio::EnsEMBL::Virtual::StaticContig->new(1,1,-1,
+				    $self->fetch_RawContigs_by_chr_name($name));
 
 
 }
@@ -761,7 +801,10 @@ sub get_all_fpc_ids{
    my ($self,@args) = @_;
 
    my $type = $self->dbobj->static_golden_path_type();
-   my $sth = $self->dbobj->prepare("select distinct(fpcctg_name) from static_golden_path where type = '$type'");
+   my $sth = $self->dbobj->prepare("SELECT DISTINCT(fpcctg_name) 
+				    FROM static_golden_path 
+				    WHERE type = '$type'"
+				);
    $sth->execute();
    my @out;
    my $cid;
