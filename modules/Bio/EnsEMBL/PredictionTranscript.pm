@@ -20,10 +20,10 @@ PredictionTranscript
 
 Container for single transcript ab initio gene prediction ala GenScan.
 Is directly storable/retrievable in EnsEMBL using PredictionTranscript Adaptor.
- 
+
 
 Creation:
-   
+
      my $tran = new Bio::EnsEMBL::PredictionTranscript();
      $tran->add_Exon( $exon );
 
@@ -94,16 +94,16 @@ sub new {
 
   my $self = {};
   bless $self,$class;
-  
+
   # set stuff in self from @args
   foreach my $exon (@optional_exons) {
     if( ! defined $self->{'exons'} ) {
       $self->{'exons'} = [];
     }
-    
+
     $self->add_Exon($exon);
   }
-  
+
   return $self;
 }
 
@@ -212,7 +212,7 @@ sub start {
 
   if(defined $arg) {
     $self->{'start'} = $arg;
-  } 
+  }
 
   return $self->{'start'};
 }
@@ -240,8 +240,6 @@ sub end {
 }
 
 
- 
-
 ## Attribute section ##
 
 sub analysis {
@@ -254,7 +252,7 @@ sub analysis {
 
 sub dbID {
    my $self = shift;
-   
+
    if( @_ ) {
       my $value = shift;
       $self->{'dbID'} = $value;
@@ -265,7 +263,7 @@ sub dbID {
 
 sub adaptor {
    my $self = shift;
-   
+
    if( @_ ) {
       my $value = shift;
       $self->{'adaptor'} = $value;
@@ -337,7 +335,9 @@ sub get_all_Exons {
   Arg [1]    : none
   Example    : $exons = $self->get_all_translateable_Exons
   Description: Retreives the same value of get_all_Exons for this prediction
-               transcript.  In a prediction transcript there is no UTR and
+               transcript with the exception that undefined exons (only when
+               transcript is in slice coords and exon maps to gap) are not
+               returned.  In a prediction transcript there is no UTR and
                thus all exons are entirely translateable.
   Returntype : listref of Bio::EnsEMBL::Exon
   Exceptions : none
@@ -612,125 +612,151 @@ sub get_cdna {
 
 
 
-sub pep_coords {
-    my $self = shift;
-    $self->throw( "Not implemented yet" )
-}
+=head1 pep2genomic
 
+  Arg  1   : integer start - relative to peptide
+  Arg  2   : integer end   - relative to peptide
 
-=head2 pep2genomic
+  Function : Provides a list of Bio::EnsEMBL::SeqFeatures which
+             is the genomic coordinates of this start/end on the peptide
 
-  Arg  1    : int $start_amino
-  Arg  2    : int $end_amino
-  Function  : computes a list of genomic location covering the given range 
-              of amino_acids. Exons do part of calculation. 
-  Returntype: list [ start, end, strand, Contig_object, Exon, pep_start, pep_end ]
-  Exceptions: none
-  Caller    : Runnables mapping blast hits to genomic coords
+  Returns  : list of Bio::EnsEMBL::SeqFeature
 
 =cut
 
 sub pep2genomic {
-   my $self = shift;
-   my $start_amino = shift;
-   my $end_amino = shift;
-   my @result = ();
+  my ($self,$start,$end) = @_;
 
-   my $start_cdna = $start_amino * 3 - 2;
-   my $end_cdna = $end_amino * 3;
+  if( !defined $end ) {
+    $self->throw("Must call with start/end");
+  }
 
-   my ( $ov_start, $ov_end );
-   my ( $pep_start, $pep_end );
+  # move start end into translate cDNA coordinates now.
+  # much easier!
+  $start = 3* $start-2;
+  $end   = 3* $end;
 
-   #print ::LOG "pep2genomic: ",$start_amino, " ", $end_amino,"\n";
-
-   if( ! defined $self->{'_exon_align'} ) {
-     $self->get_cdna();
-   }
-
-   for my $ex_align ( @{$self->{'_exon_align'}} ) {
-
-     # calculate overlap of cdna region with each exon
-     $ov_start = ( $start_cdna >= $ex_align->{cdna_start} ) ? $start_cdna : $ex_align->{cdna_start};
-     $ov_end = ( $end_cdna <= $ex_align->{cdna_end} ) ? $end_cdna : $ex_align->{cdna_end};
-     
-     $pep_start = int(( $start_cdna+2)/3 );
-
-     if( $ov_end >= $ov_start ) {
-       my @ires = $ex_align->{exon}->cdna2genomic
-	 ( $ov_start - $ex_align->{cdna_start} + 1,
-	   $ov_end - $ex_align->{cdna_start} + 1 );
-       for my $cdnaCoord ( @ires ) {
-	 
-	 push( @result, [ $cdnaCoord->[0], $cdnaCoord->[1], $cdnaCoord->[2],
-			  $cdnaCoord->[3], $ex_align->{exon},
-			  $cdnaCoord->[4] + $ex_align->{pep_start} - 1,
-			  $cdnaCoord->[5] + $ex_align->{pep_start} - 1 ] );
-       }
-     }
-   }
-   #for my $tmp ( @result ) {
-   #  print ::LOG "pep2genomic result: ", join ( " ", @$tmp ),"\n";
-   #}
-
-   return @result;
+  return $self->cdna2genomic( $start, $end );
 }
+
 
 
 =head2 cdna2genomic
 
-  Arg  1    : int $start_cdna
-  Arg  2    : int $end_cdna
-  Function  : computes a list of genomic location covering the given range 
-              of nucleotides. Exons do part of calculation. 
-  Returntype: list [ start, end, strand, Contig_object, Exon, cdna_start, 
-                     cdna_end ]
-  Exceptions: none
-  Caller    : Runnables mapping blast hits to genomic coords
+  Arg [1]    : $start
+               The start position in genomic coordinates
+  Arg [2]    : $end
+               The end position in genomic coordinates
+  Arg [3]    : (optional) $strand
+               The strand of the genomic coordinates
+  Example    : @coords = $transcript->cdna2genomic($start, $end);
+  Description: Converts cdna coordinates to genomic coordinates.  The
+               return value is a list of coordinates and gaps.
+  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
+               Bio::EnsEMBL::Mapper::Gap objects
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub cdna2genomic {
-   my $self = shift;
-   my $start_cdna = shift;
-   my $end_cdna = shift;
-   my @result = ();
+  my ($self,$start,$end) = @_;
+
+  if( !defined $end ) {
+    $self->throw("Must call with start/end");
+  }
+
+  my $mapper = $self->_get_cdna_coord_mapper();
+
+  return $mapper->map_coordinates( $self, $start, $end, 1, "cdna" );
+}
 
 
-   my ( $ov_start, $ov_end );
+
+=head2 genomic2cdna
+
+  Arg [1]    : $start
+               The start position in genomic coordinates
+  Arg [2]    : $end
+               The end position in genomic coordinates
+  Arg [3]    : (optional) $strand
+               The strand of the genomic coordinates (default value 1)
+  Arg [4]    : (optional) $contig
+               The contig the coordinates are on.  This can be a slice
+               or RawContig, but must be the same object in memory as
+               the contig(s) of this transcripts exon(s), because of the
+               use of object identity. If no contig argument is specified the
+               contig of the first exon is used, which is fine for slice
+               coordinates but may cause incorrect mappings in raw contig
+               coords if this transcript spans multiple contigs.
+  Example    : @coords = $transcript->genomic2cdna($start, $end, $strnd, $ctg);
+  Description: Converts genomic coordinates to cdna coordinates.  The
+               return value is a list of coordinates and gaps.  Gaps
+               represent intronic or upstream/downstream regions which do
+               not comprise this transcripts cdna.  Coordinate objects
+               represent genomic regions which map to exons (utrs included).
+  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
+               Bio::EnsEMBL::Mapper::Gap objects
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub genomic2cdna {
+  my ($self, $start, $end, $strand, $contig) = @_;
+
+  unless(defined $start && defined $end) {
+    $self->throw("start and end arguments are required\n");
+  }
+  $strand = 1 unless(defined $strand);
+
+  #"ids" in mapper are contigs of exons, so use the same contig that should
+  #be attached to all of the exons...
+  unless(defined $contig) {
+    my @exons = @{$self->get_all_translateable_Exons};
+    return () unless(@exons);
+    $contig = $exons[0]->contig;
+  }
+  my $mapper = $self->_get_cdna_coord_mapper;
+
+  return $mapper->map_coordinates($contig, $start, $end, $strand, "genomic");
+}
 
 
-   #print ::LOG "cdna2genomic: ",$start_cdna, " ", $end_cdna,"\n";
+=head2 _get_cdna_coord_mapper
 
-   if( ! defined $self->{'_exon_align'} ) {
-     $self->get_cdna();
-   }
+  Args       : none
+  Example    : none
+  Description: creates and caches a mapper from "cdna" coordinate system to 
+               "genomic" coordinate system. Uses Exons to help with that. Only
+               calculates in the translateable part. 
+  Returntype : Bio::EnsEMBL::Mapper( "cdna", "genomic" );
+  Exceptions : none
+  Caller     : cdna2genomic, pep2genomic
 
-   for my $ex_align ( @{$self->{'_exon_align'}} ) {
+=cut
 
-     # calculate overlap of cdna region with each exon
-     $ov_start = ( $start_cdna >= $ex_align->{cdna_start} ) ? $start_cdna : $ex_align->{cdna_start};
-     $ov_end = ( $end_cdna <= $ex_align->{cdna_end} ) ? $end_cdna : $ex_align->{cdna_end};
-     
-     if( $ov_end >= $ov_start ) {
-       my @ires = $ex_align->{exon}->cdna2genomic
-	 ( $ov_start - $ex_align->{cdna_start} + 1,
-	   $ov_end - $ex_align->{cdna_start} + 1 );
+sub _get_cdna_coord_mapper {
+  my ( $self ) = @_;
 
-       for my $cdnaCoord ( @ires ) {
-	 
-	 push( @result, [ $cdnaCoord->[0], $cdnaCoord->[1], $cdnaCoord->[2],
-			  $cdnaCoord->[3], $ex_align->{exon},
-			  $ov_start,
-			  $ov_end ] );
-       }
-     }
-   }
-#   for my $tmp ( @result ) {
-     #print ::LOG "cdna2genomic result: ", join ( " ", @$tmp ),"\n";
-#   }
+  if( defined $self->{'_exon_coord_mapper'} ) {
+    return $self->{'_exon_coord_mapper'};
+  }
 
-   return @result;
+  #
+  # the mapper is loaded with OBJECTS in place of the IDs !!!!
+  #  the objects are the contigs in the exons
+  #
+  my $mapper;
+  $mapper = Bio::EnsEMBL::Mapper->new( "cdna", "genomic" );
+  my @exons = @{$self->get_all_translateable_Exons() };
+  my $start = 1;
+  for my $exon ( @exons ) {
+    $exon->load_genomic_mapper( $mapper, $self, $start );
+    $start += $exon->length;
+  }
+  $self->{'_exon_coord_mapper'} = $mapper;
+  return $mapper;
 }
 
 

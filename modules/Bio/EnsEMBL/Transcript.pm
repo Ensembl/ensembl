@@ -1043,40 +1043,81 @@ sub pep2genomic {
   return $self->cdna2genomic( $start, $end );
 }
 
+=head2 cdna2genomic
+
+  Arg [1]    : $start
+               The start position in genomic coordinates
+  Arg [2]    : $end
+               The end position in genomic coordinates
+  Arg [3]    : (optional) $strand
+               The strand of the genomic coordinates
+  Example    : @coords = $transcript->cdna2genomic($start, $end);
+  Description: Converts cdna coordinates to genomic coordinates.  The
+               return value is a list of coordinates and gaps.
+  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
+               Bio::EnsEMBL::Mapper::Gap objects
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub cdna2genomic {
   my ($self,$start,$end) = @_;
-
-  my $mapper;
-  my @out;
 
   if( !defined $end ) {
     $self->throw("Must call with start/end");
   }
 
-  $mapper = $self->_get_cdna_coord_mapper();
-  
-  my @mapped_coords = $mapper->map_coordinates( $self, $start, $end, 1, "cdna" );
+  my $mapper = $self->_get_cdna_coord_mapper();
 
-  for my $coord ( @mapped_coords ) {
-    if( $coord->isa( "Bio::EnsEMBL::Mapper::Coordinate" ) ) {
-      my $sf = Bio::EnsEMBL::SeqFeature->new
-	( -start => $coord->start(),
-	  -end => $coord->end(),
-	  -strand => $coord->strand()
-	);
-      $sf->contig( $coord->id() );
-      push( @out, $sf );
-    }
-  } 
-	  
-  return @out;
+  return $mapper->map_coordinates( $self, $start, $end, 1, "cdna" );
 }
 
 
 
-sub genomic2cdna {
+=head2 genomic2cdna
 
+  Arg [1]    : $start
+               The start position in genomic coordinates
+  Arg [2]    : $end
+               The end position in genomic coordinates
+  Arg [3]    : (optional) $strand
+               The strand of the genomic coordinates (default value 1)
+  Arg [4]    : (optional) $contig
+               The contig the coordinates are on.  This can be a slice
+               or RawContig, but must be the same object in memory as
+               the contig(s) of this transcripts exon(s), because of the
+               use of object identity. If no contig argument is specified the
+               contig of the first exon is used, which is fine for slice
+               coordinates but may cause incorrect mappings in raw contig
+               coords if this transcript spans multiple contigs.
+  Example    : @coords = $transcript->genomic2cdna($start, $end, $strnd, $ctg);
+  Description: Converts genomic coordinates to cdna coordinates.  The
+               return value is a list of coordinates and gaps.  Gaps
+               represent intronic or upstream/downstream regions which do
+               not comprise this transcripts cdna.  Coordinate objects
+               represent genomic regions which map to exons (utrs included).
+  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
+               Bio::EnsEMBL::Mapper::Gap objects
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub genomic2cdna {
+  my ($self, $start, $end, $strand, $contig) = @_;
+
+  unless(defined $start && defined $end) {
+    $self->throw("start and end arguments are required\n");
+  }
+  $strand = 1 unless(defined $strand);
+
+  #"ids" in mapper are contigs of exons, so use the same contig that should
+  #be attached to all of the exons...
+  $contig = $self->get_all_Exons->[0]->contig unless(defined $contig);
+  my $mapper = $self->_get_cdna_coord_mapper;
+
+  return $mapper->map_coordinates($contig, $start, $end, $strand, "genomic");
 }
 
 
@@ -1093,8 +1134,6 @@ sub genomic2cdna {
 
 =cut
 
-
-  
 sub _get_cdna_coord_mapper {
   my ( $self ) = @_;
 
@@ -1106,7 +1145,6 @@ sub _get_cdna_coord_mapper {
   # the mapper is loaded with OBJECTS in place of the IDs !!!!
   #  the objects are the contigs in the exons
   #
-
   my $mapper;
   $mapper = Bio::EnsEMBL::Mapper->new( "cdna", "genomic" );
   my @exons = @{$self->get_all_Exons() };
@@ -1404,6 +1442,10 @@ sub species {
 # sub DEPRECATED METHODS FOLLOW
 #
 ##########################################################
+
+
+=head2 sub DEPRECATED methods follow
+=cut
 
 sub translateable_exons {
     my( $self ) = @_;
