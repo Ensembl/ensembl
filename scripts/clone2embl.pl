@@ -80,7 +80,7 @@ my $getall =0;
 my $pepformat = 'Fasta';
 my $test;
 my $part;
-my $dbname;
+my $dbname = 'ensdev';
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
