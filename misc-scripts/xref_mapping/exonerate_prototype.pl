@@ -71,7 +71,7 @@ rm -f /tmp/\$LSB_JOBINDEX.$query /tmp/\$LSB_JOBINDEX.$target /tmp/$output
 lsrcp ecs1a:$root_dir/$target /tmp/\$LSB_JOBINDEX.$target
 lsrcp ecs1a:$root_dir/$query  /tmp/\$LSB_JOBINDEX.$query
 
-$exonerate_path /tmp/\$LSB_JOBINDEX.$query /tmp/\$LSB_JOBINDEX.$target --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo "xrefdna %qi %ti %qab %qae %tab %tae %C %s\n" $dna_exonerate_options | grep '^xrefdna ' > /tmp/$output
+$exonerate_path /tmp/\$LSB_JOBINDEX.$query /tmp/\$LSB_JOBINDEX.$target --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo "xrefdna:%qi:%ti:%qab:%qae:%tab:%tae:%C:%s\n" $dna_exonerate_options | grep '^xrefdna' > /tmp/$output
 
 lsrcp /tmp/$output ecs1a:$root_dir/$output
 
@@ -134,6 +134,16 @@ sub parse_and_store {
   # get or create the appropriate analysis ID
   my $analysis_id = get_analysis_id($type);
 
+  # TODO - get this from config
+  my $dbi = DBI->connect("dbi:mysql:host=ecs1g;port=3306;database=arne_core_20_34",
+			 "ensadmin",
+			 "ensembl",
+			 {'RaiseError' => 1}) || die "Can't connect to database";
+
+  my $ox_sth = $dbi->prepare("INSERT INTO object_xref(ensembl_id, ensembl_object_type, xref_id) VALUES(?,?,?)");
+
+  my $ix_sth = $dbi->prepare("INSERT INTO identity_xref VALUES(?,?,?,?,?,?,?,?,?,?,?)");
+
   # files to write table data to
   open (OBJECT_XREF, ">object_xref.");
   open (IDENTITY_XREF, ">identity_xref.txt");
@@ -150,14 +160,23 @@ sub parse_and_store {
     while (<FILE>) {
 
       $total_lines++;
-      my ($label, $query_id, $target_id, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split();
+      chomp();
+      my ($label, $query_id, $target_id, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
+      $cigar_line =~ s/ //;
+
       # TODO make sure query & target are the right way around
 
       print OBJECT_XREF "$target_id\t$type\t$query_id\n";
       print IDENTITY_XREF "$query_id\t$target_id\t$query_start\t$query_end\t$target_start\t$target_end\t$cigar_line\t$score\t\\N\t$analysis_id\n";
       # TODO - evalue?
 
-      # TODO - get object_xref ID from inserts and use in identity_xref table
+      # Store in database
+      # create entry in object_xref and get its object_xref_id
+      $ox_sth->execute($target_id, $type, $query_id) || warn "Error writing to object_xref table";
+      my $object_xref_id = $ox_sth->{'mysql_insertid'};
+
+      # create entry in identity_xref
+      $ix_sth->execute($object_xref_id, $query_id, $target_id, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score, undef, $analysis_id) || warn "Error writing to identity_xref table";
 
     }
 
@@ -290,5 +309,6 @@ sub get_analysis_id {
 
   }
 
+  return $analysis_id;
 
 }
