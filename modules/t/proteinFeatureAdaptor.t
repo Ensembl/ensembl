@@ -5,12 +5,12 @@ use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 11;
+	plan tests => 2;
 }
 
 use MultiTestDB;
 
-our $verbose = 1;
+our $verbose = 0;
 
 my $multi = MultiTestDB->new;
 
@@ -36,8 +36,8 @@ sub print_features {
   my $features = shift;
   foreach my $f (@$features) {
     if(defined($f)) {
-      print $f->start, '-', $f->end, ' -> ', $f->hseqname, ':',
-           $f->hstart, '-', $f->hend, "\n"; 
+      debug($f->start.'-'.$f->end. ' -> '.$f->hseqname. ':'.
+            $f->hstart. '-'.$f->hend); 
     } 
   }
 }
