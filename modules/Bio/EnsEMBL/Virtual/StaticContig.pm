@@ -260,7 +260,7 @@ sub get_all_SimilarityFeatures_above_score{
     $self->throw("Must supply score parameter") unless $score;
 
     if( $self->_use_cext_get() ) {
-	return $self->_cext_get_all_SimilarityFeatures_type($analysis_type);
+    	return $self->_cext_get_all_SimilarityFeatures_type($analysis_type);
     }
     
     my $glob_start = $self->_global_start;
@@ -275,7 +275,7 @@ sub get_all_SimilarityFeatures_above_score{
 
     #print STDERR "SIMI: got bump factor ",$bp,"\n";
 
-    if( ! defined $self->{'_feature_cache'} ) {
+    if( ! defined $self->{'_feature_cache'} || $score < $self->{'_feature_cache_score'} ) {
       &eprof_start('similarity-query');
 
 
@@ -322,6 +322,7 @@ sub get_all_SimilarityFeatures_above_score{
     
     
       $self->{'_feature_cache'} = {};
+      $self->{'_feature_cache_score'} = $score;
 
       my $out;
       my $length=$self->length;
@@ -1839,85 +1840,81 @@ sub get_all_Genes_exononly{
         AND    e.contig_id in $idlist
         AND    sgp.chr_end >= $glob_start
 	AND    sgp.chr_start <= $glob_end
-        ORDER  BY t.gene_id,t.transcript_id,et.rank,e.sticky_rank";
+        ORDER  BY t.gene_id, t.transcript_id, et.rank, e.sticky_rank";
 
-   my $sth = $self->dbobj->prepare($query);
-   $sth->execute();
+    my $sth = $self->dbobj->prepare($query);
+    $sth->execute();
 
-   my ($exonid,$stickyrank,$phase,$rank,$transcriptid,$geneid,$start,$end,$strand);
-   $sth->bind_columns(undef,\$exonid,\$stickyrank,\$phase,\$rank,\$transcriptid,\$geneid,\$start,\$end,\$strand);
+    my ($exonid,$stickyrank,$phase,$rank,$transcriptid,$geneid,$start,$end,$strand);
+    $sth->bind_columns(undef,\$exonid,\$stickyrank,\$phase,\$rank,\$transcriptid,\$geneid,\$start,\$end,\$strand);
   
-   my $current_transcript;
-   my $current_gene;
-   my $current_transcript_id='';
-   my $current_gene_id='';
-   my $previous_exon;
+    my $current_transcript;
+    my $current_gene;
+    my $current_transcript_id='';
+    my $current_gene_id='';
+    my $previous_exon;
 
-   my @out;
-   my @trans;
-   my $length = $glob_end - $glob_start;
+    my @out;
+    my @trans;
+    my $length = $glob_end - $glob_start;
 
-   while( $sth->fetch ) {
+    while( $sth->fetch ) {
+        next if (($end > $length) || ($start < 1));
 
-       if (($end > $length) || ($start < 1)) {
-	   next;
-       }
-       if( $geneid ne $current_gene_id ) {
+        if( $geneid ne $current_gene_id ) {
 	   # make a new gene
-	   $current_gene = Bio::EnsEMBL::Gene->new;
-	   $current_gene->dbID($geneid);
-	   $current_gene->adaptor($self->dbobj->get_GeneAdaptor);
-           my $sth2 = $self->dbobj->prepare($query);
-           $sth2->execute;
-           my $rowhash = $sth2->fetchrow_hashref;
-           my $type = $rowhash->{'type'};
-           $current_gene->type($type);
-	   push(@out,$current_gene);
-	   $current_gene_id = $geneid;
-       }
+    	    $current_gene = Bio::EnsEMBL::Gene->new;
+    	    $current_gene->dbID($geneid);
+    	    $current_gene->adaptor($self->dbobj->get_GeneAdaptor);
+                my $sth2 = $self->dbobj->prepare($query);
+                $sth2->execute;
+                my $rowhash = $sth2->fetchrow_hashref;
+                my $type = $rowhash->{'type'};
+                $current_gene->type($type);
+        	    push(@out,$current_gene);
+    	        $current_gene_id = $geneid;
+            }
 
-       if( $transcriptid ne $current_transcript_id ) {
-	   # make a new transcript
-	   $current_transcript = Bio::EnsEMBL::WebTranscript->new();
-	   $current_transcript->dbID($current_transcript_id);
-	   $current_transcript->adaptor($self->dbobj->get_TranscriptAdaptor);
+            if( $transcriptid ne $current_transcript_id ) {
+    	   # make a new transcript
+        	    $current_transcript = Bio::EnsEMBL::WebTranscript->new();
+    	        $current_transcript->dbID($current_transcript_id);
+	            $current_transcript->adaptor($self->dbobj->get_TranscriptAdaptor);
+                
+	            $current_gene->add_Transcript($current_transcript);
+	            push(@trans,$current_transcript);
+	            if( $rank == 1 ) {
+	                $current_transcript->is_start_exon_in_context('dummy',1);
+	            } else {
+	                $current_transcript->is_start_exon_in_context('dummy',0);
+	            }
 
-	   $current_gene->add_Transcript($current_transcript);
-	   push(@trans,$current_transcript);
-	   if( $rank == 1 ) {
-	       $current_transcript->is_start_exon_in_context('dummy',1);
-	   } else {
-	       $current_transcript->is_start_exon_in_context('dummy',0);
-	   }
+        	   $current_transcript_id = $transcriptid;
+        	   $current_transcript->dbID($transcriptid);
+        	   $current_transcript->adaptor( $self->dbobj->get_TranscriptAdaptor );
+        }
+        if( $stickyrank > 1 && defined $previous_exon && $previous_exon->dbID() == $exonid ) { # This is the same EXON so amend its length
+	        $previous_exon->end($end);
+            next;            ##  else we can't do anything else so create the sticky exon anyway! {but this will possibly only return part of the sticky exon}
+        } 
+#	        if( !defined $previous_exon ) {
+#    	        $self->warn("Really bad news - half-on-half off Sticky Exon. Faking it");
+#            } elsif( $previous_exon->end < $end ) {
+#	            next;
+#	        }
+#        }
 
-	   $current_transcript_id = $transcriptid;
-	   $current_transcript->dbID($transcriptid);
-	   $current_transcript->adaptor( $self->dbobj->get_TranscriptAdaptor );
-	 }
-
-       if( $stickyrank > 1 ) {
-	   if( !defined $previous_exon ) {
-	       $self->warn("Really bad news - half-on-half off Sticky Exon. Faking it");
-	   } elsif( $previous_exon->end < $end ) {
-	       $previous_exon->end($end);
-	       next;
-	   }
-
-       }
-
-
-       my $exon = Bio::EnsEMBL::Exon->new();
-       $exon->start($start);
-       $exon->end($end);
-       $exon->strand($strand);
-       $exon->dbID($exonid);
-       $exon->adaptor( $self->dbobj->get_ExonAdaptor() );
-       $exon->seqname($self->id);
-       $exon->phase($phase);
-       $previous_exon = $exon;
-       $current_transcript->add_Exon($exon);
-       $current_transcript->end_exon_rank($rank);
-       
+        my $exon = Bio::EnsEMBL::Exon->new();
+            $exon->start($start);
+            $exon->end($end);
+            $exon->strand($strand);
+            $exon->dbID($exonid);
+            $exon->adaptor( $self->dbobj->get_ExonAdaptor() );
+            $exon->seqname($self->id);
+            $exon->phase($phase);
+            $previous_exon = $exon;
+            $current_transcript->add_Exon($exon);
+            $current_transcript->end_exon_rank($rank);
    }
 
    #
