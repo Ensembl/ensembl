@@ -1057,7 +1057,6 @@ sub _get_all_SeqFeatures_type {
 
    my $count = 0;
    foreach $sf ( @$sf ) {
-       #print "\n ##### Starting to convert featre " . $sf->seqname . " " . $sf->id . "\n";
        $sf = $self->_convert_seqfeature_to_vc_coords($sf);
 
        if( !defined $sf ) {      
@@ -1074,9 +1073,7 @@ sub _get_all_SeqFeatures_type {
         else{
 
      if( $type eq 'prediction' ) {
-       print "##### Finished to convert featre " . $sf->seqname . " " . $sf->id . " ".$sf->strand. " ".$sf->start."\n";
        foreach my $sub ( $sf->sub_SeqFeature ) {
-	 print "### sub is ".$sub->start." ".$sub->end." ".$sub->strand."\n";
        }
      }
 
