@@ -453,6 +453,94 @@ sub get_all_Gene_id{
    return @out;
 }
 
+=head2 archive_Gene
+
+ Title   : archive_Gene
+ Usage   : $obj->archive_gene($gene_id,$arcdb)
+ Function: Deletes a gene and all its transcripts and exons, 
+           and archives partial info in the archive db passed on.
+ Example : 
+ Returns : nothing
+ Args    : $gene_id, $arcdb (archive database object)
+
+
+=cut
+
+sub archive_Gene{
+   my ($self,$geneid,$arcdb) = @_;
+   my @trans;
+   my %exon;
+   
+   # get transcripts for the gene given 
+
+   my $gene = $self->get_Gene($geneid);
+   foreach my $transcript ($gene->each_Transcript) {
+       
+       #Get out transcript info needed to write into archive db
+       my $seq = $transcript->dna_seq;
+       $seq->id($transcript->id);
+       print STDERR "The transcript sequence id is ".$seq->id."\n";
+       my $version = $transcript->version;
+       #Temporary, since versions not stored yet...
+       !$version && $version = 1;
+
+       my $type = 'transcript';
+
+       my $gene_id = $gene->id;
+       my $gene_version = $gene->version;
+       #Temporary, since versions not stored yet...
+       !$gene_version && $gene_version = 1;
+
+       my $clone_id = $clone->id;
+       my $clone_version = $clone->sv;
+       #Temporary, since versions not stored yet...
+       !$clone_version && $clone_version = 1;
+       
+       #Finally, write all the info to a new entry in the archive database
+
+       $arc_db->write_seq($seq, $version, $type, $gene_id, $gene_version, $clone_id, $clone_version);
+       
+       #Get out translation to write protein into archive db
+       #Note: version is the one from transcript!
+
+       $seq = $transcript->translate;
+       print STDERR "The protein sequence id is ".$seq->id."\n";
+       $type = 'protein';
+
+       $arc_db->write_seq($seq, $version, $type, $gene_id, $gene_version, $clone_id, $clone_version);
+
+       #Delete transcript rows
+       $sth= $self->prepare("delete from transcript where id = '$trans'");
+       $sth->execute;
+       
+       #Get out exons for this transcript
+       foreach my $exon ($transcript->each_Exon) {
+	   
+	   #Get out info needed to write into archive db
+	   $seq = $exon->seq;
+	   $seq->id($exon->id);
+	   print STDERR "The exon sequence id is ".$exon->id."\n";
+	   $version = $exon->version;
+	   !$version && $version = 1;
+	   $type = 'exon';
+	   
+	   #Write into archive db
+	   $arc_db->write_seq($seq, $version, $type, $gene_id, $gene_version, $clone_id, $clone_version);
+	   
+           #Delete exon_transcript rows
+	   $sth= $self->prepare("delete from exon_transcript where transcript = '$trans'");
+	   $sth->execute;
+	   #Delete exon rows
+	   $sth = $self->prepare("delete from exon where id = '$exon'");
+	   $sth->execute;
+       }
+   }
+   
+   # delete gene rows
+   
+   $sth = $self->prepare("delete from gene where id = '$geneid'");
+   $sth->execute;
+}   
 
 =head2 delete_Clone
 
@@ -467,27 +555,30 @@ sub get_all_Gene_id{
 =cut
 
 sub delete_Clone{
-   my ($self,$clone_id) = @_;
+   my ($self,$clone_id,$arcdb) = @_;
+   
+   $clone_id || $self->throw ("Trying to delete clone without a clone_id\n");
+   $arcdb || $self->throw ("Not allowed to delete clones without passing on a valid, connected, archive_DB!\n");
    
    my @contigs;
    # get a list of contigs to zap
    my $sth = $self->prepare("select id from contig where clone = '$clone_id'");
-
+   
    $sth->execute;
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@contigs,$rowhash->{'id'});
    }
-
-
+   
+   
    # Delete from DNA table, Contig table, Clone table
-
+   
    foreach my $contig ( @contigs ) {
        my $sth = $self->prepare("delete from contig where id = '$contig'");
        $sth->execute;
        $sth = $self->prepare("delete from dna where contig = '$contig'");
        $sth->execute;
    }
-
+   
    $sth = $self->prepare("delete from clone where id = '$clone_id'");
    $sth->execute;
 }
