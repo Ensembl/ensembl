@@ -224,17 +224,24 @@ sub get_taxonomy_id {
 
 =head2 get_default_assembly
 
-Description: DEPRECATED. Use CoordSystemAdaptor::fetch_top_level instead to
-             obtain the assembly version.
+  Description: DEPRECATED. Use the version of the coordinate system you are
+             interested in instead.
+
+  Example:     #use this instead
+               my ($highest_cs) = @{$db->get_CoordSystemAdaptor->fetch_all()};
+               my $assembly = $highest_cs->version();
 
 =cut
 
 sub get_default_assembly {
   my $self = shift;
 
-  deprecate('Use CoordSystemAdaptor::fetch_top_level instead');
+  deprecate("Use version of coordinate system you are interested in instead.\n".
+            "Example:\n".
+            '  ($cs) = @{$coord_system_adaptor->fetch_all()};'."\n" .
+            '  $assembly = $cs->version();');
 
-  my $cs = $self->db->get_CoordSystemAdaptor->fetch_top_level();
+  my ($cs) = @{$self->db->get_CoordSystemAdaptor->fetch_all()};
 
   return $cs->version();
 }
