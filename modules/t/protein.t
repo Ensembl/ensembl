@@ -174,10 +174,10 @@ else {
     print "not ok 17\n";
 }
 
-
-$protein->add_Protein_feature($introns[0]);
-
 my @features2 = $protein->each_Protein_feature();
+
+print STDERR scalar (@features2), "\n";
+
 
 
 if (scalar @features2 == 3) {
@@ -198,6 +198,7 @@ if ($protein->transcriptac() eq "ENST00000216167") {
     print "ok 20\n";
 }
 else {
+
     print "not ok 20\n";
 }
 
@@ -245,7 +246,7 @@ else {
     print "not ok 25\n";
 }
 
-print $introns[0]->intron_length, "\n";
+
 if ($introns[0]->intron_length == 94) {
     
     print "ok 26\n";

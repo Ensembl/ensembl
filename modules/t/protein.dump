@@ -16,6 +16,7 @@ INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, 
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (5,NULL,NULL,'RepeatMasker','1','RepeatMasker','repeat');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (6,'Pfam',3,'hmm','1','Fasta','domain');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (7,'PRINTS',3,'hmm','1','Fasta','domain');
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,'transmembrane',3,'hmm','1','transmembrane','transmembrane');
 
 #
 # Dumping data for table 'analysisprocess'
@@ -212,6 +213,7 @@ INSERT INTO interpro_description (interpro_ac,description) VALUES ('IPR000002','
 
 INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (1,'ENSP00000216167',2,6,6,6,12,'PF00098',23,435,23);
 INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (2,'ENSP00000216167',7,14,7,14,21,'PR00012',21,4,56);
+INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (3,'ENSP00000216167',7,14,8,14,21,'transmembrane',21,4,56);
 
 #
 # Dumping data for table 'repeat_feature'
