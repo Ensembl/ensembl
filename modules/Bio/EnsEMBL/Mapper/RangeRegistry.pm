@@ -83,6 +83,14 @@ sub new {
 }
 
 
+sub flush {
+  my $self = shift;
+  $self->{'registry'} = {};
+}
+
+
+
+
 =head2 check_and_register
 
   Arg [1]    : string $id
