@@ -348,7 +348,7 @@ sub get_array_supporting {
           , e_t.rank
           , exon.rank
 
-       LIMIT 2000
+       LIMIT 2500
         };
 
     #print STDERR "query [$query]\n"; 
