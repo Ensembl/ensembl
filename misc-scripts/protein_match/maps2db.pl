@@ -74,21 +74,21 @@ if (($organism eq "human") || ($organism eq "mouse")) {
 }
 close(REFSEQ);
 
-if ($organism eq "human") {
-    open (REFSEQPRED,"$refseq_pred") || die "Can't open REFSEQ PRED $refseq_pred\n";
+#if ($organism eq "human") {
+#    open (REFSEQPRED,"$refseq_pred") || die "Can't open REFSEQ PRED $refseq_pred\n";
     #Read the file by genbank entries (separated by //) 
-    $/ = "\/\/\n";
-    while (<REFSEQPRED>) {
+#    $/ = "\/\/\n";
+#    while (<REFSEQPRED>) {
 #This subroutine store for each NP (refseq protein accession number) its corresponding NM (DNA accession number)
-	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
-	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
+#	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
+#	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
 	#print STDERR "PROT: $prot_ac\t$dna_ac\n";
-	$ref_map_pred{$prot_ac} = $dna_ac;
-    }
+#	$ref_map_pred{$prot_ac} = $dna_ac;
+#    }
 #Put back the default (new line) for reading file
-    $/ = "\n"; 
-}
-close(REFSEQPRED);
+#    $/ = "\n"; 
+#}
+#close(REFSEQPRED);
 
 
 open (XMAP,"$xmap") || die "Can't open XMAP $xmap\n";
