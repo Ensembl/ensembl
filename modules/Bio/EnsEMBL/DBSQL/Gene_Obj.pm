@@ -793,7 +793,16 @@ sub get_Gene_by_DBLink {
     my $supporting = shift;
     my @genes=$self->get_Gene_array_by_DBLink($external_id,$supporting);
 
-    return $genes[0];
+    my $biggest;
+    my $max;
+    foreach my $gene (@genes) {
+	my $size = (scalar($gene->each_unique_Exon));
+	if ($size > $max) {
+	    $biggest = $gene;
+	    $max=$size;
+	}
+    }
+    return $biggest;
 }
 
 =head2 get_Gene_by_DBLink
