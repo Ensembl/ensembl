@@ -759,7 +759,7 @@ sub get_all_MapFrags {
 
 sub has_MapSet {
     my( $self, $mapset_name ) = @_;
-    return $self->dbobj->get_MapFragAdaptor->has_mapset( $mapset_name );
+    return $self->adaptor()->db()->get_MapFragAdaptor->has_mapset( $mapset_name );
 }
 
 
