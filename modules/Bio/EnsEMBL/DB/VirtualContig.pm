@@ -486,7 +486,7 @@ sub top_SeqFeatures {
    } 
 
    foreach my $gene ( $self->get_all_Genes()) {
-       print STDERR "Got a $gene\n";
+#       print STDERR "Got a $gene\n";
        my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
        push(@f,$vg);
    }
@@ -1328,8 +1328,9 @@ sub _get_all_SeqFeatures_type {
 
    my $count = 0;
    foreach $sf ( @$sf ) {
+
        $sf = $self->_convert_seqfeature_to_vc_coords($sf);
-       print STDERR "Got a $sf\n";
+       #print STDERR "Got a $sf\n";
 
        if( !defined $sf ) {
 	   next;
@@ -1417,13 +1418,13 @@ sub _convert_seqfeature_to_vc_coords {
    if( $self->{'leftmostcontig_id'} eq $cid ){
        if( $self->ori_in_vc($cid) == 1) {
 	   # if end is less than startincontig - a no-go
-	   if( $sf->end < $self->{'startincontig'}->{$cid} ) {
-	       return 0;
+	   if( $sf->end < $self->{'startincontig'}->{$cid} ) {     
+	       return undef;
 	   }
        } else {
 	   # if start is > start in contig
-	   if( $sf->start > $self->{'startincontig'}->{$cid} ) {
-	       return 0;
+	   if( $sf->start > $self->{'startincontig'}->{$cid} ) {    
+	       return undef;
 	   }
        }
    }
