@@ -151,7 +151,7 @@ sub _objs_from_sth {
 
 sub fetch_all_by_chr_name {
     my ($self,$chr_name) = @_;
-
+    
     throw('Chromosome name argument expected') if(!$chr_name);
 
     my $slice =

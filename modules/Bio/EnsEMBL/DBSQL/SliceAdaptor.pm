@@ -704,7 +704,6 @@ sub fetch_by_chr_band {
   my ($self,$chr,$band) = @_;
 
   my $chr_slice = $self->fetch_by_region('toplevel', $chr);
-
   my $seq_region_id = $self->get_seq_region_id($chr_slice);
 
   my $sth = $self->db->prepare

@@ -175,7 +175,6 @@ sub generic_fetch {
   #append additional clauses which may have been defined
   $sql .= "\n$final_clause";
 
-  ##print STDERR "\n\n$sql\n\n";
 
   my $sth = $db->prepare($sql);
 
@@ -345,7 +344,6 @@ sub fetch_all_by_Slice_and_score {
     my $syn = $tabs[0]->[1];
     $constraint = "${syn}.score > $score";
   }
-
   return $self->fetch_all_by_Slice_constraint($slice, $constraint, 
 					      $logic_name);
 }
