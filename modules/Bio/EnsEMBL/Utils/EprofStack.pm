@@ -44,7 +44,12 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::EnsEMBL::Root;
-use Time::HiRes qw(time);
+BEGIN {
+ eval {
+ require Time::HiRes;
+ Time::HiRes->import('time');
+ };
+};
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
