@@ -222,33 +222,6 @@ sub adaptor {
 }
 
 
-
-
-=head2 contig
-
-  Arg [1]    : Bio::EnsEMBL::RawContig/Slice $contig
-  Example    : none
-  Description: get/set for attribute contig. Is channeled to the bioperl
-               comliant entire_seq/attach_seq calls.
-  Returntype : Bio::EnsEMBL::RawContig/Slice
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub contig {
-  my $self = shift;
-  my $seq = shift;
-  
-  if( $seq ) {
-    $self->attach_seq($seq);
-  }
-
-  return $self->entire_seq();
-}
-
-
 =head2 transform
 
   Arg  1    : Bio::EnsEMBL::Slice $slice

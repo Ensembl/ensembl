@@ -345,7 +345,7 @@ sub get_all_RepeatFeatures{
 
 sub get_all_Genes{
    my ($self, $empty_flag) = @_;
-   
+
    #caching is performed on a per slice basis in the GeneAdaptor
    my $gene_adaptor = $self->adaptor->db->get_GeneAdaptor();
    return $gene_adaptor->fetch_by_Slice($self, $empty_flag);

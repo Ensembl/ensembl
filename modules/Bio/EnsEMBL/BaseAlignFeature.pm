@@ -277,34 +277,6 @@ sub adaptor {
 }
 
 
-=head2 contig
-
-  Arg [1]    : Bio::EnsEMBL::Slice or
-               Bio::EnsEMBL::RawContig $contig
-  Example    : none
-  Description: The sequnence where the coordinates make sense. Channeled to
-               attach_seq/entire_seq from BioPerl
-  Returntype : Slice/RawContig
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub contig {
-  my $self = shift;
-  if( @_ ) {
-    my $value = shift;
-    #print "setting exons contig to ".$value." \n";
-    $self->attach_seq($value);
-  }
-  else {
-    return $self->entire_seq();
-  }
-}
-
-
-
 =head2 _parse_cigar
 
   Args       : none

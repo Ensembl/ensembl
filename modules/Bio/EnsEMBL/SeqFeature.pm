@@ -293,14 +293,20 @@ sub frame {
 =cut
 
 sub primary_tag{
-    my ($self,$arg) = @_;
+  my ($self,$arg) = @_;
+  
+  if (defined($arg)) {
+    # throw warnings about setting primary tag
+    my ($p,$f,$l) = caller;
+    $self->warn("$f:$l setting primary_tag now deprecated." .
+		"Primary tag is delegated to analysis object");
+  }
 
-    if (defined($arg)) {
-        # throw warnings about setting primary tag
-        my ($p,$f,$l) = caller;
-        $self->warn("$f:$l setting primary_tag now deprecated. Primary tag is delegated to analysis object");
-   }
-   return $self->analysis->gff_feature();
+  unless($self->analysis) {
+    return '';
+  }
+  
+  return $self->analysis->gff_feature();
 }
 
 =head2 source_tag
@@ -322,7 +328,12 @@ sub source_tag{
     if (defined($arg)) {
         # throw warnings about setting primary tag
         my ($p,$f,$l) = caller;
-        $self->warn("$f:$l setting source_tag now deprecated. Source tag is delegated to analysis object");
+        $self->warn("$f:$l setting source_tag now deprecated. " .
+		    "Source tag is delegated to analysis object");
+    }
+
+    unless($self->analysis) {
+      return "";
     }
 
    return $self->analysis->gff_source();
