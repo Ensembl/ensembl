@@ -120,7 +120,7 @@ sub new {
     $self->connect();
 
     if($dbconn->disconnect_when_inactive()) {
-      $self->disconnect_when_inactive(1) 
+      $self->disconnect_when_inactive(1);
     }
   } else {
 
@@ -362,6 +362,7 @@ sub disconnect_when_inactive {
     }
   }
 
+
   return $self->{'disconnect_when_inactive'};
 }
 
@@ -517,7 +518,7 @@ sub do {
 sub disconnect_if_idle {
   my $self = shift;
 
-  if(!$self->db_handle()->{'Kids'} &&
+  if($self->db_handle()->{'Kids'} == 0 &&
      !$self->db_handle()->{'InactiveDestroy'}) {
     $self->db_handle->disconnect();
   }
