@@ -126,9 +126,8 @@ sub get_last_update_offset{
     my $rowhash = $sth->fetchrow_hashref;
     my $last    = $rowhash->{'UNIX_TIMESTAMP(max(time_started))'};
     if ($last eq "") { 
-	$self->warn ("No value stored for last_update in db_update table!
-Setting it to 1!");
-    $last=1801;
+	$self->warn ("No value stored for last_update in db_update table! Setting it to 1!");
+        $last=1801;
     }
 
     #Now get the offset time from the meta table, which is in time format
