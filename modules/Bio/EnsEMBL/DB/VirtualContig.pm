@@ -598,10 +598,15 @@ sub get_all_Genes {
     }
     
     foreach my $t ( values %trans ) {
-	my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->start_exon_id}->contig_id,$t->start,$t->start,1);
-	$t->start($start);
-	($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->end_exon_id}->contig_id,$t->end,$t->end,1);
-	$t->end($start);
+	if( exists $self->{'contig'}->{$exon{$t->start_exon_id}->contig_id} ) {
+	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->start_exon_id}->contig_id,$t->start,$t->start,1);
+	    $t->start($start);
+	}
+
+	if( exists $self->{'contig'}->{$exon{$t->end_exon_id}->contig_id} ) {
+	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->end_exon_id}->contig_id,$t->end,$t->end,1);
+	    $t->end($start);
+	}
     }
     
     return values %gene;
@@ -1019,15 +1024,17 @@ sub _build_contig_map {
 	    }
 	    
 	    if( $current_orientation == 1 ) {
-		print(STDERR "Current orientation $current_orientation\n");
-		print(STDERR "golden start " . $current_contig->golden_start . "\n");
-
-		$self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start+1;
+		if( $overlap->distance == 0 ) {
+		    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start+1; 
+		} else {
+		    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start;
+		}
 	    } else {
-		print(STDERR "Current orientation $current_orientation\n");
-		print(STDERR "golden end " . $current_contig->golden_end . "\n");
-
-		$self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end-1;
+		if( $overlap->distance == 0 ) {
+		    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end-1; 
+		} else {
+		    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end; 
+		}
 	    }
 	    
 	    $self->{'contigori'}->{$current_contig->id} = $current_orientation;
@@ -1282,6 +1289,11 @@ sub _convert_seqfeature_to_vc_coords {
        $self->throw("sequence feature [$sf] has no seqname!");
    }
 
+   if( !exists $self->{'contig'}->{$cid} ) {
+       return 0;
+   }
+
+
    my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
    
    $sf->start ($rstart);
@@ -1307,7 +1319,8 @@ sub _convert_seqfeature_to_vc_coords {
        
        $sf->seqname($self->id);
    }
-       
+
+   return 1;
 }
 
 =head2 _convert_start_end_strand_vc
