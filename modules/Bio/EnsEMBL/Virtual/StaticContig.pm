@@ -1239,7 +1239,7 @@ sub get_all_DASFeatures{
 # BAC.*_C are fly contigs....
 # CRA_x are Celera mosquito contigs....
 
-	           if( $sf->seqname() =~ /(\w+\.\d+\.\d+.\d+|BAC.*_C)|CRA_.*/ ) {
+	           if( $sf->seqname() =~ /(\w+\.\d+\.\d+.\d+|BAC.*_C|CRA_.*|AAAB\d+\_\d+)/ ) {
 #                    warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
  		            push(@contig_features,$sf);
                } elsif( $sf->seqname() =~ /chr[\d+|X|Y]/i) { 
@@ -1255,6 +1255,14 @@ sub get_all_DASFeatures{
 #                    warn ("Got a mouse clone feature: ", $sf->seqname(), "\n");
  	                push(@contig_features, $sf);
                } elsif( $sf->seqname() =~ /\w{1,2}\d+/i) { 
+#                    print STDERR "CLONE >".$sf->seqname()."<\n";
+                    if(my $contig_from_clone = $self->contig_from_clone($sf->seqname()) ) {
+#                        print STDERR "CONTIG NAME FROM CLONE >$contig_from_clone<\n";
+                        $sf->seqname($contig_from_clone);
+ 	                    push(@contig_features, $sf);
+                    }
+#                    warn ("Got a clone feature: ", $sf->seqname(), "\n");
+               } elsif( $sf->seqname() =~ /\w+/i) { 
 #                    print STDERR "CLONE >".$sf->seqname()."<\n";
                     if(my $contig_from_clone = $self->contig_from_clone($sf->seqname()) ) {
 #                        print STDERR "CONTIG NAME FROM CLONE >$contig_from_clone<\n";
