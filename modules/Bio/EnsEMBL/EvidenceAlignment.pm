@@ -64,7 +64,7 @@ use Bio::Root::RootI;
     Usage   :   my $tr_ea   = Bio::EnsEMBL::EvidenceAlignment->new(
                                 -DBADAPTOR    => $dba,
                                 -TRANSCRIPTID => $transcript_id,
-				-PFETCH       => '/path/to/pfetch');
+				-SEQFETCHER   => $seqfetcher);
 		my $cont_ea = Bio::EnsEMBL::EvidenceAlignment->new(
                                 -DBADAPTOR => $dba,
                                 -CONTIGID  => $contig_stable_id);
@@ -74,8 +74,11 @@ use Bio::Root::RootI;
                 with contig ID or -TRANSCRIPTID with transcript
 		ID, which may be either the transcript stable ID or
 		the transcript dbID); optional full path of pfetch
-		binary (-PFETCH), defaulting to whatever is in the
-		user's search path.
+		executable (-PFETCH), defaulting to whatever is in the
+		user's search path; optional SeqFetcher (-SEQFETCHER),
+		which, if present, will be used instead of the pfetch
+		executable. The seqfetcher, if supplied, must have a
+		get_Seqs_by_accs method.
 
 =cut
 
@@ -83,12 +86,13 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($transcriptid, $contigid, $dbadaptor, $pfetch) = $self->_rearrange(
-                                                         ['TRANSCRIPTID',
-						          'CONTIGID',
-                                                          'DBADAPTOR',
-						          'PFETCH'],
-						         @args);
+  my ($transcriptid, $contigid, $dbadaptor, $seqfetcher, $pfetch)
+    = $self->_rearrange(['TRANSCRIPTID',
+			 'CONTIGID',
+                         'DBADAPTOR',
+			 'SEQFETCHER',
+			 'PFETCH'],
+		         @args);
   if (defined $transcriptid and defined $contigid) {
     $self->throw("may have a transcript ID or a contig ID but not both");
   }
@@ -103,6 +107,10 @@ sub new {
   }
   $self->pfetch($pfetch);
   $self->dbadaptor($dbadaptor);
+
+  # If seqfetcher not specified, we leave it undefined, and pfetch
+  # executable will be used instead.
+  $self->seqfetcher($seqfetcher);
 
   return $self; # success - we hope!
 }
@@ -122,6 +130,24 @@ sub dbadaptor {
     $obj->{evidencealignment_db_adaptor} = $value;
   }
   return $obj->{evidencealignment_db_adaptor};
+}
+
+=head2 seqfetcher
+
+     Title   :   seqfetcher
+     Usage   :   $ea->seqfetcher($seqfetcher_obj);
+     Function:   get/set for seqfetcher, which must have a
+                 get_Seqs_by_accs method
+
+=cut
+
+sub seqfetcher {
+  my $obj = shift;
+  if( @_ ) {
+    my $value = shift;
+    $obj->{evidencealignment_seqfetcher} = $value;
+  }
+  return $obj->{evidencealignment_seqfetcher};
 }
 
 =head2 pfetch
@@ -326,9 +352,15 @@ sub _get_features_from_rawcontig {
                 accesions in one pfetch call. This is closely
 		based on
 		Bio/EnsEMBL::Pipeline::SeqFetcher::Pfetch in
-		ensembl-pipeline. Having it here allows
-		the current module to work for both pipeline
-		and Web users.
+		ensembl-pipeline. Having it here allows the
+		caller to simply specify a path to the pfetch
+		executable (or use the default path). This
+		allows us to avoid the different, incompatible
+		wrappers for pfetch in the Web and pipeline
+		code, and hence work with either pipeline or
+		Web. However, if $self->seqfetcher does exist,
+		that will be used in preference to the pfetch
+		executable.
     Returns :   Array of Bio::Seq
 
 =cut
@@ -341,6 +373,17 @@ sub _get_Seqs_by_accs {
   }
 
   my @seq;
+
+  if ($self->seqfetcher) {
+    eval {
+      @seq = $self->seqfetcher->get_Seqs_by_accs(@acc);
+    };
+    if($@){
+      $self->warn("$@");
+    }
+    return @seq;
+  }
+  
   my $newseq;
   my $tracker = 0;
   my $pfetch = $self->pfetch;
@@ -362,14 +405,14 @@ sub _get_Seqs_by_accs {
     };
 
     if($@){
-      print STDERR "$@\n";
+      $self->warn("$@");
     }
 
     if (defined $newseq){
       push (@seq, $newseq);
     }
     else{
-      $self->warn("Could not even pfetch sequence for [" . $acc[$tracker] . "]\n");
+      $self->warn("Could not even pfetch sequence for [" . $acc[$tracker] . "]");
     }
     $tracker++;
   }
@@ -667,14 +710,14 @@ sub _get_aligned_features_for_contig {
     my $flen = $feature->end - $feature->start + 1;
     if ($flen != 3 * $hlen) {
       $self->warn("genomic length $flen but protein hit length $hlen for hit "
-        . $feature->hseqname . "\n");
+        . $feature->hseqname);
       next PEP_FEATURE_LOOP;
     }
     if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
       > length $hit_seq_obj->seq))
     {
       $self->warn("hit coordinates out of range: hit " . $feature->hseqname .
-        ", hit start " . $feature->hstart . ", hit length $hlen\n");
+        ", hit start " . $feature->hstart . ", hit length $hlen");
       next PEP_FEATURE_LOOP;
     }
     my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
@@ -764,14 +807,14 @@ sub _get_aligned_features_for_contig {
     my $flen = $feature->end - $feature->start + 1;
     if ($hlen != $flen) {
       $self->warn("genomic length $flen but DNA hit length $hlen for hit "
-        . $feature->hseqname . "\n");
+        . $feature->hseqname);
       next NUC_FEATURE_LOOP;
     }
     if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
          > length $hit_seq_obj->seq))
     {
       $self->warn("hit coordinates out of range: hit " . $feature->hseqname .
-        ", hit start " . $feature->hstart . ", hit length $hlen\n");
+        ", hit start " . $feature->hstart . ", hit length $hlen");
       next NUC_FEATURE_LOOP;
     }
     my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
@@ -1015,14 +1058,14 @@ sub _get_aligned_evidence_for_transcript {
       my $flen = $feature->end - $feature->start + 1;
       if ($flen != 3 * $hlen) {
         $self->warn("genomic length $flen but protein hit length $hlen for hit "
-        . $feature->hseqname . "\n");
+        . $feature->hseqname);
         next PEP_FEATURE_LOOP;
       }
       if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
 	  > length $hit_seq_obj->seq))
       {
         $self->warn("hit coordinates out of range: hit " . $feature->hseqname .
-          ", hit start " . $feature->hstart . ", hit length $hlen\n");
+          ", hit start " . $feature->hstart . ", hit length $hlen");
         next PEP_FEATURE_LOOP;
       }
       my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
@@ -1137,14 +1180,14 @@ sub _get_aligned_evidence_for_transcript {
       my $flen = $feature->end - $feature->start + 1;
       if ($hlen != $flen) {
         $self->warn("genomic length $flen but DNA hit length $hlen for hit "
-          . $feature->hseqname . "\n");
+          . $feature->hseqname);
         next NUC_FEATURE_LOOP;
       }
       if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
 	  > length $hit_seq_obj->seq))
       {
         $self->warn("hit coordinates out of range: hit " . $feature->hseqname .
-          ", hit start " . $feature->hstart . ", hit length $hlen\n");
+          ", hit start " . $feature->hstart . ", hit length $hlen");
         next NUC_FEATURE_LOOP;
       }
       if ($feature->start < $exon->start) {
