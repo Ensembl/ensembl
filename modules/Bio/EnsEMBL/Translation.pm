@@ -358,7 +358,13 @@ sub get_all_ProteinFeatures {
     my $pfa = $adaptor->db()->get_ProteinFeatureAdaptor();
     my $name;
     foreach my $f (@{$pfa->fetch_all_by_translation_id($dbID)}) {
-      $name = lc($f->analysis->logic_name());
+      my $analysis = $f->analysis();
+      if($analysis) {
+	$name = lc($f->analysis->logic_name());
+      } else {
+	warning("ProteinFeature has no attached analysis\n");
+	$name = '';
+      }
       $hash{$name} ||= [];
       push @{$hash{$name}}, $f;
     }
