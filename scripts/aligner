@@ -11,10 +11,14 @@
 #
 # aligner --transcript ENST00000279043 > ENST00000279043.fa
 #
+# aligner --transcript 12213 > 12213.fa
+#
 # aligner --contig --host ecs1h --dbname homo_sapiens_core_4_28 \
 # --user ensro AL356104.6.1.96693 > AL356104.6.1.96693.fa
 #
-# It isn't possible to mix contigs and transcripts in the same command.
+# Stable IDs and/or internal dbIDs may be used for transcripts.
+# It isn't possible to mix contigs and transcripts in the
+# same command.
 
 use constant DEFAULT_USER   => 'anonymous';
 use constant DEFAULT_DBNAME => 'current';
@@ -64,9 +68,9 @@ foreach my $id (@ARGV) {
     $ea->contigname($id);
   }
   my @evidence_seq_arr;
-  eval {
+  #eval {
     @evidence_seq_arr = $ea->fetch_alignment;
-  };
+  #};
   if ($@) {
     die "error: can't fetch alignment for $id\n";
   }
