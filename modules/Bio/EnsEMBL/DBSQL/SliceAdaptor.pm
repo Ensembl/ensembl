@@ -379,7 +379,10 @@ sub fetch_by_gene_stable_id{
 
  Title   : fetch_by_chr_name
  Usage   : $slice = $slice_adaptor->fetch_by_chr_name('20');
- Function: Creates a slice of an entire chromosome 
+ Function: Creates a slice of an entire chromosome. Note that is the start coordinate
+           of the chromosome is > 1 ( see assembly table, e.g.: 'select min(chr_start) 
+           from assembly where chromosome_id =?') this will put Ns at the beginning of the
+           slice sequence.
  Returns : Slice object 
  Args    : chromosome name
 
