@@ -20,7 +20,7 @@ Bio::EnsEMBL::Analysis::Log - Logs decisions made in an analysis run
 
   $obj->store("This is a stored message");
 
-  foreach my $mess ( $obj->each_message() ) {
+  foreach my $mess ( $obj->each_LogMessage() ) {
      print "Message: ",$mess->text," by: ",$mess->author, " at:\n", $mess->stack, "\n\n"
   }
 
