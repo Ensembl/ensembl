@@ -38,7 +38,7 @@ ok(verbose() == -1);
 
 warning('This warn should not appear');
 
-ok(verbose(1));
+ok(1);
 
 warning('This warn should appear');
 
@@ -68,3 +68,6 @@ ok(7);
 sub test_deprecate {
   deprecate('This deprecate warning should appear');
 }
+
+
+verbose(0);

@@ -9,7 +9,7 @@ BEGIN { $| = 1;
 use MultiTestDB;
 use TestUtils qw(debug test_getter_setter);
 
-our $verbose = 1; #set to 1 to turn on debug printouts
+our $verbose = 0; #set to 1 to turn on debug printouts
 
 my $multi = MultiTestDB->new();
 my $db = $multi->get_DBAdaptor( 'core' );
@@ -46,17 +46,17 @@ ok($asm_mapper && $asm_mapper->isa('Bio::EnsEMBL::AssemblyMapper'));
 #
 
 my @coords = $asm_mapper->map('20', 500_001, 60_000_000, 1, $chr_cs);
-
+ok(@coords);
 print_coords(@coords);
 
 
 @coords = $asm_mapper->map('AL359765.6.1.13780', 1, 13780, 1, $ctg_cs);
-
+ok(@coords);
 print_coords(@coords);
 
 my $cln_mapper = $asma->fetch_by_CoordSystems($cln_cs, $ctg_cs);
 @coords = $cln_mapper->map('AL359765.6', 1, 20_000, 1, $cln_cs);
-
+ok(@coords);
 print_coords(@coords);
 
 
@@ -66,13 +66,13 @@ print_coords(@coords);
 
 my @seq_regions =
   $asm_mapper->list_seq_regions('20', 500_001, 60_000_000, $chr_cs);
-
+ok(@seq_regions);
 my $str = join("\n", "----------", @seq_regions);
 debug("$str\n");
 
 @seq_regions =
   $asm_mapper->list_seq_regions('AL359765.6.1.13780', 1, 13780, $ctg_cs);
-
+ok(@seq_regions);
 $str = join("\n", "----------", @seq_regions);
 debug("$str\n");
 
@@ -84,13 +84,13 @@ debug("$str\n");
 
 my @seq_ids =
   $asm_mapper->list_ids('20', 500_001, 60_000_000, $chr_cs);
-
+ok(@seq_ids);
 $str = join("\n", "----------", @seq_ids);
 debug("$str\n");
 
 @seq_ids =
   $asm_mapper->list_ids('AL359765.6.1.13780', 1, 13780, $ctg_cs);
-
+ok(@seq_ids);
 $str = join("\n", "----------", @seq_ids);
 debug("$str\n");
 
@@ -98,6 +98,8 @@ debug("$str\n");
 
 sub print_coords {
   my @coord_list = @_;
+
+  return if(!$verbose);
 
   foreach my $coord (@coord_list) {
     if($coord->isa('Bio::EnsEMBL::Mapper::Gap')) {

@@ -8,6 +8,17 @@ BEGIN { $| = 1;
 use MultiTestDB;
 use TestUtils qw(debug);
 
+use Bio::EnsEMBL::Utils::Exception qw(verbose);
+
+######################################################################
+# 
+# Clone is a deprecated class but needed for backwards 
+# compatibility.  These tests ensure that it actually works,
+# but verbosity is turned off to avoid all of the deprecated warnings
+#
+#######################################################################
+
+verbose(-1);
 
 our $verbose = 0; #set to 1 for debug printing
 
@@ -103,3 +114,7 @@ ok( $a == 6395 &&
     $n == 0 &&
     $gc_content == 48.28 && 
     $a + $t + $c + $g + $n == $contig->length());
+
+
+
+verbose(0);

@@ -14,6 +14,19 @@ use Bio::EnsEMBL::RawContig;
 use TestUtils qw(test_getter_setter);
 use Bio::Seq;
 
+use Bio::EnsEMBL::Utils::Exception qw(verbose);
+
+######################################################################
+# 
+# RawContigAdaptor is a deprecated class but needed for backwards 
+# compatibility.  These tests ensure that it actually works,
+# but verbosity is turned off to avoid all of the deprecated warnings
+#
+#######################################################################
+
+verbose(-1);
+
+
 #
 #1 slice adaptor compiles
 #
@@ -220,3 +233,7 @@ ok($first_contig->clone->name eq "AL359765.6");
 ## restore the original state of the contig table
 #$multi->restore("core","contig","dna","repeat_feature","simple_feature",
 #             "dna_align_feature","protein_align_feature","prediction_transcript");
+
+
+
+verbose(0);

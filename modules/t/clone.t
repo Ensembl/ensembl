@@ -2,12 +2,24 @@ use lib 't';
 use Test;
 use strict;
 
-BEGIN { $| = 1; plan tests => 6;}
+BEGIN { $| = 1; plan tests => 9;}
 
 use MultiTestDB;
 use Bio::Seq;
 use Bio::EnsEMBL::RawContig;
 use Bio::EnsEMBL::Clone;
+
+use Bio::EnsEMBL::Utils::Exception qw(verbose);
+
+######################################################################
+# 
+# Clone is a deprecated class but needed for backwards 
+# compatibility.  These tests ensure that it actually works,
+# but verbosity is turned off to avoid all of the deprecated warnings
+#
+#######################################################################
+
+verbose(-1);
 
 ok(1);
 
@@ -213,3 +225,6 @@ ok(scalar(@$contigs) == 1);
 my $raw_contig = undef;
 $raw_contig = $real_clone->get_RawContig_by_position(42);
 ok($raw_contig);
+
+
+verbose(0);

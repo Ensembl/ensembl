@@ -5,14 +5,26 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 4;
+	plan tests => 5;
 }
 
 
 use MultiTestDB;
 use TestUtils qw(debug test_getter_setter);
+
+use Bio::EnsEMBL::Utils::Exception qw(verbose);
 use Bio::EnsEMBL::Chromosome;
 
+
+######################################################################
+# 
+# Chromosome is a deprecated class but needed for backwards 
+# compatibility.  These tests ensure that it actually works,
+# but verbosity is turned off to avoid all of the deprecated warnings
+#
+#######################################################################
+
+verbose(-1);
 
 #
 #1 TEST - Chromosome Compiles
@@ -42,3 +54,6 @@ ok($chromosome->isa('Bio::EnsEMBL::Chromosome'));
 ok($chromosome->adaptor == $ca);
 ok($chromosome->length());
 ok($chromosome->name());
+
+
+verbose(0);
