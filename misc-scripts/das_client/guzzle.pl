@@ -23,7 +23,7 @@ use lib qw(/opt/local/libdata/perl5/i386-openbsd/5.8.0
 use Bio::Das;
 use CGI::Pretty qw(:standard -compile);
 
-#use Data::Dumper;
+use Data::Dumper;
 
 #---------------------------------------------------------------
 # Configurable things (change these):
@@ -51,7 +51,7 @@ my $tmpurl  = '/guzzle_tmp';
 #
 my $tmpdir  = $htdocs . $tmpurl;
 if (! (-d $tmpdir && -w $tmpdir && -x $tmpdir)) {
-    die "Check value of \$tmpdir, '$tmpdir' is not a directory\n";
+    die "Check value of \$tmpdir, '$tmpdir' is not a writable directory\n";
 }
 
 # $query_page_title and $result_page_title:
@@ -379,6 +379,8 @@ sub do_query
 		    -segment    => $query->{SEGMENT});
 
 		next if (!$reply->is_success);
+
+		#print $cgi->pre(Dumper($reply));
 
 		if (exists $query->{MAPPER} ) {
 		    # Map results using align mapper.
@@ -836,7 +838,8 @@ sub result_page
 			    $source->{NAME},	    # Source
 			    $feature->type->label,  # Description
 			    $feature->start,	    # Start
-			    $feature->stop ],	    # Stop
+			    $feature->stop,	    # Stop
+			    $feature->score ],	    # Score
 			FEATURE => $feature,	# Yes, this will duplicate
 						# some of the data...
 			COLOUR	=> $source->{COLOUR} );
@@ -969,7 +972,7 @@ sub result_page
     }
 
     print $cgi->Tr($cgi->th( [
-	qw( &nbsp; Label Source Description Start Stop ) ] ));
+	qw( &nbsp; Label Source Description Start Stop Score ) ] ));
 
     foreach my $table_row (@{ $table }) {
 	# Don't display the full sequence reply (good/bad?)
@@ -996,13 +999,14 @@ sub result_page
 	$cgi->td({ -colspan => 2 },
 	$cgi->radio_group(
 	    -name	=> 'SORT1',
-	    -values	=> [ 0, 1, 2, 3, 4 ],
+	    -values	=> [ 0, 1, 2, 3, 4, 5 ],
 	    -labels	=> {
 		0	=> ' Label',
 		1	=> ' Source',
 		2	=> ' Description',
 		3	=> ' Start',
-		4	=> ' Stop' },
+		4	=> ' Stop',
+		5	=> ' Score' },
 	    -default	=> 1 ) ),
 	$cgi->td({
 	    -rowspan	=> 2,
@@ -1016,13 +1020,14 @@ sub result_page
 	$cgi->td({ -colspan => 2 },
 	$cgi->radio_group(
 	    -name	=> 'SORT2',
-	    -values	=> [ 0, 1, 2, 3, 4 ],
+	    -values	=> [ 0, 1, 2, 3, 4, 5 ],
 	    -labels	=> {
 		0	=> ' Label',
 		1	=> ' Source',
 		2	=> ' Description',
 		3	=> ' Start',
-		4	=> ' Stop' },
+		4	=> ' Stop',
+		5	=> ' Score' },
 	    -default	=> 3 ) ));
     $cgi->autoEscape(1);
     print $cgi->end_table, $cgi->end_form;
