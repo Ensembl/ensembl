@@ -844,8 +844,10 @@ sub get_all_alt_locations {
   foreach my $axf (@$axfs) {
     if(uc($axf->type()) eq 'HAP') {
       push @haps, $axf;
-    } elsif(uc($axf->type()) eq 'PAR') {
+    } elsif(uc($axf->type()) =~ 'PAR') {
       push @alt, $axf;
+    } elsif( $axf->type() eq "HAP REF" ) {
+      # do nothing when you are on REF
     } else {
       warning("Unknown exception feature type ". $axf->type()."- ignoring.");
     }
