@@ -89,7 +89,7 @@ sub new{
 
        $hash{"-$key"} = $value;
    }
-   print STDERR "Got here!\n";
+   
    my @kv = %hash;
 
    return "$module"->new(%hash);

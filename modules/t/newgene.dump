@@ -19,16 +19,16 @@ INSERT INTO analysis VALUES (4,'swir','1','blastp','1','blastp','similarity');
 # Dumping data for table 'clone'
 #
 
-INSERT INTO clone VALUES ('test_clone_1','EMBL_test_1',1,1,1,'2000-07-03 18:31:00','2000-07-03 18:31:00','2000-07-03 18:31:00');
+INSERT INTO clone VALUES (1,'test_clone_1','EMBL_test_1',1,1,1,'2000-07-03 18:31:00','2000-07-03 18:31:00','2000-07-03 18:31:00');
 
 #
 # Dumping data for table 'contig'
 #
 
-INSERT INTO contig VALUES (1,'test_contig_1','test_clone_1',30,1,1,1,1,'international_test_1');
-INSERT INTO contig VALUES (2,'test_contig_2','test_clone_1',39,1,1,2,1,'international_test_2');
-INSERT INTO contig VALUES (3,'test_contig_3','test_clone_1',30,1,1,3,1,'international_test_3');
-INSERT INTO contig VALUES (4,'test_contig_4','test_clone_1',30,1,1,4,1,'international_test_4');
+INSERT INTO contig VALUES (1,'test_contig_1',1,30,1,1,1,1,'international_test_1');
+INSERT INTO contig VALUES (2,'test_contig_2',1,39,1,1,2,1,'international_test_2');
+INSERT INTO contig VALUES (3,'test_contig_3',1,30,1,1,3,1,'international_test_3');
+INSERT INTO contig VALUES (4,'test_contig_4',1,30,1,1,4,1,'international_test_4');
 
 #
 # Dumping data for table 'contigoverlap'

@@ -47,7 +47,7 @@ INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromos
 # Dumping data for table 'contigoverlap'
 #
 
-INSERT INTO contigoverlap (dna_a_id, dna_b_id, contig_a_position, contig_b_position, source, overlap_size, overlap_type) VALUES (4,6,1055,1,'UNORDERED',800,'right2left');
+INSERT INTO contigoverlap (dna_a_id, dna_b_id, contig_a_position, contig_b_position, overlap_source, overlap_size, overlap_type) VALUES (4,6,1055,1,'UNORDERED',800,'right2left');
 #
 # Dumping data for table 'db_update'
 #

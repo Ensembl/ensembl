@@ -71,7 +71,9 @@ use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
 use DBI;
 use Bio::EnsEMBL::DB::ObjI;
-use Bio::EnsEMBL::Pipeline::DB::ObjI;
+
+# who put this in? And why?
+#use Bio::EnsEMBL::Pipeline::DB::ObjI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 

@@ -110,24 +110,19 @@ sub fetch {
  
     my $id=$self->id;
 
-#    my $sth = $self->dbobj->prepare("select c.id,c.internal_id,cl.embl_version " . 
-#                           "from dna as d,contig as c,clone as cl " .
-#                           "where d.id = c.dna and c.id = '$id' and c.clone = cl.id");
-
     my $sth = $self->dbobj->prepare("
         SELECT contig.internal_id
           , contig.dna
           , clone.embl_version
-          , clone.internal_id
+          , clone.id
         FROM dna
           , contig
           , clone
         WHERE contig.dna = dna.id
           AND contig.clone = clone.internal_id
-          AND contig.id = ?
+          AND contig.id = '$id'
         ");
-
-    my $res = $sth->execute($id);
+    my $res = $sth->execute();
 
     if (my $row = $sth->fetchrow_arrayref) {  
         $self->internal_id($row->[0]);
@@ -531,7 +526,13 @@ sub get_all_SimilarityFeatures_above_score{
 				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
 
 	   $out->analysis    ($analysis);
-	   $out->id          ($hid);              # MC This is for Arek - but I don't
+	   
+	   # Ewan - this is messing up the C extensions
+	   # This has to be commented out. Arek will have to get this
+	   # from somewhere else, like ->hseqname. Maybe we should have
+	   # a $featurepair->web_id helper function in the SeqFeature
+	   # FeaturePair interface
+	   #$out->id          ($hid);              # MC This is for Arek - but I don't
 	                                          #    really know where this method has come from.
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;
@@ -724,7 +725,9 @@ sub get_all_SimilarityFeatures{
 				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
 
 	   $out->analysis    ($analysis);
-	   $out->id          ($hid);              # MC This is for Arek - but I don't
+	   
+	   # see comment below
+	   #$out->id          ($hid);              # MC This is for Arek - but I don't
 	                                          #    really know where this method has come from.
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;

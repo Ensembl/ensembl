@@ -197,8 +197,8 @@ sub new_analysis{
 
     if( $ENSEMBL_EXT_LOADED == 1 && $USE_PERL_ONLY == 0 ) {
 	# catch for @args being passed in.
-        #my $self = Bio::EnsEMBL::Ext::Analysis->new();
-	my $self = Bio::EnsEMBL::Analysis->new();
+        my $self = Bio::EnsEMBL::Ext::Analysis->new();
+	#my $self = Bio::EnsEMBL::Analysis->new();
 	return $self;
     }
 
