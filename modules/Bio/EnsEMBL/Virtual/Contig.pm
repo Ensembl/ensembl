@@ -2352,8 +2352,7 @@ sub species{
 
    if( !defined $self->{'_species_cache'} ) {
        my $species = $self->dbobj->get_MetaContainer->get_Species();
-       if( ! $species ){ $self->throw("Can't retrieve species from ",
-				      "database MetaContainer") }
+       if( ! $species ){ $self->throw("Can't retrieve species from database MetaContainer") }
        $self->{'_species_cache'} = $species;
    }
    return $self->{'_species_cache'};
