@@ -127,10 +127,39 @@ while (defined(my $line = <PMATCH>)) {
 		QEND	=> $qend,
 		TSTART	=> $tstart,
 		TEND	=> $tend });
+
+	push(@{ $hits{$qid}{$tid}{QRANGES} },
+		new Bio::Range(-start => $qstart, -end => $qend));
+	push(@{ $hits{$qid}{$tid}{TRANGES} },
+		new Bio::Range(-start => $tstart, -end => $tend));
 }
 
 close(PMATCH);
 
+# Stitch Q and T ranges
+foreach my $query (values(%hits)) {
+  foreach my $target (values(%{ $query })) {
+    foreach my $c ('Q', 'T') {
+      my @stitched;
+      foreach my $range (@{ $target->{$c . 'RANGES'} }) {
+
+	my @new;
+        for (my $i = 0; $i < scalar @stitched; ++$i) {
+	  if (defined ($stitched[$i]) && $range->overlaps($stitched[$i])) {
+	    $range = $stitched[$i]->union($range);
+	  } else {
+	    push(@new, $stitched[$i]);
+	  }
+        }
+        push(@new, $range);
+	@stitched = @new;
+
+      }
+    }
+  }
+}
+
+    
 if (!$opts{'k'}) {
 	unlink($pmatch_out);	# Get rid of pmatch output file
 } else {
@@ -146,36 +175,17 @@ foreach my $query (values(%hits)) {
 
 		foreach my $c ('Q', 'T') {
 
-			my $overlap = 0;	# Total query overlap length
 			my $totlen = 0;		# Total hit length
 
-			my @pair;
-			foreach my $hit (
-				sort { $a->{$c . 'START'} <=>
-				       $b->{$c . 'START'} }
-				@{ $target->{HITS} }) {
-
-				$totlen += $hit->{$c . 'END'} -
-					   $hit->{$c . 'START'} + 1;
-
-				shift(@pair) if (scalar(@pair) == 2);
-				push(@pair, $hit);
-				next if (scalar(@pair) != 2);
-
-				$r1->start($pair[0]{$c . 'START'});
-				$r1->end($pair[0]{$c . 'END'});
-
-				$r2->start($pair[1]{$c . 'START'});
-				$r2->end($pair[1]{$c . 'END'});
-
-				if ($r1->overlaps($r2)) {
-				    $overlap += $r1->intersection($r2)->length;
-				}
+			foreach my $range (@{ $target->{$c . 'STITCH'} }) {
+				next unless defined $range;
+				$totlen += $range->length;
 			}
 
 			# Calculate the query and target identities
 			$target->{$c . 'IDENT'} =
-				100*($totlen - $overlap)/$target->{$c . 'LEN'};
+				100 * $totlen / $target->{$c . 'LEN'};
+
 		}
 	}
 }
