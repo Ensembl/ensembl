@@ -17,6 +17,7 @@ Handles mapping between two coordinate systems using the information stored in
 the assembly table
 
 =head1 SYNOPSIS
+
     $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
     $asma = $db->get_AssemblyMapperAdaptor();
     $csa  = $db->get_CoordSystemAdaptor();
@@ -74,8 +75,11 @@ use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
-my $CHUNKFACTOR = 20; #2^20 = approx 10^6
-my $MAX_PAIR_COUNT = 6000; # max size of the pair cache in the mappers
+#2^20 = approx 10^6
+my $CHUNKFACTOR = 20; 
+
+# max size of the pair cache in the mappers
+my $MAX_PAIR_COUNT = 6000; 
 
 =head2 new
 

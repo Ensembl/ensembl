@@ -33,8 +33,6 @@ Post questions/comments to the Ensembl dev list: ensembl-dev@ebi.ac.uk
 
 =cut
 
-
-
 package Bio::EnsEMBL::DBSQL::ExonAdaptor;
 
 use vars qw( @ISA );
@@ -69,7 +67,7 @@ sub _tables {
 }
 
 
-#=head2 _columns
+# _columns
 #
 #  Arg [1]    : none
 #  Example    : none
