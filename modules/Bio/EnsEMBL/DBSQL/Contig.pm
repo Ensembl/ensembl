@@ -203,7 +203,7 @@ sub get_all_SeqFeatures {
 
     push(@out,$self->get_all_SimilarityFeatures);
     push(@out,$self->get_all_RepeatFeatures);
-#    push(@out,$self->get_all_PredictionFeatures);
+#   push(@out,$self->get_all_PredictionFeatures);
 
     print(STDERR "Fetched all features\n");
     return @out;
@@ -231,40 +231,101 @@ sub get_all_SimilarityFeatures{
 
    my %analhash;
 
-   # make the SQL query
+   #First of all, get all features that are part of a feature set
 
-   my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " . 
-				    "from feature where contig = '$id'");
-
+   my $sth = $self->_dbobj->prepare("select  p1.id,p1.seq_start,p1.seq_end,p1.strand,p1.score,p1.analysis,p1.name,p1.hstart,p1.hend,p1.hid,p2.fset,p2.rank from feature as p1, fset_feature as p2 where p1.contig ='$id' and p2.feature = p1.id order by p2.fset");
    $sth->execute();
 
-   my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hstart,$hend,$hid);
+   # SQL query to get all features
+   #my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " . 
+   #			    "from feature where contig = '$id'");
+   #$sth->execute();
 
+   my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank);
+   my $seen = 0;
+   
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
-
-   while( $sth->fetch ) {
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank);
+   
+   while($sth->fetch) {
        my $out;
        my $analysis;
-
+       my $fset;
+       
        if (!$analhash{$analysisid}) {
 	   $analysis = $self->_dbobj->get_Analysis($analysisid);
 	   $analhash{$analysisid} = $analysis;
-
+	   
        } else {
 	   $analysis = $analhash{$analysisid};
        }
-
+       
        if( !defined $name ) {
 	   $name = 'no_source';
        }
+       
+       #Build fset feature object if new fset found
+       if ($fset != $seen) {
+	   $out =  new Bio::EnsEMBL::SeqFeature;
+	   $out->id($fset);
+	   $seen = $fset;
+       }
+       
+       #Build Feature Object
+       my $feature = new Bio::EnsEMBL::SeqFeature;
+       $feature->seqname   ($id);
+       $feature->start     ($start);
+       $feature->end       ($end);
+       $feature->strand    ($strand);
+       $feature->source_tag($name);
+       $feature->primary_tag('similarity');
+       $feature->id         ($fid);
+       
+       if( defined $score ) {
+	   $feature->score($score);
+       }
+       
+       $feature->analysis($analysis);
+       
+       # Final check that everything is ok.
+       $feature->validate();
 
+       #Add this feature to the fset
+       $out->add_sub_SeqFeature($feature,'EXPAND');
+       push(@array,$out);
+   }
+   
+   #Then get the rest of the features, i.e. featurepairs and single features that are not part of a fset
+
+   $sth = $self->_dbobj->prepare("select  p1.id,p1.seq_start,p1.seq_end,p1.strand,p1.score,p1.analysis,p1.name,p1.hstart,p1.hend,p1.hid,p2.fset,p2.rank from feature as p1, fset_feature as p2 where p1.contig ='$id' and p2.feature = p1.id order by p2.fset");
+   $sth->execute();
+
+   # bind the columns
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank);
+   
+   while($sth->fetch) {
+       my $out;
+       my $analysis;
+              
+       if (!$analhash{$analysisid}) {
+	   $analysis = $self->_dbobj->get_Analysis($analysisid);
+	   $analhash{$analysisid} = $analysis;
+	   
+       } else {
+	   $analysis = $analhash{$analysisid};
+       }
+       
+       if( !defined $name ) {
+	   $name = 'no_source';
+       }
+       
+   
        if( $hid ne '__NONE__' ) {
 	   # is a paired feature
 	   # build EnsEMBL features and make the FeaturePair
 	   my $feature1 = new Bio::EnsEMBL::SeqFeature;
 	   my $feature2 = new Bio::EnsEMBL::SeqFeature;
-
+	   
 	   $out = Bio::EnsEMBL::FeaturePair->new( -feature1 => $feature1, 
 						  -feature2 => $feature2);
 
@@ -304,8 +365,8 @@ sub get_all_SimilarityFeatures{
        $out->validate();
 
       push(@array,$out);
-  }
- 
+   }
+   
    return @array;
 }
 

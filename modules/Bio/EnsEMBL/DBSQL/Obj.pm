@@ -1000,7 +1000,7 @@ sub archive_Gene {
 
 =head2 delete_Exon
 
- Title   : delete_Clone
+ Title   : delete_Exon
  Usage   : $obj->delete_Exon($exon_id)
  Function: Deletes exon, including exon_transcript rows
  Example : $obj->delete_Exon(ENSE000034)
