@@ -81,14 +81,15 @@ sub fetch_by_Slice {
   my %exon_cache = ();
   my %gene_cache = ();
 
+
   my ( $gene, $transcript, $translation ); 
 
   while( my $hr = $sth->fetchrow_hashref() ) {
-    if( $! defined hr->{'gene_type'} {
+    if( !defined $hr->{'gene_type'}) {
       # no gene for the transcript
       $gene = Bio::EnsEMBL::Gene->new();
       $gene->source( $hr->{'db'} );
-
+      $gene_cache{ $hr->{'db'}."-".$hr->{'gene_id'} } = $gene;
     } elsif( !exists $gene_cache{ $hr->{'db'}."-".$hr->{gene_id} } ) {
       $gene = Bio::EnsEMBL::Gene->new();
       $gene->stable_id( $hr->{'gene_name'} );
