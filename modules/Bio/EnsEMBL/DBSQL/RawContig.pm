@@ -514,6 +514,7 @@ my $query="
           AND g.type = '$type'
         ";
 
+    #warn $query;
 
    return  $self->_gene_query($query,$supporting);
 }

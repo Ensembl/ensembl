@@ -1036,7 +1036,6 @@ sub _gene_query{
                 } else {
                     # sticky exon mapped. Reset sequnece and
                     # coordinates of the StickyExon
-		    $exon->attach_seq($self->primary_seq);
 		    $exon->seqname($self->id);
 		    $exon->start($vc_start);
 		    $exon->end($vc_end);
@@ -1052,7 +1051,7 @@ sub _gene_query{
 		    $exonconverted{$exon->dbID} = 1;
 		}               
 	    }
-
+            $exon->attach_seq($self->primary_seq);
 	}                               # foreach exon
         
         if ($internalExon == 0) { 

@@ -2324,8 +2324,8 @@ sub get_all_Genes_exononly{
     return ();
   }
 
-  if( exists $self->{'_all_Genes_exononly'} ) {
-    return @{$self->{'_all_Genes_exononly'}};
+  if( my $genes = $self->{'_all_Genes_exononly'} ) {
+    return @$genes;
   }
 
   #  IF     (sgp.raw_ori=1,e.strand,(-e.strand))
@@ -2413,7 +2413,7 @@ sub get_all_Genes_exononly{
                        ## part of the sticky exon)
     } 
         
-    unless( exists $exons{$exonid} ) { 
+    unless( $exons{$exonid} ) { 
       my $exon = Bio::EnsEMBL::Exon->new();
       $exon->start($start);
       $exon->end($end);
@@ -2422,6 +2422,7 @@ sub get_all_Genes_exononly{
       $exon->adaptor( $self->dbobj->get_ExonAdaptor() );
       $exon->seqname($self->id);
       $exon->phase($phase);
+      $exon->attach_seq($self);
       $previous_exon = $exon;
       $exons{$exonid} = $exon;
     }
@@ -2445,7 +2446,6 @@ sub get_all_Genes_exononly{
       $trans->is_end_exon_in_context('dummy',0);
     }
   }
-
 
   $self->{'_all_Genes_exononly'} = \@out;
 

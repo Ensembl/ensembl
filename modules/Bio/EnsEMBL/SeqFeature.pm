@@ -412,7 +412,7 @@ sub analysis {
 sub validate {
     my ($self) = @_;
 
-    $self->vthrow("Seqname not defined in feature")     unless defined($self->seqname);
+    #$self->vthrow("Seqname not defined in feature")     unless defined($self->seqname);
     $self->vthrow("start not defined in feature")       unless defined($self->start);
     $self->vthrow("end not defined in feature")         unless defined($self->end);
     $self->vthrow("strand not defined in feature")      unless defined($self->strand);

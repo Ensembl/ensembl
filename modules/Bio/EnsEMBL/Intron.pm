@@ -112,10 +112,10 @@ sub downstream_Exon {
     return $self->{'_downstream_exon'};
 }
 
-sub id {
+sub stable_id {
     my( $self ) = @_;
     
-    return join("-", map $_->id, $self->_up_down_exons);
+    return join("-", map $_->stable_id, $self->_up_down_exons);
 }
 
 # Just returns the upstream and downstream exons,

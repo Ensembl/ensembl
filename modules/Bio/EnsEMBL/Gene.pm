@@ -266,7 +266,7 @@ sub all_Exon_objects{
  Title   : get_all_Exons
  Usage   : foreach my $exon ( $gene->each_unique_Exon )
  Function: retrieves an array of exons associated with this
-           gene, guarenteed to be nonredundant
+           gene, guaranteed to be nonredundant
  Example :
  Returns : 
  Args    :
