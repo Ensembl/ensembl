@@ -288,7 +288,6 @@ sub retrieve {
     Bio::Search::HSP::HSPI              hsp
   );
   foreach my $type (keys %METHODS) {
-    warn "Trying $type -> $METHODS{$type}";
     if( UNIVERSAL::isa($caller, $type) ) {
       my $method = "retrieve_$METHODS{$type}";
       return $self->$method( @_ );
