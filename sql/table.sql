@@ -506,3 +506,6 @@ CREATE TABLE meta (
         KEY meta_key_index ( meta_key ),
         KEY meta_value_index ( meta_value )
 	);
+
+# Auto add schema version to database
+insert into meta (meta_key, meta_value) values ("schema_version", "$Revision$");     
