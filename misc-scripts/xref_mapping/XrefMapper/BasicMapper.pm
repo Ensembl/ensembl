@@ -412,9 +412,6 @@ sub fetch_and_dump_seq{
     $self->dir(".");
   }
   $self->ensembl_dna_file($self->dir."/".$self->species."_dna.fasta");
-  open(DNA,">".$self->ensembl_dna_file()) 
-    || die("Could not open dna file for writing: ".$self->ensembl_dna_file."\n");
-
   #
   # store ensembl protein file name and open it
   #
@@ -423,6 +420,8 @@ sub fetch_and_dump_seq{
   if(defined($self->dumpcheck()) and -e $self->ensembl_protein_file() and -e $self->ensembl_dna_file()){
     return;
   }
+  open(DNA,">".$self->ensembl_dna_file()) 
+    || die("Could not open dna file for writing: ".$self->ensembl_dna_file."\n");
 
   open(PEP,">".$self->ensembl_protein_file()) 
     || die("Could not open protein file for writing: ".$self->ensembl_protein_file."\n");
