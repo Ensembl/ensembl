@@ -67,6 +67,7 @@ use DBI;
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
 @ISA = qw(Bio::Root::Object);
+
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -632,6 +633,85 @@ sub write_Analysis {
 	$self->throw("Wrong number of rows returned : " . $sth->rows . " : should be 1");
     }
 
+}
+
+=head2 find_GenomeHits 
+
+ Title   : find_GenomeHits
+ Usage   : $obj->find_GenomeHits($hitid)
+ Function: 
+ Example : 
+ Returns : 
+ Args    : 
+
+
+=cut
+
+
+sub find_GenomeHits {
+    my ($self,$arg) = @_;
+
+    $self->throw("No hit id input") unless defined($arg);
+
+    my $query = "select c.id, " .
+	                "f.seq_start, " . 
+			"f.seq_end, "   . 
+			"f.score, "     .
+			"f.strand, "    .
+			"f.analysis, "  .
+			"f.name, "      .
+			"f.hstart, "    .
+			"f.hend, "      .
+			"f.hid "       .
+	        "from   feature as f,contig as c " .
+		"where  f.hid = '$arg' and " . 
+		        "c.internal_id = f.contig";
+
+    my $sth   = $self->_db_obj->prepare($query);
+    my $res   = $sth->execute;
+    
+    my ($contig,$start,$end,$score,$strand,$analysisid,$name,$hstart,$hend,$hid);
+    
+
+    $sth->bind_columns(undef,\$contig,\$start,\$end,\$score,\$strand,\$analysisid,
+		       \$name,\$hstart,\$hend,\$hid);
+    
+
+    my %analhash;         # Stores all the analysis objects
+    my @features;
+
+    while($sth->fetch) {
+	my $out;
+	my $analysis;
+	
+	if (!$analhash{$analysisid}) {
+	   
+	    my $feature_obj = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+
+	    $analysis = $feature_obj->get_Analysis($analysisid);
+	    $analhash{$analysisid} = $analysis;
+	   
+	} else {
+	    $analysis = $analhash{$analysisid};
+	}
+       
+	if( !defined $name ) {
+	    $name = 'no_source';
+	}
+       
+	 
+	$out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+	$out->set_all_fields($start,$end,$strand,$score,$name,'similarity',$contig,
+			     $hstart,$hend,1,$score,$name,'similarity',$hid);
+
+	$out->analysis($analysis);
+	$out->validate;
+       
+      push(@features,$out);
+	
+    }
+
+    return @features;
 }
 
 =head2 _db_obj

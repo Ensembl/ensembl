@@ -56,6 +56,7 @@ use strict;
 
 use Bio::Root::Object;
 
+use Bio::EnsEMBL::DB::ObjI;
 use Bio::EnsEMBL::DBSQL::Gene_Obj;
 use Bio::EnsEMBL::DBSQL::Update_Obj;
 use Bio::EnsEMBL::DBSQL::Feature_Obj;
@@ -1916,8 +1917,49 @@ sub gene_Obj {
     return $self->{_gene_obj};
 
 }
+
+=head2 feature_Obj
+    
+ Title   : feature_Obj
+ Usage   : my $featureobj = $db->feature_Obj
+ Function: Returns the feature object database handle
+ Example : 
+ Returns : Bio::EnsEMBL::DB::Feature_ObjI
+ Args    : 
+
+=cut
+
+sub feature_Obj {
+    my ($self) = @_;
+
+    unless (defined($self->{_feature_obj})) {
+	$self->{_feature_obj} = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);    
+    }
+
+    return $self->{_feature_obj};
+
+}
+
+
+=head2 find_GenomeHits
+    
+ Title   : find_GenomeHits
+ Usage   : my @features = $self->find_GenomeHits($hid)
+ Function: Finds all features in the db that
+           are hits to a sequence with id $hid
+ Example : 
+ Returns : @ Bio::EnsEMBL::FeaturePair
+ Args    : string
+
+=cut
  
- 
+sub find_GenomeHits {
+    my ($self,$arg) = @_;
+
+    return $self->feature_Obj->find_GenomeHits($arg);
+}
+			     
+
 =head2 deleteObj
 
     Title   : deleteObj

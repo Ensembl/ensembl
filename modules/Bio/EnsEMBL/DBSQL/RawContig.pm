@@ -1023,20 +1023,14 @@ sub _load_overlaps {
 		"       co.dna_b_id, ".
 		"       co.type, " .
 		"       co.overlap_size, " .
-		"       con.dna as dna1, " .
-                "       con2.dna as dna2, " .
-		"       con.id as id1,".
-		"       con2.id as id2 " .
+		"       con.dna " .
                 "from   contigoverlap as co, " . 
-		"       contig as con," .
-		"       contig as con2 " . 
-		"where  ((con2.dna = co.dna_b_id " . 
-		"and      con.dna = co.dna_a_id) " .
-		"or     (con2.dna = co.dna_a_id " .
-                "and      con.dna = co.dna_b_id)) " .
-		"and    con.internal_id = $id";
+		"       contig as con " .
+		"where  con.internal_id = $id " .
+		"and    (con.dna = co.dna_b_id " . 
+		"or     con.dna = co.dna_a_id)  ";
 
-   print(STDERR "Query is $query");
+#   print(STDERR "Query is $query");
 
    my $sth = $self->dbobj->prepare($query);
    
@@ -1044,7 +1038,7 @@ sub _load_overlaps {
        $self->throw("Unable to execute contig overlap get!");
    }
 
-   print STDERR "Completed!\n";
+ #  print STDERR "Completed!\n";
    
 
    #
@@ -1066,14 +1060,14 @@ sub _load_overlaps {
    # start by switching on whether things are in the a or b contig
    # positions, then builds left/right and polarity variables.
    #
-
+   print("Number of rows is " . $sth->rows . "\n");
    while( my $rowhash = $sth->fetchrow_hashref ) {
        print STDERR "We have a potential overlap,",$rowhash->{'dna_a_id'},"\n";
        
        # First condition means the query contig is contig_a
-       if ($rowhash->{dna_a_id} == $rowhash->{dna1}) {
+       if ($rowhash->{dna_a_id} == $rowhash->{dna}) {
 
-	   my $sisterid = $rowhash->{id2};
+	   my $sisterdnaid = $rowhash->{dna_b_id};
 	   my $type     = $rowhash->{overlap_type};
 
 	   my ($selflr,$sisterpol);
@@ -1094,11 +1088,21 @@ sub _load_overlaps {
 	       $self->throw("Impossible type position $type\n");
 	   }
 
+	   # Now fetch the sister contig id
+	   $query = "select id from contig where dna = " . $sisterdnaid;
+	   my $sth2 = $self->dbobj->prepare($query);
+	   $sth2->execute;
 
+	   my $sisterid;
+	   if ($sth2->rows == 1) {
+	       $sisterid = $sth2->fetchrow_hashref->{id};
+	   } else {
+	       $self->throw("ERROR: Wrong number of rows returned for dna id $sisterdnaid " . $sth->rows);
+	   }
 #	   print(STDERR "Type $type $sisterpol $selflr " . $rowhash->{overlap_size} . "\n");
 
 	   my $sis      = new Bio::EnsEMBL::DBSQL::RawContig ( '-dbobj' => $self->dbobj,
-								  '-id'    => $sisterid );
+							       '-id'    => $sisterid );
 	   
 	   $sis->fetch();
 
@@ -1118,7 +1122,7 @@ sub _load_overlaps {
 
        } else {
 
-	   my $sisterid = $rowhash->{id2};
+	   my $sisterdnaid = $rowhash->{dna_a_id};
 	   my $type = $rowhash->{'overlap_type'};
 
 	   my ($selflr,$sisterpol);
@@ -1138,9 +1142,22 @@ sub _load_overlaps {
 	       $self->throw("Impossible type position $type\n");
 	   }
 #	   print(STDERR "Type $type $sisterpol $selflr " . $rowhash->{overlap_size} . "\n");
-	   
+
+	   # Now fetch the sister contig id
+	   $query = "select id from contig where dna = " . $sisterdnaid;
+	   my $sth2 = $self->dbobj->prepare($query);
+	   $sth2->execute;
+
+	   my $sisterid;
+	   if ($sth2->rows == 1) {
+	       $sisterid = $sth2->fetchrow_hashref->{id};
+	   } else {
+	       $self->throw("ERROR: Wrong number of rows returned for dna id $sisterdnaid " . $sth->rows);
+	   }
+	   print("Sister id is $sisterid\n");
+
 	   my $sis      = new Bio::EnsEMBL::DBSQL::RawContig ( '-dbobj' => $self->dbobj,
-								  '-id'    => $sisterid );
+							       '-id'    => $sisterid );
 	   
 	   $sis->fetch();
 	   
