@@ -1494,7 +1494,7 @@ sub write_Transcript{
 
    # ok - now load this line in
 
-   my $tst = $self->prepare("insert into transcript (id,gene,translation) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "')");
+   my $tst = $self->prepare("insert into transcript (id,gene,translation,version) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "','".$trans->version."')");
    $tst->execute();
    $self->write_Translation($trans->translation());
    
@@ -1558,7 +1558,7 @@ sub write_Exon{
 
    # FIXME: better done with placeholders. (perhaps?).
 
-   my $exonst = "insert into exon (id,contig,created,modified,seq_start,seq_end,strand,phase) values ('" .
+   my $exonst = "insert into exon (id,contig,created,modified,seq_start,seq_end,strand,phase,stored) values ('" .
        $exon->id() . "','" .
 	   $exon->contig_id() . "','" .
 	       $exon->created(). "','" .
@@ -1566,7 +1566,7 @@ sub write_Exon{
 		       $exon->start . ",".
 			   $exon->end . ",".
 			       $exon->strand . ",".
-				   $exon->phase . ")";
+				   $exon->phase . ",now())";
    
    my $sth = $self->prepare($exonst);
    $sth->execute();
@@ -1607,11 +1607,12 @@ sub write_Contig {
    my $seqstr    = $dna->seq;
    my $offset    = $contig->offset();
    my $orientation    = $contig->orientation();
+   my $order = $contig->order();
    my @sql;
 
    push(@sql,"lock tables contig write,dna write");
    push(@sql,"insert into dna(contig,sequence,created) values('$contigid','$seqstr','$date')");
-   push(@sql,"replace into contig(id,dna,length,clone,offset,orientation) values('$contigid',LAST_INSERT_ID(),$len,'$clone',$offset,$orientation)");
+   push(@sql,"replace into contig(id,dna,length,clone,offset,orientation,order) values('$contigid',LAST_INSERT_ID(),$len,'$clone',$offset,$orientation,$order)");
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {

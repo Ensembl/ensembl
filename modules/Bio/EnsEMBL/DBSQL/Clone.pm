@@ -137,8 +137,8 @@ sub get_all_Genes{
 	       $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
 	   }
 
-	   if( $geneid != $current_gene_id ) {
-	       if( $transcriptid == $current_transcript_id ) {
+	   if( $geneid ne $current_gene_id ) {
+	       if( $transcriptid eq $current_transcript_id ) {
 		   $self->throw("Bad internal error. Switching genes without switching transcripts");
 	       } 
 	       $gene = Bio::EnsEMBL::Gene->new();
