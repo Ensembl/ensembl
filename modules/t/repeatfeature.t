@@ -30,7 +30,7 @@ ok($ens_test);
 my $db = $ens_test->get_DBSQL_Obj;
 $cadp = $db->get_RawContigAdaptor();
 $contig = $cadp->fetch_by_dbID(1);
-my $analysis = $db->get_AnalysisAdaptor->fetch_by_newest_logic_name("dummy-repeatmask");
+my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name("dummy-repeatmask");
 print STDERR "ANALYSIS ".$analysis."\n";
 ok($analysis);
 ok($contig);

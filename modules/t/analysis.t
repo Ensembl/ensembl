@@ -48,7 +48,7 @@ $analysis_ad->store($analysis);
 ok(1);
 
 
-my $analysis_out = $analysis_ad->fetch_by_newest_logic_name('dummy_analysis');
+my $analysis_out = $analysis_ad->fetch_by_logic_name('dummy_analysis');
 
 
 ok($analysis_out);
