@@ -981,7 +981,7 @@ sub get_Genes_by_Type {
     
     foreach my $contig ($self->_vmap->get_all_RawContigs) {
 	foreach my $gene ( $contig->get_Genes_by_Type($type,$supporting) ) {      
-	    $gene{$gene->id()} = $gene;
+	    $gene{$gene->dbID()} = $gene;
 	}
     }
 
@@ -1087,7 +1087,7 @@ sub _gene_query{
 # Utterly weird perl behaviour on acari: using unless breaks this 
 #        unless  ($internalExon) {
         #    my $geneid = $gene->id;
-            delete $gene{$gene->id};
+            delete $gene{$gene->dbID};
         } 
     }                                   # foreach gene
 
