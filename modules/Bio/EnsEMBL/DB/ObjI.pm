@@ -89,6 +89,7 @@ sub get_Clone{
 =cut
 
 sub get_Contig{
+   my ($self) = @_;
 
    $self->throw("Not implemented in the object!");
 }
@@ -130,6 +131,9 @@ sub write_Contig {
 
    $self->throw("Not implemented in the object!");
 }
+
+1;
+
 
 
 

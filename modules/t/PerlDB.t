@@ -21,13 +21,14 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..4\n"; 
+BEGIN { $| = 1; print "1..5\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::PerlDB::Clone;
 use Bio::EnsEMBL::PerlDB::Contig;
+use Bio::EnsEMBL::PerlDB::Obj;
 
 use Bio::Seq;
 use Bio::EnsEMBL::Gene;
@@ -65,6 +66,7 @@ $contig = Bio::EnsEMBL::PerlDB::Contig->new();
 
 # add sequence and genes
 
+$contig->id("contig_id");
 $contig->seq($seq);
 $contig->add_Gene($gene);
 
@@ -89,4 +91,14 @@ foreach $contig ( $clone->get_all_Contigs ) {
 	    print "ok 4\n";
         }
 
-} 
+}
+
+# make a Obj for db.
+
+$db = Bio::EnsEMBL::PerlDB::Obj->new();
+
+$db->write_Contig($contig);
+
+$c = $db->get_Contig("contig_id");
+$c =0;
+print "ok 5\n";

@@ -219,4 +219,25 @@ sub seq{
     
 }
 
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id{
+   my $obj = shift;
+   if( @_ ) {
+       my $value = shift;
+       $obj->{'id'} = $value;
+   }
+   return $obj->{'id'};
+   
+}
+
 1;
