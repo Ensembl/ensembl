@@ -13,14 +13,20 @@ use TestUtils qw( debug test_getter_setter );
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Analysis;
+use Bio::EnsEMBL::CoordSystem;
 
 our $verbose= 0;
 
+my $coord_system = Bio::EnsEMBL::CoordSystem->new
+  (-NAME    => 'chromosome',
+   -VERSION => 'NCBI34',
+   -DBID    => 123,
+   -TOP_LEVEL => 1);
 
 my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
-my $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => 'chromosome',
+
+my $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
                                      -SEQ_REGION_NAME => 'X',
-                                     -VERSION         => 'NCBI33',
                                      -START           => 1_000_000,
                                      -END             => 2_000_000);
 
@@ -45,14 +51,12 @@ ok($feature->strand == $strand);
 ok($feature->analysis == $analysis);
 ok($feature->slice == $slice);
 
-
 #
 # 7-11 Test setters
 #
 $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'new analysis');
-$slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => 'chromosome',
+$slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
                                   -SEQ_REGION_NAME => 'Y',
-                                  -VERSION         => 'NCBI33',
                                   -START           => 1_000_000,
                                   -END             => 2_000_000);
 ok(&test_getter_setter($feature, 'start', 1000));
