@@ -447,6 +447,7 @@ sub fetch_VirtualContig_of_gene{
 				    WHERE e.id=et.exon 
 				    AND et.transcript=tr.id 
 				    AND sgp.raw_id=e.contig 
+				    AND sgp.type = '$type' 
 				    AND tr.gene = '$geneid';" 
 		   		    );
    $sth->execute();
@@ -459,14 +460,16 @@ sub fetch_VirtualContig_of_gene{
        ($start,$end,$chr_name)=@row;
 
        push @start,$start;
+       print STDERR "Genestart: $start\n";
        push @end,$end;     
+       print STDERR "Geneend: $end\n";
    }   
    
    my @start_sorted=sort @start;
    my @end_sorted=sort @end;
 
-   $start=pop @start_sorted;
-   $end=shift @end_sorted;
+   $start=shift @start_sorted;
+   $end=pop @end_sorted;
 
    if( !defined $start ) {
        $self->throw("Gene is not on the golden path. Cannot build VC");
