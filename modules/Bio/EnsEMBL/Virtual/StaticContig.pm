@@ -1,5 +1,3 @@
-
-
 #
 # Ensembl module for Bio::EnsEMBL::Virtual::StaticContig
 #
@@ -826,8 +824,10 @@ sub get_all_PredictionFeatures {
 	   $analysis = $analhash{$analysisid};
        }
 
-       
-       if( $hid ne $previous|| $previous eq -1 || $previous_contig != $contig) {
+       # MC. Temporarily changed back the genscan fetching for a build.
+       if( $hid =~ /Initial/ || $hid =~ /Single/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 || $previous_contig != $contig) {
+#       if( $hid ne $previous|| $previous eq -1 || $previous_contig != $contig) {
+#        if($phase != $previous || $previous_contig != $contig $previous == -1) {
 	   $count++;
 	   $current_fset = Bio::EnsEMBL::SeqFeature->new();
 	   $current_fset->source_tag('genscan');
