@@ -52,8 +52,8 @@ sub process_insert {
      $$cdna_ins_pos_ref <  $transcript->cdna_coding_end()) {
 
     info("insertion in cds ($insert_len)");
-    # print "BEFORE CDS INSERT:\n";
-    # print_exon($exon);
+    #print "BEFORE CDS INSERT:\n";
+    #print_exon($exon, $transcript);
 
     $code |= StatMsg::CDS;
 
@@ -84,6 +84,7 @@ sub process_insert {
       # which in cdna coords is immediately after last exon
       $first_exon->cdna_end($first_exon->cdna_start + $first_len - 1);
       $exon->cdna_start($first_exon->cdna_end + 1);
+      $exon->cdna_end($exon->cdna_end - $frameshift);
 
       # decrease the length of the CDS by the length of new intron
       $transcript->move_cdna_coding_end(-$frameshift);
@@ -109,8 +110,8 @@ sub process_insert {
       }
     }
 
-    # print "AFTER CDS INSERT:\n";
-    # print_exon($exon);
+    #print "AFTER CDS INSERT:\n";
+    #print_exon($exon, $transcript);
 
   }
 
@@ -151,23 +152,29 @@ sub process_insert {
   return;
 }
 
-#sub print_exon {
-  #my $exon = shift;
+sub print_exon {
+  my $exon = shift;
+  my $tr = shift;
 
-  #if(!$exon) {
-   #throw("Exon undefined");
-  #}
-	
-                                                                                
-  #print "EXON:\n";
-  #print "cdna_start = ". $exon->cdna_start() . "\n";
-  #print "cdna_end   = ". $exon->cdna_end() . "\n";
-  #print "start             = ". $exon->start() . "\n";
-  #print "end               = ". $exon->end() . "\n";
-  #print "strand            = ". $exon->strand() . "\n\n";
-                                                                                
-  #return;
-#}
+  if (!$exon) {
+    throw("Exon undefined");
+  }
+
+  print STDERR "EXON:\n";
+  print STDERR "  cdna_start = ". $exon->cdna_start() . "\n";
+  print STDERR "  cdna_end   = ". $exon->cdna_end() . "\n";
+  print STDERR "  start             = ". $exon->start() . "\n";
+  print STDERR "  end               = ". $exon->end() . "\n";
+  print STDERR "  strand            = ". $exon->strand() . "\n\n";
+
+  if($tr) {
+    print STDERR "TRANSCRIPT:\n";
+    print STDERR "  cdna_coding_start = ". $tr->cdna_coding_start() . "\n";
+    print STDERR "  cdna_coding_end   = ". $tr->cdna_coding_end(). "\n";
+  }
+
+  return;
+}
 
 
 1;

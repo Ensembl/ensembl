@@ -310,6 +310,7 @@ sub process_cds_delete {
 
           # start next exon after new intron
           $exon->start($exon->start() + $first_len + $intron_len);
+          $exon->cdna_end($exon->cdna_end - $intron_len);
         } else {
           if($first_len) {
             my $first_exon = InterimExon->new();
@@ -326,6 +327,7 @@ sub process_cds_delete {
 
           # start next exon after new intron
           $exon->end($exon->end() - ($first_len + $intron_len));
+          $exon->cdna_end($exon->cdna_end - $intron_len);
         }
       }
     }
