@@ -9,6 +9,16 @@ use vars qw(@ISA);
 
 @ISA = qw(SeqStoreConverter::MusMusculus);
 
+sub update_clone_info {
+  my $self = shift;
+  return;
+}
+
+sub copy_internal_clone_names {
+    return;
+}
+
+
 sub copy_other_tables {
   my $self = shift;
 
@@ -48,17 +58,9 @@ sub copy_other_tables {
 		     "clone_info",
 		     "clone_info_keyword",
 		     "clone_lock",
-		     "current_clone_info",
-		     "keyword",
-		     "job",
-		     "job_status",
-		     "input_id_analysis");
+		     "current_clone_info");
 }
 
-sub update_clone_info {
-  my $self = shift;
-  return;
-}
 
 sub remove_supercontigs {
     my $self = shift;
@@ -82,8 +84,5 @@ sub remove_supercontigs {
 	     "WHERE coord_system_id = 2");
 }
 
-sub copy_internal_clone_names {
-    return;
-}
 
 1;

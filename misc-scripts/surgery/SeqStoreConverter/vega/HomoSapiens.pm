@@ -10,6 +10,16 @@ use vars qw(@ISA);
 
 @ISA = qw(SeqStoreConverter::HomoSapiens);
 
+
+sub update_clone_info {
+  my $self = shift;
+  return;
+}
+
+sub copy_internal_clone_names {
+    return;
+}
+
 sub copy_other_tables {
   my $self = shift;
 
@@ -49,24 +59,16 @@ sub copy_other_tables {
 		     "clone_info",
 		     "clone_info_keyword",
 		     "clone_lock",
-		     "current_clone_info",
-		     "keyword",
-		     "job",
-		     "job_status",
-		     "input_id_analysis");
+		     "current_clone_info");
 }
 
-sub update_clone_info {
-  my $self = shift;
-  return;
-}
 
 sub remove_supercontigs {
     my $self = shift;
     
     my $target = $self->target();
     my $dbh    = $self->dbh();
-    $self->debug("Vega mouse specific - removing supercontigs from $target");
+    $self->debug("Vega human specific - removing supercontigs from $target");
 
     $dbh->do("DELETE FROM $target.meta ". 
 	     "WHERE meta_value like '%supercontig%'");
@@ -83,8 +85,5 @@ sub remove_supercontigs {
 	     "WHERE coord_system_id = 2");
 }
 
-sub copy_internal_clone_names {
-    return;
-}
 
 1;
