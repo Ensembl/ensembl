@@ -4,7 +4,7 @@
 
 <!DOCTYPE schemadescription SYSTEM "schema_description.dtd">
 
-<schemadescription schema-version="27" document-version="$Revision$">
+<schemadescription schema-version="28" document-version="$Revision$">
 
   <introduction>
     <text>This document gives a high-level description of the tables that make up the EnsEMBL core schema. Tables are grouped into logical groups, and the purpose of each table is explained. It is intended to allow people to familiarise themselves with the schema when encountering it for the first time, or when they need to use some tables that they've not used before. Note that while some of the more important columns in some of the tables are discussed, this document makes no attempt to enumerate all of the names, types and contents of every single table. Some concepts which are referred to in the table descriptions are given at the end of this document; these are linked to from the table description where appropriate.</text>
