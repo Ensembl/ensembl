@@ -446,11 +446,6 @@ sub _evidence_lines_sort {
     ||  $a->accession_number cmp $b->accession_number
   } @$tmp_evidence_arr_ref;
 
-  foreach my $el (@sorted_arr) {
-    print STDERR "XXX ", $el->accession_number, "\t",
-    $$per_hid_max_scores_hash_ref{$el->accession_number}, "\n";
-  }
-  
   return \@sorted_arr;
 }
 
