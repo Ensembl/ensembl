@@ -457,16 +457,16 @@ sub build_contig_map {
 	    my $mc_startin;
 	    if( $current_orientation == 1 ) {
 		$mc_startin=$current_contig->golden_start;
-		($overlap->distance == 1 ) && $mc_startin++; 
+#		($overlap->distance == 1 ) && $mc_startin++; 
 	    } else {
 		$mc_startin=$current_contig->golden_end;
-		( $overlap->distance == 1 ) && $mc_startin--;
+	#	( $overlap->distance == 1 ) && $mc_startin--;
 	    }
 	    
 	    $self->create_MapContig($mc_start,$mc_startin,$current_orientation,$current_contig);
 	    
 	    # up the length
-	    $current_length += $overlap->sister->golden_length -1;
+	    $current_length += $overlap->sister->golden_length;
 	    #print STDERR "Returning with length $current_length\n";
 	} else {
 	    # go left wrt to the contig
@@ -514,15 +514,15 @@ sub build_contig_map {
 
 	    my $mc_startin;
 	    if( $current_orientation == 1 ) {
-		$mc_startin=$current_contig->golden_start+1;
+		$mc_startin=$current_contig->golden_start;
 	    } else {
-		$mc_startin=$current_contig->golden_end-1;
+		$mc_startin=$current_contig->golden_end;
 	    }
 	    
 	    $self->create_MapContig($mc_start,$mc_startin,$current_orientation,$current_contig);
 	    
 	    # up the length
-	    $current_length += $overlap->sister->golden_length -1;
+	    $current_length += $overlap->sister->golden_length;
 	    #print STDERR "Returning with length $current_length\n";
 	}
     }

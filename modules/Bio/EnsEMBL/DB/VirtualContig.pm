@@ -356,7 +356,7 @@ sub primary_seq {
    #Go through each MapContig
    my $previous = undef;
    foreach my $mc ( @map_contigs ) {
-       if( defined $previous && $previous->end != $mc->start ) {
+       if( defined $previous && $previous->end+1 != $mc->start ) {
 	   # then start had better be before end
 	   if( $mc->start < $previous->end ) {
 	       $self->throw("Inconsistent map contigs with start of next contig less than end of previous");
@@ -364,6 +364,7 @@ sub primary_seq {
 
 	   my $length = $mc->start - $previous->end -1;
 	   my $str = 'N' x $length;
+	   #print STDERR "Adding in $length N's\n";
 	   $seq_string .= $str;
        } else {
 	   # exact overlap - chew back the switch base
@@ -372,7 +373,8 @@ sub primary_seq {
        }
 
        # now add in the actual sequence.
-       #print STDERR "Start in is ".$mc->contig->id." ".$mc->start_in.":".$mc->end_in." ".$mc->contig->length."\n";
+       #print STDERR $mc->start," Start in is ".$mc->contig->id." ".$mc->start_in.":".$mc->end_in." ".$mc->contig->length."\n";
+       #print STDERR "adding to",length($seq_string),"\n";
 
        # flip if other way around
        my $substring;
@@ -383,9 +385,10 @@ sub primary_seq {
        } else {
 	   $substring = $mc->contig->primary_seq->subseq($mc->start_in,$mc->end_in);
        }
-
+       
        # add it
        $seq_string .= $substring;
+       $previous = $mc;
    }
    
    # if there is a right overhang, add it 
