@@ -600,7 +600,7 @@ sub recalculate_coordinates {
       $start = $t->start();
     }
 
-    if( $t->end() < $end ) {
+    if( $t->end() > $end ) {
       $end = $t->end();
     }
 
