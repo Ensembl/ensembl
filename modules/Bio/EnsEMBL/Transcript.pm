@@ -372,10 +372,14 @@ sub spliced_seq {
 =head2 translateable_seq
 
   Args       : none
-  Example    : none
-  Description: returns a string with the translateable part of the
-               Sequence. It magically pads the exon sequences with
-               N if the phases of the Exons dont align
+  Example    : print $transcript->translateable_seq(), "\n";
+  Description: Returns a sequence string which is the the translateable part 
+               of the transcripts sequence.  This is formed by concatenating
+               the coding portion of the exons sequence together (UTRs are not
+               included in the sequence).  Exon phase information is ignored 
+               unless the MONKEY_EXONS environment variable is set with a true 
+               value.  If MONKEY_EXONS is true the sequence may be padded with 
+               Ns in order to acheive correct exon phases.
   Returntype : txt
   Exceptions : none
   Caller     : general
@@ -405,9 +409,9 @@ sub translateable_seq {
     if( $phase != $lastphase && ( defined $ENV{'MONKEY_EXONS'})) {
       # endpadding for the last exon
       if( $lastphase == 1 ) {
-	$mrna .= 'NN';
+        $mrna .= 'NN';
       } elsif( $lastphase == 2 ) {
-	$mrna .= 'N';
+        $mrna .= 'N';
       }
       #startpadding for this exon
       $mrna .= 'N' x $phase;
