@@ -41,10 +41,10 @@ use vars qw(@ISA);
 @ISA = qw(Bio::Root::Object);
 
 my $tdbtype = 'rdb';
-my $thost   = 'localhost';
+my $thost   = 'cgi-srv4.sanger.ac.uk';
 my $tport   = '410000';
 my $tdbname = 'ensembl';
-my $tdbuser = 'root';
+my $tdbuser = 'ensro';
 my $tpass = undef;
 my $adbname = 'ens_archive';
 my $module = "Bio::EnsEMBL::DBSQL::Obj";
@@ -85,6 +85,8 @@ my $last_offset      = $tdb->get_last_update_offset;
 my $now_offset       = $tdb->get_now_offset;    # This should be something different
 
 print STDERR "From/to times $last_offset $now_offset\n";
+
+print "Trying output... verbose=$verbose\n";
 
 $| = 1;
 
