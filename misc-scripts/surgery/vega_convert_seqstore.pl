@@ -44,20 +44,22 @@ while( my $line = <FILE> ) {
 
   my $converter;
 
-  eval "require SeqStoreConverter::$species";
 
+  eval "require SeqStoreConverter::vega::$species";
   if($@) {
-    warn("Could not require conversion module SeqStoreConverter::$species\n" .
+    warn("Could not require conversion module SeqStoreConverter::vega::$species\n" .
          "Using SeqStoreConverter::VegaBasicConverter instead:\n$@");
-
-    require SeqStoreConverter::VegaBasicConverter;
-    $species = "VegaBasicConverter";
+    
+    require SeqStoreConverter::BasicConverter;
+    $species = "BasicConverter";
   }
-
+  else {
+    warn "Using conversion module SeqStoreConverter::vega::$species\n";
+  }
   {
     no strict 'refs';
-
-    $converter = "SeqStoreConverter::$species"->new
+    
+    $converter = "SeqStoreConverter::vega::$species"->new
       ( $user, $password, $host, $source_db_name, $target_db_name, 
         $schema, $force, $verbose, $limit );
   }
@@ -68,20 +70,20 @@ while( my $line = <FILE> ) {
 for my $converter ( @all_species_converters ) {
   $converter->debug( "\n\n*** converting " . $converter->source . " to " . 
                      $converter->target() . " ***");
-  $converter->transfer_meta();
-  $converter->create_coord_systems();
-  $converter->create_seq_regions();
-  $converter->create_assembly();
-  $converter->create_attribs();
-  $converter->set_top_level();
+ # $converter->transfer_meta();
+ # $converter->create_coord_systems();
+ # $converter->create_seq_regions();
+ # $converter->create_assembly();
+ # $converter->create_attribs();
+ # $converter->set_top_level();
 
-  $converter->transfer_dna();
-  $converter->transfer_genes();
-  $converter->transfer_prediction_transcripts();
-  $converter->transfer_features();
-  $converter->transfer_stable_ids();
+#  $converter->transfer_dna();
+#  $converter->transfer_genes();
+#  $converter->transfer_prediction_transcripts();
+#  $converter->transfer_features();
+#  $converter->transfer_stable_ids();
   $converter->copy_other_tables();
-  $converter->copy_repeat_consensus();
+#  $converter->copy_repeat_consensus();
 }
 
 
@@ -93,7 +95,7 @@ sub usage {
   print STDERR "$msg\n\n" if($msg);
 
   print STDERR <<EOF;
-usage:   perl convert_seqstore <options>
+usage:   perl vega_convert_seqstore <options>
 
 options: -file <input_file>     input file with tab delimited 'species',
                                 'host', 'source_db', 'target_db' values
