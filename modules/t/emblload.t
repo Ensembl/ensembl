@@ -29,7 +29,7 @@ my $db = $ens_test->get_DBSQL_Obj;
 
 $file = "t/roa1.dat";
 
-$seqio = Bio::SeqIO->new( -format => 'EMBL',-file => $file);
+$seqio = Bio::SeqIO->new( '-format' => 'EMBL',-file => $file);
 
 while( my $seq = $seqio->next_seq ) {
     
