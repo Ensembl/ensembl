@@ -1,10 +1,3 @@
-#!/usr/local/bin/perl
-
-
-
-
-
-
 use DBI;
 use Getopt::Long;
 
@@ -12,16 +5,22 @@ my $host   = "ecs2d";
 my $dbname = "homo_sapiens_core_6_29";
 my $dbuser = "ensro";
 my $dbpass = undef;
+my $port = undef;
 
 &GetOptions( 
-	     'host:s'   => \$host,
-	     'dbname:s' => \$dbname,
-	     'dbuser:s' => \$dbuser,
-	     'dbpass:s' => \$dbpass );
+	    'host:s'   => \$host,
+	    'dbname:s' => \$dbname,
+	    'user:s' => \$dbuser,
+	    'pass:s' => \$dbpass,
+	    'port:s' => \$port );
 
+if( defined $port ) {
+  $dsn = "dbi:mysql:host=$host;database=$dbname;port=$port";
+} else {
+  $dsn = "dbi:mysql:host=$host;database=$dbname";
+}
 
-$dsn = "dbi:mysql:host=$host;database=$dbname";
-$db = DBI->connect( $dsn, $dbuser , $dbpass );
+$db = DBI->connect( $dsn, $dbuser, $dbpass );
 
 if( !defined $db ) {
     die "Unable to connect to database host $host database $dbname $dbpass";
@@ -44,29 +43,31 @@ $sth = $db->prepare( "
  SELECT gsi.stable_id as gene_stable_id,
          tsi.stable_id as transcript_stable_id,
          esi.stable_id as exon_stable_id,
-         MIN(IF(sgp.raw_ori=1,
-             ( e.seq_start+sgp.chr_start-sgp.raw_start ),
-             ( sgp.chr_start+sgp.raw_end-e.seq_end ))) 
+         MIN(IF(sgp.contig_ori=1,
+             ( e.contig_start+sgp.chr_start-sgp.contig_start ),
+             ( sgp.chr_start+sgp.contig_end-e.contig_end ))) 
           as exon_chrom_start,
-         MAX(IF(sgp.raw_ori=1,
-             ( e.seq_end+sgp.chr_start-sgp.raw_start ),
-             ( sgp.chr_start+sgp.raw_end-e.seq_start ))) 
+         MAX(IF(sgp.contig_ori=1,
+             ( e.contig_end+sgp.chr_start-sgp.contig_start ),
+             ( sgp.chr_start+sgp.contig_end-e.contig_start ))) 
           as exon_chrom_end, 
-         e.strand * sgp.raw_ori as exon_chrom_strand,
+         e.contig_strand * sgp.contig_ori as exon_chrom_strand,
          et.rank as rank,
          tl.start_exon_id,
          tl.seq_start as seq_start,
          tl.end_exon_id,
          tl.seq_end as seq_end,
-         sgp.chr_name as chr_name,
+         chr.name as chr_name,
          e.exon_id as exon_id
    FROM  exon e, exon_stable_id esi,
          exon_transcript et, transcript t,
          transcript_stable_id tsi,
-         static_golden_path sgp,
+         assembly sgp,
          gene_stable_id gsi,
-         translation tl
-   WHERE e.contig_id = sgp.raw_id
+         translation tl,
+         chromosome chr
+   WHERE e.contig_id = sgp.contig_id
+     AND sgp.chromosome_id = chr.chromosome_id
      AND esi.exon_id = e.exon_id
      AND et.exon_id = e.exon_id
      AND t.transcript_id = et.transcript_id
