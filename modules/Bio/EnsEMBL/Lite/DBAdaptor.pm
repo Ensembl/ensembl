@@ -71,6 +71,19 @@ sub get_RepeatFeatureAdaptor {
   return $self->_get_adaptor("Bio::EnsEMBL::Lite::RepeatFeatureAdaptor");
 }
 
+sub get_DensityAdaptor {
+  my $self = shift;
+
+  return $self->_get_adaptor("Bio::EnsEMBL::Lite::DensityPlot::DensityAdaptor");
+}
+
+sub get_ChromosomeAdaptor {
+  my $self = shift;
+
+  return $self->_get_adaptor("Bio::EnsEMBL::Lite::ChromosomeAdaptor");
+}
+
+
 sub get_SNPAdaptor {
   my $self = shift;
 

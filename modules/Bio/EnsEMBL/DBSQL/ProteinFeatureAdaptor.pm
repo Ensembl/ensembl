@@ -508,12 +508,4 @@ sub _set_protein_feature {
    return $feature;
 }
 
-
-
-
-
-
-
-
-
-
+1;

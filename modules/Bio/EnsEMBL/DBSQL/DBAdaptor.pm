@@ -848,7 +848,7 @@ sub add_DASFeatureFactory{
 sub _each_DASFeatureFactory{
    my ($self) = @_;
 
-   return @{$self->{'_das_ff'}}
+   return @{$self->{'_das_ff'}||[]}
 }
 
 

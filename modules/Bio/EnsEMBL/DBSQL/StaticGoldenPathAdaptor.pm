@@ -1347,3 +1347,5 @@ sub is_golden_static_clone {
 
 #    return scalar($sth->fetchrow_array);
 }
+
+1;

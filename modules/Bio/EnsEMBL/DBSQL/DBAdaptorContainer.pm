@@ -70,4 +70,4 @@ sub add_db_adaptor {
 }
 
 
-
+1;

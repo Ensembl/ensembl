@@ -437,3 +437,5 @@ sub _make_analysis {
     
     $self->analysis($anal);
 }
+
+1;

@@ -202,3 +202,5 @@ sub intron_position{
    return $pos;
 
 }
+
+1;

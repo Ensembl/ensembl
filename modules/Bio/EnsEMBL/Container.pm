@@ -177,3 +177,4 @@ sub DESTROY {
   $self->{_obj} = undef;
 }
 
+1;

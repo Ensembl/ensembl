@@ -154,12 +154,5 @@ sub remove {
   return $self->{'_primary_adaptor'}->remove($feature);
 }
 
-
-
-
-
-
-
-
-
+1;
 
