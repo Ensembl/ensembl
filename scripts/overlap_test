@@ -1,0 +1,57 @@
+#!/usr/local/bin/perl
+
+use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DB::VirtualContig;
+
+my $db = new Bio::EnsEMBL::DBSQL::Obj(-host   => 'obi-wan',
+				      -port   => 410000,
+				      -dbname => 'ens500',
+				      -user => 'ensro',
+				      );
+
+
+my $contig = $db->get_Contig($ARGV[0]);
+
+my $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
+						 -focusposition => 1,
+						 -ori           => 1,
+						 -left          => 1000000,
+						 -right         => 1000000);
+
+my $seq      = $vc->primary_seq;
+my @features = $vc->_get_all_SeqFeatures_type('prediction');
+
+foreach my $f (@features) {
+    print ($f->source_tag . "\t" . $f->start . "\t" . $f->end . "\n");
+}
+
+print("Sequence is        " . $seq->length . "\n");
+
+#print("sequence should be AAAACCCCTTGGGAAA\n");
+#use overlap;
+#
+#insert into dna(sequence,created,id) values('AAAAA',now(),null);
+#insert into contig(id,internal_id,clone,length,orientation,dna) values('contig1',null,'pog',5,1,last_insert_id());
+
+#insert into dna(sequence,created,id) values('GGGGGG',now(),null);
+#insert into contig(id,internal_id,clone,length,orientation,dna) values('contig2',null,'pog',6,-1,last_insert_id());
+
+#insert into dna(sequence,created,id) values('AAAAA',now(),null);
+#insert into contig(id,internal_id,clone,length,orientation,dna) values('contig3',null,'pog',5,-1,last_insert_id());
+
+#insert into dna(sequence,created,id) values('GGGGGG',now(),null);
+#insert into contig(id,internal_id,clone,length,orientation,dna) values('contig4',null,'pog',6,1,last_insert_id());
+
+#insert into dna(sequence,created,id) values('AAAAA',now(),null);
+#insert into contig(id,internal_id,clone,length,orientation,dna) values('contig5',null,'pog',5,1,last_insert_id());
+
+#insert into contigoverlap(dna_a_id,dna_b_id,contig_a_position,contig_b_position,type,overlap_size,overlap_type) 
+#    values(1,2,4,5,'TEST',1,'right2right');
+#insert into contigoverlap(dna_a_id,dna_b_id,contig_a_position,contig_b_position,type,overlap_size,overlap_type) 
+#    values(2,3,1,4,'TEST',1,'left2right');
+#insert into contigoverlap(dna_a_id,dna_b_id,contig_a_position,contig_b_position,type,overlap_size,overlap_type) 
+#    values(3,4,2,2,'TEST',1,'left2left');
+#insert into contigoverlap(dna_a_id,dna_b_id,contig_a_position,contig_b_position,type,overlap_size,overlap_type) 
+#    values(4,5,5,2,'TEST',1,'right2left');
+
+#insert into clone(id,embl_id,version,embl_version) values('pog','pog',1,1);
