@@ -18,5 +18,17 @@ all-merges.sh > all-merges.out 2>all-merges.log
 # file(s). Results go to  out/{stats,mapping,summary,final}
 all-stats.sh > all-stats.out 2>all-stats.log
 
-# do the peptide business
-# (to follow)
+
+# do the peptide business; first, collate them:
+pep-collate.sh 2> pep-collate.log
+
+# Now pull out the longest peptide of each original igi
+# peptide file, using the 'valid' igi's from the summary files (which are
+# proudced by all-stats.sh.
+summary=out/summary/ens_affy_fgenesh.summary
+peptidefiles="ensembl/ensembl.pep affymetrix/affymetrix.pep fgenesh/fgenesh.pep"
+outdir=pep
+gtfsummary2pep.pl $summary $peptidefiles > $outdir/pep.out 2> $outdir/pep.log
+gzip -c $outdir/pep.out > $outdir/pep.out.gz
+# ftp stuff, and we're done.
+
