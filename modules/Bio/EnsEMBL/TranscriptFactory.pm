@@ -240,6 +240,7 @@ sub fset2transcript_3frame {
       $exon->strand   ($f->strand);
       $exon->attach_seq($contig);
       $exon->phase    ($endphase);
+      $exon->end_phase( ($exon->phase + $exon->length)%3 );
       $exon->score    ($f->score);
       $exon->p_value  ($f->p_value);
       $endphase = $exon->end_phase;
@@ -293,6 +294,7 @@ sub fset2transcript_with_seq {
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);
 	$exon->phase    ($f->phase);
+	$exon->end_phase( ($exon->phase + $exon->length)%3 );
 	$exon->score ($f->score);
 	#print STDERR "contig is a = ".$seq."\n";
 	$exon->attach_seq($seq);
