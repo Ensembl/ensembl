@@ -256,8 +256,36 @@ sub alignment_strings {
   }
   return [ $rseq,$rhseq ];
 }
+
+=head2 get_SimpleAlign
+
+  Arg [1]    : list of string $flags
+               translated = by default, the sequence alignment will be on nucleotide. With translated flag
+                            the aligned sequences are translated.
+               uc = by default aligned sequences are given in lower cases. With uc flag, the aligned 
+                    sequences are given in upper cases.
+  Example    : $daf->get_SimpleAlign or
+               $daf->get_SimpleAlign("translated") or
+               $daf->get_SimpleAlign("translated","uc")
+  Description: Allows to rebuild the alignment string of both the seq and hseq sequence
+               using the cigar_string information and the slice and hslice objects
+  Returntype : a Bio::SimpleAlign object
+  Exceptions : 
+  Caller     : 
+
+=cut
+
 sub get_SimpleAlign {
-  my $ddaf = shift;
+  my ( $self, @flags ) = @_;
+
+  # setting the flags
+  my $uc = 0;
+  my $translated = 0;
+
+  for my $flag ( @flags ) {
+    $uc = 1 if ($flag =~ /^uc$/i);
+    $translated = 1 if ($flag =~ /^translated$/i);
+  }
 
   my $sa = Bio::SimpleAlign->new();
 
@@ -268,19 +296,26 @@ sub get_SimpleAlign {
     $bio07 = 1;
   }
 
-  my ($sb_seq,$qy_seq) = @{$ddaf->alignment_strings};
+  my ($sb_seq,$qy_seq) = @{$self->alignment_strings};
 
-  my $loc_sb_seq = Bio::LocatableSeq->new(-SEQ    => $sb_seq,
-                                          -START  => $ddaf->seq_region_start,
-                                          -END    => $ddaf->seq_region_end,
-                                          -ID     => $ddaf->seqname,
-                                          -STRAND => $ddaf->strand);
+  my $loc_sb_seq = Bio::LocatableSeq->new(-SEQ    => $uc ? uc $sb_seq : lc $sb_seq,
+                                          -START  => $self->seq_region_start,
+                                          -END    => $self->seq_region_end,
+                                          -ID     => $self->seqname,
+                                          -STRAND => $self->strand);
 
-  my $loc_qy_seq = Bio::LocatableSeq->new(-SEQ    => $qy_seq,
-                                          -START  => $ddaf->hseq_region_start,
-                                          -END    => $ddaf->hseq_region_end,
-                                          -ID     => $ddaf->hseqname,
-                                          -STRAND => $ddaf->hstrand);
+  $loc_sb_seq->seq($uc ? uc $loc_sb_seq->translate->seq
+                   : lc $loc_sb_seq->translate->seq) if ($translated);
+
+  my $loc_qy_seq = Bio::LocatableSeq->new(-SEQ    => $uc ? uc $qy_seq : lc $qy_seq,
+                                          -START  => $self->hseq_region_start,
+                                          -END    => $self->hseq_region_end,
+                                          -ID     => $self->hseqname,
+                                          -STRAND => $self->hstrand);
+
+  $loc_qy_seq->seq($uc ? uc  $loc_qy_seq->translate->seq
+                   : lc $loc_qy_seq->translate->seq) if ($translated);
+
   if($bio07) {
     $sa->addSeq($loc_sb_seq);
     $sa->addSeq($loc_qy_seq);
