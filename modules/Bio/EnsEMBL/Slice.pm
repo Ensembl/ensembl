@@ -652,7 +652,7 @@ sub id {
 sub name {
   my $self = shift;
 
-  return join( $self->chr_name(), ':', $self->chr_start(), 
+  return join( '', $self->chr_name(), ':', $self->chr_start(), 
 	       '-', $self->chr_end());
 }
 
