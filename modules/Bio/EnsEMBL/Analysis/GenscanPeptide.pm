@@ -221,7 +221,7 @@ sub _find_coord {
        $exlen -= (4-$pep_startphase)%3;
     
     my $nopep = int($exlen/3);
-    my $pep_endphase = $exlen%3 + 1;
+       $pep_endphase = $exlen%3 + 1;
     
     $pepend    = $nopep + $pepstart -1;
     
