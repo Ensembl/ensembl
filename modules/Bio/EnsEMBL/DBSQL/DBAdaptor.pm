@@ -67,7 +67,11 @@ my $reg = "Bio::EnsEMBL::Registry";
 						    -driver => 'mysql' );
   Exmaple2   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
                                                     -species => 'Homo_sapiens',
-                                                    -group   => 'core');
+                                                    -group   => 'core'
+						    -user   => 'root',
+						    -dbname => 'pog',
+						    -host   => 'caldy',
+						    -driver => 'mysql');
   Description: Constructor for DBAdaptor.
   Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
   Exceptions : none
@@ -88,6 +92,7 @@ sub new {
     rearrange([qw(SPECIES GROUP DBCONN DNADB)], @args);
 
   if(defined($con)){
+    
     $self->dbc($con);
   }
   else{
@@ -104,7 +109,7 @@ sub new {
     $self->group($group);
   }
 
-  Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
+  $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
 
   if(defined $dnadb) {
     $self->dnadb($dnadb);
@@ -113,35 +118,35 @@ sub new {
   return $self;
 }
 
-=head2 new_fast
+#=head2 new_fast
 
-  Arg [-CON]: Bio::EnsEMBL::DBSQL::DBConnection
+#  Arg [-CON]: Bio::EnsEMBL::DBSQL::DBConnection
 
-  Exmaple    : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -con => $dbc);
-  Description: Constructor for DBAdaptor.
-  Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
-  Exceptions : none
-  Caller     : general
+#  Exmaple    : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -con => $dbc);
+#  Description: Constructor for DBAdaptor.
+#  Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
+#  Exceptions : none
+#  Caller     : general
 
-=cut
+#=cut
 
-sub new_fast{
-  my($class, @args) = @_;
-  my ( $con ) = rearrange([qw(CON)],@args);
+#sub new_fast{
+#  my($class, @args) = @_;
+#  my ( $con ) = rearrange([qw(CON)],@args);
 
-  #call superclass constructor
-  my $self ={};
-  bless $self,$class;
-  unless($con && ref $con &&
-	 $con->isa('Bio::EnsEMBL::DBSQL::DBConnection')) {
-    throw("$con passed is not of type Bio::EnsEMBL::DBSQL::DBConnection");
-  }
-  $self->dbc($con);
-  $self->species($con->species());
-  $self->group($con->group());
+#  #call superclass constructor
+#  my $self ={};
+#  bless $self,$class;
+#  unless($con && ref $con &&
+#	 $con->isa('Bio::EnsEMBL::DBSQL::DBConnection')) {
+#    throw("$con passed is not of type Bio::EnsEMBL::DBSQL::DBConnection");
+#  }
+#  $self->dbc($con);
+#  $self->species($con->species());
+#  $self->group($con->group());
 
-  return $self;
-}
+#  return $self;
+#}
 
 
 sub new_merged{
@@ -171,10 +176,18 @@ sub new_merged{
 =cut
 
 sub dbc{
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_dbc} = $arg );
-  $self->{_dbc};
+  my $self  = shift;
+  
+  if(@_){
+    my $arg = shift;
+    if(defined($arg)){
+      if(!$arg->isa('Bio::EnsEMBL::DBSQL::DBConnection')){
+	throw("$arg is no a DBConnection\n");
+      }
+    }
+    $self->{_dbc} = $arg;
+  }
+  return $self->{_dbc};
 }
 
 =head2 db

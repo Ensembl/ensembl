@@ -84,19 +84,12 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
                  which would otherwise keep open a lot of connections to the
                  database.  Database connections are automatically reopened
                  when required.
-  Arg [DNADB] :  (optional)  Bio::EnsEMBL::DBSQL::DBConnection
-                 The dbconnection to get the dna from.
-  Arg [SPECIES]: (optional) string
-                 Name of the species to be labelled as.
-  Arg [GROUP]: (optional) string
-                 Name of the group to be labelled as. (e.g. core, estgene, vega etc)
+
   Example    : $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new
                   (-user   => 'anonymous',
                    -dbname => 'homo_sapiens_core_20_34c',
                    -host   => 'ensembldb.ensembl.org',
-                   -driver => 'mysql'
-                   -species => 'Homo Sapiens',
-                   -group   => 'core');
+                   -driver => 'mysql');
 
   Description: Constructor for a DatabaseConenction. Any adaptors that require
                database connectivity should inherit from this class.
@@ -111,16 +104,15 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 sub new {
   my $class = shift;
 
-  my ($db,$host,$driver,$user,$password,$port, $inactive_disconnect, $dbconn, $dnadb) =
+  my ($db,$host,$driver,$user,$password,$port, $inactive_disconnect, $dbconn) =
     rearrange([qw(DBNAME HOST DRIVER USER PASS PORT 
-                  DISCONNECT_WHEN_INACTIVE DBCONN DNADB)], @_);
+                  DISCONNECT_WHEN_INACTIVE DBCONN )], @_);
 
   my $self = {};
   bless $self, $class;
 
   if($dbconn) {
-    if($db || $host || $driver || $password || $port || $inactive_disconnect
-      || $dnadb) {
+    if($db || $host || $driver || $password || $port || $inactive_disconnect) {
       throw("Cannot specify other arguments when -DBCONN argument used.");
     }
 
@@ -183,9 +175,9 @@ sub new {
 
   }
 
-  if(defined $dnadb) {
-    $self->dnadb($dnadb);
-  }
+#  if(defined $dnadb) {
+#    $self->dnadb($dnadb);
+#  }
   return $self;
 }
 
