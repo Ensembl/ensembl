@@ -485,6 +485,9 @@ sub _is_sorted{
    if( defined $value) {
       $self->{'_is_sorted'} = $value;
     }
+    if (! defined $self->{'_is_sorted'}) {
+      $self->{'_is_sorted'} = 0;
+    }
     return $self->{'_is_sorted'};
 
 }
