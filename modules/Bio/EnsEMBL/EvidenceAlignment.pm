@@ -17,7 +17,8 @@ Bio::EnsEMBL::EvidenceAlignment.pm
 
  my $ea = Bio::EnsEMBL::EvidenceAlignment->new(
                           -DBADAPTOR    => $dba,
-                          -TRANSCRIPTID => $tr_stable_id);
+                          -TRANSCRIPTID => $tr_stable_id,
+			  -SEQFETCHER   => $seqfetcher);
  my $alignment_arr_ref = $ea->fetch_alignment;
  $ea->transcriptid($other_tr_stable_id);
  my $other_alignment_arr_ref = $ea->fetch_alignment;
@@ -26,7 +27,7 @@ Bio::EnsEMBL::EvidenceAlignment.pm
 
 =head1 DESCRIPTION
 
-Gives an alignement of either a transcript and its evidence or a raw
+Gives an alignment of either a transcript and its evidence or a raw
 contig and its similarity features. Coordinates in the database are
 used to recreate the alignment, and must be correct or some data may
 not be displayed or may be displayed incorrectly.
@@ -37,15 +38,12 @@ Ensembl: ensembl-dev@ebi.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
 package Bio::EnsEMBL::EvidenceAlignment;
-
-# pfetch binary - just pick it up from PATH
-use constant PFETCH => 'pfetch';
 
 # modify placement on VC by adding the following to genomic start/end
 use constant VC_MINUS_STRAND_HACK_BP => -1;
@@ -57,22 +55,26 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::SeqIO;
 use Bio::EnsEMBL::Gene;
 use Bio::Root::RootI;
+use Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch;
 
 @ISA = qw(Bio::Root::RootI);
 
 =head2 new
 
     Title   :   new
-    Usage   :   my $transcript_ea = Bio::EnsEMBL::EvidenceAlignment->new(
-                                      -DBADAPTOR    => $dba,
-                                      -TRANSCRIPTID => $transcript_stable_id);
-		my $contig_ea     = Bio::EnsEMBL::EvidenceAlignment->new(
-                                      -DBADAPTOR    => $dba,
-                                      -CONTIGID     => $contig_stable_id);
+    Usage   :   my $tr_ea   = Bio::EnsEMBL::EvidenceAlignment->new(
+                                -DBADAPTOR    => $dba,
+                                -TRANSCRIPTID => $transcript_stable_id);
+		my $cont_ea = Bio::EnsEMBL::EvidenceAlignment->new(
+                                -DBADAPTOR => $dba,
+                                -CONTIGID  => $contig_stable_id);
     Function:   Initialises EvidenceAlignment object
     Returns :   An EvidenceAlignment object
-    Args    :   Database adaptor object and a stable ID string (transcript
-                or contig)
+    Args    :   Database adaptor object and an ID string (-CONTIGID
+                with contig ID or -TRANSCRIPTID with transcript
+		stable ID); optional seqfetcher (-SEQFETCHER), which
+		must have a get_Seqs_by_accs method (by default,
+		Pfetch is used).
 
 =cut
 
@@ -80,11 +82,12 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($transcriptid, $contigid, $dbadaptor) = $self->_rearrange(
-                                                ['TRANSCRIPTID',
-						 'CONTIGID',
-                                                 'DBADAPTOR'],
-						@args);
+  my ($transcriptid, $contigid, $dbadaptor, $seqfetcher) = $self->_rearrange(
+                                                         ['TRANSCRIPTID',
+						          'CONTIGID',
+                                                          'DBADAPTOR',
+						          'SEQFETCHER'],
+						         @args);
   if (defined $transcriptid and defined $contigid) {
     $self->throw("may have a transcript ID or a contig ID but not both");
   }
@@ -94,6 +97,10 @@ sub new {
   if ($contigid) {
     $self->contigid($contigid);
   }
+  if (! $seqfetcher) {
+    $seqfetcher = Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch->new();
+  }
+  $self->seqfetcher($seqfetcher);
   $self->dbadaptor($dbadaptor);
 
   return $self; # success - we hope!
@@ -116,12 +123,29 @@ sub dbadaptor {
   return $obj->{evidencealignment_db_adaptor};
 }
 
+=head2 seqfetcher
+
+    Title   :   seqfetcher
+    Usage   :   $ea->seqfetcher($seqfetcher_obj);
+    Function:   get/set for seqfetcher, which must have a
+                get_Seqs_by_accs method
+=cut
+
+sub seqfetcher {
+  my $obj = shift;
+  if( @_ ) {
+    my $value = shift;
+    $obj->{evidencealignment_seqfetcher} = $value;
+  }
+  return $obj->{evidencealignment_seqfetcher};
+}
+
 =head2 transcriptid
 
     Title   :   transcriptid
     Usage   :   $ea->transcriptid($transcript_stable_id);
-    Function:   get/set for transcript stable id string (also unsets
-                contig id)
+    Function:   get/set for transcript stable id string (setting
+                this also unsets contigid)
 
 =cut
 
@@ -139,8 +163,8 @@ sub transcriptid {
 
     Title   :   contigid
     Usage   :   $ea->contigid($contig_stable_id);
-    Function:   get/set for contig stable id string (also unsets
-                transcript id)
+    Function:   get/set for contig stable id string (setting this
+                also unsets transcriptid)
 
 =cut
 
@@ -154,18 +178,18 @@ sub contigid {
   return $obj->{evidencealignment_contig_id};
 }
 
-=head2 get_features_from_transcript
+=head2 _get_features_from_transcript
 
-    Title   :   get_features_from_transcript
-    Usage   :   $ea->get_features_from_transcript($transcript_obj, $vc);
+    Title   :   _get_features_from_transcript
+    Usage   :   $ea->_get_features_from_transcript($transcript_obj, $vc);
     Function:   use SGP adaptor supplied to get evidence off a VC
-		of the transcript supplied; return an array
-		of featurepairs; features not falling witin exons
-		are cut
+		of the transcript supplied; features not falling witin
+		exons are cut
+    Returns :   array of featurepairs
 
 =cut
 
-sub get_features_from_transcript {
+sub _get_features_from_transcript {
   my ($self, $transcript_obj, $vc) = @_;
   $self->throw('interface fault') if (@_ != 3);
     
@@ -187,15 +211,17 @@ sub get_features_from_transcript {
   return @features;
 }
 
-=head2 get_features_from_rawcontig
+=head2 _get_features_from_rawcontig
 
-    Title   :   get_features_from_rawcontig
-    Usage   :   $ea->get_features_from_rawcontig($rawcontig_obj, $strand);
-    Function:   Get features off specified strand of the given raw contig
+    Title   :   _get_features_from_rawcontig
+    Usage   :   $ea->_get_features_from_rawcontig($rc_obj, $strand);
+    Function:   Get features off specified strand of the raw contig
+                supplied
+    Returns :   array of featurepairs
 
 =cut
 
-sub get_features_from_rawcontig {
+sub _get_features_from_rawcontig {
   my ($self, $rawcontig_obj, $strand) = @_;
   $self->throw('interface fault') if (@_ != 3);
 
@@ -207,7 +233,9 @@ sub get_features_from_rawcontig {
       eval {
         $tmp = $feature->hseqname;
       };
-      if (! $@) {
+      if ($@) {
+        $self->warn("feature $feature has no hseqname method");
+      } else {
         push @features, $feature;
       }
     }
@@ -215,10 +243,10 @@ sub get_features_from_rawcontig {
   return @features;
 }
 
-=head2 pad_pep_str
+=head2 _pad_pep_str
 
-    Title   :   pad_pep_str
-    Usage   :   $padded_pep_seq = $ea->pad_pep_str($pep_str);
+    Title   :   _pad_pep_str
+    Usage   :   $padded_pep_seq = $ea->_pad_pep_str($pep_str);
     Function:   make a protein sequence the same length as the
                 corresponding DNA sequence by adding '--' after
 		each amino acid
@@ -226,7 +254,7 @@ sub get_features_from_rawcontig {
 
 =cut
 
-sub pad_pep_str {
+sub _pad_pep_str {
   my ($self, $original) = @_;
   $self->throw('interface fault') if (@_ != 2);
 
@@ -242,7 +270,10 @@ sub pad_pep_str {
 
     Title   :   fetch_alignment
     Usage   :   my $seq_arr_ref = $ea->fetch_alignment;
-    Function:   gets aligned evidence and transcript or raw contig
+    Function:   gets transcript or raw contig and corresponding
+                evidence or similarity features; for raw
+		contigs, these are displayed for the forward
+		strand followed by the reverse strand
     Returns :   reference to array of Bio::PrimarySeq
 
 =cut
@@ -295,12 +326,11 @@ sub _get_transcript_nuc {
   return $retval;
 }
 
-# get all hit sequences by aggregated use of pfetch
+# get all hit sequences by aggregated use of seqfetcher
 sub _get_hits {
   my ($self, $features_arr_ref) = @_;
   $self->throw('interface fault') if (@_ != 2);
 
-  my $pfetch = PFETCH;		# executable
   my $clump_size = 1000;	# number of sequences to fetch at once
   my %hits_hash = ();
   my @hseqnames = ();
@@ -308,44 +338,33 @@ sub _get_hits {
     my $hseqname = $$features_arr_ref[$i]->hseqname;
     if (! exists $hits_hash{$hseqname})
     {
-      push @hseqnames, $$features_arr_ref[$i]->hseqname;
+      push @hseqnames, $hseqname;
       if ((@hseqnames % $clump_size) == 0) {
-        open (EVIDENCEALIGNMENT_PFETCH_IN_FH, "$pfetch -q @hseqnames |")
-          or $self->throw("error running pfetch");
-        my $seq_no = 0;
-        while (<EVIDENCEALIGNMENT_PFETCH_IN_FH>) {
-          chomp;
-	  my $seq_obj;
-	  if ($_ ne "no match") {
-	     my $seq_obj = Bio::Seq->new(
-	                     -seq => $_,
-	                     -id  => 'fake_id',
-	 		     -accession_number =>$hseqnames[$seq_no]
-	                   );
-   	    $hits_hash{$hseqnames[$seq_no]} = $seq_obj;
+        my @seqs = $self->seqfetcher->get_Seqs_by_accs(@hseqnames);
+	foreach my $seq_obj (@seqs) {
+          $hits_hash{$seq_obj->accession_number} = $seq_obj;
+	}
+	foreach my $hseqname (@hseqnames) {
+	  if (not exists $hits_hash{$hseqname}) {
+	    $self->warn("couldn't fetch sequence for hit $hseqname");
+	    $hits_hash{$hseqname} = undef;
 	  }
-	  $seq_no++;
-        }
-      @hseqnames = ();
+	}
+        @hseqnames = ();
       }
     }
   }
-
-  # fetch the non-clump-sized remainder
-  open (EVIDENCEALIGNMENT_PFETCH_IN_FH, "$pfetch -q @hseqnames |")
-    or $self->throw("error running pfetch");
-  my $seq_no = 0;
-  while (<EVIDENCEALIGNMENT_PFETCH_IN_FH>) {
-    chomp;
-    my $seq_obj;
-    if ($_ ne "no match") {
-      my $seq_obj = Bio::Seq->new( -seq => $_,
-                                   -id  => 'fake_id',
-				   -accession_number =>$hseqnames[$seq_no]
-				 );
-      $hits_hash{$hseqnames[$seq_no]} = $seq_obj;
+  if (@hseqnames) {	# fetch the non-clump-sized remainder
+    my @seqs = $self->seqfetcher->get_Seqs_by_accs(@hseqnames);
+    foreach my $seq_obj (@seqs) {
+      $hits_hash{$seq_obj->accession_number} = $seq_obj;
     }
-    $seq_no++;
+    foreach my $hseqname (@hseqnames) {
+      if (not exists $hits_hash{$hseqname}) {
+        $self->warn("couldn't fetch sequence for hit $hseqname");
+        $hits_hash{$hseqname} = undef;
+      }
+    }
   }
 
   return \%hits_hash;
@@ -365,7 +384,7 @@ sub _get_aligned_features_for_contig {
   # get contig
   my $contig_obj = $db->get_Contig($contig_id);
 
-  my @features = $self->get_features_from_rawcontig($contig_obj, $strand);
+  my @features = $self->_get_features_from_rawcontig($contig_obj, $strand);
   my $hits_hash_ref = $self->_get_hits(\@features);
   my $nucseq_obj = $contig_obj->primary_seq;
   if ($strand < 0) {
@@ -383,7 +402,7 @@ sub _get_aligned_features_for_contig {
   # translations themselves form our first three rows of 'evidence'
   for (my $i = 0; $i < 3; $i++) {
     my $evidence_line = $translations[$i]->seq;
-    $evidence_line = $self->pad_pep_str($evidence_line);
+    $evidence_line = $self->_pad_pep_str($evidence_line);
     if ($i == 1) {
       $evidence_line = '-' . $evidence_line;
     } elsif ($i == 2) {
@@ -410,27 +429,39 @@ sub _get_aligned_features_for_contig {
 
   PEP_FEATURE_LOOP:
   foreach my $feature (@features) {
-    next PEP_FEATURE_LOOP	# unless feature falls within this contig
-      unless (($feature->start >= 1) && ($feature->end <= $dna_len_bp));
     next PEP_FEATURE_LOOP	# if feature is a duplicate of the last
       if ($last_feat
       && ($last_feat->start  == $feature->start)
       && ($last_feat->end    == $feature->end)
       && ($last_feat->hstart == $feature->hstart)
       && ($last_feat->hseqname eq $feature->hseqname));
+    if (($feature->start < 1) || ($feature->end > $dna_len_bp)) {
+      $self->warn("genomic coordinates out of range: start " .
+        $feature->start . ", end " . $feature->end);
+      next PEP_FEATURE_LOOP;
+    }
     my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
-    next PEP_FEATURE_LOOP 
-      unless ($hit_seq_obj && ($hit_seq_obj->moltype eq 'protein'));
+    if (! $hit_seq_obj) {
+      next PEP_FEATURE_LOOP;	# already warned in _get_hits()
+    }
+    next PEP_FEATURE_LOOP	# not an error, DNA and protein are mixed
+      unless ($hit_seq_obj->moltype eq 'protein');
     my $hlen = $feature->hend - $feature->hstart + 1;
     my $flen = $feature->end - $feature->start + 1;
-    next PEP_FEATURE_LOOP unless ($flen == 3 * $hlen);
+    if ($flen != 3 * $hlen) {
+      $self->warn("genomic length $flen but protein hit length $hlen for hit "
+        . $feature->hseqname . "\n");
+      next PEP_FEATURE_LOOP;
+    }
     if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
       > length $hit_seq_obj->seq))
     {
+      $self->warn("hit coordinates out of range: hit " . $feature->hseqname .
+        ", hit start " . $feature->hstart . ", hit length $hlen\n");
       next PEP_FEATURE_LOOP;
     }
     my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
-    $hseq = $self->pad_pep_str($hseq);
+    $hseq = $self->_pad_pep_str($hseq);
     my $hindent_bp;
     if ($strand > 0) {
       $hindent_bp = $feature->start - 1;
@@ -461,7 +492,8 @@ sub _get_aligned_features_for_contig {
 
     # splice in the evidence fragment
     my $hseqlen = length $$hit{hseq};
-    next if (($$hit{hindent} < 0) || ($$hit{hindent} + $hseqlen > $dna_len_bp));
+    next
+      if (($$hit{hindent} < 0) || ($$hit{hindent} + $hseqlen > $dna_len_bp));
     substr $evidence_line, $$hit{hindent}, $hseqlen, $$hit{hseq};
 
     # store if end of evidence line
@@ -494,23 +526,35 @@ sub _get_aligned_features_for_contig {
   $last_feat = undef;
   NUC_FEATURE_LOOP:
   foreach my $feature(@features) {
-    next NUC_FEATURE_LOOP	# unless feature falls within this contig
-      unless (($feature->start >= 1) && ($feature->end <= $dna_len_bp));
     next NUC_FEATURE_LOOP	# if feature is a duplicate of the last
       if ($last_feat
       && ($last_feat->start  == $feature->start)
       && ($last_feat->end    == $feature->end)
       && ($last_feat->hstart == $feature->hstart)
       && ($last_feat->hseqname eq $feature->hseqname));
+    if (($feature->start < 1) || ($feature->end > $dna_len_bp)) {
+      $self->warn("genomic coordinates out of range: start " .
+        $feature->start . ", end " . $feature->end);
+      next NUC_FEATURE_LOOP;
+    }
     my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
-    next NUC_FEATURE_LOOP 
-      unless ($hit_seq_obj && ($hit_seq_obj->moltype ne 'protein'));
+    if (! $hit_seq_obj) {
+      next NUC_FEATURE_LOOP;	# already warned in _get_hits()
+    }
+    next NUC_FEATURE_LOOP	# not an error, DNA and protein are mixed
+      unless ($hit_seq_obj->moltype ne 'protein');
     my $hlen = $feature->hend - $feature->hstart + 1;
     my $flen = $feature->end - $feature->start + 1;
-    next NUC_FEATURE_LOOP unless ($flen == $hlen);
+    if ($hlen != $flen) {
+      $self->warn("genomic length $flen but DNA hit length $hlen for hit "
+        . $feature->hseqname . "\n");
+      next NUC_FEATURE_LOOP;
+    }
     if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
          > length $hit_seq_obj->seq))
     {
+      $self->warn("hit coordinates out of range: hit " . $feature->hseqname .
+        ", hit start " . $feature->hstart . ", hit length $hlen\n");
       next NUC_FEATURE_LOOP;
     }
     my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
@@ -627,7 +671,7 @@ sub _get_aligned_evidence_for_transcript {
   }
 
   my @all_exons = $transcript_obj->get_all_Exons;
-  my @features = $self->get_features_from_transcript($transcript_obj, $vc);
+  my @features = $self->_get_features_from_transcript($transcript_obj, $vc);
   my $hits_hash_ref = $self->_get_hits(\@features);
   my $translation = $transcript_obj->translate->seq;
   my $nucseq_str = $self->_get_transcript_nuc(\@all_exons);
@@ -689,7 +733,7 @@ sub _get_aligned_evidence_for_transcript {
 
   # translation itself forms our first row of 'evidence'
   my $evidence_line = $translation;
-  $evidence_line = $self->pad_pep_str($evidence_line);
+  $evidence_line = $self->_pad_pep_str($evidence_line);
   # get 3' UTR length and adjust evidence line for 5' and 3' UTRs
   $evidence_line = ('-' x $total_5prime_utr_len) . $evidence_line;
   my $total_3prime_utr_len = $cdna_len_bp - length($evidence_line);
@@ -722,18 +766,27 @@ sub _get_aligned_evidence_for_transcript {
         && ($last_feat->hstart == $feature->hstart)
         && ($last_feat->hseqname eq $feature->hseqname));
       my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
-      next PEP_FEATURE_LOOP 
-        unless ($hit_seq_obj && ($hit_seq_obj->moltype eq 'protein'));
+      if (! $hit_seq_obj) {
+        next PEP_FEATURE_LOOP;	# already warned in _get_hits()
+      }
+      next PEP_FEATURE_LOOP	# not an error, DNA and protein are mixed
+        unless ($hit_seq_obj->moltype eq 'protein');
       my $hlen = $feature->hend - $feature->hstart + 1;
       my $flen = $feature->end - $feature->start + 1;
-      next PEP_FEATURE_LOOP unless ($flen == 3 * $hlen);
+      if ($flen != 3 * $hlen) {
+        $self->warn("genomic length $flen but protein hit length $hlen for hit "
+        . $feature->hseqname . "\n");
+        next PEP_FEATURE_LOOP;
+      }
       if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
 	  > length $hit_seq_obj->seq))
       {
+        $self->warn("hit coordinates out of range: hit " . $feature->hseqname .
+          ", hit start " . $feature->hstart . ", hit length $hlen\n");
         next PEP_FEATURE_LOOP;
       }
       my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
-      $hseq = $self->pad_pep_str($hseq);
+      $hseq = $self->_pad_pep_str($hseq);
       my $hindent_bp;
       if ($exon->strand > 0) {
         $hindent_bp =   $total_exon_len + $feature->start - $exon->start
@@ -816,14 +869,23 @@ sub _get_aligned_evidence_for_transcript {
         && ($last_feat->hstart == $feature->hstart)
         && ($last_feat->hseqname eq $feature->hseqname));
       my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
-      next NUC_FEATURE_LOOP 
-        unless ($hit_seq_obj && ($hit_seq_obj->moltype ne 'protein'));
+      if (! $hit_seq_obj) {
+	next NUC_FEATURE_LOOP;	# already warned in _get_hits()
+      }
+      next NUC_FEATURE_LOOP	# not an error, DNA and protein are mixed
+        unless ($hit_seq_obj->moltype ne 'protein');
       my $hlen = $feature->hend - $feature->hstart + 1;
       my $flen = $feature->end - $feature->start + 1;
-      next NUC_FEATURE_LOOP unless ($flen == $hlen);
+      if ($hlen != $flen) {
+        $self->warn("genomic length $flen but DNA hit length $hlen for hit "
+          . $feature->hseqname . "\n");
+        next NUC_FEATURE_LOOP;
+      }
       if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
 	  > length $hit_seq_obj->seq))
       {
+        $self->warn("hit coordinates out of range: hit " . $feature->hseqname .
+          ", hit start " . $feature->hstart . ", hit length $hlen\n");
         next NUC_FEATURE_LOOP;
       }
       my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
