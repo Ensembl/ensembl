@@ -80,7 +80,7 @@ sub fetch_all_by_Slice_and_set_code {
   my $slice = shift;
   my $set_code = shift;
 
-  throw('Set code argument is required') if(!$set_code);
+  throw('Set code argument is required.') if(!$set_code);
 
   my $msa = $self->db->get_MiscSetAdaptor();
   my $set = $msa->fetch_by_code($set_code);
@@ -95,6 +95,82 @@ sub fetch_all_by_Slice_and_set_code {
   return $self->fetch_all_by_Slice_constraint($slice, $constraint);
 }
 
+
+
+=head2 fetch_all_by_attribute_type_value
+
+  Arg [1]    : string $attrib_type_code
+               The code of the attribute type to fetch features for
+  Arg [2]    : (optional) string $attrib_value
+               The value of the attribute to fetch features for
+  Example    : 
+         #get all misc features that have an embl accession
+         @feats = @{$mfa->fetch_all_by_attrib_type_value('embl_acc')};
+         #get the misc feature with synonym 'AL014121'
+         ($feat)=@{$mfa->fetch_all_by_attrib_type_value('synonym','AL014121');
+  Description: Retrieves MiscFeatures which have a particular attribute.
+               If the attribute value argument is also provided only features
+               which have the attribute AND a particular value are returned.
+               The features are returned in their native coordinate system
+               (i.e. the coordinate system that they are stored in).
+  Returntype : listref of Bio::EnsEMBL::MiscFeatures
+  Exceptions : throw if attrib_type code arg is not provided
+  Caller     : general
+
+=cut
+
+sub fetch_all_by_attribute_type_value {
+  my $self = shift;
+  my $attrib_type_code = shift;
+  my $attrib_value = shift;
+
+  throw("Attrib type code argument is required.") if(!$attrib_type_code);
+
+  #
+  # Need to do 2 queries so that all of the ids come back with the features.
+  # The problem with adding attrib constraints to filter the misc_features
+  # which come back is that not all of the attributes will come back
+  #
+
+  my $sql = "SELECT DISTINCT ma.misc_feature_id " .
+            "FROM   misc_attrib ma, attrib_type at " .
+            "WHERE  ma.attrib_type_id = at.attrib_type_id " .
+            "AND    at.code = ?";
+
+  my @bind_vals = ($attrib_type_code);
+
+  if($attrib_value) {
+    push @bind_vals, $attrib_value;
+    $sql .= " AND ma.value = ?";
+  }
+
+  my $sth = $self->prepare($sql);
+  $sth->execute(@bind_vals);
+
+  my @ids = map {$_->[0]} @{$sth->fetchall_arrayref()};
+
+  $sth->finish();
+
+  #construct constraints from the list of ids.  Split ids into
+  #groups of 1000 to ensure that the query is not too big
+  my @constraints;
+  while(@ids) {
+    my @subset =  splice(@ids, 0, 1000);
+    if(@subset == 1) {
+      push @constraints, "mf.misc_feature_id = $subset[0]";
+    } else {
+      my $id_str = join(',',@subset);
+      push @constraints, "mf.misc_feature_id in ($id_str)";
+    }
+  }
+
+  my @results;
+  foreach my $constraint (@constraints) {
+    push @results, @{$self->generic_fetch($constraint)};
+  }
+
+  return \@results;
+}
 
 
 #_tables
