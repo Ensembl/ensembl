@@ -24,7 +24,7 @@
 #
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..5\n"; 
+BEGIN { $| = 1; print "1..10\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -83,6 +83,56 @@ else {
     print "not ok 5\n";
 }
 
-my $rm = "rm seq_temp.swiss";
+if ($protein->length == 46) {
+    print "ok 6\n";
+}
+else {
+    print "not ok 6\n";
+}
 
-system($rm) == 0 or die "$0\Error running '$rm'";
+if ($protein->id eq "ENSP00000216167") {
+     print "ok 7\n";
+}
+else {
+    print "not ok 7\n";
+}
+
+my @dates = $protein->get_dates();
+
+if (scalar @dates == 2) {
+     print "ok 8\n";
+}
+else {
+    print "not ok 8\n";
+}
+
+my @dblinks = $protein->annotation->each_DBLink();
+
+print STDERR scalar @dblinks, "\n";
+
+if (scalar @dblinks == 7) {
+     print "ok 9\n";
+}
+else {
+    print "not ok 9\n";
+}
+
+if ($protein->seq eq "RNSKRTLCMNNLFPHYRQKNPRLLREPSDFLHLKSVKSSCFLLPYP") {
+    print "ok 10\n";
+}
+else {
+    print "not ok 10\n";
+}
+
+#my $rm = "rm seq_temp.swiss";
+
+#system($rm) == 0 or die "$0\Error running '$rm'";
+
+
+
+
+
+
+
+
+
