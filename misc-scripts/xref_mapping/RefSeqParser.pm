@@ -31,11 +31,10 @@ sub run {
 
   my $self = shift if (defined(caller(1)));
   my $file = shift;
-  $file = basename($file);
   my $source_id = shift;
 
   if ($source_id < 1) {
-    $source_id = BaseParser->get_source_id_for_filename($file);
+    $source_id = BaseParser->get_source_id_for_filename(basename($file));
     print "Source id for $file: $source_id\n";
   }
 
@@ -74,8 +73,13 @@ sub create_xrefs {
     (my $gi, my $n, my $ref, my $acc, my $description) = split(/\|/, $header);
     my ($species, $mrna);
     if ($file =~ /\.protein\.faa$/) {
-      # further parse description field
+
       ($mrna, $description, $species) = $description =~ /(\S*)\s+(.*)\s+\[(.*)\]$/;
+
+    } elsif ($file =~ /\.rna\.fna$/) {
+
+      ($species, $description) = $description =~ /\s*(\w+\s+\w+)\s+(.*)$/;
+
     }
 
     $species = lc $species;
@@ -93,8 +97,7 @@ sub create_xrefs {
       $xref->{SEQUENCE} = $sequence;
       $xref->{SPECIES_ID} = $species_id;
 
-      # TODO species for non-protein files ?????
-      # TODO synonyms etc
+      # TODO synonyms, dependent xrefs etc
 
       push @xrefs, $xref;
 
