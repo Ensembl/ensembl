@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 41;
+	plan tests => 42;
 }
 
 
@@ -127,3 +127,9 @@ ok(%generic_adaptors->{"Repeat"});
 eval { my %generic_adpators = $db->get_GenericFeatureAdaptors("Mickey") };
 ok($@);
 
+# Slice tests - should these go in slice.t?
+my $slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end('X', 1, 10000);
+ok($slice);
+
+my %features = $slice->get_generic_features();
+ok(%features);
