@@ -964,6 +964,45 @@ sub get_all_Genes_by_type{
 }
 
 
+=head2 get_all_Transcripts
+
+  Arg [1]    : none
+  Example    : @transcripts = @{$slice->get_all_Transcripts};
+  Description: Gets all transcripts which overlap this slice.  If you want to
+               specify a particular analysis or type, then you are better off
+               using get_all_Genes or get_all_Genes_by_type and iterating
+               through the transcripts of each gene.
+  Returntype : reference to a list of Bio::EnsEMBL::Transcripts
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_Transcripts {
+  my $self = shift;
+  return $self->adaptor->db->get_TranscriptAdaptor->fetch_all_by_Slice($self);
+}
+
+
+=head2 get_all_Exons
+
+  Arg [1]    : none
+  Example    : @exons = @{$slice->get_all_Exons};
+  Description: Gets all exons which overlap this slice.  Note that these exons
+               will not be associated with any transcripts, so this may not
+               be terribly useful.
+  Returntype : reference to a list of Bio::EnsEMBL::Exons
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_Exons {
+  my $self = shift;
+  return $self->adaptor->db->get_ExonAdaptor->fetch_all_by_Slice($self);
+}
+
+
 
 =head2 get_all_QtlFeatures
 
