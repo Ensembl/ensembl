@@ -191,8 +191,9 @@ sub get_all_binvalues{
 
  	return [] if(!@{$self->{'bin_array'}});
 
-  my $width = $self->scale_to_fit() ||
-    throw("Cannot scale values - scale_to_fit has not been set");
+  my $width = $self->scale_to_fit();
+  return [] unless defined($width);
+  # throw("Cannot scale values - scale_to_fit has not been set");
 
   if ($self->stretch && ($max_value-$min_value) ){
     foreach my $bv (@{ $self->{'bin_array'}}){
