@@ -209,7 +209,7 @@ sub fetch_by_feature_and_dbID{
     my ($self,$feature,$transl) = @_;
     my @features;
     my %anahash;
-    if (($feature eq "PRINTS") || ($feature eq "Pfam") || ($feature eq "PROSITE")) {
+    if (($feature eq "PRINTS") || ($feature eq "Pfam") || ($feature eq "PROSITE") || ($feat eq "superfamily")) {
 	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,d.short_description from protein_feature p,interpro_description d,interpro i,analysis a where p.translation = '$transl' and i.id = p.hid and i.interpro_ac = d.interpro_ac and p.analysis = a.id and a.gff_feature = 'domain' and a.db = '$feature'");
 	$sth->execute();
 	
