@@ -153,6 +153,39 @@ sub _initialize {
 
 }
 
+
+=head2 get_geneids_by_hids
+
+ Title   : get_geneids_by_hids
+ Usage   : @geneids = $obj->get_geneids_by_hids(@hids)
+ Function: gives back geneids with these hids as supporting evidence
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_geneids_by_hids{
+   my ($self,@hids) = @_;
+
+    my $inlist = join(',',map "'$_'", @hids);
+       $inlist = "($inlist)";
+
+   my $sth = $self->prepare("select transcript.gene from transcript as transcript, exon_transcript as exon_transcript, exon as exon, supporting_feature as supporting_feature where exon.id = supporting_feature.exon and exon_transcript.exon = exon.id and exon_transcript.transcript = transcript.id and supporting_feature.hid in $inlist");
+
+   $sth->execute();
+   my %gene;
+
+   while( (my $arr = $sth->fetchrow_arrayref()) ) {
+       my ($geneid) = @{$arr};
+       $gene{$geneid} =1;
+   }
+
+   return keys %gene;
+}
+
+
 =head2 get_Gene
 
  Title   : get_Gene
