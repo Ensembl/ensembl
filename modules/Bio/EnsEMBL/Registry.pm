@@ -142,13 +142,24 @@ sub load_all{
 	    }
 	}
 	elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
-	    print STDERR  "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
+	  my $file = $ENV{ENSEMBL_REGISTRY};
+	    print STDERR  "Loading conf from ".$file."\n";
 	    unless (my $return = do $ENV{ENSEMBL_REGISTRY}){
-		throw "Error in Configuration\n $!\n";
+	      throw "Configuration error in $file: $@" if $@;
+	      throw "Configuration error in $file: $!" unless defined $return;
+	      throw "Configuration error in $file" unless $return;
 	    }
 	}
-	elsif(-e $ENV{HOME}."/.ensembl_init"){
-	    do($ENV{HOME}."/.ensembl_init");
+	elsif(-e $ENV{HOME}."/.ensembl_init") {
+	  my $file = $ENV{HOME}."/.ensembl_init";
+	  my $return;
+
+	  unless( my $return =  do( $file )) {
+	      throw "Configuration error in $file: $@" if $@;
+	      throw "Configuration error in $file: $!" unless defined $return;
+	      throw "Configuration error in $file" unless $return;
+	  }
+
 	}
 	else{
 	  print STDERR "NO default configuration to load\n";
