@@ -107,7 +107,7 @@ sub fetch_all {
            '-adaptor'         => $self,
            '-slice'           => $x_slice,
            '-alternate_slice' => $slice->sub_Slice($sr_start, $sr_end),
-           '-type'            => $x_type);
+           '-type'            => "$x_type REF" );
   }
 
   $sth->finish();
