@@ -29,7 +29,7 @@ Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor - Adaptor for DnaAlignFeatures
 =head1 DESCRIPTION
 
 
-This is an adaptor for protein features on DNA sequence. Like other
+This is an adaptor for DNA features on DNA sequence. Like other
 feature getting adaptors it has a number of fetch_ functions and a
 store function.
 
@@ -80,7 +80,7 @@ sub fetch_by_dbID{
        $self->throw("fetch_by_dbID must have an id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id from protein_align_feature p where p.protein_align_feature_id = $id");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id from dna_align_feature p where p.dna_align_feature_id = $id");
    $sth->execute();
 
    my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id) = $sth->fetchrow_array();
@@ -130,7 +130,7 @@ sub fetch_by_contig_id{
        $self->throw("fetch_by_contig_id must have an contig id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id from protein_align_feature p where p.contig_id = $cid");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id from dna_align_feature p where p.contig_id = $cid");
    $sth->execute();
 
    my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id);
@@ -199,7 +199,7 @@ sub fetch_by_assembly_location{
    # build the SQL
 
    my $cid_list = join(',',@cids);
-   my $sth = $self->prepare("select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,a.gff_source,a.gff_feature from protein_align_feature p where p.contig_id in ($cid_list)");
+   my $sth = $self->prepare("select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,a.gff_source,a.gff_feature from dna_align_feature p where p.contig_id in ($cid_list)");
    $sth->execute();
 
 
@@ -270,7 +270,7 @@ sub store{
        $self->throw("Contig_id must be a number, not [$contig_id]");
    }
 
-   my $sth = $self->prepare("insert into protein_align_feature (contig_id,contig_start,contig_end,contig_strand,hit_start,hit_end,hit_strand,hit_name,cigar_line,analysis_id,score) values (?,?,?,?,?,?,?,?,?,?,?)");
+   my $sth = $self->prepare("insert into dna_align_feature (contig_id,contig_start,contig_end,contig_strand,hit_start,hit_end,hit_strand,hit_name,cigar_line,analysis_id,score) values (?,?,?,?,?,?,?,?,?,?,?)");
 
    foreach my $sf ( @sf ) {
        if( !ref $sf || !$sf->isa("Bio::EnsEMBL::FeaturePair") ) {
