@@ -157,11 +157,11 @@ sub build_contigs {
 
 	    push(@contigs,$tmpcontig);
 
+	    $self->add_Contig($tmpcontig);
 	}
 
     }
 
-    
     $self->_make_ContigOverlaps;
     
     print STDERR scalar($self->get_all_Contigs) . " contigs found in clone\n";
@@ -220,7 +220,7 @@ sub _make_ContigOverlaps {
 							      -contigb   => $contigb,
 							      -positiona => $positiona,
 							      -positionb => $positionb,
-							      -type      => 'CLONE',
+							      -source    => 'CLONE',
 							      -distance  => $spacing,
 							      -overlap_type => $type);
 		
