@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 38;
+	plan tests => 39;
 }
 
 use MultiTestDB;
@@ -269,7 +269,10 @@ $gene->transform();
 $multi->hide( "core", "gene", "transcript", "exon", "exon_transcript", "gene_description", "translation", "gene_stable_id", "transcript_stable_id", "exon_stable_id", "translation_stable_id", "supporting_feature", "dna_align_feature" );
 
 my $gene_ad = $db->get_GeneAdaptor();
+my $desc = 'test description';
+$gene->description($desc);
 debug( "Storing the gene" );
+
 $gene_ad->store($gene);
 
 ok(1);
@@ -300,6 +303,7 @@ ok( $exons->[0]->start == 13586 );
 ok( $exons->[1]->strand == 1 );
 ok( $exons->[1]->phase == 0 );
 
+ok($gene_out->description eq $desc);
 
 
 my $pep;
