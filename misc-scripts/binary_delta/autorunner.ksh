@@ -90,17 +90,17 @@ typeset -ft do_delta
 typeset -ft cleandb
 
 # A regular expression that should be avoided
-avoid_re='mart'
+avoid_re='£'
 
 # A regular expression that should be required
-require_re='1[0-5]_'
+require_re='.'
 
 version_re='[0-9][0-9]*_[0-9][0-9]*'
 
 # Use ftp://ftp.ensembl.org/ls-lR.Z to figure out what files are
 # available
 lynx -source ftp://ftp.ensembl.org/ls-lR.Z | \
-    sed -n 's/^\.\(.*data\/mysql\)\/\(.*\)_\('"$version_re"'\):$/\1 \2 \3/p' | \
+    sed -n 's/^\.\(.*data\/mysql.*\)\/\(.*\)_\('"$version_re"'\):$/\1 \2 \3/p' | \
     grep -v $avoid_re | grep $require_re | sort -k2 >ls-lR
 
 while read path db ver; do
