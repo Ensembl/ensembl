@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 29;
+	plan tests => 30;
 }
 
 use MultiTestDB;
@@ -116,64 +116,72 @@ ok(!defined $dbc->get_db_adaptor('core'));
 ok(!defined $dbc->get_all_db_adaptors->{'core'});
 
 
-#
-# 16-17 disconnect and auto-reconnect via a prepare
-#
-ok($dbc->disconnect);
-$sth = $dbc->prepare('SELECT * from gene limit 1');
-$sth->execute;
-ok($sth->rows);
-$sth->finish;
-
 
 #
-# test construction with another datbase connection
+# try the database with the disconnect_when_inactive flag set.
+# this should automatically disconnect from the db
 #
+$dbc->disconnect_when_inactive(1);
+
+ok(!$dbc->db_handle->ping());
+
 {
-  my $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbconn => $dbc);
-  ok($dbc2->host()     eq $dbc->host());
-  ok($dbc2->username() eq $dbc->username());
-  ok($dbc2->password() eq $dbc->password());
-  ok($dbc2->port()     == $dbc->port());
-  ok($dbc2->driver()   eq $dbc->driver());
-  ok(${$dbc2->ref_count()} == 2 && $dbc2->ref_count() == $dbc->ref_count());
+  # reconnect should happen now
+  my $sth2 = $dbc->prepare('SELECT * from gene limit 1');
+  $sth2->execute;
+  ok($sth2->rows);
+  $sth2->finish;
+
+  # disconnect should occur now
 }
 
-#make sure connection is still ok on first db after second is garbage collected
-$sth = $dbc->prepare('show tables');
-ok($sth->execute());
-$sth->finish();
-
-my $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbconn => $dbc);
-my $dbc3 = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbconn => $dbc2);
-
-ok(${$dbc2->ref_count()} == 3 && $dbc3->ref_count() == $dbc->ref_count());
+ok(!$dbc->db_handle->ping());
 
 #
-# 18-19 make new connection with shared dbhandle, 
-# test copied/shared connection
-# disconnect original, 
-# use copy with shared handle (that shouldn't have been disconnected)
+# try the same thing but with 2 connections at a time
 #
-$dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbconn => $dbc);
-$sth = $dbc2->prepare('SELECT * from gene limit 1');
-$sth->execute;
-ok($sth->rows);
-$sth->finish;
-$dbc->disconnect;
-$sth = $dbc2->prepare('SELECT * from gene limit 1');
-$sth->execute;
-ok($sth->rows);
-$sth->finish;
 
-$dbc = undef;
+{
+  my $sth1 = $dbc->prepare('SELECT * from gene limit 1');
+  $sth1->execute;
 
-$sth = $dbc2->prepare('show tables');
-ok($sth->execute());
-$sth->finish();
+  {
+    my $sth2 = $dbc->prepare('SELECT * from gene limit 1');
+    $sth2->execute();
+    $sth2->finish();
+  }
 
-$dbc3 = undef;
+  ok($sth1->rows);
+  my @gene = $sth1->fetchrow_array();
+  ok(@gene);
 
-$sth = $dbc2->prepare('show tables');
-ok($sth->execute());
-$sth->finish();
+  $sth1->finish;
+}
+
+
+ok(!$dbc->db_handle->ping());
+
+$dbc->disconnect_when_inactive(0);
+
+ok($dbc->db_handle->ping());
+
+{
+  my $sth1 = $dbc->prepare('SELECT * from gene limit 1');
+  $sth1->execute();
+  ok($sth1->rows());
+  $sth1->finish();
+}
+
+#should not have disconnected this time
+ok($dbc->db_handle->ping());
+
+# construct a second database handle using a first one:
+my $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-DBCONN => $dbc);
+
+ok($dbc2->dbname eq $dbc->dbname());
+ok($dbc2->host   eq $dbc->host());
+ok($dbc2->username()   eq $dbc->username());
+ok($dbc2->password eq $dbc->password());
+ok($dbc2->port  == $dbc->port());
+ok($dbc2->driver eq $dbc->driver());
+
