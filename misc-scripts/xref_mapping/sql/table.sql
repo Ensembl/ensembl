@@ -52,9 +52,10 @@ CREATE TABLE dependent_xref (
 CREATE TABLE synonym (
 
   xref_id                     int unsigned not null,
-  synonym_xref_id             int unsigned not null,
+  synonym                     varchar(255),
 
-  KEY xref_idx(xref_id)
+  KEY xref_idx(xref_id),
+  KEY synonym_idx(synonym)
 
 );
 
