@@ -70,15 +70,18 @@ use Bio::EnsEMBL::DBSQL::DummyStatement;
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,$db_obj) = @_;
+sub new {
+  my($class,$db_obj) = @_;
 
-  my $make = $self->SUPER::_initialize;
+  my $self = {};
+  bless $self,$class;
+
+
   
   $db_obj || $self->throw("Database Gene object must be passed a db obj!");
   $self->_db_obj($db_obj);
 
-  return $make; # success - we hope!
+  return $self; # success - we hope!
 }
 
 =head2 donor_locator

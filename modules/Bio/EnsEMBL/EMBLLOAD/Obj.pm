@@ -38,18 +38,21 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::EMBLLOAD::Obj;
 use vars qw(@ISA);
 use strict;
-use Bio::Root::Object;
-@ISA = qw(Bio::Root::Object);
+use Bio::Root::RootI;
+@ISA = qw(Bio::Root::RootI);
 
 use Bio::SeqIO;
 use Bio::EnsEMBL::Gene;
 use  Bio::EnsEMBL::EMBLLOAD::Clone;
 use  Bio::EnsEMBL::EMBLLOAD::Contig;
 
-sub _initialize {
-    my($self,@args) = @_;
+sub new {
+    my($class,@args) = @_;
     
-    my $make = $self->SUPER::_initialize;    
+    my $self = {};
+    bless $self,$class;
+
+
     my ($file,$format,$seq)=$self->_rearrange([qw(FILE FORMAT SEQ)],@args);        
 # my $file='data/newentry';
 # my$format='EMBL';  
@@ -65,7 +68,7 @@ sub _initialize {
     }
     $self->get_Seq($seq);
 
-    return $make;     
+    return $self;     
 }
 
 

@@ -45,11 +45,11 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::EMBLLOAD::Clone;
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::EMBLLOAD::Contig;
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
+@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::CloneI);
 use Bio::EnsEMBL::Translation;
 
 # Object preamble - inheriets from Bio::Root::Object
@@ -57,12 +57,17 @@ use Bio::EnsEMBL::Translation;
 # new() is inherited from Bio::Root::Object
 
 
-sub _initialize {
-    my($self,@args) = @_;    
+sub new {
+    my($class,@args) = @_;    
+
+    my $self = {};
+    bless $self,$class;
+
+
     my ($annseq)=$self->_rearrange([qw(ANNSEQ)],@args);
-    my $make = $self->SUPER::_initialize; 
+
     $self->_get_Seq($annseq);  
-    return $make; 
+    return $self; 
     
 }
 

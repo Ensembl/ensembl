@@ -47,20 +47,23 @@ package Bio::EnsEMBL::Ghost;
 use vars qw(@ISA);
 use strict;
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::Object);
-# new() is inherited from Bio::Root::Object
+@ISA = qw(Bio::Root::RootI);
 
-# _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+
+
+sub new {
+  my($class,@args) = @_;
+
+  my $self = {};
+  bless $self,$class;
 
   my $make = $self->SUPER::_initialize(@args);
   $self->{'_pointer_array'} = [];
 # set stuff in self from @args
-  return $make; # success - we hope!
+  return $self; # success - we hope!
 }
 
 =head2 id

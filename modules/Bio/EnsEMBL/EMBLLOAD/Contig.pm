@@ -39,22 +39,24 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::EMBLLOAD::Contig;
 use vars qw(@ISA);
 use strict;
-use Bio::Root::Object;
+use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
+@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::ContigI);
 use Bio::EnsEMBL::EMBLLOAD::Obj;
 use Bio::EnsEMBL::Gene;
 
 
-sub _initialize {
-    my($self,@args) = @_;
+sub new {
+    my($class,@args) = @_;
     
+    my $self = {};
+    bless $self,$class;
+
     my ($annseq)=$self->_rearrange([qw(ANNSEQ)],@args);
-    my $make = $self->SUPER::_initialize; 
+
     $self->_get_Seq($annseq); 
     $self->id;
-    return $make; 
-    
+    return $self; 
 }
 
 

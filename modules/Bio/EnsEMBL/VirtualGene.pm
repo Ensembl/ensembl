@@ -76,18 +76,20 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::SeqFeatureI;
-use Bio::Root::Object;
+use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::Object Bio::SeqFeatureI);
+@ISA = qw(Bio::Root::RootI Bio::SeqFeatureI);
 
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+  my($class,@args) = @_;
 
-  my $make = $self->SUPER::_initialize(@args);
+  my $self = {};
+  bless $self,$class;
+
 
   my ($gene,$contig,$start,$end,$strand,$contigid) = $self->_rearrange(['GENE','CONTIG','START','END','STRAND','CONTIGID'],@args);
   if( !defined $gene ) {
@@ -120,7 +122,7 @@ sub _initialize {
       $self->strand($strand);
   }
 
-  return $make; # success - we hope!
+  return $self; # success - we hope!
 }
 
 =head2 start
