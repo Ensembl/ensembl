@@ -37,6 +37,7 @@ use strict;
 
 use Bio::EnsEMBL::DnaDnaAlignFeature;
 use Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor;
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor);
 
@@ -114,7 +115,7 @@ sub _columns {
 sub store {
   my ($self, @feats) = @_;
 
-  throw("Must call store with sequence features") if( scalar(@feats) == 0 );
+  throw("Must call store with features") if( scalar(@feats) == 0 );
 
   my @tabs = $self->_tables;
   my ($tablename) = @{$tabs[0]};
@@ -146,7 +147,7 @@ sub store {
     }
 
     if(!defined($feat->analysis)) {
-      throw("Cannot store sequence features without analysis");
+      throw("An analysis must be attached to the features to be stored.");
     }
 
     #store the analysis if it has not been stored yet
