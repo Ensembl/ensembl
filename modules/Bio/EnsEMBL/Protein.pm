@@ -216,6 +216,29 @@ sub each_Protein_feature{
 
 }
 
+=head2 add_intron
+
+ Title   : add_intron
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_intron{
+    my ($self,$value) = @_;
+
+    if (!defined $value) {
+	$self->throw("The intron is no defined");
+    }
+
+   push(@{$self->{'_intron'}},$value);   
+
+}
+
 
 =head2 each_Intron_feature
 
@@ -231,10 +254,42 @@ sub each_Protein_feature{
 
 sub each_Intron_feature{
    my ($self) = @_;
-   my $proteinid = $self->id();
-   my @array_introns = $self->adaptor->get_Introns($proteinid);
-   return @array_introns;
+   if (defined ($self->{'_intron'})) {
+       return @{$self->{'_intron'}};
+   }
+   else {
+       my $proteinid = $self->id();
+       my @array_introns = $self->adaptor->get_Introns($proteinid);
+       foreach my $in (@array_introns) {
+	   $self->add_intron($in);
+       }
+       return @{$self->{'_intron'}};
+   }
 }
+
+=head2 add_snps
+
+ Title   : add_snps
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_snps{
+    my ($self,$value) = @_;
+
+    if (!defined $value) {
+	$self->throw("The snp is no defined");
+    }
+
+   push(@{$self->{'_snp'}},$value);  
+
+}
+
 
 =head2 each_snps_feature
 
@@ -250,8 +305,17 @@ sub each_Intron_feature{
 
 sub each_snps_feature{
    my ($self) = @_;
-   my @snps_array = $self->adaptor->get_snps($self);
-   return @snps_array;
+   my ($self) = @_;
+   if (defined ($self->{'_snp'})) {
+       return @{$self->{'_snp'}};
+   }
+   else {
+       my @snps_array = $self->adaptor->get_snps($self);
+       foreach my $sn (@snps_array) {
+	   $self->add_snps($sn);
+       }
+       return @{$self->{'_snp'}};
+   }
 
 }
 
