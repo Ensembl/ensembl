@@ -55,7 +55,7 @@ use strict;
 use vars qw(@ISA);
 
 use Bio::EnsEMBL::KaryotypeBand;
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
@@ -185,10 +185,15 @@ sub fetch_by_chr_band {
   my $slice = $self->db->get_SliceAdaptor->fetch_by_region('chromosome',
                                                            $chr_name);
 
-  my $constraint = "k.band = '$band'";
+  my $constraint = "k.band like '$band%'";
   my $result = $self->fetch_by_Slice_constraint($slice,$constraint);
 
   return undef if(!@$result);
+
+  if(@$result > 1) {
+    warning("Band $chr_name $band is ambiguous.  Returning first band found.");
+  }
+
   my ($kb) = @$result;
 
   return $kb;
