@@ -429,7 +429,7 @@ sub translateable_exons{
 
 	    if( $exon->strand == 1 ) {
 		if( $self->translation->end() > $exon->end ) {
-		    $self->warn("Bad news. Attempting to say that this translation is inside this exon, but outside".$exon->id." ".$exon->end()." ".$self->translation->end()."\n");
+		    $self->warn("Bad news. Attempting to say that this translation is inside this exon, but outside, exon: ".$exon->id." exon end: ".$exon->end()." translation end: ".$self->translation->end()."\n");
 		    ### GENEWISE BUG. DO NOT PROPAGATE
 		    $endexon->end($exon->end);
 		} else {

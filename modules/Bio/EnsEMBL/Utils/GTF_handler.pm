@@ -633,7 +633,7 @@ sub dump_genes {
                 my $exon_id    = $exon->id;
                 my $exon_start = $exon->start;
                 my $exon_end   = $exon->end;
-                my $seq_name   = $exon->contig_id;
+                my $seq_name   = $exon->seqname;
                 my $phase      = $exon->phase;
                 my $score      = $exon->score || 0;
                 my $strand    = ($exon->strand == 1) ? '+' : '-';
