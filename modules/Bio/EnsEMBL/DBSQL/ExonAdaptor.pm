@@ -3,28 +3,33 @@
 # Copyright EMBL-EBI 2001
 #
 # Author: Arne Stabenau
-# based on 
+# based on
 # Elia Stupkas Gene_Obj
-# 
+#
 # Date : 20.02.2001
 #
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::ExonAdaptor - MySQL Database queries to generate and store exons (including supporting evidence)
+Bio::EnsEMBL::DBSQL::ExonAdaptor - An adaptor responsible for the retrieval and
+storage of exon objects
 
 =head1 SYNOPSIS
 
-$exon_adaptor = $database_adaptor->get_ExonAdaptor();
-$exon = $exon_adaptor->fetch_by_dbID
+  $exon_adaptor = $database_adaptor->get_ExonAdaptor();
+  $exon = $exon_adaptor->fetch_by_dbID($dbID);
+
+=head1 DESCRIPTION
+
+The ExonAdaptor is responsible for retrieving and storing Exon objects from an
+Ensembl database.  Most of the ExonAdaptor functionality is inherited from the
+B<Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor> class.
 
 =head1 CONTACT
 
-  Arne Stabenau: stabenau@ebi.ac.uk
-  Elia Stupka  : elia@ebi.ac.uk
-  Ewan Birney  : 
+Post questions/comments to the Ensembl dev list: ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
+=head1 METHODS
 
 =cut
 
@@ -285,8 +290,6 @@ sub store {
 }
 
 
-
-
 =head2 remove
 
   Arg [1]    : Bio::EnsEMBL::Exon $exon
@@ -538,19 +541,16 @@ sub _objs_from_sth {
 }
 
 
+=head1 DEPRECATED METHODS
 
+=cut
 
 
 =head2 get_stable_entry_info
 
-  Arg [1]    : Bio::EnsEMBL::Exon $exon
-  Example    : $exon_adaptor->get_stable_entry_info($exon);
-  Description: gets stable info for an exon. this is not usually done at
-               creation time for speed purposes, and can be lazy-loaded later
-               if it is needed..
-  Returntype : none
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::Exon
+  Description: DEPRECATED. This method is no longer necessary.  Exons are
+               always fetched with their stable identifiers (if they exist) and
+               no lazy loading is necessary.
 
 =cut
 

@@ -1,14 +1,14 @@
 #
 # EnsEMBL module for Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor
 #
-# Copyright (c) 2003 EnsEMBL
+# Copyright (c) 2003 Ensembl
 #
 # You may distribute this module under the same terms as perl itself
 
 =head1 NAME
 
 Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor - An Abstract Base class for all
-                                          FeatureAdaptors
+FeatureAdaptors
 
 =head1 SYNOPSIS
 
@@ -23,8 +23,7 @@ common to all feature adaptors.
 
 =head1 CONTACT
 
-Contact EnsEMBL development list for info: <ensembl-dev@ebi.ac.uk>
-
+Contact Ensembl development list for info: <ensembl-dev@ebi.ac.uk>
 
 =head1 METHODS
 
@@ -256,7 +255,6 @@ sub fetch_all_by_dbID_list {
 
   return \@out;
 }
-
 
 
 
@@ -989,7 +987,9 @@ sub deleteObj {
 }
 
 
+=head1 DEPRECATED METHODS
 
+=cut
 
 
 =head2 fetch_all_by_RawContig_constraint
