@@ -223,7 +223,7 @@ sub external_name {
 
 sub is_known {
   my $self = shift;
-  if( defined $self->external_name() ) {
+  if( defined $self->external_name() && $self->external_name() ne '' ) {
     return 1;
   } else {
     return 0;
