@@ -765,8 +765,9 @@ sub seq_region_end {
   Description: Returns the dna sequence from the attached slice and 
                attached database that overlaps with this feature.
                Returns undef if there is no slice or no database.
+               Returns undef if this feature is unstranded (i.e. strand=0).
   Returntype : undef or string
-  Exceptions : none
+  Exceptions : warning if this feature is not stranded
   Caller     : general
 
 =cut
@@ -779,8 +780,13 @@ sub seq {
     return undef;
   }
 
-  return $self->{'slice'}->subseq($self->{'start'}, $self->{'end'},
-                                  $self->{'strand'});
+  if(!$self->strand()) {
+    warning("Cannot retrieve sequence for unstranded feature.");
+    return undef;
+  }
+
+  return $self->{'slice'}->subseq($self->start(), $self->end(),
+                                  $self->strand());
 
 }
 
