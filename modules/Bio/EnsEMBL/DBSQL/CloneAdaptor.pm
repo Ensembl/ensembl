@@ -70,7 +70,7 @@ sub fetch_by_accession {
 
     if( !defined $id) {$self->throw("Don't have $id for new adaptor");}
 
-    my $statement="select internal_id,id,embl_id,version,embl_version,htg_phase,
+    my $statement="select internal_id,embl_id,version,embl_version,htg_phase,
                           UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified),
                           UNIX_TIMESTAMP(stored) 
                    from   clone 
@@ -80,7 +80,7 @@ sub fetch_by_accession {
     my $sth = $self->prepare($statement);    
     my $res = $sth ->execute();
 
-    my ($internal_id,$id,$embl_id,$version,$embl_version,
+    my ($internal_id,$embl_id,$version,$embl_version,
 	$htg_phase,$created,$modified, $stored)= $sth->fetchrow_array;
    
     $self->throw("no clone for $id") unless defined $internal_id;
