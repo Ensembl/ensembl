@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 44;
+	plan tests => 46;
 }
 
 
@@ -262,7 +262,7 @@ $softmasked_seq = $seq = undef;
 #
 # 45 Test Slice::get_all_MapFrags
 #
-ok(scalar @{$slice->get_all_MapFrags});
+ok(scalar @{$slice->get_all_MapFrags('cloneset')});
 
 #
 # 46 Test Slice::get_tiling_path

@@ -910,7 +910,7 @@ sub _mask_features {
 =head2 get_all_MapFrags
 
   Arg [1]    : string $mapset
-  Example    : none
+  Example    : $slice->get_all_MapFrags('cloneset');
   Description: Retreives all mapfrags of mapset $mapset that overlap this slice
   Returntype : listref of Bio::EnsEMBL::MapFrags
   Exceptions : none
@@ -921,6 +921,10 @@ sub _mask_features {
 sub get_all_MapFrags {
     my $self = shift;
     my $mapset = shift;
+
+    unless($mapset) {
+      $self->throw("mapset argument is required");
+    }
 
     my $mfa = $self->adaptor()->db()->get_MapFragAdaptor();
 
