@@ -55,7 +55,7 @@ use strict;
 use vars qw(@ISA);
 
 use Bio::EnsEMBL::KaryotypeBand;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
@@ -126,7 +126,7 @@ sub _objs_from_sth {
        -SLICE   => $slice,
        -ADAPTOR => $self,
        -DBID    => $karyotype_id,
-       -BAND    => $band,
+       -NAME    => $band,
        -STAIN   => $stain);
   }
 
@@ -156,7 +156,7 @@ sub fetch_all_by_chr_name {
 
     my $slice =
       $self->db->get_SliceAdaptor->fetch_by_region('chromosome', $chr_name);
-    return $self->fetch_by_Slice($slice);
+    return $self->fetch_all_by_Slice($slice);
 }
 
 
@@ -166,17 +166,19 @@ sub fetch_all_by_chr_name {
                Name of the chromosome from which to retrieve the band
   Arg  [2]   : string $band
                The name of the band to retrieve from the specified chromosome
-  Example    : $band = $kary_adaptor->fetch_all_by_chr_band('4', 'q23');
+  Example    : @bands = @{$kary_adaptor->fetch_all_by_chr_band('4', 'q23')};
   Description: Fetches the karyotype band object from the database
                for the given chromosome and band name.  If no such band
-               exists, undef is returned instead.
+               exists, undef is returned instead.  This function uses fuzzy
+               matching of the band name. For example the bands 'q23.1' and
+               'q23.4' could be matched by fetch_all_by_chr_band('20', 'q23');
   Returntype : Bio::EnsEMBL::KaryotypeBand in chromosomal coordinates.
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub fetch_by_chr_band {
+sub fetch_all_by_chr_band {
   my ($self, $chr_name, $band) = @_;
 
   throw('Chromosome name argument expected') if(!$chr_name);
@@ -186,17 +188,17 @@ sub fetch_by_chr_band {
                                                            $chr_name);
 
   my $constraint = "k.band like '$band%'";
-  my $result = $self->fetch_by_Slice_constraint($slice,$constraint);
+  return $self->fetch_all_by_Slice_constraint($slice,$constraint);
+}
 
-  return undef if(!@$result);
 
-  if(@$result > 1) {
-    warning("Band $chr_name $band is ambiguous.  Returning first band found.");
-  }
 
-  my ($kb) = @$result;
+sub fetch_by_chr_band {
+  my $self = shift;
+  deprecate('Use fetch_all_by_chr_band instead.');
 
-  return $kb;
+  my ($band) = @{$self->fetch_all_by_chr_band(@_)};
+  return $band;
 }
 
 
