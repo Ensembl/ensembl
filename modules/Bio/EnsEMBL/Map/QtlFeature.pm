@@ -92,6 +92,7 @@ sub qtl {
 }
 
 
+
 =head2 strand
 
   Arg [1]    : none
@@ -106,9 +107,32 @@ sub qtl {
 
 sub strand {
 	my $self = shift;
-
   return 0;
 }
+
+
+
+=head2 move
+
+  Arg [1]    : $start - The new end of this qtl feature
+  Arg [2]    : $end - The new start of this qtl feature
+  Arg [3]    : $strand - ignored always set to 0
+  Example    : $qtl_feat->move(1, 10_000);
+  Description: Overrides superclass move() method to ensure strand is always 0.
+               See Bio::EnsEMBL::Feature::move
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub move {
+  my ($self, $start, $end, $strand) = @_;
+
+  #maintain a strandedness of 0
+  return $self->SUPER::move($start,$end,0);
+}
+
 
 
 1;
