@@ -69,6 +69,7 @@ use vars qw(@ISA);
                    -END    => $end,
                    -STRAND => $strand,
                    -SEQ_REGION_NAME => $seq_region,
+                   -SEQ_REGION_LENGTH => $seq_region_length,
                    -COORD_SYSTEM  => $cs,
                    -ADAPTOR => $adaptor,
                    -REPEAT_MASK => ['repeat_masker'],
