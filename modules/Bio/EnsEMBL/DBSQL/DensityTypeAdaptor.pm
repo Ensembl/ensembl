@@ -234,7 +234,7 @@ sub store {
   }
 
   my $sth = $self->prepare
-    ("INSERT INTO density_type (analysis_id,".
+    ("INSERT IGNORE INTO density_type (analysis_id,".
                                   "block_size, value_type) ". 
     "VALUES (?,?,?)");
 
@@ -248,8 +248,6 @@ sub store {
     }
 
     if($dt->is_stored($db)) {
-      warning("DensityType [".$dt->density_type_id."] is already stored" .
-              " in this database.");
       next FEATURE;
     }
 
@@ -262,9 +260,25 @@ sub store {
       $analysis_adaptor->store($dt->analysis());
     }
 	
-    $sth->execute($dt->analysis->dbID(), $dt->block_size(), $dt->value_type());
+    my $inserted = $sth->execute($dt->analysis->dbID(), $dt->block_size(),
+                                 $dt->value_type());
 
-    my $dbID = $sth->{'mysql_insertid'};
+    my $dbID;
+
+    # $inserted can be 0E0 which is true but equal to 0
+    if(!$inserted || $inserted == 0) {
+      # insert failed, presumably because was already stored in database
+
+      my @dts=@{$self->fetch_all_by_logic_name($dt->analysis()->logic_name())};
+      my ($stored_dt) = grep {$_->block_size() == $dt->block_size()} @dts;
+      if(!$stored_dt) {
+        throw("Could not retrieve or store DensityType from database.\n" .
+              "Incorrect db permissions or missing density_type table?\n");
+      }
+      $dbID = $stored_dt->dbID();
+    } else {
+      $dbID = $sth->{'mysql_insertid'};
+    }
 
     # next two lines are to set the density type as stored
     $dt->dbID($dbID);
