@@ -246,9 +246,9 @@ sub move {
     throw('strand must be 0, -1 or 1');
   }   
 
-  $self->{'start'} = shift;
-  $self->{'end'} = shift;
-  $self->{'strand'} = shift if(defined($strand));
+  $self->{'start'} = $start;
+  $self->{'end'} = $end;
+  $self->{'strand'} = $strand if(defined($strand));
 }
 
 
