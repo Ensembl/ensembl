@@ -12,7 +12,8 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DB::ExternalFeatureFactoryI - Abstract interface for databases providing external features
+Bio::EnsEMBL::DB::ExternalFeatureFactoryI - Abstract interface for
+databases providing external features
 
 =head1 SYNOPSIS
 
@@ -25,7 +26,7 @@ Bio::EnsEMBL::DB::ExternalFeatureFactoryI - Abstract interface for databases pro
 					   # other arguments
 					   -external => [ $mydb ] );
 
-   # you can add external databases to an obj once made
+   # alternatively, you can add external databases to an obj once made
    $dbobj->add_ExternalFeatureFactory($mydb);
 
    # now the ExternalFeatureFactory has been added, Ensembl RawContigs
@@ -66,9 +67,11 @@ features in one these two coordinate systems
 
 The methods that have to be implemented are:
 
-    get_External_SeqFeatures_contig($ensembl_contig_identifier,$sequence_version,$start,$end);
+    get_External_SeqFeatures_contig(
+        $ensembl_contig_identifier,$sequence_version,$start,$end);
 
-   get_External_SeqFeatures_clone($embl_accession_number,$sequence_version,$start,$end);
+    get_External_SeqFeatures_clone(
+        $embl_accession_number,$sequence_version,$start,$end);
 
 The semantics of this method is as follows:
 
@@ -104,9 +107,19 @@ the following spec:
     each SeqFeature holding onto another object, but this is left to
     the implementor to decide on the correct strategy.
 
+    d) must return an unique identifier when called with method id. 
+
 You must implement both functions. In most cases, one function will
-always return an empty list, whereas the other function will actually query
-the external database.
+always return an empty list, whereas the other function will actually
+query the external database.
+
+The second way of accessing the External Database from Ensembl is
+using unique internal identifiers in that database. The method is:
+
+    get_SeqFeature_by_id($id);
+
+It should return exactly one Sequence Feature object of the same type
+as above.
 
 
 =head1 FEEDBACK
@@ -168,7 +181,7 @@ use vars qw(@ISA);
 sub get_Ensembl_SeqFeatures_contig{
    my ($self) = @_;
 
-   $self->throw("Abstract method get_External_SeqFeatures_contig encountered in base class. Implementation failed to complete it")
+   $self->throw("Abstract method get_External_SeqFeatures_contig encountered in base class. Implementation failed to complete it");
 
 }
 
@@ -187,10 +200,29 @@ sub get_Ensembl_SeqFeatures_contig{
 sub get_Ensembl_SeqFeatures_clone{
    my ($self) = @_;
    
-   $self->throw("Abstract method get_Ensembl_SeqFeatures_clone encountered in base class. Implementation failed to complete it")
+   $self->throw("Abstract method get_Ensembl_SeqFeatures_clone encountered in base class. Implementation failed to complete it");
 
 }
 
+=head2 get_SeqFeature_by_id
+
+ Title   : get_SeqFeature_by_id (Abstract)
+ Usage   : 
+ Function: Return SeqFeature object for any valid unique id  
+ Example :
+ Returns : 
+ Args    : id as determined by the External Database
+
+
+=cut
+
+       
+sub get_SeqFeature_by_id {
+   my ($self) = @_;
+   $self->throw("Abstract method get_SeqFeature_by_id  encountered in base class. Implementation failed to complete it");
+
+
+}
 
 1;
 
