@@ -721,6 +721,18 @@ sub get_xref{
   return undef;
 }
 
+sub add_xref{
+ my ($self,$acc,$version,$label,$description,$source_id,$species_id) = @_;
+
+  if(!defined($add_xref_sth)){
+    $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
+  }
+ $add_xref_sth->execute($acc,$version,$label,$description,$source_id,$species_id) 
+   || die "$acc\t$label\t\t$source_id\t$species_id\n";
+ 
+}
+
+
 sub add_to_xrefs{
   my ($self,$master_xref,$acc,$version,$label,$description,$linkage,$source_id,$species_id) = @_;
 
