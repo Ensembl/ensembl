@@ -1015,6 +1015,7 @@ sub _load_overlaps{
    my $id      = $self->internal_id();
    my $version = $self->seq_version();
 
+
    my $query =  "select co.contig_a_position," .
                 "       co.contig_b_position," .
 		"       co.overlap_type," .
@@ -1035,7 +1036,7 @@ sub _load_overlaps{
                 "and      con.dna = co.dna_b_id)) " .
 		"and    con.internal_id = $id";
 
-#   print(STDERR "Query is $query");
+   print(STDERR "Query is $query");
 
    my $sth = $self->dbobj->prepare($query);
    
@@ -1043,6 +1044,8 @@ sub _load_overlaps{
        $self->throw("Unable to execute contig overlap get!");
    }
 
+   print STDERR "Completed!\n";
+   
 
    #
    # Certainly worth explaining here.
@@ -1065,7 +1068,8 @@ sub _load_overlaps{
    #
 
    while( my $rowhash = $sth->fetchrow_hashref ) {
-
+       print STDERR "We have a potential overlap,",$rowhash->{'dna_a_id'},"\n";
+       
        # First condition means the query contig is contig_a
        if ($rowhash->{dna_a_id} == $rowhash->{dna1}) {
 
