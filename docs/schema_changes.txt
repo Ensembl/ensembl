@@ -1,0 +1,210 @@
+Ensembl Schema and API Changes for the New Sequence Storage Architecture 
+========================================================================
+
+18-SEP-2003
+
+
+Introduction
+============
+
+This document describes the changes to the Ensembl database schema and API 
+concerned with sequence storage. The goals of the changes are a cleaner, more 
+intuitive API, a more general schema able to better capture divergent assembly
+types, and more flexibility with regards to assembly related data such as 
+haplotypes, pseudo autosomal regions, whole genome shotgun assemblies etc.
+
+Some familiarity with the existing Ensembl schema and API is assumed; this 
+document is not intended as an introduction to Ensembl. 
+
+
+Schema Changes
+==============
+
+Seq_region
+----------
+
+The most significant schema change is the addition of the seq_region table and
+the removal of the contig, chromosome, and clone tables. One of the main 
+reasons for this change is to facilitate storage of genomes which are not 
+necessarily organised into contigs, clones and chromosomes.
+
+The seq_region table stores information about sequence regions. The primary 
+key is used as a pointer into the dna table so that actual sequence can be 
+obtained, and the coord_system_id allows sequence regions of multiple types to 
+be stored. Clones, contigs and chromosomes are all now stored in the seq_region
+table. Contigs are stored with the co-ordinate system 'contig'. The 
+relationship between contigs and clones is stored in the assembly table. The 
+relationships between contigs and chromosomes, and between contigs and 
+supercontigs, are stored in the assembly table. 
+
+The introduction of the seq_region table and the rationalisation of contig, 
+clone and chromosome information into it has meant that many tables that used 
+to have foreign keys referencing the contig table now have reference the 
+seq_region table. Thus the names of a lot of columns have been changed from 
+contig_id, contig_start, contig_end etc to seq_region_id, seq_region_start, 
+seq_region_end etc. 
+
+There is a new pair of tables (seq_region_attrib, attrib_type) that can be used
+to store  attributes for certain seq_regions; at the time of writing only the 
+HTG phase of clones is stored in this manner but there are likely to be other 
+attributes stored in future. Use of attributes allows a wider potential range 
+of object types to be stored in the seq_region table.
+
+Exons are now stored in chromosomal co-ordinates, so the concept of "sticky" 
+exons is no longer applicable.
+
+
+Feature tables and the assembly table
+-------------------------------------
+
+As mentioned above, all the feature tables, i.e. exon, repeat_feature, 
+simple_feature, dna_align_feature, protein_align_feature, marker_feature, 
+prediction_transcript, prediction_exon, gene, qtl_feature, transcript and 
+karyotype now have columns that reference the seq_region table, not the contig 
+table. Similarly the assembly table has been modified in order to make the 
+naming more consistent, and to reflect the fact that the assembly table now 
+contains several different types of relationships. Thus the asm_* columns in 
+the assembly table refer to the assembled object, and the cmp_* columns refer 
+to the objects making up the assembly.
+
+The new assembly_exception table allows multiple sequence regions to point to 
+the same sequence, analogous to a symbolic link in a filesystem pointing to 
+the actual file. This mechanism has been implemented specifically to support 
+haplotypes and PARs, but may be useful for other similar structures in the 
+future.
+
+
+Meta information
+----------------
+
+The meta table now has keys named assembly.mapping which describe mappings 
+between co-ordinate systems in the assembly table. These are in the form 
+
+	co-ord_system1{:version}|co-ord_system2{:version}
+e.g.
+	chromosome:NCBI33|contig
+
+There is a new metadata table, meta_coord, which describes, via joins with the 
+coord_system table, the co-ordinate systems that each of the feature tables 
+use. 
+
+The coord_system table also has an attrib column; this is used to define the 
+top-level co-ordinate system for the species, and which co-ordinate system is 
+at the sequence level. Each species has a co-ordinate system called 'toplevel',
+which represents the highest level co-ordinate system, and one called 
+'seqlevel'  which represents the level at which sequence is stored; in the case
+of human, 'toplevel' is a synonym for 'chromsome' and 'seqlevel' is a synonym 
+for 'contig'. Other species have 'toplevel' and 'seqlevel' set appropriately. 
+These synonyms should allow species-independent code to be written more easily.
+It is also possible to query the CoordSystemAdaptor to obtain a list of the 
+available co-ordinate systems.
+
+
+Transcript and Translation tables
+---------------------------------
+
+There have been some significant changes to the transcript and translation 
+tables. 
+
+The transcript table now has seq_region_start, seq_region_end and 
+seq_region_strand to allow faster retrieval, and also to allow transcripts to 
+be retrieved independently of genes and exons. The transcript table no longer 
+has a translation_id column; translations now point to transcripts instead of 
+the other way around. This allows pseudogenes to be represented as transcripts
+that have no translation.
+
+
+API Changes
+===========
+
+Slice
+-----
+
+The Slice object has become more general and has effectively replaced Clone, 
+Contig and Chromosome. The latter three objects, along with their associated 
+adaptors, have been deprecated; in other words they still exist, mostly as 
+wrappers around the appropriate new API calls, but using them will generate a 
+warning that code should be changed to use the appropriate method on Slice.
+
+A Slice is now defined by the following attributes:
+
+	seq_region_name, start, end, strand, coord_system
+
+i.e. A Slice can be defined in any coordinate system (not just chromosomal 
+co-ordinates as was the case previously).
+
+Note that the commonly-used fetch_by_chr_start_end() method on the old 
+SliceAdaptor has been replaced by the more general fetch_by_region() method on 
+the new SliceAdaptor to reflect the increased generality of the adaptor's 
+function.
+
+
+Feature methods
+---------------
+
+All feature objects now have methods which allow interchangeability between 
+co-ordinate systems. Generally, features should be stored in the database in 
+whichever co-ordinate system they are calculated in, and the following methods 
+used to convert them:
+
+# move the feature to the chromosomal coordinate system
+$feature = $feature->transform('chromosome');
+
+# move the feature to a different slice (possibly on another coord system)
+$feature = $feature->transfer($new_slice);
+
+# project the feature onto another coord system possibly across boundaries
+@projection = @{$feature->project('contig')};
+
+# change the start, end, and strand of the feature in place
+$feature->move($new_start, $new_end, $new_strand);
+
+Those who are familiar with the old transform() method will notice that its 
+functionality has been split into the new transform() and transfer() methods.
+
+Additionally features could formerly be split accross boundaries or in the case
+of exons, form sticky exons.  Features which span boundaries are now undefined,
+so it is a good idea to check the return value of transform and transfer.  The 
+project() method supplies an alternative means to extract these split 
+coordinates if they are required.
+
+The slice object also contains an analagous project() method which is a 
+replacement for the old get_tiling_path() method.  The project() method is 
+generalized for all coordinate systems whereas get_tiling_path() was specific 
+to chromosome to contig conversion.
+  
+Overall the transform() method should not be as needed as much was before.  It 
+is important to note that features do not have to be converted to the contig 
+coordinate system prior to storing.  Previous storing code ike:
+
+$feature->transform;
+$feature_adaptor->store($feature);
+
+Now just becomes:
+
+# store in original coord system
+$feature_adaptor->store($feature);
+
+
+Note that the transform() and transfer() methods return copies of the modified 
+feature, rather than altering it in-place as before.
+
+
+Other changes
+-------------
+
+The other main changes to the API are as follows:
+
+Bio::EnsEMBL::SeqFeature has been replaced with the more concise 
+Bio::EnsEMBL::Feature class.
+
+Genes, exons and transcripts are more decoupled; transcripts and exons can be 
+retrieved independently of genes and each other. Genes and exons are now 
+classed as features and so have all the functionality of the 
+Bio::EnsEMBL::Feature class.
+
+Similarly, KaryotypeBands are now classed as features.
+
+Bio::EnsEMBL::PredictionTranscript now inherits from Bio::EnsEMBL::Transcript; 
+hence PredictionTranscripts have all the functionality available to 
+transcripts.
