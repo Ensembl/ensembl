@@ -558,108 +558,39 @@ sub get_all_SeqFeatures {
 =cut
 
 sub get_all_SimilarityFeatures_above_score{
+
     my ($self, $analysis_type, $score) = @_;
     
-    $self->throw("Must supply analysis_type parameter") unless $analysis_type;
-    $self->throw("Must supply score parameter") unless $score;
+    my $sf = [];
     
-       
-    my $glob_start=$self->_global_start;
-    my $glob_end=$self->_global_end;
-    my $chr_name=$self->_chr_name;
-    
-    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
-    
-       
-    my    $statement = "SELECT feature.id, feature.seq_start+static_golden_path.chr_start as s,
-                               feature.seq_end+static_golden_path.chr_start, strand, score, 
-                               analysis, name, hstart, hend, hid,
-                               static_golden_path.chr_start,static_golden_path.chr_end,
-                               static_golden_path.raw_ori
-		        FROM   feature, analysis,static_golden_path
-                        WHERE  feature.score > '$score'  
-                        AND    feature.analysis = analysis.id 
-                        AND    static_golden_path.raw_id = feature.contig
-		        AND    analysis.db = '$analysis_type'  
-                        AND    NOT(static_golden_path.chr_end < '$glob_start' 
-		        OR     static_golden_path.chr_start >'$glob_end' )
-		        AND    static_golden_path.chr_name='$chr_name' 
-                        ORDER  by s";
-    
-    my  $sth = $self->dbobj->prepare($statement);    
-    $sth->execute(); 
-
-    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$chr_start,\$chr_end,\$raw_ori);
-
-
-    my @array;
-    my %analhash;
-    my $out;
-    my @distinct_features;
-    
-  FEATURE: while($sth->fetch) {
-      my $out;
-      my $analysis;
-   
-      foreach my $arrayref(@distinct_features){
-	  if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
-      }
-      my @list=($start,$end,$analysisid);
-      push @distinct_features,\@list;
-
-	if ($raw_ori == -1){    
-		my $length=$end-$start;
-        	my $medium=$chr_end+$chr_start-$start-0.5*$length;
- 		$start=$medium-0.5*$length;
-        	$end=$medium+0.5*$length;
-        	$strand=-1*$strand;
+    foreach my $c ($self->_vmap->get_all_RawContigs) {
+	
+	print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
+	
+	push(@$sf,$c->get_all_SimilarityFeatures_above_score($analysis_type,$score));
+	
+	# Need to clip seq features to fit the boundaries of
+	# our v/c so displays don't break
+	my @vcsf = ();
+	my $count = 0;
+	foreach $sf ( @$sf ) {
+	    $sf = $self->_convert_seqfeature_to_vc_coords($sf);
+	    
+	    if( !defined $sf ) {next;}        
+	    
+	    if (($sf->start < 0 ) || ($sf->end >$self->length)) {$count++;}
+	    
+	    else{push (@vcsf, $sf);}
 	}
-
-     
-      if ($start>=$glob_start && $end<=$glob_end){
-
-    	$start=$start-$glob_start;
-    	$end=$end-$glob_start;
-
-	  if (!$analhash{$analysisid}) 
-	  {
-	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	      $analysis = $feature_obj->get_Analysis($analysisid);
-	      $analhash{$analysisid} = $analysis;	   
-	  } 
-	  else {$analysis = $analhash{$analysisid};}
-	  
-	  if( !defined $name ) {
-	      $name = 'no_source';
-	  }
-	  $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
-	  $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
-				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
-	  $out->analysis    ($analysis);
-	  $out->id          ($hid);              
-	   
-	  $out = new Bio::EnsEMBL::SeqFeature;
-	  $out->seqname   ($self->id);
-	  $out->start     ($start);
-	  $out->end       ($end);
-	  $out->strand    ($strand);
-	  $out->source_tag($name);
-	  $out->primary_tag('similarity');
-	  $out->id         ($fid);
-	  
-	  if( defined $f_score ) {
-	      $out->score($f_score);
-	  }
-	  $out->analysis($analysis);
-	  
-	  $out->validate();
-	  
-	  push(@array,$out);       
-      }
-  }
-
-    return @array;
+	
+	return @vcsf;	
+    }
+    
 }
+
+
+
+
 
 
 
@@ -695,122 +626,13 @@ sub get_all_SimilarityFeatures {
 
 =cut
 
-sub get_all_RepeatFeatures_1 {
+sub get_all_RepeatFeatures {
    my ($self) = @_;
    
    return $self->_get_all_SeqFeatures_type('repeat');
 
 }
 
-
-=head2 get_all_RepeatFeatures
-
- Title   : get_all_RepeatFeatures
- Usage   : foreach my $sf ( $contig->get_all_RepeatFeatures ) 
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_RepeatFeatures {
-  
-  my ($self) = @_;
-
-   my @array;
-
-  my %analhash;
-  
-  my $glob_start=$self->_global_start;
-  my $glob_end=$self->_global_end;
-  my $chr_name=$self->_chr_name;
-  
-  
-  my $statement = "SELECT rf.id,rf.seq_start+sgp.chr_start,rf.seq_end+sgp.chr_start,
-                          rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
-                          sgp.raw_ori,sgp.chr_start,sgp.chr_end 
-                   FROM   repeat_feature rf,static_golden_path sgp
-                   WHERE  sgp.raw_id = rf.contig
-                   AND    NOT (sgp.chr_end < '$glob_start' OR sgp.chr_start >'$glob_end' )
-		   AND    sgp.chr_name='$chr_name' ";
-  
-
-  my $sth = $self->dbobj->prepare($statement);
-  
-  $sth->execute();
-  
-  my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid,$raw_ori,$chr_start,$chr_end);
-  
-  $sth->bind_columns
-      (undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$hstart,\$hend,\$hid,\$raw_ori,\$chr_start,\$chr_end);
-
- 
-
-
- my @distinct_features;  
-
- FEATURE:  while( $sth->fetch ) {
-     
-     my $out;
-     my $analysis;
-          
-     foreach my $arrayref(@distinct_features){
-	 if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
-     }
-     my @list=($start,$end,$analysisid);
-     push @distinct_features,\@list;
-      
-     if ($raw_ori == -1){    
-	 my $length=$end-$start;
-	 my $medium=$chr_end+$chr_start-$start-0.5*$length;
-	 $start=$medium-0.5*$length;
-	 $end=$medium+0.5*$length;
-	 $strand=-1*$strand;
-     }
-     
-     
-      if ($start>=$glob_start && $end<=$glob_end){
-
-	  $start=$start-$glob_start;
-	  $end=$end-$glob_start;
-	  
-	  
-	  if (!$analhash{$analysisid}) {
-	      
-	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	      $analysis = $feature_obj->get_Analysis($analysisid);
-	      
-	      $analhash{$analysisid} = $analysis;
-	      
-	  } else {
-	      $analysis = $analhash{$analysisid};
-	  }
-	  
-      
-	  if( $hid ne '__NONE__' ) {
-	      # is a paired feature
-	      # build EnsEMBL features and make the FeaturePair
-	      
-	      $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
-	      $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$self->id,
-				   $hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
-	      
-	      $out->analysis($analysis);
-	      
-	  } else {
-	      $self->warn("Repeat feature does not have a hid. bad news....");
-	  }
-	  
-	  $out->validate();
-	  
-	  push(@array,$out);
-      }  
-  }
-   
-  return @array;
-}
 
 
 
