@@ -176,11 +176,60 @@ sub get_taxonomy_id {
 }
 
 
+=head2 get_default_assembly_name
+
+  Arg [1]    : none
+  Example    : $assembly = $meta_container->get_default_assembly_name();
+  Description: Retrieves the default assembly name for this database from the 
+               meta container
+  Returntype : string
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub get_default_assembly_name {
+  my $self = shift;
+
+  my $arrRef = $self->list_value_by_key('assembly.name' );
+ 
+  if( @$arrRef ) {
+    return $arrRef->[0];
+  } else {
+    return undef;
+  }
+}
+
+=head2 get_default_assembly_version
+
+  Arg [1]    : none
+  Example    : $assembly = $meta_container->get_default_assembly_version();
+  Description: Retrieves the default assembly version for this database from the 
+               meta container
+  Returntype : string
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub get_default_assembly_version {
+  my $self = shift;
+
+  my $arrRef = $self->list_value_by_key('assembly.version' );
+ 
+  if( @$arrRef ) {
+    return $arrRef->[0];
+  } else {
+    return undef;
+  }
+}
+
+
 =head2 get_default_assembly
 
   Arg [1]    : none
   Example    : $assembly = $meta_container->get_default_assembly();
-  Description: Retrieves the default assembly for this database from the 
+  Description: Retrieves the default assembly for this database from the
                meta container
   Returntype : string
   Exceptions : none
@@ -192,13 +241,14 @@ sub get_default_assembly {
   my $self = shift;
 
   my $arrRef = $self->list_value_by_key('assembly.default' );
- 
+
   if( @$arrRef ) {
     return $arrRef->[0];
   } else {
     return undef;
   }
 }
+
 
 sub get_max_assembly_contig {
   my $self = shift;

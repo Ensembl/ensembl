@@ -655,7 +655,6 @@ sub get_all_RepeatFeatures {
 }
 
 
-
 =head2 get_all_SNPs
 
   Args      : none
@@ -1364,7 +1363,7 @@ sub get_all_ExternalFeatures {
 
    my $features = [];
 
-   my $xfa_hash = $self->adaptor->db->get_ExternalFeatureAdaptors;
+   my $xfa_hash = $self->adaptor->db->get_ExternalFeatureAdaptors();
    my @xf_adaptors = ();
 
    if($track_name) {
@@ -1378,6 +1377,48 @@ sub get_all_ExternalFeatures {
 
    foreach my $xfa (@xf_adaptors) {
      push @$features, @{$xfa->fetch_all_by_Slice($self)};
+   }
+
+   return $features;
+}
+
+
+=head2 get_all_ExternalLiteFeatures
+
+  Arg [1]    : (optional) string $track_name
+               If specified only features from ExternalFeatureAdaptors with 
+               the track name $track_name are retrieved.  
+               If not set, all features from every ExternalFeatureAdaptor are 
+               retrieved.
+  Example    : @x_features = @{$slice->get_all_ExternalFeatures}
+  Description: Retrieves features on this slice from external feature adaptors 
+  Returntype : listref of light Bio::SeqFeatureI implementing objects in slice 
+               coordinates 
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_ExternalLiteFeatures {
+   my ($self, $track_name) = @_;
+
+   my $features = [];
+   my $want_light = 1;
+   
+   my $xfa_hash = $self->adaptor->db->get_ExternalFeatureAdaptors();
+   my @xf_adaptors = ();
+
+   if($track_name) {
+     #use a specific adaptor
+     push @xf_adaptors, $xfa_hash->{$track_name};
+   } else {
+     #use all of the adaptors
+     push @xf_adaptors, values %$xfa_hash;
+   }
+
+
+   foreach my $xfa (@xf_adaptors) {
+     push @$features, @{$xfa->fetch_all_by_Slice($self, $want_light)};
    }
 
    return $features;

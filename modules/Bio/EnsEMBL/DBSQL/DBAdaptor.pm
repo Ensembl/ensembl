@@ -86,7 +86,7 @@ sub new {
 	# $self here is actually a Container object
 	# so need to call _obj to get the DBAdaptor
 	$self->_obj->{'default_module'} =  {
-              'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
+            'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
             'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
             'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
             'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
@@ -306,8 +306,28 @@ sub get_BlastAdaptor {
 
   my $db_apt = $self->get_db_adaptor('blast');
 
-  return $self->get_adaptor("Blast",
-			     $db_apt);
+  return $self->get_adaptor("Blast", $db_apt);
+}
+
+
+=head2 get_GlovarAdaptor
+
+  Args       : none 
+  Example    : $gv_adaptor = $db_adaptor->get_GlovarAdaptor();
+  Description: Gets a GlovarAdaptor for retrieving variations
+  Returntype : Bio::EnsEMBL::External::Glovar::GlovarAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_GlovarAdaptor {
+  my ($self)  = @_;
+  print "get_db_adaptor in DBAdaptor...\n";
+  my $gv_apt = $self->get_db_adaptor('glovar');
+  print "get_adaptor in DBAdaptor...\n";
+  return $self->get_adaptor("Glovar", $gv_apt);
+
 }
 
 
@@ -990,7 +1010,7 @@ sub add_ExternalFeatureAdaptor {
     $self->{'_xf_adaptors'} = {};
   }
 
-  my $track_name = $adaptor->{'_track_name'};
+  my $track_name = $adaptor->track_name();
 
   #use a generic track name if one hasn't been defined
   unless(defined $track_name) {
@@ -1006,7 +1026,6 @@ sub add_ExternalFeatureAdaptor {
     $self->{'_xf_adaptors'}->{"$track_name"} = $adaptor;
   }
 
-  $adaptor->db($self);
 }
 
 
