@@ -118,6 +118,75 @@ sub fetch_all {
 }
 
 
+=head2 fetch_all_by_feature_class
+
+  Arg [1]    : string $feature_cless - The name of the feature class
+  Example    : my @analyses = @{$analysis_adaptor->fetch_all_by_feature_class('Gene');
+  Description: Returns all analyses that correspond to a given 
+               feature class; see feature_classes method for a list.
+  Returntype : Listref of Bio::EnsEMBL::Analysis
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub fetch_all_by_feature_class {
+  my $self = shift;
+  my $feat_class = shift || throw( "Need a feature type, e.g. SimpleFeature" );
+ 
+  my @feature_classes = $self->feature_classes; # List of all feature classes
+  my %feat_table_map;
+  foreach my $class( @feature_classes ){
+    # Map e.g. DnaAlignFeature to dna_align_feature
+    my $table = join( "_", map lc, ( $class =~ /([A-Z][a-z]+)/g ) );
+    $feat_table_map{$class} = $table;
+  }
+  $feat_table_map{DensityFeature}='density_type'; # analysis_id in diff table
+  my $feat_table = $feat_table_map{$feat_type} || 
+      ( warning( "No feature type corresponding to $feat_type" ) &&
+        return [] );
+
+  my $sql_t = qq|
+SELECT DISTINCT( a.analysis_id )
+FROM   analysis a, %s f
+WHERE  a.analysis_id=f.analysis_id |;
+  
+  my $sql = sprintf( $sql_t, $feat_table );
+  my $sth = $self->prepare( $sql );
+  my $rv  = $sth->execute();
+  my $res = $sth->fetchall_arrayref;
+  return [ map{ $self->fetch_by_dbID($_->[0]) } @{$res} ];
+}
+
+
+=head2 feature_classes
+
+  Arg [1]    : NONE
+  Example    : my @fclasses = $analysis_adaptor->feature_classes;
+  Description: Returns a list of the different classes of Ensembl feature 
+               object that have an analysis
+  Returntype : List of feature classes
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub feature_classes{
+  # Can't think of a way to do this programatically, so hard-coded
+  return qw(
+            AffyFeature
+            DensityFeature
+            DnaAlignFeature
+            Gene
+            MarkerFeature
+            ProteinAlignFeature
+            ProteinFeature
+            QtlFeature
+            RepeatFeature
+            SimpleFeature
+            );
+}
+
 =head2 fetch_by_dbID
 
   Arg [1]    : int $internal_analysis_id - the database id of the analysis 
