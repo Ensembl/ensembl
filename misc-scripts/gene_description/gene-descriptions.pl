@@ -37,10 +37,11 @@ my @word_order = qw(unknown hypothetical putative novel probable [0-9]{3} kDa fr
 ## Getting parameters/options and usage
 
 my $usage = "
- Usage: $0 -h host \\
-           -u dbuser \\
+ Usage: $0 -host host \\
+           -port port \\
+           -dbuser dbuser \\
            -debug \\
-           -d dbname 
+           -dbname dbname 
            -consortium dbname in external_db table (e.g. ZFIN_ID for zebrafish)
            -r regexps_file
            fileprotein_database_file(s) > gene-descriptions.tab
@@ -55,24 +56,26 @@ my $usage = "
 
  OR to load the data from gene-descriptions.tab file to \'gene-description\' table
 
-        $0 -h host \\
-           -u dbuser \\
-           -d dbname \\
-           -p password \\
+        $0 -host host \\
+           -port port \\
+           -dbuser dbuser \\
+           -dbname dbname \\
+           -dbpass password \\
            -load gene-descriptions.tab
 \n";
 
 my $help = 0;
-my ($host, $dbname, $dbuser, $dbpass, $gene_description_file);
+my ($host, $port, $dbname, $dbuser, $dbpass, $gene_description_file);
 my $regexp_file;
 my $debug = 0;
 my $consortium = "";
 
 unless (GetOptions('help' => \$help,
-		   'h=s' => \$host,
-		   'd=s' => \$dbname,
-		   'u=s' => \$dbuser,
-		   'p=s' => \$dbpass,
+		   'host=s' => \$host,
+		   'port=i' => \$port,
+		   'dbname=s' => \$dbname,
+		   'dbuser=s' => \$dbuser,
+		   'dbpass=s' => \$dbpass,
 		   'r=s' => \$regexp_file,
 		   'consortium' => \$consortium,
 		   'load=s' => \$gene_description_file,
@@ -121,7 +124,7 @@ if (defined $gene_description_file || defined $dbpass) {
 ## Loading data to database if requested and exit
 
 if (defined $gene_description_file) {
-  if (load_data($gene_description_file,$host,$dbname,$dbuser,$dbpass) == 1) {
+  if (load_data($gene_description_file,$host,$port,$dbname,$dbuser,$dbpass) == 1) {
     exit 0;
   } else {
     warn "Problem when loading data
@@ -147,6 +150,7 @@ exit 1";
 print STDERR "Connecting to $dbname $host......";
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor (-host => $host,
+                                             -port => $port,
 					     -dbname => $dbname,
 					     -user => $dbuser);
 print STDERR "Done\n";
@@ -161,11 +165,12 @@ print STDERR "Preparing query...";
 
 my $sth = $db->prepare("
 SELECT
- tsc.translation_id,tsc.gene_id,xdb.db_name,x.dbprimary_acc,ix.query_identity,ix.target_identity
+ tsl.translation_id,tsc.gene_id,xdb.db_name,x.dbprimary_acc,ix.query_identity,ix.target_identity
 FROM
- transcript tsc,object_xref ox,xref x,external_db xdb,identity_xref ix
+ translation tsl,transcript tsc,object_xref ox,xref x,external_db xdb,identity_xref ix
 WHERE
- tsc.translation_id = ox.ensembl_id AND
+ tsl.transcript_id = tsc.transcript_id AND
+ tsl.translation_id = ox.ensembl_id AND
  ox.xref_id = x.xref_id AND
  x.external_db_id = xdb.external_db_id AND
  xdb.db_name in ($db_query) AND
@@ -320,7 +325,7 @@ sub compare_desc {
 } # compare_desc
 
 sub load_data {
-  my ($gene_description_file,$host,$dbname,$dbuser,$dbpass) = @_;
+  my ($gene_description_file,$host,$port,$dbname,$dbuser,$dbpass) = @_;
 
   if (-e $gene_description_file) {
     symlink $gene_description_file,"$ENV{PWD}/gene_description_file.symlink";
@@ -331,6 +336,7 @@ exit 3";
   }
  
   my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor (-host => $host,
+                                               -port => $port,
 					       -dbname => $dbname,
 					       -user => $dbuser,
 					       -pass => $dbpass);
@@ -396,7 +402,7 @@ sub parse_protein_database {
       
       if ($line =~ /^DE\s{3}(\S.*\S)$/o) {
 	$desc .= " " unless ($desc eq "");
-	$desc .= uc $1;
+        $desc .= $1;
       }
       
       if ($line =~ /^\/\/$/o) {
@@ -410,11 +416,11 @@ sub parse_protein_database {
     } elsif ($db eq $protein_db_naming_href->{'refseq'}) {
       
       if ($line =~ /^DEFINITION\s+(\S.*\S)$/o) {
-	$desc .= uc $1;
+        $desc .= $1;
 	while (defined ($line = <PROTDBF>)) {
 	  last if ($line =~ /^ACCESSION\s+(\S+)\s*.*$/o);
 	  if ($line =~ /^\s+(\S.*\S)$/o) {
-	    $desc .= " ".uc $1;
+	    $desc .= " ". $1;
 	  }
 	}
       }
