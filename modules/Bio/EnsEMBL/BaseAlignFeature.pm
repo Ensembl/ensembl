@@ -534,6 +534,7 @@ sub _parse_features {
   #
   # Loop through each portion of alignment and construct cigar string
   #
+
   foreach my $f (@f) {
     #
     # Sanity checks
@@ -804,14 +805,13 @@ sub _transform_to_rawcontig{
     my $contig_id = $mf->seqname;
     if(!$rc_features{$contig_id}){
       $rc_features{$contig_id} = [];
-      push(@{$rc_features{$contig_id}}, $mf);
-    }else{
-      push(@{$rc_features{$contig_id}}, $mf);
     }
+
+    push(@{$rc_features{$contig_id}}, $mf);
   }
 
   foreach my $contig_id(keys(%rc_features)){
-    my $outputf = $self->new( -features => \@{$rc_features{$contig_id}} );
+    my $outputf = $self->new( -features => $rc_features{$contig_id} );
     $outputf->analysis( $self->analysis() );
     $outputf->score( $self->score() );
     $outputf->percent_id( $self->percent_id() );
@@ -895,8 +895,14 @@ sub _transform_feature_to_rawcontig{
     $self->throw( "couldn't map ".$self."\n" );
     return $self;
   }
+  my ( $hit_start, $hit_end );
+
   if( scalar( @mapped ) > 1 ) {
-    my $hit_start = $feature->hstart;
+    if( $feature->hstrand == 1 ) {
+      $hit_start = $feature->hstart();
+    } else {
+      $hit_end = $feature->hend();
+    }
     #print STDERR " feature is being mapped across multiple contigs ".$feature->gffstring."\n";
   SPLIT: for( my $i=0; $i <= $#mapped; $i++ ) {
       if($mapped[$i]->isa("Bio::EnsEMBL::Mapper::Gap")){
@@ -920,8 +926,11 @@ sub _transform_feature_to_rawcontig{
 	$hit_length = sprintf "%.0f", $tmp;
       }
       #print STDERR "hit length ".$hit_length."\n";
-     
-      my $hit_end = ($hit_start + $hit_length) - 1;
+      if( $feature->hstrand() == 1 ) {
+	$hit_end = ($hit_start + $hit_length) - 1;
+      } else {
+	$hit_start = ( $hit_end - $hit_length + 1 );
+      } 
       #print "hit start ".$hit_start." hit end ".$hit_end."\n";
       my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[$i]->id() );
       my $f1 = new Bio::EnsEMBL::SeqFeature();
@@ -943,9 +952,15 @@ sub _transform_feature_to_rawcontig{
       #$new_feature->hscore($feature->score);
       $new_feature->analysis($feature->analysis);
       $new_feature->attach_seq($rawContig);
+      #print STDERR "FEATURE: ",join( " ", ( $new_feature->start(), $new_feature->end(), $new_feature->seqname,
+	#			$new_feature->contig(), $new_feature->hstart(), $new_feature->hend() )),"\n";
       #print STDERR "split feature ".$new_feature->gffstring."\n";
       push(@out, $new_feature);
-      $hit_start = ($hit_end + 1);
+      if( $feature->hstrand() == 1 ) {
+	$hit_start = ($hit_end + 1);
+      } else {
+	$hit_end = $hit_start -1;
+      }
     }
   }else{
     if($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
