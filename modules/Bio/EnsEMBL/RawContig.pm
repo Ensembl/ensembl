@@ -32,8 +32,9 @@ use strict;
 
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::DB::ContigI;
 
-@ISA = qw( Bio::Root::RootI );
+@ISA = qw( Bio::Root::RootI Bio::EnsEMBL::DB::ContigI );
 
 =head2 new
 
@@ -372,6 +373,30 @@ sub _mask_features {
 sub get_all_RepeatFeatures {
    my $self = shift;
    return ();
+}
+
+
+=head2 get_genscan_peptides
+
+  Args      : none
+  Function  : retrieves Prediction Transcripts on this RawContig from
+              Database connection.
+  Returntype: list Bio::EnsEMBL::PredictionTranscript
+  Exceptions: Warning when no database connection
+  Caller    : Pipeline RunnableDB::BlastGenscanPep
+
+=cut
+
+sub get_genscan_peptides {
+   my $self = shift;
+   if( ! defined $self->adaptor() ) {
+     $self->warn( "Need db connection for get_genscan_peptides()" );
+     return ();
+   }
+
+   my $transcripts = $self->adaptor()->db()->get_PredictionTranscriptAdaptor()->
+     fetch_by_Contig( $self );
+   return @$transcripts;
 }
 
 
