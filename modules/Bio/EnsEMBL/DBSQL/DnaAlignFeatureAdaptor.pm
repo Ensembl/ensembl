@@ -215,7 +215,7 @@ sub fetch_by_assembly_location_constraint{
 
   my $sql = "select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id,p.score,p.perc_ident,p.evalue from dna_align_feature p where p.contig_id in ($cid_list)";
   
-  if( defined $constraint ) {
+  if($constraint) {
     $sql .=  " AND $constraint";
   }
   #print STDERR "SQL $sql\n";
@@ -240,17 +240,21 @@ sub fetch_by_assembly_location_constraint{
        
     # coord list > 1 - means does not cleanly map. At the moment, skip
     if( scalar(@coord_list) > 1 ) {
+      $self->warn("this feature doesn't cleanly map skipping\n");
       next;
     }
-    
+    if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+      $self->warn("this feature is on a part of $contig_id which isn't on the golden path skipping");
+      next;
+    }
     if( !defined $ana{$analysis_id} ) {
       $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
     }
 
     # ok, ready to build a sequence feature: do we want this relative or not?
-
+    
   
-    my $out= $self->_new_feature($start,$end,$strand,$score,$hstart,$hend,$hstrand,$hname,$cigar,$ana{$analysis_id},$perc_ident,$evalue,"slice",undef);
+    my $out= $self->_new_feature($coord_list[0]->start,$coord_list[0]->end,$coord_list[0]->strand,$score,$hstart,$hend,$hstrand,$hname,$cigar,$ana{$analysis_id},$perc_ident,$evalue,$coord_list[0]->id,undef);
 
     push(@f,$out);
   }
