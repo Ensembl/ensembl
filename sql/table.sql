@@ -286,7 +286,8 @@ CREATE TABLE repeat_consensus (
     
     PRIMARY KEY( repeat_consensus_id ),
     KEY name (repeat_name),
-    KEY class (repeat_class)
+    KEY class (repeat_class),
+    KEY consensus(repeat_consensus(10))
 );
 
 
