@@ -44,8 +44,8 @@ sub run {
   }
 
 
-  my (%genbank) = XrefParser::BaseParser->get_valid_codes("EMBL",$species_id);
-  my (%refseq) = XrefParser::BaseParser->get_valid_codes("refseq",$species_id);
+  my (%genbank) = %{XrefParser::BaseParser->get_valid_codes("EMBL",$species_id)};
+  my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
 
   open(RGD,"<".$file) || die "Could not open $file\n";
 #Genbank_Nucleotide      Gene_Symbol     RGD_ID

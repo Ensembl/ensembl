@@ -42,8 +42,8 @@ sub run {
   my $dir = dirname($file);
   
 
-  my (%swiss) = XrefParser::BaseParser->get_valid_codes("uniprot",$species_id);
-  my (%refseq) = XrefParser::BaseParser->get_valid_codes("refseq",$species_id);
+  my (%swiss) = %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
+  my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
 
   open(SWISSPROT,"<".$dir."/swissprot.txt") || die "Could not open $dir/swissprot.txt\n";
 #e.g.

@@ -270,7 +270,7 @@ sub get_valid_codes{
       $valid_codes{$row[0]} =$row[1];
     }
   }
-  return %valid_codes;
+  return \%valid_codes;
 }
 
 # --------------------------------------------------------------------------------

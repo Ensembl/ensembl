@@ -43,8 +43,8 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }                                                                                                                      
                                                                                                                       
-  my (%swiss) = XrefParser::BaseParser->get_valid_codes("uniprot",$species_id);
-  my (%refseq) = XrefParser::BaseParser->get_valid_codes("refseq",$species_id);
+  my (%swiss) = %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
+  my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
 
 
   my $count = 0;

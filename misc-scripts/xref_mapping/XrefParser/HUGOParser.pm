@@ -63,8 +63,8 @@ sub run {
   close ENS4;
 
   
-  my (%swiss)  =  XrefParser::BaseParser->get_valid_codes("uniprot",$species_id);
-  my (%refseq) =  XrefParser::BaseParser->get_valid_codes("refseq",$species_id);
+  my (%swiss)  =  %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
+  my (%refseq) =  %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
  
 
   my $count = 0;
