@@ -477,7 +477,7 @@ sub fetch_by_gene_stable_id{
    if( !defined $start ) {
      my $type = $self->db->assembly_type()
        or $self->throw("No assembly type defined");
-     $self->throw("Gene is not on the golden path '$type'. " .
+     $self->throw("Gene [$geneid] is not on the golden path '$type'. " .
 		  "Cannot build Slice.");
    }
      
