@@ -1,0 +1,39 @@
+
+
+module artemis {
+ 
+    interface Sequence {
+	string getSubSequence(in long start,in long end);
+	long length();
+    };
+
+    struct Qualifier {
+	string name;
+	sequence<string> values;
+    };
+
+    typedef sequence <Qualifier> QualifierList;
+
+    interface Feature {
+	string getKey();
+	string getLocation();
+	QualifierList getQualifiers();
+	boolean getQualifierByName(in string name,out Qualifier thequalifier);
+    };
+
+    typedef sequence <Feature> FeatureList;
+
+    interface Entry {
+	string getName(); // accession number usually.
+	long getFeatureCount(); 
+	Feature getFeatureAtIndex(in long index);
+	long indexOf(in Feature feature);
+	boolean contains(in Feature feature);
+	FeatureList getFeaturesInRange(in long start,in long end);
+	FeatureList getAllFeatures();
+	Sequence getSequence();
+    };
+};
+
+
+
