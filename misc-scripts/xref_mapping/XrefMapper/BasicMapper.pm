@@ -1163,7 +1163,7 @@ sub build_transcript_display_xrefs {
     }
 
     if (!$best_xref) {
-      warn("Couldn't find a display xref for transcript id $obj\n");
+      #warn("Couldn't find a display xref for transcript id $obj\n");
     } else {
 
       # If transcript, store directly
