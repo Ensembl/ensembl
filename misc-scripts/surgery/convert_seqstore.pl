@@ -32,14 +32,13 @@ usage() if($help);
 open(FILE, $file) or die("Could not open input file '$file'");
 
 
- 
 my @all_species_converters;
 
 while( my $line = <FILE> ) {
   chomp($line);
   next if $line =~ /^#/;
   next if !$line;
-  
+
   my ( $species, $host, $source_db_name, $target_db_name ) = 
     split( "\t", $line );
 
@@ -54,10 +53,10 @@ while( my $line = <FILE> ) {
     require SeqStoreConverter::BasicConverter;
     $species = "BasicConverter";
   }
-  
+
   {
     no strict 'refs';
-    
+
     $converter = "SeqStoreConverter::$species"->new
       ( $user, $password, $host, $source_db_name, $target_db_name, 
         $schema, $force, $verbose, $limit );
@@ -82,6 +81,7 @@ for my $converter ( @all_species_converters ) {
   $converter->transfer_features();
   $converter->transfer_stable_ids();
   $converter->copy_other_tables();
+  $converter->copy_repeat_consensus();
 }
 
 

@@ -548,7 +548,7 @@ sub create_coord_systems {
             qtl_feature           => 'chromosome',
             misc_feature          => 'chromosome',
             prediction_transcript => 'contig',
-            prediction_exon       => 'prediction_exon',
+            prediction_exon       => 'contig',
             karyotype             => 'chromosome');
 
   $self->debug("Building coord_system table");
@@ -1024,6 +1024,28 @@ sub copy_other_tables {
                     "protein_feature",
                     "repeat_consensus");
 }
+
+
+sub copy_repeat_consensus {
+  my $self = shift;
+
+  my $source = $self->source();
+  my $target = $self->target();
+
+  my $dbh = $self->dbh();
+
+  $self->debug("Converting repeat_consensus table.");
+
+  $dbh->do("INSERT INTO $target.repeat_consensus " .
+           "(repeat_consensus_id, repeat_name, repeat_class, repeat_type, ".
+           " repeat_consensus) " .
+           "SELECT repeat_consensus_id, repeat_name, repeat_class, " .
+           "       '', repeat_consensus " .
+           "FROM $source.repeat_consensus rc" );
+
+  return;
+}
+
 
 
 sub create_attribs {
