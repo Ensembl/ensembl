@@ -333,44 +333,30 @@ sub get_all_SimilarityFeatures{
        }
        
        if( $hid ne '__NONE__' ) {
-	   # is a paired feature
-	   # build EnsEMBL features and make the FeaturePair
-	   my $feature1 = new Bio::EnsEMBL::SeqFeature;
-	   my $feature2 = new Bio::EnsEMBL::SeqFeature;
-	   
-	   $out = Bio::EnsEMBL::FeaturePair->new( -feature1 => $feature1, 
-						  -feature2 => $feature2);
 
-	   $out->hstart     ($hstart);
-	   $out->hend       ($hend);
-	   $out->hseqname   ($hid);
-	   $out->hsource_tag($name);
-	   $out->hprimary_tag('similarity');
-	   $out->hstrand     ($strand);
+	   $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+
+	   $out->set_all_fields($start,$end,$strand,$score,$name,'similarity',$id,
+				$hstart,$hend,1,$score,$name,'similarity',$hid);
+
 	   $out->analysis    ($analysis);
-
-	   if( defined $score ) {
-	       $out->hscore($score);
-	   }
 
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;
+	   $out->seqname   ($id);
+	   $out->start     ($start);
+	   $out->end       ($end);
+	   $out->strand    ($strand);
+	   $out->source_tag($name);
+	   $out->primary_tag('similarity');
+	   $out->id         ($fid);
+	   
+	   if( defined $score ) {
+	       $out->score($score);
+	   }
+	   $out->analysis($analysis);
        }
 
-       $out->seqname   ($id);
-       $out->start     ($start);
-       $out->end       ($end);
-       $out->strand    ($strand);
-       $out->source_tag($name);
-       $out->primary_tag('similarity');
-       $out->id         ($fid);
-
-       if( defined $score ) {
-	   $out->score($score);
-       }
-
-
-       $out->analysis($analysis);
 
        # Final check that everything is ok.
        
@@ -432,41 +418,21 @@ sub get_all_RepeatFeatures {
        if( $hid ne '__NONE__' ) {
 	   # is a paired feature
 	   # build EnsEMBL features and make the FeaturePair
-	   my $feature1 = new Bio::EnsEMBL::SeqFeature;
-	   my $feature2 = new Bio::EnsEMBL::SeqFeature;
 
-	   $out = Bio::EnsEMBL::Repeat->new( -feature1 => $feature1, 
-					     -feature2 => $feature2);
-
-	   $out->hstart      ($hstart);
-	   $out->hend       ($hend);
-	   $out->hseqname   ($hid);
-	   $out->hsource_tag('repeat');
-	   $out->hprimary_tag('similarity');
-	   $out->hstrand     ($strand);
-	   $out->analysis    ($analysis);
-
-	   if( defined $score ) {
-	       $out->hscore($score);
+	   # automatically builds two sub sequence features
+	   # we could call new_complete, but inlining this test
+	   # helps speed alot
+	   if( $Bio::EnsEMBL::FeaturePair::ENSEMBL_EXT_USED == 1 ) {
+	       $out = Bio::EnsEMBL::Ext::FeaturePair->new();
+	   } else {
+	       $out = Bio::EnsEMBL::FeaturePair->new_complete();
 	   }
-
+	   $out->set_all_fields($start,$end,$strand,$score,'repeat','similarity',$id,
+				$hstart,$hend,1,$score,'repeat','similarity',$hid);
        } else {
 #	   $out = new Bio::EnsEMBL::SeqFeature;
 	   $self->warn("Repeat feature doesn't have hid. Skipping\n");
        }
-
-      
-       $out->seqname   ($id);
-       $out->start     ($start);
-       $out->end       ($end);
-       $out->strand    ($strand);
-       $out->source_tag('repeat');
-       $out->primary_tag('similarity');
-
-       if( defined $score ) {
-	   $out->score($score);
-       }
-
 
        $out->analysis($analysis);
 

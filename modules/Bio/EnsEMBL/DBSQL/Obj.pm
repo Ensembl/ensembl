@@ -63,7 +63,7 @@ use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
-use Bio::EnsEMBL::Analysis::Analysis;
+use Bio::EnsEMBL::FeatureFactory;
 use DBI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
@@ -1914,7 +1914,7 @@ sub get_supporting_evidence {
            Checks first whether this analysis entry already exists
  Example :
  Returns : int
- Args    : Bio::EnsEMBL::Analysis::Analysis
+ Args    : Bio::EnsEMBL::AnalysisI
 
 
 =cut
@@ -1922,7 +1922,7 @@ sub get_supporting_evidence {
 sub write_Analysis {
     my ($self,$anal) = @_;
 
-    $self->throw("Argument is not a Bio::EnsEMBL::Analysis::Analysis") unless $anal->isa("Bio::EnsEMBL::Analysis::Analysis");
+    $self->throw("Argument is not a Bio::EnsEMBL::AnalysisI") unless $anal->isa("Bio::EnsEMBL::AnalysisI");
 
 
     # First check whether this entry already exists.
@@ -2033,15 +2033,14 @@ sub get_Analysis {
     my $rh  = $sth->fetchrow_hashref;
 
     if ($sth->rows) {
-
-	my $anal = new Bio::EnsEMBL::Analysis::Analysis(-db    => $rh->{db},
-					      -db_version      => $rh->{db_version},
-					      -program         => $rh->{program},
-					      -program_version => $rh->{program_version},
-					      -gff_source      => $rh->{gff_source},
-					      -gff_feature     => $rh->{gff_feature},
-					      -id              => $rh->{id},
-					      );
+	my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
+	$anal->db($rh->{'db'});
+	$anal->db_version($rh->{'db_version'});
+	$anal->program($rh->{'program'});
+	$anal->program_version($rh->{'program_version'});
+	$anal->gff_source($rh->{gff_source});
+	$anal->gff_feature($rh->{gff_feature});
+	$anal->id($rh->{id});
 
 	return $anal;
     }  else {
@@ -2058,7 +2057,7 @@ sub get_Analysis {
  Function: Tests whether this feature already exists in the database
  Example :
  Returns : Analysis id if the entry exists
- Args    : Bio::EnsEMBL::Analysis::Analysis
+ Args    : Bio::EnsEMBL::Analysis
 
 
 =cut
@@ -2066,7 +2065,7 @@ sub get_Analysis {
 sub exists_Analysis {
     my ($self,$anal) = @_;
 
-    $self->throw("Object is not a Bio::EnsEMBL::Analysis::Analysis") unless $anal->isa("Bio::EnsEMBL::Analysis::Analysis");
+    $self->throw("Object is not a Bio::EnsEMBL::AnalysisI") unless $anal->isa("Bio::EnsEMBL::AnalysisI");
 
     my $query;
 

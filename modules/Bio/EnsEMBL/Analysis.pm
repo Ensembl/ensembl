@@ -13,7 +13,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Analysis::Analysis.pm - Stores details of an analysis run
+Bio::EnsEMBL::Analysis.pm - Stores details of an analysis run
 
 =head1 SYNOPSIS
 
@@ -41,7 +41,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 # Let the code begin...
 
-package Bio::EnsEMBL::Analysis::Analysis;
+package Bio::EnsEMBL::Analysis;
 
 use vars qw(@ISA);
 use strict;
@@ -49,9 +49,10 @@ use strict;
 # Object preamble - inherits from Bio::Root::Object;
 
 use Bio::Root::Object;
+use Bio::EnsEMBL::AnalysisI;
 
 # Inherits from the base bioperl object
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::AnalysisI);
 
 # new() is inherited from Bio::Root::Object
 

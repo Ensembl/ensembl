@@ -151,4 +151,7 @@ Exons are actually attached to sequences
 
 Methods inherieted from Bio::SeqFeature::Generic
 
-  $start  = $exon->start() - start position in bio coordinates. 
+  $start  = $exon->start()  - start position in bio coordinates. 
+  $end    = $exon->end()    - end position in bio coordinates
+  $strand = $exon->strand() - 
+

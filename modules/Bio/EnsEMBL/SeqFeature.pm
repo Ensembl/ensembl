@@ -26,7 +26,7 @@ Bio::EnsEMBL::SeqFeature - Ensembl specific sequence feature.
 					    -analysis => $analysis
 					    );
 
-    # $analysis is a Bio::EnsEMBL::Analysis::Analysis object
+    # $analysis is a Bio::EnsEMBL::Analysis object
     
     # SeqFeatureI methods can be used
     my $start = $feat->start;
@@ -61,26 +61,46 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::SeqFeature;
-				
-use vars qw(@ISA);
+	       		
+use vars qw(@ISA $ENSEMBL_EXT_LOADED $ENSEMBL_EXT_USED );
 use strict;
 
 # Object preamble - inherits from Bio::Root::Object
 use Bio::EnsEMBL::SeqFeatureI;
-use Bio::Root::Object;
+use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::SeqFeatureI);
+BEGIN {
+    
+    eval { 
+	require EnsemblExt;
+    };
+    if( $@ ) {
+	$ENSEMBL_EXT_LOADED = 0;
+	$ENSEMBL_EXT_USED = 0;
+    } else {
+
+	$ENSEMBL_EXT_LOADED = 1;
+	$ENSEMBL_EXT_USED = 0;
+	print STDERR "Using EnsemblExt...\n";
+	print STDERR "Got $ENSEMBL_EXT_LOADED with $ENSEMBL_EXT_USED\n";
+    }
+}
+
+@ISA = qw(Bio::EnsEMBL::SeqFeatureI Bio::Root::RootI );
 
 # new is inherited from Bio::Root::Object
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+  my($class,@args) = @_;
+  my $self;
 
-  my $make = $self->SUPER::_initialize;
+  $self = {};
 
   $self->{'_gsf_tag_hash'} = {};
   $self->{'_gsf_sub_array'} = [];
   $self->{'_parse_h'} = {};
+
+  bless $self,$class;
 
   my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname) = 
       $self->_rearrange([qw(START
@@ -106,7 +126,7 @@ sub _initialize {
   $analysis     && $self->analysis($analysis);
   $seqname      && $self->seqname($seqname);
 
-  return $make; # success - we hope!
+  return $self; # success - we hope!
 
 }
 
@@ -354,8 +374,8 @@ sub analysis {
    my ($self,$value) = @_;
 
    if (defined($value)) {
-       $self->throw("Analysis is not a Bio::EnsEMBL::Analysis::Analysis object") unless 
-	   ref($value) eq"Bio::EnsEMBL::Analysis::Analysis";
+       $self->throw("Analysis is not a Bio::EnsEMBL::AnalysisI object") unless 
+	   (ref($value) && $value->isa("Bio::EnsEMBL::AnalysisI"));
        $self->{_analysis} = $value;
    }
    return $self->{_analysis};

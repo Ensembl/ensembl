@@ -49,7 +49,7 @@ use strict;
 use Bio::Tools::HMMER::Results;
 
 use Bio::EnsEMBL::Analysis::GenscanPeptide;
-use Bio::EnsEMBL::Analysis::Analysis;
+use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::Analysis::MSPcrunch;
 use Bio::EnsEMBL::Analysis::GFF;
 
@@ -177,7 +177,7 @@ sub read_Repeats {
 	print(STDERR "   - Reading RepeatMasker file $gfffile\n");
     }
 
-    my $analysis   = new Bio::EnsEMBL::Analysis::Analysis( -program         => $msp->[1],
+    my $analysis   = new Bio::EnsEMBL::Analysis( -program         => $msp->[1],
 							   -program_version => 1,
 							   -gff_source      => 'RepeatMasker',
 							   -gff_feature     => 'repeat');
@@ -212,7 +212,7 @@ sub read_Pfam {
     my $pfamobj = new Bio::Tools::HMMER::Results(-file => $pfamfile,
 						 -type => 'hmmpfam');
 
-    my $analysis = new Bio::EnsEMBL::Analysis::Analysis(-db              => $pfam->[2],
+    my $analysis = new Bio::EnsEMBL::Analysis(-db              => $pfam->[2],
 							-db_version      => 1,
 							-program         => $pfam->[1],
 							-program_version => 1,
@@ -257,7 +257,7 @@ sub read_Pfam {
 sub read_Genscan {
     my ($self,) = @_;
 
-    my $analysis = new Bio::EnsEMBL::Analysis::Analysis(-program     => "Genscan",
+    my $analysis = new Bio::EnsEMBL::Analysis(-program     => "Genscan",
 							-program_version => 1,
 							-gff_source  => "genscan",
 							-gff_feature => "exon",

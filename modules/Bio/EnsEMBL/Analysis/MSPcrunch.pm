@@ -54,7 +54,7 @@ use strict;
 
 use Bio::Root::Object;
 
-use Bio::EnsEMBL::Analysis::Analysis;
+use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::Analysis::MSPType;
 use Bio::EnsEMBL::FeaturePair;
 
@@ -404,7 +404,7 @@ sub analysis {
 
     if (defined($arg)) {
 	$self->throw("Argument is not Bio::EnsEMBL::Analysis::Analysis object") 
-	    unless $arg->isa("Bio::EnsEMBL::Analysis::Analysis");
+	    unless $arg->isa("Bio::EnsEMBL::AnalysisI");
 
 	$self->{_analysis} = $arg;
     }
@@ -419,7 +419,7 @@ sub _make_analysis {
 
     my $test    = Bio::EnsEMBL::Analysis::MSPType->each_MSPType;
     my $MSPType = Bio::EnsEMBL::Analysis::MSPType->extension2MSPType($ext);
-    my $anal    = new Bio::EnsEMBL::Analysis::Analysis;
+    my $anal    = new Bio::EnsEMBL::Analysis;
     
     $anal->db             ($MSPType->[2]);
     $anal->db_version     ($MSPType->[6]);
