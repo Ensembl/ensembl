@@ -163,17 +163,19 @@ sub dbID {
 =cut
 
 sub external_db {
-  my ($self, $arg ) = @_;
+  my ($self, $ext_dbname) = @_;
 
-  if( defined $arg ) {
-    $self->{'_external_db'} = $arg;
-  }
-  # if not already set, go off and set it
-  elsif ( !defined $self->{'_external_db'} ) { 
-    $self->{'_external_db'} = $self->_get_external_info("db");
+  if(defined $ext_dbname) { 
+    $self->{'_ext_dbname'} = $ext_dbname;
+  } 
+
+  if( exists $self->{'_ext_dbname'} ) {
+    return $self->{'_ext_dbname'};
   }
 
-  return $self->{'_external_db'};
+  $self->{'_ext_dbname'} = $self->adaptor->get_external_dbname($self->dbID);
+  return $self->{'_ext_dbname'};
+
 }
 
 
@@ -189,44 +191,18 @@ sub external_db {
 =cut
 
 sub external_name {
-  my ($self, $arg) = @_;
+  my ($self, $ext_name) = @_;
 
-  if( defined $arg ) {
-    $self->{'_external_name'} = $arg;
+  if(defined $ext_name) { 
+    $self->{'_ext_name'} = $ext_name;
+  } 
+
+  if( exists $self->{'_ext_name'} ) {
+    return $self->{'_ext_name'};
   }
-  # if not already set, go off and set it
-  elsif ( !defined $self->{'_external_name'} ) { 
-    $self->{'_external_name'} = $self->_get_external_info("name");
-  }
 
-  return $self->{'_external_name'};
-}
-
-
-=head2 _get_external_info
-
- Title   : _get_external_info
- Usage   : $ext_name = $obj->_get_external_info();
- Function: external_name if available
- Example : 
- Returns : the external name of this transcript
- Args    : string. Switch on whether to return a name or dbname.
-
-=cut
-
-sub _get_external_info {
-  my ($self, $required) = @_;
-
-  # find out from which species this translation comes from
-  my $species = $self->species->species;
-
-  # go and grab the list of DBLinks
-  my $dblinks = $self->get_all_DBLinks;
-
-  # set the priority of the order in which the external dbs are searched
-  # based on the species
-  # the actual order of dbs was determined by the deprecated priority column
-  # in the external_db table
+  $self->{'_ext_name'} = $self->adaptor->get_external_name($self->dbID);
+  return $self->{'_ext_name'};
 
 }
 
