@@ -509,6 +509,53 @@ sub get_all_SeqFeatures {
 
 }
 
+
+=head2 get_all_FeaturesByScore
+
+ Title   : get_all_FeaturesByScore
+ Usage   : foreach my $sf ( $contig->get_all_FeaturesByScore(score, feature_type) ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_FeaturesByScore{
+    my ($self, $score, $type) = @_;
+
+    $self->throw("Must supply score parameter") unless $score;
+    
+    my $sf = ();
+   
+    foreach my $c ($self->_vmap->get_all_RawContigs) {
+	   push(@$sf, $c->get_all_FeaturesByScore($score, $type));
+   }
+
+   # Need to clip seq features to fit the boundaries of
+   # our v/c so displays don't break
+   my @vcsf = ();
+   my $count = 0;
+   foreach $sf ( @$sf ) {
+
+       $sf = $self->_convert_seqfeature_to_vc_coords($sf);
+
+       if( !defined $sf ) {      
+	   next;
+       }	
+       if (($sf->start < 0 ) || ($sf->end > $self->length)) {
+	   $count++;
+       }
+       else{
+	    push (@vcsf, $sf);
+       }
+   }
+   
+   return @vcsf;
+}
+
+
 =head2 get_all_SimilarityFeatures
 
  Title   : get_all_SimilarityFeatures
