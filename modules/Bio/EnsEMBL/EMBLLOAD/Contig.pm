@@ -441,7 +441,7 @@ sub _build_gene{
 	    }
 	}
 	$$rhtranscripts{$product_tag}=$trans;
-
+        $trans->stable_id($product_tag);
 	# create exons, avoiding duplicates
 	foreach my $sub (@exon_features){
 
@@ -461,6 +461,7 @@ sub _build_gene{
 	    if(!$exon){
 		$exon=Bio::EnsEMBL::Exon->new();
 		$$rhexons{"$st:$ed"}=$exon;
+#                $exon->stable_id("$st:$ed");
 		$exon->start($st);
 		$exon->end($ed);
 		$exon->strand($sub->strand);
@@ -496,6 +497,9 @@ sub _build_gene{
 	    $ana->logic_name("embl_load_gene");
 	    $ana->program("embl_load");
 	    $gene->analysis($ana);
+	    
+	    print STDERR "GENE ID ",$gene_id,"\n";
+
 
 	    $$rhgenes{$gene_id}=$gene;
 	    # add type tag to gene
@@ -511,6 +515,8 @@ sub _build_gene{
 	    }
 	}
 	$gene->add_Transcript($trans);
+	
+
     }
 
 
@@ -549,7 +555,7 @@ sub _build_gene{
 	$tranl->end($last_end);
 	$trans->translation($tranl);
     }
-
+    $gene->stable_id($gene_id);       
 }
 
 =head2 length
