@@ -28,37 +28,19 @@ This module is part of the Ensembl project http://www.ensembl.org
 
 Post general queries to B<ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-
-# Let the code begin...
 
 
 package Bio::EnsEMBL::Mapper::Unit;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::EnsEMBL::Root
-
-use Bio::EnsEMBL::Root;
-
-@ISA = qw(Bio::EnsEMBL::Root);
-
-# new() is written here 
-
 sub new {
-  my($class,@args) = @_;
+  my($class, $id, $start, $end) = @_;
 
-    my $self = {};
-    bless $self,$class;
-
-# set stuff in self from @args
-    return $self;
+  return bless {'id' => $id, 'start' => $start, 'end' => $end}, $class;
 }
 
 

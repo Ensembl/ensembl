@@ -37,13 +37,9 @@ use vars qw(@ISA);
 use strict;
 
 sub new {
-  my($class,@args) = @_;
+  my($class,$from,$to,$ori) = @_;
 
-    my $self = {};
-    bless $self,$class;
-
-# set stuff in self from @args
-    return $self;
+  return bless {'from' => $from, 'to' => $to, 'ori' => $ori}, $class;
 }
 
 
