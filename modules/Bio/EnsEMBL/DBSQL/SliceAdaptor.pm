@@ -470,10 +470,11 @@ sub fetch_by_gene_stable_id{
    }
    my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_gene($geneid);
 
+   if( !defined $size ) {$size=0;}
+
    if( $size =~/([\d+\.]+)%/ ) {
      $size = int($1/100 * ($end-$start+1));
    }
-   if( !defined $size ) {$size=0;}
 
    if( !defined $start ) {
      my $type = $self->db->assembly_type()
