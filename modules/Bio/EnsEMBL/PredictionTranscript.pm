@@ -352,7 +352,7 @@ sub get_all_Exons {
 sub get_all_translateable_Exons {
   my $self = shift;
 
-  return [ grep{ ref( $_ ) eq 'Bio::EnsEMBL::Exon' } @{$self->get_all_Exons} ];
+  return [ grep{ ref( $_ ) eq 'Bio::EnsEMBL::Exon' } @{$self->get_all_Exons(1)} ];
 }
 
 

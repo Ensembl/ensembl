@@ -748,11 +748,18 @@ sub assembly_type{
 sub dnadb {
   my ($self,$arg) = @_;
 
-  if (defined($arg)) {
-    $self->add_db_adaptor('dnadb', $arg);
+  if($arg) {
+    if(ref $arg && (($arg->isa('Bio::EnsEMBL::Container') && 
+		     $arg->_obj == $self) || $arg == $self)) {
+      #we don't want to store a circular reference to our self
+      return;
+    }
+
+    #if this a container, we don't care, hang onto it
+    $self->{'dnadb'} = $arg;
   }
 
-  return $self->get_db_adaptor('dnadb') || $self;
+  return $self->{'dnadb'} || $self;
 }
 
 
@@ -780,6 +787,9 @@ sub deleteObj {
       $self->{'_xf_adaptors'}->{$key} = undef;
     }
   }
+
+
+  $self->{'dnadb'} = undef;
 
   #call the superclass deleteObj method
   $self->SUPER::deleteObj;
