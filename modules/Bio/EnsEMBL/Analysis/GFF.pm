@@ -276,6 +276,7 @@ sub _parse_attrib {
 
 	my $fp;
 
+
 	if ($self->type eq "Repeat") {
 	    $fp = new Bio::EnsEMBL::Repeat(-feature1 => $homol,
 					   -feature2 => $newf,
