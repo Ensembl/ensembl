@@ -33,8 +33,8 @@ print "ok \n";    # 1st test passed, loaded needed modules
 $conf{'mysqladmin'} = '/mysql/current/bin/mysqladmin';
 $conf{'mysql'} = '/mysql/current/bin/mysql';
 $conf{'user'}  = 'root';
-$conf{'database'} = 'ensembl07';
-$conf{'transcript'} = 'ENST00000020513';
+$conf{'database'} = 'test_trans';
+$conf{'transcript'} = 'ENST00000020596';
 
 if ( -e 't/trans_to_vc.conf' ) {
    print STDERR "Reading configuration from trans_to_vc.conf\n";

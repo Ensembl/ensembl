@@ -1001,7 +1001,7 @@ Calling Gene_Obj->get_Virtual_contig instead!");
 
 
 
-sub   get_Transcript_in_VC_coordinates{
+sub get_Transcript_in_VC_coordinates{
    my ($self,$tid) = @_;
 
    $self->warn("Obj->get_Transcript_in_VC_coordinates is a deprecated method! 
@@ -1009,18 +1009,6 @@ Calling Gene_Obj->get_Virtual_contig instead!");
 
    return my $transcript =$self->gene_Obj->get_Transcript_in_VC_coordinates($tid);
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 =head2 donor_locator
     
@@ -1168,7 +1156,7 @@ sub get_Transcript{
     my ($self,$transid) = @_;
  
     $self->warn("Obj->get_Transcript is a deprecated method! 
-Calling Gene_Obj->get_Translation instead!");
+Calling Gene_Obj->get_Transcript instead!");
 
     return $self->gene_Obj->get_Transcript($transid);
 }
