@@ -35,7 +35,8 @@ use Carp;
            -h host -u user -p password
      e.g
   
-       dump_by_chr.pl  -disease homo_sapiens_disease_110 \n
+       dump_by_chr.pl  -litedb homo_sapiens_lite_110 \
+           -disease homo_sapiens_disease_110 \
             + host,user,passwd args
 
      Alternatively, dump all things in one go, relying on the consistent
@@ -48,7 +49,7 @@ use Carp;
      In this case, the %s will be replaced by all the known database
      types, and all will be dumped. Is the theory.
 
-     Known types are: (see source code)
+     Known satellite db\'s are: (see source code)
   
    (5) When changing something in this script or dumping from a different
        database, run first with the -check option, to see if all indices
