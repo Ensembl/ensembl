@@ -202,7 +202,7 @@ sub fetch_all_by_Slice_transcript_ids {
   return $snps;
 }
 
-sub fetch_attributes_only{
+sub fetch_attributes_only_lite{
   my $self = shift;
 
   my $refsnp_id = shift;

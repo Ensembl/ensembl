@@ -34,6 +34,43 @@ use vars ('@ISA', '$AUTOLOAD');
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
+=head2 fetch_attributes_only
+
+  Arg [1]    : int refsnp_id
+  Arg [2]    : (optional) string source
+  Example    : none
+  Description: Retrieves a snp objcet from the SNP database but does not
+               populate the location information.  This is necessary given 
+               the current state of the snp database because location 
+               information has to be retrieved differently for different 
+               species!
+  Returntype : Bio::EnsEMBL::SNP
+  Exceptions : none
+  Caller     : snpview
+
+=cut
+
+
+
+sub fetch_attributes_only{
+    my ( $self, @args ) = @_;
+
+  my $lite_db = Bio::EnsEMBL::Registry->get_db($self->db(),'lite');
+  my $snp_db = Bio::EnsEMBL::Registry->get_db($self->db(),'SNP');
+
+  if( defined $snp_db ) {
+      my $snp_adaptor = $snp_db->get_SNPAdaptor();
+      return $snp_adaptor->fetch_attributes_only( @args );
+  }
+
+  if( defined $lite_db ) {
+      my $snp_adaptor = $lite_db->get_SNPAdaptor();
+      return $snp_adaptor->fetch_attributes_only( @args );
+  }
+
+}
+
+
 
 
 =head2 AUTOLOAD
@@ -63,24 +100,23 @@ sub AUTOLOAD {
   #strip out fully qualified method name
   $method =~ s/.*:://;
 
-
   my $lite_db = Bio::EnsEMBL::Registry->get_db($self->db(),'lite');
   my $snp_db = Bio::EnsEMBL::Registry->get_db($self->db(),'SNP');
-  
-  #
-  # First try the primary adaptor
-  #
+
   if( defined $lite_db ) {
       my $snp_adaptor = $lite_db->get_SNPAdaptor();
       if($snp_adaptor->can($method)) {
 	  return $snp_adaptor->$method(@args);
       } 
   }
-  
-  my $snp_adaptor = $snp_db->get_SNPAdaptor();
-  if($snp_adaptor->can($method)) {
-      return $snp_adaptor->$method(@args);
+
+  if( defined $snp_db ) {
+      my $snp_adaptor = $snp_db->get_SNPAdaptor();
+      if($snp_adaptor->can($method)) {
+	  return $snp_adaptor->$method(@args);
+      }
   }
+
 
 
   throw("The requested method $method could not be found in lite or snp" );
