@@ -711,9 +711,17 @@ sub store {
        $type = $gene->type;
    }
 
+   my $xref_id = 0;
+#   if (defined ($gene->relevant_xref)) {
+#     $xref_id = $gene->relevant_xref;
+#   }
+#   else {
+#     $xref_id = 0;
+#   }
+
    my $sth2 = $self->prepare("INSERT INTO gene(type, analysis_id, 
-                                               transcript_count) 
-                              VALUES('$type', $analysisId, $trans_count)" );
+                                               transcript_count, relevant_xref_id) 
+                              VALUES('$type', $analysisId, $trans_count, $xref_id)" );
    $sth2->execute();
 
    
@@ -941,6 +949,7 @@ sub get_external_name {
   return $xref;
 }
 
+
 =head2 get_external_dbname
 
   Arg [1]    : int $dbID
@@ -981,6 +990,41 @@ sub get_external_dbname {
   return $db_name;
 }
 							
+
+=head2 get_relevant_xref_id
+
+  Arg [1]    : int $dbID
+               the database identifier of the gene for which the name of
+               external db from which its external name is derived.
+  Example    : $external_dbname = $gene_adaptor->get_relevant_xref_id(42);
+  Description: Retrieves the relevant_xref_id for a gene.
+  Returntype : int
+  Exceptions : thrown if $dbId arg is not defined
+  Caller     : general
+
+=cut
+
+sub get_relevant_xref_id {
+  my ($self, $dbID) = @_;
+
+  if( !defined $dbID ) {
+      $self->throw("Must call with a dbID");
+  }
+
+  my $sth = $self->prepare("SELECT relevant_xref_id 
+                            FROM   gene 
+                            WHERE  gene_id = ?
+                           ");
+  $sth->execute($dbID);
+
+  my ($xref_id) = $sth->fetchrow_array();
+  if( !defined $xref_id ) {
+    return undef;
+  }
+
+  return $xref_id;
+}
+
 
 
 1;
