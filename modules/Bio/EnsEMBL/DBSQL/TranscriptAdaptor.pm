@@ -142,11 +142,42 @@ sub fetch_by_translation_stable_id {
   my ($self, $transl_stable_id ) = @_;
 
   my $sth = $self->prepare( "SELECT t.transcript_id " .
-                            "FROM   translation_stable_id tsi, translation t " .
+                            "FROM   translation_stable_id tsi, translation t ".
                             "WHERE  tsi.stable_id = ? " .
                             "AND    t.translation_id = tsi.translation_id");
 
   $sth->execute("$transl_stable_id");
+
+  my ($id) = $sth->fetchrow_array;
+  if ($id){
+  	return $self->fetch_by_dbID($id);
+  } else {
+  	return undef;
+  }
+}
+
+
+
+=head2 fetch_by_translation_id
+
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
+sub fetch_by_translation_id {
+  my $self = shift;
+  my $id   = shift;
+
+  my $sth = $self->prepare( "SELECT t.transcript_id " .
+                            "FROM   translation t ".
+                            "WHERE  t.translation_id = ?");
+
+  $sth->execute("$id");
 
   my ($id) = $sth->fetchrow_array;
   if ($id){
@@ -185,34 +216,38 @@ sub fetch_all_by_Gene {
 
 
 
-=head2 fetch_all_by_DBEntry
 
-  Arg [1]    : in $external_id
-                the external identifier for the transcript to be obtained
-  Example    : @trans = @{$trans_adaptor->fetch_all_by_DBEntry($ext_id)}
-  Description: retrieves a list of transcripts with an external database
-                idenitifier $external_id
-  Returntype : listref of Bio::EnsEMBL::DBSQL::Transcript in contig coordinates
+=head2 fetch_all_by_external_name
+
+  Arg [1]    : string $external_id
+               An external identifier of the transcript to be obtained
+  Example    : @trans = @{$tr_adaptor->fetch_all_by_external_name('ARSE')};
+  Description: Retrieves all transcripts which are associated with an 
+               external identifier such as a GO term, HUGO id, Swissprot
+               identifer, etc.  Usually there will only be a single transcript
+               returned in the listref, but not always.  Transcripts are
+               returned in their native coordinate system.  That is, the 
+               coordinate system in which they are stored in the database. If
+               they are required in another coordinate system the 
+               Transcript::transfer or Transcript::transform method can be 
+               used to convert them.  If no transcripts with the external
+               identifier are found, a reference to an empty list is returned.
+  Returntype : reference to a list of transcripts
   Exceptions : none
-  Caller        : ?
+  Caller     : general
 
 =cut
 
-sub fetch_all_by_DBEntry {
+sub fetch_all_by_external_name {
   my $self = shift;
   my $external_id = shift;
 
   my @trans = ();
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
-  my @ids = $entryAdaptor->transcriptids_by_extids($external_id);
-  foreach my $trans_id ( @ids ) {
-    my $trans = $self->fetch_by_dbID( $trans_id );
-    if( $trans ) {
-        push( @trans, $trans );
-    }
-  }
-  return \@trans;
+  my @ids = $entryAdaptor->list_transcript_ids_by_extids($external_id);
+
+  return $self->fetch_all_by_dbID_list(\@ids);
 }
 
 
@@ -325,6 +360,45 @@ sub store {
    #
    my $translation = $transcript->translation();
    if( defined $translation ) {
+     #make sure that the start and end exon are set correctly
+     my $start_exon = $translation->start_Exon();
+     my $end_exon   = $translation->end_Exon();
+
+     if(!$start_exon) {
+       throw("Translation does not define a start exon.");
+     }
+
+     if(!$end_exon) {
+       throw("Translation does not defined an end exon.");
+     }
+
+     #If the dbID is not set, this means the exon must have been a different 
+     #object in memory than the the exons of the transcript.  Try to find the
+     #matching exon in all of the exons we just stored
+     if(!$start_exon->dbID()) {
+       my $key = $start_exon->hashkey();
+       ($start_exon) = grep {$_->hashkey() eq $key} @$exons;
+       
+       if($start_exon) {
+         $translation->start_Exon($start_exon);
+       } else {
+         throw("Translation's start_Exon does not appear to be one of the " .
+               "exons in its associated Transcript");
+       }
+     }
+
+     if(!$end_exon->dbID()) {
+       my $key = $end_exon->hashkey();
+       ($end_exon) = grep {$_->hashkey() eq $key} @$exons;
+
+       if($start_exon) {
+         $translation->end_Exon($end_exon);
+       } else {
+         throw("Translation's end_Exon does not appear to be one of the " .
+               "exons in its associated Transcript.");
+       }
+     }
+       
      $db->get_TranslationAdaptor()->store( $translation, $transc_dbID );
    }
 
@@ -415,15 +489,13 @@ sub get_Interpro_by_transid {
    my $sth = $self->prepare
      ("SELECT  STRAIGHT_JOIN i.interpro_ac, x.description " .
       "FROM    transcript_stable_id tsi, ".
-              "transcript t, " .
               "translation tl, ".
               "protein_feature pf, ".
 		          "interpro i, " .
               "xref x " .
 	    "WHERE tsi.stable_id = ? " .
-	    "AND   t.transcript_id = tsi.transcript_id " .
+	    "AND   tl.transcript_id = tsi.transcript_id " .
 	    "AND	 tl.translation_id = pf.translation_id  " .
-      "AND   tl.transcript_id = t.transcript_id " .
 	    "AND   i.id = pf.hit_id " .
 	    "AND   i.interpro_ac = x.dbprimary_acc");
 
@@ -510,8 +582,9 @@ sub update {
    my ($self,$transcript) = @_;
    my $update = 0;
 
-   if( !defined $transcript || !ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
-       throw("Must update a transcript object, not a $transcript");
+   if( !defined $transcript || !ref $transcript || 
+       !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+     throw("Must update a transcript object, not a $transcript");
    }
 
    my $update_transcript_sql = "
@@ -820,6 +893,22 @@ sub get_stable_entry_info {
 
 
   return 1;
+}
+
+
+
+
+=head2 fetch_all_by_DBEntry
+
+  Description: DEPRECATED this method has been renamed 
+               fetch_all_by_external_name
+
+=cut
+
+sub fetch_all_by_DBEntry {
+  my $self = shift;
+  deprecate('Use fetch_all_by_external_name instead.');
+  return $self->fetch_all_by_external_name(@_);
 }
 
 
