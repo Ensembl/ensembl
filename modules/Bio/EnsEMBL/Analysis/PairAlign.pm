@@ -366,6 +366,12 @@ sub convert_FeaturePair {
 						  -end   => $new->end,
 						  -strand => 1);
 
+        if ($hstart2 > $hend2) {
+	   my $tmp = $hstart2;
+	   $hstart2 = $hend2;
+           $hend2   = $tmp;
+        }
+
 	my $final2 = new Bio::EnsEMBL::SeqFeature(-start => $hstart2,
 						  -end   => $hend2,
 						  -strand => $finalstrand);
