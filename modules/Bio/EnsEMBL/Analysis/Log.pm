@@ -16,13 +16,13 @@ Bio::EnsEMBL::Analysis::Log - Logs decisions made in an analysis run
 
 =head1 SYNOPSIS
 
-  $obj = new Bio::EnsEMBL::Analysis::Log;
+  my $obj = new Bio::EnsEMBL::Analysis::Log;
 
   $obj->store("This is a stored message");
 
-  foreach $mess ( $obj->each_message() ) {
-     print "Message: ",$mess->text," by: ",$mess->author, " at:\n" $mess->stack "\n\n"
-     }
+  foreach my $mess ( $obj->each_message() ) {
+     print "Message: ",$mess->text," by: ",$mess->author, " at:\n", $mess->stack, "\n\n"
+  }
 
 =head1 DESCRIPTION
 
