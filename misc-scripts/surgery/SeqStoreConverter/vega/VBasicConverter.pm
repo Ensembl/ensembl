@@ -86,7 +86,15 @@ sub copy_current_clone_info {
     $sth->finish();    
 }
 
-
+sub update_genscan {
+	my $self = shift;
+	$self->debug("Vega specific - updating analysis name for Genscans");
+	my $target = $self->target();
+	my $sth = $self->dbh()->prepare
+		("UPDATE $target.analysis set logic_name = 'Vega_Genscan' where logic_name = 'Genscan'");
+    $sth->execute();
+    $sth->finish();    
+}	
 
 sub update_clone_info {
   my $self = shift;
