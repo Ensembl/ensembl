@@ -56,26 +56,10 @@ use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
 
 sub _tables {
   my $self = shift;
-  
-  return ([ 'exon', 'e' ], [ 'exon_transcript', 'et' ], 
-	  [ 'exon_stable_id', 'esi' ] );
 
-}
+  return ([ 'exon', 'e' ], [ 'exon_transcript', 'et' ],
+          [ 'exon_stable_id', 'esi' ] );
 
-
-
-#_default_where_clause
-#
-#  Arg [1]    : none
-#  Example    : none
-#  Description: PROTECTED implementation of superclass abstract method
-#               Makes join between et and e table
-#  Returntype : string
-#  Exceptions : none
-#  Caller     : generic_fetch
-
-sub _default_where_clause {
-  return "et.exon_id = e.exon_id";
 }
 
 
@@ -99,7 +83,8 @@ sub _columns {
 
 
 sub _left_join {
-  return ( [ 'exon_stable_id', "esi.exon_id = e.exon_id" ] );
+  return ( [ 'exon_stable_id', "esi.exon_id = e.exon_id" ],
+           [ 'exon_transcript', "et.exon_id = e.exon_id" ] );
 }
 
 
@@ -195,26 +180,27 @@ sub store {
   my ( $self, $exon ) = @_;
 
   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
-    $self->throw("$exon is not a EnsEMBL exon - not dumping!");
+    throw("$exon is not a EnsEMBL exon - not dumping!");
   }
 
-  if( $exon->dbID && $exon->adaptor && $exon->adaptor == $self ) {
+  my $db = $self->db();
+
+  if($exon->is_stored($db)) {
     return $exon->dbID();
   }
 
   if( ! $exon->start || ! $exon->end ||
       ! $exon->strand || ! defined $exon->phase ) {
-    $self->throw("Exon does not have all attributes to store");
+    throw("Exon does not have all attributes to store");
   }
 
-  # trap contig_id separately as it is likely to be a common mistake
-  
   my $exon_sql = q{
-    INSERT into exon ( seq_region_id, seq_region_start, 
-		       seq_region_end, seq_region_strand, phase, 
+    INSERT into exon ( seq_region_id, seq_region_start,
+		       seq_region_end, seq_region_strand, phase,
 		       end_phase )
-    VALUES ( ?, ?, ?, ?, ?, ? ) 
+    VALUES ( ?, ?, ?, ?, ?, ? )
   };
+
   my $exonst = $self->prepare($exon_sql);
 
   my $exonId = undef;
@@ -222,36 +208,52 @@ sub store {
 
   my $slice = $exon->slice();
 
-  unless( $slice && ref $slice ) {
-    $self->throw("Exon does not have an attached slice with a valid " . 
-		 "database id.  Needs to have one set");
+  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice') ) {
+    throw("Exon does not have an attached slice to be stored.");
   }
 
-  my $seq_region_id = $self->db()->get_SliceAdaptor()->
-    get_seq_region_id( $exon->slice() );
+  my $slice_adaptor = $db->get_SliceAdaptor();
+
+  my $original = $exon;
+
+
+  #exon coordinates need to be relative to the start of the seq_region
+  if($slice->start != 1 || $slice->strand != 1) {
+    #get slice of entire seq region
+    $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
+                                             $slice->seq_region_name(),
+                                             undef, undef, undef,
+                                             $slice->coord_system->version());
+    $exon = $exon->transfer($slice);
+
+    if(!$exon) {
+      throw('Exon could not be transfered to slice of entire seq_region.');
+    }
+  }
+
+  my $seq_region_id = $slice_adaptor->get_seq_region_id( $slice );
 
   if( ! $seq_region_id ) {
-    throw( "Attached slice is not valid in database" );
+    throw( "Attached slice is not valid in database." );
   }
 
+  #store the exon
   $exonst->execute( $seq_region_id,
-		    $exon->start(),
-		    $exon->end(),
-		    $exon->strand(),
-		    $exon->phase(),
-		    $exon->end_phase());
+                    $exon->start(),
+                    $exon->end(),
+                    $exon->strand(),
+                    $exon->phase(),
+                    $exon->end_phase());
   $exonId = $exonst->{'mysql_insertid'};
 
-  
+  #store any stable_id information
   if ($exon->stable_id && $exon->version()) {
+    my $sth = $self->prepare(
+      "INSERT INTO exon_stable_id " .
+      "SET version = ?, " .
+          "table_id = ?, " .
+          "exon_id = ?");
 
-    my $statement = "
-      INSERT INTO exon_stable_id
-      SET version = ?,
-          stable_id = ?,
-          exon_id = ? ";
-    
-    my $sth = $self->prepare($statement);
     $sth->execute( $exon->version, $exon->stable_id, $exonId );
   }
 
@@ -259,24 +261,20 @@ sub store {
   # Now the supporting evidence
   # should be stored from featureAdaptor
   my $sql = "insert into supporting_feature (exon_id, feature_id, feature_type)
-             values(?, ?, ?)";  
-  
-  my $sf_sth = $self->db->prepare($sql);
-  
+             values(?, ?, ?)";
+
+  my $sf_sth = $self->prepare($sql);
+
   my $anaAdaptor = $self->db->get_AnalysisAdaptor();
   my $dna_adaptor = $self->db->get_DnaAlignFeatureAdaptor();
   my $pep_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
   my $type;
 
   foreach my $sf (@{$exon->get_all_supporting_features}) {
-    unless($sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
-      $self->throw("$sf must be an align feature otherwise" .
-		   "it can't be stored");
+    if(!$sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
+      throw("$sf must be an align feature otherwise" .
+            "it can't be stored");
     }
-
-    #sanity check
-    
-    $sf->slice($exon->slice());
 
     if($sf->isa("Bio::EnsEMBL::DnaDnaAlignFeature")){
       $dna_adaptor->store($sf);
@@ -285,7 +283,7 @@ sub store {
       $pep_adaptor->store($sf);
       $type = 'protein_align_feature';
     } else {
-      $self->warn("Supporting feature of unknown type. Skipping : [$sf]\n");
+      warning("Supporting feature of unknown type. Skipping : [$sf]\n");
       next;
     }
 
@@ -297,8 +295,10 @@ sub store {
   # to point to the new database
   #
 
-  $exon->adaptor($self);
-  $exon->dbID($exonId);
+  $original->adaptor($self);
+  $original->dbID($exonId);
+
+  return $exonId;
 }
 
 
