@@ -495,6 +495,7 @@ sub store {
      $exonAdaptor->store( $exon );
    }
 
+   my $original_translation = $transcript->translation();
    my $original = $transcript;
    my $seq_region_id;
    ($transcript, $seq_region_id) = $self->_pre_store($transcript);
@@ -564,6 +565,10 @@ sub store {
      }
 
      $db->get_TranslationAdaptor()->store( $translation, $transc_dbID );
+     # set values of the original translation, we may have copied it
+     # when we transformed the transcript
+     $original_translation->dbID($translation->dbID());
+     $original_translation->adaptor($translation->adaptor());
    }
 
    #
