@@ -163,36 +163,80 @@ sub fetch_by_contig_name {
 
 sub fetch_by_fpc_name {
     my ($self,$fpc_name) = @_;
+    
+    my( $p, $f, $l ) = caller; 
+    $self->warn( "$f:$l calls deprecated method fetch_by_fpc_name. Please use fetch_by_supercontig_name instead" );
 
-    my $type = $self->db->assembly_type();
+    $self->fetch_by_supercontig_name( $fpc_name ); 
+}
 
-    my $sth = $self->db->prepare("
+sub fetch_by_supercontig_name {
+  my ($self,$supercontig_name) = @_;
+  
+  my $assembly_type = $self->db->assembly_type();
+  
+  my $sth = $self->db->prepare("
         SELECT chr.name, a.superctg_ori, MIN(a.chr_start), MAX(a.chr_end)
         FROM assembly a, chromosome chr
-        WHERE superctg_name = '$fpc_name'
-        AND type = '$type'
+        WHERE superctg_name = ?
+        AND type = ?
         AND chr.chromosome_id = a.chromosome_id
         GROUP by superctg_name
         ");
 
-    $sth->execute;
-
-    my ($chr, $strand, $slice_start, $slice_end) = $sth->fetchrow_array;
-
-    my $slice;
-
-    $slice = new Bio::EnsEMBL::Slice
-      (
-       -chr_name => $chr,
-       -chr_start =>$slice_start,
-       -chr_end => $slice_end,
-       -strand => $strand,
-       -assembly_type => $type
-      );
-
-    return $slice;
+  $sth->execute( $supercontig_name, $assembly_type );
+  
+  my ($chr, $strand, $slice_start, $slice_end) = $sth->fetchrow_array;
+  
+  my $slice;
+  
+  $slice = new Bio::EnsEMBL::Slice
+    (
+     -chr_name => $chr,
+     -chr_start =>$slice_start,
+     -chr_end => $slice_end,
+     -strand => $strand,
+     -assembly_type => $assembly_type
+    );
+  
+  return $slice;
 }
 
+
+=head2 list_overlapping_supercontigs
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               overlapping given Sice
+  Example    : 
+  Description: return the names of the supercontigs that overlap given Slice.  
+  Returntype : listref string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+sub list_overlapping_supercontigs {
+   my ($self,$slice) = @_;
+   my $sth = $self->db->prepare( "
+      SELECT DISTINCT superctg_name
+        FROM assembly a, chromosome c
+       WHERE c.chromosome_id = a.chromosome_id 
+         AND c.name = ?
+         AND a.type = ?
+         AND a.chr_end >= ?
+         AND a.chr_start <= ?
+       " );
+   $sth->execute( $slice->chr_name(), $slice->assembly_type(),
+		  $slice->chr_start(), $slice->chr_end() );
+
+   my $result = [];
+   while( my $aref = $sth->fetchrow_arrayref() ) {
+     push( @$result, $aref->[0] );
+   }
+
+   return $result;
+}
 
 
 =head2 fetch_by_clone_accession

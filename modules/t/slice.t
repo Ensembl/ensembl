@@ -5,13 +5,15 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 46;
+	plan tests => 48;
 }
 
+use TestUtils qw( debug );
 
 use MultiTestDB;
 use Bio::EnsEMBL::Slice;
 
+our $verbose= 0;
 
 #
 #1 TEST - Slice Compiles
@@ -270,6 +272,16 @@ $softmasked_seq = $seq = undef;
 ok(scalar @{$slice->get_tiling_path});
 
 
+my $super_slices = $slice->get_all_supercontig_Slices();
 
 
+#
+# 47-48 get_all_supercontig_Slices()
+#
+debug( "Supercontig starts at ".$super_slices->[0]->chr_start() );
 
+ok( $super_slices->[0]->chr_start() == 29591966 );
+
+debug( "Supercontig name ".$super_slices->[0]->name() );
+
+ok( $super_slices->[0]->name() eq "NT_028392" );

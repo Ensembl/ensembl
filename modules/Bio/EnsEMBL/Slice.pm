@@ -192,7 +192,7 @@ sub dbID {
 
 =head2 name
 
-  Arg [1]    : none
+  Arg [1]    : optional string $name
   Example    : $name = $slice->name();
   Description: Returns the name of this slice. The name is formatted as a 
                the following string: "$chr_name.$chr_start-$chr_end". 
@@ -201,6 +201,7 @@ sub dbID {
                can also act as a hash value. This is similar to the name 
                method in RawContig so for exons which can have either type 
                of sequence attached it provides a more common interface.
+               You can as well set the slicename to something like "NT_110023" 
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -208,18 +209,63 @@ sub dbID {
 =cut
 
 sub name {
-  my $self = shift;
+  my ( $self, $arg )  = @_;
+  
+  if( defined $arg ) {
+    $self->{name} = $arg;
+  } elsif(!defined $self->{name}) {
 
-  my $string = join '', $self->chr_name, '.', 
-                        $self->chr_start, '-', $self->chr_end();
+    my $string = join '', $self->chr_name, '.', 
+    $self->chr_start, '-', $self->chr_end();
 
-  if($self->strand == -1) {
-    return "reverse($string)";
+  
+    if($self->strand == -1) {
+      $self->{name} = "reverse($string)";
+    } else {
+      $self->{name} = $string;
+    }
   }
 
-  return $string;
+  return $self->{name};
 }
 
+=head2 get_all_supercontig_Slices
+
+  Arg [1]    : none
+  Example    : none
+  Description: Returns Slices that represent overlapping supercontigs.
+               Coordinates inside those slices are supercontig coordinates.
+               You can transfer features to this slices coordinate system with
+               the normal transform call. The returned slices hav their names
+               set to the supercontig names.
+  Returntype : listref Bio::EnsEMBL::Slice
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+
+sub get_all_supercontig_Slices {
+  my $self = shift;
+  my $result = [];
+
+  if( $self->adaptor() ) {
+    my $superctg_names = $self->adaptor()->list_overlapping_supercontigs( $self );
+    
+    for my $name ( @$superctg_names ) {
+      my $slice;
+      $slice = $self->adaptor()->fetch_by_supercontig_name( $name );
+      $slice->name( $name );
+      push( @$result, $slice );
+    }
+  } else {
+    $self->warn( "Slice needs to be attached to a database to get supercontigs" );
+  }
+
+  return $result;
+}
+
+    
 
 
 

@@ -5,12 +5,14 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 26;
+	plan tests => 27;
 }
 
 use MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
-use TestUtils qw(test_getter_setter);
+use TestUtils qw(test_getter_setter debug);
+
+our $verbose = 1;
 
 my ($CHR, $START, $END, $FLANKING) = ("20", 30_252_000, 31_252_001, 1000);
 
@@ -68,9 +70,11 @@ ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
 # 12-13 fetch_by_fpc_name
 #
 my $fpc_name = 'NT_011387';
-$slice = $slice_adaptor->fetch_by_fpc_name($fpc_name);
+$slice = $slice_adaptor->fetch_by_supercontig_name($fpc_name);
 ok($new_slice->chr_start);
 ok($new_slice->chr_end);
+
+
 
 #
 # 14 - 15 fetch_by_clone_accession
@@ -145,4 +149,12 @@ my $chromo = $db->get_ChromosomeAdaptor->fetch_by_chr_name($CHR);
 ok($chromo->length eq $slice->chr_end);
 
 
+$slice = $slice_adaptor->fetch_by_chr_start_end("20", 29_252_000, 31_252_001 );
+my $name_list = $slice_adaptor->list_overlapping_supercontigs( $slice );
+
+for my $name ( @$name_list ) {
+  debug( "Overlapping supercontig ".$name );
+}
+
+ok( $name_list->[0] eq "NT_028392" );
 
