@@ -5,13 +5,14 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 47;
+	plan tests => 48;
 }
 
 use TestUtils qw( debug );
 
 use MultiTestDB;
 use Bio::EnsEMBL::Slice;
+use Bio::EnsEMBL::ProjectionSegment;
 
 our $verbose= 0;
 
@@ -283,7 +284,22 @@ ok(scalar @{$slice->get_all_MiscFeatures()});
 #
 # Test Slice::project
 #
-ok(scalar @{$slice->project('seqlevel')});
+
+my @segments = @{$slice->project( 'seqlevel' )};
+ok(scalar @segments );
+
+eval {
+  my @sub_slices = map { $_->to_Slice() } @segments;
+  my @starts = map { $_->from_start() } @segments;
+  my @ends = map { $_->from_end() } @segments;
+};
+
+if( $@ ) {
+  debug( "to_Slice call failed on segment of projection" );
+  ok(0);
+} else {
+  ok(1)
+}
 
 
 #my $super_slices = $slice->get_all_supercontig_Slices();
