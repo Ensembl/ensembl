@@ -166,21 +166,20 @@ sub write_Protein_feature{
   
     my $homol = $feature->feature2;
     
-    my $sth = $self->prepare(  "insert into protein_feature(id,seq_start,seq_end,score,analysis,translation,hstart,hend,hid) ".
+    my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
 			       "values ('NULL',"
+			       ."'".$feature->seqname    ."',"
 			       .$feature->start          .","
 			       .$feature->end            .","
-			       .$feature->score          .","
-			       .$analysisid                .","
-			       ."'".$feature->seqname        ."',"
+			       .$analysisid              .","
 			       .$homol->start            .","
 			       .$homol->end              .","
-			       ."'".$homol->seqname      ."')");
-		
-
-
+			       ."'".$homol->seqname      ."',"
+			       .$feature->score         .","
+			       .$feature->percent_id    .","
+			       ."'".$feature->p_value   ."')");
     $sth->execute();
-    
+
 }
 
 =head2 write_Protein_feature_by_translationID
@@ -238,7 +237,7 @@ sub write_Protein_feature_by_translationID {
 	    if ( $features->isa('Bio::EnsEMBL::FeaturePair') ) {
 		my $homol = $features->feature2;
 		
-		my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) ".
+		my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
 					   "values ('NULL',"
 					   ."'".$pep                 ."',"
 					   .$features->start          .","
