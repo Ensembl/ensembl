@@ -43,7 +43,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::DBSQL::Utils;
-use Bio::EnsEMBL::DBSQL::Obj;
+
 use strict;
 
 

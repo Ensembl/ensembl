@@ -2428,6 +2428,29 @@ sub get_AnalysisAdaptor {
     return $aa;
 }
 
+=head2 get_SimpleFeatureAdaptor
+
+ Title   : get_SimpleFeatureAdaptor
+ Usage   : $sa = $db->get_SimpleFeatureAdaptor;
+ Example :
+ Returns : the adaptor
+ Args    :
+
+
+=cut
+
+sub get_SimpleFeatureAdaptor {
+    my( $self ) = @_;
+    
+    my( $aa );
+    unless ($aa = $self->{'_analysis_adaptor'}) {
+        require Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor;
+        $aa = Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor->new($self);
+        $self->{'_analysis_adaptor'} = $aa;
+    }
+    return $aa;
+}
+
 
 sub get_DBEntryAdaptor {
     my( $self ) = @_;

@@ -30,10 +30,11 @@ package Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+
+
+
 use vars '@ISA';
-#use Bio::EnsEMBL::NewGene;
-#use Bio::EnsEMBL::NewExon;
-#use Bio::EnsEMBL::NewTranscript;
+
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 

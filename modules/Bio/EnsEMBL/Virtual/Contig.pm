@@ -100,7 +100,7 @@ use Bio::EnsEMBL::DB::ContigI;
 use Bio::EnsEMBL::Virtual::Map;
 use Bio::EnsEMBL::Virtual::PrimarySeq;
 use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
-
+use Bio::EnsEMBL::StickyExon;
 
 @ISA = qw(Bio::EnsEMBL::DB::ContigI);
 

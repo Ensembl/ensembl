@@ -287,6 +287,59 @@ sub add_map_coordinates{
    $self->_is_frozen(0);
 }
 
+=head2 list_pairs
+
+ Title   : list_pairs
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub list_pairs{
+   my ($self,$start,$end,$id,$type) = @_;
+
+   if( !defined $type ) {
+       $self->throw("Must start,end,id,type as coordinates");
+   }
+
+   # perhaps a little paranoid/excessive
+   if( $self->_is_frozen == 0 ) {
+       $self->_freeze();
+   }
+
+
+   my @list;
+
+   if( $type eq $self->to ) {
+       if( !defined $self->{'_pair_hash_to'}->{$id} ) {
+	   return ();
+       }
+       @list = @{$self->{'_pair_hash_to'}->{$id}};
+   } elsif ( $type eq $self->from ) {
+       if( !defined $self->{'_pair_hash_from'}->{$id} ) {
+	   return ();
+       }
+       @list = @{$self->{'_pair_hash_from'}->{$id}};
+   }
+
+   my @output;
+   foreach my $p ( @list ) {
+       if( $p->end < $start ) {
+	   next;
+       }
+       if( $p->start > $end ) {
+	   break;
+       }
+       push(@output,$p);
+   }
+   return @output;
+}
+
+
 =head2 to
 
  Title   : to

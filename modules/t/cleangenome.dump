@@ -1,0 +1,6 @@
+
+
+
+insert into clone (clone_id,name,embl_acc,version,embl_version,htg_phase) VALUES (1,'testclone','testacc',1,4,3);
+
+insert into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES (1,'testcontig',1,20,1,1,1);

@@ -46,6 +46,7 @@ use Bio::Root::RootI;
 use Bio::EnsEMBL::Transcript;
 use Bio::DBLinkContainerI;
 use Bio::Annotation::DBLink;
+use Bio::EnsEMBL::DBEntry;
 
 
 @ISA = qw(Bio::Root::RootI Bio::DBLinkContainerI);

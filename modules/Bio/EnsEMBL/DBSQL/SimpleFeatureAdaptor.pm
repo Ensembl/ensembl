@@ -51,9 +51,6 @@ use Bio::EnsEMBL::SimpleFeature;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 # new() can be inherited from Bio::Root::RootI
 
-BEGIN {
-    print STDERR "\n\nWARNING. This module assummes the ContigAdaptor has been written!\n\n";
-};
 
 =head2 fetch_by_dbID
 
@@ -81,7 +78,7 @@ sub fetch_by_dbID{
        $self->throw("No simple feature with id $id");
    }
 
-   my $contig = $self->db->get_ContigAdaptor->fetch_by_dbID($contig_id);
+   my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($contig_id);
    my $out = Bio::EnsEMBL::SimpleFeature->new();
    $out->start($start);
    $out->end($end);

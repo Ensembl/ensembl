@@ -25,7 +25,8 @@ Bio::EnsEMBL::AssemblyMapper - Handles mapping from raw contigs to assembly coor
     my @chr_coordlist = $mapper->map_coordinates(2,5,-1,627012,"rawcontig");
  
     my @raw_coordlist = $mapper->map_coordinates(10002,10020,1,"chr1","assembly");
-    
+
+    my @cid_list = $mapper->list_contig_ids(10002,10020,"chr1");
 
 =head1 DESCRIPTION
 
@@ -113,6 +114,36 @@ sub map_coordinates{
    return $self->_mapper->map_coordinates($start,$end,$strand,$id,$maptype);
 }
 
+=head2 list_contig_ids
+
+ Title   : list_contig_ids
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub list_contig_ids{
+   my ($self,$start,$end,$chr) = @_;
+
+   # may not have registered this region yet
+
+   $self->register_region($start,$end,$chr);
+
+   my @pairs = $self->_mapper->list_pairs($start,$end,$chr,'assembly');
+   
+   my @ids;
+
+   foreach my $pair ( @pairs ) {
+       push(@ids,$pair->from->id);
+   }
+
+   return @ids;
+}
+
 
 =head2 register_region
 
@@ -127,7 +158,7 @@ sub map_coordinates{
 =cut
 
 sub register_region{
-   my ($self,$id,$start,$end) = @_;
+   my ($self,$start,$end,$id) = @_;
 
    $self->adaptor->register_region($self,$self->_type,$id,$start,$end);
 }
