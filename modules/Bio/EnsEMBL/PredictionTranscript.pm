@@ -231,13 +231,17 @@ sub translation {
             "translation");
   }
 
+  my $tmpSeq = new Bio::Seq( -id => "dummy",
+			     -seq => $self->spliced_seq(),
+			     -moltype => "dna" );
+
   return Bio::EnsEMBL::Translation->new
     (-ADAPTOR    => $pta,
      -START_EXON => $start_exon,
      -END_EXON   => $end_exon,
      -SEQ_START  => 1,
      -SEQ_END    => $end_exon->length(),
-     -SEQ        => $self->translate()->seq());
+     -SEQ        => $tmpSeq->translate()->seq());
 }
 
 
