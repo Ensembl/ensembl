@@ -86,8 +86,8 @@ $|=1;
 
 my $to_locator       = make_locator_string($tdbtype,$module,$thost,$tport,$tdbname,$tdbuser,$tpass);
 my $tdb              = new Bio::EnsEMBL::DBLoader($to_locator);
-my $from_locator     = "Bio::EnsEMBL::TimDB::Obj";
-#my $from_locator     = $tdb->get_donor_locator;
+#my $from_locator     = "Bio::EnsEMBL::TimDB::Obj";
+my $from_locator     = $tdb->get_donor_locator;
 my $arc_locator;
 if ($archive) {
     $arc_locator = "Bio::EnsEMBL::DBArchive::Obj//host=$thost;port=$tport;dbname=$adbname;user=$tdbuser;pass=$arcpass";
