@@ -372,7 +372,14 @@ sub _mask_features {
 
 sub get_all_RepeatFeatures {
    my $self = shift;
-   return ();
+   if( ! defined $self->adaptor() ) {
+     $self->warn( "Need db connection for get_genscan_peptides()" );
+     return ();
+   }
+
+   my $repeats = $self->adaptor()->db()->get_RepeatFeatureAdaptor()->
+     fetch_by_RawContig( $self );
+   return @$repeats;
 }
 
 
