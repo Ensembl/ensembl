@@ -10,31 +10,56 @@ BEGIN {
 
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::TimDB::Obj;
+use Bio::EnsEMBL::DBLoader;
 
 use Getopt::Long;
 use strict;
 
 my ($cloneid,
+    $locator,
+    $dbtype,
+    $dbhost,
+    $dbport,
+    $dbname,
+    $dbuser,
+    $dbpass,
 );
+
+$dbtype = "rdb";
+$dbname = "ensembl";
+$dbhost = "localhost";
+$dbport = 410000;
+$dbuser = "ensro";
+$dbpass = "";
+
+my @clones;
+my $db;
 
 $|=1;
 GetOptions("clone=s"     => \$cloneid,                # Clone name      e.g. dJ998N21
+           "dbtype=s"    => \$dbtype,
+           "dbhost=s"    => \$dbhost,
+	   "dbport=s"    => \$dbport,
+           "dbuser=s"    => \$dbuser,
+           "dbname=s"    => \$dbname,
+           "dbpass=s"    => \$dbpass,
 	   ) or usage();
 
-# Connect to the database
-
-my @clones;
 push(@clones,$cloneid);
 
-my $timdb     = Bio::EnsEMBL::TimDB::Obj->new(\@clones);
 
-my $clone = $timdb->get_Clone($cloneid);
+if ($dbtype eq "timdb") {
+    $db     = Bio::EnsEMBL::TimDB::Obj->new(\@clones);
+} elsif ($dbtype eq "rdb") {
+    $db     = new Bio::EnsEMBL::DBLoader("Bio::EnsEMBL::DBSQL::Obj//host=$dbhost;port=$dbport;dbname=$dbname;user=$dbuser;pass=$dbpass");
+}
+
+my $clone = $db->get_Clone($cloneid);
 
 foreach my $contig ($clone->get_all_Contigs) {
     open(POG,">" . $contig->id . ".gff");
     print("   - processing contig " . $contig->id . "\n");
-    
-    print("   - getting genes\n");
+    print("   - getting features\n");
 
     my @homols;
 
@@ -42,8 +67,8 @@ foreach my $contig ($clone->get_all_Contigs) {
     
     homol2gff(\*POG,\@homols);               # Prints out gff.
 
-close(POG);
-}
+    close(POG);
+ }
 
 
 
@@ -56,21 +81,40 @@ close(POG);
 ############################################################
 
 sub usage {
-    print("\nUsage: featureparser_test2 <clone> <contig_number> <accession>\n");
+    print("\nUsage: featureparser_test3 -dbtype <typd> -dbhost <host> -dbport <port> -dbname <name> -dbuser <user> -dbpass <pass> <clone>\n");
     exit(0);
 }
 
 
 sub homol2gff {
     my ($fh,$homols) = @_;
-
+    
     foreach my $h1 (@$homols) {
-        print($fh $h1->gff_string);
+
         if ($h1->isa("Bio::EnsEMBL::FeaturePair")) {
-           print($fh "\tSequence:" . $h1->hseqname . "\t" . $h1->hstart . "\t" . $h1->hend . "\n");
-        } else {
-	   print($fh "\n");
+	    print($fh $h1->gff_string);
+	    print($fh "\tSequence:" . $h1->hseqname . "\t" . $h1->hstart . "\t" . $h1->hend . "\n");
+        } elsif ($h1->sub_SeqFeature) {
+	    foreach my $f ($h1->sub_SeqFeature) {
+		print($fh $f->gff_string);
+		print($fh "\n");
+	    }
+	} else {
+	    print($fh $h1->gff_string);
+	    print($fh "\n");
         }
+	my $anal = $h1->analysis;
+	if (defined($anal) && $anal->isa("Bio::EnsEMBL::Analysis::Analysis")) {
+	    print($fh $anal->db . "\t" .
+	          $anal->db_version . "\t" .
+	          $anal->program    . "\t" .
+	          $anal->program_version . "\t" .
+                  $anal->gff_source      . "\t" .
+	          $anal->gff_feature     . "\n")
+	    } else {
+		print("No analysis for " . $h1->id . "\n");
+	    }
+	
     }
 }
 
