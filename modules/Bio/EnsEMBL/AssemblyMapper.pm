@@ -41,7 +41,7 @@ mapper object between disjoint coordinate systems.
 
 =head1 CONTACT
 
-Ensembl - ensembl-dev@ebi.ac.uk
+Post general queries to B<ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 

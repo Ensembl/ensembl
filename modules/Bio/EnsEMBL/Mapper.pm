@@ -3,9 +3,9 @@
 #
 # Ensembl module for Bio::EnsEMBL::Mapper
 #
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
+# Written by Ewan Birney <birney@ebi.ac.uk>
 #
-# Copyright Ewan Birney
+# Copyright GRL/EBI
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -13,34 +13,37 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Mapper - DESCRIPTION of Object
+Bio::EnsEMBL::Mapper
 
 =head1 SYNOPSIS
 
+  # add a coodinate mapping - supply two pairs or coordinates
+  $map->add_map_coordinates(
+    $contig_id, $contig_start, $contig_end, $contig_ori,
+    $chr_name, chr_start, $chr_end
+  );
 
-    $map->add_map_coordinates( $contig_id, $contig_start, $contig_end, $conitg_ori,
-			       $chr_name, chr_start, $chr_end);
-
-
-    my @coordlist = $mapper->map_coordinates(627012, 2, 5, -1, "rawcontig");
-
-Give standard usage here
+  # map from one coordinate system to another
+  my @coordlist = $mapper->map_coordinates(627012, 2, 5, -1, "rawcontig");
 
 =head1 DESCRIPTION
 
-Describe the object here
+Generic mapper to provide coordinate transforms between two
+disjoint coordinate systems. This mapper is intended to be
+'context neutral' - in that it does not contain any code
+relating to any particular coordinate system. This is
+provided in, for example, Bio::EnsEMBL::AssemblyMapper.
 
 =head1 AUTHOR - Ewan Birney
 
-This modules is part of the Ensembl project http://www.ensembl.org
+This module is part of the Ensembl project http://www.ensembl.org
 
-Email birney@ebi.ac.uk
-
-Describe contact details here
+Post general queries to B<ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods.
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -62,7 +65,6 @@ use Bio::EnsEMBL::Mapper::Gap;
 
 @ISA = qw(Bio::Root::RootI);
 
-# new() is written here 
 
 sub new {
   my($class,@args) = @_;
@@ -76,7 +78,7 @@ sub new {
   if( !defined $to ) {
       $self->throw("Must supply from and to tags");
   }
-  
+
   $self->{'_pair_hash_to'} = {};
   $self->{'_pair_hash_from'} = {};
 
@@ -90,13 +92,22 @@ sub new {
 
 =head2 map_coordinates
 
- Title   : map_coordinates
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+    Arg  1      int $id
+                id of 'source' sequence
+    Arg  2      int $start
+                start coordinate of 'source' sequence
+    Arg  3      int $end
+                end coordinate of 'source' sequence
+    Arg  4      int $strand
+                raw contig orientation (+/- 1)
+    Arg  5      int $type
+                nature of transform - gives the type of
+                coordinates to be transformed *from*
+    Function    generic map method
+    Returntype  array of Bio::EnsEMBL::Mapper::Coordinate
+                and/or   Bio::EnsEMBL::Mapper::Gap
+    Exceptions  none
+    Caller      Bio::EnsEMBL::Mapper
 
 =cut
 
@@ -126,7 +137,7 @@ sub map_coordinates{
    if( $self->_is_sorted == 0 ) {
        $self->_sort();
    }
-   
+
    if( !defined $hash->{$id} ) {
        # one big gap!
        my $gap = Bio::EnsEMBL::Mapper::Gap->new();
@@ -165,7 +176,7 @@ sub map_coordinates{
 	   push(@result,$gap);
            $start = $gap->end+1;
        }
-       
+
        my ($target_start,$target_end,$target_ori);
 
        # start is somewhere inside the region
@@ -174,7 +185,7 @@ sub map_coordinates{
        } else {
 	   $target_end   = $target_coord->end - ($start - $self_coord->start);
        }
-       
+
        # either we are enveloping this map or not. If yes, then end
        # point (self perspective) is determined solely by target. If not
        # we need to adjust
@@ -205,22 +216,22 @@ sub map_coordinates{
        $last_used_pair = $pair;
        $start = $self_coord->end+1;
    }
-   
+
 
    if( !defined $last_used_pair ) {
        my $gap = Bio::EnsEMBL::Mapper::Gap->new();
        $gap->start($start);
        $gap->end($end);
        push(@result,$gap);
-      
+
    } elsif( &$self_func($last_used_pair)->end < $end ) {
        # gap at the end
        my $gap = Bio::EnsEMBL::Mapper::Gap->new();
        $gap->start(&$self_func($last_used_pair)->end+1);
        $gap->end($end);
-       push(@result,$gap);       
+       push(@result,$gap);
    }
-       
+
    if ( $strand == -1 ) {
        @result = reverse ( @result);
    }
@@ -229,15 +240,28 @@ sub map_coordinates{
 
 }
 
+
 =head2 add_map_coordinates
 
- Title   : add_map_coordinates
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+    Arg  1      int $id
+                id of 'source' sequence
+    Arg  2      int $start
+                start coordinate of 'source' sequence
+    Arg  3      int $end
+                end coordinate of 'source' sequence
+    Arg  4      int $strand
+                relative orientation of source and target (+/- 1)
+    Arg  5      int $id
+                id of 'targe' sequence
+    Arg  6      int $start
+                start coordinate of 'targe' sequence
+    Arg  7      int $end
+                end coordinate of 'targe' sequence
+    Function    stores details of mapping between two regions:
+                'source' and 'target'
+    Returntype  none
+    Exceptions  none
+    Caller      Bio::EnsEMBL::Mapper
 
 =cut
 
@@ -288,20 +312,27 @@ sub add_map_coordinates{
    $self->_is_sorted(0);
 }
 
+
 =head2 list_pairs
 
- Title   : list_pairs
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+    Arg  1      int $id
+                id of 'source' sequence
+    Arg  2      int $start
+                start coordinate of 'source' sequence
+    Arg  3      int $end
+                end coordinate of 'source' sequence
+    Arg  4      int $type
+                nature of transform - gives the type of
+                coordinates to be transformed *from*
+    Function    list all pairs of mappings in a region
+    Returntype  list of Bio::EnsEMBL::Mapper::Pair
+    Exceptions  none
+    Caller      Bio::EnsEMBL::Mapper
 
 =cut
 
 sub list_pairs{
-   my ($self,$start,$end,$id,$type) = @_;
+   my ($self, $id, $start, $end, $type) = @_;
 
    if( !defined $type ) {
        $self->throw("Must start,end,id,type as coordinates");
@@ -346,15 +377,15 @@ sub list_pairs{
 }
 
 
-=head2 to
+=head2 from, to
 
- Title   : to
- Usage   : $obj->to($newval)
- Function: 
- Example : 
- Returns : value of to
- Args    : newvalue (optional)
-
+    Arg  1      Bio::EnsEMBL::Mapper::Unit $id
+                id of 'source' sequence
+    Function    accessor method form the 'source'
+                and 'target' in a Mapper::Pair
+    Returntype  Bio::EnsEMBL::Mapper::Unit
+    Exceptions  none
+    Caller      Bio::EnsEMBL::Mapper
 
 =cut
 
@@ -366,18 +397,6 @@ sub to{
     return $self->{'to'};
 
 }
-
-=head2 from
-
- Title   : from
- Usage   : $obj->from($newval)
- Function: 
- Example : 
- Returns : value of from
- Args    : newvalue (optional)
-
-
-=cut
 
 sub from{
    my ($self,$value) = @_;
@@ -391,13 +410,12 @@ sub from{
 
 =head2 _dump
 
- Title   : _dump
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+    Arg  1      *FileHandle $fh
+    Function    convenience dump function
+                possibly useful for debugging
+    Returntype  none
+    Exceptions  none
+    Caller      internal
 
 =cut
 
@@ -420,13 +438,12 @@ sub _dump{
 
 =head2 _sort
 
- Title   : _sort
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+    Function    sort function so that all
+                mappings are sorted by
+                chromosome start
+    Returntype  none
+    Exceptions  none
+    Caller      internal
 
 =cut
 
@@ -440,22 +457,20 @@ sub _sort{
    foreach my $id ( keys %{$self->{'_pair_hash_to'}} ) {
        @{$self->{'_pair_hash_to'}->{$id}} = sort { $a->to->start <=> $b->to->start } @{$self->{'_pair_hash_to'}->{$id}};
    }
-   
+
    $self->_is_sorted(1);
 
 }
 
 
-
 =head2 _is_sorted
 
- Title   : _is_sorted
- Usage   : $obj->_is_sorted($newval)
- Function: 
- Example : 
- Returns : value of _is_sorted
- Args    : newvalue (optional)
-
+    Arg  1      int $sorted
+    Function    toggle for whether the (internal)
+                map data are sorted
+    Returntype  int
+    Exceptions  none
+    Caller      internal
 
 =cut
 
@@ -469,9 +484,4 @@ sub _is_sorted{
 }
 
 
-
-
-
-
-
-
+1;
