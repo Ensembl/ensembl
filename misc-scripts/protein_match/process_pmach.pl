@@ -39,6 +39,8 @@ my ($ens,$sp,$refseq,$pdb);
 &finalprocess($refseq);
 &finalprocess($pdb);
 
+#perl ../../../src/ensembl-live/misc-scripts/protein_match/process_pmach.pl -ens ../primary/TGWpep -sp ../primary/SPTr.human.expanded -refseq ../primary/hs2.fsa -pdb ../primary/scop.fas
+
 sub runpmatch {
     print STDERR "Running pmatch\n";
  

@@ -39,6 +39,8 @@ my %embl_clone;
 	    'output:s'=>\$out
             );
 
+#perl ../../../src/ensembl-live/misc-scripts/protein_match/get_xrefs.pl -mapping ../map_outputs/totalmap.final -xrefs ../sec_outputs/xrefs.map -dbmap ../sec_outputs/mapdb.map -refseq ../primary/hs.gnp -output final.map 
+
 open (DBMAP,"$dbmap") || die "Can't open file $dbmap\n"; 
 open (XREF,"$xrefs") || die "Can't open file $xrefs\n";
 open (MAP,"$mapping") || die "Can't open file $mapping\n";

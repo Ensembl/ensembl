@@ -92,14 +92,6 @@ while (<ENS2>) {
     $_ =~ s/\r//g;
     my ($hgnc1,$hugo) = split(/\t/,$_);
     
-#    if (!defined $hugo_sp{$hgnc1}) {
-#	print ERROR "Can't map back $hugo_sp{$hgnc} (ENS2)\n";
-#    }
-
-#    if (!defined $hugo_refseq{$hgnc1}) {
-#	print ERROR "Can't map back $hugo_refseq{$hgnc} (ENS2)\n";
-#    }
-
     if ($hugo_sp{$hgnc1}) {
 	print OUT "$map{$hugo_sp{$hgnc1}}\t$hugo_sp{$hgnc1}\tHUGOSYMBOL\t$hugo\n";
     }
