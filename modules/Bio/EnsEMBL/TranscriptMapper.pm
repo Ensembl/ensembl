@@ -251,6 +251,19 @@ sub genomic2cds {
    throw("start, end and strand arguments are required");
  }
 
+ if($start > $end) {
+   throw("start arg must be less than or equal to end arg");
+ }
+
+ my $cdna_cstart = $self->{'cdna_coding_start'};
+ my $cdna_cend   = $self->{'cdna_coding_end'};
+
+ #this is a pseudogene if there is no coding region
+ if(!defined($cdna_cstart)) {
+   #return a gap of the entire requested region, there is no CDS
+   return Bio::EnsEMBL::Mapper::Gap->new($start,$end);
+ }
+
  my @coords = $self->genomic2cdna($start, $end, $strand);
 
  my @out;
@@ -261,15 +274,10 @@ sub genomic2cds {
    } else {
      my $start = $coord->start;
      my $end   = $coord->end;
-     my $cdna_cstart = $self->{'cdna_coding_start'};
-     my $cdna_cend   = $self->{'cdna_coding_end'};
 
      if($coord->strand == -1 || $end < $cdna_cstart || $start > $cdna_cend) {
        #is all gap - does not map to peptide
-       my $gap = new Bio::EnsEMBL::Mapper::Gap;
-       $gap->start($start);
-       $gap->end($end);
-       push @out, $gap;
+       push @out, Bio::EnsEMBL::Mapper::Gap->new($start,$end);
      } else {
        #we know area is at least partially overlapping CDS
 	
@@ -278,21 +286,16 @@ sub genomic2cds {
 
        if($start < $cdna_cstart) {
          #start of coordinates are in the 5prime UTR
-         my $gap = new Bio::EnsEMBL::Mapper::Gap;
-         my $gap_len = $cdna_cstart - $start;
-         $gap->start($start);
-         $gap->end($cdna_cstart - 1);
+         push @out, Bio::EnsEMBL::Mapper::Gap->new($start, $cdna_cstart-1);
+
          #start is now relative to start of CDS
          $cds_start = 1;
-         push @out, $gap;
        }
 	
        my $end_gap = undef;
        if($end > $cdna_cend) {
          #end of coordinates are in the 3prime UTR
-         $end_gap = new Bio::EnsEMBL::Mapper::Gap;
-         $end_gap->start($cdna_cend + 1);
-         $end_gap->end($end);
+         $end_gap = Bio::EnsEMBL::Mapper::Gap->new($cdna_cend + 1, $end);
          #adjust end to relative to CDS start
          $cds_end = $cdna_cend - $cdna_cstart + 1;
        }
