@@ -249,6 +249,10 @@ sub fetch_by_stable_id {
   $sth->execute( $stable_id );
 
   my ( $gene ) = @{$self->_objects_from_sth( $sth, $slice )};
+
+  #transform gene to RawContig coords:
+  $gene->transform;
+  
   return $gene;
 }
 
@@ -275,9 +279,12 @@ sub fetch_by_transcript_stable_id {
     ( '-empty' => 1,
       '-adaptor' => $core_db_adaptor->get_SliceAdaptor());
   
-    $sth->execute( $stable_id );
+  $sth->execute( $stable_id );
   
   my ( $gene ) = @{$self->_objects_from_sth( $sth, $slice )};
+
+  #transform gene to rawcontig coords
+  $gene->transform;
 
   return $gene;
 }
