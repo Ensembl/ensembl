@@ -76,11 +76,19 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 sub fetch_by_chr_start_end {
     my ($self,$chr,$start,$end) = @_;
 
-    if( !defined $end ) {   # Why defined?  Is '0' a valid end?
-        $self->throw("must provide chr, start and end");
+    unless($chr) {
+      $self->throw("chromosome name argument must be defined and not ''");
     }
 
-    if( $start > $end ) {
+    unless(defined $end) {   # Why defined?  Is '0' a valid end?
+      $self->throw("end argument must be defined\n");
+    }
+
+    unless(defined $start) {
+      $self->throw("start argument must be defined\n");
+    }
+
+    if($start > $end) {
       $self->throw("start must be less than end: parameters $chr:$start:$end");
     }
     
@@ -147,10 +155,11 @@ sub fetch_by_fpc_name {
     my $type = $self->db->assembly_type();
 
     my $sth = $self->db->prepare("
-        SELECT chromosome_id, superctg_ori, MIN(chr_start), MAX(chr_end)
-        FROM assembly
+        SELECT chr.name, a.superctg_ori, MIN(a.chr_start), MAX(a.chr_end)
+        FROM assembly a, chromosome chr
         WHERE superctg_name = '$fpc_name'
         AND type = '$type'
+        AND chr.chromosome_id = a.chromosome_id
         GROUP by superctg_name
         ");
 
@@ -193,14 +202,16 @@ sub fetch_by_clone_accession{
    my $sth = $self->db->prepare("SELECT  c.name,
                         a.chr_start,
                         a.chr_end,
-                        a.chromosome_id 
+                        chr.name 
                     FROM    assembly a, 
                         contig c, 
-                        clone  cl
+                        clone  cl,
+                        chromosome chr
                     WHERE c.clone_id = cl.clone_id
                     AND cl.name = '$clone'  
                     AND c.contig_id = a.contig_id 
-                    AND a.type = '$type' 
+                    AND a.type = '$type'
+                    AND chr.chromosome_id = a.chromosome_id
                     ORDER BY a.chr_start"
                     );
    $sth->execute();
@@ -399,11 +410,12 @@ sub _get_chr_start_end_of_contig {
    my $sth = $self->db->prepare("SELECT  c.name,
                         a.chr_start,
                         a.chr_end,
-                        a.chromosome_id 
-                    FROM assembly a, contig c 
+                        chr.name 
+                    FROM assembly a, contig c, chromosome chr 
                     WHERE c.name = '$contigid' 
                     AND c.contig_id = a.contig_id 
-                    AND a.type = '$type'"
+                    AND a.type = '$type'
+                    AND chr.chromosome_id = a.chromosome_id"
                     );
    $sth->execute();
    my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
@@ -438,21 +450,21 @@ sub _get_chr_start_end_of_gene {
                     (a.chr_start+a.contig_end-e.contig_end)),
    if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
                     (a.chr_start+a.contig_end-e.contig_start)),
-     c.name
+     chr.name
   
                     FROM    exon e,
                         transcript tr,
                         exon_transcript et,
                         assembly a,
                         gene_stable_id gsi,
-                        chromosome c
+                        chromosome chr
                     WHERE e.exon_id=et.exon_id 
                     AND et.transcript_id =tr.transcript_id 
                     AND a.contig_id=e.contig_id 
                     AND a.type = '$type' 
                     AND tr.gene_id = gsi.gene_id
                     AND gsi.stable_id = '$geneid'
-                    AND a.chromosome_id = c.chromosome_id" 
+                    AND a.chromosome_id = chr.chromosome_id" 
                     );
    $sth->execute();
 

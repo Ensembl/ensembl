@@ -69,6 +69,10 @@ sub fetch_by_dbID {
 
   my $chr = (); 
 
+  unless(defined $id) {
+    $self->throw("Chromosome dbID argument required\n");
+  }
+
   unless(defined $self->{'_chr_cache'} ) {
     $self->{'_chr_cache'} = {};
   }
@@ -129,6 +133,11 @@ sub fetch_by_chr_name{
 
    #Convert the name to the dbID
    my $dbID = $self->get_dbID_by_chr_name($chr_name);
+
+   unless(defined $dbID) {
+     $self->warn("chromosome with name $chr_name not in database");
+     return undef;
+   } 
    
    return $self->fetch_by_dbID($dbID);
 }
@@ -202,7 +211,6 @@ sub get_landmark_MarkerFeatures_old{
                        AND    sgp.chr_name='$chr_name'";
    
    $statement =~ s/\s+/ /g;
-   #print STDERR "Doing Query ... $statement\n";
    
    my $sth = $self->prepare($statement);
    $sth->execute;
@@ -262,7 +270,6 @@ sub get_landmark_MarkerFeatures{
 		";
    
    $statement =~ s/\s+/ /g;
-   #print STDERR "Doing Query ... $statement\n";
    
    my $sth = $self->prepare($statement);
    $sth->execute;
