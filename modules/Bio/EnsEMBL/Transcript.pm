@@ -676,8 +676,8 @@ sub dna_seq {
 	}
     } # end of if previous is there
 
-    
-    $mrna  .= $tmp;
+    $prev = $exon;  #heikki: this line was missing!  
+    $mrna  .= $tmp; 
   }
 
 
@@ -1061,11 +1061,74 @@ sub modified{
 
 }
 
+=head2 rna_pos
 
+  Title   : rna_pos
+  Usage   : $loc = $feat->dna_seq(23456)
+  Function: Translates genomic coordinates into mRNA coordinates
+  Returns : integer
+  Args    : integer, genomic location
+
+=cut
+
+sub rna_pos {
+    my ($self, $loc) = @_;
+
+    my $start = $self->start_exon->start;
+    #test that loc is within  mRNA
+    return undef if $loc < $start;
+    return undef if $loc >= $self->end_exon->end;
+
+    my $mrna = 1;
+
+    my $prev = undef;
+    foreach my $exon ($self->each_Exon) {
+	
+	my $tmp = length $exon->seq->seq();
+	#$tmp -= $exon->phase if not $prev;
+
+	# we now have to figure out if the phase is compatible. If it
+	# is not, we need to add some stuff in...
+
+	if( $prev ) {
+	    if( $prev->end_phase != $exon->phase ) {
+		if( $prev->end_phase == 0 ) {
+		    if( $exon->phase == 1 ) {
+			$mrna += 2;
+		    }
+
+		    if( $exon->phase == 2 ) {
+			$mrna += 1;
+		    }
+		} elsif ( $prev->end_phase == 1 ) {
+		    if( $exon->phase == 0 ) {
+			$mrna += 2;
+		    }
+		    
+		    if( $exon->phase == 2 ) {
+			$mrna += 1;
+		    }
+		} elsif ( $prev->end_phase == 2 ) {
+		    if( $exon->phase == 0 ) {
+			$mrna += 1;
+		    }
+		    
+		    if( $exon->phase == 1 ) {
+			$mrna += 2;
+		    }
+		} else {
+		    $self->warn("Impossible phases in calculating fixing stuff");
+		}
+	    }
+	} # end of if previous is there
+
+	if ($loc < $exon->end) {
+	    return $loc - $exon->start + $mrna ;
+	}
+	$mrna  += $tmp;
+	$prev = $exon;
+    }
+    #return $mrna;
+}
 
 1;
-
-
-
-
-
