@@ -805,7 +805,7 @@ sub get_Contigs_by_Chromosome {
 
    my $res = $sth ->execute;
    my $row;
-
+   
    while( $row = $sth->fetchrow_arrayref ) {
        my $contig = new Bio::EnsEMBL::DBSQL::RawContig 
 	   ( -dbobj => $self,		
@@ -2365,28 +2365,32 @@ sub write_Contig {
    $dna->id                       || $self->throw("No contig id entered.");
    $clone                         || $self->throw("No clone entered.");
 
-   my $contigid  = $contig->id;
-   my $date      = $contig->seq_date;
-   my $len       = $dna   ->length;
-   my $seqstr    = $dna   ->seq;
-   my $offset    = $contig->embl_offset();
-   my $chromosomeId = $self->write_Chromosome; #$contig->chromosome->get_db_id;
+#   (defined($contig->species)    && $contig->species   ->isa("Bio::EnsEMBL::Species"))    || $self->throw("No species object defined");
+   (defined($contig->chromosome) && $contig->chromosome->isa("Bio::EnsEMBL::Chromosome")) || $self->throw("No chromosomeobject defined");
+
+   my $contigid      = $contig->id;
+   my $date          = $contig->seq_date;
+   my $len           = $dna   ->length;
+   my $seqstr        = $dna   ->seq;
+   my $offset        = $contig->embl_offset();
+   my $order         = $contig->embl_order();
+
+#   my $species_id    = $self->write_Species   ($contig->species);
+#   my $chromosome_id = $self->write_Chromosome($contig->chromosome,$species_id); 
+
+   my $chromosome_id  = $contig->chromosome->get_db_id;
 
    $seqstr =~ tr/atgcn/ATGCN/;
 
-   #Removed in new schema?
-   #my $orientation    = $contig->embl_orientation();
-   my $order     = $contig->embl_order();
    my @sql;
 
    push(@sql,"lock tables contig write,dna write");
    push(@sql,"insert into dna(sequence,created) values('$seqstr',FROM_UNIXTIME($date))");
    push(@sql,"insert into contig(id,internal_id,dna,length,clone,offset,corder,chromosomeId ) " .
-	     "values('$contigid',null,LAST_INSERT_ID(),$len,'$clone',$offset,$order,$chromosomeId)");
+	     "values('$contigid',null,LAST_INSERT_ID(),$len,'$clone',$offset,$order,$chromosome_id)");
 
    push(@sql,"unlock tables");   
 
-   print(STDERR "$sql[2]\n");
    foreach my $sql (@sql) {
 
      my $sth =  $self->prepare($sql);
@@ -2413,12 +2417,113 @@ sub write_Contig {
    return 1;
 }
 
-sub write_Chromosome {
-    my ($self,$chromosome) = @_;
-    
-    return 1;
 
+=head2 write_Chromosome
+
+ Title   : write_Chromosome
+ Usage   : $obj->write_Chromosome
+ Function: writes a chromosome into the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_Chromosome {
+    my ($self,$chromosome,$species_id) = @_;
+
+    $self->throw("No chromosome argument input") unless defined($chromosome);
+    $self->throw("No species_id argument input") unless defined($species_id);
+
+    if (!$chromosome->isa("Bio::EnsEMBL::Chromosome")) {
+	$self->throw("[$chromosome] is not a Bio::EnsEMBL::Chromosome object");
+    }
+
+    my $query = "select chromosome_id " .
+	        "from   chromosome " .
+		"where  name       = '" . $chromosome->name . "' " .
+		"and    species_id = "  . $species_id . 
+		"and    id         = "  . $chromosome->id;
+
+    my $sth = $self->prepare($query);
+    my $res = $sth->execute;
+
+    if ($sth->rows == 1) {
+	my $rowhash       = $sth->fetchrow_hashref;
+	my $chromosome_id = $rowhash->{chromosome_id};
+	return $chromosome_id;
+    } 
+
+    $query =  "insert into chromosome(chromosome_id,name,id,species_id) " . 
+	      "            values(null,'" . $chromosome->name . "'," . $chromosome->id . "," . $species_id . ")";
+	
+    
+    $sth = $self->prepare($query);
+    $res = $sth->execute;
+
+    $sth = $self->prepare("select last_insert_id()");
+    $res = $sth->execute;
+
+    my $rowhash       = $sth->fetchrow_hashref;
+    my $chromosome_id = $rowhash->{'last_insert_id()'};
+   
+    return $chromosome_id;
 }
+
+
+=head2 write_Species
+
+ Title   : write_Species
+ Usage   : $obj->write_Species
+ Function: writes a species object into the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_Species {
+    my ($self,$species) = @_;
+
+    if (!defined($species)) {
+	$self->throw("No species argument input");
+    }
+    if (!$species->isa("Bio::EnsEMBL::Species")) {
+	$self->throw("[$species] is not a Bio::EnsEMBL::Species object");
+    }
+
+    my $query = "select species_id " .
+	        "from   species " .
+		"where  nickname    = '" . $species->nickname . "' " . 
+		"and    taxonomy_id = "  . $species->taxonomy_id;
+
+    my $sth = $self->prepare($query);
+    my $res = $sth->execute;
+
+    if ($sth->rows == 1) {
+	my $rowhash    = $sth->fetchrow_hashref;
+	my $species_id = $rowhash->{species_id};
+	return $species_id;
+    } 
+
+    $query =  "insert into species(species_id,nickname,taxonomy_id) " . 
+	      "            values(null,'" . $species->nickname . "'," . $species->taxonomy_id . ")";
+	
+    
+    $sth = $self->prepare($query);
+    $res = $sth->execute;
+
+    $sth = $self->prepare("select last_insert_id()");
+    $res = $sth->execute;
+
+    my $rowhash = $sth->fetchrow_hashref;
+    my $species_id = $rowhash->{'last_insert_id()'};
+   
+    return $species_id;
+}
+
 =head2 write_Clone
 
  Title   : write_Clone
@@ -2457,7 +2562,9 @@ sub write_Clone{
        $self->write_Contig($contig,$clone_id);
    }
 
-   
+   foreach my $overlap ($clone->get_all_ContigOverlaps) {
+       $self->write_ContigOverlap($overlap);
+   }
 }
 
 
@@ -2474,7 +2581,7 @@ sub write_Clone{
 =cut
 
 sub write_ContigOverlap {
-    my ($self,$overlap,$type) = @_;
+    my ($self,$overlap) = @_;
 
     if (!defined($overlap)) {
 	$self->throw("No overlap object");
@@ -2523,6 +2630,7 @@ sub write_ContigOverlap {
 
     $rowhash = $sth->fetchrow_hashref;
     my $dna_b_id = $rowhash->{id};
+    my $type     = $overlap->source;
 
     print(STDERR "DNA ids are $dna_a_id : $dna_b_id\n");
 
