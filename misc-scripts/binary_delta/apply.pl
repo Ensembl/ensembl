@@ -122,11 +122,14 @@ foreach my $info_file (glob($delta_dir . '/*.info')) {
     } elsif ($patch_command eq 'ZIP') {
 	print "\tDecompressing compressed file\n";
 	do_decompress($delta_file, $v2_file);
+    } elsif ($patch_command eq 'ADD') {
+	print "\tAdding new file\n";
+	copy($delta_file, $v2_file);
     } else {
 	warn "\tStrange patch command: $patch_command\n";
     }
 
-    if ($v2_file !~ /\.gz$/) {
+    if ($v2_file !~ /\.gz$/ && $patch_command ne 'PATCH') {
 	if ($v2_sum ne '(none)' && $v2_sum ne make_checksum($v2_file)) {
 	    print "\tChecksum mismatch for new file\n";
 	    print "\tCan not continue\n";
