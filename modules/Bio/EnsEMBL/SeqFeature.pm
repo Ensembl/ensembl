@@ -69,18 +69,18 @@ use strict;
 use Bio::EnsEMBL::SeqFeatureI;
 use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::RootI EnsEMBL::SeqFeatureI);
+@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::SeqFeatureI);
 
 sub new {
   my($caller,@args) = @_;
-
+  
   my ($self) = $caller->SUPER::new(@args);
 
   $self->{'_gsf_tag_hash'} = {};
   $self->{'_gsf_sub_array'} = [];
   $self->{'_parse_h'} = {};
 
-  bless $self,$class;
+  bless $self,$caller;
 
 my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value, $phase, $end_phase); 
 
@@ -111,6 +111,8 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 
 #  $gff_string && $self->_from_gff_string($gff_string);
 
+  if ( defined $analysis  && $analysis ne "")   { $self->analysis($analysis)};
+  if( ! defined $analysis ) { $self->analysis( Bio::EnsEMBL::Analysis->new() ) };
   if ( defined ($start) && $start ne "" )       { $self->start($start)};
   if ( defined ($end )  && $end   ne "" )       { $self->end($end)}
   if ( defined $strand  && $strand ne "")       { $self->strand($strand)}
@@ -118,7 +120,6 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
   if ( defined $source_tag && $source_tag ne ""){ $self->source_tag($source_tag)}
   if ( defined $frame  && $frame ne "")         { $self->frame($frame)}
   if ( defined $score  && $score ne "")         { $self->score($score)}
-  if ( defined $analysis  && $analysis ne "")   { $self->analysis($analysis)};
   if ( defined $seqname && $seqname ne "")      { $self->seqname($seqname)};
   if ( defined $percent_id && $percent_id ne ""){ $self->percent_id($percent_id)};
   if ( defined $p_value && $p_value ne "")      { $self->p_value($p_value)};
