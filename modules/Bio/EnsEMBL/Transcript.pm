@@ -640,76 +640,52 @@ sub split_Transcript_to_Partial {
 
 
 sub cds {
-    my ($self) = @_;
+   my ($self) = @_;
 
-    my $debug;
+      my $prev;
+   my $tstr;
+
+   #$self->sort();
+   my @exons = $self->translateable_exons;
+   my $exon_start = $exons[0];
 
 
-    if ( ! defined $self->translation ) {
-        $self->throw("You have to have a translation now to make a translation. Doh!");
-    }
+   foreach my $exon ( @exons ) {
 
-    my @trans = $self->split_Transcript_to_Partial(1);
 
-    unless (@trans) {
-        $self->throw("Bad internal error - split a transcript to zero transcripts! Doh!");
-    }  
+       # trim down start ends on the basis of phase.
+       if( $prev && $prev->end_phase != $exon->phase ) {
+	   $self->throw("Called coherent translate but exon phases don't match. Yuk!");
+       }
 
-    my $seqstr;
-    my $prevtrans;
-    my $seen_start = 0;
-    my $dna_seq = "";
+       # warn about non DNA passed in. 
 
-    foreach my $ptrans ( @trans ) {
+       if( $exon->entire_seq()->moltype ne 'dna' ) {
+	   #$self->warn("Error. Whoever implemented this databases did not set type to Dna. Setting now!");
+	   $exon->entire_seq()->moltype('dna');
+       }
+#       print STDERR "Exon phase " . $exon->id ." " . $exon->phase . "\t" . $exon->start . "\t" . $exon->end . " " .$exon->strand. " ".$exon->entire_seq->id ."\n";
+#       print STDERR "Exon sequence is " . $exon->seq->seq . "\n";
 
-        my $tseq = $ptrans->_translate_coherent($debug);
+       my $seq = $exon->seq();
+       my $str = $seq->seq();
+       
 
-        # to be consistent with our EMBL dumping, we need to make the actual join
-        # with fill-in N's and then pass into translate so that ambiguous codons
-        # which still have a translation happen! This has to be the weirdest piece
-        # of manipulation I have done in a long time. What we do is take the last
-        # exon of the old transcript and the first exon of the current transcript,
-        # fill both sides in so that they make nice reading frames and then translate
-        # the 6 bases which this makes. Phase 0 exons are filled in by 3 to make sure
-        # that there is some filler.
+       if( CORE::length( $str ) == 0 ) {
+	   $self->throw("Bad internal error - got a 0 length rstring...");
+       }
 
-        if( defined $prevtrans ) {
-	    my $last_exon  = $prevtrans->end_exon();
-	    my $first_exon = $ptrans   ->start_exon();
-	    my $filler;
+       $tstr .= $str;
+   }
 
-	    # last exon
-	    if( $last_exon->end_phase != 0 ) {
-	        $filler = substr($last_exon->seq->seq, $last_exon->seq->length - $last_exon->end_phase);
-	    } 
-	    $filler .= 'N' x (3 - $last_exon->end_phase);
+   if( $exon_start->phase == 1 ) {
+       $tstr = substr $tstr, 2;
+   } elsif ( $exon_start->phase == 2 ) {
+       $tstr = substr $tstr, 1;
+   } 
 
-	    # do first exon now.
-
-	    if( $first_exon->phase == 0 ) {
-	        $filler .= 'NNN';
-	    } else {
-	        $filler .= 'N' x $first_exon->phase;
-	    }
-	    $filler .= substr($first_exon->seq->seq, 0, (3 - $first_exon->phase) % 3);
-
-	    # translate it.
-	    if( CORE::length($filler) != 6 ) {
-	        my $lphase = $last_exon->end_phase;
-	        my $fphase = $first_exon->phase;
-	        $self->throw("Wrong length of filler seq. Error in coding [$filler] $lphase:$fphase\n");
-	    }
-	    my $fillerseq = Bio::Seq->new( -seq => $filler, -moltype => 'dna');
-            $dna_seq .= $filler;
-
-        } 
-        $prevtrans = $ptrans;
-    }
-
-    my $bio_seq = Bio::Seq->new( -seq => $dna_seq, -moltype => 'dna',
-                                 -id => $self->translation->id() );
-
-    return $bio_seq;
+   my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -moltype => 'dna' );
+   return $temp_seq;
 }
 
 
