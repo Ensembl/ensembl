@@ -52,7 +52,7 @@ INSERT INTO source VALUES (1300, 'Interpro', 1, 'Y', 2);
 INSERT INTO source VALUES (1400, 'ZFIN_ID', 1, 'Y', 2);
 INSERT INTO source VALUES (1500, 'MIM2', 1, 'Y', 3);
 
-
+INSERT INTO source VALUES (2000, 'CCDS', 1, 'N', 4);
 
 ################################################################################
 # Files to fetch data from
