@@ -793,16 +793,45 @@ sub get_all_DASFeatures{
   my ($self,@args) = @_;
   $self->{_das_features} ||= {}; # Cache
   my %das_features;
+
+
   foreach my $dasfact( @{$self->get_all_DASFactories} ){
     my $dsn  = $dasfact->adaptor->dsn;
     my $name = $dasfact->adaptor->name;
+
     $name ||= $dasfact->adaptor->url .'/'. $dsn;
+
+
     if( $self->{_das_features}->{$name} ){ # Use cached
       $das_features{$name} = $self->{_das_features}->{$name};
       next;
     }
     else{ # Get fresh data
       my @featref = $dasfact->fetch_all_by_DBLink_Container( $self );
+      $self->{_das_features}->{$name} = [@featref];
+      $das_features{$name} = [@featref];
+    }
+  }
+  return \%das_features;
+}
+
+sub get_all_DASFeatures_by_slice{
+  my ($self, $slice, @args) = @_;
+  $self->{_das_features} ||= {}; # Cache
+  my %das_features;
+
+  foreach my $dasfact( @{$self->get_all_DASFactories} ){
+    my $dsn  = $dasfact->adaptor->dsn;
+    my $name = $dasfact->adaptor->name;
+
+    $name ||= $dasfact->adaptor->url .'/'. $dsn;
+
+    if( $self->{_das_features}->{$name} ){ # Use cached
+      $das_features{$name} = $self->{_das_features}->{$name};
+      next;
+    }
+    else{ # Get fresh data
+      my @featref = ("${name}_ENSMUSG", ($dasfact->fetch_all_by_Slice( $slice ))[0]);
       $self->{_das_features}->{$name} = [@featref];
       $das_features{$name} = [@featref];
     }
