@@ -50,6 +50,7 @@ use strict;
 package Bio::EnsEMBL::MiscSet;
 
 use Bio::EnsEMBL::Storable;
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 use vars qw(@ISA);
 
