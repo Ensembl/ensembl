@@ -1,33 +1,17 @@
-# dump chr region from db
-# useful for making a test region etc.
-#
-# writes tab-delimited text files for
-#    contig
-#    clone
-#    assembly
-#    chromosome
-#    dna
-
+# cp chr region from db
 
 use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
+open SGP, "> sgp.out" or die;
+open DNA, "> dna.out" or die;
+open CLONE, "> clone.out" or die;
+open CTG, "> ctg.out" or die;
 
 my $chr_name = '';
 my $chr_start = ;   # -1 to start at chr start
-my $chr_end = ;     # -1 to end at chr end
+my $chr_end =       # -1 to end at chr end;
 my $type = '';
-
-die "Must have an assembly type" unless $type;
-die "Must have an chromosome name" unless $chr_name;
-die "Must have an chromosome start" unless $chr_start;
-die "Must have an chromosome end" unless $chr_end;
-
-open SGP, "> assembly.out" or die "canna open file";
-open DNA, "> dna.out" or die "canna open file";
-open CLONE, "> clone.out" or die "canna open file";
-open CTG, "> contig.out" or die "canna open file";
-open CHR, "| sort -u > chromosome.out" or die "canna open file";
 
 $, = "\t";
 
@@ -38,12 +22,11 @@ my $src = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
 );
 
 my $sth = $src->prepare(qq{
-    SELECT a.*, c.*
-    FROM   assembly a, chromosome c
-    WHERE  c.name = ?
-    AND    a.chromosome_id = c.chromosome_id
-    AND    a.type = ?
-    ORDER  by a.chr_start
+    SELECT *
+    FROM   static_golden_path
+    WHERE  chr_name = ?
+    AND    type = ?
+    ORDER  by chr_start
 });
 
 $sth->execute($chr_name, $type);
@@ -52,16 +35,13 @@ my @contigs;
 my @row;
 
 while (@row = $sth->fetchrow_array) {
-    my (@sgp) = @row[0 .. 11];
-    my (@chr) = @row[12 .. 18];
-    my ($ctg, $start, $end) = @sgp[2, 3, 4];
+    my ($ctg, $start, $end) = @row[2, 3, 4];
 
     next if $start < $chr_start && $chr_start >= 0;
     last if $end > $chr_end && $chr_end >= 0;
 
     push @contigs, $ctg;
-    print SGP @sgp, "\n";
-    print CHR @chr, "\n";
+    print SGP @row, "\n";
 }
 
 my $where = '(' . join(',', @contigs) . ')';
@@ -69,7 +49,7 @@ my $where = '(' . join(',', @contigs) . ')';
 my $sth = $src->prepare(qq{
     SELECT *
     FROM   contig
-    WHERE  contig_id in $where
+    WHERE  internal_id in $where
 });
 
 $sth->execute();
@@ -78,19 +58,11 @@ while (@row = $sth->fetchrow_array) {
     print CTG @row, "\n";
 }
 
-my $cmd = qq{
-    SELECT distinct clone.*
-    FROM   clone, contig
-    WHERE  contig.contig_id in $where
-    AND    clone.clone_id = contig.clone_id
-};
-# print "$cmd\n";
-
 my $sth = $src->prepare(qq{
     SELECT distinct clone.*
     FROM   clone, contig
-    WHERE  contig.contig_id in $where
-    AND    clone.clone_id = contig.clone_id
+    WHERE  contig.internal_id in $where
+    AND    clone.internal_id = contig.clone
 });
 
 $sth->execute();
@@ -102,8 +74,8 @@ while (@row = $sth->fetchrow_array) {
 my $sth = $src->prepare(qq{
     SELECT *
     FROM   dna, contig
-    WHERE  contig.contig_id in $where
-    AND    dna.dna_id = contig.dna_id
+    WHERE  contig.internal_id in $where
+    AND    dna.id = contig.dna
 });
 
 $sth->execute();
@@ -116,7 +88,6 @@ close DNA;
 close SGP;
 close CTG;
 close CLONE;
-close CHR;
 
 $sth->finish;
 
