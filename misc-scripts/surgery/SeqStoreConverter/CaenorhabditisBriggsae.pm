@@ -72,7 +72,7 @@ sub create_coord_systems {
   foreach my $mapping (@assembly_mappings) {
     $sth->execute($mapping);
   }
-  
+
   $sth->finish();
 
   return;
@@ -153,6 +153,67 @@ sub create_assembly {
   $self->assembly_contig_clone();
 }
 
+
+
+
+#
+# Override the assembly contig clone method because the briggsae database
+# does not have any embl_offsets
+#
+sub assembly_contig_clone {
+  my $self = shift;
+
+  my $target = $self->target();
+  my $source = $self->source();
+  my $dbh    = $self->dbh();
+
+
+  $self->debug("CaenorhabditisBriggsae Specific: loading contig/clone " .
+               "assembly relationship");
+
+  my $asm_sth = $dbh->prepare
+    ("INSERT INTO $target.assembly " .
+     "set asm_seq_region_id = ?, ".
+     "    asm_start = ?, " .
+     "    asm_end   = ?, " .
+     "    cmp_seq_region_id = ?, ".
+     "    cmp_start = ?, " .
+     "    cmp_end   = ?, " .
+     "    ori       = ?");
+
+  # get a list of the contigs that have clones, their ids, and the
+  # corresponding clone ids
+  my $ctg_sth = $dbh->prepare
+    ("SELECT ctg.name, ctg.contig_id, ctg.length, cln.new_id " .
+     "FROM   $source.contig ctg, $target.tmp_cln_map cln " .
+     "WHERE  ctg.name not like 'c%' " .  # only contigs w/ proper accessions
+     "AND    ctg.clone_id = cln.old_id");
+
+  $ctg_sth->execute();
+
+  my ($ctg_name, $ctg_id, $ctg_len, $cln_id);
+
+  $ctg_sth->bind_columns(\$ctg_name, \$ctg_id, \$ctg_len, \$cln_id);
+
+  while($ctg_sth->fetch()) {
+    my (undef,$cln_start, $cln_end) = split(/\./, $ctg_name);
+    my $cln_len = $cln_end - $cln_start + 1;
+    if($cln_len != $ctg_len) {
+      die("Contig len $ctg_len != Clone len $cln_len");
+    }
+
+    $asm_sth->execute($cln_id, $cln_start, $cln_end,
+                      $ctg_id, 1, $ctg_len, 1);
+  }
+
+  $ctg_sth->finish();
+  $asm_sth->finish();
+
+  return;
+}
+
+
+
 #
 # Override contig_to_seq_region and clone_to_seq_region to provide 
 # briggsae specific behaviour
@@ -232,7 +293,7 @@ sub clone_to_seq_region {
 		 WHERE  cl.clone_id = ctg.clone_id
      AND    cl.embl_acc not like 'c%'
      GROUP BY ctg.clone_id");
- 
+
   $select_sth->execute();
 
   my ($clone_id, $embl_acc, $length);
