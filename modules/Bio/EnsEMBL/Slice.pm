@@ -354,37 +354,42 @@ sub get_all_ExternalFeatures{
 
 sub _get_all_SeqFeatures_type {
    my ($self,$type) = @_;
-   my @sf;
+   $self->throw('interface fault') if @_ != 2;
 
   $self->warn("Slice: get_all_SeqFeatures_type");
   
    my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
-     ( $self->assembly_type() );
+                                    ( $self->assembly_type );
 
-   $mapper->register_region( $self->chr_name(),
-			     $self->chr_start(),
-			     $self->chr_end() );
+   # register the VC
+   $mapper->register_region( $self->chr_name,
+			     $self->chr_start,
+			     $self->chr_end );
   
-   my @cids = $mapper->list_contig_ids( $self->chr_name(),
-				        $self->chr_start(),
-				        $self->chr_end() );
+   # get contig IDs for the VC
+   my @cids = $mapper->list_contig_ids( $self->chr_name,
+				        $self->chr_start,
+				        $self->chr_end );
    
    my $rca = $self->adaptor->db->get_RawContigAdaptor;
    my @vcsf = ();
    foreach my $id (@cids) {
      my $c = $rca->fetch_by_dbID($id);
+     my $virtual_contig_of_contig = $self->adaptor->fetch_Slice_by_contig($c->name);
+     my $contig_chr_start = $virtual_contig_of_contig->chr_start;
+     my $contig_chr_end = $virtual_contig_of_contig->chr_end;
      if ( $type eq 'external' ) {
        foreach my $f ($c->get_all_ExternalFeatures()) {
-         my @mapped = $mapper->map_coordinates_to_assembly
-                            ( $id,
-                              $f->start,
-                              $f->end,
-                              $self->strand );
+         my @feature_mapped_to_assembly = $mapper->map_coordinates_to_assembly
+                         ($id, $f->start, $f->end, $f->strand);
+	 my $newstrand = $feature_mapped_to_assembly[0]->strand * $f->strand;
+	 my $newstart = $feature_mapped_to_assembly[0]->start - $self->chr_start;
+	 my $newend = $newstart + $f->end - $f->start + 1;
 	 my $newf = Bio::EnsEMBL::SeqFeature->new();
-	 %$newf = %$self;
-	 $newf->start( $mapped[0]->start() - $self->chr_start() + 1);
-         $newf->end( $mapped[0]->end() - $self->chr_start() + 1);
-         $newf->strand( $f->strand * $self->strand);
+	 %$newf = %$f;
+	 $newf->start($newstart);
+         $newf->end($newend);
+         $newf->strand($newstrand);
 	 push @vcsf, $newf;
        }
      } else {
