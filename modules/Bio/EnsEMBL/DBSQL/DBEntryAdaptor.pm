@@ -230,8 +230,8 @@ sub store {
              SET object_xref_id = ?,
              query_identity = ?,
              target_identity = ?,
-             hit_start = ?,
-             hit_end = ?,
+             query_start = ?,
+             query_end = ?,
              translation_start = ?,
              translation_end = ?,
              cigar_line = ?,
@@ -240,7 +240,7 @@ sub store {
              analysis_id = ?" );
 
       $sth->execute($Xidt, $exObj->query_identity, $exObj->target_identity,
-		   $exObj->hit_start(), $exObj->hit_end(), 
+		   $exObj->query_start(), $exObj->query_end(), 
 		   $exObj->translation_start(), $exObj->translation_end(),
 		   $exObj->cigar_line(), $exObj->score(), $exObj->evalue(),
 		   $analysis_id);
@@ -413,7 +413,7 @@ sub _fetch_by_object_type {
            exDB.db_name, exDB.release, exDB.status, 
            oxr.object_xref_id, 
            es.synonym, 
-           idt.query_identity, idt.target_identity, idt.hit_start, idt.hit_end,
+           idt.query_identity, idt.target_identity, idt.query_start, idt.query_end,
            idt.translation_start, idt.translation_end, idt.cigar_line,
            idt.score, idt.evalue, idt.analysis_id,
            gx.linkage_type
@@ -434,7 +434,7 @@ sub _fetch_by_object_type {
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     my ( $refID, $dbprimaryId, $displayid, $version, 
          $desc, $dbname, $release, $exDB_status, $objid, 
-         $synonym, $queryid, $targetid, $hit_start, $hit_end,
+         $synonym, $queryid, $targetid, $query_start, $query_end,
 	 $translation_start, $translation_end, $cigar_line,
 	 $score, $evalue, $analysis_id, $linkage_type ) = @$arrRef;
 
@@ -467,8 +467,8 @@ sub _fetch_by_object_type {
 	  }
 	}
 	$exDB->cigar_line( $cigar_line );
-	$exDB->hit_start( $hit_start );
-	$exDB->hit_end( $hit_end );
+	$exDB->query_start( $query_start );
+	$exDB->query_end( $query_end );
 	$exDB->translation_start( $translation_start );
 	$exDB->translation_end( $translation_end );
 	$exDB->score( $score );
