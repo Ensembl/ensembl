@@ -41,6 +41,9 @@ ok(@{$rfa->fetch_all_by_motif($motif)} == 10);
 my $ids = $rfa->list_dbIDs();
 ok (@{$ids});
 
+# test fetch_all_by_transcript
+my $transcript =  $db->get_TranscriptAdaptor()->fetch_by_dbID(21740);
+ok(@{$rfa->fetch_all_by_transcript($transcript)} == 13);
 
 # Test store
 

@@ -62,7 +62,8 @@ ok($rf->adaptor->isa('Bio::EnsEMBL::DBSQL::RegulatoryFeatureAdaptor'));
 my $rf1 = $rfa->fetch_by_dbID(1);
 ok(@{$rf1->regulated_transcripts()} == 3);
 
-# 9 check get_transcripts_regulated_by_same_motif
+# 10 check get_transcripts_regulated_by_same_motif
 ok(@{$rf1->transcripts_regulated_by_same_motif()} == 3);
+
 
 
