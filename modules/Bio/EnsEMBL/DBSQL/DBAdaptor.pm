@@ -392,24 +392,6 @@ sub get_TranslationAdaptor {
 }
 
 
-=head2 get_FeatureAdaptor
-
-  Args       : none 
-  Example    : $feature_adaptor = $db_adaptor->get_FeatureAdaptor();
-  Description: Gets a FeatureAdaptor for this database
-  Returntype : Bio::EnsEMBL::DBSQL::FeatureAdaptor
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_FeatureAdaptor {
-    my( $self ) = @_;
-
-    return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::FeatureAdaptor");
-}
-
-
 =head2 get_RawContigAdaptor
 
   Args       : none 
