@@ -516,7 +516,7 @@ sub get_all_DBEntries {
   my $self = shift;
 
   #if not cached, retrieve all of the xrefs for this gene
-  if(!defined $self->{'dbentries'} && $self->adaptor()z) {
+  if(!defined $self->{'dbentries'} && $self->adaptor()) {
     $self->{'dbentries'} = 
       $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene($self);
   }
