@@ -60,18 +60,18 @@ use Getopt::Long;
 my $dbtype = 'rdb';
 my $host   = 'localhost';
 my $port   = '410000';
-my $dbname = 'ensdev';
-my $dbuser = 'ensembl';
+my $dbname = 'ensembl';
+my $dbuser = 'ensro';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 
-my $webdir = undef;
 my $format  = 'transcript';
 my $usefile = 0;
 my $getall  = 0;
 my $verbose = 0;
 my $noacc   = 0;
 my $test    = 0;
+my $webdir = undef;
 my $logerror = undef;
 my $help;
 my $chunk   = 1;
@@ -87,9 +87,9 @@ my $chunk   = 1;
 	     'chunk:i'    => \$chunk,
 	     'usefile'    => \$usefile,
 	     'format:s'   => \$format,
-	     'webdir:s'     => \$webdir,
 	     'getall'     => \$getall,
 	     'verbose'    => \$verbose,
+	     'webdir:s'     => \$webdir,
 	     'test'       => \$test,
 	     'noacc'      => \$noacc,
 	     'logerror:s' => \$logerror,
@@ -123,7 +123,7 @@ if( $usefile ) {
 
 my $seqio;
 
-if( $format eq 'pep' || $format eq 'transcript' ) {
+if( $format eq 'pep' || $format eq 'transcript') {
     $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*STDOUT ) ;
 }
 
@@ -147,7 +147,7 @@ while ( @gene_id > 0 ) {
 
     eval {
 	
-	my @genes = $db->get_Gene_array_supporting("no_evidence",@chunk_list);
+	my @genes = $db->get_Gene_array(@chunk_list);
 	foreach my $gene ( @genes ) {
 	    my $gene_id = $gene->id();
 	    if( $format eq 'pep' ) {
@@ -160,7 +160,7 @@ while ( @gene_id > 0 ) {
 			print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
 			next;
 		    }
-		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
 		    $seqio->write_seq($tseq);
 		}
 	    } elsif ( $format eq 'dump' ) {
@@ -181,7 +181,7 @@ while ( @gene_id > 0 ) {
 		    $seq->id($trans->id);
 		    my @exon = $trans->each_Exon;
 		    my $fe = $exon[0];
-		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
 		    $seqio->write_seq($seq);
 		}
 	    }
@@ -193,7 +193,7 @@ while ( @gene_id > 0 ) {
 		    $seq->id($trans->id);
 		    my @exon = $trans->each_Exon;
 		    my $fe = $exon[0];
-		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
 		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*TRANS ) ;
 		    $seqio->write_seq($seq);
 		}
@@ -208,7 +208,7 @@ while ( @gene_id > 0 ) {
 			print STDERR "Skipping peptide dumping of ".$gene->id.", translation has stop codons. (in clone ". $fe->clone_id .")\n\n";
 			next;
 		    }
-		    $tseq->desc("Gene:$gene_id Clone: ".$fe->clone_id);
+		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig: " . $fe->contig_id);
 		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*PEP) ;
 		    $seqio->write_seq($tseq);
 		}
@@ -224,7 +224,7 @@ while ( @gene_id > 0 ) {
 	foreach my $clone ( $db->geneid_to_cloneid($gene_id)) {
 	    print STDERR "Error in clone $clone:\n";
 	}
-	print STDERR "Unable to process @chunk_list due to \n$@\n";
+	print STDERR "unable to process @chunk_list, due to \n$@\n";
     }
     
 }

@@ -54,11 +54,11 @@ for ($i = 0; $i <= $#$clone1; $i++) {
     print("Genes1 " . scalar(@genes1) . " genes2 " . scalar(@genes2)  . "\n");
     my $count = 1;
 
-    foreach my $gene1 (@genes1) {
-	my ($over,$exact,$link,$miss) = find_overlaps($gene1,@genes2);
-	my $numexons                  = scalar($gene1->each_unique_Exon);
+    foreach my $gene2 (@genes2) {
+	my ($over,$exact,$link,$miss) = find_overlaps($gene2,@genes1);
+	my $numexons                  = scalar($gene2->each_unique_Exon);
 
-	print(" Gene2 $count :\t$numexons\t$over\t$exact\t$link\t$miss\n");
+	print(" Gene1 $count :\t$numexons\t$over\t$exact\t$link\t$miss\n");
 	$count++;
     }
     };

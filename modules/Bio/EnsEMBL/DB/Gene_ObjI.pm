@@ -36,7 +36,7 @@ usually preceded with a _
 
 # Let the code begin...
 
-package Bio::EnsEMBL::DBSQL::Gene_ObjI;
+package Bio::EnsEMBL::DB::Gene_ObjI;
 
 use vars qw(@ISA);
 use strict;
