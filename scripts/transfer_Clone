@@ -1,0 +1,2 @@
+#!/bin/ksh
+perl -I ~/bioperl-live -I ~/pogdir/ensembl/modules/ transfer.pl -fdbtype timdb -tdbtype rdb -tdbname pogdev -thost localhost -tmodule Bio::EnsEMBL::DBSQL::Obj $1 
