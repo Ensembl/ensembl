@@ -76,6 +76,19 @@ CREATE TABLE clone (
 );
 
 #
+# Table structure for table 'map_density'
+#
+CREATE TABLE map_density (
+   chromosome_id   int(10) NOT NULL,
+   chr_start	int(10) NOT NULL,
+   chr_end	int(10) NOT NULL,
+   type		varchar(20) NOT NULL,
+   value	int(10) NOT NULL,
+    
+   PRIMARY KEY(chromosome_id,chr_start,chr_end,type) 
+);
+
+#
 # Table structure for table 'contig'
 #
 CREATE TABLE contig (
