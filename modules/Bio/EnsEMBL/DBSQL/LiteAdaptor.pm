@@ -246,7 +246,7 @@ sub fetch_virtualRepeatFeatures_start_end {
 
     my $sth = $self->prepare(
         "select r.id, r.hid,  r.chr_name, r.repeat_chrom_start, r.repeat_chrom_end, r.repeat_chrom_strand
-           from $_db_name.repeat as r
+           from $_db_name.www_repeat as r
           where r.chr_name = ? and r.repeat_chrom_start <= ? and r.repeat_chrom_start >= ? and r.repeat_chrom_end >= ?".
 		  	( (defined $type && $type ne '') ? " and r.type = '$type'" : '' ).
           " order by r.repeat_chrom_start"            
