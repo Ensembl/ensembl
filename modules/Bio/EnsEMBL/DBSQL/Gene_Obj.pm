@@ -429,7 +429,6 @@ sub get {
     Returns : an array of gene objects
     Args    : 'evidence' and gene id array
 
-    
 =cut
     
 sub get_array_supporting {
@@ -447,7 +446,8 @@ sub get_array_supporting {
     
     # I know this SQL statement is silly.
     #    
-     
+    my $analysisAdaptor = $self->_db_obj->get_AnalysisAdaptor;     
+
     my $query = qq{
         SELECT tscript.gene
           , con.id
@@ -468,6 +468,7 @@ sub get_array_supporting {
           , transl.version
           , cl.id
 	  , genetype.type
+          , gene.analysisId
         FROM contig con
           , gene
           , transcript tscript
@@ -507,7 +508,7 @@ sub get_array_supporting {
 	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
 	    $exoncreated,$exonmodified,$strand,$phase,$exon_rank,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
-	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid,$genetype) = @{$arr};
+	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid,$genetype,$analysisId) = @{$arr};
 
 
  	
@@ -537,6 +538,7 @@ sub get_array_supporting {
 	    $gene->type                     ($genetype);
 
 	    $gene->add_cloneid_neighbourhood($cloneid);
+	    $gene->analysis( $analysisAdaptor->fetch_by_dbID( $analysisId ));
 	    
 	    $current_gene_id = $geneid;
 	    push(@out,$gene);
@@ -1273,7 +1275,8 @@ sub write{
    my ($self,$gene) = @_;
    my $old_gene;
    my %done;
-   
+   my $analysisAdaptor = $self->_db_obj->get_AnalysisAdaptor;
+      
    if ( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("$gene is not a EnsEMBL gene - not writing!");
    }
@@ -1328,15 +1331,23 @@ sub write{
        }
    }
    
-
+   my $analysisId = 0;
+   
+   if( defined $gene->analysis ) {
+     if( ! $analysisAdaptor->exists( $gene->analysis )) {
+       $analysisId = 
+         $analysisAdaptor->store( $gene->analysis );
+     }
+   }
+   
    !$gene->created() && $gene->created(0);
    !$gene->modified() && $gene->modified(0);
  
-   my $sth2 = $self->_db_obj->prepare("insert into gene (id,version,created,modified,stored) values ('". 
+   my $sth2 = $self->_db_obj->prepare("insert into gene (id,version,created,modified,stored,analysisId) values ('". 
 			     $gene->id       . "','".
 			     $gene->version  . "',FROM_UNIXTIME(".
 			     $gene->created  . "),FROM_UNIXTIME(".
-			     $gene->modified . "),now())");
+			     $gene->modified . "),now(),$analysisId )");
    $sth2->execute();
 
    foreach my $dbl ( $gene->each_DBLink ) {

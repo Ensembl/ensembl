@@ -70,6 +70,7 @@ use Bio::EnsEMBL::DBSQL::GapContig;
 
 use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
+use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
 
@@ -142,13 +143,14 @@ sub new {
     }
     if( ! $host ) {
         $host = 'localhost';
+	$self->host( $host );
     }
     if( ! defined $perlonlysequences ) {
         $perlonlysequences = 0;
     }
 
     my $dsn = "DBI:$driver:database=$db;host=$host";
-
+	
     if( $debug && $debug > 10 ) {
         $self->_db_handle("dummy dbh handle in debug mode $debug");
     } else {
@@ -163,7 +165,9 @@ sub new {
 
         $self->_db_handle($dbh);
     }
-
+    $self->username( $user );
+    $self->dbname( $db );
+    
     if ($perl && $perl == 1) {
         $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
     }
@@ -2274,6 +2278,29 @@ sub feature_Obj {
     return $self->{_feature_obj};
 
 }
+
+=head2 get_AnalysisAdaptor
+
+ Title   : get_AnalysisAdaptor
+ Usage   : $analysisAdaptor = $dbObj->get_AnalysisAdaptor;
+ Function: gives the adaptor to fetch/store Analysis objects.
+ Example :
+ Returns : the adaptor
+ Args    :
+
+
+=cut
+
+sub get_AnalysisAdaptor {
+   my ($self) = @_;
+   if( ! defined $self->{_analysisAdaptor} ) {
+     $self->{_analysisAdaptor} = 
+       Bio::EnsEMBL::DBSQL::AnalysisAdaptor->new($self);
+   }
+   return $self->{_analysisAdaptor};
+}
+
+
 
 =head2 get_StaticGoldenPathAdaptor
 

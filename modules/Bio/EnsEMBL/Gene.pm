@@ -42,27 +42,27 @@ use strict;
 
 # Object preamble - inheriets from Bio::SeqFeature::Generic
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use Bio::EnsEMBL::Transcript;
 use Bio::DBLinkContainerI;
 use Bio::Annotation::DBLink;
 
 
-@ISA = qw(Bio::Root::Object Bio::DBLinkContainerI);
+@ISA = qw(Bio::Root::RootI Bio::DBLinkContainerI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+  my($class,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
+  my $self = bless {}, $class;
 
   $self->{'_transcript_array'} = [];
   $self->{'_clone_neighbourhood'} = [];
   $self->{'_db_link'} = [];
 # set stuff in self from @args
-  return $make; # success - we hope!
+  return $self; # success - we hope!
 }
 
 =head2 is_known
@@ -458,6 +458,26 @@ sub version{
     return $obj->{'version'};
 
 }
+
+=head2 analysis
+
+ Title   : analysis
+ Usage   : $gene->analysis($analysisObject)
+ Function: get/set this genes analysis object
+ Returns : on get the analysis object
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub analysis {
+  my ($self,$value) = @_;
+  if( defined $value ) {
+    $self->{'analysis'} = $value;
+  }
+  return $self->{'analysis'};
+}
+
 
 =head2 _dump
 
