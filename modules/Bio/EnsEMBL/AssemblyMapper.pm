@@ -488,7 +488,7 @@ sub in_assembly {
                                                    $top_level);
 
   my @list = $asma->list_ids($object->seq_region(), $object->start(),
-                             $object->end(), $top_level);
+                             $object->end(), $object->coord_system());
 
   return (@list > 0);
 }
@@ -507,7 +507,7 @@ sub map_coordinates_to_assembly {
 
   #not sure if contig_id is seq_region_id or name...
   return $self->map($contig_id, $start, $end, $strand,
-                   $self->assembled_CoordSystem());
+                   $self->contig_CoordSystem());
 
 }
 
@@ -525,7 +525,7 @@ sub fast_to_assembly {
 
   #not sure if contig_id is seq_region_id or name...
   return $self->map($contig_id, $start, $end, $strand,
-                    $self->assembled_CoordSystem());
+                    $self->contig_CoordSystem());
 }
 
 
@@ -541,7 +541,7 @@ sub map_coordinates_to_rawcontig {
   deprecate('Use map() instead.');
 
   return $self->map($chr_name, $start, $end, $strand,
-                    $self->component_CoordSystem());
+                    $self->assembled_CoordSystem());
 
 }
 
@@ -556,7 +556,7 @@ sub list_contig_ids {
   deprecate('Use list_ids() instead.');
 
   return $self->list_ids($chr_name, $start, $end, 
-                         $self->component_CoordSystem());
+                         $self->assembled_CoordSystem());
 }
 
 
