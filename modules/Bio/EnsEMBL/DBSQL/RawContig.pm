@@ -622,6 +622,75 @@ sub get_all_RepeatFeatures {
    return @array;
 }
 
+=head2 get_MarkerFeatures
+
+  Title   : get_MarkerFeatures 
+  Usage   : @fp = $contig->get_MarkerFeatures; 
+  Function: Gets MarkerFeatures. MarkerFeatures can be asked for a Marker. 
+            Its assumed, that when you can get MarkerFeatures, then you can 
+            get the Map Code as well.
+  Example : - 
+  Returns : -
+  Args : -
+
+=cut
+
+
+sub get_MarkerFeatures {
+  my $self = shift;
+
+  my $id = $self->internal_id;
+  my @result = ();
+  eval {
+    require Bio::EnsEMBL::Map::MarkerFeature;
+
+    # features for this contig with db=mapprimer
+    my $sth = $self->_dbobj->prepare
+      ( "select f.seq_start, f.seq_end, f.score, f.strand, f.name, ".
+        "f.hstart, f.hend, f.hid, f.analysis ".
+        "from feature f, analysis a ".
+        "where f.contig='$id' and ".
+        "f.analysis = a.id and a.db='mapprimer'" );
+    $sth->execute;
+    
+    my ($start, $end, $score, $strand, $hstart, 
+        $name, $hend, $hid, $analysisid );
+    my $analysis;
+    my %analhash;
+
+    $sth->bind_columns
+      ( \$start, \$end, \$score, \$strand, \$name, 
+        \$hstart, \$hend, \$hid, \$analysisid );
+        
+    while( $sth->fetch ) {
+      my $out;
+      
+      if (!$analhash{$analysisid}) {
+        $analysis = $self->_dbobj->get_Analysis($analysisid);
+        $analhash{$analysisid} = $analysis;
+        
+      } else {
+        $analysis = $analhash{$analysisid};
+      }
+    
+      $out = Bio::EnsEMBL::Map::MarkerFeature->new();
+      $out->set_all_fields
+        ( $start,$end,$strand,$score,
+          $name,'similarity',$self->id,
+          $hstart,$hend,1,$score,$name,'similarity',$hid);
+          $out->analysis($analysis);
+      $out->mapdb( $self->_dbobj->mapdb );
+      push( @result, $out );
+    }
+  };
+
+  if( $@ ) {
+    print STDERR ("Install the Ensembl-map package for this feature" );
+  }
+  return @result;
+}
+
+
 =head2 get_all_RepeatFeatures
 
  Title   : get_all_RepeatFeatures

@@ -83,8 +83,9 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  my ($db,$host,$driver,$user,$password,$debug,$perl,$external) = 
+  my ($db,$mapdbname,$host,$driver,$user,$password,$debug,$perl,$external) = 
       $self->_rearrange([qw(DBNAME
+			    MAPDBNAME
 			    HOST
 			    DRIVER
 			    USER
@@ -148,7 +149,23 @@ sub _initialize {
 	  $self->add_ExternalFeatureFactory($external_f);
       }
   }
+  $mapdbname || ( $mapdbname = 'maps' );
 
+  eval q
+   ( use Bio::EnsEMBL::Map::DBSQL::Obj;
+     my $mapdb = Bio::EnsEMBL::Map::DBSQL::Obj->new
+     ( -DBNAME => $mapdbname,
+       -HOST => $host,
+       -DRIVER => $driver,
+       -USER => $user,
+       -PASS => $password,
+       -ENSDB => $db );
+     $self->mapdb( $mapdb );
+  );
+ 
+  if( $@ ) {
+    print STDERR ( "No connection to Map database.\n" );
+  }                                                                             
 
   return $make; # success - we hope!
 
@@ -383,6 +400,15 @@ sub write_Chromosome {
     my $chromosome_id = $rowhash->{'last_insert_id()'};
    
     return $chromosome_id;
+}
+
+# get/set a possible mapdb connection
+sub mapdb {
+  my $self = shift;
+  my $mapdb = shift;
+  $mapdb &&
+    ( $self->{_mapdb} = $mapdb );
+  $self->{_mapdb};
 }
 
 
