@@ -67,14 +67,19 @@ use Bio::EnsEMBL::DBSQL::DBConnection;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::DBConnection);
 
+my $instantiated = undef;
+
 
 #Override constructor inherited by Bio::EnsEMBL::DBSQL::DBConnection
 sub new {
   my($class, @args) = @_;
+    
 
   #call superclass constructor
   my $self = $class->SUPER::new(@args);
   
+  print STDERR "Core DBADAPTOR INSTANTIATED: " . $self->stack_trace_dump();
+
   my (
       $mapdbname,
       $litedbname,
@@ -156,6 +161,8 @@ sub new {
   } else {
     $self->static_golden_path_type($sgp);
   }
+
+  $instantiated = $self;
 
   return $self; # success - we hope!
 }
@@ -279,6 +286,8 @@ sub db_mode_web {
       $self->{_db_mode} = 'default';
     }
   }
+
+  print STDERR "db_mode is " . $self->{_db_mode} . "\n";
 
   return ($self->{_db_mode} eq 'web');
 }
@@ -571,9 +580,13 @@ sub lite_DBAdaptor {
 sub get_GeneAdaptor {
     my( $self ) = @_;
 
-    if( $self->db_mode_web() && defined $self->liteDB() ) {
-      return $self->liteDB()->get_GeneAdaptor();
+    print STDERR "Getting GeneAdaptor\n";
+
+    if( $self->db_mode_web() && defined $self->lite_DBAdaptor() ) {
+      print STDERR "Got LITE GeneAdaptor\n";
+      return $self->lite_DBAdaptor()->get_GeneAdaptor();
     } else {
+      print STDERR "GOT CORE GeneAdaptor\n";
       return $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
     }
 }

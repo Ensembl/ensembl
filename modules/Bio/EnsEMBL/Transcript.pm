@@ -177,6 +177,26 @@ sub dbID {
 
 }
 
+=head2 external_db
+
+ Title   : external_db
+ Usage   : $ext_db = $obj->external_db();
+ Function: external_name if available
+ Returns : the external db link for this transcript
+ Args    : new external db (optional)
+
+=cut
+
+sub external_db {
+  my ($self, $arg ) = @_;
+
+  if( defined $arg ) {
+    $self->{'_external_db'} = $arg;
+  }
+
+  return $self->{'_external_db'};
+}
+
 
 =head2 external_name
 

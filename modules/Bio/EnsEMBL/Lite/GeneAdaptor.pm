@@ -22,8 +22,9 @@ Bio::EnsEMBL::DBSQL::GeneLiteAdaptor - MySQL Database queries to retrieve genes 
 
 =cut
 
+use strict;
 
-package Bio::EnsEMBL::DBSQL::GeneLiteAdaptor;
+package Bio::EnsEMBL::Lite::GeneAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -53,7 +54,7 @@ my $MAX_TRANSCRIPT_LENGTH=3000000;
 sub fetch_by_Slice {
   my ( $self, $slice ) = @_;
   my @out;
-  my $core_DB = $self->db->core_DBAdaptor();
+  my $core_DBAdaptor = $self->db->core_DBAdaptor();
 
   my $sth = $self->prepare
     ( "SELECT id, transcript_id, chr_name, chr_start, chr_end, chr_strand,
@@ -199,7 +200,7 @@ sub list_geneIds {
 sub list_stable_geneIds {
    my ($self) = @_;
    $self->warn( "Use the GeneAdaptor for this query" );
-   return @out;
+   return ();
 }
 
 
