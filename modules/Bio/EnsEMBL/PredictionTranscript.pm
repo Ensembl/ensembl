@@ -835,7 +835,7 @@ sub transform {
   $self->flush_Exons();
 
   # attach the new list of exons to the transcript
-  push $self->{'exons'} = \@exons;
+  $self->{'exons'} = \@exons;
 }
 
 

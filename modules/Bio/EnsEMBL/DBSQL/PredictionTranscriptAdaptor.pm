@@ -380,13 +380,13 @@ sub store {
 	$exonst->execute( undef, 1, $contig_id, $contig_start, 
 			  $contig_end, $contig_strand,
 			  $start_phase, $score, $p_value, $analysis, 
-			  scalar( @{$exons} ));
+			  scalar( @exons ));
 	$dbID = $exonst->{'mysql_insertid'};
       } else {
 	$exonst->execute( $dbID, $rank, $contig_id, $contig_start, 
 			  $contig_end, $contig_strand,
 			  $start_phase, $score, $p_value, $analysis, 
-			  scalar( @{$exons} ) );
+			  scalar( @exons ) );
       }
       $rank++;
     }
