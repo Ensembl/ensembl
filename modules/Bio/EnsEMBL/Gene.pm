@@ -376,26 +376,9 @@ sub add_Transcript {
        throw("$trans is not a Bio::EnsEMBL::Transcript!");
    }
 
-   if( defined $self->{'start'} ) {
-     if( $self->{'start'} > $trans->start() ) {
-       $self->start( $trans->start() );
-     }
-   } else {
-     $self->start( $trans->start() );
-   }
-
-   if( defined $self->{'end'} ) {
-     if( $self->{'end'} < $trans->end() ) {
-       $self->end( $trans->end() );
-     }
-   } else {
-     $self->end( $trans->end() );
-   }
-
-   $self->{strand} = $trans->strand();;
-
    $self->{'_transcript_array'} ||= [];
    push(@{$self->{'_transcript_array'}},$trans);
+
    $self->recalculate_coordinates();
 }
 
