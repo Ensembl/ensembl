@@ -222,7 +222,7 @@ sub fetch_by_dbID {
     }
 
     $sth = $self->prepare(
-        qq(select ms.mapset_id, ms.code, ms.name, ms.description
+        qq(select ms.mapset_id, ms.code, ms.name, ms.description, ms.maximum_length
              from mapset as ms, mapfrag_mapset as mm
             where ms.mapset_id = mm.mapset_id and mm.mapfrag_id = ?
         )
@@ -368,7 +368,7 @@ sub get_mapsets {
     my $self = shift;
     my $flag = shift;
     my $sth = $self->prepare(
-        "select mapset_id, code, name, description
+        "select mapset_id, code, name, description, maximum_length
            from mapset"
     );
     $sth->execute();

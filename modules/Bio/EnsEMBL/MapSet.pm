@@ -7,7 +7,8 @@ sub new {
     my $class = shift;
     my $self = {
         'mapset_id'     => $_[0],   'name'          => $_[1],
-        'code'          => $_[2],   'description'   => $_[3]
+        'code'          => $_[2],   'description'   => $_[3],
+        'longest_feature' => $_[4]
     };
     bless $self,$class;
     return $self;
