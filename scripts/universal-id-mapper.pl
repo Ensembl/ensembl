@@ -75,7 +75,7 @@ while (<STDIN>) {
     if ( /$id_regexp/ ) { # ... but only if anything looks like an ID
         my @words = split /$word_delim/;
         foreach my $w ( @words ) {
-            if ( $w =~ /^$id_regexp$/  ) {
+            if ( $w =~ /$id_regexp/) {
                 if (defined $map{$w}) {
                     s/\b$w\b/$map{$w}/g; # works on $_
                     $remapped++;
