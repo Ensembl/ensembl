@@ -863,6 +863,7 @@ sub _get_aligned_evidence_for_transcript {
       my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
       if (! $hit_seq_obj) {
         $self->warn("couldn't fetch hit sequence " . $feature->hseqname ."\n");
+	next NUC_FEATURE_LOOP;
       }
       next NUC_FEATURE_LOOP	# not an error, DNA and protein are mixed
         unless ($hit_seq_obj->moltype ne 'protein');
