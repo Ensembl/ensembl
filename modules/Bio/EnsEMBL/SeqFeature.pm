@@ -1109,8 +1109,8 @@ sub _transform_to_Slice {
     $self->end    ($mapped[0]->end   - $slice->chr_start + 1);
     $self->strand ($mapped[0]->strand);
   } else {
-    $self->start  ($slice->end - $mapped[0]->end   + 1);
-    $self->end    ($slice->end - $mapped[0]->start + 1);
+    $self->start  ($slice->chr_end - $mapped[0]->end   + 1);
+    $self->end    ($slice->chr_end - $mapped[0]->start + 1);
     $self->strand ($mapped[0]->strand * -1);
   }
 
