@@ -825,7 +825,7 @@ sub clone_dir {
 
 	# Check the argument is a directory
 	unless(-d $arg){
-	    $self->throw("Cannot find directory for $disk_id");
+	    $self->throw("Cannot find directory $arg for $disk_id");
 	}
 
 	# check for sequence file

@@ -497,10 +497,7 @@ sub read_MarkerFeatures {
     # print STDERR "read line\n";
     next, if /^\s*$/;
     my @line = split;
-    if(( $line[0] cmp $self->id ) != 0 ) {
-      next;
-    }
-
+    
     my ($start, $end) = ( $line[1] =~ /^(\d+)\.\.(\d+)$/ );
 
     my $f1 = new Bio::EnsEMBL::SeqFeature

@@ -244,11 +244,14 @@ sub get_MarkerFeatures {
     my ($self) = @_;
 
     if (!defined($self->{_read_MarkerFeatures})) {
+      print STDERR ("Get Marker Features called\n" );
 	$self->featureParser->read_MarkerFeatures;
 	$self->{_read_MarkerFeatures} = 1;
     }
     # return array of objects
-    return $self->featureParser->each_MarkerFeature;
+    my @dummy = $self->featureParser->each_MarkerFeature;
+    print STDERR (  "Got ", $#dummy+1," MarkerFeatures\n" );
+    return @dummy;
 }
 
 =head2 get_all_GenePredictions
