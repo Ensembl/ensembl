@@ -131,7 +131,6 @@ sub transfer_transcript {
 
   my @chimp_exons;
 
-
  EXON:
   foreach my $exon (@$exons) {
 
@@ -175,10 +174,10 @@ sub transfer_transcript {
         $chimp_cdna_pos += $c->length();
         $cdna_exon_start += $c->length();
 
-        debug("exon mapped - incrementing chimp_cdna_pos and cdna_exon_start\n" .
-              "  exon_len = " . $c->length() . "\n" .
-              "  chimp_cdna_pos  = $chimp_cdna_pos\n" .
-              "  cdna_exon_start = $cdna_exon_start"); 
+      #debug("exon mapped - incrementing chimp_cdna_pos and cdna_exon_start\n" .
+      #        "  exon_len = " . $c->length() . "\n" .
+      #        "  chimp_cdna_pos  = $chimp_cdna_pos\n" .
+      #        "  cdna_exon_start = $cdna_exon_start"); 
 
 
         push @chimp_exons, [$c->start(), $c->end(), $c->strand(), $c->id()];
@@ -197,7 +196,7 @@ sub transfer_transcript {
         return ();
       }
 
-      my($exon_start, $exon_end, $exon_strand, $seq_region) = @$result;
+      my($exon_start, $exon_end, $exon_strand, $exon_seq_region) = @$result;
 
       for(my $i=0; $i < $num; $i++) {
         my $c = $coords[$i];
@@ -211,7 +210,8 @@ sub transfer_transcript {
             process_deletion(\$chimp_cdna_pos, $c->length(),
                              \$exon_start, \$exon_end, $exon_strand,
                              \$cdna_exon_start,
-                             \$cdna_coding_start, \$cdna_coding_end);
+                             \$cdna_coding_start, \$cdna_coding_end,
+                            $exon_seq_region);
 
           return () if(!defined($result));
 
@@ -249,17 +249,18 @@ sub transfer_transcript {
               #
               # insert in chimp, deletion in human
               #
-              debug("before insertion processing\n" .
-                    "  cdna_exon_start = $cdna_exon_start");
+              #debug("before insertion processing\n" .
+              #      "  cdna_exon_start = $cdna_exon_start");
 
               my $result = 
                 process_insertion(\$chimp_cdna_pos, $insert_len,
                                   \$exon_start, \$exon_end, $exon_strand,
                                   \$cdna_exon_start,
-                                  \$cdna_coding_start, \$cdna_coding_end);
+                                  \$cdna_coding_start, \$cdna_coding_end,
+                                 $exon_seq_region);
 
-              debug("after insertion processing\n" .
-                    "  cdna_exon_start = $cdna_exon_start");
+              #debug("after insertion processing\n" .
+              #      "  cdna_exon_start = $cdna_exon_start");
 
               return () if(!defined($result));
 
@@ -271,21 +272,35 @@ sub transfer_transcript {
 
           $chimp_cdna_pos += $c->length();
 
-          debug("match - incremented chimp_cdna_pos\n" .
-                "  match_len = " . $c->length() . "\n" .
-                "  chimp_cdna_pos = $chimp_cdna_pos");
+          #debug("match - incremented chimp_cdna_pos\n" .
+          #      "  match_len = " . $c->length() . "\n" .
+          #      "  chimp_cdna_pos = $chimp_cdna_pos");
 
         }
       }  # foreach coord
 
       $cdna_exon_start += $exon_end - $exon_start + 1;
 
-      debug("exon complete - incremented cdna_exon_start\n" .
-            "  exon_len = " . ($exon_end - $exon_start + 1) .
-            "  cdna_exon_start = $cdna_exon_start\n");
+      #debug("exon complete - incremented cdna_exon_start\n" .
+      #      "  exon_len = " . ($exon_end - $exon_start + 1) .
+      #      "  cdna_exon_start = $cdna_exon_start\n");
 
+
+      push @chimp_exons, [$exon_start, $exon_end, $exon_strand,
+                          $exon_seq_region];
     }
   } # foreach exon
+
+  my $slice_adaptor = $chimp_db->get_SliceAdaptor();
+
+  my @transcripts = create_transcripts(\@chimp_exons,
+                                       $cdna_coding_start, $cdna_coding_end,
+                                       $slice_adaptor);
+
+  foreach my $transcript (@transcripts) {
+    debug("\nTranslation:" . $transcript->translate()->seq() . "\n\n");
+  }
+
 }
 
 ###############################################################################
@@ -316,17 +331,19 @@ sub process_deletion {
   my $cdna_coding_start_ref = shift;
   my $cdna_coding_end_ref   = shift;
 
+  my $exon_seq_region    = shift;
+
   my $del_start = $$cdna_del_pos_ref + 1;
   my $del_end   = $$cdna_del_pos_ref + $del_len;
 
   my $exon_len = $$exon_end_ref - $$exon_start_ref + 1;
   my $cdna_exon_end = $$cdna_exon_start_ref + $exon_len - 1;
 
-  debug("processing deletion");
-  debug("  del_start = $del_start");
-  debug("  del_end   = $del_end");
+  #debug("processing deletion");
+  #debug("  del_start = $del_start");
+  #debug("  del_end   = $del_end");
 
-  # sanity check, deletion should be completely in or adjacent to exon boundaries
+  #sanity check, deletion should be completely in or adjacent to exon boundaries
   if($del_start < $$cdna_exon_start_ref - 1 ||
      $del_start > $cdna_exon_end + 1) {
 
@@ -540,10 +557,6 @@ sub process_deletion {
       my $first_len  = $del_start - $$cdna_exon_start_ref;
       my $intron_len = 3 - $frameshift;
 
-      #second exon is going to starts right after 'frameshift intron'
-      #but in cdna coords this is immediately after last exon
-      $$cdna_exon_start_ref += $first_len;
-
       #reduce the length of the CDS by the length of the new intron
       $$cdna_coding_end_ref -= $intron_len;
 
@@ -557,18 +570,51 @@ sub process_deletion {
 
       ### TBD may have to check we have not run up to end of CDS here
 
+      # we may have encountered a delete at the very end of the exon
+      # in this case we have to take the intron out of the end of this exon
+      # since we are not creating a second one
+      if($first_len + $intron_len >= $exon_len) {
+        if($exon_strand == 1) {
+          $$exon_end_ref -= $intron_len;
+        } else {
+          $$exon_start_ref      -= $intron_len;
+          $$cdna_exon_start_ref -= $intron_len;
+        }
+        return [];
+      }
+
+      #second exon is going to start right after 'frameshift intron'
+      #but in cdna coords this is immediately after last exon
+      $$cdna_exon_start_ref += $first_len;
+
       if($exon_strand == 1) {
-        #end the current exon at the beginning of the deletion
-        my $out_exon = [$$exon_start_ref, $$exon_start_ref + $first_len - 1];
+        # end the current exon at the beginning of the deletion
+        # watch out though, because we may be at the very beginning of
+        # the exon in which case we do not want to create one
+
+        my $first_exon = undef;
+
+        if($first_len) {
+          $first_exon = [$$exon_start_ref, $$exon_start_ref + $first_len - 1,
+                          $exon_strand, $exon_seq_region];
+        }
+
         #start next exon after new intron
         $$exon_start_ref += $first_len + $intron_len;
-        return [$out_exon];
+
+        return (defined($first_exon)) ? [$first_exon] : [];
 
       } else {
-        my $out_exon = [$$exon_end_ref - $first_len + 1, $$exon_end_ref];
+        my $first_exon = undef;
+
+        if($first_len) {
+          $first_exon = [$$exon_end_ref - $first_len + 1, $$exon_end_ref,
+                         $exon_strand, $exon_seq_region];
+        }
         #start next exon after new intron
         $$exon_end_ref   -= $first_len + $intron_len;
-        return [$out_exon];
+
+        return (defined($first_exon)) ? [$first_exon] : [];
       }
     }
   }
@@ -622,12 +668,14 @@ sub process_insertion {
   my $cdna_coding_start_ref = shift;
   my $cdna_coding_end_ref   = shift;
 
+  my $exon_seq_region = shift;
+
   my $exon_len      = $$exon_end_ref - $$exon_start_ref + 1;
   my $cdna_exon_end = $$cdna_exon_start_ref + $exon_len - 1;
 
-  debug("processing insertion");
-  debug("  ins_left = $$cdna_ins_pos_ref");
-  debug("  ins_len  = $insert_len");
+  #debug("processing insertion");
+  #debug("  ins_left = $$cdna_ins_pos_ref");
+  #debug("  ins_len  = $insert_len");
 
   # sanity check, insert should be completely in exon boundaries
   if($$cdna_ins_pos_ref < $$cdna_exon_start_ref ||
@@ -705,15 +753,17 @@ sub process_insertion {
       ### TBD may have to check we have not run up to end of CDS here
 
       if($exon_strand == 1) {
-        #end the current exon at the beginning of the deletion
-        my $out_exon = [$$exon_start_ref, $$exon_start_ref + $first_len - 1];
+        #end the current exon at the beginning of the insert
+        my $out_exon = [$$exon_start_ref, $$exon_start_ref + $first_len - 1,
+                        $exon_strand, $exon_seq_region];
         #start the next exon after the frameshift intron
         $$exon_start_ref += $first_len + $frameshift;
 
         return [$out_exon];
 
       } else {
-        my $out_exon = [$$exon_end_ref - $first_len + 1, $$exon_end_ref];
+        my $out_exon = [$$exon_end_ref - $first_len + 1, $$exon_end_ref,
+                       $exon_strand, $exon_seq_region];
         #start the next exon after the frameshift intron
         $$exon_end_ref   -= $first_len + $frameshift;
 
@@ -768,15 +818,15 @@ sub get_coords_extent {
 
   my($start, $end, $strand, $seq_region);
 
-  debug("calculating coord span");
+  #debug("calculating coord span");
 
   foreach my $c (@$coords) {
     next if($c->isa('Bio::EnsEMBL::Mapper::Gap'));
 
-    debug(" coord_start  = " . $c->start );
-    debug(" coord_end    = " . $c->end   );
-    debug(" coord_strand = " . $c->strand );
-    debug(" coord_id     = " . $c->id);
+    #debug(" coord_start  = " . $c->start );
+    #debug(" coord_end    = " . $c->end   );
+    #debug(" coord_strand = " . $c->strand );
+    #debug(" coord_id     = " . $c->id);
 
     if(!defined($seq_region)) {
       $seq_region = $c->id();
@@ -829,10 +879,152 @@ sub get_coords_extent {
     }
   }
 
-  debug("  calculated span = $start-$end($strand)\n" .
-        "  length = " . ($end - $start + 1));
+  #debug("  calculated span = $start-$end($strand)\n" .
+  #      "  length = " . ($end - $start + 1));
 
   return [$start, $end, $strand, $seq_region];
+}
+
+################################################################################
+# create_transcripts
+#
+################################################################################
+
+sub create_transcripts {
+  my $exon_coords       = shift;
+  my $cdna_coding_start = shift;
+  my $cdna_coding_end   = shift;
+  my $slice_adaptor     = shift;
+
+  my $transcript_strand = undef;
+  my $transcript_seq_region = undef;
+
+  my $transcript = Bio::EnsEMBL::Transcript->new();
+  my $translation = Bio::EnsEMBL::Translation->new();
+
+  my @chimp_transcripts;
+
+  my $cdna_start = 1;
+  my $cur_phase  = undef;
+
+  foreach my $exon_coord (@$exon_coords) {
+    my($exon_start, $exon_end, $exon_strand, $seq_region) = @$exon_coord;
+
+    #sanity check:
+    if($exon_end < $exon_start) {
+      my $exon_dump = '';
+      foreach my $ex (@$exon_coords) {
+        if($ex->[0] > $ex->[1]) {
+          $exon_dump .= '*';
+        }
+        $exon_dump .= '  [' . join(' ', @$ex) . "]\n";
+      }
+      throw("Unexpected: received exon start less than end:\n$exon_dump\n");
+    }
+
+    my $exon_len = $exon_end - $exon_start + 1;
+    my $cdna_end = $cdna_start + $exon_len - 1;
+
+    if(!defined($transcript_seq_region)) {
+      $transcript_seq_region = $seq_region;
+    }
+    elsif($transcript_seq_region ne $seq_region) {
+      debug("transcript exons on different scaffolds - discarding transcript");
+      ### TBD can probably split transcript rather than discarding
+      return ();
+    }
+
+    if(!defined($transcript_strand)) {
+      $transcript_strand = $exon_strand;
+    }
+    elsif($transcript_strand != $exon_strand) {
+      debug("transcript exons on different strands - discarding transcript");
+      ### TBD can probably split transcript rather than discarding
+      return ();
+    }
+
+    #
+    # calculate the start & end phases
+    #
+
+    my ($start_phase, $end_phase);
+
+    if(defined($cur_phase)) {
+      if($cdna_start <= $cdna_coding_end) {
+        $start_phase = $cur_phase; #start phase is last exons end phase
+      } else {
+        #the end of the last exon was the end of the CDS
+        $start_phase = -1;
+      }
+    } else {
+      #sanity check
+      if($cdna_start > $cdna_coding_start && $cdna_start < $cdna_coding_end) {
+        throw("Unexpected.  Start of CDS is not in exon?\n" .
+              "  exon_cdna_start = $cdna_start\n" .
+              "  cdna_coding_start = $cdna_coding_start");
+      }
+      if($cdna_coding_start == $cdna_coding_start) {
+        $start_phase = 0;
+      } else {
+        $start_phase = -1;
+      }
+    }
+
+    if($cdna_end < $cdna_coding_start ||
+       $cdna_end > $cdna_coding_end) {
+      #the end of this exon is outside the CDS
+      $end_phase = -1;
+    } else {
+      #the end of this exon is in the CDS
+      #figure out how much coding sequence in the exon
+      my $coding_start =
+        ($cdna_coding_start > $cdna_start) ? $cdna_coding_start : $cdna_start;
+      my $coding_len = $cdna_end - $cdna_start + 1;
+
+      if($start_phase > 0) {
+        $coding_len += $start_phase;
+      }
+
+      $end_phase = $coding_len % 3;
+    }
+
+    my $slice = $slice_adaptor->fetch_by_region('scaffold', $seq_region);
+
+    my $exon = Bio::EnsEMBL::Exon->new
+      (-START     => $exon_start,
+       -END       => $exon_end,
+       -STRAND    => $exon_strand,
+       -PHASE     => $start_phase,
+       -END_PHASE => $end_phase,
+       -SLICE     => $slice);
+
+    $transcript->add_Exon($exon);
+
+    #
+    # see if this exon is the start or end exon of the translation
+    #
+
+    if($cdna_start <= $cdna_coding_start &&
+       $cdna_end   >= $cdna_coding_start) {
+      my $translation_start = $cdna_coding_start - $cdna_start + 1;
+      $translation->start_Exon($exon);
+      $translation->start($translation_start);
+    }
+    if($cdna_start <= $cdna_coding_end &&
+       $cdna_end   >= $cdna_coding_end) {
+      my $translation_end = $cdna_coding_end - $cdna_start + 1;
+      $translation->end_Exon($exon);
+      $translation->end($translation_end);
+    }
+
+    $cdna_start = $cdna_end + 1;
+    $cur_phase = ($end_phase >= 0) ? $end_phase : undef;
+  }
+
+  $transcript->translation($translation);
+  push @chimp_transcripts, $transcript;
+
+  return @chimp_transcripts;
 }
 
 
