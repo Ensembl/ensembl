@@ -73,11 +73,15 @@ ensembl-dev@ebi.ac.uk
 use strict;
 use warnings;
 
+package Bio::EnsEMBL::MiscFeature;
+
 use Bio::EnsEMBL::Feature;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 use vars qw(@ISA);
+
+@ISA = qw(Bio::EnsEMBL::Feature);
 
 
 # new is inherited from superclass
@@ -85,7 +89,7 @@ use vars qw(@ISA);
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
-  return bless($hashref), $class;
+  return bless($hashref, $class);
 }
 
 
@@ -224,7 +228,11 @@ sub get_attribute {
 
   throw('Type arg is required.') if(!$type);
 
-  return $self->{'attributes'}->{$type} || ();
+  if(exists $self->{'attributes'}->{$type}) {
+    return @{$self->{'attributes'}->{$type}};
+  }
+
+  return ();
 }
 
 1;

@@ -18,7 +18,7 @@ a group of miscellaneuos features.
 
   ...
 
-  my $misc_set = Bio::EnsEMBL::MiscSet->new(1234,
+  my $misc_set = Bio::EnsEMBL::MiscSet->new(1234, $adaptor,
                                             'tilepath',
                                             'Assembly Tiling Path',
                                             'The tiling path of clones',
@@ -49,6 +49,15 @@ use strict;
 
 package Bio::EnsEMBL::MiscSet;
 
+use Bio::EnsEMBL::Storable;
+
+use vars qw(@ISA);
+
+@ISA = qw(Bio::EnsEMBL::Storable);
+
+
+
+
 =head2 new
 
   Arg [1]    : int $misc_set_id
@@ -73,37 +82,22 @@ package Bio::EnsEMBL::MiscSet;
 =cut
 
 sub new {
-  my ($caller, $misc_set_id, $code, $name, $desc, $max_len) = @_;
+  my ($caller, $misc_set_id, $adaptor, $code, $name, $desc, $max_len) = @_;
 
   my $class = ref($caller) || $caller;
 
+  if($adaptor && !(ref($adaptor) ||
+                   !$adaptor->isa('Bio::EnsEMBL::DBSQL::MiscSetAdaptor'))) {
+    throw('Adaptor arg must be a Bio::EnsEMBL::DBSQL::MiscSetAdaptor');
+  }
+
   return bless {'dbID'            => $misc_set_id,
+                'adaptor'         => $adaptor,
                 'code'            => $code,
                 'name'            => $name,
                 'description'     => $desc,
                 'longest_feature' => $max_len}, $class;
 }
-
-
-
-=head2 dbID
-
-  Arg [1]    : int $newval (optional) 
-               The new value to set the dbID attribute to
-  Example    : $dbID = $obj->dbID()
-  Description: Getter/Setter for the dbID attribute
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub dbID{
-  my $self = shift;
-  $self->{'dbID'} = shift if(@_);
-  return $self->{'dbID'};
-}
-
 
 =head2 code
 
@@ -124,10 +118,28 @@ sub code{
 }
 
 
+=head2 name
+
+  Arg [1]    : string $newval (optional)
+               The new value to set the code attribute to
+  Example    : $name = $obj->name()
+  Description: Getter/Setter for the name attribute
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub name {
+  my $self = shift;
+  $self->{'name'} = shift if(@_);
+  return $self->{'name'};
+}
+
 
 =head2 description
 
-  Arg [1]    : string $newval (optional) 
+  Arg [1]    : string $newval (optional)
                The new value to set the description attribute to
   Example    : $description = $obj->description()
   Description: Getter/Setter for the description attribute
@@ -161,5 +173,6 @@ sub longest_feature{
   $self->{'longest_feature'} = shift if(@_);
   return $self->{'longest_feature'};
 }
+
 
 1;
