@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 87;
+	plan tests => 90;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -366,7 +366,38 @@ foreach my $segment (@projection) {
 ok($feature->display_id eq '');
 
 
+#
+# test seq function call
+#
 
+$slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
+                                                 '20',
+                                                 30_249_935,
+                                                 31_000_000);
+$feature = new Bio::EnsEMBL::Feature( -slice => $slice,
+				    -start => 100,
+				    -end => 200,
+				    -strand => 1,
+				    -analysis => $analysis );
+
+my $seq = $feature->seq();
+debug( "Feature ".$feature->start()."-".$feature->end() );
+debug( "Feature sequence is: ".$seq );
+
+ok( length( $seq ) == 101 );
+ok( $seq =~ /^[GCATgcat]+$/ );
+
+$feature->move( 100,200,-1 );
+my $seq2 = $feature->seq();
+debug( "Reverse Feature seq: ".$seq2 );
+
+$seq2 = reverse( $seq2 );
+$seq2 =~ tr/acgtACGT/tgcaTGCA/;
+
+ok( $seq eq $seq2 );
+
+#
+#
 
 
 my $slice_adaptor = $db->get_SliceAdaptor();

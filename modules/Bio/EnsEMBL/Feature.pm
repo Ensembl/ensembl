@@ -750,6 +750,41 @@ sub seq_region_end {
 }
 
 
+
+=head2 seq
+
+  Args       : none
+  Example    : my $dna_sequence = $simple_feature->seq();
+  Description: Returns the dna sequence from the attached slice and 
+               attached database that overlaps with this feature.
+               Returns undef if there is no slice or no database.
+  Returntype : undef or string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+sub seq {
+  my $self = shift;
+
+  if( ! defined $self->{'slice'} ) {
+    return undef;
+  }
+
+  my $slice_adaptor = $self->{'slice'}->adaptor();
+  return undef unless defined $slice_adaptor;
+  my $seq_adaptor = $slice_adaptor->db()->get_SequenceAdaptor();
+
+  return ${$seq_adaptor->fetch_by_Slice_start_end_strand
+    ( 
+     $self->{'slice'}, $self->{'start'},
+     $self->{'end'}, $self->{'strand'}
+    )};
+
+}
+
+
 ##############################################
 # Methods included for backwards compatibility
 ##############################################
