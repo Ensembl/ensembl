@@ -1,14 +1,69 @@
+# EnsEMBL module for Bio::EnsEMBL::RepeatFeature
+#
+# Copyright (c) 2003 EnsEMBL
+#
 
-### Bio::EnsEMBL::RepeatFeature
+=head1 NAME
+
+Bio::EnsEMBL::RepeatFeature - A feature representing a repeat on a piece of
+sequence.
+
+=head1 SYNOPSIS
+
+    my $rf = new Bio::EnsEMBL::Feature(-start   => 100,
+                                       -end     => 220,
+                                       -strand  => -1,
+                                       -slice   => $slice
+                                       -analysis => $analysis
+                                       -repeat_consensus => $rc,
+                                       -hstart  => 10,
+                                       -hend    => 100,
+                                       -hstrand => 1,
+                                       -score => 83.2
+                                      );
+
+    my $hstart  = $feat->hstart;
+    my $hend    = $feat->hend;
+
+    #move the feature to the chromosomal coordinate system
+    $feature = $feature->transform('chromosome');
+
+    #move the feature to a different slice (possibly on another coord system)
+    $feature = $feature->transfer($new_slice);
+
+    #project the feature onto another coordinate system possibly across
+    #boundaries:
+    @projection = @{$feature->project('contig')};
+
+    #change the start, end, and strand of the feature in place
+    $feature->move($new_start, $new_end, $new_strand);
+
+=head1 DESCRIPTION
+
+This a feature representing a repeat region on a sequence
+
+=head1 CONTACT
+
+Post questions to the EnsEMBL development list: ensembl-dev@ebi.ac.uk
+
+=head1 APPENDIX
+
+The rest of the documentation details each of the object methods.
+Internal methods are usually preceded with a _
+
+=cut
 
 package Bio::EnsEMBL::RepeatFeature;
 
 use strict;
-use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::Feature;
+
+use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 use vars '@ISA';
 
-@ISA = qw{ Bio::EnsEMBL::SeqFeature };
+@ISA = qw{ Bio::EnsEMBL::Feature };
 
 
 =head2 new_fast
@@ -16,10 +71,10 @@ use vars '@ISA';
   Arg [1]    : hash reference $hashref
   Example    : none
   Description: This is an ultra fast constructor which requires knowledge of
-               the objects internals to be used.  It is only used by 
+               the objects internals to be used.  It is only used by
                RepeatFeatureAdaptors (when thousands of repeats need to be
-               quickly created).  The SeqFeature superclass constructor 'new'
-               should be used in most instances.
+               quickly created).  The constructor 'new' should be used in
+               most instances.
   Returntype : Bio::EnsEMBL::RepeatFeature
   Exceptions : none
   Caller     : RepeatFeatureAdaptors
@@ -28,35 +83,56 @@ use vars '@ISA';
 
 sub new_fast {
   my ($class, $hashref) = @_;
-  
+
   return bless $hashref, $class;
 }
 
 
+=head2 new
 
-=head2 adaptor
-
-  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor $adaptor
-  Example    : $adaptor = $repeat->adaptor;
-  Description: The adaptor which performs database requests for this object.
-               This should be set when the object is stored in the database or
-               retrieved from the database.
-  Returntype : Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor
+  Arg [REPEAT_CONSENSUS] : Bio::EnsEMBL::RepeatConsensus (optional)
+                           The repeat consensus for this repeat feature
+  Arg [HSTART] : int (optional)
+                 The hit start on the consensus sequence
+  Arg [HEND]   : int (optional)
+                 The hit end on the consensus sequence
+  Arg [SCORE]  : float (optional)
+                 The score
+  Arg [...]    : Named arguments to superclass constructor
+                 (see Bio::EnsEMBL::Feaure)
+  Example    : $rf = Bio::EnsEMBL::RepeatFeature->new(-REPEAT_CONSENSUS => $rc,
+                                                      -HSTART => 10,
+                                                      -HEND   => 100,
+                                                      -SCORE  => 58.0,
+                                                      -START  => 1_000_100,
+                                                      -END    => 1_000_190,
+                                                      -STRAND => 1,
+                                                      -ANALYSIS => $an,
+                                                      -SLICE  => $chr_slice);
+  Description: Creates a new Bio::EnsEMBL::RepeatFeature object
+  Returntype : Bio::EnsEMBL::RepeatFeature
   Exceptions : none
-  Caller     : general
+  Caller     : RepeatFeatureAdaptors
 
 =cut
 
-sub adaptor {
-  my ($self, $adaptor) = @_;
-  
-  if(defined $adaptor) {
-    $self->{'_adaptor'} = $adaptor;
-  }
-  
-  return $self->{'_adaptor'};
-}
+sub new {
+  my $caller = shift;
 
+  my $class = ref($caller) || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  my ($repeat_consensus, $hstart, $hend, $score) =
+    rearrange(['REPEAT_CONSENSUS','HSTART','HEND','SCORE'], @_);
+
+  $self->repeat_consensus($repeat_consensus);
+  $self->{'hstart'} = $hstart;
+  $self->{'hend'}   = $hend;
+  $self->{'score'}  = $score;
+
+  return $self;
+}
 
 
 =head2 repeat_consensus
@@ -71,59 +147,21 @@ sub adaptor {
 =cut
 
 sub repeat_consensus {
-  my( $self, $con ) = @_;
-    
-  if (defined $con) {
-    $self->throw("$con is not a RepeatConsensus")
-      unless $con->isa("Bio::EnsEMBL::RepeatConsensus");
-    $self->{'_repeat_consensus'} = $con;
+  my $self = shift;
+
+  if(@_) {
+    my $rc = shift;
+    if(defined($rc)) {
+      if(!ref($rc) || !$rc->isa('Bio::EnsEMBL::RepeatConsensus')) {
+        throw('RepeatConsensus arg must be a Bio::EnsEMBL::RepeatConsensus');
+      }
+    }
+    $self->{'repeat_consensus'} = $rc;
   }
-  return $self->{'_repeat_consensus'};
+
+  return $self->{'repeat_consensus'};
 }
 
-
-
-=head2 dbID
-
-  Arg [1]    : (optional) $db_id
-  Example    : $dbID = $repeat->dbID
-  Description: getter/setter for this objects internal database identifier
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub dbID {
-    my( $self, $db_id ) = @_;
-    
-    if (defined $db_id) {
-        $self->{'_db_id'} = $db_id;
-    }
-    return $self->{'_db_id'};
-}
-
-
-=head2 analysis
-
-  Arg [1]    : (optional) Bio::EnsEMBL::Analysis
-  Example    : $analysis = $repeat_feat->analysis;
-  Description: Getter/Setter for the analysis that was used to generate this
-               object
-  Returntype : Bio::EnsEMBL::Analysis
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub analysis {
-    my( $self, $analysis ) = @_;
-    
-    if ($analysis) {
-        $self->{'_analysis'} = $analysis;
-    }
-    return $self->{'_analysis'};
-}
 
 
 =head2 hstart
@@ -139,12 +177,27 @@ sub analysis {
 =cut
 
 sub hstart {
-    my( $self, $hstart ) = @_;
-    
-    if ($hstart) {
-        $self->{'_hstart'} = $hstart;
-    }
-    return $self->{'_hstart'};
+  my $self = shift;
+  $self->{'hstart'} = shift if(@_);
+  return $self->{'hstart'};
+}
+
+
+=head2 score
+
+  Arg [1]    : (optional) float $score
+  Example    : $score = $repeat->score();
+  Description: Getter/Setter for the score of this repeat feature
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub score {
+  my $self = shift;
+  $self->{'score'} = shift if(@_);
+  return $self->{'score'};
 }
 
 
@@ -162,45 +215,27 @@ sub hstart {
 =cut
 
 sub hend {
-    my( $self, $hend ) = @_;
-    
-    if ($hend) {
-        $self->{'_hend'} = $hend;
-    }
-    return $self->{'_hend'};
+  my $self = shift;
+  $self->{'hend'} = shift if(@_);
+  return $self->{'hend'};
 }
 
 
 
 =head2 hstrand
 
-  Arg [1]    : none 
+  Arg [1]    : none
   Example    : none
   Description: always returns 1. method exists for consistancy with other 
                features.
   Returntype : int
   Exceptions : none
-  Caller     : 
+  Caller     :
 
 =cut
 
-sub hstrand { 
-  return 1; 
-}
-
-
-sub to_FTString {
-    my( $self ) = @_;
-    
-    my $start  = $self->start or $self->throw("start not set");
-    my $end    = $self->end   or $self->throw("end not set");
-    my $strand = $self->strand;
-    $self->throw("strand not set") unless defined($strand);
-    
-    my $loc = "$start..$end";
-    if ($strand == -1) {
-        $loc = "complement($loc)";
-    }
+sub hstrand {
+  return 1;
 }
 
 

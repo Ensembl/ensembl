@@ -1,96 +1,169 @@
-
-### Bio::EnsEMBL::RepeatConsensus
+use strict;
 
 package Bio::EnsEMBL::RepeatConsensus;
 
-use strict;
-use Bio::PrimarySeqI;
-use Bio::EnsEMBL::Root;
-use vars '@ISA';
+use Bio::EnsEMBL::Storable;
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
+use vars qw(@ISA);
+@ISA = qw(Bio::EnsEMBL::Storable);
+
+
+=head2 new
+
+  Arg [NAME] : string (optional)
+               The name of this repeat consensus
+  Arg [LENGTH]: int (optional)
+               The length of the repeat consensus sequence
+  Arg [REPEAT_CLASS]: string (optional)
+               The type of repeat consensus
+  Arg [REPEAT_CONSENSUS]: string (optional)
+               The sequence of this repeat consensus
+  Arg [...]: Named arguments to superclass constructor
+             (see Bio::EnsEMBL::Storable)
+  Example    : $rc = Bio::EnsEMBL::RepeatConsensus->new
+                       (-REPEAT_CONSENSUS => 'AATG'
+                        -NAME => '(AATG)n',
+                        -REPEAT_CLASS => 'Simple_repeat',
+                        -LENGTH => '4',
+                        -DBID => 1023,
+                        -ADAPTOR => $rc_adaptor);
+  Description: Creates a new Bio::EnsEMBL::RepeatFeature object
+  Returntype : Bio::EnsEMBL::RepeatFeature
+  Exceptions : none
+  Caller     : RepeatFeatureAdaptors
+
+=cut
 
 sub new {
-    my( $pkg ) = @_;
-    
-    return bless {}, $pkg;
+  my $caller = shift;
+
+  my $class = ref($caller) || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  my ($name, $length, $repeat_class, $repeat_consensus) =
+    rearrange(['NAME', 'LENGTH', 'REPEAT_CLASS', 'REPEAT_CONSENSUS'], @_);
+
+  $self->{'name'} = $name;
+  $self->{'length'} = $length;
+  $self->{'repeat_class'} = $repeat_class;
+  $self->{'repeat_consensus'} = $repeat_consensus;
+
+  return $self;
 }
 
-sub moltype  { return 'dna' };
-sub alphabet { return 'dna' };
 
-sub dbID {
-    my( $self, $db_id ) = @_;
-    
-    if ($db_id) {
-        $self->{'_db_id'} = $db_id;
-    }
-    return $self->{'_db_id'};
-}
+=head2 name
 
-# Alias primary_id method to dbID
-*primary_id = \&dbID;
+  Arg [1]    : string $name (optional)
+  Example    : $name = $repeat_consensus->name()
+  Description: Getter/Setter for the name of this repeat_consensus
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub name {
-    my( $self, $name ) = @_;
-    
-    if ($name) {
-        $self->{'_name'} = $name;
-    }
-    return $self->{'_name'};
+  my $self = shift;
+  $self->{'name'} = shift if(@_);
+  return $self->{'name'};
 }
 
-# Alias display_id and accession_number methods to name
-*display_id       = \&name;
-*accession_number = \&name;
+
+=head2 length
+
+  Arg [1]    : int $length (optional)
+  Example    : $length = $repeat_consensus->length()
+  Description: Getter/Setter for the length of this repeat_consensus
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub length {
-    my( $self, $length ) = @_;
-    
-    if ($length) {
-        $self->{'_length'} = $length;
-    }
-    return $self->{'_length'};
+  my $self = shift;
+  $self->{'length'} = shift if(@_);
+  return $self->{'length'};
 }
+
+
+=head2 repeat_class
+
+  Arg [1]    : string $class (optional)
+               The class of 
+  Example    : $class = $repeat_consensus->repeat_class()
+  Description: Getter/Setter for the class of this repeat_consensus
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub repeat_class {
-    my( $self, $repeat_class ) = @_;
-    
-    if ($repeat_class) {
-        $self->{'_repeat_class'} = $repeat_class;
-    }
-    return $self->{'_repeat_class'};
+  my $self = shift;
+  $self->{'repeat_class'} = shift if(@_);
+  return $self->{'repeat_class'};
 }
+
+
+=head2 desc
+
+  Arg [1]    : none
+  Example    : $desc = $repeat_consensus->desc()
+  Description: Getter for the description of this repeat consensus as extracted
+               from the repeat_class.  This method is probably useless.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub desc {
-    my( $self ) = @_;
-    
-    my $class = $self->repeat_class or return;
-    return "class=$class";
+  my $self = shift;
+  my $class = $self->repeat_class or return;
+  return "class=$class";
 }
 
-sub adaptor {
-    my( $self, $adaptor ) = @_;
-    
-    if ($adaptor) {
-        $self->{'_adaptor'} = $adaptor;
-    }
-    return $self->{'_adaptor'};
-}
+
+
+=head2 repeat_consensus
+
+  Arg [1]    : string $consensus_seq (optional)
+               The sequence of this repeat consensus
+  Example    : $consensus = $repeat_consensus->repeat_consensus();
+  Description: Getter/Setter for the sequence of this repeat_consensus.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub repeat_consensus {
-    my( $self, $repeat_consensus ) = @_;
-    
-    if ($repeat_consensus) {
-        $self->{'_repeat_consensus'} = $repeat_consensus;
-    }
-    return $self->{'_repeat_consensus'};
+  my $self = shift;
+  $self->{'repeat_consensus'} = shift if(@_);
+  return $self->{'repeat_consensus'};
 }
 
+
+
+=head2 seq
+
+  Arg [1]    : none
+  Example    : none
+  Description: Returns the repeat consensus.  This method is useless - Use
+               repeat_consensus() instead.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub seq {
-    my( $self ) = @_;
-    
-    return $self->repeat_consensus;
+  my( $self ) = @_;
+  return $self->repeat_consensus;
 }
 
 1;
