@@ -48,7 +48,7 @@ if($release_num) {
 #
 # make sure the user wishes to continue
 #
-print STDERR "The following databases will be external_db updated:\n  ";
+print STDERR "The following databases will be attrib_tye updated:\n  ";
 print join("\n  ", @dbnames);
 print "\ncontinue with update (yes/no)>  ";
 
@@ -85,24 +85,31 @@ for my $database ( @dbnames ) {
 sub repair {
   my ( $attribs, $database, $db ) = @_;
   
-  $db->do( $database );
+  $db->do( "use $database" );
 
   my @tables = qw( seq_region_attrib misc_attrib translation_attrib transcript_attrib );
   my $ref = $db->selectall_arrayref( "show create table attrib_type" );
-  my $create_table = $ref->[0]->[0];
+  my $create_table = $ref->[0]->[1];
+
   $db->do( "alter table attrib_type rename old_attrib_type" );
   $db->do( $create_table );
 
+
   load_attribs( $db, $attribs );
 
-  $db->do( "delete old_attrib_type " .
+  $db->do( "delete oat " .
 	   "from old_attrib_type oat, attrib_type at " .
 	   "where oat.attrib_type_id = at.attrib_type_id " .
 	   "and oat.code = at.code" );
 
-  # only the conflicts remain in old attrib type
-  # move non conflicting entries out of the way to upper part of
-  # attrib_type table
+  # what remains in old attrib type ?
+  #  Entries with a code that is unknown in general file 
+  #  and that shouldnt really happen. If it happens, the code
+  #  needs to ne appended to attrib_type table and the attrib
+  #  type_ids will be updated in the feature tables.
+
+  #  Entries with a code that is known, but has different 
+  #  attrib_type_id. Feature tables will be updated.
 
   $db->do( "create table tmp_attrib_types ".
 	   "select oat.attrib_type_id, oat.code, oat.name, oat.description " .
@@ -114,19 +121,27 @@ sub repair {
 	   "select code, name, description ". 
 	   "from tmp_attrib_types" );
 
-  $ref = $db->selectall_arrayref( "select code from tmp_attrib_type" );
+  $ref = $db->selectall_arrayref( "select code from tmp_attrib_types" );
   $db->do( "drop table tmp_attrib_types" );
 
-  if( ! @$ref ) {
-    # no problem, thats strange
-    print STDERR "Strange condition, $database didnt have conflicts but ".
-	"executed conflict code\n";
-    return;
+  print STDERR "Database $database todo:\n";
+  if( @$ref ) {
+    print STDERR "  Missing codes ",join( ", ", map { $_->[0] } @$ref ),"\n";
   }
 
-  print STDERR "Database $database has following codes different from attrib_type.txt.\n";
-  print STDERR join( ",", map { $_->[0] } @$ref ),"\n";
-    
+  my %missing_codes = map { $_->[0], 1 } @$ref;
+
+  $ref = $db->selectall_arrayref( "select code from old_attrib_type oat " );
+
+  my @updated_codes;
+  for my $code_ref ( @$ref ) {
+    if( ! exists $missing_codes{ $code_ref->[0] } ) {
+      push( @updated_codes, $code_ref->[0] );
+    }
+  }
+
+  print STDERR "  Updated codes ", join( ", ", @updated_codes ), "\n";
+
   # now do multi table updates on all tables
   for my $up_table ( @tables ) {
     $db->do( "update $up_table tb, attrib_type at, old_attrib_type oat ".
@@ -134,6 +149,8 @@ sub repair {
 	     "where tb.attrib_type_id = oat.attrib_type_id ".
 	     "and oat.code = at.code " );
   }
+
+  $db->do( "drop table old_attrib_type" );
 }
 
 
@@ -193,8 +210,8 @@ sub read_attrib_file {
   my $row;
   while($row = <$fh>) {
     chomp($row);
-    next if( /^\S*$/ );
-    next if ( /^\#/ );
+    next if( $row =~ /^\S*$/ );
+    next if ( $row =~ /^\#/ );
 
     my @a = split(/\t/, $row);
     
