@@ -89,7 +89,6 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
      -dbname => $hdbname,
      -pass   => $hpass,
      -user   => $huser,
-     -dnadb  => $chimp_db,
      -port   => $hport);
 
 
@@ -132,13 +131,15 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
   }
 
 
-  my $cs_adaptor      = $human_db->get_CoordSystemAdaptor();
-  my $asmap_adaptor   = $human_db->get_AssemblyMapperAdaptor();
+  my $cs_adaptor      = $chimp_db->get_CoordSystemAdaptor();
+  my $asmap_adaptor   = $chimp_db->get_AssemblyMapperAdaptor();
 
   my $chimp_cs = $cs_adaptor->fetch_by_name('chromosome',  $cassembly);
   my $human_cs = $cs_adaptor->fetch_by_name('chromosome', $hassembly);
 
   my $mapper = $asmap_adaptor->fetch_by_CoordSystems($chimp_cs, $human_cs);
+  $mapper->max_pair_count( 6_000_000 );
+  $mapper->register_all();
 
   my $total_transcripts = 0;
 
@@ -163,7 +164,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
         my $interim_transcript = transfer_transcript($transcript, $mapper,
                                                      $human_cs);
         my $finished_transcripts =
-          create_transcripts($interim_transcript, $slice_adaptor);
+          create_transcripts($interim_transcript, $chimp_db->get_SliceAdaptor);
 
 
         # set the translation stable identifier on the finished transcripts
