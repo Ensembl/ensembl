@@ -5,28 +5,43 @@ use Getopt::Long;
 
 
 
-my ($seq_region_in, $chain_in);
+my ($seq_region_in_1, $seq_region_in_2, $chain_in);
 
 
-GetOptions('seq_region_in=s'  => \$seq_region_in,
+GetOptions('seq_region_in_1=s'  => \$seq_region_in_1,
+           'seq_region_in_2=s'  => \$seq_region_in_2,
            'chain_in=s'       => \$chain_in);
 
-$seq_region_in || usage();
+$seq_region_in_1 || usage();
+$seq_region_in_2 || usage();
 $chain_in || usage();
 
-open(SEQ_REGION_IN, $seq_region_in) or die("Could not open file $seq_region_in");
+open(SEQ_REGION_IN_1, $seq_region_in_1)
+  or die("Could not open file $seq_region_in_1");
+open(SEQ_REGION_IN_2, $seq_region_in_2)
+  or die("Could not open file $seq_region_in_2");
 open(CHAIN_IN,      $chain_in)      or die("Could not open file $chain_in");
 
-my %seq_region_map;
+my %seq_region_map_1;
+my %seq_region_map_2;
 
 my @row;
-while(<SEQ_REGION_IN>) {
+
+while(<SEQ_REGION_IN_1>) {
   chomp;
   @row = split("\t", $_);
-  $seq_region_map{$row[1]} = $row[0];
+  $seq_region_map_1{$row[1]} = $row[0];
 }
 
-close SEQ_REGION_IN;
+close SEQ_REGION_IN_1;
+
+while(<SEQ_REGION_IN_2>) {
+  chomp;
+  @row = split("\t", $_);
+  $seq_region_map_2{$row[1]} = $row[0];
+}
+
+close SEQ_REGION_IN_2;
 
 
 my $is_header_line = 1;
@@ -34,19 +49,26 @@ my ($asm_sr_id, $cmp_sr_id, $asm_start, $cmp_start, $asm_strand, $cmp_strand,
     $ori, $match, $insert, $delete, $asm_begin, $asm_end, $cmp_begin,
     $cmp_end, $align_id, $asm_sr_len, $cmp_sr_len);
 
+
+my %seen_coordinates;
+my $line_num = 0;
+
+my ($asm_sr_name,$cmp_sr_name);
+
 LINE:
 while(<CHAIN_IN>) {
+  $line_num++;
   chomp;
 
   if($is_header_line) {
     my @header = split;
 
-    my $asm_sr_name = $header[2];
-    my $cmp_sr_name = $header[7];
+    $asm_sr_name = $header[2];
+    $cmp_sr_name = $header[7];
     $asm_sr_name =~ s/chr//; #take the 'chr' off of chromosome names
     $cmp_sr_name =~ s/chr//;
-    $asm_sr_id = $seq_region_map{$asm_sr_name};
-    $cmp_sr_id = $seq_region_map{$cmp_sr_name};
+    $asm_sr_id = $seq_region_map_1{$asm_sr_name};
+    $cmp_sr_id = $seq_region_map_2{$cmp_sr_name};
 
     if(!$asm_sr_id) {
       warn("Unknown asm_seq_region $asm_sr_name");
@@ -105,11 +127,40 @@ while(<CHAIN_IN>) {
         $cmp_start -= $delete if($delete);
       }
 
-      print join("\t", 
-                 $asm_sr_id, $cmp_sr_id, 
-                 $asm_begin, $asm_end, 
+      if($seen_coordinates{"$asm_sr_id:$asm_begin"}) {
+        my $first_line = $seen_coordinates{"$asm_sr_id:$asm_begin"};
+         die("Duplicate coordinates [$asm_sr_name $asm_begin]. " .
+             "At line=$line_num and line=$first_line\n");
+      }
+
+      if($seen_coordinates{"$cmp_sr_id:$cmp_begin"}) {
+        my $first_line = $seen_coordinates{"$cmp_sr_id:$cmp_begin"};
+         die("Duplicate coordinates [$cmp_sr_name $cmp_begin]. " .
+             "At line=$line_num and line=$first_line\n");
+      }
+
+      if($seen_coordinates{"$asm_sr_id:$asm_end"}) {
+        my $first_line = $seen_coordinates{"$asm_sr_id:$asm_end"};
+         die("Duplicate coordinates [$asm_sr_name $asm_end]. " .
+             "At line=$line_num and line=$first_line\n");
+      }
+
+      if($seen_coordinates{"$cmp_sr_id:$cmp_end"}) {
+        my $first_line = $seen_coordinates{"$cmp_sr_id:$cmp_end"};
+         die("Duplicate coordinates [$cmp_sr_name $cmp_end]. " .
+             "At line=$line_num  and line=$first_line\n");
+      }
+
+      print join("\t",
+                 $asm_sr_id, $cmp_sr_id,
+                 $asm_begin, $asm_end,
                  $cmp_begin, $cmp_end,
-                 $ori, "\n"); 
+                 $ori, "\n");
+
+      $seen_coordinates{"$asm_sr_id:$asm_begin"} = $line_num;
+      $seen_coordinates{"$cmp_sr_id:$cmp_begin"} = $line_num;
+      $seen_coordinates{"$asm_sr_id:$asm_end"}   = $line_num;
+      $seen_coordinates{"$cmp_sr_id:$cmp_end"}   = $line_num;
 
     } else {
       #empty line, next line is header line
@@ -121,7 +172,7 @@ while(<CHAIN_IN>) {
 close(CHAIN_IN);
 
 sub usage {
-  print "\nusage: perl chain2assembly.pl -seq_region_in <filename> -chain_in <filename>\n";
+  print "\nusage: perl chain2assembly.pl -seq_region_in_1 <filename> -seq_region_in_2 <filename> -chain_in <filename>\n";
   print "\n  seq_region_in must be a tab delimited text file dumped from an ensembl core".
         "\n  database (with revision > 19) that contains all of the seq_region names and ".
         "\n  identifiers used in the chain_in file.\n" .
