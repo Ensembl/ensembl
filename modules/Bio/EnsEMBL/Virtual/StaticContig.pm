@@ -302,16 +302,15 @@ sub _create_similarity_features {
 =cut
 
 sub get_all_RepeatFeatures {
-    my ($self) = @_;
+    my ($self,$bp) = @_;
     
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
     
-    
     my $statement = "SELECT rf.id,
                  IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start),
-                        (sgp.chr_start+sgp.raw_end-rf.seq_end)),                                        
+                        (sgp.chr_start+sgp.raw_end-rf.seq_end)) as start,                                        
                  IF     (sgp.raw_ori=1,(rf.seq_end+sgp.chr_start-sgp.raw_start),
                         (sgp.chr_start+sgp.raw_end-rf.seq_start)), 
                  IF     (sgp.raw_ori=1,rf.strand,(-rf.strand)),                         
@@ -320,8 +319,7 @@ sub get_all_RepeatFeatures {
                  WHERE  sgp.raw_id = rf.contig
                  AND    sgp.chr_end >= $glob_start 
                  AND    sgp.chr_start <=$glob_end
-		 AND    sgp.chr_name='$chr_name' ";
-    
+		 AND    sgp.chr_name='$chr_name' order by start";
     
     my $sth = $self->dbobj->prepare($statement);
     $sth->execute();
@@ -335,31 +333,37 @@ sub get_all_RepeatFeatures {
     
     my @features;
     my @distinct_features;  
+    my @glob_temp;
+    my $temp_start;
+    my $c=0;
+    #Loop through repeat features, and glob them (i.e. join overlapping ones)
+    while( $sth->fetch ) {
+	if ($c == 0 )  {
+	    $temp_start=$start;
+	    @glob_temp=($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
+	    $c=1;
+	    next;
+	}
+	my $check=$start+$bp;
+	if ($check <= $glob_temp[2]) {
+	    @glob_temp=($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
+	    next;
+	}
+	$glob_temp[1]=$temp_start;
+
+	# create features
+	my $out=$self->_create_repeat_features(@glob_temp);
+	
+	if (defined $out){
+	    if ($self->_clip_2_vc($out)){
+		push @features,$self->_convert_2_vc($out);
+	    }
+	}
+	@glob_temp=($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
+	$temp_start=$start;
+    }
     
-  FEATURE:  while( $sth->fetch ) {
-      
-      # exclude overlapping features (for the web)     
-      foreach my $arrayref(@distinct_features){
-	  if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
-      }
-      my @list=($start,$end,$analysisid);
-      push @distinct_features,\@list;
-      
-      
-      # create features
-      my @args=($fid,$start,$end,$strand,$score,$analysisid,
-		$hstart,$hend,$hid);
-      
-      my $out=$self->_create_repeat_features(@args);
-      
-      if (defined $out){
-	  if ($self->_clip_2_vc($out)){
-	      push @features,$self->_convert_2_vc($out);
-	  }
-      }
-  }
-    
-    return @features;
+        return @features;
     
 }
 
