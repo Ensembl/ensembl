@@ -1,7 +1,7 @@
 use strict;
 
 use Getopt::Long;
-use BaseParser;
+use XrefParser::BaseParser;
 
 my ($host, $port, $dbname, $user, $pass, @species, @sources);
 
