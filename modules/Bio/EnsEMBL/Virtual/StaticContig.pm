@@ -174,8 +174,6 @@ $self->throw("Must supply analysis_type parameter") unless $analysis_type;
 $self->throw("Must supply score parameter") unless $score;
 
 
-print STDERR "version 005\n";
-
 my $glob_start=$self->_global_start;
 my $glob_end=$self->_global_end;
 my $chr_name=$self->_chr_name;
