@@ -59,7 +59,7 @@ use Bio::Root::Object;
 sub _initialize {
   my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
+  my $make = $self->SUPER::_initialize(@args);
 
   my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
 					  ID
@@ -161,7 +161,7 @@ sub get_Contig {
    my ($self,$contigid) = @_;
 
    if( $contigid ne $self->id() ) {
-       $self->warn("In an Acedb database, trying to get a contigid $contigid not on the clone. Indicates an error!");
+       $self->throw("In an Acedb database, trying to get a contigid $contigid not on the clone. Indicates an error!");
    }
 
    my ($c) = $self->get_all_Contigs(); 

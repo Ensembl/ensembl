@@ -20,7 +20,7 @@ Bio::EnsEMBL::AceDB::Obj - Object representing an instance of an EnsEMBL DB
 
     $clone = $db->get_Clone('X45667');
 
-    $contig = $db->get_Contig("dJ52N12.02793");
+    $contig = $db->get_Contig("X23343");
 
     $gene  = $db->get_Gene('HG45501');
 
@@ -84,7 +84,7 @@ sub _initialize {
      $self->_debug(0);
  }
   
-  $timeout || do {$timeout = 60;};
+  $timeout ||= 60;
   my $ace = my $db = Ace->connect(-host => $host,
 				  -timeout => $timeout,
 				  -port => $port);
@@ -137,7 +137,8 @@ sub get_Gene{
 
 sub get_Clone {
    my ($self,$id) = @_;
-
+   
+   #$self->fetch("Sequence => $id") || $self->throw("$id is not a valid sequence in this database");
    my $clone = new Bio::EnsEMBL::AceDB::Clone( -id => $id,
 					-dbobj => $self );
    return $clone;
@@ -158,8 +159,7 @@ sub get_Clone {
 sub get_Contig {
    my ($self,$id) = @_;
 
-   # FIXME: should check that this id is correct in this db.
-
+   $self->fetch("Sequence => $id") || $self->throw("$id is not a valid sequence in this database");
    my $contig = new Bio::EnsEMBL::AceDB::Contig ( -dbobj => $self,
 					       -id => $id );
 
@@ -179,9 +179,9 @@ sub get_Contig {
 =cut
 
 sub fetch{
-   my ($self,$str1,$str2) = @_;
+   my ($self,@args) = @_;
 
-   $self->_db_handle->fetch($str1,$str2);
+   $self->_db_handle->fetch(@args);
 }
 
 
@@ -200,9 +200,9 @@ sub fetch{
 sub _debug{
    my ($self,$value) = @_;
    if( defined $value) {
-      $self->{'_db_handle'} = $value;
+      $self->{'_debug'} = $value;
     }
-    return $self->{'_db_handle'};
+    return $self->{'_debug'};
 
 }
 
