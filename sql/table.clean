@@ -97,11 +97,11 @@ CREATE TABLE clone (
 # Table structure for table 'map_density'
 #
 CREATE TABLE map_density (
-   chromosome_id   int(10) NOT NULL,
-   chr_start	int(10) NOT NULL,
-   chr_end	int(10) NOT NULL,
-   type		varchar(20) NOT NULL,
-   value	int(10) NOT NULL,
+   chromosome_id    tinyint unsigned NOT NULL,
+   chr_start	    int(10) NOT NULL,
+   chr_end	    int(10) NOT NULL,
+   type		    varchar(20) NOT NULL,
+   value	    int(10) NOT NULL,
     
    PRIMARY KEY(type,chromosome_id,chr_start) 
 );
@@ -120,7 +120,7 @@ CREATE TABLE contig (
   international_name  varchar(40),
   
   PRIMARY KEY (contig_id),
-  UNIQUE id (name),
+  UNIQUE name (name),
   KEY clone (clone_id),
   KEY dna (dna_id)
 );
@@ -469,7 +469,7 @@ CREATE TABLE translation_stable_id (
 # Each row represents a contig (raw_id, FK from contig table) at least part of
 # which is present in the golden path. The part of the contig that is
 # in the path is delimited by fields raw_start and raw_end (start < end), and
-# the absolute position within the golden path chromosome (chr_name) is given
+# the absolute position within the golden path chromosome (chromosome_id) is given
 # by chr_start and chr_end. Each contig is in some "fingerprint clone contig"
 # and the fpc contig is identified by field fpcctg_name and the position of
 # the specified bit of the contig within its FPC contig is given by fields
@@ -544,12 +544,12 @@ CREATE TABLE gene_description (
 );
 
 CREATE TABLE karyotype (
-   chr_name  varchar(40) NOT NULL,
-   chr_start int(10)     NOT NULL,
-   chr_end   int(10)     NOT NULL,
-   band      varchar(40) NOT NULL,
-   stain     varchar(40) NOT NULL,
-   PRIMARY KEY (chr_name,band)
+   chromosome_id  tinyint unsigned NOT NULL,
+   chr_start      int(10)     NOT NULL,
+   chr_end        int(10)     NOT NULL,
+   band           varchar(40) NOT NULL,
+   stain          varchar(40) NOT NULL,
+   PRIMARY KEY (chromosome_id,band)
 );
 
 
@@ -629,18 +629,18 @@ CREATE TABLE landmark_marker (
   chr_start bigint(17) DEFAULT '0' NOT NULL,
   chr_end bigint(17) DEFAULT '0' NOT NULL,
   chr_strand bigint(1) DEFAULT '0' NOT NULL,
-  chr_name char(20)  NOT NULL,
-  KEY chr_name (chr_name,chr_start)
+  chromosome_id tinyint unsigned NOT NULL,
+  KEY chromosome_id (chromosome_id,chr_start)
 );
 
 CREATE TABLE meta (
-        meta_id INT not null auto_increment,
-        meta_key varchar( 40 ) not null,
-        meta_value varchar( 255 ) not null,
+    meta_id INT not null auto_increment,
+    meta_key varchar( 40 ) not null,
+    meta_value varchar( 255 ) not null,
 
-        PRIMARY KEY( meta_id ),
-        KEY meta_key_index ( meta_key ),
-        KEY meta_value_index ( meta_value )
+    PRIMARY KEY( meta_id ),
+    KEY meta_key_index ( meta_key ),
+    KEY meta_value_index ( meta_value )
 );
 
 # Auto add schema version to database
