@@ -18,7 +18,7 @@ Bio::EnsEMBL::Clone - Object representing one clone
 
     # $db is Bio::EnsEMBL::DB::Obj 
 
-    @contig = $db->get_Contigs();
+    @contig = $db->get_all_Contigs();
 
     $clone = $db->get_Clone();
 
