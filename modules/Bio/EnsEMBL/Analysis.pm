@@ -17,7 +17,7 @@ Bio::EnsEMBL::Analysis.pm - Stores details of an analysis run
 
 =head1 SYNOPSIS
 
-    my $obj    = new Bio::EnsEMBL::Analysis::Analysis(
+    my $obj    = new Bio::EnsEMBL::Analysis(
         -id              => $id,
         -logic_name      => 'SWIRBlast',
         -db              => $db,
