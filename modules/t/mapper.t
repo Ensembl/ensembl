@@ -25,7 +25,7 @@
 ## We start with some black magic to print on failure.
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 10;   # 5 tests total
+	plan tests => 14;   # 5 tests total
 	use vars qw($loaded); }
 END { print "not ok 1\n" unless $loaded; }
 
@@ -134,13 +134,12 @@ test_transform( $mapper,
 
 $mapper = Bio::EnsEMBL::Mapper->new( "asm1", "asm2" );
 
-$mapper = Bio::EnsEMBL::Mapper->new( "asm1", "asm2" );
-
 $mapper->add_map_coordinates( "1", 1, 10, 1, "1", 101, 110 );
 $mapper->add_map_coordinates( "1", 11, 20, 1, "1", 111, 120 );
 $mapper->add_map_coordinates( "1", 22, 30, 1, "1", 132, 140 );
 $mapper->add_map_coordinates( "1", 51, 70, 1, "1", 161, 180 );
 $mapper->add_map_coordinates( "1", 31, 35, 1, "1", 141, 145 );
+
 
 test_transform( $mapper, 
 		[ "1", 5, 45, 1, "asm1" ],
@@ -149,6 +148,34 @@ test_transform( $mapper,
 		[ "1", 132, 145, 1 ],
 		[ "1", 36, 45, 0 ]
 	      );
+
+
+#
+# test tranformation of 'insertion' coordinates where end = start -1
+#
+
+$mapper = Bio::EnsEMBL::Mapper->new('asm1', 'asm2');
+
+$mapper->add_map_coordinates('1', 1, 10, 1, 'X', 101, 110);
+$mapper->add_map_coordinates('1', 11, 20, -1, 'Y', 1, 10);
+
+# boundary insert, expect 2 edge inserts back
+test_transform($mapper, ['1', 11, 10, 1, 'asm1'],
+               ['X', 111, 110, 1],
+               ['Y', 11,  10, -1]);
+
+# edge insert, negative strand, expect edge insert negative strand
+test_transform($mapper, ['1', 1, 0, -1, 'asm1'],
+               ['X', 101, 100, -1]);
+
+# normal case, expect single insert in middle
+test_transform($mapper, ['1', 2, 1, 1, 'asm1'],
+               ['X', 102, 101, 1]);
+
+# expect a gap
+test_transform($mapper, ['1', 100, 200, 1, 'asm1'],
+               ['1', 100, 200, 0]);
+
 
 
 # the following subroutine tests that a given source co-ordinate range
