@@ -57,52 +57,28 @@ use Bio::EnsEMBL::Chromosome;
 sub fetch_by_dbID {
   my ($self,$id) = @_;
 
-  my $chr = (); 
-
-  unless(defined $id) {
-    $self->throw("Chromosome dbID argument required\n");
-  }
+  $self->throw("Chromosome dbID argument required\n") unless defined $id;
 
   unless(defined $self->{'_chr_cache'} ) {
     $self->{'_chr_cache'} = {};
     $self->{'_chr_name_cache'} = {};
   }
 
-  #
   # If there is not already a cached version of this chromosome pull it
-  # from the database and add it to the cache.
-  #
-  unless($chr = $self->{'_chr_cache'}->{$id}) {
-    my $sth = $self->prepare( "SELECT name, length
-                               FROM chromosome
-                               WHERE chromosome_id = ?" );
-    $sth->execute( $id );
-    
-    my($name, $length);
-    $sth->bind_columns(\$name,\$length); 
-    $sth->fetch();
-   
-
-    if($@) {
-      $self->throw("Could not create chromosome from dbID $id\n" .
-		   "Exception: $@\n");
-    }
-
-    unless($name) {
-      $self->throw("Could determine chromosome name from dbID $id\n");
-    }
-
-    $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
-                                         -dbID => $id,
-					 -chr_name => $name,
-					 -length => $length );
-
-    $self->{'_chr_cache'}->{$id} = $chr;
-    $self->{'_chr_name_cache'}->{$name} = $chr;
-    
+  #     from the database and add it to the cache.
+  unless( $self->{'_chr_cache'}->{$id} ) {
+    my $sth;
+    eval {
+      $sth = $self->prepare( "SELECT * FROM chromosome WHERE chromosome_id = ?" );
+      $sth->execute( $id );
+    };
+    $self->throw("Could not create chromosome from dbID $id\nException: $@\n") if $@;
+    my $h = $sth->fetchrow_hashref();
+    $self->throw("Could determine chromosome name from dbID $id\n") unless $h;
+    $self->_create_object_from_hashref( $h );
   }
 
-  return $chr;
+  return $self->{'_chr_cache'}->{$id};
 }
 
 
@@ -119,45 +95,25 @@ sub fetch_by_dbID {
 =cut
 
 sub fetch_by_chr_name{
-   my ($self,$chr_name) = @_;
-
-  my $chr = undef; 
-
-  unless(defined $chr_name) {
-    $self->throw("Chromosome name argument required\n");
-  }
+  my ($self,$chr_name) = @_;
 
   unless(defined $self->{'_chr_cache'} ) {
     $self->{'_chr_cache'} = {};
     $self->{'_chr_name_cache'} = {};
   }
 
-  #
-  # If there is not already a cached version of this chromosome pull it
-  # from the database and add it to the cache.
-  #
-  unless($chr = $self->{'_chr_name_cache'}->{$chr_name}) {
-    my $sth = $self->prepare( "SELECT chromosome_id, length
-                               FROM chromosome
-                               WHERE name = ?" );
-    $sth->execute( $chr_name );
-    
-    my($dbID, $length);
-    $sth->bind_columns(\$dbID,\$length); 
-
-    if ($sth->rows > 0) {
-    $sth->fetch();
-
-    $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
-					 -dbID => $dbID,
-					 -chr_name => $chr_name,
-					 -length => $length );
-
-    $self->{'_chr_cache'}->{$dbID} = $chr;
-    $self->{'_chr_name_cache'}->{$chr_name} = $chr;
+  unless($self->{'_chr_name_cache'}->{$chr_name}) {
+    my $sth;
+    eval {
+      $sth = $self->prepare( "SELECT * FROM chromosome WHERE name = ?" );
+      $sth->execute( $chr_name );
+    };
+    $self->throw("Could not create chromosome from chr $chr_name\nException: $@\n") if $@;
+    my $h = $sth->fetchrow_hashref();
+    $self->throw("Do not recognise chromosome $chr_name\n") unless $h;
+    $self->_create_object_from_hashref( $h );
   }
-  }
-  return $chr;
+  return $self->{'_chr_name_cache'}->{$chr_name};
 }
 
 
@@ -174,51 +130,45 @@ sub fetch_by_chr_name{
 
 sub fetch_all {
   my($self) = @_;
-  
   my @chrs = (); 
 
-
-    my $sth = $self->prepare( "SELECT chromosome_id, name, length
-                               FROM chromosome" );
-    $sth->execute();
-    
-    my($chromosome_id, $name, $length);
-    $sth->bind_columns(\$chromosome_id,\$name,\$length); 
-
-    while($sth->fetch()) {
-   
-    my $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
-					 -chr_name => $name,
-					 -dbID => $chromosome_id,
-					 -length => $length );
-
-    $self->{'_chr_cache'}->{$chromosome_id} = $chr;
-    $self->{'_chr_name_cache'}->{$name} = $chr;
-    push @chrs, $chr;
-  }
-
+  my $sth = $self->prepare( "SELECT * from chromosome");
+     $sth->execute();
+  while( my $h = $sth->fetchrow_hashref() ) {
+    push @chrs, $self->_create_object_from_hashref( $h );
+  } 
   return \@chrs;
 }
 
+=head2 _create_object_from_hashref
 
+  Args       : hash ref containing a row of the chromosome table
+  Example    : $self->_create_object_from_hashref
+  Description: Creates object from hash reference
+  Returntype : Bio::Chromosome object
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub _create_object_from_hashref {
+  my( $self,$h ) =@_;
+  my $chr = new Bio::EnsEMBL::Chromosome(
+    -adaptor  => $self,        -dbID   => $h->{'chromosome_id'},
+    -chr_name => $h->{'name'}, -length => $h->{'length'},
+  );
+  return $self->{'_chr_cache'     }->{$h->{'chromosome_id'}} = 
+         $self->{'_chr_name_cache'}->{$h->{'name'}         } = $chr ;
+}
 
 sub store{
   my ($self, $chromosome) = @_;
 
-  my $chr_name = $chromosome->chr_name;
-  if(!$chr_name){
-    $self->throw("can't store a chromosome without a name");
-  }
-  my $length = $chromosome->length;
-  if(!$length){
-    $self->throw("can't store a chromosome without a length");
-  }
-  my $sql = "insert into chromosome(name, length) values(?, ?)";
-
-  my $sth = $self->db->prepare($sql);
+  $self->throw("can't store a chromosome without a name") unless my $chr_name = $chromosome->chr_name;
+  $self->throw("can't store a chromosome without a length") unless my $length = $chromosome->length;
+  my $sth = $self->db->prepare("insert into chromosome set name=?, length=?");
   $sth->execute($chr_name, $length);
   $chromosome->dbID($sth->{'mysql_insertid'});
   $chromosome->adaptor($self);
 }
-
 1;
