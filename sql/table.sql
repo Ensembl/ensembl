@@ -393,7 +393,7 @@ CREATE TABLE static_golden_path (
 
 CREATE TABLE protein_feature (
   id            int(10) unsigned NOT NULL auto_increment,
-  translation   varchar(40) NOT NULL,	 # foreign key translation_stable_id:stable_id
+  translation   int(10) unsigned NOT NULL,	 # foreign key translation_stable_id:stable_id
   seq_start     int(10) NOT NULL,
   seq_end       int(10) NOT NULL,
   analysis      int(10) unsigned NOT NULL,	# foreign key analysisprocess:analysisId
@@ -453,7 +453,7 @@ CREATE TABLE karyotype (
 
 CREATE TABLE objectXref(
        objectxrefId INT unsigned not null auto_increment,
-       ensembl_id VARCHAR(40) not null, 	# foreign key transcript_stable_id:stable_id
+       ensembl_id int unsigned not null, 	# foreign key transcript_stable_id:stable_id
                                             # foreign key translation_stable_id:stable_id
                                             # foreign key gene_stable_id:stable_id
                                             # foreign key contig:id
