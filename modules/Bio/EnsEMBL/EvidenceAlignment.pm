@@ -433,17 +433,24 @@ sub _get_hits {
 
 # _evidence_lines_sort: takes reference to an array of evidence lines
 # and reference to a hash of per-hid maximum scores,
-# returns reference to the former sorted by the latter
+# returns reference to the former sorted by score (highest score first),
+# with ties sorted alphabetically
 
 sub _evidence_lines_sort {
   my ($self, $tmp_evidence_arr_ref, $per_hid_max_scores_hash_ref) = @_;
   $self->throw('interface fault') if (@_ != 3);
 
   my @sorted_arr = sort {
-    $$per_hid_max_scores_hash_ref{$a->accession_number}
-    <=> $$per_hid_max_scores_hash_ref{$b->accession_number}
+    $$per_hid_max_scores_hash_ref{$b->accession_number}
+    <=> $$per_hid_max_scores_hash_ref{$a->accession_number}
     ||  $a->accession_number cmp $b->accession_number
   } @$tmp_evidence_arr_ref;
+
+  foreach my $el (@sorted_arr) {
+    print STDERR "XXX ", $el->accession_number, "\t",
+    $$per_hid_max_scores_hash_ref{$el->accession_number}, "\n";
+  }
+  
   return \@sorted_arr;
 }
 
