@@ -795,6 +795,78 @@ sub fetch_VirtualContig_of_exon{
 }
 
 
+=head2 fetch_VirtualContig_of_feature
+
+ Title   : fetch_VirtualContig_of_exon
+ Usage   : $vc = $stadp->fetch_VirtualContig_of_feature('AC000001.1.1.2000',20,200,100);
+ Function: Creates a virtual contig of the arbitrary feature.  If a context size is given, the vc is extended by that number of basepairs on either side of the gene.  Throws if the object is not golden.
+ Returns : Virtual Contig object 
+ Args    : contig id, seq_start, seq_end, [context size in bp]
+
+=cut
+
+sub fetch_VirtualContig_of_feature {
+   my ($self,$contigid,$seq_start,$seq_end,$size) = @_;
+
+   unless( defined $contigid && defined $seq_start && defined $seq_end ) {
+       $self->throw("Must have feature details to fetch VirtualContig of feature");
+   }
+   if( !defined $size ) {$size=0;}
+   my($chr_name,$raw_ori,$start,$end) = $self->get_location_of_feature($contigid,$seq_start,$seq_end);
+     
+   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
+							$start-$size,
+							$end+$size
+							);
+}
+
+
+
+=head2 get_location_of_feature
+
+ Title   : get_location_of_feature
+ Usage   : $vc = $stadp->fetch_VirtualContig_of_feature('AC000001.1.1.2000',20,200,100);
+ Function: Gets golden path co-ordinates of an arbitrary feature. Throws if contig is not golden... 
+ Returns : array consisting of ( chromosome, orientation, start, end )
+ Args    : contig id, seq_start, seq_end, [context size in bp]
+
+=cut
+sub get_location_of_feature {
+   my ($self,$contigid,$seq_start,$seq_end) = @_;
+
+   unless( defined $contigid && defined $seq_start && defined $seq_end ) {
+       $self->throw("Must have feature details to get location of it");
+   }
+
+   my $type = $self->dbobj->static_golden_path_type();
+
+   my $sth = $self->dbobj->prepare("SELECT  
+			if(sgp.raw_ori=1,
+			    ($seq_start-sgp.raw_start+sgp.chr_start),
+			    (sgp.chr_start+sgp.raw_end-$seq_end)),
+   
+			if(sgp.raw_ori=1,
+			    ($seq_end-sgp.raw_start+sgp.chr_start),
+			    (sgp.chr_start+sgp.raw_end-$seq_start)),
+
+			    sgp.raw_ori,
+			    sgp.chr_name
+                    FROM    contig c, 
+			    static_golden_path sgp 
+                    WHERE   c.id = '$contigid' 
+			    AND c.internal_id = sgp.raw_id
+                            AND sgp.type = '$type' 
+                    ");
+   $sth->execute();
+
+   my ($start,$end,$raw_ori,$chr_name)=$sth->fetchrow_array;
+   
+   if( !defined $start ) {
+       $self->throw("Contig $contigid is not on the current $type golden path.");
+   }
+     
+   return ( $chr_name, $raw_ori, $start, $end );
+}
 
 
 
