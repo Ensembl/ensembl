@@ -243,27 +243,23 @@ sub get_all_Genes{
 
 sub get_all_clone_Genes{
    my ($self) = @_;
-   my (%contig,@genes,@exons);
+   my (%contig,%clone,@genes,@exons);
 
    @genes = $self->get_all_Genes();
 
    # this is scary. Don't look
    # (we are using the fact that the gene objects
    # can be written into)
-
+   
    foreach my $gene ( @genes) {
-
-foreach my $trans ( $gene->each_Transcript ) {
-
-       push(@exons,$trans->each_Exon);
+       foreach my $trans ( $gene->each_Transcript ) {
+	   # 
+	   push(@exons,$trans->each_Exon);
+       }
    }
-}
    foreach my $exon ( @exons ) {
-
-
        if( !exists $contig{$exon->contig_id} ) {
-
-
+	   $clone{$exon->clone_id} = $self->get_Clone($exon->clone_id)->seq;
 	   $contig{$exon->contig_id} = $self->get_Contig($exon->contig_id);
        }
        my ($s,$e,$str) = $contig{$exon->contig_id}->_convert_coords_contig_clone($exon->start,$exon->end,$exon->strand);
@@ -271,6 +267,7 @@ foreach my $trans ( $gene->each_Transcript ) {
        $exon->start($s);
        $exon->end($e);
        $exon->strand($str);
+       $exon->attach_seq($clone{$exon->clone_id});
    }
 
    return @genes;

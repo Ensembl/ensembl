@@ -345,24 +345,27 @@ sub get_clone_Gene {
     my $gene = $self->get_Gene($id);
     
 #	print "We are getting $id<p><p>\n";
-
-    my %contig;
     
-    foreach my $trans ( $gene->each_Transcript ) {
-       foreach my $exon ( $trans->each_Exon ) {
+    my %contig;
+    my %clone;
 
-          if( !exists $contig{$exon->contig_id} ) {
+    foreach my $trans ( $gene->each_Transcript ) {
+	foreach my $exon ( $trans->each_Exon ) {
 	   
-         	   $contig{$exon->contig_id} = $self->get_Contig($exon->contig_id);
+	   if( !exists $contig{$exon->contig_id} ) {
+	       $clone{$exon->clone_id} = $self->get_Clone($exon->clone_id)->seq;
+	       $contig{$exon->contig_id} = $self->get_Contig($exon->contig_id);
            }
 	  my  $cid = $exon->contig_id;
 
           my ($s,$e,$str) = $contig{$exon->contig_id}->_convert_coords_contig_clone($exon->start,$exon->end,$exon->strand);
 #       print "Converting exon ",$exon->id,"to $,$e,$str using $contig{$cid} ($cid)<p>\n";
 
-         $exon->start($s);
-         $exon->end($e);
-         $exon->strand($str);
+	   $exon->start($s);
+	   $exon->end($e);
+	   $exon->strand($str);
+	   $exon->attach_seq($clone{$exon->clone_id});
+	   
 	}
    }
     
