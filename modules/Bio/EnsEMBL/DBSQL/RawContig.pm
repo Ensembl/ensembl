@@ -110,7 +110,6 @@ sub direct_new {
         $dbobj,
         $id,
         $perlonlysequences,
-        $contig_overlap_source,
         $overlap_distance_cutoff,
 	$internal_id,
 	$dna_id,
@@ -120,7 +119,6 @@ sub direct_new {
 				  DBOBJ
 				  ID
 				  PERLONLYSEQUENCES
-				  CONTIG_OVERLAP_SOURCE
 				  OVERLAP_DISTANCE_CUTOFF
 				  INTERNAL_ID
 				  DNA_ID
@@ -143,7 +141,6 @@ sub direct_new {
     $self->seq_version($seq_version);
     $self->cloneid    ($cloneid);
     $self->perl_only_sequences($perlonlysequences);
-    $self->contig_overlap_source($contig_overlap_source);
     $self->overlap_distance_cutoff($overlap_distance_cutoff);
 
     return $self;
