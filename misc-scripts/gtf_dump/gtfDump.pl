@@ -166,6 +166,7 @@ sub print_genes {
       my @exons = values %{$t->{exon}};
       @exons = sort { $a->{rank} <=> $b->{rank} } @exons;
       my $coding = 0;	
+      my $phase = 0;
       my $frame = 0;
       
       foreach $e ( @exons ) {
@@ -292,7 +293,8 @@ sub print_genes {
 	  ($e->{strand}==1?"+":"-"),"\t",$frame,"\t",
 	  $gtfLineTail;
 
-	  $frame = ( $cdsend - $cdsstart + 1 - $frame ) % 3;
+	  $phase = ( $cdsend - $cdsstart + 1 + $phase ) % 3;
+	  $frame = ( 3 - $phase ) % 3;
 	} 
       }
     }
