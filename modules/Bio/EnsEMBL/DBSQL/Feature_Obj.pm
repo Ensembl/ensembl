@@ -98,13 +98,17 @@ sub _initialize {
 sub delete {
     my ($self,$contig) = @_;
 
+    if ($contig->isa("Bio::EnsEMBL::DB::ContigI")) {
+	$self->throw("You have to give a contig id, not a contig object!");
+    }
+
     my $sth = $self->_db_obj->prepare("select fs.feature,fs.fset " .
 			     "from   fset_feature as fs, " .
 			     "       feature as f " .
 			     "where  fs.feature = f.id " .
 			     "and    f.contig = '$contig'");
 
-    my $res = $sth->execute;
+    my $res = $sth->execute || $self->warn("Could not find features for contig $contig");
 
     my %fset;
 
@@ -191,8 +195,6 @@ sub write {
 	    print(STDERR "Feature invalid. Skipping feature\n");
 	    next FEATURE;
 	}
-
-	
 	if($feature->isa('Bio::EnsEMBL::Repeat')) {
 	    push(@repeats,$feature);
 	} elsif ( $feature->sub_SeqFeature ) {
