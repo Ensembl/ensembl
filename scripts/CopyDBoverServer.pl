@@ -12,7 +12,7 @@ Copy mysql databases between different servers and run myisamchk on the indices 
 
 The input file should have the following format
 
-source_server\tsource_database\tdestination_server\tdestination_database
+source_server\\tsource_port\\tsource_db\\tdestination_server\\tdestination_port\\tdestination_db
 
 e.g.
 
@@ -122,7 +122,7 @@ join(", ", keys %mysql_directory_per_svr) ."\n";
     warn "
 The input file has the wrong format,
 $line
-source_server\\tsource_db\\tdestination_server\\tdestination_db
+source_server\\tsource_port\\tsource_db\\tdestination_server\\tdestination_port\\tdestination_db
 EXIT 1
 ";
     exit 1;
