@@ -17,11 +17,11 @@ use strict;
 use Getopt::Std;
 use vars qw($opt_h $opt_T $opt_i 
 	    $opt_U $opt_D $opt_P $opt_H $opt_p
-	    $opt_s $opt_c $opt_C $opt_l $opt_d $opt_r);
+	    $opt_s $opt_c $opt_C $opt_l $opt_d $opt_r $opt_n);
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-getopts("hTi:U:D:P:H:p:s:cCl:dr:");
+getopts("hTi:U:D:P:H:p:s:cCl:dr:n:");
 
 $|=1;
 
@@ -50,6 +50,7 @@ dna_compress.pl
   -r num   number of randomisation subsequence selections [$def_r]
   -i id    clone_dbid (for comparing, converting, extracting DNA)
   -d       delete clone
+  -n num   process N items
 
   -U user  ensembl db user [$def_U]
   -D db    ensembl db      [$def_D]
@@ -93,6 +94,7 @@ if($opt_C || $opt_c){
   my $clones=$clone_apt->fetch_all();
   my $nd=0;
   my $ns=0;
+  my $nc=0;
   foreach my $clone (@$clones){
     my $clone_dbid=$clone->dbID;
     next if($opt_i && $opt_i!=$clone_dbid);
@@ -189,6 +191,8 @@ if($opt_C || $opt_c){
       }
       
     }
+    $nc++;
+    last if($opt_n && $nc>$opt_n);
   }
   print "Same: $ns; Different: $nd\n" if $opt_C;
   exit 0;
