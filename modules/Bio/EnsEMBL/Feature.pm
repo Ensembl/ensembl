@@ -52,11 +52,16 @@ Internal methods are usually preceded with a _
 =cut
 
 
+use strict;
+use warnings;
+
 package Bio::EnsEMBL::Feature;
 
 use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+
+use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::Storable);
 
@@ -92,7 +97,7 @@ sub new {
 
   my $class = ref($caller) || $caller;
 
-  my($start, $end, $strand, $slice, $analysis) =
+  my($start, $end, $strand, $slice, $analysis, $dbID, $adaptor) =
     rearrange(['START','END','STRAND','SLICE','ANALYSIS',
                'DBID', 'ADAPTOR'], @_);
 
