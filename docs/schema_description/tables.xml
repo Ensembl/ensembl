@@ -357,7 +357,7 @@
       
       <name>prediction_transcript</name>
 
-      <description>Stores transcripts that are predicted by ab initio gene finder programs. Unlike EnsEMBL transcripts they are not supported by any evidence.</description>
+      <description>Stores transcripts that are predicted by ab initio gene finder programs (e.g. genscan, SNAP). Unlike EnsEMBL transcripts they are not supported by any evidence.</description>
       
       <used></used>
       
