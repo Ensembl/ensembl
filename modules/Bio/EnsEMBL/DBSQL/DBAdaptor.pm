@@ -122,9 +122,6 @@ sub new {
       'ProteinAlignFeature'  =>
            'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
       'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
-      'ProxyGene'            => 'Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor',
-      'ProxyRepeatFeature'   =>
-          'Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor',
       'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
       'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
       'RawContig'            => 'Bio::EnsEMBL::DBSQL::RawContigAdaptor',
@@ -408,12 +405,6 @@ sub get_GeneAdaptor {
   my( $self ) = @_;
   #get a core db adaptor
   return $self->get_adaptor("Gene");
-  
-  #Disable proxy for now, lite should no longer be necessary.
-  #use a proxy gene adaptor, capable of making decisions with regards to the
-  #database that it uses, passing in the core adaptor as a constructor arg
-  #return $self->get_adaptor("ProxyGene",
-	#		     $core_adaptor);
 }
 
 
@@ -557,13 +548,8 @@ sub get_RepeatConsensusAdaptor {
 
 sub get_RepeatFeatureAdaptor {
   my( $self ) = @_;
-  
-  my $core_adaptor = 
-    $self->dnadb->get_adaptor("RepeatFeature");
-  
-  #create a proxy adaptor, using a core RepeatFeatureAdaptor as constructor arg
-  return $self->get_adaptor("ProxyRepeatFeature",
-			    $core_adaptor);
+
+  return $self->dnadb->get_adaptor("RepeatFeature");
 }
 
 
