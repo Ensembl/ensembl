@@ -186,9 +186,9 @@ while ( @gene_id > 0 ) {
 		}
 	    }
 	    elsif ($format eq 'webdump') {
-		my $trans_file = $webdir.$gene->id.".trans";
-		open (TRANS,">$trans_file");
 		foreach my $trans ( $gene->each_Transcript ) {
+		    my $trans_file = $webdir.$trans->id.".trans";
+		    open (TRANS,">$trans_file");
 		    my $seq = $trans->dna_seq();
 		    $seq->id($trans->id);
 		    my @exon = $trans->each_Exon;
@@ -196,13 +196,11 @@ while ( @gene_id > 0 ) {
 		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
 		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*TRANS ) ;
 		    $seqio->write_seq($seq);
-		}
-		my $pep_file =  $webdir.$gene->id.".pep";
-		open (PEP,">$pep_file");
-		foreach my $trans ( $gene->each_Transcript ) {
-		    # get out first exon. Tag it to clone and gene on this basis
-		    my @exon = $trans->each_Exon;
-		    my $fe = $exon[0];
+		    $seqio=undef;
+		    close (TRANS);
+		    
+		    my $pep_file =  $webdir.$trans->id.".pep";
+		    open (PEP,">$pep_file");
 		    my $tseq = $trans->translate();
 		    if ( $tseq->seq =~ /\*/ ) {
 			print STDERR "Skipping peptide dumping of ".$gene->id.", translation has stop codons. (in clone ". $fe->clone_id .")\n\n";
@@ -211,6 +209,8 @@ while ( @gene_id > 0 ) {
 		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig: " . $fe->contig_id);
 		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*PEP) ;
 		    $seqio->write_seq($tseq);
+		    $seqio=undef;
+		    close(PEP);
 		}
 	    }
 	    else {
