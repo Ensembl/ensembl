@@ -1160,7 +1160,7 @@ sub get_all_DASFeatures{
                } elsif( $sf->seqname() =~ /\w{1,2}\d+/i) { 
                     #warn ("Got a clone feature: ", $sf->seqname(), "\n");
  	                push(@clone_features, $sf);
-               } elsif( $sf->seqname() eq '__ERROR__') { 
+               } elsif( $sf->das_type_id() eq '__ERROR__') { 
                     #Always push errors even if they aren't wholly within the VC
 	                push(@genomic_features, $sf);
                } elsif( $sf->seqname() eq '') { 
@@ -1246,14 +1246,10 @@ sub _convert_chrfeature_to_vc_coords{
     my $chr_start = $self->_global_start();
     my $chr_end   = $self->_global_end();
     
-	if($f->start() < $self->_global_start()){
-		print STDERR "DAS ERROR! Feature not on VC  between $chr_start and $chr_end: ";
-        print STDERR " START: ",  $f->das_start(), "\t";
-        print STDERR " END: ",    $f->das_end(), "\t";
-        print STDERR " STRAND: ", $f->das_strand(), "\t";
-       	print STDERR " ID: ",     $f->das_feature_id(), "\n";	
-		return();
-	}
+    if($f->start > $chr_end || $f->end < $chr_start ) {
+	print STDERR qq(* DAS ERROR! Feature ).$f->das_feature_id().qq(not on VC  between $chr_start and $chr_end:\n*     ). $f->das_start()."-".$f->das_end(),' on strand '.$f->das_strand()."\n";
+	return undef;
+    }
     $f->start($f->start() - $chr_start + 1);
     $f->end($f->end() - $chr_start + 1);
     return($f);
@@ -2079,6 +2075,14 @@ sub get_all_VirtualGenes_startend_lite {
 sub get_all_EMBLGenes_startend_lite {
 	my  $self = shift;
 	return $self->dbobj->get_LiteAdaptor->fetch_EMBLgenes_start_end(
+        $self->_chr_name, 
+        $self->_global_start, 
+        $self->_global_end
+    ); 
+}
+sub get_all_SangerGenes_startend_lite {
+	my  $self = shift;
+	return $self->dbobj->get_LiteAdaptor->fetch_SangerGenes_start_end(
         $self->_chr_name, 
         $self->_global_start, 
         $self->_global_end
