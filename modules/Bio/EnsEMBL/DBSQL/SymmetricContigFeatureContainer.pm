@@ -78,8 +78,6 @@ sub get_FeaturePair_list_by_rawcontig_id{
    while( my $aref = $sth->fetchrow_arrayref ) {
        my ($start,$end,$strand,$hstart,$hend,$hstrand,$hname,$score) = @{$aref};
        my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
-       
-
        $out->set_all_fields($start,$end,$strand,$score,$id,'symmetric',$id,
 			    $hstart,$hend,$hstrand,$score,$hname,'symmetric',$hname);
 
@@ -114,7 +112,7 @@ sub write_FeaturePair_List{
        my ($hitid) = $sth->fetchrow_array;
 
        my $seqname = $fp->feature1->seqname;
-       $seqname =~ /(\S+)\.(\d+).(\S+)/ || $self->throw("Feature pair name does not conform to acc.version.number sequence");
+       $seqname =~ /(\S+)\.(\d+)\.(\S+)/ || $self->throw("Feature pair name does not conform to acc.version.number sequence");
        my $version = $2;
        my $contigid = "$1.$3";
        my $clone=$1;
@@ -122,7 +120,7 @@ sub write_FeaturePair_List{
        $sth->execute;
 
        $seqname = $fp->feature2->seqname;
-       $seqname =~ /(\S+)\.(\d+).(\S+)/ || $self->throw("Feature pair name does not conform to acc.version.number sequence");
+       $seqname =~ /(\S+)\.(\d+)\.(\S+)/ || $self->throw("Feature pair name does not conform to acc.version.number sequence");
        $version = $2;
        $contigid = "$1.$3";
        $clone=$1;

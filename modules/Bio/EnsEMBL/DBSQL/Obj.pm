@@ -2031,7 +2031,6 @@ sub get_Contig{
 	my $contig = new Bio::EnsEMBL::DBSQL::GapContig;
 	return $contig;
     }
-
     my $contig = new Bio::EnsEMBL::DBSQL::RawContig(
         -id                         => $id,
         -dbobj                      => $self,

@@ -488,20 +488,46 @@ sub get_old_Exons {
     if ($@) {
 	$self->throw("The crossmatch database has to hold the old dna database to be able to call get_old_exons! $@");
     }
+    my $oldclone;
+    eval {
+	$oldclone = $old_db->get_Clone($self->cloneid);
+    };
 
-    #We get out a SymmetricContigFeatureContainer from the crossdb and use it to
-    #retrieve feature pairs for this contig, then sort them
+    #If the clone does not exist, these are really new exons
+    if ($@) {
+	print STDERR "Clone doesn't exist, returning empty array...\n";
+	return ();
+    }
+    print STDERR "Gets here....\n\n";
+    my $newclone= $self->dbobj->get_Clone($self->cloneid);
+    #If the clones have the same version, the underlying dna hasn't changed,
+    #therefore we just return the old exons...
+    if ($oldclone->embl_version == $newclone->embl_version) {
+	print STDERR "Clones have the same version, returning old exons as they are...\n";
+	return $oldclone->get_Contig($self->id)->get_all_Exons(); 
+    }
+    #We get out a SymmetricContigFeatureContainer from the crossdb and use it     #to retrieve feature pairs for this contig, then sort them
     my $sfpc = $crossdb->get_SymmetricContigFeatureContainer;
-    my @fp=$sfpc->get_FeaturePair_list_by_rawcontig_id($self->id);
+    $self->id =~ /(\S+)\.0+(\d+)/;
+    my $id = "$1.".$newclone->version.".$2";
+    print "Getting feature pairs with id $id\n";
+    my @fp=$sfpc->get_FeaturePair_list_by_rawcontig_id($id);
     my @sorted_fp= sort { $a->start <=> $b->start} @fp;
 
     my %validoldcontigs;
     my %fphash;
-
+    print STDERR "Gets lower....\n\n";
+    my @old_exons;
     foreach my $fp ( @sorted_fp ) {
+	print STDERR "Going through $fp\n";
 	my $contigid = $fp->hseqname;
 	$contigid =~ s/\.\d+\./\./g;
-	$validoldcontigs{$contigid} = $fp->hseqname;
+	$contigid =~ /(\S+)\.(\d+)/;
+	my $newid = $1.".0000".$2; 
+	print STDERR "Contig id called $contigid\n";
+	my $oldcontig=$old_db->get_Contig($newid);
+	push @old_exons, $oldcontig->get_all_Exons;
+	$validoldcontigs{$newid} = $fp->hseqname;
 	if( !exists $fphash{$fp->hseqname} ) {
 	    $fphash{$fp->hseqname} = [];
 	}
@@ -509,29 +535,13 @@ sub get_old_Exons {
     }
 
 
-
     #We now need to get all the Genes for this clone on the old case
-
-    my $oldclone = $old_db->get_Clone($self->cloneid);
-
-    my @genes = $oldclone->get_all_Genes();
-    my @exons;
-
-    foreach my $gene ( @genes ) {
-	foreach my $exon ( $gene->each_unique_Exon ) {
-	    if( exists $validoldcontigs{$exon->seqname} ) {
-		push(@exons,$exon);
-	    }
-	}
-    }
-
-
     # now perform the mapping
 
     my @mapped_exons;
   EXON:
     
-    foreach my $exon (@exons) {
+    foreach my $exon (@old_exons) {
 	
 	foreach my $fp ( @{$fphash{$validoldcontigs{$exon->seqname}}} ) {
 	    if( $fp->hstart < $exon->start && $fp->hend > $exon->start ) {
@@ -545,7 +555,7 @@ sub get_old_Exons {
 		    my $oldend   = $exon->end;
 
 		    $exon->start($fp->hend - ($oldstart - $fp->hend));  
-		    $exon->end  ($fp->hend - ($oldstart - $fp->hstart));
+		    $exon->end  ($fp->hend - ($oldend   - $fp->hend));
 		    $exon->strand( -1 * $exon->strand);
 		}
 		push (@mapped_exons,$exon);
