@@ -16,24 +16,38 @@ Bio::EnsEMBL::DBSQL::SlicetAdaptor - Adaptors for slices
 
 =head1 SYNOPSIS
 
+  my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+
+  my $slice_adaptor = $db->get_SliceAdaptor();
+  
+  #get a slice on the entire chromosome X
+  my $chr_slice = $slice_adaptor->fetch_by_region('chromosome','X');
+
+  #get a slice for each clone in the database
+  foreach my $cln_slice (@{$slice_adaptor->fetch_all('clone')}) {
+    #do something with clone
+  }
+
+  #get a slice which is part of NT_004321
+  my $spctg_slice = $slice_adaptor->fetch_by_region('supercontig','NT_004321',
+                                                    200_000, 600_000);
 
 
 =head1 DESCRIPTION
 
-Factory for getting out slices of assemblies.
+This module is responsible for fetching Slices representing genomic regions
+from a database.  Details on how slices can be used are in the 
+Bio::EnsEMBL::Slice module.
 
 =head1 AUTHOR - Ewan Birney
 
 This modules is part of the Ensembl project http://www.ensembl.org
 
+=head1 CONTACT
+
 Email ensembl-dev@ebi.ac.uk
 
-Describe contact details here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object
-methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 

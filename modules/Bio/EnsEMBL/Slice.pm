@@ -18,13 +18,29 @@ Bio::EnsEMBL::Slice - Arbitary Slice of a genome
 
    $slice = $sa->fetch_by_region('chromosome', 'X', 1_000_000, 2_000_000);
 
+   #get some attributes of the slice
+   my $seqname = $slice->seq_region_name();
+   my $start = $slice->start();
+   my $end   = $slice->end();
+   print "$seqname, $start-$end\n";
+
+   #get the sequence from the slice
+   my $seq = $slice->seq();
+   print $seq;
+
+   #get some features from the slice
    foreach $gene ( @{$slice->get_all_Genes} ) {
       # do something with a gene
    }
 
+   foreach my $feature ( @{$slice->get_all_DnaAlignFeatures}) {
+     # do something with dna-dna alignments
+   }
+
+
 =head1 DESCRIPTION
 
-A slice object represents a region of a genome.  It can be used to retrieve
+A Slice object represents a region of a genome.  It can be used to retrieve
 sequence or features from an area of interest.
 
 =head1 AUTHOR - Ewan Birney
@@ -35,6 +51,8 @@ This modules is part of the Ensembl project http://www.ensembl.org
 
 Questions can be posted to the ensembl-dev mailing list:
 ensembl-dev@ebi.ac.uk
+
+=head1 METHODS
 
 =cut
 
@@ -1513,7 +1531,9 @@ sub get_generic_features() {
 
 # sub DEPRECATED METHODS #
 ###############################################################################
-=head2 sub DEPRECATED methods
+
+=head1 DEPRECATED METHODS
+
 =cut
 
 
