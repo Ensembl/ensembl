@@ -62,7 +62,7 @@ sub new {
   my $self = {};
   bless $self,$class;
 
-  my ($chr,$start,$end,$type,$adaptor) = $self->_rearrange([qw(CHR_NAME CHR_START CHR_END ASSEMBLY_TYPE ADAPTOR)],@args);
+  my ($chr,$start,$end,$type,$adaptor, $dbID) = $self->_rearrange([qw(CHR_NAME CHR_START CHR_END ASSEMBLY_TYPE ADAPTOR DBID)],@args);
 
   if( !defined $chr || !defined $start || !defined $end || !defined $type ) {
     $self->throw("Do not have all the parameters for slice");
@@ -73,7 +73,7 @@ sub new {
   $self->chr_end($end);
   $self->assembly_type($type);
   $self->adaptor($adaptor);
-
+  $self->dbID( $dbID );
 # set stuff in self from @args
   return $self;
 }
@@ -109,8 +109,52 @@ sub get_all_SimilarityFeatures_above_score{
    }
 
    push(@out,$self->adaptor->db->get_DnaAlignFeatureAdaptor->fetch_by_Slice_and_score($self,$score));
-
+   
    return @out;
+}
+
+
+
+=head2 seq
+
+  Args      : none
+  Function  : returns the entire sequence string for this Slice
+              needs the adaptor to be set.
+  Returntype: txt
+  Exceptions: none
+  Caller    : general
+
+=cut
+
+sub seq {
+  my $self = shift;
+  my $seqAdaptor = $self->db->get_SequenceAdaptor();
+  my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, 1, -1, 1 );
+
+  return $seq;
+}
+
+
+=head2 subseq
+
+  Arg  1    : int $startBasePair
+              relative to start of slice, which is 1.
+  Arg  2    : int $endBasePair
+              relative to start of slice.
+  Function  : returns string of dna sequence
+  Returntype: txt
+  Exceptions: end should be at least as big as start
+  Caller    : general
+
+=cut
+
+sub subseq {
+  my ( $self, $start, $end ) = shift;
+
+  my $seqAdaptor = $self->db->get_SequenceAdaptor();
+  my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, $start, $end, 1 );
+
+  return $seq;
 }
 
 
@@ -432,6 +476,27 @@ sub adaptor{
     }
     return $self->{'adaptor'};
 
+}
+
+
+=head2 dbID
+
+  Arg [1]   : int databaseInternalId
+              A slice might exist in the database and will than have this
+              internal id.
+  Function  : attribute function
+  Returntype: int
+  Exceptions: none
+  Caller    : DBSQL::SliceAdaptor
+
+=cut
+
+sub dbID {
+   my ( $self, $value ) = @_;
+   if( defined $value ) {
+     $self->{'dbID'} = $value;
+   }
+   return $self->{'dbID'};
 }
 
 
