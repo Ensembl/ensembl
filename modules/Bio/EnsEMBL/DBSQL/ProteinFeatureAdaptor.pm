@@ -99,6 +99,11 @@ sub fetch_all_by_translation_id {
 
     my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
 
+    if(!$analysis) {
+      warning("Analysis with dbID=$analysisid does not exist\n" .
+	      "but is referenced by ProteinFeature $dbID");
+    }
+
     my $feat = Bio::EnsEMBL::ProteinFeature->new
       (-DBID        => $dbID,
        -ADADAPTOR   => $self,
