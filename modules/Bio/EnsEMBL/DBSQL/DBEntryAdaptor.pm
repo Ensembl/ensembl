@@ -227,7 +227,9 @@ sub store {
              INSERT ignore INTO go_xref
                 SET object_xref_id = ?,
                     linkage_type = ? " );
-      $sth->execute( $Xidt, $exObj->linkage_type() );
+      foreach my $lt (@{$exObj->get_all_linkage_types()}) {
+        $sth->execute( $Xidt, $lt );
+      }
     }
   } 
   return $dbX;
@@ -402,21 +404,23 @@ sub _fetch_by_object_type {
   ");
 
   $sth->execute($ensObj, $ensType);
-  my %seen;
+  my (%seen, %linkage_types, %synonyms);
+  
 
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     my ( $refID, $dbprimaryId, $displayid, $version, 
-	 $desc, $dbname, $release, $exDB_status, $objid, 
+         $desc, $dbname, $release, $exDB_status, $objid, 
          $synonym, $queryid, $targetid, $linkage_type ) = @$arrRef;
 
     my %obj_hash = ( 
-	_adaptor    => $self,
+	      _adaptor    => $self,
         _dbID       => $refID,
         _primary_id => $dbprimaryId,
         _display_id => $displayid,
         _version    => $version,
         _release    => $release,
         _dbname     => $dbname);
+
 
     # using an outer join on the synonyms as well as on identity_xref, we
     # now have to filter out the duplicates (see v.1.18 for
@@ -427,11 +431,12 @@ sub _fetch_by_object_type {
 
       if ((defined $queryid)) {         # an xref with similarity scores
         $exDB = Bio::EnsEMBL::IdentityXref->new_fast(\%obj_hash);       
-	$exDB->query_identity($queryid);
+        $exDB->query_identity($queryid);
         $exDB->target_identity($targetid);
       } elsif( defined $linkage_type ) {
-	$exDB = Bio::EnsEMBL::GoXref->new_fast( \%obj_hash );
-	$exDB->linkage_type( $linkage_type );
+        $exDB = Bio::EnsEMBL::GoXref->new_fast( \%obj_hash );
+        $exDB->add_linkage_type( $linkage_type );
+        $linkage_types{$refID}->{$linkage_type} = 1;
       } else {
         $exDB = Bio::EnsEMBL::DBEntry->new_fast(\%obj_hash);
       }
@@ -443,8 +448,19 @@ sub _fetch_by_object_type {
       $seen{$refID} = $exDB;
     } 
 
-    # $exDB still points to the same xref, so we can keep adding synonyms
-    $seen{$refID}->add_synonym($synonym) if(defined($synonym));
+    #
+    # $exDB still points to the same xref, so we can keep adding
+    # go evidence tags or synonyms
+    #
+    if(defined($synonym) && !$synonyms{$refID}->{$synonym}) {
+      $seen{$refID}->add_synonym($synonym) if(defined($synonym));
+      $synonyms{$refID}->{$synonym} = 1;
+    }
+
+    if(defined($linkage_type) && !$linkage_types{$refID}->{$linkage_type}) {
+      $seen{$refID}->add_linkage_type($linkage_type);
+      $linkage_types{$refID}->{$linkage_type} = 1;
+    }
   }
 
   return \@out;
