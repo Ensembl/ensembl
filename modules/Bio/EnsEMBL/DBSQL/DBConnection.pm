@@ -459,7 +459,7 @@ sub remove_db_adaptor {
       return undef;
   }
 
-  return new Bio::EnsEMBL::Container($adaptor);
+  return $adaptor;
 }
 
 
@@ -508,14 +508,14 @@ sub get_db_adaptor {
       return undef;
   }
 
-  return new Bio::EnsEMBL::Container($self->{'_db_adaptors'}->{$name});
+  return $self->{'_db_adaptors'}->{$name};
 }
 
 
 
 sub deleteObj {
   my $self = shift;
-
+  
   #print STDERR "DBConnection::deleteObj : Breaking circular references:\n";
 
   foreach my $adaptor_name (keys %{$self->{'_adaptors'}}) {
