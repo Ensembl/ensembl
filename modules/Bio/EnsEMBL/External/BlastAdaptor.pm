@@ -303,6 +303,8 @@ sub store_result{
     $sth->finish;
   }
   if( $rv < 1 ){# Insert
+    my $use_date = $res->use_date() || 
+      $res->use_date($self->use_date('RESULT'));
     my $sth = $dbh->prepare( sprintf $SQL_RESULT_STORE, $use_date );
     $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
     my $id = $dbh->{mysql_insertid};
@@ -377,14 +379,14 @@ sub store_hit{
   my ( $id, $use_date ) = split( '!!', $hit->token);
   $use_date ||= '';
 
-  my( $rv );
+  my $rv = 0;
   if( $id ){
     my $sth = $dbh->prepare( sprintf $SQL_HIT_RETRIEVE, $use_date );
     $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
     $sth->finish;
   }
   if( $rv < 1 ){ # Insert
-    my $use_date = $hit->use_date() || $hit->( $self->use_date('HIT') );
+    my $use_date = $hit->use_date() || $hit->use_date($self->use_date('HIT'));
     my $sth = $dbh->prepare( sprintf $SQL_HIT_STORE, $use_date );
     $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
     my $id = $dbh->{mysql_insertid};
@@ -474,7 +476,7 @@ sub store_hsp{
     $sth->finish;
   }
   if( $rv < 1 ){ # Insert
-    my $use_date = $hsp->use_date() || $hsp->( $self->use_date('HSP') );
+    my $use_date = $hsp->use_date() || $hsp->use_date($self->use_date('HSP'));
     my $sth = $dbh->prepare( sprintf $SQL_HSP_STORE, $use_date );
     my @bound = ( $frozen, $ticket, $chr_name,  $chr_start, $chr_end );
     $sth->execute( @bound ) || $self->throw( $sth->errstr );
@@ -552,7 +554,7 @@ sub get_all_HSPs {
    my $SQL = qq(
 SELECT object
 FROM   blast_hsp%s
-WHERE  ticket = ? );
+WHERE  \(ticket = ? OR ticket = ?\) );
 
    my $CHR_SQL = qq(
 AND    chr_name = ? );
@@ -562,7 +564,7 @@ AND    chr_start <= ?
 AND    chr_end   >= ? );
 
    my $q = sprintf( $SQL, $use_date );
-   my @binded = ( $id );
+   my @binded = ( $id, substr($id,6) );
 
    if( $chr_name ){
      $q .= $CHR_SQL;
@@ -771,20 +773,26 @@ sub create_tables {
   # Get list of existing tables in database
   my $q = 'show tables like ?';
   my $sth = $dbh->prepare( $q );
-
   my $rv_tck = $sth->execute("blast_ticket")    || $self->throw($sth->errstr);
   my $rv_log = $sth->execute("blast_table_log" )|| $self->throw($sth->errstr);
+  $sth->finish;
 
   if( $rv_tck == 0 ){
-    warn( "Creating blast_ticket table" );
+    warn( "Creating blast_ticket table\n" );
     my $sth = $dbh->prepare( $SQL_CREATE_TICKET );
     my $rv = $sth->execute() || $self->throw( $sth->errstr );
+    $sth->finish;
   }
+  else{ warn( "blast_ticket table already exists\n" ) }
+
   if( $rv_log == 0 ){
-    warn( "Creating blast_result table" );
+    warn( "Creating blast_result table\n" );
     my $sth = $dbh->prepare( $SQL_CREATE_TABLE_LOG );
     my $rv = $sth->execute() || $self->throw( $sth->errstr );    
+     $sth->finish;
   }
+  else{ warn( "blast_table_log table already exists\n" ) }  
+
   return 1;
 }
 
@@ -821,18 +829,18 @@ sub rotate_daily_tables {
   # Get list of existing tables in database
   my $q = 'show table status like ?';
   my $sth = $dbh->prepare( $q );
-  
   my $rv_res  = $sth->execute($res_table) || $self->throw($sth->errstr);
   my $rv_hit  = $sth->execute($hit_table) || $self->throw($sth->errstr);
   my $rv_hsp  = $sth->execute($hsp_table) || $self->throw($sth->errstr);
+  $sth->finish;
 
   if( $rv_res == 0 ){
     warn( "Creating today's $res_table table\n" );
 
     # Create new table
     my $q = sprintf($SQL_CREATE_DAILY_RESULT, $res_table);
-    my $sth = $dbh->prepare( $q );
-    my $rv = $sth->execute() || $self->throw( $sth->errstr );         
+    my $sth1 = $dbh->prepare( $q );
+    my $rv = $sth1->execute() || $self->throw( $sth1->errstr );         
 
     # Flip current table in blast_table_tog
     my $last_date = $self->use_date( "RESULT" ) || '';
@@ -842,15 +850,19 @@ sub rotate_daily_tables {
       || die( $self->throw( $sth2->errstr ) );
     $sth3->execute( 'FILLED','0',0,"blast_result$last_date") 
       || die( $self->throw( $sth3->errstr ) );
+    $sth1->finish();
+    $sth2->finish();
+    $sth3->finish();    
   }
+  else{ warn( "Today's $res_table table already exists\n" ) }
 
   if( $rv_hit == 0 ){
     warn( "Creating today's $hit_table table\n" );
 
     # Create new table
     my $q = sprintf($SQL_CREATE_DAILY_HIT, $hit_table);
-    my $sth = $dbh->prepare( $q );
-    my $rv = $sth->execute() || $self->throw( $sth->errstr );         
+    my $sth1 = $dbh->prepare( $q );
+    my $rv = $sth1->execute() || $self->throw( $sth1->errstr );         
 
     # Flip current table in blast_table_tog
     my $last_date = $self->use_date( "HIT" ) || '';
@@ -860,15 +872,19 @@ sub rotate_daily_tables {
       || die( $self->throw( $sth2->errstr ) );
     $sth3->execute( 'FILLED','0',0,"blast_hit$last_date") 
       || die( $self->throw( $sth3->errstr ) );
+    $sth1->finish();
+    $sth2->finish();
+    $sth3->finish();    
   }
+  else{ warn( "Today's $hit_table table already exists\n" ) }
   
   if( $rv_hsp == 0 ){
     warn( "Creating today's $hsp_table table\n" );
 
     # Create new table
     my $q = sprintf($SQL_CREATE_DAILY_HSP, $hsp_table );
-    my $sth = $dbh->prepare( $q );
-    my $rv = $sth->execute() || $self->throw( $sth->errstr );         
+    my $sth1 = $dbh->prepare( $q );
+    my $rv = $sth1->execute() || $self->throw( $sth1->errstr );         
 
     # Flip current table in blast_table_tog
     my $last_date = $self->use_date( "HSP" ) || '';    
@@ -878,7 +894,11 @@ sub rotate_daily_tables {
       || die( $self->throw( $sth2->errstr ) );
     $sth3->execute( 'FILLED','0',0,"blast_hsp$last_date") 
       || die( $self->throw( $sth3->errstr ) );
+    $sth1->finish();
+    $sth2->finish();
+    $sth3->finish();    
   }
+  else{ warn( "Today's $hsp_table table already exists\n" ) }
   return 1;
 }
 
