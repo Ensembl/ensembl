@@ -586,6 +586,48 @@ sub store{
 }
 
 
+=head2 remove
+
+  Arg [1]    : A feature $feature 
+  Example    : $feature_adaptor->remove($feature);
+  Description: This removes a feature from the database.  The table the
+               feature is removed from is defined by the abstract method
+               _tablename, and the primary key of the table is assumed
+               to be _tablename() . '_id'.  The feature argument must 
+               be an object implementing the dbID method, and for the
+               feature to be removed from the datasbase a dbID value must
+               be returned.
+  Returntype : none
+  Exceptions : thrown if $feature arg does not implement dbID(), or if 
+               $feature->dbID is not a true value               
+  Caller     : general
+
+=cut
+
+sub remove {
+  my ($self, $feature) = @_;
+
+  unless($feature->can('dbID')) {
+    $self->throw("Feature [$feature] does not implement method dbID");
+  }
+
+  unless($feature->dbID) {
+    $self->warn("BaseFeatureAdaptor::remove - dbID not defined - " .
+                "feature could not be removed");
+  }
+
+  my $table = $self->_tablename();
+
+  my $sth = $self->prepare("DELETE FROM $table WHERE ${table}_id = ?");
+  $sth->execute($feature->dbID());
+
+  #unset the feature dbID
+  $feature->dbID('');
+  
+  return;
+}
+
+
 =head2 _tablename
 
   Args       : none
@@ -629,7 +671,7 @@ sub _columns {
 }
 
 
-=head2 _obj_from_hashref
+=head2 _objs_from_sth
 
   Arg [1]    : DBI::row_hashref $hashref containing key-value pairs 
                for each of the columns specified by the _columns method
@@ -643,7 +685,7 @@ sub _columns {
 
 =cut
 
-sub _obj_from_hashref {
+sub _objs_from_sth {
   my $self = shift;
 
   $self->throw("abstract method _obj_from_hashref not defined by implementing"

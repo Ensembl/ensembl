@@ -77,7 +77,7 @@ sub display_label{
 sub dbID{
   my ($self, $arg) = @_;
 
-  if($arg){
+  if(defined $arg){
     $self->{_database_id} = $arg;
   }
 

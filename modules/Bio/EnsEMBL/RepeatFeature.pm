@@ -69,7 +69,7 @@ sub get_RepeatConsensus {
 sub dbID {
     my( $self, $db_id ) = @_;
     
-    if ($db_id) {
+    if (defined $db_id) {
         $self->{'_db_id'} = $db_id;
     }
     return $self->{'_db_id'};

@@ -120,7 +120,7 @@ sub store {
   my $tablename = $self->_tablename();
   
   if( scalar(@sf) == 0 ) {
-    $self->throw("Must call store with contig_id then sequence features");
+    $self->throw("Must call store with sequence features");
   }
   
   my $sth = $self->prepare("

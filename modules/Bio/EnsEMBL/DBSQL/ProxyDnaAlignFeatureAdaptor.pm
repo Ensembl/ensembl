@@ -52,7 +52,7 @@ use vars qw(@ISA);
 
   Arg [1]    : string $constraint
   Arg [2]    : string $logic_name
-  Example    : 
+  Example    : none
   Description: Overrides the Bio::EnsEMBL::DNAAlignFeatureAdaptor generic_fetch
                method.  Normally requests will still be forwarded to the 
                core (primary) database with the exception of requests that
@@ -76,9 +76,82 @@ sub generic_fetch {
       return $est_adaptor->generic_fetch($constraint, $logic_name);
     }
   }
-    
+  
   #use the core adaptor
   return $self->{'_primary_adaptor'}->generic_fetch($constraint, $logic_name);
+}
+
+
+=head2 store
+
+  Arg [1]    : Bio::EnsEMBL::DnaDnaAlignFeature $feature
+  Example    : none
+  Description: overrides the store method to ensure that the est database
+               is used to store ex_e2g_features
+  Returntype : see DnaAlignFeatureAdaptor::store
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub store {
+  my ($self, @sfs) = @_;
+
+  my $est_features = [];
+  my $core_features = [];
+
+  my $est_db = $self->db()->get_db_adaptor('est');
+  if(defined $est_db) {
+    foreach my $f (@sfs) {
+      if($f->analysis() && $f->analysis()->logic_name() eq 'ex_e2g_feat') {
+	push @$est_features, $f;
+      } else {
+	push @$core_features, $f;
+      }
+      #forward request to the EST db
+      my $est_adaptor = $est_db->get_DnaAlignFeatureAdaptor();
+      if(scalar @$est_features) {
+	$est_adaptor->store(@$est_features);
+      }
+      if(scalar @$core_features) {
+	$self->{'_primary_adaptor'}->store(@$core_features);
+      }
+    }
+  }
+
+  #use the core adaptor
+  return $self->{'_primary_adaptor'}->store(@sfs);
+}
+
+
+=head2 remove
+
+  Arg [1]    : Bio::EnsEMBL::DnaDnaAlignFeature $feature
+  Example    : none
+  Description: overrides the remove method to ensure that the est database
+               is used to remove ex_e2g_features
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub remove {
+  my ($self, $feature) = @_;
+
+  if($feature && $feature->analysis && 
+     $feature->analysis()->logic_name() eq 'ex_e2g_feat') {
+    my $est_db = $self->db()->get_db_adaptor('est');
+
+    if(defined $est_db) {
+      #forward request to the EST db
+      my $est_adaptor = $est_db->get_DnaAlignFeatureAdaptor();
+      return $est_adaptor->remove($feature);
+    }
+  }
+
+  #use the core adaptor
+  return $self->{'_primary_adaptor'}->remove($feature);
 }
 
 
