@@ -30,7 +30,7 @@
   
        satellite_dbdump_bychr  -disease homo_sapiens_disease_110
 
-     Known types are: embl est expression family maps snp
+     Known types are: family disease maps expression est # snp 
 
 =head1 DESCRIPTION
 
@@ -38,7 +38,8 @@ This script generates a full dump of one or several EnsEMBL sattelite
 database for a particular chromosome. Useful to create a small but fully
 functional EnsEMBL db (e.g. laptop mini-mirror) 
 
-Based on make_dbdumpk_bychr (which does the core database). 
+Based on make_dbdumpk_bychr (which should be used for the core, embl and
+EST database. embl is a problem still, however.
 
 =cut
 
@@ -66,6 +67,7 @@ my $diseaseb;
 my $mapsdb;
 my $expressiondb;
 my $estdb;
+my $snpdb;
 # end of satellites
 
 &GetOptions( 
@@ -82,7 +84,8 @@ my $estdb;
             'maps:s' => \$mapsdb,
             'expression:s' => \$expressiondb,
             'est:s' => \$estdb,
-	     );
+            'snp:s' => \$snpdb,
+           );
 
 die "need a litedb; use -litedb something " unless $litedb;
 die "chromosome names should start with 'chr'" unless $chr =~ /^chr/;
@@ -97,6 +100,9 @@ if ($lim) {
 &dump_disease($diseasedb);
 &dump_maps($mapsdb);
 &dump_expression($expressiondb);
+&dump_snp($snpdb);
+
+&dump_est($estdb);
 
 sub dump_family { 
     my ($satdb) = @_;
@@ -274,6 +280,77 @@ WHERE sa.db_name = 'ensgene'
 ";
     dump_data($sql, $satdb, 'frequency');
 }                                       # expression
+
+sub dump_snp  {
+    my ($satdb) = @_;
+    return unless $satdb;
+
+    warn "ignoring any non-ENSG aliases";
+    my $dumpdir = "$workdir/$satdb";
+    dump_schema($satdb);
+
+    my @small_ones = qw(Assay ContigHit Locus  Pop Resource Submitter);
+    foreach my $table ( @small_ones ) { 
+        $sql = "select * from $satdb.$table";
+        dump_data($sql, $satdb, $table);
+    }
+
+    #  RefSNP:
+    $sql = "
+SELECT rs.*
+FROM   $satdb.RefSNP rs, 
+       $litedb.gene_snp lgs,
+       $litedb.gene lg
+WHERE  lg.chr_name = '$chr'
+ AND   lg.gene = lgs.gene
+ AND   lgs.refsnpid = rs.id 
+";
+    dump_data($sql, $satdb, 'RefSNP');
+    
+    #  SubSNP
+    $sql = "
+SELECT ss.*
+FROM   $satdb.SubSNP ss, 
+       $litedb.gene_snp lgs,
+       $litedb.gene lg
+WHERE  lg.chr_name = '$chr'
+ AND   lg.gene = lgs.gene
+ AND   lgs.refsnpid = ss.refsnpid 
+";
+
+
+# (or should the last bit be ``lgs.refsnpid = ss.id'') ? 
+    dump_data($sql, $satdb, 'SubSNP');
+
+#  Hit        
+    $sql = "
+SELECT h.*
+FROM   $satdb.Hit h, 
+       $litedb.gene_snp lgs,
+       $litedb.gene lg
+WHERE  lg.chr_name = '$chr'
+ AND   lg.gene = lgs.gene
+ AND   lgs.refsnpid = h.refsnpid 
+";
+    dump_data($sql, $satdb, 'Hit');
+
+# ignore these (says Heikki):
+#  Freq  
+#  GPHit      
+#  SubPop     
+
+}                                       # snp
+
+
+
+
+
+sub dump_est  {
+    my ($satdb) = @_;
+    warn "no written, doing nohting";
+    return undef;
+    return unless $satdb;
+}                                       # est
 
 sub dump_schema {
     my ($satdb) = @_;
