@@ -21,7 +21,8 @@ Bio::EnsEMBL::Virtual::Map - Map of MapContigs which define a VirtualContig
 
 =head1 DESCRIPTION
 
-This object is basically a hash of map contigs which make a virtual contig
+This object is basically a hash of MapContigs which make a virtual
+contig  (MapContigs are just helper objects, see there).
 
 =head1 AUTHOR - Ewan Birney
 
@@ -72,7 +73,8 @@ sub new {
 
  Title   : build_map
  Usage   : $map->build_map($rawcontig,$focusposition,$ori,$left,$right)
- Function:
+ Function: constructs a Map of the RawContigs in the map. Is (only?) called
+   as one of the last step of the Virtual::Contig::new()
  Example :
  Returns : 
  Args    :
@@ -80,7 +82,7 @@ sub new {
 
 =cut
 
-sub build_map{
+sub build_map {
    my ($self,$rawcontig,$focusposition,$ori,$left,$right) = @_;
 
 
@@ -225,15 +227,15 @@ sub build_map{
 
  Title   : create_MapContig
  Usage   :
- Function:
+ Function: creates a MapContig and adds it into own VirtualMap.
  Example :
  Returns : 
- Args    :
+ Args    : RawContig, ChrStart, ChrEnd, RawStart, Orientation
 
 
 =cut
 
-sub create_MapContig{
+sub create_MapContig {
    my ($self,$rawcontig,$start,$end,$start_in_rawcontig,$orientation) = @_;
 
    if( !defined $orientation || $start > $end ||
