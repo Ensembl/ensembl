@@ -16,8 +16,13 @@ sub new {
 
   my $self = bless {}, $class;
 
-  my $dbh = DBI->connect( "DBI:mysql:host=$host", $user, $pass,
+  my $port;
+  ($host, $port) = split(/:/, $host);
+  $port ||= 3306;
+
+  my $dbh = DBI->connect( "DBI:mysql:host=$host:port=$port", $user, $pass,
                           {'RaiseError' => 1});
+
 
   $self->verbose( $verbose );
   $self->dbh( $dbh );
