@@ -59,18 +59,39 @@ $sf->adaptor($sfa);
 ok($sf->adaptor->isa('Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor'));
 
 
-my $slice = $dba->get_SliceAdaptor->fetch_by_region('chromosome', '20');
+my $chr_slice = $dba->get_SliceAdaptor->fetch_by_region('chromosome', '20');
 
-my $features = $sfa->fetch_all_by_Slice($slice);
+my $features = $sfa->fetch_all_by_Slice($chr_slice);
 
-foreach my $feature (@$features) {
-  debug("\n\nfeature start = " . $feature->start());
-  debug("feature end = " . $feature->end());
-  debug("feature strand = " . $feature->strand());
-  debug("feature display_label = " . $feature->display_label());
-  debug("feature score = " . $feature->score());
-}
+debug('--- chr 20 simple features ---');
+print_features($features);
+
+my $cln_slice = $dba->get_SliceAdaptor->fetch_by_region('clone','AL031658.11');
+$features = $sfa->fetch_all_by_Slice($cln_slice);
+
+debug('-- cln AL359765.11 simple features ---');
+print_features($features);
+
+my $sprctg_slice = $dba->get_SliceAdaptor->fetch_by_region('supercontig',
+                                                         'NT_028392');
+$features = $sfa->fetch_all_by_Slice($sprctg_slice);
+
+debug('-- sprctg NT_028392 simple features ---');
+print_features($features);
 
 # List_dbidx
 my $ids = $sfa->list_dbIDs();
 ok (@{$ids});
+
+
+
+sub print_features {
+  my $features = shift;
+  foreach my $feature (@$features) {
+    debug("\n\nfeature start = " . $feature->start());
+    debug("feature end = " . $feature->end());
+    debug("feature strand = " . $feature->strand());
+    debug("feature display_label = " . $feature->display_label());
+    debug("feature score = " . $feature->score());
+  }
+}
