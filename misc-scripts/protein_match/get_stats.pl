@@ -86,7 +86,7 @@ print OUT "$unique Ensembl id matched\n";
 
 print OUT "REFID: $refid\n";
 
-while ($q_idt <= 100) {
+while ($q_idt < 100) {
     
     $query = "select count(distinct(o.objectxrefId)) 
           from objectXref as o,
