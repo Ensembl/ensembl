@@ -20,7 +20,7 @@
 #-----------------------------------------------------------------------
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..14\n"; 
+BEGIN { $| = 1; print "1..16\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -45,9 +45,9 @@ print "ok 2\n";
 
 
  my $protein_adaptor=Bio::EnsEMBL::DBSQL::Protein_Adaptor->new($db);
-eval {
+#eval {
     $protein = $protein_adaptor->fetch_Protein_by_dbid('ENSP00000216167');
-};
+#};
 if ($@) {
     print "not ok 3\n";
 }
@@ -153,6 +153,20 @@ if (scalar @features2 == 3) {
 }
 else {
     print "not ok 14\n";
+}
+
+if ($protein->geneac() eq "ENSG00000100331") {
+print "ok 15\n";
+}
+else {
+    print "not ok 15\n";
+}
+
+if ($protein->transcriptac() eq "ENST00000216167") {
+    print "ok 16\n";
+}
+else {
+    print "not ok 16\n";
 }
 
 my $rm = "rm seq_temp.swiss";

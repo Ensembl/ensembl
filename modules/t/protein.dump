@@ -301,6 +301,7 @@ INSERT INTO repeat_feature (id, contig, seq_start, seq_end, score, strand, analy
 # Dumping data for table 'static_golden_path'
 #
 
+INSERT INTO static_golden_path (fpcctg_name, chr_name, raw_id, chr_start, chr_end, fpcctg_start, fpcctg_end, raw_start, raw_end, raw_ori, type) VALUES ('ctg22fin11','chr22',1,47623160,47662662,342063,381565,1711,41213,1,'UCSC');
 
 
 #
