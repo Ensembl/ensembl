@@ -203,6 +203,8 @@ sub seq_date{
     $self->throw("Object did not provide the seq_date method on Contig interface!");
 
 }
+
+
 =head2 get_all_Genes
 
  Title   : get_all_Genes

@@ -112,7 +112,6 @@ sub _initialize {
   my $clone_dbm_file="$unfinished_root/unfinished_clone.dbm";
   my %unfin_clone;
   unless(tie(%unfin_clone,'NDBM_File',$clone_dbm_file,O_RDONLY,0644)){
-#  unless(dbmopen(%unfin_clone,$clone_dbm_file,0666)){
       $self->throw("Error opening clone dbm file");
   }
   $self->{'_clone_dbm'}=\%unfin_clone;
@@ -122,7 +121,6 @@ sub _initialize {
       my $accession_dbm_file="$unfinished_root/unfinished_accession.dbm";
       my %unfin_accession;
       unless(tie(%unfin_accession,'NDBM_File',$accession_dbm_file,O_RDONLY,0644)){
-      #unless(dbmopen(%unfin_accession,$accession_dbm_file,0666)){
 	  $self->throw("Error opening accession dbm file");
       }
       $self->{'_accession_dbm'}=\%unfin_accession;
@@ -132,7 +130,6 @@ sub _initialize {
   my $clone_update_dbm_file="$unfinished_root/unfinished_clone_update.dbm";
   my %unfin_clone_update;
   unless(tie(%unfin_clone_update,'NDBM_File',$clone_update_dbm_file,O_RDONLY,0644)){
-  #unless(dbmopen(%unfin_clone_update,$clone_update_dbm_file,0666)){
       $self->throw("Error opening clone update dbm file");
   }
   $self->{'_clone_update_dbm'}=\%unfin_clone_update;
@@ -240,6 +237,13 @@ sub get_Gene{
 sub get_Clone {
     my ($self,$id) = @_;
 
+    # if its already been created, get it from the hash
+    if($self->{'_clone_array'}->{$id}){
+	return $self->{'_clone_array'}->{$id};
+    }
+
+    # else, have to build it
+
     # test if clone is not locked (for safety); don't check for valid SV's
     my($flock,$fsv)=$self->_check_clone_entry($id);
     if($flock){
@@ -259,6 +263,9 @@ sub get_Clone {
 					       -htgsp=>$htgsp,
 					       -byacc => $self->{'_byacc'},
 					       );
+    # save it to hash
+    $self->{'_clone_array'}->{$id}=$clone;
+
     return $clone;
 }
 

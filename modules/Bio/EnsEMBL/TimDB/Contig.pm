@@ -192,25 +192,6 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
-=head2 created
-
- Title   : created
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub created{
-   my ($self) = @_;
-
-   $self->warn("In Contig TimDB, faking a creation date...");
-   return (time() - 3600);
-}
-
 
 =head2 get_all_SeqFeatures
 
@@ -527,4 +508,46 @@ sub _gs{
 
 }
 
+
+=head2 created
+
+ Title   : created
+ Usage   :
+ Function: created data - in TimDB this is based on the created data of the clone
+ Example : $contig->created
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub created{
+    my ($self) = @_;
+    my $id=$self->id;
+    # get clone from contig
+    $id=~s/\.\d+$//;
+    return $self->_dbobj->get_Clone($id)->created;
+}
+
+
+=head2 seq_date
+
+ Title   : seq_date
+ Usage   : $contig->seq_date()
+ Function: Gives the unix time value of the dna sequence file stored in TimDB
+    Since DNA is stored by clone, there is just one time for all contigs
+ Example : $contig->seq_date()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub seq_date{
+    my ($self) = @_;
+    my $id=$self->id;
+    # get clone from contig
+    $id=~s/\.\d+$//;
+    return $self->_dbobj->get_Clone($id)->seq_date;
+}
 1;

@@ -279,7 +279,24 @@ foreach my $clone_id ( @clones ) {
 		print STDERR "DNA of $checkdna identical to that in $clone_id\n";
 	    }
 	}
-	
+
+	my $debug;
+	if($debug){
+	    # debug tests
+	    my $id=$clone->id;
+	    print "DNA date [$id]: ".$clone->seq_date."\n";
+	    print "create date [$id]: ".$clone->created."\n";
+	    print "modify date [$id]: ".$clone->modified."\n";
+	    print "version [$id]: ".$clone->version."\n";
+
+	    # debug tests by contig
+	    foreach my $contig ($clone->get_all_Contigs){
+		my $id=$contig->id;
+		print "DNA date [$id]: ".$contig->seq_date."\n";
+	    }
+	    exit 0;
+	}
+
 	if( $format =~ /gff/ ) {
 	    foreach my $contig ( $clone->get_all_Contigs )  {
 		my @seqfeatures = $contig->as_seqfeatures();

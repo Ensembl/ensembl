@@ -80,7 +80,7 @@ sub _initialize {
   $self->id($id);
   
   $self->disk_id($disk_id);
-  $self->sv($sv);
+  $self->embl_version($sv);
   $self->embl_id($emblid);
   $self->htg_phase($htgsp);
   $self->byacc($byacc);
@@ -213,45 +213,6 @@ sub _initialize {
   print STDERR scalar(@{$self->{'_contig_array'}})." contigs found in clone\n";
 
   return $make; # success - we hope!
-}
-
-=head2 created
-
- Title   : created
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub created{
-   my ($self) = @_;
-
-   $self->warn("In Clone TimDB, faking a creation date...");
-   return (time() - 3600);
-}
-
-
-=head2 modified
-
- Title   : modified
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub modified {
-   my ($self) = @_;
-
-   $self->warn("In Clone TimDB, faking a modification date...");
-   return (time() - 3600);
 }
 
 
@@ -433,16 +394,9 @@ sub embl_id {
 =cut
 
 sub sv {
-    my ($obj,$value) = @_;
-    if (defined $value) {
-        $value ||= -1;
-	if ($value =~ /^-?\d+$/) {
-	    $obj->{'_clone_sv'} = $value;
-	} else {
-	    $obj->throw("Invalid value for SV '$value'");
-	}
-    }
-    return $obj->{'_clone_sv'};
+    my($self)=@_;
+    $self->warn("DEPRECATING METHOD replace \$self->sv with \$self->embl_version");
+    return $self->embl_version;
 }
 
 
@@ -543,5 +497,119 @@ sub compare_dna{
     return $eflag;
 }
 
+
+=head2 embl_version
+
+ Title   : embl_version
+ Usage   : $clone->embl_version()
+ Function: Gives the value of the EMBL version, i.e. the sequence data version [SV]
+ Example : $clone->embl_version()
+ Returns : version number
+ Args    : none
+
+
+=cut
+
+sub embl_version {
+    my ($obj,$value) = @_;
+    if (defined $value) {
+        $value ||= -1;
+	if ($value =~ /^-?\d+$/) {
+	    $obj->{'_clone_sv'} = $value;
+	} else {
+	    $obj->throw("Invalid value for embl_version [SV] '$value'");
+	}
+    }
+    return $obj->{'_clone_sv'};
+}
+
+=head2 seq_date
+
+ Title   : seq_date
+ Usage   : $clone->seq_date()
+ Function: In TimDB there is one DNA file per clone, so just checks this date
+ Example : $clone->seq_date()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub seq_date {
+    my ($self) = @_;
+    my $dnafile=$self->{'_clone_dir'}."/".$self->disk_id.".seq";
+    my $dnafiledate=(stat($dnafile))[9];
+    return $dnafiledate;
+}
+
+
+=head2 version
+
+ Title   : version
+ Function: Schema translation
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub version {
+    my ($self,@args) = @_;
+    # this value is incremented each time a clone is unlocked after processing in TimDB
+    return $self->_clone_status(6);
+}
+
+
+=head2 created
+
+ Title   : created
+ Usage   : $clone->created()
+ Function: Gives the unix time value of the created datetime field, which indicates
+           the first time this clone was put in ensembl
+ Example : $clone->created()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub created {
+    my ($self) = @_;
+    # this value is the time set when a clone is unlocked after being first created in TimDB
+    return $self->_clone_status(5);
+}
+
+
+=head2 modified
+
+ Title   : modified
+ Usage   : $clone->modified()
+ Function: Gives the unix time value of the modified datetime field, which indicates
+           the last time this clone was modified in ensembl
+ Example : $clone->modified()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub modified{
+    my ($self) = @_;
+    # this value is the time set when a clone is unlocked in TimDB
+    return $self->_clone_status(0);
+}
+
+sub _clone_status{
+    my($self,$field)=@_;
+    my $disk_id=$self->disk_id;
+    my $val=$self->_dbobj->{'_clone_update_dbm'}->{$disk_id};
+    if(!$val){
+	my $id=$self->id;
+	$self->throw("No Status entry for $disk_id [$id]");
+    }
+    my @fields=split(',',$val);
+    return $fields[$field];
+}
 
 1;

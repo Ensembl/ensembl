@@ -118,6 +118,7 @@ sub sv {
 
 }
 
+
 =head2 embl_version
 
  Title   : embl_version
@@ -136,6 +137,7 @@ sub embl_version {
     $self->warn("Base class has not implemented embl_version yet!");
 
 }
+
 
 =head2 seq_date
 
@@ -197,6 +199,7 @@ sub htg_phase {
 
 }
 
+
 =head2 created
 
  Title   : created
@@ -215,6 +218,8 @@ sub created {
     
     $self->warn("Base class has not implemented created  yet!");
 }
+
+
 =head2 modified
 
  Title   : modified
@@ -232,25 +237,6 @@ sub modified{
     my ($self,@args) = @_;
 
     $self->warn("Base class has not implemented modified yet!");
-}
-
-=head2 stored
-
- Title   : stored
- Usage   : $clone->stored()
- Function: Gives the unix time value of the stored datetime field, which indicates
-           the last time this clone was stored in ensembl
- Example : $clone->stored()
- Returns : unix time
- Args    : none
-
-
-=cut
-
-sub stored {
-    my ($self,@args) = @_;
-
-    $self->warn("Base class has not implemented stored yet!");
 }
 
 
@@ -292,6 +278,7 @@ sub get_all_Contigs {
    $self->warn("Base class has not implemented get_all_Contigs yet!");
 
 }
+
 
 =head2 get_all_Genes
 
@@ -370,6 +357,7 @@ sub seq {
    return $out;
 }
 
+
 =head2 get_AnnSeq
 
  Title   : get_AnnSeq
@@ -422,9 +410,3 @@ sub get_AnnSeq {
 }
 
 1;
-
-
-
-
-
-
