@@ -666,6 +666,143 @@ sub fetch_by_misc_feature_attribute {
 }
 
 
+=head2 get_exceptions_by_slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+  Example    : 
+ Description: get Bio::EnsEMBL::Mapper::Coordinates where on given slice are
+              PAR or overlapping haplotypes
+  Returntype : listref of Bio::EnsEMBL::Mapper::Coordinate
+  Exceptions : none
+  Caller     : Slice
+
+=cut
+
+
+=head2 fetch_normalized_slice_projection
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+  Example    :  ( optional )
+  Description: gives back a project style result. The returned slices 
+               represent the areas to which there are symlinks for the 
+               given slice. start, end show which area on given slice is 
+               symlinked
+  Returntype : [[start,end,$slice][]]
+  Exceptions : none
+  Caller     : BaseFeatureAdaptor
+
+=cut
+
+
+sub fetch_normalized_slice_projection {
+  my $self = shift;
+  my $slice = shift;
+
+  if( $self->{'_exc_cache'}->{$slice->name()} ) {
+    return $self->{'_exc_cache'}->{$slice->name()};
+  }
+
+  my $result = [];
+  my $sql = "
+    SELECT seq_region_id, seq_region_start, seq_region_end,
+           exc_type, exc_seq_region_id, exc_seq_region_start,
+           exc_seq_region_end
+      FROM assembly_exception 
+     WHERE seq_region_id = ?
+  ";
+
+  my $slice_seq_region_id = $self->get_seq_region_id( $slice );
+
+  my $sth = $self->prepare( $sql );
+  $sth->execute( $slice_seq_region_id );
+
+  my (@haps, @pars);
+
+  my ( $seq_region_id, $seq_region_start, $seq_region_end,
+       $exc_type, $exc_seq_region_id, $exc_seq_region_start,
+       $exc_seq_region_end );
+  $sth->bind_columns( \$seq_region_id, \$seq_region_start, \$seq_region_end,
+		      \$exc_type, \$exc_seq_region_id, \$exc_seq_region_start,
+		      \$exc_seq_region_end );
+
+  while( $sth->fetch() ) {
+    # need overlapping PAR and all HAPs if any
+    if( $exc_type eq "PAR" ) {
+      if( $seq_region_start <= $slice->end() && 
+	  $seq_region_end >= $slice->start() ) {
+	push( @pars, [ $seq_region_start, $seq_region_end, $exc_seq_region_id,
+		       $exc_seq_region_start, $exc_seq_region_end ] );
+      }
+    } else {
+      push( @haps, [ $seq_region_start, $seq_region_end, $exc_seq_region_id,
+		     $exc_seq_region_start, $exc_seq_region_end ] );
+    }
+  }
+
+  if( @pars || @haps ) {
+    my @syms;
+
+    if( @haps > 1 ) {
+      my @sort_haps = sort { $a->[1] <=> $b->[1] } @haps;
+      throw( "More than one HAP region not supported yet" );
+    } elsif( @haps == 1 ) {
+      my $hap = $haps[0];
+
+      my $seq_reg_slice = $self->fetch_by_seq_region_id( $slice_seq_region_id );
+      my $exc_slice = $self->fetch_by_seq_region_id( $hap->[2] );
+
+      my $hap = $haps[0];
+
+      push( @syms, [ 1, $hap->[0]-1, $hap->[2], 1, $hap->[3] - 1 ] );
+      push( @syms, [ $hap->[1]+1, $seq_reg_slice->length(), 
+		     $hap->[2], $hap->[4] + 1, $exc_slice->length() ] );
+      
+    }
+    
+    # for now haps and pars should not be both there, but in theory we could handle it
+    # here by cleverly merging the pars into the existing syms, for now just:
+    push( @syms, @pars );
+
+    my $mapper = Bio::EnsEMBL::Mapper->new( "sym", "org" );
+    for my $sym ( @syms ) {
+      $mapper->add_map_coordinates( $slice_seq_region_id, $sym->[0], $sym->[1], 1,
+				    $sym->[2], $sym->[3], $sym->[4] );
+    }
+
+    my @linked = $mapper->map_coordinates( $slice_seq_region_id,
+					   $slice->start(), $slice->end(), 
+					   $slice->strand(), "sym" );
+    
+    # gaps are regions where there is no mapping to another region
+    my $rel_start = 1;
+    for my $coord ( @linked ) {
+      if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
+	push( @$result, [ $rel_start, $coord->length()+$rel_start-1, $slice ] );
+      } else {
+	my $exc_slice = $self->fetch_by_seq_region_id( $coord->id() );
+	my $exc2_slice = Bio::EnsEMBL::Slice->new
+	  (
+	   -START  => $coord->start(),
+	   -END    => $coord->end(),
+	   -STRAND => $coord->strand(),
+	   -SEQ_REGION_NAME => $exc_slice->seq_region_name(),
+	   -COORD_SYSTEM => $exc_slice->coord_system(),
+	   -ADAPTOR => $self
+	  );
+	
+	push( @$result, [ $rel_start, $coord->length() + $rel_start - 1, $exc2_slice ] );
+      }
+      $rel_start += $coord->length();
+    }
+  }
+
+
+
+  # cache and return
+  $self->{'_exc_cache'}->{$slice->name()} = $result;
+  return $result;
+}
+
 
 
 #####################################
