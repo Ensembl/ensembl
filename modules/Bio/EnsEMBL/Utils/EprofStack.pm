@@ -37,21 +37,18 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::Utils::EprofStack;
-use vars qw(@ISA);
+
 use POSIX;
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
 
-use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Utils::Exception qw(warning);
 BEGIN {
  eval {
  require Time::HiRes;
  Time::HiRes->import('time');
  };
 };
-
-@ISA = qw(Bio::EnsEMBL::Root);
 
 
 sub new { 
@@ -85,7 +82,7 @@ sub push_stack{
    my ($self,@args) = @_;
 
    if( $self->{'is_active'} == 1 ) {
-       $self->warn("Attempting to push stack on tag ".$self->tag." when active. Discarding previous push");
+       warning("Attempting to push stack on tag ".$self->tag." when active. Discarding previous push");
    }
    #my($user,$sys) = times();
    # $self->{'current_start'} = (POSIX::times)[0];
@@ -109,7 +106,7 @@ sub pop_stack{
    my ($self,@args) = @_;
 
    if( $self->{'is_active'} == 0 ) {
-       $self->warn("Attempting to push stack on tag ",$self->tag," when not active. Ignoring");
+       warning("Attempting to pop stack on tag ".$self->tag." when not active. Ignoring");
    }
    #my($user,$sys) = times();
  #  my $clocktime = ( (POSIX::times)[0] - $self->{'current_start'} ) / POSIX::sysconf(&POSIX::_SC_CLK_TCK);
