@@ -1,0 +1,1 @@
+This directory should diseapear soon, the protein annotation should be take soon by protein pipeline object, but waiting for this code to come out, here are the few scripts which are used for the protein annotation. They have been written to be run at the Sanger center and are not supposed to be portable...wait for the protein pipeline to come.
