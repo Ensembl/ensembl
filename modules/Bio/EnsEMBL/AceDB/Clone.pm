@@ -18,7 +18,6 @@ Bio::EnsEMBL::AceDB::Clone - Object representing one clone
 
     # $db is Bio::EnsEMBL::AceDB::Obj 
 
-
     $clone = $db->get_Clone();
 
     @contig = $clone->get_Contigs();
@@ -91,7 +90,7 @@ sub _initialize {
 
 =cut
 
-sub get_all_Genes{
+sub get_all_Genes {
    my ($self,@args) = @_;
    my (@genes);
 
@@ -113,7 +112,7 @@ sub get_all_Genes{
 
 =cut
 
-sub seq{
+sub seq {
    my ($self) = @_;
 
    my ($c) = $self->get_Contig($self->id());
@@ -133,7 +132,7 @@ sub seq{
 
 =cut
 
-sub get_all_Contigs{
+sub get_all_Contigs {
    my ($self) = @_;
    my $sth;
    my @res;
@@ -158,7 +157,7 @@ sub get_all_Contigs{
 
 =cut
 
-sub get_Contig{
+sub get_Contig {
    my ($self,$contigid) = @_;
 
    if( $contigid ne $self->id() ) {
@@ -203,7 +202,7 @@ sub id {
 
 =cut
 
-sub _dbobj{
+sub _dbobj {
    my ($obj,$value) = @_;
    if( defined $value) {
       $obj->{'_dbobj'} = $value;

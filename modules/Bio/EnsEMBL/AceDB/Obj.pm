@@ -18,7 +18,7 @@ Bio::EnsEMBL::AceDB::Obj - Object representing an instance of an EnsEMBL DB
 
     $db = new Bio::EnsEMBL::AceDB::Obj( -host => 'caldy' , -port => '210000' );
 
-    $clone = $db->get_clone('X45667');
+    $clone = $db->get_Clone('X45667');
 
     $contig = $db->get_Contig("dJ52N12.02793");
 
@@ -135,7 +135,7 @@ sub get_Gene{
 
 =cut
 
-sub get_Clone{
+sub get_Clone {
    my ($self,$id) = @_;
 
    my $clone = new Bio::EnsEMBL::AceDB::Clone( -id => $id,
@@ -155,7 +155,7 @@ sub get_Clone{
 
 =cut
 
-sub get_Contig{
+sub get_Contig {
    my ($self,$id) = @_;
 
    # FIXME: should check that this id is correct in this db.
