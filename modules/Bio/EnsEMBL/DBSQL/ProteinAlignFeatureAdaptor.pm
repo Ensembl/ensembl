@@ -173,6 +173,10 @@ sub fetch_by_contig_id{
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor($logic_name);
     $analysis = $aa->fetch_by_logic_name($logic_name);
+    unless($analysis->dbID()) {
+      $self->warn("No analysis for logic name $logic_name exists\n");
+      return ();
+    }
     $constraint = " p.analysis_id = ".$analysis->dbID();
   }
   my @features = $self->fetch_by_contig_id_constraint($cid, $constraint);
@@ -196,6 +200,10 @@ sub fetch_by_contig_id_and_score{
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
+    unless($analysis->dbID()) {
+      $self->warn("No analysis for logic name $logic_name exists\n");
+      return ();
+    }
    $constraint .= " and p.analysis_id = ".$analysis->dbID(); 
   }
 
@@ -223,6 +231,10 @@ sub fetch_by_contig_id_and_pid{
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
+    unless($analysis->dbID()) {
+      $self->warn("No analysis for logic name $logic_name exists\n");
+      return ();
+    }
    $constraint .= " and p.analysis_id = ".$analysis->dbID(); 
   }
 
@@ -247,6 +259,10 @@ sub fetch_by_Slice{
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
+    unless($analysis->dbID()) {
+      $self->warn("No analysis for logic name $logic_name exists\n");
+      return ();
+    }
    $constraint .= " p.analysis_id = ".$analysis->dbID(); 
   }
   
@@ -283,6 +299,10 @@ sub fetch_by_Slice_and_score {
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
+    unless($analysis->dbID()) {
+      $self->warn("No analysis for logic name $logic_name exists\n");
+      return ();
+    }
    $constraint .= " and p.analysis_id = ".$analysis->dbID(); 
   }
   
@@ -322,6 +342,10 @@ sub fetch_by_Slice_and_pid {
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
+    unless($analysis->dbID()) {
+      $self->warn("No analysis for logic name $logic_name exists\n");
+      return ();
+    }
    $constraint .= " and p.analysis_id = ".$analysis->dbID(); 
   }
   my @features = $self->fetch_by_assembly_location_constraint($slice->chr_start,$slice->chr_end,$slice->chr_name,$slice->assembly_type, $constraint);
@@ -352,6 +376,10 @@ sub fetch_by_assembly_location{
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor();
     $analysis = $aa->fetch_by_logic_name($logic_name);
+    unless($analysis->dbID()) {
+      $self->warn("No analysis for logic name $logic_name exists\n");
+      return ();
+    }
     $constraint = " p.analysis_id = ".$analysis->dbID();  
   }
   return $self->fetch_by_assembly_location_constraint($start,$end,$chr,$type,$constraint);
@@ -374,6 +402,10 @@ sub fetch_by_assembly_location_and_score{
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor();
     $analysis = $aa->fetch_by_logic_name($logic_name);
+    unless($analysis->dbID()) {
+      $self->warn("No analysis for logic name $logic_name exists\n");
+      return ();
+    }
     $constraint .= " and p.analysis_id = ".$analysis->dbID();  
   }
   return $self->fetch_by_assembly_location_constraint($start,$end,$chr,$type,$constraint);
@@ -397,6 +429,10 @@ sub fetch_by_assembly_location_and_pid{
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor();
     $analysis = $aa->fetch_by_logic_name($logic_name);
+    unless($analysis->dbID()) {
+      $self->warn("No analysis for logic name $logic_name exists\n");
+      return ();
+    }
     $constraint .= " and p.analysis_id = ".$analysis->dbID();  
   }
   return $self->fetch_by_assembly_location_constraint($start,$end,$chr,$type,$constraint);
@@ -432,7 +468,12 @@ sub fetch_by_assembly_location_constraint{
    my @cids = $mapper->list_contig_ids($chr, $chr_start,$chr_end);
    my $cid_list = join(',',@cids);
    # build the SQL
-   my $sql = "select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line, p.analysis_id, p.score,p.evalue,p.perc_ident from protein_align_feature p where p.contig_id in ($cid_list)";
+   my $sql = "SELECT p.contig_id, p.contig_start, p.contig_end, 
+                     p.contig_strand, p.hit_start, p.hit_end, p.hit_name, 
+                     p.cigar_line, p.analysis_id, p.score,p.evalue, 
+                     p.perc_ident 
+              FROM   protein_align_feature p 
+              WHERE p.contig_id in ($cid_list)";
    if($constraint) {
      $sql .=  " AND $constraint";
    }
@@ -564,7 +605,9 @@ sub _new_feature {
 						      -cigar_string => $cigar);
   $dnapep->analysis($analysis);
   $dnapep->seqname($seqname);
-  
+  #set the 'id' of the feature to the hit name
+  $dnapep->id($hname);
+
   if( defined $seq ) {
     $dnapep->attach_seq($seq);
   }

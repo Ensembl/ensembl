@@ -483,6 +483,8 @@ sub fetch_by_assembly_location_constraint{
     $sql .=  " AND $constraint";
   }
 
+  print STDERR $sql . ' ' . $self->stack_trace_dump();
+
   my $sth = $self->prepare($sql);
 
   $sth->execute();

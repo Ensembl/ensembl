@@ -126,23 +126,71 @@ are the methods to implement
  Returns : 
  Args    :
 
+=cut
+
+sub get_all_SimilarityFeatures_above_score {
+  my ($self, $logic_name, $score) = @_;
+
+  #
+  # To deprecate, or not deprecate...
+  # It seems to me that this function isn't very useful in that it's task
+  # could be performed much faster through a call to either
+  # get_DnaAlignFeatures_above_score or
+  # get_ProteinAlignFeatures_above_score.  
+  # Reminder Warning follows:
+  #
+  $self->warn("Call to Slice->get_all_SimilarityFeatures_above_score.");
+
+  my @prot_feats = 
+    $self->get_ProteinAlignFeatures_above_score($logic_name, $score);
+  my @dna_feats = 
+    $self->get_DnaAlignFeatures_above_score($logic_name, $score);
+
+  return (@prot_feats, @dna_feats);
+}
+  
+
+=head2 get_DnaAlignFeatures_above_score
+
+  Args      : $logic_name, $score
+  Function  : returns all DnaAlignFeatures of type logic_name and above score
+  Returntype: list of Bio::EnsEMBL::DnaDnaAlignFeature objects
+  Exceptions: none
+  Caller    : GlyphSet_feature inherited objects
 
 =cut
 
-sub get_all_SimilarityFeatures_above_score{
-   my ($self,$logic_name, $score, $bp) = @_;
+sub get_DnaAlignFeatures_above_score{
+   my ($self,$logic_name, $score) = @_;
 
-   my @out;
+   $self->warn("Slice: get_all_SimilarityFeatures_above_score\n");
 
    if( !defined $score ) {
      $self->throw("No defined score.");
    }
 
-   push(@out,$self->adaptor->db->get_DnaAlignFeatureAdaptor->fetch_by_Slice_and_score($self,$score, $logic_name));
-   
-   return @out;
+   my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
+
+   return $dafa->fetch_by_Slice_and_score($self,$score, $logic_name);
 }
 
+=head2 get_ProteinAlignFeatures_above_score
+
+  Args      : $logic_name, $score
+  Function  : getss all ProteinAlignFeatures of type logic_name and above score
+  Returntype: list of Bio::EnsEMBL::DnaPepAlignFeature objects
+  Exceptions: none
+  Caller    : GlyphSet_feature inherited objects
+  
+=cut
+
+sub get_ProteinAlignFeatures_above_score {
+  my ($self, $logic_name, $score) = @_;
+
+  my $pafa = $self->adaptor->db->get_ProteinAlignFeatureAdaptor();
+
+  return $pafa->fetch_by_Slice_and_score($self, $score, $logic_name);
+}
 
 
 =head2 seq
@@ -235,6 +283,8 @@ sub get_all_RepeatFeatures{
    my ($self,@args) = @_;
 
 
+   $self->warn("Slice: get_all_RepeatFeatures\n");
+
    my @repeats = 
      $self->adaptor->db->get_RepeatFeatureAdaptor()->fetch_by_Slice($self);
 
@@ -259,6 +309,8 @@ sub get_all_RepeatFeatures{
 
 sub get_all_PredictionFeatures{
    my ($self,@args) = @_;
+
+   $self->warn("Slice: get_all_PredictionFeatures");
    
    my @pred_feat = $self->adaptor->fetch_all_prediction_transcripts($self);
    
@@ -280,6 +332,9 @@ sub get_all_PredictionFeatures{
 
 sub get_all_ExternalFeatures{
    my ($self) = @_;
+
+  $self->warn("Slice: get_all_ExternalFeatures");
+  
 
    return $self->_get_all_SeqFeatures_type('external');
 
@@ -303,6 +358,8 @@ sub _get_all_SeqFeatures_type {
    my ($self,$type) = @_;
    my @sf;
 
+  $self->warn("Slice: get_all_SeqFeatures_type");
+  
    my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
      ( $self->assembly_type() );
 
@@ -495,37 +552,6 @@ sub convert_Gene_to_raw_contig{
 }
 
 
-=head2 Backward Compatibility functions
-
-=cut
-
-=head2 get_all_Genes_exononly
-
- Title   : get_all_Genes_exononly
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_Genes_exononly{
-   my ($self) = @_;
-
-   my ($p,$f,$l) = caller;
-   $self->warn("$f:$l get_all_Genes_exononly has been deprecated. get_all_Genes called");
-
-   return $self->get_all_Genes();
-}
-
-
-
-=head2 Internal functions
-
-=cut
-
 =head2 chr_name
 
  Title   : chr_name
@@ -715,27 +741,6 @@ sub accession_number {
     return $acc;
 }
 
-sub fetch_chromosome_length {
-  my ($self) = @_;
-
-  $self->warn( "Call to deprecated method fetch_chromosome_length\n" .
-	       "use \$slice->get_Chromosome()->length(); instead.\n" .
-	       $self->stack_trace_dump());
-
-  return $self->get_Chromosome()->length();
-}
-
-
-        
-sub fetch_karyotype_band_start_end {
-   my ($self,@args) = @_;
-
-   $self->warn( "Call to deprecated method fetch_karyotype_band_start_end\n" .
-		"use \$slice->get_KaryotypeBands(); instead.\n" .
-	       $self->stack_trace_dump());
-
-   return $self->get_KaryotypeBands();
-}
 
 
 sub get_KaryotypeBands() {
@@ -760,6 +765,9 @@ sub get_Chromosome {
 
 sub get_repeatmasked_seq {
     my ($self) = @_;
+
+    $self->warn("Slice: get_repeatmasked_seq\n");
+
     my @repeats = $self->get_all_RepeatFeatures();
     my $dna = $self->seq();
     my $masked_dna = $self->mask_features($dna, @repeats);
@@ -774,6 +782,10 @@ sub get_repeatmasked_seq {
 
 sub mask_features {
     my ($self, $dnastr,@repeats) = @_;
+
+   $self->warn("Slice: mask_features\n");
+
+
     my $dnalen = length($dnastr);
     #print "there are ".@repeats."\n";
   REP:foreach my $f (@repeats) {
@@ -891,31 +903,94 @@ sub get_all_DASFeatures {
   return ();
 }
 
+
+
+
+
+
+
+
+
+
+
+
+=head2 Backward Compatibility functions
+
+=cut
+
+=head2 get_all_Genes_exononly
+
+ Title   : get_all_Genes_exononly
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Genes_exononly{
+   my ($self) = @_;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l get_all_Genes_exononly has been deprecated. get_all_Genes called");
+
+   return $self->get_all_Genes();
+}
+
+
 sub get_all_SangerGenes_startend_lite {
   my $self = shift;
 
-  $self->warn("Slice->get_all_SangerGenes_startend_lite deprecated use get_allGenes() instead\n" .
-	      $self->stack_trace_dump());
-  return ();
+  $self->warn("Slice->get_all_SangerGenes_startend_lite deprecated" . 
+	      " use get_allGenes() instead\n");
+  
+  return $self->get_Genes_by_source('sanger');
 }
   
 sub get_all_VirtualGenes_startend_lite {
   my $self = shift;
 
   $self->warn("Slice->get_all_VirtualGenes_startend_lite deprecated" .
-	      "use get_allGenes() instead\n" .
-	     $self->stack_trace_dump());
+	      " use get_all_Genes() instead\n");
 
-  return ();
+  return $self->get_all_Genes();
 }
 
 
 sub get_all_EMBLGenes_startend_lite {
   my $self = shift;
 
-  $self->warn("Slice->get_all_EMBLGenes_startend_lite deprecated use get_allGenes() instead\n" .  $self->stack_trace_dump());
+  $self->warn("Slice->get_all_EMBLGenes_startend_lite deprecated" .
+	      " use get_Genes_by_source() instead\n");
 
-  return ();
+  return $self->get_Genes_by_source('embl');
 }
+
+
+
+sub fetch_chromosome_length {
+  my ($self) = @_;
+
+  $self->warn( "Call to deprecated method fetch_chromosome_length\n" .
+	       "use \$slice->get_Chromosome()->length(); instead.\n" .
+	       $self->stack_trace_dump());
+
+  return $self->get_Chromosome()->length();
+}
+
+
+        
+sub fetch_karyotype_band_start_end {
+   my ($self,@args) = @_;
+
+   $self->warn( "Call to deprecated method fetch_karyotype_band_start_end\n" .
+		"use \$slice->get_KaryotypeBands(); instead.\n" .
+	       $self->stack_trace_dump());
+
+   return $self->get_KaryotypeBands();
+}
+
 
 1;
