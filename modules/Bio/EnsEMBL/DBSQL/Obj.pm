@@ -496,7 +496,7 @@ sub get_Translation{
 sub get_Exon{
    my ($self,$exonid) = @_;
 
-   my $sth = $self->prepare("select id,contig,created,modified,seq_start,seq_end,strand,phase from exon where id = '$exonid'");
+   my $sth = $self->prepare("select id,version,contig,UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified),seq_start,seq_end,strand,phase from exon where id = '$exonid'");
    $sth->execute;
    my $rowhash = $sth->fetchrow_hashref;
    if( ! defined $rowhash ) {
@@ -505,6 +505,7 @@ sub get_Exon{
 
    my $exon = Bio::EnsEMBL::Exon->new();
    $exon->contig_id($rowhash->{'contig'});
+   $exon->version($rowhash->{'version'});
 
    my $contig_id = $exon->contig_id();
 
@@ -515,10 +516,11 @@ sub get_Exon{
 
    $exon->clone_id($rowhash2->{'clone'});
 
+
    # rest of the attributes
    $exon->id($rowhash->{'id'});
-   $exon->created($rowhash->{'created'});
-   $exon->modified($rowhash->{'modified'});
+   $exon->created($rowhash->{'UNIX_TIMESTAMP(created)'});
+   $exon->modified($rowhash->{'UNIX_TIMESTAMP(modified)'});
    $exon->start($rowhash->{'seq_start'});
    $exon->end($rowhash->{'seq_end'});
    $exon->strand($rowhash->{'strand'});
@@ -1663,16 +1665,17 @@ sub write_Exon{
    };
    
    if  ( $@ || $exon->version > $old_exon->version) {
-       my $exonst = "insert into exon (id,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
-	   $exon->id() . "','" .
-	       $exon->contig_id() . "','" .
-		   $exon->created(). "','" .
-		       $exon->modified . "'," .
-			   $exon->start . ",".
-			       $exon->end . ",".
-				   $exon->strand . ",".
-				       $exon->phase . ",now(),".
-					   $exon->end_phase . ")";
+       my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
+	   $exon->id() . "'," .
+	       $exon->version() . ",'".
+		   $exon->contig_id() . "',FROM_UNIXTIME(" .
+		       $exon->created(). "),FROM_UNIXTIME(" .
+			   $exon->modified() . ")," .
+			       $exon->start . ",".
+				   $exon->end . ",".
+				       $exon->strand . ",".
+					   $exon->phase . ",now(),".
+					       $exon->end_phase . ")";
        
        my $sth = $self->prepare($exonst);
        $sth->execute();
