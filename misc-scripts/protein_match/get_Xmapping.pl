@@ -213,23 +213,23 @@ if ($organism eq "human") {
     close (ENS1);
 
 #Read the file containing the NCBI prediction in gnp format
-    open (REFSEQ,"$refseq_pred") || die "Can't open $refseq_pred\n";
+#    open (REFSEQ,"$refseq_pred") || die "Can't open $refseq_pred\n";
     
-    print STDERR "Reading Refseq file with NCBI predictions\n";
+#    print STDERR "Reading Refseq file with NCBI predictions\n";
 
-    $/ = "\/\/\n";
+#    $/ = "\/\/\n";
     
-    while (<REFSEQ>) {
-	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
-	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
+#    while (<REFSEQ>) {
+#	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
+#	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
 	
-	$refseq_map{$dna_ac} = $prot_ac; 
+#	$refseq_map{$dna_ac} = $prot_ac; 
 	
 #Its a curated Refseq, flag it as predicted
-	print OUT "$prot_ac\tRefSeq_pred\t$prot_ac\tRefSeq_pred\t$prot_ac\t\tPRED\n";
+#	print OUT "$prot_ac\tRefSeq_pred\t$prot_ac\tRefSeq_pred\t$prot_ac\t\tPRED\n";
 
-    }
-    close (REFSEQ);
+#    }
+#    close (REFSEQ);
     
     $/ = "\n";
 
