@@ -141,24 +141,22 @@ sub _parse_exon{
     my $is = $fh->input_record_separator('>');
     my $dis = <$fh>; # skip first record (dull!)
     while( <$fh> ) {
-	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):*(\d*)\s.*(\d{4}-\d\d-\d\d)_[\d:]+\s+(\d{4}-\d\d-\d\d)_[\d:]+.*\n(.*)/  ) {
+	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):*(\d*)\s.*(\d{4}-\d\d-\d\d_[\d:]+)\s+(\d{4}-\d\d-\d\d_[\d:]+).*\n(.*)/  ) {
 	    my $e = $1;
 	    my $contigid = $2;
 	    my $start = $3;
 	    my $end = $4;
 	    my $phase = $5;
-	    my $created = $6;
-	    my $modified = $7;
+	    my $created = &acetime($6,1);
+	    my $modified = &acetime($7,1);
 	    my $pep = $8;
 	    
 	    $pep =~ s/\s+//g;
 	    
-	    # FIXME
-	    # timdb has e/t/g version numbers - should be added to model at this point
-	    # decode version at this point
-	    my $eid;
-	    if($e=~/^$EXON_ID_SUBSCRIPT(\d+)/){
+	    my($eid,$ever);
+	    if($e=~/^$EXON_ID_SUBSCRIPT(\d+)\.(\d+)/){
 		$eid=$EXON_ID_SUBSCRIPT.$1;
+		$ever=$2;
 	    }else{
 		$self->throw("Exon identifier could not be parsed: $eid");
 	    }
@@ -188,6 +186,7 @@ sub _parse_exon{
 
 	    my $exon = Bio::EnsEMBL::Exon->new();
 	    $exon->id($eid);
+	    $exon->version($ever);
 
 	    # at this point, $contigid could be the disk_id where acc_id is required
 	    # (diskname->$ensembl name translation required)
@@ -449,20 +448,18 @@ sub map_all{
     foreach my $t (keys %{$self->{'_trans_hash'}}){
 	my $transcript=new Bio::EnsEMBL::Transcript;
 
-	# FIXME
-	# parse versions at this point
-	my $transcript_id;
-	if($t =~ /$TRANSCRIPT_ID_SUBSCRIPT(\d+)/){
+	my($transcript_id,$tver);
+	if($t =~ /$TRANSCRIPT_ID_SUBSCRIPT(\d+)\.(\d+)/){
 	    $transcript_id = $TRANSCRIPT_ID_SUBSCRIPT . $1;
+	    $tver=$2;
 	}else{
 	    $self->throw("Cannot parse $t as a valid transcript id");
 	}
 
 	$transcript->id($transcript_id);
+	$transcript->version($tver);
 	foreach my $e (@{$self->{'_trans_hash'}->{$t}}){
 	    #print STDERR "Looking at $e\n";
-	    # FIXME
-	    # parse versions at this point
 	    my $exon_id;
 	    if($e =~ /$EXON_ID_SUBSCRIPT(\d+)/){
 		$exon_id = $EXON_ID_SUBSCRIPT . $1;
@@ -506,16 +503,16 @@ sub map_all{
     foreach my $g (keys %{$self->{'_gene_hash'}}){
 	my $gene=new Bio::EnsEMBL::Gene;
 
-	# FIXME
-	# parse versions at this point
-	my $gene_id;
-	if($g =~ /$GENE_ID_SUBSCRIPT(\d+)/){
+	my($gene_id,$gene_version);
+	if($g =~ /$GENE_ID_SUBSCRIPT(\d+)\.(\d+)/){
 	    $gene_id = $GENE_ID_SUBSCRIPT . $1;
+	    $gene_version=$2;
 	}else{
 	    $self->throw("Cannot parse $g as a valid gene id");
 	}
 
 	$gene->id($gene_id);
+	$gene->version($gene_version);
 	my %clone_neighbourhood;
 	foreach my $t (@{$self->{'_gene_hash'}->{$g}}){
 
@@ -531,8 +528,6 @@ sub map_all{
 		}
 	    }
 
-	    # FIXME
-	    # parse versions at this point
 	    my $transcript_id;
 	    if($t =~ /$TRANSCRIPT_ID_SUBSCRIPT(\d+)/){
 		$transcript_id = $TRANSCRIPT_ID_SUBSCRIPT . $1;
@@ -642,5 +637,59 @@ sub contig_order_file{
     return $self->{'contig_order_file'};
 }
 
+=pod
+
+=head2 acetime
+
+    # Generate a acedb time string for now
+    $time = acetime();
+
+Generates an acedb time string (such as
+"1998-06-04_17:31:51") for inclusion in an ace file, taking
+a time string as input, or defaulting to current time.
+
+If supply an acedb time string and a second parameter will do the
+reverse operation.
+
+    # Generate time in seconds from an acedb time string
+    $time = acetime('1998-06-04_17:31:51',1);
+
+This routine is stolen from humpubace.pm at Sanger and originally
+written by James Gilbert.
+
+=cut
+
+sub acetime (;$$) {
+    my $time = shift || time;
+    my $flag = shift;
+
+    # if flag set, do reverse operation
+    if($flag){
+
+	my($year,$mon,$mday,$hours,$min,$sec);
+	if($time=~/^(\d{4})\-(\d{2})\-(\d{2})\_(\d{2}):(\d{2}):(\d{2})$/){
+	    ($year,$mon,$mday,$hours,$min,$sec)=($1,$2,$3,$4,$5,$6);
+	}elsif($time=~/^(\d{4})\-(\d{2})\-(\d{2})$/){
+	    ($year,$mon,$mday,$hours,$min,$sec)=($1,$2,$3,0,0,0);
+	}else{
+	    die "ERROR: not a valid acedb time string [$time]";
+	}
+	use Time::Local;
+	return timelocal($sec,$min,$hours,$mday,($mon-1),$year);
+
+    }else{
+
+	# Get time info
+	my ($sec, $min, $hour, $mday, $mon, $year) = (localtime($time))[0..5];
+	
+	# Change numbers to double-digit format
+	($mon, $mday, $hour, $min, $sec) = ('00'..'59')[($mon + 1), $mday, $hour, $min, $sec];
+	
+	# Make year
+	$year += 1900;
+
+	return "$year-$mon-${mday}_$hour:$min:$sec";
+    }
+}
 
 1;
