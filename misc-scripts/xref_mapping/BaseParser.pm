@@ -119,8 +119,8 @@ sub get_source_id_for_filename {
   my ($self, $file) = @_;
 
   my $sql = "SELECT source_id FROM source WHERE url LIKE '%/" . $file . "'"; 
-  print $sql . "\n";
-  my $sth = $dbi->prepare($sql);
+  #print $sql . "\n";
+  my $sth = dbi()->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
   my $source_id;
@@ -151,7 +151,7 @@ sub upload_xrefs {
     $del_sth->execute();
 
     # upload new ones
-    my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,source_id,species_id) VALUES(?,?,?,?)");
+    my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
     my $pri_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
     my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?,?)");
     my $dep_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
@@ -161,6 +161,7 @@ sub upload_xrefs {
       # Create entry in xref table and note ID
       $xref_sth->execute($xref->{ACCESSION},
 			 $xref->{LABEL},
+			 $xref->{DESCRIPTION},
 			 $xref->{SOURCE_ID},
 			 $xref->{SPECIES_ID}) || die $dbi->errstr;
 
