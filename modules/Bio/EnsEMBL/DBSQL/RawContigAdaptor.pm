@@ -155,7 +155,7 @@ sub fetch {
   
   my $aref = $sth->fetchrow_arrayref();
   if( defined $aref ) {
-    $self->_contig_from_arrayref( $contig, $aref );
+    $self->_fill_contig_from_arrayref( $contig, $aref );
   } else {
     $self->throw( "Couldnt fetch contig, unexpected .." );
   }
@@ -176,7 +176,7 @@ sub _contig_from_sth {
   while( my $aref = $sth->fetchrow_arrayref() ) {
     
     my $contig = Bio::EnsEMBL::RawContig->new( $aref->[0], $self );
-    $self->_contig_from_arrayref( $contig, $aref );
+    $self->_fill_contig_from_arrayref( $contig, $aref );
 
     push( @res, $contig );
   }
@@ -186,7 +186,7 @@ sub _contig_from_sth {
 
 
 
-sub _contig_from_arrayref {
+sub _fill_contig_from_arrayref {
   my $self   = shift;
   my $contig = shift;
   my $aref   = shift;
@@ -202,15 +202,15 @@ sub _contig_from_arrayref {
   my $dbPrimarySeq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new
     ( $dna_id, $self->db() ); # ?
 
-  my $contig = Bio::EnsEMBL::RawContig->new($contig_id,$self);
+  # my $contig = Bio::EnsEMBL::RawContig->new($contig_id,$self);
 
 
-  $contig->sequence( $dbPrimarySeq );
-  $contig->length( $length );
-  $contig->name( $name );
-  $contig->offset( $offset );
-  $contig->corder( $corder );
-  $contig->international_name( $international_name );
+  (defined $dbPrimarySeq) && $contig->sequence( $dbPrimarySeq );
+  (defined $length) && $contig->length( $length );
+  (defined $name) && $contig->name( $name );
+  (defined $offset) && $contig->offset( $offset );
+  (defined $corder) && $contig->corder( $corder );
+  (defined $international_name) && $contig->international_name( $international_name );
 
   # these are lazy fetched
   #my $clone = $self->db->get_CloneAdaptor->fetch_by_dbID($clone_id);
