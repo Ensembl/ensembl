@@ -41,21 +41,28 @@ while (defined(my $line = <>)) {
 foreach my $db (keys %thing) {
     foreach my $v (@{ $thing{$db} }) {
 	print <<EOT;
-scp -c none -r ecs3:/mysqla/current/var/${db}_$v databases/
+if [ ! -f databases/${db}_$v.done ]; then
+  scp -c none -r ecs3:/mysqla/current/var/${db}_$v databases/
+fi
 EOT
     }
 
     for (my $i = 0; $i < scalar @{ $thing{$db} } - 1; ++$i) {
 	print <<EOT;
-/usr/bin/time perl ./build.pl -c ./xdelta.osf -s databases -d deltas \\
-   $db $thing{$db}[$i] $thing{$db}[$i + 1] 2>&1 | \\
-   tee deltas/${db}_$thing{$db}[$i]_delta_$thing{$db}[$i + 1].txt
+if [ ! -f deltas/${db}_$thing{$db}[$i]_delta_$thing{$db}[$i + 1].txt ]; then
+  /usr/bin/time perl ./build.pl -c ./xdelta.osf -s databases -d deltas \\
+    $db $thing{$db}[$i] $thing{$db}[$i + 1] 2>&1 | \\
+    tee deltas/${db}_$thing{$db}[$i]_delta_$thing{$db}[$i + 1].txt
+fi
 EOT
     }
 
     foreach my $v (@{ $thing{$db} }) {
 	print <<EOT;
-rm -rf databases/${db}_$v
+if [ ! -f databases/${db}_$v.done ]; then
+  rm -rf databases/${db}_$v
+  touch databases/${db}_$v.done
+fi
 EOT
     }
 }
