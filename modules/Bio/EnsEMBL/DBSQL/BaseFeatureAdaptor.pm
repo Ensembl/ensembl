@@ -5,7 +5,6 @@
 #
 # You may distribute this module under the same terms as perl itself
 
-
 =head1 NAME
 
 Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor - An Abstract Base class for all
@@ -25,6 +24,9 @@ common to all feature adaptors.
 =head1 CONTACT
 
 Contact EnsEMBL development list for info: <ensembl-dev@ebi.ac.uk>
+
+
+=head1 METHODS
 
 =cut
 
@@ -192,6 +194,68 @@ sub fetch_by_dbID{
   return $feat;
 }
 
+
+=head2 fetch_all_by_dbID_list
+
+  Arg [1]    : listref of ints $id_list
+               The unique database identifiers for the features to be obtained
+  Example    : @feats = @{$adaptor->fetch_by_dbID_list([1234, 2131, 982]))};
+  Description: Returns the features created from the database defined by the
+               the ids in contained in the id list $id_list.  The features 
+               will be returned in their native coordinate system. That is, 
+               the coordinate system in which they are stored in the database.
+               In order to convert the features to a particular coordinate 
+               system use the transfer() or transform() method.  If none of the
+               features are found in the database a reference to an empty 
+               list is returned.
+  Returntype : listref of Bio::EnsEMBL::Features
+  Exceptions : thrown if $id arg is not provided
+               does not exist
+  Caller     : general
+
+=cut
+
+sub fetch_all_by_dbID_list {
+  my ($self,$id_list) = @_;
+
+  if(!defined($id_list) || ref($id_list) ne 'ARRAY') {
+    throw("id_list list reference argument is required") if(!defined $id_list);
+  }
+
+  return [] if(!@$id_list);
+
+  my @out;
+  #construct a constraint like 't1.table1_id = 123'
+  my @tabs = $self->_tables;
+  my ($name, $syn) = @{$tabs[0]};
+
+  #mysql is faster and we ensure that we do not exceed the max query size by
+  #splitting large queries into smaller queries of 200 ids
+  my $max_size = 200;
+
+  while(@$id_list) {
+    my @ids;
+    if(@$id_list > $max_size) {
+      @ids = splice(@$id_list, 0, $max_size);
+    } else {
+      @ids = splice(@$id_list, 0);
+    }
+
+    
+    my $id_str;
+    if(@ids > 1)  {
+      $id_str = " IN (" . join(',', @ids). ")";
+    } else {
+      $id_str = " = " . $ids[0];
+    }
+
+    my $constraint = "${syn}.${name}_id $id_str";
+
+    push @out, @{$self->generic_fetch($constraint)};
+  }
+
+  return \@out;
+}
 
 
 
