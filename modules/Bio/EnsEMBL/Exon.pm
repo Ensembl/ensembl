@@ -96,6 +96,7 @@ use strict;
 
 use Bio::EnsEMBL::SeqFeature;
 use Bio::Seq; # exons have to have sequences...
+use Bio::EnsEMBL::StickyExon;
 
 @ISA = qw(Bio::EnsEMBL::SeqFeature);
 
@@ -348,7 +349,8 @@ sub _transform_to_Slice {
   unless($self->contig) {
     $self->throw("Exon's contig must be defined to transform to Slice coords");
   }
-
+  #print STDERR "transforming ".$self." from raw contig to slice coords\n";
+  #print STDERR "exon ".$self->stable_id." ".$self->gffstring."\n";
   my $adaptor = $slice->adaptor || $self->contig->adaptor;
 
   unless($adaptor) {
@@ -404,7 +406,7 @@ sub _transform_to_Slice {
 
   $newexon->strand( $mapped[0]->strand() * $slice->strand() );
   $newexon->contig( $slice );
-
+  $slice->chr_end;
   #copy the attached supporting features and transform them
   my @feats;
   if( exists $self->{_supporting_evidence} ) {
@@ -416,6 +418,7 @@ sub _transform_to_Slice {
     }
     $newexon->add_supporting_features(@feats);
   }
+  #print STDERR "transformed exon ".$newexon->stable_id." ".$newexon->gffstring."\n";
   return $newexon;
 }
 
@@ -435,7 +438,7 @@ sub _transform_to_Slice {
 sub _transform_to_RawContig {
   my $self = shift;
   #print STDERR "\tTransforming exons to rawcontig coords\n";
-  
+  #print STDERR "exon ".$self->gffstring."\n";
   my $slice_adaptor = $self->contig->adaptor;
 
   unless($slice_adaptor) {
@@ -497,6 +500,7 @@ sub _transform_to_RawContig {
 
     my $stickyExon = Bio::EnsEMBL::StickyExon->new();
     $stickyExon->phase( $self->phase() );
+    $stickyExon->end_phase($self->end_phase());
     $stickyExon->adaptor( $self->adaptor() );
     $stickyExon->start( 1 );
     if( defined $self->dbID() ) { 
@@ -543,6 +547,7 @@ sub _transform_to_RawContig {
     if (defined($self->modified)) {
       $stickyExon->modified($self->modified);
     }
+   #  print STDERR "transformed sticky exon ".$stickyExon->gffstring."\n";
     return $stickyExon;
     
   } else {
@@ -568,7 +573,9 @@ sub _transform_to_RawContig {
     
     #replace old supporting feats with transformed supporting feats
     $new_exon->add_supporting_features(@{$sf_hash{$rawContig->name}});
+    #print STDERR "transformed exon ".$new_exon->gffstring."\n";
     return $new_exon;
+   
   }
 }
 
@@ -643,7 +650,7 @@ sub end_phase {
     $self->{_end_phase} = $endphase;
   }
   if ( !defined( $self->{_end_phase} ) ){
-    $self->warn("No end phase set in Exon. You must set it explicitly. " .
+    $self->throw("No end phase set in Exon. You must set it explicitly. $!" .
 	      "Caller: ".caller);
   }
   return $self->{_end_phase};
@@ -693,7 +700,7 @@ sub phase {
   if (defined($value)) {
     # Value must be 0,1,2, or -1 for non-coding
     if ($value =~ /^(-1|0|1|2)$/) {
-#	print STDERR "Setting phase for " . $self->id . " to $value\n";
+      #print STDERR "Setting phase to $value\n";
       $self->{'phase'} = $value;
     } else {
       $self->throw("Bad value ($value) for exon phase. Should only be" .
@@ -1587,8 +1594,8 @@ sub seq {
   else {
     # call subseq on the contig which may be a RawContig or a Slice
 
-    # print STDERR "[Exon.pm seq method: Start: " . $self->start . "\tEnd:   " . $self->end . "\t";
-    # print STDERR "Strand: " . $self->strand . "]\nContig: " . $self->contig() . "\n\n";
+    #print STDERR "[Exon.pm seq method: Start: " . $self->start . "\tEnd:   " . $self->end . "\t";
+    #print STDERR "Strand: " . $self->strand . "]\nContig: " . $self->contig() . "\n\n";
 
       
     $seq = $self->contig()->subseq($self->start, $self->end);
@@ -1848,7 +1855,7 @@ sub clone_id{
 sub contig_id{
   my $self = shift;
   $self->warn("Bio::EnsEMBL::Exon::contig_id is deprecated.  \n" .
-	      "Use exon->contig->dbID instead\n");
+	      "Use exon->contig->dbID instead $!");
 
 #  if($contig_id) {
 #    my $contig = 

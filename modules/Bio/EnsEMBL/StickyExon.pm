@@ -364,7 +364,7 @@ sub transform {
   my $slice = shift;
 
   # print "Calling transform on sticky exon\n";
-
+  
   if( defined $self->contig() and 
       $self->contig()->isa( "Bio::EnsEMBL::RawContig" ) )  {
 
@@ -387,7 +387,7 @@ sub transform {
     my $component_exons = $self->get_all_component_Exons;
 
     foreach my $c_exon ( @$component_exons ) {
-      
+     # print STDERR "component exon ".$self->stable_id." ".$c_exon->gffstring."\n";
       my @mapped = $mapper->map_coordinates_to_assembly
 	(
 	 $c_exon->contig()->dbID,
@@ -467,7 +467,7 @@ sub transform {
 	}
 	else {
 	  $mapped_start = $mapped[0]->start;
-	  $composite_exon_end_phase = $c_exon->phase();
+	  $composite_exon_end_phase = $c_exon->end_phase();
 	}
       }
     }
@@ -503,7 +503,7 @@ sub transform {
 
     $newexon->phase( $composite_exon_phase );
     $newexon->end_phase( $composite_exon_end_phase );
-   
+    #print STDERR "transformed exon ".$newexon->stable_id." ".$newexon->gffstring."\n";
     return $newexon;
   } 
   else {
