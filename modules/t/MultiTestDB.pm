@@ -385,7 +385,7 @@ sub hide {
     my @lines = <SCHEMA_FILE>;
     my $sql = join ' ', @lines;
 
-    $sql =~ s/;$//;
+    $sql =~ s/;\s*$//;
 
     close SCHEMA_FILE;
 
