@@ -2214,7 +2214,8 @@ sub get_all_VirtualGenes_startend_lite {
 	return $self->dbobj->get_LiteAdaptor->fetch_virtualgenes_start_end(
         $self->_chr_name, 
         $self->_global_start, 
-        $self->_global_end
+        $self->_global_end,
+        'core'
     ); 
 }
 
@@ -2230,7 +2231,7 @@ sub get_all_VirtualTranscripts_startend_lite {
 
 sub get_all_VirtualTranscripts_startend_lite_coding {
     my  $self = shift;
-    return $self->dbobj->get_LiteAdaptor->fetch_virtualtranscripts_coding_start_end(
+    return $self->dbobj->get_LiteAdaptor->fetch_virtualtranscripts_start_end(
         $self->_chr_name,
         $self->_global_start,
         $self->_global_end,
@@ -2249,19 +2250,21 @@ sub get_all_VirtualGenscans_startend_lite {
 
 sub get_all_EMBLGenes_startend_lite {
 	my  $self = shift;
-	return $self->dbobj->get_LiteAdaptor->fetch_EMBLgenes_start_end(
+	return $self->dbobj->get_LiteAdaptor->fetch_virtualgenes_start_end(
         $self->_chr_name, 
         $self->_global_start, 
-        $self->_global_end
+        $self->_global_end,
+        'embl'
     ); 
 }
 
 sub get_all_SangerGenes_startend_lite {
       my  $self = shift;
-      return $self->dbobj->get_LiteAdaptor->fetch_SangerGenes_start_end(
+      return $self->dbobj->get_LiteAdaptor->fetch_virtualgenes_start_end(
         $self->_chr_name,
         $self->_global_start,
-        $self->_global_end
+        $self->_global_end,
+        'sanger'
     );
 }
 
