@@ -281,7 +281,12 @@ sub fetch_by_Transcript_id {
     my $transid = shift;
 
     # this is a cheap SQL call
-    my $sth = $self->prepare("select gene_id from transcript where transcript_id = '$transid'");
+    #my $sth = $self->prepare("select gene_id from transcript where transcript_id = '$transid'");
+    my $sth = $self->prepare("	SELECT	tr.gene_id 
+				FROM	transcript as tr, 
+					transcript_stable_id as trs 
+				WHERE	trs.stable_id = '$transid' 
+				AND	trs.transcript_id = tr.transcript_id");
     $sth->execute;
 
     my ($geneid) = $sth->fetchrow_array();
@@ -312,7 +317,12 @@ sub fetch_by_Peptide_id {
     my $peptideid = shift;
 
     # this is a cheap SQL call
-    my $sth = $self->prepare("select gene_id from transcript where translation_id = '$peptideid'");
+    my $sth = $self->prepare("	SELECT	tr.gene_id 
+				FROM	transcript as tr, 
+					translation_stable_id as trs 
+			    	WHERE	trs.stable_id = '$peptideid' 
+				AND	trs.translation_id = tr.translation_id
+			    ");
     $sth->execute;
 
     my ($geneid) = $sth->fetchrow_array();
