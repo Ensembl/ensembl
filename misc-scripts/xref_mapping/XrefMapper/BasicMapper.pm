@@ -852,7 +852,8 @@ sub parse_mappings {
   $self->dump_direct_xrefs($xref_id_offset, $max_object_xref_id);
 
   # write comparison info. Can be removed after development
-  $self->dump_comparison();
+  ###writes to xref.txt.Do not want to do this if loading data afterwards
+  ####  $self->dump_comparison();
 
 }
 
@@ -1388,25 +1389,44 @@ sub build_transcript_display_xrefs {
     my ($best_xref, $best_xref_priority_idx) = split /\|/, $obj_to_best_xref{$key};
 
     # If transcript has a translation, use the best xref out of the transcript & translation
+
+
+    my $transcript_id;
+    my $translation_id;
     if ($type =~ /Transcript/i) {
-      my $transcript_id = $object_id;
-      my $translation_id = $transcript_to_translation{$transcript_id};
-
-      if ($translation_id) {
-	my ($translation_xref, $translation_priority) = split /\|/, $obj_to_best_xref{"Translation|$translation_id"};
-	my ($transcript_xref, $transcript_priority)   = split /\|/, $obj_to_best_xref{"Transcript|$transcript_id"};
-
-	if ($translation_priority < $transcript_priority) {
-	  $best_xref = $translation_xref;
-	  $best_xref_priority_idx = $translation_priority;
-	} else {
-	  $best_xref = $transcript_xref;
-	  $best_xref_priority_idx = $transcript_priority;
-	}
-
-      }
+      $transcript_id = $object_id;
+      $translation_id = $transcript_to_translation{$transcript_id};
     }
-
+    elsif ($type =~ /Translation/i) {
+      $translation_id = $object_id;
+      $transcript_id = $translation_to_transcript{$translation_id};
+      $object_id = $transcript_id;
+    }
+    else{
+      print "$type type error BARFFF!!!\n";
+      next;
+    }
+    if ($translation_id) {
+      my ($translation_xref, $translation_priority) = split /\|/, $obj_to_best_xref{"Translation|$translation_id"};
+      my ($transcript_xref, $transcript_priority)   = split /\|/, $obj_to_best_xref{"Transcript|$transcript_id"};
+      
+      if(!$translation_xref){
+	$best_xref = $transcript_xref;
+	$best_xref_priority_idx = $transcript_priority;
+      }
+      if(!$transcript_xref){
+	$best_xref = $translation_xref;
+	$best_xref_priority_idx = $translation_priority;
+      }
+      elsif ($translation_priority < $transcript_priority) {
+	$best_xref = $translation_xref;
+	$best_xref_priority_idx = $translation_priority;
+      } else {
+	$best_xref = $transcript_xref;
+	$best_xref_priority_idx = $transcript_priority;
+      }
+      
+    }
     if ($best_xref) {
 
       # Write record with xref_id_offset
