@@ -48,6 +48,187 @@ use Bio::Root::RootI;
 #The method ->new is inherited from the BaseAdaptor
 @ISA = qw(Bio::EnsEMBL::Archive::DBSQL::BaseAdaptor);
 
+=head2 fetch_by_dbID
+
+ Title   : fetch_by_dbID
+ Usage   :
+ Function:
+ Example :
+ Returns : Bio::EnsEMBL::Overlap::Overlap
+ Args    :
+
+
+=cut
+
+sub fetch_by_dbID {
+    my ($self,$id) = @_;
+
+    $self->throw("I need a dbID") unless $id;
+    my $statement = "SELECT seq_id,version,start_clone,start_coord,end_clone,end_coord,modified,release_version from versioned_seq where versioned_seq_id = $id";
+    my $sth = $self->db->execute($statement);
+    my($seq_id,$v,$start_c,$start,$end_c,$end,$mod,$rel) = $sth->fetchrow_array;
+    my $sad = $self->db->get_SeqAdaptor;
+    my $seq = $sad->fetch_by_dbID($seq_id);
+    my $vseq = Bio::EnsEMBL::Archive::VersionedSeq->new(
+					      -dbid => $id,
+					      -archive_seq => $seq,
+					      -version => $v,
+					      -start_clone => $start_c,
+					      -start => $start,
+					      -end_clone => $end_c,
+					      -end => $end,
+					      -modified => $mod,
+					      -release_number => $rel,
+					      -adaptor => $self
+					      );
+    return $seq;
+}
+
+=head2 store
+
+ Title   : store
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub store {
+   my ($self,$vseq) = @_;
+
+   unless (defined $vseq || $vseq->isa('Bio::EnsEMBL::Archive::VersionedSeq')) {
+       $self->throw("Cannot store $vseq, you have to provide a Bio::EnsEMBL::Archive::Vseq object to store!");
+   }
+   if ($vseq->db_ID) {
+       $self->warn("Trying to store this versionedseq ".$vseq->name." twice");
+       return $vseq->db_ID;
+   }
+   
+   my $seqda = $self->db->get_SeqAdaptor;
+   my $seq_id = $seqda->store($vseq->archive_seq);
+   
+   if (! $self->_exists($vseq)) {
+       if ($vseq->archive_seq->type ne 'gene') {
+	   (! defined $vseq->seq) && $self->warn("Trying to store a versioned seq without sequence for a ".$vseq->archive_seq->type." sequence");
+	   
+	   my $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_clone,start_coord,end_clone,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",'".$vseq->seq."','".$vseq->start_clone."',".$vseq->start.",'".$vseq->end_clone."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
+       }
+       else {
+	   my $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_clone,start_coord,end_clone,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",NULL,'".$vseq->start_clone."',".$vseq->start.",'".$vseq->end_clone."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
+       }
+       my $sth = $self->db->execute($statement);
+       $id = $sth->{'mysql_insertid'};
+       $vseq->db_ID($id);
+   } 
+   $vseq->adaptor;
+   return $vseq->db_ID;
+}
+
+=head2 _exists
+
+ Title   : _exists
+ Usage   :
+ Function: Check if this Seq exists already in the database
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub _exists{
+    my ($vseq) = @_;
+
+    my $statement = "select versioned_seq_id from versioned_seq where seq_id = '".$vseq->archive_seq->db_ID."' and version = ".$vseq->version;
+    my $sth = $self->db->execute($statement);
+    my($id) = $sth->fetchrow_array;
+    if ($id) { 
+	$vseq->db_ID($id);
+	return 1;
+    }
+    else {
+	return 0;
+    }
+}
+
+#Methods below are to provide quick mysql version of the PrimarySeqI methods
+
+=head2 seq
+
+ Title   : seq
+ Usage   : $string    = $obj->seq()
+ Function: Returns the sequence as a string of letters.
+ Returns : A scalar
+ Args    : none
+
+=cut
+
+sub seq {
+   my ($self,$id) = @_;
+   
+   $self->throw("I need an id") unless $id;
+
+   my $sth=$self->prepare("SELECT sequence FROM versioned_seq WHERE versioned_seq_id = $id");
+   $sth->execute();
+   my($str) = $sth->fetchrow;
+   return $str;
+}
+
+=head2 subseq
+
+ Title   : subseq
+ Usage   : $substring = $obj->subseq(10,40);
+ Function: returns the subseq from start to end, where the first base
+           is 1 and the number is inclusive, ie 1-2 are the first two
+           bases of the sequence
+           Start cannot be larger than end but can be equal
+ Returns : a string
+ Args    : start and end scalars
+
+=cut
+
+sub subseq{
+    my ($self,$id,$start,$end) = @_;
+    
+    $self->throw("I need an id") unless $id;
+    $self->throw("I need a start") unless $start;
+    $self->throw("I need an end") unless $end;
+
+    my $length= $end-$start+1;
+    
+    my $sth=$self->prepare("SELECT SUBSTRING(sequence,$start,$length) FROM versioned_seq WHERE versioned_seq_id = $id");
+    $sth->execute(); 
+    
+    my($subseq) = $sth->fetchrow;
+    
+    return $subseq;
+}
+
+=head2 length
+
+ Title   : length
+ Usage   : $len = $seq->length()
+ Function: Returns the length of the sequence
+ Returns : scalar
+ Args    : none
+
+
+=cut
+
+sub length {
+    my ($self,$id) = @_;
+
+    $self->throw("I need an id") unless $id;
+
+    my $sth=$self->prepare("SELECT length(sequence) FROM versioned_seq WHERE versioned_seq_id = $id");
+    $sth->execute(); 
+    
+    my ($length) = $sth->fetchrow;
+    
+    return $length;
+}
 
 1;
 

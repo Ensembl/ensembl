@@ -361,24 +361,24 @@ sub start_clone{
 
 }
 
-=head2 seq_start
+=head2 start
 
- Title   : seq_start
- Usage   : $obj->seq_start($newval)
- Function: Getset for seq_start value
- Returns : value of seq_start
+ Title   : start
+ Usage   : $obj->start($newval)
+ Function: Getset for start value
+ Returns : value of start
  Args    : newvalue (optional)
 
 
 =cut
 
-sub seq_start{
+sub start{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'seq_start'} = $value;
+      $obj->{'start'} = $value;
     }
-    return $obj->{'seq_start'};
+    return $obj->{'start'};
 
 }
 
@@ -403,24 +403,24 @@ sub end_clone{
 
 }
 
-=head2 seq_end
+=head2 end
 
- Title   : seq_end
- Usage   : $obj->seq_end($newval)
- Function: Getset for seq_end value
- Returns : value of seq_end
+ Title   : end
+ Usage   : $obj->end($newval)
+ Function: Getset for end value
+ Returns : value of end
  Args    : newvalue (optional)
 
 
 =cut
 
-sub seq_end{
+sub end{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'seq_end'} = $value;
+      $obj->{'end'} = $value;
     }
-    return $obj->{'seq_end'};
+    return $obj->{'end'};
 
 }
 

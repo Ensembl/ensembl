@@ -196,12 +196,14 @@ sub prepare {
 sub execute{
    my ($self,$query) = @_;
 
-   if($self->_readonly){
+   my $sth;
+   if (($query =~ /insert|update/) && ($self->_readonly)){
        #print "READONLY: $query\n";
    }else{
-       my $usth   = $self->prepare($query);
-       $usth->execute;
+       $sth = $self->prepare($query);
+       $sth->execute;
    }
+   return $sth;
 }
 
 =head2 _readonly
