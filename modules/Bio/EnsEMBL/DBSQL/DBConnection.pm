@@ -130,6 +130,8 @@ sub new {
   $self->host( $host );
   $self->dbname( $db );
   $self->password( $password);
+  $self->port($port);
+  $self->driver($driver);
 
   #be very sneaky and actually return a dbholder object which is outside
   #of the circular reference loops and will cleanup after the subclass 
