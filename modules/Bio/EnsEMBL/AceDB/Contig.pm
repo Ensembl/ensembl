@@ -270,11 +270,16 @@ sub get_all_Genes {
     
     # Loop through the subsequences
     foreach my $sub ($seq->at('Structure.Subsequence')) {
-                
+    
+        my $genename = "$sub";        
+        if ($genename =~ /^.TRIMMED/) {
+            next;
+        }
+        
         # Fetch the method and check we're interested in it            
         if ($methods{$sub->fetch->at("Method[1]")}) {
              
-            my $genename = "$sub";                                  
+                                              
             my ($start, $end) = map($_->name(), $sub->row(1));
             my $strand = ($start < $end) ? 1 : -1;
             my $subseq = $sub->fetch();             
