@@ -40,29 +40,6 @@ use vars '@ISA';
 @ISA = qw(Bio::EnsEMBL::DBSQL::ProxyAdaptor);
 
 
-
-sub set_primary{
-  my ($self, $primary_adaptor) = @_;
-
-#
-# For old style code i will have to add primary db later when get is called
-#
-  unless($primary_adaptor) {
-    throw("The primary_adaptor argument is required\n");
-    return undef;
-  }
-#  
-#  #determine the type of adaptor the proxy is filling in for
-  $self->{'_proxy_type'} = ref($primary_adaptor);
-#  
-  #strip out fully qualified package name
-  $self->{'_proxy_type'} =~ s/.*:://;
-
-  $self->{'_primary_adaptor'} = $primary_adaptor;
-#
-}
- 
-
 =head2 fetch_by_Slice
 
   Arg [1]    : list of arbitrary args @args
@@ -79,19 +56,15 @@ sub set_primary{
 sub fetch_all_by_Slice {
   my ($self, @args) = @_;
 
-  my $lite_db = Bio::EnsEMBL::Registry->get_db($self->db(),'lite');#$self->db()->get_db_adaptor('lite');
-  my $snp_db = Bio::EnsEMBL::Registry->get_db($self->db(),'SNP'); #$self->db()->get_db_adaptor('SNP');
+  my $lite_db = $self->db()->get_db_adaptor('lite');
+  my $snp_db = $self->db()->get_db_adaptor('SNP');
 
   if(defined $lite_db) {
     #use the Lite database if it is available
-    my $lite_adaptor =  Bio::EnsEMBL::Registry->get_adaptor( 
-                          $lite_db->species, $lite_db->group ,"lite");
-    return $lite_adaptor->fetch_all_by_Slice(@args);
+    return $lite_db->get_SNPAdaptor()->fetch_all_by_Slice(@args);
   } elsif(defined $snp_db) {
     #use the snp database if it is available
-    my $snp_adaptor =  Bio::EnsEMBL::Registry->get_adaptor( 
-			  $snp_db->species, $snp_db->group ,"SNP");   
-    return $snp_adaptor->fetch_all_by_Slice(@args);
+    return $snp_db->get_SNPAdaptor()->fetch_all_by_Slice(@args);
   }
 
   #There is no core SNPAdaptor so throw an exception if lite and SNP
