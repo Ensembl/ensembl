@@ -315,7 +315,7 @@ sub exists {
       return 1;
     }
 
-    foreach my $cacheAna ( $self->{_cache} ) {
+    while(  my ( $cacheId, $cacheAna) = each %{$self->{_cache}} ) {
       if( $cacheAna->compare( $anal ) >= 0 ) {
         return 1;
       }
