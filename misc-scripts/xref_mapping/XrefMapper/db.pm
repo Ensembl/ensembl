@@ -191,6 +191,14 @@ sub dumpcheck {
   return $self->{_dumpcheck};
 }
 
+sub maxdump {
+  my ($self, $arg) = @_;
+  
+  (defined $arg) &&
+    ($self->{_maxdump} = $arg );
+  return $self->{_maxdump};
+}
+
 
 sub process_dir {
   my ($dir) = @_;
