@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 29;
+	plan tests => 33;
 }
 
 use MultiTestDB;
@@ -60,6 +60,15 @@ ok( $gene->external_name eq "Q9H466");
 
 debug( "Gene external dbname: " . $gene->external_db );
 ok( $gene->external_db eq "SPTREMBL");
+
+debug( "Gene external dbname: " . $gene->relevant_xref );
+ok( $gene->relevant_xref == 128324);
+
+
+# test the getters and setters
+ok( test_getter_setter( $gene, "external_name", "banana" ));   
+ok( test_getter_setter( $gene, "external_db", "dummy" ));   
+ok( test_getter_setter( $gene, "relevant_xref", 42 ));   
 
 
 my $links = $gene->get_all_DBLinks();
