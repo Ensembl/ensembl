@@ -93,16 +93,22 @@ foreach my $info_file (glob($delta_dir . '/*.info')) {
 	print "\tChecksum mismatch for old file\n";
 	print "\tCan not continue\n";
 	die;
+    } elsif ($v1_sum ne '(none)' && $v1_size != (stat $v1_file)[7]) {
+	print "\tSize mismatch for old file\n";
+	print "\tCan not continue\n";
     } else {
-	print "\tChecksum ok for old file\n";
+	print "\tChecksum and size ok for old file\n";
     }
 
     if ($delta_sum ne '(none)' && $delta_sum ne make_checksum($delta_file)) {
 	print "\tChecksum mismatch for delta file\n";
 	print "\tCan not continue\n";
 	die;
+    } elsif ($delta_sum ne '(none)' && $delta_size != (stat $delta_file)[7]) {
+	print "\tSize mismatch for delta file\n";
+	print "\tCan not continue\n";
     } else {
-	print "\tChecksum ok for delta file\n";
+	print "\tChecksum and size ok for delta file\n";
     }
 
     if ($patch_command eq 'PATCH') {
@@ -122,7 +128,10 @@ foreach my $info_file (glob($delta_dir . '/*.info')) {
 	print "\tChecksum mismatch for new file\n";
 	print "\tCan not continue\n";
 	die;
+    } elsif ($v2_sum ne '(none)' && $v2_size != (stat $v2_file)[7]) {
+	print "\tSize mismatch for new file\n";
+	print "\tCan not continue\n";
     } else {
-	print "\tChecksum ok for new file\n";
+	print "\tChecksum and size ok for new file\n";
     }
 }
