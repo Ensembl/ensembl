@@ -1345,14 +1345,14 @@ sub delete_Gene{
    my ($self,$geneid) = @_;
    my @trans;
    my %exon;
-   my $translation;
+   my @translation;
    # get out exons, transcripts for gene. 
 
    my $sth = $self->prepare("select id,translation from transcript where gene = '$geneid'");
    $sth->execute;
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@trans,$rowhash->{'id'});
-       $translation = $rowhash->{'translation'};
+       push(@translation,$rowhash->{'translation'});
    }
 
    foreach my $trans ( @trans ) {
@@ -1363,9 +1363,10 @@ sub delete_Gene{
        }
    }
 
-   my $sth2 = $self->prepare("delete from translation where id = '$translation'");
-   $sth2->execute;
-
+   foreach my $translation (@translation) {
+       my $sth2 = $self->prepare("delete from translation where id = '$translation'");
+       $sth2->execute;
+   }
    # delete exons, transcripts, gene rows
 
    foreach my $exon ( keys %exon ) {
@@ -1382,9 +1383,6 @@ sub delete_Gene{
        $sth= $self->prepare("delete from exon_transcript where transcript = '$trans'");
        $sth->execute;
    }
-
-   
-
    $sth = $self->prepare("delete from gene where id = '$geneid'");
    $sth->execute;
 }   
@@ -1631,28 +1629,18 @@ sub write_Gene{
        }
    }
 
-   eval {
-       $old_gene = $self->get_Gene($gene->id);
-   };
-
-   if ( $@ || ($gene->version > $old_gene->version)) {
-
-       !$gene->created() && $gene->created(0);
-       !$gene->modified() && $gene->modified(0);
-
-       my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
-				 $gene->id       . "','".
-				 $gene->version  . "',FROM_UNIXTIME(".
-				 $gene->created  . "),FROM_UNIXTIME(".
-				 $gene->modified . "),now())");
-       $sth2->execute();
-   }
-   else {
-       print "Got this gene with this version already, no need to write in db\n";
-   }
+   !$gene->created() && $gene->created(0);
+   !$gene->modified() && $gene->modified(0);
+   
+   my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
+			     $gene->id       . "','".
+			     $gene->version  . "',FROM_UNIXTIME(".
+			     $gene->created  . "),FROM_UNIXTIME(".
+			     $gene->modified . "),now())");
+   $sth2->execute();
 
    foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
-
+       
        my $sth = $self->prepare("select gene,clone from geneclone_neighbourhood where gene='".$gene->id."' && clone='$cloneid'");
        $sth->execute();
        my $rowhash =  $sth->fetchrow_arrayref();
@@ -1662,10 +1650,10 @@ sub write_Gene{
 				 $gene->id . "','". 
 				 $cloneid ."')");
 	   $sth->execute();
+	   
        }
    }
 }
-
 
 =head2 write_all_Protein_features
 
@@ -2249,21 +2237,10 @@ sub write_Transcript{
    }
 
    # ok - now load this line in
-
+   my $tst = $self->prepare("insert into transcript (id,gene,translation,version) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "',".$trans->version.")");
+   $tst->execute();
+   $self->write_Translation($trans->translation());
    
-   eval {
-       $old_trans=$self->get_Transcript($trans->id);
-   };
-   
-   if ($@) {
-
-       my $tst = $self->prepare("insert into transcript (id,gene,translation,version) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "',".$trans->version.")");
-       $tst->execute();
-       $self->write_Translation($trans->translation());
-   }
-   else {
-       $self->warn ("Transcript already present in the database");
-   }
    return 1;
 }
 
@@ -2287,27 +2264,15 @@ sub write_Translation{
 	$self->throw("Is not a translation. Cannot write!");
     }
     
-    eval {
-	$old_transl=$self->get_Translation($translation->id);
-    };
-    
+    my $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
+			     . $translation->id . "',"
+			     . $translation->version . ","
+			     . $translation->start . ",'"  
+			     . $translation->start_exon_id. "',"
+			     . $translation->end . ",'"
+			     . $translation->end_exon_id . "')");
+    $tst->execute();
 
-    if ( $@ || ($translation->version > $old_transl->version)) {
-	if( !defined $translation->version  ) {
-	    $self->throw("No version number on translation");
-	}
-	my $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
-				 . $translation->id . "',"
-				 . $translation->version . ","
-				 . $translation->start . ",'"  
-				 . $translation->start_exon_id. "',"
-				 . $translation->end . ",'"
-				 . $translation->end_exon_id . "')");
-	$tst->execute();
-    }
-    else {
-	$self->warn("Translation already present in the database");
-    }
 }
 
 =head2 write_Exon
@@ -2337,33 +2302,26 @@ sub write_Exon{
 
    # FIXME: better done with placeholders. (perhaps?).
 
-   eval {
-       $old_exon=$self->get_Exon($exon->id);
-   };
    
-   if  ($@) {
-       my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
-	   $exon->id() . "'," .
+   my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
+       $exon->id() . "'," .
 	   $exon->version() . ",'".
-	   $exon->contig_id() . "', FROM_UNIXTIME(" .
-	   $exon->created(). "), FROM_UNIXTIME(" .
-	   $exon->modified() . ")," .
-			       $exon->start . ",".
-				   $exon->end . ",".
-				       $exon->strand . ",".
-					   $exon->phase . ",now(),".
-					       $exon->end_phase . ")";
-       
-       my $sth = $self->prepare($exonst);
-       $sth->execute();
+	       $exon->contig_id() . "', FROM_UNIXTIME(" .
+		   $exon->created(). "), FROM_UNIXTIME(" .
+		       $exon->modified() . ")," .
+			   $exon->start . ",".
+			       $exon->end . ",".
+				   $exon->strand . ",".
+				       $exon->phase . ",now(),".
+					   $exon->end_phase . ")";
+   
+   my $sth = $self->prepare($exonst);
+   $sth->execute();
+   
+   # Now the supporting evidence
+   
+   $self->write_supporting_evidence($exon);
 
-       # Now the supporting evidence
-
-       $self->write_supporting_evidence($exon);
-   }
-   else {
-       $self->warn("Exon already present in the database");
-   }
 #   my $unlockst = $self->prepare("unlock exon");
 #   $unlockst->execute;
    
