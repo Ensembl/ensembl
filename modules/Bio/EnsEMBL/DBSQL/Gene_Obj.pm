@@ -60,6 +60,7 @@ use Bio::EnsEMBL::DB::Gene_ObjI;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
+use Bio::EnsEMBL::DB::VirtualContig;
 use DBI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
@@ -782,11 +783,92 @@ sub get_Virtual_Contig{
     if (!defined $max_length) {
 	$self->throw("You need to specify the max. length of the Virtual Contig!");
     }
+
+    #First of all, get out first exon, and create a 10000 bp Virtual Contig
+    #starting from the contig on which the first exon is lying
+
+    my $first_exon=$transcript->first_exon();
+    my $first_contig=$self->_db_obj->get_Contig($first_exon->contig_id());
+    my $first_ori=$first_exon->strand();
+    my $vc=Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $first_contig,
+					      -focusposition => 2,
+					      -ori => $first_ori,
+					      -left => 5000,
+					      -right => 5000
+					      );
     
-    my $virtualcontig=Bio::EnsEBML::DB::VirtualContig->new();
+    #Now get the last exon, and extend the virtual contig until the last exon is also
+    #contained in the vc
+
+    my $last_exon=$transcript->last_exon();
+    my $last_contig=$self->_db_obj->get_Contig($last_exon->contig_id());
+    my $last_ori=$last_exon->strand();
+    my $not_finished=1;
+
+    EXTEND:while (){
+	foreach my $vcraw ($vc->rawcontig_ids()) {
+	    if ($last_contig->id eq $vcraw) {
+		last EXTEND;
+	    }
+	}
+	$vc=$vc->extend(-5000,5000);
+	#If virtual contig longer than max. length, exit and return undef
+	if ($vc->length > $max_length) {
+	    print STDERR "Hit max. length!\n";
+	    return undef;
+	}
+    }
+
+    #Check that the Virtual Contig contains all exons of this transcript
+    my $ok=undef;
+    my $oldc;
+    my $old_e_cont;
+    my @notin;
+
+    foreach my $exon ($transcript->each_Exon) {
+	my $contig_id=$exon->contig_id();
+	if ($contig_id ne $old_e_cont) {
+	    foreach my $vcraw ($vc->rawcontig_ids) {
+		if ($contig_id eq $vcraw) {
+		    $ok=1;
+		}
+	    }
+
+	    #If contigs found not contained in virtual contig, push them in an array
+	    if (!$ok) {
+		if ($oldc ne $contig_id){
+		    push @notin,$contig_id;
+		}
+		$oldc=$contig_id;
+	    }
+	}
+	$ok=undef;
+	$old_e_cont=$contig_id;
+    }
     
+    #If missing contigs are found, extend again
+    my $n=@notin+0;
+    foreach my $notin (@notin) {
+      EXTEND_MORE:while (){
+	  foreach my $vcraw ($vc->rawcontig_ids()) {
+	      if ($notin eq $vcraw) {
+		  last EXTEND_MORE;
+	      }
+	  }
+	  $vc=$vc->extend(-5000,5000);
+
+	  #If virtual contig longer than max. length, exit and return undef
+	  if ($vc->length > $max_length) {
+	      print STDERR "Hit max. length!\n";
+	      return undef;
+	  }
+      }
+    }
+    print STDERR "Length of virtual contig for transcript ".$transcript->id." is ".$vc->length()."\n";
     
+    return $vc;
 }
+
 =head2 write
 
  Title   : write
