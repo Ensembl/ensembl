@@ -408,6 +408,8 @@ sub get_all_RepeatFeatures {
     my $chr_name=$self->_chr_name;
     my $length=$self->length;
     my $idlist  = $self->_raw_contig_id_list();
+    
+    $self->throw("No chromosome name") unless defined $chr_name;
 
     unless ($idlist){
 	return ();

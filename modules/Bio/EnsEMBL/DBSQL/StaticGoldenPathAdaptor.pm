@@ -928,19 +928,32 @@ sub fetch_VirtualContig_by_gene{
 =cut
 
 sub fetch_VirtualContig_by_fpc_name{
-   my ($self,$name) = @_;
-   
-   my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
-   my $start = $fpc[0];
-   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new(	$start->chr_start,
-							1,
-							-1,
-							@fpc
-						    );
- 
-   $vc->dbobj($self->dbobj);
-   $vc->id($name);
-   return $vc;
+    my ($self,$name) = @_;
+
+    my @raw = $self->fetch_RawContigs_by_fpc_name($name);
+    my $start = $raw[0];
+    my $vc = Bio::EnsEMBL::Virtual::StaticContig->new(
+        $start->chr_start,
+        1,
+        -1,
+        @raw
+        );
+
+    $vc->dbobj($self->dbobj);
+    $vc->id($name);
+
+    # Fill in the chr_name
+    my $get_chr_name = $vc->dbobj->prepare(q{
+        SELECT chr_name
+        FROM static_golden_path
+        WHERE fpcctg_name = ?
+        LIMIT 1
+        });
+    $get_chr_name->execute($name);
+    my ($chr_name) = $get_chr_name->fetchrow;
+    $vc->_chr_name($chr_name);
+
+    return $vc;
 }
 
 # depracated
