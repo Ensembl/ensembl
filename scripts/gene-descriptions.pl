@@ -238,7 +238,6 @@ foreach my $ensg ( keys %gene_desc )  {
     ### add more as appropriate
     
     if ($_) { #  =~ /[a-z]/;???
-      #  print STDOUT "$ensg\t $_ [Source:$db;Acc:$acc,%qy:$qy_percid,\%tg:$tg_percid]\n"; 
       print STDOUT "$ensg\t".substr($_,0,255-length(" [Source:$db;Acc:$acc]"))." [Source:$db;Acc:$acc]\n"; 
     } else {
       warn "throwing away: $desc\n";
@@ -311,18 +310,14 @@ sub parse_protein_database ($$$) {
   open PROTDBF,$protein_database_file || die "$protein_database_file:$!";
   
   while (defined (my $line = <PROTDBF>)) {
-
+    next if ($line =~ /^$/);
     if ($line =~ /^ID\s{3}.*$/o) {
       if ($line =~ /^ID\s{3}.*\s+PRELIMINARY;\s+.*$/o) {
 	$db = $protein_db_naming_href->{'sptrembl'};
-#	print "OK1:$db\n";
 	push @databases_used_for_guessing_descriptions, $db unless (grep /^$db$/, @databases_used_for_guessing_descriptions);
-#	print join " ",@databases_used_for_guessing_descriptions,"\n";
       } elsif ($line =~ /^ID\s{3}.*\s+STANDARD;\s+.*$/o) { 
 	$db = $protein_db_naming_href->{'swissprot'};
-#	print "OK2:$db\n";
 	push @databases_used_for_guessing_descriptions, $db unless (grep /^$db$/, @databases_used_for_guessing_descriptions);
-#	print join " ",@databases_used_for_guessing_descriptions,"\n";
       } else {
 	chomp $line;
 	warn "\nCould not recognize line : \"$line\"\nCheck the input file format in $protein_database_file.\n\n";
@@ -332,14 +327,10 @@ sub parse_protein_database ($$$) {
     
     if ($line =~ /^LOCUS\s+\S+\s+.*$/o) {
       $db = $protein_db_naming_href->{'refseq'};
-#      print "OK3:$db\n";
       push @databases_used_for_guessing_descriptions, $db  unless (grep /^$db$/, @databases_used_for_guessing_descriptions);
-#      print join " ",@databases_used_for_guessing_descriptions,"\n";
     }
-    
     if ($db eq $protein_db_naming_href->{'swissprot'} ||
 	$db eq $protein_db_naming_href->{'sptrembl'}) {
-      
       if ($line =~ /^AC\s{3}(\S+);.*$/o &&
 	  ! defined $acc)  {
 	$acc = $1;
@@ -396,11 +387,6 @@ Expecting to match this regexp /^DBSOURCE\\s+REFSEQ:\\s+accession\\s+(\\S+)\\.\\
 
   close PROTDBF;
   
-#  foreach my $db_acc (keys %sp_desc)  {
-#    my $desc = $sp_desc{$db_acc};
-#    print "$db_acc\t$desc\n";
-#  }
-
   return 1;
 
 } # parse_protein_database
