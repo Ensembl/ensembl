@@ -486,6 +486,51 @@ sub remove {
 }
 
 
+=head2 get_Interpro_by_geneid
+
+ Title   : get_Interpro_by_geneid
+ Usage   : @interproid = $geneAdaptor->get_Interpro_by_geneid($gene->id);
+ Function: gets interpro accession numbers by geneid. A hack really -
+           we should have a much more structured system than this
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Interpro_by_geneid {
+   my ($self,$gene) = @_;
+
+
+   my $sth = $self->prepare("
+      SELECT i.interpro_ac,idesc.description 
+        FROM transcript t, protein_feature pf, interpro i, 
+             interpro_description idesc, gene_stable_id gsi,
+             translation_stable_id tlsi
+       WHERE gsi.stable_id = '$gene' 
+         AND t.gene_id = gsi.gene_id
+         AND t.translation_id = tlsi.translation_id
+         AND tlsi.stable_id = pf.translation 
+         AND i.id = pf.hid 
+         AND i.interpro_ac = idesc.interpro_ac");
+   $sth->execute;
+
+   my @out;
+   my %h;
+   while( (my $arr = $sth->fetchrow_arrayref()) ) {
+       if( $h{$arr->[0]} ) { next; }
+       $h{$arr->[0]}=1;
+       my $string = $arr->[0] .":".$arr->[1];
+       
+       push(@out,$string);
+   }
+
+
+   return @out;
+}
+
+
 
 
 
