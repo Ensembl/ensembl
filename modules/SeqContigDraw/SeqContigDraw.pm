@@ -32,8 +32,6 @@ use GD;
 use Parameters;
 
 
-
-
 =head2 draw_contig_image
 
  Title   : draw_contig_image
@@ -193,7 +191,8 @@ sub draw_gene
     my ($im,$gene,$seq_len,$contig_id)=@_;
     
     my @types=('exon','intron');
-    
+
+   
     my $image_param_ref;
     my $image_comp_ref;
 
@@ -255,6 +254,92 @@ sub draw_gene
     if (! defined $seq_len){ &draw_scale_bar($im,$len);}    
 
 }
+
+
+
+
+=head2 draw_transcript
+    
+ Title   : draws_gene
+ Usage   : &SeqContigDraw::draw_gene($im,$gene,$seq_len,$contig_id)
+ Function: draws a gene
+ Example :
+ Returns :  
+ Args    :
+    
+    
+=cut
+    
+    
+            
+sub draw_transcript
+{
+    my ($im,$trans,$seq_len,$contig_id)=@_;
+     
+    my @types=('exon','intron');
+        
+    my $image_param_ref;
+    my $image_comp_ref;
+
+
+ # if it is a gene image
+    if (!defined $seq_len){ $image_param_ref=&Parameters::gene_image_par;$image_comp_ref=&Parameters::gene_image_components;}
+             
+    # if it is a contig image
+    else{ $image_param_ref=&Parameters::contig_image_par;$image_comp_ref=&Parameters::contig_image_components;}
+            
+    my $gd_col_ref=&Parameters::colors;
+    my $new_gene_status=1;
+    my $keep_coord=0;
+    my $len;
+    my $fixed;
+    my $substr;
+
+  my @exons = sort { $a->start <=> $b->start } $trans->each_Exon();
+    foreach my $exon ( @exons )
+    {
+    
+        if( defined $seq_len ){$len=$seq_len;}
+            else {$len=&transcript_length($trans);$fixed=1;}
+        if (!defined $seq_len && $new_gene_status==1){$substr=$exon->start;}
+             
+        my $width=1;
+        my @x_args;
+             
+        foreach my $type(@types){
+        
+            # calculate x coord
+            if ($type eq 'exon'){@x_args=($len,$exon->start-$substr,$exon->end-$substr,$exon->end-$exon->start,$fixed)};
+            if ($type eq 'intron'){@x_args=($len,$keep_coord-$substr,$exon->start-$substr,$exon->start-$keep_coord,$fixed);}
+            my  ($x_start,$x_end)=&calc_x_coord(@x_args);
+     
+            # calculate y coord
+            if (defined $seq_len){$image_param_ref=undef;}
+            my @arg=($type,$width,$exon->strand,$image_param_ref);
+            my ($y_start,$y_end)=&calc_y_coord(@arg);
+    
+  # start drawing from first exon
+            if  ($type eq 'exon' || $new_gene_status !=1){
+    
+                # do not draw unless exons and introns are on the contig (contig image) or it is a gene image
+                if (!defined $seq_len || $exon->contig_id eq $contig_id){
+                $im->filledRectangle($x_start,$y_start,$x_end,$y_end,$gd_col_ref->{$image_comp_ref->{$type}{color}});
+            }
+                # do not print map for a gene image
+           # if (defined $seq_len){&print_map($x_start,$y_start,$x_end,$y_end,$gene->id,$image_comp_ref->{$type}{link},$gene->id);}
+            }
+        } 
+        # do not reset variables unless exons and introns are on the contig (contig image) or it is a gene image
+        if (!defined $seq_len || $exon->contig_id eq $contig_id){
+            $new_gene_status=0;
+            $keep_coord=$exon->end;
+        }
+    }       
+    # draw a scale bar for a gene image
+    if (! defined $seq_len){ &draw_scale_bar($im,$len);}    
+}
+    
+
 
 
 
@@ -420,7 +505,6 @@ sub draw_scale_bar
     
     $im->filledRectangle($scale_start,$image_param_ref->{y_scale},$scale_end,$image_param_ref->{y_scale}+$image_param_ref->{scale_width},$gd_col_ref->{$image_comp_ref->{$type}{color}});
     $im->string(gdSmallFont,$scale_end+8,$image_param_ref->{y_scale}-5,"$scale_bar bp",$gd_col_ref->{$image_comp_ref->{$type}{legend_color}});
-
 }
 
 
@@ -457,6 +541,41 @@ sub gene_length
     
     return $gene_len;    
 }
+
+
+
+
+
+
+
+sub transcript_length
+{
+    
+    my ($gene) = @_;
+    
+    # this wont work with genes across contigs. Doh!
+    my @exons = sort { $a->start <=> $b->start } $gene->each_Exon();    
+    my ($f,$l);
+    $f = $exons[0];
+    $l = $exons[$#exons];
+
+    #my $f= shift @exons;       
+    my $first=$f->start; 
+    #my $l=pop @exons;
+    my $last=$l->end;
+    my $gene_len=$last-$first;
+    
+    return $gene_len;    
+}
+
+
+
+
+
+
+
+
+
 
 
 =head2 calc_x_coord
