@@ -172,6 +172,9 @@ if ($use_graphics) {
 }
 
 if ($use_mapping) {
+    #require Storable;
+    #import Storable 'dclone';	    # Not just yet...
+
     require Bio::EnsEMBL::Mapper;
 }
 
@@ -338,7 +341,7 @@ sub do_query
 
 		    foreach my $mapped (@mapped) {
 			next if ($mapped->isa('Bio::EnsEMBL::Mapper::Gap'));
-			$range = ':' . $mapped->start() . ',' .  $mapped->end();
+			$range = ':' . $mapped->start . ',' .  $mapped->end;
 			push(@{ $query{$ti}{SEGMENT} }, $ti . $range);
 		    }
 		} else {
@@ -365,17 +368,16 @@ sub do_query
 	    -dsn	=> $query->{DSN},
 	    -segment    => $query->{SEGMENT});
 
-	next if (!$reply->is_success());
+	next if (!$reply->is_success);
 
 	if (exists $query->{MAPPER}) {
 	    # Map results using align mapper.
 	    # Scary stuff.  If this works, I deserve a beer.
 
-	    my @results = $reply->results();
+	    my @results = $reply->results;
 	    foreach my $result (@results) {
                 # Tag the string that we later use in the tabla
                 # and graphics.
-		$result->group($result->group() . " [$seqid]");
 
                 # Do the reverse mapping from the target
                 # coodinate system into the query coordinate
@@ -387,9 +389,22 @@ sub do_query
                 # method of Bio::Das::Request to add ranges that
                 # were split into two or more ranges.
 
+                # FIXME:  For now, just drop anyhting which
+                # doesn't map cleanly (that splits, contracts,
+                # or maps to a gap).
+
 		my @mapped = $query->{MAPPER}->map_coordinates(
-		    'targetID', $result->start(), $result->stop(), 1,
+		    'targetID', $result->start, $result->stop, 1,
 		    'targetCOORD');
+
+		if (scalar @mapped > 1 ||
+		    $mapped[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+		    $result->group($result->group . " [unmappable]");
+		} else {
+		    $result->group($result->group . " [mapped to $seqid]");
+		    $result->start($mapped[0]->start);
+		    $result->stop($mapped[0]->end);
+		}
 	    }
 	    #print $cgi->pre(Dumper($reply));
 	}
@@ -479,7 +494,9 @@ sub create_graphics
 		    -primary	=> $feature->group,
 		    -source_tag	=> $feature->type->label,
 		    -tag	=> {
-			colour	=> $table_row->{COLOUR}
+			colour	=>
+			    ($feature->label eq 'GAP' ?
+				'white' : $table_row->{COLOUR})
 		    } ));
 	}
     }
