@@ -17,7 +17,7 @@ Bio::EnsEMBL::Mapper
 
 =head1 SYNOPSIS
 
-  $map = Bio::EnsEMBL::Mapper->new(-to => 'rawcontig', -from => 'chromosome');
+  $map = Bio::EnsEMBL::Mapper->new('rawcontig', 'chromosome');
 
   # add a coodinate mapping - supply two pairs or coordinates
   $map->add_map_coordinates(
@@ -49,15 +49,10 @@ Internal methods are usually preceded with a _
 
 =cut
 
-
-# Let the code begin...
-
-
 package Bio::EnsEMBL::Mapper;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Mapper::Pair;
@@ -65,7 +60,6 @@ use Bio::EnsEMBL::Mapper::Unit;
 use Bio::EnsEMBL::Mapper::Coordinate;
 use Bio::EnsEMBL::Mapper::Gap;
 
-#use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
@@ -342,9 +336,10 @@ sub add_map_coordinates{
    my ($self, $contig_id, $contig_start, $contig_end, 
        $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
 
-   
-   if( !defined $contig_ori ) {
-       $self->throw("Need 7 arguments!");
+   unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
+          && defined($contig_ori) && defined($chr_name) && defined($chr_start)
+          && defined($chr_end)) {
+       $self->throw("7 arguments expected");
    }
 
    if( ($contig_end - $contig_start)  != ($chr_end - $chr_start) ) {
