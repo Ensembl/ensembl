@@ -46,6 +46,7 @@ use Bio::EnsEMBL::TimDB::Clone;
 use Bio::EnsEMBL::Analysis::LegacyParser;
 use Bio::EnsEMBL::Analysis::ensConf qw(UNFIN_ROOT
 				       UNFIN_DATA_ROOT
+				       UNFIN_DATA_ROOT_CGP
 				       CONFIRMED_EXON_FASTA
 				       );
 use NDBM_File;
@@ -114,6 +115,7 @@ sub _initialize {
       $exon_file="$CONFIRMED_EXON_FASTA";
   }
   $self->{'_unfinished_root'}=$unfinished_root;
+  $self->{'_unfin_data_root_cgp'}=$UNFIN_DATA_ROOT_CGP;
   my $clone_dbm_file="$unfinished_root/unfinished_clone.dbm";
   my %unfin_clone;
   unless(tie(%unfin_clone,'NDBM_File',$clone_dbm_file,O_RDONLY,0644)){

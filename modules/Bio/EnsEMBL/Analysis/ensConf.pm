@@ -56,14 +56,22 @@ use strict;
 use vars qw( %ensConf );
 
 # Could change user in future
-my $humpub = ( getpwnam('humpub') )[7];
-my $ftp    = ( getpwnam('ftp')    )[7];
+#my $humpub = ( getpwnam('humpub') )[7];
+#my $ftp    = ( getpwnam('ftp')    )[7];
+
+my $sanger_path="/nfs/disk100/humpub1a/unfinished_ana";
+my $ext_path="/nfs/disk100/humpub2a/unfinished_ana";
+my %cgp_path=map {$_,"$sanger_path/$_"} qw ( SU SF );
+$cgp_path{'EU'}="$ext_path/EU";
+$cgp_path{'EF'}="$ext_path/EF";
 
 # Hash containing config info
 %ensConf = (
-	    UNFIN_ROOT => "$humpub/th/unfinished_ana",
-	    UNFIN_DATA_ROOT => "/nfs/disk100/humpub1/unfinished_ana",
-            CONFIRMED_EXON_FASTA => "$humpub/blast/confirmed_exon",
+	    UNFIN_ROOT => $sanger_path,
+	    UNFIN_DATA_ROOT => $sanger_path,
+	    UNFIN_DATA_ROOT2 => $ext_path,
+	    UNFIN_DATA_ROOT_CGP => \%cgp_path,
+            CONFIRMED_EXON_FASTA => "$sanger_path/confirmed_exon",
 	    EXON_ID_SUBSCRIPT => 'ENSE',
 	    EXON_ID_DIGITS => 11,
 	    TRANSCRIPT_ID_SUBSCRIPT => 'ENST',
