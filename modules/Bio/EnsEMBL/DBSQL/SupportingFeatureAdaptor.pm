@@ -54,12 +54,10 @@ sub fetch_all_by_Exon {
 
   my $out = [];
 
-  # if exon is sticky, get supporting from components
-  if( $exon->isa( 'Bio::EnsEMBL::StickyExon' )) {
-    foreach my $component_exon ( @{$exon->get_all_component_Exons} ) {
-      push @$out, @{$self->fetch_all_by_Exon( $component_exon )};
-    }
-    return $out;
+  #throw if this is a sticky exon
+  if($exon->isa('Bio::EnsEMBL::StickyExon')) {
+    $self->throw('Expected Exon but got StickyExon. ' .
+		 'Call get_all_component_Exons first');
   }
 
   unless($exon->dbID) {
@@ -87,17 +85,13 @@ sub fetch_all_by_Exon {
     }else {
       $self->throw("Unknown feature type [$type]\n");
     }
-    
-    #we might have to convert the features coordinate system
-    unless($feature->contig->name() eq $exon->contig->name()) {
-      if($exon->contig()->isa("Bio::EnsEMBL::Slice")) {
-	#tranform to slice coords
-	$feature->transform($exon->contig());
-      } else {
-	#this feature is on the wrong contig
-	#this is okay only if this is a sticky component exon
-	next;
-      }
+
+    if($exon->contig()->isa("Bio::EnsEMBL::Slice")) {
+      #tranform to slice coords
+      $feature->transform($exon->contig());
+    } else {
+      #we might have to convert the features coordinate system
+      next unless($feature->contig->dbID == $exon->contig->dbID);
     }
     push @$out, $feature;
   }
