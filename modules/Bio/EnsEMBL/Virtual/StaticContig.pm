@@ -2308,7 +2308,7 @@ sub get_all_Genes {
 
    my %gene;
 
-    my @temp = keys(%gene);
+    #my @temp_one = keys(%gene);
     
    foreach my $gene ( @genes ) {
        $gene{$gene->dbID()}= $gene;
