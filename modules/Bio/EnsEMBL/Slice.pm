@@ -1071,30 +1071,36 @@ sub get_tiling_path {
   
 
 
-=head2 get_all_landmark_MarkerFeatures
+=head2 get_all_MarkerFeatures
 
-  Arg [1]    : none
-  Example    : my @marker_feats = @{$slice->get_all_landmark_MarkerFeatures};
-  Description: Retrieves all landmark markers which lie on this slice. This
-               query uses the lite database, and an empty list will be returned
-               if the lite database is not available.
+  Arg [1]    : (optional) string logic_name
+               The logic name of the marker features to retrieve 
+  Arg [2]    : (optional) int $priority 
+               Lower (exclusive) priority bound of the markers to retrieve
+  Arg [3]    : (optional) int $map_weight 
+               Upper (exclusive) priority bound of the markers to retrieve
+  Example    : my @markers = @{$slice->get_all_MarkerFeatures(undef,50, 2)};
+  Description: Retrieves all markers which lie on this slice fulfilling the 
+               specified map_weight and priority parameters (if supplied).
   Returntype : reference to a list of Bio::EnsEMBL::MarkerFeatures
-  Exceptions : warning if lite database is not available
-  Caller     : contigview?, general
+  Exceptions : none
+  Caller     : contigview, general
 
 =cut
 
-sub get_all_landmark_MarkerFeatures {
-  my $self = shift;
+sub get_all_MarkerFeatures {
+  my ($self, $logic_name, $priority, $map_weight) = @_;
 
-  my $lma = $self->adaptor()->db()->get_LandmarkMarkerAdaptor();
-  if( ! defined $lma ) {
-   $self->warn("Lite database must be available to retrieve landmark markers");
-   return [];
-  } else {
-    return $lma->fetch_all_by_Slice( $self );
-  }
+  my $ma = $self->adaptor->db->get_MarkerFeatureAdaptor;
+
+  my $feats = $ma->fetch_all_by_Slice_and_priority($self, 
+					      $priority, 
+					      $map_weight, 
+					      $logic_name);
+  return $feats;
 }
+
+
 
 =head2 get_all_compara_DnaAlignFeatures
 
@@ -1103,7 +1109,7 @@ sub get_all_landmark_MarkerFeatures {
   Arg [2]    : string $qy_assembly
                The name of the assembly to retrieve similarity features from
   Example    : $fs = $slc->get_all_compara_DnaAlignFeatures('Mus musculus',
-							    'MGSC_3');
+							    'MGSC3');
   Description: Retrieves a list of DNA-DNA Alignments to the species specified
                by the $qy_species argument.
                The compara database must be attached to the core database
