@@ -345,15 +345,13 @@ sub fetch_all_by_Slice_constraint {
   my($self, $orig_slice, $original_constraint, $logic_name) = @_;
   my @result_features;
 
-
-
-  if(!defined($orig_slice) || !ref($orig_slice) || !$orig_slice->isa("Bio::EnsEMBL::Slice")) {
+  if(!ref($orig_slice) || !$orig_slice->isa("Bio::EnsEMBL::Slice")) {
     throw("Slice arg must be a Bio::EnsEMBL::Slice not a [$orig_slice]\n");
   }
 
   $original_constraint ||= '';
   $original_constraint = $self->_logic_name_to_constraint($original_constraint,
-                                                 $logic_name);
+                                                          $logic_name);
 
   #if the logic name was invalid, undef was returned
   return [] if(!defined($original_constraint));
@@ -364,7 +362,6 @@ sub fetch_all_by_Slice_constraint {
   if(exists($self->{'_slice_feature_cache'}->{$key})) {
     return $self->{'_slice_feature_cache'}->{$key};
   }
-
 
   my $slice_adaptor = $orig_slice->adaptor();
 
@@ -416,95 +413,96 @@ sub fetch_all_by_Slice_constraint {
       my $mapper;
       my @coords;
       my @ids;
-
+      
       if($feat_cs->equals($slice_cs)) {
-	#no mapping is required if this is the same coord system
-	my $constraint = $original_constraint;
-
-	# obtain seq_region_id of this slice from db
-	my $seq_region_id = 
-	  $self->db->get_SliceAdaptor->get_seq_region_id($slice);
-	$constraint .= " AND " if($constraint);
-	$constraint .=
+        #no mapping is required if this is the same coord system
+        my $constraint = $original_constraint;
+        
+        # obtain seq_region_id of this slice from db
+        my $seq_region_id = 
+          $self->db->get_SliceAdaptor->get_seq_region_id($slice);
+        $constraint .= " AND " if($constraint);
+        $constraint .=
           "${tab_syn}.seq_region_id = $seq_region_id AND " .
           "${tab_syn}.seq_region_start <= $slice_end AND " .
           "${tab_syn}.seq_region_end >= $slice_start";
-	my $fs = $self->generic_fetch($constraint,undef,$slice);
+        my $fs = $self->generic_fetch($constraint,undef,$slice);
 
-	#features may still have to have coordinates made relative to slice start
-	$fs = $self->_remap($fs, $mapper, $slice);
+        #features may still have to have coordinates made relative to slice 
+        #start
+        $fs = $self->_remap($fs, $mapper, $slice);
 
-	push @features, @$fs;
+        push @features, @$fs;
       } else {
-	$mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
+        $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
+        
+        # Get a list of coordinates and corresponding internal ids for the
+        # regions we are interested in
+        @coords = $mapper->map($slice_seq_region, $slice_start, $slice_end,
+                               $slice_strand, $slice_cs);
 
-	# Get a list of coordinates and corresponding internal ids for the
-	# regions we are interested in
-	@coords = $mapper->map($slice_seq_region, $slice_start, $slice_end,
-                                $slice_strand, $slice_cs);
+        @coords = grep {!$_->isa('Bio::EnsEMBL::Mapper::Gap')} @coords;
 
-	@coords = grep {!$_->isa('Bio::EnsEMBL::Mapper::Gap')} @coords;
+        next COORD_SYSTEM if(!@coords);
 
-	next COORD_SYSTEM if(!@coords);
+        @ids = map {$_->id()} @coords;
+        @ids = @{$asma->seq_regions_to_ids($feat_cs, \@ids)};
 
-	@ids = map {$_->id()} @coords;
-	@ids = @{$asma->seq_regions_to_ids($feat_cs, \@ids)};
+        #if the regions are large and only partially spanned
+        #it is faster to to limit the query with start and end constraints
+        #however, it is difficult to tell if a region is large and only 
+        #partially wanted. The easy approach is just to limit the queries if 
+        #there are less than a certain number of regions. As well seperate 
+        #queries are needed otherwise the indices will not be useful
+        if(@coords > $MAX_SPLIT_QUERY_SEQ_REGIONS) {
+          #do one query, and do not limit with start / end constraints
+          my $constraint = $original_constraint;
+          my $id_str = join(',', @ids);
+          $constraint .= " AND " if($constraint);
+          $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
+          
+          my $fs = 
+            $self->generic_fetch($constraint, $mapper, $slice);
+          
+          $fs = $self->_remap($fs, $mapper, $slice);
 
-	#if the regions are large and only partially spanned
-	#it is faster to to limit the query with start and end constraints
-	#however, it is difficult to tell if a region is large and only partially
-	#wanted. The easy approach is just to limit the queries if there are less
-	#than a certain number of regions. As well seperate queries are needed
-	#otherwise the indices will not be useful
-	if(@coords > $MAX_SPLIT_QUERY_SEQ_REGIONS) {
-	  #do one query, and do not limit with start / end constraints
-	  my $constraint = $original_constraint;
-	  my $id_str = join(',', @ids);
-	  $constraint .= " AND " if($constraint);
-	  $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
+          push @features, @$fs;
 
-	  my $fs = 
-	    $self->generic_fetch($constraint, $mapper, $slice);
+        } else {
+          #do multiple split queries using start / end constraints
+          my $len = @coords;
+          for(my $i = 0; $i < $len; $i++) {
+            my $constraint = $original_constraint;
+            $constraint .= " AND " if($constraint);
+            $constraint .=
+              "${tab_syn}.seq_region_id = "     . $ids[$i] . " AND " .
+              "${tab_syn}.seq_region_start <= " . $coords[$i]->end() . " AND ".
+              "${tab_syn}.seq_region_end >= "   . $coords[$i]->start();
+            my $fs = $self->generic_fetch($constraint,$mapper,$slice);
 
-	  $fs = $self->_remap($fs, $mapper, $slice);
-
-	  push @features, @$fs;
-
-	} else {
-	  #do multiple split queries using start / end constraints
-	  my $len = @coords;
-	  for(my $i = 0; $i < $len; $i++) {
-	    my $constraint = $original_constraint;
-	    $constraint .= " AND " if($constraint);
-	    $constraint .=
-	      "${tab_syn}.seq_region_id = "     . $ids[$i] . " AND " .
-		"${tab_syn}.seq_region_start <= " . $coords[$i]->end() . " AND " .
-		  "${tab_syn}.seq_region_end >= "   . $coords[$i]->start();
-	    my $fs = $self->generic_fetch($constraint,$mapper,$slice);
-
-	    $fs = $self->_remap($fs, $mapper, $slice);
-
-	    push @features, @$fs;
-	  }
-	}
+            $fs = $self->_remap($fs, $mapper, $slice);
+            
+            push @features, @$fs;
+          }
+        }
       }
     } #COORD system loop
-
+    
     #if this was a symlinked slice offset the feature coordinates as needed
     if($slice != $orig_slice) {
       foreach my $f (@features) {
-	#function calls are slow!
-	if($offset != 1) {
-	  $f->{'start'} += $offset-1;
-	  $f->{'end'}   += $offset-1;
-	}
-	$f->{'slice'} = $orig_slice;
-	push @result_features, $f;
+        #function calls are slow!
+        if($offset != 1) {
+          $f->{'start'} += $offset-1;
+          $f->{'end'}   += $offset-1;
+        }
+        $f->{'slice'} = $orig_slice;
+        push @result_features, $f;
       }
     } else {
       push @result_features, @features;
     }
-
+    
   } #slice & symmlinked slice loop
 
   $self->{'_slice_feature_cache'}->{$key} = \@result_features;
