@@ -230,14 +230,16 @@ sub fetch_all_by_domain {
     throw("domain argument is required");
   }
 
-  my $sth = $self->prepare("SELECT tr.gene_id
-                            FROM interpro i,
-                                 protein_feature pf,
-                                 transcript tr
-                            WHERE i.interpro_ac = ?
-                            AND   i.id = pf.hit_id
-                            AND   pf.translation_id = tr.translation_id
-                            GROUP BY tr.gene_id");
+  my $sth = $self->prepare("SELECT tr.gene_id " .
+                           "FROM interpro i, " .
+                               " protein_feature pf, " .
+                               " transcript tr, " .
+                               " translation tl " .
+                           "WHERE i.interpro_ac = ? " .
+                           "AND   i.id = pf.hit_id " .
+                           "AND   pf.translation_id = tl.translation_id ".
+                           "AND   tr.transcript_id = tl.transcript_id " .
+                           "GROUP BY tr.gene_id");
 
   $sth->execute($domain);
   my @gene_ids = ();
