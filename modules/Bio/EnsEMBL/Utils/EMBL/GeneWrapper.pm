@@ -70,7 +70,7 @@ sub new {
 
   my $self = $class->SUPER::new();
 
-  unless($gene && $gene->isa('Bio::EnsEMBL::Gene')) {
+  unless($gene && ref $gene && $gene->isa('Bio::EnsEMBL::Gene')) {
     $self->throw("Gene argument must be a Bio::EnsEMBL::Gene");
   }
 
@@ -126,12 +126,12 @@ sub to_FTHelper {
 
   my @out;
 
-  my @dblinks = $self->gene->each_DBLink();
+  my @dblinks = @{$self->gene->get_all_DBLinks()};
 
-  foreach my $trans ($self->gene->get_all_Transcripts()) {
+  foreach my $trans (@{$self->gene->get_all_Transcripts()}) {
     my $join = "";
     
-    foreach my $exon ($trans->translateable_exons()) {
+    foreach my $exon (@{$trans->get_all_translateable_Exons()}) {
       $join .= ',' if($join); #append a comma to the last coord set
 
       if($exon->strand() == 1) {
@@ -155,7 +155,7 @@ sub to_FTHelper {
     push(@out, $ft);
   }
 
-  foreach my $exon ($self->gene->get_all_Exons()) {
+  foreach my $exon (@{$self->gene->get_all_Exons()}) {
     my $ft = Bio::SeqIO::FTHelper->new();
 
     if( $exon->strand() == 1 ) {

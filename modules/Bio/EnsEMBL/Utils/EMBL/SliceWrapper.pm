@@ -373,22 +373,22 @@ sub top_SeqFeatures {
   }
 
   unless($self->skip_SeqFeature('similarity')) {
-    push @sfs, $self->slice->get_all_SimilarityFeatures();
+    push @sfs, @{$self->slice->get_all_SimilarityFeatures()};
   }
   unless($self->skip_SeqFeature('repeat')) {
-    push @sfs, $self->slice->get_all_RepeatFeatures();
+    push @sfs, @{$self->slice->get_all_RepeatFeatures()};
   }
   unless($self->skip_SeqFeature('external')) {
     if($self->slice->can('get_all_SNPFeatures')) {
-      push @sfs, $self->slice->get_all_SNPFeatures();
+      push @sfs, @{$self->slice->get_all_SNPFeatures()};
     }
-    push @sfs, $self->slice->get_all_ExternalFeatures();
+    push @sfs, @{$self->slice->get_all_ExternalFeatures()};
   }
   unless($self->skip_SeqFeature('prediction')) {
-    push @sfs, $self->slice->get_all_PredictionFeatures();
+    push @sfs, @{$self->slice->get_all_PredictionFeatures()};
   }
   unless($self->skip_SeqFeature('gene')) {
-    foreach my $gene ($self->slice->get_all_Genes()) {
+    foreach my $gene (@{$self->slice->get_all_Genes()}) {
       push @sfs, new Bio::EnsEMBL::Utils::EMBL::GeneWrapper($gene);
     }
   }
