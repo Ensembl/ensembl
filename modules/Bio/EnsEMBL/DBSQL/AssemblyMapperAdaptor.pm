@@ -69,6 +69,7 @@ use Bio::EnsEMBL::TopLevelAssemblyMapper;
 
 use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
 use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
+use Bio::EnsEMBL::Utils::SeqRegionCache;
 
 use integer; #do proper arithmetic bitshifts
 
@@ -79,8 +80,6 @@ my $CHUNKFACTOR = 20;  # 2^20 = approx. 10^6
 # if the mapper is bigger than that its flushed before registering new stuff:
 my $MAX_PAIR_COUNT = 1000; 
 
-#number of seq regions to remember ids fo
-my $SEQ_REGION_CACHE_SIZE = 2500;
 
 =head2 new
 
@@ -100,10 +99,6 @@ sub new {
   my $self = $class->SUPER::new($dbadaptor);
 
   $self->{'_asm_mapper_cache'} = {};
-
-  my %cache;
-  tie(%cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_REGION_CACHE_SIZE);
-  $self->{'_sr_id_cache'} = \%cache;
 
   return $self;
 }
@@ -319,6 +314,7 @@ sub register_assembled {
          asm.cmp_end,
          asm.cmp_seq_region_id,
          sr.name,
+         sr.length, 
          asm.ori,
          asm.asm_start,
          asm.asm_end
@@ -339,10 +335,11 @@ sub register_assembled {
     $sth->execute($asm_seq_region_id, $region_start, $region_end, $cmp_cs_id);
 
     my($cmp_start, $cmp_end, $cmp_seq_region_id, $cmp_seq_region, $ori,
-      $asm_start, $asm_end);
+      $asm_start, $asm_end, $cmp_seq_region_length);
 
     $sth->bind_columns(\$cmp_start, \$cmp_end, \$cmp_seq_region_id,
-                       \$cmp_seq_region, \$ori, \$asm_start, \$asm_end);
+                       \$cmp_seq_region, \$cmp_seq_region_length, \$ori, 
+                       \$asm_start, \$asm_end);
 
     #
     # Load the unregistered regions of the mapper
@@ -354,8 +351,12 @@ sub register_assembled {
                  $asm_seq_region, $asm_start, $asm_end,
                  $ori,
                  $cmp_seq_region, $cmp_start, $cmp_end);
-      $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"} =
-        $cmp_seq_region_id;
+      my $arr = [ $cmp_seq_region_id, $cmp_seq_region, $cmp_cs_id, $cmp_seq_region_length ];
+
+      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$cmp_seq_region:$cmp_cs_id"} =
+          $arr;
+      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$cmp_seq_region_id"} =
+          $arr;
     }
   }
 
@@ -372,15 +373,16 @@ sub _seq_region_name_to_id {
   ($sr_name && $cs_id) || throw('seq_region_name and coord_system_id args ' .
 				'are required');
 
-  my $sr_id = $self->{'_sr_id_cache'}->{"$sr_name:$cs_id"};
-
-  return $sr_id if($sr_id);
+  my $arr = $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$sr_name:$cs_id"};
+  if( $arr ) {
+    return $arr->[0];
+  }
 
   # Get the seq_region_id via the name.  This would be quicker if we just
   # used internal ids instead but stored but then we lose the ability
   # the transform accross databases with different internal ids
 
-  my $sth = $self->prepare("SELECT seq_region_id " .
+  my $sth = $self->prepare("SELECT seq_region_id, length " .
 			   "FROM   seq_region " .
 			   "WHERE  name = ? AND coord_system_id = ?");
 
@@ -391,10 +393,15 @@ sub _seq_region_name_to_id {
 	  "in coord system $cs_id");
   }
 
-  ($sr_id) = $sth->fetchrow_array();
+  my ($sr_id, $sr_length) = $sth->fetchrow_array();
   $sth->finish();
 
-  $self->{'_sr_id_cache'}->{"$sr_name:$cs_id"} = $sr_id;
+  $arr = [ $sr_id, $sr_name, $cs_id, $sr_length ];
+  
+  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$sr_name:$cs_id"} =
+      $arr;
+  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$sr_id"} =
+      $arr;
 
   return $sr_id;
 }
@@ -442,7 +449,8 @@ sub register_component {
          asm.asm_start,
          asm.asm_end,
          asm.asm_seq_region_id,
-         sr.name
+         sr.name,
+         sr.length
       FROM
          assembly asm, seq_region sr
       WHERE
@@ -466,10 +474,15 @@ sub register_component {
           "component region cmp_seq_region_id=[$cmp_seq_region_id]");
   }
 
-  my ($asm_start, $asm_end, $asm_seq_region_id, $asm_seq_region) =
+  my ($asm_start, $asm_end, $asm_seq_region_id, $asm_seq_region, $asm_seq_region_length) =
     $sth->fetchrow_array();
 
-  $self->{'_sr_id_cache'}->{"$asm_seq_region:$asm_cs_id"} = $asm_seq_region_id;
+  my $arr = [ $asm_seq_region_id, $asm_seq_region, $asm_cs_id, $asm_seq_region_length ];
+  
+  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$asm_seq_region:$asm_cs_id"} =
+      $arr;
+  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$asm_seq_region_id"} =
+      $arr;
 
   $sth->finish();
 
@@ -574,6 +587,7 @@ sub register_chained {
          asm.cmp_end,
          asm.cmp_seq_region_id,
          sr.name,
+         sr.length,
          asm.ori,
          asm.asm_start,
          asm.asm_end
@@ -593,6 +607,7 @@ sub register_chained {
          asm.asm_end,
          asm.asm_seq_region_id,
          sr.name,
+         sr.length,
          asm.ori,
          asm.cmp_start,
          asm.cmp_end
@@ -655,11 +670,11 @@ sub register_chained {
     #load the start <-> mid mapper with the results and record the mid cs
     #ranges we just added to the mapper
 
-    my ($mid_start, $mid_end, $mid_seq_region_id, $mid_seq_region,
+    my ($mid_start, $mid_end, $mid_seq_region_id, $mid_seq_region, $mid_length,
         $ori, $start_start, $start_end);
 
     $sth->bind_columns(\$mid_start, \$mid_end, \$mid_seq_region_id,
-		       \$mid_seq_region, \$ori, \$start_start,
+		       \$mid_seq_region, \$mid_length, \$ori, \$start_start,
 		       \$start_end);
 
     while($sth->fetch()) {
@@ -686,8 +701,12 @@ sub register_chained {
       }
 
       #update sr_name cache
-      $self->{'_sr_id_cache'}->{"$mid_seq_region:$mid_cs_id"} =
-        $mid_seq_region_id;
+      my $arr = [ $mid_seq_region_id, $mid_seq_region, $mid_cs_id, $mid_length ];
+  
+      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$mid_seq_region:$mid_cs_id"} =
+          $arr;
+      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$mid_seq_region_id"} =
+          $arr;
 
       push @mid_ranges,[$mid_seq_region_id,$mid_seq_region,
                         $mid_start,$mid_end];
@@ -748,11 +767,11 @@ sub register_chained {
     #load the end <-> mid mapper with the results and record the mid cs
     #ranges we just added to the mapper
 
-    my ($end_start, $end_end, $end_seq_region_id, $end_seq_region,
+    my ($end_start, $end_end, $end_seq_region_id, $end_seq_region, $end_length,
         $ori, $mid_start, $mid_end);
 
     $sth->bind_columns(\$end_start, \$end_end, \$end_seq_region_id,
-		       \$end_seq_region, \$ori, \$mid_start,
+		       \$end_seq_region, \$end_length, \$ori, \$mid_start,
 		       \$mid_end);
 
     while($sth->fetch()) {
@@ -766,8 +785,12 @@ sub register_chained {
         );
 
       #update sr_name cache
-      $self->{'_sr_id_cache'}->{"$end_seq_region:$end_cs_id"} =
-        $end_seq_region_id;
+      my $arr = [ $end_seq_region_id, $end_seq_region, $end_cs_id, $end_length ];
+      
+      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$end_seq_region:$end_cs_id"} =
+          $arr;
+      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$end_seq_region_id"} =
+          $arr;
 
       #register this region on the end coord system
       $end_registry->check_and_register($end_seq_region, $end_start, $end_end);
@@ -852,7 +875,6 @@ sub register_chained {
 sub deleteObj {
   my $self = shift;
 
-  delete $self->{'_asm_mapper_cache'};
   $self->SUPER::deleteObj();
 }
 
@@ -884,9 +906,12 @@ sub seq_regions_to_ids {
   my @out;
 
   foreach my $sr (@$seq_regions) {
-    my $id = $self->{'_sr_id_cache'}->{"$sr:$cs_id"};
-    $id = $self->_seq_region_name_to_id($sr,$cs_id) if(!$id);
-    push @out, $id;
+    my $arr = $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$sr:$cs_id"};
+    if( $arr ) {
+      push( @out, $arr->[0] );
+    } else {
+      push @out, $self->_seq_region_name_to_id($sr,$cs_id);
+    }
   }
 
   return \@out;

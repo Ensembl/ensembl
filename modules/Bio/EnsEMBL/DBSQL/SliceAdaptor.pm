@@ -95,10 +95,10 @@ use Bio::EnsEMBL::Mapper;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
+use Bio::EnsEMBL::Utils::SeqRegionCache;
+
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
-
-my $SEQ_REGION_CACHE_SIZE = 1000;
 
 sub new {
   my $caller = shift;
@@ -107,14 +107,6 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my %name_cache;
-  my %id_cache;
-
-  tie(%name_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_REGION_CACHE_SIZE);
-  tie(%id_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_REGION_CACHE_SIZE);
-
-  $self->{'_name_cache'} = \%name_cache;
-  $self->{'_id_cache'} = \%id_cache;
 
   return $self;
 }
@@ -170,6 +162,10 @@ sub new {
 
 =cut
 
+
+#
+# ARNE: This subroutine needs simplification!! 
+#
 sub fetch_by_region {
   my ($self, $coord_system_name, $seq_region_name,
       $start, $end, $strand, $version) = @_;
@@ -209,7 +205,7 @@ sub fetch_by_region {
 
     $constraint = "sr.coord_system_id = ?";
 
-    $key = lc(join(':',$seq_region_name,$cs->name(), $cs->version));
+    $key = "$seq_region_name:".$cs->dbID();
   } else {
     $sql = "SELECT sr.name, sr.seq_region_id, sr.length, " .
            "       cs.coord_system_id " .
@@ -225,10 +221,13 @@ sub fetch_by_region {
 
   #check the cache so we only go to the db if necessary
   my $length;
-  my $name_cache = $self->{'_name_cache'};
+  my $arr;
+  if( $key ) {
+    $arr = $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{$key};
+  }
 
-  if($key && exists($name_cache->{$key})) {
-    $length = $name_cache->{$key}->[1];
+  if( $arr ) {
+    $length = $arr->[3];
   } else {
     my $sth = $self->prepare($sql . " WHERE sr.name = ? AND " .
                              $constraint);
@@ -261,9 +260,11 @@ sub fetch_by_region {
         my $tmp_cs = ($cs) ? $cs : $csa->fetch_by_dbID($cs_id);
 
         # cache values for future reference
-        $key = lc(join(':',$tmp_name,$tmp_cs->name(),$tmp_cs->version));
-        $name_cache->{$key}         = [$id,$tmp_length];
-        $self->{'_id_cache'}->{$id} = [$tmp_name,$tmp_length,$high_cs];
+        my $arr = [ $id, $tmp_name, $cs_id, $tmp_length ];
+        $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$tmp_name:$cs_id"} =
+            $arr;
+        $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$id"} =
+            $arr;
 
         my $tmp_ver = substr($tmp_name, $prefix_len);
 
@@ -291,15 +292,15 @@ sub fetch_by_region {
       my ($id, $cs_id);
       ($seq_region_name, $id, $length, $cs_id) = $sth->fetchrow_array();
       $sth->finish();
+      
+      # cahce to speed up for future queries
+      my $arr = [ $id, $seq_region_name, $cs_id, $length ];
+      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$seq_region_name:$cs_id"} =
+          $arr;
+      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$id"} =
+          $arr;
 
-      if(!$cs) {
-        $cs = $csa->fetch_by_dbID($cs_id);
-        $key = lc(join(':',$seq_region_name,$cs->name(), $cs->version));
-      }
-
-      #cache results to speed up future queries
-      $name_cache->{$key}         = [$id,$length];
-      $self->{'_id_cache'}->{$id} = [$seq_region_name, $length, $cs];
+      $cs = $csa->fetch_by_dbID( $cs_id );
     }
   }
 
@@ -384,12 +385,13 @@ sub fetch_by_name {
 sub fetch_by_seq_region_id {
   my ($self, $seq_region_id) = @_;
 
-  my $id_cache = $self->{'_id_cache'};
-
+  my $arr = $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{ $seq_region_id };
   my ($name, $length, $cs);
 
-  if(exists $id_cache->{$seq_region_id}) {
-    ($name, $length, $cs) = @{$id_cache->{$seq_region_id}};
+  if( $arr ) {
+    my $cs_id;
+    ($name, $cs_id, $length ) = ( $arr->[1], $arr->[2], $arr->[3] );
+    $cs = $self->db->get_CoordSystemAdaptor->fetch_by_dbID($cs_id);
   } else {
     my $sth = $self->prepare("SELECT name, length, coord_system_id " .
                              "FROM seq_region " .
@@ -406,9 +408,12 @@ sub fetch_by_seq_region_id {
     $cs = $self->db->get_CoordSystemAdaptor->fetch_by_dbID($cs_id);
 
     #cache results to speed up repeated queries
-    $id_cache->{$seq_region_id} = [$name, $length, $cs];
-    my $key = lc(join(':', $name, $cs->name, $cs->version));
-    $self->{'_name_cache'}->{$key} = [$seq_region_id, $length];
+    my $arr = [ $seq_region_id, $name, $cs_id, $length ];
+      
+    $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$name:$cs_id"} =
+        $arr;
+    $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$seq_region_id"} =
+        $arr;
   }
 
   return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM      => $cs,
@@ -445,44 +450,42 @@ sub get_seq_region_id {
   if(!$slice || !ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
     throw('Slice argument is required');
   }
-
-  my $cs_name = $slice->coord_system->name();
-  my $cs_version = $slice->coord_system->version();
+  
   my $seq_region_name = $slice->seq_region_name();
+  my $key = $seq_region_name.":".$slice->coord_system->dbID();
+  my $arr = $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$key"};
 
-  my $key = lc(join(':', $seq_region_name,$cs_name,$cs_version));
-
-  my $name_cache = $self->{'_name_cache'};
-
-  if(exists($name_cache->{$key})) {
-    return $name_cache->{$key}->[0];
+  if( $arr ) {
+    return $arr->[0];
   }
 
-  my $csa = $self->db()->get_CoordSystemAdaptor();
-  my $coord_system = $csa->fetch_by_name($cs_name,$cs_version);
+  my $cs_id = $slice->coord_system->dbID();
 
   my $sth = $self->prepare("SELECT seq_region_id, length " .
                            "FROM seq_region " .
                            "WHERE name = ? AND coord_system_id = ?");
 
   #force seq_region_name cast to string so mysql cannot treat as int
-  $sth->execute("$seq_region_name", $coord_system->dbID());
+  $sth->execute("$seq_region_name", $cs_id );
 
   if($sth->rows() != 1) {
     throw("Non existant or ambigous seq_region:\n" .
-          "  coord_system=[$cs_name],\n" .
-          "  name=[$seq_region_name],\n" .
-          "  version=[$cs_version]");
+          "  coord_system=[$cs_id],\n" .
+          "  name=[$seq_region_name],\n");
+
   }
 
   my($seq_region_id, $length) = $sth->fetchrow_array();
   $sth->finish();
 
   #cache information for future requests
-  $name_cache->{$key} = [$seq_region_id, $length];
-  $self->{'_id_cache'}->{$seq_region_id} =
-    [$seq_region_name, $length, $coord_system];
-
+  $arr = [ $seq_region_id, $seq_region_name, $cs_id, $length ];
+  
+  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$seq_region_name:$cs_id"} =
+      $arr;
+  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$seq_region_id"} =
+      $arr;
+  
   return $seq_region_id;
 }
 
@@ -592,8 +595,6 @@ sub fetch_all {
   my ($seq_region_id, $name, $length, $cs_id);
   $sth->bind_columns(\$seq_region_id, \$name, \$length, \$cs_id);
 
-  my $name_cache = $self->{'_name_cache'};
-  my $id_cache   = $self->{'_id_cache'};
   my $cache_count = 0;
 
   my @out;
@@ -605,14 +606,16 @@ sub fetch_all {
         throw("seq_region $name references non-existent coord_system $cs_id.");
       }
 
-      my $cs_key = lc($cs->name().':'.$cs_version);
-
       #cache values for future reference, but stop adding to the cache once we
       #we know we have filled it up
-      if($cache_count < $SEQ_REGION_CACHE_SIZE) {
-        my $key = lc($name) . ':'. $cs_key;
-        $name_cache->{$key} = [$seq_region_id, $length];
-        $id_cache->{$seq_region_id} = [$name, $length, $cs];
+      if($cache_count < $Bio::EnsEMBL::Utils::SEQ_REGION_CACHE_SIZE) {
+        my $arr = [ $seq_region_id, $name, $cs_id, $length ];
+        
+        $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$name:$cs_id"} =
+            $arr;
+        $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$seq_region_id"} =
+            $arr;
+
         $cache_count++;
       }
 
@@ -652,17 +655,6 @@ sub fetch_all {
   $sth->finish();
 
   return \@out;
-}
-
-
-sub deleteObj {
-  my $self = shift;
-
-  $self->SUPER::deleteObj;
-
-  $self->{'_id_cache'} = {};
-  $self->{'_name_cache'} = {};
-  $self->{'_exc_cache'} = {};
 }
 
 
