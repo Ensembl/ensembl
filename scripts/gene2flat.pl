@@ -1,5 +1,24 @@
 #!/usr/local/bin/perl
 
+=head1 NAME
+
+gene2flat
+
+=head1 SYNOPSIS
+ 
+  gene2flat ENSG00000012
+
+=head1 DESCRIPTION
+
+gene2flat produces a number of flat file outputs of the genes,
+in particular the protein translation
+
+=head1 OPTIONS
+
+   -getall 
+
+
+=cut
 use strict;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::SeqIO;
@@ -13,6 +32,7 @@ my $tdbname = 'ensdev';
 my $format  = 'pep';
 my $usefile = 0;
 my $getall  = 0;
+my $verbose = 0;
 
 &GetOptions( 
 	     'dbtype:s' => \$tdbtype,
@@ -22,6 +42,7 @@ my $getall  = 0;
 	     'dbname:s' => \$tdbname,
 	     'format:s'   => \$format,
 	     'getall'   => \$getall,
+	     'verbose' => \$verbose,
 	     );
 my $db;
 
@@ -53,6 +74,9 @@ if( $format eq 'pep' ) {
 }
 
 foreach my $gene_id ( @gene_id ) {
+    if( $verbose ) {
+	print STDERR "Dumping $gene_id\n";
+    }
 
     eval {
 
@@ -60,7 +84,15 @@ foreach my $gene_id ( @gene_id ) {
 
 	if( $format eq 'pep' ) {
 	    foreach my $trans ( $gene->each_Transcript ) {
+		# get out first exon. Tag it to clone and gene on this basis
+		my @exon = $trans->each_Exon;
+		my $fe = $exon[0];
 		my $tseq = $trans->translate();
+		if ( $tseq->seq =~ /\*/ ) {
+		    print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
+		    next;
+		}
+		$tseq->desc("Gene:$gene_id Clone:".$fe->clone_id);
 		$seqio->write_seq($tseq);
 	    }
 	} elsif ( $format eq 'dump' ) {

@@ -237,10 +237,15 @@ foreach my $clone_id ( @clones ) {
 	} elsif ( $format =~ /pep/ ) {
 	    my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => \*STDOUT ) ;
 	    my $cid = $clone->id();
+	    
 	    foreach my $gene ( $clone->get_all_Genes() ) {
+		my $geneid = $gene->id();
 		foreach my $trans ( $gene->each_Transcript ) {
 		    my $tseq = $trans->translate();
-		    $tseq->desc("Clone:$cid");
+		    if( $tseq->seq =~ /\*/ ) {	
+			print STDERR $trans-id," got stop codons. Not dumping. on $cid\n";
+		    }
+		    $tseq->desc("Clone:$cid Gene:$geneid");
 		    $seqout->write_seq($tseq);
 		}
 	    }
