@@ -750,9 +750,19 @@ sub _translate {
 
 sub translate {
     my($self) = @_;
+
     my $pep = $self->_translate() || throw ("Can't translate DNA\n");
-    my $phase=$self->phase();
-    if($phase){$phase=3-$phase;}
+
+    my $phase= 0;
+
+    if (defined($self->phase)) {
+       $phase = $self->phase;
+    }
+
+    if ($phase){
+       $phase = 3 - $phase;
+    }
+
     return $pep->[$phase];
 }
 
@@ -1382,9 +1392,14 @@ sub cdna2genomic {
   my $self = shift;
   my $start_cdna = shift;
   my $end_cdna = shift;
-  
-  my $phase_start_cdna = $start_cdna + $self->phase();
-  my $phase_end_cdna = $end_cdna + $self->phase();
+ 
+  my $phase = 0;
+
+  if (defined($self->phase)) {
+     $phase = $self->phase;
+  } 
+  my $phase_start_cdna = $start_cdna + $phase;
+  my $phase_end_cdna = $end_cdna + $phase;
 
   my $pep_start = int(($phase_start_cdna+2)/3);
   my $pep_end = int (($phase_end_cdna+2)/3);

@@ -536,7 +536,7 @@ sub _parse_features {
       $self->throw("Inconsisent scores in feature array [$score - " . 
 		   $f->score . "]");
     }
-    if ($percent ne $f->percent_id) {
+    if (defined($f->percent_id) && $percent ne $f->percent_id) {
       $self->throw("Inconsistent pids in feature array [$percent - " . 
 		   $f->percent_id . "]");
     }

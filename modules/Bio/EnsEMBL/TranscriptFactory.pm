@@ -96,8 +96,8 @@ sub fset2transcript {
     $translation->start(1);
     $translation->end($exons[scalar(@exons)-1]->length);
     
-    $translation->start_exon($exons[0]);
-    $translation->end_exon($exons[$#exons]);
+    $translation->start_Exon($exons[0]);
+    $translation->end_Exon($exons[$#exons]);
 
     my $endphase = $exons[0]->end_phase;
     
@@ -153,8 +153,8 @@ sub fset2transcript_guess_phases {
 	
     $translation->start        (1);
     $translation->end          ($exons[$#exons]->end - $exons[$#exons]->start + 1);
-    $translation->start_exon($exons[0]);
-    $translation->end_exon($exons[$#exons]);
+    $translation->start_Exon($exons[0]);
+    $translation->end_Exon($exons[$#exons]);
     $transcript->translation($translation);
     
     my $endphase = 0;
@@ -249,12 +249,22 @@ sub fset2transcript_3frame {
     }
        
     my $translation = new Bio::EnsEMBL::Translation;
-    #print "contig id = ".$contig->id."\n";
-    $translation->temporary_id($contig->id . "." . $fset->id);
+
+    my $contig_id = "";
+    my $fset_id   = "";
+
+    if (defined($contig->id)) {
+       $contig_id = $contig->id;
+    }
+    if (defined($fset->id)) {
+       $fset_id = $fset->id;
+    }
+
+    $translation->temporary_id($contig_id . "." . $fset_id);
     $translation->start        (1);
     $translation->end          ($exons[$#exons]->end - $exons[$#exons]->start + 1);
-    $translation->start_exon($exons[0]);
-    $translation->end_exon  ($exons[$#exons]);
+    $translation->start_Exon($exons[0]);
+    $translation->end_Exon  ($exons[$#exons]);
     $transcript->translation($translation);
 
  #  print STDERR "Phase $startphase " . $transcript->translate->seq . "\n";

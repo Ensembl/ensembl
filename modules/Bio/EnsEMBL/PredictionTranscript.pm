@@ -454,7 +454,13 @@ sub get_cdna {
 
     push( @{$self->{'_exon_align'}}, $exon_align );
 
-    if( $exon->phase() != $lastphase ) {
+    my $phase = 0;
+
+    if (defined($exon->phase)) {
+      $phase = $exon->phase;
+    }
+
+    if( $phase != $lastphase ) {
 
       if( $lastphase == 1 ) {
 	$cdna .= 'NN';
@@ -467,8 +473,8 @@ sub get_cdna {
       }
 
       #startpadding for this exon
-      $cdna .= 'N' x $exon->phase();
-      $cdna_start += $exon->phase();
+      $cdna .= 'N' x $phase;
+      $cdna_start += $phase;
     }
     
     $new_cdna = $exon->seq->seq();
@@ -477,7 +483,8 @@ sub get_cdna {
     $cdna_end = $cdna_start + CORE::length( $new_cdna ) - 1;
 
     # how many peptides are added by this exon??
-    $pep_count = int( ( CORE::length( $new_cdna ) + $exon->phase() + 2 ) / 3 );
+
+    $pep_count = int( ( CORE::length( $new_cdna ) + $phase + 2 ) / 3 );
 
     $pep_end = $pep_start + $pep_count - 1; 
     $lastphase = $exon->end_phase();
@@ -590,7 +597,7 @@ sub cdna2genomic {
    my ( $ov_start, $ov_end );
 
 
-   print ::LOG "cdna2genomic: ",$start_cdna, " ", $end_cdna,"\n";
+   #print ::LOG "cdna2genomic: ",$start_cdna, " ", $end_cdna,"\n";
 
    if( ! defined $self->{'_exon_align'} ) {
      $self->get_cdna();
@@ -617,7 +624,7 @@ sub cdna2genomic {
      }
    }
    for my $tmp ( @result ) {
-     print ::LOG "cdna2genomic result: ", join ( " ", @$tmp ),"\n";
+     #print ::LOG "cdna2genomic result: ", join ( " ", @$tmp ),"\n";
    }
 
    return @result;
