@@ -195,13 +195,13 @@ sub get_all_SeqFeatures{
 
    # make the SQL query
 
-   my $sth = $self->_dbobj->prepare("select start,end,strand,score,analysis from feature where contig = \"$id\"");
+   my $sth = $self->_dbobj->prepare("select seq_start,seq_end,strand,score,analysis from feature where contig = \"$id\"");
    my $res = $sth->execute();
 
    while( my $rowhash = $sth->fetchrow_hashref) {
       my $out = new Bio::SeqFeature::Generic;
-      $out->start($rowhash->{start});
-      $out->end($rowhash->{end});
+      $out->start($rowhash->{seq_start});
+      $out->end($rowhash->{seq_end});
       $out->strand($rowhash->{strand});
       if( defined $rowhash->{score} ) {
 	  $out->score($rowhash->{score});

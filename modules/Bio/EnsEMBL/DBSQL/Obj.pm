@@ -226,12 +226,12 @@ sub get_Transcript{
 sub get_Translation{
    my ($self,$translation_id) = @_;
 
-   my $sth = $self->prepare("select start,start_exon,end,end_exon from translation where id = '$translation_id'");
+   my $sth = $self->prepare("select seq_start,start_exon,seq_end,end_exon from translation where id = '$translation_id'");
    my $res = $sth->execute();
    my $rowhash = $sth->fetchrow_hashref;
    my $out = Bio::EnsEMBL::Translation->new();
-   $out->start($rowhash->{'start'});
-   $out->end($rowhash->{'end'});
+   $out->start($rowhash->{'seq_start'});
+   $out->end($rowhash->{'seq_end'});
    $out->start_exon_id($rowhash->{'start_exon'});
    $out->end_exon_id($rowhash->{'end_exon'});
    $out->id($translation_id);
@@ -254,7 +254,7 @@ sub get_Translation{
 sub get_Exon{
    my ($self,$exonid) = @_;
 
-   my $sth = $self->prepare("select id,contig,created,modified,start,end,strand,phase from exon where id = '$exonid'");
+   my $sth = $self->prepare("select id,contig,created,modified,seq_start,seq_end,strand,phase from exon where id = '$exonid'");
    $sth->execute;
    my $rowhash = $sth->fetchrow_hashref;
 
@@ -274,8 +274,8 @@ sub get_Exon{
    $exon->id($rowhash->{'id'});
    $exon->created($rowhash->{'created'});
    $exon->modified($rowhash->{'modified'});
-   $exon->start($rowhash->{'start'});
-   $exon->end($rowhash->{'end'});
+   $exon->start($rowhash->{'seq_start'});
+   $exon->end($rowhash->{'seq_end'});
    $exon->strand($rowhash->{'strand'});
    $exon->phase($rowhash->{'phase'});
    
@@ -671,7 +671,7 @@ sub write_Translation{
    }
 
    
-   my $tst = $self->prepare("insert into translation (id,start,start_exon,end,end_exon) values ('" 
+   my $tst = $self->prepare("insert into translation (id,seq_start,start_exon,seq_end,end_exon) values ('" 
 			    . $translation->id . "',"
 			    . $translation->start . ",'"  
 			    . $translation->start_exon_id. "',"
@@ -708,7 +708,7 @@ sub write_Exon{
 
    # FIXME: better done with placeholders. (perhaps?).
 
-   my $exonst = "insert into exon (id,contig,created,modified,start,end,strand,phase) values ('" .
+   my $exonst = "insert into exon (id,contig,created,modified,seq_start,seq_end,strand,phase) values ('" .
        $exon->id() . "','" .
 	   $exon->contig_id() . "','" .
 	       $exon->created(). "','" .
@@ -820,7 +820,7 @@ sub write_Clone{
 =head2 prepare
 
  Title   : prepare
- Usage   : $sth = $dbobj->prepare("select start,end from feature where analysis = \" \" ");
+ Usage   : $sth = $dbobj->prepare("select seq_start,seq_end from feature where analysis = \" \" ");
  Function: prepares a SQL statement on the DBI handle
 
            If the debug level is greater than 10, provides information into the
