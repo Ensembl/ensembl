@@ -57,7 +57,7 @@ CREATE TABLE contig (
   internal_id       int(10) unsigned NOT NULL auto_increment,
   id                varchar(40) NOT NULL,
   clone             int(10) NOT NULL,
-  length            int(10) unsigned,
+  length            int(10) unsigned NOT NULL,
   offset            int(10) unsigned,
   corder            int(10) unsigned,
   dna               int(10) NOT NULL,
@@ -67,7 +67,8 @@ CREATE TABLE contig (
   PRIMARY KEY (internal_id),
   UNIQUE id (id),
   KEY clone (clone),
-  KEY dna (dna)
+  KEY dna (dna),
+  KEY length (length)
 );
 
 #
@@ -79,11 +80,12 @@ CREATE TABLE contigoverlap (
   overlap_source        varchar(40) NOT NULL,
   contig_a_position     int(10) unsigned,
   contig_b_position     int(10) unsigned,
-  overlap_size          int(10) unsigned,
+  overlap_size          int(10) unsigned NOT NULL,
   overlap_type          enum('right2left','left2right','left2left','right2right'),
   
   PRIMARY KEY (dna_a_id,dna_b_id,overlap_source),
   KEY dna_b_dna_a(dna_b_id,dna_a_id),
+  KEY (overlap_size),
   KEY (overlap_source)
 );
 
