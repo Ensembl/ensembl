@@ -1296,7 +1296,7 @@ sub _mask_features {
 
     # check if we get repeat completely outside of expected slice range
     if ($end < 1 || $start > $dnalen) {
-      warning("Unexpected: Repeat completely outside slice coordinates.");
+	  warning("Unexpected: Repeat completely outside slice coordinates.");
       next REP;
     }
 
@@ -1490,7 +1490,7 @@ sub get_all_compara_Syntenies {
 
   my $sa = $compara_db->get_SyntenyAdaptor;
   $sa->setSpecies("XX",$self->adaptor->db->get_MetaContainer->get_Species->binomial, $qy_species );
-  return $sa->get_synteny_for_chromosome( $self->chr_name,$self->chr_start, $self->chr_end );
+  return $sa->get_synteny_for_chromosome( $self->seq_region_name,$self->start, $self->end );
 }
 
 
