@@ -75,7 +75,7 @@ sub new {
 
   Arg [1]    : none
   Example    : @gene_ids = $gene_adaptor->list_geneIds();
-  Description: Gets an array of internal ids for all genes in the current db
+  Description: DEPRECATED; use list_dbIDs instead
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
@@ -85,26 +85,33 @@ sub new {
 sub list_geneIds {
    my ($self) = @_;
 
-   my @out;
-   my $sth = $self->prepare("SELECT gene_id FROM gene");
-   $sth->execute;
-
-   while (my ($id) = $sth->fetchrow) {
-       push(@out, $id);
-   }
-
-   $sth->finish;
-
-   return \@out;
+   $self->warn("list_geneIds is deprecated; use list_dbIDs instead");
+   return $self->list_dbIDs();
 }
 
+=head2 list_dbIDs
+
+  Arg [1]    : none
+  Example    : @gene_ids = $gene_adaptor->list_dbIDs();
+  Description: Gets an array of internal ids for all genes in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub list_dbIDs {
+   my ($self) = @_;
+
+   return $self->_list_dbIDs("gene");
+}
 
 
 =head2 list_stable_geneIds
 
   Arg [1]    : list_stable_gene_ids
   Example    : @stable_ids = $gene_adaptor->list_stable_gene_ids();
-  Description: Returns a list stable ids for all genes in the current db
+  Description: DEPRECATED; use list_stable_dbIDs() instead.
   Returntype : list of strings
   Exceptions : none
   Caller     : ?
@@ -114,17 +121,27 @@ sub list_geneIds {
 sub list_stable_geneIds {
    my ($self) = @_;
 
-   my @out;
-   my $sth = $self->prepare("SELECT stable_id FROM gene_stable_id");
-   $sth->execute;
+   $self->warn("list_stable_geneIds is deprecated; use list_stable_dbIDs instead");
+   return $self->list_stable_dbIDs();
 
-   while (my ($id) = $sth->fetchrow) {
-       push(@out, $id);
-   }
-
-   return \@out;
 }
 
+=head2 list_stable_dbIDs
+
+  Arg [1]    : none
+  Example    : @stable_gene_ids = $gene_adaptor->list_stable_dbIDs();
+  Description: Gets an array of stable ids for all genes in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub list_stable_dbIDs {
+   my ($self) = @_;
+
+   return $self->_list_dbIDs("gene_stable_id", "stable_id");
+}
 
 =head2 fetch_by_dbID
 
