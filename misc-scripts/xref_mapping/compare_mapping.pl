@@ -32,7 +32,7 @@ my ($old_x2e_r, $old_e2x_r) = read_mappings($old);
 #my %old_e2x = %$old_e2x_r;
 
 compare($old_x2e_r, $new_x2e_r, "xref");
-compare($old_e2x_r, $new_e2x_r, "ensembl object");
+compare($old_e2x_r, $new_e2x_r, "ensembl_object");
 
 # ----------------------------------------
 # Compare mappings keyed on xref
@@ -41,8 +41,8 @@ sub compare {
 
   my ($oldr, $newr, $desc) = @_;
 
-  open(NEW_ONLY,   ">${desc}_new_only.txt");
-  open(OLD_ONLY,   ">${desc}_old_only.txt");
+  open(NEW_ONLY, ">${desc}_new_only.txt");
+  open(OLD_ONLY, ">${desc}_old_only.txt");
 
   my %new = %$newr;
   my %old = %$oldr;
@@ -62,7 +62,7 @@ sub compare {
 	}
       }
       if ($found) {
-	$matched++ 
+	$matched++;
       } else {
 	$mismatched++;
       }
@@ -70,7 +70,7 @@ sub compare {
 
     } else {
       $new_only++;
-      print NEW_ONLY "$key\n";
+      print NEW_ONLY join("\t", split(/\./, $key)) . "\n";
     }
 
   }
@@ -79,7 +79,7 @@ sub compare {
 
     if (!exists $new{$key}) {
       $old_only++;
-      print OLD_ONLY "$key\n";
+      print OLD_ONLY join("\t", split(/\./, $key)) . "\n";
     }
 
   }
