@@ -220,7 +220,7 @@ sub fetch_by_region {
       $constraint .= "AND cs.version = ? ";
       push @bind_vals, $version;
     }
-    $constraint .= "ORDER BY cs.rank DESC";
+    $constraint .= "ORDER BY cs.rank ASC";
   }
 
   #check the cache so we only go to the db if necessary
