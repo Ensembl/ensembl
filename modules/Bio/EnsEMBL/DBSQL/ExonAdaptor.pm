@@ -174,7 +174,6 @@ sub _exon_from_sth {
   my $sticky_length = 0;
   my $sticky_str = "";
   my $exon;
-
   if( $hashRef->{'sticky_rank'} >1 ) {	
     
     # sticky exon
@@ -185,7 +184,7 @@ sub _exon_from_sth {
     
     $exon->add_component_Exon($component);
     $sticky_length += $component->length;
-    $sticky_str    .= $component->seq;
+    $sticky_str    .= $component->seq->seq;
 
     $exon->phase($component->phase);
     $exon->adaptor($self);
@@ -196,7 +195,7 @@ sub _exon_from_sth {
 
       $exon->add_component_Exon($component);
       $sticky_length += $component->length;
-      $sticky_str     = $component->seq . $sticky_str;
+      $sticky_str     = $component->seq->seq . $sticky_str;
 
       if( $component->sticky_rank == 1 ) {
 	$exon->contig( $component->contig );
