@@ -942,10 +942,13 @@ sub _build_contig_map {
 	
 	if( $overlap->distance == 1 ) {
 	  $current_left_size += $overlap->sister->golden_length-1;
+	  print("Current " . $current_left_size . " " . $left . "\n");
 	} else {
 	  $current_left_size += $overlap->distance;
-	  if( $current_left_size < $left ) {
+	  print("Current " . $current_left_size . " " . $left . "\n");
+	  if( $current_left_size > $left ) {
 	    # set the left overhang!
+	    print(STDERR "Setting left overhang " . $current_left_size . " " . $left . "\n");
 	    $self->_left_overhang($overlap->distance - ($current_left_size - $left));
 	    last GOING_LEFT;
 	  }
@@ -980,7 +983,7 @@ sub _build_contig_map {
   print STDERR "Current left = $left vs global left= $current_left_size\n";
   
   my $current_length;
-  
+  print STDERR "Left overhang is " . $self->_left_overhang . "\n";
   if( $self->_left_overhang() == 0 ) {
     if( $current_orientation == 1 ) {
       print(STDERR "Current orientation $current_orientation\n");
@@ -1005,13 +1008,16 @@ sub _build_contig_map {
 	} else {
 	  $current_length = $startpos - $current_contig->golden_start+1;
 	}
-    } else {
+  } else {
 	# has an overhang - first contig offset into the system
-	$self->{'start'}        ->{$current_contig->id} = $self->_left_overhang+1;
+    print STDERR "First contig offset " . $self->_left_overhang . "\n";
+      $self->{'start'}        ->{$current_contig->id} = $self->_left_overhang+1;
 	if( $current_orientation == 1 ) {
-	    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start;
+	  $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start;
 	} else {
-	    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end;
+	  print STDERR "Start in contig is " . $current_contig->golden_end . "\n";
+
+	  $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end;
 	}
 	$self->{'contigori'}    ->{$current_contig->id} = $current_orientation;
 	$self->{'contighash'}   ->{$current_contig->id} = $current_contig;
@@ -1782,7 +1788,9 @@ sub _at_right_end {
 
 sub _left_overhang{
    my ($obj,$value) = @_;
+   
    if( defined $value) {
+     print(STDERR "Setting overhand to $value\n");
       $obj->{'_left_overhang'} = $value;
     }
     return $obj->{'_left_overhang'};
