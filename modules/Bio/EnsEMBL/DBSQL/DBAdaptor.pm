@@ -121,6 +121,8 @@ sub new {
       'MarkerFeature'        => 
           'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
       'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
+      'MiscSet'              => 'Bio::EnsEMBL::DBSQL::MiscSetAdaptor',
+      'MiscFeature'          => 'Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor',
       'RepeatFeature'        => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
       'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
       'ProxyGene'            => 'Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor',
@@ -768,7 +770,7 @@ sub get_MarkerAdaptor {
   Arg [1]    : none
   Example    : $csa = $db_adaptor->get_CoordSystemAdaptor();
   Description: Gets a CoordSystemAdaptor for this database
-  Returntype : Bio::EnsEMBL::DBSQL::CoordSystem
+  Returntype : Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
   Exceptions : none
   Caller     : general
 
@@ -778,6 +780,34 @@ sub get_CoordSystemAdaptor {
   my $self = shift;
 
   return $self->get_adaptor('CoordSystem');
+}
+
+
+
+
+=head2 get_MiscSetAdaptor
+
+  Arg [1]    : none
+  Example    : $msa = $db_adaptor->get_MiscSetAdaptor();
+  Description: Gets a MiscSet adaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::MiscSetAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_MiscSetAdaptor {
+  my $self = shift;
+
+  return $self->get_adaptor('MiscSet');
+}
+
+
+
+sub get_MiscFeatureAdaptor {
+  my $self = shift;
+
+  return $self->get_adaptor('MiscFeature');
 }
 
 
