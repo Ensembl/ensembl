@@ -91,14 +91,14 @@ sub sql {
 
    my $str = join('', @chrs);
 
-   my $time = time;
-   print STDERR "\nSQL:\n$str\n\n";
+#   my $time = time;
+#   print STDERR "\nSQL:\n$str\n\n";
 
  #  print STDERR stack_trace_dump(), "\n";
 
    my $res = $self->SUPER::execute(@_);
-   $time = time - $time;
-   print STDERR "DONE ($time)\n";
+#   $time = time - $time;
+#   print STDERR "DONE ($time)\n";
 
    return $res;
  }
