@@ -369,11 +369,11 @@ sub _generate_missing_exon{
    my $isc;
 
    if( ($strand == 1 && $contigb->orientation == 1) || ($strand == -1 && $contigb->orientation == -1) ) {
-       $start = $contigb->offset - ($Bio::EnsEMBL::DB::Clone::CONTIG_SPACING)/2;
+       $start = $contigb->offset - ($Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING/2);
        $end = $start + $number -1;
        $isc = 0;
    } else {
-       $start = $contigb->offset + $contigb->length + ($Bio::EnsEMBL::DB::Clone::CONTIG_SPACING)/2;
+       $start = $contigb->offset + $contigb->length + ($Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING/2);
        $end = $start + $number -1;
        $isc = 1;
    }

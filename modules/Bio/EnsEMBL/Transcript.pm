@@ -164,6 +164,43 @@ sub flush_Exon{
    $self->{'_trans_exon_array'} = [];
 }
 
+=head2 first_exon
+
+ Title   : first_exon
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub first_exon{
+   my ($self,@args) = @_;
+
+   return $self->{'_trans_exon_array'}->[0];
+}
+
+=head2 last_exon
+
+ Title   : last_exon
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub last_exon{
+   my ($self) = @_;
+   my @temp = @{$self->{'_trans_exon_array'}};
+
+   return @temp[$#temp];
+}
+
 
 =head2 split_Transcript_to_Partial
 
@@ -209,11 +246,15 @@ sub split_Transcript_to_Partial{
        push(@out,$t);
 
        while( my $exon = shift @exons ) {
-	   if( $exon->phase == $prev->end_phase ) {
+	   if( $exon->contig_id eq $prev->contig_id && $exon->phase == $prev->end_phase) {
 	       # add it
 	       $t->add_Exon($exon);
 	       $prev = $exon;
 	   } else {
+	       if( $exon->contig_id eq $prev->contig_id ) {
+		   $self->warn("Got two exons, ". $exon->id ."[".$exon->contig_id."]:".$prev->id. "[".$prev->contig_id."] same contigs but incompatible phases!");
+	       }
+
 	       $prev = $exon;
 	       if( $#exons < 0 ) {
 		   # this was the last exon!
@@ -262,11 +303,51 @@ sub translate {
 
 
   my $seqstr;
+  my $prevtrans;
   foreach my $ptrans ( @trans ) {
       my $tseq = $ptrans->_translate_coherent($debug);
-      # to be consistent with our EMBL dumping, we need a double X here.
-      if( defined $seqstr ) { $seqstr .= 'XX'; } 
+     
+      # to be consistent with our EMBL dumping, we need to make the actual join
+      # with fill-in N's and then pass into translate so that ambiguous codons
+      # which still have a translation happen! This has to be the weirdest piece
+      # of manipulation I have done in a long time. What we do is take the last
+      # exon of the old transcript and the first exon of the current transcript,
+      # fill both sides in so that they make nice reading frames and then translate
+      # the 6 bases which this makes. Phase 0 exons are filled in by 3 to make sure
+      # that there is some filler.
+      
+      if( defined $prevtrans ) {
+	  my $last_exon = $prevtrans->last_exon();
+	  my $first_exon = $ptrans->first_exon();
+	  my $filler;
+
+	  # last exon
+	  if( $last_exon->end_phase != 0 ) {
+	      $filler = substr($last_exon->seq->str,$last_exon->seq->seq_len-$last_exon->end_phase);
+	  } 
+	  $filler .= 'N' x (3 - $last_exon->end_phase);
+
+	  # do first exon now.
+
+	  if( $first_exon->phase != 0 ) {
+	      $filler .= 'N' x $first_exon->phase;
+	  } else {
+	      $filler .= 'NNN';
+	  }
+	  $filler .= substr($first_exon->seq->str,0,(3-$first_exon->phase)%3);
+
+	  # translate it.
+	  if( length($filler) != 6 ) {
+	      my $lphase = $last_exon->end_phase;
+	      my $fphase = $first_exon->phase;
+	      $self->throw("Wrong length of filler seq. Error in coding [$filler] $lphase:$fphase\n");
+	  }
+	  my $fillerseq = Bio::Seq->new( -seq => $filler, -type => 'Dna');
+	  my $tfillerseq = $fillerseq->translate();
+	  $seqstr .= $tfillerseq->str;
+      } 
       $seqstr .= $tseq->str;
+      $prevtrans = $ptrans;
   }
   
   $seqstr =~ s/\*$//g;
