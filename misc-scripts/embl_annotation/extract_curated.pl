@@ -14,14 +14,14 @@ use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 
 # embl genes will be written to this database:
 my $ohost='localhost';
-my $ouser='root';
+my $ouser='ecs1dadmin';
 my $odbname='embl_test';
-my $pass='';
+my $pass='TyhRv';
 
 # list of clones in ensembl for which an embl file should be
 # checked is read from here
 my $ihost='localhost';
-my $iuser='root';
+my $iuser='ecs1dadmin';
 my $idbname='';
 
 # test file
@@ -158,7 +158,7 @@ if($list){
     }
 
     $dbi=Bio::EnsEMBL::DBLoader->new(
-    "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ihost;user=$iuser;dbname=$idbname");
+    "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ihost;user=$iuser;dbname=$idbname;pass=$pass");
 
     my $nclone=0;
     foreach my $clone_id ($dbi->get_all_Clone_id){
