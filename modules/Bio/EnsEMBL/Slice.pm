@@ -78,13 +78,13 @@ use Bio::EnsEMBL::RepeatMaskedSlice;
 =head2 new
 
   Arg [...]  : List of named arguments
-               string COORD_SYSTEM
-               string SEQ_REGION_NAME,
-               int    START,
-               int    END,
-               string VERSION (optional, defaults to '')
-               int    STRAND, (optional, defaults to 1)
-               Bio::EnsEMBL::DBSQL::SliceAdaptor ADAPTOR (optional)
+               Bio::EnsEMBL::CoordSystem          COORD_SYSTEM
+               string                             SEQ_REGION_NAME,
+               int                                START,
+               int                                END,
+               string                             VERSION (optional, defaults to '')
+               int                                STRAND, (optional, defaults to 1)
+               Bio::EnsEMBL::DBSQL::SliceAdaptor  ADAPTOR (optional)
   Example    : $slice = Bio::EnsEMBL::Slice->new(-coord_system => $cs,
                                                  -start => 1,
                                                  -end => 10000,
@@ -1457,7 +1457,7 @@ sub get_all_compara_Syntenies {
 
   my $sa = $compara_db->get_SyntenyAdaptor;
   $sa->setSpecies("XX",$self->adaptor->db->get_MetaContainer->get_Species->binomial, $qy_species );
-  return $sa->get_synteny_for_chromosome( $self->chr_name,$self->chr_start, $self->chr_end );
+  return $sa->get_synteny_for_chromosome( $self->seq_region_name,$self->start, $self->end );
 }
 
 
