@@ -1,4 +1,5 @@
 #!/usr/local/bin/perl
+
 =head1 NAME
 
 Update
@@ -72,7 +73,7 @@ if ($help) {
 }
 
 my $last_offset = 949000000;  
-my $now_offset  = time; 
+my $now_offset  = 949110000; #time; 
 
 $| = 1;
 
@@ -83,13 +84,17 @@ if ($last_offset > $now_offset) {
 
 my $from_locator     = "Bio::EnsEMBL::TimDB::Obj";
 my $to_locator       = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+my $arc_locator      = "Bio::EnsEMBL::DBArchive::Obj//host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 
 my $update_manager   = new Bio::EnsEMBL::Analysis::UpdateManager(-fromlocator => $from_locator,
 								 -tolocator   => $to_locator,
+								 -arclocator  => $arc_locator,
 								 -fromtime    => $last_offset,
 								 -totime      => $now_offset,
 								 );
 
+$update_manager->nowrite  ($nowrite);
+$update_manager->verbose  ($verbose);
 $update_manager->chunksize(20);
 $update_manager->update;
 
