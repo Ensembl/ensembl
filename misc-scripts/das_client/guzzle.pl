@@ -361,10 +361,21 @@ sub do_query
 
     my @replies;
     foreach my $query (values %query) {
-	print $cgi->pre(Dumper($query));
 	my $reply = $das->features(
 	    -dsn	=> $query->{DSN},
 	    -segment    => $query->{SEGMENT});
+
+	next if (!$reply->is_success());
+
+	if (exists $query->{MAPPER}) {
+	    my @results = $reply->results();
+	    foreach my $result (@results) {
+		my $group = $result->group();
+		$result->group($group . " [$seqid]");
+		#print $cgi->pre(Dumper($result));
+	    }
+	    #print $cgi->pre(Dumper($reply));
+	}
 	push(@replies, $reply);
     }
 
