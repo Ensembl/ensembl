@@ -91,7 +91,7 @@ my $fdbpass = undef;
 my $tdbtype = 'rdb';
 my $thost   = 'localhost';
 my $tport   = '410000';
-my $tdbname = 'ensembl_freeze17';
+my $tdbname = 'ensembl_freeze17_michele';
 my $tdbuser = 'root';
 my $tdbpass = undef;
 
@@ -219,7 +219,7 @@ if ($feature) {
 		print STDERR "Clone $clone_id not present in ensembl db!\n";
 		next;
 	    } 
-	    elsif ($oldclone->version == 0) {
+	    #elsif ($oldclone->version == 0) {
 		my $clone = $from_db->get_Clone($clone_id);
 		my $oldclone;
 		print STDERR "Writing features for clone ".$clone->id."\n";
@@ -227,20 +227,22 @@ if ($feature) {
 		    my @features=$contig->get_all_SeqFeatures;
 		    my $nf=scalar(@features);
 		    print STDERR "Writing $nf features for contig ".$contig->id."\n";
-		    exit;
 		    if ($nf) {
 			my $oldcontig = $to_db->get_Contig($contig->id);
 			my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($to_db);
 			$feature_obj->write($oldcontig, @features);
 		    }
+		    else {
+			print STDERR "Warning: Found zero features for this contig\n";
+		    }
+		    print STDERR "Changing clone $clone_id version from 0 to 1\n";
+		    my $sth = $to_db->prepare("update clone set version=1 where id='$clone_id'");
+		    $sth->execute() || print STDERR "Could not change version number!\n";
 		}
-		print STDERR "Changing clone $clone_id version from 0 to 1\n";
-		my $sth = $to_db->prepare("update clone set version=1 where id='$clone_id'");
-		$sth->execute() || print STDERR "Could not change version number!\n";
-	    }
-	    else {
-		print STDERR "Clone already updated, skipping\n\n";
-	    }
+	    #}
+	    #else {
+		#print STDERR "Clone already updated, skipping\n\n";
+	    #}
 	};
 	if ( $@ ) {
 	    print STDERR "Could not transfer clone $clone_id\n$@\n";

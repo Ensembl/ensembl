@@ -133,42 +133,20 @@ elsif ($check) {
     
 }
 elsif ($compare) {
-    #my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
-    #my $db =  Bio::EnsEMBL::DBLoader->new($locator);
-    #my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
-
-    #$db->static_golden_path_type('UCSC');
-    #my $sgp_adaptor = $db->get_StaticGoldenPathAdaptor();
-    #my @ensembl_genes;
-    #print STDERR "Getting EnsEMBL genes in fpc cooridnates\n";
-    #foreach my $fpc ($sgp_adaptor->get_all_fpc_ids()){
-	#print STDERR "Getting genes for fpc contig $fpc\n";
-	#my $vc;
-	#eval {
-	#$vc = $sgp_adaptor->fetch_VirtualContig_by_fpc_name($fpc);
-    #};
-	#if ($@) {
-	    #print STDERR "Could not build virtual Contig for $fpc because $@\n";
-	    #next;
-	#}
-	#my @vc_genes=$vc->get_all_Genes;
-	#push @ensembl_genes,@vc_genes;
-    #}
-    
     $parse =~/ctg(\d+).gtf/;
-    my $parse2 = "../neomorphic/ctg$1.mrg.gtf";
+    my $parse2 = "../neomorphic_known/ctg$1.mrg.gtf";
     my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
     open (PARSE2,"$parse2") || die("Could not open $parse2 for ensembl gtf reading$!");
     
-    my @ensembl_genes=$gtfh->parse_file(\*PARSE2);
-    my $n=scalar @ensembl_genes;
+    my @standard_genes=$gtfh->parse_file(\*PARSE2);
+    my $n=scalar @standard_genes;
     print STDERR "Got $n genes from Neomoprhic file $parse2\n";
-    foreach my $gene (@ensembl_genes) {
-	foreach my $exon ($gene->each_unique_Exon) {
-	    #print STDERR "EnsEMBL gene has exon: ".$exon->id."\n";
-	}
-    }
-    my $stats=Bio::EnsEMBL::GeneComparison::GeneComparisonStats->new(-standard=>\@ensembl_genes, -predictor=>\@gtf_genes);
+    #foreach my $gene (@standard_genes) {
+	#foreach my $exon ($gene->each_unique_Exon) {
+	    #print STDERR "Neomorphic gene has exon: ".$exon->id."\n";
+	#}
+    #}
+    my $stats=Bio::EnsEMBL::GeneComparison::GeneComparisonStats->new(-standard=>\@standard_genes, -predictor=>\@gtf_genes);
  my %genes=$stats->get_OverlapMap;
     my $knownoverlap=0;
     foreach my $gene_id (keys(%genes)){
@@ -209,8 +187,10 @@ elsif ($compare) {
     foreach my $overlap (keys %overlaps) {
 	print STDERR "Gene overlap: ". $overlap. " Proportion of bases ".
 	    $overlaps{$overlap}. "\n";                    
+	
     }
-
+    #$stats->make_merges;
+    
     my $string=$stats->getGeneComparisonStats;
     print STDERR "Gene comparison stats:\n";
     print STDERR $string;
