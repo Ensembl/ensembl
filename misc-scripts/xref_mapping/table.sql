@@ -64,6 +64,7 @@ CREATE TABLE source (
   source_id                   int unsigned not null auto_increment,
   name                        varchar(255) not null,
   url                         varchar(255),
+  checksum                    varchar(255),
   file_modified_date          datetime not null,
   upload_date                 datetime not null,
   release                     varchar(255),
