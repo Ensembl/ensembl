@@ -900,7 +900,7 @@ sub _build_contig_map{
 =cut
 
 sub found_left_end {
-    my ($self, $arg) = @;
+    my ($self, $arg) = @_;
 
     if (defined ($arg)) {
 	$self->{_found_left_end} = $arg;
@@ -923,7 +923,7 @@ sub found_left_end {
 =cut
 
 sub found_right_end {
-    my ($self,$arg) = @;
+    my ($self,$arg) = @_;
 
     if (defined($arg)) {
 	$self->{_found_right_end} = $arg;
