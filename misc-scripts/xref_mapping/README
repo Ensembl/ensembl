@@ -64,6 +64,51 @@ So to load/parse all the xrefs for the human the command would be:-
                  -dbname xref_store -species human -create
 
 
+The following is the typical output for a rat run :-)
+
+perl xref_parser.pl -host host1 -port 3350 -user admin -pass pass -dbname xref_test -species rat -create
+
+Removed existing database xref_test
+Creating xref_test from sql/table.sql
+Populating metadata in xref_test from sql/populate_metadata.sql
+Species rat is valid (name = rattus_norvegicus, ID = 10116)
+Downloading ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10116.SPC to ./UniprotSWISSPROT/10116.SPC
+Checksum for 10116.SPC does not match, parsing
+Parsing 10116.SPC with UniProtParser
+Taxonomy ID 10116 corresponds to species ID 10116 name rattus_norvegicus
+SwissProt source id for ./UniprotSWISSPROT/10116.SPC: 1
+SpTREMBL source id for ./UniprotSWISSPROT/10116.SPC: 2
+Read 3970 SwissProt xrefs and 4432 SPTrEMBL xrefs from ./UniprotSWISSPROT/10116.SPC
+Uploading xrefs
+Downloading ftp://ftp.ncbi.nih.gov/genomes/R_norvegicus/protein/protein.gbk.gz to ./RefSeq/protein.gbk.gz
+Uncompressing ./RefSeq/protein.gbk.gz
+Checksum for protein.gbk does not match, parsing
+Parsing protein.gbk with RefSeqGPFFParser
+Read 21178 xrefs from ./RefSeq/protein.gbk
+Uploading xrefs
+Downloading ftp://ftp.ncbi.nih.gov/genomes/R_norvegicus/RNA/rna.gbk.gz to ./RefSeq/rna.gbk.gz
+Uncompressing ./RefSeq/rna.gbk.gz
+Checksum for rna.gbk does not match, parsing
+Parsing rna.gbk with RefSeqGPFFParser
+Read 21178 xrefs from ./RefSeq/rna.gbk
+Uploading xrefs
+Downloading ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/RAT/gene_association.goa_rat.gz to ./GO/gene_association.goa_rat.gz
+Uncompressing ./GO/gene_association.goa_rat.gz
+Checksum for gene_association.goa_rat does not match, parsing
+Parsing gene_association.goa_rat with GOParser
+        44991 GO dependent xrefs added
+Downloading ftp://rgd.mcw.edu/pub/data_release/genbank_to_gene_ids.txt to ./RGD/genbank_to_gene_ids.txt
+Checksum for genbank_to_gene_ids.txt does not match, parsing
+Parsing genbank_to_gene_ids.txt with RGDParser
+        11863 xrefs succesfully loaded
+        2461 xrefs ignored
+
+
+
+NOTE: Due to the fact that some Uniprot/refseq entries may no longer be valid (loaded) some xrefs are 
+ignored and so do not panic if you see xref ignored messages with values.
+
+
 
 So we now have a set of xrefs that are dependent on the uniprot and refseq 
 entries loaded. These can then be mapped to the ENSEMBL entitys with the 
