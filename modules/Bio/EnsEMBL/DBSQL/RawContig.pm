@@ -110,7 +110,7 @@ sub fetch {
     my ($self) = @_;
  
     my $id=$self->id;
-print STDERR "**** About to fetch Rawcontig $id \n";
+
 #    my $sth = $self->dbobj->prepare("select c.id,c.internal_id,cl.embl_version " . 
 #                           "from dna as d,contig as c,clone as cl " .
 #                           "where d.id = c.dna and c.id = '$id' and c.clone = cl.id");
@@ -129,8 +129,7 @@ print STDERR "**** About to fetch Rawcontig $id \n";
 
     my $res = $sth->execute($id);
 
-    if (my $row = $sth->fetchrow_arrayref) {
-print STDERR "**** Setting internal id to " , $row->[0] ,  "\n";    
+    if (my $row = $sth->fetchrow_arrayref) {  
         $self->internal_id($row->[0]);
         $self->dna_id($row->[1]);
         $self->seq_version($row->[2]);
@@ -866,7 +865,23 @@ sub embl_offset{
 
 }
 
+=head2 embl_accession
 
+ Title   : embl_accession
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub embl_accession{
+   my $self = shift;
+
+   return "AL000000";
+}
 
 
 =head2 id
@@ -884,7 +899,6 @@ sub embl_offset{
 sub id {
    my ($self,$value) = @_;
    if( defined $value) {
-       print(STDERR "Setting id to $value\n");
       $self->{'id'} = $value;
     }
     return $self->{'id'};
