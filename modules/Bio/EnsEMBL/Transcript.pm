@@ -47,6 +47,7 @@ use strict;
 
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::TranscriptI;
 use Bio::Tools::CodonTable;
@@ -1932,6 +1933,37 @@ sub add_DBLink{
 
 #   push(@{$self->{'_db_link'}},$value);
 }
+
+
+=head2 get_all_Introns
+
+  Arg [1]    : none
+  Example    : my @introns = @{$transcript->get_all_Introns()};
+  Description: Returns an listref of the introns in this transcipr in order.
+               i.e. the first intron in the listref is the 5prime most exon in 
+               the transcript.
+  Returntype : a list reference to Bio::EnsEMBL::Intron objects
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_Introns {
+   my ($self) = @_;
+   if( ! defined $self->{'_trans_exon_array'} && defined $self->adaptor() ) {
+     $self->{'_trans_exon_array'} = $self->adaptor()->db()->
+       get_ExonAdaptor()->fetch_all_by_Transcript( $self );
+   }
+
+   my @introns=();
+   my @exons = @{$self->{'_trans_exon_array'}};
+   for(my $i=0; $i < scalar(@exons)-1; $i++){
+     my $intron = new Bio::EnsEMBL::Intron($exons[$i],$exons[$i+1]);
+     push(@introns, $intron)
+   }
+   return \@introns;
+}
+
 
 
 1;

@@ -98,8 +98,6 @@ sub start {
   }
 
   if($multi_flag) {
-    use Carp 'cluck';
-    cluck("Bio::EnsEMBL::Gene::start - Gene spans multiple contigs.");
     $self->warn("Bio::EnsEMBL::Gene::start - Gene spans multiple contigs." .
 		"The return value from start may not be what you want");
   }    
@@ -147,7 +145,6 @@ sub end {
   }
 
   if($multi_flag) {
-    cluck("Bio::EnsEMBL::Gene::start - Gene spans multiple contigs.");
     $self->warn("Bio::EnsEMBL::Gene::end - Gene spans multiple contigs." .
 		"The return value from end may not be what you want");
   }
