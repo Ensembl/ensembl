@@ -122,13 +122,14 @@ sub _initialize {
   $self->{'_clone_dbm'}=\%unfin_clone;
 
   # if going to do things !$noacc then need to open this dbm file too
+  my %unfin_accession;
   if(!$noacc){
       my $accession_dbm_file="$unfinished_root/unfinished_accession.dbm";
-      my %unfin_accession;
       unless(tie(%unfin_accession,'NDBM_File',$accession_dbm_file,O_RDONLY,0644)){
 	  $self->throw("Error opening accession dbm file");
       }
       $self->{'_accession_dbm'}=\%unfin_accession;
+#      print "ACC: $accession_dbm_file: ".scalar(keys %{$self->{'_accession_dbm'}})."\n";
   }
 
   # clone update file access
@@ -209,7 +210,7 @@ sub _initialize {
 	      $fok=1;
 	  }else{
 	      # see if maps via a translation
-	      my($clone2)=$self->get_id_acc($clone);
+	      my($clone2)=$self->get_id_acc($clone,1);
 	      next if $clone2 eq 'unk';
 	      if($clones{$clone2}){
 		  push(@okclones,$clone2);
@@ -217,7 +218,7 @@ sub _initialize {
 	      }
 	  }
 	  if(!$fok){
-	      $self->warn("Clone $clone is not recognised");
+	      $self->warn("Clone $clone is not recognised or locked");
 	  }
       }
       $raclones=\@okclones;
@@ -288,7 +289,7 @@ sub get_Clone {
     # can only build it, if it was 'loaded' in the initial call to timdb
     # (i.e. that it is in the active list)
     unless($self->{'_active_clones'}->{$id}){
-	$self->throw("$id cannot be fetched as not loaded in original object call ");
+	$self->throw("$id fetched - not loaded in original object call - locked?");
     }
 
     # test if clone is not locked (for safety); don't check for valid SV's
@@ -537,10 +538,23 @@ sub _check_clone_entry{
 =cut
 
 sub get_id_acc{
-    my($self,$id)=@_;
+    my($self,$id,$t)=@_;
     # check to see if clone exists, and extract relevant items from dbm record
     # cgp is the clone category (SU, SF, EU, EF)
     my($line,$cdate,$type,$cgp,$acc,$sv,$id2,$fok,$emblid,$htgsp);
+
+#    print "id: |$id|\n";
+#    print "line: ".$self->{'_clone_dbm'}->{$id}."\n";
+#    print "byacc: ".$self->{'_byacc'}."\n";
+#    print "accdb: ".$self->{'_accession_dbm'}."\n";
+#    print "acc: ".$self->{'_accession_dbm'}->{$id}."\n";
+#    if($t){
+#	print "ACC: ".scalar(keys %{$self->{'_accession_dbm'}})."\n";
+#	foreach my $clone (keys %{$self->{'_accession_dbm'}}){
+#	    print "|$clone|,|".$self->{'_accession_dbm'}->{$clone}."|\n";
+#	}
+#    }
+
     if($line=$self->{'_clone_dbm'}->{$id}){
 	# first straight forward lookup
 	($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$line);

@@ -371,12 +371,12 @@ sub get_updated_objects {
 	print STDERR "Using ".$self->usefile." as a list of clones to update!\n";
 	my $file = $self->usefile();
 	open(IN,"<$file");
-	while (<IN>) {
-	    chomp;
-	    push(@clones,$_);
+	while(<IN>){
+	    if(/^(\S+)/){
+		push(@clones,$1);
+	    }
 	}
-    }
-    else {
+    } else {
 	eval {
 	    @clones = $fromdb->get_updated_Clone_id($self->fromtime,$self->totime);
 	};
@@ -523,11 +523,17 @@ sub transfer_chunk {
 	    elsif ($object->isa("Bio::EnsEMBL::Exon")) {
 		$self->write_exon($todb,$object);
 	    }
+
 	};
 	if ($@) {
 	    warn($@);
-	    warn("ERROR: clone $id not updated, will be deleted from recipient database\n");
-	    $todb->delete_Clone($object);
+	    # FIXME
+	    # don't think you should delete clones at this point
+	    # as you get an exception if the clone load fails for any reason
+	    # should remove clones via 'ghosts'
+	    warn("ERROR: clone $id could not be fetched - might have become locked");
+	    #warn("ERROR: clone $id not updated, will be deleted from recipient database\n");
+	    #$todb->delete_Clone($object);
 	    
 	}    
     }
