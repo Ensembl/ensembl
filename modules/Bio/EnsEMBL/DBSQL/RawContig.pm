@@ -722,7 +722,7 @@ sub get_all_SeqFeatures {
 
     push(@out,$self->get_all_SimilarityFeatures);
     push(@out,$self->get_all_RepeatFeatures);
- #   push(@out,$self->get_all_PredictionFeatures);
+    push(@out,$self->get_all_PredictionFeatures);
 
     return @out;
 }
@@ -1366,19 +1366,19 @@ sub get_all_PredictionFeatures {
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
 	   $current_fset->analysis($analysis);
-	   $current_fset->seqname($self->id);
+	   $current_fset->seqname($hid);
 	   $current_fset->id($count);
 	   $current_fset->score(0.0);
            $count++;
-	   $current_fset->raw_seqname($self->id);
+	   $current_fset->raw_seqname($hid);
 	   $fsetstart = $start;
 	   push(@array,$current_fset);
        }
 
        $out = new Bio::EnsEMBL::SeqFeature;
        
-       $out->seqname   ($self->id);
-       $out->raw_seqname($self->id);
+       $out->seqname   ($hid);
+       $out->raw_seqname($hid);
 
        $out->start     ($start);
        $out->end       ($end);
