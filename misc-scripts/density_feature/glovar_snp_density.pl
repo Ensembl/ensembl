@@ -7,10 +7,17 @@ script to calculate glovar SNP density and stats for Vega
 
 =head1 SYNOPSIS
 
+    ./glovar_snp_density.pl
+        --species=Homo_sapiens
+        [--chr=6,13,14]
+        [--dry-run|-n]
+        [--help|-h]
 
 =head1 DESCRIPTION
 
-Blocksize condition is 4000 per genome.
+This script calculates Glovar SNP densities and total numbers per chromosome
+for use in mapview. Can be run for individual chromosomes if desired (default:
+all chromosomes).
 
 =head1 LICENCE
 
@@ -48,9 +55,10 @@ use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use POSIX;
 
-my ($species, $dry, $help);
+my ($species, $chr, $dry, $help);
 &GetOptions(
     "species=s" => \$species,
+    "chr=s"     => \$chr,
     "dry-run"   => \$dry,
     "n"         => \$dry,
     "help"      => \$help,
@@ -61,6 +69,7 @@ if($help || !$species){
     print qq(Usage:
     ./glovar_snp_density.pl
         --species=Homo_sapiens
+        [--chr=6,13,14]
         [--dry-run|-n]
         [--help|-h]\n\n);
     exit;
@@ -85,13 +94,24 @@ warn "Database error: $databases->{'non_fatal_error'}\n"
 my $dfa = $databases->{'core'}->get_DensityFeatureAdaptor;
 my $dta = $databases->{'core'}->get_DensityTypeAdaptor;
 my $aa  = $databases->{'core'}->get_AnalysisAdaptor;
-my $attrib_adaptor = $databases->{'core'}->get_AttributeAdaptor();
-my $slice_adaptor = $databases->{'core'}->get_SliceAdaptor();
-my $top_slices = $slice_adaptor->fetch_all("toplevel");
+my $attrib_adaptor = $databases->{'core'}->get_AttributeAdaptor;
+my $slice_adaptor = $databases->{'core'}->get_SliceAdaptor;
 
-## calculate block size
+## which chromosomes do we run?
+my @top_slices;
+if ($chr) {
+    ## run chromosomes specified on commandline
+    foreach (split(",", $chr)) {
+        push @top_slices, $slice_adaptor->fetch_by_region("toplevel", $_);
+    }
+} else {
+    ## run all chromosomes for this species
+    @top_slices = @{$slice_adaptor->fetch_all("toplevel")};
+}
+
+## calculate block size (assuming 4000 blocks per genome)
 my ( $block_size, $genome_size );
-for my $slice ( @$top_slices ) {
+for my $slice ( @{$slice_adaptor->fetch_all("toplevel")} ) {
     $genome_size += $slice->length;
 }
 $block_size = int( $genome_size / 4000 );
@@ -114,15 +134,15 @@ $dta->store($dt) unless $dry;
 
 ## loop over chromosomes
 my @chr;
-foreach my $sl (@$top_slices) {
+foreach my $sl (@top_slices) {
     push @chr, $sl->seq_region_name;
 }
 print STDERR "\nAvailable chromosomes: @chr\n";
 
 my ($current_start, $current_end);
-foreach my $slice (@$top_slices){
+foreach my $slice (@top_slices) {
     $current_start = 1;
-    my $chr = $slice->seq_region_name();
+    my $chr = $slice->seq_region_name;
     my ($total, $i);
     my $bins = POSIX::ceil($slice->end / $block_size);
     
@@ -146,9 +166,10 @@ foreach my $slice (@$top_slices){
             $current_start = $current_end + 1;
             next;
         }
-        foreach my $snp (@{$snps}){
-            $count++ if ($snp->start >= 1);
-        }
+        ## only count snps that don't overlap slice start
+        ## also, avoid duplicate counting
+        my %snps = map { "$_->name => 1" if ($_->start >= 1) } @{$snps};
+        $count = scalar(keys %snps);
 
         ## density
         my $df = Bio::EnsEMBL::DensityFeature->new
@@ -178,4 +199,3 @@ foreach my $slice (@$top_slices){
 
 print STDERR "\nAll done at " . `date` . "\n";
 
-1;
