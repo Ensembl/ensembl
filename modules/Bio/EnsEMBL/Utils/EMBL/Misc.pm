@@ -59,15 +59,20 @@ sub features2join_string {
       #use the accession:x-y format
       foreach my $feat (@fs) {
 	my $contig = $feat->contig;
-	my $clone_acc = $contig->clone->id;
-	my $clone_ver = $contig->clone->embl_version;
+	my $clone = $contig->clone;
+	my $acc;
+	if($clone->embl_id) {
+	  $acc = $clone->embl_id .'.'. $clone->embl_version;
+	} else {
+	  $acc = $clone->id;
+	}
 	my $start = $feat->start + $contig->embl_offset - 1;
 	my $end   = $feat->end + $contig->embl_offset - 1;
 	my $strand = $feat->strand;
 	if($strand == 1) {
-	  push @join, "$clone_acc.$clone_ver:$start..$end";
+	  push @join, "$acc:$start..$end";
 	} else {
-	  push @join, "complement($clone_acc.$clone_ver:$start..$end)";
+	  push @join, "complement($acc:$start..$end)";
 	}
       }
     }
