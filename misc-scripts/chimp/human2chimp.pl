@@ -362,6 +362,8 @@ sub transfer_transcript {
 
       } else {
 
+        @coords = @{merge_coords(\@coords)};
+
         my $num = scalar(@coords);
 
         for (my $i=0; $i < $num; $i++) {
@@ -376,44 +378,37 @@ sub transfer_transcript {
                                      $chimp_exon, $chimp_transcript);
 
           } else {
-            # can end up with adjacent inserts and deletions so need
-            # to take previous coordinate, skipping over gaps
-            my $prev_c = undef;
+            if($i > 0) {
 
-            for (my $j = $i-1; $j >= 0 && !defined($prev_c); $j--) {
-              if ($coords[$j]->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-                $prev_c = $coords[$j];
+              my $prev_c = $coords[$i-1];
+              if($prev_c->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+
+                my $insert_len;
+                if ($chimp_exon->strand() == 1) {
+                  $insert_len = $c->start() - $prev_c->end() - 1;
+                } else {
+                  $insert_len = $prev_c->start() - $c->end() - 1;
+                }
+
+                #sanity check:
+                if ($insert_len < 0) {
+                  throw("Unexpected - negative insert " .
+                        "- undetected exon inversion?");
+                }
+
+                if ($insert_len > 0) {
+
+                  #
+                  # insert in chimp, deletion in human
+                  #
+
+                  Insertion::process_insert(\$chimp_cdna_pos, $insert_len,
+                                            $chimp_exon, $chimp_transcript);
+
+                  $chimp_cdna_pos += $insert_len;
+                }
               }
             }
-
-            if ($prev_c) {
-
-              my $insert_len;
-              if ($chimp_exon->strand() == 1) {
-                $insert_len = $c->start() - $prev_c->end() - 1;
-              } else {
-                $insert_len = $prev_c->start() - $c->end() - 1;
-              }
-
-              #sanity check:
-              if ($insert_len < 0) {
-                throw("Unexpected - negative insert " .
-                      "- undetected exon inversion?");
-              }
-
-              if ($insert_len > 0) {
-
-                #
-                # insert in chimp, deletion in human
-                #
-
-                Insertion::process_insert(\$chimp_cdna_pos, $insert_len,
-                                          $chimp_exon, $chimp_transcript);
-
-                $chimp_cdna_pos += $insert_len;
-              }
-            }
-
             $chimp_cdna_pos += $c->length();
           }
         }  # foreach coord
@@ -520,6 +515,113 @@ sub get_coords_extent {
   $chimp_exon->strand($strand);
   $chimp_exon->seq_region($seq_region);
   $chimp_exon->cdna_end($chimp_exon->cdna_start() + $chimp_exon->length() - 1);
+}
+
+
+###############################################################################
+# merge_coords
+#
+# merges adjacent deletions and insertions
+#
+###############################################################################
+
+sub merge_coords {
+  my $coords = shift;
+
+  info("Coords BEFORE Merging:");
+  print_coords($coords);
+
+  my @out = ($coords->[0]);
+
+  # start at 2nd coord because we look at two coords at a time
+  for(my $i = 1; $i < @$coords; $i++) {
+    my $c1 = $coords->[$i-1];
+    my $c2 = $coords->[$i];
+
+    if($c2->isa('Bio::EnsEMBL::Mapper::Gap')) {
+      push @out, $c2;
+      next;
+    }
+
+    # look for adjacent insertion and deletion
+
+    if($c1->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+      push @out, $c2;
+      next;
+    }
+
+    if($i < 2) {
+      # if there was no previous coordinate, then there is no insert as of yet
+      push @out, $c2;
+      next;
+    }
+
+    my $prev_coord = $coords->[$i-2];
+    my $insert_len;
+    if ($c2->strand() == 1) {
+      $insert_len = $c2->start() - $prev_coord->end() - 1;
+    } else {
+      $insert_len = $prev_coord->start() - $c2->end() - 1;
+    }
+
+    #sanity check:
+    if ($insert_len < 0) {
+      throw("Unexpected - negative insert - undetected exon inversion?");
+    }
+
+    if($insert_len == 0) {
+      push @out, $c2;
+      next;
+    }
+
+    # adjacent deletion and insertion was found
+    my $del_len = $c1->length();
+
+    info("Merging adjacent insert and delete: I=$insert_len D=$del_len");
+
+    if($del_len > $insert_len) {
+      # deletion consumes insertion
+
+      # shrink deletion (grow match) by length of insert
+      $c1->end($c1->end - $insert_len);
+
+      if($c2->strand() == 1) {
+        $c2->start($c2->start() - $insert_len);
+      } else {
+        $c2->end($c2->end() + $insert_len);
+      }
+
+      push @out, $c2;
+    } else {
+      #take previous gap off of list and take previous coord
+      pop(@out);
+      $c1 = $out[$#out];
+
+      if($insert_len - $del_len == 0) {
+        # if the insert len is 0 we can merge with previous match
+        if($c2->strand() == 1) {
+          $c1->end($c2->end());
+        } else {
+          $c1->start($c2->start());
+        }
+      } else {
+        # grow this match (and shrink insert) by length that was consumed by
+        # delete and add it to the list
+        if($c2->strand() == 1) {
+          $c2->start($c2->start() - $del_len);
+        } else {
+          $c2->end($c2->end() + $del_len);
+        }
+
+        push @out, $c2;
+      }
+    }
+  }
+
+  info("Coords AFTER Merging:");
+  print_coords(\@out);
+
+  return \@out;
 }
 
 ###############################################################################
