@@ -66,7 +66,7 @@ sub run {
     }
   }
   print "\t$count succesfull xrefs loaded\n";
-  print "\t$mismatch FAILED xrefs\n";
+  print "\t$mismatch xrefs ignored\n";
 }
 
 sub gene_name_2_xref_from_hugo{

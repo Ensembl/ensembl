@@ -106,7 +106,7 @@ sub run {
   }
   close (ENS1);
   print "\t$count xrefs succesfully loaded\n";
-  print "\t$mismatch xrefs failed to load\n";
+  print "\t$mismatch xrefs ignored\n";
 }
   
       
