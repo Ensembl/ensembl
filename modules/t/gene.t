@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 59;
+	plan tests => 60;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -39,8 +39,11 @@ debug ("Gene->list_stable_ids");
 my $stable_ids = $ga->list_stable_ids();
 ok (@{$stable_ids});
 
-$gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
+$gene = $ga->fetch_by_display_label( "T9S4_HUMAN" );
+ok( $gene->dbID() == 18262 );
+
+$gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
 debug( "Gene->fetch_by_stable_id()" );
 ok( $gene );
