@@ -606,64 +606,13 @@ sub get_all_ContigOverlaps {
     my ($self) = @_;
     
     
-    my @overlaps;
-
+    my( %overlap );
     foreach my $contig ($self->get_all_Contigs) {
-	if (defined($contig->get_left_overlap)) {
-	    
-	    my $overlap    = $contig->get_left_overlap;
-	    my $type;
-	    
-	    if ($overlap->sister_polarity == 1) {
-		$type = 'left2right';
-	    } elsif ($overlap->sister_polarity == -1) {
-		$type = 'left2left';
-	    } else {
-		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
-	    }
-	    
-	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(
-                -contiga => $contig,
-                -contigb => $overlap->sister,
-                -positiona => $overlap->self_position,
-                -positionb => $overlap->sister_position,
-                -source    => $overlap->source,
-                -distance  => $overlap->distance,
-                -overlap_type => $type,
-                );
-	    
-	    push(@overlaps,$tmpoverlap);
-	}
-
-	if (defined($contig->get_right_overlap)) {
-	    
-	    my $overlap    = $contig->get_right_overlap;
-	    my $type;
-	    
-	    if ($overlap->sister_polarity == 1) {
-		$type = 'right2left';
-	    } elsif ($overlap->sister_polarity == -1) {
-		$type = 'right2right';
-	    } else {
-		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
-	    }
-	    
-	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(
-                -contiga => $contig,
-                -contigb => $overlap->sister,
-                -positiona => $overlap->self_position,
-                -positionb => $overlap->sister_position,
-                -source    => $overlap->source,
-                -distance  => $overlap->distance,
-                -overlap_type => $type,
-                );
-	    
-	    push(@overlaps,$tmpoverlap);
-	    
-	}
+	foreach my $lap ($contig->get_all_Overlaps) {
+            $overlap{$lap->hash_string} = $lap;
+        }
     }
-
-    return (@overlaps);
+    return values %overlap;
 }
 
 =head2 htg_phase

@@ -60,7 +60,7 @@ use Bio::EnsEMBL::DBSQL::Gene_Obj;
 use Bio::EnsEMBL::DB::RawContigI;
 
 use Bio::EnsEMBL::Repeat;
-use Bio::EnsEMBL::ContigOverlapHelper;
+use Bio::EnsEMBL::ContigOverlap;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
 use Bio::EnsEMBL::DBSQL::DBPrimarySeq;
