@@ -60,6 +60,8 @@ use Bio::EnsEMBL::Translation;
 
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 
+use Time::HiRes qw(time);
+
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );
 
 
@@ -270,6 +272,109 @@ sub fetch_all_by_Gene {
   return $transcripts;
 }
 
+
+
+=head2 fetch_all_by_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice to fetch transcripts on.
+  Arg [3]    : (optional) boolean $load_exons
+               if true, exons will be loaded immediately rather than
+               lazy loaded later.
+  Example    : $transcripts = $
+  Description: Overrides superclass method to optionally load exons
+               immediately rather than lazy-loading them later.  This
+               is more efficient when there are a lot of transcripts whose
+               exons are going to be used.
+  Returntype : reference to list of transcripts
+  Exceptions : thrown if exon cannot be placed on transcript slice
+  Caller     : Slice::get_all_Transcripts
+
+=cut
+
+sub fetch_all_by_Slice {
+  my $self  = shift;
+  my $slice = shift;
+  my $load_exons = shift;
+
+  my $transcripts = $self->SUPER::fetch_all_by_Slice($slice);
+
+  # if there are 0 or 1 transcripts still do lazy-loading
+  if(!$load_exons || @$transcripts < 2) {
+    return $transcripts;
+  }
+
+  # preload all of the exons now, instead of lazy loading later
+  # faster than 1 query per transcript
+
+  # get extent of region spanned by transcripts
+  my ($min_start, $max_end);
+  foreach my $tr (@$transcripts) {
+    if(!defined($min_start) || $tr->start() < $min_start) {
+      $min_start = $tr->start();
+    }
+    if(!defined($max_end) || $tr->end() > $max_end) {
+      $max_end   = $tr->end();
+    }
+  }
+
+  $min_start += $slice->start() - 1;
+  $max_end   += $slice->start() - 1;
+
+  my $ext_slice;
+
+  if($min_start >= $slice->start() && $max_end <= $slice->end()) {
+    $ext_slice = $slice;
+  } else {
+    my $sa = $self->db()->get_SliceAdaptor();
+    my $ext_slice = $sa->fetch_by_region
+      ($slice->coord_system->name(), $slice->seq_region_name(),
+       $min_start,$max_end, $slice->strand(), $slice->coord_system->version());
+  }
+
+  # associate exon identifiers with transcripts
+
+  my %tr_hash = map {$_->dbID => $_} @$transcripts;
+
+  my $tr_id_str = '(' . join(',', keys %tr_hash) . ')';
+
+  my $sth = $self->prepare("SELECT transcript_id, exon_id, rank " .
+                           "FROM   exon_transcript " .
+                           "WHERE  transcript_id IN $tr_id_str");
+
+  $sth->execute();
+
+  my ($ex_id, $tr_id, $rank);
+  $sth->bind_columns(\$tr_id, \$ex_id, \$rank);
+
+  my %ex_tr_hash;
+
+  while($sth->fetch()) {
+    $ex_tr_hash{$ex_id} ||= [];
+    push @{$ex_tr_hash{$ex_id}}, [$tr_hash{$tr_id}, $rank];
+  }
+
+  $sth->finish();
+
+  my $ea = $self->db()->get_ExonAdaptor();
+  my $exons = $ea->fetch_all_by_Slice($ext_slice);
+
+  # move exons onto transcript slice, and add them to transcripts
+  foreach my $ex (@$exons) {
+    $ex = $ex->transfer($slice) if($slice != $ext_slice);
+
+    if(!$ex) {
+      throw("Unexpected. Exon could not be transfered onto transcript slice.");
+    }
+
+    foreach my $row (@{$ex_tr_hash{$ex->dbID()}}) {
+      my ($tr, $rank) = @$row;
+      $tr->add_Exon($ex, $rank);
+    }
+  }
+
+  return $transcripts;
+}
 
 
 

@@ -1316,8 +1316,11 @@ sub get_all_Genes_by_type{
 
 =head2 get_all_Transcripts
 
-  Arg [1]    : none
-  Example    : @transcripts = @{$slice->get_all_Transcripts};
+  Arg [1]    : (optional) boolean $load_exons
+               If set to true exons will not be lazy-loaded but will instead
+               be loaded right away.  This is faster if the exons are
+               actually going to be used right away.
+  Example    : @transcripts = @{$slice->get_all_Transcripts)_};
   Description: Gets all transcripts which overlap this slice.  If you want to
                specify a particular analysis or type, then you are better off
                using get_all_Genes or get_all_Genes_by_type and iterating
@@ -1330,13 +1333,15 @@ sub get_all_Genes_by_type{
 
 sub get_all_Transcripts {
   my $self = shift;
+  my $load_exons = shift;
 
   if(!$self->adaptor()) {
     warning('Cannot get Transcripts without attached adaptor');
     return [];
   }
 
-  return $self->adaptor->db->get_TranscriptAdaptor->fetch_all_by_Slice($self);
+  my $ta = $self->adaptor()->db()->get_TranscriptAdaptor();
+  return $ta->fetch_all_by_Slice($self, $load_exons);
 }
 
 

@@ -791,7 +791,7 @@ sub add_Attributes {
 =cut
 
 sub add_Exon{
-  my ($self,$exon) = @_;
+  my ($self,$exon, $rank) = @_;
 
   #yup - we are going to be picky here...
   unless(defined $exon && ref $exon && $exon->isa("Bio::EnsEMBL::Exon") ) {
@@ -799,6 +799,11 @@ sub add_Exon{
   }
 
   $self->{'_trans_exon_array'} ||= [];
+
+  if(defined($rank)) {
+    $self->{'_trans_exon_array'}->[$rank-1] = $exon;
+    return;
+  }
 
   my $was_added = 0;
 
