@@ -1301,7 +1301,19 @@ sub write{
 			     $dbl->database   . "')");
        $sth3->execute();
    }
-       
+    
+   my $id=$gene->id;
+   my $type=$gene->type;
+
+   my $sth4 = $self->_db_obj->prepare("insert into genetype (gene_id,type) values ('$id','$type')");
+
+   $sth4->execute();
+
+
+
+
+
+   
    return 1;
 }
 
