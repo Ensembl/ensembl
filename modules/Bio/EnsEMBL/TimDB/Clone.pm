@@ -44,6 +44,9 @@ use Bio::EnsEMBL::DB::CloneI;
 use Bio::EnsEMBL::TimDB::Contig;
 use Bio::SeqIO;
 
+use NDBM_File;
+use Fcntl qw( O_RDONLY );
+
 # Object preamble - inheriets from Bio::Root::Object
 use Bio::Root::Object;
 
@@ -110,7 +113,8 @@ sub _initialize {
   # open dbm for this clone (to check contigs are listed there)
   # NOTE: data stored here, is by disk_id
   my %unfin_contig;
-  unless(dbmopen(%unfin_contig,$contig_dbm_file,0666)){
+  unless(tie(%unfin_contig,'NDBM_File',$contig_dbm_file,O_RDONLY,0644)){
+  #unless(dbmopen(%unfin_contig,$contig_dbm_file,0666)){
       $self->throw("Error opening contig dbm file");
   }
   my($key,$val);
