@@ -50,13 +50,13 @@ sub new {
 
   my ( $dbID, $adaptor, $primary_id, $version,
        $dbname, $release  ) = $self->_rearrange
-	 ( qw { ADAPTOR
+	 ( [ qw { ADAPTOR
 		DBID
 		PRIMARY_ID
 		VERSION
 		DBNAME
 		RELEASE
-	      } );
+	      }], @args );
 
   if( defined $adaptor ) { $self->adaptor( $adaptor )}
   if( defined $dbID ) { $self->dbID( $dbID ) }
@@ -64,6 +64,7 @@ sub new {
   if( defined $version ) { $self->version( $version ) }
   if( defined $dbname ) { $self->dbname( $dbname ) }
   if( defined $release) { $self->release( $release ) }
+  $self->{_synonyms} = [];;
 
   return $self;
 }
@@ -155,7 +156,7 @@ sub flush_synonyms {
 # of the refernce can be put. This will lead you to a page
 # hopefully giving you more information on the object
 # referenced
-sub urlPattern {
+sub url_pattern {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
     $self->{_urlPattern} = $arg;
