@@ -72,4 +72,68 @@ Waiting for some definitions here...
 
 =cut
 
+=head2 percent_id
+
+ Title   : percent_id
+ Usage   : $percent_id = $featpair->percent_id
+           $featpair->percent_id($pid)
+ Function: Get/set on the percent_id of feature1
+ Returns : integer
+ Args    : none
+
+=cut
+
+sub percent_id {
+    my ($self) = @_;
+    $self->throw("Method not impelemented here");
+}
+
+=head2 hpercent_id
+
+ Title   : hpercent_id
+ Usage   : $percent_id = $featpair->hpercent_id
+           $featpair->hpercent_id($pid)
+ Function: Get/set on the percent_id of feature2
+ Returns : integer
+ Args    : none
+
+=cut
+
+sub hpercent_id {
+    my ($self) = @_;
+    $self->throw("Method not impelemented here");
+}
+
+=head2 p_value
+
+ Title   : p_value
+ Usage   : $p_value = $featpair->p_value
+           $featpair->p_value($p_value)
+ Function: Get/set on the p_value of feature1
+ Returns : integer
+ Args    : none
+
+=cut
+
+sub p_value {
+    my ($self) = @_;
+    $self->throw("Method not impelemented here");
+}
+=head2 hp_value
+
+ Title   : hp_value
+ Usage   : $p_value = $featpair->hp_value
+           $featpair->hp_value($p_value)
+ Function: Get/set on the p_value of feature2
+ Returns : integer
+ Args    : none
+
+=cut
+
+sub hp_value {
+    my ($self) = @_;
+    $self->throw("Method not impelemented here");
+}
+
+
 1;

@@ -57,7 +57,7 @@ package Bio::EnsEMBL::DBSQL::Obj;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+# Object preamble - inherits from Bio::Root::Object
 
 use Bio::Root::Object;
 
@@ -71,10 +71,11 @@ use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
 use DBI;
 use Bio::EnsEMBL::DB::ObjI;
+use Bio::EnsEMBL::Pipeline::DB::ObjI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
-@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::Object);
+@ISA = qw( Bio::EnsEMBL::DB::ObjI Bio::Root::Object);
 
 # _initialize is where the heavy stuff will happen when new is called
 

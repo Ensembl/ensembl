@@ -118,4 +118,36 @@ sub id {
     $self->("Have not implemented id");
 }
 
+=head2 percent_id
+
+ Title   : percent_id
+ Usage   : $pid = $feat->percent_id()
+           $feat->percent_id($pid)
+ Function: get/set on percentage identity information
+ Returns : float
+ Args    : none if get, the new value if set
+
+=cut
+
+sub percent_id {
+    my ($self) = @_;
+    $self->throw("percent_id() not yet implemented");
+}
+
+=head2 e_value
+
+ Title   : p_value
+ Usage   : $p_val = $feat->p_value()
+           $feat->p_value($p_val)
+ Function: get/set on p value information
+ Returns : float
+ Args    : none if get, the new value if set
+
+=cut
+
+sub e_value {
+    my ($self) = @_;
+    $self->throw("e value() not yet implemented");
+}
+
 1;

@@ -102,10 +102,10 @@ sub new {
 
   bless $self,$class;
 
-my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname); 
+my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value); 
 
   eval {
-  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname) = 
+  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value) = 
       $self->_rearrange([qw(START
 			    END
 			    STRAND
@@ -115,6 +115,8 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 			    SOURCE_TAG
 			    PRIMARY_TAG
 			    SEQNAME
+                PERCENT_ID
+                P_VALUE
 			    )],@args);
 };
   if( $@ ) {
@@ -133,7 +135,8 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
   $score        && $self->score($score);
   $analysis     && $self->analysis($analysis);
   $seqname      && $self->seqname($seqname);
-
+  $percent_id   && $self->percent_id($percent_id);
+  $p_value      && $self->p_value($p_value);
   return $self; # success - we hope!
 
 }
@@ -709,6 +712,50 @@ sub id {
 
     return $self->{_id};
 
+}
+
+=head2 percent_id
+
+ Title   : percent_id
+ Usage   : $pid = $feat->percent_id()
+           $feat->percent_id($pid)
+ Function: get/set on percentage identity information
+ Returns : float
+ Args    : none if get, the new value if set
+
+=cut
+
+sub percent_id {
+    my ($self,$value) = @_;
+
+    if (defined($value)) 
+    {
+	    $self->{_percent_id} = $value;
+    }
+
+    return $self->{_percent_id};
+}
+
+=head2 p_value
+
+ Title   : p_value
+ Usage   : $p_val = $feat->p_value()
+           $feat->p_value($p_val)
+ Function: get/set on p value information
+ Returns : float
+ Args    : none if get, the new value if set
+
+=cut
+
+sub p_value {
+    my ($self,$value) = @_;
+
+    if (defined($value)) 
+    {
+	    $self->{_p_value} = $value;
+    }
+
+    return $self->{_p_value};
 }
 
 1;
