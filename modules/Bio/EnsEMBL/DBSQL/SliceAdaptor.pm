@@ -835,11 +835,9 @@ sub list_overlapping_supercontigs {
 
 sub fetch_by_chr_name{
    my ($self,$chr_name) = @_;
-   deprecate('Use fetch_by_region() instead');
+   deprecate('Use fetch_by_region() instead.');
 
-   my $csa = $self->db()->get_CoordSystemAdaptor();
-   my $cs = $csa->fetch_top_level();
-   return $self->fetch_by_region($cs->name());
+   return $self->fetch_by_region('toplevel',$chr_name);
 }
 
 
