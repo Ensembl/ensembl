@@ -666,7 +666,6 @@ sub _get_aligned_features_for_contig {
     push @evidence_arr, $evidence_obj;
   }
 
-  my @seqcache = ();
   my @pep_evidence_arr = ();
   my $last_feat = undef;
 
@@ -1017,7 +1016,6 @@ sub _get_aligned_evidence_for_transcript {
 		  );
   push @evidence_arr, $evidence_obj;
 
-  my @seqcache = ();
   my $total_exon_len = 0;
   my @pep_evidence_arr = ();
   my $last_feat = undef;
