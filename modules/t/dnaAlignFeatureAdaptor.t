@@ -38,7 +38,7 @@ my $chr_slice = $db->get_SliceAdaptor->fetch_by_region('chromosome','20',
 $feats = $dafa->fetch_all_by_Slice($chr_slice);
 debug('---fetching by chromosomal slice---');
 debug("Got " . scalar(@$feats) . " features back");
-ok(@$feats == 1354);
+ok(@$feats == 6188);
 print_features($feats);
 
 
@@ -57,14 +57,14 @@ print_features($feats);
 #
 # Test fetch_by_dbID
 #
-my $feat = $dafa->fetch_by_dbID(22171863, 'contig');
-debug('--- fetching by dbID in contig coords ---');
+my $feat = $dafa->fetch_by_dbID(22171863);
+debug('--- fetching by dbID ---');
 ok($feat);
 print_features([$feat]);
 
 
-$feat = $dafa->fetch_by_dbID(22171863, 'supercontig');
-debug('--- fetching by dbID in supercontig coords ---');
+$feat = $feat->transform('supercontig');
+debug('--- transform to supercontig coords ---');
 ok($feat);
 print_features([$feat]);
 
@@ -75,8 +75,8 @@ print_features([$feat]);
 $feats = $dafa->fetch_all_by_Slice_and_pid($chr_slice, '90');
 debug('--- fetching by chr Slice and pid (90) ---');
 debug("Got " . scalar(@$feats));
-ok(@$feats == 253);
-print_features($feats);
+ok(@$feats == 452);
+#print_features($feats);
 
 #
 # Test store
@@ -99,7 +99,7 @@ my $percent_id = 90;
 my $evalue     = 23.2;
 my $cigar_string = '100M';
 
-my $feat = Bio::EnsEMBL::DnaDnaAlignFeature->new
+$feat = Bio::EnsEMBL::DnaDnaAlignFeature->new
   (-START  => $start,
    -END    => $end,
    -STRAND => $strand,

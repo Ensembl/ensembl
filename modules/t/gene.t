@@ -2,7 +2,7 @@ use lib 't';
 use strict;
 use warnings;
 
-BEGIN { $| = 1;  
+BEGIN { $| = 1;
 	use Test;
 	plan tests => 38;
 }
@@ -313,7 +313,7 @@ foreach my $trans( @{$gene_out->get_all_Transcripts()} ){
     $translate = 1;
   } else {
     $translate = 0;
-  }  	    
+  }
 }
 
 ok($translate == 1);
@@ -381,6 +381,9 @@ ok( $known==17 );
 #}
 
 
+#save contents of gene table
+$multi->save('core', 'gene');
+
 # tests for update method
 # go get a fresh gene again
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
@@ -399,6 +402,8 @@ $gene->display_xref( $dbEntryAdaptor->fetch_by_dbID( 614 ));
 $gene->type('dummy');
 $ga->update($gene);
 
-$newgene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
+$newgene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 ok ( $newgene->display_xref->dbID() == 614 );
 ok ( $newgene->type eq 'dummy' );
+
+$multi->restore('core', 'gene');

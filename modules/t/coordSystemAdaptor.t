@@ -75,7 +75,7 @@ ok($cs->name eq 'chromosome');
 #
 # 13-14 Test fetch_sequence_level
 #
-my $cs = $csa->fetch_sequence_level();
+$cs = $csa->fetch_sequence_level();
 
 ok($cs->name eq 'contig');
 ok($cs->is_sequence_level());

@@ -64,7 +64,7 @@ ok(@{$rca->fetch_all_by_class_seq('LTRs', '')} == 38);
 
 $multi_db->save('core', 'repeat_consensus');
 
-my $rc = Bio::EnsEMBL::RepeatConsensus->new
+$rc = Bio::EnsEMBL::RepeatConsensus->new
   (-REPEAT_CONSENSUS => 'ACTG',
    -NAME             => 'ACTG(n)',
    -LENGTH           => 4,

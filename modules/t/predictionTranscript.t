@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 32;
+	plan tests => 30;
 }
 
 use MultiTestDB;

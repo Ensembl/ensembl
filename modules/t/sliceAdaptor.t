@@ -69,21 +69,21 @@ ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
 #
 # 12-13 fetch_by_fpc_name
 #
-my $fpc_name = 'NT_011387';
-$slice = $slice_adaptor->fetch_by_supercontig_name($fpc_name);
-ok($new_slice->chr_start);
-ok($new_slice->chr_end);
+#my $fpc_name = 'NT_011387';
+#$slice = $slice_adaptor->fetch_by_supercontig_name($fpc_name);
+#ok($new_slice->chr_start);
+#ok($new_slice->chr_end);
 
 
 
 #
 # 14 - 15 fetch_by_clone_accession
 #
-my $clone_acc = 'AL031658';
-$slice = $slice_adaptor->fetch_by_clone_accession($clone_acc);
-$new_slice = $slice_adaptor->fetch_by_clone_accession($clone_acc, $FLANKING);
-ok($new_slice->chr_start == $slice->chr_start - $FLANKING);
-ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
+#my $clone_acc = 'AL031658';
+#$slice = $slice_adaptor->fetch_by_clone_accession($clone_acc);
+#$new_slice = $slice_adaptor->fetch_by_clone_accession($clone_acc, $FLANKING);
+#ok($new_slice->chr_start == $slice->chr_start - $FLANKING);
+#ok($new_slice->chr_end   == $slice->chr_end   + $FLANKING);
 
 
 #

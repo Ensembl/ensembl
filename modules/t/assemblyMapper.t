@@ -45,7 +45,7 @@ ok($asm_mapper && $asm_mapper->isa('Bio::EnsEMBL::AssemblyMapper'));
 # 3 Test map
 #
 
-my @coords = $asm_mapper->map('20', 50_0001, 60_000_000, 1, $chr_cs);
+my @coords = $asm_mapper->map('20', 500_001, 60_000_000, 1, $chr_cs);
 
 print_coords(@coords);
 
@@ -65,7 +65,7 @@ print_coords(@coords);
 #
 
 my @seq_regions =
-  $asm_mapper->list_seq_regions('20', 50_0001, 60_000_000, $chr_cs);
+  $asm_mapper->list_seq_regions('20', 500_001, 60_000_000, $chr_cs);
 
 my $str = join("\n", "----------", @seq_regions);
 debug("$str\n");
@@ -83,9 +83,9 @@ debug("$str\n");
 
 
 my @seq_ids =
-  $asm_mapper->list_ids('20', 50_0001, 60_000_000, $chr_cs);
+  $asm_mapper->list_ids('20', 500_001, 60_000_000, $chr_cs);
 
-my $str = join("\n", "----------", @seq_ids);
+$str = join("\n", "----------", @seq_ids);
 debug("$str\n");
 
 @seq_ids =

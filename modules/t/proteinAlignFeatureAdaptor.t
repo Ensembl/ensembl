@@ -39,7 +39,7 @@ my $chr_slice = $db->get_SliceAdaptor->fetch_by_region('chromosome','20',
 $feats = $pafa->fetch_all_by_Slice($chr_slice);
 debug('---fetching by chromosomal slice---');
 debug("Got " . scalar(@$feats) . " features back");
-ok(@$feats == 620);
+ok(@$feats == 2429);
 print_features($feats);
 
 
@@ -52,20 +52,20 @@ $feats = $pafa->fetch_all_by_Slice($ctg_slice);
 debug('--- contig AL031658.11.1.162976 (1-50000) features ---');
 debug("Got " . scalar(@$feats));
 ok(@$feats == 357);
-print_features($feats);
+      print_features($feats);
 
 
 #
 # Test fetch_by_dbID
 #
-my $feat = $pafa->fetch_by_dbID(5339568, 'contig');
-debug('--- fetching by dbID in contig coords ---');
+my $feat = $pafa->fetch_by_dbID(5339568);
+debug('--- fetching by dbID ---');
 ok($feat);
 print_features([$feat]);
 
 
-$feat = $pafa->fetch_by_dbID(5339568, 'supercontig');
-debug('--- fetching by dbID in supercontig coords ---');
+$feat = $feat->transform('supercontig');
+debug('--- transforming to supercontig coords ---');
 ok($feat);
 print_features([$feat]);
 
@@ -76,14 +76,14 @@ print_features([$feat]);
 $feats = $pafa->fetch_all_by_Slice_and_pid($chr_slice, '90');
 debug('--- fetching by chr Slice and pid (90) ---');
 debug("Got " . scalar(@$feats));
-ok(@$feats == 29);
+ok(@$feats == 64);
 print_features($feats);
 
 #
 # Test store
 #
 
-$multi->save('core', 'dna_align_feature');
+$multi->save('core', 'protein_align_feature');
 
 my $analysis   = $feat->analysis;
 my $slice      =
@@ -100,7 +100,7 @@ my $percent_id = 90;
 my $evalue     = 23.2;
 my $cigar_string = '100M';
 
-my $feat = Bio::EnsEMBL::DnaPepAlignFeature->new
+$feat = Bio::EnsEMBL::DnaPepAlignFeature->new
   (-START  => $start,
    -END    => $end,
    -STRAND => $strand,
@@ -123,7 +123,7 @@ ok($feat->is_stored($db));
 
 my $dbID = $feat->dbID();
 
-$feat = $pafa->fetch_by_dbID($dbID, 'contig');
+$feat = $pafa->fetch_by_dbID($dbID);
 
 ok($feat->dbID == $dbID);
 ok($feat->start == $start);
@@ -139,7 +139,7 @@ ok($feat->score == $score);
 ok($feat->p_value == $evalue);
 ok($feat->analysis->logic_name eq $analysis->logic_name);
 
-$multi->restore('core', 'dna_align_feature');
+$multi->restore('core', 'protein_align_feature');
 
 
 

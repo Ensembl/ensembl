@@ -5,7 +5,7 @@ use Bio::EnsEMBL::Exon;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 11;
+	plan tests => 10;
 }
 
 my $loaded = 0;
