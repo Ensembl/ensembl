@@ -31,13 +31,13 @@ print_features($feats);
 
 
 #HAP_1 is a fake haplotype on chromosome 20
-my $slice = $slice_adaptor->fetch_by_region('chromosome', '20_HAP1',
+$slice = $slice_adaptor->fetch_by_region('chromosome', '20_HAP1',
                                             30_399_998,30_600_002);
 my $org_slice = $slice_adaptor->fetch_by_region('chromosome', '20',
                                             30_430_000,30_500_000 );
 
 
-my $feats = $sfa->fetch_all_by_Slice($slice);
+$feats = $sfa->fetch_all_by_Slice($slice);
 
 debug("Got " . scalar(@$feats));
 ok( @$feats == 9 );
@@ -77,7 +77,7 @@ ok(@$feats == 14);
 my $hap_slice = $slice_adaptor->fetch_by_region('chromosome', '20_HAP1',
                                              30_400_000,30_700_000 );
 
-my $org_slice = $slice_adaptor->fetch_by_region('chromosome', '20',
+$org_slice = $slice_adaptor->fetch_by_region('chromosome', '20',
                                              30_400_000,30_800_000 );
 
 my ( $fhs, $bhs, $fos, $bos );

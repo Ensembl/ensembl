@@ -15,7 +15,7 @@ use Bio::EnsEMBL::Slice;
 
 my $multi = MultiTestDB->new();
 
-$verbose = 1; #set to true to turn on debug print outs
+$verbose = 0; #set to true to turn on debug print outs
 
 ok( $multi );
 
