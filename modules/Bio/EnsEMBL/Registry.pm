@@ -129,7 +129,7 @@ sub load_all{
   if(!defined($registry_register{'seen'})){
     $registry_register{'seen'}=1;
     if(defined($web_reg)){
-      print STDERR  "Loading conf from site defs file ".$web_reg."\n";
+#      print STDERR  "Loading conf from site defs file ".$web_reg."\n";
       unless (my $return = do $web_reg ){
 	throw "Error in Configuration\n $!\n";
       }
@@ -137,23 +137,21 @@ sub load_all{
       delete $INC{$web_reg}; 
     }
     elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
-      print STDERR  "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
-#      print STDERR "Called from ".caller()."\n";
+#      print STDERR  "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
       unless (my $return = do $ENV{ENSEMBL_REGISTRY}){
 	throw "Error in Configuration\n $!\n";
       }
     }
     elsif(-e $ENV{HOME}."/.ensembl_init"){
-      print STDERR "Loading conf from ".$ENV{HOME}."/.ensembl_init\n";
       do($ENV{HOME}."/.ensembl_init");
     }
-    else{
-      print STDERR "NO default configuration to load\n";
-    }
+#    else{
+#      print STDERR "NO default configuration to load\n";
+#    }
   }
-  else{
-    print STDERR "Already configured???\n";
-  }
+#  else{
+#    print STDERR "Already configured???\n";
+#  }
 }
 
 =head2 check_if_already_there
@@ -693,7 +691,8 @@ sub add_new_tracks{
   if(defined($species_reg)){
     my $config = $conf->{'general'}->{$view};
     foreach my $dba ($reg->get_all_DBAdaptors()){
-      if($dba->species eq $species_reg and !$reg->default_track($dba->species,$dba->group)){
+      #      if($dba->species eq $species_reg and !$reg->default_track($dba->species,$dba->group)){
+      if(!$reg->default_track($dba->species,$dba->group)){
 	if($start == 0){
 	  if(exists($config->{'vega_transcript_lite'}) and defined($config->{'vega_transcript_lite'}->{'pos'})){
 	    $start = $config->{'vega_transcript_lite'}->{'pos'};
