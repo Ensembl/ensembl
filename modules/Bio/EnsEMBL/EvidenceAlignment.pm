@@ -404,8 +404,8 @@ sub _pad_pep_str {
     Args    :   for transcripts, an optional list of accession
 		numbers of hit sequences of interest; if none
 		are given, all relevant hit sequences are
-		retrieved; for contigs, all relevant hit
-		sequences are always retrieved
+		retrieved (note that for contigs, all relevant
+		hit sequences are always retrieved)
     Returns :   reference to array of Bio::PrimarySeq
 
 =cut
@@ -416,12 +416,13 @@ sub fetch_alignment {
   $self->throw('must have a stable ID and a DB adaptor object')
     unless (($self->transcriptid || $self->contigname) && $self->dbadaptor);
 
+  my $ref_to_retval;	# reference to array to return
   if ($self->transcriptid) {
-    return $self->_get_aligned_evidence_for_transcript($self->transcriptid,
-                                                       $self->dbadaptor, @_);
+    $ref_to_retval = $self->_get_aligned_evidence_for_transcript(
+                            $self->transcriptid, $self->dbadaptor, @_);
   } elsif ($self->contigname) {
-  my $rca = $self->dbadaptor->get_RawContigAdaptor;
-  my $contig = $rca->fetch_by_name($self->contigname);
+    my $rca = $self->dbadaptor->get_RawContigAdaptor;
+    my $contig = $rca->fetch_by_name($self->contigname);
     my $plus_strand_alignment  = $self->_get_aligned_features_for_contig(
                                  $contig, $self->dbadaptor, 1);
     my $minus_strand_alignment = $self->_get_aligned_features_for_contig(
@@ -430,8 +431,9 @@ sub fetch_alignment {
     foreach my $line (@$minus_strand_alignment) {
       push @$all_alignments, $line;
     }
-    return $all_alignments;
+    $ref_to_retval = $all_alignments;
   }
+  return @$ref_to_retval;
 }
 
 # sort an evidence array
