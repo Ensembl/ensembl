@@ -395,7 +395,7 @@ sub primary_seq {
 	   $end = $c->length;
        } else {
 	   if( $self->{'rightmostcontig_id'} eq $cid ) {
-	       print STDERR "Rightmost end is ",$self->{'rightmostend'},"\n";
+	       print STDERR "Rightmost end is ",$self->{'rightmostend'},$cid,"\n";
 	       
 	       $end = $self->{'rightmostend'};
 	   } else {
@@ -632,7 +632,7 @@ sub get_all_PredictionFeatures {
 
 sub get_all_Genes {
     my ($self) = @_;
-    my (%gene,%trans,%exon);
+    my (%gene,%trans,%exon,%exonconverted);
 
     foreach my $c ( values %{$self->{'contighash'}} ) {   
 	foreach my $gene ( $c->get_all_Genes() ) {      
@@ -651,6 +651,7 @@ sub get_all_Genes {
                 
 	    if ($self->_convert_seqfeature_to_vc_coords($exon)) {
                 $internalExon = 1;
+		$exonconverted{$exon->id} = 1;
             }                           
 
 	    print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand," ,",$exon->seqname,"\n";
@@ -659,7 +660,9 @@ sub get_all_Genes {
         unless ($internalExon) {    
             delete $gene{$gene->id};
             print STDERR "Removing gene with id ", $gene->id, " as none of its exons on VirtualContig\n";
-        }
+        } else {
+	    print STDERR "Storing gene with id",$gene->id,"\n";
+	}
     }
     
     # get out unique set of translation objects
@@ -671,12 +674,15 @@ sub get_all_Genes {
     } 
        
     foreach my $t ( values %trans ) {
-	if( exists $self->{'contighash'}->{$exon{$t->start_exon_id}->contig_id} ) {
+
+	if( exists $exonconverted{$t->start_exon_id} ) {
+	    print STDERR "converting start for ",$t->id,"\n";
 	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->start_exon_id}->contig_id,$t->start,$t->start,1);
 	    $t->start($start);
 	}
 
-	if( exists $self->{'contighash'}->{$exon{$t->end_exon_id}->contig_id} ) {
+	if( exists $exonconverted{$t->end_exon_id}  ) {
+	    print STDERR "converting end for ",$t->id,"\n";
 	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->end_exon_id}->contig_id,$t->end,$t->end,1);
 	    $t->end($start);
 	}
@@ -945,98 +951,99 @@ print STDERR "in build contig map\n";
 
   GOING_LEFT :
     
-    while( $current_left_size < $left ) {
-	#print(STDERR "Current left = $current_left_size\n");
-	#print STDERR "Looking at ",$current_contig->id," with $current_left_size\n";
+      while( $current_left_size < $left ) {
+	  print(STDERR "Current left = $current_left_size\n");
+	  print STDERR "Looking at ",$current_contig->id," with $current_left_size\n";
 	
-	if( exists $seen_hash{$current_contig->id} ) {
-	    $self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
-	} else {
-	    $seen_hash{$current_contig->id} = 1;
-	}
-
-
-	
-	if( $current_orientation == 1 ) {
-	    
-	# go left wrt to the contig.
-	    $overlap = $current_contig->get_left_overlap();
-	    
-	    # if there is no left overlap, trim left to this size
-	    # as this means we have run out of contigs
-	    
-	    #print STDERR "Gone left\n";
-	    
-	    if( !defined $overlap ) {
-		$left = $current_left_size;
-		#print STDERR "getting out - no overlap\n";
-		last;
-	    }
-	
-	if( $overlap->distance == 1 ) {
-	  $current_left_size += $overlap->sister->golden_length -1;
-	} else {
-	  $current_left_size += $overlap->distance;
-	  if( $current_left_size > $left ) {
-	    # set the left overhang!
-	    #print STDERR "Triggered left overhang - ",$overlap->distance,":$current_left_size\n";
-	    $self->_left_overhang($overlap->distance - ($current_left_size - $left));
-	    last GOING_LEFT;
+	  if( exists $seen_hash{$current_contig->id} ) {
+	      $self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
+	  } else {
+	      $seen_hash{$current_contig->id} = 1;
 	  }
-	  $current_left_size += $overlap->sister->golden_length;
-	}
 	
-	$current_contig = $overlap->sister();
-	
-	if( $overlap->sister_polarity == 1) {
-	  $current_orientation = 1;
-	} else {
-	  $current_orientation = -1;
-	}
-      } else {
-	# go right wrt to the contig.
-	$overlap = $current_contig->get_right_overlap();
-	
-	# if there is no left overlap, trim left to this size
-	# as this means we have run out of contigs
-	if( !defined $overlap ) {
-	  $left = $current_left_size;
-	  last;
-	}
-	
-	if( $overlap->distance == 1 ) {
-	  $current_left_size += $overlap->sister->golden_length-1;
-	  #print STDERR ("Current " . $current_left_size . " " . $left . "\n");
-	} else {
-	  $current_left_size += $overlap->distance;
-	  #print STDERR ("Current " . $current_left_size . " " . $left . "\n");
-	  if( $current_left_size > $left ) {
-	    # set the left overhang!
-	    #print(STDERR "Setting left overhang " . $current_left_size . " " . $left . "\n");
-	    $self->_left_overhang($overlap->distance - ($current_left_size - $left));
-	    last GOING_LEFT;
+	  if( $current_orientation == 1 ) {
+	      
+	      # go left wrt to the contig.
+	      $overlap = $current_contig->get_left_overlap();
+	      
+	      # if there is no left overlap, trim left to this size
+	      # as this means we have run out of contigs
+	      
+	      print STDERR "Gone left\n";
+	      
+	      if( !defined $overlap ) {
+		  $left = $current_left_size;
+		  print STDERR "getting out - no overlap\n";
+		  last;
+	      }
+	      
+	      if( $overlap->distance == 1 ) {
+		  $current_left_size += $overlap->sister->golden_length -1;
+	      } else {
+		  $current_left_size += $overlap->distance;
+		  if( $current_left_size > $left ) {
+		      # set the left overhang!
+		      print STDERR "Triggered left overhang - ",$overlap->distance,":$current_left_size\n";
+		      $self->_left_overhang($overlap->distance - ($current_left_size - $left));
+		      last GOING_LEFT;
+		  }
+
+		  $current_left_size += $overlap->sister->golden_length;
+	      }
+	      print STDERR "Found sister " . $overlap->sister->id . "\t" . $current_left_size . "\n";
+	      $current_contig = $overlap->sister();
+	      
+	      if( $overlap->sister_polarity == 1) {
+		  $current_orientation = 1;
+	      } else {
+		  $current_orientation = -1;
+	      }
+	  } else {
+	      # go right wrt to the contig.
+	      $overlap = $current_contig->get_right_overlap();
+	      print STDERR "Gone rightt\n";
+	      # if there is no left overlap, trim left to this size
+	      # as this means we have run out of contigs
+	      if( !defined $overlap ) {
+		  $left = $current_left_size;
+		  print STDERR "Getting out - no overlap";
+		  last;
+	      }
+	      
+	      if( $overlap->distance == 1 ) {
+		  $current_left_size += $overlap->sister->golden_length-1;
+		  print STDERR ("Current " . $current_left_size . " " . $left . "\n");
+	      } else {
+		  $current_left_size += $overlap->distance;
+		  print STDERR ("Current " . $current_left_size . " " . $left . "\n");
+		  if( $current_left_size > $left ) {
+		      # set the left overhang!
+		      print(STDERR "Setting left overhang " . $current_left_size . " " . $left . "\n");
+		      $self->_left_overhang($overlap->distance - ($current_left_size - $left));
+		      last GOING_LEFT;
+		  }
+		  $current_left_size += $overlap->sister->golden_length;
+		  
+	      }
+
+	      $current_contig = $overlap->sister();
+	      
+	      if( $overlap->sister_polarity == 1) {
+		  $current_orientation = -1;
+	      } else {
+		  $current_orientation = 1;
+	      }
 	  }
-	  $current_left_size += $overlap->sister->golden_length;
-	}
-	
-	$current_contig = $overlap->sister();
-	
-	if( $overlap->sister_polarity == 1) {
-	  $current_orientation = -1;
-	} else {
-	  $current_orientation = 1;
-	}
       }
-    }
   
   # now $current_contig is the left most contig in this set, with
   # its orientation set and ready to rock... ;)
   
   my $total = $left + $right;
   
-  #print STDERR "leftmost contig is "  . $current_contig->id . 
-  #             " with $total to account for, " .
-  #	       " gone $current_left_size of $left\n";
+  print STDERR "leftmost contig is "  . $current_contig->id . 
+               " with $total to account for, " .
+  	       " gone $current_left_size of $left\n";
 
   $self->{'leftmostcontig_id'} = $current_contig->id;
   
@@ -1074,7 +1081,7 @@ print STDERR "in build contig map\n";
 	}
   } else {
 	# has an overhang - first contig offset into the system
-    #print STDERR "First contig offset " . $self->_left_overhang . "\n";
+      #print STDERR "First contig offset " . $self->_left_overhang . "\n";
       $self->{'start'}        ->{$current_contig->id} = $self->_left_overhang+1;
 	if( $current_orientation == 1 ) {
 	  $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start;
@@ -1171,7 +1178,7 @@ print STDERR "in build contig map\n";
 	    $current_length += $overlap->sister->golden_length -1;
 	} else {
 	    # go left wrt to the contig
-	    #print STDERR "Going left with " . $current_contig->id . "\n";
+	    print STDERR "Going left with " . $current_contig->id . "\n";
 	    
 	    $overlap = $current_contig->get_left_overlap();
 	    #print STDERR ("Overlap is $overlap\n");
@@ -1215,6 +1222,7 @@ print STDERR "in build contig map\n";
 
 	   # up the length
 	   $current_length += $overlap->sister->golden_length -1;
+	    print (STDERR "Length is " . $current_length . "\n");
        }
    }
 
@@ -1223,7 +1231,7 @@ print STDERR "in build contig map\n";
    $total = $left + $right;
 
    # need to store end point for last contig
-   #print STDERR "Looking at setting rightmost end with $total and $current_length ",$current_contig->golden_end,"\n";
+   print STDERR "Looking at setting rightmost end with $total and $current_length ",$current_contig->golden_end,"\n";
 
     $self->{'rightmostcontig_id'} = $current_contig->id();
     if( $self->_right_overhang == 0 ) {
@@ -1475,13 +1483,31 @@ sub _convert_seqfeature_to_vc_coords {
        if ( $self->ori_in_vc($cid) == 1) {
 	   
            # If end < startincontig contig for orientation 1 
- 	   if ($sf->end < $self->{'startincontig'}->{$cid}) {  
+	   print "Exon " . $sf->start . "\t" . $self->{startincontig}{$cid} . "\n";
+ 	   if ($sf->start < $self->{'startincontig'}->{$cid}) {  
                return undef;              
 	   }
            
        } else {
             # If start > startincontig for orientation <> 1
-	   if ($sf->start > $self->{'startincontig'}->{$cid}) {  
+	   print "Exon " . $sf->end . "\t" . $self->{startincontig}{$cid} . "\n";
+	   if ($sf->end > $self->{'startincontig'}->{$cid}) {  
+               return undef;              
+	   }
+        }
+   }  elsif ( $self->{'rightmostcontig_id'} eq $cid ){
+       
+       if ( $self->ori_in_vc($cid) == 1) {
+	   
+	   print "Exon " . $sf->start . "\t" . $self->{rightmostend} . "\n";
+ 	   if ($sf->end >  $self->{rightmostend}) {  
+               return undef;              
+	   }
+           
+       } else {
+            # If start > startincontig for orientation <> 1
+	   print "Exon " . $sf->start. "\t" . $self->{rightmostend} . "\n";
+	   if ($sf->start <  $self->{rightmostend}) {  
                return undef;              
 	   }
         }
@@ -1981,7 +2007,7 @@ sub _left_overhang{
    my ($obj,$value) = @_;
    
    if( defined $value) {
-     print(STDERR "Setting overhand to $value\n");
+     print(STDERR "Setting overhang to $value\n");
       $obj->{'_left_overhang'} = $value;
     }
     return $obj->{'_left_overhang'};
