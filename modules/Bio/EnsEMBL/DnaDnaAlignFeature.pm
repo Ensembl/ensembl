@@ -215,9 +215,9 @@ sub alignment_strings {
   } 
 
   my ($seq, $hseq);
-  $seq = $self->slice->subseq($self->start, $self->end) if ($seq_flag || $fix_seq_flag);
-  $hseq = $self->hslice->subseq($self->hstart, $self->hend) if ($hseq_flag || $fix_hseq_flag);
-
+  $seq = $self->slice->subseq($self->start, $self->end, $self->strand) if ($seq_flag || $fix_seq_flag);  
+  $hseq = $self->hslice->subseq($self->hstart, $self->hend, $self->hstrand) if ($hseq_flag || $fix_hseq_flag);
+  
   my $rseq= "";
   # rseq - result sequence
   my $rhseq= "";
