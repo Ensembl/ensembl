@@ -290,6 +290,7 @@ sub ensembl_annseq_output {
        $aseqstream->throw("not got EMBL IO but a $aseqstream. Not going to add output functions");
    }
 
+   $aseqstream->_index_function(\&sort_Indexer_function);
    $aseqstream->_post_sort(\&sort_FTHelper_EnsEMBL);
    
    # attach ensembl specific dumping functions
