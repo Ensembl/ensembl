@@ -1465,11 +1465,11 @@ sub write_Feature {
 
 	foreach my $sub ( $feature->sub_SeqFeature ) {
 	    my $sth5 = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,hstart,hend,hid) values('NULL','".$contig->id."',"
-				      .$sub->start.","
-				      .$sub->end. ","
-				      .$sub->score. ","
-				      .$sub->strand. ","
-				      .$analysisid. ",-1,-1,'__NONE__')");
+				      .$sub->start   .","
+				      .$sub->end     . ","
+				      .$sub->score   . ","
+				      .$sub->strand  . ","
+				      .$analysisid   . ",-1,-1,'__NONE__')");
 	    $sth5->execute();
 	    my $sth6 = $self->prepare("insert into fset_feature(fset,feature,rank) values ($fset_id,LAST_INSERT_ID(),$rank)");
 	    $sth6->execute();
@@ -1497,7 +1497,7 @@ sub write_supporting_evidence {
 
     $self->throw("Argument must be Bio::EnsEMBL::Exon. You entered [$exon]\n") unless $exon->isa("Bio::EnsEMBL::Exon");
 
-     my $sth  = $self->prepare("insert into supporting_feature(id,exon,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?,?)");
+     my $sth  = $self->prepare("insert into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
     
     FEATURE: foreach my $f ($exon->each_Supporting_Feature) {
 
@@ -1515,7 +1515,6 @@ sub write_supporting_evidence {
 	if ($f->isa("Bio::EnsEMBL::FeaturePair")) {
 	    $sth->execute('NULL',
 			  $exon->id,
-			  $exon->contig_id,
 			  $f->start,
 			  $f->end,
 			  $f->score,
@@ -1560,14 +1559,12 @@ sub get_supporting_evidence {
     $instring = substr($instring,0,-2);
 
 
-
     my $sth = $self->prepare("select * from supporting_feature where exon in (" . $instring . ")");
     $sth->execute;
 
     my %anahash;
 
     while (my $rowhash = $sth->fetchrow_hashref) {
-	
 	my $f1 = new Bio::EnsEMBL::SeqFeature;
 	my $f2 = new Bio::EnsEMBL::SeqFeature;
 	
@@ -1576,7 +1573,8 @@ sub get_supporting_evidence {
 
 	my $exon = $rowhash->{exon};
 
-	$f1->seqname($rowhash->{contig});
+#	$f1->seqname($rowhash->{contig});
+	$f1->seqname("Supporting_feature");
 	$f1->start  ($rowhash->{seq_start});
 	$f1->end    ($rowhash->{seq_end});
 	$f1->strand ($rowhash->{strand});

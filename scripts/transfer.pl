@@ -201,6 +201,7 @@ foreach my $clone_id ( @clone ) {
 	
 	foreach my $contig ($clone->get_all_Contigs) {
 	    push(@features,$contig->get_all_SimilarityFeatures);
+	    print(STDERR "Number of features for " . $contig->id . " " . scalar(@features) . "\n");
 	}
 	
 	foreach my $gene ( $clone->get_all_Genes() ) {

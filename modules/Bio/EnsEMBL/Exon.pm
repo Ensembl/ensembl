@@ -699,11 +699,10 @@ sub each_Supporting_Feature {
 sub find_supporting_evidence {
     my ($self,$features) = @_;
 
-
     foreach my $f (@$features) {
-
 	# We should probably check the contig name here.
-	if (($f->seqname eq $self->contig_id) && $f->overlaps($self)) {
+	# But we can't rely on the contig name being the feature seqname
+	if ($f->overlaps($self)) {
 	    $self->add_Supporting_Feature($f);
 	}
     }
