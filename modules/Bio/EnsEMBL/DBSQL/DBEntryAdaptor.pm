@@ -155,7 +155,7 @@ sub store {
      " );
 	$sth->execute( $exObj->primary_id(), $exObj->display_id(), $exObj->version(),
 		       $exObj->description());
-
+	
 	$sth = $self->prepare( "
       SELECT LAST_INSERT_ID()
     " );
@@ -194,21 +194,40 @@ sub store {
 		$sth->execute();
 	    }
 	}
-    
-    
-    $sth = $self->prepare( "
+	
+	
+	$sth = $self->prepare( "
    INSERT INTO objectXref
      SET xrefId = $dbX,
          ensembl_object_type = ?,
          ensembl_id = ?
   " );
-
-  $sth->execute( $ensType, $ensObject );
-    
-    $exObj->dbID( $dbX );
-    $exObj->adaptor( $self );
+	
+	$sth->execute( $ensType, $ensObject );
+	
+	$exObj->dbID( $dbX );
+	$exObj->adaptor( $self );
+	
+	if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
+	    $sth = $self->prepare( "
+      SELECT LAST_INSERT_ID()
+    " );
+	    $sth->execute();
+	    my ( $Xidt ) = $sth->fetchrow_array();
+	    
+	    $sth = $self->prepare( "
+             INSERT INTO identityXref
+             SET objectxrefId = $Xidt,
+             query_identity = ?,
+             target_identity = ?
+    " );
+	    $sth->execute( $exObj->query_identity, $exObj->target_identity );
+	    
+	}
     }
+        
     return $dbX;
+    
 }
 
 sub fetch_by_gene {
