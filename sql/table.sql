@@ -172,7 +172,7 @@ CREATE TABLE simple_feature (
   seq_region_start            int(10) unsigned NOT NULL,
   seq_region_end              int(10) unsigned NOT NULL,
   seq_region_strand           tinyint(1) NOT NULL,
-  display_label               varchar(40) NOT NULL, # what to show, may link to other things, depends on analysis
+  display_label               varchar(40) NOT NULL,
   analysis_id                 int(10) unsigned NOT NULL,
   score                       double,
 
@@ -1052,9 +1052,11 @@ CREATE TABLE coord_system (
   coord_system_id             INT NOT NULL auto_increment,
   name                        VARCHAR(40) NOT NULL,
   version                     VARCHAR(40),
-  attrib                      SET ('top_level', 'default_version', 'sequence_level'),
+  rank                        INT NOT NULL,
+  attrib                      SET ('default_version', 'sequence_level'),
 
   UNIQUE(name, version),
+  UNIQUE(rank),
   PRIMARY KEY (coord_system_id)
 
 ) TYPE=MyISAM;
