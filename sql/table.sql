@@ -716,7 +716,7 @@ CREATE TABLE qtl_feature (
   qtl_id int not null,
   analysis_id int not null,
   key( qtl_id ),
-  key loc_idx( chromosome_id, start )
+  key loc_idx( seq_region_id, start )
 );
 
 #
