@@ -21,8 +21,9 @@ use vars qw(@ISA);
 
 if (!defined(caller())) {
 
-  if (scalar(@ARGV) != 1) {
-    print "\nUsage: UniProtParser.pm file.SPC <soure_id> <species_id>\n\n";
+  if (scalar(@ARGV) != 3) {
+    print "\nUsage: UniProtParser.pm file.SPC <source_id> <species_id>\n\n";
+    print scalar(@ARGV);
     exit(1);
   }
 
@@ -131,8 +132,25 @@ sub create_xrefs {
     }
 
     my $xref;
-    my $acc;
-    ($acc) = $_ =~ /AC\s+(.+);/; # may catch multiple ; separated accessions
+
+    # set accession (and synonyms if more than one)
+    # AC line may have primary accession and possibly several ; separated synonyms
+    # May also be more than one AC line
+    my ($acc) = $_ =~ /(AC\s+.+)/s; # will match first AC line and everything else
+    my @all_lines = split /\n/, $acc;
+
+    # extract ^AC lines only & build list of accessions
+    my @accessions;
+    foreach my $line (@all_lines) {
+      my ($accessions_only) = $line =~ /^AC\s+(.+)/;
+      push(@accessions, (split /;\s*/, $accessions_only)) if ($accessions_only);
+    }
+
+    $xref->{ACCESSION} = $accessions[0];
+    for (my $a=1; $a <= $#accessions; $a++) {
+      push(@{$xref->{"SYNONYMS"} }, $accessions[$a]);
+    }
+
     my ($label, $sp_type) = $_ =~ /ID\s+(\w+)\s+(\w+)/;
 
     # SwissProt/SPTrEMBL are differentiated by having STANDARD/PRELIMINARY here
@@ -157,15 +175,18 @@ sub create_xrefs {
     $xref->{SEQUENCE_TYPE} = 'peptide';
     $xref->{STATUS} = 'experimental';
 
-    my ($description) = $_ =~ /DE\s+(.*)\n/;
-    $xref->{DESCRIPTION} = $description;
+    # May have multi-line descriptions
+    my ($description_and_rest) = $_ =~ /(DE\s+.*)/s;
+    @all_lines = split /\n/, $description_and_rest;
 
-    # set accession (and synonyms if more than one)
-    my @acc = split /;\s*/, $acc;
-    $xref->{ACCESSION} = $acc[0];
-    for (my $a=1; $a <= $#acc; $a++) {
-      push(@{$xref->{"SYNONYMS"} }, $acc[$a]);
+    # extract ^DE lines only & build cumulative description string
+    my $description;
+    foreach my $line (@all_lines) {
+      my ($description_only) = $line =~ /^DE\s+(.+)/;
+      $description .= $description_only if ($description_only);
     }
+
+    $xref->{DESCRIPTION} = $description;
 
     # extract sequence
     my ($seq) = $_ =~ /SQ\s+(.+)/s; # /s allows . to match newline
