@@ -4,14 +4,19 @@ use strict;
 use Apache::Constants qw(:response :methods :http);
 use Apache::File ();
 use Apache::Log ();
+use Apache::EnsEMBL::Header;
+use Apache::EnsEMBL::Footer;
 
 #############################################################
-# Mod_perl request handler for Location /test2
+# Mod_perl request handler all /htdocs pages
 #############################################################
 sub handler {
     my $r = shift;
-    my ($header, $footer);
 
+    $r->err_header_out('EnsEMBL-Error'=>"Problem in module Apache::EnsEMBL::SendDecPage");
+    $r->custom_response(SERVER_ERROR, "/Crash");
+    
+    
     if ($r->content_type ne 'text/html') {
         return DECLINED;
     }
@@ -69,20 +74,17 @@ sub handler {
         $r->send_http_header;
     }
     
-    my ($title, $gif);  # currently unused
     my ($trail, $nav_start, $nav_end, $nav_menu);
+    my ($title, $gif);  # currently unused
+    my ($header, $footer);
     
     &make_nav_trail(\$r, \$trail);
     &make_nav_menu (\$r, \$nav_menu);
-    #$r->log->error("Printed Nav: $nav_menu");
     &make_nav_start(\$r, \$nav_start, \$nav_menu);
     &make_nav_end  (\$r, \$nav_end);
 
-    #$r->log->error("Top Nav: $nav_start");
-    #$r->log->error("Bottom Nav: $nav_end");
-
-    &make_ensembl_header(\$r, \$header);
-    &make_ensembl_footer(\$r, \$footer);
+    &Apache::EnsEMBL::Header::make_ensembl_header(\$r, \$header);
+    &Apache::EnsEMBL::Footer::make_ensembl_footer(\$r, \$footer);
     
     unless ($r->header_only) {
         $r->print($header);
@@ -124,19 +126,14 @@ sub make_menu {
     my $oldRS = $/;
     $/ = "";
     open (MENU, $file) or $$req_ref->log->error("Can't open nav menu conf file [$file]: $!");
-    #$$req_ref->log->error("Opened $file!");
     my @menus = <MENU>;
     
     
     foreach my $m (@menus){
         chomp ($m);
         next if (/^#/);
-        #$$req_ref->log->error("Full Menu: $m");
         
         my @this_menu = reverse(split (/\n/,$m));
-        #foreach my $tm(@this_menu){
-        #    $$req_ref->log->error("\tMenu items: $tm");
-        #}
         my $header = pop(@this_menu);
         my ($h,$u) = split (/;/,$header);
         
@@ -167,12 +164,7 @@ EOI
 EOH
 
     } # end of foreach my $m
-    
 
-
-
-    #$$req_ref->log->error("NAVBAR HTML: $html");
-    
     $/ = $oldRS;
 
     close (MENU) or $$req_ref->log->error("Can't close nav menu conf file [$file]: $!");
@@ -182,7 +174,7 @@ EOH
 } # end of sub
 
 #############################################################
-# Construct the nav menu bar
+# Construct the nav menu
 #############################################################
 sub make_nav_menu {
 
@@ -194,18 +186,13 @@ my ($req_ref, $navmenu_ref) = @_;
     my %nav = ();
     my $uri = $$req_ref->filename;
     
-    #$$req_ref->log->error("Full URL: $uri");
     $uri =~ s/\w+\.*\w+$//;
-    #$$req_ref->log->error("DIR: $uri");
-    #$$req_ref->log->error("Looking for: $uri$local_filename");
     if (-e "$uri$local_filename"){
         $menufile = "$uri$local_filename";
-        #$$req_ref->log->error("Menufile: $menufile");
         $$navmenu_ref = &make_menu($req_ref, $menufile);
     }
     else{
         $menufile = $$req_ref->document_root.$default_filename;
-        #$$req_ref->log->error("Menufile: $menufile");
         $$navmenu_ref = &make_menu($req_ref, $menufile);
     }
 
@@ -290,9 +277,6 @@ sub make_nav_trail {
     pop(@dirs);             # remove the html filename at the end of the URL
     shift(@dirs);           # remove the root dir
 
-    #$$req_ref->log->error("Mapfile: $mapfile");
-    #$$req_ref->log->error("URL dirs: @dirs");
-
     unless (open (MAP, "$mapfile")) {
         $$req_ref->log->error("Cannot open URL map file: $!");
         return;
@@ -305,16 +289,11 @@ sub make_nav_trail {
         $map{$url} = $label;        
     }
 
-    #foreach my $key (keys %map){
-    #    $$req_ref->log->error("HASH: $key -> $map{$key}")
-    #}
-    
     my $path_tmp ="";
     $$trail_ref = "<B CLASS=\"trailbar\">You are here:</B> <A HREF=\"/\">Home</A>";
     
     for (my $i=0;$i<(scalar(@dirs));$i++){
         $path_tmp .= "$dirs[$i]/";
-        #$$req_ref->log->error("PATH: $path_tmp");
         if ($i < $#dirs){
             if ($map{$path_tmp}){
                 $$trail_ref .= " -> <A HREF=\"/$path_tmp\">$map{$path_tmp}</A>";
@@ -334,8 +313,6 @@ sub make_nav_trail {
         
     }
     
-    #$$req_ref->log->error("Trail: $$trail_ref");
-     
     $$trail_ref=<<EOS; 
 <TABLE WIDTH="100%" BORDER="0">
  <TR>
@@ -350,76 +327,6 @@ EOS
 
 } # end of sub"
 
-#############################################################
-# Construct the standard EnsEMBL page header
-#############################################################
-sub make_ensembl_header {
-
-    my ($req_ref, $header_ref) = @_;
-
-# need to be able to change TITLE and header gif
-
-    $$header_ref=<<EOS;
-<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
-<HTML>
- <HEAD>
-  <TITLE>EnsEMBL Genome Views Server</TITLE>    
-  <LINK REL="stylesheet" HREF="/EnsEMBL.css">
- </HEAD>
-<BODY TEXT="#000000" BGCOLOR="#FFFFFF">
-
-<TABLE WIDTH="100%" BORDER="0">
- <TR>
-  <TD>
-   <A HREF="http://ensembl.ebi.ac.uk/">
-   <IMG SRC="/icons/humembl.gif" ALIGN="CENTER" BORDER="0">
-   </A>
-  </TD>
- </TR>
-</TABLE>
-<!P>
-EOS
-
-    return;
-
-} # end of sub"
-
-#############################################################
-# Construct the standard EnsEMBL page header
-#############################################################
-sub make_ensembl_footer {
-
-    my ($req_ref, $footer_ref) = @_;
-    my $modtime = localtime (time - $$req_ref->mtime);
-    
-    $$footer_ref=<<EOS;
-<P>
-<TABLE WIDTH="100%" BORDER="0">
- <TR>
-  <TD CLASS="trailbar">
-    &nbsp;
-  </TD>
- </TR>
-</TABLE>
-<HR>
-<!P>
-<TABLE BORDER="0" WIDTH="100%">
-  <TR>
-    <TD CLASS="lfooter"><I>
-         last modified : $modtime </I>
-    </TD>
-    <TD CLASS="rfooter" ALIGN="RIGHT">
-        <I><A HREF=mailto:webmaster\@sanger.ac.uk>webmaster\@sanger.ac.uk</A></I>
-    </TD>
-  </TR>
-</TABLE>
-</BODY>
-</HTML>
-EOS
-
-    return;
-
-} # end of sub"
 #############################################################
 
 1;
@@ -437,7 +344,7 @@ __END__
 
 =head1 NAME
 
-Apache::EnsEMBL::SendDecPage - Apache Mod_perl module to serve decorated HTML files
+Apache::EnsEMBL::SendDecPage - Apache Mod_perl module to serve "decorated" HTML files
 
 =head1 SYNOPSIS
 
@@ -448,28 +355,28 @@ footer and side navigation bar.
 
 =head1 DESCRIPTION (some features not yet implemented)
 
-This module takes standard HTTP GET requests received by Apache and locates the
+This module takes standard HTTP requests received by Apache and locates the
 corresponding HTML file which is then returned wrapped suitably. It is fully 
-HTTP/1.1 compliant. 
+HTTP/1.1 compliant. This module also includes an optimization which checks 
+whether the browser already has the page in its disk cache and is only
+requesting the page if it has changed. 
 
-The header includes a "bread crumb" trail to show (roughly) where the current page 
-lies in the server document tree structure and a reference to a CSS which is 
-used to apply a style. 
+The header displays a "bread crumb" trail to indicate where the current document 
+lies in the server tree structure and a reference to a CSS which is 
+used to apply a style. URLs can optionally be mapped to a "friendly" name by placing
+and entry in the "/urlmappings.txt" file in the server "/htdocs" directory.
 
-The navigation bar is created dynamically by incorporating the contents of a 
+The navigation side bar menu is created dynamically by incorporating the contents of a 
 "nav.conf" file in the same directory as the HTML file (if it exists). This contains
 a list of navigation options that will be written to the side bar. 
-If the config file
-does not exist the default navigation bar is used (/def_nav.conf).
+If the config file does not exist the default navigation bar is used (/def_nav.conf).
 
-The footer shows last modification date of the HTML file and a contact email address.
+The footer shows a last modification date of the HTML file and a contact email address.
 
-This module includes an optimization which checks whether the browser already
-has the page in its disk cache and is only requesting the page if it has changed.
 
 =head1 RELATED MODULES
 
-See also: Apache::EnsEMBL::SendPage, nav.conf, def_nav.conf
+See also: Apache::EnsEMBL::SendPage, Apache::EnsEMBL::Header, Apache::EnsEMBL::Footer
 
 =head1 FEED_BACK
 
