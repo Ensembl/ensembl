@@ -46,21 +46,29 @@ sub new {
     return $self;
 }
 
+#sub db {
+#    my ($self, $arg) = @_;
+#    $self->{'_db'} = $arg if ($arg);
+#    return($self->{'_db'});
+#}
+
 sub fetch_virtualtranscripts_start_end {
-    my ( $self, $chr, $vc_start, $vc_end ) =@_;
+    my ( $self, $chr, $vc_start, $vc_end, $database ) =@_;
     my $_db_name = $self->{'_lite_db_name'};
-    my $cache_name = "_virtualtranscripts_cache_$chr"."_$vc_start"."_$vc_end";
+    $database      ||= 'ensembl';
+    my $cache_name = "_$database"."_vtrans_cache_$chr"."_$vc_start"."_$vc_end";
     return $self->{$cache_name} if( $self->{$cache_name} );
     my $sth = $self->prepare(
         "select transcript_id, transcript_name, translation_name, gene_name,
                 chr_start, chr_end, chr_strand, external_name, external_db,
                 exon_structure, type
-           from $_db_name.js5_transcript_3
+           from $_db_name.js5_transcript
           where chr_name = ? and chr_start <= ? and chr_start >= ? and
-                chr_end >= ?"
+                chr_end >= ? and db = ?"
     );
+    
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start );
+        $sth->execute( $chr, $vc_end, $vc_start-3000000, $vc_start, $database );
     };
     return [] if($@);
     my @transcripts;

@@ -2140,7 +2140,8 @@ sub get_all_VirtualTranscripts_startend_lite {
     return $self->dbobj->get_LiteAdaptor->fetch_virtualtranscripts_start_end(
         $self->_chr_name,
         $self->_global_start,
-        $self->_global_end
+        $self->_global_end,
+        @_
     );
 }
 
