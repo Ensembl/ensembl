@@ -527,6 +527,13 @@ CREATE TABLE identity_xref(
 );
 
 
+CREATE TABLE go_xref (
+  object_xref_id int(10) unsigned DEFAULT '0' NOT NULL,
+  linkage_type enum('computational','experimental','curated'),
+  PRIMARY KEY (object_xref_id)
+);
+
+
 #
 #Table structure for table xref
 #
