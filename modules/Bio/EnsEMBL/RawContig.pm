@@ -216,7 +216,7 @@ sub subseq {
 
   #if the sequence of this contig has been manually set retrieve its substring
   if(my $str = $self->{_seq}) {
-    $str = substr($str, $start -1, $end -1);
+    $str = substr($str, $start -1, $end - $start + 1);
 
     if($strand == -1) {
       $str = reverse $str;
