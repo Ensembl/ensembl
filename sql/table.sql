@@ -38,15 +38,17 @@ CREATE TABLE clone (
 #
 CREATE TABLE contig (
   id varchar(40) DEFAULT '' NOT NULL,
+  internal_id int(10) DEFAULT '0' NOT NULL auto_increment,
   clone varchar(40) DEFAULT '' NOT NULL,
   mapbin varchar(40) DEFAULT '' NOT NULL,
   length int(10) unsigned,
   offset int(10) unsigned,
   orientation int(1) DEFAULT '1' NOT NULL,
   corder int(10) unsigned,
-  dna varchar(40),
-  PRIMARY KEY (id),
-  KEY clone_index (clone)
+  dna int(10),
+  PRIMARY KEY (internal_id),
+  KEY clone_index (clone),
+  KEY id_index (id)
 );
 
 #
@@ -90,13 +92,10 @@ CREATE TABLE db_update (
 # Table structure for table 'dna'
 #
 CREATE TABLE dna (
-  contig varchar(40) DEFAULT '' NOT NULL,
   sequence mediumtext NOT NULL,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
-  PRIMARY KEY (contig),
-  KEY id (id),
-  KEY idx1 (id,contig)
+  PRIMARY KEY (id)
 );
 
 #
