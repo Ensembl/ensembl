@@ -267,7 +267,7 @@ sub score {
     if (defined($arg)) {
 	return $self->feature1->score($arg);
     } else {
-	return $self->feature1->score;
+	return $self->feature1->score || 0;
     }
 }
 

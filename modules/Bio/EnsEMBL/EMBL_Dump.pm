@@ -118,7 +118,8 @@ sub add_ensembl_comments {
    $aseq->annotation->add_Comment($comment);
    
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("The /gene_id indicates a unique id for a gene, /cds_id a unique id for a translation and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://www.ensembl.org/.");
+   $comment->text("The /gene_id indicates a unique id for a gene, /cds_id a unique id for a translation and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://www.ensembl.org/Docs/embl.html.");
+
    $aseq->annotation->add_Comment($comment);
 
    $comment = Bio::Annotation::Comment->new();
