@@ -285,7 +285,7 @@ sub fset2transcript_with_seq {
   
 	my $exon  = new Bio::EnsEMBL::Exon;
 	$exon->contig_id($seq->id);
-        $exon->contig   ($contig);
+        $exon->contig   ($seq);
 	$exon->start    ($f->start);
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);
