@@ -62,6 +62,7 @@ use Bio::EnsEMBL::Protein;
 use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
 use Bio::Species;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
+use Bio::EnsEMBL::ExternalData::GeneSNP;
 
 #use Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
 
@@ -699,56 +700,79 @@ sub get_snps {
        }
    }
 
+   my $genesnp = new Bio::EnsEMBL::ExternalData::GeneSNP
+       (-gene => $gene,
+	-contig => $vc
+	);
+
+   $genesnp->transcript($transcript);
+   
+   my @seq_diff = $genesnp->snps2transcript(@snips);
+       
+   foreach my $diff (@seq_diff) {
+       foreach my $var ($diff->each_Variant) {
+	   if($var->isa('Bio::Variation::AAChange') ) {
+	   print STDERR $var->label, "\n";
+	   print STDERR $var->trivname, "\n";
+	   print STDERR $var->allele_ori->seq, "\n";
+	   print STDERR $var->allele_mut->seq, "\n";
+	   foreach my $all ($var->each_Allele) {
+	       print STDERR $all->seq, "\n";
+	   }
+       }
+   }
+   }
+
 #Get all of the exons out of the virtual transcript
-   my @exons = $transcript->each_Exon;
+   #my @exons = $transcript->each_Exon;
 
 #This loop checks which exons are localised on the transcript
-   foreach my $sn (@snips) {
-       my $sn_pos = $sn->start;
-       foreach my $ex(@exons) {
-	   if (($sn_pos >= $ex->start) && ($sn_pos <= $ex->end)) {
-	       my $uni;
-	       $uni->{snp} = $sn;
+#   foreach my $sn (@snips) {
+#       my $sn_pos = $sn->start;
+#       foreach my $ex(@exons) {
+#	   if (($sn_pos >= $ex->start) && ($sn_pos <= $ex->end)) {
+#	       my $uni;
+#	       $uni->{snp} = $sn;
 #This store the position of the exon where the snp is located
-	       $uni->{pos} = $count;
-	       push (@ex_snps, $uni);
-	   }
-	   $count++;
-       }
-       $count = 0;
-   }
+#	       $uni->{pos} = $count;
+#	       push (@ex_snps, $uni);
+#	   }
+#	   $count++;
+#       }
+#       $count = 0;
+#   }
 
 #Loop over all of the snps which are located on exons
-   foreach my $rt (@ex_snps) {
+#   foreach my $rt (@ex_snps) {
 #to check
-      	my @array = (0..$rt->{pos});
-	my $previous_exons_length = 0;
-
-	foreach my $po (@array) {
-	    $previous_exons_length =+ $exons[$po]->length;
-	}
+#      	my @array = (0..$rt->{pos});
+#	my $previous_exons_length = 0;
+#
+#	foreach my $po (@array) {
+#	    $previous_exons_length =+ $exons[$po]->length;
+#	}
 
 #Get the location of the snp in aa coordinates	    
-	my $aa_pos = int (($rt->{snp}->start - @exons[$rt->{pos}]->start + $previous_exons_length)/3) + 1;
+#	my $aa_pos = int (($rt->{snp}->start - @exons[$rt->{pos}]->start + $previous_exons_length)/3) + 1;
 	
 #Create a Protein_FeaturePair object
-	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
-						   -start => $aa_pos,
-						   -end => $aa_pos,
-						   -score => 0, 
-						   -percent_id => "NULL",
-						   -p_value => "NULL");
-	
-	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => 0,
-						  -end => 0,
-						  -seqname => "SNP");
-	
-	my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-							    -feature2 => $feat2,);
-	
-	push(@array_features,$feature);
-	    
-   }
+#	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
+#						   -start => $aa_pos,
+#						   -end => $aa_pos,
+#						   -score => 0, 
+#						   -percent_id => "NULL",
+#						   -p_value => "NULL");
+#	
+#	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => 0,
+#						  -end => 0,
+#						  -seqname => "SNP");
+#	
+#	my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
+#							    -feature2 => $feat2,);
+#	
+#	push(@array_features,$feature);
+#	    
+#   }
    return @array_features;
 }
 
