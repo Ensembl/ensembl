@@ -172,8 +172,6 @@ sub get_all_SimilarityFeatures_above_score{
     $self->throw("Must supply analysis_type parameter") unless $analysis_type;
     $self->throw("Must supply score parameter") unless $score;
     
-    print STDERR "doing this one\n";
-       
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
@@ -219,12 +217,7 @@ sub get_all_SimilarityFeatures_above_score{
 
       my $vc_start;
       my $vc_end;
-	if ($raw_ori == -1){    
-	#	my $length=$end-$start;
-        #	my $medium=$chr_end+$chr_start-$start-0.5*$length;
- 	#	$start=$medium-0.5*$length;
-        #	$end=$medium+0.5*$length;
-        
+	if ($raw_ori == -1){         
 	    $vc_start=$chr_end+$chr_start-$end;
 	    $vc_end=$chr_end+$chr_start-$start;
 	    $strand=-1*$strand;
@@ -299,12 +292,8 @@ sub get_all_RepeatFeatures {
   my ($self) = @_;
 
    my @array;
-
   my %analhash;
 
-
-  print STDERR "doing repeats from here\n";
-  
   my $glob_start=$self->_global_start;
   my $glob_end=$self->_global_end;
   my $chr_name=$self->_chr_name;
@@ -348,18 +337,17 @@ sub get_all_RepeatFeatures {
      my $vc_end;
 
      if ($raw_ori == -1){    
-#	 my $length=$end-$start;
-#	 my $medium=$chr_end+$chr_start-$start-0.5*$length;
-#	 $start=$medium-0.5*$length;
-#	 $end=$medium+0.5*$length;
-
 	 $vc_start=$chr_end+$chr_start-$end;
 	 $vc_end=$chr_end+$chr_start-$start;
 	 $strand=-1*$strand;
-	 $strand=-1*$strand;
      }
-     
-     
+
+ else {
+          $vc_start=$start;
+          $vc_end=$end;
+      }
+      
+      
       if ($start>=$glob_start && $end<=$glob_end){
 
 	  $start=$vc_start-$glob_start;
