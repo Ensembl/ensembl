@@ -177,7 +177,7 @@ my $glob_start=$self->_global_start;
 my $glob_end=$self->_global_end;
 my $chr_name=$self->_chr_name;
 
-  
+print STDERR "version 001\n";  
 
 my    $statement = "SELECT f.id, 
                            f.seq_start+s.chr_start-s.raw_start,
@@ -447,7 +447,7 @@ my $glob_end=$self->_global_end;
 my $chr_name=$self->_chr_name;
 my $dbname=$self->dbobj->dbname;
 my $mapsdbname=$self->dbobj->mapdbname;
-my @result = ();
+my @markers;
 
 
 eval {
@@ -493,7 +493,7 @@ eval {
 	my $out=$self->_create_Marker_features(@args);
 	if (defined $out){
 	    if ($self->_clip_2_vc($out)){
-		push @result,$self->_convert_2_vc($out);
+		push @markers,$self->_convert_2_vc($out);
 	    }
 	} 
     }
@@ -502,16 +502,16 @@ eval {
  
 if($@){$self->warn("Problems retrieving map data\nMost likely not connected to maps db\n$@\n");}
 
-return @result;
+return @markers;
 
 }
 
 
 
-=head2 next_Marker
+=head2 next_landmark_Marker
 
- Title   : next_Marker
- Usage   : $obj->next_Marker
+ Title   : next_landmark_Marker
+ Usage   : $obj->next_landmark_Marker
  Function: retrieves next marker  
  Returns : marker feature
  Args    : marker id, raw contig id
@@ -536,60 +536,43 @@ my $chr_name=$self->_chr_name;
 my $dbname=$self->dbobj->dbname;
 my $mapsdbname=$self->dbobj->mapdbname;
 
-my @result;
+my @markers;
 
 eval {
     require Bio::EnsEMBL::Map::MarkerFeature;
 
 
-    # find marker's golden path position
-    
-    my $statement=  "select sgp.chr_start+f.seq_start-sgp.raw_start,sgp.chr_name 
-                     from static_golden_path sgp, feature f,contig c 
-                     where c.internal_id=sgp.raw_id 
-                     and sgp.raw_id=f.contig  
-                     and f.analysis=11 
-                     and f.hid='$marker' 
-                     and c.id='$contig'";
- 
+    # find marker's golden path position    
+    my ($start,$chr_name)=$self->_gp_position($marker,$contig);
 
-    my $sth = $self->dbobj->prepare($statement);
-    $sth->execute;
-    
-    my ($start, $chr_name);
-
-    $sth->bind_columns(undef,\$start,\$chr_name);
-
-    while ($sth->fetch){}; 
 
    # get next marker
-
     my $limit=10000000; # this is to prevent full table scan
     my $end=$start+$limit;
 
 
 
-    $statement="SELECT    f.seq_start+sgp.chr_start-sgp.raw_start as start, 
-                             f.seq_end+sgp.chr_start-sgp.raw_start, 
-                             f.score, f.strand, f.name, f.hstart, f.hend, 
-                             f.hid, f.analysis, s.name,
-                             sgp.raw_ori,sgp.chr_start,sgp.chr_end 
-                   FROM      $dbname.feature f, $dbname.analysis a, 
-                             $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
-                             $dbname.static_golden_path sgp
-                   WHERE     sgp.raw_id=f.contig and  m.marker=s.marker 
-                   AND       f.hid=m.marker
-                   AND       sgp.chr_name='$chr_name' 
-                   AND       f.analysis=11 
-                   AND       sgp.chr_start>$start 
-                   AND       sgp.chr_start <$end 
-                   AND       sgp.chr_start+f.seq_start-sgp.raw_start>$start  
-                   AND       s.name regexp '^D[0-9][0-9]?S' 
-                   ORDER BY  start limit 1";
+    my $statement=   "SELECT    f.seq_start+sgp.chr_start-sgp.raw_start as start, 
+                                f.seq_end+sgp.chr_start-sgp.raw_start, 
+                                f.score, f.strand, f.name, f.hstart, f.hend, 
+                                f.hid, f.analysis, s.name,
+                                sgp.raw_ori,sgp.chr_start,sgp.chr_end 
+                      FROM      $dbname.feature f, $dbname.analysis a, 
+                                $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
+                                $dbname.static_golden_path sgp
+                      WHERE     sgp.raw_id=f.contig and  m.marker=s.marker 
+                      AND       f.hid=m.marker
+                      AND       sgp.chr_name='$chr_name' 
+                      AND       f.analysis=11 
+                      AND       sgp.chr_start>$start 
+                      AND       sgp.chr_start <$end 
+                      AND       sgp.chr_start+f.seq_start-sgp.raw_start>$start  
+                      AND       s.name regexp '^D[0-9][0-9]?S' 
+                      ORDER BY  start limit 1";
 
 
 
-    $sth = $self->dbobj->prepare($statement);
+    my $sth = $self->dbobj->prepare($statement);
     $sth->execute;
     
     my ($score, $strand, $hstart, $name, $hend, $hid, $analysisid,$synonym,$raw_ori,$chr_start,$chr_end);
@@ -608,20 +591,144 @@ eval {
 		  $analysisid,$synonym,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end,$chr_name);
 
 	my $out=$self->_create_Marker_features(@args);
-	if (defined $out){push @result,$self->_convert_2_vc($out);}; 
+	if (defined $out){push @markers,$self->_convert_2_vc($out);}; 
     }
 
 };
 
 if($@){$self->warn("Problems retrieving map data\nMost likely not connected to maps db\n$@\n");}
 
-return $result[0];
+return $markers[0];
+
+
+}
+
+
+=head2 _previous_landmark_Marker
+
+ Title   : previous_landmark_Marker
+ Usage   : $obj->previous_landmark_Marker
+ Function: retrieves previous marker  
+ Returns : marker feature
+ Args    : marker id, raw contig id
+
+
+=cut
+
+
+
+sub previous_landmark_Marker
+{
+
+my ($self,$marker,$contig)=@_;
+
+$self->throw("Must supply marker id") unless $marker;
+$self->throw("Must supply contig id") unless $contig;
+
+
+my $glob_start=$self->_global_start;
+my $glob_end=$self->_global_end;
+my $chr_name=$self->_chr_name;
+my $dbname=$self->dbobj->dbname;
+my $mapsdbname=$self->dbobj->mapdbname;
+
+my @markers;
+
+eval {
+    require Bio::EnsEMBL::Map::MarkerFeature;
+
+
+    # find marker's golden path position    
+    my ($start,$chr_name)=$self->_gp_position($marker,$contig);
+
+
+   # get next marker
+    my $limit=10000000; # this is to prevent full table scan
+    my $end=$start-$limit;
+    if ($end<0){$end=0;}
+
+
+    my $statement=   "SELECT    f.seq_start+sgp.chr_start-sgp.raw_start as start, 
+                                f.seq_end+sgp.chr_start-sgp.raw_start, 
+                                f.score, f.strand, f.name, f.hstart, f.hend, 
+                                f.hid, f.analysis, s.name,
+                                sgp.raw_ori,sgp.chr_start,sgp.chr_end 
+                      FROM      $dbname.feature f, $dbname.analysis a, 
+                                $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
+                                $dbname.static_golden_path sgp
+                      WHERE     sgp.raw_id=f.contig and  m.marker=s.marker 
+                      AND       f.hid=m.marker
+                      AND       sgp.chr_name='$chr_name' 
+                      AND       f.analysis=11 
+                      AND       sgp.chr_start<$start 
+                      AND       sgp.chr_start>$end 
+                      AND       sgp.chr_start+f.seq_start-sgp.raw_start<$start  
+                      AND       s.name regexp '^D[0-9][0-9]?S' 
+                      ORDER BY  start limit 1";
+
+
+
+    my $sth = $self->dbobj->prepare($statement);
+    $sth->execute;
+    
+    my ($score, $strand, $hstart, $name, $hend, $hid, $analysisid,$synonym,$raw_ori,$chr_start,$chr_end);
+    
+    my $analysis;
+    my %analhash;
+    
+    $sth->bind_columns
+	( undef, \$start, \$end, \$score, \$strand, \$name, 
+	  \$hstart, \$hend, \$hid, \$analysisid,\$synonym,\$raw_ori,\$chr_start,\$chr_end );
+    
+        
+    while( $sth->fetch ) {
+	
+	my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
+		  $analysisid,$synonym,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end,$chr_name);
+
+	my $out=$self->_create_Marker_features(@args);
+	if (defined $out){push @markers,$self->_convert_2_vc($out);}; 
+    }
+
+};
+
+if($@){$self->warn("Problems retrieving map data\nMost likely not connected to maps db\n$@\n");}
+
+return $markers[0];
 
 
 }
 
 
 
+sub _gp_position
+{
+my ($self,$marker,$contig)=@_;
+
+$self->throw("Must supply marker id") unless $marker;
+$self->throw("Must supply contig id") unless $contig;
+
+
+my $statement=  "select sgp.chr_start+f.seq_start-sgp.raw_start,sgp.chr_name 
+                 from static_golden_path sgp, feature f,contig c 
+                 where c.internal_id=sgp.raw_id 
+                 and sgp.raw_id=f.contig  
+                 and f.analysis=11 
+                 and f.hid='$marker' 
+                 and c.id='$contig'";
+ 
+
+my $sth = $self->dbobj->prepare($statement);
+$sth->execute;
+
+my ($start, $chr_name);
+$sth->bind_columns(undef,\$start,\$chr_name);
+while ($sth->fetch){}; 
+
+return ($start,$chr_name);
+
+
+}
 
 
 sub _create_Marker_features
