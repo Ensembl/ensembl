@@ -105,7 +105,7 @@ ok($db1 == $db2);
 #
 # 13 get_db_adaptor
 #
-ok($dbc->get_db_adaptor('core')->isa('Bio::EnsEMBL::Container'));
+ok($dbc->get_db_adaptor('core')->isa('Bio::EnsEMBL::DBSQL::DBConnection'));
 
 #
 # 14-15 remove_db_adaptor

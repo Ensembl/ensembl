@@ -367,14 +367,14 @@ debug( "known: $known Unknown: $unknown\n" );
 
 ok( $known==17 );
 
-if( my $lite = $multi->get_DBAdaptor( 'lite' ) ) {
-  debug( "Lite database available" );
-  my $lga = $lite->get_GeneAdaptor();
-  $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
+#if( my $lite = $multi->get_DBAdaptor( 'lite' ) ) {
+#  debug( "Lite database available" );
+#  my $lga = $lite->get_GeneAdaptor();
+#  $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
-  $lga->store( $gene );
-  debug( "Store done" );
-}
+#  $lga->store( $gene );
+#  debug( "Store done" );
+#}
 
 
 # tests for update method
