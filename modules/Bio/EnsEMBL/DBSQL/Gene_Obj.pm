@@ -806,7 +806,7 @@ sub get_Gene_by_DBLink {
 	}
 	return $biggest;
     }
-    return undef;
+    return;
 }
 
 =head2 get_Gene_by_DBLink
