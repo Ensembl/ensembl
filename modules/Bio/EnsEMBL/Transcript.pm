@@ -336,8 +336,8 @@ sub translateable_exons{
 	   $retexon->start($exon->start + $self->translation->start() -1);
 	   $retexon->end  ($exon->start + $self->translation->end() -1);
        } else {
-	   $retexon->end  ($exon->end - $self->translation->start -1);
-	   $retexon->start($exon->end - $self->translation->end -1);
+	   $retexon->end  ($exon->end - ($self->translation->start -1));
+	   $retexon->start($exon->end - ($self->translation->end -1));
        }
        
 
@@ -370,7 +370,7 @@ sub translateable_exons{
 	       $stexon->end($exon->end);
 	   } else {
 	       $stexon->start($exon->start);
-	       $stexon->end($exon->end - $self->translation->start-1);
+	       $stexon->end($exon->end - ($self->translation->start-1));
 	   }
 	   $stexon->phase(0);
 	   push(@out,$stexon);
@@ -401,9 +401,10 @@ sub translateable_exons{
 	       $endexon->end($exon->start + $self->translation->end -1 );
 	   } else {
 	       # I hope this is correct
-	       $endexon->start($exon->end - $self->translation->end -1);
+	       $endexon->start($exon->end - ($self->translation->end -1));
 	       $endexon->end($exon->end);
 	   }
+	  
 	   push(@out,$endexon);
 	   last;
        } else {
