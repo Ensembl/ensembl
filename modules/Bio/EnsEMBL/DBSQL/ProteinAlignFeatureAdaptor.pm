@@ -57,7 +57,6 @@ use strict;
 # Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::DnaPepAlignFeature;
 use Bio::EnsEMBL::PepDnaAlignFeature;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
