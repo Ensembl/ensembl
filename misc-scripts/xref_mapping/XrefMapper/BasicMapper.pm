@@ -53,9 +53,12 @@ my %method_target_threshold;
 
 
 sub dump_seqs{
+
   my ($self) = @_;
+
   $self->dump_xref();
   $self->dump_ensembl();
+
 }
 
 
@@ -697,6 +700,8 @@ sub parse_mappings {
 
   my ($self, $xref) = @_;
 
+  my $dir = $self->dir();
+
   # get current max object_xref_id
   # TODO use selectall_arrayref
   my $row = @{$self->dbi()->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
@@ -723,8 +728,8 @@ sub parse_mappings {
   #my $ix_sth = $dbi->prepare("INSERT INTO identity_xref VALUES(?,?,?,?,?,?,?,?,?,?,?)");
 
   # files to write table data to
-  open (OBJECT_XREF, ">object_xref.txt");
-  open (IDENTITY_XREF, ">identity_xref.txt");
+  open (OBJECT_XREF,   ">$dir/object_xref.txt");
+  open (IDENTITY_XREF, ">$dir/identity_xref.txt");
 
   my $total_lines = 0;
   my $last_lines = 0;
@@ -747,7 +752,7 @@ sub parse_mappings {
   #   value: list of xref_id (with offset)
   my %object_xref_mappings;
 
-  my $dir = $self->dir();
+
   foreach my $file (glob("$dir/*.map")) {
 
     #print "Parsing results from " . basename($file) .  "\n";
@@ -824,7 +829,7 @@ sub parse_mappings {
   $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, \%ensembl_object_types, \%object_xref_mappings);
 
   # write comparison info. Can be removed after development
-  dump_comparison();
+  $self->dump_comparison();
 
 }
 
@@ -908,9 +913,11 @@ sub dump_core_xrefs {
   my %xref_to_objects = %$xref_ids_hashref;
   my %ensembl_object_types = %$ensembl_object_types_hashref;
 
-  open (XREF, ">xref.txt");
-  open (OBJECT_XREF, ">>object_xref.txt");
-  open (EXTERNAL_SYNONYM, ">external_synonym.txt");
+  my $dir = $self->dir();
+
+  open (XREF, ">$dir/xref.txt");
+  open (OBJECT_XREF, ">>$dir/object_xref.txt");
+  open (EXTERNAL_SYNONYM, ">$dir/external_synonym.txt");
 
   my $xref_dbi = $self->xref()->dbi();
   my $core_dbi = $self->dbi();
@@ -1050,6 +1057,10 @@ sub dump_core_xrefs {
 
 sub dump_comparison {
 
+  my $self = shift;
+
+  my $dir = $self->dir();
+
   print "Dumping comparison data\n";
 
   open (COMPARISON, ">comparison/xref_mappings.txt");
@@ -1058,7 +1069,7 @@ sub dump_comparison {
 
   # first read all the xrefs that were dumped and get an xref_id->accession map
   my %xref_id_to_accesson;
-  open (XREF, "xref.txt");
+  open (XREF, "$dir/xref.txt");
   print XREF "xref_accession" . "\t" . "ensembl_type" . "\t" . "ensembl_id\n";
   while (<XREF>) {
     my ($xref_id,$accession,$label,$description) = split;
@@ -1066,7 +1077,7 @@ sub dump_comparison {
   }
   close (XREF);
 
-  open (OBJECT_XREF, "object_xref.txt");
+  open (OBJECT_XREF, "$dir/object_xref.txt");
   while (<OBJECT_XREF>) {
     my ($object_xref_id,$object_id,$type,$xref_id) = split;
     print COMPARISON $xref_id_to_accesson{$xref_id} . "\t" . $type . "\t" . $object_id . "\n";
@@ -1081,6 +1092,8 @@ sub dump_comparison {
 sub build_transcript_display_xrefs {
 
   my ($self, $object_xref_mappings, $xref_id_offset) = @_;
+
+  my $dir = $self->dir();
 
   # get a list of xref sources; format:
   # key: xref_id value: source_name
@@ -1165,8 +1178,8 @@ sub build_transcript_display_xrefs {
   my %transcript_display_xrefs;
 
   # Write a .sql file that can be executed, and a .txt file that can be processed
-  open (TRANSCRIPT_DX, ">transcript_display_xref.sql");
-  open (TRANSCRIPT_DX_TXT, ">transcript_display_xref.txt");
+  open (TRANSCRIPT_DX, ">$dir/transcript_display_xref.sql");
+  open (TRANSCRIPT_DX_TXT, ">$dir/transcript_display_xref.txt");
 
   foreach my $key (keys %obj_to_best_xref) {
 
@@ -1225,6 +1238,8 @@ sub build_gene_display_xrefs {
 
   my ($self, $transcript_display_xrefs) = @_;
 
+  my $dir = $self->dir();
+
   my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-species => $self->species(),
 					      -dbname  => $self->dbname(),
 					      -host    => $self->host(),
@@ -1253,8 +1268,8 @@ sub build_gene_display_xrefs {
 
   print "Assigning display_xrefs to genes\n";
 
-  open (GENE_DX, ">gene_display_xref.sql");
-  open (GENE_DX_TXT, ">gene_display_xref.txt");
+  open (GENE_DX, ">$dir/gene_display_xref.sql");
+  open (GENE_DX_TXT, ">$dir/gene_display_xref.txt");
   my $hit = 0;
   my $miss = 0;
   my $trans_no_xref = 0;
@@ -1402,7 +1417,7 @@ sub do_upload {
 
   foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym") {
 
-    my $file = getcwd() . "/" . $table . ".txt";
+    my $file = $self->dir() . "/" . $table . ".txt";
     my $sth;
 
     if ($deleteexisting) {
