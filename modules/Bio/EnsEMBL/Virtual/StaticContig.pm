@@ -258,6 +258,7 @@ sub get_all_SimilarityFeatures_above_score{
 
   $self->throw("Must supply analysis_type parameter") unless $analysis_type;
   $self->throw("Must supply score parameter") unless defined($score);
+  $score=0;
 
   if( $self->_use_cext_get() ) {
     return $self->_cext_get_all_SimilarityFeatures_type($analysis_type);
@@ -342,7 +343,6 @@ sub get_all_SimilarityFeatures_above_score{
     my $length=$self->length;
   FEATURE: 
     my $prev = undef;
-      
     while($sth->fetch) {
 
       my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,
@@ -2256,6 +2256,15 @@ sub get_all_VirtualGenscans_startend_lite {
     );
 }
 
+sub get_all_VirtualFgenesh_startend_lite {
+    my  $self = shift;
+    return $self->dbobj->get_LiteAdaptor->fetch_virtualfgenesh_start_end(
+        $self->_chr_name,
+        $self->_global_start,
+        $self->_global_end
+    );
+}
+
 sub get_all_EMBLGenes_startend_lite {
 	my  $self = shift;
 	return $self->dbobj->get_LiteAdaptor->fetch_virtualgenes_start_end(
@@ -3109,6 +3118,85 @@ sub _cext_get_all_SimilarityFeatures_type{
 
 }
 
+
+sub get_all_SimilarityFeatures_by_analysis_id {
+   my ( $self, $ana_id ) = @_;
+
+   my $glob_start=$self->_global_start;
+   my $glob_end  =$self->_global_end;
+   my $chr_name  =$self->_chr_name;
+   my $idlist    = $self->_raw_contig_id_list();
+   my $type      = $self->dbobj->static_golden_path_type;
+
+   
+   unless ($idlist){
+       return ();
+   }
+   
+   my    $statement = "SELECT f.id, 
+                        IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start))  as start,  
+                        IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start))  as end , 
+                        IF     (sgp.raw_ori=1,f.strand,(-f.strand)) as strand,
+                                f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
+                        FROM   feature f, analysisprocess a,static_golden_path sgp
+                        WHERE  f.analysis = a.analysisId
+                        AND    f.analysis = $ana_id
+                        AND    sgp.raw_id = f.contig
+                        AND    f.contig in $idlist
+                        AND    sgp.chr_end >= $glob_start 
+                        AND    sgp.chr_start <=$glob_end 
+                        AND    sgp.chr_name ='$chr_name' 
+                        AND    sgp.type = '$type'
+                        AND    a.gff_feature = 'similarity'
+                        ORDER  by start";
+   
+    
+    
+    my  $sth = $self->dbobj->prepare($statement);    
+    $sth->execute(); 
+    
+    
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+        $hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
+    
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
+                       \$analysisid,\$name,\$hstart,\$hend,\$hid);
+    
+    
+    my @features;
+    
+    my $out;
+    my %analhash;
+    my $length=$self->length;
+  FEATURE: 
+    while($sth->fetch) {
+
+        if (($end > $length) || ($start < 1)) {
+            next;
+        }
+        
+        my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
+
+        my $analysis=$self->_get_analysis($analysisid);
+        
+        if( !defined $name ) {
+            $name = 'no_source';
+        }
+        
+        $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+        $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+                             $hstart,$hend,1,$f_score,$name,'similarity',$hid);
+
+        $out->analysis($analysis);
+        $out->id      ($hid);
+        push(@features,$out);
+    }
+  
+   return @features;
+
+}
 
 =head2 _fill_cext_SimilarityFeature_cache
 
