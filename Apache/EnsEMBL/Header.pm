@@ -1,7 +1,9 @@
 package Apache::EnsEMBL::Header;
        
-use strict;
+# need to be able to change TITLE and header gif
 
+use strict;
+#use Apache::Constants qw(:response :methods :http);
 use vars qw/@ISA @EXPORT @EXPORT_OK/;
 
 #############################################################
@@ -11,7 +13,6 @@ sub make_ensembl_header {
 
     my ($req_ref, $header_ref) = @_;
 
-# need to be able to change TITLE and header gif
 
     $$header_ref=<<EOS;
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
