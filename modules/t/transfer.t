@@ -108,10 +108,13 @@ $dbname = $conf{'recipient'};
 $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 $rec_db =  Bio::EnsEMBL::DBLoader->new($locator);
 
-$gene=$don_db->get_Gene('ENSG00000019419');
+my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($don_db);
 
-$rec_db->delete_Gene($gene->id);
-$rec_db->write_Gene($gene);
+$gene=$gene_obj->get('ENSG00000019419');
+
+my $rec_go=Bio::EnsEMBL::DBSQL::Gene_Obj->new($rec_db);
+$rec_go->delete($gene->id);
+$rec_go->write($gene);
 print "ok 7\n";
 
 END {

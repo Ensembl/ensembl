@@ -590,21 +590,6 @@ sub transfer_chunk {
             if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
                 $self->write_clone($todb,$arcdb,$object);
             }
-
-            # These won't happen - updated clones only are returned from TimDB
-
-            # Check if it is a gene
-            elsif ($object->isa("Bio::EnsEMBL::Gene")) {
-                if ($self->nogene == 0) {
-                  $self->write_gene($todb,$arcdb,$object);
-                }
-            }
-
-            # Check if it is an exon
-            elsif ($object->isa("Bio::EnsEMBL::Exon")) {
-                $self->write_exon($todb,$object);
-            }
-
         };
         if ($@) {
             warn("ERROR: problems in updating clone $id: $@ Deleting it from recipient database to preserve data integrity\n");
@@ -711,8 +696,8 @@ sub write_clone {
        
         unless ($self->nogene) { 
         foreach my $gene ($object->get_all_Genes('evidence')) {
-            $self->verbose &&  print STDERR "Getting all genes via clone get_all_Genes method\n";        
-            $self->write_gene($db,$arcdb,$gene,'1');
+            $self->verbose && print STDERR "New Gene, writing it in the database\n";
+	    $self->nowrite || $db->gene_Obj->write($gene);
         }
         }
     } 
@@ -735,7 +720,7 @@ sub write_clone {
                     $db->write_Clone ($object);
                 }
                 foreach my $gene (@new_genes) {
-                    $self->write_gene($db,$arcdb,$gene,%old_genes,'1');
+                    $self->write_gene_hash($db,$arcdb,$gene,%old_genes,'1');
                 }
             }
         }       
@@ -751,10 +736,10 @@ sub write_clone {
 }
 
 
-=head2 write_gene
+=head2 write_gene_hash
 
-  Title   : write_gene
-  Usage   : $self->write_gene($db,$object);
+  Title   : write_gene_hash
+  Usage   : $self->write_gene_hash($db,$object);
   Function: Writes gene into the recipient database
   Returns : Nothing
   Args    : Bio::EnsEMBL::DB::ObjI,Bio::EnsEMBL::Gene
@@ -762,11 +747,11 @@ sub write_clone {
 =cut
 
 
-sub write_gene {
+sub write_gene_hash {
     my ($self, $db, $arc_db, $don_gene, %old_genes, $clone_level) = @_;
 
     my $rec_gene;
-
+    
     $self->verbose && print STDERR "Got gene with id " . $don_gene->id . 
         ", and version " . ($don_gene->version ? $don_gene->version : "undefined") . "\n";    
     
@@ -795,14 +780,14 @@ sub write_gene {
 		$self->verbose && print STDERR "Genes with the same version, deleting recipient gene and writing one from donor without archiving\n";  
 
 		unless ($self->nowrite) {
-		    $db->delete_Gene($old_genes{$don_gene->id}->id);
-		    $db->write_Gene ($don_gene);
+		    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
+		    $gene_obj->delete($old_genes{$don_gene->id}->id);
+		    $gene_obj->write($don_gene);
 		}
 	    } else {
 		$self->verbose && print STDERR "Genes with the same version, nothing needs to be done\n"; 
 	    }
 	}
     }
-}   
-
+} 
 

@@ -1454,7 +1454,7 @@ sub _vmap{
 
  Title   : noseq
  Usage   : $vc->noseq
- Function: If set to 1, vc does not attach a primary seq to its exons 
+ Function: If set to 1, vc does not attach a primary seq to its features (exons) 
  Example : $vc->noseq(1)
  Returns : nothing
  Args    : 1/0

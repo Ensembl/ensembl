@@ -389,8 +389,8 @@ sub get_all_Genes {
            if( $self->_db_obj->_contig_seq_cache($exon->contig_id) ) {
 	       $seq = $self->_db_obj->_contig_seq_cache($exon->contig_id);
            } else {
-
-	       my $contig      = $self->_db_obj->get_Contig(-id => $exon->contig_id );
+	       print STDERR "Exon ".$exon->id." contig id ".$exon->contig_id."\n";
+	       my $contig      = $self->_db_obj->get_Contig($exon->contig_id);
 	       $contig->fetch();
 
 	       $seq = $contig->primary_seq();
