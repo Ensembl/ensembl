@@ -1168,6 +1168,51 @@ sub _dump_map {
    }
 }
 
+=head2 dump_agp
+
+ Title   : dump_agp
+ Usage   : Produces an accessioned golden path file (agp)
+  Function: $vc->dump_agp('ctg123',\*STDOUT);
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub dump_agp {
+   my ($self,$id,$fh) = @_;
+
+   ! defined $fh && do { $self->throw("No file handle passed to dump_agp"); };
+   my @mapc = $self->_vmap->get_all_MapContigs;
+   my $mc = shift @mapc;
+   my $start = 1;
+   my $clone = $self->dbobj->get_Clone($mc->contig->cloneid);
+   my $ori = $mc->orientation == '-1' ? "-" : "+";
+
+   print $fh sprintf("%10s %6d %6d %4d  P  %s.%s %5d %5d %s\n",$id,
+		     1,$mc->length,1,$mc->contig->cloneid,$clone->embl_version,$mc->start_in,$mc->end_in,$ori);
+   my $prev = $mc;
+   my $count = 2;
+   my $current = $mc->length;
+   # main loop
+   foreach $mc ( @mapc) {
+       if( $prev->end+1 < $mc->start ) {
+	   print $fh sprintf("%10s %6d %6d  N %d",$id,$current+1,$current+$mc->start-$prev->end+1,$mc->start-$prev->end+1);
+	   $current = $current+$mc->start-$prev->end+1;
+	   $count++;
+       }
+       $clone = $self->dbobj->get_Clone($mc->contig->cloneid);
+       $ori = $mc->orientation == '-1' ? "-" : "+";
+       
+       print $fh sprintf("%10s %6d %6d %4d  P  %s.%s %5d %5d %s\n",$id,
+			 $current+1,$current+$mc->length,1,$mc->contig->cloneid,$clone->embl_version,$mc->start_in,$mc->end_in,$ori);
+       $current = $current+$mc->length;
+       $count++;
+   }
+   
+}
+
 
 =head2 get_all_RawContigs
 

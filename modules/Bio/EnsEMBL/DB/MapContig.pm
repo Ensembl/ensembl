@@ -169,6 +169,12 @@ sub end{
     } 
 }
 
+sub length {
+    my $self = shift;
+
+    return $self->end - $self->start +1;
+}
+
 
 sub _leftmost_end {
     my ($obj,$value) = @_;
