@@ -253,7 +253,7 @@ while (my ($ensp, $ensg, $db, $acc, $qy_percid, $tg_percid) = $sth->fetchrow_arr
 
 ## Load regexps
 
-open REGEXP, $regexp_file;
+open (REGEXP, $regexp_file) || die "Can't open REGEX file: $regexp_file\n";
 my @regexps;
 
 while (my $line = <REGEXP>) {
@@ -376,7 +376,9 @@ sub parse_protein_database {
 	
       } else {
 	chomp $line;
-	warn "\nCould not recognize line : \"$line\"\nCheck the input file format in $protein_database_file.\n\n";
+#took away the warning as many lines in SP have ID  AC and nothing else
+
+#	warn "\nCould not recognize line : \"$line\"\nCheck the input file format in $protein_database_file.\n\n";
 #	return 0;
       }
     }
