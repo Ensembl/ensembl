@@ -328,7 +328,15 @@ sub totime {
 	$self->{_totime} = $arg;
     } 
 
+<<<<<<< UpdateManager.pm
+    if (!defined($self->{_totime})) {
+	$self->{_totime} = time;
+    }
+
+    return $self->{_totime};
+=======
     return $self->{_totime} || time;
+>>>>>>> 1.3
 }
 
 =head2 get_updated_objects
@@ -464,27 +472,33 @@ sub transfer_chunk {
 
     foreach my $id (@clones) {
 	
-	my $object=$fromdb->get_Clone($id);
-	
-	# Check if it is a clone object
-	if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
-	    $self->write_clone($todb,$arcdb,$object);
-	}
-	
-	# These won't happen - updated clones only are returned from TimDB
-	
-	# Check if it is a gene
-	elsif ($object->isa("Bio::EnsEMBL::Gene")) {
-	    $self->write_gene($todb,$arcdb,$object);
-	}
-	
-	# Check if it is an exon
-	elsif ($object->isa("Bio::EnsEMBL::Exon")) {
-	    $self->write_exon($todb,$object);
-	}
+	eval {
+	    my $object=$fromdb->get_Clone($id);
+	    
+	    # Check if it is a clone object
+	    if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
+		$self->write_clone($todb,$arcdb,$object);
+	    }
+	    
+	    # These won't happen - updated clones only are returned from TimDB
+	    
+	    # Check if it is a gene
+	    elsif ($object->isa("Bio::EnsEMBL::Gene")) {
+		$self->write_gene($todb,$arcdb,$object);
+	    }
+	    
+	    # Check if it is an exon
+	    elsif ($object->isa("Bio::EnsEMBL::Exon")) {
+		$self->write_exon($todb,$object);
+	    }
+	};
+	if ($@) {
+	    warn($@);
+	    warn("ERROR: clone $id not updated, will be deleted from recipient database\n");
+	    $todb->delete_Clone($object);
+	    
+	}    
     }
-    
-    
 }
 
 =head2 write_exon
