@@ -49,6 +49,8 @@ use strict;
 use vars qw($AUTOLOAD @ISA);
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -117,22 +119,26 @@ sub AUTOLOAD {
     return $adaptor->$method(@args);
   } 
   
-  #
-  # The request could not be filled by the primary adaptor
-  # try the same request using all of the attached databases
-  #
+
   my @databases = values %{$self->db()->get_all_db_adaptors()};
-  foreach my $adaptor (@databases) {
-    
-    #Try to get the appropriate adaptor from the database
-    #    my $get_adaptor = "get_" . $self->{'_proxy_type'};
-    #    if($database->can($get_adaptor)) {
-    
-    #Try to invoke the request on the database's adaptor
-    #     my $adaptor = eval "\$database->$get_adaptor";
-    if($adaptor->can($method)) {
-      return $adaptor->$method(@args);
+  foreach my $db (@databases) {
+
+
+    my $snp = $reg->get_adaptor($db->species,$db->group,"lite");
+    if(defined($snp)){
+
+      if($snp->can($method)) {
+	return $snp->$method(@args);
+      }
     }
+    $snp = $reg->get_adaptor($db->species,$db->group,"ProxySNP");
+    if(defined($snp)){
+
+      if($snp->can($method)) {
+	return $snp->$method(@args);
+      }
+    }
+
   }
 
   #none of the attached adaptors could fulfill the request either
