@@ -42,18 +42,19 @@ methods. Internal methods are usually preceded with a _
 
 # Let the code begin...
 package Bio::EnsEMBL::Analysis::FeatureParser;
+
 use vars qw($AUTOLOAD @ISA);
 use strict;
 
-
-
 use Bio::Tools::HMMER::Results;
 
-use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::Analysis::GenscanPeptide;
+use Bio::EnsEMBL::Analysis::Analysis;
 use Bio::EnsEMBL::Analysis::MSPcrunch;
-use Bio::EnsEMBL::Repeat;
 use Bio::EnsEMBL::Analysis::GFF;
+
+use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::Repeat;
 
 use FileHandle;
 
@@ -218,21 +219,32 @@ sub read_Pfam {
     my @homols;
 
     foreach my $dom ($pfamobj->each_Domain) {
-	my $align     = new Bio::EnsEMBL::Analysis::PairAlign;
-	
-	$dom->source_tag ('hmmpfam');
-	$dom->primary_tag('similarity');
-	$dom->strand    (1);
-	$dom->add_tag_value('Analysis',$analysis);
-
 	my $dom2 = $dom->feature2;
 
-	$dom2->source_tag('hmmpfam');
-	$dom2->primary_tag('similarity');
-	$dom2->strand(1);
-	$dom2->add_tag_value('Analysis',$analysis);
+	my $f1 = new Bio::EnsEMBL::SeqFeature(-seqname => $dom->seqname,
+					      -start   => $dom->start,
+					      -end     => $dom->end,
+					      -score   => $dom->score,
+					      -source_tag  =>'hmmpfam',
+					      -primary_tag =>'similarity',
+					      -strand      => 1,
+					      -analysis    => $analysis,
+					      );
 
-	$genscan_peptide->add_pepHit($dom);
+	my $f2 = new Bio::EnsEMBL::SeqFeature(-seqname => $dom2->seqname,
+					      -start   => $dom2->start,
+					      -end     => $dom2->end,
+					      -score   => $dom2->score,
+					      -source_tag  =>'hmmpfam',
+					      -primary_tag =>'similarity',
+					      -strand      => 1,
+					      -analysis    => $analysis,
+					      );
+
+	my $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
+					       -feature2 => $f2);
+
+	$genscan_peptide->add_pepHit($fp);
 
     }
 

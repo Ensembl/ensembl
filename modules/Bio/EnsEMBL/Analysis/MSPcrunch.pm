@@ -53,8 +53,11 @@ use strict;
 # Object preamble - inherits from Bio::Root::Object;
 
 use Bio::Root::Object;
+
 use Bio::EnsEMBL::Analysis::Analysis;
 use Bio::EnsEMBL::Analysis::MSPType;
+use Bio::EnsEMBL::FeaturePair;
+
 use FileHandle;
 
 # Inherits from the base bioperl object
@@ -223,9 +226,11 @@ sub _read_Homol {
 	
     my $anal = $self->analysis;
 
-    $sf1->analysis($anal);
-    $sf2->analysis($anal);
-    $fp->analysis($anal);
+    $self->throw("Can't make analysis\n") unless defined($self->analysis);
+    $sf1->analysis($self->analysis);
+    $sf2->analysis($self->analysis);
+
+    $fp->analysis ($self->analysis);
 
     return ($fp);
 }
@@ -261,8 +266,11 @@ sub each_Homol {
 sub add_Homol {
     my ($self,$homol) = @_;
     
+    
     $self->throw("Argument to Bio::EnsEMBL::Analysis::MSPcrunch->add_Homol is not a Bio::EnsEMBL::FeaturePair") unless $homol->isa("Bio::EnsEMBL::FeaturePair");
     
+    $homol->validate;
+
     push(@{$self->{_homols}},$homol);
 
 }
@@ -379,6 +387,7 @@ sub analysis {
 
 	$self->{_analysis} = $arg;
     }
+
     return $self->{_analysis};
 }
 

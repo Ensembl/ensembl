@@ -418,6 +418,8 @@ sub _make_homol {
 
     if ($pep_homol->isa("Bio::EnsEMBL::SeqFeatureI") && defined($pep_homol->analysis) && $newh->isa("Bio::EnsEMBL::SeqFeatureI")) {
 	$newh->analysis($pep_homol->analysis);
+    } else {
+	$self->throw("Can't find analysis for pep_homol " . $pep_homol->seqname . " " . $pep_homol->source_tag . "\n");
     }
     # Create the peptide homol
     my $peph  = new Bio::EnsEMBL::Pep_SeqFeature(-start  => $h1,
@@ -429,14 +431,18 @@ sub _make_homol {
     $peph->start_frac ($start_frac);
     $peph->end_frac   ($end_frac);
     
-    if ($pep_homol2->isa("Bio::EnsEMBL::SeqFeatureI") &&defined($pep_homol2->analysis) && $peph->isa("Bio::EnsEMBL::SeqFeatureI")) {
+    if ($pep_homol2->isa("Bio::EnsEMBL::SeqFeatureI") && defined($pep_homol2->analysis) && $peph->isa("Bio::EnsEMBL::SeqFeatureI")) {
 	$peph->analysis($pep_homol2->analysis);
+    } else {
+	$self->throw("Can't find analysis for pep_homol " . $pep_homol2->seqname . " " . $pep_homol2->source_tag . "\n");
     }
-    
+	    
     # Add the peptide homol to the dna homol
     my $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $newh,
 					   -feature2 => $peph,
 					   );
+    $fp->analysis($pep_homol->analysis);
+
     return $fp;
 }
 
@@ -486,6 +492,8 @@ sub _make_dna_homol {
 
     if (defined($pep_homol2->analysis)) {
 	$newh->analysis($pep_homol2->analysis);
+    } else {
+	$self->throw("Can't find analysis for pep_homol " . $pep_homol2->seqname . " " . $pep_homol2->source_tag . "\n");
     }
     
 
@@ -499,14 +507,18 @@ sub _make_dna_homol {
     $peph->seqname    ($pep_homol->seqname);
 
     if (defined($pep_homol->analysis)) {
-	$peph->analysis($pep_homol2->analysis);
+	$peph->analysis($pep_homol->analysis);
+    } else {
+	$self->throw("Can't find analysis for pep_homol " . $pep_homol->seqname . " " . $pep_homol->source_tag . "\n");
     }
+
     
     # Add the peptide homol to the dna homol
     my $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $newh,
 					   -feature2 => $peph,
 					   );
     
+    $fp->analysis($pep_homol->analysis);
     return $fp;
 }
    
