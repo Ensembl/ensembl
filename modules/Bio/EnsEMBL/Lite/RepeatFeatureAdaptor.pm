@@ -179,50 +179,11 @@ sub _objs_from_sth {
 			     '_gsf_strand'        => $feat_strand,
 			     '_adaptor'       => $repeat_adaptor,
 			     '_repeat_consensus' => $rc,
-			     '_db_id'         => $id } );
+			     '_db_id'         => $id,
+			     '_gsf_seq'       => $slice } );
     }
 
   return \@repeats; 
-}
-
-
-=head2 fetch_by_Slice_and_type
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_Slice_and_type instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_Slice_and_type {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_Slice_and_type has been renamed fetch_all_by_Slice_and_type\n" . caller);
-
-  return $self->fetch_all_by_Slice_and_type(@args);
-}
-
-
-=head2 fetch_by_Slice
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_Slice instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_Slice {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
-
-  return $self->fetch_all_by_Slice(@args);
 }
 
 
