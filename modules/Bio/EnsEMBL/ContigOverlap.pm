@@ -181,6 +181,7 @@ sub is_identical {
     $self->throw("Should never reach here. Bad error!");
 }
 
+
 sub _invert_overlap_type {
     my ($self,$type) = @_;
 
@@ -190,6 +191,25 @@ sub _invert_overlap_type {
     return $type; # should be the two symetrical cases
 }
 	   
+=head2 hash_string
+
+ Title   : hash_string
+ Usage   : $str = $co->hash_string
+ Function: Returns contiga:contigb:positiona:positionb:overlap_type:distance
+           Really a convience function for 
+ Example : 
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub hash_string{
+   my ($self) = @_;
+
+   return join(':',$self->contiga->id,$self->contigb->id,$self->positiona,$self->positionb,$self->overlap_type,$self->distance);
+
+}
 
 =head2 contiga
 
