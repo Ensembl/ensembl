@@ -28,6 +28,7 @@ CREATE TABLE blast_ticket (
   update_time datetime NOT NULL default '0000-00-00 00:00:00',
   ticket varchar(32) NOT NULL default '',
   object longblob,
+  status enum('CURRENT','DELETED') NOT NULL default 'CURRENT',
   PRIMARY KEY  (ticket_id),
   UNIQUE KEY ticket (ticket),
   KEY create_time (create_time),
