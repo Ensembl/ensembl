@@ -353,9 +353,10 @@ sub subseq {
   Arg [1]    : (optional) string $logic_name
                The name of the analysis used to generate the prediction
                transcripts obtained.
-  Example    : @transcripts = $slice->get_all_PredictionTranscripts();
+  Example    : @transcripts = @{$slice->get_all_PredictionTranscripts};
   Description: Retrieves the list of prediction transcripts which overlap
-               this slice.
+               this slice with logic_name $logic_name.  If logic_name is 
+               not defined then all prediction transcripts are retrieved.
   Returntype : listref of Bio::EnsEMBL::PredictionTranscript
   Exceptions : none
   Caller     : none
@@ -379,11 +380,15 @@ sub get_all_PredictionTranscripts {
                to obtain.
   Arg [2]    : (optional) float $score
                The mimimum score of the features to retrieve
-  Example    : @dna_align_feats = $slice->get_all_DnaAlignFeatures()
-  Description: Retrieves the DnaDnaAlignFeatures which overlap this slice
+  Example    : @dna_dna_align_feats = @{$slice->get_all_DnaAlignFeatures};
+  Description: Retrieves the DnaDnaAlignFeatures which overlap this slice with
+               logic name $logic_name and with score above $score.  If 
+               $logic_name is not defined features of all logic names are 
+               retrieved.  If $score is not defined features of all scores are
+               retrieved.
   Returntype : listref of Bio::EnsEMBL::DnaDnaAlignFeatures
   Exceptions : none
-  Caller     :general
+  Caller     : general
 
 =cut
 
@@ -404,9 +409,13 @@ sub get_all_DnaAlignFeatures {
                to obtain.
   Arg [2]    : (optional) float $score
                The mimimum score of the features to retrieve
-  Example    : @pep_align_feats = $slice->get_all_ProteinAlignFeatures()
-  Description: Retrieves the PepDnaAlignFeatures which overlap this slice.
-  Returntype : listref of Bio::EnsEMBL::PepDnaAlignFeatures
+  Example    : @dna_pep_align_feats = @{$slice->get_all_ProteinAlignFeatures};
+  Description: Retrieves the DnaPepAlignFeatures which overlap this slice with
+               logic name $logic_name and with score above $score.  If 
+               $logic_name is not defined features of all logic names are 
+               retrieved.  If $score is not defined features of all scores are
+               retrieved.
+  Returntype : listref of Bio::EnsEMBL::DnaPepAlignFeatures
   Exceptions : none
   Caller     : general
 
@@ -428,11 +437,14 @@ sub get_all_ProteinAlignFeatures {
                the name of the analysis performed on the features to retrieve
   Arg [2]    : (optional) float $score
                the lower bound of the score of the features to be retrieved
-  Example    : @feats = $slice->get_all_SimilarityFeatures()
+  Example    : @feats = @{$slice->get_all_SimilarityFeatures};
   Description: Retrieves all dna_align_features and protein_align_features
                with analysis named $logic_name and with score above $score.
                It is probably faster to use get_all_ProteinAlignFeatures or
                get_all_DnaAlignFeatures if a sepcific feature type is desired.
+               If $logic_name is not defined features of all logic names are 
+               retrieved.  If $score is not defined features of all scores are
+               retrieved.
   Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
   Exceptions : none
   Caller     : general
@@ -451,6 +463,7 @@ sub get_all_SimilarityFeatures {
 }
 
 
+
 =head2 get_all_SimpleFeatures
 
   Arg [1]    : (optional) string $logic_name
@@ -458,9 +471,13 @@ sub get_all_SimilarityFeatures {
                to obtain.
   Arg [2]    : (optional) float $score
                The mimimum score of the features to retrieve
-  Example    : @simple_feats = $slice->get_all_SimpleFeatures()
-  Description: Retrieves the SimpleFeatures which overlap this slice.
-  Returntype : listref of Bio::EnsEMBL::DnaDnaAlignFeature
+  Example    : @simple_feats = @{$slice->get_all_SimpleFeatures};
+  Description: Retrieves the SimpleFeatures which overlap this slice with
+               logic name $logic_name and with score above $score.  If 
+               $logic_name is not defined features of all logic names are 
+               retrieved.  If $score is not defined features of all scores are
+               retrieved.
+  Returntype : listref of Bio::EnsEMBL::SimpleFeatures
   Exceptions : none
   Caller     : general
 
@@ -481,8 +498,11 @@ sub get_all_SimpleFeatures {
   Arg [1]    : (optional) string $logic_name
                The name of the analysis performed on the repeat features
                to obtain.
-  Example    : @repeat_feats = $slice->get_all_RepeatFeatures()
-  Description: Retrieves the RepeatFeatures which overlap this slice.
+  Example    : @repeat_feats = @{$slice->get_all_RepeatFeatures}
+  Description: Retrieves the RepeatFeatures which overlap  with
+               logic name $logic_name and with score above $score.  If 
+               $logic_name is not defined features of all logic names are 
+               retrieved.
   Returntype : listref of Bio::EnsEMBL::RepeatFeatures
   Exceptions : none
   Caller     : general
@@ -497,13 +517,18 @@ sub get_all_RepeatFeatures {
    return $rpfa->fetch_all_by_Slice($self, $logic_name);
 }
 
+
+
 =head2 get_all_SNPs
 
   Args      : none
-  Function  : returns all SNPs on this slice
+  Function  : returns all SNPs on this slice. This function will only work
+              correctly if the SNP database or the lite database has been
+              attached to the core database.  This can been done through
+              a call to DBAdaptor::add_db_adaptor.
   Returntype: listref of Bio::EnsEMBL::External::Variation
   Exceptions: none
-  Caller    : GlyphSet_feature inherited objects
+  Caller    : contigview, snpview
 
 =cut
 
@@ -522,13 +547,17 @@ sub get_all_SNPs {
 
 =head2 get_all_Genes
 
- Title   : get_all_Genes
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : (optional) boolean $empty_flag 
+  Example    : @genes = $slice->get_all_Genes;
+  Description: Retrieves all genes that overlap this slice.  The empty flag is 
+               used by the web code and is used to retrieve light weight genes
+               that only have a start, end and strand (only works if lite db
+               is available).  If the lite database has been attached to the
+               core database this method will use the lite database (and 
+               genes will not be as full featured).
+  Returntype : listref of Bio::EnsEMBL::Genes
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -544,12 +573,20 @@ sub get_all_Genes{
 
 =head2 get_all_Genes_by_source
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : string $source 
+  Arg [2]    : (optional) boolean $empty_flag
+  Example    : @genes = @{$slice->get_all_Genes_by_souce('core')};
+  Description: Retrieves genes that overlap this slice from database $source.  
+               This is primarily used by web code to retrieve subsets of genes
+               from the lite database (which contains an sets of genes from 
+               several databases).   The empty flag indicates light weight 
+               genes that only have a start, end and strand should be used
+               (only works if lite db is available). If the lite database has 
+               been attached to the core database this method will use the 
+               lite database (and genes will not be as full featured).
+  Returntype : listref of Bio::EnsEMBL::Genes
+  Exceptions : none
+  Caller     : contigview
 
 =cut
 
@@ -564,12 +601,20 @@ sub get_all_Genes_by_source{
 
 =head2 get_all_Genes_by_type
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : string $type 
+  Arg [2]    : (optional) boolean $empty_flag
+  Example    : @genes = @{$slice->get_all_Genes_by_type('ensembl')};
+  Description: Retrieves genes that overlap this slice of type $type.  
+               This is primarily used by the genebuilding code when several 
+               types of genes are used.
+               The empty flag indicates light weight genes that only have a 
+               start, end and strand should be used (only works if lite db is 
+               available). If the lite database has 
+               been attached to the core database this method will use the 
+               lite database (and genes will not be as full featured).
+  Returntype : listref of Bio::EnsEMBL::Genes
+  Exceptions : none
+  Caller     : genebuilder
 
 =cut
 
@@ -583,14 +628,17 @@ sub get_all_Genes_by_type{
 
 
 
+
 =head2 chr_name
 
- Title   : chr_name
- Usage   : $obj->chr_name($newval)
- Function: 
- Example : 
- Returns : value of chr_name
- Args    : newvalue (optional)
+  Arg [1]    : (optional) string $value 
+  Example    : $chr_name = $slice->chr_name;
+  Description: Getter/Setter for the name of the chromosome that this slice
+               is on.  This is generally set by the SliceAdaptor and should 
+               probably not be set outside of that context.
+  Returntype : string
+  Exceptions : none
+  Caller     : SliceAdaptor
 
 =cut
 
@@ -603,15 +651,19 @@ sub chr_name{
 
 }
 
+
+
 =head2 chr_start
 
- Title   : chr_start
- Usage   : $obj->chr_start($newval)
- Function: 
- Example : 
- Returns : value of chr_start
- Args    : newvalue (optional)
-
+  Arg [1]    : int $value
+  Example    : $chr_start = $slice->chr_start;
+  Description: Getter/Setter for the start base of this slice on the 
+               chromosome.  This is generally set by the SliceAdaptor and
+               probably shouldnt be set outside of that context.
+               chr_start is always less than or equal to chr_end
+  Returntype : int
+  Exceptions : none
+  Caller     : SliceAdaptor, general
 
 =cut
 
@@ -627,12 +679,15 @@ sub chr_start{
 
 =head2 chr_end
 
- Title   : chr_end
- Usage   : $obj->chr_end($newval)
- Function: 
- Example : 
- Returns : value of chr_end
- Args    : newvalue (optional)
+  Arg [1]    : int $value
+  Example    : $chr_end = $slice->chr_end;
+  Description: Getter/Setter for the end base of this slice on the 
+               chromosome.  This is generally set by the SliceAdaptor and
+               probably shouldnt be set outside of that context.
+               chr_end is always greater than or equal to chr_start
+  Returntype : int
+  Exceptions : none
+  Caller     : SliceAdaptor, general
 
 =cut
 
@@ -648,12 +703,14 @@ sub chr_end{
 
 =head2 strand
 
- Title   : strand
- Usage   : $obj->strand($newval)
- Function: 
- Example : 
- Returns : value of strand
- Args    : newvalue (optional)
+  Arg [1]    : int $value
+  Example    : $strand = $slice->strand;
+  Description: Getter/Setter for the strand of the chromosome this slice is on.
+               This should not be set manually.  A much better way to obtain
+               a slice on the opposite strand is to call the invert method.
+  Returntype : int (either 1 or -1)
+  Exceptions : none
+  Caller     : invert, SliceAdaptor, general
 
 =cut
 
@@ -671,13 +728,14 @@ sub strand{
 
 =head2 assembly_type
 
- Title   : assembly_type
- Usage   : $obj->assembly_type($newval)
- Function: 
- Example : 
- Returns : value of assembly_type
- Args    : newvalue (optional)
-
+  Arg [1]    : string $value
+  Example    : $assembly_mapper_adaptor->fetch_by_type($slice->assembly_type);
+  Description: Gets/Sets the assembly type that this slice is constructed 
+               from.  This is generally set by the slice adaptor and probably
+               shouldnt be set outside of this context. 
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -691,6 +749,18 @@ sub assembly_type{
 }
 
 
+
+=head2 get_all_KaryotypeBands
+
+  Arg [1]    : none
+  Example    : @kary_bands = @{$slice->get_all_KaryotypeBands};
+  Description: Retrieves the karyotype bands which this slice overlaps.
+  Returntype : listref oif Bio::EnsEMBL::KaryotypeBands
+  Exceptions : none
+  Caller     : general, contigview
+
+=cut
+
 sub get_all_KaryotypeBands {
   my ($self) = @_;
   
@@ -699,14 +769,26 @@ sub get_all_KaryotypeBands {
 }
 
 
+
+=head2 get_Chromosome
+
+  Arg [1]    : none
+  Example    : $chromosome = $slice->get_Chromosome;
+  Description: Retrieves the chromosome object which this slice is on
+  Returntype : Bio::EnsEMBL::Chromosome
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub get_Chromosome {
   my $self = shift @_;
 
   my $ca =  $self->adaptor->db->get_ChromosomeAdaptor();
 
-  # this slice will contain N's at the beginning if the chr_start in the table is > 1
   return $ca->fetch_by_chr_name($self->chr_name());
 }
+
 
 
 =head2 get_repeatmasked_seq
@@ -754,6 +836,8 @@ sub get_repeatmasked_seq {
     return $masked_seq;
 }
 
+
+
 =head2 _mask_features
 
   Arg [1]    : string $dna_string
@@ -762,7 +846,7 @@ sub get_repeatmasked_seq {
                give the list of coordinates to replace with N or with 
                lower case
   Arg [3]    : int $soft_masking_enable (optional)
-  Example    : 
+  Example    : none
   Description: replaces string positions described in the RepeatFeatures
                with Ns (default setting), or with the lower case equivalent 
                (soft masking)
@@ -821,6 +905,18 @@ sub _mask_features {
   return $dnastr;
 } 
 
+
+
+=head2 get_all_MapFrags
+
+  Arg [1]    : string $mapset
+  Example    : none
+  Description: Retreives all mapfrags of mapset $mapset that overlap this slice
+  Returntype : listref of Bio::EnsEMBL::MapFrags
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub get_all_MapFrags {
     my $self = shift;
@@ -1061,6 +1157,17 @@ sub get_all_Haplotypes {
 
 
 
+=head2 get_all_DASFeatures
+
+  Arg [1]    : none
+  Example    : $features = $slice->get_all_DASFeatures;
+  Description: Retreives a hash reference to the DAS features which overlap 
+               this slice
+  Returntype : hashref of Bio::SeqFeatures
+  Exceptions : ?
+  Caller     : webcode
+
+=cut
 
 sub get_all_DASFeatures{
    my ($self,@args) = @_;

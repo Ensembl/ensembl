@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 27;
+	plan tests => 44;
 }
 
 
@@ -21,7 +21,7 @@ ok(1);
 
 
 my $CHR           = '20';
-my $START         = 31_000_000;
+my $START         = 30_270_000;
 my $END           = 31_200_000;
 my $STRAND        = 1;
 my $ASSEMBLY_TYPE = 'NCBI_30';
@@ -116,31 +116,158 @@ ok($slice->strand == $STRAND);
 #
 # 23-24 Test Slice::seq
 #
-my $seq = $slice->seq;
-my $invert_seq = $slice->invert->seq;
-
-print STDERR "SEQ=[$seq]\n";
+my $seq = uc $slice->seq;
+my $invert_seq = uc $slice->invert->seq;
 
 ok(length($seq) == $slice->length); #sequence is correct length
-print STDERR "[".length($seq)."] != [".$slice->length."]\n"; 
-$seq = uc reverse $seq;  #reverse complement seq
-$seq =~ s/ACTG/TGAC/g; 
+
+$seq = reverse $seq;  #reverse complement seq
+$seq =~ tr/ACTG/TGAC/; 
+
 ok($seq eq $invert_seq); #revcom same as seq on inverted slice
 
 #
 # 25-26 Test Slice::subseq
 #
 my $SPAN = 10;
-my $sub_seq = $slice->subseq(-$SPAN,$SPAN);
-my $invert_sub_seq = $slice->invert->subseq($slice->length + $SPAN, 
-					    $slice->length - $SPAN);
+my $sub_seq = uc $slice->subseq(-$SPAN,$SPAN);
+my $invert_sub_seq = uc $slice->invert->subseq( $slice->length - $SPAN + 1, 
+						$slice->length + $SPAN + 1);
+
 ok(length $sub_seq == (2*$SPAN) + 1 ); 
-$seq = uc reverse $seq;
-$seq =~ s/ACTG/TGAC/g;
-ok($seq eq $invert_seq);
+$sub_seq = reverse $sub_seq;
+$sub_seq =~ tr/ACTG/TGAC/;
+
+ok($sub_seq eq $invert_sub_seq);
+
+#
+# 27 Test Slice::get_all_PredictionTranscripts
+#
+my $pts = $slice->get_all_PredictionTranscripts;
+ok(scalar @$pts);
 
 
+#
+# 28 Test Slice::get_all_DnaAlignFeatures
+#
+my $count = 0;
+my $dafs = $slice->get_all_DnaAlignFeatures;
+ok(scalar @$dafs);
+$count += scalar @$dafs;
 
+#
+# 29 Test Slice::get_all_ProteinAlignFeatures
+#
+my $pafs = $slice->get_all_ProteinAlignFeatures;
+ok(scalar @$pafs);
+$count += scalar @$pafs;
+
+#
+# 30 Test Slice::get_all_SimilarityFeatures
+#
+ok($count == scalar @{$slice->get_all_SimilarityFeatures});
+
+#
+# 31 Test Slice::get_all_SimpleFeatures
+#
+ok(scalar @{$slice->get_all_SimpleFeatures});
+
+#
+# 32 Test Slice::get_all_RepeatFeatures
+#
+ok(scalar @{$slice->get_all_RepeatFeatures});
+
+#
+# 33 Test Slice::get_all_Genes
+#
+ok(scalar @{$slice->get_all_Genes});
+
+#
+# 34 Test Slice::get_all_Genes_by_type
+#
+ok(scalar @{$slice->get_all_Genes_by_type('ensembl')});
+
+#
+# 35 Test Slice::chr_name
+#
+my $old_val = $slice->chr_name;
+my $new_val = 'Y';
+$slice->chr_name($new_val);
+ok($slice->chr_name eq $new_val);
+$slice->chr_name($old_val);
+
+#
+# 36 Test Slice::chr_start
+#
+$old_val = $slice->chr_start;
+$new_val = 123;
+$slice->chr_start($new_val);
+ok($slice->chr_start == $new_val);
+$slice->chr_start($old_val);
+
+#
+# 37 Test Slice::chr_end
+#
+$old_val = $slice->chr_end;
+$new_val = 1234567;
+$slice->chr_end($new_val);
+ok($slice->chr_end == $new_val);
+$slice->chr_end($old_val);
+
+#
+# 38 Test Slice::strand
+#
+$old_val = $slice->strand;
+$new_val = $old_val * -1;
+$slice->strand($new_val);
+ok($slice->strand == $new_val);
+$slice->strand($old_val);
+
+#
+# 39 Test Slice::assembly_type
+#
+$old_val = $slice->assembly_type;
+$new_val = 'TEST';
+$slice->assembly_type($new_val);
+ok($slice->assembly_type eq $new_val);
+$slice->assembly_type($old_val);
+
+
+#
+# 40 Test Slice::get_all_KaryotypeBands
+#
+ok(scalar @{$slice->get_all_KaryotypeBands});
+
+
+#
+# 41-42 Test Slice::get_Chromosome
+#
+my $chromo;
+ok($chromo = $slice->get_Chromosome);
+ok($chromo->chr_name eq $slice->chr_name);
+
+#
+# 43-44 Test Slice::get_RepeatMaskedSeq
+#
+$seq = $slice->seq;
+ok(length($slice->get_repeatmasked_seq->seq) == length($seq));
+
+my $softmasked_seq = $slice->get_repeatmasked_seq(['RepeatMask'], 1)->seq;
+
+ok($softmasked_seq ne $seq);
+ok(uc($softmasked_seq) eq $seq);
+
+$softmasked_seq = $seq = undef;  
+
+#
+# 45 Test Slice::get_all_MapFrags
+#
+ok(scalar @{$slice->get_all_MapFrags});
+
+#
+# 46 Test Slice::get_tiling_path
+#
+ok(scalar @{$slice->get_tiling_path});
 
 
 
