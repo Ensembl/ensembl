@@ -27,6 +27,7 @@ my $coord_system = Bio::EnsEMBL::CoordSystem->new
 
 my $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
                                      -SEQ_REGION_NAME => 'X',
+                                     -SEQ_REGION_LENGTH => 15e6,
                                      -START           => 1,
                                      -END             => 2e6);
 

@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 50;
+	plan tests => 53;
 }
 
 use MultiTestDB;
@@ -40,6 +40,8 @@ my $slice = $slice_adaptor->fetch_by_region('toplevel',$CHR, $START, $END);
 ok($slice->seq_region_name eq $CHR);
 ok($slice->start == $START);
 ok($slice->end   == $END);
+ok($slice->seq_region_length == 62842997);
+debug("slice seq_region length = " . $slice->seq_region_length());
 
 #
 # fetch_by_contig_name
@@ -102,7 +104,8 @@ $slice = $slice_adaptor->fetch_by_transcript_id($tid);
 $new_slice = $slice_adaptor->fetch_by_transcript_id($tid, $FLANKING);
 ok($new_slice->start == $slice->start - $FLANKING);
 ok($new_slice->end   == $slice->end   + $FLANKING);
-
+ok($slice->seq_region_length == 62842997);
+debug("new slice seq_region length = " . $new_slice->seq_region_length());
 
 #
 # 20-23 fetch_by_gene_stable_id
@@ -244,6 +247,7 @@ my $name = 'testregion';
 
 $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
                                   -SEQ_REGION_NAME => $name,
+                                  -SEQ_REGION_LENGTH => $len,
                                   -START           => 1,
                                   -END             => $len,
                                   -STRAND          => 1); 
@@ -271,6 +275,7 @@ $len = 50e6;
 $name = 'testregion2';
 $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
                                   -SEQ_REGION_NAME => $name,
+                                  -SEQ_REGION_LENGTH => $len,
                                   -START           => 1,
                                   -END             => $len,
                                   -STRAND          => 1); 
@@ -278,7 +283,8 @@ $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
 $slice_adaptor->store($slice);
 
 $slice = $slice_adaptor->fetch_by_region('chromosome', $name);
-ok($slice->length eq $len);
+ok($slice->length() == $len);
+ok($slice->seq_region_length() == $len);
 ok($slice->seq_region_name eq $name);
 
 $multi->restore('core', 'seq_region', 'dna', 'dnac');

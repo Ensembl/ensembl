@@ -32,6 +32,7 @@ my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
 
 my $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
                                      -SEQ_REGION_NAME => 'X',
+                                     -SEQ_REGION_LENGTH => 15e6,
                                      -START           => 1_000_000,
                                      -END             => 2_000_000);
 
@@ -62,6 +63,7 @@ ok($feature->slice == $slice);
 $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'new analysis');
 $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
                                   -SEQ_REGION_NAME => 'Y',
+                                  -SEQ_REGION_LENGTH => 15e6,
                                   -START           => 1_000_000,
                                   -END             => 2_000_000);
 ok(&test_getter_setter($feature, 'start', 1000));

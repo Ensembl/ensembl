@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 43;
+	plan tests => 45;
 }
 
 use TestUtils qw( debug );
@@ -25,6 +25,7 @@ my $CHR           = '20';
 my $START         = 30_270_000;
 my $END           = 31_200_000;
 my $STRAND        = 1;
+my $SEQ_REGION_LENGTH = 50e6;
 
 my $multi_db = MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
@@ -39,6 +40,7 @@ my $slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, $END);
 ok($slice->seq_region_name eq $CHR);
 ok($slice->start == $START);
 ok($slice->end == $END);
+ok($slice->seq_region_length == 62842997);
 ok($slice->adaptor == $slice_adaptor);
 
 
@@ -48,17 +50,20 @@ ok($slice->adaptor == $slice_adaptor);
 my $coord_system = $csa->fetch_by_name('toplevel');
 
 $slice = new Bio::EnsEMBL::Slice
-  (-seq_region_name  => $CHR,
-   -start            => $START,
-   -end              => $END,
-   -strand           => $STRAND,
-   -coord_system     => $coord_system);
+  (-seq_region_name   => $CHR,
+   -seq_region_length => $SEQ_REGION_LENGTH,
+   -start             => $START,
+   -end               => $END,
+   -strand            => $STRAND,
+   -coord_system      => $coord_system);
 
 
 ok($slice->seq_region_name eq $CHR);
+
 ok($slice->start == $START);
 ok($slice->end == $END);
 ok($slice->strand == $STRAND);
+ok($slice->seq_region_length == $SEQ_REGION_LENGTH);
 
 #
 #Test - Slice::adaptor
@@ -270,6 +275,7 @@ ok($a == 234371
 my $test_seq = 'ATGCATGCATGCATGCATGCATGC';
 my $test_slice = new Bio::EnsEMBL::Slice
   (-seq_region_name  => 'misc',
+   -seq_region_length => 24,
    -start            => 1,
    -end              => 24,
    -strand           => 1,
