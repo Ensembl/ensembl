@@ -49,9 +49,9 @@ sub skip_tests {
     exit(0);
 }
 
-if ( -e 't/tim_transfer.skip' ) {
+if ( !-e 't/tim_transfer.do' ) {
        $skip = 1;
-       print STDERR "Skipping Tim tranfer system\n";
+       print STDERR "\n**Skipping Tim tranfer system.\n**You must have tim_transfer.do as file in t to activate\n";
        &skip_tests();
 } 
 if ( -e 't/transfer.conf' ) {
