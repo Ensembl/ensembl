@@ -149,7 +149,7 @@ sub get_set_lists{
 #	  ["method2",[$self->species,"*"]],
 #	  ["method3",["*","*"]]];
 
-  return [["ExonerateBest1",["homo_sapiens","RefSeq"]]];
+  return [["ExonerateUngappedBest1", ["homo_sapiens","UniProtSwissProt"]]];
 #  return [["ExonerateBest1",["*","*"]]];
 
 }
@@ -419,9 +419,11 @@ sub fetch_and_dump_seq{
   # store ensembl protein file name and open it
   #
   $self->ensembl_protein_file($self->dir."/".$self->species."_protein.fasta");
+
   if(defined($self->dumpcheck()) and -e $self->ensembl_protein_file() and -e $self->ensembl_dna_file()){
     return;
   }
+
   open(PEP,">".$self->ensembl_protein_file()) 
     || die("Could not open dna file for writing: ".$self->ensembl_protein_file."\n");
 
@@ -441,6 +443,7 @@ sub fetch_and_dump_seq{
       print DNA ">" . $transcript->dbID() . "\n" .$seq."\n";
       my $trans = $transcript->translation();
       my $translation = $transcript->translate();
+
       if(defined($translation)){
 	my $pep_seq = $translation->seq();
 	$pep_seq =~ s/(.{60})/$1\n/g;
@@ -699,6 +702,17 @@ sub store {
     print "Maximum existing object_xref_id = $max_object_xref_id\n";
   }
 
+  my $max_xref_id = 0;
+  my $core_sth = $self->dbi->prepare("SELECT MAX(xref_id) FROM xref");
+  $core_sth->execute();
+  my $max_xref_id = ($core_sth->fetchrow_array())[0];
+  if (!defined $max_xref_id) {
+    print "Can't get highest existing xref_id, using 0\n)";
+  } else {
+    print "Maximum existing xref_id = $max_xref_id\n";
+  }
+  my $xref_id_offset = $max_xref_id + 1;
+
   #my $ox_sth = $dbi->prepare("INSERT INTO object_xref(ensembl_id, ensembl_object_type, xref_id) VALUES(?,?,?)");
 
   #my $ix_sth = $dbi->prepare("INSERT INTO identity_xref VALUES(?,?,?,?,?,?,?,?,?,?,?)");
@@ -743,14 +757,18 @@ sub store {
 
       # TODO make sure query & target are the right way around
 
-      print OBJECT_XREF "$object_xref_id\t$target_id\t$type\t$query_id\n";
-      print IDENTITY_XREF "$object_xref_id\t$query_id\t$target_id\t$query_start\t$query_end\t$target_start\t$target_end\t$cigar_line\t$score\t\\N\t$analysis_id\n";
+      # note we add on $xref_id_offset to avoid clashes
+      print OBJECT_XREF "$object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
+      print IDENTITY_XREF "$object_xref_id\t" . ($query_id+$xref_id_offset) . "\t$target_id\t$query_start\t$query_end\t$target_start\t$target_end\t$cigar_line\t$score\t\\N\t$analysis_id\n";
       # TODO - evalue?
       $object_xref_id++;
 
       $ensembl_object_types{$target_id} = $type;
 
       #push @{$primary_xref_ids{$query_id}}, $target_id;
+
+      # note the NON-OFFSET xref_id is stored here as the values are used in
+      # a query against the original xref database
       $primary_xref_ids{$query_id}{$target_id} = $target_id;
 
       # Store in database
@@ -773,7 +791,10 @@ sub store {
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
   # write relevant xrefs to file
-  $self->dump_xrefs(\%primary_xref_ids, $object_xref_id+1, \%ensembl_object_types);
+  $self->dump_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, \%ensembl_object_types);
+
+  # write comparison info. Can be removed after development
+  dump_comparison();
 
 }
 
@@ -840,7 +861,7 @@ sub get_analysis_id {
 
 sub dump_xrefs {
 
-  my ($self, $xref_ids_hashref, $start_object_xref_id, $ensembl_object_types_hashref) = @_;
+  my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset, $ensembl_object_types_hashref) = @_;
   my @xref_ids = keys %$xref_ids_hashref;
   my %xref_to_objects = %$xref_ids_hashref;
   my %ensembl_object_types = %$ensembl_object_types_hashref;
@@ -850,18 +871,6 @@ sub dump_xrefs {
 
   my $xref_dbi = $self->xref()->dbi();
   my $core_dbi = $self->dbi();
-
-  # get current highest internal ID from xref
-  my $max_xref_id = 0;
-  my $core_sth = $core_dbi->prepare("SELECT MAX(xref_id) FROM xref");
-  $core_sth->execute();
-  my $max_xref_id = ($core_sth->fetchrow_array())[0];
-  if (!defined $max_xref_id) {
-    print "Can't get highest existing xref_id, using 0\n)";
-  } else {
-    print "Maximum existing xref_id = $max_xref_id\n";
-  }
-  my $core_xref_id = $max_xref_id + 1;
 
   # keep a unique list of source IDs to build the external_db table later
   my %source_ids;
@@ -897,10 +906,11 @@ sub dump_xrefs {
 
     # note the xref_id we write to the file is NOT the one we've just read
     # from the internal xref database as the ID may already exist in the core database
+    # so we add on $xref_id_offset
     while (my @row = $xref_sth->fetchrow_array()) {
-      print XREF "$core_xref_id\t$accession\t$label\t$description\n";
+
+      print XREF ($xref_id+$xref_id_offset) . "\t" . $accession . "\t" . $label . "\t" . $description . "\n";
       $source_ids{$source_id} = $source_id;
-      $core_xref_id++;
 
     }
 
@@ -912,16 +922,17 @@ sub dump_xrefs {
 
     $dep_sth->bind_columns(\$xref_id, \$accession, \$label, \$description, \$source_id);
     while (my @row = $dep_sth->fetchrow_array()) {
-      print XREF "$core_xref_id\t$accession\t$label\t$description\tDEPENDENT\n";
+
+print XREF ($xref_id+$xref_id_offset) . "\t" . $accession . "\t" . $label . "\t" . $description . "DEPENDENT\n";
       $source_ids{$source_id} = $source_id;
-      $core_xref_id++;
+
       # create an object_xref linking this (dependent) xref with any objects it maps to
-      if (defined $xref_to_objects{$xref_id}) {
-	my @objects = keys( %{$xref_to_objects{$xref_id}} );
+      if (defined $xref_to_objects{$xref_id+$xref_id_offset}) {
+	my @objects = keys( %{$xref_to_objects{$xref_id+$xref_id_offset}} );
 	print "xref $accession has " . scalar(@objects) . " associated ensembl objects\n";
 	foreach my $object_id (@objects) {
 	  my $type = $ensembl_object_types{$object_id};
-	  print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t$core_xref_id DEPENDENT\n";
+	  print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "DEPENDENT\n";
 	  $object_xref_id++;
 	}
       }
@@ -960,7 +971,7 @@ sub dump_xrefs {
 
   my $source_sql = "SELECT name, release FROM source WHERE source_id $source_id_str";
   my $source_sth = $xref_dbi->prepare($source_sql);
-  print STDERR $source_sql."\n";
+  #print STDERR $source_sql."\n";
   $source_sth->execute();
 
   my ($source_name, $release);
@@ -974,7 +985,38 @@ sub dump_xrefs {
 
   close(EXTERNAL_DB);
 
+}
 
+# produce output for comparison with existing ensembl mappings
+# format is (with header)
+# xref_accession ensembl_type ensembl_id
+
+sub dump_comparison {
+
+  print "Dumping comparison data\n";
+
+  open (COMPARISON, ">comparison/xref_mappings.txt");
+
+  # get the xref accession for each xref as the xref_ids are ephemeral
+
+  # first read all the xrefs that were dumped and get an xref_id->accession map
+  my %xref_id_to_accesson;
+  open (XREF, "xref.txt");
+  while (<XREF>) {
+    my ($xref_id,$accession,$label,$description) = split;
+    $xref_id_to_accesson{$xref_id} = $accession;
+  }
+  close (XREF);
+
+  open (OBJECT_XREF, "object_xref.txt");
+  while (<OBJECT_XREF>) {
+    my ($object_xref_id,$object_id,$type,$xref_id) = split;
+    print COMPARISON $xref_id_to_accesson{$xref_id} . "\t" . $type . "\t" . $object_id . "\n";
+  }
+
+
+  close (OBJECT_XREF);
+  close (COMPARISON);
 
 }
 
