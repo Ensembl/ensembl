@@ -123,7 +123,7 @@
     MAPPING
 
     The mapping  feature is a  new addition.  It  allows you to  provide a
-    simple <tab>-delimited file containing mapping information.  Currently
+    simple comma-delimited file containing mapping information.  Currently
     mappings may be of the following types:
 
         * simple
