@@ -342,6 +342,7 @@ sub _objFromHashref {
   my $self = shift;
   my $rowHash = shift;
 
+
   my $analysis = Bio::EnsEMBL::Analysis->new
     ( -id => $rowHash->{analysisId},
       -db => $rowHash->{db},

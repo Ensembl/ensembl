@@ -487,7 +487,10 @@ sub get_Analysis {
 	$anal->gff_feature    ($rh->{gff_feature});
 	my $mid = $rh->{'id'};
 
-	$anal->dbID("$mid");
+	if( !$anal->isa('Bio::EnsEMBL::Ext::Analysis') ) {
+	    $anal->dbID("$mid");
+	}
+
 	return $anal;
     }  else {
 	$self->throw("Can't fetch analysis id $id\n");
