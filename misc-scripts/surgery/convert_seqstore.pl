@@ -40,12 +40,12 @@ my $sth;
 # The coord_system table needs to be filled first
 
 debug("Building coord_system table");
-my @inserts = ('INSERT INTO coord_system (name, version, attrib) VALUES ("chromosome",  "NCBI33", "default_version,top_level")',
-	       'INSERT INTO coord_system (name, version, attrib) VALUES ("supercontig", NULL,     "default_version")',
-	       'INSERT INTO coord_system (name, version, attrib) VALUES ("clone",       NULL,     "default_version")',
-	       'INSERT INTO coord_system (name, version, attrib) VALUES ("contig",      NULL,     "default_version,sequence")' );
+my @inserts = ('("chromosome",  "NCBI33", "default_version,top_level")',
+	       '("supercontig", NULL,     "default_version")',
+	       '("clone",       NULL,     "default_version")',
+	       '("contig",      NULL,     "default_version,sequence_level")' );
 foreach my $insert (@inserts) {
-  execute($dbi, $insert);
+  execute($dbi, 'INSERT INTO coord_system (name, version, attrib) VALUES '. $insert);
 }
 
 # cache coord-system names to save lots of joins
