@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/local/ensembl/bin/perl -w
 
 use strict;
 use Getopt::Long;
@@ -64,6 +64,7 @@ my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/current/var",
 			       'ecs2:3365' => "/mysql/data_3365/databases",
 			       'ecs2:3366' => "/mysql/data_3366/databases",
 			       'ecs3d:3307' => "/mysqld/current/var",
+			       'ecs3:3304' => "/mysqld/current/var",
 			       'ecs4:3350' => "/mysql-3350/databases",
 			       'ecs4:3351' => "/mysql-3351/databases",
 			       'ecs4:3352' => "/mysql-3352/databases",
@@ -76,6 +77,7 @@ my $generic_working_host = $working_host;
 $generic_working_host =~ s/(ecs[1234]).*/$1/;
 my $working_dir = $ENV{'PWD'};
 my %already_flushed;
+#$already_flushed{'ecs3.internal.sanger.ac.uk'} = 1;
 
 # parsing/checking the input file
 
@@ -104,7 +106,7 @@ while (my $line = <F>) {
 	$dest_srv_ok = 1;
       }
     }
-    unless ($src_srv_ok && $dest_srv) {
+    unless ($src_srv_ok && $dest_srv_ok) {
       warn "// skipped copy of $src_db from $src_srv to $dest_srv
 // this script works only to copy dbs between certain ecs_nodes:mysql_port" .
 join(", ", keys %mysql_directory_per_svr) ."\n";
@@ -145,9 +147,12 @@ foreach my $db_to_copy (@dbs_to_copy) {
 
   my $source_srv = $db_to_copy->{src_srv};
   $source_srv =~ s/(ecs[1234][a-h]?)\.*.*/$1/;
+  $source_srv =~ s/(ia64[ef])\.*.*/$1/;
+  
   my $source_port = $db_to_copy->{src_port};
 
   my $source_db = $mysql_directory_per_svr{$source_srv . ":" . $source_port} . "/" . $db_to_copy->{src_db};
+  
 
   my $destination_srv = $db_to_copy->{dest_srv};
   $destination_srv =~ s/(ecs[1234][a-h]?)\.*.*/$1/;
