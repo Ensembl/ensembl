@@ -1,4 +1,0 @@
-overlap testoverlap
-mysqladmin /nfs/disk89/michele/mysql/bin/mysqladmin
-mysql mysql
-user  root
