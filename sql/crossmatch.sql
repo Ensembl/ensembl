@@ -1,4 +1,3 @@
-
 # this is symmetric feature pairs for raw contigs
 
 
@@ -27,8 +26,8 @@ CREATE TABLE symmetric_contig_feature (
 );
 
 CREATE TABLE dblocation (
-  olddatabase  varchar(40) NOT NULL,
-  newdatabase  varchar(40) NOT NULL
+  olddatabase  varchar(100) NOT NULL,
+  newdatabase  varchar(100) NOT NULL
   );
 
 CREATE TABLE clonelist (
