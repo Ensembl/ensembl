@@ -22,7 +22,11 @@
 
     -gff       dump in gff format instead of EMBL
 
-    
+=head1 EXAMPLE CLONES
+
+    dJ271M21   single contig, forward strand genes only (default)
+
+    dJ718J7    single contig, single reverse strand gene with partial transcripts
 
 =cut
 
