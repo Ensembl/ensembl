@@ -640,6 +640,7 @@ sub _get_chr_start_end_of_gene {
    return ($chr,$start,$end);      
 }
 
+1;
 
 
 

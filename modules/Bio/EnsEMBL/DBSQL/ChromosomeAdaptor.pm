@@ -432,3 +432,5 @@ sub store{
   $chromosome->dbID($sth->{'mysql_insertid'});
   $chromosome->adaptor($self);
 }
+
+1;
