@@ -11,7 +11,7 @@ use StatMsg;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 use constant MEDIUM => 9;  # 8 or less is short
-use constant LONG   => 19; # 9-18 is medium, >18 is long
+use constant LONG   => 49; # 9-48 is medium, >48 is long
 
 #
 # returns true if a given length is considered to be SHORT
