@@ -30,7 +30,7 @@ from the database.
 
 Post questions to the EnsEMBL development list <ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
+=head1 METHODS
 
 The rest of the documentation details each of the object methods. Internal
 methods are usually preceded with a _
@@ -234,24 +234,6 @@ sub get_MetaContainer {
 sub get_ProteinFeatureAdaptor {
     my $self = shift;
     return $self->get_adaptor("ProteinFeature");
-}
-
-
-=head2 get_ProteinAdaptor
-
-  Args       : none 
-  Example    : $pa = $database_adaptor->get_ProteinAdaptor();
-  Description: Gets a ProteinAdaptor for this database.
-               Formerly named get_Protein_Adaptor()
-  Returntype : Bio::EnsEMBL::DBSQL::ProteinAdaptor
-  Exceptions : none 
-  Caller     : general
-
-=cut
-
-sub get_ProteinAdaptor {
-    my $self  = shift;
-    return $self->get_adaptor("Protein");
 }
 
 
@@ -1205,6 +1187,21 @@ sub get_RawContigAdaptor {
     my( $self ) = @_;
 
     return $self->dnadb->get_adaptor("RawContig");
+}
+
+
+=head2 get_ProteinAdaptor
+
+  Description: ProteinAdaptor is deprecated. Use TranslationAdaptor instead
+
+=cut
+
+sub get_ProteinAdaptor {
+    my $self  = shift;
+    deprecate("The ProteinAdaptor is deprecated. Use the TranslationAdaptor " .
+              "instead of the ProteinAdaptor and Translation instead of " .
+              "Protein.");
+    return $self->get_adaptor("Protein");
 }
 
 
