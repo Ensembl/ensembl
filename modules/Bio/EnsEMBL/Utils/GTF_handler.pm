@@ -427,7 +427,7 @@ sub dump_genes {
 	
         #print STDERR "Dumping gene ".$gene->id."\n";
 	foreach my $trans ($gene->each_Transcript) {
-	    print STDERR "Dumping transcript ".$trans->id."\n";
+	    #print STDERR "Dumping transcript ".$trans->id."\n";
 	    my $c=1;
 	    my $seen=0;
 	    my $exon_string;
