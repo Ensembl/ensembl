@@ -197,6 +197,26 @@ sub new {
 
 #----------------------------------------------------------------------
 
+=head2 ticket
+
+  Arg [1]   : string ticket (optional)
+  Function  : Get/get the blast ticket attribute
+  Returntype: string ticket
+  Exceptions: 
+  Caller    : 
+  Example   : 
+
+=cut
+
+sub ticket{
+  my $key = "_ticket";
+  my $self = shift;
+  if( @_ ){ $self->{$key} = shift }
+  return $self->{$key};
+}
+
+#----------------------------------------------------------------------
+
 =head2 store
 
   Arg [1]   : 
@@ -384,9 +404,10 @@ sub store_result{
 
   my $dbh  = $self->db->db_handle;
 
-  my $ticket = $res->group_ticket;
   my ( $id, $use_date ) = split( '!!', $res->token || '' );
   $use_date ||= $self->use_date('RESULT');
+  #my $ticket = $res->group_ticket || warn( "Result $id has no ticket" );
+  my $ticket = $self->ticket || warn("Result $id BlastAdaptor has no ticket");
 
   my $rv = 0;
   if( $id ){
@@ -460,9 +481,10 @@ sub store_hit{
 
   my $dbh  = $self->db->db_handle;
 
-  my $ticket = $hit->group_ticket;
   my ( $id, $use_date ) = split( '!!', $hit->token || '' );
   $use_date ||= '';
+  #my $ticket = $hit->group_ticket || warn( "Hit $id has no ticket" );
+  my $ticket = $self->ticket || warn("Hit $id BlastAdaptor has no ticket");
 
   my $rv = 0;
   if( $id ){
@@ -535,9 +557,10 @@ sub store_hsp{
 
   my $dbh  = $self->db->db_handle;
 
-  my $ticket = $hsp->group_ticket;
   my ( $id, $use_date ) = split( '!!', $hsp->token || '');
   $use_date ||= $self->use_date('HSP');
+  #my $ticket = $hsp->group_ticket || warn( "HSP $id has no ticket" );
+  my $ticket = $self->ticket || warn( "HSP $id BlastAdaptor has no ticket" );
 
   my $chr_name  = 'NULL';
   my $chr_start = 'NULL';
@@ -627,7 +650,7 @@ sub get_all_HSPs {
    my $SQL = qq(
 SELECT object
 FROM   blast_hsp%s
-WHERE  \(ticket = ? OR ticket = ?\) );
+WHERE  ticket = ? );
 
    my $CHR_SQL = qq(
 AND    chr_name = ? );
@@ -637,7 +660,7 @@ AND    chr_start <= ?
 AND    chr_end   >= ? );
 
    my $q = sprintf( $SQL, $use_date );
-   my @binded = ( $id, substr($id,6) );
+   my @binded = ( $id );
 
    if( $chr_name ){
      $q .= $CHR_SQL;
@@ -648,7 +671,7 @@ AND    chr_end   >= ? );
        push @binded, $chr_end, $chr_start;
      }
    }
-#   warn( "$q: ", join( ', ',@binded ) ); 
+   #warn( "$q: ", join( ', ',@binded ) ); 
 
    my $sth = $self->db->db_handle->prepare($q);
    my $rv = $sth->execute( @binded ) || $self->throw( $sth->errstr );
