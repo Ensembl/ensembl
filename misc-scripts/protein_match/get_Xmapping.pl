@@ -91,8 +91,6 @@ while ( my $seq = $in->next_seq() ) {
     }
 }
 
-#Get Xref mapping specifically for human
-if ($organism eq "human") {
 #Read the refseq file in gnp format
     print STDERR "Reading REFSEQ File\n";
     
@@ -124,6 +122,11 @@ if ($organism eq "human") {
     $/ = "\n";
     
     
+
+
+#Get Xref mapping specifically for human
+if ($organism eq "human") {
+
 #Read the Hugo files
     print STDERR "Reading Hugo files\n";
     
@@ -178,6 +181,8 @@ if ($organism eq "mouse") {
 	my ($mgi,$rik,$a,$b,$c,$sps) = split (/\t/,$_);
       	
 	my @sp = split(/\s/,$sps);
+	
+#put in hash all of the SP entries which correspond to an MGI (this will be used later)
 	$mgi2sp{$mgi} = $sps;
 	
 	foreach my $s(@sp) {
@@ -185,18 +190,22 @@ if ($organism eq "mouse") {
 	}
     }
     open (MGILOC, "$mgi_locus") || die "Can't open $mgi_locus\n";
- 
+    
     while (<MGILOC>) {
+#The input file gives us MGI to LOCUS, we want SP to LOCUS, thus we use the hash %mgi2sp
+	
 	chomp;
-	my ($mgi,$hugo) = split (/\t/,$_);
+	my ($mgi,$locus) = split (/\t/,$_);
 	
 	if ($mgi2sp{$mgi}) {
-	 my @swiss = split (/\s/,$mgi2sp{$mgi}); 
-	 
-	 foreach my $sw(@swiss) {
-	     print OUT "$sw\tSPTR\t$mgi\tLOCUS\t$mgi\t\n";
+#There can be many SPs for one MGI
+	    my @swiss = split (/\s/,$mgi2sp{$mgi}); 
+	    
+	    foreach my $sw(@swiss) {
+		print OUT "$sw\tSPTR\t$locus\tLOCUS\t$locus\t\n";
+	    }
 	}
-     }
+    }
 }
 
 print STDERR "The output has been written there: $out\n";
