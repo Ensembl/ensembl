@@ -227,7 +227,7 @@ sub write {
                   .$homol->end              .","
                   ."'".$homol->seqname      ."',"
                   .((defined $feature->percent_id)   ? $feature->percent_id  : 'NULL')  .","    
-                  .((defined $feature->p_value)      ? $feature->p_value     : 'NULL')  .","
+                  .((defined $feature->p_value)      ? &exponent($feature->p_value)     : 'NULL')  .","
                   .((defined $feature->phase)        ? $feature->phase       : 'NULL')  .","
                   .((defined $feature->end_phase)    ? $feature->end_phase   : 'NULL')  .")");
         
@@ -329,7 +329,7 @@ sub write {
 				      ."'".$sub->source_tag ."',"
                       ."-1,-1,"
                       ."'".($sub->primary_tag || "__NONE__")."',"
-                      . ((defined $sub->p_value)     ?   $sub->p_value       : 'NULL')  .","
+                      . ((defined $sub->p_value)     ?   &exponent($sub->p_value)       : 'NULL')  .","
                       . ((defined $sub->percent_id)  ?   $sub->percent_id    : 'NULL')  .","
                       . ((defined $sub->phase)       ?   $sub->phase         : 'NULL')  .","
                       . ((defined $sub->end_phase)   ?   $sub->end_phase     : 'NULL')  .")");
@@ -842,3 +842,10 @@ sub _db_obj{
 
 
 
+
+sub exponent {
+    my ($number) = @_;
+
+    my ($exp) = sprintf("%.3e", $number);
+    return $exp;
+}

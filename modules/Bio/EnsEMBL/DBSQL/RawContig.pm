@@ -129,7 +129,8 @@ sub direct_new {
     $id    || $self->throw("Cannot make contig db object without id");
     $dbobj || $self->throw("Cannot make contig db object without db object");
     $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
-    if( !$internal_id || !$dna_id || ! defined $seq_version || !$cloneid ) {
+
+    if( !$internal_id || !$dna_id || !defined($seq_version) || !$cloneid ) {
 	$self->throw("you don't have all the data to make a direct new [$internal_id,$dna_id,$seq_version,$cloneid]!");
     }
 
@@ -893,7 +894,7 @@ sub get_all_SimilarityFeatures_above_score{
 
 =cut
 
-sub get_all_SimilarityFeatures{
+sub get_all_SimilarityFeatures {
    my ($self) = @_;
 
    my @array;
@@ -902,128 +903,23 @@ sub get_all_SimilarityFeatures{
    my $id     = $self->internal_id();
    my $length = $self->length();
 
+   my @genscan = $self->get_all_PredictionFeatures;
+
+   push(@array,@genscan);
    my %analhash;
 
-   #First of all, get all features that are part of a feature set
-
-   #my $sth = $self->dbobj->prepare("select  p1.id, " .
-   #                          "p1.seq_start, p1.seq_end, " . 
-   #                           "p1.strand,p1.score,p1.analysis,p1.name,  " .
-   #                          "p1.hstart,p1.hend,p1.hid,"  .
-   #                          "p2.fset,p2.rank, " . 
-   #                          "fs.score " .
-   #                 "from    feature as p1,  " .
-   #                 "        fset_feature as p2, " .
-   #                 "        fset as fs " .
-   #                 "where   p1.contig ='$id' " .
-   #                 "and     p2.feature = p1.id " .
-   #                 "and     fs.id = p2.fset " .
-   #                 "order by p2.fset");
-
-    my $statement = "SELECT feature.id, seq_start, seq_end, strand, feature.score, analysis, name, " .
-		             "hstart, hend, hid, evalue, perc_id, phase, end_phase, fset, rank, fset.score " .
-		     "FROM   feature, fset_feature, fset " .
-		     "WHERE  feature.contig =$id " .
-		     "AND    fset_feature.feature = feature.id " .
-		     "AND    fset.id = fset " .
-                     "ORDER BY fset";
-		     
-                                    
-   my $sth = $self->dbobj->prepare($statement);                                    
-                                    
-   $sth->execute();
-   
-   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$phase,$end_phase,$fset,$rank,$fset_score);
-   my $seen = 0;
-   
-   # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,\$end_phase,\$fset,\$rank,\$fset_score);
-   
-   my $out;
-   
-   my $fset_id_str = "";
-
-   while($sth->fetch) {
-
-       my $analysis;
-
-       if (!$analhash{$analysisid}) {
-	   
-       my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	   $analysis = $feature_obj->get_Analysis($analysisid);
-	   $analhash{$analysisid} = $analysis;
-       
-       } else {
-	   $analysis = $analhash{$analysisid};
-       }
-       
-       if( !defined $name ) {
-	   $name = 'no_source';
-       }
-       
-       #Build fset feature object if new fset found
-       if ($fset != $seen) {
-#	   print(STDERR "Making new fset feature $fset\n");
-	   $out =  new Bio::EnsEMBL::SeqFeature;
-	   $out->id($fset);
-	   $out->analysis($analysis);
-	   $out->seqname ($self->id);
-	   $out->raw_seqname ($self->id);
-	   $out->score($fset_score);
-	   $out->source_tag($name);
-	   $out->primary_tag("FSET");
-
-	   $seen = $fset;
-	   push(@array,$out);
-       }
-       $fset_id_str = $fset_id_str . $fid . ",";       
-       #Build Feature Object
-       my $feature = new Bio::EnsEMBL::SeqFeature;
-       $feature->seqname   ($self->id);
-       $feature->raw_seqname ($self->id);
-       $feature->start     ($start);
-       $feature->end       ($end);
-       $feature->strand    ($strand);
-       $feature->source_tag($name);
-       $feature->primary_tag('similarity');
-       $feature->id         ($fid);
-       $feature->p_value    ($evalue)       if (defined $evalue);
-       $feature->percent_id ($perc_id)      if (defined $perc_id);
-       $feature->phase      ($phase)        if (defined $phase);
-       $feature->end_phase  ($end_phase)    if (defined $end_phase);
-       
-       if( defined $f_score ) {
-	   $feature->score($f_score);
-       }
-       
-       $feature->analysis($analysis);
-       
-       # Final check that everything is ok.
-       $feature->validate();
-
-       #Add this feature to the fset
-       $out->add_sub_SeqFeature($feature,'EXPAND');
-
-   }
-   
    #Then get the rest of the features, i.e. featurepairs and single features that are not part of a fset
-   $fset_id_str =~ s/\,$//;
+   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$phase,$end_phase);
 
-   if ($fset_id_str) {
-       $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid, evalue, perc_id, phase, end_phase " . 
-				     "from feature where id not in (" . $fset_id_str . ") and contig = $id");
-   } else {
-       $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid, evalue, perc_id, phase, end_phase ".
-				     "from feature where contig = $id");
+   my $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid, evalue, perc_id, phase, end_phase ".
+				"from feature where contig = $id");
    
-   }
-
    $sth->execute();
 
    # bind the columns
    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,\$end_phase);
    
-   while($sth->fetch) {
+   FEAT: while($sth->fetch) {
        my $out;
        my $analysis;
               
@@ -1032,22 +928,30 @@ sub get_all_SimilarityFeatures{
        if (!$analhash{$analysisid}) {
 	   
 	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	   $analysis = $feature_obj->get_Analysis($analysisid);
-	   $analhash{$analysisid} = $analysis;
+	   eval {
+	     $analysis = $feature_obj->get_Analysis($analysisid);
+	     $analhash{$analysisid} = $analysis;
+	   };
+	   if ($@) {
+	     print STDERR "Error fetching analysis $analysisid. Skipping [$@]\n";
+	     next FEAT;
+	   }
 	   
        } else {
 	   $analysis = $analhash{$analysisid};
        }
        
        if( !defined $name ) {
-	   $name = 'no_source';
+	 $name = 'no_source';
+       } elsif ($name eq "genscan") {
+	 next FEAT;
        }
        
        if( $hid ne '__NONE__' ) {
 	   # is a paired feature
 	   # build EnsEMBL features and make the FeaturePair
 	 
-	   $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+	 $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
 
 
 	   $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$self->id,
@@ -1088,11 +992,6 @@ sub get_all_SimilarityFeatures{
       
    }
    
-#   my @extras = $self->get_extra_features;
-#   my @newfeatures = $self->filter_features(\@fps,\@extras);
-
-#   print ("Size " . @array . " " . @newfeatures . "\n");
-#   push(@array,@newfeatures);
    push(@array,@fps);
 
    return @array;
@@ -1269,27 +1168,27 @@ sub get_all_PredictionFeatures {
    my %analhash;
 
    # make the SQL query
-   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,fset.id ". 
-       "from feature f, fset fset,fset_feature ff where ff.feature = f.id and fset.id = ff.fset and contig = $id and name = 'genscan'";
+   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid ". 
+       "from feature f where contig = $id and name = 'genscan'";
 
    my $sth = $self->dbobj->prepare($query);
    
    $sth->execute();
    
-   my ($fid,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid);
+   my ($fid,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid);
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$fsetid);
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid);
   
    $previous = -1;
    my $current_fset;
+   my $count;
+
    while( $sth->fetch ) {
        my $out;
        
        my $analysis;
 	   
-       print STDERR  "ID $fid, START $start, END $end, STRAND $strand, SCORE $score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid, FSET $fsetid\n";
-       
        if (!$analhash{$analysisid}) {
 
 	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
@@ -1302,14 +1201,15 @@ sub get_all_PredictionFeatures {
        }
 
 
-       if( $fsetid != $previous ) {
+       if( $hid eq "Initial Exon" || $hid eq "Single Exon" || $previous eq "Single Exon" || $previous eq "Terminal Exon" || $previous == -1) {
 	   $current_fset = new Bio::EnsEMBL::SeqFeature;
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
 	   $current_fset->analysis($analysis);
 	   $current_fset->seqname($self->id);
+	   $current_fset->id($count);
+           $count++;
 	   $current_fset->raw_seqname($self->id);
-	   $current_fset->id($fsetid);
 	   push(@array,$current_fset);
        }
 
@@ -1317,6 +1217,7 @@ sub get_all_PredictionFeatures {
        
        $out->seqname   ($self->id);
        $out->raw_seqname($self->id);
+
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);
@@ -1340,7 +1241,7 @@ sub get_all_PredictionFeatures {
        $out->validate();
        $current_fset->add_sub_SeqFeature($out,'EXPAND');
        $current_fset->strand($strand);
-       $previous = $fsetid;
+       $previous = $hid;
   }
  
    return @array;
@@ -1364,7 +1265,6 @@ sub get_all_PredictionFeatures {
 sub get_genscan_peptides {
     my ($self) = @_;
     my @transcripts;
-    
     foreach my $fset ($self->get_all_PredictionFeatures) {
 	my $trans = &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($fset,$self);
 	push(@transcripts,$trans);
@@ -2680,7 +2580,6 @@ sub _mask_features {
 
 
 
-
 =head2 overlap_distance_cutoff
 
  Title   : overlap_distance_cutoff
@@ -2717,7 +2616,6 @@ sub is_golden {
    } 
    return 0;
 }
-
 
 =head2 set_attribute
 
