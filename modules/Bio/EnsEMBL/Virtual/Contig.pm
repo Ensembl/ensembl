@@ -1830,38 +1830,38 @@ sub _sanity_check{
        $message .= "Gene has to have a version;";
    }
 
-   foreach my $trans ( $gene->each_Transcript ) {
+   foreach my $transc ( $gene->each_Transcript ) {
 
-       if( !defined $trans->id ) {
+       if( !defined $transc->id ) {
 	   $error = 1;
 	   $message .= "Transcript has no id;";
        }
-       if( !defined $trans->translation || !ref $trans->translation) {
+       if( !defined $transc->translation || !ref $transc->translation) {
 	   $error = 1;
 	   $message .= "Transcript has no translation;";
        } else {
-	   if( !defined $trans->translation->id ) {
+	   if( !defined $transc->translation->id ) {
 	       $error = 1;
 	       $message .= "Translation has no id";
 	   } 
-	   if( !defined $trans->translation->start ) {
+	   if( !defined $transc->translation->start ) {
 	       $error = 1;
 	       $message .= "Translation has no start";
 	   } 
-	   if( !defined $trans->translation->start_exon_id ) {
+	   if( !defined $transc->translation->start_exon_id ) {
 	       $error = 1;
 	       $message .= "Translation has no start exon id";
 	   } 
-	   if( !defined $trans->translation->end ) {
+	   if( !defined $transc->translation->end ) {
 	       $error = 1;
 	       $message .= "Translation has no end";
 	   } 
-	   if( !defined $trans->translation->end_exon_id ) {
+	   if( !defined $transc->translation->end_exon_id ) {
 	       $error = 1;
 	       $message .= "Translation has no end exon id";
 	   } 
        }
-       foreach my $exon ( $trans->each_Exon ) {
+       foreach my $exon ( $transc->each_Exon ) {
 	   if( !defined $exon->id ) {
 	       $error = 1;
 	       $message .= "Exon has no id";
@@ -1902,7 +1902,7 @@ sub _sanity_check{
        # now see if the changes (using exon coords rather than VC)
        # have worked:
        # start exon:
-       my $t = $trans->translation;
+       my $t = $transc->translation;
        my $e = $gene->get_Exon_by_id($t->start_exon_id);
        my $m =_check_exon_start_end($t, $e, 'start');
 
