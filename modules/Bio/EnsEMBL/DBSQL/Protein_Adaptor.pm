@@ -696,7 +696,7 @@ sub get_snps {
     my @genes = $vc->get_all_Genes();
     
 #Get which virtual transcript holds the transcript we want to study   
-<<<<<<< Protein_Adaptor.pm
+
    foreach my $gen (@genes) {
        if ($gen->id eq $geneid) {
 	   $gene = $gen;
@@ -710,6 +710,8 @@ sub get_snps {
 	   $transcript = $trans;
        }
    }
+
+
    my $genesnp;
    eval {
        require Bio::EnsEMBL::ExternalData::GeneSNP;
@@ -727,19 +729,20 @@ sub get_snps {
    
    my @seq_diff = $genesnp->snps2transcript(@snips);
        
-   foreach my $diff (@seq_diff) {
-       foreach my $var ($diff->each_Variant) {
-	   if($var->isa('Bio::Variation::AAChange') ) {
-	   print STDERR $var->label, "\n";
-	   print STDERR $var->trivname, "\n";
-	   print STDERR $var->allele_ori->seq, "\n";
-	   print STDERR $var->allele_mut->seq, "\n";
-	   foreach my $all ($var->each_Allele) {
-	       print STDERR $all->seq, "\n";
-	   }
-       }
-   }
-
+    foreach my $diff (@seq_diff) {
+	foreach my $var ($diff->each_Variant) {
+	    if($var->isa('Bio::Variation::AAChange') ) {
+		print STDERR $var->label, "\n";
+		print STDERR $var->trivname, "\n";
+		print STDERR $var->allele_ori->seq, "\n";
+		print STDERR $var->allele_mut->seq, "\n";
+		foreach my $all ($var->each_Allele) {
+		    print STDERR $all->seq, "\n";
+		}
+	    }
+	}
+    }
+   
     foreach my $gen (@genes) {
 	if ($gen->id eq $geneid) {
 	    $gene = $gen;
