@@ -159,6 +159,69 @@ sub load_genomic_mapper {
   }
 }
 
+=head2 adjust_start_end
+
+  Arg  1     : int $start_adjustment
+  Arg  2     : int $end_adjustment
+  Example    : none
+  Description: returns a new Exon with this much shifted coordinates
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : none
+  Caller     : Transcript->get_all_translateable_Exons()
+
+=cut
+
+
+sub adjust_start_end {
+  my ( $self, $start_adjust, $end_adjust ) = @_;
+
+  my $new_exon;
+  
+  my $start = $self->start() + $start_adjust;
+  my $end = $self->end() + $end_adjust;
+
+  my $mapper = Bio::EnsEMBL::Mapper->new( "cdna", "genomic" );
+  my $current_start = 1;
+
+  for my $exon ( @{$self->get_all_component_Exons()} ) {
+    $mapper->add_map_coordinates( $self, $current_start, $current_start+$exon->length()-1,
+                                  $exon->strand(), $exon->contig, $exon->start(), $exon->end() );
+  }
+
+  my @mapped_coords = $mapper->map_coordinates( $self, $start, $end, 1, "cdna" );
+  if( scalar @mapped_coords == 1 ) {
+    # we can return a normal exon
+    $new_exon = Bio::EnsEMBL::Exon->new();
+
+    %$new_exon = %$self;
+    $new_exon->start( $mapped_coords[0]->start() );
+    $new_exon->end( $mapped_coords[0]->end() );
+    $new_exon->strand( $mapped_coords[0]->strand() );
+    $new_exon->contig( $mapped_coords[0]->id() );
+    delete $new_exon->{'component_exons'};    
+  } else {
+    # make a new sticky Exon
+    $new_exon = Bio::EnsEMBL::StickyExon->new();
+    %$new_exon = %$self;
+
+    $new_exon->start( 1 );
+    $new_exon->end( $end - $start + 1);
+    $new_exon->strand( 1 );
+    delete $new_exon->{'component_exons'};    
+    
+    for my $coord ( @mapped_coords ) {
+      my $cex = Bio::EnsEMBL::Exon->new();
+      %$cex = %$self;
+      $cex->start( $coord->start() );
+      $cex->end( $coord->end() );
+      $cex->strand( $coord->strand() );
+      $cex->contig( $coord->id() ); 
+    }
+  }
+
+  return $new_exon;
+}
+
 =head2 add_component_Exon
 
  Title   : add_component_Exon

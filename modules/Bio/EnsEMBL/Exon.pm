@@ -1533,6 +1533,37 @@ sub load_genomic_mapper {
 
 
 
+=head2 adjust_start_end
+
+  Arg  1     : int $start_adjustment
+  Arg  2     : int $end_adjustment
+  Example    : none
+  Description: returns a new Exon with this much shifted coordinates
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : none
+  Caller     : Transcript->get_all_translateable_Exons()
+
+=cut
+
+sub adjust_start_end {
+  my ( $self, $start_adjust, $end_adjust ) = @_;
+
+  my $new_exon;
+  %{$new_exon} = %{$self};
+  if( $self->strand() == 1 ) {
+    $new_exon->start( $self->start() + $start_adjust );
+    $new_exon->end( $self->end() + $end_adjust )
+  } else {
+    $new_exon->start( $self->end() - $start_adjust );
+    $new_exon->end( $self->start() - $end_adjust )
+  }
+
+  return $new_exon;
+}
+
+
+
+
 sub seq {
   my $self = shift;
   my $arg = shift;
