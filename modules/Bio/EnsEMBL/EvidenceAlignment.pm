@@ -207,6 +207,7 @@ sub _get_features_from_transcript {
   my @features = ();
   FEATURE_LOOP:
   foreach my $feature (@all_features) {
+    next unless $feature->primary_tag =~ /similarity/i;
     if ($feature->strand == $strand) {
       # fix VC-related coordinate problem
       $feature->start($feature->start + VC_HACK_BP);
@@ -291,6 +292,7 @@ sub _get_features_from_rawcontig {
 
   my @features = ();
   foreach my $feature (@all_features) {
+    next unless $feature->primary_tag =~ /similarity/i;
     if ($feature->strand == $strand) {
       my $tmp;
       eval {
