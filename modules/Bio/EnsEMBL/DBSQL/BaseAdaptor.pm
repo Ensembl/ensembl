@@ -63,7 +63,7 @@ sub new {
     bless $self,$class;
 
     if( !defined $dbobj || !ref $dbobj ) {
-	$self->throw("Don't have a db [$dbobj] for new adaptor");
+        $self->throw("Don't have a db [$dbobj] for new adaptor");
     }
 
     $self->db($dbobj);
