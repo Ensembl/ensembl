@@ -189,9 +189,11 @@ sub extend {
     return $nvc;
 }
 
-# Hack to make Areks code display, now fixed - Elia
+
 sub get_MarkerFeatures {
-    return ();
+
+    my ($self)=@_;
+     return $self->_get_all_SeqFeatures_type('marker');
 }
  
 =head2 extend_maximally
@@ -918,6 +920,8 @@ sub _get_all_SeqFeatures_type {
 	   push(@$sf,$c->get_all_PredictionFeatures());
        } elsif ( $type eq 'external' ) {
 	   push(@$sf,$c->get_all_ExternalFeatures());
+       } elsif ( $type eq 'marker' ) {
+	   push(@$sf,$c->get_MarkerFeatures());
        } else {
 	   $self->throw("Type $type not recognised");
        }
