@@ -118,7 +118,8 @@ sub _make_datastructures {
 
  Title   : new_from_one
  Usage   :
- Function: makes a copy of a contig. 
+ Function: makes a virtual contig out of a single contig, including the
+           bits that are not on the GoldenPath
  Example :
  Returns : 
  Args    : a Contig (virtual or otherwise)
@@ -151,7 +152,7 @@ sub new_from_one {
  Example : see SYNOPSIS
  Returns : a virtual contig
  Args    : 
-           -focuscontig: (raw?) contig that forms the basis of the new
+           -focuscontig: raw contig that forms the basis of the new
                          Virtual contig
 
            -focusposition: the reference point in the focuscontig,
@@ -244,129 +245,6 @@ sub primary_seq {
 						       -id =>$self->id						        );
     $self->{'_virtual_primary_seq'} = $vseq;
     return $vseq;
-}
-
-=head2 extend
-
- Title   : extend
- Usage   : $new_vc = $vc->extend(100,100);
- Function: Make a new vc by extending an existing one
- Example :
- Returns : Bio::EnsEMBL::Virtual::Contig
- Args    :
-
-
-=cut
-
-sub extend {
-    my ($self, $left, $right) = @_;
-    
-    if (! defined $left || ! defined $right ){
-	$self->throw("Must supply a left and right value when extending a VirtualContig");
-    }
-    
-    # checky $self call to make sure we get the original type of object...
-
-    my $nvc = $self->new( -focuscontig => $self->_vmap->focus_contig,
-			  -focusposition   => $self->_vmap->focus_position,
-			  -ori             => $self->_vmap->focus_orientation,
-			  -left            => $self->_vmap->left_size - $left,
-			  -right           => $self->_vmap->right_size + $right,
-			  );
-    
-    my $id = join('.', ($nvc->_vmap->focus_contig->id, $nvc->_vmap->focus_position, $nvc->_vmap->focus_orientation, $nvc->_vmap->left_size, $nvc->_vmap->right_size));
-    $nvc->_unique_number($id);
-    
-    return $nvc;
-}
-
-=head2 extend_maximally
-
- Title   : extend_maximally
- Usage   : $new_vc = $vc->extend_maximally();
- Function: Extends an existing vc as far as possible in both directions
- Example :
- Returns : Bio::EnsEMBL::Virtual::Contig
- Args    :
-
-
-=cut
-
-sub extend_maximally {
-    my ($self) = @_;
-    
-    # based on an original idea by Ewan Birney. ;)
-    my $nvc = $self->extend(-10000000000,10000000000);
-    return $nvc;
-}
-
-=head2 extend_maximally_left
-
- Title   : extend_maximally_left
- Usage   : $new_vc = $vc->extend_maximally_left();
- Function: Extends an existing vc as far as possible to the left
- Example :
- Returns : Bio::EnsEMBL::Virtual::Contig
- Args    :
-
-
-=cut
-
-sub extend_maximally_left {
-    my ($self) = @_;
-    # based on an original idea by Ewan Birney. ;)
-    my $nvc = $self->extend(-10000000000,0);
-    return $nvc;
-}
-
-
-=head2 extend_maximally_right
-
- Title   : extend_maximally_right
- Usage   : $new_vc = $vc->extend_maximally_right();
- Function: Extends an existing vc as far as possible to the right
- Example :
- Returns : Bio::EnsEMBL::Virtual::Contig
- Args    :
-
-
-=cut
-
-sub extend_maximally_right {
-    my ($self) = @_;
-    # based on an original idea by Ewan Birney. ;)
-    my $nvc = $self->extend(0,10000000000);
-    return $nvc;
-}
-
-=head2 windowed_VirtualContig
-
- Title   : windowed_VirtualContig
- Usage   : $newvc = $vc->windowed_VirtualContig(13400,0,2000);
- Function: Provides a new vc from a current vc as a window
-           on the old vc. 
- Example :
- Returns : 
- Args    : focus position in vc For wvc, left distance to extend, right distance to extend.
-
-
-=cut
-
-sub windowed_VirtualContig {
-    my ($self,$position,$left,$right) = @_;
-    
-    if( $position < 0 || $position > $self->length ) {
-	$self->throw("Attempting to build a new virtual contig out of length bounds!");
-    }
-    
-    my ($map_contig,$f_position,$ori) = $self->raw_contig_position($position,1);
-    
-    return Bio::EnsEMBL::Virtual::Contig->new(-focuscontig   => $map_contig,
-					        -focusposition => $f_position,
-					        -ori           => $ori,
-					        -left          => $left,
-					        -right         => $right
-					        );
 }
 
 =head1 Functions implementing the Bio::SeqI interface inherieted by ContigI
