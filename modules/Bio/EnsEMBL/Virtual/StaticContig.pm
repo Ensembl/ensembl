@@ -3251,5 +3251,11 @@ sub each_AssemblyContig {
 
 }
 
-
+sub get_all_MapFrags {
+    my $self = shift;
+    my $mapset = shift;
+    return $self->dbobj->get_MapFragAdaptor->fetch_mapset_chr_start_end( 
+        $mapset, $self->_chr_name, $self->_global_start, $self->_global_end
+    );
+}    
 1;
