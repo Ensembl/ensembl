@@ -168,14 +168,18 @@ sub get_Gene{
 sub get_Clone{
     my ($self,$id) = @_;
 
-    my($disk_id,$cgp);
-    ($id,$disk_id,$cgp)=$self->get_id_acc($id);
+    my($disk_id,$cgp,$sv,$emblid,$htgsp);
+    ($id,$disk_id,$cgp,$sv,$emblid,$htgsp)=$self->get_id_acc($id);
 
     # create clone object
     my $clone = new Bio::EnsEMBL::TimDB::Clone(-id => $id,
 					       -disk_id => $disk_id,
 					       -dbobj => $self,
-					       -cgp => $cgp);
+					       -cgp => $cgp,
+					       -sv=>$sv,
+					       -emblid=>$emblid,
+					       -htgsp=>$htgsp,
+					       );
     return $clone;
 }
 
@@ -183,10 +187,10 @@ sub get_id_acc{
     my($self,$id)=@_;
     # check to see if clone exists, and extract relevant items from dbm record
     # cgp is the clone category (SU, SF, EU, EF)
-    my($line,$cdate,$type,$cgp,$acc,$sv,$id2,$fok);
+    my($line,$cdate,$type,$cgp,$acc,$sv,$id2,$fok,$emblid,$htgsp);
     if($line=$self->{'_clone_dbm'}->{$id}){
 	# first straight forward lookup
-	($cdate,$type,$cgp,$acc,$sv)=split(/,/,$line);
+	($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$line);
 	# translate to $acc if output requires this
 	if($self->{'_byacc'}){
 	    $id2=$id;
@@ -198,7 +202,7 @@ sub get_id_acc{
     }elsif(($self->{'_byacc'}) && ($id2=$self->{'_accession_dbm'}->{$id})){
 	# lookup by accession number, if valid
 	if($line=$self->{'_clone_dbm'}->{$id2}){
-	    ($cdate,$type,$cgp,$acc,$sv)=split(/,/,$line);
+	    ($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$line);
 	    if($acc ne $id){
 		$self->throw("$id maps to $id2 but does not map back correctly ($acc)");
 	    }else{
@@ -209,7 +213,7 @@ sub get_id_acc{
     if(!$fok){
 	$self->throw("$id is not a valid sequence in this database");
     }
-    return $id,$id2,$cgp;
+    return $id,$id2,$cgp,$sv,$emblid,$htgsp;
 }
     
 

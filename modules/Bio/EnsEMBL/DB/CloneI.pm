@@ -60,6 +60,84 @@ $CONTIG_SPACING = 400;
 # new() is inherited from Bio::Root::Object
 
 
+=head2 id
+
+ Title   : id
+ Usage   : this is the primary id for ensembl. General the accession number from embl.
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub id {
+   my ($self,@args) = @_;
+
+   $self->warn("Base class has not implemented this yet!");
+
+}
+
+=head2 embl_id
+
+ Title   : embl_id
+ Usage   : this is the embl_id for this clone, to generate nice looking files
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub embl_id {
+   my ($self,@args) = @_;
+
+   $self->warn("Base class has not implemented this yet!");
+
+}
+
+
+=head2 sv
+
+ Title   : sv
+ Function: returns the version number (not the acc.version, just verision).
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub sv {
+   my ($self,@args) = @_;
+
+   $self->warn("Base class has not implemented this yet!");
+
+}
+
+
+=head2 htg_phase
+
+ Title   : htg_phase
+ Usage   : this is the phase being 1,2,3,4 (4 being finished).
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub htg_phase {
+   my ($self,@args) = @_;
+
+   $self->warn("Base class has not implemented this yet!");
+
+}
+
+
 =head2 get_Contig
 
  Title   : get_Contig
@@ -200,4 +278,9 @@ sub get_AnnSeq{
 }
 
 1;
+
+
+
+
+
 

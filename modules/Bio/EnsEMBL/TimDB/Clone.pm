@@ -54,11 +54,15 @@ sub _initialize {
   my $make = $self->SUPER::_initialize(@args);
 
   # set stuff in self from @args
-  my ($dbobj,$id,$cgp,$disk_id)=$self->_rearrange([qw(DBOBJ
-						      ID
-						      CGP
-						      DISK_ID
-						      )],@args);
+  my ($dbobj,$id,$cgp,$disk_id,$sv,$emblid,$htgsp)=
+      $self->_rearrange([qw(DBOBJ
+			    ID
+			    CGP
+			    DISK_ID
+			    SV
+			    EMBLID
+			    HTGSP
+			    )],@args);
   $id || $self->throw("Cannot make contig db object without id");
   $disk_id || $self->throw("Cannot make contig db object without disk_id");
   $dbobj || $self->throw("Cannot make contig db object without db object");
@@ -69,6 +73,9 @@ sub _initialize {
   # id of clone
   $self->id($id);
   $self->disk_id($disk_id);
+  $self->sv($sv);
+  $self->embl_id($emblid);
+  $self->htg_phase($htgsp);
   # db object
   $self->_dbobj($dbobj);
 
@@ -273,5 +280,79 @@ sub _dbobj {
     }
     return $obj->{'_dbobj'};
 }
+
+=head2 embl_id
+
+ Title   : embl_id
+ Usage   : this is the embl_id for this clone, to generate nice looking files
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub embl_id {
+    my ($obj,$value) = @_;
+    if( defined $value) {
+
+	# FIXME
+	# may be '' - what to do in this case?
+
+	$obj->{'_clone_embl_id'} = $value;
+    }
+    return $obj->{'_clone_embl_id'};
+}
+
+
+=head2 sv
+
+ Title   : sv
+ Function: returns the version number (not the acc.version, just verision).
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub sv {
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	if($value=~/^\d+$/){
+	    $obj->{'_clone_sv'} = $value;
+	}else{
+	    $obj->throw("Invalid value for SV $value");
+	}
+    }
+    return $obj->{'_clone_sv'};
+}
+
+
+=head2 htg_phase
+
+ Title   : htg_phase
+ Usage   : this is the phase being 0,1,2,3,4 (4 being finished).
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub htg_phase {
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	if($value=~/^[01234]$/){
+	    $obj->{'_clone_htgsp'} = $value;
+	}else{
+	    $obj->throw("Invalid value for htg_phase $value");
+	}
+    }
+    return $obj->{'_clone_htgsp'};
+}
+
 
 1;
