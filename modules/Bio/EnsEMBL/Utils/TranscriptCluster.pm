@@ -12,7 +12,7 @@ comparison criteria external to this class (for instance, in the
 method _compare_Transcripts of the class GeneComparison).
 Each TranscriptCluster object holds the IDs of the transcripts clustered and the beginning and end coordinates
 of each one (taken from the start and end coordinates of the first and last exon in the correspondig
-each_Exon array)
+get_all_Exons array)
 
 =head1 CONTACT
 
@@ -109,10 +109,10 @@ sub to_String {
   my $self = shift @_;
   my $data='';
   foreach my $tran ( @{ $self->{'_transcript_array'} } ){
-    my @exons = $tran->each_Exon;
+    my @exons = $tran->get_all_Exons;
      
-    $data .= sprintf "Id: %-16s"      , $tran->id;
-    $data .= sprintf "Contig: %-20s"  , $exons[0]->contig_id;
+    $data .= sprintf "Id: %-16s"      , $tran->stable_id;
+    $data .= sprintf "Contig: %-20s"  , $exons[0]->contig->id;
     $data .= sprintf "Exons: %-3d"    , scalar(@exons);
     $data .= sprintf "Start: %-9d"    , _get_start($tran);
     $data .= sprintf "End: %-9d"      , _get_end  ($tran);
@@ -132,7 +132,7 @@ sub to_String {
 
 sub _get_start {
   my $transcript = shift @_;
-  my @exons = $transcript->each_Exon;
+  my @exons = $transcript->get_all_Exons;
   my $st;
   
   if ($exons[0]->strand == 1) {
@@ -157,7 +157,7 @@ sub _get_start {
 
 sub _get_end {
   my $transcript = shift @_;
-  my @exons = $transcript->each_Exon;
+  my @exons = $transcript->get_all_Exons;
   my $end;
   
   if ($exons[0]->strand == 1) {

@@ -12,7 +12,7 @@ comparison criteria external to this class (for instance, in the
 methods compare and _compare_Genes methods of the class GeneComparison).
 Each GeneCluster object holds the IDs of the genes clustered and the beginning and end coordinates
 of each one (taken from the start and end coordinates of the first and last exon in the correspondig
-each_unique_Exon aray)
+get_all_Exons array)
 
 =head1 CONTACT
 
@@ -273,7 +273,8 @@ sub pair_Transcripts {
       $$overlap_matrix{ $tran1 }{ $tran2 } = _compare_Transcripts( $tran1, $tran2 );
       my @list = ( $$overlap_matrix{ $tran1 }{ $tran2 }, $tran1, $tran2 );
       push ( @overlap_pairs, \@list );
-      print STDERR "Overlap( ".$tran1->id.",".$tran2->id." ) = ".$$overlap_matrix{ $tran1 }{ $tran2 }."\n";
+      #print STDERR "Overlap( ".$tran1->stable_id.",".$tran2->stable_id." ) = "
+      #.$$overlap_matrix{ $tran1 }{ $tran2 }."\n";
     }
   }
   # sort the list of @overlap_pairs on the overlap
@@ -291,6 +292,11 @@ sub pair_Transcripts {
   foreach my $list ( @sorted_pairs ){
     # each list contains @$list = ( overlap, transcript1, transcript2 )
     
+    # first of all, if the overlap is zero, ditch it
+    if ( $$list[0] == 0 ){
+      next PAIR;
+    }
+
     # if we've seen both transcripts already reject them
     if ( $$link{ $$list[1] }{ $$list[2] } && defined( $seen1{ $$list[1] } ) && defined( $seen2{ $$list[2] } ) ){
       next PAIR;
@@ -370,7 +376,6 @@ sub pair_Transcripts {
       push( @unpaired, $tran2 );
     }
   }
-
   print STDERR scalar(@pairs)." transcript pairs created\n";
   #my $count2=1;
   #foreach my $pair ( @pairs ){
@@ -380,7 +385,7 @@ sub pair_Transcripts {
   #$count2=1;
   #print STDERR scalar(@unpaired)." unpaired transcripts\n";
   #foreach my $unpaired ( @unpaired ){
-  #  print STDERR "unpaired $count2: ".$unpaired->id."\n";
+  #  print STDERR "unpaired $count2: ".$unpaired->stable_id."\n";
   #}
   # return the pairs, the unpaired transcripts, and those transcript which have been taken twice or more
   return (\@pairs,\@unpaired,\@doubled);
@@ -398,8 +403,8 @@ sub pair_Transcripts {
 
 sub _compare_Transcripts {         
   my ($transcript1,$transcript2) = @_;
-  my @exons1   = $transcript1->each_Exon;
-  my @exons2   = $transcript2->each_Exon;
+  my @exons1   = $transcript1->get_all_Exons;
+  my @exons2   = $transcript2->get_all_Exons;
   my $overlaps = 0;
   
   foreach my $exon1 (@exons1){
@@ -442,10 +447,10 @@ sub to_String {
   my $self = shift @_;
   my $data='';
   foreach my $gene ( $self->get_Genes ){
-    my @exons = $gene->each_unique_Exon;
+    my @exons = $gene->get_all_Exons;
      
-    $data .= sprintf "Id: %-16s"      , $gene->id;
-    $data .= sprintf "Contig: %-20s"  , $exons[0]->contig_id;
+    $data .= sprintf "Id: %-16s"      , $gene->stable_id;
+    $data .= sprintf "Contig: %-20s"  , $exons[0]->contig->id;
     $data .= sprintf "Exons: %-3d"    , scalar(@exons);
     $data .= sprintf "Start: %-9d"    , $self->_get_start($gene);
     $data .= sprintf "End: %-9d"      , $self->_get_end  ($gene);
@@ -465,7 +470,7 @@ sub to_String {
 
 sub _get_start {
   my ($self,$gene) = @_;
-  my @exons = $gene->each_unique_Exon;
+  my @exons = $gene->get_all_Exons;
   my $st;
   
   if ($exons[0]->strand == 1) {
@@ -489,7 +494,7 @@ sub _get_start {
 
 sub _get_end {
   my ($self,$gene) = @_;
-  my @exons = $gene->each_unique_Exon;
+  my @exons = $gene-get_all_Exons;
   my $end;
   
   if ($exons[0]->strand == 1) {
@@ -537,7 +542,7 @@ sub nucleotide_level_accuracy {
 		$gene_sn = $sum_sn/$count;	
 		$gene_sp = $sum_sp/$count;	
 		my @gene_stats = ($gene_sn, $gene_sp);	
-		$statistics{$gene->id} = [@gene_stats];
+		$statistics{$gene->stable_id} = [@gene_stats];
 	}
 	$self->statistics(%statistics);
 }
