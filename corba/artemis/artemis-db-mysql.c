@@ -131,15 +131,22 @@ impl_Ensembl_artemis_DB_getEntry(impl_POA_Ensembl_artemis_DB * servant,
 				 CORBA_Environment * ev)
 {
    Ensembl_artemis_Entry retval;
+
+   char sqlbuffer[1024];
+   MYSQL_RES * result;
+   MYSQL_ROW row;
+   int state;
+
    if( servant->verbose ) {
      fprintf(stderr,"DB: Going to make a new entry with entryname %s\n",entryname);
    }
 
-   retval = new_Ensembl_artemis_Entry(servant->poa,servant->connection,entryname,ev);
+   retval = new_Ensembl_artemis_Entry(servant->poa,servant->connection,g_strdup(entryname),ev);
 
    if( servant->verbose ) {
      fprintf(stderr,"DB: Made new entry with entryname %s\n",entryname);
    }
+
 
    return retval;
 }
@@ -174,6 +181,8 @@ impl_Ensembl_artemis_DB_getallEntryNames(impl_POA_Ensembl_artemis_DB *
    while( row= mysql_fetch_row(result) ) {
      retval->_buffer[i++] = CORBA_string_dup(row[0]);
    }
+
+   
 
    return retval;
 }

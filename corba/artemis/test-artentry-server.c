@@ -19,7 +19,7 @@ int main (int argc, char *argv[])
 
     fprintf(stderr,"Got in...\n");
     mysql_init(&mysql);
-    connection = mysql_real_connect(&mysql,"localhost","root",0,"ensdev",0,0,0);
+    connection = mysql_real_connect(&mysql,"obi-wan","ensro",0,"ensdev",0,0,0);
 
     fprintf(stderr,"Connected...\n");
 

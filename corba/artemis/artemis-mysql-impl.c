@@ -182,7 +182,7 @@ impl_POA_Ensembl_artemis_Sequence * new_impl_EA_Sequence(PortableServer_POA poa,
 {
    impl_POA_Ensembl_artemis_Sequence *newservant;
 
-
+   fprintf(stderr,"Making sequence with %s\n",c_id);
    newservant = g_new0(impl_POA_Ensembl_artemis_Sequence, 1);
    newservant->servant.vepv = &impl_Ensembl_artemis_Sequence_vepv;
    newservant->poa = poa;
@@ -206,7 +206,7 @@ Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYS
   int state;
   int no;
   
-  
+     
   if( c == NULL ) {
     fprintf(stderr,"Passed in NULL connection. Cannot build sequence object on null connection");
     /* yikes- should do something!*/
@@ -220,27 +220,28 @@ Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYS
   /*
    * Check in exists in database *now* not later!
    */
+ 
 
-  fprintf(stderr,"About to make select call...\n");
-  
   sprintf(sqlbuffer,"SELECT length from contig where id = '%s'",c_id);
 
-  fprintf(stderr,"Before state\n");
+  
   state = mysql_query(c,sqlbuffer);
   fprintf(stderr,"Before store\n");
   result = mysql_store_result(c);
-  no = mysql_num_rows(result);
+  fprintf(stderr,"Got result %d\n",(int)result);
+  /*no = mysql_num_rows(result);
   if( no == 0 ) {
     fprintf(stderr,"No sequence of this name %s",c_id);
     return;
   }
+  */
 
 
   fprintf(stderr,"Before fetch\n");
   row = mysql_fetch_row(result);
 
   fprintf(stderr,"Making implementation\n");
-  newservant = new_impl_EA_Sequence(poa,c,c_id,verbose);
+  newservant = new_impl_EA_Sequence(poa,c,g_strdup(c_id),verbose);
   
   fprintf(stderr,"Made newservant...\n");
 
@@ -248,23 +249,18 @@ Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYS
 
   fprintf(stderr,"Made and stored! %d\n",newservant->length);
 
-  fprintf(stderr,"About to free!\n");
   mysql_free_result(result);
-  fprintf(stderr,"Freed!\n");
-
 
   
   /*
    * ok. We can rock and roll now 
    */
-   POA_Ensembl_artemis_Sequence__init((PortableServer_Servant) newservant, ev);
-   fprintf(stderr,"Freed!\n");
-   objid = PortableServer_POA_activate_object(poa, newservant, ev);
-   CORBA_free(objid);
-   fprintf(stderr,"Freed!\n");
-   retval = PortableServer_POA_servant_to_reference(poa, newservant, ev);
-   fprintf(stderr,"About to return!\n");
-   return retval;
+  POA_Ensembl_artemis_Sequence__init((PortableServer_Servant) newservant, ev);
+  objid = PortableServer_POA_activate_object(poa, newservant, ev);
+  CORBA_free(objid);
+  retval = PortableServer_POA_servant_to_reference(poa, newservant, ev);
+  fprintf(stderr,"About to return a sequence!\n");
+  return retval;
 }
 
 
@@ -296,6 +292,7 @@ impl_Ensembl_artemis_Sequence_getSubSequence(impl_POA_Ensembl_artemis_Sequence
    int state;
    char * str;
 
+   fprintf(stderr,"getting into subseq... %s\n",servant->contig_id);
    sprintf(sqlbuffer,"SELECT sequence from dna where contig = '%s'",servant->contig_id);
    state = mysql_query(servant->connection,sqlbuffer);
    result = mysql_store_result(servant->connection);
@@ -313,6 +310,8 @@ impl_Ensembl_artemis_Sequence_getSubSequence(impl_POA_Ensembl_artemis_Sequence
    temp[end-start+1] = '\0';
 
    retval = CORBA_string_dup(temp);
+   free(temp);
+   fprintf(stderr,"getting out with ... %s\n",servant->contig_id);
    return retval;
 }
 
@@ -536,7 +535,7 @@ impl_Ensembl_artemis_Entry_getAllFeatures(impl_POA_Ensembl_artemis_Entry *
 
 
    c = servant->connection;
-   fprintf(stderr,"Got in...\n",no);
+   fprintf(stderr,"Got in... with %s\n",servant->contig_id);
 
 
    sprintf(sqlbuffer,"SELECT p1.transcript,p1.rank,p2.start,p2.end,p2.strand,p2.id,p2.created,p2.modified from exon_transcript as p1,exon as p2 where p2.contig = '%s' and p1.exon = p2.id order by p1.transcript,p1.rank",servant->contig_id);
@@ -590,7 +589,7 @@ impl_Ensembl_artemis_Entry_getAllFeatures(impl_POA_Ensembl_artemis_Entry *
      }
 
      fprintf(stderr,"Now processing %s %s  %s %s %s %s\n",trans_id,row[4],row[2],row[3],row[6],row[7]);
-     temp_buffer[i++] = new_EA_Exon_Feature(servant->poa,row[5],row[6],row[7],atol(row[2]),atol(row[3]),1,0,ev);
+     temp_buffer[i++] = new_EA_Exon_Feature(servant->poa,row[5],row[6],row[7],atol(row[2]),atol(row[3]),strcmp(row[4],"1") == 0 ? 1 : -1,0,ev);
 
      if( touched == 1 ) {
        strcat(loc,",");
@@ -599,7 +598,7 @@ impl_Ensembl_artemis_Entry_getAllFeatures(impl_POA_Ensembl_artemis_Entry *
      }
 
 
-     if( strcmp(row[4],"1") ) {
+     if( strcmp(row[4],"1") == 0) {
        fprintf(stderr,"Going to use forward\n");
        strcat(loc,row[2]);
        strcat(loc,"..");
@@ -647,6 +646,24 @@ impl_Ensembl_artemis_Entry_getSequence(impl_POA_Ensembl_artemis_Entry *
 				       servant, CORBA_Environment * ev)
 {
    Ensembl_artemis_Sequence retval;
+
+   char sqlbuffer[1024];
+   MYSQL_RES * result;
+   MYSQL_ROW row;
+   int state;
+
+   char * c_id = "Z69666.00001";
+
+   fprintf(stderr,"Get seq... %d: SELECT length from contig where id = '%s'\n",(int)servant->connection,c_id);
+   
+   sprintf(sqlbuffer,"SELECT length from contig where id = '%s'",c_id);
+
+   fprintf(stderr,"Before state\n");
+   state = mysql_query(servant->connection,sqlbuffer);
+   fprintf(stderr,"Before store\n");
+   result = mysql_store_result(servant->connection);
+
+   mysql_free_result(result);
 
    fprintf(stderr,"Getting into give sequence\n");
 

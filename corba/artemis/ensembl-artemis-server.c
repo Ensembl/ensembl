@@ -6,11 +6,12 @@
 #include <popt.h>
 
 
-MYSQL * connection = NULL;
 char  * host       = "localhost";
 char  * user       = "ensemblro";
 char  * pass       = "ensemblropass";
 char  * db         = "ensdev";
+
+MYSQL mysql;
 
 int verbose        = 0; 
 
@@ -26,32 +27,38 @@ struct poptOption options[] = {
 };
 
 
-void ea_connect ( void ) 
+MYSQL * ea_connect ( void ) 
 {
-  MYSQL mysql;
+    MYSQL * connection;
+    
+    if( strcmp(pass,"-") == 0 ) {
+	pass = NULL;
+    }
+    
+    mysql_init(&mysql);
+    if ( verbose ) {
+	fprintf(stderr,"Connecting with %s %s %s\n",host,user,db);
+    }
+    
+    connection = mysql_real_connect(&mysql,host,user,pass,db,0,0,0); 
 
-  if( strcmp(pass,"-") == 0 ) {
-    pass = NULL;
-  }
-
-  mysql_init(&mysql);
-  if ( verbose ) {
-    fprintf(stderr,"Connecting with %s %s %s\n",host,user,db);
-  }
-
-  connection = mysql_real_connect(&mysql,host,user,pass,db,0,0,0); 
-
-  if( connection == NULL ) {
-    g_error("Unable to make connection to mysql with host %s, user %s, password %s and database %s",host,user,pass == NULL ? "NoPassword" : pass,db);
-    exit(0);
-  }
-
-
+    if( connection == NULL ) {
+	g_error("Unable to make connection to mysql with host %s, user %s, password %s and database %s",host,user,pass == NULL ? "NoPassword" : pass,db);
+	exit(0);
+    }
+    return connection;
 }
 
 
 int main (int argc, char *argv[])
 {
+    MYSQL * connection;
+    char sqlbuffer[1024];
+   MYSQL_RES * result;
+   MYSQL_ROW row;
+   int state;
+   
+   char * c_id = "Z69666.00001";
 
   PortableServer_ObjectId objid = {0, sizeof("EnsemblArtemisServer"), "EnsemblArtemisServer"};
   PortableServer_POA poa;
@@ -79,7 +86,7 @@ int main (int argc, char *argv[])
     exit(0);
   }
   
-  ea_connect();
+  connection = ea_connect();
 
   if( verbose ) {
     fprintf(stderr,"Made connection to MySQL successfully...\n");
@@ -93,6 +100,7 @@ int main (int argc, char *argv[])
   if( verbose ) {
     fprintf(stderr,"Built ORB successfully...\n");
   }
+
 
   eadb = new_EA_Database(poa,connection,verbose,&ev);
 

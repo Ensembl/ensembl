@@ -66,6 +66,7 @@ int main (int argc,char ** argv)
   len = Ensembl_artemis_Sequence_length(seq,&ev);
   fprintf(stderr,"Got length %d\n",len);
   seqchar = Ensembl_artemis_Sequence_getSubSequence(seq,1,len,&ev);
+  fprintf(stderr,"Got sequence %c\n",seqchar[0]);
 
   fprintf(stderr,">%s Transcript:%d\n",Ensembl_artemis_Entry_getName(entry,&ev),
 	  Ensembl_artemis_Entry_getFeatureCount(entry,&ev));
