@@ -367,11 +367,13 @@ sub _get_aligned_evidence {
   # translation itself forms our first row of 'evidence'
   my $evidence_line = $translation;
   $evidence_line = $self->pad_pep_str($evidence_line);
-  # adjust for 5' and 3' UTRs
+  # get 3' UTR length and adjust evidence line for 5' and 3' UTRs
   $evidence_line = ('-' x $total_5prime_utr_len) . $evidence_line;
-  while (length($evidence_line) < $cdna_len_bp) {
-    $evidence_line .= '-';
+  my $total_3prime_utr_len = $cdna_len_bp - length($evidence_line);
+  if ($total_3prime_utr_len < 0) {
+    $total_3prime_utr_len = 0;	# disaster recovery
   }
+  $evidence_line .= '-' x $total_3prime_utr_len;
   $evidence_obj = Bio::PrimarySeq->new(
                     -seq              => $evidence_line,
                     -id               => 0,
@@ -405,9 +407,6 @@ sub _get_aligned_evidence {
       if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
 	  > length $hit_seq_obj->seq))
       {
-        print STDERR 'XXX pep hit coords out of range for ',
-          $feature->hseqname, ': hstart ', $feature->hstart, ', hend ',
-          $feature->hend, ', max length ', length $hit_seq_obj->seq, "\n";
         next PEP_FEATURE_LOOP;
       }
       my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
@@ -448,8 +447,8 @@ sub _get_aligned_evidence {
     # splice in the evidence fragment
     my $hseqlen = length $$hit{hseq};
     next if (($$hit{hindent} < $total_5prime_utr_len)
-          || ($$hit{hindent} + $hseqlen > $cdna_len_bp));
-
+          || ($$hit{hindent} + $hseqlen
+	     > ($cdna_len_bp - $total_3prime_utr_len)));
     substr $evidence_line, $$hit{hindent}, $hseqlen, $$hit{hseq};
 
     # store if end of evidence line
@@ -502,9 +501,6 @@ sub _get_aligned_evidence {
       if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
 	  > length $hit_seq_obj->seq))
       {
-        print STDERR 'XXX nuc hit coords out of range for ',
-          $feature->hseqname, ': hstart ', $feature->hstart, ', hend ',
-          $feature->hend, ', max length ', length $hit_seq_obj->seq, "\n";
         next NUC_FEATURE_LOOP;
       }
       my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
