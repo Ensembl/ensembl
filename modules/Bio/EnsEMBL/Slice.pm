@@ -227,7 +227,7 @@ sub get_all_SimpleFeatures_above_score {
 
   my $sfa = $self->adaptor()->db()->get_SimpleFeatureAdaptor();
 
-  return $sfa->fetch_by_Slice_and_score($self, $logic_name, $score);
+  return $sfa->fetch_by_Slice_and_score($self, $score, $logic_name);
 }
 
 
