@@ -8,13 +8,13 @@
 # Table structure for table 'analysis'
 #
 CREATE TABLE analysis (
-  id varchar(40) DEFAULT '' NOT NULL,
   db varchar(40),
   db_version varchar(5),
   program varchar(40) DEFAULT '' NOT NULL,
   program_version varchar(5),
   gff_source varchar(40),
   gff_feature varchar(40),
+  id int(11) DEFAULT '0' NOT NULL auto_increment,
   PRIMARY KEY (id)
 );
 
