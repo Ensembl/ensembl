@@ -32,49 +32,51 @@ print "ok \n";    # 1st test passed, loaded needed modules
 
 #Creating test donor and recipient databases
 
-$conf{'donor'} = 'testdonor';
-$conf{'recipient'} = 'testrecipient';
+$conf{'donor'}      = 'testdonor';
+$conf{'recipient'}  = 'testrecipient';
 $conf{'mysqladmin'} = '/mysql/current/bin/mysqladmin';
-$conf{'mysql'} = '/mysql/current/bin/mysql';
-$conf{'user'}  = 'ensembl';
-$conf{'update'} = '../scripts/update_list_chunk.pl';
-$conf{'perl'} = 'perl';
+$conf{'mysql'}      = '/mysql/current/bin/mysql';
+$conf{'user'}       = 'ensembl';
+$conf{'update'}     = '../scripts/update_list_chunk.pl';
+$conf{'perl'}       = 'perl';
 
 if ( -e 't/transfer.conf' ) {
-   print STDERR "Reading configuration from transfer.conf\n";
-   open(C,"t/transfer.conf");
-   while(<C>) {
-       my ($key,$value) = split;
-       $conf{$key} = $value;
-   }
+  print STDERR "Reading configuration from transfer.conf\n";
+  open(C,"t/transfer.conf");
+  while(<C>) {
+    my ($key,$value) = split;
+    $conf{$key} = $value;
+  }
 } else {
-    print STDERR "Using default values\n";
-    foreach $key ( keys %conf ) {
-       print STDERR " $key $conf{$key}\n";
-       }
-    print STDERR "\nPlease use a file t/transfer.conf to alter these values if the test fails\nFile is written <key> <value> syntax\n\n";
+  print STDERR "Using default values\n";
+  foreach $key ( keys %conf ) {
+    print STDERR " $key $conf{$key}\n";
+  }
+  print STDERR "\nPlease use a file t/transfer.conf to alter these values if the test fails\nFile is written <key> <value> syntax\n\n";
 }
 
 $nuser = $conf{user};
 
-my $create_donor = "$conf{mysqladmin} -u ".$nuser." create $conf{donor}";
-my $create_recipient = "$conf{mysqladmin} -u ".$nuser." create $conf{recipient}";
-system($create_donor) == 0 or die "$0\nError running '$create_donor' : $!";
+my $create_donor          = "$conf{mysqladmin} -u ".$nuser." create $conf{donor}";
+my $create_recipient      = "$conf{mysqladmin} -u ".$nuser." create $conf{recipient}";
+
+system($create_donor)     == 0 or die "$0\nError running '$create_donor' : $!";
 system($create_recipient) == 0 or die "$0\nError running '$create_recipient' : $!";
 
 print "ok 2\n";    #Databases created successfuly
 
 #Initialising databases
-my $init_donor = "$conf{mysql} -u ".$nuser." $conf{donor} < ../sql/table.sql";
-my $init_recipient = "$conf{mysql} -u ".$nuser." $conf{recipient} < ../sql/table.sql";
-system($init_donor) == 0 or die "$0\nError running '$init_donor' : $!";
+my $init_donor          = "$conf{mysql} -u ".$nuser." $conf{donor} < ../sql/table.sql";
+my $init_recipient      = "$conf{mysql} -u ".$nuser." $conf{recipient} < ../sql/table.sql";
+
+system($init_donor)     == 0 or die "$0\nError running '$init_donor' : $!";
 system($init_recipient) == 0 or die "$0\nError running '$init_recipient' : $!";
 
 print "ok 3\n";
 
 #Suck test data into donor
 print STDERR "Inserting test data in test donor db... this will take a while...\n";
-my $suck_data = "$conf{mysql} -u ".$nuser." $conf{donor} < t/donor.dump";
+my $suck_data      = "$conf{mysql} -u ".$nuser." $conf{donor} < t/donor.dump";
 system($suck_data) == 0 or die "$0\nError running '$suck_data' : $!";
 
 print "ok 4\n";
@@ -94,9 +96,9 @@ print "ok 6\n";
 
 
 END {
-    my $drop_donor = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{donor}";
-    my $drop_recipient = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{recipient}";
-    system($drop_donor) == 0 or die "$0\nError running '$drop_donor' : $!";
+    my $drop_donor          = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{donor}";
+    my $drop_recipient      = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{recipient}";
+    system($drop_donor)     == 0 or die "$0\nError running '$drop_donor' : $!";
     system($drop_recipient) == 0 or die "$0\nError running '$drop_recipient' : $!";
 }
 
