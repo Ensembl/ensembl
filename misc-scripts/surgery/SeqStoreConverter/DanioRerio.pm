@@ -22,13 +22,13 @@ sub create_coord_systems {
 
   my @coords =
     (["chromosome" , $ass_def, "default_version", 1],
-     ["supercontig", undef, "default_version", 2],
+     ["supercontig", $ass_def, "default_version", 2],
      ["clone"      , undef, "default_version", 3],
      ["chunk"      , undef, "default_version,sequence_level", 4]);
 
   my @assembly_mappings =  ("chromosome:$ass_def|chunk",
                             "clone|chunk",
-                            "supercontig|chunk");
+                            "supercontig:$ass_def|chunk");
 
   my %cs = (gene                   => ['supercontig','chromosome'],
              transcript             => ['supercontig','chromosome'],
