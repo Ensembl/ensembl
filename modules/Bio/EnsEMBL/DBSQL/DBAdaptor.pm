@@ -405,12 +405,13 @@ sub get_CompressedSequenceAdaptor {
 sub get_GeneAdaptor {
   my( $self ) = @_;
   #get a core db adaptor
-  my $core_adaptor = $self->get_adaptor("Gene");
+  return $self->get_adaptor("Gene");
   
+  #Disable proxy for now, lite should no longer be necessary.
   #use a proxy gene adaptor, capable of making decisions with regards to the
   #database that it uses, passing in the core adaptor as a constructor arg
-  return $self->get_adaptor("ProxyGene",
-			     $core_adaptor);
+  #return $self->get_adaptor("ProxyGene",
+	#		     $core_adaptor);
 }
 
 
