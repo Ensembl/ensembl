@@ -237,7 +237,9 @@ BEGIN {
         source          => 1,
         CDS             => 2,
         exon            => 3,
-        repeat_region   => 4,
+        repeat   => 4,
+        similarity   => 5,
+        variation   => 6,
     );
 
     # $last is one more than the largest value in %sort_order
