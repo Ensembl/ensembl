@@ -300,7 +300,6 @@ sub get_all_SimilarityFeatures_above_score{
 		        AND    sgp.chr_name = '$chr_name'
                         AND    a.id = f.analysis
                         AND    f.score > $score
-                        AND    a.db in ('unigene.seq','sptr','embl_vertrna')
                         ORDER  by hid,start";
       # PLEASE READ THE COMMENT ABOVE if you want to remove the sort by hid
 
