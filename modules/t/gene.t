@@ -30,7 +30,7 @@ ok($ens_test);
 my $db = $ens_test->get_DBSQL_Obj;
 $cadp = $db->get_RawContigAdaptor();
 $contig = $cadp->fetch_by_dbID(3);
-my $analysis = $db->get_AnalysisAdaptor->fetch_by_newest_logic_name("dummy-gene");
+my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name("dummy-gene");
 
 ok($analysis);
 ok($contig);
@@ -169,7 +169,7 @@ foreach my $trans($gene->each_Transcript()){
 	
 	my $pep = $trans->translate();
 
-	if($pep !=~ /\*/){
+	if($pep->seq !~ /\*/){
 	    $translate = 1;
         }else{
 	 $translate = 0;
