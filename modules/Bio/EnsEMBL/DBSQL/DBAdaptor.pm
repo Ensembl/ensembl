@@ -175,7 +175,6 @@ sub new {
     $self->host( $host );
     $self->dbname( $db );
     $self->password( $password);
-  
     # following was added on branch; unclear if it is needed:
     $self->mapdbname( $mapdbname );
 
