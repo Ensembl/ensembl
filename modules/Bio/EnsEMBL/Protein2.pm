@@ -315,32 +315,13 @@ sub get_all_DomainFeatures{
     }
    else {
        push(@f,$self->get_all_PrintsFeatures());
+      
        push(@f,$self->get_all_PfamFeatures());
+
        push(@f,$self->get_all_PrositeFeatures());
+
        return @f;
     }
-}
-
-=head2 add_Domains
-
- Title   : add_Domains
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub add_Domains{
-    my ($self,$value) = @_;
-    
-    if (!defined $value) {
-	$self->throw("Domain is no defined");
-    }
-
-   push(@{$self->{'_domains'}},$value); 
 }
 
 
@@ -467,13 +448,12 @@ sub get_all_PrositeFeatures{
 	return @{$self->{'_prosite'}};
     }
    else {
-       @{$self->{'_prosite'}} = undef;
        my $proteinid = $self->id();
        my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('PROSITE',$proteinid);
        foreach my $in (@array_features) {
 	   $self->add_Prosite($in);
        }
-	   return @{$self->{'_prosite'}};
+       return @array_features;
    }
 }
 
@@ -495,9 +475,7 @@ sub add_Prosite{
     if (!defined $value) {
 	$self->throw("Prosite is no defined");
     }
-
    push(@{$self->{'_prosite'}},$value); 
-
 }
 
 =head2 get_all_SigpFeatures
@@ -519,13 +497,12 @@ sub get_all_SigpFeatures{
 	return @{$self->{'_sigp'}};
     }
     else {
-	@{$self->{'_sigp'}} = undef;
-       my $proteinid = $self->id();
+	my $proteinid = $self->id();
 	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('sigp',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Sigp($in);
 	}
-	return @{$self->{'_prosite'}};
+	return @array_features;
     }
     
 }
@@ -570,13 +547,12 @@ sub get_all_TransmembraneFeatures{
 	return @{$self->{'_transmembrane'}};
     }
     else {
-	@{$self->{'_transmembrane'}} = undef;
        my $proteinid = $self->id();
 	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('transmembrane',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Transmembrane($in);
 	}
-	return @{$self->{'_transmembrane'}};
+       	return @array_features;
     }
     
 
@@ -622,13 +598,12 @@ sub get_all_CoilsFeatures{
 	return @{$self->{'_coils'}};
     }
     else {
-	@{$self->{'_coils'}} = undef;
        my $proteinid = $self->id();
 	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('coils',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Coils($in);
 	}
-	return @{$self->{'_coils'}};
+	return @array_features;
     }
 }
 
@@ -672,13 +647,12 @@ sub get_all_LowcomplFeatures{
 	return @{$self->{'_lowcompl'}};
     }
     else {
-	@{$self->{'_lowcompl'}} = undef;
        my $proteinid = $self->id();
 	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('low_complexity',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Lowcompl($in);
 	}
-	return @{$self->{'_lowcompl'}};
+	return @array_features;
     }
 }
 
@@ -722,13 +696,12 @@ sub get_all_SuperfamilyFeatures{
 	return @{$self->{'_superfamily'}};
     }
     else {
-	@{$self->{'_superfamily'}} = undef;
        my $proteinid = $self->id();
 	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('superfamily',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Lowcompl($in);
 	}
-	return @{$self->{'_superfamily'}};
+	return @array_features;
     }
 }
 
@@ -793,33 +766,6 @@ sub transcriptac{
     }
     return $obj->{'transcriptac'};
 
-}
-
-
-=head2 each_Protein_feature
-
- Title   : each_Protein_feature
- Usage   :my @features = $protein->each_Protein_feature
- Function:Retrieve an array of protein features (FeaturePair objects)
- Example :
- Returns : FeaturePair objects
- Args    :none
-
-
-=cut
-
-sub each_Protein_feature{
-   my ($self,@args) = @_;
-
-   if (defined ($self->{'_prot_feat'})) {
-        #print STDERR "ENTERING PROTEIN FEATURE RETURN\n";
-  	#foreach my $sf ( @{$self->{'_prot_feat'}} ) {
-	#	print STDERR "Protein feature $sf\n";
-       ##}
-       return @{$self->{'_prot_feat'}};
-   }
-
-  return ();
 }
 
 =head2 add_intron
@@ -970,9 +916,9 @@ sub length{
 
 }
 
-=head2 start
+=head2 get_all_DBlinks
 
- Title   : start
+ Title   : get_all_DBlinks
  Usage   :
  Function:
  Example :
@@ -982,29 +928,23 @@ sub length{
 
 =cut
 
-sub start{
-   my ($self) = @_;
-   return 0;
+sub get_all_DBLinks{
+ my ($self) = @_;
+ my @dbl = $self->annotation->each_DBLink();
 
-}
+ if (defined (@dbl)) {
+     return(@dbl);
+   }
 
-=head2 end
-
- Title   : end
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub end{
-   my ($self) = @_;
-   my $length = $self->length;
-   return $length;
-
+   else {
+       my $protein_id = $self->id();
+       my @snps_array = $self->dbEntry_adaptor->fetch_by_translation($protein_id);
+       foreach my $sn (@snps_array) {
+	   $self->annotation->add_DBLink($sn);
+       }
+       my @dbls = $self->annotation->each_DBLink();
+	   return(@dbls);
+   }
 }
 
 =head2 molecular_weight
@@ -1147,6 +1087,27 @@ sub protfeat_adaptor{
     return $obj->{'protfeat_adaptor'};
 }
 
+=head2 DBEntry_adaptor
+
+ Title   : DBEntry_adaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub dbEntry_adaptor{
+    my $obj = shift;
+    if( @_ ) {
+	my $value = shift;
+	
+	$obj->{'dbentry_adaptor'} = $value;
+    }
+    return $obj->{'dbentry_adaptor'};
+}
 
 1;
 

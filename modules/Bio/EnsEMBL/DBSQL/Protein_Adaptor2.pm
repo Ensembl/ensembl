@@ -207,11 +207,6 @@ sub fetch_Protein_by_dbid{
 #Get the transcript object (this will allow us to get the aa sequence of the protein
    my $transcript = $self->fetch_Transcript_by_dbid($transid);
 
-#Get all of the Dblink for the given Peptide id
-   my @dbentry = $self->fetchDBentry_by_dbID($id);
-
-#Get all of the Protein Features for the given Protein
-   my @prot_feat = $self->fetch_Protein_features_by_dbid($id);
 
 #Get all of the family (at the Transcript level), not implemented yet
    #my $family = $self->fetch_Family_by_dbid($id);
@@ -265,8 +260,9 @@ sub fetch_Protein_by_dbid{
    $protein->adaptor($self);
    
    $protein->protfeat_adaptor($self->_protfeat_obj());
-  
 
+   $protein->dbEntry_adaptor($self->_dbEntryAdaptor());
+  
 #Add the species object to protein object
    $protein->species($species);
 
@@ -301,25 +297,6 @@ sub fetch_Transcript_by_dbid{
    return $transcript;
 
 }
-
-=head2 fetchDBentry_by_dbid
-
- Title   : fetchDBentry_by_dbid
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub fetchDBentry_by_dbID{
-   my ($self,$protein_id) = @_;
-   my @entries = $self->_dbEntryAdaptor->fetch_by_translation($protein_id);
-   return @entries;
-}
-
 
 =head2 fetch_DBlinks_by_dbid
 
