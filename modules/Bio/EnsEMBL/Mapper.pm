@@ -273,11 +273,8 @@ sub fastmap {
      $to = 'to';
    }
 
-   my $hash = $self->{"_pair_$type"};
-     
-   unless(defined $hash) {
+   my $hash = $self->{"_pair_$type"} or
        $self->throw("Type $type is neither to or from coordinate systems");
-   }
 
    if( $self->{'_is_sorted'} == 0 ) {
        $self->_sort();
@@ -285,31 +282,29 @@ sub fastmap {
 
    my $pairs = $hash->{$id};
 
-   for my $pair ( @$pairs ) {
-     my $pair = $pairs->[0];
-     my $self_coord   = $pair->{$from};
-     my $target_coord = $pair->{$to};
+   my $pair = $pairs->[0];
+   my $self_coord   = $pair->{$from};
+   my $target_coord = $pair->{$to};
    
-     # only super easy mapping is done 
-     if( $start < $self_coord->{'start'} ||
-         $end > $self_coord->{'end'} ) {
-       next;
-     }
+   # only super easy mapping is done 
+   if( $start < $self_coord->{'start'} ||
+       $end > $self_coord->{'end'} ) {
+     next;
+   }
 
-     if( $pair->{'ori'} == 1 ) {
-       return ( $target_coord->{'id'},
-                $target_coord->{'start'}+$start-$self_coord->{'start'},
-                $target_coord->{'start'}+$end-$self_coord->{'start'},
-                $strand );
-     } else {
-       return ( $target_coord->{'id'},
-                $target_coord->{'end'} - ($end - $self_coord->{'start'}),
-                $target_coord->{'end'} - ($start - $self_coord->{'start'}),
-                -$strand );
-     }
-  }
+   if( $pair->{'ori'} == 1 ) {
+     return ( $target_coord->{'id'},
+	      $target_coord->{'start'}+$start-$self_coord->{'start'},
+	      $target_coord->{'start'}+$end-$self_coord->{'start'},
+	      $strand );
+   } else {
+     return ( $target_coord->{'id'},
+	      $target_coord->{'end'} - ($end - $self_coord->{'start'}),
+	      $target_coord->{'end'} - ($start - $self_coord->{'start'}),
+	      -$strand );
+   }
 
-  return ();
+   return ();
 }
 
 
