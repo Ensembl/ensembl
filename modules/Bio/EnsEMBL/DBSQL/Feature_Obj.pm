@@ -170,8 +170,8 @@ sub write {
     my $contigid = $contig->id;
     my $analysis;
 
-    my $sth = $self->_db_obj->prepare(  "insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue) ".
-                                        "values (?,?,?,?,?,?,?,?,?,?,?,?,?)");
+    my $sth = $self->_db_obj->prepare(  "insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue,phase,end_phase) ".
+                                        "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     
     # Put the repeats in a different table, and also things we need to write
     # as fsets.
@@ -224,7 +224,9 @@ sub write {
 			          $homol->end,
 			          $homol->seqname,
                       $feature->percent_id,
-                      $feature->p_value);
+                      $feature->p_value,
+                      $feature->phase,
+                      $feature->end_phase);
 	    } else {
 		$sth->execute('NULL',
 			          $contig->internal_id,
@@ -236,7 +238,11 @@ sub write {
 			          $analysisid,
 			          -1,
 			          -1,
-			          "__NONE__");
+			          "__NONE__",
+                      'NULL',
+                      'NULL',
+                      'NULL',
+                      'NULL' );
 	    }
 	}
     }
@@ -301,18 +307,27 @@ sub write {
 	my $rank = 1;
 
 	foreach my $sub ( $feature->sub_SeqFeature ) {
-	    my $sth5 = $self->_db_obj->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values('NULL','".$contig->internal_id."',"
-				      .$sub->start   .","
-				      .$sub->end     . ","
-				      .$sub->score   . ","
-				      .$sub->strand  . ","
-				      .$analysisid   . ",\'" 
-				      .$sub->source_tag  . "\',-1,-1,'__NONE__')");
-	    $sth5->execute();
+	    my $sth5 = $self->_db_obj->prepare("insert into feature "
+                      ."(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid,evalue,perc_id,phase,end_phase) "
+                      ."values('NULL','".$contig->internal_id."',"
+				      .$sub->start          .","
+				      .$sub->end            . ","
+				      .$sub->score          . ","
+				      .$sub->strand         . ","
+				      .$analysisid          . "," 
+				      ."'".$sub->source_tag ."',"
+                      ."-1,-1,"
+                      ."'".($sub->primary_tag || "__NONE__")."',"
+                      . ((defined $sub->p_value)     ?   $sub->p_value       : 'NULL')  .","
+                      . ((defined $sub->percent_id)  ?   $sub->percent_id    : 'NULL')  .","
+                      . ((defined $sub->phase)       ?   $sub->phase         : 'NULL')  .","
+                      . ((defined $sub->end_phase)   ?   $sub->end_phase     : 'NULL')  .")");
+	    
+        $sth5->execute();
 	    my $sth6 = $self->_db_obj->prepare("insert into fset_feature(fset,feature,rank) values ($fset_id,LAST_INSERT_ID(),$rank)");
 	    $sth6->execute();
 	    $rank++;
-	}
+	    }
     }
     
     return 1;
