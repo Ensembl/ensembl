@@ -18,19 +18,18 @@ function getdb
     typeset dbver=${db}_${ver}
 
     if [[ ! -d databases/${dbver} ]]; then
-	typeset olddir=$PWD
 	trap "rm -rf databases/${dbver}; exit 1" INT
 	mkdir -p databases/${dbver}
-	cd databases/${dbver}
-	ftp -i -n -v ftp.ensembl.org <<EOT
+	( cd databases/${dbver}
+	  ftp -i -n -v ftp.ensembl.org <<EOT
 user anonymous ak@ebi.ac.uk
 cd ${path}/${dbver}
 bin
 mget *
 bye
 EOT
+	)
 	trap - INT
-	cd $olddir
     fi
 }
 
