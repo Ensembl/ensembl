@@ -175,6 +175,7 @@ sub _exon_from_sth {
   my $exon;
 
   if( $hashRef->{'sticky_rank'} >1 ) {	
+    
     # sticky exon
     $exon = Bio::EnsEMBL::StickyExon->new();
     $exon->dbID($hashRef->{'exon_id'});
@@ -194,7 +195,7 @@ sub _exon_from_sth {
 
       $exon->add_component_Exon($component);
       $sticky_length += $component->length;
-      $sticky_str    .= $component->seq->seq;
+      $sticky_str     = $component->seq->seq . $sticky_str;
 
       if( $component->sticky_rank == 1 ) {
 	$exon->contig( $component->contig );
@@ -211,8 +212,8 @@ sub _exon_from_sth {
     $exon->start(1);
     $exon->end($sticky_length);
 
-    my $rev = reverse(split(//,$sticky_str));
-    my $tempseq = Bio::PrimarySeq->new( -display_id => 'artificial.sticky.exon'.$exon->dbID , '-seq' => $rev);
+    #my $rev = reverse(split(//,$sticky_str));
+    my $tempseq = Bio::PrimarySeq->new( -display_id => 'artificial.sticky.exon'.$exon->dbID , '-seq' => $sticky_str);
     $exon->attach_seq($tempseq);
 
   } else {
