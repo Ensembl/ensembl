@@ -448,18 +448,18 @@ sub fetch_by_transcript_id {
 
 
 
-=head2 fetch_by_transcript_stable_id
+=head2 fetch_by_gene_stable_id
 
   Arg [1]    : string $geneid
                The stable id of the gene around which the slice is 
                desired
   Arg [2]    : (optional) int $size
-               The length of the flanking regions the slice should encompass 
+               The length of the flanking regions the slice should encompass
                on either side of the gene (0 by default)
   Example    : $slc = $sa->fetch_by_transcript_stable_id('ENSG00000012123',10);
-  Description: Creates a slice around the region of the specified gene. 
-               If a context size is given, the slice is extended by that 
-               number of basepairs on either side of the gene. 
+  Description: Creates a slice around the region of the specified gene.
+               If a context size is given, the slice is extended by that
+               number of basepairs on either side of the gene.
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
   Caller     : general
