@@ -49,7 +49,7 @@ INSERT INTO source VALUES (1030, 'PDB', 1, 'N', 2);
 INSERT INTO source VALUES (1040, 'protein_id', 1, 'N', 2);
 INSERT INTO source VALUES (1050, 'PUBMED', 1, 'N', 2);
 INSERT INTO source VALUES (1060, 'MEDLINE', 1, 'N', 2);
-INSERT INTO source VALUES (1100, 'LocusLink', 1, 'N', 2);
+#INSERT INTO source VALUES (1100, 'LocusLink', 1, 'N', 2);
 INSERT INTO source VALUES (1110, 'EntrezGene', 1, 'N', 2);
 
 INSERT INTO source VALUES (1070, 'GO', 1, 'Y',5);
@@ -58,14 +58,14 @@ INSERT INTO source VALUES (1090, 'HUGO', 1, 'Y',2);
 INSERT INTO source VALUES (1200, 'RGD', 1, 'Y',2);
 INSERT INTO source VALUES (1300, 'Interpro', 1, 'Y', 2);
 INSERT INTO source VALUES (1400, 'ZFIN_ID', 1, 'Y', 2);
-INSERT INTO source VALUES (1500, 'OMIM', 1, 'Y', 3);
+#INSERT INTO source VALUES (1500, 'OMIM', 1, 'Y', 3);
 
 INSERT INTO source VALUES (2000, 'CCDS', 1, 'Y', 4);
 
-INSERT INTO source VALUES (2400, 'WormBase', 1, 'Y',4);
+#INSERT INTO source VALUES (2400, 'WormBase', 1, 'Y',4);
+INSERT INTO source VALUES (2400, 'wormpep_id', 1, 'Y', 4);
 INSERT INTO source VALUES (2410, 'wormbase_gene', 1, 'N',4);
 INSERT INTO source VALUES (2420, 'wormbase_transcript', 1, 'N', 4);
-INSERT INTO source VALUES (2430, 'wormpep_id', 1, 'N', 4);
 INSERT INTO source VALUES (2440, 'wormbase_pseudogene', 1, 'N', 4);
 
 ################################################################################
