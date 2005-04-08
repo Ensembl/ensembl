@@ -302,7 +302,7 @@ sub list_or_file {
   Arg[2-N]    : (optional) List of values to set
   Example     : my $dbname = $support->param('dbname');
                 $support->param('port', 3306);
-                $support->chromosomes(1, 6, 'X');
+                $support->param('chromosomes', 1, 6, 'X');
   Description : Getter/setter for parameters. Accepts single-value params and
                 list params.
   Return type : Scalar value for single-value parameters, array of values for
