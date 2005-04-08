@@ -50,8 +50,8 @@ my %source_to_external_db;
 my %xrefs_written;
 my %object_xrefs_written;
 
-my $core_dbi;
-my $xref_dbi;
+#my $core_dbi;
+#my $xref_dbi;
 
 =head2 dump_seqs
 
@@ -73,8 +73,8 @@ sub dump_seqs{
   my ($self, $location) = @_;
 
   # initialise DB connections
-  $core_dbi = $self->dbi();
-  $xref_dbi = $self->xref()->dbi();
+#  $core_dbi = $self->dbc;
+#  $xref_dbi = $self->xref()->dbc;
 
   $self->dump_xref();
   $self->dump_ensembl($location);
@@ -133,10 +133,10 @@ sub build_list_and_map {
 =cut
 
 sub get_species_id_from_species_name{
-  my ($xref,$species) = @_;
+  my ($self,$species) = @_;
 
   my $sql = "select species_id from species where name = '".$species."'";
-  my $sth = $xref_dbi->prepare($sql);
+  my $sth = $self->dbc->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
   my $species_id;
@@ -146,7 +146,7 @@ sub get_species_id_from_species_name{
     print STDERR "Couldn't get ID for species ".$species."\n";
     print STDERR "It must be one of :-\n";
     $sql = "select name from species";
-    $sth = $xref_dbi->prepare($sql);
+    $sth = $self->dbc->prepare($sql);
     $sth->execute();
     while(my @row = $sth->fetchrow_array()){
       print STDERR $row[0]."\n";
@@ -196,11 +196,11 @@ sub get_set_lists{
 =cut
 
 sub get_source_id_from_source_name{
-  my ($xref, $source) = @_;
+  my ($self, $source) = @_;
   my $source_id;
   
   my $sql = "select source_id from source where name = '".$source."'";
-  my $sth = $xref_dbi->prepare($sql);
+  my $sth = $self->dbc->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
   if (defined $row[0] and $row[0] ne '') {
@@ -210,7 +210,7 @@ sub get_source_id_from_source_name{
     print STDERR "Couldn't get ID for source ".$source."\n";
     print STDERR "It must be one of :-\n";
     $sql = "select name from source";
-    $sth = $xref_dbi->prepare($sql);
+    $sth = $self->dbc->prepare($sql);
     $sth->execute();
     while(my @row = $sth->fetchrow_array()){
       print STDERR $row[0]."\n";
@@ -373,7 +373,7 @@ sub dump_subset{
       $sql .= " LIMIT ".$self->maxdump()." ";
     }
 
-    my $sth = $xref->dbi()->prepare($sql);
+    my $sth = $xref->dbc->prepare($sql);
     $sth->execute();
     while(my @row = $sth->fetchrow_array()){
 
@@ -418,13 +418,7 @@ sub dump_ensembl{
 sub fetch_and_dump_seq{
   my ($self, $location) = @_;
 
-  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-species => $self->species(),
-					      -dbname  => $self->dbname(),
-					      -host    => $self->host(),
-					      -port    => $self->port(),
-					      -pass    => $self->password(),
-					      -user    => $self->user(),
-					      -group   => 'core');
+  my $db = $self;
 
   #
   # store ensembl dna file name and open it
@@ -776,12 +770,12 @@ sub parse_mappings {
 
   my $dir = $self->dir();
 
-  #create new connections incase old ones have died.
-  $core_dbi = $self->dbi();
-  $xref_dbi = $self->xref()->dbi();
+  # incase timed out.
+  $self->dbc->connect();
+  $self->xref->dbc->connect();
 
   # get current max object_xref_id
-  my $row = @{$core_dbi->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
+  my $row = @{$self->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
   my $max_object_xref_id = @{$row}[0];
   if (!defined $max_object_xref_id) {
     print "Can't get highest existing object_xref_id, using 1\n";
@@ -792,7 +786,7 @@ sub parse_mappings {
   my $object_xref_id_offset = $max_object_xref_id + 1;
   my $object_xref_id = $object_xref_id_offset;
 
-  $row = @{$self->dbi->selectall_arrayref("SELECT MAX(xref_id) FROM xref")}[0];
+  $row = @{$self->dbc->db_handle->selectall_arrayref("SELECT MAX(xref_id) FROM xref")}[0];
   my $max_xref_id = @$row[0];
   if (!defined $max_xref_id) {
     print "Can't get highest existing xref_id, using 1\n";
@@ -924,7 +918,7 @@ sub dump_orphan_xrefs() {
   # need a double left-join
   my $sql = "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM xref x LEFT JOIN primary_xref px ON px.xref_id=x.xref_id LEFT JOIN dependent_xref dx ON dx.dependent_xref_id=x.xref_id WHERE px.xref_id IS NULL AND dx.dependent_xref_id IS NULL";
 
-  my $sth = $xref_dbi->prepare($sql);
+  my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
 
   my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id);
@@ -967,7 +961,7 @@ sub dump_direct_xrefs {
   # Will need to look up translation stable ID from transcript stable ID, build hash table
   print "Building transcript stable ID -> translation stable ID lookup table\n";
   my %transcript_stable_id_to_translation_stable_id;
-  my $trans_sth = $core_dbi->prepare("SELECT tss.stable_id as transcript, tls.stable_id AS translation FROM translation tl, translation_stable_id tls, transcript_stable_id tss WHERE tss.transcript_id=tl.transcript_id AND tl.translation_id=tls.translation_id");
+  my $trans_sth = $self->dbc->prepare("SELECT tss.stable_id as transcript, tls.stable_id AS translation FROM translation tl, translation_stable_id tls, transcript_stable_id tss WHERE tss.transcript_id=tl.transcript_id AND tl.translation_id=tls.translation_id");
   $trans_sth->execute();
   my ($transcript_stable_id, $translation_stable_id);
   $trans_sth->bind_columns(\$transcript_stable_id, \$translation_stable_id);
@@ -981,7 +975,7 @@ sub dump_direct_xrefs {
 
   # SQL / statement handle for getting all direct xrefs
   my $xref_sql = "SELECT dx.general_xref_id, dx.ensembl_stable_id, dx.type, dx.linkage_xref, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM direct_xref dx, xref x WHERE dx.general_xref_id=x.xref_id";
-  my $xref_sth = $xref_dbi->prepare($xref_sql);
+  my $xref_sth = $self->xref->dbc->prepare($xref_sql);
 
   $xref_sth->execute();
 
@@ -1071,7 +1065,7 @@ sub dump_interpro {
 
   open (INTERPRO, ">" .  $self->dir() . "/interpro.txt");
 
-  my $sth = $xref_dbi->prepare("SELECT * FROM interpro");
+  my $sth = $self->xref->dbc->prepare("SELECT * FROM interpro");
   $sth->execute();
 
   my ($interpro, $pfam);
@@ -1096,7 +1090,7 @@ sub build_stable_id_to_internal_id_hash {
     print "Caching stable ID -> internal ID links for ${type}s\n";
 
     my $core_sql = "SELECT ${type}_id, stable_id FROM ${type}_stable_id" ;
-    my $sth = $core_dbi->prepare($core_sql);
+    my $sth = $self->dbc->prepare($core_sql);
     $sth->execute();
     my ($internal_id, $stable_id);
     $sth->bind_columns(\$internal_id, \$stable_id);
@@ -1158,7 +1152,7 @@ sub get_analysis_id {
 
   my $logic_name = $typeToLogicName{lc($ensembl_type)};
 
-  my $sth = $core_dbi->prepare("SELECT analysis_id FROM analysis WHERE logic_name='" . $logic_name ."'");
+  my $sth = $self->dbc->prepare("SELECT analysis_id FROM analysis WHERE logic_name='" . $logic_name ."'");
   $sth->execute();
 
   my $analysis_id;
@@ -1171,7 +1165,7 @@ sub get_analysis_id {
   } else {
 
     print "No analysis with logic_name $logic_name found, creating ...\n";
-    $sth = $core_dbi->prepare("INSERT INTO analysis (logic_name, created) VALUES ('" . $logic_name. "', NOW())");
+    $sth = $self->dbc->prepare("INSERT INTO analysis (logic_name, created) VALUES ('" . $logic_name. "', NOW())");
     # TODO - other fields in analysis table
     $sth->execute();
     $analysis_id = $sth->{'mysql_insertid'};
@@ -1232,7 +1226,7 @@ sub dump_core_xrefs {
 
 
     my $sql = "SELECT * FROM xref WHERE xref_id $id_str";
-    my $xref_sth = $xref_dbi->prepare($sql);
+    my $xref_sth = $self->xref->dbc->prepare($sql);
     $xref_sth->execute();
 
     my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id, $master_xref_id, $linkage_annotation);
@@ -1262,7 +1256,7 @@ sub dump_core_xrefs {
 
     $sql = "SELECT DISTINCT(x.xref_id), dx.master_xref_id, x.accession, x.label, x.description, x.source_id, x.version, dx.linkage_annotation FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id $id_str";
 
-    my $dep_sth = $xref_dbi->prepare($sql);
+    my $dep_sth = $self->xref->dbc->prepare($sql);
     $dep_sth->execute();
 
     $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
@@ -1312,7 +1306,7 @@ sub dump_core_xrefs {
     # Now get the synonyms for each of these xrefs and write them to the external_synonym table
     $sql = "SELECT DISTINCT xref_id, synonym FROM synonym WHERE xref_id $id_str";
 
-    my $syn_sth = $xref_dbi->prepare($sql);
+    my $syn_sth = $self->xref->dbc->prepare($sql);
     $syn_sth->execute();
 
     $syn_sth->bind_columns(\$xref_id, \$accession);
@@ -1336,7 +1330,7 @@ sub dump_core_xrefs {
   # calculate display_xref_ids for transcripts and genes
   my $transcript_display_xrefs = $self->build_transcript_display_xrefs($xref_id_offset);
 
-  build_genes_to_transcripts();
+  $self->build_genes_to_transcripts();
 
   $self->build_gene_display_xrefs($transcript_display_xrefs);
 
@@ -1397,7 +1391,7 @@ sub build_transcript_display_xrefs {
   # note %xref_to_source is global
   print "Building xref->source mapping table\n";
   my $sql = "SELECT x.xref_id, s.name FROM source s, xref x WHERE x.source_id=s.source_id";
-  my $sth = $xref_dbi->prepare($sql);
+  my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
 
   my ($xref_id, $source_name);
@@ -1412,7 +1406,7 @@ sub build_transcript_display_xrefs {
   # Cache the list of translation->transcript mappings & vice versa
   # Nte variables are global
   print "Building translation to transcript mappings\n";
-  my $sth = $core_dbi->prepare("SELECT translation_id, transcript_id FROM translation");
+  my $sth = $self->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
   $sth->execute();
 
   my ($translation_id, $transcript_id);
@@ -1577,13 +1571,15 @@ sub build_gene_display_xrefs {
 
   my $dir = $self->dir();
 
-  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-species => $self->species(),
-					      -dbname  => $self->dbname(),
-					      -host    => $self->host(),
-					      -port    => $self->port(),
-					      -pass    => $self->password(),
-					      -user    => $self->user(),
-					      -group   => 'core');
+#  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-species => $self->species(),
+#					      -dbname  => $self->dbc->dbname(),
+#					      -host    => $self->host(),
+#					      -port    => $self->port(),
+#					      -pass    => $self->password(),
+#					      -user    => $self->user(),
+#					      -group   => 'core');
+  my $db = $self;
+
   my $ta = $db->get_TranscriptAdaptor();
 
   print "Assigning display_xrefs to genes\n";
@@ -1682,7 +1678,7 @@ sub build_genes_to_transcripts {
   print "Getting transcripts for all genes\n";
 
   my $sql = "SELECT gene_id, transcript_id FROM transcript";
-  my $sth = $core_dbi->prepare($sql);
+  my $sth = $self->dbc->prepare($sql);
   $sth->execute();
 
   my ($gene_id, $transcript_id);
@@ -1745,7 +1741,7 @@ sub map_source_to_external_db {
   my %source_to_external_db;
 
   # get all sources
-  my $sth = $self->xref->dbi()->prepare("SELECT source_id, name FROM source");
+  my $sth = $self->xref->dbc->prepare("SELECT source_id, name FROM source");
   $sth->execute();
   my ($source_id, $source_name);
   $sth->bind_columns(\$source_id, \$source_name);
@@ -1754,7 +1750,7 @@ sub map_source_to_external_db {
 
     # find appropriate external_db_id for each one
     my $sql = "SELECT external_db_id FROM external_db WHERE db_name=?";
-    my $core_sth = $core_dbi->prepare($sql);
+    my $core_sth = $self->dbc->prepare($sql);
     $core_sth->execute($source_name);
 
     my @row = $core_sth->fetchrow_array();
@@ -1792,14 +1788,14 @@ sub do_upload {
 
     if ($deleteexisting) {
 
-      $sth = $core_dbi->prepare("DELETE FROM $table");
+      $sth = $self->dbc->prepare("DELETE FROM $table");
       print "Deleting existing data in $table\n";
       $sth->execute();
 
     }
 
     # don't seem to be able to use prepared statements here
-    $sth = $core_dbi->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
+    $sth = $self->dbc->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
     print "Uploading data in $file to $table\n";
     $sth->execute();
 
@@ -1813,17 +1809,17 @@ sub do_upload {
 
     if ($deleteexisting) {
 
-      $sth = $core_dbi->prepare("UPDATE $table SET display_xref_id=NULL");
+      $sth = $self->dbc->prepare("UPDATE $table SET display_xref_id=NULL");
       print "Setting all existing display_xref_id in $table to null\n";
       $sth->execute();
 
     }
 
     print "Setting $table display_xrefs from $file\n";
-    my $str = "mysql -u " .$self->user() ." -p" . $self->password() . " -h " . $self->host() ." -P " . $self->port() . " " .$self->dbname() . " < $file";
+    my $str = "mysql -u " .$self->user() ." -p" . $self->password() . " -h " . $self->host() ." -P " . $self->port() . " " .$self->dbc->dbname() . " < $file";
     system $str;
 
-    #$sth = $core_dbi->prepare("UPDATE $table SET display_xref_id=? WHERE ${table}_id=?");
+    #$sth = $self->dbc->prepare("UPDATE $table SET display_xref_id=? WHERE ${table}_id=?");
     #open(DX_TXT, $file);
     #while (<DX_TXT>) {
     #  my ($xref_id, $object_id) = split;
@@ -1871,7 +1867,7 @@ sub build_gene_descriptions {
   print "Getting & filtering xref descriptions\n";
  # Note %xref_descriptions & %xref_accessions are global
 
-  my $sth = $self->xref->dbi()->prepare("SELECT xref_id, accession, description FROM xref");
+  my $sth = $self->xref->dbc->prepare("SELECT xref_id, accession, description FROM xref");
   $sth->execute();
   my ($xref_id, $accession, $description);
   $sth->bind_columns(\$xref_id, \$accession, \$description);
@@ -2049,14 +2045,16 @@ sub compare_xref_descriptions {
 # load external_db (if it's empty) from ../external_db/external_dbs.txt
 
 sub upload_external_db {
+  my ($self) = @_;
 
-  my $row = @{$core_dbi->selectall_arrayref("SELECT COUNT(*) FROM external_db")}[0];
+  $self->dbc->connect();
+  my $row = @{$self->dbc->db_handle->selectall_arrayref("SELECT COUNT(*) FROM external_db")}[0];
   my $count = @{$row}[0];
 
   if ($count == 0) {
     my $edb = cwd() . "/../external_db/external_dbs.txt";
     print "external_db table is empty, uploading from $edb\n";
-    my $edb_sth = $core_dbi->prepare("LOAD DATA INFILE \'$edb\' INTO TABLE external_db");
+    my $edb_sth = $self->dbc->prepare("LOAD DATA INFILE \'$edb\' INTO TABLE external_db");
     $edb_sth->execute();
   } else {
     print "external_db table already has $count rows, will not change it\n";

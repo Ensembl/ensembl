@@ -48,6 +48,9 @@ my $xref=undef;
 my $species=undef;
 my $type;
 
+my %xref_hash=();
+my %species_hash=();
+
 while( my $line = <FILE> ) {
 
   chomp($line);
@@ -58,80 +61,136 @@ while( my $line = <FILE> ) {
   my ($key, $value) = split("=",$line);
   if($key eq "species"){
     $type = "species";
-    if(defined($species)){
-      push @all_species, $species;
-      $species = undef;
-    }
-
-    if ($value !~ /_/) {
-      print STDERR "\'$value\' is not a recognised species - please use full species name (e.g. homo_sapiens) in $file\n";
-      exit(1);
-    }
-
-    eval "require XrefMapper::$value";
-    my $module;
-    if($@) {
-      warn("Did not find a specific mapping module XrefMapper::$value - using XrefMapper::BasicMapper instead\n");
-      require XrefMapper::BasicMapper;
-      $module = "BasicMapper";
-    } else{
-      $module = $value;
-    }
-
-    no strict 'refs';
-    $species = "XrefMapper::$module"->new();
-    $species->species($value);
-
-    if(defined($dumpcheck)){
-      $species->dumpcheck("yes");
-    }
-    if(defined($maxdump)){
-      $species->maxdump($maxdump);
-    }
-    if(defined($use_existing_mappings)){
-      $species->use_existing_mappings("yes");
-    }
-
+    $species_hash{'species'} = $value;
   }
   elsif($key eq "xref"){
     $type = "xref";
-    $xref = new XrefMapper::db();
   }
   elsif($type eq "species"){ # processing species data
-    $species->$key($value);
+    $species_hash{lc($key)} = $value;
   }
   elsif($type eq "xref"){    # processing xref data
-    $xref->$key($value);
+    $xref_hash{lc($key)} = $value;
   }
 }
-if(defined($species)){
-  push @all_species, $species;
+
+if(defined($xref_hash{host})){
+  my ($host, $user, $dbname, $pass, $port);
+  $host = $xref_hash{'host'};
+  $user = $xref_hash{'user'};
+  $dbname = $xref_hash{'dbname'};
+  if(defined($xref_hash{'pass'})){
+    $pass = $xref_hash{'pass'};
+  }
+  else{
+    $pass = '';
+  }
+  if(defined($xref_hash{'port'})){
+    $port = $xref_hash{'port'};
+  }
+  else{
+    $port = 3306;
+  }
+
+  $xref = new XrefMapper::db(-host => $host,
+			     -port => $port,
+			     -user => $user, 
+			     -pass => $pass,
+			     -group   => 'core',
+			     -dbname => $dbname);
+
+  if(defined($xref_hash{'dir'})){
+    $xref->dir($xref_hash{'dir'});
+  }
+
+}
+else{
+  die "No host name given for xref\n";
 }
 
-my $i = 1;
+if(defined($species_hash{'species'})){
+  my $value = $species_hash{'species'};
+  if ($value !~ /_/) {
+      print STDERR "\'$value\' is not a recognised species - please use full species name (e.g. homo_sapiens) in $file\n";
+      exit(1);
+    }
+  
+  eval "require XrefMapper::$value";
+  my $module;
+  if($@) {
+    warn("Did not find a specific mapping module XrefMapper::$value - using XrefMapper::BasicMapper instead\n");
+    require XrefMapper::BasicMapper;
+    $module = "BasicMapper";
+  } else{
+    $module = $value;
+  }
+  
+  no strict 'refs';
+  my ($host, $port, $user, $dbname, $pass);
+  $host = $species_hash{'host'};
+  $user = $species_hash{'user'};
+  $dbname = $species_hash{'dbname'};
+  if(defined($species_hash{'pass'})){
+    $pass = $species_hash{'pass'};
+  }
+  else{
+    $pass = '';
+  }
+  if(defined($species_hash{'port'})){
+    $port = $species_hash{'port'};
+  }
+  else{
+    $port = '';
+  }
+  
+  $species = "XrefMapper::$module"->new(-host => $host,
+					-port => $port,
+					-user => $user, 
+					-pass => $pass,
+					-species => $value,
+					-group   => 'core',
+					-dbname => $dbname);
 
-for my $species ( @all_species ) {
+  if(defined($species_hash{'dir'})){
+    $species->dir($species_hash{'dir'});
+  }
 
-  $species->xref($xref); # attach xref object to species object
+  $species->species($value);
+  
+  if(defined($dumpcheck)){
+    $species->dumpcheck("yes");
+  }
+  if(defined($maxdump)){
+    $species->maxdump($maxdump);
+  }
+  if(defined($use_existing_mappings)){
+    $species->use_existing_mappings("yes");
+  }
 
-  print "\nDumping xref & Ensembl sequences" . info($i, @all_species) . "\n";
-  $species->dump_seqs($location);
-
-  print "\nChecking external_db table\n" if ($upload);
-  $species->upload_external_db() if ($upload);
-
-  print "\nRunning mapping" . info($i, @all_species) . "\n";
-  $species->build_list_and_map();
-
-  print "\nParsing mapping output" . info($i, @all_species) . "\n";
-  $species->parse_mappings();
-
-  print "\nUploading xrefs" . info($i, @all_species) . "\n" if ($upload);
-  $species->do_upload($deleteexisting) if ($upload);
-
-  $i++;
-
+  
 }
+else{
+  die "No Species given\n";
+}
+
+
+$species->xref($xref); # attach xref object to species object
+
+print "\nDumping xref & Ensembl sequences\n";
+$species->dump_seqs($location);
+
+print "\nChecking external_db table\n" if ($upload);
+$species->upload_external_db() if ($upload);
+
+print "\nRunning mapping\n";
+$species->build_list_and_map();
+
+print "\nParsing mapping output\n";
+$species->parse_mappings();
+
+print "\nUploading xrefs\n" if ($upload);
+$species->do_upload($deleteexisting) if ($upload);
+
 
 print STDERR "*** All finished ***\n";
 
