@@ -119,7 +119,11 @@ sub new {
   if( !defined $dbobj || !ref $dbobj ) {
     throw("Don't have a db [$dbobj] for new adaptor");
   }
-  if( ref($dbobj) =~ /DBAdaptor$/){
+  if($dbobj->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
+    $self->db($dbobj);
+    $self->dbc($dbobj->dbc);
+  }
+  elsif( ref($dbobj) =~ /DBAdaptor$/){
     $self->db($dbobj);
     $self->dbc($dbobj->dbc);
   }
