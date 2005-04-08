@@ -11,7 +11,7 @@ index dumps) for Vega.
     ./glovar_snp_density.pl
         --species=Homo_sapiens
         [--chr=6,13,14]
-        [--dry-run|-n]
+        [--dry_run|-n]
         [--avdump|-a]
         [--help|-h]
 
@@ -65,7 +65,7 @@ my ($species, $chr, $dry, $avdump, $help);
 &GetOptions(
     "species=s" => \$species,
     "chr=s"     => \$chr,
-    "dry-run"   => \$dry,
+    "dry_run"   => \$dry,
     "n"         => \$dry,
     "avdump"    => \$avdump,
     "a"         => \$avdump,
@@ -78,7 +78,7 @@ if($help || !$species){
     ./glovar_snp_density.pl
         --species=Homo_sapiens
         [--chr=6,13,14]
-        [--dry-run|-n]
+        [--dry_run|-n]
         [--avdump|-a]
         [--help|-h]\n\n);
     exit;
