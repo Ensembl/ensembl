@@ -38,6 +38,8 @@ INSERT INTO source VALUES (3, "RefSeq_peptide", 1, 'Y',1);
 INSERT INTO source VALUES (4, "RefSeq_dna", 1, 'Y',1);
 INSERT INTO source VALUES (5, "IPI", 1, 'Y',2);
 INSERT INTO source VALUES (6, "UniGene", 1, 'Y',2);
+INSERT INTO source VALUES (10, "RefSeq_peptide_predicted", 1, 'Y',1);
+INSERT INTO source VALUES (11, "RefSeq_dna_predicted", 1, 'Y',1);
 
 # Other sources - used to create dependent xrefs, but not to download from
 
