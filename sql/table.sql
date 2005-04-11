@@ -343,13 +343,16 @@ CREATE TABLE repeat_feature (
 CREATE TABLE gene (
 
   gene_id                     int unsigned NOT NULL auto_increment,
-  type                        VARCHAR(40) NOT NULL,
+  biotype                     VARCHAR(40) NOT NULL,
   analysis_id                 int,
   seq_region_id               int(10) unsigned NOT NULL, 
   seq_region_start            int(10) unsigned NOT NULL, 
   seq_region_end              int(10) unsigned NOT NULL, 
   seq_region_strand           tinyint(2) NOT NULL,       
   display_xref_id             int unsigned,
+  source                      VARCHAR(20) NOT NULL,
+  confidence                  enum( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' ),
+  description                 text,
 
   PRIMARY KEY (gene_id),
   KEY seq_region_idx( seq_region_id, seq_region_start ),
@@ -421,6 +424,9 @@ CREATE TABLE transcript (
   seq_region_end              int(10) unsigned NOT NULL, 
   seq_region_strand           tinyint(2) NOT NULL, 
   display_xref_id             int unsigned,
+  biotype                     VARCHAR(40) NOT NULL,
+  confidence                  enum( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' ),
+  description                 text,
 
   PRIMARY KEY (transcript_id),
   KEY seq_region_idx( seq_region_id, seq_region_start ),
@@ -560,18 +566,6 @@ CREATE TABLE interpro (
 
 );
 
-################################################################################
-#
-# Table structure for table 'gene_description'
-#
-
-CREATE TABLE gene_description (
-
-  gene_id                     int unsigned NOT NULL,
-  description                 text,
-  PRIMARY KEY (gene_id)
-
-);
 
 ################################################################################
 #
