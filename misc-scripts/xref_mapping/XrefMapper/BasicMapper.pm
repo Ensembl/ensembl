@@ -9,10 +9,6 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Translation;
 use XrefMapper::db;
 
-use vars '@ISA';
-
-@ISA = qw{ XrefMapper::db };
-
 
 =head1 NAME
 
@@ -50,8 +46,24 @@ my %source_to_external_db;
 my %xrefs_written;
 my %object_xrefs_written;
 
-#my $core_dbi;
-#my $xref_dbi;
+=head2 new
+
+  Description: Constructor for BasicMapper.
+  Returntype : BasicMapper
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub new{
+  my($class, @args) = @_;
+
+  my $self ={};
+  bless $self,$class;
+
+  return $self;
+}
+
 
 =head2 dump_seqs
 
@@ -71,10 +83,6 @@ my %object_xrefs_written;
 sub dump_seqs{
 
   my ($self, $location) = @_;
-
-  # initialise DB connections
-#  $core_dbi = $self->dbc;
-#  $xref_dbi = $self->xref()->dbc;
 
   $self->dump_xref();
   $self->dump_ensembl($location);
@@ -105,12 +113,12 @@ sub build_list_and_map {
     my @dna=();
     push @dna, $method;
     push @dna, $self->xref->dir."/xref_".$i."_dna.fasta";
-    push @dna, $self->ensembl_dna_file();
+    push @dna, $self->core->dna_file();
     push @list, \@dna;
     my @pep=();
     push @pep, $method;
     push @pep, $self->xref->dir."/xref_".$i."_peptide.fasta";
-    push @pep, $self->ensembl_protein_file();
+    push @pep, $self->core->protein_file();
     push @list, \@pep;
     $i++;
   }
@@ -135,12 +143,13 @@ sub build_list_and_map {
 sub get_species_id_from_species_name{
   my ($self,$species) = @_;
 
+
   my $sql = "select species_id from species where name = '".$species."'";
   my $sth = $self->dbc->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
   my $species_id;
-  if (defined @row) {
+  if (@row) {
     $species_id = $row[0];
   } else {
     print STDERR "Couldn't get ID for species ".$species."\n";
@@ -173,12 +182,6 @@ sub get_species_id_from_species_name{
 sub get_set_lists{
   my ($self) = @_;
 
-  #  return [["ExonerateGappedBest1", ["homo_sapiens","Uniprot/SWISSPROT"]]];
-
-#  return [["method1",["homo_sapiens","RefSeq"],["homo_sapiens","UniProtSwissProt"]],
-#	  ["method2",[$self->species,"*"]],
-#	  ["method3",["*","*"]]];
-
   return [["ExonerateGappedBest1", ["*","*"]]];
 
 }
@@ -205,7 +208,6 @@ sub get_source_id_from_source_name{
   my @row = $sth->fetchrow_array();
   if (defined $row[0] and $row[0] ne '') {
     $source_id = $row[0];
-#    print $source."\t*".$row[0]."*\n";
   } else {
     print STDERR "Couldn't get ID for source ".$source."\n";
     print STDERR "It must be one of :-\n";
@@ -275,14 +277,12 @@ sub dump_xref{
 
   $i=0;
   foreach my $list (@lists){
-#    print "method->".@$list[0]."\n";
     $method[$i] = shift @$list;
     my $j = 0;
     my @source_id=();
     my @species_id=();
     foreach my $element (@$list){
       while(my $species = shift(@$element)){
-	#	print $j.")\t".$species."\n";
 	if($species ne "*"){
 	  $species_id[$j] = get_species_id_from_species_name($xref,$species);
 	}
@@ -296,8 +296,6 @@ sub dump_xref{
 	else{
 	  $source_id[$j] = -1;
 	}
-#	print $j."\t".$source. "\t".$source_id[$j] ."\n";
-#	print $j."\t".$species."\t".$species_id[$j]."\n";
 	$j++;
       }
     }
@@ -418,30 +416,32 @@ sub dump_ensembl{
 sub fetch_and_dump_seq{
   my ($self, $location) = @_;
 
-  my $db = $self;
+  my $ensembl = $self->core;
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
 
   #
   # store ensembl dna file name and open it
   #
-  
-  # if no directory set then dump in the current directory.
-  if(!defined($self->dir())){
-    $self->dir(".");
+  if(!defined($ensembl->dir())){
+    $ensembl->dir(".");
   }
-  $self->ensembl_dna_file($self->dir."/".$self->species."_dna.fasta");
+  $ensembl->dna_file($ensembl->dir."/".$ensembl->species."_dna.fasta");
+
+
   #
   # store ensembl protein file name and open it
   #
-  $self->ensembl_protein_file($self->dir."/".$self->species."_protein.fasta");
+  $ensembl->protein_file($ensembl->dir."/".$ensembl->species."_protein.fasta");
 
-  if(defined($self->dumpcheck()) and -e $self->ensembl_protein_file() and -e $self->ensembl_dna_file()){
+
+  if(defined($self->dumpcheck()) and -e $ensembl->protein_file() and -e $ensembl->dna_file()){
     return;
   }
-  open(DNA,">".$self->ensembl_dna_file()) 
-    || die("Could not open dna file for writing: ".$self->ensembl_dna_file."\n");
+  open(DNA,">".$ensembl->dna_file()) 
+    || die("Could not open dna file for writing: ".$ensembl->dna_file."\n");
 
-  open(PEP,">".$self->ensembl_protein_file()) 
-    || die("Could not open protein file for writing: ".$self->ensembl_protein_file."\n");
+  open(PEP,">".$ensembl->protein_file()) 
+    || die("Could not open protein file for writing: ".$ensembl->protein_file."\n");
 
   my $gene_adaptor = $db->get_GeneAdaptor();
 
@@ -498,82 +498,7 @@ sub fetch_and_dump_seq{
 
 
 
-#=head2 xref_protein_file
-# 
-#  Arg [1]    : (optional) string $arg
-#               the fasta file name for the protein xref
-#  Example    : $file name = $xref->xref_protein_file();
-#  Description: Getter / Setter for the protien xref fasta file 
-#  Returntype : string
-#  Exceptions : none
-#
-#=cut
-#
-#
-#sub xref_protein_file{
-#  my ($self, $arg) = @_;
-#
-#  (defined $arg) &&
-#    ($self->{_xref_prot_file} = $arg );
-#  return $self->{_xref_prot_file};
-#}
-#
-#=head2 xref_dna_file
-#
-#  Arg [1]    : (optional) string $arg
-#               the fasta file name for the dna xref
-#  Example    : $file name = $xref->xref_dna_file();
-#  Description: Getter / Setter for the dna xref fasta file 
-#  Returntype : string
-#  Exceptions : none
-#
-#=cut
-#
-#sub xref_dna_file{
-#  my ($self, $arg) = @_;
-#
-#  (defined $arg) &&
-#    ($self->{_xref_dna_file} = $arg );
-#  return $self->{_xref_dna_file};
-#}
 
-=head2 ensembl_protein_file
- 
-  Arg [1]    : (optional) string $arg
-               the fasta file name for the ensembl proteins 
-  Example    : $file_name = $self->ensembl_protein_file();
-  Description: Getter / Setter for the protien ensembl fasta file 
-  Returntype : string
-  Exceptions : none
-
-=cut
-
-sub ensembl_protein_file{
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_ens_prot_file} = $arg );
-  return $self->{_ens_prot_file};
-}
-
-=head2 ensembl_dna_file
- 
-  Arg [1]    : (optional) string $arg
-               the fasta file name for the ensembl dna 
-  Example    : $file_name = $self->ensembl_dna_file();
-  Description: Getter / Setter for the protien ensembl fasta file 
-  Returntype : string
-  Exceptions : none
-
-=cut
-
-sub ensembl_dna_file{
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_ens_dna_file} = $arg );
-  return $self->{_ens_dna_file};
-}
 
 =head2 method
  
@@ -595,6 +520,37 @@ sub method{
   return $self->{_method};
 }
 
+sub core{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_core} = $arg );
+  return $self->{_core};
+}
+
+sub dumpcheck {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_dumpcheck} = $arg );
+  return $self->{_dumpcheck};
+}
+
+sub maxdump {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_maxdump} = $arg );
+  return $self->{_maxdump};
+}
+
+sub use_existing_mappings {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_use_existing_mappings} = $arg );
+  return $self->{_use_existing_mappings};
+}
 
 sub xref{
   my ($self, $arg) = @_;
@@ -622,7 +578,7 @@ sub run_mapping {
 
   # delete old output files in target directory if we're going to produce new ones
   if (!defined($self->use_existing_mappings)) {
-    my $dir = $self->dir();
+    my $dir = $self->core->dir();
     unlink (<$dir/*.map $dir/*.out $dir/*.err>);
   }
 
@@ -651,7 +607,7 @@ sub run_mapping {
       $method_target_threshold{$method} = $obj->target_identity_threshold();
 
       if (!defined($self->use_existing_mappings)) {
-	my $job_name = $obj->run($queryfile, $targetfile, $self->dir());
+	my $job_name = $obj->run($queryfile, $targetfile, $self->core->dir());
 	push @job_names, $job_name;
 	sleep 1; # make sure unique names really are unique
       }
@@ -661,7 +617,7 @@ sub run_mapping {
 
   if (!defined($self->use_existing_mappings)) {
     # submit depend job to wait for all mapping jobs
-    submit_depend_job($self->dir, @job_names);
+    submit_depend_job($self->core->dir, @job_names);
   }
 
 } # run_mapping
@@ -766,16 +722,18 @@ sub submit_depend_job {
 
 sub parse_mappings {
 
-  my ($self, $xref) = @_;
+  my ($self) = @_;
 
-  my $dir = $self->dir();
+  my $ensembl = $self->core;
+  my $xref = $self->xref;
+  my $dir = $ensembl->dir();
 
-  # incase timed out.
-  $self->dbc->connect();
-  $self->xref->dbc->connect();
+  # incase timed out, force reconnection
+  $ensembl->dbc->connect();
+  $xref->dbc->connect();
 
   # get current max object_xref_id
-  my $row = @{$self->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
+  my $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
   my $max_object_xref_id = @{$row}[0];
   if (!defined $max_object_xref_id) {
     print "Can't get highest existing object_xref_id, using 1\n";
@@ -786,7 +744,7 @@ sub parse_mappings {
   my $object_xref_id_offset = $max_object_xref_id + 1;
   my $object_xref_id = $object_xref_id_offset;
 
-  $row = @{$self->dbc->db_handle->selectall_arrayref("SELECT MAX(xref_id) FROM xref")}[0];
+  $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(xref_id) FROM xref")}[0];
   my $max_xref_id = @$row[0];
   if (!defined $max_xref_id) {
     print "Can't get highest existing xref_id, using 1\n";
@@ -887,7 +845,7 @@ sub parse_mappings {
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
   # write relevant xrefs to file
-  my $max_object_xref_id = $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset, \%ensembl_object_types);
+  $max_object_xref_id = $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset, \%ensembl_object_types);
 
   # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
   $self->dump_orphan_xrefs($xref_id_offset);
@@ -913,7 +871,7 @@ sub dump_orphan_xrefs() {
 
   my $count;
 
-  open (XREF, ">>" . $self->dir() . "/xref.txt");
+  open (XREF, ">>" . $self->core->dir() . "/xref.txt");
 
   # need a double left-join
   my $sql = "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM xref x LEFT JOIN primary_xref px ON px.xref_id=x.xref_id LEFT JOIN dependent_xref dx ON dx.dependent_xref_id=x.xref_id WHERE px.xref_id IS NULL AND dx.dependent_xref_id IS NULL";
@@ -955,13 +913,13 @@ sub dump_direct_xrefs {
 
   my $count = 0;
 
-  open (XREF, ">>" . $self->dir() . "/xref.txt");
-  open (OBJECT_XREF, ">>" . $self->dir() . "/object_xref.txt");
+  open (XREF, ">>" . $self->core->dir() . "/xref.txt");
+  open (OBJECT_XREF, ">>" . $self->core->dir() . "/object_xref.txt");
 
   # Will need to look up translation stable ID from transcript stable ID, build hash table
   print "Building transcript stable ID -> translation stable ID lookup table\n";
   my %transcript_stable_id_to_translation_stable_id;
-  my $trans_sth = $self->dbc->prepare("SELECT tss.stable_id as transcript, tls.stable_id AS translation FROM translation tl, translation_stable_id tls, transcript_stable_id tss WHERE tss.transcript_id=tl.transcript_id AND tl.translation_id=tls.translation_id");
+  my $trans_sth = $self->core->dbc->prepare("SELECT tss.stable_id as transcript, tls.stable_id AS translation FROM translation tl, translation_stable_id tls, transcript_stable_id tss WHERE tss.transcript_id=tl.transcript_id AND tl.translation_id=tls.translation_id");
   $trans_sth->execute();
   my ($transcript_stable_id, $translation_stable_id);
   $trans_sth->bind_columns(\$transcript_stable_id, \$translation_stable_id);
@@ -1063,7 +1021,7 @@ sub dump_interpro {
 
   my $self = shift;
 
-  open (INTERPRO, ">" .  $self->dir() . "/interpro.txt");
+  open (INTERPRO, ">" .  $self->core->dir() . "/interpro.txt");
 
   my $sth = $self->xref->dbc->prepare("SELECT * FROM interpro");
   $sth->execute();
@@ -1090,7 +1048,7 @@ sub build_stable_id_to_internal_id_hash {
     print "Caching stable ID -> internal ID links for ${type}s\n";
 
     my $core_sql = "SELECT ${type}_id, stable_id FROM ${type}_stable_id" ;
-    my $sth = $self->dbc->prepare($core_sql);
+    my $sth = $self->core->dbc->prepare($core_sql);
     $sth->execute();
     my ($internal_id, $stable_id);
     $sth->bind_columns(\$internal_id, \$stable_id);
@@ -1152,7 +1110,7 @@ sub get_analysis_id {
 
   my $logic_name = $typeToLogicName{lc($ensembl_type)};
 
-  my $sth = $self->dbc->prepare("SELECT analysis_id FROM analysis WHERE logic_name='" . $logic_name ."'");
+  my $sth = $self->core->dbc->prepare("SELECT analysis_id FROM analysis WHERE logic_name='" . $logic_name ."'");
   $sth->execute();
 
   my $analysis_id;
@@ -1165,7 +1123,7 @@ sub get_analysis_id {
   } else {
 
     print "No analysis with logic_name $logic_name found, creating ...\n";
-    $sth = $self->dbc->prepare("INSERT INTO analysis (logic_name, created) VALUES ('" . $logic_name. "', NOW())");
+    $sth = $self->core->dbc->prepare("INSERT INTO analysis (logic_name, created) VALUES ('" . $logic_name. "', NOW())");
     # TODO - other fields in analysis table
     $sth->execute();
     $analysis_id = $sth->{'mysql_insertid'};
@@ -1186,7 +1144,7 @@ sub dump_core_xrefs {
   my %xref_to_objects = %$xref_ids_hashref;
   my %ensembl_object_types = %$ensembl_object_types_hashref;
 
-  my $dir = $self->dir();
+  my $dir = $self->core->dir();
 
   open (XREF, ">$dir/xref.txt");
   open (OBJECT_XREF, ">>$dir/object_xref.txt");
@@ -1350,7 +1308,7 @@ sub dump_comparison {
 
   my $self = shift;
 
-  my $dir = $self->dir();
+  my $dir = $self->core->dir();
 
   print "Dumping comparison data\n";
 
@@ -1382,7 +1340,7 @@ sub build_transcript_display_xrefs {
 
   my ($self, $xref_id_offset) = @_;
 
-  my $dir = $self->dir();
+  my $dir = $self->core->dir();
 
   # get a list of xref sources; format:
   # key: xref_id value: source_name
@@ -1406,7 +1364,7 @@ sub build_transcript_display_xrefs {
   # Cache the list of translation->transcript mappings & vice versa
   # Nte variables are global
   print "Building translation to transcript mappings\n";
-  my $sth = $self->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
+  $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
   $sth->execute();
 
   my ($translation_id, $transcript_id);
@@ -1569,16 +1527,9 @@ sub build_gene_display_xrefs {
 
   my ($self, $transcript_display_xrefs) = @_;
 
-  my $dir = $self->dir();
+  my $dir = $self->core->dir();
 
-#  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-species => $self->species(),
-#					      -dbname  => $self->dbc->dbname(),
-#					      -host    => $self->host(),
-#					      -port    => $self->port(),
-#					      -pass    => $self->password(),
-#					      -user    => $self->user(),
-#					      -group   => 'core');
-  my $db = $self;
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $self->core->dbc);
 
   my $ta = $db->get_TranscriptAdaptor();
 
@@ -1678,7 +1629,7 @@ sub build_genes_to_transcripts {
   print "Getting transcripts for all genes\n";
 
   my $sql = "SELECT gene_id, transcript_id FROM transcript";
-  my $sth = $self->dbc->prepare($sql);
+  my $sth = $self->core->dbc->prepare($sql);
   $sth->execute();
 
   my ($gene_id, $transcript_id);
@@ -1750,7 +1701,7 @@ sub map_source_to_external_db {
 
     # find appropriate external_db_id for each one
     my $sql = "SELECT external_db_id FROM external_db WHERE db_name=?";
-    my $core_sth = $self->dbc->prepare($sql);
+    my $core_sth = $self->core->dbc->prepare($sql);
     $core_sth->execute($source_name);
 
     my @row = $core_sth->fetchrow_array();
@@ -1777,25 +1728,27 @@ sub do_upload {
 
   my ($self, $deleteexisting) = @_;
 
+  my $ensembl = $self->core;
+  my $core_db = $ensembl->dbc;
   # xref.txt etc
 
   # TODO warn if table not empty
 
   foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "gene_description", "go_xref", "interpro") {
 
-    my $file = $self->dir() . "/" . $table . ".txt";
+    my $file = $ensembl->dir() . "/" . $table . ".txt";
     my $sth;
 
     if ($deleteexisting) {
 
-      $sth = $self->dbc->prepare("DELETE FROM $table");
+      $sth = $core_db->prepare("DELETE FROM $table");
       print "Deleting existing data in $table\n";
       $sth->execute();
 
     }
 
     # don't seem to be able to use prepared statements here
-    $sth = $self->dbc->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
+    $sth = $core_db->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
     print "Uploading data in $file to $table\n";
     $sth->execute();
 
@@ -1804,22 +1757,23 @@ sub do_upload {
   # gene_display_xref.sql etc
   foreach my $table ("gene", "transcript") {
 
-    my $file = $self->dir() . "/" . $table . "_display_xref.sql";
+
+    my $file = $ensembl->dir() . "/" . $table . "_display_xref.sql";
     my $sth;
 
     if ($deleteexisting) {
 
-      $sth = $self->dbc->prepare("UPDATE $table SET display_xref_id=NULL");
+      $sth = $core_db->prepare("UPDATE $table SET display_xref_id=NULL");
       print "Setting all existing display_xref_id in $table to null\n";
       $sth->execute();
 
     }
 
     print "Setting $table display_xrefs from $file\n";
-    my $str = "mysql -u " .$self->user() ." -p" . $self->password() . " -h " . $self->host() ." -P " . $self->port() . " " .$self->dbc->dbname() . " < $file";
+    my $str = "mysql -u " .$core_db->user() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
     system $str;
 
-    #$sth = $self->dbc->prepare("UPDATE $table SET display_xref_id=? WHERE ${table}_id=?");
+    #$sth = $core_db->prepare("UPDATE $table SET display_xref_id=? WHERE ${table}_id=?");
     #open(DX_TXT, $file);
     #while (<DX_TXT>) {
     #  my ($xref_id, $object_id) = split;
@@ -1888,7 +1842,7 @@ sub build_gene_descriptions {
 
   print "Regexp filtering (" . scalar(@regexps) . " regexps) removed $removed descriptions, left with " . scalar(keys %xref_descriptions) . "\n";
 
-  my $dir = $self->dir();
+  my $dir = $self->core->dir();
   open(GENE_DESCRIPTIONS,">$dir/gene_description.txt") || die "Could not open $dir/gene_description.txt";
 
   # Foreach gene, get any xrefs associated with its transcripts or translations
@@ -2047,14 +2001,15 @@ sub compare_xref_descriptions {
 sub upload_external_db {
   my ($self) = @_;
 
-  $self->dbc->connect();
-  my $row = @{$self->dbc->db_handle->selectall_arrayref("SELECT COUNT(*) FROM external_db")}[0];
+  my $core_db = $self->core->dbc;
+  $core_db->connect();
+  my $row = @{$core_db->db_handle->selectall_arrayref("SELECT COUNT(*) FROM external_db")}[0];
   my $count = @{$row}[0];
 
   if ($count == 0) {
     my $edb = cwd() . "/../external_db/external_dbs.txt";
     print "external_db table is empty, uploading from $edb\n";
-    my $edb_sth = $self->dbc->prepare("LOAD DATA INFILE \'$edb\' INTO TABLE external_db");
+    my $edb_sth = $core_db->prepare("LOAD DATA INFILE \'$edb\' INTO TABLE external_db");
     $edb_sth->execute();
   } else {
     print "external_db table already has $count rows, will not change it\n";

@@ -1,13 +1,42 @@
 package XrefMapper::db;
 
 use vars '@ISA';
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::Registry;
-use Bio::EnsEMBL::Utils::ConfigRegistry;
+use Bio::EnsEMBL::DBSQL::DBConnection;
 
+sub new{
+  my($class, @args) = @_;
 
-@ISA = qw{Bio::EnsEMBL::DBSQL::DBAdaptor};
+  my $self ={};
+  bless $self,$class;
 
+   $self->dbc(new Bio::EnsEMBL::DBSQL::DBConnection(@args));
+
+  return $self;
+} 
+
+sub species{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_species} = $arg );
+  return $self->{_species};
+
+}
+
+sub dbc{
+  my $self  = shift;
+
+  if(@_){
+    my $arg = shift;
+    if(defined($arg)){
+      if(!$arg->isa('Bio::EnsEMBL::DBSQL::DBConnection')){
+        throw("$arg is no a DBConnection\n");
+      }
+    }
+    $self->{_dbc} = $arg;
+  }
+  return $self->{_dbc};
+}
 
 =head2 dir
                                                                                 
@@ -30,28 +59,42 @@ sub dir {
 
 }
 
-sub dumpcheck {
+=head2 protein_file
+ 
+  Arg [1]    : (optional) string $arg
+               the fasta file name for the ensembl proteins 
+  Example    : $file_name = $self->ensembl_protein_file();
+  Description: Getter / Setter for the protien ensembl fasta file 
+  Returntype : string
+  Exceptions : none
+
+=cut
+
+sub protein_file{
   my ($self, $arg) = @_;
 
   (defined $arg) &&
-    ($self->{_dumpcheck} = $arg );
-  return $self->{_dumpcheck};
+    ($self->{_ens_prot_file} = $arg );
+  return $self->{_ens_prot_file};
 }
 
-sub maxdump {
+=head2 dna_file
+ 
+  Arg [1]    : (optional) string $arg
+               the fasta file name for the ensembl dna 
+  Example    : $file_name = $self->ensembl_dna_file();
+  Description: Getter / Setter for the protien ensembl fasta file 
+  Returntype : string
+  Exceptions : none
+
+=cut
+
+sub dna_file{
   my ($self, $arg) = @_;
 
   (defined $arg) &&
-    ($self->{_maxdump} = $arg );
-  return $self->{_maxdump};
-}
-
-sub use_existing_mappings {
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_use_existing_mappings} = $arg );
-  return $self->{_use_existing_mappings};
+    ($self->{_ens_dna_file} = $arg );
+  return $self->{_ens_dna_file};
 }
 
 sub process_dir {

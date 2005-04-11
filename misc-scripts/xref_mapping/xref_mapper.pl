@@ -45,7 +45,8 @@ open(FILE, $file) or die("Could not open input file '$file'");
  
 my  @all_species;
 my $xref=undef;
-my $species=undef;
+my $ensembl=undef;
+my $mapper=undef;
 my $type;
 
 my %xref_hash=();
@@ -73,6 +74,7 @@ while( my $line = <FILE> ) {
     $xref_hash{lc($key)} = $value;
   }
 }
+
 
 if(defined($xref_hash{host})){
   my ($host, $user, $dbname, $pass, $port);
@@ -143,28 +145,33 @@ if(defined($species_hash{'species'})){
     $port = '';
   }
   
-  $species = "XrefMapper::$module"->new(-host => $host,
-					-port => $port,
-					-user => $user, 
-					-pass => $pass,
-					-species => $value,
-					-group   => 'core',
-					-dbname => $dbname);
+  
+  $mapper = "XrefMapper::$module"->new();
+
+  my $core = new XrefMapper::db(-host => $host,
+			     -port => $port,
+			     -user => $user, 
+			     -pass => $pass,
+			     -group   => 'core',
+			     -dbname => $dbname);
+
 
   if(defined($species_hash{'dir'})){
-    $species->dir($species_hash{'dir'});
+    $core->dir($species_hash{'dir'});
   }
 
-  $species->species($value);
+  $core->species($value);
+
+  $mapper->core($core);
   
   if(defined($dumpcheck)){
-    $species->dumpcheck("yes");
+    $mapper->dumpcheck("yes");
   }
   if(defined($maxdump)){
-    $species->maxdump($maxdump);
+    $mapper->maxdump($maxdump);
   }
   if(defined($use_existing_mappings)){
-    $species->use_existing_mappings("yes");
+    $mapper->use_existing_mappings("yes");
   }
 
   
@@ -174,22 +181,22 @@ else{
 }
 
 
-$species->xref($xref); # attach xref object to species object
+$mapper->xref($xref); # attach xref object to mapper object
 
 print "\nDumping xref & Ensembl sequences\n";
-$species->dump_seqs($location);
+$mapper->dump_seqs($location);
 
 print "\nChecking external_db table\n" if ($upload);
-$species->upload_external_db() if ($upload);
+$mapper->upload_external_db() if ($upload);
 
 print "\nRunning mapping\n";
-$species->build_list_and_map();
+$mapper->build_list_and_map();
 
 print "\nParsing mapping output\n";
-$species->parse_mappings();
+$mapper->parse_mappings();
 
 print "\nUploading xrefs\n" if ($upload);
-$species->do_upload($deleteexisting) if ($upload);
+$mapper->do_upload($deleteexisting) if ($upload);
 
 
 print STDERR "*** All finished ***\n";
