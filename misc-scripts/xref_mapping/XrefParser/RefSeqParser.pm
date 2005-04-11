@@ -38,11 +38,15 @@ sub run {
   my $dna_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_dna');
   print "RefSeq_peptide source ID = $peptide_source_id; RefSeq_dna source ID = $dna_source_id\n";
 
+  my $pred_peptide_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_peptide_predicted');
+  my $pred_dna_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_dna_predicted');
+  print "RefSeq_peptide_predicted source ID = $pred_peptide_source_id; RefSeq_dna_predicted source ID = $pred_dna_source_id\n";
+
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
-  XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($peptide_source_id, $dna_source_id, $file, $species_id));
+  XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id));
 
 }
 
@@ -55,7 +59,7 @@ sub run {
 
 sub create_xrefs {
 
-  my ($peptide_source_id, $dna_source_id, $file, $species_id) = @_;
+  my ($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id) = @_;
 
   my %name2species_id = XrefParser::BaseParser->name2species_id();
 
@@ -84,14 +88,26 @@ sub create_xrefs {
       ($mrna, $description, $species) = $description =~ /(\S*)\s+(.*)\s+\[(.*)\]$/;
       $xref->{SEQUENCE_TYPE} = 'peptide';
       $xref->{STATUS} = 'experimental';
-      $xref->{SOURCE_ID} = $peptide_source_id;
+      my $source_id;
+      if ($acc =~ /^XP_/) {
+          $source_id = $pred_peptide_source_id;
+        } else {
+          $source_id = $peptide_source_id;
+        }
+      $xref->{SOURCE_ID} = $source_id;
 
     } elsif ($file =~ /\.fna$/) {
 
       ($species, $description) = $description =~ /\s*(\w+\s+\w+)\s+(.*)$/;
       $xref->{SEQUENCE_TYPE} = 'dna';
       $xref->{STATUS} = 'experimental';
-      $xref->{SOURCE_ID} = $dna_source_id;
+      my $source_id;
+      if ($acc =~ /^XM_/) {
+	$source_id = $pred_dna_source_id;
+      } else {
+	$source_id = $dna_source_id;
+      }
+      $xref->{SOURCE_ID} = $source_id;
 
     }
 

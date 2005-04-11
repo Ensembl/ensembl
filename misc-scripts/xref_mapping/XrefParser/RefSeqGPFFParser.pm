@@ -45,7 +45,11 @@ sub run {
   my $dna_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_dna');
   print "RefSeq_peptide source ID = $peptide_source_id; RefSeq_dna source ID = $dna_source_id\n";
 
-   XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($peptide_source_id, $dna_source_id, $file, $species_id));
+  my $pred_peptide_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_peptide_predicted');
+  my $pred_dna_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_dna_predicted');
+  print "RefSeq_peptide_predicted source ID = $pred_peptide_source_id; RefSeq_dna_predicted source ID = $pred_dna_source_id\n";
+
+   XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id));
 
 }
 
@@ -58,7 +62,7 @@ sub run {
 
 sub create_xrefs {
 
-  my ($peptide_source_id, $dna_source_id, $file, $species_id) = @_;
+  my ($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id) = @_;
 
   my %name2species_id =  XrefParser::BaseParser->name2species_id();
 
@@ -70,29 +74,25 @@ sub create_xrefs {
 
   local $/ = "\/\/\n";
 
-  my ($type, $source_id);
+  my $type;
   if ($file =~ /protein/) {
 
     $type = 'peptide';
-    $source_id = $peptide_source_id;
 
   } elsif ($file =~ /rna/) {
 
     $type = 'dna';
-    $source_id = $dna_source_id;
 
   } elsif($file =~ /RefSeq_dna/){
 
     $type = 'dna';
-    $source_id = $dna_source_id;
 
   } elsif($file =~ /RefSeq_protein/){
 
     $type = 'peptide';
-    $source_id = $peptide_source_id;
 
   }else{
-    die "Could not work out sequence type & source for $file\n";
+    die "Could not work out sequence type for $file\n";
   }
 
 
@@ -115,6 +115,25 @@ sub create_xrefs {
 
       my ($acc) = $entry =~ /ACCESSION\s+(\S+)/;
       my ($ver) = $entry =~ /VERSION\s+(\S+)/;
+
+      # get the right source ID based on $type and whether this is predicted (X*) or not
+      my $source_id;
+      if ($type =~ /dna/) {
+	if ($acc =~ /^XM_/) {
+	  $source_id = $pred_dna_source_id;
+	} else {
+	  $source_id = $dna_source_id;
+	}
+      } elsif ($type =~ /peptide/) {
+	if ($acc =~ /^XP_/) {
+	  $source_id = $pred_peptide_source_id;
+	} else {
+	  $source_id = $peptide_source_id;
+	}
+      }
+      print "Warning: can't get source ID for $type $acc\n" if (!$source_id);
+
+      # Description - may be multi-line
       my ($description) = $entry =~ /DEFINITION\s+([^[]+)/s;
       print $entry if (length($description) == 0);
       $description =~ s/\nACCESSION.*//s;
@@ -141,6 +160,7 @@ sub create_xrefs {
       else{
          print "$acc NE $acc_no_ver\n";
       }
+
       $xref->{LABEL} = $acc . "\." . $ver;
       $xref->{DESCRIPTION} = $description;
       $xref->{SOURCE_ID} = $source_id;
