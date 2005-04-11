@@ -618,9 +618,3 @@ ok($dbe_id && $dbe_id == $dbe->dbID());
 
 
 $multi->restore();
-
-
-# test regulatory feature retrieval
-my $rf_gene = $ga->fetch_by_dbID(18256);
-#ok(@{$rf_gene->fetch_all_regulatory_features()} == 1);  # non-recursive
-ok(@{$rf_gene->fetch_all_regulatory_features(1)} == 2); # recursive
