@@ -1959,26 +1959,4 @@ sub get_all_DAS_Features{
   return \%das_features;
 }
 
-=head2 fetch_all_regulatory_features
-
-  Arg [1]    : none
-  Example    : @features = $transcript->fetch_all_regulatory_features();
-  Description: Gets all the regulatory features associated with this transcript.
-               Each feature only appears once.
-  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
-  Exceptions : If arg is not of correct type.
-  Caller     : ?
-
-=cut
-
-sub fetch_all_regulatory_features {
-
-   my ($self) = @_;
-
-   my $rfa = $self->adaptor->db->get_RegulatoryFeatureAdaptor();
-
-   return $rfa->fetch_all_by_transcript($self);
-
-}
-
 1;
