@@ -833,6 +833,71 @@
       
     </table>
 
+
+    <!-- ============================================================ -->
+
+    <table>
+      
+      <name>regulatory_feature</name>
+
+      <description>Stores information about features which have an effect (positive or negative) on transcription or translation,such as microRNAs.</description>
+      
+      <used></used>
+      
+      <see>
+	<tableref name="regulatory_motif" reason="More information about the type of regulatory feature"/>
+	<tableref name="regulatory_feature_object" reason="Links regulatory features to the Ensembl objects they regulate."/>
+      </see>
+
+    </table>
+
+    <!-- ============================================================ -->
+
+    <table>
+      
+      <name>regulatory_motif</name>
+
+      <description>Describe which motif a particular regulatory feature is composed of.</description>
+      
+      <used></used>
+      
+      <see>
+	<tableref name="regulatory_feature" reason="Contains actual genomic instances of this motif"/>
+      </see>
+
+    </table>
+
+    <!-- ============================================================ -->
+
+    <table>
+      
+      <name>regulatory_feature_object</name>
+
+      <description>Links regulatory features to the Ensembl objects they are associated with. Analagous to object_xref.</description>
+      
+      <used></used>
+      
+      <see>
+	<tableref name="regulatory_feature" reason=""/>
+      </see>
+
+    </table>
+
+    <!-- ============================================================ -->
+
+    <table>
+      
+      <name>peptide_regulatory_feature</name>
+
+      <description></description>
+      
+      <used></used>
+      
+      <see>
+      </see>
+
+    </table>
+
   </tablegroup> <!-- Features and analyses-->
 
   <!-- ============================================================ -->
