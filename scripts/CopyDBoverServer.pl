@@ -63,14 +63,14 @@ if ($help || scalar @ARGV == 0 || ! defined $pass) {
 my ($input_file) = @ARGV;
 my @dbs_to_copy;
 
-my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/current/var",
-			       'ecs1b:3306' => "/mysql2a/current/var",
-			       'ecs1c:3306' => "/mysql3a/current/var",
-			       'ecs1d:3306' => "/mysql4a/current/var",
-			       'ecs1e:3306' => "/mysql5a/current/var",
-			       'ecs1f:3306' => "/mysql6a/current/var",
-			       'ecs1g:3306' => "/mysql7a/current/var",
-			       'ecs1h:3306' => "/mysql_archive/current/var",
+	my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/databases",
+                               'ecs1b:3306' => "/mysql2a/databases",
+                               'ecs1c:3306' => "/mysql3a/databases",
+                               'ecs1d:3306' => "/mysql4a/databases",
+                               'ecs1e:3306' => "/mysql5a/databases",
+                               'ecs1f:3306' => "/mysql6a/databases",
+                               'ecs1g:3306' => "/mysql7a/databases",
+                               'ecs1h:3306' => "/mysql_archive/current/var",
 			       'ecs2:3361' => "/mysql/data_3361/databases",
 			       'ecs2:3362' => "/mysql/data_3362/databases",
 			       'ecs2:3363' => "/mysql/data_3363/databases",
