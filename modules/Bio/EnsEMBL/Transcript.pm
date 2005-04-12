@@ -1994,7 +1994,7 @@ sub get_all_DAS_Features{
 =head2 get_all_regulatory_features
 
   Arg [1]    : none
-  Example    : @features = $transcript->fetch_all_regulatory_features();
+  Example    : @features = $transcript->get_all_regulatory_features();
   Description: Gets all the regulatory features associated with this transcript.
                Each feature only appears once.
   Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
