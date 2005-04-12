@@ -881,7 +881,7 @@ sub get_all_DAS_Features{
 }
 
 
-=head2 fetch_all_regulatory_features
+=head2 get_all_regulatory_features
 
   Arg [1]    : If set, regulatory features on transcripts belonging to this gene
                are returned as well.
@@ -895,7 +895,7 @@ sub get_all_DAS_Features{
 
 =cut
 
-sub fetch_all_regulatory_features {
+sub get_all_regulatory_features {
 
    my ($self, $recursive) = @_;
 
