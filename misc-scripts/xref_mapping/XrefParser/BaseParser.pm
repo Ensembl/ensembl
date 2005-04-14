@@ -15,6 +15,7 @@ my $add_xref_sth = undef;
 my $add_direct_xref_sth = undef;
 my $add_dependent_xref_sth = undef;
 my $get_xref_sth = undef;
+my $add_synonym_sth = undef;
 
 my $dbi;
 my %dependent_sources;
@@ -824,6 +825,21 @@ sub add_to_xrefs{
   $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id)|| die "$master_xref\t$dependent_id\t$linkage\t$source_id";
 
 
+}
+
+sub add_to_syn{
+  my ($self, $acc, $source_id, $syn) = @_;
+
+  if(!defined($add_synonym_sth)){
+    $add_synonym_sth =  $dbi->prepare("INSERT INTO synonym VALUES(?,?)");
+  }
+  my $xref_id = get_xref($acc, $source_id);
+  if(defined($xref_id)){
+    $add_synonym_sth->execute($xref_id, $syn) || die "$dbi->errstr \n $xref_id\n $syn\n";
+  }
+  else{
+    die "Could not find acc $acc in xref table source = $source_id\n";
+  }
 }
 
 # --------------------------------------------------------------------------------
