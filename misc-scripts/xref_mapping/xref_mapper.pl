@@ -81,8 +81,8 @@ if(defined($xref_hash{host})){
   $host = $xref_hash{'host'};
   $user = $xref_hash{'user'};
   $dbname = $xref_hash{'dbname'};
-  if(defined($xref_hash{'pass'})){
-    $pass = $xref_hash{'pass'};
+  if(defined($xref_hash{'password'})){
+    $pass = $xref_hash{'password'};
   }
   else{
     $pass = '';
@@ -132,8 +132,8 @@ if(defined($species_hash{'species'})){
   $host = $species_hash{'host'};
   $user = $species_hash{'user'};
   $dbname = $species_hash{'dbname'};
-  if(defined($species_hash{'pass'})){
-    $pass = $species_hash{'pass'};
+  if(defined($species_hash{'password'})){
+    $pass = $species_hash{'password'};
   }
   else{
     $pass = '';
