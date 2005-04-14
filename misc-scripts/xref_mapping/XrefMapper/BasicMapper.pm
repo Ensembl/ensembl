@@ -8,6 +8,7 @@ use IPC::Open3;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Translation;
 use XrefMapper::db;
+use vars '@ISA';
 
 
 =head1 NAME
@@ -520,6 +521,17 @@ sub method{
   return $self->{_method};
 }
 
+=head2 core
+ 
+  Arg [1]    : (optional) 
+  Example    : $mapper->core($new_core);
+  Description: Getter / Setter for the core. 
+               info for the ensembl core database. 
+  Returntype : XrefMapper::db
+  Exceptions : none
+
+=cut
+
 sub core{
   my ($self, $arg) = @_;
 
@@ -527,6 +539,19 @@ sub core{
     ($self->{_core} = $arg );
   return $self->{_core};
 }
+
+
+=head2 dumpcheck
+ 
+  Arg [1]    : (optional) 
+  Example    : $mapper->dumpcheck("yes");
+  Description: Getter / Setter for dumpcheck. 
+               If set the mapper will not dump fasta files 
+               if they exist already. 
+  Returntype : scalar
+  Exceptions : none
+
+=cut
 
 sub dumpcheck {
   my ($self, $arg) = @_;
@@ -536,6 +561,18 @@ sub dumpcheck {
   return $self->{_dumpcheck};
 }
 
+=head2 maxdump
+ 
+  Arg [1]    : (optional) 
+  Example    : $mapper->maxdump(10);
+  Description: Getter / Setter for maxdump. 
+               If set the mapper will only dump that number of 
+               sequences into the fasta files. (Mainly used for testing).
+  Returntype : scalar
+  Exceptions : none
+
+=cut
+
 sub maxdump {
   my ($self, $arg) = @_;
 
@@ -543,6 +580,20 @@ sub maxdump {
     ($self->{_maxdump} = $arg );
   return $self->{_maxdump};
 }
+
+
+
+=head2 use_existing_mappings
+
+  Arg [1]    : (optional) 
+  Example    : $mapper->use_existing_mappings("yes");
+  Description: Getter / Setter for use_existing_mappings. 
+               If set the mapper will not redo the mapping
+               but parse the existing .map files.
+  Returntype : scalar
+  Exceptions : none
+
+=cut
 
 sub use_existing_mappings {
   my ($self, $arg) = @_;
@@ -552,6 +603,18 @@ sub use_existing_mappings {
   return $self->{_use_existing_mappings};
 }
 
+
+=head2 xref
+ 
+  Arg [1]    : (optional) 
+  Example    : $mapper->core($new_core);
+  Description: Getter / Setter for the core. 
+               info for the xref database. 
+  Returntype : XrefMapper::db
+  Exceptions : none
+
+=cut
+
 sub xref{
   my ($self, $arg) = @_;
 
@@ -559,6 +622,8 @@ sub xref{
     ($self->{_xref} = $arg );
   return $self->{_xref};
 }
+
+
 
 =head2 run_mapping
 
@@ -577,7 +642,7 @@ sub run_mapping {
   my ($self, $lists) = @_;
 
   # delete old output files in target directory if we're going to produce new ones
-  if (!defined($self->use_existing_mappings)) {
+  if (!defined($self->use_existing_mappings())) {
     my $dir = $self->core->dir();
     unlink (<$dir/*.map $dir/*.out $dir/*.err>);
   }
@@ -710,8 +775,6 @@ sub submit_depend_job {
 
 =head2 parse_mappings
 
-  Arg[1]     : The target file used in the exonerate run. Used to work out the Ensembl object type.
-  Arg[2]     :
   Example    : none
   Description: Parse exonerate output files and build files for loading into target db tables.
   Returntype : List of strings
@@ -791,8 +854,8 @@ sub parse_mappings {
 
     # get or create the appropriate analysis ID
     # XXX restore when using writeable database
-    #my $analysis_id = $self->get_analysis_id($type);
-    my $analysis_id = 999;
+    my $analysis_id = $self->get_analysis_id($type);
+    #    my $analysis_id = 999;
 
     while (<FILE>) {
 
@@ -1105,8 +1168,8 @@ sub get_analysis_id {
 
   my ($self, $ensembl_type) = @_;
 
-  my %typeToLogicName = ( 'dna' => 'XrefExonerateDNA',
-			  'protein' => 'XrefExonerateProtein' );
+  my %typeToLogicName = ( 'transcript' => 'XrefExonerateDNA',
+			  'translation' => 'XrefExonerateProtein' );
 
   my $logic_name = $typeToLogicName{lc($ensembl_type)};
 
@@ -1118,7 +1181,7 @@ sub get_analysis_id {
   if (my @row = $sth->fetchrow_array()) {
 
     $analysis_id = $row[0];
-    print "Found exising analysis ID ($analysis_id) for $logic_name\n";
+#    print "Found exising analysis ID ($analysis_id) for $logic_name\n";
 
   } else {
 
@@ -1770,7 +1833,7 @@ sub do_upload {
     }
 
     print "Setting $table display_xrefs from $file\n";
-    my $str = "mysql -u " .$core_db->user() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+    my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
     system $str;
 
     #$sth = $core_db->prepare("UPDATE $table SET display_xref_id=? WHERE ${table}_id=?");
