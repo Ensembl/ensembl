@@ -49,13 +49,15 @@ use strict;
 use integer;
 
 use Bio::EnsEMBL::Mapper::Pair;
+use Bio::EnsEMBL::Mapper::IndelPair;
 use Bio::EnsEMBL::Mapper::Unit;
 use Bio::EnsEMBL::Mapper::Coordinate;
+use Bio::EnsEMBL::Mapper::IndelCoordinate;
 use Bio::EnsEMBL::Mapper::Gap;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
-
+use Data::Dumper;
 
 =head2 new
 
@@ -214,7 +216,7 @@ sub map_coordinates{
      $pair = $lr->[$i];
      my $self_coord   = $pair->{$from};
      my $target_coord = $pair->{$to};
-     
+
      # if we haven't even reached the start, move on
      if( $self_coord->{'end'} < $start ) {
        next;
@@ -233,50 +235,68 @@ sub map_coordinates{
        push(@result,$gap);
        $start = $gap->{'end'}+1;
      }
-     
      my ($target_start,$target_end,$target_ori);
-     
-     # start is somewhere inside the region
-     if( $pair->{'ori'} == 1 ) {
-       $target_start = 
-	   $target_coord->{'start'} + ($start - $self_coord->{'start'});
-     } else {
-       $target_end = 
-	   $target_coord->{'end'} - ($start - $self_coord->{'start'});
+     my $res;
+     if  (exists $pair->{'indel'}){
+	 #when next pair is an IndelPair and not a Coordinate, create the new mapping Coordinate, the IndelCoordinate
+	 $target_start = $target_coord->{'start'};
+	 $target_end = $target_coord->{'end'};
+	 
+	 #create a Gap object
+	 my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, ($self_coord->{'end'} < $end ? $self_coord->{'end'} : $end));       
+	 #create the Coordinate object
+	 my $coord = Bio::EnsEMBL::Mapper::Coordinate->new($target_coord->{'id'},
+						      $target_start,
+						      $target_end,
+						      $pair->{'ori'} * $strand,
+						      $cs);
+	 #and finally, the IndelCoordinate object with 
+	 $res = Bio::EnsEMBL::Mapper::IndelCoordinate->new($gap,$coord);     	 
+     }
+     else{
+	 # start is somewhere inside the region
+	 if( $pair->{'ori'} == 1 ) {
+	     $target_start = 
+		 $target_coord->{'start'} + ($start - $self_coord->{'start'});
+	 } else {
+	     $target_end = 
+		 $target_coord->{'end'} - ($start - $self_coord->{'start'});
+	 }
+	 
+	 # either we are enveloping this map or not. If yes, then end
+	 # point (self perspective) is determined solely by target. If not
+	 # we need to adjust
+	 
+	 if( $end > $self_coord->{'end'} ) {
+	     # enveloped
+	     if( $pair->{'ori'} == 1 ) {
+		 $target_end = $target_coord->{'end'};
+	     } else {
+		 $target_start = $target_coord->{'start'};
+	     }
+	 } else {
+	     # need to adjust end
+	     if( $pair->{'ori'} == 1 ) {
+		 $target_end = 
+		     $target_coord->{'start'} + ($end - $self_coord->{'start'});
+	     } else {
+		 $target_start = 
+		     $target_coord->{'end'} - ($end - $self_coord->{'start'});
+	     }
+	 }
+
+	 $res = Bio::EnsEMBL::Mapper::Coordinate->new($target_coord->{'id'},
+						      $target_start,
+						      $target_end,
+						      $pair->{'ori'} * $strand,
+						      $cs);
      }
 
-     # either we are enveloping this map or not. If yes, then end
-     # point (self perspective) is determined solely by target. If not
-     # we need to adjust
-     
-     if( $end > $self_coord->{'end'} ) {
-       # enveloped
-       if( $pair->{'ori'} == 1 ) {
-         $target_end = $target_coord->{'end'};
-       } else {
-         $target_start = $target_coord->{'start'};
-       }
-     } else {
-       # need to adjust end
-       if( $pair->{'ori'} == 1 ) {
-         $target_end = 
-             $target_coord->{'start'} + ($end - $self_coord->{'start'});
-       } else {
-         $target_start = 
-             $target_coord->{'end'} - ($end - $self_coord->{'start'});
-       }
-     }
-
-     my $res = Bio::EnsEMBL::Mapper::Coordinate->new($target_coord->{'id'},
-						     $target_start,
-						     $target_end,
-						     $pair->{'ori'} * $strand,
-                 $cs);
      push(@result,$res);
      
      $last_used_pair = $pair;
      $start = $self_coord->{'end'}+1;
-   }
+ }
 
    if( !defined $last_used_pair ) {
        my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, $end);
@@ -507,6 +527,63 @@ sub add_map_coordinates{
     Bio::EnsEMBL::Mapper::Unit->new($chr_name, $chr_start, $chr_end);
 
   my $pair = Bio::EnsEMBL::Mapper::Pair->new($from, $to, $contig_ori);
+
+  # place into hash on both ids
+  my $map_to = $self->{'to'};
+  my $map_from = $self->{'from'};
+
+  push( @{$self->{"_pair_$map_to"}->{uc($chr_name)}}, $pair );
+  push( @{$self->{"_pair_$map_from"}->{uc($contig_id)}}, $pair );
+
+  $self->{'pair_count'}++;
+
+  $self->{'_is_sorted'} = 0;
+  return 1;
+}
+
+
+=head2 add_indel_coordinates
+
+    Arg  1      int $id
+                id of 'source' sequence
+    Arg  2      int $start
+                start coordinate of 'source' sequence
+    Arg  3      int $end
+                end coordinate of 'source' sequence
+    Arg  4      int $strand
+                relative orientation of source and target (+/- 1)
+    Arg  5      int $id
+                id of 'targe' sequence
+    Arg  6      int $start
+                start coordinate of 'targe' sequence
+    Arg  7      int $end
+                end coordinate of 'targe' sequence
+    Function    stores details of mapping between two regions:
+                'source' and 'target'. Returns 1 if the pair was added, 0 if it
+                was already in. Used when adding an indel
+    Returntype  int 0,1
+    Exceptions  none
+    Caller      Bio::EnsEMBL::Mapper
+
+=cut
+
+sub add_indel_coordinates{
+  my ($self, $contig_id, $contig_start, $contig_end, 
+      $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
+
+  unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
+	 && defined($contig_ori) && defined($chr_name) && defined($chr_start)
+	 && defined($chr_end)) {
+    throw("7 arguments expected");
+  }
+
+  #we need to create the IndelPair object to add to both lists, to and from
+  my $from =
+    Bio::EnsEMBL::Mapper::Unit->new($contig_id, $contig_start, $contig_end);
+  my $to   =
+    Bio::EnsEMBL::Mapper::Unit->new($chr_name, $chr_start, $chr_end);
+
+  my $pair = Bio::EnsEMBL::Mapper::IndelPair->new($from, $to, $contig_ori);
 
   # place into hash on both ids
   my $map_to = $self->{'to'};
@@ -756,51 +833,60 @@ sub _merge_pairs {
       $current_pair = $lr->[$i];
       $next_pair = $lr->[$next];
       $del_pair = undef;
-
-      # duplicate filter
-      if( $current_pair->{'to'}->{'start'} == $next_pair->{'to'}->{'start'} ) {
-        $del_pair = $next_pair;
-      } elsif(( $current_pair->{'from'}->{'id'} eq $next_pair->{'from'}->{'id'} ) &&
-              ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
-              ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
-
-        if( $current_pair->{'ori'} == 1 ) {
-          # check forward strand merge
-          if( $next_pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
-            # normal merge with previous element
-            $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
-            $current_pair->{'from'}->{'end'} = $next_pair->{'from'}->{'end'};
-            $del_pair = $next_pair;
-          }
-        } else {
-          # check backward strand merge
-          if( $next_pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
-            # yes its a merge
-            $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
-            $current_pair->{'from'}->{'start'} = $next_pair->{'from'}->{'start'};
-            $del_pair = $next_pair;
-          }
-        }
-      }
       
-      if( defined $del_pair ) {
-        splice( @$lr, $next, 1 );
-        $lr_from = $self->{"_pair_$map_from"}->{uc($del_pair->{'from'}->{'id'})};
-        for( my $j=0; $j <= $#$lr_from; $j++ ) {
-          if( $lr_from->[$j] == $del_pair ) {
-            splice( @$lr_from, $j, 1 );
-            last;
-          }
-        }
-        $length--;
-        if( $length < $next ) { last; }
-      } else {
-        $next++;
-        $i++;
+      if(exists $current_pair->{'indel'} || exists $next_pair->{'indel'}){
+	  #necessary to modify the merge function to not merge indels
+	  $next++;
+	  $i++;
       }
-    }
+      else{
+	  # duplicate filter
+	  if( $current_pair->{'to'}->{'start'} == $next_pair->{'to'}->{'start'} ) {
+	      $del_pair = $next_pair;
+	  } elsif(( $current_pair->{'from'}->{'id'} eq $next_pair->{'from'}->{'id'} ) &&
+		  ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
+		  ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {
+	      
+	      if( $current_pair->{'ori'} == 1 ) {
+		  # check forward strand merge
+		  if( $next_pair->{'from'}->{'start'} - 1 == $current_pair->{'from'}->{'end'} ) {
+		      # normal merge with previous element
+		      $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
+		      $current_pair->{'from'}->{'end'} = $next_pair->{'from'}->{'end'};
+		      $del_pair = $next_pair;
+		  }
+	      } else {
+		  # check backward strand merge
+		  if( $next_pair->{'from'}->{'end'} + 1 == $current_pair->{'from'}->{'start'} ) {
+		      # yes its a merge
+		      $current_pair->{'to'}->{'end'} = $next_pair->{'to'}->{'end'};
+		      $current_pair->{'from'}->{'start'} = $next_pair->{'from'}->{'start'};
+		      $del_pair = $next_pair;
+		  }
+	      }
+	  }
+      
+	  if( defined $del_pair ) {
+	      splice( @$lr, $next, 1 );
+	      $lr_from = $self->{"_pair_$map_from"}->{uc($del_pair->{'from'}->{'id'})};
+	      for( my $j=0; $j <= $#$lr_from; $j++ ) {
+		  if( $lr_from->[$j] == $del_pair ) {
+		      splice( @$lr_from, $j, 1 );
+		      last;
+		  }
+	      }
+	      $length--;
+	      if( $length < $next ) { last; }
+	  }
+	  else {
+	      $next++;
+	      $i++;
+	  }
+      }  
+      
+   }
     $self->{'pair_count'} += scalar( @$lr );
-  }
+ }
 }
 
 
