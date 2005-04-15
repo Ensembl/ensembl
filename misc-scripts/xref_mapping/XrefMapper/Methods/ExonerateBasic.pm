@@ -106,12 +106,12 @@ cd /tmp
 
 rm -f /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile /tmp/$output
 
-lsrcp ecs1a:$target /tmp/\$LSB_JOBINDEX.$targetfile
-lsrcp ecs1a:$query  /tmp/\$LSB_JOBINDEX.$queryfile
+lsrcp $target /tmp/\$LSB_JOBINDEX.$targetfile
+lsrcp $query  /tmp/\$LSB_JOBINDEX.$queryfile
 
 $exonerate_path /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > /tmp/$output
 
-lsrcp /tmp/$output ecs1a:$root_dir/$output
+lsrcp /tmp/$output $root_dir/$output
 
 rm -f /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile /tmp/$output
 EOF
