@@ -72,6 +72,10 @@ use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 use Bio::EnsEMBL::ProjectionSegment;
 use Bio::EnsEMBL::Registry;
 
+use Bio::EnsEMBL::StrainSlice;
+
+use Data::Dumper;
+
 my $reg = "Bio::EnsEMBL::Registry";
 
 # inheritance to Bio::EnsEMBL::Root will eventually be removed
@@ -1356,6 +1360,35 @@ sub get_all_VariationFeatures{
   } else {
     return [];
   }
+}
+
+
+=head2 get_by_strain
+
+    Arg[1]      : string $strain
+    Example     : my $strainSlice = $slice->get_by_strain($strain);
+    Description : Gets the specific Slice for the strain
+    ReturnType  : Bio::EnsEMB::StrainSlice
+    Exceptions  : none
+    Caller      : general
+
+=cut
+
+sub get_by_strain{
+    my $self = shift;
+    my $strain_name = shift;
+    
+    return Bio::EnsEMBL::StrainSlice->new(
+					  -START   => $self->{'start'},
+					  -END     => $self->{'end'},
+					  -STRAND  => $self->{'strand'},
+					  -ADAPTOR => $self->{'adaptor'},
+					  -SEQ     => $self->{'seq'},
+					  -SEQ_REGION_NAME => $self->{'seq_region_name'},
+					  -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
+					  -COORD_SYSTEM    => $self->{'coord_system'},
+					  -STRAIN_NAME     => $strain_name);
+
 }
 
 =head2 get_all_genotyped_VariationFeatures
