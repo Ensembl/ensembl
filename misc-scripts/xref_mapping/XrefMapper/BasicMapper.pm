@@ -887,9 +887,9 @@ sub parse_mappings {
       push @{$object_xref_mappings{$key}}, $xref_id;
 
       # store query & target identities
-      # Note this is a hash (object id) of hashes (xref id) of hashes ("query_identity" or "target_identity")
-      $object_xref_identities{$target_id}->{$xref_id}->{"query_identity"} = $query_identity;
-      $object_xref_identities{$target_id}->{$xref_id}->{"target_identity"} = $target_identity;
+      # Note this is a hash (type|object id) of hashes (xref id) of hashes ("query_identity" or "target_identity")
+      $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = $query_identity;
+      $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = $target_identity;
 
       # note the NON-OFFSET xref_id is stored here as the values are used in
       # a query against the original xref database
@@ -1311,8 +1311,8 @@ sub dump_core_xrefs {
 	    $object_xrefs_written{$full_key} = 1;
 
 	    # Also store *parent's* query/target identity for dependent xrefs
-	    $object_xref_identities{$object_id}->{$xref_id}->{"target_identity"} = $object_xref_identities{$object_id}->{$master_xref_id}->{"target_identity"};
-	    $object_xref_identities{$object_id}->{$xref_id}->{"query_identity"} = $object_xref_identities{$object_id}->{$master_xref_id}->{"query_identity"};
+	    $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"target_identity"};
+	    $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"query_identity"};
 
 	    # write a go_xref with the appropriate linkage type
 	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
@@ -1345,8 +1345,6 @@ sub dump_core_xrefs {
   close(OBJECT_XREF);
   close(EXTERNAL_SYNONYM);
   close(GO_XREF);
-
-  print "Before calling display_xref, object_xref_mappings size " . scalar (keys %object_xref_mappings) . "\n";
 
   # calculate display_xref_ids for transcripts and genes
   my $transcript_display_xrefs = $self->build_transcript_display_xrefs($xref_id_offset);
@@ -1425,7 +1423,7 @@ sub build_transcript_display_xrefs {
   print "Got " . scalar(keys %xref_to_source) . " xref-source mappings\n";
 
   # Cache the list of translation->transcript mappings & vice versa
-  # Nte variables are global
+  # Note variables are global
   print "Building translation to transcript mappings\n";
   $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
   $sth->execute();
@@ -1467,11 +1465,10 @@ sub build_transcript_display_xrefs {
 	my $i = find_in_list($source, @priorities);
 
 	my $s = $source . "|" . $xref;
-	my $query_identity = $object_xref_identities{$object_id}->{$xref}->{"query_identity"};
-	my $target_identity = $object_xref_identities{$object_id}->{$xref}->{"target_identity"};
+	my $key = $type . "|" . $object_id;
+	my $query_identity  = $object_xref_identities{$key}->{$xref}->{"query_identity"};
+	my $target_identity = $object_xref_identities{$key}->{$xref}->{"target_identity"};
 
-      print "###$type $object_id: xref $xref pri $i qi $query_identity\n" if ((($object_id == 93561 && $type =~ /Transcript/) || ($object_id == 65810 && $type =~ /Translation/)) && $i == 0);
-	print "xref $xref $type $object_id pri $i qi $query_identity best qi " . $best_qi{$s} . " ti $target_identity\n" if ($xref == 397813 || $xref == 397814);
 	# Check if this source has a better priority than the current best one
 	# Note if 2 sources are the same priority, the mappings are compared on
 	# query_identity then target_identity
@@ -1482,7 +1479,6 @@ sub build_transcript_display_xrefs {
 	  $best_xref = $xref;
 	  $best_xref_priority_idx = $i;
 	  $best_qi{$s} = $query_identity;
-	  print "Setting best qi $s to $query_identity\n" if ($xref == 397813 || $xref == 397814);
 	  $best_ti{$s} = $target_identity;
 	}
       } else {
@@ -1491,11 +1487,11 @@ sub build_transcript_display_xrefs {
     }
     # store object type, id, and best xref id and source priority
     if ($best_xref) {
-      print "##setting obj to best xref $key to $best_xref | $best_xref_priority_idx\n" if ($best_xref == 397813 || $best_xref == 397814);
       $obj_to_best_xref{$key} = $best_xref . "|" . $best_xref_priority_idx;
     }
 
   }
+
 
   # Now go through each of the calculated best xrefs and convert any that are
   # calculated against translations to be associated with their transcript,
@@ -1536,10 +1532,10 @@ sub build_transcript_display_xrefs {
     if ($translation_id) {
       my ($translation_xref, $translation_priority) = split /\|/, $obj_to_best_xref{"Translation|$translation_id"};
       my ($transcript_xref, $transcript_priority)   = split /\|/, $obj_to_best_xref{"Transcript|$transcript_id"};
-      my $transcript_qi = $object_xref_identities{$object_id}->{$transcript_xref}->{"query_identity"};
-      my $translation_qi = $object_xref_identities{$object_id}->{$translation_xref}->{"query_identity"};
+      my $transcript_qi = $object_xref_identities{"Transcript|$object_id"}->{$transcript_xref}->{"query_identity"};
+      my $translation_qi = $object_xref_identities{"Translation|$object_id"}->{$translation_xref}->{"query_identity"};
 
-print "translation 65810: translation xref: $translation_xref $translation_priority transcript_xref $transcript_xref $transcript_priority\n" if ($type =~ /Translation/ && $object_id == 65810);
+      #print "transcript xref $transcript_xref transcript pri $transcript_priority transcript qi: $transcript_qi translation xref $translation_xref translation pri $translation_priority translation qi $translation_qi\n";
       if(!$translation_xref){
 	$best_xref = $transcript_xref;
 	$best_xref_priority_idx = $transcript_priority;
@@ -1548,20 +1544,19 @@ print "translation 65810: translation xref: $translation_xref $translation_prior
 	$best_xref = $translation_xref;
 	$best_xref_priority_idx = $translation_priority;
       }
-      elsif ($translation_priority < $transcript_priority && $translation_qi > $transcript_qi) {
+      elsif ($translation_priority < $transcript_priority) {
 	$best_xref = $translation_xref;
 	$best_xref_priority_idx = $translation_priority;
       } else {
 	$best_xref = $transcript_xref;
 	$best_xref_priority_idx = $transcript_priority;
       }
-      
+
     }
     if ($best_xref) {
 
       # Write record with xref_id_offset
       print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE transcript_id=" . $object_id . ";\n";
-      print "wrote " . $best_xref . " (plus offset) for 93591\n" if ($object_id eq 93591);
       print TRANSCRIPT_DX_TXT ($best_xref+$xref_id_offset) . "\t" . $object_id . "\n";
       $n++;
 
@@ -1932,19 +1927,20 @@ sub build_gene_descriptions {
 	foreach my $xref (@xref_ids) {
 	  $local_xref_to_object{$xref} = $key;
 	}
-	
+
       }
 
       my $translation = $transcript_to_translation{$transcript};
       $key = "Translation|$translation";
       if ($object_xref_mappings{$key}) {
 
-	push @gene_xrefs, @{$object_xref_mappings{$key}} ;
+	@xref_ids = @{$object_xref_mappings{$key}};
+	push @gene_xrefs, @xref_ids ;
 	foreach my $xref (@xref_ids) {
 	  $local_xref_to_object{$xref} = $key;
 	}
       }
-      
+
     }
 
     # Now sort through these and find the "best" description and write it
@@ -2028,13 +2024,14 @@ sub compare_xref_descriptions {
 
      return 0 if ($type_a != $type_b); # only compare like with like
 
-     my $query_identity_a = $object_xref_identities{$object_a}->{$a}->{"query_identity"};
-     my $query_identity_b = $object_xref_identities{$object_b}->{$b}->{"query_identity"};
+     my $query_identity_a = $object_xref_identities{$key_a}->{$a}->{"query_identity"};
+     my $query_identity_b = $object_xref_identities{$key_b}->{$b}->{"query_identity"};
 
+     print "gene 78163 " . $xref_accessions{$a} . " key a $key_a qia $query_identity_a " . $xref_accessions{$b} . " key b $key_b qib $query_identity_b \n" if ($gene_id==78163);
      return ($query_identity_a <=> $query_identity_b) if ($query_identity_a != $query_identity_b);
 
-     my $target_identity_a = $object_xref_identities{$object_a}->{$a}->{"target_identity"};
-     my $target_identity_b = $object_xref_identities{$object_b}->{$b}->{"target_identity"};
+     my $target_identity_a = $object_xref_identities{$key_a}->{$a}->{"target_identity"};
+     my $target_identity_b = $object_xref_identities{$key_b}->{$b}->{"target_identity"};
 
      return ($target_identity_a <=> $target_identity_b);
 
