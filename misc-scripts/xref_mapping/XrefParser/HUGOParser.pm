@@ -9,6 +9,7 @@ use vars qw(@ISA);
 @ISA = qw(XrefParser::BaseParser);
 my $xref_sth ;
 my $dep_sth;
+my $syn_sth;
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -42,6 +43,7 @@ sub run {
   my $dir = dirname($file);
 
   my %hugo;
+  my %syn;
 
   open (ENS4, $dir."/ens4.txt") || die "Can't open hugo ens4 $dir/ens4.txt\n";
   #HGNC    Symbol  Literature Aliases      Withdrawn Symbols
@@ -55,6 +57,9 @@ sub run {
     my $label = $array[1];
 
     $hugo{$hgnc} = $label;
+    if(defined($array[3])){
+      $syn{$hgnc}  = $array[3];
+    }
 
   }
   close ENS4;
@@ -83,6 +88,13 @@ sub run {
       else{
 	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,'',$hugo{$hgnc},"","",$source_id,$species_id,$count);
 	$count++;
+	if(defined($syn{$hgnc})){ #dead name add to synonym
+	  my @array = split(',\s*',$syn{$hgnc});
+	  foreach my $arr (@array){
+#	    print "adding synonym ".$arr." for ".$hugo{$hgnc}." ($hgnc)\n";
+	    XrefParser::BaseParser->add_to_syn($hgnc, $source_id, $arr);
+	  }
+	}
       }
       #	print "$array[1]\tSPTR\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\tXREF\n";
     }
