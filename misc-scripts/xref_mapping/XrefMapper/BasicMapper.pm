@@ -643,9 +643,16 @@ sub run_mapping {
 
   # delete old output files in target directory if we're going to produce new ones
   if (!defined($self->use_existing_mappings())) {
+    print "deleting out err and map files from output dir\n";
     my $dir = $self->core->dir();
     unlink (<$dir/*.map $dir/*.out $dir/*.err>);
   }
+  #disconnect so that we can then reconnect after the long mapping bit.
+  $self->core->dbc->disconnect_if_idle(1);
+  $self->xref->dbc->disconnect_if_idle(1);
+  $self->core->dbc->disconnect_when_inactive(1);
+  $self->xref->dbc->disconnect_when_inactive(1);
+
 
   # foreach method, submit the appropriate job & keep track of the job name
   # note we check if use_existing_mappings is set here, not earlier, as we
@@ -792,7 +799,12 @@ sub parse_mappings {
   my $dir = $ensembl->dir();
 
   # incase timed out, force reconnection
+  $ensembl->dbc->disconnect_if_idle(0);
+  $ensembl->dbc->disconnect_when_inactive(0);
   $ensembl->dbc->connect();
+
+  $xref->dbc->disconnect_if_idle(0);
+  $xref->dbc->disconnect_when_inactive(0);
   $xref->dbc->connect();
 
   # get current max object_xref_id
@@ -1193,6 +1205,7 @@ sub get_analysis_id {
     print "Done (analysis ID=" . $analysis_id. ")\n";
 
   }
+  $sth->finish();
 
   return $analysis_id;
 
