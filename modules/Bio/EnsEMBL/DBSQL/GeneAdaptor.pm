@@ -71,7 +71,6 @@ sub _tables {
   my $self = shift;
 
   return ([ 'gene', 'g' ],
-          [ 'gene_description', 'gd' ],
           [ 'gene_stable_id', 'gsi' ],
           [ 'xref', 'x' ],
           [ 'external_db' , 'exdb' ]);
@@ -91,8 +90,9 @@ sub _columns {
   my $self = shift;
 
   return qw( g.gene_id g.seq_region_id g.seq_region_start g.seq_region_end
-	     g.seq_region_strand g.analysis_id g.type g.display_xref_id
-	     gd.description gsi.stable_id gsi.version UNIX_TIMESTAMP(gsi.created_date)
+	     g.seq_region_strand g.analysis_id g.biotype g.display_xref_id
+	     g.description g.confidence g.source 
+	     gsi.stable_id gsi.version UNIX_TIMESTAMP(gsi.created_date)
 	     UNIX_TIMESTAMP(gsi.modified_date) 
 	     x.display_label x.dbprimary_acc x.description x.version 
 	     exdb.db_name exdb.status exdb.release );
@@ -100,8 +100,7 @@ sub _columns {
 
 
 sub _left_join {
-  return ( [ 'gene_description', "gd.gene_id = g.gene_id" ],
-	   [ 'gene_stable_id', "gsi.gene_id = g.gene_id" ],
+  return ( [ 'gene_stable_id', "gsi.gene_id = g.gene_id" ],
 	   [ 'xref', "x.xref_id = g.display_xref_id" ],
 	   [ 'external_db', "exdb.external_db_id = x.external_db_id" ] );
 }
@@ -535,9 +534,15 @@ sub fetch_all_by_external_name {
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
 
-  my @ids = $entryAdaptor->list_gene_ids_by_extids( $external_id );
+  my ( @ids, @result );
+  @ids = $entryAdaptor->list_gene_ids_by_extids( $external_id );
 
-  return $self->fetch_all_by_dbID_list(\@ids);
+  my $genes = $self->fetch_all_by_dbID_list(\@ids);
+
+  my %genes_by_dbIDs = map { $_->dbID(),$_ } @$genes;
+  @result = map { $genes_by_dbIDs{ $_ } } @ids;
+
+  return \@result;
 }
 
 
@@ -742,7 +747,7 @@ sub store {
     $analysis_id = $db->get_AnalysisAdaptor->store($analysis);
   }
 
-  my $type = $gene->type || "";
+  my $type = $gene->biotype || "";
 
   my $original = $gene;
   my $original_transcripts = $gene->get_all_Transcripts();
@@ -751,22 +756,28 @@ sub store {
 
   my $store_gene_sql =
         "INSERT INTO gene " .
-           "SET type = ?, " .
+           "SET biotype = ?, " .
                "analysis_id = ?, " .
                "seq_region_id = ?, " .
                "seq_region_start = ?, " .
                "seq_region_end = ?, " .
-               "seq_region_strand = ?";
+               "seq_region_strand = ?, ".
+	       "description = ?, " .
+               "source = ?, ".
+               "confidence = ? ";
 
   my $sth = $self->prepare( $store_gene_sql );
    $sth->execute(
-		  "$type",
-		  $analysis_id,
-		  $seq_region_id,
-		  $gene->start(),
-		  $gene->end(),
-		  $gene->strand()
-		 );
+		 $type,
+		 $analysis_id,
+		 $seq_region_id,
+		 $gene->start(),
+		 $gene->end(),
+		 $gene->strand(),
+		 $gene->description(),
+		 $gene->source(),
+		 $gene->confidence()
+		);
   $sth->finish();
 
    my $gene_dbID = $sth->{'mysql_insertid'};
@@ -796,16 +807,6 @@ sub store {
    }
 
 
-  # store the gene description associated with this gene if there is
-  # one
-  my $desc = $gene->description();
-  if(defined($desc)) {
-    $sth = $self->prepare("INSERT INTO gene_description " .
-                            " SET gene_id = ?, " .
-                            " description = ?" );
-    $sth->execute($gene_dbID, $desc);
-    $sth->finish();
-  }
 
    # store the dbentries associated with this gene
    my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
@@ -945,12 +946,6 @@ sub remove {
   $sth->execute( $gene->dbID );
   $sth->finish();
 
-  # remove this genes description
-
-  $sth = $self->prepare( "delete from gene_description where gene_id = ?" );
-  $sth->execute( $gene->dbID() );
-  $sth->finish();
-
   # remove this gene from the database
 
   $sth = $self->prepare( "delete from gene where gene_id = ? " );
@@ -1041,9 +1036,10 @@ sub update {
 
    my $update_gene_sql = "
         UPDATE gene
-           SET type = ?,
+           SET biotype = ?,
                analysis_id = ?,
-               display_xref_id = ?
+               display_xref_id = ?,
+               confidence = ?
          WHERE gene_id = ?";
 
    my $display_xref = $gene->display_xref();
@@ -1059,6 +1055,7 @@ sub update {
    $sth->execute($gene->type(), 
 		 $gene->analysis->dbID(),
 		 $display_xref_id,
+		 $gene->confidence(),
 		 $gene->dbID()
 		);
 
@@ -1096,15 +1093,16 @@ sub _objs_from_sth {
   my %sr_cs_hash;
 
   my ( $gene_id, $seq_region_id, $seq_region_start, $seq_region_end, 
-       $seq_region_strand, $analysis_id, $type, $display_xref_id, 
+       $seq_region_strand, $analysis_id, $biotype, $display_xref_id, 
        $gene_description, $stable_id, $version, $created_date, 
-       $modified_date, $xref_display_id,
+       $modified_date, $xref_display_id, $confidence, $source, 
        $xref_primary_acc, $xref_desc, $xref_version, $external_name, 
        $external_db, $external_status, $external_release );
 
   $sth->bind_columns( \$gene_id, \$seq_region_id, \$seq_region_start,
-          \$seq_region_end, \$seq_region_strand, \$analysis_id, \$type,
-          \$display_xref_id, \$gene_description, \$stable_id, \$version,
+          \$seq_region_end, \$seq_region_strand, \$analysis_id, \$biotype,
+          \$display_xref_id, \$gene_description, \$confidence, \$source, 
+	  \$stable_id, \$version,
           \$created_date, \$modified_date, 
 	  \$xref_display_id, \$xref_primary_acc, \$xref_desc, \$xref_version,
           \$external_db, \$external_status,
@@ -1222,7 +1220,7 @@ sub _objs_from_sth {
     #finally, create the new gene
     push @genes, Bio::EnsEMBL::Gene->new
       ( '-analysis'      =>  $analysis,
-        '-type'          =>  $type,
+        '-biotype'       =>  $biotype,
         '-start'         =>  $seq_region_start,
         '-end'           =>  $seq_region_end,
         '-strand'        =>  $seq_region_strand,
@@ -1237,12 +1235,20 @@ sub _objs_from_sth {
         '-external_name' =>  $external_name,
         '-external_db'   =>  $external_db,
         '-external_status' => $external_status,
-        '-display_xref' => $display_xref );
+        '-display_xref' => $display_xref,
+	'-confidence'   => $confidence,
+        '-source'       => $source );
   }
 
   return \@genes;
 }
 
+
+##########################
+#                        #
+#  DEPRECATED METHODS    #
+#                        #
+##########################
 
 
 =head2 fetch_by_maximum_DBLink
@@ -1255,6 +1261,8 @@ sub _objs_from_sth {
 sub fetch_by_maximum_DBLink {
   my ( $self, $external_id ) = @_;
   
+  deprecate( "use fetch_all_by_external_name instead" );
+
   my $genes=$self->fetch_all_by_external_name( $external_id);
   
   my $biggest;

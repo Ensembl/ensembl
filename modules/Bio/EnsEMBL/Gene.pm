@@ -60,10 +60,11 @@ sub new {
 
   my ( $stable_id, $version, $external_name, $type, $external_db, 
        $external_status, $display_xref, $description, $transcripts,
-       $created_date, $modified_date ) = 
+       $created_date, $modified_date, $confidence, $biotype, $source ) = 
     rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
 		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF', 'DESCRIPTION',
-                 'TRANSCRIPTS', 'CREATED_DATE', 'MODIFIED_DATE'], @_ );
+                 'TRANSCRIPTS', 'CREATED_DATE', 'MODIFIED_DATE', 
+	         'CONFIDENCE', 'BIOTYPE', 'SOURCE'], @_ );
 
   if ($transcripts) {
     $self->{'_transcript_array'} = $transcripts;
@@ -79,9 +80,11 @@ sub new {
   $self->external_db( $external_db ) if( defined $external_db );
   $self->external_status( $external_status ) if( defined $external_status );
   $self->display_xref( $display_xref ) if( defined $display_xref );
-  $self->type( $type ) if( defined $type );
+  $self->biotype( $type ) if( defined $type );
+  $self->biotype( $biotype ) if( defined $biotype );
   $self->description($description);
-
+  $self->confidence( $confidence );
+  $self->source( $source );
   return $self;
 }
 
@@ -101,7 +104,7 @@ sub new {
 
 sub is_known{
   my $self = shift;
-  return ($self->{'display_xref'}) ? 1 : 0;
+  return ( $self->{'confidence'} eq "KNOWN" );
 }
 
 
@@ -133,6 +136,44 @@ sub external_name {
     return undef;
   }
 }
+
+
+=head2 confidence
+
+  Arg [1]    : string $confidence
+  Example    : none
+  Description: get/set for attribute confidence
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub confidence {
+   my $self = shift;
+  $self->{'confidence'} = shift if( @_ );
+  return $self->{'confidence'};
+}
+
+
+
+=head2 source
+
+  Arg [1]    : string $source
+  Example    : none
+  Description: get/set for attribute source
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub source {
+  my $self = shift;
+  $self->{'source'} = shift if( @_ );
+  return ( $self->{'source'} || "ensembl" );
+}
+
 
 
 =head2 external_db	
@@ -178,9 +219,9 @@ sub external_db {
 =cut
 
 sub external_status {
-  my ( $self, $ext_status ) = @_;
+  my $self = shift;
 
-  return $self->{'_ext_status'} = $ext_status if defined $ext_status;
+  $self->{'_ext_status'} = shift if ( @_ );
   return $self->{'_ext_status'} if exists $self->{'_ext_status'};
 
   my $display_xref = $self->display_xref();
@@ -342,6 +383,7 @@ sub get_all_Exons {
   Arg [1]    : string $type
   Example    : none
   Description: get/set for attribute type
+               This function is going to be deprecated soon, use biotype instead
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -351,10 +393,30 @@ sub get_all_Exons {
 
 sub type {
    my $self = shift;
+   
+   $self->{'biotype'} = shift if( @_ );
 
-   $self->{'type'} = shift if( @_ );
+   return ( $self->{'biotype'} || "protein_coding" );
+}
 
-   return $self->{'type'};
+
+
+=head2 biotype
+
+  Arg [1]    : string $biotype
+  Example    : $gene->biotype( "protein_coding" );
+  Description: get/set for the biotype attribute
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub biotype {
+  my $self = shift;
+
+  $self->{'biotype'} = shift if( @_ );
+  return ( $self->{'biotype'} || "protein_coding" );
 }
 
 
@@ -556,7 +618,6 @@ sub transfer {
 }
 
 
-
 =head2 display_xref
 
   Arg [1]    : Bio::EnsEMBL::DBEntry $display_xref
@@ -651,110 +712,6 @@ sub display_id {
 
 
 
-###########################
-# DEPRECATED METHODS FOLLOW
-###########################
-
-=head2 DEPRECATED add_DBLink
-
-  Description: DEPRECATED This method has been deprecated in favor of the
-               add_DBEntry method.  Objects are responible for holding only
-               xrefs directly associated with themselves now.
-
-=cut
-
-
-sub add_DBLink{
-  my ($self,$value) = @_;
-
-  throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
-
-#  unless(defined $value && ref $value 
-#	 && $value->isa('Bio::Annotation::DBLink') ) {
-#    throw("This [$value] is not a DBLink");
-#  }
-  
-#  if( !defined $self->{'_db_link'} ) {
-#    $self->{'_db_link'} = [];
-#  }
-
-#  push(@{$self->{'_db_link'}},$value);
-}
-
-
-
-
-=head2 temporary_id
-
- Function: DEPRECATED:  Use dbID or stable_id or something else instead
-
-=cut
-
-sub temporary_id {
-   my ($obj,$value) = @_;
-   deprecate( "I cant see what a temporary_id is good for, please use " .
-               "dbID or stableID or\n try without an id." );
-   if( defined $value) {
-      $obj->{'temporary_id'} = $value;
-    }
-    return $obj->{'temporary_id'};
-}
-
-=head2 created
-
-  Description: DEPRECATED - Transcripts no longer have a created attribute
-
-=cut
-
-sub created{
-    my ($self,$value) = @_;
-    deprecate( "The created attribute isnt available any more" );
-    if(defined $value ) {
-      $self->{'created'} = $value;
-    }
-    return $self->{'created'};
-}
-
-=head2 modified
-
-  Description: DEPRECATED - Transcripts no longer have a modified attribute
-
-=cut
-
-sub modified {
-    my ($self,$value) = @_;
-    deprecate( "The modified item isnt available any more" );
-    if( defined $value ) {
-      $self->{'modified'} = $value;
-    }
-    return $self->{'modified'};
-}
-
-=head2 chr_name
-
-  Description: DEPRECATED.  Use project, tranform, or transfer to obtain this
-               gene in another coord system.  Use $gene->slice->seq_region_name
-               to get the name of the underlying coord system. Or
-               $gene->slice->name().
-
-=cut
-
-sub chr_name {
-  my $self = shift;
-
-  deprecate( "Use project() to obtain other coordinate systems" );
-
-  my $gene_slice = $self->slice();
-  if( $gene_slice->coord_system()->name eq "chromosome" ) {
-    return $gene_slice->seq_region_name();
-  }
-
-  my $coords = $self->project( "toplevel" );
-
-  if( @$coords ) {
-    return $coords->[0]->[2]->seq_region_name();
-  }
-}
 
 =head2 get_all_DASFactories
 
@@ -837,6 +794,8 @@ sub get_all_DASFeatures_by_slice{
   }
   return \%das_features;
 }
+
+
 =head2 get_all_DAS_Features
 
   Arg [1]    : none
@@ -904,5 +863,82 @@ sub get_all_regulatory_features {
    return $rfa->fetch_all_by_gene($self, $recursive);
 
 }
+
+###########################
+# DEPRECATED METHODS FOLLOW
+###########################
+
+=head2 DEPRECATED add_DBLink
+
+  Description: DEPRECATED This method has been deprecated in favor of the
+               add_DBEntry method.  Objects are responible for holding only
+               xrefs directly associated with themselves now.
+
+=cut
+
+
+sub add_DBLink{
+  my ($self,$value) = @_;
+
+  throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
+
+#  unless(defined $value && ref $value 
+#	 && $value->isa('Bio::Annotation::DBLink') ) {
+#    throw("This [$value] is not a DBLink");
+#  }
+  
+#  if( !defined $self->{'_db_link'} ) {
+#    $self->{'_db_link'} = [];
+#  }
+
+#  push(@{$self->{'_db_link'}},$value);
+}
+
+
+
+
+=head2 temporary_id
+
+ Function: DEPRECATED:  Use dbID or stable_id or something else instead
+
+=cut
+
+sub temporary_id {
+   my ($obj,$value) = @_;
+   deprecate( "I cant see what a temporary_id is good for, please use " .
+               "dbID or stableID or\n try without an id." );
+   if( defined $value) {
+      $obj->{'temporary_id'} = $value;
+    }
+    return $obj->{'temporary_id'};
+}
+
+
+=head2 chr_name
+
+  Description: DEPRECATED.  Use project, tranform, or transfer to obtain this
+               gene in another coord system.  Use $gene->slice->seq_region_name
+               to get the name of the underlying coord system. Or
+               $gene->slice->name().
+
+=cut
+
+sub chr_name {
+  my $self = shift;
+
+  deprecate( "Use project() to obtain other coordinate systems" );
+
+  my $gene_slice = $self->slice();
+  if( $gene_slice->coord_system()->name eq "chromosome" ) {
+    return $gene_slice->seq_region_name();
+  }
+
+  my $coords = $self->project( "toplevel" );
+
+  if( @$coords ) {
+    return $coords->[0]->[2]->seq_region_name();
+  }
+}
+
 
 1;
