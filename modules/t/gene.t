@@ -277,7 +277,7 @@ my $stable_id = 'ENSG00000171456';
 $gene->description($desc);
 $gene->stable_id($stable_id);
 
-$multi->hide( "core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "gene_description", "translation", "gene_stable_id", "transcript_stable_id", "exon_stable_id", "translation_stable_id", "supporting_feature", "dna_align_feature" );
+$multi->hide( "core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "translation", "gene_stable_id", "transcript_stable_id", "exon_stable_id", "translation_stable_id", "supporting_feature", "dna_align_feature" );
 
 my $gene_ad = $db->get_GeneAdaptor();
 debug( "Storing the gene" );
@@ -409,7 +409,7 @@ $ga->update($gene);
 
 my $newgene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
 ok ( $newgene->display_xref->dbID() == 128324 );
-ok ( $newgene->type eq 'ensembl' );
+ok ( $newgene->type eq 'protein_coding' );
 
 # now change the original gene and update it
 my $dbEntryAdaptor=  $db->get_DBEntryAdaptor();
@@ -503,7 +503,7 @@ ok( $ok );
 # Gene remove test
 #
 
-$multi->save( "core", "gene", "gene_stable_id", "gene_description",
+$multi->save( "core", "gene", "gene_stable_id",
 	      "transcript", "transcript_stable_id",
 	      "translation", "translation_stable_id", "protein_feature",
 	      "exon", "exon_stable_id", "exon_transcript", "supporting_feature",
@@ -516,7 +516,6 @@ my $gene_count = count_rows( $db, "gene" );
 my $exon_count = count_rows( $db, "exon" );
 my $trans_count = count_rows( $db, "transcript" );
 my $tl_count = count_rows( $db, "translation" );
-my $gdesc_count = count_rows($db, "gene_description");
 my $gstable_count = count_rows($db, "gene_stable_id");
 
 my $tminus = scalar( @{$gene->get_all_Transcripts() } );
@@ -534,7 +533,6 @@ $ga->remove( $gene );
 ok( count_rows( $db, "gene" ) == ( $gene_count - 1 ));
 ok( count_rows( $db, "transcript" ) == ($trans_count-$tminus));
 ok( count_rows( $db, "exon" ) == ( $exon_count - $eminus ));
-ok( count_rows( $db, "gene_description" ) == ( $gdesc_count -1 ));
 ok( count_rows( $db, "gene_stable_id" ) == ($gstable_count -1));
 
 ok(!defined($gene->dbID()));
