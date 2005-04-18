@@ -6,7 +6,7 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 10;
+	plan tests => 11;
 }
 
 my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
