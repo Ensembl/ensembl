@@ -378,13 +378,13 @@ sub fetch_by_dbID{
 =cut
 
 sub fetch_all_by_dbID_list {
-  my ($self,$id_list) = @_;
+  my ($self,$id_list_ref) = @_;
 
-  if(!defined($id_list) || ref($id_list) ne 'ARRAY') {
+  if(!defined($id_list_ref) || ref($id_list_ref) ne 'ARRAY') {
     throw("id_list list reference argument is required");
   }
 
-  return [] if(!@$id_list);
+  return [] if(!@$id_list_ref);
 
   my @out;
   #construct a constraint like 't1.table1_id = 123'
@@ -394,13 +394,14 @@ sub fetch_all_by_dbID_list {
   # mysql is faster and we ensure that we do not exceed the max query size by
   # splitting large queries into smaller queries of 200 ids
   my $max_size = 200;
+  my @id_list = @$id_list_ref;
 
-  while(@$id_list) {
+  while(@id_list) {
     my @ids;
-    if(@$id_list > $max_size) {
-      @ids = splice(@$id_list, 0, $max_size);
+    if(@id_list > $max_size) {
+      @ids = splice(@id_list, 0, $max_size);
     } else {
-      @ids = splice(@$id_list, 0);
+      @ids = splice(@id_list, 0);
     }
 
     my $id_str;
