@@ -269,7 +269,7 @@ ok(scalar @{$slice->get_all_Genes});
 #
 #  Test Slice::get_all_Genes_by_type
 #
-ok(scalar @{$slice->get_all_Genes_by_type('ensembl')});
+ok(scalar @{$slice->get_all_Genes_by_type('protein_coding')});
 
 
 
