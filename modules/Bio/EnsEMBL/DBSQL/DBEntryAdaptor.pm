@@ -808,14 +808,19 @@ sub _type_by_external_id{
 # because MySQL can't use any fields in the index.
 
   my %hash = (); 
+  my @result = ();
+
   foreach( @queries ) {
     my $sth = $self->prepare( $_ );
     $sth->execute("$name", $ensType);
     while( my $r = $sth->fetchrow_array() ) {
-      $hash{$r} = 1;
+      if( !exists $hash{$r} ) {
+	$hash{$r} = 1;
+	push( @result, $r );
+      }
     }
   }
-  return keys %hash;
+  return @result;
 }
 
 
