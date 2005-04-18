@@ -100,7 +100,8 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   my ( $exons, $stable_id, $version, $external_name, $external_db,
-       $external_status, $display_xref, $created_date, $modified_date );
+       $external_status, $display_xref, $created_date, $modified_date,
+       $description, $biotype, $confidence  );
 
   #catch for old style constructor calling:
   if((@_ > 0) && ref($_[0])) {
@@ -111,10 +112,12 @@ sub new {
   }
   else {
     ( $exons, $stable_id, $version, $external_name, $external_db,
-      $external_status, $display_xref, $created_date, $modified_date ) = 
+      $external_status, $display_xref, $created_date, $modified_date,
+      $description, $biotype ) = 
         rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
                      'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
-		     'CREATED_DATE', 'MODIFIED_DATE' ], @_ );
+		     'CREATED_DATE', 'MODIFIED_DATE', 'DESCRIPTION',
+		     'BIOTYPE', 'CONFIDENCE' ], @_ );
   }
 
   if( $exons ) {
@@ -132,6 +135,9 @@ sub new {
   $self->display_xref( $display_xref ) if( defined $display_xref );
   $self->edits_enabled(1);
 
+  $self->description( $description );
+  $self->confidence( $confidence );
+  $self->biotype( $biotype );
 
   return $self;
 }
@@ -425,12 +431,63 @@ sub is_known {
 }
 
 
+=head2 type
+
+  Arg [1]    : string $biotype
+  Example    : none
+  Description: This will be replaced with biotype. Will be deprecated soon.
+               get/set for attribute biotype
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub type {
   my $self = shift;
 
-  $self->{'type'} = shift if( @_ );
-  return $self->{'type'};
+  $self->{'biotype'} = shift if( @_ );
+  return ( $self->{'biotype'} || "protein_coding" );
 }
+
+
+
+=head2 confidence
+
+  Arg [1]    : string $confidence
+  Example    : none
+  Description: get/set for attribute confidence
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub confidence {
+   my $self = shift;
+  $self->{'confidence'} = shift if( @_ );
+  return $self->{'confidence'};
+}
+
+
+=head2 biotype
+
+  Arg [1]    : string $biotype
+  Example    : none
+  Description: get/set for attribute biotype
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub biotype {
+   my $self = shift;
+  $self->{'biotype'} = shift if( @_ );
+  return ( $self->{'biotype'} || "protein_coding" );
+}
+
+
 
 
 =head2 display_xref
@@ -1832,6 +1889,88 @@ sub get_all_cdna_SNPs {
   return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs(@_);
 }
 
+
+=head2 get_all_DASFactories
+
+  Arg [1]   : none
+  Function  : Retrieves a listref of registered DAS objects
+  Returntype: [ DAS_objects ]
+  Exceptions:
+  Caller    :
+  Example   : $dasref = $prot->get_all_DASFactories
+
+=cut
+
+sub get_all_DASFactories {
+   my $self = shift;
+   return [ $self->adaptor()->db()->_each_DASFeatureFactory ];
+}
+
+=head2 get_all_DAS_Features
+
+  Arg [1]    : none
+  Example    : $features = $prot->get_all_DAS_Features;
+  Description: Retreives a hash reference to a hash of DAS feature
+               sets, keyed by the DNS, NOTE the values of this hash
+               are an anonymous array containing:
+                (1) a pointer to an array of features;
+                (2) a pointer to the DAS stylesheet
+  Returntype : hashref of Bio::SeqFeatures
+  Exceptions : ?
+  Caller     : webcode
+
+
+=cut
+
+sub get_all_DAS_Features{
+  my ($self,@args) = @_;
+  $self->{_das_features} ||= {}; # Cache
+  my %das_features;
+
+  my $db = $self->adaptor->db;
+  my $GeneAdaptor = $db->get_GeneAdaptor;
+  my $Gene = $GeneAdaptor->fetch_by_transcript_stable_id($self->stable_id);	
+  my $slice = $Gene->feature_Slice;
+
+  foreach my $dasfact( @{$self->get_all_DASFactories} ){
+    my $dsn = $dasfact->adaptor->dsn;
+    my $name = $dasfact->adaptor->name;
+    my $type = $dasfact->adaptor->type;
+    my $key = defined($dasfact->adaptor->url) ? $dasfact->adaptor->url .'/'. $dsn : $dasfact->adaptor->protocol .'://'.$dasfact->adaptor->domain.'/'. $dsn;
+    if( $self->{_das_features}->{$key} ){ # Use cached
+		  $das_features{$key} = $self->{_das_features}->{$key};
+		  next;
+    } else{ # Get fresh data
+		  my @featref = ($type eq 'ensembl_location') ?  ($name, ($dasfact->fetch_all_by_Slice( $slice ))[0]) : $dasfact->fetch_all_by_DBLink_Container( $self );
+		  $self->{_das_features}->{$key} = [@featref];
+		  $das_features{$key} = [@featref];
+	 }
+  }
+  return \%das_features;
+}
+
+=head2 fetch_all_regulatory_features
+
+  Arg [1]    : none
+  Example    : @features = $transcript->fetch_all_regulatory_features();
+  Description: Gets all the regulatory features associated with this transcript.
+               Each feature only appears once.
+  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
+  Exceptions : If arg is not of correct type.
+  Caller     : ?
+
+=cut
+
+sub fetch_all_regulatory_features {
+
+   my ($self) = @_;
+
+   my $rfa = $self->adaptor->db->get_RegulatoryFeatureAdaptor();
+
+   return $rfa->fetch_all_by_transcript($self);
+
+}
+
 ###########################
 # DEPRECATED METHODS FOLLOW
 ###########################
@@ -1932,85 +2071,5 @@ sub temporary_id{
 }
 
 
-=head2 get_all_DASFactories
-
-  Arg [1]   : none
-  Function  : Retrieves a listref of registered DAS objects
-  Returntype: [ DAS_objects ]
-  Exceptions:
-  Caller    :
-  Example   : $dasref = $prot->get_all_DASFactories
-
-=cut
-
-sub get_all_DASFactories {
-   my $self = shift;
-   return [ $self->adaptor()->db()->_each_DASFeatureFactory ];
-}
-
-=head2 get_all_DAS_Features
-
-  Arg [1]    : none
-  Example    : $features = $prot->get_all_DAS_Features;
-  Description: Retreives a hash reference to a hash of DAS feature
-               sets, keyed by the DNS, NOTE the values of this hash
-               are an anonymous array containing:
-                (1) a pointer to an array of features;
-                (2) a pointer to the DAS stylesheet
-  Returntype : hashref of Bio::SeqFeatures
-  Exceptions : ?
-  Caller     : webcode
-
-
-=cut
-
-sub get_all_DAS_Features{
-  my ($self,@args) = @_;
-  $self->{_das_features} ||= {}; # Cache
-  my %das_features;
-
-  my $db = $self->adaptor->db;
-  my $GeneAdaptor = $db->get_GeneAdaptor;
-  my $Gene = $GeneAdaptor->fetch_by_transcript_stable_id($self->stable_id);	
-  my $slice = $Gene->feature_Slice;
-
-  foreach my $dasfact( @{$self->get_all_DASFactories} ){
-    my $dsn = $dasfact->adaptor->dsn;
-    my $name = $dasfact->adaptor->name;
-    my $type = $dasfact->adaptor->type;
-    my $key = defined($dasfact->adaptor->url) ? $dasfact->adaptor->url .'/'. $dsn : $dasfact->adaptor->protocol .'://'.$dasfact->adaptor->domain.'/'. $dsn;
-    if( $self->{_das_features}->{$key} ){ # Use cached
-		  $das_features{$key} = $self->{_das_features}->{$key};
-		  next;
-    } else{ # Get fresh data
-		  my @featref = ($type eq 'ensembl_location') ?  ($name, ($dasfact->fetch_all_by_Slice( $slice ))[0]) : $dasfact->fetch_all_by_DBLink_Container( $self );
-		  $self->{_das_features}->{$key} = [@featref];
-		  $das_features{$key} = [@featref];
-	 }
-  }
-  return \%das_features;
-}
-
-=head2 get_all_regulatory_features
-
-  Arg [1]    : none
-  Example    : @features = $transcript->get_all_regulatory_features();
-  Description: Gets all the regulatory features associated with this transcript.
-               Each feature only appears once.
-  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
-  Exceptions : If arg is not of correct type.
-  Caller     : ?
-
-=cut
-
-sub get_all_regulatory_features {
-
-   my ($self) = @_;
-
-   my $rfa = $self->adaptor->db->get_RegulatoryFeatureAdaptor();
-
-   return $rfa->fetch_all_by_transcript($self);
-
-}
 
 1;
