@@ -170,19 +170,9 @@ sub create_xrefs {
 
       # TODO experimental/predicted
 
-      # pubmed & medline are simple dependent xrefs; may be several of each
-      my @pubmed = $entry =~ /\s+PUBMED\s+(\d+)/g;
-      my @LocusIDline = $entry =~ /db_xref=.LocusID:(\d+)/g;
       my @EntrezGeneIDline = $entry =~ /db_xref=.GeneID:(\d+)/g;
       my @mimline = $entry =~ /db_xref=.MIM:(\d+)/g;
 
-      foreach my $ll (@LocusIDline) {
-	my %dep;
-	$dep{SOURCE_ID} = $dependent_sources{LocusLink};
-	$dep{LINKAGE_SOURCE_ID} = $source_id;
-	$dep{ACCESSION} = $ll;
-	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
-      }
       foreach my $ll (@EntrezGeneIDline) {
 	my %dep;
 	$dep{SOURCE_ID} = $dependent_sources{EntrezGene};
@@ -195,13 +185,6 @@ sub create_xrefs {
 	$dep{SOURCE_ID} = $dependent_sources{MIM};
 	$dep{LINKAGE_SOURCE_ID} = $source_id;
 	$dep{ACCESSION} = $mim;
-	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
-      }
-      foreach my $pub (@pubmed) {
-	my %dep;
-	$dep{SOURCE_ID} = $dependent_sources{PUBMED};
-	$dep{LINKAGE_SOURCE_ID} = $source_id;
-	$dep{ACCESSION} = $pub;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
       }
 
