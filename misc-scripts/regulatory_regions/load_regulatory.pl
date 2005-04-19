@@ -17,16 +17,9 @@ GetOptions( "host=s",   \$host,
 	    "port=i",   \$port,
 	    "dbname=s", \$dbname,
 	    "file=s",   \$file,
-	    "motif=i",  \$motif,
 	    "delete",   \$del,
 	    "help",     \&usage
 	  );
-
-
-if (!$motif) {
-  print "No motif ID specified, exiting\n";
-  exit(1);
-}
 
 my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$dbname",
 		       $user,
@@ -35,7 +28,9 @@ my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$dbname",
 
 delete_existing($dbi) if ($del);
 
-my $rr_sth = $dbi->prepare("INSERT INTO regulatory_feature (name, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, regulatory_motif_id, influence) VALUES(?,?,?,?,?,?,?,?)");
+my $rf_sth = $dbi->prepare("INSERT INTO regulatory_feature (name, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, regulatory_motif_id, influence) VALUES(?,?,?,?,?,?,?,?)");
+my $rm_select_sth = $dbi->prepare("SELECT regulatory_motif_id FROM regulatory_motif WHERE name=? AND type=?");
+my $rm_insert_sth = $dbi->prepare("INSERT INTO regulatory_motif (name, type) VALUES(?,?)");
 my $rr_obj_sth = $dbi->prepare("INSERT INTO regulatory_feature_object VALUES(?,?,?)");
 
 my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
@@ -52,6 +47,8 @@ my $gene_adaptor        = $db_adaptor->get_GeneAdaptor();
 
 my $count = 0;
 
+my %anal;
+
 open (FILE, "<$file") || die "Can't open $file";
 
 while (<FILE>) {
@@ -62,15 +59,33 @@ while (<FILE>) {
 
   my $strand = ($str =~ /\+/ ? 1 : -1);
 
-  # get analysis ID for $method
-  my $analysis = $analysis_adaptor->fetch_by_logic_name($method);
+  # $seq is the name of a motif - if it's already there, find its ID, otherwise add it
+  $rm_select_sth->execute($seq, $feature);
+  my $motif_id = ($rm_select_sth->fetchrow_array())[0];
+  if (!$motif_id) {
+    $rm_insert_sth->execute($seq, $feature);
+    $motif_id = $rm_insert_sth->{'mysql_insertid'};
+  }
+
+  # get analysis ID for $method, and cache
+  my $analysis = $anal{$method};
+  if (!$analysis) {
+    $analysis = $analysis_adaptor->fetch_by_logic_name($method);
+    $anal{$method} = $analysis;
+  }
+
   if (!$analysis) {
     print STDERR "Can't get analysis for $method, skipping\n";
     next;
   }
 
   # get seq_region id for $chr
-  my $chr_slice = $slice_adaptor->fetch_by_region('chromosome', $chr, $start, $end, $strand);
+  my $chr_slice = $slice_adaptor->fetch_by_region(undef, $chr, $start, $end, $strand);
+
+  if (!$chr_slice) {
+    print STDERR "Can't get slice for $chr:$start:$end:$strand\n";
+    next;
+  }
 
   # get internal ID from $type and $id
   my ($ensembl_type) = $type =~ /(gene|transcript|translation)/;
@@ -107,26 +122,44 @@ while (<FILE>) {
     next;
   }
 
-  # populate tables
-  # this should be done via the store methods of the API, once we have some ...
-  $rr_sth->execute($seq,
-		   $slice_adaptor->get_seq_region_id($chr_slice),
-		   $chr_slice->start(),
-		   $chr_slice->end(),
-		   $chr_slice->strand(),
-		   $analysis->dbID(),
-		   $motif,
-		   'negative');
+  # for miRNA_target (and possibly others) where individual features don't
+  # have a unique name, create a composite one. Also set influence for each type.
+  my $feature_name;
+  my $influence;
+  if ($feature =~ /miRNA_target/i) {
+    $feature_name = $id .":" . $seq;
+    $influence = 'negative';
+  }
 
-  my $rr_id = $rr_sth->{'mysql_insertid'};
+  print STDERR "No feature name for $seq of type $feature on $id. Also can't set influence\n" if (!$feature_name);
 
-  $rr_obj_sth->execute($rr_id,
-		      $ensembl_type,
-		      $ensembl_object->dbID());
+  my $seq_region_id = $slice_adaptor->get_seq_region_id($chr_slice);
 
-  $count++;
-  # TODO - motifs, peptides
+  if ($seq_region_id) {
 
+    # add the feature
+    $rf_sth->execute($feature_name,
+		     $seq_region_id,
+		     $chr_slice->start(),
+		     $chr_slice->end(),
+		     $chr_slice->strand(),
+		     $analysis->dbID(),
+		     $motif_id,
+		     $influence);
+
+    my $rr_id = $rf_sth->{'mysql_insertid'};
+
+    $rr_obj_sth->execute($rr_id,
+			 $ensembl_type,
+			 $ensembl_object->dbID());
+
+    $count++;
+
+  } else {
+
+    print STDERR "Can't get seq_region_id for chromosome $chr_slice\n";
+
+  }
 }
 
 close FILE;
@@ -140,7 +173,7 @@ sub delete_existing {
   my $dbi = shift;
 
   $dbi->do("DELETE FROM regulatory_feature");
-  #$dbi->do("DELETE FROM regulatory_motif");
+  $dbi->do("DELETE FROM regulatory_motif");
   $dbi->do("DELETE FROM regulatory_feature_object");
   $dbi->do("DELETE FROM peptide_regulatory_feature");
 
@@ -158,7 +191,6 @@ Usage: perl load_regulatory.pl
          -user   : user name
          -pass   : password
          -dbname : database name
-         -motif  : ID of motif to link to. Must already exist in database.
 	 -file   : file to load from
 	 -delete : delete existing contents of tables first
 
