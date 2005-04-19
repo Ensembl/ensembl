@@ -20,7 +20,7 @@ sub copy_internal_clone_names {
 #get id for 'fpc_clone_id' attribute
 
     $dbh->do("INSERT INTO $target.attrib_type (code,name,description)".
-	     "values ('fpc_clone_id','fpc clone','clone id used for linking to Zebrafish webFPC')");
+            "values ('fpc_clone_id','fpc clone','clone id used for linking to Zebrafish webFPC')");
 
     my ($attrib_id) = $dbh->selectrow_array("Select attrib_type_id from $target.attrib_type where code = 'fpc_clone_id'");
     warn "No attrib id found\n" unless defined($attrib_id);
@@ -38,69 +38,120 @@ sub copy_internal_clone_names {
     my $insert_sth = $dbh->prepare("insert into $target.seq_region_attrib values (?,$attrib_id,?)");
 
     while ($select1_sth->fetch()) {
-		$embl_name =~ s/([\d\w]+).*/$1/;
-		$select2_sth->bind_param(1,$embl_name);
-		$select2_sth->execute;
-		$insert_sth->bind_param(1,$seq_region_id);
-		while (my ($clone_name) = $select2_sth->fetchrow_array()) {
-			$insert_sth->bind_param(2,$clone_name);
-			$insert_sth->execute();
-		}
-	}
+        $embl_name =~ s/([\d\w]+).*/$1/;
+        $select2_sth->bind_param(1,$embl_name);
+        $select2_sth->execute;
+        $insert_sth->bind_param(1,$seq_region_id);
+        while (my ($clone_name) = $select2_sth->fetchrow_array()) {
+            $insert_sth->bind_param(2,$clone_name);
+            $insert_sth->execute();
+        }
+    }
 }
 
 sub update_clone_info {
-  my $self = shift;
-  my $target_cs_name = shift;
+    my $self = shift;
+    my $target_cs_name = shift;
 
-  my $target = $self->target();
-  my $source = $self->source();
-  my $dbh    = $self->dbh();
+    my $target = $self->target();
+    my $source = $self->source();
+    my $dbh    = $self->dbh();
 
-  $self->debug("Vega Danio_specific - Transforming clone_id into seq_region_id for clone_info and current_clone_info");
+    # clone_info, current_clone_info
+    $self->debug("Vega Danio_specific - Transforming clone_id into seq_region_id for clone_info and current_clone_info");
 
-  foreach my $table_name ('clone_info','current_clone_info') {
-      my $select_st1 = 
-      "SELECT ctg.name, ctg.clone_id " .
-      "FROM   $source.contig ctg, $source.$table_name ci " .
-      "WHERE  ctg.clone_id = ci.clone_id " .
-      "AND ctg.name not like 'ctg%' " .
-      "AND ctg.name not like 'NA%'";
-      
-      my $query_results1 = $dbh->selectall_arrayref($select_st1);
-      
-      my $i = 0;
-      foreach my $contig_name (@$query_results1) {
-	  my $embl_acc = $contig_name->[0];
-	  my $select_st2 = 
-	  "SELECT sr.seq_region_id " .
-	  "FROM $target.seq_region sr " . 
-	  "WHERE sr.name = '$embl_acc'";
-	  my @query_results2 = $dbh->selectrow_array($select_st2);
-	  push @{$query_results1->[$i]},@query_results2;
-	  $i++;
-      }
-      
-      foreach my $clone (@$query_results1) {
-	  my $seq_reg_id = $clone->[2];
-	  my $clone_id = $clone->[1];
-	  
-	  my $update_query = 
-	  "UPDATE $target.$table_name " .
-	  "SET clone_id = '$seq_reg_id' " .
-	  "WHERE clone_id = '$clone_id'";
-	  $dbh->do($update_query);
-      }
-      my $alter_struct_1 = 
-      "ALTER table $target.$table_name " .
-      "CHANGE clone_id seq_region_id int(10) not null";
-      my $alter_struct_2 = 
-      "ALTER table $target.$table_name " .
-      "add unique index (seq_region_id)";
-      $dbh->do($alter_struct_1);
-      $dbh->do($alter_struct_2);
-  }
+    foreach my $table_name ('clone_info','current_clone_info') {
+        my $select_st1 = 
+            "SELECT ctg.name, ctg.clone_id " .
+            "FROM   $source.contig ctg, $source.$table_name ci " .
+            "WHERE  ctg.clone_id = ci.clone_id " .
+            "AND ctg.name not like 'ctg%' " .
+            "AND ctg.name not like 'NA%'";
+
+        my $query_results1 = $dbh->selectall_arrayref($select_st1);
+
+        my $i = 0;
+        foreach my $contig_name (@$query_results1) {
+            my $embl_acc = $contig_name->[0];
+            my $select_st2 = 
+                "SELECT sr.seq_region_id " .
+                "FROM $target.seq_region sr " . 
+                "WHERE sr.name = '$embl_acc'";
+            my @query_results2 = $dbh->selectrow_array($select_st2);
+            push @{$query_results1->[$i]},@query_results2;
+            $i++;
+        }
+
+        foreach my $clone (@$query_results1) {
+            my $seq_reg_id = $clone->[2];
+            my $clone_id = $clone->[1];
+
+            my $update_query = 
+                "UPDATE $target.$table_name " .
+                "SET clone_id = '$seq_reg_id' " .
+                "WHERE clone_id = '$clone_id'";
+            $dbh->do($update_query);
+        }
+        my $alter_struct_1 = 
+            "ALTER table $target.$table_name " .
+            "CHANGE clone_id seq_region_id int(10) not null";
+        my $alter_struct_2 = 
+            "ALTER table $target.$table_name " .
+            "add unique index (seq_region_id)";
+        $dbh->do($alter_struct_1);
+        $dbh->do($alter_struct_2);
+    }
+
+    # assembly_tag
+    $self->debug("Vega Danio_specific - Transforming contig_id into seq_region_id for assembly_tag");
+
+    my $select_st3 = 
+        "SELECT ctg.name, ctg.contig_id " .
+        "FROM   $source.contig ctg, $source.assembly_tag at " .
+        "WHERE  ctg.contig_id = at.contig_id " .
+        "AND ctg.name not like 'ctg%' " .
+        "AND ctg.name not like 'NA%'";
+
+    my $query_results3 = $dbh->selectall_arrayref($select_st3);
+
+    my $j = 0;
+    foreach my $contig_name (@$query_results3) {
+        my $embl_acc = $contig_name->[0];
+        my $select_st4 = 
+            "SELECT sr.seq_region_id " .
+            "FROM $target.seq_region sr " . 
+            "WHERE sr.name = '$embl_acc'";
+        my @query_results4 = $dbh->selectrow_array($select_st4);
+        push @{$query_results3->[$j]}, @query_results4;
+        $j++;
+    }
+
+    foreach my $contig (@$query_results3) {
+        my $seq_reg_id = $contig->[2];
+        my $contig_id = $contig->[1];
+
+        my $update_query = 
+            "UPDATE $target.assembly_tag " .
+            "SET contig_id = '$seq_reg_id' " .
+            "WHERE contig_id = '$contig_id'";
+        $dbh->do($update_query);
+    }
+
+    $dbh->do("  ALTER TABLE $target.assembly_tag
+                CHANGE contig_id seq_region_id int(10) UNSIGNED NOT NULL");
+
+    $dbh->do("  ALTER TABLE $target.assembly_tag
+                CHANGE contig_start seq_region_start int(10)");
+
+    $dbh->do("  ALTER TABLE $target.assembly_tag
+                CHANGE contig_end seq_region_end int(10)");
+
+    $dbh->do("  ALTER TABLE $target.assembly_tag
+                CHANGE contig_strand seq_region_strand tinyint(1)");
+
+    $dbh->do("  ALTER TABLE $target.assembly_tag
+                ADD UNIQUE INDEX (seq_region_id)");
+
 }
-
 
 1;
