@@ -174,8 +174,7 @@ sub _generic_fetch {
         SELECT repeat_consensus_id
           , repeat_name
           , repeat_class
-	  , repeat_type
-          , LENGTH(repeat_consensus)
+          , repeat_type
           , repeat_consensus
         FROM repeat_consensus
         WHERE }. $where_clause);
@@ -185,11 +184,16 @@ sub _generic_fetch {
         \$repeat_consensus_id,
         \$repeat_name,
         \$repeat_class,
-	\$repeat_type,
-        \$repeat_length,
+        \$repeat_type,
         \$repeat_consensus
         );
 
+    
+    if ($repeat_consensus =~ /^(\d+)\(N\)$/) {
+      $repeat_length = $1;
+    } else {
+      $repeat_length = CORE::length($repeat_consensus);
+    }
     my @consensi;
     while ($sth->fetch) {
         push @consensi, Bio::EnsEMBL::RepeatConsensus->new
