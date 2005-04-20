@@ -1235,17 +1235,6 @@ sub dump_core_xrefs {
   # build cache of source id -> external_db id; note %source_to_external_db is global
   %source_to_external_db = $self->map_source_to_external_db();
 
-
-  my $sql_syn= "select s.xref_id, s.synonym ";
-  $sql_syn .= "   from xref x, synonym s, dependent_xref d ";
-  $sql_syn .= "     where d.dependent_xref_id = x.xref_id and ";
-  $sql_syn .= "            s.xref_id = x.xref_id and ";
-  $sql_syn .= "            x.xref_id = ?";
-
-  my $dep_syn_sth = $self->xref->dbc->prepare($sql_syn);
-
-
-
   # execute several queries with a max of 200 entries in each IN clause - more efficient
   my $batch_size = 200;
 
@@ -1318,16 +1307,6 @@ sub dump_core_xrefs {
 	$xrefs_written{$xref_id} = 1;
 	$source_ids{$source_id} = $source_id;
       }
-      
-      #dump synonyms for dependent_xref
-      $dep_syn_sth->execute($xref_id);
-      
-      my ($syn_xref, $syn);
-      $dep_syn_sth->bind_columns(\$syn_xref, \$syn);
-      while ($dep_syn_sth->fetch()) {	
-	print EXTERNAL_SYNONYM ($syn_xref+$xref_id_offset) . "\t" .$syn."\n";
-      }
-      
 
       # create an object_xref linking this (dependent) xref with any objects it maps to
       # write to file and add to object_xref_mappings
@@ -1359,22 +1338,36 @@ sub dump_core_xrefs {
       }
     }
 
-    # Now get the synonyms for each of these xrefs and write them to the external_synonym table
-    $sql = "SELECT DISTINCT xref_id, synonym FROM synonym WHERE xref_id $id_str";
-
-    my $syn_sth = $self->xref->dbc->prepare($sql);
-    $syn_sth->execute();
-
-    $syn_sth->bind_columns(\$xref_id, \$accession);
-    while ($syn_sth->fetch()) {
-
-      print EXTERNAL_SYNONYM ($xref_id+$xref_id_offset) . "\t" . $accession . "\n";
-
-    }
-
     #print "source_ids: " . join(" ", keys(%source_ids)) . "\n";
 
   } # while @xref_ids
+
+  # Dump any synonyms for xrefs we've written
+  # Do one big query to get a list of all the synonyms; note each xref may have
+  # more than one synonym so they are stored in a hash of lists
+  print "Dumping synonyms\n";
+  my $syn_count;
+  my %synonyms;
+  my $syn_sth = $self->xref->dbc->prepare("SELECT xref_id, synonym FROM synonym");
+  $syn_sth->execute();
+
+  my ($xref_id, $synonym);
+  $syn_sth->bind_columns(\$xref_id, \$synonym);
+  while ($syn_sth->fetch()) {
+
+    push @{$synonyms{$xref_id}}, $synonym;
+
+  }
+
+  # Now write the ones we want to the file
+  foreach my $xref_id (keys %synonyms) {
+    foreach my $syn (@{$synonyms{$xref_id}}) {
+      print EXTERNAL_SYNONYM ($xref_id+$xref_id_offset) . "\t" . $syn . "\n";
+      $syn_count++;
+    }
+  }
+
+  print "Wrote $syn_count synonyms\n";
 
   close(XREF);
   close(OBJECT_XREF);
@@ -1649,15 +1642,15 @@ sub build_gene_display_xrefs {
 	$trans_xref++;
       }
       my ($xref_id, $priority) = split (/\|/, $transcript_display_xrefs->{$transcript_id});
-      #print "gene $gene_id orig:" . $transcript_display_xrefs->{$transcript_id} . " xref id: " . $xref_id . " pri " . $priority . "\n";
+
       # 2 separate if clauses to avoid having to fetch transcripts unnecessarily
 
-      if (($priority lt $best_xref_priority_idx)) {
+      if (($priority < $best_xref_priority_idx)) {
 
 	$best_xref_priority_idx = $priority;
 	$best_xref = $xref_id;
 
-      } elsif ($priority eq $best_xref_priority_idx) {
+      } elsif ($priority == $best_xref_priority_idx) {
 
 	# compare transcript lengths and use longest
 	my $transcript = $ta->fetch_by_dbID($transcript_id);
@@ -2062,7 +2055,7 @@ sub compare_xref_descriptions {
      my $query_identity_a = $object_xref_identities{$key_a}->{$a}->{"query_identity"};
      my $query_identity_b = $object_xref_identities{$key_b}->{$b}->{"query_identity"};
 
-     print "gene 78163 " . $xref_accessions{$a} . " key a $key_a qia $query_identity_a " . $xref_accessions{$b} . " key b $key_b qib $query_identity_b \n" if ($gene_id==78163);
+     #print "gene 78163 " . $xref_accessions{$a} . " key a $key_a qia $query_identity_a " . $xref_accessions{$b} . " key b $key_b qib $query_identity_b \n" if ($gene_id==78163);
      return ($query_identity_a <=> $query_identity_b) if ($query_identity_a != $query_identity_b);
 
      my $target_identity_a = $object_xref_identities{$key_a}->{$a}->{"target_identity"};
