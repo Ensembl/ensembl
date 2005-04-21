@@ -117,11 +117,11 @@ sub parse_common_options {
             "Unable to open configuration file $conffile for reading: $!");
         while (<CONF>) {
             # remove comments
+            s/^[#;].*//;
             s/\s+[;].*$//;
-            s/^[#;].*$//;
 
             # read options into internal parameter datastructure
-            /(\w\S*)\s*=\s*(.*)/;
+            next unless (/(\w\S*)\s*=\s*(.*)/);
             $self->param($1, $2);
         }
     } else {
@@ -763,6 +763,77 @@ sub mem {
     my $mem = `ps -p $$ -o vsz |tail -1`;
     chomp $mem;
     return $mem;
+}
+
+sub throw {
+  my $string = shift;
+
+  my $VERBOSITY         = 3000;
+  my $DEFAULT_INFO      = 4000;
+  my $DEFAULT_DEPRECATE = 3000;
+  my $DEFAULT_WARNING   = 2000;
+  my $DEFAULT_EXCEPTION = 1000;
+
+  #for backwards compatibility with Bio::EnsEMBL::Root::throw
+  #allow to be called as an object method as well as class method
+  $string = shift if(ref($string)); #skip object if one provided
+
+  my $level  = shift;
+
+  $level = $DEFAULT_EXCEPTION if(!defined($level));
+
+  if($VERBOSITY < $level) {
+    die("\n"); #still die, but silently
+  }
+
+  my $std = stack_trace_dump(3);
+
+  my $out = "\n-------------------- EXCEPTION --------------------\n" .
+              "MSG: $string\n" .
+              "$std" .
+              "---------------------------------------------------\n";
+  die $out;
+}
+
+sub stack_trace_dump {
+  my @stack = stack_trace();
+
+  my $levels = 2; #default is 2 levels so stack_trace_dump call is not present
+  $levels = shift if(@_);
+  $levels = 1 if($levels < 1);
+  
+  while($levels) {
+    $levels--;
+    shift @stack;
+  }
+
+  my $out;
+  my ($module,$function,$file,$position);
+
+
+  foreach my $stack ( @stack) {
+    ($module,$file,$position,$function) = @{$stack};
+    $out .= "STACK $function $file:$position\n";
+  }
+
+  return $out;
+}
+
+sub stack_trace {
+  my $i = 0;
+  my @out;
+  my $prev;
+  while ( my @call = caller($i++)) {
+
+    # major annoyance that caller puts caller context as
+    # function name. Hence some monkeying around...
+    $prev->[3] = $call[3];
+    push(@out,$prev);
+    $prev = \@call;
+  }
+  $prev->[3] = 'toplevel';
+  push(@out,$prev);
+  return @out;
 }
 
 1;
