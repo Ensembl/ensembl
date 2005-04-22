@@ -186,6 +186,9 @@ $mapper->xref($xref); # attach xref object to mapper object
 print "\nDumping xref & Ensembl sequences\n";
 $mapper->dump_seqs($location);
 
+print "\nDeleting old data\n" if ($deleteexisting);
+$mapper->delete_existing() if ($deleteexisting);
+
 print "\nChecking external_db table\n" if ($upload);
 $mapper->upload_external_db() if ($upload);
 
@@ -196,7 +199,7 @@ print "\nParsing mapping output\n";
 $mapper->parse_mappings();
 
 print "\nUploading xrefs\n" if ($upload);
-$mapper->do_upload($deleteexisting) if ($upload);
+$mapper->do_upload() if ($upload);
 
 
 print STDERR "*** All finished ***\n";
