@@ -149,9 +149,6 @@ sub update_clone_info {
     $dbh->do("  ALTER TABLE $target.assembly_tag
                 CHANGE contig_strand seq_region_strand tinyint(1)");
 
-    $dbh->do("  ALTER TABLE $target.assembly_tag
-                ADD UNIQUE INDEX (seq_region_id)");
-
 }
 
 1;
