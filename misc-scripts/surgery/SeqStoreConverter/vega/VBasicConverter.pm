@@ -35,29 +35,9 @@ sub remove_supercontigs {
 
 
 
-sub copy_other_tables {
+sub copy_other_vega_tables {
     my $self = shift;
     $self->copy_tables(
-        # xref tables
-        "xref",
-        "go_xref",
-        "identity_xref",
-        "object_xref",
-        "external_db",
-        "external_synonym",
-        # marker/qtl related tables
-        "map",
-        "marker",
-        "marker_synonym",
-        "qtl",
-        "qtl_synonym",
-        # misc other tables
-        "supporting_feature",
-        "analysis",
-        "exon_transcript",
-        "interpro",
-        "gene_description",
-        "protein_feature",
         # vega tables
         "gene_synonym",
         "transcript_info",
