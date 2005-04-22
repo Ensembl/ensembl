@@ -7,7 +7,7 @@ use SeqStoreConverter::DanioRerio;
 use SeqStoreConverter::vega::VBasicConverter;
 use vars qw(@ISA);
 
-@ISA = qw(SeqStoreConverter::vega::VBasicConverter SeqStoreConverter::DanioRerio);
+@ISA = qw( SeqStoreConverter::DanioRerio SeqStoreConverter::vega::VBasicConverter);
 
 sub copy_internal_clone_names {
     my $self = shift;
