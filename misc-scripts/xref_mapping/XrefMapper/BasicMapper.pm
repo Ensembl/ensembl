@@ -812,7 +812,7 @@ sub parse_mappings {
   my $max_object_xref_id = @{$row}[0];
   if (!defined $max_object_xref_id) {
     print "No existing object_xref_ids, will start from 1\n";
-    $max_object_xref_id = -1; # so that generated xref_ids will be the same as in xref db
+    $max_object_xref_id = 0;
   } else {
     print "Maximum existing object_xref_id = $max_object_xref_id\n";
   }
