@@ -811,8 +811,8 @@ sub parse_mappings {
   my $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
   my $max_object_xref_id = @{$row}[0];
   if (!defined $max_object_xref_id) {
-    print "Can't get highest existing object_xref_id, using 1\n";
-    $max_object_xref_id = 1;
+    print "No existing object_xref_ids, will start from 1\n";
+    $max_object_xref_id = -1; # so that generated xref_ids will be the same as in xref db
   } else {
     print "Maximum existing object_xref_id = $max_object_xref_id\n";
   }
@@ -822,8 +822,8 @@ sub parse_mappings {
   $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(xref_id) FROM xref")}[0];
   my $max_xref_id = @$row[0];
   if (!defined $max_xref_id) {
-    print "Can't get highest existing xref_id, using 1\n";
-    $max_xref_id = 1;
+    print "No existing xref_ids, will start from 1\n";
+    $max_xref_id = -1; # so that generated xref_ids will be the same as in xref db
   } else {
     print "Maximum existing xref_id = $max_xref_id\n";
   }
@@ -1510,7 +1510,7 @@ sub build_transcript_display_xrefs {
 	  $best_ti{$s} = $target_identity;
 	}
       } else {
-	warn("Couldn't find a source for xref $xref \n");
+	warn("Couldn't find a source for xref id $xref " . $xref_accessions{$xref_id} . "\n");
       }
     }
     # store object type, id, and best xref id and source priority
@@ -1812,7 +1812,7 @@ sub map_source_to_external_db {
 
 sub do_upload {
 
-  my ($self, $deleteexisting) = @_;
+  my ($self) = @_;
 
   my $ensembl = $self->core;
   my $core_db = $ensembl->dbc;
@@ -1823,18 +1823,9 @@ sub do_upload {
   foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "gene_description", "go_xref", "interpro") {
 
     my $file = $ensembl->dir() . "/" . $table . ".txt";
-    my $sth;
-
-    if ($deleteexisting) {
-
-      $sth = $core_db->prepare("DELETE FROM $table");
-      print "Deleting existing data in $table\n";
-      $sth->execute();
-
-    }
 
     # don't seem to be able to use prepared statements here
-    $sth = $core_db->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
+    my $sth = $core_db->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
     print "Uploading data in $file to $table\n";
     $sth->execute();
 
@@ -1843,17 +1834,7 @@ sub do_upload {
   # gene_display_xref.sql etc
   foreach my $table ("gene", "transcript") {
 
-
     my $file = $ensembl->dir() . "/" . $table . "_display_xref.sql";
-    my $sth;
-
-    if ($deleteexisting) {
-
-      $sth = $core_db->prepare("UPDATE $table SET display_xref_id=NULL");
-      print "Setting all existing display_xref_id in $table to null\n";
-      $sth->execute();
-
-    }
 
     print "Setting $table display_xrefs from $file\n";
     my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
@@ -1866,6 +1847,37 @@ sub do_upload {
     #  $sth->execute($xref_id, $object_id);
     #}
     #close(DX_TXT);
+  }
+
+}
+
+# Delete (or set some fields to null) existing data
+
+sub delete_existing {
+
+  my $self = shift;
+
+  my $ensembl = $self->core;
+  my $core_db = $ensembl->dbc;
+  # xref.txt etc
+
+  # TODO warn if table not empty
+
+  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "gene_description", "go_xref", "interpro") {
+
+    my $sth = $core_db->prepare("DELETE FROM $table");
+    print "Deleting existing data in $table\n";
+    $sth->execute();
+
+  }
+
+  # gene_display_xref.sql etc
+  foreach my $table ("gene", "transcript") {
+
+    my $sth = $core_db->prepare("UPDATE $table SET display_xref_id=NULL");
+    print "Setting all existing display_xref_id in $table to null\n";
+    $sth->execute();
+
   }
 
 }
