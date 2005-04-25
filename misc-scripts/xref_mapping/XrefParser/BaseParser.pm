@@ -322,7 +322,22 @@ sub get_valid_xrefs_for_dependencies{
 
 
 sub get_valid_codes{
+
   my ($self,$source_name,$species_id) =@_;
+
+  # First cache synonyms so we can quickly add them later
+  my %synonyms;
+  my $syn_sth = dbi()->prepare("SELECT xref_id, synonym FROM synonym");
+  $syn_sth->execute();
+
+  my ($xref_id, $synonym);
+  $syn_sth->bind_columns(\$xref_id, \$synonym);
+  while ($syn_sth->fetch()) {
+
+    push @{$synonyms{$xref_id}}, $synonym;
+
+  }
+
   my %valid_codes;
   my @sources;
 
@@ -333,13 +348,17 @@ sub get_valid_codes{
     push @sources,$row[0];
   }
   $sth->finish;
-  
+
   foreach my $source (@sources){
     $sql = "select accession, xref_id from xref where species_id = $species_id and source_id = $source";
     my $sth = dbi()->prepare($sql);
     $sth->execute();
     while(my @row = $sth->fetchrow_array()){
       $valid_codes{$row[0]} =$row[1];
+      # add any synonyms for this xref as well
+      foreach my $syn (@{$synonyms{$row[1]}}) {
+	$valid_codes{$syn} = $row[1];
+      }
     }
   }
   return \%valid_codes;
