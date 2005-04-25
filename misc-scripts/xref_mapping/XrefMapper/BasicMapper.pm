@@ -43,6 +43,7 @@ my %object_xref_mappings;
 my %object_xref_identities;
 my %xref_descriptions;
 my %xref_accessions;
+my %xref_labels;
 my %source_to_external_db;
 my %xrefs_written;
 my %object_xrefs_written;
@@ -807,6 +808,9 @@ sub parse_mappings {
   $xref->dbc->disconnect_when_inactive(0);
   $xref->dbc->connect();
 
+  # cache xref id->label info; useful for debugging
+  $self->cache_xref_labels($xref->dbc);
+
   # get current max object_xref_id
   my $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
   my $max_object_xref_id = @{$row}[0];
@@ -1227,6 +1231,22 @@ sub dump_core_xrefs {
   open (EXTERNAL_SYNONYM, ">$dir/external_synonym.txt");
   open (GO_XREF, ">$dir/go_xref.txt");
 
+  # Cache synonyms for later use
+  # Do one big query to get a list of all the synonyms; note each xref may have
+  # more than one synonym so they are stored in a hash of lists
+  my $syn_count;
+  my %synonyms;
+  my $syn_sth = $self->xref->dbc->prepare("SELECT xref_id, synonym FROM synonym");
+  $syn_sth->execute();
+
+  my ($sxref_id, $synonym);
+  $syn_sth->bind_columns(\$sxref_id, \$synonym);
+  while ($syn_sth->fetch()) {
+
+    push @{$synonyms{$sxref_id}}, $synonym;
+
+  }
+
   # keep a unique list of source IDs to build the external_db table later
   my %source_ids;
 
@@ -1343,23 +1363,7 @@ sub dump_core_xrefs {
   } # while @xref_ids
 
   # Dump any synonyms for xrefs we've written
-  # Do one big query to get a list of all the synonyms; note each xref may have
-  # more than one synonym so they are stored in a hash of lists
-  print "Dumping synonyms\n";
-  my $syn_count;
-  my %synonyms;
-  my $syn_sth = $self->xref->dbc->prepare("SELECT xref_id, synonym FROM synonym");
-  $syn_sth->execute();
-
-  my ($xref_id, $synonym);
-  $syn_sth->bind_columns(\$xref_id, \$synonym);
-  while ($syn_sth->fetch()) {
-
-    push @{$synonyms{$xref_id}}, $synonym;
-
-  }
-
-  # Now write the ones we want to the file
+  # Now write the synonyms we want to the file
   foreach my $xref_id (keys %synonyms) {
     foreach my $syn (@{$synonyms{$xref_id}}) {
       print EXTERNAL_SYNONYM ($xref_id+$xref_id_offset) . "\t" . $syn . "\n";
@@ -1503,7 +1507,7 @@ sub build_transcript_display_xrefs {
 #	if ($i > -1 && $i < $best_xref_priority_idx &&
 #	    (($query_identity > $best_query_identity) ||
 #	    ($query_identity == $best_query_identity && $target_identity > $best_target_identity))) {
-	if ($i > -1 && $i < $best_xref_priority_idx && $query_identity > $best_qi{$s}) {
+	if ($i > -1 && $i <= $best_xref_priority_idx && $query_identity > $best_qi{$s}) {
 	  $best_xref = $xref;
 	  $best_xref_priority_idx = $i;
 	  $best_qi{$s} = $query_identity;
@@ -2114,6 +2118,21 @@ sub upload_external_db {
   } else {
     print "external_db table already has $count rows, will not change it\n";
    }
+
+}
+
+# Cache xref labels for debugging purposes
+
+sub cache_xref_labels {
+
+  my ($self,$xref_dbc) = @_;
+
+  print "Caching xref labels\n";
+  my $sth = $xref_dbc->prepare("SELECT xref_id, label FROM xref");
+  $sth->execute();
+  while(my @row = $sth->fetchrow_array()){
+    $xref_labels{$row[0]} = $row[1];
+  }
 
 }
 
