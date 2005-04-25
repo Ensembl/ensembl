@@ -217,4 +217,28 @@ CREATE TABLE assembly_tag (
   PRIMARY KEY (tag_id),
   UNIQUE KEY (contig_id, contig_start, contig_end, contig_strand, tag_type)
 ) TYPE=MyISAM;
+
  
+################################################################################
+#
+# Table structure for table 'keyword'
+
+CREATE TABLE keyword (
+  keyword_id int(10) unsigned NOT NULL auto_increment,
+  keyword_name varchar(50) default NULL,
+  PRIMARY KEY  (keyword_id)
+) TYPE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'clone_info_keyword'
+
+
+CREATE TABLE clone_info_keyword (
+  keyword_id int(10) unsigned NOT NULL default '0',
+  clone_info_id int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (keyword_id,clone_info_id),
+  KEY clone_info_id_idx (clone_info_id)
+) TYPE=MyISAM;
+
