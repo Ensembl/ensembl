@@ -105,6 +105,16 @@ sub update_clone_info {
     # assembly_tag
     $self->debug("Vega Danio_specific - Transforming contig_id into seq_region_id for assembly_tag");
 
+    # first remove orphans from assembly_tag table (i.e. entries pointing to 
+    # non-existing contigs)
+    my $numrows = $dbh->do(qq(
+        DELETE at
+        FROM $source.assembly_tag at
+        LEFT JOIN $source.contig c ON c.contig_id = at.contig_id
+        WHERE c.contig_id IS NULL
+    ));
+    $self->debug("  Deleted $numrows orphans from assembly_tag");
+
     my $select_st3 = 
         "SELECT ctg.name, ctg.contig_id " .
         "FROM   $source.contig ctg, $source.assembly_tag at " .
