@@ -12,7 +12,7 @@ use DBI;
 
 use Getopt::Long;
 
-my ( $host, $user, $pass, $port, $expression, $dbpattern, $file );
+my ( $host, $user, $pass, $port, $expression, $dbpattern, $file, $result_only  );
 
 GetOptions( "host=s", \$host,
 	    "user=s", \$user,
@@ -20,7 +20,8 @@ GetOptions( "host=s", \$host,
 	    "port=i", \$port,
 	    "expr=s", \$expression,
 	    "file=s", \$file,
-	    "dbpattern=s", \$dbpattern
+	    "dbpattern|pattern=s", \$dbpattern,
+            "result_only!", \$result_only,
 	  );
 
 if( !$host ) {
@@ -73,8 +74,9 @@ for my $dbname ( @dbnames ) {
     }
   }
   
-    
-  print STDERR "$dbname\n";
+   unless ($result_only) { 
+    print STDERR "$dbname\n";
+   }
   if(( ! $expression ) && ( !$file )) {
     next;
   }
@@ -90,8 +92,16 @@ for my $dbname ( @dbnames ) {
 	   $expression =~ /^\s*desc/i ) {
     my $res = $db->selectall_arrayref( $expression );
     my @results = map { join( " ", @$_ ) } @$res ;
+    my $db_name_off = 0 ;
     for my $result ( @results ) {
-      print STDERR "  Result: ",$result,"\n";
+     if($result_only){ 
+      unless ($db_name_off){
+        $db_name_off =1 ;
+        print STDERR "==> $dbname :\n";
+      }
+     }
+      print STDERR "    Result: ",$result,"\n";
+
     }
   } else {
     $db->do( $expression );
