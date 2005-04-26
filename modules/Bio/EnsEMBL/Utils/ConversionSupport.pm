@@ -181,7 +181,7 @@ sub confirm_params {
     print $self->list_all_params;
 
     # ask user if he wants to proceed
-    $self->user_confirm;
+    exit unless $self->user_proceed("Continue?");
     
     return(1);
 }
@@ -212,32 +212,52 @@ sub list_all_params {
     return $txt;
 }
 
-=head2 user_confirm
+=head2 user_proceed
 
-  Example     : print "Do you want to continue?\n";
-                $support->user_confirm;
+  Arg[1]      : (optional) String $text - notification text to present to user
+  Example     : # run a code snipped conditionally
+                if ($support->user_proceed("Run the next code snipped?") {
+                    # run some code
+                }
+
+                # exit if requested by user
+                exit unless ($support->user_proceed("Want to continue?"));
   Description : If running interactively, the user is asked if he wants to
-                proceed.
-  Return type : true on success.
+                perform a script action. If he doesn't, this section is skipped
+                and the script proceeds with the code. When running
+                non-interactively, the section is run by default.
+  Return type : TRUE to proceed, FALSE to skip.
   Exceptions  : none
   Caller      : general
 
 =cut
 
-sub user_confirm {
-    my $self = shift;
+sub user_proceed {
+    my ($self, $text) = @_;
 
     if ($self->param('interactive')) {
-        print "Continue? [y/N] ";
+        print "$text\n" if $text;
+        print "[y/N] ";
         my $input = lc(<>);
         chomp $input;
         unless ($input eq 'y') {
-            print "Aborting.\n";
-            exit(0);
+            print "Skipping.\n";
+            return(0);
         }
     }
 
     return(1);
+}
+
+=head2 user_confirm
+
+  Description : DEPRECATED - please use user_proceed() instead
+
+=cut
+
+sub user_confirm {
+    my $self = shift;
+    exit unless $self->user_proceed("Continue?");
 }
 
 =head2 comma_to_list
