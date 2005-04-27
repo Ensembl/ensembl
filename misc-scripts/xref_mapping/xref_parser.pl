@@ -3,7 +3,7 @@ use strict;
 use Getopt::Long;
 use XrefParser::BaseParser;
 
-my ($host, $port, $dbname, $user, $pass, @species, @sources, $skipdownload, $create, $release);
+my ($host, $port, $dbname, $user, $pass, @species, @sources, $skipdownload, $create, $release, $cleanup);
 
 GetOptions('user=s'       => \$user,
 	   'pass=s'       => \$pass,
@@ -15,6 +15,7 @@ GetOptions('user=s'       => \$user,
 	   'skipdownload' => \$skipdownload,
 	   'create'       => \$create,
 	   'setrelease=s' => \$release,
+	   'cleanup'      => \$cleanup,
 	   'help'         => sub { usage(); exit(0); });
 
 @species = split(/,/,join(',',@species));
@@ -28,7 +29,7 @@ if (!$user || !$host || !$dbname) {
 
 }
 
-XrefParser::BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources, $skipdownload, $create, $release);
+XrefParser::BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources, $skipdownload, $create, $release, $cleanup);
 
 # --------------------------------------------------------------------------------
 
@@ -70,6 +71,8 @@ sub usage {
   -skipdownload Don't download new data, parse existing.
 
   -setrelease   Set the release version for ALL the sources specified.
+
+  -cleanup      Delete the Downloaded source files after parsing.
 
 EOF
 

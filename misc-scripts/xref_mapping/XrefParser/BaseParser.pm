@@ -22,7 +22,7 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %name2species_id;
 
-my ($host, $port, $dbname, $user, $pass, $create, $release);
+my ($host, $port, $dbname, $user, $pass, $create, $release, $cleanup);
 my $skipdownload;
 
 # --------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ my $skipdownload;
 
 sub run {
 
-  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $create, $release) = @_;
+  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $create, $release, $cleanup) = @_;
 
   my @species = @$speciesr;
   my @sources = @$sourcesr;
@@ -178,6 +178,8 @@ sub run {
 
 	# set release if specified
 	set_release($release, $source_id) if ($release);
+
+	unlink("$dir/$new_file[0]") if ($cleanup);
 
       }
     elsif(!$dsn && !$empty){
