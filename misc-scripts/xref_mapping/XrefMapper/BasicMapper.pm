@@ -1824,7 +1824,7 @@ sub do_upload {
 
   # TODO warn if table not empty
 
-  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "gene_description", "go_xref", "interpro") {
+  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "go_xref", "interpro") {
 
     my $file = $ensembl->dir() . "/" . $table . ".txt";
 
@@ -1853,6 +1853,12 @@ sub do_upload {
     #close(DX_TXT);
   }
 
+  # gene descriptions
+  my $file = $ensembl->dir() . "/gene_description.sql";
+  print "Setting gene descriptions from $file\n";
+  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+  system $str;
+
 }
 
 # Delete (or set some fields to null) existing data
@@ -1865,9 +1871,7 @@ sub delete_existing {
   my $core_db = $ensembl->dbc;
   # xref.txt etc
 
-  # TODO warn if table not empty
-
-  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "gene_description", "go_xref", "interpro") {
+  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "go_xref", "interpro") {
 
     my $sth = $core_db->prepare("DELETE FROM $table");
     print "Deleting existing data in $table\n";
@@ -1883,6 +1887,11 @@ sub delete_existing {
     $sth->execute();
 
   }
+
+  # gene descriptions
+  my $sth = $core_db->prepare("UPDATE gene SET description=NULL");
+  print "Setting all existing descriptions in gene table to null\n";
+  $sth->execute();
 
 }
 
@@ -1945,7 +1954,7 @@ sub build_gene_descriptions {
   print "Regexp filtering (" . scalar(@regexps) . " regexps) removed $removed descriptions, left with " . scalar(keys %xref_descriptions) . "\n";
 
   my $dir = $self->core->dir();
-  open(GENE_DESCRIPTIONS,">$dir/gene_description.txt") || die "Could not open $dir/gene_description.txt";
+  open(GENE_DESCRIPTIONS,">$dir/gene_description.sql") || die "Could not open $dir/gene_description.sql";
 
   # Foreach gene, get any xrefs associated with its transcripts or translations
 
@@ -1998,7 +2007,8 @@ sub build_gene_descriptions {
       my $source = $xref_to_source{$best_xref};
       my $acc = $xref_accessions{$best_xref};
 
-      print GENE_DESCRIPTIONS "$gene_id\t$description" . " [Source:$source;Acc:$acc]\n" if ($description);
+      my $desc = $description . " [Source:$source;Acc:$acc]";
+      print GENE_DESCRIPTIONS "UPDATE gene SET description='$desc' WHERE gene_id=$gene_id\n" if ($description);
 
     }
 
