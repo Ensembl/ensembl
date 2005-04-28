@@ -2008,7 +2008,7 @@ sub build_gene_descriptions {
       my $acc = $xref_accessions{$best_xref};
 
       my $desc = $description . " [Source:$source;Acc:$acc]";
-      print GENE_DESCRIPTIONS "UPDATE gene SET description='$desc' WHERE gene_id=$gene_id\n" if ($description);
+      print GENE_DESCRIPTIONS "UPDATE gene SET description=\"$desc\" WHERE gene_id=$gene_id;\n" if ($description);
 
     }
 
