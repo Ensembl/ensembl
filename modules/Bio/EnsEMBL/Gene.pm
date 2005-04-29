@@ -437,7 +437,7 @@ sub get_all_homologous_Genes{
         # Something up with DB. Create a new gene is best we can do
         $hgene = Bio::EnsEMBL::Gene->new
             ( -stable_id=>$hstable_id,
-              -description=>$homolo->description, );
+              -description=>$member->description, );
       }
       my $hspecies = $member->genome_db->name;
       push @{$self->{'homologues'}}, [$hgene,$homolo,$hspecies];
