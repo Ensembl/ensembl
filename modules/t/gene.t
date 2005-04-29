@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 64;
+	plan tests => 65;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -84,6 +84,12 @@ my $links = $gene->get_all_DBLinks();
 debug( "Links: ".scalar( @$links ));
 
 ok( scalar @$links == 6 );
+
+my $homologies = $gene->get_all_homology_Genes();
+debug( "Homologies: ".scalar( @$homologies ));
+
+ok( scalar @$homologies ? 
+           ($homologies->[0][0]->isa("Bio::EnsEMBL::Gene")) : 1 );
 
 # now create a new gene ...
 

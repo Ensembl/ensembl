@@ -376,7 +376,75 @@ sub get_all_Exons {
    return \@out;
 }
 
+=head2 get_all_orthologous_Genes
 
+  Args       : none
+  Example    : 
+  Description: Queries the Ensembl Compara database and retrieves all
+               Genes from other species that are orthologous.
+               REQUIRES properly setup Registry conf file.
+  Returntype : listref [
+                        Bio::EnsEMBL::Gene,
+                        Bio::EnsEMBL::Compara::Homology,
+                        string $species, # Need as cannot get spp from Gene 
+                       ]
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_homologous_Genes{
+  my $self = shift;
+
+  if( exists( $self->{'homologues'} ) ){
+    return $self->{'homologues'};
+  }
+  $self->{'homologues'} = [];
+
+  # TODO: Find a robust way of retrieving compara dba directly.
+  # For now look through all DBAs
+  my $compara_dba;
+  foreach my $dba( Bio::EnsEMBL::Registry->get_all_DBAdaptors ){
+    if( $dba->isa('Bio::EnsEMBL::Compara::DBSQL::DBAdaptor') ){
+      $compara_dba = $dba;
+      last;
+    }
+  }
+  unless( $compara_dba ){
+    warning("No compara in Bio::EnsEMBL::Registry");
+    return $self->{'homologues'};
+  }
+
+  # Get the compara 'member' corresponding to self
+  my $member_adaptor   = $compara_dba->get_adaptor('Member');
+  my $query_member = $member_adaptor->fetch_by_source_stable_id
+      ("ENSEMBLGENE",$self->stable_id);
+  unless( $query_member ){ return $self->{'homologues'} };
+
+  # Get the compara 'homologies' corresponding to 'member'
+  my $homology_adaptor = $compara_dba->get_adaptor('Homology');
+  my @homolos = @{$homology_adaptor->fetch_by_Member($query_member)};
+  unless( scalar(@homolos) ){ return $self->{'homologues'} };
+
+  # Get the ensembl 'genes' corresponding to 'homologies'
+  foreach my $homolo( @homolos ){
+    foreach my $member_attrib( @{$homolo->get_all_Member_Attribute} ){
+      my ($member, $attrib) = @{$member_attrib};
+      my $hstable_id = $member->stable_id;
+      next if ($hstable_id eq $query_member->stable_id); # Ignore self     
+      my $hgene = $member->get_Gene;
+      unless( $hgene ){
+        # Something up with DB. Create a new gene is best we can do
+        $hgene = Bio::EnsEMBL::Gene->new
+            ( -stable_id=>$hstable_id,
+              -description=>$homolo->description, );
+      }
+      my $hspecies = $member->genome_db->name;
+      push @{$self->{'homologues'}}, [$hgene,$homolo,$hspecies];
+    }
+  }
+  return $self->{'homologues'};
+}
 
 =head2 type
 
