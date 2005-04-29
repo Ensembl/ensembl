@@ -376,7 +376,7 @@ sub get_all_Exons {
    return \@out;
 }
 
-=head2 get_all_orthologous_Genes
+=head2 get_all_homologous_Genes
 
   Args       : none
   Example    : 
