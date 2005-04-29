@@ -216,11 +216,11 @@ sub do_conversion {
 	$self->conv_obj->copy_repeat_consensus();
 	$self->conv_obj->create_meta_coord();
 	if ($self->conv_support->param('do_vega_schema_conversion')) {
-		
 		$self->conv_obj->update_clone_info();
 		$self->conv_obj->remove_supercontigs();
 		$self->conv_obj->copy_internal_clone_names();
 		$self->conv_obj->update_genscan();
+                $self->conv_obj->copy_assembly_exception;
 	}
 
 }
