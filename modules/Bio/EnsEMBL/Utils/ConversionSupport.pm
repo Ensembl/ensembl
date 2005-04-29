@@ -260,6 +260,33 @@ sub user_confirm {
     exit unless $self->user_proceed("Continue?");
 }
 
+=head2 read_user_input
+
+  Arg[1]      : (optional) String $text - notification text to present to user
+  Example     : my $ret = $support->read_user_input("Choose a number [1/2/3]");
+                if ($ret == 1) {
+                    # do something
+                } elsif ($ret == 2) {
+                    # do something else
+                }
+  Description : If running interactively, the user is asked for input.
+  Return type : String - user's input
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub read_user_input {
+    my ($self, $text) = @_;
+
+    if ($self->param('interactive')) {
+        print "$text\n" if $text;
+        my $input = <>;
+        chomp $input;
+        return $input;
+    }
+}
+
 =head2 comma_to_list
 
   Arg[1-N]    : list of parameter names to parse
