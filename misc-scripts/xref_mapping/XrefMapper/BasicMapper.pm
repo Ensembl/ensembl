@@ -954,7 +954,7 @@ sub dump_triage_data() {
   my ($self, $xref_id_offset) = @_;
 
   open (XREF, ">>" . $self->core->dir() . "/xref.txt");
-  open (XREF_MISSED, ">" . $self->core->dir() . "/xref_missed.txt");
+  open (XREF_MISSED, ">" . $self->core->dir() . "/triage.txt");
 
   foreach my $source ("%RefSeq%","UniProt%"){
     my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id from xref x, source s where s.name like '".$source."' and x.source_id = s.source_id";
