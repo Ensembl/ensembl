@@ -1295,7 +1295,9 @@ sub get_all_translateable_Exons {
     # Adjust to translation start if this is the start exon
     if ($ex == $start_exon ) {
       if ($t_start < 1 or $t_start > $length) {
-        throw("Translation start '$t_start' is outside exon $ex length=$length");
+#        throw("Translation start '$t_start' is outside exon $ex length=$length");
+        warn("WARN: Translation start '$t_start' is outside exon $ex length=$length");
+	return [];
       }
       $adjust_start = $t_start - 1;
     }
