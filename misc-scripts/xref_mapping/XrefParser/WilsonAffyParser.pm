@@ -63,7 +63,7 @@ sub create_xrefs {
 
       # add xref - not we're assuming it doesn't already exist;
       # may need to check like in CCDS parser
-      my $xref_id = $self->add_xref($acc, 0, $acc, "", $source_id, $species_id);
+      my $xref_id = $self->add_xref($acc, 0, $acc, "$target direct mapping", $source_id, $species_id);
       $self->add_direct_xref($xref_id, $target, "transcript", "");
       $direct++;
 
