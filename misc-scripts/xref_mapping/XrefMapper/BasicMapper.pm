@@ -47,7 +47,7 @@ my %xref_labels;
 my %source_to_external_db;
 my %xrefs_written;
 my %object_xrefs_written;
-
+my %failed_xref_mappings;
 =head2 new
 
   Description: Constructor for BasicMapper.
@@ -809,7 +809,7 @@ sub parse_mappings {
   $xref->dbc->connect();
 
   # cache xref id->label info; useful for debugging
-  $self->cache_xref_labels($xref->dbc);
+#  $self->cache_xref_labels($xref->dbc);
 
   # get current max object_xref_id
   my $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
@@ -885,8 +885,13 @@ sub parse_mappings {
       my $target_identity = int (100 * $identity / $target_length);
 
       # only take mappings where there is a good match on one or both sequences
-      next if ($query_identity  < $method_query_threshold{$method} &&
-	       $target_identity < $method_target_threshold{$method});
+      if ($query_identity  < $method_query_threshold{$method} &&
+	  $target_identity < $method_target_threshold{$method}){
+	my $reason = $target_id."|".$query_identity."|".$target_identity."|";
+	   $reason .= $method_query_threshold{$method}."|". $method_target_threshold{$method};
+	$failed_xref_mappings{$query_id} = $reason;
+	next;
+      }
 
       # note we add on $xref_id_offset to avoid clashes
       print OBJECT_XREF "$object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
@@ -929,6 +934,9 @@ sub parse_mappings {
   # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
   $self->dump_orphan_xrefs($xref_id_offset);
 
+  # dump triage type data
+  $self->dump_triage_data($xref_id_offset);
+
   # dump interpro table as well
   $self->dump_interpro();
 
@@ -941,6 +949,41 @@ sub parse_mappings {
 
 }
 
+
+sub dump_triage_data() {
+  my ($self, $xref_id_offset) = @_;
+
+  open (XREF, ">>" . $self->core->dir() . "/xref.txt");
+  open (XREF_MISSED, ">" . $self->core->dir() . "/xref_missed.txt");
+
+  foreach my $source ("%RefSeq%","UniProt%"){
+    my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id from xref x, source s where s.name like '".$source."' and x.source_id = s.source_id";
+    my $sth = $self->xref->dbc->prepare($sql);
+    $sth->execute();
+    
+    my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id);
+    $sth->bind_columns(\$xref_id, \$accession, \$version, \$label, \$description, \$source_id, \$species_id);
+    while($sth->fetch()){
+      if (!$xrefs_written{$xref_id}) {
+	$xrefs_written{$xref_id} = 1;
+	my $external_db_id = $source_to_external_db{$source_id};
+	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	if(defined($failed_xref_mappings{$xref_id})){
+	  my ($ensembl_id,$q_perc,$t_perc,$q_cut,$t_cut) =  split(/\|/,$failed_xref_mappings{$xref_id});
+	  print XREF_MISSED  ($xref_id+$xref_id_offset) . 
+	    "\thighest match to ensembl($ensembl_id) is $q_perc\% for the xref but the cutoff is $q_cut\%. Ensembl matches $t_perc\% but the cutoff is $t_cut\%. Hence xref not included\n";
+	}
+	else{
+	  print XREF_MISSED  ($xref_id+$xref_id_offset) . "\tNo match to Ensembl\n";
+	}
+      }
+    }
+    $sth->finish;
+  }
+  close(XREF);
+  close(XREF_MISSED);
+}
+
 # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
 # e.g. Interpro xrefs
 
@@ -951,6 +994,7 @@ sub dump_orphan_xrefs() {
   my $count;
 
   open (XREF, ">>" . $self->core->dir() . "/xref.txt");
+  open (XREF_MISSED, ">>" . $self->core->dir() . "/xref_failed.txt");
 
   # need a double left-join
   my $sql = "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM xref x LEFT JOIN primary_xref px ON px.xref_id=x.xref_id LEFT JOIN dependent_xref dx ON dx.dependent_xref_id=x.xref_id WHERE px.xref_id IS NULL AND dx.dependent_xref_id IS NULL";
@@ -967,6 +1011,7 @@ sub dump_orphan_xrefs() {
     if ($external_db_id) { # skip "unknown" sources
       if (!$xrefs_written{$xref_id}) {
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+
 	$xrefs_written{$xref_id} = 1;
 	$count++;
       }
@@ -976,6 +1021,7 @@ sub dump_orphan_xrefs() {
   $sth->finish();
 
   close(XREF);
+  close(XREF_MISSED);
 
   print "Wrote $count xrefs that are neither primary nor dependent\n";
 
