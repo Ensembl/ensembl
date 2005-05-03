@@ -851,7 +851,7 @@ sub transfer_features {
      "       contig_strand, analysis_id, repeat_start, repeat_end, " .
      "       repeat_consensus_id, score FROM $source.repeat_feature $limit");
 
-  $self->debug("Readding indexes on repeat_feature");
+  $self->debug("Reading indexes on repeat_feature");
   $dbh->do("ALTER TABLE $target.repeat_feature " .
            "ADD INDEX seq_region_idx( seq_region_id, seq_region_start)");
   $dbh->do("ALTER TABLE $target.repeat_feature " .
@@ -875,7 +875,7 @@ sub transfer_features {
             "       hit_end, hit_name, cigar_line, evalue, perc_ident, score ".
             "FROM $source.protein_align_feature $limit");
 
-  $self->debug("Readding indexes on protein_align_feature");
+  $self->debug("Reading indexes on protein_align_feature");
   $dbh->do( qq{ALTER TABLE $target.protein_align_feature
                ADD index  seq_region_idx(  analysis_id, seq_region_id,
                                            seq_region_start, score )});
@@ -899,7 +899,7 @@ sub transfer_features {
             "       perc_ident, score FROM $source.dna_align_feature $limit");
 
 
-  $self->debug("Readding indexes on dna_align_feature");
+  $self->debug("Reading indexes on dna_align_feature");
   $dbh->do( qq{ALTER TABLE $target.dna_align_feature
                ADD INDEX seq_region_idx(seq_region_id, analysis_id,
                                         seq_region_start, score)});
