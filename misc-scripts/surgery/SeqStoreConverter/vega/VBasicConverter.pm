@@ -46,9 +46,8 @@ sub copy_other_vega_tables {
         "clone_remark",
         "clone_info",
         "clone_info_keyword",
-        "clone_lock",
         "assembly_tag",
-    );
+   );
     $self->copy_current_clone_info;
 }
 
