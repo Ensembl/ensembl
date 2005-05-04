@@ -56,17 +56,17 @@ use Data::Dumper;
 =cut
 
 sub new {
-	my $class = shift;
-	my $support = shift;
-	my $self = {};
-	bless ($self,$class);
-	$self->{config} =  Bio::EnsEMBL::Utils::ConversionSupport->new($support);
-	$self->conv_support->parse_common_options;
-	my $siteroot = $self->conv_support->serverroot;
-	$self->conv_support->param('vega_sql',$siteroot.$self->conv_support->param('vega_sql'));
-	$self->conv_support->param('core_sql',$siteroot.$self->conv_support->param('core_sql'));
-	$self->conv_support->param('patch_sql',$siteroot.$self->conv_support->param('patch_sql'));
-	return $self;
+    my $class = shift;
+    my $support = shift;
+    my $self = {};
+    bless ($self,$class);
+    $self->{config} =  Bio::EnsEMBL::Utils::ConversionSupport->new($support);
+    $self->conv_support->parse_common_options;
+    my $siteroot = $self->conv_support->serverroot;
+    $self->conv_support->param('vega_sql',$siteroot.$self->conv_support->param('vega_sql'));
+    $self->conv_support->param('core_sql',$siteroot.$self->conv_support->param('core_sql'));
+    $self->conv_support->param('patch_sql',$siteroot.$self->conv_support->param('patch_sql'));
+    return $self;
 }
 
 =head2 conv_support
@@ -80,8 +80,8 @@ sub new {
 =cut
 
 sub conv_support {
-	my $self = shift;
-	return $self->{config};
+    my $self = shift;
+    return $self->{config};
 }
 
 =head2 conv_obj
@@ -95,8 +95,8 @@ sub conv_support {
 =cut
 
 sub conv_obj {
-	my $self = shift;
-	return $self->{'converter_object'};
+    my $self = shift;
+    return $self->{'converter_object'};
 }
 
 
@@ -111,13 +111,13 @@ sub conv_obj {
 =cut
 
 sub species_alias {
-	my $self=shift;
-	my $name = shift;
-	return 'CanisFamiliaris' if $name =~ /canis/;
-	return 'HomoSapiens' if $name =~ /homo/;
-	return 'MusMusculus' if $name =~ /mus/;
-	return 'DanioRerio' if $name =~ /danio/;
-	die "invalid name of source database, please check configuration file";
+    my $self=shift;
+    my $name = shift;
+    return 'CanisFamiliaris' if $name =~ /canis/;
+    return 'HomoSapiens' if $name =~ /homo/;
+    return 'MusMusculus' if $name =~ /mus/;
+    return 'DanioRerio' if $name =~ /danio/;
+    die "invalid name of source database, please check configuration file";
 }
 
 =head2 choose_conversion_type
@@ -133,50 +133,50 @@ sub species_alias {
 =cut
 
 sub choose_conversion_type {
-	my $self = shift;
-	my $converter;
-	my $species;
-	$species = $self->species_alias($self->conv_support->param('source_db'));
-	if ($self->conv_support->param('do_vega_schema_conversion')) {
-		$species = "vega::".$species;
-		eval "require SeqStoreConverter::$species";
-		if($@) {
-			warn("Could not require conversion module SeqStoreConverter::$species\ for vega conversion\n" .
-				 "Using SeqStoreConverter::BasicConverter instead:\n$@");
-			require SeqStoreConverter::BasicConverter;
-			$species = "BasicConverter";
-		}
-		else {
-			warn "Using conversion module SeqStoreConverter::$species for vega conversion\n";
-		}
-	}
-	else {
-		eval "require SeqStoreConverter::$species";
-		if($@) {
-			warn("Could not require conversion module SeqStoreConverter::$species for Ensembl conversion\n" .
-				 "Using SeqStoreConverter::BasicConverter instead:\n$@");
-			require SeqStoreConverter::BasicConverter;
-			$species = "BasicConverter";
-		}
-		else {
-			warn "Using conversion module SeqStoreConverter::$species for Ensembl conversion\n";
-		}
-		$self->conv_support->param('vega_sql',0);
-	}
-	$converter = "SeqStoreConverter::$species"->new
-		( $self->conv_support->param('user'), 
-		  $self->conv_support->param('pass'), 
-		  $self->conv_support->param('host'), 
-		  $self->conv_support->param('source_db'), 
-		  $self->conv_support->param('target_db'), 
-		  $self->conv_support->param('core_sql'), 
-		  $self->conv_support->param('vega_sql'), 
-		  $self->conv_support->param('force'), 
-		  $self->conv_support->param('verbose'),
-		  '',
-		);
-	
-	$self->{'converter_object'} = $converter;
+    my $self = shift;
+    my $converter;
+    my $species;
+    $species = $self->species_alias($self->conv_support->param('source_db'));
+    if ($self->conv_support->param('do_vega_schema_conversion')) {
+        $species = "vega::".$species;
+        eval "require SeqStoreConverter::$species";
+        if($@) {
+            warn("Could not require conversion module SeqStoreConverter::$species\ for vega conversion\n" .
+                    "Using SeqStoreConverter::BasicConverter instead:\n$@");
+            require SeqStoreConverter::BasicConverter;
+            $species = "BasicConverter";
+        }
+        else {
+            warn "Using conversion module SeqStoreConverter::$species for vega conversion\n";
+        }
+    }
+    else {
+        eval "require SeqStoreConverter::$species";
+        if($@) {
+            warn("Could not require conversion module SeqStoreConverter::$species for Ensembl conversion\n" .
+                    "Using SeqStoreConverter::BasicConverter instead:\n$@");
+            require SeqStoreConverter::BasicConverter;
+            $species = "BasicConverter";
+        }
+        else {
+            warn "Using conversion module SeqStoreConverter::$species for Ensembl conversion\n";
+        }
+        $self->conv_support->param('vega_sql',0);
+    }
+    $converter = "SeqStoreConverter::$species"->new
+        ( $self->conv_support->param('user'), 
+          $self->conv_support->param('pass'), 
+          $self->conv_support->param('host'), 
+          $self->conv_support->param('source_db'), 
+          $self->conv_support->param('target_db'), 
+          $self->conv_support->param('core_sql'), 
+          $self->conv_support->param('vega_sql'), 
+          $self->conv_support->param('force'), 
+          $self->conv_support->param('verbose'),
+          '',
+        );
+
+    $self->{'converter_object'} = $converter;
 }
 
 =head2 do_conversion
@@ -191,37 +191,38 @@ sub choose_conversion_type {
 
 
 sub do_conversion {
-	my $self= shift;
-	$self->conv_obj->debug( "\n\n*** converting " . $self->conv_obj->source . " to " . 
-					   $self->conv_obj->target() . " ***");
-	$self->conv_obj->transfer_meta();
-	$self->conv_obj->create_coord_systems();
-	$self->conv_obj->create_seq_regions();
-	$self->conv_obj->create_assembly();
-	$self->conv_obj->create_attribs();
-	$self->conv_obj->set_top_level();
-	
-	$self->conv_obj->transfer_dna();
-	$self->conv_obj->transfer_genes();
-	$self->conv_obj->transfer_prediction_transcripts();
-	
-	if ($self->conv_support->param('do_features')) {
-		$self->conv_obj->transfer_features();
-	}
+    my $self= shift;
+    $self->conv_obj->debug( "\n\n*** converting " . $self->conv_obj->source . " to " . 
+            $self->conv_obj->target() . " ***");
+    $self->conv_obj->transfer_meta();
+    $self->conv_obj->create_coord_systems();
+    $self->conv_obj->create_seq_regions();
+    $self->conv_obj->create_assembly();
+    $self->conv_obj->create_attribs();
+    $self->conv_obj->set_top_level();
+
+    $self->conv_obj->transfer_dna();
+    $self->conv_obj->transfer_genes();
+    $self->conv_obj->transfer_prediction_transcripts();
+
+    if ($self->conv_support->param('do_features')) {
+        $self->conv_obj->transfer_features();
+    }
 #use this for both ensembl and vega for now,
 #but might need changing when vega gets eg transcript modified dates
-	$self->conv_obj->transfer_vega_stable_ids();
+    $self->conv_obj->transfer_vega_stable_ids();
 
-	$self->conv_obj->copy_other_tables();
-	$self->conv_obj->copy_repeat_consensus();
-	$self->conv_obj->create_meta_coord();
-	if ($self->conv_support->param('do_vega_schema_conversion')) {
-		$self->conv_obj->update_clone_info();
-		$self->conv_obj->remove_supercontigs();
-		$self->conv_obj->copy_internal_clone_names();
-		$self->conv_obj->update_genscan();
-                $self->conv_obj->copy_assembly_exception;
-	}
+    $self->conv_obj->copy_other_tables();
+    $self->conv_obj->copy_repeat_consensus();
+    $self->conv_obj->create_meta_coord();
+    if ($self->conv_support->param('do_vega_schema_conversion')) {
+        $self->conv_obj->copy_other_vega_tables();
+        $self->conv_obj->update_clone_info();
+        $self->conv_obj->remove_supercontigs();
+        $self->conv_obj->copy_internal_clone_names();
+        $self->conv_obj->update_genscan();
+        $self->conv_obj->copy_assembly_exception;
+    }
 
 }
 
