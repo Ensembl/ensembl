@@ -775,7 +775,11 @@ sub register_chained {
 
   #ascertain which is component and which is actually assembled coord system
   @path = @{$csa->get_mapping_path($mid_cs, $end_cs)};
-  if(@path != 2) {
+  if(@path == 2 || ( @path == 3 && !defined $path[1])) {
+
+    $asm_cs = $path[0];
+    $cmp_cs = $path[-1];
+  } else {
     my $path = join(',', map({$_->name .' '. $_->version} @path));
     my $len = scalar(@path)-1;
     throw("Unexpected mapping path between intermediate and last" .
@@ -785,7 +789,6 @@ sub register_chained {
 	  "(path=$path)");
   }
 
-  ($asm_cs,$cmp_cs) = @path;
   $sth = ($asm_cs->equals($mid_cs)) ? $asm2cmp_sth : $cmp2asm_sth;
 
   my $end_cs_id = $end_cs->dbID();
