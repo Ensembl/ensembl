@@ -107,6 +107,7 @@ sub parse_common_options {
         'conffile|conf=s',
         'logfile|log=s',
         'logpath=s',
+        'verbose|v=s',
         'interactive|i=s',
         'dry_run|dry|n=s',
         'help|h|?',
