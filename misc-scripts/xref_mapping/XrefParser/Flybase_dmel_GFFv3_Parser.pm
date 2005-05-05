@@ -70,13 +70,14 @@ sub new {
   $self->source_name_name('flybase_name');
 
   # gadfly-CG-ids
-  $self->source_name_gadfly_gene('gadfly_gene_cgid');          # cg-id from genome annotation drosphila
-  $self->source_name_gadfly_transcript('gadfly_transcript_cgid');          # cg-id from genome annotation drosphila
-  $self->source_name_gadfly_translation('gadfly_translation_cgid');          # cg-id from genome annotation drosphila
+  $self->source_name_gadfly_gene('gadfly_gene_cgid');                # cg-id from genome annotation drosphila CG0123
+  $self->source_name_gadfly_transcript('gadfly_transcript_cgid');    # cg-id from genome annotation drosphila CG0123-RA
+  $self->source_name_gadfly_translation('gadfly_translation_cgid');  # cg-id from genome annotation drosphila CG0123-PA
   
-  my @gene_types = qw (gene pseudogene );
+
+  my @gene_types = qw ( gene ) ;
   my @translation_types = qw (CDS);
-  my @transcript_types = qw (mRNA);
+  my @transcript_types = qw (mRNA ncRNA snRNA tRNA rRNA pseudogene);
 
   $self->gene_types(\@gene_types) ;
   $self->translation_types(\@translation_types) ;
