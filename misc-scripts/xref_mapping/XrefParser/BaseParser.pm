@@ -8,6 +8,7 @@ use File::Path;
 use File::Basename;
 use POSIX qw(strftime);
 use Getopt::Long;
+use Bio::EnsEMBL::Utils::Exception;
 
 my $base_dir = ".";
 
@@ -29,7 +30,6 @@ my $skipdownload;
 # Get info about files to be parsed from the database
 
 sub run {
-
   ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $create, $release, $cleanup) = @_;
 
   my @species = @$speciesr;
@@ -108,6 +108,7 @@ sub run {
 	print "Parsing $dsn with $parser\n";
         eval "require XrefParser::$parser";
         my $new = "XrefParser::$parser"->new();
+
         $new->run($dsn, $source_id, $species_id);
 	next;
       }
@@ -151,7 +152,6 @@ sub run {
       # need to check file size as some .SPC files can be of zero length
       $file_cs = md5sum("$dir/$file");
       if (!defined $checksum || $checksum ne $file_cs) {
-	
 	if (-s "$dir/$file") {
 	  $parse =1;
 	  print "Checksum for $file does not match, parsing\n";
@@ -163,7 +163,6 @@ sub run {
 	else {
 	  $empty = 1;
 	  print $file . " has zero length, skipping\n";
-	  
 	}
       }
     }
@@ -211,7 +210,7 @@ sub new {
 sub get_source_id_for_filename {
 
   my ($self, $file) = @_;
-
+  print STDERR "FILE $file\n" ; 
   my $sql = "SELECT s.source_id FROM source s, source_url su WHERE su.source_id=s.source_id AND su.url LIKE  '%/" . $file . "%'";
   my $sth = dbi()->prepare($sql);
   $sth->execute();
@@ -259,18 +258,21 @@ sub get_species_id_for_filename {
 # Get source ID for a particular source name
 
 sub get_source_id_for_source_name {
-
+  
   my ($self, $source_name) = @_;
-
   my $sql = "SELECT source_id FROM source WHERE name='" . $source_name . "'";
   my $sth = dbi()->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
   my $source_id;
   if (@row) {
-    $source_id = $row[0];
+    $source_id = $row[0]; 
   } else {
-    warn("Couldn't get source ID for source name $source_name\n");
+    print STDERR "WARNING: There is no entity $source_name in the source-table of the \n" .
+      "WARNING: xref-database. The name of the external db name ($source_name) is hardcoded\n" .
+	"WARNING: in the parser\n";
+    warn("WARNING: Couldn't get source ID for source name $source_name\n");
+
     $source_id = -1;
   }
 
@@ -370,13 +372,10 @@ sub get_valid_codes{
 # Upload xrefs to the database
 
 sub upload_xref_object_graphs {
-
   my ($self, $rxrefs) = @_;
 
-
   my $dbi = dbi();
-
-#  print "count = ".$#$rxrefs."\n";
+  print "count = ".$#$rxrefs."\n";
 
   if ($#$rxrefs > -1) {
 
@@ -398,6 +397,7 @@ sub upload_xref_object_graphs {
 
     foreach my $xref (@{$rxrefs}) {
        my $xref_id;
+       throw("your xref does not have an accession-number,so it can't be stored in the database") unless ($xref->{ACCESSION});
       # Create entry in xref table and note ID
       if(! $xref_sth->execute($xref->{ACCESSION},
 			 $xref->{VERSION},
@@ -405,6 +405,7 @@ sub upload_xref_object_graphs {
 			 $xref->{DESCRIPTION},
 			 $xref->{SOURCE_ID},
 			 $xref->{SPECIES_ID})){
+	throw("your xref: $xref->{ACCESSION} does not have a source-id") unless $xref->{SOURCE_ID};
 	$xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID});
 	$xref_update_label_sth->execute($xref->{LABEL},$xref_id) if (defined($xref->{LABEL}));
 	$xref_update_descr_sth->execute($xref->{DESCRIPTION},$xref_id,) if (defined($xref->{DESCRIPTION}));
@@ -417,7 +418,7 @@ sub upload_xref_object_graphs {
       # create entry in primary_xref table with sequence; if this is a "cumulative"
       # entry it may already exist, and require an UPDATE rather than an INSERT
       if(!(defined($xref_id) and $xref_id)){
-	print STDERR "xref_id is not set \n$xref->{ACCESSION}\n  $xref->{LABEL}\n $xref->{DESCRIPTION}\n $xref->{SOURCE_ID}\n";
+	print STDERR "xref_id is not set for :\n$xref->{ACCESSION}\n$xref->{LABEL}\n$xref->{DESCRIPTION}\n$xref->{SOURCE_ID}\n";
       }
       if (primary_xref_id_exists($xref_id)) {
 	
@@ -433,9 +434,7 @@ sub upload_xref_object_graphs {
 
       # if there are synonyms, add entries in the synonym table
       foreach my $syn (@{$xref->{SYNONYMS}}) {
-
 	$syn_sth->execute($xref_id, $syn) || die "$dbi->errstr \n $xref_id\n $syn\n";
-
       }	# foreach syn
 
       # if there are dependent xrefs, add xrefs and dependent xrefs for them
@@ -474,6 +473,20 @@ sub upload_xref_object_graphs {
   }
 
 }
+
+sub upload_direct_xrefs{
+  my ($self, $direct_xref)  = @_;
+  for my $dr(@$direct_xref) {
+    # print "having now direct-XREF : $dr->{ENSEMBL_STABLE_ID} \n" ;
+    my $general_xref_id = get_xref_id_by_accession_and_source($dr->{ACCESSION},$dr->{SOURCE_ID});
+    if ($general_xref_id){
+      # print "direct_xref:\n$general_xref_id\n$dr->{ENSEMBL_STABLE_ID}\n$dr->{ENSEMBL_TYPE}\t$dr->{LINKAGE_XREF}\n\n";
+      $self->add_direct_xref($general_xref_id, $dr->{ENSEMBL_STABLE_ID},$dr->{ENSEMBL_TYPE},$dr->{LINKAGE_XREF});
+    }
+  }
+}
+
+
 
 # --------------------------------------------------------------------------------
 # Get & cache a hash of all the source names for dependent xrefs (those that are
@@ -745,9 +758,7 @@ sub show_valid_sources() {
 # --------------------------------------------------------------------------------
 
 sub validate_species {
-
   my @species = @_;
-
   my @species_ids;
 
   my $dbi = dbi();
@@ -766,11 +777,8 @@ sub validate_species {
       show_valid_species();
       exit(1);
     }
-
   }
-
   return @species_ids;
-
 }
 
 # --------------------------------------------------------------------------------
@@ -887,7 +895,6 @@ sub sanitise {
   my $ret = $str;
 
   $ret =~ s/[\/\:]//g;
-
   return $ret;
 
 }
