@@ -69,6 +69,11 @@ sub new {
   $self->source_name_symbol('flybase_synonym');
   $self->source_name_name('flybase_name');
 
+  # gadfly-CG-ids
+  $self->source_name_gadfly_gene('gadfly_gene_cgid');          # cg-id from genome annotation drosphila
+  $self->source_name_gadfly_transcript('gadfly_transcript_cgid');          # cg-id from genome annotation drosphila
+  $self->source_name_gadfly_translation('gadfly_translation_cgid');          # cg-id from genome annotation drosphila
+  
   my @gene_types = qw (gene pseudogene );
   my @translation_types = qw (CDS);
   my @transcript_types = qw (mRNA);
@@ -228,8 +233,17 @@ sub make_dbxref_xref{
 	}
       }elsif($dbx =~m/Gadfly:/){
 	$dbx =~s/Gadfly://g;
-	  $src_id = $self->get_source_id_for_source_name($self->source_name_fbgn);	
+	foreach my $check ( @{ $self->gene_types} ){
+	  $src_id = $self->get_source_id_for_source_name($self->source_name_gadfly_gene) if ($check=~m/$type/);
+	}
+	foreach my $check ( @{ $self->translation_types} ){
+	  $src_id = $self->get_source_id_for_source_name($self->source_name_gadfly_translation) if ($check=~m/$type/);
+	}
+	foreach my $check ( @{ $self->transcript_types} ){
+	  $src_id = $self->get_source_id_for_source_name($self->source_name_gadfly_transcript) if ($check=~m/$type/);
+	}
       }
+
       if ($src_id){ # only add xref entry for FBgn FBtr...
 	my $xref ;
 	$xref->{ACCESSION} = $dbx ;
@@ -344,6 +358,28 @@ sub source_name_fbgn{
   $self->{_source_name_gene} = shift if @_ ;
   return $self->{_source_name_gene};
 }
+
+
+sub source_name_gadfly_gene{
+  my $self = shift;
+
+  $self->{_source_name_gadfly_gene} = shift if @_ ;
+  return $self->{_source_name_gadfly_gene};
+}
+
+sub source_name_gadfly_transcript{
+  my $self = shift;
+
+  $self->{_source_name_gadfly_transcript} = shift if @_ ;
+  return $self->{_source_name_gadfly_transcript};
+}
+sub source_name_gadfly_translation{
+  my $self = shift;
+
+  $self->{_source_name_gadfly_translation} = shift if @_ ;
+  return $self->{_source_name_gadfly_translation};
+}
+
 
 sub source_name_fbtr{
   my $self = shift;
