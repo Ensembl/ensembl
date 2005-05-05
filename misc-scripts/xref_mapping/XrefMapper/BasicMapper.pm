@@ -1752,7 +1752,7 @@ sub transcript_display_xref_sources {
 	  'RefSeq_peptide',
 	  'RefSeq_dna',
 	  'Uniprot/SPTREMBL',
-	  'LocusLink');
+	  'EntrezGene');
 
 }
 
