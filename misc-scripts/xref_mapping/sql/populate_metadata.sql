@@ -69,35 +69,78 @@ INSERT INTO source VALUES (2410, 'wormbase_gene', 1, 'N',4);
 INSERT INTO source VALUES (2420, 'wormbase_transcript', 1, 'N', 4);
 INSERT INTO source VALUES (2440, 'wormbase_pseudogene', 1, 'N', 4);
 
+
+INSERT INTO source VALUES (2500, 'flybase_gff', 1, 'Y', 4);
+
+INSERT INTO source VALUES (2510, 'flybase_gene_id', 1, 'N', 4);
+INSERT INTO source VALUES (2520, 'flybase_transcript_id', 1, 'N', 4);
+INSERT INTO source VALUES (2530, 'flybase_polypeptide_id', 1, 'N', 4);
+INSERT INTO source VALUES (2540, 'flybase_annotation_id', 1, 'N', 4);
+INSERT INTO source VALUES (2550, 'flybase_synonym', 1, 'N', 4);
+INSERT INTO source VALUES (2560, 'flybase_name', 1, 'N', 4);
+INSERT INTO source VALUES (2570, 'gadfly_gene_cgid', 1, 'N', 4);
+INSERT INTO source VALUES (2571, 'gadfly_transcript_cgid', 1, 'N', 4);
+INSERT INTO source VALUES (2572, 'gadfly_translation_cgid', 1, 'N', 4);
+
+
+
+
+
 ################################################################################
 # Files to fetch data from
 
 
 # --------------------------------------------------------------------------------
-### DROSOPHILA
+### DROSOPHILA TESTING GFF
+# chr 2L	
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-2L-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
-## Uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7227, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/7227.SPC', '', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7227, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 7227, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
+# chr 2R
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-2R-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
-## refseq
+# chr 3L
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-3L-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate1.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate2.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate3.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate4.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate5.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate6.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate7.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate8.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate10.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
-## GO
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 7227,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', '', now(), now(), "GOParser");
-## Interpro
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 7227,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
-## UniGene
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 7227,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Dm.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Dm.data.gz', '', now(), now(), "UniGeneParser");
+# chr 3R
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-3R-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+
+# chr 4
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-4-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+
+# chr X 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-X-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+
+## HETERO-CHROMATIN
+
+# 2h 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-2h-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+
+# 3h 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-3h-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+
+# 4h 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-4h-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+
+# U 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-U-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+
+# Xh 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-Xh-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+
+# Yh	 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-Yh-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 
 
