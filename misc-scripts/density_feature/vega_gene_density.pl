@@ -125,6 +125,8 @@ for my $slice ( @top_slices ) {
 }
 
 $big_block_size = int( $min_big_chr / 150 );
+#use this size if another human is needed
+#$big_block_size = 28050;
 push @{$big_chr}, $big_block_size;
 $small_block_size = int( $min_small_chr / 150 );
 push @{$small_chr}, $small_block_size;
