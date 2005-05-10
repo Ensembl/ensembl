@@ -887,7 +887,7 @@ sub parse_mappings {
       # only take mappings where there is a good match on one or both sequences
       if ($query_identity  < $method_query_threshold{$method} &&
 	  $target_identity < $method_target_threshold{$method}){
-	my $reason = $target_id."|".$query_identity."|".$target_identity."|";
+	my $reason = $target_id."|".$type."|".$query_identity."|".$target_identity."|";
 	   $reason .= $method_query_threshold{$method}."|". $method_target_threshold{$method};
 	$failed_xref_mappings{$query_id} = $reason;
 	next;
@@ -949,9 +949,70 @@ sub parse_mappings {
 
 }
 
+sub get_stable_ids(){
+  my ($self, $type, $string, $hashref) = @_;
+
+  my $sql = "SELECT ".$type."_id ,stable_id ";
+  $sql .=      "FROM ".$type."_stable_id ";
+  $sql .=          "WHERE ".$type."_id IN (".$string.")";
+
+  my $sth = $self->core->dbc->prepare($sql);
+  $sth->execute();
+  my ($trans, $stable);
+  $sth->bind_columns(\$trans,\$stable);
+  while($sth->fetch()){
+    $hashref->{$trans} = $stable;
+  }
+  $sth->finish;
+}
 
 sub dump_triage_data() {
   my ($self, $xref_id_offset) = @_;
+
+  my $translation="";
+  my $translation_count=0;
+  my $transcript="";
+  my $transcript_count=0;
+  my $batch_size=200;
+  my %translation_2_stable=();
+  my %transcript_2_stable=();
+  foreach my $temp (values %failed_xref_mappings){
+    my ($id, $type) = split(/\|/,$temp);
+    if($type =~ /Translation/){
+      $translation_count++;
+      if($translation_count > $batch_size){
+	my $ex = $self->get_stable_ids("translation",$translation.$id,\%translation_2_stable);
+	$translation_count = 0;
+	$translation = "";
+      }
+      else{
+	$translation .= "$id,";
+      }
+    }
+    elsif($type =~ /Transcript/){
+      $transcript_count++;
+      if($transcript_count > $batch_size){
+	$self->get_stable_ids("transcript",$transcript.$id,\%transcript_2_stable);
+	$transcript_count=0;
+	$transcript="";
+      }
+      else{
+	$transcript .= "$id,";
+      }
+    }
+    else{
+      die "Unknown type *".$type."*\n".$temp."\n";
+    }
+  }
+  if($transcript_count){
+    chop $transcript; # remove last , from list
+    $self->get_stable_ids("transcript",$transcript,\%transcript_2_stable);
+  }
+  if($translation_count){
+    chop $translation;
+    $self->get_stable_ids("translation",$translation,\%translation_2_stable);
+  }
+
 
   open (XREF, ">>" . $self->core->dir() . "/xref.txt");
   open (XREF_MISSED, ">" . $self->core->dir() . "/triage.txt");
@@ -969,12 +1030,21 @@ sub dump_triage_data() {
 	my $external_db_id = $source_to_external_db{$source_id};
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 	if(defined($failed_xref_mappings{$xref_id})){
-	  my ($ensembl_id,$q_perc,$t_perc,$q_cut,$t_cut) =  split(/\|/,$failed_xref_mappings{$xref_id});
-	  print XREF_MISSED  ($xref_id+$xref_id_offset) . 
-	    "\thighest match to ensembl($ensembl_id) is $q_perc\% for the xref but the cutoff is $q_cut\%. Ensembl matches $t_perc\% but the cutoff is $t_cut\%. Hence xref not included\n";
+	  my ($ensembl_id,$type,$q_perc,$t_perc,$q_cut,$t_cut) =  split(/\|/,$failed_xref_mappings{$xref_id});
+	  print XREF_MISSED  ($xref_id+$xref_id_offset) . "\thighest match is $accession (".$q_perc."%) to ";
+	  if($type  =~ /Translation/){
+	    print XREF_MISSED $translation_2_stable{$ensembl_id};
+	  }
+	  elsif($type  =~ /Transcript/){
+	    print XREF_MISSED $transcript_2_stable{$ensembl_id};
+	  }
+	  else{
+	    die "type=*".$type."*\n".$failed_xref_mappings{$xref_id}."\n";
+	  }
+	  print XREF_MISSED " (".$t_perc."\%) which are below there respective cutoffs off $q_cut\% and $t_cut\%.\n";
 	}
 	else{
-	  print XREF_MISSED  ($xref_id+$xref_id_offset) . "\tNo match to Ensembl\n";
+	  print XREF_MISSED  ($xref_id+$xref_id_offset) . "\t$accession no match to Ensembl\n";
 	}
       }
     }
