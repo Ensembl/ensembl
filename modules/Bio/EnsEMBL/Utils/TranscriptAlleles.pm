@@ -39,46 +39,35 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Variation::ConsequenceType;
 use vars qw(@ISA @EXPORT_OK);
 
 @ISA = qw(Exporter);
 
-@EXPORT_OK = qw(&type_variation);
+@EXPORT_OK = qw(&get_all_ConsequenceType);
 
 use Data::Dumper;
 
-=head2 get_all_peptide_variations
+=head2 get_all_ConsequenceType
 
   Arg [1]    : $transcript the transcript to obtain the peptide variations for
   Arg [2]    : $alleles listref of AlleleFeatures
-  Example    : $pep_hash = get_all_peptide_variations($transcript, \@alleles);
-  Description: Takes a list of coding alleles on this transcript in
-               which are in cdna coordinates and returns a hash with peptide
-               coordinate keys and listrefs of alternative amino acids as
-               values.  
-
-               Note that the peptide encoded by the reference sequence is
-               also present in the results and that duplicate peptides
-               (e.g. resulting from synonomous mutations) are discarded.
-               It is possible to have greated than two peptides variations
-               at a given location given adjacent or overlapping snps.
-               Insertion/deletion variations are ignored by this method.
-               Example of a data structure that could be returned:
-               {  1  => ['I', 'M'],
-                 10  => ['I', 'T'],
-                 37  => ['N', 'D'],
-                 56  => ['G', 'E'],
-                 118 => ['R', 'K'],
-                 159 => ['D', 'E'],
-                 167 => ['Q', 'R'],
-                 173 => ['H', 'Q'] }
-  Returntype : hashref
+  Example    : $consequence_types = get_all_ConsequenceType($transcript, \@alleles);
+               foreach my $ct (@{$consequence_types}){
+                  print "Allele : ", $ct->allele_string, " has a consequence type of :",$ct->type;
+                  print " and is affecting the transcript with ",$ct->aa_alleles, "in position ", 
+		              $ct->aa_start,"-", $ct->aa_end if (defined $ct->aa_alleles);
+		  print "\n";
+	      }
+  Description: Takes a list of AlleleFeatures and a Transcritpt, and return a list
+                     of ConsequenceType of the alleles in the given Transcript
+  Returntype : listref of Bio::EnsEMBL::Variation::ConsequenceType
   Exceptions : none
-  Caller     : general
+  Caller     : general 
 
 =cut
 
-sub get_all_peptide_variations {
+sub get_all_ConsequenceType {
   my $transcript = shift;
   my $alleles = shift;
 
@@ -90,132 +79,112 @@ sub get_all_peptide_variations {
     throw('Reference to a list of Bio::EnsEMBL::Variation::AlleleFeature objects is required');
   }
 
-  my $codon_table = Bio::Tools::CodonTable->new;
-  my $codon_length = 3;
-  my $cdna = $transcript->spliced_seq;
-  print "cdna seq $cdna\n";
-  my $variant_alleles;
-  my $translation_start = $transcript->cdna_coding_start;
-  print "translation start ",$translation_start,"\n";
-  foreach my $allele (@$alleles) {
-    #skip variations not on a single base
-    next if ($allele->start != $allele->end);
-    print "allele in coords ",$allele->start,"-",$allele->end,"\n";
-    #convert the AlleleFeature in cdna coordinates
-    my $new_allele = convert_to_cdna($transcript,$allele);
-    print "allele in cdna oords ",$new_allele->start,"-",$new_allele->end,"\n";
-    next if(!defined $new_allele); #the AlleleFeature it is not in a coding region
-    my $start = $new_allele->start;
-    my $strand = $new_allele->strand;
 
-    #calculate offset of the nucleotide from codon start (0|1|2)
-    my $codon_pos = ($start - $translation_start) % $codon_length;
-    #calculate the peptide coordinate of the allele
-    my $peptide = ($start - $translation_start +
-		   ($codon_length - $codon_pos)) / $codon_length;
-
-    #retrieve the codon
-    my $codon = substr($cdna, $start - $codon_pos-1, $codon_length);
-    print "start $start and codon $codon\n";
-    #store each alternative allele by its location in the peptide
-    my $allele_string = lc($new_allele->allele_string);
-    print "allele $allele_string\n";
-    next if $allele_string eq '-';       #skip deletions
-    next if CORE::length($allele_string) != 1; #skip insertions
-
-    
-    if($strand == -1) {
-	#complement the allele if the snp is on the reverse strand
-	$allele_string =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+  my @alleles_ordered = sort { $a->start <=> $b->start} @$alleles; #sort the alleles by the genomic position
+  my @same_codon; #contains up to 3 allele features, that are in the same codon
+  my @out; #array containing the consequence types of the alleles in the transcript
+  foreach my $allele (@alleles_ordered) {
+    #get consequence type of the AlleleFeature
+    my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start,$allele->end,$allele->strand,[$allele->allele_string]);
+    #calculate the consequence type of the Allele
+    my $ref_consequences = type_variation($transcript,$consequence_type);
+    if ($allele->start != $allele->end){
+	#do not calculate for indels effects of 2 or more in same codon
+	push @out, @{$ref_consequences};
+	next;
     }
 
-    #create a data structure of variant alleles sorted by both their
-    #peptide position and their position within the peptides codon
-    $variant_alleles ||= {};
-    if(exists $variant_alleles->{$peptide}) {
-        my $alleles_arr = $variant_alleles->{$peptide}->[1];
-        push @{$alleles_arr->[$codon_pos]}, $allele_string;
-    } else {
-        #create a list of 3 lists (one list for each codon position)
-        my $alleles_arr = [[],[],[]];
-        push @{$alleles_arr->[$codon_pos]}, $allele_string;
-        $variant_alleles->{$peptide} = [$codon, $alleles_arr];
+    my $new_consequence = shift @{$ref_consequences};
+    if (!defined $new_consequence->aa_start){
+	push @out, $new_consequence;
+	next;
     }
-}
-  
-  my %out;
-  #now generate all possible codons for each peptide and translate them
-  foreach my $peptide (keys %$variant_alleles) {
-    my ($codon, $alleles) = @{$variant_alleles->{$peptide}};
-
-    #need to push original nucleotides onto each position
-    #so that all possible combinations can be generated
-    push @{$alleles->[0]}, substr($codon,0,1);
-    push @{$alleles->[1]}, substr($codon,1,1);
-    push @{$alleles->[2]}, substr($codon,2,1);
-
-    my %alt_amino_acids;
-    foreach my $a1 (@{$alleles->[0]}) {
-      substr($codon, 0, 1) = $a1;
-      foreach my $a2 (@{$alleles->[1]}) {
-        substr($codon, 1, 1) = $a2;
-        foreach my $a3 (@{$alleles->[2]}) {
-          substr($codon, 2, 1) = $a3;
-          my $aa = $codon_table->translate($codon);
-	  $aa = '*' if ($codon_table->is_ter_codon($codon));
-          #print "$codon translation is $aa\n";
-          $alt_amino_acids{$aa} = 1;
-        }
-      }
+    #for alleles with aa effect, find out if they are in the same codon
+    if (!defined $same_codon[0] || $same_codon[0]->aa_start == $new_consequence->aa_start){
+	push @same_codon,$new_consequence;
     }
+    else{
+	#if there is more than one element in the same_codon array, calculate the effect of the codon
+	if (@same_codon > 1){
+	    calculate_same_codon(\@same_codon);
 
-    my @aas = keys %alt_amino_acids;
-    $out{$peptide} = \@aas;
-  }
-
-  return \%out;
+	}
+	push @out, @same_codon;
+	@same_codon = ();
+    }
+  }    
+  #add last consequence_type
+  if (@same_codon > 0){
+      push @out, @same_codon;
+  }           
+  return \@out;
 }
 
-#creates a new Allele Feature in cdna coordinates
-
-sub convert_to_cdna{
-    my ($transcript,$allele) = @_;
-    my $new_allele; #new alleleFeature in cdna coordinates
-    print "before converting transcript start ", $transcript->cdna_coding_start,"-",$transcript->cdna_coding_end,"\n";
-    my $slice = $transcript->slice();
-    my $sa = $slice->adaptor();
-
-    $slice = $sa->fetch_by_Feature($transcript);
-
-    $transcript = $transcript->transfer($slice);
-    print "transcript start ", $transcript->cdna_coding_start,"-",$transcript->cdna_coding_end,"\n";
-
-    my @coords = $transcript->genomic2cdna($allele->start,
-                                 $allele->end,
-                                 $allele->strand);
-    print Dumper(@coords);    
-    exit;
-    if((@coords == 1) && ($coords[0]->isa('Bio::EnsEMBL::Mapper::Coordinate'))){
-	#copy the AlleleFeature and convert to cdna coords...
-	%$new_allele = %$allele;
-	bless $new_allele, ref $allele;
-	$new_allele->start($coords[0]->start);
-	$new_allele->end($coords[0]->end);	
+# recalculates the effect of 2 or 3 SNPs in the same codon
+sub calculate_same_codon{
+    my $same_codon = shift;
+    my $new_codon;
+    my $codon_table = Bio::Tools::CodonTable->new;
+    if (@{$same_codon} == 3){
+	#if there are 3 alleles in the same codon
+	map {$new_codon .= @{$_->alleles}} @{$same_codon};
     }
-    
-    return $new_allele;
-}
+    else{
+	#if there are 2 alleles affecting the same codon
+	my $first_pos = $same_codon->[0]->cdna_start % 3; #position of the first allele in the codon
+	my $second_pos = $same_codon->[1]->cdna_start % 3; #position of the second allele in the codon
+	
+	if ($first_pos == 0){
+	    #codon starts with first allele
+	    $new_codon = $same_codon->[0]->alleles->[0]; #first base in the codon
+	    if ($second_pos == 1){
+		$new_codon .= $same_codon->[1]->alleles->[0]; #second base in the codon
+		$new_codon .= substr($same_codon->[1]->codon,2,1); #third base in the codon
+	    }
+	    else{
+		$new_codon .= substr($same_codon->[1]->codon,1,1); #second base in the codon
+		$new_codon .= $same_codon->[1]->alleles->[0]; #third base in the codon
+	    }
+	}
+	else{
+	    #alleles are in position 1 and 2 in the codon
+	    $new_codon = substr($same_codon->[1]->codon,0,1); #first base in the codon
+	    $new_codon .= $same_codon->[0]->alleles->[0]; #second base in the codon
+	    $new_codon .= $same_codon->[1]->alleles->[0]; #third base in the codon
+	}
+	
+    }
+    #calculate the new_aa
+    my $new_aa = $codon_table->translate($new_codon);
+    #and update the aa_alleles field
+    map {$_->aa_alleles($new_aa)} @{$same_codon};
 
+}
 #
 # Classifies a variation which is in the vicinity of a transcript
 #
 sub type_variation {
   my $tr  = shift;
   my $var = shift;
-
   if (!$var->isa('Bio::EnsEMBL::Variation::ConsequenceType')){
-      throw("Not possible to calculate the consequence type for," ref($var),": Bio::EnsEMBL::Variation::ConsequenceType object expected");
+      throw("Not possible to calculate the consequence type for ",ref($var)," : Bio::EnsEMBL::Variation::ConsequenceType object expected");
   }
+  
+  my $slice = $tr->slice();
+  
+  if(!$slice) {
+    warning("Cannot obtain SNPs for transcript without attached Slice.");
+    return {};
+  }
+
+  my $sa = $slice->adaptor();
+
+  # retrieve slice in the region of the transcript
+  $slice = $sa->fetch_by_Feature($tr, 0 );
+
+  # copy transcript, to work in coord system we are interested in
+  $tr = $tr->transfer( $slice );
+
   my $tm = $tr->get_TranscriptMapper();
 
   my @coords = $tm->genomic2cdna($var->start,
@@ -300,8 +269,15 @@ sub type_variation {
 
   @coords = $tm->genomic2pep($var->start, $var->end, $var->strand);
 
+
   if(@coords != 1 || $coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
     throw("Unexpected: Could map to CDS but not to peptide coordinates.");
+  }
+
+  my @coords_amp = $tm->genomic2pep($var->start -2, $var->end +2, $var->strand);
+
+  if (@coords_amp != @coords){
+      $var->type( 'SPLICE_SITE' );
   }
 
   $c = $coords[0];
@@ -376,7 +352,8 @@ sub apply_aa_change {
     if(length($a)) {
       substr($cds, $var->cds_start-1, $var_len) = $a;
       my $codon_str = substr($cds, $codon_cds_start-1, $codon_len + abs(length($a)-$var_len));
-
+      
+      $var->codon($codon_str); #add the codon to the ConsequenceType object
       my $codon_seq = Bio::Seq->new(-seq      => $codon_str,
                                     -moltype  => 'dna',
                                     -alphabet => 'dna');
