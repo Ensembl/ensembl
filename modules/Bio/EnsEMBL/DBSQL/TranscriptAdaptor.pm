@@ -298,10 +298,14 @@ sub fetch_all_by_Slice {
 
   my $transcripts = $self->SUPER::fetch_all_by_Slice($slice);
 
-  # if there are 0 or 1 transcripts still do lazy-loading
-  if(!$load_exons || @$transcripts < 2) {
-    return $transcripts;
+  #load exons when requested
+  if (!$load_exons){
+      return $transcripts;
   }
+  # if there are 0 or 1 transcripts still do lazy-loading
+#  if(!$load_exons || @$transcripts < 2) {
+#    return $transcripts;
+#  }
 
   # preload all of the exons now, instead of lazy loading later
   # faster than 1 query per transcript
