@@ -189,14 +189,15 @@ sub _generic_fetch {
         );
 
     
-    if ($repeat_consensus =~ /^(\d+)\(N\)$/) {
-      $repeat_length = $1;
-    } else {
-      $repeat_length = CORE::length($repeat_consensus);
-    }
     my @consensi;
     while ($sth->fetch) {
-        push @consensi, Bio::EnsEMBL::RepeatConsensus->new
+      if ($repeat_consensus =~ /^(\d+)\(N\)$/) {
+	$repeat_length = $1;
+      } else {
+	$repeat_length = CORE::length($repeat_consensus);
+      }
+
+      push @consensi, Bio::EnsEMBL::RepeatConsensus->new
           (-DBID => $repeat_consensus_id,
            -NAME => $repeat_name,
            -REPEAT_CLASS => $repeat_class,

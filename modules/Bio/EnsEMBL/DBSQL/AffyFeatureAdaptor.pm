@@ -272,11 +272,13 @@ sub _objs_from_sth {
   my $dest_slice_end;
   my $dest_slice_strand;
   my $dest_slice_length;
+  my $dest_slice_sr_name;
   if( $dest_slice ) {
     $dest_slice_start  = $dest_slice->start();
     $dest_slice_end    = $dest_slice->end();
     $dest_slice_strand = $dest_slice->strand();
     $dest_slice_length = $dest_slice->length();
+    $dest_slice_sr_name = $dest_slice->seq_region_name();
   }
 
   my $last_feature_id = -1;
@@ -297,13 +299,14 @@ sub _objs_from_sth {
       $sr_cs_hash{$seq_region_id}       = $slice->coord_system();
     }
 
-    #
+    my $sr_name = $sr_name_hash{$seq_region_id};
+    my $sr_cs   = $sr_cs_hash{$seq_region_id};
+ 
+   #
     # remap the feature coordinates to another coord system
     # if a mapper was provided
     #
     if($mapper) {
-      my $sr_name = $sr_name_hash{$seq_region_id};
-      my $sr_cs   = $sr_cs_hash{$seq_region_id};
 
       ($sr_name,$seq_region_start,$seq_region_end,$seq_region_strand) =
         $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs);
@@ -339,7 +342,8 @@ sub _objs_from_sth {
       }
 
       #throw away features off the end of the requested slice
-      next FEATURE if $seq_region_end < 1 || $seq_region_start > $dest_slice_length;
+      next FEATURE if $seq_region_end < 1 || $seq_region_start > $dest_slice_length ||
+	  ( $dest_slice_sr_name ne $sr_name );
 
       $slice = $dest_slice;
     }
