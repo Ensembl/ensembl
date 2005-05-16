@@ -53,15 +53,14 @@ sub run {
   open(FILE,"<". $file) || die "could not open file $file";
   while(my $line = <FILE>){
     chomp $line;
-    my ($key,$label,$sps) = (split("\t",$line))[0,1,6];
+    my ($key,$label,$desc,$sps) = (split("\t",$line))[0,1,3,6];
     my @sp = split(/\s/,$sps); 
     foreach my $value (@sp){
       if(defined($value) and $value and defined($swiss{$value})){
-	XrefParser::BaseParser->add_to_xrefs($swiss{$value},$key,'',$label,"","",$source_id,$species_id);
+	XrefParser::BaseParser->add_to_xrefs($swiss{$value},$key,'',$label,$desc,"",$source_id,$species_id);
 	$count++;
       }
       elsif(defined($value) and $value and defined($refseq{$value})){
-#	print STDERR "ARSE\t".$key."\t".$value."\t".$label."\n";	
 	$mismatch++;
       }
     }
