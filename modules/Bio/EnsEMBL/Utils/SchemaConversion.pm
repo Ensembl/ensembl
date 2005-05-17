@@ -211,19 +211,16 @@ sub do_conversion {
 #use this for both ensembl and vega for now,
 #but might need changing when vega gets eg transcript modified dates
     $self->conv_obj->transfer_vega_stable_ids();
-
-    $self->conv_obj->copy_other_tables();
-    $self->conv_obj->copy_repeat_consensus();
-    $self->conv_obj->create_meta_coord();
-    if ($self->conv_support->param('do_vega_schema_conversion')) {
-        $self->conv_obj->copy_other_vega_tables();
-        $self->conv_obj->update_clone_info();
-        $self->conv_obj->remove_supercontigs();
-        $self->conv_obj->copy_internal_clone_names();
-        $self->conv_obj->update_genscan();
-        $self->conv_obj->copy_assembly_exception;
-    }
-
+    $self->conv_obj->copy_other_tables(); 
+    $self->conv_obj->copy_repeat_consensus(); 
+    $self->conv_obj->create_meta_coord(); 
+    if ($self->conv_support->param('do_vega_schema_conversion')) { 
+        $self->conv_obj->copy_other_vega_tables(); 
+        $self->conv_obj->update_clone_info(); 
+        $self->conv_obj->remove_supercontigs(); 
+        $self->conv_obj->copy_internal_clone_names(); 
+        $self->conv_obj->copy_assembly_exception; 
+    } 
 }
 
 =head2 make_schema_up_to_date
