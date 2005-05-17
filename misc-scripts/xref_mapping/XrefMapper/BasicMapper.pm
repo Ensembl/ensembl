@@ -48,6 +48,8 @@ my %source_to_external_db;
 my %xrefs_written;
 my %object_xrefs_written;
 my %failed_xref_mappings;
+my %updated_source;
+
 =head2 new
 
   Description: Constructor for BasicMapper.
@@ -1028,6 +1030,9 @@ sub dump_triage_data() {
       if (!$xrefs_written{$xref_id}) {
 	$xrefs_written{$xref_id} = 1;
 	my $external_db_id = $source_to_external_db{$source_id};
+	if(!defined($updated_source{$external_db_id})){
+	  $self->cleanup_sources_file($external_db_id);
+	}
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 	if(defined($failed_xref_mappings{$xref_id})){
 	  my ($ensembl_id,$type,$q_perc,$t_perc,$q_cut,$t_cut) =  split(/\|/,$failed_xref_mappings{$xref_id});
@@ -1080,6 +1085,9 @@ sub dump_orphan_xrefs() {
     my $external_db_id = $source_to_external_db{$source_id};
     if ($external_db_id) { # skip "unknown" sources
       if (!$xrefs_written{$xref_id}) {
+	if(!defined($updated_source{$external_db_id})){
+	  $self->cleanup_sources_file($external_db_id);
+	}
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 
 	$xrefs_written{$xref_id} = 1;
@@ -1155,6 +1163,9 @@ sub dump_direct_xrefs {
       if ($ensembl_internal_id) {
 
 	if (!$xrefs_written{$xref_id}) {
+	  if(!defined($updated_source{$external_db_id})){
+	    $self->cleanup_sources_file($external_db_id);
+	  }
 	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 	  $xrefs_written{$xref_id} = 1;
 	}
@@ -1177,6 +1188,9 @@ sub dump_direct_xrefs {
 	    if ($stable_id =~ /$pat/) {
 
 	      if (!$xrefs_written{$xref_id}) {
+		if(!defined($updated_source{$external_db_id})){
+		  $self->cleanup_sources_file($external_db_id);
+		}
 		print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 		$xrefs_written{$xref_id} = 1;
 	      }
@@ -1413,6 +1427,9 @@ sub dump_core_xrefs {
       if (!$xrefs_written{$xref_id}) {
 	my $external_db_id = $source_to_external_db{$source_id};
 	if ($external_db_id) { # skip "unknown" sources
+	  if(!defined($updated_source{$external_db_id})){
+	    $self->cleanup_sources_file($external_db_id);
+	  }
 	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 	  $xrefs_written{$xref_id} = 1;
 	  $source_ids{$source_id} = $source_id;
@@ -1439,6 +1456,9 @@ sub dump_core_xrefs {
       $label = $accession if (!$label);
 
       if (!$xrefs_written{$xref_id}) {
+	if(!defined($updated_source{$external_db_id})){
+	  $self->cleanup_sources_file($external_db_id);
+	}
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\tDEPENDENT\n";
 	$xrefs_written{$xref_id} = 1;
 	$source_ids{$source_id} = $source_id;
@@ -1928,6 +1948,41 @@ sub map_source_to_external_db {
   return %source_to_external_db;
 }
 
+
+sub cleanup_sources_file{
+  my ($self,$id) = @_;
+
+  $updated_source{$id} =1;
+
+  my $dir = $self->core->dir();
+  open (DEL, ">>$dir/cleanup.sql") || die "Could not open $dir/cleanup.sql\n";
+
+
+  print DEL "DELETE external_synonym ";
+  print DEL     "FROM external_synonym, xref ";
+  print DEL       "WHERE external_synonym.xref_id = xref.xref_id ";
+  print DEL         "AND xref.external_db_id = $id\n";
+
+
+  print DEL "DELETE identity_xref ";
+  print DEL     "FROM identity_xref, object_xref, xref ";
+  print DEL       "WHERE identity_xref.object_xref_id = object_xref.object_xref_id ";
+  print DEL         "AND object_xref.xref_id = xref.xref_id ";
+  print DEL         "AND xref.external_db_id = $id \n";
+
+
+  print DEL "DELETE object_xref ";
+  print DEL     "FROM object_xref, xref ";
+  print DEL       "WHERE object_xref.xref_id = xref.xref_id ";
+  print DEL         "AND xref.external_db_id = $id\n";
+
+
+  print DEL "DELETE FROM xref WHERE xref.external_db_id = $id \n";
+
+  close DEL;
+
+}
+
 # Upload .txt files and execute .sql files.
 
 sub do_upload {
@@ -1938,7 +1993,46 @@ sub do_upload {
   my $core_db = $ensembl->dbc;
   # xref.txt etc
 
-  # TODO warn if table not empty
+  if(defined($self->delete_existing())){
+
+    my $file = $ensembl->dir() . "/cleanup.sql";
+    open(CLEAN,"<$file") || die "could not open $file for reading \n";
+    while(<CLEAN>){
+      chomp;
+      my $sth = $core_db->prepare($_);
+      $sth->execute() or die "Couldn't execute statement: " . $sth->errstr;
+    }     
+    close CLEAN;
+    #
+    # used execute to make getting errors easier.
+    #    my $str = "mysql -u" .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+    #   system $str;
+
+
+
+    foreach my $table ("go_xref", "interpro") {
+
+      my $sth = $core_db->prepare("DELETE FROM $table");
+      print "Deleting existing data in $table\n";
+      $sth->execute();
+      
+    }
+
+    # gene_display_xref.sql etc
+    foreach my $table ("gene", "transcript") {
+      
+      my $sth = $core_db->prepare("UPDATE $table SET display_xref_id=NULL");
+      print "Setting all existing display_xref_id in $table to null\n";
+      $sth->execute();
+      
+    }
+    
+    # gene descriptions
+    my $sth = $core_db->prepare("UPDATE gene SET description=NULL");
+    print "Setting all existing descriptions in gene table to null\n";
+    $sth->execute();
+
+  }
 
   foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "go_xref", "interpro") {
 
@@ -1981,33 +2075,12 @@ sub do_upload {
 
 sub delete_existing {
 
-  my $self = shift;
+  my ($self, $arg) = @_;
 
-  my $ensembl = $self->core;
-  my $core_db = $ensembl->dbc;
-  # xref.txt etc
+  (defined $arg) &&
+    ($self->{_delete_existing} = $arg );
+  return $self->{_delete_existing};
 
-  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "go_xref", "interpro") {
-
-    my $sth = $core_db->prepare("DELETE FROM $table");
-    print "Deleting existing data in $table\n";
-    $sth->execute();
-
-  }
-
-  # gene_display_xref.sql etc
-  foreach my $table ("gene", "transcript") {
-
-    my $sth = $core_db->prepare("UPDATE $table SET display_xref_id=NULL");
-    print "Setting all existing display_xref_id in $table to null\n";
-    $sth->execute();
-
-  }
-
-  # gene descriptions
-  my $sth = $core_db->prepare("UPDATE gene SET description=NULL");
-  print "Setting all existing descriptions in gene table to null\n";
-  $sth->execute();
 
 }
 
@@ -2141,6 +2214,7 @@ sub filter_by_regexp {
 
   foreach my $regexp (@$regexps) {
     $str =~ s/$regexp//ig;
+    $str =~ s/\"//ig;
   }
 
   return $str;
