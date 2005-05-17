@@ -23,17 +23,6 @@ CREATE TABLE gene_synonym (
   PRIMARY KEY  (synonym_id)
 ) TYPE=MyISAM;
 
-################################################################################
-#
-# Table structure for table 'translation_stable_id_pool'
-#
-
-CREATE TABLE translation_stable_id_pool (
-  translation_pool_id int(10) unsigned NOT NULL auto_increment,
-  translation_stable_id varchar(40) default NULL,
-  timestamp datetime NOT NULL default '0000-00-00 00:00:00',
-  PRIMARY KEY  (translation_pool_id)
-) TYPE=MyISAM;
 
 ################################################################################
 #
@@ -188,42 +177,6 @@ CREATE TABLE clone_info (
 
 ################################################################################
 #
-# Table structure for table 'input_id_analysis'
-#
-
-CREATE TABLE input_id_analysis (
-  input_id varchar(40) NOT NULL default '',
-  analysis_id smallint(10) unsigned NOT NULL default '0',
-  created datetime NOT NULL default '0000-00-00 00:00:00',
-  result smallint(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (analysis_id,input_id),
-  KEY input_created (input_id,created)
-) TYPE=MyISAM;
-
-################################################################################
-#
-# Table structure for table 'rule_conditions'
-#
-
-CREATE TABLE rule_conditions (
-  rule_id smallint(10) unsigned NOT NULL default '0',
-  condition varchar(40) default NULL
-) TYPE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'rule_goal'
-#
-
-CREATE TABLE rule_goal (
-  rule_id smallint(5) unsigned NOT NULL auto_increment,
-  goal varchar(40) default NULL,
-  PRIMARY KEY  (rule_id)
-) TYPE=MyISAM;
-
-################################################################################
-#
 # Table structure for table 'clone_remark'
 
 
@@ -234,45 +187,6 @@ CREATE TABLE clone_remark (
   PRIMARY KEY  (clone_remark_id)
 ) TYPE=MyISAM;
 
-################################################################################
-#
-# Table structure for table 'clone_info_keyword'
-
-
-CREATE TABLE clone_info_keyword (
-  keyword_id int(10) unsigned NOT NULL default '0',
-  clone_info_id int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (keyword_id,clone_info_id),
-  KEY clone_info_id_idx (clone_info_id)
-) TYPE=MyISAM;
-
-
-
-## The following tables are  probably not used, however create them anyway to be on the safe side.
-
-################################################################################
-#
-# Table structure for table 'clone_lock'
-
-CREATE TABLE clone_lock (
-  clone_lock_id int(10) unsigned NOT NULL auto_increment,
-  clone_id varchar(40) NOT NULL default '',
-  clone_version int(10) unsigned NOT NULL default '0',
-  timestamp datetime NOT NULL default '0000-00-00 00:00:00',
-  author_id int(10) NOT NULL default '0',
-  PRIMARY KEY  (clone_lock_id),
-  UNIQUE KEY clone_index (clone_id,clone_version)
-) TYPE=MyISAM;
-
-################################################################################
-#
-# Table structure for table 'keyword'
-
-CREATE TABLE keyword (
-  keyword_id int(10) unsigned NOT NULL auto_increment,
-  keyword_name varchar(50) default NULL,
-  PRIMARY KEY  (keyword_id)
-) TYPE=MyISAM;
 
 ################################################################################
 #
@@ -289,34 +203,42 @@ CREATE TABLE current_clone_info (
 
 ################################################################################
 #
-# Table structure for table 'job'
+# Table structure for table 'assembly_tag'
 
+CREATE TABLE assembly_tag (
+  tag_id		    INT(10)    UNSIGNED NOT NULL AUTO_INCREMENT,
+  contig_id	    INT(10)    UNSIGNED NOT NULL,
+  contig_start	    INT(10)    NOT NULL,
+  contig_end	    INT(10)    NULL,
+  contig_strand	    TINYINT(1) NOT NULL DEFAULT '0',
+  tag_type		    ENUM('Unsure', 'Clone_left_end', 'Clone_right_end', 'Misc') NOT NULL DEFAULT 'Misc',
+  tag_info		    TEXT       NULL, 		    
 
-CREATE TABLE job (
-  job_id int(10) unsigned NOT NULL auto_increment,
-  input_id varchar(40) NOT NULL default '',
-  analysis_id smallint(5) unsigned NOT NULL default '0',
-  submission_id mediumint(10) unsigned NOT NULL default '0',
-  stdout_file varchar(100) NOT NULL default '',
-  stderr_file varchar(100) NOT NULL default '',
-  retry_count tinyint(2) unsigned default '0',
-  PRIMARY KEY  (job_id),
-  KEY input_id (input_id),
-  KEY analysis_id (analysis_id)
-) TYPE=MyISAM;
-
-################################################################################
-#
-# Table structure for table 'job_status'
-
-CREATE TABLE job_status (
-  job_id int(10) unsigned NOT NULL default '0',
-  status varchar(40) NOT NULL default 'CREATED',
-  time datetime NOT NULL default '0000-00-00 00:00:00',
-  is_current enum('n','y') default 'n',
-  KEY job_id (job_id),
-  KEY status (status),
-  KEY is_current (is_current)
+  PRIMARY KEY (tag_id),
+  UNIQUE KEY (contig_id, contig_start, contig_end, contig_strand, tag_type)
 ) TYPE=MyISAM;
 
  
+################################################################################
+#
+# Table structure for table 'keyword'
+
+CREATE TABLE keyword (
+  keyword_id int(10) unsigned NOT NULL auto_increment,
+  keyword_name varchar(50) default NULL,
+  PRIMARY KEY  (keyword_id)
+) TYPE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'clone_info_keyword'
+
+
+CREATE TABLE clone_info_keyword (
+  keyword_id int(10) unsigned NOT NULL default '0',
+  clone_info_id int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (keyword_id,clone_info_id),
+  KEY clone_info_id_idx (clone_info_id)
+) TYPE=MyISAM;
+

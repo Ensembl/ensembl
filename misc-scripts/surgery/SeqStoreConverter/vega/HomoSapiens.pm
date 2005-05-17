@@ -8,6 +8,6 @@ use SeqStoreConverter::vega::VBasicConverter;
 
 use vars qw(@ISA);
 
-@ISA = qw(SeqStoreConverter::vega::VBasicConverter SeqStoreConverter::HomoSapiens);
+@ISA = qw(SeqStoreConverter::HomoSapiens SeqStoreConverter::vega::VBasicConverter);
 
 1;

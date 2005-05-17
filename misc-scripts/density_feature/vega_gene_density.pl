@@ -9,7 +9,7 @@ script to calculate gene densities and stats in Vega
 
     ./vega_gene_density.pl
         --species=Homo_sapiens
-        [--dry-run|-n]
+        [--dry_run|-n]
         [--help|-h]
 
 =head1 DESCRIPTION
@@ -63,7 +63,7 @@ my ($species, $chr, $dry, $help);
 &GetOptions(
     "species=s" => \$species,
     "chr=s"     => \$chr,
-    "dry-run"   => \$dry,
+    "dry_run"   => \$dry,
     "n"         => \$dry,
     "help"      => \$help,
     "h"         => \$help,
@@ -74,7 +74,7 @@ if($help || !$species){
     ./vega_gene_density.pl
         --species=Homo_sapiens
         [--chr=1,2]
-        [--dry-run|-n]
+        [--dry_run|-n]
         [--help|-h]\n\n);
     exit;
 }
@@ -125,6 +125,8 @@ for my $slice ( @top_slices ) {
 }
 
 $big_block_size = int( $min_big_chr / 150 );
+#use this size if another human is needed
+#$big_block_size = 28050;
 push @{$big_chr}, $big_block_size;
 $small_block_size = int( $min_small_chr / 150 );
 push @{$small_chr}, $small_block_size;

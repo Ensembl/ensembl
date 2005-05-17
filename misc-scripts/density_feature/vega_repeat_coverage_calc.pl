@@ -32,7 +32,7 @@ use Data::Dumper;
 my ($species, $dry, $help);
 &GetOptions(
     "species=s" => \$species,
-    "dry-run"   => \$dry,
+    "dry_run"   => \$dry,
     "n"         => \$dry,
     "help"      => \$help,
     "h"         => \$help,
@@ -42,7 +42,7 @@ if($help || !$species){
     print qq(Usage:
     ./vega_gene_density.pl
         --species=Homo_sapiens
-        [--dry-run|-n]
+        [--dry_run|-n]
         [--help|-h]\n\n);
     exit;
 }

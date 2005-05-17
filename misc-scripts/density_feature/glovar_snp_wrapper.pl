@@ -9,7 +9,7 @@ Wrapper for glovar_snp_density.pl
 
     ./glovar_snp_density.pl
         --species=Homo_sapiens
-        [--dry-run|-n]
+        [--dry_run|-n]
         [--avdump|-a]
 
 =head1 DESCRIPTION
@@ -53,7 +53,7 @@ use Getopt::Long;
 my ($species, $dry, $avdump);
 &GetOptions(
     "species=s" => \$species,
-    "dry-run"   => \$dry,
+    "dry_run"   => \$dry,
     "n"         => \$dry,
     "avdump"    => \$avdump,
     "a"         => \$avdump,
@@ -64,7 +64,7 @@ unless ($species) {
     ./glovar_snp_density.pl
         --species=Homo_sapiens
         [--avdump|-a]
-        [--dry-run|-n]\n\n);
+        [--dry_run|-n]\n\n);
     exit;
 }
 
