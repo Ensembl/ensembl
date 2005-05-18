@@ -34,7 +34,7 @@ RESTRICTIONS:
    ecs2 port: 336[1-6]
    ecs3 port: 300[47]
    ecs4 port: 335[0-3]
-   ia64[ef] port: 3306
+   ia64[efgh] port: 3306
 3- -pass is compulsory and is expected to be the mysql password to connect as ensadmin
 
 This script MUST be run as the mysqlens Unix user.
