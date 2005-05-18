@@ -1842,6 +1842,8 @@ sub transcript_display_xref_sources {
 	  'RefSeq_peptide',
 	  'RefSeq_dna',
 	  'Uniprot/SPTREMBL',
+	  'RefSeq_peptide_predicted',
+	  'RefSeq_dna_predicted',
 	  'EntrezGene');
 
 }
@@ -2249,7 +2251,7 @@ sub compare_xref_descriptions {
 
   my ($consortium, $gene_id, $xref_to_object) = @_;
 
-  my @sources = ("Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/SWISSPROT", $consortium);
+  my @sources = ("RefSeq_dna_predicted", "RefSeq_peptide_predicted", "Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/SWISSPROT", $consortium);
   my @words = qw(unknown hypothetical putative novel probable [0-9]{3} kDa fragment cdna protein);
 
   my $src_a = $xref_to_source{$a};
