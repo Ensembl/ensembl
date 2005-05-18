@@ -2090,6 +2090,7 @@ sub delete_existing {
 #   get all transcripts & translations
 #   get all associated xrefs
 #   filter by regexp, discard blank ones
+#   if, after filtering, the description is not blank, use the *original* description
 #   order by source & keyword
 #   assign description of best xref to gene
 # }
@@ -2130,8 +2131,8 @@ sub build_gene_descriptions {
   my @regexps = $self->gene_description_filter_regexps();
   while ($sth->fetch()) {
     if ($description) {
-      $description = filter_by_regexp($description, \@regexps);
-      if ($description ne "") {
+      my $filtered_description = filter_by_regexp($description, \@regexps);
+      if ($filtered_description ne "") {
 	$xref_descriptions{$xref_id} = $description;
 	$xref_accessions{$xref_id} = $accession;
       } else {
