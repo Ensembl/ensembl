@@ -2197,6 +2197,8 @@ sub build_gene_descriptions {
       my $source = $xref_to_source{$best_xref};
       my $acc = $xref_accessions{$best_xref};
 
+      $description =~ s/\"//ig; # remove " as they will cause problems in .sql files
+
       my $desc = $description . " [Source:$source;Acc:$acc]";
       print GENE_DESCRIPTIONS "UPDATE gene SET description=\"$desc\" WHERE gene_id=$gene_id;\n" if ($description);
 
@@ -2215,7 +2217,6 @@ sub filter_by_regexp {
 
   foreach my $regexp (@$regexps) {
     $str =~ s/$regexp//ig;
-    $str =~ s/\"//ig;
   }
 
   return $str;
