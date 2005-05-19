@@ -1622,7 +1622,7 @@ sub build_transcript_display_xrefs {
     # use the one with the highest priority, i.e. lower list position in @priorities
     my @xrefs = @{$object_xref_mappings{$key}};
     my ($best_xref, $best_xref_priority_idx);
-    # store best query & target identities for each source
+    # store best query & target identities for each source for this object
     my %best_qi;
     my %best_ti;
     $best_xref_priority_idx = 99999;
@@ -1632,7 +1632,7 @@ sub build_transcript_display_xrefs {
       if ($source) {
 	my $i = find_in_list($source, @priorities);
 
-	my $s = $source . "|" . $xref;
+	my $s = $source . "|" . $object_id;
 	my $key = $type . "|" . $object_id;
 	my $query_identity  = $object_xref_identities{$key}->{$xref}->{"query_identity"};
 	my $target_identity = $object_xref_identities{$key}->{$xref}->{"target_identity"};
@@ -1640,14 +1640,15 @@ sub build_transcript_display_xrefs {
 	# Check if this source has a better priority than the current best one
 	# Note if 2 sources are the same priority, the mappings are compared on
 	# query_identity then target_identity
-#	if ($i > -1 && $i < $best_xref_priority_idx &&
-#	    (($query_identity > $best_query_identity) ||
-#	    ($query_identity == $best_query_identity && $target_identity > $best_target_identity))) {
-	if ($i > -1 && $i <= $best_xref_priority_idx && $query_identity > $best_qi{$s}) {
+	if ($i > -1 && $i < $best_xref_priority_idx &&
+	    (($query_identity > $best_qi{$s}) ||
+	    ($query_identity == $best_qi{$s} && $target_identity > $best_ti{$s}))) {
+	#if ($i > -1 && $i <= $best_xref_priority_idx && $query_identity > $best_qi{$s}) {
 	  $best_xref = $xref;
 	  $best_xref_priority_idx = $i;
 	  $best_qi{$s} = $query_identity;
 	  $best_ti{$s} = $target_identity;
+	  print "Setting best xref to $xref for 80679 best qi " . $best_qi{$s} . " best ti " . $best_ti{$s} . "\n" if ($type =~ /Translation/ && $object_id == 80679 && $source =~ /RefSeq_peptide/);
 	}
       } else {
 	warn("Couldn't find a source for xref id $xref " . $xref_accessions{$xref_id} . "\n");
@@ -1819,7 +1820,7 @@ sub build_gene_display_xrefs {
   print "Transcripts with no xrefs: $trans_no_xref with xrefs: $trans_xref\n";
   print "Wrote $hit gene display_xref entries to gene_display_xref.sql\n";
   print "Couldn't find display_xrefs for $miss genes\n" if ($miss > 0);
-  print "Found display_xrefs for all genes\n" if ($miss eq 0);
+  print "Found display_xrefs for all genes\n" if ($miss == 0);
 
   return \%genes_to_transcripts;
 
@@ -2169,6 +2170,7 @@ sub build_gene_descriptions {
 
 	@xref_ids = @{$object_xref_mappings{$key}};
 	push @gene_xrefs, @xref_ids;
+	foreach my $gx (@gene_xrefs) { print "null gene xref after transcript for gene_id $gene_id\n" if (!$gx);	}
 	foreach my $xref (@xref_ids) {
 	  $local_xref_to_object{$xref} = $key;
 	}
@@ -2181,6 +2183,7 @@ sub build_gene_descriptions {
 
 	@xref_ids = @{$object_xref_mappings{$key}};
 	push @gene_xrefs, @xref_ids ;
+	foreach my $gx (@gene_xrefs) { print "null gene xref after translation gene_id $gene_id\n" if (!$gx);	}
 	foreach my $xref (@xref_ids) {
 	  $local_xref_to_object{$xref} = $key;
 	}
@@ -2192,8 +2195,13 @@ sub build_gene_descriptions {
 
     if (@gene_xrefs) {
 
+      #print "before ";
+      #foreach my $gx (@gene_xrefs) { print $xref_to_source{$gx} . "|" ;	}
+      #print "\n";
       @gene_xrefs = sort {compare_xref_descriptions($self->consortium(), $gene_id, \%local_xref_to_object)} @gene_xrefs;
-
+      #print "after ";
+      #foreach my $gx (@gene_xrefs) { print $xref_to_source{$gx} . "|" ;	}
+      #print "\n";
       my $best_xref = $gene_xrefs[-1];
       my $description = $xref_descriptions{$best_xref};
       my $source = $xref_to_source{$best_xref};
