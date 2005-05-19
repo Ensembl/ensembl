@@ -9,7 +9,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Translation;
 use XrefMapper::db;
 use vars '@ISA';
-
+use strict;
 
 =head1 NAME
 
@@ -2133,7 +2133,7 @@ sub build_gene_descriptions {
   my @regexps = $self->gene_description_filter_regexps();
   while ($sth->fetch()) {
     if ($description) {
-      my $filtered_description = filter_by_regexp($description, \@regexps);
+      my $filtered_description = $self->filter_by_regexp($description, \@regexps);
       if ($filtered_description ne "") {
 	$xref_descriptions{$xref_id} = $description;
 	$xref_accessions{$xref_id} = $accession;
@@ -2155,6 +2155,8 @@ sub build_gene_descriptions {
 
   foreach my $gene_id (keys %genes_to_transcripts) {
 
+
+    print "GENE: $gene_id\n";
     my @gene_xrefs;
 
     my %local_xref_to_object;
@@ -2192,9 +2194,12 @@ sub build_gene_descriptions {
 
     if (@gene_xrefs) {
 
+#      @gene_xrefs = @{$self->strip(\@gene_xrefs)};  # remove blank entrys
+
       @gene_xrefs = sort {compare_xref_descriptions($self->consortium(), $gene_id, \%local_xref_to_object)} @gene_xrefs;
 
-      my $best_xref = $gene_xrefs[-1];
+#      my $best_xref = $gene_xrefs[-1];
+      my $best_xref = $self->get_best(\@gene_xrefs,$gene_id);
       my $description = $xref_descriptions{$best_xref};
       my $source = $xref_to_source{$best_xref};
       my $acc = $xref_accessions{$best_xref};
@@ -2205,17 +2210,34 @@ sub build_gene_descriptions {
       print GENE_DESCRIPTIONS "UPDATE gene SET description=\"$desc\" WHERE gene_id=$gene_id;\n" if ($description);
 
     }
-
+    
   } # foreach gene
 
   close(GENE_DESCRIPTIONS);
 
 }
 
+sub get_best {
+  my ($self,$refxref,$junk) = @_;
+  return $$refxref[-1];
+}
+
+sub strip{
+  my ($self,$refarray) = @_;
+  my @ret;
+
+  foreach my $arr (@$refarray){
+    if(defined($xref_accessions{$arr})){
+      push @ret, $arr;
+    }
+  }
+  return \@ret;
+}
+
 # remove a list of patterns from a string
 sub filter_by_regexp {
 
-  my ($str, $regexps) = @_;
+  my ($self, $str, $regexps) = @_;
 
   foreach my $regexp (@$regexps) {
     $str =~ s/$regexp//ig;
@@ -2339,6 +2361,14 @@ sub cache_xref_labels {
   }
 
 }
+sub get_xref_descriptions{
+  return \%xref_descriptions;
+}
+
+sub get_xref_accessions{
+ return \%xref_accessions;
+}
+
 
 1;
 
