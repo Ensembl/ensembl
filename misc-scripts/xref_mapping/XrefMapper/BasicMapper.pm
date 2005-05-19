@@ -1648,7 +1648,6 @@ sub build_transcript_display_xrefs {
 	  $best_xref_priority_idx = $i;
 	  $best_qi{$s} = $query_identity;
 	  $best_ti{$s} = $target_identity;
-	  print "Setting best xref to $xref for 80679 best qi " . $best_qi{$s} . " best ti " . $best_ti{$s} . "\n" if ($type =~ /Translation/ && $object_id == 80679 && $source =~ /RefSeq_peptide/);
 	}
       } else {
 	warn("Couldn't find a source for xref id $xref " . $xref_accessions{$xref_id} . "\n");
