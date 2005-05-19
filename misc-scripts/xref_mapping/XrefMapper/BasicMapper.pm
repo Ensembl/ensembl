@@ -2169,7 +2169,6 @@ sub build_gene_descriptions {
 
 	@xref_ids = @{$object_xref_mappings{$key}};
 	push @gene_xrefs, @xref_ids;
-	foreach my $gx (@gene_xrefs) { print "null gene xref after transcript for gene_id $gene_id\n" if (!$gx);	}
 	foreach my $xref (@xref_ids) {
 	  $local_xref_to_object{$xref} = $key;
 	}
@@ -2182,7 +2181,6 @@ sub build_gene_descriptions {
 
 	@xref_ids = @{$object_xref_mappings{$key}};
 	push @gene_xrefs, @xref_ids ;
-	foreach my $gx (@gene_xrefs) { print "null gene xref after translation gene_id $gene_id\n" if (!$gx);	}
 	foreach my $xref (@xref_ids) {
 	  $local_xref_to_object{$xref} = $key;
 	}
@@ -2194,13 +2192,8 @@ sub build_gene_descriptions {
 
     if (@gene_xrefs) {
 
-      #print "before ";
-      #foreach my $gx (@gene_xrefs) { print $xref_to_source{$gx} . "|" ;	}
-      #print "\n";
       @gene_xrefs = sort {compare_xref_descriptions($self->consortium(), $gene_id, \%local_xref_to_object)} @gene_xrefs;
-      #print "after ";
-      #foreach my $gx (@gene_xrefs) { print $xref_to_source{$gx} . "|" ;	}
-      #print "\n";
+
       my $best_xref = $gene_xrefs[-1];
       my $description = $xref_descriptions{$best_xref};
       my $source = $xref_to_source{$best_xref};
