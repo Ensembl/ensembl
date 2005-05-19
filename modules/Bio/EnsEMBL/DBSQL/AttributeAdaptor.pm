@@ -479,6 +479,7 @@ sub store_on_Translation {
 sub remove_from_Slice {
   my $self = shift;
   my $slice = shift;
+  my $attrib_type_id = shift;
 
   if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
     throw("Bio::EnsEMBL::Slice argument expected.");
@@ -489,13 +490,18 @@ sub remove_from_Slice {
   if(!$srid) {
     throw("Could not get seq_region_id for provided slice: ".$slice->name());
   }
-
-  my $sth = $self->prepare("DELETE FROM seq_region_attrib " .
-                           "WHERE seq_region_id = ?");
-
-  $sth->execute($srid);
-
-  $sth->finish();
+  
+  if (defined $attrib_type_id) {
+    my $sth = $self->prepare("DELETE FROM seq_region_attrib " .
+        "WHERE seq_region_id = ? AND attrib_type_id = ?");
+    $sth->execute($srid, $attrib_type_id);
+    $sth->finish;
+  } else {
+    my $sth = $self->prepare("DELETE FROM seq_region_attrib " .
+        "WHERE seq_region_id = ?");
+    $sth->execute($srid);
+    $sth->finish();
+  }
 
   return;
 }
