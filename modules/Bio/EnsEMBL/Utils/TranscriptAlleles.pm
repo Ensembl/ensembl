@@ -55,7 +55,7 @@ use Data::Dumper;
   Example    : $consequence_types = get_all_ConsequenceType($transcript, \@alleles);
                foreach my $ct (@{$consequence_types}){
                   print "Allele : ", $ct->allele_string, " has a consequence type of :",$ct->type;
-                  print " and is affecting the transcript with ",$ct->aa_alleles, "in position ", 
+                  print " and is affecting the transcript with ",@{$ct->aa_alleles}, "in position ", 
 		              $ct->aa_start,"-", $ct->aa_end if (defined $ct->aa_alleles);
 		  print "\n";
 	      }
@@ -85,7 +85,8 @@ sub get_all_ConsequenceType {
   my @out; #array containing the consequence types of the alleles in the transcript
   foreach my $allele (@alleles_ordered) {
     #get consequence type of the AlleleFeature
-    my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start,$allele->end,$allele->strand,[$allele->allele_string]);
+    my $new_allele = $allele->transform('chromosome');
+    my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$new_allele->start,$new_allele->end,$allele->strand,[$allele->allele_string]);
     #calculate the consequence type of the Allele
     my $ref_consequences = type_variation($transcript,$consequence_type);
     if ($allele->start != $allele->end){
@@ -107,16 +108,21 @@ sub get_all_ConsequenceType {
 	#if there is more than one element in the same_codon array, calculate the effect of the codon
 	if (@same_codon > 1){
 	    calculate_same_codon(\@same_codon);
-
 	}
 	push @out, @same_codon;
 	@same_codon = ();
+	push @same_codon, $new_consequence; #push the element not in the same codon
     }
-  }    
+  }
   #add last consequence_type
-  if (@same_codon > 0){
+  if (@same_codon == 1){
       push @out, @same_codon;
-  }           
+  }
+  elsif (@same_codon > 1){
+    calculate_same_codon(\@same_codon);
+    push @out, @same_codon;
+  }
+
   return \@out;
 }
 
@@ -124,16 +130,16 @@ sub get_all_ConsequenceType {
 sub calculate_same_codon{
     my $same_codon = shift;
     my $new_codon;
+    my $old_aa;
     my $codon_table = Bio::Tools::CodonTable->new;
     if (@{$same_codon} == 3){
 	#if there are 3 alleles in the same codon
-	map {$new_codon .= @{$_->alleles}} @{$same_codon};
+	map {$new_codon .= @{$_->alleles};$old_aa = $_->aa_alleles()->[0]} @{$same_codon};
     }
     else{
 	#if there are 2 alleles affecting the same codon
-	my $first_pos = $same_codon->[0]->cdna_start % 3; #position of the first allele in the codon
-	my $second_pos = $same_codon->[1]->cdna_start % 3; #position of the second allele in the codon
-	
+	my $first_pos = ($same_codon->[0]->cdna_start -1) % 3; #position of the first allele in the codon
+	my $second_pos = ($same_codon->[1]->cdna_start -1)% 3; #position of the second allele in the codon
 	if ($first_pos == 0){
 	    #codon starts with first allele
 	    $new_codon = $same_codon->[0]->alleles->[0]; #first base in the codon
@@ -152,12 +158,12 @@ sub calculate_same_codon{
 	    $new_codon .= $same_codon->[0]->alleles->[0]; #second base in the codon
 	    $new_codon .= $same_codon->[1]->alleles->[0]; #third base in the codon
 	}
-	
+	$old_aa = $same_codon->[0]->aa_alleles->[0];	
     }
     #calculate the new_aa
     my $new_aa = $codon_table->translate($new_codon);
     #and update the aa_alleles field
-    map {$_->aa_alleles($new_aa)} @{$same_codon};
+    map {$_->aa_alleles([$old_aa,$new_aa])} @{$same_codon};
 
 }
 #
@@ -169,24 +175,21 @@ sub type_variation {
   if (!$var->isa('Bio::EnsEMBL::Variation::ConsequenceType')){
       throw("Not possible to calculate the consequence type for ",ref($var)," : Bio::EnsEMBL::Variation::ConsequenceType object expected");
   }
-  
   my $slice = $tr->slice();
   
-  if(!$slice) {
-    warning("Cannot obtain SNPs for transcript without attached Slice.");
-    return {};
-  }
+   if(!$slice) {
+     warning("Cannot obtain SNPs for transcript without attached Slice.");
+     return {};
+   }
 
-  my $sa = $slice->adaptor();
+   my $sa = $slice->adaptor();
 
-  # retrieve slice in the region of the transcript
-  $slice = $sa->fetch_by_Feature($tr, 0 );
-
-  # copy transcript, to work in coord system we are interested in
-  $tr = $tr->transfer( $slice );
-
+   # retrieve slice in the region of the transcript
+   $slice = $sa->fetch_by_Feature($tr, 0 );
+   # copy transcript, to work in coord system we are interested in
+#   $tr = $tr->transfer( $slice );
+  $tr = $tr->transform('chromosome');
   my $tm = $tr->get_TranscriptMapper();
-
   my @coords = $tm->genomic2cdna($var->start,
                                  $var->end,
                                  $var->strand);
@@ -316,7 +319,6 @@ sub apply_aa_change {
 
   my $len = $var->aa_end - $var->aa_start + 1;
   my $old_aa = substr($peptide, $var->aa_start -1 , $len);
-
   my $codon_cds_start = $var->aa_start * 3 - 2;
   my $codon_cds_end   = $var->aa_end   * 3;
   my $codon_len = $codon_cds_end - $codon_cds_start + 1;
