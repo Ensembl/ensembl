@@ -244,9 +244,9 @@ sub get_all_differences_StrainSlice{
 	#both strains have differences
 	#create a hash with the differences in the first slice
 	my %allele_features_self = map {$_->start => $_} @{$self->{'alleleFeatures'}};
-	foreach my $difference (@{$strainSlice->{'alleleFeatures'}}){
+	foreach my $difference (@{$strainSlice->{'alleleFeatures'}}){	 
 	    #there is no difference in the other strain slice, convert the allele
-	    if (!defined $allele_features_self{$difference->start}){
+	    if ((!defined $allele_features_self{$difference->start} || (defined $allele_features_self{$difference->start} && $allele_features_self{$difference->start}->length_diff != 0))){
 		push @{$differences},$strainSlice->_convert_difference($difference);
 	    }		
 	    else{
