@@ -2155,8 +2155,6 @@ sub build_gene_descriptions {
 
   foreach my $gene_id (keys %genes_to_transcripts) {
 
-
-    print "GENE: $gene_id\n";
     my @gene_xrefs;
 
     my %local_xref_to_object;
@@ -2200,14 +2198,20 @@ sub build_gene_descriptions {
 
 #      my $best_xref = $gene_xrefs[-1];
       my $best_xref = $self->get_best(\@gene_xrefs,$gene_id);
-      my $description = $xref_descriptions{$best_xref};
       my $source = $xref_to_source{$best_xref};
-      my $acc = $xref_accessions{$best_xref};
 
-      $description =~ s/\"//ig; # remove " as they will cause problems in .sql files
+      # only store the description if its source is one of the allowed ones
+      if (find_in_list($source, gene_description_sources()) > -1) {
 
-      my $desc = $description . " [Source:$source;Acc:$acc]";
-      print GENE_DESCRIPTIONS "UPDATE gene SET description=\"$desc\" WHERE gene_id=$gene_id;\n" if ($description);
+	my $description = $xref_descriptions{$best_xref};
+	my $acc = $xref_accessions{$best_xref};
+
+	$description =~ s/\"//ig; # remove " as they will cause problems in .sql files
+
+	my $desc = $description . " [Source:$source;Acc:$acc]";
+	print GENE_DESCRIPTIONS "UPDATE gene SET description=\"$desc\" WHERE gene_id=$gene_id;\n" if ($description);
+
+      }
 
     }
     
@@ -2218,7 +2222,7 @@ sub build_gene_descriptions {
 }
 
 sub get_best {
-  my ($self,$refxref,$junk) = @_;
+  my ($self,$refxref,$gene_id) = @_;
   return $$refxref[-1];
 }
 
@@ -2273,7 +2277,9 @@ sub compare_xref_descriptions {
 
   my ($consortium, $gene_id, $xref_to_object) = @_;
 
-  my @sources = ("RefSeq_dna_predicted", "RefSeq_peptide_predicted", "Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/SWISSPROT", $consortium);
+  my @sources = gene_description_sources();
+  push @sources, $consortium;
+
   my @words = qw(unknown hypothetical putative novel probable [0-9]{3} kDa fragment cdna protein);
 
   my $src_a = $xref_to_source{$a};
@@ -2324,6 +2330,15 @@ sub compare_xref_descriptions {
     return $pos_a <=> $pos_b;
 
   }
+}
+
+# list of sources to be used when building gene descriptions
+# sorted into increasing order of priority
+
+sub gene_description_sources {
+
+  return ("RefSeq_dna_predicted", "RefSeq_peptide_predicted", "Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/SWISSPROT");
+
 }
 
 # load external_db (if it's empty) from ../external_db/external_dbs.txt
