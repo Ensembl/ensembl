@@ -5,20 +5,99 @@ use  XrefMapper::BasicMapper;
 use vars '@ISA';
 
 @ISA = qw{ XrefMapper::BasicMapper };
+use strict;
 
 sub get_set_lists {
 
   return [["ExonerateGappedBest1", ["mus_musculus","*"]]];
 
 }
+sub consortium {
 
-sub gene_description_filter_regexps {
+  return "MarkerSymbol"; # Default to something that won't be matched as a source
+
+}
+
+sub special_filter {
 
   return ('\(?[0-9A-Z]{10}RIK PROTEIN\)?[ \.]',
-	  'RIKEN CDNA [0-9A-Z]{10}[ \.;]',
+	  'RIKEN CDNA [0-9A-Z]{10} GENE',
 	  '.*RIKEN FULL-LENGTH ENRICHED LIBRARY.*PRODUCT:',
 	  '.*RIKEN FULL-LENGTH ENRICHED LIBRARY.*',
 	  '\(*HYPOTHETICAL\s+.*',
+	  '^UNKNOWN\s+.*',
+	  'CDNA SEQUENCE\s?,? [A-Z]+\d+[ \.;]',
+	  'CLONE MGC:\d+[ \.;]',
+	  ' MGC:\s*\d+[ \.;]',
+	  'HYPOTHETICAL PROTEIN,',
+	  'HYPOTHETICAL PROTEIN \S+[\.;]',
+	  'DNA SEGMENT, CHR.*',
+	  'PROTEIN \S+ HOMOLOG\.?',
+	  '^SIMILAR TO GENE.*',
+	  'SIMILAR TO PUTATIVE[ \.]',
+	  '^SIMILAR TO HYPOTHETICAL.*',
+	  'SIMILAR TO (KIAA|LOC|RIKEN).*',
+	  'SIMILAR TO GENBANK ACCESSION NUMBER\s+\S+',
+	  'SIMILAR TO\s+$',
+          'EXPRESSED SEQUENCE [A-Z]+\d+[ \.;]',
+          'EST [A-Z]+\d+[ \.;]',
+          '^\s*\(FRAGMENT\)\.?\s*$',
+	  '^\s*\(?GENE\)?\.?;?\s*$',
+          '\s*\(?GENE\)?\.?;?',
+          '\s*\(?PRECURSOR\)?\.?;?',
+          '^\s*\(\s*\)\s*$',
+	  '^\s*\(\d*\)\s*[ \.]$',
+          '^\s+\(?\s*$');
+}
+
+sub get_best {
+  my ($self,$xrefref,$gene_id) =@_;
+
+  my @refs = @{$xrefref};
+  my @mouseregexps = $self->special_filter();
+  my $check =0;
+  my $new_best;
+  my $best_xref = @refs[-1];
+
+ 
+  my $xref_descriptions = $self->get_xref_descriptions();
+  my $xref_accessions = $self->get_xref_accessions();
+ 
+
+  while(!$check){
+
+#    if($gene_id == "85298"){
+#      print $gene_id. join(',',@refs)."\n";
+#      print "the number of mouse special reg exp is ".scalar(@mouseregexps). " \n";
+#    }
+    $new_best = pop(@refs);
+    
+    if($new_best){
+#      if($gene_id == "85298"){
+#      	print  "best = $new_best\tacc=*".$xref_accessions->{$new_best}."*\npre*".$xref_descriptions->{$new_best}."*\n";
+#      }
+      my $description = $self->filter_by_regexp($xref_descriptions->{$new_best}, \@mouseregexps);
+      
+      
+#      if($gene_id == "85298"){
+#      	print "post*".$description."*\n";
+#      }
+      if ($description ne "") {
+	$best_xref = $new_best;
+	$check=1;
+      }
+    }
+    else{
+      $check= 1;
+    }
+  }
+  
+  return $best_xref;
+}
+
+sub gene_description_filter_regexps {
+
+  return ('\(*HYPOTHETICAL\s+.*',
 	  '^UNKNOWN\s+.*',
 	  'CDNA SEQUENCE\s?,? [A-Z]+\d+[ \.;]',
 	  'CLONE MGC:\d+[ \.;]',
