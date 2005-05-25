@@ -37,9 +37,9 @@
 1902	SNGR_Hver	1	XREF	1	0	1
 1910	Sanger_Mver1_1_1	1	XREF	1	0	1
 2000	Uniprot/SPTREMBL	1	KNOWN	1	0	1
-2010	prediction_SPTREMBL	1	XREF	1	0	1
+2010	prediction_SPTREMBL	1	XREF	1	1	1
 2100	Superfamily	1	KNOWNXREF	1	0	1
-2200	Uniprot/SWISSPROT	1	KNOWN	1	0	1
+2200	Uniprot/SWISSPROT	1	KNOWN	1	1	1
 2300	Vega_gene	1	XREF	1	0	1
 2310	Vega_transcript	1	XREF	1	0	1
 2320	Vega_translation	1	XREF	1	0	1
