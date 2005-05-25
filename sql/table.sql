@@ -688,6 +688,11 @@ CREATE TABLE external_db (
   release                     VARCHAR(40)  NOT NULL,
   status                      ENUM ('KNOWNXREF','KNOWN','XREF','PRED','ORTH', 'PSEUDO') not null,
 
+  dbprimary_acc_linkable      BOOLEAN DEFAULT 1 NOT NULL,
+  display_label_linkable      BOOLEAN DEFAULT 0 NOT NULL,
+
+  priority                    INT NOT NULL,
+
   PRIMARY KEY( external_db_id ) 
 
 );
