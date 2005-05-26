@@ -2201,7 +2201,7 @@ sub build_gene_descriptions {
       my $source = $xref_to_source{$best_xref};
 
       # only store the description if its source is one of the allowed ones
-      if (find_in_list($source, gene_description_sources()) > -1) {
+      if (find_in_list($source, $self->gene_description_sources()) > -1) {
 
 	my $description = $xref_descriptions{$best_xref};
 	my $acc = $xref_accessions{$best_xref};
