@@ -18,6 +18,12 @@ sub consortium {
 
 }
 
+sub gene_description_sources {
+
+  return ("RefSeq_dna_predicted", "RefSeq_peptide_predicted", "Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/SWISSPROT", "MarkerSymbol");
+
+}
+
 sub special_filter {
 
   return ('\(?[0-9A-Z]{10}RIK PROTEIN\)?[ \.]',
