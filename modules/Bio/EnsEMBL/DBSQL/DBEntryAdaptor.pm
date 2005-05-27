@@ -64,6 +64,7 @@ sub fetch_by_dbID {
   my $sth = $self->prepare(
    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version, xref.description,
+           exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.release, es.synonym
     FROM   xref, external_db exDB
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
@@ -75,8 +76,9 @@ sub fetch_by_dbID {
   my $exDB;
 
   while ( my $arrayref = $sth->fetchrow_arrayref()){
-    my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, 
-         $release, $synonym) = @$arrayref;
+    my ( $refID, $dbprimaryId, $displayid, $version, $desc,
+	 $primary_id_linkable, $display_id_linkable, $priority,
+         $dbname, $release, $synonym) = @$arrayref;
 
     if(!$exDB) {
       $exDB = Bio::EnsEMBL::DBEntry->new
@@ -86,7 +88,10 @@ sub fetch_by_dbID {
           -display_id => $displayid,
           -version => $version,
           -release => $release,
-          -dbname => $dbname );
+          -dbname => $dbname,
+	  -primary_id_linkable => $primary_id_linkable,
+	  -display_id_linkable => $display_id_linkable,
+	  -priority => $priority);
 
       $exDB->description( $desc ) if ( $desc );
     }
@@ -126,6 +131,7 @@ sub fetch_by_db_accession {
   my $sth = $self->prepare(
    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version, xref.description,
+           exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.release, es.synonym
     FROM   xref, external_db exDB
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
@@ -153,6 +159,7 @@ sub fetch_by_db_accession {
 
   while ( my $arrayref = $sth->fetchrow_arrayref()){
     my ( $dbID, $dbprimaryId, $displayid, $version, $desc, $dbname,
+	 $primary_id_linkable, $display_id_linkable, $priority,
          $release, $synonym) = @$arrayref;
 
     if(!$exDB) {
@@ -163,7 +170,10 @@ sub fetch_by_db_accession {
           -display_id => $displayid,
           -version => $version,
           -release => $release,
-          -dbname => $dbname );
+          -dbname => $dbname,
+	  -primary_id_linkable => $primary_id_linkable,
+	  -display_id_linkable => $display_id_linkable,
+	  -priority => $priority);
 
       $exDB->description( $desc ) if ( $desc );
     }
@@ -249,7 +259,7 @@ sub store {
            display_label = ?,
            version = ?,
            description = ?,
-           external_db_id = ?" );
+           external_db_id = ?");
     $sth->execute( $exObj->primary_id(), $exObj->display_id(),
 		   $exObj->version(), $exObj->description(), $dbRef);
     $dbX = $sth->{'mysql_insertid'};
@@ -590,6 +600,7 @@ sub _fetch_by_object_type {
   my $sth = $self->prepare("
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
            xref.description,
+           exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.release, exDB.status,
            oxr.object_xref_id,
            es.synonym, 
@@ -613,7 +624,8 @@ sub _fetch_by_object_type {
 
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     my ( $refID, $dbprimaryId, $displayid, $version, 
-         $desc, $dbname, $release, $exDB_status, $objid, 
+         $desc, $primary_id_linkable, $display_id_linkable, $priority,
+         $dbname, $release, $exDB_status, $objid,
          $synonym, $queryid, $targetid, $query_start, $query_end,
          $translation_start, $translation_end, $cigar_line,
          $score, $evalue, $analysis_id, $linkage_type ) = @$arrRef;
@@ -660,6 +672,10 @@ sub _fetch_by_object_type {
 
       $exDB->description($desc)   if(defined($desc));
       $exDB->status($exDB_status) if(defined($exDB_status));
+
+      $exDB->primary_id_linkable($primary_id_linkable);
+      $exDB->display_id_linkable($display_id_linkable);
+      $exDB->priority($priority);
 
       push( @out, $exDB );
       $seen{$refID} = $exDB;
@@ -822,8 +838,6 @@ sub _type_by_external_id{
   }
   return @result;
 }
-
-
 
 
 =head2 geneids_by_extids

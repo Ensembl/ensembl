@@ -79,7 +79,10 @@ sub new_fast {
 						       -dbname  => $dbname,
 						       -release => $release,
 						       -display_id => $did,
-                               -description => $description);
+                                                       -description => $description,
+						       -primary_id_linkable =>$primary_id_linkable,
+						       -display_id_linkable =>$display_id_linkable,
+						       -priority => $priority);
   Description: Creates a new DBEntry object
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
@@ -93,9 +96,11 @@ sub new {
   my $self = bless {},$class;
 
   my ( $adaptor, $dbID, $primary_id, $version,
-       $dbname, $release, $display_id, $description ) =
+       $dbname, $release, $display_id, $description,
+       $primary_id_linkable, $display_id_linkable, $priority) =
     rearrange ( ['ADAPTOR','DBID','PRIMARY_ID','VERSION',
-                 'DBNAME','RELEASE','DISPLAY_ID','DESCRIPTION'], @args );
+                 'DBNAME','RELEASE','DISPLAY_ID','DESCRIPTION',
+		'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY'], @args );
 
   $self->{'adaptor'} = $adaptor;
   $self->{'dbID'}    = $dbID;
@@ -107,6 +112,9 @@ sub new {
   if( defined $release) { $self->release( $release ) }
   if( defined $display_id) { $self->display_id( $display_id ) }
   if( defined $description) { $self->description($description) }
+  if( defined $primary_id_linkable) { $self->primary_id_linkable($primary_id_linkable) }
+  if( defined $display_id_linkable) { $self->display_id_linkable($display_id_linkable) }
+  if( defined $priority) { $self->priority($priority) }
   $self->{synonyms} = [];;
 
   return $self;
@@ -280,6 +288,64 @@ sub description {
   return $self->{description};
 }
 
+
+=head2 primary_id_linkable
+
+  Arg [1]    : boolean $primary_id_linkable
+  Example    : none
+  Description: get/set for attribute primary_id_linkable
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub primary_id_linkable {
+  my ( $self, $arg ) = @_;
+  if( defined $arg ) {
+    $self->{primary_id_linkable} = $arg;
+  } 
+  return $self->{primary_id_linkable};
+}
+
+=head2 display_id_linkable
+
+  Arg [1]    : boolean $display_id_linkable
+  Example    : none
+  Display_id_linkable: get/set for attribute display_id_linkable
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub display_id_linkable {
+  my ( $self, $arg ) = @_;
+  if( defined $arg ) {
+    $self->{display_id_linkable} = $arg;
+  } 
+  return $self->{display_id_linkable};
+}
+
+
+=head2 priority
+
+  Arg [1]    : int $priority
+  Example    : none
+  Priority: get/set for attribute priority
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub priority {
+  my ( $self, $arg ) = @_;
+  if( defined $arg ) {
+    $self->{priority} = $arg;
+  } 
+  return $self->{priority};
+}
 
 =head2 add_synonym
 
