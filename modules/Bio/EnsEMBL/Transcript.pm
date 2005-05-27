@@ -154,7 +154,8 @@ sub new {
                If you only want to retrieve the DBEntries associated with the
                transcript then you should use the get_all_DBEntries call 
                instead.
-  Returntype : list reference to Bio::EnsEMBL::DBEntry objects
+  Returntype : list reference to Bio::EnsEMBL::DBEntry objects, sorted by
+               priority (desc), external db name (asc), display_id (asc)
   Exceptions : none
   Caller     : general
 
@@ -169,6 +170,8 @@ sub get_all_DBLinks {
 
   my $transl = $self->translation();
   push @links, @{$transl->get_all_DBEntries} if($transl);
+
+  @links = sort {_compare_xrefs()} @links;
 
   return \@links;
 }
@@ -1972,6 +1975,40 @@ sub fetch_all_regulatory_features {
    return $rfa->fetch_all_by_transcript($self);
 
 }
+
+
+
+
+=head2 _compare_xrefs
+
+  Description: compare xrefs based on priority (descending), then name (ascending),
+               then display_label (ascending)
+
+=cut
+
+sub _compare_xrefs {
+
+  # compare on priority first (descending)
+  if ($a->priority() != $b->priority()) {
+
+    return $b->priority() <=> $a->priority();
+
+  } else { # equal priorities, compare on external_db name
+
+    if ($a->dbname() ne $b->dbname()) {
+
+      return $a->dbname() cmp $b->dbname();
+
+    } else { # equal priorities and names, compare on display_label
+
+      return $a->display_id() cmp $b->display_id();
+
+    }
+
+  }
+
+}
+
 
 ###########################
 # DEPRECATED METHODS FOLLOW
