@@ -50,7 +50,8 @@ sub DESTROY {
   my $dbc = $obj->dbc;
   $obj->dbc(undef);
 
-  DBI::st::DESTROY($obj);
+  ### Do not need to explictly call this:
+  #DBI::st::DESTROY($obj);
 
   # The count for the number of kids is decremented only after this
   # function is complete. Disconnect if there is 1 kid (this one) remaining.

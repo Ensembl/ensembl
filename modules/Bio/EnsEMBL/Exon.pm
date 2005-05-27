@@ -487,7 +487,7 @@ sub _transform_to_RawContig {
     # and then all the component exons ...
     for( my $i=0; $i <= $#mapped; $i++ ) {
       if($mapped[$i]->isa("Bio::EnsEMBL::Mapper::Gap")){
-	$self->throw(" exon lies on a gap cannot be mapped\n");
+	$self->throw("exon '". $self->stable_id ."' lies on a gap cannot be mapped\n");
       }
       my $componentExon = Bio::EnsEMBL::Exon->new();
       $componentExon->start( $mapped[$i]->start() );
@@ -529,7 +529,7 @@ sub _transform_to_RawContig {
     # thats a simple exon
     if($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
       
-      $self->throw(" exon lies on a gap cannot be mapped\n");
+      $self->throw("exon '". $self->stable_id ."' lies on a gap cannot be mapped\n");
     }
     my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[0]->id() );
     my $new_exon = new Bio::EnsEMBL::Exon();
