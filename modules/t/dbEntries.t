@@ -32,7 +32,6 @@ debug( "Test database instatiated" );
 #
 ok( $db );
 
-
 # some retrievals
 my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
@@ -84,7 +83,10 @@ my $xref = Bio::EnsEMBL::DBEntry->new
    -primary_id => "1",
    -dbname => "SWISSPROT",
    -release => "1",
-   -display_id => "Ens related thing"
+   -display_id => "Ens related thing",
+   -primary_id_linkable => "0",
+   -display_id_linkable => "1",
+   -priority => "5"
    );
 
 
