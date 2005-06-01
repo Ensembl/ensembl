@@ -123,8 +123,11 @@ sub run {
 
 	$last_type = $type;
 
+	$file =~ s/[&=]//g;
+	warn "$file in longer than 256 charcters" if(length($file) > 256);
 	print "Downloading $urls to $dir/$file\n";
-	my $result = system("wget", "--quiet","--directory-prefix=$dir", $urls);
+   
+	my $result = system("wget", "--quiet","--directory-prefix=$dir", "--output-document=$dir/$file",  $urls );
 
 	# check that the file actually downloaded; may not (e.g. if too many anonymous users)
 	if ($result != 0) {
@@ -146,6 +149,7 @@ sub run {
 	  $file = $1;
 	}
       }
+
       push @new_file, $file;
 
       # compare checksums and parse/upload if necessary
@@ -232,6 +236,11 @@ sub get_source_id_for_filename {
   return $source_id;
 
 }
+
+sub rename_url_file{
+  return undef;
+}
+
 # Get species ID for a particular file; matches url field
 
 sub get_species_id_for_filename {
