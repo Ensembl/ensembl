@@ -40,80 +40,53 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
-  my $dir = dirname($file);
-
-  my %hugo;
-  my %syn;
-
-  open (ENS4, $dir."/ens4.txt") || die "Can't open hugo ens4 $dir/ens4.txt\n";
-  #HGNC    Symbol  Literature Aliases      Withdrawn Symbols
-  #5       A1BG
-  #7       A2M
-  <ENS4>;  #header line
-  while(<ENS4>){
-    chomp;
-    my @array = split(/\t/,$_);
-    my $hgnc = $array[0];
-    my $label = $array[1];
-
-    $hugo{$hgnc} = $label;
-    if(defined($array[3])){
-      $syn{$hgnc}  = $array[3];
-    }
-
-  }
-  close ENS4;
 
   my (%swiss)  =  %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
-  my (%refseq) =  %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
+#  my (%refseq) =  %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
 
   my $count = 0;
   my $mismatch = 0;
-  open (ENS1, $dir."/ens1.txt") || die "Can't open hugo ens1  $dir/ens1.txt\n";
-  #HGNC    SWISSPROT       Ref Seq
-  #5       P04217  NM_130786
-  #7       P01023  NM_000014
-  <ENS1>;
-  while (<ENS1>) {
-    chomp;
-    my @array = split(/\t/,$_);
-    my $hgnc = $array[0];
+  open (HUGO, "<$file") || die "Can't open hugo file $file\n";
 
-    if ($array[1]) {  #swissprot
-      my $master = $swiss{$array[1]};
-      my $dep    = $hugo{$hgnc};
-      if(!defined($master) or !defined($dep)){
+
+  <HUGO>;
+#23	ABAT	4-aminobutyrate aminotransferase		P80404
+#29	ABCA1	ATP-binding cassette, sub-family A (ABC1), member 1	ABC1, HDLDT1	O95477
+  while (<HUGO>) {
+    chomp;
+# 0 HGNC ID	       # primary accession
+# 1 Approved Symbol    # label
+# 2 Approved Name      # description
+# 3 Previous Symbols   # synonyms
+# 4 UniProt ID         # uniprot accession
+    my @array = split(/\t/,$_);
+
+    if ($array[4]) {  #swissprot
+      my $master = $swiss{$array[4]};
+      if(!defined($master)){
 	$mismatch++;
       }
       else{
-	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,'',$hugo{$hgnc},"","",$source_id,$species_id,$count);
+	XrefParser::BaseParser->add_to_xrefs($master,$array[0],'',$array[1],$array[2],"",$source_id,$species_id);
 	$count++;
-	if(defined($syn{$hgnc})){ #dead name add to synonym
-	  my @array = split(',\s*',$syn{$hgnc});
-	  foreach my $arr (@array){
+	if(defined($array[3])){ #dead name add to synonym
+	  my @array2 = split(',\s*',$array[3]);
+	  foreach my $arr (@array2){
 #	    print "adding synonym ".$arr." for ".$hugo{$hgnc}." ($hgnc)\n";
-	    XrefParser::BaseParser->add_to_syn($hgnc, $source_id, $arr);
+	    XrefParser::BaseParser->add_to_syn($array[0], $source_id, $arr);
 	  }
 	}
       }
       #	print "$array[1]\tSPTR\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\tXREF\n";
     }
 
-#    if ($array[2]) {
-#      my $master = $refseq{$array[2]};
-#      my $dep    = $hugo{$hgnc};
-#      if(!defined($master) or !defined($dep)){
-#	$mismatch++;
-#      }
-#      else{
-#	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,'',$hugo{$hgnc},"","",$source_id,$species_id);
-#	$count++;
-#      }
-#    }
   }
-  close (ENS1);
+  close (HUGO);
   print "\t$count xrefs succesfully loaded\n";
   print "\t$mismatch xrefs ignored\n";
+}
+sub rename_url_file{
+  return "hugo.txt";
 }
 
 sub new {
