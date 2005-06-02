@@ -88,7 +88,7 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my($probe, $probeset, $mismatchcount ) =
+  my($probe, $mismatchcount ) =
       rearrange(['PROBE', 'MISMATCHCOUNT' ],
 		@_);
 
