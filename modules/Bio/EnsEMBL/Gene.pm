@@ -460,11 +460,40 @@ sub get_all_homologous_Genes{
 
 
 sub type {
-   my $self = shift;
-   
-   $self->{'biotype'} = shift if( @_ );
+    my $self = shift;
+    
+    $self->{'biotype'} = shift if( @_ );
+    
+    # map biotype/confidence to HAWK classification for Vega
+    if ($self->source eq 'vega') {
+        my %typemap = (
+            'protein_coding.KNOWN'          => 'Known',
+            'protein_coding.NOVEL'          => 'Novel_CDS',
+            'unclassified.NOVEL'            => 'Novel_Transcript',
+            'protein_coding.PREDICTED'      => 'Predicted_Gene',
+            'unclassified.PUTATIVE'         => 'Putative',
+            'pseudogene.KNOWN'              => 'Pseudogene',
+            'pseudogene.NOVEL'              => 'Pseudogene',
+            'processed_pseudogene.KNOWN'    => 'Processed_pseudogene',
+            'processed_pseudogene.NOVEL'    => 'Processed_pseudogene',
+            'unprocessed_pseudogene.KNOWN'  => 'Unprocessed_pseudogene',
+            'unprocessed_pseudogene.NOVEL'  => 'Unprocessed_pseudogene',
+            'Ig_pseudogene_segment.KNOWN'   => 'Ig_Pseudogene_Segment',
+            'Ig_pseudogene_segment.NOVEL'   => 'Ig_Pseudogene_Segment',
+            'Ig_segment.KNOWN'              => 'Ig_Segment',
+            'Ig_segment.NOVEL'              => 'Ig_Segment',
+        );
+        my $bio_conf = $self->biotype.".".$self->confidence;
+        if ($typemap{$bio_conf}) {
+            return $typemap{$bio_conf};
+        } else {
+            warning("biotype.confidence ($bio_conf) cannot be resolved to HAWK type");
+        }
 
-   return ( $self->{'biotype'} || "protein_coding" );
+    # for all other sources, return biotype
+    } else {
+        return ( $self->{'biotype'} || "protein_coding" );
+    }
 }
 
 

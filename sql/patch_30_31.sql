@@ -21,14 +21,14 @@ ALTER TABLE transcript ADD description text;
 UPDATE transcript t, xref x SET t.description = x.description WHERE t.display_xref_id = x.xref_id;
 UPDATE transcript SET description=NULL WHERE description="";
 
-
 # usefull settings for the new tables
-UPDATE gene SET biotype='protein_coding' WHERE biotype = 'ensembl';
- 
-UPDATE gene SET confidence='KNOWN' WHERE display_xref_id != 0;
-UPDATE transcript SET confidence='KNOWN' WHERE display_xref_id != 0;
+
+UPDATE gene SET source = 'vega';
+UPDATE gene g, xref x, external_db ed SET g.confidence='KNOWN' WHERE g.display_xref_id = x.xref_id and x.external_db_id = ed.external_db_id and g.display_xref_id != 0 and ed.db_name != 'Vega_gene';
+UPDATE transcript t, xref x, external_db ed SET t.confidence='KNOWN' WHERE t.display_xref_id = x.xref_id and x.external_db_id = ed.external_db_id and t.display_xref_id != 0 and ed.db_name != 'Vega_transcript';
 
 # some vega specific stuff, shouldnt harm anybody else
+
 UPDATE gene SET biotype='unclassified' WHERE biotype = 'Transcript';
 UPDATE gene SET biotype='pseudogene' WHERE biotype = 'Pseudogene';
 UPDATE gene SET biotype='protein_coding', confidence='NOVEL' WHERE biotype = 'Novel_CDS';
@@ -50,7 +50,6 @@ UPDATE transcript t, gene g SET t.biotype = g.biotype WHERE g.gene_id = t.gene_i
 
 
 # new tables regulatory stuff and transcript supporting features
-
 
 ################################################################################
 #
