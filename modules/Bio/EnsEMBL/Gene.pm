@@ -432,7 +432,8 @@ sub get_all_homologous_Genes{
       my ($member, $attrib) = @{$member_attrib};
       my $hstable_id = $member->stable_id;
       next if ($hstable_id eq $query_member->stable_id); # Ignore self     
-      my $hgene = $member->get_Gene;
+      my $hgene = undef;
+      eval { $hgene = $member->get_Gene;} ;
       unless( $hgene ){
         # Something up with DB. Create a new gene is best we can do
         $hgene = Bio::EnsEMBL::Gene->new
