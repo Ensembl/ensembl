@@ -176,7 +176,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate8.protein.gpff.gz','a017c30494c3086a038053523f1c0a1d',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate10.protein.gpff.gz','57906bd7e7484549bdc355da9f98f76b',now(),now(),'RefSeqGPFFParser');
+VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate9.protein.gpff.gz','57906bd7e7484549bdc355da9f98f76b',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
 VALUES (1070,7227,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz','f9f157a21af8f4a01c9bfd1aec029366',now(),now(),'GOParser');
@@ -438,7 +438,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate7.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate8.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate10.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 6239,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate9.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
 
 ##   WormBase 
 
