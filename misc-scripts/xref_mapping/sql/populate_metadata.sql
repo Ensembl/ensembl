@@ -142,8 +142,8 @@ VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/curre
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
 VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-Yh-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (1,7227,'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/7227.SPC','23e986d7793346bc782d2a5988209460',now(),now(),'UniProtParser');
+INSERT INTO source_url (source_id, species_id, url,  file_modified_date, upload_date, parser)\
+VALUES (1,7227,'ftp://ftp.ebi.ac.uk/pub/databases/integr8/uniprot/proteomes/17.D_melanogaster.dat.gz',now(),now(),'UniProtParser');
 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
 VALUES (1,7227,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz','7a9c8a8dc7c277dcb321a81a548098d9',now(),now(),'UniProtParser');
