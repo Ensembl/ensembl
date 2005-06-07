@@ -75,8 +75,8 @@ UPDATE transcript SET description=NULL WHERE description="";
 # usefull settings for the new tables
 
 UPDATE gene SET source = 'vega';
-UPDATE gene g, xref x, external_db ed SET g.confidence='KNOWN' WHERE g.display_xref_id != 0 and ed.db_name != 'Vega_gene';
-UPDATE transcript t, xref x, external_db ed SET t.confidence='KNOWN' WHERE t.display_xref_id != 0 and ed.db_name != 'Vega_transcript';
+UPDATE gene g, xref x, external_db ed SET g.confidence='KNOWN' WHERE g.display_xref_id = x.xref_id and x.external_db_id = ed.external_db_id and g.display_xref_id != 0 and ed.status like 'KNOWN%';
+UPDATE transcript t, xref x, external_db ed SET t.confidence='KNOWN' WHERE t.display_xref_id = x.xref_id and x.external_db_id = ed.external_db_id and t.display_xref_id != 0 and ed.status like 'KNOWN%';
 
 # some vega specific stuff, shouldnt harm anybody else
 
