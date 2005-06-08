@@ -85,8 +85,8 @@ sub get_all_ConsequenceType {
   my @out; #array containing the consequence types of the alleles in the transcript
   foreach my $allele (@alleles_ordered) {
     #get consequence type of the AlleleFeature
-    my $new_allele = $allele->transform('chromosome');
-    my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$new_allele->start,$new_allele->end,$allele->strand,[$allele->allele_string]);
+#    my $new_allele = $allele->transform('chromosome');
+    my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start,$allele->end,$allele->strand,[$allele->allele_string]);
     #calculate the consequence type of the Allele
     my $ref_consequences = type_variation($transcript,$consequence_type);
     if ($allele->start != $allele->end){
@@ -175,20 +175,27 @@ sub type_variation {
   if (!$var->isa('Bio::EnsEMBL::Variation::ConsequenceType')){
       throw("Not possible to calculate the consequence type for ",ref($var)," : Bio::EnsEMBL::Variation::ConsequenceType object expected");
   }
-  my $slice = $tr->slice();
-  
-   if(!$slice) {
-     warning("Cannot obtain SNPs for transcript without attached Slice.");
-     return {};
-   }
 
-   my $sa = $slice->adaptor();
+  # ARNE: need the following:
+  # $var and $tr need to have the same slice attached
+  # if not, its difficult to compare the variations and the 
+  # transcript. If one or both are on a strain slice the 
+  # coordinate transformations DONT WORK CORRECTLY
 
-   # retrieve slice in the region of the transcript
-   $slice = $sa->fetch_by_Feature($tr, 0 );
-   # copy transcript, to work in coord system we are interested in
-#   $tr = $tr->transfer( $slice );
-  $tr = $tr->transform('chromosome');
+  # if( $tr->slice() != $var->slice() ) {
+
+#     # problem: Are the coordinates comparable?
+#     # throw here, or warn and return, otherwise its too difficult
+#     if( $tr->slice()->is_not_strainSlice() &&
+# 	$var->slice()->is_not_strainSlice() ) {
+#       # coordintes are transferable
+#     } else {
+#       # coordinates are not transferable
+#     }
+#   } else {
+#     # yes they are comparable
+#   }
+
   my $tm = $tr->get_TranscriptMapper();
   my @coords = $tm->genomic2cdna($var->start,
                                  $var->end,
@@ -213,7 +220,6 @@ sub type_variation {
   }
 
   my $c = $coords[0];
-
   if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
 
     # check if the variation is completely outside the transcript:
@@ -304,7 +310,6 @@ sub apply_aa_change {
   #my $peptide = $tr->translate->seq();
   #to consider stop codon as well
   my $mrna = $tr->translateable_seq();
-
   my $mrna_seqobj = Bio::Seq->new( -seq        => $mrna,
 				   -moltype    => "dna",
 				   -alphabet   => "dna");
@@ -316,9 +321,9 @@ sub apply_aa_change {
   $codon_table ||= 1; # default vertebrate codon table 
 
   my $peptide = $mrna_seqobj->translate(undef,undef,undef,$codon_table)->seq;
-
   my $len = $var->aa_end - $var->aa_start + 1;
   my $old_aa = substr($peptide, $var->aa_start -1 , $len);
+  print "old aa $old_aa \n";
   my $codon_cds_start = $var->aa_start * 3 - 2;
   my $codon_cds_end   = $var->aa_end   * 3;
   my $codon_len = $codon_cds_end - $codon_cds_start + 1;
@@ -334,7 +339,6 @@ sub apply_aa_change {
   foreach my $a (@alleles) {
     $a =~ s/\-//;
     my $cds = $tr->translateable_seq();
-    
     if($var_len != length($a)) {
       if(abs(length($a) - $var_len) % 3) {
         # frameshifting variation, do not set peptide_allele string
