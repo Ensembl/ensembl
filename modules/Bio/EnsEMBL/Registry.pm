@@ -99,8 +99,10 @@ package Bio::EnsEMBL::Registry;
 use strict;
 
 use Bio::EnsEMBL::DBSQL::MergedAdaptor;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use DBI;
 
 use vars qw(%registry_register);
 
@@ -189,8 +191,8 @@ sub add_db{
   my ($class, $db, $name, $adap) = @_;
 
 
-  if($db->species() ne $adap->species){
-    $registry_register{$db->species()}{$db->group()}{'_special'}{$name} = $adap;
+  if(lc($db->species()) ne lc($adap->species)){
+    $registry_register{lc($db->species())}{lc($db->group())}{'_special'}{lc($name)} = $adap;
   }
 }
 
@@ -207,8 +209,8 @@ sub add_db{
 sub remove_db{
   my ($class, $db, $name) = @_;
 
-  my $ret = $registry_register{$db->species()}{$db->group()}{'_special'}{$name};
-  $registry_register{$db->species()}{$db->group()}{'_special'}{$name} = undef;
+  my $ret = $registry_register{lc($db->species())}{lc($db->group())}{'_special'}{lc($name)};
+  $registry_register{lc($db->species())}{lc($db->group())}{'_special'}{lc($name)} = undef;
 
   return $ret;
 }
@@ -226,12 +228,12 @@ sub remove_db{
 sub get_db{
   my ($class, $db, $name) = @_;
 
-  my $ret = Bio::EnsEMBL::Registry->get_DBAdaptor($db->species,$name);
+  my $ret = Bio::EnsEMBL::Registry->get_DBAdaptor(lc($db->species),lc($name));
 
   if(defined($ret)){
     return $ret;
   }
-  return $registry_register{$db->species()}{$db->group()}{'_special'}{$name};
+  return $registry_register{lc($db->species())}{lc($db->group())}{'_special'}{lc($name)};
 }
 
 =head2 get_all_db_adaptors
@@ -251,13 +253,13 @@ sub get_all_db_adaptors{
 # as add_db_adaptor does not add if it is from the same species.
 
   foreach my $dba (@{$registry_register{'_DBA'}}){
-    if($dba->species() eq $db->species()){
+    if(lc($dba->species()) eq lc($db->species())){
       $ret{$dba->group()} = $dba;
     } 
   }
 
  foreach my $key (keys %{$registry_register{$class->get_alias($db->species())}{$db->group()}{'_special'}}){
-   $ret{$key} = $registry_register{$class->get_alias($db->species())}{$db->group()}{'_special'}{$key};
+   $ret{$key} = $registry_register{$class->get_alias($db->species())}{lc($db->group())}{'_special'}{$key};
  }
 
   return \%ret;
@@ -289,7 +291,7 @@ sub add_DBAdaptor{
 
   $species = $class->get_alias($species);
 
-  $registry_register{$species}{$group}{'_DB'} = $adap;
+  $registry_register{$species}{lc($group)}{'_DB'} = $adap;
 
   if(!defined($registry_register{'_DBA'})){
     my @list =();
@@ -320,7 +322,7 @@ sub get_DBAdaptor{
   $species = $class->get_alias($species);
 
   if(defined($group)){ # group defined so return standard DB Adaptor
-    return  $registry_register{$species}{$group}{'_DB'};
+    return  $registry_register{$species}{lc($group)}{'_DB'};
   }
   else{ #return a merged db adaptor
     return  new_merged Bio::EnsEMBL::DBSQL::DBAdaptor($species);
@@ -365,8 +367,8 @@ sub add_DNAAdaptor{
     deprecated("");
   }
   else{
-    $registry_register{$species}{$group}{'_DNA'} = $dnadb_group;
-    $registry_register{$species}{$group}{'_DNA2'} = $dnadb_species;
+    $registry_register{$species}{lc($group)}{'_DNA'} = $dnadb_group;
+    $registry_register{$species}{lc($group)}{'_DNA2'} = $dnadb_species;
   }
 }
 
@@ -384,8 +386,8 @@ sub get_DNAAdaptor{
   my ($class, $species, $group) = @_;
 
   $species = $class->get_alias($species);
-  my $new_group = $registry_register{$species}{$group}{'_DNA'};
-  my $new_species = $registry_register{$species}{$group}{'_DNA2'};
+  my $new_group = $registry_register{$species}{lc($group)}{'_DNA'};
+  my $new_species = $registry_register{$species}{lc($group)}{'_DNA2'};
   if( defined $new_group ) {
     return  $class->get_DBAdaptor($new_species,$new_group);
   } else {
@@ -425,15 +427,15 @@ sub add_adaptor{
 #
 
   if(defined($reset)){ # JUST REST THE HASH VLAUE NO MORE PROCESSING NEEDED
-    $registry_register{$species}{$group}{$type} = $adap;
+    $registry_register{$species}{lc($group)}{lc($type)} = $adap;
     return;
   }
-  if(defined($registry_register{$species}{$group}{$type})){ 
+  if(defined($registry_register{$species}{lc($group)}{lc($type)})){ 
     print STDERR ("Overwriting Adaptor in Registry for $species $group $type\n");
-    $registry_register{$species}{$group}{$type} = $adap;
+    $registry_register{$species}{lc($group)}{lc($type)} = $adap;
    return;
   }
-  $registry_register{$species}{$group}{$type} = $adap;
+  $registry_register{$species}{lc($group)}{lc($type)} = $adap;
 
   
   if(!defined ($registry_register{$species}{'list'})){
@@ -447,39 +449,17 @@ sub add_adaptor{
 
 #  print STDERR "REGADD  $species \t $group \t $type\t to the registry\n";
 
-  if(!defined ($registry_register{$type}{$species})){
+  if(!defined ($registry_register{lc($type)}{$species})){
     my @list =();
     push(@list,$adap);
-    $registry_register{$type}{$species}= \@list;
+    $registry_register{lc($type)}{$species}= \@list;
   }
   else{
-    push(@{$registry_register{$type}{$species}},$adap);
+    push(@{$registry_register{lc($type)}{$species}},$adap);
   }
 
 }
 
-
-=head2 set_get_via_dnadb_if_set
-
-  set the flag so that for this type of adaptor the data is obtained
-  from the dna source and not centrally i.e. estgenes where the sequence
-  data is held in the core.
-
-  Arg [1]    : name of the species to set flag for.
-  Arg [2]    : name of the type to set flag for. (i.e. Sequence)
-  Example    : Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set("Human","Sequence");
-  Returntype : none
-  Exceptions : none
-  
-  
-
-=cut
-
-#sub set_get_via_dnadb_if_set{
-#  my ($class,$species,$type) = @_;
-#
-#  $registry_register{$class->get_alias($species)}{$type}{'DNADB'} = 1;
-#}
 
 =head2 get_adaptor
 
@@ -496,21 +476,21 @@ sub get_adaptor{
   my ($class,$species,$group,$type)= @_;
  
   $species = $class->get_alias($species);
-  my %dnadb_adaptors = qw(Sequence  1 AssemblyMapper 1  KaryotypeBand 1 RepeatFeature 1 CoordSystem 1  AssemblyExceptionFeature 1 );
+  my %dnadb_adaptors = qw(sequence  1 assemblymapper 1  karyotypeband 1 repeatfeature 1 coordsystem 1  assemblyexceptionfeature 1 );
 
-  my $dnadb_group =  $registry_register{$species}{$group}{_DNA};
+  my $dnadb_group =  $registry_register{$species}{lc($group)}{_DNA};
 
-  if( defined($dnadb_group) && defined($dnadb_adaptors{$type}) ) {
-      $species = $registry_register{$species}{$group}{'_DNA2'};
+  if( defined($dnadb_group) && defined($dnadb_adaptors{lc($type)}) ) {
+      $species = $registry_register{$species}{lc($group)}{'_DNA2'};
       $group = $dnadb_group;
   }
 
-  my $ret = $registry_register{$species}{$group}{$type};
+  my $ret = $registry_register{$species}{lc($group)}{lc($type)};
   if(!defined($ret)){
     return undef;
   }
   if(!ref($ret)){ # not instantiated yet
-    my $dba = $registry_register{$species}{$group}{'_DB'};
+    my $dba = $registry_register{$species}{lc($group)}{'_DB'};
     my $module = $ret;
     eval "require $module";
 
@@ -543,26 +523,6 @@ sub get_all_adaptors{
 }
 
 
-=head2 get_MergedAdaptor
-
-  Arg [1]    : name of the species to get the adaptors for in the registry.
-  Arg [2]    : name of the type to get the adaptors for in the registry.
-  Example    : $merged = Bio::EnsEMBL::Registry->get_MergedAdaptor("Mouse","Gene");
-  Returntype : Bio::EnsEMBL::DBSQL::MergedAdaptor
-  Exceptions : none
-
-=cut
-
-sub get_MergedAdaptor{
-  my ($class,$species,$type)=@_;
-
-  $species = $class->get_alias($species);
-  my $ret = new Bio::EnsEMBL::DBSQL::MergedAdaptor();
-  $ret->add_list(@{$registry_register{$type}{$species}});
-
-  return $ret;
-}
-
 =head2 add_alias
 
   Arg [1]    : name of the species to add alias for
@@ -577,7 +537,7 @@ sub get_MergedAdaptor{
 sub add_alias{
   my ($class, $species,$key) = @_;
 
-  $registry_register{'_ALIAS'}{$key} = $species;
+  $registry_register{'_ALIAS'}{lc($key)} = lc($species);
 }
 
 =head2 get_alias
@@ -593,10 +553,10 @@ sub add_alias{
 sub get_alias{
   my ($class, $key) = @_;
 
-  if(!defined($registry_register{'_ALIAS'}{$key})){
+  if(!defined($registry_register{'_ALIAS'}{lc($key)})){
     return $key;
   }
-  return $registry_register{'_ALIAS'}{$key};
+  return $registry_register{'_ALIAS'}{lc($key)};
 }
 
 =head2 alias_exists
@@ -613,7 +573,7 @@ sub get_alias{
 sub alias_exists{
   my ($class, $key) = @_;
 
-  if(defined($registry_register{'_ALIAS'}{$key})){
+  if(defined($registry_register{'_ALIAS'}{lc($key)})){
     return 1;
   }
   return 0;
@@ -635,6 +595,7 @@ sub disconnect_all {
     $dbc->disconnect_if_idle() if $dbc->connected();
   }
 }
+
 =head2 change_access
 
   Will change the username and password for a set of databases.
@@ -691,13 +652,194 @@ sub get_all_DBAdaptors_by_connection{
 }
 
 
+=head2 load_registry_from_db
+
+  Arg [HOST] : The domain name of the database host to connect to.
+               
+  Arg [USER] : string
+               The name of the database user to connect with
+  Arg [PASS] : (optional) string
+               The password to be used to connect to the database
+  Arg [PORT] : int
+               The port to use when connecting to the database
+  Arg [VERBOSE]: (optional) Wether to print database messages 
+
+  Example : load_registry_from_db( -host => 'ensembldb.ensembl.org',
+				   -user => 'anonymous',
+				   -verbose => "1" );
+
+  Description: Will load the latest versions of the ensembl databases it
+               can find on a database instance into the registry.
+
+  Exceptions : None.
+ 
+=cut
+
+sub load_registry_from_db{
+  my($self, @args) = @_;
+  my ($host, $port, $user, $pass, $verbose) =
+    rearrange([qw(HOST PORT USER PASS VERBOSE)], @args);
 
 
+
+  my $go_version = 0;
+  my $compara_version =0;
+
+  $user ||= "ensro";
+  my $db = DBI->connect( "DBI:mysql:host=$host;port=$port" , $user, $pass );
+
+  my $res = $db->selectall_arrayref( "show databases" );
+  my @dbnames = map {$_->[0] } @$res;
+  
+  my %temp;
+  for my $db (@dbnames){
+    if($db =~ /^([a-z]+_[a-z]+_[a-z]+)_(\d+)_(\d+[a-z]*)/){
+      if(defined($temp{$1})){
+	my ($r1,$r2) = split($temp{$1},"_");
+	if($r1 < $2){
+	  $temp{$1} = $2."_".$3;
+	}
+      }
+      else{
+	$temp{$1} = $2."_".$3;
+      }
+    }
+    elsif($db =~ /^ensembl_compara_(\d+)/){
+      if($compara_version < $1){
+	$compara_version = $1;
+      }
+    }
+    elsif($db =~ /^ensembl_go_(\d+)/){
+      if($go_version < $1){
+	$go_version = $1;
+      }
+    }
+  }
+  
+  @dbnames =();
+  
+  foreach my $key ( keys %temp){
+    push @dbnames, $key."_".$temp{$key};
+  }	 
+  # register core databases
+  
+  my @core_dbs = grep { /^[a-z]+_[a-z]+_core_\d+_/ } @dbnames;
+  
+  for my $coredb ( @core_dbs ) {
+    my ($species, $num ) = ( $coredb =~ /(^[a-z]+_[a-z]+)_core_(\d+)/ );
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+      ( -group => "core",
+	-species => $species,
+	-host => $host,
+	-user => $user,
+	-pass => $pass,
+	-port => $port,
+	-dbname => $coredb
+      );
+    (my $sp = $species ) =~ s/_/ /g;
+    $self->add_alias( $species, $sp );
+    print $coredb." loaded\n" if ($verbose);
+  }
+  
+  my @estgene_dbs = grep { /^[a-z]+_[a-z]+_estgene_\d+_/ } @dbnames;
+  
+  for my $estgene_db ( @estgene_dbs ) {
+    my ($species, $num) = ( $estgene_db =~ /(^[a-z]+_[a-z]+)_estgene_(\d+)/ );
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+      ( -group => "estgene",
+	-species => $species,
+	-host => $host,
+	-user => $user,
+	-pass => $pass,
+	-port => $port,
+	-dbname => $estgene_db
+      );
+    print $estgene_db." loaded\n" if ($verbose);
+  }
+  
+  
+  eval "require Bio::EnsEMBL::Variation::DBSQL::DBAdaptor";
+  if($@) {
+    #ignore variations as code required not there for this
+    print "Bio::EnsEMBL::Variation::DBSQL::DBAdaptor module not found so variation databases will be ignored if found\n" if ($verbose);
+  }
+  else{
+    my @variation_dbs = grep { /^[a-z]+_[a-z]+_variation_\d+_/ } @dbnames;
+    
+    for my $variation_db ( @variation_dbs ) {
+      my ($species, $num ) = ( $variation_db =~ /(^[a-z]+_[a-z]+)_variation_(\d+)/ );
+      my $dba = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new
+	( -group => "variation",
+	  -species => $species,
+	  -host => $host,
+	  -user => $user,
+	  -pass => $pass,
+	  -port => $port,
+	  -dbname => $variation_db
+	);
+      print $variation_db." loaded\n" if ($verbose);
+    }
+  }
+  
+  #Compara
+  if($compara_version){
+    eval "require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor";
+    if($@) {
+      #ignore compara as code required not there for this
+      print "Bio::EnsEMBL::Compara::DBSQL::DBAdaptor not found so compara database ensembl_compara_$compara_version will be ignored\n" if ($verbose);
+    }
+    else{
+      my $compara_db = "ensembl_compara_".$compara_version;
+
+      my $dba = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new
+	( -group => "compara",
+	  -species => "multi",
+	  -host => $host,
+	  -user => $user,
+	  -pass => $pass,
+	  -port => $port,
+	  -dbname => $compara_db
+	);
+      print $compara_db." loaded\n" if ($verbose);       
+    }
+  }
+  else{
+    print "No Compara database found" if ($verbose);
+  }
+
+
+  #GO
+  if($go_version){
+    eval "use Bio::EnsEMBL::ExternalData::GO::GOAdaptor";
+    if($@) {
+      #ignore go as code required not there for this
+      print "Bio::EnsEMBL::ExternalData::GO::GOAdaptor::DBAdaptor not found so go database ensemb_go_$go_version will be ignored\n" if ($verbose);
+    }
+    else{
+      my $go_db = "ensembl_go_".$go_version;
+      my $dba = Bio::EnsEMBL::ExternalData::GO::GOAdaptor->new
+	( -group => "go",
+	  -species => "multi",
+	  -host => $host,
+	  -user => $user,
+	  -pass => $pass,
+	  -port => $port,
+	  -dbname => $go_db
+	);
+      print $go_db." loaded\n" if ($verbose);              
+    }
+  }
+  else{
+    print "No go database found" if ($verbose);
+  }
+  
+}
 
 
 #
 # Web specific routines
 #
+
 
 
 =head2 load_registry_with_web_adaptors
@@ -746,7 +888,8 @@ sub load_registry_with_web_adaptors{
 sub set_default_track{
   my ($class, $species, $group) = @_;  
 
-  $registry_register{'def_track'}{$species}{$group} = 1;
+  $species = get_alias($species);
+  $registry_register{'def_track'}{$species}{lc($group)} = 1;
 }
 
 =head2 default_track
@@ -763,7 +906,8 @@ sub set_default_track{
 sub default_track{
   my ($class, $species, $group) = @_;  
 
-  if(defined($registry_register{'def_track'}{$species}{$group})){
+  $species = get_alias($species);
+  if(defined($registry_register{'def_track'}{$species}{lc($group)})){
     return 1;
   }
   
