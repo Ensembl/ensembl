@@ -323,19 +323,20 @@ sub fetch_all_by_Slice {
   # preload all of the transcripts now, instead of lazy loading later
   # faster than 1 query per transcript
 
+  # first check if transcripts are already preloaded
+  # coorectly we should check all of them ..
+  return $genes if( exists $genes->[0]->{'_transcript_array'} );
+
   # get extent of region spanned by transcripts
   my ($min_start, $max_end);
   foreach my $g (@$genes) {
-    if(!defined($min_start) || $g->start() < $min_start) {
-      $min_start = $g->start();
+    if(!defined($min_start) || $g->seq_region_start() < $min_start) {
+      $min_start = $g->seq_region_start();
     }
-    if(!defined($max_end) || $g->end() > $max_end) {
-      $max_end   = $g->end();
+    if(!defined($max_end) || $g->seq_region_end() > $max_end) {
+      $max_end   = $g->seq_region_end();
     }
   }
-
-  $min_start += $slice->start() - 1;
-  $max_end   += $slice->start() - 1;
 
   my $ext_slice;
 
@@ -380,13 +381,18 @@ sub fetch_all_by_Slice {
       next;
     }
 
-    $tr = $tr->transfer($slice) if($slice != $ext_slice);
-
-    if(!$tr) {
-      throw("Unexpected. Transcript could not be transfered onto Gene slice.");
+    my $new_tr;
+    if($slice != $ext_slice) {
+      $new_tr = $tr->transfer($slice) if($slice != $ext_slice);
+      if(!$new_tr) {
+	throw("Unexpected. Transcript could not be transfered onto Gene slice.");
+      }
+    } else {
+      $new_tr = $tr;
     }
 
-    $tr_g_hash{$tr->dbID()}->add_Transcript($tr);
+
+    $tr_g_hash{$tr->dbID()}->add_Transcript($new_tr);
   }
 
   return $genes;
