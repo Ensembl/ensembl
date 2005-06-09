@@ -300,8 +300,13 @@ sub fetch_attributes {
 sub store {
   my ($self, @markers) = @_;
 
-  foreach my $marker( @markers ){
+  MARKER:foreach my $marker( @markers ){
 
+    if($marker->dbID){
+      if($self->fetch_by_dbID($marker->dbID)){
+        next MARKER;
+      }
+    }
     #
     # Sanity check
     #
