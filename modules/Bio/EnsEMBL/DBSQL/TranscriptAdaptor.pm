@@ -306,19 +306,20 @@ sub fetch_all_by_Slice {
   # preload all of the exons now, instead of lazy loading later
   # faster than 1 query per transcript
 
+  # first check if the exons are already preloaded
+  return $transcripts if( exists $transcripts->[0]->{'_trans_exon_array'});
+
+
   # get extent of region spanned by transcripts
   my ($min_start, $max_end);
   foreach my $tr (@$transcripts) {
-    if(!defined($min_start) || $tr->start() < $min_start) {
-      $min_start = $tr->start();
+    if(!defined($min_start) || $tr->seq_region_start() < $min_start) {
+      $min_start = $tr->seq_region_start();
     }
-    if(!defined($max_end) || $tr->end() > $max_end) {
-      $max_end   = $tr->end();
+    if(!defined($max_end) || $tr->seq_region_end() > $max_end) {
+      $max_end   = $tr->seq_region_end();
     }
   }
-
-  $min_start += $slice->start() - 1;
-  $max_end   += $slice->start() - 1;
 
   my $ext_slice;
 
@@ -360,15 +361,20 @@ sub fetch_all_by_Slice {
 
   # move exons onto transcript slice, and add them to transcripts
   foreach my $ex (@$exons) {
-    $ex = $ex->transfer($slice) if($slice != $ext_slice);
 
-    if(!$ex) {
-      throw("Unexpected. Exon could not be transfered onto transcript slice.");
+    my $new_ex;
+    if($slice != $ext_slice) {
+      $new_ex = $ex->transfer($slice) if($slice != $ext_slice);
+      if(!$new_ex) {
+	throw("Unexpected. Exon could not be transfered onto transcript slice.");
+      }
+    } else {
+      $new_ex = $ex;
     }
 
-    foreach my $row (@{$ex_tr_hash{$ex->dbID()}}) {
+    foreach my $row (@{$ex_tr_hash{$new_ex->dbID()}}) {
       my ($tr, $rank) = @$row;
-      $tr->add_Exon($ex, $rank);
+      $tr->add_Exon($new_ex, $rank);
     }
   }
 
