@@ -85,7 +85,7 @@ debug( "Links: ".scalar( @$links ));
 
 ok( scalar @$links == 6 );
 
-my $homologies = $gene->get_all_homology_Genes();
+my $homologies = $gene->get_all_homologous_Genes();
 debug( "Homologies: ".scalar( @$homologies ));
 
 ok( scalar @$homologies ? 
