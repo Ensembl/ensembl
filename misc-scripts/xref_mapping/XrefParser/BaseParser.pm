@@ -607,6 +607,14 @@ sub dbi {
 sub md5sum {
 
   my $file = shift;
+
+  unless (-e $file) {
+	print "\n\nOOOPS ! Can't find file $file - you have to download it again. \n\n" ; 
+        print " SKIPPING $file\n" ; 
+        sleep(10) ; 	
+	return ; 
+  }
+
   open(FILE, $file);
   binmode(FILE);
   my $md5 = Digest::MD5->new->addfile(*FILE)->hexdigest();
