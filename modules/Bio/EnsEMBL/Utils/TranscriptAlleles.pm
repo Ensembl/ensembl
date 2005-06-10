@@ -44,9 +44,7 @@ use vars qw(@ISA @EXPORT_OK);
 
 @ISA = qw(Exporter);
 
-@EXPORT_OK = qw(&get_all_ConsequenceType);
-
-use Data::Dumper;
+@EXPORT_OK = qw(&get_all_ConsequenceType &type_variation);
 
 =head2 get_all_ConsequenceType
 
@@ -85,7 +83,6 @@ sub get_all_ConsequenceType {
   my @out; #array containing the consequence types of the alleles in the transcript
   foreach my $allele (@alleles_ordered) {
     #get consequence type of the AlleleFeature
-#    my $new_allele = $allele->transform('chromosome');
     my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start,$allele->end,$allele->strand,[$allele->allele_string]);
     #calculate the consequence type of the Allele
     my $ref_consequences = type_variation($transcript,$consequence_type);
@@ -172,8 +169,12 @@ sub calculate_same_codon{
 sub type_variation {
   my $tr  = shift;
   my $var = shift;
+
+  my $UPSTREAM = 5000;
+  my $DOWNSTREAM = 5000;
+
   if (!$var->isa('Bio::EnsEMBL::Variation::ConsequenceType')){
-      throw("Not possible to calculate the consequence type for ",ref($var)," : Bio::EnsEMBL::Variation::ConsequenceType object expected");
+      throw("Not possible to calculate the consequence type for ",ref($var)," : Bio::EnsEMBL::Variation::ConsequenceType object expected");      
   }
 
   # ARNE: need the following:
@@ -196,6 +197,13 @@ sub type_variation {
 #     # yes they are comparable
 #   }
 
+  #necessary to compare the variation with the transcript to determine if it is in the
+  #vicinity or not
+  if (($var->start < $tr->start - $UPSTREAM) || ($var->end  > $tr->end + $DOWNSTREAM)){
+      #since the variation is more than UPSTREAM and DOWNSTREAM of the transcript, there is no effect in the transcript
+      return [];
+  }
+  
   my $tm = $tr->get_TranscriptMapper();
   my @coords = $tm->genomic2cdna($var->start,
                                  $var->end,
@@ -323,7 +331,6 @@ sub apply_aa_change {
   my $peptide = $mrna_seqobj->translate(undef,undef,undef,$codon_table)->seq;
   my $len = $var->aa_end - $var->aa_start + 1;
   my $old_aa = substr($peptide, $var->aa_start -1 , $len);
-  print "old aa $old_aa \n";
   my $codon_cds_start = $var->aa_start * 3 - 2;
   my $codon_cds_end   = $var->aa_end   * 3;
   my $codon_len = $codon_cds_end - $codon_cds_start + 1;
