@@ -24,20 +24,20 @@ my %taxonomy2species_id;
 my %name2species_id;
 
 my ($host, $port, $dbname, $user, $pass, $create, $release, $cleanup);
-my $skipdownload;
+my ($skipdownload,$drop_db) ;
 
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
 
 sub run {
-  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $create, $release, $cleanup) = @_;
+  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $create, $release, $cleanup,$drop_db) = @_;
 
   my @species = @$speciesr;
   my @sources = @$sourcesr;
 
   my $sql_dir = dirname($0);
 
-  create($host, $port, $user, $pass, $dbname, $sql_dir."/") if ($create);
+  create($host, $port, $user, $pass, $dbname, $sql_dir."/" , $drop_db ) if ($create);
 
   my $dbi = dbi();
 
@@ -923,7 +923,7 @@ sub sanitise {
 
 sub create {
 
-  my ($host, $port, $user, $pass, $dbname, $sql_dir) = @_;
+  my ($host, $port, $user, $pass, $dbname, $sql_dir,$drop_db ) = @_;
 
   my $dbh = DBI->connect( "DBI:mysql:host=$host:port=$port", $user, $pass,
                           {'RaiseError' => 1});
@@ -932,7 +932,13 @@ sub create {
   my %dbs = map {$_->[0] => 1} @{$dbh->selectall_arrayref('SHOW DATABASES')};
 
   if ($dbs{$dbname}) {
-    if ($create) {
+
+    if ( $drop_db ) {     
+	$dbh->do( "DROP DATABASE $dbname" );
+	print "Database $dbname dropped\n" ; 
+    }
+  
+    if ( $create && !$drop_db ) {
       print "WARNING: about to drop database $dbname on $host:$port; yes to confirm, otherwise exit: ";
       $| = 1; # flush stdout
       my $p = <STDIN>;
@@ -944,7 +950,7 @@ sub create {
 	print "$dbname NOT removed\n";
 	exit(1);
       }
-    } else {
+    } elsif ( !$create) {
       die("Database $dbname already exists. Use -create option to overwrite it.");
     }
   }
