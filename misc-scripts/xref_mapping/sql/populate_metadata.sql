@@ -82,7 +82,7 @@ INSERT INTO source VALUES (2571, 'gadfly_transcript_cgid', 1, 'N', 4);
 INSERT INTO source VALUES (2572, 'gadfly_translation_cgid', 1, 'N', 4);
 
 # ciona intestinalis source 
-INSERT INTO source VALUES (2601, 'c_int_proteins_jgi_v1', 1, 'N', 4);
+INSERT INTO source VALUES (2601, 'c_int_proteins_jgi_v1', 1, 'Y', 4);
 
 
 
