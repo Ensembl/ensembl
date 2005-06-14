@@ -73,9 +73,9 @@ sub usage {
 
   -setrelease   Set the release version for ALL the sources specified.
 
-  -cleanup      Delete the Downloaded source files after parsing.
-  
-  -drop_db      Drop the xref-database 
+  -cleanup      Delete the downloaded source files after parsing.
+
+  -drop_db      Drop the xref-database
 
 EOF
 
