@@ -85,8 +85,8 @@ use Data::Dumper;
 								-seq_region_length => 12e6,
 								-strain_name => $strain_name);
     Description : Creates a new Bio::EnsEMBL::StrainSlice object that will contain a shallow copy of the
-                  Slice object, plus additional information such as the train_name this Slice refers to
-                  and listref of Bio::EnsEMBL::Variation::VariationFeatures of differences with the
+                  Slice object, plus additional information such as the strain_name this Slice refers to
+                  and listref of Bio::EnsEMBL::Variation::AlleleFeatures of differences with the
                   reference sequence
     ReturnType  : Bio::EnsEMBL::StrainSlice
     Exceptions  : none
@@ -98,7 +98,7 @@ sub new{
     my $caller = shift;
     my $class = ref($caller) || $caller;
 
-    #create the StrainSlice object as the Slice, plust the strain_name attribute
+    #create the StrainSlice object as the Slice, plus the strain_name attribute
     my ($strain_name) = rearrange(['STRAIN_NAME'],@_);
 
     my $self = $class->SUPER::new(@_);
@@ -129,6 +129,7 @@ sub new{
 	    if ((defined $population) && ($population->is_strain)){
 		#get all the VariationFeatures in the $population and the Slice given
 		my $allele_features = $af_adaptor->fetch_all_by_Slice_Population($self,$population);
+		
 		$self->{'alleleFeatures'} = $allele_features;
 		return $self;
 	    }
@@ -147,6 +148,16 @@ sub new{
     }
 }
 
+=head2
+=cut
+
+sub strain_name{
+   my $self = shift;
+   if (@_){
+       $self->{'strain_name'} = shift @_;
+   }
+   return $self->{'strain_name'};
+}
 =head2 seq
 
   Arg [1]    : none
@@ -201,6 +212,9 @@ sub seq {
 sub get_all_differences_Slice{
     my $self = shift;
 
+    # shouldnt this return features in StrainSlice coordinates?
+    # shouldnt it be possible to get apply this alleles and get back the reference?
+
     return $self->{'alleleFeatures'};
 }
 
@@ -246,9 +260,9 @@ sub get_all_differences_StrainSlice{
 	my %allele_features_self = map {$_->start => $_} @{$self->{'alleleFeatures'}};
 	foreach my $difference (@{$strainSlice->{'alleleFeatures'}}){	 
 	    #there is no difference in the other strain slice, convert the allele
-	    if ((!defined $allele_features_self{$difference->start} || (defined $allele_features_self{$difference->start} && $allele_features_self{$difference->start}->length_diff != 0))){
-		push @{$differences},$strainSlice->_convert_difference($difference);
-	    }		
+	    if (!defined $allele_features_self{$difference->start} || (defined $allele_features_self{$difference->start} && ($allele_features_self{$difference->start}->length_diff != 0 or $difference->length_diff !=0))){
+	      push @{$differences},$strainSlice->_convert_difference($difference);
+	    }
 	    else{
 		#if it is defined and have the same allele, delete from the hash since it is not a difference
 		#between the strains
@@ -259,40 +273,40 @@ sub get_all_differences_StrainSlice{
 	}	
 	#and finally, make a shallow copy of the differences in the first strain
 	foreach my $difference (values %allele_features_self){
-	    my %vf = %$difference;
-	    push @{$differences},bless \%vf,ref($difference);
+	  my %vf = %$difference;
+	  push @{$differences},bless \%vf,ref($difference);
 	}
-
+	
     }
     #need to map differences to the first strain, self, since the coordinates are in the Slice coordinate system
     my $mapper = $self->mapper(); #now that we have the differences, map them in the StrainSlice
     my @results;
-    foreach my $difference (@{$differences}){	
-	@results = $mapper->map_coordinates('Slice',$difference->start,$difference->end,$difference->strand,'Slice');
-	#we can have 3 possibilities:
-	#the difference is an insertion and when mapping returns the boundaries of the insertion in the StrainSlice
-	if (@results == 2){
-	    #the first position in the result is the beginning of the insertion
-	    if($results[0]->start < $results[1]->start){
-		$difference->start($results[0]->end+1);
-		$difference->end($results[1]->start-1);
-	    }
-	    else{
-		#it is the second position the beginning of the insertion
-		$difference->start($results[1]->end+1);
-		$difference->end($results[0]->start-1);
-	    }
-	    $difference->strand($results[0]->strand);
+    foreach my $difference (@{$differences}){
+      @results = $mapper->map_coordinates('Slice',$difference->start,$difference->end,$difference->strand,'Slice');
+      #we can have 3 possibilities:
+      #the difference is an insertion and when mapping returns the boundaries of the insertion in the StrainSlice
+      if (@results == 2){
+	#the first position in the result is the beginning of the insertion
+	if($results[0]->start < $results[1]->start){
+	  $difference->start($results[0]->end+1);
+	  $difference->end($results[1]->start-1);
 	}
 	else{
-	    #it can be either a SNP or a deletion, and we have the coordinates in the result, etither a Bio::EnsEMBL::Mapper::Coordinate
-	    # or a Bio::EnsEMBL::Mapper::IndelCoordinate
-	    $difference->start($results[0]->start);
-	    $difference->end($results[0]->end);
-	    $difference->strand($results[0]->strand);
+	  #it is the second position the beginning of the insertion
+	  $difference->start($results[1]->end+1);
+	  $difference->end($results[0]->start-1);
 	}
+	$difference->strand($results[0]->strand);
+      }
+      else{
+	#it can be either a SNP or a deletion, and we have the coordinates in the result, etither a Bio::EnsEMBL::Mapper::Coordinate
+	# or a Bio::EnsEMBL::Mapper::IndelCoordinate
+	$difference->start($results[0]->start);
+	$difference->end($results[0]->end);
+	$difference->strand($results[0]->strand);
+      }
     }
-
+    
     return $differences;
 }
 
@@ -451,12 +465,14 @@ sub mapper{
 	my $start_strain = 1;
 	my $end_strain;
 	my $length_allele;
+	my $total_length_diff = 0;
 	#we will walk from left to right in the slice object, updating the start and end strain every time
 	#there is a new alleleFeature in the Strain
 	foreach my $allele_feature (@allele_features_ordered){
-	    #we have a insertion/deletion: marks the beginning of new slice move coordinates	    
+	    #we have a insertion/deletion: marks the beginning of new slice move coordinates
 	    if ($allele_feature->length_diff != 0){
-		$length_allele = $allele_feature->length + $allele_feature->length_diff(); #length of the allele in the Strain		    
+	        $total_length_diff += $allele_feature->length_diff;
+		$length_allele = $allele_feature->length + $allele_feature->length_diff(); #length of the allele in the Strain		
 		$end_slice = $allele_feature->start() - 1; #set the end of the slice before the alleleFeature
 		if ($end_slice >= $start_slice){
 		    #normal cases (not with gaps)
@@ -479,6 +495,9 @@ sub mapper{
 	    #if we haven't reached the end of the StrainSlice, add the final map coordinates between the strain and the slice
 	    $mapper->add_map_coordinates('Slice',$start_slice,$self->length,1,'StrainSlice',$start_strain,$start_strain + $self->length - $start_slice);
 	}
+
+	$mapper->add_map_coordinates('Slice', -$self->start+1, 0,1, 'StrainSlice', -$self->start +1,0) if ($self->start > 0); #before strainSlice
+	$mapper->add_map_coordinates('Slice', $self->length + 1,$self->seq_region_length - ($self->length +1),1, 'StrainSlice', $self->length + 1 + $total_length_diff,$self->seq_region_length + $total_length_diff - ($self->length +1) ) if ($self->length <= $self->seq_region_length); #after strainSlice
 	$self->{'mapper'} = $mapper;
     }
     return $self->{'mapper'};
@@ -515,18 +534,18 @@ sub get_all_Transcripts {
   my (@results, @results_ordered, $new_start, $new_end, $new_strand);
   #foreach of the transcripts, map them to the StrainSlice and replace the Slice with the StrainSlice
   foreach my $transcript (@{$transcripts}){
-      $transcript->{'slice'} = $self; #add the StrainSlice as the Slice for this Transcript
-      #map from the Slice to the Strain Slice
-      my @results = $mapper->map_coordinates('Slice',$transcript->start,$transcript->end,$transcript->strand,'Slice');
-      #from the results, order them but filter out those that are not coordinates
-      @results_ordered = sort {$a->start <=> $b->start} grep {ref($_) eq 'Bio::EnsEMBL::Mapper::Coordinate'} @results;
-      $new_start = $results_ordered[0]->start();
-      $new_strand = $results_ordered[0]->strand();
-      $new_end = $results_ordered[-1]->end();  #get last element of the array, the end of the slice
-      $transcript->start($new_start);  #update the new coordinates for the transcript
-      $transcript->end($new_end);
-      $transcript->strand($new_strand);
-      
+    #$transcript->{'slice'} = $self; #add the StrainSlice as the Slice for this Transcript
+    $transcript->slice($self);
+    #map from the Slice to the Strain Slice
+    my @results = $mapper->map_coordinates('Slice',$transcript->start,$transcript->end,$transcript->strand,'Slice');
+    #from the results, order them but filter out those that are not coordinates
+    @results_ordered = sort {$a->start <=> $b->start} grep {ref($_) eq 'Bio::EnsEMBL::Mapper::Coordinate'} @results;
+    $new_start = $results_ordered[0]->start();
+    $new_strand = $results_ordered[0]->strand();
+    $new_end = $results_ordered[-1]->end();  #get last element of the array, the end of the slice
+    $transcript->start($new_start);  #update the new coordinates for the transcript
+    $transcript->end($new_end);
+    $transcript->strand($new_strand);
   }
   return $transcripts;
 }
@@ -571,6 +590,15 @@ sub get_all_Exons {
       $exon->strand($new_strand);
   }
   return $exons;
+}
+
+sub transform{
+  my $self = shift;
+  my $cs_name = shift;
+  my $cs_version =shift;
+
+  my $new_slice = $self::SUPER->transform($cs_name,$cs_version);
+  return $new_slice->get_by_strain($self->strain_name);
 }
 
 1;
