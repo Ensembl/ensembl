@@ -1221,6 +1221,7 @@ CREATE TABLE density_type (
 #
 # Table structure for table 'regulatory_feature'
 #
+# Describes instances of regulatory_factor binding to the genome.
 
 CREATE TABLE regulatory_feature (
 
@@ -1231,8 +1232,8 @@ CREATE TABLE regulatory_feature (
   seq_region_end        INT NOT NULL,
   seq_region_strand     TINYINT NOT NULL,
   analysis_id           INT NOT NULL,                  # FK refs analysis
-  regulatory_motif_id   INT,                           # FK refs regulatory_motif
-  influence             ENUM('positive', 'negative', 'mixed', 'unknown'),
+  regulatory_factor_id  INT,                           # FK refs regulatory_motif
+
 
   PRIMARY KEY(regulatory_feature_id)
 
@@ -1240,16 +1241,16 @@ CREATE TABLE regulatory_feature (
 
 ################################################################################
 #
-# Table structure for table 'regulatory_motif'
+# Table structure for table 'regulatory_factor'
 #
 
-CREATE TABLE regulatory_motif (
+CREATE TABLE regulatory_factor (
 
-  regulatory_motif_id   INT NOT NULL auto_increment,
-  name                  VARCHAR(255) NOT NULL,
-  type                  ENUM('miRNA_target', 'promoter'),
+  regulatory_factor_id   INT NOT NULL auto_increment,
+  name                   VARCHAR(255) NOT NULL,
+  type                   ENUM('miRNA_target', 'transcription_factor', 'transcription_factor_complex'),
 
-  PRIMARY KEY(regulatory_motif_id)
+  PRIMARY KEY(regulatory_factor_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -1264,6 +1265,8 @@ CREATE TABLE regulatory_feature_object (
   regulatory_feature_id INT NOT NULL,               # FK to regulatory_feature
   ensembl_object_type   ENUM( 'Transcript', 'Translation', 'Gene') NOT NULL,
   ensembl_object_id     INT NOT NULL,               # FK to transcript,gene etc
+  influence             ENUM('positive', 'negative', 'mixed', 'unknown'),
+  evidence              VARCHAR(255),
 
   KEY regulatory_feature_idx (regulatory_feature_id),
   KEY ensembl_object_idx (ensembl_object_type, ensembl_object_id)
@@ -1273,16 +1276,17 @@ CREATE TABLE regulatory_feature_object (
 
 ################################################################################
 #
-# Table structure for table 'peptide_regulatory_feature'
+# Table structure for table 'regulatory_factor_transcript'
 #
+# Describes which transcripts code for particular regulatory factors.
 
-CREATE TABLE peptide_regulatory_feature (
+CREATE TABLE regulatory_factor_transcript (
 
-  translation_id        INT NOT NULL,               # FK to translation
-  regulatory_feature_id INT NOT NULL,               # FK to regulatory_feature
+  transcript_id         INT NOT NULL,               # FK to transcript
+  regulatory_factor_id  INT NOT NULL,               # FK to regulatory_feature
 
-  KEY translation_idx (translation_id),
-  KEY regulatory_feature_idx (regulatory_feature_id)
+  KEY translation_idx (transcript_id),
+  KEY regulatory_factor_idx (regulatory_factor_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
