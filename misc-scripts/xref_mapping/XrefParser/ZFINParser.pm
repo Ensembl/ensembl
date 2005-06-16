@@ -58,6 +58,7 @@ sub run {
     chomp;
     my ($zfin, $label, $acc) = split (/\s+/,$_);
     if(defined($swiss{$acc})){
+      XrefParser::BaseParser->add_to_xrefs($swiss{$acc},$zfin,'',$label,'','',$source_id,$species_id);
       $count++;
     }
     else{
@@ -74,6 +75,7 @@ sub run {
     chomp;
     my ($zfin, $label, $acc) = split (/\s+/,$_);
     if(defined($refseq{$acc})){
+      XrefParser::BaseParser->add_to_xrefs($refseq{$acc},$zfin,'',$label,'','',$source_id,$species_id);
       $count++;
     }
     else{
@@ -83,7 +85,6 @@ sub run {
   close REFSEQ;
   print "\t$count xrefs succesfully loaded\n";
   print "\t$mismatch xrefs ignored\n";
-  die "Do not store loaded bit  (NOT tested yet)\n";
 }
 
 sub new {

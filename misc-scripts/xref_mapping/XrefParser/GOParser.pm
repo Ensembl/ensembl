@@ -45,6 +45,8 @@ sub run {
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
   my %worm;
   my $wormset;
+  my %fish;
+  my $fishset;
 
   my $count  = 0;
 
@@ -59,39 +61,52 @@ sub run {
       $array[9] =~ s/\'/\\\'/g;
       my $master=0;
       if($array[0] =~ /ENSEMBL/){
-	#these might be good for a check
-	# match GO to Uniprot
-	# match Uniprot to ENSEMBL
-	# check ENSEMBL's are the same.
+        #these might be good for a check
+        # match GO to Uniprot
+        # match Uniprot to ENSEMBL
+        # check ENSEMBL's are the same.
       }
       elsif($array[0] =~ /RefSeq/){
-	if($refseq{$array[1]}){
-	  XrefParser::BaseParser->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
-	  $count++;
-	}
+        if($refseq{$array[1]}){
+          XrefParser::BaseParser->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+          $count++;
+        }
       }
       elsif($array[0] =~ /UniProt/){
-	if($swiss{$array[1]}){
-	  XrefParser::BaseParser->add_to_xrefs($swiss{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
-	  $count++;
-	}
+        if($swiss{$array[1]}){
+          XrefParser::BaseParser->add_to_xrefs($swiss{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+          $count++;
+        }
       }
       elsif($array[0] =~ /^WB$/){
 #WB      CE20707 ZYG-9           GO:0008017      WB:WBPaper00003099|PMID:9606208 ISS             F                       protein  taxon:6239      20030829        WB
-	if(!defined($wormset)){
-	  $wormset = 1;
-	  %worm = %{XrefParser::BaseParser->get_valid_xrefs_for_dependencies
-	      ('wormbase_transcript','Uniprot/SPTREMBL','RefSeq_peptide',
-	       'Uniprot/SWISSPROT')};
-	}
-	if(defined($worm{$array[2]})){
-	  XrefParser::BaseParser->add_to_xrefs($worm{$array[2]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
-	  $count++;
-	}
+        if(!defined($wormset)){
+          $wormset = 1;
+          %worm = %{XrefParser::BaseParser->get_valid_xrefs_for_dependencies
+              ('wormbase_transcript','Uniprot/SPTREMBL','RefSeq_peptide',
+               'Uniprot/SWISSPROT')};
+        }
+        if(defined($worm{$array[2]})){
+          XrefParser::BaseParser->add_to_xrefs($worm{$array[2]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+          $count++;
+        }
+      }
+      elsif($array[0] =~ /^ZFIN$/){
+#ZFIN    ZDB-GENE-030131-5418    rfng            GO:0030902      ZFIN:ZDB-PUB-050125-4|PMID:15659486     IMP     ZFIN:ZDB-MRPHLNO-050308-5     radical fringe homolog (Drosophila)              gene    taxon:7955      20050310        ZFIN
+        if(!defined($fishset)){
+          $fishset = 1;
+          %fish = %{XrefParser::BaseParser->get_valid_xrefs_for_dependencies
+              ('ZFIN_ID','Uniprot/SPTREMBL','RefSeq_peptide',
+               'Uniprot/SWISSPROT')};
+        }
+        if(defined($fish{$array[1]})){
+          XrefParser::BaseParser->add_to_xrefs($fish{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+          $count++;
+        }
       }
       elsif(!defined($wrongtype{$array[0]})){
-	print STDERR "WARNING: unknown type ".$array[0]."\n";
-	$wrongtype{$array[0]} = 1;
+        print STDERR "WARNING: unknown type ".$array[0]."\n";
+        $wrongtype{$array[0]} = 1;
       }
     }
   }
