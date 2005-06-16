@@ -103,11 +103,10 @@ sub parse_common_options {
         'port|dbport|db_port=n',
         'user|dbuser|db_user=s',
         'pass|dbpass|db_pass=s',
-        'driver|dbdriver|db_driver=s',
         'conffile|conf=s',
         'logfile|log=s',
         'logpath=s',
-        'verbose|v=s',
+        'verbose|v',
         'interactive|i=s',
         'dry_run|dry|n=s',
         'help|h|?',
@@ -129,6 +128,7 @@ sub parse_common_options {
             next unless (/(\w\S*)\s*=\s*(.*)/);
             $self->param($1, $2);
         }
+        $self->param('conffile', $conffile);
     } else {
         warning("Unable to open configuration file $conffile for reading: $!");
     }
@@ -160,6 +160,64 @@ sub parse_extra_options {
     };
     $self->error($@) if $@;
     return(1);
+}
+
+=head2 allowed_params
+
+  Arg[1-N]    : (optional) List of allowed parameters to set
+  Example     : my @allowed = $self->allowed_params(qw(param1 param2));
+  Description : Getter/setter for allowed parameters. This is used by
+                $self->confirm_params() to avoid cluttering of output with
+                conffile entries not relevant for a given script. You can use
+                $self->get_common_params() as a shortcut to set them.
+  Return type : Array - list of allowed parameters
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub allowed_params {
+    my $self = shift;
+
+    # setter
+    if (@_) {
+        @{ $self->{'_allowed_params'} } = @_;
+    }
+
+    # getter
+    if (ref($self->{'_allowed_params'}) eq 'ARRAY') {
+        return @{ $self->{'_allowed_params'} };
+    } else {
+        return ();
+    }
+}
+
+=head2 get_common_params
+
+  Example     : my @allowed_params = $self->get_common_params, 'extra_param';
+  Description : Returns a list of commonly used parameters in the conversion
+                scripts. Shortcut for setting allowed parameters with
+                $self->allowed_params().
+  Return type : Array - list of common parameters
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub get_common_params {
+    return qw(
+        conffile
+        dbname
+        host
+        port
+        user
+        pass
+        logpath
+        logfile
+        verbose
+        interactive
+        dry_run
+    );
 }
 
 =head2 confirm_params
@@ -202,15 +260,42 @@ sub list_all_params {
     my $txt = sprintf "    %-20s%-40s\n", qw(PARAMETER VALUE);
     $txt .= "    " . "-"x70 . "\n";
     $Text::Wrap::colums = 72;
-    foreach my $key (sort keys %{ $self->{'_param'} }) {
+    my @params = $self->allowed_params;
+    foreach my $key (@params) {
         my @vals = $self->param($key);
-        $txt .= Text::Wrap::wrap( sprintf('    %-20s', $key),
-                                  ' 'x24,
-                                  join(", ", @vals)
-                                ) . "\n";
+        if (@vals) {
+            $txt .= Text::Wrap::wrap( sprintf('    %-20s', $key),
+                                      ' 'x24,
+                                      join(", ", @vals)
+                                    ) . "\n";
+        }
     }
     $txt .= "\n";
     return $txt;
+}
+
+=head2 check_required_params
+
+  Arg[1-N]    : List @params - parameters to check
+  Example     : $self->check_required_params(qw(dbname host port));
+  Description : Checks $self->param to make sure the requested parameters
+                have been set. Dies if parameters are missing.
+  Return type : true on success
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub check_required_params {
+    my ($self, @params) = @_;
+    my @missing = ();
+    foreach my $param (@params) {
+        push @missing, $param unless $self->param($param);
+    }
+    if (@missing) {
+        throw("Missing parameters: @missing.\nYou must specify them on the commandline or in your conffile.\n");
+    }
+    return(1);
 }
 
 =head2 user_proceed
@@ -311,10 +396,10 @@ sub comma_to_list {
     return(1);
 }
 
-=head2 list_to_file
+=head2 list_or_file
 
   Arg[1]      : Name of parameter to parse
-  Example     : $support->list_to_file('gene_stable_id');
+  Example     : $support->list_or_file('gene_stable_id');
   Description : Determines whether a parameter holds a list or it is a filename
                 to read the list entries from.
   Return type : true on success
@@ -474,31 +559,8 @@ sub get_database {
             -pass   => $self->param('pass'),
             -dbname => $self->param('dbname'),
     );
-    return $dba;
-}
-
-=head2 check_required_params
-
-  Arg[1-N]    : List @params - parameters to check
-  Example     : $self->check_required_params(qw(dbname host port));
-  Description : Checks $self->param to make sure the requested parameters
-                have been set. Dies if parameters are missing.
-  Return type : true on success
-  Exceptions  : none
-  Caller      : general
-
-=cut
-
-sub check_required_params {
-    my ($self, @params) = @_;
-    my @missing = ();
-    foreach my $param (@params) {
-        push @missing, $param unless $self->param($param);
-    }
-    if (@missing) {
-        throw("Missing parameters: @missing.\nYou must specify them on the commandline or in your conffile.\n");
-    }
-    return(1);
+    $self->{'_dba'} = $dba;
+    return $self->{'_dba'};
 }
 
 =head2 dynamic_use
@@ -544,6 +606,7 @@ sub dynamic_use {
 
 sub get_chrlength {
     my ($self, $dba) = @_;
+    $dba ||= $self->{'_dba'};
     throw("get_chrlength should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n")
         unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
 
@@ -598,6 +661,7 @@ sub get_chrlength {
 
 sub get_taxonomy_id {
     my ($self, $dba) = @_;
+    $dba ||= $self->{'_dba'};
     my $sql = 'SELECT meta_value FROM meta WHERE meta_key = "species.taxonomy_id"';
     my $sth = $dba->dbc->db_handle->prepare($sql);
     $sth->execute;
@@ -621,6 +685,7 @@ sub get_taxonomy_id {
 
 sub get_species_scientific_name {
     my ($self, $dba) = @_;
+    $dba ||= $self->{'_dba'};
     my $sql = qq(
         SELECT
                 meta_value
@@ -641,6 +706,30 @@ sub get_species_scientific_name {
     $self->throw("Could not determine species scientific name from database.")
         unless $species;
     return $species;
+}
+
+=head2 species
+
+  Arg[1]      : (optional) String $species - species name to set
+  Example     : my $species = $support->species;
+                my $url = "http://vega.sanger.ac.uk/$species/";
+  Description : Getter/setter for species name (Genus_species). If not set, it's
+                determined from database's meta table
+  Return type : String - species name
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub species {
+    my $self = shift;
+    $self->{'_species'} = shift if (@_);
+    # get species name from database if not set
+    unless ($self->{'_species'}) {
+        $self->{'_species'} = join('_',
+            split(/ /, $self->get_species_scientific_name));
+    }
+    return $self->{'_species'};
 }
 
 =head2 sort_chromosomes
@@ -751,6 +840,28 @@ sub log_warning {
     return(1);
 }
 
+=head2 log_verbose
+
+  Arg[1]      : String $txt - the warning text to log
+  Arg[2]      : Int $indent - indentation level for log message
+  Example     : my $log = $support->log_filehandle('>>');
+                $support->log_verbose('Log this verbose message.\n', 1);
+  Description : Logs a message via $self->log if --verbose option was used
+  Return type : TRUE on success, FALSE if not verbose
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub log_verbose {
+    my ($self, $txt, $indent) = @_;
+
+    return(0) unless $self->param('verbose');
+
+    $self->log($txt, $indent);
+    return(1);
+}
+
 =head2 log_filehandle
 
   Arg[1]      : String $mode - file access mode
@@ -781,6 +892,36 @@ sub log_filehandle {
     }
     $self->{'_log_filehandle'} = $fh;
     return $self->{'_log_filehandle'};
+}
+
+=head2 filehandle
+
+  Arg[1]      : String $mode - file access mode
+  Arg[2]      : String $file - input or output file
+  Example     : my $fh = $support->filehandle('>>', '/path/to/file');
+                # print to the filehandle
+                print $fh 'Your text goes here...\n';
+  Description : Returns a filehandle (*STDOUT for writing, *STDIN for reading
+                by default) to print to or read from.
+  Return type : Filehandle - the filehandle
+  Exceptions  : thrown if file can't be opened
+  Caller      : general
+
+=cut
+
+sub filehandle {
+    my ($self, $mode, $file) = @_;
+    $mode ||= ">";
+    my $fh;
+    if ($file) {
+        open($fh, "$mode", $file) or throw(
+            "Unable to open $file for writing: $!");
+    } elsif ($mode =~ />/) {
+        $fh = \*STDOUT;
+    } elsif ($mode =~ /</) {
+        $fh = \*STDIN;
+    }
+    return $fh;
 }
 
 =head2 init_log
