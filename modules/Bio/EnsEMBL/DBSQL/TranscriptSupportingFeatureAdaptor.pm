@@ -61,10 +61,10 @@ sub fetch_all_by_Transcript {
     return [];
   }
 
-  return $out;
   my $sth = $self->prepare("SELECT tsf.feature_type, tsf.feature_id
                             FROM   transcript_supporting_feature tsf
                             WHERE  transcript_id = ?");
+
 
   $sth->execute($transcript->dbID());
 
