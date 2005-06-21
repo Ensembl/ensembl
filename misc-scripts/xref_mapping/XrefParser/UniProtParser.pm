@@ -240,7 +240,11 @@ sub create_xrefs {
 	      $dep2{SOURCE_NAME} = $source;
 	      $dep2{SOURCE_ID} = $dependent_sources{protein_id};
 	      $dep2{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
-	      $dep2{ACCESSION} = $protein_id;
+	      # store accession unversioned
+	      $dep2{LABEL} = $protein_id;
+	      my ($prot_acc, $prot_version) = $protein_id =~ /([^.]+)\.([^.]+)/;
+	      $dep2{ACCESSION} = $prot_acc;
+	      $dep2{VERSION} = $prot_acc;
 	      push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
 	    }
 	  }
