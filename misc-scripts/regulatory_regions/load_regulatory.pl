@@ -28,10 +28,10 @@ my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$dbname",
 
 delete_existing($dbi) if ($del);
 
-my $rf_sth = $dbi->prepare("INSERT INTO regulatory_feature (name, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, regulatory_motif_id, influence) VALUES(?,?,?,?,?,?,?,?)");
-my $rm_select_sth = $dbi->prepare("SELECT regulatory_motif_id FROM regulatory_motif WHERE name=? AND type=?");
-my $rm_insert_sth = $dbi->prepare("INSERT INTO regulatory_motif (name, type) VALUES(?,?)");
-my $rr_obj_sth = $dbi->prepare("INSERT INTO regulatory_feature_object VALUES(?,?,?)");
+my $rf_sth = $dbi->prepare("INSERT INTO regulatory_feature (name, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, regulatory_factor_id) VALUES(?,?,?,?,?,?,?)");
+my $rm_select_sth = $dbi->prepare("SELECT regulatory_factor_id FROM regulatory_factor WHERE name=? AND type=?");
+my $rm_insert_sth = $dbi->prepare("INSERT INTO regulatory_factor (name, type) VALUES(?,?)");
+my $rr_obj_sth = $dbi->prepare("INSERT INTO regulatory_feature_object VALUES(?,?,?,?,?)");
 
 my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 						    -user => $user,
@@ -59,12 +59,12 @@ while (<FILE>) {
 
   my $strand = ($str =~ /\+/ ? 1 : -1);
 
-  # $seq is the name of a motif - if it's already there, find its ID, otherwise add it
+  # $seq is the name of a factor - if it's already there, find its ID, otherwise add it
   $rm_select_sth->execute($seq, $feature);
-  my $motif_id = ($rm_select_sth->fetchrow_array())[0];
-  if (!$motif_id) {
+  my $factor_id = ($rm_select_sth->fetchrow_array())[0];
+  if (!$factor_id) {
     $rm_insert_sth->execute($seq, $feature);
-    $motif_id = $rm_insert_sth->{'mysql_insertid'};
+    $factor_id = $rm_insert_sth->{'mysql_insertid'};
   }
 
   # get analysis ID for $method, and cache
@@ -144,14 +144,15 @@ while (<FILE>) {
 		     $chr_slice->end(),
 		     $chr_slice->strand(),
 		     $analysis->dbID(),
-		     $motif_id,
-		     $influence);
+		     $factor_id);
 
     my $rr_id = $rf_sth->{'mysql_insertid'};
 
     $rr_obj_sth->execute($rr_id,
 			 $ensembl_type,
-			 $ensembl_object->dbID());
+			 $ensembl_object->dbID(),
+			 $influence,
+			 "");                     # no evidence yet
 
     $count++;
 
@@ -164,7 +165,7 @@ while (<FILE>) {
 
 close FILE;
 
-print "Uploaded $count regulatory regions to database\n";
+print "Uploaded $count regulatory features to database\n";
 
 
 
@@ -173,9 +174,9 @@ sub delete_existing {
   my $dbi = shift;
 
   $dbi->do("DELETE FROM regulatory_feature");
-  $dbi->do("DELETE FROM regulatory_motif");
+  $dbi->do("DELETE FROM regulatory_factor");
   $dbi->do("DELETE FROM regulatory_feature_object");
-  $dbi->do("DELETE FROM peptide_regulatory_feature");
+  $dbi->do("DELETE FROM regulatory_factor_transcript");
 
   print "Deleted existing data in regulatory region tables\n";
 
