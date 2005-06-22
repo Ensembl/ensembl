@@ -13,8 +13,8 @@
 803	flybase_polypeptide_id	1	KNOWNXREF	1	0	5
 804	flybase_annotation_id	1	KNOWNXREF	1	0	5
 805	flybase_symbol	1	KNOWNXREF	1	0	50
-806     flybase_synonym 1       KNOWNXREF       1       0       5
-807     flybase_name    1       KNOWNXREF       1       0       5
+806	flybase_synonym	1	KNOWNXREF	1	0	5
+807	flybase_name	1	KNOWNXREF	1	0	5
 808	flybase_transcript_id	1	KNOWNXREF	1	0	5
 810	gadfly_gene_cgid	1	KNOWNXREF	1	0	10
 811	gadfly_transcript_cgid	1	KNOWNXREF	1	0	10
