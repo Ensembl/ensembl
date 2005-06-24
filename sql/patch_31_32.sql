@@ -1,3 +1,10 @@
+# Add linkable & priority columns to external_db
+ALTER TABLE external_db ADD COLUMN dbprimary_acc_linkable BOOLEAN DEFAULT 1 NOT NULL;
+ALTER TABLE external_db ADD COLUMN display_label_linkable BOOLEAN DEFAULT 0 NOT NULL;
+ALTER TABLE external_db ADD COLUMN priority INT NOT NULL;
+
+################################################################################
+
 # Many changes to regulatory-feature-related tables
 # Since these tables are empty it is easier to drop the existing 
 # tables and re-create the new ones
@@ -79,5 +86,4 @@ CREATE TABLE regulatory_factor_transcript (
   KEY regulatory_factor_idx (regulatory_factor_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
-
 
