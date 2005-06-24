@@ -9,7 +9,7 @@
 700	EMBL	1	KNOWNXREF	1	0	5
 800	flybase_gene_id	1	KNOWNXREF	1	0	5
 801	flybase_translation_id	1	KNOWNXREF	1	0	5
-802	flybase_gff	1	KNOWNXREF	1	0	5_
+802	flybase_gff	1	KNOWNXREF	1	0	5
 803	flybase_polypeptide_id	1	KNOWNXREF	1	0	5
 804	flybase_annotation_id	1	KNOWNXREF	1	0	5
 805	flybase_symbol	1	KNOWNXREF	1	0	50
@@ -55,7 +55,6 @@
 2510	ZFIN_ID	1	KNOWNXREF	1	0	5
 2520	ZFIN_AC	1	KNOWNXREF	1	0	5
 2600	GeneDB	1	KNOWN	1	0	5
-2601	c_int_proteins_jgi_v1	1	0	5
 2700	Ens_Hs_gene	1	XREF	1	0	5
 2710	Ens_Hs_transcript	1	XREF	1	0	5
 2720	Ens_Hs_translation	1	XREF	1	0	5
