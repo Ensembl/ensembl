@@ -1640,7 +1640,7 @@ sub build_transcript_display_xrefs {
 	# Check if this source has a better priority than the current best one
 	# Note if 2 sources are the same priority, the mappings are compared on
 	# query_identity then target_identity
-	if ($i > -1 && $i < $best_xref_priority_idx &&
+	if ($i > -1 && $i <= $best_xref_priority_idx &&
 	    (($query_identity > $best_qi{$s}) ||
 	    ($query_identity == $best_qi{$s} && $target_identity > $best_ti{$s}))) {
 	#if ($i > -1 && $i <= $best_xref_priority_idx && $query_identity > $best_qi{$s}) {
