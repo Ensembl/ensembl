@@ -837,14 +837,14 @@
 
     <table>
       
-      <name>regulatory_motif</name>
+      <name>regulatory_factor</name>
 
-      <description>Describe which motif a particular regulatory feature is composed of.</description>
+      <description>Describe which regulatory factor a particular regulatory feature is composed of.</description>
       
       <used></used>
       
       <see>
-	<tableref name="regulatory_feature" reason="Contains actual genomic instances of this motif"/>
+	<tableref name="regulatory_feature" reason="Contains actual genomic instances of this factor"/>
       </see>
 
     </table>
@@ -869,9 +869,9 @@
 
     <table>
       
-      <name>peptide_regulatory_feature</name>
+      <name>regulatory_factor_transcript</name>
 
-      <description></description>
+      <description>Describes which transcripts code for particular regulatory factors.</description>
       
       <used></used>
       
