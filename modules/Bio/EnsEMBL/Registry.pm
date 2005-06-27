@@ -127,49 +127,71 @@ $registry_register{'_WARN'} = 0;
 =cut
  
 sub load_all{
-    my $class = shift;
-    my $web_reg = shift;
-
-    #$registry_register{'_WARN'} = 0; # default report overwriting
-    if(!defined($registry_register{'seen'})){
-	$registry_register{'seen'}=1;
-	if(defined($web_reg)){
-	    print STDERR  "Loading conf from site defs file ".$web_reg."\n";
-	    if(-e $web_reg){
-		unless (my $return = do $web_reg ){
-		    throw "Error in Configuration\n $!\n";
-		}
-		# other wise it gets done again by the web initialisation stuff
-		delete $INC{$web_reg}; 
-	    }
-	}
-	elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
-	  my $file = $ENV{ENSEMBL_REGISTRY};
-	    print STDERR  "Loading conf from ".$file."\n";
-	    unless (my $return = do $ENV{ENSEMBL_REGISTRY}){
-	      throw "Configuration error in $file: $@" if $@;
-	      throw "Configuration error in $file: $!" unless defined $return;
-	      throw "Configuration error in $file" unless $return;
-	    }
-	}
-	elsif(-e $ENV{HOME}."/.ensembl_init") {
-	  my $file = $ENV{HOME}."/.ensembl_init";
-	  my $return;
-
-	  unless( my $return =  do( $file )) {
-	      throw "Configuration error in $file: $@" if $@;
-	      throw "Configuration error in $file: $!" unless defined $return;
-	      throw "Configuration error in $file" unless $return;
-	  }
-
-	}
-	else{
-	  print STDERR "NO default configuration to load\n";
-	}
+  my $class = shift;
+  my $web_reg = shift;
+  
+  #$registry_register{'_WARN'} = 0; # default report overwriting
+  if(defined($registry_register{'seen'})){
+    print STDERR "Clearing previuosly loaded configuration from Registry\n";
+    $class->clear();
+  }
+  $registry_register{'seen'}=1;
+  if(defined($web_reg)){
+    print STDERR  "Loading conf from site defs file ".$web_reg."\n";
+    if(-e $web_reg){
+      unless (my $return = do $web_reg ){
+	throw "Error in Configuration\n $!\n";
+      }
+      # other wise it gets done again by the web initialisation stuff
+      delete $INC{$web_reg}; 
+      }
+  }
+  elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
+    my $file = $ENV{ENSEMBL_REGISTRY};
+    print STDERR  "Loading conf from ".$file."\n";
+    unless (my $return = do $ENV{ENSEMBL_REGISTRY}){
+      throw "Configuration error in $file: $@" if $@;
+      throw "Configuration error in $file: $!" unless defined $return;
+      throw "Configuration error in $file" unless $return;
     }
-    else{
-      print STDERR "Already configured???\n";
+  }
+  elsif(-e $ENV{HOME}."/.ensembl_init") {
+    my $file = $ENV{HOME}."/.ensembl_init";
+    my $return;
+    
+    unless( my $return =  do( $file )) {
+      throw "Configuration error in $file: $@" if $@;
+      throw "Configuration error in $file: $!" unless defined $return;
+      throw "Configuration error in $file" unless $return;
     }
+    
+  }
+  else{
+    print STDERR "NO default configuration to load\n";
+  }
+}
+
+
+=head2 clear
+ Will clear the registry and disconnect from all databases.
+
+  Example    : Bio::EnsEMBL::Registry->clear();
+  Returntype : none
+  Exceptions : none
+
+
+=cut
+
+sub clear{
+  my ($self);
+  
+  foreach my $dba (@{$registry_register{'_DBA'}}){
+    print $dba."\n";
+    if($dba->dbc->connected){
+      $dba->dbc->db_handle->disconnect();
+    }
+  }
+  %registry_register = undef;
 }
 
 #
