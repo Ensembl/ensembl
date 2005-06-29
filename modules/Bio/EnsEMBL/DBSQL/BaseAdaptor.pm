@@ -161,12 +161,12 @@ sub prepare{
 
 =head2 db
 
-  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBConnection $obj 
+  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor $obj 
                the database this adaptor is using.
   Example    : $db = $adaptor->db();
   Description: Getter/Setter for the DatabaseConnection that this adaptor is 
                using.
-  Returntype : Bio::EnsEMBL::DBSQL::DBConnection
+  Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
   Exceptions : none
   Caller     : Adaptors inherited fro BaseAdaptor
 
@@ -179,6 +179,19 @@ sub db{
   return $self->{'db'};
 
 }
+
+=head2 dbc
+
+  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBConnection $obj 
+               the database this adaptor is using.
+  Example    : $db = $adaptor->db();
+  Description: Getter/Setter for the DatabaseConnection that this adaptor is 
+               using.
+  Returntype : Bio::EnsEMBL::DBSQL::DBConnection
+  Exceptions : none
+  Caller     : Adaptors inherited fro BaseAdaptor
+
+=cut
 
 sub dbc{
   my $self = shift;
