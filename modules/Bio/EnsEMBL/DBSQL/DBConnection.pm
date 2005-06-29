@@ -7,8 +7,6 @@
         -dbname  => 'homo_sapiens_core_20_34c',
         -host    => 'ensembldb.ensembl.org',
         -driver  => 'mysql',
-        -species => 'Homo Sapiens',
-        -group   => 'core'
         );
 
 
@@ -56,7 +54,7 @@ use DBI;
 
 use Bio::EnsEMBL::DBSQL::StatementHandle;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw info warning);
+use Bio::EnsEMBL::Utils::Exception qw(deprecate throw info warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 @ISA = qw(Bio::EnsEMBL::Root); # for backwards compatibility
@@ -397,52 +395,6 @@ sub password {
   $self->{_password};
 }
 
-=head2 species
-
-  Arg [1]    : (optional) string $arg
-               The new value of the species used by this connection. 
-  Example    : $host = $db_connection->species()
-  Description: Getter/Setter for the species of to use for 
-               this connection.  There is currently no point in setting 
-               this value after the connection has already been established 
-               by the constructor.
-  Returntype : string
-  Exceptions : none
-  Caller     : new
-
-=cut
-
-sub species {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_species} = $arg );
-  return $self->{_species};
-}
-
-
-=head2 group
-
-  Arg [1]    : (optional) string $arg
-               The new value of the group used by this connection. 
-  Example    : $host = $db_connection->group()
-  Description: Getter/Setter for the group of to use for 
-               this connection.  There is currently no point in setting 
-               this value after the connection has already been established 
-               by the constructor.
-  Returntype : string
-  Exceptions : none
-  Caller     : new
-
-=cut
-
-sub group {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_group} = $arg );
-  return $self->{_group};
-}
-
-
 
 
 =head2 disconnect_when_inactive
@@ -651,5 +603,38 @@ sub disconnect_if_idle {
   return 0;
 }
 
+####
+#deprecated functions
+####
+
+=head2
+
+   group is no longer available in DBConnection and should be accessed if needed
+   from an adaptor.
+
+=cut
+
+sub group {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_group} = $arg );
+  deprecate "group should not be called from DBConnection but from an adaptor\n";
+  return $self->{_group};
+}
+
+=head2 species
+
+   species is no longer available in DBConnection and should be accessed if needed
+   from an adaptor.
+
+=cut
+
+sub species {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_species} = $arg );
+  deprecate "species should not be called from DBConnection but from an adaptor\n";
+  return $self->{_species};
+}
 
 1;
