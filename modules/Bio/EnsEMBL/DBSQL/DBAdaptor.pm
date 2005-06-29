@@ -280,7 +280,7 @@ sub get_available_adaptors{
       Marker                   MarkerFeature        QtlFeature     Qtl
     ) ),
    # Finally the exceptions... those that have non-standard mapping between object / adaptor ....
-    'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
+#    'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
     'MetaCoordContainer'   => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
     'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
     'SNP'                  => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor'
