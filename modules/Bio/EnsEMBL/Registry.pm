@@ -29,13 +29,17 @@ Else if the file .ensembl_init in your home directory exist it is used.
 For the Web server ENSEMBL_REGISTRY should be set in SiteDefs.pm, which will
 pass this on to load_all.
 
+
+The registry can also be loaded via the method load_registry_from_db which
+given a host will load the latest versions of the Ensembl databases from it.
+
 The four types of registrys are for db adaptors, dba adaptors, dna adaptors
 and the standard type.
 
 =head2 db
 
 These are registrys for backwards compatibillity and enable the subroutines
-to add other adaptors to connections.
+to add other adaptors to connections. 
 
 e.g. get_all_db_adaptors, get_db_adaptor, add_db_adaptor, remove_db_adaptor
 are the old DBAdaptor subroutines which are now redirected to the Registry.
@@ -200,7 +204,7 @@ sub clear{
 
 =head2 add_db
 
-  Arg [1]    : db to add adaptor to.
+  Arg [1]    : db (DBAdaptor) to add adaptor to.
   Arg [2]    : name of the name to add the adaptor to in the registry.
   Arg [3]    : The adaptor to be added to the registry.
   Example    : Bio::EnsEMBL::Registry->add_db($db, "lite", $dba);
@@ -220,7 +224,7 @@ sub add_db{
 
 =head2 remove_db
 
-  Arg [1]    : db to remove adaptor from.
+  Arg [1]    : db (DBAdaptor) to remove adaptor from.
   Arg [2]    : name to remove the adaptor from in the registry.
   Example    : my $db = Bio::EnsEMBL::Registry->remove_db($db, "lite");
   Returntype : adaptor
@@ -239,7 +243,7 @@ sub remove_db{
 
 =head2 get_db
 
-  Arg [1]    : db to get adaptor from.
+  Arg [1]    : db (DBAdaptor) to get adaptor from.
   Arg [2]    : name to get the adaptor for in the registry.
   Example    : my $db = Bio::EnsEMBL::Registry->get_db("Human", "core", "lite");
   Returntype : adaptor
@@ -260,7 +264,7 @@ sub get_db{
 
 =head2 get_all_db_adaptors
 
-  Arg [1]    : db to get all the adaptor from.
+  Arg [1]    : db (DBAdaptor) to get all the adaptors from.
   Example    : my $db = Bio::EnsEMBL::Registry->get_all_db_adaptors($db);
   Returntype : adaptor
   Exceptions : none
@@ -280,7 +284,7 @@ sub get_all_db_adaptors{
     } 
   }
 
- foreach my $key (keys %{$registry_register{$class->get_alias($db->species())}{$db->group()}{'_special'}}){
+ foreach my $key (keys %{$registry_register{$class->get_alias($db->species())}{lc($db->group())}{'_special'}}){
    $ret{$key} = $registry_register{$class->get_alias($db->species())}{lc($db->group())}{'_special'}{$key};
  }
 
@@ -364,6 +368,29 @@ sub get_all_DBAdaptors{
 
   return @{$registry_register{'_DBA'}};
 }
+
+=head2 get_all_DBAdaptors_by_connection
+
+  Arg [1]    :dbconnection to use to find DBAdaptors
+  Returntype : reference to list of DBAdaptors
+  Exceptions : none.
+  Example    : @dba = @{Bio::EnsEMBL::Registry->get_all_DBAdaptors_by_connection($dbc);
+
+=cut
+
+sub get_all_DBAdaptors_by_connection{
+  my ($self, $dbc_orig) = @_;
+  my @return;
+
+  foreach my $dba ( @{$registry_register{'_DBA'}}){
+    my $dbc = $dba->dbc;
+    if($dbc->equals($dbc_orig)){
+      push @return, $dba;
+    }
+  }
+  return \@return;
+}
+
 
 #
 # DNA Adaptors
@@ -459,14 +486,13 @@ sub add_adaptor{
   }
   $registry_register{$species}{lc($group)}{lc($type)} = $adap;
 
-  
   if(!defined ($registry_register{$species}{'list'})){
     my @list =();
-    push(@list,$adap);
+    push(@list,$type);
     $registry_register{$species}{'list'}= \@list;
   }
   else{
-    push(@{$registry_register{$species}{'list'}},$adap);
+    push(@{$registry_register{$species}{'list'}},$type);
   }
 
 #  print STDERR "REGADD  $species \t $group \t $type\t to the registry\n";
@@ -530,7 +556,12 @@ sub get_adaptor{
 
 =head2 get_all_adaptors
 
-  Arg [1]    : name of the species to get the adaptors for.
+  Arg [SPECIES] : (optional) string 
+                  species name to get adaptors for
+  Arg [GROUP] : (optional) string 
+                  group name to get adaptors for
+  Arg [TYPE] : (optional) string 
+                  type to get adaptors for
   Example    : @adaps = @{Bio::EnsEMBL::Registry->get_all_adaptors()};
   Returntype : list of adaptors
   Exceptions : none
@@ -538,10 +569,62 @@ sub get_adaptor{
 =cut
 
 sub get_all_adaptors{
-  my ($class,$species)= @_;
+  my ($class,@args)= @_;
+  my ($species, $group, $type);
+  my @ret=();
+  my (%species_hash, %group_hash, %type_hash);
 
-  $species = get_alias($species);
-  return $registry_register{$species}{'list'};
+
+  if(@args == 1){ #old species only one parameter
+    warn("-SPECIES argument should now be used to get species adaptors");
+    $species = $args[0];
+  }
+  else{
+    # new style -SPECIES, -GROUP, -TYPE
+    ($species, $group, $type) =
+      rearrange([qw(SPECIES GROUP TYPE)], @args);
+  }
+
+  if(defined($species)){
+    $species_hash{$species} = 1;
+  }
+  else{
+    # get list of species
+    foreach my $dba (@{$registry_register{'_DBA'}}){
+      $species_hash{lc($dba->species())} = 1;
+    }
+  }
+  if(defined($group)){
+    $group_hash{$group} = 1;
+  }
+  else{
+    foreach my $dba (@{$registry_register{'_DBA'}}){
+      $group_hash{lc($dba->group())} = 1;
+    }
+  }
+  if(defined($type)){
+    $type_hash{$type} =1;
+  }
+  else{
+    foreach my $dba (@{$registry_register{'_DBA'}}){ 
+	foreach my $ty (@{$registry_register{$dba->species}{'list'}}){
+	  $type_hash{lc($ty)} = 1;
+	}
+      }
+  }
+  
+  ### NOW NEED TO INSTANTIATE BY CALLING get_adaptor
+  foreach my $sp (keys %species_hash){
+    foreach my $gr (keys %group_hash){
+      foreach my $ty (keys %type_hash){
+	my $temp = $class->get_adaptor($sp,$gr,$ty);
+	if(defined($temp)){
+	  push @ret, $temp;
+	}
+      }
+    }
+  }
+  return (\@ret);
 }
 
 
@@ -659,19 +742,6 @@ my $self = shift;
     }
 }
 
-
-sub get_all_DBAdaptors_by_connection{
-  my ($self, $dbc_orig) = @_;
-  my @return;
-
-  foreach my $dba ( @{$registry_register{'_DBA'}}){
-    my $dbc = $dba->dbc;
-    if($dbc->equals($dbc_orig)){
-      push @return, $dba;
-    }
-  }
-  return \@return;
-}
 
 
 =head2 load_registry_from_db
