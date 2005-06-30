@@ -102,7 +102,6 @@ package Bio::EnsEMBL::Registry;
 
 use strict;
 
-use Bio::EnsEMBL::DBSQL::MergedAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
@@ -190,7 +189,6 @@ sub clear{
   my ($self);
   
   foreach my $dba (@{$registry_register{'_DBA'}}){
-    print $dba."\n";
     if($dba->dbc->connected){
       $dba->dbc->db_handle->disconnect();
     }
@@ -347,12 +345,8 @@ sub get_DBAdaptor{
 
   $species = $class->get_alias($species);
 
-  if(defined($group)){ # group defined so return standard DB Adaptor
-    return  $registry_register{$species}{lc($group)}{'_DB'};
-  }
-  else{ #return a merged db adaptor
-    return  new_merged Bio::EnsEMBL::DBSQL::DBAdaptor($species);
-  }
+  return  $registry_register{$species}{lc($group)}{'_DB'};
+
 }
 
 =head2 get_all_DBAdaptors
@@ -495,7 +489,7 @@ sub add_adaptor{
     push(@{$registry_register{$species}{'list'}},$type);
   }
 
-#  print STDERR "REGADD  $species \t $group \t $type\t to the registry\n";
+
 
   if(!defined ($registry_register{lc($type)}{$species})){
     my @list =();
@@ -684,6 +678,16 @@ sub alias_exists{
   return 0;
 }
 
+=head2 set_disconnect_when_inactive
+
+  Example    : Bio::EnsEMBL::Registry->set_disconnect_when_inactive();
+  Description: Set the flag to make sure that the database connection is dropped if
+               not being used on each database.
+  Returntype : none
+  Exceptions : none
+
+=cut
+
 sub set_disconnect_when_inactive{
   foreach my $dba ( @{get_all_DBAdaptors()}){
     my $dbc = $dba->dbc;
@@ -692,6 +696,16 @@ sub set_disconnect_when_inactive{
     $dbc->disconnect_when_inactive(1);
   }
 }
+
+
+=head2 disconnect_all
+
+  Example    : Bio::EnsEMBL::Registry->disconnect_all();
+  Description: disconnect from all the databases.
+  Returntype : none
+  Exceptions : none
+
+=cut
 
 sub disconnect_all {
   foreach my $dba ( get_all_DBAdaptors() ){
@@ -934,21 +948,16 @@ sub load_registry_from_db{
 
 
 
-=head2 load_registry_with_web_adaptors
-  Will load the registry with all the Adaptors used in the Web server.
-  Providing Sitedefs and SpeciesDefs can be found on PERL5LIB path.
+=head2 DEPRECATED load_registry_with_web_adaptors
 
-  Example    : Bio::EnsEMBL::Registry->load_registry_with_web_adaptors();
-  Returntype : none
-  Exceptions : Will die if Sitedefs or SpeciesDefs is not found on the
-               PERL5LIB path.
+  DEPRECATED: Use load_registry_from_db instead.
 
 =cut
 
 sub load_registry_with_web_adaptors{
   my $class = shift;
 
-
+  deprecate('Use the load_registry_from_db instead'); 
   eval{ require SiteDefs };
   if ($@){ die "Can't use SiteDefs.pm - $@\n"; }
     SiteDefs->import(qw(:ALL));
