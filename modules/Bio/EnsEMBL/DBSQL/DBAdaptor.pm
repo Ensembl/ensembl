@@ -90,7 +90,6 @@ sub new {
     rearrange([qw(SPECIES GROUP DBCONN DNADB)], @args);
 
   if(defined($con)){
-    
     $self->dbc($con);
   }
   else{
@@ -100,9 +99,7 @@ sub new {
   if(defined($species)){
     $self->species($species);
   }
-#  else{
-#    $self->species("DEFAULT");
-#  }
+
   if(defined($group)){
     $self->group($group);
   }
@@ -113,19 +110,6 @@ sub new {
     $self->dnadb($dnadb);
   }
  
-  return $self;
-}
-
-
-sub new_merged{
-  my($class, $species, @args) = @_;
-
-  my $self ={};
-  bless $self,$class;
-
-  $self->species($species);
-  $self->group("_MERGED_");
-
   return $self;
 }
 
@@ -688,13 +672,8 @@ sub AUTOLOAD {
     throw("Could not work out type for $AUTOLOAD \n");
   }
 
-  my $ret = undef;
-  if($self->group() eq "_MERGED_"){
-    $ret = $reg->get_MergedAdaptor($self->species(),$type);
-  }
-  else{
-    $ret = $reg->get_adaptor($self->species(),$self->group(),$type);
-  }
+  my  $ret = $reg->get_adaptor($self->species(),$self->group(),$type);
+
   if($ret){
     return $ret;
   }
