@@ -13,7 +13,9 @@ Bio::EnsEMBL::Registry
 
 =head1 SYNOPSIS
 
-$gene_adaptor = Bio::EnsEMBL::Registry->get_adaptor("Homo Sapiens","core","Gene"))
+Bio::EnsEMBL::Registry->load_all("configuration_file");
+
+$gene_adaptor = Bio::EnsEMBL::Registry->get_adaptor("homo_sapiens","core","gene"))
 
 
 =head1 DESCRIPTION
@@ -109,11 +111,9 @@ use DBI;
 
 use vars qw(%registry_register);
 
-$registry_register{'_WARN'} = 0;
-
-
 
 =head2 load_all
+
  Will load the registry with the configuration file which is obtained from
  the first in the following and in that order.
 
@@ -133,7 +133,6 @@ sub load_all{
   my $class = shift;
   my $web_reg = shift;
   
-  #$registry_register{'_WARN'} = 0; # default report overwriting
   if(defined($registry_register{'seen'})){
     print STDERR "Clearing previuosly loaded configuration from Registry\n";
     $class->clear();
@@ -176,6 +175,7 @@ sub load_all{
 
 
 =head2 clear
+
  Will clear the registry and disconnect from all databases.
 
   Example    : Bio::EnsEMBL::Registry->clear();
@@ -351,16 +351,36 @@ sub get_DBAdaptor{
 
 =head2 get_all_DBAdaptors
 
-  Example    : @dba = @{Bio::EnsEMBL::Registry->get_all_DBAdaptors();
-  Returntype : list of DBAdaptors
-  Exceptions : none
+  Arg [SPECIES]: (optional) string 
+                  species name to get adaptors for
+  Arg [GROUP]  : (optional) string 
+                  group name to get adaptors for
+  Example      : @dba = @{Bio::EnsEMBL::Registry->get_all_DBAdaptors()};
+               : @human_dbas = @{Bio::EnsEMBL::Registry->get_all_DBAdaptors(-species => 'human')};
+  Returntype   : list of DBAdaptors
+  Exceptions   : none
 
 =cut
 
 sub get_all_DBAdaptors{
-  my ($class)=@_;
+  my ($class,@args)=@_;
+  my @ret;
 
-  return @{$registry_register{'_DBA'}};
+  my ($species, $group) = 
+    rearrange([qw(SPECIES GROUP)], @args);
+  if(defined($species)){
+    $species = $class->get_alias($species);
+  }
+  foreach my $dba (@{$registry_register{'_DBA'}}){
+    if(!defined($species) || $species eq $dba->species){
+      if(!defined($group) || lc($group) eq lc($dba->group)){
+	push @ret, $dba;
+      }
+    }
+  }
+
+
+  return \@ret;
 }
 
 =head2 get_all_DBAdaptors_by_connection
@@ -975,6 +995,7 @@ sub load_registry_with_web_adaptors{
 }
 
 =head2 set_default_track
+
   Sets a flag to say that that this species/group are a default track and do not
   need to be added as another web track.
 
@@ -994,6 +1015,7 @@ sub set_default_track{
 }
 
 =head2 default_track
+
   Check flag to see if this is a default track
 
   Arg [1]    : name of the species to get the adaptors for in the registry.
@@ -1017,6 +1039,7 @@ sub default_track{
 
 
 =head2 add_new_tracks
+
   Will add new gene tracks to the configuration of the WEB server if they are
   not of the type default and the configuration already has genes in the display.
 
