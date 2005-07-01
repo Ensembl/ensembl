@@ -23,6 +23,7 @@
 822	FlyBaseORFNames	1	XREF	1	0	5
 823	FlyBaseSynonyms	1	XREF	1	0	5
 824	FlyBaseName_translations	1	XREF	1	0	5
+825	FlyBaseName_transcript	1	XREF	1	0	50
 900	GKB	1	XREF	1	0	5
 1000	GO	1	KNOWNXREF	1	0	5
 1100	HUGO	1	KNOWNXREF	0	1	100
