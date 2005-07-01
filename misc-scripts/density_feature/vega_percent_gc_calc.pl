@@ -1,183 +1,163 @@
-#!/usr/local/bin/perl -w
+#!/usr/local/bin/perl
 
-#
-# Calculate the GC content for top level seq_regions
-#   small regions 500bp to be able to display on contigview
-#   big regions genomesize / 4000 for 4000 features on the genome
+=head1 NAME
+
+vega_percent_gc_calc.pl - calculate GC content
+
+=head1 SYNOPSIS
+
+vega_percent_gc_calc.pl [options]
+
+General options:
+    --conffile, --conf=FILE             read parameters from FILE
+                                        (default: conf/Conversion.ini)
+
+    --dbname, db_name=NAME              use database NAME
+    --host, --dbhost, --db_host=HOST    use database host HOST
+    --port, --dbport, --db_port=PORT    use database port PORT
+    --user, --dbuser, --db_user=USER    use database username USER
+    --pass, --dbpass, --db_pass=PASS    use database passwort PASS
+    --logfile, --log=FILE               log to FILE (default: *STDOUT)
+    --logpath=PATH                      write logfile to PATH (default: .)
+    --logappend, --log_append           append to logfile (default: truncate)
+    -v, --verbose                       verbose logging (default: false)
+    -i, --interactive=0|1               run script interactively (default: true)
+    -n, --dry_run, --dry=0|1            don't write results to database
+    -h, --help, -?                      print help (this message)
+
+=head1 DESCRIPTION
+
+This script calculates GC content per chromosomes.
+
+The block size is determined so that you have 150 bins for the smallest
+chromosome over 5 Mb in length. For chromosomes smaller than 5 Mb, an
+additional smaller block size is used to yield 150 bins for the overall
+smallest chromosome. This will result in reasonable resolution for small
+chromosomes and high performance for big ones.
+
+=head1 LICENCE
+
+This code is distributed under an Apache style licence:
+Please see http://www.ensembl.org/code_licence.html for details
+
+=head1 AUTHOR
+
+Patrick Meidl <pm2@sanger.ac.uk>
+
+=head1 CONTACT
+
+Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
+
+=cut
 
 use strict;
+use warnings;
+no warnings 'uninitialized';
+
+use FindBin qw($Bin);
+use vars qw($SERVERROOT);
+
 BEGIN {
-    $ENV{'ENSEMBL_SERVERROOT'} = "../../..";
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/conf");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-compara/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-draw/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-external/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-otter/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/bioperl-live");
+    $SERVERROOT = "$Bin/../../..";
+    unshift(@INC, "$SERVERROOT/ensembl-otter/modules");
+    unshift(@INC, "$SERVERROOT/ensembl/modules");
+    unshift(@INC, "$SERVERROOT/bioperl-live");
 }
 
-#use SiteDefs;
-use EnsWeb;
-use EnsEMBL::DB::Core;
 use Getopt::Long;
+use Pod::Usage;
+use Bio::EnsEMBL::Utils::ConversionSupport;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use POSIX;
 
-use Data::Dumper;
+$| = 1;
 
-my ($species, $dry, $help);
-&GetOptions(
-    "species=s" => \$species,
-    "dry_run"   => \$dry,
-    "n"         => \$dry,
-    "help"      => \$help,
-    "h"         => \$help,
+my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
+
+# parse options
+$support->parse_common_options(@_);
+$support->allowed_params($support->get_common_params);
+
+if ($support->param('help') or $support->error) {
+    warn $support->error if $support->error;
+    pod2usage(1);
+}
+
+# ask user to confirm parameters to proceed
+$support->confirm_params;
+
+# get log filehandle and print heading and parameters to logfile
+$support->init_log;
+
+# connect to database and get adaptors
+my $dba = $support->get_database('ensembl');
+my $dfa = $dba->get_DensityFeatureAdaptor;
+my $dta = $dba->get_DensityTypeAdaptor;
+my $aa = $dba->get_AnalysisAdaptor;
+
+# Create new Analysis object
+my $analysis = Bio::EnsEMBL::Analysis->new(
+    -program     => "percent_gc_calc.pl",
+    -database    => "ensembl",
+    -gff_source  => "percent_gc_calc.pl",
+    -gff_feature => "density",
+    -logic_name  => "PercentGC",
 );
+$aa->store($analysis) unless ($support->param('dry_run'));
 
-if($help || !$species){
-    print qq(Usage:
-    ./vega_gene_density.pl
-        --species=Homo_sapiens
-        [--dry_run|-n]
-        [--help|-h]\n\n);
-    exit;
-}
+# split chromosomes by size and determine block size
+my $chr_slices = $support->split_chromosomes_by_size(5000000);
 
-$ENV{'ENSEMBL_SPECIES'} = $species;
+# loop over block sizes
+foreach my $block_size (keys %{ $chr_slices }) {
+    $support->log("Available chromosomes using block size of $block_size:\n    ");
+    $support->log(join("\n    ", map { $_->seq_region_name } @{ $chr_slices->{$block_size} })."\n");
 
-#get the adaptors needed
-my $slice_adaptor = Bio::EnsEMBL::Registry->get_adaptor($species,"vega","Slice") or die "can't load slice adaptor - is the species name correct?";
-my $dfa =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","DensityFeature") or die;
-my $dta =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","DensityType") or die;
-my $aa  =  Bio::EnsEMBL::Registry->get_adaptor($species,"vega","Analysis") or die;
+    # create DensityType objects
+    my $density_type = Bio::EnsEMBL::DensityType->new(
+         -analysis   => $analysis,
+         -block_size => $block_size,
+         -value_type => 'ratio',
+    );
+    $dta->store($density_type) unless ($support->param('dry_run'));
 
-## set db user/pass to allow write access
-$EnsWeb::species_defs->set_write_access('ENSEMBL_DB',$species);
+    # loop over chromosomes
+    $support->log_stamped("Looping over chromosomes...\n");
+    my ($current_start, $current_end);
+    foreach my $slice (@{ $chr_slices->{$block_size} }) {
+        $current_start = 1;
+        my $chr = $slice->seq_region_name;
+        my $i;
+        my $bins = POSIX::ceil($slice->end/$block_size);
 
-my $top_slices = $slice_adaptor->fetch_all( "toplevel" );
+        $support->log_stamped("Chromosome $chr with block size $block_size...\n", 1);
 
-my $big_chr = [];
-my $small_chr = [];
-
-my (@big_chr_names, $big_block_size, $min_big_chr);
-my (@small_chr_names, $small_block_size, $min_small_chr);
-for my $slice ( @$top_slices ) {
-    if ($slice->length < 5000000) {
-	if (! $min_small_chr or ($min_small_chr > $slice->length)) {
-	    $min_small_chr = $slice->length;
-	}
-	push @small_chr_names, $slice->seq_region_name;
-	push @{$small_chr->[0]}, $slice;
+        # loop over blocks
+        while($current_start <= $slice->end) {
+            $i++;
+            $current_end = $current_start + $block_size - 1;
+            if ($current_end > $slice->end) {
+                $current_end = $slice->end;
+            }
+            my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
+            my $gc = $sub_slice->get_base_count->{'%gc'};
+            $support->log_verbose("Chr: $chr | Bin: $i/$bins | \%GC: $gc\n", 2);
+            my $df =  Bio::EnsEMBL::DensityFeature->new(
+                -seq_region    => $slice,
+                -start         => $current_start,
+                -end           => $current_end,
+                -density_type  => $density_type,
+                -density_value => $gc,
+            );
+            $dfa->store($df) unless ($support->param('dry_run'));
+            $current_start = $current_end + 1;
+        }
+        $support->log_stamped("Done.\n", 1);
     }
-    if (! $min_big_chr or ($min_big_chr > $slice->length) && $slice->length > 5000000) {
-	$min_big_chr = $slice->length;
-    }
-    push @big_chr_names, $slice->seq_region_name;
-    push @{$big_chr->[0]}, $slice;
+    $support->log_stamped("Done.\n");
 }
 
-$big_block_size = int( $min_big_chr / 150 );
-$small_block_size = int( $min_small_chr / 150 );
-push @{$big_chr}, $big_block_size;
-push @{$small_chr}, $small_block_size;
+# finish logfile
+$support->finish_log;
 
-
-print STDERR "\nAvailable chromosomes using block size of $big_block_size: @big_chr_names\n";
-print STDERR "\nAvailable chromosomes using block size of $small_block_size: @small_chr_names\n";
-
-#
-# Create new analysis object for density calculation.
-#
-my $analysis = new Bio::EnsEMBL::Analysis (-program     => "percent_gc_calc.pl",
-					   -database    => "ensembl",
-					   -gff_source  => "percent_gc_calc.pl",
-					   -gff_feature => "density",
-					   -logic_name  => "PercentGC");
-$aa->store($analysis) unless $dry;
-
-#
-# Create new density types
-#
-if ($small_block_size) {
-    my $small_density_type = Bio::EnsEMBL::DensityType->new
-	(-analysis   => $analysis,
-	 -block_size => $small_block_size,
-	 -value_type => 'ratio');
-    $dta->store($small_density_type) unless $dry;
-    push @{$small_chr}, $small_density_type;
-}
-
-if ($big_block_size) {
-    my $big_density_type = Bio::EnsEMBL::DensityType->new
-	(-analysis   => $analysis,
-	 -block_size => $big_block_size,
-	 -value_type => 'ratio');
-    $dta->store($big_density_type) unless $dry;
-    push @{$big_chr}, $big_density_type;
-}
-
-my ( $current_start, $current_end );
-
-$Data::Dumper::Maxdepth = 2;
-
-my $types = [];
-foreach my $object ( $big_chr, $small_chr) {
-    eval {
-	my $block_size = $object->[1];
-	foreach my $slice (@{$object->[0]}){
-	    $current_start = 1;
-	    warn "Chromosome ",$slice->seq_region_name;
-	    while($current_start <= $slice->end()) {
-		$current_end = $current_start+$block_size-1;
-		if( $current_end > $slice->end() ) {
-		    $current_end = $slice->end();
-		}
-		my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
-		warn "start = $current_start, end = $current_end\n";
-		my $gc = $sub_slice->get_base_count()->{'%gc'};
-		my $df =  Bio::EnsEMBL::DensityFeature->new
-		    (-seq_region    => $slice,
-		     -start         => $current_start,
-		     -end           => $current_end,
-		     -density_type  => $object->[2],
-		     -density_value => $gc);
-		$dfa->store($df) unless $dry;
-		$current_start = $current_end+1;
-	    }
-	}
-    };
-}
-
-#
-# helper to draw an ascii representation of the density features
-#
-sub print_features {
-    my $features = shift;
-  
-    return if(!@$features);
-    
-    my $sum = 0;
-    my $length = 0;
-    #  my $type = $features->[0]->{'density_type'}->value_type();
-    
-    print("\n");
-    my $max=0;
-    foreach my $f (@$features) {
-	if($f->density_value() > $max){
-	    $max=$f->density_value();
-	}
-    }
-    foreach my $f (@$features) {
-	my $i=1;
-	for(; $i< ($f->density_value()/$max)*40; $i++){
-	    print "*";
-	}
-	for(my $j=$i;$j<40;$j++){
-	    print " ";
-	}
-	print "  ".$f->density_value()."\t".$f->start()."\n";
-    }
-}
