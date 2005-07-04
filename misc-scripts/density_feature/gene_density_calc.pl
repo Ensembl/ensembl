@@ -17,6 +17,8 @@ use Getopt::Long;
 
 my ( $host, $user, $pass, $port, $dbname  );
 
+$port = 3306 ; 
+
 my ( $block_count, $genome_size, $block_size );
 
 GetOptions( "host=s", \$host,
@@ -25,6 +27,13 @@ GetOptions( "host=s", \$host,
 	    "port=i", \$port,
 	    "dbname=s", \$dbname
 	  );
+
+
+
+unless ($host || $user || $pass || $dbname) { 
+	print "\n\nusage : perl gene_density.pl -host <HOST> -user <USER> -pass <PASS> -port <3306> -dbname <DATABASENAME> \n\n" ; 
+	exit(0) ; 
+	}
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -user => $user,
