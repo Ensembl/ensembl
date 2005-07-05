@@ -56,6 +56,7 @@
 2510	ZFIN_ID	1	KNOWNXREF	1	0	5
 2520	ZFIN_AC	1	KNOWNXREF	1	0	5
 2600	GeneDB	1	KNOWN	1	0	5
+2601	ciona_int_jgi_proteins_v1	1	KNOWN	1	0	5
 2700	Ens_Hs_gene	1	XREF	1	0	5
 2710	Ens_Hs_transcript	1	XREF	1	0	5
 2720	Ens_Hs_translation	1	XREF	1	0	5
