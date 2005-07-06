@@ -1,7 +1,14 @@
 #
 # Repeat classification script
 # based on js5's lite database repeat-libraries script
+# 
+# script  repeat-libraries.pl <UNUSED>
 #
+# This script is used to do run on (old) v19 databases to get the 
+# repeat class from the repeat name before categorising them into types. 
+# It is not used for any other purpose anymore. Repeat classification on 
+# newer v32 databases is done with repeat-types.pl
+#  
 
 use strict;
 
