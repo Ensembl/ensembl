@@ -1,6 +1,8 @@
 #
 # Repeat classification script
-# based on js5's lite database repeat-libraries script
+# 
+# This script is used to do the repeat classification for web display 
+# on newer v32 databases.    
 #
 
 use strict;
