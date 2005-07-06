@@ -117,8 +117,8 @@ $db->do( "update repeat_feature rf, tmp_old_new_rcid tonr " .
 
 print STDERR "Repeat_features updated.\n";
 
-$db->do( "delete repeat_consensus " .
-	 "from repeat_consensus rc, tmp_old_new_rcid tonr " .
+$db->do( "delete from rc " .
+	 "using repeat_consensus rc, tmp_old_new_rcid tonr " .
 	 "where rc.repeat_consensus_id = tonr.old_id " );
 
 $db->do( "update repeat_consensus " .
