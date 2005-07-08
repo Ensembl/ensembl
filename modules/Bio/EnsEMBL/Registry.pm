@@ -1059,7 +1059,7 @@ sub add_new_tracks{
   my %pars;
 #  print STDERR "Species $species_reg check for default tracks\n";
   if(defined($species_reg)){
-    foreach my $dba ($reg->get_all_DBAdaptors()){
+    foreach my $dba (@{$reg->get_all_DBAdaptors()}){
       if(!$reg->default_track($dba->species,$dba->group)){
 	$pars{'available'} = "species ".$reg->get_alias($dba->species());
 	$pars{'db_alias'} = $dba->group();
