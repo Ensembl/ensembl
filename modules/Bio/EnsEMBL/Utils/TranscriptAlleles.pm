@@ -44,7 +44,7 @@ use vars qw(@ISA @EXPORT_OK);
 
 @ISA = qw(Exporter);
 
-@EXPORT_OK = qw(&get_all_ConsequenceType);
+@EXPORT_OK = qw(get_all_ConsequenceType type_variation);
 
 use Data::Dumper;
 
@@ -176,26 +176,6 @@ sub type_variation {
       throw("Not possible to calculate the consequence type for ",ref($var)," : Bio::EnsEMBL::Variation::ConsequenceType object expected");
   }
 
-  # ARNE: need the following:
-  # $var and $tr need to have the same slice attached
-  # if not, its difficult to compare the variations and the 
-  # transcript. If one or both are on a strain slice the 
-  # coordinate transformations DONT WORK CORRECTLY
-
-  # if( $tr->slice() != $var->slice() ) {
-
-#     # problem: Are the coordinates comparable?
-#     # throw here, or warn and return, otherwise its too difficult
-#     if( $tr->slice()->is_not_strainSlice() &&
-# 	$var->slice()->is_not_strainSlice() ) {
-#       # coordintes are transferable
-#     } else {
-#       # coordinates are not transferable
-#     }
-#   } else {
-#     # yes they are comparable
-#   }
-
   my $tm = $tr->get_TranscriptMapper();
   my @coords = $tm->genomic2cdna($var->start,
                                  $var->end,
@@ -219,6 +199,23 @@ sub type_variation {
     return \@out;
   }
 
+  my @coords_splice_2 = $tm->genomic2cdna($var->start -2, $var->end +2, $var->strand);
+  my @coords_splice_3 = $tm->genomic2cdna($var->start -3, $var->end +3, $var->strand);
+  my @coords_splice_8 = $tm->genomic2cdna($var->start -8, $var->end +8, $var->strand);
+
+  my ($splice_site_2, $splice_site_3, $splice_site_8);
+
+  if (scalar @coords_splice_2 >1) {
+    $splice_site_2=1;
+  }
+  elsif (scalar @coords_splice_3 >1) {
+    $splice_site_3=1;
+  }
+  elsif (scalar @coords_splice_8 >1) {
+    $splice_site_8=1;
+  }
+  
+
   my $c = $coords[0];
   if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
 
@@ -235,7 +232,19 @@ sub type_variation {
 
     # variation must be intronic since mapped to cdna gap, but is within
     # transcript
-    $var->type('INTRONIC');
+
+    
+    if ($splice_site_2) {
+      $var->splice_site('ESSENTIAL_SPLICE_SITE');
+      $var->type('INTRONIC');
+    }
+    elsif ($splice_site_3 or $splice_site_8) {
+      $var->splice_site('SPLICE_SITE');
+      $var->type('INTRONIC');
+    }
+    else {
+      $var->type('INTRONIC');
+    }
     return [$var];
   }
 
@@ -272,7 +281,7 @@ sub type_variation {
     }
     return [$var];
   }
-
+  
   $var->cds_start( $c->start() );
   $var->cds_end( $c->end() );
 
@@ -283,18 +292,12 @@ sub type_variation {
     throw("Unexpected: Could map to CDS but not to peptide coordinates.");
   }
 
-  my @coords_amp = $tm->genomic2pep($var->start -2, $var->end +2, $var->strand);
-
-  if (@coords_amp != @coords){
-      $var->type( 'SPLICE_SITE' );
-  }
-
   $c = $coords[0];
 
   $var->aa_start( $c->start());
   $var->aa_end( $c->end());
 
-  apply_aa_change($tr, $var);
+  apply_aa_change($tr, $var, $splice_site_2, $splice_site_3);
 
   return [$var];
 }
@@ -306,6 +309,8 @@ sub type_variation {
 sub apply_aa_change {
   my $tr = shift;
   my $var = shift;
+  my $splice_site_2 = shift;
+  my $splice_site_3 = shift;
 
   #my $peptide = $tr->translate->seq();
   #to consider stop codon as well
@@ -323,7 +328,7 @@ sub apply_aa_change {
   my $peptide = $mrna_seqobj->translate(undef,undef,undef,$codon_table)->seq;
   my $len = $var->aa_end - $var->aa_start + 1;
   my $old_aa = substr($peptide, $var->aa_start -1 , $len);
-  print "old aa $old_aa \n";
+
   my $codon_cds_start = $var->aa_start * 3 - 2;
   my $codon_cds_end   = $var->aa_end   * 3;
   my $codon_len = $codon_cds_end - $codon_cds_start + 1;
@@ -343,8 +348,10 @@ sub apply_aa_change {
       if(abs(length($a) - $var_len) % 3) {
         # frameshifting variation, do not set peptide_allele string
         # since too complicated and could be very long
-        $var->type('FRAMESHIFT_CODING');
-        return;
+	
+	$var->type('FRAMESHIFT_CODING');
+	
+        return [$var];
       }
 
       if($codon_len == 0) { # insertion
@@ -382,13 +389,26 @@ sub apply_aa_change {
   }
 
   if(@aa_alleles > 1) {
-    if (! defined $var->type) {
-      $var->type('NON_SYNONYMOUS_CODING');
+    if ( ! defined $var->type  ){
+      if ($splice_site_2 or $splice_site_3) {
+	$var->splice_site('SPLICE_SITE');
+	$var->type('NON_SYNONYMOUS_CODING');
+      }
+      else {
+	$var->type('NON_SYNONYMOUS_CODING');
+      }
     }
-  } else {
-    $var->type('SYNONYMOUS_CODING');
   }
-
+  else {
+    if (($splice_site_2 or $splice_site_3) and $aa_alleles[0] !~ /\*/) {
+      $var->splice_site('SPLICE_SITE');
+      $var->type('SYNONYMOUS_CODING');
+    }
+    else {
+      $var->type('SYNONYMOUS_CODING');
+    }
+  }
+    
   $var->aa_alleles(\@aa_alleles);
 }
 
