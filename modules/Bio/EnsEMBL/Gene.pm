@@ -404,7 +404,7 @@ sub get_all_homologous_Genes{
   # TODO: Find a robust way of retrieving compara dba directly.
   # For now look through all DBAs
   my $compara_dba;
-  foreach my $dba( Bio::EnsEMBL::Registry->get_all_DBAdaptors ){
+  foreach my $dba( @{Bio::EnsEMBL::Registry->get_all_DBAdaptors} ){
     if( $dba->isa('Bio::EnsEMBL::Compara::DBSQL::DBAdaptor') ){
       $compara_dba = $dba;
       last;
