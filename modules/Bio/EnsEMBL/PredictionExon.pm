@@ -155,7 +155,7 @@ sub end_phase {
   if( @_ ) {
     throw( "End_phase setting not supported" );
   }
-  return (3- $self->phase() + $self->length()) % 3;
+  return ($self->phase() + $self->length()) % 3;
 }
 
 
