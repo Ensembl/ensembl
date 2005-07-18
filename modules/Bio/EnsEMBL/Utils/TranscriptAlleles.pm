@@ -233,21 +233,21 @@ sub type_variation {
     # variation must be intronic since mapped to cdna gap, but is within
     # transcript
 
-    
+    $var->type('INTRONIC');
+
     if ($splice_site_2) {
       $var->splice_site('ESSENTIAL_SPLICE_SITE');
-      $var->type('INTRONIC');
     }
     elsif ($splice_site_3 or $splice_site_8) {
       $var->splice_site('SPLICE_SITE');
-      $var->type('INTRONIC');
-    }
-    else {
-      $var->type('INTRONIC');
     }
     return [$var];
   }
 
+  if ($splice_site_3) {
+    $var->splice_site('SPLICE_SITE');
+  }
+  
   $var->cdna_start( $c->start() );
   $var->cdna_end( $c->end() );
 
@@ -297,7 +297,7 @@ sub type_variation {
   $var->aa_start( $c->start());
   $var->aa_end( $c->end());
 
-  apply_aa_change($tr, $var, $splice_site_2, $splice_site_3);
+  apply_aa_change($tr, $var);
 
   return [$var];
 }
@@ -309,8 +309,6 @@ sub type_variation {
 sub apply_aa_change {
   my $tr = shift;
   my $var = shift;
-  my $splice_site_2 = shift;
-  my $splice_site_3 = shift;
 
   #my $peptide = $tr->translate->seq();
   #to consider stop codon as well
@@ -390,25 +388,13 @@ sub apply_aa_change {
 
   if(@aa_alleles > 1) {
     if ( ! defined $var->type  ){
-      if ($splice_site_2 or $splice_site_3) {
-	$var->splice_site('SPLICE_SITE');
-	$var->type('NON_SYNONYMOUS_CODING');
-      }
-      else {
-	$var->type('NON_SYNONYMOUS_CODING');
-      }
+      $var->type('NON_SYNONYMOUS_CODING');
     }
   }
   else {
-    if (($splice_site_2 or $splice_site_3) and $aa_alleles[0] !~ /\*/) {
-      $var->splice_site('SPLICE_SITE');
-      $var->type('SYNONYMOUS_CODING');
-    }
-    else {
-      $var->type('SYNONYMOUS_CODING');
-    }
+    $var->type('SYNONYMOUS_CODING');
   }
-    
+
   $var->aa_alleles(\@aa_alleles);
 }
 
