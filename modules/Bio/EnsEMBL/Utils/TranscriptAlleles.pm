@@ -172,8 +172,17 @@ sub calculate_same_codon{
 sub type_variation {
   my $tr  = shift;
   my $var = shift;
+
+  my $UPSTREAM = 5000;
+  my $DOWNSTREAM = 5000;
+
   if (!$var->isa('Bio::EnsEMBL::Variation::ConsequenceType')){
       throw("Not possible to calculate the consequence type for ",ref($var)," : Bio::EnsEMBL::Variation::ConsequenceType object expected");
+  }
+
+  if (($var->start < $tr->start - $UPSTREAM) || ($var->end  > $tr->end + $DOWNSTREAM)){
+    #since the variation is more than UPSTREAM and DOWNSTREAM of the transcript, there is no effect in the transcript
+    return [];
   }
 
   my $tm = $tr->get_TranscriptMapper();
