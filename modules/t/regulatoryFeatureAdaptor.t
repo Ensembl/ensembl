@@ -26,18 +26,18 @@ ok(ref($rfa) && $rfa->isa('Bio::EnsEMBL::DBSQL::RegulatoryFeatureAdaptor'));
 debug('---- fetch_by_dbID (default coords) ----');
 my $feat = $rfa->fetch_by_dbID(2);
 ok($feat->dbID == 2);
-ok($feat->slice->seq_region_name() eq '3');
-ok($feat->start == 49546683);
-ok($feat->end == 49546702);
+ok($feat->slice->seq_region_name() eq '1');
+ok($feat->start == 919787);
+ok($feat->end == 919807);
 ok($feat->strand == 1);
 
-# test fetch all by motif
-my $rma = $db->get_RegulatoryMotifAdaptor();
-my $motif = $rma->fetch_by_name('motif1');
-ok($motif);
-ok(@{$rfa->fetch_all_by_motif($motif)} == 10);
+# test fetch all by factor
+my $rma = $db->get_RegulatoryFactorAdaptor();
+my $factor = $rma->fetch_by_name('hsa-miR-138');
+ok($factor);
+ok(@{$rfa->fetch_all_by_factor($factor)} == 2);
 
-# List_dbidx
+# List_dbids
 my $ids = $rfa->list_dbIDs();
 ok (@{$ids});
 
@@ -53,7 +53,7 @@ my $slice = $db->get_SliceAdaptor()->fetch_by_seq_region_id(469286);
 
 my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name('miRanda');
 
-my $rm = Bio::EnsEMBL::RegulatoryMotif->new(-name => 'motif1',
+my $rm = Bio::EnsEMBL::RegulatoryFactor->new(-name => 'factor1',
 					    -type => 'miRNA_target');
 
 my $rf = Bio::EnsEMBL::RegulatoryFeature->new(-name      => 'hsa-miR-108',
@@ -62,8 +62,7 @@ my $rf = Bio::EnsEMBL::RegulatoryFeature->new(-name      => 'hsa-miR-108',
 					      -strand    => -1,
 					      -slice     => $slice,
 					      -analysis  => $analysis,
-					      -motif     => $motif,
-					      -influence => 'positive',
+					      -factor     => $factor,
 					      -adaptor   => $rfa);
 
 $rfa->store($rf);
