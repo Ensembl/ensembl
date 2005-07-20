@@ -345,7 +345,7 @@ sub store {
 
     my $analysis = $rf->analysis();
     if(!ref($analysis) || !$analysis->isa("Bio::EnsEMBL::Analysis")) {
-      throw("RegulatoryFeature cannot be stored without an associated analysus.");
+      throw("RegulatoryFeature cannot be stored without an associated analysis.");
     }
 
     my $original = $rf;
