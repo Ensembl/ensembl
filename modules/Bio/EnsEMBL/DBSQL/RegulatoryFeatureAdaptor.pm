@@ -333,7 +333,7 @@ sub store {
                             seq_region_strand,
                             analysis_id,
                             regulatory_factor_id)
-                            VALUES (?,?,?,?,?,?,?,?)});
+                            VALUES (?,?,?,?,?,?,?)});
 
   foreach my $rf (@features) {
 
