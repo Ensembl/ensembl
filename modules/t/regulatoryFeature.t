@@ -42,9 +42,9 @@ ok(test_getter_setter($rf,'end',14));
 ok(test_getter_setter($rf,'strand',1));
 
 # 5 factor
-#my $rm = Bio::EnsEMBL::RegulatoryFactor->new(-NAME => 'Joe',
-#					    -TYPE => 'promoter');
-#ok(test_getter_setter($rf,'factor',$rm));
+my $rm = Bio::EnsEMBL::RegulatoryFactor->new(-NAME => 'Joe',
+					    -TYPE => 'transcription_factor');
+ok(test_getter_setter($rf,'factor',$rm));
 
 # 6 influence
 #ok(test_getter_setter($rf,'influence','positive'));

@@ -627,4 +627,4 @@ $multi->restore();
 # test regulatory feature retrieval
 my $rf_gene = $ga->fetch_by_dbID(18256);
 #ok(@{$rf_gene->get_all_regulatory_features()} == 1);  # non-recursive
-ok(@{$rf_gene->get_all_regulatory_features(1)} == 2); # recursive
+ok(@{$rf_gene->get_all_regulatory_features(1)} == 12); # recursive
