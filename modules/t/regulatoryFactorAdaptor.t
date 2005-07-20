@@ -25,22 +25,23 @@ ok(ref($rma) && $rma->isa('Bio::EnsEMBL::DBSQL::RegulatoryFactorAdaptor'));
 #
 
 my $rm = $rma->fetch_by_dbID(1);
-ok($rm->name() eq 'factor1');
+ok($rm->name() eq 'hsa-miR-23b');
 ok($rm->dbID == 1);
 ok($rm->type eq 'miRNA_target');
 
 #
 # Test fetch_by_name
 #
-$rm = $rma->fetch_by_name('factor1');
-ok($rm->name() eq 'factor1');
+$rm = $rma->fetch_by_name('hsa-miR-23b');
+ok($rm->name() eq 'hsa-miR-23b');
 ok($rm->dbID() == 1);
 ok($rm->type() eq 'miRNA_target');
 
 #
 # Test fetch_all_by_type
 #
-ok(@{$rma->fetch_all_by_type('promoter')} == 2);
+print "size is " . @{$rma->fetch_all_by_type('transcription_factor')} . "\n";
+ok(@{$rma->fetch_all_by_type('transcription_factor')} == 2);
 
 #
 # Test store
@@ -49,7 +50,7 @@ ok(@{$rma->fetch_all_by_type('promoter')} == 2);
 $multi_db->save('core', 'regulatory_factor');
 
 $rm = Bio::EnsEMBL::RegulatoryFactor->new(-NAME => 'test_store',
-					 -TYPE => 'promoter');
+					 -TYPE => 'transcription_factor');
 
 $rma->store($rm);
 
@@ -58,6 +59,6 @@ ok($rm->dbID && $rm->adaptor());
 $rm = $rma->fetch_by_dbID($rm->dbID);
 
 ok($rm->name eq 'test_store');
-ok($rm->type eq 'promoter');
+ok($rm->type eq 'transcription_factor');
 
 $multi_db->restore('core', 'regulatory_factor');
