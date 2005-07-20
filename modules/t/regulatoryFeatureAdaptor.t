@@ -35,15 +35,15 @@ ok($feat->strand == 1);
 my $rma = $db->get_RegulatoryFactorAdaptor();
 my $factor = $rma->fetch_by_name('hsa-miR-138');
 ok($factor);
-ok(@{$rfa->fetch_all_by_factor($factor)} == 2);
+ok(@{$rfa->fetch_all_by_factor($factor)} == 3);
 
 # List_dbids
 my $ids = $rfa->list_dbIDs();
 ok (@{$ids});
 
 # test fetch_all_by_transcript
-my $transcript =  $db->get_TranscriptAdaptor()->fetch_by_dbID(21740);
-ok(@{$rfa->fetch_all_by_transcript($transcript)} == 13);
+my $transcript =  $db->get_TranscriptAdaptor()->fetch_by_stable_id("ENST00000217299");
+ok(@{$rfa->fetch_all_by_transcript($transcript)} == 14);
 
 # Test store
 
