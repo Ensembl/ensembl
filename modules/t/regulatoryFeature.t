@@ -50,7 +50,7 @@ ok(test_getter_setter($rf,'strand',1));
 #ok(test_getter_setter($rf,'influence','positive'));
 
 # 7 dbID
-ok(test_getter_setter($rf,'dbID',42));
+ok(test_getter_setter($rf,'dbID',20));
 
 #
 # 8 check adaptor attaching
@@ -60,10 +60,10 @@ ok($rf->adaptor->isa('Bio::EnsEMBL::DBSQL::RegulatoryFeatureAdaptor'));
 
 # 9 check retrieving regulated transcripts
 my $rf1 = $rfa->fetch_by_dbID(1);
-ok(@{$rf1->regulated_transcripts()} == 3);
+ok(@{$rf1->regulated_transcripts()} == 1);
 
 # 10 check get_transcripts_regulated_by_same_factor
-ok(@{$rf1->transcripts_regulated_by_same_factor()} == 3);
+ok(@{$rf1->transcripts_regulated_by_same_factor()} == 1);
 
 
 
