@@ -9,7 +9,7 @@ BEGIN { $| = 1;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::RegulatoryFeature;
-use Bio::EnsEMBL::RegulatoryMotif;
+use Bio::EnsEMBL::RegulatoryFactor;
 
 
 our $verbose = 0;
@@ -41,10 +41,10 @@ ok(test_getter_setter($rf,'end',14));
 # 4 strand
 ok(test_getter_setter($rf,'strand',1));
 
-# 5 motif
-#my $rm = Bio::EnsEMBL::RegulatoryMotif->new(-NAME => 'Joe',
+# 5 factor
+#my $rm = Bio::EnsEMBL::RegulatoryFactor->new(-NAME => 'Joe',
 #					    -TYPE => 'promoter');
-#ok(test_getter_setter($rf,'motif',$rm));
+#ok(test_getter_setter($rf,'factor',$rm));
 
 # 6 influence
 ok(test_getter_setter($rf,'influence','positive'));
@@ -62,8 +62,8 @@ ok($rf->adaptor->isa('Bio::EnsEMBL::DBSQL::RegulatoryFeatureAdaptor'));
 my $rf1 = $rfa->fetch_by_dbID(1);
 ok(@{$rf1->regulated_transcripts()} == 3);
 
-# 10 check get_transcripts_regulated_by_same_motif
-ok(@{$rf1->transcripts_regulated_by_same_motif()} == 3);
+# 10 check get_transcripts_regulated_by_same_factor
+ok(@{$rf1->transcripts_regulated_by_same_factor()} == 3);
 
 
 
