@@ -16,24 +16,24 @@ my $verbose = 0;
 
 # Test Creation
 
-my $rma = $db->get_RegulatoryMotifAdaptor();
+my $rma = $db->get_RegulatoryFactorAdaptor();
 
-ok(ref($rma) && $rma->isa('Bio::EnsEMBL::DBSQL::RegulatoryMotifAdaptor'));
+ok(ref($rma) && $rma->isa('Bio::EnsEMBL::DBSQL::RegulatoryFactorAdaptor'));
 
 #
 # Test fetch_by_dbID
 #
 
 my $rm = $rma->fetch_by_dbID(1);
-ok($rm->name() eq 'motif1');
+ok($rm->name() eq 'factor1');
 ok($rm->dbID == 1);
 ok($rm->type eq 'miRNA_target');
 
 #
 # Test fetch_by_name
 #
-$rm = $rma->fetch_by_name('motif1');
-ok($rm->name() eq 'motif1');
+$rm = $rma->fetch_by_name('factor1');
+ok($rm->name() eq 'factor1');
 ok($rm->dbID() == 1);
 ok($rm->type() eq 'miRNA_target');
 
@@ -46,9 +46,9 @@ ok(@{$rma->fetch_all_by_type('promoter')} == 2);
 # Test store
 #
 
-$multi_db->save('core', 'regulatory_motif');
+$multi_db->save('core', 'regulatory_factor');
 
-$rm = Bio::EnsEMBL::RegulatoryMotif->new(-NAME => 'test_store',
+$rm = Bio::EnsEMBL::RegulatoryFactor->new(-NAME => 'test_store',
 					 -TYPE => 'promoter');
 
 $rma->store($rm);
@@ -60,4 +60,4 @@ $rm = $rma->fetch_by_dbID($rm->dbID);
 ok($rm->name eq 'test_store');
 ok($rm->type eq 'promoter');
 
-$multi_db->restore('core', 'regulatory_motif');
+$multi_db->restore('core', 'regulatory_factor');
