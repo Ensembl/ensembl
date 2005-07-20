@@ -412,6 +412,10 @@ sub fetch_all_by_ensembl_object_type {
 
    $sth->execute($type, $id);
 
+   #my @ids = map {$_->[0]} @{$sth->fetchall_arrayref()};
+
+   #my $in = "IN (" . join("," @ids) . ")";
+
    my $dbID;
    my %regulatory_features;
    while (($dbID) = $sth->fetchrow_array()) {
