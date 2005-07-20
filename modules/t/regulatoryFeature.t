@@ -47,7 +47,7 @@ ok(test_getter_setter($rf,'strand',1));
 #ok(test_getter_setter($rf,'factor',$rm));
 
 # 6 influence
-ok(test_getter_setter($rf,'influence','positive'));
+#ok(test_getter_setter($rf,'influence','positive'));
 
 # 7 dbID
 ok(test_getter_setter($rf,'dbID',42));
