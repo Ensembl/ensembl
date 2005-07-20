@@ -40,7 +40,6 @@ ok($rm->type() eq 'miRNA_target');
 #
 # Test fetch_all_by_type
 #
-print "size is " . @{$rma->fetch_all_by_type('transcription_factor')} . "\n";
 ok(@{$rma->fetch_all_by_type('transcription_factor')} == 2);
 
 #
