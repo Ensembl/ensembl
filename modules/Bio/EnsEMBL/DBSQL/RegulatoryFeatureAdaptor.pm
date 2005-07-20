@@ -89,7 +89,7 @@ sub fetch_all_by_Slice {
 sub _tables {
   my $self = shift;
 
-  return (['regulatory_feature', 'rf'], ['regulatory_motif', 'rm']);
+  return (['regulatory_feature', 'rf'], ['regulatory_factor', 'rm']);
 }
 
 
@@ -113,8 +113,7 @@ sub _columns {
 	     rf.seq_region_end
 	     rf.seq_region_strand
 	     rf.analysis_id
-	     rf.influence
-	     rf.regulatory_motif_id
+	     rf.regulatory_factor_id
 	     rm.name
 	     rm.type);
 }
@@ -133,7 +132,7 @@ sub _columns {
 sub _default_where_clause {
   my $self = shift;
 
-  return 'rf.regulatory_motif_id = rm.regulatory_motif_id';
+  return 'rf.regulatory_factor_id = rm.regulatory_factor_id';
 }
 
 
@@ -151,7 +150,7 @@ sub _objs_from_sth {
   # a fair bit of gymnastics is used.
   #
 
-  my $rca = $self->db()->get_RegulatoryMotifAdaptor();
+  my $rca = $self->db()->get_RegulatoryFactorAdaptor();
   my $sa = $self->db()->get_SliceAdaptor();
   my $aa = $self->db->get_AnalysisAdaptor();
 
@@ -164,11 +163,11 @@ sub _objs_from_sth {
 
   my($regulatory_feature_id, $regulatory_feature_name, $seq_region_id,
      $seq_region_start, $seq_region_end, $seq_region_strand, $analysis_id,
-     $influence, $motif_id, $motif_name, $motif_type);
+     $factor_id, $factor_name, $factor_type);
 
   $sth->bind_columns( \$regulatory_feature_id, \$regulatory_feature_name, \$seq_region_id, 
 		      \$seq_region_start, \$seq_region_end, \$seq_region_strand, \$analysis_id,
-		      \$influence, \$motif_id, \$motif_name, \$motif_type);
+		      \$factor_id, \$factor_name, \$factor_type);
 
   my $asm_cs;
   my $cmp_cs;
@@ -199,13 +198,13 @@ sub _objs_from_sth {
   }
 
   FEATURE: while($sth->fetch()) {
-    #create a regulatory motif object
+    #create a regulatory factor object
 
-    my $rm = $rm_hash{$motif_id} ||=
-      Bio::EnsEMBL::RegulatoryMotif->new_fast
-          ({'dbID' => $motif_id,
-            'name' => $motif_name,
-            'type' => $motif_type});
+    my $rm = $rm_hash{$factor_id} ||=
+      Bio::EnsEMBL::RegulatoryFactor->new_fast
+          ({'dbID' => $factor_id,
+            'name' => $factor_name,
+            'type' => $factor_type});
 
     #get the analysis object
     my $analysis = $analysis_hash{$analysis_id} ||=
@@ -280,8 +279,7 @@ sub _objs_from_sth {
           'start'         =>  $seq_region_start,
           'end'           =>  $seq_region_end,
           'strand'        =>  $seq_region_strand,
-          'motif'         =>  $rm,
-          'influence'     =>  $influence,
+          'factor'        =>  $rm,
           'adaptor'       =>  $self,
           'slice'         =>  $slice,
           'dbID'          =>  $regulatory_feature_id } );
@@ -291,23 +289,23 @@ sub _objs_from_sth {
   return \@features;
 }
 
-=head2 fetch_all_by_motif
+=head2 fetch_all_by_factor
 
-  Arg [1]    : Bio::EnsEMBL::RegulatoryMotif 
-               the type of regulatory motif to obtain
-  Example    : $rm = $rma->fetch_all_by_motif($motif);
+  Arg [1]    : Bio::EnsEMBL::RegulatoryFactor 
+               the type of regulatory factor to obtain
+  Example    : $rm = $rma->fetch_all_by_factor($factor);
   Description: Obtains all regulatory features that correspond to a
-               particular regulatory motif
+               particular regulatory factor
   Returntype : listREF of Bio::EnsEMBL::RegulatoryFeatures
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub fetch_all_by_motif {
-    my( $self, $motif) = @_;
+sub fetch_all_by_factor {
+    my( $self, $factor) = @_;
 
-    return $self->generic_fetch("rf.regulatory_motif_id = " . $motif->dbID());
+    return $self->generic_fetch("rf.regulatory_factor_id = " . $factor->dbID());
 }
 
 
@@ -334,8 +332,7 @@ sub store {
                             seq_region_end,
                             seq_region_strand,
                             analysis_id,
-                            regulatory_motif_id,
-                            influence) 
+                            regulatory_factor_id)
                             VALUES (?,?,?,?,?,?,?,?)});
 
   foreach my $rf (@features) {
@@ -361,8 +358,7 @@ sub store {
 		  $rf->end(),
 		  $rf->strand(),
 		  $analysis->dbID(),
-		  $rf->motif()->dbID(),
-		  $rf->influence());
+		  $rf->factor()->dbID());
 
     my $db_id = $sth->{'mysql_insertid'}
     or throw("Didn't get an insertid from the INSERT statement");

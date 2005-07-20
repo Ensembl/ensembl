@@ -19,8 +19,7 @@ $feature = Bio::EnsEMBL::RegulatoryFeature->new(-start     => 100,
                                                 -strand    => -1,
                                                 -slice     => $slice,
                                                 -analysis  => $analysis,
-                                                -motif      => $motif,
-                                                -influence => 'positive',
+                                                -factor    => $factor,
                                                 -dbID      => 1230,
                                                 -adaptor   => $adaptor);
 
@@ -62,8 +61,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
                                                 -strand    => -1,
                                                 -slice     => $slice,
                                                 -analysis  => $analysis,
-                                                -motif     => $motif,
-                                                -influence => 'positive',
+                                                -factor     => $factor,
                                                 -dbID      => 1230,
                                                 -adaptor   => $adaptor);
   Description: Constructs a new Bio::EnsEMBL::RegulatoryFeature.
@@ -79,11 +77,10 @@ sub new {
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
 
-  my ($name, $motif, $type, $influence) = rearrange(['NAME', 'MOTIF','INFLUENCE'],@_);
+  my ($name, $factor) = rearrange(['NAME', 'FACTOR'],@_);
 
   $self->{'name'} = $name;
-  $self->{'motif'} = $motif;
-  $self->{'influence'} = $influence;
+  $self->{'factor'} = $factor;
 
   return $self;
 }
@@ -96,32 +93,32 @@ sub new_fast {
 }
 
 
-=head2 motif
+=head2 factor
 
-  Arg [1]    : (optional) Bio::EnsEMBL::RegulatoryMotif
+  Arg [1]    : (optional) Bio::EnsEMBL::RegulatoryFactor
   Example    : 
-  Description: Getter/Setter for the repeat motif of this regulatory feature
-  Returntype : Bio::EnsEMBL::RegulatoryMotif
+  Description: Getter/Setter for the regulatory factor that this regulatory feature represents
+  Returntype : Bio::EnsEMBL::RegulatoryFactor
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub motif {
+sub factor {
   my $self = shift;
 
   if(@_) {
     my $rm = shift;
     if(defined($rm)) {
-      if(!ref($rm) || !$rm->isa('Bio::EnsEMBL::RegulatoryMotif')) {
-        throw('RegulatoryMotif arg must be a Bio::EnsEMBL::RegulatoryMotif');
+      if(!ref($rm) || !$rm->isa('Bio::EnsEMBL::RegulatoryFactor')) {
+        throw('RegulatoryFactor arg must be a Bio::EnsEMBL::RegulatoryFactor');
       }
     }
-    $self->{'motif'} = $rm;
+    $self->{'factor'} = $rm;
 
   }
 
-  return $self->{'motif'};
+  return $self->{'factor'};
 }
 
 
@@ -142,31 +139,12 @@ sub name {
   return $self->{'name'};
 }
 
-
-=head2 influence
-
-  Arg [1]    : none
-  Example    : print $rf->influence();
-  Description: Getter/setter for this features influence type.
-  Returntype : string
-  Exceptions : none
-  Caller     : web drawing code
-
-=cut
-
-sub influence {
-  my $self = shift;
-  $self->{'influence'} = shift if(@_);
-  return $self->{'influence'};
-}
-
-
 =head2 regulated_transcripts
 
   Arg [1]    : none
   Example    : my $transcipts = $rf->regulated_transcripts();
   Description: Return a list of all transcripts that are regulated by 
-               this RegulatoryFeature..
+               this RegulatoryFeature.
   Returntype : listREF of Bio::EnsEMBL::RegulatoryFeatures
   Exceptions : none
   Caller     : ?
@@ -199,12 +177,12 @@ sub regulated_transcripts {
 
 
 
-=head2 transcripts_regulated_by_same_motif
+=head2 transcripts_regulated_by_same_factor
 
   Arg [1]    : none
-  Example    : my $transcipts = $rf->transcripts_regulated_by_same_motif();
+  Example    : my $transcipts = $rf->transcripts_regulated_by_same_factor();
   Description: Return a list of all transcripts that are regulated by any
-               RegulatoryFeature with the same motif as this one. If a transcript
+               RegulatoryFeature with the same factor as this one. If a transcript
                is regulated by more than one feature, it will only appear
                once in the returned list.
   Returntype : listREF of Bio::EnsEMBL::RegulatoryFeatures
@@ -213,13 +191,13 @@ sub regulated_transcripts {
 
 =cut
 
-sub transcripts_regulated_by_same_motif {
+sub transcripts_regulated_by_same_factor {
 
   my $self = shift;
 
 
-  # fetch all regulatory features by motif
-  my $features = $self->adaptor()->fetch_all_by_motif($self->motif());
+  # fetch all regulatory features by factor
+  my $features = $self->adaptor()->fetch_all_by_factor($self->factor());
 
   # build cumulative list of transcripts, removing duplicates
   my %transcripts;
