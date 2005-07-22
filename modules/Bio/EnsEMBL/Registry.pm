@@ -621,7 +621,7 @@ sub get_all_adaptors{
   }
   else{
     foreach my $dba (@{$registry_register{'_DBA'}}){ 
-	foreach my $ty (@{$registry_register{$dba->species}{'list'}}){
+	foreach my $ty (@{$registry_register{lc($dba->species)}{'list'}}){
 	  $type_hash{lc($ty)} = 1;
 	}
       }
