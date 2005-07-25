@@ -381,30 +381,30 @@ sub dump_embl {
   #       in HUM).
   my $VALUE = "$entry_name    standard; DNA; HTG; $len BP.";
   $self->write($FH, $EMBL_HEADER, 'ID', $VALUE);  
-  print $FH "XX\n";
+  $self->print( $FH, "XX\n" );
 
   #Accession
   $self->write($FH, $EMBL_HEADER, 'AC', $acc);
-  print $FH "XX\n";
+  $self->print( $FH, "XX\n" );
 
   #Version
   $self->write($FH, $EMBL_HEADER, 'SV', $version);
-  print $FH "XX\n";
+  $self->print( $FH, "XX\n" );
 
   #Date
   $self->write($FH, $EMBL_HEADER, 'DT', $self->_date_string);
-  print $FH "XX\n";
+  $self->print( $FH, "XX\n" );
 
   my $species   = $slice->adaptor->db->get_MetaContainer->get_Species();
 
   #Description
   $self->write($FH, $EMBL_HEADER, 'DE', $species->binomial .
                " $name_str $start..$end annotated by Ensembl");
-  print $FH "XX\n";
+  $self->print( $FH, "XX\n" );
 
   #key words
   $self->write($FH, $EMBL_HEADER, 'KW', '.');
-  print $FH "XX\n";
+  $self->print( $FH, "XX\n" );
 
   #Species
   my $species_name = $species->binomial();
@@ -418,7 +418,7 @@ sub dump_embl {
   my @cls = $species->classification;
   shift @cls; #shift off species name
   $self->write($FH, $EMBL_HEADER, 'OC', join('; ', reverse(@cls)) . '.');
-  print $FH "XX\n";
+  $self->print( $FH, "XX\n" );
   
   #References (we are not dumping refereneces)
 
@@ -427,13 +427,13 @@ sub dump_embl {
   #comments
   foreach my $comment (@COMMENTS) {
     $self->write($FH, $EMBL_HEADER, 'CC', $comment);
-    print $FH "XX\n";
+    $self->print( $FH, "XX\n" );
   }
 
   ####################
   #DUMP FEATURE TABLE
   ####################
-  print $FH "FH   Key             Location/Qualifiers\n";
+  $self->print( $FH, "FH   Key             Location/Qualifiers\n" );
 
   my $FEATURE_TABLE = 
 'FT   ^<<<<<<<<<<<<<<<^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<~
@@ -441,7 +441,7 @@ sub dump_embl {
   $self->_dump_feature_table($slice, $FH, $FEATURE_TABLE);  
 
   #write an XX after the feature tables
-  print $FH "XX\n";
+  $self->print( $FH, "XX\n" );
 
   ###################
   #DUMP SEQUENCE
@@ -462,7 +462,7 @@ sub dump_embl {
   $self->write_embl_seq($FH, \$SEQ);
 
 
-  print $FH "//\n";
+  $self->print( $FH, "//\n" );
 
   # Set formatting back to normal
   $: = " \n-";
@@ -587,7 +587,7 @@ sub dump_genbank {
   ####################
   # DUMP FEATURE TABLE
   ####################
-  print $FH "FEATURES             Location/Qualifiers\n";
+  $self->print( $FH, "FEATURES             Location/Qualifiers\n" );
   $self->_dump_feature_table($slice, $FH, $GENBANK_FT);
 
   ####################
@@ -606,11 +606,11 @@ sub dump_genbank {
   $value = "$a_count a $c_count c $g_count g $t_count t";
   $value .= " $other_count n" if($other_count);
   $self->write($FH, $GENBANK_HEADER, $tag, $value);
-  print $FH "ORIGIN\n";
+  $self->print( $FH, "ORIGIN\n" );
 
   $self->write_genbank_seq($FH, \$SEQ);
 
-  print $FH "//\n";
+  $self->print( $FH, "//\n" );
 
   # Set formatting back to normal
   $: = " \n-";
@@ -876,7 +876,7 @@ sub dump_fasta {
   my $end = $slice->length();
 
   my $header = ">$id $seqtype:$idtype $location\n";
-  print $FH $header;
+  $self->print( $FH, $header );
 
   #set the formatting to FASTA
   my $FORMAT = '^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -974,7 +974,7 @@ sub write {
   #while the last value still contains something
   while($values[-1] ne '') {
     formline($FORMAT, @values);
-    print $FH "$^A";
+    $self->print( $FH, $^A );
     $^A = '';
   }
 }
@@ -996,7 +996,7 @@ sub write_genbank_seq {
   while($$seq) {
     $total += 60; 
     formline($GENBANK_SEQ,$total, $$seq, $$seq, $$seq, $$seq, $$seq, $$seq);
-    print $FH $^A;
+    $self->print( $FH, $^A );
     $^A = '';
   }
 }
@@ -1021,9 +1021,14 @@ sub write_embl_seq {
     formline($EMBL_SEQ, 
 	     $$seq, $$seq, $$seq, $$seq, $$seq, $$seq, 
 	     $length - $total);
-    print $FH $^A;
+    $self->print( $FH, $^A );
     $^A = '';
   }
+}
+
+sub print {
+  my( $self, $FH, $string ) = @_;
+  print $FH $string;
 }
 
 1;   
