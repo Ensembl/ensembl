@@ -200,8 +200,8 @@ sub do_conversion {
     $self->conv_obj->create_assembly();
     $self->conv_obj->create_attribs();
     $self->conv_obj->set_top_level();
-
     $self->conv_obj->transfer_dna();
+	$self->conv_obj->reset_gene_trans_tables();
     $self->conv_obj->transfer_genes();
     $self->conv_obj->transfer_prediction_transcripts();
 
@@ -245,6 +245,7 @@ sub make_schema_up_to_date {
 	my $cmd = "/usr/local/mysql/bin/mysql -u $user -p$pass -P $port -h $host $target < $patch_schema";
 	system ($cmd);
 }
+
 
 
 =head2 conv_usage
