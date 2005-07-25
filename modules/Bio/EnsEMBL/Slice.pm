@@ -1825,30 +1825,29 @@ sub _mask_features {
 =cut
 
 sub get_all_SearchFeatures {
-    my $self = shift;
-    my $ticket = shift;
-    local $_;
+  my $self = shift;
+  my $ticket = shift;
+  local $_;
+  unless($ticket) {
+    throw("ticket argument is required");
+  }
 
-    unless($ticket) {
-      throw("ticket argument is required");
-    }
+  if(!$self->adaptor()) {
+    warning("Cannot get SearchFeatures without an attached adaptor");
+    return [];
+  }
 
-    if(!$self->adaptor()) {
-      warning("Cannot get SearchFeatures without an attached adaptor");
-      return [];
-    }
+  my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
 
-    my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
+  my $offset = $self->start-1;
 
-    my $offset = $self->start-1;
+  my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket, $self->chr_name, $self->start, $self->end) : [];
 
-    my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket, $self->chr_name, $self->start, $self->end) : [];
-
-    foreach( @$features ) { 
-      $_->start( $_->start-$offset );
-      $_->end(   $_->end-$offset );
-    };
-    return $features;
+  foreach( @$features ) { 
+    $_->start( $_->start - $offset );
+    $_->end(   $_->end   - $offset );
+  };
+  return $features;
 }
 
 =head2 get_all_AssemblyExceptionFeatures
