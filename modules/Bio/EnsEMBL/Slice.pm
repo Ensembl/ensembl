@@ -1529,11 +1529,27 @@ sub get_all_Genes{
        warning( "$dbtype genes not available" );
        return [];
      }
+     return $ga->fetch_all_by_Slice( $self, $logic_name, $load_transcripts);
  } else {
-    $ga =  $self->adaptor->db->get_GeneAdaptor();
+#     $ga =  $self->adaptor->db->get_GeneAdaptor();
+#     return $ga->fetch_all_by_Slice( $self, $logic_name, $load_transcripts);
+     #get all db in the registry
+     my @adaptors = $reg->get_all_DBAdaptors();
+     my $gene_ref; #list of genes for all databases in the registry
+     
+     foreach my $adaptor (@adaptors){
+	 eval{
+	     $ga = $adaptor->get_GeneAdaptor();
+	 };
+	 if (defined $ga){
+	     my $genes = $ga->fetch_all_by_Slice($self, $logic_name, $load_transcripts);
+	     push @{$gene_ref}, @{$genes};
+	 }
+     }
+     return $gene_ref;
+
    }
 
-  return $ga->fetch_all_by_Slice( $self, $logic_name, $load_transcripts);
 }
 
 =head2 get_all_Genes_by_type
@@ -1581,6 +1597,10 @@ sub get_all_Genes_by_type{
                If set to true exons will not be lazy-loaded but will instead
                be loaded right away.  This is faster if the exons are
                actually going to be used right away.
+  Arg [2]    : (optional) string $dbtype
+               The dbtype of transcripts to obtain.  This assumes that the db has
+               been added to the DBAdaptor under this name (using the
+               DBConnection::add_db_adaptor method).
   Example    : @transcripts = @{$slice->get_all_Transcripts)_};
   Description: Gets all transcripts which overlap this slice.  If you want to
                specify a particular analysis or type, then you are better off
@@ -1595,20 +1615,52 @@ sub get_all_Genes_by_type{
 sub get_all_Transcripts {
   my $self = shift;
   my $load_exons = shift;
+  my $dbtype = shift;
 
+  my $ta;
   if(!$self->adaptor()) {
     warning('Cannot get Transcripts without attached adaptor');
     return [];
   }
+#  $ta = $self->adaptor()->db()->get_TranscriptAdaptor();
+#  return $ta->fetch_all_by_Slice($self, $load_exons);
+  if($dbtype) {
+      my $db = $reg->get_db($self->adaptor()->db(), $dbtype);
+      if(defined($db)){
+	  $ta = $reg->get_adaptor( $db->species(), $db->group(), "Transcript" );
+      }
+      else{
+	  $ta = $reg->get_adaptor( $self->adaptor()->db()->species(), $dbtype, "Transcript" );
+      }
+      if(!defined $ta) {
+	  warning( "$dbtype transcripts not available" );
+	  return [];
+      }
+      return $ta->fetch_all_by_Slice($self, $load_exons);
+  } else {
+       #get all db in the registry
+       my @adaptors = $reg->get_all_DBAdaptors();
+       my $transcript_ref; #list of transcripts for all databases in the registry      
+       foreach my $adaptor (@adaptors){
+	   eval{
+	       $ta = $adaptor->get_TranscriptAdaptor();
+	   };
+ 	  my $transcripts = $ta->fetch_all_by_Slice($self, $load_exons);
+ 	  push @{$transcript_ref}, @{$transcripts};
+       }
+      return $transcript_ref;
+  }
 
-  my $ta = $self->adaptor()->db()->get_TranscriptAdaptor();
-  return $ta->fetch_all_by_Slice($self, $load_exons);
 }
 
 
 =head2 get_all_Exons
 
-  Arg [1]    : none
+  Arg [1]    : (optional) string $dbtype
+               The dbtype of exons to obtain.  This assumes that the db has
+               been added to the DBAdaptor under this name (using the
+               DBConnection::add_db_adaptor method).
+
   Example    : @exons = @{$slice->get_all_Exons};
   Description: Gets all exons which overlap this slice.  Note that these exons
                will not be associated with any transcripts, so this may not
@@ -1621,13 +1673,40 @@ sub get_all_Transcripts {
 
 sub get_all_Exons {
   my $self = shift;
+  my $dbtype = shift;
+  my $ea;
 
   if(!$self->adaptor()) {
     warning('Cannot get Exons without attached adaptor');
     return [];
   }
 
-  return $self->adaptor->db->get_ExonAdaptor->fetch_all_by_Slice($self);
+  if(defined $dbtype) {
+      my $db = $reg->get_db($self->adaptor()->db(), $dbtype);
+      if(defined($db)){
+	  $ea = $reg->get_adaptor( $db->species(), $db->group(), "Exon" );
+      }
+      else{
+	  $ea = $reg->get_adaptor( $self->adaptor()->db()->species(), $dbtype, "Exon" );
+      }
+      if(!defined $ea) {
+	  warning( "$dbtype exons not available" );
+	  return [];
+      }
+      return $ea->fetch_all_by_Slice($self);
+  } else {
+      #get all db in the registry
+      my @adaptors = $reg->get_all_DBAdaptors();
+      my $exon_ref; #list of exons for all databases in the registry      
+      foreach my $adaptor (@adaptors){
+	  eval{
+	      $ea = $adaptor->get_ExonAdaptor();
+	  };
+	  my $exons = $ea->fetch_all_by_Slice($self);
+	  push @{$exon_ref}, @{$exons};
+      }
+      return $exon_ref;
+  }
 }
 
 
