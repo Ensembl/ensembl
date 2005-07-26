@@ -414,9 +414,29 @@ sub subseq {
   my $subseq;
   my $seq;
   if($self->adaptor){
-      $seq = $self->seq;
-      reverse_comp(\$seq) if ($strand == -1);
-      $subseq = substr($seq,$start-1,$end - $start +1);
+    my $seqAdaptor = $self->adaptor()->db()->get_SequenceAdaptor();
+    $subseq = ${$seqAdaptor->fetch_by_Slice_start_end_strand($self,$start,$end,$strand)}; #get the reference sequence for that slice
+    #apply all differences to the reference sequence
+    # sort edits in reverse order to remove complication of
+    # adjusting downstream edits
+    my @allele_features_ordered = sort {$b->start() <=> $a->start()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
+    my $af_start;
+    my $af_end;
+    foreach my $af (@allele_features_ordered){
+	if (($af->start - $start +1 > 0) && ($end - $af->end > 0)){
+	    #save the current start and end of the alleleFeature before changing for apply_edit
+	    $af_start = $af->start;
+	    $af_end = $af->end;
+	    #apply the difference if the feature is in the new slice
+	    $af->start($af->start - $start +1);
+	    $af->end($af->end - $start +1);
+	    $af->apply_edit(\$subseq); #change, in the reference sequence, the af
+	    #restore the initial values of alleleFeature start and end
+	    $af->start($af_start);
+	    $af->end($af_end);
+	    
+	}
+    }
   } 
   else {
       ## check for gap at the beginning and pad it with Ns
@@ -507,7 +527,7 @@ sub mapper{
 =head2 get_all_Transcripts
 
   Args       : None
-  Example    : @transcripts = @{$slice->get_all_Transcripts)_};
+  Example    : @transcripts = @{$slice->get_all_Transcripts)};
   Description: Gets all transcripts which overlap this Strain Slice.  If you want to
                specify a particular analysis or type, then you are better off
                using get_all_Genes or get_all_Genes_by_type and iterating
@@ -521,40 +541,20 @@ sub mapper{
 sub get_all_Transcripts {
   my $self = shift;
 
-  if(!$self->adaptor()) {
-    warning('Cannot get Transcripts without attached adaptor');
-    return [];
-  }
+  my $transcripts = $self->SUPER::get_all_Transcripts(1);
+  $self->map_to_Strain($transcripts);
 
-  my $ta = $self->adaptor()->db()->get_TranscriptAdaptor();
-  #get first all Transcript in the Slice
-  my $transcripts = $ta->fetch_all_by_Slice($self, 1);
-  #get the mapper between the Slice and the StrainSlice
-  my $mapper = $self->mapper();
-  my (@results, @results_ordered, $new_start, $new_end, $new_strand);
-  #foreach of the transcripts, map them to the StrainSlice and replace the Slice with the StrainSlice
-  foreach my $transcript (@{$transcripts}){
-    #$transcript->{'slice'} = $self; #add the StrainSlice as the Slice for this Transcript
-    $transcript->slice($self);
-    #map from the Slice to the Strain Slice
-    my @results = $mapper->map_coordinates('Slice',$transcript->start,$transcript->end,$transcript->strand,'Slice');
-    #from the results, order them but filter out those that are not coordinates
-    @results_ordered = sort {$a->start <=> $b->start} grep {ref($_) eq 'Bio::EnsEMBL::Mapper::Coordinate'} @results;
-    $new_start = $results_ordered[0]->start();
-    $new_strand = $results_ordered[0]->strand();
-    $new_end = $results_ordered[-1]->end();  #get last element of the array, the end of the slice
-    $transcript->start($new_start);  #update the new coordinates for the transcript
-    $transcript->end($new_end);
-    $transcript->strand($new_strand);
-  }
   return $transcripts;
 }
 
 
 =head2 get_all_Exons
 
-  Arg [1]    : none
-  Example    : @exons = @{$slice->get_all_Exons};
+  Arg [1]    : (optional) string $dbtype
+               The dbtype of exons to obtain.  This assumes that the db has
+               been added to the DBAdaptor under this name (using the
+               DBConnection::add_db_adaptor method).
+  Example    : @exons = @{$strainSlice->get_all_Exons};
   Description: Gets all exons which overlap this StrainSlice.  Note that these exons
                will not be associated with any transcripts, so this may not
                be terribly useful.
@@ -566,30 +566,40 @@ sub get_all_Transcripts {
 
 sub get_all_Exons {
   my $self = shift;
+  my $dbtype = shift;
 
-  if(!$self->adaptor()) {
-    warning('Cannot get Exons without attached adaptor');
-    return [];
-  }
-  my $exons = $self->adaptor->db->get_ExonAdaptor->fetch_all_by_Slice($self);
-  #get the mapper between the Slice and the StrainSlice
-  my $mapper = $self->mapper();
-  my (@results, @results_ordered, $new_start, $new_end, $new_strand);
-  #foreach of the transcripts, map them to the StrainSlice and replace the Slice with the StrainSlice
-  foreach my $exon (@{$exons}){
-      $exon->{'slice'} = $self; #add the StrainSlice as the Slice for this Exon
-      #map from the Slice to the Strain Slice
-      my @results = $mapper->map_coordinates('Slice',$exon->start,$exon->end,$exon->strand,'Slice');
-      #from the results, order them but filter out those that are not coordinates
-      @results_ordered = sort {$a->start <=> $b->start} grep {ref($_) eq 'Bio::EnsEMBL::Mapper::Coordinate'} @results;
-      $new_start = $results_ordered[0]->start();
-      $new_strand = $results_ordered[0]->strand();
-      $new_end = $results_ordered[-1]->end();  #get last element of the array, the end of the slice
-      $exon->start($new_start);  #update new coordinates for the Exon
-      $exon->end($new_end);
-      $exon->strand($new_strand);
-  }
+  my $exons = $self->SUPER::get_all_Exons($dbtype);
+  $self->map_to_Strain($exons); #map the exons to the Strain
+
   return $exons;
+}
+
+=head2 get_all_Genes
+
+  Arg [1]    : (optional) string $logic_name
+               The name of the analysis used to generate the genes to retrieve
+  Arg [2]    : (optional) string $dbtype
+               The dbtype of genes to obtain.  This assumes that the db has
+               been added to the DBAdaptor under this name (using the
+               DBConnection::add_db_adaptor method).
+  Example    : @genes = @{$strainSlice->get_all_Genes};
+  Description: Retrieves all genes that overlap this slice.
+  Returntype : listref of Bio::EnsEMBL::Genes
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_all_Genes{
+  my ($self, $logic_name, $dbtype) = @_;
+
+  my $genes = $self->SUPER::get_all_Genes($logic_name, $dbtype, 1);
+
+  $self->map_to_Strain($genes);
+
+  $self->map_to_Strain($gene->get_all_Exons); #map the Exons to the Strain 
+  $self->map_to_Strain($$gene->get_all_Transcripts); #map the Transcripts to the Strain
+  return $genes;
 }
 
 sub transform{
@@ -600,5 +610,40 @@ sub transform{
   my $new_slice = $self::SUPER->transform($cs_name,$cs_version);
   return $new_slice->get_by_strain($self->strain_name);
 }
+
+=head2 map_to_Strain
+
+    Arg[1]      : ref $features
+    Example     : $strainSlice->map_to_Strain($exons);
+    Description : Gets the features from the Slice and maps it in the StrainSlice, using the mapper
+                  between Slice and StrainSlice
+    ReturnType  : None
+    Exceptions  : None
+    Caller      : general
+    
+=cut
+
+sub map_to_Strain{
+    my $self = shift;
+    my $features = shift;
+
+    my $mapper = $self->mapper();
+    my (@results, @results_ordered, $new_start, $new_end, $new_strand);
+    #foreach of the transcripts, map them to the StrainSlice and replace the Slice with the StrainSlice
+    foreach my $feature (@{$features}){
+	$feature->slice($self); #replace the StrainSlice as the Slice for this feature (the Slice plus the AlleleFeatures)
+	#map from the Slice to the Strain Slice
+	my @results = $mapper->map_coordinates('Slice',$feature->start,$feature->end,$feature->strand,'Slice');
+	#from the results, order them but filter out those that are not coordinates
+	@results_ordered = sort {$a->start <=> $b->start} grep {ref($_) eq 'Bio::EnsEMBL::Mapper::Coordinate'} @results;
+	$new_start = $results_ordered[0]->start();
+	$new_strand = $results_ordered[0]->strand();
+	$new_end = $results_ordered[-1]->end();  #get last element of the array, the end of the slice
+	$feature->start($new_start);  #update new coordinates for the Exon
+	$feature->end($new_end);
+	$feature->strand($new_strand);
+  }
+}
+
 
 1;
