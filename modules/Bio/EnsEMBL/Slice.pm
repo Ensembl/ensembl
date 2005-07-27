@@ -1645,8 +1645,10 @@ sub get_all_Transcripts {
 	   eval{
 	       $ta = $adaptor->get_TranscriptAdaptor();
 	   };
- 	  my $transcripts = $ta->fetch_all_by_Slice($self, $load_exons);
- 	  push @{$transcript_ref}, @{$transcripts};
+	   if (defined $ta){
+	       my $transcripts = $ta->fetch_all_by_Slice($self, $load_exons);
+	       push @{$transcript_ref}, @{$transcripts};
+	   }
        }
       return $transcript_ref;
   }
@@ -1702,8 +1704,10 @@ sub get_all_Exons {
 	  eval{
 	      $ea = $adaptor->get_ExonAdaptor();
 	  };
-	  my $exons = $ea->fetch_all_by_Slice($self);
-	  push @{$exon_ref}, @{$exons};
+	  if (defined $ea){
+	      my $exons = $ea->fetch_all_by_Slice($self);
+	      push @{$exon_ref}, @{$exons};
+	  }
       }
       return $exon_ref;
   }
