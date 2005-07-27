@@ -596,9 +596,10 @@ sub get_all_Genes{
   my $genes = $self->SUPER::get_all_Genes($logic_name, $dbtype, 1);
 
   $self->map_to_Strain($genes);
-
-  $self->map_to_Strain($gene->get_all_Exons); #map the Exons to the Strain 
-  $self->map_to_Strain($$gene->get_all_Transcripts); #map the Transcripts to the Strain
+  foreach my $gene (@{$genes}){
+      $self->map_to_Strain($gene->get_all_Exons); #map the Exons to the Strain 
+      $self->map_to_Strain($gene->get_all_Transcripts); #map the Transcripts to the Strain
+  }
   return $genes;
 }
 
