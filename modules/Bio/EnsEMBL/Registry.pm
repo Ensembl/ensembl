@@ -730,6 +730,7 @@ sub set_disconnect_when_inactive{
 sub disconnect_all {
   foreach my $dba ( @{get_all_DBAdaptors()||[]} ){
     my $dbc = $dba->dbc;
+    next unless $dbc;
     #disconnect if connected
     $dbc->disconnect_if_idle() if $dbc->connected();
   }
