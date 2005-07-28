@@ -213,7 +213,7 @@ sub get_all_differences_Slice{
     my $self = shift;
     my $differences; #reference to the array with the differences between Slice and StrainSlice
     my $ref_allele;
-    foreach my $difference (@{$self->{'alleleFeatures'}){
+    foreach my $difference (@{$self->{'alleleFeatures'}}){
 	if ($difference->length_diff == 0){
 	    #the difference is a SNP, check if it is the same as the reference allele
 	    $ref_allele = $self->SUPER::subseq($difference->start,$difference->end,$difference->strand);
