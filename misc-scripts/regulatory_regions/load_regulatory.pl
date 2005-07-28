@@ -125,8 +125,10 @@ while (<FILE>) {
   # for miRNA_target (and possibly others) where individual features don't
   # have a unique name, create a composite one. Also set influence for each type.
   my $feature_name;
+  my $influence;
   if ($feature =~ /miRNA_target/i) {
     $feature_name = $id .":" . $seq;
+    $influence = "negative";
   }
 
   print STDERR "No feature name for $seq of type $feature on $id.\n" if (!$feature_name);
@@ -149,6 +151,7 @@ while (<FILE>) {
     $rr_obj_sth->execute($rr_id,
 			 $ensembl_type,
 			 $ensembl_object->dbID(),
+			 $influence,
 			 "");                     # no evidence yet
 
     $count++;
