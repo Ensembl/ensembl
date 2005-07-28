@@ -126,9 +126,12 @@ while (<FILE>) {
   # have a unique name, create a composite one. Also set influence for each type.
   my $feature_name;
   my $influence;
-  if ($feature =~ /miRNA_target/i) {
+  if ($method =~ /miRanda/i) {
     $feature_name = $id .":" . $seq;
     $influence = "negative";
+  } elsif ($method =~ /cisRed/i) {
+    $feature_name = $id .":" . $seq;
+    $influence = "unknown";
   }
 
   print STDERR "No feature name for $seq of type $feature on $id.\n" if (!$feature_name);
