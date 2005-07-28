@@ -211,10 +211,21 @@ sub seq {
 
 sub get_all_differences_Slice{
     my $self = shift;
-
-    # shouldnt this return features in StrainSlice coordinates?
-    # shouldnt it be possible to get apply this alleles and get back the reference?
-
+    my $differences; #reference to the array with the differences between Slice and StrainSlice
+    my $ref_allele;
+    foreach my $difference (@{$self->{'alleleFeatures'}){
+	if ($difference->length_diff == 0){
+	    #the difference is a SNP, check if it is the same as the reference allele
+	    $ref_allele = $self->SUPER::subseq($difference->start,$difference->end,$difference->strand);
+	    if ($ref_allele ne $difference->allele_string){
+		#when the alleleFeature is different from the reference allele, add to the differences list
+		push @{$differences},$difference;
+	    }
+	}
+	else{
+	    push @{$differences},$difference;
+	}
+    }
     return $self->{'alleleFeatures'};
 }
 
