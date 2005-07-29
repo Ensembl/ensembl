@@ -312,9 +312,18 @@ sub fetch_all_by_factor {
 
 =head2 store
 
-  Arg [1]    : list of Bio::EnsEMBL::RegulatoryFeatures
-               the regulatory features to store in the database
-  Example    : $regulatory_feature_adaptor->store($regulatory_feature);
+  Arg [1]    : Bio::EnsEMBL::RegulatoryFeatures
+               the regulatory feature to store in the database
+  Arg [2]    : Bio::EnsEMBL::Transcript, Bio::EnsEMBL::Gene or
+               Bio::EnsEMBL::Translation $ensObject
+               An EnsEMBL object to associate with this external database entry
+  Arg [3]    : String influence - must match one of the ENUM values in 
+               regulatory_feature_object.influence
+  Arg [4]    : String evidence - evidence for this association.
+  Example    : $regulatory_feature_adaptor->store($regulatory_feature,
+						  $ensObj, 'Transcript',
+						 'positive',
+						 'Experimental stain');
   Description: stores regulatory features in the database
   Returntype : none
   Exceptions :
@@ -323,49 +332,75 @@ sub fetch_all_by_factor {
 =cut
 
 sub store {
-  my( $self, @features ) = @_;
+  my( $self, $feature, $ensObj, $influence, $evidence ) = @_;
 
-  my $sth = $self->prepare(qq {INSERT into regulatory_feature 
-                           (name,
-                            seq_region_id,
-                            seq_region_start,
-                            seq_region_end,
-                            seq_region_strand,
-                            analysis_id,
-                            regulatory_factor_id)
-                            VALUES (?,?,?,?,?,?,?)});
+  my $rf_sth = $self->prepare(qq {INSERT into regulatory_feature
+				  (name,
+				   seq_region_id,
+				   seq_region_start,
+				   seq_region_end,
+				   seq_region_strand,
+				   analysis_id,
+				   regulatory_factor_id)
+				  VALUES (?,?,?,?,?,?,?)});
 
-  foreach my $rf (@features) {
+  my $rfo_sth = $self->prepare(qq {INSERT into regulatory_feature_object
+				  (regulatory_feature_id,
+				   ensembl_object_type,
+				   ensembl_object_id,
+				   influence,
+				   evidence)
+				  VALUES (?,?,?,?,?)});
 
-    if(!ref($rf) || !$rf->isa('Bio::EnsEMBL::RegulatoryFeature')) {
-      throw('Expected RegulatoryFeature argument not [' . ref($rf) .'].');
-    }
+  if (!ref($feature) || !$feature->isa('Bio::EnsEMBL::RegulatoryFeature')) {
+    throw('Expected RegulatoryFeature argument not [' . ref($feature) .'].');
+  }
 
-    my $name = $rf->name() or throw("name not set");
+  my $name = $feature->name() or throw("name not set");
 
-    my $analysis = $rf->analysis();
-    if(!ref($analysis) || !$analysis->isa("Bio::EnsEMBL::Analysis")) {
-      throw("RegulatoryFeature cannot be stored without an associated analysis.");
-    }
+  my $analysis = $feature->analysis();
+  if (!ref($analysis) || !$analysis->isa("Bio::EnsEMBL::Analysis")) {
+    throw("RegulatoryFeature cannot be stored without an associated analysis.");
+  }
 
-    my $original = $rf;
-    my $seq_region_id;
-    ($rf, $seq_region_id) = $self->_pre_store($rf);
+  my $original = $feature;
+  my $seq_region_id;
+  ($feature, $seq_region_id) = $self->_pre_store($feature);
 
-    $sth->execute($rf->name(),
-		  $seq_region_id,
-		  $rf->start(),
-		  $rf->end(),
-		  $rf->strand(),
-		  $analysis->dbID(),
-		  $rf->factor()->dbID());
+  $rf_sth->execute($feature->name(),
+		$seq_region_id,
+		$feature->start(),
+		$feature->end(),
+		$feature->strand(),
+		$analysis->dbID(),
+		$feature->factor()->dbID());
 
-    my $db_id = $sth->{'mysql_insertid'}
+  my $db_id = $rf_sth->{'mysql_insertid'}
     or throw("Didn't get an insertid from the INSERT statement");
 
-    $original->dbID($db_id);
-    $original->adaptor($self);
+  $original->dbID($db_id);
+  $original->adaptor($self);
+
+  # store relationship in regulatory_feature_object
+  if (!ref($ensObj) || 
+      (!$ensObj->isa('Bio::EnsEMBL::Gene') &&
+       !$ensObj->isa('Bio::EnsEMBL::Transcript') &&
+       !$ensObj->isa('Bio::EnsEMBL::Translation'))){
+    throw('Ensembl object must be one of Bio::EnsEMBL::Gene, Bio::EnsEMBL::Transcript or Bio::EnsEMBL::Translation');
   }
+
+  # get type from object
+  my $ensType;
+  $ensType = 'Gene' if ($ensObj->isa('Bio::EnsEMBL::Gene'));
+  $ensType = 'Transcript' if ($ensObj->isa('Bio::EnsEMBL::Transcript'));
+  $ensType = 'Translation' if ($ensObj->isa('Bio::EnsEMBL::Translation'));
+
+  $rfo_sth->execute($db_id,
+		    $ensType,
+		    $ensObj->dbID(),
+		    $influence,
+		    $evidence);
+
 }
 
 
