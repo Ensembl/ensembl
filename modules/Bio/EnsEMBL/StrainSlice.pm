@@ -217,7 +217,9 @@ sub get_all_differences_Slice{
 	if ($difference->length_diff == 0){
 	    #the difference is a SNP, check if it is the same as the reference allele
 	    $ref_allele = $self->SUPER::subseq($difference->start,$difference->end,$difference->strand);
-	    if ($ref_allele ne $difference->allele_string){
+	    $ref_allele = "-" if $ref_allele eq "";
+
+	    if ($ref_allele ne $difference->allele_string) {
 		#when the alleleFeature is different from the reference allele, add to the differences list
 		push @{$differences},$difference;
 	    }
@@ -226,7 +228,9 @@ sub get_all_differences_Slice{
 	    push @{$differences},$difference;
 	}
     }
+
     return $differences;
+
 }
 
 =head2 get_all_differences_StrainSlice
@@ -268,17 +272,18 @@ sub get_all_differences_StrainSlice{
     else{
 	#both strains have differences
 	#create a hash with the differences in the first slice
-	my %allele_features_self = map {$_->start => $_} @{$self->{'alleleFeatures'}};
-	foreach my $difference (@{$strainSlice->{'alleleFeatures'}}){	 
+	my %allele_features_self = map {$_->start.'-'.$_->end => $_} @{$self->{'alleleFeatures'}};
+	foreach my $difference (@{$strainSlice->{'alleleFeatures'}}){
 	    #there is no difference in the other strain slice, convert the allele
-	    if (!defined $allele_features_self{$difference->start} || (defined $allele_features_self{$difference->start} && ($allele_features_self{$difference->start}->length_diff != 0 or $difference->length_diff !=0))){
+
+	  if (!defined $allele_features_self{$difference->start.'-'.$difference->end}){
 	      push @{$differences},$strainSlice->_convert_difference($difference);
 	    }
 	    else{
 		#if it is defined and have the same allele, delete from the hash since it is not a difference
 		#between the strains
-		if ($allele_features_self{$difference->start}->allele_string eq $difference->allele_string){
-		    delete $allele_features_self{$difference->start};
+		if ($allele_features_self{$difference->start.'-'.$difference->end}->allele_string eq $difference->allele_string){
+		  delete $allele_features_self{$difference->start.'-'.$difference->end};
 		}
 	    }
 	}	
@@ -607,10 +612,12 @@ sub get_all_Genes{
   my $genes = $self->SUPER::get_all_Genes($logic_name, $dbtype, 1);
 
   $self->map_to_Strain($genes);
+
   foreach my $gene (@{$genes}){
       $self->map_to_Strain($gene->get_all_Exons); #map the Exons to the Strain 
       $self->map_to_Strain($gene->get_all_Transcripts); #map the Transcripts to the Strain
   }
+
   return $genes;
 }
 
