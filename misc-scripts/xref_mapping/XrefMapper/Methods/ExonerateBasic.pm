@@ -213,7 +213,7 @@ sub check_err {
 
   foreach my $err (glob("$dir/*.err")) {
 
-    print "Warning: $err has non-zero size; may indicate problems with exonerate run\n" if (-s $err);
+    print "\n\n*** Warning: $err has non-zero size; may indicate problems with exonerate run\n\n\n" if (-s $err);
 
   }
 }
