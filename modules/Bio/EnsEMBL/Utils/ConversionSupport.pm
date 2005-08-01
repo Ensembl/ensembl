@@ -550,13 +550,14 @@ sub get_database {
         "${prefix}host",
         "${prefix}port",
         "${prefix}user",
-        "${prefix}pass",
+        # "${prefix}pass", not required since might be empty
         "${prefix}dbname",
     );
 
     my %adaptors = (
         core    => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
         ensembl => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+        evega   => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
         otter   => 'Bio::Otter::DBSQL::DBAdaptor',
         vega    => 'Bio::Otter::DBSQL::DBAdaptor',
     );
@@ -679,7 +680,8 @@ sub dynamic_use {
 
 =head2 get_chrlength
 
-  Arg[1]      : Bio::EnsEMBL::DBSQL::DBAdaptor $dba
+  Arg[1]      : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor $dba
+  Arg[2]      : (optional) String $version - coord_system version
   Example     : my $chr_length = $support->get_chrlength($dba);
   Description : Get all chromosomes and their length from the database. Return
                 chr_name/length for the chromosomes the user requested (or all
@@ -691,16 +693,15 @@ sub dynamic_use {
 =cut
 
 sub get_chrlength {
-    my ($self, $dba) = @_;
+    my ($self, $dba, $version) = @_;
     $dba ||= $self->dba;
     throw("get_chrlength should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n")
         unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
 
     my $sa = $dba->get_SliceAdaptor;
     my @chromosomes = map { $_->seq_region_name } 
-                            @{ $sa->fetch_all('chromosome') };
-    my %chr = map { $_ => $sa->fetch_by_region('chromosome', $_)->length }
-                            @chromosomes;
+                            @{ $sa->fetch_all('chromosome', $version) };
+    my %chr = map { $_ => $sa->fetch_by_region('chromosome', $_, undef, undef, undef, $version)->length } @chromosomes;
 
     my @wanted = $self->param('chromosomes');
     if (@wanted) {
@@ -820,11 +821,12 @@ sub species {
 
 =head2 sort_chromosomes
 
-  Arg[1]      : Hashref $chr_hashref - Hashref with chr_name as keys
+  Arg[1]      : (optional) Hashref $chr_hashref - Hashref with chr_name as keys
   Example     : my $chr = { '6-COX' => 1, '1' => 1, 'X' => 1 };
                 my @sorted = $support->sort_chromosomes($chr);
   Description : Sorts chromosomes in an intuitive way (numerically, then
-                alphabetically)
+                alphabetically). If no chromosome hashref is passed, it's
+                retrieve by calling $self->get_chrlength()
   Return type : List - sorted chromosome names
   Exceptions  : thrown if no hashref is provided
   Caller      : general
@@ -833,6 +835,7 @@ sub species {
 
 sub sort_chromosomes {
     my ($self, $chr_hashref) = @_;
+    $chr_hashref = $self->get_chrlength unless ($chr_hashref);
     throw("You have to pass a hashref of your chromosomes")
         unless ($chr_hashref and ref($chr_hashref) eq 'HASH');
     return (sort _by_chr_num keys %$chr_hashref);
@@ -960,7 +963,11 @@ sub split_chromosomes_by_size {
 sub log {
     my ($self, $txt, $indent) = @_;
     $indent ||= 0;
-    $txt = "    "x$indent . $txt;
+    
+    # strip off leading linebreaks so that indenting doesn't break
+    $txt =~ s/^(\n*)//;
+    
+    $txt = $1."    "x$indent . $txt;
     my $fh = $self->{'_log_filehandle'};
     throw("Unable to obtain log filehandle") unless $fh;
     print $fh "$txt";
