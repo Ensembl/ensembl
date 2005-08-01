@@ -189,7 +189,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (1300,7227,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz',now(),now(),'InterproParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (6,7227,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Dm.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Dm.data.gz',now(),now(),'UniGeneParser');
+VALUES (6,7227,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Drosophila_melanogaster/Dm.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Drosophila_melanogaster/Dm.data.gz',now(),now(),'UniGeneParser');
 
 
 
@@ -238,7 +238,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2000, 9606,'/dummy/CCDS.txt', '', now(), now(), "CCDSParser");
 
 ##      UniGene
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9606,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Hs.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Hs.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9606,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Homo_sapiens/Hs.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Homo_sapiens/Hs.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 
@@ -268,7 +268,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 10090,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10090,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Mm.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Mm.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10090,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Mus_musculus/Mm.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Mus_musculus/Mm.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 ### RAT
@@ -298,7 +298,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 10116,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10116,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Rn.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Rn.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10116,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Rattus_norvegicus/Rn.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Rattus_norvegicus/Rn.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 
@@ -329,7 +329,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 7955,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 7955,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Dr.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Dr.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 7955,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Danio_rerio/Dr.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Danio_rerio/Dr.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 ### Chicken
@@ -352,7 +352,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9031,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9031,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Gga.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Gga.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9031,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Gallus_gallus/Gga.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Gallus_gallus/Gga.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 ### XENOPUS
@@ -378,7 +378,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 8364,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 8364,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Str.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Str.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 8364,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Xenopus_tropicalis/Str.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Xenopus_tropicalis/Str.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 
@@ -403,7 +403,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9615,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9615,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Cfa.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Cfa.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9615,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Canis_familiaris/Cfa.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Canis_familiaris/Cfa.data.gz', '', now(), now(), "UniGeneParser");
 
 # --------------------------------------------------------------------------------
 
@@ -422,7 +422,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 6239,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 6239,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Cel.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Cel.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 6239,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Caenorhabditis_elegans/Cel.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Caenorhabditis_elegans/Cel.data.gz', '', now(), now(), "UniGeneParser");
 
 ##       refseq
 #INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 6239,'ftp://ftp.ncbi.nih.gov/genomes/Caenorhabditis_elegans/CHR_I/NC_003279.gbk', '', now(), now(), "RefSeqGPFFParser");
@@ -473,7 +473,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 7460,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
 ##      UniGene
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 7460,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Ame.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Ame.data.gz', '', now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 7460,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Apis_mellifera/Ame.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Apis_mellifera/Ame.data.gz', '', now(), now(), "UniGeneParser");
 
 
 
@@ -511,7 +511,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(6, 7719,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Cin.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Cin.data.gz',  now(), now(), "UniGeneParser");
+(6, 7719,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Ciona_intestinalis/Cin.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Ciona_intestinalis/Cin.data.gz',  now(), now(), "UniGeneParser");
 
 ## xrefs to protein-annotation from JGI on OLDER assembly version v1 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
