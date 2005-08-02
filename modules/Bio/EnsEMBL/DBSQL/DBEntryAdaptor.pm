@@ -98,6 +98,7 @@ sub fetch_by_dbID {
     }
 
     $exDB->add_synonym( $synonym )  if ($synonym);
+
   }
 
   $sth->finish();
@@ -603,7 +604,7 @@ sub _fetch_by_object_type {
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
            xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
-           exDB.db_name, exDB.release, exDB.status,
+           exDB.db_name, exDB.release, exDB.status, exDB.db_display_name,
            oxr.object_xref_id,
            es.synonym, 
            idt.query_identity, idt.target_identity, idt.hit_start,
@@ -627,7 +628,7 @@ sub _fetch_by_object_type {
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     my ( $refID, $dbprimaryId, $displayid, $version, 
          $desc, $primary_id_linkable, $display_id_linkable, $priority,
-         $dbname, $release, $exDB_status, $objid,
+         $dbname, $release, $exDB_status, $exDB_db_display_name, $objid,
          $synonym, $queryid, $targetid, $query_start, $query_end,
          $translation_start, $translation_end, $cigar_line,
          $score, $evalue, $analysis_id, $linkage_type ) = @$arrRef;
@@ -678,6 +679,7 @@ sub _fetch_by_object_type {
       $exDB->primary_id_linkable($primary_id_linkable);
       $exDB->display_id_linkable($display_id_linkable);
       $exDB->priority($priority);
+      $exDB->db_display_name($exDB_db_display_name);
 
       push( @out, $exDB );
       $seen{$refID} = $exDB;
