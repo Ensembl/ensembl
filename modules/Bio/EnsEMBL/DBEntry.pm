@@ -82,7 +82,8 @@ sub new_fast {
                                                        -description => $description,
 						       -primary_id_linkable =>$primary_id_linkable,
 						       -display_id_linkable =>$display_id_linkable,
-						       -priority => $priority);
+						       -priority => $priority,
+						       -db_display_name => $db_display_name );
   Description: Creates a new DBEntry object
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
@@ -97,10 +98,11 @@ sub new {
 
   my ( $adaptor, $dbID, $primary_id, $version,
        $dbname, $release, $display_id, $description,
-       $primary_id_linkable, $display_id_linkable, $priority) =
+       $primary_id_linkable, $display_id_linkable, $priority, $db_display_name) =
     rearrange ( ['ADAPTOR','DBID','PRIMARY_ID','VERSION',
                  'DBNAME','RELEASE','DISPLAY_ID','DESCRIPTION',
-		'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY'], @args );
+		 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
+		 'DB_DISPLAY_NAME'], @args );
 
   $self->{'adaptor'} = $adaptor;
   $self->{'dbID'}    = $dbID;
@@ -115,6 +117,7 @@ sub new {
   if( defined $primary_id_linkable) { $self->primary_id_linkable($primary_id_linkable) }
   if( defined $display_id_linkable) { $self->display_id_linkable($display_id_linkable) }
   if( defined $priority) { $self->priority($priority) }
+  if( defined $db_display_name) { $self->db_display_name($db_display_name) }
   $self->{synonyms} = [];;
 
   return $self;
@@ -345,6 +348,26 @@ sub priority {
     $self->{priority} = $arg;
   } 
   return $self->{priority};
+}
+
+
+=head2 db_display_name
+
+  Arg [1]    : String $db_display_name
+  Example    : none
+  Db_display_name: get/set for attribute db_display_name
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub db_display_name {
+  my ( $self, $arg ) = @_;
+  if( defined $arg ) {
+    $self->{db_display_name} = $arg;
+  } 
+  return $self->{db_display_name};
 }
 
 =head2 add_synonym

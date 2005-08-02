@@ -65,7 +65,7 @@ sub fetch_by_dbID {
    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
-           exDB.db_name, exDB.release, es.synonym
+           exDB.db_name, exDB.db_display_name, exDB.release, es.synonym
     FROM   xref, external_db exDB
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.xref_id = ?
@@ -78,7 +78,7 @@ sub fetch_by_dbID {
   while ( my $arrayref = $sth->fetchrow_arrayref()){
     my ( $refID, $dbprimaryId, $displayid, $version, $desc,
 	 $primary_id_linkable, $display_id_linkable, $priority,
-         $dbname, $release, $synonym) = @$arrayref;
+         $dbname, $db_display_name, $release, $synonym) = @$arrayref;
 
     if(!$exDB) {
       $exDB = Bio::EnsEMBL::DBEntry->new
@@ -91,7 +91,8 @@ sub fetch_by_dbID {
           -dbname => $dbname,
 	  -primary_id_linkable => $primary_id_linkable,
 	  -display_id_linkable => $display_id_linkable,
-	  -priority => $priority);
+	  -priority => $priority,
+	  -db_display_name => $db_display_name);
 
       $exDB->description( $desc ) if ( $desc );
     }
@@ -132,7 +133,7 @@ sub fetch_by_db_accession {
    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
-           exDB.db_name, exDB.release, es.synonym
+           exDB.db_name, exDB.db_display_name, exDB.release, es.synonym
     FROM   xref, external_db exDB
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.dbprimary_acc = ?
@@ -158,7 +159,7 @@ sub fetch_by_db_accession {
   my $exDB;
 
   while ( my $arrayref = $sth->fetchrow_arrayref()){
-    my ( $dbID, $dbprimaryId, $displayid, $version, $desc, $dbname,
+    my ( $dbID, $dbprimaryId, $displayid, $version, $desc, $dbname,$db_display_name,
 	 $primary_id_linkable, $display_id_linkable, $priority,
          $release, $synonym) = @$arrayref;
 
@@ -173,7 +174,8 @@ sub fetch_by_db_accession {
           -dbname => $dbname,
 	  -primary_id_linkable => $primary_id_linkable,
 	  -display_id_linkable => $display_id_linkable,
-	  -priority => $priority);
+	  -priority => $priority,
+	  -db_display_name=>$db_display_name);
 
       $exDB->description( $desc ) if ( $desc );
     }
