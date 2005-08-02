@@ -64,6 +64,7 @@ sub new{
 
   my $self ={};
   bless $self,$class;
+  $self->jobcount(0);
 
   return $self;
 }
@@ -564,6 +565,7 @@ sub dumpcheck {
   return $self->{_dumpcheck};
 }
 
+
 =head2 maxdump
  
   Arg [1]    : (optional) 
@@ -626,6 +628,23 @@ sub xref{
   return $self->{_xref};
 }
 
+=head2 jobcount
+ 
+  Arg [1]    : (optional) 
+  Example    : $mapper->jobcount(1004);
+  Description: Getter / Setter for number of jobs submitted. 
+  Returntype : scalar
+  Exceptions : none
+
+=cut
+
+sub jobcount {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_jobcount} = $arg );
+  return $self->{_jobcount};
+}
 
 
 =head2 run_mapping
@@ -686,6 +705,7 @@ sub run_mapping {
 	push @job_names, $job_name;
 	sleep 1; # make sure unique names really are unique
       }
+      $self->jobcount($self->jobcount+$obj->jobcount);
     }
 
   } # foreach method
@@ -694,7 +714,7 @@ sub run_mapping {
     # submit depend job to wait for all mapping jobs
     submit_depend_job($self->core->dir, @job_names);
   }
-
+  $self->check_err($self->core->dir); 
 } # run_mapping
 
 
@@ -929,6 +949,13 @@ sub parse_mappings {
   close(OBJECT_XREF);
 
   print "Read $total_lines lines from $total_files exonerate output files\n";
+
+  if(!defined($self->use_existing_mappings()) 
+     and $self->jobcount() != $total_files){
+    print  "There should be ".$self->jobcount()." files. Please check\n";
+    print  "As this is the number of jobs submitted\n";
+    die "There should be ".$self->jobcount()." files. Please check\n";
+  }  
 
   # write relevant xrefs to file
   $max_object_xref_id = $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset, \%ensembl_object_types);
@@ -2219,6 +2246,19 @@ sub build_gene_descriptions {
 
   close(GENE_DESCRIPTIONS);
 
+}
+# Check if any .err files exist that have non-zero size;
+# this indicates that something has gone wrong with the exonerate run
+
+sub check_err {
+
+  my ($self, $dir) = @_;
+
+  foreach my $err (glob("$dir/*.err")) {
+
+    print "\n\n*** Warning: $err has non-zero size; may indicate problems with exonerate run\n\n\n" if (-s $err);
+
+  }
 }
 
 sub get_best {

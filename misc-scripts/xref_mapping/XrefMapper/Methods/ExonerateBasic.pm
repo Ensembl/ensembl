@@ -17,10 +17,30 @@ sub new {
 
   my $self ={};
   bless $self,$class;
+  $self->jobcount(0);
 
   return $self;
 
 }
+
+=head2 jobcount
+ 
+  Arg [1]    : (optional) 
+  Example    : $mapper->jobcount(1004);
+  Description: Getter / Setter for number of jobs submitted. 
+  Returntype : scalar
+  Exceptions : none
+
+=cut
+
+sub jobcount {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_jobcount} = $arg );
+  return $self->{_jobcount};
+}
+ 
 
 =head2 run
 
@@ -40,7 +60,8 @@ sub run() {
 
   my $name = $self->submit_exonerate($query, $target, $dir, $self->options());
 
-  $self->check_err($dir);
+#  $self->check_err($dir);
+#  no point until after the depend job done.
 
   return $name;
 
@@ -82,6 +103,8 @@ sub submit_exonerate {
   my $targetfile = basename($target);
 
   my $num_jobs = calculate_num_jobs($query);
+
+  $self->jobcount($self->jobcount()+$num_jobs);
 
   my $options_str = join(" ", @options);
 
