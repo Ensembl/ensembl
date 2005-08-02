@@ -71,7 +71,8 @@ while($row = <$fh>) {
                'status'                 => $a[3],
 	       'dbprimary_acc_linkable' => $a[4],
 	       'display_label_linkable' => $a[5],
-	       'priority'               => $a[6]};
+	       'priority'               => $a[6],
+	       'db_display_name'        => $a[7]};
 }
 $fh->close();
 
@@ -84,8 +85,9 @@ foreach my $dbname (@dbnames) {
 
   $sth = $db->prepare('INSERT INTO external_db (external_db_id, db_name,
                                                 release, status, dbprimary_acc_linkable,
-                                                display_label_linkable, priority)
-                       VALUES (?,?,?,?,?,?,?)');
+                                                display_label_linkable, priority,
+                                                db_display_name)
+                       VALUES (?,?,?,?,?,?,?,?)');
 
   foreach my $row (@rows) {
     $sth->execute($row->{'external_db_id'},
@@ -94,7 +96,8 @@ foreach my $dbname (@dbnames) {
 		  $row->{'status'},
 		  $row->{'dbprimary_acc_linkable'},
 		  $row->{'display_label_linkable'},
-		  $row->{'priority'});
+		  $row->{'priority'},
+		  $row->{'db_display_name'});
   }
 
   $sth->finish();
