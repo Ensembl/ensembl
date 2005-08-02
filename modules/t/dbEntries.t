@@ -86,7 +86,8 @@ my $xref = Bio::EnsEMBL::DBEntry->new
    -display_id => "Ens related thing",
    -primary_id_linkable => "0",
    -display_id_linkable => "1",
-   -priority => "5"
+   -priority => "5",
+   -db_display_name => "Nice friendly name"
    );
 
 
