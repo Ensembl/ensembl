@@ -879,6 +879,9 @@ sub parse_mappings {
   # Note %object_xref_mappings is global
 
 
+  my @dna_check=();
+  my @pep_check=();
+
   foreach my $file (glob("$dir/*.map")) {
 
     #print "Parsing results from " . basename($file) .  "\n";
@@ -886,10 +889,20 @@ sub parse_mappings {
     $total_files++;
 
     # files are named Method_(dna|peptide)_N.map
-    my $type = get_ensembl_object_type($file);
-
-    my $method = get_method($file);
-
+#    my $type = get_ensembl_object_type($file);
+#
+#    my $method = get_method($file);
+    my ($method, $type, $part) = get_parts($file);
+    
+    if($type =~ 'Translation'){
+      $pep_check[$part] = $part;
+    }
+    elsif($type =~ 'Transcript'){
+      $dna_check[$part] =  $part;
+    }
+    else{
+      die "unknown type $type\n";
+    }
     # get or create the appropriate analysis ID
     # XXX restore when using writeable database
     my $analysis_id = $self->get_analysis_id($type);
@@ -950,12 +963,31 @@ sub parse_mappings {
 
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
-  if(!defined($self->use_existing_mappings()) 
-     and $self->jobcount() != $total_files){
-    print  "There should be ".$self->jobcount()." files. Please check\n";
-    print  "As this is the number of jobs submitted\n";
-    die "There should be ".$self->jobcount()." files. Please check\n";
-  }  
+  if($self->jobcount() != $total_files){
+    print $dna_check[-1]." dna map files\n";
+    print $pep_check[-1]." peptide map files\n";
+    my $test_failed = 0;
+    for(my $i=1; $i < $dna_check[-1]; $i++){
+      if($dna_check[$i] != $i){
+	print "DNA $i file not found\n"; 
+	$test_failed = 1;
+      }
+    }
+    for(my $i=1; $i < $pep_check[-1]; $i++){
+      if($pep_check[$i] != $i){
+	print "PEPTIDE $i file not found\n"; 
+	$test_failed = 1;
+      }
+    }
+    if($test_failed){
+      die "Missing Files aborting run\n";
+    }
+    if(!defined($self->use_existing_mappings())){
+      print  "There should be ".$self->jobcount()." files. Please check\n";
+      print  "As this is the number of jobs submitted\n";
+      die "There should be ".$self->jobcount()." files. Please check\n";
+    }  
+  }
 
   # write relevant xrefs to file
   $max_object_xref_id = $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset, \%ensembl_object_types);
@@ -1322,6 +1354,30 @@ sub get_ensembl_object_type {
   }
 
   return $type;
+
+}
+
+sub get_parts {
+
+  my $filename = shift;
+
+  $filename = basename($filename);
+
+  my ($method,$type,$part) = $filename =~ /^(.*)_(dna|peptide)_(\d+)\.map/;
+  if ($type eq "dna" ) {
+
+    $type = "Transcript";
+
+  } elsif ($type eq "peptide") {
+
+    $type = "Translation";
+
+  } else {
+
+    print STDERR "Cannot deduce Ensembl object type from filename $filename\n";
+  }
+
+  return ($method, $type, $part);
 
 }
 
