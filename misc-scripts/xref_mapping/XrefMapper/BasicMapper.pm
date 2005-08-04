@@ -867,8 +867,6 @@ sub parse_mappings {
   # this is a hash of hashes, keyed on xref id that relates xrefs to e! objects (may be 1-many)
   my %primary_xref_ids = ();
 
-  # also keep track of types of ensembl objects
-  my %ensembl_object_types;
 
   # and a list of mappings of ensembl objects to xrefs
   # (primary now, dependent added in dump_core_xrefs)
@@ -935,8 +933,6 @@ sub parse_mappings {
       # TODO - evalue?
       $object_xref_id++;
 
-      $ensembl_object_types{$target_id} = $type;
-
       # store mapping for later - note NON-OFFSET xref_id is used
       my $key = $type . "|" . $target_id;
       my $xref_id = $query_id;
@@ -949,7 +945,7 @@ sub parse_mappings {
 
       # note the NON-OFFSET xref_id is stored here as the values are used in
       # a query against the original xref database
-      $primary_xref_ids{$query_id}{$target_id} = $target_id;
+      $primary_xref_ids{$query_id}{$target_id."|".$type} = $target_id."|".$type;
 
     }
 
@@ -990,7 +986,7 @@ sub parse_mappings {
   }
 
   # write relevant xrefs to file
-  $max_object_xref_id = $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset, \%ensembl_object_types);
+  $max_object_xref_id = $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset);
 
   # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
   $self->dump_orphan_xrefs($xref_id_offset);
@@ -1431,11 +1427,10 @@ sub get_analysis_id {
 
 sub dump_core_xrefs {
 
-  my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset, $object_xref_id_offset,  $ensembl_object_types_hashref) = @_;
+  my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset, $object_xref_id_offset) = @_;
 
   my @xref_ids = keys %$xref_ids_hashref;
   my %xref_to_objects = %$xref_ids_hashref;
-  my %ensembl_object_types = %$ensembl_object_types_hashref;
 
   my $dir = $self->core->dir();
 
@@ -1532,6 +1527,7 @@ sub dump_core_xrefs {
     $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
     while ($dep_sth->fetch()) {
 
+
       my $external_db_id = $source_to_external_db{$source_id};
       next if (!$external_db_id);
 
@@ -1542,6 +1538,7 @@ sub dump_core_xrefs {
 	if(!defined($updated_source{$external_db_id})){
 	  $self->cleanup_sources_file($external_db_id);
 	}
+	
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\tDEPENDENT\n";
 	$xrefs_written{$xref_id} = 1;
 	$source_ids{$source_id} = $source_id;
@@ -1551,13 +1548,11 @@ sub dump_core_xrefs {
       # write to file and add to object_xref_mappings
       if (defined $xref_to_objects{$master_xref_id}) {
 	my @ensembl_object_ids = keys( %{$xref_to_objects{$master_xref_id}} ); 
-	#print "xref $accession has " . scalar(@ensembl_object_ids) . " associated ensembl objects\n";
-	foreach my $object_id (@ensembl_object_ids) {
-	  my $type = $ensembl_object_types{$object_id};
+	foreach my $object_id_key (@ensembl_object_ids) {
+	  my ($object_id, $type) = split /\|/, $object_id_key;
 	  my $full_key = $type."|".$object_id."|".$xref_id;
 	  if (!$object_xrefs_written{$full_key}) {
 	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tDEPENDENT\n";
-
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
 	    my $key = $type . "|" . $object_id;
 	    push @{$object_xref_mappings{$key}}, $xref_id;
@@ -2036,6 +2031,8 @@ sub map_source_to_external_db {
 
 sub cleanup_sources_file{
   my ($self,$id) = @_;
+
+
 
   $updated_source{$id} =1;
 
