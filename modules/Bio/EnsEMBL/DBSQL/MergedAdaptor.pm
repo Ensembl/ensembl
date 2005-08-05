@@ -13,7 +13,7 @@ Bio::EnsEMBL::DBSQL::MergedAdaptor
 
 =head1 SYNOPSIS
 
-$merged_adaptor = new Bio::EnsEMBL::DBSQL::MergedAdaptor();
+$merged_adaptor = new Bio::EnsEMBL::DBSQL::MergedAdaptor(-species => "human", -type => "Population");
 
 
 =head1 DESCRIPTION
@@ -37,22 +37,48 @@ package Bio::EnsEMBL::DBSQL::MergedAdaptor;
 use vars qw(@ISA);
 use strict;
 
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
+
 
 =head2 new
 
-  Example    : $MergedAdaptor = new Bio::EnsEMBL::DBSQL::MergedAdaptor();
+  Example      : $MergedAdaptor = new 
+               : Bio::EnsEMBL::DBSQL::MergedAdaptor(-species=> 'human', -type =>'Population');
+  Arg [SPECIES]: (optional) string 
+                  species name to get adaptors for
+  Arg [TYPE]   : (optional) string 
+                  type to get adaptors for
+
   Description: Creates a new MergedAdaptor
   Returntype : Bio::EnsEMBL::DBSQL::MergedAdaptor
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::Registry
+  Exceptions : throws if species or type not specified
+  Caller     : general
+  Status     : At Risk
+             : Under development
 
 =cut
 
 sub new {
-  my ($class) = @_;
+  my ($class,@args) = @_;
 
   my $self ={};
   bless $self,$class;
+
+  my ($species, $type) =
+    rearrange([qw(SPECIES TYPE)], @args);
+
+  if(!defined($species)|| !defined($type)){
+    die "Species and Type must be specified\n";
+  }
+  
+  my @adaps = @{$reg->get_all_adaptors(-species => $species, -type => $type)};
+
+  my @list =();
+  push(@list,@adaps);
+  $self->{'list'}= \@list;
 
   return $self;
 }
@@ -63,6 +89,8 @@ sub new {
   Description: adds a list of adaptors to the Merged adaptor list.
   Returntype : none
   Exceptions : none
+  Status     : At Risk
+             : Under development
 
 =cut
 
@@ -80,6 +108,8 @@ sub add_list{
   Description: adds an adaptor to the Merged adaptor list.
   Returntype : none
   Exceptions : none
+  Status     : At Risk
+             : Under development
 
 =cut
 
@@ -122,10 +152,7 @@ sub AUTOLOAD {
 
   foreach my $adaptor (@{$self->{'list'}}) {
     my $ref;
-    if($adaptor->can($sub)
-#       and !($adaptor->isa("Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor") ||
-#	     $adaptor->isa("Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor"))
-      ){
+    if($adaptor->can($sub)){
       $ref = $adaptor->$sub(@args);
       my $type= ref($ref);
       if($type =~/HASH/){
