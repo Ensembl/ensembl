@@ -2151,6 +2151,16 @@ sub do_upload {
   my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
   system $str;
 
+  # update meta table with timestamp saying when xrefs were last updated
+  $file =  $ensembl->dir() . "/meta_timestamp.sql";
+  open (FILE, ">$file");
+  print FILE "DELETE FROM meta WHERE meta_key='xref.timestamp'\n";
+  print FILE "INSERT INTO meta (meta_key,meta_value) VALUES ('xref.timestamp', NOW())\n");
+  close(FILE);
+
+  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+  system $str;
+
 }
 
 # Delete (or set some fields to null) existing data
