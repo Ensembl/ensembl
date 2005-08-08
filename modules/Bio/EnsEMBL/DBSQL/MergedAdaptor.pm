@@ -140,11 +140,7 @@ use vars '$AUTOLOAD';
 
 sub AUTOLOAD {
   my ($self,@args) = @_;
-  my %hash_return=();
   my @array_return=();
-  my $obj_return= undef;
-  my $scalar_return=undef;
-  my $return = undef;
 
   $AUTOLOAD =~ /^.*::(\w+)+$/ ;
 
@@ -154,42 +150,13 @@ sub AUTOLOAD {
     my $ref;
     if($adaptor->can($sub)){
       $ref = $adaptor->$sub(@args);
-      my $type= ref($ref);
-      if($type =~/HASH/){
-#	print "HASH\t";
-	warn("Merged adaptor Could be overwriting return value for $sub\n");
-	warn("Due to HASH being returned\n");
-	foreach my $key (keys %$ref){
-	  $hash_return{$key} = $$ref{$key};
-	}
-	$return = \%hash_return;
-      }
-      elsif($type =~/ARRAY/){
-	push @array_return,@$ref;
-	$return = \@array_return;
-      }
-      elsif($type =~/SCALAR/){
-	if(defined($scalar_return)){
-	  warn("Merged adaptor overwriting return value for sub $sub\n");
-	  warn("Maybe change return value for this sub to be ARRAY or use standard adaptor\n");
-	}
-	$scalar_return = $ref;
-	$return = \$scalar_return;
-      }
-      else{ # obj
-	if(defined($obj_return)){
-	  warn("Merged adaptor overwriting return value for $sub\n");
-	  warn("Maybe change return value for this sub to be ARRAY or use standard adaptor\n");
-	}
-	$obj_return = $ref;
-	$return = $obj_return;
-      }
+      push @array_return, $ref;
     }
     else{ # end of can
       warn("In Merged Adaptor $adaptor cannot call sub $sub");
     }
   }
-  return $return;
+  return \@array_return;
 }
 
 sub DESTROY{
