@@ -101,9 +101,9 @@
 3116	AFFY_U133_X3P	1	XREF	1	0	1	Affymx Microarray U133
 3117	AFFY_Canine	1	XREF	1	0	1	Affymx Microarray Canine
 3118	AFFY_Chicken	1	XREF	1	0	1	Affymx Microarray Chicken
-3119	AFFY_HuGeneFL	1	XREF	1	0	1
-3120	AFFY_DrosGenome1	1	XREF	1	0	1
-3121	AFFY_Drosophila_2	1	XREF	1	0	1
+3119	AFFY_HuGeneFL	1	XREF	1	0	1	Affymx Microarray HuGeneFL
+3120	AFFY_DrosGenome1	1	XREF	1	0	1      Affymx Microarray Drosophila
+3121	AFFY_Drosophila_2	1	XREF	1	0	1      Affymx Microarray Drosophila2.0
 3300	miRNA_Registry	1	XREF	1	0	1	miRNA Registry
 3400	SGD	1	KNOWN	1	0	50	SGD
 3500	IPI	1	KNOWN	1	0	5	IPI
