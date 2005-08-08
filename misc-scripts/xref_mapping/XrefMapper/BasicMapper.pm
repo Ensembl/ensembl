@@ -2110,7 +2110,7 @@ sub do_upload {
     }
     
     # gene descriptions
-    my $sth = $core_db->prepare("UPDATE gene SET description=NULL");
+    my $sth = $core_db->prepare("UPDATE gene g, analysis a SET g.description=NULL WHERE g.analysis_id=a.analysis_id AND a.logic_name != \"ncRNA\"");
     print "Setting all existing descriptions in gene table to null\n";
     $sth->execute();
 
@@ -2154,8 +2154,8 @@ sub do_upload {
   # update meta table with timestamp saying when xrefs were last updated
   $file =  $ensembl->dir() . "/meta_timestamp.sql";
   open (FILE, ">$file");
-  print FILE "DELETE FROM meta WHERE meta_key='xref.timestamp'\n";
-  print FILE "INSERT INTO meta (meta_key,meta_value) VALUES ('xref.timestamp', NOW())\n");
+  print FILE "DELETE FROM meta WHERE meta_key='xref.timestamp';\n";
+  print FILE "INSERT INTO meta (meta_key,meta_value) VALUES ('xref.timestamp', NOW())\n";
   close(FILE);
 
   my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
@@ -2299,12 +2299,14 @@ sub build_gene_descriptions {
 	$description =~ s/\"//ig; # remove " as they will cause problems in .sql files
 
 	my $desc = $description . " [Source:$source;Acc:$acc]";
-	print GENE_DESCRIPTIONS "UPDATE gene SET description=\"$desc\" WHERE gene_id=$gene_id;\n" if ($description);
+
+	# prevent overwriting ncRNA gene descriptions as these are calculated by an external method
+	print GENE_DESCRIPTIONS "UPDATE gene g, analysis a SET g.description=\"$desc\" WHERE a.analysis_id=g.analysis_id AND a.logic_name != \"ncRNA\" AND g.gene_id=$gene_id;\n" if ($description);
 
       }
 
     }
-    
+
   } # foreach gene
 
   close(GENE_DESCRIPTIONS);
