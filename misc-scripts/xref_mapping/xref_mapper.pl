@@ -175,6 +175,7 @@ if(defined($species_hash{'species'})){
   }
   if(defined($use_existing_mappings)){
     $mapper->use_existing_mappings("yes");
+    $mapper->dumpcheck("yes");
   }
 
   
