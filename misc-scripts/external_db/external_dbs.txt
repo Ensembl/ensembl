@@ -50,7 +50,7 @@
 2430	wormbase_pseudogene	1	PSEUDO	1	0	5	Wormbase Pseudogene
 2510	ZFIN_ID	1	KNOWNXREF	1	0	5	ZFIN ID
 2600	GeneDB	1	KNOWN	1	0	5	GeneDB
-2601	ciona_int_aniseed	1	KNOWN	1	0	5	ANISEED 
+2601	aniseed	1	KNOWN	1	0	5	ANISEED 
 2602	ciona_int_jgi	1	KNOWN	1	0	10	JGI Gene ID
 2700	Ens_Hs_gene	1	XREF	1	0	5	Ensembl Human Gene
 2710	Ens_Hs_transcript	1	XREF	1	0	5	Ensembl Human Transcript
