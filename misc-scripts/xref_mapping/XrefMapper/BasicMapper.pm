@@ -1883,7 +1883,7 @@ sub build_gene_display_xrefs {
 
     if ($best_xref) {
       # Write record
-      print GENE_DX "UPDATE gene g, analysis a SET g.display_xref_id=" . $best_xref . " WHERE g.gene_id=" . $gene_id . " AND g.analysis_id=a.analysis_id AND a.logic_name != \"ncRNA\"\n";
+      print GENE_DX "UPDATE gene g, analysis a SET g.display_xref_id=" . $best_xref . " WHERE g.gene_id=" . $gene_id . " AND g.analysis_id=a.analysis_id AND a.logic_name != \"ncRNA\";\n";
       print GENE_DX_TXT $best_xref . "\t" . $gene_id ."\n";
       $hit++;
     } else {
