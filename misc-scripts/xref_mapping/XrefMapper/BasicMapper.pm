@@ -1883,7 +1883,7 @@ sub build_gene_display_xrefs {
 
     if ($best_xref) {
       # Write record
-      print GENE_DX "UPDATE gene SET display_xref_id=" . $best_xref . " WHERE gene_id=" . $gene_id . ";\n";
+      print GENE_DX "UPDATE gene g, analysis a SET g.display_xref_id=" . $best_xref . " WHERE g.gene_id=" . $gene_id . " AND g.analysis_id=a.analysis_id AND a.logic_name != \"ncRNA\"\n";
       print GENE_DX_TXT $best_xref . "\t" . $gene_id ."\n";
       $hit++;
     } else {
@@ -2097,18 +2097,18 @@ sub do_upload {
       my $sth = $core_db->prepare("DELETE FROM $table");
       print "Deleting existing data in $table\n";
       $sth->execute();
-      
+
     }
 
-    # gene_display_xref.sql etc
-    foreach my $table ("gene", "transcript") {
-      
-      my $sth = $core_db->prepare("UPDATE $table SET display_xref_id=NULL");
-      print "Setting all existing display_xref_id in $table to null\n";
-      $sth->execute();
-      
-    }
-    
+    # gene & transcript display_xrefs
+    my $sth = $core_db->prepare("UPDATE gene g, analysis a SET g.display_xref_id=NULL WHERE g.analysis_id=a.analysis_id AND a.logic_name != \"ncRNA\"");
+    print "Setting all existing display_xref_id in gene to null\n";
+    $sth->execute();
+
+    my $sth = $core_db->prepare("UPDATE transcript t SET display_xref_id=NULL");
+    print "Setting all existing display_xref_id in transcript to null\n";
+    $sth->execute();
+
     # gene descriptions
     my $sth = $core_db->prepare("UPDATE gene g, analysis a SET g.description=NULL WHERE g.analysis_id=a.analysis_id AND a.logic_name != \"ncRNA\"");
     print "Setting all existing descriptions in gene table to null\n";
