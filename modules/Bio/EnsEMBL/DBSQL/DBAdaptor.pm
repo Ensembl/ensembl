@@ -76,6 +76,7 @@ my $reg = "Bio::EnsEMBL::Registry";
   Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -122,8 +123,9 @@ sub new {
   Exmaple    : $dbc = $dba->dbc();
   Description: Getter/Setter for DBConnection.
   Returntype : Bio::EnsEMBL::DBSQL::DBConnection
-  Exceptions : none
+  Exceptions : throws if argument not a Bio::EnsEMBL::DBSQL::DBConnection
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -142,17 +144,6 @@ sub dbc{
   return $self->{_dbc};
 }
 
-=head2 db
-
-
-=cut
-
-sub db{
-  my ($self, $arg ) = @_;
- deprecate("db Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
- return $self->dbc($arg);
-}
-
 
 
 =head2 add_db_adaptor
@@ -167,6 +158,8 @@ sub db{
   Returntype : none
   Exceptions : none
   Caller     : EnsWeb
+  Status     : At Risk
+             : may get deprecated, please use add_db from the registry instead
 
 =cut
 
@@ -192,6 +185,8 @@ sub add_db_adaptor {
   Returntype : none
   Exceptions : none
   Caller     : ?
+  Status     : At Risk
+             : mey get deprecated, use remove_db instead from the Registry
 
 =cut
 
@@ -212,6 +207,9 @@ sub remove_db_adaptor {
   Returntype : hash reference with Bio::EnsEMBL::DBSQL::DBConnection values
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::ProxyAdaptor
+  Status     : At Risk
+             : may get deprecated soon
+             : please use  Bio::EnsEMBL::Registry->get_all_db_adaptors
 
 =cut
 
@@ -232,6 +230,9 @@ sub get_all_db_adaptors {
   Returntype : Bio::EnsEMBL::DBSQL::DBConnection
   Exceptions : none
   Caller     : ?
+  Status     : At Risk
+             : may get deprecated soon
+             : please use  Bio::EnsEMBL::Registry->get_db_adaptors
 
 =cut
 
@@ -241,6 +242,16 @@ sub get_db_adaptor {
   return Bio::EnsEMBL::Registry->get_db($self, $name);
 }
 
+=head2 get_available_adaptors
+
+  Example    : my %pairs = %{$dba->get_available_adaptors()};
+  Description: gets a hash of the available adaptors
+  ReturnType : reference to a hash
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Utils::ConfigRegistry
+  Status     : Stable
+
+=cut 
 
 sub get_available_adaptors{
   my %pairs =  ( 
@@ -292,6 +303,8 @@ sub get_available_adaptors{
   Returntype : none
   Exceptions : none
   Caller     : EnsWeb
+  Status     : At Risk
+             : with the new web code this may not be needed/supported
 
 =cut
 
@@ -315,6 +328,8 @@ sub remove_all_DASFeatureFactories {
   Returntype : Bio::EnsEMBL::ExternalFeatureFactory
   Exceptions : none
   Caller     : ??
+  Status     : At Risk
+             : with the new web code this may not be needed/supported
 
 =cut
 
@@ -360,7 +375,7 @@ sub _each_DASFeatureFactory{
   Returntype : none
   Exceptions : none
   Caller     : general
-
+  
 =cut
 
 sub add_ExternalFeatureAdaptor {
@@ -458,7 +473,10 @@ sub add_ExternalFeatureFactory{
   Returntype : Adaptor Object of arbitrary type or undef
   Exceptions : none
   Caller     : external
-
+  Status     : Medium Risk
+             : please use the Registry method, as at some time this
+             : may no longer be supprted.
+ 
 =cut
 
 sub get_adaptor {
@@ -480,7 +498,10 @@ sub get_adaptor {
   Returntype : none
   Exceptions : none
   Caller     : external
-
+  Status     : Medium Risk
+             : please use the Registry method, as at some time this
+             : may no longer be supprted.
+ 
 =cut
 
 sub set_adaptor {
@@ -571,6 +592,7 @@ sub add_GenericFeatureAdaptor {
   Returntype : string
   Exceptions : none
   Caller     : new
+  Status     : Stable
 
 =cut
 
@@ -594,6 +616,7 @@ sub species {
   Returntype : string
   Exceptions : none
   Caller     : new
+  Status     : Stable
 
 =cut
 
@@ -612,6 +635,7 @@ sub group {
   Returntype : Bio::EnsEMBL::Utils::SeqRegionCache
   Exceptions : none
   Caller     : SliceAdaptor, AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -640,6 +664,8 @@ sub get_SeqRegionCache {
            on disk but have other databases with genes and features in
  Returns : dna database adaptor
  Args    : Bio::EnsEMBL::DBSQL::BaseAdaptor
+ Status  : Medium Risk.
+         : Use the Registry method add_DNAAdaptor/get_DNAAdaptor instead
 
 =cut
 
@@ -692,6 +718,18 @@ sub DESTROY {} # required due to AUTOLOAD
 #########################
 # sub DEPRECATED METHODS
 #########################
+=head2 db
+  
+  Description: DEPRECATED 
+  
+=cut
+
+sub db{
+  my ($self, $arg ) = @_;
+ deprecate("db Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+ return $self->dbc($arg);
+}
+
 
 sub source { deprecate('Do not use - this method does nothing'); }
 
