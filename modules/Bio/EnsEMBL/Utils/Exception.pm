@@ -125,7 +125,10 @@ sub throw {
 
   #for backwards compatibility with Bio::EnsEMBL::Root::throw
   #allow to be called as an object method as well as class method
+  #Root function now deprecated so call will have the string instead.
+
   $string = shift if(ref($string)); #skip object if one provided
+  $string = shift if($string eq "Bio::EnsEMBL::Utils::Exception");
 
   my $level  = shift;
 
@@ -166,9 +169,10 @@ sub throw {
 
 sub warning {
   my $string = shift;
+  $string = shift if($string eq "Bio::EnsEMBL::Utils::Exception"); #skip object if one provided
   my $level  = shift;
 
-  $level = $DEFAULT_WARNING if(!defined($level));
+   $level = $DEFAULT_WARNING if(!defined($level));
 
   return if ($VERBOSITY < $level);
 
@@ -229,6 +233,7 @@ sub warning {
 
 sub info {
   my $string = shift;
+  $string = shift if($string eq "Bio::EnsEMBL::Utils::Exception");
   my $level  = shift;
 
   $level = $DEFAULT_INFO if(!defined($level));
@@ -288,6 +293,7 @@ sub info {
 sub verbose {
   if(@_) {
     my $verbosity = shift;
+    $verbosity = shift if($verbosity eq "Bio::EnsEMBL::Utils::Exception");
     if($verbosity =~ /\d+/) { #check if verbosity is an integer
       $VERBOSITY = $verbosity;
     } else {
@@ -338,6 +344,7 @@ sub stack_trace_dump{
 
   my $levels = 2; #default is 2 levels so stack_trace_dump call is not present
   $levels = shift if(@_);
+  $levels = shift if($levels eq "Bio::EnsEMBL::Utils::Exception");
   $levels = 1 if($levels < 1);
   
   while($levels) {
@@ -413,6 +420,7 @@ my %DEPRECATED;
 
 sub deprecate {
   my $mesg = shift;
+  $mesg = shift if($mesg eq "Bio::EnsEMBL::Utils::Exception"); #skip object if one provided
 
   my $level = shift;
 

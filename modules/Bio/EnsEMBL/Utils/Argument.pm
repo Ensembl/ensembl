@@ -115,6 +115,7 @@ use vars qw(@ISA @EXPORT);
 
 sub rearrange {
   my $order = shift;
+  $order = shift if($order eq "Bio::EnsEMBL::Utils::Argument"); #skip object if one provided
 
   # If we've got parameters, we need to check to see whether
   # they are named or simply listed. If they are listed, we
