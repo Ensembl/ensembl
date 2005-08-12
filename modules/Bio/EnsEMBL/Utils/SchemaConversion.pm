@@ -48,7 +48,7 @@ use Data::Dumper;
 
   Example     : $conversion->Bio::EnsEMBL::Utils::SchemaConversion->new($serverroot);
   Description : Constructor, including an instance of a Bio::EnsEMBL::Utils::ConversionSupport 
-                object. Parses input file
+                object. Parses input file and checks input with user
   Return type : Bio::EnsEMBL::Utils::SchemaConversion object 
   Exceptions  : thrown if $Siteroot not passed over
   Caller      : $Siteroot/utils/vega_schema_conversion
@@ -62,6 +62,42 @@ sub new {
     bless ($self,$class);
     $self->{config} =  Bio::EnsEMBL::Utils::ConversionSupport->new($support);
     $self->conv_support->parse_common_options;
+	$self->conv_support->parse_extra_options('do_vega_sc=s',
+											 'do_ens_sc=s',
+											 'source_db=s',
+											 'core_sql=s',
+											 'vega_sql=s',
+											 'patch_sql=s',
+											 'force=s',
+											 'do_features=s');
+
+	#check input and show help
+	$self->conv_usage() if ($self->conv_support->param("help"));
+	$self->conv_usage("configuration file needed") unless ($self->conv_support->param("conffile"));
+	$self->conv_usage("password for database access needed") unless ($self->conv_support->param("pass"));
+	$self->conv_usage("can only do conversion to ensembl OR Vega, not both") if ($self->conv_support->param('do_vega_sc') && $self->conv_support->param('do_ens_sc'));
+	$self->conv_usage("You need to do vega->veg or ensembl->vega conversion") unless ($self->conv_support->param('do_vega_sc') || $self->conv_support->param('do_ens_sc'));
+	
+	# ask user to confirm parameters to proceed
+	$self->conv_support->allowed_params('conffile',
+										'do_vega_sc',
+										'do_ens_sc',
+										'host',
+										'port',
+										'user',
+										'pass',
+										'source_db',
+										'dbname',
+										'force',
+										'do_features',
+										'verbose',
+										'logpath',
+										'logfile',
+										'core_sql',
+										'vega_sql',
+										'patch_sql');										
+	$self->conv_support->confirm_params;
+
     my $siteroot = $self->conv_support->serverroot;
     $self->conv_support->param('vega_sql',$siteroot.$self->conv_support->param('vega_sql'));
     $self->conv_support->param('core_sql',$siteroot.$self->conv_support->param('core_sql'));
@@ -136,8 +172,9 @@ sub choose_conversion_type {
     my $self = shift;
     my $converter;
     my $species;
+
     $species = $self->species_alias($self->conv_support->param('source_db'));
-    if ($self->conv_support->param('do_vega_schema_conversion')) {
+    if ($self->conv_support->param('do_vega_sc')) {
         $species = "vega::".$species;
         eval "require SeqStoreConverter::$species";
         if($@) {
@@ -166,9 +203,9 @@ sub choose_conversion_type {
     $converter = "SeqStoreConverter::$species"->new
         ( $self->conv_support->param('user'), 
           $self->conv_support->param('pass'), 
-          $self->conv_support->param('host'), 
+          $self->conv_support->param('host').':'.$self->conv_support->param('port'), 
           $self->conv_support->param('source_db'), 
-          $self->conv_support->param('target_db'), 
+          $self->conv_support->param('dbname'), 
           $self->conv_support->param('core_sql'), 
           $self->conv_support->param('vega_sql'), 
           $self->conv_support->param('force'), 
@@ -214,7 +251,7 @@ sub do_conversion {
     $self->conv_obj->copy_other_tables(); 
     $self->conv_obj->copy_repeat_consensus(); 
     $self->conv_obj->create_meta_coord(); 
-    if ($self->conv_support->param('do_vega_schema_conversion')) { 
+    if ($self->conv_support->param('do_vega_sc')) { 
         $self->conv_obj->copy_other_vega_tables(); 
         $self->conv_obj->update_clone_info(); 
         $self->conv_obj->remove_supercontigs(); 
@@ -235,7 +272,7 @@ sub do_conversion {
 
 sub make_schema_up_to_date {
 	my $self = shift;
-	$self->conv_obj->debug ("\n*** Patching schema to latest version ***\n");
+	$self->conv_obj->debug ("\nPatching schema to latest version\n");
 	my $user = $self->conv_obj->user;
 	my $pass = $self->conv_obj->password;
 	my $port = $self->conv_obj->port;
@@ -266,27 +303,30 @@ sub conv_usage {
 	
 	print STDERR <<EOF;
 
+** Source and target databases must be on the same mysql instance
+
 usage: ./conversion_densities.pl  <options>
 
-options: -pass <password>       the mysql user's password (required)
-
-         -conf <conf_file>      configuration file (required):
+options: --conf <conf_file>      configuration file (uses conf/Conversion.ini by default):
 
                                    fields:
-                                      do_vega_conversion (0 or 1)
-                                      do_ensembl_conversion (0 or 1)
+                                      do_vega_sc (do vega conversion: 0 or 1)
+                                      do_ens_sc (do ensembl conversion: 0 or 1)
                                       user (a mysql db user with read/write priveleges)
-                                      host (plus port eg ecs3d:3307)
+                                      host (eg ecs3f)
+                                      port (eg 3310)
                                       source_db (schema 19 source database)
-                                      target_db (schema 20+ trget database)
-                                      core_sql (location of ensembl schema creation script eg ensembl/sql/table.sql)
-                                      vega_sql (location of creation script for additinoal vega tables eg ensembl/sql/vega_specific_tables.sql)
-                                      patch_sql (location of schema patching script eg ensembl/sql/vega_latest_schema.sql)
-                                      force (overwrite existing target database? 0 or 1)
-                                      verbose (print out debug statements 0 or 1)
-                                      do_features (0 or 1 - transfer dna- and protein-align features, for debugging)
-
-         -help                  display this message
+                                      dbname (schema 20+ target database)
+                                      force (overwrite existing target database: 0 or 1)
+                                      verbose (print out debug statements: 0 or 1)
+                                      logpath (location of log file)
+                                      do_features (transfer dna- and protein-align features, for debugging: 0 or 1)
+                                      core_sql (location of ensembl schema creation script: ensembl/sql/table.sql)
+                                      vega_sql (location of creation script for additional vega tables: ensembl/sql/vega_specific_tables.sql)
+                                      patch_sql (location of schema patching script: ensembl/sql/vega_latest_schema.sql)
+ 
+         --log                   name of log_file
+         --help                  display this message
 
 EOF
   exit;
