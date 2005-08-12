@@ -48,6 +48,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
   Returntype : Bio::EnsEMBL::DBSQL::DensityTypeAdaptor
   Exceptions : none
   Caller     : DBAdaptor
+  Status     : Stable
 
 =cut
 
@@ -71,6 +72,7 @@ sub new {
   Returntype : reference to list of Bio::EnsEMBL::DensityType objects
   Exceptions : none
   Caller     : general, new
+  Status     : Stable
 
 =cut
 
@@ -122,6 +124,7 @@ sub fetch_all {
   Returntype : Bio::EnsEMBL::DensityType
   Exceptions : throw if dbID argument not defined
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -152,6 +155,7 @@ sub fetch_by_dbID {
   Returntype : reference to list of Bio::EnsEMBL::DensityTypes
   Exceptions : thrown if logic_name argument is not provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -205,12 +209,13 @@ sub fetch_all_by_logic_name {
 
   Arg [1]    : list of Bio::EnsEMBL::DensityType @dt
                the density types to store in the database
-  Example    : $density_type->store(1234, @density_types);
+  Example    : $density_type->store(@density_types);
   Description: Stores a list of density type objects in the database
   Returntype : none
   Exceptions : thrown if @dt is not defined
                or if any elements of @dt are not Bio::EnsEMBL::DensityType 
   Caller     : general
+  Status     : Stable
 
 =cut
 

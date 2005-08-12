@@ -41,6 +41,7 @@ use strict;
   Returntype : Bio::EnsEMBL::DnaPepAlignFeature
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor
+  Status     : Stable
 
 =cut
 
@@ -60,6 +61,8 @@ sub new_fast {
   Returntype : int
   Exceptions : none
   Caller     : Bio::EnsEMBL::BaseAlignFeature
+  Status     : Stable
+
 
 =cut
 
@@ -77,6 +80,8 @@ sub _hit_unit {
   Returntype : int
   Exceptions : none
   Caller     : Bio::EnsEMBL::BaseAlignFeature
+  Status     : Stable
+
 
 =cut
 

@@ -61,6 +61,7 @@ use strict;
   Returntype : Bio::EnsEMBL::DBSQL::AnalysisAdaptor
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Status     : Stable
 
 =cut
 
@@ -85,6 +86,7 @@ sub new {
   Returntype : listref of Bio::EnsEMBL::Analysis retrieved from the database
   Exceptions : none
   Caller     : AnalysisAdaptor::new
+  Status     : Stable
 
 =cut
 
@@ -130,6 +132,7 @@ sub fetch_all {
   Returntype : Listref of Bio::EnsEMBL::Analysis
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -171,6 +174,7 @@ WHERE  a.analysis_id=f.analysis_id |;
   Returntype : List of feature classes
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -201,6 +205,7 @@ sub feature_classes{
   Returntype : Bio::EnsEMBL::Analysis
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -247,6 +252,7 @@ sub fetch_by_dbID {
   Returntype : Bio::EnsEMBL::Analysis
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -304,6 +310,7 @@ sub fetch_by_logic_name {
   Exceptions : throw on incorrect argument
                throw if analysis argument does not have a logic name
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -452,6 +459,7 @@ sub store {
   Returntype : int 1 if update is performed, undef if it is not
   Exceptions : throw if arg is not an analysis object
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -503,6 +511,7 @@ sub update {
   Returntype : none
   Exceptions : thrown if $anal arg is not an analysis object
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -549,6 +558,7 @@ sub remove {
   Returntype : int dbID if analysis is found, otherwise returns undef
   Exceptions : thrown if $anal arg is not an analysis object
   Caller     : store
+  Status     : Stable
 
 =cut
 
@@ -586,6 +596,7 @@ sub exists {
   Returntype : Bio::EnsEMBL::Analysis
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::AnalsisAdaptor::fetch_* methods
+  Status     : Stable
 
 =cut
 

@@ -69,6 +69,7 @@ use vars qw(@ISA);
   Returntype : listref of Bio::EnsEMBL::ProteinFeatures
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -138,6 +139,7 @@ sub fetch_all_by_translation_id {
   Returntype : Bio::EnsEMBL::ProteinFeauture
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -198,6 +200,7 @@ sub fetch_by_dbID{
   Returntype : int - the new internal identifier of the stored protein feature
   Exceptions : thrown if arg is not a Bio::EnsEMBL:
   Caller     : none
+  Status     : Stable
 
 =cut
 

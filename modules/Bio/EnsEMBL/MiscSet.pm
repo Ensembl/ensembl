@@ -77,6 +77,7 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::MiscSet
   Exceptions : none
   Caller     : MiscFeatureAdaptor
+  Status     : Stable
 
 =cut
 
@@ -107,6 +108,7 @@ sub new {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -126,6 +128,7 @@ sub code{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -145,6 +148,7 @@ sub name {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -164,6 +168,7 @@ sub description{
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

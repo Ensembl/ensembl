@@ -37,10 +37,11 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
   Args       : exon1, exon2. The two exons to build the Intron from.
   Example    : $intron = new Bio::EnsEMBL::Intron($exon1, $exon2)
-  Description: create an Intron object
+  Description: create an Intron object from two exons.
   Returntype : Bio::EnsEMBL::Intron
   Exceptions : exons not on the same strand or slice.
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -89,6 +90,7 @@ sub new {
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -107,6 +109,7 @@ sub prev_Exon {
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

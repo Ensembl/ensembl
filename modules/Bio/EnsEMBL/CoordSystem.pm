@@ -99,6 +99,7 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::CoordSystem
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -172,6 +173,7 @@ sub new {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -192,6 +194,7 @@ sub name {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -214,6 +217,7 @@ sub version {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -247,6 +251,7 @@ sub equals {
   Returntype : 0 or 1
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -264,6 +269,7 @@ sub is_top_level {
   Returntype : 0 or 1
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -282,6 +288,7 @@ sub is_sequence_level {
   Returntype : 0 or 1
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -307,6 +314,7 @@ sub is_default {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

@@ -67,6 +67,8 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
   Description: Constructs a new Bio::EnsEMBL::RegulatoryFeature.
   Exceptions : Thrown on invalid -SLICE, -ANALYSIS, -STRAND arguments
   Caller     : general, subclass constructors
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -101,6 +103,8 @@ sub new_fast {
   Returntype : Bio::EnsEMBL::RegulatoryFactor
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -130,6 +134,8 @@ sub factor {
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -148,6 +154,8 @@ sub name {
   Returntype : listREF of Bio::EnsEMBL::RegulatoryFeatures
   Exceptions : none
   Caller     : ?
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -188,6 +196,8 @@ sub regulated_transcripts {
   Returntype : listREF of Bio::EnsEMBL::RegulatoryFeatures
   Exceptions : none
   Caller     : ?
+  Status     : At Risk
+             : under development
 
 =cut
 

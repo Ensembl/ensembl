@@ -31,6 +31,8 @@ tables inside EnsEMBL core.
 
  _resolve_type
 
+This whole module has a status of At Risk as it is under development.
+
 =head1 DESCRIPTION
   
 
@@ -61,14 +63,11 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::ArchiveStableId
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
-# sub prepare {
-#  my $self = shift;
-#  warn @_;
-#  $self->SUPER::prepare( @_ );
-# }
 
 sub fetch_by_stable_id {
   my $self = shift;
@@ -100,6 +99,8 @@ sub fetch_by_stable_id {
   Returntype : Bio::EnsEMBL::ArchiveStableId 
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -134,6 +135,8 @@ sub fetch_by_stable_id_version {
   Returntype : Bio::EnsEMBL::ArchiveStableId
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -170,6 +173,8 @@ sub fetch_by_stable_id_dbname {
   Returntype : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions : empty if not a gene stable id or not in database
   Caller     : ArchiveStableId->get_all_transcripts()
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -224,6 +229,8 @@ sub fetch_all_by_gene_archive_id {
   Returntype : Bio::EnsEMBL::ArchiveStableId
   Exceptions : undef if not in db or not a Transcript
   Caller     : Bio::EnsEMBL::ArchiveStableId->get_translation_archive_id
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -279,6 +286,8 @@ sub fetch_by_transcript_archive_id {
   Returntype : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions : none
   Caller     : Bio::EnsEMBL::ArchiveStableId->get_all_predecessors
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -336,6 +345,8 @@ sub fetch_pre_by_arch_id {
   Returntype : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions : none
   Caller     : webcode for archive
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -393,6 +404,8 @@ sub fetch_all_currently_related {
   Returntype : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions : none
   Caller     : Bio::EnsEMBL::ArchiveStableId->get_all_successors
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -448,6 +461,8 @@ sub fetch_succ_by_arch_id {
   Returntype : listref string
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -499,6 +514,8 @@ sub list_dbnames {
   Returntype : string
   Exceptions : none
   Caller     : ArchiveStableId->get_peptide or general
+  Status     : At Risk
+             : under development
 
 =cut
 

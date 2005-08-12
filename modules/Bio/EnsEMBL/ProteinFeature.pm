@@ -59,6 +59,7 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::FeaturePair
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -80,6 +81,15 @@ sub new {
 }
 
 
+=head2 strand
+
+  Arg [1]    : Ignored
+  Description: Overwrites Bio::EnsEMBL::Feature->strand to not allow
+             : the strand to be set.
+  Returntype : int
+  Status     : Stable
+
+=cut
 
 #do not allow the strand to be set
 sub strand {
@@ -98,6 +108,7 @@ sub strand {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -118,6 +129,7 @@ sub idesc{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

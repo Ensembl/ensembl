@@ -78,6 +78,7 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
   Returntype : Bio::EnsEMBL::PredictionTranscript
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -109,6 +110,7 @@ sub new {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -133,6 +135,7 @@ sub coding_region_start {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -153,6 +156,7 @@ sub coding_region_end {
   Returntype : listref of Bio::EnsEMBL::PredictionExons
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -172,6 +176,7 @@ sub get_all_translateable_Exons {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -195,11 +200,11 @@ sub display_label{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
 sub stable_id { return display_label(@_); }
-
 
 sub get_all_DBEntries { return []; }
 
@@ -228,6 +233,7 @@ sub is_known { return 0;}
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -279,6 +285,7 @@ sub translation {
   Returntype: a Bio::Seq as in transcript->translate()
   Exceptions: none
   Caller    : general
+  Status     : Stable
 
 =cut
 
@@ -313,6 +320,7 @@ sub translate {
   Returntype : int
   Exceptions : none
   Caller     : five_prime_utr, get_all_snps, general
+  Status     : Stable
 
 =cut
 
@@ -332,6 +340,7 @@ sub cdna_coding_start { return 1; }
   Returntype : int
   Exceptions : none
   Caller     : five_prime_utr, get_all_snps, general
+  Status     : Stable
 
 =cut
 
@@ -354,6 +363,7 @@ sub cdna_coding_end {
   Returntype : Bio::EnsEMBL::PredictionTranscript
   Exceptions : wrong parameters
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -395,6 +405,7 @@ sub transform {
   Returntype : Bio::EnsEMBL::PredictionTranscript
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -427,6 +438,7 @@ sub transfer {
   Returntype : a list reference to Bio::EnsEMBL::Exon objects
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -450,6 +462,7 @@ sub get_all_Exons {
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 

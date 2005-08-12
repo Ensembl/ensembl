@@ -71,6 +71,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
   Returntype : Bio::EnsEMBL::Feature
   Exceptions : Thrown on invalid -SLICE arguments
   Caller     : general, subclass constructors
+  Status     : Stable
 
 =cut
 
@@ -89,6 +90,16 @@ sub new {
   return $self;
 }
 
+=head2 new_fast
+
+  Arg [1]    : hashref to be blessed
+  Description: Construct a new Bio::EnsEMBL::Feature using the hashref.
+  Exceptions : none
+  Returntype : Bio::EnsEMBL::Feature
+  Caller     : general, subclass constructors
+  Status     : Stable
+
+=cut  
 
 sub new_fast {
   my $class = shift;
@@ -106,6 +117,7 @@ sub new_fast {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -128,6 +140,7 @@ sub type {
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -153,6 +166,7 @@ sub alternate_slice {
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 

@@ -75,6 +75,7 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::DensityFeature
   Exceptions : throw if invalid density value type is provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -107,6 +108,19 @@ sub new {
   return $self;
 }
 
+
+=head2 new_fast
+
+  Arg [...]  : none
+  Example    : $feature = Bio::EnsEMBL::DensityFeature->new_fast();  
+  Description: Creates a new density feature.
+  Returntype : Bio::EnsEMBL::DensityFeature
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
 sub new_fast{
   my $caller = shift;
 
@@ -128,6 +142,7 @@ sub new_fast{
   Returntype : int (always 0)
   Exceptions : warning if an attempt is made to set the strand
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -149,6 +164,7 @@ sub strand {
   Returntype : float
   Exceptions : throw if a negative density value is provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -176,6 +192,7 @@ sub density_value {
   Returntype : Bio::EnsEMBL::Analysis
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -200,6 +217,7 @@ sub analysis {
   Returntype : Bio::EnsEMBL::DensityType
   Exceptions : if object passed is not of type DensityType
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -228,6 +246,7 @@ sub density_type{
  Function:
  Returns : this objects scaled value
  Args    : newvalue (optional)
+ Status  : Stable
 
 =cut
 
@@ -249,6 +268,7 @@ sub scaledvalue{
  Function:
  Returns : this object's url
  Args    : newvalue (optional)
+ Status  : Stable
 
 
 =cut

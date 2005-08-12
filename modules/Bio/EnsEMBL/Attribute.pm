@@ -67,6 +67,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
   Returntype : Bio::EnsEMBL::Attribute
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -95,6 +96,7 @@ sub new {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -113,6 +115,7 @@ sub code {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -130,6 +133,7 @@ sub name {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -148,6 +152,7 @@ sub description {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

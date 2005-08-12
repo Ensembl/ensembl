@@ -50,9 +50,6 @@ So if before we had
    my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
 
 We now want to change this to
-   my $sfa =  Bio::EnsEMBL::Registry->get_db($self->adaptor->db,'blast');
-
-OR preferably if the blast adaptor was set up in configure
    my $sfa = Bio::EnsEMBL::Registry->get_adaptor("Human","core","blast");
 
 
@@ -125,27 +122,27 @@ use vars qw(%registry_register);
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : none
   Exceptions : none
-
+  Status     : Stable
 
 =cut
  
 sub load_all{
   my $class = shift;
-  my $web_reg = shift;
+  my $conf_file = shift;
   
   if(defined($registry_register{'seen'})){
     print STDERR "Clearing previuosly loaded configuration from Registry\n";
     $class->clear();
   }
   $registry_register{'seen'}=1;
-  if(defined($web_reg)){
-    print STDERR  "Loading conf from site defs file ".$web_reg."\n";
-    if(-e $web_reg){
-      unless (my $return = do $web_reg ){
+  if(defined($conf_file)){
+    print STDERR  "Loading conf from site defs file ".$conf_file."\n";
+    if(-e $conf_file){
+      unless (my $return = do $conf_file ){
 	throw "Error in Configuration\n $!\n";
       }
       # other wise it gets done again by the web initialisation stuff
-      delete $INC{$web_reg}; 
+      delete $INC{$conf_file}; 
       }
   }
   elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
@@ -181,7 +178,7 @@ sub load_all{
   Example    : Bio::EnsEMBL::Registry->clear();
   Returntype : none
   Exceptions : none
-
+  Status     : Stable
 
 =cut
 
@@ -197,7 +194,7 @@ sub clear{
 }
 
 #
-# add ons.
+# db adaptors. (for backwards compatibillity)
 #
 
 =head2 add_db
@@ -208,7 +205,11 @@ sub clear{
   Example    : Bio::EnsEMBL::Registry->add_db($db, "lite", $dba);
   Returntype : none
   Exceptions : none
-
+  Status     : At Risk.
+             : This is here for backwards compatibillity only and may be removed 
+             : eventually. Solution is to make sure the db and the adaptor have
+             : the same species and the call is then no longer needed.
+             
 =cut
 
 sub add_db{
@@ -227,6 +228,10 @@ sub add_db{
   Example    : my $db = Bio::EnsEMBL::Registry->remove_db($db, "lite");
   Returntype : adaptor
   Exceptions : none
+  Status     : At Risk.
+             : This is here for backwards compatibillity only and may be removed 
+             : eventually. Solution is to make sure the db and the adaptor have
+             : the same species and the call is then no longer needed.
 
 =cut
 
@@ -246,6 +251,10 @@ sub remove_db{
   Example    : my $db = Bio::EnsEMBL::Registry->get_db("Human", "core", "lite");
   Returntype : adaptor
   Exceptions : none
+  Status     : At Risk.
+             : This is here for backwards compatibillity only and may be removed 
+             : eventually. Solution is to make sure the db and the adaptor have
+             : the same species then call get_DBAdaptor instead.
 
 =cut
 
@@ -266,6 +275,11 @@ sub get_db{
   Example    : my $db = Bio::EnsEMBL::Registry->get_all_db_adaptors($db);
   Returntype : adaptor
   Exceptions : none
+  Status     : At Risk.
+             : This is here for backwards compatibillity only and may be removed 
+             : eventually. Solution is to make sure the dbs all have
+             : the same species then call get_all_DBAdaptors(-species => "human");
+
 
 =cut
 
@@ -302,6 +316,8 @@ sub get_all_db_adaptors{
   Example    : Bio::EnsEMBL::Registry->add_DBAdaptor("Human", "core", $dba);
   Returntype : none
   Exceptions : none
+  caller     : internal
+  Status     : Stable
 
 =cut
 
@@ -337,6 +353,7 @@ sub add_DBAdaptor{
   Example    : $dba = Bio::EnsEMBL::Registry->get_DBAdaptor("Human", "core");
   Returntype : DBAdaptor
   Exceptions : none
+  Status     : Stable
 
 =cut
 
@@ -359,6 +376,7 @@ sub get_DBAdaptor{
                : @human_dbas = @{Bio::EnsEMBL::Registry->get_all_DBAdaptors(-species => 'human')};
   Returntype   : list of DBAdaptors
   Exceptions   : none
+  Status       : Stable
 
 =cut
 
@@ -389,6 +407,7 @@ sub get_all_DBAdaptors{
   Returntype : reference to list of DBAdaptors
   Exceptions : none.
   Example    : @dba = @{Bio::EnsEMBL::Registry->get_all_DBAdaptors_by_connection($dbc);
+  Status     : Stable
 
 =cut
 
@@ -418,6 +437,7 @@ sub get_all_DBAdaptors_by_connection{
   Example    : Bio::EnsEMBL::Registry->add_DNAAdaptor("Human", "core", $dnaAdap);
   Returntype : none
   Exceptions : none
+  Status     : Stable
 
 =cut
 
@@ -442,6 +462,7 @@ sub add_DNAAdaptor{
   Example    : $dnaAdap = Bio::EnsEMBL::Registry->get_DNAAdaptor("Human", "core");
   Returntype : adaptor
   Exceptions : none
+  Status     : Stable
 
 =cut
 
@@ -472,6 +493,8 @@ sub get_DNAAdaptor{
   Example    : Bio::EnsEMBL::Registry->add_adaptor("Human", "core", "Gene", $adap);
   Returntype : none
   Exceptions : none
+  Caller     : internal
+  Status     : Stable
 
 
 =cut
@@ -531,6 +554,7 @@ sub add_adaptor{
   Example    : $adap = Bio::EnsEMBL::Registry->get_adaptor("Human", "core", "Gene");
   Returntype : adaptor
   Exceptions : none
+  Status     : Stable
 
 =cut
 
@@ -577,8 +601,9 @@ sub get_adaptor{
   Arg [TYPE] : (optional) string 
                   type to get adaptors for
   Example    : @adaps = @{Bio::EnsEMBL::Registry->get_all_adaptors()};
-  Returntype : list of adaptors
+  Returntype : ref to list of adaptors
   Exceptions : none
+  Status     : Stable
 
 =cut
 
@@ -650,6 +675,7 @@ sub get_all_adaptors{
   Description: add alternative name for the species.
   Returntype : none
   Exceptions : none
+  Status     : Stable
 
 =cut
 
@@ -666,6 +692,7 @@ sub add_alias{
   Description: get proper species name.
   Returntype : species name
   Exceptions : none
+  Status     : Stable
 
 =cut
 
@@ -686,6 +713,7 @@ sub get_alias{
   Description: does the species name exist.
   Returntype : 1 if exists else 0
   Exceptions : none
+  Status     : Stable
 
 =cut
 
@@ -705,6 +733,7 @@ sub alias_exists{
                not being used on each database.
   Returntype : none
   Exceptions : none
+  Status     : Stable
 
 =cut
 
@@ -724,6 +753,7 @@ sub set_disconnect_when_inactive{
   Description: disconnect from all the databases.
   Returntype : none
   Exceptions : none
+  Status     : Stable
 
 =cut
 
@@ -754,6 +784,7 @@ sub disconnect_all {
   Description: change username and password on one or more databases
   Returntype : none
   Exceptions : none
+  Status     : Stable
 
 =cut
 
@@ -799,6 +830,7 @@ my $self = shift;
                can find on a database instance into the registry.
 
   Exceptions : None.
+  Status     : Stable
  
 =cut
 
@@ -1005,6 +1037,7 @@ sub load_registry_with_web_adaptors{
   Example    : $merged = Bio::EnsEMBL::Registry->set_default_track("Human","core");
   Returntype : none
   Exceptions : none
+  Status     : At Risk.
 
 =cut
 
@@ -1024,6 +1057,7 @@ sub set_default_track{
   Example    : $merged = Bio::EnsEMBL::Registry->set_default_track("Human","core");
   Returntype : int 
   Exceptions : none
+  Status     : At Risk.
 
 =cut
 
@@ -1048,6 +1082,7 @@ sub default_track{
   Returntype : none
   Exceptions : none
   Called by  : UserConfig.pm
+  Status     : At Risk.
   
 =cut
 

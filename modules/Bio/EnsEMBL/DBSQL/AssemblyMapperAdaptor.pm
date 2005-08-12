@@ -88,6 +88,7 @@ my $CHUNKFACTOR = 20;  # 2^20 = approx. 10^6
   Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Status     : Stable
 
 =cut
 
@@ -129,6 +130,7 @@ sub new {
   Returntype : Bio::EnsEMBL::AssemblyMapper
   Exceptions : wrong argument types
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -238,6 +240,7 @@ sub fetch_by_CoordSystems {
                or if it associated with multiple assembled pieces (bad data
                in assembly table)
   Caller     : Bio::EnsEMBL::AssemblyMapper
+  Status     : Stable
 
 =cut
 
@@ -445,6 +448,7 @@ sub _seq_region_name_to_id {
                or if it associated with multiple assembled pieces (bad data
                in assembly table)
   Caller     : Bio::EnsEMBL::AssemblyMapper
+  Status     : Stable
 
 =cut
 
@@ -559,7 +563,7 @@ sub register_component {
                error in the data in the meta table or in the code that creates
                the mapping paths.
   Caller     : Bio::EnsEMBL::AssemblyMapper
-
+  Status     : Stable
 
 =cut
 
@@ -863,6 +867,7 @@ sub register_chained {
   Returntype : none
   Exceptions : none
   Caller     : specialised prograhsm
+  Status     : Stable
 
 =cut
 
@@ -972,6 +977,7 @@ sub register_all {
   Exceptions : throw if mapper is between coord systems with unexpected
                mapping paths
   Caller     : specialised programs doing a lot of genome-wide mapping
+  Status     : Stable
 
 =cut
 
@@ -1242,6 +1248,7 @@ sub _build_combined_mapper {
   Returntype : listref of ints
   Exceptions : throw if a non-existant seqregion is provided
   Caller     : general
+  Status     : Stable
 
 =cut
 

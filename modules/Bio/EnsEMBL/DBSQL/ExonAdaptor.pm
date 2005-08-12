@@ -119,6 +119,7 @@ sub _final_clause {
   Returntype : Bio::EnsEMBL::Exon in contig coordinates
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -142,8 +143,9 @@ sub fetch_by_stable_id {
   Example    : none
   Description: Retrieves all Exons for the Transcript in 5-3 order
   Returntype : listref Bio::EnsEMBL::Exon on Transcript slice 
-  Exceptions : none
+  Exceptions : throws if transcript has no slice
   Caller     : Transcript->get_all_Exons()
+  Status     : Stable
 
 =cut
 
@@ -204,6 +206,7 @@ sub fetch_all_by_Transcript {
                or if $exon->start, $exon->end, $exon->strand, or $exon->phase 
                are not defined or if $exon is not a Bio::EnsEMBL::Exon
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -331,6 +334,7 @@ sub store {
   Returntype : none
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -412,6 +416,7 @@ sub remove {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -429,6 +434,7 @@ sub list_dbIDs {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 

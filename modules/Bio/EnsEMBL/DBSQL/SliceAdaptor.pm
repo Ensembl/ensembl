@@ -163,6 +163,7 @@ sub new {
                throw if invalid coord_system_name is provided
                throw if start > end is provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -341,6 +342,7 @@ sub fetch_by_region {
   Returntype : Bio::EnsEMBL::Slice or undef
   Exceptions : throw if incorrent arg provided
   Caller     : Pipeline
+  Status     : Stable
 
 =cut
 
@@ -386,6 +388,7 @@ sub fetch_by_name {
   Returntype : Bio::EnsEMBL::Slice or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -445,6 +448,7 @@ sub fetch_by_seq_region_id {
   Exceptions : throw if the seq_region of the slice is not in the db
                throw if incorrect arg provided
   Caller     : BaseFeatureAdaptor
+  Status     : Stable
 
 =cut
 
@@ -535,6 +539,7 @@ sub get_seq_region_id {
   Returntype : listref of Bio::EnsEMBL::Slices
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -666,8 +671,9 @@ sub fetch_all {
  Usage   :
  Function: create a Slice representing a series of bands
  Example :
- Returns :
+ Returns : Bio::EnsEMBL::Slice
  Args    : the band name
+ Status     : Stable
 
 =cut
 
@@ -696,8 +702,9 @@ sub fetch_by_band {
  Usage   :
  Function: create a Slice representing a series of bands
  Example :
- Returns :
+ Returns : Bio::EnsEMBL::Slice
  Args    : the band name
+ Status     : Stable
 
 =cut
 
@@ -740,6 +747,7 @@ sub fetch_by_chr_band {
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : Thrown if the exon is not in the database.
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -772,6 +780,7 @@ sub fetch_by_exon_stable_id{
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : Thrown if the transcript is not in the database.
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -807,6 +816,7 @@ sub fetch_by_transcript_stable_id{
   Exceptions : throw on incorrect args
                throw if transcript is not in database
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -842,6 +852,7 @@ sub fetch_by_transcript_id {
   Exceptions : throw on incorrect args
                throw if transcript does not exist
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -879,6 +890,7 @@ sub fetch_by_gene_stable_id {
                throw if feature argument is not provided
   Caller     : fetch_by_gene_stable_id, fetch_by_transcript_stable_id,
                fetch_by_gene_id, fetch_by_transcript_id
+  Status     : Stable
 
 =cut
 
@@ -962,6 +974,7 @@ sub fetch_by_Feature{
                Warning if multiple features with the specified attribute type
                and value exist in the database.
   Caller     : webcode
+  Status     : Stable
 
 =cut
 
@@ -999,6 +1012,7 @@ sub fetch_by_misc_feature_attribute {
   Returntype : [[start,end,$slice][]]
   Exceptions : none
   Caller     : BaseFeatureAdaptor
+  Status     : Stable
 
 =cut
 
@@ -1163,6 +1177,7 @@ sub fetch_normalized_slice_projection {
                throw if slice argument is not passed
                throw if the slice end is not equal to seq_region_length
   Caller     : database loading scripts
+  Status     : Stable
 
 =cut
 
@@ -1258,6 +1273,7 @@ sub store {
   Returntype : DBD::sth 
   Exceptions : none
   Caller     : internal, convenience method
+  Status     : Stable
 
 =cut
 

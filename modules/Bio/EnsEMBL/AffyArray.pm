@@ -66,7 +66,8 @@ use Bio::EnsEMBL::Storable;
   Returntype : 
   Exceptions : none
   Caller     : 
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -101,7 +102,8 @@ sub new {
   Returntype : listref of Bio::EnsEMBL::AffyProbe
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -129,7 +131,8 @@ sub get_all_AffyProbes {
   Returntype : string
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -153,7 +156,8 @@ sub name {
   Returntype : listref of Bio::EnsEMBL::AffyFeature
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -179,7 +183,8 @@ sub setsize {
   Returntype : Bio::EnsEMBL::AffyArray
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 

@@ -86,17 +86,18 @@ sub _columns {
 
 =head2 fetch_by_stable_id
 
-Arg [1]    : string $stable_id
-             The stable id of the transcript to retrieve
-Example    : $trans = $trans_adptr->fetch_by_stable_id('GENSCAN00000001234');
-Description: Retrieves a prediction transcript via its display_label.
-             This method is called fetch_by_stable_id for polymorphism with
-             the TranscriptAdaptor.  Prediction transcript display_labels are
-             not necessarily stable in that the same identifier may be reused
-             for a completely different prediction transcript in a subsequent
-             database release.
-Returntype : Bio::EnsEMBL::PredictionTranscript
-Caller     : general
+  Arg [1]    : string $stable_id
+               The stable id of the transcript to retrieve
+  Example    : $trans = $trans_adptr->fetch_by_stable_id('GENSCAN00000001234');
+  Description: Retrieves a prediction transcript via its display_label.
+               This method is called fetch_by_stable_id for polymorphism with
+               the TranscriptAdaptor.  Prediction transcript display_labels are
+               not necessarily stable in that the same identifier may be reused
+               for a completely different prediction transcript in a subsequent
+               database release.
+  Returntype : Bio::EnsEMBL::PredictionTranscript
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -130,6 +131,7 @@ sub fetch_by_stable_id {
   Returntype : reference to list of transcripts
   Exceptions : thrown if exon cannot be placed on transcript slice
   Caller     : Slice::get_all_Transcripts
+  Status     : Stable
 
 =cut
 
@@ -244,6 +246,7 @@ sub fetch_all_by_Slice {
   Returntype : reference to a list of Bio::EnsEMBL::PredictionTranscripts
   Exceptions : none
   Caller     : superclass generic_fetch
+  Status     : Stable
 
 =cut
 
@@ -404,6 +407,7 @@ sub _objs_from_sth {
   Returntype : none
   Exceptions : on wrong argument type 
   Caller     : general 
+  Status     : Stable
 
 =cut
 
@@ -489,8 +493,9 @@ sub store {
   Example    : $prediction_transcript_adaptor->remove($pt);
   Description: removes given prediction transcript $pt from database. 
   Returntype : none
-  Exceptions : none 
+  Exceptions : throws if argument not a  Bio::EnsEMBL::PredictionTranscript
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -533,6 +538,7 @@ sub remove {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 

@@ -58,6 +58,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
               A warning is given if:
                  * The feature has already been stored in this db
   Caller     : Pipeline
+  Status     : Stable
 
 =cut
 
@@ -152,6 +153,7 @@ sub store{
   Returntype : listref of Bio::EnsEMBL::ProteinAlignFeatures
   Exceptions : none
   Caller     : Bio::EnsEMBL::BaseFeatureAdaptor::generic_fetch
+  Status     : Stable
 
 =cut
 
@@ -336,6 +338,7 @@ sub _columns {
   Returntype : listref of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 

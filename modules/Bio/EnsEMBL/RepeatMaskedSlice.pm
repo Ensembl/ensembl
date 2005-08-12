@@ -82,6 +82,7 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::RepeatMaskedSlice
   Exceptions : none
   Caller     : RawComputes (PredictionTranscript creation code).
+  Status     : Stable
 
 =cut
 
@@ -119,6 +120,7 @@ sub new {
   Returntype : reference to list of strings
   Exceptions : none
   Caller     : seq() method
+  Status     : Stable
 
 =cut
 
@@ -145,6 +147,7 @@ sub repeat_mask_logic_names {
   Returntype : boolean
   Exceptions : none
   Caller     : seq() method
+  Status     : Stable
 
 =cut
 
@@ -176,6 +179,7 @@ sub soft_mask {
   Returntype : hash reference
   Exceptions : none
   Caller     : seq() and subseq() methods
+  Status     : Stable
 
 =cut
 
@@ -195,6 +199,7 @@ sub not_default_masking_cases {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -237,6 +242,7 @@ sub seq {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

@@ -42,13 +42,14 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
   Arg [1]    : list of Bio::EnsEMBL::SimpleFeatures @sf
                the simple features to store in the database
-  Example    : $simple_feature_adaptor->store(1234, @simple_feats);
+  Example    : $simple_feature_adaptor->store(@simple_feats);
   Description: Stores a list of simple feature objects in the database
   Returntype : none
   Exceptions : thrown if @sf is not defined, if any of the features do not
                have an attached slice.
-               or if any elements of @sf are not Bio::EnsEMBL::SeqFeatures 
+               or if any elements of @sf are not Bio::EnsEMBL::SimpleFeatures 
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -112,6 +113,7 @@ sub store{
   Returntype : list of listrefs of strings
   Exceptions : none
   Caller     : internal
+  Status     : Stable
 
 =cut
 
@@ -131,6 +133,7 @@ sub _tables {
   Returntype : list of strings
   Exceptions : none
   Caller     : internal
+  Status     : Stable
 
 =cut
 
@@ -152,6 +155,7 @@ sub _columns {
   Returntype : list reference to Bio::EnsEMBL::SimpleFeature objects
   Exceptions : none
   Caller     : internal
+  Status     : Stable
 
 =cut
 
@@ -300,6 +304,7 @@ sub _objs_from_sth {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 

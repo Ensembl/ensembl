@@ -85,6 +85,7 @@ use Bio::EnsEMBL::Utils::Exception qw(deprecate warning);
   Returntype : Bio::EnsEMBL::KarytotypeBand
   Exceptions : none
   Caller     : Bio::EnsEMBL::KaryotypeBandAdaptor
+  Status     : Stable
 
 =cut
 
@@ -110,6 +111,7 @@ sub new {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -129,6 +131,7 @@ sub name{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -149,6 +152,7 @@ sub stain{
   Returntype : int (always 0)
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -169,6 +173,7 @@ sub strand {
   Returntype : none
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -190,6 +195,7 @@ sub move {
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 

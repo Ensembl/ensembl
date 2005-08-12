@@ -82,6 +82,7 @@ my $DEFAULT_MAX_PAIR_COUNT = 1000;
   Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
   Exceptions : thrown if multiple coord_systems are provided
   Caller     : AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -131,6 +132,7 @@ sub new {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -157,6 +159,7 @@ sub max_pair_count {
   Returntype : none
   Exceptions : none
   Caller     : specialised programs doing a lot of mapping
+  Status     : Stable
 
 =cut
 
@@ -190,6 +193,7 @@ sub register_all {
   Exceptions : thrown if if the specified TO coordinat system is not one
                of the coordinate systems associated with this assembly mapper
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -244,6 +248,7 @@ sub map {
   Returntype : none
   Exceptions : none
   Caller     : AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -255,12 +260,47 @@ sub flush {
   $self->{'asm_register'} = {};
 }
 
+=head2 size
+
+  Args       : none
+  Example    : $num_of_pairs = $mapper->size();
+  Description: return the number of pairs currently stored.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut 
 
 sub size {
   my $self = shift;
   return $self->{'mapper'}->{'pair_count'};
 }
 
+=head2 fastmap
+
+  Arg [1]    : string $frm_seq_region
+               The name of the sequence region to transform FROM
+  Arg [2]    : int $frm_start
+               The start of the region to transform FROM
+  Arg [3]    : int $frm_end
+               The end of the region to transform FROM
+  Arg [4]    : int $strand
+               The strand of the region to transform FROM
+  Arg [5]    : Bio::EnsEMBL::CoordSystem
+               The coordinate system to transform FROM
+  Example    : @coords = $asm_mapper->map('X', 1_000_000, 2_000_000,
+                                            1, $chr_cs);
+  Description: Transforms coordinates from one coordinate system
+               to another.
+  Returntype : List of Bio::EnsEMBL::Mapper::Coordinate and/or
+               Bio::EnsEMBL::Mapper:Gap objects
+  Exceptions : thrown if if the specified TO coordinat system is not one
+               of the coordinate systems associated with this assembly mapper
+  Caller     : general
+  Status     : Stable
+
+=cut
 
 
 sub fastmap {
@@ -323,6 +363,7 @@ sub fastmap {
   Returntype : List of strings
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -381,6 +422,7 @@ sub list_seq_regions {
   Returntype : List of ints
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -420,6 +462,7 @@ sub list_ids {
   Returntype : 0 or 1
   Exceptions : throw on incorrect arguments
   Caller     : internal, AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -454,6 +497,7 @@ sub have_registered_component {
   Returntype : 0 or 1
   Exceptions : throw on incorrect arguments
   Caller     : internal, AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -484,6 +528,7 @@ sub have_registered_assembled {
   Returntype : none
   Exceptions : throw on incorrect arguments
   Caller     : internal, AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -511,6 +556,7 @@ sub register_component {
   Returntype : none
   Exceptions : throw on incorrect arguments
   Caller     : internal, AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -537,6 +583,7 @@ sub register_assembled {
   Returntype : Bio::EnsEMBL::Mapper
   Exceptions : none
   Caller     : internal, AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -554,6 +601,7 @@ sub mapper {
   Returntype : Bio::EnsEMBL::CoordSystem
   Exceptions : none
   Caller     : internal, AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -571,6 +619,7 @@ sub assembled_CoordSystem {
   Returntype : Bio::EnsEMBL::CoordSystem
   Exceptions : none
   Caller     : internal, AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -588,6 +637,7 @@ sub component_CoordSystem {
   Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

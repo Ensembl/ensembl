@@ -70,6 +70,7 @@ use Bio::EnsEMBL::Utils::Argument  qw(rearrange);
   Returntype : Bio::EnsEMBL::Upstream
   Exceptions : none
   Caller     : Bio::EnsEMBL::Transcript, general
+  Status     : Stable
 
 =cut
 
@@ -100,6 +101,7 @@ sub new {
                or a Bio::EnsEMBL::Transcript
   Caller     : $self->new, $self->_derive_coords, 
                $self->_first_coding_Exon
+  Status     : Stable
 
 =cut
 
@@ -128,6 +130,7 @@ sub transcript {
   Returntype : int
   Exceptions : Throws if length is requested before it has been set.
   Caller     : $self->new, $self->_derive_coords
+  Status     : Stable
 
 =cut
 
@@ -154,6 +157,7 @@ sub length {
   Returntype : none
   Exceptions : none
   Caller     : $self->length, $self->transform
+  Status     : Stable
 
 =cut
 
@@ -178,6 +182,7 @@ sub _flush_cache {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -209,6 +214,7 @@ sub upstart {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -238,6 +244,7 @@ sub upend {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -267,6 +274,7 @@ sub downstart {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -293,6 +301,7 @@ sub downend {
   Returntype : 
   Exceptions : 
   Caller     : 
+  Status     : At Risk
 
 =cut
 
@@ -315,6 +324,7 @@ sub transform {
   Returntype : arrayref
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -334,6 +344,7 @@ sub derive_upstream_coords {
   Returntype : arrayref
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -353,6 +364,7 @@ sub derive_downstream_coords {
   Exceptions : Throws if argument is not either 'up' or 'down'
   Caller     : $self->upstart, $self->upend, $self->downstart, 
                $self->downend
+  Status     : Stable
 
 =cut
 
@@ -449,6 +461,7 @@ sub _derive_coords {
   Exceptions : Throws if argument is not either 'right_end' 
                or 'left_end'
   Caller     : $self->_derive_coords
+  Status     : Stable
 
 =cut
 
@@ -531,6 +544,7 @@ sub _bases_to_trim {
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : none
   Caller     : $self->_derive_coords, $self->_bases_to_trim
+  Status     : Stable
 
 =cut
 

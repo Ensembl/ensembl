@@ -40,15 +40,43 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 
 =head2 new
 
-  Arg [start]  : int $start
-  Arg [end]    : int $end
-  Arg [strand] : 1,-1 $strand
-  Arg [slice]  : Bio::EnsEMBL::Slice $slice
+  Arg [-START]  : 
+       int - start postion of the gene
+  Arg [-END]    : 
+       int - end position of the gene
+  Arg [-STRAND] : 
+       int  -  1,-1 tehe strand the gene is on
+  Arg [-SLICE]  : 
+       Bio::EnsEMBL::Slice - the slice the gene is on
+  Arg [-STABLE_ID] :
+        string - the stable identifier of this gene
+  Arg [-VERSION] :
+        int - the version of the stable identifier of this gene
+  Arg [-EXTERNAL_NAME] :
+        string - the external database name associated with this gene
+  Arg [-EXTERNAL_DB] :
+        string - the name of the database the external name is from
+  Arg [-EXTERNAL_STATUS]:
+        string - the status of the external identifier
+  Arg [-DISPLAY_XREF]:
+        Bio::EnsEMBL::DBEntry - The external database entry that is used
+        to label this gene when it is displayed.
+  Arg [-CREATED_DATE]:
+        string - the date the gene was created
+  Arg [-MODIFIED_DATE]:
+        string - the date the gene was last modified
+  Arg [-DESCRIPTION]:
+        string - the genes description
+  Arg [-BIOTYPE]:
+        string - the biotype e.g. "protein_coding"
+  Arg [-CONFIDENCE]:
+        string - the gene confidence i.e. "KNOWN","NOVEL"
   Example    : $gene = Bio::EnsEMBL::Gene->new();
   Description: Creates a new gene object
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -98,6 +126,7 @@ sub new {
   Returntype : 0,1
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -116,6 +145,7 @@ sub is_known{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -146,6 +176,7 @@ sub external_name {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -165,6 +196,7 @@ sub confidence {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -185,6 +217,7 @@ sub source {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -215,6 +248,7 @@ sub external_db {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -243,6 +277,7 @@ sub external_status {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -265,6 +300,7 @@ sub description {
   Returntype : none
   Exceptions : thrown on incorrect argument type
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -295,6 +331,7 @@ sub add_DBEntry {
   Returntype : list reference to Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : get_all_DBLinks, GeneAdaptor::store
+  Status     : Stable
 
 =cut
 
@@ -327,6 +364,7 @@ sub get_all_DBEntries {
   Returntype : list reference to Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -355,6 +393,7 @@ sub get_all_DBLinks {
   Returntype : listref Bio::EnsEMBL::Exon
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -390,6 +429,7 @@ sub get_all_Exons {
                        ]
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -456,6 +496,7 @@ sub get_all_homologous_Genes{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -507,6 +548,7 @@ sub type {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -529,6 +571,7 @@ sub biotype {
   Returntype : none
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -556,6 +599,7 @@ sub add_Transcript {
   Returntype : listref Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -585,6 +629,7 @@ sub get_all_Transcripts {
   Returntype : listref of Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -605,6 +650,7 @@ sub get_all_alt_alleles {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -623,6 +669,7 @@ sub version{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -633,11 +680,35 @@ sub stable_id{
 }
 
 
+=head2 created_date
+
+  Arg [1]    : (optional) string to be used for the created date
+  Example    : none
+  Description: get/set for attribute created date
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
 sub created_date {
   my $self = shift;
   $self->{'created_date'} = shift if ( @_ );
   return $self->{'created_date'};
 }
+
+=head2 modified_date
+
+  Arg [1]    : (optional) string to be used for the modified date
+  Example    : none
+  Description: get/set for attribute modified date
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
 
 
 sub modified_date {
@@ -656,6 +727,7 @@ sub modified_date {
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : wrong parameters
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -695,6 +767,7 @@ sub transform {
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -724,6 +797,7 @@ sub transfer {
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -743,6 +817,7 @@ sub display_xref {
   Returntype : none
   Exceptions : none
   Caller     : internal
+  Status     : Stable
 
 =cut
 
@@ -800,6 +875,7 @@ sub recalculate_coordinates {
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 
@@ -820,6 +896,7 @@ sub display_id {
   Exceptions:
   Caller    :
   Example   : $dasref = $prot->get_all_DASFactories
+  Status     : Stable
 
 =cut
 
@@ -841,6 +918,7 @@ sub get_all_DASFactories {
   Returntype : hashref of Bio::SeqFeatures
   Exceptions : ?
   Caller     : webcode
+  Status     : Stable
 
 =cut
 
@@ -906,7 +984,7 @@ sub get_all_DASFeatures_by_slice{
   Returntype : hashref of Bio::SeqFeatures
   Exceptions : ?
   Caller     : webcode
-
+  Status     : Stable
 
 =cut
 
@@ -949,6 +1027,8 @@ sub get_all_DAS_Features{
   Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
   Exceptions : If arg is not of correct type.
   Caller     : ?
+  Status     : At Risk
+             : regulatory features are under development
 
 =cut
 

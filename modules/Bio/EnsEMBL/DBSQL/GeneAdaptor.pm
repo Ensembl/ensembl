@@ -66,6 +66,7 @@ use vars '@ISA';
 #  Returntype : list of listrefs of strings
 #  Exceptions : none
 #  Caller     : internal
+#  Status     : Stable
 
 sub _tables {
   my $self = shift;
@@ -85,6 +86,7 @@ sub _tables {
 #  Returntype : list of strings
 #  Exceptions : none
 #  Caller     : internal
+#  Status     : Stable
 
 sub _columns {
   my $self = shift;
@@ -115,6 +117,7 @@ sub _left_join {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -132,6 +135,7 @@ sub list_dbIDs {
   Returntype : reference to a list of strings
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -151,6 +155,7 @@ sub list_stable_ids {
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -178,6 +183,7 @@ sub fetch_by_display_label {
   Returntype : Bio::EnsEMBL::Gene in given coordinate system
   Exceptions : if we cant get the gene in given coord system
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -215,6 +221,7 @@ sub fetch_by_stable_id {
   Returntype : Bio::EnsEMBL::Gene (or undef)
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -256,6 +263,7 @@ sub fetch_by_exon_stable_id{
   Returntype : list of Bio::EnsEMBL::Genes
   Exceptions : none
   Caller     : domainview
+  Status     : Stable
 
 =cut
 
@@ -304,6 +312,7 @@ sub fetch_all_by_domain {
   Returntype : reference to list of transcripts
   Exceptions : thrown if exon cannot be placed on transcript slice
   Caller     : Slice::get_all_Transcripts
+  Status     : Stable
 
 =cut
 
@@ -418,6 +427,7 @@ sub fetch_all_by_Slice {
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -452,6 +462,7 @@ sub fetch_by_transcript_id {
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -490,6 +501,7 @@ sub fetch_by_transcript_stable_id {
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : geneview
+  Status     : Stable
 
 =cut
 
@@ -532,6 +544,7 @@ sub fetch_by_translation_stable_id {
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
   Caller     : goview
+  Status     : Stable
 
 =cut
 
@@ -569,6 +582,7 @@ sub fetch_all_by_external_name {
   Exceptions : throw if incorrect arg provided
                warning if gene arg does not have dbID
   Caller     : Gene::get_all_alt_alleles
+  Status     : Stable
 
 =cut
 
@@ -627,6 +641,7 @@ sub fetch_all_alt_alleles {
   Exceptions : throw on incorrect arguments
                throw on sql error (e.g. duplicate unique id)
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -724,6 +739,7 @@ sub store_alt_alleles {
   Exceptions : thrown if the $gene is not a Bio::EnsEMBL::Gene or if 
                $gene does not have an analysis object
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -910,6 +926,7 @@ sub store {
   Exceptions : throw on incorrect arguments 
                warning if gene is not stored in this database
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -979,6 +996,7 @@ sub remove {
   Returntype : listref of strings 
   Exceptions : none 
   Caller     : domainview?
+  Status     : Stable
 
 =cut
 
@@ -1029,6 +1047,7 @@ sub get_Interpro_by_geneid {
   Returntype : None
   Exceptions : thrown if the $gene is not a Bio::EnsEMBL::Gene
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1078,6 +1097,7 @@ sub update {
 #  Returntype : listref of Bio::EnsEMBL::Genes in target coordinate system
 #  Exceptions : none
 #  Caller     : internal
+#  Status     : Stable
 
 sub _objs_from_sth {
   my ($self, $sth, $mapper, $dest_slice) = @_;

@@ -56,6 +56,7 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
   Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures in Slice coordinates
   Exceptions : thrown if pid is not defined
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -95,6 +96,7 @@ sub fetch_all_by_Slice_and_pid {
   Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
   Exceptions : thrown if hit_name is not defined
   Caller     : general
+  Status     : Stable
 
 =cut
 

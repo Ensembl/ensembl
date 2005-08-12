@@ -46,6 +46,7 @@ use strict;
 @ISA = qw( Bio::EnsEMBL::Storable Bio::Annotation::DBLink );
 
 
+
 =head2 new_fast
 
   Arg [1]    : hash reference $hashref
@@ -56,6 +57,7 @@ use strict;
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -88,6 +90,10 @@ sub new_fast {
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBEntryAdaptor
+  Status     : At Risk
+             : due to 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY'
+             : being under development
+             : If you don't use any of these the sub can be considered Stable
 
 =cut
 
@@ -134,6 +140,7 @@ sub new {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -157,6 +164,7 @@ sub primary_id {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -179,6 +187,7 @@ sub display_id{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -201,6 +210,7 @@ sub dbname {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -220,6 +230,7 @@ sub database {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -238,6 +249,7 @@ sub optional_id {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -258,6 +270,7 @@ sub release {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -280,6 +293,7 @@ sub version {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -300,6 +314,8 @@ sub description {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : due to it being under development
 
 =cut
 
@@ -319,6 +335,8 @@ sub primary_id_linkable {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : due to it being under development
 
 =cut
 
@@ -335,10 +353,12 @@ sub display_id_linkable {
 
   Arg [1]    : int $priority
   Example    : none
-  Priority: get/set for attribute priority
+  Priority   : get/set for attribute priority
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : due to it being under development
 
 =cut
 
@@ -379,6 +399,7 @@ sub db_display_name {
   Returntype : none
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -399,6 +420,7 @@ sub add_synonym {
   Returntype : list reference of strings 
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -416,6 +438,7 @@ sub get_all_synonyms {
   Returntype : none
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -433,6 +456,7 @@ sub flush_synonyms {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -455,6 +479,7 @@ sub status{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

@@ -61,6 +61,8 @@ use vars qw(@ISA);
   Returntype : reference to a list of Bio::EnsEMBL::RegulatoryFeatures.
   Exceptions : throw on bad argument
   Caller     : Slice::get_all_RegulatoryFeatures
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -299,6 +301,8 @@ sub _objs_from_sth {
   Returntype : listREF of Bio::EnsEMBL::RegulatoryFeatures
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -328,6 +332,8 @@ sub fetch_all_by_factor {
   Returntype : none
   Exceptions :
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -412,6 +418,8 @@ sub store {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -432,6 +440,8 @@ sub list_dbIDs {
   Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
   Exceptions : none
   Caller     : ?
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -472,6 +482,8 @@ sub fetch_all_by_ensembl_object_type {
   Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
   Exceptions : If arg is not of correct type.
   Caller     : ?
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -499,6 +511,8 @@ sub fetch_all_by_transcript {
   Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
   Exceptions : If arg is not of correct type.
   Caller     : ?
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -529,6 +543,8 @@ sub fetch_all_by_translation {
   Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
   Exceptions : If arg is not of correct type.
   Caller     : ?
+  Status     : At Risk
+             : under development
 
 =cut
 

@@ -102,6 +102,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
                cannot be connected to.
   Caller     : Bio::EnsEMBL::::Utils::ConfigRegistry ( for newer code using the registry)
                Bio::EnsEMBL::DBSQL::DBAdaptor        ( for old style code)
+  Status     : Stable
 
 =cut
 
@@ -170,6 +171,7 @@ sub new {
   Returntype : none
   Exceptions : none
   Caller     : new, db_handle
+  Status     : Stable
 
 =cut
 
@@ -207,12 +209,15 @@ sub connect {
 
 
 =head2 connected
+
   Example    : $dbcon->connected()
   Description: Boolean which tells if DBConnection is connected or not.
                State is set internally, and external processes should not alter state.
   Returntype : undef or 1
   Exceptions : none
   Caller     : db_handle, connect, disconnect_if_idle, user processes
+  Status     : Stable
+
 =cut
 
 sub connected {
@@ -268,6 +273,7 @@ sub equals{
   Returntype : string
   Exceptions : none
   Caller     : new
+  Status     : Stable
 
 =cut
 
@@ -292,6 +298,7 @@ sub driver {
   Returntype : string
   Exceptions : none
   Caller     : new
+  Status     : Stable
 
 =cut
 
@@ -316,6 +323,7 @@ sub port {
   Returntype : string
   Exceptions : none
   Caller     : new
+  Status     : Stable
 
 =cut
 
@@ -339,6 +347,7 @@ sub dbname {
   Returntype : string
   Exceptions : none
   Caller     : new
+  Status     : Stable
 
 =cut
 
@@ -362,6 +371,7 @@ sub username {
   Returntype : string
   Exceptions : none
   Caller     : new
+  Status     : Stable
 
 =cut
 
@@ -385,6 +395,7 @@ sub host {
   Returntype : string
   Exceptions : none
   Caller     : new
+  Status     : Stable
 
 =cut
 
@@ -409,6 +420,7 @@ sub password {
   Returntype : boolean
   Exceptions : none
   Caller     : Pipeline
+  Status     : Stable
 
 =cut
 
@@ -437,6 +449,7 @@ sub disconnect_when_inactive {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -460,6 +473,7 @@ sub locator {
   Returntype : DBI Database Handle
   Exceptions : none
   Caller     : new, DESTROY
+  Status     : Stable
 
 =cut
 
@@ -489,6 +503,7 @@ sub db_handle {
   Exceptions : thrown if the SQL statement is empty, or if the internal
                database handle is not present
   Caller     : Adaptor modules
+  Status     : Stable
 
 =cut
 
@@ -524,6 +539,7 @@ sub prepare {
   Exceptions : thrown if the SQL statement is empty, or if the internal
                database handle is not present.
   Caller     : Adaptor modules
+  Status     : Stable
 
 =cut
 
@@ -568,6 +584,7 @@ sub do {
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::SQL::StatementHandle::DESTROY
                Bio::EnsEMBL::DBSQL::DBConnection::do
+  Status     : Stable
 
 =cut
 

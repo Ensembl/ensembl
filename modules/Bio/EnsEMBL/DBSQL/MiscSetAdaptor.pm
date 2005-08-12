@@ -60,6 +60,7 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::MiscSet
   Exceptions : none
   Caller     : MiscFeatureAdaptor
+  Status     : Stable
 
 =cut
 
@@ -94,6 +95,7 @@ sub new {
   Returntype : listref of Bio::EnsEMBL::MiscSets
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -140,6 +142,7 @@ sub fetch_all {
   Returntype : Bio::EnsEMBL::MiscSet
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -166,6 +169,7 @@ sub fetch_by_dbID {
   Returntype : Bio::EnsEMBL::MiscSet
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -193,6 +197,7 @@ sub fetch_by_code {
   Exceptions : throw on incorrect arguments
                warning if a feature is already stored in this database
   Caller     : MiscFeatureAdaptor::store
+  Status     : Stable
 
 =cut
 

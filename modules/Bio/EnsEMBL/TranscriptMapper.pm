@@ -65,8 +65,9 @@ use Bio::EnsEMBL::Mapper::Coordinate;
                'Genomic' coordinates are coordinates which are relative to the
                slice that the Transcript is on.
   Returntype : Bio::EnsEMBL::TranscriptMapper
-  Exceptions : none
+  Exceptions : throws if a transcript is not an argument
   Caller     : Transcript::get_TranscriptMapper
+  Status     : Stable
 
 =cut
 
@@ -99,6 +100,18 @@ sub new {
 }
 
 
+=head2 _load_mapper
+
+  Arg [1]    : Bio::EnsEMBL::Transcript $transcript
+               The transcript for which a mapper should be created.
+  Example    : my $mapper = _load_mapper($transcript);
+  Description: loads the mapper
+  Returntype : Bio::EnsEMBL::Mapper
+  Exceptions : none
+  Caller     : Internal
+  Status     : Stable
+
+=cut
 
 sub _load_mapper {
   my $transcript = shift;
@@ -209,8 +222,9 @@ sub _load_mapper {
                return value is a list of coordinates and gaps.
   Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
                Bio::EnsEMBL::Mapper::Gap objects
-  Exceptions : none
+  Exceptions : throws if no start or end
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -234,7 +248,7 @@ sub cdna2genomic {
                The start position in genomic coordinates
   Arg [2]    : $end
                The end position in genomic coordinates
-  Arg [3]    : (optional) $strand
+  Arg [3]    : $strand
                The strand of the genomic coordinates (default value 1)
   Example    : @coords = $trans_mapper->genomic2cdna($start, $end, $strnd);
   Description: Converts genomic coordinates to cdna coordinates.  The
@@ -244,8 +258,9 @@ sub cdna2genomic {
                represent genomic regions which map to exons (utrs included).
   Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
                Bio::EnsEMBL::Mapper::Gap objects
-  Exceptions : none
+  Exceptions : throws if start, end or strand not defined
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -277,8 +292,9 @@ sub genomic2cdna {
                transcript used to construct this TranscriptMapper was on.
   Returntype : list of Bio::EnsEMBL::Mapper::Gap and
                Bio::EnsEMBL::Mapper::Coordinate objects
-  Exceptions : none
+  Exceptions : throws if no end
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -312,8 +328,9 @@ sub pep2genomic {
                transcript that was used to create this transcript mapper.
   Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
                Bio::EnsEMBL::Mapper::Gap objects
-  Exceptions : throw if incorrect arguments
+  Exceptions : throw if start, end or strand not defined
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -405,8 +422,9 @@ sub genomic2cds {
                return value is a list of coordinates and gaps.
   Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
                Bio::EnsEMBL::Mapper::Gap objects
-  Exceptions : none
+  Exceptions : throw if start, end or strand not defined
   Caller     : general
+  Status     : Stable
 
 =cut
 

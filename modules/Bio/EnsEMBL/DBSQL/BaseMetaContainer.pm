@@ -53,6 +53,7 @@ use Bio::EnsEMBL::Utils::Exception qw(deprecate);
   Returntype : listref of strings 
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -89,6 +90,7 @@ sub list_value_by_key {
   Returntype : none
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -118,6 +120,7 @@ sub store_key_value {
   Returntype : none
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -141,6 +144,7 @@ sub update_key_value {
   Returntype : none
   Exceptions : none
   Caller     : dna_compress script, general
+  Status     : Stable
 
 =cut
 

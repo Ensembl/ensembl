@@ -15,7 +15,7 @@ ab initio prediction method
 
 =head1 SYNOPSIS
 
-    $ex = new Bio::EnsEMBL::Exon(-START     => 100,
+    $exon = new Bio::EnsEMBL::PredictionExon(-START  => 100,
                                  -END       => 200,
                                  -STRAND    => 1,
                                  -SLICE     => $slice,
@@ -69,9 +69,10 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
   Args       : see SUPERCLASS Bio::EnsEMBL::Exon
   Example    : none
   Description: create an Exon object
-  Returntype : Bio::EnsEMBL::Exon 
+  Returntype : Bio::EnsEMBL::PredictionExon 
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -101,6 +102,7 @@ sub new {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -121,6 +123,7 @@ sub score{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -145,6 +148,7 @@ sub p_value{
   Exceptions : warning if end_phase is called without an argument and the
                value is not set.
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -168,6 +172,7 @@ sub end_phase {
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : wrong parameters
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -201,6 +206,7 @@ sub transform {
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -222,6 +228,7 @@ sub transfer {
   Description: For compatibility with Bio::EnsEMBL::Exon
                Does nothing.
   Returntype : none
+  Status     : Stable
 
 =cut
 
@@ -233,6 +240,7 @@ sub add_supporting_features { }
   Description: For compatibility with Bio::EnsEMBL::Exon
                Does nothing and returns empty list
   Returntype : empty list.
+  Status     : Stable
 
 =cut
 
@@ -244,6 +252,7 @@ sub get_all_supporting_features { return []; }
   Description: For compatibility with Bio::EnsEMBL::Exon
                Does nothing.
   Returntype : empty list.
+  Status     : Stable
 
 =cut
 

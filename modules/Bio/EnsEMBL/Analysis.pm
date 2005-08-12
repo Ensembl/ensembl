@@ -83,6 +83,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
   Returntype : Bio::EnsEMBL::Analysis
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -143,6 +144,7 @@ sub new {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -165,6 +167,7 @@ sub db {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -187,6 +190,7 @@ sub db_version {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -210,6 +214,7 @@ sub db_file {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -232,6 +237,7 @@ sub program {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -254,6 +260,7 @@ sub program_version {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -277,6 +284,7 @@ sub program_file {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -299,6 +307,7 @@ sub module {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -321,6 +330,7 @@ sub module_version {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -343,6 +353,7 @@ sub gff_source {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -366,6 +377,7 @@ sub gff_feature {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -388,6 +400,7 @@ sub parameters {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -411,6 +424,7 @@ sub created {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -431,6 +445,7 @@ sub logic_name {
   Returntype : int 0,1
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -450,6 +465,7 @@ sub has_database{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -472,6 +488,7 @@ sub description {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -496,6 +513,7 @@ sub display_label {
   Returntype : int -1,0,1
   Exceptions : none
   Caller     : unknown
+  Status     : Stable
 
 =cut
 

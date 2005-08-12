@@ -100,6 +100,36 @@ use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
+=head2 new
+
+  Arg [-SLICE]: Bio::EnsEMBL::SLice - Represents the sequence that this
+                feature is on. The coordinates of the created feature are
+                relative to the start of the slice.
+  Arg [-START]: The start coordinate of this feature relative to the start
+                of the slice it is sitting on.  Coordinates start at 1 and
+                are inclusive.
+  Arg [-END]  : The end coordinate of this feature relative to the start of
+                the slice it is sitting on.  Coordinates start at 1 and are
+                inclusive.
+  Arg [-STRAND]: The orientation of this feature.  Valid values are 1,-1,0.
+  Arg [-SEQNAME] : A seqname to be used instead of the default name of the
+                of the slice.  Useful for features that do not have an
+                attached slice such as protein features.
+  Arg [-dbID]   : (optional) internal database id
+  Arg [-ADAPTOR]: (optional) Bio::EnsEMBL::DBSQL::BaseAdaptor
+  Example    : $feature = Bio::EnsEMBL::MiscFeature->new(-start    => 1,
+                                                     -end      => 100,
+                                                     -strand   => 1,
+                                                     -slice    => $slice,
+                                                     -analysis => $analysis);
+  Description: Constructs a new Bio::EnsEMBL::Feature.  Generally subclasses
+               of this method are instantiated, rather than this class itself.
+  Returntype : Bio::EnsEMBL::MiscFeature
+  Exceptions : Thrown on invalid -SLICE, -ANALYSIS, -STRAND ,-ADAPTOR arguments
+  Caller     : general, subclass constructors
+  Status     : Stable
+
+=cut
 
 
 sub new {
@@ -112,6 +142,18 @@ sub new {
   return $self;
 }
 
+
+=head2 new_fast
+
+  Arg [...]  : hashref to bless as new MiscFeature
+  Example    : $miscfeature = Bio::EnsEMBL::MiscFeature->new_fast();
+  Description: Creates a new Miscfeature.
+  Returntype : Bio::EnsEMBL::MiscFeature
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
 
 
 sub new_fast {
@@ -133,6 +175,7 @@ sub new_fast {
   Returntype : none
   Exceptions : throw on wrong argument type
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -159,6 +202,7 @@ sub add_Attribute {
   Exceptions : throw if the set arg is not provided,
                throw if the set to be added does not have a code
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -188,6 +232,7 @@ sub add_MiscSet {
   Returntype : listref of Bio::EnsEMBL::MiscSet
   Exceptions : throw if the code arg is not provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -216,6 +261,7 @@ sub get_all_MiscSets {
   Returntype : listref of Bio::EnsEMBL::Attribute
   Exceptions : 
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -234,12 +280,44 @@ sub get_all_Attributes {
   }
 }
 
+=head2 get_all_attribute_values
+
+  Arg [1]    : string $code
+               The code of the Attribute object values to retrieve
+  Example    : @attributes_vals = @{$misc_feature->get_all_attribute_values('name')};
+  Description: Retrieves a list of Attribute object values for given code or all
+               of the associated Attributes.
+  Returntype : listref of values
+  Exceptions : 
+  Caller     : general
+  Status     : Stable
+
+=cut
+
 sub get_all_attribute_values {
   my $self = shift;
   my $code = shift;
-  my @results = map { uc( $_->code() ) eq uc( $code ) ? $_->value : () } @{$self->{'attributes'}};
+  my @results = map { uc( $_->code() ) eq uc( $code ) ? $_->value : () } 
+                @{$self->{'attributes'}};
   return \@results;
 }
+
+=head2 get_scalar_attribute
+
+  Arg [1]    : string $code
+               The code of the Attribute object values to retrieve
+  Example    : $vals = $misc_feature->get_scalar_attribute('name');
+  Description: Retrieves a value for given code or all
+               of the associated Attributes.
+  Returntype : scalar value
+  Exceptions : 
+  Caller     : general
+  Status     : Stable
+
+
+=cut
+  
+
 sub get_scalar_attribute {
   my $self = shift;
   my $code = shift;
@@ -257,6 +335,7 @@ sub get_scalar_attribute {
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 

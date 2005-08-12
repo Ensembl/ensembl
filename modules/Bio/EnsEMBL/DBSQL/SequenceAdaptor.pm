@@ -56,6 +56,7 @@ our $SEQ_CACHE_MAX   = (2 ** $SEQ_CHUNK_PWR) * $SEQ_CACHE_SZ;
   Returntype : Bio::EnsEMBL:DBSQL::SequenceAdaptor
   Exceptions : none
   Caller     : DBAdaptor::get_SequenceAdaptor
+  Status     : Stable
 
 =cut
 
@@ -100,6 +101,7 @@ sub new {
   Returntype : string 
   Exceptions : endBasePair should be less or equal to length of slice 
   Caller     : Bio::EnsEMBL::Slice::seq(), Slice::subseq() 
+  Status     : Stable
 
 =cut
 
@@ -292,6 +294,7 @@ sub _fetch_seq {
   Returntype : none
   Exceptions : throw if the database insert fails
   Caller     : sequence loading scripts
+  Status     : Stable
 
 =cut
 

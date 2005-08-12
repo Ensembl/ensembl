@@ -55,6 +55,7 @@ use strict;
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -122,6 +123,7 @@ sub fetch_by_dbID {
   Returntype : Bio::EnsEMBL::DBSQL::DBEntry
   Exceptions : thrown if arguments are incorrect
   Caller     : general, domainview
+  Status     : Stable
 
 =cut
 
@@ -208,6 +210,7 @@ sub fetch_by_db_accession {
   Returntype : int  - the identifier of the newly created external refernce
   Exceptions : none
   Caller     : scripts which load Xrefs and ObjectXrefs, etc. into EnsEMBL.
+  Status     : Stable
 
 =cut
 
@@ -375,6 +378,7 @@ sub store {
   Returntype : int
   Exceptions : thrown on incorrect args
   Caller     : GeneAdaptor::store, TranscriptAdaptor::store
+  Status     : Stable
 
 =cut
 
@@ -413,8 +417,9 @@ sub exists {
                all of the gene, transcript, and translation xrefs associated 
                with this gene.
   Returntype : listref of Bio::EnsEMBL::DBEntries
-  Exceptions : none
+  Exceptions : thows if gene object not passed
   Caller     : Bio::EnsEMBL::Gene
+  Status     : Stable
 
 =cut
 
@@ -439,8 +444,9 @@ sub fetch_all_by_Gene {
                to contain all of the gene, transcript, and translation xrefs 
                associated with this gene.
   Returntype : listref of Bio::EnsEMBL::DBEntries
-  Exceptions : none
+  Exceptions : throes if transcript argument not passed
   Caller     : Bio::EnsEMBL::Gene 
+  Status     : Stable
 
 =cut
 
@@ -462,8 +468,9 @@ sub fetch_all_by_Transcript {
   Example    : @db_entries = @{$db_entry_adptr->fetch_by_Translation($trans)};
   Description: Retrieves external database entries for an EnsEMBL translation
   Returntype : listref of Bio::EnsEMBL::DBEntries
-  Exceptions : none
+  Exceptions : throws if translation object not passed
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -503,6 +510,7 @@ sub fetch_all_by_Translation {
                Warning if object or dbentry is not stored in this database.
   Caller     : TranscriptAdaptor::remove, GeneAdaptor::remove,
                TranslationAdaptor::remove
+  Status     : Stable
 
 =cut
 
@@ -587,6 +595,7 @@ sub remove_from_object {
   Caller     : fetch_all_by_Gene
                fetch_all_by_Translation
                fetch_all_by_Transcript
+  Status     : Stable
 
 =cut
 
@@ -713,6 +722,7 @@ sub _fetch_by_object_type {
   Returntype : list of ints
   Exceptions : none
   Caller     : unknown
+  Status     : Stable
 
 =cut
 
@@ -738,6 +748,7 @@ sub list_gene_ids_by_extids{
   Returntype : list of ints
   Exceptions : none
   Caller     : unknown
+  Status     : Stable
 
 =cut
 
@@ -760,6 +771,7 @@ sub list_transcript_ids_by_extids{
   Returntype :  list of Ints
   Exceptions :  none
   Caller     :  unknown
+  Status     : Stable
 
 =cut
 
@@ -783,6 +795,7 @@ sub list_translation_ids_by_extids{
   Caller     : list_translation_ids_by_extids
                translationids_by_extids
   			   geneids_by_extids
+  Status     : Stable
 
 =cut
 

@@ -50,6 +50,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
   Returntype : reference to list of Bio::EnsEMBL::AssemblyExceptionFeatures
   Exceptions : none
   Caller     : fetch_by_dbID, fetch_by_Slice
+  Status     : Stable
 
 =cut
 
@@ -129,6 +130,7 @@ sub fetch_all {
   Returntype : Bio::EnsEMBL::AssemblyExceptionFeature
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -155,6 +157,7 @@ sub fetch_by_dbID {
   Returntype : reference to list of Bio::EnsEMBL::AssemblyException features
   Exceptions : none
   Caller     : Feature::get_all_alt_locations, general
+  Status     : Stable
 
 =cut
 

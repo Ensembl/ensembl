@@ -57,6 +57,7 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::RepeatConsensus
   Exceptions : none
   Caller     : general, Bio::EnsEMBL::RepeatFeatureAdaptor
+  Status     : Stable
 
 =cut
 
@@ -79,6 +80,7 @@ sub fetch_by_dbID {
   Returntype : Bio::EnsEMBL::RepeatConsensus
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -104,6 +106,7 @@ sub fetch_by_name {
   Returntype : Bio::EnsEMBL::RepeatConsensus
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -133,6 +136,7 @@ sub fetch_by_name_class {
   Returntype : listREF of Bio::EnsEMBL::RepeatConsensus
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -161,6 +165,7 @@ sub fetch_by_class_seq {
   Returntype : listref of Bio::EnsEMBL::RepeatConsensus objects
   Exceptions : none
   Caller     : internal
+  Status     : Stable
 
 =cut
 
@@ -218,6 +223,7 @@ sub _generic_fetch {
   Returntype : none
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 

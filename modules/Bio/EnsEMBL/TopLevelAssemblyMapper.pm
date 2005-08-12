@@ -56,6 +56,22 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::CoordSystem;
 
+=head2 new
+
+  Arg [1]    : Bio::EnsEMBL::DBAdaptor $dbadaptor the adaptor for
+               the database this mapper is using.
+  Arg [2]    : Toplevel CoordSystem
+  Arg [3]    : Other CoordSystem
+  Description: Creates a new TopLevelAssemblyMapper object
+  Returntype : Bio::EnsEMBL::DBSQL::TopLevelAssemblyMapper
+  Exceptions : throws if any of the 3 arguments are missing/ not 
+             : of the correct type.
+  Caller     : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
+  Status     : Stable
+
+=cut
+
+
 sub new {
   my ($caller, $adaptor, $toplevel_cs, $other_cs) = @_;
 
@@ -91,6 +107,32 @@ sub adaptor {
 
   return $self->{'adaptor'};
 }
+
+=head2 map
+
+  Arg [1]    : string $frm_seq_region
+               The name of the sequence region to transform FROM
+  Arg [2]    : int $frm_start
+               The start of the region to transform FROM
+  Arg [3]    : int $frm_end
+               The end of the region to transform FROM
+  Arg [4]    : int $strand
+               The strand of the region to transform FROM
+  Arg [5]    : Bio::EnsEMBL::CoordSystem
+               The coordinate system to transform FROM
+  Arg [6]    : if set will do a fastmap
+  Example    : @coords = $mapper->map('X', 1_000_000, 2_000_000,
+                                            1, $chr_cs);
+  Description: Transforms coordinates from one coordinate system
+               to another.
+  Returntype : List of Bio::EnsEMBL::Mapper::Coordinate and/or
+               Bio::EnsEMBL::Mapper:Gap objects
+  Exceptions : thrown if if the specified TO coordinate system is not one
+               of the coordinate systems associated with this mapper
+  Caller     : general
+  Status     : Stable
+
+=cut
 
 
 sub map {
@@ -160,17 +202,77 @@ sub map {
 #
 # for polymorphism with AssemblyMapper
 #
+=head2 flush
+
+  Args       : none
+  Example    : none
+  Description: polymorphism with AssemblyMapper, does nothing
+  Returntype : none
+  Exceptions : none
+  Status     : Stable
+
+=cut
+
 sub flush {}
+
+=head2 fastmap
+
+  Arg [1]    : string $frm_seq_region
+               The name of the sequence region to transform FROM
+  Arg [2]    : int $frm_start
+               The start of the region to transform FROM
+  Arg [3]    : int $frm_end
+               The end of the region to transform FROM
+  Arg [4]    : int $strand
+               The strand of the region to transform FROM
+  Arg [5]    : Bio::EnsEMBL::CoordSystem
+               The coordinate system to transform FROM
+  Example    : @coords = $mapper->fastmap('X', 1_000_000, 2_000_000,
+                                            1, $chr_cs);
+  Description: Transforms coordinates from one coordinate system
+               to another.
+  Returntype : List of Bio::EnsEMBL::Mapper::Coordinate and/or
+               Bio::EnsEMBL::Mapper:Gap objects
+  Exceptions : thrown if if the specified TO coordinate system is not one
+               of the coordinate systems associated with this mapper
+  Caller     : general
+  Status     : Stable
+
+=cut
 
 sub fastmap {
   my $self = shift;
   return $self->map(@_,1);
 }
 
+=head2 assembled_CoordSystem
+
+  Arg [1]    : none
+  Example    : $cs = $mapper->assembled_CoordSystem
+  Description: Retrieves the assembled CoordSystem from this mapper
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : internal, AssemblyMapperAdaptor
+  Status     : Stable
+
+=cut
+
 sub assembled_CoordSystem {
   my $self = shift;
   return $self->{'toplevel_cs'};
 }
+
+=head2 component_CoordSystem
+
+  Arg [1]    : none
+  Example    : $cs = $mapper->component_CoordSystem
+  Description: Retrieves the component CoordSystem from this  mapper
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : internal, AssemblyMapperAdaptor
+  Status     : Stable
+
+=cut
 
 sub component_CoordSystem {
   my $self = shift;
@@ -265,6 +367,7 @@ sub _list {
   Returntype : List of strings
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -293,6 +396,7 @@ sub list_seq_regions {
   Exceptions : thrown if the from CoordSystem is the toplevel coord system
                thrown if the from CoordSystem is not the one used in the mapper
   Caller     : general
+  Status     : Stable
 
 =cut
 

@@ -7,7 +7,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DensityType - A type representing a density, or precentage
+Bio::EnsEMBL::DensityType - A type representing a density, or percentage
 coverage etc. in a given region.
 
 =head1 SYNOPSIS
@@ -16,11 +16,11 @@ use Bio::EnsEMBL::DensityType;
 
 $type = Bio::EnsEMBL::DensityType->new(-analysis => $analysis,
 				       -blocksize => 1000000,
-				       -vlaue_type => $type);
+				       -value_type => $type);
 
 =head1 DESCRIPTION
 
-A density type represents a density, or precentage
+A density type represents a density, or percentage
 coverage etc. in a given region.
 
 				       
@@ -61,6 +61,7 @@ use vars qw(@ISA);
                valuetype must be 'sum' or 'ratio',
                valid analysis object must be passed
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -104,6 +105,7 @@ sub new {
   Returntype : Bio::EnsEMBL::Analysis
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -128,6 +130,7 @@ sub analysis{
   Returntype : float
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -146,6 +149,7 @@ sub value_type{
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

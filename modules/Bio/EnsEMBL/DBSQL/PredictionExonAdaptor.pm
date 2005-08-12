@@ -107,8 +107,9 @@ sub _final_clause {
   Example    : none
   Description: Retrieves all Exons for the Transcript in 5-3 order
   Returntype : listref Bio::EnsEMBL::Exon on Transcript slice 
-  Exceptions : none
+  Exceptions : throws if transcript does not have a slice
   Caller     : Transcript->get_all_Exons()
+  Status     : Stable
 
 =cut
 
@@ -160,6 +161,7 @@ sub fetch_all_by_PredictionTranscript {
                or if $exon->start, $exon->end, $exon->strand, or $exon->phase 
                are not defined or if $exon is not a Bio::EnsEMBL::PredictionExon 
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -227,6 +229,7 @@ sub store {
   Returntype : none
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -258,6 +261,7 @@ sub remove {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 

@@ -80,11 +80,22 @@ use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
   Arg [-DISPLAY_XREF]:
         Bio::EnsEMBL::DBEntry - The external database entry that is used
         to label this transcript when it is displayed.
+  Arg [-CREATED_DATE]:
+        string - the date the transcript was created
+  Arg [-MODIFIED_DATE]:
+        string - the date the transcript was last modified
+  Arg [-DESCRIPTION]:
+        string - the transcipts description
+  Arg [-BIOTYPE]: 
+        string - the biotype e.g. "protein_coding"
+  Arg [-CONFIDENCE]:
+        string - the transcripts confidence i.e. "KNOWN","NOVEL"
   Example    : $tran = new Bio::EnsEMBL::Transcript(-EXONS => \@exons);
   Description: Constructor. Instantiates a Transcript object.
   Returntype : Bio::EnsEMBL::Transcript
   Exceptions : throw on bad arguments
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -158,6 +169,7 @@ sub new {
                priority (desc), external db name (asc), display_id (asc)
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -192,6 +204,7 @@ sub get_all_DBLinks {
   Returntype : list reference to Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : get_all_DBLinks, TranscriptAdaptor::store
+  Status     : Stable
 
 =cut
 
@@ -221,6 +234,7 @@ sub get_all_DBEntries {
   Returntype : none
   Exceptions : thrown on incorrect argument type
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -247,6 +261,7 @@ sub add_DBEntry {
   Returntype : listreference of Bio::EnsEMBL::FeaturePair
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -277,6 +292,7 @@ sub get_all_supporting_features {
                throw if any of the features are not in the same coordinate
                system as the Transcript
   Caller     : general
+  Status     : Stable
  
 =cut
  
@@ -327,6 +343,7 @@ sub add_supporting_features {
  Function: external_name if available
  Returns : the external db link for this transcript
  Args    : new external db (optional)
+ Status     : Stable
 
 =cut
 
@@ -359,6 +376,7 @@ sub external_db {
  Function: external_name if available
  Returns : the external db link for this transcript
  Args    : new external db (optional)
+ Status     : Stable
 
 =cut
 
@@ -392,6 +410,7 @@ sub external_status {
  Example : 
  Returns : the external name of this transcript
  Args    : new external name (optional)
+ Status     : Stable
 
 =cut
 
@@ -425,6 +444,7 @@ sub external_name {
   Returntype : 0,1
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -443,7 +463,8 @@ sub is_known {
   Returntype : string
   Exceptions : none
   Caller     : general
-
+  Status     : At Risk
+             : will be replaced with biotype
 =cut
 
 sub type {
@@ -463,6 +484,7 @@ sub type {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -481,6 +503,7 @@ sub confidence {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -501,6 +524,7 @@ sub biotype {
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -528,6 +552,7 @@ sub display_xref {
   Returntype : Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -559,6 +584,7 @@ sub translation {
   Returntype : txt
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -612,6 +638,7 @@ sub spliced_seq {
   Returntype : txt
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -654,6 +681,7 @@ sub translateable_seq {
   Returntype : int
   Exceptions : none
   Caller     : five_prime_utr, get_all_snps, general
+  Status     : Stable
 
 =cut
 
@@ -717,6 +745,7 @@ sub cdna_coding_start {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -781,6 +810,7 @@ sub cdna_coding_end {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -826,6 +856,7 @@ sub coding_region_start {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -865,6 +896,7 @@ sub coding_region_end {
   Returntype : boolean - the current value of the edits
   Exceptions : none
   Caller     : general, cdna_coding_start, cdna_coding_end, length
+  Status     : Stable
 
 =cut
 
@@ -892,6 +924,7 @@ sub edits_enabled {
   Returntype : Bio::EnsEMBL::SeqEdit
   Exceptions : none
   Caller     : spliced_seq()
+  Status     : Stable
 
 =cut
 
@@ -923,6 +956,7 @@ sub get_all_SeqEdits {
   Exceptions : warning if transcript does not have attached adaptor and 
                attempts lazy load.
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -961,6 +995,7 @@ sub get_all_Attributes {
   Returntype : none
   Exceptions : throw on incorrect arguments
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -993,7 +1028,11 @@ sub add_Attributes {
  Title   : add_Exon
  Usage   : $trans->add_Exon($exon)
  Returns : Nothing
- Args    :
+ Args [1]: Bio::EnsEMBL::Exon object to add
+ Args [2]: rank
+ Exceptions: throws if not a valid Bio::EnsEMBL::Exon
+           : or exon clasjes with another one
+ Status  : Stable
 
 =cut
 
@@ -1082,6 +1121,7 @@ sub add_Exon{
   Returntype : a list reference to Bio::EnsEMBL::Exon objects
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1104,6 +1144,7 @@ sub get_all_Exons {
   Returntype : a list reference to Bio::EnsEMBL::Intron objects
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1127,11 +1168,13 @@ sub get_all_Introns {
 
 =head2 length
 
-
-    my $t_length = $transcript->length
-
-Returns the sum of the length of all the exons in
-the transcript.
+  Args       : none
+  Example    : my $t_length = $transcript->length
+  Description: Returns the sum of the length of all the exons in the transcript.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1166,6 +1209,7 @@ sub length {
   Returntype : none
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1197,6 +1241,7 @@ sub flush_Exons{
   Returntype : Bio::Seq or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1231,6 +1276,7 @@ sub five_prime_utr {
   Returntype : Bio::Seq or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1269,6 +1315,7 @@ sub three_prime_utr {
   Returntype : listref Bio::EnsEMBL::Exon
   Exceptions : throw if translation has invalid information
   Caller     : Genebuild
+  Status     : Stable
 
 =cut
 
@@ -1298,7 +1345,6 @@ sub get_all_translateable_Exons {
     # Adjust to translation start if this is the start exon
     if ($ex == $start_exon ) {
       if ($t_start < 1 or $t_start > $length) {
-#        throw("Translation start '$t_start' is outside exon $ex length=$length");
         warn("WARN: Translation start '$t_start' is outside exon $ex length=$length");
 	return [];
       }
@@ -1342,6 +1388,7 @@ sub get_all_translateable_Exons {
   Returntype : Bio::Seq or undef
   Exceptions : If no Translation is set in this Transcript
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1402,10 +1449,16 @@ sub translate {
 
 =head2 seq
 
-Returns a Bio::Seq object which consists of just
-the sequence of the exons concatenated together,
-without messing about with padding with N\'s from
-Exon phases like B<dna_seq> does.
+  Description: Returns a Bio::Seq object which consists of just
+             : the sequence of the exons concatenated together,
+             : without messing about with padding with N\'s from
+             : Exon phases like B<dna_seq> does.
+  Args       : none
+  Example    : none
+  Returntype : Bio::Seq
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1475,6 +1528,7 @@ sub genomic2cdna {
   Returntype : Bio::EnsEMBL::TranscriptMapper
   Exceptions : none
   Caller     : cdna2genomic, pep2genomic, genomic2cdna, cdna2genomic
+  Status     : Stable
 
 =cut
 
@@ -1492,6 +1546,7 @@ sub get_TranscriptMapper {
  Usage   : $start_exon = $transcript->start_Exon;
  Returns : The first exon in the transcript.
  Args    : NONE
+ Status  : Stable
 
 =cut
 
@@ -1506,6 +1561,7 @@ sub start_Exon{
  Usage   : $end_exon = $transcript->end_Exon;
  Returns : The last exon in the transcript.
  Args    : NONE
+ Status  : Stable
 
 =cut
 
@@ -1523,7 +1579,7 @@ sub end_Exon{
  Function: 
  Returns : value of description
  Args    : newvalue (optional)
-
+ Status  : Stable
 
 =cut
 
@@ -1541,6 +1597,7 @@ sub description{
  Function: 
  Returns : value of version
  Args    : 
+ Status  : Stable
 
 =cut
 
@@ -1558,7 +1615,7 @@ sub version{
  Function: 
  Returns : value of stable_id
  Args    : 
-
+ Status  : Stable
 
 =cut
 
@@ -1568,12 +1625,36 @@ sub stable_id{
   return $self->{'stable_id'};
 }
 
+=head2 created_date
+
+  Arg [1]    : (optional) string to be used for the created date
+  Example    : none
+  Description: get/set for attribute created date
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
 sub created_date {
   my $self = shift;
   $self->{'created_date'} = shift if ( @_ );
   return $self->{'created_date'};
 }
 
+
+=head2 modified_date
+
+  Arg [1]    : (optional) string to be used for the modified date
+  Example    : none
+  Description: get/set for attribute modified date
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
 
 sub modified_date {
   my $self = shift;
@@ -1596,6 +1677,7 @@ sub modified_date {
   Returntype : none
   Exceptions : none
   Caller     : GeneAdaptor->store()
+  Status     : Stable
 
 =cut
 
@@ -1634,6 +1716,8 @@ sub swap_exons {
   Returntype : Bio::EnsEMBL::Transcript
   Exceptions : wrong parameters
   Caller     : general
+  Status     : Medium Risk
+             : deprecation needs to be removed at some time
 
 =cut
 
@@ -1707,6 +1791,7 @@ sub transform {
   Returntype : Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1775,6 +1860,7 @@ sub transfer {
   Returntype : none
   Exceptions : none
   Caller     : internal
+  Status     : Stable
 
 =cut
 
@@ -1847,6 +1933,7 @@ sub recalculate_coordinates {
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 
@@ -1858,7 +1945,10 @@ sub display_id {
 
 =head2 get_all_peptide_variations
 
-Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_peptide_variations
+  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_peptide_variations
+  Status  : At Risk
+          : Will be replaced with modules from the ensembl-variation package
+
 
 =cut
 
@@ -1876,7 +1966,10 @@ sub get_all_peptide_variations {
 
 =head2 get_all_SNPs
 
-Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs
+  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs
+
+  Status  : At Risk
+          : Will be replaced with modules from the ensembl-variation package
 
 =cut
 
@@ -1884,9 +1977,12 @@ sub get_all_SNPs {
   return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs(@_);
 }
 
-=head2 get_all_peptide_variations
+=head2 get_all_cdna_SNPs
 
-Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs
+  Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs
+ 
+  Status  : At Risk
+          : Will be replaced with modules from the ensembl-variation package
 
 =cut
 
@@ -1903,6 +1999,7 @@ sub get_all_cdna_SNPs {
   Exceptions:
   Caller    :
   Example   : $dasref = $prot->get_all_DASFactories
+  Status    : Stable
 
 =cut
 
@@ -1923,6 +2020,7 @@ sub get_all_DASFactories {
   Returntype : hashref of Bio::SeqFeatures
   Exceptions : ?
   Caller     : webcode
+  Status    : Stable
 
 
 =cut
@@ -1963,6 +2061,7 @@ sub get_all_DAS_Features{
   Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
   Exceptions : If arg is not of correct type.
   Caller     : ?
+  Status    : At Risk
 
 =cut
 

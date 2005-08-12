@@ -146,6 +146,7 @@ sub _objs_from_sth {
                (assembly) coordinates 
   Exceptions : none 
   Caller     : general 
+  Status     : Stable
 
 =cut
 
@@ -177,8 +178,9 @@ sub fetch_all_by_chr_name {
                matching of the band name. For example the bands 'q23.1' and
                'q23.4' could be matched by fetch_all_by_chr_band('20', 'q23');
   Returntype : Bio::EnsEMBL::KaryotypeBand in chromosomal coordinates.
-  Exceptions : none
+  Exceptions : throws if chr or band is missing in arguments
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -215,6 +217,7 @@ sub fetch_by_chr_band {
   Returntype : reference to a list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 

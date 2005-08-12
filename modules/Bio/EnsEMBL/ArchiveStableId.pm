@@ -33,6 +33,8 @@ ArchiveStableId objects are the main workunit for retrieving stable id archived 
 
   get_components:
   
+ Status:   At Risk. This module is in development.
+
 
 =cut
 
@@ -64,6 +66,8 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::ArchiveStableId
   Exceptions : none
   Caller     : Adaptor
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -100,6 +104,8 @@ sub new {
   Returntype : Bio::EnsEMBL::ArchiveStableId
   Exceptions : none
   Caller     : general, Adaptor
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -128,6 +134,8 @@ sub new_fast {
   Returntype : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -146,6 +154,8 @@ sub get_all_predecessors {
   Returntype : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -166,6 +176,8 @@ sub get_all_successors {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -189,6 +201,8 @@ sub get_peptide {
   Returntype : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions : empty if not a gene stable id or not in database
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -214,6 +228,8 @@ sub get_all_transcript_archive_ids {
   Returntype : Bio::EnsEMBL::ArchiveStableId
   Exceptions : undef if not in db or not a Transcript
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 

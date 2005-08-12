@@ -67,6 +67,7 @@ package Bio::EnsEMBL::ProjectionSegment;
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -85,6 +86,7 @@ sub from_start {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -104,6 +106,7 @@ sub from_end {
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

@@ -55,6 +55,7 @@ use Bio::Species;
   Returntype : Bio::Species
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -90,6 +91,7 @@ sub get_Species {
   Returntype : string
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -157,6 +159,7 @@ sub get_max_assembly_contig {
   Returntype : string
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 

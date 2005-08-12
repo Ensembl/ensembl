@@ -52,6 +52,8 @@ use Data::Dumper;
   Returntype : Bio::EnsEMBL::DensityFeatureSet
   Exceptions : throw if invalid density value type is provided
   Caller     : general
+  Status     : Stable
+
 =cut
 
 sub new {
@@ -84,7 +86,7 @@ sub new {
  range (i.e. from min to max rather than absolute numbers).
  Returns : value of _stretch
  Args    : newvalue (optional)
-
+ Status  : Stable
 
 =cut
 
@@ -104,6 +106,7 @@ sub stretch{
  scaled in proportion.
  Returns : scale_to_fit value
  Args    : newvalue (optional)
+ Status  : Stable
 
 
 =cut
@@ -122,6 +125,7 @@ sub scale_to_fit{
  Function: 
  Returns : value of colour
  Args    : newvalue (optional)
+ Status  : Stable
 
 
 =cut
@@ -141,6 +145,7 @@ sub colour{
  Function: 
  Returns : value of label
  Args    : newvalue (optional)
+ Status  : Stable
 
 
 =cut
@@ -160,6 +165,7 @@ sub label{
  Function: 
  Returns : value of label2
  Args    : newvalue (optional)
+ Status  : Stable
 
 
 =cut
@@ -181,6 +187,7 @@ sub label2{
   Returntype : reference to a list of DensityFeatures
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -225,6 +232,7 @@ sub get_all_binvalues{
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -240,6 +248,7 @@ sub max_value{ $_[0]->{'max_value'};}
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -256,6 +265,7 @@ sub min_value{ $_[0]->{'min_value'};}
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

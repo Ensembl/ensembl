@@ -75,6 +75,7 @@ use strict;
   Returntype : string
   Exceptions : thrown if $linkage_type argument not supplied
   Caller     : DBEntryAdaptor
+  Status     : Stable
 
 =cut
 
@@ -97,6 +98,7 @@ sub add_linkage_type {
   Returntype : none
   Exceptions : none
   Caller     : geneview? general
+  Status     : Stable
 
 =cut
 
@@ -115,6 +117,7 @@ sub get_all_linkage_types {
   Returntype : none
   Exceptions : none
   Caller     : general 
+  Status     : Stable
 
 =cut
 

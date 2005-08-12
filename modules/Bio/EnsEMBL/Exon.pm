@@ -65,12 +65,34 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
 =head2 new
 
-  Args       : see SUPERCLASS B<Bio::EnsEMBL::Feature>
+  Arg [-SLICE]: Bio::EnsEMBL::SLice - Represents the sequence that this
+                feature is on. The coordinates of the created feature are
+                relative to the start of the slice.
+  Arg [-START]: The start coordinate of this feature relative to the start
+                of the slice it is sitting on.  Coordinates start at 1 and
+                are inclusive.
+  Arg [-END]  : The end coordinate of this feature relative to the start of
+                the slice it is sitting on.  Coordinates start at 1 and are
+                inclusive.
+  Arg [-STRAND]: The orientation of this feature.  Valid values are 1,-1,0.
+  Arg [-SEQNAME] : A seqname to be used instead of the default name of the
+                of the slice.  Useful for features that do not have an
+                attached slice such as protein features.
+  Arg [-dbID]   : (optional) internal database id
+  Arg [-ADAPTOR]: (optional) Bio::EnsEMBL::DBSQL::BaseAdaptor
+  Arg [-PHASE]    :(optional) the phase. 
+  Arg [-END_PHASE]:(optional) the end phase
+  Arg [-STABLE_ID]:(optional) the stable id of the exon
+  Arg [-VERSION]  :(optional) the version
+  Arg [-CREATED_DATE] :(optional) the created date
+  Arg [-MODIFIED_DATE]:(optional) the last midifeid date
+
   Example    : none
   Description: create an Exon object
   Returntype : Bio::EnsEMBL::Exon
-  Exceptions : none
+  Exceptions : if phase is not valid (i.e. 0,1, 2 -1)
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -85,7 +107,7 @@ sub new {
     rearrange( [ "PHASE", "END_PHASE", "STABLE_ID", "VERSION",
 		 "CREATED_DATE", "MODIFIED_DATE" ], @_ );
 
-  $self->{'phase'} = $phase;
+  $self->phase($phase) if (defined $phase); # make sure phase is valid.
   $self->{'end_phase'} = $end_phase;
   $self->{'stable_id'} = $stable_id;
   $self->{'version'} = $version;
@@ -106,8 +128,9 @@ sub new {
   Example    : none
   Description: create an Exon object
   Returntype : Bio::EnsEMBL::Exon
-  Exceptions : none
+  Exceptions : throws if end < start
   Caller     : general, creation in Bio::EnsEMBL::Lite::GeneAdaptor
+  Status     : Stable
 
 =cut
 
@@ -148,6 +171,7 @@ sub new_fast {
   Exceptions : warning if end_phase is called without an argument and the
                value is not set.
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -170,8 +194,15 @@ sub end_phase {
 
 =head2 phase
 
-  my $phase = $exon->phase;
-  $exon->phase(2);
+  Arg [1]    : (optional) int $phase
+  Example    :  my $phase = $exon->phase;
+                $exon->phase(2);
+  Description: Gets/Sets the phase of the exon.
+  Returntype : int
+  Exceptions : throws if phase is not (0, 1 2 or -1).
+  Caller     : general
+  Status     : Stable
+
 
 Get or set the phase of the Exon, which tells the
 translation machinery, which makes a peptide from
@@ -229,6 +260,7 @@ sub phase {
   Exceptions : thrown if an arg is passed
                thrown if frame cannot be calculated due to a bad phase value
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -273,6 +305,7 @@ sub frame {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -294,6 +327,7 @@ sub start {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -315,6 +349,7 @@ sub end {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -336,6 +371,7 @@ sub strand {
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -363,6 +399,7 @@ sub slice {
   Returntype : none
   Exceptions : Thrown is invalid arguments are provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -384,6 +421,7 @@ sub move {
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : wrong parameters
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -426,6 +464,7 @@ sub transform {
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -454,7 +493,7 @@ sub transfer {
 
 =head2 add_supporting_features
 
-  Arg [1]    : Bio::EnsEMBL::SeqFeatureI $feature
+  Arg [1]    : Bio::EnsEMBL::Feature $feature
   Example    : $exon->add_supporting_features(@features);
   Description: Adds a list of supporting features to this exon. 
                Duplicate features are not added.  
@@ -463,10 +502,11 @@ sub transfer {
                get_all_supporting_features call will not retrieve supporting
                features from the database.
   Returntype : none
-  Exceptions : throw if any of the features are not SeqFeatureIs
+  Exceptions : throw if any of the features are not Feature
                throw if any of the features are not in the same coordinate
                system as the exon
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -516,6 +556,7 @@ sub add_supporting_features {
   Returntype : listreference of Bio::EnsEMBL::BaseAlignFeature objects 
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -535,7 +576,10 @@ sub get_all_supporting_features {
 
 =head2 find_supporting_evidence
 
-  Arg [1]    : Bio::EnsEMBL::SeqFeatureI $features
+# This method is only for genebuild backwards compatibility.
+# Avoid using it if possible
+
+  Arg [1]    : Bio::EnsEMBL::Feature $features
                The list of features to search for supporting (i.e. overlapping)
                evidence.
   Arg [2]    : (optional) boolean $sorted
@@ -549,6 +593,7 @@ sub get_all_supporting_features {
   Returntype : none
   Exceptions : none
   Caller     : general
+  Status     : Medium Risk
 
 =cut
 
@@ -583,6 +628,7 @@ sub find_supporting_evidence {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -593,12 +639,35 @@ sub stable_id {
 }
 
 
+=head2 created_date
+
+  Arg [1]    : string $created_date
+  Example    : none
+  Description: get/set for attribute created_date
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
 sub created_date {
   my $self = shift;
   $self->{'created_date'} = shift if ( @_ );
   return $self->{'created_date'};
 }
 
+=head2 modified_date
+
+  Arg [1]    : string $modified_date
+  Example    : none
+  Description: get/set for attribute modified_date
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
 
 sub modified_date {
   my $self = shift;
@@ -616,6 +685,7 @@ sub modified_date {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -635,6 +705,7 @@ sub version {
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : none
   Caller     : Transcript->get_all_translateable_Exons()
+  Status     : Stable
 
 =cut
 
@@ -677,6 +748,7 @@ sub adjust_start_end {
   Returntype : Bio::Seq
   Exceptions : thrown if transcript argument is not provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -738,6 +810,7 @@ sub peptide {
                warning if exon does not have attatched slice
                warning if exon strand is not defined (or 0)
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -789,6 +862,7 @@ sub seq {
                a unique hash value are set
                set
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -841,6 +915,7 @@ sub hashkey {
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 

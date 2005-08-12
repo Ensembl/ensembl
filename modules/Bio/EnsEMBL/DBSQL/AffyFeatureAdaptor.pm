@@ -50,7 +50,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
   Returntype : listref of Bio::EnsEMBL::AffyFeature
   Exceptions : none
   Caller     : AffyProbe->get_all_AffyFeatures()
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -78,8 +79,10 @@ sub fetch_all_by_AffyProbe {
                Arrays that are given by their names. If none is given, all features on that Slice 
                are returned.
   Returntype : listref of Bio::EnsEMBL::AffyFeature
-  Exceptions : none
+  Exceptions : throws if arraynames passed
   Caller     : slice->get_all_AffyFeatures()
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -111,6 +114,8 @@ sub fetch_all_by_Slice_arrayname {
                have an attached slice or atached probe.
                or if any elements of @afs are not Bio::EnsEMBL::AffyFeatures 
   Caller     : general
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -174,6 +179,8 @@ sub store{
   Returntype : list of listrefs of strings
   Exceptions : none
   Caller     : internal
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -201,6 +208,8 @@ sub _default_where_clause {
   Returntype : list of strings
   Exceptions : none
   Caller     : internal
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -224,6 +233,8 @@ sub _columns {
   Returntype : list reference to Bio::EnsEMBL::AffyFeature objects
   Exceptions : none
   Caller     : internal
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -375,6 +386,8 @@ sub _objs_from_sth {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 

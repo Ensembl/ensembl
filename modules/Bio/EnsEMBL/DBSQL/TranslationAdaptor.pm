@@ -65,6 +65,7 @@ use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
   Returntype : Bio::EnsEMBL::Translation
   Exceptions : throw on incorrect argument
   Caller     : Transcript
+  Status     : Stable
 
 =cut
 
@@ -149,6 +150,9 @@ sub fetch_by_Transcript {
   Returntype : reference to a list of Translations
   Exceptions : none
   Caller     : general
+  Status     : Medium Risk
+             :   At some time may be deprecated to instead use 
+             :   TranscriptAdaptor::fetch_all_by_external_name 
 
 =cut
 
@@ -187,6 +191,7 @@ sub fetch_all_by_external_name {
                thrown if only partial stable id information is present (e.g.
                identifier but not version number)
   Caller     : Transcript::store
+  Status     : Stable
 
 =cut
 
@@ -291,6 +296,7 @@ sub store {
   Exceptions : throw on incorrect arguments
                warning if translation is not in this database
   Caller     : TranscriptAdaptor::remove
+  Status     : Stable
 
 =cut
 
@@ -348,6 +354,7 @@ sub remove {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -367,6 +374,7 @@ sub list_dbIDs {
   Returntype : reference to a list of strings
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -392,6 +400,7 @@ sub list_stable_ids {
   Exceptions : warning if an additional (old style) Transcript argument is
                provided
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -416,12 +425,12 @@ sub fetch_by_dbID {
 }
 
 
-=head2 fetch_by_dbID
+=head2 fetch_by_stable_id
 
-  Arg [1]    : int $dbID
-               The internal identifier of the Translation to obtain
-  Example    : $translation = $translation_adaptor->fetch_by_dbID(1234);
-  Description: This fetches a Translation object via its internal id.  This
+  Arg [1]    : string $stable_id
+               The stable identifier of the Translation to obtain
+  Example    : $translation = $translation_adaptor->fetch_by_stable_id("ENSP00001");
+  Description: This fetches a Translation object via its stable id.  This
                is only debatably useful since translations do not make much
                sense outside of the context of their Translation.  Consider
                using fetch_by_Transcript instead.
@@ -430,6 +439,7 @@ sub fetch_by_dbID {
   Exceptions : warning if an additional (old style) Transcript argument is
                provided
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -461,6 +471,7 @@ sub fetch_by_stable_id {
   Returntype : Reference to list of Bio::EnsEMBL::Translations
   Exceptions : None
   Caller     : general
+  Status     : Stable
 
 =cut
 

@@ -90,10 +90,8 @@ Internal methods are usually preceded with a _
 package Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use vars qw(@ISA);
 use strict;
-use Bio::EnsEMBL::Root;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-@ISA = qw(Bio::EnsEMBL::Root);
 
 
 =head2 new
@@ -107,6 +105,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
   Returntype : Bio::EnsEMBL::DBSQL::BaseAdaptor
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::DBConnection
+  Status     : Stable
 
 =cut
 
@@ -149,6 +148,7 @@ sub new {
   Returntype : DBI::StatementHandle
   Exceptions : none
   Caller     : Adaptors inherited from BaseAdaptor
+  Status     : Stable
 
 =cut
 
@@ -169,6 +169,7 @@ sub prepare{
   Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
   Exceptions : none
   Caller     : Adaptors inherited fro BaseAdaptor
+  Status     : Stable
 
 =cut
 
@@ -190,6 +191,7 @@ sub db{
   Returntype : Bio::EnsEMBL::DBSQL::DBConnection
   Exceptions : none
   Caller     : Adaptors inherited fro BaseAdaptor
+  Status     : Stable
 
 =cut
 
@@ -263,6 +265,7 @@ sub _straight_join {
   Returntype : listref of Bio::EnsEMBL::SeqFeature in contig coordinates
   Exceptions : none
   Caller     : BaseFeatureAdaptor, ProxyDnaAlignFeatureAdaptor::generic_fetch
+  Status     : Stable
 
 =cut
 
@@ -348,6 +351,7 @@ sub generic_fetch {
   Exceptions : thrown if $id arg is not provided
                does not exist
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -387,6 +391,7 @@ sub fetch_by_dbID{
   Exceptions : thrown if $id arg is not provided
                does not exist
   Caller     : general
+  Status     : Stable
 
 =cut
 

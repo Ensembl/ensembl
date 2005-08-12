@@ -48,6 +48,7 @@ use vars qw(@ISA);
   Exceptions : warning if $exon is not in the database (i.e. dbID not defined)
                throw if a retrieved supporting feature is of unknown type 
   Caller     : Bio::EnsEMBL::Exon
+  Status     : Stable
 
 =cut
 

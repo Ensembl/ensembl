@@ -56,6 +56,8 @@ use Bio::EnsEMBL::Storable;
   Arg [-SEQ]        : Manually sets the peptide sequence of this translation.
                       May be useful if this translation is not stored in
                       a database.
+  Arg [-CREATED_DATE]: the date the translation was created
+  Arg [-MODIFIED_DATE]: the date the translation was modified
   Example    : my $tl = Bio::EnsEMBL::Translation->new
                    (-START_EXON => $ex1,
                     -END_EXON   => $ex2,
@@ -65,6 +67,7 @@ use Bio::EnsEMBL::Storable;
   Returntype : Bio::EnsEMBL::Translation
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -106,7 +109,7 @@ sub new {
            the exon given by start_exon_id.
  Returns : value of start
  Args    : newvalue (optional)
-
+ Status  : Stable
 
 =cut
 
@@ -130,6 +133,7 @@ sub start{
            the exon given by end_exon.
  Returns : value of end
  Args    : newvalue (optional)
+ Status  : Stable
 
 
 =cut
@@ -155,6 +159,7 @@ sub end {
            position indicated by start, see above).
  Returns : value of start_exon (Exon object)
  Args    : newvalue (optional)
+ Status  : Stable
 
 
 =cut
@@ -184,7 +189,7 @@ sub start_Exon {
            position indicated by end, see above).
  Returns : value of end_exon (Exon object)
  Args    : newvalue (optional)
-
+ Status  : Stable
 
 =cut
 
@@ -211,6 +216,7 @@ sub end_Exon {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -229,6 +235,7 @@ sub version {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -238,12 +245,36 @@ sub stable_id {
   return $self->{'stable_id'};
 }
 
+=head2 created_date
+
+  Arg [1]    : (optional) string to be used for the created date
+  Example    : none
+  Description: get/set for attribute created date
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut 
+
 sub created_date {
   my $self = shift;
   $self->{'created_date'} = shift if ( @_ );
   return $self->{'created_date'};
 }
 
+
+=head2 modified_date
+
+  Arg [1]    : (optional) string to be used for the modified date
+  Example    : none
+  Description: get/set for attribute modified date
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut 
 
 sub modified_date {
   my $self = shift;
@@ -262,6 +293,7 @@ sub modified_date {
   Returntype: none
   Exceptions: none
   Caller    : Transcript->transform() 
+  Status     : Stable
 
 =cut
 
@@ -299,6 +331,7 @@ sub transform {
   Returntype : list reference to Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : get_all_DBLinks, TranslationAdaptor::store
+  Status     : Stable
 
 =cut
 
@@ -333,6 +366,7 @@ sub get_all_DBEntries {
   Returntype : none
   Exceptions : thrown on incorrect argument type
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -358,6 +392,7 @@ sub add_DBEntry {
   Returntype : see get_all_DBEntries
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -382,6 +417,7 @@ sub get_all_DBLinks {
   Returntype : Bio::EnsEMBL::ProteinFeature
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -446,6 +482,7 @@ sub get_all_ProteinFeatures {
   Returntype : listref of Bio::EnsEMBL::ProteinFeatures
   Exceptions : none
   Caller     : webcode (protview)
+  Status     : Stable
 
 =cut
 
@@ -479,6 +516,7 @@ sub get_all_DomainFeatures{
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 
@@ -497,6 +535,7 @@ sub display_id {
   Returntype : int
   Exceptions : none
   Caller     : webcode (protview etc.)
+  Status     : Stable
 
 =cut
 
@@ -521,6 +560,7 @@ sub length {
   Exceptions : warning if the sequence is not set and cannot be retrieved from
                the database.
   Caller     : webcode (protview etc.)
+  Status     : Stable
 
 =cut
 
@@ -565,6 +605,7 @@ sub seq {
   Exceptions : warning if translation does not have attached adaptor and 
                attempts lazy load.
   Caller     : general, modify_translation
+  Status     : Stable
 
 =cut
 
@@ -604,6 +645,7 @@ sub get_all_Attributes {
   Returntype : none
   Exceptions : throw on incorrect arguments
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -632,6 +674,7 @@ sub add_Attributes {
   Returntype : Bio::EnsEMBL::SeqEdit
   Exceptions : none
   Caller     : spliced_seq()
+  Status     : Stable
 
 =cut
 
@@ -660,6 +703,7 @@ sub get_all_SeqEdits {
   Returntype : Bio::Seq
   Exceptions :
   Caller     : Bio::EnsEMBL::Transcript->translate
+  Status     : Stable
 
 =cut
 
@@ -704,8 +748,9 @@ sub temporary_id {
   Function  : Retrieves a listref of registered DAS objects
   Returntype: [ DAS_objects ]
   Exceptions:
-  Caller    :
+  Caller    : webcode
   Example   : $dasref = $prot->get_all_DASFactories
+  Status     : Stable
 
 =cut
 
@@ -727,6 +772,7 @@ sub get_all_DASFactories {
   Returntype : hashref of Bio::SeqFeatures
   Exceptions : ?
   Caller     : webcode
+  Status     : Stable
 
 =cut
 
@@ -763,7 +809,7 @@ sub get_all_DASFeatures{
   Returntype : hashref of Bio::SeqFeatures
   Exceptions : ?
   Caller     : webcode
-
+  Status     : Stable
 
 =cut
 
@@ -807,6 +853,9 @@ sub get_all_DAS_Features{
   Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
   Exceptions : If arg is not of correct type.
   Caller     : ?
+  Status     : At Risk
+             : Regulatory features are currently under development and are 
+             : likely to change.
 
 =cut
 

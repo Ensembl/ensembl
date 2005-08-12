@@ -109,6 +109,7 @@ use strict;
   Exceptions : thrown if both feature and cigar string args are provided
                thrown if neither feature nor cigar string args are provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -151,6 +152,7 @@ sub new {
   Returntype : Bio::EnsEMBL::BaseAlignFeature
   Exceptions : none
   Caller     : none currently
+  Status     : Stable
 
 =cut
 
@@ -173,6 +175,7 @@ sub new_fast {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -191,6 +194,7 @@ sub cigar_string {
   Returntype : int
   Exceptions : 
   Caller     : 
+  Status     : Stable
 
 =cut
 
@@ -225,6 +229,7 @@ sub alignment_length {
   Returntype : list of Bio::EnsEMBL::FeaturePair
   Exceptions : cigar_string not set internally
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -252,6 +257,7 @@ sub ungapped_features {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
  
 =cut
 
@@ -276,6 +282,7 @@ sub strands_reversed {
   Returntype : none
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -317,6 +324,7 @@ sub reverse_complement {
   Returntype : list of Bio::EnsEMBL::FeaturePair
   Exceptions : none
   Caller     : ungapped_features
+  Status     : Stable
 
 =cut
 
@@ -463,6 +471,7 @@ sub _parse_cigar {
   Exceptions : argument list undergoes many sanity checks - throws under many
                invalid conditions
   Caller     : new
+  Status     : Stable
 
 =cut
 
@@ -764,6 +773,7 @@ sub _parse_features {
   Returntype : int 1,3
   Exceptions : none
   Caller     : internal
+  Status     : Stable
 
 =cut
 
@@ -783,6 +793,7 @@ sub _hit_unit {
   Returntype : int 1,3
   Exceptions : none
   Caller     : internal
+  Status     : Stable
 
 =cut
 

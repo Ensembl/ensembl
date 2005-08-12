@@ -48,6 +48,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -73,6 +75,8 @@ sub fetch_by_name {
   Returntype : none
   Exceptions : none
   Caller     : lazy load Array attributes into empty array from AffyArray object
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -94,6 +98,8 @@ sub fetch_attributes {
   Returntype : list of listrefs of strings
   Exceptions : none
   Caller     : internal
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -113,6 +119,8 @@ sub _tables {
   Returntype : list of strings
   Exceptions : none
   Caller     : internal
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -133,6 +141,8 @@ sub _columns {
   Returntype : list reference to Bio::EnsEMBL::AffyFeature objects
   Exceptions : none
   Caller     : internal
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -173,6 +183,8 @@ sub _objs_from_sth {
   Returntype : none
   Exceptions : none
   Caller     : affy feature calculating scripts
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -222,6 +234,8 @@ sub store {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 

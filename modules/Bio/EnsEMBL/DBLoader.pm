@@ -64,6 +64,7 @@ use strict;
   Exceptions : thrown if the specified module cannot be instantiated or the
                locator string cannot be parsed
   Caller     : ?
+  Status     : Stable
 
 =cut
 

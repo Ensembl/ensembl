@@ -58,6 +58,8 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::RegulatoryFactor
   Exceptions : none
   Caller     : general, Bio::EnsEMBL::RegulatoryFactorAdaptor
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -80,6 +82,8 @@ sub fetch_by_dbID {
   Returntype : Bio::EnsEMBL::RegulatoryFactor
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -101,6 +105,8 @@ sub fetch_by_name {
   Returntype : listREF of Bio::EnsEMBL::RegulatoryFactors
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -121,6 +127,8 @@ sub fetch_all_by_type {
   Returntype : listref of Bio::EnsEMBL::RegulatoryFactor objects
   Exceptions : none
   Caller     : internal
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -156,6 +164,8 @@ sub _generic_fetch {
   Returntype : none
   Exceptions : none
   Caller     : ?
+  Status     : At Risk
+             : under development
 
 =cut
 

@@ -35,17 +35,22 @@ use warnings;
 
 package Bio::EnsEMBL::Storable;
 
-use Bio::EnsEMBL::Root;
-use vars qw(@ISA);
-
-#
-# will eventually remove unneeded inheritance to Root
-#
-@ISA = qw(Bio::EnsEMBL::Root);
-
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+
+=head2 new
+
+  Arg [-ADAPTOR] : Bio::EnsEMBL::DBSQL::BaseAdaptor
+  Arg [-dbID]    : database internal id
+  Example        : none 
+  Caller         : internal calls
+  Description    : create a new Storable object 
+  Returntype     : Bio::EnsEMBL::Storable
+  Exceptions     : Adaptor not a Bio::EnsEMBL::DBSQL::BaseAdaptor
+  Status         : Stable
+
+=cut
 
 sub new {
   my $caller = shift;
@@ -71,6 +76,7 @@ sub new {
   Returntype : int
   Exceptions : none
   Caller     : general, set from adaptor on store
+  Status     : Stable
 
 =cut
 
@@ -87,9 +93,10 @@ sub dbID {
   Arg [1]    : Bio::EnsEMBL::DBSQL::BaseAdaptor $adaptor
   Example    : none
   Description: get/set for this objects Adaptor
-  Returntype : Bio::EnsEMBL::DBSQL::ChromsomeAdaptor
+  Returntype : Bio::EnsEMBL::DBSQL::BaseAdaptor
   Exceptions : none
   Caller     : general, set from adaptor on store
+  Status     : Stable
 
 =cut
 
@@ -110,7 +117,8 @@ sub adaptor {
 
 =head2 is_stored
 
-  Arg [1]    : Bio::EnsEMBL::DBSQL::DBConnection
+  Arg [1]    : Bio::EnsEMBL::DBSQL::DBConnection 
+             : or Bio::EnsEMBL::DBSQL::DBAdaptor
   Example    : do_something if($object->is_stored($db));
   Description: Returns true if this object is stored in the provided database.
                This works under the assumption that if the adaptor and dbID are
@@ -122,6 +130,7 @@ sub adaptor {
                throw if adaptor is set but dbID is not
                throw if incorrect argument is passed
   Caller     : store methods
+  Status     : Stable
 
 =cut
 

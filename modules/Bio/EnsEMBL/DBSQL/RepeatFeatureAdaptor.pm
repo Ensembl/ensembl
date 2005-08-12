@@ -21,7 +21,7 @@ my @repeats = @{$rfa->fetch_all_by_Slice($slice)};
 =head1 DESCRIPTION
 
 This is an adaptor for the retrieval and storage of RepeatFeature objects
-from the RepeatFeature database.  Most of the implementation is in the
+from the database.  Most of the implementation is in the
 superclass BaseFeatureAdaptor.
 
 =head1 AUTHOR - James Gilbert
@@ -65,6 +65,7 @@ use vars qw(@ISA);
   Returntype : reference to a list of Bio::EnsEMBL::RepeatFeatures.
   Exceptions : throw on bad argument
   Caller     : Slice::get_all_RepeatFeatures
+  Status     : Stable
 
 =cut
 
@@ -325,12 +326,13 @@ sub _objs_from_sth {
 
   Arg [1]    : list of Bio::EnsEMBL::RepeatFeatures $repeat_feature_id
                the list of repeat features to store in the database
-  Example    : $repeat_feature_adaptor->store(1234, @repeat_features);
+  Example    : $repeat_feature_adaptor->store(@repeat_features);
   Description: stores a repeat feature in the database
   Returntype : none
   Exceptions : if the repeat features do not have attached sequences 
                or if repeat_consensus are not present 
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -460,6 +462,7 @@ sub store {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 

@@ -58,11 +58,24 @@ use vars qw(@ISA);
 
 =head2 new
 
-  Arg [PROBE] : 
-               Every AffyFeature needs an AffyProbe on construction. This should be already
-               stored if you plan to store this feature.
-  Arg [MISMATCHCOUNT] :
-               How many mismatches over the length of the probe? (0,1) 
+  Arg [PROBE] : Every AffyFeature needs an AffyProbe on construction. This should be already
+                stored if you plan to store this feature.
+  Arg [MISMATCHCOUNT] : How many mismatches over the length of the probe? (0,1) 
+  Arg [-SLICE]: Bio::EnsEMBL::SLice - Represents the sequence that this
+                feature is on. The coordinates of the created feature are
+                relative to the start of the slice.
+  Arg [-START]: The start coordinate of this feature relative to the start
+                of the slice it is sitting on.  Coordinates start at 1 and
+                are inclusive.
+  Arg [-END]  : The end coordinate of this feature relative to the start of
+                the slice it is sitting on.  Coordinates start at 1 and are
+                inclusive.
+  Arg [-STRAND]: The orientation of this feature.  Valid values are 1,-1,0.
+  Arg [-SEQNAME] : A seqname to be used instead of the default name of the
+                of the slice.  Useful for features that do not have an
+                attached slice such as protein features.
+  Arg [-dbID]   : (optional) internal database id
+  Arg [-ADAPTOR]: (optional) Bio::EnsEMBL::DBSQL::BaseAdaptor
   Example    : my $feature = Bio::EnsEMBL::AffyFeature->new(
                  -PROBE => $affyProbe,
                  -MISMATCHCOUNT => 0,
@@ -75,7 +88,8 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::AffyFeature
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -108,7 +122,8 @@ sub new {
   Returntype : Bio::EnsEMBL::AffyFeature
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -130,7 +145,8 @@ sub new_fast {
   Returntype : string
   Exceptions : none
   Caller     : general
-
+  Status     : At Risk
+             : This maybe removed. Use $feature->probe->probeset() to be safe
 
 =cut
 
@@ -153,7 +169,8 @@ sub probeset {
   Returntype : int
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -174,7 +191,8 @@ sub mismatchcount {
   Returntype : int
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -196,7 +214,8 @@ sub probelength {
   Returntype : Bio::EnsEMBL::AffyProbe
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -220,7 +239,7 @@ sub probe {
     return $self->{'probe'};
 }
 
-
+1;
 
 
 

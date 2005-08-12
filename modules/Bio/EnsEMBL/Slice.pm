@@ -58,24 +58,19 @@ package Bio::EnsEMBL::Slice;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Root; # included for backwards compatibility
-
 use Bio::PrimarySeqI;
 
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
-
 use Bio::EnsEMBL::RepeatMaskedSlice;
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
-
 use Bio::EnsEMBL::ProjectionSegment;
 use Bio::EnsEMBL::Registry;
 
 my $reg = "Bio::EnsEMBL::Registry";
 
-# inheritance to Bio::EnsEMBL::Root will eventually be removed
-@ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
+@ISA = qw(Bio::PrimarySeqI);
 
 
 =head2 new
@@ -85,7 +80,8 @@ my $reg = "Bio::EnsEMBL::Registry";
                string SEQ_REGION_NAME,
                int    START,
                int    END,
-               string VERSION (optional, defaults to '')
+               int    SEQ_REGION_LENGTH, (optional)
+               string SEQ (optional)
                int    STRAND, (optional, defaults to 1)
                Bio::EnsEMBL::DBSQL::SliceAdaptor ADAPTOR (optional)
   Example    : $slice = Bio::EnsEMBL::Slice->new(-coord_system => $cs,
@@ -109,8 +105,9 @@ my $reg = "Bio::EnsEMBL::Registry";
                (with the exception of the adaptor) may not be altered.  To
                change the attributes a new slice must be created.
   Returntype : Bio::EnsEMBL::Slice
-  Exceptions : none
+  Exceptions : throws if start, end, coordsystem or seq_region_name not specified or not of the correct type
   Caller     : general, Bio::EnsEMBL::SliceAdaptor
+  Status     : Stable
 
 =cut
 
@@ -188,8 +185,9 @@ sub new {
   Description: Getter/Setter for the slice object adaptor used
                by this slice for database interaction.
   Returntype : Bio::EnsEMBL::DBSQL::SliceAdaptor
-  Exceptions : none
+  Exceptions : thorws if argument passed is not a SliceAdaptor
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -225,6 +223,7 @@ sub adaptor{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -245,6 +244,7 @@ sub seq_region_name {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -262,6 +262,7 @@ sub seq_region_length {
   Returntype : Bio::EnsEMBL::CoordSystem
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -281,6 +282,7 @@ sub coord_system {
   Returntype: string or undef
   Exceptions: none
   Caller    : general
+  Status     : Stable
 
 =cut
 
@@ -301,6 +303,7 @@ sub coord_system_name {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -322,6 +325,7 @@ sub centrepoint {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -345,6 +349,7 @@ sub start {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -364,6 +369,7 @@ sub end {
   Returntype : int (either 1 or -1)
   Exceptions : none
   Caller     : general, invert
+  Status     : Stable
 
 =cut
 
@@ -389,6 +395,7 @@ sub strand{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -416,6 +423,7 @@ sub name {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -436,6 +444,7 @@ sub length {
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -464,6 +473,7 @@ sub invert {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -500,6 +510,7 @@ sub seq {
   Exceptions : end should be at least as big as start
                strand must be set
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -565,6 +576,7 @@ sub subseq {
   Returntype : hashref
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -638,6 +650,7 @@ sub get_base_count {
                can also be used as [$start,$end,$slice] triplets
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -831,6 +844,7 @@ sub _constrain_to_region {
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : warning if an attempt is made to contract the slice below 1bp
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -907,6 +921,7 @@ sub expand {
   Returntype : Bio::EnsEMBL::Slice or undef if arguments are wrong
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -969,6 +984,7 @@ sub sub_Slice {
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : warning if called when sequence of Slice has been set manually.
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1008,6 +1024,7 @@ sub seq_region_Slice {
   Returntype : int or undef if slices does not have attached adaptor
   Exceptions : warning if slice is not associated with a SliceAdaptor
   Caller     : assembly loading scripts, general
+  Status     : Stable
 
 =cut
 
@@ -1034,6 +1051,7 @@ sub get_seq_region_id {
   Returntype : listref Bio::EnsEMBL::Attribute
   Exceptions : warning if slice does not have attached adaptor
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1080,6 +1098,7 @@ sub get_all_Attributes {
   Returntype : listref of Bio::EnsEMBL::PredictionTranscript
   Exceptions : warning if slice does not have attached adaptor
   Caller     : none
+  Status     : Stable
 
 =cut
 
@@ -1115,6 +1134,7 @@ sub get_all_PredictionTranscripts {
   Returntype : listref of Bio::EnsEMBL::DnaDnaAlignFeatures
   Exceptions : warning if slice does not have attached adaptor
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1153,7 +1173,7 @@ sub get_all_DnaAlignFeatures {
   Arg [2]    : (optional) float $score
                The mimimum score of the features to retrieve
   Arg [3]    : (optional) string $dbtype
-               The name of an attached datbase to retrieve features from 
+               The name of an attached database to retrieve features from 
                instead.
   Example    : @dna_pep_align_feats = @{$slice->get_all_ProteinAlignFeatures};
   Description: Retrieves the DnaPepAlignFeatures which overlap this slice with
@@ -1164,6 +1184,7 @@ sub get_all_DnaAlignFeatures {
   Returntype : listref of Bio::EnsEMBL::DnaPepAlignFeatures
   Exceptions : warning if slice does not have attached adaptor
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1210,6 +1231,7 @@ sub get_all_ProteinAlignFeatures {
   Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
   Exceptions : warning if slice does not have attached adaptor
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1242,6 +1264,7 @@ sub get_all_SimilarityFeatures {
   Returntype : listref of Bio::EnsEMBL::SimpleFeatures
   Exceptions : warning if slice does not have attached adaptor
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1275,6 +1298,7 @@ sub get_all_SimpleFeatures {
   Returntype : listref of Bio::EnsEMBL::RepeatFeatures
   Exceptions : warning if slice does not have attached adaptor
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1300,6 +1324,8 @@ sub get_all_RepeatFeatures {
     ReturnType  : Bio::EnsEMBL::Variation::LDFeatureContainer
     Exceptions  : none
     Caller      : contigview, snpview
+     Status     : At Risk
+                : Variation database is under development.
 
 =cut
 
@@ -1337,6 +1363,8 @@ sub get_all_LD_values{
     ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions : none
     Caller     : contigview, snpview
+    Status     : At Risk
+               : Variation database is under development.
 
 =cut
 
@@ -1373,6 +1401,8 @@ sub get_all_VariationFeatures{
     ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions : none
     Caller     : contigview, snpview, ldview
+    Status     : At Risk
+               : Variation database is under development.
 
 =cut
 
@@ -1479,6 +1509,7 @@ sub get_all_SNPs_transcripts {
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
   Caller     : none
+  Status     : Stable
 
 =cut
 
@@ -1531,6 +1562,7 @@ sub get_all_Genes{
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
   Caller     : genebuilder
+  Status     : Stable
 
 =cut
 
@@ -1563,6 +1595,7 @@ sub get_all_Genes_by_type{
   Returntype : reference to a list of Bio::EnsEMBL::Transcripts
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1590,6 +1623,7 @@ sub get_all_Transcripts {
   Returntype : reference to a list of Bio::EnsEMBL::Exons
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1614,6 +1648,7 @@ sub get_all_Exons {
   Returntype : listref Bio::EnsEMBL::Map::QtlFeature
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1646,6 +1681,7 @@ sub get_all_QtlFeatures {
   Returntype : listref oif Bio::EnsEMBL::KaryotypeBands
   Exceptions : none
   Caller     : general, contigview
+  Status     : Stable
 
 =cut
 
@@ -1695,6 +1731,7 @@ sub get_all_KaryotypeBands {
   Returntype : Bio::EnsEMBL::RepeatMaskedSlice
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1748,6 +1785,7 @@ sub get_repeatmasked_seq {
   Returntype : none
   Exceptions : none
   Caller     : seq
+  Status     : Stable
 
 =cut
 
@@ -1821,6 +1859,7 @@ sub _mask_features {
   Returntype : listref of Bio::EnsEMBL::SeqFeatures
   Exceptions : none
   Caller     : general (webby!)
+  Status     : Stable
 
 =cut
 
@@ -1860,6 +1899,7 @@ sub get_all_SearchFeatures {
   Returntype : listref of Bio::EnsEMBL::AssemblyExceptionFeatures
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1891,6 +1931,7 @@ sub get_all_AssemblyExceptionFeatures {
   Returntype : listref of Bio::EnsEMBL::MiscFeatures
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1916,6 +1957,17 @@ sub get_all_MiscFeatures {
 
 
 
+=head2 get_all_AffyFeatures
+
+  Arg [1]    : (optional) array of names
+  Example    : $slice->get_all_AffyFeatures();
+  Description: Retreives all affy features which overlap this slice.
+  Returntype : listref of Bio::EnsEMBL::AffyFeatures
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
 
 sub get_all_AffyFeatures {
     my $self = shift;
@@ -1953,6 +2005,7 @@ sub get_all_AffyFeatures {
   Returntype : reference to a list of Bio::EnsEMBL::MarkerFeatures
   Exceptions : none
   Caller     : contigview, general
+  Status     : Stable
 
 =cut
 
@@ -1995,6 +2048,7 @@ sub get_all_MarkerFeatures {
   Returntype : reference to a list of Bio::EnsEMBL::DnaDnaAlignFeatures
   Exceptions : warning if compara database is not available
   Caller     : contigview
+  Status     : Stable
 
 =cut
 
@@ -2022,6 +2076,15 @@ sub get_all_compara_DnaAlignFeatures {
   my $dafa = $compara_db->get_DnaAlignFeatureAdaptor;
   return $dafa->fetch_all_by_Slice($self, $qy_species, $qy_assembly, $alignment_type);
 }
+
+=head2 get_all_compara_Syntenies
+
+  Arg [1]    : query species
+  Description: gets al the conpara syntenys fro a specfic species
+  Returns    : arrayref of Bio::EnsEMBL::Compara::SyntenyRegion
+  Status     : Stable
+
+=cut
 
 sub get_all_compara_Syntenies {
   my ($self, $qy_species ) = @_;
@@ -2060,6 +2123,7 @@ sub get_all_compara_Syntenies {
   Returntype : listref of Bio::EnsEMBL::External::Haplotype::Haplotypes
   Exceptions : warning is Haplotype database is not available
   Caller     : contigview, general
+  Status     : Stable
 
 =cut
 
@@ -2100,6 +2164,7 @@ sub get_all_Haplotypes {
   Returntype : hashref of Bio::SeqFeatures
   Exceptions : ?
   Caller     : webcode
+  Status     : Stable
 
 =cut
 
@@ -2132,6 +2197,7 @@ sub get_all_DASFeatures{
                coordinates 
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -2184,6 +2250,7 @@ sub get_all_ExternalFeatures {
   Returntype : Hash of named features.
   Exceptions : none
   Caller     : none
+  Status     : Stable
 
 =cut
 

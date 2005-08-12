@@ -52,6 +52,7 @@ our $MAX_SPLIT_QUERY_SEQ_REGIONS = 3;
   Returntype : Bio::EnsEMBL::BaseFeatureAdaptor
   Exceptions : none
   Caller     : implementing subclass constructors
+  Status     : Stable
 
 =cut
 
@@ -85,6 +86,7 @@ sub new {
   Returntype : listref of Bio::EnsEMBL::SeqFeatures in Slice coordinates
   Exceptions : none
   Caller     : Bio::EnsEMBL::Slice
+  Status     : Stable
 
 =cut
 
@@ -103,15 +105,16 @@ sub fetch_all_by_Slice {
                lower bound of the the score of the features retrieved
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : $fts = $a->fetch_all_by_Slice($slice, 'Swall');
+  Example    : $fts = $a->fetch_all_by_Slice_and_score($slice,90,'Swall');
   Description: Returns a list of features created from the database which are 
                are on the Slice defined by $slice and which have a score 
-               greated than $score. If $logic_name is defined, 
+               greater than $score. If $logic_name is defined, 
                only features with an analysis of type $logic_name will be 
                returned. 
   Returntype : listref of Bio::EnsEMBL::SeqFeatures in Slice coordinates
   Exceptions : none
   Caller     : Bio::EnsEMBL::Slice
+  Status     : Stable
 
 =cut
 
@@ -147,6 +150,7 @@ sub fetch_all_by_Slice_and_score {
   Returntype : listref of Bio::EnsEMBL::SeqFeatures in Slice coordinates
   Exceptions : thrown if $slice is not defined
   Caller     : Bio::EnsEMBL::Slice
+  Status     : Stable
 
 =cut
 
@@ -615,6 +619,8 @@ sub _logic_name_to_constraint {
   Returntype : none
   Exceptions : thrown method is not implemented by subclass
   Caller     : general
+  Status     : At Risk
+             : throws if called.
 
 =cut
 
@@ -640,6 +646,7 @@ sub store{
   Exceptions : thrown if $feature arg does not implement dbID(), or if
                $feature->dbID is not a true value
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -672,7 +679,7 @@ sub remove {
 =head2 remove_by_Slice
 
   Arg [1]    : Bio::Ensembl::Slice $slice
-  Example    : $feature_adaptor->remove_by_RawContig($slice);
+  Example    : $feature_adaptor->remove_by_Slice($slice);
   Description: This removes features from the database which lie on a region
                represented by the passed in slice.  Only features which are
                fully contained by the slice are deleted; features which overlap
@@ -682,6 +689,7 @@ sub remove {
   Returntype : none
   Exceptions : thrown if no slice is supplied
   Caller     : general
+  Status     : Stable
 
 =cut
 

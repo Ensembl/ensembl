@@ -74,7 +74,7 @@ use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 #  Returntype : list of listrefs of strings
 #  Exceptions : none
 #  Caller     : internal
-
+#  Status     : Stable
 
 sub _tables {
   my $self = shift;
@@ -93,6 +93,7 @@ sub _tables {
 #  Returntype : list of strings
 #  Exceptions : none
 #  Caller     : internal
+#  Status     : Stable
 
 sub _columns {
   my $self = shift;
@@ -122,6 +123,7 @@ sub _left_join {
   Returntype : Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -156,6 +158,7 @@ sub fetch_by_stable_id{
   Returntype : Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -191,6 +194,7 @@ sub fetch_by_translation_stable_id {
   Returntype : Bio::EnsEMBL::Transcript or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -226,6 +230,7 @@ sub fetch_by_translation_id {
   Returntype : listref Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : Gene->get_all_Transcripts()
+  Status     : Stable
 
 =cut
 
@@ -288,6 +293,7 @@ sub fetch_all_by_Gene {
   Returntype : reference to list of transcripts
   Exceptions : thrown if exon cannot be placed on transcript slice
   Caller     : Slice::get_all_Transcripts
+  Status     : Stable
 
 =cut
 
@@ -406,6 +412,7 @@ sub fetch_all_by_Slice {
   Returntype : reference to a list of transcripts
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -431,6 +438,7 @@ sub fetch_all_by_external_name {
   Returntype : Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -452,6 +460,7 @@ sub fetch_by_display_label {
   Returntype : Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -491,6 +500,7 @@ sub fetch_all_by_exon_stable_id {
   Returntype : int 
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -751,6 +761,7 @@ sub store {
   Returntype : listref of strings 
   Exceptions : none 
   Caller     : domainview? , GeneView
+  Status     : Stable
 
 =cut
 
@@ -802,6 +813,7 @@ sub get_Interpro_by_transid {
   Exceptions : throw on incorrect arguments
                warning if transcript is not in this database
   Caller     : GeneAdaptor::remove
+  Status     : Stable
 
 =cut
 
@@ -895,6 +907,7 @@ sub remove {
                warn if the method is called on a transcript that does not exist 
                in the database.
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -938,6 +951,7 @@ sub update {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -956,6 +970,7 @@ sub list_dbIDs {
   Returntype : listref of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -975,6 +990,7 @@ sub list_stable_ids {
 #  Returntype : listref of Bio::EnsEMBL::Transcripts in target coord system
 #  Exceptions : none
 #  Caller     : internal
+#  Status     : Stable
 
 sub _objs_from_sth {
   my ($self, $sth, $mapper, $dest_slice) = @_;

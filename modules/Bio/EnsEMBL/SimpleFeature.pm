@@ -73,6 +73,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
   Returntype : Bio::EnsEMBL::Feature
   Exceptions : Thrown on invalid -SLICE, -ANALYSIS, -STRAND arguments
   Caller     : general, subclass constructors
+  Status     : Stable
 
 =cut
 
@@ -92,6 +93,18 @@ sub new {
 }
 
 
+=head2 new_fast
+
+  Arg [1]    : hashref to be blessed
+  Description: Construct a new Bio::EnsEMBL::Feature using the hashref.
+  Exceptions : none
+  Returntype : Bio::EnsEMBL::Feature
+  Caller     : general, subclass constructors
+  Status     : Stable
+
+=cut
+
+
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
@@ -108,6 +121,7 @@ sub new_fast {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -131,6 +145,7 @@ sub display_label{
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 
@@ -150,6 +165,7 @@ sub display_id {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

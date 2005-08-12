@@ -111,6 +111,7 @@ sub _fetch_seq {
   Returntype : int
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::RawContigAdaptor::store
+  Status     : Stable
 
 =cut
 

@@ -78,6 +78,8 @@ use vars qw(@ISA);
   Arg [-SEQNAME] : A seqname to be used instead of the default name of the 
                 of the slice.  Useful for features that do not have an 
                 attached slice such as protein features.
+  Arg [-dbID]   : (optional) internal database id
+  Arg [-ADAPTOR]: (optional) Bio::EnsEMBL::DBSQL::BaseAdaptor
   Example    : $feature = Bio::EnsEMBL::Feature->new(-start    => 1, 
                                                      -end      => 100,
                                                      -strand   => 1,
@@ -86,8 +88,9 @@ use vars qw(@ISA);
   Description: Constructs a new Bio::EnsEMBL::Feature.  Generally subclasses
                of this method are instantiated, rather than this class itself.
   Returntype : Bio::EnsEMBL::Feature
-  Exceptions : Thrown on invalid -SLICE, -ANALYSIS, -STRAND arguments
+  Exceptions : Thrown on invalid -SLICE, -ANALYSIS, -STRAND ,-ADAPTOR arguments
   Caller     : general, subclass constructors
+  Status     : Stable
 
 =cut
 
@@ -152,6 +155,7 @@ sub new {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -176,6 +180,7 @@ sub start {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -199,6 +204,7 @@ sub end {
   Returntype : int
   Exceptions : thrown if an invalid strand argument is passed
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -232,6 +238,7 @@ sub strand {
   Returntype : none
   Exceptions : Thrown is invalid arguments are provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -266,6 +273,7 @@ sub move {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -287,6 +295,7 @@ sub length {
   Returntype : Bio::EnsEMBL::Analysis
   Exceptions : thrown if an invalid argument is passed
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -318,6 +327,7 @@ sub analysis {
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : thrown if an invalid argument is passed
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -363,6 +373,7 @@ sub slice {
   Exceptions : thrown if an invalid coordinate system is provided
                warning if Feature is not attached to a slice
   Caller     : general, transfer()
+  Status     : Stable
 
 =cut
 
@@ -466,6 +477,7 @@ sub transform {
   Exceptions : throw on incorrect argument
                throw if feature does not have attached slice
   Caller     : general, transform()
+  Status     : Stable
 
 =cut
 
@@ -563,7 +575,7 @@ sub transfer {
     }
   Description: Returns the results of 'projecting' this feature onto another
                coordinate system.  This is useful to see where a feature
-               where a feature would lie in a coordinate system in which it
+               would lie in a coordinate system in which it
                crosses a boundary.
 
                This method returns a reference to a list of
@@ -584,8 +596,9 @@ sub transfer {
 
   Returntype : list reference of Bio::EnsEMBL::ProjectionSegments
                which can also be used as [$start,$end,$slice] triplets
-  Exceptions : none
+  Exceptions : slice does not have an adaptor
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -633,6 +646,7 @@ sub project {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -665,6 +679,7 @@ sub seqname {
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 
@@ -685,6 +700,7 @@ sub display_id {
                Slice.
   Exceptions : warning if Feature does not have attached slice.
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 
@@ -720,6 +736,7 @@ sub feature_Slice {
   Returntype : string or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -740,6 +757,7 @@ sub seq_region_name {
   Returntype : unsigned int or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -762,6 +780,7 @@ sub seq_region_length {
   Returntype : 1,0,-1 or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -786,6 +805,7 @@ sub seq_region_strand {
   Returntype : int or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -817,6 +837,7 @@ sub seq_region_start {
   Returntype : int or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -842,10 +863,10 @@ sub seq_region_end {
   Example    : print $feature->coord_system_name()
   Description: Gets the name of the coord_system which this feature is on.
                Returns undef if this Feature is not on a slice.
-  Function  : 
-  Returntype: 
-  Exceptions: 
-  Caller    : 
+  Returntype : string or undef
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -867,6 +888,7 @@ sub coord_system_name {
   Returntype : undef or string
   Exceptions : warning if this feature is not stranded
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -917,6 +939,7 @@ sub seq {
   Returntype : reference to list of features of the same type of this feature.
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -1144,7 +1167,7 @@ sub id {
                favour and use a simple one line comparison instead:
                $overlaps = ($f1->end() >= $f2->start() &&
                             $f1->start() <= $f2->end());
-
+  Status     : At Risk
 =cut
 
 sub overlaps {

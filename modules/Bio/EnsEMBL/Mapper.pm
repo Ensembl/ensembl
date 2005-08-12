@@ -71,6 +71,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
   Returntype : Bio::EnsEMBL::Mapper
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -112,6 +113,7 @@ sub new {
   Returntype : none
   Exceptions : none
   Caller     : AssemblyMapper, ChainedAssemblyMapper
+  Status     : Stable
 
 =cut
 
@@ -144,8 +146,10 @@ sub flush {
     Function    generic map method
     Returntype  array of Bio::EnsEMBL::Mapper::Coordinate
                 and/or   Bio::EnsEMBL::Mapper::Gap
-    Exceptions  none
+    Exceptions  throw if  start,end,strand,id or type are missing
+                or type not one of the coord systems
     Caller      Bio::EnsEMBL::Mapper
+    Status     : Stable
 
 =cut
 
@@ -320,6 +324,7 @@ sub map_coordinates{
   Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and/or Gap objects
   Exceptions : none
   Caller     : map_coordinates()
+  Status     : Stable
 
 =cut
 
@@ -402,8 +407,9 @@ sub map_insert {
     Function    inferior map method. Will only do ungapped unsplit mapping.
                 Will return id, start, end strand in a list.
     Returntype  list of results
-    Exceptions  none
+    Exceptions  throws if type is neither to or from coordinate systems
     Caller      Bio::EnsEMBL::AssemblyMapper
+    Status     : Stable
 
 =cut
 
@@ -482,8 +488,9 @@ sub fastmap {
                 'source' and 'target'. Returns 1 if the pair was added, 0 if it
                 was already in.
     Returntype  int 0,1
-    Exceptions  none
+    Exceptions  throws if one or more of the 7 arguments are missing
     Caller      Bio::EnsEMBL::Mapper
+    Status     : Stable
 
 =cut
 
@@ -534,6 +541,7 @@ sub add_map_coordinates{
     Exceptions  throw if 'to' and 'from' from both Bio::EnsEMBL::Mappers
                 are incompatible
     Caller      $mapper->methodname()
+    Status     : Stable
 
 =cut
 
@@ -584,8 +592,10 @@ sub add_Mapper{
                 coordinates to be transformed *from*
     Function    list all pairs of mappings in a region
     Returntype  list of Bio::EnsEMBL::Mapper::Pair
-    Exceptions  none
+    Exceptions  throws if one or more of the 4 arguments are missing
+                throws if start > end
     Caller      Bio::EnsEMBL::Mapper
+    Status     : Stable
 
 =cut
 
@@ -656,6 +666,7 @@ sub list_pairs{
     Returntype  Bio::EnsEMBL::Mapper::Unit
     Exceptions  none
     Caller      Bio::EnsEMBL::Mapper
+    Status     : Stable
 
 =cut
 
@@ -678,15 +689,17 @@ sub from{
 }
 
 
-#  _dump
-#
-#     Arg  1      *FileHandle $fh
-#     Function    convenience dump function
-#                 possibly useful for debugging
-#     Returntype  none
-#     Exceptions  none
-#     Caller      internal
-#
+=head2  _dump
+
+   Arg  1      : *FileHandle $fh
+   Description : convenience dump function
+               : possibly useful for debugging
+   Returntype  : none
+   Exceptions  : none
+   Caller      : internal
+   Status      : Medium Risk
+
+=cut 
 
 sub _dump{
    my ($self,$fh) = @_;
@@ -705,15 +718,16 @@ sub _dump{
 }
 
 
-# _sort
-#
-#    Function    sort function so that all
-#                mappings are sorted by
-#                chromosome start
-#    Returntype  none
-#    Exceptions  none
-#    Caller      internal
-#
+=head2 _sort
+
+  Description: sort function so that all mappings are sorted by
+               chromosome start
+  Returntype : none
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
 
 sub _sort{
    my ($self) = @_;
@@ -804,15 +818,17 @@ sub _merge_pairs {
 }
 
 
-# _is_sorted
-#
-#    Arg  1      int $sorted
-#    Function    toggle for whether the (internal)
-#                map data are sorted
-#    Returntype  int
-#    Exceptions  none
-#    Caller      internal
-#
+=head2 _is_sorted
+
+    Arg  1     : (optional) int $sorted
+    Description: getter.setter for togglewhether the (internal)
+               : map data are sorted
+    Returntype : int
+    Exceptions : none
+    Caller     : internal
+  Status     : Stable
+
+=cut
 
 sub _is_sorted {
    my ($self, $value) = @_;

@@ -92,6 +92,7 @@ my $DEFAULT_MAX_PAIR_COUNT = 6000;
   Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
   Exceptions : thrown if wrong number of coord_systems are provided
   Caller     : AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -150,6 +151,7 @@ sub new {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -177,6 +179,7 @@ sub max_pair_count {
   Returntype : none
   Exceptions : none
   Caller     : specialised programs doing a lot of mapping
+  Status     : Stable
 
 =cut
 
@@ -198,6 +201,18 @@ sub flush {
   $self->{'last_mid_mapper'}->flush();
   $self->{'first_last_mapper'}->flush();
 }
+
+=head2 size
+
+  Args       : none
+  Example    : $num_of_pairs = $mapper->size();
+  Description: return the number of pairs currently stored.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut 
 
 sub size {
   my $self = shift;
@@ -229,6 +244,7 @@ sub size {
   Exceptions : thrown if the specified TO coordinat system is not one
                of the coordinate systems associated with this assembly mapper
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -345,6 +361,7 @@ sub fastmap {
   Returntype : List of strings
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -436,6 +453,7 @@ sub list_seq_regions {
   Returntype : List of ints
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -465,15 +483,52 @@ sub list_ids {
 
 
 
+=head2 first_last_mapper
+
+  Args       : none
+  Example    : $mapper = $cam->first_last_mapper();
+  Description: return the mapper.
+  Returntype : Bio::EnsEMBL::Mapper
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut 
+
 sub first_last_mapper {
   my $self = shift;
   return $self->{'first_last_mapper'};
 }
 
+=head2 first_middle_mapper
+
+  Args       : none
+  Example    : $mapper = $cam->first_middle_mapper();
+  Description: return the mapper.
+  Returntype : Bio::EnsEMBL::Mapper
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut 
+
+ 
 sub first_middle_mapper {
   my $self = shift;
   return $self->{'first_mid_mapper'};
 }
+
+=head2 last_middle_mapper
+
+  Args       : none
+  Example    : $mapper = $cam->last_middle_mapper();
+  Description: return the mapper.
+  Returntype : Bio::EnsEMBL::Mapper
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut 
 
 sub last_middle_mapper {
   my $self = shift;
@@ -481,26 +536,86 @@ sub last_middle_mapper {
 }
 
 
+=head2 first_CoordSystem
+
+  Args       : none
+  Example    : $coordsys = $cam->first_CoordSystem();
+  Description: return the CoordSystem.
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut 
+
 sub first_CoordSystem {
   my $self = shift;
   return $self->{'first_cs'};
 }
 
 
+=head2 middle_CoordSystem
+
+  Args       : none
+  Example    : $coordsys = $cam->middle_CoordSystem();
+  Description: return the CoordSystem.
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut 
+
 sub middle_CoordSystem {
   my $self = shift;
   return $self->{'mid_cs'};
 }
+
+=head2 last_CoordSystem
+
+  Args       : none
+  Example    : $coordsys = $cam->last_CoordSystem();
+  Description: return the CoordSystem.
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut 
 
 sub last_CoordSystem {
   my $self = shift;
   return $self->{'last_cs'};
 }
 
+=head2 first_registry
+
+  Args       : none
+  Example    : $coordsys = $cam->first_registry();
+  Description: return the Registry.
+  Returntype : Bio::EnsEMBL::Mapper::RangeRegistry
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut 
+ 
 sub first_registry {
   my $self = shift;
   return $self->{'first_registry'};
 }
+
+=head2 lsst_registry
+
+  Args       : none
+  Example    : $coordsys = $cam->lsst_registry();
+  Description: return the Registry.
+  Returntype : Bio::EnsEMBL::Mapper::RangeRegistry
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut 
 
 sub last_registry {
   my $self = shift;
@@ -517,14 +632,54 @@ sub last_registry {
 # ordering is arbitrary and both ends might actually be assembled, but these
 # methods provide convenient synonyms
 #
+
+=head2 mapper
+
+  Args       : none
+  Example    : $mapper = $cam->mapper();
+  Description: return the first_last_mapper.
+  Returntype : Bio::EnsEMBL::Mapper
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut 
+
 sub mapper {
   my $self = shift;
   return $self->first_last_mapper();
 }
+
+=head2 assembled_CoordSystem
+
+  Args       : none
+  Example    : $coordsys = $cam->assembled_CoordSystem();
+  Description: return the first CoordSystem.
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut 
+
+
 sub assembled_CoordSystem {
   my $self = shift;
   return $self->{'first_cs'};
 }
+
+=head2 component_CoordSystem
+
+  Args       : none
+  Example    : $coordsys = $cam->component_CoordSystem();
+  Description: return the last CoordSystem.
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut 
+
 sub component_CoordSystem {
   my $self = shift;
   return $self->{'last_cs'};
@@ -539,6 +694,7 @@ sub component_CoordSystem {
   Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

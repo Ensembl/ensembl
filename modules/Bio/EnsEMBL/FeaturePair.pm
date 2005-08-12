@@ -102,11 +102,12 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
                                               -percent_id => 92.0,
                                               -hseqname => 'ALUSX10.1',
                                               -analysis => $analysis);
-Description: Creates a new Bio::EnsEMBL::FeaturePair object
+  Description: Creates a new Bio::EnsEMBL::FeaturePair object
   Returntype : Bio::EnsEMBL::FeaturePair
   Exceptions : throw if start > end
                throw if invalid strand is provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -188,6 +189,7 @@ sub new {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -207,6 +209,7 @@ sub hseqname {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -225,6 +228,7 @@ sub hstart{
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -244,6 +248,7 @@ sub hend{
   Returntype : 0,1,-1
   Exceptions : thrown 
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -273,6 +278,7 @@ sub hstrand{
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : thrown if an invalid argument is passed
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -300,6 +306,7 @@ sub hslice {
   Returntype : string or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -321,6 +328,7 @@ sub hseq_region_name {
   Returntype : 1,0,-1 or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -344,6 +352,7 @@ sub hseq_region_strand {
   Returntype : int or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -375,6 +384,7 @@ sub hseq_region_start {
   Returntype : int or undef
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -401,6 +411,7 @@ sub hseq_region_end {
   Returntype : float
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -420,6 +431,7 @@ sub score{
   Returntype : float
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -440,6 +452,7 @@ sub percent_id {
  Returntype : string
  Execeptions: none
  Caller     : general
+ Status     : Stable
 
 =cut
 
@@ -459,6 +472,7 @@ sub species{
  Returntype : string
  Execeptions: none
  Caller     : general
+ Status     : Stable
 
 =cut
 
@@ -477,6 +491,7 @@ sub hspecies{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -495,6 +510,7 @@ sub coverage {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -513,6 +529,7 @@ sub hcoverage {
   Returntype : float
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -534,6 +551,7 @@ sub p_value{
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 
@@ -551,6 +569,7 @@ sub display_id {
  Returntype : int
  Execeptions: none
  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -571,6 +590,7 @@ sub identical_matches{
  Returntype : int
  Execeptions: none
  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -591,6 +611,7 @@ sub positive_matches{
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
  
 =cut
 
@@ -611,6 +632,7 @@ sub group_id {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
  
 =cut
 

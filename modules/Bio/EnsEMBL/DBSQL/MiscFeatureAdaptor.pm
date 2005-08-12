@@ -76,6 +76,7 @@ use vars qw(@ISA);
   Exceptions : throw if set_code is not provided
                warning if no set for provided set code exists
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -136,6 +137,7 @@ sub fetch_all_by_Slice_and_set_code {
   Returntype : listref of Bio::EnsEMBL::MiscFeatures
   Exceptions : throw if attrib_type code arg is not provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -507,6 +509,7 @@ sub _objs_from_sth {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -528,6 +531,7 @@ sub list_dbIDs {
                warning if misc feature is already stored in this database
                throw if start/end/strand attribs are not valid
   Caller     : general
+  Status     : Stable
 
 =cut
 

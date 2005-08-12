@@ -38,6 +38,7 @@ use Bio::LocatableSeq;
   Returntype : int
   Exceptions : none
   Caller     : Bio::EnsEMBL::BaseAlignFeature
+  Status     : Stable
 
 =cut
 
@@ -56,6 +57,7 @@ sub _hit_unit {
   Returntype : int
   Exceptions : none
   Caller     : Bio::EnsEMBL::BaseAlignFeature
+  Status     : Stable
 
 =cut
 
@@ -79,6 +81,7 @@ sub _query_unit {
   Returntype : Bio::EnsEMBL::DnaDnaAlignFeature object
   Exceptions : 
   Caller     : 
+  Status     : Stable
 
 =cut
 
@@ -196,6 +199,7 @@ sub restrict_between_positions {
                the second corresponds to hseq
   Exceptions : 
   Caller     : 
+  Status     : Stable
 
 =cut
 
@@ -272,6 +276,7 @@ sub alignment_strings {
   Returntype : a Bio::SimpleAlign object
   Exceptions : 
   Caller     : 
+  Status     : Stable
 
 =cut
 

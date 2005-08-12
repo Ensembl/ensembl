@@ -48,6 +48,7 @@ use vars qw(@ISA);
   Exceptions : warning if $transcript is not in the database (i.e. dbID not defined)
                throw if a retrieved supporting feature is of unknown type 
   Caller     : Bio::EnsEMBL::Transcript
+  Status     : Stable
 
 =cut
 

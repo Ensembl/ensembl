@@ -110,6 +110,7 @@ sub new_fast {
   Returntype : Bio::EnsEMBL::RepeatFeature
   Exceptions : none
   Caller     : RepeatFeatureAdaptors
+  Status     : Stable
 
 =cut
 
@@ -140,6 +141,7 @@ sub new {
   Returntype : Bio::EnsEMBL::RepeatConsensus
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -170,6 +172,7 @@ sub repeat_consensus {
   Returntype : int
   Exceptions : none 
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -188,6 +191,7 @@ sub hstart {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -208,6 +212,7 @@ sub score {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -227,7 +232,8 @@ sub hend {
                features.
   Returntype : int
   Exceptions : none
-  Caller     :
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -247,6 +253,7 @@ sub hstrand {
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : Stable
 
 =cut
 

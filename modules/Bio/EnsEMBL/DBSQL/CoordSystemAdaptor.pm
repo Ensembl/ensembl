@@ -115,6 +115,7 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
   Exceptions : none
   Caller     :
+  Status     : Stable
 
 =cut
 
@@ -269,6 +270,7 @@ sub new {
   Returntype : listref of Bio::EnsEMBL::CoordSystems
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -298,6 +300,7 @@ sub fetch_all {
   Returntype : Bio::EnsEMBL::CoordSystem
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -339,6 +342,7 @@ sub fetch_by_rank {
   Exceptions : throw if no name argument provided
                warning if no version provided and default does not exist
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -405,6 +409,7 @@ sub fetch_by_name {
   Returntype : listref of Bio::EnsEMBL::CoordSystem objects
   Exceptions : throw if no name argument provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -437,6 +442,7 @@ sub fetch_all_by_name {
   Returntype : Bio::EnsEMBL::CoordSystem or undef
   Exceptions : thrown if no coord_system exists for specified dbID
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -463,6 +469,7 @@ sub fetch_by_dbID {
   Returntype : a Bio::EnsEMBL::CoordSystem object
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -483,6 +490,7 @@ sub fetch_top_level {
   Exceptions : throw if no sequence_level coord system exists at all
                throw if multiple sequence_level coord systems exists
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -556,6 +564,7 @@ sub fetch_sequence_level {
 
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -715,6 +724,7 @@ sub _fetch_all_by_attrib {
   Returntype : none
   Exceptions : Warning if CoordSystem is already stored in this database.
   Caller     : none
+  Status     : Stable
 
 =cut
 

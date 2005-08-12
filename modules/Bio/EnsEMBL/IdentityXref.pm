@@ -42,19 +42,22 @@ Post questions to the ensembl development list: <ensembl-dev@ebi.ac.uk>
 package Bio::EnsEMBL::IdentityXref;
 use vars qw(@ISA $AUTOLOAD);
 use strict;
-
+use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
 @ISA = qw( Bio::EnsEMBL::DBEntry );
 
 
 =head2 new
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [...]  : QUERY_IDENTITY TARGET_IDENTITY SCORE EVALUE CIGAR_LINE
+             : QUERY_START QUERY_END TRANSLATION_START TRANSLATION_END
+             : ANALYSIS   pairs
+  Example    : see synopsis 
+  Description: Create a new Bio::EnsEMBL::IdentityXref object
+  Returntype : Bio::EnsEMBL::IdentityXref
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -63,7 +66,7 @@ sub new {
     my $self = $class->SUPER::new(@args);
     my ($query_identity, $target_identity, $score, $evalue, 
         $cigar_line, $query_start, $query_end, $translation_start,
-        $translation_end, $analysis ) = $self->_rearrange(
+        $translation_end, $analysis ) = rearrange(
         [qw(QUERY_IDENTITY TARGET_IDENTITY SCORE EVALUE CIGAR_LINE 
             QUERY_START QUERY_END TRANSLATION_START TRANSLATION_END
             ANALYSIS)], @args);
@@ -90,6 +93,7 @@ sub new {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -112,6 +116,7 @@ sub query_identity{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -135,6 +140,7 @@ sub target_identity{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -153,6 +159,7 @@ sub cigar_line {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -171,6 +178,7 @@ sub translation_start {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -189,6 +197,7 @@ sub translation_end {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -207,6 +216,7 @@ sub query_start {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -225,6 +235,7 @@ sub query_end {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -243,6 +254,7 @@ sub score {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -261,6 +273,7 @@ sub evalue {
   Returntype : Bio::EnsEMBL::Analysis
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -283,6 +296,7 @@ sub analysis {
   Returntype : Bio::EnsEMBL::Mapper
   Exceptions : none
   Caller     : general, ProteinDAS subsystem
+  Status     : Stable
 
 =cut
 
@@ -353,6 +367,7 @@ sub get_mapper {
   Returntype : listref of whatever was put in
   Exceptions : none
   Caller     : general, ProteinDAS subsystem
+  Status     : Stable
 
 =cut
 
@@ -395,6 +410,7 @@ sub transform_feature {
   Returntype : list of Coordinates/Gaps which represents the mapping
   Exceptions : none
   Caller     : another way of doing ProteinDAS
+  Status     : Stable
 
 =cut
 

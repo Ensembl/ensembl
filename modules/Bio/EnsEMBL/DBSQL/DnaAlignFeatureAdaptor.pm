@@ -51,6 +51,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
   Returntype : list of listrefs of strings
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor::generic_fetch
+  Status     : Stable
 
 =cut
 
@@ -70,6 +71,7 @@ sub _tables {
   Returntype : list of strings
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor::generic_fetch
+  Status     : Stable
 
 =cut
 
@@ -110,6 +112,7 @@ sub _columns {
                A warning is given if:
                  * The feature has already been stored in this db
   Caller     : Pipeline
+  Status     : Stable
 
 =cut
 
@@ -198,6 +201,7 @@ sub store {
   Returntype : listref of Bio::EnsEMBL::DnaDnaAlignFeatures
   Exceptions : none
   Caller     : Bio::EnsEMBL::BaseFeatureAdaptor::generic_fetch
+  Status     : Stable
 
 =cut
 
@@ -355,6 +359,7 @@ sub _objs_from_sth {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 

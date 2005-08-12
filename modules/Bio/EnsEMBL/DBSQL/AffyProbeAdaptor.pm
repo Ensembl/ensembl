@@ -41,6 +41,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
   Returntype : none
   Exceptions : throw on arong argument type
   Caller     : general
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -111,7 +113,8 @@ PROBE:
   Returntype : a single Bio::EnsEMBL::AffyProbe
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -147,7 +150,8 @@ sub fetch_by_array_probeset_probe {
   Returntype : listref of Bio::EnsEMBL::AffyProbe
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -166,7 +170,8 @@ sub fetch_all_by_probeset {
   Returntype : listref of Bio::EnsEMBL::AffyFeature
   Exceptions : none
   Caller     : AffyProbe->get_all_AffyFeatures()
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -195,7 +200,8 @@ sub fetch_by_AffyArray {
   Returntype : listref of Bio::EnsEMBL::AffyFeature
   Exceptions : none
   Caller     : AffyProbe->get_all_AffyFeatures()
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -222,6 +228,8 @@ sub fetch_by_AffyFeature {
   Returntype : list of listrefs of strings
   Exceptions : none
   Caller     : internal
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -240,6 +248,8 @@ sub _tables {
   Returntype : list of strings
   Exceptions : none
   Caller     : internal
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -259,6 +269,8 @@ sub _columns {
   Returntype : list reference to Bio::EnsEMBL::AffyFeature objects
   Exceptions : none
   Caller     : internal
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -294,6 +306,8 @@ sub _objs_from_sth {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 

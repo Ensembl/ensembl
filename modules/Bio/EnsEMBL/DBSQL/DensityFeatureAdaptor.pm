@@ -60,6 +60,7 @@ our $DENSITY_FEATURE_CACHE_SIZE = 20;
   Returntype : Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor
   Exceptions : none
   Caller     : implementing subclass constructors
+  Status     : Stable
 
 =cut
 
@@ -122,6 +123,7 @@ sub new {
                warning if no features with logic_name $logic_name exist
                warning if density_type table has invalid block_size value
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -454,6 +456,7 @@ sub _objs_from_sth {
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
+  Status     : Stable
 
 =cut
 
@@ -475,6 +478,7 @@ sub list_dbIDs {
                have an attached slice.
                or if any elements of @df are not Bio::EnsEMBL::SeqFeatures 
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -554,6 +558,7 @@ sub store{
   Returntype : Bio::EnsEMBL::DensityFeatureSet
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

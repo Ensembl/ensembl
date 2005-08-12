@@ -26,6 +26,8 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::RegulatoryFactor
   Exceptions : none
   Caller     : RegulatoryFactor
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -61,6 +63,8 @@ sub new_fast {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 
@@ -79,6 +83,8 @@ sub name {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : At Risk
+             : under development
 
 =cut
 

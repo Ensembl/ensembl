@@ -61,6 +61,7 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::AttributeAdaptor
   Exceptions : none
   Caller     : DBAdaptor
+  Status     : Stable
 
 =cut
 
@@ -86,6 +87,7 @@ sub new {
   Exceptions : throw if incorrect arguments
                throw if provided MiscFeature does not have a dbID
   Caller     : MiscFeature
+  Status     : Stable
 
 =cut
 
@@ -128,6 +130,7 @@ sub fetch_all_by_MiscFeature {
   Exceptions : throw if incorrect arguments
                throw if provided MiscFeature does not have a dbID
   Caller     : Transcript
+  Status     : Stable
 
 =cut
 
@@ -170,6 +173,7 @@ sub fetch_all_by_Transcript {
   Exceptions : throw if incorrect arguments
                throw if provided Translation does not have a dbID
   Caller     : Transcript
+  Status     : Stable
 
 =cut
 
@@ -215,6 +219,7 @@ sub fetch_all_by_Translation {
   Exceptions : throw if incorrect arguments
                throw if cannot get seq_region_id from provided Slice
   Caller     : Slice
+  Status     : Stable
 
 =cut
 
@@ -261,6 +266,7 @@ sub fetch_all_by_Slice {
   Returntype : none
   Exceptions : throw if $slice argument not provided
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -314,6 +320,7 @@ sub store_on_Slice {
   Exceptions : throw on incorrect arguments
                throw if provided feature is not stored in this database
   Caller     : general, MiscFeatureAdaptor
+  Status     : Stable
 
 =cut
 
@@ -367,6 +374,7 @@ sub store_on_MiscFeature {
   Exceptions : throw on incorrect arguments
                throw if provided Transcript is not stored in this database
   Caller     : general, TranscriptAdaptor
+  Status     : Stable
 
 =cut
 
@@ -421,6 +429,7 @@ sub store_on_Transcript {
   Exceptions : throw on incorrect arguments
                throw if provided Translation is not stored in this database
   Caller     : general, TranslationAdaptor
+  Status     : Stable
 
 =cut
 
@@ -473,6 +482,7 @@ sub store_on_Translation {
   Exceptions : throw on incorrect arguments
                throw if cannot obtain seq_region_id from provided Slice
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -518,6 +528,7 @@ sub remove_from_Slice {
   Exceptions : throw on incorrect arguments
                throw if MiscFeature is not stored in this database
   Caller     : general
+  Status     : Stable
 
 =cut
 

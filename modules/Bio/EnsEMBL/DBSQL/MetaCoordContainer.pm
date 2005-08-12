@@ -52,6 +52,7 @@ sub new {
   Returntype : listref of Bio::EnsEMBL::CoordSystem objects
   Exceptions : throw if name argument not provided
   Caller     : BaseFeatureAdaptor
+  Status     : Stable
 
 =cut
 
@@ -96,6 +97,7 @@ sub fetch_all_CoordSystems_by_feature_type {
   Returntype : int or undef
   Exceptions : throw on incorrect argument
   Caller     : BaseFeatureAdaptor
+  Status     : Stable
 
 =cut
 
@@ -133,6 +135,7 @@ sub fetch_max_length_by_CoordSystem_feature_type {
   Returntype : none
   Exceptions : none
   Caller     : BaseFeatureAdaptor
+  Status     : Stable
 
 =cut
 

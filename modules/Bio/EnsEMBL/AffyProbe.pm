@@ -69,9 +69,10 @@ use vars qw(@ISA);
   Example    : none
   Description: Constructor for an array probe
   Returntype : Bio::EnsEMBL::AffyProbe
-  Exceptions : none
+  Exceptions : throws if each probe does not have a name
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -104,7 +105,7 @@ sub new {
       throw( "Provide array or arrayname with probename" );
     }
   } else {
-      throw( "You need to provide probenames to generat a probe" );
+      throw( "You need to provide probenames to generate a probe" );
   }
 
   # check the parameters and fill internal data structures
@@ -145,7 +146,8 @@ sub new {
   Returntype : none
   Exceptions : none
   Caller     : general, constructor, AffyProbeAdaptor->_obj_from_sth()
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -168,7 +170,8 @@ sub add_Array_probename {
   Returntype : listref Bio::EnsEMBL:AffyFeature
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -194,7 +197,8 @@ sub get_all_AffyFeatures {
   Returntype : listref Bio::EnsEMBL::AffyArray
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -224,6 +228,8 @@ sub get_all_AffyArrays {
   Returntype : listref of strings
   Exceptions : none
   Caller     : general
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -248,6 +254,8 @@ sub get_all_complete_names {
   Returntype : string
   Exceptions : throws if the arrayname is not known in this probe
   Caller     : general
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 
 =cut
@@ -274,7 +282,8 @@ sub get_complete_name {
   Returntype : listref of strings
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -292,7 +301,8 @@ sub get_all_probenames {
   Returntype : string
   Exceptions : throw if arrayname is not known for this probe
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -318,7 +328,8 @@ sub get_probename {
   Returntype : none
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 
@@ -337,7 +348,8 @@ sub add_arrayname_probename {
   Returntype : string
   Exceptions : none
   Caller     : general
-
+  Status     : Medium Risk
+             : may be replaced with none affy specific methods
 
 =cut
 

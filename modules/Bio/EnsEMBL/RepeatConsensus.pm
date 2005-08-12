@@ -30,10 +30,11 @@ use vars qw(@ISA);
                         -LENGTH => '4',
                         -DBID => 1023,
                         -ADAPTOR => $rc_adaptor);
-  Description: Creates a new Bio::EnsEMBL::RepeatFeature object
-  Returntype : Bio::EnsEMBL::RepeatFeature
+  Description: Creates a new Bio::EnsEMBL::RepeatConsensus object
+  Returntype : Bio::EnsEMBL::RepeatConsensus
   Exceptions : none
   Caller     : RepeatFeatureAdaptors
+  Status     : Stable
 
 =cut
 
@@ -57,6 +58,18 @@ sub new {
 }
 
 
+=head2 new_fast
+
+  Arg [1] : hashref to bless as a new RepeatConsensus 
+
+  Description: Creates a new Bio::EnsEMBL::RepeatConsensus object
+  Returntype : Bio::EnsEMBL::RepeatConsensus
+  Exceptions : none
+  Caller     : internal
+  Status     : Stable
+
+=cut
+
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
@@ -72,6 +85,7 @@ sub new_fast {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -90,6 +104,7 @@ sub name {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -109,6 +124,7 @@ sub length {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -146,6 +162,7 @@ sub repeat_type {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Medium risk
 
 =cut
 
@@ -186,6 +203,7 @@ sub repeat_consensus {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

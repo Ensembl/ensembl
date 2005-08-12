@@ -101,8 +101,10 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
   Description: Constructs a SeqEdit representing a single edit to a
                sequence, such as an rna modification or a selenocysteine.
   Returntype : Bio::EnsEMBL::SeqEdit
-  Exceptions : none
+  Exceptions : throws if attribute set and other args aswell
+               throws if start and end not set correctly of attribure not set
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -177,6 +179,7 @@ sub new {
   Returntype : int
   Exceptions : none
   Caller     : Transcript, Translation
+  Status     : Stable
 
 =cut
 
@@ -209,8 +212,9 @@ sub start {
                E.g. start = 1, end = 1 is a replacement of the first base but
                start = 1, end = 0 is an insert BEFORE the first base.
   Returntype : int
-  Exceptions : none
+  Exceptions : throws if end  <= 0
   Caller     : Transcript, Translation
+  Status     : Stable
 
 =cut
 
@@ -243,6 +247,7 @@ sub end {
   Returntype : string
   Exceptions : none
   Caller     : Transcript, Translation
+  Status     : Stable
 
 =cut
 
@@ -265,6 +270,7 @@ sub alt_seq {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -286,6 +292,7 @@ sub length_diff {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -306,6 +313,7 @@ sub name {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -325,6 +333,7 @@ sub code {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -348,6 +357,7 @@ sub description {
   Returntype : Bio::EnsEMBL::Attribute
   Exceptions : warning if start/end or alt_seq properties are not defined
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -390,6 +400,7 @@ sub get_Attribute {
   Returntype : reference to the same sequence that was passed in
   Exceptions : none
   Caller     : Transcript, Translation
+  Status     : Stable
 
 =cut
 
