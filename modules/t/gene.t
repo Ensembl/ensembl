@@ -67,7 +67,7 @@ debug( "Gene external name: " . $gene->external_name );
 ok( $gene->external_name eq "Q9H466");
 
 debug( "Gene external dbname: " . $gene->external_db );
-ok( $gene->external_db eq "SPTREMBL");
+ok( $gene->external_db eq "Uniprot/SPTREMBL");
 
 debug( "Gene display xref id: " . $gene->display_xref->dbID );
 ok( $gene->display_xref->dbID() == 128324);
