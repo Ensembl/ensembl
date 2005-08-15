@@ -45,6 +45,7 @@ use strict;
   Returntype : Bio::EnsEMBL::Mapper::Gap
   Exceptions : none
   Caller     : Bio::EnsEMBL::Mapper
+  Status     : Stable
 
 =cut
 
@@ -66,6 +67,7 @@ sub new {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -88,6 +90,7 @@ sub start{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -108,6 +111,7 @@ sub end{
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

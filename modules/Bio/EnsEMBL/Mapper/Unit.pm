@@ -52,6 +52,7 @@ sub new {
   Returntype  int|char
   Exceptions  none
   Caller      Bio::EnsEMBL::Mapper::Unit
+  Status      Stable
 
 =cut
 
@@ -74,6 +75,7 @@ sub id{
   Returntype  int
   Exceptions  none
   Caller      Bio::EnsEMBL::Mapper::Unit
+  Status      Stable
 
 =cut
 
@@ -96,6 +98,7 @@ sub start{
   Returntype  int
   Exceptions  none
   Caller      Bio::EnsEMBL::Mapper::Unit
+  Status      Stable
 
 =cut
 

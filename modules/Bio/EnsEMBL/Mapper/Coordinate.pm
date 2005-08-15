@@ -35,6 +35,22 @@ package Bio::EnsEMBL::Mapper::Coordinate;
 use vars qw(@ISA);
 use strict;
 
+=head2 new
+
+  Arg [1]     char|int id of object in mapped region
+  Arg [2]     int start of region   
+  Arg [3]     int end of region
+  Arg [4]     int strand if region
+  Arg [5]     Bio::EnsEMBL::CoordSystem  coordsytem of the region
+  Function    creates a new Coordinate object
+  Returntype  Bio::EnsEMBL::Mapper::Coordinate
+  Exceptions  none
+  Status      Stable
+
+=cut
+  
+ 
+
 sub new {
   my($class, $id, $start, $end, $strand, $coord_system) = @_;
 
@@ -50,10 +66,11 @@ sub new {
 
   Arg  1      int $start
               start coordinate of object in mapped region
-  Function    accessor method
+  Function    getter/setter method
   Returntype  int
   Exceptions  none
   Caller      Bio::EnsEMBL::Mapper::Coordinate
+  Status      Stable
 
 =cut
 
@@ -68,10 +85,11 @@ sub start{
 
   Arg  1      int $end
               end coordinate of object in mapped region
-  Function    accessor method
+  Function    getter/setter method
   Returntype  int
   Exceptions  none
   Caller      Bio::EnsEMBL::Mapper::Coordinate
+  Status      Stable
 
 =cut
 
@@ -86,10 +104,11 @@ sub end{
 
   Arg  1      int $strand
               strand of object in mapped region
-  Function    accessor method
+  Function    getter/setter method
   Returntype  int
   Exceptions  none
   Caller      Bio::EnsEMBL::Mapper::Coordinate
+  Status      Stable
 
 =cut
 
@@ -105,10 +124,11 @@ sub strand{
   Arg  1      char|int $id
               id of object in mapped region
 	      e.g. seq_region_id / seq_region_name
-  Function    accessor method
+  Function    getter/setter method
   Returntype  char|int
   Exceptions  none
   Caller      Bio::EnsEMBL::Mapper::Coordinate
+  Status      Stable
 
 =cut
 
@@ -119,11 +139,32 @@ sub id{
 }
 
 
+=head2 coord_system
+
+  Arg  1      Bio::EnsEMBL::CoordSystem
+  Function    getter/setter method
+  Returntype  Bio::EnsEMBL::CoordSystem
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Coordinate
+  Status      Stable
+
+=cut
+
 sub coord_system {
   my $self = shift;
   $self->{'coord_system'} = shift if(@_);
   return $self->{'coord_system'};
 }
+
+=head2 length
+
+  Function    getter method
+  Returntype  int
+  Exceptions  none
+  Caller      ?
+  Status      Stable
+
+=cut
 
 sub length {
   my $self = shift;

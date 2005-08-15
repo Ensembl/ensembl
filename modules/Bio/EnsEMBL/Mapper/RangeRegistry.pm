@@ -73,6 +73,7 @@ use integer;
   Returntype : Bio::EnsEMBL::Mapper::RangeRegistry
   Exceptions : none
   Caller     : AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -124,6 +125,7 @@ sub flush {
                throw if end is less than start
                throw if id, start, or end are not defined
   Caller     : AssemblyMapperAdaptor
+  Status     : Stable
 
 =cut
 
@@ -274,6 +276,7 @@ sub check_and_register {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

@@ -52,6 +52,7 @@ sub new {
   Returntype  Bio::EnsEMBL::Mapper::Unit
   Exceptions  none
   Caller      Bio::EnsEMBL::Mapper::Pair
+  Status     : Stable
 
 =cut
 
@@ -83,6 +84,7 @@ sub from {
   Returntype  Bio::EnsEMBL::Mapper::Unit
   Exceptions  none
   Caller      Bio::EnsEMBL::Mapper::Pair
+  Status     : Stable
 
 =cut
 
