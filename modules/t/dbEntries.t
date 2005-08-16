@@ -81,7 +81,7 @@ ok( $ident_count == 32 );
 my $xref = Bio::EnsEMBL::DBEntry->new
   (
    -primary_id => "1",
-   -dbname => "SWISSPROT",
+   -dbname => "Uniprot/SWISSPROT",
    -release => "1",
    -display_id => "Ens related thing",
    -primary_id_linkable => "0",
@@ -106,7 +106,7 @@ $goref->add_linkage_type( "IC" );
 my $ident_xref = Bio::EnsEMBL::IdentityXref->new
   (
    -primary_id => "1",
-   -dbname => "SPTREMBL",
+   -dbname => "Uniprot/SPTREMBL",
    -release => "1",
    -display_id => "Ens related Ident"
    );
