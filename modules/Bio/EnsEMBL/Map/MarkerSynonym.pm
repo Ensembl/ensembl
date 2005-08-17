@@ -25,10 +25,6 @@ package Bio::EnsEMBL::Map::MarkerSynonym;
 use strict;
 use vars qw(@ISA);
 
-use Bio::EnsEMBL::Root;
-
-@ISA = ('Bio::EnsEMBL::Root');
-
 
 =head2 new
 
@@ -40,6 +36,7 @@ use Bio::EnsEMBL::Root;
   Returntype : Bio::EnsEMBL::Map::MarkerSynonym
   Exceptions : non
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -62,6 +59,7 @@ sub new {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -84,6 +82,7 @@ sub dbID {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -106,6 +105,7 @@ sub source {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 

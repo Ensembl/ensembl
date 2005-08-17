@@ -50,6 +50,7 @@ use vars qw(@ISA);
   Returntype : listref of Bio::EnsEMBL::MarkerFeatures
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -76,6 +77,7 @@ sub fetch_all_by_Marker {
   Returntype : listref of Bio::EnsEMBL::Map::MarkerFeatures in slice coords
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -313,6 +315,7 @@ sub _objs_from_sth {
   Exceptions : thrown if not all data needed for storing is populated in the
                marker features
   Caller     : general
+  Status     : stable
 
 =cut
 

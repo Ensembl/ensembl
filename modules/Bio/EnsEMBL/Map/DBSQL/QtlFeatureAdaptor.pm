@@ -47,6 +47,7 @@ use vars qw(@ISA);
   Returntype : listref of Bio::EnsEMBL::QtlFeatures
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 

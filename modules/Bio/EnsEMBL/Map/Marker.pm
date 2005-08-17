@@ -54,6 +54,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
   Returntype : Bio::EnsEMBL::Map::Marker
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -101,6 +102,7 @@ sub new {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -124,6 +126,7 @@ sub left_primer {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -148,6 +151,7 @@ sub right_primer {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -171,6 +175,7 @@ sub min_primer_dist {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -195,6 +200,7 @@ sub max_primer_dist {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -221,6 +227,7 @@ sub priority {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -247,6 +254,7 @@ sub type {
   Returntype : listref of Bio::EnsEMBL::Map::MarkerSynonyms
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -276,6 +284,7 @@ sub get_all_MarkerSynonyms {
   Returntype : none
   Exceptions : thrown if incorrect argument is passed
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -299,6 +308,7 @@ sub add_MarkerSynonyms {
   Returntype : none
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -318,6 +328,7 @@ sub flush_MarkerSynonyms {
   Returntype : Bio::EnsEMBL::Map::MarkerSynonym
   Exceptions : thrown if the argument is invalid
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -348,6 +359,7 @@ sub display_MarkerSynonym {
   Returntype : listref of Bio::EnsEMBL::Map::MarkerFeatures
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -371,6 +383,7 @@ sub get_all_MarkerFeatures {
   Returntype : listref of Bio::EnsEMBL::Map::MapLocations
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -400,6 +413,7 @@ sub get_all_MapLocations {
   Returntype : Bio::EnsEMBL::Map::MapLocation
   Exceptions : thrown if the map_name arg is not provided
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -430,8 +444,9 @@ sub get_MapLocation {
                using this function to manually load map locations will prevent
                lazy-loading of locations from the database. 
   Returntype : listref of Bio::EnsEMBL::MapLocations
-  Exceptions : none
+  Exceptions : throws if map location has no name
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -464,6 +479,7 @@ sub add_MapLocations {
   Returntype : none
   Exceptions : 
   Caller     : 
+  Status     : stable
 
 =cut
 

@@ -59,6 +59,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
   Returntype : Bio::EnsEMBL::Map::Qtl
   Exceptions : none
   Caller     : general, DBSQL::QtlAdaptor, DBSQL::QtlFeatureAdaptor
+  Status     : stable
 
 =cut
 
@@ -94,6 +95,7 @@ sub new {
   Returntype : none
   Exceptions : thrown if arguments are not provided
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -121,6 +123,7 @@ sub add_synonym {
   Returntype : hashref of synonyms keyed on their source name
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -141,6 +144,7 @@ sub get_synonyms {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -164,6 +168,7 @@ sub trait {
   Returntype : float
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -188,6 +193,7 @@ sub lod_score {
   Returntype : Bio::EnsEMBL::Map::Marker
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -212,6 +218,7 @@ sub peak_marker {
   Returntype : Bio::EnsEMBL::Map::Marker
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -237,6 +244,7 @@ sub flank_marker_1 {
   Returntype : Bio::EnsEMBL::Map::Marker
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -263,6 +271,7 @@ sub flank_marker_2 {
   Returntype : Bio::EnsEMBL::Map::QtlFeature
   Exceptions : only works with adaptored Qtls
   Caller     : general
+  Status     : stable
 
 =cut
 

@@ -51,6 +51,7 @@ use Bio::EnsEMBL::Feature;
   Returntype : Bio::EnsEMBL::Map::MarkerFeature
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -84,6 +85,7 @@ sub new {
   Returntype : int
   Exceptions : none
   Caller     : internal
+  Status     : stable
 
 =cut
 
@@ -109,6 +111,7 @@ sub _marker_id {
   Returntype : Bio::EnsEMBL::Map::Marker
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -139,6 +142,7 @@ sub marker {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -164,6 +168,7 @@ sub map_weight {
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
+  Status     : stable
 
 =cut
 

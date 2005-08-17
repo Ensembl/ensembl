@@ -43,6 +43,7 @@ use vars qw(@ISA);
   Returntype : Bio::EnsEMBL::Map::Qtl
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -56,6 +57,17 @@ sub fetch_by_dbID {
   return $res->[0];
 }
 
+
+=head2 fetch_all
+
+  Example    : none
+  Description: get all the qtl's
+  Returntype : listref Bio::EnsEMBL::Map::Qtl
+  Exceptions : none
+  Caller     : general
+  Status     : stable
+
+=cut
 
 sub fetch_all {
   my $self = shift;
@@ -74,6 +86,7 @@ sub fetch_all {
   Returntype : listref Bio::EnsEMBL::Map::Qtl
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -101,6 +114,7 @@ sub fetch_all_by_trait {
   Returntype : listref Bio::EnsEMBL::Map::Qtl 
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -215,6 +229,7 @@ sub _obj_from_sth {
   Returntype : listref string
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 

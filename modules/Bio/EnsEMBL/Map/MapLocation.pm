@@ -26,11 +26,7 @@ package Bio::EnsEMBL::Map::MapLocation;
 use strict;
 use vars qw(@ISA);
 
-use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Utils::Exception qw(deprecate);
-
-@ISA = qw(Bio::EnsEMBL::Root);
-
 
 =head2 new
 
@@ -48,6 +44,7 @@ use Bio::EnsEMBL::Utils::Exception qw(deprecate);
   Returntype : Bio::EnsEMBL::Map::MapLocation
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -73,6 +70,7 @@ sub new {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -94,6 +92,7 @@ sub map_name {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -113,6 +112,7 @@ sub name {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -132,6 +132,7 @@ sub chromosome_name{
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -151,6 +152,7 @@ sub position {
   Returntype : float
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 

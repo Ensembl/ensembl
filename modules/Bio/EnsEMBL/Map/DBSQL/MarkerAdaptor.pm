@@ -44,6 +44,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
   Returntype : listref of Bio::EnsEMBL::Map::Markers
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -98,6 +99,7 @@ sub fetch_all {
   Returntype : Bio::EnsEMBL::Map::Marker
   Exceptions : thrown if no marker with $dbID is present in the database
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -165,6 +167,7 @@ sub fetch_by_dbID {
   Returntype : listref of Bio::EnsEMBL::Map::Markers
   Exceptions : none
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -218,6 +221,7 @@ sub fetch_all_by_synonym {
   Returntype : none
   Exceptions : none
   Caller     : Bio::EnsEMBL::Map::Marker::marker
+  Status     : stable
 
 =cut
 
@@ -294,6 +298,7 @@ sub fetch_attributes {
   Exceptions : thrown if not all data needed for storing is populated in the
                marker
   Caller     : general
+  Status     : stable
 
 =cut
 
@@ -395,6 +400,7 @@ SET    display_marker_synonym_id = $display_synonym_id
   Returntype : dbID of the MarkerSynonym
   Exceptions : thrown if not all data needed for storing is populated
   Caller     : $self->store
+  Status     : stable
 
 =cut
 

@@ -48,6 +48,7 @@ use Bio::EnsEMBL::Feature;
   Returntype : Bio::EnsEMBL::Map::QtlFeature
   Exceptions : none
   Caller     : general, DBSQL::QtlFeatureAdaptor
+  Status     : Stable
 
 =cut
 
@@ -78,6 +79,7 @@ sub new {
   Returntype : Bio::EnsEMBL::Map::Qtl
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -102,6 +104,7 @@ sub qtl {
   Returntype : int (always 0)
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -123,6 +126,7 @@ sub strand {
   Returntype : none
   Exceptions : none
   Caller     : general
+  Status     : Stable
 
 =cut
 
