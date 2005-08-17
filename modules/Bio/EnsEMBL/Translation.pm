@@ -587,9 +587,13 @@ sub seq {
   my $tr_adaptor = $self->{'adaptor'}->db()->get_TranscriptAdaptor;
 
   my $seq = $tr_adaptor->fetch_by_translation_id($dbID)->translate();
-  $self->{'seq'} = $seq->seq();
-
-  return $self->{'seq'};
+  if($seq){
+    $self->{'seq'} = $seq->seq();
+    return $self->{'seq'};
+  }
+  else{
+    return ''; #empty string
+  }
 }
 
 =head2 get_all_Attributes
