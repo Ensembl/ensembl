@@ -1419,7 +1419,7 @@ sub translate {
     $mrna =~ s/TAG$|TGA$|TAA$//i;
   }
 
-  if(length($mrna) <1){
+  if(CORE::length($mrna) <1){
     return undef; 
   }
 
