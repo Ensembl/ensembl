@@ -1419,6 +1419,10 @@ sub translate {
     $mrna =~ s/TAG$|TGA$|TAA$//i;
   }
 
+  if(length($mrna) <1){
+    return undef; 
+  }
+
   my $peptide = Bio::Seq->new( -seq      => $mrna,
                                -moltype  => "dna",
                                -alphabet => 'dna',
