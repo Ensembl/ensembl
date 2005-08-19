@@ -2374,6 +2374,111 @@ sub consortium {
 
 }
 
+
+
+# move translation hits on to their transcripts if the same external_db_id
+# has hits to both translation and transcript
+
+
+sub cleanup_database {
+  my ($self) = @_;
+  my $ensembl_dbc = $self->core->dbc;
+
+  # 1 make sure external_db do not lie on both translations and transcripts
+
+  my $sql_check  = (<<ESQL);
+  SELECT x.external_db_id, ox.ensembl_object_type, COUNT(*), e.db_name
+    FROM xref x, object_xref ox, external_db e 
+     WHERE x.xref_id = ox.xref_id AND e.external_db_id = x.external_db_id
+       GROUP BY x.external_db_id, ox.ensembl_object_type
+ESQL
+
+  my $sth = $ensembl_dbc->prepare($sql_check);
+  $sth->execute();
+  my $previous_id = -1;
+  my $previous_type ="";
+  while(my @row = $sth->fetchrow_array()){
+    my $external_db_id = $row[0];
+    if($external_db_id == $previous_id){
+      $self->fix_mart_prob($row[3],$external_db_id,$row[1],$previous_type);  
+    }
+    $previous_id = $external_db_id;
+    $previous_type = $row[1];
+  }
+
+  # now recheck just incase :-)
+  $sth->execute();
+  $previous_id = -1;
+  $previous_type ="";
+  my $error =0;
+  while(my @row = $sth->fetchrow_array()){
+    my $external_db_id = $row[0];
+    if($external_db_id == $previous_id){
+      print "Problem: Still have multiple associations with ".$row[3]."\n";
+      $error++;
+    }
+    $previous_id = $external_db_id;
+    $previous_type = $row[1];
+  }
+  $sth->finish();
+  if(!$error){
+    print "\texternal databases only associate to one ensembl type (PASS)\n";
+  }
+  else{
+    print "\texternal databases only associate to one ensembl type (FAIL)\n";
+  }
+}
+
+
+sub fix_mart_prob{
+  my ($self,$db_name,$db_id,$type1,$type2) = @_;
+  my $ensembl_dbc = $self->core->dbc;
+
+  print "$db_name is associated with both $type1 and $type2 object types\n";
+
+  if($type1 != "Translation" or $type1 |= "Transcript"){
+    print STDERR "####Cannot deal with type $type1 for $db_name!!!!\n";
+    print "####Cannot deal with type $type1 for $db_name!!!!\n";
+    return;
+  }
+  if($type2 != "Translation" or $type2 |= "Transcript"){
+    print STDERR "####Cannot deal with type $type2 for $db_name!!!!\n";
+    print "####Cannot deal with type $type2 for $db_name!!!!\n";
+    return;
+  }
+
+  print "Therefore moving all associations from Translations to Transcripts\n";
+
+
+  $ensembl_dbc->do("CREATE TABLE object_xref2 like object_xref");
+
+  $ensembl_dbc->do("ALTER TABLE object_xref DROP INDEX ensembl_object_type");
+
+  my $sql =(<<EOF);
+  UPDATE object_xref, translation, xref
+     SET object_xref.ensembl_object_type = 'Transcript',
+         object_xref.ensembl_id = translation.transcript_id 
+     WHERE object_xref.ensembl_object_type = 'Translation' AND
+           object_xref.ensembl_id = translation.translation_id AND
+           xref.xref_id = object_xref.xref_id AND
+           xref.external_db_id = $db_id;
+EOF
+
+
+#  print $sql."\n";
+
+  $ensembl_dbc->do($sql);
+
+  $ensembl_dbc->do("INSERT IGNORE INTO object_xref2 SELECT * FROM object_xref");
+
+  $ensembl_dbc->do("DROP TABLE object_xref");
+
+  $ensembl_dbc->do("ALTER TABLE object_xref2 RENAME object_xref");
+
+
+}
+
+
 # Sort a list of xrefs by the priority of their sources
 # Assumed this function is called by Perl sort, passed with parameter
 # See comment for build_gene_descriptions for how precedence is decided.

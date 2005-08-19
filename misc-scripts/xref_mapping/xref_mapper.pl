@@ -203,8 +203,10 @@ $mapper->parse_mappings();
 print "\nUploading xrefs\n" if ($upload);
 $mapper->do_upload() if ($upload);
 
+print "\nchecking xrefs\n" if ($upload);
+$mapper->cleanup_database() if ($upload);
 
-print STDERR "*** All finished ***\n";
+print  "*** All finished ***\n";
 
 sub info {
 
