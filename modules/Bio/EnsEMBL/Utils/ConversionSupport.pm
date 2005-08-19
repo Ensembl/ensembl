@@ -51,6 +51,7 @@ use Text::Wrap;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use FindBin qw($Bin $Script);
 use POSIX qw(strftime);
+use Cwd qw(abs_path);
 
 =head2 new
 
@@ -115,6 +116,7 @@ sub parse_common_options {
 
     # reads config file
     my $conffile = $h{'conffile'} || $self->serverroot . "/conf/Conversion.ini";
+    $conffile = abs_path($conffile);
     if (-e $conffile) {
         open(CONF, $conffile) or throw( 
             "Unable to open configuration file $conffile for reading: $!");
@@ -304,7 +306,7 @@ sub check_required_params {
 
   Arg[1]      : (optional) String $text - notification text to present to user
   Example     : # run a code snipped conditionally
-                if ($support->user_proceed("Run the next code snipped?") {
+                if ($support->user_proceed("Run the next code snipped?")) {
                     # run some code
                 }
 
@@ -1056,8 +1058,8 @@ sub log_stamped {
     my ($self, $txt, $indent) = @_;
     
     # append timestamp and memory usage to log text
-    chomp($txt);
-    $txt .= " ".$self->date_and_mem."\n";
+    $txt =~ s/(\n*)$//;
+    $txt .= " ".$self->date_and_mem.$1;
     
     $self->log($txt, $indent);
     return(1);
