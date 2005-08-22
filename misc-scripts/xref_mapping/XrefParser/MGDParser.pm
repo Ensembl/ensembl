@@ -49,6 +49,7 @@ sub run {
 
   my $count = 0;
   my $mismatch = 0;
+  my %mgi_good;
 
   open(FILE,"<". $file) || die "could not open file $file";
   while(my $line = <FILE>){
@@ -58,6 +59,7 @@ sub run {
     foreach my $value (@sp){
       if(defined($value) and $value and defined($swiss{$value})){
 	XrefParser::BaseParser->add_to_xrefs($swiss{$value},$key,'',$label,$desc,"",$source_id,$species_id);
+	$mgi_good{$key} = 1;
 	$count++;
       }
       elsif(defined($value) and $value and defined($refseq{$value})){
@@ -66,7 +68,27 @@ sub run {
     }
   }
   close FILE;
+
+
+  my $dir = dirname($file);
+  my $syn_file = $dir."/MRK_Synonym.sql.rpt";
+
+  open(FILE2,"<". $syn_file) || die "could not open file $syn_file";
+  my $synonyms=0;
+
+  while(<FILE2>){
+    if(/MGI:/){
+      chomp ;
+      my ($key,$syn) = (split)[0,4];
+      if(defined($mgi_good{$key})){
+	$self->add_to_syn($key, $source_id, $syn);
+	$synonyms++;
+      }
+    }
+  }
+  close FILE2;
   print "\t$count xrefs succesfully loaded\n";
+  print "\t$synonyms synonyms successfully loaded\n";
   print "\t$mismatch xrefs failed to load\n";
      
 
