@@ -71,7 +71,7 @@ sub throw{
 				        "throw('message'); #instead\n".
 					"\n---------------------------------------------------\n");
 
-   Bio::EnsEMBL::Utils::Exception->throw($self,$string);
+   Bio::EnsEMBL::Utils::Exception->throw($string);
 
 
 }
