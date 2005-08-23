@@ -47,30 +47,56 @@ sub run {
 #  my (%genbank) = %{XrefParser::BaseParser->get_valid_codes("EMBL",$species_id)};
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
 
-  open(RGD,"<".$file) || die "Could not open $file\n";
-#Genbank_Nucleotide      Gene_Symbol     RGD_ID
-#U40064  Ppard   3370
-#AF218575        Nbn     621420
 
+  open(RGD,"<".$file) || die "Could not open $file\n";
+
+  my $line = <RGD>;
+  chomp $line;
+  my @linearr = split(/\t/,$line);
+
+  #
+  #warn if sanity check fails
+  #
+
+  if($linearr[0] =~ /GENE_RDB_ID/){
+   warn ($linearr[0]."!= GENE_RDB_ID is not the first element in the header\n");
+  }
+  if($linearr[1] ne "SYMBOL"){
+    warn ("SYMBOL is not the second element in the header\n");
+  }
+  if($linearr[2] ne "NAME"){
+    warn ("NAME is not the third element in the header\n");
+  }
+  if($linearr[14] ne "GENBANK_NUCLEOTIDE"){
+    warn ("GENBANK_NUCLEOTIDE is not the fourteenth element in the header\n");
+  }
+  
   my $count= 0;
   my $mismatch = 0;
-  <RGD>;
-  while (<RGD>) {
-    chomp;
-    my @array = split (/\t/,$_);
-    my $xref=undef; 
-    $xref=$refseq{$array[0]} if defined($refseq{$array[0]});
-#    $xref=$genbank{$array[0]}  if defined($genbank{$array[0]});
-    if(defined($xref)){
-      XrefParser::BaseParser->add_to_xrefs($xref,"RGD:".$array[2],"",$array[1],"","",$source_id,$species_id);
-      $count++;
+  while ($line = <RGD>) {
+    chomp $line;
+    my ($rgd, $symbol, $name, $refseq) = (split (/\t/,$line))[0,1,2,14];
+    my @nucs = split(/\,/,$refseq);
+    my $done = 0;
+    foreach my $nuc (reverse @nucs){
+      if(!$done){
+	my $xref=undef; 
+	$xref=$refseq{$nuc} if defined($refseq{$nuc});
+	if(defined($xref)){
+	  $done = 1;
+	  XrefParser::BaseParser->add_to_xrefs($xref,"RGD:".$rgd,"",$symbol,$name,"",$source_id,$species_id);
+	  $count++;
+	}
+      }
     }
-    else{
+    if(!$done){
+      $self->add_xref("RGD:".$rgd,"",$symbol,$name,$source_id,$species_id);
       $mismatch++;
     }
+
   }
-  print "\t$count xrefs succesfully loaded\n";
-  print "\t$mismatch xrefs ignored\n";
+  print "\t$count xrefs succesfully loaded and dependent on refseq\n";
+  print "\t$mismatch xrefs added but with NO dependencies\n";
 }
 
 
