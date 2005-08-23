@@ -475,7 +475,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 7460,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Apis_mellifera/Ame.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Apis_mellifera/Ame.data.gz', '', now(), now(), "UniGeneParser");
 
-
+# --------------------------------------------------------------------------------
 
 
 #### SeqSquirt
@@ -516,6 +516,34 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 ## xrefs to protein-annotation from JGI on OLDER assembly version v1 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
 VALUES (2601, 7719,'ftp://ftp.jgi-psf.org/pub/JGI_data/Ciona/v1.0/ciona.prot.fasta.gz',now(),now(),'FastaProteinSeqParser');
+
+# --------------------------------------------------------------------------------
+
+#### Cow
+
+## Uniprot
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (1, 9913, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (2, 9913, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+
+##       refseq protein
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 9913,'ftp://ftp.ncbi.nih.gov/genomes/Bos_taurus/protein/protein.gbk.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 9913,'ftp://ftp.ncbi.nih.gov/genomes/Bos_taurus/RNA/rna.gbk.gz', '', now(), now(), "RefSeqGPFFParser");
+
+##       GO
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(1070, 9913,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
+
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(1300, 9913,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+
+##      UniGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(6, 9913,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Bt.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Bt.data.gz',  now(), now(), "UniGeneParser");
+
+
 
 ################################################################################
 
