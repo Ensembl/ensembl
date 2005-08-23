@@ -119,6 +119,7 @@ use vars qw(%registry_register);
   3) If the file .ensembl_init exist in the home directory it is used
 
   Arg [1]    : (optional) string $arg file to load the registry from
+  Arg [2]    : (optional) string if set prints out messages about conf file used.
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : none
   Exceptions : none
@@ -129,44 +130,36 @@ use vars qw(%registry_register);
 sub load_all{
   my $class = shift;
   my $conf_file = shift;
+  my $verbose = shift;
   
   if(defined($registry_register{'seen'})){
-    print STDERR "Clearing previuosly loaded configuration from Registry\n";
+    print STDERR "Clearing previuosly loaded configuration from Registry\n" if ($verbose);
     $class->clear();
   }
   $registry_register{'seen'}=1;
   if(defined($conf_file)){
-    print STDERR  "Loading conf from site defs file ".$conf_file."\n";
+    print STDERR  "Loading conf from site defs file ".$conf_file."\n" if ($verbose);
+;
     if(-e $conf_file){
-      unless (my $return = do $conf_file ){
-	throw "Error in Configuration\n $!\n";
-      }
+      eval{ require($conf_file) }; $@ && die($@);
+      
       # other wise it gets done again by the web initialisation stuff
       delete $INC{$conf_file}; 
-      }
+    }
   }
   elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
     my $file = $ENV{ENSEMBL_REGISTRY};
-    print STDERR  "Loading conf from ".$file."\n";
-    unless (my $return = do $ENV{ENSEMBL_REGISTRY}){
-      throw "Configuration error in $file: $@" if $@;
-      throw "Configuration error in $file: $!" unless defined $return;
-      throw "Configuration error in $file" unless $return;
-    }
+    print STDERR  "Loading conf from ".$file."\n"  if ($verbose);
+;
+    eval{ require($file) }; $@ && die($@);
   }
   elsif(-e $ENV{HOME}."/.ensembl_init") {
     my $file = $ENV{HOME}."/.ensembl_init";
-    my $return;
     
-    unless( my $return =  do( $file )) {
-      throw "Configuration error in $file: $@" if $@;
-      throw "Configuration error in $file: $!" unless defined $return;
-      throw "Configuration error in $file" unless $return;
-    }
-    
+    eval{ require($file) }; $@ && die($@)
   }
   else{
-    print STDERR "NO default configuration to load\n";
+    print STDERR "NO default configuration to load\n" if ($verbose);
   }
 }
 
