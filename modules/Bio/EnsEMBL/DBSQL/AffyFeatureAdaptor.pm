@@ -223,6 +223,24 @@ sub _columns {
 
 }
 
+=head2 _final_clause
+
+ Arg [1]    : none
+ Example    : none
+ Description: Insert necessary order clause into SQL for this adaptor. Sorting might 
+              decrease performance in the fetch_by_slice case. Hope is, sorting by location
+              first makes this problem smaller. Sorting just by feature_id would be enough.
+ Returntype : string
+ Exceptions : none
+ Caller     : generic_fetch
+
+=cut
+
+
+sub _final_clause {
+   return ' ORDER BY af.seq_region_id, af.seq_region_start, af.affy_feature_id';
+}
+
 
 =head2 _objs_from_sth
 
@@ -294,10 +312,12 @@ sub _objs_from_sth {
 
   my $last_feature_id = -1;
   FEATURE: while($sth->fetch()) {
-    #get the analysis object
+
+    # This assumes that features come out sorted by id!
     next if( $last_feature_id == $affy_feature_id );
     $last_feature_id = $affy_feature_id;
 
+    #get the analysis object
     my $analysis = $analysis_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
 
     #get the slice object
