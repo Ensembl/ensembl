@@ -67,7 +67,7 @@ use Cwd qw(abs_path);
 
 sub new {
     my $class = shift;
-    (my $serverroot = shift) or throw("You must supply a serverroot");
+    (my $serverroot = shift) or throw("You must supply a serverroot.");
     my $self = {
         '_serverroot'   => $serverroot,
         '_param'        => { interactive => 1 },
@@ -107,8 +107,8 @@ sub parse_common_options {
         'conffile|conf=s',
         'logfile|log=s',
         'logpath=s',
-        'logappend|log_append',
-        'verbose|v',
+        'logappend|log_append=s',
+        'verbose|v=s',
         'interactive|i=s',
         'dry_run|dry|n=s',
         'help|h|?',
@@ -276,6 +276,64 @@ sub list_all_params {
     }
     $txt .= "\n";
     return $txt;
+}
+
+=head2 create_commandline_options
+
+  Arg[1]      : Hashref $settings - hashref describing what to do
+                Allowed keys:
+                    allowed_params => 0|1   # use all allowed parameters
+                    exclude => []           # listref of parameters to exclude
+                    replace => {param => newval} # replace value of param with
+                                                 # newval
+  Example     : $support->create_commandline_options({
+                    allowed_params => 1,
+                    exclude => ['verbose'],
+                    replace => { 'dbname' => 'homo_sapiens_vega_33_35e' }
+                });
+  Description : Creates a commandline options string that can be passed to any
+                other script using ConversionSupport.
+  Return type : String - commandline options string
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub create_commandline_options {
+    my ($self, $settings) = @_;
+    my %param_hash;
+
+    # get all allowed parameters
+    if ($settings->{'allowed_params'}) {
+        # exclude params explicitly stated
+        my %exclude = map { $_ => 1 } @{ $settings->{'exclude'} || [] };
+        
+        foreach my $param ($self->allowed_params) {
+            unless ($exclude{$param}) {
+                my ($first, @rest) = $self->param($param);
+                next unless (defined($first));
+
+                if (@rest) {
+                    $first = join(",", $first, @rest);
+                }
+                $param_hash{$param} = $first;
+            }
+        }
+
+    }
+
+    # replace values
+    foreach my $key (keys %{ $settings->{'replace'} || {} }) {
+        $param_hash{$key} = $settings->{'replace'}->{$key};
+    }
+
+    # create the commandline options string
+    my $options_string;
+    foreach my $param (keys %param_hash) {
+        $options_string .= sprintf("--%s %s ", $param, $param_hash{$param});
+    }
+    
+    return $options_string;
 }
 
 =head2 check_required_params
