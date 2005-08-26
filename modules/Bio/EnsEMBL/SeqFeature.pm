@@ -63,6 +63,7 @@ use Bio::EnsEMBL::Root;
 
 @ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::SeqFeatureI);
 
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 sub new {
   my($caller,@args) = @_;
@@ -83,7 +84,7 @@ sub new {
   my ($start,$end,$strand,$frame,$score,$analysis,$seqname, $source_tag,
       $primary_tag, $percent_id, $p_value, $phase, $end_phase) =
 
-      $self->_rearrange([qw(START
+      &rearrange([qw(START
                             END
                             STRAND
                             FRAME
