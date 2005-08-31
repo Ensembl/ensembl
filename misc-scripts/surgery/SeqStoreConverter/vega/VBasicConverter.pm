@@ -120,5 +120,51 @@ sub copy_assembly_exception {
     }
 }
 
+# reset gene, transcript and gene_description tables back to 30
+sub reset_gene_trans_tables {
+	my $self = shift;
+	$self->debug ("Patching gene, transcript and gene_description tables back to sch-30");
+	my $target = $self->target;
+	my $dbh = $self->dbh;
+	$dbh->do("DROP TABLE $target.gene");
+	$dbh->do( qq(CREATE TABLE $target.gene (
+                 `gene_id` int(10) unsigned NOT NULL auto_increment,
+                 `type` varchar(40) NOT NULL default '',
+                 `analysis_id` int(11) default NULL,
+                 `seq_region_id` int(10) unsigned NOT NULL default '0',
+                 `seq_region_start` int(10) unsigned NOT NULL default '0',
+                 `seq_region_end` int(10) unsigned NOT NULL default '0',
+                 `seq_region_strand` tinyint(2) NOT NULL default '0',
+                 `display_xref_id` int(10) unsigned default NULL,
+                  PRIMARY KEY  (`gene_id`),
+                  KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`),
+                  KEY `xref_id_index` (`display_xref_id`),
+                  KEY `analysis_idx` (`analysis_id`)
+                  ) ENGINE=MyISAM DEFAULT CHARSET=latin1
+                ));
+	$dbh->do("DROP TABLE $target.transcript");
+	$dbh->do( qq(CREATE TABLE $target.transcript (
+                 `transcript_id` int(10) unsigned NOT NULL auto_increment,
+                 `gene_id` int(10) unsigned NOT NULL default '0',
+                 `seq_region_id` int(10) unsigned NOT NULL default '0',
+                 `seq_region_start` int(10) unsigned NOT NULL default '0',
+                 `seq_region_end` int(10) unsigned NOT NULL default '0',
+                 `seq_region_strand` tinyint(2) NOT NULL default '0',
+                 `display_xref_id` int(10) unsigned default NULL,
+                 PRIMARY KEY  (`transcript_id`),
+                 KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`),
+                 KEY `gene_index` (`gene_id`),
+                 KEY `xref_id_index` (`display_xref_id`)
+                 ) ENGINE=MyISAM DEFAULT CHARSET=latin1
+                ));
+	$dbh->do( qq(CREATE TABLE $target.gene_description (
+                 `gene_id` int(10) unsigned NOT NULL default '0',
+                 `description` text,
+                 PRIMARY KEY  (`gene_id`)
+                 ) ENGINE=MyISAM DEFAULT CHARSET=latin1
+                ));
+}
+
+
 
 

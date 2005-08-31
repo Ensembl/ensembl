@@ -2,25 +2,58 @@
 
 =head1 NAME
 
-glovar_snp_density.pl -
-Script to calculate glovar SNP density and stats (and optioanlly prepare AV
-index dumps) for Vega.
+glovar_snp_density.pl - Script to calculate glovar SNP density and stats (and
+optioanlly prepare AV index dumps) for Vega.
 
 =head1 SYNOPSIS
 
-    ./glovar_snp_density.pl
-        --species=Homo_sapiens
-        [--chr=6,13,14]
-        [--dry_run|-n]
-        [--avdump|-a]
-        [--help|-h]
+glovar_snp_density.pl [options]
+
+General options:
+    --conffile, --conf=FILE             read parameters from FILE
+                                        (default: conf/Conversion.ini)
+
+    --dbname, db_name=NAME              use database NAME
+    --host, --dbhost, --db_host=HOST    use database host HOST
+    --port, --dbport, --db_port=PORT    use database port PORT
+    --user, --dbuser, --db_user=USER    use database username USER
+    --pass, --dbpass, --db_pass=PASS    use database passwort PASS
+    --logfile, --log=FILE               log to FILE (default: *STDOUT)
+    --logpath=PATH                      write logfile to PATH (default: .)
+    --logappend, --log_append           append to logfile (default: truncate)
+    -v, --verbose                       verbose logging (default: false)
+    -i, --interactive=0|1               run script interactively (default: true)
+    -n, --dry_run, --dry=0|1            don't write results to database
+    -h, --help, -?                      print help (this message)
+
+Specific options:
+
+    --chromosomes, --chr=LIST           only process LIST chromosomes
+    --avdump=0|1                        create AV dump
+    --glovardbname=NAME                 use Glovar database NAME
+    --glovarhost=HOST                   use Glovar database host HOST
+    --glovarport=PORT                   use Glovar database port PORT
+    --glovaruser=USER                   use Glovar database username USER
+    --glovarpass=PASS                   use Glovar database passwort PASS
+    --oracle_home=PATH                  set $ORACLE_HOME env variable to PATH
+    --ld_library_path=PATH              set $LD_LIBRARY_PATH env variable to
+                                        PATH
+    --glovar_snp_consequence_exp=NUM    use NUM glovar SNP consequence
+                                        experiment
 
 =head1 DESCRIPTION
 
 This script calculates Glovar SNP densities and total numbers per chromosome
 for use in mapview. Can be run for individual chromosomes if desired (default:
-all chromosomes). It optionally also dumps SNPs into a file for generating the
-AV search index.
+all chromosomes). Since it uses a lot of memory, there is a wrapper script
+which runs this script one chromosome at a time (glovar_snp_wrapper.pl). It
+optionally also dumps SNPs into a file for generating the AV search index.
+
+The block size is determined so that you have 150 bins for the smallest
+chromosome over 5 Mb in length. For chromosomes smaller than 5 Mb, an
+additional smaller block size is used to yield 150 bins for the overall
+smallest chromosome. This will result in reasonable resolution for small
+chromosomes and high performance for big ones.
 
 =head1 LICENCE
 
@@ -38,219 +71,224 @@ Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 =cut
 
 use strict;
+use warnings;
+no warnings 'uninitialized';
+
+use FindBin qw($Bin);
+use vars qw($SERVERROOT);
+
 BEGIN {
-    $ENV{'ENSEMBL_SERVERROOT'} = "../../..";
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/conf");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-compara/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-draw/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-external/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-otter/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-variation/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl/modules");
-    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/bioperl-live");
+    $SERVERROOT = "$Bin/../../..";
+    unshift(@INC, "$SERVERROOT/ensembl-otter/modules");
+    unshift(@INC, "$SERVERROOT/ensembl/modules");
+    unshift(@INC, "$SERVERROOT/ensembl-external/modules");
+    unshift(@INC, "$SERVERROOT/ensembl-variation/modules");
+    unshift(@INC, "$SERVERROOT/bioperl-live");
 }
 
-use SiteDefs;
-use EnsWeb;
-use EnsEMBL::DB::Core;
 use Getopt::Long;
+use Pod::Usage;
+use Bio::EnsEMBL::Utils::ConversionSupport;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use POSIX;
-use Bio::EnsEMBL::Registry;
-my $reg = "Bio::EnsEMBL::Registry";
 
-my ($species, $chr, $dry, $avdump, $help);
-&GetOptions(
-    "species=s" => \$species,
-    "chr=s"     => \$chr,
-    "dry_run"   => \$dry,
-    "n"         => \$dry,
-    "avdump"    => \$avdump,
-    "a"         => \$avdump,
-    "help"      => \$help,
-    "h"         => \$help,
+$| = 1;
+
+my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
+
+# parse options
+$support->parse_common_options(@_);
+$support->parse_extra_options(
+    'chromosomes|chr=s@',
+    'avdump=s',
+    'glovarhost=s',
+    'glovarport=s',
+    'glovaruser=s',
+    'glovarpass=s',
+    'glovardbname=s',
+    'oracle_home=s',
+    'ld_library_path=s',
+    'glovar_snp_consequence_exp=n',
+);
+$support->allowed_params($support->get_common_params,
+    'chromosomes',
+    'avdump',
+    'glovarhost',
+    'glovarport',
+    'glovaruser',
+    'glovarpass',
+    'glovardbname',
+    'oracle_home',
+    'ld_library_path',
+    'glovar_snp_consequence_exp',
 );
 
-if($help || !$species){
-    print qq(Usage:
-    ./glovar_snp_density.pl
-        --species=Homo_sapiens
-        [--chr=6,13,14]
-        [--dry_run|-n]
-        [--avdump|-a]
-        [--help|-h]\n\n);
-    exit;
+if ($support->param('help') or $support->error) {
+    warn $support->error if $support->error;
+    pod2usage(1);
 }
 
-$ENV{'ENSEMBL_SPECIES'} = $species;
+$support->comma_to_list('chromosomes');
 
-## set db user/pass to allow write access
-$EnsWeb::species_defs->set_write_access('ENSEMBL_DB',$species);
+# ask user to confirm parameters to proceed
+$support->confirm_params;
 
-# connect to databases
-my $databases = &EnsEMBL::DB::Core::get_databases(qw(core glovar));
+# get log filehandle and print heading and parameters to logfile
+$support->init_log;
 
-die "Problem connecting to databases: $databases->{'error'}\n"
-    if  $databases->{'error'} ;
-warn "Database error: $databases->{'non_fatal_error'}\n"
-    if $databases->{'non_fatal_error'};
+# connect to database and get adaptors
+my $dba = $support->get_database('ensembl');
+my $dba_glovar = $support->get_glovar_database;
+my $dfa = $dba->get_DensityFeatureAdaptor;
+my $dta = $dba->get_DensityTypeAdaptor;
+my $aa  = $dba->get_AnalysisAdaptor;
+my $attrib_adaptor = $dba->get_AttributeAdaptor;
 
-# get the adaptors needed
-my $dfa = $databases->{'core'}->get_DensityFeatureAdaptor;
-my $dta = $databases->{'core'}->get_DensityTypeAdaptor;
-my $aa  = $databases->{'core'}->get_AnalysisAdaptor;
-my $attrib_adaptor = $databases->{'core'}->get_AttributeAdaptor;
-my $slice_adaptor = $databases->{'core'}->get_SliceAdaptor;
+# split chromosomes by size and determine block size
+my $chr_slices = $support->split_chromosomes_by_size(5000000);
 
-# which chromosomes do we run?
-my @top_slices;
-if ($chr) {
-    # run chromosomes specified on commandline
-    foreach (split(",", $chr)) {
-        push @top_slices, $slice_adaptor->fetch_by_region("toplevel", $_);
-    }
-} else {
-    # run all chromosomes for this species
-    @top_slices = @{$slice_adaptor->fetch_all("toplevel")};
-}
-
-# calculate block size (assuming 4000 blocks per genome)
-my ( $block_size, $genome_size );
-for my $slice ( @{$slice_adaptor->fetch_all("toplevel")} ) {
-    $genome_size += $slice->length;
-}
-$block_size = int( $genome_size / 4000 );
-
-# analysis
-my $analysis = new Bio::EnsEMBL::Analysis (
+# create Analysis object
+my $analysis = Bio::EnsEMBL::Analysis->new(
         -program     => "glovar_snp_density.pl",
         -database    => "vega",
         -gff_source  => "glovar_snp_density.pl",
         -gff_feature => "density",
-        -logic_name  => "snpDensity");
-$aa->store( $analysis ) unless $dry;
-
-# density type
-my $dt = Bio::EnsEMBL::DensityType->new(
-        -analysis   => $analysis,
-        -block_size => $block_size,
-        -value_type => 'sum');
-$dta->store($dt) unless $dry;
-
-# loop over chromosomes
-my @chr;
-foreach my $sl (@top_slices) {
-    push @chr, $sl->seq_region_name;
-}
-print STDERR "\nAvailable chromosomes: @chr\n";
+        -logic_name  => "snpDensity",
+);
+$aa->store( $analysis ) unless ($support->param('dry_run'));
 
 # settings for AV index dump
 use constant SNP_LINE => join("\t",
     'Glovar SNP', '%s', '/%s/snpview?snp=%s&source=glovar', '%s',
     "Single nucleotide polymorphism (SNP) %s [Alleles: %s]. Alternative IDs: %s.\n"
 );
-if ($avdump) {
-    print STDERR "Preparing directories for AV index dump...\n";
-    my $dumpdir = "$ENV{'ENSEMBL_SERVERROOT'}/utils/indexing/input";
+my $species = $support->species;
+my $fh;
+if ($support->param('avdump')) {
+    $support->log("Preparing directories for AV index dump...\n");
+    my $dumpdir = $support->serverroot."/utils/indexing/input";
     unless (-e $dumpdir) {
-        mkdir $dumpdir, 0777 or die "Could not creat directory $dumpdir: $!\n";
+        mkdir $dumpdir, 0777 or
+            $support->log_error("Could not creat directory $dumpdir: $!\n");
     }
     unless (-e "$dumpdir/$species") {
-        mkdir "$dumpdir/$species", 0777 or die
-            "Could not creat directory $dumpdir/$species: $!\n";
+        mkdir "$dumpdir/$species", 0777 or
+            $support->log_error("Could not creat directory $dumpdir/$species: $!\n");
     }
-    open (AV, ">>$dumpdir/$species/SNP.txt") or die
-        "Could not open $dumpdir/$species/SNP.txt for writing: $!\n";
-    print STDERR "Done.\n";
+    $fh = $support->filehandle('>>', "$dumpdir/$species/SNP.txt");
+    $support->log("Done.\n");
 }
 
-my ($current_start, $current_end);
-foreach my $slice (@top_slices) {
-    $current_start = 1;
-    my $chr = $slice->seq_region_name;
-    my ($total, $i);
-    my $bins = POSIX::ceil($slice->end / $block_size);
-    
-    print STDERR "\nSNP densities for chr $chr with block size $block_size\n";
-    print STDERR "Start at " . `date`;
+# loop over block sizes
+my %av_done;
+foreach my $block_size (keys %{ $chr_slices }) {
+    $support->log("Available chromosomes using block size of $block_size:\n    ");
+    $support->log(join("\n    ", map { $_->seq_region_name } @{ $chr_slices->{$block_size} })."\n");
 
-    # loop over blocks
-    while($current_start <= $slice->end) {
-        $i++;
-        $current_end = $current_start+$block_size-1;
-        if ($current_end > $slice->end) {
-            $current_end = $slice->end;
-        }
-        my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
-        my $count = 0;
+    # create DensityType objects
+    my $dt = Bio::EnsEMBL::DensityType->new(
+            -analysis   => $analysis,
+            -block_size => $block_size,
+            -value_type => 'sum',
+    );
+    $dta->store($dt) unless ($support->param('dry_run'));
 
-        my $varfeats;
-        eval { $varfeats = $sub_slice->get_all_ExternalFeatures('GlovarSNP'); };
-        if ($@) {
-            warn $@;
-            $current_start = $current_end + 1;
-            next;
-        }
-        # only count varfeats that don't overlap slice start
-        # also, avoid duplicate counting
-        my %varfeats = map { "$_->variation_name => 1" if ($_->start >= 1) } @{$varfeats};
-        $count = scalar(keys %varfeats);
+    # looping over chromosomes
+    $support->log_stamped("Looping over chromosomes...\n");
+    my ($current_start, $current_end);
+    foreach my $slice (@{ $chr_slices->{$block_size} }) {
+        $current_start = 1;
+        my $chr = $slice->seq_region_name;
+        my ($total, $i);
+        my $bins = POSIX::ceil($slice->end/$block_size);
+        
+        $support->log_stamped("Chromosome $chr with block size $block_size...\n", 1);
 
-        # AV index dump
-        if ($avdump) {
-            foreach my $varfeat (@{$varfeats}) {
-                next if ($varfeat->start < 1);
-                my $snpid = $varfeat->variation_name;
-
-                # dblinks
-                my @sources = @{ $varfeat->variation->get_all_synonym_sources };
-                my (@IDs, @desc);
-                foreach my $source (@sources) {
-                    my @extIDs = @{ $varfeat->variation->get_all_synonyms($source) };
-                    push @IDs, @extIDs;
-                    push @desc, "$source: @extIDs";
-                }
-                
-                print AV sprintf SNP_LINE,
-                    $snpid,
-                    $species,
-                    $snpid,
-                    join(" ", @IDs),
-                    $snpid,
-                    $varfeat->allele_string,
-                    join(", ", @desc)
-                ; 
+        # loop over blocks
+        while ($current_start <= $slice->end) {
+            $i++;
+            $current_end = $current_start + $block_size - 1;
+            if ($current_end > $slice->end) {
+                $current_end = $slice->end;
             }
+            my $sub_slice = $slice->sub_Slice($current_start, $current_end);
+            my $count = 0;
+
+            my $varfeats;
+            eval { $varfeats = $sub_slice->get_all_ExternalFeatures('GlovarSNP'); };
+            if ($@) {
+                $support->log_warning($@);
+                $current_start = $current_end + 1;
+                next;
+            }
+
+            # only count varfeats that don't overlap slice start
+            # also, avoid duplicate counting
+            my %varfeats = map { $_->start > 0 ? ($_->variation_name => 1) : () } @{$varfeats};
+            $count = scalar(keys %varfeats);
+
+            # AV index dump
+            if ($support->param('avdump') && (! $av_done{$chr})) {
+                foreach my $varfeat (@{$varfeats}) {
+                    next if ($varfeat->start < 1);
+                    my $snpid = $varfeat->variation_name;
+
+                    # dblinks
+                    my @sources = @{ $varfeat->variation->get_all_synonym_sources };
+                    my (@IDs, @desc);
+                    foreach my $source (@sources) {
+                        my @extIDs = @{ $varfeat->variation->get_all_synonyms($source) };
+                        push @IDs, @extIDs;
+                        push @desc, "$source: @extIDs";
+                    }
+                    
+                    print $fh sprintf SNP_LINE,
+                        $snpid,
+                        $species,
+                        $snpid,
+                        join(" ", @IDs),
+                        $snpid,
+                        $varfeat->allele_string,
+                        join(", ", @desc)
+                    ; 
+                }
+            }
+
+            # density
+            my $df = Bio::EnsEMBL::DensityFeature->new(
+                -seq_region    => $slice,
+                -start         => $current_start,
+                -end           => $current_end,
+                -density_type  => $dt,
+                -density_value => $count,
+            );
+            $current_start = $current_end + 1;
+            $dfa->store($df) unless ($support->param('dry_run'));
+            $total += $count;
+
+            # logging
+            $support->log_verbose("Chr: $chr | Bin: $i/$bins | Count: $count | ".$support->date_and_mem."\n", 2);
         }
 
-        # density
-        my $df = Bio::EnsEMBL::DensityFeature->new
-            (-seq_region    => $slice,
-             -start         => $current_start,
-             -end           => $current_end,
-             -density_type  => $dt,
-             -density_value => $count);
-        $current_start = $current_end + 1;
-        $dfa->store($df) unless $dry;
-        $total += $count;
+        # set flag to do AV dump only once for each chromosome
+        $av_done{$chr} = 1;
+                
+        # stats
+        $support->log("Total for chr $chr: $total\n", 1);
+        my $stat = Bio::EnsEMBL::Attribute->new(
+            -NAME => 'SNPs',
+            -CODE => 'SNPCount',
+            -VALUE => $total,
+            -DESCRIPTION => 'Total Number of SNPs',
+        );
+        $attrib_adaptor->store_on_Slice($slice, [$stat]) unless ($support->param('dry_run'));
 
-        # logging
-        print STDERR "Chr: $chr | Bin: $i/$bins | Count: $count | ";
-        print STDERR "Mem: " . `ps -p $$ -o vsz |tail -1`;
+        $support->log_stamped("Done.\n", 1);
     }
-
-    # stats
-    print STDERR "Total for chr $chr: $total\n";
-    my $stat = Bio::EnsEMBL::Attribute->new
-	(-NAME => 'SNPs',
-	 -CODE => 'SNPCount',
-	 -VALUE => $total,
-	 -DESCRIPTION => 'Total Number of SNPs');
-    $attrib_adaptor->store_on_Slice($slice, [$stat]) unless $dry;
+    $support->log_stamped("Done.\n");
 }
-close AV if $avdump;
 
-print STDERR "\nAll done at " . `date` . "\n";
+# finish logfile
+$support->finish_log;
 
