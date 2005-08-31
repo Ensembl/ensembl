@@ -524,6 +524,9 @@ sub type {
             'Ig_pseudogene_segment.NOVEL'   => 'Ig_Pseudogene_Segment',
             'Ig_segment.KNOWN'              => 'Ig_Segment',
             'Ig_segment.NOVEL'              => 'Ig_Segment',
+            'Known_in_progress.KNOWN'       => 'Known_in_progress',
+            'Novel_CDS_in_progress.KNOWN'   => 'Novel_CDS_in_progress',
+            'Novel_CDS_in_progress.NOVEL'   => 'Novel_CDS_in_progress',
         );
         my $bio_conf = $self->biotype.".".$self->confidence;
         if ($typemap{$bio_conf}) {

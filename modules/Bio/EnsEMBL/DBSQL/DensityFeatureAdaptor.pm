@@ -160,19 +160,31 @@ sub fetch_all_by_Slice {
 
   my $best_ratio   = undef;
   my $density_type = undef;
+  my $best_ratio_large = undef;
+  my $density_type_large = undef;
 
   foreach my $dt (@dtypes) {
-    my $ratio;
-    if($dt->block_size() < $wanted_block_size) {
-      $ratio = $wanted_block_size/$dt->block_size();
-    } else {
-      $ratio = $dt->block_size()/$wanted_block_size;
-    }
+    my $ratio = $wanted_block_size/$dt->block_size();
 
-    if(!defined($best_ratio) || $ratio < $best_ratio) {
-      $best_ratio = $ratio;
-      $density_type = $dt;
+    # we prefer to use a block size that's smaller than the required one
+    # (better results on interpolation). remember larger block sizes though
+    # in case there is no smaller one in the database
+    if ($ratio < 1) {
+      if(!defined($best_ratio_large) || $ratio > $best_ratio_large) {
+        $best_ratio_large = $ratio;
+        $density_type_large = $dt;
+      }
+    } else {
+      if(!defined($best_ratio) || $ratio < $best_ratio) {
+        $best_ratio = $ratio;
+        $density_type = $dt;
+      }
     }
+  }
+  # fall back to larger block size
+  unless ($best_ratio) {
+    $best_ratio = $best_ratio_large;
+    $density_type = $density_type_large;
   }
 
   #the ratio was not good enough, or this logic name was not in the

@@ -51,6 +51,7 @@ use Text::Wrap;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use FindBin qw($Bin $Script);
 use POSIX qw(strftime);
+use Cwd qw(abs_path);
 
 =head2 new
 
@@ -66,7 +67,7 @@ use POSIX qw(strftime);
 
 sub new {
     my $class = shift;
-    (my $serverroot = shift) or throw("You must supply a serverroot");
+    (my $serverroot = shift) or throw("You must supply a serverroot.");
     my $self = {
         '_serverroot'   => $serverroot,
         '_param'        => { interactive => 1 },
@@ -103,10 +104,10 @@ sub parse_common_options {
         'port|dbport|db_port=n',
         'user|dbuser|db_user=s',
         'pass|dbpass|db_pass=s',
-        'driver|dbdriver|db_driver=s',
         'conffile|conf=s',
         'logfile|log=s',
         'logpath=s',
+        'logappend|log_append=s',
         'verbose|v=s',
         'interactive|i=s',
         'dry_run|dry|n=s',
@@ -115,6 +116,7 @@ sub parse_common_options {
 
     # reads config file
     my $conffile = $h{'conffile'} || $self->serverroot . "/conf/Conversion.ini";
+    $conffile = abs_path($conffile);
     if (-e $conffile) {
         open(CONF, $conffile) or throw( 
             "Unable to open configuration file $conffile for reading: $!");
@@ -129,6 +131,7 @@ sub parse_common_options {
             next unless (/(\w\S*)\s*=\s*(.*)/);
             $self->param($1, $2);
         }
+        $self->param('conffile', $conffile);
     } else {
         warning("Unable to open configuration file $conffile for reading: $!");
     }
@@ -160,6 +163,65 @@ sub parse_extra_options {
     };
     $self->error($@) if $@;
     return(1);
+}
+
+=head2 allowed_params
+
+  Arg[1-N]    : (optional) List of allowed parameters to set
+  Example     : my @allowed = $self->allowed_params(qw(param1 param2));
+  Description : Getter/setter for allowed parameters. This is used by
+                $self->confirm_params() to avoid cluttering of output with
+                conffile entries not relevant for a given script. You can use
+                $self->get_common_params() as a shortcut to set them.
+  Return type : Array - list of allowed parameters
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub allowed_params {
+    my $self = shift;
+
+    # setter
+    if (@_) {
+        @{ $self->{'_allowed_params'} } = @_;
+    }
+
+    # getter
+    if (ref($self->{'_allowed_params'}) eq 'ARRAY') {
+        return @{ $self->{'_allowed_params'} };
+    } else {
+        return ();
+    }
+}
+
+=head2 get_common_params
+
+  Example     : my @allowed_params = $self->get_common_params, 'extra_param';
+  Description : Returns a list of commonly used parameters in the conversion
+                scripts. Shortcut for setting allowed parameters with
+                $self->allowed_params().
+  Return type : Array - list of common parameters
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub get_common_params {
+    return qw(
+        conffile
+        dbname
+        host
+        port
+        user
+        pass
+        logpath
+        logfile
+        logappend
+        verbose
+        interactive
+        dry_run
+    );
 }
 
 =head2 confirm_params
@@ -202,22 +264,107 @@ sub list_all_params {
     my $txt = sprintf "    %-20s%-40s\n", qw(PARAMETER VALUE);
     $txt .= "    " . "-"x70 . "\n";
     $Text::Wrap::colums = 72;
-    foreach my $key (sort keys %{ $self->{'_param'} }) {
+    my @params = $self->allowed_params;
+    foreach my $key (@params) {
         my @vals = $self->param($key);
-        $txt .= Text::Wrap::wrap( sprintf('    %-20s', $key),
-                                  ' 'x24,
-                                  join(", ", @vals)
-                                ) . "\n";
+        if (@vals) {
+            $txt .= Text::Wrap::wrap( sprintf('    %-20s', $key),
+                                      ' 'x24,
+                                      join(", ", @vals)
+                                    ) . "\n";
+        }
     }
     $txt .= "\n";
     return $txt;
+}
+
+=head2 create_commandline_options
+
+  Arg[1]      : Hashref $settings - hashref describing what to do
+                Allowed keys:
+                    allowed_params => 0|1   # use all allowed parameters
+                    exclude => []           # listref of parameters to exclude
+                    replace => {param => newval} # replace value of param with
+                                                 # newval
+  Example     : $support->create_commandline_options({
+                    allowed_params => 1,
+                    exclude => ['verbose'],
+                    replace => { 'dbname' => 'homo_sapiens_vega_33_35e' }
+                });
+  Description : Creates a commandline options string that can be passed to any
+                other script using ConversionSupport.
+  Return type : String - commandline options string
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub create_commandline_options {
+    my ($self, $settings) = @_;
+    my %param_hash;
+
+    # get all allowed parameters
+    if ($settings->{'allowed_params'}) {
+        # exclude params explicitly stated
+        my %exclude = map { $_ => 1 } @{ $settings->{'exclude'} || [] };
+        
+        foreach my $param ($self->allowed_params) {
+            unless ($exclude{$param}) {
+                my ($first, @rest) = $self->param($param);
+                next unless (defined($first));
+
+                if (@rest) {
+                    $first = join(",", $first, @rest);
+                }
+                $param_hash{$param} = $first;
+            }
+        }
+
+    }
+
+    # replace values
+    foreach my $key (keys %{ $settings->{'replace'} || {} }) {
+        $param_hash{$key} = $settings->{'replace'}->{$key};
+    }
+
+    # create the commandline options string
+    my $options_string;
+    foreach my $param (keys %param_hash) {
+        $options_string .= sprintf("--%s %s ", $param, $param_hash{$param});
+    }
+    
+    return $options_string;
+}
+
+=head2 check_required_params
+
+  Arg[1-N]    : List @params - parameters to check
+  Example     : $self->check_required_params(qw(dbname host port));
+  Description : Checks $self->param to make sure the requested parameters
+                have been set. Dies if parameters are missing.
+  Return type : true on success
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub check_required_params {
+    my ($self, @params) = @_;
+    my @missing = ();
+    foreach my $param (@params) {
+        push @missing, $param unless $self->param($param);
+    }
+    if (@missing) {
+        throw("Missing parameters: @missing.\nYou must specify them on the commandline or in your conffile.\n");
+    }
+    return(1);
 }
 
 =head2 user_proceed
 
   Arg[1]      : (optional) String $text - notification text to present to user
   Example     : # run a code snipped conditionally
-                if ($support->user_proceed("Run the next code snipped?") {
+                if ($support->user_proceed("Run the next code snipped?")) {
                     # run some code
                 }
 
@@ -311,10 +458,10 @@ sub comma_to_list {
     return(1);
 }
 
-=head2 list_to_file
+=head2 list_or_file
 
   Arg[1]      : Name of parameter to parse
-  Example     : $support->list_to_file('gene_stable_id');
+  Example     : $support->list_or_file('gene_stable_id');
   Description : Determines whether a parameter holds a list or it is a filename
                 to read the list entries from.
   Return type : true on success
@@ -371,6 +518,7 @@ sub param {
             $self->{'_param'}->{$name} = shift;
         } else {
             # list of values
+            undef $self->{'_param'}->{$name};
             @{ $self->{'_param'}->{$name} } = @_;
         }
     }
@@ -444,6 +592,8 @@ sub serverroot {
 
   Arg[1]      : String $database - the type of database to connect to
                 (eg core, otter)
+  Arg[2]      : (optional) String $prefix - the prefix used for retrieving the
+                connection settings from the configuration
   Example     : my $db = $support->get_database('core');
   Description : Connects to the database specified.
   Return type : DBAdaptor of the appropriate type
@@ -455,11 +605,19 @@ sub serverroot {
 sub get_database {
     my $self = shift;
     my $database = shift or throw("You must provide a database");
-    $self->check_required_params(qw(host port user pass dbname));
+    my $prefix = shift;
+    $self->check_required_params(
+        "${prefix}host",
+        "${prefix}port",
+        "${prefix}user",
+        # "${prefix}pass", not required since might be empty
+        "${prefix}dbname",
+    );
 
     my %adaptors = (
         core    => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
         ensembl => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+        evega   => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
         otter   => 'Bio::Otter::DBSQL::DBAdaptor',
         vega    => 'Bio::Otter::DBSQL::DBAdaptor',
     );
@@ -468,37 +626,88 @@ sub get_database {
 
     $self->dynamic_use($adaptors{$database});
     my $dba = $adaptors{$database}->new(
-            -host   => $self->param('host'),
-            -port   => $self->param('port'),
-            -user   => $self->param('user'),
-            -pass   => $self->param('pass'),
-            -dbname => $self->param('dbname'),
+            -host   => $self->param("${prefix}host"),
+            -port   => $self->param("${prefix}port"),
+            -user   => $self->param("${prefix}user"),
+            -pass   => $self->param("${prefix}pass"),
+            -dbname => $self->param("${prefix}dbname"),
+            -group  => $database,
     );
+    $self->{'_dba'}->{$database} = $dba;
+    $self->{'_dba'}->{'default'} = $dba unless $self->{'_dba'}->{'default'};
+    return $self->{'_dba'}->{$database};
+}
+
+=head2 get_glovar_database
+
+  Example     : my $dba = $support->get_glovar_database;
+  Description : Connects to the Glovar database.
+  Return type : Bio::EnsEMBL::ExternalData::Glovar::DBAdaptor
+  Exceptions  : thrown if no connection to a core db exists
+  Caller      : general
+
+=cut
+
+sub get_glovar_database {
+    my $self = shift;
+    $self->check_required_params(qw(
+        glovarhost
+        glovarport
+        glovaruser
+        glovarpass
+        glovardbname
+        oracle_home
+        ld_library_path
+        glovar_snp_consequence_exp
+    ));
+
+    # check for core dbadaptor
+    my $core_db = $self->dba;
+    unless ($core_db && (ref($core_db) =~ /Bio::.*::DBSQL::DBAdaptor/)) {
+        $self->log_error("You have to connect to a core db before you can get a glovar dbadaptor.\n");
+        exit;
+    }
+    
+    # setup Oracle environment
+    $ENV{'ORACLE_HOME'} = $self->param('oracle_home');
+    $ENV{'LD_LIBRARY_PATH'} = $self->param('ld_library_path');
+
+    # connect to Glovar db
+    $self->dynamic_use('Bio::EnsEMBL::ExternalData::Glovar::DBAdaptor');
+    my $dba = Bio::EnsEMBL::ExternalData::Glovar::DBAdaptor->new(
+            -host   => $self->param("glovarhost"),
+            -port   => $self->param("glovarport"),
+            -user   => $self->param("glovaruser"),
+            -pass   => $self->param("glovarpass"),
+            -dbname => $self->param("glovardbname"),
+            -group  => 'glovar',
+    );
+
+    # setup adaptor inter-relationships
+    $dba->dnadb($core_db);
+    $self->dynamic_use('Bio::EnsEMBL::ExternalData::Glovar::GlovarSNPAdaptor');
+    my $glovar_snp_adaptor = $dba->get_GlovarSNPAdaptor;
+    $glovar_snp_adaptor->consequence_exp($self->param('glovar_snp_consequence_exp'));
+    $core_db->add_ExternalFeatureAdaptor($glovar_snp_adaptor);
+
     return $dba;
 }
 
-=head2 check_required_params
+=head2 dba
 
-  Arg[1-N]    : List @params - parameters to check
-  Example     : $self->check_required_params(qw(dbname host port));
-  Description : Checks $self->param to make sure the requested parameters
-                have been set. Dies if parameters are missing.
-  Return type : true on success
+  Arg[1]      : (optional) String $database - type of db apaptor to retrieve
+  Example     : my $dba = $support->dba;
+  Description : Getter for database adaptor. Returns default (i.e. created
+                first) db adaptor if no argument is provided.
+  Return type : Bio::EnsEMBL::DBSQL::DBAdaptor or Bio::Otter::DBSQL::DBAdaptor
   Exceptions  : none
   Caller      : general
 
 =cut
 
-sub check_required_params {
-    my ($self, @params) = @_;
-    my @missing = ();
-    foreach my $param (@params) {
-        push @missing, $param unless $self->param($param);
-    }
-    if (@missing) {
-        throw("Missing parameters: @missing.\nYou must specify them on the commandline or in your conffile.\n");
-    }
-    return(1);
+sub dba {
+    my ($self, $database) = shift;
+    return $self->{'_dba'}->{$database} || $self->{'_dba'}->{'default'};
 }
 
 =head2 dynamic_use
@@ -531,7 +740,8 @@ sub dynamic_use {
 
 =head2 get_chrlength
 
-  Arg[1]      : Bio::EnsEMBL::DBSQL::DBAdaptor $dba
+  Arg[1]      : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor $dba
+  Arg[2]      : (optional) String $version - coord_system version
   Example     : my $chr_length = $support->get_chrlength($dba);
   Description : Get all chromosomes and their length from the database. Return
                 chr_name/length for the chromosomes the user requested (or all
@@ -543,15 +753,15 @@ sub dynamic_use {
 =cut
 
 sub get_chrlength {
-    my ($self, $dba) = @_;
+    my ($self, $dba, $version) = @_;
+    $dba ||= $self->dba;
     throw("get_chrlength should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n")
         unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
 
     my $sa = $dba->get_SliceAdaptor;
     my @chromosomes = map { $_->seq_region_name } 
-                            @{ $sa->fetch_all('chromosome') };
-    my %chr = map { $_ => $sa->fetch_by_region('chromosome', $_)->length }
-                            @chromosomes;
+                            @{ $sa->fetch_all('chromosome', $version) };
+    my %chr = map { $_ => $sa->fetch_by_region('chromosome', $_, undef, undef, undef, $version)->length } @chromosomes;
 
     my @wanted = $self->param('chromosomes');
     if (@wanted) {
@@ -598,6 +808,7 @@ sub get_chrlength {
 
 sub get_taxonomy_id {
     my ($self, $dba) = @_;
+    $dba ||= $self->dba;
     my $sql = 'SELECT meta_value FROM meta WHERE meta_key = "species.taxonomy_id"';
     my $sth = $dba->dbc->db_handle->prepare($sql);
     $sth->execute;
@@ -621,6 +832,7 @@ sub get_taxonomy_id {
 
 sub get_species_scientific_name {
     my ($self, $dba) = @_;
+    $dba ||= $self->dba;
     my $sql = qq(
         SELECT
                 meta_value
@@ -643,13 +855,38 @@ sub get_species_scientific_name {
     return $species;
 }
 
+=head2 species
+
+  Arg[1]      : (optional) String $species - species name to set
+  Example     : my $species = $support->species;
+                my $url = "http://vega.sanger.ac.uk/$species/";
+  Description : Getter/setter for species name (Genus_species). If not set, it's
+                determined from database's meta table
+  Return type : String - species name
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub species {
+    my $self = shift;
+    $self->{'_species'} = shift if (@_);
+    # get species name from database if not set
+    unless ($self->{'_species'}) {
+        $self->{'_species'} = join('_',
+            split(/ /, $self->get_species_scientific_name));
+    }
+    return $self->{'_species'};
+}
+
 =head2 sort_chromosomes
 
-  Arg[1]      : Hashref $chr_hashref - Hashref with chr_name as keys
+  Arg[1]      : (optional) Hashref $chr_hashref - Hashref with chr_name as keys
   Example     : my $chr = { '6-COX' => 1, '1' => 1, 'X' => 1 };
                 my @sorted = $support->sort_chromosomes($chr);
   Description : Sorts chromosomes in an intuitive way (numerically, then
-                alphabetically)
+                alphabetically). If no chromosome hashref is passed, it's
+                retrieve by calling $self->get_chrlength()
   Return type : List - sorted chromosome names
   Exceptions  : thrown if no hashref is provided
   Caller      : general
@@ -658,6 +895,7 @@ sub get_species_scientific_name {
 
 sub sort_chromosomes {
     my ($self, $chr_hashref) = @_;
+    $chr_hashref = $self->get_chrlength unless ($chr_hashref);
     throw("You have to pass a hashref of your chromosomes")
         unless ($chr_hashref and ref($chr_hashref) eq 'HASH');
     return (sort _by_chr_num keys %$chr_hashref);
@@ -705,11 +943,73 @@ sub _by_chr_num {
     }
 }
 
+=head2 split_chromosomes_by_size
+
+  Arg[1]      : (optional) Int $cutoff - the cutoff in bp between small and
+                large chromosomes
+  Example     : my $chr_slices = $support->split_chromosomes_by_size;
+                foreach my $block_size (keys %{ $chr_slices }) {
+                    print "Chromosomes with blocksize $block_size: ";
+                    print join(", ", map { $_->seq_region_name }
+                                        @{ $chr_slices->{$block_size} });
+                }
+  Description : Determines block sizes for storing DensityFeatures on
+                chromosomes, and return slices for each chromosome. The block
+                size is determined so that you have 150 bins for the smallest
+                chromosome over 5 Mb in length. For chromosomes smaller than 5
+                Mb, an additional smaller block size is used to yield 150 bins
+                for the overall smallest chromosome. This will result in
+                reasonable resolution for small chromosomes and high
+                performance for big ones.
+  Return type : Hashref (key: block size; value: Arrayref of chromosome
+                Bio::EnsEMBL::Slices)
+  Exceptions  : none
+  Caller      : density scripts
+
+=cut
+
+sub split_chromosomes_by_size {
+    my $self = shift;
+    my $cutoff = shift || 5000000;
+    
+    my $slice_adaptor = $self->dba->get_SliceAdaptor;
+    my $top_slices;
+    if ($self->param('chromosomes')) {
+        foreach my $chr ($self->param('chromosomes')) {
+            push @{ $top_slices }, $slice_adaptor->fetch_by_region('chromosome', $chr);
+        }
+    } else {
+        $top_slices = $slice_adaptor->fetch_all("toplevel");
+    }
+
+    my ($big_chr, $small_chr, $min_big_chr, $min_small_chr);
+    foreach my $slice (@{ $top_slices }) {
+        if ($slice->length < $cutoff) {
+            if (! $min_small_chr or ($min_small_chr > $slice->length)) {
+                $min_small_chr = $slice->length;
+            }
+            # push small chromosomes onto $small_chr
+            push @{ $small_chr }, $slice;
+        }
+        if (! $min_big_chr or ($min_big_chr > $slice->length) && $slice->length > $cutoff) {
+            $min_big_chr = $slice->length;
+        }
+        # push _all_ chromosomes onto $big_chr
+        push @{ $big_chr }, $slice;
+    }
+
+    my $chr_slices;
+    $chr_slices->{int($min_big_chr/150)} = $big_chr if $min_big_chr;
+    $chr_slices->{int($min_small_chr/150)} = $small_chr if $min_small_chr;
+
+    return $chr_slices;
+}
+
 =head2 log
 
   Arg[1]      : String $txt - the text to log
   Arg[2]      : Int $indent - indentation level for log message
-  Example     : my $log = $support->log_filehandle('>>');
+  Example     : my $log = $support->log_filehandle;
                 $support->log('Log foo.\n', 1);
   Description : Logs a message to the filehandle initialised by calling
                 $self->log_filehandle(). You can supply an indentation level
@@ -723,7 +1023,11 @@ sub _by_chr_num {
 sub log {
     my ($self, $txt, $indent) = @_;
     $indent ||= 0;
-    $txt = "    "x$indent . $txt;
+    
+    # strip off leading linebreaks so that indenting doesn't break
+    $txt =~ s/^(\n*)//;
+    
+    $txt = $1."    "x$indent . $txt;
     my $fh = $self->{'_log_filehandle'};
     throw("Unable to obtain log filehandle") unless $fh;
     print $fh "$txt";
@@ -734,7 +1038,7 @@ sub log {
 
   Arg[1]      : String $txt - the warning text to log
   Arg[2]      : Int $indent - indentation level for log message
-  Example     : my $log = $support->log_filehandle('>>');
+  Example     : my $log = $support->log_filehandle;
                 $support->log_warning('Log foo.\n', 1);
   Description : Logs a message via $self->log and increases the warning counter.
   Return type : true on success
@@ -751,17 +1055,88 @@ sub log_warning {
     return(1);
 }
 
+=head2 log_error
+
+  Arg[1]      : String $txt - the error text to log
+  Arg[2]      : Int $indent - indentation level for log message
+  Example     : my $log = $support->log_filehandle;
+                $support->log_error('Log foo.\n', 1);
+  Description : Logs a message via $self->log and exits the script.
+  Return type : none
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub log_error {
+    my ($self, $txt, $indent) = @_;
+    $txt = "ERROR: ".$txt;
+    $self->log($txt, $indent);
+    $self->log("Exiting.\n");
+    exit;
+}
+
+=head2 log_verbose
+
+  Arg[1]      : String $txt - the warning text to log
+  Arg[2]      : Int $indent - indentation level for log message
+  Example     : my $log = $support->log_filehandle;
+                $support->log_verbose('Log this verbose message.\n', 1);
+  Description : Logs a message via $self->log if --verbose option was used
+  Return type : TRUE on success, FALSE if not verbose
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub log_verbose {
+    my ($self, $txt, $indent) = @_;
+
+    return(0) unless $self->param('verbose');
+
+    $self->log($txt, $indent);
+    return(1);
+}
+
+=head2 log_stamped
+
+  Arg[1]      : String $txt - the warning text to log
+  Arg[2]      : Int $indent - indentation level for log message
+  Example     : my $log = $support->log_filehandle;
+                $support->log_stamped('Log this stamped message.\n', 1);
+  Description : Appends timestamp and memory usage to a message and logs it via
+                $self->log
+  Return type : TRUE on success
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub log_stamped {
+    my ($self, $txt, $indent) = @_;
+    
+    # append timestamp and memory usage to log text
+    $txt =~ s/(\n*)$//;
+    $txt .= " ".$self->date_and_mem.$1;
+    
+    $self->log($txt, $indent);
+    return(1);
+}
+
 =head2 log_filehandle
 
-  Arg[1]      : String $mode - file access mode
-  Example     : my $log = $support->log_filehandle('>>');
+  Arg[1]      : (optional) String $mode - file access mode
+  Example     : my $log = $support->log_filehandle;
                 # print to the filehandle
                 print $log 'Lets start logging...\n';
                 # log via the wrapper $self->log()
                 $support->log('Another log message.\n');
   Description : Returns a filehandle for logging (STDERR by default, logfile if
                 set from config or commandline). You can use the filehandle
-                directly to print to, or use the smart wrapper $self->log()
+                directly to print to, or use the smart wrapper $self->log().
+                Logging mode (truncate or append) can be set by passing the
+                mode as an argument to log_filehandle(), or with the
+                --logappend commandline option (default: truncate)
   Return type : Filehandle - the filehandle to log to
   Exceptions  : thrown if logfile can't be opened
   Caller      : general
@@ -770,7 +1145,8 @@ sub log_warning {
 
 sub log_filehandle {
     my ($self, $mode) = @_;
-    $mode ||= ">";
+    $mode ||= '>';
+    $mode = '>>' if ($self->param('logappend'));
     my $fh = \*STDERR;
     if (my $logfile = $self->param('logfile')) {
         if (my $logpath = $self->param('logpath')) {
@@ -783,13 +1159,44 @@ sub log_filehandle {
     return $self->{'_log_filehandle'};
 }
 
+=head2 filehandle
+
+  Arg[1]      : String $mode - file access mode
+  Arg[2]      : String $file - input or output file
+  Example     : my $fh = $support->filehandle('>>', '/path/to/file');
+                # print to the filehandle
+                print $fh 'Your text goes here...\n';
+  Description : Returns a filehandle (*STDOUT for writing, *STDIN for reading
+                by default) to print to or read from.
+  Return type : Filehandle - the filehandle
+  Exceptions  : thrown if file can't be opened
+  Caller      : general
+
+=cut
+
+sub filehandle {
+    my ($self, $mode, $file) = @_;
+    $mode ||= ">";
+    my $fh;
+    if ($file) {
+        open($fh, "$mode", $file) or throw(
+            "Unable to open $file for writing: $!");
+    } elsif ($mode =~ />/) {
+        $fh = \*STDOUT;
+    } elsif ($mode =~ /</) {
+        $fh = \*STDIN;
+    }
+    return $fh;
+}
+
 =head2 init_log
 
-  Example     : print LOG $support->init_log;
-  Description : Returns some header information for a logfile. This includes
-                script name, date, user running the script and parameters the
-                script will be running with
-  Return type : String - the log text
+  Example     : $support->init_log;
+  Description : Opens a filehandle to the logfile and prints some header
+                information to this file. This includes script name, date, user
+                running the script and parameters the script will be running
+                with.
+  Return type : Filehandle - the log filehandle
   Exceptions  : none
   Caller      : general
 
@@ -798,27 +1205,33 @@ sub log_filehandle {
 sub init_log {
     my $self = shift;
 
+    # get a log filehandle
+    my $log = $self->log_filehandle;
+
     # print script name, date, user who is running it
     my $hostname = `hostname`;
     chomp $hostname;
     my $script = "$hostname:$Bin/$Script";
     my $user = `whoami`;
     chomp $user;
-    my $txt = "Script: $script\nDate: ".$self->date."\nUser: $user\n";
+    $self->log("Script: $script\nDate: ".$self->date."\nUser: $user\n");
 
     # print parameters the script is running with
-    $txt .= "Parameters:\n\n";
-    $txt .= $self->list_all_params;
+    $self->log("Parameters:\n\n");
+    $self->log($self->list_all_params);
 
-    return $txt;
+    # remember start time
+    $self->{'_start_time'} = time;
+
+    return $log;
 }
 
 =head2 finish_log
 
-  Example     : print LOG $support->finish_log;
-  Description : Return footer information to write to a logfile. This includes
-                the number of logged warnings, timestamp and memory footprint.
-  Return type : String - the log text
+  Example     : $support->finish_log;
+  Description : Writes footer information to a logfile. This includes the
+                number of logged warnings, timestamp and memory footprint.
+  Return type : TRUE on success
   Exceptions  : none
   Caller      : general
 
@@ -826,8 +1239,18 @@ sub init_log {
 
 sub finish_log {
     my $self = shift;
-    my $txt = "All done. ".$self->warnings." warnings. ".$self->date_and_mem."\n";
-    return $txt;
+    $self->log("All done. ".$self->warnings." warnings. ");
+    if ($self->{'_start_time'}) {
+        $self->log("Runtime ");
+        my $diff = time - $self->{'_start_time'};
+        my $sec = $diff % 60;
+        $diff = ($diff - $sec) / 60;
+        my $min = $diff % 60;
+        my $hours = ($diff - $min) / 60;
+        $self->log("${hours}h ${min}min ${sec}sec ");
+    }
+    $self->log($self->date_and_mem."\n\n");
+    return(1);
 }
 
 =head2 date_and_mem
