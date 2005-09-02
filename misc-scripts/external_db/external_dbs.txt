@@ -104,7 +104,7 @@
 3119	AFFY_HuGeneFL	1	XREF	1	0	1	Affymx Microarray HuGeneFL
 3120	AFFY_DrosGenome1	1	XREF	1	0	1      Affymx Microarray Drosophila
 3121	AFFY_Drosophila_2	1	XREF	1	0	1      Affymx Microarray Drosophila2.0
-3122	AFFY_HC_G110	1	XREF	1	0	1      Affymx Microarray HCG110
+3122	AFFY_HC_G110	1	XREF	1	0	1	Affymx Microarray HCG110
 3300	miRNA_Registry	1	XREF	1	0	1	miRNA Registry
 3400	SGD	1	KNOWN	1	0	50	SGD
 3500	IPI	1	KNOWN	1	0	5	IPI
