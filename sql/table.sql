@@ -594,7 +594,7 @@ CREATE TABLE object_xref (
 
   object_xref_id              INT not null auto_increment,
   ensembl_id                  int unsigned not null, 
-  ensembl_object_type         ENUM( 'RawContig', 'Transcript', 'Gene', 'Translation' ) not null,
+  ensembl_object_type         ENUM( 'RawContig', 'Transcript', 'Gene', 'Translation', 'regulatory_factor', 'regulatory_feature' ) not null,
   xref_id                     INT unsigned not null,
 
   UNIQUE ( ensembl_object_type, ensembl_id, xref_id ),
@@ -1278,16 +1278,18 @@ CREATE TABLE regulatory_feature_object (
 
 ################################################################################
 #
-# Table structure for table 'regulatory_factor_transcript'
+# Table structure for table 'regulatory_factor_coding'
 #
-# Describes which transcripts code for particular regulatory factors.
+# Describes which genes/transcripts code for particular regulatory factors.
 
-CREATE TABLE regulatory_factor_transcript (
+CREATE TABLE regulatory_factor_coding (
 
-  transcript_id         INT NOT NULL,               # FK to transcript
-  regulatory_factor_id  INT NOT NULL,               # FK to regulatory_feature
+  regulatory_factor_id  INT NOT NULL,      # FK to regulatory_factor
+  transcript_id         INT,               # FK to transcript
+  gene_id         	INT,               # FK to gene
 
-  KEY translation_idx (transcript_id),
+  KEY transcript_idx (transcript_id),
+  KEY gene_idx (gene_id),
   KEY regulatory_factor_idx (regulatory_factor_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
