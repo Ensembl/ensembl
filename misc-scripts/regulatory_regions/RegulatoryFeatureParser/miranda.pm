@@ -38,7 +38,7 @@ sub parse {
   my %feature_objects;
   my %anal;
 
-  # TODO - regulatory_factor_transcripts
+  # TODO - regulatory_factor_coding
 
   my $stable_id_to_internal_id = $self->build_stable_id_cache($db_adaptor);
 

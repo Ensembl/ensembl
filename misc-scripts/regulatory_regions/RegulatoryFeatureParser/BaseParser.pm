@@ -19,8 +19,8 @@ sub delete_existing {
 
   print "Deleting existing features & related data for type $type\n";
 
-  # Delete any regulatory_factor_transcript entries first
-  my $sth = $db_adaptor->dbc->prepare("DELETE rft FROM regulatory_feature rfeat, regulatory_factor_transcript rft, analysis a WHERE rfeat.regulatory_factor_id=rft.regulatory_factor_id AND a.analysis_id=rfeat.analysis_id AND LOWER(a.analysis_id)=?");
+  # Delete any regulatory_feature_coding entries first
+  my $sth = $db_adaptor->dbc->prepare("DELETE rft FROM regulatory_feature rfeat, regulatory_factor_coding rft, analysis a WHERE rfeat.regulatory_factor_id=rft.regulatory_factor_id AND a.analysis_id=rfeat.analysis_id AND LOWER(a.analysis_id)=?");
   $sth->execute($t);
 
   # now delete interlinked regulatory_feature, regulatory_factor and regulatory_feature_object entries
