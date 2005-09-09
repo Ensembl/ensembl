@@ -341,8 +341,6 @@ sub apply_aa_change {
   my $codon_len = $codon_cds_end - $codon_cds_start + 1;
 
   my @alleles = @{$var->alleles};
-  
-#  shift(@alleles); # ignore reference allele
 
   my $var_len = $var->cds_end - $var->cds_start + 1;
 
@@ -369,21 +367,21 @@ sub apply_aa_change {
 
     my $new_aa;
 
-    if(length($a)) {
-      substr($cds, $var->cds_start-1, $var_len) = $a;
-      my $codon_str = substr($cds, $codon_cds_start-1, $codon_len + abs(length($a)-$var_len));
-      
-      $var->codon($codon_str); #add the codon to the ConsequenceType object
-      my $codon_seq = Bio::Seq->new(-seq      => $codon_str,
-                                    -moltype  => 'dna',
-                                    -alphabet => 'dna');
+    substr($cds, $var->cds_start-1, $var_len) = $a;
+	
+    my $codon_str = substr($cds, $codon_cds_start-1, $codon_len + length($a)-$var_len);
+    
+    $var->codon($codon_str); #add the codon to the ConsequenceType object
+    my $codon_seq = Bio::Seq->new(-seq      => $codon_str,
+				  -moltype  => 'dna',
+				  -alphabet => 'dna');
 
+    $new_aa = $codon_seq->translate(undef,undef,undef,$codon_table)->seq();
 
-      $new_aa = $codon_seq->translate(undef,undef,undef,$codon_table)->seq();
-    } else {
-      $new_aa = '-'; # deletion
+    if(length($new_aa)<1){
+      $new_aa='-';
     }
-
+    
     if(uc($new_aa) ne uc($old_aa)) {
       push @aa_alleles, $new_aa;
       if ($new_aa =~ /\*/) {
