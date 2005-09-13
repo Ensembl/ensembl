@@ -3,15 +3,14 @@ package RegulatoryFeatureParser::cisred;
 use strict;
 
 # Parse data from cisred database dump; download zip file from
-# http://www.cisred.org/files/Databases/cisREDdb-Hsap-1.1b/SQL/data.zip
+# http://www.cisred.org/content/data/about/human1.2e/folder_listing
 # Only features.txt is parsed
 #
 # Format:
 
-# <id> <batch_id> <seqname> <source> <feature> <start> <end> <score> <strand> <frame> <gene_id> <consensus>
-#
-# 1	1	7	cisRed	con.omops.w10_1	75069868	75069877	0.0370026894185291	-	.	ENSG00000006606	rGGTTkGGGG
-# 2	1	7	cisRed	con.omops.w6_1	75069913	75069918	0.0124691222715891	-	.	ENSG00000006606	GCCTGG
+# <id> <batch_id> <seqname> <source> <feature> <start> <end> <score> <mi_score> <strand> <frame> <gene_id> <consensus>
+# 6  1  10  cisRed  con.omops.w10_2_0  43087959  43087968  0.0320202924260256  8.21540322580645  -  .  ENSG00000198915  GGAGGsCTCs
+#10  1  10  cisRed  con.omops.w10_2_1  43083501  43083510  0.0079514357443787  11.7362903225806  -  .  ENSG00000198915  GGAGGCCTCC
 
 use RegulatoryFeatureParser::BaseParser;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -56,7 +55,7 @@ sub parse {
 
     my %feature;
 
-    my ($id, $batch_id, $seqname, $source, $feature, $start, $end, $score, $strand, $frame, $gene_id, $consensus) = split;
+    my ($id, $batch_id, $seqname, $source, $feature, $start, $end, $score, $mi_score, $strand, $frame, $gene_id, $consensus) = split;
 
     my $strand = ($strand =~ /\+/ ? 1 : -1);
 
