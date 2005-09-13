@@ -50,7 +50,7 @@ sub validate_type {
   if ($sth->fetchrow_array()) {
     print "Type $type is valid\n";
   } else {
-    print "Type $type is not valid\n";
+    print "Type $type is not valid - is there an entry for $type in the analysis table?\n";
     return 0;
   }
 
