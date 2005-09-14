@@ -73,6 +73,7 @@ use Bio::EnsEMBL::ProjectionSegment;
 use Bio::EnsEMBL::Registry;
 
 use Bio::EnsEMBL::StrainSlice;
+use Bio::EnsEMBL::IndividualSlice;
 
 use Data::Dumper;
 
@@ -1361,6 +1362,35 @@ sub get_all_VariationFeatures{
     return [];
   }
 }
+
+=head2 get_by_Individual
+
+    Arg[1]      : Bio::EnsEMBL::Variation::Individual $individual
+    Example     : my $individualSlice = $slice->get_by_Individual($individual);
+    Description : Gets the specific Slice for the individual
+    ReturnType  : Bio::EnsEMB::IndividualSlice
+    Exceptions  : none
+    Caller      : general
+
+=cut
+
+sub get_by_Individual{
+    my $self = shift;
+    my $individual = shift;
+    
+    return Bio::EnsEMBL::IndividualSlice->new(
+					  -START   => $self->{'start'},
+					  -END     => $self->{'end'},
+					  -STRAND  => $self->{'strand'},
+					  -ADAPTOR => $self->{'adaptor'},
+#					  -SEQ     => $self->{'seq'},
+					  -SEQ_REGION_NAME => $self->{'seq_region_name'},
+					  -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
+					  -COORD_SYSTEM    => $self->{'coord_system'},
+					  -INDIVIDUAL     => $individual);
+
+}
+
 
 
 =head2 get_by_strain
