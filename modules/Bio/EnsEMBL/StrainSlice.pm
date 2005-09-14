@@ -120,6 +120,8 @@ sub new{
     my $af_adaptor = $variation_db->get_AlleleFeatureAdaptor;
     
     if( $af_adaptor ) {
+	#set the adaptor to retrieve data from the allele table
+	$af_adaptor->from_IndividualSlice(0);
 	#get the Population for the given strain
 	my $pop_adaptor = $variation_db->get_PopulationAdaptor;
 
@@ -148,7 +150,15 @@ sub new{
     }
 }
 
-=head2
+=head2 strain_name
+
+    Arg [1]     : (optional) string $strain_name
+    Example     : my $strain_name = $strainSlice->strain_name();
+    Description : Getter/Setter for the name of the strain
+    ReturnType  : string
+    Exceptions  : none
+    Caller      : general
+
 =cut
 
 sub strain_name{
@@ -217,9 +227,8 @@ sub get_all_differences_Slice{
 	if ($difference->length_diff == 0){
 	    #the difference is a SNP, check if it is the same as the reference allele
 	    $ref_allele = $self->SUPER::subseq($difference->start,$difference->end,$difference->strand);
-	    $ref_allele = "-" if $ref_allele eq "";
-
-	    if ($ref_allele ne $difference->allele_string) {
+	    $ref_allele = '-' if ($ref_allele eq '');
+	    if ($ref_allele ne $difference->allele_string){
 		#when the alleleFeature is different from the reference allele, add to the differences list
 		push @{$differences},$difference;
 	    }
@@ -275,7 +284,6 @@ sub get_all_differences_StrainSlice{
 	my %allele_features_self = map {$_->start.'-'.$_->end => $_} @{$self->{'alleleFeatures'}};
 	foreach my $difference (@{$strainSlice->{'alleleFeatures'}}){
 	    #there is no difference in the other strain slice, convert the allele
-
 	  if (!defined $allele_features_self{$difference->start.'-'.$difference->end}){
 	      push @{$differences},$strainSlice->_convert_difference($difference);
 	    }
