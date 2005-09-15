@@ -5,6 +5,7 @@
 420	Celera_Trans	1	PRED	1	0	5	Celera trans
 600	DROS_ORTH	1	ORTH	1	0	5	DROS ORTH
 700	EMBL	1	KNOWNXREF	1	0	5	EMBL
+701	EMBL_predicted	1	PRED	1	0	4	Predicted EMBL
 800	flybase_gene_id	1	KNOWNXREF	1	0	5	Flybase Gene
 801	flybase_translation_id	1	KNOWNXREF	1	0	5	Flybase translation ID
 802	flybase_gff	1	KNOWNXREF	1	0	5	Flybase GFF
@@ -29,6 +30,7 @@
 1500	MIM	1	KNOWNXREF	1	0	5	MIM
 1600	PDB	1	KNOWNXREF	1	0	5	PDB
 1700	protein_id	1	KNOWNXREF	1	0	5	Protein ID
+1701	protein_id_predicted	1	PRED	1	0	4	Predicted Protein ID
 1800	RefSeq_dna	1	KNOWN	1	0	25	RefSeq DNA
 1805	RefSeq_dna_predicted	1	PRED	1	0	15	RefSeq DNA predicted
 1810	RefSeq_peptide	1	KNOWN	1	0	26	RefSeq peptide
@@ -37,10 +39,12 @@
 1901	Sanger_Hver1_3_1	1	XREF	1	0	5	Sanger Hver 131
 1902	SNGR_Hver	1	XREF	1	0	5	Sanger Hver
 1910	Sanger_Mver1_1_1	1	XREF	1	0	5	Sanger Hver 111
-2000	Uniprot/SPTREMBL	1	KNOWN	1	0	20	UniProt/TrEMBL
+2000	Uniprot/SPTREMBL	1	KNOWN	1	0	20	Predicted UniProt/TrEMBL
+2001	Uniprot/SPTREMBL_predicted	1	KNOWN	1	0	15	UniProt/TrEMBL
 2010	prediction_SPTREMBL	1	XREF	1	1	10	Prediction SpTREMBL
 2100	Superfamily	1	KNOWNXREF	1	0	5	Superfamily
 2200	Uniprot/SWISSPROT	1	KNOWN	1	1	30	UniProt/Swiss-Prot
+2201	Uniprot/SWISSPROT_predicted	1	PRED	1	1	15	Predicted UniProt/Swiss-Prot
 2300	Vega_gene	1	XREF	1	0	5	Vega gene
 2310	Vega_transcript	1	XREF	1	0	5	Vega transcript
 2320	Vega_translation	1	XREF	1	0	5	Vega translation
