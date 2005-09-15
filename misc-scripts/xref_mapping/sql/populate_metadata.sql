@@ -90,10 +90,10 @@ INSERT INTO source VALUES (2601, 'c_int_proteins_jgi_v1', 1, 'Y', 4);
 
 # anopheles gambiae sources
 # predicted versions of Uniprot/EMBL - created as dependent in appropriate parse
-INSERT INTO source VALUES (2601, "Uniprot/SWISSPROT_predicted", 1, 'N',1);
-INSERT INTO source VALUES (2602, "Uniprot/SPTREMBL_predicted", 1, 'N',1);
-INSERT INTO source VALUES (2610, "EMBL_predicted", 1, 'N',1);
-INSERT INTO source VALUES (2640, 'protein_id_predicted', 1, 'N', 2);
+INSERT INTO source VALUES (2801, "Uniprot/SWISSPROT_predicted", 1, 'N',1);
+INSERT INTO source VALUES (2802, "Uniprot/SPTREMBL_predicted", 1, 'N',1);
+INSERT INTO source VALUES (2810, "EMBL_predicted", 1, 'N',1);
+INSERT INTO source VALUES (2840, 'protein_id_predicted', 1, 'N', 2);
 
 ################################################################################
 # Files to fetch data from
