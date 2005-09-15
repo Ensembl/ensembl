@@ -41,6 +41,10 @@ INSERT INTO source VALUES (6, "UniGene", 1, 'Y',2);
 INSERT INTO source VALUES (10, "RefSeq_peptide_predicted", 1, 'Y',1);
 INSERT INTO source VALUES (11, "RefSeq_dna_predicted", 1, 'Y',1);
 
+# Agilent probes
+INSERT INTO source VALUES (2700, 'AgilentProbe', 1, 'Y', 4);
+INSERT INTO source VALUES (2701, 'AgilentCGH', 1, 'Y', 4);
+
 # Other sources - used to create dependent xrefs, but not to download from
 
 INSERT INTO source VALUES (1010, 'EMBL', 1, 'N', 2);
@@ -84,8 +88,12 @@ INSERT INTO source VALUES (2572, 'gadfly_translation_cgid', 1, 'N', 4);
 # ciona intestinalis source 
 INSERT INTO source VALUES (2601, 'c_int_proteins_jgi_v1', 1, 'Y', 4);
 
-
-
+# anopheles gambiae sources
+# predicted versions of Uniprot/EMBL - created as dependent in appropriate parse
+INSERT INTO source VALUES (2601, "Uniprot/SWISSPROT_predicted", 1, 'N',1);
+INSERT INTO source VALUES (2602, "Uniprot/SPTREMBL_predicted", 1, 'N',1);
+INSERT INTO source VALUES (2610, "EMBL_predicted", 1, 'N',1);
+INSERT INTO source VALUES (2640, 'protein_id_predicted', 1, 'N', 2);
 
 ################################################################################
 # Files to fetch data from
@@ -237,6 +245,11 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      CCDS
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2000, 9606,'/dummy/CCDS.txt', '', now(), now(), "CCDSParser");
 
+
+##      Agilent
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 9606,'./Agilent/HumanExpression.fasta', '', now(), now(), "AgilentParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2701, 9606,'./Agilent/HumanCGH.fasta', '', now(), now(), "AgilentParser");
+
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9606,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Homo_sapiens/Hs.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Homo_sapiens/Hs.data.gz', '', now(), now(), "UniGeneParser");
 
@@ -270,6 +283,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10090,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Mus_musculus/Mm.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Mus_musculus/Mm.data.gz', '', now(), now(), "UniGeneParser");
 
+##      Agilent
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 10090,'./Agilent/MouseExpression.fasta', '', now(), now(), "AgilentParser");
+
 # --------------------------------------------------------------------------------
 ### RAT
 ##      uniprot
@@ -299,6 +315,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10116,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Rattus_norvegicus/Rn.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Rattus_norvegicus/Rn.data.gz', '', now(), now(), "UniGeneParser");
+
+##      Agilent
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 10116,'./Agilent/RatExpression.fasta', '', now(), now(), "AgilentParser");
 
 # --------------------------------------------------------------------------------
 
@@ -478,7 +497,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 # --------------------------------------------------------------------------------
 
 
-#### SeqSquirt
+#### SeaSquirt
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -517,7 +536,24 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
 VALUES (2601, 7719,'ftp://ftp.jgi-psf.org/pub/JGI_data/Ciona/v1.0/ciona.prot.fasta.gz',now(),now(),'FastaProteinSeqParser');
 
+
 # --------------------------------------------------------------------------------
+
+###### Anopheles
+
+# Uniprot
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1,7165,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz',now(),now(),'UniProtParser');
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2,7165,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz',now(),now(),'UniProtParser');
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300,7165,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz',now(),now(),'InterproParser');
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (6,7165,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Anopheles_gambiae/Aga.seq.uniq.Z  ftp://ftp.ncbi.nih.gov/repository/UniGene/Aga.data.Z',now(),now(),'UniGeneParser');
+
+
+# --------------------------------------------------------------------------------
+
+
 
 #### Cow
 
@@ -542,7 +578,6 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
 (6, 9913,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Bt.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Bt.data.gz',  now(), now(), "UniGeneParser");
-
 
 
 ################################################################################
