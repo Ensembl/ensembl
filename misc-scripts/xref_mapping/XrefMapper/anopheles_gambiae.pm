@@ -1,4 +1,4 @@
-package XrefMapper::homo_sapiens;
+package XrefMapper::anopheles_gambiae;
 
 use  XrefMapper::BasicMapper;
 
