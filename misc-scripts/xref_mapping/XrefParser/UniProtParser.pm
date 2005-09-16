@@ -51,6 +51,7 @@ sub run {
   print "SwissProt source id for $file: $sp_source_id\n";
   print "SpTREMBL source id for $file: $sptr_source_id\n";
 
+
   my @xrefs = create_xrefs($sp_source_id, $sptr_source_id, $species_id, $file);
 
   # delete previous if running directly rather than via BaseParser
@@ -107,8 +108,20 @@ sub create_xrefs {
 
   my $num_sp = 0;
   my $num_sptr = 0;
+  my $num_sp_pred = 0;
+  my $num_sptr_pred = 0;
 
   my %dependent_sources = XrefParser::BaseParser->get_dependent_xref_sources(); # name-id hash
+
+  # Get predicted equivalents of various sources used here
+  my $sp_pred_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SWISSPROT_predicted');
+  my $sptr_pred_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SPTREMBL_predicted');
+  my $embl_pred_source_id = $dependent_sources{'EMBL_predicted'};
+  my $protein_id_pred_source_id = $dependent_sources{'protein_id_predicted'};
+  print "Predicted SwissProt source id for $file: $sp_pred_source_id\n";
+  print "Prediced SpTREMBL source id for $file: $sptr_pred_source_id\n";
+  print "Predicted EMBL source id for $file: $embl_pred_source_id\n";
+  print "Predicted protein_id source id for $file: $protein_id_pred_source_id\n";
 
   open(UNIPROT, $file) || die "Can't open Swissprot file $file\n";
 
@@ -124,7 +137,6 @@ sub create_xrefs {
     # all and only proceed if one of them matches.
     #OX   NCBI_TaxID=158878, 158879;
     #OX   NCBI_TaxID=103690;
-
 
     my ($ox) = $_ =~ /OX\s+[a-zA-Z_]+=([0-9 ,]+);/;
 #    print "OX  --> $ox\n";
@@ -143,7 +155,8 @@ sub create_xrefs {
 #	print "FAIL ".$taxon_id_from_file."\n";
 #      }
     }
-    next if (!$found); # no taxon_id's math, so skip to next record
+
+    next if (!$found); # no taxon_id's match, so skip to next record
     my $xref;
 
     # set accession (and synonyms if more than one)
@@ -164,18 +177,32 @@ sub create_xrefs {
       push(@{$xref->{"SYNONYMS"} }, $accessions[$a]);
     }
 
+    # Check for CC (caution) lines containing certain text
+    # if this appears then set the source of this and and dependent xrefs to the predicted equivalents
+    my $is_predicted = /CC.*EMBL\/GenBank\/DDBJ whole genome shotgun \(WGS\) entry/;
+
     my ($label, $sp_type) = $_ =~ /ID\s+(\w+)\s+(\w+)/;
 
     # SwissProt/SPTrEMBL are differentiated by having STANDARD/PRELIMINARY here
     if ($sp_type =~ /STANDARD/i) {
 
       $xref->{SOURCE_ID} = $sp_source_id;
-      $num_sp++;
-
+      if ($is_predicted) {
+	$xref->{SOURCE_ID} = $sp_pred_source_id;
+	$num_sp_pred++;
+      } else {
+	$xref->{SOURCE_ID} = $sp_source_id;
+	$num_sp++;
+      }
     } elsif ($sp_type =~ /PRELIMINARY/i) {
 
-      $xref->{SOURCE_ID} = $sptr_source_id;
-      $num_sptr++;
+      if ($is_predicted) {
+	$xref->{SOURCE_ID} = $sptr_pred_source_id;
+	$num_sptr_pred++;
+      } else {
+	$xref->{SOURCE_ID} = $sptr_source_id;
+	$num_sptr++;
+      }
 
     } else {
 
@@ -183,6 +210,9 @@ sub create_xrefs {
 
     }
 
+
+
+    # some straightforward fields
     $xref->{LABEL} = $label;
     $xref->{SPECIES_ID} = $species_id;
     $xref->{SEQUENCE_TYPE} = 'peptide';
@@ -231,6 +261,10 @@ sub create_xrefs {
 	  $dep{SOURCE_NAME} = $source;
 	  $dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
 	  $dep{SOURCE_ID} = $dependent_sources{$source};
+	  if ($source eq "EMBL" && $is_predicted) {
+	    $dep{SOURCE_ID} = $embl_pred_source_id
+	  };
+
 	  $dep{ACCESSION} = $acc;
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 	  if($dep =~ /EMBL/){
@@ -239,6 +273,9 @@ sub create_xrefs {
 	      my %dep2;
 	      $dep2{SOURCE_NAME} = $source;
 	      $dep2{SOURCE_ID} = $dependent_sources{protein_id};
+	      if ($is_predicted) {
+		$dep2{SOURCE_ID} = $protein_id_pred_source_id
+	      };
 	      $dep2{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
 	      # store accession unversioned
 	      $dep2{LABEL} = $protein_id;
@@ -282,6 +319,7 @@ sub create_xrefs {
   close (UNIPROT);
 
   print "Read $num_sp SwissProt xrefs and $num_sptr SPTrEMBL xrefs from $file\n";
+  print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if ($num_sp_pred > 0 || $num_sptr_pred > 0);
 
   return \@xrefs;
 
