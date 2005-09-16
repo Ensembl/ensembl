@@ -115,7 +115,7 @@ CREATE TABLE species (
   name                        varchar(255) not null,
   aliases                     varchar(255),
 
-  PRIMARY KEY(species_id),
+  KEY species_idx (species_id),
   KEY taxonomy_idx(taxonomy_id),
   KEY name_idx(name)
 
