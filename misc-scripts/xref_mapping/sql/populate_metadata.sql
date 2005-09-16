@@ -8,7 +8,6 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9606,9606, 
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (10090,10090, 'mus_musculus',            'mouse,mmusculus,musmusculus');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (10116, 10116, 'rattus_norvegicus',       'rat,rnovegicus,rattusnorvegicus');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (31033,31033, 'fugu_rubripes',           'pufferfish,fugu,frubripes,fugurubripes');
-INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7165,7165,  'anopheles_gambiae',       'mosquito,anopheles,agambiae,anophelesgambiae');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7227, 7227, 'drosophila_melanogaster', 'drosophila,dmelongaster,drosophilamelanogaster' );
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (6239, 6239, 'caenorhabditis_elegans',  'elegans,celegans,caenorhabditiselegans');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (6238, 6238, 'caenorhabditis_briggsae', 'briggsae,cbriggsae,caenorhabditisbriggsae');
@@ -25,6 +24,10 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (4932, 4932,
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7460, 7460,  'apis_mellifera',  'apismellifera,honeybee,amellifera');
 
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7719, 7719,  'ciona_intestinalis', 'cionaintestinalis,cintestinalis,seasquirt'); 
+
+# Serveral strains of anopheles have different taxonomy IDs
+INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7165,7165, 'anopheles_gambiae', 'mosquito,anopheles,agambiae,anophelesgambiae');
+INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7165,180454, 'anopheles_gambiae_strain', '');
 
 
 ################################################################################
