@@ -28,7 +28,8 @@ Then it will update the meta_coord table for all the following table names one b
  qtl_feature
  karyotype
  transcript
- density_feature\n";
+ density_feature
+ regulatory_feature\n";
 
 GetOptions('help' => \$help,
            'host=s' => \$host,
@@ -63,7 +64,8 @@ my @table_names = qw(affy_feature
                      qtl_feature
                      karyotype
                      transcript
-                     density_feature);
+                     density_feature
+                     regulatory_feature);
 
 unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from meta_coord' $dbname > $dbname.meta_coord.backup") ==0) {
   print STDERR "Can't dump the original meta_coord for back up\n";
