@@ -16,3 +16,5 @@ CREATE TABLE regulatory_factor_coding (
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
+alter table transcript change confidence status  enum( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' );
+alter table gene change confidence status  enum( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' );
