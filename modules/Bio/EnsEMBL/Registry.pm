@@ -893,20 +893,20 @@ sub load_registry_from_db{
     print $coredb." loaded\n" if ($verbose);
   }
   
-  my @estgene_dbs = grep { /^[a-z]+_[a-z]+_estgene_\d+_/ } @dbnames;
+  my @est_dbs = grep { /^[a-z]+_[a-z]+_est_\d+_/ } @dbnames;
   
-  for my $estgene_db ( @estgene_dbs ) {
-    my ($species, $num) = ( $estgene_db =~ /(^[a-z]+_[a-z]+)_estgene_(\d+)/ );
+  for my $est_db ( @est_dbs ) {
+    my ($species, $num) = ( $est_db =~ /(^[a-z]+_[a-z]+)_est_(\d+)/ );
     my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
-      ( -group => "estgene",
+      ( -group => "est",
 	-species => $species,
 	-host => $host,
 	-user => $user,
 	-pass => $pass,
 	-port => $port,
-	-dbname => $estgene_db
+	-dbname => $est_db
       );
-    print $estgene_db." loaded\n" if ($verbose);
+    print $est_db." loaded\n" if ($verbose);
   }
   
   
