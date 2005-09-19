@@ -101,7 +101,7 @@ sub _columns {
   return qw( t.transcript_id t.seq_region_id t.seq_region_start t.seq_region_end 
 	     t.seq_region_strand t.gene_id 
              t.display_xref_id tsi.stable_id tsi.version UNIX_TIMESTAMP(created_date)
-             UNIX_TIMESTAMP(modified_date) t.description t.biotype t.confidence
+             UNIX_TIMESTAMP(modified_date) t.description t.biotype t.status
              x.display_label exdb.db_name exdb.status );
 }
 
@@ -550,12 +550,12 @@ sub store {
    my $tst = $self->prepare(
         "insert into transcript ( gene_id, seq_region_id, seq_region_start, " .
 			    "seq_region_end, seq_region_strand, biotype, " .
-			    "confidence, description ) ".
+			    "status, description ) ".
 			    "values ( ?, ?, ?, ?, ?, ?, ?, ? )");
 
    $tst->execute( $gene_dbID, $seq_region_id, $transcript->start(),
                   $transcript->end(), $transcript->strand(), 
-		  $transcript->biotype(), $transcript->confidence(),
+		  $transcript->biotype(), $transcript->status(),
 		  $transcript->description() );
 
    $tst->finish();
@@ -925,7 +925,7 @@ sub update {
            SET display_xref_id = ?,
                description = ?,
                biotype = ?,
-               confidence = ?
+               status = ?
          WHERE transcript_id = ?";
 
    my $display_xref = $transcript->display_xref();
@@ -939,7 +939,7 @@ sub update {
 
    my $sth = $self->prepare( $update_transcript_sql );
    $sth->execute( $display_xref_id, $transcript->description(),
-		  $transcript->biotype(), $transcript->confidence(),
+		  $transcript->biotype(), $transcript->status(),
 		  $transcript->dbID() );
  }
 
@@ -1012,13 +1012,13 @@ sub _objs_from_sth {
   my ( $transcript_id, $seq_region_id, $seq_region_start, $seq_region_end, 
        $seq_region_strand, $gene_id,  
        $display_xref_id, $stable_id, $version, $created_date, $modified_date,
-       $description, $biotype, $confidence,
+       $description, $biotype, $status,
        $external_name, $external_db, $external_status );
 
   $sth->bind_columns( \$transcript_id, \$seq_region_id, \$seq_region_start, 
                       \$seq_region_end, \$seq_region_strand, \$gene_id,  
                       \$display_xref_id, \$stable_id, \$version, \$created_date, \$modified_date,
-		      \$description, \$biotype, \$confidence,
+		      \$description, \$biotype, \$status,
                       \$external_name, \$external_db, \$external_status );
 
 
@@ -1164,7 +1164,7 @@ sub _objs_from_sth {
         '-display_xref'  => $display_xref,
 	'-description'   => $description,
 	'-biotype'       => $biotype,
-	'-confidence'    => $confidence );
+	'-status'    => $status );
   }
 
   return \@transcripts;

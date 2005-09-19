@@ -69,8 +69,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
         string - the genes description
   Arg [-BIOTYPE]:
         string - the biotype e.g. "protein_coding"
-  Arg [-CONFIDENCE]:
-        string - the gene confidence i.e. "KNOWN","NOVEL"
+  Arg [-STATUS]:
+        string - the gene status i.e. "KNOWN","NOVEL"
   Example    : $gene = Bio::EnsEMBL::Gene->new();
   Description: Creates a new gene object
   Returntype : Bio::EnsEMBL::Gene
@@ -88,11 +88,11 @@ sub new {
 
   my ( $stable_id, $version, $external_name, $type, $external_db, 
        $external_status, $display_xref, $description, $transcripts,
-       $created_date, $modified_date, $confidence, $biotype, $source ) = 
+       $created_date, $modified_date, $confidence, $biotype, $source, $status ) = 
     rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
 		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF', 'DESCRIPTION',
                  'TRANSCRIPTS', 'CREATED_DATE', 'MODIFIED_DATE', 
-	         'CONFIDENCE', 'BIOTYPE', 'SOURCE'], @_ );
+	         'CONFIDENCE', 'BIOTYPE', 'SOURCE', 'STATUS'], @_ );
 
   if ($transcripts) {
     $self->{'_transcript_array'} = $transcripts;
@@ -111,7 +111,9 @@ sub new {
   $self->biotype( $type ) if( defined $type );
   $self->biotype( $biotype ) if( defined $biotype );
   $self->description($description);
-  $self->confidence( $confidence );
+  $self->status( $confidence ); # incase old naming is used.
+                                # kept to ensure routine is backwards compatible.
+  $self->status( $status);      # add new naming
   $self->source( $source );
   return $self;
 }
@@ -133,7 +135,7 @@ sub new {
 
 sub is_known{
   my $self = shift;
-  return ( $self->{'confidence'} eq "KNOWN" );
+  return ( $self->{'status'} eq "KNOWN" );
 }
 
 
@@ -168,11 +170,29 @@ sub external_name {
 }
 
 
+=head2 status
+
+  Arg [1]    : string $status
+  Example    : none
+  Description: get/set for attribute status
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Medium Risk
+
+=cut
+
+sub status {
+   my $self = shift;
+  $self->{'status'} = shift if( @_ );
+  return $self->{'status'};
+}
+
 =head2 confidence
 
   Arg [1]    : string $confidence
   Example    : none
-  Description: get/set for attribute confidence
+  Description: get/set for attribute status
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -182,8 +202,9 @@ sub external_name {
 
 sub confidence {
    my $self = shift;
-  $self->{'confidence'} = shift if( @_ );
-  return $self->{'confidence'};
+
+  $self->{'status'} = shift if( @_ );
+  return $self->{'status'};
 }
 
 
@@ -506,7 +527,7 @@ sub type {
     
     $self->{'biotype'} = shift if( @_ );
     
-    # map biotype/confidence to HAWK classification for Vega
+    # map biotype/status to HAWK classification for Vega
     if ($self->source eq 'vega') {
         my %typemap = (
             'protein_coding.KNOWN'          => 'Known',
@@ -528,11 +549,11 @@ sub type {
             'Novel_CDS_in_progress.KNOWN'   => 'Novel_CDS_in_progress',
             'Novel_CDS_in_progress.NOVEL'   => 'Novel_CDS_in_progress',
         );
-        my $bio_conf = $self->biotype.".".$self->confidence;
+        my $bio_conf = $self->biotype.".".$self->status;
         if ($typemap{$bio_conf}) {
             return $typemap{$bio_conf};
         } else {
-            warning("biotype.confidence ($bio_conf) cannot be resolved to HAWK type");
+            warning("biotype.status ($bio_conf) cannot be resolved to HAWK type");
         }
 
     # for all other sources, return biotype

@@ -93,7 +93,7 @@ sub _columns {
 
   return qw( g.gene_id g.seq_region_id g.seq_region_start g.seq_region_end
 	     g.seq_region_strand g.analysis_id g.biotype g.display_xref_id
-	     g.description g.confidence g.source 
+	     g.description g.status g.source 
 	     gsi.stable_id gsi.version UNIX_TIMESTAMP(gsi.created_date)
 	     UNIX_TIMESTAMP(gsi.modified_date) 
 	     x.display_label x.dbprimary_acc x.description x.version 
@@ -786,7 +786,7 @@ sub store {
                "seq_region_strand = ?, ".
 	       "description = ?, " .
                "source = ?, ".
-               "confidence = ? ";
+               "status = ? ";
 
   my $sth = $self->prepare( $store_gene_sql );
    $sth->execute(
@@ -798,7 +798,7 @@ sub store {
 		 $gene->strand(),
 		 $gene->description(),
 		 $gene->source(),
-		 $gene->confidence()
+		 $gene->status()
 		);
   $sth->finish();
 
@@ -1064,7 +1064,7 @@ sub update {
            SET biotype = ?,
                analysis_id = ?,
                display_xref_id = ?,
-               confidence = ?
+               status = ?
          WHERE gene_id = ?";
 
    my $display_xref = $gene->display_xref();
@@ -1080,7 +1080,7 @@ sub update {
    $sth->execute($gene->type(), 
 		 $gene->analysis->dbID(),
 		 $display_xref_id,
-		 $gene->confidence(),
+		 $gene->status(),
 		 $gene->dbID()
 		);
 
@@ -1121,13 +1121,13 @@ sub _objs_from_sth {
   my ( $gene_id, $seq_region_id, $seq_region_start, $seq_region_end, 
        $seq_region_strand, $analysis_id, $biotype, $display_xref_id, 
        $gene_description, $stable_id, $version, $created_date, 
-       $modified_date, $xref_display_id, $confidence, $source, 
+       $modified_date, $xref_display_id, $status, $source, 
        $xref_primary_acc, $xref_desc, $xref_version, $external_name, 
        $external_db, $external_status, $external_release );
 
   $sth->bind_columns( \$gene_id, \$seq_region_id, \$seq_region_start,
           \$seq_region_end, \$seq_region_strand, \$analysis_id, \$biotype,
-          \$display_xref_id, \$gene_description, \$confidence, \$source, 
+          \$display_xref_id, \$gene_description, \$status, \$source, 
 	  \$stable_id, \$version,
           \$created_date, \$modified_date, 
 	  \$xref_display_id, \$xref_primary_acc, \$xref_desc, \$xref_version,
@@ -1267,7 +1267,7 @@ sub _objs_from_sth {
         '-external_db'   =>  $external_db,
         '-external_status' => $external_status,
         '-display_xref' => $display_xref,
-	'-confidence'   => $confidence,
+	'-status'   => $status,
         '-source'       => $source );
   }
 

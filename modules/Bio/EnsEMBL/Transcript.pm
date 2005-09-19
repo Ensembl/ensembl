@@ -88,8 +88,8 @@ use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
         string - the transcipts description
   Arg [-BIOTYPE]: 
         string - the biotype e.g. "protein_coding"
-  Arg [-CONFIDENCE]:
-        string - the transcripts confidence i.e. "KNOWN","NOVEL"
+  Arg [-STATUS]:
+        string - the transcripts status i.e. "KNOWN","NOVEL"
   Example    : $tran = new Bio::EnsEMBL::Transcript(-EXONS => \@exons);
   Description: Constructor. Instantiates a Transcript object.
   Returntype : Bio::EnsEMBL::Transcript
@@ -112,7 +112,7 @@ sub new {
 
   my ( $exons, $stable_id, $version, $external_name, $external_db,
        $external_status, $display_xref, $created_date, $modified_date,
-       $description, $biotype, $confidence  );
+       $description, $biotype, $confidence, $status  );
 
   #catch for old style constructor calling:
   if((@_ > 0) && ref($_[0])) {
@@ -124,11 +124,11 @@ sub new {
   else {
     ( $exons, $stable_id, $version, $external_name, $external_db,
       $external_status, $display_xref, $created_date, $modified_date,
-      $description, $biotype ) = 
+      $description, $biotype, $status ) = 
         rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
                      'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
 		     'CREATED_DATE', 'MODIFIED_DATE', 'DESCRIPTION',
-		     'BIOTYPE', 'CONFIDENCE' ], @_ );
+		     'BIOTYPE', 'CONFIDENCE', 'STATUS' ], @_ );
   }
 
   if( $exons ) {
@@ -147,7 +147,8 @@ sub new {
   $self->edits_enabled(1);
 
   $self->description( $description );
-  $self->confidence( $confidence );
+  $self->status( $confidence );  #old style name
+  $self->status( $status );      #new style name
   $self->biotype( $biotype );
 
   return $self;
@@ -476,11 +477,29 @@ sub type {
 
 
 
+=head2 status
+
+  Arg [1]    : string $status
+  Example    : none
+  Description: get/set for attribute status
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Medium Risk
+
+=cut
+
+sub status {
+   my $self = shift;
+  $self->{'status'} = shift if( @_ );
+  return $self->{'status'};
+}
+
 =head2 confidence
 
   Arg [1]    : string $confidence
   Example    : none
-  Description: get/set for attribute confidence
+  Description: get/set for attribute status
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -490,8 +509,8 @@ sub type {
 
 sub confidence {
    my $self = shift;
-  $self->{'confidence'} = shift if( @_ );
-  return $self->{'confidence'};
+  $self->{'status'} = shift if( @_ );
+  return $self->{'status'};
 }
 
 
