@@ -256,6 +256,9 @@ sub check_version{
   
   if($database_version == 0){
     #try to work out the version
+    if($dba->dbc->dbname() =~ /^_test_db_/){
+      return;
+    }
     if($dba->dbc->dbname() =~ /\S+_\S+_\S+_(\d+)_\S+/){
       $database_version = $1;
     }
