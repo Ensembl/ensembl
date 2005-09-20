@@ -146,6 +146,9 @@ sub load_all{
       # other wise it gets done again by the web initialisation stuff
       delete $INC{$conf_file}; 
     }
+    else{ #error message
+      print STDERR "File passed (".$conf_file.") does not exist therefore no configuration loaded\n";
+    }
   }
   elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
     my $file = $ENV{ENSEMBL_REGISTRY};
@@ -847,7 +850,7 @@ sub load_registry_from_db{
   for my $db (@dbnames){
     if($db =~ /^([a-z]+_[a-z]+_[a-z]+)_(\d+)_(\d+[a-z]*)/){
       if(defined($temp{$1})){
-	my ($r1,$r2) = split($temp{$1},"_");
+	my ($r1,$r2) = split("_",$temp{$1});
 	if($r1 < $2){
 	  $temp{$1} = $2."_".$3;
 	}
