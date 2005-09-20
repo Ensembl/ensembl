@@ -822,8 +822,9 @@ my $self = shift;
 				   -user => 'anonymous',
 				   -verbose => "1" );
 
-  Description: Will load the latest versions of the ensembl databases it
-               can find on a database instance into the registry.
+  Description: Will load the correct versions of the ensembl databases fro the
+               software release it can find on a database instance into the 
+               registry.
 
   Exceptions : None.
   Status     : Stable
@@ -847,25 +848,21 @@ sub load_registry_from_db{
   my @dbnames = map {$_->[0] } @$res;
   
   my %temp;
+  my $software_version = Bio::EnsEMBL::Utils::ConfigRegistry->software_version;
+  print "Will only load $software_version databases\n" if ($verbose);
   for my $db (@dbnames){
     if($db =~ /^([a-z]+_[a-z]+_[a-z]+)_(\d+)_(\d+[a-z]*)/){
-      if(defined($temp{$1})){
-	my ($r1,$r2) = split("_",$temp{$1});
-	if($r1 < $2){
-	  $temp{$1} = $2."_".$3;
-	}
-      }
-      else{
+      if($2 eq $software_version){
 	$temp{$1} = $2."_".$3;
       }
     }
     elsif($db =~ /^ensembl_compara_(\d+)/){
-      if($compara_version < $1){
+      if($1 eq $software_version){
 	$compara_version = $1;
       }
     }
     elsif($db =~ /^ensembl_go_(\d+)/){
-      if($go_version < $1){
+      if($1 eq $software_version){
 	$go_version = $1;
       }
     }
@@ -965,10 +962,11 @@ sub load_registry_from_db{
 
   #GO
   if($go_version){
-    eval "use Bio::EnsEMBL::ExternalData::GO::GOAdaptor";
+    eval "require Bio::EnsEMBL::ExternalData::GO::GOAdaptor";
     if($@) {
       #ignore go as code required not there for this
-      print "Bio::EnsEMBL::ExternalData::GO::GOAdaptor::DBAdaptor not found so go database ensemb_go_$go_version will be ignored\n" if ($verbose);
+#      print $@;
+      print "GO software not installed so go database ensemb_go_$go_version will be ignored\n" if ($verbose);
     }
     else{
       my $go_db = "ensembl_go_".$go_version;
