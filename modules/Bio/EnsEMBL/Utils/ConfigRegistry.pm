@@ -60,7 +60,9 @@ my $SOFTWARE_VERSION = 34;
 # 3) 
 #
 
-
+sub software_version{
+  return $SOFTWARE_VERSION;
+}
 
 
 sub gen_load{
