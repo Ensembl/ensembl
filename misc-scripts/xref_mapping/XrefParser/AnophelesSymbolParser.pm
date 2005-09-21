@@ -10,7 +10,7 @@ use vars qw(@ISA);
 
 # AnophelesSymbol database dump for anopheles - FASTA format
 #
-# >ANXB10B,ANXB10B,ANXB10B,protein,Annexin B10B
+# >ANXB10B|Annexin B10B
 # MSWYYTPHPTVVPAEDFDASADANALRKAMKGFGTDEQAIIDILCARSNGQRQEIAEAFKRELGRDLIDDLKSELGGKFEDVILGLMLRPEAYLCKQLHKAMDGIGTDEKSLIEII
 # CPQTNDQIRAIVDCYEEMYSRPLAEHLCSETSGSFRRLLTMIIVGSRDPQGTVDPELAVEQAKQLYDAGEGKLGTDEEVFYKILAHASFDQLEIVFEEYKSLSGRTIEQALKAELS
 # GELYDALSAIVECVQMAPHFFAKRLHKAMDGVGTDDATLIRIIVSRSEIDLQNIKDEFEQMYNKTLVSAVRSETSGDYKRALCALIGNA
@@ -34,7 +34,7 @@ sub run {
     my ($header, $sequence) = $_ =~ /^>?(.+?)\n([^>]*)/s or warn("Can't parse FASTA entry: $_\n");
 
     # deconstruct header - just use first part
-    my ($accession, @rest) = split /,/, $header;
+    my ($accession, $description) = split /\|/, $header;
 
     # make sequence into one long string
     $sequence =~ s/\n//g;
@@ -42,6 +42,7 @@ sub run {
     # build the xref object and store it
     $xref->{ACCESSION}     = $accession;
     $xref->{LABEL}         = $accession;
+    $xref->{DESCRITPION}   = $description;
     $xref->{SEQUENCE}      = $sequence;
     $xref->{SOURCE_ID}     = $source_id;
     $xref->{SPECIES_ID}    = $species_id;
