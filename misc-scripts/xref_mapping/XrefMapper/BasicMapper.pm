@@ -700,6 +700,7 @@ sub run_mapping {
       $method_query_threshold{$method} = $obj->query_identity_threshold();
       $method_target_threshold{$method} = $obj->target_identity_threshold();
 
+
       if (!defined($self->use_existing_mappings)) {
 	my $job_name = $obj->run($queryfile, $targetfile, $self->core->dir());
 	push @job_names, $job_name;
@@ -710,8 +711,10 @@ sub run_mapping {
 
   } # foreach method
 
+
   if (!defined($self->use_existing_mappings)) {
     # submit depend job to wait for all mapping jobs
+
     submit_depend_job($self->core->dir, @job_names);
   }
   $self->check_err($self->core->dir); 
@@ -2032,8 +2035,6 @@ sub map_source_to_external_db {
 sub cleanup_sources_file{
   my ($self,$id) = @_;
 
-
-
   $updated_source{$id} =1;
 
   my $dir = $self->core->dir();
@@ -2547,7 +2548,12 @@ sub compare_xref_descriptions {
 
 sub gene_description_sources {
 
-  return ("RefSeq_dna_predicted", "RefSeq_peptide_predicted", "Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/SWISSPROT");
+  return ("RefSeq_dna_predicted",
+	  "RefSeq_peptide_predicted",
+	  "Uniprot/SPTREMBL",
+	  "RefSeq_dna",
+	  "RefSeq_peptide",
+	  "Uniprot/SWISSPROT");
 
 }
 
