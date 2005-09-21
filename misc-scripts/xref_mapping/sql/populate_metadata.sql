@@ -97,6 +97,10 @@ INSERT INTO source VALUES (2801, "Uniprot/SWISSPROT_predicted", 1, 'N',1);
 INSERT INTO source VALUES (2802, "Uniprot/SPTREMBL_predicted", 1, 'N',1);
 INSERT INTO source VALUES (2810, "EMBL_predicted", 1, 'N',1);
 INSERT INTO source VALUES (2840, 'protein_id_predicted', 1, 'N', 2);
+INSERT INTO source VALUES (2850, "Celera_Gene", 1, 'Y', 3);
+INSERT INTO source VALUES (2852, "Celera_Pep", 1, 'Y', 3);
+INSERT INTO source VALUES (2854, "Celera_Trans", 1, 'Y', 3);
+INSERT INTO source VALUES (2856, "Anopheles_symbol", 1, 'Y', 3);
 
 ################################################################################
 # Files to fetch data from
@@ -549,10 +553,18 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2,7165,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz',now(),now(),'UniProtParser');
 
+# Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300,7165,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz',now(),now(),'InterproParser');
 
+# Unigene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (6,7165,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Anopheles_gambiae/Aga.seq.uniq.gz  ftp://ftp.ncbi.nih.gov/repository/UniGene/Anopheles_gambiae/Aga.data.gz',now(),now(),'UniGeneParser');
 
+# Celera
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2852, 7165,'/Celera_Pep/consensus-proteins_xref.fasta', now(), now(), "CeleraProteinParser");
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2854, 7165,'/Celera_trans/consensus-transcripts_xref.fasta', now(), now(), "CeleraTranscriptParser");
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2856, 7165,'/Anopheles_symbol/GeneName_translation_UniqID.txt', now(), now(), "AnophelesSymbolParser");
 
 # --------------------------------------------------------------------------------
 
