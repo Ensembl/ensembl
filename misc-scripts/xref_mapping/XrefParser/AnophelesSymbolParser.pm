@@ -42,7 +42,7 @@ sub run {
     # build the xref object and store it
     $xref->{ACCESSION}     = $accession;
     $xref->{LABEL}         = $accession;
-    $xref->{DESCRITPION}   = $description;
+    $xref->{DESCRIPTION}   = $description;
     $xref->{SEQUENCE}      = $sequence;
     $xref->{SOURCE_ID}     = $source_id;
     $xref->{SPECIES_ID}    = $species_id;
