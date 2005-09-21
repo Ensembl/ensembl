@@ -23,14 +23,15 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %name2species_id;
 
-my ($host, $port, $dbname, $user, $pass, $create, $release, $cleanup);
+my ($host, $port, $dbname, $user, $pass, $create, $release, $cleanup, $deletedownloaded);
 my ($skipdownload,$drop_db) ;
 
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
 
 sub run {
-  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $create, $release, $cleanup,$drop_db) = @_;
+
+  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $create, $release, $cleanup, $drop_db, $deletedownloaded) = @_;
 
   my @species = @$speciesr;
   my @sources = @$sourcesr;
@@ -118,13 +119,17 @@ sub run {
       # File parsing
       if (!$skipdownload) {
 
-	rmtree $dir if ($type ne $last_type);
+	rmtree $dir if ($type ne $last_type && $deletedownloaded);
 	mkdir $dir if (!-e $dir);
 
 	$last_type = $type;
 
 	$file =~ s/[&=]//g;
-	warn "$file in longer than 256 charcters" if(length($file) > 256);
+	if (length($file) > 100) {
+	  $file = time;
+	  print"URL is longer than 100 charcters; renamed to $file\n";
+	}
+
 	print "Downloading $urls to $dir/$file\n";
    
 	my $result = system("wget", "--quiet","--directory-prefix=$dir", "--output-document=$dir/$file",  $urls );
@@ -609,7 +614,7 @@ sub md5sum {
   my $file = shift;
 
   unless (-e $file) {
-	print "\n\nOOOPS ! Can't find file $file - you have to download it again. \n\n" ; 
+	print "\n\nWarning: can't find file $file - you have to download it again. \n\n" ; 
         print " SKIPPING $file\n" ; 
         sleep(10) ; 	
 	return ; 
