@@ -1077,7 +1077,7 @@ sub dump_triage_data() {
   open (XREF, ">>" . $self->core->dir() . "/xref.txt");
   open (XREF_MISSED, ">" . $self->core->dir() . "/triage.txt");
 
-  foreach my $source ("%RefSeq%","UniProt%"){
+  foreach my $source ("%RefSeq%","UniProt%","Anopheles_symbol"){
     my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id from xref x, source s where s.name like '".$source."' and x.source_id = s.source_id";
     my $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
@@ -1104,7 +1104,7 @@ sub dump_triage_data() {
 	  else{
 	    die "type=*".$type."*\n".$failed_xref_mappings{$xref_id}."\n";
 	  }
-	  print XREF_MISSED " (".$t_perc."\%) which are below there respective cutoffs off $q_cut\% and $t_cut\%.\n";
+	  print XREF_MISSED " (".$t_perc."\%) which are below their respective cutoffs off $q_cut\% and $t_cut\%.\n";
 	}
 	else{
 	  print XREF_MISSED  ($xref_id+$xref_id_offset) . "\t$accession no match to Ensembl\n";
