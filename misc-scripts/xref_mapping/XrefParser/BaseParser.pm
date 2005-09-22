@@ -109,11 +109,22 @@ sub run {
 	print "Parsing $dsn with $parser\n";
         eval "require XrefParser::$parser";
         my $new = "XrefParser::$parser"->new();
-
         $new->run($dsn, $source_id, $species_id);
 	next;
       }
 
+      # Local files need to be dealt with specially; assume they are specified as
+      # LOCAL:location/of/file/relative/to/xref_mapper
+      if ($urls =~ /^LOCAL:(.*)/i) {
+	my $local_file = $1;
+	print "Parsing local file $local_file with $parser\n";
+        eval "require XrefParser::$parser";
+        my $new = "XrefParser::$parser"->new();
+        $new->run($local_file, $source_id, $species_id);
+	next;
+      }
+
+      # Download files
       my ($file) = $urls =~ /.*\/(.*)/;
 
       # File parsing
