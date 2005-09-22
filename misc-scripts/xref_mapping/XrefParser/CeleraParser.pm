@@ -21,6 +21,8 @@ sub run {
 
   my ($self, $file, $source_id, $species_id) = @_;
 
+  my $celera_gene_source_id = $self->get_source_id_for_source_name('Celera_Gene');
+
   my @xrefs;
 
   local $/ = "\n>";
@@ -36,7 +38,7 @@ sub run {
     my ($header, $sequence) = $_ =~ /^>?(.+?)\n([^>]*)/s or warn("Can't parse FASTA entry: $_\n");
 
     # deconstruct header - just use first part
-    my ($accession, @rest) = split /,/, $header;
+    my ($accession, $cg) = split /,/, $header;
 
     # make sequence into one long string
     $sequence =~ s/\n//g;
@@ -49,6 +51,17 @@ sub run {
     $xref->{SPECIES_ID}    = $species_id;
     $xref->{SEQUENCE_TYPE} = $self->get_sequence_type();
     $xref->{STATUS}        = 'experimental';
+
+    # pull cg_name from peptide files as well and create dependent xrefs
+    if ($self->get_sequence_type() =~ /peptide/) {
+      my ($cg_name) = $cg =~ /cg_name=(.*)/;
+      my %dep;
+      $dep{SOURCE_NAME} = 'Celera_Gene';
+      $dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
+      $dep{SOURCE_ID} = $celera_gene_source_id;
+      $dep{ACCESSION} = $cg_name;
+      push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
+    }
 
     push @xrefs, $xref;
 
