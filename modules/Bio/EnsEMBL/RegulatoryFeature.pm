@@ -148,8 +148,8 @@ sub name {
 =head2 regulated_transcripts
 
   Arg [1]    : none
-  Example    : my $transcipts = $rf->regulated_transcripts();
-  Description: Return a list of all transcripts that are regulated by 
+  Example    : my $transcripts = $rf->regulated_transcripts();
+  Description: Return a list of all transcripts that are regulated by
                this RegulatoryFeature.
   Returntype : listREF of Bio::EnsEMBL::RegulatoryFeatures
   Exceptions : none
@@ -184,6 +184,43 @@ sub regulated_transcripts {
 }
 
 
+=head2 regulated_genes
+
+  Arg [1]    : none
+  Example    : my $genes = $rf->regulated_genes();
+  Description: Return a list of all genes that are regulated by
+               this RegulatoryFeature.
+  Returntype : listREF of Bio::EnsEMBL::RegulatoryFeatures
+  Exceptions : none
+  Caller     : ?
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub regulated_genes {
+
+  my $self = shift;
+
+  my ($gene_id);
+
+  my $sth = $self->adaptor()->db()->dbc()->prepare("SELECT ensembl_object_id
+			                            FROM regulatory_feature_object
+			                            WHERE ensembl_object_type='Gene'
+			                            AND regulatory_feature_id=?");
+
+  $sth->execute($self->dbID());
+  $sth->bind_columns(\$gene_id);
+
+  my $gene_adaptor = $self->adaptor()->db()->get_GeneAdaptor();
+  my @genes;
+  while ($sth->fetch) {
+    push @genes, $gene_adaptor->fetch_by_dbID($gene_id);
+  }
+
+  return \@genes;
+
+}
 
 =head2 transcripts_regulated_by_same_factor
 
@@ -222,6 +259,49 @@ sub transcripts_regulated_by_same_factor {
   }
 
   my @tr = values %transcripts;
+
+  return \@tr;
+
+}
+
+
+=head2 genes_regulated_by_same_factor
+
+  Arg [1]    : none
+  Example    : my $transcipts = $rf->genes_regulated_by_same_factor();
+  Description: Return a list of all genes that are regulated by any
+               RegulatoryFeature with the same factor as this one. If a gene
+               is regulated by more than one feature, it will only appear
+               once in the returned list.
+  Returntype : listREF of Bio::EnsEMBL::RegulatoryFeatures
+  Exceptions : none
+  Caller     : ?
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub genes_regulated_by_same_factor {
+
+  my $self = shift;
+
+
+  # fetch all regulatory features by factor
+  my $features = $self->adaptor()->fetch_all_by_factor($self->factor());
+
+  # build cumulative list of genes, removing duplicates
+  my %genes;
+  foreach my $feature (@$features) {
+    foreach my $feature_gene (@{$feature->regulated_genes()}) {
+      bless $feature_gene, "Bio::EnsEMBL::Gene";
+      if (!exists($genes{$feature_gene->dbID()})) {
+	$genes{$feature_gene->dbID()} = $feature_gene;
+      }
+    }
+
+  }
+
+  my @tr = values %genes;
 
   return \@tr;
 
