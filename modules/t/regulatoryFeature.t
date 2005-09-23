@@ -4,7 +4,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 9;
+	plan tests => 12;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -65,5 +65,11 @@ ok(@{$rf1->regulated_transcripts()} == 1);
 # 10 check get_transcripts_regulated_by_same_factor
 ok(@{$rf1->transcripts_regulated_by_same_factor()} == 1);
 
+# 11 check retrieving regulated genes
+my $rf2 = $rfa->fetch_by_dbID(40);
+ok(@{$rf2->regulated_genes()} == 1);
+
+# 12 check get_genes_regulated_by_same_factor
+ok(@{$rf2->genes_regulated_by_same_factor()} == 2);
 
 
