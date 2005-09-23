@@ -253,9 +253,11 @@ sub check_version{
 
   # Check the datbase and versions match
   # give warning if they do not.
-  my $mca = $dba->get_MetaContainerAdaptor();
-  my $database_version = $mca->get_schema_version();
-  
+  my $mca = $reg->get_adaptor($dba->species(),$dba->group(),"MetaContainer");
+  my $database_version = 0;
+  if(defined($mca)){
+    $database_version = $mca->get_schema_version();
+  }
   if($database_version == 0){
     #try to work out the version
     if($dba->dbc->dbname() =~ /^_test_db_/){
