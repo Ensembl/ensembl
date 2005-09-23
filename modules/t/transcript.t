@@ -4,7 +4,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 138;
+	plan tests => 139;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -609,7 +609,11 @@ sub test_trans_mapper_edits {
   print_coords(\@coords);
 }
 
-
+# test getting coded-for regualtory factors
+my $transcript_adaptor = $db->get_TranscriptAdaptor();
+my $transcript = $transcript_adaptor->fetch_by_dbID(21717);
+my @factors = @{$transcript->fetch_coded_for_regulatory_factors()};
+ok($factors[0]->dbID() == 2);
 
 
 
