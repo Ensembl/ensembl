@@ -1,5 +1,5 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::RegulatoryMotifAdaptor
+# EnsEMBL module for Bio::EnsEMBL::DBSQL::RegulatoryFactorAdaptor
 #
 # Copyright EMBL/EBI
 #
@@ -15,9 +15,9 @@ Bio::EnsEMBL::DBSQL::RegulatoryFactorAdaptor
 
 $rma = $database_adaptor->get_RegulatoryFactorAdaptor();
 
-$regulatory_factor = $rma->fetch_by_dbID(132);
-$regulatory_factor = $rma->fetch_by_name('Factor1');
-@regulatory_factors = $rma->fetch_all_by_type("promoter");
+$regulatory_factor = $rfa->fetch_by_dbID(132);
+$regulatory_factor = $rfa->fetch_by_name('Factor1');
+@regulatory_factors = $rfa->fetch_all_by_type("transcription_factor");
 
 $rma->store($rm1, $rm2, $rm3);
 
@@ -149,8 +149,9 @@ sub _generic_fetch {
     my @factors;
     while ($sth->fetch) {
         push @factors, Bio::EnsEMBL::RegulatoryFactor->new(-DBID => $regulatory_factor_id,
-							 -NAME => $name,
-							 -TYPE => $type);
+							   -NAME => $name,
+							   -TYPE => $type,
+							   -ADAPTOR => $self);
       }
     return \@factors;
 }
