@@ -190,6 +190,88 @@ sub store {
   }
 }
 
+
+=head2 fetch_factors_coded_for_by_gene
+
+  Arg [1]    : Bio::EnsEMBL::Gene 
+  Example    : $rfa->fetch_factors_coded_for_by_gene($gene)
+  Description: Fetches any regulatory_factors that are coded for by a particular gene
+  Returntype : Listref of Bio::Ensembl::RegulatoryFactor
+  Exceptions : 
+  Caller     : ?
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub fetch_factors_coded_for_by_gene {
+
+  my ($self, $gene) = @_;
+
+  if (!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+    throw('Expected Bio::Ensembl::Gene argument not [' . ref($gene) .'].');
+  }
+
+  my @factors;
+
+  my ($factor_id);
+
+  my $sth = $self->db()->dbc()->prepare("SELECT regulatory_factor_id
+			                 FROM regulatory_factor_coding
+			                 WHERE gene_id=?");
+
+  $sth->execute($gene->dbID());
+  $sth->bind_columns(\$factor_id);
+
+  while ($sth->fetch) {
+    push @factors, $self->fetch_by_dbID($factor_id);
+  }
+
+  return \@factors;
+
+}
+
+
+=head2 fetch_factors_coded_for_by_transcript
+
+  Arg [1]    : Bio::EnsEMBL::Transcript 
+  Example    : $rfa->fetch_factors_coded_for_by_transcript($transcript)
+  Description: Fetches any regulatory_factors that are coded for by a particular transcript
+  Returntype : Listref of Bio::Ensembl::RegulatoryFactor
+  Exceptions : 
+  Caller     : ?
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub fetch_factors_coded_for_by_transcript {
+
+  my ($self, $transcript) = @_;
+
+  if (!ref($transcript) || !$transcript->isa('Bio::EnsEMBL::Transcript')) {
+    throw('Expected Bio::Ensembl::Transcript argument not [' . ref($transcript) .'].');
+  }
+
+  my @factors;
+
+  my ($factor_id);
+
+  my $sth = $self->db()->dbc()->prepare("SELECT regulatory_factor_id
+			                 FROM regulatory_factor_coding
+			                 WHERE transcript_id=?");
+
+  $sth->execute($transcript->dbID());
+  $sth->bind_columns(\$factor_id);
+
+  while ($sth->fetch) {
+    push @factors, $self->fetch_by_dbID($factor_id);
+  }
+
+  return \@factors;
+
+}
+
 1;
 
 __END__
