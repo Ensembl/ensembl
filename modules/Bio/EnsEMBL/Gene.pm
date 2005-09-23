@@ -1142,5 +1142,27 @@ sub chr_name {
   }
 }
 
+=head2 fetch_coded_for_regulatory_factors
+
+  Arg [1]    : none
+  Example    : $gene->fetch_coded_for_regualtory_factors()
+  Description: Fetches any regulatory_factors that are coded for by this gene
+  Returntype : Listref of Bio::Ensembl::RegulatoryFactor
+  Exceptions :
+  Caller     : ?
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub fetch_coded_for_regulatory_factors {
+
+  my ($self) = @_;
+
+  my $rfa = $self->adaptor->db->get_RegulatoryFactorAdaptor();
+
+  return $rfa->fetch_factors_coded_for_by_gene($self);
+
+}
 
 1;
