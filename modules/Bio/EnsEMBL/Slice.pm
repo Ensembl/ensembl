@@ -1,4 +1,3 @@
-#
 # Ensembl module for Bio::EnsEMBL::Slice
 #
 #
@@ -1571,7 +1570,7 @@ sub get_all_Genes{
 	 eval{
 	     $ga = $adaptor->get_GeneAdaptor();
 	 };
-	 if (defined $ga){
+	 if (! $@){
 	     my $genes = $ga->fetch_all_by_Slice($self, $logic_name, $load_transcripts);
 	     push @{$gene_ref}, @{$genes};
 	 }
@@ -1675,7 +1674,7 @@ sub get_all_Transcripts {
 	   eval{
 	       $ta = $adaptor->get_TranscriptAdaptor();
 	   };
-	   if (defined $ta){
+	   if (!$@){
 	       my $transcripts = $ta->fetch_all_by_Slice($self, $load_exons);
 	       push @{$transcript_ref}, @{$transcripts};
 	   }
@@ -1734,7 +1733,7 @@ sub get_all_Exons {
 	  eval{
 	      $ea = $adaptor->get_ExonAdaptor();
 	  };
-	  if (defined $ea){
+	  if (! $@){
 	      my $exons = $ea->fetch_all_by_Slice($self);
 	      push @{$exon_ref}, @{$exons};
 	  }
