@@ -115,7 +115,7 @@ sub parse_common_options {
     );
 
     # reads config file
-    my $conffile = $h{'conffile'} || $self->serverroot . "/conf/Conversion.ini";
+    my $conffile = $h{'conffile'} || $self->serverroot . "/sanger-plugins/vega/conf/ini-files/Conversion.ini";
     $conffile = abs_path($conffile);
     if (-e $conffile) {
         open(CONF, $conffile) or throw( 
