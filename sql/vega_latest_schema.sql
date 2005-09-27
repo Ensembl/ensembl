@@ -75,23 +75,27 @@ UPDATE transcript SET description=NULL WHERE description="";
 # usefull settings for the new tables
 
 UPDATE gene SET source = 'vega';
-UPDATE gene g, xref x, external_db ed SET g.confidence='KNOWN' WHERE g.display_xref_id = x.xref_id and x.external_db_id = ed.external_db_id and g.display_xref_id != 0 and ed.status like 'KNOWN%';
-UPDATE transcript t, xref x, external_db ed SET t.confidence='KNOWN' WHERE t.display_xref_id = x.xref_id and x.external_db_id = ed.external_db_id and t.display_xref_id != 0 and ed.status like 'KNOWN%';
 
-# some vega specific stuff, shouldnt harm anybody else
+#########################################################################################################
+# may well want to update confidence for genes and transcripts based on source of the xref, but not yet #
+
+#UPDATE gene g, xref x, external_db ed SET g.confidence='KNOWN' WHERE g.display_xref_id = x.xref_id and x.external_db_id = ed.external_db_id and g.display_xref_id != 0 and ed.status like 'KNOWN%';
+#UPDATE transcript t, xref x, external_db ed SET t.confidence='KNOWN' WHERE t.display_xref_id = x.xref_id and x.external_db_id = ed.external_db_id and t.display_xref_id != 0 and ed.status like 'KNOWN%';
+
+# HAWK -> biotype conversions
 
 UPDATE gene SET biotype='unclassified' WHERE biotype = 'Transcript';
-UPDATE gene SET biotype='pseudogene' WHERE biotype = 'Pseudogene';
+UPDATE gene SET biotype='pseudogene', confidence='NOVEL' WHERE biotype = 'Pseudogene';
 UPDATE gene SET biotype='protein_coding', confidence='NOVEL' WHERE biotype = 'Novel_CDS';
-UPDATE gene SET biotype='unclassified', confidence='NOVEL' WHERE biotype = 'Novel_Transcript';
-UPDATE gene SET biotype='unclassified',confidence='PUTATIVE' WHERE biotype = 'Putative';
+UPDATE gene SET biotype='processed_transcript', confidence='NOVEL' WHERE biotype = 'Novel_Transcript';
+UPDATE gene SET biotype='processed_transcript',confidence='PUTATIVE' WHERE biotype = 'Putative';
 UPDATE gene SET biotype='protein_coding', confidence='KNOWN' WHERE biotype = 'Known';
 
-UPDATE gene SET biotype='processed_pseudogene' WHERE biotype = 'Processed_pseudogene';
-UPDATE gene SET biotype='unprocessed_pseudogene' WHERE biotype = 'Unprocessed_pseudogene';
+UPDATE gene SET biotype='processed_pseudogene', confidence='NOVEL' WHERE biotype = 'Processed_pseudogene';
+UPDATE gene SET biotype='unprocessed_pseudogene', confidence='NOVEL' WHERE biotype = 'Unprocessed_pseudogene';
 UPDATE gene SET biotype='protein_coding',confidence='PREDICTED' WHERE biotype = 'Predicted_Gene';
-UPDATE gene SET biotype='Ig_segment' WHERE biotype = 'Ig_Segment';
-UPDATE gene SET biotype='Ig_pseudogene_segment' WHERE biotype = 'Ig_Pseudogene_Segment';
+UPDATE gene SET biotype='Ig_segment', confidence='NOVEL' WHERE biotype = 'Ig_Segment';
+UPDATE gene SET biotype='Ig_pseudogene_segment', confidence='NOVEL' WHERE biotype = 'Ig_Pseudogene_Segment';
 
 UPDATE gene SET biotype=replace( biotype, '-','_' );
 
@@ -201,3 +205,29 @@ CREATE TABLE regulatory_factor_transcript (
 
 # Add db_display_name column to external_db
 ALTER TABLE external_db ADD COLUMN db_display_name VARCHAR(255);
+
+########################
+# FROM patch_33_34.sql #
+########################
+
+ALTER table object_xref MODIFY ensembl_object_type ENUM( 'RawContig', 'Transcript', 'Gene', 'Translation', 'regulatory_factor', 'regulatory_feature' ) not null;
+
+DROP TABLE regulatory_factor_transcript;
+
+CREATE TABLE regulatory_factor_coding (
+
+  regulatory_factor_id  INT NOT NULL,      # FK to regulatory_factor
+  transcript_id         INT,               # FK to transcript
+  gene_id         	INT,               # FK to gene
+
+  KEY transcript_idx (transcript_id),
+  KEY gene_idx (gene_id),
+  KEY regulatory_factor_idx (regulatory_factor_id)
+
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
+alter table transcript change confidence status  enum( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' );
+alter table gene change confidence status  enum( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' );
+
+#set schema version
+update meta set meta_value = '34' where meta_key = 'schema_version';
