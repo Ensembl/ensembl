@@ -854,7 +854,7 @@ sub load_registry_from_db{
   my @dbnames = map {$_->[0] } @$res;
   
   my %temp;
-  my $software_version = Bio::EnsEMBL::Utils::ConfigRegistry->software_version;
+  my $software_version = $self->software_version;
   print "Will only load $software_version databases\n" if ($verbose);
   for my $db (@dbnames){
     if($db =~ /^([a-z]+_[a-z]+_[a-z]+)_(\d+)_(\d+[a-z]*)/){
