@@ -45,8 +45,6 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump);
 
-my $SOFTWARE_VERSION = 34;
-
 =head2 load_core, load_estgene, load_vega, load_compara, load_pipeline, load_SNP, load_lite
   Arg [1]    : DBAdaptor with DBConnection alredy attached
   Returntype : DBAdaptor;
@@ -59,10 +57,6 @@ my $SOFTWARE_VERSION = 34;
 # 2) not core add dnadb
 # 3) 
 #
-
-sub software_version{
-  return $SOFTWARE_VERSION;
-}
 
 
 sub gen_load{
@@ -246,40 +240,11 @@ sub load_and_attach_dnadb_to_core{
   $reg->add_DNAAdaptor($dba->species,$dba->group,$dba->species,"core"); 
 }
 
-# those that do not need to attach to core:-#
-
-sub check_version{
-  my ($dba) = @_;
-
-  # Check the datbase and versions match
-  # give warning if they do not.
-  my $mca = $reg->get_adaptor($dba->species(),$dba->group(),"MetaContainer");
-  my $database_version = 0;
-  if(defined($mca)){
-    $database_version = $mca->get_schema_version();
-  }
-  if($database_version == 0){
-    #try to work out the version
-    if($dba->dbc->dbname() =~ /^_test_db_/){
-      return;
-    }
-    if($dba->dbc->dbname() =~ /\S+_\S+_\S+_(\d+)_\S+/){
-      $database_version = $1;
-    }
-    else{
-      warn("No database version for database ".$dba->dbc->dbname().". You must be using as pre version 34 database with version 34 or later code. You need to update your database or use the appropriate ensembl software release to ensure your script does not crash\n");
-    }
-  }
-  if($database_version != $SOFTWARE_VERSION){
-    warn("For ".$dba->dbc->dbname()." there is a difference in the software release (".$SOFTWARE_VERSION.") and the database release (".$database_version."). You should change one of these to ensure your script does not crash.\n");
-  }
-}
 
 sub load_core{
   my ($dba) = @_;
 
   load_adaptors($dba);
-  check_version($dba);
 }
 
 sub load_compara{

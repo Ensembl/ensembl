@@ -108,6 +108,8 @@ use DBI;
 
 use vars qw(%registry_register);
 
+my $API_VERSION = 34;
+
 
 =head2 load_all
 
@@ -579,6 +581,10 @@ sub get_adaptor{
     if($@) {
       warning("$module cannot be found.\nException $@\n");
       return undef;
+    }
+    if(!defined($registry_register{$species}{lc($group)}{'CHECKED'})){
+      $registry_register{$species}{lc($group)}{'CHECKED'} = 1;
+      $class->version_check($dba);
     }
     my $adap = "$module"->new($dba);
     Bio::EnsEMBL::Registry->add_adaptor($species, $group, $type, $adap, "reset");
@@ -1101,6 +1107,40 @@ sub add_new_tracks{
   }
   return $pos;
 
+}
+
+sub software_version{
+  return $API_VERSION;
+}
+
+sub version_check{
+  my ($self, $dba) = @_;
+
+  # Check the datbase and versions match
+  # give warning if they do not.
+  if(-e $ENV{HOME}."/.ensemblapi_no_version_check"){
+    return;
+  }
+  my $mca = $self->get_adaptor($dba->species(),$dba->group(),"MetaContainer");
+  my $database_version = 0;
+  if(defined($mca)){
+    $database_version = $mca->get_schema_version();
+  }
+  if($database_version == 0){
+    #try to work out the version
+    if($dba->dbc->dbname() =~ /^_test_db_/){
+      return;
+    }
+    if($dba->dbc->dbname() =~ /\S+_\S+_\S+_(\d+)_\S+/){
+      $database_version = $1;
+    }
+    else{
+      warn("No database version for database ".$dba->dbc->dbname().". You must be using as pre version 34 database with version 34 or later code. You need to update your database or use the appropriate ensembl software release to ensure your script does not crash\n");
+    }
+  }
+  if($database_version != $API_VERSION){
+    warn("For ".$dba->dbc->dbname()." there is a difference in the software release (".$API_VERSION.") and the database release (".$database_version."). You should change one of these to ensure your script does not crash.\n");
+  }
 }
 
 
