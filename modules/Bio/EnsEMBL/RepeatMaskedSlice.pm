@@ -58,6 +58,11 @@ use vars qw(@ISA);
 
 @ISA = ('Bio::EnsEMBL::Slice');
 
+# The BLOCK_PWR is the lob_bin of the chunksize where you want your repeat features
+# to be retreived. This will create repeat feature retrieval calls that are likely 
+# to be on the same slice and hopefully create cache hits and less database traffic
+my $BLOCK_PWR = 18;
+
 
 
 =head2 new
@@ -260,15 +265,22 @@ sub subseq {
   my $soft_mask   = $self->soft_mask();
   my $not_default_masking_cases = $self->not_default_masking_cases;
 
-  # We want the repeat coordinates to be relative to the beginning of the
-  # subregion requested and we only want the ones in the subregion.
-  # Create a slice of the subregion to retrieve these with.
-  my $left_expand  = 1 - $start;  # a negative expansion is a contraction
-  my $right_expand = $end - $self->length();
 
-  my $subslice = $self->expand($left_expand, $right_expand);
+  # If frequent subseqs happen on repeatMasked sequence this results in
+  # a lot of feature retrieval from the database. To avoid this, features
+  # are only retrieved from subslices with fixed space boundaries. 
+  # The access happens in block to make cache hits more likely
+
+  # The blocksize can be defined on the top of this module.
+
+  my $seq_region_slice = $self->seq_region_Slice();
+  my $block_min = ($self->start()-1) >> $BLOCK_PWR;
+  my $block_max = ($self->end()-1) >> $BLOCK_PWR;
 
   my $repeats = [];
+
+  my $subslice = $seq_region_slice->sub_Slice( ($block_min << $BLOCK_PWR)+1,
+						(($block_max+1)<<$BLOCK_PWR ));
 
   foreach my $l (@$logic_names) {
     push @{$repeats}, @{$subslice->get_all_RepeatFeatures($l)};
@@ -277,15 +289,12 @@ sub subseq {
   #
   # get the dna
   #
-  my $dna = $self->SUPER::subseq($start, $end, 1 );
-
+  my $subsequence_slice = $self->sub_Slice( $start, $end, $strand );
+  my $dna = $subsequence_slice->seq();
   #
   # mask the dna
   #
-  $self->_mask_features(\$dna,$repeats,$soft_mask,$not_default_masking_cases);
-  if( $strand && $strand == -1 ) {
-    reverse_comp( \$dna );
-  }
+  $subsequence_slice->_mask_features(\$dna,$repeats,$soft_mask,$not_default_masking_cases);
 
   return $dna;
 }

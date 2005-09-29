@@ -1799,14 +1799,15 @@ sub _mask_features {
   # length method
   my $dnalen = CORE::length($$dnaref);
 
- REP:foreach my $f (@{$repeats}) {
+ REP:foreach my $old_f (@{$repeats}) {
+    my $f = $old_f->transfer( $self );
     my $start  = $f->start;
     my $end    = $f->end;
     my $length = ($end - $start) + 1;
 
     # check if we get repeat completely outside of expected slice range
     if ($end < 1 || $start > $dnalen) {
-      warning("Unexpected: Repeat completely outside slice coordinates.");
+      # warning("Unexpected: Repeat completely outside slice coordinates.");
       next REP;
     }
 
