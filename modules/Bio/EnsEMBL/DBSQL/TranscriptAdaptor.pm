@@ -102,7 +102,7 @@ sub _columns {
 	     t.seq_region_strand t.gene_id 
              t.display_xref_id tsi.stable_id tsi.version UNIX_TIMESTAMP(created_date)
              UNIX_TIMESTAMP(modified_date) t.description t.biotype t.status
-             x.display_label exdb.db_name exdb.status );
+             x.display_label exdb.db_name exdb.status exdb.db_display_name);
 }
 
 
@@ -1013,15 +1013,13 @@ sub _objs_from_sth {
        $seq_region_strand, $gene_id,  
        $display_xref_id, $stable_id, $version, $created_date, $modified_date,
        $description, $biotype, $status,
-       $external_name, $external_db, $external_status );
+       $external_name, $external_db, $external_status, $external_db_name );
 
-  $sth->bind_columns( \$transcript_id, \$seq_region_id, \$seq_region_start, 
+  $sth->bind_columns( \$transcript_id, \$seq_region_id, \$seq_region_start,
                       \$seq_region_end, \$seq_region_strand, \$gene_id,  
                       \$display_xref_id, \$stable_id, \$version, \$created_date, \$modified_date,
 		      \$description, \$biotype, \$status,
-                      \$external_name, \$external_db, \$external_status );
-
-
+                      \$external_name, \$external_db, \$external_status, \$external_db_name );
 
   my $asm_cs;
   my $cmp_cs;
@@ -1142,6 +1140,7 @@ sub _objs_from_sth {
         ({ 'dbID' => $display_xref_id,
            'adaptor' => $dbEntryAdaptor,
            'display_id' => $external_name,
+           'db_display_name' => $external_db_name,
            'dbname' => $external_db});
     }
 				
@@ -1161,6 +1160,7 @@ sub _objs_from_sth {
         '-external_name' =>  $external_name,
         '-external_db'   =>  $external_db,
         '-external_status' => $external_status,
+        '-external_display_name' => $external_db_name, 
         '-display_xref'  => $display_xref,
 	'-description'   => $description,
 	'-biotype'       => $biotype,
@@ -1189,6 +1189,7 @@ sub get_display_xref {
 
   my $sth = $self->prepare("SELECT e.db_name,
                                    x.display_label,
+                                   e.db_external_name,
                                    x.xref_id
                             FROM   transcript t, 
                                    xref x, 
@@ -1200,7 +1201,7 @@ sub get_display_xref {
   $sth->execute( $transcript->dbID );
 
 
-  my ($db_name, $display_label, $xref_id ) = $sth->fetchrow_array();
+  my ($db_name, $display_label, $xref_id, $display_db_name ) = $sth->fetchrow_array();
   if( !defined $xref_id ) {
     return undef;
   }
@@ -1211,6 +1212,7 @@ sub get_display_xref {
      -adaptor => $self->db->get_DBEntryAdaptor(),
      -dbname => $db_name,
      -display_id => $display_label
+     -db_display_name => $display_db_name
     );
 
   return $db_entry;

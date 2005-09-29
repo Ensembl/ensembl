@@ -112,7 +112,7 @@ sub new {
 
   my ( $exons, $stable_id, $version, $external_name, $external_db,
        $external_status, $display_xref, $created_date, $modified_date,
-       $description, $biotype, $confidence, $status  );
+       $description, $biotype, $confidence, $external_db_name, $status );
 
   #catch for old style constructor calling:
   if((@_ > 0) && ref($_[0])) {
@@ -124,11 +124,11 @@ sub new {
   else {
     ( $exons, $stable_id, $version, $external_name, $external_db,
       $external_status, $display_xref, $created_date, $modified_date,
-      $description, $biotype, $status ) = 
+      $description, $biotype, $confidence, $external_db_name, $status ) = 
         rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
                      'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
 		     'CREATED_DATE', 'MODIFIED_DATE', 'DESCRIPTION',
-		     'BIOTYPE', 'CONFIDENCE', 'STATUS' ], @_ );
+		     'BIOTYPE', 'CONFIDENCE', 'EXTERNAL_DB_NAME', 'STATUS' ], @_ );
   }
 
   if( $exons ) {

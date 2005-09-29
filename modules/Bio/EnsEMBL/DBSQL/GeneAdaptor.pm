@@ -97,7 +97,7 @@ sub _columns {
 	     gsi.stable_id gsi.version UNIX_TIMESTAMP(gsi.created_date)
 	     UNIX_TIMESTAMP(gsi.modified_date) 
 	     x.display_label x.dbprimary_acc x.description x.version 
-	     exdb.db_name exdb.status exdb.release );
+	     exdb.db_name exdb.status exdb.release,exdb.db_display_name );
 }
 
 
@@ -1123,7 +1123,7 @@ sub _objs_from_sth {
        $gene_description, $stable_id, $version, $created_date, 
        $modified_date, $xref_display_id, $status, $source, 
        $xref_primary_acc, $xref_desc, $xref_version, $external_name, 
-       $external_db, $external_status, $external_release );
+       $external_db, $external_status, $external_release, $external_db_name );
 
   $sth->bind_columns( \$gene_id, \$seq_region_id, \$seq_region_start,
           \$seq_region_end, \$seq_region_strand, \$analysis_id, \$biotype,
@@ -1132,7 +1132,7 @@ sub _objs_from_sth {
           \$created_date, \$modified_date, 
 	  \$xref_display_id, \$xref_primary_acc, \$xref_desc, \$xref_version,
           \$external_db, \$external_status,
-          \$external_release );
+          \$external_release, \$external_db_name );
 
   my $asm_cs;
   my $cmp_cs;
@@ -1243,7 +1243,8 @@ sub _objs_from_sth {
            'version'    => $xref_version,
            'description' => $xref_desc,
            'release' => $external_release,
-           'dbname' => $external_db
+           'dbname' => $external_db,
+           'db_display_name' => $external_db_name,
          });
       $display_xref->status( $external_status );
     }				
