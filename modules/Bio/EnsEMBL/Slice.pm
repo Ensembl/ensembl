@@ -1571,8 +1571,10 @@ sub get_all_Genes{
 	     $ga = $adaptor->get_GeneAdaptor();
 	 };
 	 if (! $@){
-	     my $genes = $ga->fetch_all_by_Slice($self, $logic_name, $load_transcripts);
-	     push @{$gene_ref}, @{$genes};
+	     if ($ga->db->species eq $self->adaptor->db->species){
+	       my $genes = $ga->fetch_all_by_Slice($self, $logic_name, $load_transcripts);
+	       push @{$gene_ref}, @{$genes};
+	     }
 	 }
      }
      return $gene_ref;
@@ -1672,13 +1674,16 @@ sub get_all_Transcripts {
        my $transcript_ref; #list of transcripts for all databases in the registry      
        foreach my $adaptor (@adaptors){
 	   eval{
-	       $ta = $adaptor->get_TranscriptAdaptor();
+	     $ta = $adaptor->get_TranscriptAdaptor();
 	   };
 	   if (!$@){
+	     if ($ta->db->species eq $self->adaptor->db->species){
 	       my $transcripts = $ta->fetch_all_by_Slice($self, $load_exons);
 	       push @{$transcript_ref}, @{$transcripts};
+	     }
 	   }
-       }
+	   
+	 }
       return $transcript_ref;
   }
 
@@ -1734,8 +1739,10 @@ sub get_all_Exons {
 	      $ea = $adaptor->get_ExonAdaptor();
 	  };
 	  if (! $@){
-	      my $exons = $ea->fetch_all_by_Slice($self);
-	      push @{$exon_ref}, @{$exons};
+	     if (ea->db->species eq $self->adaptor->db->species){
+	       my $exons = $ea->fetch_all_by_Slice($self);
+	       push @{$exon_ref}, @{$exons};
+	    }
 	  }
       }
       return $exon_ref;
