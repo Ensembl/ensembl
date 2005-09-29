@@ -37,11 +37,41 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw(deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(deprecate warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 # new() is inherited from Bio::EnsEMBL::DBSQL::BaseAdaptor
+
+=head2 get_schema_version
+
+  Arg [1]    : none
+  Example    : $schema_ver = $meta_container->get_schema_version();
+  Description: Retrieves the schema version from the database meta table
+  Returntype : int
+  Exceptions : none
+  Caller     : ?
+  Status     : Medium risk
+
+=cut
+
+sub get_schema_version {
+  my $self = shift;
+
+  my $arrRef = $self->list_value_by_key( 'schema_version' );
+  
+  if( @$arrRef ) {
+    my ($ver) = ($arrRef->[0] =~ /^\s*(\d+)\s*$/);
+    if(!defined($ver)){ # old style format
+      return 0;
+    }
+    return $ver;
+  } else {
+    warning("Please insert meta_key 'schema_version' " .
+	    "in meta table at core db.\n");
+  }
+  return 0;
+}
 
 
 =head2 list_value_by_key

@@ -47,35 +47,6 @@ use Bio::Species;
 
 # add well known meta info get-functions below
 
-=head2 get_schema_version
-
-  Arg [1]    : none
-  Example    : $schema_ver = $meta_container->get_schema_version();
-  Description: Retrieves the schema version from the database meta table
-  Returntype : int
-  Exceptions : none
-  Caller     : ?
-  Status     : Medium risk
-
-=cut
-
-sub get_schema_version {
-  my $self = shift;
-
-  my $arrRef = $self->list_value_by_key( 'schema_version' );
-  
-  if( @$arrRef ) {
-    my ($ver) = ($arrRef->[0] =~ /^\s*(\d+)\s*$/);
-    if(!defined($ver)){ # old style format
-      return 0;
-    }
-    return $ver;
-  } else {
-    $self->warn("Please insert meta_key 'schema_version' " .
-		"in meta table at core db.\n");
-  }
-  return 0;
-}
 
 
 =head2 get_Species
