@@ -1739,7 +1739,7 @@ sub get_all_Exons {
 	      $ea = $adaptor->get_ExonAdaptor();
 	  };
 	  if (! $@){
-	     if (ea->db->species eq $self->adaptor->db->species){
+	     if ($ea->db->species eq $self->adaptor->db->species){
 	       my $exons = $ea->fetch_all_by_Slice($self);
 	       push @{$exon_ref}, @{$exons};
 	    }
