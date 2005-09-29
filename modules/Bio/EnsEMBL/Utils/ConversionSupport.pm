@@ -120,6 +120,7 @@ sub parse_common_options {
     if (-e $conffile) {
         open(CONF, $conffile) or throw( 
             "Unable to open configuration file $conffile for reading: $!");
+        my $serverroot = $self->serverroot;
         while (<CONF>) {
             chomp;
 
@@ -129,7 +130,13 @@ sub parse_common_options {
 
             # read options into internal parameter datastructure
             next unless (/(\w\S*)\s*=\s*(.*)/);
-            $self->param($1, $2);
+            my $name = $1;
+            my $val = $2;
+            if ($val =~ /\$SERVERROOT/) {
+                $val =~ s/\$SERVERROOT/$serverroot/g;
+                $val = abs_path($val);
+            }
+            $self->param($name, $val);
         }
         $self->param('conffile', $conffile);
     } else {
@@ -793,6 +800,42 @@ sub get_chrlength {
     }
 
     return \%chr;
+}
+
+=head2 get_ensembl_chr_mapping
+
+  Arg[1]      : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor $dba
+  Arg[2]      : (optional) String $version - coord_system version
+  Example     : my $ensembl_mapping = $support->get_ensembl_chr_mapping($dba);
+  Description : Gets a mapping between Vega chromosome names and their
+                equivalent Ensembl chromosomes.
+  Return type : Hashref - Vega name => Ensembl name
+  Exceptions  : thrown if not passing a Bio::EnsEMBL::DBSQL::DBAdaptor
+  Caller      : general
+
+=cut
+
+sub get_ensembl_chr_mapping {
+    my ($self, $dba, $version) = @_;
+    $dba ||= $self->dba;
+    throw("get_ensembl_chr_mapping should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n") unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
+
+    my $sa = $dba->get_SliceAdaptor;
+    my @chromosomes = map { $_->seq_region_name } 
+                            @{ $sa->fetch_all('chromosome', $version) };
+
+    my %chrs;
+    foreach my $chr (@chromosomes) {
+        my $sr = $sa->fetch_by_region('chromosome', $chr, undef, undef, undef, $version);
+        my ($ensembl_name_attr) = @{ $sr->get_all_Attributes('ensembl_name') };
+        if ($ensembl_name_attr) {
+            $chrs{$chr} = $ensembl_name_attr->value;
+        } else {
+            $chrs{$chr} = $chr;
+        }
+    }
+
+    return \%chrs;
 }
 
 =head2 get_taxonomy_id
