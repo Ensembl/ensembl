@@ -104,6 +104,7 @@ use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::ConfigRegistry;
 use DBI;
 
 use vars qw(%registry_register);
@@ -828,9 +829,9 @@ my $self = shift;
 				   -user => 'anonymous',
 				   -verbose => "1" );
 
-  Description: Will load the correct versions of the ensembl databases fro the
+  Description: Will load the correct versions of the ensembl databases for the
                software release it can find on a database instance into the 
-               registry.
+               registry. Also adds a set of standard aliases.
 
   Exceptions : None.
   Status     : Stable
@@ -848,13 +849,14 @@ sub load_registry_from_db{
   my $compara_version =0;
 
   $user ||= "ensro";
+  $port ||= 3306;
   my $db = DBI->connect( "DBI:mysql:host=$host;port=$port" , $user, $pass );
 
   my $res = $db->selectall_arrayref( "show databases" );
   my @dbnames = map {$_->[0] } @$res;
   
   my %temp;
-  my $software_version = $self->software_version;
+  my $software_version = $self->software_version();
   print "Will only load $software_version databases\n" if ($verbose);
   for my $db (@dbnames){
     if($db =~ /^([a-z]+_[a-z]+_[a-z]+)_(\d+)_(\d+[a-z]*)/){
@@ -991,6 +993,80 @@ sub load_registry_from_db{
   else{
     print "No go database found" if ($verbose);
   }
+
+  #hard coded aliases for the different species
+
+  my @aliases = ('chimp','PanTro1', 'Pan', 'P_troglodytes');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Pan_troglodytes",
+						 -alias => \@aliases);
+  
+  @aliases = ('elegans');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Caenorhabditis_elegans", 
+						 -alias => \@aliases);
+  
+  @aliases = ('tetraodon');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Tetraodon_nigroviridis",
+						 -alias => \@aliases);
+  
+  @aliases = ('H_Sapiens', 'homo sapiens', 'Homo_Sapiens', 'Homo', 'human', 'Hg17','ensHS', '9606');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Homo_sapiens",
+						 -alias => \@aliases);
+  
+  @aliases = ('M_Musculus', 'mus musculus', 'Mus_Musculus', 'Mus', 'mouse','Mm5','ensMM','10090');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Mus_musculus",
+						 -alias => \@aliases);
+  
+  @aliases = ('R_Norvegicus', 'rattus norvegicus', 'Rattus_Norvegicus', 'Rattus', 'rat', 'Rn3', '10116');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Rattus_norvegicus",
+                                               -alias => \@aliases);
+  
+  @aliases = ('F_Rubripes', 'fugu rubripes', 'Fugu_Rubripes', 'Fugu');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Fugu_rubripes",
+						 -alias => \@aliases);
+  
+  @aliases = ('G_Gallus', 'gallus gallus', 'Gallus_gallus', 'Chicken', 'GalGal2');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Gallus_Gallus",
+						 -alias => \@aliases);
+  
+  @aliases = ('D_Rerio', 'danio rerio', 'Danio_Rerio', 'Danio', 'zebrafish', 'zfish');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Danio_rerio",
+						 -alias => \@aliases);
+  
+  @aliases = ('X_Tropicalis', 'xenopus tropicalis','Xenopus_tropicalis', 'Xenopus');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Xenopus_tropicalis",
+						 -alias => \@aliases);
+  
+  @aliases = ('A_Gambiae', 'Anopheles Gambiae','Anopheles_gambiae', 'Anopheles','mosquito');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Anopheles_gambiae",
+						 -alias => \@aliases);
+  
+  @aliases = ('A_Mellifera', 'Apis Mellifera','Apis_mellifera', 'Apis', 'honeybee');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Apis_mellifera",
+						 -alias => \@aliases);
+  
+  @aliases = ('D_Melanogaster', 'drosophila melanogaster', 'Drosophila_melanogaster', 'drosophila', 'fly');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Drosophila_melanogaster",
+						 -alias => \@aliases);
+  
+  @aliases = ('S_Cerevisiae', 'Saccharomyces Cerevisiae', 
+	      'Saccharomyces_cerevisiae', 'Saccharomyces', 'yeast');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Saccharomyces_cerevisiae",
+						 -alias => \@aliases);
+
+  @aliases = ('C_Familiaris', 'Canis Familiaris', 
+	      'Canis_familiaris', 'Canis', 'dog');
+  
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Canis_familiaris",
+						 -alias => \@aliases);
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Ciona_intestinalis",
+						 -alias => ['ciona']);
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Bos_taurus",
+						 -alias => ['cow']);
+  @aliases = ('compara');
+  
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "multi",
+						 -alias => \@aliases);
+
   
 }
 
@@ -1109,17 +1185,60 @@ sub add_new_tracks{
 
 }
 
+=head2 software_version
+  
+  get the software version.
+  
+  Args       : none
+  ReturnType : int
+  Status     : At Risk
+  
+=cut
+  
 sub software_version{
+  my ($self) = @_;
   return $API_VERSION;
 }
+  
+=head2 no_version_check
+  
+  getter/setter for whether to run the version checking
+  
+  Arg[0]     : (optional) int
+  Returntype : int or undef if not set
+  Exceptions : none
+  Status     : At Risk.
 
+=cut
+  
+sub no_version_check {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) && ( $self->{'_no_version_check'} = $arg );
+  return $self->{'_no_version_check'};
+}
+
+  
+=head2 version_check
+  
+  run the database/API code version check for a DBAdaptor
+  
+  Arg[0]     : DBAdaptor to check
+  Returntype : int 1 if okay, 0 if not the same 
+  Exceptions : none
+  Status     : At Risk.
+
+=cut
+  
+  
 sub version_check{
   my ($self, $dba) = @_;
-
+  
   # Check the datbase and versions match
   # give warning if they do not.
-  if(-e $ENV{HOME}."/.ensemblapi_no_version_check"){
-    return;
+  my $check = no_version_check();
+  if(-e $ENV{HOME}."/.ensemblapi_no_version_check" or 
+     (defined($check) and ($check != 0))){
+    return 1;
   }
   my $mca = $self->get_adaptor($dba->species(),$dba->group(),"MetaContainer");
   my $database_version = 0;
@@ -1129,19 +1248,31 @@ sub version_check{
   if($database_version == 0){
     #try to work out the version
     if($dba->dbc->dbname() =~ /^_test_db_/){
-      return;
+      return 1;
     }
-    if($dba->dbc->dbname() =~ /\S+_\S+_\S+_(\d+)_\S+/){
+    if($dba->dbc->dbname() =~ /(\d+)_\S+$/){
+      $database_version = $1;
+    }
+    elsif($dba->dbc->dbname() =~ /ensembl_compara_(\d+)/){
+      $database_version = $1;
+    }
+    elsif($dba->dbc->dbname() =~ /ensembl_go_(\d+)/){
+      $database_version = $1;
+    }
+    elsif($dba->dbc->dbname() =~ /ensembl_help_(\d+)/){
       $database_version = $1;
     }
     else{
-      warn("No database version for database ".$dba->dbc->dbname().". You must be using as pre version 34 database with version 34 or later code. You need to update your database or use the appropriate ensembl software release to ensure your script does not crash\n");
+      warn("No database version for database ".$dba->dbc->dbname().". You must be using a pre version 34 database with version 34 or later code. You need to update your database or use the appropriate ensembl software release to ensure your script does not crash\n");
     }
   }
   if($database_version != $API_VERSION){
     warn("For ".$dba->dbc->dbname()." there is a difference in the software release (".$API_VERSION.") and the database release (".$database_version."). You should change one of these to ensure your script does not crash.\n");
+    return 0;
+  }
+  else {
+    return 1;
   }
 }
-
 
 1;
