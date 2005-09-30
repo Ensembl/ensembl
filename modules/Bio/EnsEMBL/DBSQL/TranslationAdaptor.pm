@@ -314,6 +314,10 @@ sub remove {
     return;
   }
 
+  # remove athe attributes associated with this translation
+  my $attrib_adp = $self->db->get_AttributeAdaptor;
+  $attrib_adp->remove_from_Translation($translation);
+
   # remove all xref associations to this translation
   my $dbe_adaptor = $self->db()->get_DBEntryAdaptor();
   foreach my $dbe (@{$translation->get_all_DBEntries()}) {

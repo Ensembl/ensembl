@@ -838,6 +838,36 @@ sub remove {
     return;
   }
 
+  # remove the supporting features of this transcript
+
+  my $prot_adp = $self->db->get_ProteinAlignFeatureAdaptor;
+  my $dna_adp = $self->db->get_DnaAlignFeatureAdaptor;
+
+  my $sfsth = $self->prepare("SELECT feature_type, feature_id  " .
+                             "FROM transcript_supporting_feature " .
+                             "WHERE transcript_id = ?");
+  $sfsth->execute($transcript->dbID);
+  while(my ($type, $feature_id) = $sfsth->fetchrow()){
+    if($type eq 'protein_align_feature'){
+      my $f = $prot_adp->fetch_by_dbID($feature_id);
+      $prot_adp->remove($f);
+    }
+    elsif($type eq 'dna_align_feature'){
+      my $f = $dna_adp->fetch_by_dbID($feature_id);
+      $dna_adp->remove($f);
+    }
+    else {
+      warning("Unknown supporting feature type $type. Not removing feature.");
+    }
+  }
+  $sfsth->finish();
+
+  # delete the association to supporting features
+
+  $sfsth = $self->prepare("DELETE FROM transcript_supporting_feature WHERE transcript_id = ?");
+  $sfsth->execute( $transcript->dbID );
+  $sfsth->finish();
+
   # remove all xref linkages to this transcript
 
   my $dbeAdaptor = $self->db->get_DBEntryAdaptor();
@@ -845,17 +875,21 @@ sub remove {
     $dbeAdaptor->remove_from_object($dbe, $transcript, 'Transcript');
   }
 
-  my $exonAdaptor = $self->db->get_ExonAdaptor();
-  my $translationAdaptor = $self->db->get_TranslationAdaptor();
+  # remove the attributes associated with this transcript
+
+  $attrib_adp->remove_from_Transcript($transcript);
+  my $attrib_adp = $self->db->get_AttributeAdaptor;  
 
   # remove the translation associated with this transcript
 
+  my $translationAdaptor = $self->db->get_TranslationAdaptor();
   if( defined($transcript->translation()) ) {
     $translationAdaptor->remove( $transcript->translation );
   }
 
   # remove exon associations to this transcript
 
+  my $exonAdaptor = $self->db->get_ExonAdaptor();
   foreach my $exon ( @{$transcript->get_all_Exons()} ) {
     # get the number of transcript references to this exon
     # only remove the exon if this is the last transcript to

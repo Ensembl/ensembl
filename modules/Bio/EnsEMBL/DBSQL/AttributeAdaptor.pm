@@ -475,6 +475,8 @@ sub store_on_Translation {
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                The Slice to remove attributes from
+  Arg [2]    : (optional) dbID $attrib_type_id
+               Database id of attributes to remove
   Example    : $attribute_adaptor->remove_from_Slice($slice);
   Description: Removes all attributes which are stored in the database on
                the provided Slice.
@@ -555,6 +557,106 @@ sub remove_from_MiscFeature {
 
   return;
 }
+
+
+=head2 remove_from_Transcript
+
+  Arg [1]    : Bio::EnsEMBL::Transcript $transcript
+               The Transcript to remove attributes from
+  Arg [2]    : (optional) dbID $attrib_type_id
+               Database id of attributes to remove
+  Example    : $attribute_adaptor->remove_from_Transcript($transcript);
+  Description: Removes all attributes which are stored in the database on
+               the provided Transcript.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               throw if transcript not stored
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub remove_from_Transcript {
+  my $self = shift;
+  my $transcript = shift;
+  my $attrib_type_id = shift;
+
+  if(!ref($transcript) || !$transcript->isa('Bio::EnsEMBL::Transcript')) {
+    throw("Bio::EnsEMBL::Transcript argument expected.");
+  }
+
+  my $db = $self->db();
+
+  if (! $transcript->is_stored($db)) {
+    throw("Transcript is not stored in the database.");
+  }
+  
+  if (defined $attrib_type_id) {
+    my $sth = $self->prepare("DELETE FROM transcript_attrib " .
+        "WHERE transcript_id = ? AND attrib_type_id = ?");
+    $sth->execute($transcript->dbID, $attrib_type_id);
+    $sth->finish;
+  } else {
+    my $sth = $self->prepare("DELETE FROM transcript_attrib " .
+        "WHERE transcript_id = ?");
+    $sth->execute($transcript->dbID);
+    $sth->finish();
+  }
+
+  return;
+}
+
+
+
+=head2 remove_from_Translation
+
+  Arg [1]    : Bio::EnsEMBL::Translation $translation
+               The Translation to remove attributes from
+  Arg [2]    : (optional) dbID $attrib_type_id
+               Database id of attributes to remove
+  Example    : $attribute_adaptor->remove_from_Transcript($transcript);
+  Description: Removes all attributes which are stored in the database on
+               the provided Transcript.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               throw if transcript not stored
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub remove_from_Translation {
+  my $self = shift;
+  my $translation = shift;
+  my $attrib_type_id = shift;
+
+  if(!ref($translation) || !$translation->isa('Bio::EnsEMBL::Translation')) {
+    throw("Bio::EnsEMBL::Translation argument expected.");
+  }
+
+  my $db = $self->db();
+
+  if (! $translation->is_stored($db)) {
+    throw("Transcript is not stored in the database.");
+  }
+  
+  if (defined $attrib_type_id) {
+    my $sth = $self->prepare("DELETE FROM translation_attrib " .
+        "WHERE translation_id = ? AND attrib_type_id = ?");
+    $sth->execute($translation->dbID, $attrib_type_id);
+    $sth->finish;
+  } else {
+    my $sth = $self->prepare("DELETE FROM translation_attrib " .
+        "WHERE translation_id = ?");
+    $sth->execute($translation->dbID);
+    $sth->finish();
+  }
+
+  return;
+}
+
+
+
 
 
 
