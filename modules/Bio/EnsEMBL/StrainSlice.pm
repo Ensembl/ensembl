@@ -110,7 +110,7 @@ sub new{
 	return '';
     }
     my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
-
+    
     unless($variation_db) {
 	warning("Variation database must be attached to core database to " .
 		"retrieve variation information" );
@@ -447,21 +447,21 @@ sub subseq {
     my $af_start;
     my $af_end;
     foreach my $af (@allele_features_ordered){
-	if (($af->start - $start +1 > 0) && ($end - $af->end > 0)){
-	    #save the current start and end of the alleleFeature before changing for apply_edit
-	    $af_start = $af->start;
-	    $af_end = $af->end;
-	    #apply the difference if the feature is in the new slice
-	    $af->start($af->start - $start +1);
-	    $af->end($af->end - $start +1);
-	    $af->apply_edit(\$subseq); #change, in the reference sequence, the af
-	    #restore the initial values of alleleFeature start and end
-	    $af->start($af_start);
-	    $af->end($af_end);
-	    
-	}
+      if (($af->start - $start +1 > 0) && ($end - $af->end > 0)){
+	#save the current start and end of the alleleFeature before changing for apply_edit
+	$af_start = $af->start;
+	$af_end = $af->end;
+	#apply the difference if the feature is in the new slice
+	$af->start($af->start - $start +1);
+	$af->end($af->end - $start +1);
+	$af->apply_edit(\$subseq); #change, in the reference sequence, the af
+	#restore the initial values of alleleFeature start and end
+	$af->start($af_start);
+	$af->end($af_end);
+	
+      }
     }
-  } 
+  }
   else {
       ## check for gap at the beginning and pad it with Ns
       if ($start < 1) {
@@ -651,24 +651,28 @@ sub transform{
 =cut
 
 sub map_to_Strain{
-    my $self = shift;
-    my $features = shift;
+  my $self = shift;
+  my $features = shift;
 
-    my $mapper = $self->mapper();
-    my (@results, @results_ordered, $new_start, $new_end, $new_strand);
-    #foreach of the transcripts, map them to the StrainSlice and replace the Slice with the StrainSlice
-    foreach my $feature (@{$features}){
-	$feature->slice($self); #replace the StrainSlice as the Slice for this feature (the Slice plus the AlleleFeatures)
-	#map from the Slice to the Strain Slice
-	my @results = $mapper->map_coordinates('Slice',$feature->start,$feature->end,$feature->strand,'Slice');
-	#from the results, order them but filter out those that are not coordinates
-	@results_ordered = sort {$a->start <=> $b->start} grep {ref($_) eq 'Bio::EnsEMBL::Mapper::Coordinate'} @results;
-	$new_start = $results_ordered[0]->start();
-	$new_strand = $results_ordered[0]->strand();
-	$new_end = $results_ordered[-1]->end();  #get last element of the array, the end of the slice
-	$feature->start($new_start);  #update new coordinates for the Exon
-	$feature->end($new_end);
-	$feature->strand($new_strand);
+  my $mapper = $self->mapper();
+  my (@results, @results_ordered, $new_start, $new_end, $new_strand);
+  #foreach of the transcripts, map them to the StrainSlice and replace the Slice with the StrainSlice
+  foreach my $feature (@{$features}){
+    $feature->slice($self); #replace the StrainSlice as the Slice for this feature (the Slice plus the AlleleFeatures)
+    #map from the Slice to the Strain Slice
+    my @results = $mapper->map_coordinates('Slice',$feature->start,$feature->end,$feature->strand,'Slice');
+    
+    #from the results, order them but filter out those that are not coordinates
+    @results_ordered = sort {$a->start <=> $b->start} grep {ref($_) eq 'Bio::EnsEMBL::Mapper::Coordinate'} @results;
+    
+    if (@results_ordered) {
+      $new_start = $results_ordered[0]->start();
+      $new_strand = $results_ordered[0]->strand();
+      $new_end = $results_ordered[-1]->end();  #get last element of the array, the end of the slice
+      $feature->start($new_start);  #update new coordinates for the Exon
+      $feature->end($new_end);
+      $feature->strand($new_strand);
+    }
   }
 }
 
