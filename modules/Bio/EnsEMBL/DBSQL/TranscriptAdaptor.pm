@@ -876,7 +876,6 @@ sub remove {
   }
 
   # remove the attributes associated with this transcript
-
   my $attrib_adp = $self->db->get_AttributeAdaptor;  
   $attrib_adp->remove_from_Transcript($transcript);
 
