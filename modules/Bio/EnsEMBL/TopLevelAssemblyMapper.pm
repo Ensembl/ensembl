@@ -14,6 +14,7 @@ Handles mapping between a given coordinate system and the toplevel pseudo
 coordinate system.
 
 =head1 SYNOPSIS
+
     $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
     $asma = $db->get_AssemblyMapperAdaptor();
     $csa  = $db->get_CoordSystemAdaptor();

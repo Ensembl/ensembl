@@ -17,6 +17,7 @@ Handles mapping between two coordinate systems using the information stored in
 the assembly table
 
 =head1 SYNOPSIS
+
     $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
     $asma = $db->get_AssemblyMapperAdaptor();
     $csa  = $db->get_CoordSystemAdaptor();

@@ -40,7 +40,6 @@ methods are usually preceded with a _
 package Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 
-use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
