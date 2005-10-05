@@ -75,7 +75,7 @@ sub get_all_ConsequenceType {
     throw('Bio::EnsEMBL::Transcript argument is required.');
   }
 
-  if(!ref($alleles) eq 'ARRAY') {
+  if(!ref($alleles) || (ref($alleles) ne 'ARRAY') {
     throw('Reference to a list of Bio::EnsEMBL::Variation::AlleleFeature objects is required');
   }
 
