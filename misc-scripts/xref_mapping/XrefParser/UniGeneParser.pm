@@ -113,7 +113,8 @@ sub create_xrefs {
 
     if(!defined($geneid_2_desc{$acc_no_ver})){
       print "****$_\n";
-      die "OOPS!! no desc for $acc_no_ver\n";
+      $geneid_2_desc{$acc_no_ver} = "";
+      warn "No desc for $acc_no_ver\n";
     }
 
 
