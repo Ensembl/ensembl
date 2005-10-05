@@ -858,6 +858,8 @@ sub parse_mappings {
   }
   my $xref_id_offset = $max_xref_id + 1;
 
+  $self->xref_id_offset($xref_id_offset); #store 
+
   # files to write table data to
   open (OBJECT_XREF,   ">$dir/object_xref.txt");
   open (IDENTITY_XREF, ">$dir/identity_xref.txt");
@@ -991,17 +993,20 @@ sub parse_mappings {
   # write relevant xrefs to file
   $max_object_xref_id = $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset);
 
-  # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
-  $self->dump_orphan_xrefs($xref_id_offset);
-
-  # dump triage type data
-  $self->dump_triage_data($xref_id_offset);
 
   # dump interpro table as well
   $self->dump_interpro();
 
   # dump direct xrefs
   $self->dump_direct_xrefs($xref_id_offset, $max_object_xref_id);
+
+  # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
+  $self->dump_orphan_xrefs($xref_id_offset);
+
+
+  # dump triage type data
+  $self->dump_triage_data($xref_id_offset);
+
 
   # write comparison info. Can be removed after development
   ###writes to xref.txt.Do not want to do this if loading data afterwards
@@ -1086,7 +1091,7 @@ sub dump_triage_data() {
     $sth->bind_columns(\$xref_id, \$accession, \$version, \$label, \$description, \$source_id, \$species_id);
     while($sth->fetch()){
       if (!$xrefs_written{$xref_id}) {
-	$xrefs_written{$xref_id} = 1;
+#	$xrefs_written{$xref_id} = 1;
 	my $external_db_id = $source_to_external_db{$source_id};
 	if(!defined($updated_source{$external_db_id})){
 	  $self->cleanup_sources_file($external_db_id);
@@ -1148,7 +1153,7 @@ sub dump_orphan_xrefs() {
 	}
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 
-	$xrefs_written{$xref_id} = 1;
+#	$xrefs_written{$xref_id} = 1;
 	$count++;
       }
     }
@@ -1162,6 +1167,7 @@ sub dump_orphan_xrefs() {
   print "Wrote $count xrefs that are neither primary nor dependent\n";
 
 }
+
 
 # Dump direct xrefs. Need to do stable ID -> internal ID mapping.
 
@@ -1191,6 +1197,7 @@ sub dump_direct_xrefs {
 
   # Will need lookup tables for gene/transcript/translation stable ID to internal ID
   my $stable_id_to_internal_id = $self->build_stable_id_to_internal_id_hash();
+
 
   # SQL / statement handle for getting all direct xrefs
   my $xref_sql = "SELECT dx.general_xref_id, dx.ensembl_stable_id, dx.type, dx.linkage_xref, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM direct_xref dx, xref x WHERE dx.general_xref_id=x.xref_id";
@@ -2599,6 +2606,125 @@ sub get_xref_descriptions{
 sub get_xref_accessions{
  return \%xref_accessions;
 }
+
+sub xref_id_offset{
+ my  $self  = shift;
+
+  $self->{'xref_id_offset'} = shift if( @_ );
+  if( exists $self->{'xref_id_offset'} ) {
+    return $self->{'xref_id_offset'};
+  }
+ return undef;
+}
+
+sub add_missing_pairs{
+  my ($self) = @_;
+  my $xref_id_offset = $self->xref_id_offset();
+  #
+  # add the pairs
+  #
+  # get current max object_xref_id
+  my $row = @{$self->core->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
+  my $max_object_xref_id = @{$row}[0];
+  if (!defined $max_object_xref_id) {
+    die ("No existing object_xref_ids, something very wrong\n");
+  }
+#  print "xref offset => $xref_id_offset\n";
+#  print "max object xref => $max_object_xref_id \n";
+  my $xref_sql = (<<EOS);
+  SELECT x1.xref_id, x2.xref_id 
+    FROM pairs p, xref x1, xref x2
+      WHERE p.accession1 = x1.accession
+	AND p.accession2 = x2.accession
+	 AND p.source_id = x1.source_id
+EOS
+  my $xref_sth = $self->xref->dbc->prepare($xref_sql);
+  $xref_sth->execute(); 
+  my ($xref_id1,$xref_id2);
+  $xref_sth->bind_columns(\$xref_id1, \$xref_id2);
+
+  my %good2missed=();
+  my $okay =0;
+  my $both = 0;
+  my $poss = 0;
+  while ($xref_sth->fetch()) {
+    if(!defined($xrefs_written{$xref_id1}) or !defined($xrefs_written{$xref_id2})){
+      if (!defined($xrefs_written{$xref_id1}) and !defined($xrefs_written{$xref_id2})){
+	$okay++;
+      }
+      elsif(!defined($xrefs_written{$xref_id2})){
+	$poss++;
+	$good2missed{$xref_id1+$xref_id_offset} = $xref_id2+$xref_id_offset;
+      }
+      else{
+	$poss++;
+	$good2missed{$xref_id2+$xref_id_offset} = $xref_id1+$xref_id_offset;
+      }
+    }
+    else{
+      $both++;
+    }
+  }
+#  print "but apparently $okay have no matches at all and $both have two\n";
+#  print "potential filler ins = $poss\n";
+#  print "good2missed=>".scalar(%good2missed)."\n";
+  open(OBJECT_XREF2, ">".$self->core->dir()."/pairs_object_xref.txt") || die "Could not open pairs_object_xref.txt";
+
+  my $i=0;
+  my $index;
+  my $added = 0;
+  my $sql = "SELECT xref_id, ensembl_id, ensembl_object_type FROM object_xref WHERE xref_id IN (";
+  my ($goodxref, $ens_int_id,$type);
+  my @list =();
+  foreach my $key (keys %good2missed){
+    if($i > 200){
+      my $sth_ob = $self->core->dbc->prepare($sql.(join(',',@list)).")") || die @_;
+      $sth_ob->execute();
+      $sth_ob->bind_columns(\$goodxref,\$ens_int_id,\$type);
+      while($sth_ob->fetch()){
+	$max_object_xref_id++;
+	$added++;
+	print OBJECT_XREF2 "$max_object_xref_id\t$ens_int_id\t$type\t" .$good2missed{$goodxref} . "\tDEPENDENT\n";	
+      }
+      $sth_ob->finish();
+      @list =();
+      $i=0;
+    }
+    else{
+      push @list, $key;
+      $i++;
+    }
+  }
+  if($i){
+    my $sth_ob = $self->core->dbc->prepare($sql.(join(',',@list)).")") || die @_;
+    $sth_ob->execute();
+    $sth_ob->bind_columns(\$goodxref,\$ens_int_id,\$type);
+    while($sth_ob->fetch()){
+      $max_object_xref_id++;
+      $added++;
+      print OBJECT_XREF2 "$max_object_xref_id\t$ens_int_id\t$type\t" .$good2missed{$goodxref} . "\tDEPENDENT\n";	
+    }
+    $sth_ob->finish();
+  }
+
+  close OBJECT_XREF2;
+
+  #
+  # Now load the data into the database.
+  #
+ 
+  my $file = $self->core->dir()."/pairs_object_xref.txt";
+  
+  # don't seem to be able to use prepared statements here
+  my $sth = $self->core->dbc->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE object_xref");
+  print "Uploading data in $file to object_xref\n";
+  $sth->execute();
+  
+  print "$added new object xrefs added based on the Pairs\n";
+
+}
+
+
 
 
 1;

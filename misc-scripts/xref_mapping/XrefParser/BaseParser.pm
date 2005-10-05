@@ -405,7 +405,7 @@ sub upload_xref_object_graphs {
   if ($#$rxrefs > -1) {
 
     # remove all existing xrefs with same source ID(s)
-    delete_by_source($rxrefs);
+    $self->delete_by_source($rxrefs);
 
     # upload new ones
     print "Uploading xrefs\n";
@@ -416,12 +416,13 @@ sub upload_xref_object_graphs {
     my $dep_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
     my $xref_update_label_sth = $dbi->prepare("UPDATE xref SET label=? WHERE xref_id=?");
     my $xref_update_descr_sth = $dbi->prepare("UPDATE xref SET description=? WHERE xref_id=?");
+    my $pair_sth = $dbi->prepare("INSERT INTO pairs VALUES(?,?,?)");
 
     local $xref_sth->{RaiseError}; # disable error handling here as we'll do it ourselves
     local $xref_sth->{PrintError};
 
     foreach my $xref (@{$rxrefs}) {
-       my $xref_id;
+       my $xref_id=undef;
        throw("your xref does not have an accession-number,so it can't be stored in the database") unless ($xref->{ACCESSION});
       # Create entry in xref table and note ID
       if(! $xref_sth->execute($xref->{ACCESSION},
@@ -485,18 +486,20 @@ sub upload_xref_object_graphs {
 	$dep_sth->execute($xref_id, $dep_xref_id, $dep{LINKAGE_ANNOTATION}, $dep{LINKAGE_SOURCE_ID} ) || die $dbi->errstr;
 	# TODO linkage anntation?
 
-      }				# foreach dep
-
-
-    }				# foreach xref
-
-
-    $xref_sth->finish() if defined $xref_sth;
-    $pri_insert_sth->finish() if defined $pri_insert_sth;
-    $pri_update_sth->finish() if defined $pri_update_sth;
+      }	 # foreach dep
+       
+       if(defined($xref_id) and defined($xref->{PAIR})){
+	 $pair_sth->execute($xref->{SOURCE_ID},$xref->{ACCESSION},$xref->{PAIR});
+       }				
+       
+              
+       $xref_sth->finish() if defined $xref_sth;
+       $pri_insert_sth->finish() if defined $pri_insert_sth;
+       $pri_update_sth->finish() if defined $pri_update_sth;
+       
+     }  # foreach xref
 
   }
-
 }
 
 sub upload_direct_xrefs{
@@ -718,8 +721,8 @@ sub delete_by_source {
   my $dep_sth = $dbi->prepare("DELETE FROM dependent_xref USING xref, dependent_xref WHERE xref.xref_id=dependent_xref.master_xref_id AND xref.source_id=?");
 
   # xrefs and primary_xrefs are straightforward deletes
-  my $xref_sth = $dbi->prepare("DELETE FROM xref WHERE source_id=?");
-  my $p_xref_sth = $dbi->prepare("DELETE FROM primary_xref WHERE source_id=?");
+  my $xref_sth = $dbi->prepare("DELETE FROM xref, primary_xref USING xref, primary_xref WHERE source_id=? AND primary_xref.xref_id = xref.xref_id");
+#  my $p_xref_sth = $dbi->prepare("DELETE FROM primary_xref WHERE source_id=?");
 
   # xrefs may come from more than one source (e.g. UniProt/SP/SPtr)
   # so find all sources first
@@ -736,7 +739,7 @@ sub delete_by_source {
     print "Deleting dependent xrefs of xrefs with source ID $source \n";
     $dep_sth->execute($source);
     print "Deleting primary xrefs with source ID $source \n";
-    $p_xref_sth->execute($source);
+#    $p_xref_sth->execute($source);
     print "Deleting xrefs with source ID $source \n";
     $xref_sth->execute($source);
   }
@@ -744,7 +747,7 @@ sub delete_by_source {
   $syn_sth->finish() if defined $syn_sth;
   $dep_sth->finish() if defined $dep_sth;
   $xref_sth->finish() if defined $xref_sth;
-  $p_xref_sth->finish() if defined $p_xref_sth;
+#  $p_xref_sth->finish() if defined $p_xref_sth;
 
 }
 

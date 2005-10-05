@@ -172,6 +172,16 @@ sub create_xrefs {
 
       my @EntrezGeneIDline = $entry =~ /db_xref=.GeneID:(\d+)/g;
       my @mimline = $entry =~ /db_xref=.MIM:(\d+)/g;
+      my @protein_id = $entry =~ /\/protein_id=.(\S+_\d+)/g;
+      my @coded_by = $entry =~  /\/coded_by=.(\w+_\d+)/g;
+
+      foreach my $cb (@coded_by){
+	$xref->{PAIR} = $cb;
+      }
+
+      foreach my $pi (@protein_id){
+	$xref->{PROTEIN} = $pi;
+      }
 
       foreach my $ll (@EntrezGeneIDline) {
 	my %dep;

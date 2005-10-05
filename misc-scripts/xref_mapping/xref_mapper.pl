@@ -203,6 +203,11 @@ $mapper->parse_mappings();
 print "\nUploading xrefs\n" if ($upload);
 $mapper->do_upload() if ($upload);
 
+print "\nChecking pair data\n" if($upload);
+$mapper->add_missing_pairs() if($upload);
+
+#$mapper->check_pairs() if(!$upload);
+
 print "\nchecking xrefs\n" if ($upload);
 $mapper->cleanup_database() if ($upload);
 

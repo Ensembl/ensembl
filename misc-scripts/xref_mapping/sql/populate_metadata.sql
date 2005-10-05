@@ -43,7 +43,6 @@ INSERT INTO source VALUES (5, "IPI", 1, 'Y',2);
 INSERT INTO source VALUES (6, "UniGene", 1, 'Y',2);
 INSERT INTO source VALUES (10, "RefSeq_peptide_predicted", 1, 'Y',1);
 INSERT INTO source VALUES (11, "RefSeq_dna_predicted", 1, 'Y',1);
-
 # Agilent probes
 INSERT INTO source VALUES (2700, 'AgilentProbe', 1, 'Y', 4);
 INSERT INTO source VALUES (2701, 'AgilentCGH', 1, 'Y', 4);
@@ -60,7 +59,6 @@ INSERT INTO source VALUES (1070, 'GO', 1, 'Y',5);
 INSERT INTO source VALUES (1080, 'MarkerSymbol', 1, 'Y',2);
 INSERT INTO source VALUES (1090, 'HUGO', 1, 'Y',2);
 
-#INSERT INTO source VALUES (1100, 'LocusLink', 1, 'N', 2);
 INSERT INTO source VALUES (1110, 'EntrezGene', 1, 'N', 2);
 
 INSERT INTO source VALUES (1200, 'RGD', 1, 'Y',2);
@@ -234,6 +232,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 9606,'ftp://ftp.ncbi.nih.gov/refseq/H_sapiens/mRNA_Prot/human.rna.fna.gz', '', now(), now(), "RefSeqParser");
 
+
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/gene_association.goa_human.gz', '', now(), now(), "GOParser");
 
@@ -306,12 +305,11 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 10116,'ftp://ftp.ncbi.nih.gov/refseq/R_norvegicus/mRNA_Prot/rat.rna.fna.gz', '', now(), now(), "RefSeqParser");
 
-
 ##      GO 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 10116,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/RAT/gene_association.goa_rat.gz', '', now(), now(), "GOParser");
 
 ##  RGD
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1200, 10116,'ftp://rgd.mcw.edu/pub/data_release/genbank_to_gene_ids.txt', '', now(), now(), "RGDParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1200, 10116,'ftp://rgd.mcw.edu/pub/data_release/GENES', '', now(), now(), "RGDParser");
 
 ##  IPI
 ##      IPI
