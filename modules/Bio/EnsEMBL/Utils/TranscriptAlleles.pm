@@ -37,7 +37,7 @@ package Bio::EnsEMBL::Utils::TranscriptAlleles;
 
 use strict;
 use warnings;
-
+use Data::Dumper;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Variation::ConsequenceType;
 use vars qw(@ISA @EXPORT_OK);
@@ -73,7 +73,7 @@ sub get_all_ConsequenceType {
     throw('Bio::EnsEMBL::Transcript argument is required.');
   }
 
-  if(!ref($alleles) eq 'ARRAY') {
+  if(!ref($alleles) || (ref($alleles) ne 'ARRAY')) {
     throw('Reference to a list of Bio::EnsEMBL::Variation::AlleleFeature objects is required');
   }
 
@@ -84,6 +84,7 @@ sub get_all_ConsequenceType {
   foreach my $allele (@alleles_ordered) {
     #get consequence type of the AlleleFeature
     my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start,$allele->end,$allele->strand,[$allele->allele_string]);
+
     #calculate the consequence type of the Allele
     my $ref_consequences = type_variation($transcript,$consequence_type);
     if ($allele->start != $allele->end){
