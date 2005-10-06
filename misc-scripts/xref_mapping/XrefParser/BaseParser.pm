@@ -405,7 +405,7 @@ sub upload_xref_object_graphs {
   if ($#$rxrefs > -1) {
 
     # remove all existing xrefs with same source ID(s)
-    $self->delete_by_source($rxrefs);
+#    $self->delete_by_source($rxrefs);
 
     # upload new ones
     print "Uploading xrefs\n";
