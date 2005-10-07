@@ -185,6 +185,17 @@ sub type_variation {
     return [];
   }
 
+  my @features = $tr->fetch_all_regulatory_features();
+
+  #regulatory_features and consequence_type feature are all in genomic coordinates,
+  #so just to check whether they overlap with each other or not
+  foreach my $feature (@features) {
+    if ($var->end >= $feature->start and $var->start <= $feature->end) {
+      $var->regulatory_region('REGULATORY_REGION');
+      last;
+    }
+  }
+
   my $tm = $tr->get_TranscriptMapper();
   my @coords = $tm->genomic2cdna($var->start,
                                  $var->end,
