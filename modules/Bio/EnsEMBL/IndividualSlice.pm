@@ -664,4 +664,9 @@ sub map_to_Individual{
   }
 }
 
+sub alleleFeatures{
+    my $self = shift;
+    return $self->{'alleleFeatures'};
+}
+
 1;
