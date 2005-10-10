@@ -73,6 +73,7 @@ use Bio::EnsEMBL::Registry;
 
 use Bio::EnsEMBL::StrainSlice;
 use Bio::EnsEMBL::IndividualSlice;
+use Bio::EnsEMBL::IndividualSliceFactory;
 
 use Data::Dumper;
 
@@ -1360,6 +1361,35 @@ sub get_all_VariationFeatures{
   } else {
     return [];
   }
+}
+
+
+=head 2 get_all_by_Population
+
+    Arg[1]      : Bio::EnsEMBL::Variation::Population $population
+    Example     : my $individualSlice = $slice->get_by_Population($population);
+    Description : Gets the specific Slice for all the individuls in the population
+    ReturnType  : listref of Bio::EnsEMB::IndividualSlice
+    Exceptions  : none
+    Caller      : general
+
+=cut
+
+sub get_all_by_Population{
+    my $self = shift;
+    my $population_name = shift;
+
+    my $individualSliceFactory = Bio::EnsEMBL::IndividualSliceFactory->new(
+									   -START   => $self->{'start'},
+									   -END     => $self->{'end'},
+									   -STRAND  => $self->{'strand'},
+									   -ADAPTOR => $self->{'adaptor'},
+									   -SEQ_REGION_NAME => $self->{'seq_region_name'},
+									   -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
+									   -COORD_SYSTEM    => $self->{'coord_system'},
+									   -POPULATION     => $population_name
+									   );
+    return $individualSliceFactory->get_all_IndividualSlice();
 }
 
 =head2 get_by_Individual

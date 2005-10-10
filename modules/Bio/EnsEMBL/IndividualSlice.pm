@@ -105,49 +105,8 @@ sub new{
 
     $self->{'individual_name'} = $individual_name;
 
-    if(!$self->adaptor()) {
-	warning('Cannot get new IndividualSlice features without attached adaptor');
-	return '';
-    }
-    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+    return $self;
 
-    unless($variation_db) {
-	warning("Variation database must be attached to core database to " .
-		"retrieve variation information" );
-	return '';
-    }
-    #get the AlleleFeatures in the Individual
-    my $af_adaptor = $variation_db->get_AlleleFeatureAdaptor;
-    
-    if( $af_adaptor ) {
-	#set the adaptor to retrieve data from genotype table
-	$af_adaptor->from_IndividualSlice(1);
-	#get the Individual for the given strain
-	my $ind_adaptor = $variation_db->get_IndividualAdaptor;
-
-	if ($ind_adaptor){
-	    my $individual = $ind_adaptor->fetch_all_by_name($self->{'individual_name'}); #ignore individuals with same name
-	    #check that there is such individual in the database
-	    if (defined $individual->[0]){
-		#get all the VariationFeatures in the $individual and the Slice given
-		my $allele_features = $af_adaptor->fetch_all_by_Slice_Individual($self,$individual->[0]);
-		
-		$self->{'alleleFeatures'} = $allele_features;
-		return $self;
-	    }
-	    else{ 
-		warning("Strain not in the database");
-		return '';
-	    }
-	}
-	else{
-	    warning("Not possible to retrieve IndividualAdaptor from the variation database");
-	    return '';
-	}
-    } else {
-	warning("Not possible to retrieve AlleleFeatureAdaptor from variation database");
-	return '';
-    }
 }
 
 =head2 individual_name
@@ -669,4 +628,15 @@ sub alleleFeatures{
     return $self->{'alleleFeatures'};
 }
 
+sub add_AlleleFeature{
+    my $self = shift;
+
+    if (@_){
+	if(!ref($_[0]) || !$_[0]->isa('Bio::EnsEMBL::Variation::AlleleFeature')) {
+	    throw("Bio::EnsEMBL::Variation::AlleleFeature argument expected");
+	}
+	#add the alleleFeature to the individualSlice
+	push @{$self->{'alleleFeatures'}},shift;
+    }
+}
 1;
