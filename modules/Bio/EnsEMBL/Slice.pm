@@ -1327,6 +1327,46 @@ sub get_all_LD_values{
 }
 }
 
+=head2 get_all_AlleleFeatures_by_Slice_Population
+
+    Arg[0]      : Bio::EnsEMBL::Slice $slice
+    Arg[1]      : Bio::EnsEMBL::Variation::Population $population
+    Example     : my $vf = $vfa->fetch_all_by_Slice_Individual($slice,$population);   
+    Description : Gets all the VariationFeatures in a certain Slice for a given
+                  Population
+    ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
+    Exceptions  : thrown on bad arguments
+    Caller      : general
+
+=cut
+
+sub get_all_AlleleFeatures_by_Slice_Population{
+    my $self = shift;
+    my $slice = shift;
+    my $population = shift;
+
+    if(!$self->adaptor()) {
+	warning('Cannot get allele features without attached adaptor');
+	return [];
+    }
+
+    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+    
+    unless($variation_db) {
+	warning("Variation database must be attached to core database to " .
+		"retrieve variation information" );
+	return [];
+  }
+    
+    my $af_adaptor = $variation_db->get_AlleleFeatureAdaptor;
+    if( $af_adaptor ) {
+	return $af_adaptor->fetch_all_by_Slice_Population($self,$population);
+    } else {
+	return [];
+    }
+    
+}
+
 =head2 get_all_VariationFeatures
 
     Args       : none
