@@ -42,11 +42,12 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Variation::ConsequenceType;
 use vars qw(@ISA @EXPORT_OK);
 
+use Data::Dumper;
+
 @ISA = qw(Exporter);
 
 @EXPORT_OK = qw(get_all_ConsequenceType type_variation);
 
-use Data::Dumper;
 
 =head2 get_all_ConsequenceType
 
@@ -75,7 +76,7 @@ sub get_all_ConsequenceType {
     throw('Bio::EnsEMBL::Transcript argument is required.');
   }
 
-  if(!ref($alleles) || (ref($alleles) ne 'ARRAY') {
+  if(!ref($alleles) || (ref($alleles) ne 'ARRAY')) {
     throw('Reference to a list of Bio::EnsEMBL::Variation::AlleleFeature objects is required');
   }
 
@@ -185,14 +186,16 @@ sub type_variation {
     return [];
   }
 
-  my @features = $tr->fetch_all_regulatory_features();
+  my @features = @{$tr->fetch_all_regulatory_features()};
 
   #regulatory_features and consequence_type feature are all in genomic coordinates,
-  #so just to check whether they overlap with each other or not
-  foreach my $feature (@features) {
-    if ($var->end >= $feature->start and $var->start <= $feature->end) {
-      $var->regulatory_region('REGULATORY_REGION');
-      last;
+  #so just to check whether they overlap with each other or not also in same strand
+  if (@features) {
+    foreach my $feature (@features) {
+      if ($var->end >= $feature->start and $var->start <= $feature->end and $var->strand == $feature->strand) {
+	$var->regulatory_region('REGULATORY_REGION');
+	last;
+      }
     }
   }
 
