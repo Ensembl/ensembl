@@ -676,5 +676,20 @@ sub map_to_Strain{
   }
 }
 
+=head2 get_AlleleFeatures
+
+    Args        : none
+    Example     : my $alleleFeatures = $strainSlice->get_AlleleFeatures();
+    Description : Gets all the AlleleFeatures sitting on the strain
+    ReturnType  : listref of Bio::EnsEMBL::Variation::AlleleFeature
+    Exceptions  : none
+    Caller      : general
+
+=cut
+
+sub get_AlleleFeatures{
+    my $self = shift;
+    return $self->{'alleleFeatures'};
+}
 
 1;
