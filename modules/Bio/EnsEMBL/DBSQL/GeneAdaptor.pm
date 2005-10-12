@@ -1276,6 +1276,64 @@ sub _objs_from_sth {
 }
 
 
+=head2 cache_gene_seq_mappings
+
+  Args       : none
+  Example    : $gene_adaptor->cache_gene_seq_mappings();
+  Description: caches all the assembly mappings needed for genes
+  Returntype : None
+  Exceptions : None
+  Caller     : general
+  Status     : At Risk
+             : New experimental code.
+
+=cut
+
+sub cache_gene_seq_mappings{
+  my ($self) = @_;
+
+  #get the sequence level to map too
+
+  my $sql = (<<SSQL);
+  SELECT	name 
+   FROM	coord_system 
+    WHERE attrib like "%sequence_level%"
+SSQL
+  my $sth = $self->prepare($sql);
+  $sth->execute();
+  
+  my $sequence_level = $sth->fetchrow_array();
+  
+  $sth->finish();
+
+  my $csa = $self->db->get_CoordSystemAdaptor();
+  my $ama = $self->db->get_AssemblyMapperAdaptor();
+
+  my $cs1 = $csa->fetch_by_name($sequence_level);
+  
+
+  #get level to map too.
+  
+  $sql = (<<LSQL); 
+  SELECT DISTINCT (c.name) FROM gene g, seq_region sr, coord_system c 
+    WHERE sr.seq_region_id = g.seq_region_id 
+          AND c.coord_system_id = sr.coord_system_id;
+LSQL
+
+
+  $sth = $self->prepare($sql);
+  $sth->execute();
+  
+  while(my $csn = $sth->fetchrow_array()){
+    if($csn eq $sequence_level){
+      next;
+    }
+    my $cs2 = $csa->fetch_by_name($csn);
+    my $am = $ama->fetch_by_CoordSystems($cs1,$cs2);
+    $am->register_all();    
+  };
+}
+  
 ##########################
 #                        #
 #  DEPRECATED METHODS    #
