@@ -1236,8 +1236,8 @@ sub version_check{
   # Check the datbase and versions match
   # give warning if they do not.
   my $check = no_version_check();
-  if(-e $ENV{HOME}."/.ensemblapi_no_version_check" or 
-     (defined($check) and ($check != 0))){
+  if( (defined($ENV{HOME}) and (-e $ENV{HOME}."/.ensemblapi_no_version_check"))
+   or (defined($check) and ($check != 0))){
     return 1;
   }
   my $mca = $self->get_adaptor($dba->species(),$dba->group(),"MetaContainer");
