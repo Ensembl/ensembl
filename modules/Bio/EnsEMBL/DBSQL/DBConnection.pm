@@ -141,7 +141,7 @@ sub new {
     $host   ||= 'mysql';
     $port   ||= 3306;
 
-    my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
+    my $dsn = "DBI:$driver:database=$db;host=$host;port=$port;mysql_local_infile=1";
 
     $self->username( $user );
     $self->host( $host );
