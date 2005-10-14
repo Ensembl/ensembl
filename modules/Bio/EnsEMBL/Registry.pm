@@ -189,7 +189,7 @@ sub clear{
       $dba->dbc->db_handle->disconnect();
     }
   }
-  %registry_register = undef;
+  %registry_register = ();
 }
 
 #
