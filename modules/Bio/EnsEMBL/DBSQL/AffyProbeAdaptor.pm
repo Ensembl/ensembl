@@ -27,7 +27,7 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::AffyProbe;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(deprecate throw warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -175,7 +175,7 @@ sub fetch_all_by_probeset {
 
 =cut
 
-sub fetch_by_AffyArray {
+sub fetch_all_by_AffyArray {
   my $self  = shift;
   my $array = shift;
 
@@ -190,6 +190,30 @@ sub fetch_by_AffyArray {
   }
 
   return $self->generic_fetch("ap.affy_array_id = $array_id");
+}
+
+=head2 fetch_by_AffyArray
+
+  Arg [1]    : Bio::EnsEMBL::AffyArray $array
+  Example    : none
+  Description: Fetches all Arrays that given probe is part of. Included
+             : for backwards compatibility - should have been called
+             : fetch_all_by_AffyArray
+  Returntype : listref of Bio::EnsEMBL::AffyFeature
+  Exceptions : none
+  Caller     : AffyProbe->get_all_AffyFeatures()
+  Status     : High risk
+             : Likely to be removed - use fetch_all_by_AffyArray instead.
+
+=cut
+
+sub fetch_by_AffyArray {
+  my $self  = shift;
+  my $array = shift;
+
+  deprecate("AffyProbeAdaptor->fetch_by_AffyArray() should not be used, use fetch_all_by_AffyArray() instead.");
+
+  return $self->fetch_all_by_AffyArray($array);
 }
 
 =head2 fetch_all_by_AffyFeature
