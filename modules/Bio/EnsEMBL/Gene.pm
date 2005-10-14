@@ -1044,7 +1044,7 @@ sub get_all_DAS_Features{
 
   Arg [1]    : If set, regulatory features on transcripts belonging to this gene
                are returned as well.
-  Example    : @features = $gene->gene_all_regulatory_features(1);
+  Example    : @features = $gene->get_all_regulatory_features(1);
   Description: Gets all the regulatory features associated with a
                particular gene, and (optionally) its transcripts.
                Each feature only appears once.
