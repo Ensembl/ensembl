@@ -1034,6 +1034,7 @@ sub get_stable_ids(){
 sub dump_triage_data() {
   my ($self, $xref_id_offset) = @_;
 
+  print "Dumping triage data\n";
   my $translation="";
   my $translation_count=0;
   my $transcript="";
@@ -1079,11 +1080,31 @@ sub dump_triage_data() {
   }
 
 
+  my $primary_sql= (<<PSQL);
+    SELECT DISTINCT(s.source_id) 
+      FROM source s, primary_xref px, xref x 
+	WHERE x.xref_id = px.xref_id
+	  AND s.source_id = x.source_id
+PSQL
+
+  my $psth = $self->xref->dbc->prepare($primary_sql) || die "prepare failed";
+  $psth->execute() || die "execute failed";
+
+  my @primary_sources =();
+
+  my ($prim);
+  $psth->bind_columns(\$prim);
+  while($psth->fetch()){
+    push @primary_sources, $prim;
+  }
+
   open (XREF, ">>" . $self->core->dir() . "/xref.txt");
   open (XREF_MISSED, ">" . $self->core->dir() . "/triage.txt");
 
-  foreach my $source ("%RefSeq%","UniProt%","Anopheles_symbol"){
-    my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id from xref x, source s where s.name like '".$source."' and x.source_id = s.source_id";
+#  foreach my $source ("%RefSeq%","UniProt%","Anopheles_symbol"){
+  foreach my $source (@primary_sources){
+    my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id from xref x, source s where x.source_id = s.source_id";
+#    my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id from xref x, source s where s.name like '".$source."' and x.source_id = s.source_id";
     my $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
     
@@ -1097,6 +1118,11 @@ sub dump_triage_data() {
 	  $self->cleanup_sources_file($external_db_id);
 	}
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+
+#dump out dependencies aswell
+	
+        $self->dump_all_dependencies($xref_id, $xref_id_offset);
+
 	if(defined($failed_xref_mappings{$xref_id})){
 	  my ($ensembl_id,$type,$q_perc,$t_perc,$q_cut,$t_cut) =  split(/\|/,$failed_xref_mappings{$xref_id});
 	  print XREF_MISSED  ($xref_id+$xref_id_offset) . "\thighest match is $accession (".$q_perc."%) to ";
@@ -2724,7 +2750,39 @@ EOS
 
 }
 
+sub dump_all_dependencies{
+  my ($self, $master_id, $xref_id_offset) = @_;
 
+  # Now get the dependent xrefs for this xref and write them
+  
+  my $sql = "SELECT DISTINCT(x.xref_id), dx.master_xref_id, x.accession, x.label, x.description, x.source_id, x.version, dx.linkage_annotation FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = $master_id";
+  
+  my $dep_sth = $self->xref->dbc->prepare($sql);
+  $dep_sth->execute();
+
+   my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id, $master_xref_id, $linkage_annotation);
+  
+  $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
+  while ($dep_sth->fetch()) {
+    
+    
+    my $external_db_id = $source_to_external_db{$source_id};
+     next if (!$external_db_id);
+    
+    
+    $label = $accession if (!$label);
+    
+    if (!$xrefs_written{$xref_id}) {
+      if(!defined($updated_source{$external_db_id})){
+	$self->cleanup_sources_file($external_db_id);
+      }
+      
+      print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\tDEPENDENT\n";
+      $xrefs_written{$xref_id} = 1;
+    }
+  }
+}
+    
 
 
 1;
