@@ -89,7 +89,7 @@ sub get_all_ConsequenceType {
 #    my $new_allele = $allele->transform('chromosome');
     my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start,$allele->end,$allele->strand,[$allele->allele_string]);
     #calculate the consequence type of the Allele
-    my $ref_consequences = type_variation($transcript,$consequence_type);
+    my $ref_consequences = type_variation($transcript,"",$consequence_type);
     if ($allele->start != $allele->end){
 	#do not calculate for indels effects of 2 or more in same codon
 	push @out, @{$ref_consequences};
@@ -172,6 +172,7 @@ sub calculate_same_codon{
 #
 sub type_variation {
   my $tr  = shift;
+  my $g   = shift;
   my $var = shift;
 
   my $UPSTREAM = 5000;
@@ -181,22 +182,38 @@ sub type_variation {
       throw("Not possible to calculate the consequence type for ",ref($var)," : Bio::EnsEMBL::Variation::ConsequenceType object expected");
   }
 
-  if (($var->start < $tr->start - $UPSTREAM) || ($var->end  > $tr->end + $DOWNSTREAM)){
-    #since the variation is more than UPSTREAM and DOWNSTREAM of the transcript, there is no effect in the transcript
-    return [];
-  }
+  ##to find if a SNP is overlapping with a regulatory region, we need to get a slice containing a gene
+  ##plus 5kb on both side, then fetch regulatory feature by the slice, then check whether they overlapping
 
-  my @features = @{$tr->fetch_all_regulatory_features()};
+  if ($g and ref($g) and $g->isa('Bio::EnsEMBL::Gene')) {
 
-  #regulatory_features and consequence_type feature are all in genomic coordinates,
-  #so just to check whether they overlap with each other or not also in same strand
-  if (@features) {
-    foreach my $feature (@features) {
-      if ($var->end >= $feature->start and $var->start <= $feature->end and $var->strand == $feature->strand) {
-	$var->regulatory_region('REGULATORY_REGION');
+    my $seq_region_slice = $g->slice->seq_region_Slice;
+
+    my $g_start = $g->start - $UPSTREAM;
+    $g_start = 1 if $g_start <1;
+    my $g_end = $g->end + $DOWNSTREAM;
+    $g_end = $seq_region_slice->end if $g_end > $seq_region_slice->end;
+
+    my $g_slice = $seq_region_slice->sub_Slice($g_start,$g_end, $g->slice->strand);
+
+    my $rfa = $g->adaptor->db->get_RegulatoryFeatureAdaptor();
+
+    my $rfs = $rfa->fetch_all_by_Slice($g_slice);
+
+    foreach my $rf (@{$rfs}) {
+      my $new_rf_start = $rf->start+$g_slice->start-1;
+      my $new_rf_end  = $rf->end+$g_slice->start-1;
+
+      if ($var->end >= $new_rf_start and $var->start <= $new_rf_end) {
+ 	$var->regulatory_region('REGULATORY_REGION');
 	last;
       }
     }
+  }
+
+  if (($var->start < $tr->start - $UPSTREAM) || ($var->end  > $tr->end + $DOWNSTREAM)){
+    #since the variation is more than UPSTREAM and DOWNSTREAM of the transcript, there is no effect in the transcript
+    return [];
   }
 
   my $tm = $tr->get_TranscriptMapper();
@@ -216,7 +233,7 @@ sub type_variation {
       my %new_var = %{$var};
       $new_var{'end'} = $var->start + $c->length() - 1;
       $var->start( $new_var{'end'} + 1);      
-      push @out, @{type_variation($tr, bless \%new_var, ref($var))};
+      push @out, @{type_variation($tr, "", bless \%new_var, ref($var))};
     }
 
     return \@out;
@@ -283,7 +300,7 @@ sub type_variation {
       my %new_var = %{$var};
       $new_var{'end'} = $var->start + $c->length() - 1;
       $var->start( $new_var{'end'} + 1);
-      push @out, @{type_variation($tr, bless \%new_var, ref($var))};
+      push @out, @{type_variation($tr, "", bless \%new_var, ref($var))};
     }
     return \@out;
   }
