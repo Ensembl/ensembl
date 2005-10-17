@@ -1234,7 +1234,7 @@ CREATE TABLE regulatory_feature (
   seq_region_end        INT NOT NULL,
   seq_region_strand     TINYINT NOT NULL,
   analysis_id           INT NOT NULL,                  # FK refs analysis
-  regulatory_factor_id  INT,                           # FK refs regulatory_motif
+  regulatory_factor_id  INT,                           # FK refs regulatory_factor
 
 
   PRIMARY KEY(regulatory_feature_id)
