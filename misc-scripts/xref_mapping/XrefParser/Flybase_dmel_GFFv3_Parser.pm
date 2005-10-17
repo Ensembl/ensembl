@@ -123,7 +123,7 @@ sub run {
     XrefParser::BaseParser->delete_by_source(\@xrefs);
   }
   print "... parsed.\n";
-  print STDERR "uploading ".scalar(@xrefs)." direct-xrefs's\n";
+  print STDERR "uploading ".scalar(@xrefs)." xrefs's\n";
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 
   print STDERR "uploading ".scalar(@direct_xrefs)." direct-xrefs's\n";
@@ -217,31 +217,37 @@ sub make_dbxref_xref{
 
     foreach my $dbx (@dbx) {
       my $src_id = undef;
+      my $source_type = undef;
 
       if ($dbx =~m/FlyBase:/){
 	$dbx =~s/FlyBase://g;
 
 	if($dbx=~m/FBgn/){
 	  $src_id = $self->get_source_id_for_source_name($self->source_name_fbgn);
-
+	  $source_type = "gene";
 	}elsif ($dbx =~m/FBtr/){
 	  $src_id = $self->get_source_id_for_source_name($self->source_name_fbtr);
-
+	  $source_type = "transcript";
 	}elsif ($dbx =~m/FBpp/){
 	  $src_id = $self->get_source_id_for_source_name($self->source_name_fbpp);
+	  $source_type = "translation";
 	}elsif ($dbx =~m/FBan/){
 	  $src_id = $self->get_source_id_for_source_name($self->source_name_fban);
+	  $source_type = "gene";
 	}
       }elsif($dbx =~m/Gadfly:/){
 	$dbx =~s/Gadfly://g;
 	foreach my $check ( @{ $self->gene_types} ){
 	  $src_id = $self->get_source_id_for_source_name($self->source_name_gadfly_gene) if ($check=~m/$type/);
+	  $source_type = "gene";
 	}
 	foreach my $check ( @{ $self->translation_types} ){
 	  $src_id = $self->get_source_id_for_source_name($self->source_name_gadfly_translation) if ($check=~m/$type/);
+	  $source_type = "translation";
 	}
 	foreach my $check ( @{ $self->transcript_types} ){
 	  $src_id = $self->get_source_id_for_source_name($self->source_name_gadfly_transcript) if ($check=~m/$type/);
+	  $source_type = "transcript";
 	}
       }
 
@@ -254,7 +260,7 @@ sub make_dbxref_xref{
 	$xref->{SYNONYMS} = $self->get_synonyms($cgid);
 	$self->add_xref($xref);
 
-	if ($type){
+	if ($type and ($type eq $source_type)){
 	  my $direct_xref;
 	  $direct_xref = $xref ;
 	  $direct_xref->{ENSEMBL_STABLE_ID} = $cgid;
