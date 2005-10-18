@@ -195,7 +195,7 @@ sub DESTROY {
   my $obj = $self->_obj;
 
   if(!$obj) {
-    warn("Bio::EnsEMBL::Container: potential memory leak, contained"
+    warn("$self: potential memory leak, contained"
 	 . " object is not defined during garbage collection.");
   } elsif($obj->can('deleteObj')) {
     $obj->deleteObj();
