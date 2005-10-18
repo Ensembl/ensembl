@@ -640,6 +640,11 @@ sub get_database {
             -dbname => $self->param("${prefix}dbname"),
             -group  => $database,
     );
+    
+    # explicitely set the dnadb to itself - by default the Registry assumes
+    # a group 'core' for this now
+    $dba->dnadb($dba);
+
     $self->{'_dba'}->{$database} = $dba;
     $self->{'_dba'}->{'default'} = $dba unless $self->{'_dba'}->{'default'};
     return $self->{'_dba'}->{$database};
