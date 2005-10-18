@@ -425,7 +425,7 @@ CREATE TABLE transcript (
   seq_region_strand           tinyint(2) NOT NULL, 
   display_xref_id             int unsigned,
   biotype                     VARCHAR(40) NOT NULL,
-  enum                        status( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' ),
+  status                      enum( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' ),
   description                 text,
 
   PRIMARY KEY (transcript_id),
