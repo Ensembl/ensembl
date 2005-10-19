@@ -101,7 +101,7 @@
 3111	AFFY_HG_U133_PLUS_2	1	XREF	1	0	1	Affymx Microarray U133
 3112	AFFY_HG_U133A_2	1	XREF	1	0	1	Affymx Microarray U133
 3113	AFFY_HG_Focus	1	XREF	1	0	1	Affymx Microarray Focus
-3114	AFFY_Rat230_2	1	XREF	1	0	1	Affymx Microarray U133
+3114	AFFY_Rat230_2	1	XREF	1	0	1	Affymx Microarray Rat230
 3115	AFFY_Zebrafish	1	XREF	1	0	1	Affymx Microarray Zebrafish
 3116	AFFY_U133_X3P	1	XREF	1	0	1	Affymx Microarray U133
 3117	AFFY_Canine	1	XREF	1	0	1	Affymx Microarray Canine
