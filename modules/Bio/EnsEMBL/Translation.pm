@@ -764,42 +764,6 @@ sub get_all_DASFactories {
 }
 
 
-=head2 get_all_DASFeatures
-
-  Arg [1]    : none
-  Example    : $features = $prot->get_all_DASFeatures;
-  Description: Retreives a hash reference to a hash of DAS feature
-               sets, keyed by the DNS, NOTE the values of this hash
-               are an anonymous array containing:
-                (1) a pointer to an array of features;
-                (2) a pointer to the DAS stylesheet
-  Returntype : hashref of Bio::SeqFeatures
-  Exceptions : ?
-  Caller     : webcode
-  Status     : Stable
-
-=cut
-
-sub get_all_DASFeatures{
-  my ($self,@args) = @_;
-  $self->{_das_features} ||= {}; # Cache
-  my %das_features;
-  foreach my $dasfact( @{$self->get_all_DASFactories} ){
-    my $dsn  = $dasfact->adaptor->dsn;
-    my $name = $dasfact->adaptor->name;
-    $name ||= $dasfact->adaptor->url .'/'. $dsn;
-    if( $self->{_das_features}->{$name} ){ # Use cached
-      $das_features{$name} = $self->{_das_features}->{$name};
-      next;
-    }
-    else{ # Get fresh data
-      my @featref = $dasfact->fetch_all_by_DBLink_Container( $self );
-      $self->{_das_features}->{$name} = [@featref];
-      $das_features{$name} = [@featref];
-    }
-  }
-  return \%das_features;
-}
 
 =head2 get_all_DAS_Features
 
@@ -831,19 +795,22 @@ sub get_all_DAS_Features{
     my $dsn = $dasfact->adaptor->dsn;
     my $name = $dasfact->adaptor->name;
     my $type = $dasfact->adaptor->type;
+    my $url = $dasfact->adaptor->url;
 
-    my $key = defined($dasfact->adaptor->url) ? $dasfact->adaptor->url .'/'. $dsn : $dasfact->adaptor->protocol .'://'.$dasfact->adaptor->domain.'/'. $dsn;
+# Construct a cache key : SOURCE_URL/TYPE
+# Need the type to handle sources that serve multiple types of features
 
-	 $name ||= $key;
+    my $key = $url || $dasfact->adaptor->protocol .'://'.$dasfact->adaptor->domain;
+    $key .= "/$dsn/$type";
 
-    if( $self->{_das_features}->{$name} ){ # Use cached
-		  $das_features{$key} = $self->{_das_features}->{$name};
-		  next;
+    if( $self->{_das_features}->{$key} ){ # Use cached
+	$das_features{$name} = $self->{_das_features}->{$key};
+	next;
     } else{ # Get fresh data
-		  my @featref = ($type eq 'ensembl_location') ?  ($name, ($dasfact->fetch_all_by_Slice( $slice ))[0]) : $dasfact->fetch_all_by_ID( $self );
-		  $self->{_das_features}->{$name} = [@featref];
-		  $das_features{$name} = [@featref];
-	 }
+	my $featref = ($type eq 'ensembl_location') ?  ($dasfact->fetch_all_by_Slice( $slice ))[0] : $dasfact->fetch_all_by_ID( $self );
+	$self->{_das_features}->{$key} = $featref;
+	$das_features{$name} = $featref;
+    }
   }
   return \%das_features;
 }
