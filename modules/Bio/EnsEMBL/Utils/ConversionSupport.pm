@@ -1198,6 +1198,10 @@ sub log_filehandle {
     my $fh = \*STDERR;
     if (my $logfile = $self->param('logfile')) {
         if (my $logpath = $self->param('logpath')) {
+            unless (-e $logpath) {
+                system("mkdir $logpath") == 0 or
+                    $self->log_error("Can't create log dir $logpath: $!\n");
+            }
             $logfile = "$logpath/$logfile";
         }
         open($fh, "$mode", $logfile) or throw(
