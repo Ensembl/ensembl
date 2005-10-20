@@ -89,8 +89,8 @@ sub warn{
 
     Bio::EnsEMBL::Utils::Exception->warning("\n------------------ DEPRECATED ---------------------\n".
                                         "Bio::EnsEMBL::Root::warn has been deprecated\n".
-					 "use Bio::EnsEMBL::Utils::Exception qw(warn); \n".
-					 "warn('message'); #instead\n".
+					 "use Bio::EnsEMBL::Utils::Exception qw(warning); \n".
+					 "warning('message'); #instead\n".
 					 "\n---------------------------------------------------\n");
     
     Bio::EnsEMBL::Utils::Exception->warning($string);
