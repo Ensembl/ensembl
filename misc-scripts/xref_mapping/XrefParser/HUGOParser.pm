@@ -58,11 +58,12 @@ sub run {
 # 1 Approved Symbol    # label
 # 2 Approved Name      # description
 # 3 Previous Symbols   # synonyms
-# 4 UniProt ID         # uniprot accession
+# 4 Aliases            # aliases
+# 5 UniProt ID         # uniprot accession
     my @array = split(/\t/,$_);
 
-    if ($array[4]) {  #swissprot
-      my $master = $swiss{$array[4]};
+    if ($array[5]) {  #swissprot
+      my $master = $swiss{$array[5]};
       if(!defined($master)){
 	$mismatch++;
       }
@@ -76,6 +77,14 @@ sub run {
 	    XrefParser::BaseParser->add_to_syn($array[0], $source_id, $arr);
 	  }
 	}
+	if(defined($array[4])){ #alias add to synonym
+	  my @array2 = split(',\s*',$array[4]);
+	  foreach my $arr (@array2){
+#	    print "adding synonym ".$arr." for ".$hugo{$hgnc}." ($hgnc)\n";
+	    XrefParser::BaseParser->add_to_syn($array[0], $source_id, $arr);
+	  }
+	}
+	
       }
       #	print "$array[1]\tSPTR\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\tXREF\n";
     }
