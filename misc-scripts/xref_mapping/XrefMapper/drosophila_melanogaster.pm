@@ -82,7 +82,6 @@ sub build_display_xrefs {
 
 	if ($source =~ /$second_source/) {
 	  $obj_to_best_xref{$key} = $best_xref;
-          print "Found $second_source for $type $object_id\n";
 	}
 
       } else {
