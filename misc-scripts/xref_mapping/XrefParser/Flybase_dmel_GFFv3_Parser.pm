@@ -240,11 +240,11 @@ sub make_dbxref_xref{
       if ($dbx =~m/FlyBase:/){
 	$dbx =~s/FlyBase://g;
 
-	if($dbx=~m/FBgn/){
+	if($dbx=~m/FBgn/ and $type eq "gene"){
 	  $src_id = $self->get_source($self->source_name_fbgn);
-	}elsif ($dbx =~m/FBtr/){
+	}elsif ($dbx =~m/FBtr/ and $type eq "transcript"){
 	  $src_id = $self->get_source($self->source_name_fbtr);
-	}elsif ($dbx =~m/FBpp/){
+	}elsif ($dbx =~m/FBpp/ and $type eq "translation"){
 	  $src_id = $self->get_source($self->source_name_fbpp);
 	}elsif ($dbx =~m/FBan/){
 	  $src_id = $self->get_source($self->source_name_fban);
