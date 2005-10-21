@@ -19,6 +19,8 @@ use Bio::EnsEMBL::Utils::Exception;
 
 @ISA = qw(XrefParser::BaseParser);
 
+my %cache_source =();
+
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -68,6 +70,7 @@ sub new {
   $self->source_name_fban('flybase_annotation_id');   # source-name for FBan
   $self->source_name_symbol('flybase_synonym');
   $self->source_name_name('flybase_name');
+  $self->source_name_name_prefix('FlyBaseName_');
 
   # gadfly-CG-ids
   $self->source_name_gadfly_gene('gadfly_gene_cgid');                # cg-id from genome annotation drosphila CG0123
@@ -75,7 +78,7 @@ sub new {
   $self->source_name_gadfly_translation('gadfly_translation_cgid');  # cg-id from genome annotation drosphila CG0123-PA
   
 
-  my @gene_types = qw ( gene ) ;
+  my @gene_types = qw (gene) ;
   my @translation_types = qw (CDS);
   my @transcript_types = qw (mRNA ncRNA snRNA tRNA rRNA pseudogene);
 
@@ -93,6 +96,19 @@ sub new {
 
 # --------------------------------------------------------------------------------
 
+
+
+# large number of calls to SQL should now be speeded up as cached.
+sub get_source{
+  my ($self, $name) =@_;
+
+  if(!defined($cache_source{$name})){
+    $cache_source{$name} = XrefParser::BaseParser->get_source_id_for_source_name($name)
+  }
+
+  return $cache_source{$name};
+}
+
 sub run {
   my $self = shift if (defined(caller(1)));
   my $file = shift;
@@ -107,7 +123,7 @@ sub run {
   $self->species_id($species_id) ;
 
   my $external_source_db_name = $self->external_source_db_name() ;
-  my $flybase_source_id = XrefParser::BaseParser->get_source_id_for_source_name($external_source_db_name);
+  my $flybase_source_id = $self->get_source($external_source_db_name);
 
   $self->create_xrefs($flybase_source_id, $file);
 
@@ -152,11 +168,12 @@ sub create_xrefs {
     chomp;
     my @col = split /\s+/;
     if($col[3]){
+     
 
       # test if line contains information for object wanted (CDS,mRNA,gene,..)
       if ( $self->line_contains_object_to_process( $col[2] ) ){
 
-	my $type = $self->set_ensembl_object_type($col[2]);
+ 	my $type = $self->set_ensembl_object_type($col[2]);
 
 	my @desc = split /\;/,$col[8];
 	my $cgid = shift @desc;
@@ -165,6 +182,7 @@ sub create_xrefs {
 
 	# set up xref-entry for EVERY single item
 	foreach my $item (@desc) {
+
 
 	  # make all xrefs for type "Name=" in desc-field
 	  $self->make_name_xref($item,$cgid,$type);
@@ -223,31 +241,24 @@ sub make_dbxref_xref{
 	$dbx =~s/FlyBase://g;
 
 	if($dbx=~m/FBgn/){
-	  $src_id = $self->get_source_id_for_source_name($self->source_name_fbgn);
-	  $source_type = "gene";
+	  $src_id = $self->get_source($self->source_name_fbgn);
 	}elsif ($dbx =~m/FBtr/){
-	  $src_id = $self->get_source_id_for_source_name($self->source_name_fbtr);
-	  $source_type = "transcript";
+	  $src_id = $self->get_source($self->source_name_fbtr);
 	}elsif ($dbx =~m/FBpp/){
-	  $src_id = $self->get_source_id_for_source_name($self->source_name_fbpp);
-	  $source_type = "translation";
+	  $src_id = $self->get_source($self->source_name_fbpp);
 	}elsif ($dbx =~m/FBan/){
-	  $src_id = $self->get_source_id_for_source_name($self->source_name_fban);
-	  $source_type = "gene";
+	  $src_id = $self->get_source($self->source_name_fban);
 	}
       }elsif($dbx =~m/Gadfly:/){
 	$dbx =~s/Gadfly://g;
-	foreach my $check ( @{ $self->gene_types} ){
-	  $src_id = $self->get_source_id_for_source_name($self->source_name_gadfly_gene) if ($check=~m/$type/);
-	  $source_type = "gene";
+	if($type eq "gene"){
+	  $src_id = $self->get_source($self->source_name_gadfly_gene) ;
 	}
-	foreach my $check ( @{ $self->translation_types} ){
-	  $src_id = $self->get_source_id_for_source_name($self->source_name_gadfly_translation) if ($check=~m/$type/);
-	  $source_type = "translation";
+	elsif($type eq "translation"){
+	  $src_id = $self->get_source($self->source_name_gadfly_translation);
 	}
-	foreach my $check ( @{ $self->transcript_types} ){
-	  $src_id = $self->get_source_id_for_source_name($self->source_name_gadfly_transcript) if ($check=~m/$type/);
-	  $source_type = "transcript";
+	elsif($type eq "transcript"){
+	  $src_id = $self->get_source($self->source_name_gadfly_transcript); 
 	}
       }
 
@@ -260,7 +271,7 @@ sub make_dbxref_xref{
 	$xref->{SYNONYMS} = $self->get_synonyms($cgid);
 	$self->add_xref($xref);
 
-	if ($type and ($type eq $source_type)){
+	if ($type){
 	  my $direct_xref;
 	  $direct_xref = $xref ;
 	  $direct_xref->{ENSEMBL_STABLE_ID} = $cgid;
@@ -296,10 +307,10 @@ sub set_flybase_synonyms {
 
 sub make_name_xref{
   my ($self,$item,$cgid,$type) = @_;
-  my $xref;
+  my $xref=undef;
   my $target = $self->gff_name ;
 
-  if($item=~m/$target/){
+  if($item=~m/$target/){  ##Name=
 
     my $gff_gene_name = get_fields ( $item, $target ) ;
     #print "having $$gff_gene_name[0]\n" ; 
@@ -307,10 +318,15 @@ sub make_name_xref{
     $xref->{ACCESSION} = $$gff_gene_name[0];
     $xref->{LABEL} = $$gff_gene_name[0];
     $xref->{SPECIES_ID} = $self->species_id();
-    $xref->{SOURCE_ID} =  $self->get_source_id_for_source_name($self->source_name_name);
+    my $type_s = $type;
+    if($type eq "translation"){
+      $type_s = $type."s";
+    }
+    $xref->{SOURCE_ID} =  $self->get_source($self->source_name_name_prefix().$type_s);
     $self->add_xref($xref);
   }
-  if ($type){
+  # only allow Name on genes. This is a fix for Biomart really.
+  if (defined($xref) and $type){
     my $direct_xref;
     $direct_xref = $xref ;
     $direct_xref->{ENSEMBL_STABLE_ID} = $cgid;
@@ -348,6 +364,13 @@ sub source_name_name{
 
   $self->{_source_name_name} = shift if @_ ;
   return $self->{_source_name_name};
+}
+
+sub source_name_name_prefix{
+  my $self = shift;
+
+  $self->{_source_name_name_prefix} = shift if @_ ;
+  return $self->{_source_name_name_prefix};
 }
 
 
