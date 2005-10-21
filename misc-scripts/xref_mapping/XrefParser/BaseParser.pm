@@ -716,6 +716,12 @@ sub delete_by_source {
   # SQL for deleting stuff
   # Note this SQL only works on MySQL version 4 and above
 
+  #Remove direct xrefsbased on source
+  my $direct_sth = $dbi->prepare("DELETE FROM direct_xref USING xref, direct_xref WHERE xref.xref_id=direct_xref.general_xref_id AND xref.source_id=?");
+  
+  #remove Pairs fro source
+  my $pairs_sth = $dbi->prepare("DELETE FROM pairs WHERE source_id=?");
+
   # Remove dependent_xrefs and synonyms based on source of *xref*
   my $syn_sth = $dbi->prepare("DELETE FROM synonym USING xref, synonym WHERE xref.xref_id=synonym.xref_id AND xref.source_id=?");
   my $dep_sth = $dbi->prepare("DELETE FROM dependent_xref USING xref, dependent_xref WHERE xref.xref_id=dependent_xref.master_xref_id AND xref.source_id=?");
@@ -734,6 +740,10 @@ sub delete_by_source {
 
   # now delete them
   foreach my $source (keys %source_ids) {
+    print "Deleting pairs with source ID $source \n";
+    $pairs_sth->execute($source);
+    print "Deleting direct xrefs with source ID $source \n";
+    $direct_sth->execute($source);
     print "Deleting synonyms of xrefs with source ID $source \n";
     $syn_sth->execute($source);
     print "Deleting dependent xrefs of xrefs with source ID $source \n";
