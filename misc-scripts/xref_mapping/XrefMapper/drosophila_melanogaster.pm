@@ -30,7 +30,7 @@ sub build_transcript_display_xrefs {
 
   $self->build_xref_to_source_mappings();
 
-  $self->build_display_xrefs("Transcript", "flybase_name", "gadfly_transcript_cgid");
+  $self->build_display_xrefs("Transcript", "FlyBaseName_transcript", "gadfly_transcript_cgid");
 
 }
 
@@ -38,7 +38,7 @@ sub build_gene_display_xrefs {
 
   my ($self) = @_;
 
-  $self->build_display_xrefs("Gene", "flybase_name", "gadfly_gene_cgid");
+  $self->build_display_xrefs("Gene", "FlyBaseName_gene", "gadfly_gene_cgid");
 
 }
 
@@ -181,6 +181,9 @@ sub read_direct_xref_mappings {
 	$n++;
 
       }
+    }
+    else{
+      print "WARNING: $source_id \n";
     }
   }
 
