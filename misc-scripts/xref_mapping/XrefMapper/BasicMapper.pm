@@ -2274,6 +2274,39 @@ sub build_gene_descriptions {
 
   # Foreach gene, get any xrefs associated with its transcripts or translations
 
+  # just in case species specific routines missed the population of the
+  # needed hashes. Check an populate if miising.
+  if(!scalar(keys %translation_to_transcript)){
+    print "Building translation to transcript mappings\n";
+    $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
+    $sth->execute();
+    
+    my ($translation_id, $transcript_id);
+    $sth->bind_columns(\$translation_id, \$transcript_id);
+    
+    while ($sth->fetch()) {
+      $translation_to_transcript{$translation_id} = $transcript_id;
+      $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
+    }
+  }
+  if(!scalar(keys %xref_to_source)){
+    print "Building xref->source mapping table\n";
+    my $sql = "SELECT x.xref_id, s.name FROM source s, xref x WHERE x.source_id=s.source_id";
+    my $sth = $self->xref->dbc->prepare($sql);
+    $sth->execute();
+
+    my ($xref_id, $source_name);
+    $sth->bind_columns(\$xref_id, \$source_name);
+
+    while ($sth->fetch()) {
+      $xref_to_source{$xref_id} = $source_name;
+    }
+
+    print "Got " . scalar(keys %xref_to_source) . " xref-source mappings\n";
+
+  }
+
+
   print "Assigning gene descriptions\n";
 
 
