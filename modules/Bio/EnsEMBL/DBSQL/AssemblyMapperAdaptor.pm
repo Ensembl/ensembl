@@ -11,8 +11,6 @@
 
 =Head1 NAME
 
-Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
-
 =head1 SYNOPSIS
 
   my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
@@ -1022,6 +1020,10 @@ sub register_all_chained {
 
   if( ! defined $mid_cs ) {
     @path = @{$csa->get_mapping_path($first_cs, $last_cs)};
+    if( $path[1] == undef ) {
+      $path[1] = $path[2];
+      $#path = 1;
+    }
   } else {
     @path = @{$csa->get_mapping_path($first_cs, $mid_cs)};
   }
