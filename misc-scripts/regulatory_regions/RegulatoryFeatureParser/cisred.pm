@@ -235,12 +235,12 @@ sub get_blank_factor_id () {
   my ($factor_id) = $sth->fetchrow_array();
 
   if ($factor_id) {
-    print "Found existing blank factor, id=$factor_id\n";
+    print "Found existing blank factor, id = $factor_id\n";
   } else {
      $db_adaptor->dbc->do("INSERT INTO regulatory_factor (name) VALUES ('')");
      $sth->execute();
      ($factor_id) = $sth->fetchrow_array();
-     print "Created new blank factor, id=$factor_id\n";
+     print "Created new blank factor, id = $factor_id\n";
   }
 
   return $factor_id;
