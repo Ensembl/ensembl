@@ -1213,8 +1213,8 @@ sub software_version{
   
 sub no_version_check {
   my ($self, $arg ) = @_;
-  ( defined $arg ) && ( $self->{'_no_version_check'} = $arg );
-  return $self->{'_no_version_check'};
+  ( defined $arg ) && ( $registry_register{'_no_version_check'} = $arg );
+  return $registry_register{'_no_version_check'};
 }
 
   
