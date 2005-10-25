@@ -2,17 +2,41 @@ package RegulatoryFeatureParser::cisred;
 
 use strict;
 
-# Parse data from cisred database dump; download zip file from
-# http://www.cisred.org/content/data/about/human1.2e/folder_listing
-# Only features.txt is parsed
+use File::Basename;
+
+# To get files for CisRed data, connect to db.cisred.org as anonymous
+# and use the queries below.
 #
-# Format:
+# Note that you can't connect directly to it from the Sanger machines
+# (firewall issues) so I do it from the EBI and then scp the data across
+# to the Sanger machine.										
+#
+#   mysql -u anonymous -h db.cisred.org -e 'select f.id as motif_id, f.seqname as chromosome, f.start, f.end, f.ensembl_gene_id,g.group_id from features f, group_content g where f.id=g.feature_id' cisred_Hsap_1_2e > motifs.txt
+#
+#   mysql -u anonymous -h db.cisred.org -e 'select distinct(group_id), count(*) from group_content where group_id !=0 and group_id != -1 group by group_id having count(*) > 1' cisred_Hsap_1_2e > group_sizes.txt
+#
+# The queries should take ~ 1 minute and ~ 2 seconds respectively.
+#
+# For the second query, if a group_id has an entry in this file then the regulatory_factor should be assigned as "crtHsapXX" where XX is the group_id. If there's no entry, don't assign a regulatory_factor.
+#
+# Note all features are unstranded
 
-# <id> <batch_id> <seqname> <source> <feature> <start> <end> <score> <mi_score> <strand> <frame> <gene_id> <consensus>
-# 6  1  10  cisRed  con.omops.w10_2_0  43087959  43087968  0.0320202924260256  8.21540322580645  -  .  ENSG00000198915  GGAGGsCTCs
-#10  1  10  cisRed  con.omops.w10_2_1  43083501  43083510  0.0079514357443787  11.7362903225806  -  .  ENSG00000198915  GGAGGCCTCC
+# Format of motifs.txt
+# motif_id	chromosome	start	        end	        ensembl_gene_id	  group_id
+# 6	        10	        43087959	43087968	ENSG00000198915	  -1
+# 15	        10	        43087044	43087053	ENSG00000198915	  -1
+# 20	        10	        43087045	43087054	ENSG00000198915	  -1
+# 37	        10	        43086873	43086884	ENSG00000198915	  -1
+# 51	        5	        42855740	42855752	ENSG00000198865	  -1
+# 54	        10	        43082459	43082470	ENSG00000198915	  -1
 
-use RegulatoryFeatureParser::BaseParser;
+# Format of group_sizes.txt
+# group_id	count(*)
+# 1	        8
+# 2	        7
+# 3	        4
+
+
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 use vars qw(@ISA);
@@ -31,6 +55,14 @@ sub parse {
 
   print "Parsing $file with cisred parser\n";
 
+  # ----------------------------------------
+  # We need a "blank" factor for those features which aren't assigned factors
+  # Done this way to maintain referential integrity
+
+  my $blank_factor_id = $self->get_blank_factor_id($db_adaptor);
+
+  # ----------------------------------------
+
   my $feature_internal_id = ($self->find_max_id($db_adaptor, "regulatory_feature")) + 1;
   my $highest_factor_id = ($self->find_max_id($db_adaptor, "regulatory_factor")) + 1;
 
@@ -41,89 +73,109 @@ sub parse {
   my @factors;
   my %factor_ids_by_name; # name -> factor_id
   my %feature_objects;
-  my %anal;
 
   # TODO - regulatory_factor_coding
 
   my $stable_id_to_internal_id = $self->build_stable_id_cache($db_adaptor);
 
-  open (FILE, "<$file") || die "Can't open $file";
+  # read group_sizes.txt from same location as $file
+  my $group_sizes_file = dirname($file) . "/group_sizes.txt";
 
+  my %group_sizes;
+  print "Parsing group sizes from $group_sizes_file\n";
+  open (GROUP_SIZES, "<$group_sizes_file") || die "Can't open $group_sizes_file";
+  <GROUP_SIZES>; # skip header
+  while (<GROUP_SIZES>) {
+    my ($file_group_id, $size) = split;
+    $group_sizes{$file_group_id} = $size;
+  }
+  close(GROUP_SIZES);
+
+  # ----------------------------------------
+  # Analysis
+
+  my $analysis = $analysis_adaptor->fetch_by_logic_name("cisRed");
+
+  if (!$analysis) {
+    print STDERR "Can't get analysis for cisRed, skipping\n";
+    next;
+  }
+
+  my $analysis_id = $analysis->dbID();
+
+  # ----------------------------------------
+  # Parse motifs.txt file
+
+  print "Parsing features from $file\n";
+
+  open (FILE, "<$file") || die "Can't open $file";
+  <FILE>; # skip header
   while (<FILE>) {
 
     next if ($_ =~ /^\s*\#/ || $_ =~ /^\s*$/);
 
     my %feature;
 
-    my ($id, $batch_id, $seqname, $source, $feature, $start, $end, $score, $mi_score, $strand, $frame, $gene_id, $consensus) = split;
+    my ($motif_id, $chromosome, $start, $end, $gene_id, $group_id) = split;
 
-    my $strand = ($strand =~ /\+/ ? 1 : -1);
+    # ----------------------------------------
+    # Feature name
+    # Name is craHsap + motif_id 
+    # TODO - other species
+
+    $feature{NAME} = "craHsap" . $motif_id;
+    $feature{INFLUENCE} = "unknown"; # TODO - what does cisRed store?
+    $feature{ANALYSIS_ID} = $analysis_id;
 
     # ----------------------------------------
     # Factor
 
-    # $seq is the name of a factor - if it's already there, find its ID, otherwise add it
-    my $factor_id = $factor_ids_by_name{$feature};
-    if (!$factor_id) {
-      my %factor;
-      $factor_id = $highest_factor_id + 1;
-      $factor{INTERNAL_ID} = $factor_id;
-      $factor{NAME} = $feature;
-      $factor{TYPE} = $feature; # TODO - error checking that $feature is one of the enums?
-      push @factors, \%factor;
-      $factor_ids_by_name{$feature} = $factor_id;
-      $highest_factor_id = $factor_id;
-      #print join("  ", ("Factor: ", $factor{ID}, $factor{NAME}, $factor{TYPE})) . "\n";
+    # If $group_id is present in %group_sizes we want to create or reuse a factor.
+    # If not, this feature is not associated with any factor.
+    # If the factor is to be created, its name is crtHsapXX where XX is group_id.
+    # TODO - other species prefixes
+
+    $feature{FACTOR_ID} = $blank_factor_id;
+    if ($group_sizes{$group_id}) {
+      my $factor_id = $factor_ids_by_name{$feature{NAME}};
+
+      if (!$factor_id) { # create one
+	my %factor;
+	$factor_id = $highest_factor_id + 1;
+	$factor{INTERNAL_ID} = $factor_id;
+	$factor{NAME} = "crtHsap" . $group_id;
+	$factor{TYPE} = $factor{NAME}; # TODO - error checking that type is one of the enums?
+	push @factors, \%factor;
+	$factor_ids_by_name{$factor{NAME}} = $factor_id;
+	$highest_factor_id = $factor_id;
+	#print join("  ", ("Factor: ", $factor{ID}, $factor{NAME}, $factor{TYPE})) . "\n";
+      }
+      $feature{FACTOR_ID} = $factor_id;
     }
-
-    $feature{FACTOR_ID} = $factor_id;
-
-    # ----------------------------------------
-    # Analysis
-
-    my $analysis = $anal{$source};
-    if (!$analysis) {
-      $analysis = $analysis_adaptor->fetch_by_logic_name($source);
-      $anal{$source} = $analysis;
-    }
-
-    if (!$analysis) {
-      print STDERR "Can't get analysis for $source, skipping\n";
-      next;
-    }
-
-    $feature{ANALYSIS_ID} = $analysis->dbID();
 
     # ----------------------------------------
     # Seq_region ID and co-ordinates
 
-    my $seqname_slice = $slice_adaptor->fetch_by_region(undef, $seqname, $start, $end, $strand);
+    my $chr_slice = $slice_adaptor->fetch_by_region(undef, $chromosome, $start, $end);
 
-    if (!$seqname_slice) {
-      print STDERR "Can't get slice for $seqname:$start:$end:$strand\n";
+    if (!$chr_slice) {
+      print STDERR "Can't get slice for $chromosome:$start:$end\n";
       next;
     }
 
-    my $seq_region_id = $slice_adaptor->get_seq_region_id($seqname_slice);
+    my $seq_region_id = $slice_adaptor->get_seq_region_id($chr_slice);
 
     if (!$seq_region_id) {
-      print STDERR "Can't get seq_region_id for chromosome $seqname\n";
+      print STDERR "Can't get seq_region_id for chromosome $chromosome\n";
       next;
     }
 
     $feature{SEQ_REGION_ID} = $seq_region_id;
-    $feature{START} = $seqname_slice->start();
-    $feature{END} = $seqname_slice->end();
-    $feature{STRAND} = $seqname_slice->strand();
+    $feature{START} = $chr_slice->start();
+    $feature{END} = $chr_slice->end();
 
-    # ----------------------------------------
-    # Feature name
-
-    # For cisRed, individual features don't have a unique name, so create
-    # a composite one. Also set influence.
-
-    $feature{NAME} = $gene_id .":" . $feature;
-    $feature{INFLUENCE} = "unknown"; # TODO - what does cisRed store?
+    # Note CisRed should be unstranded
+    $feature{STRAND} = $chr_slice->strand();
 
     # ----------------------------------------
     # Ensembl object - always a gene in cisRed
@@ -140,7 +192,6 @@ sub parse {
 
     # ----------------------------------------
     # Feature internal ID
-    # note this is not the "id" referred to above
 
     $feature{INTERNAL_ID} = $feature_internal_id++;
 
@@ -156,7 +207,7 @@ sub parse {
 
     #print "Feature: ";
     #foreach my $field (keys %feature) {
-    #  print $field . ": " . $feature{$field} . " ";
+    #	print $field . ": " . $feature{$field} . " ";
     #}
     #print "\n";
 
@@ -173,6 +224,28 @@ sub parse {
 
 }
 
+
+sub get_blank_factor_id () {
+
+  my ($self, $db_adaptor) = @_;
+
+  my $sth = $db_adaptor->dbc->prepare("SELECT regulatory_factor_id FROM regulatory_factor WHERE name=''");
+  $sth->execute();
+
+  my ($factor_id) = $sth->fetchrow_array();
+
+  if ($factor_id) {
+    print "Found existing blank factor, id=$factor_id\n";
+  } else {
+     $db_adaptor->dbc->do("INSERT INTO regulatory_factor (name) VALUES ('')");
+     $sth->execute();
+     ($factor_id) = $sth->fetchrow_array();
+     print "Created new blank factor, id=$factor_id\n";
+  }
+
+  return $factor_id;
+
+}
 
 
 sub new {
