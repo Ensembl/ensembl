@@ -1020,7 +1020,7 @@ sub register_all_chained {
 
   if( ! defined $mid_cs ) {
     @path = @{$csa->get_mapping_path($first_cs, $last_cs)};
-    if( $path[1] == undef ) {
+    if(!defined($path[1]) ) {
       $path[1] = $path[2];
       $#path = 1;
     }
