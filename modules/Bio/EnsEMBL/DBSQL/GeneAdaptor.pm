@@ -1312,23 +1312,12 @@ SSQL
   my $cs1 = $csa->fetch_by_name($sequence_level);
   
 
-  #get level to map too.
-  
-  $sql = (<<LSQL); 
-  SELECT DISTINCT (c.name) FROM gene g, seq_region sr, coord_system c 
-    WHERE sr.seq_region_id = g.seq_region_id 
-          AND c.coord_system_id = sr.coord_system_id;
-LSQL
+  #get level to map to two
 
+  my $mcc =  $self->db->get_MetaCoordContainerAdaptor();
+  my $csnew = $mcc->fetch_all_CoordSystems_by_feature_type('gene');
 
-  $sth = $self->prepare($sql);
-  $sth->execute();
-  
-  while(my $csn = $sth->fetchrow_array()){
-    if($csn eq $sequence_level){
-      next;
-    }
-    my $cs2 = $csa->fetch_by_name($csn);
+  foreach my $cs2 (@$csnew){
     my $am = $ama->fetch_by_CoordSystems($cs1,$cs2);
     $am->register_all();    
   };
