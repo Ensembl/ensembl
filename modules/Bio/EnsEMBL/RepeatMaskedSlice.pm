@@ -52,7 +52,7 @@ use warnings;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
-
+use Bio::EnsEMBL::Utils::Exception;
 
 use vars qw(@ISA);
 
