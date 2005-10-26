@@ -84,6 +84,9 @@ INSERT INTO source VALUES (2530, 'flybase_polypeptide_id', 1, 'N', 4);
 INSERT INTO source VALUES (2540, 'flybase_annotation_id', 1, 'N', 4);
 INSERT INTO source VALUES (2550, 'flybase_synonym', 1, 'N', 4);
 INSERT INTO source VALUES (2560, 'flybase_name', 1, 'N', 4);
+INSERT INTO source VALUES (2561, 'FlyBaseName_gene', 1, 'N', 4);
+INSERT INTO source VALUES (2562, 'FlyBaseName_transcript', 1, 'N', 4);
+INSERT INTO source VALUES (2563, 'FlyBaseName_translations', 1, 'N', 4);
 INSERT INTO source VALUES (2570, 'gadfly_gene_cgid', 1, 'N', 4);
 INSERT INTO source VALUES (2571, 'gadfly_transcript_cgid', 1, 'N', 4);
 INSERT INTO source VALUES (2572, 'gadfly_translation_cgid', 1, 'N', 4);
@@ -109,54 +112,54 @@ INSERT INTO source VALUES (2856, "Anopheles_symbol", 1, 'Y', 3);
 # --------------------------------------------------------------------------------
 ### DROSOPHILA TESTING GFF
 # chr 2L	
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-2L-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-2L-r4.2.1.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 # chr 2R
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-2R-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-2R-r4.2.1.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 # chr 3L
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-3L-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-3L-r4.2.1.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 # chr 3R
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-3R-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-3R-r4.2.1.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 # chr 4
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-4-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-4-r4.2.1.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 # chr X 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-X-r4.1.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-X-r4.2.1.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 ## HETERO-CHROMATIN
 
 # 2h 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-2h-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-2h-hetr32b2.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 # 3h 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-3h-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-3h-hetr32b2.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 # 4h 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-4h-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-4h-hetr32b2.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 # U 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-U-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-U-hetr32b2.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 # Xh 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-Xh-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-Xh-hetr32b2.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 # Yh	 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser)\
-VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-Yh-hetr32b2.gff.gz', 'N', now(), now(), "Flybase_dmel_GFFv3_Parser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current_hetchr/gff/dmel-Yh-hetr32b2.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
 
 
 # Uniprot for drosophila
@@ -239,7 +242,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/gene_association.goa_human.gz', '', now(), now(), "GOParser");
 
 ##       HUGO
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1090, 9606,'http://www.gene.ucl.ac.uk/cgi-bin/nomenclature/gdlw.pl?title=Genew+output+data&col=gd_hgnc_id&col=gd_app_sym&col=gd_app_name&col=gd_prev_sym&col=md_prot_id&status=Approved&status=Approved+Non-Human&status_opt=3&=on&where=&order_by=gd_hgnc_id&limit=&format=text&submit=submit&.cgifields=&.cgifields=status&.cgifields=chr', '', now(), now(), "HUGOParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1090, 9606,'http://www.gene.ucl.ac.uk/cgi-bin/nomenclature/gdlw.pl?title=Genew+output+data&col=gd_hgnc_id&col=gd_app_sym&col=gd_app_name&col=gd_prev_sym&col=gd_aliases&col=md_prot_id&status=Approved&status=Approved+Non-Human&status_opt=3&=on&where=&order_by=gd_hgnc_id&limit=&format=text&submit=submit&.cgifields=&.cgifields=status&.cgifields=chr', '', now(), now(), "HUGOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
