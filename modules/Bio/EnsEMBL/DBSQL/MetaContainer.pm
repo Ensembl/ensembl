@@ -38,7 +38,7 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseMetaContainer;
-use Bio::EnsEMBL::Utils::Exception qw(deprecate);
+use Bio::EnsEMBL::Utils::Exception;
 
 use Bio::Species;
 
@@ -173,8 +173,8 @@ sub get_genebuild {
   if( @$arrRef ) {
     return $arrRef->[0];
   } else {
-    $self->warn("Please insert meta_key 'genebuild.version' " .
-		"in meta table at core db.\n");
+    warning("Please insert meta_key 'genebuild.version' " .
+            "in meta table at core db.\n");
   }
 }
 
