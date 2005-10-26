@@ -142,15 +142,26 @@ sub run {
 	}
 
 	print "Downloading $urls to $dir/$file\n";
-   
-	my $result = system("wget", "--quiet","--directory-prefix=$dir", "--output-document=$dir/$file",  $urls );
 
-	# check that the file actually downloaded; may not (e.g. if too many anonymous users)
-	if ($result != 0) {
-	  print "wget returned exit code $result; $type file $file not downloaded. Skipping.\n";
-	  next;
+	my $num_attempts = 0;
+	my $missing = 1;
+	while($num_attempts < 5 and $missing){
+	  my $result = system("wget", "--quiet","--directory-prefix=$dir", "--output-document=$dir/$file",  $urls );
+	  
+	  # check that the file actually downloaded; may not (e.g. if too many anonymous users)
+	  if ($result != 0) {
+	    print "wget returned exit code $result; $type file $file not downloaded.\n";
+	    print "waiting for 3 minutes then trying again\n";
+	    sleep(180);
+	  }
+	  else{
+	    $missing=0;
+	  }
+	  $num_attempts++;
 	}
-
+	if($missing){
+	  die "Could not get $type file $file tried 5 times but failed\n";
+	}
 	# if the file is compressed, the FTP server may or may not have automatically uncompressed it
 	# TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
 	if ($file =~ /(.*)\.gz$/) {
