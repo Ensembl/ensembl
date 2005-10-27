@@ -674,7 +674,8 @@ sub _fetch_by_object_type {
         $exDB->translation_end($translation_end);
         $exDB->score($score);
         $exDB->evalue($evalue);
-      } elsif( defined $linkage_type ) {
+
+      } elsif( defined $linkage_type && $linkage_type != "") {
         $exDB = Bio::EnsEMBL::GoXref->new_fast( \%obj_hash );
         $exDB->add_linkage_type( $linkage_type );
         $linkage_types{$refID}->{$linkage_type} = 1;
@@ -703,7 +704,7 @@ sub _fetch_by_object_type {
       $synonyms{$refID}->{$synonym} = 1;
     }
 
-    if(defined($linkage_type) && !$linkage_types{$refID}->{$linkage_type}) {
+    if(defined($linkage_type) && $linkage_type != "" && !$linkage_types{$refID}->{$linkage_type}) {
       $seen{$refID}->add_linkage_type($linkage_type);
       $linkage_types{$refID}->{$linkage_type} = 1;
     }
