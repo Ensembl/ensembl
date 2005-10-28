@@ -51,8 +51,8 @@ use vars qw(@ISA);
   Arg [1]    : Bio::EnsEMBL::Slice $slice
   Arg [2]    : (optional) string $logic_name
                Limits RepeatFeatures obtained to those having an Analysis with
-               of the specified logic_name.  If no logic name is specified
-               Repeats of all analysis types are retrieved.
+               of the specified logic_name.  If no logic name is specified,
+               regulatory features of all analysis types are retrieved.
   Example    : @rfeats = @{$rfa->fetch_all_by_Slice($slice, 'miRanda')};
   Description: Retrieves regulatory features overlapping the area designated by
                the provided slice argument.  Returned features will be in
