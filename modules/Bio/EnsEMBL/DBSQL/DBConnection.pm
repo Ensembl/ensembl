@@ -514,7 +514,7 @@ sub prepare {
      throw("Attempting to prepare an empty SQL query.");
    }
 
-  # print STDERR  "SQL(".$self->dbname."):$string\n";
+#   print STDERR  "SQL(".$self->dbname."):" . join(' ', @args) . "\n";
 
    my $sth = $self->db_handle->prepare(@args);
 
