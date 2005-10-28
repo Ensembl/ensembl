@@ -1,7 +1,7 @@
 
-BEGIN { $| = 1;  
+BEGIN { $| = 1;
 	use Test;
-	plan tests => 11;
+	plan tests => 14;
 }
 
 my $loaded = 0;
@@ -39,11 +39,11 @@ $analysis->gff_source('dummy');
 $analysis->gff_feature('dummy');
 $analysis->description( "some funny description" );
 $analysis->display_label( "and a label" );
+$analysis->created( "2005-10-28 10:28:29");
 
 ok($analysis);
 
 $analysis_ad->store($analysis);
-
 
 ok(defined $analysis->dbID() );
 
@@ -61,7 +61,18 @@ ok( check_methods( $analysis_out, "db", "db_file", "dbID", "compare",
 		   "program", "db_version", "adaptor" ));
 
 ok( $analysis_out->description eq "some funny description" );
-ok( count_rows( $db, "analysis_description" ) == 1 );
+ok( count_rows( $db, "analysis_description" ) == 2 );
+
+# try updating
+$analysis->logic_name("new_dummy");
+$analysis->description("new description");
+$analysis->display_label("new label");
+my $dbID = $analysis->dbID();
+$analysis_ad->update($analysis);
+my $analysis_updated = $analysis_ad->fetch_by_dbID($dbID);
+ok($analysis_updated->logic_name() eq "new_dummy");
+ok($analysis_updated->description() eq "new description");
+ok($analysis_updated->display_label() eq "new label");
 
 $multi->restore();
 
