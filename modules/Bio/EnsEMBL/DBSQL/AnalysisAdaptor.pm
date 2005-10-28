@@ -329,7 +329,7 @@ sub store {
   if(!$analysis->logic_name()) {
     throw("Analysis cannot be stored without a valid logic_name");
   }
-
+    
 
   my $rows_inserted = 0;
   my $sth;
@@ -411,7 +411,7 @@ sub store {
 
   # if we need to fetch the timestamp, or the insert failed due to existance
   # of an existing entry, we need to retrieve the entry from the db
-  # note: $sth->execute can return 0E0 on erorr which is zero, but true
+  # note: $sth->execute can return 0E0 on error which is zero, but true
   # which is why the $rows_inserted clause was added.
   if(!$analysis->created() || !$rows_inserted || $rows_inserted == 0) {
     my $new_analysis = $self->fetch_by_logic_name($analysis->logic_name);
@@ -428,12 +428,10 @@ sub store {
     $dbID = $sth->{'mysql_insertid'};
     $sth->finish();
 
-    # store desccription and display_label so they are there 
+    # store description and display_label
     if( defined( $analysis->description() ) ||
 	defined( $analysis->display_label() )) {
-      $sth = $self->prepare( "INSERT IGNORE INTO TABLE analysis_description ".
-			     "SET analysis_id = ?, display_label = ?, ".
-			     "    description = ? " );
+      $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description) VALUES (?,?,?)");
       $sth->execute( $dbID, $analysis->display_label(), $analysis->description() );
       $sth->finish();
     }
@@ -492,6 +490,14 @@ sub update {
 
   $sth->finish();
 
+  # also update description & display label
+  $sth = $self->prepare
+    ("UPDATE analysis_description SET description = ?, display_label = ? WHERE analysis_id = ?");
+
+  $sth->execute($a->description(), $a->display_label(), $a->dbID);
+
+  $sth->finish();
+
   # the logic_name cache needs to be re-updated now, since we may have just
   # changed the logic_name
   $self->fetch_all();
@@ -527,6 +533,9 @@ sub remove {
   }
 
   my $sth = $self->prepare("DELETE FROM analysis WHERE analysis_id = ?");
+  $sth->execute($analysis->dbID());
+
+  $sth = $self->prepare("DELETE FROM analysis_description WHERE analysis_id = ?");
   $sth->execute($analysis->dbID());
 
   # remove this analysis from the cache
