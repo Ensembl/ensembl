@@ -11,7 +11,7 @@ use File::Basename;
 # (firewall issues) so I do it from the EBI and then scp the data across
 # to the Sanger machine.										
 #
-#   mysql -u anonymous -h db.cisred.org -e 'select f.id as motif_id, f.seqname as chromosome, f.start, f.end, f.ensembl_gene_id,g.group_id from features f, group_content g where f.id=g.feature_id' cisred_Hsap_1_2e > motifs.txt
+#   mysql -u anonymous -h db.cisred.org -e 'select f.id as motif_id, f.seqname as chromosome, f.start, f.end, f.strand, f.ensembl_gene_id,g.group_id from features f, group_content g where f.id=g.feature_id' cisred_Hsap_1_2e > motifs.txt
 #
 #   mysql -u anonymous -h db.cisred.org -e 'select distinct(group_id), count(*) from group_content where group_id !=0 and group_id != -1 group by group_id having count(*) > 1' cisred_Hsap_1_2e > group_sizes.txt
 #
@@ -116,7 +116,7 @@ sub parse {
 
     my %feature;
 
-    my ($motif_id, $chromosome, $start, $end, $gene_id, $group_id) = split;
+    my ($motif_id, $chromosome, $start, $end, $strand, $gene_id, $group_id) = split;
 
     # ----------------------------------------
     # Feature name
@@ -171,11 +171,9 @@ sub parse {
     }
 
     $feature{SEQ_REGION_ID} = $seq_region_id;
-    $feature{START} = $chr_slice->start();
-    $feature{END} = $chr_slice->end();
-
-    # Note CisRed should be unstranded
-    $feature{STRAND} = $chr_slice->strand();
+    $feature{START} = $start;
+    $feature{END} = $end;
+    $feature{STRAND} = $strand;
 
     # ----------------------------------------
     # Ensembl object - always a gene in cisRed
