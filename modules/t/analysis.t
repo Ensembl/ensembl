@@ -1,7 +1,7 @@
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 14;
+	plan tests => 15;
 }
 
 my $loaded = 0;
@@ -63,7 +63,7 @@ ok( check_methods( $analysis_out, "db", "db_file", "dbID", "compare",
 ok( $analysis_out->description eq "some funny description" );
 ok( count_rows( $db, "analysis_description" ) == 2 );
 
-# try updating
+# try updating existing description
 $analysis->logic_name("new_dummy");
 $analysis->description("new description");
 $analysis->display_label("new label");
@@ -73,6 +73,22 @@ my $analysis_updated = $analysis_ad->fetch_by_dbID($dbID);
 ok($analysis_updated->logic_name() eq "new_dummy");
 ok($analysis_updated->description() eq "new description");
 ok($analysis_updated->display_label() eq "new label");
+
+# now try updating analysis that has no existing description
+$analysis = Bio::EnsEMBL::Analysis->new();
+$analysis->logic_name('dummy_analysis');
+$analysis->created( "2005-10-28 10:28:29");
+$analysis_ad->store($analysis);
+$dbID = $analysis->dbID();
+print "## description before: " . $analysis->description() . "\n";
+$analysis->description("updated description");
+
+$analysis_ad->update($analysis);
+$analysis_updated = $analysis_ad->fetch_by_dbID($dbID);
+ok($analysis_updated->description() eq "updated description");
+print "## description after: " . $analysis_updated->description() . "\n";
+
+
 
 $multi->restore();
 
