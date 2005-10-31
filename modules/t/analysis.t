@@ -80,13 +80,11 @@ $analysis->logic_name('dummy_analysis');
 $analysis->created( "2005-10-28 10:28:29");
 $analysis_ad->store($analysis);
 $dbID = $analysis->dbID();
-print "## description before: " . $analysis->description() . "\n";
 $analysis->description("updated description");
-
 $analysis_ad->update($analysis);
 $analysis_updated = $analysis_ad->fetch_by_dbID($dbID);
 ok($analysis_updated->description() eq "updated description");
-print "## description after: " . $analysis_updated->description() . "\n";
+
 
 
 
