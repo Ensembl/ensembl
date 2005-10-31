@@ -490,13 +490,30 @@ sub update {
 
   $sth->finish();
 
-  # also update description & display label
-  $sth = $self->prepare
-    ("UPDATE analysis_description SET description = ?, display_label = ? WHERE analysis_id = ?");
+  # also update description & display label - may need to create these if
+  # not already there
+  $sth = $self->prepare("SELECT description FROM analysis_description WHERE analysis_id= ?");
+  $sth->execute($a->dbID);
 
-  $sth->execute($a->description(), $a->display_label(), $a->dbID);
+  if ($sth->fetchrow_hashref) { # update if exists
 
-  $sth->finish();
+    $sth = $self->prepare
+      ("UPDATE analysis_description SET description = ?, display_label = ? WHERE analysis_id = ?");
+
+    $sth->execute($a->description(), $a->display_label(), $a->dbID);
+
+  } else { # create new entry
+
+    if( $a->description() || $a->display_label()) {
+      $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description) VALUES (?,?,?)");
+      $sth->execute( $a->dbID(), $a->display_label(), $a->description() );
+      $sth->finish();
+    }
+
+  }
+
+
+    $sth->finish();
 
   # the logic_name cache needs to be re-updated now, since we may have just
   # changed the logic_name
