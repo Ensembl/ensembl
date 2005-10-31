@@ -508,61 +508,6 @@ sub get_all_homologous_Genes{
   return $self->{'homologues'};
 }
 
-=head2 type
-
-  Arg [1]    : string $type
-  Example    : none
-  Description: get/set for attribute type
-               This function is going to be deprecated soon, use biotype instead
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : At Risk
-
-=cut
-
-
-sub type {
-    my $self = shift;
-    
-    $self->{'biotype'} = shift if( @_ );
-    
-    # map biotype/status to HAWK classification for Vega
-    if ($self->source eq 'vega') {
-        my %typemap = (
-            'protein_coding.KNOWN'          => 'Known',
-            'protein_coding.NOVEL'          => 'Novel_CDS',
-            'unclassified.NOVEL'            => 'Novel_Transcript',
-            'protein_coding.PREDICTED'      => 'Predicted_Gene',
-            'unclassified.PUTATIVE'         => 'Putative',
-            'pseudogene.KNOWN'              => 'Pseudogene',
-            'pseudogene.NOVEL'              => 'Pseudogene',
-            'processed_pseudogene.KNOWN'    => 'Processed_pseudogene',
-            'processed_pseudogene.NOVEL'    => 'Processed_pseudogene',
-            'unprocessed_pseudogene.KNOWN'  => 'Unprocessed_pseudogene',
-            'unprocessed_pseudogene.NOVEL'  => 'Unprocessed_pseudogene',
-            'Ig_pseudogene_segment.KNOWN'   => 'Ig_Pseudogene_Segment',
-            'Ig_pseudogene_segment.NOVEL'   => 'Ig_Pseudogene_Segment',
-            'Ig_segment.KNOWN'              => 'Ig_Segment',
-            'Ig_segment.NOVEL'              => 'Ig_Segment',
-            'Known_in_progress.KNOWN'       => 'Known_in_progress',
-            'Novel_CDS_in_progress.KNOWN'   => 'Novel_CDS_in_progress',
-            'Novel_CDS_in_progress.NOVEL'   => 'Novel_CDS_in_progress',
-        );
-        my $bio_conf = $self->biotype.".".$self->status;
-        if ($typemap{$bio_conf}) {
-            return $typemap{$bio_conf};
-        } else {
-            warning("biotype.status ($bio_conf) cannot be resolved to HAWK type");
-        }
-
-    # for all other sources, return biotype
-    } else {
-        return ( $self->{'biotype'} || "protein_coding" );
-    }
-}
-
-
 
 =head2 biotype
 
@@ -1101,5 +1046,17 @@ sub fetch_coded_for_regulatory_factors {
   return $rfa->fetch_factors_coded_for_by_gene($self);
 
 }
+
+=head2 type
+
+  Description: DEPRECATED. Use biotype() instead.
+
+=cut
+
+sub type {
+    deprecate("Use biotype() instead");
+    biotype(@_);
+}
+
 
 1;
