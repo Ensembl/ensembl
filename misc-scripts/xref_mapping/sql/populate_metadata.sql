@@ -593,7 +593,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9913,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
 
 ##      UniGene
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (6, 9913,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Bt.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Bt.data.gz',  now(), now(), "UniGeneParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (6, 9913,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Bos_taurus/Bt.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Bos_taurus/Bt.data.gz',  now(), now(), "UniGeneParser");
 
 #### Monodelphis
 
