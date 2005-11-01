@@ -7,7 +7,7 @@
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9606,9606,  'homo_sapiens',            'human,hsapiens,homosapiens');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (10090,10090, 'mus_musculus',            'mouse,mmusculus,musmusculus');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (10116, 10116, 'rattus_norvegicus',       'rat,rnovegicus,rattusnorvegicus');
-INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (31033,31033, 'fugu_rubripes',           'pufferfish,fugu,frubripes,fugurubripes');
+INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (31033,31033, 'takifugu_rubripes',           'pufferfish,fugu,fugu_rubripes,frubripes,fugurubripes');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7227, 7227, 'drosophila_melanogaster', 'drosophila,dmelongaster,drosophilamelanogaster' );
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (6239, 6239, 'caenorhabditis_elegans',  'elegans,celegans,caenorhabditiselegans');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (6238, 6238, 'caenorhabditis_briggsae', 'briggsae,cbriggsae,caenorhabditisbriggsae');
@@ -797,5 +797,57 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
 (1300, 13616,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+
+#### Fugu
+
+## Uniprot
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (1, 31033, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (2, 31033, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+
+##       refseq
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other1.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other2.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other3.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other4.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other5.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other6.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other7.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other1.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other2.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other3.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other4.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other5.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other6.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 31033,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other7.rna.fna.gz',  now(), now(), "RefSeqParser");
+
+##       GO
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(1070, 31033,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
+
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(1300, 31033,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+
+
+##      UniGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(6, 31033,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Takifugu_rubripes/Tru.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Takifugu_rubripes/Tru.data.gz',  now(), now(), "UniGeneParser");
 
 ################################################################################
