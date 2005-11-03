@@ -32,7 +32,8 @@ Specific options:
 =head1 DESCRIPTION
 
 This script calculates Vega gene densities and total numbers per chromosome
-for use in mapview.
+for use in mapview. It also checks for new biotype/status pairs and warns to
+adapt the appropriate modules to deal with them.
 
 The block size is determined so that you have 150 bins for the smallest
 chromosome over 5 Mb in length. For chromosomes smaller than 5 Mb, an
@@ -109,28 +110,57 @@ my $dfa = $dba->get_DensityFeatureAdaptor;
 my $dta = $dba->get_DensityTypeAdaptor;
 my $aa = $dba->get_AnalysisAdaptor;
 my $attrib_adaptor = $dba->get_AttributeAdaptor;
+my $dbh = $dba->dbc->db_handle;
 
 # split chromosomes by size and determine block size
 my $chr_slices = $support->split_chromosomes_by_size(5000000);
 
-# create Analysis and DensityType objects
+# known biotype/status pairs and associated density type
 my %gene_types = (
-    "Known" => "knownGeneDensity",
-    "Novel_CDS" => "novelCDSDensity",
-    "Novel_Transcript" => "novelTransDensity",
-    "Putative" => "putativeTransDensity",
-    "Predicted_Gene" => "predictedTransDensity",
-    "Ig_Pseudogene_Segment" => "IgPseudoSegDensity",
-    "Ig_Segment" => "IgSegDensity",
-    "Processed_pseudogene" => "pseudoGeneDensity",
-    "Pseudogene" => "pseudoGeneDensity",
-    "Unprocessed_pseudogene" => "pseudoGeneDensity",
-    "Known_in_progress" => "knownGeneDensity",
-    "Novel_CDS_in_progress" => "novelCDSDensity", 
+    "protein_coding_KNOWN" => "knownGeneDensity",
+    "protein_coding_NOVEL" => "novelCDSDensity",
+    "processed_transcript_NOVEL" => "novelTransDensity",
+    "processed_transcript_PUTATIVE" => "putativeTransDensity",
+    "protein_coding_PREDICTED" => "predictedTransDensity",
+    "Ig_pseudogene_segment_NOVEL" => "IgPseudoSegDensity",
+    "Ig_segment_NOVEL" => "IgSegDensity",
+    "pseudogene_NOVEL" => "pseudoGeneDensity",
+    "processed_pseudogene_NOVEL" => "pseudoGeneDensity",
+    "unprocessed_pseudogene_NOVEL" => "pseudoGeneDensity",
+    "protein_coding_in_progress_KNOWN" => "knownGeneDensity",
+    "protein_coding_in_progress_NOVEL" => "novelCDSDensity", 
 );
-$support->log("Available gene types:\n    ");
-$support->log(join("\n    ", sort keys %gene_types)."\n");
 
+# check for new biotype/status pairs
+my $sql = qq(
+    SELECT concat(biotype, '_', status) as c 
+    FROM transcript
+    GROUP by biotype, status
+);
+my $sth = $dbh->prepare($sql);
+$sth->execute;
+my (%type_status, $new);
+while (my ($type) = $sth->fetchrow_array) {
+    if ($gene_types{$type}) {
+        $type_status{$type} = 'no';
+    } else {
+        $type_status{$type} = 'YES';
+        $new = 1;
+    }
+}
+my $FMT = "%-50s%-20s\n";
+$support->log("Checking for new biotype/status pairs...\n\n");
+$support->log(sprintf($FMT, qw(BIOTYPE/STATUS NEW)), 1);
+$support->log(('-'x70)."\n", 1);
+map { $support->log(sprintf($FMT, $_, $type_status{$_}), 1) }
+    sort keys %type_status;
+$support->log("\n");
+if ($new) {
+    $support->log_warning("There are new biotype/status pairs! You might need to adapt Bio::EnsEMBL::ColourMap, EnsEMBL::Sanger_vega::Component::Chromosome and configure mapview to show them.\n\n");
+}
+
+
+# create Analysis and DensityType objects
 my (%density_types, $dtcache);
 foreach my $type (keys %gene_types) {
     $density_types{$gene_types{$type}} = 1;
@@ -159,7 +189,7 @@ foreach my $block_size (keys %{ $chr_slices }) {
     $support->log(join("\n    ", map { $_->seq_region_name } @{ $chr_slices->{$block_size} })."\n");
 
     # looping over chromosomes
-    $support->log_stamped("Looping over chromosomes...\n");
+    $support->log_stamped("\nLooping over chromosomes...\n");
     my ($current_start, $current_end);
     foreach my $slice (@{ $chr_slices->{$block_size} }) {
         $current_start = 1;
@@ -191,10 +221,11 @@ foreach my $block_size (keys %{ $chr_slices }) {
             foreach my $gene (@{$genes}) {
                 # only count genes that don't overlap the subslice start
                 # (since these were already counted in the last bin)
+                my $gene_type = $gene->biotype . '_' . $gene->status;
                 if ($gene->start >= 1) {
-                    $total{$gene->type}++;
+                    $total{$gene_type}++;
                 }
-                $num{$gene_types{$gene->type}}++;
+                $num{$gene_types{$gene_type}}++;
             }
             
             # create DensityFeature objects for each type
@@ -321,12 +352,10 @@ foreach my $block_size (keys %{ $chr_slices }) {
         # log stats
         $support->log("\n");
         $support->log("Totals for chr $chr:\n", 1);
-        my $fmt = "%-30s%-40s\n";
-        $support->log(sprintf($fmt, qw(TYPE COUNT)), 2);
+        $support->log(sprintf($FMT, qw(TYPE COUNT)), 2);
         $support->log(('-'x70)."\n", 2);
-        map { $support->log(sprintf($fmt, $_, $total{$_}), 2) } sort keys %total;
-        $support->log_stamped("Done.\n", 1);
-        $support->log("\n");
+        map { $support->log(sprintf($FMT, $_, $total{$_}), 2) } sort keys %total;
+        $support->log_stamped("\nDone.\n\n", 1);
     }
     $support->log_stamped("Done.\n");
 }
