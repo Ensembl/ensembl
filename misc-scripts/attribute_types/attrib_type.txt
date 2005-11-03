@@ -100,23 +100,23 @@
 31	fpc_clone_id	fpc clone
 
 # additional gene counts for Vega (see GeneCount for general description)
-32	NovelCDSCount	14:Novel CDS	Total Number of Novel CDSs
-33	NovelTransCount	16:Novel transcripts	Total Number of Novel transcripts
-34	PutTransCount	24:Putative transcripts	Total Number of Putative transcripts
-35	PredTransCount	30:Predicted transcripts	Total Number of Predicted transcripts
-36	IgSegCount	26:Ig segments	Total Number of Ig Segments
-37	IgPsSegCount	28:Ig pseudogene Segments	Total Number of Ig Pseudogene Segments
-38	TotPsCount	18:Total pseudogenes	Total Number of Pseudogenes
-39	UnclassPsCount	23:Unclassified pseudogenes	Number of Unclassified pseudogenes
-40	ProcPsCount	20:Processed pseudogenes	Number of Processed pseudogenes
-41	UnprocPsCount	22:Unprocessed pseudogenes	Number of Unprocessed pseudogenes
-42	KnwnprogCount	13:Known genes (in progress)	Number of Known Genes in progress
-43	NovCDSprogCount	15:Novel CDS (in progress)	Number of novel CDS in progress
+32	NovelCDSCount	protein_coding_NOVEL	Total Number of Novel CDSs
+33	NovelTransCount	processed_transcript_NOVEL	Total Number of Novel transcripts
+34	PutTransCount	processed_transcript_PUTATIVE	Total Number of Putative transcripts
+35	PredTransCount	protein_coding_PREDICTED	Total Number of Predicted transcripts
+36	IgSegCount	Ig_segment_NOVEL	Total Number of Ig Segments
+37	IgPsSegCount	Ig_pseudogene_segment_NOVEL	Total Number of Ig Pseudogene Segments
+38	TotPsCount	total_pseudogene_NOVEL	Total Number of Pseudogenes
+39	UnclassPsCount	pseudogene_NOVEL	Number of Unclassified pseudogenes
+40	ProcPsCount	processed_pseudogene_NOVEL	Number of Processed pseudogenes
+41	UnprocPsCount	unprocessed_pseudogene_NOVEL	Number of Unprocessed pseudogenes
+42	KnwnprogCount	protein_coding_in_progress_KNOWN	Number of Known Genes in progress
+43	NovCDSprogCount	protein_coding_in_progress_NOVEL	Number of novel CDS in progress
 
 # Vega annotation stats
-44	AnnotSeqLength	03:Annotated sequence length	Total length of annotated clone sequence
-45	TotCloneNum	08:Total number of clones	Total number of clones
-46	NumAnnotClone	10:Number of annotated clones	Number of annotated clones
+44	AnnotSeqLength	Annotated sequence length	Total length of annotated clone sequence
+45	TotCloneNum	Total number of clones	Total number of clones
+46	NumAnnotClone	Number of annotated clones	Number of annotated clones
 
 # Acknowledgements for manual annotation of this seq_region
 47	ack	Acknowledgement		Acknowledgement
