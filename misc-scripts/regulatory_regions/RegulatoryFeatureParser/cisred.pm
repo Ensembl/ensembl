@@ -15,7 +15,10 @@ use File::Basename;
 #
 #   mysql -u anonymous -h db.cisred.org -e 'select distinct(group_id), count(*) from group_content where group_id !=0 and group_id != -1 group by group_id having count(*) > 1' cisred_Hsap_1_2e > group_sizes.txt
 #
-# The queries should take ~ 1 minute and ~ 2 seconds respectively.
+#
+#   mysql -h db.cisred.org -u anonymous -e 'select id, chromosome, start, end, strand, ensembl_gene_id from search_region where ensembl_gene_id REGEXP "^ENSG[0-9]{11}$"' cisred_Hsap_1_2e > search_regions.txt
+#
+# The queries should take ~ 1 minute, ~2 seconds and ~ 2 seconds respectively.
 #
 # For the second query, if a group_id has an entry in this file then the regulatory_factor should be assigned as "crtHsapXX" where XX is the group_id. If there's no entry, don't assign a regulatory_factor.
 #
@@ -36,6 +39,13 @@ use File::Basename;
 # 2	        7
 # 3	        4
 
+# Format of search_regions.txt
+# id      chromosome      start   end     strand  ensembl_gene_id
+# 2       X       99697840        99699489        -       ENSG00000000003
+# 11      X       99639860        99646074        +       ENSG00000000005
+# 18      1       166594596       166599297       -       ENSG00000000457
+# 27      1       166493136       166495988       +       ENSG00000000460
+
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
@@ -53,6 +63,12 @@ sub parse {
 
   my %result;
 
+  my $analysis_adaptor = $db_adaptor->get_AnalysisAdaptor();
+  my $slice_adaptor = $db_adaptor->get_SliceAdaptor();
+
+  my $stable_id_to_internal_id = $self->build_stable_id_cache($db_adaptor);
+
+ 
   print "Parsing $file with cisred parser\n";
 
   # ----------------------------------------
@@ -66,17 +82,12 @@ sub parse {
   my $feature_internal_id = ($self->find_max_id($db_adaptor, "regulatory_feature")) + 1;
   my $highest_factor_id = ($self->find_max_id($db_adaptor, "regulatory_factor")) + 1;
 
-  my $analysis_adaptor = $db_adaptor->get_AnalysisAdaptor();
-  my $slice_adaptor = $db_adaptor->get_SliceAdaptor();
-
   my @features;
   my @factors;
   my %factor_ids_by_name; # name -> factor_id
   my %feature_objects;
 
   # TODO - regulatory_factor_coding
-
-  my $stable_id_to_internal_id = $self->build_stable_id_cache($db_adaptor);
 
   # read group_sizes.txt from same location as $file
   my $group_sizes_file = dirname($file) . "/group_sizes.txt";
@@ -213,10 +224,54 @@ sub parse {
 
   close FILE;
 
+ # ----------------------------------------
+  # Search regions 
+  # read search_regions.txt from same location as $file
+  my $search_regions_file = dirname($file) . "/search_regions.txt";
+
+  my @search_regions;
+  print "Parsing search regions from $search_regions_file\n";
+  open (SEARCH_REGIONS, "<$search_regions_file") || die "Can't open $search_regions_file";
+  <SEARCH_REGIONS>; # skip header
+  while (<SEARCH_REGIONS>) {
+    my ($id, $chromosome, $start, $end, $strand, $ensembl_gene_id) = split;
+    my $gene_id = $stable_id_to_internal_id->{gene}->{$ensembl_gene_id};
+    if (!$gene_id) {
+      warn("Can't get internal ID for $ensembl_gene_id\n");
+      next;
+    }
+    my $sr_chr_slice = $slice_adaptor->fetch_by_region(undef, $chromosome, $start, $end);
+    if (!$sr_chr_slice) {
+      print STDERR "Can't get slice for $chromosome:$start:$end\n";
+      next;
+    }
+    my $sr_seq_region_id = $slice_adaptor->get_seq_region_id($sr_chr_slice);
+    if (!$sr_seq_region_id) {
+      print STDERR "Can't get seq_region_id for chromosome $chromosome\n";
+      next;
+    }
+    my %search_region;
+    $search_region{NAME} = "CisRed_Search_$id";
+    $search_region{SEQ_REGION_ID} = $sr_seq_region_id;
+    $search_region{START} = $start;
+    $search_region{END} = $end;
+    $search_region{STRAND} = ($strand =~ /\+/ ? 1 : -1);
+    $search_region{ENSEMBL_OBJECT_TYPE} = 'Gene';
+    $search_region{ENSEMBL_OBJECT_ID} = $gene_id;
+    $search_region{TYPE} = 'cisred';
+    push @search_regions, \%search_region;
+
+  }
+  close(SEARCH_REGIONS);
+
+
+  # ----------------------------------------
+
   $result{FEATURES} = \@features;
   $result{FACTORS} = \@factors;
+  $result{SEARCH_REGIONS} = \@search_regions;
 
-  print "Parsed " . scalar(@{$result{FEATURES}}) . " features and " . scalar(@{$result{FACTORS}}) . " factors\n";
+  print "Parsed " . scalar(@{$result{FEATURES}}) . " features, " . scalar(@{$result{FACTORS}}) . " factors and " . scalar(@{$result{SEARCH_REGIONS}}) . " search regions\n";
 
   return \%result;
 
