@@ -35,6 +35,10 @@ sub delete_existing {
   $sth = $db_adaptor->dbc->prepare("DELETE rfeat FROM regulatory_feature rfeat, analysis a WHERE a.analysis_id=rfeat.analysis_id AND LOWER(a.analysis_id)=?");
   $sth->execute($t);
 
+  # delete search regions of this type
+  $sth = $db_adaptor->dbc->prepare("DELETE FROM regulatory_search_region WHERE type=?");
+  $sth->execute($t);
+
 }
 
 # --------------------------------------------------------------------------------
@@ -123,6 +127,8 @@ sub upload_features_and_factors {
   my $factor_sth = $dbc->prepare("INSERT INTO regulatory_factor (regulatory_factor_id, name, type) VALUES(?,?,?)");
   my $feature_object_sth = $dbc->prepare("INSERT INTO regulatory_feature_object (regulatory_feature_id, ensembl_object_type, ensembl_object_id, influence, evidence) VALUES(?,?,?,?,?)");
 
+  my $sr_sth = $dbc->prepare("INSERT INTO regulatory_search_region (name, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, ensembl_object_type, ensembl_object_id, type ) VALUES(?,?,?,?,?,?,?,?)");
+
   print "Uploading " . scalar(@{$objects->{FEATURES}}) . " features ...\n";
 
   foreach my $feature (@{$objects->{FEATURES}}) {
@@ -154,6 +160,21 @@ sub upload_features_and_factors {
 
   }
 
+  print "Uploading " . scalar(@{$objects->{SEARCH_REGIONS}}) . " search regions ...\n";
+
+  foreach my $search_region (@{$objects->{SEARCH_REGIONS}}) {
+
+    $sr_sth->execute($search_region->{NAME},
+		     $search_region->{SEQ_REGION_ID},
+		     $search_region->{START},
+		     $search_region->{END},
+		     $search_region->{STRAND},
+		     $search_region->{ENSEMBL_OBJECT_TYPE},
+		     $search_region->{ENSEMBL_OBJECT_ID},
+		     $search_region->{TYPE});
+
+
+  }
   print "Done\n";
 
 }
