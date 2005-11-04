@@ -1294,4 +1294,27 @@ CREATE TABLE regulatory_factor_coding (
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
+################################################################################
+#
+# Table structure for table 'regulatory_search_region'
+#
+# Describes regions which were searched for regulatory features.
+
+CREATE TABLE regulatory_search_region (
+
+  regulatory_search_region_id  INT NOT NULL auto_increment,
+  name                         VARCHAR(255) NOT NULL,
+  seq_region_id                INT NOT NULL,                 # FK refs seq_region
+  seq_region_start             INT NOT NULL,
+  seq_region_end               INT NOT NULL,
+  seq_region_strand            TINYINT NOT NULL,
+  ensembl_object_type          ENUM( 'Transcript', 'Translation', 'Gene') NOT NULL,
+  ensembl_object_id            INT,           # FK to gene/transcript/translation
+  type                         ENUM('cisred', 'unknown'),
+
+  PRIMARY KEY (regulatory_search_region_id),
+  KEY rsr_idx (regulatory_search_region_id),
+  KEY ensembl_object_idx (ensembl_object_type, ensembl_object_id)
+
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
