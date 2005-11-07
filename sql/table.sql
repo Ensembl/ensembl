@@ -1310,7 +1310,7 @@ CREATE TABLE regulatory_search_region (
   seq_region_strand            TINYINT NOT NULL,
   ensembl_object_type          ENUM( 'Transcript', 'Translation', 'Gene') NOT NULL,
   ensembl_object_id            INT,           # FK to gene/transcript/translation
-  type                         ENUM('cisred', 'unknown'),
+  type                         ENUM('cisred_search', 'cisred_mask', 'unknown'),
 
   PRIMARY KEY (regulatory_search_region_id),
   KEY rsr_idx (regulatory_search_region_id),
