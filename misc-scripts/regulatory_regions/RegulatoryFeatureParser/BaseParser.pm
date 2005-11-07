@@ -35,9 +35,14 @@ sub delete_existing {
   $sth = $db_adaptor->dbc->prepare("DELETE rfeat FROM regulatory_feature rfeat, analysis a WHERE a.analysis_id=rfeat.analysis_id AND LOWER(a.analysis_id)=?");
   $sth->execute($t);
 
-  # delete search regions of this type
-  $sth = $db_adaptor->dbc->prepare("DELETE FROM regulatory_search_region WHERE type=?");
-  $sth->execute($t);
+  # Delete search regions; they have a different analysis_id
+  my $sr_type = $type . "_search";
+  die "Can't find analysis for $sr_type " unless validate_type($db_adaptor, $sr_type);
+  my $anal_sth = $db_adaptor->dbc->prepare("SELECT analysis_id FROM analysis WHERE LOWER(logic_name)=?");
+  $anal_sth->execute($sr_type);
+  my $anal = ($anal_sth->fetchrow_array())[0];
+  $sth = $db_adaptor->dbc->prepare("DELETE FROM regulatory_search_region WHERE analysis_id=?");
+  $sth->execute($anal);
 
 }
 
@@ -127,7 +132,7 @@ sub upload_features_and_factors {
   my $factor_sth = $dbc->prepare("INSERT INTO regulatory_factor (regulatory_factor_id, name, type) VALUES(?,?,?)");
   my $feature_object_sth = $dbc->prepare("INSERT INTO regulatory_feature_object (regulatory_feature_id, ensembl_object_type, ensembl_object_id, influence, evidence) VALUES(?,?,?,?,?)");
 
-  my $sr_sth = $dbc->prepare("INSERT INTO regulatory_search_region (name, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, ensembl_object_type, ensembl_object_id, type ) VALUES(?,?,?,?,?,?,?,?)");
+  my $sr_sth = $dbc->prepare("INSERT INTO regulatory_search_region (name, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, ensembl_object_type, ensembl_object_id, analysis_id ) VALUES(?,?,?,?,?,?,?,?)");
 
   print "Uploading " . scalar(@{$objects->{FEATURES}}) . " features ...\n";
 
@@ -171,7 +176,7 @@ sub upload_features_and_factors {
 		     $search_region->{STRAND},
 		     $search_region->{ENSEMBL_OBJECT_TYPE},
 		     $search_region->{ENSEMBL_OBJECT_ID},
-		     $search_region->{TYPE});
+		     $search_region->{ANALYSIS_ID});
 
 
   }

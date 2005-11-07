@@ -103,16 +103,19 @@ sub parse {
   close(GROUP_SIZES);
 
   # ----------------------------------------
-  # Analysis
+  # Analysis - need one for each type of feature
+  my %analysis;
 
-  my $analysis = $analysis_adaptor->fetch_by_logic_name("cisRed");
+  foreach my $anal ("cisRed", "cisred_search") {  # TODO - add other types as necessary
 
-  if (!$analysis) {
-    print STDERR "Can't get analysis for cisRed, skipping\n";
-    next;
+    my $analysis_obj = $analysis_adaptor->fetch_by_logic_name($anal);
+
+    die "Can't get analysis for $anal, skipping" if (!$analysis_obj);
+
+    $analysis{$anal} = $analysis_obj->dbID();
+    print "Analysis ID for $anal is " . $analysis{$anal} . "\n";
+
   }
-
-  my $analysis_id = $analysis->dbID();
 
   # ----------------------------------------
   # Parse motifs.txt file
@@ -136,7 +139,7 @@ sub parse {
 
     $feature{NAME} = "craHsap" . $motif_id;
     $feature{INFLUENCE} = "unknown"; # TODO - what does cisRed store?
-    $feature{ANALYSIS_ID} = $analysis_id;
+    $feature{ANALYSIS_ID} = $analysis{cisRed};
 
     # ----------------------------------------
     # Factor
@@ -224,7 +227,7 @@ sub parse {
 
   close FILE;
 
- # ----------------------------------------
+  # ----------------------------------------
   # Search regions 
   # read search_regions.txt from same location as $file
   my $search_regions_file = dirname($file) . "/search_regions.txt";
@@ -258,7 +261,7 @@ sub parse {
     $search_region{STRAND} = ($strand =~ /\+/ ? 1 : -1);
     $search_region{ENSEMBL_OBJECT_TYPE} = 'Gene';
     $search_region{ENSEMBL_OBJECT_ID} = $gene_id;
-    $search_region{TYPE} = 'cisred';
+    $search_region{ANALYSIS_ID} = $analysis{cisred_search};
     push @search_regions, \%search_region;
 
   }
