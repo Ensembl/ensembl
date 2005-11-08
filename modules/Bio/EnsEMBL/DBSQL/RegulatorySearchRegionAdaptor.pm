@@ -15,7 +15,7 @@ Bio::EnsEMBL::DBSQL::RegulatorySearchRegionAdaptor
 
 $rfa = $database_adaptor->get_RegulatorySearchRegionAdaptor();
 
-my $regulatory_feature = $rfa->fetch_by_dbID(1234);
+my $rs = $rfa->fetch_by_dbID(1234);
 
 =head1 DESCRIPTION
 
@@ -108,7 +108,7 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  return qw (rs.regulatory_feature_id
+  return qw (rs.regulatory_search_region_id
 	     rs.name
 	     rs.seq_region_id
 	     rs.seq_region_start
@@ -310,7 +310,7 @@ sub store {
 				   seq_region_strand,
 				   analysis_id,
 				   ensembl_object_type,
-				   ensemnl_object_id)
+				   ensembl_object_id)
 				  VALUES (?,?,?,?,?,?,?,?)});
 
   if (!ref($feature) || !$feature->isa('Bio::EnsEMBL::RegulatorySearchRegion')) {
@@ -334,7 +334,7 @@ sub store {
 		   $feature->end(),
 		   $feature->strand(),
 		   $analysis->dbID(),
-		   $feature->ensembl_objct_type(),
+		   $feature->ensembl_object_type(),
 		   $feature->ensembl_object_id());
 
   my $db_id = $rs_sth->{'mysql_insertid'}
@@ -364,6 +364,30 @@ sub list_dbIDs {
 
    return $self->_list_dbIDs("regulatory_search_region");
 }
+
+
+=head2 fetch_by_name
+
+  Arg [1]    : string $name
+               the name of the regulatory search_region to obtain
+  Example    : $rs = $rsa->fetch_by_name('CisRed_Search_11');
+  Description: Obtains a regulatory factor from the database via its name
+  Returntype : Bio::EnsEMBL::RegulatorySearchRegion
+  Exceptions : none
+  Caller     : general
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub fetch_by_name {
+    my( $self, $name ) = @_;
+
+    my ($rc) = @{$self->generic_fetch("name = '$name'")};
+
+    return $rc;
+}
+
 
 1;
 
