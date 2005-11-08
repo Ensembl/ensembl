@@ -4,7 +4,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 12;
+	plan tests => 9;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
