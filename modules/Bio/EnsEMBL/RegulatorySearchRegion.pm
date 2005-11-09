@@ -19,8 +19,8 @@ $region  = Bio::EnsEMBL::RegulatorySearchRegion->new(-start            	  => 100
                                                      -strand           	  => -1,
                                                      -slice            	  => $slice,
                                                      -analysis         	  => $analysis,
-                                                     -ensembl_object_type => "Gene",
-                                                     -ensembl_object_id   => 12340,
+                                                     -ensembl_object_id   => 12235,
+                                                     -ensembl_object_type => 'Gene',
                                                      -dbID                => 1230,
                                                      -adaptor             => $adaptor);
 
@@ -48,6 +48,7 @@ use vars qw(@ISA);
 
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
@@ -62,12 +63,12 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
                                                 -strand              => -1,
                                                 -slice               => $slice,
                                                 -analysis            => $analysis,
-                                                -ensembl_object_type => "Gene",
-                                                -ensembl_object_id   => 12340,
+                                                -ensembl_object_type => 'Gene',
+                                                -ensembl_object_id => 12445,
                                                 -dbID                => 1230,
                                                 -adaptor             => $adaptor);
   Description: Constructs a new Bio::EnsEMBL::RegulatorySearchRegion.
-  Exceptions : Thrown on invalid -SLICE, -ANALYSIS, -STRAND arguments
+  Exceptions : Thrown on invalid -SLICE, -ANALYSIS, -STRAND
   Caller     : general, subclass constructors
   Status     : At Risk
              : under development
@@ -81,11 +82,11 @@ sub new {
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
 
-  my ($name, $factor, $ensembl_object_type, $ensembl_object_id) = rearrange(['NAME', 'ENSEMBL_OBJECT_TYPE', 'ENSEMBL_OBJECT_ID'],@_);
+  my ($name, $ensembl_object_type, $ensembl_object_id) = rearrange(['NAME', 'ENSEMBL_OBJECT_TYPE', 'ENSEMBL_OBJECT_ID'],@_);
 
   $self->{'name'} = $name;
-  $self->{'ensembl_object_type'} = $ensembl_object_type;
   $self->{'ensembl_object_id'} = $ensembl_object_id;
+  $self->{'ensembl_object_type'} = $ensembl_object_type;
 
   return $self;
 }
@@ -152,6 +153,35 @@ sub ensembl_object_id {
   my $self = shift;
   $self->{'ensembl_object_id'} = shift if(@_);
   return $self->{'ensembl_object_id'};
+}
+
+
+=head2 ensembl_object
+
+  Arg [1]    : none
+  Example    : $gene = $rsr->ensembl_object();
+  Description: Get the ensembl object linked to this search region. Lazy loads object.
+  Returntype : Bio::EnsEMBL::Gene, Bio::EnsEMBL::Transcript or Bio::EnsEMBL::Translation
+  Exceptions : 
+  Caller     : web drawing code
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub ensembl_object {
+
+  my $self = shift;
+
+  my $type = ucfirst(lc($self->{'ensembl_object_type'}));
+
+  my $adaptor;
+  $adaptor = $self->adaptor()->db->get_GeneAdaptor() if ($type eq 'Gene');
+  $adaptor = $self->adaptor()->db->get_TranscriptAdaptor() if ($type eq 'Transcript');
+  $adaptor = $self->adaptor()->db->get_TranslationAdaptor() if ($type eq 'Translation');
+
+  return $adaptor->fetch_by_dbID($self->{'ensembl_object_id'});
+
 }
 
 1;
