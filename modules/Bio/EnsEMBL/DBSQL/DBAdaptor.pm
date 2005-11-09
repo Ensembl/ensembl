@@ -264,7 +264,7 @@ sub get_available_adaptors{
       Gene                     KaryotypeBand        MiscSet
       MiscFeature              PredictionTranscript PredictionExon
       ProteinFeature           ProteinAlignFeature  RegulatoryFeature
-      RegulatoryFactor         RepeatConsensus
+      RegulatoryFactor         RegulatorySearchRegion RepeatConsensus
       RepeatFeature            Sequence             SimpleFeature
       Slice                    SupportingFeature    Transcript
       TranscriptSupportingFeature Translation
