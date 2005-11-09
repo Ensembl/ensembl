@@ -4,7 +4,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 9;
+	plan tests => 10;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -41,13 +41,15 @@ my $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
                                      -START           => 0,
                                      -END             => 2_000_000);
 
+my $gene = $dba->get_GeneAdaptor()->fetch_by_stable_id( "ENSG00000171456" );
+
 my $rs = new Bio::EnsEMBL::RegulatorySearchRegion(-start               => 100,
                                                   -end                 => 220,
                                                   -strand              => -1,
                                                   -slice               => $slice,
                                                   -analysis            => $analysis,
-                                                  -ensembl_object_type => "Gene",
-                                                  -ensembl_object_id   => 12340,
+                                                  -ensembl_object_id   => 18256,
+                                                  -ensembl_object_type => 'Gene',
                                                   -dbID                => 1230,
                                                   -adaptor             => $rsa);
 ok($rs);
@@ -72,11 +74,11 @@ ok(test_getter_setter($rs,'dbID',20));
 # 6 name
 ok(test_getter_setter($rs,'name', 'CisRed_search_2'));
 
-# 7 ensembl_object_type
-ok(test_getter_setter($rs,'ensembl_object_type','Gene'));
+# 7 ensembl_object_id
+ok(test_getter_setter($rs,'ensembl_object_id',18256));
 
-# 8 ensembl_object_id
-ok(test_getter_setter($rs,'ensembl_object_id',1234));
+#8 ensembl_object_type
+ok(test_getter_setter($rs,'ensembl_object_type','Gene'));
 
 #
 # 9 check adaptor attaching
@@ -84,4 +86,7 @@ ok(test_getter_setter($rs,'ensembl_object_id',1234));
 $rs->adaptor($rsa);
 ok($rs->adaptor->isa('Bio::EnsEMBL::DBSQL::RegulatorySearchRegionAdaptor'));
 
-
+# 10 Check loading of ensembl object
+my $gene = $rs->ensembl_object();
+ok($gene->isa('Bio::EnsEMBL::Gene'));
+ok($gene->dbID() == 18256);
