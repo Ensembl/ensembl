@@ -23,14 +23,23 @@ sub gene_description_filter_regexps {
 # gene: flybase_name if present, else gadfly_gene_cgid
 #
 # transcript: flybase_name if present, else gadfly_transcript_cgid
+sub xref_offset{
+  my ($self, $val) = @_;
+
+  if(defined($val)){
+    $self->{'_xref_offset'} = $val;
+  }
+  return $self->{'_xref_offset'};
+}
 
 sub build_transcript_display_xrefs {
 
-  my ($self) = @_;
+  my ($self,$xref_id_offset) = @_;
 
+  $self->xref_offset($xref_id_offset);
   $self->build_xref_to_source_mappings();
 
-  $self->build_display_xrefs("Transcript", "FlyBaseName_transcript", "gadfly_transcript_cgid");
+  $self->build_display_xrefs("Transcript", "FlyBaseName_transcript", "gadfly_transcript_cgid",$xref_id_offset);
 
 }
 
@@ -38,17 +47,18 @@ sub build_gene_display_xrefs {
 
   my ($self) = @_;
 
-  $self->build_display_xrefs("Gene", "FlyBaseName_gene", "gadfly_gene_cgid");
+  my $xref_id_offset =  $self->xref_offset();
+  
+  $self->build_display_xrefs("Gene", "FlyBaseName_gene", "gadfly_gene_cgid",$xref_id_offset);
 
 }
 
 sub build_display_xrefs {
 
-  my ($self, $type, $first_source, $second_source) = @_;
+  my ($self, $type, $first_source, $second_source, $xref_id_offset) = @_;
 
   print "Building " . lc($type) . " display_xrefs for drosophila\n";
 
-  my ($self, $xref_id_offset) = @_;
 
   my $dir = $self->core->dir();
 
