@@ -850,4 +850,92 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
 (6, 31033,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Takifugu_rubripes/Tru.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Takifugu_rubripes/Tru.data.gz',  now(), now(), "UniGeneParser");
 
+#### Yeast
+
+## Uniprot
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (1, 4932, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (2, 4932, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+
+##       refseq
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi1.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi2.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi3.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi4.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi5.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi6.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi7.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi8.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi9.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi10.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi11.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi12.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi13.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi14.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi15.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi16.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi17.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi1.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi2.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi3.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi4.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi5.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi6.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (4, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi7.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi8.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi9.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi10.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi11.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi12.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi13.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi14.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi15.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi16.rna.fna.gz',  now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(3, 4932,'ftp://ftp.ncbi.nih.gov/refseq/release/fungi/fungi17.rna.fna.gz',  now(), now(), "RefSeqParser");
+
+##       GO
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(1070, 4932,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
+
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+(1300, 4932,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+
+
 ################################################################################
