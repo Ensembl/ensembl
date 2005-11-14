@@ -627,6 +627,7 @@ sub get_database {
         evega   => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
         otter   => 'Bio::Otter::DBSQL::DBAdaptor',
         vega    => 'Bio::Otter::DBSQL::DBAdaptor',
+		compara => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
     );
     my %valid = map { $_ => 1 } keys %adaptors;
     throw("Unknown database: $database") unless $valid{$database};
