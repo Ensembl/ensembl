@@ -20,3 +20,4 @@ CREATE TABLE regulatory_search_region (
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
+ALTER TABLE density_type ADD COLUMN region_features INT NOT NULL AFTER block_size;

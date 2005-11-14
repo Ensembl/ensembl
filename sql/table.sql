@@ -1212,8 +1212,8 @@ CREATE TABLE density_type (
   density_type_id       INT NOT NULL auto_increment,
   analysis_id           INT NOT NULL, #FK refs analysis
   block_size            INT NOT NULL,
+  region_features       INT NOT NULL,
   value_type            ENUM('sum','ratio') NOT NULL,
-
   PRIMARY KEY(density_type_id),
   UNIQUE(analysis_id, block_size)
 
