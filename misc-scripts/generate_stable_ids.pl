@@ -103,6 +103,8 @@ sub usage {
 
   Note if -start is used you must generate gene, transcript, exon and translation stable IDs separately in order to specify the correct prefix for each.
 
+  The parameter to -start should be the stable ID you wish to start from, e.g. ENSG00000000001 as this is used to obtain the prefix (e.g. ENSG).
+
   Produces SQL which can be run against the target database.
 
 EOF
