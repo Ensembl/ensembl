@@ -15,12 +15,12 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 18;
+	plan tests => 13;
 }
 
 
 
-our $verbose = 1;
+our $verbose = 0;
 verbose('WARNING');
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
