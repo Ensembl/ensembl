@@ -164,7 +164,17 @@ sub fetch_all_by_Slice {
   my $density_type_large = undef;
 
   foreach my $dt (@dtypes) {
-    my $ratio = $wanted_block_size/$dt->block_size();
+
+    my $ratio;
+    if( $dt->block_size() > 0 ) {
+      $ratio = $wanted_block_size/$dt->block_size();
+    } else {
+      # This is only valid if the requested seq_region is the one the 
+      # features are stored on. Please use sensibly. Or find better implementation.
+
+      my $block_size = $slice->seq_region_length() / $dt->region_features();
+      $ratio = $wanted_block_size / $block_size;
+    }
 
     # we prefer to use a block size that's smaller than the required one
     # (better results on interpolation). remember larger block sizes though
@@ -181,8 +191,9 @@ sub fetch_all_by_Slice {
       }
     }
   }
-  # fall back to larger block size
-  unless ($best_ratio) {
+  # fall back to larger block size if there is no smaller black size 
+  # or it would require retrieving too many features
+  if( !$best_ratio || $best_ratio > 30 ) {
     $best_ratio = $best_ratio_large;
     $density_type = $density_type_large;
   }
@@ -200,7 +211,7 @@ sub fetch_all_by_Slice {
     @{$self->fetch_all_by_Slice_constraint($slice,$constraint)};
 
   #we don't want to interpolate if the ratio was very close
-  $interpolate = 0 if($best_ratio < 1.05);
+  $interpolate = 0 if($best_ratio < 1.05 && $best_ratio > 0.9 );
 
   return \@features if(!$interpolate);
 
@@ -527,7 +538,9 @@ sub store{
       throw("DensityFeature must be an Ensembl DensityFeature, " .
             "not a [".ref($df)."]");
     }
-
+    
+    # we dont store 0 value density features
+    next if( $df->density_value == 0 );
     if($df->is_stored($db)) {
       warning("DensityFeature [".$df->dbID."] is already stored" .
               " in this database.");

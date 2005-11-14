@@ -82,13 +82,13 @@ sub fetch_all {
   my @out;
 
   my $sth = $self->prepare("SELECT density_type_id, analysis_id, block_size,".
-                           "       value_type " .
+                           "       value_type, region_features " .
                            "FROM density_type");
 
   $sth->execute();
 
-  my($dbID, $analysis_id, $blk_size, $vtype);
-  $sth->bind_columns(\$dbID, \$analysis_id, \$blk_size, \$vtype);
+  my($dbID, $analysis_id, $blk_size, $vtype, $region_features );
+  $sth->bind_columns(\$dbID, \$analysis_id, \$blk_size, \$vtype, \$region_features );
 
   my $analysis_adaptor = $self->db->get_AnalysisAdaptor();
 
@@ -104,6 +104,7 @@ sub fetch_all {
                                             -DBID    => $dbID,
                                             -ANALYSIS => $analysis,
                                             -BLOCK_SIZE => $blk_size,
+					    -REGION_FEATURES => $region_features,
                                             -VALUE_TYPE => $vtype);
 
     $self->{'dbID_cache'}->{$dbID} = $dt;
@@ -173,27 +174,23 @@ sub fetch_all_by_logic_name {
   return [] if(!$analysis);
 
   my $sth = $self->prepare("SELECT density_type_id, block_size,".
-                           "       value_type " .
+                           "       value_type, region_features " .
                            "FROM density_type " .
                            "WHERE analysis_id = ?");
   $sth->execute($analysis->dbID());
 
-  my($dbID, $blk_size, $vtype);
-  $sth->bind_columns(\$dbID, \$blk_size, \$vtype);
+  my($dbID, $blk_size, $vtype, $region_features );
+  $sth->bind_columns(\$dbID, \$blk_size, \$vtype, \$region_features);
 
   my @out;
 
   while($sth->fetch()) {
 
-    if($blk_size < 1) {
-      warning("density_type table contains invalid block_size=$blk_size.");
-      $blk_size = 1;
-    }
-
     my $dt = Bio::EnsEMBL::DensityType->new(-ADAPTOR => $self,
                                             -DBID    => $dbID,
                                             -ANALYSIS => $analysis,
                                             -BLOCK_SIZE => $blk_size,
+					    -REGION_FEATURES => $region_features,
                                             -VALUE_TYPE => $vtype);
 
     $self->{'dbID_cache'}->{$dbID} = $dt;
@@ -228,8 +225,8 @@ sub store {
 
   my $sth = $self->prepare
     ("INSERT IGNORE INTO density_type (analysis_id,".
-                                  "block_size, value_type) ". 
-    "VALUES (?,?,?)");
+                                  "block_size, value_type, region_features ) ". 
+    "VALUES (?, ?, ?, ?)");
 
   my $db = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
@@ -253,8 +250,13 @@ sub store {
       $analysis_adaptor->store($dt->analysis());
     }
 	
-    my $inserted = $sth->execute($dt->analysis->dbID(), $dt->block_size(),
-                                 $dt->value_type());
+    my $block_size = $dt->block_size();
+    $block_size |= 0;
+    my $region_features = $dt->region_features();
+    $region_features |= 0;
+
+    my $inserted = $sth->execute($dt->analysis->dbID(), $block_size,
+                                 $dt->value_type(), $region_features);
 
     my $dbID;
 

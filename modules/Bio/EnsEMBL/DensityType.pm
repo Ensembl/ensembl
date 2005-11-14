@@ -71,8 +71,8 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ($analysis, $block_size, $value_type) = 
-    rearrange(['ANALYSIS','BLOCK_SIZE','VALUE_TYPE'],@_);
+  my ($analysis, $block_size, $value_type, $region_features) = 
+    rearrange(['ANALYSIS','BLOCK_SIZE','VALUE_TYPE','REGION_FEATURES'],@_);
 
   if($analysis) {
     if(!ref($analysis) || !$analysis->isa('Bio::EnsEMBL::Analysis')) {
@@ -86,13 +86,22 @@ sub new {
 	  $value_type."*");
   }
 
-  if($block_size <=0 ){
-    throw('-BLOCK_SIZE must be greater than 0'); 
+  $block_size |= 0;
+  $region_features |= 0;
+
+  if(! ($block_size xor $region_features )){
+    throw('Set either -BLOCK_SIZE or -REGION_FEATURES, not both'); 
   }
+
+  if( $block_size <0 or $region_features < 0 ) {
+    throw( 'No negative values for -BLOCK_SIZE or -REGION_FEATURES' );
+  }
+
 
   $self->{'analysis'} = $analysis;
   $self->{'block_size'} = $block_size;
   $self->{'value_type'} = $value_type;
+  $self->{'region_features'} = $region_features;
 
   return $self;
 }
@@ -157,6 +166,24 @@ sub block_size{
   my $self = shift;
   $self->{'block_size'} = shift if(@_);
   return $self->{'block_size'};
+}
+
+
+=head2 region_features
+
+  Arg [1]    : int $region_features
+  Example    : The number of features per seq_region inside this density_type..
+  Description: get/set for attribute region_features
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub region_features {
+   my $self = shift;
+  $self->{'region_features'} = shift if( @_ );
+  return $self->{'region_features'};
 }
 
 

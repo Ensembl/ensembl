@@ -20,7 +20,7 @@ BEGIN { $| = 1;
 
 
 
-our $verbose = 0;
+our $verbose = 1;
 verbose('WARNING');
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
@@ -98,17 +98,62 @@ ok(scalar( @density_features) == 10);
 
 ok(!$density_features[0]->is_stored($db));
 $dfa->store(@density_features);		
-ok($density_features[0]->is_stored($db));
 
 #
 # get back from database and check
 #
 
+my @filtered_features = grep { $_->density_value() != 0 } @density_features;
+
 my @stored_features = @{$dfa->fetch_all_by_Slice($slice,'GeneDensityTest', 10)};
 
-for (my $i=0; $i< scalar(@density_features); $i++){
-  ok($density_features[0]->density_value() == $stored_features[0]->density_value());
+for (my $i=0; $i< scalar(@filtered_features); $i++){
+  ok($filtered_features[0]->density_value() == $stored_features[0]->density_value());
 }
+
+
+
+#
+# Now some density features with region_feature count set on density type
+# Lets say we want 300 features on our seq_regions
+# 
+
+
+debug( "Region Features enabled densities" );
+
+$dt = Bio::EnsEMBL::DensityType->new(-analysis   => $analysis,
+				     -region_features => 300,
+				     -value_type => 'sum');
+
+ok(!$dt->is_stored($db));
+$dta->store($dt);	
+ok($dt->is_stored($db));
+
+@density_features = ();
+my $chr_20_slice = $slice_adaptor->fetch_by_region( "chromosome", 20 );
+my $step = $chr_20_slice->length() / 300;
+$start = 1;
+while( $start < $chr_20_slice->length() ) {
+  my $end = int( $start + $step );
+  push @density_features, Bio::EnsEMBL::DensityFeature->new(-seq_region    => $chr_20_slice,
+							     -start         => int($start),
+							     -end           => int( $start+$step),
+							     -density_type  => $dt,
+							     -density_value => 5 );
+  $start += $step + 1;
+}
+
+$dfa->store( @density_features );
+ok($density_features[-1]->is_stored($db));
+debug( "Created ".scalar( @density_features )." density features on chr 20" );
+
+@stored_features = @{$dfa->fetch_all_by_Slice($chr_20_slice,'GeneDensityTest', 100, "interpolate" )};
+ok( scalar( @stored_features ) == 100 );
+debug( "Interpolated retreived ".scalar( @stored_features ));
+
+ok( abs( $stored_features[0]->density_value() - 15) < 0.0001 );
+debug( "Density value = ".$stored_features[0]->density_value() );
+
 
 
 
