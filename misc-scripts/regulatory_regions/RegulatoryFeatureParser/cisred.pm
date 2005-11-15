@@ -4,47 +4,26 @@ use strict;
 
 use File::Basename;
 
-# To get files for CisRed data, connect to db.cisred.org as anonymous
-# and use the queries below.
+# To get files for CisRed data, download the following 2 files (e.g. via wget):
 #
-# Note that you can't connect directly to it from the Sanger machines
-# (firewall issues) so I do it from the EBI and then scp the data across
-# to the Sanger machine.										
+# http://www.cisred.org/content/databases_methods/human_2/data_files/motifs.txt
 #
-#   mysql -u anonymous -h db.cisred.org -e 'select f.id as motif_id, f.seqname as chromosome, f.start, f.end, f.strand, f.ensembl_gene_id,g.group_id from features f, group_content g where f.id=g.feature_id' cisred_Hsap_1_2e > motifs.txt
-#
-#   mysql -u anonymous -h db.cisred.org -e 'select distinct(group_id), count(*) from group_content where group_id !=0 and group_id != -1 group by group_id having count(*) > 1' cisred_Hsap_1_2e > group_sizes.txt
-#
-#
-#   mysql -h db.cisred.org -u anonymous -e 'select id, chromosome, start, end, strand, ensembl_gene_id from search_region where ensembl_gene_id REGEXP "^ENSG[0-9]{11}$"' cisred_Hsap_1_2e > search_regions.txt
-#
-# The queries should take ~ 1 minute, ~2 seconds and ~ 2 seconds respectively.
-#
-# For the second query, if a group_id has an entry in this file then the regulatory_factor should be assigned as "crtHsapXX" where XX is the group_id. If there's no entry, don't assign a regulatory_factor.
-#
-# Note all features are unstranded
+# http://www.cisred.org/content/databases_methods/human_2/data_files/search_regions.txt
 
-# Format of motifs.txt
-# motif_id	chromosome	start	        end	        ensembl_gene_id	  group_id
-# 6	        10	        43087959	43087968	ENSG00000198915	  -1
-# 15	        10	        43087044	43087053	ENSG00000198915	  -1
-# 20	        10	        43087045	43087054	ENSG00000198915	  -1
-# 37	        10	        43086873	43086884	ENSG00000198915	  -1
-# 51	        5	        42855740	42855752	ENSG00000198865	  -1
-# 54	        10	        43082459	43082470	ENSG00000198915	  -1
+# Format of motifs.txt (note group_name often blank)
 
-# Format of group_sizes.txt
-# group_id	count(*)
-# 1	        8
-# 2	        7
-# 3	        4
+# name	chromosome	start	end	strand	group_name
+# craHsap1	X	138337029	138337034	1
+# craHsap2	X	138338145	138338150	1
+# craHsap3	X	138338363	138338368	1
+# craHsap4	X	138338388	138338395	1
 
 # Format of search_regions.txt
-# id      chromosome      start   end     strand  ensembl_gene_id
-# 2       X       99697840        99699489        -       ENSG00000000003
-# 11      X       99639860        99646074        +       ENSG00000000005
-# 18      1       166594596       166599297       -       ENSG00000000457
-# 27      1       166493136       166495988       +       ENSG00000000460
+# name	chromosome	start	end	strand	ensembl_gene_id
+# 1	17	39822200	39824467	-1	ENSG00000005961
+# 8	17	23151483	23153621	-1	ENSG00000007171
+# 14	1	166434638	166437230	-1	ENSG00000007908
+# 19	1	23602820	23605631	-1	ENSG00000007968
 
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -87,21 +66,6 @@ sub parse {
   my %factor_ids_by_name; # name -> factor_id
   my %feature_objects;
 
-  # TODO - regulatory_factor_coding
-
-  # read group_sizes.txt from same location as $file
-  my $group_sizes_file = dirname($file) . "/group_sizes.txt";
-
-  my %group_sizes;
-  print "Parsing group sizes from $group_sizes_file\n";
-  open (GROUP_SIZES, "<$group_sizes_file") || die "Can't open $group_sizes_file";
-  <GROUP_SIZES>; # skip header
-  while (<GROUP_SIZES>) {
-    my ($file_group_id, $size) = split;
-    $group_sizes{$file_group_id} = $size;
-  }
-  close(GROUP_SIZES);
-
   # ----------------------------------------
   # Analysis - need one for each type of feature
   my %analysis;
@@ -129,15 +93,16 @@ sub parse {
     next if ($_ =~ /^\s*\#/ || $_ =~ /^\s*$/);
 
     my %feature;
-
-    my ($motif_id, $chromosome, $start, $end, $strand, $gene_id, $group_id) = split;
+    # name	chromosome	start	end	strand	group_name   ensembl_gene_id
+    my ($motif_name, $chromosome, $start, $end, $strand, $group_name, $gene_id) = split (/\t/);
+    #print "before: $gene_id\n";
+    $gene_id = substr($gene_id, 0, 15);
+    #print "after: $gene_id\n";
 
     # ----------------------------------------
-    # Feature name
-    # Name is craHsap + motif_id 
-    # TODO - other species
+    # Feature name & analysis
 
-    $feature{NAME} = "craHsap" . $motif_id;
+    $feature{NAME} = $motif_name;
     $feature{INFLUENCE} = "unknown"; # TODO - what does cisRed store?
     $feature{ANALYSIS_ID} = $analysis{cisRed};
 
@@ -150,14 +115,14 @@ sub parse {
     # TODO - other species prefixes
 
     $feature{FACTOR_ID} = $blank_factor_id;
-    if ($group_sizes{$group_id}) {
+    if ($group_name && $group_name ne '' && $group_name !~ /\s/) {
       my $factor_id = $factor_ids_by_name{$feature{NAME}};
 
       if (!$factor_id) { # create one
 	my %factor;
 	$factor_id = $highest_factor_id + 1;
 	$factor{INTERNAL_ID} = $factor_id;
-	$factor{NAME} = "crtHsap" . $group_id;
+	$factor{NAME} = $group_name;
 	$factor{TYPE} = $factor{NAME}; # TODO - error checking that type is one of the enums?
 	push @factors, \%factor;
 	$factor_ids_by_name{$factor{NAME}} = $factor_id;
@@ -196,9 +161,9 @@ sub parse {
 
     if (!$ensembl_id) {
       print STDERR "Can't get ensembl internal ID for $gene_id, skipping\n";
+      print join("-", $motif_name, $chromosome, $start, $end, $strand, $group_name, $gene_id, "\n");
       next;
     }
-
     $feature{ENSEMBL_TYPE} = "Gene";
     $feature{ENSEMBL_ID} = $ensembl_id;
 
