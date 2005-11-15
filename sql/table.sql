@@ -1215,7 +1215,7 @@ CREATE TABLE density_type (
   region_features       INT NOT NULL,
   value_type            ENUM('sum','ratio') NOT NULL,
   PRIMARY KEY(density_type_id),
-  UNIQUE(analysis_id, block_size)
+  UNIQUE(analysis_id, block_size, region_features)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 

@@ -21,3 +21,5 @@ CREATE TABLE regulatory_search_region (
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 ALTER TABLE density_type ADD COLUMN region_features INT NOT NULL AFTER block_size;
+ALTER TABLE density_type DROP INDEX analysis_id;
+ALTER TABLE density_type ADD UNIQUE analysis_id( analysis_id, block_size, region_features);
