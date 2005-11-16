@@ -29,7 +29,8 @@ Then it will update the meta_coord table for all the following table names one b
  karyotype
  transcript
  density_feature
- regulatory_feature\n";
+ regulatory_feature
+ regulatory_search_region\n";
 
 GetOptions('help' => \$help,
            'host=s' => \$host,
@@ -38,10 +39,12 @@ GetOptions('help' => \$help,
            'pass=s' => \$pass,
            'dbname=s' => \$dbname);
 
-if ($help || scalar @ARGV == 0) {
-  print $usage,"\n";
-  exit 0;
-}
+#print "help: $help argv:" . scalar(@ARGV) . "$host $port $user $pass $dbname\n";
+
+#if ($help || scalar @ARGV == 0) {
+#  print $usage,"\n";
+#  exit 0;
+#}
 
 my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(-host => $host,
                                                 -port => $port,
@@ -65,7 +68,8 @@ my @table_names = qw(affy_feature
                      karyotype
                      transcript
                      density_feature
-                     regulatory_feature);
+                     regulatory_feature
+                     regulatory_search_region);
 
 unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from meta_coord' $dbname > $dbname.meta_coord.backup") ==0) {
   print STDERR "Can't dump the original meta_coord for back up\n";
