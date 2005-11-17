@@ -1,5 +1,7 @@
 # Patch to convert release 35 Ensembl schema to release 36
 
+UPDATE meta set meta_value="36" where meta_key="schema_version";
+
 # New table (so no data conversion required) for storing regulatory search regions
 
 CREATE TABLE regulatory_search_region (
@@ -23,3 +25,4 @@ CREATE TABLE regulatory_search_region (
 ALTER TABLE density_type ADD COLUMN region_features INT NOT NULL AFTER block_size;
 ALTER TABLE density_type DROP INDEX analysis_id;
 ALTER TABLE density_type ADD UNIQUE analysis_id( analysis_id, block_size, region_features);
+
