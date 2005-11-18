@@ -22,7 +22,6 @@ my $use_existing_mappings=undef;
 my $maxdump=undef;
 my $help;
 my $upload = undef;
-my $deleteexisting;;
 my $location;
 
 GetOptions ('file=s'              => \$file,
@@ -31,7 +30,6 @@ GetOptions ('file=s'              => \$file,
 	    'useexistingmappings' => \$use_existing_mappings,
 	    'maxdump=n'           => \$maxdump,
 	    'upload'              => \$upload,
-	    'deleteexisting'      => \$deleteexisting,
 	    'location=s'          => \$location,
             'help'                => sub { &show_help(); exit 1;} );
  
@@ -169,9 +167,6 @@ if(defined($species_hash{'species'})){
   }
   if(defined($maxdump)){
     $mapper->maxdump($maxdump);
-  }
-  if(defined($deleteexisting)){
-    $mapper->delete_existing("yes");
   }
   if(defined($use_existing_mappings)){
     $mapper->use_existing_mappings("yes");

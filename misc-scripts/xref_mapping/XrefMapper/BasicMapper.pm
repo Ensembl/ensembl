@@ -856,6 +856,7 @@ sub parse_mappings {
   } else {
     print "Maximum existing xref_id = $max_xref_id\n";
   }
+
   my $xref_id_offset = $max_xref_id + 1;
 
   $self->xref_id_offset($xref_id_offset); #store 
@@ -1885,7 +1886,7 @@ sub build_gene_display_xrefs {
 
     my @transcripts = @{$genes_to_transcripts{$gene_id}};
 
-    my $best_xref;
+    my $best_xref=undef;
     my $best_xref_priority_idx = 99999;
     my $best_transcript_length = -1;
     foreach my $transcript_id (@transcripts) {
@@ -1917,7 +1918,7 @@ sub build_gene_display_xrefs {
       }
     }
 
-    if ($best_xref) {
+    if (defined($best_xref)) {
       # Write record
       print GENE_DX "UPDATE gene g, analysis a SET g.display_xref_id=" . $best_xref . " WHERE g.gene_id=" . $gene_id . " AND g.analysis_id=a.analysis_id AND a.logic_name != \"ncRNA\";\n";
       print GENE_DX_TXT $best_xref . "\t" . $gene_id ."\n";
@@ -2109,46 +2110,56 @@ sub do_upload {
   my $core_db = $ensembl->dbc;
   # xref.txt etc
 
-  if(defined($self->delete_existing())){
 
-    my $file = $ensembl->dir() . "/cleanup.sql";
-    open(CLEAN,"<$file") || die "could not open $file for reading \n";
-    while(<CLEAN>){
-      chomp;
-      my $sth = $core_db->prepare($_);
-      $sth->execute() or die "Couldn't execute statement: " . $sth->errstr;
-    }     
-    close CLEAN;
-    #
-    # used execute to make getting errors easier.
-    #    my $str = "mysql -u" .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-    #   system $str;
-
-
-
-    foreach my $table ("go_xref", "interpro") {
-
-      my $sth = $core_db->prepare("DELETE FROM $table");
-      print "Deleting existing data in $table\n";
-      $sth->execute();
-
-    }
-
-    # gene & transcript display_xrefs
-    my $sth = $core_db->prepare("UPDATE gene g, analysis a SET g.display_xref_id=NULL WHERE g.analysis_id=a.analysis_id AND a.logic_name != \"ncRNA\"");
-    print "Setting all existing display_xref_id in gene to null\n";
+  my $file = $ensembl->dir() . "/cleanup.sql";
+  open(CLEAN,"<$file") || die "could not open $file for reading \n";
+  while(<CLEAN>){
+    chomp;
+    my $sth = $core_db->prepare($_);
+    $sth->execute() or die "Couldn't execute statement: " . $sth->errstr;
+  }     
+  close CLEAN;
+  
+  
+  foreach my $table ("go_xref", "interpro") {
+    
+    my $sth = $core_db->prepare("DELETE FROM $table");
+    print "Deleting existing data in $table\n";
     $sth->execute();
-
-    my $sth = $core_db->prepare("UPDATE transcript t SET display_xref_id=NULL");
-    print "Setting all existing display_xref_id in transcript to null\n";
-    $sth->execute();
-
-    # gene descriptions
-    my $sth = $core_db->prepare("UPDATE gene g, analysis a SET g.description=NULL WHERE g.analysis_id=a.analysis_id AND a.logic_name != \"ncRNA\"");
-    print "Setting all existing descriptions in gene table to null\n";
-    $sth->execute();
-
+    
   }
+  
+  # gene & transcript display_xrefs
+  my $sth = $core_db->prepare(<<GADES);
+  UPDATE gene g, analysis a 
+    SET g.display_xref_id=NULL 
+      WHERE g.analysis_id=a.analysis_id 
+	AND a.logic_name != "ncRNA"
+GADES
+  print "Setting all existing display_xref_id in gene to null\n";
+  $sth->execute();
+  
+
+  my $sth = $core_db->prepare(<<TRAN);
+  UPDATE transcript t, gene g, analysis a 
+    SET t.display_xref_id=NULL
+      WHERE g.analysis_id = a.analysis_id
+	AND a.logic_name != "ncRNA"
+	  AND g.gene_id =t.gene_id
+TRAN
+  print "Setting all existing display_xref_id in transcript to null\n";
+  $sth->execute();
+
+  # gene descriptions
+  my $sth = $core_db->prepare(<<GENE);
+  UPDATE gene g, analysis a 
+    SET g.description=NULL 
+      WHERE g.analysis_id=a.analysis_id 
+	AND a.logic_name != "ncRNA";
+GENE
+  print "Setting all existing descriptions in gene table to null\n";
+  $sth->execute();
+
 
   foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "go_xref", "interpro") {
 
@@ -2170,13 +2181,6 @@ sub do_upload {
     my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
     system $str;
 
-    #$sth = $core_db->prepare("UPDATE $table SET display_xref_id=? WHERE ${table}_id=?");
-    #open(DX_TXT, $file);
-    #while (<DX_TXT>) {
-    #  my ($xref_id, $object_id) = split;
-    #  $sth->execute($xref_id, $object_id);
-    #}
-    #close(DX_TXT);
   }
 
   # gene descriptions
@@ -2194,19 +2198,6 @@ sub do_upload {
 
   my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
   system $str;
-
-}
-
-# Delete (or set some fields to null) existing data
-
-sub delete_existing {
-
-  my ($self, $arg) = @_;
-
-  (defined $arg) &&
-    ($self->{_delete_existing} = $arg );
-  return $self->{_delete_existing};
-
 
 }
 
