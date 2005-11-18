@@ -1237,7 +1237,9 @@ CREATE TABLE regulatory_feature (
   regulatory_factor_id  INT,                           # FK refs regulatory_factor
 
 
-  PRIMARY KEY(regulatory_feature_id)
+  PRIMARY KEY(regulatory_feature_id),
+  KEY seq_region_idx(seq_region_id, analysis_id, seq_region_start),
+  KEY seq_region_idx_2(seq_region_id, seq_region_start)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -1314,7 +1316,9 @@ CREATE TABLE regulatory_search_region (
 
   PRIMARY KEY (regulatory_search_region_id),
   KEY rsr_idx (regulatory_search_region_id),
-  KEY ensembl_object_idx (ensembl_object_type, ensembl_object_id)
+  KEY ensembl_object_idx (ensembl_object_type, ensembl_object_id),
+  KEY seq_region_idx(seq_region_id, seq_region_start),
+  KEY seq_region_idx_2(seq_region_id, seq_region_start)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 

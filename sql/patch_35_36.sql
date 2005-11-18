@@ -26,3 +26,8 @@ ALTER TABLE density_type ADD COLUMN region_features INT NOT NULL AFTER block_siz
 ALTER TABLE density_type DROP INDEX analysis_id;
 ALTER TABLE density_type ADD UNIQUE analysis_id( analysis_id, block_size, region_features);
 
+ALTER TABLE regulatory_feature ADD INDEX seq_region_idx(seq_region_id, analysis_id, seq_region_start);
+ALTER TABLE regulatory_feature ADD INDEX seq_region_idx_2(seq_region_id, seq_region_start);
+
+ALTER TABLE regulatory_search_region ADD INDEX seq_region_idx(seq_region_id, seq_region_start);
+ALTER TABLE regulatory_search_region ADD INDEX seq_region_idx_2(seq_region_id, seq_region_start);
