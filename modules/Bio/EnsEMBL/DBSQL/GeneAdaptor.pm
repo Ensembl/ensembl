@@ -749,7 +749,7 @@ sub store {
   if(!ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
     throw("Must store a gene object, not a $gene");
   }
-
+print "in gene store\n";
   my $db = $self->db();
 
   if($gene->is_stored($db)) {
@@ -876,16 +876,20 @@ sub store {
   }
 
   # update gene to point to display xref if it is set
+  print $gene->display_xref . "\n";
   if(my $display_xref = $gene->display_xref) {
     my $dxref_id;
-
+print "here 1\n";
     if($display_xref->is_stored($db)) {
       $dxref_id = $display_xref->dbID();
+      print "stored\n";
     } else {
       $dxref_id = $dbEntryAdaptor->exists($display_xref);
+      print "exists\n";
     }
-
+    print "dxref_id $dxref_id\n";
     if(defined($dxref_id)) {
+      print "here\n";
       $sth = $self->prepare
         ("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
       $sth->execute($dxref_id, $gene_dbID);
@@ -1064,7 +1068,8 @@ sub update {
            SET biotype = ?,
                analysis_id = ?,
                display_xref_id = ?,
-               status = ?
+               status = ?,
+               description = ?
          WHERE gene_id = ?";
 
    my $display_xref = $gene->display_xref();
@@ -1081,10 +1086,11 @@ sub update {
 		 $gene->analysis->dbID(),
 		 $display_xref_id,
 		 $gene->status(),
+		 $gene->description(),
 		 $gene->dbID()
 		);
 
-   # maybe should update stable id or gene description ???
+   # maybe should update stable id ???
 }
 
 
