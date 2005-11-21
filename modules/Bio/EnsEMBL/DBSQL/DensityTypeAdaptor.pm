@@ -95,10 +95,6 @@ sub fetch_all {
   while($sth->fetch()) {
     my $analysis = $analysis_adaptor->fetch_by_dbID($analysis_id);
 
-    if($blk_size < 1) {
-      warning("density_type table contains invalid block_size=$blk_size.");
-      $blk_size = 1;
-    }
 
     my $dt = Bio::EnsEMBL::DensityType->new(-ADAPTOR => $self,
                                             -DBID    => $dbID,
