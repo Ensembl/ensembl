@@ -64,7 +64,6 @@ $dta->store($dt);
 ok($dt->is_stored($db));
 
 
-
 my $slice_adaptor = $db->get_SliceAdaptor();
 my $slice = $slice_adaptor->fetch_by_region('chromosome', '20', 1, ($block_size*10));
 
@@ -131,16 +130,17 @@ ok($dt->is_stored($db));
 
 @density_features = ();
 my $chr_20_slice = $slice_adaptor->fetch_by_region( "chromosome", 20 );
-my $step = $chr_20_slice->length() / 300;
+my $step = POSIX::ceil( $chr_20_slice->length() / 300);
 $start = 1;
 while( $start < $chr_20_slice->length() ) {
-  my $end = int( $start + $step );
+  my $end = $start+$step -1;
+  if( $end > $chr_20_slice->length ) { $end = $chr_20_slice->length();}
   push @density_features, Bio::EnsEMBL::DensityFeature->new(-seq_region    => $chr_20_slice,
-							     -start         => int($start),
-							     -end           => int( $start+$step),
+							     -start         => $start,
+							     -end           => $end,
 							     -density_type  => $dt,
 							     -density_value => 5 );
-  $start += $step + 1;
+  $start += $step;
 }
 
 $dfa->store( @density_features );
@@ -153,6 +153,38 @@ debug( "Interpolated retreived ".scalar( @stored_features ));
 
 ok( abs( $stored_features[0]->density_value() - 15) < 0.0001 );
 debug( "Density value = ".$stored_features[0]->density_value() );
+
+
+# test the retreival of the right sized features
+# first yet another density size
+# comes to about 1000bp on chr 20
+
+$dt = Bio::EnsEMBL::DensityType->new(-analysis   => $analysis,
+				     -region_features => 30_000,
+			             -value_type => 'sum');
+$dta->store($dt);	
+
+# need some features 
+@density_features = ();
+$step = POSIX::ceil( $chr_20_slice->length() / 30_000);
+for my $arr ( [1,1000,1],[1001,2000,2],[2001,3000,3],[31_000_000,31_000_999,31.0],[31_500_000, 31_500_999,31.5] ) {
+  push @density_features, Bio::EnsEMBL::DensityFeature->new(-seq_region    => $chr_20_slice,
+							     -start         => $arr->[0],
+							     -end           => $arr->[1],
+							     -density_type  => $dt,
+							     -density_value => $arr->[2] );
+}
+$dfa->store( @density_features );
+
+# now check for retrieval
+my $sub_Slice = $chr_20_slice->sub_Slice( 1, 1000_000 );
+@stored_features = @{$dfa->fetch_all_by_Slice( $sub_Slice, 'GeneDensityTest', 2 )};
+ok( $stored_features[0]->length() > 10000 );
+@stored_features = @{$dfa->fetch_all_by_Slice( $sub_Slice, 'GeneDensityTest', 10 )};
+ok( $stored_features[0]->length() > 10000 );
+@stored_features = @{$dfa->fetch_all_by_Slice( $sub_Slice, 'GeneDensityTest', 100 )};
+ok( $stored_features[0]->length() == 1000 );
+
 
 
 

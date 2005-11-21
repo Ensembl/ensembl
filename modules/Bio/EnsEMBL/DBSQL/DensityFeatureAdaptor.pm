@@ -162,6 +162,7 @@ sub fetch_all_by_Slice {
   my $density_type = undef;
   my $best_ratio_large = undef;
   my $density_type_large = undef;
+  my %dt_ratio_hash;
 
   foreach my $dt (@dtypes) {
 
@@ -175,35 +176,27 @@ sub fetch_all_by_Slice {
       my $block_size = $slice->seq_region_length() / $dt->region_features();
       $ratio = $wanted_block_size / $block_size;
     }
-
+    
     # we prefer to use a block size that's smaller than the required one
-    # (better results on interpolation). remember larger block sizes though
-    # in case there is no smaller one in the database
-    if ($ratio < 1) {
-      if(!defined($best_ratio_large) || $ratio > $best_ratio_large) {
-        $best_ratio_large = $ratio;
-        $density_type_large = $dt;
-      }
-    } else {
-      if(!defined($best_ratio) || $ratio < $best_ratio) {
-        $best_ratio = $ratio;
-        $density_type = $dt;
-      }
+    # (better results on interpolation).
+    # give larger bits a disadvantage and make them comparable
+    if( $ratio < 1 ) {
+      $ratio = 5/$ratio;
     }
-  }
-  # fall back to larger block size if there is no smaller black size 
-  # or it would require retrieving too many features
-  if( !$best_ratio || $best_ratio > 30 ) {
-    $best_ratio = $best_ratio_large;
-    $density_type = $density_type_large;
+
+    $dt_ratio_hash{ $ratio } = $dt;
   }
 
+  $best_ratio = (sort {$a<=>$b} (keys %dt_ratio_hash))[0];
+  
   #the ratio was not good enough, or this logic name was not in the
   #density type table, return an empty list
   if(!defined($best_ratio) ||
      (defined($max_ratio) && $best_ratio > $max_ratio)) {
     return [];
   }
+
+  $density_type = $dt_ratio_hash{$best_ratio};
 
   my $constraint = "df.density_type_id = " . $density_type->dbID();
 
