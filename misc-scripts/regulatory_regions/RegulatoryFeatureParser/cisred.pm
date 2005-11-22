@@ -152,7 +152,7 @@ sub parse {
     $feature{SEQ_REGION_ID} = $seq_region_id;
     $feature{START} = $start;
     $feature{END} = $end;
-    $feature{STRAND} = ($strand =~ /\+/ ? 1 : -1);
+    $feature{STRAND} = $strand;
 
     # ----------------------------------------
     # Ensembl object - always a gene in cisRed
