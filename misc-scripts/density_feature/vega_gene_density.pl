@@ -125,6 +125,7 @@ my %gene_types = (
     "protein_coding_PREDICTED" => "predictedPCodDensity",
     "Ig_pseudogene_segment_" => "IgPseudoSegDensity",
     "Ig_segment_NOVEL" => "IgSegDensity",
+	"Ig_segment_KNOWN" => "IgSegDensity",
     "pseudogene_" => "pseudoGeneDensity",
     "processed_pseudogene_" => "pseudoGeneDensity",
     "unprocessed_pseudogene_" => "pseudoGeneDensity",
@@ -294,10 +295,11 @@ foreach my $block_size (keys %{ $chr_slices }) {
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'Ig_segment_NOVEL',
+            -NAME => 'total_Ig_segment_',
             -CODE => 'IgSegCount',
-            -VALUE => $total{'Ig_segment_NOVEL'} || 0,
-            -DESCRIPTION => 'Number of Novel Ig Segments'
+            -VALUE => $total{'Ig_segment_NOVEL'}
+						+ $total{'Ig_segment_KNOWN'} || 0,
+            -DESCRIPTION => 'Number of Ig Segments'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
