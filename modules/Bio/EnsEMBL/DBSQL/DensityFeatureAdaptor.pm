@@ -203,9 +203,6 @@ sub fetch_all_by_Slice {
   my @features =
     @{$self->fetch_all_by_Slice_constraint($slice,$constraint)};
 
-  #we don't want to interpolate if the ratio was very close
-  $interpolate = 0 if($best_ratio < 1.05 && $best_ratio > 0.9 );
-
   return \@features if(!$interpolate);
 
   #interpolate the features into new features of a different size
