@@ -175,12 +175,21 @@ sub store {
     my $original = $feat;
     my $seq_region_id;
     ($feat, $seq_region_id) = $self->_pre_store($feat);
+    $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+    $sth->bind_param(2,$feat->start,SQL_INTEGER);
+    $sth->bind_param(3,$feat->end,SQL_INTEGER);
+    $sth->bind_param(4,$feat->strand,SQL_TINYINT);
+    $sth->bind_param(5,$hstart,SQL_INTEGER);
+    $sth->bind_param(6,$hend,SQL_INTEGER);
+    $sth->bind_param(7,$hstrand,SQL_TINYINT);
+    $sth->bind_param(8,$hseqname,SQL_VARCHAR);
+    $sth->bind_param(9,$cigar_string,SQL_LONGVARCHAR);
+    $sth->bind_param(10,$feat->analysis->dbID,SQL_INTEGER);
+    $sth->bind_param(11,$feat->score,SQL_DOUBLE);
+    $sth->bind_param(12,$feat->p_value,SQL_DOUBLE);
+    $sth->bind_param(13,$feat->percent_id,SQL_FLOAT);
 
-    $sth->execute( $seq_region_id, $feat->start, $feat->end, $feat->strand,
-		   $hstart, $hend, $hstrand, $hseqname,
-		   $cigar_string, $feat->analysis->dbID, $feat->score,
-		   $feat->p_value, $feat->percent_id);
-
+    $sth->execute();
     $original->dbID($sth->{'mysql_insertid'});
     $original->adaptor($self);
   }

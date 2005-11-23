@@ -88,11 +88,15 @@ Internal methods are usually preceded with a _
 =cut
 
 package Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use vars qw(@ISA);
+require Exporter;
+use vars qw(@ISA @EXPORT);
 use strict;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+use DBI qw(:sql_types);
 
+@ISA = qw(Exporter);
+@EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 
 =head2 new
 
@@ -326,6 +330,7 @@ sub generic_fetch {
 
   #append additional clauses which may have been defined
   $sql .= "\n$final_clause";
+
   my $sth = $db->dbc->prepare($sql);
   $sth->execute;
   my $res = $self->_objs_from_sth($sth, $mapper, $slice);

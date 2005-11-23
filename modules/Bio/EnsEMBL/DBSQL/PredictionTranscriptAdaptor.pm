@@ -458,12 +458,14 @@ sub store {
     ($pt, $seq_region_id) = $self->_pre_store($pt);
 
     #store the prediction transcript
-    $ptstore_sth->execute($seq_region_id,
-                          $pt->start(),
-                          $pt->end(),
-                          $pt->strand(),
-                          $analysis->dbID(),
-                          $pt->display_label());
+    $ptstore_sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+    $ptstore_sth->bind_param(2,$pt->start,SQL_INTEGER);
+    $ptstore_sth->bind_param(3,$pt->end,SQL_INTEGER);
+    $ptstore_sth->bind_param(4,$pt->strand,SQL_TINYINT);
+    $ptstore_sth->bind_param(5,$analysis->dbID,SQL_INTEGER);
+    $ptstore_sth->bind_param(6,$pt->display_label,SQL_VARCHAR);
+
+    $ptstore_sth->execute();
 
     my $pt_id = $ptstore_sth->{'mysql_insertid'};
     $original->dbID($pt_id);
@@ -479,7 +481,9 @@ sub store {
     if(!defined($pt->display_label())) {
       my $zeros = '0' x (11 - length($pt_id));
       my $display_label = uc($analysis->logic_name()) . $zeros . $pt_id;
-      $ptupdate_sth->execute($display_label, $pt_id);
+      $ptupdate_sth->bind_param(1,$display_label,SQL_VARCHAR);
+      $ptupdate_sth->bind_param(2,$pt_id,SQL_INTEGER);
+      $ptupdate_sth->execute();
       $original->display_label($display_label);
     }
   }
@@ -521,7 +525,8 @@ sub remove {
   #remove the prediction transcript
   my $sth = $self->prepare( "DELETE FROM prediction_transcript
                              WHERE prediction_transcript_id = ?" );
-  $sth->execute( $pre_trans->dbID );
+  $sth->bind_param(1,$pre_trans->dbID,SQL_INTEGER);
+  $sth->execute();
 
   #unset the adaptor and internal id
   $pre_trans->dbID(undef);

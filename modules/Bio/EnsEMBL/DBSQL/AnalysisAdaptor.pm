@@ -230,7 +230,8 @@ sub fetch_by_dbID {
     WHERE  analysis.analysis_id = ? };
 
   my $sth = $self->prepare($query);
-  $sth->execute( $id );
+  $sth->bind_param(1,$id,SQL_INTEGER);
+  $sth->execute();
   my $rowHashRef = $sth->fetchrow_hashref;
   if( ! defined $rowHashRef ) {
     return undef;
@@ -279,7 +280,8 @@ sub fetch_by_logic_name {
     ON analysis.analysis_id = analysis_description.analysis_id
     WHERE  logic_name = ?" );
 
-  $sth->execute($logic_name);
+  $sth->bind_param(1,$logic_name,SQL_VARCHAR);
+  $sth->execute();
   my $rowHashRef;
   $rowHashRef = $sth->fetchrow_hashref;
 
@@ -357,21 +359,20 @@ sub store {
           gff_feature = ?
 
 			    } );
-    $rows_inserted = $sth->execute
-      ( $analysis->created,
-        $analysis->logic_name,
-        $analysis->db,
-        $analysis->db_version,
-        $analysis->db_file,
-        $analysis->program,
-        $analysis->program_version,
-        $analysis->program_file,
-        $analysis->parameters,
-        $analysis->module,
-        $analysis->module_version,
-        $analysis->gff_source,
-        $analysis->gff_feature
-      );
+    $sth->bind_param(1,$analysis->created,SQL_DATETIME);
+    $sth->bind_param(2,$analysis->logic_name,SQL_VARCHAR);
+    $sth->bind_param(3,$analysis->db,SQL_VARCHAR);
+    $sth->bind_param(4,$analysis->db_version,SQL_VARCHAR);
+    $sth->bind_param(5,$analysis->db_file,SQL_VARCHAR);
+    $sth->bind_param(6,$analysis->program,SQL_VARCHAR);
+    $sth->bind_param(7,$analysis->program_version,SQL_VARCHAR);
+    $sth->bind_param(8,$analysis->program_file,SQL_VARCHAR);
+    $sth->bind_param(9,$analysis->parameters,SQL_VARCHAR);
+    $sth->bind_param(10,$analysis->module,SQL_VARCHAR);
+    $sth->bind_param(11,$analysis->module_version,SQL_VARCHAR);
+    $sth->bind_param(12,$analysis->gff_source,SQL_VARCHAR);
+    $sth->bind_param(13,$analysis->gff_feature,SQL_VARCHAR);
+    $rows_inserted = $sth->execute();
 
   } else {
     $sth = $self->prepare( q{
@@ -390,21 +391,21 @@ sub store {
           gff_source = ?,
           gff_feature = ?
 	 } );
+    
+    $sth->bind_param(1,$analysis->logic_name,SQL_VARCHAR);
+    $sth->bind_param(2,$analysis->db,SQL_VARCHAR);
+    $sth->bind_param(3,$analysis->db_version,SQL_VARCHAR);
+    $sth->bind_param(4,$analysis->db_file,SQL_VARCHAR);
+    $sth->bind_param(5,$analysis->program,SQL_VARCHAR);
+    $sth->bind_param(6,$analysis->program_version,SQL_VARCHAR);
+    $sth->bind_param(7,$analysis->program_file,SQL_VARCHAR);
+    $sth->bind_param(8,$analysis->parameters,SQL_VARCHAR);
+    $sth->bind_param(9,$analysis->module,SQL_VARCHAR);
+    $sth->bind_param(10,$analysis->module_version,SQL_VARCHAR);
+    $sth->bind_param(11,$analysis->gff_source,SQL_VARCHAR);
+    $sth->bind_param(12,$analysis->gff_feature,SQL_VARCHAR);
 
-    $rows_inserted = $sth->execute
-      ( $analysis->logic_name,
-        $analysis->db,
-        $analysis->db_version,
-        $analysis->db_file,
-        $analysis->program,
-        $analysis->program_version,
-        $analysis->program_file,
-        $analysis->parameters,
-        $analysis->module,
-        $analysis->module_version,
-        $analysis->gff_source,
-        $analysis->gff_feature,
-      );
+    $rows_inserted = $sth->execute();
   }
 
   my $dbID;
@@ -431,8 +432,14 @@ sub store {
     # store description and display_label
     if( defined( $analysis->description() ) ||
 	defined( $analysis->display_label() )) {
+
       $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description) VALUES (?,?,?)");
-      $sth->execute( $dbID, $analysis->display_label(), $analysis->description() );
+
+      $sth->bind_param(1,$dbID,SQL_INTEGER);
+      $sth->bind_param(2,$analysis->display_label(),SQL_VARCHAR);
+      $sth->bind_param(3,$analysis->description,SQL_LONGVARCHAR);
+      $sth->execute();
+
       $sth->finish();
     }
   }
@@ -481,12 +488,24 @@ sub update {
      "    gff_source = ?, gff_feature = ? " .
      "WHERE analysis_id = ?");
 
-  $sth->execute
-    ($a->created, $a->logic_name, $a->db, $a->db_version, $a->db_file,
-     $a->program, $a->program_version, $a->program_file,
-     $a->parameters, $a->module, $a->module_version,
-     $a->gff_source, $a->gff_feature,
-     $a->dbID);
+
+
+  $sth->bind_param(1,$a->created,SQL_DATETIME);
+  $sth->bind_param(2,$a->logic_name,SQL_VARCHAR);
+  $sth->bind_param(3,$a->db,SQL_VARCHAR);
+  $sth->bind_param(4,$a->db_version,SQL_VARCHAR);
+  $sth->bind_param(5,$a->db_file,SQL_VARCHAR);
+  $sth->bind_param(6,$a->program,SQL_VARCHAR);
+  $sth->bind_param(7,$a->program_version,SQL_VARCHAR);
+  $sth->bind_param(8,$a->program_file,SQL_VARCHAR);
+  $sth->bind_param(9,$a->parameters,SQL_VARCHAR);
+  $sth->bind_param(10,$a->module,SQL_VARCHAR);
+  $sth->bind_param(11,$a->module_version,SQL_VARCHAR);
+  $sth->bind_param(12,$a->gff_source,SQL_VARCHAR);
+  $sth->bind_param(13,$a->gff_feature,SQL_VARCHAR);
+  $sth->bind_param(14,$a->dbID,SQL_INTEGER);
+
+  $sth->execute();
 
   $sth->finish();
 
@@ -550,7 +569,8 @@ sub remove {
   }
 
   my $sth = $self->prepare("DELETE FROM analysis WHERE analysis_id = ?");
-  $sth->execute($analysis->dbID());
+  $sth->bind_param(1,$analysis->dbID,SQL_INTEGER);
+  $sth->execute();
 
   $sth = $self->prepare("DELETE FROM analysis_description WHERE analysis_id = ?");
   $sth->execute($analysis->dbID());

@@ -555,8 +555,12 @@ sub store{
     my $seq_region_id;
     ($df, $seq_region_id) = $self->_pre_store($df);
 
-    $sth->execute($seq_region_id, $df->start, $df->end,
-                  $df->density_type->dbID, $df->density_value);
+    $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+    $sth->bind_param(2,$df->start,SQL_INTEGER);
+    $sth->bind_param(3,$df->end,SQL_INTEGER);
+    $sth->bind_param(4,$df->density_type->dbID,SQL_INTEGER);
+    $sth->bind_param(5,$df->density_value,SQL_FLOAT);
+    $sth->execute();
 
     $original->dbID($sth->{'mysql_insertid'});
     $original->adaptor($self);

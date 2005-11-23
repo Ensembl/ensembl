@@ -111,7 +111,8 @@ sub fetch_all_by_MiscFeature {
                            "WHERE ma.misc_feature_id = ? " .
                            "AND   at.attrib_type_id = ma.attrib_type_id");
 
-  $sth->execute($mfid);
+  $sth->bind_param(1,$mfid,SQL_INTEGER);
+  $sth->execute();
 
   my $results = $self->_obj_from_sth($sth);
 
@@ -154,7 +155,8 @@ sub fetch_all_by_Transcript {
                            "WHERE ta.transcript_id = ? " .
                            "AND   at.attrib_type_id = ta.attrib_type_id");
 
-  $sth->execute($trid);
+  $sth->bind_param(1,$trid,SQL_INTEGER);
+  $sth->execute();
 
   my $results = $self->_obj_from_sth($sth);
 
@@ -197,7 +199,8 @@ sub fetch_all_by_Translation {
                            "WHERE ta.translation_id = ? " .
                            "AND   at.attrib_type_id = ta.attrib_type_id");
 
-  $sth->execute($tlid);
+  $sth->bind_param(1,$tlid,SQL_INTEGER);
+  $sth->execute();
 
   my $results = $self->_obj_from_sth($sth);
 
@@ -244,7 +247,8 @@ sub fetch_all_by_Slice {
                            "WHERE sra.seq_region_id = ? " .
                            "AND   at.attrib_type_id = sra.attrib_type_id");
 
-  $sth->execute($seq_region_id);
+  $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+  $sth->execute();
 
   my $results = $self->_obj_from_sth($sth);
 
@@ -300,7 +304,10 @@ sub store_on_Slice {
             "argument expected.");
     }
     my $atid = $self->_store_type( $at );
-    $sth->execute( $seq_region_id, $atid, $at->value() );
+    $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+    $sth->bind_param(2,$atid,SQL_INTEGER);
+    $sth->bind_param(3,$at->value,SQL_VARCHAR);
+    $sth->execute();
   }
 
   return;
@@ -355,7 +362,10 @@ sub store_on_MiscFeature {
             "argument expected.");
     }
     my $atid = $self->_store_type( $attrib );
-    $sth->execute( $feature_id, $atid, $attrib->value() );
+    $sth->bind_param(1,$feature_id,SQL_INTEGER);
+    $sth->bind_param(2,$atid,SQL_INTEGER);
+    $sth->bind_param(3,$attrib->value,SQL_VARCHAR);
+    $sth->execute();
   }
 
   return;
@@ -409,7 +419,10 @@ sub store_on_Transcript {
             "argument expected.");
     }
     my $atid = $self->_store_type( $attrib );
-    $sth->execute( $transcript_id, $atid, $attrib->value() );
+    $sth->bind_param(1,$transcript_id,SQL_INTEGER);
+    $sth->bind_param(2,$atid,SQL_INTEGER);
+    $sth->bind_param(3,$attrib->value,SQL_VARCHAR);
+    $sth->execute();
   }
 
   return;
@@ -464,7 +477,10 @@ sub store_on_Translation {
             "argument expected.");
     }
     my $atid = $self->_store_type( $attrib );
-    $sth->execute( $translation_id, $atid, $attrib->value() );
+    $sth->bind_param(1,$translation_id,SQL_INTEGER);
+    $sth->bind_param(2,$atid,SQL_INTEGER);
+    $sth->bind_param(3,$attrib->value,SQL_VARCHAR);
+    $sth->execute();
   }
 
   return;
@@ -506,12 +522,15 @@ sub remove_from_Slice {
   if (defined $attrib_type_id) {
     my $sth = $self->prepare("DELETE FROM seq_region_attrib " .
         "WHERE seq_region_id = ? AND attrib_type_id = ?");
-    $sth->execute($srid, $attrib_type_id);
+    $sth->bind_param(1,$srid,SQL_INTEGER);
+    $sth->bind_param(2,$attrib_type_id,SQL_INTEGER);
+    $sth->execute();
     $sth->finish;
   } else {
     my $sth = $self->prepare("DELETE FROM seq_region_attrib " .
         "WHERE seq_region_id = ?");
-    $sth->execute($srid);
+    $sth->bind_param(1,$srid,SQL_INTEGER);
+    $sth->execute();
     $sth->finish();
   }
 
@@ -551,7 +570,8 @@ sub remove_from_MiscFeature {
   my $sth = $db->dbc->prepare("DELETE FROM misc_attrib " .
                          "WHERE misc_feature_id = ?");
 
-  $sth->execute($mf->dbID());
+  $sth->bind_param(1,$mf->dbID,SQL_INTEGER);
+  $sth->execute();
 
   $sth->finish();
 
@@ -594,12 +614,15 @@ sub remove_from_Transcript {
   if (defined $attrib_type_id) {
     my $sth = $self->prepare("DELETE FROM transcript_attrib " .
         "WHERE transcript_id = ? AND attrib_type_id = ?");
-    $sth->execute($transcript->dbID, $attrib_type_id);
+    $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
+    $sth->bind_param(1,$attrib_type_id,SQL_INTEGER);
+    $sth->execute();
     $sth->finish;
   } else {
     my $sth = $self->prepare("DELETE FROM transcript_attrib " .
         "WHERE transcript_id = ?");
-    $sth->execute($transcript->dbID);
+    $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
+    $sth->execute();
     $sth->finish();
   }
 
@@ -643,12 +666,15 @@ sub remove_from_Translation {
   if (defined $attrib_type_id) {
     my $sth = $self->prepare("DELETE FROM translation_attrib " .
         "WHERE translation_id = ? AND attrib_type_id = ?");
-    $sth->execute($translation->dbID, $attrib_type_id);
+    $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
+    $sth->bind_param(2,$attrib_type_id,SQL_INTEGER);
+    $sth->execute();
     $sth->finish;
   } else {
     my $sth = $self->prepare("DELETE FROM translation_attrib " .
         "WHERE translation_id = ?");
-    $sth->execute($translation->dbID);
+    $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
+    $sth->execute();
     $sth->finish();
   }
 
@@ -671,7 +697,10 @@ sub _store_type {
      "description = ?" );
 
   my $rows_inserted =
-    $sth1->execute($attrib->code(), $attrib->name(), $attrib->description() );
+      $sth1->bind_param(1,$attrib->code,SQL_VARCHAR);
+      $sth1->bind_param(2,$attrib->name,SQL_VARCHAR);
+      $sth1->bind_param(3,$attrib->description,SQL_LONGVARCHAR);
+  $sth1->execute();
 
   my $atid = $sth1->{'mysql_insertid'};
 
@@ -680,7 +709,8 @@ sub _store_type {
     my $sth2 = $self->prepare
       ("SELECT attrib_type_id FROM attrib_type " .
        "WHERE code = ?");
-    $sth2->execute($attrib->code());
+    $sth2->bind_param(1,$attrib->code,SQL_VARCHAR);
+    $sth2->execute();
     ($atid) = $sth2->fetchrow_array();
 
     $sth2->finish();

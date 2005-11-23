@@ -373,13 +373,15 @@ sub store {
   my $seq_region_id;
   ($feature, $seq_region_id) = $self->_pre_store($feature);
 
-  $rf_sth->execute($feature->name(),
-		$seq_region_id,
-		$feature->start(),
-		$feature->end(),
-		$feature->strand(),
-		$analysis->dbID(),
-		$feature->factor()->dbID());
+  $rf_sth->bind_param(1,$feature->name,SQL_VARCHAR);
+  $rf_sth->bind_param(2,$seq_region_id,SQL_INTEGER);
+  $rf_sth->bind_param(3,$feature->start,SQL_INTEGER);
+  $rf_sth->bind_param(4,$feature->end,SQL_INTEGER);
+  $rf_sth->bind_param(5,$feature->strand,SQL_TINYINT);
+  $rf_sth->bind_param(6,$analysis->dbID,SQL_INTEGER);
+  $rf_sth->bind_param(7,$feature->factor->dbID,SQL_INTEGER);
+
+  $rf_sth->execute();
 
   my $db_id = $rf_sth->{'mysql_insertid'}
     or throw("Didn't get an insertid from the INSERT statement");
@@ -401,11 +403,13 @@ sub store {
   $ensType = 'Transcript' if ($ensObj->isa('Bio::EnsEMBL::Transcript'));
   $ensType = 'Translation' if ($ensObj->isa('Bio::EnsEMBL::Translation'));
 
-  $rfo_sth->execute($db_id,
-		    $ensType,
-		    $ensObj->dbID(),
-		    $influence,
-		    $evidence);
+  $rfo_sth->bind_param(1,$db_id,SQL_INTEGER);
+  $rfo_sth->bind_param(2,$ensType,SQL_VARCHAR);
+  $rfo_sth->bind_param(3,$ensObj->dbID,SQL_INTEGER);
+  $rfo_sth->bind_param(4,$influence,SQL_VARCHAR);
+  $rfo_sth->bind_param(5,$evidence,SQL_VARCHAR);
+
+  $rfo_sth->execute();
 
 }
 
@@ -451,7 +455,9 @@ sub fetch_all_by_ensembl_object_type {
 
    my $sth = $self->prepare("SELECT regulatory_feature_id FROM regulatory_feature_object WHERE ensembl_object_type=? AND ensembl_object_id=?");
 
-   $sth->execute($type, $id);
+   $sth->bind_param(1,$type,SQL_VARCHAR);
+   $sth->bind_param(2,$id,SQL_INTEGER);
+   $sth->execute();
 
    #my @ids = map {$_->[0]} @{$sth->fetchall_arrayref()};
 

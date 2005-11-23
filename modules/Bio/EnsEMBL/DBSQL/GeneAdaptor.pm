@@ -196,7 +196,8 @@ sub fetch_by_stable_id {
 
    my $sth = $self->prepare("SELECT gene_id from gene_stable_id " . 
                             "WHERE  stable_id = ?");
-   $sth->execute($id);
+   $sth->bind_param(1,$id,SQL_VARCHAR);
+   $sth->execute();
 
    my ($dbID) = $sth->fetchrow_array();
    $sth->finish;
@@ -236,7 +237,8 @@ sub fetch_by_exon_stable_id{
        WHERE t.transcript_id = et.transcript_id 
          AND et.exon_id = esi.exon_id 
          AND esi.stable_id = ?");
-   $sth->execute("$id");
+   $sth->bind_param(1,"$id",SQL_VARCHAR);
+   $sth->execute();
 
    my ($dbID) = $sth->fetchrow_array();
 
@@ -285,7 +287,8 @@ sub fetch_all_by_domain {
                            "AND   tr.transcript_id = tl.transcript_id " .
                            "GROUP BY tr.gene_id");
 
-  $sth->execute($domain);
+  $sth->bind_param(1,$domain,SQL_VARCHAR);
+  $sth->execute();
 
   my @array = @{$sth->fetchall_arrayref()};
   $sth->finish();
@@ -438,7 +441,8 @@ sub fetch_by_transcript_id {
      my $sth = $self->prepare("SELECT	tr.gene_id " .
 				"FROM	transcript as tr " .
 				"WHERE	tr.transcript_id = ?");
-    $sth->execute($trans_id);
+    $sth->bind_param(1,$trans_id,SQL_INTEGER);
+    $sth->execute();
 
     my ($geneid) = $sth->fetchrow_array();
 
@@ -475,7 +479,8 @@ sub fetch_by_transcript_stable_id {
 				"FROM	  transcript as tr, transcript_stable_id tcl " .
         "WHERE	tcl.stable_id = ? " .
         "AND    tr.transcript_id = tcl.transcript_id");
-    $sth->execute("$trans_stable_id");
+    $sth->bind_param(1,"$trans_stable_id",SQL_VARCHAR);
+    $sth->execute();
 
     my ($geneid) = $sth->fetchrow_array();
     $sth->finish;
@@ -518,7 +523,8 @@ sub fetch_by_translation_stable_id {
 			 "AND	  trs.translation_id = tl.translation_id " .
        "AND   tr.transcript_id = tl.transcript_id");
 
-    $sth->execute("$translation_stable_id");
+    $sth->bind_param(1,"$translation_stable_id",SQL_VARCHAR);
+    $sth->execute();
 
     my ($geneid) = $sth->fetchrow_array();
     $sth->finish;
@@ -607,7 +613,9 @@ sub fetch_all_alt_alleles {
                            "AND    aa2.gene_id = ? " .
                            "AND    aa1.gene_id <> ?");
 
-  $sth->execute($gene_id, $gene_id);
+  $sth->bind_param(1,$gene_id,SQL_INTEGER);
+  $sth->bind_param(2,$gene_id,SQL_INTEGER);
+  $sth->execute();
 
   my @alt_ids;
   my $row;
@@ -678,7 +686,8 @@ sub store_alt_alleles {
   }
 
   my $sth = $self->prepare("INSERT INTO alt_allele (gene_id) VALUES (?)");
-  $sth->execute($gene->dbID());
+  $sth->bind_param(1,$gene->dbID,SQL_INTEGER);
+  $sth->execute();
   
   my $alt_allele_id = $sth->{'mysql_insertid'};
   $sth->finish();
@@ -706,19 +715,23 @@ sub store_alt_alleles {
       #database
       $sth->finish();
       $sth->prepare("DELETE FROM alt_allele WHERE alt_allele_id = ?");
-      $sth->execute($alt_allele_id);
+      $sth->bind_param(1,$alt_allele_id,SQL_INTEGER);
+      $sth->execute();
       $sth->finish();
       throw('Genes must have dbIDs in order to construct alternate alleles.');
     }
 
+    $sth->bind_param(1,$alt_allele_id,SQL_INTEGER);
+    $sth->bind_param(2,$gene_id,SQL_INTEGER);
     eval {
-      $sth->execute($alt_allele_id, $gene_id);
+	$sth->execute();
     };
 
     if($@) {
       #an error occured, revert the db to the previous state
       $sth = $self->prepare("DELETE FROM alt_allele WHERE alt_allele_id = ?");
-      $sth->execute($alt_allele_id);
+      $sth->bind_param(1,$alt_allele_id,SQL_INTEGER);
+      $sth->execute();
       $sth->finish();
       throw("An SQL error occured inserting alternate alleles:\n$@");
     }
@@ -789,17 +802,17 @@ print "in gene store\n";
                "status = ? ";
 
   my $sth = $self->prepare( $store_gene_sql );
-   $sth->execute(
-		 $type,
-		 $analysis_id,
-		 $seq_region_id,
-		 $gene->start(),
-		 $gene->end(),
-		 $gene->strand(),
-		 $gene->description(),
-		 $gene->source(),
-		 $gene->status()
-		);
+  $sth->bind_param(1,$type,SQL_VARCHAR);
+  $sth->bind_param(2,$analysis_id,SQL_INTEGER);
+  $sth->bind_param(3,$seq_region_id,SQL_INTEGER);
+  $sth->bind_param(4,$gene->start,SQL_INTEGER);
+  $sth->bind_param(5,$gene->end,SQL_INTEGER);
+  $sth->bind_param(6,$gene->strand,SQL_TINYINT);
+  $sth->bind_param(7,$gene->description,SQL_LONGVARCHAR);
+  $sth->bind_param(8,$gene->source,SQL_VARCHAR);
+  $sth->bind_param(9,$gene->status,SQL_VARCHAR);
+
+   $sth->execute();
   $sth->finish();
 
    my $gene_dbID = $sth->{'mysql_insertid'};
@@ -824,7 +837,10 @@ print "in gene store\n";
      }
 
      $sth = $self->prepare($statement);
-     $sth->execute( $gene_dbID, $gene->stable_id(), $gene->version());
+     $sth->bind_param(1,$gene_dbID,SQL_INTEGER);
+     $sth->bind_param(2,$gene->stable_id,SQL_VARCHAR);
+     $sth->bind_param(3,$gene->version,SQL_INTEGER);
+     $sth->execute();
      $sth->finish();
    }
 
@@ -892,7 +908,9 @@ print "here 1\n";
       print "here\n";
       $sth = $self->prepare
         ("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
-      $sth->execute($dxref_id, $gene_dbID);
+      $sth->bind_param(1,$dxref_id,SQL_INTEGER);
+      $sth->bind_param(2,$gene_dbID,SQL_INTEGER);
+      $sth->execute();
       $sth->finish();
       $display_xref->dbID($dxref_id);
       $display_xref->adaptor($dbEntryAdaptor);
@@ -957,7 +975,8 @@ sub remove {
 
   # remove all alternative allele entries associated with this gene
   my $sth = $self->prepare("delete from alt_allele where gene_id = ?");
-  $sth->execute($gene->dbID());
+  $sth->bind_param(1,$gene->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   # remove all of the transcripts associated with this gene
@@ -970,13 +989,15 @@ sub remove {
   # remove the gene stable identifier
 
   $sth = $self->prepare( "delete from gene_stable_id where gene_id = ? " );
-  $sth->execute( $gene->dbID );
+  $sth->bind_param(1,$gene->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   # remove this gene from the database
 
   $sth = $self->prepare( "delete from gene where gene_id = ? " );
-  $sth->execute( $gene->dbID );
+  $sth->bind_param(1,$gene->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   # unset the gene identifier and adaptor thereby flagging it as unstored
@@ -1082,13 +1103,15 @@ sub update {
    }
 
    my $sth = $self->prepare( $update_gene_sql );
-   $sth->execute($gene->type(), 
-		 $gene->analysis->dbID(),
-		 $display_xref_id,
-		 $gene->status(),
-		 $gene->description(),
-		 $gene->dbID()
-		);
+
+   $sth->bind_param(1,$gene->type,SQL_VARCHAR);
+   $sth->bind_param(2,$gene->analysis->dbID,SQL_INTEGER);
+   $sth->bind_param(3,$display_xref_id,SQL_INTEGER);
+   $sth->bind_param(4,$gene->status,SQL_VARCHAR);
+   $sth->bind_param(5,$gene->description,SQL_VARCHAR);
+   $sth->bind_param(6,$gene->dbID,SQL_INTEGER);
+
+   $sth->execute();
 
    # maybe should update stable id ???
 }
@@ -1393,7 +1416,8 @@ sub get_display_xref {
                               AND  g.display_xref_id = x.xref_id
                               AND  x.external_db_id = e.external_db_id
                            ");
-  $sth->execute( $gene->dbID );
+  $sth->bind_param(1,$gene->dbID,SQL_INTEGER);
+  $sth->execute();
 
 
   my ($db_name, $display_label, $xref_id ) = $sth->fetchrow_array();
@@ -1430,7 +1454,9 @@ sub get_description {
   my $sth = $self->prepare("SELECT description 
                             FROM   gene_description 
                             WHERE  gene_id = ?");
-  $sth->execute($dbID);
+  $sth->bind_param(1,$dbID,SQL_INTEGER);
+
+  $sth->execute();
   my @array = $sth->fetchrow_array();
   return $array[0];
 }
@@ -1471,7 +1497,8 @@ sub get_stable_entry_info {
   my $sth = $self->prepare("SELECT stable_id, UNIX_TIMESTAMP(created),
                                    UNIX_TIMESTAMP(modified), version 
                             FROM gene_stable_id 
-                            WHERE gene_id = ".$gene->dbID);
+                            WHERE gene_id = ?");
+  $sth->bind_param(1,$gene->dbID,SQL_INTEGER);
   $sth->execute();
 
   my @array = $sth->fetchrow_array();

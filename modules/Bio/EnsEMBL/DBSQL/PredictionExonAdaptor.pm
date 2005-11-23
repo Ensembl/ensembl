@@ -199,15 +199,17 @@ sub store {
                        "seq_region_strand, start_phase, score, p_value) " .
       "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ? )");
 
-  $sth->execute( $pt_id,
-                 $rank,
-                 $seq_region_id,
-                 $pexon->start(),
-                 $pexon->end(),
-                 $pexon->strand(),
-                 $pexon->phase(),
-                 $pexon->score(),
-                 $pexon->p_value());
+  $sth->bind_param(1,$pt_id,SQL_INTEGER);
+  $sth->bind_param(2,$rank,SQL_SMALLINT);
+  $sth->bind_param(3,$seq_region_id,SQL_INTEGER);
+  $sth->bind_param(4,$pexon->start,SQL_INTEGER);
+  $sth->bind_param(5,$pexon->end,SQL_INTEGER);
+  $sth->bind_param(6,$pexon->strand,SQL_TINYINT);
+  $sth->bind_param(7,$pexon->phase,SQL_TINYINT);
+  $sth->bind_param(8,$pexon->score,SQL_DOUBLE);
+  $sth->bind_param(9,$pexon->p_value,SQL_DOUBLE);
+
+  $sth->execute();
 
   my $dbID = $sth->{'mysql_insertid'};
 
@@ -245,7 +247,8 @@ sub remove {
   }
 
   my $sth = $self->prepare( "delete from prediction_exon where prediction_exon_id = ?" );
-  $sth->execute( $pexon->dbID );
+  $sth->bind_param(1,$pexon->dbID,SQL_INTEGER);
+  $sth->execute();
 
   $pexon->dbID(undef);
   $pexon->adaptor(undef);

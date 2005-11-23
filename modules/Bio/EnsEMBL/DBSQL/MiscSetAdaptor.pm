@@ -229,8 +229,12 @@ sub store {
       next SET;
     }
 
-    my $num_inserted = $sth->execute($ms->code(), $ms->name(),
-                                   $ms->description(), $ms->longest_feature());
+    $sth->bind_param(1,$ms->code,SQL_VARCHAR);
+    $sth->bind_param(2,$ms->name,SQL_VARCHAR);
+    $sth->bind_param(3,$ms->description,SQL_LONGVARCHAR);
+    $sth->bind_param(4,$ms->longest_feature,SQL_INTEGER);
+
+    my $num_inserted = $sth->execute();
 
     my $dbID;
 
@@ -238,7 +242,8 @@ sub store {
       # insert failed because set with this code already exists
       my $sth2 = $self->prepare("SELECT misc_set_id from misc_set " .
                                 "WHERE code = ?");
-      $sth2->execute($ms->code());
+      $sth2->bind_param(1,$ms->code,SQL_VARCHAR);
+      $sth2->execute();
 
       if($sth2->rows() != 1) {
         throw("Could not retrieve or store MiscSet, code=[".$ms->code."]\n".

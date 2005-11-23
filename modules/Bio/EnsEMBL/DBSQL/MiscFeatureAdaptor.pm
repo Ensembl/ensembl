@@ -167,7 +167,9 @@ sub fetch_all_by_attribute_type_value {
   }
 
   my $sth = $self->prepare($sql);
-  $sth->execute(@bind_vals);
+  $sth->bind_param(1,$attrib_type_code,SQL_VARCHAR);
+  $sth->bind_param(2,$attrib_value,SQL_VARCHAR) if ($attrib_value);
+  $sth->execute();
 
   my @ids = map {$_->[0]} @{$sth->fetchall_arrayref()};
 
@@ -573,8 +575,11 @@ sub store {
     ($mf, $seq_region_id) = $self->_pre_store($mf);
 
     # store the actual MiscFeature
-    $feature_sth->execute($seq_region_id, $mf->start(),
-                          $mf->end(), $mf->strand());
+    $feature_sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+    $feature_sth->bind_param(2,$mf->start,SQL_INTEGER);
+    $feature_sth->bind_param(3,$mf->end,SQL_INTEGER);
+    $feature_sth->bind_param(4,$mf->strand,SQL_TINYINT);
+    $feature_sth->execute();
 
     my $dbID = $feature_sth->{'mysql_insertid'};
 
@@ -591,7 +596,10 @@ sub store {
       $msa->store($set) if(!$set->is_stored($db));
 
       # update the misc_feat_misc_set table to store the set relationship
-      $feature_set_sth->execute($dbID, $set->dbID());
+      $feature_set_sth->bind_param(1,$dbID,SQL_INTEGER);
+      $feature_set_sth->bind_param(2,$set->dbID,SQL_INTEGER);
+
+      $feature_set_sth->execute();
     }
   }
 

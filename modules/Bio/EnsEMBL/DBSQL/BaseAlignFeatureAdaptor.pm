@@ -32,13 +32,14 @@ Post questions/comments to the ensembl developer list: ensembl-dev@ebi.ac.uk
 =cut
 
 package Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor;
-use vars qw(@ISA);
+use vars qw(@ISA @EXPORT);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
+@EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 
 =head2 fetch_all_by_Slice_and_pid
 

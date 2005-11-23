@@ -173,7 +173,8 @@ sub fetch_all_by_logic_name {
                            "       value_type, region_features " .
                            "FROM density_type " .
                            "WHERE analysis_id = ?");
-  $sth->execute($analysis->dbID());
+  $sth->bind_param(1,$analysis->dbID,SQL_INTEGER);
+  $sth->execute();
 
   my($dbID, $blk_size, $vtype, $region_features );
   $sth->bind_columns(\$dbID, \$blk_size, \$vtype, \$region_features);
@@ -251,8 +252,11 @@ sub store {
     my $region_features = $dt->region_features();
     $region_features |= 0;
 
-    my $inserted = $sth->execute($dt->analysis->dbID(), $block_size,
-                                 $dt->value_type(), $region_features);
+    $sth->bind_param(1,$dt->analysis->dbID,SQL_INTEGER);
+    $sth->bind_param(2,$block_size,SQL_INTEGER);
+    $sth->bind_param(3,$dt->value_type,SQL_VARCHAR);
+    $sth->bind_param(4,$region_features, SQL_VARCHAR);
+    my $inserted = $sth->execute();
 
     my $dbID;
 

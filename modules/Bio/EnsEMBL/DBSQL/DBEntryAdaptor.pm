@@ -72,7 +72,8 @@ sub fetch_by_dbID {
     WHERE  xref.xref_id = ?
     AND    xref.external_db_id = exDB.external_db_id");
 
-  $sth->execute($dbID);
+  $sth->bind_param(1,$dbID,SQL_INTEGER);
+  $sth->execute();
 
   my $exDB;
 
@@ -143,7 +144,9 @@ sub fetch_by_db_accession {
     AND    exDB.db_name = ?
     AND    xref.external_db_id = exDB.external_db_id");
 
-  $sth->execute($accession, $dbname);
+  $sth->bind_param(1,$accession,SQL_VARCHAR);
+  $sth->bind_param(2,$dbname,SQL_VARCHAR);
+  $sth->execute();
 
   if(!$sth->rows() && lc($dbname) eq 'interpro') {
     #
@@ -156,7 +159,8 @@ sub fetch_by_db_accession {
     $sth = $self->prepare
       ("SELECT null, i.interpro_ac, i.id, null, null, 'Interpro', null, null ".
        "FROM interpro i where i.interpro_ac = ?");
-    $sth->execute($accession);
+    $sth->bind_param(1,$accession,SQL_VARCHAR);
+    $sth->execute();
   }
 
   my $exDB;
@@ -228,7 +232,9 @@ sub store {
       WHERE db_name = ?
         AND release = ?");
 
-  $sth->execute( $exObj->dbname(), $exObj->release() );
+  $sth->bind_param(1,$exObj->dbname,SQL_VARCHAR);
+  $sth->bind_param(2,$exObj->release,SQL_VARCHAR);
+  $sth->execute();
 
   my ($dbRef) =  $sth->fetchrow_array();
 
@@ -247,7 +253,10 @@ sub store {
           AND dbprimary_acc = ?
           AND version = ?" );
 
-  $sth->execute( $dbRef, $exObj->primary_id(),$exObj->version() );
+  $sth->bind_param(1,$dbRef,SQL_INTEGER);
+  $sth->bind_param(2,$exObj->primary_id,SQL_VARCHAR);
+  $sth->bind_param(3,$exObj->version,SQL_VARCHAR);
+  $sth->execute();
   my ($dbX) = $sth->fetchrow_array();
   $sth->finish();
 
@@ -266,8 +275,12 @@ sub store {
            version = ?,
            description = ?,
            external_db_id = ?");
-    $sth->execute( $exObj->primary_id(), $exObj->display_id(),
-		   $exObj->version(), $exObj->description(), $dbRef);
+    $sth->bind_param(1,$exObj->primary_id,SQL_VARCHAR);
+    $sth->bind_param(2,$exObj->display_id,SQL_VARCHAR);
+    $sth->bind_param(3,$exObj->version,SQL_VARCHAR);
+    $sth->bind_param(4,$exObj->description,SQL_VARCHAR);
+    $sth->bind_param(5,$dbRef,SQL_INTEGER);
+    $sth->execute();
     $dbX = $sth->{'mysql_insertid'};
     $sth->finish();
 
@@ -286,9 +299,13 @@ sub store {
 
     my $synonyms = $exObj->get_all_synonyms();
     foreach my $syn ( @$synonyms ) {
-      $synonym_check_sth->execute($dbX, $syn);
+	$synonym_check_sth->bind_param(1,$dbX,SQL_INTEGER);
+	$synonym_check_sth->bind_param(1,$syn,SQL_VARCHAR);
+      $synonym_check_sth->execute();
       my ($dbSyn) = $synonym_check_sth->fetchrow_array(); 
-      $synonym_store_sth->execute($dbX, $syn) if(!$dbSyn);
+	$synonym_store_sth->bind_param(1,$dbX,SQL_INTEGER);
+	$synonym_store_sth->bind_param(2,$syn,SQL_VARCHAR);
+      $synonym_store_sth->execute() if(!$dbSyn);
     }
 
     $synonym_check_sth->finish();
@@ -305,7 +322,10 @@ sub store {
             AND   ensembl_object_type = ?
             AND   ensembl_id = ?");
 
-  $sth->execute($dbX, $ensType, $ensObject);
+  $sth->bind_param(1,$dbX,SQL_INTEGER);
+  $sth->bind_param(2,$ensType,SQL_VARCHAR);
+  $sth->bind_param(3,$ensObject,SQL_INTEGER);
+  $sth->execute();
   my ($tst) = $sth->fetchrow_array;
   $sth->finish();
 
@@ -317,7 +337,11 @@ sub store {
          "INSERT ignore INTO object_xref
           SET xref_id = ?, ensembl_object_type = ?, ensembl_id = ?");
 
-    $sth->execute( $dbX, $ensType, $ensObject );	
+    $sth->bind_param(1,$dbX,SQL_INTEGER);
+    $sth->bind_param(2,$ensType,SQL_VARCHAR);
+    $sth->bind_param(3,$ensObject,SQL_INTEGER);
+
+    $sth->execute();
     $exObj->dbID( $dbX );
     $exObj->adaptor( $self );
 
@@ -349,18 +373,27 @@ sub store {
              score = ?,
              evalue = ?,
              analysis_id = ?" );
-      $sth->execute($Xidt, $exObj->query_identity, $exObj->target_identity,
-                    $exObj->query_start(), $exObj->query_end(),
-                    $exObj->translation_start(), $exObj->translation_end(),
-                    $exObj->cigar_line(), $exObj->score, $exObj->evalue(),
-                    $analysis_id);
+      $sth->bind_param(1,$Xidt,SQL_INTEGER);
+      $sth->bind_param(2,$exObj->query_identity,SQL_INTEGER);
+      $sth->bind_param(3,$exObj->target_identity,SQL_INTEGER);
+      $sth->bind_param(4,$exObj->query_start,SQL_INTEGER);
+      $sth->bind_param(5,$exObj->query_end,SQL_INTEGER);
+      $sth->bind_param(6,$exObj->translation_start,SQL_INTEGER);
+      $sth->bind_param(7,$exObj->translation_end,SQL_INTEGER);
+      $sth->bind_param(8,$exObj->cigar_line,SQL_LONGVARCHAR);
+      $sth->bind_param(9,$exObj->score,SQL_DOUBLE);
+      $sth->bind_param(10,$exObj->evalue,SQL_DOUBLE);
+      $sth->bind_param(11,$analysis_id,SQL_INTEGER);
+      $sth->execute();
     } elsif( $exObj->isa( 'Bio::EnsEMBL::GoXref' )) {
       $sth = $self->prepare( "
              INSERT ignore INTO go_xref
                 SET object_xref_id = ?,
                     linkage_type = ? " );
       foreach my $lt (@{$exObj->get_all_linkage_types()}) {
-        $sth->execute( $Xidt, $lt );
+	  $sth->bind_param(1,$Xidt,SQL_INTEGER);
+	  $sth->bind_param(2,$lt,SQL_VARCHAR);
+        $sth->execute();
       }
     }
   } 
@@ -395,7 +428,9 @@ sub exists {
                             AND    x.display_label = ? 
                             AND    xdb.db_name = ?');
 
-  $sth->execute($dbe->display_id, $dbe->dbname);
+  $sth->bind_param(1,$dbe->display_id,SQL_INTEGER);
+  $sth->bind_param(1,$dbe->dbname,SQL_VARCHAR);
+  $sth->execute();
 
   my ($dbID) = $sth->fetchrow_array;
 
@@ -554,7 +589,10 @@ sub remove_from_object {
      "WHERE  ox.xref_id = ? " .
      "AND    ox.ensembl_id = ? " .
      "AND    ox.ensembl_object_type = ?");
-  $sth->execute($dbe->dbID(), $object->dbID(), $object_type);
+  $sth->bind_param(1,$dbe->dbID,SQL_INTEGER);
+  $sth->bind_param(2,$object->dbID,SQL_INTEGER);
+  $sth->bind_param(3,$object_type,SQL_VARCHAR);
+  $sth->execute();
 
   if(!$sth->rows() == 1) {
     $sth->finish();
@@ -567,16 +605,19 @@ sub remove_from_object {
   # delete from the tables which contain additional linkage information
 
   $sth = $self->prepare("DELETE FROM go_xref WHERE object_xref_id = ?");
-  $sth->execute($ox_id);
+  $sth->bind_param(1,$ox_id,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   $sth = $self->prepare("DELETE FROM identity_xref WHERE object_xref_id = ?");
-  $sth->execute($ox_id);
+  $sth->bind_param(1,$ox_id,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   # delete the actual linkage itself
   $sth = $self->prepare("DELETE FROM object_xref WHERE object_xref_id = ?");
-  $sth->execute($ox_id);
+  $sth->bind_param(1,$ox_id,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   return;
@@ -630,7 +671,9 @@ sub _fetch_by_object_type {
       AND  oxr.ensembl_object_type = ?
   ");
 
-  $sth->execute($ensObj, $ensType);
+  $sth->bind_param(1,$ensObj,SQL_INTEGER);
+  $sth->bind_param(1,$ensType,SQL_VARCHAR);
+  $sth->execute();
   my (%seen, %linkage_types, %synonyms);
 
 
@@ -846,7 +889,9 @@ sub _type_by_external_id{
 
   foreach( @queries ) {
     my $sth = $self->prepare( $_ );
-    $sth->execute("$name", $ensType);
+    $sth->bind_param(1,"$name",SQL_VARCHAR);
+    $sth->bind_param(1,$ensType,SQL_VARCHAR);
+    $sth->execute();
     while( my $r = $sth->fetchrow_array() ) {
       if( !exists $hash{$r} ) {
 	$hash{$r} = 1;

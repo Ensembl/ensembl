@@ -435,15 +435,17 @@ sub store {
     my $seq_region_id;
     ($rf, $seq_region_id) = $self->_pre_store($rf);
 
-    $sth->execute($seq_region_id,
-                  $rf->start,
-                  $rf->end,
-                  $rf->strand,
-                  $rf->repeat_consensus->dbID(),
-                  $rf->hstart,
-                  $rf->hend,
-                  $rf->score,
-                  $rf->analysis->dbID);
+    $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+    $sth->bind_param(2,$rf->start,SQL_INTEGER);
+    $sth->bind_param(3,$rf->end,SQL_INTEGER);
+    $sth->bind_param(4,$rf->strand,SQL_TINYINT);
+    $sth->bind_param(5,$rf->repeat_consensus->dbID,SQL_INTEGER);
+    $sth->bind_param(6,$rf->hstart,SQL_INTEGER);
+    $sth->bind_param(7,$rf->hend,SQL_INTEGER);
+    $sth->bind_param(8,$rf->score,SQL_DOUBLE);
+    $sth->bind_param(9,$rf->analysis->dbID,SQL_INTEGER);
+
+    $sth->execute();
 
     my $db_id = $sth->{'mysql_insertid'}
       or throw("Didn't get an insertid from the INSERT statement");

@@ -55,7 +55,10 @@ sub _fetch_seq {
                "SELECT SUBSTRING( d.sequence, ?, ?), n_line
                 FROM dnac d
                 WHERE d.seq_region_id = ?");
-  $sth->execute($comp_start, $comp_len, $seq_region_id);
+  $sth->bind_param(1,$comp_start,SQL_INTEGER);
+  $sth->bind_param(2,$comp_len ,SQL_INTEGER);
+  $sth->bind_param(3,$seq_region_id,SQL_INTEGER);
+  $sth->execute();
   $sth->bind_columns(\$bvector, \$nline);
   $sth->fetch();
   $sth->finish();
@@ -179,7 +182,10 @@ sub store {
   my $statement = $self->prepare(
         "INSERT INTO dnac(seq_region_id, sequence, n_line) VALUES(?,?,?)");
 
-  $statement->execute($seq_region_id, $bvector, $nline);
+  $statement->bind_param(1,$seq_region_id,SQL_INTEGER);
+  $statement->bind_param(2,$bvector,SQL_BLOB);
+  $statement->bind_param(3,$nline,SQL_LONGVARCHAR);
+  $statement->execute();
 
   $statement->finish();
   return;

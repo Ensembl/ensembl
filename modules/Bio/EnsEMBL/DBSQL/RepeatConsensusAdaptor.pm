@@ -249,7 +249,12 @@ sub store {
     my $seq   = $rc->repeat_consensus
       or throw("repeat_consensus not set");
 
-    $sth->execute($name, $class, $type, $seq);
+    $sth->bind_param(1,$name,SQL_VARCHAR);
+    $sth->bind_param(2,$class,SQL_VARCHAR);
+    $sth->bind_param(3,$type,SQL_VARCHAR);
+    $sth->bind_param(4,$seq,SQL_LONGVARCHAR);
+
+    $sth->execute();
 
     my $db_id = $sth->{'mysql_insertid'}
     or throw("Didn't get an insertid from the INSERT statement");

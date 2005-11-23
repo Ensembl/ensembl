@@ -195,8 +195,9 @@ sub fetch_all_by_gene_archive_id {
      };
   
   my $sth = $self->prepare( $sql );
-  $sth->execute( $gene_archive_id->stable_id(),
-		 $gene_archive_id->version );
+  $sth->bind_param(1,$gene_archive_id->stable_id,SQL_VARCHAR);
+  $sth->bind_param(2,$gene_archive_id->version,SQL_SMALLINT);
+  $sth->execute();
   
   my ( $stable_id, $version, $db_name );
   $sth->bind_columns( \$stable_id, \$version, \$db_name );
@@ -249,8 +250,9 @@ sub fetch_by_transcript_archive_id {
      };
   
   my $sth = $self->prepare( $sql );
-  $sth->execute( $transcript_archive_id->stable_id(),
-		 $transcript_archive_id->version );
+  $sth->bind_param(1,$transcript_archive_id->stable_id,SQL_VARCHAR);
+  $sth->bind_param(1,$transcript_archive_id->version,SQL_SMALLINT);
+  $sth->execute();
   
   my ( $stable_id, $version, $db_name ) =
     $sth->fetchrow_array();
@@ -312,7 +314,9 @@ sub fetch_pre_by_arch_id {
     };
 
   my $sth = $self->prepare( $sql );
-  $sth->execute( $arch_id->stable_id(), $arch_id->db_name() );
+  $sth->bind_param(1,$arch_id->stable_id, SQL_VARCHAR);
+  $sth->bind_param(2,$arch_id->db_name,SQL_VARCHAR);
+  $sth->execute();
   my ( $old_stable_id, $old_version, $old_db_name );
   $sth->bind_columns( \$old_stable_id, \$old_version, \$old_db_name );
   while( $sth->fetch() ) {
@@ -430,7 +434,9 @@ sub fetch_succ_by_arch_id {
     };
 
   my $sth = $self->prepare( $sql );
-  $sth->execute( $arch_id->stable_id(), $arch_id->db_name() );
+  $sth->bind_param(1,$arch_id->stable_id,SQL_VARCHAR);
+  $sth->bind_param(2,$arch_id->db_name,SQL_VARCHAR);
+  $sth->execute();
   my ( $new_stable_id, $new_version, $new_db_name );
   $sth->bind_columns( \$new_stable_id, \$new_version, \$new_db_name );
   while( $sth->fetch() ) {
@@ -540,7 +546,9 @@ sub get_peptide {
 
 
   my $sth = $self->prepare( $sql );
-  $sth->execute( $arch_id->stable_id(), $arch_id->version() );
+  $sth->bind_param(1,$arch_id->stable_id, SQL_VARCHAR);
+  $sth->bind_param(2,$arch_id->version, SQL_SMALLINT);
+  $sth->execute();
   
   my ( $peptide_seq ) = $sth->fetchrow_array();
   $sth->finish();

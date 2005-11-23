@@ -244,12 +244,14 @@ sub store {
   ($exon, $seq_region_id) = $self->_pre_store($exon);
 
   #store the exon
-  $exonst->execute( $seq_region_id,
-                    $exon->start(),
-                    $exon->end(),
-                    $exon->strand(),
-                    $exon->phase(),
-                    $exon->end_phase());
+  $exonst->bind_param(1,$seq_region_id, SQL_INTEGER);
+  $exonst->bind_param(2,$exon->start, SQL_INTEGER);
+  $exonst->bind_param(3,$exon->end, SQL_INTEGER);
+  $exonst->bind_param(4,$exon->strand, SQL_TINYINT);
+  $exonst->bind_param(5,$exon->phase, SQL_TINYINT);
+  $exonst->bind_param(6,$exon->end_phase, SQL_TINYINT);
+
+  $exonst->execute();
   $exonId = $exonst->{'mysql_insertid'};
 
   #store any stable_id information
@@ -274,7 +276,12 @@ sub store {
     }
 
     my $sth = $self->prepare( $statement );
-    $sth->execute( $exon->version, $exon->stable_id, $exonId );
+
+    $sth->bind_param(1,$exon->version,SQL_INTEGER);
+    $sth->bind_param(2,$exon->stable_id,SQL_VARCHAR);
+    $sth->bind_param(3,$exonId,SQL_INTEGER);
+
+    $sth->execute();
   }
 
   # Now the supporting evidence
@@ -306,7 +313,10 @@ sub store {
       next;
     }
 
-    $sf_sth->execute($exonId, $sf->dbID, $type);
+    $sf_sth->bind_param(1,$exonId,SQL_INTEGER);
+    $sf_sth->bind_param(2,$sf->dbID,SQL_INTEGER);
+    $sf_sth->bind_param(3,$type,SQL_VARCHAR);
+    $sf_sth->execute();
   }
 
   #
@@ -364,9 +374,10 @@ sub remove {
   my $dna_adp = $self->db->get_DnaAlignFeatureAdaptor;
 
   my $sth = $self->prepare("SELECT feature_type, feature_id  " .
-                           "FROM supporting_feature " .
-                           "WHERE exon_id = ?");
-  $sth->execute($exon->dbID);
+                           "FROM supporting_feature " .            
+			   "WHERE exon_id = ?");
+  $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
+  $sth->execute();
 
   while(my ($type, $feature_id) = $sth->fetchrow()){
     if($type eq 'protein_align_feature'){
@@ -386,19 +397,22 @@ sub remove {
   # delete the association to supporting features
 
   $sth = $self->prepare("DELETE FROM supporting_feature WHERE exon_id = ?");
-  $sth->execute( $exon->dbID );
+  $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   # delete the exon stable identifier
 
   $sth = $self->prepare( "DELETE FROM exon_stable_id WHERE exon_id = ?" );
-  $sth->execute( $exon->dbID );
+  $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   # delete the exon
 
   $sth = $self->prepare( "DELETE FROM exon WHERE exon_id = ?" );
-  $sth->execute( $exon->dbID );
+  $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   $exon->dbID(undef);
@@ -639,8 +653,9 @@ sub get_stable_entry_info {
   my $sth = $self->prepare("SELECT stable_id, UNIX_TIMESTAMP(created),
                                    UNIX_TIMESTAMP(modified), version 
                             FROM   exon_stable_id 
-                            WHERE  exon_id = " . $exon->dbID);
+                            WHERE  exon_id = ");
 
+  $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
   $sth->execute();
 
   # my @array = $sth->fetchrow_array();
@@ -695,7 +710,8 @@ sub fetch_all_by_gene_id {
   };
 
   my $sth = $self->prepare( $query );
-  $sth->execute($gene_id);
+  $sth->bind_param(1,$gene_id,SQL_INTEGER);
+  $sth->execute();
 
   while( $hashRef = $sth->fetchrow_hashref() ) {
     if( ! exists $exons{ $hashRef->{exon_id} } ) {

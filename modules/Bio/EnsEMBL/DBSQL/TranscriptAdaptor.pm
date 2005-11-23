@@ -135,7 +135,8 @@ sub fetch_by_stable_id{
    # transcript_id in the first query
    my $sth = $self->prepare("SELECT transcript_id from transcript_stable_id ". 
                             "WHERE  stable_id = ?");
-   $sth->execute($id);
+   $sth->bind_param(1,$id,SQL_VARCHAR);
+   $sth->execute();
 
    my ($dbID) = $sth->fetchrow_array();
 
@@ -170,7 +171,8 @@ sub fetch_by_translation_stable_id {
                             "WHERE  tsi.stable_id = ? " .
                             "AND    t.translation_id = tsi.translation_id");
 
-  $sth->execute("$transl_stable_id");
+  $sth->bind_param(1,"$transl_stable_id",SQL_VARCHAR);
+  $sth->execute();
 
   my ($id) = $sth->fetchrow_array;
   $sth->finish;
@@ -208,7 +210,8 @@ sub fetch_by_translation_id {
                             "FROM   translation t ".
                             "WHERE  t.translation_id = ?");
 
-  $sth->execute($id);
+  $sth->bind_param(1,$id,SQL_INTEGER);
+  $sth->execute();
 
   my ($dbID) = $sth->fetchrow_array;
   $sth->finish;
@@ -472,7 +475,8 @@ sub fetch_all_by_exon_stable_id {
 				exon_stable_id as esi 
 				WHERE esi.exon_id = et.exon_id and 
 				esi.stable_id = ?  ));
-  $sth->execute("$stable_id");
+  $sth->bind_param(1,"$stable_id",SQL_VARCHAR);
+  $sth->execute();
 
   while( my $id = $sth->fetchrow_array ) {
     my $transcript = $self->fetch_by_dbID( $id  );
@@ -553,10 +557,16 @@ sub store {
 			    "status, description ) ".
 			    "values ( ?, ?, ?, ?, ?, ?, ?, ? )");
 
-   $tst->execute( $gene_dbID, $seq_region_id, $transcript->start(),
-                  $transcript->end(), $transcript->strand(), 
-		  $transcript->biotype(), $transcript->status(),
-		  $transcript->description() );
+  $tst->bind_param(1,$gene_dbID,SQL_INTEGER);
+  $tst->bind_param(2,$seq_region_id,SQL_INTEGER);
+  $tst->bind_param(3,$transcript->start,SQL_INTEGER);
+  $tst->bind_param(4,$transcript->end,SQL_INTEGER);
+  $tst->bind_param(5,$transcript->strand,SQL_TINYINT);
+  $tst->bind_param(6,$transcript->biotype,SQL_VARCHAR);
+  $tst->bind_param(7,$transcript->status,SQL_VARCHAR);
+  $tst->bind_param(8,$transcript->description,SQL_LONGVARCHAR);
+
+   $tst->execute();
 
    $tst->finish();
 
@@ -637,7 +647,9 @@ sub store {
      if(defined($dxref_id)) {
        my $sth = $self->prepare( "update transcript set display_xref_id = ?".
                                  " where transcript_id = ?");
-       $sth->execute($dxref_id, $transc_dbID);
+       $sth->bind_param(1,$dxref_id,SQL_INTEGER);
+       $sth->bind_param(2,$transc_dbID,SQL_INTEGER);
+       $sth->execute();
        $dxref->dbID($dxref_id);
        $dxref->adaptor($dbEntryAdaptor);
        $sth->finish();
@@ -658,7 +670,10 @@ sub store {
                     ." values (?,?,?)");
    my $rank = 1;
    foreach my $exon ( @{$transcript->get_all_Exons} ) {
-     $etst->execute($exon->dbID,$transc_dbID,$rank);
+       $etst->bind_param(1,$exon->dbID,SQL_INTEGER);
+       $etst->bind_param(2,$transc_dbID,SQL_INTEGER);
+       $etst->bind_param(3,$rank,SQL_INTEGER);
+     $etst->execute();
      $rank++;
    }
 
@@ -692,7 +707,10 @@ sub store {
      }
 
      my $sth = $self->prepare($statement);
-     $sth->execute($transc_dbID, $transcript->stable_id, $transcript->version);
+     $sth->bind_param(1,$transc_dbID,SQL_INTEGER);
+     $sth->bind_param(2,$transcript->stable_id,SQL_VARCHAR);
+     $sth->bind_param(3,$transcript->version,SQL_INTEGER);
+     $sth->execute();
      $sth->finish();
    }
 
@@ -726,7 +744,10 @@ sub store {
       next;
     }
 
-    $sf_sth->execute($transc_dbID, $sf->dbID, $type);
+    $sf_sth->bind_param(1,$transc_dbID,SQL_INTEGER);
+    $sf_sth->bind_param(2,$sf->dbID,SQL_INTEGER);
+    $sf_sth->bind_param(3,$type,SQL_VARCHAR);
+    $sf_sth->execute();
   }
 
 
@@ -781,7 +802,8 @@ sub get_Interpro_by_transid {
 	    "AND   i.id = pf.hit_id " .
 	    "AND   i.interpro_ac = x.dbprimary_acc");
 
-   $sth->execute($transid);
+   $sth->bind_param(1,$transid,SQL_INTEGER);
+   $sth->execute();
 
    my @out;
    my %h;
@@ -846,7 +868,8 @@ sub remove {
   my $sfsth = $self->prepare("SELECT feature_type, feature_id  " .
                              "FROM transcript_supporting_feature " .
                              "WHERE transcript_id = ?");
-  $sfsth->execute($transcript->dbID);
+  $sfsth->bind_param(1,$transcript->dbID,SQL_INTEGER);
+  $sfsth->execute();
   while(my ($type, $feature_id) = $sfsth->fetchrow()){
     if($type eq 'protein_align_feature'){
       my $f = $prot_adp->fetch_by_dbID($feature_id);
@@ -865,7 +888,8 @@ sub remove {
   # delete the association to supporting features
 
   $sfsth = $self->prepare("DELETE FROM transcript_supporting_feature WHERE transcript_id = ?");
-  $sfsth->execute( $transcript->dbID );
+  $sfsth->bind_param(1,$transcript->dbID,SQL_INTEGER);
+  $sfsth->execute();
   $sfsth->finish();
 
   # remove all xref linkages to this transcript
@@ -897,7 +921,8 @@ sub remove {
     my $sth = $self->prepare( "SELECT count(*)
                                FROM   exon_transcript
                                WHERE  exon_id = ?" );
-    $sth->execute( $exon->dbID );
+    $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
+    $sth->execute();
     my ($count) = $sth->fetchrow_array();
     $sth->finish();
 
@@ -908,16 +933,19 @@ sub remove {
 
   my $sth = $self->prepare( "DELETE FROM exon_transcript
                              WHERE transcript_id = ?" );
-  $sth->execute( $transcript->dbID );
+  $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth = $self->prepare( "DELETE FROM transcript_stable_id
                           WHERE transcript_id = ?" );
-  $sth->execute( $transcript->dbID );
+  $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
 
   $sth = $self->prepare( "DELETE FROM transcript
                           WHERE transcript_id = ?" );
-  $sth->execute( $transcript->dbID );
+  $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   $transcript->dbID(undef);
@@ -971,9 +999,14 @@ sub update {
    }
 
    my $sth = $self->prepare( $update_transcript_sql );
-   $sth->execute( $display_xref_id, $transcript->description(),
-		  $transcript->biotype(), $transcript->status(),
-		  $transcript->dbID() );
+   
+   $sth->bind_param(1,$display_xref_id,SQL_INTEGER);
+   $sth->bind_param(2,$transcript->description,SQL_LONGVARCHAR);
+   $sth->bind_param(3,$transcript->biotype,SQL_VARCHAR);
+   $sth->bind_param(4,$transcript->status,SQL_VARCHAR);
+   $sth->bind_param(5,$transcript->dbID,SQL_INTEGER);
+
+   $sth->execute();
  }
 
 =head2 list_dbIDs
@@ -1231,7 +1264,8 @@ sub get_display_xref {
                               AND  t.display_xref_id = x.xref_id
                               AND  x.external_db_id = e.external_db_id
                            ");
-  $sth->execute( $transcript->dbID );
+  $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
+  $sth->execute();
 
 
   my ($db_name, $display_label, $xref_id, $display_db_name ) = $sth->fetchrow_array();
@@ -1273,7 +1307,8 @@ sub get_stable_entry_info {
   my $sth = $self->prepare("SELECT stable_id, version 
                             FROM   transcript_stable_id 
                             WHERE  transcript_id = ?");
-  $sth->execute($transcript->dbID());
+  $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
+  $sth->execute();
 
   my @array = $sth->fetchrow_array();
   $transcript->{'_stable_id'} = $array[0];

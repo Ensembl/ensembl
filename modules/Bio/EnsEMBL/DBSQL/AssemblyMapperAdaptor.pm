@@ -355,7 +355,12 @@ sub register_assembled {
 
   foreach my $region (@chunk_regions) {
     my($region_start, $region_end) = @$region;
-    $sth->execute($asm_seq_region_id, $region_start, $region_end, $cmp_cs_id);
+    $sth->bind_param(1,$asm_seq_region_id,SQL_INTEGER);
+    $sth->bind_param(2,$region_start,SQL_INTEGER);
+    $sth->bind_param(3,$region_end,SQL_INTEGER);
+    $sth->bind_param(4,$cmp_cs_id,SQL_INTEGER);
+
+    $sth->execute();
 
     my($cmp_start, $cmp_end, $cmp_seq_region_id, $cmp_seq_region, $ori,
       $asm_start, $asm_end, $cmp_seq_region_length);
@@ -409,7 +414,9 @@ sub _seq_region_name_to_id {
 			   "FROM   seq_region " .
 			   "WHERE  name = ? AND coord_system_id = ?");
 
-  $sth->execute($sr_name, $cs_id);
+  $sth->bind_param(1,$sr_name,SQL_VARCHAR);
+  $sth->bind_param(2,$cs_id,SQL_INTEGER);
+  $sth->execute();
 
   if(!$sth->rows() == 1) {
     throw("Ambiguous or non-existant seq_region [$sr_name] " .
@@ -490,7 +497,9 @@ sub register_component {
    };
 
   my $sth = $self->prepare($q);
-  $sth->execute($cmp_seq_region_id, $asm_cs_id);
+  $sth->bind_param(1,$cmp_seq_region_id,SQL_INTEGER);
+  $sth->bind_param(2,$asm_cs_id,SQL_INTEGER);
+  $sth->execute();
 
   if($sth->rows() == 0) {
     #this component is not used in the assembled part i.e. gap
@@ -698,7 +707,11 @@ sub register_chained {
   #need to perform the query for each unregistered range
   foreach my $range (@$ranges) {
     my ($start, $end) = @$range;
-    $sth->execute($seq_region_id, $start, $end, $mid_cs_id);
+    $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+    $sth->bind_param(2,$start,SQL_INTEGER);
+    $sth->bind_param(3,$end,SQL_INTEGER);
+    $sth->bind_param(4,$mid_cs_id,SQL_INTEGER);
+    $sth->execute();
 
     #load the start <-> mid mapper with the results and record the mid cs
     #ranges we just added to the mapper
@@ -796,7 +809,11 @@ sub register_chained {
   my $end_cs_id = $end_cs->dbID();
   foreach my $mid_range (@mid_ranges) {
     my ($mid_seq_region_id, $mid_seq_region,$start, $end) = @$mid_range;
-    $sth->execute($mid_seq_region_id, $start, $end, $end_cs_id);
+    $sth->bind_param(1,$mid_seq_region_id,SQL_INTEGER);
+    $sth->bind_param(2,$start,SQL_INTEGER);
+    $sth->bind_param(3,$end,SQL_INTEGER);
+    $sth->bind_param(4,$end_cs_id,SQL_INTEGER);
+    $sth->execute();
     #print STDERR "bind vals=($mid_seq_region_id, $start, $end, $mid_cs_id)\n";
 
     #load the end <-> mid mapper with the results and record the mid cs
@@ -902,7 +919,9 @@ sub register_all {
 
   my $sth = $self->prepare($q);
 
-  $sth->execute($cmp_cs_id, $asm_cs_id);
+  $sth->bind_param(1,$cmp_cs_id,SQL_INTEGER);
+  $sth->bind_param(2,$asm_cs_id,SQL_INTEGER);
+  $sth->execute();
 
   # load the mapper with the assembly information
 
@@ -1041,7 +1060,9 @@ sub register_all_chained {
   my ($asm_cs,$cmp_cs) = @path;
 
   $sth->{mysql_use_result} = 1;
-  $sth->execute( $asm_cs->dbID(), $cmp_cs->dbID());
+  $sth->bind_param(1,$asm_cs->dbID,SQL_INTEGER);
+  $sth->bind_param(2,$cmp_cs->dbID,SQL_INTEGER);
+  $sth->execute();
 
 
   my ($mid_start, $mid_end, $mid_seq_region_id, $mid_seq_region, $mid_length,
@@ -1123,7 +1144,9 @@ sub register_all_chained {
 
   ($asm_cs,$cmp_cs) = @path;
 
-  $sth->execute( $asm_cs->dbID(), $cmp_cs->dbID());
+  $sth->bind_param(1,$asm_cs->dbID,SQL_INTEGER);
+  $sth->bind_param(2,$cmp_cs->dbID,SQL_INTEGER);
+  $sth->execute();
 
 
   my ($end_start, $end_end, $end_seq_region_id, $end_seq_region,

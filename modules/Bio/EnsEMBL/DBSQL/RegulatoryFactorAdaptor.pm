@@ -180,7 +180,9 @@ sub store {
     my $name = $rm->name or throw("name not set");
     my $type = $rm->type or throw("type not set");
 
-    $sth->execute($name, $type);
+    $sth->bind_param(1,$name,SQL_VARCHAR);
+    $sth->bind_param(2,$type,SQL_VARCHAR);
+    $sth->execute();
 
     my $db_id = $sth->{'mysql_insertid'}
     or throw("Didn't get an insertid from the INSERT statement");
@@ -220,7 +222,8 @@ sub fetch_factors_coded_for_by_gene {
 			                 FROM regulatory_factor_coding
 			                 WHERE gene_id=?");
 
-  $sth->execute($gene->dbID());
+  $sth->bind_param(1,$gene->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->bind_columns(\$factor_id);
 
   while ($sth->fetch) {
@@ -261,7 +264,8 @@ sub fetch_factors_coded_for_by_transcript {
 			                 FROM regulatory_factor_coding
 			                 WHERE transcript_id=?");
 
-  $sth->execute($transcript->dbID());
+  $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->bind_columns(\$factor_id);
 
   while ($sth->fetch) {

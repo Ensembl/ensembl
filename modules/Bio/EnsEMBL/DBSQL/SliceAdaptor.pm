@@ -240,7 +240,11 @@ sub fetch_by_region {
     # Quotes around "$seq_region_name" are needed so that mysql does not
     # treat chromosomes like '6' as an int.  This was doing horrible
     # inexact matches like '6DR51', '6_UN', etc.
-    $sth->execute("$seq_region_name", @bind_vals);
+    $sth->bind_param(1,"$seq_region_name",SQL_VARCHAR);
+    $sth->bind_param(2,$cs->dbID,SQL_INTEGER) if ($cs);
+    $sth->bind_param(2,$version,SQL_VARCHAR)  if ($version);	
+
+    $sth->execute();
 
     if($sth->rows() == 0) {
       $sth->finish();
@@ -249,7 +253,10 @@ sub fetch_by_region {
       #the end of the seq_region name
 
       $sth = $self->prepare($sql . " WHERE sr.name LIKE ? AND " . $constraint);
-      $sth->execute("$seq_region_name.%", @bind_vals);
+      $sth->bind_param(1,"$seq_region_name.%",SQL_VARCHAR);
+      $sth->bind_param(2,$cs->dbID,SQL_INTEGER) if ($cs);
+      $sth->bind_param(2,$version,SQL_VARCHAR) if ($version);
+      $sth->execute();
 
       my $prefix_len = length($seq_region_name) + 1;
       my $high_ver = undef;
@@ -407,7 +414,8 @@ sub fetch_by_seq_region_id {
                              "FROM seq_region " .
                              "WHERE seq_region_id = ?");
 
-    $sth->execute($seq_region_id);
+    $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+    $sth->execute();
 
     return undef if($sth->rows() == 0);
 
@@ -475,7 +483,9 @@ sub get_seq_region_id {
                            "WHERE name = ? AND coord_system_id = ?");
 
   #force seq_region_name cast to string so mysql cannot treat as int
-  $sth->execute("$seq_region_name", $cs_id );
+  $sth->bind_param(1,"$seq_region_name",SQL_VARCHAR);
+  $sth->bind_param(2,$cs_id,SQL_INTEGER);
+  $sth->execute();
 
   if($sth->rows() != 1) {
     throw("Non existant or ambigous seq_region:\n" .
@@ -597,7 +607,8 @@ sub fetch_all {
        $self->prepare('SELECT seq_region_id, name, length, coord_system_id ' .
                       'FROM   seq_region ' .
                       'WHERE  coord_system_id =?');
-     $sth->execute($orig_cs->dbID);
+     $sth->bind_param(1,$orig_cs->dbID,SQL_INTEGER);
+     $sth->execute();
   }
 
   my ($seq_region_id, $name, $length, $cs_id);
@@ -685,7 +696,8 @@ sub fetch_by_band {
          "from karyotype as k " .
          "where k.band like ? and k.seq_region_id = s.seq_region_id");
 
-  $sth->execute( "$band%" );
+  $sth->bind_param(1,"$band%",SQL_VARCHAR);
+  $sth->execute();
   my ( $seq_region_name, $discrepancy, $seq_region_start, $seq_region_end) = $sth->fetchrow_array;
 
   if($seq_region_name && $discrepancy>0) {
@@ -719,7 +731,9 @@ sub fetch_by_chr_band {
          "from karyotype as k " .
          "where k.seq_region_id = ? and k.band like ?");
 
-  $sth->execute( $seq_region_id, "$band%" );
+  $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+  $sth->bind_param(2,"$band%",SQL_VARCHAR);
+  $sth->execute();
   my ( $slice_start, $slice_end) = $sth->fetchrow_array;
 
   if(defined $slice_start) {
@@ -1244,7 +1258,11 @@ sub store {
                          "       length = ?, " .
                          "       coord_system_id = ?" );
 
-  $sth->execute($sr_name, $sr_len, $cs->dbID());
+  $sth->bind_param(1,$sr_name,SQL_VARCHAR);
+  $sth->bind_param(2,$sr_len,SQL_INTEGER);
+  $sth->bind_param(3,$cs->dbID,SQL_INTEGER);
+
+  $sth->execute();
 
   my $seq_region_id = $sth->{'mysql_insertid'};
 

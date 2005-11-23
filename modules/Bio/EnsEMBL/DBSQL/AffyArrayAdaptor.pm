@@ -212,11 +212,14 @@ sub store {
 	my $sth = $self->prepare( "INSERT INTO affy_array".
 				  "( name, probe_setsize, parent_array_id ) ".
 				  "VALUES( ?,?,? )" );
+	$sth->bind_param(1,$array->name(),SQL_VARCHAR);
+	$sth->bind_param(2,$array->setsize(),SQL_INTEGER);
 	if( defined $superset ) {
-	    $sth->execute( $array->name(), $array->setsize(), $superset->dbID() );
+	    $sth->bind_param(3,$superset->dbID(), SQL_INTEGER);
 	} else {
-	    $sth->execute( $array->name(), $array->setsize(), undef );
+	    $sth->bind_param(3,undef);
 	}
+	$sth->execute();
 	my $dbID = $sth->{'mysql_insertid'};
 	$array->dbID( $dbID );
 	$array->adaptor( $self );

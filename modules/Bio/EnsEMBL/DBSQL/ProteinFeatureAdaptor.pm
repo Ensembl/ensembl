@@ -92,7 +92,8 @@ sub fetch_all_by_translation_id {
      "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " .
      "WHERE p.translation_id = ?");
 
-  $sth->execute($translation_id);
+  $sth->bind_param(1,$translation_id,SQL_INTEGER);
+  $sth->execute();
 
   while( my $row = $sth->fetchrow_arrayref) {
     my ($dbID, $start, $end, $analysisid, $score, $perc_id, $evalue, $hstart,
@@ -156,7 +157,8 @@ sub fetch_by_dbID{
         "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " .
         "WHERE  p.protein_feature_id = ?");
   
-  my $res = $sth->execute($protfeat_id);
+  $sth->bind_param(1,$protfeat_id,SQL_INTEGER);
+  my $res = $sth->execute();
    
   if($sth->rows == 0) {
     $sth->finish();
@@ -248,16 +250,17 @@ sub store {
                    "            perc_ident     = ?, ".
                    "            evalue         = ?");
 
-  $sth->execute($translation_id,
-                $feature->start(),
-                $feature->end(),
-                $analysis->dbID(),
-                $feature->hstart(),
-                $feature->hend(),
-                $feature->hseqname(),
-                $feature->score(),
-                $feature->percent_id(),
-                $feature->p_value());
+  $sth->bind_param(1,$translation_id,SQL_INTEGER);
+  $sth->bind_param(2,$feature->start,SQL_INTEGER);
+  $sth->bind_param(3,$feature->end,SQL_INTEGER);
+  $sth->bind_param(4,$analysis->dbID,SQL_INTEGER);
+  $sth->bind_param(5,$feature->hstart,SQL_INTEGER);
+  $sth->bind_param(6,$feature->hend,SQL_INTEGER);
+  $sth->bind_param(7,$feature->score,SQL_DOUBLE);
+  $sth->bind_param(8,$feature->percent_id,SQL_FLOAT);
+  $sth->bind_param(9,$feature->p_value,SQL_DOUBLE);
+
+  $sth->execute();
   
   my $dbID = $sth->{'mysql_insertid'};
 

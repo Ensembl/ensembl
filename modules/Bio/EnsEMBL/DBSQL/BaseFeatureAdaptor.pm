@@ -30,7 +30,7 @@ Contact Ensembl development list for info: <ensembl-dev@ebi.ac.uk>
 =cut
 
 package Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
-use vars qw(@ISA);
+use vars qw(@ISA @EXPORT);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
@@ -39,6 +39,8 @@ use Bio::EnsEMBL::Utils::Exception qw(warning throw deprecate stack_trace_dump);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+
+@EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 
 our $SLICE_FEATURE_CACHE_SIZE = 4;
 our $MAX_SPLIT_QUERY_SEQ_REGIONS = 3;
@@ -666,7 +668,8 @@ sub remove {
   my ($table) = @{$tabs[0]};
 
   my $sth = $self->prepare("DELETE FROM $table WHERE ${table}_id = ?");
-  $sth->execute($feature->dbID());
+  $sth->bind_param(1,$feature->dbID,SQL_INTEGER);
+  $sth->execute();
 
   #unset the feature dbID ad adaptor
   $feature->dbID(undef);
@@ -715,7 +718,10 @@ sub remove_by_Slice {
                            "AND   seq_region_start >= ? " .
                            "AND   seq_region_end <= ?");
 
-  $sth->execute($seq_region_id, $start, $end);
+  $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+  $sth->bind_param(2,$start,SQL_INTEGER);
+  $sth->bind_param(3,$end,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 }
 

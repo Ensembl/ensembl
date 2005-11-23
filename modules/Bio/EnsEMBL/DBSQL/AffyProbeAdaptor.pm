@@ -90,10 +90,17 @@ PROBE:
     for my $array (@stored_arrays) {
       if ( defined $dbID ) {
         $sth = $self->prepare( "INSERT INTO affy_probe( affy_probe_id," . "affy_array_id, name, probeset ) " . "VALUES( ?,?,?,? )" );
-        $sth->execute( $dbID, $array->dbID(), $probe->get_probename( $array->name() ), $probe->probeset() );
+	$sth->bind_param(1,$dbID,SQL_INTEGER);
+	$sth->bind_param(2,$array->dbID,SQL_INTEGER);
+	$sth->bind_param(3,$probe->get_probename($array->name()),SQL_VARCHAR);
+	$sth->bind_param(4,$probe->probeset,SQL_VARCHAR);
+        $sth->execute();
       } else {
         $sth = $self->prepare( "INSERT INTO affy_probe( " . "affy_array_id, name, probeset ) " . "VALUES( ?,?,? )" );
-        $sth->execute( $array->dbID(), $probe->get_probename( $array->name() ), $probe->probeset() );
+	$sth->bind_param(1,$array->dbID,SQL_INTEGER);
+	$sth->bind_param(2,$probe->get_probename($array->name()),SQL_VARCHAR);
+	$sth->bind_param(3,$probe->probeset,SQL_VARCHAR);
+        $sth->execute();
         $dbID = $sth->{'mysql_insertid'};
         $probe->dbID($dbID);
         $probe->adaptor($self);
@@ -131,7 +138,10 @@ sub fetch_by_array_probeset_probe {
        affy_array.name = ? and affy_probe.probeset = ? and affy_probe.name = ?"
     );
   
-  $statement->execute($affy_array_name, $affy_probeset_name, $affy_probe_name);
+  $statement->bind_param(1,$affy_array_name,SQL_VARCHAR);
+  $statement->bind_param(2,$affy_probeset_name,SQL_VARCHAR);
+  $statement->bind_param(3,$affy_probe_name,SQL_VARCHAR);
+  $statement->execute();
 
   my ($affy_probe_id) = $statement->fetchrow();
 

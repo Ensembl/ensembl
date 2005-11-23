@@ -66,7 +66,8 @@ sub fetch_all_by_Exon {
                             FROM   supporting_feature sf
                             WHERE  exon_id = ?");
 
-  $sth->execute($exon->dbID());
+  $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
+  $sth->execute();
 
   my $prot_adp = $self->db->get_ProteinAlignFeatureAdaptor;
   my $dna_adp  = $self->db->get_DnaAlignFeatureAdaptor;

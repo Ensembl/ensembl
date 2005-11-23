@@ -161,8 +161,15 @@ sub store{
     my $seq_region_id;
     ($af, $seq_region_id) = $self->_pre_store($af);
 
-    $sth->execute($seq_region_id, $af->start, $af->end, $af->strand,
-                  $af->probe->dbID, $af->analysis->dbID, $af->mismatchcount );
+    $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+    $sth->bind_param(2,$af->start,SQL_INTEGER);
+    $sth->bind_param(3,$af->end,SQL_INTEGER);
+    $sth->bind_param(4,$af->strand,SQL_TINYINT);
+    $sth->bind_param(5,$af->probe->dbID,SQL_INTEGER);
+    $sth->bind_param(6,$af->analysis->dbID,SQL_INTEGER);
+    $sth->bind_param(7,$af->mismatchcount,SQL_TINYINT);
+
+    $sth->execute();
 
     $original->dbID($sth->{'mysql_insertid'});
     $original->adaptor($self);

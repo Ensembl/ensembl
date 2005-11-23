@@ -67,7 +67,8 @@ sub fetch_all_by_Transcript {
                             WHERE  transcript_id = ?");
 
 
-  $sth->execute($transcript->dbID());
+  $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
+  $sth->execute(;
 
   my $prot_adp = $self->db->get_ProteinAlignFeatureAdaptor;
   my $dna_adp  = $self->db->get_DnaAlignFeatureAdaptor;

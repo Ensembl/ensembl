@@ -31,7 +31,7 @@ ensembl-dev@ebi.ac.uk
 
 package Bio::EnsEMBL::DBSQL::SequenceAdaptor;
 
-use vars qw(@ISA);
+use vars qw(@ISA @EXPORT);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
@@ -45,7 +45,7 @@ our $SEQ_CHUNK_PWR   = 18; # 2^18 = approx. 250KB
 our $SEQ_CACHE_SZ    = 5;
 our $SEQ_CACHE_MAX   = (2 ** $SEQ_CHUNK_PWR) * $SEQ_CACHE_SZ;
 
-
+@EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 
 =head2 new
 
@@ -242,7 +242,11 @@ sub _fetch_seq {
 
         my $min = ($i << $SEQ_CHUNK_PWR) + 1;
 
-        $sth->execute($min, 1 << $SEQ_CHUNK_PWR, $seq_region_id);
+	$sth->bind_param(1,$min,SQL_INTEGER);
+	$sth->bind_param(2,1 << $SEQ_CHUNK_PWR,SQL_INTEGER);
+	$sth->bind_param(3,$seq_region_id,SQL_INTEGER);
+
+        $sth->execute();
         $sth->bind_columns(\$tmp_seq);
         $sth->fetch();
         $sth->finish();
@@ -268,7 +272,12 @@ sub _fetch_seq {
         WHERE d.seq_region_id = ?");
 
     my $tmp_seq;
-    $sth->execute($start, $length, $seq_region_id);
+
+    $sth->bind_param(1,$start,SQL_INTEGER);
+    $sth->bind_param(2,$length,SQL_INTEGER);
+    $sth->bind_param(3,$seq_region_id,SQL_INTEGER);
+
+    $sth->execute();
     $sth->bind_columns(\$tmp_seq);
     $sth->fetch();
     $sth->finish();
@@ -310,7 +319,9 @@ sub store {
   my $statement = 
     $self->prepare("INSERT INTO dna(seq_region_id, sequence) VALUES(?,?)");
 
-  $statement->execute($seq_region_id, $sequence);
+  $statement->bind_param(1,$seq_region_id,SQL_INTEGER);
+  $statement->bind_param(2,$sequence,SQL_LONGVARCHAR);
+  $statement->execute();
 
   $statement->finish();
 

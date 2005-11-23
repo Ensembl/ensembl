@@ -49,6 +49,7 @@ package Bio::EnsEMBL::DBSQL::TranslationAdaptor;
 use vars qw(@ISA);
 use strict;
 
+use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
 
@@ -87,8 +88,10 @@ sub fetch_by_Transcript {
      WHERE tl.transcript_id = ?";
 
   my $transcript_id = $transcript->dbID();
-  my $sth = $self->prepare( $sql );
-  $sth->execute( $transcript_id );
+  my $sth = $self->prepare($sql);
+  $sth->bind_param(1,$transcript_id,SQL_INTEGER);
+
+  $sth->execute();
 
   my ( $translation_id, $start_exon_id, $end_exon_id,
        $seq_start, $seq_end, $stable_id, $version, $created_date, 
@@ -222,11 +225,13 @@ sub store {
                                   seq_end, end_exon_id, transcript_id) 
          VALUES ( ?,?,?,?,? )");
 
-  $sth->execute( $translation->start(),
-                 $translation->start_Exon()->dbID(),
-                 $translation->end(),
-                 $translation->end_Exon()->dbID(),
-                 $transcript_id );
+  $sth->bind_param(1,$translation->start,SQL_INTEGER);
+  $sth->bind_param(2,$translation->start_Exon->dbID,SQL_INTEGER);
+  $sth->bind_param(3,$translation->end,SQL_INTEGER);
+  $sth->bind_param(4,$translation->end_Exon->dbID,SQL_INTEGER);
+  $sth->bind_param(5,$transcript_id,SQL_INTEGER);
+
+  $sth->execute();
 
   my $transl_dbID = $sth->{'mysql_insertid'};
 
@@ -264,8 +269,10 @@ sub store {
 
     my $sth = $self->prepare($statement);
 
-    $sth->execute($transl_dbID, $translation->stable_id(), 
-                  $translation->version());
+    $sth->bind_param(1,$transl_dbID,SQL_INTEGER);
+    $sth->bind_param(2,$translation->stable_id,SQL_VARCHAR);
+    $sth->bind_param(3,$translation->version,SQL_VARCHAR);
+    $sth->execute();
 
     $sth->finish();
   }
@@ -327,20 +334,23 @@ sub remove {
   # remove all protein_features on this translation
   my $sth = $self->prepare
     ("DELETE FROM protein_feature WHERE translation_id = ?");
-  $sth->execute($translation->dbID());
+  $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   # remove the translation stable identifier
 
   $sth = $self->prepare
     ("DELETE FROM translation_stable_id WHERE translation_id = ?" );
-  $sth->execute( $translation->dbID );
+  $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   # remove the translation itself
 
   $sth = $self->prepare("DELETE FROM translation WHERE translation_id = ?" );
-  $sth->execute( $translation->dbID );
+  $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
+  $sth->execute();
   $sth->finish();
 
   $translation->dbID( undef );
@@ -613,7 +623,8 @@ sub get_stable_entry_info {
   my $sth = $self->prepare("SELECT stable_id, version 
                             FROM   translation_stable_id 
                             WHERE  translation_id = ?");
-  $sth->execute($translation->dbID());
+  $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
+  $sth->execute();
 
   my @array = $sth->fetchrow_array();
   $translation->{'_stable_id'} = $array[0];

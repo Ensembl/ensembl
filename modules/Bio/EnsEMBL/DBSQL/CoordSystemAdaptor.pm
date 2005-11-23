@@ -808,7 +808,11 @@ sub store {
                              'attrib  = ?,' .
                              'rank    = ?');
 
-  $sth->execute($name, $version, $attrib_str, $rank);
+  $sth->bind_param(1,$name,SQL_VARCHAR);
+  $sth->bind_param(2,$version,SQL_VARCHAR);
+  $sth->bind_param(3,$attrib_str,SQL_VARCHAR);
+  $sth->bind_param(4,$rank,SQL_INTEGER);
+  $sth->execute();
   my $dbID = $sth->{'mysql_insertid'};
   $sth->finish();
 
