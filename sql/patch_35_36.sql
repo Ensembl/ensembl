@@ -31,3 +31,5 @@ ALTER TABLE regulatory_feature ADD INDEX seq_region_idx_2(seq_region_id, seq_reg
 
 ALTER TABLE regulatory_search_region ADD INDEX seq_region_idx(seq_region_id, seq_region_start);
 ALTER TABLE regulatory_search_region ADD INDEX seq_region_idx_2(seq_region_id, seq_region_start);
+
+ALTER TABLE go_xref modify linkage_type  enum('IC','IDA','IEA','IEP','IGI','IMP','IPI','ISS','NAS','ND','TAS','NR','RCA') NULL;
