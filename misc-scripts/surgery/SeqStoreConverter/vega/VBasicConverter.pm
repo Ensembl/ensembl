@@ -120,10 +120,10 @@ sub copy_assembly_exception {
     }
 }
 
-# reset gene, transcript and gene_description tables back to 30
-sub reset_gene_trans_tables {
+# reset gene, transcript, gene_description and external_db tables back to 30
+sub back_patch_schema {
 	my $self = shift;
-	$self->debug ("Patching gene, transcript and gene_description tables back to sch-30");
+	$self->debug ("Patching gene, transcript, gene_description and external_db tables back to sch-30");
 	my $target = $self->target;
 	my $dbh = $self->dbh;
 	$dbh->do("DROP TABLE $target.gene");
@@ -161,6 +161,15 @@ sub reset_gene_trans_tables {
                  `gene_id` int(10) unsigned NOT NULL default '0',
                  `description` text,
                  PRIMARY KEY  (`gene_id`)
+                 ) ENGINE=MyISAM DEFAULT CHARSET=latin1
+                ));
+	$dbh->do("DROP TABLE $target.external_db");
+	$dbh->do( qq(CREATE TABLE $target.external_db (
+                 `external_db_id` int(11) NOT NULL default '0',
+                 `db_name` varchar(100) NOT NULL default '',
+                 `release` varchar(40) NOT NULL default '',
+                 `status` enum('KNOWNXREF','KNOWN','XREF','PRED','ORTH','PSEUDO') NOT NULL default 'KNOWNXREF',
+                 PRIMARY KEY  (`external_db_id`)
                  ) ENGINE=MyISAM DEFAULT CHARSET=latin1
                 ));
 }
