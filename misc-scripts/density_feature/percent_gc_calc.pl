@@ -37,7 +37,8 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -dbname => $dbname);
 
 
-my $small_blocksize = 500;
+my $bin_count = 150;
+my $long_slice_count = 100;
 
 
 #
@@ -62,13 +63,7 @@ my $dta = $db->get_DensityTypeAdaptor();
 my $aa  = $db->get_AnalysisAdaptor();
 
 my $slices = $slice_adaptor->fetch_all( "toplevel" );
-
-my ( $large_blocksize, $genome_size );
-for my $slice ( @$slices ) {
-  $genome_size += $slice->length();
-}
-
-$large_blocksize = int( $genome_size / 4000 );
+my @sorted_slices =  sort { $b->seq_region_length() <=> $a->seq_region_length()} @$slices;
 
 
 #
@@ -88,55 +83,63 @@ $aa->store($analysis);
 # Create new density type.
 #
 
-my $small_density_type = Bio::EnsEMBL::DensityType->new
+
+my $density_type = Bio::EnsEMBL::DensityType->new
   (-analysis   => $analysis,
-   -block_size => $small_blocksize,
+   -region_features => $bin_count,
    -value_type => 'ratio');
 
-my $large_density_type = Bio::EnsEMBL::DensityType->new
-  (-analysis   => $analysis,
-   -block_size => $large_blocksize,
-   -value_type => 'ratio');
-
-$dta->store($small_density_type);
-$dta->store($large_density_type);
+$dta->store($density_type);
 
 
-my ( $current_start, $current_end );
+my ( $current_start, $current_end, $current );
+my $slice_count = 0;
+my $block_size;
 
-foreach my $slice ( @$slices ) {
+foreach my $slice (@sorted_slices){
 
-#
-# do it for small and large blocks
-#
+  $block_size = $slice->length() / $bin_count;
 
-  for my $density_type ( $large_density_type, $small_density_type ) {
+  my @density_features=();
 
-    my $blocksize = $density_type->block_size();
-    $current_start = 1;
+  print "GC percentage for ".$slice->seq_region_name().
+    " with block size $block_size\n";
 
-    while($current_start <= $slice->end()) {
-      $current_end = $current_start+$blocksize-1;
-      if( $current_end > $slice->end() ) {
-        $current_end = $slice->end();
-      }
+  $current_end = 0;
+  $current = 0;
 
-      my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
+  while ($current_end < $slice->end()) {
 
-      my $gc = $sub_slice->get_base_count()->{'%gc'};
-      my $df =  Bio::EnsEMBL::DensityFeature->new
-        (-seq_region    => $slice,
-         -start         => $current_start,
-         -end           => $current_end,
-         -density_type  => $density_type,
-         -density_value => $gc);
+    $current += $block_size;
+    $current_start = $current_end+1;
+    $current_end = int( $current + 1 );
 
-      $dfa->store($df);
-
-      $current_start = $current_end+1;
+    if ( $current_end < $current_start ) { 
+      $current_end = $current_start;
     }
+
+    if ( $current_end > $slice->end() ) {
+      $current_end = $slice->end();
+    }
+
+
+    my $sub_slice = $slice->sub_Slice( $current_start , $current_end );
+
+    my $gc = $sub_slice->get_base_count()->{'%gc'};
+    my $df =  Bio::EnsEMBL::DensityFeature->new
+      (-seq_region    => $slice,
+       -start         => $current_start,
+       -end           => $current_end,
+       -density_type  => $density_type,
+       -density_value => $gc);
+
+    $dfa->store($df);
+
   }
+
+  last if( $slice_count++ > $long_slice_count );
 }
+
 
 
 
