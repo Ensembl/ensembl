@@ -1,10 +1,9 @@
 #
-# script to calculate the snp density with help of
-#  attached lite database. Only works if argument database
-#  is a core database and lite can be found by substituting
-#  s/_core_/_lite_/
+# calculates the variation density from given core database
+# It finds Variation database by itself using naming convention s/core/variation/
 #
-# blocksize condition is 4_000 per genome?
+#
+
 
 
 use strict;
@@ -17,6 +16,9 @@ use Getopt::Long;
 
 use Data::Dumper;
 $Data::Dumper::Maxdepth = 2;
+
+my $bin_count = 150;
+my $long_slice_count = 100;
 
 my ( $host, $user, $pass, $port, $dbname  );
 
@@ -53,14 +55,9 @@ my $aa  = $db->get_AnalysisAdaptor();
 my $slice_adaptor = $db->get_SliceAdaptor();
 
 my $top_slices = $slice_adaptor->fetch_all( "toplevel" );
+my @sorted_slices =  sort { $b->seq_region_length() <=> $a->seq_region_length()} @$top_slices;
 
 
-my ( $block_size, $genome_size );
-for my $slice ( @$top_slices ) {
-  $genome_size += $slice->length();
-}
-
-$block_size = int( $genome_size / 4000 );
 
 my $analysis = new Bio::EnsEMBL::Analysis (-program     => "variation_density.pl",
 					   -database    => "ensembl",
@@ -75,7 +72,7 @@ $aa->store( $analysis );
 # Create new density type.
 #
 my $dt = Bio::EnsEMBL::DensityType->new(-analysis   => $analysis,
-					-block_size => $block_size,
+					-region_features => $bin_count,
 					-value_type => 'sum');
 $dta->store($dt);
 
@@ -86,17 +83,32 @@ $dta->store($dt);
 
 my ( $current_start, $current_end );
 
+my $slice_count = 0;
+my ( $current, $current_start, $current_end  );
 
 
-foreach my $slice (@$top_slices){
 
-  $current_start = 1;
+foreach my $slice (@sorted_slices){
+
+  $block_size = $slice->length() / $bin_count;
+
 
   print "SNP densities for ".$slice->seq_region_name().
     " with block size $block_size\n";
 
-  while($current_start <= $slice->end()) {
-    $current_end = $current_start+$block_size-1;
+  $current_end = 0;
+  $current = 0;
+
+  while($current_end < $slice->end()) {
+
+    $current += $block_size;
+    $current_start = $current_end+1;
+    $current_end = int( $current + 1 );
+
+    if( $current_end < $current_start ) { 
+      $current_end = $current_start;
+    }
+
     if( $current_end > $slice->end() ) {
       $current_end = $slice->end();
     }
@@ -111,7 +123,7 @@ foreach my $slice (@$top_slices){
     #
     foreach my $varf (@{$sub_slice->get_all_VariationFeatures()}){
       if( $varf->start >= 1 ) {
-        $count++
+	$count++
       }
     }
 
@@ -122,10 +134,11 @@ foreach my $slice (@$top_slices){
        -density_type  => $dt,
        -density_value => $count);
 
-    $current_start = $current_end + 1;
-
     $dfa->store($df);
   }
+
+  last if( $slice_count++ > $long_slice_count );
+
 }
 
 
@@ -142,7 +155,7 @@ sub variation_attach {
     return 0;
   }
   #
-  # get a lost of all databases on that server
+  # get a list of all databases on that server
   #
   my $sth = $db->dbc->prepare( "show databases" );
   $sth->execute();

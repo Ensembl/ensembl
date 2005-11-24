@@ -5,8 +5,11 @@
 
 #
 # It will only run on databases with genes ...
-# boundary condition: on average there should be 2 genes per block
 #
+
+# I think the right thing here is too generate densities on the biggest 50-100 toplevel slices ...
+# The website will be happy with about 150 bins I think.
+
 
 use strict;
 
@@ -14,6 +17,10 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use Getopt::Long;
+
+my $bin_count = 150;
+my $long_slice_count = 100;
+
 
 my ( $host, $user, $pass, $port, $dbname  );
 
@@ -49,8 +56,6 @@ my ( $gene_count )  = $sth->fetchrow_array();
 if( ! $gene_count ) {
   print STDERR "No gene density for $dbname.\n";
   exit();
-} else {
-  $block_count = $gene_count >> 1;
 }
 
 #
@@ -68,9 +73,9 @@ if( ! $seq_region_count ) {
   print STDERR "No gene density for $dbname, no seq_regions.\n";
   exit();
 
-  if( ($dbname =~ /_estgene_/ ) || ( $dbname =~ /_vega_/ )) {
+  if( ($dbname =~ /_est_/ ) || ( $dbname =~ /_vega_/ ) || ( $dbname =~ /_cdna_/ ) ) {
     my $dna_db_name = $dbname;
-    $dna_db_name =~ s/(_estgene_|_vega_)/_core_/;
+    $dna_db_name =~ s/(_estgene_|_vega_|_cdna_)/_core_/;
     my $dna_db =  new Bio::EnsEMBL::DBSQL::DBAdaptor
       (-host => $host,
        -user => $user,
@@ -99,11 +104,8 @@ my $slice_adaptor = $db->get_SliceAdaptor();
 #
 
 my $top_slices = $slice_adaptor->fetch_all('toplevel');
-for my $slice ( @$top_slices ) {
-  $genome_size += $slice->length();
-}
+my @sorted_slices = sort { $b->seq_region_length() <=> $a->seq_region_length()} @$top_slices;
 
-$block_size = int( $genome_size / $block_count );
 	
 my $analysis = new Bio::EnsEMBL::Analysis (-program     => "gene_density_calc.pl",
 					   -database    => "ensembl",
@@ -142,30 +144,40 @@ foreach my $known (1, 0) {
   #
 
   my $dt = Bio::EnsEMBL::DensityType->new(-analysis   => $analysis,
-					  -block_size => $block_size,
+					  -region_features => $bin_count,
 					  -value_type => 'sum');
 
   $dta->store($dt);
 
-  my ( $current_start, $current_end );
+  my $slice_count = 0;
+  my ( $current, $current_start, $current_end  );
+  
+  foreach my $slice (@sorted_slices){
 
-  foreach my $slice (@$top_slices){
-
-    $current_start = 1;
+    $block_size = $slice->length() / $bin_count;
 
     my @density_features=();
 
     print "Gene densities for ".$slice->seq_region_name().
       " with block size $block_size\n";
+    $current_end = 0;
+    $current = 0;
 
-    while($current_start <= $slice->end()) {
-      $current_end = $current_start+$block_size-1;
+    while($current_end < $slice->end()) {
+      $current += $block_size;
+      $current_start = $current_end+1;
+      $current_end = int( $current + 1 );
+
+      if( $current_end < $current_start ) { 
+	$current_end = $current_start;
+      }
+
       if( $current_end > $slice->end() ) {
 	$current_end = $slice->end();
       }
 
 
-      my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
+      my $sub_slice = $slice->sub_Slice( $current_start , $current_end );
 
       my $count =0;
 
@@ -185,13 +197,12 @@ foreach my $known (1, 0) {
 	 -end           => $current_end,
 	 -density_type  => $dt,
 	 -density_value => $count);
-
-      $current_start = $current_end + 1;
-#      print STDERR ".";
     }
+
     $dfa->store(@density_features);
     print "Created ", scalar @density_features, " gene density features.\n";
-    # print_features(\@density_features);
+
+    last if( $slice_count++ > $long_slice_count );
   }
 }
 
