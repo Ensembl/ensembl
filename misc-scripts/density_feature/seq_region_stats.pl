@@ -22,6 +22,22 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -dbname => $dbname);
 
 
+my %attrib_codes = ( 'miRNA' => 'miRNA',
+		     'snRNA' => 'snRNA',
+		     'snoRNA' => 'snoRNA',
+		     'rRNA' => 'rRNA',
+		     'tRNA' => 'tRNA',
+		     'known protein_coding' => 'knwCod',
+		     'misc_RNA' => 'mscRNA',
+		     'novel protein_coding' => 'novCod',
+		     'pseudogene' => 'pseudo',
+		     'scRNA' => 'scRNA',
+		     'Mt-tRNA' => 'MTtRNA',
+		     'Mt-rRNA' => 'MTrRNA');
+
+		     
+
+
 # do both genestats and snpstats by default
 $genestats = $snpstats = 1 if(!$genestats && !$snpstats);
 
@@ -69,39 +85,39 @@ foreach my $slice (@$top_slices) {
   my @attribs;
 
   if($genes_present) {
-    my $num_known_genes  = 0;
-    my $num_genes        = 0;
-    my $num_pseudo_genes = 0;
+    my %counts;
+    my $biotype;
 
     my @genes = @{$slice->get_all_Genes()};
-
+    
     foreach my $gene (@genes) {
-      if($gene->type() =~ /pseudogene/i) {
-        $num_pseudo_genes++;
-      } else {
-        $num_genes++;
+      $biotype = $gene->biotype();
+      if( $biotype =~ /coding/i ) {
         if($gene->is_known()) {
-          $num_known_genes++;
-        }
+	  $biotype = "known ".$biotype;
+	} else {
+	  $biotype = "novel ".$biotype;
+	}
       }
+
+      $counts{$biotype}++;
     }
-    push @attribs, Bio::EnsEMBL::Attribute->new
-      (-NAME => 'Gene Count',
-       -CODE => 'GeneCount',
-       -VALUE => $num_genes,
-       -DESCRIPTION => 'Total Number of Genes');
 
-    push @attribs, Bio::EnsEMBL::Attribute->new
-      (-NAME => 'Known Gene Count',
-       -CODE => 'KnownGeneCount',
-       -VALUE => $num_known_genes,
-       -DESCRIPTION => 'Total Number of Known Genes');
+    for my $biotype ( keys %counts ) {
+      my $attrib_code = $attrib_codes{$biotype};
+      if( !$attrib_code ) {
+	print STDERR "Unspecified biotype \"$biotype\".\n";
+	next;
+      }
+      my $no_space = $biotype;
+      $no_space =~ s/ /_/g;
 
-    push @attribs, Bio::EnsEMBL::Attribute->new
-      (-NAME => 'PseudoGene Count',
-       -CODE => 'PseudoGeneCount',
-       -VALUE => $num_pseudo_genes,
-       -DESCRIPTION => 'Total Number of PseudoGenes');
+      push @attribs, Bio::EnsEMBL::Attribute->new
+	(-NAME => $biotype.' Gene Count',
+	 -CODE => 'GeneNo_'.$attrib_code,
+	 -VALUE => $counts{$biotype},
+	 -DESCRIPTION => 'Number of '.$biotype.' Genes');
+    }
   }
 
   if( $snps_present ) {
