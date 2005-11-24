@@ -236,13 +236,16 @@ sub fetch_by_region {
   } else {
     my $sth = $self->prepare($sql . " WHERE sr.name = ? AND " .
                              $constraint);
-
     # Quotes around "$seq_region_name" are needed so that mysql does not
     # treat chromosomes like '6' as an int.  This was doing horrible
     # inexact matches like '6DR51', '6_UN', etc.
     $sth->bind_param(1,"$seq_region_name",SQL_VARCHAR);
-    $sth->bind_param(2,$cs->dbID,SQL_INTEGER) if ($cs);
-    $sth->bind_param(2,$version,SQL_VARCHAR)  if ($version);	
+    if ($cs){
+	$sth->bind_param(2,$cs->dbID,SQL_INTEGER);
+    }
+    else{
+	$sth->bind_param(2,$version,SQL_VARCHAR)  if ($version);	
+    }
 
     $sth->execute();
 
@@ -251,11 +254,17 @@ sub fetch_by_region {
 
       #do fuzzy matching, assuming that we are just missing a version on
       #the end of the seq_region name
-
+      
       $sth = $self->prepare($sql . " WHERE sr.name LIKE ? AND " . $constraint);
+
       $sth->bind_param(1,"$seq_region_name.%",SQL_VARCHAR);
-      $sth->bind_param(2,$cs->dbID,SQL_INTEGER) if ($cs);
-      $sth->bind_param(2,$version,SQL_VARCHAR) if ($version);
+
+      if ($cs){
+	  $sth->bind_param(2,$cs->dbID,SQL_INTEGER);
+      }
+      else{
+	  $sth->bind_param(2,$version,SQL_VARCHAR)  if ($version);	
+      }
       $sth->execute();
 
       my $prefix_len = length($seq_region_name) + 1;
