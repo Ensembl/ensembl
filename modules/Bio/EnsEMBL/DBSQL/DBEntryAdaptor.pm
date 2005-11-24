@@ -451,7 +451,8 @@ sub exists {
                it set the DBLinks attribute of the gene passed in to contain
                all of the gene, transcript, and translation xrefs associated 
                with this gene.
-  Returntype : listref of Bio::EnsEMBL::DBEntries
+  Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
+               there is mapping data, or GoXref if there is linkage data.
   Exceptions : thows if gene object not passed
   Caller     : Bio::EnsEMBL::Gene
   Status     : Stable
@@ -478,7 +479,8 @@ sub fetch_all_by_Gene {
                Previously it set the DBLinks attribute of the gene passed in 
                to contain all of the gene, transcript, and translation xrefs 
                associated with this gene.
-  Returntype : listref of Bio::EnsEMBL::DBEntries
+  Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
+               there is mapping data, or GoXref if there is linkage data.
   Exceptions : throes if transcript argument not passed
   Caller     : Bio::EnsEMBL::Gene 
   Status     : Stable
@@ -502,7 +504,8 @@ sub fetch_all_by_Transcript {
                (The translation to fetch database entries for)
   Example    : @db_entries = @{$db_entry_adptr->fetch_by_Translation($trans)};
   Description: Retrieves external database entries for an EnsEMBL translation
-  Returntype : listref of Bio::EnsEMBL::DBEntries
+  Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
+               there is mapping data, or GoXref if there is linkage data.
   Exceptions : throws if translation object not passed
   Caller     : general
   Status     : Stable
@@ -631,7 +634,8 @@ sub remove_from_object {
   			   (object type to be returned) 
   Example    : $self->_fetch_by_object_type( $translation_id, 'Translation' )
   Description: Fetches DBEntry by Object type
-  Returntype : arrayref of DBEntry objects
+  Returntype : arrayref of DBEntry objects; may be of type IdentityXref if
+               there is mapping data, or GoXref if there is linkage data.
   Exceptions : none
   Caller     : fetch_all_by_Gene
                fetch_all_by_Translation
