@@ -26,7 +26,7 @@
 1100	HUGO	1	KNOWNXREF	0	1	100	HGNC Symbol
 1200	Interpro	1	XREF	1	0	5	Interpro
 1300	EntrezGene	1	KNOWNXREF	1	0	10	EntrezGene
-1400	MarkerSymbol	1	KNOWNXREF	1	1	50	MarkerSymbol
+1400	MarkerSymbol	1	KNOWNXREF	1	1	50	MGI Symbol
 1500	MIM	1	KNOWNXREF	1	0	5	MIM
 1600	PDB	1	KNOWNXREF	1	0	5	PDB
 1700	protein_id	1	KNOWNXREF	1	0	5	Protein ID
@@ -52,7 +52,7 @@
 2410	wormbase_transcript	1	KNOWN	1	0	5	Wormbase Transcript
 2420	wormpep_id	1	KNOWN	1	0	5	Wormpep ID
 2430	wormbase_pseudogene	1	PSEUDO	1	0	5	Wormbase Pseudogene
-2510	ZFIN_ID	1	KNOWNXREF	1	0	5	ZFIN ID
+2510	ZFIN_ID	1	KNOWNXREF	1	0	5	ZFIN
 2530	ZFIN_xpat	1	KNOWNXREF	1	0	100	ZFIN expression patterns
 2600	GeneDB	1	KNOWN	1	0	5	GeneDB
 2601	aniseed	1	KNOWN	1	0	5	ANISEED 
