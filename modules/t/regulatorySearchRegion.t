@@ -4,7 +4,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 10;
+	plan tests => 11;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -86,7 +86,7 @@ ok(test_getter_setter($rs,'ensembl_object_type','Gene'));
 $rs->adaptor($rsa);
 ok($rs->adaptor->isa('Bio::EnsEMBL::DBSQL::RegulatorySearchRegionAdaptor'));
 
-# 10 Check loading of ensembl object
+# 10-11 Check loading of ensembl object
 $gene = $rs->ensembl_object();
 ok($gene->isa('Bio::EnsEMBL::Gene'));
 ok($gene->dbID() == 18256);
