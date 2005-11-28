@@ -802,7 +802,7 @@ sub get_Interpro_by_transid {
 	    "AND   i.id = pf.hit_id " .
 	    "AND   i.interpro_ac = x.dbprimary_acc");
 
-   $sth->bind_param(1,$transid,SQL_INTEGER);
+   $sth->bind_param(1,$transid,SQL_VARCHAR);
    $sth->execute();
 
    my @out;
@@ -1235,6 +1235,8 @@ sub _objs_from_sth {
 
   return \@transcripts;
 }
+
+
 
 
 
