@@ -87,6 +87,6 @@ $rs->adaptor($rsa);
 ok($rs->adaptor->isa('Bio::EnsEMBL::DBSQL::RegulatorySearchRegionAdaptor'));
 
 # 10 Check loading of ensembl object
-my $gene = $rs->ensembl_object();
+$gene = $rs->ensembl_object();
 ok($gene->isa('Bio::EnsEMBL::Gene'));
 ok($gene->dbID() == 18256);

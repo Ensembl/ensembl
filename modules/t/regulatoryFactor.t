@@ -45,7 +45,7 @@ ok($gene->dbID() == 18271);
 
 # test getting factors coded for by gene and transcript
 my $gene_adaptor = $dba->get_GeneAdaptor();
-my $gene = $gene_adaptor->fetch_by_dbID(18271);
+$gene = $gene_adaptor->fetch_by_dbID(18271);
 my @factors = @{$factor_adaptor->fetch_factors_coded_for_by_gene($gene)};
 ok($factors[0]->dbID() == 5);
 
