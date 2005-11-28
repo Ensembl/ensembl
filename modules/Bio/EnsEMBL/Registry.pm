@@ -900,6 +900,24 @@ sub load_registry_from_db{
     $self->add_alias( $species, $sp );
     print $coredb." loaded\n" if ($verbose);
   }
+
+  my @vega_dbs = grep { /^[a-z]+_[a-z]+_vega_\d+_/ } @dbnames;
+  
+  for my $vegadb ( @vega_dbs ) {
+    my ($species, $num ) = ( $vegadb =~ /(^[a-z]+_[a-z]+)_vega_(\d+)/ );
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+      ( -group => "vega",
+	-species => $species,
+	-host => $host,
+	-user => $user,
+	-pass => $pass,
+	-port => $port,
+	-dbname => $vegadb
+      );
+    (my $sp = $species ) =~ s/_/ /g;
+    $self->add_alias( $species, $sp );
+    print $vegadb." loaded\n" if ($verbose);
+  }
   
   my @est_dbs = grep { /^[a-z]+_[a-z]+_est_\d+_/ } @dbnames;
   
