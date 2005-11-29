@@ -516,7 +516,7 @@ sub add_adaptor{
     return;
   }
   if(defined($registry_register{$species}{lc($group)}{lc($type)})){ 
-    print STDERR ("Overwriting Adaptor in Registry for $species $group $type\n");
+    #print STDERR ("Overwriting Adaptor in Registry for $species $group $type\n");
     $registry_register{$species}{lc($group)}{lc($type)} = $adap;
    return;
   }
