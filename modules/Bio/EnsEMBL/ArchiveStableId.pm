@@ -46,6 +46,8 @@ package Bio::EnsEMBL::ArchiveStableId;
 use warnings;
 use strict;
 use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Utils::Argument qw( rearrange );
+
 use vars qw(@ISA);
 
 
@@ -79,8 +81,8 @@ sub new {
   my $self = bless {}, $class;
 
   my ( $stable_id, $version, $db_name, $type, $adaptor ) = 
-    $self->_rearrange( [ qw( STABLE_ID VERSION DB_NAME TYPE ADAPTOR ) ], @_ );  
-  
+    rearrange( [ qw( STABLE_ID VERSION DB_NAME TYPE ADAPTOR ) ], @_ );
+
   $self->{'stable_id'} = $stable_id;
   $self->{'version'} = $version;
   $self->{'db_name'} = $db_name;
