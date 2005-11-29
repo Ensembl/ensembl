@@ -245,7 +245,7 @@ ok(@$interpro == 1);
 # test fetch_all_by_external_name
 #
 
-($tr) = @{$ta->fetch_all_by_external_name('BAB15482')};
+($tr) = @{$ta->fetch_all_by_external_name('HCK')};
 ok($tr && $tr->stable_id eq 'ENST00000262651');
 
 #
@@ -414,6 +414,9 @@ $attribAdaptor->store_on_Transcript( $tr, $tr->get_all_Attributes() );
 
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 $tr->edits_enabled(1);
+
+#print " $tr->translateable_seq() : " .  $tr->translateable_seq() . "\n";
+#print "$tr->spliced_seq() : " . $tr->spliced_seq() . "\n";
 
 ok( $tr->translateable_seq() eq $tlseq2 );
 ok( $tr->spliced_seq() =~ /^GATTACA/ );
@@ -615,6 +618,8 @@ my $transcript = $transcript_adaptor->fetch_by_dbID(21717);
 my @factors = @{$transcript->fetch_coded_for_regulatory_factors()};
 ok($factors[0]->dbID() == 2);
 
+
+# test fetching by supporting evidence
 
 
 sub print_coords {
