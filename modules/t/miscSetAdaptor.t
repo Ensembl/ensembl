@@ -93,7 +93,7 @@ $misc_set = Bio::EnsEMBL::MiscSet->new
   (-code => 'code',
    -name => 'name',
    -description => 'description',
-   -longest_feature => 'longest_feature');
+   -longest_feature => 1000);
 
 $msa->store($misc_set);
 
