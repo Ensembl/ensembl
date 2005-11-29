@@ -44,7 +44,7 @@ for( my $i=0; $i<10; $i++ ) {
 }
 
 my $length = $mcc->fetch_max_length_by_CoordSystem_feature_type( $cs, "exon" ); 
-debug( "max = $max; length=$length ");
+#debug( "max = $max; length=$length ");
 ok( $max == $length );
 ok(count_rows($db, 'meta_coord') == $count + 1);
 
