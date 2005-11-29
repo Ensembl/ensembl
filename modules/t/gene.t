@@ -41,7 +41,7 @@ ok (@{$stable_ids});
 
 
 $gene = $ga->fetch_by_display_label( "T9S4_HUMAN" );
-ok( $gene->dbID() == 18262 );
+ok( $gene && $gene->dbID() == 18262 );
 
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
