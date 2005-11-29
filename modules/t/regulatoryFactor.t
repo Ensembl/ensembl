@@ -50,6 +50,6 @@ my @factors = @{$factor_adaptor->fetch_factors_coded_for_by_gene($gene)};
 ok($factors[0]->dbID() == 5);
 
 my $transcript_adaptor = $dba->get_TranscriptAdaptor();
-my $transcript = $transcript_adaptor->fetch_by_dbID(21717);
-my @factors = @{$factor_adaptor->fetch_factors_coded_for_by_transcript($transcript)};
+$transcript = $transcript_adaptor->fetch_by_dbID(21717);
+@factors = @{$factor_adaptor->fetch_factors_coded_for_by_transcript($transcript)};
 ok($factors[0]->dbID() == 2);
