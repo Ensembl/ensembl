@@ -248,11 +248,6 @@ options:
                         If external_db in core database is empty, it is populated
                         from ../external_db/external_dbs.txt
 
-  -deleteexisting       delete existing data from xref, object_xref,
-                        identity_xref and external synonym tables. Also set all
-                        existing display_xref_id columns in gene and transcript
-                        to null.
-
   -help                 display this message
  
 example: perl xref_mapper.pl -file mapper.input 
