@@ -52,7 +52,7 @@ use vars qw(@ISA);
   Arg [2]    : (optional) string $logic_name
                Limits RegulatorySearchRegions obtained to those having an Analysis with
                of the specified logic_name.  If no logic name is specified,
-               regulatory features of all analysis types are retrieved.
+               search regions of all analysis types are retrieved.
   Example    : @rss = @{$rsa->fetch_all_by_Slice($slice, 'CisRed_search')};
   Description: Retrieves regulatory search regions overlapping the area designated by
                the provided slice argument.  Returned regions will be in
@@ -288,9 +288,9 @@ sub _objs_from_sth {
 =head2 store
 
   Arg [1]    : Bio::EnsEMBL::RegulatorySearchRegion
-               the regulatory feature to store in the database
+               the search region to store in the database
   Example    : $regulatory_search_region_adaptor->store($regulatory_search_region);
-  Description: stores regulatory features in the database
+  Description: stores search regions in the database
   Returntype : none
   Exceptions :
   Caller     : general
@@ -388,6 +388,134 @@ sub fetch_by_name {
     return $rc;
 }
 
+=head2 fetch_all_by_transcript
+
+  Arg [1]    : Bio::EnsEMBL::Transcript
+  Example    : @features = @{$search_region_adaptor->
+                      fetch_all_by_transcript($transcript)};
+  Description: Gets all the search regions associated with a
+               particular transcript. Each feature only appears once.
+  Returntype : Listref of Bio::EnsEMBL::RegulatorySearchRegion
+  Exceptions : If arg is not of correct type.
+  Caller     : ?
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub fetch_all_by_transcript {
+
+   my ($self, $transcript) = @_;
+
+   if(!ref($transcript) || !$transcript->isa('Bio::EnsEMBL::Transcript')) {
+     throw('Expected Bio::EnsEMBL::Transcript argument not [' . ref($transcript) .'].');
+   }
+
+   my $features = $self->fetch_all_by_ensembl_object_type('Transcript', $transcript->dbID());
+
+   return $features;
+
+}
+
+=head2 fetch_all_by_translation
+
+  Arg [1]    : Bio::EnsEMBL::Translation
+  Example    : @features = @{$search_region_adaptor->
+                      fetch_all_by_Translation($Translation)};
+  Description: Gets all the search regions associated with a
+               particular Translation. Each feature only appears once.
+  Returntype : Listref of Bio::EnsEMBL::RegulatorySearchRegion
+  Exceptions : If arg is not of correct type.
+  Caller     : ?
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub fetch_all_by_translation {
+
+   my ($self, $translation) = @_;
+
+   if(!ref($translation) || !$translation->isa('Bio::EnsEMBL::Translation')) {
+      throw('Expected Bio::EnsEMBL::translation argument not [' . ref($translation) .'].');
+    }
+
+   my $features = $self->fetch_all_by_ensembl_object_type('Translation', $translation->dbID());
+
+   return $features;
+
+}
+
+=head2 fetch_all_by_gene
+
+  Arg [1]    : Bio::EnsEMBL::Gene
+  Arg [2]    : if set, return regulatory search regions associated with the
+               transcripts of the gene as well.
+  Example    : @features = @{$search_region_adaptor->
+                      fetch_all_by_gene($gene, 1)};
+  Description: Gets all the search regions associated with a
+               particular gene, and (optionally) its transcripts.
+               Each feature only appears once.
+  Returntype : Listref of Bio::EnsEMBL::RegulatorySearchRegion
+  Exceptions : If arg is not of correct type.
+  Caller     : ?
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub fetch_all_by_gene {
+
+   my ($self, $gene, $recursive) = @_;
+
+   if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+      throw('Expected Bio::EnsEMBL::Gene argument not [' . ref($gene) .'].');
+    }
+
+   my @features = @{$self->fetch_all_by_ensembl_object_type('Gene', $gene->dbID())};
+
+   # optionally add transcripts' features as well
+   if ($recursive) {
+
+     foreach my $transcript (@{$gene->get_all_Transcripts()}) {
+       push @features, @{$self->fetch_all_by_transcript($transcript)};
+     }
+
+   }
+
+
+   return \@features;
+
+}
+
+sub fetch_all_by_ensembl_object_type {
+
+   my ($self, $type, $id) = @_;
+
+   my $sth = $self->prepare("SELECT regulatory_search_region_id FROM regulatory_search_region WHERE ensembl_object_type=? AND ensembl_object_id=?");
+
+   $sth->bind_param(1,$type,SQL_VARCHAR);
+   $sth->bind_param(2,$id,SQL_INTEGER);
+   $sth->execute();
+
+   #my @ids = map {$_->[0]} @{$sth->fetchall_arrayref()};
+
+   #my $in = "IN (" . join("," @ids) . ")";
+
+   my $dbID;
+   my %search_regions;
+   while (($dbID) = $sth->fetchrow_array()) {
+     my $feature = $self->fetch_by_dbID($dbID);
+     if (!exists($search_regions{$feature->dbID()})) {
+       $search_regions{$feature->dbID()} = $feature;
+     }
+   }
+
+   my @features = values %search_regions;
+
+   return \@features;
+
+}
 
 1;
 
