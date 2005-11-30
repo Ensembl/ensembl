@@ -85,7 +85,6 @@ sub run {
   my $dir;
   while (my @row = $sth->fetchrow_array()) {
 
-
     # Download each source into the appropriate directory for parsing later
     # or call the appropriate database parser if appropriate
     # Also delete previous working directory if we're starting a new source type
@@ -186,10 +185,10 @@ sub run {
 	if (-s "$dir/$file") {
 	  $parse =1;
 	  print "Checksum for $file does not match, parsing\n";
-	  
+	
 	  # Files from sources "Uniprot/SWISSPROT" and "Uniprot/SPTREMBL" are
 	  # all parsed with the same parser
-	  $parser = 'UniProtParser' if ($parser =~ /Uniprot/i);
+	  $parser = 'UniProtParser' if ($parser eq "Uniprot/SWISSPROT" || $parser eq "Uniprot/SPTREMBL");
 	}
 	else {
 	  $empty = 1;
@@ -198,6 +197,7 @@ sub run {
       }
     }
     if($parse){
+
 	print "Parsing ".join(' ',@new_file)." with $parser\n";
 	eval "require XrefParser::$parser";
 	my $new = "XrefParser::$parser"->new();
