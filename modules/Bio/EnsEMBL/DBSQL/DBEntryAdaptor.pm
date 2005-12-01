@@ -231,18 +231,14 @@ sub store {
        FROM external_db
       WHERE db_name = ?
         AND release = ?");
-
   $sth->bind_param(1,$exObj->dbname,SQL_VARCHAR);
   $sth->bind_param(2,$exObj->release,SQL_VARCHAR);
   $sth->execute();
-
   my ($dbRef) =  $sth->fetchrow_array();
-
   if(!$dbRef) {
     throw("external_db [" . $exObj->dbname . "] release [" .
 		 $exObj->release . "] does not exist");
   }
-
   #
   # Check for the existance of the external reference, add it if not present
   #
@@ -259,7 +255,6 @@ sub store {
   $sth->execute();
   my ($dbX) = $sth->fetchrow_array();
   $sth->finish();
-
   if(!$dbX) {
     if(!$exObj->primary_id()) {
       throw("DBEntry cannot be stored without a primary_id attribute.");
@@ -283,7 +278,6 @@ sub store {
     $sth->execute();
     $dbX = $sth->{'mysql_insertid'};
     $sth->finish();
-
     #
     # store the synonyms for the new xref
     # 
@@ -307,11 +301,9 @@ sub store {
 	$synonym_store_sth->bind_param(2,$syn,SQL_VARCHAR);
       $synonym_store_sth->execute() if(!$dbSyn);
     }
-
     $synonym_check_sth->finish();
     $synonym_store_sth->finish();
   }
-
   #
   # check if the object mapping was already stored
   #
@@ -321,14 +313,13 @@ sub store {
             WHERE xref_id = ?
             AND   ensembl_object_type = ?
             AND   ensembl_id = ?");
-
   $sth->bind_param(1,$dbX,SQL_INTEGER);
   $sth->bind_param(2,$ensType,SQL_VARCHAR);
-  $sth->bind_param(3,$ensObject,SQL_INTEGER);
+print $ensObject . " " . $ensObject->dbID() . "\n";
+  $sth->bind_param(3,$ensObject->dbID(),SQL_INTEGER);
   $sth->execute();
   my ($tst) = $sth->fetchrow_array;
   $sth->finish();
-
   if(!$tst) {
     #
     # Store the reference to the internal ensembl object
@@ -339,12 +330,11 @@ sub store {
 
     $sth->bind_param(1,$dbX,SQL_INTEGER);
     $sth->bind_param(2,$ensType,SQL_VARCHAR);
-    $sth->bind_param(3,$ensObject,SQL_INTEGER);
+    $sth->bind_param(3,$ensObject->dbID(),SQL_INTEGER);
 
     $sth->execute();
     $exObj->dbID( $dbX );
     $exObj->adaptor( $self );
-
     my $Xidt = $sth->{'mysql_insertid'};
 
     #
@@ -359,7 +349,6 @@ sub store {
       } else {
         $analysis_id = undef;
       }
-
       $sth = $self->prepare( "
              INSERT ignore INTO identity_xref
              SET object_xref_id = ?,
