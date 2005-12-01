@@ -1104,7 +1104,7 @@ sub update {
 
    my $sth = $self->prepare( $update_gene_sql );
 
-   $sth->bind_param(1,$gene->type,SQL_VARCHAR);
+   $sth->bind_param(1,$gene->biotype,SQL_VARCHAR);
    $sth->bind_param(2,$gene->analysis->dbID,SQL_INTEGER);
    $sth->bind_param(3,$display_xref_id,SQL_INTEGER);
    $sth->bind_param(4,$gene->status,SQL_VARCHAR);
@@ -1351,7 +1351,136 @@ SSQL
     $am->register_all();    
   };
 }
-  
+
+
+=head2 fetch_all_by_exon_supporting_evidence
+
+  Arg [1]    : string hit_name
+  Arg [2]    : string feature type 
+               (one of "dna_align_feature" or "protein_align_feature")
+  Arg [3]    : (optional) Bio::Ensembl::Analysis
+  Example    : $genes = $gene_adaptor->fetch_all_by_exon_supporting_evidence();
+  Description: Gets all the genes with transcripts with exons which have a specified hit on a particular
+               type of feature. Optionally filter by analysis.
+  Returntype : Listref of Bio::EnsEMBL::Gene
+  Exceptions : If feature_type is not of correct type.
+  Caller     : ?
+  Status     : At Risk
+
+=cut
+
+sub fetch_all_by_exon_supporting_evidence {
+
+   my ($self, $hit_name, $feature_type, $analysis) = @_;
+
+   if($feature_type !~ /(dna)|(protein)_align_feature/) {
+     throw("feature type must be dna_align_feature or protein_align_feature");
+   }
+
+   my $anal_from = ", analysis a " if ($analysis);
+   my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? " if ($analysis);
+
+   my $sql = "SELECT DISTINCT(g.gene_id)
+                         FROM gene g,
+                              transcript t,
+                              exon_transcript et,
+                              supporting_feature sf,
+                              $feature_type f
+                              $anal_from
+                        WHERE g.gene_id=t.gene_id
+                          AND t.transcript_id = et.transcript_id
+                          AND et.exon_id = sf.exon_id
+                          AND sf.feature_id = f.${feature_type}_id
+                          AND sf.feature_type = ?
+                          AND f.hit_name=?
+                          $anal_where";
+
+   my $sth = $self->prepare($sql);
+
+   $sth->bind_param(1, $feature_type,     SQL_VARCHAR);
+   $sth->bind_param(2, $hit_name,         SQL_VARCHAR);
+   $sth->bind_param(3, $analysis->dbID(), SQL_INTEGER) if ($analysis);
+
+   $sth->execute();
+
+   my @genes;
+
+   while( my $id = $sth->fetchrow_array ) {
+     my $gene = $self->fetch_by_dbID( $id  );
+     push(@genes, $gene) if $gene;
+   }
+
+   return \@genes;
+
+}
+
+
+=head2 fetch_all_by_transcript_supporting_evidence
+
+  Arg [1]    : string hit_name
+  Arg [2]    : string feature type 
+               (one of "dna_align_feature" or "protein_align_feature")
+  Arg [3]    : (optional) Bio::Ensembl::Analysis
+  Example    : $genes = $gene_adaptor->fetch_all_by_transcript_supporting_evidence();
+  Description: Gets all the genes with transcripts with evidence for a specified hit on a particular
+               type of feature. Optionally filter by analysis.
+  Returntype : Listref of Bio::EnsEMBL::Gene
+  Exceptions : If feature_type is not of correct type.
+  Caller     : ?
+  Status     : At Risk
+
+=cut
+
+sub fetch_all_by_transcript_supporting_evidence {
+
+   my ($self, $hit_name, $feature_type, $analysis) = @_;
+
+   if($feature_type !~ /(dna)|(protein)_align_feature/) {
+     throw("feature type must be dna_align_feature or protein_align_feature");
+   }
+
+   my $anal_from = ", analysis a " if ($analysis);
+   my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? " if ($analysis);
+
+   my $sql = "SELECT DISTINCT(g.gene_id)
+                         FROM gene g,
+                              transcript t,
+                              transcript_supporting_feature sf,
+                              $feature_type f
+                              $anal_from
+                        WHERE g.gene_id = t.gene_id
+                          AND t.transcript_id = sf.transcript_id
+                          AND sf.feature_id = f.${feature_type}_id
+                          AND sf.feature_type = ?
+                          AND f.hit_name=?
+                          $anal_where";
+$sql =~ s/ +/ /g;
+print $sql . "\n";
+print $feature_type . " " . $hit_name . "\n";
+   my $sth = $self->prepare($sql);
+
+   $sth->bind_param(1, $feature_type,     SQL_VARCHAR);
+   $sth->bind_param(2, $hit_name,         SQL_VARCHAR);
+   $sth->bind_param(3, $analysis->dbID(), SQL_INTEGER) if ($analysis);
+
+   $sth->execute();
+
+   my @genes;
+
+   while( my $id = $sth->fetchrow_array ) {
+     print "## here\n";
+     my $gene = $self->fetch_by_dbID($id);
+     push(@genes, $gene) if $gene;
+   }
+
+   print "returning " . scalar(@genes) . " genes\n";
+   return \@genes;
+
+}
+
+
+
+
 ##########################
 #                        #
 #  DEPRECATED METHODS    #
