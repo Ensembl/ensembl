@@ -676,7 +676,7 @@ sub _fetch_by_object_type {
   ");
 
   $sth->bind_param(1,$ensObj,SQL_INTEGER);
-  $sth->bind_param(1,$ensType,SQL_VARCHAR);
+  $sth->bind_param(2,$ensType,SQL_VARCHAR);
   $sth->execute();
   my (%seen, %linkage_types, %synonyms);
 
