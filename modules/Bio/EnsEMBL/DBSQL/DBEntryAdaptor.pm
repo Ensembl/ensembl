@@ -315,7 +315,6 @@ sub store {
             AND   ensembl_id = ?");
   $sth->bind_param(1,$dbX,SQL_INTEGER);
   $sth->bind_param(2,$ensType,SQL_VARCHAR);
-print $ensObject . " " . $ensObject->dbID() . "\n";
   $sth->bind_param(3,$ensObject->dbID(),SQL_INTEGER);
   $sth->execute();
   my ($tst) = $sth->fetchrow_array;
