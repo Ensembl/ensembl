@@ -300,7 +300,7 @@ sub store {
     my $synonyms = $exObj->get_all_synonyms();
     foreach my $syn ( @$synonyms ) {
 	$synonym_check_sth->bind_param(1,$dbX,SQL_INTEGER);
-	$synonym_check_sth->bind_param(1,$syn,SQL_VARCHAR);
+	$synonym_check_sth->bind_param(2,$syn,SQL_VARCHAR);
       $synonym_check_sth->execute();
       my ($dbSyn) = $synonym_check_sth->fetchrow_array(); 
 	$synonym_store_sth->bind_param(1,$dbX,SQL_INTEGER);
@@ -429,7 +429,7 @@ sub exists {
                             AND    xdb.db_name = ?');
 
   $sth->bind_param(1,$dbe->display_id,SQL_INTEGER);
-  $sth->bind_param(1,$dbe->dbname,SQL_VARCHAR);
+  $sth->bind_param(2,$dbe->dbname,SQL_VARCHAR);
   $sth->execute();
 
   my ($dbID) = $sth->fetchrow_array;
