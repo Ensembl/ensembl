@@ -295,11 +295,11 @@ sub store {
     foreach my $syn ( @$synonyms ) {
 	$synonym_check_sth->bind_param(1,$dbX,SQL_INTEGER);
 	$synonym_check_sth->bind_param(2,$syn,SQL_VARCHAR);
-      $synonym_check_sth->execute();
+	$synonym_check_sth->execute();
       my ($dbSyn) = $synonym_check_sth->fetchrow_array(); 
 	$synonym_store_sth->bind_param(1,$dbX,SQL_INTEGER);
 	$synonym_store_sth->bind_param(2,$syn,SQL_VARCHAR);
-      $synonym_store_sth->execute() if(!$dbSyn);
+	$synonym_store_sth->execute() if(!$dbSyn);
     }
     $synonym_check_sth->finish();
     $synonym_store_sth->finish();
@@ -315,7 +315,7 @@ sub store {
             AND   ensembl_id = ?");
   $sth->bind_param(1,$dbX,SQL_INTEGER);
   $sth->bind_param(2,$ensType,SQL_VARCHAR);
-  $sth->bind_param(3,$ensObject->dbID(),SQL_INTEGER);
+  $sth->bind_param(3,$ensObject->dbID,SQL_INTEGER);
   $sth->execute();
   my ($tst) = $sth->fetchrow_array;
   $sth->finish();
@@ -329,7 +329,7 @@ sub store {
 
     $sth->bind_param(1,$dbX,SQL_INTEGER);
     $sth->bind_param(2,$ensType,SQL_VARCHAR);
-    $sth->bind_param(3,$ensObject->dbID(),SQL_INTEGER);
+    $sth->bind_param(3,$ensObject->dbID,SQL_INTEGER);
 
     $sth->execute();
     $exObj->dbID( $dbX );
@@ -710,7 +710,7 @@ sub _fetch_by_object_type {
         $exDB->score($score);
         $exDB->evalue($evalue);
 
-      } elsif( defined $linkage_type && $linkage_type != "") {
+      } elsif( defined $linkage_type && $linkage_type ne "") {
         $exDB = Bio::EnsEMBL::GoXref->new_fast( \%obj_hash );
         $exDB->add_linkage_type( $linkage_type );
         $linkage_types{$refID}->{$linkage_type} = 1;
@@ -739,7 +739,7 @@ sub _fetch_by_object_type {
       $synonyms{$refID}->{$synonym} = 1;
     }
 
-    if(defined($linkage_type) && $linkage_type != "" && !$linkage_types{$refID}->{$linkage_type}) {
+    if(defined($linkage_type) && $linkage_type ne "" && !$linkage_types{$refID}->{$linkage_type}) {
       $seen{$refID}->add_linkage_type($linkage_type);
       $linkage_types{$refID}->{$linkage_type} = 1;
     }

@@ -235,8 +235,6 @@ sub fetch_all_by_Slice {
   }
 
   my $seq_region_id = $slice->get_seq_region_id();
-
-
   if(!defined($seq_region_id)) {
     throw("Could not get seq_region_id for provided slice: ".$slice->name());
   }
@@ -251,7 +249,6 @@ sub fetch_all_by_Slice {
   $sth->execute();
 
   my $results = $self->_obj_from_sth($sth);
-
   $sth->finish();
 
   return $results;
@@ -615,7 +612,7 @@ sub remove_from_Transcript {
     my $sth = $self->prepare("DELETE FROM transcript_attrib " .
         "WHERE transcript_id = ? AND attrib_type_id = ?");
     $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
-    $sth->bind_param(1,$attrib_type_id,SQL_INTEGER);
+    $sth->bind_param(2,$attrib_type_id,SQL_INTEGER);
     $sth->execute();
     $sth->finish;
   } else {
@@ -696,11 +693,12 @@ sub _store_type {
     ("INSERT IGNORE INTO attrib_type set code = ?, name = ?, ".
      "description = ?" );
 
-  my $rows_inserted =
-      $sth1->bind_param(1,$attrib->code,SQL_VARCHAR);
-      $sth1->bind_param(2,$attrib->name,SQL_VARCHAR);
-      $sth1->bind_param(3,$attrib->description,SQL_LONGVARCHAR);
-  $sth1->execute();
+
+  $sth1->bind_param(1,$attrib->code,SQL_VARCHAR);
+  $sth1->bind_param(2,$attrib->name,SQL_VARCHAR);
+  $sth1->bind_param(3,$attrib->description,SQL_LONGVARCHAR);
+
+  my $rows_inserted =  $sth1->execute();
 
   my $atid = $sth1->{'mysql_insertid'};
 
