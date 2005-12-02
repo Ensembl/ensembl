@@ -1237,7 +1237,122 @@ sub _objs_from_sth {
 }
 
 
+=head2 fetch_all_by_exon_supporting_evidence
 
+  Arg [1]    : string hit_name
+  Arg [2]    : string feature type 
+               (one of "dna_align_feature" or "protein_align_feature")
+  Arg [3]    : (optional) Bio::Ensembl::Analysis
+  Example    : $transcripts = $transcript_adaptor->fetch_all_by_exon_supporting_evidence();
+  Description: Gets all the transcripts with exons which have a specified hit on a particular
+               type of feature. Optionally filter by analysis.
+  Returntype : Listref of Bio::EnsEMBL::Transcript
+  Exceptions : If feature_type is not of correct type.
+  Caller     : ?
+  Status     : At Risk
+
+=cut
+
+sub fetch_all_by_exon_supporting_evidence {
+
+   my ($self, $hit_name, $feature_type, $analysis) = @_;
+
+   if($feature_type !~ /(dna)|(protein)_align_feature/) {
+     throw("feature type must be dna_align_feature or protein_align_feature");
+   }
+
+   my $anal_from = ", analysis a " if ($analysis);
+   my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? " if ($analysis);
+
+   my $sql = "SELECT DISTINCT(t.transcript_id)
+                         FROM transcript t,
+                              exon_transcript et,
+                              supporting_feature sf,
+                              $feature_type f
+                              $anal_from
+                        WHERE t.transcript_id = et.transcript_id
+                          AND et.exon_id = sf.exon_id
+                          AND sf.feature_id = f.${feature_type}_id
+                          AND sf.feature_type = ?
+                          AND f.hit_name=?
+                          $anal_where";
+
+   my $sth = $self->prepare($sql);
+
+   $sth->bind_param(1, $feature_type,     SQL_VARCHAR);
+   $sth->bind_param(2, $hit_name,         SQL_VARCHAR);
+   $sth->bind_param(3, $analysis->dbID(), SQL_INTEGER) if ($analysis);
+
+   $sth->execute();
+
+   my @transcripts;
+
+   while( my $id = $sth->fetchrow_array ) {
+     my $transcript = $self->fetch_by_dbID( $id  );
+     push(@transcripts, $transcript) if $transcript;
+   }
+
+   return \@transcripts;
+
+}
+
+
+=head2 fetch_all_by_transcript_supporting_evidence
+
+  Arg [1]    : string hit_name
+  Arg [2]    : string feature type 
+               (one of "dna_align_feature" or "protein_align_feature")
+  Arg [3]    : (optional) Bio::Ensembl::Analysis
+  Example    : $transcripts = $transcript_adaptor->fetch_all_by_transcript_supporting_evidence();
+  Description: Gets all the transcripts with evidence for a specified hit on a particular
+               type of feature. Optionally filter by analysis.
+  Returntype : Listref of Bio::EnsEMBL::Transcript
+  Exceptions : If feature_type is not of correct type.
+  Caller     : ?
+  Status     : At Risk
+
+=cut
+
+sub fetch_all_by_transcript_supporting_evidence {
+
+   my ($self, $hit_name, $feature_type, $analysis) = @_;
+
+   if($feature_type !~ /(dna)|(protein)_align_feature/) {
+     throw("feature type must be dna_align_feature or protein_align_feature");
+   }
+
+   my $anal_from = ", analysis a " if ($analysis);
+   my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? " if ($analysis);
+
+   my $sql = "SELECT DISTINCT(t.transcript_id)
+                         FROM transcript t,
+                              transcript_supporting_feature sf,
+                              $feature_type f
+                              $anal_from
+                        WHERE t.transcript_id = sf.transcript_id
+                          AND sf.feature_id = f.${feature_type}_id
+                          AND sf.feature_type = ?
+                          AND f.hit_name=?
+                          $anal_where";
+
+   my $sth = $self->prepare($sql);
+
+   $sth->bind_param(1, $feature_type,     SQL_VARCHAR);
+   $sth->bind_param(2, $hit_name,         SQL_VARCHAR);
+   $sth->bind_param(3, $analysis->dbID(), SQL_INTEGER) if ($analysis);
+
+   $sth->execute();
+
+   my @transcripts;
+
+   while( my $id = $sth->fetchrow_array ) {
+     my $transcript = $self->fetch_by_dbID( $id  );
+     push(@transcripts, $transcript) if $transcript;
+   }
+
+   return \@transcripts;
+
+}
 
 
 =head2 get_display_xref
@@ -1323,7 +1438,7 @@ sub get_stable_entry_info {
 
 
 
-=head2 fetch_all_by_DBEntry
+=head2 fetch_all_b_DBEntry
 
   Description: DEPRECATED this method has been renamed 
                fetch_all_by_external_name
