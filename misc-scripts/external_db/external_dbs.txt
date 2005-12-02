@@ -45,6 +45,7 @@
 2100	Superfamily	1	KNOWNXREF	1	0	5	Superfamily
 2200	Uniprot/SWISSPROT	1	KNOWN	1	1	30	UniProt/Swiss-Prot
 2201	Uniprot/SWISSPROT_predicted	1	PRED	1	1	15	Predicted UniProt/Swiss-Prot
+2202    Uniprot/Varsplic		1	KNOWN	1	1	15	Uniprot alternative splice
 2300	Vega_gene	1	XREF	1	0	5	Vega gene
 2310	Vega_transcript	1	XREF	1	0	5	Vega transcript
 2320	Vega_translation	1	XREF	1	0	5	Vega translation
