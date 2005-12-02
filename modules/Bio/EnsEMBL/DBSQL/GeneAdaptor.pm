@@ -1443,20 +1443,18 @@ sub fetch_all_by_transcript_supporting_evidence {
    my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? " if ($analysis);
 
    my $sql = "SELECT DISTINCT(g.gene_id)
-                         FROM gene g,
-                              transcript t,
-                              transcript_supporting_feature sf,
-                              $feature_type f
-                              $anal_from
-                        WHERE g.gene_id = t.gene_id
-                          AND t.transcript_id = sf.transcript_id
-                          AND sf.feature_id = f.${feature_type}_id
-                          AND sf.feature_type = ?
-                          AND f.hit_name=?
-                          $anal_where";
-$sql =~ s/ +/ /g;
-print $sql . "\n";
-print $feature_type . " " . $hit_name . "\n";
+			  FROM gene g,
+			       transcript t,
+			       transcript_supporting_feature sf,
+			       $feature_type f
+			       $anal_from
+			 WHERE g.gene_id = t.gene_id
+			   AND t.transcript_id = sf.transcript_id
+			   AND sf.feature_id = f.${feature_type}_id
+			   AND sf.feature_type = ?
+			   AND f.hit_name=?
+			   $anal_where";
+
    my $sth = $self->prepare($sql);
 
    $sth->bind_param(1, $feature_type,     SQL_VARCHAR);
@@ -1468,12 +1466,10 @@ print $feature_type . " " . $hit_name . "\n";
    my @genes;
 
    while( my $id = $sth->fetchrow_array ) {
-     print "## here\n";
      my $gene = $self->fetch_by_dbID($id);
      push(@genes, $gene) if $gene;
    }
 
-   print "returning " . scalar(@genes) . " genes\n";
    return \@genes;
 
 }
