@@ -2,7 +2,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 33;
+	plan tests => 34;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
