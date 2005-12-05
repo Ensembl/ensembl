@@ -18,7 +18,7 @@ ok(1);
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 ok( $multi );
-$multi->hide( "core", "analysis" );
+$multi->hide( "core", "analysis", "analysis_description" );
 
 my $db = $multi->get_DBAdaptor( "core" );
 ok($db);
@@ -61,7 +61,6 @@ ok( check_methods( $analysis_out, "db", "db_file", "dbID", "compare",
 		   "program", "db_version", "adaptor" ));
 
 ok( $analysis_out->description eq "some funny description" );
-ok( count_rows( $db, "analysis_description" ) == 2 );
 
 # try updating existing description
 $analysis->logic_name("new_dummy");
@@ -84,6 +83,7 @@ $analysis->description("updated description");
 $analysis_ad->update($analysis);
 $analysis_updated = $analysis_ad->fetch_by_dbID($dbID);
 ok($analysis_updated->description() eq "updated description");
+ok( count_rows( $db, "analysis_description" ) == 2 );
 
 
 
