@@ -762,7 +762,7 @@ sub store {
   if(!ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
     throw("Must store a gene object, not a $gene");
   }
-print "in gene store\n";
+
   my $db = $self->db();
 
   if($gene->is_stored($db)) {
