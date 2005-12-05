@@ -39,13 +39,13 @@
 1901	Sanger_Hver1_3_1	1	XREF	1	0	5	Sanger Hver 131
 1902	SNGR_Hver	1	XREF	1	0	5	Sanger Hver
 1910	Sanger_Mver1_1_1	1	XREF	1	0	5	Sanger Hver 111
-2000	Uniprot/SPTREMBL	1	KNOWN	1	0	20	Predicted UniProt/TrEMBL
-2001	Uniprot/SPTREMBL_predicted	1	KNOWN	1	0	15	UniProt/TrEMBL
-2010	prediction_SPTREMBL	1	XREF	1	1	10	Prediction SpTREMBL
+2000	Uniprot/SPTREMBL	1	KNOWN	1	0	20	UniProtKB/TrEMBL
+2001	Uniprot/SPTREMBL_predicted	1	KNOWN	1	0	15	Predicted UniProtKB/TrEMBL
+2010	prediction_SPTREMBL	1	XREF	1	1	10	Prediction UniProtKB/TrEMBL
 2100	Superfamily	1	KNOWNXREF	1	0	5	Superfamily
-2200	Uniprot/SWISSPROT	1	KNOWN	1	1	30	UniProt/Swiss-Prot
-2201	Uniprot/SWISSPROT_predicted	1	PRED	1	1	15	Predicted UniProt/Swiss-Prot
-2202    Uniprot/Varsplic		1	KNOWN	1	1	15	Uniprot alternative splice
+2200	Uniprot/SWISSPROT	1	KNOWN	1	1	30	UniProtKB/Swiss-Prot
+2201	Uniprot/SWISSPROT_predicted	1	PRED	1	1	15	Predicted UniProtKB/Swiss-Prot
+2202    Uniprot/Varsplic		1	KNOWN	1	1	15	UniprotKB/Varsplic
 2300	Vega_gene	1	XREF	1	0	5	Vega gene
 2310	Vega_transcript	1	XREF	1	0	5	Vega transcript
 2320	Vega_translation	1	XREF	1	0	5	Vega translation
