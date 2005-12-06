@@ -47,7 +47,7 @@ ok(@{$rfa->fetch_all_by_transcript($transcript)} == 14);
 
 # Test store
 
-$multi_db->save('core', 'regulatory_feature');
+$multi_db->save('core', 'regulatory_feature', 'regulatory_feature_object' );
 
 my $slice = $db->get_SliceAdaptor()->fetch_by_seq_region_id(469286);
 
@@ -75,4 +75,4 @@ ok($rf->name()  eq 'hsa-miR-108');
 ok($rf->start() eq 100);
 ok($rf->analysis()->logic_name() eq 'miRanda');
 
-$multi_db->restore('core', 'regulatory_feature');
+$multi_db->restore('core');
