@@ -2493,10 +2493,10 @@ ESQL
   }
   $sth->finish();
   if(!$error){
-    print "\texternal databases only associate to one ensembl type (PASS)\n";
+    print "External databases only associate to one ensembl type (PASS)\n";
   }
   else{
-    print "\texternal databases only associate to one ensembl type (FAIL)\n";
+    print "External databases only associate to one ensembl type (FAIL)\n";
   }
 }
 
