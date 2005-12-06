@@ -23,6 +23,7 @@ my $maxdump=undef;
 my $help;
 my $upload = undef;
 my $location;
+my $notriage=undef;
 
 GetOptions ('file=s'              => \$file,
             'verbose'             => \$verbose,
@@ -31,6 +32,7 @@ GetOptions ('file=s'              => \$file,
 	    'maxdump=n'           => \$maxdump,
 	    'upload'              => \$upload,
 	    'location=s'          => \$location,
+	    'notriage'            => \$notriage,
             'help'                => sub { &show_help(); exit 1;} );
  
 usage("-file option is required")   if(!$file);
@@ -189,13 +191,11 @@ $mapper->dump_seqs($location);
 print "\nChecking external_db table\n" if ($upload);
 $mapper->upload_external_db() if ($upload);
 
-print "\nRunning mapping\n";
 $mapper->build_list_and_map();
 
 print "\nParsing mapping output\n";
-$mapper->parse_mappings();
+$mapper->parse_mappings($notriage);
 
-print "\nUploading xrefs\n" if ($upload);
 $mapper->do_upload() if ($upload);
 
 print "\nChecking pair data\n" if($upload);
@@ -203,7 +203,7 @@ $mapper->add_missing_pairs() if($upload);
 
 #$mapper->check_pairs() if(!$upload);
 
-print "\nchecking xrefs\n" if ($upload);
+print "\nChecking xrefs\n" if ($upload);
 $mapper->cleanup_database() if ($upload);
 
 print  "*** All finished ***\n";
@@ -247,6 +247,8 @@ options:
                         to *.txt etc regardless of whether this option is used.
                         If external_db in core database is empty, it is populated
                         from ../external_db/external_dbs.txt
+
+  -notriage             don't dump triage data
 
   -help                 display this message
  
