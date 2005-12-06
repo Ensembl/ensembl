@@ -32,14 +32,17 @@ use Bio::EnsEMBL::Utils::Exception qw(warning stack_trace_dump);
 use DBD::mysql;
 use DBI;
 
-# use Time::HiRes qw(time);
+use Time::HiRes qw(time);
 
 @ISA = qw(DBI::st);
+
 
 # As DBD::mysql::st is a tied hash can't store things in it,
 # so have to have parallel hash
 my %dbchash;
 my %dbc_sql_hash;
+
+
 sub dbc {
   my $self = shift;
 
@@ -74,35 +77,63 @@ sub sql {
 
 
 #
-# uncomment this for printing out handy debug information (every query)
+# uncomment this for printing out handy debug information 
+# (every query if you want)
 #
-#sub execute {
-#   my $self = shift;
-#
-#   my $sql = $self->sql();
-#
-#
-#   my @chrs = split(//, $sql);
-#
-#   my $j = 0;
-#   for(my $i =0; $i < @chrs; $i++) {
-#     $chrs[$i] = $_[$j++] if($chrs[$i] eq '?' && defined($_[$j]));
-#   }
-#
-#   my $str = join('', @chrs);
-#
-#   my $time = time;
-##   print STDERR "\nSQL:\n$str\n\n";
-#
-# #  print STDERR stack_trace_dump(), "\n";
-#
-#   my $res = $self->SUPER::execute(@_);
-#   $time = time - $time;
-##   print STDERR "DONE ($time)\n";
-#
-#   return $res;
-# }
+## call   Bio::EnsEMBL::DBSQL::StatementHandle->dump(1); to start log
+## call   Bio::EnsEMBL::DBSQL::StatementHandle->dump(0); to end log
+## and set $dump to 0 
+## leave $dump = 1 for continuous log
+#my @bind_args=();
+#my $dump = 1;
+#my $total_time = 0;
 
+#sub dump {
+#  $dump = shift;
+#  if($total_time){
+#    print "Time taken was $total_time\n";
+#  }
+#  $total_time = 0;
+#}
+
+#sub bind_param{ 
+#  my ($self,@args) = @_;
+
+#  $bind_args[$args[0]-1] = $args[1];
+#  $self->SUPER::bind_param(@args);
+#} 
+
+#sub execute {
+#  my ($self,@args) = @_;
+  
+#  if(!$dump){ # skip dumping
+#    return $self->SUPER::execute(@args);
+#  }
+#  my $sql = $self->sql();
+  
+  
+#  my @chrs = split(//, $sql);
+  
+#  my $j = 0;
+#  for(my $i =0; $i < @chrs; $i++) {
+#    $chrs[$i] = $bind_args[$j++] if($chrs[$i] eq '?' && defined($bind_args[$j]));
+#  }
+  
+#  my $str = join('', @chrs);
+  
+#  print "\nSQL:\n$str\n\n";
+  
+#  my $time = time;
+#  my $res = $self->SUPER::execute(@args);
+#  $time = time - $time;
+
+#  $total_time += $time;
+#  print "DONE ($time)\n";
+#  return $res;
+#}
+#
+# End uncomment
+#
 
 sub DESTROY {
   my ($obj) = @_;
