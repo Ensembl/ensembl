@@ -416,7 +416,7 @@ sub get_all_DBAdaptors_by_connection{
 
   foreach my $dba ( @{$registry_register{'_DBA'}}){
     my $dbc = $dba->dbc;
-    if($dbc->equals($dbc_orig)){
+    if($dbc && $dbc->can('equals') && $dbc->equals($dbc_orig)){
       push @return, $dba;
     }
   }
