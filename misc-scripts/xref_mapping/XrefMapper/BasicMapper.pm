@@ -665,7 +665,7 @@ sub run_mapping {
 
   # delete old output files in target directory if we're going to produce new ones
   if (!defined($self->use_existing_mappings())) {
-    print "deleting out err and map files from output dir\n";
+    print "Deleting out err and map files from output dir\n";
     my $dir = $self->core->dir();
     unlink (<$dir/*.map $dir/*.out $dir/*.err>);
   }
@@ -818,7 +818,7 @@ sub submit_depend_job {
 
 sub parse_mappings {
 
-  my ($self) = @_;
+  my ($self, $notriage) = @_;
 
   my $ensembl = $self->core;
   my $xref = $self->xref;
@@ -1006,7 +1006,7 @@ sub parse_mappings {
 
 
   # dump triage type data
-  $self->dump_triage_data($xref_id_offset);
+  $self->dump_triage_data($xref_id_offset) if (!$notriage);
 
 
   # write comparison info. Can be removed after development
@@ -2110,7 +2110,7 @@ sub do_upload {
   my $core_db = $ensembl->dbc;
   # xref.txt etc
 
-
+  print "Deleting existing data\n";
   my $file = $ensembl->dir() . "/cleanup.sql";
   open(CLEAN,"<$file") || die "could not open $file for reading \n";
   while(<CLEAN>){
@@ -2160,7 +2160,7 @@ GENE
   print "Setting all existing descriptions in gene table to null\n";
   $sth->execute();
 
-
+  print "Uploading new data\n";
   foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "go_xref", "interpro") {
 
     my $file = $ensembl->dir() . "/" . $table . ".txt";
@@ -2194,6 +2194,19 @@ GENE
   open (FILE, ">$file");
   print FILE "DELETE FROM meta WHERE meta_key='xref.timestamp';\n";
   print FILE "INSERT INTO meta (meta_key,meta_value) VALUES ('xref.timestamp', NOW())\n";
+  close(FILE);
+
+  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+  system $str;
+
+  # set gene and transcript statuses to KNOWN or NOVEL based on external_db status
+  print "Setting gene and transcript status from external_db KNOWN/NOVEL\n";
+  $file =  $ensembl->dir() . "/gene_transcript_status.sql";
+  open (FILE, ">$file");
+  print FILE "UPDATE transcript SET status=\'NOVEL\';\n";
+  print FILE "UPDATE gene SET status=\'NOVEL\';\n";
+  print FILE "UPDATE gene g, xref x, external_db e SET g.status = \'KNOWN\' WHERE g.display_xref_id = x.xref_id AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
+  print FILE "UPDATE transcript t, xref x, external_db e SET t.status = \'KNOWN\' WHERE t.display_xref_id = x.xref_id AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
   close(FILE);
 
   my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
