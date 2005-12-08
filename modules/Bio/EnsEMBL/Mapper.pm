@@ -202,7 +202,7 @@ sub map_coordinates{
    $end_idx = $#$lr;
    
    # binary search the relevant pairs
-   # helps if the list is big
+   # this helps if the list is big
    while(( $end_idx - $start_idx ) > 1 ) {
      $mid_idx = ($start_idx+$end_idx)>>1;
      $pair = $lr->[$mid_idx];
@@ -485,13 +485,11 @@ sub fastmap {
     Arg  7      int $end
                 end coordinate of 'targe' sequence
     Function    stores details of mapping between two regions:
-                'source' and 'target'. Returns 1 if the pair was added, 0 if it
-                was already in.
-    Returntype  int 0,1
+                'source' and 'target'. 
+    Returntype  void
     Exceptions  throws if one or more of the 7 arguments are missing
     Caller      Bio::EnsEMBL::Mapper
     Status     : Stable
-
 =cut
 
 sub add_map_coordinates{
@@ -525,7 +523,6 @@ sub add_map_coordinates{
   $self->{'pair_count'}++;
 
   $self->{'_is_sorted'} = 0;
-  return 1;
 }
 
 
