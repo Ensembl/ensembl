@@ -30,6 +30,7 @@ package Bio::EnsEMBL::Gene;
 use vars qw(@ISA);
 use strict;
 
+use POSIX;
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
@@ -712,14 +713,49 @@ sub transform {
   }
 
   my $new_gene = $self->SUPER::transform( @_ );
-  return undef unless $new_gene;
+  if( ! defined $new_gene ) {
+    # check if this gene projects at all to requested coord system, 
+    #  if not we are done.
+    my @segments = $self->project( @_ );
+    if( ! @segments ) {
+      return undef;
+    }
+    $self->get_all_Transcripts();    
+  }
 
   if( exists $self->{'_transcript_array'} ) {
     my @new_transcripts;
+    my ( $strand, $slice );
+    my $low_start = POSIX::INT_MAX;
+    my $hi_end = POSIX::INT_MIN;
     for my $old_transcript ( @{$self->{'_transcript_array'}} ) {
       my $new_transcript = $old_transcript->transform( @_ );
+      # this can fail if gene transform failed  
+      return undef unless $new_transcript;
+
+      if( ! defined $new_gene ) {
+	if( $new_transcript->start() < $low_start ) {
+	  $low_start = $new_transcript->start();
+	}
+	if( $new_transcript->end() > $hi_end ) {
+	  $hi_end = $new_transcript->end();
+	}
+	$slice = $new_transcript->slice();
+	$strand = $new_transcript->strand();
+      }
       push( @new_transcripts, $new_transcript );
     }
+
+    if( ! defined $new_gene ) {
+      %$new_gene = %$self;
+      bless $new_gene, ref( $self );
+
+      $self->start( $low_start );
+      $self->end( $hi_end );
+      $self->strand( $strand );
+      $self->slice( $slice );
+    }
+
     $new_gene->{'_transcript_array'} = \@new_transcripts;
   }
   return $new_gene;
@@ -731,7 +767,7 @@ sub transform {
 
   Arg [1]    : Bio::EnsEMBL::Slice $destination_slice
   Example    : none
-  Description: MOves this Gene to given target slice coordinates. If Transcripts
+  Description: Moves this Gene to given target slice coordinates. If Transcripts
                are attached they are moved as well. Returns a new gene.
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
