@@ -4,7 +4,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 139;
+	plan tests => 140;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -469,6 +469,12 @@ foreach my $ex (@{$tr->get_all_Exons()}) {
 $tr->dbID(undef);
 $tr->adaptor(undef);
 
+{
+  # testing transform with gaps in introns
+  my $tr = $ta->fetch_by_dbID( 21739 );
+  my $mapped_tr = $tr->transform( "alt_chrom" );
+  ok( $tr->spliced_seq() eq $mapped_tr->spliced_seq() );
+}
 
 $multi->hide('core', 'transcript', 'transcript_attrib', 'translation',
              'exon_transcript', 'exon', 'exon_stable_id', 
@@ -492,6 +498,7 @@ $tr->add_Attributes($attrib2);
 $ta->store($tr, $g->dbID());
 
 ok(count_rows($db, 'transcript_attrib') == 2);
+
 
 
 

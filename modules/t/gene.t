@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 66;
+	plan tests => 68;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -393,16 +393,6 @@ debug( "known: $known Unknown: $unknown\n" );
 
 ok( $known==17 );
 
-#if( my $lite = $multi->get_DBAdaptor( 'lite' ) ) {
-#  debug( "Lite database available" );
-#  my $lga = $lite->get_GeneAdaptor();
-#  $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
-
-#  $lga->store( $gene );
-#  debug( "Store done" );
-#}
-
-
 #save contents of gene table
 $multi->save('core', 'gene');
 
@@ -587,6 +577,22 @@ ok($gene->start() == 10);
 ok($gene->end()  == 400);
 
 
+{
+  # Test transformming genes over a gapped alignment, when gaps
+  # only occur in introns
+  # target_slice = sliceAdaptor->fetch_by_region( "alt_chrom", "gap_map_test" );
+
+  my $gene = $ga->fetch_by_dbID( 18274 );
+  my $new_gene = $gene->transform( "alt_chrom" );
+  my $trans_orig = $gene->get_all_Transcripts()->[0];
+  my $trans_mapped = $new_gene->get_all_Transcripts()->[0];
+  ok( $trans_orig->spliced_seq() eq 
+      $trans_mapped->spliced_seq());
+
+  # the assembly is rigged to have no gaps between the first and second exon
+  ok( $trans_mapped->get_all_Exons()->[0]->end()+1==
+      $trans_mapped->get_all_Exons()->[1]->start() );
+}
 
 
 #
@@ -623,7 +629,6 @@ ok($dbe_id && $dbe_id == $dbe->dbID());
 
 $multi->restore();
 
-
 # test regulatory feature retrieval
 my $rf_gene = $ga->fetch_by_dbID(18256);
 #ok(@{$rf_gene->get_all_regulatory_features()} == 1);  # non-recursive
@@ -633,4 +638,3 @@ ok(@{$rf_gene->get_all_regulatory_features(1)} == 12); # recursive
 $gene = $ga->fetch_by_dbID(18271);
 my @factors = @{$gene->fetch_coded_for_regulatory_factors()};
 ok($factors[0]->dbID() == 5);
-
