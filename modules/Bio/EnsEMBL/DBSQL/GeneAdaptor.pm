@@ -850,7 +850,7 @@ sub store {
    my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
    foreach my $dbe ( @{$gene->get_all_DBEntries} ) {
-     $dbEntryAdaptor->store( $dbe, $gene_dbID, "Gene" );
+     $dbEntryAdaptor->store( $dbe, $gene, "Gene" );
    }
 
 
