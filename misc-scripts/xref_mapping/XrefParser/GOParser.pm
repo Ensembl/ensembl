@@ -44,6 +44,7 @@ sub run {
   my (%swiss) = %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
   my %worm;
+  my %worm_label;
   my $wormset;
   my %fish;
   my $fishset;
@@ -83,20 +84,29 @@ sub run {
         if(!defined($wormset)){
           $wormset = 1;
           %worm = %{XrefParser::BaseParser->get_valid_xrefs_for_direct_xrefs('worm')};
+	  %worm_label = %{$self->get_label_to_accession('worm')};
         }
 	my @worm_list =();
-        if(defined($worm{$array[1]})){ 
+        if(!defined($worm{$array[1]})){ 
+	  if(defined($worm_label{$array[2]})){
+	    $array[1] = $worm_label{$array[2]};
+	  }
+	}
+        if(defined($worm{$array[1]})){ 	
 	  my ($xref_id, $stable_id, $type, $link) = split(/::/,$worm{$array[1]});
 	  
 	  my $new_xref_id=$self->get_xref($array[4],$source_id);
 	  
 	  if(!defined($new_xref_id)){
 	    $new_xref_id = $self->add_xref($array[4],undef,$array[4],"", $source_id, $species_id);
-	      $count++;
+	    $count++;
 	  }
 	  if(!defined($self->get_direct_xref($stable_id,$type, $array[6]))){
 	    $self->add_direct_xref($new_xref_id, $stable_id, $type, $array[6]);
 	  }
+	}
+	else{
+	  $miss++;
 	}
       }
       elsif($array[0] =~ /^ZFIN/){
@@ -118,7 +128,7 @@ sub run {
       }
     }
   }
-  print "\t$count GO dependent xrefs added\n"; 
+  print "\t$count GO dependent xrefs added $miss not found\n"; 
 }
 
 sub new {

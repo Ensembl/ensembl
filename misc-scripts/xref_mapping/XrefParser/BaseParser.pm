@@ -1063,6 +1063,37 @@ sub create {
 
 }
 
+sub get_label_to_accession{
+  my ($self, $name) = @_;
+  my %hash1=();
+
+  my $dbi = dbi();
+  my $sql = "select xref.accession, xref.label from xref, source where source.name like '$name%' and xref.source_id = source.source_id";
+  my $sub_sth = dbi->prepare($sql);    
+
+  $sub_sth->execute();
+  while(my @row = $sub_sth->fetchrow_array()) {
+    $hash1{$row[1]} = $row[0];
+  }   	  
+  return \%hash1;
+}
+
+
+sub get_accession_from_label{
+  my ($self, $name) = @_;
+  
+  my $dbi = dbi();
+  my $sql = "select xref.accession from xref where xref.label like '$name'";
+  my $sub_sth = dbi->prepare($sql);    
+  
+  $sub_sth->execute();
+  while(my @row = $sub_sth->fetchrow_array()) {
+    return $row[0];
+  }   	  
+  return undef;
+  
+}
+
 sub get_sub_list{
   my ($self, $name) = @_;
   my @list=();
