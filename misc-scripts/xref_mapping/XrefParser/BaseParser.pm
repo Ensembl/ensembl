@@ -359,6 +359,45 @@ sub get_valid_xrefs_for_dependencies{
   return \%dependent_2_xref;
 }
 
+sub get_valid_xrefs_for_direct_xrefs{
+  my ($self, $direct_name, @list) = @_;
+
+  my %direct_2_xref;
+
+
+  my $sql = "select source_id from source where name like ?";
+  my $sth = dbi()->prepare($sql);
+  my @direct_sources;
+  $sth->execute($direct_name."%");
+  while(my @row = $sth->fetchrow_array()){
+    push @direct_sources,$row[0];
+  }
+
+  my @sources;
+  foreach my $name (@list){
+    $sth->execute($name);
+    while(my @row = $sth->fetchrow_array()){
+      push @sources,$row[0];
+    }
+  }
+  $sth->finish;
+
+  $sql  = "select d.general_xref_id, d.ensembl_stable_id, d.type, d.linkage_xref, x1.accession ";
+  $sql .= "  from direct_xref d, xref x1 ";
+  $sql .= "    where x1.xref_id = d.general_xref_id and";
+  $sql .= "          x1.source_id=?";
+   
+  my $sth = dbi()->prepare($sql);
+  foreach my $d (@direct_sources){
+    $sth->execute($d);
+    while(my @row = $sth->fetchrow_array()){
+      $direct_2_xref{$row[4]} = $row[0]."::".$row[1]."::".$row[2]."::".$row[3];
+    }
+  }
+
+  return \%direct_2_xref;
+}
+
 
 
 sub get_valid_codes{
@@ -864,9 +903,24 @@ sub get_taxonomy_from_species_id{
   $sth->finish;
   return undef;
 }
+sub get_direct_xref{
+  my ($self,$stable_id,$type,$link) = @_;
+
+  my $direct_sth;
+  if(!defined($direct_sth)){
+    my $sql = "select general_xref_id from direct_xref d where ensembl_stable_id = ? and type = ?  and linkage_xref= ?";
+    $direct_sth = $dbi->prepare($sql);  
+  }
+  
+  $direct_sth->execute($stable_id, $type, $link) || die $dbi->errstr;
+  if(my @row = $direct_sth->fetchrow_array()) {
+    return $row[0];
+  }   
+  return undef;
+}
 
 sub get_xref{
-  my ($acc,$source) = @_;
+  my ($self,$acc,$source) = @_;
 
   if(!defined($get_xref_sth)){
     my $sql = "select xref_id from xref where accession = ? and source_id = ?";
@@ -934,11 +988,11 @@ sub add_to_syn{
 
 sub add_direct_xref {
 
-  my ($self, $general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_xref) = @_;
+  my ($self, $general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_type) = @_;
 
   $add_direct_xref_sth = dbi->prepare("INSERT INTO direct_xref VALUES(?,?,?,?)") if (!defined($add_direct_xref_sth));
 
-  $add_direct_xref_sth->execute($general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_xref);
+  $add_direct_xref_sth->execute($general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_type);
 
 }
 
@@ -1007,6 +1061,21 @@ sub create {
   $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < ".$sql_dir."sql/populate_metadata.sql";
   system($cmd);
 
+}
+
+sub get_sub_list{
+  my ($self, $name) = @_;
+  my @list=();
+
+  my $dbi = dbi();
+  my $sql = "select xref.accession from xref where xref.accession like '$name%'";
+  my $sub_sth = dbi->prepare($sql);    
+
+  $sub_sth->execute();
+  while(my @row = $sub_sth->fetchrow_array()) {
+    push @list, $row[0];
+  }   	  
+  return @list;
 }
 
 # --------------------------------------------------------------------------------

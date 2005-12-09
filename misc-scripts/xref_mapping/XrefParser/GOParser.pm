@@ -79,20 +79,28 @@ sub run {
         }
       }
       elsif($array[0] =~ /^WB/){
-#WB      CE20707 ZYG-9           GO:0008017      WB:WBPaper00003099|PMID:9606208 ISS             F                       protein  taxon:6239      20030829        WB
+	#WB      CE20707 ZYG-9           GO:0008017      WB:WBPaper00003099|PMID:9606208 ISS             F                       protein  taxon:6239      20030829        WB
         if(!defined($wormset)){
           $wormset = 1;
-          %worm = %{XrefParser::BaseParser->get_valid_xrefs_for_dependencies
-              ('wormbase_transcript','Uniprot/SPTREMBL','RefSeq_peptide',
-               'Uniprot/SWISSPROT')};
+          %worm = %{XrefParser::BaseParser->get_valid_xrefs_for_direct_xrefs('worm')};
         }
-        if(defined($worm{$array[2]})){
-          XrefParser::BaseParser->add_to_xrefs($worm{$array[2]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
-          $count++;
-        }
+	my @worm_list =();
+        if(defined($worm{$array[1]})){ 
+	  my ($xref_id, $stable_id, $type, $link) = split(/::/,$worm{$array[1]});
+	  
+	  my $new_xref_id=$self->get_xref($array[4],$source_id);
+	  
+	  if(!defined($new_xref_id)){
+	    $new_xref_id = $self->add_xref($array[4],undef,$array[4],"", $source_id, $species_id);
+	      $count++;
+	  }
+	  if(!defined($self->get_direct_xref($stable_id,$type, $array[6]))){
+	    $self->add_direct_xref($new_xref_id, $stable_id, $type, $array[6]);
+	  }
+	}
       }
       elsif($array[0] =~ /^ZFIN/){
-#ZFIN    ZDB-GENE-030131-5418    rfng            GO:0030902      ZFIN:ZDB-PUB-050125-4|PMID:15659486     IMP     ZFIN:ZDB-MRPHLNO-050308-5     radical fringe homolog (Drosophila)              gene    taxon:7955      20050310        ZFIN
+	#ZFIN    ZDB-GENE-030131-5418    rfng            GO:0030902      ZFIN:ZDB-PUB-050125-4|PMID:15659486     IMP     ZFIN:ZDB-MRPHLNO-050308-5     radical fringe homolog (Drosophila)              gene    taxon:7955      20050310        ZFIN
         if(!defined($fishset)){
           $fishset = 1;
           %fish = %{XrefParser::BaseParser->get_valid_xrefs_for_dependencies
