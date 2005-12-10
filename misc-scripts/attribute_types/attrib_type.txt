@@ -116,7 +116,7 @@
 # Vega annotation stats
 44	AnnotSeqLength	Annotated sequence length	Total length of annotated clone sequence
 45	TotCloneNum	Total number of clones	Total number of clones
-46	NumAnnotClone	Number of annotated clones	Number of annotated clones
+46	NumAnnotClone	Number of fully annotated clones	Number of fully annotated clones
 
 # Acknowledgements for manual annotation of this seq_region
 47	ack	Acknowledgement		Acknowledgement
