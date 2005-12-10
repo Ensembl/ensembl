@@ -172,7 +172,7 @@ CREATE TABLE transcript_remark (
 
 CREATE TABLE clone_info (
   clone_info_id int(10) unsigned NOT NULL auto_increment,
-  clone_id int(10) unsigned NOT NULL default '0',
+  seq_region_id int(10) unsigned NOT NULL default '0',
   author_id int(10) default NULL,
   timestamp datetime NOT NULL default '0000-00-00 00:00:00',
   PRIMARY KEY  (clone_info_id),
@@ -201,7 +201,7 @@ CREATE TABLE clone_remark (
 
 
 CREATE TABLE current_clone_info (
-  clone_id int(10) unsigned NOT NULL default '0',
+  seq_region_id int(10) unsigned NOT NULL default '0',
   clone_info_id int(10) unsigned NOT NULL default '0',
   clone_version int(10) default NULL,
   PRIMARY KEY  (clone_id)
