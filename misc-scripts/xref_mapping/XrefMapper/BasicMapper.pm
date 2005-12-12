@@ -342,7 +342,7 @@ sub dump_subset{
     my @condition;
     if($$rspecies_id[$j] > 0){
       push @condition, "x.species_id=" . $$rspecies_id[$j];
-    }
+   }
     if($$rsource_id[$j] > 0){
       push @condition, "x.source_id=" . $$rsource_id[$j];
     }
@@ -1209,7 +1209,11 @@ sub dump_direct_xrefs {
 
   open (XREF, ">>" . $self->core->dir() . "/xref.txt");
   open (OBJECT_XREF, ">>" . $self->core->dir() . "/object_xref.txt");
+  open (GO_XREF, ">>" .$self->core->dir(). "/go_xref.txt");
 
+
+  my $go_source_id;
+  my $worm_source_id = undef;
   # Will need to look up translation stable ID from transcript stable ID, build hash table
   print "Building transcript stable ID -> translation stable ID lookup table\n";
   my %transcript_stable_id_to_translation_stable_id;
@@ -1266,12 +1270,15 @@ sub dump_direct_xrefs {
 	$count++;
 
       } else {
-
+	if(!defined($worm_source_id)){
+	  $worm_source_id = get_source_id_from_source_name($self->xref(), "wormpep_id");
+	  $go_source_id = get_source_id_from_source_name($self->xref(), "GO" );
+	}
 	# deal with UTR transcripts in Elegans and potentially others
 	# Need to link xrefs that are listed as linking to e.g. ZK829.4
 	# to each of ZK829.4.1, ZK829.4.2, ZK829.4.3
 	my $old_object_xref_id = $object_xref_id;
-	if ($source_id == get_source_id_from_source_name($self->xref(), "wormpep_id")) {
+	if ($source_id == $worm_source_id || $source_id == $go_source_id) {
 
 	  # search for matching stable IDs
 	  my $pat = $ensembl_stable_id .  '\..+';
@@ -1288,6 +1295,9 @@ sub dump_direct_xrefs {
 	      }
 	      $ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$stable_id};
 	      print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
+	      if( $source_id == $go_source_id){
+		print GO_XREF $object_xref_id . "\t" . $linkage_xref . "\n";
+	      }
 	      $object_xref_id++;
 
 	    }
@@ -1309,6 +1319,7 @@ sub dump_direct_xrefs {
 
   close(OBJECT_XREF);
   close(XREF);
+  close(GO_XREF);
 
   $xref_sth->finish();
 
@@ -1474,7 +1485,7 @@ sub dump_core_xrefs {
   open (XREF, ">$dir/xref.txt");
   open (OBJECT_XREF, ">>$dir/object_xref.txt");
   open (EXTERNAL_SYNONYM, ">$dir/external_synonym.txt");
-  open (GO_XREF, ">$dir/go_xref.txt");
+  open (GO_XREF, ">>$dir/go_xref.txt");
 
   # Cache synonyms for later use
   # Do one big query to get a list of all the synonyms; note each xref may have
@@ -1596,12 +1607,11 @@ sub dump_core_xrefs {
 	    $object_xrefs_written{$full_key} = 1;
 
 	    # Also store *parent's* query/target identity for dependent xrefs
+	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
 	    $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"target_identity"};
 	    $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"query_identity"};
 
 	    # write a go_xref with the appropriate linkage type
-	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
-
 	    $object_xref_id++;
 
 	  }
@@ -2507,24 +2517,22 @@ sub fix_mart_prob{
 
   print "$db_name is associated with both $type1 and $type2 object types\n";
 
-  if($type1 != "Translation" or $type1 |= "Transcript"){
-    print STDERR "####Cannot deal with type $type1 for $db_name!!!!\n";
-    print "####Cannot deal with type $type1 for $db_name!!!!\n";
-    return;
+  my $to;
+  if($type1 eq "Gene" or $type2 eq "Gene"){
+    $to = "Gene";
   }
-  if($type2 != "Translation" or $type2 |= "Transcript"){
-    print STDERR "####Cannot deal with type $type2 for $db_name!!!!\n";
-    print "####Cannot deal with type $type2 for $db_name!!!!\n";
-    return;
+  else{
+    $to = "Transcript";
   }
-
-  print "Therefore moving all associations from Translations to Transcripts\n";
+    
+  print "Therefore moving all associations to the ".$to."s\n";
 
 
   $ensembl_dbc->do("CREATE TABLE object_xref2 like object_xref");
 
   $ensembl_dbc->do("ALTER TABLE object_xref DROP INDEX ensembl_object_type");
 
+# Move translations onto the transcripts
   my $sql =(<<EOF);
   UPDATE object_xref, translation, xref
      SET object_xref.ensembl_object_type = 'Transcript',
@@ -2534,14 +2542,28 @@ sub fix_mart_prob{
            xref.xref_id = object_xref.xref_id AND
            xref.external_db_id = $db_id;
 EOF
-
-
-#  print $sql."\n";
-
   $ensembl_dbc->do($sql);
-
+  
+  if($to eq "Gene"){ #move transcripts to the gene
+    my $sql =(<<GENE);
+  UPDATE object_xref, transcript, xref
+     SET object_xref.ensembl_object_type = 'Gene',
+         object_xref.ensembl_id = transcript.gene_id 
+     WHERE object_xref.ensembl_object_type = 'Transcript' AND
+           object_xref.ensembl_id = transcript.transcript_id AND
+           xref.xref_id = object_xref.xref_id AND
+           xref.external_db_id = $db_id;
+GENE
+    $ensembl_dbc->do($sql);
+    
+  }
+  
+  #  print $sql."\n";
+  
+  #  $ensembl_dbc->do($sql);
+  
   $ensembl_dbc->do("INSERT IGNORE INTO object_xref2 SELECT * FROM object_xref");
-
+  
   $ensembl_dbc->do("DROP TABLE object_xref");
 
   $ensembl_dbc->do("ALTER TABLE object_xref2 RENAME object_xref");

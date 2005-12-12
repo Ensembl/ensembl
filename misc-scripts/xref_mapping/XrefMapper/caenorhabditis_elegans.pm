@@ -24,7 +24,7 @@ sub build_display_xrefs {
   my ($self, $type, $external_db) = @_;
 
   print "Setting $type display_xrefs from $type stable IDs\n";
-  my $dir = $self->dir();
+  my $dir = $self->core()->dir();
 
   my $sql = "UPDATE $type t, ${type}_stable_id s, xref x, external_db e SET t.display_xref_id=x.xref_id WHERE t.${type}_id=s.${type}_id AND s.stable_id=x.dbprimary_acc AND e.external_db_id=x.external_db_id AND e.db_name=\'${external_db}\'\n";
 
