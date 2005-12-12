@@ -32,7 +32,7 @@ use Bio::EnsEMBL::Utils::Exception qw(warning stack_trace_dump);
 use DBD::mysql;
 use DBI;
 
-use Time::HiRes qw(time);
+#use Time::HiRes qw(time);
 
 @ISA = qw(DBI::st);
 
