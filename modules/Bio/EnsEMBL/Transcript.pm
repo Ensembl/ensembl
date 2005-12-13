@@ -441,7 +441,7 @@ sub external_name {
 
   Args       : none
   Example    : none
-  Description: returns true if this transcript has a display_xref
+  Description: returns true if this transcript has a status of KNOWN.
   Returntype : 0,1
   Exceptions : none
   Caller     : general
@@ -451,7 +451,7 @@ sub external_name {
 
 sub is_known {
   my $self = shift;
-  return ($self->{'display_xref'}) ? 1 : 0;
+  return ( $self->{'status'} eq "KNOWN" );
 }
 
 
