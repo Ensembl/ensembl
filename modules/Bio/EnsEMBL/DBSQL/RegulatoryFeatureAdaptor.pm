@@ -318,16 +318,28 @@ sub fetch_all_by_factor {
 
   Arg [1]    : Bio::EnsEMBL::RegulatoryFeatures
                the regulatory feature to store in the database
-  Arg [2]    : Bio::EnsEMBL::Transcript, Bio::EnsEMBL::Gene or
+  Arg [2]    : A listref representing objects regulated by this feature;
+               Each representation has the following info;
+               Entry[0] : Bio::EnsEMBL::Transcript, Bio::EnsEMBL::Gene or
+                          Bio::EnsEMBL::Translation $ensObject
+               Entry[1] : String influence - must match one of the ENUM 
+                          values in regulatory_feature_object.influence
+               Entry[2] : String evidence - evidence for this association.
+  OR...
+  Arg [2]    : DEPRECATED Bio::EnsEMBL::Transcript, Bio::EnsEMBL::Gene or
                Bio::EnsEMBL::Translation $ensObject
                An EnsEMBL object to associate with this external database entry
-  Arg [3]    : String influence - must match one of the ENUM values in 
-               regulatory_feature_object.influence
-  Arg [4]    : String evidence - evidence for this association.
-  Example    : $regulatory_feature_adaptor->store($regulatory_feature,
-						  $ensObj, 'Transcript',
-						 'positive',
-						 'Experimental stain');
+  Arg [3]    : DEPRECATED String influence - must match one of the ENUM 
+               values in regulatory_feature_object.influence
+  Arg [4]    : DEPRECATED String evidence - evidence for this association.
+  Example    : $regulatory_feature_adaptor->store
+                  ( $regulatory_feature, [
+                                          [ $ensGene,
+                                            'positive',
+                                            'Experimental stain' ],
+                                          [ $ensTranscript,
+                                            'negative',
+                                            'score=350' ] ] );
   Description: stores regulatory features in the database
   Returntype : none
   Exceptions :
@@ -338,7 +350,12 @@ sub fetch_all_by_factor {
 =cut
 
 sub store {
-  my( $self, $feature, $ensObj, $influence, $evidence ) = @_;
+  my( $self, $feature, $ensObjs, $influence, $evidence ) = @_;
+
+  if( ref( $ensObjs ) ne 'ARRAY' ){
+    warning( "Use of sralar args is deprecated - please use a listref" );
+    $ensObjs = [[$ensObjs, $influence, $evidence]];
+  }
 
   my $rf_sth = $self->prepare(qq {INSERT into regulatory_feature
 				  (name,
@@ -389,28 +406,31 @@ sub store {
   $original->dbID($db_id);
   $original->adaptor($self);
 
-  # store relationship in regulatory_feature_object
-  if (!ref($ensObj) || 
-      (!$ensObj->isa('Bio::EnsEMBL::Gene') &&
-       !$ensObj->isa('Bio::EnsEMBL::Transcript') &&
-       !$ensObj->isa('Bio::EnsEMBL::Translation'))){
-    throw('Ensembl object must be one of Bio::EnsEMBL::Gene, Bio::EnsEMBL::Transcript or Bio::EnsEMBL::Translation');
+  # store relationships in regulatory_feature_object
+  foreach my $entry( @$ensObjs ){
+    my( $ensObj, $influence, $evidence ) = @$entry;
+
+    if (!ref($ensObj) || 
+        (!$ensObj->isa('Bio::EnsEMBL::Gene') &&
+         !$ensObj->isa('Bio::EnsEMBL::Transcript') &&
+         !$ensObj->isa('Bio::EnsEMBL::Translation'))){
+      throw('Ensembl object must be one of Bio::EnsEMBL::Gene, Bio::EnsEMBL::Transcript or Bio::EnsEMBL::Translation');
+    }
+
+    # get type from object
+    my $ensType;
+    $ensType = 'Gene' if ($ensObj->isa('Bio::EnsEMBL::Gene'));
+    $ensType = 'Transcript' if ($ensObj->isa('Bio::EnsEMBL::Transcript'));
+    $ensType = 'Translation' if ($ensObj->isa('Bio::EnsEMBL::Translation'));
+    
+    $rfo_sth->bind_param(1,$db_id,SQL_INTEGER);
+    $rfo_sth->bind_param(2,$ensType,SQL_VARCHAR);
+    $rfo_sth->bind_param(3,$ensObj->dbID,SQL_INTEGER);
+    $rfo_sth->bind_param(4,$influence,SQL_VARCHAR);
+    $rfo_sth->bind_param(5,$evidence,SQL_VARCHAR);
+    
+    $rfo_sth->execute();
   }
-
-  # get type from object
-  my $ensType;
-  $ensType = 'Gene' if ($ensObj->isa('Bio::EnsEMBL::Gene'));
-  $ensType = 'Transcript' if ($ensObj->isa('Bio::EnsEMBL::Transcript'));
-  $ensType = 'Translation' if ($ensObj->isa('Bio::EnsEMBL::Translation'));
-
-  $rfo_sth->bind_param(1,$db_id,SQL_INTEGER);
-  $rfo_sth->bind_param(2,$ensType,SQL_VARCHAR);
-  $rfo_sth->bind_param(3,$ensObj->dbID,SQL_INTEGER);
-  $rfo_sth->bind_param(4,$influence,SQL_VARCHAR);
-  $rfo_sth->bind_param(5,$evidence,SQL_VARCHAR);
-
-  $rfo_sth->execute();
-
 }
 
 
