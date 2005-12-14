@@ -754,7 +754,7 @@ CREATE TABLE meta (
 
 # Auto add schema version to database
 
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "36");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "37");
 
 ################################################################################
 #
