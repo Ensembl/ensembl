@@ -30,6 +30,7 @@ use Bio::EnsEMBL::Map::Marker;
 use Bio::EnsEMBL::Map::MapLocation;
 use Bio::EnsEMBL::Map::MarkerSynonym;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::Utils::Exception qw(warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -142,7 +143,7 @@ sub fetch_by_dbID {
   $sth->finish;
 
   unless($marker_id) {
-    $self->warn("marker with dbID=[$dbID] not present in database");
+    $self-> warning("marker with dbID=[$dbID] not present in database");
     return undef;
   }
 
