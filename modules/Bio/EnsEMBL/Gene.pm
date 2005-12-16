@@ -443,7 +443,10 @@ sub get_all_Exons {
   Example    : 
   Description: Queries the Ensembl Compara database and retrieves all
                Genes from other species that are orthologous.
-               REQUIRES properly setup Registry conf file.
+               REQUIRES properly setup Registry conf file. Meaning that
+               one of the aliases for each core db has to be "Genus species"
+               e.g. "Homo sapiens" (as in the name column in genome_db table
+               in the compara database)
   Returntype : listref [
                         Bio::EnsEMBL::Gene,
                         Bio::EnsEMBL::Compara::Homology,
