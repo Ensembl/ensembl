@@ -146,6 +146,56 @@ sub name {
   return $self->{'name'};
 }
 
+
+=head2 regulated_object_info
+
+  Arg [1]    : none
+  Example    : my $obj_info = $rf->regulated_object_info();
+  Description: Return a list of hashes describing the object(s) regulated 
+               by this feature, including influence and evidence
+  Returntype : listREF of hashrefs; { object_type => $type,
+                                      object      => Bio::EnsEMBL::Gene etc, }
+                                      influence   => $influence, 
+                                      evidence    => $evdence }
+  Exceptions : none
+  Caller     : ?
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub regulated_object_info{
+  my $self = shift;
+
+  my $sql = "SELECT ensembl_object_type, ensembl_object_id, influence, evidence
+             FROM   regulatory_feature_object
+             WHERE  regulatory_feature_id=?";
+  my $sth = $self->adaptor()->db()->dbc()->prepare($sql);
+  $sth->execute($self->dbID());
+
+  my @info = ();
+  my $db_adaptor =  $self->adaptor()->db();
+  my %obj_adaptors;
+  foreach my $row( @{$sth->fetchall_arrayref} ){
+    my %obj_info = ();
+    $obj_info{object_type} = $row->[0];
+    $obj_info{influence}   = $row->[2] if $row->[2];
+    $obj_info{evidence}    = $row->[3] if $row->[3];
+    
+    unless( $obj_adaptors{$obj_info{object_type}} ){
+      my $method = sprintf( 'get_%sAdaptor',  
+                            ucfirst( lc( $obj_info{object_type} ) ) );
+      $obj_adaptors{$obj_info{object_type}} = $db_adaptor->$method;
+    }
+    my $obj_adaptor = $obj_adaptors{$obj_info{object_type}};
+    $obj_info{object} = $obj_adaptor->fetch_by_dbID($row->[1]);
+    push @info, {%obj_info};
+  }
+  
+  return [@info];
+}
+
+
 =head2 regulated_transcripts
 
   Arg [1]    : none
@@ -203,7 +253,14 @@ sub regulated_genes {
 
   my $self = shift;
 
+  
+
+  #unless( $self->{'genes'} ){
+
+
   my ($gene_id);
+
+
 
   my $sth = $self->adaptor()->db()->dbc()->prepare("SELECT ensembl_object_id
 			                            FROM regulatory_feature_object
