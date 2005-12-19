@@ -652,7 +652,7 @@ CREATE TABLE xref (
    xref_id 		      INT unsigned not null auto_increment,
    external_db_id             int not null,
    dbprimary_acc              VARCHAR(40) not null,
-   display_label              VARCHAR(40) not null,
+   display_label              VARCHAR(255) not null,
    version                    VARCHAR(10) DEFAULT '' NOT NULL,
    description                VARCHAR(255),
 
