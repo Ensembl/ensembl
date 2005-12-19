@@ -58,7 +58,7 @@ use Bio::Seq; # exons have to have sequences...
 
 use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
-
+use Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
@@ -562,14 +562,14 @@ sub add_supporting_features {
 
 sub get_all_supporting_features {
   my $self = shift;
-  
+
   if( !exists  $self->{_supporting_evidence} )  {
     if($self->adaptor) {
       my $sfa = $self->adaptor->db->get_SupportingFeatureAdaptor();
       $self->{_supporting_evidence} = $sfa->fetch_all_by_Exon($self);
     } 
   }
-  
+   
   return $self->{_supporting_evidence} || [];
 }
 
