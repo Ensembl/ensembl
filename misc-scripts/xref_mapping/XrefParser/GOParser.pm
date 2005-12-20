@@ -84,16 +84,19 @@ sub run {
         if(!defined($wormset)){
           $wormset = 1;
           %worm = %{XrefParser::BaseParser->get_valid_xrefs_for_direct_xrefs('worm')};
-	  %worm_label = %{$self->get_label_to_accession('worm')};
         }
-	my @worm_list =();
-        if(!defined($worm{$array[1]})){ 
-	  if(defined($worm_label{$array[2]})){
-	    $array[1] = $worm_label{$array[2]};
+	my $worm_acc=$array[1];
+        if(!defined($worm{$worm_acc})){ 
+	  if(defined($worm{$array[10]})){
+	    $worm_acc = $array[10];
+	  }
+	  elsif(defined($worm{$array[2]})){
+	    $worm_acc = $array[2];
 	  }
 	}
-        if(defined($worm{$array[1]})){ 	
-	  my ($xref_id, $stable_id, $type, $link) = split(/::/,$worm{$array[1]});
+
+        if(defined($worm{$worm_acc})){ 	
+	  my ($xref_id, $stable_id, $type, $link) = split(/::/,$worm{$worm_acc});
 	  
 	  my $new_xref_id=$self->get_xref($array[4],$source_id);
 	  

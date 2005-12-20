@@ -74,6 +74,7 @@ INSERT INTO source VALUES (2000, 'CCDS', 1, 'Y', 4);
 INSERT INTO source VALUES (2400, 'wormpep_id', 1, 'Y', 4);
 INSERT INTO source VALUES (2410, 'wormbase_gene', 1, 'N',4);
 INSERT INTO source VALUES (2420, 'wormbase_transcript', 1, 'N', 4);
+INSERT INTO source VALUES (2430, 'wormbase_locus', 1, 'N', 4);
 INSERT INTO source VALUES (2440, 'wormbase_pseudogene', 1, 'N', 4);
 
 # drosphila melanogster sources 
@@ -495,7 +496,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##   WormBase 
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2400, 6239, 'ftp://ftp.sanger.ac.uk/pub/databases/wormpep/wormpep140/wormpep.table140', '', now(), now(), "WormPepParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2400, 6239, 'ftp://ftp.sanger.ac.uk/pub/databases/wormpep/wormpep150/wormpep.table150', '', now(), now(), "WormPepParser");
 
 ##   Stable ID xref transfer - note use of WormbaseDatabaseStableIDParser
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2400, 6239, 'mysql:ecs4:3350:glenn_elegans_140:ensro', '', now(), now(), "WormbaseDatabaseStableIDParser");

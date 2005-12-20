@@ -24,33 +24,45 @@ sub run {
   print STDERR "WORMPep source = $source_id\tspecies = $species_id\n";
 
   my $worm_source_id = XrefParser::BaseParser->get_source_id_for_source_name('wormpep_id');
+  my $worm_locus_id = XrefParser::BaseParser->get_source_id_for_source_name('wormbase_locus');
+
+  print STDERR "source = $worm_source_id, locus = $worm_locus_id.\n";
 
   my $xref_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$worm_source_id AND species_id=$species_id");
+  my $xref_sth2 = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$worm_locus_id AND species_id=$species_id");
 
   open(PEP,"<".$file) || die "Could not open $file\n";
 
   my ($x_count, $d_count);
 
+
   while (<PEP>) {
 
     my ($transcript, $wb, $display)  = (split(/\t/,substr($_,1)))[0,1,2];
-
-    #check if the CGC_id is present in wormpep.table
-    if ($display !~ m/\w/){ # or if ($display == '')
-      $display = $wb;
-    }
 
     # reuse or create xref
     my $xref_id;
     $xref_sth->execute($wb);
     my $xref_id = ($xref_sth->fetchrow_array())[0];
     if (!$xref_id) {
-      $xref_id = $self->add_xref($wb, undef, $display, "", $worm_source_id, $species_id);
+      $xref_id = $self->add_xref($wb, undef, $wb, "", $worm_source_id, $species_id);
       $x_count++;
     }
-
     # and direct xref
     $self->add_direct_xref($xref_id, $transcript, "transcript", "");
+    $d_count++;
+
+    if(defined($display) and length($display) > 0 ){
+      my $xref_id2;
+      $xref_sth2->execute($display);
+      my $xref_id2 = ($xref_sth2->fetchrow_array())[0];
+      if (!$xref_id2) {
+	$xref_id2 = $self->add_xref($display, undef, $display, "", $worm_locus_id, $species_id);
+	$x_count++;
+      }
+      # and direct xref
+      $self->add_direct_xref($xref_id2, $transcript, "transcript", "");
+    }
 
     $d_count++;
   }
