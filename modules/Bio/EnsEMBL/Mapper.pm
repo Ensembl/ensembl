@@ -653,7 +653,6 @@ sub add_indel_coordinates{
 
   $self->{'_is_sorted'} = 0;
   return 1;
->>>>>>> 1.31.10.1
 }
 
 
