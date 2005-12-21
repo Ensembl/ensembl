@@ -309,6 +309,77 @@ sub description {
 }
 
 
+=head2 get_all_Attributes
+
+  Arg [1]    : optional string $attrib_code
+               The code of the attribute type to retrieve values for.
+  Example    : my ($author) = @{ $gene->get_all_Attributes('author') };
+               my @gene_attributes = @{ $transcript->get_all_Attributes };
+  Description: Gets a list of Attributes of this gene.
+               Optionally just get Attrubutes for given code.
+  Returntype : listref Bio::EnsEMBL::Attribute
+  Exceptions : warning if gene does not have attached adaptor and attempts lazy
+               load.
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_Attributes {
+  my $self = shift;
+  my $attrib_code = shift;
+
+  if( ! exists $self->{'attributes' } ) {
+    if(!$self->adaptor() ) {
+      return [];
+    }
+
+    my $attribute_adaptor = $self->adaptor->db->get_AttributeAdaptor();
+    $self->{'attributes'} = $attribute_adaptor->fetch_all_by_Gene($self);
+  }
+
+  if( defined $attrib_code ) {
+    my @results = grep { uc($_->code()) eq uc($attrib_code) }
+    @{$self->{'attributes'}};
+    return \@results;
+  } else {
+    return $self->{'attributes'};
+  }
+}
+
+
+=head2 add_Attributes
+
+  Arg [1...] : Bio::EnsEMBL::Attribute $attribute
+               You can have more Attributes as arguments, all will be added.
+  Example    : $gene->add_Attributes($author_attribute);
+  Description: Adds an Attribute to the Gene. If you add an attribute before
+               you retrieve any from database, lazy load will be disabled.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub add_Attributes {
+  my $self = shift;
+  my @attribs = @_;
+
+  if( ! exists $self->{'attributes'} ) {
+    $self->{'attributes'} = [];
+  }
+
+  for my $attrib ( @attribs ) {
+    if( ! $attrib->isa( "Bio::EnsEMBL::Attribute" )) {
+     throw( "Argument to add_Attribute has to be an Bio::EnsEMBL::Attribute" );
+    }
+    push( @{$self->{'attributes'}}, $attrib );
+  }
+
+  return;
+}
+
 
 =head2 add_DBEntry
 

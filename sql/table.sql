@@ -657,7 +657,7 @@ CREATE TABLE xref (
    description                VARCHAR(255),
 
    PRIMARY KEY( xref_id ),
-   UNIQUE KEY id_index( dbprimary_acc, external_db_id ),
+   UNIQUE KEY id_index( dbprimary_acc, external_db_id, version ),
    KEY display_index ( display_label )
 
 ) COLLATE=latin1_swedish_ci;
@@ -905,7 +905,19 @@ CREATE TABLE transcript_attrib (
   KEY transcript_idx( transcript_id )
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
+################################################################################
+#
+# Table structure for table 'gene_attrib'
+#
 
+CREATE TABLE gene_attrib (
+  gene_id                     int(10) unsigned NOT NULL default '0',
+  attrib_type_id              smallint(5) unsigned NOT NULL default '0',
+  value                       varchar(255) NOT NULL default '',
+
+  KEY type_val_idx( attrib_type_id, value ),
+  KEY gene_idx( gene_id )
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 ################################################################################

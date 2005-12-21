@@ -121,6 +121,49 @@ sub fetch_all_by_MiscFeature {
 }
 
 
+=head2 fetch_all_by_Gene
+
+  Arg [1]    : Bio::EnsEMBL::Gene $gene
+  Example    : @attributes = @{ $attrib_adaptor->fetch_all_by_Gene($gene) };
+  Description: Fetches all attributes for a given Gene
+  Returntype : Bio::EnsEMBL::Attribute
+  Exceptions : throw if incorrect arguments
+               throw if provided MiscFeature does not have a dbID
+  Caller     : Gene
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_Gene {
+  my $self = shift;
+  my $gene = shift;
+
+  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+    throw('Gene argument is required.');
+  }
+
+  my $gid = $gene->dbID();
+
+  if(!defined($gid)) {
+    throw("Gene must have dbID.");
+  }
+
+  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
+                           "       ga.value " .
+                           "FROM gene_attrib ga, attrib_type at " .
+                           "WHERE ga.gene_id = ? " .
+                           "AND   at.attrib_type_id = ga.attrib_type_id");
+
+  $sth->execute($gid);
+
+  my $results = $self->_obj_from_sth($sth);
+
+  $sth->finish();
+
+  return $results;
+}
+
+
 =head2 fetch_all_by_Transcript
 
   Arg [1]    : Bio::EnsEMBL::Transcript $tr
@@ -362,6 +405,59 @@ sub store_on_MiscFeature {
 }
 
 
+=head2 store_on_Gene
+
+  Arg [1]    : Bio::EnsEMBL::Gene $gene
+  Arg [2]    : listref Bio::EnsEMBL::Attribute $attribs
+  Example    : $attribute_adaptor->store_on_Gene($my_gene, $attributes)
+  Description: Stores all the attributes on the Gene. 
+               Will duplicate things if called twice.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               throw if provided Gene is not stored in this database
+  Caller     : general, GeneAdaptor
+  Status     : Stable
+
+=cut
+
+sub store_on_Gene {
+  my $self = shift;
+  my $gene = shift;
+  my $attributes = shift;
+
+  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+    throw("Gene argument expected");
+  }
+
+  if(ref($attributes) ne 'ARRAY') {
+    throw("Reference to list of Bio::EnsEMBL::Attribute objects argument " .
+          "expected");
+  }
+
+  my $db = $self->db();
+  if(!$gene->is_stored($db)) {
+    throw("Gene is not stored in this DB - cannot store attributes.");
+  }
+
+  my $gene_id = $gene->dbID();
+
+  my $sth = $self->prepare( "INSERT into gene_attrib ".
+			    "SET gene_id = ?, attrib_type_id = ?, ".
+			    "value = ? " );
+
+  for my $attrib ( @$attributes ) {
+    if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
+      throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
+            "argument expected.");
+    }
+    my $atid = $self->_store_type( $attrib );
+    $sth->execute( $gene_id, $atid, $attrib->value() );
+  }
+
+  return;
+}
+
+
 =head2 store_on_Transcript
 
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript
@@ -554,6 +650,54 @@ sub remove_from_MiscFeature {
   $sth->execute($mf->dbID());
 
   $sth->finish();
+
+  return;
+}
+
+
+=head2 remove_from_Gene
+
+  Arg [1]    : Bio::EnsEMBL::Gene $gene
+               The Gene to remove attributes from
+  Arg [2]    : (optional) dbID $attrib_type_id
+               Database id of attributes to remove
+  Example    : $attribute_adaptor->remove_from_Gene($gene);
+  Description: Removes all attributes which are stored in the database on
+               the provided Gene.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               throw if gene not stored
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub remove_from_Gene {
+  my $self = shift;
+  my $gene = shift;
+  my $attrib_type_id = shift;
+
+  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+    throw("Bio::EnsEMBL::Gene argument expected.");
+  }
+
+  my $db = $self->db();
+
+  if (! $gene->is_stored($db)) {
+    throw("Gene is not stored in the database.");
+  }
+  
+  if (defined $attrib_type_id) {
+    my $sth = $self->prepare("DELETE FROM gene_attrib " .
+        "WHERE gene_id = ? AND attrib_type_id = ?");
+    $sth->execute($gene->dbID, $attrib_type_id);
+    $sth->finish;
+  } else {
+    my $sth = $self->prepare("DELETE FROM gene_attrib " .
+        "WHERE gene_id = ?");
+    $sth->execute($gene->dbID);
+    $sth->finish();
+  }
 
   return;
 }

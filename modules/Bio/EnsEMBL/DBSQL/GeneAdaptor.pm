@@ -908,6 +908,11 @@ sub store {
   $original->adaptor( $self );
   $original->dbID( $gene_dbID );
 
+  # store gene attributes if there are any
+  my $attr_adaptor = $db->get_AttributeAdaptor();
+  $attr_adaptor->store_on_Gene($gene,
+                               $gene->get_all_Attributes);
+
   return $gene_dbID;
 }
 
@@ -955,6 +960,10 @@ sub remove {
   my $sth = $self->prepare("delete from alt_allele where gene_id = ?");
   $sth->execute($gene->dbID());
   $sth->finish();
+
+  # remove the attributes associated with this transcript
+  my $attrib_adaptor = $self->db->get_AttributeAdaptor;  
+  $attrib_adaptor->remove_from_Gene($gene);
 
   # remove all of the transcripts associated with this gene
 
