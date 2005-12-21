@@ -68,6 +68,15 @@ use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 use Bio::EnsEMBL::ProjectionSegment;
 use Bio::EnsEMBL::Registry;
 
+use Bio::EnsEMBL::StrainSlice;
+use Bio::EnsEMBL::IndividualSlice;
+use Bio::EnsEMBL::IndividualSliceFactory;
+use Bio::EnsEMBL::Mapper::RangeRegistry;
+
+use Data::Dumper;
+
+=======
+
 my $reg = "Bio::EnsEMBL::Registry";
 
 @ISA = qw(Bio::PrimarySeqI);
@@ -1393,6 +1402,281 @@ sub get_all_VariationFeatures{
   }
 }
 
+
+=head2 get_all_IndividualSlice
+
+    Args        : none
+    Example     : my $individualSlice = $slice->get_by_Population($population);
+    Description : Gets the specific Slice for all the individuls in the population
+    ReturnType  : listref of Bio::EnsEMB::IndividualSlice
+    Exceptions  : none
+    Caller      : general
+
+=cut
+
+sub get_all_IndividualSlice{
+    my $self = shift;
+
+    my $individualSliceFactory = Bio::EnsEMBL::IndividualSliceFactory->new(
+									   -START   => $self->{'start'},
+									   -END     => $self->{'end'},
+									   -STRAND  => $self->{'strand'},
+									   -ADAPTOR => $self->{'adaptor'},
+									   -SEQ_REGION_NAME => $self->{'seq_region_name'},
+									   -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
+									   -COORD_SYSTEM    => $self->{'coord_system'},
+									   );
+    return $individualSliceFactory->get_all_IndividualSlice();
+}
+
+=head2 get_by_Individual
+
+    Arg[1]      : Bio::EnsEMBL::Variation::Individual $individual
+    Example     : my $individualSlice = $slice->get_by_Individual($individual);
+    Description : Gets the specific Slice for the individual
+    ReturnType  : Bio::EnsEMB::IndividualSlice
+    Exceptions  : none
+    Caller      : general
+
+=cut
+
+sub get_by_Individual{
+    my $self = shift;
+    my $individual = shift;
+    
+    return Bio::EnsEMBL::IndividualSlice->new(
+					  -START   => $self->{'start'},
+					  -END     => $self->{'end'},
+					  -STRAND  => $self->{'strand'},
+					  -ADAPTOR => $self->{'adaptor'},
+#					  -SEQ     => $self->{'seq'},
+					  -SEQ_REGION_NAME => $self->{'seq_region_name'},
+					  -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
+					  -COORD_SYSTEM    => $self->{'coord_system'},
+					  -INDIVIDUAL     => $individual);
+
+}
+
+
+
+=head2 get_by_strain
+
+    Arg[1]      : string $strain
+    Example     : my $strainSlice = $slice->get_by_strain($strain);
+    Description : Gets the specific Slice for the strain
+    ReturnType  : Bio::EnsEMB::StrainSlice
+    Exceptions  : none
+    Caller      : general
+
+=cut
+
+sub get_by_strain{
+    my $self = shift;
+    my $strain_name = shift;
+    
+    return Bio::EnsEMBL::StrainSlice->new(
+					  -START   => $self->{'start'},
+					  -END     => $self->{'end'},
+					  -STRAND  => $self->{'strand'},
+					  -ADAPTOR => $self->{'adaptor'},
+					  -SEQ     => $self->{'seq'},
+					  -SEQ_REGION_NAME => $self->{'seq_region_name'},
+					  -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
+					  -COORD_SYSTEM    => $self->{'coord_system'},
+					  -STRAIN_NAME     => $strain_name);
+
+}
+
+sub calculate_theta{
+    my $self = shift;
+    my $strains = shift;
+    my $feature = shift; #optional parameter. Name of the feature in the Slice you want to calculate
+
+    if(!$self->adaptor()) {
+	warning('Cannot get variation features without attached adaptor');
+	return 0;
+    }
+    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+    
+    unless($variation_db) {
+	warning("Variation database must be attached to core database to " .
+		"retrieve variation information" );
+	return 0;
+    }
+
+    #need to get coverage regions for the slice in the different strains
+    my $coverage_adaptor = $variation_db->get_ReadCoverageAdaptor;
+    my $strain;
+    my $differences = [];
+    my $slices = [];
+    if ($coverage_adaptor){
+	my $num_strains = scalar(@{$strains}) +1;
+	if (!defined $feature){
+	    #we want to calculate for the whole slice
+	    push @{$slices}, $self; #add the slice as the slice to calculate the theta value
+	}
+	else{
+	    #we have features, get the slices for the different features
+	    my $features = $self->get_all_Exons();
+	    map {push @{$slices},$_->feature_Slice} @{$features}; #add the slices of the features
+	}
+	my $length_regions = 0;
+	my $snps = 0;
+	my $theta = 0;
+	my $last_position = 0;
+	#get all the differences in the slice coordinates
+	foreach my $strain_name (@{$strains}){
+	    my $strain = $self->get_by_strain($strain_name); #get the strainSlice for the strain
+	    
+	    my $results = $strain->get_all_differences_Slice;
+	    push @{$differences}, @{$results} if (defined $results);
+	}
+	#when we finish, we have, in max_level, the regions covered by all the sample
+	#sort the differences by the genomic position
+	my @differences_sorted = sort {$a->start <=> $b->start} @{$differences};
+	foreach my $slice (@{$slices}){	    	    	   
+	    my $regions_covered = $coverage_adaptor->fetch_all_regions_covered($slice,$strains);
+	    if (defined $regions_covered){
+		foreach my $range (@{$regions_covered}){
+		    $length_regions += ($range->[1] - $range->[0]) + 1; #add the length of the genomic region
+		    for (my $i = $last_position;$i<@differences_sorted;$i++){
+#		foreach (@differences_sorted){
+			if ($differences_sorted[$i]->start >= $range->[0] && $differences_sorted[$i]->end <= $range->[1]){		   		 
+			    $snps++; #count differences in the region
+			}
+			elsif ($differences_sorted[$i]->end > $range->[1]){
+			    $last_position = $i;
+			    last;
+			}
+		    }
+		}
+		#when all the ranges have been iterated, calculate rho	    
+		#this is an intermediate variable called a in the formula
+		#  a = sum i=2..strains 1/i-1
+	    }
+	}
+	my $a = _calculate_a($num_strains); 	   
+	$theta = $snps / ($a * $length_regions);
+	return $theta;
+    }
+    else{
+	return 0;
+    }
+}
+
+
+
+
+sub _calculate_a{
+    my $max_level = shift;
+    
+    my $a = 0;
+    for (my $i = 2; $i <= $max_level+1;$i++){
+	$a += 1/($i-1);
+    }
+    return $a;
+}
+
+sub calculate_pi{
+    my $self = shift;
+    my $strains = shift;
+    my $feature = shift;
+
+    if(!$self->adaptor()) {
+	warning('Cannot get variation features without attached adaptor');
+	return 0;
+    }
+    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+    
+    unless($variation_db) {
+	warning("Variation database must be attached to core database to " .
+		"retrieve variation information" );
+	return 0;
+    }
+
+    #need to get coverage regions for the slice in the different strains
+    my $coverage_adaptor = $variation_db->get_ReadCoverageAdaptor;
+    my $differences = [];
+    my $slices = [];
+    if ($coverage_adaptor){
+	my $num_strains = scalar(@{$strains}) +1;
+	if (!defined $feature){
+	    #we want to calculate for the whole slice
+	    push @{$slices}, $self; #add the slice as the slice to calculate the theta value
+	}
+	else{
+	    #we have features, get the slices for the different features
+	    my $features = $self->get_all_Exons();
+	    map {push @{$slices},$_->feature_Slice} @{$features}; #add the slices of the features
+	}
+	my @range_differences = ();
+	my $pi = 0;
+	my $regions = 0;	    
+	my $last_position = 0; #last position visited in the sorted list of differences
+	my $triallelic = 0;
+	my $is_triallelic = 0;
+	foreach my $slice (@{$slices}){	    
+	    foreach my $strain_name (@{$strains}){
+		my $strain = $slice->get_by_strain($strain_name); #get the strainSlice for the strain	       
+		my $results = $strain->get_all_differences_Slice;
+		push @{$differences}, @{$results} if (defined $results);
+	    }
+	    my @differences_sorted = sort {$a->start <=> $b->start} @{$differences};
+
+	    my $regions_covered = $coverage_adaptor->fetch_all_regions_covered($slice,$strains);	    
+	    #when we finish, we have, in max_level, the regions covered by all the sample
+	    #sort the differences	    
+	    if (defined $regions_covered){
+		foreach my $range (@{$regions_covered}){
+		    for (my $i = $last_position;$i<@differences_sorted;$i++){		    
+			if ($differences_sorted[$i]->start >= $range->[0] && $differences_sorted[$i]->end <= $range->[1]){		   
+			    #check wether it is the same region or different
+			    if (!defined $range_differences[0] || ($differences_sorted[$i]->start == $range_differences[0]->start)){
+				if (defined $range_differences[0] && ($differences_sorted[$i]->allele_string ne $range_differences[0]->allele_string)){
+				    $is_triallelic = 1;
+				}
+				push @range_differences, $differences_sorted[$i];
+			    }
+			    else{
+				#new site, calc pi for the previous one
+				$pi += 2 * (@range_differences/($num_strains)) * ( 1 - (@range_differences/$num_strains));
+				if ($is_triallelic) {
+				    $triallelic++;
+				    $is_triallelic = 0;
+				}
+				$regions++;
+				@range_differences = ();
+				#and start a new range
+				push @range_differences, $differences_sorted[$i];
+			    }
+			}
+			elsif ($differences_sorted[$i]->end > $range->[1]){
+			    $last_position = $i;
+			    last;
+			}
+		    }
+		    #calculate pi for last site, if any
+		    if (defined $range_differences[0]){
+			$pi += 2 * (@range_differences/$num_strains) * ( 1 - (@range_differences/$num_strains));
+			$regions++;
+		    }
+		}
+	    }
+	    $pi = $pi / $regions; #calculate average pi
+	    print "Regions with variations in region $regions and triallelic $triallelic\n\n";
+	}
+	return $pi;
+    }
+    else{
+	return 0;
+    }
+    
+}
+
+
+
+
+
 =head2 get_all_genotyped_VariationFeatures
 
     Args       : none
@@ -1881,6 +2165,7 @@ sub get_all_SearchFeatures {
 
   my $offset = $self->start-1;
 
+
   my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket, $self->chr_name, $self->start, $self->end) : [];
 
   foreach( @$features ) { 
@@ -1888,6 +2173,7 @@ sub get_all_SearchFeatures {
     $_->end(   $_->end   - $offset );
   };
   return $features;
+
 }
 
 =head2 get_all_AssemblyExceptionFeatures
