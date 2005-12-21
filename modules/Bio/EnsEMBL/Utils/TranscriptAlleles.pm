@@ -86,8 +86,19 @@ sub get_all_ConsequenceType {
   my @out; #array containing the consequence types of the alleles in the transcript
   foreach my $allele (@alleles_ordered) {
     #get consequence type of the AlleleFeature
-#    my $new_allele = $allele->transform('chromosome');
-    my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start,$allele->end,$allele->strand,[$allele->allele_string]);
+    # my $new_allele = $allele->transform('chromosome');
+    #my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start,$allele->end,$allele->strand,[$allele->allele_string]);
+    ### REAL HACK BY js5 because something is borked in TranscriptMapper
+    ### This relies on the Allele being of the form i.e. a SNP! [ACGT-](/[ACGT-])+
+    ### The rest don't work anyway until we have a AlignStrainSlice
+    ### MUST BE SORTED....
+    my $string = $allele->allele_string;
+    if( $transcript->strand != $allele->strand ) {
+      $string =~tr/ACGT/TGCA/;
+    }
+
+    my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start, $allele->end, $transcript->strand, [$string]);
+
     #calculate the consequence type of the Allele
     my $ref_consequences = type_variation($transcript,"",$consequence_type);
     if ($allele->start != $allele->end){
@@ -97,7 +108,12 @@ sub get_all_ConsequenceType {
     }
 
     my $new_consequence = shift @{$ref_consequences};
-    if (!defined $new_consequence->aa_start){
+    if (! defined $new_consequence ) {
+      push @out, $consequence_type; # should be empty
+      next;
+    }
+
+    if ( !defined $new_consequence->aa_start){
 	push @out, $new_consequence;
 	next;
     }
