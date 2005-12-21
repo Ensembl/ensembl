@@ -65,7 +65,7 @@ use Data::Dumper;
 							      -strain_name => $strain_name);
     Description : Creates a new Bio::EnsEMBL::StrainSlice object that will contain a shallow copy of the
                   Slice object, plus additional information such as the Strain this Slice refers to
-                  and listref of Bio::EnsEMBL::Variation::VariationFeatures of differences with the
+                  and listref of Bio::EnsEMBL::Variation::AlleleFeatures of differences with the
                   reference sequence
     ReturnType  : Bio::EnsEMBL::StrainSlice
     Exceptions  : none
@@ -95,9 +95,9 @@ sub new{
 	return '';
     }
     
-    my $vf_adaptor = $variation_db->get_VariationFeatureAdaptor;
+    my $af_adaptor = $variation_db->get_AlleleFeatureAdaptor;
     
-    if( $vf_adaptor ) {
+    if( $af_adaptor ) {
 	#get the Population for the given strain
 	my $pop_adaptor = $variation_db->get_PopulationAdaptor;
 
@@ -105,8 +105,8 @@ sub new{
 	    my $population = $pop_adaptor->fetch_by_name($self->{'strain_name'});
 	    #check that the population returned is a strain
 	    if ((defined $population) && ($population->is_strain)){
-		my $variation_features = $vf_adaptor->fetch_all_by_Slice_Population($self,$population);
-		$self->{'variationFeatures'} = $variation_features;
+		my $allele_features = $af_adaptor->fetch_all_by_Slice_Population($self,$population);
+		$self->{'alleleFeatures'} = $allele_features;
 		return $self;
 	    }
 	    else{ 
@@ -151,7 +151,7 @@ sub seq {
 
     # sort edits in reverse order to remove complication of
     # adjusting downstream edits
-    my @variation_features_ordered = sort {$b->start() <=> $a->start()} @{$self->{'variationFeatures'}} if (defined $self->{'variationFeatures'});
+    my @variation_features_ordered = sort {$b->start() <=> $a->start()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
 
     foreach my $vf (@variation_features_ordered){
 	$vf->apply_edit($reference_sequence); #change, in the reference sequence, the vf
@@ -178,7 +178,7 @@ sub seq {
 sub get_all_differences_Slice{
     my $self = shift;
 
-    return $self->{'variationFeatures'};
+    return $self->{'alleleFeatures'};
 }
 
 =head2 get_all_differences_StrainSlice
@@ -199,29 +199,29 @@ sub get_all_differences_StrainSlice{
     if (!ref($strainSlice) || !$strainSlice->isa('Bio::EnsEMBL::StrainSlice')){
 	throw('Bio::EnsEMBL::StrainSlice arg expected');
     }
-    if ( @{$self->{'variationFeatures'}} == 0 && @{$strainSlice->{'variationFeatures'}} == 0){
+    if ( @{$self->{'alleleFeatures'}} == 0 && @{$strainSlice->{'alleleFeatures'}} == 0){
 	return undef; #there are no differences in any of the Strains
 	
     }
     my $differences; #differences between strains
-    if (@{$strainSlice->{'variationFeatures'}} == 0){
+    if (@{$strainSlice->{'alleleFeatures'}} == 0){
 	#need to create a copy of VariationFeature
-	foreach my $difference (@{$self->{'variationFeatures'}}){
+	foreach my $difference (@{$self->{'alleleFeatures'}}){
 	    my %vf = %$difference;
 	    push @{$differences},bless \%vf,ref($difference);
 	}
     }
-    elsif (@{$self->{'variationFeatures'}} == 0){
+    elsif (@{$self->{'alleleFeatures'}} == 0){
 	#need to create a copy of VariationFeature, but changing the allele by the allele in the reference
-	foreach my $difference (@{$strainSlice->{'variationFeatures'}}){
+	foreach my $difference (@{$strainSlice->{'alleleFeatures'}}){
 	    push @{$differences}, $strainSlice->_convert_difference($difference);
 	}
     }
     else{
 	#both strains have differences
 	#create a hash with the differences in the self strain slice
-	my %variation_features_self = map {$_->start => $_} @{$self->{'variationFeatures'}};
-	foreach my $difference (@{$strainSlice->{'variationFeatures'}}){
+	my %variation_features_self = map {$_->start => $_} @{$self->{'alleleFeatures'}};
+	foreach my $difference (@{$strainSlice->{'alleleFeatures'}}){
 	    #there is no difference in the other strain slice, convert the allele
 	    if (!defined $variation_features_self{$difference->start}){
 		push @{$differences},$strainSlice->_convert_difference($difference);
@@ -331,7 +331,7 @@ sub sub_Slice {
   my $vf_end;
   my $offset = $subSlice->start - $self->start;
 
-  foreach my $variationFeature (@{$self->{'variationFeatures'}}){
+  foreach my $variationFeature (@{$self->{'alleleFeatures'}}){
       #calculate the new position of the variation_feature in the subSlice
       $vf_start = $variationFeature->start - $offset;
       $vf_end = $variationFeature->end - $offset;
@@ -346,7 +346,7 @@ sub sub_Slice {
 	  push @{$new_variations}, $test;
       }
   }
-  $subSlice->{'variationFeatures'} = $new_variations;
+  $subSlice->{'alleleFeatures'} = $new_variations;
   return $subSlice;
 
 }
@@ -420,7 +420,7 @@ sub mapper{
 	my $mapper = Bio::EnsEMBL::Mapper->new('Slice','StrainSlice');
 	#align with Slice
 	#get all the VariationFeatures in the strain Slice, from start to end in the Slice
-	my @variation_features_ordered = sort {$a->start() <=> $b->start()} @{$self->{'variationFeatures'}} if (defined $self->{'variationFeatures'});
+	my @variation_features_ordered = sort {$a->start() <=> $b->start()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
 	
 	my $start_slice = 1;
 	my $end_slice;
