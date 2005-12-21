@@ -32,7 +32,6 @@ Post general queries to B<ensembl-dev@ebi.ac.uk>
 
 package Bio::EnsEMBL::Mapper::IndelCoordinate;
 use Bio::EnsEMBL::Mapper::Coordinate;
-use Bio::EnsEMBL::Mapper::Gap;
 use vars qw(@ISA);
 use strict;
 
@@ -44,7 +43,7 @@ use strict;
   Arg [1]    : Bio::EnsEMBL::Mapper::Gap $gap
   Arg [2]    : Bio::EnsEMBL::Mapper::Coordinate $coordinate
   Example    : $indelCoord = Bio::EnsEMBL::Mapper::IndelCoordinate($gap, $coordinate);
-  Description: Creates a new IndelCoordinate object from a gap and a coordinate.
+  Description: Creates a new IndelCoordinate object.
   Returntype : Bio::EnsEMBL::Mapper::IndelCoordinate
   Exceptions : none
   Caller     : Bio::EnsEMBL::Mapper
