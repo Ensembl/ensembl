@@ -32,6 +32,7 @@ Post general queries to B<ensembl-dev@ebi.ac.uk>
 
 package Bio::EnsEMBL::Mapper::IndelCoordinate;
 use Bio::EnsEMBL::Mapper::Coordinate;
+use Bio::EnsEMBL::Mapper::Gap;
 use vars qw(@ISA);
 use strict;
 

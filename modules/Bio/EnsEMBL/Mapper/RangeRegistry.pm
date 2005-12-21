@@ -145,7 +145,7 @@ sub check_and_register {
   }
 
   if($start > $end) {
-    throw("start argument must be less than end argument");
+    throw("start argument must be less than end argument: $start and $end");
   }
 
   if($rstart >$rend) {
@@ -224,7 +224,8 @@ sub check_and_register {
 
     $gap_start = ($rstart > $pend)   ? $rstart : $pend+1;
 
-    if($pstart > $rend && !defined($r_idx)) {
+#    if($pstart > $rend && !defined($r_idx)) {
+    if($pend >= $rend && !defined($r_idx)) {
       $r_idx = $CUR;
       last;
     }
