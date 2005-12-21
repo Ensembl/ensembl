@@ -1213,7 +1213,11 @@ sub dump_direct_xrefs {
 
 
   my $go_source_id;
-  my $worm_source_id = undef;
+  my $worm_pep_source_id = undef;
+  my $worm_locus_source_id = undef;
+  my $worm_gene_source_id = undef;
+  my $worm_transcript_source_id = undef;
+  
   # Will need to look up translation stable ID from transcript stable ID, build hash table
   print "Building transcript stable ID -> translation stable ID lookup table\n";
   my %transcript_stable_id_to_translation_stable_id;
@@ -1270,15 +1274,20 @@ sub dump_direct_xrefs {
 	$count++;
 
       } else {
-	if(!defined($worm_source_id)){
-	  $worm_source_id = get_source_id_from_source_name($self->xref(), "wormpep_id");
+	if(!defined($worm_pep_source_id)){
+	  $worm_pep_source_id = get_source_id_from_source_name($self->xref(), "wormpep_id");
+	  $worm_locus_source_id = get_source_id_from_source_name($self->xref(), "wormbase_locus");
+	  $worm_gene_source_id = get_source_id_from_source_name($self->xref(), "wormbase_gene");
+	  $worm_transcript_source_id = get_source_id_from_source_name($self->xref(), "wormbase_transcript");
 	  $go_source_id = get_source_id_from_source_name($self->xref(), "GO" );
 	}
 	# deal with UTR transcripts in Elegans and potentially others
 	# Need to link xrefs that are listed as linking to e.g. ZK829.4
 	# to each of ZK829.4.1, ZK829.4.2, ZK829.4.3
 	my $old_object_xref_id = $object_xref_id;
-	if ($source_id == $worm_source_id || $source_id == $go_source_id) {
+	if ($source_id == $worm_pep_source_id || $source_id == $go_source_id 
+	    || $source_id == $worm_locus_source_id || $source_id == $worm_gene_source_id
+	    || $source_id == $worm_transcript_source_id) {
 
 	  # search for matching stable IDs
 	  my $pat = $ensembl_stable_id .  '\..+';
