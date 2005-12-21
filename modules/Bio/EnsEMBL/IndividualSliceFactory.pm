@@ -4,10 +4,9 @@ use strict;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 use Bio::EnsEMBL::Slice;
-use Bio::EnsEMBL::IndividualSlice;
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
-use Time::HiRes qw(gettimeofday tv_interval);
+
 use Data::Dumper;
 
 =head2 new
@@ -19,9 +18,10 @@ sub new{
 
     #creates many IndividualSlice objects from the Population
 
-    my ($coord_system, $start, $end, $strand, $seq_region_name, $seq_region_length, $adaptor) = rearrange(['COORD_SYSTEM','START','END','STRAND','SEQ_REGION_NAME','SEQ_REGION_LENGTH', 'ADAPTOR'],@_);
+    my ($population_name, $coord_system, $start, $end, $strand, $seq_region_name, $seq_region_length, $adaptor) = rearrange(['POPULATION', 'COORD_SYSTEM','START','END','STRAND','SEQ_REGION_NAME','SEQ_REGION_LENGTH', 'ADAPTOR'],@_);
 
     return bless {
+	population_name => $population_name,
 	coord_system => $coord_system,
 	start => $start,
 	end => $end,
@@ -53,8 +53,9 @@ sub get_all_IndividualSlice{
 	#set the adaptor to retrieve data from genotype table
 	$af_adaptor->from_IndividualSlice(1);
 	#get the Individual for the given strain
+	my $population_adaptor = $variation_db->get_PopulationAdaptor;
 	my $individual_adaptor = $variation_db->get_IndividualAdaptor;
-	if ($individual_adaptor){
+	if ($population_adaptor && $individual_adaptor){
 	    $slice = Bio::EnsEMBL::Slice->new(-coord_system => $self->{'coord_system'},
 					      -start => $self->{'start'},
 					      -end => $self->{'end'},
@@ -63,10 +64,20 @@ sub get_all_IndividualSlice{
 					      -seq_region_length => $self->{'seq_region_length'},
 					      -adaptor => $self->{'adaptor'}
 					      );
-	    #get all the AlleleFeatures in the $population and the Slice given
-	    my $allele_features = $af_adaptor->fetch_all_IndividualSlice($slice);
-
-	    return $self->_rearrange_Individuals_Alleles($allele_features);	    
+	    my $population = $population_adaptor->fetch_by_name($self->{'population_name'}); 
+	    #check that there is such population in the database
+	    if (defined $population){
+		#get all the AlleleFeatures in the $population and the Slice given
+		my $allele_features = $af_adaptor->fetch_all_by_Slice($slice,$population);
+		#get Individuals in the Population
+		my $individuals = $individual_adaptor->fetch_all_by_Population($population);		
+		return $self->_rearrange_Individuals_Alleles($individuals,$allele_features);
+	    }
+	    else{ 
+		warning("Population not in the database");
+		return '';
+ 
+	    }
 	}
 	else{
 	    warning("Not possible to retrieve PopulationAdaptor from the variation database");
@@ -82,30 +93,27 @@ sub get_all_IndividualSlice{
 
 sub _rearrange_Individuals_Alleles{
     my $self = shift;
-    my $allele_features = shift;
+    my $individuals = shift;
+    my $allele_features;
     my $individual_slice;
     #create the hash with all the individuals
     my %individuals_ids;
-    my $individual;
-    my $variation_db = $self->{'adaptor'}->db->get_db_adaptor('variation');
-    my $individual_adaptor = $variation_db->get_IndividualAdaptor();
+    #foreach of the individual, create the IndividualSlice object and add it to the mapping hash
+    foreach my $individual (@{$individuals}){
+	$individual_slice = Bio::EnsEMBL::Variation::IndividualSlice->new(
+	    -coord_system => $self->{'coord_system'},
+	    -start => $self->{'$start'},
+	    -end  => $self->{'end'},
+	    -strand => $self->{'strand'},
+	    -seq_region_name => $self->{'seq_region_name'},
+	    -seq_region_length => $self->{'seq_region_length'},
+	    -individual => $individual->name);
+	
+	$individuals_ids{$individual->dbID} = $individual_slice;
+    }
+
     #and rearrange all the AlleleFeatures to the individuals
     foreach my $allele_feature (@{$allele_features}){
-	if (!defined $individuals_ids{$allele_feature->{'_sample_id'}}){
-	    $individual = $individual_adaptor->fetch_by_dbID($allele_feature->{'_sample_id'});
-
-	    #create the IndividualSlice
-	    $individual_slice = Bio::EnsEMBL::IndividualSlice->new(
-								   -coord_system => $self->{'coord_system'},
-								   -start => $self->{'start'},
-								   -end  => $self->{'end'},
-								   -strand => $self->{'strand'},
-								   -seq_region_name => $self->{'seq_region_name'},
-								   -seq_region_length => $self->{'seq_region_length'},
-								   -individual => $individual->name,
-								   -sample_id => $individual->dbID);
-	    $individuals_ids{$allele_feature->{'_sample_id'}} = $individual_slice;
-	}
 	$individuals_ids{$allele_feature->{'_sample_id'}}->add_AlleleFeature($allele_feature);
     }
     my @result = values %individuals_ids;
