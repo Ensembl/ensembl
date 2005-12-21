@@ -99,11 +99,12 @@ sub new{
     my $class = ref($caller) || $caller;
 
     #create the IndividualSlice object as the Slice, plus the individual attribute
-    my ($individual_name) = rearrange(['INDIVIDUAL'],@_);
+    my ($individual_name, $sample_id) = rearrange(['INDIVIDUAL', 'SAMPLE_ID'],@_);
 
     my $self = $class->SUPER::new(@_);
 
     $self->{'individual_name'} = $individual_name;
+    $self->{'sample_id'} = $sample_id;
 
     return $self;
 
@@ -416,7 +417,6 @@ sub sub_Slice {
 
   my $new_alleles; #reference to an array that will contain the variationFeatures in the new subSlice
   #update the VariationFeatures in the sub_Slice of the Individual
-  my @results;
   my %af;
   my $new_allele_feature;
   foreach my $alleleFeature (@{$self->{'alleleFeatures'}}){      

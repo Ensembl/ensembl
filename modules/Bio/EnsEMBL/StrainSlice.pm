@@ -387,7 +387,7 @@ sub sub_Slice {
 
   my $new_alleles; #reference to an array that will contain the variationFeatures in the new subSlice
   #update the VariationFeatures in the sub_Slice of the Strain
-  my @results;
+
   my %af;
   my $new_allele_feature;
   foreach my $alleleFeature (@{$self->{'alleleFeatures'}}){      
