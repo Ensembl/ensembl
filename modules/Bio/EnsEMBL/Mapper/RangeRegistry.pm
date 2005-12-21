@@ -226,7 +226,8 @@ sub check_and_register {
 
     $gap_start = ($rstart > $pend)   ? $rstart : $pend+1;
 
-    if($pstart > $rend && !defined($r_idx)) {
+#    if($pstart > $rend && !defined($r_idx)) {
+    if($pend >= $rend && !defined($r_idx)) {
       $r_idx = $CUR;
       last;
     }
