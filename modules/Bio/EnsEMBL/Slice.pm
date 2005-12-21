@@ -75,8 +75,6 @@ use Bio::EnsEMBL::Mapper::RangeRegistry;
 
 use Data::Dumper;
 
-=======
-
 my $reg = "Bio::EnsEMBL::Registry";
 
 @ISA = qw(Bio::PrimarySeqI);
