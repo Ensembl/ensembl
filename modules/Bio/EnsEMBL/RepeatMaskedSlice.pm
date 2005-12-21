@@ -52,7 +52,7 @@ use warnings;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
-
+use Bio::EnsEMBL::Utils::Exception;
 
 use vars qw(@ISA);
 
@@ -279,8 +279,13 @@ sub subseq {
 
   my $repeats = [];
 
-  my $subslice = $seq_region_slice->sub_Slice( ($block_min << $BLOCK_PWR)+1,
-						(($block_max+1)<<$BLOCK_PWR ));
+  my $sub_start = ($block_min << $BLOCK_PWR)+1;
+  my $sub_end = ($block_max+1)<<$BLOCK_PWR;
+  if ($sub_end > $seq_region_slice->length) {
+    $sub_end =  $seq_region_slice->length ;
+  }
+
+  my $subslice = $seq_region_slice->sub_Slice( $sub_start, $sub_end);
 
   foreach my $l (@$logic_names) {
     push @{$repeats}, @{$subslice->get_all_RepeatFeatures($l)};
