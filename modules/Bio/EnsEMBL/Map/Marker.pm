@@ -424,7 +424,7 @@ sub get_MapLocation {
   #lazy-load the map locations if they have not been fetched yet
   if(!exists $self->{'map_locations'} && 
      $self->{'adaptor'} && $self->{'dbID'}) {
-    $self->adaptor->fetch_attributes;
+    $self->adaptor->fetch_attributes($self);
   }
 
   unless($map_name) {
