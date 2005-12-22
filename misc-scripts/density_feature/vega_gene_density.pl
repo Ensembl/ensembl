@@ -117,30 +117,31 @@ my $chr_slices = $support->split_chromosomes_by_size(5000000);
 
 # known biotype/status pairs and associated density type
 my %gene_types = (
-    "protein_coding_KNOWN" => "knownGeneDensity",
-    "protein_coding_NOVEL" => "novelCDSDensity",
-    "processed_transcript_NOVEL" => "novelTransDensity",
-    "processed_transcript_PUTATIVE" => "putativeTransDensity",
-    "protein_coding_PREDICTED" => "predictedTransDensity",
-    "Ig_pseudogene_segment_NOVEL" => "IgPseudoSegDensity",
+    "protein_coding_KNOWN" => "knownPCodDensity",
+	"processed_transcript_KNOWN" => "knownPTransDensity",
+    "protein_coding_NOVEL" => "novelPCodDensity",
+    "processed_transcript_NOVEL" => "novelPTransDensity",
+    "processed_transcript_PUTATIVE" => "putativePTransDensity",
+    "protein_coding_PREDICTED" => "predictedPCodDensity",
+    "Ig_pseudogene_segment_" => "IgPseudoSegDensity",
     "Ig_segment_NOVEL" => "IgSegDensity",
-    "pseudogene_NOVEL" => "pseudoGeneDensity",
-    "processed_pseudogene_NOVEL" => "pseudoGeneDensity",
-    "unprocessed_pseudogene_NOVEL" => "pseudoGeneDensity",
-    "protein_coding_in_progress_KNOWN" => "knownGeneDensity",
-    "protein_coding_in_progress_NOVEL" => "novelCDSDensity", 
+	"Ig_segment_KNOWN" => "IgSegDensity",
+    "pseudogene_" => "pseudoGeneDensity",
+    "processed_pseudogene_" => "pseudoGeneDensity",
+    "unprocessed_pseudogene_" => "pseudoGeneDensity",
 );
 
 # check for new biotype/status pairs
 my $sql = qq(
-    SELECT concat(biotype, '_', status) as c 
-    FROM transcript
+    SELECT biotype, status
+    FROM gene
     GROUP by biotype, status
 );
 my $sth = $dbh->prepare($sql);
 $sth->execute;
 my (%type_status, $new);
-while (my ($type) = $sth->fetchrow_array) {
+while (my ($biotype, $status) = $sth->fetchrow_array) {
+	my $type = $biotype.'_'.$status;
     if ($gene_types{$type}) {
         $type_status{$type} = 'no';
     } else {
@@ -252,101 +253,99 @@ foreach my $block_size (keys %{ $chr_slices }) {
         # stats
         my @attribs;
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '12:Known genes',
-            -CODE => 'KnownGeneCount',
-            -VALUE => $total{'Known'} || 0,
-            -DESCRIPTION => 'Total Number of Known genes'
+            -NAME => 'protein_coding_KNOWN',
+            -CODE => 'KnownPCCount',
+            -VALUE => $total{'protein_coding_KNOWN'} || 0,
+            -DESCRIPTION => 'Number of Known Protein Coding',
+        );
+
+        push @attribs, Bio::EnsEMBL::Attribute->new(
+            -NAME => 'processed_transcript_KNOWN',
+            -CODE => 'KnownPTCount',
+            -VALUE => $total{'processed_transcript_KNOWN'} || 0,
+            -DESCRIPTION => 'Number of Known Processed Transcripts',
+        );
+
+        push @attribs, Bio::EnsEMBL::Attribute->new(
+            -NAME => 'protein_coding_NOVEL',
+            -CODE => 'NovelPCCount',
+            -VALUE => $total{'protein_coding_NOVEL'} || 0,
+            -DESCRIPTION => 'Number of Novel Protein Coding'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '14:Novel CDS',
-            -CODE => 'NovelCDSCount',
-            -VALUE => $total{'Novel_CDS'} || 0,
-            -DESCRIPTION => 'Total Number of Novel CDSs'
+            -NAME => 'processed_transcript_NOVEL',
+            -CODE => 'NovelPTCount',
+            -VALUE => $total{'processed_transcript_NOVEL'} || 0,
+            -DESCRIPTION => 'Number of Novel transcripts'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '16:Novel transcripts',
-            -CODE => 'NovelTransCount',
-            -VALUE => $total{'Novel_Transcript'} || 0,
-            -DESCRIPTION => 'Total Number of Novel transcripts'
+            -NAME => 'processed_transcript_PUTATIVE',
+            -CODE => 'PutPTCount',
+            -VALUE => $total{'processed_transcript_PUTATIVE'} || 0,
+            -DESCRIPTION => 'Number of Putative processed transcripts'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '24:Putative',
-            -CODE => 'PutTransCount',
-            -VALUE => $total{'Putative'} || 0,
-            -DESCRIPTION => 'Total Number of Putative transcripts'
+            -NAME => 'protein_coding_PREDICTED',
+            -CODE => 'PredPCCount',
+            -VALUE => $total{'protein_coding_PREDICTED'} || 0,
+            -DESCRIPTION => 'Number of Predicted transcripts'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '30:Predicted transcripts',
-            -CODE => 'PredTransCount',
-            -VALUE => $total{'Predicted_Gene'} || 0,
-            -DESCRIPTION => 'Total Number of Predicted transcripts'
-        );
-        
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '26:Ig segments',
+            -NAME => 'total_Ig_segment_',
             -CODE => 'IgSegCount',
-            -VALUE => $total{'Ig_Segment'} || 0,
-            -DESCRIPTION => 'Total Number of Ig Segments'
+            -VALUE => $total{'Ig_segment_NOVEL'}
+						+ $total{'Ig_segment_KNOWN'} || 0,
+            -DESCRIPTION => 'Number of Ig Segments'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '28:Ig pseudogene segments',
+            -NAME => 'Ig_pseudogene_segment_',
             -CODE => 'IgPsSegCount',
-            -VALUE => $total{'Ig_Pseudogene_Segment'} || 0,
-            -DESCRIPTION => 'Total Number of Ig Pseudogene Segments'
+            -VALUE => $total{'Ig_pseudogene_segment_'} || 0,
+            -DESCRIPTION => 'Number of Ig Pseudogene Segments'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '18:Total pseudogenes',
+            -NAME => 'total_pseudogene_',
             -CODE => 'TotPsCount',
-            -VALUE => ($total{'Pseudogene'}
-                        + $total{'Processed_pseudogene'}
-                        + $total{'Unprocessed_pseudogene'}) || 0,
+            -VALUE => ($total{'pseudogene_'}
+                        + $total{'processed_pseudogene_'}
+                        + $total{'unprocessed_pseudogene_'}) || 0,
             -DESCRIPTION => 'Total Number of Pseudogenes'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '20:Processed pseudogenes',
+            -NAME => 'processed_pseudogene_',
             -CODE => 'ProcPsCount',
-            -VALUE => $total{'Processed_pseudogene'} || 0,
+            -VALUE => $total{'processed_pseudogene_'} || 0,
             -DESCRIPTION => 'Number of Processed pseudogenes'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '22:Unprocessed pseudogenes',
+            -NAME => 'unprocessed_pseudogene_',
             -CODE => 'UnprocPsCount',
-            -VALUE => $total{'Unprocessed_pseudogene'} || 0,
+            -VALUE => $total{'unprocessed_pseudogene_'} || 0,
             -DESCRIPTION => 'Number of Unprocessed pseudogenes'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '13:Known genes (in progress)',
-            -CODE => 'KnwnprogCount',
-            -VALUE => $total{'Known_in_progress'} || 0,
-            -DESCRIPTION => 'Number of Known Genes in progress'
+            -NAME => 'protein_coding_in_progress_KNOWN',
+            -CODE => 'KnwnPCProgCount',
+            -VALUE => $total{'protein_coding_in_progress_KNOWN'} || 0,
+            -DESCRIPTION => 'Number of Known Protein coding genes in progress'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => '15:Novel CDS (in progress)',
-            -CODE => 'NovCDSprogCount',
-            -VALUE => $total{'Novel_CDS_in_progress'} || 0,
-            -DESCRIPTION => 'Number of novel CDS in progress'
+            -NAME => 'protein_coding_in_progress_NOVEL',
+            -CODE => 'NovPCProgCount',
+            -VALUE => $total{'protein_coding_in_progress_NOVEL'} || 0,
+            -DESCRIPTION => 'Number of Novel Protein coding genes in progress'
         );
-        
-        # only store unclassified pseudogenes if there are no processed and
-        # unprocessed pseudos, ie if total pseudos eq pseudos
-        unless ($total{'Unprocessed_pseudogene'} == 0 && $total{'Processed_pseudogene'} == 0) {  
-            push @attribs, Bio::EnsEMBL::Attribute->new
-                (-NAME => '23:Unclassified pseudogenes',
-                 -CODE => 'UnclassPsCount',
-                 -VALUE => $total{'Pseudogene'} || 0,
-                 -DESCRIPTION => 'Number of Unclassified pseudogenes');
-        }
-        
+
         $attrib_adaptor->store_on_Slice($slice, \@attribs) unless ($support->param('dry_run'));
         
         # log stats

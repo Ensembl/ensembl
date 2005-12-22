@@ -167,7 +167,7 @@ my $species = $support->species;
 my $fh;
 if ($support->param('avdump')) {
     $support->log("Preparing directories for AV index dump...\n");
-    my $dumpdir = $support->serverroot."/utils/indexing/input";
+    my $dumpdir = $support->serverroot."/sanger-plugins/vega/utils/indexing/input";
     unless (-e $dumpdir) {
         mkdir $dumpdir, 0777 or
             $support->log_error("Could not creat directory $dumpdir: $!\n");
