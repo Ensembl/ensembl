@@ -598,65 +598,6 @@ sub add_indel_coordinates{
   return 1;
 }
 
-
-=head2 add_indel_coordinates
-
-    Arg  1      int $id
-                id of 'source' sequence
-    Arg  2      int $start
-                start coordinate of 'source' sequence
-    Arg  3      int $end
-                end coordinate of 'source' sequence
-    Arg  4      int $strand
-                relative orientation of source and target (+/- 1)
-    Arg  5      int $id
-                id of 'targe' sequence
-    Arg  6      int $start
-                start coordinate of 'targe' sequence
-    Arg  7      int $end
-                end coordinate of 'targe' sequence
-    Function    stores details of mapping between two regions:
-                'source' and 'target'. Returns 1 if the pair was added, 0 if it
-                was already in. Used when adding an indel
-    Returntype  int 0,1
-    Exceptions  none
-    Caller      Bio::EnsEMBL::Mapper
-
-=cut
-
-sub add_indel_coordinates{
-  my ($self, $contig_id, $contig_start, $contig_end, 
-      $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
-
-  unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
-	 && defined($contig_ori) && defined($chr_name) && defined($chr_start)
-	 && defined($chr_end)) {
-    throw("7 arguments expected");
-  }
-
-  #we need to create the IndelPair object to add to both lists, to and from
-  my $from =
-    Bio::EnsEMBL::Mapper::Unit->new($contig_id, $contig_start, $contig_end);
-  my $to   =
-    Bio::EnsEMBL::Mapper::Unit->new($chr_name, $chr_start, $chr_end);
-
-  my $pair = Bio::EnsEMBL::Mapper::IndelPair->new($from, $to, $contig_ori);
-
-  # place into hash on both ids
-  my $map_to = $self->{'to'};
-  my $map_from = $self->{'from'};
-
-  push( @{$self->{"_pair_$map_to"}->{uc($chr_name)}}, $pair );
-  push( @{$self->{"_pair_$map_from"}->{uc($contig_id)}}, $pair );
-
-  $self->{'pair_count'}++;
-
-  $self->{'_is_sorted'} = 0;
-  return 1;
-}
-
-
-
 =head2 add_Mapper
 
     Arg  1      Bio::EnsEMBL::Mapper $mapper2
