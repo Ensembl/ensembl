@@ -2163,8 +2163,7 @@ sub get_all_SearchFeatures {
 
   my $offset = $self->start-1;
 
-
-  my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket, $self->chr_name, $self->start, $self->end) : [];
+  my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket, $self->seq_region_name, $self->start, $self->end) : [];
 
   foreach( @$features ) { 
     $_->start( $_->start - $offset );

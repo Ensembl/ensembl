@@ -20,7 +20,8 @@ CREATE TABLE gene_synonym (
   synonym_id int(10) unsigned NOT NULL auto_increment,
   name varchar(100) default NULL,
   gene_info_id int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (synonym_id)
+  PRIMARY KEY  (synonym_id),
+  KEY gene_info_id_idx (gene_info_id)
 ) TYPE=MyISAM;
 
 
@@ -40,7 +41,8 @@ CREATE TABLE transcript_info (
   mRNA_end_not_found enum('true','false') NOT NULL default 'true',
   author_id int(10) unsigned NOT NULL default '0',
   timestamp datetime NOT NULL default '0000-00-00 00:00:00',
-  PRIMARY KEY  (transcript_info_id)
+  PRIMARY KEY  (transcript_info_id),
+  KEY transcript_stable_id_idx (transcript_stable_id)
 ) TYPE=MyISAM;
 
 ################################################################################
@@ -88,7 +90,8 @@ CREATE TABLE gene_name (
   gene_name_id int(10) unsigned NOT NULL auto_increment,
   name varchar(100) default NULL,
   gene_info_id int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (gene_name_id)
+  PRIMARY KEY  (gene_name_id),
+  KEY gene_info_id_idx (gene_info_id)
 ) TYPE=MyISAM;
 
 
@@ -114,7 +117,8 @@ CREATE TABLE gene_remark (
   gene_remark_id int(10) unsigned NOT NULL auto_increment,
   remark text,
   gene_info_id int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (gene_remark_id)
+  PRIMARY KEY  (gene_remark_id),
+  KEY gene_info_id_idx (gene_info_id)
 ) TYPE=MyISAM;
 
 
@@ -130,6 +134,7 @@ CREATE TABLE gene_info (
   is_known enum('true','false') default 'false',
   timestamp datetime NOT NULL default '0000-00-00 00:00:00',
   PRIMARY KEY  (gene_info_id)
+  KEY gene_stable_id_idx (gene_stable_id)
 ) TYPE=MyISAM;
 
 
@@ -144,7 +149,7 @@ CREATE TABLE evidence (
   transcript_info_id int(10) unsigned default NULL,
   type enum('EST','cDNA','Protein','Genomic','UNKNOWN') default NULL,
   PRIMARY KEY  (evidence_id),
-  INDEX transcript_info_id_idx (transcript_info_id)
+  KEY transcript_info_id_idx (transcript_info_id)
 ) TYPE=MyISAM;
 
 ################################################################################
@@ -156,7 +161,8 @@ CREATE TABLE transcript_remark (
   transcript_remark_id int(10) unsigned NOT NULL auto_increment,
   remark text,
   transcript_info_id int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (transcript_remark_id)
+  PRIMARY KEY  (transcript_remark_id),
+  KEY transcript_info_id_idx (transcript_info_id)
 ) TYPE=MyISAM;
 
 ################################################################################
@@ -166,7 +172,7 @@ CREATE TABLE transcript_remark (
 
 CREATE TABLE clone_info (
   clone_info_id int(10) unsigned NOT NULL auto_increment,
-  clone_id int(10) unsigned NOT NULL default '0',
+  seq_region_id int(10) unsigned NOT NULL default '0',
   author_id int(10) default NULL,
   timestamp datetime NOT NULL default '0000-00-00 00:00:00',
   PRIMARY KEY  (clone_info_id),
@@ -184,7 +190,8 @@ CREATE TABLE clone_remark (
   clone_remark_id int(10) unsigned NOT NULL auto_increment,
   remark text,
   clone_info_id int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (clone_remark_id)
+  PRIMARY KEY  (clone_remark_id),
+  KEY clone_info_id_idx (clone_info_id)
 ) TYPE=MyISAM;
 
 
@@ -194,7 +201,7 @@ CREATE TABLE clone_remark (
 
 
 CREATE TABLE current_clone_info (
-  clone_id int(10) unsigned NOT NULL default '0',
+  seq_region_id int(10) unsigned NOT NULL default '0',
   clone_info_id int(10) unsigned NOT NULL default '0',
   clone_version int(10) default NULL,
   PRIMARY KEY  (clone_id)

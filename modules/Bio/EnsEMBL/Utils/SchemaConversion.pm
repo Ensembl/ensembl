@@ -98,10 +98,6 @@ sub new {
 										'patch_sql');										
 	$self->conv_support->confirm_params;
 
-    my $siteroot = $self->conv_support->serverroot;
-    $self->conv_support->param('vega_sql',$siteroot.$self->conv_support->param('vega_sql'));
-    $self->conv_support->param('core_sql',$siteroot.$self->conv_support->param('core_sql'));
-    $self->conv_support->param('patch_sql',$siteroot.$self->conv_support->param('patch_sql'));
     return $self;
 }
 
@@ -238,7 +234,7 @@ sub do_conversion {
     $self->conv_obj->create_attribs();
     $self->conv_obj->set_top_level();
     $self->conv_obj->transfer_dna();
-	$self->conv_obj->reset_gene_trans_tables();
+    $self->conv_obj->back_patch_schema();
     $self->conv_obj->transfer_genes();
     $self->conv_obj->transfer_prediction_transcripts();
 
