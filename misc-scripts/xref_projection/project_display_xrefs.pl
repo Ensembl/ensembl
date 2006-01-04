@@ -198,7 +198,10 @@ sub project_go_terms {
 
     next if $dbEntry->dbname() ne "GO";
 
-    # check that each from GO term isn't already projected, then project it
+    # only project GO terms with non-IEA evidence codes
+    next if ($dbEntry->linkage_type() eq "IEA");
+
+    # check that each from GO term isn't already projected
     next if go_xref_exists($dbEntry, $to_go_xrefs);
 
     # set linkage_type to IEA (in the absence of a specific one for projections)
@@ -231,7 +234,7 @@ sub go_xref_exists {
 
   foreach my $xref (@{$to_go_xrefs}) {
 
-    if ($xref->dbname eq $dbEntry->dbname() && 
+    if ($xref->dbname eq $dbEntry->dbname() &&
 	$xref->primary_id eq $dbEntry->primary_id()) {
       return 1;
     }
