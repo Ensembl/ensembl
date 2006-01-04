@@ -351,6 +351,36 @@ sub sub_Slice {
 
 }
 
+sub refseq{
+  my $self = shift;
+  my $start = shift;
+  my $end = shift;
+  my $strand = shift;
+  # special case for in-between (insert) coordinates
+  return '' if($self->start() == $self->end() + 1);
+
+  my $subseq;
+  if($self->adaptor){
+    my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
+    $subseq = ${$seqAdaptor->fetch_by_Slice_start_end_strand
+      ( $self, $start,
+        $end, $strand )};
+  } else {
+    ## check for gap at the beginning and pad it with Ns
+    if ($start < 1) {
+      $subseq = "N" x (1 - $start);
+      $start = 1;
+    }
+    $subseq .= substr ($self->seq(), $start-1, $end - $start + 1);
+    ## check for gap at the end and pad it with Ns
+    if ($end > $self->length()) {
+      $subseq .= "N" x ($end - $self->length());
+    }
+    reverse_comp(\$subseq) if($strand == -1);
+  }
+  return $subseq;
+}
+
 =head2 subseq
 
   Arg  [1]   : int $startBasePair
@@ -387,9 +417,11 @@ sub subseq {
   my $subseq;
   my $seq;
   if($self->adaptor){
+
+
       $seq = $self->seq;
       reverse_comp(\$seq) if ($strand == -1);
-      $subseq = substr($seq,$start-1,$end);
+      $subseq = substr($seq,$start-1,$end - $start + 1);
   } 
   else {
       ## check for gap at the beginning and pad it with Ns
