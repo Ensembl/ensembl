@@ -7,14 +7,8 @@ use XrefMapper::db;
  
 use vars qw(@INC);
  
-#effectively add this directory to the PERL5LIB automatically
-my $dir = cwd() . '/' . __FILE__;
-my @d = split(/\//, $dir);
-pop(@d);
-$dir = join('/', @d);
-unshift @INC, $dir;
- 
- 
+
+
 my $file;
 my $verbose;
 my $dumpcheck=undef;
@@ -78,7 +72,7 @@ while( my $line = <FILE> ) {
 
 if(defined($xref_hash{host})){
   my ($host, $user, $dbname, $pass, $port);
-  $host = $xref_hash{'host'};
+  $host = $xref_hash{'host'}; 
   $user = $xref_hash{'user'};
   $dbname = $xref_hash{'dbname'};
   if(defined($xref_hash{'password'})){
@@ -102,8 +96,8 @@ if(defined($xref_hash{host})){
 			     -dbname => $dbname);
 
   if(defined($xref_hash{'dir'})){
-    $xref->dir($xref_hash{'dir'});
-  }
+    $xref->dir($xref_hash{'dir'}); 
+  } 
 
 }
 else{
@@ -117,7 +111,9 @@ if(defined($species_hash{'species'})){
       exit(1);
     }
   
-  eval "require XrefMapper::$value";
+  my $class = "XrefMapper/$value.pm";
+  require "XrefMapper/$value.pm";
+
   my $module;
   if($@) {
     warn("Did not find a specific mapping module XrefMapper::$value - using XrefMapper::BasicMapper instead\n");
@@ -158,7 +154,7 @@ if(defined($species_hash{'species'})){
 
   if(defined($species_hash{'dir'})){
     $core->dir($species_hash{'dir'});
-  }
+  } 
 
   $core->species($value);
 
@@ -180,7 +176,6 @@ if(defined($species_hash{'species'})){
 else{
   die "No Species given\n";
 }
-
 
 $mapper->xref($xref); # attach xref object to mapper object
 
