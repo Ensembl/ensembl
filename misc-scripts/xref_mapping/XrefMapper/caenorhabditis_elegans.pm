@@ -2,9 +2,10 @@ package XrefMapper::caenorhabditis_elegans;
 
 use  XrefMapper::BasicMapper;
 
-use vars '@ISA';
+use vars qw(@ISA);
 
-@ISA = qw{ XrefMapper::BasicMapper };
+@ISA = qw(XrefMapper::BasicMapper);
+
 
 sub get_set_lists {
 
