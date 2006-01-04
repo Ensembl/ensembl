@@ -351,7 +351,24 @@ sub sub_Slice {
 
 }
 
-sub refseq{
+=head2 ref_subseq
+
+  Arg  [1]   : int $startBasePair
+               relative to start of slice, which is 1.
+  Arg  [2]   : int $endBasePair
+               relative to start of slice.
+  Arg  [3]   : (optional) int $strand
+               The strand of the slice to obtain sequence from. Default
+               value is 1.
+  Description: returns string of dna from reference sequence
+  Returntype : txt
+  Exceptions : end should be at least as big as start
+               strand must be set
+  Caller     : general
+
+=cut
+
+sub ref_subseq{
   my $self = shift;
   my $start = shift;
   my $end = shift;
