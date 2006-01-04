@@ -2093,28 +2093,30 @@ sub cleanup_sources_file{
   my $dir = $self->core->dir();
   open (DEL, ">>$dir/cleanup.sql") || die "Could not open $dir/cleanup.sql\n";
 
-
-  print DEL "DELETE external_synonym ";
-  print DEL     "FROM external_synonym, xref ";
-  print DEL       "WHERE external_synonym.xref_id = xref.xref_id ";
-  print DEL         "AND xref.external_db_id = $id\n";
-
-
-  print DEL "DELETE identity_xref ";
-  print DEL     "FROM identity_xref, object_xref, xref ";
-  print DEL       "WHERE identity_xref.object_xref_id = object_xref.object_xref_id ";
-  print DEL         "AND object_xref.xref_id = xref.xref_id ";
-  print DEL         "AND xref.external_db_id = $id \n";
+  if ($id =~ m/\w/){
+    print DEL "DELETE external_synonym ";
+    print DEL     "FROM external_synonym, xref ";
+    print DEL       "WHERE external_synonym.xref_id = xref.xref_id ";
+    print DEL         "AND xref.external_db_id = $id\n";
 
 
-  print DEL "DELETE object_xref ";
-  print DEL     "FROM object_xref, xref ";
-  print DEL       "WHERE object_xref.xref_id = xref.xref_id ";
-  print DEL         "AND xref.external_db_id = $id\n";
+    print DEL "DELETE identity_xref ";
+    print DEL     "FROM identity_xref, object_xref, xref ";
+    print DEL       "WHERE identity_xref.object_xref_id = object_xref.object_xref_id ";
+    print DEL         "AND object_xref.xref_id = xref.xref_id ";
+    print DEL         "AND xref.external_db_id = $id \n";
 
 
-  print DEL "DELETE FROM xref WHERE xref.external_db_id = $id \n";
+    print DEL "DELETE object_xref ";
+    print DEL     "FROM object_xref, xref ";
+    print DEL       "WHERE object_xref.xref_id = xref.xref_id ";
+    print DEL         "AND xref.external_db_id = $id\n";
 
+
+    print DEL "DELETE FROM xref WHERE xref.external_db_id = $id \n";
+  } else { 
+    warn("\nFound an empty id\n");
+  }
   close DEL;
 
 }
@@ -2128,9 +2130,10 @@ sub do_upload {
   my $ensembl = $self->core;
   my $core_db = $ensembl->dbc;
   # xref.txt etc
+  my $file = $ensembl->dir() . "/cleanup.sql";
 
   print "Deleting existing data\n";
-  my $file = $ensembl->dir() . "/cleanup.sql";
+
   open(CLEAN,"<$file") || die "could not open $file for reading \n";
   while(<CLEAN>){
     chomp;
@@ -2663,8 +2666,8 @@ sub gene_description_sources {
 sub upload_external_db {
   my ($self) = @_;
 
-  my $core_db = $self->core->dbc;
-  $core_db->connect();
+  my $core_db = $self->core->dbc; 
+  $core_db->connect(); 
   my $row = @{$core_db->db_handle->selectall_arrayref("SELECT COUNT(*) FROM external_db")}[0];
   my $count = @{$row}[0];
 
