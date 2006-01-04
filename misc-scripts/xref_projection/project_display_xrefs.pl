@@ -201,7 +201,10 @@ sub project_go_terms {
     # check that each from GO term isn't already projected, then project it
     next if go_xref_exists($dbEntry, $to_go_xrefs);
 
-    # linkage types etc should be taken care of automatically
+    # set linkage_type to IEA (in the absence of a specific one for projections)
+    $dbEntry->flush_linkage_types();
+    $dbEntry->add_linkage_type("IEA");
+
     $to_translation->add_DBEntry($dbEntry);
 
     my $txt = " [from $from_species translation " . $from_translation->stable_id() . "]";
