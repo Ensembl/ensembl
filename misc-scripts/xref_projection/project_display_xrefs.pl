@@ -11,7 +11,7 @@ use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $store, $names, $go_terms);
+my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms);
 
 GetOptions('conf=s'       => \$conf,
 	   'compara=s'    => \$compara,
@@ -21,7 +21,6 @@ GetOptions('conf=s'       => \$conf,
 	   'names'        => \$names,
 	   'go_terms'     => \$go_terms,
 	   'print'        => \$print,
-           'store'        => \$store,
 	   'help'         => sub { usage(); exit(0); });
 
 @to_multi = split(/,/,join(',',@to_multi));
@@ -52,9 +51,6 @@ my $ma    = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'Member');
 
 my $from_ga = Bio::EnsEMBL::Registry->get_adaptor($from_species, 'core', 'Gene');
 
-my $changed_names = 0;
-my $changed_go_xrefs = 0;
-
 foreach my $to_species (@to_multi) {
 
   my $str = "gene display_xrefs and descriptions" if ($names);
@@ -68,9 +64,10 @@ foreach my $to_species (@to_multi) {
 
   my $mlss = $mlssa->fetch_by_method_link_type_registry_aliases($method_link_type, [$from_species, $to_species]);
 
+  print "$to_species, before projection: \n" . &get_stats($to_ga);
+
   # Get all genes, find homologies, set xrefs
 
- 
   foreach my $gene_id (@{$from_ga->list_dbIDs}) {
 
     my $gene = $from_ga->fetch_by_dbID($gene_id);
@@ -85,8 +82,7 @@ foreach my $to_species (@to_multi) {
 
   }
 
-  print "Projected $changed_names gene names, out of a total of " . scalar(@{$from_ga->list_dbIDs}) . "\n" if ($names);
-  print "Projected $changed_go_xrefs GO terms\n" if ($go_terms);
+  print "$to_species, after projection: \n" . &get_stats($to_ga);
 
 }
 
@@ -97,8 +93,6 @@ sub project_homologies() {
 
   my ($homologies, $to_ga, $to_dbea, $names, $go_terms, $ma) = @_;
 
-  my $changed = 0;
-
   foreach my $homology (@{$homologies}) {
 
     my @mas = @{$homology->get_all_Member_Attribute};
@@ -108,27 +102,17 @@ sub project_homologies() {
     # ----------------------------------------
     # Display names and descriptions
 
-    if ($names) {
-
-      $changed_names += project_display_names($to_ga, $to_dbea, $ma, $from_member, $to_member);
-
-    }
+    project_display_names($to_ga, $to_dbea, $ma, $from_member, $to_member) if ($names);
 
     # ----------------------------------------
     # GO terms
 
-    if ($go_terms) {
-
-      $changed_go_xrefs += project_go_terms($to_ga, $to_dbea, $ma, $from_attribute, $to_attribute);
-
-    }
+    project_go_terms($to_ga, $to_dbea, $ma, $from_attribute, $to_attribute) if ($go_terms);
 
 
     # ----------------------------------------
 
   }
-
-  return $changed;
 
 }
 
@@ -139,8 +123,6 @@ sub project_display_names {
   my ($to_ga, $to_dbea, $ma, $from_member, $to_member) = @_;
 
   my $to_gene = $to_ga->fetch_by_stable_id($to_member->stable_id());
-
-  my $changed = 0;
 
   # if no display name set, do the projection
   if (!$to_gene->external_name()) {
@@ -165,18 +147,14 @@ sub project_display_names {
       print $to_gene->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
 
       # store - need to add the DBEntry and also update the gene display xref id
-      if ($store) {
+      if (!$print) {
 	$to_dbea->store($dbEntry, $to_gene, 'Gene');
 	$to_ga->update($to_gene);
       }
 
-      $changed++;
-
     }
 
   }
-
-  return $changed;
 
 }
 
@@ -185,8 +163,6 @@ sub project_display_names {
 sub project_go_terms {
 
   my ($to_ga, $to_dbea, $ma, $from_attribute, $to_attribute) = @_;
-
-  my $changed = 0;
 
   # GO xrefs are linked to translations, not genes
   my $from_translation = $ma->fetch_by_dbID($from_attribute->peptide_member_id())->get_Translation();
@@ -199,7 +175,9 @@ sub project_go_terms {
     next if $dbEntry->dbname() ne "GO";
 
     # only project GO terms with non-IEA evidence codes
-    next if ($dbEntry->linkage_type() eq "IEA");
+    foreach my $et (@{$dbEntry->get_all_linkage_types}){
+      next if ($et eq "IEA");
+    }
 
     # check that each from GO term isn't already projected
     next if go_xref_exists($dbEntry, $to_go_xrefs);
@@ -216,13 +194,9 @@ sub project_go_terms {
 
     print $to_translation->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
 
-    $to_dbea->store($dbEntry, $to_translation, 'Translation') if ($store);
-
-    $changed++;
+    $to_dbea->store($dbEntry, $to_translation, 'Translation') if (!$print);
 
   }
-
-  return $changed;
 
 }
 
@@ -247,6 +221,45 @@ sub go_xref_exists {
 
 # ----------------------------------------------------------------------
 
+sub get_stats {
+
+  my ($to_ga) = @_;
+
+
+  my $str = "Gene names: total ";
+  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM gene g WHERE g.display_xref_id IS NOT NULL");
+
+  $str .= " projected ";
+  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.display_label LIKE '%[from%'");
+
+  $str .= "\nGO xrefs: total ";
+  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO'");
+
+  $str .= " projected ";
+  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO' AND x.display_label LIKE '%[from%'");
+
+  $str .= "\n";
+
+  return $str;
+
+}
+
+
+# ----------------------------------------------------------------------
+
+sub count_rows {
+
+  my ($adaptor, $sql) = @_;
+
+  my $sth = $adaptor->dbc->prepare($sql);
+  $sth->execute();
+
+  return ($sth->fetchrow_array())[0];
+
+}
+
+# ----------------------------------------------------------------------
+
 sub usage {
 
   print << "EOF";
@@ -257,7 +270,7 @@ sub usage {
 
  perl project_display_xrefs.pl {options}
 
- Options ([..] indcicates optional):
+ Options ([..] indicates optional):
 
   [--conf filepath]     the Bio::EnsEMBL::Registry configuration file. If none
                         is given, the one set in ENSEMBL_REGISTRY will be used
@@ -279,9 +292,7 @@ sub usage {
 
    --go_terms           Project GO terms.
 
-  [--print]             Print details of projection
-
-  [--store]             Upload projections to target databases
+  [--print]             Print details of projection only, don't store in database
 
   [--method]            Type of homologs (default: ENSEMBL_ORTHOLOGUES)
 
