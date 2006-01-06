@@ -256,9 +256,10 @@ sub store {
   $sth->bind_param(4,$analysis->dbID,SQL_INTEGER);
   $sth->bind_param(5,$feature->hstart,SQL_INTEGER);
   $sth->bind_param(6,$feature->hend,SQL_INTEGER);
-  $sth->bind_param(7,$feature->score,SQL_DOUBLE);
-  $sth->bind_param(8,$feature->percent_id,SQL_FLOAT);
-  $sth->bind_param(9,$feature->p_value,SQL_DOUBLE);
+  $sth->bind_param(7,$feature->hseqname,SQL_VARCHAR);
+  $sth->bind_param(8,$feature->score,SQL_DOUBLE);
+  $sth->bind_param(9,$feature->percent_id,SQL_FLOAT);
+  $sth->bind_param(10,$feature->p_value,SQL_DOUBLE);
 
   $sth->execute();
   
