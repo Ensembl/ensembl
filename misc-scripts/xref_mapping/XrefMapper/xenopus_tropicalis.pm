@@ -12,4 +12,23 @@ sub get_set_lists{
 
 }
 
+sub transcript_display_xref_sources {
+
+  return ('Xenopus_Jamboree',
+	  'MarkerSymbol',
+	  'flybase_symbol',
+	  'Anopheles_symbol',
+	  'Genoscope_annotated_gene',
+	  'Genoscope_predicted_transcript',
+	  'Genoscope_predicted_gene',
+	  'Uniprot/SWISSPROT',
+	  'RefSeq_peptide',
+	  'RefSeq_dna',
+	  'Uniprot/SPTREMBL',
+	  'RefSeq_peptide_predicted',
+	  'RefSeq_dna_predicted',
+	  'EntrezGene');
+
+}
+
 1;

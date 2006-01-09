@@ -109,6 +109,9 @@ INSERT INTO source VALUES (2856, "Anopheles_symbol", 1, 'Y', 3);
 # Uniprot alternative splice
 INSERT INTO source VALUES (3000, "Uniprot/Varsplic", 1, 'Y',1);
 
+# Xenopus Jamboree peptides
+INSERT INTO source VALUES (3100, "Xenopus_Jamboree", 1, 'Y',1);
+
 ################################################################################
 # Files to fetch data from
 
@@ -425,6 +428,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 8364,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Xenopus_tropicalis/Str.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Xenopus_tropicalis/Str.data.gz', '', now(), now(), "UniGeneParser");
+
+##      Xenopus Jamboree
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3100, 8364,'LOCAL:/ecs4/work4/mc2/Xenopus/jamboree/names/names_seq.fa', '', now(), now(), "XenopusJamboreeParser");
 
 # --------------------------------------------------------------------------------
 
