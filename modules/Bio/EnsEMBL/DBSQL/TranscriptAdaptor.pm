@@ -554,7 +554,7 @@ sub store {
    my $tst = $self->prepare(
         "insert into transcript ( gene_id, seq_region_id, seq_region_start, " .
 			    "seq_region_end, seq_region_strand, biotype, " .
-			    "status, description ) ".
+			    "confidence, description ) ".
 			    "values ( ?, ?, ?, ?, ?, ?, ?, ? )");
 
   $tst->bind_param(1,$gene_dbID,SQL_INTEGER);

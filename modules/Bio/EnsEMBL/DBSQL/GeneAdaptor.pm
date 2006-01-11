@@ -799,7 +799,7 @@ sub store {
                "seq_region_strand = ?, ".
 	       "description = ?, " .
                "source = ?, ".
-               "status = ? ";
+               "confidence = ? ";
 
   my $sth = $self->prepare( $store_gene_sql );
   $sth->bind_param(1,$type,SQL_VARCHAR);
