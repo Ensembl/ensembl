@@ -1090,6 +1090,7 @@ CREATE TABLE gene_archive (
   transcript_version          smallint NOT NULL,
   translation_stable_id       VARCHAR(128) NOT NULL,
   translation_version         smallint NOT NULL,
+  peptide_archive_id          int NOT NULL,
   mapping_session_id          int NOT NULL,
 
   KEY gene_idx( gene_stable_id, gene_version ),
@@ -1105,11 +1106,12 @@ CREATE TABLE gene_archive (
 
 CREATE TABLE peptide_archive (
 
-  translation_stable_id       VARCHAR(128) NOT NULL,
-  translation_version         smallint NOT NULL,
-  peptide_seq                 mediumtext NOT NULL,
+  peptide_archive_id         INT NOT NULL AUTO_INCREMENT,
+  md5_checksum               char(32),
+  peptide_seq                mediumtext NOT NULL,
 
-  PRIMARY KEY( translation_stable_id, translation_version )
+  PRIMARY KEY( peptide_archive_id ),
+  KEY checksum( md5_checksum )
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
