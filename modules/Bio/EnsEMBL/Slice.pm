@@ -1856,7 +1856,7 @@ sub get_all_Genes_by_type{
     return [];
   }
 
-  my @out = grep { $_->type eq $type } 
+  my @out = grep { $_->biotype eq $type } 
     @{ $self->get_all_Genes($logic_name, $load_transcripts)};
 
   return \@out;
