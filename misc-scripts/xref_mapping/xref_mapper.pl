@@ -16,18 +16,20 @@ my $use_existing_mappings=undef;
 my $maxdump=undef;
 my $help;
 my $upload = undef;
+my $force_externaldb_delete = undef;
 my $location;
 my $notriage=undef;
 
-GetOptions ('file=s'              => \$file,
-            'verbose'             => \$verbose,
-	    'dumpcheck'           => \$dumpcheck,
-	    'useexistingmappings' => \$use_existing_mappings,
-	    'maxdump=n'           => \$maxdump,
-	    'upload'              => \$upload,
-	    'location=s'          => \$location,
-	    'notriage'            => \$notriage,
-            'help'                => sub { &show_help(); exit 1;} );
+GetOptions ('file=s'                  => \$file,
+            'verbose'                 => \$verbose,
+	    'dumpcheck'               => \$dumpcheck,
+	    'useexistingmappings'     => \$use_existing_mappings,
+	    'maxdump=n'               => \$maxdump,
+	    'upload'                  => \$upload,
+	    'delete_external_db'      => \$force_externaldb_delete,
+	    'location=s'              => \$location,
+	    'notriage'                => \$notriage,
+            'help'                    => sub { &usage(); exit 1;} );
  
 usage("-file option is required")   if(!$file);
 usage() if($help);
@@ -184,7 +186,7 @@ $mapper->dump_seqs($location);
 
 
 print "\nChecking external_db table\n" if ($upload);
-$mapper->upload_external_db() if ($upload);
+$mapper->upload_external_db($force_externaldb_delete) if ($upload);
 
 $mapper->build_list_and_map();
 
@@ -242,6 +244,10 @@ options:
                         to *.txt etc regardless of whether this option is used.
                         If external_db in core database is empty, it is populated
                         from ../external_db/external_dbs.txt
+
+  -delete_externaldb    deletes all entries of the external_db table if it contains any rows 
+                        and uploads new data into the table - you have to interactively 
+                        confirm the deletion before. Works only if option -upload is used as well.
 
   -notriage             don't dump triage data
 
