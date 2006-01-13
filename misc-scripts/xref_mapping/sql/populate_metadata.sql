@@ -92,8 +92,11 @@ INSERT INTO source VALUES (2570, 'gadfly_gene_cgid', 1, 'N', 4);
 INSERT INTO source VALUES (2571, 'gadfly_transcript_cgid', 1, 'N', 4);
 INSERT INTO source VALUES (2572, 'gadfly_translation_cgid', 1, 'N', 4);
 
-# ciona intestinalis source 
-INSERT INTO source VALUES (2601, 'c_int_proteins_jgi_v1', 1, 'Y', 4);
+# ciona intestinalis sources
+INSERT INTO source VALUES (2601, 'cint_jgi_v1', 1, 'Y', 4);
+INSERT INTO source VALUES (2602, 'cint_jgi_v2', 1, 'Y', 4);
+INSERT INTO source VALUES (2610, 'cint_aniseed_jgi_v1', 1, 'Y', 4);
+INSERT INTO source VALUES (2611, 'cint_aniseed_jgi_v2', 1, 'Y', 4);
 
 # anopheles gambiae sources
 # predicted versions of Uniprot/EMBL - created as dependent in appropriate parse
@@ -536,7 +539,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 # --------------------------------------------------------------------------------
 
 
-#### SeaSquirt
+#### SeaSquirt Ciona intestinalis
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -575,7 +578,18 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ## xrefs to protein-annotation from JGI on OLDER assembly version v1 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (2601, 7719,'ftp://ftp.jgi-psf.org/pub/JGI_data/Ciona/v1.0/ciona.prot.fasta.gz',now(),now(),'FastaProteinSeqParser');
+VALUES (2601, 7719,'ftp://ftp.jgi-psf.org/pub/JGI_data/Ciona/v1.0/ciona.prot.fasta.gz',now(),now(),'JGI_ProteinParser');
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2602, 7719,'ftp://ftp.jgi-psf.org/pub/JGI_data/Ciona/v2.0/FM1.aa.fasta.gz',now(),now(),'JGI_ProteinParser');
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2610, 7719,'ftp://ftp.jgi-psf.org/pub/JGI_data/Ciona/v1.0/ciona.prot.fasta.gz',now(),now(),'JGI_ProteinParser');
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (2611, 7719,'ftp://ftp.jgi-psf.org/pub/JGI_data/Ciona/v2.0/FM1.aa.fasta.gz',now(),now(),'JGI_ProteinParser');
+
+
 
 
 # --------------------------------------------------------------------------------
