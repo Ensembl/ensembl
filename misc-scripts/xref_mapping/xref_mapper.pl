@@ -16,7 +16,7 @@ my $use_existing_mappings=undef;
 my $maxdump=undef;
 my $help;
 my $upload = undef;
-my $force_externaldb_delete = undef;
+my $delete_external_db ; 
 my $location;
 my $notriage=undef;
 
@@ -26,11 +26,10 @@ GetOptions ('file=s'                  => \$file,
 	    'useexistingmappings'     => \$use_existing_mappings,
 	    'maxdump=n'               => \$maxdump,
 	    'upload'                  => \$upload,
-	    'delete_external_db'      => \$force_externaldb_delete,
+	    'delete_external_db'      => \$delete_external_db , 
 	    'location=s'              => \$location,
 	    'notriage'                => \$notriage,
             'help'                    => sub { &usage(); exit 1;} );
- 
 usage("-file option is required")   if(!$file);
 usage() if($help);
 if(defined($dumpcheck) && defined($maxdump)){
@@ -186,7 +185,7 @@ $mapper->dump_seqs($location);
 
 
 print "\nChecking external_db table\n" if ($upload);
-$mapper->upload_external_db($force_externaldb_delete) if ($upload);
+$mapper->upload_external_db($delete_external_db ) if $upload ;  
 
 $mapper->build_list_and_map();
 
