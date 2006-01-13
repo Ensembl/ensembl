@@ -2075,8 +2075,8 @@ sub map_source_to_external_db {
 
     } else {
 
-      print STDERR "Can't find external_db entry for source name $source_name; xrefs for this source will not be written. Consider adding $source_name to external_db\n"
-
+      print STDERR "Can't find external_db entry for source name $source_name; xrefs for this source will not be written. Consider adding $source_name to external_db and \n"
+      . " Make sure that you used TABS not spaces as delimiters in external_db.txt\n" ; 
     }
 
   } # while source
@@ -2132,12 +2132,11 @@ sub do_upload {
   # xref.txt etc
   my $file = $ensembl->dir() . "/cleanup.sql";
 
-  print "Deleting existing data\n";
-
+  print "Deleting existing data - using file $file\n";
   open(CLEAN,"<$file") || die "could not open $file for reading \n";
-  while(<CLEAN>){
+  while (<CLEAN>){
     chomp;
-    my $sth = $core_db->prepare($_);
+    my $sth = $core_db->prepare($_); 
     $sth->execute() or die "Couldn't execute statement: " . $sth->errstr;
   }     
   close CLEAN;
@@ -2664,23 +2663,51 @@ sub gene_description_sources {
 # load external_db (if it's empty) from ../external_db/external_dbs.txt
 
 sub upload_external_db {
-  my ($self) = @_;
-
-  my $core_db = $self->core->dbc; 
-  $core_db->connect(); 
+  my ($self,$force_upload) = @_;
+ 
+  my $core_db = $self->core->dbc;
+  my $dbname = $core_db->dbname ; ;
+  $core_db->connect();
   my $row = @{$core_db->db_handle->selectall_arrayref("SELECT COUNT(*) FROM external_db")}[0];
   my $count = @{$row}[0];
+  
+  my $upload_external_db = 0 ;
 
-  if ($count == 0) {
+  if ($count > 0 ) {
+    print "external_db table already has $count rows\n" ; 
+    print " you may use -delete_external_db to delete all entries from external_db table and upload new data\n"  unless $force_upload ; 
+  }
+  if ($force_upload) { 
+    print "WARNING: to delete all data from external_db table in $dbname enter \"yes\" to confirm\n";
+    print "WARNING: any other key to continue without changing the table\n" ; 
+    print "WARNING: Do you really want to delete all entries from external_db ? [ENTER = no | yes = delete ] " ;  
+
+    $| = 1; # flush stdout
+    my $p = <STDIN>;
+    chomp $p;
+    if ($p eq "yes") {
+      my $edb_sth = $core_db->prepare("DELETE FROM external_db ") ;
+      $edb_sth->execute();
+      print "$count entries deleted from external_db table, now uploading new data\nusing file ./ensembl/misc_scripts/external_db/external_dbs.txt into $dbname \n" ;
+      $upload_external_db = 1 ;
+    } else {
+      print "\n$dbname.external_db will NOT be changed\n";
+    }
+  }
+
+  if ($count == 0 || $upload_external_db ) {
     my $edb = cwd() . "/../external_db/external_dbs.txt";
     print "external_db table is empty, uploading from $edb\n";
     my $edb_sth = $core_db->prepare("LOAD DATA INFILE \'$edb\' INTO TABLE external_db");
     $edb_sth->execute();
-  } else {
-    print "external_db table already has $count rows, will not change it\n";
-   }
+  }
 
 }
+
+
+
+
+
 
 # Cache xref labels for debugging purposes
 
