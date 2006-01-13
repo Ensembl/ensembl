@@ -24,14 +24,17 @@ my %taxonomy2species_id;
 my %name2species_id;
 
 my ($host, $port, $dbname, $user, $pass, $create, $release, $cleanup, $deletedownloaded);
-my ($skipdownload,$drop_db) ;
+my ($skipdownload,$drop_db,$checkdownload) ;
 
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
 
 sub run {
 
-  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $create, $release, $cleanup, $drop_db, $deletedownloaded) = @_;
+  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $checkdownload, 
+    $create, $release, $cleanup, $drop_db, $deletedownloaded) = @_;
+
+
 
   my @species = @$speciesr;
   my @sources = @$sourcesr;
@@ -125,6 +128,20 @@ sub run {
 
       # Download files
       my ($file) = $urls =~ /.*\/(.*)/;
+
+      if ( $checkdownload ) {   
+         
+         my $check_file = "$dir/$file" ;   
+         $check_file =~s/\.gz//; 
+         print "checking for file $check_file\n" ; 
+         if (-e "$check_file" ) { 
+           print "SKIPPING $file because file $check_file already exists\n" ; 
+           $skipdownload = 1 ;
+         } else { 
+          print "File $check_file does not exist. \n scheduling $dir/$file for download ..........\n" ; 
+        }
+      }
+
 
       # File parsing
       if (!$skipdownload) {
@@ -311,10 +328,36 @@ sub get_source_id_for_source_name {
 
     $source_id = -1;
   }
-
   return $source_id;
-
 }
+
+sub get_source_name_for_source_id {
+  my ($self, $source_id) = @_;
+  my $source_name;
+  
+  my $sql = "SELECT name FROM source WHERE source_id= '" . $source_id. "'";
+  my $sth = dbi()->prepare($sql);
+  $sth->execute();
+  my @row = $sth->fetchrow_array();
+  if (@row) {
+    $source_name = $row[0]; 
+  } else {
+    print STDERR "WARNING: There is no entity with source-id  $source_id  in the source-table of the \n" .
+      "WARNING: xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n" .
+	"WARNING: and in the parser\n";
+    warn("WARNING: Couldn't get source name for source ID $source_id\n");
+    $source_name = -1;
+  }
+  return $source_name;
+}
+
+
+
+
+
+
+
+
 
 sub get_valid_xrefs_for_dependencies{
   my ($self, $dependent_name, @reverse_ordered_source_list) = @_;
