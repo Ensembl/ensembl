@@ -16,7 +16,7 @@ Create TABLE new_peptide_archive(
   PRIMARY KEY( peptide_archive_id ),
   KEY checksum( md5_checksum )
 
-) COLLATE=latin1_bin TYPE=MyISAM;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 INSERT INTO new_peptide_archive( md5_checksum, peptide_seq,
@@ -41,7 +41,7 @@ CREATE TABLE peptide_archive(
   PRIMARY KEY( peptide_archive_id ),
   KEY checksum( md5_checksum )
 
-) COLLATE=latin1_bin TYPE=MyISAM;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 INSERT INTO peptide_archive
 SELECT peptide_archive_id, md5_checksum, peptide_seq
