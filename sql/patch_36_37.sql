@@ -48,3 +48,14 @@ SELECT peptide_archive_id, md5_checksum, peptide_seq
 FROM new_peptide_archive;
 
 DROP TABLE new_peptide_archive; 
+
+# new gene_attrib table
+CREATE TABLE gene_attrib (
+  gene_id                     int(10) unsigned NOT NULL default '0',
+  attrib_type_id              smallint(5) unsigned NOT NULL default '0',
+  value                       varchar(255) NOT NULL default '',
+
+  KEY type_val_idx( attrib_type_id, value ),
+  KEY gene_idx( gene_id )
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
