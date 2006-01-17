@@ -20,7 +20,7 @@ sub consortium {
 
 sub gene_description_sources {
 
-  return ("RefSeq_dna_predicted", "RefSeq_peptide_predicted", "Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/SWISSPROT", "MarkerSymbol");
+  return ("RefSeq_dna_predicted", "RefSeq_peptide_predicted", "Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/SWISSPROT", "MarkerSymbol", "RFAM", "miRNA_Registry");
 
 }
 
@@ -72,22 +72,12 @@ sub get_best {
 
   while(!$check){
 
-#    if($gene_id == "85298"){
-#      print $gene_id. join(',',@refs)."\n";
-#      print "the number of mouse special reg exp is ".scalar(@mouseregexps). " \n";
-#    }
     $new_best = pop(@refs);
     
     if($new_best){
-#      if($gene_id == "85298"){
-#      	print  "best = $new_best\tacc=*".$xref_accessions->{$new_best}."*\npre*".$xref_descriptions->{$new_best}."*\n";
-#      }
       my $description = $self->filter_by_regexp($xref_descriptions->{$new_best}, \@mouseregexps);
       
       
-#      if($gene_id == "85298"){
-#      	print "post*".$description."*\n";
-#      }
       if ($description ne "") {
 	$best_xref = $new_best;
 	$check=1;
