@@ -3,7 +3,7 @@ use strict;
 use Getopt::Long;
 use XrefParser::BaseParser;
 
-my ($host, $port, $dbname, $user, $pass, @species, @sources, $skipdownload, $create, $release, $cleanup,$drop_existing_db);
+my ($host, $port, $dbname, $user, $pass, @species, @sources, $skipdownload, $checkdownload, $create, $release, $cleanup,$drop_existing_db);
 
 GetOptions('user=s'       => \$user,
 	   'pass=s'       => \$pass,
@@ -12,11 +12,12 @@ GetOptions('user=s'       => \$user,
 	   'dbname=s'     => \$dbname,
 	   'species=s'    => \@species,
 	   'source=s'     => \@sources,
-	   'skipdownload' => \$skipdownload,
+	   'skipdownload'  => \$skipdownload,     # skips all downloads
+	   'checkdownload!' => \$checkdownload,   # if file exists it won't be downloaded 
 	   'create'       => \$create,
 	   'setrelease=s' => \$release,
 	   'cleanup'      => \$cleanup,
-	   'drop_db|dropdb!'     => \$drop_existing_db,
+	   'drop_db|dropdb!'     => \$drop_existing_db, # drops xref db without user interaction
 	   'help'         => sub { usage(); exit(0); });
 
 @species = split(/,/,join(',',@species));
@@ -30,7 +31,9 @@ if (!$user || !$host || !$dbname) {
 
 }
 
-XrefParser::BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources, $skipdownload, $create, $release, $cleanup,$drop_existing_db);
+
+
+XrefParser::BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources, $skipdownload, $checkdownload, $create, $release, $cleanup,$drop_existing_db);
 
 # --------------------------------------------------------------------------------
 
@@ -69,13 +72,15 @@ sub usage {
                 already exists. User is prompted before database is dropped to
                 prevent disasters arising from dropping the wrong database.
 
-  -skipdownload Don't download new data, parse existing.
+  -skipdownload Don't download any data, parse existing.
+
+  -checkdownload Check if file exiss, otherwise downloads the file 
 
   -setrelease   Set the release version for ALL the sources specified.
 
   -cleanup      Delete the downloaded source files after parsing.
 
-  -drop_db      Drop the xref-database
+  -drop_db      Drop the xref-database without user interaction
 
 EOF
 
