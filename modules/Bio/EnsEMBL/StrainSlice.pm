@@ -124,6 +124,25 @@ sub new{
     }
 }
 
+=head2 strain_name
+
+    Arg [1]     : (optional) string $strain_name
+    Example     : my $strain_name = $strainSlice->strain_name();
+    Description : Getter/Setter for the name of the strain
+    ReturnType  : string
+    Exceptions  : none
+    Caller      : general
+
+=cut
+
+sub strain_name{
+   my $self = shift;
+   if (@_){
+       $self->{'strain_name'} = shift @_;
+   }
+   return $self->{'strain_name'};
+}
+
 =head2 seq
 
   Arg [1]    : none
