@@ -1231,7 +1231,7 @@ sub dump_direct_xrefs {
   $trans_sth->finish();
 
   # Will need lookup tables for gene/transcript/translation stable ID to internal ID
-  my $stable_id_to_internal_id = $self->build_stable_id_to_internal_id_hash();
+  my ($stable_id_to_internal_id,$internal_id_to_stable_id) = $self->build_stable_id_to_internal_id_hash();
 
 
   # SQL / statement handle for getting all direct xrefs
@@ -1258,8 +1258,17 @@ sub dump_direct_xrefs {
 	#print "CCDS: transcript $tmp_esid -> translation $ensembl_stable_id\n";
       }
 
-      my $ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$ensembl_stable_id};
-
+      my $ensembl_internal_id;
+      if(defined($stable_id_to_internal_id->{$type}->{$ensembl_stable_id})){
+	$ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$ensembl_stable_id};
+      }
+      else{ # ncRNA store internal id not stable check and switch if needed
+	if(defined($internal_id_to_stable_id->{$type}->{$ensembl_stable_id})){
+	  my $tmp = $internal_id_to_stable_id->{$type}->{$ensembl_stable_id};
+	  $ensembl_internal_id = $ensembl_stable_id;
+	  $ensembl_stable_id = $tmp;
+	}
+      }
       if ($ensembl_internal_id) {
 
 	if (!$xrefs_written{$xref_id}) {
@@ -1363,7 +1372,7 @@ sub build_stable_id_to_internal_id_hash {
   my ($self) = @_;
 
   my %stable_id_to_internal_id;
-
+  my %internal_id_to_stable_id;
   foreach my $type ('gene', 'transcript', 'translation') { # Add exon here if required
 
     print "Caching stable ID -> internal ID links for ${type}s\n";
@@ -1377,12 +1386,13 @@ sub build_stable_id_to_internal_id_hash {
     while ($sth->fetch) {
 
       $stable_id_to_internal_id{$type}{$stable_id} = $internal_id;
+      $internal_id_to_stable_id{$type}{$internal_id} = $stable_id;
 
     }
 
   }
 
-  return \%stable_id_to_internal_id;
+  return (\%stable_id_to_internal_id,\%internal_id_to_stable_id);
 
 }
 
@@ -1939,7 +1949,7 @@ sub build_gene_display_xrefs {
 
     if (defined($best_xref)) {
       # Write record
-      print GENE_DX "UPDATE gene g, analysis a SET g.display_xref_id=" . $best_xref . " WHERE g.gene_id=" . $gene_id . " AND g.analysis_id=a.analysis_id AND a.logic_name != \"ncRNA\";\n";
+      print GENE_DX "UPDATE gene g SET g.display_xref_id=" . $best_xref . " WHERE g.gene_id=" . $gene_id . ";\n";
       print GENE_DX_TXT $best_xref . "\t" . $gene_id ."\n";
       $hit++;
     } else {
@@ -1964,9 +1974,10 @@ sub build_gene_display_xrefs {
 
 sub transcript_display_xref_sources {
 
-  return ('HUGO',
+  return ('RFAM',
+	  'miRNA_Registry',
+	  'HUGO',
 	  'MarkerSymbol',
-#	  'wormbase_transcript',
 	  'flybase_symbol',
 	  'Anopheles_symbol',
 	  'Genoscope_annotated_gene',
@@ -2054,10 +2065,10 @@ sub map_source_to_external_db {
   my %source_to_external_db;
 
   # get all sources
-  my $sth = $self->xref->dbc->prepare("SELECT source_id, name FROM source");
+  my $sth = $self->xref->dbc->prepare("select s.source_id, s.name, count(*) from xref x, source s where x.source_id = s.source_id group by source_id");
   $sth->execute();
-  my ($source_id, $source_name);
-  $sth->bind_columns(\$source_id, \$source_name);
+  my ($source_id, $source_name, $count);
+  $sth->bind_columns(\$source_id, \$source_name, \$count);
 
   while($sth->fetchrow_array()) {
 
@@ -2074,7 +2085,6 @@ sub map_source_to_external_db {
       #print "Source name $source_name id $source_id corresponds to core external_db_id " . $row[0] . "\n";
 
     } else {
-
       print STDERR "Can't find external_db entry for source name $source_name; xrefs for this source will not be written. Consider adding $source_name to external_db and \n"
       . " Make sure that you used TABS not spaces as delimiters in external_db.txt\n" ; 
     }
@@ -2152,31 +2162,24 @@ sub do_upload {
   
   # gene & transcript display_xrefs
   my $sth = $core_db->prepare(<<GADES);
-  UPDATE gene g, analysis a 
+  UPDATE gene g 
     SET g.display_xref_id=NULL 
-      WHERE g.analysis_id=a.analysis_id 
-	AND a.logic_name != "ncRNA"
 GADES
   print "Setting all existing display_xref_id in gene to null\n";
   $sth->execute();
   
 
   my $sth = $core_db->prepare(<<TRAN);
-  UPDATE transcript t, gene g, analysis a 
+  UPDATE transcript t 
     SET t.display_xref_id=NULL
-      WHERE g.analysis_id = a.analysis_id
-	AND a.logic_name != "ncRNA"
-	  AND g.gene_id =t.gene_id
 TRAN
   print "Setting all existing display_xref_id in transcript to null\n";
   $sth->execute();
 
   # gene descriptions
   my $sth = $core_db->prepare(<<GENE);
-  UPDATE gene g, analysis a 
+  UPDATE gene g
     SET g.description=NULL 
-      WHERE g.analysis_id=a.analysis_id 
-	AND a.logic_name != "ncRNA";
 GENE
   print "Setting all existing descriptions in gene table to null\n";
   $sth->execute();
@@ -2379,7 +2382,7 @@ sub build_gene_descriptions {
       @gene_xrefs = sort {compare_xref_descriptions($self->consortium(), $gene_id, \%local_xref_to_object)} @gene_xrefs;
 
 #      my $best_xref = $gene_xrefs[-1];
-      my $best_xref = $self->get_best(\@gene_xrefs,$gene_id);
+      my $best_xref = $self->get_best(\@gene_xrefs);
       my $source = $xref_to_source{$best_xref};
 
       # only store the description if its source is one of the allowed ones
@@ -2392,8 +2395,7 @@ sub build_gene_descriptions {
 
 	my $desc = $description . " [Source:$source;Acc:$acc]";
 
-	# prevent overwriting ncRNA gene descriptions as these are calculated by an external method
-	print GENE_DESCRIPTIONS "UPDATE gene g, analysis a SET g.description=\"$desc\" WHERE a.analysis_id=g.analysis_id AND a.logic_name != \"ncRNA\" AND g.gene_id=$gene_id;\n" if ($description);
+	print GENE_DESCRIPTIONS "UPDATE gene g SET g.description=\"$desc\" WHERE g.gene_id=$gene_id;\n" if ($description);
 
       }
 
@@ -2419,7 +2421,7 @@ sub check_err {
 }
 
 sub get_best {
-  my ($self,$refxref,$gene_id) = @_;
+  my ($self,$refxref) = @_;
   return $$refxref[-1];
 }
 
