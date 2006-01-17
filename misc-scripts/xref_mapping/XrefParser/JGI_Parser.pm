@@ -50,8 +50,10 @@ sub run {
 
   local $/ = "\n>";
 
-  open(FILE,"<".$file) || die "Could not open $file\n";
-
+  if(!open(FILE,"<".$file)){
+    print  "ERROR: Could not open $file\n";
+    return 1; # 1 is an error
+  }
   while (<FILE>) {
 
     next if (/^File:/);   # skip header
@@ -89,7 +91,7 @@ sub run {
       print "WARNING : The source-name specified in the populate_metatable.sql file is\n" .
         "WARNING : not matching the differnt cases specified in JGI_Parser.pm - plese\n" .  
           "WARNING : edit the parser \n" ; 
-      exit(0);    
+      return 1;    
     } 
     #print "ACCESSION $acession\n" ;  
 
@@ -127,7 +129,7 @@ sub run {
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 
   print "Done\n";
-
+  return 0; # successful
 }
 
 

@@ -22,8 +22,10 @@ sub run {
 
   local $/ = "\n>";
 
-  open(IPI,"<".$file) || die "Could not open $file\n";
-
+  if(!open(IPI,"<".$file)){
+    print "ERROR: Could not open $file\n";
+    return 1; # 1 = error
+  }
   my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);
 
   while (<IPI>) {
@@ -67,7 +69,7 @@ sub run {
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 
   print "Done\n";
-
+  return 0; #successful
 }
 
 

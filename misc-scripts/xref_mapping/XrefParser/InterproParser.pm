@@ -62,7 +62,10 @@ sub run {
   my %description;
   my %pfam;
      
-  open (XML, $dir."/interpro.xml") || die "Can't open hugo interpro file $dir/interpro.xml\n";
+  if(!open (XML, $dir."/interpro.xml")){
+    print "ERROR: Can't open hugo interpro file $dir/interpro.xml\n";
+    return 1; # 1= error
+  }
   #<interpro id="IPR001023" type="Family" short_name="Hsp70" protein_count="1556">
   #    <name>Heat shock protein Hsp70</name>
   #     <db_xref protein_count="18" db="PFAM" dbkey="PF01278" name="Omptin" />
@@ -88,13 +91,14 @@ sub run {
 #      print $interpro."\n";
       if(!get_xref($get_xref_sth, $interpro, $source_id)){
 	$count{INTERPRO}++;
-	$add_xref_sth->execute($interpro,'',$short_name, $name,$source_id,$species_id)
-	  || die "Problem adding ".$interpro."\n";
+	if(!$add_xref_sth->execute($interpro,'',$short_name, $name,$source_id,$species_id)){
+	  print "Problem adding ".$interpro."\n";
+	  return 1; # 1 is an error
+	}
       }
 
       while( /db="(PROSITE|PFAM|PRINTS|PREFILE|PROFILE|TIGRFAMs)"\s+dbkey="(\S+)"/cgm ) {
 	my ( $db_type, $id ) =  ( $1, $2 );
-#	print $db_type."\t".$id."\n";
 	if(!get_xref($get_interpro_sth, $interpro,$id)){
 	  $add_interpro_sth->execute($interpro,$id);
 	  $count{$db_type}++;
@@ -104,11 +108,10 @@ sub run {
   }
 
   close (LONG);
-#  die "\n";
   for my $db ( keys %count ) {
     print "\t".$count{$db}." $db loaded.\n";
   }
-  
+  return 0;
 }
 
 sub get_xref{

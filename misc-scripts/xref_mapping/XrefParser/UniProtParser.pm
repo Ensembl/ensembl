@@ -53,6 +53,9 @@ sub run {
 
 
   my @xrefs = create_xrefs($sp_source_id, $sptr_source_id, $species_id, $file);
+  if(!defined(@xrefs)){
+    return 1; # 1 error
+  }
 
   # delete previous if running directly rather than via BaseParser
   if (!defined(caller(1))) {
@@ -61,8 +64,10 @@ sub run {
   }
 
   # upload
-  XrefParser::BaseParser->upload_xref_object_graphs(@xrefs);
-
+  if(!defined(XrefParser::BaseParser->upload_xref_object_graphs(@xrefs))){
+    return 1; 
+  }
+  return 0; # successfull
 }
 
 # --------------------------------------------------------------------------------
@@ -123,8 +128,10 @@ sub create_xrefs {
   print "Predicted EMBL source id for $file: $embl_pred_source_id\n";
   print "Predicted protein_id source id for $file: $protein_id_pred_source_id\n";
 
-  open(UNIPROT, $file) || die "Can't open Swissprot file $file\n";
-
+  if(!open(UNIPROT, $file)){
+    print"Can't open Swissprot file $file\n";
+    return undef;
+  }
   my @xrefs;
 
   local $/ = "\/\/\n";
@@ -139,21 +146,15 @@ sub create_xrefs {
     #OX   NCBI_TaxID=103690;
 
     my ($ox) = $_ =~ /OX\s+[a-zA-Z_]+=([0-9 ,]+);/;
-#    print "OX  --> $ox\n";
     my @ox = split /\, /, $ox;
     my $found = 0;
 
     my %taxonomy2species_id = XrefParser::BaseParser->taxonomy2species_id();
     foreach my $taxon_id_from_file (@ox){
-#      print "taxon_id= ".$taxon_id_from_file."\n";
       if (exists $taxonomy2species_id{$taxon_id_from_file} 
 	  and $taxonomy2species_id{$taxon_id_from_file} eq $species_id) {
-#	print "PASS ".$taxon_id_from_file."\n";
 	$found = 1;	
       }
-#      else{
-#	print "FAIL ".$taxon_id_from_file."\n";
-#      }
     }
 
     next if (!$found); # no taxon_id's match, so skip to next record
@@ -288,29 +289,6 @@ sub create_xrefs {
 	}
       }
     }
-
-    # store PUBMED and MEDLINE dependent xrefs too
-    #my ($medline) = $_ =~ /RX\s+MEDLINE=(\d+);/;
-    #if (defined $medline) {
-    #
-    #  my %medline_dep;
-    #  $medline_dep{SOURCE_ID} = $dependent_sources{PUBMED};
-    #  $medline_dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
-    #  $medline_dep{ACCESSION} = $medline;
-    #  push @{$xref->{DEPENDENT_XREFS}}, \%medline_dep;
-    #
-    #}
-
-    #my ($pubmed) = $_ =~ /RX\s+PubMed=(\d+);/;
-    #if (defined $pubmed) {
-    #
-    #  my %pubmed_dep;
-    #  $pubmed_dep{SOURCE_ID} = $dependent_sources{PUBMED};
-    #  $pubmed_dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
-    #  $pubmed_dep{ACCESSION} = $pubmed;
-    #  push @{$xref->{DEPENDENT_XREFS}}, \%pubmed_dep;
-    #
-    #}
 
     push @xrefs, $xref;
 

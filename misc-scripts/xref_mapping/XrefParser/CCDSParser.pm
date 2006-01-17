@@ -18,8 +18,10 @@ sub run {
 
   my ($self, $file, $source_id, $species_id) = @_;
 
-  open(CCDS,"<".$file) || die "Could not open $file\n";
-
+  if(!open(CCDS,"<".$file)){
+    print "Could not open $file\n";
+    return 1;
+  }
   my $line_count = 0;
   my $xref_count = 0;
 
@@ -47,7 +49,7 @@ sub run {
   print "Parsed $line_count CCDS identifiers from $file, added $xref_count xrefs and $line_count direct_xrefs\n";
 
   close(CCDS);
-
+  return 0;
 }
 
 

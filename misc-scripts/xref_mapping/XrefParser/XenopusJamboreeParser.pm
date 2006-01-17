@@ -24,8 +24,10 @@ sub run {
 
   local $/ = "\n>";
 
-  open(FILE,"<".$file) || die "Could not open $file\n";
-
+  if(!open(FILE,"<".$file)){
+    print "ERROR: Could not open $file\n";
+    return 1;  # 1 error
+  }
   my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);
 
   while (<FILE>) {
@@ -59,10 +61,12 @@ sub run {
 
   print scalar(@xrefs) . " XenopusJamboreeParser xrefs succesfully parsed\n";
 
-  XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
+  if(!defined(XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs))){
+    return 1; #1 error
+  }
 
   print "Done\n";
-
+  return 0;
 }
 
 

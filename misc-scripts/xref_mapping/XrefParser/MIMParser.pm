@@ -42,10 +42,17 @@ sub run {
 
   my (%genename2xref) = gene_name_2_xref_from_hugo();
 
+  if(!defined(%genename2xref)){
+    return 1;
+  }
+
   my $count =0;
   my $mismatch=0;
 
-  open(MIM,"<".$file) || die "Could not open $file\n";
+  if(!open(MIM,"<".$file)){
+    print  "ERROR: Could not open $file\n";
+    return 1; # 1 is an error
+  }
 
   while (<MIM>) {
     chomp;
@@ -67,6 +74,7 @@ sub run {
   }
   print "\t$count succesfull xrefs loaded\n";
   print "\t$mismatch xrefs ignored\n";
+  return 0; #successful
 }
 
 sub gene_name_2_xref_from_hugo{
@@ -82,7 +90,8 @@ sub gene_name_2_xref_from_hugo{
     $source_id_for_hugo = $row[0];
   }
   if(! $source_id_for_hugo){
-    die "Could not find source id for HUGO.\n";
+    print  "ERROR: Could not find source id for HUGO.\n";
+    return undef;
   }
 
 

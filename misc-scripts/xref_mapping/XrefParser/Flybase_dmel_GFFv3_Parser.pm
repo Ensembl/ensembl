@@ -125,7 +125,9 @@ sub run {
   my $external_source_db_name = $self->external_source_db_name() ;
   my $flybase_source_id = $self->get_source($external_source_db_name);
 
-  $self->create_xrefs($flybase_source_id, $file);
+  if(!$self->create_xrefs($flybase_source_id, $file)){
+    return 1;
+  }
 
   my @xrefs = @{$self->xrefs};
 
@@ -145,6 +147,7 @@ sub run {
   print STDERR "uploading ".scalar(@direct_xrefs)." direct-xrefs's\n";
   XrefParser::BaseParser->upload_direct_xrefs(\@direct_xrefs);
 
+  return 0;
 }
 
 sub relink_synonyms_to_xrefs{
@@ -162,8 +165,10 @@ sub create_xrefs {
   my ($self, $flybase_source_id, $file) = @_;
 
   print STDERR "starting to parse $file...." ;
-  open(GFF, $file) || die "Can't open the GFF file $file\n";
-
+  if(!open(GFF, $file)){
+    print "ERROR: Can't open the GFF file $file\n";
+    return 1;
+  }
   while (<GFF>) {
     chomp;
     my @col = split /\s+/;
@@ -177,7 +182,11 @@ sub create_xrefs {
 
 	my @desc = split /\;/,$col[8];
 	my $cgid = shift @desc;
-	throw("parse-error: There seems to be no Identifier: $cgid. Suspicous!") unless ($cgid=~m/ID=/);
+	if(!$cgid=~m/ID=/){
+	  print "parse-error: There seems to be no Identifier: $cgid. Suspicous!";
+	  return 0;
+	}
+#	throw("parse-error: There seems to be no Identifier: $cgid. Suspicous!") unless ($cgid=~m/ID=/);
 	$cgid =~s/ID=//g;
 
 	# set up xref-entry for EVERY single item
@@ -196,7 +205,7 @@ sub create_xrefs {
     }
   }
   close (GFF);
-  return;
+  return 0;
 }
 
 sub set_ensembl_object_type{

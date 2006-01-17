@@ -86,6 +86,7 @@ sub run {
   $sth->bind_columns(\$source_id, \$source_url_id, \$name, \$url, \$checksum, \$parser, \$species_id);
   my $last_type = "";
   my $dir;
+  my %summary=();
   while (my @row = $sth->fetchrow_array()) {
 
     # Download each source into the appropriate directory for parsing later
@@ -103,6 +104,12 @@ sub run {
     my @new_file=();
     $dir = $base_dir . "/" . sanitise($type);
     my $dsn;
+    $summary{$parser} = 0;
+    ##
+    # for summary purposes if 0 is returned then it is successful.
+    #                         1 is returned then if failed.
+    #                     undef/nothing  is returned the we do not know
+    ##
     foreach my $urls (@files){
 
       # Database parsing
@@ -111,7 +118,9 @@ sub run {
 	print "Parsing $dsn with $parser\n";
         eval "require XrefParser::$parser";
         my $new = "XrefParser::$parser"->new();
-        $new->run($dsn, $source_id, $species_id);
+        if($new->run($dsn, $source_id, $species_id)){
+	  $summary{$parser}++;
+	}
 	next;
       }
 
@@ -122,7 +131,9 @@ sub run {
 	print "Parsing local file $local_file with $parser\n";
         eval "require XrefParser::$parser";
         my $new = "XrefParser::$parser"->new();
-        $new->run($local_file, $source_id, $species_id);
+        if($new->run($local_file, $source_id, $species_id)){
+	  $summary{$parser}++;
+	}
 	next;
       }
 
@@ -143,6 +154,13 @@ sub run {
       }
 
 
+      $file =~ s/[&=]//g;
+      if (length($file) > 100) {
+	#	  $file = time;
+	$file = md5_hex($file);
+	print"URL is longer than 100 charcters; renamed to $file\n";
+      }
+
       # File parsing
       if (!$skipdownload) {
 
@@ -151,11 +169,6 @@ sub run {
 
 	$last_type = $type;
 
-	$file =~ s/[&=]//g;
-	if (length($file) > 100) {
-	  $file = time;
-	  print"URL is longer than 100 charcters; renamed to $file\n";
-	}
 
 	print "Downloading $urls to $dir/$file\n";
 
@@ -198,42 +211,64 @@ sub run {
       # compare checksums and parse/upload if necessary
       # need to check file size as some .SPC files can be of zero length
       $file_cs = md5sum("$dir/$file");
-      if (!defined $checksum || $checksum ne $file_cs) {
-	if (-s "$dir/$file") {
-	  $parse =1;
-	  print "Checksum for $file does not match, parsing\n";
-	
-	  # Files from sources "Uniprot/SWISSPROT" and "Uniprot/SPTREMBL" are
-	  # all parsed with the same parser
-	  $parser = 'UniProtParser' if ($parser eq "Uniprot/SWISSPROT" || $parser eq "Uniprot/SPTREMBL");
+      if(defined($file_cs)){
+	if (!defined $checksum || $checksum ne $file_cs) {
+	  if (-s "$dir/$file") {
+	    $parse =1;
+	    print "Checksum for $file does not match, parsing\n";
+	    
+	    # Files from sources "Uniprot/SWISSPROT" and "Uniprot/SPTREMBL" are
+	    # all parsed with the same parser
+	    $parser = 'UniProtParser' if ($parser eq "Uniprot/SWISSPROT" || $parser eq "Uniprot/SPTREMBL");
+	  }
+	  else {
+	    $empty = 1;
+	    print $file . " has zero length, skipping\n";
+	  }
 	}
-	else {
-	  $empty = 1;
-	  print $file . " has zero length, skipping\n";
-	}
+      }
+      else{
+	$summary{$parser}++;	
       }
     }
-    if($parse){
+    
+    if($parse and defined($new_file[0]) and defined($file_cs)){
 
-	print "Parsing ".join(' ',@new_file)." with $parser\n";
-	eval "require XrefParser::$parser";
-	my $new = "XrefParser::$parser"->new();
-	$new->run("$dir/$new_file[0]", $source_id, $species_id);
-
-	# update AFTER processing in case of crash.
-	update_source($dbi, $source_url_id, $file_cs, $new_file[0]);
-
-	# set release if specified
-	set_release($release, $source_id) if ($release);
-
-	unlink("$dir/$new_file[0]") if ($cleanup);
-
+      print "Parsing ".join(' ',@new_file)." with $parser\n";
+      eval "require XrefParser::$parser";
+      my $new = "XrefParser::$parser"->new();
+      if($new->run("$dir/$new_file[0]", $source_id, $species_id)){
+	$summary{$parser}++;
       }
-    elsif(!$dsn && !$empty){
+      
+      # update AFTER processing in case of crash.
+      update_source($dbi, $source_url_id, $file_cs, $new_file[0]);
+      
+      # set release if specified
+      set_release($release, $source_id) if ($release);
+      
+      unlink("$dir/$new_file[0]") if ($cleanup);
+      
+    }
+    elsif(!$dsn && !$empty && defined($new_file[0])){
       print "Ignoring ".join(' ',@new_file)." as checksums match\n";
     }
 
   }
+  print "---------------------------------------------------------\n";
+  print "Summary of status\n";
+  print "---------------------------------------------------------\n";
+  foreach my $key (keys %summary){
+    print $key."\t";
+    if($summary{$key}){
+      print "FAILED\n";
+    }
+    else{
+      print "OKAY\n";
+    }
+  }
+
+
 
   # remove last working directory
   # TODO reinstate after debugging
@@ -516,7 +551,10 @@ sub upload_xref_object_graphs {
 
     foreach my $xref (@{$rxrefs}) {
        my $xref_id=undef;
-       throw("your xref does not have an accession-number,so it can't be stored in the database") unless ($xref->{ACCESSION});
+       if(!defined($xref->{ACCESSION})){
+	 print "your xref does not have an accession-number,so it can't be stored in the database\n";
+	 return undef;
+       }
       # Create entry in xref table and note ID
       if(! $xref_sth->execute($xref->{ACCESSION},
 			 $xref->{VERSION},
@@ -524,7 +562,10 @@ sub upload_xref_object_graphs {
 			 $xref->{DESCRIPTION},
 			 $xref->{SOURCE_ID},
 			 $xref->{SPECIES_ID})){
-	throw("your xref: $xref->{ACCESSION} does not have a source-id") unless $xref->{SOURCE_ID};
+	if(!defined($xref->{SOURCE_ID})){
+	  print "your xref: $xref->{ACCESSION} does not have a source-id\n";
+	  return undef;
+	}
 	$xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID});
 	$xref_update_label_sth->execute($xref->{LABEL},$xref_id) if (defined($xref->{LABEL}));
 	$xref_update_descr_sth->execute($xref->{DESCRIPTION},$xref_id,) if (defined($xref->{DESCRIPTION}));
@@ -593,6 +634,7 @@ sub upload_xref_object_graphs {
      }  # foreach xref
 
   }
+  return 1;
 }
 
 sub upload_direct_xrefs{
@@ -723,8 +765,8 @@ sub md5sum {
   unless (-e $file) {
 	print "\n\nWarning: can't find file $file - you have to download it again. \n\n" ; 
         print " SKIPPING $file\n" ; 
-        sleep(10) ; 	
-	return ; 
+#        sleep(10) ; 	
+	return undef; 
   }
 
   open(FILE, $file);
@@ -1000,11 +1042,14 @@ sub add_to_xrefs{
     $add_dependent_xref_sth = dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
   }
 
-  my $dependent_id = get_xref($acc, $source_id);
+  my $dependent_id = $self->get_xref($acc, $source_id);
   if(!defined($dependent_id)){
     $add_xref_sth->execute($acc,$version,$label,$description,$source_id,$species_id) || die "$acc\t$label\t\t$source_id\t$species_id\n";
   }
-  $dependent_id = get_xref($acc, $source_id);
+  $dependent_id = $self->get_xref($acc, $source_id);
+  if(!defined($dependent_id)){
+    die "$acc\t$label\t\t$source_id\t$species_id\n";
+  }
   $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id)|| die "$master_xref\t$dependent_id\t$linkage\t$source_id";
 
 
@@ -1016,7 +1061,7 @@ sub add_to_syn{
   if(!defined($add_synonym_sth)){
     $add_synonym_sth =  $dbi->prepare("INSERT INTO synonym VALUES(?,?)");
   }
-  my $xref_id = get_xref($acc, $source_id);
+  my $xref_id = $self->get_xref($acc, $source_id);
   if(defined($xref_id)){
     $add_synonym_sth->execute($xref_id, $syn) || die "$dbi->errstr \n $xref_id\n $syn\n";
   }

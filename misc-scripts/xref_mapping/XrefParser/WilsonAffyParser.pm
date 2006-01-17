@@ -18,8 +18,14 @@ sub run {
 
   my @xrefs = $self->create_xrefs($source_id, $species_id, $file);
 
+  if(!defined(@xrefs)){
+    return 1; #  1 error
+  }
   # upload
-  XrefParser::BaseParser->upload_xref_object_graphs(@xrefs);
+  if(!defined(XrefParser::BaseParser->upload_xref_object_graphs(@xrefs))){
+    return 1;
+  }
+  return 0;
 
 }
 
@@ -33,8 +39,10 @@ sub create_xrefs {
 
   my @xrefs;
 
-  open(FILE,"<".$file) || die "Could not open $file\n";
-
+  if(!open(FILE,"<".$file)){
+    print "ERROR: Could not open $file\n";
+    return 1; # 1 error
+  }
   <FILE>; # skip first line
 
   while (<FILE>) {

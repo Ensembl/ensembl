@@ -46,8 +46,10 @@ sub run {
 
   my $count = 0;
   my $mismatch = 0;
-  open (HUGO, "<$file") || die "Can't open hugo file $file\n";
-
+  if(!open (HUGO, "<$file")){
+    print  "ERROR: Can't open hugo file $file\n";
+    return 1;
+  }
 
   <HUGO>;
 #23	ABAT	4-aminobutyrate aminotransferase		P80404
@@ -93,7 +95,9 @@ sub run {
   close (HUGO);
   print "\t$count xrefs succesfully loaded\n";
   print "\t$mismatch xrefs ignored\n";
+  return 0; # successful
 }
+
 sub rename_url_file{
   return "hugo.txt";
 }

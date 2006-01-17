@@ -51,7 +51,10 @@ sub run {
   my $mismatch = 0;
   my %mgi_good;
 
-  open(FILE,"<". $file) || die "could not open file $file";
+  if(!open(FILE,"<". $file)){
+    print  "ERROR: Could not open file $file";
+    return 1; # 1 is an error
+  }
   while(my $line = <FILE>){
     chomp $line;
     my ($key,$label,$desc,$sps) = (split("\t",$line))[0,1,3,6];
@@ -73,7 +76,10 @@ sub run {
   my $dir = dirname($file);
   my $syn_file = $dir."/MRK_Synonym.sql.rpt";
 
-  open(FILE2,"<". $syn_file) || die "could not open file $syn_file";
+  if(!open(FILE2,"<". $syn_file)){
+    print  "ERROR: Could not open file $syn_file";
+    return 1;
+  }
   my $synonyms=0;
 
   while(<FILE2>){
@@ -91,7 +97,7 @@ sub run {
   print "\t$synonyms synonyms successfully loaded\n";
   print "\t$mismatch xrefs failed to load\n";
      
-
+  return 0;
 
 
 }                                                                                                                     

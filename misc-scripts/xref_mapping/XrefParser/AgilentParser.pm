@@ -22,8 +22,10 @@ sub run {
 
   local $/ = "\n>";
 
-  open(AG,"<".$file) || die "Could not open $file\n";
-
+  if(!open(AG,"<".$file)){
+    print "Could not open $file\n";
+    return 1;
+  }
   while (<AG>) {
 
     chomp;
@@ -60,7 +62,7 @@ sub run {
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 
   print "Done\n";
-
+  return 0;
 }
 
 

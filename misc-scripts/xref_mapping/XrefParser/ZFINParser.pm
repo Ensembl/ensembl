@@ -45,7 +45,10 @@ sub run {
   my (%swiss) = %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
 
-  open(SWISSPROT,"<".$dir."/swissprot.txt") || die "Could not open $dir/swissprot.txt\n";
+  if(!open(SWISSPROT,"<".$dir."/swissprot.txt")){
+    print  "ERROR: Could not open $dir/swissprot.txt\n";
+    return 1; # 1 error
+  }
 #e.g.
 #ZDB-GENE-000112-30      couptf2 O42532
 #ZDB-GENE-000112-32      couptf3 O42533
@@ -67,7 +70,10 @@ sub run {
   }
   close SWISSPROT;
   
-  open(REFSEQ,"<".$dir."/refseq.txt") || die "Could not open $dir/refseq.txt\n";
+  if(!open(REFSEQ,"<".$dir."/refseq.txt")){
+    print  "ERROR: Could not open $dir/refseq.txt\n";
+    return 1;
+  }
 #ZDB-GENE-000125-12      igfbp2  NM_131458
 #ZDB-GENE-000125-12      igfbp2  NP_571533
 #ZDB-GENE-000125-4       dlc     NP_571019
@@ -85,6 +91,7 @@ sub run {
   close REFSEQ;
   print "\t$count xrefs succesfully loaded\n";
   print "\t$mismatch xrefs ignored\n";
+  return 0;
 }
 
 sub new {

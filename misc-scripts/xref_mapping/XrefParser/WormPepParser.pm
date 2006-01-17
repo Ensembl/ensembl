@@ -31,8 +31,10 @@ sub run {
   my $xref_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$worm_source_id AND species_id=$species_id");
   my $xref_sth2 = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$worm_locus_id AND species_id=$species_id");
 
-  open(PEP,"<".$file) || die "Could not open $file\n";
-
+  if(!open(PEP,"<".$file)){
+    print "ERROR: Could not open $file\n";
+    return 1; # 1 error
+  }
   my ($x_count, $d_count);
 
 
@@ -70,7 +72,7 @@ sub run {
   close (PEP);
 
   print "Added $d_count direct xrefs and $x_count xrefs\n";
-
+  return 0;
 }
 
 sub new {

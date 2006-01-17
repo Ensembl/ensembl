@@ -48,8 +48,10 @@ sub run {
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
 
 
-  open(RGD,"<".$file) || die "Could not open $file\n";
-
+  if(!open(RGD,"<".$file)){
+    print "ERROR: Could not open $file\n";
+    return 1;
+  }
   my $line = <RGD>;
   chomp $line;
   my @linearr = split(/\t/,$line);
@@ -97,6 +99,7 @@ sub run {
   }
   print "\t$count xrefs succesfully loaded and dependent on refseq\n";
   print "\t$mismatch xrefs added but with NO dependencies\n";
+  return 0;
 }
 
 

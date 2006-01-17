@@ -41,8 +41,14 @@ sub run {
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
-
-  XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($unigene_source_id, $unigene_source_id, $file, $species_id));
+my $xrefs =create_xrefs($unigene_source_id, $unigene_source_id, $file, $species_id);
+  if(!defined($xrefs)){
+    return 1; #error
+  }
+  if(!defined(XrefParser::BaseParser->upload_xref_object_graphs($xrefs))){
+    return 1; # error
+  }
+  return 0; # successfull
 
 }
 
@@ -60,7 +66,10 @@ sub get_desc{
   local $/ = "//";
 
 
-  open (DESC, "$dir/$name.data") || die "Can't open $dir/$name.data\n";
+  if(!open (DESC, "$dir/$name.data")){
+    print "ERROR: Can't open $dir/$name.data\n";
+    return undef;
+  }
 
   while(<DESC>){
     
@@ -73,7 +82,7 @@ sub get_desc{
     $geneid_2_desc{$id} = $descrip;
     
   }
-
+  return 1;
 }
 
 
@@ -83,9 +92,15 @@ sub create_xrefs {
 
   my %name2species_id = XrefParser::BaseParser->name2species_id();
 
-  get_desc($file);
+  if(!defined(get_desc($file))){
+    return undef;
+  }
 
-  open(UNIGENE, $file) || die "Can't open RefSeq file $file\n";
+  if(!open(UNIGENE, $file)){
+    print "Can't open RefSeq file $file\n";
+    return undef;
+  }
+
 #>gnl|UG|Hs#S19185843 Homo sapiens N-acetyltransferase 2 (arylamine N-acetyltransferase)
   # , mRNA (cDNA clone MGC:71963 IMAGE:4722596), complete cds /cds=(105,977) /gb=BC067218 /gi=45501306 /ug=Hs.2 /len=1344
 #GGGGACTTCCCTTGCAGACTTTGGAAGGGAGAGCACTTTATTACAGACCTTGGAAGCAAG

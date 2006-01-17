@@ -27,8 +27,10 @@ sub run {
 
   local $/ = "\n>";
 
-  open(FILE,"<".$file) || die "Could not open $file\n";
-
+  if(!open(FILE,"<".$file)){
+    print "Could not open $file\n";
+    return 1;
+  }
   while (<FILE>) {
 
     next if (/^File:/);   # skip header
@@ -74,7 +76,7 @@ sub run {
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 
   print "Done\n";
-
+  return 0;
 }
 
 

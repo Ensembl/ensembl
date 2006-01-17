@@ -51,8 +51,10 @@ sub run {
 
   my $count  = 0;
 
-  open(GO,"<".$file) || die "Could not open $file\n";
-
+  if(!open(GO,"<".$file)){
+    print "ERROR: Could not open $file\n";
+    return 1; # 1 error
+  }
   my $taxon_line = "taxon:".$species_id;
   my $miss =0;
   while (<GO>) {
@@ -132,6 +134,7 @@ sub run {
     }
   }
   print "\t$count GO dependent xrefs added $miss not found\n"; 
+  return 0;
 }
 
 sub new {

@@ -43,7 +43,7 @@ sub run {
     } # while fetch stable ID
 
   } # foreach type
-
+  return 0;
 }
 
 sub new {

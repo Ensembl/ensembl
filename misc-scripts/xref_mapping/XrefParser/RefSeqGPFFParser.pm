@@ -49,8 +49,15 @@ sub run {
   my $pred_dna_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_dna_predicted');
   print "RefSeq_peptide_predicted source ID = $pred_peptide_source_id; RefSeq_dna_predicted source ID = $pred_dna_source_id\n";
 
-   XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id));
 
+  my $xrefs = create_xrefs($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id);
+  if(!defined($xrefs)){
+    return 1; #error
+  }
+  if(!defined(XrefParser::BaseParser->upload_xref_object_graphs($xrefs))){
+    return 1; # error
+  }
+  return 0; # successful
 }
 
 # --------------------------------------------------------------------------------
@@ -68,8 +75,10 @@ sub create_xrefs {
 
   my %dependent_sources =  XrefParser::BaseParser->get_dependent_xref_sources();
 
-  open(REFSEQ, $file) || die "Can't open RefSeqGPFF file $file\n";
-
+  if(!open(REFSEQ, $file)){
+    print "ERROR: Can't open RefSeqGPFF file $file\n";
+    return undef;
+  }
   my @xrefs;
 
   local $/ = "\/\/\n";
@@ -92,7 +101,8 @@ sub create_xrefs {
     $type = 'peptide';
 
   }else{
-    die "Could not work out sequence type for $file\n";
+    print "Could not work out sequence type for $file\n";
+    return undef;
   }
 
 

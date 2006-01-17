@@ -46,7 +46,14 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
-  XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id));
+  my $xrefs = create_xrefs($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id);
+  if(!defined($xrefs)){
+    return 1; #error
+  }
+  if(!defined(XrefParser::BaseParser->upload_xref_object_graphs($xrefs))){
+    return 1; # error
+  }
+  return 0; # successfull
 
 }
 
@@ -63,8 +70,10 @@ sub create_xrefs {
 
   my %name2species_id = XrefParser::BaseParser->name2species_id();
 
-  open(REFSEQ, $file) || die "Can't open RefSeq file $file\n";
-
+  if(!open(REFSEQ, $file)){
+    print "ERROR: Can't open RefSeq file $file\n";
+    return undef;
+  }
   my @xrefs;
 
   local $/ = "\n>";
