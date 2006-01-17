@@ -115,6 +115,11 @@ INSERT INTO source VALUES (3000, "Uniprot/Varsplic", 1, 'Y',1);
 # Xenopus Jamboree peptides
 INSERT INTO source VALUES (3100, "Xenopus_Jamboree", 1, 'Y',1);
 
+# ncRNA sources
+INSERT INTO source VALUES (4000, "ncRNA", 1, 'Y',6);
+INSERT INTO source VALUES (4010, "RFAM", 1, 'N',6);
+INSERT INTO source VALUES (4020, "miRNA_Registry", 1, 'N',6);
+
 ################################################################################
 # Files to fetch data from
 
@@ -277,6 +282,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9606,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Homo_sapiens/Hs.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Homo_sapiens/Hs.data.gz', '', now(), now(), "UniGeneParser");
 
+##      ncRNA's presently inhouse.
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 9606,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
 # --------------------------------------------------------------------------------
 
 ###MOUSE
@@ -311,6 +319,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      Agilent
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 10090,'LOCAL:AgilentProbe/MouseExpression.fasta', '', now(), now(), "AgilentParser");
 
+##      ncRNA's presently inhouse.
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 10090,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
+
 # --------------------------------------------------------------------------------
 ### RAT
 ##      uniprot
@@ -344,6 +356,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##      Agilent
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 10116,'LOCAL:AgilentProbe/RatExpression.fasta', '', now(), now(), "AgilentParser");
+
+##      ncRNA's presently inhouse.
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 10116,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
 # --------------------------------------------------------------------------------
 
