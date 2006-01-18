@@ -59,9 +59,9 @@
 2530	ZFIN_xpat	1	KNOWNXREF	1	0	100	ZFIN expression patterns
 2600	GeneDB	1	KNOWN	1	0	5	GeneDB
 2601	cint_jgi_v1	1	KNOWN	1	0	10	JGI Gene ID (JGI 1.0)
-2602    cint_jgi_v2	1	KNOWN	1	0	5	JGI Gene ID (JGI 2.0) 
+2602	cint_jgi_v2	1	KNOWN	1	0	5	JGI Gene ID (JGI 2.0) 
 2610	cint_aniseed_v1	1	KNOWN	1	0	5	ANISEED (JGI 1.0) 
-2611    cint_aniseed_v2	1	KNOWN	1	0	5	ANISEED (JGI 2.0)
+2611	cint_aniseed_v2	1	KNOWN	1	0	5	ANISEED (JGI 2.0)
 2700	Ens_Hs_gene	1	XREF	1	0	5	Ensembl Human Gene
 2710	Ens_Hs_transcript	1	XREF	1	0	5	Ensembl Human Transcript
 2720	Ens_Hs_translation	1	XREF	1	0	5	Ensembl Human Translation
