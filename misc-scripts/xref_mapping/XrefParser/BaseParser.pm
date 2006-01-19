@@ -126,19 +126,33 @@ sub run {
 
       # Local files need to be dealt with specially; assume they are specified as
       # LOCAL:location/of/file/relative/to/xref_mapper
+      my ($file) = $urls =~ /.*\/(.*)/;
       if ($urls =~ /^LOCAL:(.*)/i) {
 	my $local_file = $1;
-	print "Parsing local file $local_file with $parser\n";
-        eval "require XrefParser::$parser";
-        my $new = "XrefParser::$parser"->new();
-        if($new->run($local_file, $source_id, $species_id)){
+	$file_cs = md5sum("$dir/$file");
+	if(defined($file_cs)){
+	  if (!defined $checksum || $checksum ne $file_cs) {
+	    print "Checksum for $file does not match, parsing\n";
+	    print "Parsing local file $local_file with $parser\n";
+	    eval "require XrefParser::$parser";
+	    my $new = "XrefParser::$parser"->new();
+	    if($new->run($local_file, $source_id, $species_id)){
+	      $summary{$parser}++;
+	    }
+	    else{
+	      update_source($dbi, $source_url_id, $file_cs, $file);
+	    }
+	  }
+	  else{
+	    print "Ignoring $file as checksums match\n";
+	  }
+	}
+	else{
 	  $summary{$parser}++;
 	}
 	next;
       }
-
       # Download files
-      my ($file) = $urls =~ /.*\/(.*)/;
 
       if ( $checkdownload ) {   
          
