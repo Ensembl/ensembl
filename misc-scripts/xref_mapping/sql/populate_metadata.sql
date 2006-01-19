@@ -265,8 +265,8 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
-##      OMIM 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1500, 9606,'ftp://ftp.ncbi.nih.gov/repository/OMIM/morbidmap', '', now(), now(), "MIMParser");
+##      MIM 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1020, 9606,'ftp://ftp.ncbi.nih.gov/repository/OMIM/morbidmap', '', now(), now(), "MIMParser");
 
 ##      IPI
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.HUMAN.fasta.gz', '', now(), now(), "IPIParser");
