@@ -39,6 +39,8 @@ my %translation_to_transcript;
 my %transcript_to_translation;
 my %genes_to_transcripts;
 my %xref_to_source;
+my %stable_id_to_internal_id;
+my %internal_id_to_stable_id;
 my %object_xref_mappings;
 my %object_xref_identities;
 my %xref_descriptions;
@@ -836,6 +838,11 @@ sub parse_mappings {
   # cache xref id->label info; useful for debugging
 #  $self->cache_xref_labels($xref->dbc);
 
+
+
+  # Will need lookup tables for gene/transcript/translation stable ID to internal ID
+  $self->build_stable_id_to_internal_id_hash();
+
   # get current max object_xref_id
   my $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
   my $max_object_xref_id = @{$row}[0];
@@ -1230,8 +1237,8 @@ sub dump_direct_xrefs {
   }
   $trans_sth->finish();
 
-  # Will need lookup tables for gene/transcript/translation stable ID to internal ID
-  my ($stable_id_to_internal_id,$internal_id_to_stable_id) = $self->build_stable_id_to_internal_id_hash();
+#  # Will need lookup tables for gene/transcript/translation stable ID to internal ID
+#  $self->build_stable_id_to_internal_id_hash();
 
 
   # SQL / statement handle for getting all direct xrefs
@@ -1259,12 +1266,12 @@ sub dump_direct_xrefs {
       }
 
       my $ensembl_internal_id;
-      if(defined($stable_id_to_internal_id->{$type}->{$ensembl_stable_id})){
-	$ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$ensembl_stable_id};
+      if(defined($stable_id_to_internal_id{$type}->{$ensembl_stable_id})){
+	$ensembl_internal_id = $stable_id_to_internal_id{$type}->{$ensembl_stable_id};
       }
       else{ # ncRNA store internal id not stable check and switch if needed
-	if(defined($internal_id_to_stable_id->{$type}->{$ensembl_stable_id})){
-	  my $tmp = $internal_id_to_stable_id->{$type}->{$ensembl_stable_id};
+	if(defined($internal_id_to_stable_id{$type}{$ensembl_stable_id})){
+	  my $tmp = $internal_id_to_stable_id{$type}{$ensembl_stable_id};
 	  $ensembl_internal_id = $ensembl_stable_id;
 	  $ensembl_stable_id = $tmp;
 	}
@@ -1300,7 +1307,7 @@ sub dump_direct_xrefs {
 
 	  # search for matching stable IDs
 	  my $pat = $ensembl_stable_id .  '\..+';
-	  foreach my $stable_id (keys %{$stable_id_to_internal_id->{$type}}) {
+	  foreach my $stable_id (keys %{$stable_id_to_internal_id{$type}}) {
 
 	    if ($stable_id =~ /$pat/) {
 
@@ -1311,7 +1318,7 @@ sub dump_direct_xrefs {
 		print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 		$xrefs_written{$xref_id} = 1;
 	      }
-	      $ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$stable_id};
+	      $ensembl_internal_id = $stable_id_to_internal_id{$type}->{$stable_id};
 	      print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
 	      if( $source_id == $go_source_id){
 		print GO_XREF $object_xref_id . "\t" . $linkage_xref . "\n";
@@ -1371,8 +1378,8 @@ sub build_stable_id_to_internal_id_hash {
 
   my ($self) = @_;
 
-  my %stable_id_to_internal_id;
-  my %internal_id_to_stable_id;
+#  my %stable_id_to_internal_id;
+#  my %internal_id_to_stable_id;
   foreach my $type ('gene', 'transcript', 'translation') { # Add exon here if required
 
     print "Caching stable ID -> internal ID links for ${type}s\n";
@@ -1392,7 +1399,7 @@ sub build_stable_id_to_internal_id_hash {
 
   }
 
-  return (\%stable_id_to_internal_id,\%internal_id_to_stable_id);
+  return 1;
 
 }
 
@@ -1756,6 +1763,49 @@ sub build_transcript_display_xrefs {
   # go through each object/xref mapping and store the best ones as we go along
   my %obj_to_best_xref;
 
+#INSERT  DIRECT XREFS HERE.  ???  DEPENDENT??
+  my $sth_new = $self->xref->dbc->prepare(<<DIRX);
+  SELECT dx.general_xref_id, dx.ensembl_stable_id, dx.type, s.name, s.source_id 
+    FROM direct_xref dx, xref x, source s
+      WHERE dx.general_xref_id=x.xref_id
+	AND x.source_id=s.source_id
+	ORDER BY s.source_id
+DIRX
+
+  $sth_new->execute();
+  my ($xref_id, $ensembl_stable_id, $ensembl_type, $source_name, $source_id);
+
+  $sth_new->bind_columns(\$xref_id, \$ensembl_stable_id, \$ensembl_type, 
+			 \$source_name, \$source_id);
+
+  my $last_source_id = 0;
+
+  while($sth_new->fetch()){
+    my $index = 99999;
+    my $object_id;
+    if($last_source_id != $source_id){
+      $last_source_id = $source_id;
+      $index = find_in_list($source_name,@priorities);
+    }
+    if($index > 0){
+      if($ensembl_stable_id =~ /^ENS/){
+	$object_id = $stable_id_to_internal_id{$ensembl_stable_id};
+      }
+      else{
+	$object_id = $ensembl_stable_id;
+      }
+      $ensembl_type = ucfirst lc  $ensembl_type;
+      my $key = $ensembl_type."|".$object_id;
+      push @{$object_xref_mappings{$key}}, $xref_id;
+
+      $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = 100;
+      $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = 100;
+
+    }
+  }
+  $sth_new->finish();
+
+
   foreach my $key (keys %object_xref_mappings) {
 
     my ($type, $object_id) = split /\|/, $key;
@@ -1836,6 +1886,9 @@ sub build_transcript_display_xrefs {
       $translation_id = $object_id;
       $transcript_id = $translation_to_transcript{$translation_id};
       $object_id = $transcript_id;
+    }
+    elsif ($type =~ /Gene/i){ 
+      next;
     }
     else{
       print "Cannot deal with type $type\n";
@@ -2658,7 +2711,9 @@ sub gene_description_sources {
 	  "Uniprot/SPTREMBL",
 	  "RefSeq_dna",
 	  "RefSeq_peptide",
-	  "Uniprot/SWISSPROT");
+	  "Uniprot/SWISSPROT",
+	  "miRNA_Registry",
+	  "RFAM");
 
 }
 
