@@ -2363,7 +2363,8 @@ sub get_all_compara_DnaAlignFeatures {
 
 =head2 get_all_compara_Syntenies
 
-  Arg [1]    : query species
+  Arg [1]    : string $query_species e.g. "Mus_musculus" or "Mus musculus"
+  Arg [2]    : string $method_link_type, default is "SYNTENY"
   Description: gets al the conpara syntenys fro a specfic species
   Returns    : arrayref of Bio::EnsEMBL::Compara::SyntenyRegion
   Status     : Stable
@@ -2371,7 +2372,7 @@ sub get_all_compara_DnaAlignFeatures {
 =cut
 
 sub get_all_compara_Syntenies {
-  my ($self, $qy_species ) = @_;
+  my ($self, $qy_species, $method_link_type) = @_;
 
   if(!$self->adaptor()) {
     warning("Cannot retrieve features without attached adaptor");
@@ -2382,6 +2383,10 @@ sub get_all_compara_Syntenies {
     throw("Query species and assembly arguments are required");
   }
 
+  unless (defined $method_link_type) {
+    $method_link_type = "SYNTENY";
+  }
+
   my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
 
   unless($compara_db) {
@@ -2389,12 +2394,20 @@ sub get_all_compara_Syntenies {
 		"retrieve compara information");
     return [];
   }
+  my $binomial = $self->adaptor->db->get_MetaContainer->get_Species->binomial;
+  $qy_species =~ tr/_/ /;
+  my $mlssa = $compara_db->get_MethodLinkSpeciesSetAdaptor;
+  my $mlss = $mlssa->fetch_by_method_link_type_registry_aliases
+                    ($method_link_type,
+                     [ $binomial, $qy_species ]);
 
-  my $sa = $compara_db->get_SyntenyAdaptor;
-  $sa->setSpecies("XX",$self->adaptor->db->get_MetaContainer->get_Species->binomial, $qy_species );
-  return $sa->get_synteny_for_chromosome( $self->seq_region_name,$self->start, $self->end );
+  my $gdb = $compara_db->get_GenomeDBAdaptor->fetch_by_name_assembly($binomial);
+  my $dfa = $compara_db->get_DnaFragAdaptor;
+  my ($dnafrag) = @{$dfa->fetch_all_by_GenomeDB_region($gdb, $self->coord_system->name, $self->seq_region_name)};
+  my $sra = $compara_db->get_SyntenyRegionAdaptor;
+
+  return $sra->fetch_by_MethodLinkSpeciesSet_DnaFrag($mlss,$dnafrag,$self->start, $self->end);
 }
-
 
 =head2 get_all_Haplotypes
 
@@ -2529,7 +2542,7 @@ sub get_all_ExternalFeatures {
                returned.
   Example    : my %features = %{$slice->get_generic_features()};
   Description: Gets generic features via the generic feature adaptors that
-               have been added via DBAdaptor->add_GenericFeatureAdaptor (if 
+               have been added via DBAdaptor->add_GenricFeatureAdaptor (if 
                any)
   Returntype : Hash of named features.
   Exceptions : none
