@@ -799,7 +799,8 @@ sub store {
                "seq_region_strand = ?, ".
 	       "description = ?, " .
                "source = ?, ".
-               "confidence = ? ";
+               "status = ? ";
+  # colum status is used from schema version 34 onwards ( before it was confidence) 
 
   my $sth = $self->prepare( $store_gene_sql );
   $sth->bind_param(1,$type,SQL_VARCHAR);
@@ -812,7 +813,7 @@ sub store {
   $sth->bind_param(8,$gene->source,SQL_VARCHAR);
   $sth->bind_param(9,$gene->status,SQL_VARCHAR);
 
-   $sth->execute();
+  $sth->execute();
   $sth->finish();
 
    my $gene_dbID = $sth->{'mysql_insertid'};
@@ -892,7 +893,7 @@ sub store {
   }
 
   # update gene to point to display xref if it is set
-  print $gene->display_xref . "\n";
+  print $gene->display_xref . "\n" if $gene->display_xref ;
   if(my $display_xref = $gene->display_xref) {
     my $dxref_id;
 print "here 1\n";
