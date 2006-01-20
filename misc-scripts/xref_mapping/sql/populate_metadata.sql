@@ -52,7 +52,7 @@ INSERT INTO source VALUES (2701, 'AgilentCGH', 1, 'Y', 4);
 # Other sources - used to create dependent xrefs, but not to download from
 
 INSERT INTO source VALUES (1010, 'EMBL', 1, 'N', 2);
-INSERT INTO source VALUES (1020, 'MIM', 1, 'N', 2);
+INSERT INTO source VALUES (1020, 'MIM', 1, 'Y', 2);
 INSERT INTO source VALUES (1030, 'PDB', 1, 'N', 2);
 INSERT INTO source VALUES (1040, 'protein_id', 1, 'N', 2);
 INSERT INTO source VALUES (1050, 'PUBMED', 1, 'N', 2);
