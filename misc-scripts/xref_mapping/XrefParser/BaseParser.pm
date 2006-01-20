@@ -628,7 +628,7 @@ sub upload_xref_object_graphs {
 	if($dbi->err){
 	  print STDERR "dbi\t$dbi->err \n$dep{ACCESSION} \n $dep{SOURCE_ID} \n";
 	}
-	if(!defined($dep_xref_id)){
+	if(!defined($dep_xref_id) || $dep_xref_id ==0 ){
 	  print STDERR "acc = $dep{ACCESSION} \nlink = $dep{LINKAGE_SOURCE_ID} \n".$dbi->err."\n";
 	}
 	$dep_sth->execute($xref_id, $dep_xref_id, $dep{LINKAGE_ANNOTATION}, $dep{LINKAGE_SOURCE_ID} ) || die $dbi->errstr;
