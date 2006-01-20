@@ -52,7 +52,7 @@ INSERT INTO source VALUES (2701, 'AgilentCGH', 1, 'Y', 4);
 # Other sources - used to create dependent xrefs, but not to download from
 
 INSERT INTO source VALUES (1010, 'EMBL', 1, 'N', 2);
-INSERT INTO source VALUES (1020, 'MIM', 1, 'Y', 3);
+INSERT INTO source VALUES (1020, 'MIM', 1, 'N', 2);
 INSERT INTO source VALUES (1030, 'PDB', 1, 'N', 2);
 INSERT INTO source VALUES (1040, 'protein_id', 1, 'N', 2);
 INSERT INTO source VALUES (1050, 'PUBMED', 1, 'N', 2);
@@ -265,8 +265,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
 
-##      MIM 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1020, 9606,'ftp://ftp.ncbi.nih.gov/repository/OMIM/morbidmap', '', now(), now(), "MIMParser");
+# mim data obtained from reseq and uniprot files
+###      MIM 
+#INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1020, 9606,'ftp://ftp.ncbi.nih.gov/repository/OMIM/morbidmap', '', now(), now(), "MIMParser");
 
 ##      IPI
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.HUMAN.fasta.gz', '', now(), now(), "IPIParser");
