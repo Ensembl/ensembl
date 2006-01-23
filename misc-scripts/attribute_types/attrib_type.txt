@@ -128,3 +128,9 @@
 50	chromosome	Chromosome	chromosomal location for supercontigs that are not assembled
 51	nonsense	Nonsense Mutation	Strain specific nonesense mutation
 
+# misc Vega attribs
+52	author	Author	Group resonsible for Vega annotation
+53	author_email	Author email address	Author email address
+54	remark	Remark	Annotation remark
+55	transcr_class	Transcript class    Transcript class
+
