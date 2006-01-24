@@ -236,6 +236,9 @@ sub get_stats {
   $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.display_label LIKE '%[from%'");
   $str .= sprintf(" projected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
+  $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g WHERE display_xref_id IS NOT NULL");
+  $str .= sprintf(" total genes with names %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
+
   $str .= "\nGO xrefs: total ";
   $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO'");
 
