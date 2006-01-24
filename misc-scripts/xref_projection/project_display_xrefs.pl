@@ -64,6 +64,9 @@ foreach my $to_species (@to_multi) {
 
   my $mlss = $mlssa->fetch_by_method_link_type_registry_aliases($method_link_type, [$from_species, $to_species]);
 
+  # build hash of external db name -> ensembl object type mappings
+  my %db_to_type = build_db_to_type($to_ga);
+
   print "$to_species, before projection: \n" . &get_stats($to_ga);
 
   # Get all genes, find homologies, set xrefs
@@ -78,7 +81,7 @@ foreach my $to_species (@to_multi) {
 
     my $homologies = $ha->fetch_all_by_Member_MethodLinkSpeciesSet($member, $mlss);
 
-    project_homologies($homologies, $to_ga, $to_dbea, $names, $go_terms, $ma);
+    project_homologies($homologies, $to_ga, $to_dbea, $names, $go_terms, $ma, %db_to_type);
 
   }
 
@@ -91,7 +94,7 @@ foreach my $to_species (@to_multi) {
 # Project homologies from first to subsequent species
 sub project_homologies() {
 
-  my ($homologies, $to_ga, $to_dbea, $names, $go_terms, $ma) = @_;
+  my ($homologies, $to_ga, $to_dbea, $names, $go_terms, $ma, %db_to_type) = @_;
 
   foreach my $homology (@{$homologies}) {
 
@@ -102,7 +105,7 @@ sub project_homologies() {
     # ----------------------------------------
     # Display names and descriptions
 
-    project_display_names($to_ga, $to_dbea, $ma, $from_member, $to_member) if ($names);
+    project_display_names($to_ga, $to_dbea, $ma, $from_member, $to_member, %db_to_type) if ($names);
 
     # ----------------------------------------
     # GO terms
@@ -120,7 +123,7 @@ sub project_homologies() {
 
 sub project_display_names {
 
-  my ($to_ga, $to_dbea, $ma, $from_member, $to_member) = @_;
+  my ($to_ga, $to_dbea, $ma, $from_member, $to_member, %db_to_type) = @_;
 
   my $to_gene = $to_ga->fetch_by_stable_id($to_member->stable_id());
 
@@ -138,19 +141,51 @@ sub project_display_names {
       my $txt = " [from $from_species gene " . $from_gene->stable_id() . "]";
       $dbEntry->display_id($dbEntry->display_id() . $txt);
 
-      # Add the xref to the "to" gene, set its status to "KNOWN", modify the description and update display_xref
-      $to_gene->add_DBEntry($dbEntry);
+      # Add the xref to the "to" gene, or transcript or translation depending on what the
+      # other xrefs from this dbname as assigned to (see build_db_to_type)
+      # Note that if type is not found, it means that we're dealing with a db that has no
+      # xrefs in the target database, e.g. MarkerSymbol in mouse -> rat
+      # In this case just assign to transcripts
+
+      my @to_transcripts = @{$to_gene->get_all_Transcripts};
+      my $to_transcript = $to_transcripts[0];
+
+      my $type = $db_to_type{$dbEntry->dbname()};
+
+      if ($type eq "Gene") {
+
+	$to_gene->add_DBEntry($dbEntry);
+	$to_dbea->store($dbEntry, $to_gene, 'Gene') if (!$print);
+
+      } elsif ($type eq "Transcript" || !$type) {
+	
+	$to_transcript->add_DBEntry($dbEntry);
+	$to_dbea->store($dbEntry, $to_transcript, 'Transcript') if (!$print);
+
+      } elsif ($type eq "Translation") {
+
+	my $to_translation = $to_transcript->translation();
+	return if ($to_translation);
+	$to_translation->add_DBEntry($dbEntry);
+	$to_dbea->store($dbEntry, $to_translation, 'Translation') if (!$print);
+
+      } else {
+
+	warn("Can't deal with xrefs assigned to $type (dbname=" . $dbEntry->dbname . ")\n");
+	return;
+
+      }
+
+      # Set gene status to "KNOWN", modify the description and update display_xref
+
       $to_gene->status("KNOWN");
       $to_gene->description($from_gene->description() . $txt) if ($from_gene->description());
       $to_gene->display_xref($dbEntry);
 	
       print $to_gene->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
 
-      # store - need to add the DBEntry and also update the gene display xref id
-      if (!$print) {
-	$to_dbea->store($dbEntry, $to_gene, 'Gene');
-	$to_ga->update($to_gene);
-      }
+      # update the gene so that the display_xref_id is set
+      $to_ga->update($to_gene) if (!$print);
 
     }
 
@@ -262,6 +297,30 @@ sub count_rows {
   $sth->execute();
 
   return ($sth->fetchrow_array())[0];
+
+}
+
+# ----------------------------------------------------------------------
+
+# create a hash of external_db_name -> ensembl_object_type
+# used to assign projected xrefs to the "correct" type
+
+sub build_db_to_type {
+
+  my ($to_ga) = @_;
+
+  my %db_to_type = ();
+
+  my $sth = $to_ga->dbc()->prepare("SELECT DISTINCT e.db_name, ox.ensembl_object_type FROM external_db e, xref x, object_xref ox WHERE x.xref_id=ox.xref_id AND e.external_db_id=x.external_db_id");
+  $sth->execute();
+  my ($db_name, $type);
+  $sth->bind_columns(\$db_name, \$type);
+  while($sth->fetch()){
+    $db_to_type{$db_name} = $type;
+  }
+  $sth->finish;
+
+  return %db_to_type;
 
 }
 
