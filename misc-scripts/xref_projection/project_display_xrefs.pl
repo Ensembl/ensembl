@@ -165,7 +165,7 @@ sub project_display_names {
       } elsif ($type eq "Translation") {
 
 	my $to_translation = $to_transcript->translation();
-	return if ($to_translation);
+	return if (!$to_translation);
 	$to_translation->add_DBEntry($dbEntry);
 	$to_dbea->store($dbEntry, $to_translation, 'Translation') if (!$print);
 
