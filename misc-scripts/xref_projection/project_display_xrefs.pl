@@ -170,13 +170,13 @@ sub project_go_terms {
 
   my $to_go_xrefs = $to_translation->get_all_DBEntries();
 
-  foreach my $dbEntry (@{$from_translation->get_all_DBEntries()}) {
+  DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries()}) {
 
-    next if $dbEntry->dbname() ne "GO";
+    next if ($dbEntry->dbname() ne "GO" || !$dbEntry);
 
     # only project GO terms with non-IEA evidence codes
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
-      next if ($et eq "IEA");
+      next DBENTRY if ($et eq "IEA");
     }
 
     # check that each from GO term isn't already projected
@@ -186,15 +186,16 @@ sub project_go_terms {
     #$dbEntry->flush_linkage_types();
     $dbEntry->add_linkage_type("IEA");
 
-    $to_translation->add_DBEntry($dbEntry);
-
     my $txt = " [from $from_species translation " . $from_translation->stable_id() . "]";
 
     $dbEntry->display_id($dbEntry->display_id() . $txt);
 
+    $to_translation->add_DBEntry($dbEntry);
+
     print $to_translation->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
 
     $to_dbea->store($dbEntry, $to_translation, 'Translation') if (!$print);
+    #print "stored " . $to_translation->stable_id() . " " . $dbEntry->display_id() . "\n";
 
   }
 
@@ -225,12 +226,15 @@ sub get_stats {
 
   my ($to_ga) = @_;
 
+  my $total_genes = count_rows($to_ga, "SELECT COUNT(*) FROM gene g");
 
-  my $str = "Gene names: total ";
-  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM gene g WHERE g.display_xref_id IS NOT NULL");
+  my $str = "Total genes: $total_genes\t";
 
-  $str .= " projected ";
-  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.display_label LIKE '%[from%'");
+  my $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND g.display_xref_id IS NOT NULL AND x.display_label NOT LIKE '%[from%'");
+  $str .= sprintf("Gene names: unprojected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
+
+  $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.display_label LIKE '%[from%'");
+  $str .= sprintf(" projected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
   $str .= "\nGO xrefs: total ";
   $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO'");
