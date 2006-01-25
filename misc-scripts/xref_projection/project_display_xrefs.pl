@@ -11,17 +11,19 @@ use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms);
+my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms);
 
-GetOptions('conf=s'       => \$conf,
-	   'compara=s'    => \$compara,
-	   'from=s'       => \$from_species,
-	   'to=s'         => \@to_multi,
-	   'method=s'     => \$method_link_type,
-	   'names'        => \$names,
-	   'go_terms'     => \$go_terms,
-	   'print'        => \$print,
-	   'help'         => sub { usage(); exit(0); });
+GetOptions('conf=s'          => \$conf,
+	   'compara=s'       => \$compara,
+	   'from=s'          => \$from_species,
+	   'to=s'            => \@to_multi,
+	   'method=s'        => \$method_link_type,
+	   'names'           => \$names,
+	   'go_terms'        => \$go_terms,
+	   'print'           => \$print,
+	   'delete_names'    => \$delete_names,
+	   'delete_go_terms' => \$delete_go_terms,
+	   'help'            => sub { usage(); exit(0); });
 
 @to_multi = split(/,/,join(',',@to_multi));
 
@@ -53,16 +55,19 @@ my $from_ga = Bio::EnsEMBL::Registry->get_adaptor($from_species, 'core', 'Gene')
 
 foreach my $to_species (@to_multi) {
 
+  my $to_ga   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
+  my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
+
+  delete_names() if ($delete_names);
+  delete_go_terms() if ($delete_go_terms);
+
+  my $mlss = $mlssa->fetch_by_method_link_type_registry_aliases($method_link_type, [$from_species, $to_species]);
+
   my $str = "gene display_xrefs and descriptions" if ($names);
   $str .= " and " if ($names && $go_terms);
   $str .= "GO terms" if ($go_terms);
 
   print "Projecting $str from $from_species to $to_species\n";
-
-  my $to_ga   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
-  my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
-
-  my $mlss = $mlssa->fetch_by_method_link_type_registry_aliases($method_link_type, [$from_species, $to_species]);
 
   # build hash of external db name -> ensembl object type mappings
   my %db_to_type = build_db_to_type($to_ga);
@@ -111,7 +116,6 @@ sub project_homologies() {
     # GO terms
 
     project_go_terms($to_ga, $to_dbea, $ma, $from_attribute, $to_attribute) if ($go_terms);
-
 
     # ----------------------------------------
 
@@ -326,6 +330,35 @@ sub build_db_to_type {
 
 # ----------------------------------------------------------------------
 
+sub delete_names {
+
+  my ($to_ga) = @_;
+
+  print "Setting gene display_xrefs that were projected to NULL\n";
+  my $sth = $to_ga->dbc()->prepare("UPDATE gene, xref SET gene.display_xref_id = null WHERE gene.display_xref_id=xref.xref_id AND xref.display_label LIKE '%[from%'");
+  $sth->execute();
+
+  print "Deleting projected xrefs and object_xrefs\n";
+  $sth = $to_ga->dbc()->prepare("DELETE x, ox FROM xref x, object_xref ox WHERE x.xref_id=ox.xref_id AND x.display_label LIKE '%[from%'");
+  $sth->execute();
+
+}
+
+# ----------------------------------------------------------------------
+
+sub delete_go_terms {
+
+  my ($to_ga) = @_;
+
+  print "Deleting projected GO terms\n";
+
+  my $sth = $to_ga->dbc()->prepare("DELETE x, ox FROM xref x, external_db e, object_xref ox WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND e.db_name='GO' AND x.display_label like '%[from%';");
+  $sth->execute();
+
+}
+
+# ----------------------------------------------------------------------
+
 sub usage {
 
   print << "EOF";
@@ -354,9 +387,13 @@ sub usage {
                         several --to arguments or a comma-separated list, e.g.
                         -from human -to dog -to opossum or --to dog,opossum
 
-   --names              Project display names and descriptions.
+  [--names]             Project display names and descriptions.
 
-   --go_terms           Project GO terms.
+  [--go_terms]          Project GO terms.
+
+  [--delete_names]      Delete projected display xrefs & gene names.
+
+  [--delete_go_terms]   Delete projected GO terms.
 
   [--print]             Print details of projection only, don't store in database
 
