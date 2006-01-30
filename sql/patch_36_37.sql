@@ -1,3 +1,7 @@
+# Patch to convert release 36 Ensembl schema to release 37
+
+UPDATE meta set meta_value="37" where meta_key="schema_version";
+
 # increase width of xref display_label column to allow for longer labels
 ALTER TABLE xref CHANGE COLUMN display_label display_label VARCHAR(128) NOT NULL;
 
