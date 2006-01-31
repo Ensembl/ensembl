@@ -158,6 +158,7 @@ sub run {
          
          my $check_file = "$dir/$file" ;   
          $check_file =~s/\.gz//; 
+         $check_file =~s/\.Z//; 
          print "checking for file $check_file\n" ; 
          if (-e "$check_file" ) { 
            print "SKIPPING $file because file $check_file already exists\n" ; 
@@ -207,7 +208,7 @@ sub run {
 	}
 	# if the file is compressed, the FTP server may or may not have automatically uncompressed it
 	# TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
-	if ($file =~ /(.*)\.gz$/) {
+	if ($file =~ /(.*)\.gz$/ or $file =~ /(.*)\.Z$/) {
 	  print "Uncompressing $dir/$file\n";
 	  system("gunzip -f $dir/$file");
 	  $file = $1;
@@ -215,7 +216,7 @@ sub run {
 
       }
       else{
-	if ($file =~ /(.*)\.gz$/) {
+	if ($file =~ /(.*)\.gz$/ or $file =~ /(.*)\.Z$/) {
 	  $file = $1;
 	}
       }
