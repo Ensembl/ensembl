@@ -31,6 +31,8 @@ sub run {
   my $file = shift;
   my $source_id = shift;
   my $species_id = shift;
+  my %old_to_new;
+  my %removed;
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
@@ -40,100 +42,65 @@ sub run {
   }
 
 
-  my (%genename2xref) = gene_name_2_xref_from_hugo();
-
-  if(!defined(%genename2xref)){
-    return 1;
-  }
-
-  my $count =0;
-  my $mismatch=0;
-
+  local $/ = "*RECORD*";
+  
   if(!open(MIM,"<".$file)){
     print  "ERROR: Could not open $file\n";
     return 1; # 1 is an error
   }
-
+  
+  my $count = 0;
+  my $removed_count =0;
+  <MIM>; # first record is empty with *RECORD* as the record seperator
   while (<MIM>) {
-    chomp;
-    my ($desc, $gene_names, $mim_number, $loc) = split (/\|/,$_);
-
-    my $xref =0;
-    foreach my $gene (split(/\, */,$gene_names)){
-      if(defined($genename2xref{$gene})){
-	$xref = $genename2xref{$gene};
+    #get the MIM number
+    my $number = 0;
+    my $description = undef;
+    if(/\*FIELD\*\s+NO\n(\d+)/){
+      $number = $1;
+    }
+    if($number==0){
+      die "ERROR $_";
+    }
+    if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n/){
+      if($1 eq "^"){
+	if(/\*FIELD\*\sTI\n[\^]\d+ MOVED TO (\d+)/){
+	  $old_to_new{$number} = $1;
+	}
+	else{
+	  $removed{$number} = 1;
+	  $removed_count++;
+	}
+	next;
+      }
+      if(!defined($2) or $2 eq ""){
+	die "No descripton for $number\n";
+      }
+      else{
+	$description =$2;
+	$description =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
+	$count++;
+	$self->add_xref($number,"",$number,$description,$source_id,$species_id);
+	#	print $number."\n*".$description."*\n" unless ($count > 100); 
       }
     }
-    if($xref){
-       XrefParser::BaseParser->add_to_xrefs($xref,$mim_number,'',$desc,$gene_names,'',$source_id,$species_id);  
-      $count++;
+  }
+  my $syn_count =0;
+  foreach my $mim (keys %old_to_new){
+    my $old= $mim;
+    my $new= $old_to_new{$old};
+    while(defined($old_to_new{$new})){
+      $new = $old_to_new{$new};
     }
-    else{
-       $mismatch++;
+    if(!defined($removed{$new})){
+      $self->add_to_syn($new,$source_id,$old);
+      $syn_count++;
     }
   }
-  print "\t$count succesfull xrefs loaded\n";
-  print "\t$mismatch xrefs ignored\n";
+  print "$count MIM xrefs added\n";
+  print "added $syn_count synonyms (defined by MOVED TO)\n";
   return 0; #successful
 }
-
-sub gene_name_2_xref_from_hugo{
-  my %gene_name2xref;
-  
-  my $dbi = XrefParser::BaseParser->dbi();
-
-
-  my $source_id_for_hugo=0;
-  my $sth2 = $dbi->prepare("select * from source where name like ?");
-  $sth2->execute('HUGO') || die $dbi->errstr;
-  while(my @row = $sth2->fetchrow_array()) {
-    $source_id_for_hugo = $row[0];
-  }
-  if(! $source_id_for_hugo){
-    print  "ERROR: Could not find source id for HUGO.\n";
-    return undef;
-  }
-
-
-  my @source_list=();
-
-  $sth2->execute('Refseq%') || die $dbi->errstr;
-  while(my @row = $sth2->fetchrow_array()) {
-    push  @source_list, $row[0];
-  }
-
-  $sth2->execute('Uniprot%') || die $dbi->errstr;
-  while(my @row = $sth2->fetchrow_array()) {
-    push  @source_list, $row[0];
-  }
-
-
-  $sth2->finish;
-
-
-  my $sql = "select y.label, x.xref_id ";
-  $sql   .= "  from dependent_xref d, xref x, xref y ";
-  $sql   .= "  where d.linkage_source_id = $source_id_for_hugo and ";
-  $sql   .= "        x.xref_id = d.master_xref_id and ";
-  $sql   .= "        y.xref_id = d.dependent_xref_id and ";
-  $sql   .= "        x.source_id = ?";
-  
-    
-  my $sth = $dbi->prepare($sql);
-
-  foreach my $id (@source_list){
-    $sth->execute($id) || die $dbi->errstr;
-    while(my @row = $sth->fetchrow_array()) {
-      my $gene_name = $row[0];
-      my $xref = $row[1];
-      $gene_name2xref{$gene_name} = $xref;
-    }
-  } 
-  $sth->finish;
-  return %gene_name2xref;
-}
-  
-
 
 sub new {
 
