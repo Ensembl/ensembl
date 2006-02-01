@@ -46,7 +46,7 @@ use Data::Dumper;
 
 @ISA = qw(Exporter);
 
-@EXPORT_OK = qw(get_all_ConsequenceType type_variation);
+@EXPORT_OK = qw(&get_all_ConsequenceType &type_variation);
 
 
 =head2 get_all_ConsequenceType
@@ -82,7 +82,7 @@ sub get_all_ConsequenceType {
 
 
   my @alleles_ordered = sort { $a->start <=> $b->start} @$alleles; #sort the alleles by the genomic position
-  my @same_codon; #contains up to 3 allele features, that are in the same codon
+  my @same_codon; #contains up to 3 allele features, that are in the same codon, but each position can contain more than 1 allele
   my @out; #array containing the consequence types of the alleles in the transcript
   foreach my $allele (@alleles_ordered) {
     #get consequence type of the AlleleFeature
@@ -98,7 +98,9 @@ sub get_all_ConsequenceType {
     }
 
     my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start, $allele->end, $transcript->strand, [$string]);
-
+    if ($allele->start == 16165){
+	print "hello";
+    }
     #calculate the consequence type of the Allele
     my $ref_consequences = type_variation($transcript,"",$consequence_type);
     if ($allele->start != $allele->end){
@@ -117,27 +119,40 @@ sub get_all_ConsequenceType {
 	push @out, $new_consequence;
 	next;
     }
+    #first element of the codon
+    if (!defined $same_codon[0]){
+	push @{$same_codon[0]}, $new_consequence; #goes to the first position
+	next;
+    }
     #for alleles with aa effect, find out if they are in the same codon
-    if (!defined $same_codon[0] || $same_codon[0]->aa_start == $new_consequence->aa_start){
-	push @same_codon,$new_consequence;
+    if ($same_codon[-1]->[0]->aa_start == $new_consequence->aa_start){
+	#they are in the same codon, find out if it is the same position
+	if ($same_codon[-1]->[0]->start == $new_consequence->start){
+	    #it is the same position
+	    push @{$same_codon[-1]},$new_consequence; #push in the last 
+	}
+	else{	    
+	    push @{$same_codon[$#same_codon + 1]},$new_consequence; #this is a new element in the codon
+	}
+
     }
     else{
 	#if there is more than one element in the same_codon array, calculate the effect of the codon
 	if (@same_codon > 1){
 	    calculate_same_codon(\@same_codon);
 	}
-	push @out, @same_codon;
+	map {push @out, @{$_}} @same_codon;
 	@same_codon = ();
-	push @same_codon, $new_consequence; #push the element not in the same codon
+	push @{$same_codon[0]}, $new_consequence; #push the element not in the same codon
     }
   }
   #add last consequence_type
   if (@same_codon == 1){
-      push @out, @same_codon;
+	map {push @out, @{$_}} @same_codon;
   }
   elsif (@same_codon > 1){
     calculate_same_codon(\@same_codon);
-    push @out, @same_codon;
+    map {push @out, @{$_}} @same_codon;    
   }
 
   return \@out;
@@ -151,36 +166,38 @@ sub calculate_same_codon{
     my $codon_table = Bio::Tools::CodonTable->new;
     if (@{$same_codon} == 3){
 	#if there are 3 alleles in the same codon
-	map {$new_codon .= @{$_->alleles};$old_aa = $_->aa_alleles()->[0]} @{$same_codon};
+	map {$new_codon .= @{$_->[0]->alleles};$old_aa = $_->[0]->aa_alleles()->[0]} @{$same_codon};
     }
     else{
 	#if there are 2 alleles affecting the same codon
-	my $first_pos = ($same_codon->[0]->cdna_start -1) % 3; #position of the first allele in the codon
-	my $second_pos = ($same_codon->[1]->cdna_start -1)% 3; #position of the second allele in the codon
+	my $first_pos = ($same_codon->[0]->[0]->cdna_start -1) % 3; #position of the first allele in the codon
+	my $second_pos = ($same_codon->[1]->[0]->cdna_start -1)% 3; #position of the second allele in the codon
 	if ($first_pos == 0){
 	    #codon starts with first allele
-	    $new_codon = $same_codon->[0]->alleles->[0]; #first base in the codon
+	    $new_codon = $same_codon->[0]->[0]->alleles->[0]; #first base in the codon
 	    if ($second_pos == 1){
-		$new_codon .= $same_codon->[1]->alleles->[0]; #second base in the codon
-		$new_codon .= substr($same_codon->[1]->codon,2,1); #third base in the codon
+		$new_codon .= $same_codon->[1]->[0]->alleles->[0]; #second base in the codon
+		$new_codon .= substr($same_codon->[1]->[0]->codon,2,1); #third base in the codon
 	    }
 	    else{
-		$new_codon .= substr($same_codon->[1]->codon,1,1); #second base in the codon
-		$new_codon .= $same_codon->[1]->alleles->[0]; #third base in the codon
+		$new_codon .= substr($same_codon->[1]->[0]->codon,1,1); #second base in the codon
+		$new_codon .= $same_codon->[1]->[0]->alleles->[0]; #third base in the codon
 	    }
 	}
 	else{
 	    #alleles are in position 1 and 2 in the codon
-	    $new_codon = substr($same_codon->[1]->codon,0,1); #first base in the codon
-	    $new_codon .= $same_codon->[0]->alleles->[0]; #second base in the codon
-	    $new_codon .= $same_codon->[1]->alleles->[0]; #third base in the codon
+	    $new_codon = substr($same_codon->[1]->[0]->codon,0,1); #first base in the codon
+	    $new_codon .= $same_codon->[0]->[0]->alleles->[0]; #second base in the codon
+	    $new_codon .= $same_codon->[1]->[0]->alleles->[0]; #third base in the codon
 	}
-	$old_aa = $same_codon->[0]->aa_alleles->[0];	
+	$old_aa = $same_codon->[0]->[0]->aa_alleles->[0];	
     }
     #calculate the new_aa
     my $new_aa = $codon_table->translate($new_codon);
-    #and update the aa_alleles field
-    map {$_->aa_alleles([$old_aa,$new_aa])} @{$same_codon};
+    #and update the aa_alleles field in all the codons
+    foreach my $codon (@{$same_codon}){
+	map {$_->aa_alleles([$old_aa,$new_aa])} @{$codon};
+    }
 
 }
 #
