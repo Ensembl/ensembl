@@ -272,7 +272,7 @@ sub is_enabled {
 
 
 sub dump {
-  my ($self, $slice, $format, $outfile) = @_;
+  my ($self, $slice, $format, $outfile, $seq) = @_;
 
   $format || throw("format arg is required");
   $slice  || throw("slice arg is required");
@@ -294,9 +294,8 @@ sub dump {
     #  or throw("Could not open currently selected output filehandle " .
     #		      "for writing");
   }
-
   
-  &$dump_handler($self, $slice, $FH);
+  &$dump_handler($self, $slice, $FH, $seq);
 
   $FH->close if ($outfile); #close if we were writing to a file
 }
@@ -307,6 +306,7 @@ sub dump {
 
   Arg [1]    : Bio::EnsEMBL::Slice
   Arg [2]    : IO::File $FH
+  Arg [3]    : optional sequence string
   Example    : $seq_dumper->dump_embl($slice, $FH);
   Description: Dumps an EMBL flat file to an open file handle
   Returntype : none
@@ -319,6 +319,7 @@ sub dump_embl {
   my $self = shift;
   my $slice = shift;
   my $FH   = shift;
+  my $SEQ = shift;
 
   my $len = $slice->length;
 
@@ -447,7 +448,10 @@ sub dump_embl {
   #DUMP SEQUENCE
   ###################
 
-  my $SEQ     = $slice->seq();
+  if(!defined($SEQ)){
+    $SEQ = $slice->seq();
+  }
+#  my $SEQ     = $slice->seq();
   my $length  = length($SEQ);
   my $a_count = $SEQ =~ tr/aA/aA/;
   my $c_count = $SEQ =~ tr/cC/cC/;
@@ -484,7 +488,7 @@ sub dump_embl {
 =cut
 
 sub dump_genbank {
-  my ($self, $slice, $FH) = @_;
+  my ($self, $slice, $FH, $SEQ) = @_;
 
   #line breaks are allowed near the end of the line on ' ', "\t", "\n", ',' 
   $: = " \t\n-,";
@@ -548,6 +552,7 @@ sub dump_genbank {
 
   my $species = $slice->adaptor->db->get_MetaContainer->get_Species;
 
+
   #LOCUS
   my $tag   = 'LOCUS';
   my $value = "$entry_name $length bp DNA HTG $date";
@@ -594,7 +599,10 @@ sub dump_genbank {
   # DUMP SEQUENCE
   ####################
 
-  my $SEQ       = $slice->seq();
+  if(!defined($SEQ)){
+    $SEQ = $slice->seq();
+  }
+#  my $SEQ       = $slice->seq();
   my $a_count = $SEQ =~ tr/aA/aA/;
   my $c_count = $SEQ =~ tr/cC/cC/;
   my $t_count = $SEQ =~ tr/tT/tT/;
