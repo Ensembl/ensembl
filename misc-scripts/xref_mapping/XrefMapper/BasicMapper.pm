@@ -2162,6 +2162,12 @@ sub cleanup_sources_file{
     print DEL       "WHERE external_synonym.xref_id = xref.xref_id ";
     print DEL         "AND xref.external_db_id = $id\n";
 
+    print DEL "DELETE gx ";
+    print DEL     "FROM from xref x, object_xref ox LEFT JOIN go_xref gx ";
+    print DEL       "ON ox.object_xref_id = gx.object_xref_id ";
+    print DEL       "WHERE x.xref_id = ox.xref_id ";
+    print DEL          "AND x.external_db_id = $id ";
+    print DEL          "AND gx.linkage_type is not null\n"; 
 
     print DEL "DELETE identity_xref ";
     print DEL     "FROM identity_xref, object_xref, xref ";
