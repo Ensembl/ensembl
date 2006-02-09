@@ -312,6 +312,26 @@ sub fetch_all_by_factor {
     return $self->generic_fetch("rf.regulatory_factor_id = " . $factor->dbID());
 }
 
+=head2 fetch_all_by_factor_name
+
+  Arg [1]    : String
+               the name of the regulatory factor to fetch by
+  Example    : $rm = $rma->fetch_all_by_factor_name($factor_name);
+  Description: Obtains all regulatory features that correspond to a
+               particular regulatory factor
+  Returntype : listREF of Bio::EnsEMBL::RegulatoryFeatures
+  Exceptions : none
+  Caller     : general
+  Status     : At Risk
+             : under development
+
+=cut
+
+sub fetch_all_by_factor {
+    my( $self, $name) = @_;
+
+    return $self->generic_fetch("rm.name = " . $name);
+}
 
 
 =head2 store
