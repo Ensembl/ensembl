@@ -416,7 +416,7 @@ sub exists {
                             AND    x.display_label = ? 
                             AND    xdb.db_name = ?');
 
-  $sth->bind_param(1,$dbe->display_id,SQL_INTEGER);
+  $sth->bind_param(1,$dbe->display_id,SQL_VARCHAR);
   $sth->bind_param(2,$dbe->dbname,SQL_VARCHAR);
   $sth->execute();
 

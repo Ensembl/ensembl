@@ -40,12 +40,12 @@
 1902	SNGR_Hver	1	XREF	1	0	5	Sanger Hver
 1910	Sanger_Mver1_1_1	1	XREF	1	0	5	Sanger Hver 111
 2000	Uniprot/SPTREMBL	1	KNOWN	1	0	20	UniProtKB/TrEMBL
-2001	Uniprot/SPTREMBL_predicted	1	KNOWN	1	0	15	Predicted UniProtKB/TrEMBL
+2001	Uniprot/SPTREMBL_predicted	1	PRED	1	0	15	Predicted UniProtKB/TrEMBL
 2010	prediction_SPTREMBL	1	XREF	1	1	10	Prediction UniProtKB/TrEMBL
 2100	Superfamily	1	KNOWNXREF	1	0	5	Superfamily
 2200	Uniprot/SWISSPROT	1	KNOWN	1	1	30	UniProtKB/Swiss-Prot
 2201	Uniprot/SWISSPROT_predicted	1	PRED	1	1	15	Predicted UniProtKB/Swiss-Prot
-2202    Uniprot/Varsplic		1	KNOWN	1	1	15	UniprotKB/Varsplic
+2202	Uniprot/Varsplic	1	KNOWN	1	1	15	UniprotKB/SpliceVariant
 2300	Vega_gene	1	XREF	1	0	5	Vega gene
 2310	Vega_transcript	1	XREF	1	0	5	Vega transcript
 2320	Vega_translation	1	XREF	1	0	5	Vega translation
@@ -53,11 +53,15 @@
 2410	wormbase_transcript	1	KNOWN	1	0	5	Wormbase Transcript
 2420	wormpep_id	1	KNOWN	1	0	5	Wormpep ID
 2430	wormbase_pseudogene	1	PSEUDO	1	0	5	Wormbase Pseudogene
+2440	wormbase_locus	1	KNOWN	1	0	5	Wormbase Locus
+2450	Uniprot/Varsplic	1	KNOWN	1	0	5	Uniprot/Varsplic
 2510	ZFIN_ID	1	KNOWNXREF	1	0	5	ZFIN
 2530	ZFIN_xpat	1	KNOWNXREF	1	0	100	ZFIN expression patterns
 2600	GeneDB	1	KNOWN	1	0	5	GeneDB
-2601	aniseed	1	KNOWN	1	0	5	ANISEED 
-2602	ciona_int_jgi	1	KNOWN	1	0	10	JGI Gene ID
+2601	cint_jgi_v1	1	KNOWN	1	0	10	JGI Gene ID (JGI 1.0)
+2602	cint_jgi_v2	1	KNOWN	1	0	5	JGI Gene ID (JGI 2.0) 
+2610	cint_aniseed_v1	1	KNOWN	1	0	5	ANISEED (JGI 1.0) 
+2611	cint_aniseed_v2	1	KNOWN	1	0	5	ANISEED (JGI 2.0)
 2700	Ens_Hs_gene	1	XREF	1	0	5	Ensembl Human Gene
 2710	Ens_Hs_transcript	1	XREF	1	0	5	Ensembl Human Transcript
 2720	Ens_Hs_translation	1	XREF	1	0	5	Ensembl Human Translation
@@ -122,3 +126,4 @@
 4200	RFAM	1	XREF	1	0	5	RFAM
 4300	AgilentProbe	1	XREF	1	0	5	Agilent Probe
 4305	AgilentCGH	1	XREF	1	0	5	Agilent CGH
+4400	Xenopus_Jamboree	1	KNOWN	1	0	1	Jamboree

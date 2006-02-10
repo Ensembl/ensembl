@@ -652,7 +652,7 @@ CREATE TABLE xref (
    xref_id 		      INT unsigned not null auto_increment,
    external_db_id             int not null,
    dbprimary_acc              VARCHAR(40) not null,
-   display_label              VARCHAR(40) not null,
+   display_label              VARCHAR(128) not null,
    version                    VARCHAR(10) DEFAULT '' NOT NULL,
    description                VARCHAR(255),
 
@@ -754,7 +754,7 @@ CREATE TABLE meta (
 
 # Auto add schema version to database
 
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "36");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "37");
 
 ################################################################################
 #
@@ -905,7 +905,19 @@ CREATE TABLE transcript_attrib (
   KEY transcript_idx( transcript_id )
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
+################################################################################
+#
+# Table structure for table 'gene_attrib'
+#
 
+CREATE TABLE gene_attrib (
+  gene_id                     int(10) unsigned NOT NULL default '0',
+  attrib_type_id              smallint(5) unsigned NOT NULL default '0',
+  value                       varchar(255) NOT NULL default '',
+
+  KEY type_val_idx( attrib_type_id, value ),
+  KEY gene_idx( gene_id )
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 ################################################################################
@@ -1090,6 +1102,7 @@ CREATE TABLE gene_archive (
   transcript_version          smallint NOT NULL,
   translation_stable_id       VARCHAR(128) NOT NULL,
   translation_version         smallint NOT NULL,
+  peptide_archive_id          int NOT NULL,
   mapping_session_id          int NOT NULL,
 
   KEY gene_idx( gene_stable_id, gene_version ),
@@ -1105,11 +1118,12 @@ CREATE TABLE gene_archive (
 
 CREATE TABLE peptide_archive (
 
-  translation_stable_id       VARCHAR(128) NOT NULL,
-  translation_version         smallint NOT NULL,
-  peptide_seq                 mediumtext NOT NULL,
+  peptide_archive_id         INT NOT NULL AUTO_INCREMENT,
+  md5_checksum               char(32),
+  peptide_seq                mediumtext NOT NULL,
 
-  PRIMARY KEY( translation_stable_id, translation_version )
+  PRIMARY KEY( peptide_archive_id ),
+  KEY checksum( md5_checksum )
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 

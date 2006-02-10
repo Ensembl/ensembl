@@ -33,19 +33,14 @@ sub run {
 
   while (<PEP>) {
 
-    my ($transcript, $wb, $display)  = (split(/\t/,substr($_,1)))[0,1,2];
-
-    #check if the CGC_id is present in wormpep.table
-    if ($display !~ m/\w/){ # or if ($display == '')
-      $display = $wb;
-    }
+    my ($transcript, $wb)  = (split(/\t/,substr($_,1)))[0,1];
 
     # reuse or create xref
     my $xref_id;
     $xref_sth->execute($wb);
     my $xref_id = ($xref_sth->fetchrow_array())[0];
     if (!$xref_id) {
-      $xref_id = $self->add_xref($wb, undef, $display, "", $worm_source_id, $species_id);
+      $xref_id = $self->add_xref($wb, undef, $wb, "", $worm_source_id, $species_id);
       $x_count++;
     }
 

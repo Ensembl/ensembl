@@ -78,7 +78,7 @@ sub run {
           $count++;
         }
       }
-      elsif($array[0] =~ /^WB/){
+      elsif($array[0] =~ /^WB$/){
 #WB      CE20707 ZYG-9           GO:0008017      WB:WBPaper00003099|PMID:9606208 ISS             F                       protein  taxon:6239      20030829        WB
         if(!defined($wormset)){
           $wormset = 1;
@@ -91,7 +91,7 @@ sub run {
           $count++;
         }
       }
-      elsif($array[0] =~ /^ZFIN/){
+      elsif($array[0] =~ /^ZFIN$/){
 #ZFIN    ZDB-GENE-030131-5418    rfng            GO:0030902      ZFIN:ZDB-PUB-050125-4|PMID:15659486     IMP     ZFIN:ZDB-MRPHLNO-050308-5     radical fringe homolog (Drosophila)              gene    taxon:7955      20050310        ZFIN
         if(!defined($fishset)){
           $fishset = 1;

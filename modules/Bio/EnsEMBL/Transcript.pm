@@ -441,7 +441,7 @@ sub external_name {
 
   Args       : none
   Example    : none
-  Description: returns true if this transcript has a display_xref
+  Description: returns true if this transcript has a status of KNOWN.
   Returntype : 0,1
   Exceptions : none
   Caller     : general
@@ -451,7 +451,7 @@ sub external_name {
 
 sub is_known {
   my $self = shift;
-  return ($self->{'display_xref'}) ? 1 : 0;
+  return ( $self->{'status'} eq "KNOWN" );
 }
 
 
@@ -1758,30 +1758,109 @@ sub transform {
   }
 
   my $new_transcript = $self->SUPER::transform( @_ );
-  return undef unless $new_transcript;
-
-  if( defined $self->{'translation'} ) {
-    my $new_translation;
-    %$new_translation = %{$self->{'translation'}};;
-    bless $new_translation, ref( $self->{'translation'} );
-    $new_transcript->{'translation'} = $new_translation;
+  if( ! defined $new_transcript ) {
+    my @segments = $self->project( @_ );
+    # if it projects, maybe the exons transform well?
+    # lazy load them here
+    return undef if( ! @segments );  
+    $self->get_all_Exons();
   }
+
 
   if( exists $self->{'_trans_exon_array'} ) {
     my @new_exons;
-    for my $old_exon ( @{$self->{'_trans_exon_array'}} ) {
+    my ( $low_start, $hi_end, $slice );
+    # we want to check whether the transform preserved 5prime 3prime
+    # ordering. This assumes 5->3 order. No complaints on transsplicing.
+
+    my ( $last_new_start, $last_old_strand, 
+	 $last_new_strand, $start_exon, $end_exon,
+	$last_seq_region_name );
+    my $first = 1;
+    my $ignore_order = 0;
+    my $order_broken = 0;
+
+    for my $old_exon ( @{$self->{'_trans_exon_array'}} ) {      
       my $new_exon = $old_exon->transform( @_ );
-      if( defined $new_transcript->{'translation'} ) {
-        if( $new_transcript->translation()->start_Exon() == $old_exon ) {
-          $new_transcript->translation()->start_Exon( $new_exon );
+      return undef if( !defined $new_exon );
+      if( ! defined $new_transcript ) {
+	if( !$first ) {
+	  if( $old_exon->strand() != $last_old_strand ) {
+	    # transsplicing, ignore ordering
+	    $ignore_order = 1;  
+	  }
+
+	  if( $new_exon->slice()->seq_region_name() ne 
+	      $last_seq_region_name ) {
+	    return undef;
+	  }
+
+	  if( $last_new_strand == 1 and 
+	      $new_exon->start() < $last_new_start ) {
+	    $order_broken = 1;
+	  }
+
+	  if( $last_new_strand == -1 and
+	      $new_exon->start() > $last_new_start ) {
+	    $order_broken = 1;
+	  }
+
+	  if( $new_exon->start() < $low_start ) {
+	    $low_start = $new_exon->start();
+	  }
+	  if( $new_exon->end() > $hi_end ) {
+	    $hi_end = $new_exon->end();
+	  }
+	} else {
+	  $first = 0;
+	  $low_start = $new_exon->start();
+	  $hi_end = $new_exon->end();
+	}
+
+	$last_seq_region_name = $new_exon->slice()->seq_region_name();
+	$last_old_strand = $old_exon->strand();
+	$last_new_start = $new_exon->start();
+	$last_new_strand = $new_exon->strand();
+      }
+
+      if( defined $self->{'translation'} ) {
+        if( $self->translation()->start_Exon() == $old_exon ) {
+          $start_exon = $new_exon;
         }
-        if( $new_transcript->translation()->end_Exon() == $old_exon ) {
-          $new_transcript->translation()->end_Exon( $new_exon );
+        if( $self->translation()->end_Exon() == $old_exon ) {
+          $end_exon = $new_exon;
         }
       }
       push( @new_exons, $new_exon );
     }
+
+    if( $order_broken && !$ignore_order ) {
+      warn( "Order of exons broken in transform of ".$self->dbID() ); 
+      return undef;
+    }
+
+    if( !defined $new_transcript ) {
+      %$new_transcript = %$self;
+      bless $new_transcript, ref( $self );
+      $new_transcript->start( $low_start );
+      $new_transcript->end( $hi_end );
+      $new_transcript->slice( $new_exons[0]->slice() );
+      $new_transcript->strand( $new_exons[0]->strand() );
+    }
+
     $new_transcript->{'_trans_exon_array'} = \@new_exons;
+
+    # should be ok to do inside exon array loop
+    # translations only exist together with the exons ...
+
+    if( defined $self->{'translation'} ) {
+      my $new_translation;
+      %$new_translation = %{$self->{'translation'}};;
+      bless $new_translation, ref( $self->{'translation'} );
+      $new_transcript->{'translation'} = $new_translation;
+      $new_translation->start_Exon( $start_exon );
+      $new_translation->end_Exon( $end_exon );
+    }
   }
 
   if( exists $self->{'_supporting_evidence'} ) {
