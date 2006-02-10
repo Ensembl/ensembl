@@ -393,7 +393,7 @@ sub ref_subseq{
   my $end = shift;
   my $strand = shift;
   # special case for in-between (insert) coordinates
-  return '' if($self->start() == $self->end() + 1);
+  return '' if($start == $end + 1);
 
   my $subseq;
   if($self->adaptor){
