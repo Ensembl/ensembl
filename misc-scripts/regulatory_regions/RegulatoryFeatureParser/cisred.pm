@@ -47,7 +47,6 @@ sub parse {
 
   my $stable_id_to_internal_id = $self->build_stable_id_cache($db_adaptor);
 
- 
   print "Parsing $file with cisred parser\n";
 
   # ----------------------------------------
@@ -116,7 +115,7 @@ sub parse {
 
     $feature{FACTOR_ID} = $blank_factor_id;
     if ($group_name && $group_name ne '' && $group_name !~ /\s/) {
-      my $factor_id = $factor_ids_by_name{$feature{NAME}};
+      my $factor_id = $factor_ids_by_name{$group_name};
 
       if (!$factor_id) { # create one
 	my %factor;
