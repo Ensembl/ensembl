@@ -65,7 +65,7 @@ CREATE TABLE source (
 
   source_id                   int unsigned not null auto_increment,
   name                        varchar(255) not null,
-  release                     varchar(255),
+  db_release                  varchar(255),
   download                    enum('Y', 'N') default 'Y',
   ordered                     int unsigned not null, 
    
