@@ -411,7 +411,7 @@ ok ( $newgene->biotype eq 'protein_coding' );
 my $dbEntryAdaptor=  $db->get_DBEntryAdaptor();
 
 $gene->display_xref( $dbEntryAdaptor->fetch_by_dbID( 614 ));
-$gene->type('dummy');
+$gene->biotype('dummy');
 $ga->update($gene);
 
 $newgene = $ga->fetch_by_stable_id( "ENSG00000171456" );
