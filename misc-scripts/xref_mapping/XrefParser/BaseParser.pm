@@ -1019,7 +1019,7 @@ sub set_release {
 
   my $dbi = dbi();
 
-  my $sth = $dbi->prepare("UPDATE source SET release=? WHERE source_id=?");
+  my $sth = $dbi->prepare("UPDATE source SET db_release=? WHERE source_id=?");
 
   $sth->execute($release, $source_id);
 
