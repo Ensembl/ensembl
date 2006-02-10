@@ -67,7 +67,7 @@ while($row = <$fh>) {
   my @a = split(/\t/, $row);
   push @rows, {'external_db_id'         => $a[0],
                'db_name'                => $a[1],
-               'release'                => $a[2],
+               'db_release'             => $a[2],
                'status'                 => $a[3],
 	       'dbprimary_acc_linkable' => $a[4],
 	       'display_label_linkable' => $a[5],
@@ -84,7 +84,7 @@ foreach my $dbname (@dbnames) {
   $sth->finish();
 
   $sth = $db->prepare('INSERT INTO external_db (external_db_id, db_name,
-                                                release, status, dbprimary_acc_linkable,
+                                                db_release, status, dbprimary_acc_linkable,
                                                 display_label_linkable, priority,
                                                 db_display_name)
                        VALUES (?,?,?,?,?,?,?,?)');
@@ -92,7 +92,7 @@ foreach my $dbname (@dbnames) {
   foreach my $row (@rows) {
     $sth->execute($row->{'external_db_id'},
 		  $row->{'db_name'},
-		  $row->{'release'},
+		  $row->{'db_release'},
 		  $row->{'status'},
 		  $row->{'dbprimary_acc_linkable'},
 		  $row->{'display_label_linkable'},
