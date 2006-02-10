@@ -327,7 +327,7 @@ sub fetch_all_by_factor {
 
 =cut
 
-sub fetch_all_by_factor {
+sub fetch_all_by_factor_name {
     my( $self, $name) = @_;
 
     return $self->generic_fetch("rm.name = " . $name);
