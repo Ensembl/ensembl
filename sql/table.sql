@@ -685,7 +685,7 @@ CREATE TABLE external_db (
 
   external_db_id 	      INT not null,
   db_name                     VARCHAR(27) NOT NULL,
-  release                     VARCHAR(40) NOT NULL,
+  db_release                  VARCHAR(40) NOT NULL,
   status                      ENUM ('KNOWNXREF','KNOWN','XREF','PRED','ORTH', 'PSEUDO') not null,
 
   dbprimary_acc_linkable      BOOLEAN DEFAULT 1 NOT NULL,
