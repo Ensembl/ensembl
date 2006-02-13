@@ -66,7 +66,7 @@ sub fetch_by_dbID {
    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
-           exDB.db_name, exDB.db_display_name, exDB.release, es.synonym
+           exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.xref_id = ?
@@ -137,7 +137,7 @@ sub fetch_by_db_accession {
    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
-           exDB.db_name, exDB.db_display_name, exDB.release, es.synonym
+           exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.dbprimary_acc = ?
@@ -230,7 +230,7 @@ sub store {
      SELECT external_db_id
        FROM external_db
       WHERE db_name = ?
-        AND release = ?");
+        AND db_release = ?");
   $sth->bind_param(1,$exObj->dbname,SQL_VARCHAR);
   $sth->bind_param(2,$exObj->release,SQL_VARCHAR);
   $sth->execute();
@@ -646,7 +646,7 @@ sub _fetch_by_object_type {
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
            xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
-           exDB.db_name, exDB.release, exDB.status, exDB.db_display_name,
+           exDB.db_name, exDB.db_release, exDB.status, exDB.db_display_name,
            oxr.object_xref_id,
            es.synonym, 
            idt.query_identity, idt.target_identity, idt.hit_start,
