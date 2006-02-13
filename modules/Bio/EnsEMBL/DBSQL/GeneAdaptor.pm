@@ -816,61 +816,63 @@ sub store {
   $sth->execute();
   $sth->finish();
 
-   my $gene_dbID = $sth->{'mysql_insertid'};
+  my $gene_dbID = $sth->{'mysql_insertid'};
 
-   # store stable ids if they are available
-   if (defined($gene->stable_id)) {
+  # set dbID and adaptor of gene here - you'll need this when storing xrefs
+  $gene->dbID($gene_dbID);
+  $gene->adaptor($self);
 
-     my $statement = "INSERT INTO gene_stable_id
-                         SET gene_id = ?,
-                             stable_id = ?,
-                             version = ?, ";
-     if( $gene->created_date() ) {
-       $statement .= "created_date = from_unixtime( ".$gene->created_date()."),";
-     } else {
-       $statement .= "created_date = \"0000-00-00 00:00:00\",";
-     }
+  # store stable ids if they are available
+  if (defined($gene->stable_id)) {
 
-     if( $gene->modified_date() ) {
-       $statement .= "modified_date = from_unixtime( ".$gene->modified_date().")";
-     } else {
-       $statement .= "modified_date = \"0000-00-00 00:00:00\"";
-     }
+    my $statement = "INSERT INTO gene_stable_id
+                        SET gene_id = ?,
+                            stable_id = ?,
+                            version = ?, ";
+    if( $gene->created_date() ) {
+      $statement .= "created_date = from_unixtime( ".$gene->created_date()."),";
+    } else {
+      $statement .= "created_date = \"0000-00-00 00:00:00\",";
+    }
 
-     $sth = $self->prepare($statement);
-     $sth->bind_param(1,$gene_dbID,SQL_INTEGER);
-     $sth->bind_param(2,$gene->stable_id,SQL_VARCHAR);
-     $sth->bind_param(3,$gene->version,SQL_INTEGER);
-     $sth->execute();
-     $sth->finish();
-   }
+    if( $gene->modified_date() ) {
+      $statement .= "modified_date = from_unixtime( ".$gene->modified_date().")";
+    } else {
+      $statement .= "modified_date = \"0000-00-00 00:00:00\"";
+    }
 
+    $sth = $self->prepare($statement);
+    $sth->bind_param(1,$gene_dbID,SQL_INTEGER);
+    $sth->bind_param(2,$gene->stable_id,SQL_VARCHAR);
+    $sth->bind_param(3,$gene->version,SQL_INTEGER);
+    $sth->execute();
+    $sth->finish();
+  }
 
+  # store the dbentries associated with this gene
+  my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
-   # store the dbentries associated with this gene
-   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
+  foreach my $dbe ( @{$gene->get_all_DBEntries} ) {
+    $dbEntryAdaptor->store( $dbe, $gene, "Gene" );
+  }
 
-   foreach my $dbe ( @{$gene->get_all_DBEntries} ) {
-     $dbEntryAdaptor->store( $dbe, $gene, "Gene" );
-   }
+  # we allow transcripts not to share equal exons and instead have copies
+  # For the database we still want sharing though, to have easier time with
+  # stable ids. So we need to have a step to merge exons together before store
+  my %exons;
 
+  foreach my $trans ( @{$gene->get_all_Transcripts} ) {
+    foreach my $e ( @{$trans->get_all_Exons} ) {
+      my $key = $e->hashkey();
 
-   # we allow transcripts not to share equal exons and instead have copies
-   # For the database we still want sharing though, to have easier time with
-   # stable ids. So we need to have a step to merge exons together before store
-   my %exons;
+      if( exists $exons{ $key } ) {
+        $trans->swap_exons( $e, $exons{$key} );
+      } else {
+        $exons{$key} = $e;
+      }
+    }
+  }
 
-   foreach my $trans ( @{$gene->get_all_Transcripts} ) {
-     foreach my $e ( @{$trans->get_all_Exons} ) {
-       my $key = $e->hashkey();
-
-       if( exists $exons{ $key } ) {
-         $trans->swap_exons( $e, $exons{$key} );
-       } else {
-         $exons{$key} = $e;
-       }
-     }
-   }
 
   my $transcript_adaptor = $db->get_TranscriptAdaptor();
 
