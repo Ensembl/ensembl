@@ -566,153 +566,158 @@ sub store {
   $tst->bind_param(7,$transcript->status,SQL_VARCHAR);
   $tst->bind_param(8,$transcript->description,SQL_LONGVARCHAR);
 
-   $tst->execute();
+  $tst->execute();
+  $tst->finish();
 
-   $tst->finish();
+  my $transc_dbID = $tst->{'mysql_insertid'};
+  
+  # set dbID and adaptor of transcript here - you'll need this when storing
+  # xrefs
+  $transcript->dbID($transc_dbID);
+  $transcript->adaptor($self);
 
-   my $transc_dbID = $tst->{'mysql_insertid'};
+  #
+  # store translation
+  #
+  my $translation = $transcript->translation();
+  if( defined $translation ) {
+    #make sure that the start and end exon are set correctly
+    my $start_exon = $translation->start_Exon();
+    my $end_exon   = $translation->end_Exon();
 
-   #
-   # store translation
-   #
-   my $translation = $transcript->translation();
-   if( defined $translation ) {
-     #make sure that the start and end exon are set correctly
-     my $start_exon = $translation->start_Exon();
-     my $end_exon   = $translation->end_Exon();
+    if(!$start_exon) {
+      throw("Translation does not define a start exon.");
+    }
 
-     if(!$start_exon) {
-       throw("Translation does not define a start exon.");
-     }
+    if(!$end_exon) {
+      throw("Translation does not defined an end exon.");
+    }
 
-     if(!$end_exon) {
-       throw("Translation does not defined an end exon.");
-     }
+    #If the dbID is not set, this means the exon must have been a different 
+    #object in memory than the the exons of the transcript.  Try to find the
+    #matching exon in all of the exons we just stored
+    if(!$start_exon->dbID()) {
+      my $key = $start_exon->hashkey();
+      ($start_exon) = grep {$_->hashkey() eq $key} @$exons;
+      
+      if($start_exon) {
+        $translation->start_Exon($start_exon);
+      } else {
+        throw("Translation's start_Exon does not appear to be one of the " .
+              "exons in its associated Transcript");
+      }
+    }
 
-     #If the dbID is not set, this means the exon must have been a different 
-     #object in memory than the the exons of the transcript.  Try to find the
-     #matching exon in all of the exons we just stored
-     if(!$start_exon->dbID()) {
-       my $key = $start_exon->hashkey();
-       ($start_exon) = grep {$_->hashkey() eq $key} @$exons;
-       
-       if($start_exon) {
-         $translation->start_Exon($start_exon);
-       } else {
-         throw("Translation's start_Exon does not appear to be one of the " .
-               "exons in its associated Transcript");
-       }
-     }
+    if(!$end_exon->dbID()) {
+      my $key = $end_exon->hashkey();
+      ($end_exon) = grep {$_->hashkey() eq $key} @$exons;
 
-     if(!$end_exon->dbID()) {
-       my $key = $end_exon->hashkey();
-       ($end_exon) = grep {$_->hashkey() eq $key} @$exons;
+      if($start_exon) {
+        $translation->end_Exon($end_exon);
+      } else {
+        throw("Translation's end_Exon does not appear to be one of the " .
+              "exons in its associated Transcript.");
+      }
+    }
 
-       if($start_exon) {
-         $translation->end_Exon($end_exon);
-       } else {
-         throw("Translation's end_Exon does not appear to be one of the " .
-               "exons in its associated Transcript.");
-       }
-     }
+    $db->get_TranslationAdaptor()->store( $translation, $transc_dbID );
+    # set values of the original translation, we may have copied it
+    # when we transformed the transcript
+    $original_translation->dbID($translation->dbID());
+    $original_translation->adaptor($translation->adaptor());
+  }
 
-     $db->get_TranslationAdaptor()->store( $translation, $transc_dbID );
-     # set values of the original translation, we may have copied it
-     # when we transformed the transcript
-     $original_translation->dbID($translation->dbID());
-     $original_translation->adaptor($translation->adaptor());
-   }
+  #
+  # store the xrefs/object xref mapping
+  #
+  my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
-   #
-   # store the xrefs/object xref mapping
-   #
-   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
+  foreach my $dbe ( @{$transcript->get_all_DBEntries} ) {
+    $dbEntryAdaptor->store( $dbe, $transcript, "Transcript" );
+  }
 
-   foreach my $dbe ( @{$transcript->get_all_DBEntries} ) {
-     $dbEntryAdaptor->store( $dbe, $transc_dbID, "Transcript" );
-   }
+  #
+  # Update transcript to point to display xref if it is set
+  #
+  if(my $dxref = $transcript->display_xref) {
+    my $dxref_id;
 
-   #
-   # Update transcript to point to display xref if it is set
-   #
-   if(my $dxref = $transcript->display_xref) {
-     my $dxref_id;
+    if($dxref->is_stored($db)) {
+      $dxref_id = $dxref->dbID();
+    } else {
+      $dxref_id = $dbEntryAdaptor->exists($dxref);
+    }
 
-     if($dxref->is_stored($db)) {
-       $dxref_id = $dxref->dbID();
-     } else {
-       $dxref_id = $dbEntryAdaptor->exists($dxref);
-     }
+    if(defined($dxref_id)) {
+      my $sth = $self->prepare( "update transcript set display_xref_id = ?".
+                                " where transcript_id = ?");
+      $sth->bind_param(1,$dxref_id,SQL_INTEGER);
+      $sth->bind_param(2,$transc_dbID,SQL_INTEGER);
+      $sth->execute();
+      $dxref->dbID($dxref_id);
+      $dxref->adaptor($dbEntryAdaptor);
+      $sth->finish();
+    } else {
+      warning("Display_xref ".$dxref->dbname().":".$dxref->display_id() .
+              " is not stored in database.\nNot storing " .
+              "relationship to this transcript.");
+      $dxref->dbID(undef);
+      $dxref->adaptor(undef);
+    }
+  }
 
-     if(defined($dxref_id)) {
-       my $sth = $self->prepare( "update transcript set display_xref_id = ?".
-                                 " where transcript_id = ?");
-       $sth->bind_param(1,$dxref_id,SQL_INTEGER);
-       $sth->bind_param(2,$transc_dbID,SQL_INTEGER);
-       $sth->execute();
-       $dxref->dbID($dxref_id);
-       $dxref->adaptor($dbEntryAdaptor);
-       $sth->finish();
-     } else {
-       warning("Display_xref ".$dxref->dbname().":".$dxref->display_id() .
-               " is not stored in database.\nNot storing " .
-               "relationship to this transcript.");
-       $dxref->dbID(undef);
-       $dxref->adaptor(undef);
-     }
-   }
+  #
+  # Link transcript to exons in exon_transcript table
+  #
+  my $etst =
+    $self->prepare("insert into exon_transcript (exon_id,transcript_id,rank)"
+                   ." values (?,?,?)");
+  my $rank = 1;
+  foreach my $exon ( @{$transcript->get_all_Exons} ) {
+      $etst->bind_param(1,$exon->dbID,SQL_INTEGER);
+      $etst->bind_param(2,$transc_dbID,SQL_INTEGER);
+      $etst->bind_param(3,$rank,SQL_INTEGER);
+    $etst->execute();
+    $rank++;
+  }
 
-   #
-   # Link transcript to exons in exon_transcript table
-   #
-   my $etst =
-     $self->prepare("insert into exon_transcript (exon_id,transcript_id,rank)"
-                    ." values (?,?,?)");
-   my $rank = 1;
-   foreach my $exon ( @{$transcript->get_all_Exons} ) {
-       $etst->bind_param(1,$exon->dbID,SQL_INTEGER);
-       $etst->bind_param(2,$transc_dbID,SQL_INTEGER);
-       $etst->bind_param(3,$rank,SQL_INTEGER);
-     $etst->execute();
-     $rank++;
-   }
+  $etst->finish();
 
-   $etst->finish();
+  #
+  # Store stable_id
+  #
+  if (defined($transcript->stable_id)) {
+    if (!defined($transcript->version)) {
+      throw("Trying to store incomplete stable id information for " .
+                   "transcript");
+    }
 
-   #
-   # Store stable_id
-   #
-   if (defined($transcript->stable_id)) {
-     if (!defined($transcript->version)) {
-       throw("Trying to store incomplete stable id information for " .
-                    "transcript");
-     }
+    my $statement = 
+      "INSERT INTO transcript_stable_id ".
+        "SET transcript_id = ?, ".
+          "  stable_id = ?, ".
+            "version = ?, ";
 
-     my $statement = 
-       "INSERT INTO transcript_stable_id ".
-	 "SET transcript_id = ?, ".
-	   "  stable_id = ?, ".
-	     "version = ?, ";
+    if( $transcript->created_date() ) {
+      $statement .= "created_date = from_unixtime( ".$transcript->created_date()."),";
+    } else {
+      $statement .= "created_date = \"0000-00-00 00:00:00\",";
+    }
 
-     if( $transcript->created_date() ) {
-       $statement .= "created_date = from_unixtime( ".$transcript->created_date()."),";
-     } else {
-       $statement .= "created_date = \"0000-00-00 00:00:00\",";
-     }
+    if( $transcript->modified_date() ) {
+      $statement .= "modified_date = from_unixtime( ".$transcript->modified_date().")";
+    } else {
+      $statement .= "modified_date = \"0000-00-00 00:00:00\"";
+    }
 
-     if( $transcript->modified_date() ) {
-       $statement .= "modified_date = from_unixtime( ".$transcript->modified_date().")";
-     } else {
-       $statement .= "modified_date = \"0000-00-00 00:00:00\"";
-     }
+    my $sth = $self->prepare($statement);
+    $sth->bind_param(1,$transc_dbID,SQL_INTEGER);
+    $sth->bind_param(2,$transcript->stable_id,SQL_VARCHAR);
+    $sth->bind_param(3,$transcript->version,SQL_INTEGER);
+    $sth->execute();
+    $sth->finish();
+  }
 
-     my $sth = $self->prepare($statement);
-     $sth->bind_param(1,$transc_dbID,SQL_INTEGER);
-     $sth->bind_param(2,$transcript->stable_id,SQL_VARCHAR);
-     $sth->bind_param(3,$transcript->version,SQL_INTEGER);
-     $sth->execute();
-     $sth->finish();
-   }
 
 
   # Now the supporting evidence
@@ -752,18 +757,17 @@ sub store {
 
 
 
-   #update the original transcript object - not the transfered copy that
-   #we might have created
-   $original->dbID( $transc_dbID );
-   $original->adaptor( $self );
+  #update the original transcript object - not the transfered copy that
+  #we might have created
+  $original->dbID( $transc_dbID );
+  $original->adaptor( $self );
 
-   # store transcript attributes if there are any
-   my $attr_adaptor = $db->get_AttributeAdaptor();
-   $attr_adaptor->store_on_Transcript($transcript,
-                                      $transcript->get_all_Attributes);
+  # store transcript attributes if there are any
+  my $attr_adaptor = $db->get_AttributeAdaptor();
+  $attr_adaptor->store_on_Transcript($transcript,
+                                     $transcript->get_all_Attributes);
 
-
-   return $transc_dbID;
+  return $transc_dbID;
 }
 
 
