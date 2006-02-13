@@ -65,7 +65,9 @@ my $rf = Bio::EnsEMBL::RegulatoryFeature->new(-name      => 'hsa-miR-108',
 					      -factor     => $factor,
 					      -adaptor   => $rfa);
 
-$rfa->store($rf, $transcript, 'positive', 'some evidience');
+my @obj = [$transcript, 'positive', 'some evidence'];
+
+$rfa->store($rf, \@obj);
 
 ok($rf->dbID && $rf->adaptor());
 
