@@ -80,6 +80,7 @@ my @dbs_to_copy;
 			       'ecs3:3307' => "/mysql/current/var",
 			       'ecs3:3309' => "/mysqlh/current/var",
 			       'ecs3:3304' => "/mysql_archive/current/var",
+                               'ecs3f:3310' => "/mysqlf/ecs3f_3310/databases",
 			       'ecs4:3350' => "/mysql-3350/databases",
 			       'ecs4:3351' => "/mysql-3351/databases",
 			       'ecs4:3352' => "/mysql-3352/databases",
@@ -87,6 +88,7 @@ my @dbs_to_copy;
 			       'ia64e:3306' => "/mysql/data_3306/databases",
                                'ia64f:3306' => "/mysql/data_3306/databases",
                                'ia64g:3306' => "/mysql/data_3306/databases",
+                               'ia64g:3355' => "/mysql/data_3355/databases",
                                'ia64h:3306' => "/mysql/data_3306/databases");
 
 my $working_host = $ENV{'HOST'};
