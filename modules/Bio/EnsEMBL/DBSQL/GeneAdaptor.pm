@@ -97,7 +97,7 @@ sub _columns {
 	     gsi.stable_id gsi.version UNIX_TIMESTAMP(gsi.created_date)
 	     UNIX_TIMESTAMP(gsi.modified_date) 
 	     x.display_label x.dbprimary_acc x.description x.version 
-	     exdb.db_name exdb.status exdb.release exdb.db_display_name );
+	     exdb.db_name exdb.status exdb.db_release exdb.db_display_name );
 }
 
 
