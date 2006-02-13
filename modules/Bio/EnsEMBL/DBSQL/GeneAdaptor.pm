@@ -893,20 +893,16 @@ sub store {
   }
 
   # update gene to point to display xref if it is set
-  print $gene->display_xref . "\n" if $gene->display_xref ;
   if(my $display_xref = $gene->display_xref) {
     my $dxref_id;
-print "here 1\n";
     if($display_xref->is_stored($db)) {
       $dxref_id = $display_xref->dbID();
-      print "stored\n";
     } else {
       $dxref_id = $dbEntryAdaptor->exists($display_xref);
-      print "exists\n";
     }
-    print "dxref_id $dxref_id\n";
+
     if(defined($dxref_id)) {
-      print "here\n";
+
       $sth = $self->prepare
         ("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
       $sth->bind_param(1,$dxref_id,SQL_INTEGER);
