@@ -57,10 +57,6 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 sub fetch_all {
   my $self = shift;
 
-  if(defined($self->{'aexc_cache'})) {
-    return $self->{'aexc_cache'};
-  }
-
   my $sth = $self->prepare
     ("SELECT assembly_exception_id, seq_region_id, seq_region_start,
              seq_region_end, exc_type, exc_seq_region_id, exc_seq_region_start,
@@ -112,9 +108,7 @@ sub fetch_all {
   }
 
   $sth->finish();
-
-  $self->{'aexc_cache'} = \@features;
-
+  
   return \@features;
 }
 
