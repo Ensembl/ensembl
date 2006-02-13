@@ -67,7 +67,7 @@ sub fetch_by_dbID {
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.release, es.synonym
-    FROM   xref, external_db exDB
+    FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.xref_id = ?
     AND    xref.external_db_id = exDB.external_db_id");
@@ -653,7 +653,7 @@ sub _fetch_by_object_type {
            idt.hit_end, idt.translation_start, idt.translation_end,
            idt.cigar_line, idt.score, idt.evalue, idt.analysis_id,
            gx.linkage_type
-    FROM   xref xref, external_db exDB, object_xref oxr 
+    FROM  (xref xref, external_db exDB, object_xref oxr)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
     LEFT JOIN go_xref gx on gx.object_xref_id = oxr.object_xref_id
