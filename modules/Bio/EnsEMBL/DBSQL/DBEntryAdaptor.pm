@@ -138,7 +138,7 @@ sub fetch_by_db_accession {
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.release, es.synonym
-    FROM   xref, external_db exDB
+    FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.dbprimary_acc = ?
     AND    exDB.db_name = ?

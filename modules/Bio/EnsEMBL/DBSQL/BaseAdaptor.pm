@@ -313,7 +313,7 @@ sub generic_fetch {
   #construct a nice table string like 'table1 t1, table2 t2'
   my $tablenames = join(', ', map({ join(' ', @$_) } @tables));
 
-  my $sql = "SELECT $straight_join $columns\n  FROM $tablenames $left_join";
+  my $sql = "SELECT $straight_join $columns\n  FROM ($tablenames) $left_join";
 
   my $default_where = $self->_default_where_clause;
   my $final_clause = $self->_final_clause;
