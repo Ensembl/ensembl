@@ -158,8 +158,8 @@ sub new {
      throw('Cannot create slice on toplevel CoordSystem.');
    }
   } else {
-   warn("SLICE wo CS");
-   warn(stack_trace_dump());
+   warning("Slice without coordinate system");
+   #warn(stack_trace_dump());
   }
 
   $strand ||= 1;
