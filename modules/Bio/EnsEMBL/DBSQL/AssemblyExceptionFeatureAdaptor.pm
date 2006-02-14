@@ -1,12 +1,4 @@
-#
-# Ensembl module for Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor
-#
-#
-# Copyright Ensembl
-#
-# You may distribute this module under the same terms as perl itself
-
-# POD documentation - main docs before the code
+package Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor;
 
 =head1 NAME
 
@@ -14,32 +6,75 @@ Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor
 
 =head1 SYNOPSIS
 
-my $assembly_exception_feature_adaptor = $database_adaptor->get_AssemblyExceptionFeatureAdaptor();
-@assembly_exception_features = $assembly_exception_feature_adaptor->fetch_by_Slice($slice);
+my $assembly_exception_feature_adaptor =
+    $database_adaptor->get_AssemblyExceptionFeatureAdaptor();
+@assembly_exception_features =
+    $assembly_exception_feature_adaptor->fetch_by_Slice($slice);
 
 =head1 DESCRIPTION
 
-Assembly Exception Feature Adaptor - database access for assembly exception features
+Assembly Exception Feature Adaptor - database access for assembly exception
+features.
 
-=head1 AUTHOR - Glenn Proctor
+=head1 LICENCE
 
-=head1 METHODS
+This code is distributed under an Apache style licence:
+Please see http://www.ensembl.org/code_licence.html for details
 
+=head1 AUTHOR
+
+Glenn Proctor <glenn@ebi.ac.uk>, Ensembl core API team
+
+=head1 CONTACT
+
+Please post comments/questions to the Ensembl development list
+<ensembl-dev@ebi.ac.uk>
 
 =cut
 
-package Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor;
-use vars qw(@ISA);
 use strict;
+use warnings;
+no warnings qw(uninitialized);
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::AssemblyExceptionFeature;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Cache;
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+our @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
+# set the number of slices you'd like to cache
+our $ASSEMBLY_EXCEPTION_FEATURE_CACHE_SIZE = 100;
 
+=head2 new
+
+  Arg [1]    : list of args @args
+               Superclass constructor arguments
+  Example    : none
+  Description: Constructor which just initializes internal cache structures
+  Returntype : Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor
+  Exceptions : none
+  Caller     : implementing subclass constructors
+  Status     : Stable
+
+=cut
+
+sub new {
+  my $caller = shift;
+  my $class = ref($caller) || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  # initialize an LRU cache for slices
+  my %cache;
+  tie(%cache, 'Bio::EnsEMBL::Utils::Cache',
+    $ASSEMBLY_EXCEPTION_FEATURE_CACHE_SIZE);
+
+  $self->{'_aexc_slice_cache'} = \%cache;
+
+  return $self;
+}
 
 =head2 fetch_all
 
@@ -56,6 +91,11 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 sub fetch_all {
   my $self = shift;
+
+  # this is the "global" cache for all assembly exception features in the db
+  if(defined($self->{'_aexc_cache'})) {
+    return $self->{'_aexc_cache'};
+  }
 
   my $sth = $self->prepare
     ("SELECT assembly_exception_id, seq_region_id, seq_region_start,
@@ -74,7 +114,7 @@ sub fetch_all {
   my @features;
   my $sa = $self->db()->get_SliceAdaptor();
 
-  $self->{'aexc_dbID_cache'} = {};
+  $self->{'_aexc_dbID_cache'} = {};
 
   while($sth->fetch()) {
     my $slice   = $sa->fetch_by_seq_region_id($sr_id);
@@ -94,7 +134,7 @@ sub fetch_all {
            '-type'            => $x_type);
 
     push @features, $a;
-    $self->{'aexc_dbID_cache'}->{$ax_id} = $a;
+    $self->{'_aexc_dbID_cache'}->{$ax_id} = $a;
 
     push @features, Bio::EnsEMBL::AssemblyExceptionFeature->new
           ('-dbID'            => $ax_id,
@@ -108,6 +148,8 @@ sub fetch_all {
   }
 
   $sth->finish();
+
+  $self->{'_aexc_cache'} = \@features;
   
   return \@features;
 }
@@ -132,12 +174,12 @@ sub fetch_by_dbID {
   my $self = shift;
   my $dbID = shift;
 
-  if(!exists($self->{'aexc_dbID_cache'})) {
+  if(!exists($self->{'_aexc_dbID_cache'})) {
     # force loading of cache
     $self->fetch_all();
   }
 
-  return $self->{'aexc_dbID_cache'}->{$dbID};
+  return $self->{'_aexc_dbID_cache'}->{$dbID};
 }
 
 
@@ -161,8 +203,9 @@ sub fetch_all_by_Slice {
 
   my $key= uc($slice->name());
 
-  if(exists($self->{'aexc_slice_cache'}->{$key})) {
-    return $self->{'aexc_slice_cache'}->{$key};
+  # return features from the slice cache if present
+  if(exists($self->{'_aexc_slice_cache'}->{$key})) {
+    return $self->{'_aexc_slice_cache'}->{$key};
   }
 
   my $all_features = $self->fetch_all();
@@ -172,7 +215,6 @@ sub fetch_all_by_Slice {
 
   my @features;
 
-  my $remap = \&Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor::_remap;
   my $ma = $self->db()->get_AssemblyMapperAdaptor();
 
   foreach my $cs (@$css) {
@@ -183,14 +225,100 @@ sub fetch_all_by_Slice {
       $mapper = $ma->fetch_by_CoordSystems($cs,$slice->coord_system());
     }
 
-    push @features, @{&$remap($all_features, $mapper, $slice)};
+    push @features, @{ $self->_remap($all_features, $mapper, $slice) };
   }
 
-  $self->{'aexc_slice_cache'}->{$key} = \@features;
+  $self->{'_aexc_slice_cache'}->{$key} = \@features;
 
   return \@features;
 }
 
+
+#
+# Given a list of features checks if they are in the correct coord system
+# by looking at the first features slice.  If they are not then they are
+# converted and placed on the slice.
+#
+# Note that this is a re-implementation of a method with the same name in
+# BaseFeatureAdaptor, and in contrast to the latter which maps features in
+# place, this method returns a remapped copy of each feature. The reason for
+# this is to get around conflicts with caching.
+#
+sub _remap {
+  my ($self, $features, $mapper, $slice) = @_;
+
+  # check if any remapping is actually needed
+  if(@$features && (!$features->[0]->isa('Bio::EnsEMBL::Feature') ||
+                    $features->[0]->slice == $slice)) {
+    return $features;
+  }
+
+  # remapping has not been done, we have to do our own conversion from
+  # to slice coords
+
+  my @out;
+
+  my $slice_start = $slice->start();
+  my $slice_end   = $slice->end();
+  my $slice_strand = $slice->strand();
+  my $slice_cs    = $slice->coord_system();
+
+  my ($seq_region, $start, $end, $strand);
+
+  my $slice_seq_region = $slice->seq_region_name();
+
+  foreach my $f (@$features) {
+    # since feats were obtained in contig coords, attached seq is a contig
+    my $fslice = $f->slice();
+    if(!$fslice) {
+      throw("Feature does not have attached slice.\n");
+    }
+    my $fseq_region = $fslice->seq_region_name();
+    my $fcs = $fslice->coord_system();
+
+    if(!$slice_cs->equals($fcs)) {
+      # slice of feature in different coord system, mapping required
+      ($seq_region, $start, $end, $strand) =
+        $mapper->fastmap($fseq_region,$f->start(),$f->end(),$f->strand(),$fcs);
+
+      # undefined start means gap
+      next if(!defined $start);
+    } else {
+      $start      = $f->start();
+      $end        = $f->end();
+      $strand     = $f->strand();
+      $seq_region = $f->slice->seq_region_name();
+    }
+
+    # maps to region outside desired area
+    next if ($start > $slice_end) || ($end < $slice_start) || 
+      ($slice_seq_region ne $seq_region);
+
+    # create new copies of successfully mapped feaatures with shifted start,
+    # end and strand
+    my ($new_start, $new_end);
+    if($slice_strand == -1) {
+      $new_start = $slice_end - $end + 1;
+      $new_end = $slice_end - $start + 1;
+    } else {
+      $new_start = $start - $slice_start + 1;
+      $new_end = $end - $slice_start + 1;
+    }
+    
+    push @out, Bio::EnsEMBL::AssemblyExceptionFeature->new(
+            '-dbID'            => $f->dbID,
+            '-start'           => $new_start,
+            '-end'             => $new_end,
+            '-strand'          => $strand * $slice_strand,
+            '-adaptor'         => $self,
+            '-slice'           => $slice,
+            '-alternate_slice' => $f->alternate_slice,
+            '-type'            => $f->type,
+    );
+  }
+
+  return \@out;
+}
 
 
 
