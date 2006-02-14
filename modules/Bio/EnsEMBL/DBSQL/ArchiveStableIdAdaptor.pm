@@ -1,11 +1,4 @@
-# EnsEMBL module for ArchiveStableIdAdaptor
-# Copyright EMBL-EBI/Sanger center 2003
-#
-#
-#
-# You may distribute this module under the same terms as perl itself
-
-# POD documentation - main docs before the code
+package Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor;
 
 =head1 NAME
 
@@ -13,53 +6,63 @@ Bio::EnsEMBL::ArchiveStableIdAdaptor
 
 =head1 SYNOPSIS
 
+
+=head1 DESCRIPTION
+
 ArchiveStableIdAdaptor does all SQL to create ArchiveStableIds and works of 
- stable_id_event
- mapping_session
- archive_peptide
- archive_gene
 
-tables inside EnsEMBL core.
+    stable_id_event
+    mapping_session
+    peptite_archive
+    gene_archive
 
- fetch_by_stable_id_version
- fetch_by_stable_id_dbname
- fetch_pre_by_arch_id
- fetch_succ_by_arch_id
- list_dbnames
- get_peptide
- _lookup_version
-
- _resolve_type
+tables inside the core database.
 
 This whole module has a status of At Risk as it is under development.
 
-=head1 DESCRIPTION
-  
+=head1 METHODS
+
+    fetch_by_stable_id_version
+    fetch_by_stable_id_dbname
+    fetch_pre_by_arch_id
+    fetch_succ_by_arch_id
+    list_dbnames
+    get_peptide
+    _lookup_version
+    _resolve_type
+
+=head1 LICENCE
+
+This code is distributed under an Apache style licence:
+Please see http://www.ensembl.org/code_licence.html for details
+
+=head1 AUTHOR
+
+Ensembl core API team
+
+=head1 CONTACT
+
+Please post comments/questions to the Ensembl development list
+<ensembl-dev@ebi.ac.uk>
 
 =cut
 
-
-
-package Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor;
-
-
-use warnings;
 use strict;
+use warnings;
+no warnings qw(uninitialized);
+
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::ArchiveStableId;
 
-use vars qw(@ISA);
-
-
-@ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
+our @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
 =head2 fetch_by_stable_id
 
-  Arg [1]    : string $stable_d
+  Arg [1]    : string $stable_id
   Example    : none
-  Description: retrives a ArchiveStableId that is latest incarnation of give stable_id.
-  if not in database, will return undef.
+  Description: retrives an ArchiveStableId that is the latest incarnation of
+               given stable_id. If not in database, will return undef.
   Returntype : Bio::EnsEMBL::ArchiveStableId
   Exceptions : none
   Caller     : general
@@ -67,7 +70,6 @@ use vars qw(@ISA);
              : under development
 
 =cut
-
 
 sub fetch_by_stable_id {
   my $self = shift;
@@ -104,8 +106,6 @@ sub fetch_by_stable_id {
 
 =cut
 
-
-
 sub fetch_by_stable_id_version {
   my $self = shift;
   my $stable_id = shift;
@@ -124,7 +124,6 @@ sub fetch_by_stable_id_version {
 }
 
 
-
 =head2 fetch_by_stable_id_dbname
 
   Arg [1]    : string $stable_id
@@ -139,8 +138,6 @@ sub fetch_by_stable_id_version {
              : under development
 
 =cut
-
-
 
 sub fetch_by_stable_id_dbname {
   my $self = shift;
@@ -168,8 +165,8 @@ sub fetch_by_stable_id_dbname {
 
   Arg [1]    : Bio::EnsEMBL::ArchiveStableId $gene_archive_id
   Example    : none
-  Description: Given the ArchiveStableId of a gene retrieves ArchiveStableId s of 
-               Transcripts that make that gene.
+  Description: Given the ArchiveStableId of a gene retrieves ArchiveStableIds
+               of Transcripts that make that gene.
   Returntype : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions : empty if not a gene stable id or not in database
   Caller     : ArchiveStableId->get_all_transcripts()
@@ -178,21 +175,19 @@ sub fetch_by_stable_id_dbname {
 
 =cut
 
-
-
 sub fetch_all_by_gene_archive_id {
   my $self = shift;
   my $gene_archive_id = shift;
   my @result = ();
 
-  my $sql = qq {
+  my $sql = qq(
     SELECT ga.transcript_stable_id, ga.transcript_version,
            m.old_db_name
       FROM gene_archive ga, mapping_session m
      WHERE ga.gene_stable_id = ?
        AND ga.gene_version = ?
        AND ga.mapping_session_id = m.mapping_session_id
-     };
+  );
   
   my $sth = $self->prepare( $sql );
   $sth->bind_param(1,$gene_archive_id->stable_id,SQL_VARCHAR);
@@ -220,7 +215,6 @@ sub fetch_all_by_gene_archive_id {
 }
 
 
-
 =head2 fetch_by_transcript_archive_id
 
   Arg [1]    : Bio::EnsEMBL::ArchiveStableId
@@ -235,27 +229,24 @@ sub fetch_all_by_gene_archive_id {
 
 =cut
 
-
-
 sub fetch_by_transcript_archive_id {
   my $self = shift;
   my $transcript_archive_id = shift;
 
-  my $sql = qq {
+  my $sql = qq(
     SELECT ga.translation_stable_id, ga.translation_version,
            m.old_db_name
       FROM gene_archive ga, mapping_session m
      WHERE ga.transcript_stable_id = ?
        AND ga.transcript_version = ?
-     };
+  );
   
   my $sth = $self->prepare( $sql );
   $sth->bind_param(1,$transcript_archive_id->stable_id,SQL_VARCHAR);
-  $sth->bind_param(1,$transcript_archive_id->version,SQL_SMALLINT);
+  $sth->bind_param(2,$transcript_archive_id->version,SQL_SMALLINT);
   $sth->execute();
   
-  my ( $stable_id, $version, $db_name ) =
-    $sth->fetchrow_array();
+  my ( $stable_id, $version, $db_name ) = $sth->fetchrow_array();
   
   $sth->finish();
 
@@ -276,9 +267,6 @@ sub fetch_by_transcript_archive_id {
 }
 
 
-
-
-
 =head2 fetch_pre_by_arch_id
 
   Arg [1]    : Bio::EnsEMBL::ArchiveStableId
@@ -293,7 +281,6 @@ sub fetch_by_transcript_archive_id {
 
 =cut
 
-
 sub fetch_pre_by_arch_id {
   my $self = shift;
   my $arch_id = shift;
@@ -305,13 +292,13 @@ sub fetch_pre_by_arch_id {
     $self->throw( "Need db_name for predecessor retrieval" );
   }
 
-  my $sql = qq {
+  my $sql = qq(
     SELECT sie.old_stable_id, sie.old_version, m.old_db_name
     FROM mapping_session m, stable_id_event sie
     WHERE sie.mapping_session_id = m.mapping_session_id
       AND sie.new_stable_id = ?
       AND m.new_db_name = ?	
-    };
+  );
 
   my $sth = $self->prepare( $sql );
   $sth->bind_param(1,$arch_id->stable_id, SQL_VARCHAR);
@@ -344,8 +331,9 @@ sub fetch_pre_by_arch_id {
   Arg [1]    : Bio::EnsEMBL::ArchiveStableId $arch_id
    The one where you want to know the currently related ones.
   Example    : none
-  Description: Gives back a list of archive stable ids which are successors in the 
-               stable_id_event tree of the given stable_id. Might well be empty.
+  Description: Gives back a list of archive stable ids which are successors in
+               the stable_id_event tree of the given stable_id. Might well be
+               empty.
   Returntype : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions : none
   Caller     : webcode for archive
@@ -353,7 +341,6 @@ sub fetch_pre_by_arch_id {
              : under development
 
 =cut
-
 
 sub fetch_all_currently_related {
   my $self = shift;
@@ -413,7 +400,6 @@ sub fetch_all_currently_related {
 
 =cut
 
-
 sub fetch_succ_by_arch_id {
   my $self = shift;
   my $arch_id = shift;
@@ -425,13 +411,13 @@ sub fetch_succ_by_arch_id {
     $self->throw( "Need db_name for successor retrieval" );
   }
 
-  my $sql = qq {
+  my $sql = qq(
     SELECT sie.new_stable_id, sie.new_version, m.new_db_name
     FROM mapping_session m, stable_id_event sie
     WHERE sie.mapping_session_id = m.mapping_session_id
       AND sie.old_stable_id = ?
       AND m.old_db_name = ?	
-    };
+  );
 
   my $sth = $self->prepare( $sql );
   $sth->bind_param(1,$arch_id->stable_id,SQL_VARCHAR);
@@ -457,13 +443,12 @@ sub fetch_succ_by_arch_id {
 }
 
 
-
 =head2 list_dbnames
 
   Args       : none
   Example    : none
-  Description: A list of available database names from the latest (current) to the  
-               oldest (ordered).
+  Description: A list of available database names from the latest (current) to
+               the oldest (ordered).
   Returntype : listref string
   Exceptions : none
   Caller     : general
@@ -472,16 +457,15 @@ sub fetch_succ_by_arch_id {
 
 =cut
 
-
 sub list_dbnames {
   my $self = shift;
   
   if( ! defined $self->{'dbnames'} ) {
-    my $sql = qq {
+    my $sql = qq(
       SELECT old_db_name, new_db_name
         FROM mapping_session
        ORDER BY created DESC
-     };
+    );
     my $sth = $self->prepare( $sql );
     $sth->execute();
     my ( $old_db_name, $new_db_name );
@@ -509,14 +493,12 @@ sub list_dbnames {
 }
 
 
-
-
 =head2 get_peptide
 
   Arg [1]    : 
   Example    : none
-  Description: Retrieves the peptide string for given ArchiveStableId. If its not 
-               a peptide or not in the database returns undef.
+  Description: Retrieves the peptide string for given ArchiveStableId. If its
+               not a peptide or not in the database returns undef.
   Returntype : string
   Exceptions : none
   Caller     : ArchiveStableId->get_peptide or general
@@ -524,7 +506,6 @@ sub list_dbnames {
              : under development
 
 =cut
-
 
 sub get_peptide {
   my $self = shift;
@@ -537,12 +518,13 @@ sub get_peptide {
   }
 
   
-  my $sql = qq {
-    SELECT peptide_seq
-      FROM peptide_archive
-     WHERE translation_stable_id = ?
-       AND translation_version = ?
-     };
+  my $sql = qq(
+    SELECT pa.peptide_seq
+      FROM peptide_archive pa, gene_archive ga
+     WHERE ga.translation_stable_id = ?
+       AND ga.translation_version = ?
+       AND ga.peptide_archive_id = pa.peptide_archive_id
+  );
 
 
   my $sth = $self->prepare( $sql );
@@ -557,7 +539,7 @@ sub get_peptide {
 }
 
 
-# given an ArchiveStableId thats missing the version but has the db_name
+# given an ArchiveStableId that's missing the version but has the db_name
 # this should fill in the version
 # return true or false 
 sub _lookup_version {
@@ -612,6 +594,7 @@ sub _lookup_version {
 
   return 1;
 }
+
 
 # static helper
 sub _resolve_type {

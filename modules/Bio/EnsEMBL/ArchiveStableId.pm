@@ -42,11 +42,13 @@ ArchiveStableId objects are the main workunit for retrieving stable id archived 
 
 package Bio::EnsEMBL::ArchiveStableId;
 
-
-use warnings;
 use strict;
+use warnings;
+no warnings qw(uninitialized);
+
 use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::Utils::Argument qw( rearrange );
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Exception qw(deprecate);
 
 use vars qw(@ISA);
 
@@ -194,7 +196,7 @@ sub get_peptide {
 }
 
 
-=head2 get_all_by_transcript_archive_id
+=head2 get_all_transcript_archive_ids
 
   Args       : none
   Example    : none
@@ -212,16 +214,18 @@ sub get_peptide {
 sub get_all_transcript_archive_ids {
   my $self = shift;
 
+  my $archive_ids = [];
+
   if( $self->type() eq "Gene" ) {
-    return $self->adaptor->fetch_all_by_gene_archive_id( $self );
-  } else {
-    return undef;
+    $archive_ids = $self->adaptor->fetch_all_by_gene_archive_id( $self );
   }
+
+  return $archive_ids;
 }
 
 
 
-=head2 get_translation_archive_id
+=head2 get_all_translation_archive_ids
 
   Args       : none
   Example    : none
@@ -236,7 +240,7 @@ sub get_all_transcript_archive_ids {
 =cut
 
 
-sub get_translation_archive_id {
+sub get_all_translation_archive_ids {
   my $self = shift;
 
   if( $self->type() eq "Transcript" ) {
@@ -255,6 +259,13 @@ sub get_translation_archive_id {
   }
 }
 
+sub get_translation_archive_id {
+    my $self = shift;
+    
+    deprecate("Use get_all_translation_archive_ids() instead");
+    
+    return $self->get_all_translation_archive_ids;
+}
 
 
 
