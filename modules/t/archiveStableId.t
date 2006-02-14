@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-
+no warnings qw(uninitialized);
 
 BEGIN { $| = 1;  
 	use Test;
@@ -36,7 +36,7 @@ ok( $asi );
 my $pre_asis = $asi->get_all_predecessors();
 
 for my $asi ( @$pre_asis ) {
-  debug( "Pre G1" );
+  debug( "\tPre G1" );
   _print_asi( $asi );
 }
 
@@ -49,13 +49,13 @@ ok( scalar( @$pre_asis ) == 2 );
 my $transcripts = $pre_asis->[0]->get_all_transcript_archive_ids();
 
 for my $asi ( @$transcripts ) {
-  debug( "Transcripts G1" );
+  debug( "\tTranscripts G1" );
   _print_asi( $asi );
   
   #get_translation_archive_id was changed to give back listref.
   #this makes the function poorly named, but it is what the
   #webteam uses so....
-  my $tl = $asi->get_translation_archive_id();
+  my $tl = $asi->get_all_translation_archive_ids();
   foreach my $asi2 (@$tl) {
     _print_asi( $asi2 );
   }
@@ -69,7 +69,7 @@ ok( scalar( @$transcripts ) == 1);
 
 
 $pre_asis = $pre_asis->[0]->get_all_predecessors();
-debug( "Predecessors: ".scalar( @$pre_asis ) );
+debug( "\tPredecessors: ".scalar( @$pre_asis ) );
 
 
 #
@@ -81,7 +81,7 @@ $asi = $asia->fetch_by_stable_id_dbname( "G4", "release_1" );
 my $succ_asis = $asi->get_all_successors();
  
 for my $asi ( @$succ_asis ) {
-  debug( "Succ G4.1" );
+  debug( "\tSucc G4.1" );
   _print_asi( $asi );
 }
 
@@ -93,7 +93,7 @@ ok( scalar( @$succ_asis ) == 1 );
 $succ_asis = $succ_asis->[0]->get_all_successors();
 
 for my $asi ( @$succ_asis ) {
-  debug( "Succ Succ G4.1" );
+  debug( "\tSucc Succ G4.1" );
   _print_asi( $asi );
 }
 
@@ -111,7 +111,7 @@ ok( scalar( @$succ_asis ) == 0 );
 $asi = $asia->fetch_by_stable_id_dbname( "G2", "release_1" );
 my $asis = $asia->fetch_all_currently_related( $asi );
 
-debug( "Currently related from G2.release_1" );
+debug( "\tCurrently related from G2.release_1" );
 for my $asi ( @$asis ) {
  _print_asi( $asi );
 }
@@ -131,12 +131,12 @@ ok( ! defined $asia->fetch_by_stable_id_dbname( "FooBar", "release_unknown" ));
 sub _print_asi {
   my $asi = shift;
 
-  debug( "stable id: ".$asi->stable_id().
-	 "\nversion: ".$asi->version().
-	 "\ntype: ".$asi->type().
-	 "\ndbname: ".$asi->db_name().
-	 "\nTranscripts ".($asi->get_all_transcript_archive_ids()||"").
-	 "\nTranslation ".($asi->get_translation_archive_id()||"").
-	 "\nPeptide ".($asi->get_peptide()||"")."\n" );
+  debug( "\ttype: ".$asi->type().
+         "\n\tstable id: ".$asi->stable_id().
+	 "\n\tversion: ".$asi->version().
+	 "\n\tdbname: ".$asi->db_name().
+	 "\n\tTranscripts: ".(join(", ", map { $_->stable_id } @{ $asi->get_all_transcript_archive_ids })).
+	 "\n\tTranslations: ".(join(", ", map { $_->stable_id } @{ $asi->get_all_translation_archive_ids })).
+	 "\n\tPeptide: ".$asi->get_peptide."\n" );
 }
   
