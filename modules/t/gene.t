@@ -416,7 +416,7 @@ $ga->update($gene);
 
 $newgene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 ok ( $newgene->display_xref->dbID() == 614 );
-ok ( $newgene->type eq 'dummy' );
+ok ( $newgene->biotype eq 'dummy' );
 
 $multi->restore('core', 'gene');
 
