@@ -133,7 +133,7 @@ CREATE TABLE gene_info (
   author_id int(10) unsigned NOT NULL default '0',
   is_known enum('true','false') default 'false',
   timestamp datetime NOT NULL default '0000-00-00 00:00:00',
-  PRIMARY KEY  (gene_info_id)
+  PRIMARY KEY  (gene_info_id),
   KEY gene_stable_id_idx (gene_stable_id)
 ) TYPE=MyISAM;
 
