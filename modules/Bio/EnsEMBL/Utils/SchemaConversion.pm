@@ -149,6 +149,8 @@ sub species_alias {
     return 'HomoSapiens' if $name =~ /homo/;
     return 'MusMusculus' if $name =~ /mus/;
     return 'DanioRerio' if $name =~ /danio/;
+	##hack - should use own modules
+    return 'HomoSapiens' if $name =~ /sus/;
     die "invalid name of source database, please check configuration file";
 }
 
@@ -249,7 +251,7 @@ sub do_conversion {
     $self->conv_obj->create_meta_coord(); 
     if ($self->conv_support->param('do_vega_sc')) { 
         $self->conv_obj->copy_other_vega_tables(); 
-        $self->conv_obj->update_clone_info(); 
+        $self->conv_obj->update_clone_info();
         $self->conv_obj->remove_supercontigs(); 
         $self->conv_obj->copy_internal_clone_names(); 
         $self->conv_obj->copy_assembly_exception; 
