@@ -100,18 +100,18 @@
 31	fpc_clone_id	fpc clone
 
 # additional gene counts for Vega (see GeneCount for general description)
-32	NovelCDSCount	protein_coding_NOVEL	Total Number of Novel CDSs
-33	NovelTransCount	processed_transcript_NOVEL	Total Number of Novel transcripts
-34	PutTransCount	processed_transcript_PUTATIVE	Total Number of Putative transcripts
-35	PredTransCount	protein_coding_PREDICTED	Total Number of Predicted transcripts
-36	IgSegCount	Ig_segment_NOVEL	Total Number of Ig Segments
-37	IgPsSegCount	Ig_pseudogene_segment_NOVEL	Total Number of Ig Pseudogene Segments
-38	TotPsCount	total_pseudogene_NOVEL	Total Number of Pseudogenes
-39	UnclassPsCount	pseudogene_NOVEL	Number of Unclassified pseudogenes
-40	ProcPsCount	processed_pseudogene_NOVEL	Number of Processed pseudogenes
-41	UnprocPsCount	unprocessed_pseudogene_NOVEL	Number of Unprocessed pseudogenes
-42	KnwnprogCount	protein_coding_in_progress_KNOWN	Number of Known Genes in progress
-43	NovCDSprogCount	protein_coding_in_progress_NOVEL	Number of novel CDS in progress
+32	KnownPCCount	protein_coding_KNOWN	Number of Known Protein Coding
+33	NovelPCCount	protein_coding_NOVEL	Number of Novel Protein Coding
+34	NovelPTCount	processed_transcript_NOVEL	Number of Novel Processed Transcripts
+35	PutPTCount	processed_transcript_PUTATIVE	Number of Putative Processed Transcripts
+36	PredPCCount	protein_coding_PREDICTED	Number of Predicted Protein Coding
+37	IgSegCount	total_Ig_segment_	Number of Ig Segments
+38	IgPsSegCount	Ig_pseudogene_segment_	Number of Ig Pseudogene Segments
+39	TotPsCount	total_pseudogene_	Number of Pseudogenes
+40	ProcPsCount	processed_pseudogene_	Number of Processed pseudogenes
+41	UnprocPsCount	unprocessed_pseudogene_	Number of Unprocessed pseudogenes
+42	KnwnPCProgCount	protein_coding_in_progress_KNOWN	Number of Known Protein coding genes in progress
+43	NovPCProgCount	protein_coding_in_progress_NOVEL	Number of Novel Protein coding genes in progress
 
 # Vega annotation stats
 44	AnnotSeqLength	Annotated sequence length	Total length of annotated clone sequence
@@ -122,7 +122,6 @@
 47	ack	Acknowledgement		Acknowledgement
 
 # old clone attribute
-
 48	htg_phase	High throughput phase	high throughput genomic sequencing phase
 49	description	Description	A general descriptive text attribute
 50	chromosome	Chromosome	chromosomal location for supercontigs that are not assembled
@@ -133,4 +132,5 @@
 53	author_email	Author email address	Author email address
 54	remark	Remark	Annotation remark
 55	transcr_class	Transcript class    Transcript class
+56	KnownPTCount	processed_transcript_KNOWN	Number of Known Processed Transcripts
 
