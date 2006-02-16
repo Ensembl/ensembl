@@ -48,7 +48,8 @@ sub copy_other_vega_tables {
         "clone_info_keyword",
         "assembly_tag",
    );
-    $self->copy_current_clone_info;
+    eval { $self->copy_current_clone_info; };
+	warn $@ if $@;
 }
 
 sub copy_current_clone_info {
