@@ -91,17 +91,17 @@ UPDATE gene SET biotype='processed_transcript', confidence='NOVEL' WHERE biotype
 UPDATE gene SET biotype='processed_transcript',confidence='PUTATIVE' WHERE biotype = 'Putative';
 UPDATE gene SET biotype='protein_coding', confidence='KNOWN' WHERE biotype = 'Known';
 
-UPDATE gene SET biotype='processed_pseudogene', confidence='NOVEL' WHERE biotype = 'Processed_pseudogene';
-UPDATE gene SET biotype='unprocessed_pseudogene', confidence='NOVEL' WHERE biotype = 'Unprocessed_pseudogene';
+UPDATE gene SET biotype='processed_pseudogene', confidence=NULL WHERE biotype = 'Processed_pseudogene';
+UPDATE gene SET biotype='unprocessed_pseudogene', confidence=NULL WHERE biotype = 'Unprocessed_pseudogene';
 UPDATE gene SET biotype='protein_coding',confidence='PREDICTED' WHERE biotype = 'Predicted_Gene';
-UPDATE gene SET biotype='Ig_segment', confidence='NOVEL' WHERE biotype = 'Ig_Segment';
-UPDATE gene SET biotype='Ig_pseudogene_segment', confidence='NOVEL' WHERE biotype = 'Ig_Pseudogene_Segment';
+UPDATE gene SET biotype='Ig_segment', confidence=NULL WHERE biotype = 'Ig_Segment';
+UPDATE gene SET biotype='Ig_pseudogene_segment', confidence=NULL WHERE biotype = 'Ig_Pseudogene_Segment';
 
 UPDATE gene SET biotype=replace( biotype, '-','_' );
 
 # reasonable biotypes for the transcripts, take the one from the gene
 
-UPDATE transcript t, gene g SET t.biotype = g.biotype, t.status = g.status WHERE g.gene_id = t.gene_id;
+UPDATE transcript t, gene g SET t.biotype = g.biotype, t.confidence = g.confidence WHERE g.gene_id = t.gene_id;
 
 
 ########################
@@ -131,5 +131,17 @@ ALTER table object_xref MODIFY ensembl_object_type ENUM( 'RawContig', 'Transcrip
 alter table transcript change confidence status  enum( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' );
 alter table gene change confidence status  enum( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' );
 
-#set schema version
-update meta set meta_value = '35' where meta_key = 'schema_version';
+########################
+# FROM patch_36_37.sql #
+########################
+
+#manipulations of peptide and gene archive tables are in ensembl patch scripts
+#but are not used for vega since tables are empty
+
+
+
+
+###########################
+#set latest schema version#
+###########################
+update meta set meta_value = '37' where meta_key = 'schema_version';
