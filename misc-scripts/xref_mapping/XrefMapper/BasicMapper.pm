@@ -67,7 +67,6 @@ sub new{
   my $self ={};
   bless $self,$class;
   $self->jobcount(0);
-
   return $self;
 }
 
@@ -133,6 +132,8 @@ sub build_list_and_map {
   $self->run_mapping(\@list);
 
 }
+#
+#  $self->remove_all_old_output_files();
 
 
 =head2 get_species_id_from_species_name
@@ -671,6 +672,7 @@ sub run_mapping {
     my $dir = $self->core->dir();
     unlink (<$dir/*.map $dir/*.out $dir/*.err>);
   }
+  $self->remove_all_old_output_files();
   #disconnect so that we can then reconnect after the long mapping bit.
   $self->core->dbc->disconnect_if_idle(1);
   $self->xref->dbc->disconnect_if_idle(1);
@@ -933,7 +935,7 @@ sub parse_mappings {
       # only take mappings where there is a good match on one or both sequences
       if ($query_identity  < $method_query_threshold{$method} &&
 	  $target_identity < $method_target_threshold{$method}){
-	my $reason = $target_id."|".$type."|".$query_identity."|".$target_identity."|";
+	my $reason = $type."|".$target_id."|".$query_identity."|".$target_identity."|";
 	   $reason .= $method_query_threshold{$method}."|". $method_target_threshold{$method};
 	$failed_xref_mappings{$query_id} = $reason;
 	next;
@@ -1039,6 +1041,26 @@ sub get_stable_ids(){
   $sth->finish;
 }
 
+sub get_failed_id{
+  my ($self, $q_cut, $t_cut, $max_unmapped_reason, $summary_failed)= @_;
+#  my $max = $$max_unmapped_reason;
+  my $description_failed = "Unable to match at the thresholds of $q_cut\% for the query or  $t_cut\% for the target";
+
+  my $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".
+				   $description_failed."'");
+  $sth->execute();
+  my $xref_failed_id=undef;
+  $sth->bind_columns(\$xref_failed_id);
+  $sth->fetch;
+  if(!defined($xref_failed_id)){
+    $$max_unmapped_reason++;
+    print UNMAPPED_REASON $$max_unmapped_reason."\t".$summary_failed."\t".
+      $description_failed."\n";
+    $xref_failed_id = $$max_unmapped_reason;      
+  }
+  return $xref_failed_id;
+}
+
 sub dump_triage_data() {
   my ($self, $xref_id_offset) = @_;
 
@@ -1051,7 +1073,7 @@ sub dump_triage_data() {
   my %translation_2_stable=();
   my %transcript_2_stable=();
   foreach my $temp (values %failed_xref_mappings){
-    my ($id, $type) = split(/\|/,$temp);
+    my ($type,$id) = split(/\|/,$temp);
     if($type =~ /Translation/){
       $translation_count++;
       if($translation_count > $batch_size){
@@ -1089,7 +1111,7 @@ sub dump_triage_data() {
 
 
   my $primary_sql= (<<PSQL);
-    SELECT DISTINCT(s.source_id) 
+    SELECT DISTINCT(s.source_id),px.sequence_type 
       FROM source s, primary_xref px, xref x 
 	WHERE x.xref_id = px.xref_id
 	  AND s.source_id = x.source_id
@@ -1099,25 +1121,102 @@ PSQL
   $psth->execute() || die "execute failed";
 
   my @primary_sources =();
+  my %source_2_seqtype=();
 
-  my ($prim);
-  $psth->bind_columns(\$prim);
+  my ($prim,$seq_type);
+  $psth->bind_columns(\$prim,\$seq_type);
   while($psth->fetch()){
     push @primary_sources, $prim;
+    $source_2_seqtype{$prim} = $seq_type;
   }
 
   open (XREF, ">>" . $self->core->dir() . "/xref.txt");
-  open (XREF_MISSED, ">" . $self->core->dir() . "/triage.txt");
+
+  open (UNMAPPED_OBJECT, ">" . $self->core->dir() . "/unmapped_object.txt");
+
+  open (UNMAPPED_REASON, ">".$self->core->dir()."/unmapped_reason.txt");
+
+
+  # get the Unmapped Object Reasons for the core database and 
+  # add new ones if the standard xref descriptions are not there
+  my %cutoff_2_failed_id=();
+
+  my $summary_failed = "Failed to match at thresholds";
+  my $summary_missed = "Failed to match";
+  my $description_missed = "Unable to match to any ensembl entity at all ";
+  
+  my $sth = $self->core->dbc->prepare("select MAX(unmapped_reason_id) ".
+				      "from unmapped_reason");
+  $sth->execute();
+  my $max_unmapped_reason_id;
+  $sth->bind_columns(\$max_unmapped_reason_id);
+  $sth->fetch;
+  if(!defined($max_unmapped_reason_id)){
+    $max_unmapped_reason_id = 1;
+  }
+  $sth->finish;
+
+
+  $sth = $self->core->dbc->prepare("select MAX(unmapped_object_id) ".
+				      "from unmapped_object");
+  $sth->execute();
+  my $max_unmapped_object_id;
+  $sth->bind_columns(\$max_unmapped_object_id);
+  $sth->fetch;
+  if(!defined($max_unmapped_object_id)){
+    $max_unmapped_object_id = 1;
+  }
+  $sth->finish;
+
+  $sth = $self->core->dbc->prepare("select analysis_id ".
+				      "from analysis where logic_name = ?");
+  $sth->execute("XrefExonerateDNA");
+  my $xref_DNA_analysis;
+  $sth->bind_columns(\$xref_DNA_analysis);
+  $sth->fetch;
+  if(!defined($xref_DNA_analysis)){
+    throw("Could not find analysis id for XrefExonerateDNA\n");
+  }
+  $sth->finish;
+
+
+  $sth->execute('XrefExonerateProtein');
+  my $xref_PROT_analysis;
+  $sth->bind_columns(\$xref_PROT_analysis);
+  $sth->fetch;
+  if(!defined($xref_PROT_analysis)){
+    throw("Could not find analysis id for XrefExonerateProtein\n");
+  }
+  $sth->finish;
+
+  $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".
+				   $description_missed."'");  
+  $sth->execute();
+  my $xref_missed_id=undef;
+  $sth->bind_columns(\$xref_missed_id);
+  $sth->fetch;
+  if(!defined($xref_missed_id)){
+    $max_unmapped_reason_id++;
+    print UNMAPPED_REASON $max_unmapped_reason_id."\t".$summary_missed."\t".
+      $description_missed."\n";
+    $xref_missed_id = $max_unmapped_reason_id;      
+  }
+  $sth->finish;
+ 
 
 #  foreach my $source ("%RefSeq%","UniProt%","Anopheles_symbol"){
   foreach my $source (@primary_sources){
-    my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id from xref x, source s where x.source_id = s.source_id";
-#    my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id from xref x, source s where s.name like '".$source."' and x.source_id = s.source_id";
+
+    my %triage_dumped=(); # dump only once for each accession
+
+    my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, ".
+              "x.species_id from xref x where x.source_id = $source";
     my $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
     
     my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id);
-    $sth->bind_columns(\$xref_id, \$accession, \$version, \$label, \$description, \$source_id, \$species_id);
+    $sth->bind_columns(\$xref_id, \$accession, \$version, \$label, 
+		       \$description, \$source_id, \$species_id);
     while($sth->fetch()){
       if (!$xrefs_written{$xref_id}) {
 #	$xrefs_written{$xref_id} = 1;
@@ -1125,38 +1224,62 @@ PSQL
 	if(!defined($updated_source{$external_db_id})){
 	  $self->cleanup_sources_file($external_db_id);
 	}
-	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . 
+	             "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 
 #dump out dependencies aswell
 	
         $self->dump_all_dependencies($xref_id, $xref_id_offset);
 
 	if(defined($failed_xref_mappings{$xref_id})){
-	  my ($ensembl_id,$type,$q_perc,$t_perc,$q_cut,$t_cut) =  split(/\|/,$failed_xref_mappings{$xref_id});
-	  print XREF_MISSED  ($xref_id+$xref_id_offset) . "\thighest match is $accession (".$q_perc."%) to ";
-	  if($type  =~ /Translation/){
-	    print XREF_MISSED $translation_2_stable{$ensembl_id};
+
+	  my ($ensembl_type,$ensembl_id,$q_perc,$t_perc,$q_cut,$t_cut) =  
+	    split(/\|/,$failed_xref_mappings{$xref_id});
+
+	  if(!defined($cutoff_2_failed_id{$q_cut."_".$t_cut})){
+	    $cutoff_2_failed_id{$q_cut."_".$t_cut} = $self->get_failed_id($q_cut, $t_cut, \$max_unmapped_reason_id, $summary_failed);
 	  }
-	  elsif($type  =~ /Transcript/){
-	    print XREF_MISSED $transcript_2_stable{$ensembl_id};
+	  $max_unmapped_object_id++;
+	  
+	  print  UNMAPPED_OBJECT $max_unmapped_object_id."\txref\t";
+
+	  if($ensembl_type  =~ /Translation/){
+	    print UNMAPPED_OBJECT $xref_PROT_analysis."\t";
+	  }
+	  elsif($ensembl_type  =~ /Transcript/){
+	    print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
 	  }
 	  else{
-	    die "type=*".$type."*\n".$failed_xref_mappings{$xref_id}."\n";
+	    die "type=*".$ensembl_type."*\n".$failed_xref_mappings{$xref_id}."\n";
 	  }
-	  print XREF_MISSED " (".$t_perc."\%) which are below their respective cutoffs off $q_cut\% and $t_cut\%.\n";
+	  print UNMAPPED_OBJECT $external_db_id."\t".$accession."\t".$cutoff_2_failed_id{$q_cut."_".$t_cut}."\t";
+	  print UNMAPPED_OBJECT $q_perc."\t".$t_perc."\t";
+	  print UNMAPPED_OBJECT $ensembl_id."\t".$ensembl_type."\n";
+
 	}
 	else{
-	  print XREF_MISSED  ($xref_id+$xref_id_offset) . "\t$accession no match to Ensembl\n";
+	  $max_unmapped_object_id++;
+	  print  UNMAPPED_OBJECT $max_unmapped_object_id."\txref\t";
+	  if($source_2_seqtype{$source} =~ /peptide/){
+	    print UNMAPPED_OBJECT $xref_PROT_analysis."\t";
+	  }
+	  elsif($source_2_seqtype{$source} =~ /dna/){
+	    print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
+	  }
+	  print UNMAPPED_OBJECT $external_db_id."\t".$accession."\t";
+	  print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t\0\tNULL\n"
 	}
       }
     }
     $sth->finish;
   }
   close(XREF);
-  close(XREF_MISSED);
+  close(UNMAPPED_OBJECT);
+  close(UNMAPPED_REASON);
 }
 
 # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
+# also ignore direct_xref
 # e.g. Interpro xrefs
 
 sub dump_orphan_xrefs() {
@@ -1166,10 +1289,17 @@ sub dump_orphan_xrefs() {
   my $count;
 
   open (XREF, ">>" . $self->core->dir() . "/xref.txt");
-  open (XREF_MISSED, ">>" . $self->core->dir() . "/xref_failed.txt");
 
-  # need a double left-join
-  my $sql = "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM xref x LEFT JOIN primary_xref px ON px.xref_id=x.xref_id LEFT JOIN dependent_xref dx ON dx.dependent_xref_id=x.xref_id WHERE px.xref_id IS NULL AND dx.dependent_xref_id IS NULL";
+  # need a triple left-join
+
+  my $sql = 
+    "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id ".
+      "FROM xref x ".
+      "LEFT JOIN primary_xref px ON px.xref_id=x.xref_id ".
+      "LEFT JOIN dependent_xref dx ON dx.dependent_xref_id=x.xref_id ".
+      "LEFT JOIN direct_xref dirx ON dirx.general_xref_id=x.xref_id ".
+	 "WHERE px.xref_id IS NULL AND dx.dependent_xref_id IS NULL ".
+	    "AND dirx.general_xref_id is NULL";
 
   my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
@@ -1187,7 +1317,7 @@ sub dump_orphan_xrefs() {
 	}
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 
-#	$xrefs_written{$xref_id} = 1;
+	$xrefs_written{$xref_id} = 1;
 	$count++;
       }
     }
@@ -1196,7 +1326,6 @@ sub dump_orphan_xrefs() {
   $sth->finish();
 
   close(XREF);
-  close(XREF_MISSED);
 
   print "Wrote $count xrefs that are neither primary nor dependent\n";
 
@@ -1498,6 +1627,14 @@ sub get_analysis_id {
 
 }
 
+sub remove_all_old_output_files{
+  my ($self) =@_;
+
+  my $dir = $self->core->dir();
+
+  unlink(<$dir/*.txt $dir/*.sql>);
+
+}
 
 sub dump_core_xrefs {
 
@@ -2244,15 +2381,19 @@ GENE
   $sth->execute();
 
   print "Uploading new data\n";
-  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "go_xref", "interpro") {
+  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", 
+		     "go_xref", "interpro", "unmapped_reason", "unmapped_object") {
 
     my $file = $ensembl->dir() . "/" . $table . ".txt";
 
-    # don't seem to be able to use prepared statements here
-    my $sth = $core_db->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
-    print "Uploading data in $file to $table\n";
-    $sth->execute();
-
+    if(-e $file){
+      my $sth = $core_db->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
+      print "Uploading data in $file to $table\n";
+      $sth->execute();
+    }
+    else{
+      print "NO file $file to load??????\n";
+    }
   }
 
   # gene_display_xref.sql etc
@@ -2261,7 +2402,8 @@ GENE
     my $file = $ensembl->dir() . "/" . $table . "_display_xref.sql";
 
     print "Setting $table display_xrefs from $file\n";
-    my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+    my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
+      " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
     system $str;
 
   }
@@ -2269,7 +2411,8 @@ GENE
   # gene descriptions
   my $file = $ensembl->dir() . "/gene_description.sql";
   print "Setting gene descriptions from $file\n";
-  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
+    " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
   system $str;
 
   # update meta table with timestamp saying when xrefs were last updated
@@ -2279,7 +2422,8 @@ GENE
   print FILE "INSERT INTO meta (meta_key,meta_value) VALUES ('xref.timestamp', NOW())\n";
   close(FILE);
 
-  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
+    " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
   system $str;
 
   # set gene and transcript statuses to KNOWN or NOVEL based on external_db status
@@ -2288,11 +2432,16 @@ GENE
   open (FILE, ">$file");
   print FILE "UPDATE transcript SET status=\'NOVEL\';\n";
   print FILE "UPDATE gene SET status=\'NOVEL\';\n";
-  print FILE "UPDATE gene g, xref x, external_db e SET g.status = \'KNOWN\' WHERE g.display_xref_id = x.xref_id AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
-  print FILE "UPDATE transcript t, xref x, external_db e SET t.status = \'KNOWN\' WHERE t.display_xref_id = x.xref_id AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
+  print FILE "UPDATE gene g, xref x, external_db e SET g.status = \'KNOWN\' ";
+  print FILE    "WHERE g.display_xref_id = x.xref_id ";
+  print FILE     "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
+  print FILE "UPDATE transcript t, xref x, external_db e SET t.status = \'KNOWN\' ";
+  print FILE    "WHERE t.display_xref_id = x.xref_id ";
+  print FILE    "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
   close(FILE);
 
-  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
+    " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
   system $str;
 
 }
@@ -2436,11 +2585,8 @@ sub build_gene_descriptions {
 
     if (@gene_xrefs) {
 
-#      @gene_xrefs = @{$self->strip(\@gene_xrefs)};  # remove blank entrys
-
       @gene_xrefs = sort {compare_xref_descriptions($self->consortium(), $gene_id, \%local_xref_to_object)} @gene_xrefs;
 
-#      my $best_xref = $gene_xrefs[-1];
       my $best_xref = $self->get_best(\@gene_xrefs);
       my $source = $xref_to_source{$best_xref};
 
@@ -2454,7 +2600,8 @@ sub build_gene_descriptions {
 
 	my $desc = $description . " [Source:$source;Acc:$acc]";
 
-	print GENE_DESCRIPTIONS "UPDATE gene g SET g.description=\"$desc\" WHERE g.gene_id=$gene_id;\n" if ($description);
+	print GENE_DESCRIPTIONS "UPDATE gene g SET g.description=\"$desc\" ".
+	                          "WHERE g.gene_id=$gene_id;\n" if ($description);
 
       }
 
@@ -2474,7 +2621,8 @@ sub check_err {
 
   foreach my $err (glob("$dir/*.err")) {
 
-    print "\n\n*** Warning: $err has non-zero size; may indicate problems with exonerate run\n\n\n" if (-s $err);
+    print "\n\n*** Warning: $err has non-zero size; may indicate".
+      " problems with exonerate run\n\n\n" if (-s $err);
 
   }
 }
@@ -2852,6 +3000,21 @@ EOS
       $both++;
     }
   }
+
+# create a hash to interchange between transcripts and translations
+  my $tran_sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id from translation");
+  my $transcript;
+  my $translation;
+  $tran_sth->execute();
+  $tran_sth->bind_columns(\$translation,\$transcript);
+  my %transcript_2_translation;
+  my %translation_2_transcript;
+  while($tran_sth->fetch()){
+    $transcript_2_translation{$transcript} = $translation;
+    $translation_2_transcript{$translation} = $transcript;
+  }
+  $tran_sth->finish();
+
 #  print "but apparently $okay have no matches at all and $both have two\n";
 #  print "potential filler ins = $poss\n";
 #  print "good2missed=>".scalar(%good2missed)."\n";
@@ -2869,9 +3032,24 @@ EOS
       $sth_ob->execute();
       $sth_ob->bind_columns(\$goodxref,\$ens_int_id,\$type);
       while($sth_ob->fetch()){
-	$max_object_xref_id++;
-	$added++;
-	print OBJECT_XREF2 "$max_object_xref_id\t$ens_int_id\t$type\t" .$good2missed{$goodxref} . "\tDEPENDENT\n";	
+	if(($type =~ /Transcript/) and defined($transcript_2_translation{$ens_int_id})){
+	  $max_object_xref_id++;
+	  $added++;
+	  print OBJECT_XREF2 "$max_object_xref_id\t";
+	  print OBJECT_XREF2 "$max_object_xref_id\t";
+	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
+	  print OBJECT_XREF2 $good2missed{$goodxref};
+	  print OBJECT_XREF2 "\tDEPENDENT\n";	
+	}
+	elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
+	  $max_object_xref_id++;
+	  $added++;
+	  print OBJECT_XREF2 "$max_object_xref_id\t";
+	  print OBJECT_XREF2 "$max_object_xref_id\t";
+	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
+	  print OBJECT_XREF2 $good2missed{$goodxref};
+	  print OBJECT_XREF2 "\tDEPENDENT\n";	
+	}
       }
       $sth_ob->finish();
       @list =();
@@ -2887,11 +3065,26 @@ EOS
     $sth_ob->execute();
     $sth_ob->bind_columns(\$goodxref,\$ens_int_id,\$type);
     while($sth_ob->fetch()){
-      $max_object_xref_id++;
-      $added++;
-      print OBJECT_XREF2 "$max_object_xref_id\t$ens_int_id\t$type\t" .$good2missed{$goodxref} . "\tDEPENDENT\n";	
+      if(($type =~ /Transcript/) and defined($transcript_2_translation{$ens_int_id})){
+	$max_object_xref_id++;
+	$added++;
+	print OBJECT_XREF2 "$max_object_xref_id\t";
+	print OBJECT_XREF2 "$max_object_xref_id\t";
+	print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
+	print OBJECT_XREF2 $good2missed{$goodxref};
+	print OBJECT_XREF2 "\tDEPENDENT\n";	
+      }
+      elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
+	$max_object_xref_id++;
+	$added++;
+	print OBJECT_XREF2 "$max_object_xref_id\t";
+	print OBJECT_XREF2 "$max_object_xref_id\t";
+	print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
+	print OBJECT_XREF2 $good2missed{$goodxref};
+	print OBJECT_XREF2 "\tDEPENDENT\n";	
+      }
     }
-    $sth_ob->finish();
+   $sth_ob->finish();
   }
 
   close OBJECT_XREF2;
