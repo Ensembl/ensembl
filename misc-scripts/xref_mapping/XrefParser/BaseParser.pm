@@ -631,6 +631,7 @@ sub upload_xref_object_graphs {
 	}
 	if(!defined($dep_xref_id) || $dep_xref_id ==0 ){
 	  print STDERR "acc = $dep{ACCESSION} \nlink = $dep{LINKAGE_SOURCE_ID} \n".$dbi->err."\n";
+	  print STDERR "source = $dep{SOURCE_ID}\n";
 	}
 	$dep_sth->execute($xref_id, $dep_xref_id, $dep{LINKAGE_ANNOTATION}, $dep{LINKAGE_SOURCE_ID} ) || die $dbi->errstr;
 	# TODO linkage anntation?
@@ -677,7 +678,7 @@ sub get_dependent_xref_sources {
   if (!%dependent_sources) {
 
     my $dbi = dbi();
-    my $sth = $dbi->prepare("SELECT name,source_id FROM source WHERE download='N'");
+    my $sth = $dbi->prepare("SELECT name,source_id FROM source");
     $sth->execute() || die $dbi->errstr;
     while(my @row = $sth->fetchrow_array()) {
       my $source_name = $row[0];
@@ -823,7 +824,7 @@ sub insert_or_select {
   if ($error) {
 
     $id = get_xref_id_by_accession_and_source($acc, $source);
-    #print STDERR "Got existing xref id " . $id . " for " . $acc . " " . $source . "\n";
+#    print STDERR "Got existing xref id " . $id . " for " . $acc . " " . $source . "\n";
 	
   } else {
 	
@@ -1053,19 +1054,24 @@ sub add_to_xrefs{
   my ($self,$master_xref,$acc,$version,$label,$description,$linkage,$source_id,$species_id) = @_;
 
   if(!defined($add_xref_sth)){
-    $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
+    $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id)".
+				 " VALUES(?,?,?,?,?,?)");
+  }
+  if(!defined($add_dependent_xref_sth)){
     $add_dependent_xref_sth = dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
   }
-
+  
   my $dependent_id = $self->get_xref($acc, $source_id);
   if(!defined($dependent_id)){
-    $add_xref_sth->execute($acc,$version,$label,$description,$source_id,$species_id) || die "$acc\t$label\t\t$source_id\t$species_id\n";
+    $add_xref_sth->execute($acc,$version,$label,$description,$source_id,$species_id) 
+      || die "$acc\t$label\t\t$source_id\t$species_id\n";
   }
   $dependent_id = $self->get_xref($acc, $source_id);
   if(!defined($dependent_id)){
     die "$acc\t$label\t\t$source_id\t$species_id\n";
   }
-  $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id)|| die "$master_xref\t$dependent_id\t$linkage\t$source_id";
+  $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id)
+    || die "$master_xref\t$dependent_id\t$linkage\t$source_id";
 
 
 }
