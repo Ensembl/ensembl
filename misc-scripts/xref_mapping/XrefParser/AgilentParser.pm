@@ -20,12 +20,13 @@ sub run {
 
   my @xrefs;
 
-  local $/ = "\n>";
+#  local $/ = "\n>";
 
   if(!open(AG,"<".$file)){
     print "Could not open $file\n";
     return 1;
   }
+  my $probe;
   while (<AG>) {
 
     chomp;
@@ -34,25 +35,26 @@ sub run {
 
     # strip ^M at end of line
     $_ =~ s/\015//g;
-    my ($header, $sequence) = $_ =~ /^>?(.+)\n([^>]*)/s or warn("Can't parse FASTA entry: $_\n");
-    my $probe = $header;
 
-    # note header may need to be parsed further in future
+    if(/^>(.+)/){
+      $probe = $1;
+    }
+    else{
+      my $sequence = $_;
 
-    # make sequence into one long string (probably not needed for probes, but just in case)
-    $sequence =~ s/\n//g;
+      $sequence =~ s/\n//g;
 
-    # build the xref object and store it
-    $xref->{ACCESSION}     = $probe;
-    $xref->{LABEL}         = $probe;
-    $xref->{SEQUENCE}      = $sequence;
-    $xref->{SOURCE_ID}     = $source_id;
-    $xref->{SPECIES_ID}    = $species_id;
-    $xref->{SEQUENCE_TYPE} = 'dna';
-    $xref->{STATUS}        = 'experimental';
-
-    push @xrefs, $xref;
-
+      # build the xref object and store it
+      $xref->{ACCESSION}     = $probe;
+      $xref->{LABEL}         = $probe;
+      $xref->{SEQUENCE}      = $sequence;
+      $xref->{SOURCE_ID}     = $source_id;
+      $xref->{SPECIES_ID}    = $species_id;
+      $xref->{SEQUENCE_TYPE} = 'dna';
+      $xref->{STATUS}        = 'experimental';
+      
+      push @xrefs, $xref;
+    }
   }
 
   close(AG);
