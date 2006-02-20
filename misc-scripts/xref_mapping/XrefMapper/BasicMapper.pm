@@ -2294,6 +2294,10 @@ sub cleanup_sources_file{
   open (DEL, ">>$dir/cleanup.sql") || die "Could not open $dir/cleanup.sql\n";
 
   if ($id =~ m/\w/){
+    print DEL "DELETE unmapped_object ";
+    print DEL    "FROM unmapped_object ";
+    print DEL      "WHERE type = 'xref'\n";
+
     print DEL "DELETE external_synonym ";
     print DEL     "FROM external_synonym, xref ";
     print DEL       "WHERE external_synonym.xref_id = xref.xref_id ";
