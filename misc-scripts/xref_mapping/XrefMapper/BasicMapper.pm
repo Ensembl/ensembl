@@ -2435,6 +2435,9 @@ GENE
   print FILE "UPDATE gene g, xref x, external_db e SET g.status = \'KNOWN\' ";
   print FILE    "WHERE g.display_xref_id = x.xref_id ";
   print FILE     "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
+  print FILE "UPDATE gene g, xref x, external_db e SET g.status = \'KNOWN\' ";
+  print FILE    "WHERE g.display_xref_id = x.xref_id ";
+  print FILE     "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWNXREF\';\n";
   print FILE "UPDATE transcript t, xref x, external_db e SET t.status = \'KNOWN\' ";
   print FILE    "WHERE t.display_xref_id = x.xref_id ";
   print FILE    "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
