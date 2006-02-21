@@ -373,7 +373,7 @@ sub store {
   my( $self, $feature, $ensObjs, $influence, $evidence ) = @_;
 
   if( ref( $ensObjs ) ne 'ARRAY' ){
-    warning( "Use of sralar args is deprecated - please use a listref" );
+    warning( "Use of scalar args is deprecated - please use a listref" );
     $ensObjs = [[$ensObjs, $influence, $evidence]];
   }
 

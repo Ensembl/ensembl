@@ -58,8 +58,8 @@ foreach my $to_species (@to_multi) {
   my $to_ga   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
   my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
 
-  delete_names() if ($delete_names);
-  delete_go_terms() if ($delete_go_terms);
+  delete_names($to_ga) if ($delete_names);
+  delete_go_terms($to_ga) if ($delete_go_terms);
 
   my $mlss = $mlssa->fetch_by_method_link_type_registry_aliases($method_link_type, [$from_species, $to_species]);
 
@@ -130,14 +130,13 @@ sub project_display_names {
   my ($to_ga, $to_dbea, $ma, $from_member, $to_member, %db_to_type) = @_;
 
   my $to_gene = $to_ga->fetch_by_stable_id($to_member->stable_id());
+  my $from_gene = $from_ga->fetch_by_stable_id($from_member->stable_id());
+  my $dbEntry = $from_gene->display_xref();
+  my $to_source = $to_gene->display_xref()->dbname() if ($to_gene->display_xref());
+  my $from_source = $from_gene->display_xref()->dbname() if ($from_gene->display_xref());
 
   # if no display name set, do the projection
-  if (!$to_gene->external_name()) {
-
-    my $from_gene = $from_ga->fetch_by_stable_id($from_member->stable_id());
-    my $dbEntry = $from_gene->display_xref();
-
-    # TODO only do this for certain types of DBEntry?
+  if (check_overwrite_display_xref($to_gene, $from_source, $to_source)) {
 
     if ($dbEntry) {
 
@@ -275,6 +274,9 @@ sub get_stats {
   $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.display_label LIKE '%[from%'");
   $str .= sprintf(" projected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
+  $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x, external_db e WHERE g.display_xref_id=x.xref_id AND x.external_db_id=e.external_db_id AND e.db_name IN ('RefSeq_dna_predicted', 'RefSeq_peptide_predicted')");
+  $str .= sprintf(" predicted %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
+
   $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g WHERE display_xref_id IS NOT NULL");
   $str .= sprintf(" total genes with names %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
@@ -354,6 +356,37 @@ sub delete_go_terms {
 
   my $sth = $to_ga->dbc()->prepare("DELETE x, ox FROM xref x, external_db e, object_xref ox WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND e.db_name='GO' AND x.display_label like '%[from%';");
   $sth->execute();
+
+}
+
+# ----------------------------------------------------------------------
+
+# Decide if a gene name should be overwritten
+# Criteria: overwrite if:
+#    - no existing display_xref
+# or
+#    - existing display_xref is RefSeq_*_predicted
+#      AND from_gene is from "best" source external db,
+#      e.g. HGNC in human, MGI in mouse
+
+sub check_overwrite_display_xref {
+
+  my ($to_gene, $from_dbname, $to_dbname) = @_;
+
+  return 1 if (!$to_gene->external_name());
+
+  if ($to_dbname eq "RefSeq_dna_predicted" || $to_dbname eq "RefSeq_peptide_predicted") {
+
+    if (($from_species eq "human" && $from_dbname eq "HUGO") ||
+	($from_species eq "mouse" && $from_dbname eq "MarkerSymbol")) {
+
+      return 1;
+
+    }
+
+  }
+
+  return 0;
 
 }
 

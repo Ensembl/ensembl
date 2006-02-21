@@ -55,14 +55,15 @@ sub run {
 #ZDB-GENE-000112-34      couptf4 O42534
 
 
-  my $count =0;
+  my $spcount =0;
+  my $rscount =0;
   my $mismatch=0;
   while (<SWISSPROT>) {
     chomp;
     my ($zfin, $label, $acc) = split (/\s+/,$_);
     if(defined($swiss{$acc})){
       XrefParser::BaseParser->add_to_xrefs($swiss{$acc},$zfin,'',$label,'','',$source_id,$species_id);
-      $count++;
+      $spcount++;
     }
     else{
       $mismatch++;
@@ -82,14 +83,14 @@ sub run {
     my ($zfin, $label, $acc) = split (/\s+/,$_);
     if(defined($refseq{$acc})){
       XrefParser::BaseParser->add_to_xrefs($refseq{$acc},$zfin,'',$label,'','',$source_id,$species_id);
-      $count++;
+      $rscount++;
     }
     else{
       $mismatch++;
     }
   }
   close REFSEQ;
-  print "\t$count xrefs succesfully loaded\n";
+  print "\t$spcount xrefs from Swissprot and $rscount xrefs from RefSeq succesfully loaded\n";
   print "\t$mismatch xrefs ignored\n";
   return 0;
 }

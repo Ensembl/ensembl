@@ -67,11 +67,13 @@ debug( " $goxref_count GoXrefs, $ident_count identityXrefs." );
 #
 # 3 as many dblinks as entries in object_xref
 #
+
 ok( $db_entry_count == $xref_count );
 
 #
 # 4,5 correct number of GoXrefs and IdentityXrefs
 #
+print $goxref_count . " " . $ident_count . "\n";
 ok( $goxref_count == 48 );
 ok( $ident_count == 32 );
 
@@ -122,8 +124,6 @@ my $gene = $ga->fetch_by_dbID( $all_gene_ids->[0] );
 my $tr = $gene->get_all_Transcripts()->[0];
 my $tl = $tr->translation();
 
-
-
 $dbEntryAdaptor->store( $xref, $gene, "Gene" );
 $dbEntryAdaptor->store( $xref, $tr, "Transcript" );
 $dbEntryAdaptor->store( $goref, $tl, "Translation" );
@@ -140,7 +140,6 @@ $oxr_count = count_rows($db, 'object_xref');
 debug( "object_xref_count = $oxr_count" );
 ok( $oxr_count == 5 );
 
-
 $xref_count = count_rows($db, 'xref');
 $sth->finish();
 
@@ -149,7 +148,6 @@ $sth->finish();
 #
 debug( "Number of xrefs = $xref_count" );
 ok( $xref_count == 3 );
-
 
 #
 # 8 number of go entries right

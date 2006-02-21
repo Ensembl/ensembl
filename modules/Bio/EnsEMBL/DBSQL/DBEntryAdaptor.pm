@@ -276,6 +276,7 @@ sub store {
     $sth->bind_param(4,$exObj->description,SQL_VARCHAR);
     $sth->bind_param(5,$dbRef,SQL_INTEGER);
     $sth->execute();
+
     $dbX = $sth->{'mysql_insertid'};
     $sth->finish();
     #
@@ -859,13 +860,13 @@ sub _type_by_external_id{
   }
   my @queries = (
     "select $ID_sql
-       from $from_sql xref, object_xref as oxr
+  	from $from_sql xref, object_xref as oxr
       where $where_sql xref.dbprimary_acc = ? and
-            xref.xref_id = oxr.xref_id and oxr.ensembl_object_type= ?",
+  	     xref.xref_id = oxr.xref_id and oxr.ensembl_object_type= ?",
     "select $ID_sql 
-       from $from_sql xref, object_xref as oxr
+  	from $from_sql xref, object_xref as oxr
       where $where_sql xref.display_label = ? and
-            xref.xref_id = oxr.xref_id and oxr.ensembl_object_type= ?",
+  	     xref.xref_id = oxr.xref_id and oxr.ensembl_object_type= ?",
     "select $ID_sql
        from $from_sql object_xref as oxr, external_synonym as syn
       where $where_sql syn.synonym = ? and
@@ -880,6 +881,7 @@ sub _type_by_external_id{
   my @result = ();
 
   foreach( @queries ) {
+
     my $sth = $self->prepare( $_ );
     $sth->bind_param(1,"$name",SQL_VARCHAR);
     $sth->bind_param(2,$ensType,SQL_VARCHAR);

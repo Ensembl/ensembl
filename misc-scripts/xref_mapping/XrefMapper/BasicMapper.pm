@@ -363,7 +363,6 @@ sub dump_subset{
 
   $final_clause = " AND ((" . join(") OR (", @or_list) . "))" unless ($use_all) ;
 
-
   for my $sequence_type ('dna', 'peptide') {
 
     my $filename = $xref->dir() . "/xref_" . $index . "_" . $sequence_type . ".fasta";

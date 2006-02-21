@@ -12,9 +12,10 @@ sub get_set_lists {
   return [["ExonerateGappedBest1", ["mus_musculus","*"]]];
 
 }
+
 sub consortium {
 
-  return "MarkerSymbol"; # Default to something that won't be matched as a source
+  return "MarkerSymbol";
 
 }
 

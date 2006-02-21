@@ -112,7 +112,7 @@ sub get_all_AffyProbes {
 
   if( $self->adaptor() && $self->dbID() ) {
     my $probeAdaptor = $self->adaptor()->db()->get_AffyProbeAdaptor();
-    my $probes = $probeAdaptor->fetch_all_by_AffyArray( $self );
+    my $probes = $probeAdaptor->fetch_by_AffyArray( $self );
     return $probes;
   } else {
     warning( "Need database connection to retrieve Probes" );

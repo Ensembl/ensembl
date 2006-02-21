@@ -381,10 +381,33 @@ sub get_source_id_for_source_name {
   return $source_id;
 }
 
+
+
+# --------------------------------------------------------------------------------
+# Get a set of source IDs matching a source name pattern
+
+sub get_source_ids_for_source_name_pattern {
+
+  my ($self, $source_name) = @_;
+
+  my $sql = "SELECT source_id FROM source WHERE upper(name) LIKE '%".uc($source_name)."%'";
+
+  my $sth = dbi()->prepare($sql);
+  my @sources;
+  $sth->execute();
+  while(my @row = $sth->fetchrow_array()){
+    push @sources,$row[0];
+  }
+  $sth->finish;
+
+  return @sources;
+
+}
+
 sub get_source_name_for_source_id {
   my ($self, $source_id) = @_;
   my $source_name;
-  
+
   my $sql = "SELECT name FROM source WHERE source_id= '" . $source_id. "'";
   my $sth = dbi()->prepare($sql);
   $sth->execute();
@@ -534,6 +557,39 @@ sub get_valid_codes{
     }
   }
   return \%valid_codes;
+}
+
+# --------------------------------------------------------------------------------
+
+
+
+# --------------------------------------------------------------------------------
+
+
+
+sub get_existing_mappings {
+
+  my ($self, $from_source_name, $to_source_name, $species_id) =@_;
+
+  my %mappings;
+
+  my $from_source = get_source_id_for_source_name($from_source_name);
+  my $to_source = get_source_id_for_source_name($to_source_name);
+
+print "from source: $from_source_name id $from_source\t\tto source: $to_source_name id $to_source\n";
+
+  my $sql = "SELECT dx.dependent_xref_id, x1.accession as dependent, dx.master_xref_id, x2.accession as master FROM dependent_xref dx, xref x1, xref x2 WHERE x1.xref_id=dx.dependent_xref_id AND x2.xref_id=dx.master_xref_id AND x2.source_id=? AND x1.source_id=? AND x1.species_id=? AND x2.species_id=?";
+
+  my $sth = dbi()->prepare($sql);
+  $sth->execute($to_source_name, $from_source_name, $species_id, $species_id);
+  while(my @row = $sth->fetchrow_array()){
+    $mappings{$row[0]} = $row[1];
+  }
+
+  print "Got " . scalar(keys(%mappings)) . " $from_source_name -> $to_source_name mappings\n";
+
+  return \%mappings;
+
 }
 
 # --------------------------------------------------------------------------------

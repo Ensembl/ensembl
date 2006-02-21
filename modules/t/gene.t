@@ -583,7 +583,9 @@ ok($gene->end()  == 400);
   # target_slice = sliceAdaptor->fetch_by_region( "alt_chrom", "gap_map_test" );
 
   my $gene = $ga->fetch_by_dbID( 18274 );
+print ":::: Gene: $gene\n";
   my $new_gene = $gene->transform( "alt_chrom" );
+print ":::: New Gene $new_gene\n";
   my $trans_orig = $gene->get_all_Transcripts()->[0];
   my $trans_mapped = $new_gene->get_all_Transcripts()->[0];
   ok( $trans_orig->spliced_seq() eq 

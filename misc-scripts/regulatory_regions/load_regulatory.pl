@@ -68,6 +68,8 @@ Usage: perl $0 <options>
 
   -port    Database port to connect to
 
+  -dbname  Database name to use
+
   -user    Database username
 
   -pass    Password for user

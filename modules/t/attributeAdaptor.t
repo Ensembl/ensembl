@@ -193,6 +193,7 @@ $count = $db->dbc->db_handle->selectall_arrayref
 ok($count == 1);
 
 @attribs = @{$aa->fetch_all_by_Slice($slice)};
+print "attribs: " . scalar(@attribs) . "\n";
 ok(@attribs == 1);
 
 

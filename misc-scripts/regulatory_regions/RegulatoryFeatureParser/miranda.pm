@@ -50,7 +50,7 @@ sub parse {
 
     my %feature;
 
-    my ($group, $seq, $method, $feature, $chr, $start, $end, $str, $phase, $score, $type, $id_ignore, $id) = split;
+    my ($group, $seq, $method, $feature, $chr, $start, $end, $str, $phase, $score, $pvalue, $type, $id_ignore, $id) = split;
     my $strand = ($str =~ /\+/ ? 1 : -1);
     $id =~ s/[\"\']//g;  # strip quotes
 

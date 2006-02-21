@@ -97,7 +97,7 @@ my $stable_ids = $ta->list_stable_ids();
 ok (@{$stable_ids});
 
 my $tr = $ta->fetch_by_display_label( "DNMT3B" );
-ok( $tr->dbID() == 21737 );
+ok($tr && $tr->dbID() == 21737 );
 
 
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
@@ -625,9 +625,10 @@ my $transcript = $transcript_adaptor->fetch_by_dbID(21717);
 my @factors = @{$transcript->fetch_coded_for_regulatory_factors()};
 ok($factors[0]->dbID() == 2);
 
-
+sleep 10;
 # test fetching by supporting evidence
-
+#$transcripts = $transcript_adaptor->fetch_all_by_exon_supporting_evidence(hit,feat);
+#$transcripts = $transcript_adaptor->fetch_all_by_exon_supporting_evidence(hit,feat,anal);
 
 sub print_coords {
   my $coords = shift;

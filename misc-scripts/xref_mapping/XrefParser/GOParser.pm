@@ -1,3 +1,5 @@
+
+
 package XrefParser::GOParser;
 
 use strict;
@@ -43,6 +45,12 @@ sub run {
 
   my (%swiss) = %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
+
+  # complication with GO xrefs from JAX - linked to MGI symbols, which are themselves
+  # dependent, so we need to get the MGI->Uniprot mapping and store the *Uniprot*
+  # as the master xref
+  my (%mgi_to_uniprot) = %{XrefParser::BaseParser->get_existing_mappings("MarkerSymbol", "Uniprot/Swissprot", $species_id)};
+
   my %worm;
   my %worm_label;
   my $wormset;
@@ -127,6 +135,14 @@ sub run {
           $count++;
         }
       }
+
+      elsif($array[0] =~ /MGI/){
+        if($mgi_to_uniprot{$array[1]}){
+          XrefParser::BaseParser->add_to_xrefs($mgi_to_uniprot{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+          $count++;
+        }
+      }
+
       elsif(!defined($wrongtype{$array[0]})){
         print STDERR "WARNING: unknown type ".$array[0]."\n";
         $wrongtype{$array[0]} = 1;

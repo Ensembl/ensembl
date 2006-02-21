@@ -90,6 +90,7 @@ for my $dbname ( @dbnames ) {
   } elsif( $expression =~ /^\s*select/i ||
 	   $expression =~ /^\s*show/i ||
 	   $expression =~ /^\s*desc/i ) {
+print "### HERE";
     my $res = $db->selectall_arrayref( $expression );
     my @results = map { join( " ", @$_ ) } @$res ;
     my $db_name_off = 0 ;

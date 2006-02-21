@@ -125,7 +125,7 @@ sub new {
 
   Args       : none
   Example    : none
-  Description: returns true if this gene has a display_xref
+  Description: returns true if this gene has a status of KNOWN
   Returntype : 0,1
   Exceptions : none
   Caller     : general

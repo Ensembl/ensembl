@@ -183,6 +183,7 @@ ok( $stored_features[0]->length() > 10000 );
 @stored_features = @{$dfa->fetch_all_by_Slice( $sub_Slice, 'GeneDensityTest', 10 )};
 ok( $stored_features[0]->length() > 10000 );
 @stored_features = @{$dfa->fetch_all_by_Slice( $sub_Slice, 'GeneDensityTest', 100 )};
+print $stored_features[0]->length() . "\n";
 ok( $stored_features[0]->length() == 1000 );
 
 

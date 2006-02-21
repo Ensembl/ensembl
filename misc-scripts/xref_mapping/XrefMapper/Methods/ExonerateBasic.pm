@@ -166,6 +166,7 @@ EOF
 
     if (($reader = open(BSUB_READER, '-|'))) {
       while (<BSUB_READER>) {
+
 	if (/^Job <(\d+)> is submitted/) {
 	  $jobid = $1;
 	  print "LSF job ID for main mapping job: $jobid (job array with $num_jobs jobs)\n"
