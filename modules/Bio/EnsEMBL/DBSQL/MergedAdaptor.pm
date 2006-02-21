@@ -150,7 +150,7 @@ sub AUTOLOAD {
     my $ref;
     if($adaptor->can($sub)){
       $ref = $adaptor->$sub(@args);
-      push @array_return, $ref;
+      push @array_return, @{$ref};
     }
     else{ # end of can
       warn("In Merged Adaptor $adaptor cannot call sub $sub");
