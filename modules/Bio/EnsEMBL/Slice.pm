@@ -67,6 +67,7 @@ use Bio::EnsEMBL::RepeatMaskedSlice;
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 use Bio::EnsEMBL::ProjectionSegment;
 use Bio::EnsEMBL::Registry;
+use Bio::EnsEMBL::DBSQL::MergedAdaptor;
 
 use Bio::EnsEMBL::StrainSlice;
 use Bio::EnsEMBL::IndividualSlice;
@@ -1345,19 +1346,33 @@ sub get_all_LD_values{
 	return [];
     }
 
-  my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
-
-  unless($variation_db) {
-    warning("Variation database must be attached to core database to " .
-		"retrieve variation information" );
-    return [];
-  }
-
-    my $ld_adaptor = $variation_db->get_LDFeatureContainerAdaptor;
+    my $ld_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "LDFeatureContainer");
 
   if( $ld_adaptor ) {
-    return $ld_adaptor->fetch_by_Slice($self,$population_id);
+      my $ld_values = $ld_adaptor->fetch_by_Slice($self,$population_id);
+      if (@{$ld_values} > 1){
+	  warning("More than 1 variation database attached. Trying to merge LD results");
+	  my $ld_value_merged = shift @{$ld_values};
+	  #with more than 1 variation database attached, will try to merge in one single LDContainer object.
+	  foreach my $ld (@{$ld_values}){
+	      #copy the ld values to the result hash
+	      foreach my $key (keys %{$ld->{'ldContainer'}}){
+		  $ld_value_merged->{'ldContainer'}->{$key} = $ld->{'ldContainer'}->{$key};
+	      }
+	      #and copy the variationFeatures as well
+	      foreach my $key (keys %{$ld->{'variationFeatures'}}){
+		  $ld_value_merged->{'variationFeatures'}->{$key} = $ld->{'variationFeatures'}->{$key};
+	      }
+	      
+	  }
+	  return $ld_value_merged;
+      }
+      else{
+	  return shift @{$ld_values};
+      }
 } else {
+    warning("Variation database must be attached to core database to " .
+		"retrieve variation information" );
     return [];
 }
 }
@@ -1383,19 +1398,12 @@ sub get_all_VariationFeatures{
     return [];
   }
 
-  my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
-
-  unless($variation_db) {
-    warning("Variation database must be attached to core database to " .
-		"retrieve variation information" );
-    return [];
-  }
-
-  my $vf_adaptor = $variation_db->get_VariationFeatureAdaptor;
-
+  my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
   if( $vf_adaptor ) {
     return $vf_adaptor->fetch_all_by_Slice($self);
   } else {
+       warning("Variation database must be attached to core database to " .
+ 		"retrieve variation information" );
     return [];
   }
 }
@@ -1538,7 +1546,6 @@ sub calculate_theta{
 		foreach my $range (@{$regions_covered}){
 		    $length_regions += ($range->[1] - $range->[0]) + 1; #add the length of the genomic region
 		    for (my $i = $last_position;$i<@differences_sorted;$i++){
-#		foreach (@differences_sorted){
 			if ($differences_sorted[$i]->start >= $range->[0] && $differences_sorted[$i]->end <= $range->[1]){		   		 
 			    $snps++; #count differences in the region
 			}
@@ -1695,25 +1702,17 @@ sub get_all_genotyped_VariationFeatures{
     warning('Cannot get variation features without attached adaptor');
     return [];
   }
-  my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
 
-  unless($variation_db) {
-      warning("Variation database must be attached to core database to " .
-	      "retrieve variation information" );
-      return [];
-  }
-  
-  my $vf_adaptor = $variation_db->get_VariationFeatureAdaptor;
+  my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
   
   if( $vf_adaptor ) {
       return $vf_adaptor->fetch_all_genotyped_by_Slice($self);
   } else {
+      warning("Variation database must be attached to core database to " .
+	      "retrieve variation information" );
       return [];
   }
 }
-
-
-
 
 
 =head2 get_all_SNPs
