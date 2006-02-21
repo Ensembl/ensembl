@@ -65,7 +65,11 @@ sub run {
       $added++;
     }
     $self->add_direct_xref($xref_id, $transcript_id, "Transcript", "") if (defined($transcript_id));    
-    $self->add_direct_xref($xref_id, $gene_id, "Gene", "")             if (defined($gene_id)); 
+
+    #just add to the transcript ONLY as the check at the end will move all
+    #the those mapped to the transcript to the genes anyway due to the
+    #biomart check
+    #    $self->add_direct_xref($xref_id, $gene_id, "Gene", "")             if (defined($gene_id)); 
   }
   close FILE;
 
