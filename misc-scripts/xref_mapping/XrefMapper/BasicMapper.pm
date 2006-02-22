@@ -1110,7 +1110,7 @@ sub dump_triage_data() {
 
 
   my $primary_sql= (<<PSQL);
-    SELECT DISTINCT(s.source_id),px.sequence_type 
+    SELECT DISTINCT(s.source_id), px.sequence_type
       FROM source s, primary_xref px, xref x 
 	WHERE x.xref_id = px.xref_id
 	  AND s.source_id = x.source_id
@@ -1142,7 +1142,7 @@ PSQL
 
   my $summary_failed = "Failed to match at thresholds";
   my $summary_missed = "Failed to match";
-  my $description_missed = "Unable to match to any ensembl entity at all ";
+  my $description_missed = "Unable to match to any ensembl entity at all";
   
   my $sth = $self->core->dbc->prepare("select MAX(unmapped_reason_id) ".
 				      "from unmapped_reason");
@@ -1188,8 +1188,7 @@ PSQL
   }
   $sth->finish;
 
-  $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".
-				   $description_missed."'");  
+  $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".$description_missed."'");  
   $sth->execute();
   my $xref_missed_id=undef;
   $sth->bind_columns(\$xref_missed_id);
@@ -1266,7 +1265,7 @@ PSQL
 	    print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
 	  }
 	  print UNMAPPED_OBJECT $external_db_id."\t".$accession."\t";
-	  print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t\0\tNULL\n"
+	  print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\tNULL\n"
 	}
       }
     }
@@ -2973,7 +2972,7 @@ sub add_missing_pairs{
 #  print "xref offset => $xref_id_offset\n";
 #  print "max object xref => $max_object_xref_id \n";
   my $xref_sql = (<<EOS);
-  SELECT x1.xref_id, x2.xref_id 
+  SELECT x1.xref_id, x2.xref_id, x1.accession, x2.accession   
     FROM pairs p, xref x1, xref x2
       WHERE p.accession1 = x1.accession
 	AND p.accession2 = x2.accession
@@ -2981,10 +2980,11 @@ sub add_missing_pairs{
 EOS
   my $xref_sth = $self->xref->dbc->prepare($xref_sql);
   $xref_sth->execute(); 
-  my ($xref_id1,$xref_id2);
-  $xref_sth->bind_columns(\$xref_id1, \$xref_id2);
+  my ($xref_id1,$xref_id2, $x1_acc, $x2_acc);
+  $xref_sth->bind_columns(\$xref_id1, \$xref_id2, \$x1_acc, \$x2_acc);
 
   my %good2missed=();
+  my %good2missed_acc=();
   my $okay =0;
   my $both = 0;
   my $poss = 0;
@@ -2996,10 +2996,12 @@ EOS
       elsif(!defined($xrefs_written{$xref_id2})){
 	$poss++;
 	$good2missed{$xref_id1+$xref_id_offset} = $xref_id2+$xref_id_offset;
+	$good2missed_acc{$xref_id1+$xref_id_offset} = $x2_acc;
       }
       else{
 	$poss++;
 	$good2missed{$xref_id2+$xref_id_offset} = $xref_id1+$xref_id_offset;
+	$good2missed_acc{$xref_id2+$xref_id_offset} = $x1_acc;
       }
     }
     else{
@@ -3024,37 +3026,49 @@ EOS
 #  print "but apparently $okay have no matches at all and $both have two\n";
 #  print "potential filler ins = $poss\n";
 #  print "good2missed=>".scalar(%good2missed)."\n";
-  open(OBJECT_XREF2, ">".$self->core->dir()."/pairs_object_xref.txt") || die "Could not open pairs_object_xref.txt";
+  open(OBJECT_XREF2, ">".$self->core->dir()."/pairs_object_xref.txt") 
+    || die "Could not open pairs_object_xref.txt";
+
+  my $triage_file = $self->core->dir()."/triage_update.sql";
+  open(TRIAGE_UPDATE,">".$triage_file)
+    || die "Could not open $triage_file\n";
 
   my $i=0;
   my $index;
   my $added = 0;
-  my $sql = "SELECT xref_id, ensembl_id, ensembl_object_type FROM object_xref WHERE xref_id IN (";
-  my ($goodxref, $ens_int_id,$type);
+  my $sql = "SELECT o.xref_id, o.ensembl_id, o.ensembl_object_type, ";
+  $sql   .=        "x.dbprimary_acc, x.external_db_id ";
+  $sql   .=    "FROM object_xref o, xref x ";
+  $sql   .=      "WHERE x.xref_id = o.xref_id AND x.xref_id IN (";
+  my ($goodxref, $ens_int_id, $type, $acc, $ex_db_id);
   my @list =();
   foreach my $key (keys %good2missed){
     if($i > 200){
       my $sth_ob = $self->core->dbc->prepare($sql.(join(',',@list)).")") || die @_;
       $sth_ob->execute();
-      $sth_ob->bind_columns(\$goodxref,\$ens_int_id,\$type);
+      $sth_ob->bind_columns(\$goodxref,\$ens_int_id,\$type, \$acc, \$ex_db_id);
       while($sth_ob->fetch()){
 	if(($type =~ /Transcript/) and defined($transcript_2_translation{$ens_int_id})){
 	  $max_object_xref_id++;
 	  $added++;
 	  print OBJECT_XREF2 "$max_object_xref_id\t";
-	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	  print OBJECT_XREF2 $good2missed{$goodxref};
 	  print OBJECT_XREF2 "\tDEPENDENT\n";	
+	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
+	  print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
+	  print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
 	}
 	elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
 	  $max_object_xref_id++;
 	  $added++;
 	  print OBJECT_XREF2 "$max_object_xref_id\t";
-	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	  print OBJECT_XREF2 $good2missed{$goodxref};
 	  print OBJECT_XREF2 "\tDEPENDENT\n";	
+	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
+	  print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
+	  print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
 	}
       }
       $sth_ob->finish();
@@ -3069,25 +3083,29 @@ EOS
   if($i){
     my $sth_ob = $self->core->dbc->prepare($sql.(join(',',@list)).")") || die @_;
     $sth_ob->execute();
-    $sth_ob->bind_columns(\$goodxref,\$ens_int_id,\$type);
+    $sth_ob->bind_columns(\$goodxref,\$ens_int_id,\$type, \$acc, \$ex_db_id);
     while($sth_ob->fetch()){
       if(($type =~ /Transcript/) and defined($transcript_2_translation{$ens_int_id})){
 	$max_object_xref_id++;
 	$added++;
 	print OBJECT_XREF2 "$max_object_xref_id\t";
-	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
 	print OBJECT_XREF2 "\tDEPENDENT\n";	
+	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
+	print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
+	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
       }
       elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
 	$max_object_xref_id++;
 	$added++;
 	print OBJECT_XREF2 "$max_object_xref_id\t";
-	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
 	print OBJECT_XREF2 "\tDEPENDENT\n";	
+	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
+	print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
+	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
       }
     }
    $sth_ob->finish();
@@ -3108,6 +3126,13 @@ EOS
   
   print "$added new object xrefs added based on the Pairs\n";
 
+  my $core_db = $self->core->dbc;
+
+  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
+    " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < ". $triage_file;
+  system $str;
+
+  print "updated triage data accordingly\n";
 }
 
 sub dump_all_dependencies{
