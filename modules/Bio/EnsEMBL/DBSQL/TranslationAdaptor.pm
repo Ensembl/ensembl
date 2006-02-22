@@ -235,12 +235,15 @@ sub store {
 
   my $transl_dbID = $sth->{'mysql_insertid'};
 
+  $translation->dbID($transl_dbID);
+  $translation->adaptor($self);
+
   #store object xref mappings to translations
 
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
   #store each of the xrefs for this translation
   foreach my $dbl ( @{$translation->get_all_DBEntries} ) {
-     $dbEntryAdaptor->store( $dbl, $transl_dbID, "Translation" );
+     $dbEntryAdaptor->store( $dbl, $translation, "Translation" );
   }
 
 
@@ -278,9 +281,6 @@ sub store {
   }
 
   $translation->get_all_Attributes();
-
-  $translation->dbID( $transl_dbID );
-  $translation->adaptor( $self );
 
   # store any translation attributes that are defined
   my $attr_adaptor = $self->db->get_AttributeAdaptor();
