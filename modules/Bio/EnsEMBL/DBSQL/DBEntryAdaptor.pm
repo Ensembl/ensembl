@@ -237,7 +237,7 @@ sub store {
      SELECT external_db_id
        FROM external_db
       WHERE db_name = ?
-        AND dbrelease = ?");
+        AND db_release = ?");
   $sth->bind_param(1,$exObj->dbname,SQL_VARCHAR);
   $sth->bind_param(2,$exObj->release,SQL_VARCHAR);
   $sth->execute();
