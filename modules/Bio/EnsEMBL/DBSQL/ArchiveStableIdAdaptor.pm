@@ -556,15 +556,11 @@ sub _lookup_version {
 
   if( ! defined $arch_id->{'db_name'} ) {
     # latest version of this stable id
-
-    $sql = qq(
-      SELECT new_db_name, new_version
-	FROM stable_id_event sie, mapping_session m
-       WHERE sie.mapping_session_id = m.mapping_session_id
-	 AND new_stable_id = "@{[$arch_id->stable_id]}"
-             $EXTRA_SQL
-    ORDER BY m.created DESC
-      LIMIT 1);
+      my $sql_tmp = "SELECT new_db_name, new_version ";
+      $sql_tmp .= "FROM stable_id_event sie, mapping_session m  ";
+      $sql_tmp .= "WHERE sie.mapping_session_id = m.mapping_session_id AND new_stable_id = \"@{[$arch_id->stable_id]}\" $EXTRA_SQL ";
+      $sql_tmp .= "ORDER BY m.created DESC";
+      $sql = $self->dbc->add_limit_clause($sql_tmp,1);
   } else {
     $sql = qq(
       SELECT old_db_name, old_version
