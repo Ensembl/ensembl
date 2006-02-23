@@ -620,6 +620,118 @@ sub disconnect_if_idle {
   return 0;
 }
 
+
+=head2 add_limit_clause
+
+  Arg [1]    : string $sql
+  Arg [2]    : int $max_number
+  Example    : my $new_sql = $dbc->add_limit_clause($sql,$max_number);
+  Description: Giving an SQL statement, it adds a limit clause, dependent on the database 
+               (in MySQL, should add a LIMIT at the end, MSSQL uses a TOP clause)									 
+  Returntype : String containing the new valid SQL statement        
+  Exceptions : none
+  Caller     : general
+  Status     : at risk
+
+=cut
+
+
+sub add_limit_clause{
+    my $self = shift;
+    my $sql = shift;
+    my $max_number = shift;
+
+    my $new_sql = '';
+    if ($self->driver eq 'mysql'){
+	$new_sql = $sql . ' LIMIT ' . $max_number;
+    }
+    elsif ($self->driver eq 'odbc'){
+	#need to get anything after the SELECT statement
+	$sql =~ /select(.*)/i;
+	$new_sql = 'SELECT TOP ' . $max_number . $1;
+    }
+    else{
+	warning("Not possible to convert $sql to an unknow database driver: ", $self->driver, " no limit applied");
+	$new_sql = $sql;
+    }
+    return $new_sql;
+}
+
+
+=head2 from_date_to_seconds
+
+  Arg [1]    : date $date
+  Example    : my $string = $dbc->from_date_to_seconds($date);
+  Description: Giving a string representing a column of type date 
+                applies the database function to convert to the number of seconds from 01-01-1970
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : at risk
+
+=cut
+
+sub from_date_to_seconds{
+    my $self=  shift;
+    my $column = shift;
+
+    my $string;
+    if ($self->driver eq 'mysql'){
+	$string = "UNIX_TIMESTAMP($column)";
+    }
+    elsif ($self->driver eq 'odbc'){
+	$string = "DATEDIFF(second,'JAN 1 1970',$column)";
+    }
+    else{
+	warning("Not possible to convert $column due to an unknown database driver: ", $self->driver);
+	return '';
+    }    
+    return $string;
+}
+
+
+=head2 from_seconds_to_date
+
+  Arg [1]    : int $seconds
+  Example    : my $string = $dbc->from_seconds_to_date($seconds);
+  Description: Giving an int representing number of seconds
+                applies the database function to convert to a date 
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : at risk
+
+=cut
+
+sub from_seconds_to_date{
+    my $self=  shift;
+    my $seconds = shift;
+
+    my $string;
+    if ($self->driver eq 'mysql'){
+	if ($seconds){
+	    $string = "from_unixtime( ".$seconds.")";
+	}
+	else{
+	    $string = "\"0000-00-00 00:00:00\"";
+	}
+    }
+    elsif ($self->driver eq 'odbc'){
+	if ($seconds){
+	    $string = "DATEDIFF(date,'JAN 1 1970',$seconds)";
+	}
+	else{
+	    $string = "\"0000-00-00 00:00:00\"";
+	}
+    }
+    else{
+	warning("Not possible to convert $seconds due to an unknown database driver: ", $self->driver);
+	return '';
+
+    }    
+    return $string;
+}
+
 ####
 #deprecated functions
 ####
