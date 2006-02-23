@@ -80,10 +80,15 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  return qw( e.exon_id e.seq_region_id e.seq_region_start e.seq_region_end 
-	     e.seq_region_strand e.phase e.end_phase
-	     esi.stable_id esi.version UNIX_TIMESTAMP(created_date)
-             UNIX_TIMESTAMP(modified_date) );
+  my $created_date = $self->db->dbc->from_date_to_seconds("created_date");
+  my $modified_date = $self->db->dbc->from_date_to_seconds("modified_date");
+  return ( 'e.exon_id', 'e.seq_region_id', 'e.seq_region_start' ,'e.seq_region_end', 
+	     'e.seq_region_strand', 'e.phase','e.end_phase',
+	     'esi.stable_id', 'esi.version',$created_date,
+             $modified_date );
+#	     esi.stable_id esi.version UNIX_TIMESTAMP(created_date)
+#             UNIX_TIMESTAMP(modified_date) );
+
 }
 
 
@@ -263,17 +268,18 @@ sub store {
           "stable_id = ?, " .
 	    "exon_id = ?, ";
   
-    if( $exon->created_date() ) {
-      $statement .= "created_date = from_unixtime( ".$exon->created_date()."),";
-    } else {
-      $statement .= "created_date = \"0000-00-00 00:00:00\",";
-    }
-
-    if( $exon->modified_date() ) {
-      $statement .= "modified_date = from_unixtime( ".$exon->modified_date().")";
-    } else {
-      $statement .= "modified_date = \"0000-00-00 00:00:00\"";
-    }
+    $statement .= "created_date = " . $self->db->dbc->from_seconds_to_date($exon->created_date()) . ",";
+#     if( $exon->created_date() ) {
+#       $statement .= "created_date = from_unixtime( ".$exon->created_date()."),";
+#     } else {
+#       $statement .= "created_date = \"0000-00-00 00:00:00\",";
+#     }
+    $statement .= "modified_date = " . $self->db->dbc->from_seconds_to_date($exon->modified_date()) ;
+#     if( $exon->modified_date() ) {
+#       $statement .= "modified_date = from_unixtime( ".$exon->modified_date().")";
+#     } else {
+#       $statement .= "modified_date = \"0000-00-00 00:00:00\"";
+#     }
 
     my $sth = $self->prepare( $statement );
 
@@ -650,8 +656,10 @@ sub get_stable_entry_info {
     #$self->throw("can't fetch stable info with no dbID");
     return;
   }
-  my $sth = $self->prepare("SELECT stable_id, UNIX_TIMESTAMP(created),
-                                   UNIX_TIMESTAMP(modified), version 
+  my $created_date = $self->db->dbc->from_date_to_seconds("created_date");
+  my $modified_date = $self->db->dbc->from_date_to_seconds("modified_date");
+  my $sth = $self->prepare("SELECT stable_id, " . $created_date . ",
+                                   " . $modified_date . ", version 
                             FROM   exon_stable_id 
                             WHERE  exon_id = ");
 

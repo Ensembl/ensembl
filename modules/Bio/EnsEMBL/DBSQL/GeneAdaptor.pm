@@ -91,13 +91,15 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  return qw( g.gene_id g.seq_region_id g.seq_region_start g.seq_region_end
-	     g.seq_region_strand g.analysis_id g.biotype g.display_xref_id
-	     g.description g.status g.source 
-	     gsi.stable_id gsi.version UNIX_TIMESTAMP(gsi.created_date)
-	     UNIX_TIMESTAMP(gsi.modified_date) 
-	     x.display_label x.dbprimary_acc x.description x.version 
-	     exdb.db_name exdb.status exdb.release exdb.db_display_name );
+  my $created_date = $self->db->dbc->from_date_to_seconds("gsi.created_date");
+  my $modified_date = $self->db->dbc->from_date_to_seconds("gsi.modified_date");
+  return ( 'g.gene_id', 'g.seq_region_id', 'g.seq_region_start', 'g.seq_region_end',
+	     'g.seq_region_strand', 'g.analysis_id' ,'g.biotype', 'g.display_xref_id',
+	     'g.description', 'g.status', 'g.source', 
+	     'gsi.stable_id', 'gsi.version', $created_date,
+	   $modified_date,
+	     'x.display_label' ,'x.dbprimary_acc', 'x.description', 'x.version', 
+	     'exdb.db_name', 'exdb.status', 'exdb.release' ,'exdb.db_display_name' );
 }
 
 
@@ -829,17 +831,18 @@ sub store {
                         SET gene_id = ?,
                             stable_id = ?,
                             version = ?, ";
-    if( $gene->created_date() ) {
-      $statement .= "created_date = from_unixtime( ".$gene->created_date()."),";
-    } else {
-      $statement .= "created_date = \"0000-00-00 00:00:00\",";
-    }
-
-    if( $gene->modified_date() ) {
-      $statement .= "modified_date = from_unixtime( ".$gene->modified_date().")";
-    } else {
-      $statement .= "modified_date = \"0000-00-00 00:00:00\"";
-    }
+    $statement .= "created_date = " . $self->db->dbc->from_seconds_to_date($gene->created_date()) . ",";
+#     if( $gene->created_date() ) {
+#       $statement .= "created_date = from_unixtime( ".$gene->created_date()."),";
+#     } else {
+#       $statement .= "created_date = \"0000-00-00 00:00:00\",";
+#     }
+    $statement .= "modified_date = " . $self->db->dbc->from_seconds_to_date($gene->modified_date());
+#     if( $gene->modified_date() ) {
+#       $statement .= "modified_date = from_unixtime( ".$gene->modified_date().")";
+#     } else {
+#       $statement .= "modified_date = \"0000-00-00 00:00:00\"";
+#     }
 
     $sth = $self->prepare($statement);
     $sth->bind_param(1,$gene_dbID,SQL_INTEGER);
@@ -851,11 +854,11 @@ sub store {
 
   # store the dbentries associated with this gene
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
-
+  
   foreach my $dbe ( @{$gene->get_all_DBEntries} ) {
     $dbEntryAdaptor->store( $dbe, $gene, "Gene" );
   }
-
+  
   # we allow transcripts not to share equal exons and instead have copies
   # For the database we still want sharing though, to have easier time with
   # stable ids. So we need to have a step to merge exons together before store
@@ -864,7 +867,6 @@ sub store {
   foreach my $trans ( @{$gene->get_all_Transcripts} ) {
     foreach my $e ( @{$trans->get_all_Exons} ) {
       my $key = $e->hashkey();
-
       if( exists $exons{ $key } ) {
         $trans->swap_exons( $e, $exons{$key} );
       } else {
@@ -904,7 +906,6 @@ sub store {
     }
 
     if(defined($dxref_id)) {
-
       $sth = $self->prepare
         ("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
       $sth->bind_param(1,$dxref_id,SQL_INTEGER);
@@ -1451,17 +1452,17 @@ sub fetch_all_by_transcript_supporting_evidence {
    my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? " if ($analysis);
 
    my $sql = "SELECT DISTINCT(g.gene_id)
-			  FROM gene g,
-			       transcript t,
-			       transcript_supporting_feature sf,
-			       $feature_type f
-			       $anal_from
-			 WHERE g.gene_id = t.gene_id
-			   AND t.transcript_id = sf.transcript_id
-			   AND sf.feature_id = f.${feature_type}_id
-			   AND sf.feature_type = ?
-			   AND f.hit_name=?
-			   $anal_where";
+                         FROM gene g,
+                              transcript t,
+                              transcript_supporting_feature sf,
+                              $feature_type f
+                              $anal_from
+                        WHERE g.gene_id = t.gene_id
+                          AND t.transcript_id = sf.transcript_id
+                          AND sf.feature_id = f.${feature_type}_id
+                          AND sf.feature_type = ?
+                          AND f.hit_name=?
+                          $anal_where";
 
    my $sth = $self->prepare($sql);
 
@@ -1627,10 +1628,14 @@ sub get_stable_entry_info {
      throw("Needs a gene object, not a $gene");
   }
 
-  my $sth = $self->prepare("SELECT stable_id, UNIX_TIMESTAMP(created),
-                                   UNIX_TIMESTAMP(modified), version 
+  my $created_date = $self->db->dbc->from_date_to_seconds("created_date");
+  my $modified_date = $self->db->dbc->from_date_to_seconds("modified_date");
+
+  my $sth = $self->prepare("SELECT stable_id, " . $created_date . "," .
+                                   $modified_date . ", version 
                             FROM gene_stable_id 
                             WHERE gene_id = ?");
+
   $sth->bind_param(1,$gene->dbID,SQL_INTEGER);
   $sth->execute();
 

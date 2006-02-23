@@ -77,12 +77,14 @@ sub fetch_by_Transcript {
     throw("Bio::EnsEMBL::Transcript argument is required.");
   }
 
+  my $lsi_created_date = $self->db->dbc->from_date_to_seconds("tlsi.created_date");
+  my $lsi_modified_date = $self->db->dbc->from_date_to_seconds("tlsi.modified_date");
+
   my $sql = "
     SELECT tl.translation_id, tl.start_exon_id,
            tl.end_exon_id, tl.seq_start, tl.seq_end,
-           tlsi.stable_id, tlsi.version, UNIX_TIMESTAMP(tlsi.created_date),
-           UNIX_TIMESTAMP(tlsi.modified_date)
-      FROM translation tl
+           tlsi.stable_id, tlsi.version, " . $lsi_created_date . ", ". $lsi_modified_date . 
+	   " FROM translation tl
  LEFT JOIN translation_stable_id tlsi
         ON tlsi.translation_id = tl.translation_id
      WHERE tl.transcript_id = ?";
@@ -257,18 +259,19 @@ sub store {
 	 "SET translation_id = ?, ".
 	   "  stable_id = ?, ".
 	     "version = ?, ";
-
-    if( $translation->created_date() ) {
-      $statement .= "created_date = from_unixtime( ".$translation->created_date()."),";
-    } else {
-      $statement .= "created_date = \"0000-00-00 00:00:00\",";
-    }
-
-    if( $translation->modified_date() ) {
-      $statement .= "modified_date = from_unixtime( ".$translation->modified_date().")";
-    } else {
-      $statement .= "modified_date = \"0000-00-00 00:00:00\"";
-    }
+    $statement .= "created_date = " . $self->db->dbc->from_seconds_to_date($translation->created_date()) . ",";
+    
+#     if( $translation->created_date() ) {
+#       $statement .= "created_date = from_unixtime( ".$translation->created_date()."),";
+#     } else {
+#       $statement .= "created_date = \"0000-00-00 00:00:00\",";
+#     }
+    $statement .= "modified_date = " . $self->db->dbc->from_seconds_to_date($translation->modified_date()) ;
+#     if( $translation->modified_date() ) {
+#       $statement .= "modified_date = from_unixtime( ".$translation->modified_date().")";
+#     } else {
+#       $statement .= "modified_date = \"0000-00-00 00:00:00\"";
+#     }
 
     my $sth = $self->prepare($statement);
 
@@ -528,12 +531,15 @@ sub fetch_all_by_Transcript_list {
       $id_str = " = " . $ids[0];
     }
 
+    my $created_date = $self->db->dbc->from_date_to_seconds("tlsi.created_date");
+    my $modified_date = $self->db->dbc->from_date_to_seconds("tlsi.modified_date");
+
     my $sth = $self->prepare
       ("SELECT tl.transcript_id, tl.translation_id, tl.start_exon_id,
            tl.end_exon_id, tl.seq_start, tl.seq_end,
-           tlsi.stable_id, tlsi.version, UNIX_TIMESTAMP(tlsi.created_date),
-           UNIX_TIMESTAMP(tlsi.modified_date)
-      FROM translation tl
+           tlsi.stable_id, tlsi.version, " . $created_date . "," .
+       $modified_date . 
+       " FROM translation tl
  LEFT JOIN translation_stable_id tlsi
         ON tlsi.translation_id = tl.translation_id
      WHERE tl.transcript_id $id_str");

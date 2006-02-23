@@ -98,11 +98,14 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  return qw( t.transcript_id t.seq_region_id t.seq_region_start t.seq_region_end 
-	     t.seq_region_strand t.gene_id 
-             t.display_xref_id tsi.stable_id tsi.version UNIX_TIMESTAMP(created_date)
-             UNIX_TIMESTAMP(modified_date) t.description t.biotype t.status
-             x.display_label exdb.db_name exdb.status exdb.db_display_name);
+  my $created_date = $self->db->dbc->from_date_to_seconds("created_date");
+  my $modified_date = $self->db->dbc->from_date_to_seconds("modified_date");
+
+  return ( 't.transcript_id', 't.seq_region_id', 't.seq_region_start', 't.seq_region_end', 
+	     't.seq_region_strand', 't.gene_id', 
+             't.display_xref_id', 'tsi.stable_id','tsi.version', $created_date,
+             $modified_date, 't.description', 't.biotype', 't.status',
+             'x.display_label', 'exdb.db_name' ,'exdb.status', 'exdb.db_display_name');
 }
 
 
@@ -698,17 +701,20 @@ sub store {
           "  stable_id = ?, ".
             "version = ?, ";
 
-    if( $transcript->created_date() ) {
-      $statement .= "created_date = from_unixtime( ".$transcript->created_date()."),";
-    } else {
-      $statement .= "created_date = \"0000-00-00 00:00:00\",";
-    }
+    $statement .= "created_date = " . $self->db->dbc->from_seconds_to_date($transcript->created_date()) . ",";
 
-    if( $transcript->modified_date() ) {
-      $statement .= "modified_date = from_unixtime( ".$transcript->modified_date().")";
-    } else {
-      $statement .= "modified_date = \"0000-00-00 00:00:00\"";
-    }
+#     if( $transcript->created_date() ) {
+#       $statement .= "created_date = from_unixtime( ".$transcript->created_date()."),";
+#     } else {
+#       $statement .= "created_date = \"0000-00-00 00:00:00\",";
+#     }
+    $statement .= "modified_date = " . $self->db->dbc->from_seconds_to_date($transcript->modified_date()) ;
+
+#     if( $transcript->modified_date() ) {
+#       $statement .= "modified_date = from_unixtime( ".$transcript->modified_date().")";
+#     } else {
+#       $statement .= "modified_date = \"0000-00-00 00:00:00\"";
+#     }
 
     my $sth = $self->prepare($statement);
     $sth->bind_param(1,$transc_dbID,SQL_INTEGER);
