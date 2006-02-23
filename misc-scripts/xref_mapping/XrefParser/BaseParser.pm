@@ -371,9 +371,8 @@ sub get_source_id_for_source_name {
   if (@row) {
     $source_id = $row[0]; 
   } else {
-    print STDERR "WARNING: There is no entity $source_name in the source-table of the \n" .
-      "WARNING: xref-database. The name of the external db name ($source_name) is hardcoded\n" .
-	"WARNING: in the parser\n";
+    print STDERR "WARNING: There is no entity $source_name in the source-table of the xref database.\n" .
+      "WARNING:. The external db name ($source_name) is hardcoded in the parser\n";
     warn("WARNING: Couldn't get source ID for source name $source_name\n");
 
     $source_id = -1;
@@ -573,17 +572,15 @@ sub get_existing_mappings {
 
   my %mappings;
 
-  my $from_source = get_source_id_for_source_name($from_source_name);
-  my $to_source = get_source_id_for_source_name($to_source_name);
-
-print "from source: $from_source_name id $from_source\t\tto source: $to_source_name id $to_source\n";
+  my $from_source = $self->get_source_id_for_source_name($from_source_name);
+  my $to_source = $self->get_source_id_for_source_name($to_source_name);
 
   my $sql = "SELECT dx.dependent_xref_id, x1.accession as dependent, dx.master_xref_id, x2.accession as master FROM dependent_xref dx, xref x1, xref x2 WHERE x1.xref_id=dx.dependent_xref_id AND x2.xref_id=dx.master_xref_id AND x2.source_id=? AND x1.source_id=? AND x1.species_id=? AND x2.species_id=?";
 
   my $sth = dbi()->prepare($sql);
-  $sth->execute($to_source_name, $from_source_name, $species_id, $species_id);
+  $sth->execute($to_source, $from_source, $species_id, $species_id);
   while(my @row = $sth->fetchrow_array()){
-    $mappings{$row[0]} = $row[1];
+    $mappings{$row[1]} = $row[0];
   }
 
   print "Got " . scalar(keys(%mappings)) . " $from_source_name -> $to_source_name mappings\n";
