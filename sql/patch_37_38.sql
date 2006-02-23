@@ -2,7 +2,15 @@
 
 UPDATE meta set meta_value="38" where meta_key="schema_version";
 
-# add the two new Unmapped Object tables:-
+# Add info_type & info_text columns to xref
+
+ALTER TABLE xref ADD COLUMN info_type ENUM('PROJECTION', 'MISC');
+ALTER TABLE xref ADD COLUMN info_text VARCHAR(255);
+ALTER TABLE xref ADD INDEX info_type_idx (info_type);
+
+
+
+# Add the two new Unmapped Object tables:-
 
 
 ################################################################################
