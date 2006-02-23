@@ -85,7 +85,9 @@ sub new_fast {
 						       -primary_id_linkable =>$primary_id_linkable,
 						       -display_id_linkable =>$display_id_linkable,
 						       -priority => $priority,
-						       -db_display_name => $db_display_name );
+						       -db_display_name => $db_display_name,
+						       -info_type => $info_type,
+						       -info_text => $info_text);
   Description: Creates a new DBEntry object
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
@@ -104,11 +106,12 @@ sub new {
 
   my ( $adaptor, $dbID, $primary_id, $version,
        $dbname, $release, $display_id, $description,
-       $primary_id_linkable, $display_id_linkable, $priority, $db_display_name) =
+       $primary_id_linkable, $display_id_linkable, $priority, 
+       $db_display_name, $info_type, $info_text) =
     rearrange ( ['ADAPTOR','DBID','PRIMARY_ID','VERSION',
                  'DBNAME','RELEASE','DISPLAY_ID','DESCRIPTION',
 		 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
-		 'DB_DISPLAY_NAME'], @args );
+		 'DB_DISPLAY_NAME', 'INFO_TYPE', 'INFO_TEXT'], @args );
 
   $self->{'adaptor'} = $adaptor;
   $self->{'dbID'}    = $dbID;
@@ -124,6 +127,8 @@ sub new {
   if( defined $display_id_linkable) { $self->display_id_linkable($display_id_linkable) }
   if( defined $priority) { $self->priority($priority) }
   if( defined $db_display_name) { $self->db_display_name($db_display_name) }
+  if( defined $info_type) { $self->db_display_name($info_type) }
+  if( defined $info_text) { $self->db_display_name($info_text) }
   $self->{synonyms} = [];;
 
   return $self;
@@ -377,7 +382,7 @@ sub priority {
   Arg [1]    : String $db_display_name
   Example    : none
   Db_display_name: get/set for attribute db_display_name
-  Returntype : string
+  Returntype : string; has "Projected " prepended if info_type='PROJECTION'
   Exceptions : none
   Caller     : general
 
@@ -387,9 +392,58 @@ sub db_display_name {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
     $self->{db_display_name} = $arg;
-  } 
-  return $self->{db_display_name};
+  }
+
+  my $name;
+  if ($self->{info_type} eq "PROJECTION") {
+    $name = "Projected " . $self->{db_display_name};
+  } else {
+    $name =  $self->{db_display_name};
+  }
+
+  return $name;
 }
+
+
+=head2 info_type
+
+  Arg [1]    : String $info_type
+  Example    : none
+  Info_type: get/set for attribute info_type
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub info_type {
+  my ( $self, $arg ) = @_;
+  if( defined $arg ) {
+    $self->{info_type} = $arg;
+  } 
+  return $self->{info_type};
+}
+
+
+=head2 info_text
+
+  Arg [1]    : String $info_text
+  Example    : none
+  Info_text: get/set for attribute info_text
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub info_text {
+  my ( $self, $arg ) = @_;
+  if( defined $arg ) {
+    $self->{info_text} = $arg;
+  } 
+  return $self->{info_text};
+}
+
 
 =head2 add_synonym
 

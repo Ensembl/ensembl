@@ -66,7 +66,8 @@ sub fetch_by_dbID {
    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
-           exDB.db_name, exDB.db_display_name, exDB.release, es.synonym
+           exDB.db_name, exDB.db_display_name, exDB.release, es.synonym,
+           exDB.info_type, exDB.info_text
     FROM   xref, external_db exDB
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.xref_id = ?
@@ -80,7 +81,8 @@ sub fetch_by_dbID {
   while ( my $arrayref = $sth->fetchrow_arrayref()){
     my ( $refID, $dbprimaryId, $displayid, $version, $desc,
 	 $primary_id_linkable, $display_id_linkable, $priority,
-         $dbname, $db_display_name, $release, $synonym) = @$arrayref;
+         $dbname, $db_display_name, $release, $synonym, 
+	 $info_type, $info_text) = @$arrayref;
 
     if(!$exDB) {
       $exDB = Bio::EnsEMBL::DBEntry->new
@@ -94,7 +96,9 @@ sub fetch_by_dbID {
 	  -primary_id_linkable => $primary_id_linkable,
 	  -display_id_linkable => $display_id_linkable,
 	  -priority => $priority,
-	  -db_display_name => $db_display_name);
+	  -db_display_name => $db_display_name,
+	  -info_type => $info_type,
+	  -info_text => $info_text);
 
       $exDB->description( $desc ) if ( $desc );
     }
@@ -137,7 +141,8 @@ sub fetch_by_db_accession {
    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
-           exDB.db_name, exDB.db_display_name, exDB.release, es.synonym
+           exDB.db_name, exDB.db_display_name, exDB.release, es.synonym,
+           exDB.info_type, exDB.info_text
     FROM   xref, external_db exDB
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.dbprimary_acc = ?
@@ -168,7 +173,7 @@ sub fetch_by_db_accession {
   while ( my $arrayref = $sth->fetchrow_arrayref()){
     my ( $dbID, $dbprimaryId, $displayid, $version, $desc, $dbname,$db_display_name,
 	 $primary_id_linkable, $display_id_linkable, $priority,
-         $release, $synonym) = @$arrayref;
+         $release, $synonym, $info_type, $info_text) = @$arrayref;
 
     if(!$exDB) {
       $exDB = Bio::EnsEMBL::DBEntry->new
@@ -182,7 +187,9 @@ sub fetch_by_db_accession {
 	  -primary_id_linkable => $primary_id_linkable,
 	  -display_id_linkable => $display_id_linkable,
 	  -priority => $priority,
-	  -db_display_name=>$db_display_name);
+	  -db_display_name=>$db_display_name,
+	  -info_type => $info_type,
+	  -info_text => $info_text);
 
       $exDB->description( $desc ) if ( $desc );
     }
@@ -269,12 +276,17 @@ sub store {
            display_label = ?,
            version = ?,
            description = ?,
-           external_db_id = ?");
-    $sth->bind_param(1,$exObj->primary_id,SQL_VARCHAR);
-    $sth->bind_param(2,$exObj->display_id,SQL_VARCHAR);
-    $sth->bind_param(3,$exObj->version,SQL_VARCHAR);
-    $sth->bind_param(4,$exObj->description,SQL_VARCHAR);
-    $sth->bind_param(5,$dbRef,SQL_INTEGER);
+           external_db_id = ?,
+           info_type = ?,
+           info_text = ?");
+    $sth->bind_param(1, $exObj->primary_id,SQL_VARCHAR);
+    $sth->bind_param(2, $exObj->display_id,SQL_VARCHAR);
+    $sth->bind_param(3, $exObj->version,SQL_VARCHAR);
+    $sth->bind_param(4, $exObj->description,SQL_VARCHAR);
+    $sth->bind_param(5, $dbRef,SQL_INTEGER);
+    $sth->bind_param(6, $exObj->info_type, SQL_VARCHAR);
+    $sth->bind_param(7, $exObj->info_text, SQL_VARCHAR);
+
     $sth->execute();
 
     $dbX = $sth->{'mysql_insertid'};
@@ -653,7 +665,8 @@ sub _fetch_by_object_type {
            idt.query_identity, idt.target_identity, idt.hit_start,
            idt.hit_end, idt.translation_start, idt.translation_end,
            idt.cigar_line, idt.score, idt.evalue, idt.analysis_id,
-           gx.linkage_type
+           gx.linkage_type,
+           xref.info_type, xref.info_text
     FROM   xref xref, external_db exDB, object_xref oxr 
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
@@ -676,7 +689,8 @@ sub _fetch_by_object_type {
          $dbname, $release, $exDB_status, $exDB_db_display_name, $objid,
          $synonym, $queryid, $targetid, $query_start, $query_end,
          $translation_start, $translation_end, $cigar_line,
-         $score, $evalue, $analysis_id, $linkage_type ) = @$arrRef;
+         $score, $evalue, $analysis_id, $linkage_type,
+	 $info_type, $info_text) = @$arrRef;
 
     my %obj_hash = ( 
 		    'adaptor'    => $self,
@@ -726,6 +740,8 @@ sub _fetch_by_object_type {
       $exDB->display_id_linkable($display_id_linkable);
       $exDB->priority($priority);
       $exDB->db_display_name($exDB_db_display_name);
+      $exDB->info_type($info_type);
+      $exDB->info_text($info_text);
 
       push( @out, $exDB );
       $seen{$refID} = $exDB;

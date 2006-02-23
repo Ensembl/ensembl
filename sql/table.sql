@@ -655,10 +655,13 @@ CREATE TABLE xref (
    display_label              VARCHAR(128) not null,
    version                    VARCHAR(10) DEFAULT '' NOT NULL,
    description                VARCHAR(255),
+   info_type                  ENUM('PROJECTION', 'MISC'),
+   info_text                  VARCHAR(255),
 
    PRIMARY KEY( xref_id ),
    UNIQUE KEY id_index( dbprimary_acc, external_db_id ),
-   KEY display_index ( display_label )
+   KEY display_index ( display_label ),
+   KEY info_type_idx ( info_type )
 
 ) COLLATE=latin1_swedish_ci;
 

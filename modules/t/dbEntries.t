@@ -89,7 +89,9 @@ my $xref = Bio::EnsEMBL::DBEntry->new
    -primary_id_linkable => "0",
    -display_id_linkable => "1",
    -priority => "5",
-   -db_display_name => "Nice friendly name"
+   -db_display_name => "Nice friendly name",
+   -info_type => "PROJECTION",
+   -info_text => "from human gene ENSG0000011111"
    );
 
 
