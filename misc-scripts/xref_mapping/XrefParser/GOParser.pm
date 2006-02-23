@@ -137,8 +137,11 @@ sub run {
       }
 
       elsif($array[0] =~ /MGI/){
+	# MGI	MGI:1923501	0610007P08Rik		GO:0004386	MGI:MGI:1354194	IEA		F	RIKEN cDNA 0610007P08 gene		gene	taxon:10090	20060213	UniProt
+	#  0         1                2                      3                  4        5              6         7    8       9
         if($mgi_to_uniprot{$array[1]}){
-          XrefParser::BaseParser->add_to_xrefs($mgi_to_uniprot{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+	  # $master_xref, $acc, $version, $label, $description, $linkage, $source_id, $species_id
+          XrefParser::BaseParser->add_to_xrefs($mgi_to_uniprot{$array[1]}, $array[3], '', $array[3], '', $array[6], $source_id, $species_id);
           $count++;
         }
       }
