@@ -244,7 +244,7 @@ options:
                         If external_db in core database is empty, it is populated
                         from ../external_db/external_dbs.txt
 
-  -delete_externaldb    deletes all entries of the external_db table if it contains any rows 
+  -delete_external_db   deletes all entries of the external_db table if it contains any rows 
                         and uploads new data into the table - you have to interactively 
                         confirm the deletion before. Works only if option -upload is used as well.
 
