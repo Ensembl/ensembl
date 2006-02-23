@@ -141,7 +141,7 @@ sub fetch_by_db_accession {
    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
-           exDB.db_name, exDB.db_display_name, exDB.release, es.synonym,
+           exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
            exDB.info_type, exDB.info_text
     FROM   xref, external_db exDB
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
