@@ -8,7 +8,8 @@ ALTER TABLE xref ADD COLUMN info_type ENUM('PROJECTION', 'MISC');
 ALTER TABLE xref ADD COLUMN info_text VARCHAR(255);
 ALTER TABLE xref ADD INDEX info_type_idx (info_type);
 
-
+# Change name of release column in external_db since release is a reserved word
+ALTER TABLE external_db CHANGE COLUMN release db_release VARCHAR(40) NOT NULL;
 
 # Add the two new Unmapped Object tables:-
 
