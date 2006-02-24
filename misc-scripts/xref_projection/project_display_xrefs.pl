@@ -140,9 +140,11 @@ sub project_display_names {
 
     if ($dbEntry) {
 
-      # Modify the dbEntry to indicate it's not from this species
-      my $txt = " [from $from_species gene " . $from_gene->stable_id() . "]";
-      $dbEntry->display_id($dbEntry->display_id() . $txt);
+      # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
+      my $txt = "from $from_species gene " . $from_gene->stable_id();
+
+      $dbEntry->info_type("PROJECTION");
+      $dbEntry->info_text($txt);
 
       # Add the xref to the "to" gene, or transcript or translation depending on what the
       # other xrefs from this dbname as assigned to (see build_db_to_type)
@@ -179,10 +181,10 @@ sub project_display_names {
 
       }
 
-      # Set gene status to "KNOWN", modify the description and update display_xref
+      # Set gene status to "KNOWN" and update display_xref
 
       $to_gene->status("KNOWN");
-      $to_gene->description($from_gene->description() . $txt) if ($from_gene->description());
+      #$to_gene->description($from_gene->description() . $txt) if ($from_gene->description());
       $to_gene->display_xref($dbEntry);
 	
       print $to_gene->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
@@ -224,9 +226,9 @@ sub project_go_terms {
     #$dbEntry->flush_linkage_types();
     $dbEntry->add_linkage_type("IEA");
 
-    my $txt = " [from $from_species translation " . $from_translation->stable_id() . "]";
-
-    $dbEntry->display_id($dbEntry->display_id() . $txt);
+    my $txt = "from $from_species gene " . $from_translation->stable_id();
+    $dbEntry->info_type("PROJECTION");
+    $dbEntry->info_text($txt);
 
     $to_translation->add_DBEntry($dbEntry);
 
