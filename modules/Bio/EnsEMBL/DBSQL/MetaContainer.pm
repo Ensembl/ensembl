@@ -105,8 +105,8 @@ sub get_taxonomy_id {
   if( @$arrRef ) {
     return $arrRef->[0];
   } else {
-    $self->warn("Please insert meta_key 'species.taxonomy_id' " .
-		"in meta table at core db.\n");
+    warning("Please insert meta_key 'species.taxonomy_id' " .
+	    "in meta table at core db.\n");
   }
 }
 
