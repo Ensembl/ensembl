@@ -133,4 +133,4 @@
 54	remark	Remark	Annotation remark
 55	transcr_class	Transcript class    Transcript class
 56	KnownPTCount	processed_transcript_KNOWN	Number of Known Processed Transcripts
-
+57	ccds	CCDS	CCDS identifier
