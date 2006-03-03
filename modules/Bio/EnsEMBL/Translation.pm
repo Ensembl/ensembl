@@ -687,12 +687,20 @@ sub get_all_SeqEdits {
 
   my @seqeds;
 
-  my $attribs = $self->get_all_Attributes('_selenocysteine');
+  my $attribs;
+  
+  my @edits = ('initial_met', '_selenocysteine');
+  
 
-  # convert attributes to SeqEdit objects
-  foreach my $a (@$attribs) {
-    push @seqeds, Bio::EnsEMBL::SeqEdit->new(-ATTRIB => $a);
+  foreach my $edit(@edits){
+    $attribs = $self->get_all_Attributes($edit);
+
+    # convert attributes to SeqEdit objects
+    foreach my $a (@$attribs) {
+      push @seqeds, Bio::EnsEMBL::SeqEdit->new(-ATTRIB => $a);
+    }
   }
+  
 
   return \@seqeds;
 }
