@@ -134,3 +134,6 @@
 55	transcr_class	Transcript class    Transcript class
 56	KnownPTCount	processed_transcript_KNOWN	Number of Known Processed Transcripts
 57	ccds	CCDS	CCDS identifier
+
+#make first amino acid methionine 
+58	initial_met	Initial methionine	Set first amino acid to methionine
