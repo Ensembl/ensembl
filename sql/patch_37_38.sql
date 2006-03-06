@@ -54,3 +54,76 @@ CREATE TABLE unmapped_reason (
   PRIMARY KEY ( unmapped_reason_id )
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
+
+# Add the new oligo tables, which replace the affy tables
+
+CREATE TABLE oligo_feature (
+       oligo_feature_id   INT NOT NULL auto_increment,
+       seq_region_id      INT UNSIGNED NOT NULL,
+       seq_region_start   INT NOT NULL,
+       seq_region_end     INT NOT NULL,
+       seq_region_strand  TINYINT NOT NULL,
+       
+       mismatches         TINYINT,
+       oligo_probe_id     INT NOT NULL,
+       analysis_id        INT NOT NULL,
+
+       PRIMARY KEY (oligo_feature_id),
+       KEY seq_region_idx (seq_region_id, seq_region_start),
+       KEY probe_idx (oligo_probe_id)
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
+CREATE TABLE oligo_probe (
+       oligo_probe_id  INT NOT NULL auto_increment,
+       oligo_array_id  INT NOT NULL,
+       probeset        VARCHAR(40),
+       name            VARCHAR(20),
+       description     TEXT,
+       length          SMALLINT NOT NULL,
+
+       PRIMARY KEY (oligo_probe_id, oligo_array_id),
+       KEY probeset_idx (probeset),
+       KEY array_idx (oligo_array_id)
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
+CREATE TABLE oligo_array (
+       oligo_array_id   INT NOT NULL auto_increment,
+       parent_array_id  INT,
+       probe_setsize    TINYINT NOT NULL,
+       name             VARCHAR(40) NOT NULL,
+       type             ENUM( 'AFFY', 'OLIGO' ),
+
+       PRIMARY KEY (oligo_array_id)
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
+
+# Copy any existing data from the affy tables to the oligo tables
+
+INSERT INTO oligo_array (oligo_array_id, parent_array_id,
+       probe_setsize, name, type)
+SELECT affy_array_id, parent_array_id, probe_setsize, name, 'AFFY'
+FROM   affy_array;
+
+INSERT INTO oligo_probe (oligo_probe_id, oligo_array_id,
+       probeset, name, description, length)
+SELECT affy_probe_id, affy_array_id, probeset, name, NULL, 25
+FROM   affy_probe;
+
+INSERT INTO oligo_feature (oligo_feature_id, seq_region_id,
+       seq_region_start, seq_region_end, seq_region_strand,
+       mismatches, oligo_probe_id, analysis_id)
+SELECT affy_feature_id, seq_region_id, seq_region_start, seq_region_end,
+       seq_region_strand, mismatches, affy_probe_id, analysis_id
+FROM   affy_feature;
+
+UPDATE meta_coord
+SET    table_name='oligo_feature'
+WHERE  table_name='affy_feature';
+
+# Drop the affy tables
+
+DROP TABLE affy_array;
+DROP TABLE affy_probe;
+DROP TABLE affy_feature;
+
