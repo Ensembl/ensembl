@@ -16,7 +16,7 @@ use Bio::EnsEMBL::Test::TestUtils qw( test_getter_setter debug count_rows);
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 19;
+	plan tests => 21;
 }
 
 
@@ -28,7 +28,7 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 # get a core DBAdaptor
 my $db = $multi->get_DBAdaptor("core");
 
-$multi->hide( "core", "affy_array", "affy_probe", "affy_feature" ); 
+$multi->hide( "core", "oligo_array", "oligo_probe", "oligo_feature" ); 
 
 my $slice_adaptor = $db->get_SliceAdaptor();
 my $affyFeatureAdaptor   = $db->get_AffyFeatureAdaptor();
@@ -79,7 +79,7 @@ my $probe = Bio::EnsEMBL::AffyProbe->new
 $affyProbeAdaptor->store( $probe );
 
 ok( $probe->dbID() );
-ok( count_rows( $affyProbeAdaptor, "affy_probe" ) == 2 );
+ok( count_rows( $affyProbeAdaptor, "oligo_probe" ) == 2 );
 
 #
 # Now a feature on this probe
@@ -103,7 +103,7 @@ my $feature = Bio::EnsEMBL::AffyFeature->new
 $affyFeatureAdaptor->store( $feature );
 
 ok( $feature->dbID() );
-ok( count_rows( $affyFeatureAdaptor, "affy_feature" ) == 1 );
+ok( count_rows( $affyFeatureAdaptor, "oligo_feature" ) == 1 );
 
 #
 # Now getting the stuff from the database
@@ -122,10 +122,21 @@ ok( scalar @$db_feat == 0);
 $db_feat = $slice->get_all_AffyFeatures( "Affy-1" );
 
 ok( scalar @$db_feat == 1);
+
 $db_feat = $slice->get_all_AffyFeatures( "Affy-1", "Affy-2" );
+
 ok( scalar @$db_feat == 1);
 
+$db_feat = $affyFeatureAdaptor->fetch_all_by_probeset( 'arnes_12112' );
+
+ok( scalar @$db_feat == 1);
+
+$db_feat = $affyFeatureAdaptor->fetch_all_by_probeset( 'some probeset' );
+
+ok( scalar @$db_feat == 0);
+
 $db_feat = $slice->get_all_AffyFeatures( "Affy-2" );
+
 ok( scalar @$db_feat == 1);
 
 

@@ -19,7 +19,7 @@ our $verbose = 0;
 
 
 #
-# Affy arrays dont have to have anythong more than a name, 
+# Affy arrays don't have to have anything more than a name,
 # but it should be possible to have some other information on them
 #
 
@@ -36,7 +36,7 @@ my $affy_array = Bio::EnsEMBL::AffyArray->new
 ok( ref( $affy_array ) && $affy_array->isa( "Bio::EnsEMBL::AffyArray" ));
 
 #
-# What Affy arryas should be able to do
+# What Affy arrays should be able to do
 #
 
 ok( test_getter_setter( $affy_array, "dbID", 3 ));
@@ -45,7 +45,7 @@ ok( test_getter_setter( $affy_array, "name", "Some name" ));
 ok( test_getter_setter( $affy_array, "setsize", 11 ));
 
 # possibly do the following with database connection
-my $probes = $affy_array->get_all_AffyProbes();
+#my $probes = $affy_array->get_all_AffyProbes();
 
 #
 # Create an AffyProbe

@@ -1,251 +1,143 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::AffyArrayAdaptor
+# Ensembl module for Bio::EnsEMBL::DBSQL::AffyArrayAdaptor
 #
-#
-# Copyright EMBL/EBI
-#
-# You may distribute this module under the same terms as perl itself
-
-# POD documentation - main docs before the code
+# You may distribute this module under the same terms as Perl itself
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::AffyArrayAdaptor
+Bio::EnsEMBL::DBSQL::AffyArrayAdaptor - A database adaptor for fetching and
+storing AffyArray objects.
 
 =head1 SYNOPSIS
 
-my $arrayAdaptor = $db->get_AffyArrayAdaptor();
+my $aaa = $db->get_AffyArrayAdaptor();
 
-my $array = $arrayAdaptor->fetch_by_name( 'some name' );
-my $arrays = $arrayAdaptor->fetch_all();
-
+my $array = $aaa->fetch_by_name('Affy-1');
+my @arrays = @{$aaa->fetch_all()};
 
 =head1 DESCRIPTION
 
-The AffyArrayAdaptor module stores and retrieves AffyArray objects in the database it is connected to.
+The AffyArrayAdaptor is a database adaptor for storing and retrieving
+AffyArray objects.
+
+=head1 AUTHOR
+
+This module was originally written by Arne Stabenau, but was changed to be a
+subclass of OligoArrayAdaptor by Ian Sealy.
+
+This module is part of the Ensembl project: http://www.ensembl.org/
+
+=head1 CONTACT
+
+Post comments or questions to the Ensembl development list: ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 
 =cut
 
-package Bio::EnsEMBL::DBSQL::AffyArrayAdaptor;
-use vars qw(@ISA);
 use strict;
+use warnings;
 
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+package Bio::EnsEMBL::DBSQL::AffyArrayAdaptor;
+
 use Bio::EnsEMBL::AffyArray;
+use Bio::EnsEMBL::DBSQL::OligoArrayAdaptor;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use vars qw(@ISA);
+@ISA = qw(Bio::EnsEMBL::DBSQL::OligoArrayAdaptor);
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-=head2 fetch_by_name
+=head2 _default_where_clause
 
-  Arg [1]    : string $name
-  Example    : my $array = $arrayAdaptor->fetch_by_name( 'U133_X3P' );
-  Description: Retrieves an AffyArray object by name from the database. Its created
-               from the entries in affy_array table
+  Args       : None
+  Example    : None
+  Description: PROTECTED implementation of superclass abstract method.
+               Ensures this adaptor only returns Affy arrays.
   Returntype : string
-  Exceptions : none
-  Caller     : general
+  Exceptions : None
+  Caller     : Internal
   Status     : Medium Risk
-             : may be replaced with none affy specific methods
 
 =cut
 
-sub fetch_by_name {
-    my $self = shift;
-    my $name = shift;
-    
-    my $result = $self->generic_fetch( "aa.name = '$name'" );
-    if( scalar @$result > 1 ) {
-	warn( "AffyArray $name is not unique, only one result is returned" );
-    } 
-
-    return $result->[0];
-}
-
-
-=head2 fetch_attributes
-
-  Arg [1]    : Bio::EnsEMBL::AffyArray $array
-  Example    : none
-  Description: This function is soley intended to lazy load attributes into empty 
-               AffyArray objects. You should not need to call this.
-  Returntype : none
-  Exceptions : none
-  Caller     : lazy load Array attributes into empty array from AffyArray object
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-sub fetch_attributes {
-    my $self = shift;
-    my $array = shift;
-
-    my $tmp_array = $self->fetch_by_dbID( $array->dbID() );
-    %$array = %$tmp_array;
-}
-
-
-=head2 _tablename
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns the names, aliases of the tables to use for queries
-  Returntype : list of listrefs of strings
-  Exceptions : none
-  Caller     : internal
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-sub _tables {
-  my $self = shift;
-  
-  return ['affy_array', 'aa'];
-}
-
-
-=head2 _columns
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns a list of columns to use for queries
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : internal
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-sub _columns {
+sub _default_where_clause {
   my $self = shift;
 
-  return qw( aa.affy_array_id aa.parent_array_id aa.probe_setsize aa.name );
-
+  return "oa.type='AFFY'";
 }
-
 
 =head2 _objs_from_sth
 
-  Arg [1]    : hash reference $hashref
-  Example    : none
+  Arg [1]    : DBI statement handle object
+  Example    : None
   Description: PROTECTED implementation of superclass abstract method.
-               creates SimpleFeatures from an executed DBI statement handle.
-  Returntype : list reference to Bio::EnsEMBL::AffyFeature objects
-  Exceptions : none
-  Caller     : internal
+               Creates AffyArray objects from an executed DBI statement
+			   handle.
+  Returntype : Listref of Bio::EnsEMBL::AffyArray objects
+  Exceptions : None
+  Caller     : Internal
   Status     : Medium Risk
-             : may be replaced with none affy specific methods
 
 =cut
 
 sub _objs_from_sth {
-  my ($self, $sth, $mapper, $dest_slice) = @_;
-
-  my ( @result, $array_id, $parent_id, $setsize, $name );
- 
-  $sth->bind_columns( \$array_id, \$parent_id, \$setsize, \$name );
-
-  while( $sth->fetch() ) {
-      my $array = Bio::EnsEMBL::AffyArray->new
-	  ( -dbID => $array_id,
-	    -adaptor => $self,
-	    -name => $name,
-	    -setsize => $setsize
-	  );
-      push( @result, $array );
-      if( $parent_id ) {
-	  my $parent_array = Bio::EnsEMBL::AffyArray->new
-	  ( -dbID => $parent_id,
-	    -adaptor => $self,
-	  );
-	  $array->superset( $parent_array );
-      }
-  }
-  return \@result;
+	my ($self, $sth) = @_;
+	
+	my (@result, $array_id, $parent_id, $setsize, $name, $type);
+	
+	$sth->bind_columns( \$array_id, \$parent_id, \$setsize, \$name, \$type );
+	
+	while ( $sth->fetch() ) {
+		my $array = Bio::EnsEMBL::AffyArray->new(
+			-dbID    => $array_id,
+			-adaptor => $self,
+			-name    => $name,
+			-setsize => $setsize,
+	  	);
+		push @result, $array;
+		if ($parent_id) {
+			my $parent_array = Bio::EnsEMBL::AffyArray->new(
+				-dbID    => $parent_id,
+				-adaptor => $self,
+			);
+			$array->superset($parent_array);
+		}
+	}
+	return \@result;
 }
-
-
-=head2 store
-
-  Arg [1..]  : list of Bio::EnsEMBL::AffyArray @arrays
-  Example    : $arrayAdaptor->store( $array1, $array2, $array3 )
-  Description: Stores te given AffyArray objects in the database. There is no check wether
-               they already exist, so only call once per Array. Sets dbID and adaptor on the
-               objects that it stores.
-  Returntype : none
-  Exceptions : none
-  Caller     : affy feature calculating scripts
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-
-sub store {
-    my $self = shift;
-    my @args = @_;
-    
-    for my $array ( @args ) {
-	if( !$array->isa( "Bio::EnsEMBL::AffyArray" )) {
-	    warn( "Can only store AffyArrays" );
-	    next;
-	}
-
-	if( $array->dbID() && $array->adaptor() == $self ) {
-	    # is already stored
-	    next;
-	}
-
-	my $superset = $array->superset();
-	if( defined $superset && ! $superset->dbID() ) {
-	    $self->store( $superset );
-	}
-
-	my $sth = $self->prepare( "INSERT INTO affy_array".
-				  "( name, probe_setsize, parent_array_id ) ".
-				  "VALUES( ?,?,? )" );
-	$sth->bind_param(1,$array->name(),SQL_VARCHAR);
-	$sth->bind_param(2,$array->setsize(),SQL_INTEGER);
-	if( defined $superset ) {
-	    $sth->bind_param(3,$superset->dbID(), SQL_INTEGER);
-	} else {
-	    $sth->bind_param(3,undef);
-	}
-	$sth->execute();
-	my $dbID = $sth->{'mysql_insertid'};
-	$array->dbID( $dbID );
-	$array->adaptor( $self );
-    }
-}
-
-	    
-
 
 =head2 list_dbIDs
 
-  Arg [1]    : none
-  Example    : @feature_ids = @{$simple_feature_adaptor->list_dbIDs()};
-  Description: Gets an array of internal ids for all simple features in the current db
-  Returntype : list of ints
-  Exceptions : none
+  Args       : None
+  Example    : my @array_ids = @{$aaa->list_dbIDs()};
+  Description: Gets an array of internal IDs for all AffyArray objects in the
+               current database.
+  Returntype : List of ints
+  Exceptions : None
   Caller     : ?
   Status     : Medium Risk
-             : may be replaced with none affy specific methods
 
 =cut
 
 sub list_dbIDs {
-   my ($self) = @_;
-
-   return $self->_list_dbIDs("affy_array");
+	my ($self) = @_;
+	
+	#return $self->_list_dbIDs('oligo_array');
+	# Can't use _list_dbIDs because only want OligoArray objects of type AFFY
+	
+	my @out;
+	my $sql = "SELECT oligo_array_id  FROM oligo_array WHERE type='AFFY'";
+	my $sth = $self->prepare($sql);
+	$sth->execute;
+	
+	while (my ($id) = $sth->fetchrow() ) {
+		push @out, $id;
+	}
+	
+	$sth->finish;
+	
+	return \@out;
 }
 
 1;
+

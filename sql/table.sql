@@ -12,41 +12,44 @@
 #  - internal ids are integers named tablename_id
 #  - same name is given in foreign key relations
 
-CREATE TABLE affy_feature (
-       affy_feature_id INT NOT NULL auto_increment,
-       seq_region_id INT UNSIGNED NOT NULL,
-       seq_region_start INT NOT NULL,
-       seq_region_end INT NOT NULL,
-       seq_region_strand TINYINT NOT NULL,
+CREATE TABLE oligo_feature (
+       oligo_feature_id   INT NOT NULL auto_increment,
+       seq_region_id      INT UNSIGNED NOT NULL,
+       seq_region_start   INT NOT NULL,
+       seq_region_end     INT NOT NULL,
+       seq_region_strand  TINYINT NOT NULL,
        
-       mismatches TINYINT,
-       affy_probe_id INT NOT NULL,
-       analysis_id INT NOT NULL,
+       mismatches         TINYINT,
+       oligo_probe_id     INT NOT NULL,
+       analysis_id        INT NOT NULL,
 
-       PRIMARY KEY (affy_feature_id),
-       KEY seq_region_idx( seq_region_id, seq_region_start ),
-       KEY probe_idx( affy_probe_id )
-) COLLATE=latin1_swedish_ci;		
+       PRIMARY KEY (oligo_feature_id),
+       KEY seq_region_idx (seq_region_id, seq_region_start),
+       KEY probe_idx (oligo_probe_id)
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
-CREATE TABLE affy_probe (
-       affy_probe_id INT NOT NULL auto_increment,
-       affy_array_id INT NOT NULL,
-       probeset VARCHAR(40),
-       name VARCHAR(20),
+CREATE TABLE oligo_probe (
+       oligo_probe_id  INT NOT NULL auto_increment,
+       oligo_array_id  INT NOT NULL,
+       probeset        VARCHAR(40),
+       name            VARCHAR(20),
+       description     TEXT,
+       length          SMALLINT NOT NULL,
 
-       PRIMARY KEY ( affy_probe_id, affy_array_id ),
-       KEY probeset_idx( probeset ),
-       KEY array_idx( affy_array_id )
-) COLLATE=latin1_swedish_ci;
+       PRIMARY KEY (oligo_probe_id, oligo_array_id),
+       KEY probeset_idx (probeset),
+       KEY array_idx (oligo_array_id)
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
-CREATE TABLE affy_array (
-       affy_array_id INT NOT NULL auto_increment,
-       parent_array_id INT,
-       probe_setsize TINYINT NOT NULL,
-       name VARCHAR(40) NOT NULL,
+CREATE TABLE oligo_array (
+       oligo_array_id   INT NOT NULL auto_increment,
+       parent_array_id  INT,
+       probe_setsize    TINYINT NOT NULL,
+       name             VARCHAR(40) NOT NULL,
+       type             ENUM( 'AFFY', 'OLIGO' ),
 
-       PRIMARY KEY( affy_array_id )
-) COLLATE=latin1_swedish_ci;
+       PRIMARY KEY (oligo_array_id)
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 CREATE TABLE alt_allele (

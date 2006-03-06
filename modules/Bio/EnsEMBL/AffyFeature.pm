@@ -1,246 +1,134 @@
 #
 # Ensembl module for Bio::EnsEMBL::AffyFeature
 #
-# You may distribute this module under the same terms as perl itself
-
-# POD documentation - main docs before the code
+# You may distribute this module under the same terms as Perl itself
 
 =head1 NAME
 
-Bio::EnsEMBL::AffyFeature - a module to represent a affy probe hitting the genomic sequence.
-
+Bio::EnsEMBL::AffyFeature - A module to represent an Affy probe's genomic
+mapping.
 
 =head1 SYNOPSIS
 
 use Bio::EnsEMBL::AffyFeature;
 
-$feature = Bio::EnsEMBL::AffyArray->new 
-    ( -probe => $probe,
-      -slice => $slice,
-      -start => 23,
-      -end => 30,
-      -strand => 1,
-      -probeset => 'some setname'
-)
+my $feature = Bio::EnsEMBL::AffyFeature->new(
+	-PROBE         => $probe,
+	-MISMATCHCOUNT => 0,
+	-SLICE         => $chr_1_slice,
+	-START         => 1_000_000,
+	-END           => 1_000_024,
+	-STRAND        => -1,
+); 
 
 =head1 DESCRIPTION
 
-AffyFeatures represent an oligo (probe) on an AffyArray that matches the genome. 
-Its possible to get a probe for them, for performance reasons the probeset 
-(which is the more important information) is settable and
-retrievable without the probe information.
+An AffyFeature object represents the genomic placement of an AffyProbe
+object. The data are stored in the oligo_feature table.
+
+=head1 AUTHOR
+
+This module was originally written by Arne Stabenau, but was changed to be a
+subclass of OligoArray by Ian Sealy.
+
+This module is part of the Ensembl project: http://www.ensembl.org/
 
 =head1 CONTACT
 
-Post comments/questions to the ensembl development list: ensembl-dev@ebi.ac.uk
+Post comments or questions to the Ensembl development list: ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 
 =cut
-
 
 use strict;
 use warnings;
 
 package Bio::EnsEMBL::AffyFeature;
 
-use Bio::EnsEMBL::Feature;
-
-use Bio::EnsEMBL::Utils::Argument qw( rearrange ) ;
 use Bio::EnsEMBL::Utils::Exception qw( throw );
-
-
+use Bio::EnsEMBL::OligoFeature;
 
 use vars qw(@ISA);
-
-@ISA = qw(Bio::EnsEMBL::Feature);
+@ISA = qw(Bio::EnsEMBL::OligoFeature);
 
 
 =head2 new
 
-  Arg [PROBE] : Every AffyFeature needs an AffyProbe on construction. This should be already
-                stored if you plan to store this feature.
-  Arg [MISMATCHCOUNT] : How many mismatches over the length of the probe? (0,1) 
-  Arg [-SLICE]: Bio::EnsEMBL::SLice - Represents the sequence that this
-                feature is on. The coordinates of the created feature are
-                relative to the start of the slice.
-  Arg [-START]: The start coordinate of this feature relative to the start
-                of the slice it is sitting on.  Coordinates start at 1 and
-                are inclusive.
-  Arg [-END]  : The end coordinate of this feature relative to the start of
-                the slice it is sitting on.  Coordinates start at 1 and are
-                inclusive.
-  Arg [-STRAND]: The orientation of this feature.  Valid values are 1,-1,0.
-  Arg [-SEQNAME] : A seqname to be used instead of the default name of the
-                of the slice.  Useful for features that do not have an
-                attached slice such as protein features.
-  Arg [-dbID]   : (optional) internal database id
-  Arg [-ADAPTOR]: (optional) Bio::EnsEMBL::DBSQL::BaseAdaptor
-  Example    : my $feature = Bio::EnsEMBL::AffyFeature->new(
-                 -PROBE => $affyProbe,
-                 -MISMATCHCOUNT => 0,
-                 -SLICE => $chr_1_slice,
-                 -START => 1_000_000,
-                 -END => 1_000_024,
-                 -STRAND => -1 ); 
-  Description: Constructor for AffyFeature objects. Mainly based on the Feature 
-               constructor.
-  Returntype : Bio::EnsEMBL::AffyFeature
-  Exceptions : none
-  Caller     : general
+  Arg [-PROBE]        : Bio::EnsEMBL::OligoProbe - probe
+        An OligoFeature must have a probe. This probe must already be stored if
+		you plan to store the feature.
+  Arg [-MISMATCHCOUNT]: int
+        Number of mismatches over the length of the probe. 
+  Arg [-SLICE]        : Bio::EnsEMBL::Slice
+        The slice on which this feature is.
+  Arg [-START]        : int
+        The start coordinate of this feature relative to the start of the slice
+		it is sitting on. Coordinates start at 1 and are inclusive.
+  Arg [-END]          : int
+        The end coordinate of this feature relative to the start of the slice
+		it is sitting on. Coordinates start at 1 and are inclusive.
+  Arg [-STRAND]       : int
+        The orientation of this feature. Valid values are 1, -1 and 0.
+  Arg [-dbID]         : (optional) int
+        Internal database ID.
+  Arg [-ADAPTOR]      : (optional) Bio::EnsEMBL::DBSQL::BaseAdaptor
+        Database adaptor.
+  Example    : my $feature = Bio::EnsEMBL::OligoFeature->new(
+				   -PROBE         => $probe,
+				   -MISMATCHCOUNT => 0,
+				   -SLICE         => $chr_1_slice,
+				   -START         => 1_000_000,
+				   -END           => 1_000_024,
+				   -STRAND        => -1,
+			   ); 
+  Description: Constructor for OligoFeature objects.
+  Returntype : Bio::EnsEMBL::OligoFeature
+  Exceptions : None
+  Caller     : General
   Status     : Medium Risk
-             : may be replaced with none affy specific methods
 
 =cut
-
 
 sub new {
-  my $caller = shift;
+	my $caller = shift;
 
-  #allow constructor to be called as class or object method
-  my $class = ref($caller) || $caller;
+	my $class = ref($caller) || $caller;
 
-  my $self = $class->SUPER::new(@_);
-
-  my($probe, $mismatchcount ) =
-      rearrange(['PROBE', 'MISMATCHCOUNT' ],
-		@_);
-
-  $self->{'probe'} = $probe;
-  $self->{'mismatchcount'} = $mismatchcount;
-
-  return $self;
+	my $self = $class->SUPER::new(@_);
+	
+	return $self;
 }
-
-
-=head2 new_fast
-
-  Args       : hashref with all internal attributes set
-  Example    : none
-  Description: Fast and dirty version of new. Only works because the code is 
-               very diciplined :-)
-  Returntype : Bio::EnsEMBL::AffyFeature
-  Exceptions : none
-  Caller     : general
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-
-sub new_fast {
-  my ( $class, $hashref )  = @_;
-
-  return bless( $hashref, $class );
-}
-
-
-
-=head2 probeset
-
-  Args       : none 
-  Example    : my $probes = $array->get_all_AffyProbes();
-  Description: The probeset for this feature. Shortcut for $feature->probe->probeset().
-               Possibly not needed.
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : At Risk
-             : This maybe removed. Use $feature->probe->probeset() to be safe
-
-=cut
-
-sub probeset {
-    my $self = shift;
-    $self->{'probeset'} = shift if( @_ );
-    if( $self->{'probe'} ) {
-	$self->{'probeset'} = $self->probe()->probeset();
-    }
-    return $self->{'probeset'};
-}
-
-
-
-=head2 mismatchcount
-
-  Args       : int $mismatchcount
-  Example    : none
-  Description: getter setter for attribute mismatchcount
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-sub mismatchcount {
-    my $self = shift;
-    $self->{'mismatchcount'} = shift if @_;
-    return $self->{'mismatchcount'};
-}
-
-
-=head2 probelength
-
-  Args       : none 
-  Example    : none
-  Description: The probelength is supposed to be the length of the match.
-               Doesnt really belong here, but iss kind of too much to store 
-               for each probe (probably 25 anyway)..
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-
-sub probelength {
-    my $self = shift;
-    $self->length();
-}
-
-
 
 =head2 probe
 
-  Args       : Bio::EnsEMBL::AffyProbe $probe
-  Example    : none
-  Description: getter / setter / lazy load of the probe attribute. Feature are retrieved
-               from the database without attached probes. They are lazy loaded on demand.
-               That means that retrieving probe information from Feature creates an SQL-query.
-  Returntype : Bio::EnsEMBL::AffyProbe
-  Exceptions : none
-  Caller     : general
+  Arg [1]    : Bio::EnsEMBL::AffyProbe - probe
+  Example    : my $probe = $feature->probe();
+  Description: Getter, setter and lazy loader of probe attribute for
+               OligoFeature objects. Features are retrieved from the database
+			   without attached probes, so retrieving probe information for a
+			   feature will involve another query.
+  Returntype : Bio::EnsEMBL::OligoProbe
+  Exceptions : None
+  Caller     : General
   Status     : Medium Risk
-             : may be replaced with none affy specific methods
 
 =cut
 
 sub probe {
     my $self = shift;
-    if( @_ ) {
 	my $probe = shift;
-	if( $probe ) {
-	    throw( "Need Bio::EnsEMBL::AffyProbe as probe" ) unless
-		(ref( $probe ) && $probe->isa( "Bio::EnsEMBL::AffyProbe" ));
-	}
-	$self->{'probe'} = $probe;
-    } else {
-	if( !defined $self->{'probe'} && 
-	    defined $self->adaptor() && 
-	    $self->dbID() ) {
-	    $self->{'probe'} = $self->adaptor()->db()->
-		get_AffyProbeAdaptor()->fetch_by_AffyFeature( $self );
-	}
+    if ($probe) {
+		if ( !ref $probe || !$probe->isa('Bio::EnsEMBL::AffyProbe') ) {
+			throw('Probe must be a Bio::EnsEMBL::AffyProbe object');
+		}
+		$self->{'probe'} = $probe;
     }
+	if ( !defined $self->{'probe'} && $self->dbID() && $self->adaptor() ) {
+	    $self->{'probe'} = $self->adaptor()->db()->get_AffyProbeAdaptor()->fetch_by_AffyFeature($self);
+	}
     return $self->{'probe'};
 }
 
 1;
-
-
-
 

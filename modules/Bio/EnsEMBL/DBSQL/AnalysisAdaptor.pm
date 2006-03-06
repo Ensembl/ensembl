@@ -187,6 +187,7 @@ sub feature_classes{
             Gene
             PredictionTranscript
             MarkerFeature
+            OligoFeature
             ProteinAlignFeature
             ProteinFeature
             QtlFeature

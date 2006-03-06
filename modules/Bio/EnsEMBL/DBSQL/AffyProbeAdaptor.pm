@@ -1,219 +1,82 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::AffyProbeAdaptor
+# Ensembl module for Bio::EnsEMBL::DBSQL::AffyProbeAdaptor
 #
-#
-# Copyright EMBL/EBI
-#
-# You may distribute this module under the same terms as perl itself
-
-# POD documentation - main docs before the code
+# You may distribute this module under the same terms as Perl itself
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::AffyProbeAdaptor
+Bio::EnsEMBL::DBSQL::AffyProbeAdaptor - A database adaptor for fetching and
+storing AffyProbe objects.
 
 =head1 SYNOPSIS
 
+my $apa = $db->get_AffyProbeAdaptor();
+
+my $probe = $opa->fetch_by_array_probeset_probename('Affy-1', 'Probeset-1', 'Probe-1');
+
 =head1 DESCRIPTION
+
+The AffyProbeAdaptor is a database adaptor for storing and retrieving
+AffyProbe objects.
+
+=head1 AUTHOR
+
+This module was originally written by Arne Stabenau, but was changed to be a
+subclass of OligoProbeAdaptor by Ian Sealy.
+
+This module is part of the Ensembl project: http://www.ensembl.org/
+
+=head1 CONTACT
+
+Post comments or questions to the Ensembl development list: ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 
 =cut
 
-package Bio::EnsEMBL::DBSQL::AffyProbeAdaptor;
-use vars qw(@ISA);
 use strict;
+use warnings;
 
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+package Bio::EnsEMBL::DBSQL::AffyProbeAdaptor;
+
+use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::AffyProbe;
+use Bio::EnsEMBL::DBSQL::OligoProbeAdaptor;
 
-use Bio::EnsEMBL::Utils::Exception qw(deprecate throw warning);
+use vars qw(@ISA);
+@ISA = qw(Bio::EnsEMBL::DBSQL::OligoProbeAdaptor);
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
-
-=head2 store
-
-  Arg [1]    : list of Bio::EnsEMBL::AffyProbe @probes
-               the affy probes to store in the database
-  Example    : $affy_probe_adaptor->store(@affy_probes);
-  Description: Stores a list of affy probe objects in the database. The method doesnt check
-               if a Probe is already in the database. It sets dbID and adaptor on storing.
-  Returntype : none
-  Exceptions : throw on arong argument type
-  Caller     : general
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-sub store {
-  my ( $self, @probes ) = @_;
-
-  if ( scalar(@probes) == 0 ) {
-    throw("Must call store with list of AffyFeatures");
-  }
-
-  my $sth = $self->prepare( "INSERT INTO affy_probe ( affy_probe_id, affy_array_id, probeset, name )" . "VALUES (?,?,?,?)" );
-
-  my $db = $self->db();
-
-PROBE:
-  foreach my $probe (@probes) {
-
-    if ( !ref $probe || !$probe->isa("Bio::EnsEMBL::AffyProbe") ) {
-      throw( "Probe must be an Ensembl AffyProbe, " . "not a [" . ref($probe) . "]" );
-    }
-
-    if ( $probe->is_stored($db) ) {
-      warning( "AffyProbe [" . $probe->dbID . "] is already stored in this database." );
-      next PROBE;
-    }
-
-    # all arrays in the probe need to be stored
-    my $arrays = $probe->get_all_AffyArrays();
-    my @stored_arrays;
-
-    for my $array (@$arrays) {
-      if ( defined $array->dbID() ) {
-        push( @stored_arrays, $array );
-      }
-    }
-
-    if ( !@stored_arrays ) {
-      warn("Probes need attached arrays to be stored in database");
-      next PROBE;
-    }
-
-    my $dbID;
-    my $sth;
-
-    for my $array (@stored_arrays) {
-      if ( defined $dbID ) {
-        $sth = $self->prepare( "INSERT INTO affy_probe( affy_probe_id," . "affy_array_id, name, probeset ) " . "VALUES( ?,?,?,? )" );
-	$sth->bind_param(1,$dbID,SQL_INTEGER);
-	$sth->bind_param(2,$array->dbID,SQL_INTEGER);
-	$sth->bind_param(3,$probe->get_probename($array->name()),SQL_VARCHAR);
-	$sth->bind_param(4,$probe->probeset,SQL_VARCHAR);
-        $sth->execute();
-      } else {
-        $sth = $self->prepare( "INSERT INTO affy_probe( " . "affy_array_id, name, probeset ) " . "VALUES( ?,?,? )" );
-	$sth->bind_param(1,$array->dbID,SQL_INTEGER);
-	$sth->bind_param(2,$probe->get_probename($array->name()),SQL_VARCHAR);
-	$sth->bind_param(3,$probe->probeset,SQL_VARCHAR);
-        $sth->execute();
-        $dbID = $sth->{'mysql_insertid'};
-        $probe->dbID($dbID);
-        $probe->adaptor($self);
-      }
-    }
-  }
-}
-
-=head2 fetch_by_array_probeset_probename
-
-  Arg [1]    : string $affy_array_name
-  Arg [2]    : string $affy_probeset_name
-  Arg [3]    : string $affy_probe_name
-  Example    : none
-  Description: Returns the (unique) affy probe for given combination of
-               affy feature and affy_probeset
-  Returntype : a single Bio::EnsEMBL::AffyProbe
-  Exceptions : none
-  Caller     : general
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-sub fetch_by_array_probeset_probe {
-  my $self     = shift;
-  my $affy_array_name = shift;
-  my $affy_probeset_name = shift;
-  my $affy_probe_name = shift;
-
-  my $statement = 
-    $self->prepare(
-      "select affy_probe_id from affy_probe, affy_array where
-       affy_probe.affy_array_id = affy_probe.affy_array_id and
-       affy_array.name = ? and affy_probe.probeset = ? and affy_probe.name = ?"
-    );
-  
-  $statement->bind_param(1,$affy_array_name,SQL_VARCHAR);
-  $statement->bind_param(2,$affy_probeset_name,SQL_VARCHAR);
-  $statement->bind_param(3,$affy_probe_name,SQL_VARCHAR);
-  $statement->execute();
-
-  my ($affy_probe_id) = $statement->fetchrow();
-
-  if($affy_probe_id){
-    return $self->fetch_by_dbID($affy_probe_id);
-  }else{
-    return undef;
-  }
-}
-
-=head2 fetch_all_by_probeset
-
-  Arg [1]    : string $probesetname
-  Example    : none
-  Description: Returns all the probes for given probesetname
-  Returntype : listref of Bio::EnsEMBL::AffyProbe
-  Exceptions : none
-  Caller     : general
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-sub fetch_all_by_probeset {
-  my $self     = shift;
-  my $probeset = shift;
-
-  return $self->generic_fetch("ap.probeset = '$probeset'");
-}
 
 =head2 fetch_all_by_AffyArray
 
-  Arg [1]    : Bio::EnsEMBL::AffyArray $array
-  Example    : none
-  Description: Fetches all Arrays that given probe is part of.
-  Returntype : listref of Bio::EnsEMBL::AffyFeature
-  Exceptions : none
-  Caller     : AffyProbe->get_all_AffyFeatures()
+  Arg [1]    : Bio::EnsEMBL::AffyArray
+  Example    : my @probes = @{$apa->fetch_all_by_AffyArray($array)};
+  Description: Fetch all probes on a particular array.
+  Returntype : Listref of Bio::EnsEMBL::AffyProbe objects.
+  Exceptions : None
+  Caller     : General
   Status     : Medium Risk
-             : may be replaced with none affy specific methods
 
 =cut
 
 sub fetch_all_by_AffyArray {
-  my $self  = shift;
-  my $array = shift;
+	my $self  = shift;
+	my $array = shift;
 
-  if ( !ref($array) || !$array->isa("Bio::EnsEMBL::AffyArray") ) {
-    warn("Argument must be a stored AffyArray");
-    return [];
-  }
-  my $array_id = $array->dbID();
-  if ( !defined $array_id ) {
-    warn("Argument must be a stored AffyArray");
-    return [];
-  }
-
-  return $self->generic_fetch("ap.affy_array_id = $array_id");
+	return $self->fetch_all_by_Array($array);
 }
 
 =head2 fetch_by_AffyArray
 
-  Arg [1]    : Bio::EnsEMBL::AffyArray $array
-  Example    : none
-  Description: Fetches all Arrays that given probe is part of. Included
-             : for backwards compatibility - should have been called
-             : fetch_all_by_AffyArray
-  Returntype : listref of Bio::EnsEMBL::AffyFeature
-  Exceptions : none
-  Caller     : AffyProbe->get_all_AffyFeatures()
-  Status     : High risk
-             : Likely to be removed - use fetch_all_by_AffyArray instead.
+  Arg [1]    : Bio::EnsEMBL::AffyArray
+  Example    : my @probes = @{$apa->fetch_by_AffyArray($array)};
+  Description: Fetch all probes on a particular array. This method was misnamed
+               and is deprecated.
+  Returntype : Listref of Bio::EnsEMBL::AffyProbe objects.
+  Exceptions : None
+  Caller     : General
+  Status     : High Risk
+             : Likely to be removed - use fetch_all_by_AffyArray instead
 
 =cut
 
@@ -221,21 +84,20 @@ sub fetch_by_AffyArray {
   my $self  = shift;
   my $array = shift;
 
-  deprecate("AffyProbeAdaptor->fetch_by_AffyArray() should not be used, use fetch_all_by_AffyArray() instead.");
+  deprecate('fetch_all_by_Array() should be used instead of the deprecated fetch_by_AffyArray().');
 
-  return $self->fetch_all_by_AffyArray($array);
+  return $self->fetch_all_by_Array($array);
 }
 
-=head2 fetch_all_by_AffyFeature
+=head2 fetch_by_AffyFeature
 
-  Arg [1]    : Bio::EnsEMBL::AffyProbe $probe
-  Example    : none
-  Description: Fetches all features that given probe creates.
-  Returntype : listref of Bio::EnsEMBL::AffyFeature
-  Exceptions : none
-  Caller     : AffyProbe->get_all_AffyFeatures()
+  Arg [1]    : Bio::EnsEMBL::AffyFeature
+  Example    : my $probe = $apa->fetch_by_AffyFeature($feature);
+  Description: Returns the probe that created a particular feature.
+  Returntype : Bio::EnsEMBL::AffyProbe
+  Exceptions : Throws if argument is not a Bio::EnsEMBL::AffyFeature object
+  Caller     : General
   Status     : Medium Risk
-             : may be replaced with none affy specific methods
 
 =cut
 
@@ -243,112 +105,92 @@ sub fetch_by_AffyFeature {
   my $self    = shift;
   my $feature = shift;
 
-  if ( !ref($feature)
-    || !$feature->isa("Bio::EnsEMBL::AffyFeature")
-    || !$feature->{'_probe_id'} )
-  {
-    throw("Need AffyFeature from database as argument");
-  }
-
-  $self->fetch_by_dbID( $feature->{'_probe_id'} );
-}
-
-=head2 _tablename
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns the names, aliases of the tables to use for queries
-  Returntype : list of listrefs of strings
-  Exceptions : none
-  Caller     : internal
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-sub _tables {
-  my $self = shift;
-
-  return [ 'affy_probe', 'ap' ];
-}
-
-=head2 _columns
-
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED implementation of superclass abstract method
-               returns a list of columns to use for queries
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : internal
-  Status     : Medium Risk
-             : may be replaced with none affy specific methods
-
-=cut
-
-sub _columns {
-  my $self = shift;
-
-  return qw( ap.affy_probe_id ap.affy_array_id ap.probeset ap.name );
-
+  return $self->fetch_by_OligoFeature($feature);
 }
 
 =head2 _objs_from_sth
 
-  Arg [1]    : hash reference $hashref
-  Example    : none
+  Arg [1]    : DBI statement handle object
+  Example    : None
   Description: PROTECTED implementation of superclass abstract method.
-               creates SimpleFeatures from an executed DBI statement handle.
-  Returntype : list reference to Bio::EnsEMBL::AffyFeature objects
-  Exceptions : none
-  Caller     : internal
+               Creates OligoProbe objects from an executed DBI statement
+			   handle.
+  Returntype : Listref of Bio::EnsEMBL::AffyProbe objects
+  Exceptions : None
+  Caller     : Internal
   Status     : Medium Risk
-             : may be replaced with none affy specific methods
 
 =cut
 
 sub _objs_from_sth {
-  my ( $self, $sth, $mapper, $dest_slice ) = @_;
-
-  my ( @result, $current_dbid, $probe_id, $array_id, $probeset, $name );
-  my ( $array,  %array_cache );
-
-  $sth->bind_columns( \$probe_id, \$array_id, \$probeset, \$name );
-  my $probe;
-
-  while ( $sth->fetch() ) {
-    $array = $array_cache{$array_id} ||= $self->db->get_AffyArrayAdaptor()->fetch_by_dbID($array_id);
-    if ( !$current_dbid || ($current_dbid != $probe_id) ) {
-
-      # make a new probe
-      $probe = Bio::EnsEMBL::AffyProbe->new( -array => $array, -probeset => $probeset, -name => $name, -dbID => $probe_id, -adaptor => $self );
-      push @result, $probe;
-      $current_dbid = $probe_id;
-    } else {
-      $probe->add_Array_probename( $array, $name );
-    }
-  }
-  return \@result;
+	my ($self, $sth) = @_;
+	
+	my (@result, $current_dbid, $probe_id, $array_id, $probeset, $name, $description, $probelength);
+	my ($array, %array_cache);
+	
+	$sth->bind_columns( \$probe_id, \$array_id, \$probeset, \$name, \$description, \$probelength );
+	
+	my $probe;
+	while ( $sth->fetch() ) {
+		$array = $array_cache{$array_id} || $self->db->get_AffyArrayAdaptor()->fetch_by_dbID($array_id);
+		if (!$current_dbid || $current_dbid != $probe_id) {
+			# New probe
+			$probe = Bio::EnsEMBL::AffyProbe->new(
+				-name        => $name,
+				-array       => $array,
+				-probeset    => $probeset,
+				-description => $description,
+				-probelength => $probelength,
+				-dbID        => $probe_id,
+				-adaptor     => $self,
+			);
+			push @result, $probe;
+			$current_dbid = $probe_id;
+		} else {
+			# Extend existing probe
+			$probe->add_Array_probename($array, $name);
+		}
+	}
+	return \@result;
 }
 
 =head2 list_dbIDs
 
   Arg [1]    : none
-  Example    : @feature_ids = @{$simple_feature_adaptor->list_dbIDs()};
-  Description: Gets an array of internal ids for all simple features in the current db
-  Returntype : list of ints
-  Exceptions : none
+  Example    : my @probe_ids = @{$apa->list_dbIDs()};
+  Description: Gets an array of internal IDs for all AffyProbe objects in the
+               current database.
+  Returntype : List of ints
+  Exceptions : None
   Caller     : ?
   Status     : Medium Risk
-             : may be replaced with none affy specific methods
 
 =cut
 
 sub list_dbIDs {
-  my ($self) = @_;
+	my ($self) = @_;
 
-  return $self->_list_dbIDs("affy_probe");
+	#return $self->_list_dbIDs('oligo_probe');
+	# Can't use _list_dbIDs because only want OligoProbe objects on arrays of type AFFY
+	
+	my @out;
+	my $sql = "
+		SELECT DISTINCT op.oligo_probe_id
+		FROM   oligo_probe op, oligo_array oa
+		WHERE  op.oligo_array_id=oa.oligo_array_id
+		AND    oa.type='AFFY'
+	";
+	my $sth = $self->prepare($sql);
+	$sth->execute;
+	
+	while (my ($id) = $sth->fetchrow() ) {
+		push @out, $id;
+	}
+	
+	$sth->finish;
+	
+	return \@out;
 }
 
 1;
+
