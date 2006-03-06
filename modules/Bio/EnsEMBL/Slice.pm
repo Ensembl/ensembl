@@ -69,7 +69,7 @@ use Bio::EnsEMBL::ProjectionSegment;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::MergedAdaptor;
 
-#use Bio::EnsEMBL::StrainSlice;
+use Bio::EnsEMBL::StrainSlice;
 #use Bio::EnsEMBL::IndividualSlice;
 #use Bio::EnsEMBL::IndividualSliceFactory;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
