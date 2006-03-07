@@ -126,7 +126,7 @@ sub run {
   my $flybase_source_id = $self->get_source($external_source_db_name);
 
   if(!$self->create_xrefs($flybase_source_id, $file)){
-    return 1;
+	return 1;
   }
 
   my @xrefs = @{$self->xrefs};
@@ -167,17 +167,15 @@ sub create_xrefs {
   print STDERR "starting to parse $file...." ;
   if(!open(GFF, $file)){
     print "ERROR: Can't open the GFF file $file\n";
-    return 1;
+    return 0;
   }
   while (<GFF>) {
     chomp;
-    my @col = split /\s+/;
+	my @col = split /\s+/;
     if($col[3]){
-     
 
       # test if line contains information for object wanted (CDS,mRNA,gene,..)
       if ( $self->line_contains_object_to_process( $col[2] ) ){
-
  	my $type = $self->set_ensembl_object_type($col[2]);
 
 	my @desc = split /\;/,$col[8];
@@ -188,24 +186,24 @@ sub create_xrefs {
 	}
 #	throw("parse-error: There seems to be no Identifier: $cgid. Suspicous!") unless ($cgid=~m/ID=/);
 	$cgid =~s/ID=//g;
-
 	# set up xref-entry for EVERY single item
 	foreach my $item (@desc) {
-
 
 	  # make all xrefs for type "Name=" in desc-field
 	  $self->make_name_xref($item,$cgid,$type);
 
 	  $self->set_flybase_synonyms($item,$cgid);
-
+	  
 	  # make all xrefs for type "Name=" in desc-field
 	  $self->make_dbxref_xref($item,$cgid,$type);
 	}
       }
+	  
     }
+	
   }
   close (GFF);
-  return 0;
+  return 1;
 }
 
 sub set_ensembl_object_type{
@@ -307,7 +305,6 @@ sub set_flybase_synonyms {
     my @syns;
     push @syns, @{$s1} if $s1;
     push @syns, @{$s2} if $s2;
-    
     $self->add_synonym($cgid,\@syns);
     return \@syns;
   }
@@ -318,11 +315,9 @@ sub make_name_xref{
   my ($self,$item,$cgid,$type) = @_;
   my $xref=undef;
   my $target = $self->gff_name ;
-
   if($item=~m/$target/){  ##Name=
-
+    #print "having $$gff_gene_name[0]\n" ;
     my $gff_gene_name = get_fields ( $item, $target ) ;
-    #print "having $$gff_gene_name[0]\n" ; 
     throw("there is more than one id for item $item\n") if $$gff_gene_name[1];
     $xref->{ACCESSION} = $$gff_gene_name[0];
     $xref->{LABEL} = $$gff_gene_name[0];
@@ -332,11 +327,11 @@ sub make_name_xref{
       $type_s = $type."s";
     }
     $xref->{SOURCE_ID} =  $self->get_source($self->source_name_name_prefix().$type_s);
-    $self->add_xref($xref);
+	$self->add_xref($xref);
   }
   # only allow Name on genes. This is a fix for Biomart really.
   if (defined($xref) and $type){
-    my $direct_xref;
+	my $direct_xref;
     $direct_xref = $xref ;
     $direct_xref->{ENSEMBL_STABLE_ID} = $cgid;
     $direct_xref->{ENSEMBL_TYPE} = $type;
