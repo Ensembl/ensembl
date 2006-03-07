@@ -40,7 +40,7 @@ sub run {
     $xref->{SEQUENCE}      = $seq->seq;
     $xref->{SOURCE_ID}     = $source_id;
     $xref->{SPECIES_ID}    = $species_id;
-    $xref->{SEQUENCE_TYPE} = 'peptide';
+    $xref->{SEQUENCE_TYPE} = $seq->alphabet eq 'protein' ? 'peptide' : 'dna';
     $xref->{STATUS}        = 'experimental';
     if( my $v = $seq->version ){ $xref->{VERSION} = $v };
     push @xrefs, $xref;
