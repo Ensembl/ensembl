@@ -2443,6 +2443,9 @@ GENE
   print FILE "UPDATE transcript t, xref x, external_db e SET t.status = \'KNOWN\' ";
   print FILE    "WHERE t.display_xref_id = x.xref_id ";
   print FILE    "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
+  print FILE "UPDATE transcript t, xref x, external_db e SET t.status = \'KNOWN\' ";
+  print FILE    "WHERE t.display_xref_id = x.xref_id ";
+  print FILE    "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWNXREF\';\n";
   close(FILE);
 
   my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
