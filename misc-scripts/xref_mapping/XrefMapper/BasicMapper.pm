@@ -1284,20 +1284,22 @@ sub dump_orphan_xrefs() {
 
   my ($self, $xref_id_offset) = @_;
 
-  my $count;
+  my $count = 0;
 
   open (XREF, ">>" . $self->core->dir() . "/xref.txt");
 
   # need a triple left-join
 
-  my $sql = 
-    "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id ".
-      "FROM xref x ".
-      "LEFT JOIN primary_xref px ON px.xref_id=x.xref_id ".
-      "LEFT JOIN dependent_xref dx ON dx.dependent_xref_id=x.xref_id ".
-      "LEFT JOIN direct_xref dirx ON dirx.general_xref_id=x.xref_id ".
-	 "WHERE px.xref_id IS NULL AND dx.dependent_xref_id IS NULL ".
-	    "AND dirx.general_xref_id is NULL";
+  my $sql = q[
+    SELECT x.xref_id, x.accession, x.version, x.label, x.description, 
+           x.source_id, x.species_id 
+      FROM xref x 
+      LEFT JOIN primary_xref px   ON px.xref_id=x.xref_id 
+      LEFT JOIN dependent_xref dx ON dx.dependent_xref_id=x.xref_id 
+      LEFT JOIN direct_xref dirx  ON dirx.general_xref_id=x.xref_id 
+     WHERE px.xref_id           IS NULL 
+       AND dx.dependent_xref_id IS NULL 
+       AND dirx.general_xref_id is NULL ];
 
   my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
@@ -1651,7 +1653,7 @@ sub dump_core_xrefs {
   # Cache synonyms for later use
   # Do one big query to get a list of all the synonyms; note each xref may have
   # more than one synonym so they are stored in a hash of lists
-  my $syn_count;
+  my $syn_count = 0;
   my %synonyms;
   my $syn_sth = $self->xref->dbc->prepare("SELECT xref_id, synonym FROM synonym");
   $syn_sth->execute();
