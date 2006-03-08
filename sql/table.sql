@@ -655,13 +655,10 @@ CREATE TABLE xref (
    display_label              VARCHAR(128) not null,
    version                    VARCHAR(10) DEFAULT '' NOT NULL,
    description                VARCHAR(255),
-   info_type                  ENUM('PROJECTION', 'MISC'),
-   info_text                  VARCHAR(255),
 
    PRIMARY KEY( xref_id ),
    UNIQUE KEY id_index( dbprimary_acc, external_db_id ),
-   KEY display_index ( display_label ),
-   KEY info_type_idx ( info_type )
+   KEY display_index ( display_label )
 
 ) COLLATE=latin1_swedish_ci;
 
@@ -688,7 +685,7 @@ CREATE TABLE external_db (
 
   external_db_id 	      INT not null,
   db_name                     VARCHAR(27) NOT NULL,
-  db_release                  VARCHAR(40) NOT NULL,
+  release                     VARCHAR(40) NOT NULL,
   status                      ENUM ('KNOWNXREF','KNOWN','XREF','PRED','ORTH', 'PSEUDO') not null,
 
   dbprimary_acc_linkable      BOOLEAN DEFAULT 1 NOT NULL,
@@ -1339,43 +1336,3 @@ CREATE TABLE regulatory_search_region (
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
-################################################################################
-#
-# Table structure for table 'unmapped_object'
-#
-# Describes why a particular external entity was not mapped to an ensembl one.
-
-CREATE TABLE unmapped_object (
-
-  unmapped_object_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  type                  ENUM('xref', 'cDNA', 'Marker') NOT NULL,
-  analysis_id           INT(10) UNSIGNED NOT NULL,
-  external_db_id        INT NOT NULL,
-  identifier            VARCHAR(255) NOT NULL,
-  unmapped_reason_id    SMALLINT(5) UNSIGNED NOT NULL,
-  query_score           DOUBLE,
-  target_score          DOUBLE,
-  ensembl_id            INT(10) unsigned default '0',
-  ensembl_object_type   ENUM('RawContig','Transcript','Gene','Translation') collate latin1_bin default 'RawContig',
-  PRIMARY KEY            ( unmapped_object_id ),
-  KEY                    id_idx( identifier ),
-  KEY                    anal_idx( analysis_id ),
-  KEY                    anal_exdb_idx( analysis_id, external_db_id)
-
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
-
-################################################################################
-#
-# Table structure for table 'unmapped_reason'
-#
-# Describes the reason why a mapping failed.
-
-CREATE TABLE unmapped_reason (
-
-  unmapped_reason_id     SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
-  summary_description    VARCHAR(255),
-  full_description       VARCHAR(255),
-
-  PRIMARY KEY ( unmapped_reason_id )
-
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
