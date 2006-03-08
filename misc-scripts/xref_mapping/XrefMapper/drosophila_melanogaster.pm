@@ -1,10 +1,12 @@
 package XrefMapper::drosophila_melanogaster;
 
 use  XrefMapper::BasicMapper;
-
+use strict;
 use vars '@ISA';
 
 @ISA = qw{ XrefMapper::BasicMapper };
+
+use XrefMapper::BasicMapper qw(%stable_id_to_internal_id %object_xref_mappings %xref_to_source %xref_accessions %source_to_external_db);
 
 sub get_set_lists {
 
@@ -70,7 +72,7 @@ sub build_display_xrefs {
   # go through each object/xref mapping and store the best ones as we go along
   my %obj_to_best_xref;
 
-  OBJECT: foreach my $key (keys %object_xref_mappings) {
+  OBJECT: foreach my $key (keys %XrefMapper::BasicMapper::object_xref_mappings) {
 
     my ($obj_type, $object_id) = split /\|/, $key;
 
@@ -78,24 +80,24 @@ sub build_display_xrefs {
 
     # if the ensembl_object has more than one associated xref,
     # use the $first_source if present, otherwise the $second_source
-    my @xrefs = @{$object_xref_mappings{$key}};
+    my @xrefs = @{$XrefMapper::BasicMapper::object_xref_mappings{$key}};
     my ($best_xref);
     foreach my $xref (@xrefs) {
 
-      my $source = $xref_to_source{$xref};
+      my $source = $XrefMapper::BasicMapper::xref_to_source{$xref};
       if ($source) {
 
 	if ($source =~ /$first_source/) {
-	  $obj_to_best_xref{$key} = $xref;
+	  $XrefMapper::BasicMapper::obj_to_best_xref{$key} = $xref;
 	  next OBJECT;
 	}
 
 	if ($source =~ /$second_source/) {
-	  $obj_to_best_xref{$key} = $best_xref;
+	  $XrefMapper::BasicMapper::obj_to_best_xref{$key} = $best_xref;
 	}
 
       } else {
-	warn("Couldn't find a source for xref id $xref " . $xref_accessions{$xref_id} . "\n");
+	warn("Couldn't find a source for xref id $xref " . $XrefMapper::BasicMapper::xref_accessions{$xref} . "\n");
       }
     }
 
@@ -104,10 +106,10 @@ sub build_display_xrefs {
   open (DX, ">$dir/" . lc($type) . "_display_xref.sql");
   open (DX_TXT, ">$dir/" . lc($type) . "_display_xref.txt");
 
-  foreach my $key (keys %obj_to_best_xref) {
+  foreach my $key (keys %XrefMapper::BasicMapper::obj_to_best_xref) {
 
     my ($obj_type, $object_id) = split /\|/, $key;
-    $best_xref = $obj_to_best_xref{$key};
+    my $best_xref = $XrefMapper::BasicMapper::obj_to_best_xref{$key};
     # Write record with xref_id_offset
     print DX "UPDATE " . lc($type) . " SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE " . lc($type) . "_id=" . $object_id . ";\n";
     print DX_TXT ($best_xref+$xref_id_offset) . "\t" . $object_id . "\n";
@@ -143,10 +145,10 @@ sub build_xref_to_source_mappings {
   $sth->bind_columns(\$xref_id, \$source_name);
 
   while ($sth->fetch()) {
-    $xref_to_source{$xref_id} = $source_name;
+    $XrefMapper::BasicMapper::xref_to_source{$xref_id} = $source_name;
   }
 
-  print "Got " . scalar(keys %xref_to_source) . " xref-source mappings\n";
+  print "Got " . scalar(keys %XrefMapper::BasicMapper::xref_to_source) . " xref-source mappings\n";
 
 }
 
@@ -158,10 +160,9 @@ sub read_direct_xref_mappings {
   my ($self) = @_;
 
   # will need stable_id->internal_id mapping
-  $stable_id_to_internal_id = $self->build_stable_id_to_internal_id_hash() if (!$stable_id_to_internal_id);
+#  $self->build_stable_id_to_internal_id_hash() if (!$stable_id_to_internal_id);
 
   print "Reading direct xref mappings\n";
-
   # SQL / statement handle for getting all direct xrefs
   my $xref_sql = "SELECT dx.general_xref_id, dx.ensembl_stable_id, dx.type, dx.linkage_xref, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM direct_xref dx, xref x WHERE dx.general_xref_id=x.xref_id";
   my $xref_sth = $self->xref->dbc->prepare($xref_sql);
@@ -174,21 +175,25 @@ sub read_direct_xref_mappings {
   my $n = 0;
 
   # Get source-external_db mappings
-  %source_to_external_db = $self->map_source_to_external_db();
-
+  %XrefMapper::BasicMapper::source_to_external_db = $self->map_source_to_external_db();
+  my $missed =0;
   while ($xref_sth->fetch()) {
 
-    my $external_db_id = $source_to_external_db{$source_id};
-    if ($external_db_id) {
+    my $external_db_id = $XrefMapper::BasicMapper::source_to_external_db{$source_id};
+    if (defined($external_db_id)) {
 
-      my $ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$ensembl_stable_id};
+      my $ensembl_internal_id = $XrefMapper::BasicMapper::stable_id_to_internal_id{$type}{$ensembl_stable_id};
 
       if ($ensembl_internal_id) {
 
 	my $key = $type . "|" . $ensembl_internal_id;
-	push @{$object_xref_mappings{$key}}, $xref_id;
+	push @{$XrefMapper::BasicMapper::object_xref_mappings{$key}}, $xref_id;
 	$n++;
 
+      }
+      else{
+#	print "$type-$ensembl_stable_id NOT FOUND\n";
+	$missed++;
       }
     }
     else{
@@ -197,7 +202,7 @@ sub read_direct_xref_mappings {
   }
 
   print "Read $n direct_xref mappings\n";
-
+  print "Ignored $missed direct xrefs as the stable id could not be found\n";
 }
 
 1;

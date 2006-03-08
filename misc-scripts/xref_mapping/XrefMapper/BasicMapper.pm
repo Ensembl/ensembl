@@ -8,8 +8,10 @@ use IPC::Open3;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Translation;
 use XrefMapper::db;
-use vars '@ISA';
+use vars qw(@ISA @EXPORT_OK);
 use strict;
+@EXPORT_OK = qw (%stable_id_to_internal_id %object_xref_mappings %xref_to_source %xref_accessions %source_to_external_db);
+use vars qw (%stable_id_to_internal_id %object_xref_mappings %xref_to_source %xref_accessions %source_to_external_db);
 
 =head1 NAME
 
@@ -38,15 +40,10 @@ my %method_target_threshold;
 my %translation_to_transcript;
 my %transcript_to_translation;
 my %genes_to_transcripts;
-my %xref_to_source;
-my %stable_id_to_internal_id;
 my %internal_id_to_stable_id;
-my %object_xref_mappings;
 my %object_xref_identities;
 my %xref_descriptions;
-my %xref_accessions;
 my %xref_labels;
-my %source_to_external_db;
 my %xrefs_written;
 my %object_xrefs_written;
 my %failed_xref_mappings;
@@ -1523,7 +1520,6 @@ sub build_stable_id_to_internal_id_hash {
 
       $stable_id_to_internal_id{$type}{$stable_id} = $internal_id;
       $internal_id_to_stable_id{$type}{$internal_id} = $stable_id;
-
     }
 
   }
@@ -1804,7 +1800,7 @@ sub dump_core_xrefs {
 
   # calculate display_xref_ids for transcripts and genes
   my $transcript_display_xrefs = $self->build_transcript_display_xrefs($xref_id_offset);
-
+  
   $self->build_genes_to_transcripts();
 
   $self->build_gene_display_xrefs($transcript_display_xrefs);
@@ -2436,15 +2432,19 @@ GENE
   open (FILE, ">$file");
   print FILE "UPDATE transcript SET status=\'NOVEL\';\n";
   print FILE "UPDATE gene SET status=\'NOVEL\';\n";
+
   print FILE "UPDATE gene g, xref x, external_db e SET g.status = \'KNOWN\' ";
   print FILE    "WHERE g.display_xref_id = x.xref_id ";
   print FILE     "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
+
   print FILE "UPDATE gene g, xref x, external_db e SET g.status = \'KNOWN\' ";
   print FILE    "WHERE g.display_xref_id = x.xref_id ";
   print FILE     "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWNXREF\';\n";
+
   print FILE "UPDATE transcript t, xref x, external_db e SET t.status = \'KNOWN\' ";
   print FILE    "WHERE t.display_xref_id = x.xref_id ";
   print FILE    "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
+
   print FILE "UPDATE transcript t, xref x, external_db e SET t.status = \'KNOWN\' ";
   print FILE    "WHERE t.display_xref_id = x.xref_id ";
   print FILE    "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWNXREF\';\n";
