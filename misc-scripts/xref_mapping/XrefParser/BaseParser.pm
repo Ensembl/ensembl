@@ -976,8 +976,8 @@ sub validate_sources {
 
   foreach my $source (@sources) {
 
-    $sth->execute(lc($source));
-    if ($sth->fetchrow_array()) {
+    my $rv = $sth->execute(lc($source));
+    if ( $rv > 0 ) {
       print "Source $source is valid\n";
     } else {
       print "\nSource $source is not valid; valid sources are:\n";
