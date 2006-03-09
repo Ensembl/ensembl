@@ -123,6 +123,7 @@ my $API_VERSION = 38;
 
   Arg [1]    : (optional) string $arg file to load the registry from
   Arg [2]    : (optional) string if set prints out messages about conf file used.
+  Arg [3]    : (optional) string if not 0 will print out all information
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : none
   Exceptions : none
@@ -389,7 +390,7 @@ sub get_all_DBAdaptors{
     $species = $class->get_alias($species);
   }
   foreach my $dba (@{$registry_register{'_DBA'}}){
-    if(!defined($species) || $species eq $dba->species){
+    if(!defined($species) || lc($species) eq lc($dba->species)){
       if(!defined($group) || lc($group) eq lc($dba->group)){
 	push @ret, $dba;
       }
@@ -432,8 +433,9 @@ sub get_all_DBAdaptors_by_connection{
 
   Arg [1]    : name of the species to add the adaptor to in the registry.
   Arg [2]    : name of the group to add the adaptor to in the registry.
-  Arg [3]    : The adaptor to be added to the registry as a DNA adaptor.
-  Example    : Bio::EnsEMBL::Registry->add_DNAAdaptor("Human", "core", $dnaAdap);
+  Arg [3]    : name of the species to get the dna from
+  Arg [4]    : name of the group to get the dna from
+  Example    : Bio::EnsEMBL::Registry->add_DNAAdaptor("Human", "estgene", "Human", "core");
   Returntype : none
   Exceptions : none
   Status     : Stable
@@ -511,7 +513,7 @@ sub add_adaptor{
 # which should be a warning for now
 #
 
-  if(defined($reset)){ # JUST REST THE HASH VLAUE NO MORE PROCESSING NEEDED
+  if(defined($reset)){ # JUST REST THE HASH VALUE NO MORE PROCESSING NEEDED
     $registry_register{$species}{lc($group)}{lc($type)} = $adap;
     return;
   }
@@ -711,7 +713,6 @@ sub get_alias{
 =head2 alias_exists
 
   Arg [1]    : name of the possible alias to get species for
-  Arg [2]    : if set will not throw if not found.
   Example    : Bio::EnsEMBL::Registry->alias_exists("Human");
   Description: does the species name exist.
   Returntype : 1 if exists else 0
