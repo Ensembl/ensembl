@@ -67,7 +67,10 @@ use vars qw(@ISA);
 
   Arg [..]   : List of named arguments:
                -NAME      - The name of the coordinate system
-               -VERSION   - (optional) The version of the coordinate system
+               -VERSION   - (optional) The version of the coordinate system.
+                            Note that if the version passed in is undefined,
+                            it will be set to the empty string in the
+                            resulting CoordSystem object.
                -RANK      - The rank of the coordinate system. The highest
                             level coordinate system should have rank 1, the
                             second highest rank 2 and so on.  An example of
