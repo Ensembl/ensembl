@@ -46,11 +46,12 @@ my $reg = "Bio::EnsEMBL::Registry";
 =head2 new
 
   Example      : $MergedAdaptor = new 
-               : Bio::EnsEMBL::DBSQL::MergedAdaptor(-species=> 'human', -type =>'Population');
+               : Bio::EnsEMBL::DBSQL::MergedAdaptor(-species=> 'human', -type =>'Population', -groups => 'Sanger,Ensembl');
   Arg [SPECIES]: (optional) string 
                   species name to get adaptors for
   Arg [TYPE]   : (optional) string 
                   type to get adaptors for
+  Arg [GROUPS] : (optional) list of groups, separated by comma
 
   Description: Creates a new MergedAdaptor
   Returntype : Bio::EnsEMBL::DBSQL::MergedAdaptor
@@ -67,15 +68,27 @@ sub new {
   my $self ={};
   bless $self,$class;
 
-  my ($species, $type) =
-    rearrange([qw(SPECIES TYPE)], @args);
+  my ($species, $type, $groups) =
+    rearrange([qw(SPECIES TYPE GROUPS)], @args);
 
   if(!defined($species)|| !defined($type)){
     die "Species and Type must be specified\n";
   }
-  
-  my @adaps = @{$reg->get_all_adaptors(-species => $species, -type => $type)};
 
+  my @adaps;
+  if (!defined ($groups)){
+      #get all adaptors for that species and type
+      @adaps = @{$reg->get_all_adaptors(-species => $species, -type => $type)};
+  }
+  else{
+      #get only specified adaptors for the particular groups
+      $groups =~ s/\s+//g;
+      my @groups = split /,/,$groups; #ge the list of groups in an array
+      foreach my $group (@groups){
+	  push @adaps, $reg->get_adaptor($species,$group,$type);
+      }
+  }
+ 
   my @list =();
   push(@list,@adaps);
   $self->{'list'}= \@list;
