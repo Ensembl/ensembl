@@ -61,7 +61,6 @@ sub build_display_xrefs {
 
   print "Building " . lc($type) . " display_xrefs for drosophila\n";
 
-
   my $dir = $self->core->dir();
 
   $self->read_direct_xref_mappings();
@@ -71,6 +70,7 @@ sub build_display_xrefs {
 
   # go through each object/xref mapping and store the best ones as we go along
   my %obj_to_best_xref;
+
 
   OBJECT: foreach my $key (keys %XrefMapper::BasicMapper::object_xref_mappings) {
 
@@ -88,12 +88,12 @@ sub build_display_xrefs {
       if ($source) {
 
 	if ($source =~ /$first_source/) {
-	  $XrefMapper::BasicMapper::obj_to_best_xref{$key} = $xref;
+	  $obj_to_best_xref{$key} = $xref;
 	  next OBJECT;
 	}
 
 	if ($source =~ /$second_source/) {
-	  $XrefMapper::BasicMapper::obj_to_best_xref{$key} = $best_xref;
+	  $obj_to_best_xref{$key} = $xref;
 	}
 
       } else {
@@ -106,10 +106,10 @@ sub build_display_xrefs {
   open (DX, ">$dir/" . lc($type) . "_display_xref.sql");
   open (DX_TXT, ">$dir/" . lc($type) . "_display_xref.txt");
 
-  foreach my $key (keys %XrefMapper::BasicMapper::obj_to_best_xref) {
+  foreach my $key (keys %obj_to_best_xref) {
 
     my ($obj_type, $object_id) = split /\|/, $key;
-    my $best_xref = $XrefMapper::BasicMapper::obj_to_best_xref{$key};
+    my $best_xref = $obj_to_best_xref{$key};
     # Write record with xref_id_offset
     print DX "UPDATE " . lc($type) . " SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE " . lc($type) . "_id=" . $object_id . ";\n";
     print DX_TXT ($best_xref+$xref_id_offset) . "\t" . $object_id . "\n";
