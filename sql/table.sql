@@ -12,54 +12,82 @@
 #  - internal ids are integers named tablename_id
 #  - same name is given in foreign key relations
 
-CREATE TABLE oligo_feature (
-       oligo_feature_id   INT NOT NULL auto_increment,
-       seq_region_id      INT UNSIGNED NOT NULL,
-       seq_region_start   INT NOT NULL,
-       seq_region_end     INT NOT NULL,
-       seq_region_strand  TINYINT NOT NULL,
-       
-       mismatches         TINYINT,
-       oligo_probe_id     INT NOT NULL,
-       analysis_id        INT NOT NULL,
 
-       PRIMARY KEY (oligo_feature_id),
-       KEY seq_region_idx (seq_region_id, seq_region_start),
-       KEY probe_idx (oligo_probe_id)
+################################################################################
+#
+# Table structure for table 'oligo_feature'
+#
+
+CREATE TABLE oligo_feature (
+  
+  oligo_feature_id      INT NOT NULL AUTO_INCREMENT,
+  seq_region_id         INT UNSIGNED NOT NULL,
+  seq_region_start      INT NOT NULL,
+  seq_region_end        INT NOT NULL,
+  seq_region_strand     TINYINT NOT NULL,
+  mismatches            TINYINT,
+  oligo_probe_id        INT NOT NULL,
+  analysis_id           INT NOT NULL,
+
+  PRIMARY KEY (oligo_feature_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start),
+  KEY probe_idx (oligo_probe_id)
+  
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'oligo_probe'
+#
 
 CREATE TABLE oligo_probe (
-       oligo_probe_id  INT NOT NULL auto_increment,
-       oligo_array_id  INT NOT NULL,
-       probeset        VARCHAR(40),
-       name            VARCHAR(20),
-       description     TEXT,
-       length          SMALLINT NOT NULL,
+  
+  oligo_probe_id      INT NOT NULL AUTO_INCREMENT,
+  oligo_array_id      INT NOT NULL,
+  probeset            VARCHAR(40),
+  name                VARCHAR(20),
+  description         TEXT,
+  length              SMALLINT NOT NULL,
 
-       PRIMARY KEY (oligo_probe_id, oligo_array_id),
-       KEY probeset_idx (probeset),
-       KEY array_idx (oligo_array_id)
+  PRIMARY KEY (oligo_probe_id, oligo_array_id),
+  KEY probeset_idx (probeset),
+  KEY array_idx (oligo_array_id)
+
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'oligo_array'
+#
 
 CREATE TABLE oligo_array (
-       oligo_array_id   INT NOT NULL auto_increment,
-       parent_array_id  INT,
-       probe_setsize    TINYINT NOT NULL,
-       name             VARCHAR(40) NOT NULL,
-       type             ENUM( 'AFFY', 'OLIGO' ),
 
-       PRIMARY KEY (oligo_array_id)
+  oligo_array_id      INT NOT NULL auto_increment,
+  parent_array_id     INT,
+  probe_setsize       TINYINT NOT NULL,
+  name                VARCHAR(40) NOT NULL,
+  type                ENUM( 'AFFY', 'OLIGO' ),
+
+  PRIMARY KEY (oligo_array_id)
+
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
-CREATE TABLE alt_allele (
-  alt_allele_id INT NOT NULL auto_increment,
-  gene_id INT NOT NULL,
+################################################################################
+#
+# Table structure for table 'alt_allele'
+#
 
-  UNIQUE gene_idx( gene_id ),
-  UNIQUE allele_idx( alt_allele_id, gene_id )
-) COLLATE=latin1_swedish_ci;
-  
+CREATE TABLE alt_allele (
+  alt_allele_id         INT NOT NULL AUTO_INCREMENT,
+  gene_id               INT NOT NULL,
+
+  UNIQUE gene_idx (gene_id),
+  UNIQUE allele_idx (alt_allele_id, gene_id)
+
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 ################################################################################
@@ -67,10 +95,12 @@ CREATE TABLE alt_allele (
 # Table structure for table 'analysis'
 # 
 # semantics:
+#
 # analysis_id - internal id
-# created   - date to distinguish newer and older versions off the 
-#             same analysis. Not well maintained so far.
-# logic_name  string to identify the analysis. Used mainly inside pipeline.
+# created 
+#   - date to distinguish newer and older versions off the same analysis. Not
+#     well maintained so far.
+# logic_name - string to identify the analysis. Used mainly inside pipeline.
 # db, db_version, db_file
 #  - db should be a database name, db version the version of that db
 #    db_file the file system location of that database, 
@@ -79,42 +109,50 @@ CREATE TABLE alt_allele (
 #  - The binary used to create a feature. Similar semantic to above
 # module, module_version
 #  - Perl module names (RunnableDBS usually) executing this analysis.
-# parameters a paramter string which is processed by the perl module
+# parameters - a paramter string which is processed by the perl module
 # gff_source, gff_feature 
 #  - how to make a gff dump from features with this analysis
 
 
 CREATE TABLE analysis (
 
-  analysis_id                 int(10) unsigned NOT NULL auto_increment,
+  analysis_id                 INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   created                     datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-  logic_name                  varchar(40) not null,
-  db                          varchar(120),
-  db_version                  varchar(40),
-  db_file                     varchar(120),
-  program                     varchar(80),
-  program_version             varchar(40),
-  program_file                varchar(80),
-  parameters                  varchar(255),
-  module                      varchar(80),
-  module_version              varchar(40),
-  gff_source                  varchar(40),
-  gff_feature                 varchar(40),
+  logic_name                  VARCHAR(40) NOT NULL,
+  db                          VARCHAR(120),
+  db_version                  VARCHAR(40),
+  db_file                     VARCHAR(120),
+  program                     VARCHAR(80),
+  program_version             VARCHAR(40),
+  program_file                VARCHAR(80),
+  parameters                  VARCHAR(255),
+  module                      VARCHAR(80),
+  module_version              VARCHAR(40),
+  gff_source                  VARCHAR(40),
+  gff_feature                 VARCHAR(40),
 
   PRIMARY KEY (analysis_id),
-  KEY logic_name_idx( logic_name ),
-  UNIQUE(logic_name)
+  KEY logic_name_idx (logic_name),
+  UNIQUE (logic_name)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
+
+################################################################################
+#
+# Table structure for table 'analysis_description'
+#
 
 CREATE TABLE analysis_description (
-  analysis_id	               int(10) unsigned NOT NULL,
-  description                  text,
-  display_label                varchar(255),
 
-  KEY analysis_idx( analysis_id )
-) COLLATE=latin1_swedish_ci;
+  analysis_id	               INT(10) UNSIGNED NOT NULL,
+  description                  TEXT,
+  display_label                VARCHAR(255),
+
+  KEY analysis_idx (analysis_id)
+  
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -123,53 +161,63 @@ CREATE TABLE analysis_description (
 # This table stores DNA sequence.
 
 CREATE TABLE dna (
-  seq_region_id       int unsigned NOT NULL,
-  sequence            mediumtext NOT NULL,
+
+  seq_region_id       INT UNSIGNED NOT NULL,
+  sequence            MEDIUMTEXT NOT NULL,
 
   PRIMARY KEY (seq_region_id)
 
-) MAX_ROWS = 750000 AVG_ROW_LENGTH = 19000;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
+
 
 ################################################################################
 #
 # Table structure for table 'dnac'
 #
-# Contains equivalent data to dna table, but 4 letters of DNA code are represented
-# by a single binary character, based on 2 bit encoding
-# do not need to worry about ambiguity of length, since this is stored in contig.length
-# n_line column contains start-end pairs of coordinates in the string that are really Ns
+# Contains equivalent data to dna table, but 4 letters of DNA code are
+# represented by a single binary character, based on 2 bit encoding
+#
+# do not need to worry about ambiguity of length, since this is stored in
+# contig.length
+#
+# n_line column contains start-end pairs of coordinates in the string that are
+# really Ns
 
 CREATE TABLE dnac (
-  seq_region_id  int unsigned NOT NULL,
-  sequence  mediumblob NOT NULL,
-  n_line    text,  
+
+  seq_region_id     INT UNSIGNED NOT NULL,
+  sequence          MEDIUMBLOB NOT NULL,
+  n_line            TEXT,  
 
   PRIMARY KEY (seq_region_id)
-) MAX_ROWS = 750000 AVG_ROW_LENGTH = 19000;
+
+) COLLATE=latin1_swedish_ci TYPE=MyISAM MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
+
 
 ################################################################################
 #
 # Table structure for table 'exon'
 #
-# Note seq_region_start always less that seq_region_end, i.e.
-# when the exon is on the other strand the seq_region_start
-# is specifying the 3prime end of the exon.
+# Note seq_region_start always less that seq_region_end, i.e. when the exon is
+# on the other strand the seq_region_start is specifying the 3prime end of the
+# exon.
 
 CREATE TABLE exon (
  
-  exon_id       	      int unsigned NOT NULL auto_increment,
-  seq_region_id     	      int(10) unsigned NOT NULL,            # foreign key, seq_region:seq_region_id
-  seq_region_start  	      int(10) unsigned NOT NULL,            # start of exon within seq_region
-  seq_region_end              int(10) unsigned NOT NULL,            # end of exon within specified seq_region
-  seq_region_strand           tinyint(2) NOT NULL,                  # 1 or -1 depending on the strand of the exon
+  exon_id       	      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id     	      INT(10) UNSIGNED NOT NULL,
+  seq_region_start  	      INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  seq_region_strand           TINYINT(2) NOT NULL,
 
-  phase                       tinyint(2) NOT NULL,
-  end_phase                   tinyint(2) NOT NULL,
+  phase                       TINYINT(2) NOT NULL,
+  end_phase                   TINYINT(2) NOT NULL,
   
   PRIMARY KEY (exon_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start )
+  KEY seq_region_idx (seq_region_id, seq_region_start)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -178,16 +226,17 @@ CREATE TABLE exon (
 
 CREATE TABLE exon_stable_id (
    
-  exon_id   		      int unsigned not null,       # foreign key exon:exon_id
-  stable_id                   VARCHAR(128) not null,
-  version                     int(10),
+  exon_id   		      INT UNSIGNED NOT NULL,
+  stable_id                   VARCHAR(128) NOT NULL,
+  version                     INT(10),
   created_date                DATETIME NOT NULL,
   modified_date               DATETIME NOT NULL,
 
-  PRIMARY KEY( exon_id ),
-  UNIQUE( stable_id, version )
+  PRIMARY KEY (exon_id),
+  UNIQUE (stable_id, version)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -199,15 +248,16 @@ CREATE TABLE exon_stable_id (
 
 CREATE TABLE exon_transcript (
 
-  exon_id                     INT unsigned NOT NULL, # foreign key exon:exon_id
-  transcript_id               INT unsigned NOT NULL, # foregin key transcript:transcript_id
-  rank                        int(10) NOT NULL,        
+  exon_id                     INT UNSIGNED NOT NULL,
+  transcript_id               INT UNSIGNED NOT NULL,
+  rank                        INT(10) NOT NULL,        
 
   PRIMARY KEY (exon_id,transcript_id,rank),
   KEY transcript (transcript_id),
-  KEY exon ( exon_id )
+  KEY exon (exon_id)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -216,21 +266,22 @@ CREATE TABLE exon_transcript (
 
 CREATE TABLE simple_feature (
 
-  simple_feature_id 	      int unsigned not null auto_increment,
-  seq_region_id               int(10) unsigned NOT NULL,
-  seq_region_start            int(10) unsigned NOT NULL,
-  seq_region_end              int(10) unsigned NOT NULL,
-  seq_region_strand           tinyint(1) NOT NULL,
-  display_label               varchar(40) NOT NULL,
-  analysis_id                 int(10) unsigned NOT NULL,
-  score                       double,
+  simple_feature_id 	      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  seq_region_strand           TINYINT(1) NOT NULL,
+  display_label               VARCHAR(40) NOT NULL,
+  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  score                       DOUBLE,
 
-  PRIMARY KEY ( simple_feature_id ),
-  KEY seq_region_idx (seq_region_id, seq_region_start ),
-  KEY analysis_idx( analysis_id ),
-  KEY hit_idx( display_label )
+  PRIMARY KEY (simple_feature_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start),
+  KEY analysis_idx (analysis_id),
+  KEY hit_idx (display_label)
 
-) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+
 
 ################################################################################
 #
@@ -239,27 +290,28 @@ CREATE TABLE simple_feature (
 
 CREATE TABLE protein_align_feature (
  
-  protein_align_feature_id    int unsigned not null auto_increment,
-  seq_region_id               int(10) unsigned NOT NULL,
-  seq_region_start            int(10) unsigned NOT NULL,
-  seq_region_end              int(10) unsigned NOT NULL,
-  seq_region_strand           tinyint(1) DEFAULT '1' NOT NULL,
-  hit_start                   int(10) NOT NULL,
-  hit_end                     int(10) NOT NULL,
-  hit_name                    varchar(40) NOT NULL,
-  analysis_id                 int(10) unsigned NOT NULL,
-  score                       double,
-  evalue                      double,
-  perc_ident                  float,
-  cigar_line                  text,
+  protein_align_feature_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  seq_region_strand           TINYINT(1) DEFAULT '1' NOT NULL,
+  hit_start                   INT(10) NOT NULL,
+  hit_end                     INT(10) NOT NULL,
+  hit_name                    VARCHAR(40) NOT NULL,
+  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  score                       DOUBLE,
+  evalue                      DOUBLE,
+  perc_ident                  FLOAT,
+  cigar_line                  TEXT,
 
-  PRIMARY KEY ( protein_align_feature_id ),
-  KEY seq_region_idx( seq_region_id, analysis_id, seq_region_start, score ),
-  KEY seq_region_idx_2( seq_region_id, seq_region_start),
-  KEY hit_idx( hit_name ),
-  KEY analysis_idx( analysis_id )
+  PRIMARY KEY (protein_align_feature_id),
+  KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
+  KEY seq_region_idx_2 (seq_region_id, seq_region_start),
+  KEY hit_idx (hit_name),
+  KEY analysis_idx (analysis_id)
 
-) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+
 
 ################################################################################
 #
@@ -268,50 +320,52 @@ CREATE TABLE protein_align_feature (
 
 CREATE TABLE dna_align_feature (
 
-  dna_align_feature_id 	      int unsigned not null auto_increment,
-  seq_region_id               int(10) unsigned NOT NULL,
-  seq_region_start            int(10) unsigned NOT NULL,
-  seq_region_end              int(10) unsigned NOT NULL,
-  seq_region_strand           tinyint(1) NOT NULL,
-  hit_start                   int NOT NULL,
-  hit_end                     int NOT NULL,
-  hit_strand                  tinyint(1) NOT NULL,
-  hit_name                    varchar(40) NOT NULL,
-  analysis_id                 int(10) unsigned NOT NULL,
-  score                       double,
-  evalue                      double,
-  perc_ident                  float,
-  cigar_line                  text,
+  dna_align_feature_id 	      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  seq_region_strand           TINYINT(1) NOT NULL,
+  hit_start                   INT NOT NULL,
+  hit_end                     INT NOT NULL,
+  hit_strand                  TINYINT(1) NOT NULL,
+  hit_name                    VARCHAR(40) NOT NULL,
+  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  score                       DOUBLE,
+  evalue                      DOUBLE,
+  perc_ident                  FLOAT,
+  cigar_line                  TEXT,
 
-  PRIMARY KEY ( dna_align_feature_id ),
-  KEY seq_region_idx( seq_region_id, analysis_id, seq_region_start, score ),
-  KEY seq_region_idx_2( seq_region_id, seq_region_start),
-  KEY hit_idx( hit_name ),
-  KEY analysis_idx( analysis_id )
+  PRIMARY KEY (dna_align_feature_id),
+  KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
+  KEY seq_region_idx_2 (seq_region_id, seq_region_start),
+  KEY hit_idx (hit_name),
+  KEY analysis_idx (analysis_id)
 
-) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+
 
 ################################################################################
 #
 # Table structure for table 'repeat_consensus'
 #
+# repeat_class examples: SINE, LINE, DNA Transposon, Retroviral LTR,
+# Satellite, Tandem
 
 CREATE TABLE repeat_consensus (
 
-  repeat_consensus_id  	      int unsigned NOT NULL auto_increment,
-  repeat_name                 varchar(255) NOT NULL,
-  repeat_class                varchar(100) NOT NULL,   # eg:  SINE, LINE, DNA Transposon,
-                                                      # Retroviral LTR, Satellite,Tandem
-  repeat_type                 varchar(40) NOT NULL,
-  repeat_consensus            text,
+  repeat_consensus_id  	      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  repeat_name                 VARCHAR(255) NOT NULL,
+  repeat_class                VARCHAR(100) NOT NULL, 
+  repeat_type                 VARCHAR(40) NOT NULL,
+  repeat_consensus            TEXT,
   
-  PRIMARY KEY( repeat_consensus_id ),
+  PRIMARY KEY (repeat_consensus_id),
   KEY name (repeat_name),
   KEY class (repeat_class),
-  KEY consensus(repeat_consensus(10)),
-  KEY type( repeat_type )
+  KEY consensus (repeat_consensus(10)),
+  KEY type (repeat_type)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 ################################################################################
 #
@@ -320,23 +374,24 @@ CREATE TABLE repeat_consensus (
 
 CREATE TABLE repeat_feature (
 
-  repeat_feature_id 	      int unsigned NOT NULL auto_increment,
-  seq_region_id               int(10) unsigned NOT NULL,
-  seq_region_start            int(10) unsigned NOT NULL,
-  seq_region_end              int(10) unsigned NOT NULL,
-  seq_region_strand           tinyint(1) DEFAULT '1' NOT NULL,
-  repeat_start                int(10) NOT NULL,
-  repeat_end                  int(10) NOT NULL,
-  repeat_consensus_id         int(10) unsigned NOT NULL,
-  analysis_id                 int(10) unsigned NOT NULL,
-  score                       double,
+  repeat_feature_id 	      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  seq_region_strand           TINYINT(1) DEFAULT '1' NOT NULL,
+  repeat_start                INT(10) NOT NULL,
+  repeat_end                  INT(10) NOT NULL,
+  repeat_consensus_id         INT(10) UNSIGNED NOT NULL,
+  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  score                       DOUBLE,
   
-  PRIMARY KEY (	repeat_feature_id ),
-  KEY seq_region_idx( seq_region_id, seq_region_start ),
-  KEY repeat_idx( repeat_consensus_id ),
-  KEY analysis_idx( analysis_id )
+  PRIMARY KEY (repeat_feature_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start),
+  KEY repeat_idx (repeat_consensus_id),
+  KEY analysis_idx (analysis_id)
 
-) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+
 
 ################################################################################
 #
@@ -345,41 +400,44 @@ CREATE TABLE repeat_feature (
 
 CREATE TABLE gene (
 
-  gene_id                     int unsigned NOT NULL auto_increment,
+  gene_id                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
   biotype                     VARCHAR(40) NOT NULL,
-  analysis_id                 int,
-  seq_region_id               int(10) unsigned NOT NULL, 
-  seq_region_start            int(10) unsigned NOT NULL, 
-  seq_region_end              int(10) unsigned NOT NULL, 
-  seq_region_strand           tinyint(2) NOT NULL,       
-  display_xref_id             int unsigned,
+  analysis_id                 INT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL, 
+  seq_region_start            INT(10) UNSIGNED NOT NULL, 
+  seq_region_end              INT(10) UNSIGNED NOT NULL, 
+  seq_region_strand           TINYINT(2) NOT NULL,       
+  display_xref_id             INT UNSIGNED,
   source                      VARCHAR(20) NOT NULL,
-  status                      enum( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' ),
-  description                 text,
+  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED'),
+  description                 TEXT,
 
   PRIMARY KEY (gene_id),
-  KEY seq_region_idx( seq_region_id, seq_region_start ),
-  KEY xref_id_index ( display_xref_id ),
-  KEY analysis_idx( analysis_id )
+  KEY seq_region_idx (seq_region_id, seq_region_start),
+  KEY xref_id_index (display_xref_id),
+  KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
 # Table structure for table 'gene_stable_id'
 #
+
 CREATE TABLE gene_stable_id (
 
-  gene_id 		      int unsigned not null,  # foreign key gene:gene_id
-  stable_id                   VARCHAR(128) not null,
-  version                     int(10),
+  gene_id 		      INT UNSIGNED NOT NULL,
+  stable_id                   VARCHAR(128) NOT NULL,
+  version                     INT(10),
   created_date                DATETIME NOT NULL,
   modified_date               DATETIME NOT NULL,
 
-  PRIMARY KEY( gene_id ),
-  UNIQUE( stable_id, version )
+  PRIMARY KEY (gene_id),
+  UNIQUE (stable_id, version)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -388,14 +446,15 @@ CREATE TABLE gene_stable_id (
 
 CREATE TABLE supporting_feature (
 
-  exon_id 		      int(11) DEFAULT '0' NOT NULL,
-  feature_type                enum('dna_align_feature','protein_align_feature'),
-  feature_id                  int(11) DEFAULT '0' NOT NULL,
+  exon_id 		      INT(11) DEFAULT '0' NOT NULL,
+  feature_type                ENUM('dna_align_feature','protein_align_feature'),
+  feature_id                  INT(11) DEFAULT '0' NOT NULL,
 
   UNIQUE all_idx (exon_id,feature_type,feature_id),
   KEY feature_idx (feature_type,feature_id)
 
-) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+
 
 ################################################################################
 #
@@ -404,14 +463,15 @@ CREATE TABLE supporting_feature (
 
 CREATE TABLE transcript_supporting_feature (
 
-  transcript_id 	      int(11) DEFAULT '0' NOT NULL,
-  feature_type                enum('dna_align_feature','protein_align_feature'),
-  feature_id                  int(11) DEFAULT '0' NOT NULL,
+  transcript_id 	      INT(11) DEFAULT '0' NOT NULL,
+  feature_type                ENUM('dna_align_feature','protein_align_feature'),
+  feature_id                  INT(11) DEFAULT '0' NOT NULL,
 
   UNIQUE all_idx (transcript_id,feature_type,feature_id),
   KEY feature_idx (feature_type,feature_id)
 
-) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+
 
 ################################################################################
 #
@@ -420,23 +480,24 @@ CREATE TABLE transcript_supporting_feature (
 
 CREATE TABLE transcript (
 
-  transcript_id               INT UNSIGNED NOT NULL auto_increment,  
-  gene_id                     INT UNSIGNED NOT NULL,  # foreign key gene:gene_id
-  seq_region_id               int(10) unsigned NOT NULL, 
-  seq_region_start            int(10) unsigned NOT NULL, 
-  seq_region_end              int(10) unsigned NOT NULL, 
-  seq_region_strand           tinyint(2) NOT NULL, 
-  display_xref_id             int unsigned,
+  transcript_id               INT UNSIGNED NOT NULL AUTO_INCREMENT,  
+  gene_id                     INT UNSIGNED NOT NULL,
+  seq_region_id               INT(10) UNSIGNED NOT NULL, 
+  seq_region_start            INT(10) UNSIGNED NOT NULL, 
+  seq_region_end              INT(10) UNSIGNED NOT NULL, 
+  seq_region_strand           TINYINT(2) NOT NULL, 
+  display_xref_id             INT UNSIGNED,
   biotype                     VARCHAR(40) NOT NULL,
-  status                      enum( 'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED' ),
-  description                 text,
+  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED'),
+  description                 TEXT,
 
   PRIMARY KEY (transcript_id),
-  KEY seq_region_idx( seq_region_id, seq_region_start ),
+  KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY gene_index (gene_id),
-  KEY xref_id_index ( display_xref_id )
+  KEY xref_id_index (display_xref_id)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -445,16 +506,17 @@ CREATE TABLE transcript (
 
 CREATE TABLE transcript_stable_id (
 
-  transcript_id               int unsigned not null,  # foreign key transcript:transcript_id
-  stable_id                   VARCHAR(128) not null,
-  version                     int(10),
+  transcript_id               INT UNSIGNED NOT NULL,
+  stable_id                   VARCHAR(128) NOT NULL,
+  version                     INT(10),
   created_date                DATETIME NOT NULL,
   modified_date               DATETIME NOT NULL,
   
-  PRIMARY KEY( transcript_id ),
-  UNIQUE( stable_id, version )
+  PRIMARY KEY (transcript_id),
+  UNIQUE (stable_id, version)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -466,16 +528,17 @@ CREATE TABLE transcript_stable_id (
 
 CREATE TABLE translation (
 
-  translation_id              INT UNSIGNED NOT NULL auto_increment, 
+  translation_id              INT UNSIGNED NOT NULL AUTO_INCREMENT, 
   transcript_id               INT UNSIGNED NOT NULL, 
   seq_start                   INT(10) NOT NULL,       # relative to exon start
-  start_exon_id               INT UNSIGNED NOT NULL,  # foreign key exon:exon_id
+  start_exon_id               INT UNSIGNED NOT NULL,
   seq_end                     INT(10) NOT NULL,       # relative to exon start
-  end_exon_id                 INT UNSIGNED NOT NULL,  # foreign key exon:exon_id
+  end_exon_id                 INT UNSIGNED NOT NULL,
   
   PRIMARY KEY (translation_id),
   KEY (transcript_id)
-) COLLATE=latin1_swedish_ci;
+
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 ################################################################################
@@ -484,16 +547,16 @@ CREATE TABLE translation (
 #
 CREATE TABLE translation_stable_id (
 
-  translation_id 	      INT unsigned NOT NULL, # foreign key translation:translation_id
+  translation_id 	      INT UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
   version                     INT(10),
   created_date                DATETIME NOT NULL,
   modified_date               DATETIME NOT NULL,
 
-  PRIMARY KEY( translation_id ),
-  UNIQUE( stable_id, version )
+  PRIMARY KEY (translation_id),
+  UNIQUE (stable_id, version)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 ################################################################################
@@ -501,32 +564,34 @@ CREATE TABLE translation_stable_id (
 # Table structure for table 'assembly'
 #
 # This is a denormalised golden path. 
-# The data in this table defines the "static golden path", i.e. the
-# best effort draft full genome sequence as determined by the UCSC or NCBI
-# (depending which assembly you are using)
 #
-# Each row represents a component, e.g. a contig,  (comp_seq_region_id, 
-# FK from seq_region table) at least part of which is present in the golden path. 
-# The part of the component that is in the path is delimited by fields cmp_start
-# and cmp_end (start < end), and the absolute position within the golden path 
-# chromosome (or other appropriate assembled structure) (asm_seq_region_id) is 
-# given by asm_start and asm_end. 
-# 
+# The data in this table defines the "static golden path", i.e. the best effort
+# draft full genome sequence as determined by the UCSC or NCBI (depending which
+# assembly you are using).
+#
+# Each row represents a component, e.g. a contig,  (comp_seq_region_id, FK from
+# seq_region table) at least part of which is present in the golden path. 
+#
+# The part of the component that is in the path is delimited by fields
+# cmp_start and cmp_end (start < end), and the absolute position within the
+# golden path chromosome (or other appropriate assembled structure)
+# (asm_seq_region_id) is given by asm_start and asm_end. 
 
 CREATE TABLE assembly (
 
-  asm_seq_region_id           int unsigned NOT NULL,
-  cmp_seq_region_id           int(10) unsigned NOT NULL, 
-  asm_start                   int(10) NOT NULL,
-  asm_end                     int(10) NOT NULL,
-  cmp_start                   int(10) NOT NULL,
-  cmp_end                     int(10) NOT NULL,
-  ori                         tinyint  NOT NULL, 
+  asm_seq_region_id           INT UNSIGNED NOT NULL,
+  cmp_seq_region_id           INT(10) UNSIGNED NOT NULL, 
+  asm_start                   INT(10) NOT NULL,
+  asm_end                     INT(10) NOT NULL,
+  cmp_start                   INT(10) NOT NULL,
+  cmp_end                     INT(10) NOT NULL,
+  ori                         TINYINT  NOT NULL, 
   
-  KEY(cmp_seq_region_id),
-  KEY(asm_seq_region_id, asm_start)
+  KEY (cmp_seq_region_id),
+  KEY (asm_seq_region_id, asm_start)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -535,24 +600,25 @@ CREATE TABLE assembly (
 
 CREATE TABLE protein_feature (
 
-  protein_feature_id          int(10) unsigned NOT NULL auto_increment,
-  translation_id              int NOT NULL,	
-  seq_start                   int(10) NOT NULL,
-  seq_end                     int(10) NOT NULL,
-  hit_start                   int(10) NOT NULL,
-  hit_end                     int(10) NOT NULL,
-  hit_id                      varchar(40) NOT NULL,
-  analysis_id                 int(10) unsigned NOT NULL,
-  score                       double NOT NULL,
-  evalue                      double,
-  perc_ident                  float,
+  protein_feature_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  translation_id              INT NOT NULL,	
+  seq_start                   INT(10) NOT NULL,
+  seq_end                     INT(10) NOT NULL,
+  hit_start                   INT(10) NOT NULL,
+  hit_end                     INT(10) NOT NULL,
+  hit_id                      VARCHAR(40) NOT NULL,
+  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  score                       DOUBLE NOT NULL,
+  evalue                      DOUBLE,
+  perc_ident                  FLOAT,
 
-  PRIMARY KEY   (protein_feature_id),
+  PRIMARY KEY (protein_feature_id),
   KEY (translation_id),
-  KEY hid_index ( hit_id ),
-  KEY analysis_idx( analysis_id )
+  KEY hid_index (hit_id),
+  KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -561,13 +627,13 @@ CREATE TABLE protein_feature (
 
 CREATE TABLE interpro (
 
-  interpro_ac	              varchar(40) NOT NULL,
-  id		              varchar(40) NOT NULL,
+  interpro_ac	              VARCHAR(40) NOT NULL,
+  id		              VARCHAR(40) NOT NULL,
 
   UNIQUE (interpro_ac, id),
   KEY (id)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 ################################################################################
@@ -576,17 +642,18 @@ CREATE TABLE interpro (
 #
 
 CREATE TABLE karyotype (
-  karyotype_id                int unsigned NOT NULL auto_increment,
-  seq_region_id               int unsigned NOT NULL,
-  seq_region_start            int(10)     NOT NULL,
-  seq_region_end              int(10)     NOT NULL,
-  band                        varchar(40) NOT NULL,
-  stain                       varchar(40) NOT NULL,
+  karyotype_id                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT UNSIGNED NOT NULL,
+  seq_region_start            INT(10)     NOT NULL,
+  seq_region_end              INT(10)     NOT NULL,
+  band                        VARCHAR(40) NOT NULL,
+  stain                       VARCHAR(40) NOT NULL,
 
   PRIMARY KEY (karyotype_id),
   KEY region_band_idx (seq_region_id,band)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -595,16 +662,20 @@ CREATE TABLE karyotype (
 
 CREATE TABLE object_xref (
 
-  object_xref_id              INT not null auto_increment,
-  ensembl_id                  int unsigned not null, 
-  ensembl_object_type         ENUM( 'RawContig', 'Transcript', 'Gene', 'Translation', 'regulatory_factor', 'regulatory_feature' ) not null,
-  xref_id                     INT unsigned not null,
+  object_xref_id              INT NOT NULL AUTO_INCREMENT,
+  ensembl_id                  INT UNSIGNED NOT NULL, 
+  ensembl_object_type         ENUM('RawContig', 'Transcript', 'Gene',
+                                   'Translation', 'regulatory_factor',
+                                   'regulatory_feature')
+                              NOT NULL,
+  xref_id                     INT UNSIGNED NOT NULL,
 
-  UNIQUE ( ensembl_object_type, ensembl_id, xref_id ),
-  KEY oxref_idx( object_xref_id, xref_id, ensembl_object_type, ensembl_id ),
-  KEY xref_idx(xref_id, ensembl_object_type)
+  UNIQUE (ensembl_object_type, ensembl_id, xref_id),
+  KEY oxref_idx (object_xref_id, xref_id, ensembl_object_type, ensembl_id),
+  KEY xref_idx (xref_id, ensembl_object_type)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -612,23 +683,26 @@ CREATE TABLE object_xref (
 #
 
 CREATE TABLE identity_xref(
-        object_xref_id INT unsigned not null ,
-	query_identity 	int(5),
-        target_identity int(5),
 
-	hit_start int,
-	hit_end int,
-	translation_start int,
-	translation_end int,
-	cigar_line text,
-	
-	score double,
-	evalue double,
-	analysis_id int,
+  object_xref_id          INT UNSIGNED NOT NULL ,
+  query_identity 	  INT(5),
+  target_identity         INT(5),
+
+  hit_start               INT,
+  hit_end                 INT,
+  translation_start       INT,
+  translation_end         INT,
+  cigar_line              TEXT,
+  
+  score                   DOUBLE,
+  evalue                  DOUBLE,
+  analysis_id             INT,
 
   PRIMARY KEY (object_xref_id),
-  KEY analysis_idx( analysis_id )
-) COLLATE=latin1_swedish_ci;
+  KEY analysis_idx (analysis_id)
+
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -637,13 +711,15 @@ CREATE TABLE identity_xref(
 
 CREATE TABLE go_xref (
 
-  object_xref_id int(10) unsigned DEFAULT '0' NOT NULL,
-  linkage_type enum('IC', 'IDA', 'IEA', 'IEP', 'IGI', 'IMP', 
-		    'IPI', 'ISS', 'NAS', 'ND', 'TAS', 'NR', 'RCA') NOT NULL,
+  object_xref_id          INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  linkage_type            ENUM('IC', 'IDA', 'IEA', 'IEP', 'IGI', 'IMP', 
+		               'IPI', 'ISS', 'NAS', 'ND', 'TAS', 'NR', 'RCA')
+                          NOT NULL,
   KEY (object_xref_id),
-  UNIQUE(object_xref_id, linkage_type)
+  UNIQUE (object_xref_id, linkage_type)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -652,21 +728,22 @@ CREATE TABLE go_xref (
 
 CREATE TABLE xref (
 
-   xref_id 		      INT unsigned not null auto_increment,
-   external_db_id             int not null,
-   dbprimary_acc              VARCHAR(40) not null,
-   display_label              VARCHAR(128) not null,
+   xref_id 		      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   external_db_id             INT NOT NULL,
+   dbprimary_acc              VARCHAR(40) NOT NULL,
+   display_label              VARCHAR(128) NOT NULL,
    version                    VARCHAR(10) DEFAULT '' NOT NULL,
    description                VARCHAR(255),
    info_type                  ENUM('PROJECTION', 'MISC'),
    info_text                  VARCHAR(255),
 
-   PRIMARY KEY( xref_id ),
-   UNIQUE KEY id_index( dbprimary_acc, external_db_id ),
-   KEY display_index ( display_label ),
-   KEY info_type_idx ( info_type )
+   PRIMARY KEY (xref_id),
+   UNIQUE KEY id_index (dbprimary_acc, external_db_id),
+   KEY display_index (display_label),
+   KEY info_type_idx (info_type)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -675,12 +752,14 @@ CREATE TABLE xref (
 
 CREATE TABLE external_synonym (
 
-  xref_id                     INT unsigned not null,
-  synonym                     VARCHAR(40) not null,
-  PRIMARY KEY( xref_id, synonym ),
-  KEY name_index( synonym )
+  xref_id                     INT UNSIGNED NOT NULL,
+  synonym                     VARCHAR(40) NOT NULL,
+  
+  PRIMARY KEY (xref_id, synonym),
+  KEY name_index (synonym)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -689,56 +768,67 @@ CREATE TABLE external_synonym (
 
 CREATE TABLE external_db (
 
-  external_db_id 	      INT not null,
+  external_db_id 	      INT NOT NULL,
   db_name                     VARCHAR(27) NOT NULL,
   db_release                  VARCHAR(40) NOT NULL,
-  status                      ENUM ('KNOWNXREF','KNOWN','XREF','PRED','ORTH', 'PSEUDO') not null,
-
+  status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
+                                   'PSEUDO')
+                              NOT NULL,
   dbprimary_acc_linkable      BOOLEAN DEFAULT 1 NOT NULL,
   display_label_linkable      BOOLEAN DEFAULT 0 NOT NULL,
-
   priority                    INT NOT NULL,
-
   db_display_name             VARCHAR(255),
 
-  PRIMARY KEY( external_db_id ) 
+  PRIMARY KEY (external_db_id) 
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
+################################################################################
+#
+# Table structure for table 'prediction_exon' 
+#
 
 CREATE TABLE prediction_exon (
-    prediction_exon_id int unsigned not null auto_increment,
-    prediction_transcript_id int unsigned not null,
-    exon_rank smallint unsigned not null,
-    seq_region_id int unsigned not null,
-    seq_region_start int unsigned not null,
-    seq_region_end int unsigned not null,
-    seq_region_strand tinyint not null,
-    start_phase tinyint not null,
-    score double,
-    p_value double,
 
-    PRIMARY KEY( prediction_exon_id ),
-    KEY (prediction_transcript_id),
-    KEY ( seq_region_id, seq_region_start )
-) COLLATE=latin1_swedish_ci;
+  prediction_exon_id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  prediction_transcript_id    INT UNSIGNED NOT NULL,
+  exon_rank                   SMALLINT UNSIGNED NOT NULL,
+  seq_region_id               INT UNSIGNED NOT NULL,
+  seq_region_start            INT UNSIGNED NOT NULL,
+  seq_region_end              INT UNSIGNED NOT NULL,
+  seq_region_strand           TINYINT NOT NULL,
+  start_phase                 TINYINT NOT NULL,
+  score                       DOUBLE,
+  p_value                     DOUBLE,
 
+  PRIMARY KEY (prediction_exon_id),
+  KEY (prediction_transcript_id),
+  KEY (seq_region_id, seq_region_start)
+  
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'prediction_transcript' 
+#
 
 CREATE TABLE prediction_transcript (
-    prediction_transcript_id int unsigned not null auto_increment,
-    seq_region_id int unsigned not null,
-    seq_region_start int unsigned not null,
-    seq_region_end int unsigned not null,
-    seq_region_strand tinyint not null,
-    analysis_id int,
-    display_label varchar(255),
-    
-    PRIMARY KEY( prediction_transcript_id ),
-    KEY ( seq_region_id, seq_region_start ),
-    KEY analysis_idx( analysis_id )
-) COLLATE=latin1_swedish_ci;
 
+  prediction_transcript_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT UNSIGNED NOT NULL,
+  seq_region_start            INT UNSIGNED NOT NULL,
+  seq_region_end              INT UNSIGNED NOT NULL,
+  seq_region_strand           TINYINT NOT NULL,
+  analysis_id                 INT,
+  display_label               VARCHAR(255),
+  
+  PRIMARY KEY (prediction_transcript_id),
+  KEY (seq_region_id, seq_region_start),
+  KEY analysis_idx (analysis_id)
+
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 ################################################################################
@@ -748,19 +838,20 @@ CREATE TABLE prediction_transcript (
 
 CREATE TABLE meta (
 
-  meta_id 		      INT not null auto_increment,
-  meta_key                    varchar( 40 ) not null,
-  meta_value                  varchar( 255 ) not null,
+  meta_id 		      INT NOT NULL AUTO_INCREMENT,
+  meta_key                    VARCHAR(40) NOT NULL,
+  meta_value                  VARCHAR(255) NOT NULL,
 
-  PRIMARY KEY( meta_id ),
-  KEY meta_key_index ( meta_key ),
-  KEY meta_value_index ( meta_value )
+  PRIMARY KEY (meta_id),
+  KEY meta_key_index (meta_key),
+  KEY meta_value_index (meta_value)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 # Auto add schema version to database
-
 INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "38");
+
 
 ################################################################################
 #
@@ -768,16 +859,16 @@ INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "38");
 
 CREATE TABLE marker_synonym (
 
-  marker_synonym_id           int unsigned not null auto_increment,
-  marker_id                   int unsigned not null,  # foreign key marker:marker_id
-  source                      varchar(20),
-  name                        varchar(30),    
+  marker_synonym_id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  marker_id                   INT UNSIGNED NOT NULL,
+  source                      VARCHAR(20),
+  name                        VARCHAR(30),    
 
   PRIMARY KEY (marker_synonym_id),
   KEY marker_synonym_idx (marker_synonym_id, name),
   KEY marker_idx (marker_id)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 ################################################################################
@@ -786,19 +877,20 @@ CREATE TABLE marker_synonym (
 
 CREATE TABLE marker (
 
-  marker_id                   int unsigned not null auto_increment,
-  display_marker_synonym_id   int unsigned, #foreign key marker_synonym:marker_synonym_id
-  left_primer                 varchar(100) not null,
-  right_primer                varchar(100) not null,
-  min_primer_dist             int(10) unsigned not null,
-  max_primer_dist             int(10) unsigned not null,
-  priority                    int,
-  type                        enum('est', 'microsatellite'),
+  marker_id                   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  display_marker_synonym_id   INT UNSIGNED,
+  left_primer                 VARCHAR(100) NOT NULL,
+  right_primer                VARCHAR(100) NOT NULL,
+  min_primer_dist             INT(10) UNSIGNED NOT NULL,
+  max_primer_dist             INT(10) UNSIGNED NOT NULL,
+  priority                    INT,
+  type                        ENUM('est', 'microsatellite'),
   
   PRIMARY KEY (marker_id),
   KEY marker_idx (marker_id, priority)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -806,37 +898,39 @@ CREATE TABLE marker (
 
 CREATE TABLE marker_feature (
 
-  marker_feature_id           int unsigned not null auto_increment,
-  marker_id                   int unsigned not null,     #foreign key marker:marker_id
-  seq_region_id               int(10) unsigned NOT NULL, #foreign key contig:seq_region_id
-  seq_region_start            int(10) unsigned NOT NULL,
-  seq_region_end              int(10) unsigned NOT NULL,
-  analysis_id                 int(10) unsigned NOT NULL, #foreign key analysis:analysis_id
-  map_weight                  int(10) unsigned,
+  marker_feature_id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  marker_id                   INT UNSIGNED NOT NULL,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  map_weight                  INT(10) UNSIGNED,
 
   PRIMARY KEY (marker_feature_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start ),
-  KEY analysis_idx( analysis_id )
+  KEY seq_region_idx (seq_region_id, seq_region_start),
+  KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
    
+
 ################################################################################
 #
 # Table structure for table 'marker_map_location'
  
 CREATE TABLE marker_map_location (
 
-  marker_id                   int unsigned not null, #foreign key marker:marker_id
-  map_id                      int unsigned not null, #foreign key map:map_id
-  chromosome_name             varchar(15)  not null, 
-  marker_synonym_id           int unsigned not null, #foreign key marker_synonym:marker_synonym_id
-  position                    varchar(15) not null,
-  lod_score                   double,
+  marker_id                   INT UNSIGNED NOT NULL,
+  map_id                      INT UNSIGNED NOT NULL,
+  chromosome_name             VARCHAR(15)  NOT NULL, 
+  marker_synonym_id           INT UNSIGNED NOT NULL,
+  position                    VARCHAR(15) NOT NULL,
+  lod_score                   DOUBLE,
   
   PRIMARY KEY (marker_id, map_id),
-  KEY map_idx( map_id, chromosome_name, position) 
+  KEY map_idx (map_id, chromosome_name, position) 
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -844,11 +938,13 @@ CREATE TABLE marker_map_location (
 
 CREATE TABLE map (
 
-  map_id                      int unsigned not null auto_increment, 
-  map_name                    varchar(30) not null,
+  map_id                      INT UNSIGNED NOT NULL AUTO_INCREMENT, 
+  map_name                    VARCHAR(30) NOT NULL,
 
   PRIMARY KEY (map_id)
-) COLLATE=latin1_swedish_ci;
+
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
     
 ################################################################################
 #
@@ -857,14 +953,14 @@ CREATE TABLE map (
 
 CREATE TABLE misc_feature (
 
-  misc_feature_id 	      int(10) unsigned NOT NULL auto_increment,
-  seq_region_id               int(10) unsigned NOT NULL default '0',
-  seq_region_start            int(10) unsigned NOT NULL default '0',
-  seq_region_end              int(10) unsigned NOT NULL default '0',
-  seq_region_strand           tinyint(4) NOT NULL default '0',
+  misc_feature_id 	      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL default '0',
+  seq_region_start            INT(10) UNSIGNED NOT NULL default '0',
+  seq_region_end              INT(10) UNSIGNED NOT NULL default '0',
+  seq_region_strand           TINYINT(4) NOT NULL default '0',
 
   PRIMARY KEY (misc_feature_id),
-  KEY seq_region_idx( seq_region_id, seq_region_start )
+  KEY seq_region_idx (seq_region_id, seq_region_start)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -875,13 +971,16 @@ CREATE TABLE misc_feature (
 #
 
 CREATE TABLE misc_attrib (
-  misc_feature_id             int(10) unsigned NOT NULL default '0',
-  attrib_type_id              smallint(5) unsigned NOT NULL default '0',
-  value                       varchar(255) NOT NULL default '',
 
-  KEY type_val_idx( attrib_type_id, value ),
-  KEY misc_feature_idx( misc_feature_id )
+  misc_feature_id             INT(10) UNSIGNED NOT NULL default '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL default '0',
+  value                       VARCHAR(255) NOT NULL default '',
+
+  KEY type_val_idx (attrib_type_id, value),
+  KEY misc_feature_idx (misc_feature_id)
+  
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -889,12 +988,14 @@ CREATE TABLE misc_attrib (
 #
 
 CREATE TABLE translation_attrib (
-  translation_id              int(10) unsigned NOT NULL default '0',
-  attrib_type_id              smallint(5) unsigned NOT NULL default '0',
-  value                       varchar(255) NOT NULL default '',
 
-  KEY type_val_idx( attrib_type_id, value ),
-  KEY translation_idx( translation_id )
+  translation_id              INT(10) UNSIGNED NOT NULL default '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL default '0',
+  value                       VARCHAR(255) NOT NULL default '',
+
+  KEY type_val_idx (attrib_type_id, value),
+  KEY translation_idx (translation_id)
+  
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 ################################################################################
@@ -903,13 +1004,16 @@ CREATE TABLE translation_attrib (
 #
 
 CREATE TABLE transcript_attrib (
-  transcript_id               int(10) unsigned NOT NULL default '0',
-  attrib_type_id              smallint(5) unsigned NOT NULL default '0',
-  value                       varchar(255) NOT NULL default '',
 
-  KEY type_val_idx( attrib_type_id, value ),
-  KEY transcript_idx( transcript_id )
+  transcript_id               INT(10) UNSIGNED NOT NULL default '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL default '0',
+  value                       VARCHAR(255) NOT NULL default '',
+
+  KEY type_val_idx (attrib_type_id, value),
+  KEY transcript_idx (transcript_id)
+
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -917,12 +1021,14 @@ CREATE TABLE transcript_attrib (
 #
 
 CREATE TABLE gene_attrib (
-  gene_id                     int(10) unsigned NOT NULL default '0',
-  attrib_type_id              smallint(5) unsigned NOT NULL default '0',
-  value                       varchar(255) NOT NULL default '',
 
-  KEY type_val_idx( attrib_type_id, value ),
-  KEY gene_idx( gene_id )
+  gene_id                     INT(10) UNSIGNED NOT NULL default '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL default '0',
+  value                       VARCHAR(255) NOT NULL default '',
+
+  KEY type_val_idx (attrib_type_id, value),
+  KEY gene_idx (gene_id)
+
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
@@ -932,11 +1038,12 @@ CREATE TABLE gene_attrib (
 #
 
 CREATE TABLE seq_region_attrib (
-  seq_region_id               int(10) unsigned NOT NULL default '0',
-  attrib_type_id              smallint(5) unsigned NOT NULL default '0',
-  value                       varchar(255) NOT NULL default '',
 
-  KEY type_val_idx( attrib_type_id, value),
+  seq_region_id               INT(10) UNSIGNED NOT NULL default '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL default '0',
+  value                       VARCHAR(255) NOT NULL default '',
+
+  KEY type_val_idx (attrib_type_id, value),
   KEY seq_region_idx (seq_region_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
@@ -949,15 +1056,16 @@ CREATE TABLE seq_region_attrib (
 
 CREATE TABLE attrib_type (
 
-  attrib_type_id              smallint(5) unsigned NOT NULL auto_increment,
-  code                        varchar(15) NOT NULL default '',
-  name                        varchar(255) NOT NULL default '',
-  description                 text,
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
+  code                        VARCHAR(15) NOT NULL default '',
+  name                        VARCHAR(255) NOT NULL default '',
+  description                 TEXT,
 
-  PRIMARY KEY ( attrib_type_id),
-  UNIQUE KEY c(code)
+  PRIMARY KEY (attrib_type_id),
+  UNIQUE KEY c (code)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -966,16 +1074,17 @@ CREATE TABLE attrib_type (
 
 CREATE TABLE misc_set (
 
-  misc_set_id                 smallint(5) unsigned NOT NULL auto_increment,
-  code                        varchar(25) NOT NULL default '',
-  name                        varchar(255) NOT NULL default '',
-  description                 text NOT NULL,
-  max_length                  int unsigned not null,
+  misc_set_id                 SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
+  code                        VARCHAR(25) NOT NULL default '',
+  name                        VARCHAR(255) NOT NULL default '',
+  description                 TEXT NOT NULL,
+  max_length                  INT UNSIGNED NOT NULL,
 
   PRIMARY KEY (misc_set_id),
-  UNIQUE KEY c(code)
+  UNIQUE KEY c (code)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -984,19 +1093,14 @@ CREATE TABLE misc_set (
 
 CREATE TABLE misc_feature_misc_set (
 
-  misc_feature_id 	      int(10) unsigned NOT NULL default '0',
-  misc_set_id 		      smallint(5) unsigned NOT NULL default '0',
+  misc_feature_id 	      INT(10) UNSIGNED NOT NULL default '0',
+  misc_set_id 		      SMALLINT(5) UNSIGNED NOT NULL default '0',
 
-  PRIMARY KEY ( misc_feature_id, misc_set_id ),
-  KEY reverse_idx( misc_set_id, misc_feature_id )
+  PRIMARY KEY (misc_feature_id, misc_set_id),
+  KEY reverse_idx (misc_set_id, misc_feature_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
-################################################################################
-#
-# Tables for QTLs
-#
-################################################################################
 
 ################################################################################
 #
@@ -1005,17 +1109,18 @@ CREATE TABLE misc_feature_misc_set (
 
 CREATE TABLE qtl (
 
-  qtl_id 		      int unsigned auto_increment not null,
-  trait                       varchar(255) not null,
-  lod_score                   float,
-  flank_marker_id_1 	      int,
-  flank_marker_id_2           int,
-  peak_marker_id              int,
+  qtl_id 		      INT UNSIGNED AUTO_INCREMENT NOT NULL,
+  trait                       VARCHAR(255) NOT NULL,
+  lod_score                   FLOAT,
+  flank_marker_id_1 	      INT,
+  flank_marker_id_2           INT,
+  peak_marker_id              INT,
 
-  PRIMARY KEY ( qtl_id ),
-  KEY trait_idx( trait )
+  PRIMARY KEY (qtl_id),
+  KEY trait_idx (trait)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1024,15 +1129,16 @@ CREATE TABLE qtl (
 
 CREATE TABLE qtl_synonym (
 
-  qtl_synonym_id 	      int unsigned auto_increment not null,
-  qtl_id                      int unsigned not null,
-  source_database             enum("rat genome database", "ratmap") not null,
-  source_primary_id           varchar(255) not null,
+  qtl_synonym_id 	      INT UNSIGNED AUTO_INCREMENT NOT NULL,
+  qtl_id                      INT UNSIGNED NOT NULL,
+  source_database             ENUM("rat genome database", "ratmap") NOT NULL,
+  source_primary_id           VARCHAR(255) NOT NULL,
 
   PRIMARY KEY (qtl_synonym_id),
-  KEY qtl_idx(qtl_id)
+  KEY qtl_idx (qtl_id)
 
-) COLLATE=latin1_swedish_ci;
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1041,22 +1147,18 @@ CREATE TABLE qtl_synonym (
 
 CREATE TABLE qtl_feature (
 
-  seq_region_id 	      int not null,
-  seq_region_start      int not null,
-  seq_region_end        int not null,
-  qtl_id                int not null,
-  analysis_id           int not null,
+  seq_region_id 	INT NOT NULL,
+  seq_region_start      INT NOT NULL,
+  seq_region_end        INT NOT NULL,
+  qtl_id                INT NOT NULL,
+  analysis_id           INT NOT NULL,
 
-  KEY( qtl_id ),
-  KEY loc_idx( seq_region_id, seq_region_start ),
-  KEY analysis_idx( analysis_id )
-) COLLATE=latin1_swedish_ci;
+  KEY (qtl_id),
+  KEY loc_idx (seq_region_id, seq_region_start),
+  KEY analysis_idx (analysis_id)
 
-################################################################################
-#
-# Tables for stable ID mapping tracking
-#
-################################################################################
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1065,14 +1167,19 @@ CREATE TABLE qtl_feature (
 
 CREATE TABLE mapping_session (
 
-  mapping_session_id 	      int(11) NOT NULL auto_increment,
-  old_db_name                 varchar(80) NOT NULL default '',
-  new_db_name                 varchar(80) NOT NULL default '',
-  created                     timestamp(14) NOT NULL,
+  mapping_session_id 	      INT(11) NOT NULL AUTO_INCREMENT,
+  old_db_name                 VARCHAR(80) NOT NULL default '',
+  new_db_name                 VARCHAR(80) NOT NULL default '',
+  old_release                 VARCHAR(5) NOT NULL default '',
+  new_release                 VARCHAR(5) NOT NULL default '',
+  old_assembly                VARCHAR(20) NOT NULL default '',
+  new_assembly                VARCHAR(20) NOT NULL default '',
+  created_date                DATETIME NOT NULL,
 
-  PRIMARY KEY  (mapping_session_id)
+  PRIMARY KEY (mapping_session_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1081,19 +1188,21 @@ CREATE TABLE mapping_session (
 
 CREATE TABLE stable_id_event (
 
-  old_stable_id 	      varchar(128),
-  old_version                 smallint,
-  new_stable_id               varchar(128),
-  new_version                 smallint,
-  mapping_session_id          int(11) NOT NULL default '0',
-  type                        ENUM('gene', 'transcript', 'translation') NOT NULL,
+  old_stable_id 	    VARCHAR(128),
+  old_version               SMALLINT,
+  new_stable_id             VARCHAR(128),
+  new_version               SMALLINT,
+  mapping_session_id        INT(11) NOT NULL default '0',
+  type                      ENUM('gene', 'transcript', 'translation') NOT NULL,
 
-   UNIQUE KEY uni_idx (mapping_session_id, old_stable_id, old_version, new_stable_id, new_version, type),
+  UNIQUE KEY uni_idx (mapping_session_id, old_stable_id, old_version,
+    new_stable_id, new_version, type),
 
   KEY new_idx (new_stable_id),
   KEY old_idx (old_stable_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1103,19 +1212,20 @@ CREATE TABLE stable_id_event (
 CREATE TABLE gene_archive (
 
   gene_stable_id	      VARCHAR(128) NOT NULL,
-  gene_version                smallint NOT NULL,
+  gene_version                SMALLINT NOT NULL,
   transcript_stable_id        VARCHAR(128) NOT NULL,
-  transcript_version          smallint NOT NULL,
+  transcript_version          SMALLINT NOT NULL,
   translation_stable_id       VARCHAR(128) NOT NULL,
-  translation_version         smallint NOT NULL,
-  peptide_archive_id          int NOT NULL,
-  mapping_session_id          int NOT NULL,
+  translation_version         SMALLINT NOT NULL,
+  peptide_archive_id          INT NOT NULL,
+  mapping_session_id          INT NOT NULL,
 
-  KEY gene_idx( gene_stable_id, gene_version ),
-  KEY transcript_idx( transcript_stable_id, transcript_version ),
-  KEY translation_idx( translation_stable_id, translation_version )
+  KEY gene_idx (gene_stable_id, gene_version),
+  KEY transcript_idx (transcript_stable_id, transcript_version),
+  KEY translation_idx (translation_stable_id, translation_version)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1126,12 +1236,13 @@ CREATE TABLE peptide_archive (
 
   peptide_archive_id         INT NOT NULL AUTO_INCREMENT,
   md5_checksum               char(32),
-  peptide_seq                mediumtext NOT NULL,
+  peptide_seq                MEDIUMTEXT NOT NULL,
 
-  PRIMARY KEY( peptide_archive_id ),
-  KEY checksum( md5_checksum )
+  PRIMARY KEY (peptide_archive_id),
+  KEY checksum (md5_checksum)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1145,9 +1256,9 @@ CREATE TABLE seq_region (
   coord_system_id             INT(10) NOT NULL,
   length                      INT(10) NOT NULL,
 
-  UNIQUE(coord_system_id, name),
+  UNIQUE (coord_system_id, name),
   PRIMARY KEY (seq_region_id),
-  KEY name_idx(name)  
+  KEY name_idx (name)  
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -1170,11 +1281,11 @@ CREATE TABLE assembly_exception (
   ori                         INT NOT NULL,
 
   PRIMARY KEY (assembly_exception_id),
-
   KEY sr_idx (seq_region_id, seq_region_start),
   KEY ex_idx (exc_seq_region_id, exc_seq_region_start)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1183,17 +1294,18 @@ CREATE TABLE assembly_exception (
 
 CREATE TABLE coord_system (
 
-  coord_system_id             INT NOT NULL auto_increment,
+  coord_system_id             INT NOT NULL AUTO_INCREMENT,
   name                        VARCHAR(40) NOT NULL,
   version                     VARCHAR(40),
   rank                        INT NOT NULL,
-  attrib                      SET ('default_version', 'sequence_level'),
+  attrib                      SET('default_version', 'sequence_level'),
 
-  UNIQUE(name, version),
-  UNIQUE(rank),
+  UNIQUE (name, version),
+  UNIQUE (rank),
   PRIMARY KEY (coord_system_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1211,33 +1323,45 @@ CREATE TABLE meta_coord (
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
+################################################################################
+#
+# Table structure for table 'density_feature'
+#
 
 CREATE TABLE density_feature (
-  density_feature_id    INT NOT NULL auto_increment,
-  density_type_id       INT NOT NULL, #FK refs density_type
-  seq_region_id         INT NOT NULL, #FK refs seq_region
+
+  density_feature_id    INT NOT NULL AUTO_INCREMENT,
+  density_type_id       INT NOT NULL,
+  seq_region_id         INT NOT NULL,
   seq_region_start      INT NOT NULL,
   seq_region_end        INT NOT NULL,
   density_value         FLOAT NOT NULL,
 
-  PRIMARY KEY(density_feature_id),
+  PRIMARY KEY (density_feature_id),
   KEY seq_region_idx (density_type_id, seq_region_id, seq_region_start),
   KEY seq_region_id_idx (seq_region_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
+################################################################################
+#
+# Table structure for table 'density_type'
+#
 
 CREATE TABLE density_type (
-  density_type_id       INT NOT NULL auto_increment,
-  analysis_id           INT NOT NULL, #FK refs analysis
+
+  density_type_id       INT NOT NULL AUTO_INCREMENT,
+  analysis_id           INT NOT NULL,
   block_size            INT NOT NULL,
   region_features       INT NOT NULL,
   value_type            ENUM('sum','ratio') NOT NULL,
-  PRIMARY KEY(density_type_id),
-  UNIQUE(analysis_id, block_size, region_features)
+  
+  PRIMARY KEY (density_type_id),
+  UNIQUE (analysis_id, block_size, region_features)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1247,21 +1371,21 @@ CREATE TABLE density_type (
 
 CREATE TABLE regulatory_feature (
 
-  regulatory_feature_id INT NOT NULL auto_increment,
-  name                  VARCHAR(255) NOT NULL,
-  seq_region_id         INT NOT NULL,                  # FK refs seq_region
-  seq_region_start      INT NOT NULL,
-  seq_region_end        INT NOT NULL,
-  seq_region_strand     TINYINT NOT NULL,
-  analysis_id           INT NOT NULL,                  # FK refs analysis
-  regulatory_factor_id  INT,                           # FK refs regulatory_factor
+  regulatory_feature_id   INT NOT NULL AUTO_INCREMENT,
+  name                    VARCHAR(255) NOT NULL,
+  seq_region_id           INT NOT NULL,
+  seq_region_start        INT NOT NULL,
+  seq_region_end          INT NOT NULL,
+  seq_region_strand       TINYINT NOT NULL,
+  analysis_id             INT NOT NULL,
+  regulatory_factor_id    INT,
 
-
-  PRIMARY KEY(regulatory_feature_id),
-  KEY seq_region_idx(seq_region_id, analysis_id, seq_region_start),
-  KEY seq_region_idx_2(seq_region_id, seq_region_start)
+  PRIMARY KEY (regulatory_feature_id),
+  KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start),
+  KEY seq_region_idx_2 (seq_region_id, seq_region_start)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1270,13 +1394,15 @@ CREATE TABLE regulatory_feature (
 
 CREATE TABLE regulatory_factor (
 
-  regulatory_factor_id   INT NOT NULL auto_increment,
+  regulatory_factor_id   INT NOT NULL AUTO_INCREMENT,
   name                   VARCHAR(255) NOT NULL,
-  type                   ENUM('miRNA_target', 'transcription_factor', 'transcription_factor_complex'),
+  type                   ENUM('miRNA_target', 'transcription_factor',
+                              'transcription_factor_complex'),
 
-  PRIMARY KEY(regulatory_factor_id)
+  PRIMARY KEY (regulatory_factor_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1286,11 +1412,11 @@ CREATE TABLE regulatory_factor (
 
 CREATE TABLE regulatory_feature_object (
 
-  regulatory_feature_id INT NOT NULL,               # FK to regulatory_feature
-  ensembl_object_type   ENUM( 'Transcript', 'Translation', 'Gene') NOT NULL,
-  ensembl_object_id     INT NOT NULL,               # FK to transcript,gene etc
-  influence             ENUM('positive', 'negative', 'mixed', 'unknown'),
-  evidence              VARCHAR(255),
+  regulatory_feature_id   INT NOT NULL,
+  ensembl_object_type     ENUM('Transcript', 'Translation', 'Gene') NOT NULL,
+  ensembl_object_id       INT NOT NULL, # FK to transcript,gene etc
+  influence               ENUM('positive', 'negative', 'mixed', 'unknown'),
+  evidence                VARCHAR(255),
 
   KEY regulatory_feature_idx (regulatory_feature_id),
   KEY ensembl_object_idx (ensembl_object_type, ensembl_object_id)
@@ -1306,15 +1432,16 @@ CREATE TABLE regulatory_feature_object (
 
 CREATE TABLE regulatory_factor_coding (
 
-  regulatory_factor_id  INT NOT NULL,      # FK to regulatory_factor
-  transcript_id         INT,               # FK to transcript
-  gene_id         	INT,               # FK to gene
+  regulatory_factor_id  INT NOT NULL,
+  transcript_id         INT,
+  gene_id         	INT,
 
   KEY transcript_idx (transcript_id),
   KEY gene_idx (gene_id),
   KEY regulatory_factor_idx (regulatory_factor_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1324,23 +1451,25 @@ CREATE TABLE regulatory_factor_coding (
 
 CREATE TABLE regulatory_search_region (
 
-  regulatory_search_region_id  INT NOT NULL auto_increment,
-  name                         VARCHAR(255) NOT NULL,
-  seq_region_id                INT NOT NULL,                 # FK refs seq_region
-  seq_region_start             INT NOT NULL,
-  seq_region_end               INT NOT NULL,
-  seq_region_strand            TINYINT NOT NULL,
-  ensembl_object_type          ENUM( 'Transcript', 'Translation', 'Gene') NOT NULL,
-  ensembl_object_id            INT,           # FK to gene/transcript/translation
-  analysis_id                  INT NOT NULL,  # FK to analysis
+  regulatory_search_region_id  INT NOT NULL AUTO_INCREMENT,
+  name                        VARCHAR(255) NOT NULL,
+  seq_region_id               INT NOT NULL,
+  seq_region_start            INT NOT NULL,
+  seq_region_end              INT NOT NULL,
+  seq_region_strand           TINYINT NOT NULL,
+  ensembl_object_type         ENUM('Transcript', 'Translation', 'Gene')
+                              NOT NULL,
+  ensembl_object_id           INT,  # FK to gene/transcript/translation
+  analysis_id                 INT NOT NULL,
 
   PRIMARY KEY (regulatory_search_region_id),
   KEY rsr_idx (regulatory_search_region_id),
   KEY ensembl_object_idx (ensembl_object_type, ensembl_object_id),
-  KEY seq_region_idx(seq_region_id, seq_region_start),
-  KEY seq_region_idx_2(seq_region_id, seq_region_start)
+  KEY seq_region_idx (seq_region_id, seq_region_start),
+  KEY seq_region_idx_2 (seq_region_id, seq_region_start)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1358,14 +1487,17 @@ CREATE TABLE unmapped_object (
   unmapped_reason_id    SMALLINT(5) UNSIGNED NOT NULL,
   query_score           DOUBLE,
   target_score          DOUBLE,
-  ensembl_id            INT(10) unsigned default '0',
-  ensembl_object_type   ENUM('RawContig','Transcript','Gene','Translation') collate latin1_bin default 'RawContig',
-  PRIMARY KEY            ( unmapped_object_id ),
-  KEY                    id_idx( identifier ),
-  KEY                    anal_idx( analysis_id ),
-  KEY                    anal_exdb_idx( analysis_id, external_db_id)
+  ensembl_id            INT(10) UNSIGNED default '0',
+  ensembl_object_type   ENUM('RawContig','Transcript','Gene','Translation')
+                        default 'RawContig',
+
+  PRIMARY KEY (unmapped_object_id),
+  KEY id_idx (identifier),
+  KEY anal_idx (analysis_id),
+  KEY anal_exdb_idx (analysis_id, external_db_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1379,6 +1511,7 @@ CREATE TABLE unmapped_reason (
   summary_description    VARCHAR(255),
   full_description       VARCHAR(255),
 
-  PRIMARY KEY ( unmapped_reason_id )
+  PRIMARY KEY (unmapped_reason_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+

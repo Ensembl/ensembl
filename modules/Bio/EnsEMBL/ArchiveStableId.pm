@@ -1,11 +1,4 @@
-# EnsEMBL module for ArchiveStableId
-# Copyright EMBL-EBI/Sanger center 2003
-#
-#
-#
-# You may distribute this module under the same terms as perl itself
-
-# POD documentation - main docs before the code
+package Bio::EnsEMBL::ArchiveStableId;
 
 =head1 NAME
 
@@ -13,68 +6,82 @@ Bio::EnsEMBL::ArchiveStableId
 
 =head1 SYNOPSIS
 
-ArchiveStableId objects are the main workunit for retrieving stable id archived information from
- EnsEMBL core database.
-
 
 =head1 DESCRIPTION
 
- Attributes:
+ArchiveStableId objects are the main workunit for retrieving stable id archived
+information from EnsEMBL core database.
+
+Attributes:
   type: Gene, Transcript, Translation, Exon, other, undef
   stable_id: eg. ENSG00000000001
+  version: e.g. 1
   db_name: eg. homo_sapiens_core_12_31
-  version: 1
+  release: e.g. 35
+  assembly: e.g. NCBI35
+  successors: listref of Bio::EnsEMBL::ArchiveStableIds
+  adaptor: Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
 
- Methods:
-  new:
-  new_fast:
-  get_all_direct_predecessors:
-  get_all_direct_successors:
+Status: At Risk. This module is in development.
+ 
+=head1 METHODS
 
-  get_components:
-  
- Status:   At Risk. This module is in development.
+    new
+    new_fast
+    get_all_predecessors
+    get_all_successors
+    get_peptide
+    get_all_transcript_archive_ids
+    get_all_translation_archive_ids
 
+=head1 LICENCE
+
+This code is distributed under an Apache style licence:
+Please see http://www.ensembl.org/code_licence.html for details
+
+=head1 AUTHOR
+
+Ensembl core API team
+Currently maintained by Patrick Meidl <meidl@ebi.ac.uk>
+
+=head1 CONTACT
+
+Please post comments/questions to the Ensembl development list
+<ensembl-dev@ebi.ac.uk>
 
 =cut
-
-
-
-package Bio::EnsEMBL::ArchiveStableId;
+  
 
 use strict;
 use warnings;
 no warnings qw(uninitialized);
 
 use Bio::EnsEMBL::Root;
+our @ISA = qw(Bio::EnsEMBL::Root);
+
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(deprecate);
-
-use vars qw(@ISA);
-
-
-@ISA = qw(Bio::EnsEMBL::Root);
-
 
 
 =head2 new
 
-  Arg  1     : -stable_id $stable_id 
-  Arg [ ]    : -version $version 
-  Arg [ ]    : -db_name $db_name 
-  Arg [ ]    : -adaptor $adaptor 
-  Arg [ ]    : -type $type 
-  "Gene", "Transcript", "Translation", "Exon"
-  Example    : none
-  Description: standard constructor with named arguments to create ArchiveStableId
-  Returntype : Bio::EnsEMBL::ArchiveStableId
-  Exceptions : none
-  Caller     : Adaptor
-  Status     : At Risk
-             : under development
+  Arg [STABLE_ID] : String $stable_id 
+  Arg [VERSION]   : Int $version 
+  Arg [DB_NAME]   : String $db_name 
+  Arg [RELEASE]   : String $release
+  Arg [ASSEMBLY_NAME] : String $assembly
+  Arg [TYPE]      : String $type - "Gene", "Transcript", "Translation", "Exon"
+  Arg [ADAPTOR]   : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor $adaptor 
+  Example         : none
+  Description     : standard constructor with named arguments to create
+                    ArchiveStableId
+  Returntype      : Bio::EnsEMBL::ArchiveStableId
+  Exceptions      : none
+  Caller          : general, Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
+  Status          : At Risk
+                  : under development
 
 =cut
-
 
 sub new {
   my $class = shift;
@@ -82,12 +89,15 @@ sub new {
 
   my $self = bless {}, $class;
 
-  my ( $stable_id, $version, $db_name, $type, $adaptor ) = 
-    rearrange( [ qw( STABLE_ID VERSION DB_NAME TYPE ADAPTOR ) ], @_ );
+  my ($stable_id, $version, $db_name, $release, $assembly, $type, $adaptor) =
+    rearrange([qw( STABLE_ID VERSION DB_NAME RELEASE ASSEMBLY TYPE ADAPTOR)],
+    @_ );
 
   $self->{'stable_id'} = $stable_id;
   $self->{'version'} = $version;
   $self->{'db_name'} = $db_name;
+  $self->{'release'} = $release;
+  $self->{'assembly'} = $assembly;
   $self->{'type'} = $type;
   $self->{'adaptor'} = $adaptor;
 
@@ -95,93 +105,107 @@ sub new {
 }
 
 
-
 =head2 new_fast
 
-  Arg [1]    : string $stable_id
-  Arg [2]    : int $version
-  Arg [3]    : string $db_name
-  Arg [4]    : string $type
-  Arg [5]    : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor $adaptor
-  Example    : none
-  Description: faster version of above constructor
-  Returntype : Bio::EnsEMBL::ArchiveStableId
-  Exceptions : none
-  Caller     : general, Adaptor
-  Status     : At Risk
-             : under development
+  Arg [1]     : String $stable_id 
+  Arg [2]     : Int $version 
+  Arg [3]     : String $db_name 
+  Arg [4]     : String $release
+  Arg [5]     : String $assembly
+  Arg [6]     : String $type - "Gene", "Transcript", "Translation", "Exon"
+  Arg [7]     : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor $adaptor 
+  Example     : none
+  Description : faster version of above constructor
+  Returntype  : Bio::EnsEMBL::ArchiveStableId
+  Exceptions  : none
+  Caller      : general, Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
+  Status      : At Risk
+              : under development
 
 =cut
-
 
 sub new_fast {
   my $class = shift;
   
-  $class = ref( $class ) || $class;
+  $class = ref ($class) || $class;
 
   my $self = bless {
-		    'stable_id' => $_[0],
-		    'version' => $_[1],
-		    'db_name' => $_[2],
-		    'type' => $_[3],
-		    'adaptor' => $_[4]
-		   }, $class;
+    'stable_id' => $_[0],
+      'version' => $_[1],
+      'db_name' => $_[2],
+      'release' => $_[3],
+      'assembly' => $_[4],
+      'type' => $_[5],
+      'adaptor' => $_[6]
+  }, $class;
+
   return $self;
 }
 
 
 =head2 get_all_predecessors
 
-  Args       : none
-  Example    : none
-  Description: Retrieve a list of ArchiveStableIds that were mapped to this one. 
-  Returntype : listref Bio::EnsEMBL::ArchiveStableId
-  Exceptions : none
-  Caller     : general
-  Status     : At Risk
-             : under development
+  Args        : none
+  Example     : none
+  Description : Retrieve a list of ArchiveStableIds that were mapped to this
+                one.
+  Returntype  : listref of Bio::EnsEMBL::ArchiveStableId
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
 
 =cut
 
-
 sub get_all_predecessors {
   my $self = shift;
+  
+  my $predecessors = $self->adaptor->fetch_predecessors_by_archive_id($self);
+  
+  foreach my $pre (@$predecessors) {
+    $pre->successors($self);
+  }
 
-  $self->adaptor->fetch_pre_by_arch_id( $self );
+  return $predecessors;
 }
+
 
 =head2 get_all_successors
 
-  Args       : none
-  Example    : none
-  Description: Retrieve a list of ArchiveStableIds that this one was mapped to.
-  Returntype : listref Bio::EnsEMBL::ArchiveStableId
-  Exceptions : none
-  Caller     : general
-  Status     : At Risk
-             : under development
+  Args        : none
+  Example     : none
+  Description : Retrieve a list of ArchiveStableIds that this one was mapped to.
+  Returntype  : listref Bio::EnsEMBL::ArchiveStableId
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
 
 =cut
 
 sub get_all_successors {
   my $self = shift;
 
-  $self->adaptor->fetch_succ_by_arch_id( $self );
+  if ($self->{'successors'}) {
+    return $self->{'successors'};
+  } else {
+    my $successors = $self->adaptor->fetch_successors_by_archive_id($self);
+    return $self->successors(@$successors);
+  }
 }
-
 
 
 =head2 get_peptide
 
-  Args       : none
-  Example    : none
-  Description: Retrieves the peptide string for this ArchiveStableId.
-               Undef if this is not a Translation or cant be found in the database.
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : At Risk
-             : under development
+  Args        : none
+  Example     : none
+  Description : Retrieves the peptide string for this ArchiveStableId.
+  Returntype  : String, or undef if this is not a Translation or cant be found
+                in the database.
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
 
 =cut
 
@@ -198,18 +222,17 @@ sub get_peptide {
 
 =head2 get_all_transcript_archive_ids
 
-  Args       : none
-  Example    : none
-  Description: If this is a genes ArchiveStableId and found in the database, this 
-    function gets the transcripts archiveStableIds from it. Returns undef otherwise.
-  Returntype : listref Bio::EnsEMBL::ArchiveStableId
-  Exceptions : empty if not a gene stable id or not in database
-  Caller     : general
-  Status     : At Risk
-             : under development
+  Args        : none
+  Example     : none
+  Description : If this is a genes ArchiveStableId and found in the database,
+                this function gets the transcripts archiveStableIds from it.
+  Returntype  : listref of Bio::EnsEMBL::ArchiveStableId
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
 
 =cut
-
 
 sub get_all_transcript_archive_ids {
   my $self = shift;
@@ -224,21 +247,19 @@ sub get_all_transcript_archive_ids {
 }
 
 
-
 =head2 get_all_translation_archive_ids
 
-  Args       : none
-  Example    : none
-  Description: Retrieves the Translation ArchiveStableId for this transcript stable id. 
-    If not found or this is not a transcripts id return undef
-  Returntype : Bio::EnsEMBL::ArchiveStableId
-  Exceptions : undef if not in db or not a Transcript
-  Caller     : general
-  Status     : At Risk
-             : under development
+  Args        : none
+  Example     : none
+  Description : Retrieves the Translation ArchiveStableIds for this transcript
+                stable id. 
+  Returntype  : listref of Bio::EnsEMBL::ArchiveStableId
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
 
 =cut
-
 
 sub get_all_translation_archive_ids {
   my $self = shift;
@@ -259,52 +280,54 @@ sub get_all_translation_archive_ids {
   }
 }
 
-sub get_translation_archive_id {
-    my $self = shift;
-    
-    deprecate("Use get_all_translation_archive_ids() instead");
-    
-    return $self->get_all_translation_archive_ids;
-}
 
-
-
-# getter / setter attribute section
-
-sub type {
-  my $self = shift;
-  if( @_ ) {
-    $self->{'type'} = shift;
-  }
-  return $self->{'type'};
-}
+# getter/setters for attributes
 
 sub stable_id {
   my $self = shift;
-  if( @_ ) {
-    $self->{'stable_id'} = shift;
-  }
+  $self->{'stable_id'} = shift if (@_);
   return $self->{'stable_id'};
 }
 
 sub db_name {
   my $self = shift;
-  if( @_ ) {
-    $self->{'db_name'} = shift;
-  }
+  $self->{'db_name'} = shift if (@_);
   return $self->{'db_name'};
+}
+
+sub release {
+  my $self = shift;
+  $self->{'release'} = shift if (@_);
+  return $self->{'release'};
+}
+
+sub assembly {
+  my $self = shift;
+  $self->{'assembly'} = shift if (@_);
+  return $self->{'assembly'};
 }
 
 sub adaptor {
   my $self = shift;
-  if( @_ ) {
-    $self->{'adaptor'} = shift;
-  }
+  $self->{'adaptor'} = shift if (@_);
   return $self->{'adaptor'};
+}
+
+sub type {
+  my $self = shift;
+  $self->{'type'} = shift if (@_);
+  return $self->{'type'};
+}
+
+sub successors {
+  my $self = shift;
+  $self->{'successors'} = \@_;
+  return $self->{'successors'};
 }
 
 
 # lazy loading 
+
 sub version {
   my $self = shift;
   if( @_ ) {
@@ -320,5 +343,17 @@ sub version {
   }
   return $self->{'version'};
 }
+
+
+# deprecated methods (changed to more descriptive names)
+
+sub get_translation_archive_id {
+    my $self = shift;
+    
+    deprecate("Use get_all_translation_archive_ids() instead");
+    
+    return $self->get_all_translation_archive_ids;
+}
+
 
 1;

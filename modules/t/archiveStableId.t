@@ -105,11 +105,11 @@ for my $asi ( @$succ_asis ) {
 ok( scalar( @$succ_asis ) == 0 );
 
 #
-# 8 fetch_all_currently_related
+# 8 fetch_successor_history
 #
 
 $asi = $asia->fetch_by_stable_id_dbname( "G2", "release_1" );
-my $asis = $asia->fetch_all_currently_related( $asi );
+my $asis = $asia->fetch_successor_history( $asi );
 
 debug( "\tCurrently related from G2.release_1" );
 for my $asi ( @$asis ) {

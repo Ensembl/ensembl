@@ -56,6 +56,15 @@ CREATE TABLE unmapped_reason (
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
+# Add some more columns to mapping_session
+
+ALTER TABLE mapping_session ADD COLUMN new_assembly varchar(20) NOT NULL default '' AFTER new_db_name;
+ALTER TABLE mapping_session ADD COLUMN old_assembly varchar(20) NOT NULL default '' AFTER new_db_name;
+ALTER TABLE mapping_session ADD COLUMN new_release varchar(5) NOT NULL default '' AFTER new_db_name;
+ALTER TABLE mapping_session ADD COLUMN old_release varchar(5) NOT NULL default '' AFTER new_db_name;
+ALTER TABLE mapping_session CHANGE created created DATETIME NOT NULL;
+
+
 # Add the new oligo tables, which replace the affy tables
 
 CREATE TABLE oligo_feature (
