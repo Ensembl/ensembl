@@ -129,7 +129,8 @@ sub run {
       my ($file) = $urls =~ /.*\/(.*)/;
       if ($urls =~ /^LOCAL:(.*)/i) {
 	my $local_file = $1;
-	$file_cs = md5sum("$dir/$file");
+	#$file_cs = md5sum("$dir/$file");
+        $file_cs = md5sum($local_file);
 	if(defined($file_cs)){
 	  if (!defined $checksum || $checksum ne $file_cs) {
 	    print "Checksum for $file does not match, parsing\n";
