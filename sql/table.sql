@@ -954,10 +954,10 @@ CREATE TABLE map (
 CREATE TABLE misc_feature (
 
   misc_feature_id 	      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL default '0',
-  seq_region_start            INT(10) UNSIGNED NOT NULL default '0',
-  seq_region_end              INT(10) UNSIGNED NOT NULL default '0',
-  seq_region_strand           TINYINT(4) NOT NULL default '0',
+  seq_region_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  seq_region_start            INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  seq_region_end              INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  seq_region_strand           TINYINT(4) NOT NULL DEFAULT '0',
 
   PRIMARY KEY (misc_feature_id),
   KEY seq_region_idx (seq_region_id, seq_region_start)
@@ -972,11 +972,11 @@ CREATE TABLE misc_feature (
 
 CREATE TABLE misc_attrib (
 
-  misc_feature_id             INT(10) UNSIGNED NOT NULL default '0',
-  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL default '0',
-  value                       VARCHAR(255) NOT NULL default '',
+  misc_feature_id             INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
+  value                       TEXT NOT NULL DEFAULT '',
 
-  KEY type_val_idx (attrib_type_id, value),
+  KEY type_val_idx (attrib_type_id, value(40)),
   KEY misc_feature_idx (misc_feature_id)
   
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
@@ -989,11 +989,11 @@ CREATE TABLE misc_attrib (
 
 CREATE TABLE translation_attrib (
 
-  translation_id              INT(10) UNSIGNED NOT NULL default '0',
-  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL default '0',
-  value                       VARCHAR(255) NOT NULL default '',
+  translation_id              INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
+  value                       TEXT NOT NULL DEFAULT '',
 
-  KEY type_val_idx (attrib_type_id, value),
+  KEY type_val_idx (attrib_type_id, value(40)),
   KEY translation_idx (translation_id)
   
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
@@ -1005,11 +1005,11 @@ CREATE TABLE translation_attrib (
 
 CREATE TABLE transcript_attrib (
 
-  transcript_id               INT(10) UNSIGNED NOT NULL default '0',
-  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL default '0',
-  value                       VARCHAR(255) NOT NULL default '',
+  transcript_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
+  value                       TEXT NOT NULL DEFAULT '',
 
-  KEY type_val_idx (attrib_type_id, value),
+  KEY type_val_idx (attrib_type_id, value(40)),
   KEY transcript_idx (transcript_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
@@ -1022,11 +1022,11 @@ CREATE TABLE transcript_attrib (
 
 CREATE TABLE gene_attrib (
 
-  gene_id                     INT(10) UNSIGNED NOT NULL default '0',
-  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL default '0',
-  value                       VARCHAR(255) NOT NULL default '',
+  gene_id                     INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
+  value                       TEXT NOT NULL DEFAULT '',
 
-  KEY type_val_idx (attrib_type_id, value),
+  KEY type_val_idx (attrib_type_id, value(40)),
   KEY gene_idx (gene_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
@@ -1039,11 +1039,11 @@ CREATE TABLE gene_attrib (
 
 CREATE TABLE seq_region_attrib (
 
-  seq_region_id               INT(10) UNSIGNED NOT NULL default '0',
-  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL default '0',
-  value                       VARCHAR(255) NOT NULL default '',
+  seq_region_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
+  value                       TEXT NOT NULL DEFAULT '',
 
-  KEY type_val_idx (attrib_type_id, value),
+  KEY type_val_idx (attrib_type_id, value(40)),
   KEY seq_region_idx (seq_region_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
@@ -1057,8 +1057,8 @@ CREATE TABLE seq_region_attrib (
 CREATE TABLE attrib_type (
 
   attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
-  code                        VARCHAR(15) NOT NULL default '',
-  name                        VARCHAR(255) NOT NULL default '',
+  code                        VARCHAR(15) NOT NULL DEFAULT '',
+  name                        VARCHAR(255) NOT NULL DEFAULT '',
   description                 TEXT,
 
   PRIMARY KEY (attrib_type_id),
@@ -1075,8 +1075,8 @@ CREATE TABLE attrib_type (
 CREATE TABLE misc_set (
 
   misc_set_id                 SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
-  code                        VARCHAR(25) NOT NULL default '',
-  name                        VARCHAR(255) NOT NULL default '',
+  code                        VARCHAR(25) NOT NULL DEFAULT '',
+  name                        VARCHAR(255) NOT NULL DEFAULT '',
   description                 TEXT NOT NULL,
   max_length                  INT UNSIGNED NOT NULL,
 
@@ -1093,8 +1093,8 @@ CREATE TABLE misc_set (
 
 CREATE TABLE misc_feature_misc_set (
 
-  misc_feature_id 	      INT(10) UNSIGNED NOT NULL default '0',
-  misc_set_id 		      SMALLINT(5) UNSIGNED NOT NULL default '0',
+  misc_feature_id 	      INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  misc_set_id 		      SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
 
   PRIMARY KEY (misc_feature_id, misc_set_id),
   KEY reverse_idx (misc_set_id, misc_feature_id)
@@ -1168,12 +1168,12 @@ CREATE TABLE qtl_feature (
 CREATE TABLE mapping_session (
 
   mapping_session_id 	      INT(11) NOT NULL AUTO_INCREMENT,
-  old_db_name                 VARCHAR(80) NOT NULL default '',
-  new_db_name                 VARCHAR(80) NOT NULL default '',
-  old_release                 VARCHAR(5) NOT NULL default '',
-  new_release                 VARCHAR(5) NOT NULL default '',
-  old_assembly                VARCHAR(20) NOT NULL default '',
-  new_assembly                VARCHAR(20) NOT NULL default '',
+  old_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
+  new_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
+  old_release                 VARCHAR(5) NOT NULL DEFAULT '',
+  new_release                 VARCHAR(5) NOT NULL DEFAULT '',
+  old_assembly                VARCHAR(20) NOT NULL DEFAULT '',
+  new_assembly                VARCHAR(20) NOT NULL DEFAULT '',
   created_date                DATETIME NOT NULL,
 
   PRIMARY KEY (mapping_session_id)
@@ -1192,7 +1192,7 @@ CREATE TABLE stable_id_event (
   old_version               SMALLINT,
   new_stable_id             VARCHAR(128),
   new_version               SMALLINT,
-  mapping_session_id        INT(11) NOT NULL default '0',
+  mapping_session_id        INT(11) NOT NULL DEFAULT '0',
   type                      ENUM('gene', 'transcript', 'translation') NOT NULL,
 
   UNIQUE KEY uni_idx (mapping_session_id, old_stable_id, old_version,
@@ -1487,9 +1487,9 @@ CREATE TABLE unmapped_object (
   unmapped_reason_id    SMALLINT(5) UNSIGNED NOT NULL,
   query_score           DOUBLE,
   target_score          DOUBLE,
-  ensembl_id            INT(10) UNSIGNED default '0',
+  ensembl_id            INT(10) UNSIGNED DEFAULT '0',
   ensembl_object_type   ENUM('RawContig','Transcript','Gene','Translation')
-                        default 'RawContig',
+                        DEFAULT 'RawContig',
 
   PRIMARY KEY (unmapped_object_id),
   KEY id_idx (identifier),

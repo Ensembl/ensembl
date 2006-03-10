@@ -136,3 +136,27 @@ DROP TABLE affy_array;
 DROP TABLE affy_probe;
 DROP TABLE affy_feature;
 
+
+# change column 'value' in attrib tables from VARCHAR(255) to TEXT
+
+ALTER TABLE misc_attrib DROP INDEX type_val_idx;
+ALTER TABLE misc_attrib CHANGE value value TEXT NOT NULL DEFAULT '';
+ALTER TABLE misc_attrib ADD INDEX type_val_idx (attrib_type_id, value(40));
+
+ALTER TABLE seq_region_attrib DROP INDEX type_val_idx;
+ALTER TABLE seq_region_attrib CHANGE value value TEXT NOT NULL DEFAULT '';
+ALTER TABLE seq_region_attrib ADD INDEX type_val_idx (attrib_type_id, value(40));
+
+ALTER TABLE gene_attrib DROP INDEX type_val_idx;
+ALTER TABLE gene_attrib CHANGE value value TEXT NOT NULL DEFAULT '';
+ALTER TABLE gene_attrib ADD INDEX type_val_idx (attrib_type_id, value(40));
+
+ALTER TABLE transcript_attrib DROP INDEX type_val_idx;
+ALTER TABLE transcript_attrib CHANGE value value TEXT NOT NULL DEFAULT '';
+ALTER TABLE transcript_attrib ADD INDEX type_val_idx (attrib_type_id, value(40));
+
+ALTER TABLE translation_attrib DROP INDEX type_val_idx;
+ALTER TABLE translation_attrib CHANGE value value TEXT NOT NULL DEFAULT '';
+ALTER TABLE translation_attrib ADD INDEX type_val_idx (attrib_type_id, value(40));
+
+
