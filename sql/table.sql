@@ -27,7 +27,7 @@ CREATE TABLE oligo_feature (
   seq_region_strand     TINYINT NOT NULL,
   mismatches            TINYINT,
   oligo_probe_id        INT NOT NULL,
-  analysis_id           INT NOT NULL,
+  analysis_id           INT(10) UNSIGNED NOT NULL,
 
   PRIMARY KEY (oligo_feature_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -402,7 +402,7 @@ CREATE TABLE gene (
 
   gene_id                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
   biotype                     VARCHAR(40) NOT NULL,
-  analysis_id                 INT,
+  analysis_id                 INT(10) UNSIGNED NOT NULL,
   seq_region_id               INT(10) UNSIGNED NOT NULL, 
   seq_region_start            INT(10) UNSIGNED NOT NULL, 
   seq_region_end              INT(10) UNSIGNED NOT NULL, 
@@ -696,7 +696,7 @@ CREATE TABLE identity_xref(
   
   score                   DOUBLE,
   evalue                  DOUBLE,
-  analysis_id             INT,
+  analysis_id             INT(10) UNSIGNED NOT NULL,
 
   PRIMARY KEY (object_xref_id),
   KEY analysis_idx (analysis_id)
@@ -821,7 +821,7 @@ CREATE TABLE prediction_transcript (
   seq_region_start            INT UNSIGNED NOT NULL,
   seq_region_end              INT UNSIGNED NOT NULL,
   seq_region_strand           TINYINT NOT NULL,
-  analysis_id                 INT,
+  analysis_id                 INT(10) UNSIGNED NOT NULL,
   display_label               VARCHAR(255),
   
   PRIMARY KEY (prediction_transcript_id),
@@ -1151,7 +1151,7 @@ CREATE TABLE qtl_feature (
   seq_region_start      INT NOT NULL,
   seq_region_end        INT NOT NULL,
   qtl_id                INT NOT NULL,
-  analysis_id           INT NOT NULL,
+  analysis_id           INT(10) UNSIGNED NOT NULL,
 
   KEY (qtl_id),
   KEY loc_idx (seq_region_id, seq_region_start),
@@ -1174,7 +1174,7 @@ CREATE TABLE mapping_session (
   new_release                 VARCHAR(5) NOT NULL DEFAULT '',
   old_assembly                VARCHAR(20) NOT NULL DEFAULT '',
   new_assembly                VARCHAR(20) NOT NULL DEFAULT '',
-  created_date                DATETIME NOT NULL,
+  created                     DATETIME NOT NULL,
 
   PRIMARY KEY (mapping_session_id)
 
@@ -1352,7 +1352,7 @@ CREATE TABLE density_feature (
 CREATE TABLE density_type (
 
   density_type_id       INT NOT NULL AUTO_INCREMENT,
-  analysis_id           INT NOT NULL,
+  analysis_id           INT(10) UNSIGNED NOT NULL,
   block_size            INT NOT NULL,
   region_features       INT NOT NULL,
   value_type            ENUM('sum','ratio') NOT NULL,
@@ -1377,7 +1377,7 @@ CREATE TABLE regulatory_feature (
   seq_region_start        INT NOT NULL,
   seq_region_end          INT NOT NULL,
   seq_region_strand       TINYINT NOT NULL,
-  analysis_id             INT NOT NULL,
+  analysis_id             INT(10) UNSIGNED NOT NULL,
   regulatory_factor_id    INT,
 
   PRIMARY KEY (regulatory_feature_id),
@@ -1460,7 +1460,7 @@ CREATE TABLE regulatory_search_region (
   ensembl_object_type         ENUM('Transcript', 'Translation', 'Gene')
                               NOT NULL,
   ensembl_object_id           INT,  # FK to gene/transcript/translation
-  analysis_id                 INT NOT NULL,
+  analysis_id                 INT(10) UNSIGNED NOT NULL,
 
   PRIMARY KEY (regulatory_search_region_id),
   KEY rsr_idx (regulatory_search_region_id),
