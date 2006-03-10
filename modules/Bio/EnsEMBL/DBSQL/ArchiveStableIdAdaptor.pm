@@ -74,7 +74,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 our @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 use Bio::EnsEMBL::ArchiveStableId;
-use Bio::EnsEMBL::Utils::Exception qw(deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(deprecate warning);
 
 
 =head2 fetch_by_stable_id
@@ -516,14 +516,15 @@ sub fetch_successor_history {
     } else {
       last;
     }
+
+    # filter duplicates
+    my %unique = map { join(":", $_->stable_id, $_->version, $_->release) =>
+      $_ } @$new;
+    @$new = values %unique;
+    
     @$old = @$new;
     push @result, @$new;
   }
-
-  # filter duplicates
-  my %unique = map { join(":", $_->stable_id, $_->version, $_->release) => $_ }
-    @result;
-  @result = values %unique;
 
   return \@result;
 }
@@ -573,14 +574,15 @@ sub fetch_predecessor_history {
     } else {
       last;
     }
+    
+    # filter duplicates
+    my %unique = map { join(":", $_->stable_id, $_->version, $_->release) =>
+      $_ } @$new;
+    @$new = values %unique;
+    
     @$old = @$new;
     push @result, @$new;
   }
-
-  # filter duplicates
-  my %unique = map { join(":", $_->stable_id, $_->version, $_->release) => $_ }
-    @result;
-  @result = values %unique;
 
   return \@result;
 }
