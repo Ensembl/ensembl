@@ -46,12 +46,12 @@ my $reg = "Bio::EnsEMBL::Registry";
 =head2 new
 
   Example      : $MergedAdaptor = new 
-               : Bio::EnsEMBL::DBSQL::MergedAdaptor(-species=> 'human', -type =>'Population', -groups => 'Sanger,Ensembl');
+               : Bio::EnsEMBL::DBSQL::MergedAdaptor(-species=> 'human', -type =>'Population', -groups => ['Sanger','Ensembl']);
   Arg [SPECIES]: (optional) string 
                   species name to get adaptors for
   Arg [TYPE]   : (optional) string 
                   type to get adaptors for
-  Arg [GROUPS] : (optional) list of groups, separated by comma
+  Arg [GROUPS] : (optional) ref to list
 
   Description: Creates a new MergedAdaptor
   Returntype : Bio::EnsEMBL::DBSQL::MergedAdaptor
@@ -82,9 +82,7 @@ sub new {
   }
   else{
       #get only specified adaptors for the particular groups
-      $groups =~ s/\s+//g;
-      my @groups = split /,/,$groups; #ge the list of groups in an array
-      foreach my $group (@groups){
+      foreach my $group (@{$groups}){
 	  push @adaps, $reg->get_adaptor($species,$group,$type);
       }
   }
