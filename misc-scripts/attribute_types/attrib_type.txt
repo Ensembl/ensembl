@@ -131,6 +131,6 @@
 52	author	Author	Group resonsible for Vega annotation
 53	author_email	Author email address	Author email address
 54	remark	Remark	Annotation remark
-55	transcr_class	Transcript class    Transcript class
+55	transcr_class	Transcript class	Transcript class
 56	KnownPTCount	processed_transcript_KNOWN	Number of Known Processed Transcripts
 57	ccds	CCDS	CCDS identifier
