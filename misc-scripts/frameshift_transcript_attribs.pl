@@ -99,15 +99,23 @@ for my $dbname ( @dbnames ) {
 
   }
 
-  print "$count short intron attributes\n";
-  print "Attributes not stored in database\n" if ($nostore);
+  if ($count) {
 
-  print "Biotypes of affected genes:\n";
-  foreach $biotype (keys %biotypes) {
-    print $biotype . "\t" . $biotypes{$biotype} . "\n";
+    print "$count short intron attributes\n";
+    print "Attributes not stored in database\n" if ($nostore);
+
+    print "Biotypes of affected genes:\n";
+    foreach $biotype (keys %biotypes) {
+      print $biotype . "\t" . $biotypes{$biotype} . "\n";
+    }
+
+    print "\n";
+
+  } else {
+
+    print "No frameshift introns found!\n";
+
   }
-
-  print "\n";
 
 }
 
