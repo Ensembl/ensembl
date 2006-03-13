@@ -76,7 +76,7 @@ CREATE TABLE oligo_feature (
        
        mismatches         TINYINT,
        oligo_probe_id     INT NOT NULL,
-       analysis_id        INT NOT NULL,
+       analysis_id        INT(10) UNSIGNED NOT NULL,
 
        PRIMARY KEY (oligo_feature_id),
        KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -159,4 +159,14 @@ ALTER TABLE translation_attrib DROP INDEX type_val_idx;
 ALTER TABLE translation_attrib CHANGE value value TEXT NOT NULL DEFAULT '';
 ALTER TABLE translation_attrib ADD INDEX type_val_idx (attrib_type_id, value(40));
 
+
+# consistent analysis_id foreign key columns across database
+
+ALTER TABLE gene CHANGE analysis_id analysis_id INT(10) UNSIGNED NOT NULL;
+ALTER TABLE identity_xref CHANGE analysis_id analysis_id INT(10) UNSIGNED NOT NULL;
+ALTER TABLE prediction_transcript CHANGE analysis_id analysis_id INT(10) UNSIGNED NOT NULL;
+ALTER TABLE qtl_feature CHANGE analysis_id analysis_id INT(10) UNSIGNED NOT NULL;
+ALTER TABLE density_type CHANGE analysis_id analysis_id INT(10) UNSIGNED NOT NULL;
+ALTER TABLE regulatory_feature CHANGE analysis_id analysis_id INT(10) UNSIGNED NOT NULL;
+ALTER TABLE regulatory_search_region CHANGE analysis_id analysis_id INT(10) UNSIGNED NOT NULL;
 
