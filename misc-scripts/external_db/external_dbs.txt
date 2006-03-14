@@ -15,10 +15,10 @@
 806	flybase_synonym	1	KNOWNXREF	1	0	5	Flybase Synonym
 807	flybase_name	1	KNOWNXREF	1	0	5	Flybase Name
 808	flybase_transcript_id	1	KNOWNXREF	1	0	5	Flybase transcript ID
-810	gadfly_gene_cgid	1	KNOWNXREF	1	0	10	Gadfly gene CGID
-811	gadfly_transcript_cgid	1	KNOWNXREF	1	0	10	Gadfly transcript CGID
-812	gadfly_translation_cgid	1	KNOWNXREF	1	0	10	Gadfly translation CGID
-821	FlyBaseName_gene	1	KNOWNXREF	1	0	5	FlyBaseName gene
+810	gadfly_gene_cgid	1	XREF	1	0	10	Gadfly gene CGID
+811	gadfly_transcript_cgid	1	XREF	1	0	10	Gadfly transcript CGID
+812	gadfly_translation_cgid	1	XREF	1	0	10	Gadfly translation CGID
+821	FlyBaseName_gene	1	XREF	1	0	5	FlyBaseName gene
 824	FlyBaseName_translations	1	XREF	1	0	5	FlyBaseName translations
 825	FlyBaseName_transcript	1	XREF	1	0	50	FlyBaseName transcript
 900	GKB	1	XREF	1	0	5	GKB
