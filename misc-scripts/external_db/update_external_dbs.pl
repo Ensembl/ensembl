@@ -84,7 +84,7 @@ foreach my $dbname (@dbnames) {
   $sth->finish();
 
   $sth = $db->prepare('INSERT INTO external_db (external_db_id, db_name,
-                                                release, status, dbprimary_acc_linkable,
+                                                db_release, status, dbprimary_acc_linkable,
                                                 display_label_linkable, priority,
                                                 db_display_name)
                        VALUES (?,?,?,?,?,?,?,?)');
