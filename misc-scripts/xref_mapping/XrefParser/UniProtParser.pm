@@ -256,7 +256,7 @@ sub create_xrefs {
     foreach my $dep (@dep_lines) {
       if ($dep =~ /^DR\s+(.+)/) {
 	my ($source, $acc, @extra) = split /;\s*/, $1;
-	if (exists $dependent_sources{$source}) {
+	if (exists $dependent_sources{$source} and $source ne "GO") {
 	  # create dependent xref structure & store it
 	  my %dep;
 	  $dep{SOURCE_NAME} = $source;
