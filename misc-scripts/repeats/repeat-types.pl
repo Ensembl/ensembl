@@ -44,7 +44,7 @@ my $dbh = DBI->connect( $dsn, $user, $pass );
 my @dbnames = map {$_->[0] } @{ $dbh->selectall_arrayref( "show databases" ) };
 
 my @dbs = grep {$_ =~ /$dbpattern/} @dbnames;
-
+die("Haven't found any real dbs from $dbpattern") if(!@dbs);
 foreach my $db (@dbs) {
   warn "using $db";
   $dbh->do("use $db");
