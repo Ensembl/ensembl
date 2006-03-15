@@ -13,7 +13,7 @@ my $usage = "\n$0 --host ecs2 --port 3364 --user ensadmin --pass ensembl --dbnam
 
 This script will dump the current meta_coord table in homo_sapiens_core_27_35a.meta_coord file.
 Then it will update the meta_coord table for all the following table names one by one
- affy_feature
+ oligo_feature
  assembly_exception
  gene
  exon
@@ -52,7 +52,7 @@ my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(-host => $host,
                                                 -pass => $pass,
                                                 -dbname => $dbname);
 
-my @table_names = qw(affy_feature
+my @table_names = qw(oligo_feature
                      assembly_exception
                      gene
                      exon
