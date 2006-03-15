@@ -215,8 +215,9 @@ sub project_go_terms {
     next if ($dbEntry->dbname() ne "GO" || !$dbEntry);
 
     # only project GO terms with non-IEA evidence codes
+    # also exclude ISS terms (manually projeted based on orthologs)
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
-      next DBENTRY if ($et eq "IEA");
+      next DBENTRY if ($et eq "IEA" || $et eq "ISS");
     }
 
     # check that each from GO term isn't already projected
