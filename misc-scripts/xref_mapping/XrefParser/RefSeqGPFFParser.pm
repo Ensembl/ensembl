@@ -195,14 +195,16 @@ sub create_xrefs {
 
       foreach my $ll (@EntrezGeneIDline) {
 	my %dep;
-	$dep{SOURCE_ID} = $dependent_sources{EntrezGene};
+	$dep{SOURCE_ID} = $dependent_sources{EntrezGene} 
+          || die( 'No source for EntrezGene!' );
 	$dep{LINKAGE_SOURCE_ID} = $source_id;
 	$dep{ACCESSION} = $ll;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
       }
       foreach my $mim (@mimline) {
 	my %dep;
-	$dep{SOURCE_ID} = $dependent_sources{MIM};
+	$dep{SOURCE_ID} = $dependent_sources{MIM}
+          || die( 'No source for MIM!' );
 	$dep{LINKAGE_SOURCE_ID} = $source_id;
 	$dep{ACCESSION} = $mim;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
