@@ -1,0 +1,2 @@
+2	Failed to match	Unable to match to any ensembl entity at all
+3	Failed to match at thresholds	Unable to match at the thresholds of 90% for the query or  90% for the target
