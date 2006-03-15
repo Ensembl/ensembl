@@ -51,7 +51,7 @@ print "\ncontinue with update (yes/no)>  ";
 my $input = lc(<STDIN>);
 chomp($input);
 if($input ne 'yes') {
-  print "external_db conversion aborted\n";
+  print "unmapped_reason conversion aborted\n";
   exit();
 }
 
@@ -67,7 +67,7 @@ while($row = <$fh>) {
   my @a = split(/\t/, $row);
   push @rows, {'unmapped_reason_id'    => $a[0],
                'summary_description'   => $a[1],
-	       'full_description'      => $a[3]};
+	       'full_description'      => $a[2]};
 }
 $fh->close();
 
@@ -78,7 +78,7 @@ foreach my $dbname (@dbnames) {
   $sth->execute();
   $sth->finish();
 
-  $sth = $db->prepare('INSERT INTO external_db (unmapped_reason_id,summary_description, full_description)
+  $sth = $db->prepare('INSERT INTO unmapped_reason (unmapped_reason_id,summary_description, full_description)
                        VALUES (?,?,?)');
 
   foreach my $row (@rows) {
