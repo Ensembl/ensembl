@@ -10,7 +10,7 @@ use Bio::EnsEMBL::Attribute;
 
 use Getopt::Long;
 
-my ($host, $port, $user, $pass, $dbpattern, $nostore, $delete);
+my ($host, $port, $user, $pass, $dbpattern, $nostore, $delete, $locations);
 
 GetOptions('host=s'      => \$host,
            'user=s'      => \$user,
@@ -19,6 +19,7 @@ GetOptions('host=s'      => \$host,
            'dbpattern=s' => \$dbpattern,
 	   'nostore'     => \$nostore,
 	   'delete'      => \$delete,
+	   'locations'   => \$locations,
            'help'        => sub { usage(); exit(0); });
 
 $port ||= 3306;
@@ -64,7 +65,8 @@ for my $dbname ( @dbnames ) {
     (qq{SELECT t.transcript_id, g.biotype,
 	MIN(IF(e1.seq_region_strand = 1,
 	       e2.seq_region_start - e1.seq_region_end - 1,
-	       e1.seq_region_start - e2.seq_region_end - 1)) AS intron_length
+	       e1.seq_region_start - e2.seq_region_end - 1)) AS intron_length,
+	       e1.seq_region_end, e2.seq_region_start, e1.seq_region_strand 
 	FROM exon e1, exon e2, exon_transcript et1, exon_transcript et2,
 	transcript t, gene g
 	WHERE et1.exon_id = e1.exon_id
@@ -78,8 +80,8 @@ for my $dbname ( @dbnames ) {
 
   $sth->execute();
 
-  my ($transcript_id, $biotype, $intron_length, $count);
-  $sth->bind_columns(\$transcript_id, \$biotype, \$intron_length);
+  my ($transcript_id, $biotype, $intron_length, $start, $end, $strand, $count);
+  $sth->bind_columns(\$transcript_id, \$biotype, \$intron_length, \$start, \$end, \$strand);
 
   while ($sth->fetch()) {
 
@@ -93,6 +95,8 @@ for my $dbname ( @dbnames ) {
     my $transcript = $transcript_adaptor->fetch_by_dbID($transcript_id);
 
     $attribute_adaptor->store_on_Transcript($transcript, \@attribs) if (!$nostore);
+
+    print join("\t", $start, $end, $strand, $intron_length, "\n") if ($locations);
 
     $biotypes{$biotype}++;
     $count++;
@@ -145,6 +149,8 @@ sub usage {
   [--nostore]   Don't store the attributes, just print results.
 
   [--delete]    Delete any existing "Frameshift" attributes before creating new ones.
+
+  [--locations] Print the start, end and strand of the introns.
 
   [--help]      This text.
 
