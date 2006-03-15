@@ -287,7 +287,7 @@ sub get_stats {
   $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO'");
 
   $str .= " projected ";
-  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO' AND x.info_type='PROJECTED'");
+  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
 
   $str .= "\n";
 
