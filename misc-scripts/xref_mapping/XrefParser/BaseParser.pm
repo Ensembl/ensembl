@@ -73,17 +73,18 @@ sub run {
   }
 
   my $sql =
-    "SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser, su.species_id " .
-      "FROM source s, source_url su " .
+    "SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser, su.species_id, sp.name " .
+      "FROM source s, source_url su, species sp " .
 	"WHERE s.download='Y' AND su.source_id=s.source_id " .
-	  $source_sql . $species_sql .
-	  "ORDER BY s.ordered";
+          "AND su.species_id=sp.species_id " .
+	    $source_sql . $species_sql .
+	      "ORDER BY s.ordered";
   #print $sql . "\n";
 
   my $sth = $dbi->prepare($sql);
   $sth->execute();
-  my ($source_id, $source_url_id, $name, $url, $checksum, $parser, $species_id);
-  $sth->bind_columns(\$source_id, \$source_url_id, \$name, \$url, \$checksum, \$parser, \$species_id);
+  my ($source_id, $source_url_id, $name, $url, $checksum, $parser, $species_id, $species_name);
+  $sth->bind_columns(\$source_id, \$source_url_id, \$name, \$url, \$checksum, \$parser, \$species_id, \$species_name);
   my $last_type = "";
   my $dir;
   my %summary=();
@@ -118,7 +119,7 @@ sub run {
 	print "Parsing $dsn with $parser\n";
         eval "require XrefParser::$parser";
         my $new = "XrefParser::$parser"->new();
-        if($new->run($dsn, $source_id, $species_id)){
+        if($new->run($dsn, $source_id, $species_id, $name, $species_name)){
 	  $summary{$parser}++;
 	}
 	next;
@@ -679,7 +680,7 @@ sub upload_xref_object_graphs {
 			   $xref->{SPECIES_ID});
 
 	my $dep_xref_id = insert_or_select($xref_sth, $dbi->err, $dep{ACCESSION}, $dep{SOURCE_ID});
-			
+
 	if($dbi->err){
 	  print STDERR "dbi\t$dbi->err \n$dep{ACCESSION} \n $dep{SOURCE_ID} \n";
 	}
