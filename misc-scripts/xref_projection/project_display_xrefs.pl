@@ -271,10 +271,10 @@ sub get_stats {
 
   my $str = "Total genes: $total_genes\t";
 
-  my $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND g.display_xref_id IS NOT NULL AND x.display_label NOT LIKE '%[from%'");
+  my $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND g.display_xref_id IS NOT NULL AND x.info_type != 'PROJECTION'");
   $str .= sprintf("Gene names: unprojected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
-  $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.display_label LIKE '%[from%'");
+  $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
   $str .= sprintf(" projected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
   $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x, external_db e WHERE g.display_xref_id=x.xref_id AND x.external_db_id=e.external_db_id AND e.db_name IN ('RefSeq_dna_predicted', 'RefSeq_peptide_predicted')");
@@ -287,7 +287,7 @@ sub get_stats {
   $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO'");
 
   $str .= " projected ";
-  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO' AND x.display_label LIKE '%[from%'");
+  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO' AND x.info_type='PROJECTED'");
 
   $str .= "\n";
 
