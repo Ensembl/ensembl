@@ -66,9 +66,9 @@ for my $dbname ( @dbnames ) {
 	MIN(IF(e1.seq_region_strand = 1,
 	       e2.seq_region_start - e1.seq_region_end - 1,
 	       e1.seq_region_start - e2.seq_region_end - 1)) AS intron_length,
-	       ts.stable_id, e1.seq_region_end, e2.seq_region_start, e1.seq_region_strand
+	       ts.stable_id, e1.seq_region_end, e2.seq_region_start, e1.seq_region_strand, s.name
 	FROM exon e1, exon e2, exon_transcript et1, exon_transcript et2,
-	transcript t, gene g, transcript_stable_id ts 
+	transcript t, gene g, transcript_stable_id ts, seq_region s
 	WHERE et1.exon_id = e1.exon_id
 	AND et2.exon_id = e2.exon_id
 	AND et1.transcript_id = et2.transcript_id
@@ -76,13 +76,14 @@ for my $dbname ( @dbnames ) {
 	AND et1.transcript_id = t.transcript_id
 	AND t.gene_id = g.gene_id
 	AND t.transcript_id = ts.transcript_id
+        AND s.seq_region_id=g.seq_region_id
 	GROUP BY t.transcript_id
 	HAVING intron_length IN (1,2,4,5)});
 
   $sth->execute();
 
-  my ($transcript_id, $biotype, $intron_length, $stable_id, $start, $end, $strand, $count);
-  $sth->bind_columns(\$transcript_id, \$biotype, \$intron_length, \$stable_id, \$start, \$end, \$strand);
+  my ($transcript_id, $biotype, $intron_length, $stable_id, $start, $end, $strand, $count, $seq_region_name);
+  $sth->bind_columns(\$transcript_id, \$biotype, \$intron_length, \$stable_id, \$start, \$end, \$strand, \$seq_region_name);
 
   while ($sth->fetch()) {
 
@@ -97,7 +98,7 @@ for my $dbname ( @dbnames ) {
 
     $attribute_adaptor->store_on_Transcript($transcript, \@attribs) if (!$nostore);
 
-    print join("\t", $stable_id, $start, $end, $strand, $intron_length, "\n") if ($locations);
+    print join("\t", $stable_id, $start, $end, $strand, $intron_length, $seq_region_name, "\n") if ($locations);
 
     $biotypes{$biotype}++;
     $count++;
