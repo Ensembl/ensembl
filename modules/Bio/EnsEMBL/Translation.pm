@@ -815,7 +815,8 @@ sub get_all_DAS_Features{
 	$das_features{$name} = $self->{_das_features}->{$key};
 	next;
     } else{ # Get fresh data
-	my $featref = ($type eq 'ensembl_location') ?  ($dasfact->fetch_all_by_Slice( $slice ))[0] : $dasfact->fetch_all_by_ID( $self );
+#	my $featref = ($type eq 'ensembl_location') ?  ($dasfact->fetch_all_by_Slice( $slice ))[0] : $dasfact->fetch_all_by_ID( $self );
+	my $featref = ($type =~ /^ensembl_location/) ?  ($dasfact->fetch_all_Features( $slice, $type ))[0] : $dasfact->fetch_all_by_ID( $self );
 	$self->{_das_features}->{$key} = $featref;
 	$das_features{$name} = $featref;
     }
