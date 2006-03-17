@@ -41,7 +41,7 @@ sub build_transcript_display_xrefs {
   $self->xref_offset($xref_id_offset);
   $self->build_xref_to_source_mappings();
 
-  $self->build_display_xrefs("Transcript", "FlyBaseName_transcript", "gadfly_transcript_cgid",$xref_id_offset);
+  $self->build_display_xrefs("Transcript", "FlyBaseName_transcript", $xref_id_offset);
 
 }
 
@@ -51,13 +51,13 @@ sub build_gene_display_xrefs {
 
   my $xref_id_offset =  $self->xref_offset();
   
-  $self->build_display_xrefs("Gene", "FlyBaseName_gene", "gadfly_gene_cgid",$xref_id_offset);
+  $self->build_display_xrefs("Gene", "FlyBaseName_gene", $xref_id_offset);
 
 }
 
 sub build_display_xrefs {
 
-  my ($self, $type, $first_source, $second_source, $xref_id_offset) = @_;
+  my ($self, $type, $first_source, $xref_id_offset) = @_;
 
   print "Building " . lc($type) . " display_xrefs for drosophila\n";
 
@@ -90,10 +90,6 @@ sub build_display_xrefs {
 	if ($source =~ /$first_source/) {
 	  $obj_to_best_xref{$key} = $xref;
 	  next OBJECT;
-	}
-
-	if ($source =~ /$second_source/) {
-	  $obj_to_best_xref{$key} = $xref;
 	}
 
       } else {
