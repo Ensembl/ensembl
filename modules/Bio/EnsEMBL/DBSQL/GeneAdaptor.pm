@@ -306,6 +306,8 @@ sub fetch_all_by_domain {
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                The slice to fetch genes on.
+  Arg [2]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
   Arg [3]    : (optional) boolean $load_transcripts
                if true, transcripts will be loaded immediately rather than
                lazy loaded later.

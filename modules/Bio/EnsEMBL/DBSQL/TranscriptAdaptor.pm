@@ -102,7 +102,7 @@ sub _columns {
   my $modified_date = $self->db->dbc->from_date_to_seconds("modified_date");
 
   return ( 't.transcript_id', 't.seq_region_id', 't.seq_region_start', 't.seq_region_end', 
-	     't.seq_region_strand', 't.gene_id', 
+	     't.seq_region_strand', 't.analysis_id', 't.gene_id', 
              't.display_xref_id', 'tsi.stable_id','tsi.version', $created_date,
              $modified_date, 't.description', 't.biotype', 't.status',
              'x.display_label', 'exdb.db_name' ,'exdb.status', 'exdb.db_display_name');
@@ -288,10 +288,12 @@ sub fetch_all_by_Gene {
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                The slice to fetch transcripts on.
-  Arg [3]    : (optional) boolean $load_exons
+  Arg [2]    : (optional) boolean $load_exons
                if true, exons will be loaded immediately rather than
                lazy loaded later.
-  Example    : $transcripts = $
+  Arg [3]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Example    : @transcripts = @{ $tr_adaptor->fetch_all_by_Slice($slice) };
   Description: Overrides superclass method to optionally load exons
                immediately rather than lazy-loading them later.  This
                is more efficient when there are a lot of transcripts whose
@@ -307,8 +309,9 @@ sub fetch_all_by_Slice {
   my $self  = shift;
   my $slice = shift;
   my $load_exons = shift;
+  my $logic_name = shift;
 
-  my $transcripts = $self->SUPER::fetch_all_by_Slice($slice);
+  my $transcripts = $self->SUPER::fetch_all_by_Slice($slice, $logic_name);
 
   # if there are 0 or 1 transcripts still do lazy-loading
   if(!$load_exons || @$transcripts < 2) {
@@ -512,62 +515,77 @@ sub fetch_all_by_exon_stable_id {
 =cut
 
 sub store {
-   my ($self,$transcript,$gene_dbID) = @_;
+  my ($self, $transcript, $gene_dbID) = @_;
 
-   if( ! ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
-     throw("$transcript is not a EnsEMBL transcript - not storing");
-   }
+  if( ! ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+    throw("$transcript is not a EnsEMBL transcript - not storing");
+  }
 
-   my $db = $self->db();
+  my $db = $self->db();
 
-   if($transcript->is_stored($db)) {
-     return $transcript->dbID();
-   }
+  if($transcript->is_stored($db)) {
+    return $transcript->dbID();
+  }
 
-   #force lazy-loading of exons and ensure coords are correct
-   $transcript->recalculate_coordinates();
+  #force lazy-loading of exons and ensure coords are correct
+  $transcript->recalculate_coordinates();
 
-   #
-   # Store exons - this needs to be done before the possible transfer
-   # of the transcript to another slice (in _prestore()).Transfering results
-   # in copies  being made of the exons and we need to preserve the object
-   # identity of the exons so that they are not stored twice by different
-   # transcripts.
-   #
-   my $exons = $transcript->get_all_Exons();
-   my $exonAdaptor = $db->get_ExonAdaptor();
-   foreach my $exon ( @{$exons} ) {
-     $exonAdaptor->store( $exon );
-   }
+  # store analysis
+  my $analysis = $transcript->analysis();
+  throw("Transcript should have an analysis object.") if(!defined($analysis));
 
-   my $original_translation = $transcript->translation();
-   my $original = $transcript;
-   my $seq_region_id;
-   ($transcript, $seq_region_id) = $self->_pre_store($transcript);
+  my $analysis_id = 0;
+  if ($analysis) {
+    if($analysis->is_stored($db)) {
+      $analysis_id = $analysis->dbID();
+    } else {
+      $analysis_id = $db->get_AnalysisAdaptor->store($analysis);
+    }
+  }
 
-   # first store the transcript w/o a display xref
-   # the display xref needs to be set after xrefs are stored which needs to
-   # happen after transcript is stored...
+  #
+  # Store exons - this needs to be done before the possible transfer
+  # of the transcript to another slice (in _prestore()).Transfering results
+  # in copies  being made of the exons and we need to preserve the object
+  # identity of the exons so that they are not stored twice by different
+  # transcripts.
+  #
+  my $exons = $transcript->get_all_Exons();
+  my $exonAdaptor = $db->get_ExonAdaptor();
+  foreach my $exon ( @{$exons} ) {
+    $exonAdaptor->store( $exon );
+  }
 
-   my $xref_id = undef;
+  my $original_translation = $transcript->translation();
+  my $original = $transcript;
+  my $seq_region_id;
+  ($transcript, $seq_region_id) = $self->_pre_store($transcript);
 
-   #
-   #store transcript
-   #
-   my $tst = $self->prepare(
-        "insert into transcript ( gene_id, seq_region_id, seq_region_start, " .
-			    "seq_region_end, seq_region_strand, biotype, " .
-			    "status, description ) ".
-			    "values ( ?, ?, ?, ?, ?, ?, ?, ? )");
+  # first store the transcript w/o a display xref
+  # the display xref needs to be set after xrefs are stored which needs to
+  # happen after transcript is stored...
+
+  my $xref_id = undef;
+
+  #
+  #store transcript
+  #
+  my $tst = $self->prepare(qq(
+      INSERT INTO transcript
+          (gene_id, analysis_id, seq_region_id, seq_region_start,
+           seq_region_end, seq_region_strand, biotype, status, description)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ));
 
   $tst->bind_param(1,$gene_dbID,SQL_INTEGER);
-  $tst->bind_param(2,$seq_region_id,SQL_INTEGER);
-  $tst->bind_param(3,$transcript->start,SQL_INTEGER);
-  $tst->bind_param(4,$transcript->end,SQL_INTEGER);
-  $tst->bind_param(5,$transcript->strand,SQL_TINYINT);
-  $tst->bind_param(6,$transcript->biotype,SQL_VARCHAR);
-  $tst->bind_param(7,$transcript->status,SQL_VARCHAR);
-  $tst->bind_param(8,$transcript->description,SQL_LONGVARCHAR);
+  $tst->bind_param(2,$analysis_id,SQL_INTEGER);
+  $tst->bind_param(3,$seq_region_id,SQL_INTEGER);
+  $tst->bind_param(4,$transcript->start,SQL_INTEGER);
+  $tst->bind_param(5,$transcript->end,SQL_INTEGER);
+  $tst->bind_param(6,$transcript->strand,SQL_TINYINT);
+  $tst->bind_param(7,$transcript->biotype,SQL_VARCHAR);
+  $tst->bind_param(8,$transcript->status,SQL_VARCHAR);
+  $tst->bind_param(9,$transcript->description,SQL_LONGVARCHAR);
 
   $tst->execute();
   $tst->finish();
@@ -777,10 +795,6 @@ sub store {
 }
 
 
-
-
-
-
 =head2 get_Interpro_by_transid
 
   Arg [1]    : string $trans
@@ -983,41 +997,44 @@ sub remove {
 =cut
 
 sub update {
-   my ($self,$transcript) = @_;
-   my $update = 0;
+  my ($self, $transcript) = @_;
+  my $update = 0;
 
-   if( !defined $transcript || !ref $transcript || 
-       !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
-     throw("Must update a transcript object, not a $transcript");
-   }
+  if( !defined $transcript || !ref $transcript || 
+      !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+    throw("Must update a transcript object, not a $transcript");
+  }
 
-   my $update_transcript_sql = "
-        UPDATE transcript
-           SET display_xref_id = ?,
-               description = ?,
-               biotype = ?,
-               status = ?
-         WHERE transcript_id = ?";
+  my $update_transcript_sql = qq(
+       UPDATE transcript
+          SET analysis_id = ?,
+              display_xref_id = ?,
+              description = ?,
+              biotype = ?,
+              status = ?
+        WHERE transcript_id = ?
+  );
 
-   my $display_xref = $transcript->display_xref();
-   my $display_xref_id;
+  my $display_xref = $transcript->display_xref();
+  my $display_xref_id;
 
-   if( $display_xref && $display_xref->dbID() ) {
-     $display_xref_id = $display_xref->dbID();
-   } else {
-     $display_xref_id = undef;
-   }
+  if( $display_xref && $display_xref->dbID() ) {
+    $display_xref_id = $display_xref->dbID();
+  } else {
+    $display_xref_id = undef;
+  }
 
-   my $sth = $self->prepare( $update_transcript_sql );
-   
-   $sth->bind_param(1,$display_xref_id,SQL_INTEGER);
-   $sth->bind_param(2,$transcript->description,SQL_LONGVARCHAR);
-   $sth->bind_param(3,$transcript->biotype,SQL_VARCHAR);
-   $sth->bind_param(4,$transcript->status,SQL_VARCHAR);
-   $sth->bind_param(5,$transcript->dbID,SQL_INTEGER);
+  my $sth = $self->prepare( $update_transcript_sql );
+  
+  $sth->bind_param(1,$transcript->analysis->dbID,SQL_INTEGER);
+  $sth->bind_param(2,$display_xref_id,SQL_INTEGER);
+  $sth->bind_param(3,$transcript->description,SQL_LONGVARCHAR);
+  $sth->bind_param(4,$transcript->biotype,SQL_VARCHAR);
+  $sth->bind_param(5,$transcript->status,SQL_VARCHAR);
+  $sth->bind_param(6,$transcript->dbID,SQL_INTEGER);
 
-   $sth->execute();
- }
+  $sth->execute();
+}
 
 =head2 list_dbIDs
 
@@ -1078,22 +1095,25 @@ sub _objs_from_sth {
   #
 
   my $sa = $self->db()->get_SliceAdaptor();
+  my $aa = $self->db->get_AnalysisAdaptor();
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
 
   my @transcripts;
+  my %analysis_hash;
   my %slice_hash;
   my %sr_name_hash;
   my %sr_cs_hash;
 
   my ( $transcript_id, $seq_region_id, $seq_region_start, $seq_region_end, 
-       $seq_region_strand, $gene_id,  
+       $seq_region_strand, $analysis_id, $gene_id,  
        $display_xref_id, $stable_id, $version, $created_date, $modified_date,
        $description, $biotype, $status,
        $external_name, $external_db, $external_status, $external_db_name );
 
   $sth->bind_columns( \$transcript_id, \$seq_region_id, \$seq_region_start,
-                      \$seq_region_end, \$seq_region_strand, \$gene_id,  
-                      \$display_xref_id, \$stable_id, \$version, \$created_date, \$modified_date,
+                      \$seq_region_end, \$seq_region_strand, \$analysis_id,
+                      \$gene_id, \$display_xref_id, \$stable_id, \$version,
+                      \$created_date, \$modified_date,
 		      \$description, \$biotype, \$status,
                       \$external_name, \$external_db, \$external_status, \$external_db_name );
 
@@ -1132,6 +1152,10 @@ sub _objs_from_sth {
   }
 
   FEATURE: while($sth->fetch()) {
+
+    #get the analysis object
+    my $analysis = $analysis_hash{$analysis_id} ||=
+      $aa->fetch_by_dbID($analysis_id);
 
     my $slice = $slice_hash{"ID:".$seq_region_id};
     my $dest_mapper = $mapper;
@@ -1223,7 +1247,8 @@ sub _objs_from_sth {
 
     #finally, create the new transcript
     push @transcripts, Bio::EnsEMBL::Transcript->new
-      ( '-start'         =>  $seq_region_start,
+      ( '-analysis'      =>  $analysis,
+        '-start'         =>  $seq_region_start,
         '-end'           =>  $seq_region_end,
         '-strand'        =>  $seq_region_strand,
         '-adaptor'       =>  $self,

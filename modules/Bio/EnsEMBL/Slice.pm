@@ -1868,6 +1868,8 @@ sub get_all_Genes_by_type{
                If set to true exons will not be lazy-loaded but will instead
                be loaded right away.  This is faster if the exons are
                actually going to be used right away.
+  Arg [2]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
   Example    : @transcripts = @{$slice->get_all_Transcripts)_};
   Description: Gets all transcripts which overlap this slice.  If you want to
                specify a particular analysis or type, then you are better off
@@ -1883,6 +1885,7 @@ sub get_all_Genes_by_type{
 sub get_all_Transcripts {
   my $self = shift;
   my $load_exons = shift;
+  my $logic_name = shift;
 
   if(!$self->adaptor()) {
     warning('Cannot get Transcripts without attached adaptor');
@@ -1890,7 +1893,7 @@ sub get_all_Transcripts {
   }
 
   my $ta = $self->adaptor()->db()->get_TranscriptAdaptor();
-  return $ta->fetch_all_by_Slice($self, $load_exons);
+  return $ta->fetch_all_by_Slice($self, $load_exons, $logic_name);
 }
 
 
