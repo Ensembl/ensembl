@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 53;
+	plan tests => 54;
 }
 
 use Bio::EnsEMBL::Test::TestUtils;
@@ -270,6 +270,11 @@ ok(scalar @{$slice->get_all_Genes});
 #  Test Slice::get_all_Genes_by_type
 #
 ok(scalar @{$slice->get_all_Genes_by_type('protein_coding')});
+
+#
+#  Test Slice::get_all_Transcripts
+#
+ok(scalar @{$slice->get_all_Transcripts});
 
 
 
