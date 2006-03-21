@@ -67,7 +67,7 @@ sub fetch_by_dbID {
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
-           exDB.info_type, exDB.info_text
+           xref.info_type, xref.info_text
     FROM   xref, external_db exDB
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.xref_id = ?
@@ -142,7 +142,7 @@ sub fetch_by_db_accession {
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
-           exDB.info_type, exDB.info_text
+           xref.info_type, xref.info_text
     FROM   xref, external_db exDB
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.dbprimary_acc = ?
