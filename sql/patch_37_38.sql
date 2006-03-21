@@ -170,3 +170,10 @@ ALTER TABLE density_type CHANGE analysis_id analysis_id INT(10) UNSIGNED NOT NUL
 ALTER TABLE regulatory_feature CHANGE analysis_id analysis_id INT(10) UNSIGNED NOT NULL;
 ALTER TABLE regulatory_search_region CHANGE analysis_id analysis_id INT(10) UNSIGNED NOT NULL;
 
+
+# add column analysis_id to transcript
+
+ALTER TABLE transcript ADD COLUMN analysis_id INT(10) UNSIGNED NOT NULL AFTER gene_id;
+ALTER TABLE transcript ADD INDEX analysis_idx (analysis_id);
+UPDATE transcript t, gene g set t.analysis_id = g.analysis_id WHERE t.gene_id = g.gene_id;
+
