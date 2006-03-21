@@ -636,12 +636,12 @@ sub upload_xref_object_graphs {
 	  print "your xref: $xref->{ACCESSION} does not have a source-id\n";
 	  return undef;
 	}
-	$xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID});
+	$xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID}, $xref->{SPECIES_ID});
 	$xref_update_label_sth->execute($xref->{LABEL},$xref_id) if (defined($xref->{LABEL}));
 	$xref_update_descr_sth->execute($xref->{DESCRIPTION},$xref_id,) if (defined($xref->{DESCRIPTION}));
       }
       else{
-	$xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID});
+	$xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID}, $xref->{SPECIES_ID});
       }
 
 
@@ -679,7 +679,7 @@ sub upload_xref_object_graphs {
 			   $dep{SOURCE_ID},
 			   $xref->{SPECIES_ID});
 
-	my $dep_xref_id = insert_or_select($xref_sth, $dbi->err, $dep{ACCESSION}, $dep{SOURCE_ID});
+	my $dep_xref_id = insert_or_select($xref_sth, $dbi->err, $dep{ACCESSION}, $dep{SOURCE_ID}, $xref->{SPECIES_ID});
 
 	if($dbi->err){
 	  print STDERR "dbi\t$dbi->err \n$dep{ACCESSION} \n $dep{SOURCE_ID} \n";
@@ -853,11 +853,19 @@ sub md5sum {
 
 sub get_xref_id_by_accession_and_source {
 
-  my ($acc, $source_id) = @_;
+  my ($acc, $source_id, $species_id ) = @_;
 
   my $dbi = dbi();
-  my $sth = $dbi->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=?");
-  $sth->execute($acc, $source_id) || die $dbi->errstr;
+
+  my $sql = '
+SELECT xref_id FROM xref WHERE accession=? AND source_id=?';
+  if( $species_id ){ $sql .= ' AND species_id=?' }
+
+  my $sth = $dbi->prepare( $sql );
+
+   $sth->execute($acc, $source_id, ($species_id ? $species_id : ())) 
+      || die $dbi->errstr;
+
   my @row = $sth->fetchrow_array();
   my $xref_id = $row[0];
 
@@ -871,14 +879,14 @@ sub get_xref_id_by_accession_and_source {
 
 sub insert_or_select {
 
-  my ($sth, $error, $acc, $source) = @_;
+  my ($sth, $error, $acc, $source, $species) = @_;
 
   my $id;
 
   # TODO - check for specific error code rather than for just any error
   if ($error) {
 
-    $id = get_xref_id_by_accession_and_source($acc, $source);
+    $id = get_xref_id_by_accession_and_source($acc, $source, $species);
 #    print STDERR "Got existing xref id " . $id . " for " . $acc . " " . $source . "\n";
 	
   } else {

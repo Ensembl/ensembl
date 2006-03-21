@@ -16,7 +16,7 @@ CREATE TABLE xref (
   species_id                  int unsigned not null,
 
   PRIMARY KEY (xref_id),
-  UNIQUE acession_idx(accession,source_id)
+  UNIQUE acession_idx(accession,source_id,species_id)
 
 );
 
