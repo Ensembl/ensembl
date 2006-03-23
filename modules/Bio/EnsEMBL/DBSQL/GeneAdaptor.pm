@@ -886,7 +886,7 @@ sub store {
     my $new = $transcripts->[$i];
     my $old = $original_transcripts->[$i];
 
-    $transcript_adaptor->store($new, $gene_dbID );
+    $transcript_adaptor->store($new, $gene_dbID, $analysis_id);
 
     # update the original transcripts since we may have made copies of
     # them by transforming the gene

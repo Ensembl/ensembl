@@ -504,6 +504,11 @@ sub fetch_all_by_exon_stable_id {
   Arg [2]    : int $gene_dbID
                The identifier of the gene that this transcript is associated 
                with
+  Arg [3]    : (optional) int $analysis_id
+               The analysis_id to use when storing this gene. This is for 
+               backward compatibility only and used to fall back to the gene
+               analysis_id if no analysis object is attached to the transcript
+               (which you should do for new code).
   Example    : $transID = $transcriptAdaptor->store($transcript, $gene->dbID);
   Description: Stores a transcript in the database and returns the new
                internal identifier for the stored transcript.
@@ -515,7 +520,7 @@ sub fetch_all_by_exon_stable_id {
 =cut
 
 sub store {
-  my ($self, $transcript, $gene_dbID) = @_;
+  my ($self, $transcript, $gene_dbID, $analysis_id) = @_;
 
   if( ! ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
     throw("$transcript is not a EnsEMBL transcript - not storing");
@@ -532,15 +537,21 @@ sub store {
 
   # store analysis
   my $analysis = $transcript->analysis();
-  throw("Transcript should have an analysis object.") if(!defined($analysis));
+  my $new_analysis_id;
 
-  my $analysis_id = 0;
   if ($analysis) {
     if($analysis->is_stored($db)) {
-      $analysis_id = $analysis->dbID();
+      $new_analysis_id = $analysis->dbID;
     } else {
-      $analysis_id = $db->get_AnalysisAdaptor->store($analysis);
+      $new_analysis_id = $db->get_AnalysisAdaptor->store($analysis);
     }
+  } elsif ($analysis_id) {
+    # Fall back to analysis passed in (usually from gene) if analysis wasn't
+    # set explicitely for the transcript. This is deprectated though.
+    warning("You should explicitely attach an analysis object to the Transcript. Will fall back to Gene analysis, but this behaviour is deprecated.");
+    $new_analysis_id = $analysis_id;
+  } else {
+    throw("Need an analysis_id to store the Transcript.");
   }
 
   #
@@ -578,7 +589,7 @@ sub store {
   ));
 
   $tst->bind_param(1,$gene_dbID,SQL_INTEGER);
-  $tst->bind_param(2,$analysis_id,SQL_INTEGER);
+  $tst->bind_param(2,$new_analysis_id,SQL_INTEGER);
   $tst->bind_param(3,$seq_region_id,SQL_INTEGER);
   $tst->bind_param(4,$transcript->start,SQL_INTEGER);
   $tst->bind_param(5,$transcript->end,SQL_INTEGER);
