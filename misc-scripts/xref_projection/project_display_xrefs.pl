@@ -58,6 +58,8 @@ foreach my $to_species (@to_multi) {
   my $to_ga   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
   my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
 
+  backup($to_ga);
+
   delete_names($to_ga) if ($delete_names);
   delete_go_terms($to_ga) if ($delete_go_terms);
 
@@ -72,7 +74,8 @@ foreach my $to_species (@to_multi) {
   # build hash of external db name -> ensembl object type mappings
   my %db_to_type = build_db_to_type($to_ga);
 
-  print "$to_species, before projection: \n" . &get_stats($to_ga);
+  print "$to_species, before projection: \n";
+  print_stats($to_ga);
 
   # Get all genes, find homologies, set xrefs
 
@@ -90,7 +93,8 @@ foreach my $to_species (@to_multi) {
 
   }
 
-  print "$to_species, after projection: \n" . &get_stats($to_ga);
+  print "$to_species, after projection: \n";
+  print_stats($to_ga);
 
 }
 
@@ -215,7 +219,9 @@ sub project_go_terms {
     next if ($dbEntry->dbname() ne "GO" || !$dbEntry);
 
     # only project GO terms with non-IEA evidence codes
-    # also exclude ISS terms (manually projeted based on orthologs)
+    # also exclude ISS terms (manually projected based on orthologs)
+    next if (ref($dbEntry) ne "Bio::EnsEMBL::GoXref");
+
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
       next DBENTRY if ($et eq "IEA" || $et eq "ISS");
     }
@@ -263,35 +269,41 @@ sub go_xref_exists {
 
 # ----------------------------------------------------------------------
 
-sub get_stats {
+sub print_stats {
 
   my ($to_ga) = @_;
 
   my $total_genes = count_rows($to_ga, "SELECT COUNT(*) FROM gene g");
 
-  my $str = "Total genes: $total_genes\t";
+  my $count;
 
-  my $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND g.display_xref_id IS NOT NULL AND x.info_type != 'PROJECTION'");
-  $str .= sprintf("Gene names: unprojected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
+  if ($names) {
 
-  $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
-  $str .= sprintf(" projected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
+    $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND g.display_xref_id IS NOT NULL AND x.info_type IS NULL");
+    printf("Gene names: unprojected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
-  $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x, external_db e WHERE g.display_xref_id=x.xref_id AND x.external_db_id=e.external_db_id AND e.db_name IN ('RefSeq_dna_predicted', 'RefSeq_peptide_predicted')");
-  $str .= sprintf(" predicted %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
+    $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
+    printf(" projected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
-  $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g WHERE display_xref_id IS NOT NULL");
-  $str .= sprintf(" total genes with names %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
+    $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x, external_db e WHERE g.display_xref_id=x.xref_id AND x.external_db_id=e.external_db_id AND e.db_name IN ('RefSeq_dna_predicted', 'RefSeq_peptide_predicted')");
+    printf(" predicted %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
-  $str .= "\nGO xrefs: total ";
-  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO'");
+    $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g WHERE display_xref_id IS NOT NULL");
+    printf(" total genes with names %d (%3.1f\%)\n" , $count, (100 * $count / $total_genes));
 
-  $str .= " projected ";
-  $str .= &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
+  }
 
-  $str .= "\n";
+  if ($go_terms) {
 
-  return $str;
+    print "GO xrefs: total ";
+    print &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO'");
+
+    print " projected ";
+    print &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
+
+    print "\n";
+
+  }
 
 }
 
@@ -400,6 +412,30 @@ sub check_overwrite_display_xref {
   }
 
   return 0;
+
+}
+
+# ----------------------------------------------------------------------
+
+sub backup {
+
+  my ($to_ga) = @_;
+
+  my $dbc = $to_ga->dbc();
+  my $host = $dbc->host();
+  my $port = $dbc->port();
+  my $user = $dbc->username();
+  my $pass = $dbc->password();
+  my $dbname = $dbc->dbname();
+
+  foreach my $table ("gene", "xref", "object_xref") {
+    unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from $table' $dbname > $dbname.$table.backup; gzip -9 -f $dbname.$table.backup") == 0) {
+      print STDERR "Can't dump the original $table from $dbname for backup\n";
+      exit 1;
+    } else {
+      print STDERR "Original $table table backed up in $dbname.$table.backup\n";
+    }
+  }
 
 }
 
