@@ -1325,7 +1325,7 @@ sub get_all_RepeatFeatures {
 
 =head2 get_all_LD_values
 
-    Arg [1]     : (optional) int $population_id
+    Arg [1]     : (optional) Bio::EnsEMBL::Variation::Population $population
     Description : returns all LD values on this slice. This function will only work correctly if the variation
                   database has been attached to the core database. If the argument is passed, will return the LD information
                   in that population
@@ -1339,7 +1339,7 @@ sub get_all_RepeatFeatures {
 
 sub get_all_LD_values{
     my $self = shift;
-    my $population_id = shift;
+    my $population = shift;
     
     if(!$self->adaptor()) {
 	warning('Cannot get LDFeatureContainer without attached adaptor');
@@ -1349,7 +1349,7 @@ sub get_all_LD_values{
     my $ld_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "LDFeatureContainer");
 
   if( $ld_adaptor ) {
-      my $ld_values = $ld_adaptor->fetch_by_Slice($self,$population_id);
+      my $ld_values = $ld_adaptor->fetch_by_Slice($self,$population);
       if (@{$ld_values} > 1){
 	  warning("More than 1 variation database attached. Trying to merge LD results");
 	  my $ld_value_merged = shift @{$ld_values};
