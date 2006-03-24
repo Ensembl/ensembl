@@ -122,6 +122,9 @@ INSERT INTO source VALUES (4000, "ncRNA", 1, 'Y',70);
 INSERT INTO source VALUES (4010, "RFAM", 1, 'N',70);
 INSERT INTO source VALUES (4020, "miRNA_Registry", 1, 'N',70);
 
+# temporary (?) source for mapping Havana OTT transcripts to Ensembl transcripts
+INSERT INTO source VALUES (5000, 'OTTT', 1, 'Y', 50);
+
 ################################################################################
 # Files to fetch data from
 
@@ -288,6 +291,11 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      ncRNAs presently inhouse.
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 9606,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
+
+##      OTTT
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5000, 9606,'LOCAL:OTTT/OTTT.txt', '', now(), now(), "OTTTParser");
+
+
 # --------------------------------------------------------------------------------
 
 ###MOUSE
@@ -308,7 +316,8 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1080, 10090,'ftp://ftp.informatics.jax.org/pub/reports/MRK_SwissProt_TrEMBL.rpt ftp://ftp.informatics.jax.org/pub/reports/MRK_Synonym.sql.rpt', '', now(), now(), "MGDParser");
 
 ##      GO 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 10090,'http://www.geneontology.org/cgi-bin/downloadGOGA.pl/gene_association.mgi.gz', '', now(), now(), "GOParser");
+#INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 10090,'http://www.geneontology.org/cgi-bin/downloadGOGA.pl/gene_association.mgi.gz', '', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 10090,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/MOUSE/gene_association.goa_mouse.gz', '', now(), now(), "GOParser");
 
 ##      IPI
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 10090,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.MOUSE.fasta.gz', '', now(), now(), "IPIParser");
