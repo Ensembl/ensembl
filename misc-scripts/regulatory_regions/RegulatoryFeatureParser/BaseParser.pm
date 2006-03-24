@@ -172,21 +172,26 @@ sub upload_features_and_factors {
 
   }
 
-  print "Uploading " . scalar(@{$objects->{SEARCH_REGIONS}}) . " search regions ...\n";
+  if ($objects->{SEARCH_REGIONS}) {
 
-  foreach my $search_region (@{$objects->{SEARCH_REGIONS}}) {
+    print "Uploading " . scalar(@{$objects->{SEARCH_REGIONS}}) . " search regions ...\n";
 
-    $sr_sth->execute($search_region->{NAME},
-		     $search_region->{SEQ_REGION_ID},
-		     $search_region->{START},
-		     $search_region->{END},
-		     $search_region->{STRAND},
-		     $search_region->{ENSEMBL_OBJECT_TYPE},
-		     $search_region->{ENSEMBL_OBJECT_ID},
-		     $search_region->{ANALYSIS_ID});
+    foreach my $search_region (@{$objects->{SEARCH_REGIONS}}) {
 
+      $sr_sth->execute($search_region->{NAME},
+		       $search_region->{SEQ_REGION_ID},
+		       $search_region->{START},
+		       $search_region->{END},
+		       $search_region->{STRAND},
+		       $search_region->{ENSEMBL_OBJECT_TYPE},
+		       $search_region->{ENSEMBL_OBJECT_ID},
+		       $search_region->{ANALYSIS_ID});
+
+
+    }
 
   }
+
   print "Done\n";
 
 }
