@@ -2290,9 +2290,6 @@ sub cleanup_sources_file{
   open (DEL, ">>$dir/cleanup.sql") || die "Could not open $dir/cleanup.sql\n";
 
   if ($id =~ m/\w/){
-    print DEL "DELETE unmapped_object ";
-    print DEL    "FROM unmapped_object ";
-    print DEL      "WHERE type = 'xref'\n";
 
     print DEL "DELETE external_synonym ";
     print DEL     "FROM external_synonym, xref ";
@@ -3174,6 +3171,15 @@ sub dump_all_dependencies{
 }
     
 
+sub delete_unmapped {
+
+  my $self = shift;
+
+  my $sth = $self->core->dbc->prepare("DELETE FROM unmapped_object WHERE type='xref'");
+  print "Deleting data from unmapped_object table\n";
+  $sth->execute();
+
+}
 
 1;
 
