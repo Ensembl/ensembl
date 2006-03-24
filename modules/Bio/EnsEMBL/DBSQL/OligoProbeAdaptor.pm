@@ -12,7 +12,7 @@ storing OligoProbe objects.
 
 my $opa = $db->get_OligoProbeAdaptor();
 
-my $probe = $opa->fetch_by_array_probeset_probename('Array-1', undef, 'Probe-1');
+my $probe = $opa->fetch_by_array_probeset_probe('Array-1', undef, 'Probe-1');
 
 =head1 DESCRIPTION
 
@@ -47,12 +47,12 @@ use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
-=head2 fetch_by_array_probeset_probename
+=head2 fetch_by_array_probeset_probe
 
   Arg [1]    : string - name of array
   Arg [2]    : (optional) string - name of probeset
   Arg [3]    : string - name of probe
-  Example    : my $probe = $opa->fetch_by_array_probeset_probename('Array-1', 'Probeset-1', 'Probe-1');
+  Example    : my $probe = $opa->fetch_by_array_probeset_probe('Array-1', 'Probeset-1', 'Probe-1');
   Description: Returns a probe given a combination of array name, probeset and
                probe name. This will uniquely define an Affy probe. Only one
 			   probe is ever returned.

@@ -12,7 +12,7 @@ storing AffyProbe objects.
 
 my $apa = $db->get_AffyProbeAdaptor();
 
-my $probe = $opa->fetch_by_array_probeset_probename('Affy-1', 'Probeset-1', 'Probe-1');
+my $probe = $opa->fetch_by_array_probeset_probe('Affy-1', 'Probeset-1', 'Probe-1');
 
 =head1 DESCRIPTION
 
