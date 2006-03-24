@@ -36,13 +36,15 @@ sub delete_existing {
   $sth->execute($t);
 
   # Delete search regions; they have a different analysis_id
-  my $sr_type = $type . "_search";
-  die "Can't find analysis for $sr_type " unless validate_type($db_adaptor, $sr_type);
-  my $anal_sth = $db_adaptor->dbc->prepare("SELECT analysis_id FROM analysis WHERE LOWER(logic_name)=?");
-  $anal_sth->execute($sr_type);
-  my $anal = ($anal_sth->fetchrow_array())[0];
-  $sth = $db_adaptor->dbc->prepare("DELETE FROM regulatory_search_region WHERE analysis_id=?");
-  $sth->execute($anal);
+  if ($type = "cisred") {
+    my $sr_type = $type . "_search";
+    die "Can't find analysis for $sr_type " unless validate_type($db_adaptor, $sr_type);
+    my $anal_sth = $db_adaptor->dbc->prepare("SELECT analysis_id FROM analysis WHERE LOWER(logic_name)=?");
+    $anal_sth->execute($sr_type);
+    my $anal = ($anal_sth->fetchrow_array())[0];
+    $sth = $db_adaptor->dbc->prepare("DELETE FROM regulatory_search_region WHERE analysis_id=?");
+    $sth->execute($anal);
+  }
 
 }
 
@@ -102,6 +104,8 @@ sub build_stable_id_cache {
 
     print "Caching stable ID -> internal ID links for ${type}s\n";
 
+    my $count = 0;
+
     my $sth = $db_adaptor->dbc->prepare("SELECT ${type}_id, stable_id FROM ${type}_stable_id");
     $sth->execute();
     my ($internal_id, $stable_id);
@@ -110,8 +114,11 @@ sub build_stable_id_cache {
     while ($sth->fetch) {
 
       $stable_id_to_internal_id{$type}{$stable_id} = $internal_id;
+      $count++;
 
     }
+
+    print "Got $count $type stable ID -> internal ID mappings\n";
 
   }
 
