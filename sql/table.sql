@@ -495,7 +495,7 @@ CREATE TABLE transcript (
   PRIMARY KEY (transcript_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY gene_index (gene_id),
-  KEY xref_id_index (display_xref_id)
+  KEY xref_id_index (display_xref_id),
   KEY analysis_idx (analysis_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
