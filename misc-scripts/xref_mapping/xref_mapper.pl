@@ -19,6 +19,7 @@ my $upload = undef;
 my $delete_external_db ; 
 my $location;
 my $notriage=undef;
+my $delete_unmapped = undef;
 
 GetOptions ('file=s'                  => \$file,
             'verbose'                 => \$verbose,
@@ -29,6 +30,7 @@ GetOptions ('file=s'                  => \$file,
 	    'delete_external_db'      => \$delete_external_db , 
 	    'location=s'              => \$location,
 	    'notriage'                => \$notriage,
+	    'delete_unmapped'         => \$delete_unmapped,
             'help'                    => sub { &usage(); exit 1;} );
 usage("-file option is required")   if(!$file);
 usage() if($help);
@@ -178,6 +180,7 @@ else{
   die "No Species given\n";
 }
 
+
 $mapper->xref($xref); # attach xref object to mapper object
 
 print "\nDumping xref & Ensembl sequences\n";
@@ -191,6 +194,8 @@ $mapper->build_list_and_map();
 
 print "\nParsing mapping output\n";
 $mapper->parse_mappings($notriage);
+
+$mapper->delete_unmapped() if ($delete_unmapped);
 
 $mapper->do_upload() if ($upload);
 
@@ -249,6 +254,8 @@ options:
                         confirm the deletion before. Works only if option -upload is used as well.
 
   -notriage             don't dump triage data
+
+  -delete_unmapped      deletes data from the unmapped_object table.
 
   -help                 display this message
  
