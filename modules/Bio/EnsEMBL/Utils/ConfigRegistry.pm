@@ -45,7 +45,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump);
 
-=head2 load_core, load_estgene, load_vega, load_compara, load_pipeline, load_SNP, load_lite
+=head2 load_core, load_otherfeatures, load_vega, load_compara, load_pipeline, load_SNP, load_lite
   Arg [1]    : DBAdaptor with DBConnection alredy attached
   Returntype : DBAdaptor;
   Exceptions : none
@@ -122,8 +122,8 @@ sub gen_load{
     if($dba->group eq "estgene"){
       $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_estgene;
      }
-    elsif($dba->group eq "est"){
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_est;
+    elsif($dba->group eq "otherfeatures"){
+      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_otherfeatures;
      }
     elsif($dba->group eq "vega"){
       $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_vega;
@@ -283,7 +283,7 @@ sub load_estgene{
   load_and_attach_dnadb_to_core(@_);
 }
 
-sub load_est{
+sub load_otherfeatures{
   load_and_attach_dnadb_to_core(@_);
 }
 

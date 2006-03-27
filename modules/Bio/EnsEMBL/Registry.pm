@@ -920,20 +920,19 @@ sub load_registry_from_db{
     print $vegadb." loaded\n" if ($verbose);
   }
   
-  my @est_dbs = grep { /^[a-z]+_[a-z]+_est_\d+_/ } @dbnames;
+  my @other_dbs = grep { /^[a-z]+_[a-z]+_otherfeatures_\d+_/ } @dbnames;
   
-  for my $est_db ( @est_dbs ) {
-    my ($species, $num) = ( $est_db =~ /(^[a-z]+_[a-z]+)_est_(\d+)/ );
+  for my $other_db ( @other_dbs ) {
+    my ($species, $num) = ( $other_db =~ /(^[a-z]+_[a-z]+)_otherfeatures_(\d+)/ );
     my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
-      ( -group => "est",
+      ( -group => "otherfeatures",
 	-species => $species,
 	-host => $host,
 	-user => $user,
 	-pass => $pass,
 	-port => $port,
-	-dbname => $est_db
+	-dbname => $other_db
       );
-    print $est_db." loaded\n" if ($verbose);
   }
   
   
