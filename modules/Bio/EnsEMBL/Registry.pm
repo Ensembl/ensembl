@@ -933,6 +933,7 @@ sub load_registry_from_db{
 	-port => $port,
 	-dbname => $other_db
       );
+      print $other_db." loaded\n" if ($verbose);       
   }
   
   
