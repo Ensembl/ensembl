@@ -2054,9 +2054,14 @@ DIRX
     if ($best_xref) {
 
       # Write record with xref_id_offset
-      print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE transcript_id=" . $object_id . ";\n";
-      print TRANSCRIPT_DX_TXT ($best_xref+$xref_id_offset) . "\t" . $object_id . "\n";
-      $n++;
+      if(defined($object_id) and $object_id > 0){
+	print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE transcript_id=" . $object_id . ";\n";
+	print TRANSCRIPT_DX_TXT ($best_xref+$xref_id_offset) . "\t" . $object_id . "\n";
+	$n++;
+      }
+      else{
+	print "ERROR: problems with object_id for $key\n";
+      }
 
       my $value = ($best_xref+$xref_id_offset) . "|" . $best_xref_priority_idx;
       $transcript_display_xrefs{$object_id} = $value;
@@ -2401,7 +2406,9 @@ GENE
     print "Setting $table display_xrefs from $file\n";
     my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
       " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-    system $str;
+    if(system $str){
+      print "ERROR: parsing $file in mysql\n";
+    }
 
   }
 
@@ -2410,7 +2417,9 @@ GENE
   print "Setting gene descriptions from $file\n";
   my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
     " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-  system $str;
+  if(system $str){
+    print "ERROR: parsing $file in mysql\n";
+  }
 
   # update meta table with timestamp saying when xrefs were last updated
   $file =  $ensembl->dir() . "/meta_timestamp.sql";
@@ -2421,7 +2430,9 @@ GENE
 
   my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
     " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-  system $str;
+  if(system $str){
+    print "ERROR: parsing $file in mysql\n";
+  }
 
   # set gene and transcript statuses to KNOWN or NOVEL based on external_db status
   print "Setting gene and transcript status from external_db KNOWN/NOVEL\n";
@@ -2449,7 +2460,9 @@ GENE
 
   my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
     " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-  system $str;
+  if(system $str){
+    print "ERROR: parsing $file in mysql\n";
+  }
 
 }
 
@@ -3132,7 +3145,9 @@ EOS
 
   my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
     " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < ". $triage_file;
-  system $str;
+  if(system $str){
+    print "ERROR: parsing $triage_file in mysql\n";
+  }
 
   print "updated triage data accordingly\n";
 }
