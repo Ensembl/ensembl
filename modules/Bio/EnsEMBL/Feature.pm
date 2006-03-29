@@ -1038,6 +1038,35 @@ sub get_all_alt_locations {
 }
 
 
+=head2 overlaps
+
+  Arg [1]    : Bio::EnsEMBL::Feature $f
+               The other feature you want to check overlap with this feature
+               for.
+  Description: This method does a range comparison of this features start and
+               end and compares it with another features start and end. It will
+               return true if these ranges overlap and the features are on the
+               same seq_region.
+  Returntype : TRUE if features overlap, FALSE if they don't
+  Exceptions : warning if features are on different seq_regions
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub overlaps {
+  my $self = shift;
+  my $f = shift;
+
+  unless ($self->slice->seq_region_name eq $f->slice->seq_region_name) {
+    warning("Bio::EnsEMBL::Feature->overlaps(): features are on different seq_regions.");
+    return undef;
+  }
+  
+  return ($self->end >= $f->start and $self->start <= $f->end);
+}
+
+
 
 
 ##############################################
@@ -1154,26 +1183,6 @@ sub id {
   return $self->{'hseqname'} if($self->{'hseqname'});
   return $self->{'seqname'}  if($self->{'seqname'});
   return $self->{'dbID'};
-}
-
-
-=head2 overlaps
-
-  Description: This method is only for backwards compatibility and should not
-               be used.  It does a range comparison of this features start and
-               and and compares it with another features start and end.  It
-               Will return true if these ranges overlap but even if these
-               features are on different sequence regions!  Do yourself a
-               favour and use a simple one line comparison instead:
-               $overlaps = ($f1->end() >= $f2->start() &&
-                            $f1->start() <= $f2->end());
-  Status     : At Risk
-=cut
-
-sub overlaps {
-  my $self = shift;
-  my $f = shift;
-  return ($self->end() >= $f->start() && $self->start() <= $f->end());
 }
 
 
