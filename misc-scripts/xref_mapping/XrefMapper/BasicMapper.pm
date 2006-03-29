@@ -1038,21 +1038,27 @@ sub get_stable_ids(){
 }
 
 sub get_failed_id{
-  my ($self, $q_cut, $t_cut, $max_unmapped_reason, $summary_failed)= @_;
-#  my $max = $$max_unmapped_reason;
-  my $description_failed = "Unable to match at the thresholds of $q_cut\% for the query or  $t_cut\% for the target";
+  my ($self, $q_cut, $t_cut, $summary_failed)= @_;
+  my $description_failed = "Unable to match at the thresholds of $q_cut\% for the query or $t_cut\% for the target";
 
-  my $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".
-				   $description_failed."'");
+  my $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".$description_failed."'");
   $sth->execute();
   my $xref_failed_id=undef;
   $sth->bind_columns(\$xref_failed_id);
   $sth->fetch;
   if(!defined($xref_failed_id)){
-    $$max_unmapped_reason++;
-    print UNMAPPED_REASON $$max_unmapped_reason."\t".$summary_failed."\t".
-      $description_failed."\n";
-    $xref_failed_id = $$max_unmapped_reason;      
+    print STDERR "Could not find the description:\n";
+    print STDERR $description_failed."\n";
+    print STDERR "In the directory ensembl/misc-scripts/unmapped_reason you ";
+    print STDERR "can add the new reason to the unmapped_reason.txt file ";
+    print STDERR "and run the update_unmapped_reasons.pl script to update ";
+    print STDERR "your core database\n";
+    print STDERR "Alterntively do not add the triage data and add -notriage to the command line.\n";
+    die();
+#    $$max_unmapped_reason++;
+#    print UNMAPPED_REASON $$max_unmapped_reason."\t".$summary_failed."\t".
+#      $description_failed."\n";
+#    $xref_failed_id = $$max_unmapped_reason;      
   }
   return $xref_failed_id;
 }
@@ -1130,7 +1136,7 @@ PSQL
 
   open (UNMAPPED_OBJECT, ">" . $self->core->dir() . "/unmapped_object.txt");
 
-  open (UNMAPPED_REASON, ">".$self->core->dir()."/unmapped_reason.txt");
+#  open (UNMAPPED_REASON, ">".$self->core->dir()."/unmapped_reason.txt");
 
 
   # get the Unmapped Object Reasons for the core database and 
@@ -1141,19 +1147,18 @@ PSQL
   my $summary_missed = "Failed to match";
   my $description_missed = "Unable to match to any ensembl entity at all";
   
-  my $sth = $self->core->dbc->prepare("select MAX(unmapped_reason_id) ".
-				      "from unmapped_reason");
-  $sth->execute();
-  my $max_unmapped_reason_id;
-  $sth->bind_columns(\$max_unmapped_reason_id);
-  $sth->fetch;
-  if(!defined($max_unmapped_reason_id)){
-    $max_unmapped_reason_id = 1;
-  }
-  $sth->finish;
+#  my $sth = $self->core->dbc->prepare("select MAX(unmapped_reason_id) ".
+#				      "from unmapped_reason");
+#  $sth->execute();
+#  my $max_unmapped_reason_id;
+#  $sth->bind_columns(\$max_unmapped_reason_id);
+#  $sth->fetch;
+#  if(!defined($max_unmapped_reason_id)){
+#    $max_unmapped_reason_id = 1;
+#  }
+#  $sth->finish;
 
-
-  $sth = $self->core->dbc->prepare("select MAX(unmapped_object_id) ".
+  my $sth = $self->core->dbc->prepare("select MAX(unmapped_object_id) ".
 				      "from unmapped_object");
   $sth->execute();
   my $max_unmapped_object_id;
@@ -1187,14 +1192,22 @@ PSQL
 
   $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".$description_missed."'");  
   $sth->execute();
-  my $xref_missed_id=undef;
+  my $xref_missed_id;
   $sth->bind_columns(\$xref_missed_id);
   $sth->fetch;
   if(!defined($xref_missed_id)){
-    $max_unmapped_reason_id++;
-    print UNMAPPED_REASON $max_unmapped_reason_id."\t".$summary_missed."\t".
-      $description_missed."\n";
-    $xref_missed_id = $max_unmapped_reason_id;      
+    print STDERR "Could not find the description:\n";
+    print STDERR $description_missed,"\n";
+    print STDERR "In the directory ensembl/misc-scripts/unmapped_reason you ";
+    print STDERR "can add the new reason to the unmapped_reason.txt file ";
+    print STDERR "and run the update_unmapped_reasons.pl script to update ";
+    print STDERR "your core database\n";
+    print STDERR "Alterntively do not add the triage data and add -notriage to the command line.\n";
+    die();
+#    $max_unmapped_reason_id++;
+#    print UNMAPPED_REASON $max_unmapped_reason_id."\t".$summary_missed."\t".
+#      $description_missed."\n";
+#    $xref_missed_id = $max_unmapped_reason_id;      
   }
   $sth->finish;
  
@@ -1232,7 +1245,7 @@ PSQL
 	    split(/\|/,$failed_xref_mappings{$xref_id});
 
 	  if(!defined($cutoff_2_failed_id{$q_cut."_".$t_cut})){
-	    $cutoff_2_failed_id{$q_cut."_".$t_cut} = $self->get_failed_id($q_cut, $t_cut, \$max_unmapped_reason_id, $summary_failed);
+	    $cutoff_2_failed_id{$q_cut."_".$t_cut} = $self->get_failed_id($q_cut, $t_cut, $summary_failed);
 	  }
 	  $max_unmapped_object_id++;
 	  
@@ -1270,7 +1283,7 @@ PSQL
   }
   close(XREF);
   close(UNMAPPED_OBJECT);
-  close(UNMAPPED_REASON);
+#  close(UNMAPPED_REASON);
 }
 
 # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
@@ -2384,7 +2397,7 @@ GENE
 
   print "Uploading new data\n";
   foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", 
-		     "go_xref", "interpro", "unmapped_reason", "unmapped_object") {
+		     "go_xref", "interpro", "unmapped_object") {
 
     my $file = $ensembl->dir() . "/" . $table . ".txt";
 
@@ -3071,7 +3084,7 @@ EOS
 	  print OBJECT_XREF2 $good2missed{$goodxref};
 	  print OBJECT_XREF2 "\tDEPENDENT\n";	
 	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
-	  print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
+	  print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
 	  print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
 	}
 	elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
@@ -3082,7 +3095,7 @@ EOS
 	  print OBJECT_XREF2 $good2missed{$goodxref};
 	  print OBJECT_XREF2 "\tDEPENDENT\n";	
 	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
-	  print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
+	  print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
 	  print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
 	}
       }
