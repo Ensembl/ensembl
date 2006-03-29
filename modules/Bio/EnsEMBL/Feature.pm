@@ -1058,8 +1058,11 @@ sub overlaps {
   my $self = shift;
   my $f = shift;
 
-  unless ($self->slice->seq_region_name eq $f->slice->seq_region_name) {
-    warning("Bio::EnsEMBL::Feature->overlaps(): features are on different seq_regions.");
+  my $sr1_name = $self->seq_region_name;
+  my $sr2_name = $f->seq_region_name;
+
+  if (!$sr1_name or !$sr2_name or ($sr1_name ne $sr2_name)) {
+    warning("Bio::EnsEMBL::Feature->overlaps(): features are on different seq regions (or not attached to a seq region at all).");
     return undef;
   }
   
