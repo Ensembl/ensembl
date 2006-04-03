@@ -1759,7 +1759,7 @@ sub dump_core_xrefs {
 	  $self->cleanup_sources_file($external_db_id);
 	}
 	
-	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\tDEPENDENT\n";
+	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 	$xrefs_written{$xref_id} = 1;
 	$source_ids{$source_id} = $source_id;
       }
@@ -1772,7 +1772,7 @@ sub dump_core_xrefs {
 	  my ($object_id, $type) = split /\|/, $object_id_key;
 	  my $full_key = $type."|".$object_id."|".$xref_id;
 	  if (!$object_xrefs_written{$full_key}) {
-	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tDEPENDENT\n";
+	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\n";
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
 	    my $key = $type . "|" . $object_id;
 	    push @{$object_xref_mappings{$key}}, $xref_id;
@@ -3082,7 +3082,7 @@ EOS
 	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	  print OBJECT_XREF2 $good2missed{$goodxref};
-	  print OBJECT_XREF2 "\tDEPENDENT\n";	
+	  print OBJECT_XREF2 "\n";	
 	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	  print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
 	  print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
@@ -3093,7 +3093,7 @@ EOS
 	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	  print OBJECT_XREF2 $good2missed{$goodxref};
-	  print OBJECT_XREF2 "\tDEPENDENT\n";	
+	  print OBJECT_XREF2 "\n";	
 	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	  print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
 	  print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
@@ -3119,7 +3119,7 @@ EOS
 	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
-	print OBJECT_XREF2 "\tDEPENDENT\n";	
+	print OBJECT_XREF2 "\n";	
 	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
 	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
@@ -3130,7 +3130,7 @@ EOS
 	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
-	print OBJECT_XREF2 "\tDEPENDENT\n";	
+	print OBJECT_XREF2 "\n";	
 	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
 	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
@@ -3192,7 +3192,7 @@ sub dump_all_dependencies{
 	$self->cleanup_sources_file($external_db_id);
       }
       
-      print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\tDEPENDENT\n";
+      print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
       $xrefs_written{$xref_id} = 1;
     }
   }
