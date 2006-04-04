@@ -381,7 +381,8 @@ sub _parse_cigar {
             "allowing 1 or 3 ");
     }
 
-    if( int($mapped_length) != $mapped_length ) {
+    if( int($mapped_length) != $mapped_length and
+        ($piece =~ /M$/ or $piece =~ /D$/)) {
       throw("Internal error with mismapped length of hit, query " .
             "$query_unit, hit $hit_unit, length $length");
     }
