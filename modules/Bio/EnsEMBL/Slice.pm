@@ -681,7 +681,6 @@ sub project {
     return [];
   }
 
-
   my $db = $slice_adaptor->db();
   my $csa = $db->get_CoordSystemAdaptor();
   my $cs = $csa->fetch_by_name($cs_name, $cs_version);
@@ -2348,8 +2347,12 @@ sub get_all_compara_DnaAlignFeatures {
     throw("Query species and assembly and alignmemt type arguments are required");
   }
 
-  my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
 
+#  Bio::EnsEMBL::Registry->add_alias("Multi","compara");
+
+#  my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
+
+  my $compara_db = $reg->get_DBAdaptor("compara","compara");
   unless($compara_db) {
     warning("Compara database must be attached to core database to " .
 		"retrieve compara information");
