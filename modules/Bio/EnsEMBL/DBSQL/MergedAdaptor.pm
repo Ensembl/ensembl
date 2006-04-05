@@ -152,7 +152,7 @@ use vars '$AUTOLOAD';
 sub AUTOLOAD {
   my ($self,@args) = @_;
   my @array_return=();
-
+  my $ref_return = undef;
   $AUTOLOAD =~ /^.*::(\w+)+$/ ;
 
   my $sub = $1;
@@ -161,7 +161,11 @@ sub AUTOLOAD {
     my $ref;
     if($adaptor->can($sub)){
       $ref = $adaptor->$sub(@args);
-      push @array_return, @{$ref};
+      if( ref($ref) eq 'ARRAY' ) {
+        push @array_return, @{$ref};
+      } else {
+        push @array_return, $ref;
+      }
     }
     else{ # end of can
       warn("In Merged Adaptor $adaptor cannot call sub $sub");
