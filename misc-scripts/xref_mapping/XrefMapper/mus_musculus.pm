@@ -21,7 +21,7 @@ sub consortium {
 
 sub gene_description_sources {
 
-  return ("RefSeq_dna_predicted", "RefSeq_peptide_predicted", "Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/SWISSPROT", "MarkerSymbol", "RFAM", "miRNA_Registry");
+  return ("RefSeq_dna_predicted", "RefSeq_peptide_predicted", "Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/Varsplic", "Uniprot/SWISSPROT", "MarkerSymbol", "RFAM", "miRNA_Registry");
 
 }
 
