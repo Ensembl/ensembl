@@ -33,7 +33,9 @@ sub run {
   }
 
   my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);
-
+  my (%swiss)  =  %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
+ 
+  my $missed = 0;
   while (<FILE>) {
 
     my $xref;
@@ -44,25 +46,31 @@ sub run {
     my ($accession, $original, @description) = split /\s+/, $header;
     my $description = join(" ", @description);
 
-    # make sequence into one long string
-    $sequence =~ s/\n//g;
-
-    # build the xref object and store it
-    $xref->{ACCESSION}     = $accession;
-    $xref->{LABEL}         = $accession;
-    $xref->{DESCRIPTION}   = $description;
-    $xref->{SEQUENCE}      = $sequence;
-    $xref->{SOURCE_ID}     = $source_id;
-    $xref->{SPECIES_ID}    = $species_id;
-    $xref->{SEQUENCE_TYPE} = 'peptide';
-    $xref->{STATUS}        = 'experimental';
-
-    push @xrefs, $xref;
-
+    $original =~ s/[\(\)]//g;
+    if(defined($swiss{$original})){
+      # make sequence into one long string
+      $sequence =~ s/\n//g;
+      
+      # build the xref object and store it
+      $xref->{ACCESSION}     = $accession;
+      $xref->{LABEL}         = $accession;
+      $xref->{DESCRIPTION}   = $description;
+      $xref->{SEQUENCE}      = $sequence;
+      $xref->{SOURCE_ID}     = $source_id;
+      $xref->{SPECIES_ID}    = $species_id;
+      $xref->{SEQUENCE_TYPE} = 'peptide';
+      $xref->{STATUS}        = 'experimental';
+      
+      push @xrefs, $xref;
+    }
+    else{
+     $missed++;
+    }
   }
 
   close (FILE);
 
+  print $missed." ignored as original uniprot not found in database\n";
   print scalar(@xrefs) . " UniProtVarSplic xrefs succesfully parsed\n";
 
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
