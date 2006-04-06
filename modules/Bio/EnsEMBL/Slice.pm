@@ -2388,6 +2388,7 @@ sub get_all_MarkerFeatures {
                The name of the assembly to retrieve similarity features from
   Arg [3]    : string $type
                The type of the alignment to retrieve similarity features from
+  Arg [4]    : <optional> compara dbadptor to use.
   Example    : $fs = $slc->get_all_compara_DnaAlignFeatures('Mus musculus',
 							    'MGSC3',
 							    'WGA');
@@ -2405,7 +2406,7 @@ sub get_all_MarkerFeatures {
 =cut
 
 sub get_all_compara_DnaAlignFeatures {
-  my ($self, $qy_species, $qy_assembly, $alignment_type) = @_;
+  my ($self, $qy_species, $qy_assembly, $alignment_type, $compara_db) = @_;
 
   if(!$self->adaptor()) {
     warning("Cannot retrieve DnaAlignFeatures without attached adaptor");
@@ -2417,11 +2418,13 @@ sub get_all_compara_DnaAlignFeatures {
     throw("Query species and assembly and alignmemt type arguments are required");
   }
 
-  my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
-
+  if(!defined($compara_db)){
+    $compara_db = $self->adaptor->db->get_db_adaptor('compara');
+  }
   unless($compara_db) {
-    warning("Compara database must be attached to core database to " .
-		"retrieve compara information");
+    warning("Compara database must be attached to core database or passed ".
+	    "as an argument to " .
+	    "retrieve compara information");
     return [];
   }
 
@@ -2433,6 +2436,7 @@ sub get_all_compara_DnaAlignFeatures {
 
   Arg [1]    : string $query_species e.g. "Mus_musculus" or "Mus musculus"
   Arg [2]    : string $method_link_type, default is "SYNTENY"
+  Arg [3]    : <optional> compara dbadptor to use.
   Description: gets al the conpara syntenys fro a specfic species
   Returns    : arrayref of Bio::EnsEMBL::Compara::SyntenyRegion
   Status     : Stable
@@ -2440,7 +2444,7 @@ sub get_all_compara_DnaAlignFeatures {
 =cut
 
 sub get_all_compara_Syntenies {
-  my ($self, $qy_species, $method_link_type) = @_;
+  my ($self, $qy_species, $method_link_type, $compara_db) = @_;
 
   if(!$self->adaptor()) {
     warning("Cannot retrieve features without attached adaptor");
@@ -2455,11 +2459,13 @@ sub get_all_compara_Syntenies {
     $method_link_type = "SYNTENY";
   }
 
-  my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
-
+  if(!defined($compara_db)){
+    $compara_db = $self->adaptor->db->get_db_adaptor('compara');
+  }
   unless($compara_db) {
-    warning("Compara database must be attached to core database to " .
-		"retrieve compara information");
+    warning("Compara database must be attached to core database or passed ".
+	    "as an argument to " .
+	    "retrieve compara information");
     return [];
   }
   my $binomial = $self->adaptor->db->get_MetaContainer->get_Species->binomial;
