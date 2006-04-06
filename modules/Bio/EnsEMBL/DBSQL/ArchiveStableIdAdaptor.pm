@@ -116,8 +116,7 @@ sub fetch_by_stable_id {
   Arg [1]     : string $stable_id
   Arg [2]     : int $version
   Example     : none
-  Description : Create an archiveStableId with given version and stableId
-                No lookup is done in the database.
+  Description : Retrieve an archiveStableId with given version and stable ID.
   Returntype  : Bio::EnsEMBL::ArchiveStableId 
   Exceptions  : none
   Caller      : general
@@ -139,6 +138,58 @@ sub fetch_by_stable_id_version {
     );
   
   @_ ? $arch_id->type( shift ) : _resolve_type( $arch_id );
+
+  # find latest release this stable ID is found
+  my $sql_tmp = qq(
+    SELECT
+          m.new_db_name,
+          m.new_release,
+          m.new_assembly
+    FROM  stable_id_event sie, mapping_session m
+    WHERE sie.mapping_session_id = m.mapping_session_id
+    AND   sie.new_stable_id = "$stable_id"
+    AND   sie.new_version = $version
+    AND   m.new_db_name <> 'LATEST'
+    ORDER BY m.created DESC
+  );
+  my $sql = $self->dbc->add_limit_clause($sql_tmp, 1);
+
+  my $sth = $self->prepare($sql);
+  $sth->execute();
+  my ($db_name, $release, $assembly) = $sth->fetchrow_array();
+  $sth->finish();
+  
+  # you might have missed a stable ID that was deleted in the very first
+  # stable ID mapping for this species, so go back and try again
+  if( ! defined $db_name ) {
+    my $sql_tmp = qq(
+      SELECT
+            m.old_db_name,
+            m.old_release,
+            m.old_assembly
+      FROM  stable_id_event sie, mapping_session m
+      WHERE sie.mapping_session_id = m.mapping_session_id
+      AND   sie.old_stable_id = "$stable_id"
+      AND   sie.old_version = $version
+      AND   m.old_db_name <> 'ALL'
+      ORDER BY m.created DESC
+    );
+    $sql = $self->dbc->add_limit_clause($sql_tmp, 1);
+
+    $sth = $self->prepare($sql);
+    $sth->execute();
+    ($db_name, $release, $assembly) = $sth->fetchrow_array();
+    $sth->finish();
+  }
+  
+  if( ! defined $db_name ) {
+    # couldn't find stable ID version in archive
+    return undef;
+  } else {
+    $arch_id->db_name($db_name);
+    $arch_id->release($release);
+    $arch_id->assembly($assembly);
+  }
 
   return $arch_id;
 }
@@ -731,8 +782,6 @@ sub _lookup_version {
       $EXTRA_SQL
     );
   }
-
-  my $id_type;
 
   my $sth = $self->prepare($sql);
   $sth->execute();
