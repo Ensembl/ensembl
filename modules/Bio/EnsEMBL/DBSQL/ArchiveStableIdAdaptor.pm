@@ -366,8 +366,8 @@ sub fetch_by_transcript_archive_id {
 sub fetch_predecessors_by_archive_id {
   my $self = shift;
   my $arch_id = shift;
+  
   my @result;
-
   
   if( ! ( defined $arch_id->stable_id() &&
 	  defined $arch_id->db_name() )) {
@@ -387,9 +387,9 @@ sub fetch_predecessors_by_archive_id {
     AND   m.new_db_name = ?	
   );
 
-  my $sth = $self->prepare( $sql );
-  $sth->bind_param(1,$arch_id->stable_id, SQL_VARCHAR);
-  $sth->bind_param(2,$arch_id->db_name,SQL_VARCHAR);
+  my $sth = $self->prepare($sql);
+  $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
+  $sth->bind_param(2, $arch_id->db_name, SQL_VARCHAR);
   $sth->execute();
   
   my ($old_stable_id, $old_version, $old_db_name, $old_release, $old_assembly);
@@ -411,6 +411,57 @@ sub fetch_predecessors_by_archive_id {
     }
   }
   $sth->finish();
+
+  # if you didn't find any predecessors, there might be a gap in the
+  # mapping_session history (i.e. databases in mapping_session don't chain). To
+  # bridge the gap, look in the previous mapping_session for identical
+  # stable_id.version
+  unless (@result) {
+    
+    my $prev_dbname = $self->previous_dbname($arch_id->db_name);
+    
+    if ($prev_dbname) {
+      
+      $sql = qq(
+        SELECT
+              sie.new_stable_id,
+              sie.new_version,
+              m.new_db_name,
+              m.new_release,
+              m.new_assembly
+        FROM  mapping_session m, stable_id_event sie
+        WHERE sie.mapping_session_id = m.mapping_session_id
+        AND   sie.new_stable_id = ?
+        AND   m.new_db_name = ?	
+      );
+
+      $sth = $self->prepare($sql);
+      $sth->bind_param(1,$arch_id->stable_id, SQL_VARCHAR);
+      $sth->bind_param(2,$prev_dbname, SQL_VARCHAR);
+      $sth->execute();
+      
+      $sth->bind_columns(\$old_stable_id, \$old_version, \$old_db_name, \$old_release, \$old_assembly);
+      
+      while( $sth->fetch() ) {
+        if (defined $old_stable_id) {
+          my $old_arch_id = Bio::EnsEMBL::ArchiveStableId->new
+            ( 
+             -version => $old_version,
+             -stable_id => $old_stable_id,
+             -db_name => $old_db_name,
+             -release => $old_release,
+             -assembly => $old_assembly,
+             -adaptor => $self
+            );
+          _resolve_type( $old_arch_id );
+          push( @result, $old_arch_id );
+        }
+      }
+
+      $sth->finish();
+
+    }
+  }
 
   return \@result;
 }
@@ -481,6 +532,58 @@ sub fetch_successors_by_archive_id {
   }
   $sth->finish();
   
+  # if you didn't find any successors, there might be a gap in the
+  # mapping_session history (i.e. databases in mapping_session don't chain). To
+  # bridge the gap, look in the next mapping_session for identical
+  # stable_id.version
+  unless (@result) {
+    
+    my $next_dbname = $self->next_dbname($arch_id->db_name);
+
+    if ($next_dbname) {
+      
+      $sql = qq(
+        SELECT
+              sie.old_stable_id,
+              sie.old_version,
+              m.old_db_name,
+              m.old_release,
+              m.old_assembly
+        FROM  mapping_session m, stable_id_event sie
+        WHERE sie.mapping_session_id = m.mapping_session_id
+        AND   sie.old_stable_id = ?
+        AND   m.old_db_name = ?	
+      );
+
+      $sth = $self->prepare($sql);
+      $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
+      $sth->bind_param(2, $next_dbname, SQL_VARCHAR);
+      $sth->execute();
+      
+      $sth->bind_columns(\$new_stable_id, \$new_version, \$new_db_name, \$new_release, \$new_assembly);
+      
+      while( $sth->fetch() ) {
+        if (defined $new_stable_id) {
+          my $new_arch_id = Bio::EnsEMBL::ArchiveStableId->new
+            ( 
+             -version => $new_version,
+             -stable_id => $new_stable_id,
+             -db_name => $new_db_name,
+             -release => $new_release,
+             -assembly => $new_assembly,
+             -adaptor => $self
+            );
+            
+          _resolve_type($new_arch_id);
+          push( @result, $new_arch_id );
+        }
+      }
+
+      $sth->finish();
+
+    }
+  }
+
   return \@result;
 }
 
@@ -645,7 +748,7 @@ sub fetch_predecessor_history {
   Example     : none
   Description : A list of available database names from the latest (current) to
                 the oldest (ordered).
-  Returntype  : listref string
+  Returntype  : listref of strings
   Exceptions  : none
   Caller      : general
   Status      : At Risk
@@ -657,37 +760,116 @@ sub list_dbnames {
   my $self = shift;
   
   if( ! defined $self->{'dbnames'} ) {
+
     my $sql = qq(
       SELECT old_db_name, new_db_name
       FROM mapping_session
-      ORDER BY created ASC
+      ORDER BY created DESC
     );
     my $sth = $self->prepare( $sql );
     $sth->execute();
     my ( $old_db_name, $new_db_name );
     
-    my $first = 1;
     my @dbnames = ();
+    my %seen;
 
     $sth->bind_columns( \$old_db_name, \$new_db_name );
+
     while( $sth->fetch() ) {
+
       if( $old_db_name eq "ALL" ) {
 	next;
       }
-      if( $first ) {
-	push( @dbnames, $old_db_name );
-	push( @dbnames, $new_db_name );
-	$first = 0;
-      } else {
-	push( @dbnames, $new_db_name );
-      }
+
+      # this code now can deal with non-chaining mapping sessions
+      push(@{ $self->{'dbnames'} }, $new_db_name) unless ($seen{$new_db_name});
+      $seen{$new_db_name} = 1;
+
+      push(@{ $self->{'dbnames'} }, $old_db_name) unless ($seen{$old_db_name});
+      $seen{$old_db_name} = 1;
     }
+
     $sth->finish();
     
-    $self->{'dbnames'} = [ reverse(@dbnames) ];
   }
 
   return $self->{'dbnames'};
+}
+
+
+=head2 previous_dbname
+
+  Arg[1]      : String $dbname - focus db name
+  Example     : my $prev_db = $self->previous_dbname($curr_db);
+  Description : Returns the name of the next oldest database which has mapping
+                session information.
+  Return type : String (or undef if not available)
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+
+=cut
+
+sub previous_dbname {
+  my $self = shift;
+  my $dbname = shift;
+
+  my $curr_idx = $self->_dbname_index($dbname);
+  my @dbnames = @{ $self->list_dbnames };
+
+  if ($curr_idx == @dbnames) {
+    # this is the oldest dbname, so no previous one available
+    return undef;
+  } else {
+    return $dbnames[$curr_idx+1];
+  }
+}
+
+
+=head2 next_dbname
+
+  Arg[1]      : String $dbname - focus db name
+  Example     : my $prev_db = $self->next_dbname($curr_db);
+  Description : Returns the name of the next newest database which has mapping
+                session information.
+  Return type : String (or undef if not available)
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+
+=cut
+
+sub next_dbname {
+  my $self = shift;
+  my $dbname = shift;
+
+  my $curr_idx = $self->_dbname_index($dbname);
+  my @dbnames = @{ $self->list_dbnames };
+
+  if ($curr_idx == 0) {
+    # this is the latest dbname, so no next one available
+    return undef;
+  } else {
+    return $dbnames[$curr_idx-1];
+  }
+}
+
+
+#
+# helper method to return the array index of a database in the ordered list of
+# available databases (as returned by list_dbnames()
+#
+sub _dbname_index {
+  my $self = shift;
+  my $dbname = shift;
+
+  my @dbnames = @{ $self->list_dbnames };
+
+  for (my $i = 0; $i < @dbnames; $i++) {
+    if ($dbnames[$i] eq $dbname) {
+      return $i;
+    }
+  }
 }
 
 
