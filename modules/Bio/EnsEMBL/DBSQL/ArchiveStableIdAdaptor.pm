@@ -609,13 +609,14 @@ sub list_dbnames {
     my $sql = qq(
       SELECT old_db_name, new_db_name
       FROM mapping_session
-      ORDER BY created DESC
+      ORDER BY created ASC
     );
     my $sth = $self->prepare( $sql );
     $sth->execute();
     my ( $old_db_name, $new_db_name );
     
     my $first = 1;
+    my @dbnames = ();
 
     $sth->bind_columns( \$old_db_name, \$new_db_name );
     while( $sth->fetch() ) {
@@ -623,15 +624,16 @@ sub list_dbnames {
 	next;
       }
       if( $first ) {
-	$self->{'dbnames'} = [];
-	push( @{$self->{'dbnames'}}, $new_db_name );
-	push( @{$self->{'dbnames'}}, $old_db_name );
+	push( @dbnames, $old_db_name );
+	push( @dbnames, $new_db_name );
 	$first = 0;
       } else {
-	push( @{$self->{'dbnames'}}, $new_db_name );
+	push( @dbnames, $new_db_name );
       }
     }
     $sth->finish();
+    
+    $self->{'dbnames'} = [ reverse(@dbnames) ];
   }
 
   return $self->{'dbnames'};
@@ -697,22 +699,24 @@ sub _lookup_version {
 
   my $sql;
   my $EXTRA_SQL = defined($arch_id->{'type'}) ?
-    " and sie.type = '@{[lc($arch_id->{'type'})]}'" : '';
+    " AND sie.type = '@{[lc($arch_id->{'type'})]}'" : '';
 
   if( ! defined $arch_id->{'db_name'} ) {
     # latest version of this stable id
-      my $sql_tmp = qq(
-        SELECT
-              m.new_db_name,
-              m.new_release,
-              m.new_assembly,
-              sie.new_version
-        FROM  stable_id_event sie, mapping_session m
-        WHERE sie.mapping_session_id = m.mapping_session_id
-        AND   new_stable_id = "@{[$arch_id->stable_id]}" $EXTRA_SQL
-        ORDER BY m.created DESC
-      );
-      $sql = $self->dbc->add_limit_clause($sql_tmp, 1);
+    my $sql_tmp = qq(
+      SELECT
+            m.new_db_name,
+            m.new_release,
+            m.new_assembly,
+            sie.new_version
+      FROM  stable_id_event sie, mapping_session m
+      WHERE sie.mapping_session_id = m.mapping_session_id
+      AND   new_stable_id = "@{[$arch_id->stable_id]}"
+      AND   m.new_db_name <> 'LATEST'
+      $EXTRA_SQL
+      ORDER BY m.created DESC
+    );
+    $sql = $self->dbc->add_limit_clause($sql_tmp, 1);
   } else {
     $sql = qq(
       SELECT
@@ -730,12 +734,37 @@ sub _lookup_version {
 
   my $id_type;
 
-  my $sth = $self->prepare( $sql );
+  my $sth = $self->prepare($sql);
   $sth->execute();
   my ($db_name, $release, $assembly, $version) = $sth->fetchrow_array();
   $sth->finish();
   
+  # you might have missed a stable ID that was deleted in the very first
+  # stable ID mapping for this species, so go back and try again
   if( ! defined $db_name ) {
+    my $sql_tmp = qq(
+      SELECT
+            m.old_db_name,
+            m.old_release,
+            m.old_assembly,
+            sie.old_version
+      FROM  stable_id_event sie, mapping_session m
+      WHERE sie.mapping_session_id = m.mapping_session_id
+      AND   old_stable_id = "@{[$arch_id->stable_id]}"
+      AND   m.old_db_name <> 'ALL'
+      $EXTRA_SQL
+      ORDER BY m.created DESC
+    );
+    $sql = $self->dbc->add_limit_clause($sql_tmp, 1);
+
+    $sth = $self->prepare($sql);
+    $sth->execute();
+    ($db_name, $release, $assembly, $version) = $sth->fetchrow_array();
+    $sth->finish();
+  }
+  
+  if( ! defined $db_name ) {
+    # couldn't find stable ID in archive
     return 0;
   } else {
     $arch_id->version($version);
