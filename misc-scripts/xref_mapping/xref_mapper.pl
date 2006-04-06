@@ -1,23 +1,148 @@
+#!/usr/bin/perl
+
+=head1 NAME
+
+xref_mapper.pl - Create Ensembl gene model xref mappings
+
+=head1 SYNOPSIS
+
+=over 15
+
+=item B<xref_mapper.pl>
+
+[B<-help>]
+[B<-man>]
+[B<-file>S< >I<config_file>]
+[B<-maxdump>S< >I<int>]
+[B<-location>S< >I<string>]
+[B<-logicname>S< >I<string>] 
+[B<-useexistingmapping>]
+[B<-upload>]
+[B<-delete_external_db>]
+[B<-notriage>]
+[B<-delete_unmapped>]
+
+=back
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-help>
+
+Print a brief help message and exit.
+
+=item B<-man>
+
+Print this command's manual page and exit.
+
+=item B<-file> I<config_file>
+
+Input file with keyword pairs for 'species','host', 'port', 'dbname',
+'user', 'password' and 'directory'.
+
+=item B<-maxdump> I<int>
+
+dump only I<int> sequences.
+
+=item B<-dumpcheck>
+
+only dump if files do not exist.
+
+=item B<-location> I<string>
+
+only dump a subset of the genome. Format:
+
+    coord_system:version:name:start:end:strand e.g.
+    chromosome:NCBI34:X:1000000:2000000:1 
+
+start, end, strand are optional. coord_system can also be 'seqlevel' or
+'toplevel'
+
+USE WITH CAUTION -MAY GIVE CONFLICTING RESULTS!
+
+=item B<-logicname>
+
+dump only the specified (analysis.logic_name) gene type from the core DB
+
+=item B<-useexistingmapping>
+
+use existing *.map files
+
+=item B<upload>
+
+upload xref, object_xref, identity_xref data, and set display_xrefs
+for genes and transcripts. Data is written to *.txt etc regardless of
+whether this option is used. If external_db in core database is empty,
+it is populated from ../external_db/external_dbs.txt
+
+=item B<-delete_external_db>
+
+deletes all entries of the external_db table if it contains any rows
+and uploads new data into the table - you have to interactively
+confirm the deletion before. Works only if option B<-upload> is used
+as well.
+
+=item B<-notriage>
+
+don't dump triage data
+
+=item B<-delete_unmapped>
+
+deletes data from the unmapped_object table.
+
+=item B<EXAMPLE:>
+
+perl xref_mapper.pl -file mapper.input
+
+=back
+
+=head1 DESCRIPTION
+
+Creates xrefs to Ensembl gene models as follows;
+
+1. Connects to the Ensembl core and xref databases using the settings 
+   configured in B<-file>
+
+2. Dumps cDNAs and peptides for the gene models in the core database.
+
+3. Dumps the sequences for the xrefs in the xref database.
+
+4. Uses the method specified in the XrefMapper::I<species>.pm file to
+   associate xrefs with gene models.
+
+=head1 SEE ALSO
+
+xref_parser.pl
+
+=head1 AUTHOR
+
+Glenn and Ian
+
+=cut
+
+
 use strict;
 use warnings;
  
 use Getopt::Long;
+use Pod::Usage;
 use Cwd;
 use XrefMapper::db;
  
 use vars qw(@INC);
  
-
-
 my $file;
 my $verbose;
 my $dumpcheck=undef;
 my $use_existing_mappings=undef;
 my $maxdump=undef;
 my $help;
+my $man;
 my $upload = undef;
 my $delete_external_db ; 
 my $location;
+my $logic_name;
 my $notriage=undef;
 my $delete_unmapped = undef;
 
@@ -29,16 +154,22 @@ GetOptions ('file=s'                  => \$file,
 	    'upload'                  => \$upload,
 	    'delete_external_db'      => \$delete_external_db , 
 	    'location=s'              => \$location,
+            'logicname=s'             => \$logic_name,
 	    'notriage'                => \$notriage,
 	    'delete_unmapped'         => \$delete_unmapped,
-            'help'                    => sub { &usage(); exit 1;} );
-usage("-file option is required")   if(!$file);
-usage() if($help);
+            'help'                    => \$help,
+            'man'                     => \$man );
+pod2usage(1)            if ($help);
+pod2usage(VERBOSE => 2) if ($man);
+#usage("-file option is required")   if(!$file);
+
+pod2usage("\n[*DIE] -file option is required\n") if(!$file);
+
 if(defined($dumpcheck) && defined($maxdump)){
-  die "both dumpcheck and maxdump cannot both be specified\n";
+  pod2usage( "\n[*DIE] Cannot specify both -dumpcheck and -maxdump\n" );
 }
 
-open(FILE, $file) or die("Could not open input file '$file'");
+open(FILE, $file) or pod2usage("\nCannot open input file '$file':\n $!\n");
  
 my  @all_species;
 my $xref=undef;
@@ -173,6 +304,9 @@ if(defined($species_hash{'species'})){
     $mapper->use_existing_mappings("yes");
     $mapper->dumpcheck("yes");
   }
+  if(defined($logic_name)){
+    $mapper->logic_name($logic_name);
+  }
 
   
 }
@@ -217,50 +351,3 @@ sub info {
 
 }
 
-sub usage {
-  my $msg = shift;
-
-  print STDERR "$msg\n\n" if($msg);
-  print STDERR <<EOF;
-usage: perl xref_mapper <options>
-                                                                                    
-options:
-
- -file <input_file>     input file with keyword pairs for 'species','host',
-                        'port', 'dbname' ,'user', 'password' and 'directory'
-
-  -maxdump <int>        dump only <int> sequences.
-
-  -dumpcheck            only dump if files do not exist.
-
-  -location             only dump a subset of the genome. Format:
-                          coord_system:version:name:start:end:strand
-                          e.g.
-                          chromosome:NCBI34:X:1000000:2000000:1
-                        start, end, strand are optional
-                        coord_system can also be 'seqlevel' or 'toplevel'
-                        USE WITH CAUTION - MAY GIVE CONFLICTING RESULTS!
-
-  -useexistingmapping   use existing *.map files
-
-  -upload               upload xref, object_xref, identity_xref data, and set
-                        display_xrefs for genes and transcripts. Data is written
-                        to *.txt etc regardless of whether this option is used.
-                        If external_db in core database is empty, it is populated
-                        from ../external_db/external_dbs.txt
-
-  -delete_external_db   deletes all entries of the external_db table if it contains any rows 
-                        and uploads new data into the table - you have to interactively 
-                        confirm the deletion before. Works only if option -upload is used as well.
-
-  -notriage             don't dump triage data
-
-  -delete_unmapped      deletes data from the unmapped_object table.
-
-  -help                 display this message
- 
-example: perl xref_mapper.pl -file mapper.input 
-EOF
- 
-  exit;
-}
