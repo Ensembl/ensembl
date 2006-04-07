@@ -1340,41 +1340,59 @@ sub get_all_RepeatFeatures {
 sub get_all_LD_values{
     my $self = shift;
     my $population = shift;
-    
+
+
     if(!$self->adaptor()) {
 	warning('Cannot get LDFeatureContainer without attached adaptor');
 	return [];
     }
-
-    my $ld_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "LDFeatureContainer");
-
-  if( $ld_adaptor ) {
-      my $ld_values = $ld_adaptor->fetch_by_Slice($self,$population);
-      if (@{$ld_values} > 1){
-	  warning("More than 1 variation database attached. Trying to merge LD results");
-	  my $ld_value_merged = shift @{$ld_values};
-	  #with more than 1 variation database attached, will try to merge in one single LDContainer object.
-	  foreach my $ld (@{$ld_values}){
-	      #copy the ld values to the result hash
-	      foreach my $key (keys %{$ld->{'ldContainer'}}){
-		  $ld_value_merged->{'ldContainer'}->{$key} = $ld->{'ldContainer'}->{$key};
-	      }
-	      #and copy the variationFeatures as well
-	      foreach my $key (keys %{$ld->{'variationFeatures'}}){
-		  $ld_value_merged->{'variationFeatures'}->{$key} = $ld->{'variationFeatures'}->{$key};
-	      }
-	      
-	  }
-	  return $ld_value_merged;
-      }
-      else{
-	  return shift @{$ld_values};
-      }
-} else {
-    warning("Variation database must be attached to core database to " .
+    
+    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+    
+    unless($variation_db) {
+	warning("Variation database must be attached to core database to " .
 		"retrieve variation information" );
-    return [];
-}
+	return [];
+    }
+    
+    my $ld_adaptor = $variation_db->get_LDFeatureContainerAdaptor;
+    
+    if( $ld_adaptor ) {
+	return $ld_adaptor->fetch_by_Slice($self,$population);
+    } else {
+	return [];
+
+    }
+
+#     my $ld_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "LDFeatureContainer");
+
+#   if( $ld_adaptor ) {
+#       my $ld_values = $ld_adaptor->fetch_by_Slice($self,$population);
+#       if (@{$ld_values} > 1){
+# 	  warning("More than 1 variation database attached. Trying to merge LD results");
+# 	  my $ld_value_merged = shift @{$ld_values};
+# 	  #with more than 1 variation database attached, will try to merge in one single LDContainer object.
+# 	  foreach my $ld (@{$ld_values}){
+# 	      #copy the ld values to the result hash
+# 	      foreach my $key (keys %{$ld->{'ldContainer'}}){
+# 		  $ld_value_merged->{'ldContainer'}->{$key} = $ld->{'ldContainer'}->{$key};
+# 	      }
+# 	      #and copy the variationFeatures as well
+# 	      foreach my $key (keys %{$ld->{'variationFeatures'}}){
+# 		  $ld_value_merged->{'variationFeatures'}->{$key} = $ld->{'variationFeatures'}->{$key};
+# 	      }
+	      
+# 	  }
+# 	  return $ld_value_merged;
+#       }
+#       else{
+# 	  return shift @{$ld_values};
+#       }
+# } else {
+#     warning("Variation database must be attached to core database to " .
+# 		"retrieve variation information" );
+#     return [];
+# }
 }
 
 =head2 get_all_VariationFeatures
