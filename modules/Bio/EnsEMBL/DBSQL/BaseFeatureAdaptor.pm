@@ -254,6 +254,28 @@ sub fetch_all_by_Slice_constraint {
 }
 
 
+=head2 fetch_all_by_logic_name
+
+  Arg [3]    : string $logic_name
+               the logic name of the type of features to obtain
+  Example    : $fs = $a->fetch_all_by_logic_name('foobar');
+  Description: Returns a listref of features created from the database. 
+               only features with an analysis of type $logic_name will be 
+               returned. 
+  Returntype : listref of Bio::EnsEMBL::SeqFeatures
+  Exceptions : thrown if $logic_name
+  Caller     : General
+  Status     : Experimental
+
+=cut
+
+sub fetch_all_by_logic_name {
+  my $self = shift;
+  my $logic_name = shift || throw( "Need a logic_name" );
+  my $constraint = $self->_logic_name_to_constraint( '',$logic_name );
+  return $self->fetch_all( $constraint )
+}
+
 #
 # helper function used by fetch_all_by_Slice_constraint method
 #
