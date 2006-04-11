@@ -192,7 +192,7 @@ sub _objs_from_sth {
   while($sth->fetch()) {
     my $analysis = $analysis_adaptor->fetch_by_dbID($analysis_id);
     
-    print "$identifier\n";
+    #print "$identifier\n";
     push @features, Bio::EnsEMBL::UnmappedObject->new
       (-unmapped_object_id  => $unmapped_object_id,
        -unmapped_reason_id  => $unmapped_reason_id,
@@ -352,7 +352,7 @@ sub fetch_all_by_analysis {
     }
     $constraint .= " AND uo.external_db_id = $db_id";
   }
-  print $constraint."\n";
+  #print $constraint."\n";
   $self->generic_fetch($constraint);
   
 }
@@ -390,9 +390,8 @@ sub fetch_by_identifier {
     }
     $constraint .= " AND uo.external_db_id = $db_id";
   }
-  print $constraint."\n";
-  $self->generic_fetch($constraint);
-  
+  # print $constraint."\n";
+  return $self->generic_fetch($constraint);
 }
 
 1;
