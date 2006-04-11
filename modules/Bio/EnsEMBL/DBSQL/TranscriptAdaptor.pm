@@ -102,10 +102,11 @@ sub _columns {
   my $modified_date = $self->db->dbc->from_date_to_seconds("modified_date");
 
   return ( 't.transcript_id', 't.seq_region_id', 't.seq_region_start', 't.seq_region_end', 
-	     't.seq_region_strand', 't.analysis_id', 't.gene_id', 
-             't.display_xref_id', 'tsi.stable_id','tsi.version', $created_date,
-             $modified_date, 't.description', 't.biotype', 't.status',
-             'x.display_label', 'exdb.db_name' ,'exdb.status', 'exdb.db_display_name');
+	   't.seq_region_strand', 't.analysis_id', 't.gene_id', 
+	   't.display_xref_id', 'tsi.stable_id','tsi.version', $created_date,
+	   $modified_date, 't.description', 't.biotype', 't.status',
+	   'x.display_label', 'exdb.db_name' ,'exdb.status', 'exdb.db_display_name',
+	   'x.info_type', 'x.info_text');
 }
 
 
@@ -1119,14 +1120,16 @@ sub _objs_from_sth {
        $seq_region_strand, $analysis_id, $gene_id,  
        $display_xref_id, $stable_id, $version, $created_date, $modified_date,
        $description, $biotype, $status,
-       $external_name, $external_db, $external_status, $external_db_name );
+       $external_name, $external_db, $external_status, $external_db_name,
+       $info_type, $info_text);
 
   $sth->bind_columns( \$transcript_id, \$seq_region_id, \$seq_region_start,
                       \$seq_region_end, \$seq_region_strand, \$analysis_id,
                       \$gene_id, \$display_xref_id, \$stable_id, \$version,
                       \$created_date, \$modified_date,
 		      \$description, \$biotype, \$status,
-                      \$external_name, \$external_db, \$external_status, \$external_db_name );
+                      \$external_name, \$external_db, \$external_status, \$external_db_name,
+		      \$info_type, \$info_text);
 
   my $asm_cs;
   my $cmp_cs;
