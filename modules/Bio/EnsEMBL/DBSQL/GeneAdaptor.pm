@@ -94,12 +94,13 @@ sub _columns {
   my $created_date = $self->db->dbc->from_date_to_seconds("gsi.created_date");
   my $modified_date = $self->db->dbc->from_date_to_seconds("gsi.modified_date");
   return ( 'g.gene_id', 'g.seq_region_id', 'g.seq_region_start', 'g.seq_region_end',
-	     'g.seq_region_strand', 'g.analysis_id' ,'g.biotype', 'g.display_xref_id',
-	     'g.description', 'g.status', 'g.source', 
-	     'gsi.stable_id', 'gsi.version', $created_date,
+	   'g.seq_region_strand', 'g.analysis_id' ,'g.biotype', 'g.display_xref_id',
+	   'g.description', 'g.status', 'g.source', 
+	   'gsi.stable_id', 'gsi.version', $created_date,
 	   $modified_date,
-	     'x.display_label' ,'x.dbprimary_acc', 'x.description', 'x.version', 
-	     'exdb.db_name', 'exdb.status', 'exdb.db_release' ,'exdb.db_display_name' );
+	   'x.display_label' ,'x.dbprimary_acc', 'x.description', 'x.version', 
+	   'exdb.db_name', 'exdb.status', 'exdb.db_release' ,'exdb.db_display_name',
+	   'x.info_type', 'x.info_text');
 }
 
 
@@ -1163,16 +1164,18 @@ sub _objs_from_sth {
        $gene_description, $stable_id, $version, $created_date, 
        $modified_date, $xref_display_id, $status, $source, 
        $xref_primary_acc, $xref_desc, $xref_version, $external_name, 
-       $external_db, $external_status, $external_release, $external_db_name );
+       $external_db, $external_status, $external_release, $external_db_name,
+       $info_type, $info_text);
 
   $sth->bind_columns( \$gene_id, \$seq_region_id, \$seq_region_start,
-          \$seq_region_end, \$seq_region_strand, \$analysis_id, \$biotype,
-          \$display_xref_id, \$gene_description, \$status, \$source, 
-	  \$stable_id, \$version,
-          \$created_date, \$modified_date, 
-	  \$xref_display_id, \$xref_primary_acc, \$xref_desc, \$xref_version,
-          \$external_db, \$external_status,
-          \$external_release, \$external_db_name );
+		      \$seq_region_end, \$seq_region_strand, \$analysis_id, \$biotype,
+		      \$display_xref_id, \$gene_description, \$status, \$source, 
+		      \$stable_id, \$version,
+		      \$created_date, \$modified_date, 
+		      \$xref_display_id, \$xref_primary_acc, \$xref_desc, \$xref_version,
+		      \$external_db, \$external_status,
+		      \$external_release, \$external_db_name,
+		      \$info_type, \$info_text);
 
   my $asm_cs;
   my $cmp_cs;
@@ -1284,7 +1287,9 @@ sub _objs_from_sth {
            'description' => $xref_desc,
            'release' => $external_release,
            'dbname' => $external_db,
-           'db_display_name' => $external_db_name
+           'db_display_name' => $external_db_name,
+	   'info_type' => $info_type,
+	   'info_text' => $info_text
          });
       $display_xref->status( $external_status );
     }				
