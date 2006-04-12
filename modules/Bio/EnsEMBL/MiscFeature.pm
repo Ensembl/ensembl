@@ -325,6 +325,14 @@ sub get_scalar_attribute {
   return @results ? $results[0]->value() : '';
 }
 
+sub get_first_scalar_attribute {
+  my $self = shift;
+  foreach my $code ( @_ ) {
+    my @results = grep { uc( $_->code() ) eq uc( $code )} @{$self->{'attributes'}};
+    return $results[0]->value() if @results;
+  }
+  return '';
+}
 =head2 display_id
 
   Arg [1]    : none
