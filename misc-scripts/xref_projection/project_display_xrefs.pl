@@ -139,13 +139,15 @@ sub project_display_names {
   my $to_source = $to_gene->display_xref()->dbname() if ($to_gene->display_xref());
   my $from_source = $from_gene->display_xref()->dbname() if ($from_gene->display_xref());
 
+  my $from_latin_species = Bio::EnsEMBL::Registry->get_alias($from_species);
+
   # if no display name set, do the projection
   if (check_overwrite_display_xref($to_gene, $from_source, $to_source)) {
 
     if ($dbEntry) {
 
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
-      my $txt = "from $from_species gene " . $from_gene->stable_id();
+      my $txt = "from $from_latin_species gene " . $from_gene->stable_id();
 
       $dbEntry->info_type("PROJECTION");
       $dbEntry->info_text($txt);
@@ -212,6 +214,8 @@ sub project_go_terms {
   my $from_translation = $ma->fetch_by_dbID($from_attribute->peptide_member_id())->get_Translation();
   my $to_translation   = $ma->fetch_by_dbID($to_attribute->peptide_member_id())->get_Translation();
 
+  my $from_latin_species = Bio::EnsEMBL::Registry->get_alias($from_species);
+
   my $to_go_xrefs = $to_translation->get_all_DBEntries();
 
   DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries()}) {
@@ -233,7 +237,7 @@ sub project_go_terms {
     #$dbEntry->flush_linkage_types();
     $dbEntry->add_linkage_type("IEA");
 
-    my $txt = "from $from_species gene " . $from_translation->stable_id();
+    my $txt = "from $from_latin_species gene " . $from_translation->stable_id();
     $dbEntry->info_type("PROJECTION");
     $dbEntry->info_text($txt);
 
