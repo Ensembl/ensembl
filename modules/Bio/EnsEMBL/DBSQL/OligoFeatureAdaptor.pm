@@ -67,7 +67,7 @@ sub fetch_all_by_Probe {
 	if ( !ref($probe) && !$probe->isa('Bio::EnsEMBL::OligoProbe') ) {
 		throw('fetch_all_by_Probe requires a Bio::EnsEMBL::OligoProbe object');
 	}
-	if ( !defined $probe->db() ) {
+	if ( !defined $probe->dbID() ) {
 		throw('fetch_all_by_Probe requires a stored Bio::EnsEMBL::OligoProbe object');
 	}
 	
