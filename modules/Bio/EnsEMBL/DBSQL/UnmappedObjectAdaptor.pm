@@ -205,7 +205,8 @@ sub _objs_from_sth {
        -ensembl_id          => $ensembl_id,
        -ensembl_object_type => $ensembl_object_type,
        -summary             => $summary,
-       -full_desc           => $full_desc);
+       -full_desc           => $full_desc,
+       -adaptor             => $self);
   }
   return \@features;
 }
