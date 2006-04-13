@@ -88,19 +88,22 @@ sub new {
 
   my ($dbID, $unmapped_reason_id, $type, $analysis, $ex_db_id, $identifier, 
       $query_score, $target_score, $summary, $full_desc,
-      $ensembl_id, $ensembl_object_type) = 
+      $ensembl_id, $ensembl_object_type, $adaptor ) = 
     rearrange([qw(UNMAPPED_OBJECT_ID UNMAPPED_REASON_ID TYPE ANALYSIS 
 		  EXTERNAL_DB_ID IDENTIFIER QUERY_SCORE TARGET_SCORE 
-		  SUMMARY FULL_DESC ENSEMBL_ID ENSEMBL_OBJECT_TYPE)], @_);
+		  SUMMARY FULL_DESC ENSEMBL_ID ENSEMBL_OBJECT_TYPE ADAPTOR)], @_);
 
+  print STDERR "\n1\n$identifier\n\n".ref($analysis)."\n\n";
   my $self = $class->SUPER::new(@_);
-  if($analysis) {
+  print STDERR "\n2\n$identifier\n\n".ref($analysis)."\n\n";
+  if(defined($analysis)) {
     if(!ref($analysis) || !$analysis->isa('Bio::EnsEMBL::Analysis')) {
       throw('-ANALYSIS argument must be a Bio::EnsEMBL::Analysis not '.
             $analysis);
     }
   }
   else{
+    print STDERR "\n3\n$identifier\n\n".ref($analysis)."\n\n";
     throw('-ANALYSIS argument must be given');
   }
   $self->{'analysis'} = $analysis;
@@ -117,6 +120,7 @@ sub new {
     if(defined($ensembl_object_type));
   $self->{'unmapped_reason_id'} = $unmapped_reason_id 
     if(defined($unmapped_reason_id));
+  $self->{'adaptor'} = $adaptor  if(defined($adaptor));
   return $self;
 }
 
@@ -212,6 +216,29 @@ sub type{
   return $self->{'type'};
 }
 
+=head2 adaptor
+
+  Arg [1]     : (optional) UnmappedObjectadaptor to be set to
+  Example     : my $adap =  $unmappedObject->adaptor."\n";
+  Description : Basic getter/setter for adaptor
+  ReturnType  : UnamppedObjectAdaptor
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+
+=cut
+
+sub adaptor{
+  my $self = shift;
+
+  if(@_) {
+    my $arg = shift;
+    $self->{'adaptor'} = $arg;
+  }
+
+  return $self->{'adaptor'};
+}
+
 =head2 ensembl_object_type
 
   Arg [1]     : (optional) ensembl object type to be set to
@@ -277,10 +304,82 @@ sub external_db_id{
     my $arg = shift;
     $self->{'external_db_id'} = $arg;
   }
-
+  
   return $self->{'external_db_id'};
 }
 
+=head2 external_db_name
+
+  Example     : print $unmappedObject->external_db_name()."\n";
+  Description : Basic getter for external_db_name
+  ReturnType  : int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+
+=cut
+
+sub external_db_name{
+  my $self = shift;
+
+  my $handle = $self->{'adaptor'};
+  print STDERR "\nhandle is ".$handle."\nid = ".$self->{'external_db_id'}."\n\n";
+  if(defined($handle)){
+    print STDERR ref($handle)."\n";
+    my $sth = $handle->prepare("select db_name from external_db where external_db_id = ".$self->{'external_db_id'});
+    $sth->execute();
+    my $name;
+    $sth->bind_columns(\$name);
+    $sth->fetch();
+    return $name;
+  }
+  return "";
+}
+
+
+sub stable_id{
+  my ($self) = shift;
+  
+  my $handle = $self->{'adaptor'};
+  print STDERR "\nhandle is ".$handle."\nid = ".$self->{'ensembl_id'}."\n\n";
+  if(defined($handle)){
+    print STDERR ref($handle)."\n";
+    my $sql = "select stable_id from ".lc($self->{'ensembl_object_type'})."_stable_id where ".
+      lc($self->{'ensembl_object_type'})."_id = ".
+	$self->{'ensembl_id'};
+    my $sth = $handle->prepare($sql);
+    $sth->execute();
+    my $name;
+    $sth->bind_columns(\$name);
+    $sth->fetch();
+    return $name;
+  }
+  return "";
+}
+					     
+ #  my $adaptor;
+#  if($self->{'ensembl_object_type'} eq  "Transcript"){
+#    $adaptor= $self->adaptor->db->get_TranscriptAdaptor();
+#  }
+#  elsif($self->{'ensembl_object_type'} eq  "Translation"){
+#    $adaptor= $self->adaptor->db->get_TranslationAdaptor();
+#  }
+#  elsif($self->{'ensembl_object_type'} eq  "Gene"){
+#    $adaptor= $self->adaptor->db->get_GeneAdaptor();
+#  } 
+#  else{
+#    return undef;
+#  }
+#  my $object = $adaptor->fetch_by_dbID($self->{'ensembl_id'});
+#  if(defined($object)){
+#    return $object->stable_id;
+#  }
+#  else{
+#    return undef;
+#  }
+#}
+
+ 
 =head2 identifier
 
   Arg [1]     : (optional) identifier to be set to
