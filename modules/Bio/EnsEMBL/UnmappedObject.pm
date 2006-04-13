@@ -93,9 +93,7 @@ sub new {
 		  EXTERNAL_DB_ID IDENTIFIER QUERY_SCORE TARGET_SCORE 
 		  SUMMARY FULL_DESC ENSEMBL_ID ENSEMBL_OBJECT_TYPE ADAPTOR)], @_);
 
-  print STDERR "\n1\n$identifier\n\n".ref($analysis)."\n\n";
   my $self = $class->SUPER::new(@_);
-  print STDERR "\n2\n$identifier\n\n".ref($analysis)."\n\n";
   if(defined($analysis)) {
     if(!ref($analysis) || !$analysis->isa('Bio::EnsEMBL::Analysis')) {
       throw('-ANALYSIS argument must be a Bio::EnsEMBL::Analysis not '.
@@ -103,7 +101,6 @@ sub new {
     }
   }
   else{
-    print STDERR "\n3\n$identifier\n\n".ref($analysis)."\n\n";
     throw('-ANALYSIS argument must be given');
   }
   $self->{'analysis'} = $analysis;
@@ -323,9 +320,7 @@ sub external_db_name{
   my $self = shift;
 
   my $handle = $self->{'adaptor'};
-  print STDERR "\nhandle is ".$handle."\nid = ".$self->{'external_db_id'}."\n\n";
   if(defined($handle)){
-    print STDERR ref($handle)."\n";
     my $sth = $handle->prepare("select db_name from external_db where external_db_id = ".$self->{'external_db_id'});
     $sth->execute();
     my $name;
@@ -341,9 +336,7 @@ sub stable_id{
   my ($self) = shift;
   
   my $handle = $self->{'adaptor'};
-  print STDERR "\nhandle is ".$handle."\nid = ".$self->{'ensembl_id'}."\n\n";
   if(defined($handle)){
-    print STDERR ref($handle)."\n";
     my $sql = "select stable_id from ".lc($self->{'ensembl_object_type'})."_stable_id where ".
       lc($self->{'ensembl_object_type'})."_id = ".
 	$self->{'ensembl_id'};
