@@ -568,7 +568,7 @@ sub display_xref {
                pseudogene - i.e. a non-translating transcript such as an
                ncRNA.  This is the accepted method of determining whether
                a transcript is a pseudogene or not.
-  Returntype : Bio::EnsEMBL::Transcript
+  Returntype : Bio::EnsEMBL::Translation
   Exceptions : none
   Caller     : general
   Status     : Stable
