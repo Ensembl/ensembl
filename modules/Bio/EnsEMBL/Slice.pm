@@ -2466,7 +2466,7 @@ sub get_all_Haplotypes {
 =cut
 
 sub get_all_DASFeatures{
-   my ($self, $source_type) = @_;
+   my ($self,@args) = @_;
 
   if(!$self->adaptor()) {
     warning("Cannot retrieve features without attached adaptor");
@@ -2474,12 +2474,11 @@ sub get_all_DASFeatures{
   }
 
   my %genomic_features =
-      map { ( $_->adaptor->dsn => [ $_->fetch_all_Features($self, $source_type) ]  ) }
+      map { ( $_->adaptor->dsn => [ $_->fetch_all_by_Slice($self) ]  ) }
          $self->adaptor()->db()->_each_DASFeatureFactory;
   return \%genomic_features;
 
 }
-
 
 =head2 get_all_ExternalFeatures
 
