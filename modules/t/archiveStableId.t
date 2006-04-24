@@ -116,8 +116,8 @@ for my $asi ( @$asis ) {
  _print_asi( $asi );
 }
 
-ok(( $asis->[0]->db_name eq "release_4" ) &&
-   ( scalar @$asis == 2 ));
+ok(( $asis->[-1]->db_name eq "release_4" ) &&
+   ( scalar @$asis == 5 ));
 
 
 #
