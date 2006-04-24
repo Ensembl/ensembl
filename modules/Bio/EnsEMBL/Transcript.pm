@@ -1276,7 +1276,7 @@ sub five_prime_utr {
   return undef if(!$seq);
 
   return Bio::Seq->new(
-	       -DISPLAY_ID => $self->stable_id,
+	       -DISPLAY_ID => $self->display_id,
 	       -MOLTYPE    => 'dna',
 	       -SEQ        => $seq);
 }
@@ -1311,7 +1311,7 @@ sub three_prime_utr {
   return undef if(!$seq);
 
   return Bio::Seq->new(
-	       -DISPLAY_ID => $self->stable_id,
+	       -DISPLAY_ID => $self->display_id,
 	       -MOLTYPE    => 'dna',
 	       -SEQ        => $seq);
 }
@@ -1419,15 +1419,7 @@ sub translate {
   }
 
   my $mrna = $self->translateable_seq();
-  my $display_id;
-  if( defined $self->translation->stable_id ) {
-    $display_id = $self->translation->stable_id;
-  } elsif ( defined $self->translation->dbID ) {
-    $display_id = $self->translation->dbID();
-  } else {
-    #use memory location as temp id
-    $display_id = scalar($self->translation());
-  }
+  my $display_id = $self->translation->display_id || scalar($self->translation);
 
   # remove final stop codon from the mrna if it is present
   # produced peptides will not have '*' at end
@@ -1488,7 +1480,7 @@ sub translate {
 sub seq {
   my( $self ) = @_;
   return Bio::Seq->new
-    (-DISPLAY_ID => $self->stable_id,
+    (-DISPLAY_ID => $self->display_id,
      -MOLTYPE    => 'dna',
      -SEQ        => $self->spliced_seq);
 }
@@ -2030,8 +2022,9 @@ sub recalculate_coordinates {
   Arg [1]    : none
   Example    : print $transcript->display_id();
   Description: This method returns a string that is considered to be
-               the 'display' identifier.  For transcripts this is the 
-               stable id if it is available otherwise it is an empty string.
+               the 'display' identifier. For transcripts this is (depending on
+               availability and in this order) the stable Id, the dbID or an
+               empty string.
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
@@ -2041,7 +2034,7 @@ sub recalculate_coordinates {
 
 sub display_id {
   my $self = shift;
-  return $self->{'stable_id'} || '';
+  return $self->{'stable_id'} || $self->dbID || '';
 }
 
 

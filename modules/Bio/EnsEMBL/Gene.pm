@@ -949,8 +949,9 @@ sub recalculate_coordinates {
   Arg [1]    : none
   Example    : print $gene->display_id();
   Description: This method returns a string that is considered to be
-               the 'display' identifier.  For genes this is the stable id if
-               it is available otherwise it is an empty string.
+               the 'display' identifier. For genes this is (depending on
+               availability and in this order) the stable Id, the dbID or an
+               empty string.
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
@@ -960,7 +961,7 @@ sub recalculate_coordinates {
 
 sub display_id {
   my $self = shift;
-  return $self->{'stable_id'} || '';
+  return $self->{'stable_id'} || $self->dbID || '';
 }
 
 

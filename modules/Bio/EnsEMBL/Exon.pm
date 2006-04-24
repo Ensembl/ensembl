@@ -793,7 +793,7 @@ sub peptide {
   return Bio::Seq->new(-seq => $pep_str, 
 		       -moltype => 'protein',
 		       -alphabet => 'protein',
-                       -id => $self->stable_id);
+                       -id => $self->display_id);
 }
 
 
@@ -841,7 +841,7 @@ sub seq {
   }
 
   return Bio::Seq->new(-seq     => $self->{'_seq_cache'},
-                       -id      => $self->stable_id,
+                       -id      => $self->display_id,
                        -moltype => 'dna');
 }
 
@@ -910,8 +910,9 @@ sub hashkey {
   Arg [1]    : none
   Example    : print $exons->display_id();
   Description: This method returns a string that is considered to be
-               the 'display' identifier.  For exons this is the stable id if
-               it is available otherwise it is an empty string.
+               the 'display' identifier. For exons this is (depending on
+               availability and in this order) the stable Id, the dbID or an
+               empty string.
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
@@ -921,7 +922,7 @@ sub hashkey {
 
 sub display_id {
   my $self = shift;
-  return $self->{'stable_id'} || '';
+  return $self->{'stable_id'} || $self->dbID || '';
 }
 
 

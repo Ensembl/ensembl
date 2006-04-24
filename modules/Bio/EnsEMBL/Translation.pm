@@ -511,8 +511,9 @@ sub get_all_DomainFeatures{
   Arg [1]    : none
   Example    : print $translation->display_id();
   Description: This method returns a string that is considered to be
-               the 'display' identifier.  For translations this is the 
-               stable id if it is available otherwise it is an empty string.
+               the 'display' identifier. For translations this is (depending on
+               availability and in this order) the stable Id, the dbID or an
+               empty string.
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
@@ -522,7 +523,7 @@ sub get_all_DomainFeatures{
 
 sub display_id {
   my $self = shift;
-  return $self->{'stable_id'} || '';
+  return $self->{'stable_id'} || $self->dbID || '';
 }
 
 

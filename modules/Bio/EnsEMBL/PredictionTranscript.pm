@@ -456,9 +456,9 @@ sub get_all_Exons {
   Arg [1]    : none
   Example    : print $rf->display_id();
   Description: This method returns a string that is considered to be
-               the 'display' identifier.  For prediction transcripts this is 
-               the stable_id if it is available otherwise it is an empty 
-               string.
+               the 'display' identifier. For prediction transcripts this is
+               (depending on availability and in this order) the stable Id, the
+               dbID or an empty string.
   Returntype : string
   Exceptions : none
   Caller     : web drawing code
@@ -468,7 +468,7 @@ sub get_all_Exons {
 
 sub display_id {
   my $self = shift;
-  return $self->stable_id() || '';
+  return $self->stable_id || $self->dbID || '';
 }
 
 
