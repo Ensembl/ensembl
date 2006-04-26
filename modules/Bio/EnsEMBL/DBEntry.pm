@@ -41,6 +41,8 @@ use Bio::EnsEMBL::Utils::Exception qw(deprecate);
 
 use vars qw(@ISA $AUTOLOAD);
 use strict;
+use warnings;
+no warnings 'uninitialized';
 
 
 @ISA = qw( Bio::EnsEMBL::Storable Bio::Annotation::DBLink );
