@@ -42,8 +42,6 @@ use Bio::EnsEMBL::Utils::Exception qw(deprecate);
 use vars qw(@ISA $AUTOLOAD);
 use strict;
 use warnings;
-no warnings 'uninitialized';
-
 
 @ISA = qw( Bio::EnsEMBL::Storable Bio::Annotation::DBLink );
 
@@ -397,7 +395,7 @@ sub db_display_name {
   }
 
   my $name;
-  if ($self->{info_type} eq "PROJECTION") {
+  if ($self->{info_type} && $self->{info_type} eq "PROJECTION") {
     $name = "Projected " . $self->{db_display_name};
   } else {
     $name =  $self->{db_display_name};
@@ -422,7 +420,7 @@ sub info_type {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
     $self->{info_type} = $arg;
-  } 
+  }
   return $self->{info_type};
 }
 
