@@ -116,6 +116,7 @@ sub create_xrefs {
     my ($species) = $entry =~ /\s+ORGANISM\s+(.*)\n/;
     $species = lc $species;
     $species =~ s/^\s*//g;
+    $species =~ s/\s*\(.+\)//; # Ditch anything in parens
     $species =~ s/\s+/_/g;
     $species =~ s/\n//g;
     my $species_id_check = $name2species_id{$species};
