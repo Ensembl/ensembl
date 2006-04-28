@@ -18,11 +18,23 @@ Bio::EnsEMBL::StrainSlice - SubClass of the Slice. Represents the slice of the g
 
    $slice = $sa->fetch_by_region('chromosome', 'X', 1_000_000, 2_000_000);
 
-   $strainSlice = $slice->get_by_Strain($strain_name);
+   $strainSlice = $slice->get_by_strain($strain_name);
 
    #get the sequence from the Strain Slice
    my $seq = $strainSlice->seq();
    print $seq;
+
+   #get differences between this StrainSlice and the reference
+   my $differences = $strainSlice->get_all_differences_Slice();
+   foreach my $difference (@{$differences}){
+      print "Difference in position ", $difference->start,"-",$difference->end," in strain with allele ", $difference->allele_string,"\n";
+   }
+   #compare a strain against another strain
+   my $strainSlice_2 = $slice->get_by_strain($strain_name_2);
+   my $differences = $strainSlice->get_all_differences_StrainSlice($strainSlice_2);
+   foreach my $difference (@{$differences}){
+      print "Difference in position ", $difference->start,"-",$difference->end," in strain with allele ", $difference->allele_string,"\n";
+   }
 
 
 
@@ -53,7 +65,6 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
-use Data::Dumper;
 @ISA = qw(Bio::EnsEMBL::Slice);
 
 
@@ -188,7 +199,7 @@ sub seq {
     Args        : nonre
     Example     : my $differences = $strainSlice->get_all_differences_Slice()
     Description : Gets all differences between the StrainSlice object and the Slice is defined
-    ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
+    ReturnType  : listref of Bio::EnsEMBL::Variation::AlleleFeature
     Exceptions  : none
     Caller      : general
 
@@ -205,7 +216,7 @@ sub get_all_differences_Slice{
     Arg[1]      : Bio::EnsEMBL::StrainSlice $ss
     Example     : my $differences = $strainSlice->get_all_differences_StrainSlice($ss)
     Description : Gets differences between 2 StrainSlice objects
-    ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
+    ReturnType  : listref of Bio::EnsEMBL::Variation::AlleleFeature
     Exceptions  : thrown on bad argument
     Caller      : general
 
