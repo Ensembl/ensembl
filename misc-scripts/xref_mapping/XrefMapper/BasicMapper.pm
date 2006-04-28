@@ -421,6 +421,7 @@ sub fetch_and_dump_seq{
   my ($self, $location) = @_;
 
   my $ensembl = $self->core;
+  my $logic_name = $self->logic_name;
   my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
 
   #
@@ -456,11 +457,15 @@ sub fetch_and_dump_seq{
 
     my $slice_adaptor = $db->get_SliceAdaptor();
     my $slice = $slice_adaptor->fetch_by_name($location);
-    @genes = @{$gene_adaptor->fetch_all_by_Slice($slice)};
+    @genes = @{$gene_adaptor->fetch_all_by_Slice( $slice )};
 
   } else {
 
-    @genes = @{$gene_adaptor->fetch_all()};
+    my $constraint;
+    if( $logic_name ){
+      $constraint = $gene_adaptor->_logic_name_to_constraint( '',$logic_name );
+    }
+    @genes = @{$gene_adaptor->fetch_all( $constraint )};
 
   }
 
@@ -608,6 +613,27 @@ sub use_existing_mappings {
 }
 
 
+=head2 logic_name
+
+  Arg [1]    : (optional) 
+  Example    : $mapper->logic_name('ensembl_genes');
+  Description: Getter / Setter for logic_name. 
+               Only genes corresponding to this analysis.logic_name
+               will be dumped. 
+  Returntype : scalar
+  Exceptions : none
+
+=cut
+
+sub logic_name {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_logic_name} = $arg );
+  return $self->{_logic_name};
+}
+
+
 =head2 xref
  
   Arg [1]    : (optional) 
@@ -682,7 +708,7 @@ sub run_mapping {
   # method_query_threshold and method_target_threshold
 
   my @job_names;
-
+  my @running_methods;
   foreach my $list (@$lists){
 
     my ($method, $queryfile ,$targetfile)  =  @$list;
@@ -704,6 +730,7 @@ sub run_mapping {
       if (!defined($self->use_existing_mappings)) {
 	my $job_name = $obj->run($queryfile, $targetfile, $self->core->dir());
 	push @job_names, $job_name;
+        push @running_methods, $obj;
 	sleep 1; # make sure unique names really are unique
       }
       $self->jobcount($self->jobcount+$obj->jobcount);
@@ -714,7 +741,13 @@ sub run_mapping {
 
   if (!defined($self->use_existing_mappings)) {
     # submit depend job to wait for all mapping jobs
-
+    foreach my $method( @running_methods ){
+      # Submit all method-specific depend jobs
+      if( $method->can('submit_depend_job') ){
+        $method->submit_depend_job;
+      }
+    }
+    # Submit generic depend job. Defaults to LSF
     submit_depend_job($self->core->dir, @job_names);
   }
   $self->check_err($self->core->dir); 
@@ -1176,7 +1209,7 @@ PSQL
   $sth->bind_columns(\$xref_DNA_analysis);
   $sth->fetch;
   if(!defined($xref_DNA_analysis)){
-    throw("Could not find analysis id for XrefExonerateDNA\n");
+    die("Could not find analysis id for XrefExonerateDNA\n");
   }
   $sth->finish;
 
@@ -1186,7 +1219,7 @@ PSQL
   $sth->bind_columns(\$xref_PROT_analysis);
   $sth->fetch;
   if(!defined($xref_PROT_analysis)){
-    throw("Could not find analysis id for XrefExonerateProtein\n");
+    die("Could not find analysis id for XrefExonerateProtein\n");
   }
   $sth->finish;
 
@@ -1365,7 +1398,7 @@ sub dump_direct_xrefs {
   my $worm_transcript_source_id = undef;
   
   # Will need to look up translation stable ID from transcript stable ID, build hash table
-  print "Building transcript stable ID -> translation stable ID lookup table\n";
+  print "  Building transcript stable ID -> translation stable ID lookup table\n";
   my %transcript_stable_id_to_translation_stable_id;
   my $trans_sth = $self->core->dbc->prepare("SELECT tss.stable_id as transcript, tls.stable_id AS translation FROM translation tl, translation_stable_id tls, transcript_stable_id tss WHERE tss.transcript_id=tl.transcript_id AND tl.translation_id=tls.translation_id");
   $trans_sth->execute();
@@ -1384,101 +1417,107 @@ sub dump_direct_xrefs {
   my $xref_sql = "SELECT dx.general_xref_id, dx.ensembl_stable_id, dx.type, dx.linkage_xref, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM direct_xref dx, xref x WHERE dx.general_xref_id=x.xref_id";
   my $xref_sth = $self->xref->dbc->prepare($xref_sql);
 
-  $xref_sth->execute();
+  my $rv = $xref_sth->execute();
+  print "  Found $rv direct xrefs in xref DB\n";
 
   my ($xref_id, $ensembl_stable_id, $type, $linkage_xref, $accession, $version, $label, $description, $source_id, $species_id);
   $xref_sth->bind_columns(\$xref_id, \$ensembl_stable_id, \$type, \$linkage_xref,\ $accession, \$version, \$label, \$description, \$source_id, \$species_id);
 
   while ($xref_sth->fetch()) {
-
     my $external_db_id = $source_to_external_db{$source_id};
-    if ($external_db_id) {
 
-      # In the case of CCDS xrefs, direct_xref is to transcript but we want
-      # the mapping in the core db to be to the *translation*
-      if ($source_id == get_source_id_from_source_name($self->xref(), "CCDS")) {
-	$type = 'translation';
-	my $tmp_esid = $ensembl_stable_id;
-	$ensembl_stable_id = $transcript_stable_id_to_translation_stable_id{$tmp_esid};
-	warn "Can't find translation for transcript $tmp_esid" if (!$ensembl_stable_id);
-	#print "CCDS: transcript $tmp_esid -> translation $ensembl_stable_id\n";
+    unless( $external_db_id ){
+      if( ! defined( $external_db_id ) ){
+        warn("  No external_db_id for source $source_id. Skip source!\n" );  
+        $source_to_external_db{$source_id} = 0;
       }
-
-      my $ensembl_internal_id;
-      if(defined($stable_id_to_internal_id{$type}->{$ensembl_stable_id})){
-	$ensembl_internal_id = $stable_id_to_internal_id{$type}->{$ensembl_stable_id};
-      }
-      else{ # ncRNA store internal id not stable check and switch if needed
-	if(defined($internal_id_to_stable_id{$type}{$ensembl_stable_id})){
-	  my $tmp = $internal_id_to_stable_id{$type}{$ensembl_stable_id};
-	  $ensembl_internal_id = $ensembl_stable_id;
-	  $ensembl_stable_id = $tmp;
-	}
-      }
-      if ($ensembl_internal_id) {
-
-	if (!$xrefs_written{$xref_id}) {
-	  if(!defined($updated_source{$external_db_id})){
-	    $self->cleanup_sources_file($external_db_id);
-	  }
-	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
-	  $xrefs_written{$xref_id} = 1;
-	}
-	print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
-	$object_xref_id++;
-	$count++;
-
-      } else {
-	if(!defined($worm_pep_source_id)){
-	  $worm_pep_source_id = get_source_id_from_source_name($self->xref(), "wormpep_id");
-	  $worm_locus_source_id = get_source_id_from_source_name($self->xref(), "wormbase_locus");
-	  $worm_gene_source_id = get_source_id_from_source_name($self->xref(), "wormbase_gene");
-	  $worm_transcript_source_id = get_source_id_from_source_name($self->xref(), "wormbase_transcript");
-	  $go_source_id = get_source_id_from_source_name($self->xref(), "GO" );
-	}
-	# deal with UTR transcripts in Elegans and potentially others
-	# Need to link xrefs that are listed as linking to e.g. ZK829.4
-	# to each of ZK829.4.1, ZK829.4.2, ZK829.4.3
-	my $old_object_xref_id = $object_xref_id;
-	if ($source_id == $worm_pep_source_id || $source_id == $go_source_id 
-	    || $source_id == $worm_locus_source_id || $source_id == $worm_gene_source_id
-	    || $source_id == $worm_transcript_source_id) {
-
-	  # search for matching stable IDs
-	  my $pat = $ensembl_stable_id .  '\..+';
-	  foreach my $stable_id (keys %{$stable_id_to_internal_id{$type}}) {
-
-	    if ($stable_id =~ /$pat/) {
-
-	      if (!$xrefs_written{$xref_id}) {
-		if(!defined($updated_source{$external_db_id})){
-		  $self->cleanup_sources_file($external_db_id);
-		}
-		print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
-		$xrefs_written{$xref_id} = 1;
-	      }
-	      $ensembl_internal_id = $stable_id_to_internal_id{$type}->{$stable_id};
-	      print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
-	      if( $source_id == $go_source_id){
-		print GO_XREF $object_xref_id . "\t" . $linkage_xref . "\n";
-	      }
-	      $object_xref_id++;
-
-	    }
-
-	  } # foreach stable_id
-
-	} # if source_id
-
-	# if we haven't changed $object_xref_id, nothing was written
-	print STDERR "Can't find $type corresponding to stable ID $ensembl_stable_id in ${type}_stable_id, not writing record for xref $accession\n" if ($object_xref_id == $old_object_xref_id);
-
-      }
-
-     
-
+      next;
     }
 
+    # In the case of CCDS xrefs, direct_xref is to transcript but we want
+    # the mapping in the core db to be to the *translation*
+    if ($source_id == get_source_id_from_source_name($self->xref(), "CCDS")) {
+      $type = 'translation';
+      my $tmp_esid = $ensembl_stable_id;
+      $ensembl_stable_id = $transcript_stable_id_to_translation_stable_id{$tmp_esid};
+      warn "Can't find translation for transcript $tmp_esid" if (!$ensembl_stable_id);
+      #print "CCDS: transcript $tmp_esid -> translation $ensembl_stable_id\n";
+    }
+    
+    my $ensembl_internal_id;
+    if(defined($stable_id_to_internal_id{$type}->{$ensembl_stable_id})){
+      $ensembl_internal_id = $stable_id_to_internal_id{$type}->{$ensembl_stable_id};
+    }
+    else{ # ncRNA store internal id not stable check and switch if needed
+      if(defined($internal_id_to_stable_id{$type}{$ensembl_stable_id})){
+        my $tmp = $internal_id_to_stable_id{$type}{$ensembl_stable_id};
+        $ensembl_internal_id = $ensembl_stable_id;
+        $ensembl_stable_id = $tmp;
+      }
+    }
+    if ($ensembl_internal_id) {
+      
+      if (!$xrefs_written{$xref_id}) {
+        if(!defined($updated_source{$external_db_id})){
+          $self->cleanup_sources_file($external_db_id);
+        }
+        print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+        $xrefs_written{$xref_id} = 1;
+      }
+      print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
+      $object_xref_id++;
+      $count++;
+      
+    } else {
+      if(!defined($worm_pep_source_id)){
+        $worm_pep_source_id = get_source_id_from_source_name($self->xref(), "wormpep_id");
+        $worm_locus_source_id = get_source_id_from_source_name($self->xref(), "wormbase_locus");
+        $worm_gene_source_id = get_source_id_from_source_name($self->xref(), "wormbase_gene");
+        $worm_transcript_source_id = get_source_id_from_source_name($self->xref(), "wormbase_transcript");
+        $go_source_id = get_source_id_from_source_name($self->xref(), "GO" );
+      }
+      # deal with UTR transcripts in Elegans and potentially others
+      # Need to link xrefs that are listed as linking to e.g. ZK829.4
+      # to each of ZK829.4.1, ZK829.4.2, ZK829.4.3
+      my $old_object_xref_id = $object_xref_id;
+      if ($source_id == $worm_pep_source_id || $source_id == $go_source_id 
+          || $source_id == $worm_locus_source_id || $source_id == $worm_gene_source_id
+          || $source_id == $worm_transcript_source_id) {
+        
+        # search for matching stable IDs
+        my $pat = $ensembl_stable_id .  '\..+';
+        foreach my $stable_id (keys %{$stable_id_to_internal_id{$type}}) {
+          
+          if ($stable_id =~ /$pat/) {
+            
+            if (!$xrefs_written{$xref_id}) {
+              if(!defined($updated_source{$external_db_id})){
+                $self->cleanup_sources_file($external_db_id);
+              }
+              print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+              $xrefs_written{$xref_id} = 1;
+            }
+            $ensembl_internal_id = $stable_id_to_internal_id{$type}->{$stable_id};
+            print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
+            if( $source_id == $go_source_id){
+              print GO_XREF $object_xref_id . "\t" . $linkage_xref . "\n";
+            }
+            $object_xref_id++;
+            
+          }
+          
+        } # foreach stable_id
+        
+      } # if source_id
+      
+      # if we haven't changed $object_xref_id, nothing was written
+      print STDERR "Can't find $type corresponding to stable ID $ensembl_stable_id in ${type}_stable_id, not writing record for xref $accession\n" if ($object_xref_id == $old_object_xref_id);
+      
+      
+      
+      
+      
+    }
   }
 
   close(OBJECT_XREF);
@@ -1487,7 +1526,7 @@ sub dump_direct_xrefs {
 
   $xref_sth->finish();
 
-  print "Wrote $count direct xrefs\n";
+  print "  Wrote $count direct xrefs\n";
 
 }
 
@@ -2403,7 +2442,7 @@ GENE
     my $file = $ensembl->dir() . "/" . $table . ".txt";
 
     if(-e $file){
-      my $sth = $core_db->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
+      my $sth = $core_db->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE $table");
       print "Uploading data in $file to $table\n";
       $sth->execute();
     }
@@ -2418,22 +2457,28 @@ GENE
     my $file = $ensembl->dir() . "/" . $table . "_display_xref.sql";
 
     print "Setting $table display_xrefs from $file\n";
-    my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
-      " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-    if(system $str){
-      print "ERROR: parsing $file in mysql\n";
-    }
-
+    my $mysql_command = get_mysql_command($core_db);
+    system( "$mysql_command < $file" ) == 0 
+        or print( "ERROR: parsing $file in mysql\n" );
+#    my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
+#      "' -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+#    if(system $str){
+#      print "ERROR: parsing $file in mysql\n";
+#    }
   }
 
   # gene descriptions
   my $file = $ensembl->dir() . "/gene_description.sql";
   print "Setting gene descriptions from $file\n";
-  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
-    " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-  if(system $str){
-    print "ERROR: parsing $file in mysql\n";
-  }
+  my $mysql_command = get_mysql_command($core_db);
+  system( "$mysql_command < $file" ) == 0 
+      or print( "ERROR: parsing $file in mysql\n" );
+
+#  my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
+#    "' -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+#  if(system $str){
+#    print "ERROR: parsing $file in mysql\n";
+#  }
 
   # update meta table with timestamp saying when xrefs were last updated
   $file =  $ensembl->dir() . "/meta_timestamp.sql";
@@ -2442,11 +2487,15 @@ GENE
   print FILE "INSERT INTO meta (meta_key,meta_value) VALUES ('xref.timestamp', NOW())\n";
   close(FILE);
 
-  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
-    " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-  if(system $str){
-    print "ERROR: parsing $file in mysql\n";
-  }
+  my $mysql_command = get_mysql_command($core_db);
+  system( "$mysql_command < $file" ) == 0 
+      or print( "ERROR: parsing $file in mysql\n" );
+#  my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
+#    "' -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+#  system $str;
+#  if(system $str){
+#    print "ERROR: parsing $file in mysql\n";
+#  }
 
   # set gene and transcript statuses to KNOWN or NOVEL based on external_db status
   print "Setting gene and transcript status from external_db KNOWN/NOVEL\n";
@@ -2472,12 +2521,14 @@ GENE
   print FILE    "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWNXREF\';\n";
   close(FILE);
 
-  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
-    " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-  if(system $str){
-    print "ERROR: parsing $file in mysql\n";
-  }
-
+  my $mysql_command = get_mysql_command($core_db);
+  system( "$mysql_command < $file" ) == 0 
+      or print( "ERROR: parsing $file in mysql\n" );
+#  my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
+#    "' -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
+#  if(system $str){
+#    print "ERROR: parsing $file in mysql\n";
+#  }
 }
 
 # Assign gene descriptions
@@ -2944,7 +2995,7 @@ sub upload_external_db {
   if ($count == 0 || $upload_external_db ) {
     my $edb = cwd() . "/../external_db/external_dbs.txt";
     print "external_db table is empty, uploading from $edb\n";
-    my $edb_sth = $core_db->prepare("LOAD DATA INFILE \'$edb\' INTO TABLE external_db");
+    my $edb_sth = $core_db->prepare("LOAD DATA LOCAL INFILE \'$edb\' INTO TABLE external_db");
     $edb_sth->execute();
   }
 
@@ -3150,7 +3201,7 @@ EOS
   my $file = $self->core->dir()."/pairs_object_xref.txt";
   
   # don't seem to be able to use prepared statements here
-  my $sth = $self->core->dbc->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE object_xref");
+  my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE object_xref");
   print "Uploading data in $file to object_xref\n";
   $sth->execute();
   
@@ -3158,11 +3209,15 @@ EOS
 
   my $core_db = $self->core->dbc;
 
-  my $str = "mysql -u " .$core_db->username() ." -p" . $core_db->password() . 
-    " -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < ". $triage_file;
-  if(system $str){
-    print "ERROR: parsing $triage_file in mysql\n";
-  }
+  my $mysql_command = get_mysql_command($core_db);
+  system( "$mysql_command < $file" ) == 0 
+      or print( "ERROR: parsing $file in mysql\n" );
+
+#  my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
+#    "' -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < ". $triage_file;
+#  if(system $str){
+#    print "ERROR: parsing $triage_file in mysql\n";
+#  }
 
   print "updated triage data accordingly\n";
 }
@@ -3209,6 +3264,28 @@ sub delete_unmapped {
   print "Deleting data from unmapped_object table\n";
   $sth->execute();
 
+}
+
+sub get_mysql_command{
+  my $self = shift;
+  my $dbc  = shift;
+  
+  UNIVERSAL::isa( $dbc, 'Bio::EnsEMBL::DBSQL::DB' )
+      || die( "Need a Bio::EnsEMBL::DBSQL::DB not a " . ref($dbc) );
+
+  my $host   = $dbc->host;
+  my $port   = $dbc->port;
+  my $dbname = $dbc->dbname;
+  my $user   = $dbc->username;
+  my $pass   = $dbc->password;
+  my $str = join( ' ',
+                  'mysql',
+                  ( $host ? ( '-h', $host ) : () ),
+                  ( $port ? ( '-P', $port ) : () ),
+                  ( $user ? ( '-u', $user ) : () ),
+                  ( $pass ? ( '-p', "'".$pass."'" ) : () ),
+                  $dbname );
+  return $str;
 }
 
 1;
