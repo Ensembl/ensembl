@@ -718,10 +718,12 @@ sub from_seconds_to_date{
     }
     elsif ($self->driver eq 'odbc'){
 	if ($seconds){
-	    $string = "DATEDIFF(date,'JAN 1 1970',$seconds)";
+	    $string = "DATEADD(second,$seconds,date)";
+#	    $string = "DATEDIFF(date,'JAN 1 1970',$seconds)";
 	}
 	else{
-	    $string = "\"0000-00-00 00:00:00\"";
+#	    $string = "\"0000-00-00 00:00:00\"";
+	    $string = 'January 1, 1900';
 	}
     }
     else{
