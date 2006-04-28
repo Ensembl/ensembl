@@ -223,7 +223,7 @@ sub calculate_num_jobs {
   my $bytes_per_job = 250000;
 
   my $size = (stat $query)[7];
-
+  if( $size == 0 ){ return 0 }
   return int($size/$bytes_per_job) || 1;
 
 }
