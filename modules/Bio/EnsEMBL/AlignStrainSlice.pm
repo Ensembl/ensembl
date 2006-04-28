@@ -32,7 +32,7 @@ Bio::EnsEMBL::AlignStrainSlice - Represents the slice of the genome aligned with
    my $alleleFeatures = $strainSlice1->get_all_differences_Slice();
    foreach my $af (@{$alleleFeatures}){
        my $new_feature = $alignSlice->alignFeature($af, $strainSlice1);
-       print "Coordinates of the feature in AlignSlice are: ", $new_af->start, "-", $new_af->end, "\n";
+       print "Coordinates of the feature in AlignSlice are: ", $new_feature->start, "-", $new_feature->end, "\n";
    }
 
 
