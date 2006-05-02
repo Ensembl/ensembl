@@ -237,7 +237,7 @@ sub project_go_terms {
     #$dbEntry->flush_linkage_types();
     $dbEntry->add_linkage_type("IEA");
 
-    my $txt = "from $from_latin_species gene " . $from_translation->stable_id();
+    my $txt = "from $from_latin_species translation " . $from_translation->stable_id();
     $dbEntry->info_type("PROJECTION");
     $dbEntry->info_text($txt);
 
