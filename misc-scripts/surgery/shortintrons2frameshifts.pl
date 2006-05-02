@@ -165,7 +165,7 @@ foreach my $gene_id (@gene_ids) {
            -START   => $cdna_start,
            -END     => $cdna_start + $fs->length() - 1,
            -ALT_SEQ => '');
-        $aa->store_on_Transcript($tr, [$seqed->get_Attribute]);
+        $aa->store_on_Transcript($tr->dbID, [$seqed->get_Attribute]);
 
         # adjust cdna coordinates for frameshifted basepairs
         if($tr->translation) {

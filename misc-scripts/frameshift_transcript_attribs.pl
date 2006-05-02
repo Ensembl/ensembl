@@ -96,7 +96,7 @@ for my $dbname ( @dbnames ) {
 
     my $transcript = $transcript_adaptor->fetch_by_dbID($transcript_id);
 
-    $attribute_adaptor->store_on_Transcript($transcript, \@attribs) if (!$nostore);
+    $attribute_adaptor->store_on_Transcript($transcript->dbID, \@attribs) if (!$nostore);
 
     print join("\t", $stable_id, $start, $end, $strand, $intron_length, $seq_region_name, "\n") if ($locations);
 

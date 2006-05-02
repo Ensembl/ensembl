@@ -200,7 +200,7 @@ $multi->hide( "core", "translation_attrib" );
 my $tl = $tr->translation();
 my $attrAdaptor = $db->get_AttributeAdaptor();
 
-$attrAdaptor->store_on_Translation( $tl, $tl->get_all_Attributes() );
+$attrAdaptor->store_on_Translation($tl->dbID, $tl->get_all_Attributes);
 
 $tr = $tra->fetch_by_stable_id( "ENST00000217347" );
 

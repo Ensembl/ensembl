@@ -73,7 +73,7 @@ ok( $db_entry_count == $xref_count );
 #
 # 4,5 correct number of GoXrefs and IdentityXrefs
 #
-print $goxref_count . " " . $ident_count . "\n";
+debug( "GoXrefs and IdentityXrefs: ".$goxref_count . " " . $ident_count);
 ok( $goxref_count == 48 );
 ok( $ident_count == 32 );
 
@@ -126,11 +126,11 @@ my $gene = $ga->fetch_by_dbID( $all_gene_ids->[0] );
 my $tr = $gene->get_all_Transcripts()->[0];
 my $tl = $tr->translation();
 
-$dbEntryAdaptor->store( $xref, $gene, "Gene" );
-$dbEntryAdaptor->store( $xref, $tr, "Transcript" );
-$dbEntryAdaptor->store( $goref, $tl, "Translation" );
-$dbEntryAdaptor->store( $ident_xref, $tl, "Translation" );
-$dbEntryAdaptor->store( $ident_xref, $tr, "Transcript" );
+$dbEntryAdaptor->store( $xref, $gene->dbID, "Gene" );
+$dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
+$dbEntryAdaptor->store( $goref, $tl->dbID, "Translation" );
+$dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
+$dbEntryAdaptor->store( $ident_xref, $tr->dbID, "Transcript" );
 
 my ( $oxr_count, $go_count );
 

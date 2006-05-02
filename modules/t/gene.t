@@ -110,7 +110,9 @@ ok($analysis);
 $gene = Bio::EnsEMBL::Gene->new();
 
 my $transcript1 = Bio::EnsEMBL::Transcript->new();
+$transcript1->analysis($analysis);
 my $transcript2 = Bio::EnsEMBL::Transcript->new();
+$transcript2->analysis($analysis);
 
 my $ex1 = Bio::EnsEMBL::Exon->new(); 
 my $ex2 = Bio::EnsEMBL::Exon->new();
@@ -563,10 +565,11 @@ my $second_ex = Bio::EnsEMBL::Exon->new
 
 $transcript1 = Bio::EnsEMBL::Transcript->new
   (-EXONS => [$first_ex, $second_ex]);
+$transcript1->analysis($analysis);
 
 $transcript2 = Bio::EnsEMBL::Transcript->new
   (-EXONS => [$first_ex]);
-
+$transcript2->analysis($analysis);
 
 $gene->add_Transcript($transcript1);
 $gene->add_Transcript($transcript2);

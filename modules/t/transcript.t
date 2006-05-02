@@ -410,7 +410,7 @@ ok($tr->translateable_seq() eq $tlseq1);
 $multi->hide( "core", "transcript_attrib" );
 my $attribAdaptor = $db->get_AttributeAdaptor();
 
-$attribAdaptor->store_on_Transcript( $tr, $tr->get_all_Attributes() );
+$attribAdaptor->store_on_Transcript($tr->dbID, $tr->get_all_Attributes);
 
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 $tr->edits_enabled(1);
