@@ -203,32 +203,55 @@ sub fetch_by_db_accession {
 }
 
 
-
 =head2 store
 
   Arg [1]    : Bio::EnsEMBL::DBEntry $exObj
                The DBEntry (xref) to be stored
-  Arg [2]    : Bio::EnsEMBL::Transcript, Bio::EnsEMBL::Gene or 
-               Bio::EnsEMBL::Translation $ensObject
-               An EnsEMBL object to associate with this external database entry
-  Arg [3]    : string $ensType ('Transcript', 'Translation', 'Gene');
+  Arg [2]    : Int $ensID
+               The dbID of an EnsEMBL object to associate with this external
+               database entry
+  Arg [3]    : string $ensType ('Transcript', 'Translation', 'Gene')
                The type of EnsEMBL object that this external database entry is
                being associated with.
-  Example    : $dbea->store($db_entry, $transcript, 'Transcript');
+  Example    : $dbea->store($db_entry, $transcript_id, 'Transcript');
   Description: Stores a reference to an external database (if it is not stored
                already) and associates an EnsEMBL object of a specified type
                with the external identifier.
-  Returntype : int  - the identifier of the newly created external refernce
-  Exceptions : none
-  Caller     : scripts which load Xrefs and ObjectXrefs, etc. into EnsEMBL.
+  Returntype : int - the dbID of the newly created external refernce
+  Exceptions : thrown when invalid dbID is passed to this method
+  Caller     : scripts which load Xrefs and ObjectXrefs, etc. into Ensembl
   Status     : Stable
 
 =cut
 
-
 sub store {
-  my ( $self, $exObj, $ensObject, $ensType ) = @_;
+  my ( $self, $exObj, $ensID, $ensType ) = @_;
   my $dbJustInserted;
+
+  #
+  # backwards compatibility check:
+  # check if $ensID is an object; if so, use $obj->dbID
+  #
+  my $ensembl_id;
+
+  if ($ensID =~ /^\d+$/) {
+    $ensembl_id = $ensID;
+  
+  } elsif ( ref($ensID) eq 'Bio::EnsEMBL::Gene' or
+            ref($ensID) eq 'Bio::EnsEMBL::Transcript' or
+            ref($ensID) eq 'Bio::EnsEMBL::Translation') {
+
+    warning("You should pass DBEntryAdaptor->store() a dbID rather than an ensembl object to store the xref on");
+
+    if ($ensID->dbID) {
+      $ensembl_id = $ensID->dbID;
+    } else {
+      throw("$ensType ".$ensID->display_id." doesn't have a dbID, can't store xref");
+    }
+
+  } else {
+    throw("Invalid dbID passed to DBEntryAdaptor->store()");
+  }
 
   #
   # Check for the existance of the external_db, throw if it does not exist
@@ -328,7 +351,7 @@ sub store {
             AND   ensembl_id = ?");
   $sth->bind_param(1,$dbX,SQL_INTEGER);
   $sth->bind_param(2,$ensType,SQL_VARCHAR);
-  $sth->bind_param(3,$ensObject->dbID,SQL_INTEGER);
+  $sth->bind_param(3,$ensembl_id,SQL_INTEGER);
   $sth->execute();
   my ($tst) = $sth->fetchrow_array;
   $sth->finish();
@@ -342,7 +365,7 @@ sub store {
 
     $sth->bind_param(1,$dbX,SQL_INTEGER);
     $sth->bind_param(2,$ensType,SQL_VARCHAR);
-    $sth->bind_param(3,$ensObject->dbID,SQL_INTEGER);
+    $sth->bind_param(3,$ensembl_id,SQL_INTEGER);
 
     $sth->execute();
     $exObj->dbID( $dbX );
@@ -630,7 +653,7 @@ sub remove_from_object {
 
 =head2 _fetch_by_object_type
 
-  Arg [1]    : string $ensObj
+  Arg [1]    : string $ensID
   Arg [2]    : string $ensType
   			   (object type to be returned) 
   Example    : $self->_fetch_by_object_type( $translation_id, 'Translation' )
@@ -646,10 +669,10 @@ sub remove_from_object {
 =cut
 
 sub _fetch_by_object_type {
-  my ( $self, $ensObj, $ensType ) = @_;
+  my ( $self, $ensID, $ensType ) = @_;
   my @out;
 
-  if (!defined($ensObj)) {
+  if (!defined($ensID)) {
     throw("Can't fetch_by_EnsObject_type without an object");
   }
   if (!defined($ensType)) {
@@ -677,7 +700,7 @@ sub _fetch_by_object_type {
       AND  oxr.ensembl_object_type = ?
   ");
 
-  $sth->bind_param(1,$ensObj,SQL_INTEGER);
+  $sth->bind_param(1,$ensID,SQL_INTEGER);
   $sth->bind_param(2,$ensType,SQL_VARCHAR);
   $sth->execute();
   my (%seen, %linkage_types, %synonyms);
