@@ -823,10 +823,6 @@ sub store {
 
   my $gene_dbID = $sth->{'mysql_insertid'};
 
-  # set dbID and adaptor of gene here - you'll need this when storing xrefs
-  $gene->dbID($gene_dbID);
-  $gene->adaptor($self);
-
   # store stable ids if they are available
   if (defined($gene->stable_id)) {
 
@@ -834,18 +830,10 @@ sub store {
                         SET gene_id = ?,
                             stable_id = ?,
                             version = ?, ";
-    $statement .= "created_date = " . $self->db->dbc->from_seconds_to_date($gene->created_date()) . ",";
-#     if( $gene->created_date() ) {
-#       $statement .= "created_date = from_unixtime( ".$gene->created_date()."),";
-#     } else {
-#       $statement .= "created_date = \"0000-00-00 00:00:00\",";
-#     }
-    $statement .= "modified_date = " . $self->db->dbc->from_seconds_to_date($gene->modified_date());
-#     if( $gene->modified_date() ) {
-#       $statement .= "modified_date = from_unixtime( ".$gene->modified_date().")";
-#     } else {
-#       $statement .= "modified_date = \"0000-00-00 00:00:00\"";
-#     }
+    $statement .= "created_date = " .
+      $self->db->dbc->from_seconds_to_date($gene->created_date()) . ",";
+    $statement .= "modified_date = " .
+      $self->db->dbc->from_seconds_to_date($gene->modified_date());
 
     $sth = $self->prepare($statement);
     $sth->bind_param(1,$gene_dbID,SQL_INTEGER);
@@ -859,7 +847,7 @@ sub store {
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
   
   foreach my $dbe ( @{$gene->get_all_DBEntries} ) {
-    $dbEntryAdaptor->store( $dbe, $gene, "Gene" );
+    $dbEntryAdaptor->store($dbe, $gene_dbID, "Gene");
   }
   
   # we allow transcripts not to share equal exons and instead have copies
@@ -928,15 +916,14 @@ sub store {
     }
   }
 
-  # set the adaptor and dbID on the original passed in gene not the
-  # transfered copy
-  $original->adaptor( $self );
-  $original->dbID( $gene_dbID );
-
   # store gene attributes if there are any
   my $attr_adaptor = $db->get_AttributeAdaptor();
-  $attr_adaptor->store_on_Gene($gene,
-                               $gene->get_all_Attributes);
+  $attr_adaptor->store_on_Gene($gene_dbID, $gene->get_all_Attributes);
+
+  # set the adaptor and dbID on the original passed in gene not the
+  # transfered copy
+  $original->adaptor($self);
+  $original->dbID($gene_dbID);
 
   return $gene_dbID;
 }

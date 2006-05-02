@@ -414,14 +414,13 @@ sub store_on_MiscFeature {
 
 =head2 store_on_Gene
 
-  Arg [1]    : Bio::EnsEMBL::Gene $gene
+  Arg [1]    : Int $gene_id - the dbID of the gene to store the attributes for
   Arg [2]    : listref Bio::EnsEMBL::Attribute $attribs
   Example    : $attribute_adaptor->store_on_Gene($my_gene, $attributes)
   Description: Stores all the attributes on the Gene. 
                Will duplicate things if called twice.
   Returntype : none
   Exceptions : throw on incorrect arguments
-               throw if provided Gene is not stored in this database
   Caller     : general, GeneAdaptor
   Status     : Stable
 
@@ -429,24 +428,15 @@ sub store_on_MiscFeature {
 
 sub store_on_Gene {
   my $self = shift;
-  my $gene = shift;
+  my $gene_id = shift;
   my $attributes = shift;
 
-  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
-    throw("Gene argument expected");
-  }
+  my $gene_dbID = $self->_id_check($gene_id);
 
   if(ref($attributes) ne 'ARRAY') {
     throw("Reference to list of Bio::EnsEMBL::Attribute objects argument " .
           "expected");
   }
-
-  my $db = $self->db();
-  if(!$gene->is_stored($db)) {
-    throw("Gene is not stored in this DB - cannot store attributes.");
-  }
-
-  my $gene_id = $gene->dbID();
 
   my $sth = $self->prepare( "INSERT into gene_attrib ".
 			    "SET gene_id = ?, attrib_type_id = ?, ".
@@ -457,8 +447,8 @@ sub store_on_Gene {
       throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
             "argument expected.");
     }
-    my $atid = $self->_store_type( $attrib );
-    $sth->execute( $gene_id, $atid, $attrib->value() );
+    my $atid = $self->_store_type($attrib);
+    $sth->execute($gene_dbID, $atid, $attrib->value);
   }
 
   return;
@@ -467,54 +457,44 @@ sub store_on_Gene {
 
 =head2 store_on_Transcript
 
-  Arg [1]    : Bio::EnsEMBL::Transcript $transcript
+  Arg [1]    : Int $trans_id
+               The dbID of the transcript to store the attributes for
   Arg [2]    : listref Bio::EnsEMBL::Attribute $attribs
-  Example    : $attribute_adaptor->store_on_Transcript($my_transcript,
-                                                        $attributes)
+  Example    : $attribute_adaptor->store_on_Transcript($trans_id, $attributes)
   Description: Stores all the attributes on the Transcript. 
                Will duplicate things if called twice.
   Returntype : none
   Exceptions : throw on incorrect arguments
-               throw if provided Transcript is not stored in this database
   Caller     : general, TranscriptAdaptor
   Status     : Stable
 
 =cut
 
 sub store_on_Transcript {
-  my $self       = shift;
-  my $transcript    = shift;
+  my $self = shift;
+  my $trans_id = shift;
   my $attributes = shift;
 
-  if(!ref($transcript) || !$transcript->isa('Bio::EnsEMBL::Transcript')) {
-    throw("Transcript argument expected");
-  }
-
-  if(ref($attributes) ne 'ARRAY') {
+  my $trans_dbID = $self->_id_check($trans_id);
+  
+  if (ref($attributes) ne 'ARRAY') {
     throw("Reference to list of Bio::EnsEMBL::Attribute objects argument " .
           "expected");
   }
-
-  my $db = $self->db();
-  if(!$transcript->is_stored($db)) {
-    throw("Transcript is not stored in this DB - cannot store attributes.");
-  }
-
-  my $transcript_id = $transcript->dbID();
 
   my $sth = $self->prepare( "INSERT into transcript_attrib ".
 			    "SET transcript_id = ?, attrib_type_id = ?, ".
 			    "value = ? " );
 
-  for my $attrib ( @$attributes ) {
-    if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
+  for my $attrib (@$attributes) {
+    if (!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
       throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
             "argument expected.");
     }
-    my $atid = $self->_store_type( $attrib );
-    $sth->bind_param(1,$transcript_id,SQL_INTEGER);
-    $sth->bind_param(2,$atid,SQL_INTEGER);
-    $sth->bind_param(3,$attrib->value,SQL_VARCHAR);
+    my $atid = $self->_store_type($attrib);
+    $sth->bind_param(1,$trans_dbID, SQL_INTEGER);
+    $sth->bind_param(2,$atid, SQL_INTEGER);
+    $sth->bind_param(3,$attrib->value, SQL_VARCHAR);
     $sth->execute();
   }
 
@@ -525,54 +505,44 @@ sub store_on_Transcript {
 
 =head2 store_on_Translation
 
-  Arg [1]    : Bio::EnsEMBL::Translation $translation
+  Arg [1]    : Int $transl_id
+               The dbID of the translation to store the attributes for
   Arg [2]    : listref Bio::EnsEMBL::Attribute $attribs
-  Example    : $attribute_adaptor->store_on_Translation($my_translation,
-                                                        $attributes)
+  Example    : $attribute_adaptor->store_on_Translation($transl_id, $attributes)
   Description: Stores all the attributes on the Translation. 
                Will duplicate things if called twice.
   Returntype : none
   Exceptions : throw on incorrect arguments
-               throw if provided Translation is not stored in this database
   Caller     : general, TranslationAdaptor
   Status     : Stable
 
 =cut
 
 sub store_on_Translation {
-  my $self        = shift;
-  my $translation = shift;
-  my $attributes  = shift;
+  my $self = shift;
+  my $transl_id = shift;
+  my $attributes = shift;
 
-  if(!ref($translation) || !$translation->isa('Bio::EnsEMBL::Translation')) {
-    throw("Translation argument expected");
-  }
-
-  if(ref($attributes) ne 'ARRAY') {
+  my $transl_dbID = $self->_id_check($transl_id);
+  
+  if (ref($attributes) ne 'ARRAY') {
     throw("Reference to list of Bio::EnsEMBL::Attribute objects argument " .
           "expected");
   }
-
-  my $db = $self->db();
-  if(!$translation->is_stored($db)) {
-    throw("Translation is not stored in this DB - cannot store attributes.");
-  }
-
-  my $translation_id = $translation->dbID();
 
   my $sth = $self->prepare( "INSERT into translation_attrib ".
 			    "SET translation_id = ?, attrib_type_id = ?, ".
 			    "value = ? " );
 
-  for my $attrib ( @$attributes ) {
-    if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
+  for my $attrib (@$attributes) {
+    if (!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
       throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
             "argument expected.");
     }
-    my $atid = $self->_store_type( $attrib );
-    $sth->bind_param(1,$translation_id,SQL_INTEGER);
-    $sth->bind_param(2,$atid,SQL_INTEGER);
-    $sth->bind_param(3,$attrib->value,SQL_VARCHAR);
+    my $atid = $self->_store_type($attrib);
+    $sth->bind_param(1,$transl_dbID, SQL_INTEGER);
+    $sth->bind_param(2,$atid, SQL_INTEGER);
+    $sth->bind_param(3,$attrib->value, SQL_VARCHAR);
     $sth->execute();
   }
 
@@ -823,8 +793,37 @@ sub remove_from_Translation {
 }
 
 
+#
+# _id_check
+#
+# backwards compatibility check:
+# check if $ensID is an object; if so, return $obj->dbID
+#
 
+sub _id_check {
+  my $self = shift;
+  my $ensID = shift;
 
+  if ($ensID =~ /^\d+$/) {
+    return $ensID;
+  
+  } elsif (ref($ensID) eq 'Bio::EnsEMBL::Gene' or
+      ref($ensID) eq 'Bio::EnsEMBL::Transcript' or
+      ref($ensID) eq 'Bio::EnsEMBL::Translation') {
+
+    warning("You should pass a dbID rather than an ensembl object to store the attribute on");
+
+    if ($ensID->dbID) {
+      return $ensID->dbID;
+    } else {
+      throw("Ensembl object ".$ensID->display_id." doesn't have a dbID, can't store attribute");
+    }
+
+  } else {
+    throw("Invalid dbID");
+  }
+
+}
 
 
 # _store_type
@@ -865,11 +864,8 @@ sub _store_type {
 
   $sth1->finish();
 
-
   return $atid;
 }
-
-
 
 
 sub _obj_from_sth {

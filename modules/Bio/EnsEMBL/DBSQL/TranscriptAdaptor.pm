@@ -604,11 +604,6 @@ sub store {
 
   my $transc_dbID = $tst->{'mysql_insertid'};
   
-  # set dbID and adaptor of transcript here - you'll need this when storing
-  # xrefs
-  $transcript->dbID($transc_dbID);
-  $transcript->adaptor($self);
-
   #
   # store translation
   #
@@ -666,7 +661,7 @@ sub store {
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
   foreach my $dbe ( @{$transcript->get_all_DBEntries} ) {
-    $dbEntryAdaptor->store( $dbe, $transcript, "Transcript" );
+    $dbEntryAdaptor->store($dbe, $transc_dbID, "Transcript");
   }
 
   #
@@ -791,17 +786,15 @@ sub store {
     $sf_sth->execute();
   }
 
-
+  # store transcript attributes if there are any
+  my $attr_adaptor = $db->get_AttributeAdaptor();
+  $attr_adaptor->store_on_Transcript($transc_dbID,
+                                     $transcript->get_all_Attributes);
 
   #update the original transcript object - not the transfered copy that
   #we might have created
-  $original->dbID( $transc_dbID );
-  $original->adaptor( $self );
-
-  # store transcript attributes if there are any
-  my $attr_adaptor = $db->get_AttributeAdaptor();
-  $attr_adaptor->store_on_Transcript($transcript,
-                                     $transcript->get_all_Attributes);
+  $original->dbID($transc_dbID);
+  $original->adaptor($self);
 
   return $transc_dbID;
 }
