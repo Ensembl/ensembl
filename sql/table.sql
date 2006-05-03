@@ -409,7 +409,7 @@ CREATE TABLE gene (
   seq_region_strand           TINYINT(2) NOT NULL,       
   display_xref_id             INT UNSIGNED,
   source                      VARCHAR(20) NOT NULL,
-  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED'),
+  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION'),
   description                 TEXT,
 
   PRIMARY KEY (gene_id),
@@ -489,7 +489,7 @@ CREATE TABLE transcript (
   seq_region_strand           TINYINT(2) NOT NULL, 
   display_xref_id             INT UNSIGNED,
   biotype                     VARCHAR(40) NOT NULL,
-  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED'),
+  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION'),
   description                 TEXT,
 
   PRIMARY KEY (transcript_id),
