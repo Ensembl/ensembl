@@ -395,7 +395,7 @@ sub db_display_name {
   }
 
   my $name;
-  if ($self->{info_type} eq "PROJECTION") {
+  if ($self->{info_type} && $self->{info_type} eq "PROJECTION") {
     $name = "Projected " . $self->{db_display_name};
   } else {
     $name =  $self->{db_display_name};
