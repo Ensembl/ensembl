@@ -139,8 +139,12 @@ sub adaptor {
 sub map {
   throw('Incorrect number of arguments.') if(@_ != 6 && @_ != 7);
 
-  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $frm_cs,
+  my($self, $frm_seq_region_name, $frm_start, $frm_end, $frm_strand, $frm_cs,
     $fastmap) = @_;
+
+  my @tmp;
+  push @tmp, $frm_seq_region_name;
+  my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, \@tmp)}[0];
 
   my $mapper      = $self->{'mapper'};
   my $toplevel_cs = $self->{'toplevel_cs'};
@@ -177,11 +181,11 @@ sub map {
       my $mapper = $adaptor->fetch_by_CoordSystems($other_cs, $cs);
 
       if($fastmap) {
-        my @result = $mapper->fastmap($frm_seq_region, $frm_start, $frm_end,
+        my @result = $mapper->fastmap($seq_region_id, $frm_start, $frm_end,
                                       $frm_strand, $frm_cs);
         return @result if(@result);
       } else {
-        my @coords = $mapper->map($frm_seq_region, $frm_start, $frm_end,
+        my @coords = $mapper->map($seq_region_id, $frm_start, $frm_end,
                                   $frm_strand, $frm_cs);
 
         if(@coords > 1 || !$coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
@@ -194,10 +198,10 @@ sub map {
   # the toplevel coordinate system for the region requested *is* the
   # requested region.
   if($fastmap) {
-    return ($frm_seq_region,$frm_start, $frm_end, $frm_strand, $other_cs);
+    return ($seq_region_id,$frm_start, $frm_end, $frm_strand, $other_cs);
   }
   return Bio::EnsEMBL::Mapper::Coordinate->new
-    ($frm_seq_region,$frm_start,$frm_end, $frm_strand, $other_cs);
+    ($seq_region_id,$frm_start,$frm_end, $frm_strand, $other_cs);
 }
 
 #
@@ -282,7 +286,7 @@ sub component_CoordSystem {
 
 
 sub _list {
-  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_cs, $seq_regions) = @_;
+  my($self, $frm_seq_region_name, $frm_start, $frm_end, $frm_cs, $seq_regions) = @_;
 
   my $mapper      = $self->{'mapper'};
   my $toplevel_cs = $self->{'toplevel_cs'};
@@ -319,11 +323,15 @@ sub _list {
 
       my @result;
 
+      my @tmp;
+      push @tmp, $frm_seq_region_name;
+      my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, \@tmp)}[0];
+
       if($seq_regions) {
-        @result = $mapper->list_seq_regions($frm_seq_region, $frm_start,
+        @result = $mapper->list_seq_regions($seq_region_id, $frm_start,
                                             $frm_end, $frm_cs);
       } else {
-        @result = $mapper->list_ids($frm_seq_region, $frm_start,
+        @result = $mapper->list_ids($seq_region_id, $frm_start,
                                     $frm_end, $frm_cs);
       }
 
@@ -332,19 +340,19 @@ sub _list {
   }
 
   # the toplevel coordinate system for the region requested *is* the
-  return ($frm_seq_region);
+  return ($frm_seq_region_name);
 
 
   # requested region.
   if($seq_regions) {
-    return ($frm_seq_region);
+    return ($frm_seq_region_name);
   }
 
   #this seems a bit silly and inefficient, but it is probably never
   #called anyway.
   my $slice_adaptor = $adaptor->db()->get_SliceAdaptor();
   my $slice = $slice_adaptor->fetch_by_region($other_cs->name(),
-                                              $frm_seq_region,
+                                              $frm_seq_region_name,
                                               undef,undef,undef,$other_cs);
   return ($slice_adaptor->get_seq_region_id($slice));
 }
