@@ -213,6 +213,8 @@ sub map {
   push @tmp, $frm_seq_region_name;
   my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, \@tmp)}[0];
 
+  print STDERR "name = $frm_seq_region_name, id = $seq_region_id \n";
+
   #speed critical section:
   #try to do simple pointer equality comparisons of the coord system objects
   #first since this is likely to work most of the time and is much faster
@@ -239,6 +241,8 @@ sub map {
           " of this AssemblyMapper");
   }
 
+  print STDERR "seq region id is $seq_region_id\n";
+  print STDERR "mapper is of type ".ref($mapper)."\n"; 
   return $mapper->map_coordinates($seq_region_id, $frm_start, $frm_end,
                                   $frm_strand, $frm);
 }

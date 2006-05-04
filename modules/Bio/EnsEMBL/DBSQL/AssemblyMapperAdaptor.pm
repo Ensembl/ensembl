@@ -250,6 +250,12 @@ sub register_assembled {
   my $asm_start      = shift;
   my $asm_end        = shift;
 
+  my $test = $asm_seq_region;
+  $test =~ s/\d+//g;
+  if(length($test) > 0 or $asm_seq_region < 1000){
+    print STDERR "$asm_seq_region NOT INTEGER\n";
+    print STDERR stack_trace_dump();
+  }
   if(!ref($asm_mapper) || !$asm_mapper->isa('Bio::EnsEMBL::AssemblyMapper')) {
     throw("Bio::EnsEMBL::AssemblyMapper argument expected");
   }
@@ -373,12 +379,12 @@ sub register_assembled {
     # Load the unregistered regions of the mapper
     #
     while($sth->fetch()) {
-      next if($asm_mapper->have_registered_component($cmp_seq_region));
-      $asm_mapper->register_component($cmp_seq_region);
+      next if($asm_mapper->have_registered_component($cmp_seq_region_id));
+      $asm_mapper->register_component($cmp_seq_region_id);
       $asm_mapper->mapper->add_map_coordinates(
                  $asm_seq_region, $asm_start, $asm_end,
                  $ori,
-                 $cmp_seq_region, $cmp_start, $cmp_end);
+                 $cmp_seq_region_id, $cmp_start, $cmp_end);
 
       my $arr = [ $cmp_seq_region_id, $cmp_seq_region, 
                   $cmp_cs_id, $cmp_seq_region_length ];
@@ -766,14 +772,14 @@ sub register_chained {
         $start_mid_mapper->add_map_coordinates
           (
            $seq_region_id,$start_start, $start_end, $ori,
-           $mid_seq_region, $mid_start, $mid_end
+           $mid_seq_region_id, $mid_start, $mid_end
           );
       } else {
         if( $from eq "first" ) {
           $combined_mapper->add_map_coordinates
             (
              $seq_region_id,$start_start, $start_end, $ori,
-             $mid_seq_region, $mid_start, $mid_end
+             $mid_seq_region_id, $mid_start, $mid_end
             );
         } else {
           $combined_mapper->add_map_coordinates
@@ -811,7 +817,7 @@ sub register_chained {
   # last_registry and we are done
   if( ! defined $mid_cs ) {
     for my $range ( @mid_ranges ) {
-      $end_registry->check_and_register( $range->[1], $range->[2],
+      $end_registry->check_and_register( $range->[0], $range->[2],
                                          $range->[3] );
     }
 
@@ -870,8 +876,8 @@ sub register_chained {
       #      "$mid_start-$mid_end($ori)\n";
       $end_mid_mapper->add_map_coordinates
         (
-         $end_seq_region, $end_start, $end_end, $ori,
-         $mid_seq_region, $mid_start, $mid_end
+         $end_seq_region_id, $end_start, $end_end, $ori,
+         $mid_seq_region_id, $mid_start, $mid_end
         );
 
       #update sr_name cache
@@ -881,7 +887,7 @@ sub register_chained {
       $self->{'sr_id_cache'}->{"$end_seq_region_id"} = $arr;
 
       #register this region on the end coord system
-      $end_registry->check_and_register($end_seq_region, $end_start, $end_end);
+      $end_registry->check_and_register($end_seq_region_id, $end_start, $end_end);
     }
   }
 
@@ -975,11 +981,11 @@ sub register_all {
   my %asm_registered;
 
   while($sth->fetch()) {
-    $mapper->register_component($cmp_seq_region);
+    $mapper->register_component($cmp_seq_region_id);
     $mapper->mapper->add_map_coordinates(
-                 $asm_seq_region, $asm_start, $asm_end,
+                 $asm_seq_region_id, $asm_start, $asm_end,
                  $ori,
-                 $cmp_seq_region, $cmp_start, $cmp_end);
+                 $cmp_seq_region_id, $cmp_start, $cmp_end);
 
       my $arr = [$cmp_seq_region_id, $cmp_seq_region, $cmp_cs_id, $cmp_length];
 
@@ -987,13 +993,13 @@ sub register_all {
       $self->{'sr_id_cache'}->{"$cmp_seq_region_id"} = $arr;
 
     # only register each asm seq_region once since it requires some work
-    if(!$asm_registered{$asm_seq_region}) {
-      $asm_registered{$asm_seq_region} = 1;
+    if(!$asm_registered{$asm_seq_region_id}) {
+      $asm_registered{$asm_seq_region_id} = 1;
 
       # register all chunks from start of seq region to end
       my $end_chunk = $asm_length >> $CHUNKFACTOR;
       for(my $i = 0; $i <= $end_chunk; $i++) {
-        $mapper->register_assembled($asm_seq_region, $i);
+        $mapper->register_assembled($asm_seq_region_id, $i);
       }
 
       $arr = [$asm_seq_region_id, $asm_seq_region, $asm_cs_id, $asm_length];
@@ -1137,15 +1143,15 @@ sub register_all_chained {
   while($sth->fetch()) {
     $mapper->add_map_coordinates
       (
-       $start_seq_region, $start_start, $start_end, $ori,
-       $mid_seq_region, $mid_start, $mid_end
+       $start_seq_region_id, $start_start, $start_end, $ori,
+       $mid_seq_region_id, $mid_start, $mid_end
       );
-    push( @ranges, [$start_seq_region, $start_start, $start_end ] );
+    push( @ranges, [$start_seq_region_id, $start_start, $start_end ] );
 
-    $reg->check_and_register( $start_seq_region, 1, $start_length );
+    $reg->check_and_register( $start_seq_region_id, 1, $start_length );
     if( ! defined $mid_cs ) {
       $casm_mapper->last_registry()->check_and_register
-	( $mid_seq_region, $mid_start, $mid_end );
+	( $mid_seq_region_id, $mid_start, $mid_end );
     }
 
     my $arr = [ $mid_seq_region_id, $mid_seq_region,
@@ -1208,11 +1214,11 @@ sub register_all_chained {
   while($sth->fetch()) {
     $end_mid_mapper->add_map_coordinates
       (
-       $end_seq_region, $end_start, $end_end, $ori,
-       $mid_seq_region, $mid_start, $mid_end
+       $end_seq_region_id, $end_start, $end_end, $ori,
+       $mid_seq_region_id, $mid_start, $mid_end
       );
 
-    $reg->check_and_register( $end_seq_region, 1, $end_length );
+    $reg->check_and_register( $end_seq_region_id, 1, $end_length );
 
     my $arr = [ $end_seq_region_id, $end_seq_region,
              $end_cs_id, $end_length ];
@@ -1242,11 +1248,11 @@ sub _build_combined_mapper {
 
 
   foreach my $range (@$ranges) {
-    my ( $seq_region_name, $start, $end) = @$range;
+    my ( $seq_region_id, $start, $end) = @$range;
 
     my $sum = 0;
 
-    my @initial_coords = $start_mid_mapper->map_coordinates($seq_region_name,
+    my @initial_coords = $start_mid_mapper->map_coordinates($seq_region_id,
                                                             $start,$end,1,
                                                             $start_name);
 
@@ -1276,12 +1282,12 @@ sub _build_combined_mapper {
 
           if($start_name eq 'first') { # add coords in consistant order
             $combined_mapper->add_map_coordinates(
-                             $seq_region_name, $total_start, $total_end, $ori,
+                             $seq_region_id, $total_start, $total_end, $ori,
                              $fcoord->id(), $fcoord->start(), $fcoord->end());
           } else {
             $combined_mapper->add_map_coordinates(
                         $fcoord->id(), $fcoord->start(), $fcoord->end(),$ori,
-                        $seq_region_name, $total_start, $total_end);
+                        $seq_region_id, $total_start, $total_end);
           }
 
           #print STDERR "  fcoord: id=".$fcoord->id." start=".

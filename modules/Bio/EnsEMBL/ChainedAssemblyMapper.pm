@@ -332,10 +332,13 @@ sub map {
   }
 
   if($fastmap) {
+    print STDERR "FAST seq region id is $seq_region_id\n";
     return $mapper->fastmap($seq_region_id, $frm_start, $frm_end,
                             $frm_strand, $frm);
   }
 
+  print STDERR "mapper is of type ".ref($mapper)."\n";
+  print STDERR "SLOW seq region id is $seq_region_id\n";
   return $mapper->map_coordinates($seq_region_id, $frm_start, $frm_end,
                                   $frm_strand, $frm);
 }
