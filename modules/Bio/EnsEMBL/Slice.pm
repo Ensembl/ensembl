@@ -706,6 +706,7 @@ sub project {
   my $normal_slice_proj =
     $slice_adaptor->fetch_normalized_slice_projection($self);
   foreach my $segment (@$normal_slice_proj) {
+    print STDERR "slice project ".$segment->[2]->name."\t".$segment->[2]->coord_system->name."\n";
     my $normal_slice = $segment->[2];
 
     $slice_cs = $normal_slice->coord_system();
@@ -717,7 +718,12 @@ sub project {
     my @coords;
 
     if( defined $asm_mapper ) {
-      @coords = $asm_mapper->map($normal_slice->seq_region_name(),
+      print STDERR "HI ".$normal_slice->seq_region_name()."\n";
+      print STDERR "\t".$normal_slice->start(),
+	"\t".$normal_slice->end(),
+	  "\t",$normal_slice->strand(),
+	    "\t",$slice_cs->name." -> ".$cs->name."\n";
+     @coords = $asm_mapper->map($normal_slice->seq_region_name(),
 				 $normal_slice->start(),
 				 $normal_slice->end(),
 				 $normal_slice->strand(),
@@ -728,7 +734,14 @@ sub project {
     }
 
     #construct a projection from the mapping results and return it
-
+    print STDERR "asm_mapper is a ".ref($asm_mapper)."\n";
+    print STDERR "#COORD id is ".$coords[0]->id."\n";
+    my $test = $coords[0]->id;
+    $test =~ s/\d+//g;
+    if(length($test) > 0 ){
+      print STDERR "NOT INTEGER\n";
+      print STDERR stack_trace_dump();
+   }
     foreach my $coord (@coords) {
       my $coord_start  = $coord->start();
       my $coord_end    = $coord->end();
@@ -749,14 +762,21 @@ sub project {
         }
 
         #create slices for the mapped-to coord system
-        my $slice = $slice_adaptor->fetch_by_region($coord_cs->name(),
+	print STDERR "COORD id is ".$coord->id."\n";
+#        my $slice = $slice_adaptor->fetch_by_region($coord_cs->name(),
+#                                                    $coord->id(),
+#                                                    $coord_start,
+#                                                    $coord_end,
+#                                                    $coord->strand(),
+#                                                    $coord_cs->version());
+
+        my $slice = $slice_adaptor->fetch_by_seq_region_id(
                                                     $coord->id(),
                                                     $coord_start,
                                                     $coord_end,
-                                                    $coord->strand(),
-                                                    $coord_cs->version());
-
-        my $current_end = $current_start + $length - 1;
+                                                    $coord->strand(),);
+	print STDERR "slice poject ".$slice."\n";
+	my $current_end = $current_start + $length - 1;
 	
         push @projection, bless([$current_start, $current_end, $slice],
                                 "Bio::EnsEMBL::ProjectionSegment");
