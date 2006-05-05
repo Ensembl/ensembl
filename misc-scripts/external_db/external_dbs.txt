@@ -127,3 +127,4 @@
 4300	AgilentProbe	1	XREF	1	0	5	Agilent Probe
 4305	AgilentCGH	1	XREF	1	0	5	Agilent CGH
 4400	Xenopus_Jamboree	1	KNOWN	1	0	1	Jamboree
+5000	Ens_Mm_gene	1	XREF	1	0	40	Ensembl Mouse Gene
