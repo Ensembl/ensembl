@@ -98,10 +98,15 @@ sub get_all_ConsequenceType {
     }
 
     my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start, $allele->end, $transcript->strand, [$string]);
-    if ($allele->start == 16165){
-	print "hello";
+
+    #calculate the consequence type of the Allele if different from the reference Allele
+    
+    if ($allele->ref_allele_string eq $string){
+	#same allele as reference, there is no consequence, called SARA
+	$consequence_type->type('SARA');
+	push @out, $consequence_type;
+	next;
     }
-    #calculate the consequence type of the Allele
     my $ref_consequences = type_variation($transcript,"",$consequence_type);
     if ($allele->start != $allele->end){
 	#do not calculate for indels effects of 2 or more in same codon
