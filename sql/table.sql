@@ -212,6 +212,8 @@ CREATE TABLE exon (
 
   phase                       TINYINT(2) NOT NULL,
   end_phase                   TINYINT(2) NOT NULL,
+
+  is_current                  BOOLEAN DEFAULT 1,
   
   PRIMARY KEY (exon_id),
   KEY seq_region_idx (seq_region_id, seq_region_start)
@@ -233,7 +235,7 @@ CREATE TABLE exon_stable_id (
   modified_date               DATETIME NOT NULL,
 
   PRIMARY KEY (exon_id),
-  UNIQUE (stable_id, version)
+  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -411,6 +413,7 @@ CREATE TABLE gene (
   source                      VARCHAR(20) NOT NULL,
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION'),
   description                 TEXT,
+  is_current                  BOOLEAN DEFAULT 1,
 
   PRIMARY KEY (gene_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -434,7 +437,7 @@ CREATE TABLE gene_stable_id (
   modified_date               DATETIME NOT NULL,
 
   PRIMARY KEY (gene_id),
-  UNIQUE (stable_id, version)
+  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -491,6 +494,7 @@ CREATE TABLE transcript (
   biotype                     VARCHAR(40) NOT NULL,
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION'),
   description                 TEXT,
+  is_current                  BOOLEAN DEFAULT 1,
 
   PRIMARY KEY (transcript_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -515,7 +519,7 @@ CREATE TABLE transcript_stable_id (
   modified_date               DATETIME NOT NULL,
   
   PRIMARY KEY (transcript_id),
-  UNIQUE (stable_id, version)
+  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -590,7 +594,8 @@ CREATE TABLE assembly (
   ori                         TINYINT  NOT NULL, 
   
   KEY (cmp_seq_region_id),
-  KEY (asm_seq_region_id, asm_start)
+  KEY (asm_seq_region_id, asm_start),
+  UNIQUE KEY all_idx (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start, cmp_end, ori)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -853,6 +858,12 @@ CREATE TABLE meta (
 
 # Auto add schema version to database
 INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "39");
+
+# patches included in this schema file
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_a.sql|status_enum');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_b.sql|unique_assembly');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_c.sql|multiversion_objects');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_d.sql|schema_version');
 
 
 ################################################################################
