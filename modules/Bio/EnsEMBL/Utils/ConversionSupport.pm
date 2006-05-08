@@ -52,6 +52,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use FindBin qw($Bin $Script);
 use POSIX qw(strftime);
 use Cwd qw(abs_path);
+use DBI;
 
 =head2 new
 
@@ -139,7 +140,7 @@ sub parse_common_options {
             $self->param($name, $val);
         }
         $self->param('conffile', $conffile);
-    } else {
+    } elsif ($conffile) {
         warning("Unable to open configuration file $conffile for reading: $!");
     }
     
@@ -649,6 +650,59 @@ sub get_database {
     $self->{'_dba'}->{$database} = $dba;
     $self->{'_dba'}->{'default'} = $dba unless $self->{'_dba'}->{'default'};
     return $self->{'_dba'}->{$database};
+}
+
+
+=head2 get_dbconnection
+
+  Arg[1]      : (optional) String $prefix - the prefix used for retrieving the
+                connection settings from the configuration
+  Example     : my $dbh = $self->get_dbconnection;
+  Description : Connects to the database server specified. You don't have to
+                specify a database name (this is useful for running commands
+                like $dbh->do('show databases')).
+  Return type : DBI database handle
+  Exceptions  : thrown if connection fails
+  Caller      : general
+  Status      : At Risk
+
+=cut
+
+sub get_dbconnection {
+  my $self = shift;
+  my $prefix = shift;
+
+  $self->check_required_params(
+      "${prefix}host",
+      "${prefix}port",
+      "${prefix}user",
+  );
+
+  my $dsn = "DBI:" . ($self->param('driver')||'mysql') .
+            ":host=" . $self->param("${prefix}host") .
+            ";port=" . $self->param("${prefix}port");
+
+  if ($self->param("${prefix}dbname")) {
+    $dsn .= ";dbname=".$self->param("${prefix}dbname");
+  }
+
+  my $dbh;
+
+  eval{
+    $dbh = DBI->connect($dsn, $self->param("${prefix}user"),
+      $self->param("${prefix}pass"), {'RaiseError' => 1, 'PrintError' => 0});
+  };
+
+  if (!$dbh || $@ || !$dbh->ping) {
+    $self->log_error("Could not connect to db server as user ".
+      $self->param("${prefix}user") .
+      " using [$dsn] as a locator:\n" . $DBI::errstr);
+  }
+
+  $self->{'_dbh'} = $dbh;
+
+  return $self->{'_dbh'};
+
 }
 
 =head2 get_glovar_database
@@ -1294,7 +1348,7 @@ sub init_log {
 
 sub finish_log {
     my $self = shift;
-    $self->log("All done. ".$self->warnings." warnings. ");
+    $self->log("\nAll done. ".$self->warnings." warnings. ");
     if ($self->{'_start_time'}) {
         $self->log("Runtime ");
         my $diff = time - $self->{'_start_time'};
