@@ -2457,7 +2457,7 @@ GENE
     my $file = $ensembl->dir() . "/" . $table . "_display_xref.sql";
 
     print "Setting $table display_xrefs from $file\n";
-    my $mysql_command = get_mysql_command($core_db);
+    my $mysql_command = $self->get_mysql_command($core_db);
     system( "$mysql_command < $file" ) == 0 
         or print( "ERROR: parsing $file in mysql\n" );
 #    my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
@@ -2470,7 +2470,7 @@ GENE
   # gene descriptions
   my $file = $ensembl->dir() . "/gene_description.sql";
   print "Setting gene descriptions from $file\n";
-  my $mysql_command = get_mysql_command($core_db);
+  my $mysql_command = $self->get_mysql_command($core_db);
   system( "$mysql_command < $file" ) == 0 
       or print( "ERROR: parsing $file in mysql\n" );
 
@@ -2487,7 +2487,7 @@ GENE
   print FILE "INSERT INTO meta (meta_key,meta_value) VALUES ('xref.timestamp', NOW())\n";
   close(FILE);
 
-  my $mysql_command = get_mysql_command($core_db);
+  my $mysql_command = $self->get_mysql_command($core_db);
   system( "$mysql_command < $file" ) == 0 
       or print( "ERROR: parsing $file in mysql\n" );
 #  my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
@@ -2521,7 +2521,7 @@ GENE
   print FILE    "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWNXREF\';\n";
   close(FILE);
 
-  my $mysql_command = get_mysql_command($core_db);
+  my $mysql_command = $self->get_mysql_command($core_db);
   system( "$mysql_command < $file" ) == 0 
       or print( "ERROR: parsing $file in mysql\n" );
 #  my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
@@ -3209,8 +3209,8 @@ EOS
 
   my $core_db = $self->core->dbc;
 
-  my $mysql_command = get_mysql_command($core_db);
-  system( "$mysql_command < $file" ) == 0 
+  my $mysql_command = $self->get_mysql_command($core_db);
+  system( "$mysql_command < $triage_file" ) == 0 
       or print( "ERROR: parsing $file in mysql\n" );
 
 #  my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
@@ -3270,8 +3270,8 @@ sub get_mysql_command{
   my $self = shift;
   my $dbc  = shift;
   
-  UNIVERSAL::isa( $dbc, 'Bio::EnsEMBL::DBSQL::DB' )
-      || die( "Need a Bio::EnsEMBL::DBSQL::DB not a " . ref($dbc) );
+  UNIVERSAL::isa( $dbc, 'Bio::EnsEMBL::DBSQL::DBConnection' )
+      || die( "Need a Bio::EnsEMBL::DBSQL::DBConnection not a " . ref($dbc) );
 
   my $host   = $dbc->host;
   my $port   = $dbc->port;
@@ -3283,7 +3283,7 @@ sub get_mysql_command{
                   ( $host ? ( '-h', $host ) : () ),
                   ( $port ? ( '-P', $port ) : () ),
                   ( $user ? ( '-u', $user ) : () ),
-                  ( $pass ? ( '-p', "'".$pass."'" ) : () ),
+                  ( $pass ? ( "-p'".$pass."'" ) : () ),
                   $dbname );
   return $str;
 }
