@@ -187,11 +187,13 @@ sub project_display_names {
 
       }
 
-      # Set gene status to "KNOWN" and update display_xref
-
-      $to_gene->status("KNOWN");
-      #$to_gene->description($from_gene->description() . $txt) if ($from_gene->description());
+      # Set gene status to "KNOWN_BY_PROJECTION" and update display_xref
+      # also set the status of the gene's transcripts
+      $to_gene->status("KNOWN_BY_PROJECTION");
       $to_gene->display_xref($dbEntry);
+      foreach my $transcript (@{$to_gene->get_all_Transcripts()}) {
+	$transcript->status("KNOWN_BY_PROJECTION");
+      }
 	
       print $to_gene->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
 
