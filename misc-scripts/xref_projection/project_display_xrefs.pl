@@ -9,7 +9,7 @@ use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
-my $method_link_type = "ENSEMBL_ORTHOLOGUES";
+my $method_link_type = "TREE_HOMOLOGIES";
 
 my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms);
 
@@ -106,6 +106,8 @@ sub project_homologies() {
   my ($homologies, $to_ga, $to_dbea, $names, $go_terms, $ma, %db_to_type) = @_;
 
   foreach my $homology (@{$homologies}) {
+
+    next if ($homology->description ne "ortholog_one2one" && $homology->description ne "apparent_ortholog_one2one");
 
     my @mas = @{$homology->get_all_Member_Attribute};
     my ($from_member, $from_attribute) = @{$mas[0]};
