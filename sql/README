@@ -7,7 +7,7 @@ patches to keep your schema up-to-date between releases.
 1. Creating an empty Ensembl db from scratch:
 =============================================
 
-The Ensembl database schema is defined in the file ensembl/sql/tables.sql. Use
+The Ensembl database schema is defined in the file ensembl/sql/table.sql. Use
 the mysql commandline client to load this schema into a new database:
 
 a. log into your MySQL database server and create a new database.
@@ -15,7 +15,7 @@ a. log into your MySQL database server and create a new database.
 b. load the schema into this database:
 
   $ mysql -h mysql_host -P 3306 -u your_username -pyour_password \
-      new_ensembl_db < ensembl/sql/tables.sql
+      new_ensembl_db < ensembl/sql/table.sql
 
 
 2. Patching an existing Ensembl database to the latest schema:
