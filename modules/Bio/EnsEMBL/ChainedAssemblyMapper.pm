@@ -332,8 +332,8 @@ sub map {
   }
 
   if($fastmap) {
-    print STDERR "FAST seq region id is $seq_region_id\n";
-    return $mapper->fastmap($seq_region_id, $frm_start, $frm_end,
+    print STDERR "FAST seq region id is $seq_region_id using $frm_seq_region_name\n";
+    return $mapper->fastmap($frm_seq_region_name, $frm_start, $frm_end,
                             $frm_strand, $frm);
   }
 
@@ -486,7 +486,7 @@ sub list_seq_regions {
   }
 
   #convert them to names
-  return @{$self->adaptor()->ids_to_seq_region_names($to_cs, \@seq_regs)};
+  return @{$self->adaptor()->seq_ids_to_regions(\@seq_regs)};
 }
 
 

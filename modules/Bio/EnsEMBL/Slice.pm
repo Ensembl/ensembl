@@ -734,14 +734,16 @@ sub project {
     }
 
     #construct a projection from the mapping results and return it
-    print STDERR "asm_mapper is a ".ref($asm_mapper)."\n";
-    print STDERR "#COORD id is ".$coords[0]->id."\n";
-    my $test = $coords[0]->id;
-    $test =~ s/\d+//g;
-    if(length($test) > 0 ){
-      print STDERR "NOT INTEGER\n";
-      print STDERR stack_trace_dump();
-   }
+    if($coords[0]->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+      print STDERR "asm_mapper is a ".ref($asm_mapper)."\n";
+      print STDERR "#COORD id is ".$coords[0]->id."\n";
+      my $test = $coords[0]->id;
+      $test =~ s/\d+//g;
+      if(length($test) > 0 ){
+	print STDERR "NOT INTEGER\n";
+	print STDERR stack_trace_dump();
+      }
+    }
     foreach my $coord (@coords) {
       my $coord_start  = $coord->start();
       my $coord_end    = $coord->end();

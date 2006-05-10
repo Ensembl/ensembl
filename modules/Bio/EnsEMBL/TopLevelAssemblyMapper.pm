@@ -181,11 +181,11 @@ sub map {
       my $mapper = $adaptor->fetch_by_CoordSystems($other_cs, $cs);
 
       if($fastmap) {
-        my @result = $mapper->fastmap($seq_region_id, $frm_start, $frm_end,
+        my @result = $mapper->fastmap($frm_seq_region_name, $frm_start, $frm_end,
                                       $frm_strand, $frm_cs);
         return @result if(@result);
       } else {
-        my @coords = $mapper->map($seq_region_id, $frm_start, $frm_end,
+        my @coords = $mapper->map($frm_seq_region_name, $frm_start, $frm_end,
                                   $frm_strand, $frm_cs);
 
         if(@coords > 1 || !$coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
