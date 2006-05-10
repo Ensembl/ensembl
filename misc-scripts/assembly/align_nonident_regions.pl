@@ -23,7 +23,10 @@ Required arguments:
 
 Optional arguments:
 
+    --chromosomes, --chr=LIST           only process LIST chromosomes
     --bindir=DIR                        look for program binaries in DIR
+    --tmpfir=DIR                        use DIR for temporary files (useful for
+                                        re-runs after failure)
 
     --conffile, --conf=FILE             read parameters from FILE
                                         (default: conf/Conversion.ini)
@@ -46,7 +49,7 @@ assemblies of a genome by creating a whole genome alignment between the two.
 The process assumes that the two assemblies are reasonably similar, i.e. there
 are no major rearrangements or clones moved from one chromosome to another.
 
-See "Related scripts" below for an overview of the whole process.
+See "Related files" below for an overview of the whole process.
 
 This particular script creates a whole genome alignment between two closely
 related assemblies for non-identical regions. These regions are identified by
@@ -58,22 +61,21 @@ Alignments are calculated by this algorithm:
     1. fetch region from tmp_align
     2. write soft-masked sequences to temporary files
     3. align using blastz
-    4. filter best hits (for query sequences, i.e. Ensembl regions) using
+    4. filter best hits (for query sequences, i.e. alternative regions) using
        axtBest
     5. parse blastz output to create blocks of exact matches only
-    6. remove overlapping target (Vega) alignments
+    6. remove overlapping target (reference) alignments
     7. write alignments to assembly table
 
-=head1 RELATED SCRIPTS
+=head1 RELATED FILES
 
-The whole process of creating a whole genome alignment is done by these
-scripts:
+The whole process of creating a whole genome alignment between two assemblies
+is done by a series of scripts. Please see
 
-    ensembl/misc-scripts/assembly/load_alternative_assembly.pl
-    ensembl/misc-scripts/assembly/align_by_clone_identity.pl
-    ensembl/misc-scripts/assembly/align_nonident_regions.pl
+  ensembl/misc-scripts/assembly/README
 
-See documention in the respective script for more information.
+for a high-level description of this process, and POD in the individual scripts
+for the details.
 
 =head1 LICENCE
 
@@ -121,6 +123,8 @@ $support->parse_extra_options(
     'altdbname=s',
     'altassembly=s',
     'bindir=s',
+    'tmpdir=s',
+    'chromosomes|chr=s@',
 );
 $support->allowed_params(
     $support->get_common_params,
@@ -128,6 +132,8 @@ $support->allowed_params(
     'altdbname',
     'altassembly',
     'bindir',
+    'tmpdir',
+    'chromosomes',
 );
 
 if ($support->param('help') or $support->error) {
@@ -170,12 +176,17 @@ my $A_sa = $A_dba->get_SliceAdaptor;
 my $aligner = AssemblyMapper::BlastzAligner->new(-SUPPORT => $support);
 
 # create tmpdir to store input and output
-$aligner->create_tempdir;
+$aligner->create_tempdir($support->param('tmpdir'));
 
 # loop over non-aligned regions in tmp_align table
 $support->log_stamped("Looping over non-aligned blocks...\n");
 
-$sth = $R_dbh->prepare(qq(SELECT * FROM tmp_align));
+$sql = qq(SELECT * FROM tmp_align);
+if ($support->param('chromosomes')) {
+  my $chr_string = join(", ", $support->param('chromosomes'));
+  $sql .= " WHERE ref_seq_region_name IN ($chr_string)";
+}
+$sth = $R_dbh->prepare($sql);
 $sth->execute;
 
 while (my $row = $sth->fetchrow_hashref) {
@@ -254,6 +265,16 @@ while (my $row = $sth->fetchrow_hashref) {
   
   $support->log("Done.\n", 2);
 
+  # cleanup temp files
+  $support->log("Cleaning up temp files...\n", 2);
+  $aligner->cleanup_tmpfiles(
+    "$A_basename.fa",
+    "$A_basename.nib",
+    "$R_basename.fa",
+    "$R_basename.nib",
+  );
+  $support->log("Done.\n", 2);
+
   # log alignment stats
   $aligner->log_block_stats(2);
 
@@ -276,19 +297,13 @@ unless ($support->param('dry_run')) {
 # cleanup
 $support->log_stamped("\nRemoving tmpdir...\n");
 $aligner->remove_tempdir;
-$support->log_stamped("Done.\n");
-
-# drop tmp_align
-unless ($support->param('dry_run')) {
-  if ($support->user_proceed("Would you like to drop the tmp_align table?")) {
-    $support->log_stamped("Dropping tmp_align table...\n");
-    $R_dbh->do(qq(DROP TABLE tmp_align));
-    $support->log_stamped("Done.\n");
-  }
-}
+$support->log_stamped("Done.\n\n");
 
 # overall stats
 $aligner->log_overall_stats;
+
+# remind to drop tmp_align
+$support->log("\nDon't forget to drop the tmp_align table when all is done!\n\n");
 
 # finish logfile
 $support->finish_log;
