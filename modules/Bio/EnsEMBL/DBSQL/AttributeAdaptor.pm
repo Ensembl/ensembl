@@ -416,7 +416,7 @@ sub store_on_MiscFeature {
 
   Arg [1]    : Int $gene_id - the dbID of the gene to store the attributes for
   Arg [2]    : listref Bio::EnsEMBL::Attribute $attribs
-  Example    : $attribute_adaptor->store_on_Gene($my_gene, $attributes)
+  Example    : $attribute_adaptor->store_on_Gene($gene_id, $attributes)
   Description: Stores all the attributes on the Gene. 
                Will duplicate things if called twice.
   Returntype : none
