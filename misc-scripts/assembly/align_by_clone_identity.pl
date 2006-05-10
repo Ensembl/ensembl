@@ -68,16 +68,15 @@ The alignment is created in two steps:
     2. Store non-aligned blocks in a temporary table (tmp_align). They can
        later be aligned using blastz by align_nonident_regions.pl.
 
-=head1 RELATED SCRIPTS
+=head1 RELATED FILES
 
-The whole process of creating a whole genome alignment is done by these
-scripts:
+The whole process of creating a whole genome alignment between two assemblies
+is done by a series of scripts. Please see
 
-    ensembl/misc-scripts/assembly/load_alternative_assembly.pl
-    ensembl/misc-scripts/assembly/align_by_clone_identity.pl
-    ensembl/misc-scripts/assembly/align_nonident_regions.pl
+  ensembl/misc-scripts/assembly/README
 
-See documention in the respective script for more information.
+for a high-level description of this process, and POD in the individual scripts
+for the details.
 
 =head1 LICENCE
 
@@ -243,8 +242,8 @@ my $fmt5 = "%-40s%10s\n";
 my $fmt6 = "%-10s%-12s%-10s%-12s\n";
 
   my $sth1 = $R_dbh->prepare(qq(
-      INSERT INTO assembly (asm_seq_region_id, cmp_seq_region_id, asm_start,
-        asm_end, cmp_start, cmp_end, ori)
+      INSERT IGNORE INTO assembly (asm_seq_region_id, cmp_seq_region_id,
+        asm_start, asm_end, cmp_start, cmp_end, ori)
       VALUES (?, ?, ?, ?, ?, ?, 1)
   ));
   my $sth2 = $R_dbh->prepare(qq(
@@ -659,10 +658,10 @@ sub found_nomatch {
     # start a new non-align block
     push @{ $nomatch->{$R_chr} }, [
       $A_seg->from_start,
-      undef,
+      $A_seg->from_end,
       $j,
       $R_seg->from_start,
-      undef,
+      $R_seg->from_end,
       $i,
       $A_chr,
     ];
