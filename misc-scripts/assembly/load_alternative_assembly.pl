@@ -44,21 +44,20 @@ assemblies of a genome by creating a whole genome alignment between the two.
 The process assumes that the two assemblies are reasonably similar, i.e. there
 are no major rearrangements or clones moved from one chromosome to another.
 
-See "Related scripts" below for an overview of the whole process.
+See "Related files" below for an overview of the whole process.
 
 This particular script loads the alternative chromosomes into the Ensembl
 database for further processing.
 
-=head1 RELATED SCRIPTS
+=head1 RELATED FILES
 
-The whole process of creating a whole genome alignment is done by these
-scripts:
+The whole process of creating a whole genome alignment between two assemblies
+is done by a series of scripts. Please see
 
-    ensembl/misc-scripts/assembly/load_alternative_assembly.pl
-    ensembl/misc-scripts/assembly/align_by_clone_identity.pl
-    ensembl/misc-scripts/assembly/align_nonident_regions.pl
+  ensembl/misc-scripts/assembly/README
 
-See documention in the respective script for more information.
+for a high-level description of this process, and POD in the individual scripts
+for the details.
 
 =head1 LICENCE
 
@@ -151,6 +150,20 @@ $dbh->{'ref'} = $dba->{'ref'}->dbc->db_handle;
 # database containing the alternative assembly
 $dba->{'alt'} = $support->get_database('core', 'alt');
 $dbh->{'alt'} = $dba->{'alt'}->dbc->db_handle;
+
+#####
+# create backups of the tables that will be modified
+#
+$support->log_stamped("Creating table backups...\n");
+$support->log_stamped("seq_region...\n", 1);
+$dbh->{'ref'}->do('CREATE TABLE seq_region_bak SELECT * FROM seq_region');
+$support->log_stamped("assembly...\n", 1);
+$dbh->{'ref'}->do('CREATE TABLE assembly_bak SELECT * FROM assembly');
+$support->log_stamped("meta...\n", 1);
+$dbh->{'ref'}->do('CREATE TABLE meta_bak SELECT * FROM meta');
+$support->log_stamped("coord_system...\n", 1);
+$dbh->{'ref'}->do('CREATE TABLE coord_system_bak SELECT * FROM coord_system');
+$support->log_stamped("Done.\n\n");
 
 #####
 # load seq_regions from alternative assembly db
