@@ -210,7 +210,7 @@ foreach my $R_chr ($support->sort_chromosomes) {
     }
 }
 
-$support->log_stamepd("Done.\n\n");
+$support->log_stamped("Done.\n\n");
 
 # print overall results
 $support->log("\nOverall stats:\n");
