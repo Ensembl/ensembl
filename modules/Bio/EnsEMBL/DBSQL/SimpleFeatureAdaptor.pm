@@ -183,15 +183,15 @@ sub _objs_from_sth {
   my %slice_hash;
   my %sr_name_hash;
   my %sr_cs_hash;
-
-
+  
+  
   my($simple_feature_id,$seq_region_id, $seq_region_start, $seq_region_end,
      $seq_region_strand, $display_label, $analysis_id, $score);
 
   $sth->bind_columns(\$simple_feature_id,\$seq_region_id, \$seq_region_start,
                      \$seq_region_end, \$seq_region_strand, \$display_label,
                      \$analysis_id, \$score);
-
+  
   my $asm_cs;
   my $cmp_cs;
   my $asm_cs_vers;
@@ -212,15 +212,19 @@ sub _objs_from_sth {
   my $dest_slice_strand;
   my $dest_slice_length;
   my $dest_slice_sr_name;
+  my $dest_slice_seq_region_id;
   if($dest_slice) {
     $dest_slice_start  = $dest_slice->start();
     $dest_slice_end    = $dest_slice->end();
     $dest_slice_strand = $dest_slice->strand();
     $dest_slice_length = $dest_slice->length();
     $dest_slice_sr_name = $dest_slice->seq_region_name();
+    $dest_slice_seq_region_id =$dest_slice->get_seq_region_id();
   }
 
+  my $count =0;
   FEATURE: while($sth->fetch()) {
+      $count++;
     #get the analysis object
     my $analysis = $analysis_hash{$analysis_id} ||=
       $aa->fetch_by_dbID($analysis_id);
@@ -243,22 +247,21 @@ sub _objs_from_sth {
     #
     if($mapper) {
 
-      ($sr_name,$seq_region_start,$seq_region_end,$seq_region_strand) =
+      ($seq_region_id,$seq_region_start,$seq_region_end,$seq_region_strand) =
         $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
                           $seq_region_strand, $sr_cs);
 
+      print STDERR "SR_NAME".$seq_region_id."\n";
       #skip features that map to gaps or coord system boundaries
-      next FEATURE if(!defined($sr_name));
-
+      next FEATURE if(!defined($seq_region_id));
+      
       #get a slice in the coord system we just mapped to
       if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
-        $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
-          $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
-                               $cmp_cs_vers);
+        $slice = $slice_hash{"ID:".$seq_region_id} ||=
+          $sa->fetch_by_seq_region_id($seq_region_id);
       } else {
-        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
-          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
-                               $asm_cs_vers);
+        $slice = $slice_hash{"ID:".$seq_region_id} ||=
+          $sa->fetch_by_seq_region_id($seq_region_id);
       }
     }
 
@@ -281,7 +284,8 @@ sub _objs_from_sth {
        
       #throw away features off the end of the requested slice
       if($seq_region_end < 1 || $seq_region_start > $dest_slice_length ||
-	( $dest_slice_sr_name ne $sr_name )) {
+	( $dest_slice_seq_region_id != $seq_region_id )) {
+#	print STDERR "IGNORED DUE TO CUTOFF  $dest_slice_seq_region_id ne $seq_region_id . $sr_name\n";
 	next FEATURE;
       }
       $slice = $dest_slice;
@@ -297,7 +301,8 @@ sub _objs_from_sth {
        'dbID'     => $simple_feature_id,
        'display_label' => $display_label,
        'score'    => $score});
-  }
+    }
+  print STDERR "FEATURE COUNT $count\n";
 
   return \@features;
 }

@@ -338,13 +338,14 @@ sub _objs_from_sth {
   my $dest_slice_strand;
   my $dest_slice_length;
   my $dest_slice_sr_name;
-
+  my $dest_slice_sr_id;
   if($dest_slice) {
     $dest_slice_start  = $dest_slice->start();
     $dest_slice_end    = $dest_slice->end();
     $dest_slice_strand = $dest_slice->strand();
     $dest_slice_length = $dest_slice->length();
     $dest_slice_sr_name = $dest_slice->seq_region_name();
+    $dest_slice_sr_id  = $dest_slice->get_seq_region_id();
   }
 
   my $current = -1;
@@ -414,27 +415,26 @@ sub _objs_from_sth {
       #
       if ($mapper) {
 
-        ($sr_name,$seq_region_start,$seq_region_end,$seq_region_strand) =
+        ($seq_region_id,$seq_region_start,$seq_region_end,$seq_region_strand) =
           $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
                            $seq_region_strand, $sr_cs);
 
         #skip features that map to gaps or coord system boundaries
-        if(!defined($sr_name)) {
+        if(!defined($seq_region_id)) {
           $throw_away = $misc_feature_id;
           next FEATURE;
         }
 
         #get a slice in the coord system we just mapped to
-        if ($asm_cs == $sr_cs ||
-            ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
-          $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
-            $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
-                                 $cmp_cs_vers);
-        } else {
-          $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
-            $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
-                                 $asm_cs_vers);
-        }
+#        if ($asm_cs == $sr_cs ||
+#            ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
+          $slice = $slice_hash{"ID:".$seq_region_id} ||=
+            $sa->fetch_by_seq_region_id($seq_region_id);
+#        } else {
+#          $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
+#            $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
+#                                 $asm_cs_vers);
+#        }
       }
 
       #
@@ -455,7 +455,7 @@ sub _objs_from_sth {
 	}
 	#throw away features off the end of the requested slice
 	if ($seq_region_end < 1 || $seq_region_start > $dest_slice_length ||
-	   ( $dest_slice_sr_name ne $sr_name )) {
+	   ( $dest_slice_sr_id ne $seq_region_id )) {
 	  #flag this feature as one to throw away
 	  $throw_away = $misc_feature_id;
 	  next FEATURE;

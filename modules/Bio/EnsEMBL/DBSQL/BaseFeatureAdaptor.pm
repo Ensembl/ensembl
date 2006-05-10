@@ -187,7 +187,7 @@ sub fetch_all_by_Slice_constraint {
     throw('Could not retrieve normalized Slices. Database contains ' .
           'incorrect assembly_exception information.');
   }
-
+  
   # Want to get features on the FULL original slice
   # as well as any symlinked slices
 
@@ -195,6 +195,10 @@ sub fetch_all_by_Slice_constraint {
   # same seq_region as original slice
 
   my $sr_id = $slice->get_seq_region_id();
+  print STDERR "sr_id = $sr_id\n";
+  foreach my $pro (@proj){
+    print STDERR "projected slice -> ".$pro->to_Slice->get_seq_region_id()."\n";
+  }
 
   @proj = grep { $_->to_Slice->get_seq_region_id() != $sr_id } @proj;
 
@@ -217,7 +221,8 @@ sub fetch_all_by_Slice_constraint {
   foreach my $seg (@proj) {
     my $offset = $seg->from_start();
     my $seg_slice  = $seg->to_Slice();
-
+    print STDERR "MORE: ".$seg_slice->name."\n";
+    print STDERR "constraint :- $constraint\n";
     my $features = $self->_slice_fetch($seg_slice, $constraint); ## NO RESULTS
 
     # if this was a symlinked slice offset the feature coordinates as needed
@@ -225,6 +230,7 @@ sub fetch_all_by_Slice_constraint {
 
     FEATURE:
       foreach my $f (@$features) {
+	print STDERR "FEAT: ".ref($f)."\n";
         if($offset != 1) {
 
           $f->{'start'} += $offset-1;
@@ -234,6 +240,7 @@ sub fetch_all_by_Slice_constraint {
         # discard boundary crossing features from symlinked regions
         foreach my $bound (@bounds) {
           if($f->{'start'} < $bound && $f->{'end'} >= $bound) {
+	    print STDERR "BOUNDRY CROSSED\n";
             next FEATURE;
           }
         }
@@ -289,6 +296,7 @@ sub _slice_fetch {
   my $slice_strand = $slice->strand();
   my $slice_cs     = $slice->coord_system();
   my $slice_seq_region = $slice->seq_region_name();
+  my $slice_seq_region_id = $slice->get_seq_region_id();
 
   #get the synonym and name of the primary_table
   my @tabs = $self->_tables;
@@ -300,7 +308,7 @@ sub _slice_fetch {
 
   my $asma = $self->db->get_AssemblyMapperAdaptor();
   my @features;
-#warn "jere are $self, @feat_css\n";
+warn "jere are $self, @feat_css\n";
   # fetch the features from each coordinate system they are stored in
  COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
     my $mapper;
@@ -334,13 +342,16 @@ sub _slice_fetch {
           " AND ${tab_syn}.seq_region_start >= $min_start";
       }
 
+      print STDERR "#constraint $constraint\n";
       my $fs = $self->generic_fetch($constraint,undef,$slice);
 
       # features may still have to have coordinates made relative to slice
       # start
+      print STDERR"#number of features is :- ".scalar(@$fs)."\n";
       $fs = _remap($fs, $mapper, $slice);
 
       push @features, @$fs;
+      print STDERR "#number of features is :- ".scalar(@$fs)."\n";
     } else {
       $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
 
@@ -356,7 +367,8 @@ sub _slice_fetch {
       next COORD_SYSTEM if(!@coords);
 
       @ids = map {$_->id()} @coords;
-      @ids = @{$asma->seq_regions_to_ids($feat_cs, \@ids)};
+#coords are now id rather than name
+#      @ids = @{$asma->seq_regions_to_ids($feat_cs, \@ids)};
 
       # When regions are large and only partially spanned by slice
       # it is faster to to limit the query with start and end constraints.
@@ -369,11 +381,14 @@ sub _slice_fetch {
         $constraint .= " AND " if($constraint);
         $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
 
+	print STDERR ".con: $constraint\n";
         my $fs = $self->generic_fetch($constraint, $mapper, $slice);
 
+	print STDERR ".number of features is :- ".scalar(@$fs)."\n";
         $fs = _remap($fs, $mapper, $slice);
 
         push @features, @$fs;
+	print STDERR ".number of features is :- ".scalar(@features)."\n";
 
       } else {
         # do multiple split queries using start / end constraints
@@ -396,9 +411,12 @@ sub _slice_fetch {
               " AND ${tab_syn}.seq_region_start >= $min_start";
           }
 
+	print STDERR "~con: $constraint\n";
           my $fs = $self->generic_fetch($constraint,$mapper,$slice);
 
+	  print STDERR "~number of features is :- ".scalar(@$fs)."\n";
           $fs = _remap($fs, $mapper, $slice);
+	  print STDERR "~number after _remap features is :- ".scalar(@$fs)."\n";
 
           push @features, @$fs;
         }
@@ -539,6 +557,7 @@ sub _remap {
 
   my ($seq_region, $start, $end, $strand);
 
+  my $slice_seq_region_id = $slice->get_seq_region_id();
   my $slice_seq_region = $slice->seq_region_name();
 
   foreach my $f (@$features) {
@@ -548,13 +567,14 @@ sub _remap {
       throw("Feature does not have attached slice.\n");
     }
     my $fseq_region = $fslice->seq_region_name();
+    my $fseq_region_id = $fslice->get_seq_region_id();
     my $fcs = $fslice->coord_system();
 
     if(!$slice_cs->equals($fcs)) {
       #slice of feature in different coord system, mapping required
 
       ($seq_region, $start, $end, $strand) =
-        $mapper->fastmap($fseq_region,$f->start(),$f->end(),$f->strand(),$fcs);
+        $mapper->fastmap($fseq_region_id,$f->start(),$f->end(),$f->strand(),$fcs);
 
       # undefined start means gap
       next if(!defined $start);

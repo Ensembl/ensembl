@@ -93,7 +93,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Mapper;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
 
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
@@ -203,6 +203,14 @@ sub fetch_by_region {
   my @bind_vals;
   my $key;
 
+  print STDERR "slcie frtach by region $seq_region_name\n";
+  my $test = $seq_region_name;
+  $test =~ s/\d+//g;
+  if(length($test) == 0 and $seq_region_name > 1000){
+    print STDERR "$seq_region_name IS AN INTEGER\n";
+    print STDERR stack_trace_dump();
+  }
+   
   if($cs) {
     push @bind_vals, $cs->dbID();
     $sql = "SELECT sr.name,sr.seq_region_id, sr.length, " .

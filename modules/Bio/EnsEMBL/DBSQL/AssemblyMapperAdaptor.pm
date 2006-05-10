@@ -67,7 +67,8 @@ use Bio::EnsEMBL::ChainedAssemblyMapper;
 use Bio::EnsEMBL::TopLevelAssemblyMapper;
 
 use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
-use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
+#use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
 use Bio::EnsEMBL::Utils::SeqRegionCache;
 
 use integer; #do proper arithmetic bitshifts
@@ -574,7 +575,7 @@ sub register_component {
   # (2) Use locality of reference (if they want something in same general
   #     region it will already be registered).
 
-  $self->register_assembled($asm_mapper,$asm_seq_region,$asm_start,$asm_end);
+  $self->register_assembled($asm_mapper,$asm_seq_region_id,$asm_start,$asm_end);
 }
 
 
