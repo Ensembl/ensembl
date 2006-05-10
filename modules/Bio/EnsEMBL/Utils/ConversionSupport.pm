@@ -1410,4 +1410,27 @@ sub mem {
     return $mem;
 }
 
+=head2 commify
+
+  Arg[1]      : Int $num - a number to commify
+  Example     : print "An easy to read number: ".$self->commify(100000000);
+                # will print 100,000,000
+  Description : put commas into a number to make it easier to read
+  Return type : a string representing the commified number
+  Exceptions  : none
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub commify {
+  my $self = shift;
+  my $num = shift;
+
+  $num = reverse($num);
+  $num =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+
+  return scalar reverse $num;
+}
+
 1;
