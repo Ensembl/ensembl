@@ -268,6 +268,10 @@ sub create_xrefs {
 
 	  $dep{ACCESSION} = $acc;
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
+	  if($dep =~ /GO/){
+	    chop $extra[1]; # remove "." at the end
+	    $dep{LINKAGE_ANNOTATION}= $extra[1];
+	  }
 	  if($dep =~ /EMBL/){
 	    my ($protein_id) = $extra[0];
 	    if($protein_id ne "-"){
