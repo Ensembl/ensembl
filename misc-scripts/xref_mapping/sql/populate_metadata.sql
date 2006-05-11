@@ -641,7 +641,11 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2854, 7165,'LOCAL:Celera_trans/consensus-transcripts_xref.fasta', now(), now(), "CeleraTranscriptParser");
 
+# Anopheles symbols
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2856, 7165,'LOCAL:Anopheles_symbol/GeneName_translation_UniqID.txt', now(), now(), "AnophelesSymbolParser");
+
+# GO
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 7165,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
 
 # --------------------------------------------------------------------------------
 
