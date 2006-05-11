@@ -1874,7 +1874,7 @@ sub get_all_Genes_by_type{
   }
 
   my @out = grep { $_->biotype eq $type } 
-    @{ $self->get_all_Genes($logic_name, $load_transcripts)};
+    @{ $self->get_all_Genes($logic_name, undef, $load_transcripts)};
 
   return \@out;
 }
