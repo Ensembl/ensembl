@@ -40,6 +40,7 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9544, 9544,
 # "High level" sources that we will also download from (via source_url)
 
 INSERT INTO source VALUES (1020, 'MIM', 1, 'Y', 10);
+
 INSERT INTO source VALUES (1, "Uniprot/SWISSPROT", 1, 'Y',20);
 INSERT INTO source VALUES (2, "Uniprot/SPTREMBL", 1, 'Y',20);
 INSERT INTO source VALUES (3, "RefSeq_peptide", 1, 'Y',20);
@@ -55,6 +56,8 @@ INSERT INTO source VALUES (2701, 'AgilentCGH', 1, 'Y', 50);
 # Other sources - used to create dependent xrefs, but not to download from
 
 INSERT INTO source VALUES (1010, 'EMBL', 1, 'N', 30);
+INSERT INTO source VALUES (1021, 'GENE_MAP', 1, 'N', 30);
+INSERT INTO source VALUES (1022, 'MORBID_MAP', 1, 'N', 30);
 INSERT INTO source VALUES (1030, 'PDB', 1, 'N', 30);
 INSERT INTO source VALUES (1040, 'protein_id', 1, 'N', 30);
 INSERT INTO source VALUES (1050, 'PUBMED', 1, 'N', 30);
@@ -272,7 +275,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 # mim data obtained from reseq and uniprot files
 ###      MIM 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1020, 9606,'ftp://ftp.ncbi.nih.gov/repository/OMIM/omim.txt.Z', '', now(), now(), "MIMParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1020, 9606,'ftp://ftp.ncbi.nih.gov/repository/OMIM/omim.txt.Z ftp://ftp.ncbi.nih.gov/repository/OMIM/morbidmap ftp://ftp.ncbi.nih.gov/repository/OMIM/genemap', '', now(), now(), "MIMParser");
 
 ##      IPI
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.HUMAN.fasta.gz', '', now(), now(), "IPIParser");
