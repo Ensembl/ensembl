@@ -1139,6 +1139,26 @@ sub add_to_xrefs{
 
 }
 
+sub add_to_syn_for_mult_sources{
+  my ($self, $acc, $sources, $syn) = @_;
+
+  if(!defined($add_synonym_sth)){
+    $add_synonym_sth =  $dbi->prepare("INSERT INTO synonym VALUES(?,?)");
+  }
+  my $found =0;
+  foreach my $source_id (@$sources){
+    my $xref_id = $self->get_xref($acc, $source_id);
+    if(defined($xref_id)){
+      $add_synonym_sth->execute($xref_id, $syn) || die "$dbi->errstr \n $xref_id\n $syn\n";
+      $found =1;
+    }
+  }
+#  if(!$found){
+#    die "Could not find acc $acc in xref table for sources".join(", ",@$sources)."\n";
+#  }
+}
+
+
 sub add_to_syn{
   my ($self, $acc, $source_id, $syn) = @_;
 

@@ -10,7 +10,6 @@ use vars qw(@ISA);
 @ISA = qw(XrefParser::BaseParser);
 
 
-
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
 
@@ -29,21 +28,77 @@ sub run {
 
   my $self = shift if (defined(caller(1)));
   my $file = shift;
-  my $source_id = shift;
+  my $general_source_id = shift;
   my $species_id = shift;
   my %old_to_new;
   my %removed;
-
-  if(!defined($source_id)){
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
+  my $source_id;
+  my @sources;
+  if(!defined($general_source_id)){
+    $general_source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
   }
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
+  push @sources, $general_source_id;
+ 
+
+  my %genemap;
+  my %morbidmap;
+  my $gene_source_id = XrefParser::BaseParser->get_source_id_for_source_name("GENE_MAP");
+  push @sources, $gene_source_id;
+  my $morbid_source_id =  XrefParser::BaseParser->get_source_id_for_source_name("MORBID_MAP");
+  push @sources, $morbid_source_id;
+
+  print "sources are:- ".join(", ",@sources)."\n";
+  if(!open(MIM,"<MIM/genemap")){
+    print  "ERROR: Could not open MIM/genemap\n";
+    return 1; # 1 is an error
+  }
+    
+  #Each entry is a list of fields, separated by the '|' character. 
+  #The fields are, in order :
+  
+  #1  - Numbering system, in the format  Chromosome.Map_Entry_Number
+  #2  - Month entered
+  #3  - Day     "
+  #4  - Year    "
+  #5  - Location
+  #6  - Gene Symbol(s)
+  #7  - Gene Status (see below for codes)
+  #8  - Title
+  #9  - 
+  #10 - MIM Number
+  #11 - Method (see below for codes)
+  #12 - Comments
+  #13 -
+  #14 - Disorders
+  #15 - Disorders, cont.
+  #16 - Disorders, cont
+  #17 - Mouse correlate
+  #18 - Reference  }
+
+  while(<MIM>){
+    my @array = split (/\|/, $_);
+    $genemap{$array[9]} = 1; # array starts at 0 so 10 - 1.
+  }
+  close MIM;
+  
+  if(!open(MIM,"<MIM/morbidmap")){
+    print  "ERROR: Could not open MIM/morbidmap\n";
+    return 1; # 1 is an error
+  }
+
+  while(<MIM>){
+    my @array = split (/\|/, $_);
+    $morbidmap{$array[2]} = 1;
+  }
+  close MIM;
+
 
 
   local $/ = "*RECORD*";
-  
+
   if(!open(MIM,"<".$file)){
     print  "ERROR: Could not open $file\n";
     return 1; # 1 is an error
@@ -58,7 +113,29 @@ sub run {
     my $description = undef;
     if(/\*FIELD\*\s+NO\n(\d+)/){
       $number = $1;
-    }
+      if(defined($morbidmap{$number})){
+	$source_id = $morbid_source_id;
+      }
+      elsif(defined($genemap{$number})){
+	$source_id = $gene_source_id;
+      }
+      else{
+	if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n/){
+	  if($1 eq "^"){
+	    if(/\*FIELD\*\sTI\n[\^]\d+ MOVED TO (\d+)/){
+	      $old_to_new{$number} = $1;
+	    }
+	    else{
+	      $removed{$number} = 1;
+	      $removed_count++;
+	    }
+	    next;
+	  }
+	}
+	next;
+#	$source_id = $general_source_id; 
+      }
+   }
     if($number==0){
       die "ERROR $_";
     }
@@ -93,7 +170,7 @@ sub run {
       $new = $old_to_new{$new};
     }
     if(!defined($removed{$new})){
-      $self->add_to_syn($new,$source_id,$old);
+      $self->add_to_syn_for_mult_sources($new, \@sources, $old);
       $syn_count++;
     }
   }
@@ -101,6 +178,8 @@ sub run {
   print "added $syn_count synonyms (defined by MOVED TO)\n";
   return 0; #successful
 }
+
+
 
 sub new {
 
