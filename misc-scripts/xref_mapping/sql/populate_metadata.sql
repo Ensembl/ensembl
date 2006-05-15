@@ -67,6 +67,7 @@ INSERT INTO source VALUES (1070, 'GO', 1, 'Y',60);
 INSERT INTO source VALUES (1080, 'MarkerSymbol', 1, 'Y',30);
 INSERT INTO source VALUES (1090, 'HUGO', 1, 'Y',30);
 
+
 INSERT INTO source VALUES (1110, 'EntrezGene', 1, 'N', 30);
 
 INSERT INTO source VALUES (1200, 'RGD', 1, 'Y',30);
@@ -292,7 +293,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9606,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Homo_sapiens/Hs.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Homo_sapiens/Hs.data.gz', '', now(), now(), "UniGeneParser");
 
-##      ncRNAs presently inhouse.
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 9606,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
 
@@ -335,7 +336,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      Agilent ( zipfile in ensembl-personal/ianl ) 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 10090,'LOCAL:AgilentProbe/MouseExpression.fasta', '', now(), now(), "AgilentParser");
 
-##      ncRNAs presently inhouse.
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 10090,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
 
@@ -373,7 +374,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      Agilent ( zipfile in ensembl-personal/ianl ) 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 10116,'LOCAL:AgilentProbe/RatExpression.fasta', '', now(), now(), "AgilentParser");
 
-##      ncRNAs presently inhouse.
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 10116,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
 # --------------------------------------------------------------------------------
