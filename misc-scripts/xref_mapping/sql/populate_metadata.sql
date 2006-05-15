@@ -285,7 +285,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2000, 9606,'LOCAL:CCDS/CCDS.txt', '', now(), now(), "CCDSParser");
 
 
-##      Agilent
+##      Agilent ( zipfile in ensembl-personal/ianl ) 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 9606,'LOCAL:AgilentProbe/HumanExpression.fasta', '', now(), now(), "AgilentParser");
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2701, 9606,'LOCAL:AgilentCGH/HumanCGH.fasta', '', now(), now(), "AgilentParser");
 
@@ -332,7 +332,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10090,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Mus_musculus/Mm.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Mus_musculus/Mm.data.gz', '', now(), now(), "UniGeneParser");
 
-##      Agilent
+##      Agilent ( zipfile in ensembl-personal/ianl ) 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 10090,'LOCAL:AgilentProbe/MouseExpression.fasta', '', now(), now(), "AgilentParser");
 
 ##      ncRNAs presently inhouse.
@@ -370,7 +370,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10116,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Rattus_norvegicus/Rn.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Rattus_norvegicus/Rn.data.gz', '', now(), now(), "UniGeneParser");
 
-##      Agilent
+##      Agilent ( zipfile in ensembl-personal/ianl ) 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 10116,'LOCAL:AgilentProbe/RatExpression.fasta', '', now(), now(), "AgilentParser");
 
 ##      ncRNAs presently inhouse.
