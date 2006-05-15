@@ -627,101 +627,101 @@ VALUES (2611, 7719,'ftp://ftp.jgi-psf.org/pub/JGI_data/Ciona/v2.0/FM1.aa.fasta.g
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 7719, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 51511, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 7719, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7719, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 51511, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 51511, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/ *gpff
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(3, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other1.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+(3, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other1.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(3, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other2.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+(3, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other2.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(3, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other3.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+(3, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other3.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(3, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other4.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+(3, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other4.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(3, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other5.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+(3, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other5.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(3, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other6.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
+(3, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other6.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(3, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other7.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser"); 
+(3, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other7.protein.gpff.gz',  now(), now(), "RefSeqGPFFParser"); 
 
 ##       refseq ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/ *rna*fna*
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (4, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other1.rna.fna.gz',  now(), now(), "RefSeqParser");
+ (4, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other1.rna.fna.gz',  now(), now(), "RefSeqParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (4, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other2.rna.fna.gz',  now(), now(), "RefSeqParser");
+ (4, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other2.rna.fna.gz',  now(), now(), "RefSeqParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (4, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other3.rna.fna.gz',  now(), now(), "RefSeqParser");
+ (4, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other3.rna.fna.gz',  now(), now(), "RefSeqParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (4, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other4.rna.fna.gz',  now(), now(), "RefSeqParser");
+ (4, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other4.rna.fna.gz',  now(), now(), "RefSeqParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (4, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other5.rna.fna.gz',  now(), now(), "RefSeqParser");
+ (4, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other5.rna.fna.gz',  now(), now(), "RefSeqParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (4, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other6.rna.fna.gz',  now(), now(), "RefSeqParser");
+ (4, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other6.rna.fna.gz',  now(), now(), "RefSeqParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (4, 7719,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other7.rna.fna.gz',  now(), now(), "RefSeqParser"); 
+ (4, 51511,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other7.rna.fna.gz',  now(), now(), "RefSeqParser"); 
 
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate1.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate1.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate2.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate2.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate3.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate3.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate4.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate4.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate5.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate5.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate6.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate6.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate7.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate7.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate8.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate8.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate9.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate9.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate10.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate10.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate11protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate11protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate12.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate12.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate13.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate13.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate14.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate14.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate15.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate15.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 7719,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
+(1070, 51511,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1300, 7719,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+(1300, 51511,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
 
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(6, 7719,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Ciona_savignyi/Csa.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Ciona_savignyi/Csa.data.gz',  now(), now(), "UniGeneParser");
+(6, 51511,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Ciona_savignyi/Csa.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Ciona_savignyi/Csa.data.gz',  now(), now(), "UniGeneParser");
 
 
 
