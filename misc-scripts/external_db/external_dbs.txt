@@ -128,3 +128,5 @@
 4400	Xenopus_Jamboree	1	KNOWN	1	0	1	Jamboree
 4500	Tiffin	1	XREF	1	0	1	Tiffin DNA motifs
 4600	OTTT	1	XREF	1	0	1	Havana transcripts
+4400	Xenopus_Jamboree	1	KNOWN	1	0	1	Jamboree
+5000	Ens_Mm_gene	1	XREF	1	0	40	Ensembl Mouse Gene
