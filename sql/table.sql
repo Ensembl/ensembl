@@ -411,7 +411,7 @@ CREATE TABLE gene (
   seq_region_strand           TINYINT(2) NOT NULL,       
   display_xref_id             INT UNSIGNED,
   source                      VARCHAR(20) NOT NULL,
-  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION'),
+  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
   description                 TEXT,
   is_current                  BOOLEAN DEFAULT 1,
 
@@ -492,7 +492,7 @@ CREATE TABLE transcript (
   seq_region_strand           TINYINT(2) NOT NULL, 
   display_xref_id             INT UNSIGNED,
   biotype                     VARCHAR(40) NOT NULL,
-  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION'),
+  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
   description                 TEXT,
   is_current                  BOOLEAN DEFAULT 1,
 
@@ -864,6 +864,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_a.sql|stat
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_b.sql|unique_assembly');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_c.sql|multiversion_objects');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_d.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_e.sql|unknown_status_enum');
 
 
 ################################################################################
