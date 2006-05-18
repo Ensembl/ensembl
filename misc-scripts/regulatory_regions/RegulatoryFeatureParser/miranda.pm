@@ -20,7 +20,7 @@ use vars qw(@ISA);
 
 sub parse {
 
-  my ($self, $db_adaptor, $file) = @_;
+  my ($self, $db_adaptor, $file, $old_assembly, $new_assembly) = @_;
 
   my %result;
 
@@ -42,6 +42,9 @@ sub parse {
 
   my $stable_id_to_internal_id = $self->build_stable_id_cache($db_adaptor);
 
+  # this object is only used for projection
+  my $dummy_analysis = new Bio::EnsEMBL::Analysis(-logic_name => 'CisRedProjection');
+
   open (FILE, "<$file") || die "Can't open $file";
 
   while (<FILE>) {
@@ -53,6 +56,15 @@ sub parse {
     my ($group, $seq, $method, $feature, $chr, $start, $end, $str, $phase, $score, $pvalue, $type, $id_ignore, $id) = split;
     my $strand = ($str =~ /\+/ ? 1 : -1);
     $id =~ s/[\"\']//g;  # strip quotes
+
+    # ----------------------------------------
+    # Feature name
+
+    # For miRNA_target, individual features don't have a unique name, so create
+    # a composite one. Also set influence.
+
+    $feature{NAME} = $id .":" . $seq;
+    $feature{INFLUENCE} = "negative";
 
     # ----------------------------------------
     # Factor
@@ -92,7 +104,7 @@ sub parse {
     # ----------------------------------------
     # Seq_region ID and co-ordinates
 
-    my $chr_slice = $slice_adaptor->fetch_by_region(undef, $chr, $start, $end, $strand);
+    my $chr_slice = $slice_adaptor->fetch_by_region('chromosome', $chr, undef, undef, undef, $old_assembly);
 
     if (!$chr_slice) {
       print STDERR "Can't get slice for $chr:$start:$end:$strand\n";
@@ -107,18 +119,25 @@ sub parse {
     }
 
     $feature{SEQ_REGION_ID} = $seq_region_id;
-    $feature{START} = $chr_slice->start();
-    $feature{END} = $chr_slice->end();
-    $feature{STRAND} = $chr_slice->strand();
 
-    # ----------------------------------------
-    # Feature name
+    # project if necessary
+    if ($new_assembly) {
 
-    # For miRNA_target, individual features don't have a unique name, so create
-    # a composite one. Also set influence.
+      #print join("\t", "OLD: ", $start, $end, $strand, $chr, $feature{NAME}) . "\n";
 
-    $feature{NAME} = $id .":" . $seq;
-    $feature{INFLUENCE} = "negative";
+      my $projected_feature = $self->project_feature($start, $end, $strand, $chr, $chr_slice, $dummy_analysis, $new_assembly, $slice_adaptor, $feature{NAME});
+
+      $start = $projected_feature->start();
+      $end = $projected_feature->end();
+      $strand = $projected_feature->strand();
+
+      #print join("\t", "NEW: ", $start, $end, $strand, $chr, $feature{NAME}) . "\n";
+
+    }
+
+    $feature{START} = $start;
+    $feature{END} = $end;
+    $feature{STRAND} = $strand;
 
     # ----------------------------------------
     # Ensembl object
