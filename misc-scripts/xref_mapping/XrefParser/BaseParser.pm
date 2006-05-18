@@ -32,9 +32,9 @@ my ($skipdownload,$drop_db,$checkdownload) ;
 sub run {
 
   ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $checkdownload, 
-    $create, $release, $cleanup, $drop_db, $deletedownloaded) = @_;
-
-
+    $create, $release, $cleanup, $drop_db, $deletedownloaded,my $dl_path) = @_;
+  
+  $base_dir = $dl_path if $dl_path;   
 
   my @species = @$speciesr;
   my @sources = @$sourcesr;
