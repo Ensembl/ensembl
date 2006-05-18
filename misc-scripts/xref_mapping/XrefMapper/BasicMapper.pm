@@ -3047,7 +3047,11 @@ sub add_missing_pairs{
   # get current max object_xref_id
   my $row = @{$self->core->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
   my $max_object_xref_id = @{$row}[0];
-  if (!defined $max_object_xref_id) {
+
+  my $row2 = @{$self->core->dbc->db_handle->selectall_arrayref("SELECT count(object_xref_id) FROM object_xref")}[0];
+  my $entries_obj_xref = @{$row2}[0]; 
+
+  if (!defined $max_object_xref_id && $entries_obj_xref == 0 ) {
     die ("No existing object_xref_ids, something very wrong\n");
   }
 #  print "xref offset => $xref_id_offset\n";
