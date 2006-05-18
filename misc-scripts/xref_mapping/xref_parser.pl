@@ -3,17 +3,19 @@ use strict;
 use Getopt::Long;
 use XrefParser::BaseParser;
 
-my ($host, $port, $dbname, $user, $pass, @species, @sources, $skipdownload, $checkdownload, $create, $release, $cleanup,$drop_existing_db);
+my ($host, $port, $dbname, $user, $pass, @species, @sources, $skipdownload, $checkdownload, $create, $release, $cleanup,$drop_existing_db,$dl_path,$delete_downloaded);
 
-GetOptions('user=s'       => \$user,
-	   'pass=s'       => \$pass,
-	   'host=s'       => \$host,
-	   'port=i'       => \$port,
-	   'dbname=s'     => \$dbname,
-	   'species=s'    => \@species,
-	   'source=s'     => \@sources,
-	   'skipdownload'  => \$skipdownload,     # skips all downloads
-	   'checkdownload!' => \$checkdownload,   # if file exists it won't be downloaded 
+GetOptions('dbuser|user=s'       => \$user,
+	   'dbpass|pass=s'       => \$pass,
+	   'dbhost|host=s'       => \$host,
+	   'dbport|port=i'       => \$port,
+	   'dbname=s'            => \$dbname,
+	   'species=s'           => \@species,
+	   'source=s'            => \@sources,
+	   'download_dir=s'      => \$dl_path,
+	   'delete_downloaded'   => \$delete_downloaded ,  # deletes all downloaded files  
+	   'skipdownload'        => \$skipdownload,     # skips all downloads
+	   'checkdownload!'      => \$checkdownload,   # if file exists it won't be downloaded 
 	   'create'       => \$create,
 	   'setrelease=s' => \$release,
 	   'cleanup'      => \$cleanup,
@@ -32,8 +34,9 @@ if (!$user || !$host || !$dbname) {
 }
 
 
-
-XrefParser::BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources, $skipdownload, $checkdownload, $create, $release, $cleanup,$drop_existing_db);
+XrefParser::BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources, 
+          $skipdownload, $checkdownload, $create, $release, $cleanup,$drop_existing_db,
+          $delete_downloaded, $dl_path);
 
 # --------------------------------------------------------------------------------
 
