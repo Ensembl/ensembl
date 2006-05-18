@@ -38,7 +38,7 @@ use vars qw(@ISA);
 
 sub parse {
 
-  my ($self, $db_adaptor, $file) = @_;
+  my ($self, $db_adaptor, $file, $old_assembly, $new_assembly) = @_;
 
   my %result;
 
@@ -80,10 +80,15 @@ sub parse {
 
   }
 
+  # this object is only used for projection
+  my $dummy_analysis = new Bio::EnsEMBL::Analysis(-logic_name => 'CisRedProjection');
+
   # ----------------------------------------
   # Parse motifs.txt file
 
   print "Parsing features from $file\n";
+
+  my $skipped = 0;
 
   open (FILE, "<$file") || die "Can't open $file";
   <FILE>; # skip header
@@ -132,9 +137,9 @@ sub parse {
     }
 
     # ----------------------------------------
-    # Seq_region ID and co-ordinates
+    # Seq_region ID and co-ordinates, projected if necessary
 
-    my $chr_slice = $slice_adaptor->fetch_by_region(undef, $chromosome, $start, $end);
+    my $chr_slice = $slice_adaptor->fetch_by_region('chromosome', $chromosome, undef, undef, undef, $old_assembly);
 
     if (!$chr_slice) {
       print STDERR "Can't get slice for $chromosome:$start:$end\n";
@@ -149,9 +154,26 @@ sub parse {
     }
 
     $feature{SEQ_REGION_ID} = $seq_region_id;
+
+    # project if necessary
+    if ($new_assembly) {
+
+      #print join("\t", "OLD: ", $start, $end, $strand, $chromosome, $motif_name) . "\n";
+
+      my $projected_feature = $self->project_feature($start, $end, $strand, $chromosome, $chr_slice, $dummy_analysis, $new_assembly, $slice_adaptor, $motif_name);
+
+      $start = $projected_feature->start();
+      $end = $projected_feature->end();
+      $strand = $projected_feature->strand();
+
+      #print join("\t", "NEW: ", $start, $end, $strand, $chromosome, $motif_name) . "\n";
+
+    }
+
     $feature{START} = $start;
     $feature{END} = $end;
     $feature{STRAND} = $strand;
+
 
     # ----------------------------------------
     # Ensembl object - always a gene in cisRed
@@ -161,8 +183,10 @@ sub parse {
     if (!$ensembl_id) {
       print STDERR "Can't get ensembl internal ID for $gene_id, skipping\n";
       print join("-", $motif_name, $chromosome, $start, $end, $strand, $group_name, $gene_id, "\n");
+      $skipped++;
       next;
     }
+
     $feature{ENSEMBL_TYPE} = "Gene";
     $feature{ENSEMBL_ID} = $ensembl_id;
 
@@ -191,6 +215,8 @@ sub parse {
 
   close FILE;
 
+  print "Skipped $skipped due to missing stable ID - internal ID mappings\n";
+
   # ----------------------------------------
   # Search regions 
   # read search_regions.txt from same location as $file
@@ -207,7 +233,7 @@ sub parse {
       warn("Can't get internal ID for $ensembl_gene_id\n");
       next;
     }
-    my $sr_chr_slice = $slice_adaptor->fetch_by_region(undef, $chromosome, $start, $end);
+    my $sr_chr_slice = $slice_adaptor->fetch_by_region('chromosome', $chromosome, undef, undef, undef, $old_assembly);
     if (!$sr_chr_slice) {
       print STDERR "Can't get slice for $chromosome:$start:$end\n";
       next;
@@ -217,8 +243,26 @@ sub parse {
       print STDERR "Can't get seq_region_id for chromosome $chromosome\n";
       next;
     }
+
+    my $name = "CisRed_Search_$id";
+
+    # project if necessary
+    if ($new_assembly) {
+
+      #print join("\t", "OLD: ", $start, $end, $strand, $chromosome, $name) . "\n";
+
+      my $projected_region = $self->project_feature($start, $end, $strand, $chromosome, $sr_chr_slice, $dummy_analysis, $new_assembly, $slice_adaptor, "CisRed_Search_$id");
+
+      $start = $projected_region->start();
+      $end = $projected_region->end();
+      $strand = $projected_region->strand();
+
+      #print join("\t", "NEW: ", $start, $end, $strand, $chromosome, $name) . "\n";
+
+    }
+
     my %search_region;
-    $search_region{NAME} = "CisRed_Search_$id";
+    $search_region{NAME} = $name;
     $search_region{SEQ_REGION_ID} = $sr_seq_region_id;
     $search_region{START} = $start;
     $search_region{END} = $end;
