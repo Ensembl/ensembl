@@ -166,6 +166,8 @@ sub parse {
       $end = $projected_feature->end();
       $strand = $projected_feature->strand();
 
+      $feature{SEQ_REGION_ID} = $slice_adaptor->get_seq_region_id($projected_feature->feature_Slice);
+
       #print join("\t", "NEW: ", $start, $end, $strand, $chromosome, $motif_name) . "\n";
 
     }
