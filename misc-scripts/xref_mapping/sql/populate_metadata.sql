@@ -410,6 +410,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 7955,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Danio_rerio/Dr.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Danio_rerio/Dr.data.gz', '', now(), now(), "UniGeneParser");
 
+##      Agilent ( original in /ecs4/work5/is1/zv6/oligo/agilent/AGILENT_G2518A.fa ) 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 7955,'LOCAL:AgilentProbe/ZebrafishExpression.fasta', '', now(), now(), "AgilentParser");
+
 # --------------------------------------------------------------------------------
 ### Chicken
 ##      uniprot
