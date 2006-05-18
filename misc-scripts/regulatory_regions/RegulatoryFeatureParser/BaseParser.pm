@@ -3,6 +3,7 @@ package RegulatoryFeatureParser::BaseParser;
 use strict;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::SimpleFeature;
 
 
 # Base functionality for regualatory feature parsers
@@ -193,6 +194,45 @@ sub upload_features_and_factors {
   }
 
   print "Done\n";
+
+}
+
+# --------------------------------------------------------------------------------
+# Project a feature from one slice to another
+sub project_feature {
+
+  my ($self, $start, $end, $strand, $chr, $slice, $analysis, $new_assembly, $slice_adaptor, $label) = @_;
+
+  # just use a SimpleFeature for convenience
+  my $feat = Bio::EnsEMBL::SimpleFeature->new
+    (-start    => $start,
+     -end      => $end,
+     -strand   => $strand,
+     -slice    => $slice,
+     -analysis => $analysis,
+     -display_label => $label,
+     -score   => 0);
+
+  # project feature to new assembly
+  my $feat_slice = $feat->feature_Slice;
+  my @segments = @{ $feat_slice->project('chromosome', $new_assembly) };
+
+  next unless (@segments);
+
+  next if (scalar(@segments) > 1);
+
+  my $proj_slice = $segments[0]->to_Slice;
+  next unless ($feat_slice->length == $proj_slice->length);
+
+
+  # everything looks fine, so adjust the coords of the feature
+  $feat->start($proj_slice->start);
+  $feat->end($proj_slice->end);
+  $feat->strand($proj_slice->strand);
+  my $slice_new_asm = $slice_adaptor->fetch_by_region('chromosome', $chr, undef, undef, undef, $new_assembly);
+  $feat->slice($slice_new_asm);
+
+  return $feat;
 
 }
 
