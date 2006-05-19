@@ -68,8 +68,6 @@ sub get_Species {
   my $common_name;
   if( @$arrRef ) {
     $common_name = $arrRef->[0];
-  } else {
-    return undef;
   }
   
   my $classification = $self->list_value_by_key( 'species.classification' );
