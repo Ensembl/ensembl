@@ -121,12 +121,14 @@ sub create_xrefs {
   # Get predicted equivalents of various sources used here
   my $sp_pred_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SWISSPROT_predicted');
   my $sptr_pred_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SPTREMBL_predicted');
+  my $go_source_id = XrefParser::BaseParser->get_source_id_for_source_name('GO');
   my $embl_pred_source_id = $dependent_sources{'EMBL_predicted'};
   my $protein_id_pred_source_id = $dependent_sources{'protein_id_predicted'};
   print "Predicted SwissProt source id for $file: $sp_pred_source_id\n";
   print "Prediced SpTREMBL source id for $file: $sptr_pred_source_id\n";
   print "Predicted EMBL source id for $file: $embl_pred_source_id\n";
   print "Predicted protein_id source id for $file: $protein_id_pred_source_id\n";
+  print "GO source id for $file: $go_source_id\n";
 
   if(!open(UNIPROT, $file)){
     print"Can't open Swissprot file $file\n";
@@ -271,6 +273,8 @@ sub create_xrefs {
 	  if($dep =~ /GO/){
 	    chop $extra[1]; # remove "." at the end
 	    $dep{LINKAGE_ANNOTATION}= $extra[1];
+	    # Next line is commented out since the "source" of these GO terms is actually the Uniprot file.
+	    #$dep{LINKAGE_SOURCE_ID} = $go_source_id;
 	  }
 	  if($dep =~ /EMBL/){
 	    my ($protein_id) = $extra[0];
