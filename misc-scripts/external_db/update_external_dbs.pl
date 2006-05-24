@@ -37,7 +37,7 @@ if($release_num) {
   #
   # filter out all non-core databases
   #
-  @dbnames = grep {/^[a-zA-Z]+\_[a-zA-Z]+\_(core|est|estgene|vega)\_${release_num}\_\d+[A-Za-z]?$/} @dbnames;
+  @dbnames = grep {/^[a-zA-Z]+\_[a-zA-Z]+\_(core|est|estgene|vega|otherfeatures|cdna)\_${release_num}\_\d+[A-Za-z]?$/} @dbnames;
 }
 
 
