@@ -582,7 +582,8 @@ sub get_existing_mappings {
   my $sth = dbi()->prepare($sql);
   $sth->execute($to_source, $from_source, $species_id, $species_id);
   while(my @row = $sth->fetchrow_array()){
-    $mappings{$row[1]} = $row[0];
+    $mappings{$row[1]} = $row[2];
+    #print "mgi_to_uniprot{" . $row[1] . "} = " . $row[2] . "\n";
   }
 
   print "Got " . scalar(keys(%mappings)) . " $from_source_name -> $to_source_name mappings\n";
@@ -611,7 +612,7 @@ sub upload_xref_object_graphs {
     my $pri_insert_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?)");
     my $pri_update_sth = $dbi->prepare("UPDATE primary_xref SET sequence=? WHERE xref_id=?");
     my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?)");
-    my $dep_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
+    my $dep_sth = $dbi->prepare("INSERT INTO dependent_xref (master_xref_id, dependent_xref_id, linkage_annotation, linkage_source_id) VALUES(?,?,?,?)");
     my $xref_update_label_sth = $dbi->prepare("UPDATE xref SET label=? WHERE xref_id=?");
     my $xref_update_descr_sth = $dbi->prepare("UPDATE xref SET description=? WHERE xref_id=?");
     my $pair_sth = $dbi->prepare("INSERT INTO pairs VALUES(?,?,?)");
@@ -689,7 +690,6 @@ sub upload_xref_object_graphs {
 	  print STDERR "source = $dep{SOURCE_ID}\n";
 	}
 	$dep_sth->execute($xref_id, $dep_xref_id, $dep{LINKAGE_ANNOTATION}, $dep{LINKAGE_SOURCE_ID} ) || die $dbi->errstr;
-	# TODO linkage anntation?
 
       }	 # foreach dep
        
@@ -1133,9 +1133,11 @@ sub add_to_xrefs{
   if(!defined($dependent_id)){
     die "$acc\t$label\t\t$source_id\t$species_id\n";
   }
+  if ($master_xref == 48955) {
+    print "$master_xref\t$acc\t$dependent_id\t$linkage\t$source_id\n";
+  }
   $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id)
     || die "$master_xref\t$dependent_id\t$linkage\t$source_id";
-
 
 }
 
