@@ -168,19 +168,19 @@ sub project_display_names {
       if ($type eq "Gene") {
 
 	$to_gene->add_DBEntry($dbEntry);
-	$to_dbea->store($dbEntry, $to_gene, 'Gene') if (!$print);
+	$to_dbea->store($dbEntry, $to_gene->dbID(), 'Gene') if (!$print);
 
       } elsif ($type eq "Transcript" || !$type) {
 	
 	$to_transcript->add_DBEntry($dbEntry);
-	$to_dbea->store($dbEntry, $to_transcript, 'Transcript') if (!$print);
+	$to_dbea->store($dbEntry, $to_transcript->dbID(), 'Transcript') if (!$print);
 
       } elsif ($type eq "Translation") {
 
 	my $to_translation = $to_transcript->translation();
 	return if (!$to_translation);
 	$to_translation->add_DBEntry($dbEntry);
-	$to_dbea->store($dbEntry, $to_translation, 'Translation') if (!$print);
+	$to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation') if (!$print);
 
       } else {
 
@@ -249,7 +249,7 @@ sub project_go_terms {
 
     print $to_translation->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
 
-    $to_dbea->store($dbEntry, $to_translation, 'Translation') if (!$print);
+    $to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation') if (!$print);
     #print "stored " . $to_translation->stable_id() . " " . $dbEntry->display_id() . "\n";
 
   }
@@ -487,7 +487,7 @@ sub usage {
 
   [--print]             Print details of projection only, don't store in database
 
-  [--method]            Type of homologs (default: ENSEMBL_ORTHOLOGUES)
+  [--method]            Type of homologs (default: TREE_HOMOLOGIES)
 
   [--help]              This text.
 
