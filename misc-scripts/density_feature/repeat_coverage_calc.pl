@@ -15,6 +15,7 @@ use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
+use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 
 use POSIX;
 
@@ -159,7 +160,11 @@ foreach my $slice ( @sorted_slices ) {
          -density_value => $percentage_repeat));
     }
 
-    $dfa->store( @dfs );
+    if (@dfs) {
+      $dfa->store(@dfs);
+    } else {
+      warning("No repeat density calculated for ".$slice->name." (chunk start $chunk_start, chunk end $chunk_end).");
+    }
 
     my $used_lower_limit = $small_start<$variable_start?$small_start:$variable_start;
 
