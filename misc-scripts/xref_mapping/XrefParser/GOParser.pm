@@ -51,6 +51,9 @@ sub run {
   # as the master xref
   my (%mgi_to_uniprot) = %{XrefParser::BaseParser->get_existing_mappings("MarkerSymbol", "Uniprot/Swissprot", $species_id)};
 
+  # also need to have the correct source ID for GO terms
+  my $go_source_id = XrefParser::BaseParser->get_source_id_for_source_name("GO");
+
   my %worm;
   my %worm_label;
   my $wormset;
@@ -69,6 +72,10 @@ sub run {
     if(/$taxon_line/){
       chomp;
       my @array = split (/\t/,$_);
+
+      # Skip "NOT" terms entirely
+      next if ($array[3] eq "NOT");
+
       $array[9] =~ s/\'/\\\'/g;
       my $master=0;
       if($array[0] =~ /ENSEMBL/){
@@ -78,15 +85,18 @@ sub run {
         # check ENSEMBL's are the same.
       }
       elsif($array[0] =~ /RefSeq/){
-        if($refseq{$array[1]}){
+        if($refseq{$array[1]}) {
           XrefParser::BaseParser->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
           $count++;
+	  #print join (" ", "RefSeq" ,$refseq{$array[1]}, $array[4], "\n");
+
         }
       }
       elsif($array[0] =~ /UniProt/){
         if($swiss{$array[1]}){
           XrefParser::BaseParser->add_to_xrefs($swiss{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
           $count++;
+	  #print join (" ", "UniProt" ,$swiss{$array[1]}, $array[4], "\n");
         }
       }
       elsif($array[0] =~ /^WB/){
@@ -138,11 +148,11 @@ sub run {
 
       elsif($array[0] =~ /MGI/){
 	# MGI	MGI:1923501	0610007P08Rik		GO:0004386	MGI:MGI:1354194	IEA		F	RIKEN cDNA 0610007P08 gene		gene	taxon:10090	20060213	UniProt
-	#  0         1                2                      3                  4        5              6         7    8       9
+	#  0         1                2         3             4                  5        6             7         8
         if($mgi_to_uniprot{$array[1]}){
-	  # $master_xref, $acc, $version, $label, $description, $linkage, $source_id, $species_id
-          XrefParser::BaseParser->add_to_xrefs($mgi_to_uniprot{$array[1]}, $array[3], '', $array[3], '', $array[6], $source_id, $species_id);
+          XrefParser::BaseParser->add_to_xrefs($mgi_to_uniprot{$array[1]}, $array[4], '', $array[4], '', $array[6], $go_source_id, $species_id);
           $count++;
+	  #print join (" ", "MGI" ,$mgi_to_uniprot{$array[1]}, $array[4], "\n");
         }
       }
 
