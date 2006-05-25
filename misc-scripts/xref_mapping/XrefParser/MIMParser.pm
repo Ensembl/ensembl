@@ -45,9 +45,9 @@ sub run {
 
   my %genemap;
   my %morbidmap;
-  my $gene_source_id = XrefParser::BaseParser->get_source_id_for_source_name("GENE_MAP");
+  my $gene_source_id = XrefParser::BaseParser->get_source_id_for_source_name("MIM_GENE");
   push @sources, $gene_source_id;
-  my $morbid_source_id =  XrefParser::BaseParser->get_source_id_for_source_name("MORBID_MAP");
+  my $morbid_source_id =  XrefParser::BaseParser->get_source_id_for_source_name("MIM_MORBID");
   push @sources, $morbid_source_id;
 
   print "sources are:- ".join(", ",@sources)."\n";
@@ -91,7 +91,8 @@ sub run {
 
   while(<MIM>){
     my @array = split (/\|/, $_);
-    $morbidmap{$array[2]} = 1;
+    # store the description
+    $morbidmap{$array[2]} = $array[0];
   }
   close MIM;
 
@@ -111,13 +112,16 @@ sub run {
     #get the MIM number
     my $number = 0;
     my $description = undef;
+    my $is_morbid = 0;
     if(/\*FIELD\*\s+NO\n(\d+)/){
       $number = $1;
+      $source_id = $gene_source_id;
       if(defined($morbidmap{$number})){
-	$source_id = $morbid_source_id;
+#	$source_id = $morbid_source_id;
+	$is_morbid=1;
       }
       elsif(defined($genemap{$number})){
-	$source_id = $gene_source_id;
+#	$source_id = $gene_source_id;
       }
       else{
 	if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n/){
@@ -157,9 +161,12 @@ sub run {
 	$description =$2;
 	$description =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
 	$count++;
-	$self->add_xref($number,"",$number,$description,$source_id,$species_id);
-	#	print $number."\n*".$description."*\n" unless ($count > 100); 
-      }
+	$self->add_xref($number,"",$number,$description,$gene_source_id,$species_id);
+# now also add morbid entry
+	if($is_morbid){
+	  $self->add_xref($number,"",$number,$morbidmap{$number},$morbid_source_id,$species_id);
+	}			}
+      #	print $number."\n*".$description."*\n" unless ($count > 100); 
     }
   }
   my $syn_count =0;
