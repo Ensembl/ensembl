@@ -3,10 +3,12 @@
 This document describes how to create a whole genome alignment between two
 assembly versions of a genome.
 
-
 All scripts used in this pipeline have a --help option to print available
 arguments (to be passed in from the commandline, or read from a ini-style
 configuration file specified with --conffile).
+
+For an example how to *use* the mapping created by these scripts, please see
+EXAMPLE.use_mapping.pl.
 
 
 -------------------------------------------------------------------------------
