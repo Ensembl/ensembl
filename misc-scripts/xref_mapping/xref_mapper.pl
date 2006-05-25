@@ -21,6 +21,7 @@ xref_mapper.pl - Create Ensembl gene model xref mappings
 [B<-delete_external_db>]
 [B<-notriage>]
 [B<-delete_unmapped>]
+[B<-dumpcheck>]
 
 =back
 
