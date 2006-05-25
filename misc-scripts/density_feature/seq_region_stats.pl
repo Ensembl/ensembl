@@ -32,8 +32,8 @@ my %attrib_codes = ( 'miRNA' => 'miRNA',
 		     'novel protein_coding' => 'novCod',
 		     'pseudogene' => 'pseudo',
 		     'scRNA' => 'scRNA',
-		     'Mt-tRNA' => 'MTtRNA',
-		     'Mt-rRNA' => 'MTrRNA');
+		     'Mt_tRNA' => 'MTtRNA',
+		     'Mt_rRNA' => 'MTrRNA');
 
 		     
 
