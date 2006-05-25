@@ -50,7 +50,7 @@ sub run {
   $sptr_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SPTREMBL');
   print "SwissProt source id for $file: $sp_source_id\n";
   print "SpTREMBL source id for $file: $sptr_source_id\n";
-
+ 
 
   my @xrefs = create_xrefs($sp_source_id, $sptr_source_id, $species_id, $file);
   if(!defined(@xrefs)){
@@ -121,14 +121,17 @@ sub create_xrefs {
   # Get predicted equivalents of various sources used here
   my $sp_pred_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SWISSPROT_predicted');
   my $sptr_pred_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SPTREMBL_predicted');
-  my $go_source_id = XrefParser::BaseParser->get_source_id_for_source_name('GO');
+#  my $go_source_id = XrefParser::BaseParser->get_source_id_for_source_name('GO');
   my $embl_pred_source_id = $dependent_sources{'EMBL_predicted'};
   my $protein_id_pred_source_id = $dependent_sources{'protein_id_predicted'};
   print "Predicted SwissProt source id for $file: $sp_pred_source_id\n";
   print "Prediced SpTREMBL source id for $file: $sptr_pred_source_id\n";
   print "Predicted EMBL source id for $file: $embl_pred_source_id\n";
   print "Predicted protein_id source id for $file: $protein_id_pred_source_id\n";
-  print "GO source id for $file: $go_source_id\n";
+#  print "GO source id for $file: $go_source_id\n";
+
+  my (%genemap) = %{XrefParser::BaseParser->get_valid_codes("mim_gene",$species_id)};
+  my (%morbidmap) = %{XrefParser::BaseParser->get_valid_codes("mim_morbid",$species_id)};
 
   if(!open(UNIPROT, $file)){
     print"Can't open Swissprot file $file\n";
@@ -256,26 +259,56 @@ sub create_xrefs {
     my ($deps) = $_ =~ /(DR\s+.+)/s; # /s allows . to match newline
       my @dep_lines = split /\n/, $deps;
     foreach my $dep (@dep_lines) {
+      if($dep =~ /GO/){
+	next;
+      }
       if ($dep =~ /^DR\s+(.+)/) {
 	my ($source, $acc, @extra) = split /;\s*/, $1;
 	if (exists $dependent_sources{$source} ) {
 	  # create dependent xref structure & store it
 	  my %dep;
-	  $dep{SOURCE_NAME} = $source;
-	  $dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
-	  $dep{SOURCE_ID} = $dependent_sources{$source};
+          $dep{SOURCE_NAME} = $source;
+          $dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
+          $dep{SOURCE_ID} = $dependent_sources{$source};
+	  $dep{ACCESSION} = $acc;
+	  if($dep =~ /MIM/){
+	    $dep{ACCESSION} = $acc;
+	    if(defined($morbidmap{$acc}) and $extra[0] eq "phenotype."){
+	      $dep{SOURCE_NAME} = "MIM_MORBID";
+	      $dep{SOURCE_ID} = $dependent_sources{"MIM_MORBID"};
+	    }
+	    elsif(defined($genemap{$acc}) and $extra[0] eq "gene."){
+	      $dep{SOURCE_NAME} = "MIM_GENE";
+	      $dep{SOURCE_ID} = $dependent_sources{"MIM_GENE"};
+	    }
+	    elsif($extra[0] eq "gene+phenotype."){
+	      $dep{SOURCE_NAME} = "MIM_MORBID";
+	      $dep{SOURCE_ID} = $dependent_sources{"MIM_MORBID"};
+	      if(defined($morbidmap{$acc})){
+		push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
+	      }
+	      my %dep2;
+	      $dep2{ACCESSION} = $acc;
+	      $dep2{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
+	      $dep2{SOURCE_NAME} = "MIM_GENE";
+	      $dep2{SOURCE_ID} = $dependent_sources{"MIM_GENE"};	      
+	      if(defined($genemap{$acc})){
+		push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
+	      }
+	      next;
+	    }
+	    else{
+	      print "missed $dep\n";
+	      next;
+	    }
+	  }
 	  if ($source eq "EMBL" && $is_predicted) {
 	    $dep{SOURCE_ID} = $embl_pred_source_id
 	  };
 
 	  $dep{ACCESSION} = $acc;
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
-	  if($dep =~ /GO/){
-	    chop $extra[1]; # remove "." at the end
-	    $dep{LINKAGE_ANNOTATION}= $extra[1];
-	    # Next line is commented out since the "source" of these GO terms is actually the Uniprot file.
-	    #$dep{LINKAGE_SOURCE_ID} = $go_source_id;
-	  }
+
 	  if($dep =~ /EMBL/){
 	    my ($protein_id) = $extra[0];
 	    if($protein_id ne "-"){
