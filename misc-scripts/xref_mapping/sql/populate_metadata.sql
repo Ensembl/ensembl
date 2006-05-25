@@ -57,8 +57,8 @@ INSERT INTO source VALUES (2701, 'AgilentCGH', 1, 'Y', 50);
 # Other sources - used to create dependent xrefs, but not to download from
 
 INSERT INTO source VALUES (1010, 'EMBL', 1, 'N', 30);
-INSERT INTO source VALUES (1021, 'GENE_MAP', 1, 'N', 30);
-INSERT INTO source VALUES (1022, 'MORBID_MAP', 1, 'N', 30);
+INSERT INTO source VALUES (1021, 'MIM_GENE', 1, 'N', 30);
+INSERT INTO source VALUES (1022, 'MIM_MORBID', 1, 'N', 30);
 INSERT INTO source VALUES (1030, 'PDB', 1, 'N', 30);
 INSERT INTO source VALUES (1040, 'protein_id', 1, 'N', 30);
 INSERT INTO source VALUES (1050, 'PUBMED', 1, 'N', 30);
