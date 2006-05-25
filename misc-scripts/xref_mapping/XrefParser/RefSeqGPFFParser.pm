@@ -75,6 +75,9 @@ sub create_xrefs {
 
   my %dependent_sources =  XrefParser::BaseParser->get_dependent_xref_sources();
 
+#  my (%genemap) = %{XrefParser::BaseParser->get_valid_codes("mim_gene",$species_id)};
+#  my (%morbidmap) = %{XrefParser::BaseParser->get_valid_codes("mim_morbid",$species_id)};
+
   if(!open(REFSEQ, $file)){
     print "ERROR: Can't open RefSeqGPFF file $file\n";
     return undef;
@@ -202,14 +205,28 @@ sub create_xrefs {
 	$dep{ACCESSION} = $ll;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
       }
-      foreach my $mim (@mimline) {
-	my %dep;
-	$dep{SOURCE_ID} = $dependent_sources{MIM}
-          || die( 'No source for MIM!' );
-	$dep{LINKAGE_SOURCE_ID} = $source_id;
-	$dep{ACCESSION} = $mim;
-	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
-      }
+# Refseq's do not tell wetheer the mim is for the gene of morbid so ignore for now.
+#      foreach my $mim (@mimline) {
+#	my %dep;
+#	if(defined($morbidmap{$mim})){
+#	  $dep{SOURCE_NAME} = "MIM_MORBID";
+#	  $dep{SOURCE_ID} = $dependent_sources{"MIM_MORBID"}         
+#	    || die( 'No source for MIM_MORBID!' );
+#	}
+#	elsif(defined($genemap{$mim})){
+#	  $dep{SOURCE_NAME} = "MIM_GENE";
+#	  $dep{SOURCE_ID} = $dependent_sources{"MIM_GENE"}         
+#	    || die( 'No source for MIM_GENE!' );
+#	}
+#	else{
+#	  next;
+#	}
+##      	$dep{SOURCE_ID} = $dependent_sources{MIM}
+##          || die( 'No source for MIM!' );
+#	$dep{LINKAGE_SOURCE_ID} = $source_id;
+#	$dep{ACCESSION} = $mim;
+#	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
+#      }
 
       push @xrefs, $xref;
 
