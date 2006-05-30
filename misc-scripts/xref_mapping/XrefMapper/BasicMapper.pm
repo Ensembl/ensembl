@@ -474,29 +474,36 @@ sub fetch_and_dump_seq{
     $max = $self->maxdump();
   }
   my $i =0;
+  my $rna = 0;
   foreach my $gene (@genes){
-    foreach my $transcript (@{$gene->get_all_Transcripts()}) {
-      $i++;
-      my $seq = $transcript->spliced_seq(); 
-      $seq =~ s/(.{60})/$1\n/g;
-      print DNA ">" . $transcript->dbID() . "\n" .$seq."\n";
-      my $trans = $transcript->translation();
-      my $translation = $transcript->translate();
-
-      if(defined($translation)){
-	my $pep_seq = $translation->seq();
-	$pep_seq =~ s/(.{60})/$1\n/g;
-	print PEP ">".$trans->dbID()."\n".$pep_seq."\n";
+#    if($gene->biotype eq "protein_coding" or $gene->biotype eq "pseudogene"){
+      foreach my $transcript (@{$gene->get_all_Transcripts()}) {
+	$i++;
+	my $seq = $transcript->spliced_seq(); 
+	$seq =~ s/(.{60})/$1\n/g;
+	print DNA ">" . $transcript->dbID() . "\n" .$seq."\n";
+	my $trans = $transcript->translation();
+	my $translation = $transcript->translate();
+	
+	if(defined($translation)){
+	  my $pep_seq = $translation->seq();
+	  $pep_seq =~ s/(.{60})/$1\n/g;
+	  print PEP ">".$trans->dbID()."\n".$pep_seq."\n";
+	}
       }
-    }
-
-    last if(defined($max) and $i > $max);
-
+      
+      last if(defined($max) and $i > $max);
+      
+ #   }
+ #   else{
+ #     $rna++;
+ #   }
   }
-
   close DNA;
   close PEP;
-
+  die "FINISHED DUMP\n";
+#  print "$rna RNA genes ignored for mapping purposes\n";
+  
 }
 
 
@@ -2442,7 +2449,7 @@ GENE
     my $file = $ensembl->dir() . "/" . $table . ".txt";
 
     if(-e $file){
-      my $sth = $core_db->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE $table");
+      my $sth = $core_db->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
       print "Uploading data in $file to $table\n";
       $sth->execute();
     }
@@ -2995,7 +3002,7 @@ sub upload_external_db {
   if ($count == 0 || $upload_external_db ) {
     my $edb = cwd() . "/../external_db/external_dbs.txt";
     print "external_db table is empty, uploading from $edb\n";
-    my $edb_sth = $core_db->prepare("LOAD DATA LOCAL INFILE \'$edb\' INTO TABLE external_db");
+    my $edb_sth = $core_db->prepare("LOAD DATA INFILE \'$edb\' INTO TABLE external_db");
     $edb_sth->execute();
   }
 
@@ -3205,7 +3212,7 @@ EOS
   my $file = $self->core->dir()."/pairs_object_xref.txt";
   
   # don't seem to be able to use prepared statements here
-  my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE object_xref");
+  my $sth = $self->core->dbc->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE object_xref");
   print "Uploading data in $file to object_xref\n";
   $sth->execute();
   
