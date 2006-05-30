@@ -499,7 +499,7 @@ sub get_all_Exons {
 
    foreach my $trans ( @{$self->get_all_Transcripts} ) {
        foreach my $e ( @{$trans->get_all_Exons} ) {
-	   $h{$e->start()."-".$e->end()."-".$e->strand()."-".$e->phase()} = $e;
+	   $h{$e->start()."-".$e->end()."-".$e->strand()."-".$e->phase()."-".$e->end_phase()} = $e;
        }
    }
 
