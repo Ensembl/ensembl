@@ -277,7 +277,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 # mim data obtained from reseq and uniprot files
 ###      MIM 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1020, 9606,'ftp://ftp.ncbi.nih.gov/repository/OMIM/omim.txt.Z ftp://ftp.ncbi.nih.gov/repository/OMIM/morbidmap ftp://ftp.ncbi.nih.gov/repository/OMIM/genemap', '', now(), now(), "MIMParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1020, 9606,'ftp://ftp.ncbi.nih.gov/repository/OMIM/omim.txt.Z', '', now(), now(), "MIMParser");
 
 ##      IPI
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.HUMAN.fasta.gz', '', now(), now(), "IPIParser");
