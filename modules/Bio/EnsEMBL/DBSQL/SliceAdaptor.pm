@@ -203,7 +203,6 @@ sub fetch_by_region {
   my @bind_vals;
   my $key;
 
-  print STDERR "slcie frtach by region $seq_region_name\n";
   my $test = $seq_region_name;
   $test =~ s/\d+//g;
   if(length($test) == 0 and $seq_region_name > 1000){
@@ -456,7 +455,7 @@ sub fetch_by_seq_region_id {
                                   -SEQ_REGION_LENGTH => $length,
                                   -START             => $start || 1,
                                   -END               => $end || $length,
-                                  -STRAND            => 1 || $strand,
+                                  -STRAND            => $strand || 1,
                                   -ADAPTOR           => $self);
 }
 
