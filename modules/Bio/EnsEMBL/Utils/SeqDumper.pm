@@ -730,7 +730,7 @@ sub _dump_feature_table {
             $value = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
             $self->write(@ff, '', $value);
           }
-          $self->write(@ff,''   , '/note="pseudogene"');
+          $self->write(@ff,''   , '/note="'.$transcript->biotype().'"');
           $self->write(@ff,''
                        ,'/note="transcript_id='.$transcript->stable_id().'"');
         }
