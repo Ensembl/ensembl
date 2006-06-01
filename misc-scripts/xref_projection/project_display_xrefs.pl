@@ -11,7 +11,7 @@ use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 my $method_link_type = "TREE_HOMOLOGIES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms);
+my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup);
 
 GetOptions('conf=s'          => \$conf,
 	   'compara=s'       => \$compara,
@@ -23,6 +23,7 @@ GetOptions('conf=s'          => \$conf,
 	   'print'           => \$print,
 	   'delete_names'    => \$delete_names,
 	   'delete_go_terms' => \$delete_go_terms,
+	   'nobackup'        => \$no_backup,
 	   'help'            => sub { usage(); exit(0); });
 
 @to_multi = split(/,/,join(',',@to_multi));
@@ -58,7 +59,7 @@ foreach my $to_species (@to_multi) {
   my $to_ga   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
   my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
 
-  backup($to_ga);
+  backup($to_ga) if (!$no_backup);
 
   delete_names($to_ga) if ($delete_names);
   delete_go_terms($to_ga) if ($delete_go_terms);
@@ -250,7 +251,7 @@ sub project_go_terms {
     print $to_translation->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
 
     $to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation') if (!$print);
-    #print "stored " . $to_translation->stable_id() . " " . $dbEntry->display_id() . "\n";
+    #print "stored xref ID " . $dbEntry->dbID() ." " . $to_translation->stable_id() . " ". $to_translation->dbID() . " " . $dbEntry->display_id() . "\n";
 
   }
 
@@ -264,8 +265,8 @@ sub go_xref_exists {
 
   foreach my $xref (@{$to_go_xrefs}) {
 
-    if ($xref->dbname eq $dbEntry->dbname() &&
-	$xref->primary_id eq $dbEntry->primary_id()) {
+    if ($xref->dbname() eq $dbEntry->dbname() &&
+	$xref->primary_id() eq $dbEntry->primary_id()) {
       return 1;
     }
 
@@ -360,16 +361,11 @@ sub delete_names {
   my ($to_ga) = @_;
 
   # do both old style (where display_label was modified) and new style (where info_type=PROJECTION)
-  # TODO - take out old style one at some stage
   print "Setting gene display_xrefs that were projected to NULL\n";
-  my $sth = $to_ga->dbc()->prepare("UPDATE gene, xref SET gene.display_xref_id = null WHERE gene.display_xref_id=xref.xref_id AND xref.display_label LIKE '%[from%'");
-  $sth->execute();
-  $sth = $to_ga->dbc()->prepare("UPDATE gene, xref SET gene.display_xref_id = null WHERE gene.display_xref_id=xref.xref_id AND xref.info_type='PROJECTION'");
+  my $sth = $to_ga->dbc()->prepare("UPDATE gene, xref SET gene.display_xref_id = null WHERE gene.display_xref_id=xref.xref_id AND xref.info_type='PROJECTION'");
   $sth->execute();
 
   print "Deleting projected xrefs and object_xrefs\n";
-  $sth = $to_ga->dbc()->prepare("DELETE x, ox FROM xref x, object_xref ox WHERE x.xref_id=ox.xref_id AND x.display_label LIKE '%[from%'");
-  $sth->execute();
   $sth = $to_ga->dbc()->prepare("DELETE x, ox FROM xref x, object_xref ox WHERE x.xref_id=ox.xref_id AND x.info_type='PROJECTION'");
   $sth->execute();
 
@@ -384,10 +380,7 @@ sub delete_go_terms {
   print "Deleting projected GO terms\n";
 
   # do both old style (where display_label was modified) and new style (where info_type=PROJECTION)
-  # TODO - take out old style one at some stage
-  my $sth = $to_ga->dbc()->prepare("DELETE x, ox FROM xref x, external_db e, object_xref ox WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND e.db_name='GO' AND x.display_label like '%[from%'");
-  $sth->execute();
-  $sth = $to_ga->dbc()->prepare("DELETE x, ox FROM xref x, external_db e, object_xref ox WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
+  my $sth = $to_ga->dbc()->prepare("DELETE x, ox, gx FROM xref x, external_db e, object_xref ox, go_xref gx WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND ox.object_xref_id=gx.object_xref_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
   $sth->execute();
 
 }
@@ -488,6 +481,8 @@ sub usage {
   [--print]             Print details of projection only, don't store in database
 
   [--method]            Type of homologs (default: TREE_HOMOLOGIES)
+
+  [--nobackup]          Skip dumping of table backups
 
   [--help]              This text.
 
