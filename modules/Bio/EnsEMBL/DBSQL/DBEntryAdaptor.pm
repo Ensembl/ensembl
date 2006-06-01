@@ -935,6 +935,78 @@ sub _type_by_external_id{
   return @result;
 }
 
+=head2 fetch_all_by_description
+
+  Arg [1]    : string description to search for. Include % etc in this string
+  Arg [2]    : <optional> string $dbname. Name of the database to search
+
+  Example    : @canc_refs = @{$db_entry_adaptor->fetch_all_by_description("%cancer%")};
+               @db_entries = @{$db_entry_adaptor->fetch_all_by_description("%cancer%","MIM_MORBID")};
+  Description: Retrieves DBEntrys that match the description. Optionally you can search on 
+               external databases tpye
+  Returntype : ref to array of Bio::EnsEMBL::DBSQL::DBEntry
+  Exceptions : None.
+  Caller     : General
+  Status     : At Risk
+
+=cut
+
+sub fetch_all_by_description {
+  my $self = shift;
+  my $description = shift;
+  my $dbname = shift;
+  my @results=();
+
+  my $sql =    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
+           xref.version, xref.description,
+           exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
+           exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
+           xref.info_type, xref.info_text
+    FROM   (xref, external_db exDB)
+    LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
+    WHERE  xref.description like ?    
+    AND    xref.external_db_id = exDB.external_db_id";
+
+   if(defined($dbname)){
+     $sql .= " AND exDB.db_name = ? ";
+   }
+   my $sth = $self->prepare($sql);
+   
+  $sth->bind_param(1,$description,SQL_VARCHAR);
+  if(defined($dbname)){
+    $sth->bind_param(2,$dbname,SQL_VARCHAR);
+  }
+  $sth->execute();
+  while ( my $arrayref = $sth->fetchrow_arrayref()){
+    my ( $dbID, $dbprimaryId, $displayid, $version, $desc, $dbname,$db_display_name,
+	 $primary_id_linkable, $display_id_linkable, $priority,
+         $release, $synonym, $info_type, $info_text) = @$arrayref;
+
+      my $exDB = Bio::EnsEMBL::DBEntry->new
+        ( -adaptor => $self,
+          -dbID => $dbID,
+          -primary_id => $dbprimaryId,
+          -display_id => $displayid,
+          -version => $version,
+          -release => $release,
+          -dbname => $dbname,
+	  -primary_id_linkable => $primary_id_linkable,
+	  -display_id_linkable => $display_id_linkable,
+	  -priority => $priority,
+	  -db_display_name=>$db_display_name,
+	  -info_type => $info_type,
+	  -info_text => $info_text);
+
+      $exDB->description( $desc ) if ( $desc );
+
+    $exDB->add_synonym( $synonym )  if ($synonym);
+    push @results, $exDB;
+  }
+
+  $sth->finish();
+
+  return \@results;
+}
 
 =head2 geneids_by_extids
 
