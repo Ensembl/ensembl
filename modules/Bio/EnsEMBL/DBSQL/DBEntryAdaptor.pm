@@ -277,13 +277,20 @@ sub store {
          FROM xref
         WHERE external_db_id = ?
           AND dbprimary_acc = ?
-          AND version = ?" );
+          AND version = ?
+          AND info_type = ?
+          AND info_text = ?
+         " );
 
   $sth->bind_param(1,$dbRef,SQL_INTEGER);
   $sth->bind_param(2,$exObj->primary_id,SQL_VARCHAR);
   $sth->bind_param(3,$exObj->version,SQL_VARCHAR);
+  $sth->bind_param(4,$exObj->info_type,SQL_VARCHAR);
+  $sth->bind_param(5,$exObj->info_text,SQL_VARCHAR);
+
   $sth->execute();
   my ($dbX) = $sth->fetchrow_array();
+
   $sth->finish();
   if(!$dbX) {
     if(!$exObj->primary_id()) {
@@ -366,7 +373,7 @@ sub store {
     $sth->bind_param(1,$dbX,SQL_INTEGER);
     $sth->bind_param(2,$ensType,SQL_VARCHAR);
     $sth->bind_param(3,$ensembl_id,SQL_INTEGER);
-
+    #print "stored xref id $dbX in obejct_xref\n";
     $sth->execute();
     $exObj->dbID( $dbX );
     $exObj->adaptor( $self );
