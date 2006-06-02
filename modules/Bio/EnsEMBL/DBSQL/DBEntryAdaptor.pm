@@ -171,8 +171,8 @@ sub fetch_by_db_accession {
   my $exDB;
 
   while ( my $arrayref = $sth->fetchrow_arrayref()){
-    my ( $dbID, $dbprimaryId, $displayid, $version, $desc, $dbname,$db_display_name,
-	 $primary_id_linkable, $display_id_linkable, $priority,
+    my ( $dbID, $dbprimaryId, $displayid, $version, $desc, 
+	 $primary_id_linkable, $display_id_linkable, $priority, $dbname, $db_display_name,
          $release, $synonym, $info_type, $info_text) = @$arrayref;
 
     if(!$exDB) {
@@ -978,8 +978,8 @@ sub fetch_all_by_description {
   }
   $sth->execute();
   while ( my $arrayref = $sth->fetchrow_arrayref()){
-    my ( $dbID, $dbprimaryId, $displayid, $version, $desc, $dbname,$db_display_name,
-	 $primary_id_linkable, $display_id_linkable, $priority,
+    my ( $dbID, $dbprimaryId, $displayid, $version, $desc, 
+	 $primary_id_linkable, $display_id_linkable, $priority, $dbname,$db_display_name,
          $release, $synonym, $info_type, $info_text) = @$arrayref;
 
       my $exDB = Bio::EnsEMBL::DBEntry->new
