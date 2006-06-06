@@ -11,7 +11,7 @@ use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 my $method_link_type = "TREE_HOMOLOGIES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup);
+my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats);
 
 GetOptions('conf=s'          => \$conf,
 	   'compara=s'       => \$compara,
@@ -24,9 +24,9 @@ GetOptions('conf=s'          => \$conf,
 	   'delete_names'    => \$delete_names,
 	   'delete_go_terms' => \$delete_go_terms,
 	   'nobackup'        => \$no_backup,
+	   'full_stats'      => \$full_stats,
 	   'help'            => sub { usage(); exit(0); });
 
-@to_multi = split(/,/,join(',',@to_multi));
 
 if (!$conf|| !$compara || !$from_species || !@to_multi) {
 
@@ -43,6 +43,8 @@ if (!$go_terms && !$names) {
 
 }
 
+@to_multi = split(/,/,join(',',@to_multi));
+
 # Take values from ENSEMBL_REGISTRY environment variable or from ~/.ensembl_init
 # if no reg_conf file is given.
 Bio::EnsEMBL::Registry->no_version_check(1);
@@ -53,6 +55,8 @@ my $ha    = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'Homology')
 my $ma    = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'Member');
 
 my $from_ga = Bio::EnsEMBL::Registry->get_adaptor($from_species, 'core', 'Gene');
+
+my %projections_by_evidence_type = {};
 
 foreach my $to_species (@to_multi) {
 
@@ -97,6 +101,14 @@ foreach my $to_species (@to_multi) {
   print "$to_species, after projection: \n";
   print_stats($to_ga);
 
+  # print statistics if required
+  if ($full_stats) {
+    foreach my $et (sort keys %projections_by_evidence_type) {
+      next if ($et eq 'IEA');
+      print $et . "\t" . $projections_by_evidence_type{$et} . "\n";
+    }
+  }
+
 }
 
 # ----------------------------------------------------------------------
@@ -108,7 +120,7 @@ sub project_homologies() {
 
   foreach my $homology (@{$homologies}) {
 
-    next if ($homology->description ne "ortholog_one2one" && $homology->description ne "apparent_ortholog_one2one");
+    next if ($homology->description() ne "ortholog_one2one" && $homology->description() ne "apparent_ortholog_one2one");
 
     my @mas = @{$homology->get_all_Member_Attribute};
     my ($from_member, $from_attribute) = @{$mas[0]};
@@ -252,6 +264,11 @@ sub project_go_terms {
 
     $to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation') if (!$print);
     #print "stored xref ID " . $dbEntry->dbID() ." " . $to_translation->stable_id() . " ". $to_translation->dbID() . " " . $dbEntry->display_id() . "\n";
+
+    # record statistics by evidence type
+    foreach my $et (@{$dbEntry->get_all_linkage_types}){
+      $projections_by_evidence_type{$et}++;
+    }
 
   }
 
@@ -483,6 +500,8 @@ sub usage {
   [--method]            Type of homologs (default: TREE_HOMOLOGIES)
 
   [--nobackup]          Skip dumping of table backups
+
+  [--full_stats]        Print full statistics, e.g. number of terms per evidence type
 
   [--help]              This text.
 
