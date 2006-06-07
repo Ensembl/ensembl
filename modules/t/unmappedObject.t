@@ -10,7 +10,6 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::UnmappedObject;
 use Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor;
-
 our $verbose = 0;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
@@ -44,7 +43,7 @@ my $test_query_score = 1;
 my $test_target_score = 1000;
 my $test_summary = 'TEST failed match';
 my $test_desc = 'TEST failed match due to being below threshold of 90%';
-my $test_ensembl_id = "123456";
+my $test_ensembl_id = "21734";
 my $test_ensembl_object_type = "Translation";
 my $uo = Bio::EnsEMBL::UnmappedObject->new (
 	-unmapped_object_id 	=> 0,
@@ -60,6 +59,7 @@ my $uo = Bio::EnsEMBL::UnmappedObject->new (
 	-summary		=> $test_summary,
 	-full_desc      	=> $test_desc);
 	 
+
 $uma->store($uo);
 
 my @objects = @{$uma->fetch_all()};

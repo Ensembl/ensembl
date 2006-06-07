@@ -40,26 +40,27 @@ ok( $asm_mapper && $asm_mapper->isa( "Bio::EnsEMBL::ChainedAssemblyMapper" ));
 #
 
 my @coords =  $asm_mapper->map( '1', 1, 50, 1, $chr_cs );
-ok( $coords[0]->id() eq "multimap_testregion" );
+
+ok( $coords[0]->id() == 965905);
 ok( $coords[0]->start() == 10 );
 ok( $coords[0]->end() == 59 );
 ok( $coords[0]->strand() == 1 );
 
 @coords = $asm_mapper->map( "multimap_testregion", 100, 800, 1, $chnk_cs );
 
-ok( $coords[0]->id() eq "1" );
+ok( $coords[0]->id() == 469271 );  #seq_region_id not name now.
 ok( $coords[0]->start() == 91 );
 ok( $coords[0]->end() == 200 );
 ok( $coords[0]->strand() == 1 );
 
 ok( $coords[1]->isa( "Bio::EnsEMBL::Mapper::Gap" ) );
 
-ok( $coords[2]->id() eq "1" );
+ok( $coords[2]->id() == 469271);
 ok( $coords[2]->start() == 201 );
 ok( $coords[2]->end() == 400 );
 ok( $coords[2]->strand() == -1 );
 
-ok( $coords[4]->id() eq "2" );
+ok( $coords[4]->id() == 469282);
 ok( $coords[4]->start() == 1 );
 ok( $coords[4]->end() == 100 );
 ok( $coords[4]->strand() == -1 );
