@@ -110,7 +110,6 @@ sub fetch_by_Transcript {
   # but I guess thats ok ....
 
   foreach my $exon (@{$transcript->get_all_Exons()}) {
-    print STDERR "exon id $exon";
     if($exon->dbID() == $start_exon_id ) {
       $start_exon = $exon;
     }

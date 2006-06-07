@@ -266,6 +266,7 @@ sub fetch_all_by_Slice {
   my $slice_end    = $slice->end;
   my $slice_strand = $slice->strand;
   my $slice_seq_region  = $slice->seq_region_name;
+  my $slice_seq_region_id  = $slice->get_seq_region_id;
   my $coord_system = $slice->coord_system;
 
   if($self->_supported('SLICE')) {
@@ -309,8 +310,8 @@ sub fetch_all_by_Slice {
     foreach my $segment (@{$slice->project($from_coord_system->name,
                                            $from_coord_system->version)}) {
       my ($start,$end,$pslice) = @$segment;
-      $features{$pslice->seq_region_name} ||= [];
-      push @{$features{$pslice->seq_region_name}},
+      $features{$pslice->seq_region_name } ||= [];
+      push @{$features{$pslice->seq_region_name }},
            @{&$fetch_method($self, $pslice->seq_region_name,
                             $pslice->start(),
                             $pslice->end())};
@@ -334,17 +335,17 @@ sub fetch_all_by_Slice {
       $slice_setter = _guess_slice_setter($feats) if(!$slice_setter);
 
       foreach my $f (@$feats) {
-        my($sr_name, $start, $end, $strand) = 
+        my($sr_id, $start, $end, $strand) = 
           $mapper->fastmap($fseq_region,$f->start,$f->end,$f->strand,
                            $from_coord_system);
         
         #maps to gap
-        next if(!defined($sr_name));
+        next if(!defined($sr_id));
 
         #maps to unexpected seq region, probably error in the externally
-        if($sr_name ne $slice_seq_region) {
-          warning("Externally created Feature mapped to [$sr_name] " .
-                  "which is not on requested seq_region [$slice_seq_region]");
+        if($sr_id ne $slice_seq_region_id) {
+          warning("Externally created Feature mapped to [$sr_id] " .
+                  "which is not on requested seq_region_id [$slice_seq_region_id]");
           next;
         }
 

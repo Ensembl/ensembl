@@ -429,10 +429,7 @@ sub transform {
   }
 
   my $projection = $self->project( $cs_name, $cs_version );
-  print STDERR "projection is".$projection."\n";
-  foreach my $segment (@$projection) {
-    print STDERR "feature  project ".$segment->[2]."\t".$segment->[0]."\n";
-  }
+
   if( @$projection != 1 ) {
     return undef;
   } else {

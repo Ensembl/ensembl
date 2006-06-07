@@ -251,7 +251,6 @@ sub _objs_from_sth {
         $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
                           $seq_region_strand, $sr_cs);
 
-      print STDERR "SR_NAME".$seq_region_id."\n";
       #skip features that map to gaps or coord system boundaries
       next FEATURE if(!defined($seq_region_id));
       
@@ -302,7 +301,6 @@ sub _objs_from_sth {
        'display_label' => $display_label,
        'score'    => $score});
     }
-  print STDERR "FEATURE COUNT $count\n";
 
   return \@features;
 }

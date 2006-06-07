@@ -328,10 +328,10 @@ sub _list {
       my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, \@tmp)}[0];
 
       if($seq_regions) {
-        @result = $mapper->list_seq_regions($seq_region_id, $frm_start,
+        @result = $mapper->list_seq_regions($frm_seq_region_name, $frm_start,
                                             $frm_end, $frm_cs);
       } else {
-        @result = $mapper->list_ids($seq_region_id, $frm_start,
+        @result = $mapper->list_ids($frm_seq_region_name, $frm_start,
                                     $frm_end, $frm_cs);
       }
 

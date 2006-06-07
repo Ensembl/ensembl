@@ -195,10 +195,6 @@ sub fetch_all_by_Slice_constraint {
   # same seq_region as original slice
 
   my $sr_id = $slice->get_seq_region_id();
-  print STDERR "sr_id = $sr_id\n";
-  foreach my $pro (@proj){
-    print STDERR "projected slice -> ".$pro->to_Slice->get_seq_region_id()."\n";
-  }
 
   @proj = grep { $_->to_Slice->get_seq_region_id() != $sr_id } @proj;
 
@@ -221,8 +217,6 @@ sub fetch_all_by_Slice_constraint {
   foreach my $seg (@proj) {
     my $offset = $seg->from_start();
     my $seg_slice  = $seg->to_Slice();
-    print STDERR "MORE: ".$seg_slice->name."\n";
-    print STDERR "constraint :- $constraint\n";
     my $features = $self->_slice_fetch($seg_slice, $constraint); ## NO RESULTS
 
     # if this was a symlinked slice offset the feature coordinates as needed
@@ -230,7 +224,6 @@ sub fetch_all_by_Slice_constraint {
 
     FEATURE:
       foreach my $f (@$features) {
-	print STDERR "FEAT: ".ref($f)."\n";
         if($offset != 1) {
 
           $f->{'start'} += $offset-1;
@@ -308,7 +301,7 @@ sub _slice_fetch {
 
   my $asma = $self->db->get_AssemblyMapperAdaptor();
   my @features;
-warn "jere are $self, @feat_css\n";
+
   # fetch the features from each coordinate system they are stored in
  COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
     my $mapper;
@@ -342,16 +335,13 @@ warn "jere are $self, @feat_css\n";
           " AND ${tab_syn}.seq_region_start >= $min_start";
       }
 
-      print STDERR "#constraint $constraint\n";
       my $fs = $self->generic_fetch($constraint,undef,$slice);
 
       # features may still have to have coordinates made relative to slice
       # start
-      print STDERR"#number of features is :- ".scalar(@$fs)."\n";
       $fs = _remap($fs, $mapper, $slice);
 
       push @features, @$fs;
-      print STDERR "#number of features is :- ".scalar(@$fs)."\n";
     } else {
       $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
 
@@ -381,14 +371,11 @@ warn "jere are $self, @feat_css\n";
         $constraint .= " AND " if($constraint);
         $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
 
-	print STDERR ".con: $constraint\n";
         my $fs = $self->generic_fetch($constraint, $mapper, $slice);
 
-	print STDERR ".number of features is :- ".scalar(@$fs)."\n";
         $fs = _remap($fs, $mapper, $slice);
 
         push @features, @$fs;
-	print STDERR ".number of features is :- ".scalar(@features)."\n";
 
       } else {
         # do multiple split queries using start / end constraints
@@ -411,12 +398,9 @@ warn "jere are $self, @feat_css\n";
               " AND ${tab_syn}.seq_region_start >= $min_start";
           }
 
-	print STDERR "~con: $constraint\n";
           my $fs = $self->generic_fetch($constraint,$mapper,$slice);
 
-	  print STDERR "~number of features is :- ".scalar(@$fs)."\n";
           $fs = _remap($fs, $mapper, $slice);
-	  print STDERR "~number after _remap features is :- ".scalar(@$fs)."\n";
 
           push @features, @$fs;
         }

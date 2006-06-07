@@ -172,7 +172,7 @@ sub _objs_from_sth {
 
   my %marker_cache;
   my %slice_hash;
-  my %sr_name_hash;
+#  my %sr_name_hash;
   my %sr_cs_hash;
   my %analysis_cache;
   my $marker_adp = $self->db->get_MarkerAdaptor;
@@ -225,12 +225,12 @@ sub _objs_from_sth {
     }
 
     #get the slice object
-    my $slice = $slice_hash{"ID:".$seq_region_id};
+    my $slice = $slice_hash{$seq_region_id};
 
     if(!$slice) {
       $slice = $sa->fetch_by_seq_region_id($seq_region_id);
-      $slice_hash{"ID:".$seq_region_id} = $slice;
-      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
+      $slice_hash{$seq_region_id} = $slice;
+#      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
       $sr_cs_hash{$seq_region_id} = $slice->coord_system();
     }
 
@@ -246,26 +246,18 @@ sub _objs_from_sth {
     # if a mapper was provided
     #
     if($mapper) {
-      my $sr_name = $sr_name_hash{$seq_region_id};
+#      my $sr_name = $sr_name_hash{$seq_region_id};
       my $sr_cs   = $sr_cs_hash{$seq_region_id};
 
-      ($sr_name,$seq_region_start,$seq_region_end) =
-        $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
-                         0, $sr_cs);
+     ($seq_region_id,$seq_region_start,$seq_region_end) =
+        $mapper->fastmap($slice->seq_region_name(), $seq_region_start, $seq_region_end, 0, $sr_cs);
 
       #skip features that map to gaps or coord system boundaries
-      next FEATURE if(!defined($sr_name));
+      next FEATURE if(!defined($seq_region_id));
 
       #get a slice in the coord system we just mapped to
-      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
-        $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
-          $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
-                               $cmp_cs_vers);
-      } else {
-        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
-          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
-                               $asm_cs_vers);
-      }
+      $slice = $slice_hash{"$seq_region_id"} ||=
+	$sa->fetch_by_seq_region_id($seq_region_id);
     }
 
     #

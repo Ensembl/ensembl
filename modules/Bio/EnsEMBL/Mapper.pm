@@ -523,16 +523,9 @@ sub add_map_coordinates{
   }
   my $test = $contig_id;
   $test =~ s/\d+//g;
-  if(length($test) > 0 or $contig_id < 1000){
-    print STDERR "$contig_id NOT INTEGER\n";
-    print STDERR stack_trace_dump();
-  }
+
   $test = $chr_name;
   $test =~ s/\d+//g;
-  if(length($test) > 0 or $chr_name < 1000 ){
-    print STDERR "$chr_name NOT INTEGER\n";
-    print STDERR stack_trace_dump();
-  }
 
   my $from =
     Bio::EnsEMBL::Mapper::Unit->new($contig_id, $contig_start, $contig_end);

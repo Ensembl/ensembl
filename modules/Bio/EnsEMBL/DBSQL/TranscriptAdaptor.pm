@@ -1196,7 +1196,6 @@ sub _objs_from_sth {
     #
     if($dest_mapper) {
 
-      print STDERR "NAME: $sr_name\n";
       ($seq_region_id,$seq_region_start,$seq_region_end,$seq_region_strand) =
         $dest_mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
                               $seq_region_strand, $sr_cs);
@@ -1206,13 +1205,9 @@ sub _objs_from_sth {
 
       #get a slice in the coord system we just mapped to
       if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
-	print STDERR "---$cmp_cs_name, $seq_region_id,undef, undef, undef,
-                               $cmp_cs_vers\n";
         $slice = $slice_hash{"ID:".$seq_region_id} ||=
           $sa->fetch_by_seq_region_id($seq_region_id);
       } else {
-	print STDERR "----$asm_cs_name, $seq_region_id, undef, undef, undef,
-                               $asm_cs_vers\n";
         $slice = $slice_hash{"ID:".$seq_region_id} ||=
           $sa->fetch_by_seq_region_id($seq_region_id);
       }

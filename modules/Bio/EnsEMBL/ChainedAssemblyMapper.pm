@@ -303,9 +303,6 @@ sub map {
   #get a list of ranges in the requested region that have not been registered,
   #and register them at the same
 
-  #print STDERR "frm_start=$frm_start frm_end=$frm_end" .
-  #              "min_start=$min_start min_end=$min_end\n";
-
   my $ranges;
 
   if($is_insert) {
@@ -332,13 +329,10 @@ sub map {
   }
 
   if($fastmap) {
-    print STDERR "FAST seq region id is $seq_region_id using $frm_seq_region_name\n";
-    return $mapper->fastmap($frm_seq_region_name, $frm_start, $frm_end,
+    return $mapper->fastmap($seq_region_id, $frm_start, $frm_end,
                             $frm_strand, $frm);
   }
 
-  print STDERR "mapper is of type ".ref($mapper)."\n";
-  print STDERR "SLOW seq region id is $seq_region_id\n";
   return $mapper->map_coordinates($seq_region_id, $frm_start, $frm_end,
                                   $frm_strand, $frm);
 }

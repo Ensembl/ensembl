@@ -180,11 +180,8 @@ sub fetch_all_by_Transcript {
                    " AND e.exon_id = et.exon_id";
 
   # fetch all of the exons
-  print STDERR "\n".$slice."\n\t".$slice->name."\n";
-  print STDERR "$constraint\n";
   my $exons = $self->fetch_all_by_Slice_constraint($slice,$constraint);
 
-  print STDERR "ther are ".scalar(@$exons)." exons\n";
   #un-override the table definition
   $self->{'tables'} = undef;
   $self->{'final_clause'} = undef;
@@ -193,7 +190,6 @@ sub fetch_all_by_Transcript {
   if($slice->name() ne $tslice->name()) {
     my @out;
     foreach my $ex (@$exons) {
-      print STDERR "$ex being transfered\n";
       push @out, $ex->transfer($tslice);
     }
     $exons = \@out;
