@@ -24,7 +24,7 @@ my %taxonomy2species_id;
 my %name2species_id;
 
 my ($host, $port, $dbname, $user, $pass, $create, $release, $cleanup, $deletedownloaded);
-my ($skipdownload,$drop_db,$checkdownload) ;
+my ($skipdownload,$drop_db,$checkdownload, $dl_path) ;
 
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
@@ -32,9 +32,9 @@ my ($skipdownload,$drop_db,$checkdownload) ;
 sub run {
 
   ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $checkdownload, 
-    $create, $release, $cleanup, $drop_db, $deletedownloaded,my $dl_path) = @_;
-  
-  $base_dir = $dl_path if $dl_path;   
+    $create, $release, $cleanup, $drop_db, $deletedownloaded, $dl_path) = @_;
+
+  $base_dir = $dl_path if $dl_path;
 
   my @species = @$speciesr;
   my @sources = @$sourcesr;
@@ -181,7 +181,11 @@ sub run {
       # File parsing
       if (!$skipdownload) {
 
-	rmtree $dir if ($type ne $last_type && $deletedownloaded);
+	if ($type ne $last_type && $deletedownloaded) {
+	  print "Deleting $dir\n";
+	  rmtree $dir;
+	}
+
 	mkdir $dir if (!-e $dir);
 
 	$last_type = $type;
