@@ -13,7 +13,6 @@ GetOptions('dbuser|user=s'       => \$user,
 	   'species=s'           => \@species,
 	   'source=s'            => \@sources,
 	   'download_dir=s'      => \$dl_path,
-	   'delete_downloaded'   => \$delete_downloaded ,  # deletes all downloaded files  
 	   'skipdownload'        => \$skipdownload,     # skips all downloads
 	   'checkdownload!'      => \$checkdownload,   # if file exists it won't be downloaded 
 	   'create'       => \$create,
