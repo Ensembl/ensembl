@@ -55,6 +55,8 @@ ALTER table identity_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xre
 
 ALTER table karyotype ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
+ALTER table stable_id_event ADD FOREIGN KEY (mapping_session_id) REFERENCES mapping_session(mapping_session_id);
+
 ALTER table marker_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table marker_feature ADD FOREIGN KEY (marker_id) REFERENCES marker(marker_id);
 ALTER table marker_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
