@@ -208,5 +208,17 @@ ok(count_rows($db, 'exon') == $ex_count - 1);
 ok(count_rows($db, 'exon_stable_id') == $exstable_count - 1);
 ok(count_rows($db, 'supporting_feature') == $supfeat_count - $supfeat_minus);
 
-
 $multi->restore();
+
+
+# tests for multiple versions of transcripts in a database
+
+$exon = $exonad->fetch_by_stable_id('ENSE00001109603');
+debug("fetch_by_stable_id");
+ok( $exon->dbID == 162033 );
+
+my @exons = @{ $exonad->fetch_all_versions_by_stable_id('ENSE00001109603') };
+debug("fetch_all_versions_by_stable_id");
+ok( scalar(@exons) == 2 );
+
+

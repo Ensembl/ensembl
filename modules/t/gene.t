@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 68;
+	plan tests => 76;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -44,7 +44,6 @@ $gene = $ga->fetch_by_display_label( "T9S4_HUMAN" );
 ok( $gene && $gene->dbID() == 18262 );
 
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
-
 debug( "Gene->fetch_by_stable_id()" );
 ok( $gene );
 
@@ -643,3 +642,42 @@ ok(@{$rf_gene->get_all_regulatory_features(1)} == 12); # recursive
 $gene = $ga->fetch_by_dbID(18271);
 my @factors = @{$gene->fetch_coded_for_regulatory_factors()};
 ok($factors[0]->dbID() == 5);
+
+# tests for multiple versions of genes in a database
+
+$gene = $ga->fetch_by_stable_id('ENSG00000355555');
+debug("fetch_by_stable_id");
+ok( $gene->dbID == 18275 );
+
+@genes = @{ $ga->fetch_all_versions_by_stable_id('ENSG00000355555') };
+debug("fetch_all_versions_by_stable_id");
+ok( scalar(@genes) == 2 );
+
+my $sl = $sa->fetch_by_region('chromosome', 'MT_NC_001807');
+@genes = @{ $sl->get_all_Genes };
+ok( scalar(@genes) == 1 );
+
+$gene = $ga->fetch_by_transcript_stable_id('ENST00000355555');
+debug("fetch_by_transcript_stable_id");
+ok( $gene->dbID == 18275 );
+
+$gene = $ga->fetch_by_translation_stable_id('ENSP00000355555');
+debug("fetch_by_translation_stable_id");
+ok( $gene->dbID == 18275 );
+
+@genes = @{ $ga->fetch_all_by_external_name('MX_HUMAN') };
+debug( "fetch_all_by_external_name" );
+ok( scalar(@genes) == 1 && $genes[0]->dbID == 18275 );
+
+$gene = $ga->fetch_by_display_label('MX_HUMAN');
+debug("fetch_by_display_label");
+ok( $gene->dbID == 18275 );
+
+$gene = $ga->fetch_by_dbID(18275);
+debug("fetch_by_dbID, current");
+ok( $gene->is_current == 1 );
+
+$gene = $ga->fetch_by_dbID(18276);
+debug("fetch_by_dbID, non current");
+ok( $gene->is_current == 0 );
+

@@ -499,10 +499,42 @@ $ta->store($tr, $g->dbID());
 
 ok(count_rows($db, 'transcript_attrib') == 2);
 
-
-
-
 $multi->restore('core');
+
+# tests for multiple versions of transcripts in a database
+
+$tr = $ta->fetch_by_stable_id('ENST00000355555');
+debug("fetch_by_stable_id");
+ok( $tr->dbID == 21740 );
+
+my @transcripts = @{ $ta->fetch_all_versions_by_stable_id('ENST00000355555') };
+debug("fetch_all_versions_by_stable_id");
+ok( scalar(@transcripts) == 2 );
+
+$tr = $ta->fetch_by_translation_stable_id('ENSP00000355555');
+debug("fetch_by_translation_stable_id");
+ok( $tr->dbID == 21740 );
+
+@transcripts = @{ $ta->fetch_all_by_exon_stable_id('ENSE00001109603') };
+debug("fetch_all_by_exon_stable_id");
+ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21740 );
+
+$g = $db->get_GeneAdaptor->fetch_by_stable_id('ENSG00000355555');
+@transcripts = @{ $ta->fetch_all_by_Gene($g) };
+debug("fetch_all_by_Gene");
+ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21740 );
+
+my $sl = $sa->fetch_by_region('chromosome', 'MT_NC_001807');
+@transcripts = @{ $sl->get_all_Transcripts };
+ok( scalar(@transcripts) == 1 );
+
+@transcripts = @{ $ta->fetch_all_by_external_name('MX_HUMAN') };
+debug( "fetch_all_by_external_name" );
+ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21740 );
+
+$tr = $ta->fetch_by_display_label('MX_HUMAN');
+debug("fetch_by_display_label");
+ok( $tr->dbID == 21740 );
 
 
 sub test_trans_mapper_edits {
@@ -625,7 +657,7 @@ my $transcript = $transcript_adaptor->fetch_by_dbID(21717);
 my @factors = @{$transcript->fetch_coded_for_regulatory_factors()};
 ok($factors[0]->dbID() == 2);
 
-sleep 10;
+#sleep 10;
 # test fetching by supporting evidence
 #$transcripts = $transcript_adaptor->fetch_all_by_exon_supporting_evidence(hit,feat);
 #$transcripts = $transcript_adaptor->fetch_all_by_exon_supporting_evidence(hit,feat,anal);
