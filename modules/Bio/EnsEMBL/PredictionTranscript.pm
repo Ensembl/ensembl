@@ -262,8 +262,14 @@ sub translation {
            # "translation");
   }
 
+  my $Xseq = $self->spliced_seq();
+  my $start_phase = $start_exon->phase;
+  if( $start_phase > 0 ) {
+    $Xseq = "N"x$start_phase . $Xseq;
+  }
+
   my $tmpSeq = new Bio::Seq( -id => "dummy",
-			     -seq => $self->spliced_seq(),
+			     -seq => $Xseq,
 			     -moltype => "dna" );
 
   return Bio::EnsEMBL::Translation->new
