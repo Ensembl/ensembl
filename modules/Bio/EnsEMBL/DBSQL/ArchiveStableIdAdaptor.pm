@@ -319,6 +319,7 @@ sub fetch_by_transcript_archive_id {
     FROM  gene_archive ga, mapping_session m
     WHERE ga.transcript_stable_id = ?
     AND   ga.transcript_version = ?
+    AND   ga.mapping_session_id = m.mapping_session_id
   );
   
   my $sth = $self->prepare( $sql );

@@ -1,3 +1,5 @@
+package Bio::EnsEMBL::DBSQL::ExonAdaptor;
+
 #EnsEMBL Exon reading writing adaptor for mySQL
 #
 # Copyright EMBL-EBI 2001
@@ -33,18 +35,14 @@ Post questions/comments to the Ensembl dev list: ensembl-dev@ebi.ac.uk
 
 =cut
 
-package Bio::EnsEMBL::DBSQL::ExonAdaptor;
-
-use vars qw( @ISA );
 use strict;
-
 
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
  
+use vars qw( @ISA );
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );
-
 
 
 #_tables
@@ -82,20 +80,16 @@ sub _columns {
 
   my $created_date = $self->db->dbc->from_date_to_seconds("created_date");
   my $modified_date = $self->db->dbc->from_date_to_seconds("modified_date");
-  return ( 'e.exon_id', 'e.seq_region_id', 'e.seq_region_start' ,'e.seq_region_end', 
-	     'e.seq_region_strand', 'e.phase','e.end_phase',
-	     'esi.stable_id', 'esi.version',$created_date,
-             $modified_date );
-#	     esi.stable_id esi.version UNIX_TIMESTAMP(created_date)
-#             UNIX_TIMESTAMP(modified_date) );
 
+  return ( 'e.exon_id', 'e.seq_region_id', 'e.seq_region_start',
+           'e.seq_region_end', 'e.seq_region_strand', 'e.phase','e.end_phase',
+           'e.is_current',
+	   'esi.stable_id', 'esi.version', $created_date, $modified_date );
 }
-
 
 sub _left_join {
   return ( [ 'exon_stable_id', "esi.exon_id = e.exon_id" ]);
 }
-
 
 
 # _final_clause
@@ -114,14 +108,13 @@ sub _final_clause {
 }
 
 
-
 =head2 fetch_by_stable_id
 
   Arg [1]    : string $stable_id
                the stable id of the exon to retrieve
   Example    : $exon = $exon_adaptor->fetch_by_stable_id('ENSE0000988221');
   Description: Retrieves an Exon from the database via its stable id
-  Returntype : Bio::EnsEMBL::Exon in contig coordinates
+  Returntype : Bio::EnsEMBL::Exon in native coordinates.
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -129,16 +122,36 @@ sub _final_clause {
 =cut
 
 sub fetch_by_stable_id {
-  my ( $self, $stable_id ) = @_;
+  my ($self, $stable_id) = @_;
 
-  my $constraint = "esi.stable_id = \"$stable_id\"";
+  my $constraint = "esi.stable_id = '$stable_id' AND e.is_current = 1";
+  my ($exon) = @{ $self->generic_fetch($constraint) };
 
-  # should be only one :-)
-  my $exons = $self->SUPER::generic_fetch( $constraint );
+  return $exon;
+}
 
-  if( ! @$exons ) { return undef }
 
-  return $exons->[0];
+=head2 fetch_all_versions_by_stable_id 
+
+  Arg [1]     : String $stable_id 
+                The stable ID of the exon to retrieve
+  Example     : my $exon = $exon_adaptor->fetch_all_version_by_stable_id
+                  ('ENSE00000309301');
+  Description : Similar to fetch_by_stable_id, but retrieves all versions of an
+                exon stored in the database.
+  Returntype  : listref of Bio::EnsEMBL::Exon objects
+  Exceptions  : if we cant get the gene in given coord system
+  Caller      : general
+  Status      : At Risk
+
+=cut
+
+sub fetch_all_versions_by_stable_id {
+  my ($self, $stable_id) = @_;
+
+  my $constraint = "esi.stable_id = '$stable_id'";
+
+  return $self->generic_fetch($constraint);
 }
 
 
@@ -175,14 +188,13 @@ sub fetch_all_by_Transcript {
   $self->{'tables'} = \@tables;
   $self->{'final_clause'} = "ORDER BY et.transcript_id, et.rank";
 
-
   my $constraint = "et.transcript_id = ".$transcript->dbID() .
                    " AND e.exon_id = et.exon_id";
 
   # fetch all of the exons
-  my $exons = $self->fetch_all_by_Slice_constraint($slice,$constraint);
+  my $exons = $self->fetch_all_by_Slice_constraint($slice, $constraint);
 
-  #un-override the table definition
+  # un-override the table definition
   $self->{'tables'} = undef;
   $self->{'final_clause'} = undef;
 
@@ -197,7 +209,6 @@ sub fetch_all_by_Transcript {
 
   return $exons;
 }
-
 
 
 =head2 store
@@ -216,7 +227,7 @@ sub fetch_all_by_Transcript {
 =cut
 
 sub store {
-  my ( $self, $exon ) = @_;
+  my ($self, $exon) = @_;
 
   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
     throw("$exon is not a EnsEMBL exon - not storing.");
@@ -233,11 +244,15 @@ sub store {
     throw("Exon does not have all attributes to store");
   }
 
+  # default to is_current = 1 if this attribute is not set
+  my $is_current = $exon->is_current;
+  $is_current = 1 unless (defined($is_current));
+
   my $exon_sql = q{
     INSERT into exon ( seq_region_id, seq_region_start,
 		       seq_region_end, seq_region_strand, phase,
-		       end_phase )
-    VALUES ( ?, ?, ?, ?, ?, ? )
+		       end_phase, is_current )
+    VALUES ( ?, ?, ?, ?, ?, ?, ? )
   };
 
   my $exonst = $self->prepare($exon_sql);
@@ -249,12 +264,13 @@ sub store {
   ($exon, $seq_region_id) = $self->_pre_store($exon);
 
   #store the exon
-  $exonst->bind_param(1,$seq_region_id, SQL_INTEGER);
-  $exonst->bind_param(2,$exon->start, SQL_INTEGER);
-  $exonst->bind_param(3,$exon->end, SQL_INTEGER);
-  $exonst->bind_param(4,$exon->strand, SQL_TINYINT);
-  $exonst->bind_param(5,$exon->phase, SQL_TINYINT);
-  $exonst->bind_param(6,$exon->end_phase, SQL_TINYINT);
+  $exonst->bind_param(1, $seq_region_id, SQL_INTEGER);
+  $exonst->bind_param(2, $exon->start, SQL_INTEGER);
+  $exonst->bind_param(3, $exon->end, SQL_INTEGER);
+  $exonst->bind_param(4, $exon->strand, SQL_TINYINT);
+  $exonst->bind_param(5, $exon->phase, SQL_TINYINT);
+  $exonst->bind_param(6, $exon->end_phase, SQL_TINYINT);
+  $exonst->bind_param(7, $is_current, SQL_TINYINT);
 
   $exonst->execute();
   $exonId = $exonst->{'mysql_insertid'};
@@ -268,18 +284,10 @@ sub store {
           "stable_id = ?, " .
 	    "exon_id = ?, ";
   
-    $statement .= "created_date = " . $self->db->dbc->from_seconds_to_date($exon->created_date()) . ",";
-#     if( $exon->created_date() ) {
-#       $statement .= "created_date = from_unixtime( ".$exon->created_date()."),";
-#     } else {
-#       $statement .= "created_date = \"0000-00-00 00:00:00\",";
-#     }
-    $statement .= "modified_date = " . $self->db->dbc->from_seconds_to_date($exon->modified_date()) ;
-#     if( $exon->modified_date() ) {
-#       $statement .= "modified_date = from_unixtime( ".$exon->modified_date().")";
-#     } else {
-#       $statement .= "modified_date = \"0000-00-00 00:00:00\"";
-#     }
+    $statement .= "created_date = " .
+      $self->db->dbc->from_seconds_to_date($exon->created_date()) . ",";
+    $statement .= "modified_date = " .
+      $self->db->dbc->from_seconds_to_date($exon->modified_date()) ;
 
     my $sth = $self->prepare( $statement );
 
@@ -319,9 +327,9 @@ sub store {
       next;
     }
 
-    $sf_sth->bind_param(1,$exonId,SQL_INTEGER);
-    $sf_sth->bind_param(2,$sf->dbID,SQL_INTEGER);
-    $sf_sth->bind_param(3,$type,SQL_VARCHAR);
+    $sf_sth->bind_param(1, $exonId, SQL_INTEGER);
+    $sf_sth->bind_param(2, $sf->dbID, SQL_INTEGER);
+    $sf_sth->bind_param(3, $type, SQL_VARCHAR);
     $sf_sth->execute();
   }
 
@@ -382,7 +390,7 @@ sub remove {
   my $sth = $self->prepare("SELECT feature_type, feature_id  " .
                            "FROM supporting_feature " .            
 			   "WHERE exon_id = ?");
-  $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
+  $sth->bind_param(1, $exon->dbID, SQL_INTEGER);
   $sth->execute();
 
   while(my ($type, $feature_id) = $sth->fetchrow()){
@@ -403,21 +411,21 @@ sub remove {
   # delete the association to supporting features
 
   $sth = $self->prepare("DELETE FROM supporting_feature WHERE exon_id = ?");
-  $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
+  $sth->bind_param(1, $exon->dbID, SQL_INTEGER);
   $sth->execute();
   $sth->finish();
 
   # delete the exon stable identifier
 
   $sth = $self->prepare( "DELETE FROM exon_stable_id WHERE exon_id = ?" );
-  $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
+  $sth->bind_param(1, $exon->dbID, SQL_INTEGER);
   $sth->execute();
   $sth->finish();
 
   # delete the exon
 
   $sth = $self->prepare( "DELETE FROM exon WHERE exon_id = ?" );
-  $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
+  $sth->bind_param(1, $exon->dbID, SQL_INTEGER);
   $sth->execute();
   $sth->finish();
 
@@ -445,6 +453,7 @@ sub list_dbIDs {
 
    return $self->_list_dbIDs("exon");
 }
+
 
 =head2 list_stable_ids
 
@@ -492,14 +501,13 @@ sub _objs_from_sth {
 
   my ( $exon_id, $seq_region_id, $seq_region_start,
        $seq_region_end, $seq_region_strand, $phase,
-       $end_phase, $stable_id, $version, $created_date, 
+       $end_phase, $is_current, $stable_id, $version, $created_date, 
        $modified_date );
 
-  $sth->bind_columns(  \$exon_id, \$seq_region_id, 
-		       \$seq_region_start,
-		       \$seq_region_end, \$seq_region_strand, \$phase,
-		       \$end_phase, \$stable_id, \$version, \$created_date,
-		       \$modified_date );
+  $sth->bind_columns( \$exon_id, \$seq_region_id, \$seq_region_start,
+                      \$seq_region_end, \$seq_region_strand, \$phase,
+		      \$end_phase, \$is_current, \$stable_id, \$version,
+                      \$created_date, \$modified_date );
 
   my $asm_cs;
   my $cmp_cs;
@@ -611,8 +619,8 @@ sub _objs_from_sth {
     }
 
     #finally, create the new repeat feature
-    push @exons, Bio::EnsEMBL::Exon->new
-      ( '-start'         =>  $seq_region_start,
+    push @exons, Bio::EnsEMBL::Exon->new(
+        '-start'         =>  $seq_region_start,
 	'-end'           =>  $seq_region_end,
 	'-strand'        =>  $seq_region_strand,
 	'-adaptor'       =>  $self,
@@ -623,7 +631,9 @@ sub _objs_from_sth {
 	'-created_date'  =>  $created_date || undef,
 	'-modified_date' =>  $modified_date || undef,
         '-phase'         =>  $phase,
-        '-end_phase'     =>  $end_phase )
+        '-end_phase'     =>  $end_phase,
+        'is_current'     =>  $is_current
+    );
 
   }
 
@@ -663,7 +673,7 @@ sub get_stable_entry_info {
                             FROM   exon_stable_id 
                             WHERE  exon_id = ");
 
-  $sth->bind_param(1,$exon->dbID,SQL_INTEGER);
+  $sth->bind_param(1, $exon->dbID, SQL_INTEGER);
   $sth->execute();
 
   # my @array = $sth->fetchrow_array();
@@ -676,6 +686,7 @@ sub get_stable_entry_info {
 
   return 1;
 }
+
 
 =head2 fetch_all_by_gene_id
 
@@ -695,7 +706,9 @@ sub fetch_all_by_gene_id {
   if( !$gene_id ) {
       $self->throw("Gene dbID not defined");
   }
+  
   $self->{rchash} = {};
+  
   my $query = qq {
     SELECT 
       STRAIGHT_JOIN 
@@ -740,3 +753,4 @@ sub fetch_all_by_gene_id {
 
 
 1;
+

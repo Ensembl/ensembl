@@ -113,7 +113,6 @@ sub fetch_by_dbID {
 }
 
 
-
 =head2 fetch_by_db_accession
 
   Arg [1]    : string $dbname - The name of the database which the provided
@@ -471,7 +470,6 @@ sub exists {
 }
 
 
-
 =head2 fetch_all_by_Gene
 
   Arg [1]    : Bio::EnsEMBL::Gene $gene 
@@ -812,13 +810,12 @@ sub _fetch_by_object_type {
 sub list_gene_ids_by_extids{
    my ($self,$name) = @_;
 
-   my %T = map { ($_,1) }
+   my %T = map { ($_, 1) }
        $self->_type_by_external_id( $name, 'Translation', 'gene' ),
        $self->_type_by_external_id( $name, 'Transcript',  'gene' ),
        $self->_type_by_external_id( $name, 'Gene' );
    return keys %T;
 }
-
 
 
 =head2 list_transcript_ids_by_extids
@@ -839,7 +836,7 @@ sub list_transcript_ids_by_extids{
    my ($self,$name) = @_;
    my @transcripts;
 
-   my %T = map { ($_,1) }
+   my %T = map { ($_, 1) }
        $self->_type_by_external_id( $name, 'Translation', 'transcript' ),
        $self->_type_by_external_id( $name, 'Transcript' );
    return keys %T;
@@ -860,63 +857,82 @@ sub list_transcript_ids_by_extids{
 
 sub list_translation_ids_by_extids{
   my ($self,$name) = @_;
-  return $self->_type_by_external_id( $name, 'Translation' );
+  return $self->_type_by_external_id($name, 'Translation');
 }
 
 =head2 _type_by_external_id
 
-  Arg [1]    : string $name
-  			   (dbprimary_acc)
-  Arg [2]    : string $ensType
-  			   (Object_type)
-  Arg [3]    : string $extraType
-  			   (other object type to be returned) - optional
-  Example    : $self->_type_by_external_id( $name, 'Translation' ) 
+  Arg [1]    : string $name - dbprimary_acc
+  Arg [2]    : string $ensType - ensembl_object_type
+  Arg [3]    : (optional) string $extraType
+  	       other object type to be returned
+  Example    : $self->_type_by_external_id($name, 'Translation');
   Description: Gets
-  Returntype : list of ensembl_IDs
+  Returntype : list of dbIDs (gene_id, transcript_id, etc.)
   Exceptions : none
   Caller     : list_translation_ids_by_extids
                translationids_by_extids
-  			   geneids_by_extids
+  	       geneids_by_extids
   Status     : Stable
 
 =cut
 
 sub _type_by_external_id{
-  my ($self,$name,$ensType,$extraType) = @_;
+  my ($self, $name, $ensType, $extraType) = @_;
 
   my $from_sql = '';
   my $where_sql = '';
   my $ID_sql = "oxr.ensembl_id";
-  if(defined $extraType) {
-    if(lc($extraType) eq 'translation') {
+
+  if (defined $extraType) {
+    if (lc($extraType) eq 'translation') {
       $ID_sql = "tl.translation_id";
     } else {
       $ID_sql = "t.${extraType}_id";
     }
 
-    if(lc($ensType) eq 'translation') {
-      $from_sql = 'transcript as t, translation as tl, ';
-      $where_sql = 't.transcript_id = tl.transcript_id and ' .
-                'tl.translation_id = oxr.ensembl_id and ';
+    if (lc($ensType) eq 'translation') {
+      $from_sql = 'transcript t, translation tl, ';
+      $where_sql = qq(
+          t.transcript_id = tl.transcript_id AND
+          tl.translation_id = oxr.ensembl_id AND
+          t.is_current = 1 AND
+      );
     } else {
-      $from_sql = 'transcript as t, ';
-      $where_sql = 't.'.lc($ensType).'_id = oxr.ensembl_id and ';
+      $from_sql = 'transcript t, ';
+      $where_sql = 't.'.lc($ensType).'_id = oxr.ensembl_id AND '.
+          't.is_current = 1 AND ';
     }
   }
+
+  if (lc($ensType) eq 'gene') {
+    $from_sql = 'gene g, ';
+    $where_sql = 'g.gene_id = oxr.ensembl_id AND g.is_current = 1 AND ';
+  } elsif (lc($ensType) eq 'transcript') {
+    $from_sql = 'transcript t, ';
+    $where_sql = 't.transcript_id = oxr.ensembl_id AND t.is_current = 1 AND ';
+  } elsif (lc($ensType) eq 'translation') {
+    $from_sql = 'transcript t, translation tl, ';
+    $where_sql = qq(
+        t.transcript_id = tl.transcript_id AND
+        tl.translation_id = oxr.ensembl_id AND
+        t.is_current = 1 AND
+    );
+  }
+
   my @queries = (
-    "select $ID_sql
-  	from $from_sql xref, object_xref as oxr
-      where $where_sql xref.dbprimary_acc = ? and
-  	     xref.xref_id = oxr.xref_id and oxr.ensembl_object_type= ?",
-    "select $ID_sql 
-  	from $from_sql xref, object_xref as oxr
-      where $where_sql xref.display_label = ? and
-  	     xref.xref_id = oxr.xref_id and oxr.ensembl_object_type= ?",
-    "select $ID_sql
-       from $from_sql object_xref as oxr, external_synonym as syn
-      where $where_sql syn.synonym = ? and
-            syn.xref_id = oxr.xref_id and oxr.ensembl_object_type= ?",
+    "SELECT $ID_sql
+       FROM $from_sql xref x, object_xref oxr
+      WHERE $where_sql x.dbprimary_acc = ? AND
+  	     x.xref_id = oxr.xref_id AND oxr.ensembl_object_type= ?",
+    "SELECT $ID_sql 
+       FROM $from_sql xref x, object_xref oxr
+      WHERE $where_sql x.display_label = ? AND
+  	     x.xref_id = oxr.xref_id AND oxr.ensembl_object_type= ?",
+    "SELECT $ID_sql
+       FROM $from_sql object_xref oxr, external_synonym syn
+      WHERE $where_sql syn.synonym = ? AND
+            syn.xref_id = oxr.xref_id AND oxr.ensembl_object_type= ?",
   );
 
 # Increase speed of query by splitting the OR in query into three separate 
@@ -929,8 +945,8 @@ sub _type_by_external_id{
   foreach( @queries ) {
 
     my $sth = $self->prepare( $_ );
-    $sth->bind_param(1,"$name",SQL_VARCHAR);
-    $sth->bind_param(2,$ensType,SQL_VARCHAR);
+    $sth->bind_param(1, $name, SQL_VARCHAR);
+    $sth->bind_param(2, $ensType, SQL_VARCHAR);
     $sth->execute();
     while( my $r = $sth->fetchrow_array() ) {
       if( !exists $hash{$r} ) {
@@ -941,6 +957,7 @@ sub _type_by_external_id{
   }
   return @result;
 }
+
 
 =head2 fetch_all_by_description
 
