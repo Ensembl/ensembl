@@ -183,8 +183,8 @@ $support->log_stamped("Looping over non-aligned blocks...\n");
 
 $sql = qq(SELECT * FROM tmp_align);
 if ($support->param('chromosomes')) {
-  my $chr_string = join(", ", $support->param('chromosomes'));
-  $sql .= " WHERE ref_seq_region_name IN ($chr_string)";
+  my $chr_string = join("', '", $support->param('chromosomes'));
+  $sql .= " WHERE ref_seq_region_name IN ('$chr_string')";
 }
 $sth = $R_dbh->prepare($sql);
 $sth->execute;

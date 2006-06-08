@@ -486,6 +486,8 @@ sub adjust_coords {
 sub filter_overlaps {
     my $self = shift;
     my $id = $self->id;
+    
+    return unless ($self->{'_match'});
 
     foreach my $R_chr (sort keys %{ $self->{'_match'} }) {
         # rearrange the datastructure so that we can find overlaps
