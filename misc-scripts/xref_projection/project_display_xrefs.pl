@@ -56,7 +56,7 @@ my $ma    = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'Member');
 
 my $from_ga = Bio::EnsEMBL::Registry->get_adaptor($from_species, 'core', 'Gene');
 
-my %projections_by_evidence_type = {};
+my %projections_by_evidence_type;
 
 foreach my $to_species (@to_multi) {
 
@@ -103,10 +103,16 @@ foreach my $to_species (@to_multi) {
 
   # print statistics if required
   if ($full_stats) {
+    print "Projected terms by evidence code:\n";
+    my $total;
     foreach my $et (sort keys %projections_by_evidence_type) {
       next if ($et eq 'IEA');
-      print $et . "\t" . $projections_by_evidence_type{$et} . "\n";
+      if ($et) {
+	print $et . "\t" . $projections_by_evidence_type{$et} . "\n";
+	$total += $projections_by_evidence_type{$et};
+      }
     }
+    print "Total:\t$total\n";
   }
 
 }
@@ -243,6 +249,9 @@ sub project_go_terms {
     # also exclude ISS terms (manually projected based on orthologs)
     next if (ref($dbEntry) ne "Bio::EnsEMBL::GoXref");
 
+    # TODO - this will skip whole xref if any evidence type is IEA
+    # even if there are more than one evidence type for this GO term
+    # Should be changed to just skip IEA one, not others
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
       next DBENTRY if ($et eq "IEA" || $et eq "ISS");
     }
@@ -250,8 +259,13 @@ sub project_go_terms {
     # check that each from GO term isn't already projected
     next if go_xref_exists($dbEntry, $to_go_xrefs);
 
+    # record statistics by evidence type
+    foreach my $et (@{$dbEntry->get_all_linkage_types}){
+      $projections_by_evidence_type{$et}++;
+      #print $dbEntry->display_id() . " " . $et . " " . $projections_by_evidence_type{$et} . "\n";
+    }
+
     # add linkage_type for projection to IEA (in the absence of a specific one for projections)
-    #$dbEntry->flush_linkage_types();
     $dbEntry->add_linkage_type("IEA");
 
     my $txt = "from $from_latin_species translation " . $from_translation->stable_id();
@@ -264,11 +278,6 @@ sub project_go_terms {
 
     $to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation') if (!$print);
     #print "stored xref ID " . $dbEntry->dbID() ." " . $to_translation->stable_id() . " ". $to_translation->dbID() . " " . $dbEntry->display_id() . "\n";
-
-    # record statistics by evidence type
-    foreach my $et (@{$dbEntry->get_all_linkage_types}){
-      $projections_by_evidence_type{$et}++;
-    }
 
   }
 
@@ -283,7 +292,8 @@ sub go_xref_exists {
   foreach my $xref (@{$to_go_xrefs}) {
 
     if ($xref->dbname() eq $dbEntry->dbname() &&
-	$xref->primary_id() eq $dbEntry->primary_id()) {
+	$xref->primary_id() eq $dbEntry->primary_id() &&
+	join("", @{$xref->get_all_linkage_types()}) eq join("", @{$dbEntry->get_all_linkage_types()})) {
       return 1;
     }
 
