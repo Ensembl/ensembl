@@ -622,7 +622,7 @@ sub store {
   $tst->bind_param(7, $transcript->biotype, SQL_VARCHAR);
   $tst->bind_param(8, $transcript->status, SQL_VARCHAR);
   $tst->bind_param(9, $transcript->description, SQL_LONGVARCHAR);
-  $tst->bind_param(10, $is_current, SQL_INTEGER);
+  $tst->bind_param(10, $is_current, SQL_TINYINT);
 
   $tst->execute();
   $tst->finish();
@@ -1056,7 +1056,7 @@ sub update {
   $sth->bind_param(3, $transcript->description, SQL_LONGVARCHAR);
   $sth->bind_param(4, $transcript->biotype, SQL_VARCHAR);
   $sth->bind_param(5, $transcript->status, SQL_VARCHAR);
-  $sth->bind_param(6, $transcript->is_current, SQL_INTEGER);
+  $sth->bind_param(6, $transcript->is_current, SQL_TINYINT);
   $sth->bind_param(7, $transcript->dbID, SQL_INTEGER);
 
   $sth->execute();
@@ -1535,4 +1535,5 @@ sub fetch_all_by_DBEntry {
 
 
 1;
+
 
