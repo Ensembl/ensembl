@@ -1,37 +1,40 @@
-#
-# EnsEMBL module for DBEntry
-#
-# Cared for by Arne Stabenau <stabenau@ebi.ac.uk>
-#
-# Copyright EMBL/EBI 2001
-#
-# You may distribute this module under the same terms as perl itself
+package Bio::EnsEMBL::DBEntry;
 
-# POD documentation - main docs before the code
+=head1 NAME
 
-=pod 
-
-=head1 NAME 
-
-Bio::EnsEMBL::DBEntry - Module to collect information about an external reference
+Bio::EnsEMBL::DBEntry -
+Object representing an external reference (xref)
 
 =head1 SYNOPSIS
 
+
 =head1 DESCRIPTION
 
-This module stores information about external references to EnsEMBL objects
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL developer mailing list: <ensembl-dev@ebi.ac.uk> 
+This object holds information about external references (xrefs) to Ensembl
+objects.
 
 =head1 METHODS
 
+
+=head1 LICENCE
+
+This code is distributed under an Apache style licence. Please see
+http://www.ensembl.org/info/about/code_licence.html for details.
+
+=head1 AUTHOR
+
+Arne Stabenau <stabenau@ebi.ac.uk>, Ensembl core API team
+
+=head1 CONTACT
+
+Please post comments/questions to the Ensembl development list
+<ensembl-dev@ebi.ac.uk>
+
 =cut
 
-
-
-package Bio::EnsEMBL::DBEntry;
+use strict;
+use warnings;
+no warnings qw(uninitialized);
 
 use Bio::EnsEMBL::Storable;
 use Bio::Annotation::DBLink;
@@ -39,24 +42,18 @@ use Bio::Annotation::DBLink;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(deprecate);
 
-use vars qw(@ISA $AUTOLOAD);
-use strict;
-use warnings;
-
-@ISA = qw( Bio::EnsEMBL::Storable Bio::Annotation::DBLink );
-
+our @ISA = qw(Bio::EnsEMBL::Storable Bio::Annotation::DBLink);
 
 
 =head2 new_fast
 
-  Arg [1]    : hash reference $hashref
-  Example    : none
+  Arg [1]    : Hashref $hashref - hash reference to bless as new DBEntry object
   Description: A very quick constructor that requires internal knowledge of
                the class. This is used in speed critical sections of the code
                where many objects need to be created quickly.
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
-  Caller     : ?
+  Caller     : general
   Status     : Stable
 
 =cut
@@ -64,38 +61,40 @@ use warnings;
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
+
   bless $hashref, $class;
+
   $hashref->{synonyms} = [];
   
   return $hashref;
 }
 
 
-
 =head2 new
 
   Args [...] : list of named parameters 
-  Example    : my $dbentry = new Bio::EnsEMBL::DBEntry(-adaptor => $adaptor,
-						       -primary_id => $pid,
-						       -version => $version,
-						       -dbname  => $dbname,
-						       -release => $release,
-						       -display_id => $did,
-                                                       -description => $description,
-						       -primary_id_linkable =>$primary_id_linkable,
-						       -display_id_linkable =>$display_id_linkable,
-						       -priority => $priority,
-						       -db_display_name => $db_display_name,
-						       -info_type => $info_type,
-						       -info_text => $info_text);
+  Example    : my $dbentry = new Bio::EnsEMBL::DBEntry(
+                    -adaptor => $adaptor,
+                    -primary_id => $pid,
+                    -version => $version,
+                    -dbname  => $dbname,
+                    -release => $release,
+                    -display_id => $did,
+                    -description => $description,
+                    -primary_id_linkable =>$primary_id_linkable,
+                    -display_id_linkable =>$display_id_linkable,
+                    -priority => $priority,
+                    -db_display_name => $db_display_name,
+                    -info_type => $info_type,
+                    -info_text => $info_text);
   Description: Creates a new DBEntry object
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBEntryAdaptor
   Status     : At Risk
-             : due to 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY'
-             : being under development
-             : If you don't use any of these the sub can be considered Stable
+               Due to 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY'
+               being under development - if you don't use any of these the
+               method can be considered Stable
 
 =cut
 
@@ -135,14 +134,13 @@ sub new {
 }
 
 
-
 =head2 primary_id
 
-  Arg [1]    : string $primary_id
+  Arg [1]    : (optional) String $arg - value to set
   Example    : none
-  Description: get/set for attribute primary_id
-               its this objects primary id in the external database
-  Returntype : string
+  Description: Getter/setter for attribute 'primary_id'.
+               This is the object's primary id in the external database.
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -154,20 +152,18 @@ sub primary_id {
   if( defined $arg ) {
     $self->{primary_id} = $arg;
   } 
-
   return $self->{primary_id};
 }
 
 
-
 =head2 display_id
 
-  Arg [1]    : string $display_id
+  Arg [1]    : (optional) String $arg - value to set
   Example    : none
-  Description: get/set for attribute display_id
-               This objects preferred display string. That can be the same
-               as primary id or ensembl specific.
-  Returntype : string
+  Description: Getter/setter for attribute 'display_id'.
+               The object's preferred display name. This can be the same
+               as primary_id or ensembl-specific.
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -180,17 +176,37 @@ sub display_id{
        $self->{display_id} = $arg;
    } 
    return $self->{display_id};
-
 }
 
+
+=head2 optional_id
+
+  Args       : none
+  Example    : none
+  Description: Additional getter for attribute 'display_id'.
+               The object's preferred display name.
+               Only include for BioPerl interface compliance, please use
+               $self->display_id().
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub optional_id {
+  my $self = shift;
+  return $self->display_id;
+}
 
 
 =head2 dbname
 
-  Arg [1]    : string $dbname
+  Arg [1]    : (optional) String $arg - value to set
   Example    : none
-  Description: get/set for attribute dbname
-  Returntype : string
+  Description: Getter/setter for attribute 'dbname'.
+               The name of the external database.
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -206,14 +222,15 @@ sub dbname {
 }
 
 
-
 =head2 database
 
   Args       : none
   Example    : none
-  Description: additional get for the dbname to make it compliant to
-               some interface
-  Returntype : string
+  Description: Additional getter for attribute 'dbname'.
+               The name of the external database.
+               Only include for BioPerl interface compliance, please use
+               $self->dbname().
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -226,33 +243,13 @@ sub database {
 }
 
 
-
-=head2 optional_id
-
-  Args       : none
-  Example    : none
-  Description: additional get for the display_id to make it compliant to
-               some interface
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub optional_id {
-  my $self = shift;
-  return $self->display_id;
-}
-
-
-
 =head2 release
 
-  Arg [1]    : string $release
+  Arg [1]    : (optional) String $arg - value to set
   Example    : none
-  Description: get/set for attribute release
-  Returntype : string
+  Description: Getter/setter for attribute 'release'.
+               The external database release name.
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -270,10 +267,11 @@ sub release {
 
 =head2 version
 
-  Arg [1]    : string $version
+  Arg [1]    : (optional) String $arg - value to set
   Example    : none
-  Description: get/set for attribute version
-  Returntype : string
+  Description: Getter/setter for attribute 'version'.
+               The object's version in the external database.
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -289,14 +287,13 @@ sub version {
 }
 
 
-
-
 =head2 description
 
-  Arg [1]    : string $description
+  Arg [1]    : (optional) String $arg - value to set
   Example    : none
-  Description: get/set for attribute description
-  Returntype : string
+  Description: Getter/setter for attribute 'description'.
+               The object's description.
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -312,12 +309,33 @@ sub description {
 }
 
 
+=head2 comment
+
+  Args       : none
+  Example    : none
+  Description: Additional getter for attribute 'description'.
+               The object's description.
+               Only include for BioPerl interface compliance, please use
+               $self->description().
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub comment {
+  my $self = shift;
+  return $self->description();
+}
+
+
 =head2 primary_id_linkable
 
-  Arg [1]    : boolean $primary_id_linkable
+  Arg [1]    : (optional) Boolean $arg - value to set
   Example    : none
-  Description: get/set for attribute primary_id_linkable
-  Returntype : string
+  Description: Getter/setter for attribute 'primary_id_linkable'.
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : At Risk
@@ -333,12 +351,13 @@ sub primary_id_linkable {
   return $self->{primary_id_linkable};
 }
 
+
 =head2 display_id_linkable
 
-  Arg [1]    : boolean $display_id_linkable
+  Arg [1]    : (optional) Boolean $arg - value to set
   Example    : none
-  Display_id_linkable: get/set for attribute display_id_linkable
-  Returntype : string
+  Description: Getter/setter for attribute 'display_id_linkable'.
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : At Risk
@@ -359,8 +378,8 @@ sub display_id_linkable {
 
   Arg [1]    : int $priority
   Example    : none
-  Priority   : get/set for attribute priority
-  Returntype : string
+  Priority   : Getter/setter for attribute 'priority'.
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : At Risk
@@ -381,8 +400,10 @@ sub priority {
 
   Arg [1]    : String $db_display_name
   Example    : none
-  Db_display_name: get/set for attribute db_display_name
-  Returntype : string; has "Projected " prepended if info_type='PROJECTION'
+  Description: Getter/setter for attribute 'db_display_name'.
+               The preferred display name for the external database. Has
+               "Projected " prepended if info_type='PROJECTION'.
+  Returntype : String
   Exceptions : none
   Caller     : general
 
@@ -409,8 +430,8 @@ sub db_display_name {
 
   Arg [1]    : String $info_type
   Example    : none
-  Info_type: get/set for attribute info_type
-  Returntype : string
+  Description: Getter/setter for attribute 'info_type'.
+  Returntype : String
   Exceptions : none
   Caller     : general
 
@@ -429,8 +450,8 @@ sub info_type {
 
   Arg [1]    : String $info_text
   Example    : none
-  Info_text: get/set for attribute info_text
-  Returntype : string
+  Description: Getter/setter for attribute 'info_text'.
+  Returntype : String
   Exceptions : none
   Caller     : general
 
@@ -447,10 +468,9 @@ sub info_text {
 
 =head2 add_synonym
 
-  Arg  1     : string $synonym
+  Arg [1]    : String $arg - synonym to add
   Example    : none
-  Description: adding a synonynm for the external object under which it is 
-               also known
+  Description: Add a synonym for the external object.
   Returntype : none
   Exceptions : none
   Caller     : general
@@ -470,9 +490,9 @@ sub add_synonym {
 =head2 get_all_synonyms
 
   Args       : none
-  Example    : @synonyms = @{$db_entry->get_all_synonyms()};
-  Description: get a list of synonym added to this object
-  Returntype : list reference of strings 
+  Example    : my @synonyms = @{ $db_entry->get_all_synonyms };
+  Description: Get a list of synonyms known for this object.
+  Returntype : listref of strings 
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -489,7 +509,7 @@ sub get_all_synonyms {
 
   Args       : none
   Example    : none
-  Description: remove all synonyms from this object
+  Description: Remove all synonyms from this object.
   Returntype : none
   Exceptions : none
   Caller     : general
@@ -505,10 +525,10 @@ sub flush_synonyms {
 
 =head2 status
 
-  Arg [1]    : string $status
+  Arg [1]    : (optional) String $arg - value to set
   Example    : none
-  Description: get/set for attribute status
-  Returntype : string
+  Description: Getter/setter for attribute 'status'.
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -517,33 +537,11 @@ sub flush_synonyms {
 
 
 sub status{
- my ( $self, $arg ) = @_;
-   if( defined $arg ) {
-       $self->{status} = $arg;
-   } 
-   return $self->{status};
-}
-
-
-
-=head2 comment
-
-  Args       : none
-  Example    : none
-  Description: additional get for description to comply with bioperl
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-#Cheat to comply with bioperl
-sub comment {
-    my ($self) = @_;
-    if ($self) {
-	return $self->description();
-    }
+  my ( $self, $arg ) = @_;
+  if( defined $arg ) {
+     $self->{status} = $arg;
+  } 
+  return $self->{status};
 }
 
 
@@ -565,3 +563,4 @@ sub get_synonyms {
 }
 
 1;
+
