@@ -1,14 +1,8 @@
-#
-# Ensembl module for Transcript
-#
-# Copyright (c) 1999-2004 Ensembl
-#
-# You may distribute this module under the same terms as perl itself
-#
+package Bio::EnsEMBL::Transcript;
 
 =head1 NAME
 
-Transcript - gene transcript object
+Bio::EnsEMBL::Transcript - object representing an Ensembl transcript
 
 =head1 SYNOPSIS
 
@@ -31,21 +25,26 @@ Manipulation:
 
 =head1 DESCRIPTION
 
-A representation of a transcript within the ensembl system.  A transcript
+A representation of a transcript within the Ensembl system.  A transcript
 consists of a set of Exons and (possibly) a Translation which defines the
 coding and non-coding regions of the exons.
 
+=head1 LICENCE
+
+This code is distributed under an Apache style licence. Please see
+http://www.ensembl.org/info/about/code_licence.html for details.
+
+=head1 AUTHOR
+
+Ensembl core API team
+
 =head1 CONTACT
 
-Email questions to the ensembl developer mailing list <ensembl-dev@ebi.ac.uk>
-
-=head1 METHODS
+Please post comments/questions to the Ensembl development list
+<ensembl-dev@ebi.ac.uk>
 
 =cut
 
-package Bio::EnsEMBL::Transcript;
-
-use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::Feature;
@@ -57,9 +56,8 @@ use Bio::EnsEMBL::SeqEdit;
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
 
-
+use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Feature);
-
 
 
 =head2 new
@@ -90,6 +88,8 @@ use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
         string - the biotype e.g. "protein_coding"
   Arg [-STATUS]:
         string - the transcripts status i.e. "KNOWN","NOVEL"
+  Arg [-IS_CURRENT]:
+        Boolean - specifies if this is the current version of the transcript
   Example    : $tran = new Bio::EnsEMBL::Transcript(-EXONS => \@exons);
   Description: Constructor. Instantiates a Transcript object.
   Returntype : Bio::EnsEMBL::Transcript
@@ -99,12 +99,10 @@ use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
 
 =cut
 
-
-
 sub new {
-  my($class) = shift;
+  my ($class) = shift;
 
-  if( ref $class ) { 
+  if (ref $class) { 
       $class = ref $class;
   }
 
@@ -112,7 +110,8 @@ sub new {
 
   my ( $exons, $stable_id, $version, $external_name, $external_db,
        $external_status, $display_xref, $created_date, $modified_date,
-       $description, $biotype, $confidence, $external_db_name, $status );
+       $description, $biotype, $confidence, $external_db_name, $status,
+       $is_current );
 
   #catch for old style constructor calling:
   if((@_ > 0) && ref($_[0])) {
@@ -124,11 +123,13 @@ sub new {
   else {
     ( $exons, $stable_id, $version, $external_name, $external_db,
       $external_status, $display_xref, $created_date, $modified_date,
-      $description, $biotype, $confidence, $external_db_name, $status ) = 
+      $description, $biotype, $confidence, $external_db_name, $status,
+      $is_current ) = 
         rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
                      'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
 		     'CREATED_DATE', 'MODIFIED_DATE', 'DESCRIPTION',
-		     'BIOTYPE', 'CONFIDENCE', 'EXTERNAL_DB_NAME', 'STATUS' ], @_ );
+		     'BIOTYPE', 'CONFIDENCE', 'EXTERNAL_DB_NAME', 'STATUS',
+                     'IS_CURRENT' ], @_ );
   }
 
   if( $exons ) {
@@ -147,9 +148,10 @@ sub new {
   $self->edits_enabled(1);
 
   $self->description( $description );
-  $self->status( $confidence );  #old style name
-  $self->status( $status );      #new style name
+  $self->status( $confidence );  # old style name
+  $self->status( $status );      # new style name
   $self->biotype( $biotype );
+  $self->is_current($is_current) if (defined($is_current));
 
   return $self;
 }
@@ -157,8 +159,7 @@ sub new {
 
 =head2 get_all_DBLinks
 
-  Arg [1]    : none
-  Example    : @dblinks = @{$transcript->get_all_DBLinks()};
+  Example    : my @dblinks = @{ $transcript->get_all_DBLinks };
   Description: Retrieves _all_ related DBEntries for this transcript.  
                This includes all DBEntries that are associated with the
                corresponding translation.
@@ -166,7 +167,7 @@ sub new {
                If you only want to retrieve the DBEntries associated with the
                transcript then you should use the get_all_DBEntries call 
                instead.
-  Returntype : list reference to Bio::EnsEMBL::DBEntry objects, sorted by
+  Returntype : Listref of Bio::EnsEMBL::DBEntry objects, sorted by
                priority (desc), external db name (asc), display_id (asc)
   Exceptions : none
   Caller     : general
@@ -192,8 +193,7 @@ sub get_all_DBLinks {
 
 =head2 get_all_DBEntries
 
-  Arg [1]    : none
-  Example    : @dbentries = @{$gene->get_all_DBEntries()};
+  Example    : my @dbentries = @{ $gene->get_all_DBEntries };
   Description: Retrieves DBEntries (xrefs) for this transcript.  
                This does _not_ include the corresponding translations 
                DBEntries (see get_all_DBLinks).
@@ -202,7 +202,7 @@ sub get_all_DBLinks {
                database if an adaptor is available and no DBEntries are present
                on the transcript (i.e. they have not already been added or 
                loaded).
-  Returntype : list reference to Bio::EnsEMBL::DBEntry objects
+  Returntype : Listref of Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : get_all_DBLinks, TranscriptAdaptor::store
   Status     : Stable
@@ -212,7 +212,7 @@ sub get_all_DBLinks {
 sub get_all_DBEntries {
   my $self = shift;
 
-  #if not cached, retrieve all of the xrefs for this gene
+  # if not cached, retrieve all of the xrefs for this gene
   if(!defined $self->{'dbentries'} && $self->adaptor()) {
     $self->{'dbentries'} = 
       $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Transcript($self);
@@ -228,10 +228,11 @@ sub get_all_DBEntries {
 
   Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
                The dbEntry to be added
-  Example    : @dbentries = @{$gene->get_all_DBEntries()};
-  Description: Associates a DBEntry with this gene. Note that adding DBEntries
-               will prevent future lazy-loading of DBEntries for this gene
-               (see get_all_DBEntries).
+  Example    : my $dbe = Bio::EnsEMBL::DBEntery->new(...);
+               $transcript->add_DBEntry($dbe);
+  Description: Associates a DBEntry with this transcript. Note that adding
+               DBEntries will prevent future lazy-loading of DBEntries for this
+               gene (see get_all_DBEntries).
   Returntype : none
   Exceptions : thrown on incorrect argument type
   Caller     : general
@@ -252,14 +253,12 @@ sub add_DBEntry {
 }
 
 
-
 =head2 get_all_supporting_features
 
-  Arg [1]    : none
-  Example    : @evidence = @{$transcript->get_all_supporting_features()};
+  Example    : my @evidence = @{ $transcript->get_all_supporting_features };
   Description: Retreives any supporting features added manually by 
                calls to add_supporting_features.
-  Returntype : listreference of Bio::EnsEMBL::FeaturePair
+  Returntype : Listref of Bio::EnsEMBL::FeaturePair objects
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -275,19 +274,19 @@ sub get_all_supporting_features {
       $self->{_supporting_evidence} = $tsfa->fetch_all_by_Transcript($self);
     }
   }
-
   
   return $self->{_supporting_evidence} || [];
 }
 
 
-
 =head2 add_supporting_features
 
-  Arg [1]    : Bio::EnsEMBL::FeaturePair $feature
-  Example    : $exon->add_supporting_features(@features);
+  Arg [1-N]  : Bio::EnsEMBL::FeaturePair $feature
+               The supporting features to add
+  Example    : $transcript->add_supporting_features(@features);
   Description: Adds a list of supporting features to this Transcript.
-               The added features can be retieved by get_all_supporting_features
+               The added features can be retieved by
+               get_all_supporting_features().
   Returntype : none
   Exceptions : throw if any of the features are not FeaturePairs
                throw if any of the features are not in the same coordinate
@@ -298,7 +297,7 @@ sub get_all_supporting_features {
 =cut
  
 sub add_supporting_features {
-  my ($self,@features) = @_;
+  my ($self, @features) = @_;
 
   return unless @features;
  
@@ -332,19 +331,21 @@ sub add_supporting_features {
     }
     
     #no duplicate was found, add the feature
-    push(@{$self->{_supporting_evidence}},$feature);
+    push(@{$self->{_supporting_evidence}}, $feature);
   }
 }
 
 
 =head2 external_db
 
- Title   : external_db
- Usage   : $ext_db = $obj->external_db();
- Function: external_name if available
- Returns : the external db link for this transcript
- Args    : new external db (optional)
- Status     : Stable
+  Arg [1]    : (optional) String - name of external db to set
+  Example    : $transcript->external_db('HGNC');
+  Description: Getter/setter for attribute external_db. The db is the one that 
+               belongs to the external_name.  
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -369,15 +370,16 @@ sub external_db {
 }
 
 
-
 =head2 external_status
 
- Title   : external_status
- Usage   : $ext_db = $obj->external_status();
- Function: external_name if available
- Returns : the external db link for this transcript
- Args    : new external db (optional)
- Status     : Stable
+  Arg [1]    : (optional) String - status of the external db
+  Example    : $transcript->external_status('KNOWNXREF');
+  Description: Getter/setter for attribute external_status. The status of
+               the external db of the one that belongs to the external_name.
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -402,19 +404,17 @@ sub external_status {
 }
 
 
-
 =head2 external_name
 
- Title   : external_name
- Usage   : $ext_name = $obj->external_name();
- Function: external_name if available
- Example : 
- Returns : the external name of this transcript
- Args    : new external name (optional)
- Status     : Stable
+  Arg [1]    : (optional) String - the external name to set
+  Example    : $transcript->external_name('BRCA2-001');
+  Description: Getter/setter for attribute external_name.
+  Returntype : String or undef
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
 
 =cut
-
 
 sub external_name {
   my ($self, $ext_name) = @_;
@@ -439,10 +439,10 @@ sub external_name {
 
 =head2 is_known
 
-  Args       : none
-  Example    : none
-  Description: returns true if this transcript has a status of KNOWN.
-  Returntype : 0,1
+  Example    : print "Transcript ".$transcript->stable_id." is KNOWN\n" if
+                  $transcript->is_known;
+  Description: Returns TRUE if this gene has a status of 'KNOWN'
+  Returntype : TRUE if known, FALSE otherwise
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -453,28 +453,6 @@ sub is_known {
   my $self = shift;
   return ( $self->{'status'} eq "KNOWN" );
 }
-
-
-=head2 type
-
-  Arg [1]    : string $biotype
-  Example    : none
-  Description: This will be replaced with biotype. Will be deprecated soon.
-               get/set for attribute biotype
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : At Risk
-             : will be replaced with biotype
-=cut
-
-sub type {
-  my $self = shift;
-
-  $self->{'biotype'} = shift if( @_ );
-  return ( $self->{'biotype'} || "protein_coding" );
-}
-
 
 
 =head2 status
@@ -495,25 +473,6 @@ sub status {
   return $self->{'status'};
 }
 
-=head2 confidence
-
-  Arg [1]    : string $confidence
-  Example    : none
-  Description: get/set for attribute status
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub confidence {
-   my $self = shift;
-  $self->{'status'} = shift if( @_ );
-  return $self->{'status'};
-}
-
-
 =head2 biotype
 
   Arg [1]    : string $biotype
@@ -533,13 +492,11 @@ sub biotype {
 }
 
 
-
-
 =head2 display_xref
 
-  Arg [1]    : Bio::EnsEMBL::DBEntry $display_xref
-  Example    : $transcript->display_xref(Bio::EnsEMBL::DBEntry->new(...));
-  Description: getter setter for display_xref for this transcript
+  Arg [1]    : (optional) Bio::EnsEMBL::DBEntry - the display xref to set
+  Example    : $transcript->display_xref($db_entry);
+  Description: Getter/setter for display_xref for this transcript.
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
@@ -591,7 +548,6 @@ sub translation {
   }
   return $self->{'translation'};
 }
-
 
 
 =head2 spliced_seq
@@ -686,7 +642,6 @@ sub translateable_seq {
 }
 
 
-
 =head2 cdna_coding_start
 
   Arg [1]    : (optional) $value
@@ -750,7 +705,6 @@ sub cdna_coding_start {
 }
 
 
-
 =head2 cdna_coding_end
 
   Arg [1]    : (optional) $value
@@ -811,7 +765,6 @@ sub cdna_coding_end {
 }
 
 
-
 =head2 coding_region_start
 
   Arg [1]    : (optional) $value
@@ -855,7 +808,6 @@ sub coding_region_start {
 
   return $self->{'coding_region_start'};
 }
-
 
 
 =head2 coding_region_end
@@ -902,7 +854,6 @@ sub coding_region_end {
 
   return $self->{'coding_region_end'};
 }
-
 
 
 =head2 edits_enabled
@@ -985,7 +936,6 @@ sub get_all_Attributes {
 
   if( ! exists $self->{'attributes' } ) {
     if(!$self->adaptor() ) {
-#      warning('Cannot get attributes without an adaptor.');
       return [];
     }
 
@@ -1129,7 +1079,6 @@ sub add_Exon{
 }
 
 
-
 =head2 get_all_Exons
 
   Arg [1]    : none
@@ -1152,6 +1101,7 @@ sub get_all_Exons {
    }
    return $self->{'_trans_exon_array'};
 }
+
 
 =head2 get_all_Introns
 
@@ -1182,7 +1132,6 @@ sub get_all_Introns {
    }
    return \@introns;
 }
-
 
 
 =head2 length
@@ -1216,9 +1165,6 @@ sub length {
 }
 
 
-
-
-
 =head2 flush_Exons
 
   Arg [1]    : none
@@ -1245,7 +1191,6 @@ sub flush_Exons{
 
    $self->{'_trans_exon_array'} = [];
 }
-
 
 
 =head2 five_prime_utr
@@ -1280,7 +1225,6 @@ sub five_prime_utr {
 	       -MOLTYPE    => 'dna',
 	       -SEQ        => $seq);
 }
-
 
 
 =head2 three_prime_utr
@@ -1521,6 +1465,7 @@ sub cdna2genomic {
   return $self->get_TranscriptMapper()->cdna2genomic(@_);
 }
 
+
 =head2 genomic2cdna
 
   Description: See Bio::EnsEMBL::TranscriptMapper::genomic2cdna
@@ -1531,6 +1476,7 @@ sub genomic2cdna {
   my $self = shift;
   return $self->get_TranscriptMapper->genomic2cdna(@_);
 }
+
 
 =head2 get_TranscriptMapper
 
@@ -1554,7 +1500,6 @@ sub get_TranscriptMapper {
 }
 
 
-
 =head2 start_Exon
 
  Title   : start_Exon
@@ -1565,10 +1510,11 @@ sub get_TranscriptMapper {
 
 =cut
 
-sub start_Exon{
+sub start_Exon {
   my $self = shift;
   return $self->get_all_Exons()->[0];
 }
+
 
 =head2 end_Exon
 
@@ -1580,11 +1526,10 @@ sub start_Exon{
 
 =cut
 
-sub end_Exon{
+sub end_Exon {
    my $self = shift;
    return $self->get_all_Exons()->[-1];
 }
-
 
 
 =head2 description
@@ -1598,7 +1543,7 @@ sub end_Exon{
 
 =cut
 
-sub description{
+sub description {
   my $self = shift;
   $self->{'description'} = shift if( @_ );
   return $self->{'description'};
@@ -1616,7 +1561,7 @@ sub description{
 
 =cut
 
-sub version{
+sub version {
   my $self = shift;
   $self->{'version'} = shift if( @_ );
   return $self->{'version'};
@@ -1634,11 +1579,31 @@ sub version{
 
 =cut
 
-sub stable_id{
+sub stable_id {
   my $self = shift;
   $self->{'stable_id'} = shift if( @_ );
   return $self->{'stable_id'};
 }
+
+
+=head2 is_current
+
+  Arg [1]    : Boolean $is_current
+  Example    : $transcript->is_current(1)
+  Description: Getter/setter for is_current state of this transcript.
+  Returntype : Int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_current {
+  my $self = shift;
+  $self->{'is_current'} = shift if (@_);
+  return $self->{'is_current'};
+}
+
 
 =head2 created_date
 
@@ -1678,7 +1643,6 @@ sub modified_date {
 }
 
 
-
 =head2 swap_exons
 
   Arg [1]    : Bio::EnsEMBL::Exon $old_Exon
@@ -1716,6 +1680,7 @@ sub swap_exons {
     }
   }
 }
+
 
 =head2 transform
 
@@ -1942,8 +1907,6 @@ sub transfer {
 }
 
 
-
-
 =head recalculate_coordinates
 
   Args       : none
@@ -1969,7 +1932,8 @@ sub recalculate_coordinates {
   my $e_index;
   for ($e_index=0; $e_index<@$exons; $e_index++) {
     my $e = $exons->[$e_index];
-    next if (!defined($e) or !defined($e->start)); # Skip missing or unmapped exons!
+    # Skip missing or unmapped exons!
+    next if (!defined($e) or !defined($e->start));
     $slice = $e->slice();
     $strand = $e->strand();
     $start = $e->start();
@@ -1982,7 +1946,8 @@ sub recalculate_coordinates {
   # Start loop after first exon with coordinates
   for (; $e_index<@$exons; $e_index++) {
     my $e = $exons->[$e_index];
-    next if (!defined($e) or !defined($e->start)); # Skip missing or unmapped exons!
+    # Skip missing or unmapped exons!
+    next if (!defined($e) or !defined($e->start));
     if( $e->start() < $start ) {
       $start = $e->start();
     }
@@ -2059,6 +2024,7 @@ sub get_all_peptide_variations {
                                                                         $snps);
 }
 
+
 =head2 get_all_SNPs
 
   Description: See Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs
@@ -2071,6 +2037,7 @@ sub get_all_peptide_variations {
 sub get_all_SNPs {
   return Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs(@_);
 }
+
 
 =head2 get_all_cdna_SNPs
 
@@ -2103,6 +2070,7 @@ sub get_all_DASFactories {
    return [ $self->adaptor()->db()->_each_DASFeatureFactory ];
 }
 
+
 =head2 get_all_DAS_Features
 
   Arg [1]    : none
@@ -2120,7 +2088,7 @@ sub get_all_DASFactories {
 
 =cut
 
-sub get_all_DAS_Features{
+sub get_all_DAS_Features {
   my ($self,@args) = @_;
   $self->{_das_features} ||= {}; # Cache
   my %das_features;
@@ -2136,8 +2104,8 @@ sub get_all_DAS_Features{
     my $type = $dasfact->adaptor->type;
     my $url = $dasfact->adaptor->url;
 
-# Construct a cache key : SOURCE_URL/TYPE
-# Need the type to handle sources that serve multiple types of features
+    # Construct a cache key : SOURCE_URL/TYPE
+    # Need the type to handle sources that serve multiple types of features
 
     my $key = $url || $dasfact->adaptor->protocol .'://'.$dasfact->adaptor->domain;
     $key .= "/$dsn/$type";
@@ -2147,13 +2115,14 @@ sub get_all_DAS_Features{
 	next;
     } else{ # Get fresh data
 	my $featref = ($type =~  /^ensembl_location/) ?  ($dasfact->fetch_all_Features( $slice, $type ))[0] : $dasfact->fetch_all_by_ID( $self );
-#	my $featref = ($type eq 'ensembl_location') ?  ($dasfact->fetch_all_by_Slice( $slice ))[0] : $dasfact->fetch_all_by_ID( $self );
+        # my $featref = ($type eq 'ensembl_location') ?  ($dasfact->fetch_all_by_Slice( $slice ))[0] : $dasfact->fetch_all_by_ID( $self );
 	$self->{_das_features}->{$key} = $featref;
 	$das_features{$name} = $featref;
     }
   }
   return \%das_features;
 }
+
 
 =head2 fetch_all_regulatory_features
 
@@ -2169,13 +2138,11 @@ sub get_all_DAS_Features{
 =cut
 
 sub fetch_all_regulatory_features {
-
    my ($self) = @_;
 
    my $rfa = $self->adaptor->db->get_RegulatoryFeatureAdaptor();
 
    return $rfa->fetch_all_by_transcript($self);
-
 }
 
 
@@ -2193,14 +2160,13 @@ sub fetch_all_regulatory_features {
 =cut
 
 sub fetch_coded_for_regulatory_factors {
-
   my ($self) = @_;
 
   my $rfa = $self->adaptor->db->get_RegulatoryFactorAdaptor();
 
   return $rfa->fetch_factors_coded_for_by_transcript($self);
-
 }
+
 
 =head2 _compare_xrefs
 
@@ -2210,26 +2176,16 @@ sub fetch_coded_for_regulatory_factors {
 =cut
 
 sub _compare_xrefs {
-
   # compare on priority first (descending)
   if ($a->priority() != $b->priority()) {
-
     return $b->priority() <=> $a->priority();
-
   } else { # equal priorities, compare on external_db name
-
     if ($a->dbname() ne $b->dbname()) {
-
       return $a->dbname() cmp $b->dbname();
-
     } else { # equal priorities and names, compare on display_label
-
       return $a->display_id() cmp $b->display_id();
-
     }
-
   }
-
 }
 
 
@@ -2283,6 +2239,7 @@ sub _translation_id {
 
 }
 
+
 =head2 created
 
  Description: DEPRECATED - this attribute is not part of transcript anymore
@@ -2316,6 +2273,7 @@ sub modified{
     return $obj->{'modified'};
 }
 
+
 =head2 temporary_id
 
  Function: DEPRECATED: Use dbID or stable_id or something else instead
@@ -2333,5 +2291,29 @@ sub temporary_id{
 }
 
 
+=head2 type
+
+  Description: DEPRECATED. Use biotype() instead.
+
+=cut
+
+sub type {
+  deprecate("Use biotype() instead");
+  biotype(@_);
+}
+
+
+=head2 confidence
+
+  Description: DEPRECATED. Use status() instead.
+
+=cut
+
+sub confidence {
+  deprecate("Use status() instead");
+  status(@_);
+}
+
 
 1;
+

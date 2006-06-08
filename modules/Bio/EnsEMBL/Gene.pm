@@ -1,33 +1,47 @@
-#
-# BioPerl module for Gene
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl itself
-
-# POD documentation - main docs before the code
+package Bio::EnsEMBL::Gene;
 
 =head1 NAME
 
-Bio::EnsEMBL::Gene - Object for confirmed Genes
+Bio::EnsEMBL::Gene - Object representing a genes
 
 =head1 SYNOPSIS
 
-Confirmed genes. Basically has a set of transcripts
+  my $gene = Bio::EnsEMBL::Gene->new(
+      -START    => 123,
+      -END      => 1045,
+      -STRAND   => 1,
+      -SLICE    => $slice
+  );
+
+  # print gene information
+  print "gene start:end:strand is " . join(":", map { $gene->$_ }
+    qw(start end strand)) . "\n";
+
+  # set some additional attributes
+  $gene->stable_id('ENSG000001');
+  $gene->description('This is the gene description');
 
 =head1 DESCRIPTION
 
-A representation of a Gene within the ensembl system. A gene is basically a 
-set of one or more alternative transcripts.
+A representation of a Gene within the Ensembl system. A gene is a set of one or
+more alternative transcripts.
+
+=head1 LICENCE
+
+This code is distributed under an Apache style licence. Please see
+http://www.ensembl.org/info/about/code_licence.html for details.
+
+=head1 AUTHOR
+
+Ensembl core API team
 
 =head1 CONTACT
 
-Contact the EnsEMBL development mailing list for info <ensembl-dev@ebi.ac.uk>
+Please post comments/questions to the Ensembl development list
+<ensembl-dev@ebi.ac.uk>
 
 =cut
 
-package Bio::EnsEMBL::Gene;
-use vars qw(@ISA);
 use strict;
 
 use POSIX;
@@ -35,7 +49,7 @@ use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 
-
+use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Feature);
 
 
@@ -46,7 +60,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
   Arg [-END]    : 
        int - end position of the gene
   Arg [-STRAND] : 
-       int  -  1,-1 tehe strand the gene is on
+       int - 1,-1 tehe strand the gene is on
   Arg [-SLICE]  : 
        Bio::EnsEMBL::Slice - the slice the gene is on
   Arg [-STABLE_ID] :
@@ -62,6 +76,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
   Arg [-DISPLAY_XREF]:
         Bio::EnsEMBL::DBEntry - The external database entry that is used
         to label this gene when it is displayed.
+  Arg [-TRANSCRIPTS]:
+        Listref of Bio::EnsEMBL::Transcripts - this gene's transcripts
   Arg [-CREATED_DATE]:
         string - the date the gene was created
   Arg [-MODIFIED_DATE]:
@@ -72,7 +88,11 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
         string - the biotype e.g. "protein_coding"
   Arg [-STATUS]:
         string - the gene status i.e. "KNOWN","NOVEL"
-  Example    : $gene = Bio::EnsEMBL::Gene->new();
+  Arg [-SOURCE]:
+        string - the genes source, e.g. "ensembl"
+  Arg [-IS_CURRENT]:
+        Boolean - specifies if this is the current version of the gene
+  Example    : $gene = Bio::EnsEMBL::Gene->new(...);
   Description: Creates a new gene object
   Returntype : Bio::EnsEMBL::Gene
   Exceptions : none
@@ -89,11 +109,14 @@ sub new {
 
   my ( $stable_id, $version, $external_name, $type, $external_db, 
        $external_status, $display_xref, $description, $transcripts,
-       $created_date, $modified_date, $confidence, $biotype, $source, $status ) = 
+       $created_date, $modified_date, $confidence, $biotype, $source,
+       $status, $is_current ) = 
     rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
-		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF', 'DESCRIPTION',
+		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
+                 'DESCRIPTION',
                  'TRANSCRIPTS', 'CREATED_DATE', 'MODIFIED_DATE', 
-	         'CONFIDENCE', 'BIOTYPE', 'SOURCE', 'STATUS'], @_ );
+	         'CONFIDENCE', 'BIOTYPE', 'SOURCE', 'STATUS', 'IS_CURRENT' ],
+                 @_ );
 
   if ($transcripts) {
     $self->{'_transcript_array'} = $transcripts;
@@ -116,17 +139,17 @@ sub new {
                                 # kept to ensure routine is backwards compatible.
   $self->status( $status);      # add new naming
   $self->source( $source );
+  $self->is_current($is_current) if (defined($is_current));
+
   return $self;
 }
 
 
-
 =head2 is_known
 
-  Args       : none
-  Example    : none
-  Description: returns true if this gene has a status of KNOWN
-  Returntype : 0,1
+  Example    : print "Gene ".$gene->stable_id." is KNOWN\n" if $gene->is_known;
+  Description: Returns TRUE if this gene has a status of 'KNOWN'
+  Returntype : TRUE if known, FALSE otherwise
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -142,10 +165,10 @@ sub is_known{
 
 =head2 external_name
 
-  Arg [1]    : string $external_name
-  Example    : none
-  Description: get/set for attribute external_name.
-  Returntype : string
+  Arg [1]    : (optional) String - the external name to set
+  Example    : $gene->external_name('BRCA2');
+  Description: Getter/setter for attribute external_name.
+  Returntype : String or undef
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -155,16 +178,16 @@ sub is_known{
 sub external_name {
   my  $self  = shift;
 
-  $self->{'external_name'} = shift if( @_ );
+  $self->{'external_name'} = shift if (@_);
 
-  if( exists $self->{'external_name'} ) {
+  if (exists $self->{'external_name'}) {
     return $self->{'external_name'};
   }
 
   my $display_xref = $self->display_xref();
 
-  if( defined $display_xref ) {
-    return $display_xref->display_id()
+  if (defined $display_xref) {
+    return $display_xref->display_id();
   } else {
     return undef;
   }
@@ -173,10 +196,10 @@ sub external_name {
 
 =head2 status
 
-  Arg [1]    : string $status
-  Example    : none
-  Description: get/set for attribute status
-  Returntype : string
+  Arg [1]    : (optional) String - status to set
+  Example    : $gene->status('KNOWN');
+  Description: Getter/setter for attribute status
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Medium Risk
@@ -189,33 +212,13 @@ sub status {
   return $self->{'status'};
 }
 
-=head2 confidence
-
-  Arg [1]    : string $confidence
-  Example    : none
-  Description: get/set for attribute status
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub confidence {
-   my $self = shift;
-
-  $self->{'status'} = shift if( @_ );
-  return $self->{'status'};
-}
-
-
 
 =head2 source
 
-  Arg [1]    : string $source
-  Example    : none
-  Description: get/set for attribute source
-  Returntype : string
+  Arg [1]    : (optional) String - the source to set
+  Example    : $gene->source('ensembl');
+  Description: Getter/setter for attribute source
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -229,14 +232,13 @@ sub source {
 }
 
 
-
 =head2 external_db	
 
-  Arg [1]    : string $external_db
-  Example    : none
-  Description: get/set for attribute external_db. The db is the one that 
+  Arg [1]    : (optional) String - name of external db to set
+  Example    : $gene->external_db('HGNC');
+  Description: Getter/setter for attribute external_db. The db is the one that 
                belongs to the external_name.  
-  Returntype : string
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -261,13 +263,14 @@ sub external_db {
   }
 }
 
+
 =head2 external_status
 
-  Arg [1]    : string $external_status
-  Example    : none
-  Description: get/set for attribute external_status. The status of
+  Arg [1]    : (optional) String - status of the external db
+  Example    : $gene->external_status('KNOWNXREF');
+  Description: Getter/setter for attribute external_status. The status of
                the external db of the one that belongs to the external_name.
-  Returntype : string
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -290,13 +293,12 @@ sub external_status {
 }
 
 
-
 =head2 description
 
-  Arg [1]    : (optional) string $description
-  Example    : none
-  Description: getter setter for gene description
-  Returntype : string
+  Arg [1]    : (optional) String - the description to set
+  Example    : $gene->description('This is the gene\'s description');
+  Description: Getter/setter for gene description
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -312,13 +314,13 @@ sub description {
 
 =head2 get_all_Attributes
 
-  Arg [1]    : optional string $attrib_code
-               The code of the attribute type to retrieve values for.
+  Arg [1]    : (optional) String $attrib_code
+               The code of the attribute type to retrieve values for
   Example    : my ($author) = @{ $gene->get_all_Attributes('author') };
-               my @gene_attributes = @{ $transcript->get_all_Attributes };
+               my @gene_attributes = @{ $gene->get_all_Attributes };
   Description: Gets a list of Attributes of this gene.
-               Optionally just get Attrubutes for given code.
-  Returntype : listref Bio::EnsEMBL::Attribute
+               Optionally just get Attributes for given code.
+  Returntype : Listref of Bio::EnsEMBL::Attribute
   Exceptions : warning if gene does not have attached adaptor and attempts lazy
                load.
   Caller     : general
@@ -330,8 +332,8 @@ sub get_all_Attributes {
   my $self = shift;
   my $attrib_code = shift;
 
-  if( ! exists $self->{'attributes' } ) {
-    if(!$self->adaptor() ) {
+  if ( ! exists $self->{'attributes' } ) {
+    if (!$self->adaptor() ) {
       return [];
     }
 
@@ -339,7 +341,7 @@ sub get_all_Attributes {
     $self->{'attributes'} = $attribute_adaptor->fetch_all_by_Gene($self);
   }
 
-  if( defined $attrib_code ) {
+  if ( defined $attrib_code ) {
     my @results = grep { uc($_->code()) eq uc($attrib_code) }
     @{$self->{'attributes'}};
     return \@results;
@@ -351,11 +353,12 @@ sub get_all_Attributes {
 
 =head2 add_Attributes
 
-  Arg [1...] : Bio::EnsEMBL::Attribute $attribute
-               You can have more Attributes as arguments, all will be added.
-  Example    : $gene->add_Attributes($author_attribute);
+  Arg [1-N]  : list of Bio::EnsEMBL::Attribute's @attribs
+               Attribute(s) to add
+  Example    : my $attrib = Bio::EnsEMBL::Attribute->new(...);
+               $gene->add_Attributes($attrib);
   Description: Adds an Attribute to the Gene. If you add an attribute before
-               you retrieve any from database, lazy load will be disabled.
+               you retrieve any from database, lazy loading will be disabled.
   Returntype : none
   Exceptions : throw on incorrect arguments
   Caller     : general
@@ -386,7 +389,8 @@ sub add_Attributes {
 
   Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
                The dbEntry to be added
-  Example    : @dbentries = @{$gene->get_all_DBEntries()};
+  Example    : my $dbe = Bio::EnsEMBL::DBEntery->new(...);
+               $gene->add_DBEntry($dbe);
   Description: Associates a DBEntry with this gene. Note that adding DBEntries
                will prevent future lazy-loading of DBEntries for this gene
                (see get_all_DBEntries).
@@ -412,16 +416,15 @@ sub add_DBEntry {
 
 =head2 get_all_DBEntries
 
-  Arg [1]    : none
-  Example    : @dbentries = @{$gene->get_all_DBEntries()};
-  Description: Retrieves DBEntries (xrefs) for this gene.  This does _not_ 
+  Example    : @dbentries = @{ $gene->get_all_DBEntries };
+  Description: Retrieves DBEntries (xrefs) for this gene. This does _not_ 
                include DBEntries that are associated with the transcripts and
                corresponding translations of this gene (see get_all_DBLinks).
 
                This method will attempt to lazy-load DBEntries from a
                database if an adaptor is available and no DBEntries are present
                on the gene (i.e. they have not already been added or loaded).
-  Returntype : list reference to Bio::EnsEMBL::DBEntry objects
+  Returntype : Listref of Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : get_all_DBLinks, GeneAdaptor::store
   Status     : Stable
@@ -431,7 +434,7 @@ sub add_DBEntry {
 sub get_all_DBEntries {
   my $self = shift;
 
-  #if not cached, retrieve all of the xrefs for this gene
+  # if not cached, retrieve all of the xrefs for this gene
   if(!defined $self->{'dbentries'} && $self->adaptor()) {
     $self->{'dbentries'} = 
       $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene($self);
@@ -445,16 +448,15 @@ sub get_all_DBEntries {
 
 =head2 get_all_DBLinks
 
-  Arg [1]    : none
-  Example    : @dblinks = @{$gene->get_all_DBLinks()};
-  Description: Retrieves _all_ related DBEntries for this gene.  This includes
+  Example    : @dblinks = @{ $gene->get_all_DBLinks };
+  Description: Retrieves _all_ related DBEntries for this gene. This includes
                all DBEntries that are associated with the transcripts and
                corresponding translations of this gene.
 
                If you only want to retrieve the DBEntries associated with the
                gene (and not the transcript and translations) then you should
                use the get_all_DBEntries call instead.
-  Returntype : list reference to Bio::EnsEMBL::DBEntry objects
+  Returntype : Listref of Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -480,10 +482,9 @@ sub get_all_DBLinks {
 
 =head2 get_all_Exons
 
-  Args       : none
-  Example    : none
-  Description: a set off all the exons associated with this gene.
-  Returntype : listref Bio::EnsEMBL::Exon
+  Example    : my @exons = @{ $gene->get_all_Exons };
+  Description: Returns a set of all the exons associated with this gene.
+  Returntype : Listref of Bio::EnsEMBL::Exon objects
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -492,36 +493,35 @@ sub get_all_DBLinks {
 
 
 sub get_all_Exons {
-   my ($self,@args) = @_;
-   my %h;
+  my $self = shift;
 
-   my @out = ();
+  my %h;
+  my @out = ();
 
-   foreach my $trans ( @{$self->get_all_Transcripts} ) {
-       foreach my $e ( @{$trans->get_all_Exons} ) {
-	   $h{$e->start()."-".$e->end()."-".$e->strand()."-".$e->phase()."-".$e->end_phase()} = $e;
-       }
-   }
+  foreach my $trans ( @{$self->get_all_Transcripts} ) {
+    foreach my $e ( @{$trans->get_all_Exons} ) {
+      $h{$e->start()."-".$e->end()."-".$e->strand()."-".$e->phase()."-".$e->end_phase()} = $e;
+    }
+  }
 
-   push @out, values %h;
+  push @out, values %h;
 
-   return \@out;
+  return \@out;
 }
+
 
 =head2 get_all_homologous_Genes
 
-  Args       : none
-  Example    : 
   Description: Queries the Ensembl Compara database and retrieves all
                Genes from other species that are orthologous.
                REQUIRES properly setup Registry conf file. Meaning that
                one of the aliases for each core db has to be "Genus species"
                e.g. "Homo sapiens" (as in the name column in genome_db table
-               in the compara database)
+               in the compara database).
   Returntype : listref [
                         Bio::EnsEMBL::Gene,
                         Bio::EnsEMBL::Compara::Homology,
-                        string $species, # Need as cannot get spp from Gene 
+                        string $species # needed as cannot get spp from Gene 
                        ]
   Exceptions : none
   Caller     : general
@@ -529,7 +529,7 @@ sub get_all_Exons {
 
 =cut
 
-sub get_all_homologous_Genes{
+sub get_all_homologous_Genes {
   my $self = shift;
 
   if( exists( $self->{'homologues'} ) ){
@@ -586,10 +586,10 @@ sub get_all_homologous_Genes{
 
 =head2 biotype
 
-  Arg [1]    : string $biotype
-  Example    : $gene->biotype( "protein_coding" );
-  Description: get/set for the biotype attribute
-  Returntype : string
+  Arg [1]    : (optional) String - the biotype to set
+  Example    : $gene->biotype("protein_coding");
+  Description: Getter/setter for the attribute biotype
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -604,14 +604,15 @@ sub biotype {
 }
 
 
-
 =head2 add_Transcript
 
-  Arg  1     : Bio::EnsEMBL::Transcript $transcript
-  Example    : none
-  Description: adds another Transcript to the set of alternativly
-               spliced Transcripts off this gene. If it shares exons 
-               with another Transcript, these should be object-identical
+  Arg [1]    : Bio::EnsEMBL::Transcript $trans
+               The transcript to add to the gene
+  Example    : my $transcript = Bio::EnsEMBL::Transcript->new(...);
+               $gene->add_Transcript($transcript);
+  Description: Adds another Transcript to the set of alternatively
+               spliced Transcripts of this gene. If it shares exons 
+               with another Transcript, these should be object-identical.
   Returntype : none
   Exceptions : none
   Caller     : general
@@ -619,9 +620,8 @@ sub biotype {
 
 =cut
 
-
 sub add_Transcript {
-   my ($self,$trans) = @_;
+   my ($self, $trans) = @_;
 
    if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::Transcript") ) {
        throw("$trans is not a Bio::EnsEMBL::Transcript!");
@@ -634,22 +634,19 @@ sub add_Transcript {
 }
 
 
-
 =head2 get_all_Transcripts
 
-  Args       : none
-  Example    : none
-  Description: return the Transcripts in this gene
-  Returntype : listref Bio::EnsEMBL::Transcript
+  Example    : my @transcripts = @{ $gene->get_all_Transcripts };
+  Description: Returns the Transcripts in this gene.
+  Returntype : Listref of Bio::EnsEMBL::Transcript objects
   Exceptions : none
   Caller     : general
   Status     : Stable
 
 =cut
 
-
 sub get_all_Transcripts {
-  my ($self) = @_;
+  my $self = shift;
 
   if( ! exists $self->{'_transcript_array'} ) {
     if( defined $self->adaptor() ) {
@@ -662,15 +659,16 @@ sub get_all_Transcripts {
 }
 
 
-
 =head2 get_all_alt_alleles
 
-  Arg [1]    : none
-  Example    :  ( optional )
-  Description: Return a listref of Gene objects that represent this Gene on
+  Example    : my @alt_genes = @{ $gene->get_all_alt_alleles };
+               foreach my $alt_gene (@alt_genes) {
+                 print "Alternate allele: " . $alt_gene->stable_id() . "\n";
+               }
+  Description: Returns a listref of Gene objects that represent this Gene on
                an alternative haplotype. Empty list if there is no such
-               Gene. (eg there is no overlapping haplotype)
-  Returntype : listref of Bio::EnsEMBL::Gene
+               Gene (eg there is no overlapping haplotype).
+  Returntype : listref of Bio::EnsEMBL::Gene objects
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -684,21 +682,20 @@ sub get_all_alt_alleles {
 }
 
 
-
 =head2 version
 
-  Arg [1]    : int $version
+  Arg [1]    : (optional) Int
                A version number for the stable_id
-  Example    : nonen
-  Description: getter/setter for version number
-  Returntype : int
+  Example    : $gene->version(2);
+  Description: Getter/setter for version number
+  Returntype : Int
   Exceptions : none
   Caller     : general
   Status     : Stable
 
 =cut
 
-sub version{
+sub version {
   my $self = shift;
   $self->{'version'} = shift if(@_);
   return $self->{'version'};
@@ -707,29 +704,48 @@ sub version{
 
 =head2 stable_id
 
-  Arg [1]    : string $stable_id
-  Example    : ("ENSG0000000001")
-  Description: getter/setter for stable id for this gene
-  Returntype : string
+  Arg [1]    : (optional) String - the stable ID to set
+  Example    : $gene->stable_id("ENSG0000000001");
+  Description: Getter/setter for stable id for this gene.
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
 
 =cut
 
-sub stable_id{
+sub stable_id {
   my $self = shift;
   $self->{'stable_id'} = shift if(@_);
   return $self->{'stable_id'};
 }
 
 
+=head2 is_current
+
+  Arg [1]    : Boolean $is_current
+  Example    : $gene->is_current(1)
+  Description: Getter/setter for is_current state of this gene.
+  Returntype : Int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_current {
+  my $self = shift;
+  $self->{'is_current'} = shift if (@_);
+  return $self->{'is_current'};
+}
+
+
 =head2 created_date
 
-  Arg [1]    : (optional) string to be used for the created date
-  Example    : none
-  Description: get/set for attribute created date
-  Returntype : string
+  Arg [1]    : (optional) String - created date to set
+  Example    : $gene->created_date('2006-05-01 12:00:00');
+  Description: Getter/setter for attribute created_date
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -742,18 +758,18 @@ sub created_date {
   return $self->{'created_date'};
 }
 
+
 =head2 modified_date
 
-  Arg [1]    : (optional) string to be used for the modified date
-  Example    : none
-  Description: get/set for attribute modified date
-  Returntype : string
+  Arg [1]    : (optional) String - modified date to set
+  Example    : $gene->modified_date('2006-05-01 12:00:00');
+  Description: Getter/setter for attribute modified_date
+  Returntype : String
   Exceptions : none
   Caller     : general
   Status     : Stable
 
 =cut
-
 
 sub modified_date {
   my $self = shift;
@@ -764,21 +780,20 @@ sub modified_date {
 
 =head2 transform
 
-  Arg  1     : String $coordinate_system_name
-  Arg [2]    : String $coordinate_system_version
-  Description: moves this gene to the given coordinate system. If this gene has Transcripts
-               attached, they move as well.
+  Arg [1]    : String - coordinate system name to transform to
+  Arg [2]    : String - coordinate system version
+  Example    : my $new_gene = $gene->transform('supercontig');
+  Description: Moves this gene to the given coordinate system. If this gene has
+               Transcripts attached, they move as well.
   Returntype : Bio::EnsEMBL::Gene
-  Exceptions : wrong parameters
+  Exceptions : throw on wrong parameters
   Caller     : general
   Status     : Stable
 
 =cut
 
-
 sub transform {
   my $self = shift;
-
 
   # catch for old style transform calls
   if( !@_  || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
@@ -836,11 +851,10 @@ sub transform {
 }
 
 
-
 =head2 transfer
 
   Arg [1]    : Bio::EnsEMBL::Slice $destination_slice
-  Example    : none
+  Example    : my $new_gene = $gene->transfer($slice);
   Description: Moves this Gene to given target slice coordinates. If Transcripts
                are attached they are moved as well. Returns a new gene.
   Returntype : Bio::EnsEMBL::Gene
@@ -870,9 +884,9 @@ sub transfer {
 
 =head2 display_xref
 
-  Arg [1]    : Bio::EnsEMBL::DBEntry $display_xref
+  Arg [1]    : (optional) Bio::EnsEMBL::DBEntry - the display xref to set
   Example    : $gene->display_xref($db_entry);
-  Description: get/set display_xref for this gene
+  Description: Getter/setter display_xref for this gene.
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
@@ -887,12 +901,31 @@ sub display_xref {
 }
 
 
+=head2 display_id
+
+  Example    : print $gene->display_id();
+  Description: This method returns a string that is considered to be
+               the 'display' identifier. For genes this is (depending on
+               availability and in this order) the stable Id, the dbID or an
+               empty string.
+  Returntype : String
+  Exceptions : none
+  Caller     : web drawing code
+  Status     : Stable
+
+=cut
+
+sub display_id {
+  my $self = shift;
+  return $self->{'stable_id'} || $self->dbID || '';
+}
+
+
 =head2 recalculate_coordinates
 
-  Args       : none
-  Example    : none
-  Description: called when transcript added to the gene
-               tries to set coords for the gene.
+  Example    : $gene->recalculate_coordinates;
+  Description: Called when transcript added to the gene, tries to adapt the
+               coords for the gene.
   Returntype : none
   Exceptions : none
   Caller     : internal
@@ -943,39 +976,14 @@ sub recalculate_coordinates {
 }
 
 
-
-=head2 display_id
-
-  Arg [1]    : none
-  Example    : print $gene->display_id();
-  Description: This method returns a string that is considered to be
-               the 'display' identifier. For genes this is (depending on
-               availability and in this order) the stable Id, the dbID or an
-               empty string.
-  Returntype : string
-  Exceptions : none
-  Caller     : web drawing code
-  Status     : Stable
-
-=cut
-
-sub display_id {
-  my $self = shift;
-  return $self->{'stable_id'} || $self->dbID || '';
-}
-
-
-
-
 =head2 get_all_DASFactories
 
-  Arg [1]   : none
-  Function  : Retrieves a listref of registered DAS objects
+  Example    : $dasref = $prot->get_all_DASFactories
+  Description: Retrieves a listref of registered DAS objects
               TODO: Abstract to a DBLinkContainer obj
-  Returntype: [ DAS_objects ]
-  Exceptions:
-  Caller    :
-  Example   : $dasref = $prot->get_all_DASFactories
+  Returntype : [ DAS_objects ]
+  Exceptions : none
+  Caller     : general
   Status     : Stable
 
 =cut
@@ -985,24 +993,25 @@ sub get_all_DASFactories {
    return [ $self->adaptor()->db()->_each_DASFeatureFactory ];
 }
 
+
 =head2 get_all_DAS_Features
 
-  Arg [1]    : none
   Example    : $features = $prot->get_all_DAS_Features;
   Description: Retreives a hash reference to a hash of DAS feature
                sets, keyed by the DNS, NOTE the values of this hash
                are an anonymous array containing:
-                (1) a pointer to an array of features;
+                (1) a pointer to an array of features
                 (2) a pointer to the DAS stylesheet
   Returntype : hashref of Bio::SeqFeatures
-  Exceptions : ?
+  Exceptions : none
   Caller     : webcode
   Status     : Stable
 
 =cut
 
 sub get_all_DAS_Features{
-  my ($self,@args) = @_;
+  my ($self, @args) = @_;
+
   $self->{_das_features} ||= {}; # Cache
   my %das_features;
 
@@ -1014,8 +1023,8 @@ sub get_all_DAS_Features{
     my $type = $dasfact->adaptor->type;
     my $url = $dasfact->adaptor->url;
 
-# Construct a cache key : SOURCE_URL/TYPE
-# Need the type to handle sources that serve multiple types of features
+    # Construct a cache key : SOURCE_URL/TYPE
+    # Need the type to handle sources that serve multiple types of features
 
     my $key = $url || $dasfact->adaptor->protocol .'://'.$dasfact->adaptor->domain;
     $key .= "/$dsn/$type";
@@ -1023,28 +1032,30 @@ sub get_all_DAS_Features{
     if( $self->{_das_features}->{$key} ){ # Use cached
 	$das_features{$name} = $self->{_das_features}->{$key};
 	next;
-    } else{ # Get fresh data
+    } else { # Get fresh data
 	my $featref = ($type =~ /^ensembl_location/) ?  ($dasfact->fetch_all_Features( $slice, $type ))[0] : $dasfact->fetch_all_by_ID( $self );
-#	my $featref = ($type eq 'ensembl_location') ?  ($dasfact->fetch_all_by_Slice( $slice ))[0] : $dasfact->fetch_all_by_ID( $self );
+        # my $featref = ($type eq 'ensembl_location') ?  ($dasfact->fetch_all_by_Slice( $slice ))[0] : $dasfact->fetch_all_by_ID( $self );
 	$self->{_das_features}->{$key} = $featref;
 	$das_features{$name} = $featref;
     }
   }
+
   return \%das_features;
 }
 
 
 =head2 get_all_regulatory_features
 
-  Arg [1]    : If set, regulatory features on transcripts belonging to this gene
-               are returned as well.
+  Arg [1]    : Boolean $recursive
+               If set, regulatory features on transcripts belonging to this
+               gene are returned as well
   Example    : @features = $gene->get_all_regulatory_features(1);
-  Description: Gets all the regulatory features associated with a
-               particular gene, and (optionally) its transcripts.
-               Each feature only appears once.
-  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
+  Description: Gets all the regulatory features associated with a particular
+               gene, and (optionally) its transcripts. Each feature only
+               appears once.
+  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature objects
   Exceptions : If arg is not of correct type.
-  Caller     : ?
+  Caller     : general
   Status     : At Risk
              : regulatory features are under development
 
@@ -1059,6 +1070,7 @@ sub get_all_regulatory_features {
    return $rfa->fetch_all_by_gene($self, $recursive);
 
 }
+
 
 ###########################
 # DEPRECATED METHODS FOLLOW
@@ -1078,19 +1090,17 @@ sub add_DBLink{
 
   throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
 
-#  unless(defined $value && ref $value 
-#	 && $value->isa('Bio::Annotation::DBLink') ) {
-#    throw("This [$value] is not a DBLink");
-#  }
-  
-#  if( !defined $self->{'_db_link'} ) {
-#    $self->{'_db_link'} = [];
-#  }
+  #  unless(defined $value && ref $value 
+  #	 && $value->isa('Bio::Annotation::DBLink') ) {
+  #    throw("This [$value] is not a DBLink");
+  #  }
+    
+  #  if( !defined $self->{'_db_link'} ) {
+  #    $self->{'_db_link'} = [];
+  #  }
 
-#  push(@{$self->{'_db_link'}},$value);
+  #  push(@{$self->{'_db_link'}},$value);
 }
-
-
 
 
 =head2 temporary_id
@@ -1136,11 +1146,13 @@ sub chr_name {
   }
 }
 
+
 =head2 fetch_coded_for_regulatory_factors
 
   Arg [1]    : none
   Example    : $gene->fetch_coded_for_regualtory_factors()
-  Description: Fetches any regulatory_factors that are coded for by this gene
+  Description: DEPRECATED: Fetches any regulatory_factors that are coded for by
+               this gene.
   Returntype : Listref of Bio::Ensembl::RegulatoryFactor
   Exceptions :
   Caller     : ?
@@ -1159,6 +1171,7 @@ sub fetch_coded_for_regulatory_factors {
 
 }
 
+
 =head2 type
 
   Description: DEPRECATED. Use biotype() instead.
@@ -1166,9 +1179,22 @@ sub fetch_coded_for_regulatory_factors {
 =cut
 
 sub type {
-    deprecate("Use biotype() instead");
-    biotype(@_);
+  deprecate("Use biotype() instead");
+  biotype(@_);
+}
+
+
+=head2 confidence
+
+  Description: DEPRECATED. Use status() instead.
+
+=cut
+
+sub confidence {
+  deprecate("Use status() instead");
+  status(@_);
 }
 
 
 1;
+

@@ -1,3 +1,5 @@
+package Bio::EnsEMBL::Exon;
+
 #
 # EnsEMBL module for Bio::EnsEMBL::Exon
 #
@@ -48,10 +50,7 @@ Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
 
 =cut
 
-package Bio::EnsEMBL::Exon;
-use vars qw(@ISA);
 use strict;
-
 
 use Bio::EnsEMBL::Feature;
 use Bio::Seq; # exons have to have sequences...
@@ -60,6 +59,7 @@ use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor;
 
+use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Feature);
 
 
@@ -103,9 +103,10 @@ sub new {
 
   my $self = $class->SUPER::new( @_ );
 
-  my ( $phase, $end_phase, $stable_id, $version, $created_date, $modified_date ) = 
+  my ( $phase, $end_phase, $stable_id, $version, $created_date, $modified_date,
+       $is_current ) = 
     rearrange( [ "PHASE", "END_PHASE", "STABLE_ID", "VERSION",
-		 "CREATED_DATE", "MODIFIED_DATE" ], @_ );
+		 "CREATED_DATE", "MODIFIED_DATE", "IS_CURRENT" ], @_ );
 
   $self->phase($phase) if (defined $phase); # make sure phase is valid.
   $self->{'end_phase'} = $end_phase;
@@ -113,10 +114,10 @@ sub new {
   $self->{'version'} = $version;
   $self->{'created_date'} = $created_date;
   $self->{'modified_date'} = $modified_date;
+  $self->{'is_current'} if (defined($is_current));
 
   return $self;
 }
-
 
 
 =head2 new_fast
@@ -135,7 +136,7 @@ sub new {
 =cut
 
 sub new_fast {
-  my ($class,$slice,$start,$end,$strand) = @_;
+  my ($class, $slice, $start, $end, $strand) = @_;
 
   my $self = bless {}, $class;
 
@@ -153,8 +154,6 @@ sub new_fast {
 
   return $self;
 }
-
-
 
 
 =head2 end_phase
@@ -187,10 +186,6 @@ sub end_phase {
   return $self->{'end_phase'};
 }
 
-
-
-
-=pod
 
 =head2 phase
 
@@ -250,7 +245,6 @@ sub phase {
 }
 
 
-
 =head2 frame
 
   Arg [1]    : none
@@ -293,8 +287,6 @@ sub frame {
 }
 
 
-
-
 =head2 start
 
   Arg [1]    : int $start (optional)
@@ -311,7 +303,7 @@ sub frame {
 
 sub start {
   my $self = shift;
-  #if an arg was provided, flush the internal sequence cache
+  # if an arg was provided, flush the internal sequence cache
   delete $self->{'_seq_cache'} if(@_);
   return $self->SUPER::start(@_);
 }
@@ -333,7 +325,7 @@ sub start {
 
 sub end {
   my $self = shift;
-  #if an arg was provided, flush the internal sequence cache
+  # if an arg was provided, flush the internal sequence cache
   delete $self->{'_seq_cache'} if(@_);
   return $self->SUPER::end(@_);
 }
@@ -355,7 +347,7 @@ sub end {
 
 sub strand {
   my $self = shift;
-  #if an arg was provided, flush the internal sequence cache
+  # if an arg was provided, flush the internal sequence cache
   delete $self->{'_seq_cache'} if(@_);
   return $self->SUPER::strand(@_);
 }
@@ -377,11 +369,10 @@ sub strand {
 
 sub slice {
   my $self = shift;
-  #if an arg was provided, flush the internal sequence cache
+  # if an arg was provided, flush the internal sequence cache
   delete $self->{'_seq_cache'} if(@_);
   return $self->SUPER::slice(@_);
 }
-
 
 
 =head2 move
@@ -405,11 +396,10 @@ sub slice {
 
 sub move {
   my $self = shift;
-  #flush the internal sequence cache
+  # flush the internal sequence cache
   delete $self->{'_seq_cache'};
   return $self->SUPER::move(@_);
 }
-
 
 
 =head2 transform
@@ -424,7 +414,6 @@ sub move {
   Status     : Stable
 
 =cut
-
 
 sub transform {
   my $self = shift;
@@ -452,7 +441,6 @@ sub transform {
 
   return $new_exon;
 }
-
 
 
 =head2 transfer
@@ -490,7 +478,6 @@ sub transfer {
 }
 
 
-
 =head2 add_supporting_features
 
   Arg [1]    : Bio::EnsEMBL::Feature $feature
@@ -512,14 +499,13 @@ sub transfer {
 
 sub add_supporting_features {
   my ($self,@features) = @_;
-  #print STDERR "calling add supporting features\n\n";
+
   return unless @features;
 
   $self->{_supporting_evidence} ||= []; 
   
   # check whether this feature object has been added already
- FEATURE: foreach my $feature (@features) {
-    #print STDERR "have ".$feature." to add to exon\n\n";
+  FEATURE: foreach my $feature (@features) {
     unless($feature && $feature->isa("Bio::EnsEMBL::Feature")) {
       throw("Supporting feat [$feature] not a " .
             "Bio::EnsEMBL::Feature");
@@ -535,12 +521,12 @@ sub add_supporting_features {
     foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
       # compare objects
       if ( $feature == $added_feature ){
-	#this feature has already been added
+	# this feature has already been added
 	next FEATURE;
       }
     }
     
-    #no duplicate was found, add the feature
+    # no duplicate was found, add the feature
     push(@{$self->{_supporting_evidence}},$feature);
   }
 }
@@ -620,6 +606,7 @@ sub find_supporting_evidence {
   }
 }
 
+
 =head2 stable_id
 
   Arg [1]    : string $stable_id
@@ -633,7 +620,7 @@ sub find_supporting_evidence {
 =cut
 
 sub stable_id {
-   my $self = shift;
+  my $self = shift;
   $self->{'stable_id'} = shift if( @_ );
   return $self->{'stable_id'};
 }
@@ -657,6 +644,7 @@ sub created_date {
   return $self->{'created_date'};
 }
 
+
 =head2 modified_date
 
   Arg [1]    : string $modified_date
@@ -676,7 +664,6 @@ sub modified_date {
 }
 
 
-
 =head2 version
 
   Arg [1]    : string $version
@@ -693,6 +680,25 @@ sub version {
    my $self = shift;
   $self->{'version'} = shift if( @_ );
   return $self->{'version'};
+}
+
+
+=head2 is_current
+
+  Arg [1]    : Boolean $is_current
+  Example    : $exon->is_current(1)
+  Description: Getter/setter for is_current state of this exon.
+  Returntype : Int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_current {
+  my $self = shift;
+  $self->{'is_current'} = shift if (@_);
+  return $self->{'is_current'};
 }
 
 
@@ -797,7 +803,6 @@ sub peptide {
 }
 
 
-
 =head2 seq
 
   Arg [1]    : none
@@ -844,8 +849,6 @@ sub seq {
                        -id      => $self->display_id,
                        -moltype => 'dna');
 }
-
-
 
 
 =head2 hashkey
@@ -931,6 +934,12 @@ sub display_id {
 =cut
 
 
+=head2 _get_stable_entry_info 
+
+  Description: DEPRECATED.
+
+=cut
+
 sub _get_stable_entry_info {
    my $self = shift;
    deprecate( "This function shouldnt be called any more" );
@@ -943,7 +952,7 @@ sub _get_stable_entry_info {
 
 =head2 temporary_id
 
-  Description: DEPRECATED.  This should not be necessary
+  Description: DEPRECATED.  This should not be necessary.
 
 =cut
 
@@ -954,13 +963,14 @@ sub temporary_id {
   return $self->{'tempID'};
 }
 
+
 =head2 created
 
   Description: DEPRECATED.  Do not use.
 
 =cut
 
-sub created{
+sub created {
     my ($self,$value) = @_;
     deprecate( "Created attribute not supported any more." );
     if(defined $value ) {
@@ -975,7 +985,8 @@ sub created{
 
 =cut
 
-sub modified{
+
+sub modified {
     my ($self,$value) = @_;
     deprecate( "Modified attribute not supported any more." );
     if( defined $value ) {
@@ -1001,5 +1012,5 @@ sub type {
 }
 
 
-
 1;
+
