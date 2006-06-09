@@ -487,11 +487,9 @@ sub filter_overlaps {
     my $self = shift;
     my $id = $self->id;
     
-    return unless ($self->{'_match'});
-
     foreach my $R_chr (sort keys %{ $self->{'_match'} }) {
+        my $coord_check = [];
         # rearrange the datastructure so that we can find overlaps
-        my $coord_check;
         foreach my $id (keys %{ $self->{'_match'}->{$R_chr} }) {
             for (my $align = 0; $align < scalar(@{ $self->{'_match'}->{$R_chr}->{$id} }); $align++) {
                 for (my $c = 0; $c < scalar(@{ $self->{'_match'}->{$R_chr}->{$id}->[$align] || []}); $c++) {
@@ -507,7 +505,7 @@ sub filter_overlaps {
                 }
             }
         }
-        
+
         my @A_sort = sort { $a->[0] <=> $b->[0] } @{ $coord_check };
         my @R_sort = sort { $a->[2] <=> $b->[2] } @{ $coord_check };
 
