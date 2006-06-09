@@ -2,7 +2,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 31;
+	plan tests => 35;
 }
 
 my $loaded = 0;
@@ -210,8 +210,9 @@ ok(count_rows($db, 'supporting_feature') == $supfeat_count - $supfeat_minus);
 
 $multi->restore();
 
-
+#
 # tests for multiple versions of transcripts in a database
+#
 
 $exon = $exonad->fetch_by_stable_id('ENSE00001109603');
 debug("fetch_by_stable_id");
@@ -221,4 +222,45 @@ my @exons = @{ $exonad->fetch_all_versions_by_stable_id('ENSE00001109603') };
 debug("fetch_all_versions_by_stable_id");
 ok( scalar(@exons) == 2 );
 
+# store/update tests
+
+$multi->hide( "core", "exon", "supporting_feature", 
+	      "protein_align_feature", "dna_align_feature");
+
+my $e1 = Bio::EnsEMBL::Exon->new(
+  -start => 10,
+  -end => 1000,
+  -strand => 1,
+  -slice => $slice,
+  -phase => 0,
+  -end_phase => 0,
+  -stable_id => 'ENSE0001',
+  -version => 1
+);
+
+my $e2 = Bio::EnsEMBL::Exon->new(
+  -start => 10,
+  -end => 1000,
+  -strand => 1,
+  -slice => $slice,
+  -phase => 0,
+  -end_phase => 0,
+  -stable_id => 'ENSE0001',
+  -version => 2,
+  -is_current => 0
+);
+
+$exonad->store($e1);
+$exonad->store($e2);
+
+$exon = $exonad->fetch_by_stable_id('ENSE0001');
+ok( $exon->is_current == 1);
+
+@exons = @{ $exonad->fetch_all_versions_by_stable_id('ENSE0001') };
+foreach my $e (@exons) {
+  next unless ($e->version == 2);
+  ok($e->is_current == 0);
+}
+
+$multi->restore();
 

@@ -632,7 +632,7 @@ sub _objs_from_sth {
 	'-modified_date' =>  $modified_date || undef,
         '-phase'         =>  $phase,
         '-end_phase'     =>  $end_phase,
-        'is_current'     =>  $is_current
+        '-is_current'    =>  $is_current
     );
 
   }

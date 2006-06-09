@@ -75,17 +75,17 @@ use vars qw(@ISA);
                 the slice it is sitting on.  Coordinates start at 1 and are
                 inclusive.
   Arg [-STRAND]: The orientation of this feature.  Valid values are 1,-1,0.
-  Arg [-SEQNAME] : A seqname to be used instead of the default name of the
-                of the slice.  Useful for features that do not have an
+  Arg [-SEQNAME] : (optional) A seqname to be used instead of the default name
+                of the of the slice.  Useful for features that do not have an
                 attached slice such as protein features.
   Arg [-dbID]   : (optional) internal database id
   Arg [-ADAPTOR]: (optional) Bio::EnsEMBL::DBSQL::BaseAdaptor
-  Arg [-PHASE]    :(optional) the phase. 
-  Arg [-END_PHASE]:(optional) the end phase
-  Arg [-STABLE_ID]:(optional) the stable id of the exon
-  Arg [-VERSION]  :(optional) the version
-  Arg [-CREATED_DATE] :(optional) the created date
-  Arg [-MODIFIED_DATE]:(optional) the last midifeid date
+  Arg [-PHASE]    : the phase. 
+  Arg [-END_PHASE]: the end phase
+  Arg [-STABLE_ID]: (optional) the stable id of the exon
+  Arg [-VERSION]  : (optional) the version
+  Arg [-CREATED_DATE] : (optional) the created date
+  Arg [-MODIFIED_DATE]: (optional) the last midifeid date
 
   Example    : none
   Description: create an Exon object
@@ -114,7 +114,10 @@ sub new {
   $self->{'version'} = $version;
   $self->{'created_date'} = $created_date;
   $self->{'modified_date'} = $modified_date;
-  $self->{'is_current'} if (defined($is_current));
+
+  # default is_current
+  $is_current = 1 unless (defined($is_current));
+  $self->{'is_current'} = $is_current;
 
   return $self;
 }

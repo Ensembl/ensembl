@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 76;
+	plan tests => 81;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -643,7 +643,9 @@ $gene = $ga->fetch_by_dbID(18271);
 my @factors = @{$gene->fetch_coded_for_regulatory_factors()};
 ok($factors[0]->dbID() == 5);
 
+#
 # tests for multiple versions of genes in a database
+#
 
 $gene = $ga->fetch_by_stable_id('ENSG00000355555');
 debug("fetch_by_stable_id");
@@ -680,4 +682,46 @@ ok( $gene->is_current == 1 );
 $gene = $ga->fetch_by_dbID(18276);
 debug("fetch_by_dbID, non current");
 ok( $gene->is_current == 0 );
+
+# store/update
+
+$gene = $ga->fetch_by_stable_id('ENSG00000355555');
+foreach my $t (@{ $gene->get_all_Transcripts }) {
+  $t->get_all_Exons;
+}
+
+$multi->hide( "core", "gene", "transcript", "exon", 'xref', 'object_xref',
+              "exon_transcript", "translation", "gene_stable_id" );
+
+$gene->version(3);
+$gene->dbID(undef);
+$gene->adaptor(undef);
+$ga->store($gene);
+
+$gene->version(4);
+$gene->is_current(0);
+$gene->dbID(undef);
+$gene->adaptor(undef);
+$ga->store($gene);
+
+$gene = $ga->fetch_by_stable_id('ENSG00000355555');
+ok($gene->is_current == 1);
+
+@genes = @{ $ga->fetch_all_versions_by_stable_id('ENSG00000355555') };
+foreach my $g (@genes) {
+  next unless ($g->version == 4);
+  ok($g->is_current == 0);
+}
+
+$gene->is_current(0);
+$ga->update($gene);
+my $g1 = $ga->fetch_by_stable_id('ENSG00000355555');
+ok(!$g1);
+
+$gene->is_current(1);
+$ga->update($gene);
+$gene = $ga->fetch_by_stable_id('ENSG00000355555');
+ok($gene->is_current == 1);
+
+$multi->restore;
 

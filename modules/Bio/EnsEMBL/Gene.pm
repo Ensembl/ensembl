@@ -139,7 +139,10 @@ sub new {
                                 # kept to ensure routine is backwards compatible.
   $self->status( $status);      # add new naming
   $self->source( $source );
-  $self->is_current($is_current) if (defined($is_current));
+
+  # default to is_current
+  $is_current = 1 unless (defined($is_current));
+  $self->{'is_current'} = $is_current;
 
   return $self;
 }

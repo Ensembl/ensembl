@@ -151,7 +151,10 @@ sub new {
   $self->status( $confidence );  # old style name
   $self->status( $status );      # new style name
   $self->biotype( $biotype );
-  $self->is_current($is_current) if (defined($is_current));
+
+  # default is_current
+  $is_current = 1 unless (defined($is_current));
+  $self->{'is_current'} = $is_current;
 
   return $self;
 }

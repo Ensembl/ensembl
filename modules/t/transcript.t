@@ -4,7 +4,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 140;
+	plan tests => 152;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -117,7 +117,7 @@ ok ( $tr->display_xref->dbID() == 97759 );
 ok( test_getter_setter( $tr, "display_xref", 42 ));
 
 ok( test_getter_setter( $tr, "dbID", 100000 ));
-ok( test_getter_setter( $tr, "type", "NOVEL" ));
+ok( test_getter_setter( $tr, "biotype", "NOVEL" ));
 ok( test_getter_setter( $tr, "created_date", time() ));
 ok( test_getter_setter( $tr, "modified_date", time() ));
 
@@ -501,7 +501,9 @@ ok(count_rows($db, 'transcript_attrib') == 2);
 
 $multi->restore('core');
 
+#
 # tests for multiple versions of transcripts in a database
+#
 
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
 debug("fetch_by_stable_id");
@@ -535,6 +537,52 @@ ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21740 );
 $tr = $ta->fetch_by_display_label('MX_HUMAN');
 debug("fetch_by_display_label");
 ok( $tr->dbID == 21740 );
+
+# store/update
+
+$tr = $ta->fetch_by_stable_id('ENST00000355555');
+$g = $db->get_GeneAdaptor->fetch_by_transcript_id($tr->dbID);
+$tr->get_all_Exons;
+
+$multi->hide( "core", "gene", "transcript", "exon", 'xref', 'object_xref',
+              "exon_transcript", "translation", "transcript_stable_id" );
+
+$tr->version(3);
+$tr->dbID(undef);
+$tr->adaptor(undef);
+$ta->store($tr, $g->dbID);
+
+$tr->version(4);
+$tr->is_current(0);
+$tr->dbID(undef);
+$tr->adaptor(undef);
+$ta->store($tr, $g->dbID);
+
+$tr = $ta->fetch_by_stable_id('ENST00000355555');
+ok($tr->is_current == 1);
+
+@transcripts = @{ $ta->fetch_all_versions_by_stable_id('ENST00000355555') };
+foreach my $t (@transcripts) {
+  next unless ($t->version == 4);
+  ok($t->is_current == 0);
+}
+
+$tr->is_current(0);
+$ta->update($tr);
+my $t1 = $ta->fetch_by_stable_id('ENST00000355555');
+ok(!$t1);
+
+$tr->is_current(1);
+$ta->update($tr);
+$tr = $ta->fetch_by_stable_id('ENST00000355555');
+ok($tr->is_current == 1);
+
+$multi->restore;
+
+
+#
+# end main
+#
 
 
 sub test_trans_mapper_edits {
