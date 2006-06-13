@@ -56,7 +56,7 @@ while( <FH> ) {
 # the rgd to ensembl table
 my $rgd_ens_map = $db->selectall_arrayref
      ("select name, marker_id from marker_synonym " .
-      "where source = 'rgd' or source = 'rgdgene'" );
+      "where source = 'RGD' or source = 'RGD_NUM' or source = 'rgd' or  source = 'rgdgene'" );
 
 my %rgd_ens_map = map { $_->[0], $_->[1] } @$rgd_ens_map;
 
