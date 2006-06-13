@@ -933,6 +933,8 @@ sub load_registry_from_db{
 	-port => $port,
 	-dbname => $other_db
       );
+      (my $sp = $species ) =~ s/_/ /g;
+      $self->add_alias( $species, $sp );
       print $other_db." loaded\n" if ($verbose);       
   }
   
