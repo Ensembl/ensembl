@@ -36,8 +36,7 @@ This whole module has a status of At Risk as it is under development.
     fetch_by_stable_id
     fetch_by_stable_id_version
     fetch_by_stable_id_dbname
-    fetch_all_by_gene_archive_id
-    fetch_by_transcript_archive_id
+    fetch_all_by_archive_id
     fetch_predecessors_by_archive_id
     fetch_successors_by_archive_id
     fetch_stable_id_history
@@ -45,8 +44,6 @@ This whole module has a status of At Risk as it is under development.
     fetch_successor_history
     get_peptide
     list_dbnames
-    _lookup_version
-    _resolve_type
 
 =head1 LICENCE
 
@@ -231,53 +228,61 @@ sub fetch_by_stable_id_dbname {
 }
 
 
-=head2 fetch_all_by_gene_archive_id
+=head2 fetch_all_by_archive_id
 
-  Arg [1]     : Bio::EnsEMBL::ArchiveStableId $gene_archive_id
-  Example     : none
-  Description : Given the ArchiveStableId of a gene retrieves ArchiveStableIds
-                of Transcripts that make that gene.
+  Arg [1]     : Bio::EnsEMBL::ArchiveStableId $archive_id
+  Arg [2]     : String $return_type - type of ArchiveStableId to fetch
+  Example     : my $arch_id = $arch_adaptor->fetch_by_stable_id('ENSG0001');
+                my @archived_transcripts = $arch_adaptor->fetch_all_by_archive_id($arch_id, 'Transcript');
+  Description : Given a ArchiveStableId it retrieves associated ArchiveStableIds
+                of specified type (e.g. retrieve transcripts for genes or vice
+                versa).
   Returntype  : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
-  Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_transcript_archive_ids
+  Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_gene_archive_ids,
+                get_all_transcript_archive_ids, get_all_translation_archive_ids
   Status      : At Risk
               : under development
 
 =cut
 
-sub fetch_all_by_gene_archive_id {
+sub fetch_all_by_archive_id {
   my $self = shift;
-  my $gene_archive_id = shift;
+  my $archive_id = shift;
+  my $return_type = shift;
+
   my @result = ();
+  my $lc_self_type = lc($archive_id->type);
+  my $lc_return_type = lc($return_type);
 
   my $sql = qq(
     SELECT
-          ga.transcript_stable_id,
-          ga.transcript_version,
+          ga.${lc_return_type}_stable_id,
+          ga.${lc_return_type}_version,
           m.old_db_name,
           m.old_release,
           m.old_assembly
     FROM  gene_archive ga, mapping_session m
-    WHERE ga.gene_stable_id = ?
-    AND   ga.gene_version = ?
+    WHERE ga.${lc_self_type}_stable_id = ?
+    AND   ga.${lc_self_type}_version = ?
     AND   ga.mapping_session_id = m.mapping_session_id
   );
   
   my $sth = $self->prepare($sql);
-  $sth->bind_param(1,$gene_archive_id->stable_id,SQL_VARCHAR);
-  $sth->bind_param(2,$gene_archive_id->version,SQL_SMALLINT);
-  $sth->execute();
+  $sth->bind_param(1, $archive_id->stable_id, SQL_VARCHAR);
+  $sth->bind_param(2, $archive_id->version, SQL_SMALLINT);
+  $sth->execute;
   
   my ($stable_id, $version, $db_name, $release, $assembly);
   $sth->bind_columns(\$stable_id, \$version, \$db_name, \$release, \$assembly);
 
-  while( $sth->fetch() ) {
+  while ($sth->fetch) {
     my $new_arch_id = Bio::EnsEMBL::ArchiveStableId->new
       (
        -version => $version,
        -adaptor => $self,
        -stable_id => $stable_id,
-       -type => "Transcript",
+       -type => $return_type,
        -db_name => $db_name,
        -release => $release,
        -assembly => $assembly
@@ -288,65 +293,6 @@ sub fetch_all_by_gene_archive_id {
 
   $sth->finish();
   return \@result;
-}
-
-
-=head2 fetch_by_transcript_archive_id
-
-  Arg [1]     : Bio::EnsEMBL::ArchiveStableId
-  Example     : none
-  Description : Given a Transcripts ArchiveStableId retrieves the
-                Translations ArchiveStableId. 
-  Returntype  : Bio::EnsEMBL::ArchiveStableId or undef if not in database
-  Exceptions  : none
-  Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_translation_archive_ids
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub fetch_by_transcript_archive_id {
-  my $self = shift;
-  my $transcript_archive_id = shift;
-
-  my $sql = qq(
-    SELECT
-          ga.translation_stable_id,
-          ga.translation_version,
-          m.old_db_name,
-          m.old_release,
-          m.old_assembly
-    FROM  gene_archive ga, mapping_session m
-    WHERE ga.transcript_stable_id = ?
-    AND   ga.transcript_version = ?
-    AND   ga.mapping_session_id = m.mapping_session_id
-  );
-  
-  my $sth = $self->prepare( $sql );
-  $sth->bind_param(1,$transcript_archive_id->stable_id,SQL_VARCHAR);
-  $sth->bind_param(2,$transcript_archive_id->version,SQL_SMALLINT);
-  $sth->execute();
-  
-  my ($stable_id, $version, $db_name, $release, $assembly) = $sth->fetchrow_array();
-  
-  $sth->finish();
-
-  if( $db_name ) {
-    my $new_arch_id = Bio::EnsEMBL::ArchiveStableId->new
-      (
-       -version => $version,
-       -adaptor => $self,
-       -stable_id => $stable_id,
-       -type => "Translation",
-       -db_name => $db_name,
-       -release => $release,
-       -assembly => $assembly
-      );
-
-    return $new_arch_id;
-  } else {
-    return undef;
-  }
 }
 
 
@@ -1063,4 +1009,47 @@ sub fetch_all_currently_related {
 }
 
 
+=head2 fetch_all_by_gene_archive_id
+
+  Description : DEPRECATED. Please use fetch_all_by_archive_id($archive_id,
+                'Transcript') instead.
+
+=cut
+
+sub fetch_all_by_gene_archive_id {
+  my $self = shift;
+  my $gene_archive_id = shift;
+
+  deprecate("Please use fetch_all_by_archive_id(\$archive_id, 'Transcript') instead.");
+
+  return $self->fetch_all_by_archive_id($gene_archive_id, 'Transcript');
+}
+
+=head2 fetch_by_transcript_archive_id
+
+  Description : DEPRECATED. Please use fetch_all_by_archive_id($archive_id,
+                'Translation') instead. Note that the return type of the new
+                method is different from this one.
+
+=cut
+
+sub fetch_by_transcript_archive_id {
+  my $self = shift;
+  my $transcript_archive_id = shift;
+
+  deprecate("Please use fetch_all_by_archive_id(\$archive_id, 'Translation') instead.");
+
+  my ($translation_archive_id) =
+    @{ $self->fetch_all_by_archive_id($transcript_archive_id, 'Translation') };
+
+  if ($translation_archive_id) {
+    return $translation_archive_id;
+  } else {
+    return undef;
+  }
+}
+
+
+
 1;
+

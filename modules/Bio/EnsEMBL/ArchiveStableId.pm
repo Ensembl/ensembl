@@ -197,7 +197,6 @@ sub get_all_successors {
 
 =head2 get_peptide
 
-  Args        : none
   Example     : none
   Description : Retrieves the peptide string for this ArchiveStableId.
   Returntype  : String, or undef if this is not a Translation or cant be found
@@ -220,12 +219,37 @@ sub get_peptide {
 }
 
 
+=head2 get_all_gene_archive_ids
+
+  Example     : my @archived_genes = @{ $arch_id->get_all_gene_archive_ids };
+  Description : Returns gene ArchiveStableIds associated with this
+                ArchiveStableId. If this is a gene, it returns itself.
+  Returntype  : listref of Bio::EnsEMBL::ArchiveStableId
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub get_all_gene_archive_ids {
+  my $self = shift;
+
+  if ($self->type eq "Gene") {
+    return [$self];
+  } else {
+    return $self->adaptor->fetch_all_by_archive_id($self, 'Gene');
+  }
+}
+
+
 =head2 get_all_transcript_archive_ids
 
-  Args        : none
   Example     : none
-  Description : If this is a genes ArchiveStableId and found in the database,
-                this function gets the transcripts archiveStableIds from it.
+  Example     : my @archived_transcripts =
+                  @{ $arch_id->get_all_transcript_archive_ids };
+  Description : Returns transcript ArchiveStableIds associated with this
+                ArchiveStableId. If this is a gene, it returns itself.
   Returntype  : listref of Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
   Caller      : general
@@ -237,22 +261,20 @@ sub get_peptide {
 sub get_all_transcript_archive_ids {
   my $self = shift;
 
-  my $archive_ids = [];
-
-  if( $self->type() eq "Gene" ) {
-    $archive_ids = $self->adaptor->fetch_all_by_gene_archive_id( $self );
+  if ($self->type eq "Transcript") {
+    return [$self];
+  } else {
+    return $self->adaptor->fetch_all_by_archive_id($self, 'Transcript');
   }
-
-  return $archive_ids;
 }
 
 
 =head2 get_all_translation_archive_ids
 
-  Args        : none
-  Example     : none
-  Description : Retrieves the Translation ArchiveStableIds for this transcript
-                stable id. 
+  Example     : my @archived_peptides =
+                  @{ $arch_id->get_all_translation_archive_ids };
+  Description : Returns translation ArchiveStableIds associated with this
+                ArchiveStableId. If this is a gene, it returns itself.
   Returntype  : listref of Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
   Caller      : general
@@ -264,19 +286,10 @@ sub get_all_transcript_archive_ids {
 sub get_all_translation_archive_ids {
   my $self = shift;
 
-  if( $self->type() eq "Transcript" ) {
-    my $T = $self->adaptor->fetch_by_transcript_archive_id( $self );
-    return $T ? [$T] : [];
-  } elsif( $self->type() eq "Gene" ) {
-    my $transcripts = $self->adaptor->fetch_all_by_gene_archive_id( $self );
-    my @peptides ;
-    for (@$transcripts) {
-      my $T = $self->adaptor->fetch_by_transcript_archive_id( $_ );
-      push @peptides, $T if $T;
-    }
-    return \@peptides;
-  } else {
+  if ($self->type eq "Translation") {
     return [$self];
+  } else {
+    return $self->adaptor->fetch_all_by_archive_id($self, 'Translation');
   }
 }
 
