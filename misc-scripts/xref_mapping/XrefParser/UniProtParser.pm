@@ -298,7 +298,7 @@ sub create_xrefs {
 	      next;
 	    }
 	    else{
-	      print "missed $dep\n";
+#	      print "missed $dep\n";
 	      next;
 	    }
 	  }
