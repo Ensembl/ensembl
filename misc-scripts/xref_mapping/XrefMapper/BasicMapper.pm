@@ -1051,8 +1051,13 @@ sub parse_mappings {
 
 
   # dump triage type data
-  $self->dump_triage_data($xref_id_offset) if (!$notriage);
-
+  if(!$notriage){
+    $self->dump_triage_data($xref_id_offset);
+  }  
+  # if no triage then dump the xrefs at least
+  else{
+    $self->dump_xref_with_no_triage_data($xref_id_offset);
+  }
 
   # write comparison info. Can be removed after development
   ###writes to xref.txt.Do not want to do this if loading data afterwards
@@ -3297,6 +3302,64 @@ sub get_mysql_command{
                   ( $pass ? ( "-p'".$pass."'" ) : () ),
                   $dbname );
   return $str;
+}
+
+sub dump_xref_with_no_triage_data() {
+  my ($self, $xref_id_offset) = @_;
+
+  print "Dumping xrefs\n";
+ my $batch_size=200;
+
+  my $primary_sql= (<<PSQL);
+    SELECT DISTINCT(s.source_id), px.sequence_type
+      FROM source s, primary_xref px, xref x 
+	WHERE x.xref_id = px.xref_id
+	  AND s.source_id = x.source_id
+PSQL
+
+  my $psth = $self->xref->dbc->prepare($primary_sql) || die "prepare failed";
+  $psth->execute() || die "execute failed";
+
+  my @primary_sources =();
+  my %source_2_seqtype=();
+
+  my ($prim,$seq_type);
+  $psth->bind_columns(\$prim,\$seq_type);
+  while($psth->fetch()){
+    push @primary_sources, $prim;
+    $source_2_seqtype{$prim} = $seq_type;
+  }
+
+  open (XREF, ">>" . $self->core->dir() . "/xref.txt");
+
+  foreach my $source (@primary_sources){
+
+     my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, ".
+              "x.species_id from xref x where x.source_id = $source";
+    my $sth = $self->xref->dbc->prepare($sql);
+    $sth->execute();
+    
+    my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id);
+    $sth->bind_columns(\$xref_id, \$accession, \$version, \$label, 
+		       \$description, \$source_id, \$species_id);
+    while($sth->fetch()){
+      if (!$xrefs_written{$xref_id}) {
+	my $external_db_id = $source_to_external_db{$source_id};
+	if(!defined($updated_source{$external_db_id})){
+	  $self->cleanup_sources_file($external_db_id);
+	}
+	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . 
+	             "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+
+#dump out dependencies aswell
+	
+        $self->dump_all_dependencies($xref_id, $xref_id_offset);
+
+      }
+    }
+    $sth->finish;
+  }
+  close(XREF);
 }
 
 1;
