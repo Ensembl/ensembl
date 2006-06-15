@@ -632,7 +632,7 @@ sub upload_xref_object_graphs {
        }
       # Create entry in xref table and note ID
       if(! $xref_sth->execute($xref->{ACCESSION},
-			 $xref->{VERSION},
+			 $xref->{VERSION} || 0,
 			 $xref->{LABEL},
 			 $xref->{DESCRIPTION},
 			 $xref->{SOURCE_ID},
@@ -678,7 +678,7 @@ sub upload_xref_object_graphs {
 	my %dep = %$depref;
 
 	$xref_sth->execute($dep{ACCESSION},
-			   $dep{VERSION},
+			   $dep{VERSION} || 0,
 			   $dep{LABEL},
 			   "",
 			   $dep{SOURCE_ID},
@@ -1109,7 +1109,7 @@ sub add_xref {
   if(!defined($add_xref_sth)){
     $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
   }
- $add_xref_sth->execute($acc,$version,$label,$description,$source_id,$species_id) 
+ $add_xref_sth->execute($acc,$version || 0,$label,$description,$source_id,$species_id) 
    || die "$acc\t$label\t\t$source_id\t$species_id\n";
 
   return $add_xref_sth->{'mysql_insertid'};
@@ -1130,7 +1130,7 @@ sub add_to_xrefs{
   
   my $dependent_id = $self->get_xref($acc, $source_id);
   if(!defined($dependent_id)){
-    $add_xref_sth->execute($acc,$version,$label,$description,$source_id,$species_id) 
+    $add_xref_sth->execute($acc,$version || 0,$label,$description,$source_id,$species_id) 
       || die "$acc\t$label\t\t$source_id\t$species_id\n";
   }
   $dependent_id = $self->get_xref($acc, $source_id);
