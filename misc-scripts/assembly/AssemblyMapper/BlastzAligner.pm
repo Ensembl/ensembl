@@ -720,6 +720,12 @@ sub log_overall_stats {
     
     # blastz
     $self->support->log("\nOverall blastz alignment stats:\n");
+
+    unless ($self->get_stats('alignments')) {
+      $self->support->log("No alignments found.\n", 1);
+      return;
+    }
+    
     $self->support->log(sprintf(FMT1,
         "Matches:",
         $self->get_stats('match_total'),
