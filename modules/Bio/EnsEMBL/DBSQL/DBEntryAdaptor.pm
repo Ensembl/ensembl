@@ -945,7 +945,7 @@ sub _type_by_external_id{
   foreach( @queries ) {
 
     my $sth = $self->prepare( $_ );
-    $sth->bind_param(1, $name, SQL_VARCHAR);
+    $sth->bind_param(1, "$name", SQL_VARCHAR);
     $sth->bind_param(2, $ensType, SQL_VARCHAR);
     $sth->execute();
     while( my $r = $sth->fetchrow_array() ) {
