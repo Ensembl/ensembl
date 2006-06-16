@@ -156,6 +156,8 @@ foreach my $chr ($support->sort_chromosomes) {
 
   # compare reference and alternative sequence
   my @segments = @{ $R_slice->project('chromosome', $support->param('altassembly')) };
+  
+  my $i;
 
   foreach my $seg (@segments) {
     # reference sequence
@@ -168,8 +170,6 @@ foreach my $chr ($support->sort_chromosomes) {
     my $A_seq = $A_sub_slice->seq;
 
     # compare
-    my $i;
-
     if ($R_seq eq $A_seq) {
       # sequences are identical -> ok
       $support->log_verbose("Sequence match at ".$R_sub_slice->name."\n", 2);
@@ -200,6 +200,7 @@ foreach my $chr ($support->sort_chromosomes) {
     $support->log("Total: $i problematic alignments.\n", 2);
   } else {
     $support->log("All alignments ok.\n", 2);
+  }
 
   $support->log_stamped("Done.\n\n", 1);
 }
