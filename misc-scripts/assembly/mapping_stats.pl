@@ -174,7 +174,7 @@ foreach my $chr ($support->sort_chromosomes) {
   my $A_length = $A_chr_length - $n;
 
   # determine total length of mapping to alternative assembly
-  my $mapping_length;
+  my $mapping_length = 0;
   my %blocks;
 
   # chromosome length order of magnitude
@@ -216,10 +216,12 @@ foreach my $chr ($support->sort_chromosomes) {
   
   $support->log(sprintf($fmt1, "Total alignments:", $segs), 2);
   
-  for (my $i = 0; $i < $oom; $i++) {
-    my $from = 10**$i;
-    my $to = 10**($i+1);
-    $support->log(sprintf($fmt3, "    ".$support->commify($from)." - ".$support->commify($to)." bp:", $blocks{$to}, $blocks{$to}/$segs*100), 2);
+  if ($segs) {
+    for (my $i = 0; $i < $oom; $i++) {
+      my $from = 10**$i;
+      my $to = 10**($i+1);
+      $support->log(sprintf($fmt3, "    ".$support->commify($from)." - ".$support->commify($to)." bp:", $blocks{$to}, $blocks{$to}/$segs*100), 2);
+    }
   }
   
   $support->log("\n");
