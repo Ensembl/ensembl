@@ -129,7 +129,7 @@ sub list_dbIDs {
 
 =head2 list_stable_ids
 
-  Example    : @stable_gene_ids = @{$gene_adaptor->list_stable_dbIDs()};
+  Example    : @stable_gene_ids = @{$gene_adaptor->list_stable_ids()};
   Description: Gets an listref of stable ids for all genes in the current db
   Returntype : reference to a list of strings
   Exceptions : none
