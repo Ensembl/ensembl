@@ -164,15 +164,9 @@ sub gen_load{
 	return $db_adaptor;
       }
     }
-    if(@db_reg){
-      $dba->dbc($db_reg[0]->dbc);
-      $dba->species($db_reg[0]->species);
-    }
-    else{
-      $dba->species(find_unique_species("DEFAULT",$dba->group));      
-      if($dba->species ne "DEFAULT"){
-	warn "WARN: For multiple species use species attribute in DBAdaptor->new\n" 
-      }
+    $dba->species(find_unique_species("DEFAULT",$dba->group));      
+    if($dba->species ne "DEFAULT"){
+      warn "WARN: For multiple species use species attribute in DBAdaptor->new\n" 
     }
   }
 
