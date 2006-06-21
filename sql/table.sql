@@ -213,7 +213,7 @@ CREATE TABLE exon (
   phase                       TINYINT(2) NOT NULL,
   end_phase                   TINYINT(2) NOT NULL,
 
-  is_current                  BOOLEAN DEFAULT 1,
+  is_current                  BOOLEAN NOT NULL DEFAULT 1,
   
   PRIMARY KEY (exon_id),
   KEY seq_region_idx (seq_region_id, seq_region_start)
@@ -413,7 +413,7 @@ CREATE TABLE gene (
   source                      VARCHAR(20) NOT NULL,
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
   description                 TEXT,
-  is_current                  BOOLEAN DEFAULT 1,
+  is_current                  BOOLEAN NOT NULL DEFAULT 1,
 
   PRIMARY KEY (gene_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -494,7 +494,7 @@ CREATE TABLE transcript (
   biotype                     VARCHAR(40) NOT NULL,
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
   description                 TEXT,
-  is_current                  BOOLEAN DEFAULT 1,
+  is_current                  BOOLEAN NOT NULL DEFAULT 1,
 
   PRIMARY KEY (transcript_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -860,15 +860,12 @@ CREATE TABLE meta (
 INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "40");
 
 # patches included in this schema file
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_a.sql|status_enum');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_b.sql|unique_assembly');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_c.sql|multiversion_objects');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_d.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_e.sql|unknown_status_enum');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_a.sql|rationalise_key_columns');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_a.sql|xref_unique_constraint');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_c.sql|xref_version');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_d.sql|stable_id_event_score_column');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_e.sql|is_current_not_null');
+
 
 ################################################################################
 #
