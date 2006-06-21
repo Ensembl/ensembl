@@ -134,3 +134,5 @@
 4500	Tiffin	1	XREF	1	0	1	Tiffin DNA motifs
 4600	OTTT	1	XREF	1	0	1	Havana transcripts
 4700	Medaka	1	XREF	1	0	1	Medaka Genome Project
+4800	ENST	1	XREF	1	0	1	Ensembl transcripts
+5000	Ens_Mm_gene	1	XREF	1	0	40	Ensembl Mouse Gene
