@@ -221,7 +221,7 @@ sub run {
 	}
 	if ($file =~ /(.*)\.zip$/) {
 	  print "Unzipping $dir/$file\n";
-	  system("unzip $dir/$file");
+	  system("unzip -o -q $dir/$file");
 	  $file = $1;
 	}
 
