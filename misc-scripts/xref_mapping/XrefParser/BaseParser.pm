@@ -219,10 +219,15 @@ sub run {
 	  system("gunzip -f $dir/$file");
 	  $file = $1;
 	}
+	if ($file =~ /(.*)\.zip$/) {
+	  print "Unzipping $dir/$file\n";
+	  system("unzip $dir/$file");
+	  $file = $1;
+	}
 
       }
       else{
-	if ($file =~ /(.*)\.gz$/ or $file =~ /(.*)\.Z$/) {
+	if ($file =~ /(.*)\.gz$/ or $file =~ /(.*)\.Z$/ or $file =~ /(.*)\.zip$/) {
 	  $file = $1;
 	}
       }
