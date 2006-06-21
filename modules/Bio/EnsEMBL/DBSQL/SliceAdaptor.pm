@@ -175,24 +175,24 @@ sub fetch_by_region {
   my ($self, $coord_system_name, $seq_region_name,
       $start, $end, $strand, $version) = @_;
 
-  $start  = 1 if(!defined($start));
-  $strand = 1 if(!defined($strand));
+  $start  = 1 if (!defined($start));
+  $strand = 1 if (!defined($strand));
 
-  throw('seq_region_name argument is required') if(!defined($seq_region_name));
+  throw('seq_region_name argument is required') if (!defined($seq_region_name));
 
   my $cs;
   my $csa = $self->db->get_CoordSystemAdaptor();
 
-  if($coord_system_name) {
+  if ($coord_system_name) {
     $cs = $csa->fetch_by_name($coord_system_name,$version);
 
-    if(!$cs) {
+    if (!$cs) {
       throw("Unknown coordinate system:\n name='$coord_system_name' " .
             "version='$version'\n");
     }
 
     # fetching by toplevel is same as fetching w/o name or version
-    if($cs->is_top_level()) {
+    if ($cs->is_top_level()) {
       $cs = undef;
       $version = undef;
     }
@@ -203,9 +203,9 @@ sub fetch_by_region {
   my @bind_vals;
   my $key;
 
-  if($cs) {
+  if ($cs) {
     push @bind_vals, $cs->dbID();
-    $sql = "SELECT sr.name,sr.seq_region_id, sr.length, " .
+    $sql = "SELECT sr.name, sr.seq_region_id, sr.length, " .
            $cs->dbID() ." FROM seq_region sr ";
 
     $constraint = "sr.coord_system_id = ?";
@@ -224,46 +224,45 @@ sub fetch_by_region {
     $constraint .= "ORDER BY cs.rank ASC";
   }
 
-  #check the cache so we only go to the db if necessary
+  # check the cache so we only go to the db if necessary
   my $length;
   my $arr;
-  if( $key ) {
+  if ($key) {
     $arr = $self->{'sr_name_cache'}->{$key};
   }
 
-  if( $arr ) {
+  if ($arr) {
     $length = $arr->[3];
   } else {
-    my $sth = $self->prepare($sql . " WHERE sr.name = ? AND " .
-                             $constraint);
+    my $sth = $self->prepare($sql . " WHERE sr.name = ? AND " . $constraint);
     # Quotes around "$seq_region_name" are needed so that mysql does not
     # treat chromosomes like '6' as an int.  This was doing horrible
     # inexact matches like '6DR51', '6_UN', etc.
-    $sth->bind_param(1,"$seq_region_name",SQL_VARCHAR);
+    $sth->bind_param(1, "$seq_region_name", SQL_VARCHAR);
     if ($cs){
-	$sth->bind_param(2,$cs->dbID,SQL_INTEGER);
+	$sth->bind_param(2, $cs->dbID, SQL_INTEGER);
     }
     else{
-	$sth->bind_param(2,$version,SQL_VARCHAR)  if ($version);	
+	$sth->bind_param(2, $version, SQL_VARCHAR)  if ($version);	
     }
 
     $sth->execute();
 
-    if($sth->rows() == 0) {
+    if ($sth->rows() == 0) {
       $sth->finish();
 
-      #do fuzzy matching, assuming that we are just missing a version on
-      #the end of the seq_region name
+      # do fuzzy matching, assuming that we are just missing a version on
+      # the end of the seq_region name
       
       $sth = $self->prepare($sql . " WHERE sr.name LIKE ? AND " . $constraint);
 
-      $sth->bind_param(1,"$seq_region_name.%",SQL_VARCHAR);
+      $sth->bind_param(1, "$seq_region_name.%", SQL_VARCHAR);
 
       if ($cs){
-	  $sth->bind_param(2,$cs->dbID,SQL_INTEGER);
+	  $sth->bind_param(2, $cs->dbID, SQL_INTEGER);
       }
       else{
-	  $sth->bind_param(2,$version,SQL_VARCHAR)  if ($version);	
+	  $sth->bind_param(2, $version, SQL_VARCHAR) if ($version);	
       }
       $sth->execute();
 
@@ -277,7 +276,9 @@ sub fetch_by_region {
       my ($tmp_name, $id, $tmp_length, $cs_id);
       $sth->bind_columns(\$tmp_name, \$id, \$tmp_length, \$cs_id);
 
-      while($sth->fetch) {
+      my $i;
+
+      while ($sth->fetch) {
         my $tmp_cs = ($cs) ? $cs : $csa->fetch_by_dbID($cs_id);
 
         # cache values for future reference
@@ -299,13 +300,21 @@ sub fetch_by_region {
             $high_ver        = $tmp_ver;
             $high_cs         = $tmp_cs;
         }
+
+        $i++;
       }
       $sth->finish();
+
+      # warn if fuzzy matching found more than one result
+      if ($i > 1) {
+        warning("Fuzzy matching of seq_region_name returned more than one result.\nYou might want to check whether the returned seq_region\n(".$high_cs->name.":$seq_region_name) is the one you intended to fetch.\n");
+      }
 
       $cs = $high_cs;
 
       #return if we did not find any appropriate match:
-      return undef if(!defined($high_ver));
+      return undef if (!defined($high_ver));
+
     } else {
 
       my ($id, $cs_id);
