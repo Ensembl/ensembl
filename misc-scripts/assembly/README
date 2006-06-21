@@ -139,6 +139,24 @@ Scripts and main modules used
 
 
 -------------------------------------------------------------------------------
+Known bugs
+-------------------------------------------------------------------------------
+
+1. PAR regions:
+===============
+
+When projecting from a symlinked region of a PAR, you will end up in the
+reference region (e.g. projecting from human chromosome Y gets you to X). The
+coordinates of the projected slice will therefor also reflect the reference
+region and might not be what you expect. Since features should only be stored
+once (on the reference region) anyway, these projections should be ignored.
+
+
+If you find other bugs please report them to the Ensembl development mailing
+list <ensembl-dev@ebi.ac.uk> or to Patrick Meidl <meidl@ebi.ac.uk>.
+
+
+-------------------------------------------------------------------------------
 Further documentation
 -------------------------------------------------------------------------------
 

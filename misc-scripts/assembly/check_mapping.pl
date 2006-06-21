@@ -166,6 +166,10 @@ foreach my $chr ($support->sort_chromosomes) {
     
     # alternative sequence
     my $A_proj_slice = $seg->to_Slice;
+    
+    # ignore PAR region (i.e. we project to the symlinked seq_region)
+    next if ($A_proj_slice->seq_region_name ne $chr);
+    
     my $A_sub_slice = $A_slice->sub_Slice($A_proj_slice->start, $A_proj_slice->end, $A_proj_slice->strand);
     my $A_seq = $A_sub_slice->seq;
 

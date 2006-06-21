@@ -183,8 +183,15 @@ foreach my $chr ($support->sort_chromosomes) {
   my $R_slice = $R_sa->fetch_by_region('chromosome', $chr);
   my @segments = @{ $R_slice->project('chromosome', $support->param('altassembly')) };
 
+  my $alignments = 0;
+
   foreach my $seg (@segments) {
-    my $l = $seg->to_Slice->length;
+    my $sl = $seg->to_Slice;
+
+    # ignore PAR region (i.e. we project to the symlinked seq_region)
+    next if ($sl->seq_region_name ne $chr);
+    
+    my $l = $sl->length;
     $mapping_length += $l;
     
     my $c_oom = $oom;
@@ -194,6 +201,8 @@ foreach my $chr ($support->sort_chromosomes) {
       $c_oom--;
     }
     $blocks{10}++ if ($l == 1);
+
+    $alignments++;
   }  
   
   # print stats
@@ -212,15 +221,13 @@ foreach my $chr ($support->sort_chromosomes) {
   
   $support->log("\n");
   
-  my $segs = scalar(@segments);
+  $support->log(sprintf($fmt1, "Total alignments:", $alignments), 2);
   
-  $support->log(sprintf($fmt1, "Total alignments:", $segs), 2);
-  
-  if ($segs) {
+  if ($alignments) {
     for (my $i = 0; $i < $oom; $i++) {
       my $from = 10**$i;
       my $to = 10**($i+1);
-      $support->log(sprintf($fmt3, "    ".$support->commify($from)." - ".$support->commify($to)." bp:", $blocks{$to}, $blocks{$to}/$segs*100), 2);
+      $support->log(sprintf($fmt3, "    ".$support->commify($from)." - ".$support->commify($to)." bp:", $blocks{$to}, $blocks{$to}/$alignments*100), 2);
     }
   }
   

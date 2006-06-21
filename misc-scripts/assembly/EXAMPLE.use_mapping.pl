@@ -142,6 +142,8 @@ while (<FILE>) {
   my $proj_slice = $segments[0]->to_Slice;
   next unless ($feat->length == $proj_slice->length);
 
+  next unless ($proj_slice->seq_region_name eq $feat->slice->seq_region_name);
+
   # everything looks fine, so adjust the coords of your feature
   $feat->start($proj_slice->start);
   $feat->end($proj_slice->end);
