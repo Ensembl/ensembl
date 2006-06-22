@@ -250,9 +250,14 @@ sub confirm_params {
     print "Running script with these parameters:\n\n";
     print $self->list_all_params;
 
-    # ask user if he wants to proceed
-    exit unless $self->user_proceed("Continue?");
-    
+	if ($self->param('host') eq 'web-4-11') {
+		# ask user if he wants to proceed
+		exit unless $self->user_proceed("**************\n\n You're working on web-4-11! Is that correct and you want to continue ?\n\n**************");
+	}
+	else {
+		# ask user if he wants to proceed
+		exit unless $self->user_proceed("Continue?");
+    }
     return(1);
 }
 
@@ -1294,7 +1299,7 @@ sub init_log {
 
 sub finish_log {
     my $self = shift;
-    $self->log("All done. ".$self->warnings." warnings. ");
+    $self->log("\nAll done. ".$self->warnings." warnings. ");
     if ($self->{'_start_time'}) {
         $self->log("Runtime ");
         my $diff = time - $self->{'_start_time'};
