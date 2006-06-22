@@ -245,19 +245,25 @@ if(defined($species_hash{'species'})){
       print STDERR "\'$value\' is not a recognised species - please use full species name (e.g. homo_sapiens) in $file\n";
       exit(1);
     }
-  
-  my $class = "XrefMapper/$value.pm";
-  require "XrefMapper/$value.pm";
 
-  my $module;
+  my $module;  
+  my $class = "XrefMapper/$value.pm";
+  eval {
+    require $class;
+  };
   if($@) {
-    warn("Did not find a specific mapping module XrefMapper::$value - using XrefMapper::BasicMapper instead\n");
-    require XrefMapper::BasicMapper;
-    $module = "BasicMapper";
+    if ($@ =~ /Can\'t locate $class/) {
+      warn("Did not find a specific mapping module XrefMapper::$value - using XrefMapper::BasicMapper instead\n");
+      require XrefMapper::BasicMapper;
+      $module = "BasicMapper";
+    } else {
+      die "$@";
+    }
+
   } else{
     $module = $value;
   }
-  
+
   no strict 'refs';
   my ($host, $port, $user, $dbname, $pass);
   $host = $species_hash{'host'};
