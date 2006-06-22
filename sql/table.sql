@@ -861,7 +861,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "40");
 
 # patches included in this schema file
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_a.sql|rationalise_key_columns');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_a.sql|xref_unique_constraint');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_b.sql|xref_unique_constraint');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_c.sql|xref_version');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_d.sql|stable_id_event_score_column');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_e.sql|is_current_not_null');
