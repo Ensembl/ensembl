@@ -865,7 +865,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_b.sql|xref
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_c.sql|xref_version');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_d.sql|stable_id_event_score_column');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_e.sql|is_current_not_null');
-
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_f.sql|remove_all_latest');
 
 ################################################################################
 #
