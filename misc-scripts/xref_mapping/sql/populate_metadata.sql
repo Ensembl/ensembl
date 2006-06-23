@@ -130,6 +130,9 @@ INSERT INTO source VALUES (4020, "miRNA_Registry", 1, 'N',70);
 # temporary (?) source for mapping Havana OTT transcripts to Ensembl transcripts
 INSERT INTO source VALUES (5000, 'OTTT', 1, 'Y', 50);
 
+# Illumina
+INSERT INTO source VALUES (5010, 'Illumina', 1, 'Y', 50);
+
 ################################################################################
 # Files to fetch data from
 
@@ -300,6 +303,13 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      OTTT
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5000, 9606,'LOCAL:OTTT/OTTT.txt', '', now(), now(), "OTTTParser");
 
+##	Illumina
+# Sentrix human-6 gene expression beadchip
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 9606,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Human_WG-6_sequence.zip#Human_WG-6_sequence.zip', '', now(), now(), "IlluminaParser");
+# Sentrix humanref-8 expression beadchip
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 9606,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Human_RefSeq-8_sequence.zip#Human_RefSeq-8_sequence.zip', '', now(), now(), "IlluminaParser");
+
+
 
 # --------------------------------------------------------------------------------
 
@@ -321,8 +331,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1080, 10090,'ftp://ftp.informatics.jax.org/pub/reports/MRK_SwissProt_TrEMBL.rpt ftp://ftp.informatics.jax.org/pub/reports/MRK_Synonym.sql.rpt', '', now(), now(), "MGDParser");
 
 ##      GO 
-#INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 10090,'http://www.geneontology.org/cgi-bin/downloadGOGA.pl/gene_association.mgi.gz', '', now(), now(), "GOParser");
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 10090,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/MOUSE/gene_association.goa_mouse.gz', '', now(), now(), "GOParser");
+# Jax file
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 10090,'http://www.geneontology.org/cgi-bin/downloadGOGA.pl/gene_association.mgi.gz', '', now(), now(), "GOParser");
+
 
 ##      IPI
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 10090,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.MOUSE.fasta.gz', '', now(), now(), "IPIParser");
