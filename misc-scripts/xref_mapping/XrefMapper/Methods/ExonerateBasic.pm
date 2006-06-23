@@ -130,7 +130,7 @@ sub submit_exonerate {
 
   my $output = $self->get_class_name() . "_" . $ensembl_type . "_" . "\$LSB_JOBINDEX.map";
 
-  my @main_bsub = ( 'bsub', '-m bc_hosts', '-R' .'rusage[tmp='.$disk_space_needed.']',  '-J' . $unique_name . "[1-$num_jobs]%200", '-o', "$prefix.%J-%I.out", '-e', "$prefix.%J-%I.err");
+  my @main_bsub = ( 'bsub', '-R' .'select[linux] -Rrusage[tmp='.$disk_space_needed.']',  '-J' . $unique_name . "[1-$num_jobs]%200", '-o', "$prefix.%J-%I.out", '-e', "$prefix.%J-%I.err");
 
 #  my @main_bsub = ( 'bsub', '-J' . $unique_name . "[1-$num_jobs]", '-o', "$prefix.%J-%I.out", '-e', "$prefix.%J-%I.err");
 
@@ -170,6 +170,9 @@ EOF
 	if (/^Job <(\d+)> is submitted/) {
 	  $jobid = $1;
 	  print "LSF job ID for main mapping job: $jobid (job array with $num_jobs jobs)\n"
+	}
+	else{
+	  print "ERROR:? $_\n";
 	}
       }
       close(BSUB_READER);
