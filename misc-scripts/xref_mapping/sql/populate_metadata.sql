@@ -351,6 +351,12 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 10090,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
+##	Illumina
+# Sentrix mouse-6 gene expression beadchip
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 10090,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Mouse-6_V1_sequence.zip#Mouse-6_V1_sequence.csv', '', now(), now(), "IlluminaParser");
+# Sentrix mouseref-8 expression beadchip
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 10090,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Mouse_Ref-8_V1_sequence.zip#Mouse_Ref-8_V1_sequence.csv', '', now(), now(), "IlluminaParser");
+
 
 # --------------------------------------------------------------------------------
 ### RAT
