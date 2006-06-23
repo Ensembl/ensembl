@@ -227,8 +227,21 @@ sub run {
 
       }
       else{
-	if ($file =~ /(.*)\.gz$/ or $file =~ /(.*)\.Z$/ or $file =~ /(.*)\.zip$/) {
+	if ($file =~ /(.*)\.gz$/ or $file =~ /(.*)\.Z$/) {
 	  $file = $1;
+	} elsif ($file =~ /\.zip/) {
+	  # .zip files are archives
+	  # that can contain several files. The file to be extracted is specified
+	  # by a hash in the URL in populate_metadata.sql, e.g.
+	  # http://www.illumina.com/General/Products/ArraysReagents/zip_files/Human_WG-6_rev.zip#Human_WG-6_rev.csv
+	  # TODO - maybe add support for .tar.gz here as well
+	  if ($file =~ /(.*\.zip)\#(.*)$/) {
+	    my $archive = $1;
+	    $file = $2;
+	    print "Using $file from archive $archive\n";
+	  } else {
+	    die "$file specifies a .zip file withouut using the # notation to specify the file in the archive to be used.";
+	  }
 	}
       }
 
