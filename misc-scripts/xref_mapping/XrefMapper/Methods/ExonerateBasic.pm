@@ -171,9 +171,6 @@ EOF
 	  $jobid = $1;
 	  print "LSF job ID for main mapping job: $jobid (job array with $num_jobs jobs)\n"
 	}
-	else{
-	  print "ERROR:? $_\n";
-	}
       }
       close(BSUB_READER);
     } else {
