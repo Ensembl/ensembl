@@ -305,9 +305,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##	Illumina
 # Sentrix human-6 gene expression beadchip
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 9606,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Human_WG-6_sequence.zip#Human_WG-6_sequence.zip', '', now(), now(), "IlluminaParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 9606,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Human_WG-6_sequence.zip#Human_WG-6_sequence.csv', '', now(), now(), "IlluminaParser");
 # Sentrix humanref-8 expression beadchip
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 9606,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Human_RefSeq-8_sequence.zip#Human_RefSeq-8_sequence.zip', '', now(), now(), "IlluminaParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 9606,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Human_RefSeq-8_sequence.zip#Human_RefSeq-8_sequence.csv', '', now(), now(), "IlluminaParser");
 
 
 
