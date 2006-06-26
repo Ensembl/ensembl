@@ -20,13 +20,13 @@
 
 CREATE TABLE oligo_feature (
   
-  oligo_feature_id      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id         INT(10) UNSIGNED NOT NULL,
-  seq_region_start      INT(10) UNSIGNED  NOT NULL,
-  seq_region_end        INT(10) UNSIGNED  NOT NULL,
+  oligo_feature_id      INT NOT NULL AUTO_INCREMENT,
+  seq_region_id         INT UNSIGNED NOT NULL,
+  seq_region_start      INT NOT NULL,
+  seq_region_end        INT NOT NULL,
   seq_region_strand     TINYINT NOT NULL,
   mismatches            TINYINT,
-  oligo_probe_id        INT(10) UNSIGNED NOT NULL,
+  oligo_probe_id        INT NOT NULL,
   analysis_id           INT(10) UNSIGNED NOT NULL,
 
   PRIMARY KEY (oligo_feature_id),
@@ -43,8 +43,8 @@ CREATE TABLE oligo_feature (
 
 CREATE TABLE oligo_probe (
   
-  oligo_probe_id      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  oligo_array_id      INT(10) UNSIGNED NOT NULL,
+  oligo_probe_id      INT NOT NULL AUTO_INCREMENT,
+  oligo_array_id      INT NOT NULL,
   probeset            VARCHAR(40),
   name                VARCHAR(20),
   description         TEXT,
@@ -64,8 +64,8 @@ CREATE TABLE oligo_probe (
 
 CREATE TABLE oligo_array (
 
-  oligo_array_id      INT(10) UNSIGNED NOT NULL auto_increment,
-  parent_array_id     INT(10) UNSIGNED,
+  oligo_array_id      INT NOT NULL auto_increment,
+  parent_array_id     INT,
   probe_setsize       TINYINT NOT NULL,
   name                VARCHAR(40) NOT NULL,
   type                ENUM( 'AFFY', 'OLIGO' ),
@@ -81,8 +81,8 @@ CREATE TABLE oligo_array (
 #
 
 CREATE TABLE alt_allele (
-  alt_allele_id         INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  gene_id               INT(10) UNSIGNED NOT NULL,
+  alt_allele_id         INT NOT NULL AUTO_INCREMENT,
+  gene_id               INT NOT NULL,
 
   UNIQUE gene_idx (gene_id),
   UNIQUE allele_idx (alt_allele_id, gene_id)
@@ -162,7 +162,7 @@ CREATE TABLE analysis_description (
 
 CREATE TABLE dna (
 
-  seq_region_id       INT(10) UNSIGNED NOT NULL,
+  seq_region_id       INT UNSIGNED NOT NULL,
   sequence            MEDIUMTEXT NOT NULL,
 
   PRIMARY KEY (seq_region_id)
@@ -185,7 +185,7 @@ CREATE TABLE dna (
 
 CREATE TABLE dnac (
 
-  seq_region_id     INT(10) UNSIGNED NOT NULL,
+  seq_region_id     INT UNSIGNED NOT NULL,
   sequence          MEDIUMBLOB NOT NULL,
   n_line            TEXT,  
 
@@ -204,7 +204,7 @@ CREATE TABLE dnac (
 
 CREATE TABLE exon (
  
-  exon_id       	      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  exon_id       	      INT UNSIGNED NOT NULL AUTO_INCREMENT,
   seq_region_id     	      INT(10) UNSIGNED NOT NULL,
   seq_region_start  	      INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
@@ -228,7 +228,7 @@ CREATE TABLE exon (
 
 CREATE TABLE exon_stable_id (
    
-  exon_id   		      INT(10) UNSIGNED NOT NULL,
+  exon_id   		      INT UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
   version                     INT(10),
   created_date                DATETIME NOT NULL,
@@ -250,8 +250,8 @@ CREATE TABLE exon_stable_id (
 
 CREATE TABLE exon_transcript (
 
-  exon_id                     INT(10) UNSIGNED NOT NULL,
-  transcript_id               INT(10) UNSIGNED NOT NULL,
+  exon_id                     INT UNSIGNED NOT NULL,
+  transcript_id               INT UNSIGNED NOT NULL,
   rank                        INT(10) NOT NULL,        
 
   PRIMARY KEY (exon_id,transcript_id,rank),
@@ -268,7 +268,7 @@ CREATE TABLE exon_transcript (
 
 CREATE TABLE simple_feature (
 
-  simple_feature_id 	      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  simple_feature_id 	      INT UNSIGNED NOT NULL AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
@@ -292,7 +292,7 @@ CREATE TABLE simple_feature (
 
 CREATE TABLE protein_align_feature (
  
-  protein_align_feature_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  protein_align_feature_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
@@ -322,7 +322,7 @@ CREATE TABLE protein_align_feature (
 
 CREATE TABLE dna_align_feature (
 
-  dna_align_feature_id 	      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  dna_align_feature_id 	      INT UNSIGNED NOT NULL AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
@@ -355,7 +355,7 @@ CREATE TABLE dna_align_feature (
 
 CREATE TABLE repeat_consensus (
 
-  repeat_consensus_id  	      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  repeat_consensus_id  	      INT UNSIGNED NOT NULL AUTO_INCREMENT,
   repeat_name                 VARCHAR(255) NOT NULL,
   repeat_class                VARCHAR(100) NOT NULL, 
   repeat_type                 VARCHAR(40) NOT NULL,
@@ -376,7 +376,7 @@ CREATE TABLE repeat_consensus (
 
 CREATE TABLE repeat_feature (
 
-  repeat_feature_id 	      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  repeat_feature_id 	      INT UNSIGNED NOT NULL AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
@@ -402,14 +402,14 @@ CREATE TABLE repeat_feature (
 
 CREATE TABLE gene (
 
-  gene_id                     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  gene_id                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
   biotype                     VARCHAR(40) NOT NULL,
   analysis_id                 INT(10) UNSIGNED NOT NULL,
   seq_region_id               INT(10) UNSIGNED NOT NULL, 
   seq_region_start            INT(10) UNSIGNED NOT NULL, 
   seq_region_end              INT(10) UNSIGNED NOT NULL, 
   seq_region_strand           TINYINT(2) NOT NULL,       
-  display_xref_id             INT(10) UNSIGNED,
+  display_xref_id             INT UNSIGNED,
   source                      VARCHAR(20) NOT NULL,
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
   description                 TEXT,
@@ -449,9 +449,9 @@ CREATE TABLE gene_stable_id (
 
 CREATE TABLE supporting_feature (
 
-  exon_id 		      INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  exon_id 		      INT(11) DEFAULT '0' NOT NULL,
   feature_type                ENUM('dna_align_feature','protein_align_feature'),
-  feature_id                  INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  feature_id                  INT(11) DEFAULT '0' NOT NULL,
 
   UNIQUE all_idx (exon_id,feature_type,feature_id),
   KEY feature_idx (feature_type,feature_id)
@@ -466,9 +466,9 @@ CREATE TABLE supporting_feature (
 
 CREATE TABLE transcript_supporting_feature (
 
-  transcript_id 	      INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  transcript_id 	      INT(11) DEFAULT '0' NOT NULL,
   feature_type                ENUM('dna_align_feature','protein_align_feature'),
-  feature_id                  INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  feature_id                  INT(11) DEFAULT '0' NOT NULL,
 
   UNIQUE all_idx (transcript_id,feature_type,feature_id),
   KEY feature_idx (feature_type,feature_id)
@@ -483,14 +483,14 @@ CREATE TABLE transcript_supporting_feature (
 
 CREATE TABLE transcript (
 
-  transcript_id               INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,  
-  gene_id                     INT(10) UNSIGNED NOT NULL,
+  transcript_id               INT UNSIGNED NOT NULL AUTO_INCREMENT,  
+  gene_id                     INT UNSIGNED NOT NULL,
   analysis_id                 INT(10) UNSIGNED NOT NULL,
   seq_region_id               INT(10) UNSIGNED NOT NULL, 
   seq_region_start            INT(10) UNSIGNED NOT NULL, 
   seq_region_end              INT(10) UNSIGNED NOT NULL, 
   seq_region_strand           TINYINT(2) NOT NULL, 
-  display_xref_id             INT(10) UNSIGNED,
+  display_xref_id             INT UNSIGNED,
   biotype                     VARCHAR(40) NOT NULL,
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
   description                 TEXT,
@@ -512,7 +512,7 @@ CREATE TABLE transcript (
 
 CREATE TABLE transcript_stable_id (
 
-  transcript_id               INT(10) UNSIGNED NOT NULL,
+  transcript_id               INT UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
   version                     INT(10),
   created_date                DATETIME NOT NULL,
@@ -534,12 +534,12 @@ CREATE TABLE transcript_stable_id (
 
 CREATE TABLE translation (
 
-  translation_id              INT(10) UNSIGNED NOT NULL AUTO_INCREMENT, 
-  transcript_id               INT(10) UNSIGNED NOT NULL, 
+  translation_id              INT UNSIGNED NOT NULL AUTO_INCREMENT, 
+  transcript_id               INT UNSIGNED NOT NULL, 
   seq_start                   INT(10) NOT NULL,       # relative to exon start
-  start_exon_id               INT(10) UNSIGNED NOT NULL,
+  start_exon_id               INT UNSIGNED NOT NULL,
   seq_end                     INT(10) NOT NULL,       # relative to exon start
-  end_exon_id                 INT(10) UNSIGNED NOT NULL,
+  end_exon_id                 INT UNSIGNED NOT NULL,
   
   PRIMARY KEY (translation_id),
   KEY (transcript_id)
@@ -553,7 +553,7 @@ CREATE TABLE translation (
 #
 CREATE TABLE translation_stable_id (
 
-  translation_id 	      INT(10) UNSIGNED NOT NULL,
+  translation_id 	      INT UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
   version                     INT(10),
   created_date                DATETIME NOT NULL,
@@ -585,7 +585,7 @@ CREATE TABLE translation_stable_id (
 
 CREATE TABLE assembly (
 
-  asm_seq_region_id           INT(10) UNSIGNED NOT NULL,
+  asm_seq_region_id           INT UNSIGNED NOT NULL,
   cmp_seq_region_id           INT(10) UNSIGNED NOT NULL, 
   asm_start                   INT(10) NOT NULL,
   asm_end                     INT(10) NOT NULL,
@@ -608,7 +608,7 @@ CREATE TABLE assembly (
 CREATE TABLE protein_feature (
 
   protein_feature_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  translation_id              INT(10) UNSIGNED NOT NULL,	
+  translation_id              INT NOT NULL,	
   seq_start                   INT(10) NOT NULL,
   seq_end                     INT(10) NOT NULL,
   hit_start                   INT(10) NOT NULL,
@@ -649,8 +649,8 @@ CREATE TABLE interpro (
 #
 
 CREATE TABLE karyotype (
-  karyotype_id                INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  karyotype_id                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT UNSIGNED NOT NULL,
   seq_region_start            INT(10)     NOT NULL,
   seq_region_end              INT(10)     NOT NULL,
   band                        VARCHAR(40) NOT NULL,
@@ -669,8 +669,8 @@ CREATE TABLE karyotype (
 
 CREATE TABLE object_xref (
 
-  object_xref_id              INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  ensembl_id                  INT(10) UNSIGNED NOT NULL, 
+  object_xref_id              INT NOT NULL AUTO_INCREMENT,
+  ensembl_id                  INT UNSIGNED NOT NULL, 
   ensembl_object_type         ENUM('RawContig', 'Transcript', 'Gene',
                                    'Translation', 'regulatory_factor',
                                    'regulatory_feature')
@@ -689,9 +689,9 @@ CREATE TABLE object_xref (
 # Table structure for table 'identity_xref'
 #
 
-CREATE TABLE identity_xref (
+CREATE TABLE identity_xref(
 
-  object_xref_id          INT(10) UNSIGNED NOT NULL,
+  object_xref_id          INT UNSIGNED NOT NULL ,
   query_identity 	  INT(5),
   target_identity         INT(5),
 
@@ -735,17 +735,17 @@ CREATE TABLE go_xref (
 
 CREATE TABLE xref (
 
-   xref_id 		      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-   external_db_id             INT(10) UNSIGNED NOT NULL,
+   xref_id 		      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+   external_db_id             INT NOT NULL,
    dbprimary_acc              VARCHAR(40) NOT NULL,
    display_label              VARCHAR(128) NOT NULL,
-   version                    VARCHAR(10) DEFAULT '0' NOT NULL,
+   version                    VARCHAR(10) DEFAULT '' NOT NULL,
    description                VARCHAR(255),
    info_type                  ENUM('PROJECTION', 'MISC'),
    info_text                  VARCHAR(255),
 
    PRIMARY KEY (xref_id),
-   UNIQUE KEY id_index (dbprimary_acc, external_db_id, info_type, info_text),
+   UNIQUE KEY id_index (dbprimary_acc, external_db_id),
    KEY display_index (display_label),
    KEY info_type_idx (info_type)
 
@@ -759,7 +759,7 @@ CREATE TABLE xref (
 
 CREATE TABLE external_synonym (
 
-  xref_id                     INT(10) UNSIGNED NOT NULL,
+  xref_id                     INT UNSIGNED NOT NULL,
   synonym                     VARCHAR(40) NOT NULL,
   
   PRIMARY KEY (xref_id, synonym),
@@ -775,7 +775,7 @@ CREATE TABLE external_synonym (
 
 CREATE TABLE external_db (
 
-  external_db_id 	      INT(10) UNSIGNED NOT NULL,
+  external_db_id 	      INT NOT NULL,
   db_name                     VARCHAR(27) NOT NULL,
   db_release                  VARCHAR(40) NOT NULL,
   status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
@@ -798,12 +798,12 @@ CREATE TABLE external_db (
 
 CREATE TABLE prediction_exon (
 
-  prediction_exon_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  prediction_transcript_id    INT(10) UNSIGNED NOT NULL,
+  prediction_exon_id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  prediction_transcript_id    INT UNSIGNED NOT NULL,
   exon_rank                   SMALLINT UNSIGNED NOT NULL,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  seq_region_id               INT UNSIGNED NOT NULL,
+  seq_region_start            INT UNSIGNED NOT NULL,
+  seq_region_end              INT UNSIGNED NOT NULL,
   seq_region_strand           TINYINT NOT NULL,
   start_phase                 TINYINT NOT NULL,
   score                       DOUBLE,
@@ -823,10 +823,10 @@ CREATE TABLE prediction_exon (
 
 CREATE TABLE prediction_transcript (
 
-  prediction_transcript_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  prediction_transcript_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT UNSIGNED NOT NULL,
+  seq_region_start            INT UNSIGNED NOT NULL,
+  seq_region_end              INT UNSIGNED NOT NULL,
   seq_region_strand           TINYINT NOT NULL,
   analysis_id                 INT(10) UNSIGNED NOT NULL,
   display_label               VARCHAR(255),
@@ -857,7 +857,7 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "40");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "39");
 
 # patches included in this schema file
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_a.sql|status_enum');
@@ -865,10 +865,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_b.sql|uniq
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_c.sql|multiversion_objects');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_d.sql|schema_version');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_38_39_e.sql|unknown_status_enum');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_a.sql|rationalise_key_columns');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_a.sql|xref_unique_constraint');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_c.sql|xref_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_d.sql|stable_id_event_score_column');
+
 
 ################################################################################
 #
@@ -876,8 +873,8 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_d.sql|stab
 
 CREATE TABLE marker_synonym (
 
-  marker_synonym_id           INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  marker_id                   INT(10) UNSIGNED NOT NULL,
+  marker_synonym_id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  marker_id                   INT UNSIGNED NOT NULL,
   source                      VARCHAR(20),
   name                        VARCHAR(30),    
 
@@ -894,8 +891,8 @@ CREATE TABLE marker_synonym (
 
 CREATE TABLE marker (
 
-  marker_id                   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  display_marker_synonym_id   INT(10) UNSIGNED,
+  marker_id                   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  display_marker_synonym_id   INT UNSIGNED,
   left_primer                 VARCHAR(100) NOT NULL,
   right_primer                VARCHAR(100) NOT NULL,
   min_primer_dist             INT(10) UNSIGNED NOT NULL,
@@ -915,8 +912,8 @@ CREATE TABLE marker (
 
 CREATE TABLE marker_feature (
 
-  marker_feature_id           INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  marker_id                   INT(10) UNSIGNED NOT NULL,
+  marker_feature_id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  marker_id                   INT UNSIGNED NOT NULL,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
@@ -936,10 +933,10 @@ CREATE TABLE marker_feature (
  
 CREATE TABLE marker_map_location (
 
-  marker_id                   INT(10) UNSIGNED NOT NULL,
-  map_id                      INT(10) UNSIGNED NOT NULL,
+  marker_id                   INT UNSIGNED NOT NULL,
+  map_id                      INT UNSIGNED NOT NULL,
   chromosome_name             VARCHAR(15)  NOT NULL, 
-  marker_synonym_id           INT(10) UNSIGNED NOT NULL,
+  marker_synonym_id           INT UNSIGNED NOT NULL,
   position                    VARCHAR(15) NOT NULL,
   lod_score                   DOUBLE,
   
@@ -955,7 +952,7 @@ CREATE TABLE marker_map_location (
 
 CREATE TABLE map (
 
-  map_id                      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT, 
+  map_id                      INT UNSIGNED NOT NULL AUTO_INCREMENT, 
   map_name                    VARCHAR(30) NOT NULL,
 
   PRIMARY KEY (map_id)
@@ -1126,12 +1123,12 @@ CREATE TABLE misc_feature_misc_set (
 
 CREATE TABLE qtl (
 
-  qtl_id 		      INT(10) UNSIGNED AUTO_INCREMENT NOT NULL,
+  qtl_id 		      INT UNSIGNED AUTO_INCREMENT NOT NULL,
   trait                       VARCHAR(255) NOT NULL,
   lod_score                   FLOAT,
-  flank_marker_id_1 	      INT(10) UNSIGNED,
-  flank_marker_id_2           INT(10) UNSIGNED,
-  peak_marker_id              INT(10) UNSIGNED,
+  flank_marker_id_1 	      INT,
+  flank_marker_id_2           INT,
+  peak_marker_id              INT,
 
   PRIMARY KEY (qtl_id),
   KEY trait_idx (trait)
@@ -1146,8 +1143,8 @@ CREATE TABLE qtl (
 
 CREATE TABLE qtl_synonym (
 
-  qtl_synonym_id 	      INT(10) UNSIGNED AUTO_INCREMENT NOT NULL,
-  qtl_id                      INT(10) UNSIGNED NOT NULL,
+  qtl_synonym_id 	      INT UNSIGNED AUTO_INCREMENT NOT NULL,
+  qtl_id                      INT UNSIGNED NOT NULL,
   source_database             ENUM("rat genome database", "ratmap") NOT NULL,
   source_primary_id           VARCHAR(255) NOT NULL,
 
@@ -1164,10 +1161,10 @@ CREATE TABLE qtl_synonym (
 
 CREATE TABLE qtl_feature (
 
-  seq_region_id 	INT(10)	UNSIGNED NOT NULL,
-  seq_region_start      INT(10)	UNSIGNED NOT NULL,
-  seq_region_end        INT(10)	UNSIGNED NOT NULL,
-  qtl_id                INT(10)	UNSIGNED NOT NULL,
+  seq_region_id 	INT NOT NULL,
+  seq_region_start      INT NOT NULL,
+  seq_region_end        INT NOT NULL,
+  qtl_id                INT NOT NULL,
   analysis_id           INT(10) UNSIGNED NOT NULL,
 
   KEY (qtl_id),
@@ -1184,7 +1181,7 @@ CREATE TABLE qtl_feature (
 
 CREATE TABLE mapping_session (
 
-  mapping_session_id 	      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  mapping_session_id 	      INT(11) NOT NULL AUTO_INCREMENT,
   old_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
   new_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
   old_release                 VARCHAR(5) NOT NULL DEFAULT '',
@@ -1209,9 +1206,8 @@ CREATE TABLE stable_id_event (
   old_version               SMALLINT,
   new_stable_id             VARCHAR(128),
   new_version               SMALLINT,
-  mapping_session_id        INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  mapping_session_id        INT(11) NOT NULL DEFAULT '0',
   type                      ENUM('gene', 'transcript', 'translation') NOT NULL,
-  score			    FLOAT NOT NULL DEFAULT 0,
 
   UNIQUE KEY uni_idx (mapping_session_id, old_stable_id, old_version,
     new_stable_id, new_version, type),
@@ -1235,8 +1231,8 @@ CREATE TABLE gene_archive (
   transcript_version          SMALLINT NOT NULL,
   translation_stable_id       VARCHAR(128) NOT NULL,
   translation_version         SMALLINT NOT NULL,
-  peptide_archive_id          INT(10) UNSIGNED NOT NULL,
-  mapping_session_id          INT(10) UNSIGNED NOT NULL,
+  peptide_archive_id          INT NOT NULL,
+  mapping_session_id          INT NOT NULL,
 
   KEY gene_idx (gene_stable_id, gene_version),
   KEY transcript_idx (transcript_stable_id, transcript_version),
@@ -1252,7 +1248,7 @@ CREATE TABLE gene_archive (
 
 CREATE TABLE peptide_archive (
 
-  peptide_archive_id         INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  peptide_archive_id         INT NOT NULL AUTO_INCREMENT,
   md5_checksum               char(32),
   peptide_seq                MEDIUMTEXT NOT NULL,
 
@@ -1271,7 +1267,7 @@ CREATE TABLE seq_region (
 
   seq_region_id               INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   name                        VARCHAR(40) NOT NULL,
-  coord_system_id             INT(10) UNSIGNED NOT NULL,
+  coord_system_id             INT(10) NOT NULL,
   length                      INT(10) NOT NULL,
 
   UNIQUE (coord_system_id, name),
@@ -1289,13 +1285,13 @@ CREATE TABLE seq_region (
 CREATE TABLE assembly_exception (
 
   assembly_exception_id       INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL, 
+  seq_region_id               INT NOT NULL,
+  seq_region_start            INT NOT NULL,
+  seq_region_end              INT NOT NULL, 
   exc_type                    ENUM('HAP', 'PAR') NOT NULL,
-  exc_seq_region_id           INT(10) UNSIGNED NOT NULL, 
-  exc_seq_region_start        INT(10) UNSIGNED NOT NULL, 
-  exc_seq_region_end          INT(10) UNSIGNED NOT NULL,
+  exc_seq_region_id           INT NOT NULL, 
+  exc_seq_region_start        INT NOT NULL, 
+  exc_seq_region_end          INT NOT NULL,
   ori                         INT NOT NULL,
 
   PRIMARY KEY (assembly_exception_id),
@@ -1312,7 +1308,7 @@ CREATE TABLE assembly_exception (
 
 CREATE TABLE coord_system (
 
-  coord_system_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  coord_system_id             INT NOT NULL AUTO_INCREMENT,
   name                        VARCHAR(40) NOT NULL,
   version                     VARCHAR(40),
   rank                        INT NOT NULL,
@@ -1333,7 +1329,7 @@ CREATE TABLE coord_system (
 CREATE TABLE meta_coord (
 
   table_name                  VARCHAR(40) NOT NULL,
-  coord_system_id             INT(10) UNSIGNED NOT NULL,
+  coord_system_id             INT NOT NULL,
   max_length                  INT,
 
   UNIQUE(table_name, coord_system_id)
@@ -1348,11 +1344,11 @@ CREATE TABLE meta_coord (
 
 CREATE TABLE density_feature (
 
-  density_feature_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  density_type_id       INT(10) UNSIGNED NOT NULL,
-  seq_region_id         INT(10) UNSIGNED NOT NULL,
-  seq_region_start      INT(10) UNSIGNED NOT NULL,
-  seq_region_end        INT(10) UNSIGNED NOT NULL,
+  density_feature_id    INT NOT NULL AUTO_INCREMENT,
+  density_type_id       INT NOT NULL,
+  seq_region_id         INT NOT NULL,
+  seq_region_start      INT NOT NULL,
+  seq_region_end        INT NOT NULL,
   density_value         FLOAT NOT NULL,
 
   PRIMARY KEY (density_feature_id),
@@ -1369,7 +1365,7 @@ CREATE TABLE density_feature (
 
 CREATE TABLE density_type (
 
-  density_type_id       INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  density_type_id       INT NOT NULL AUTO_INCREMENT,
   analysis_id           INT(10) UNSIGNED NOT NULL,
   block_size            INT NOT NULL,
   region_features       INT NOT NULL,
@@ -1389,14 +1385,14 @@ CREATE TABLE density_type (
 
 CREATE TABLE regulatory_feature (
 
-  regulatory_feature_id   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  regulatory_feature_id   INT NOT NULL AUTO_INCREMENT,
   name                    VARCHAR(255) NOT NULL,
-  seq_region_id           INT(10) UNSIGNED NOT NULL,
-  seq_region_start        INT(10) UNSIGNED NOT NULL,
-  seq_region_end          INT(10) UNSIGNED NOT NULL,
+  seq_region_id           INT NOT NULL,
+  seq_region_start        INT NOT NULL,
+  seq_region_end          INT NOT NULL,
   seq_region_strand       TINYINT NOT NULL,
   analysis_id             INT(10) UNSIGNED NOT NULL,
-  regulatory_factor_id    INT(10) UNSIGNED,
+  regulatory_factor_id    INT,
 
   PRIMARY KEY (regulatory_feature_id),
   KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start),
@@ -1412,7 +1408,7 @@ CREATE TABLE regulatory_feature (
 
 CREATE TABLE regulatory_factor (
 
-  regulatory_factor_id   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  regulatory_factor_id   INT NOT NULL AUTO_INCREMENT,
   name                   VARCHAR(255) NOT NULL,
   type                   ENUM('miRNA_target', 'transcription_factor',
                               'transcription_factor_complex'),
@@ -1430,9 +1426,9 @@ CREATE TABLE regulatory_factor (
 
 CREATE TABLE regulatory_feature_object (
 
-  regulatory_feature_id   INT(10) UNSIGNED NOT NULL,
+  regulatory_feature_id   INT NOT NULL,
   ensembl_object_type     ENUM('Transcript', 'Translation', 'Gene') NOT NULL,
-  ensembl_object_id       INT(10) UNSIGNED NOT NULL, # FK to transcript,gene etc
+  ensembl_object_id       INT NOT NULL, # FK to transcript,gene etc
   influence               ENUM('positive', 'negative', 'mixed', 'unknown'),
   evidence                VARCHAR(255),
 
@@ -1450,9 +1446,9 @@ CREATE TABLE regulatory_feature_object (
 
 CREATE TABLE regulatory_factor_coding (
 
-  regulatory_factor_id  INT(10) UNSIGNED NOT NULL,
-  transcript_id         INT(10) UNSIGNED,
-  gene_id         	INT(10) UNSIGNED,
+  regulatory_factor_id  INT NOT NULL,
+  transcript_id         INT,
+  gene_id         	INT,
 
   KEY transcript_idx (transcript_id),
   KEY gene_idx (gene_id),
@@ -1469,15 +1465,15 @@ CREATE TABLE regulatory_factor_coding (
 
 CREATE TABLE regulatory_search_region (
 
-  regulatory_search_region_id  INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  regulatory_search_region_id  INT NOT NULL AUTO_INCREMENT,
   name                        VARCHAR(255) NOT NULL,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  seq_region_id               INT NOT NULL,
+  seq_region_start            INT NOT NULL,
+  seq_region_end              INT NOT NULL,
   seq_region_strand           TINYINT NOT NULL,
   ensembl_object_type         ENUM('Transcript', 'Translation', 'Gene')
                               NOT NULL,
-  ensembl_object_id           INT(10) UNSIGNED,  # FK to gene/transcript/translation
+  ensembl_object_id           INT,  # FK to gene/transcript/translation
   analysis_id                 INT(10) UNSIGNED NOT NULL,
 
   PRIMARY KEY (regulatory_search_region_id),
@@ -1497,10 +1493,10 @@ CREATE TABLE regulatory_search_region (
 
 CREATE TABLE unmapped_object (
 
-  unmapped_object_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  unmapped_object_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
   type                  ENUM('xref', 'cDNA', 'Marker') NOT NULL,
   analysis_id           INT(10) UNSIGNED NOT NULL,
-  external_db_id        INT(10) UNSIGNED NOT NULL,
+  external_db_id        INT NOT NULL,
   identifier            VARCHAR(255) NOT NULL,
   unmapped_reason_id    SMALLINT(5) UNSIGNED NOT NULL,
   query_score           DOUBLE,
