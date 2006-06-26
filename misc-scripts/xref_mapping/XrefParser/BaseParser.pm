@@ -154,10 +154,22 @@ sub run {
 	}
 	next;
       }
+
+
       # Download files
 
+      # Deal with URLs with # notation denoting filenames from archive
+      # If the # is used, set $file and $file_from_archive approprately
+      my $file_from_archive;
+      if ($file =~ /(.*)\#(.*)/) {
+	$file = $1;
+	$file_from_archive = $2;
+	die "$file specifies a .zip file without using the # notation to specify the file in the archive to be used."if (!$file_from_archive);
+	print "Using $file_from_archive from $file\n";
+      }
+
       if ( $checkdownload ) {   
-         
+
          my $check_file = "$dir/$file" ;   
          $check_file =~s/\.gz//; 
          $check_file =~s/\.Z//; 
@@ -178,6 +190,7 @@ sub run {
 	print"URL is longer than 100 charcters; renamed to $file\n";
       }
 
+
       # File parsing
       if (!$skipdownload) {
 
@@ -190,9 +203,12 @@ sub run {
 
 	$last_type = $type;
 
-
-	print "Downloading $urls to $dir/$file\n";
-
+	if ($file_from_archive) {
+	  print "Downloading $file to $dir/$file\n";
+	} else {
+	  print "Downloading $urls to $dir/$file\n";
+	}
+	
 	my $num_attempts = 0;
 	my $missing = 1;
 	while($num_attempts < 5 and $missing){
@@ -212,6 +228,7 @@ sub run {
 	if($missing){
 	  die "Could not get $type file $file tried 5 times but failed\n";
 	}
+
 	# if the file is compressed, the FTP server may or may not have automatically uncompressed it
 	# TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
 	if ($file =~ /(.*)\.gz$/ or $file =~ /(.*)\.Z$/) {
@@ -221,31 +238,16 @@ sub run {
 	}
 	if ($file =~ /(.*)\.zip$/) {
 	  print "Unzipping $dir/$file\n";
-	  system("unzip -o -q $dir/$file");
-	  $file = $1;
+	  system("unzip -o -q -d $dir $dir/$file");
 	}
 
       }
-      else{
-	if ($file =~ /(.*)\.gz$/ or $file =~ /(.*)\.Z$/) {
-	  $file = $1;
-	} elsif ($file =~ /\.zip/) {
-	  # .zip files are archives
-	  # that can contain several files. The file to be extracted is specified
-	  # by a hash in the URL in populate_metadata.sql, e.g.
-	  # http://www.illumina.com/General/Products/ArraysReagents/zip_files/Human_WG-6_rev.zip#Human_WG-6_rev.csv
-	  # TODO - maybe add support for .tar.gz here as well
-	  if ($file =~ /(.*\.zip)\#(.*)$/) {
-	    my $archive = $1;
-	    $file = $2;
-	    print "Using $file from archive $archive\n";
-	  } else {
-	    die "$file specifies a .zip file withouut using the # notation to specify the file in the archive to be used.";
-	  }
-	}
-      }
 
-      push @new_file, $file;
+      if ($file_from_archive) {
+	push @new_file, $file_from_archive;
+      } else {
+	push @new_file, $file;
+      }
 
       # compare checksums and parse/upload if necessary
       # need to check file size as some .SPC files can be of zero length
