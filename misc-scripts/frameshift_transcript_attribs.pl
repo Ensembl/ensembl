@@ -85,7 +85,7 @@ for my $dbname ( @dbnames ) {
   my ($transcript_id, $biotype, $intron_length, $stable_id, $start, $end, $strand, $count, $seq_region_name);
   $sth->bind_columns(\$transcript_id, \$biotype, \$intron_length, \$stable_id, \$start, \$end, \$strand, \$seq_region_name);
 
-  my $last_transcript_id;
+  my $last_transcript_id = -1;
   my $intron_number;
 
   while ($sth->fetch()) {
