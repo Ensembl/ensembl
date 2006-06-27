@@ -6,15 +6,15 @@ use Getopt::Long;
 
 my ( $host, $user, $pass, $port, $dbname, $genestats, $snpstats  );
 
-
 GetOptions( "host=s", \$host,
 	    "user=s", \$user,
 	    "pass=s", \$pass,
 	    "port=i", \$port,
 	    "dbname=s", \$dbname,
-      "genestats", \$genestats,
-      "snpstats", \$snpstats
+	    "genestats", \$genestats,
+	    "snpstats", \$snpstats
 	  );
+
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -user => $user,
 					    -port => $port,
@@ -22,21 +22,26 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -dbname => $dbname);
 
 
-my %attrib_codes = ( 'miRNA' => 'miRNA',
-		     'snRNA' => 'snRNA',
-		     'snoRNA' => 'snoRNA',
-		     'rRNA' => 'rRNA',
-		     'tRNA' => 'tRNA',
+my %attrib_codes = ( 'miRNA'              => 'miRNA',
+		     'snRNA'                => 'snRNA',
+		     'snoRNA'               => 'snoRNA',
+		     'rRNA'                 => 'rRNA',
+		     'tRNA'                 => 'tRNA',
 		     'known protein_coding' => 'knwCod',
-		     'misc_RNA' => 'mscRNA',
+		     'misc_RNA'             => 'mscRNA',
 		     'novel protein_coding' => 'novCod',
-		     'pseudogene' => 'pseudo',
-		     'scRNA' => 'scRNA',
-		     'Mt_tRNA' => 'MTtRNA',
-		     'Mt_rRNA' => 'MTrRNA');
-
-		     
-
+		     'pseudogene'           => 'pseudo',
+		     'scRNA'                => 'scRNA',
+		     'Mt_tRNA'              => 'MTtRNA',
+		     'Mt_rRNA'              => 'MTrRNA',
+		     'scRNA_pseudogene'     => 'RNA_pseu',
+		     'tRNA_pseudogene'      => 'RNA_pseu',
+		     'rRNA_pseudogene'      => 'RNA_pseu',
+		     'snoRNA_pseudogene'    => 'RNA_pseu',
+		     'snRNA_pseudogene'     => 'RNA_pseu',
+		     'misc_RNA_pseudogene'  => 'RNA_pseu',
+		     'miRNA_pseudogene'     => 'RNA_pseu',
+		     'Mt_tRNA_pseudogene'   => 'RNA_pseu');
 
 # do both genestats and snpstats by default
 $genestats = $snpstats = 1 if(!$genestats && !$snpstats);
