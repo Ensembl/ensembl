@@ -20,6 +20,10 @@ Required arguments:
 
 Optional arguments:
 
+  --patch_variation_database         If this attribute is specified, will read the
+                                     sql from ensembl-variation and patch the
+                                     variation databases (default:false)
+
   --conffile, --conf=FILE             read parameters from FILE
                                       (default: conf/Conversion.ini)
 
@@ -90,6 +94,7 @@ $support->parse_extra_options(
   'pattern|dbpattern=s',
   'schema|dbschema=s',
   'bindir=s',
+  'patch_variation_database'
 );
 my @params = map { $_ unless ($_ =~ /dbname/) } $support->get_common_params;
 $support->allowed_params(
@@ -97,6 +102,7 @@ $support->allowed_params(
   'pattern',
   'schema',
   'bindir',
+  'patch_variation_database'
 );
 
 if ($support->param('help') or $support->error) {
@@ -124,12 +130,14 @@ my $dbh = $support->get_dbconnection;
 
 # read patches from file
 $support->log("Reading patches from file...\n");
-my $patchdir = "$SERVERROOT/ensembl/sql";
+my $patchdir;
+$patchdir = "$SERVERROOT/ensembl/sql" if(!defined $support->param('patch_variation_database'));
+$patchdir = "$SERVERROOT/ensembl-variation/sql" if(defined $support->param('patch_variation_database'));
 my $schema = $support->param('schema');
 my @patches;
 
 opendir(DIR, $patchdir) or
-  $support->log_error("Can't opendir $SERVERROOT/ensembl/sql: $!");
+  $support->log_error("Can't opendir $patchdir: $!");
 
 while (my $file = readdir(DIR)) {
   if ($file =~ /^patch_\d+_${schema}.*\.sql/) {
@@ -182,7 +190,7 @@ while (my ($dbname) = $sth->fetchrow_array) {
           " -P ".$support->param('port').
           " -u ".$support->param('user').
           " -p".$support->param('pass').
-          " $dbname < $SERVERROOT/ensembl/sql/$patch";
+          " $dbname < $patchdir/$patch";
 
         if (system($cmd) == 0) {
           $support->log("done.\n");
