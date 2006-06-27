@@ -62,7 +62,7 @@ for my $dbname ( @dbnames ) {
   print STDERR "Attributes will not be stored in database\n" if ($nostore);
 
   my $sth = $db_adaptor->dbc()->prepare
-    (qq{SELECT t.transcript_id, g.biotype,
+    (qq{SELECT t.transcript_id, g.gene_id, g.biotype,
 	MIN(IF(e1.seq_region_strand = 1,
 	       e2.seq_region_start - e1.seq_region_end - 1,
 	       e1.seq_region_start - e2.seq_region_end - 1)) AS intron_length,
@@ -82,15 +82,15 @@ for my $dbname ( @dbnames ) {
 
   $sth->execute();
 
-  my ($transcript_id, $biotype, $intron_length, $stable_id, $start, $end, $strand, $count, $seq_region_name);
-  $sth->bind_columns(\$transcript_id, \$biotype, \$intron_length, \$stable_id, \$start, \$end, \$strand, \$seq_region_name);
+  my ($transcript_id, $gene_id, $biotype, $intron_length, $stable_id, $start, $end, $strand, $count, $seq_region_name);
+  $sth->bind_columns(\$transcript_id, \$gene_id, \$biotype, \$intron_length, \$stable_id, \$start, \$end, \$strand, \$seq_region_name);
 
-  my $last_transcript_id = -1;
+  my $last_gene_id = -1;
   my $intron_number;
 
   while ($sth->fetch()) {
 
-    if ($transcript_id == $last_transcript_id) {
+    if ($gene_id == $last_gene_id) {
       $intron_number++;
     } else {
       $intron_number = 1;
@@ -111,7 +111,7 @@ for my $dbname ( @dbnames ) {
 
     $biotypes{$biotype}++;
     $count++;
-    $last_transcript_id = $transcript_id;
+    $last_gene_id = $gene_id;
 
   }
 
