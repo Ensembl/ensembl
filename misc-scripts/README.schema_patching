@@ -45,4 +45,6 @@ of what you've done.
 NOTE: the schema_patch.pl has been modified to work as well to patch variation
 databases. By default, and if you run it as above, it will patch the core
 databases. If you want to patch the variation_databases, the option
---patch_variation_database
+--patch_variation_database should be added, so it will read the ensembl-variation/sql
+directory and apply all the patch_*.sql to the database, as it does with the core
+databases
