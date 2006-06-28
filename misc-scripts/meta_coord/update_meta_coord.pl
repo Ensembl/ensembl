@@ -59,7 +59,6 @@ my @table_names = qw(
                      gene
                      exon
                      density_feature
-                     ditag
                      ditag_feature
                      dna_align_feature
                      karyotype
