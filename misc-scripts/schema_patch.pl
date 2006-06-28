@@ -140,7 +140,7 @@ opendir(DIR, $patchdir) or
   $support->log_error("Can't opendir $patchdir: $!");
 
 while (my $file = readdir(DIR)) {
-  if ($file =~ /^patch_\d+_${schema}.*\.sql/) {
+  if ($file =~ /^patch_\d+_${schema}.*\.sql$/) {
     $support->log("$file\n", 1);
     push @patches, $file;
   }
