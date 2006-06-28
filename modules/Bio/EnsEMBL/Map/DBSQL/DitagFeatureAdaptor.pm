@@ -1,0 +1,579 @@
+# EnsEMBL module for DitagFeatureAdaptor
+#
+# Copyright EMBL-EBI/Wellcome Trust Sanger Center 2006
+#
+# You may distribute this module under the same terms as perl itself
+#
+# Cared for by EnsEMBL (ensembl-dev@ebi.ac.uk)
+
+# POD documentation - main docs before the code
+
+=head1 NAME
+
+Bio::EnsEMBL::Map::DBSQL::DitagFeatureAdaptor
+
+=head1 SYNOPSIS
+
+my $dfa = $db->get_DitagFeatureAdaptor;
+my $ditagFeatures = $dfa->fetch_by_ditag_id(123);
+foreach my $ditagFeature (@$ditagFeatures){
+  print $ditagFeature->ditag_id . " " .
+        $ditagFeature->slice . " " . $ditagFeature->start . "-" .
+        $ditagFeature->end . " " . $ditagFeature->strand;
+}
+
+=head1 DESCRIPTION
+
+Provides database interaction for the Bio::EnsEMBL::Map::DitagFeature object
+
+=cut
+
+package Bio::EnsEMBL::Map::DBSQL::DitagFeatureAdaptor;
+
+use strict;
+use vars ('@ISA');
+
+use Bio::EnsEMBL::Map::Ditag;
+use Bio::EnsEMBL::Map::DitagFeature;
+use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+
+
+=head2 fetch_all
+
+  Arg [1]    : none
+  Example    : @all_tags = @{$ditagfeature_adaptor->fetch_all};
+  Description: Retrieves all ditagFeatures from the database
+  Returntype : listref of Bio::EnsEMBL::Map::DitagFeature
+  Caller     : general
+
+=cut
+
+sub fetch_all {
+  my $self = shift;
+
+  my $sth = $self->prepare("SELECT ditag_feature_id, ditag_id, seq_region_id, seq_region_start, 
+                            seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
+                            hit_strand, cigar_line, ditag_side, ditag_pair_id 
+                            FROM   ditag_feature" );
+  $sth->execute;
+
+  my $result = $self->_fetch($sth);
+
+  return $result;
+}
+
+
+=head2 fetch_by_dbID
+
+  Arg [1]    : ditagFeature dbID
+  Example    : @my_tags = @{$ditagfeature_adaptor->fetch_by_dbID($my_id)};
+  Description: Retrieves a ditagFeature from the database.
+  Returntype : Bio::EnsEMBL::Map::DitagFeature
+  Caller     : general
+
+=cut
+
+sub fetch_by_dbID {
+  my ($self, $dbid) = @_;
+
+  my $sth = $self->prepare("SELECT ditag_feature_id, ditag_id, seq_region_id, seq_region_start, 
+                            seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
+                            hit_strand, cigar_line, ditag_side, ditag_pair_id 
+                            FROM   ditag_feature
+                            WHERE  ditag_feature_id = ?" );
+  $sth->execute($dbid);
+
+  my $result = $self->_fetch($sth);
+
+  return $result->[0];
+}
+
+
+=head2 fetch_by_ditagID
+
+  Arg [1]    : ditag dbID
+  Example    : @my_tags = @{$ditagfeature_adaptor->fetch_by_ditag_id($my_id)};
+  Description: Retrieves all ditagFeatures from the database linking to a specific ditag-id
+  Returntype : listref of Bio::EnsEMBL::Map::DitagFeature
+  Caller     : general
+
+=cut
+
+sub fetch_by_ditagID {
+  my ($self, $ditag_id) = @_;
+
+print "\nID=$ditag_id\n";
+
+  my $sth = $self->prepare("SELECT ditag_feature_id, ditag_id, seq_region_id, seq_region_start, 
+                            seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
+                            hit_strand, cigar_line, ditag_side, ditag_pair_id 
+                            FROM   ditag_feature 
+                            WHERE  ditag_id = ? 
+                            ORDER BY ditag_pair_id" );
+  $sth->execute($ditag_id);
+
+  my $result = $self->_fetch($sth);
+
+  return $result;
+}
+
+
+=head2 fetch_all_by_type
+
+  Arg [1]    : ditag type
+  Example    : @my_tags = @{$ditagfeature_adaptor->fetch_all_by_type($type)};
+  Description: Retrieves all ditagFeatures from the database linking to a specific ditag-type
+  Returntype : listref of Bio::EnsEMBL::Map::DitagFeature
+  Caller     : general
+
+=cut
+
+sub fetch_all_by_type {
+  my ($self, $ditag_type) = @_;
+
+  my $sth = $self->prepare("SELECT df.ditag_feature_id, df.ditag_id, df.seq_region_id, 
+                            df.seq_region_start, df.seq_region_end, df.seq_region_strand, 
+                            df.analysis_id, df.hit_start, df.hit_end, df.hit_strand, 
+                            df.cigar_line, df.ditag_side, ditag_pair_id 
+                            FROM   ditag_feature df, ditag d 
+                            WHERE  df.ditag_id=d.ditag_id and d.type = ? 
+                            ORDER BY df.ditag_id, df.ditag_pair_id" );
+  $sth->execute($ditag_type);
+
+  my $result = $self->_fetch($sth);
+
+  return $result;
+}
+
+
+
+=head2 fetch_all_by_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice
+  Arg [2]    : (optional) ditag type
+  Example    : $tag = $ditagfeature_adaptor->fetch_all_by_Slice($slice, "SME005");
+  Description: Retrieves ditagFeatures from the database for a specific region
+               and (optional) ditag type.
+  Returntype : listref of Bio::EnsEMBL::Map::DitagFeatures
+  Caller     : general
+
+=cut
+
+sub fetch_all_by_Slice {
+  my ($self, $slice, $tagtype) = @_;
+
+  if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
+    throw("Bio::EnsEMBL::Slice argument expected.");
+  }
+
+  my $sql = "SELECT df.ditag_feature_id, df.ditag_id, df.seq_region_id, 
+             df.seq_region_start, df.seq_region_end, df.seq_region_strand, 
+             df.analysis_id, df.hit_start, df.hit_end, df.hit_strand, 
+             df.cigar_line, df.ditag_side, ditag_pair_id 
+             FROM   ditag_feature df, ditag d 
+             WHERE  df.ditag_id=d.ditag_id AND df.seq_region_id = ? 
+             AND df.seq_region_start >= ? AND df.seq_region_end <= ? ";
+  if($tagtype){
+    $sql .= " and d.type = ? ";
+  }
+  $sql .= "ORDER BY ditag_pair_id";
+  my $sth = $self->prepare($sql);
+  if($tagtype){
+    $sth->execute($slice->get_seq_region_id, $slice->start, $slice->end, $tagtype);
+  }
+  else{
+    $sth->execute($slice->get_seq_region_id, $slice->start, $slice->end);
+  }
+  my $result = $self->_fetch($sth);
+
+  return $result;
+}
+
+
+=head2 fetch_grouped
+
+  Arg [1]    : (optional) ditag id
+  Arg [2]    : (optional) ditag type
+  Arg [3]    : (optional) Bio::EnsEMBL::Slice
+  Example    : $gouped_tags = $ditagfeature_adaptor->fetch_grouped(undef, "ZZ11", undef);
+  Description: Retrieves Features from the database in their start-end groups;
+               The start will be the lower seq_region_start, the end the higher seq_region_end.
+               In context this should refer to potential transcript start and end locations.
+  Returntype : listref of hashes similar to DitagFeatures:
+                 %grouped_tag( -slice         => $slice,
+                               -start         => $seqstart,
+			       -end           => $seqend,
+			       -strand        => $strand,
+			       -tag_count     => $tagcount,
+			       -hit_strand    => $hit_strand,
+			       -ditag_id      => $ditag_id,
+			       -ditag_pair_id => $ditag_pair_id,
+			     );
+  Caller     : general
+
+=cut
+
+sub fetch_grouped {
+  my ($self, $ditagid, $tagtype, $slice) = @_;
+
+  my (@grouped_tags, @querywords);
+  my $sql = "SELECT df.seq_region_id, MIN(df.seq_region_start) AS minstart, 
+             MAX(df.seq_region_end) AS maxend, df.seq_region_strand, 
+             df.hit_strand, df.ditag_id, df.ditag_pair_id, d.tag_count 
+             FROM ditag_feature df, ditag d 
+             WHERE df.ditag_id=d.ditag_id ";
+
+  if($tagtype){
+    $sql .= " AND d.type = \"".$tagtype."\"";
+  }
+  if($ditagid){
+    $sql .= " AND df.ditag_id = ".$ditagid;
+  }
+  if($slice){
+    $sql .= " AND df.seq_region_id     = ".$slice->get_seq_region_id.
+            " AND df.seq_region_start >= ".$slice->start.
+	    " AND df.seq_region_end   <= ".$slice->end;
+  }
+  $sql .= " GROUP BY df.ditag_id, df.ditag_pair_id".
+          " ORDER BY df.seq_region_id, minstart, maxend";
+
+  my $sth = $self->prepare($sql);
+  $sth->execute();
+
+  my ( $seqreg, $seqstart, $seqend, $strand, $hit_strand, $ditag_id, $ditag_pair_id, $tagcount );
+  $sth->bind_columns( \$seqreg,        \$seqstart,    \$seqend,
+                      \$strand,        \$hit_strand,  \$ditag_id,
+                      \$ditag_pair_id, \$tagcount );
+
+  while ( $sth->fetch ) {
+    my $alt_slice = $self->db->get_SliceAdaptor->fetch_by_seq_region_id($seqreg);
+
+    my %grouped_tag = ( slice         => $alt_slice,
+			start         => $seqstart,
+			end           => $seqend,
+			strand        => $strand,
+			tag_count     => $tagcount,
+			hit_strand    => $hit_strand,
+			ditag_id      => $ditag_id,
+			ditag_pair_id => $ditag_pair_id,
+		      );
+    push @grouped_tags, \%grouped_tag;
+  }
+
+  return \@grouped_tags;
+}
+
+
+=head2 _fetch
+
+  Arg [1]    : statement handler
+  Description: generic sql-fetch function for the DitagFeature fetch methods
+  Returntype : listref of Bio::EnsEMBL::Map::DitagFeatures
+  Caller     : private
+
+=cut
+
+sub _fetch {
+  my ($self, $sth) = @_;
+
+  my ( $tag_id, $mothertag_id, $seqreg, $seqstart, $seqend, $strand, $analysis_id, $hit_start,
+       $hit_end, $hit_strand, $cigar_line, $ditag_side, $ditag_pair_id );
+  $sth->bind_columns( \$tag_id,        \$mothertag_id, \$seqreg,
+                      \$seqstart,      \$seqend,       \$strand,
+                      \$analysis_id,   \$hit_start,    \$hit_end,
+                      \$hit_strand,    \$cigar_line,   \$ditag_side,
+                      \$ditag_pair_id );
+
+  my @ditags;
+
+  while ( $sth->fetch ) {
+    my $analysis_obj = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+    my $slice        = $self->db->get_SliceAdaptor->fetch_by_seq_region_id($seqreg);
+
+    push @ditags,
+      Bio::EnsEMBL::Map::DitagFeature->new( -dbid          => $tag_id,
+                                            -slice         => $slice,
+                                            -start         => $seqstart,
+                                            -end           => $seqend,
+                                            -strand        => $strand, 
+                                            -analysis      => $analysis_obj,
+                                            -hit_start     => $hit_start,
+                                            -hit_end       => $hit_end,
+                                            -hit_strand    => $hit_strand,
+                                            -ditag_id      => $mothertag_id,
+                                            -cigar_line    => $cigar_line,
+                                            -ditag_side    => $ditag_side,
+					    -ditag_pair_id => $ditag_pair_id,
+                                            -adaptor       => $self,
+                                            );
+  }
+
+  return \@ditags;
+}
+
+
+=head2 sequence
+
+  Arg [1]    : dbID of DitagFeature
+  Example    : $ditagfeature_adaptor->get_sequence($ditagFeature->dbID)
+  Description: get the part of the sequence of a ditag,
+               that is actully aligned to the genome.
+  Returntype : string
+  Exceptions : thrown if not all data needed for storing is populated in the
+               ditag features
+  Caller     : Bio::EnsEMBL::Map::DitagFeature
+
+=cut
+
+sub sequence {
+  my ($self, $dbID) = @_;
+
+  my $sequence = undef;
+  my $db  = $self->db() or throw "Couldn t get database connection.";
+  my $sql = "SELECT d.sequence, df.hit_start, df.hit_end, df.hit_strand ".
+            "FROM ditag d, ditag_feature df ".
+	    "WHERE df.ditag_id=d.ditag_id and df.ditag_feature_id = ?";
+  my $sth = $db->dbc->prepare($sql);
+  $sth->execute( $dbID );
+  my ($seq, $start, $end, $strand) = $sth->fetchrow_array();
+  if($seq and $start and $end and $strand){
+    $sequence = substr($seq, ($start-1), ($end-$strand));
+    if($strand == -1) {
+      $sequence =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+    }
+  }
+
+  return $sequence;
+}
+
+
+=head2 store
+
+  Arg [1]    : (Array ref of) Bio::EnsEMBL::Map::DitagFeature
+  Example    : $ditagfeature_adaptor->store(@ditag_features);
+  Description: Stores a single ditagFeature or
+               a list of ditagFeatures in this database.
+  Returntype : none
+  Exceptions : thrown if not all data needed for storing is populated in the
+               ditag features
+  Caller     : general
+
+=cut
+
+sub store {
+  my ( $self, $ditags ) = @_;
+
+  if ( ref $ditags eq 'ARRAY' ) {
+    if ( scalar(@$ditags) == 0 ) {
+      throw( "Must call store with ditagFeature or list ref of ditagsFeature" );
+    }
+  } elsif ($ditags) {
+    my @ditags;
+    push @ditags, $ditags;
+    $ditags = \@ditags;
+  } else {
+    throw( "Must call store with ditagFeature or list ref of ditagsFeature." );
+  }
+
+  my $db = $self->db() or throw "Couldn t get database connection.";
+
+  my $sth1 = $self->prepare( "INSERT INTO ditag_feature( ditag_id, seq_region_id, seq_region_start, 
+                              seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
+                              hit_strand, cigar_line, ditag_side, ditag_pair_id ) 
+                              VALUES( ?,?,?,?,?,?,?,?,?,?,?,? )" );
+  my $sth2 = $self->prepare( "INSERT INTO ditag_feature( ditag_feature_ID, ditag_id, seq_region_id, 
+                              seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, 
+                              hit_end, hit_strand, cigar_line, ditag_side, ditag_pair_id ) 
+                              VALUES( ?,?,?,?,?,?,?,?,?,?,?,?,? )" );
+  my $sth3 = $self->prepare( "SELECT COUNT(*) FROM ditag_feature 
+                              WHERE ditag_id = ?" );
+
+TAG:
+  foreach my $ditag (@$ditags) {
+
+    if ( !ref $ditag || !$ditag->isa("Bio::EnsEMBL::Map::DitagFeature") ) {
+      throw(   "Object must be an Ensembl DitagFeature, "
+             . "not a " . ref($ditag) );
+    }
+
+#    if ( $ditag->is_stored($db) ) {
+#      warning(   "DitagFeature " . $ditag->dbID
+#                 . " is already stored in this database." );
+#      #-->update ?!
+#      next TAG;
+#    }
+
+#    #check if more than 1 tag with this ditag id exist
+#    $sth3->execute( $ditag->ditag_id );
+#    my ($num) = $sth3->fetchrow_array();
+#    if ( ($num) and ($num > 1) ) {
+#      warning( "There are already at least 2 DitagFeatures relating to Ditag ".
+#                 $ditag->ditag_id." stored in this database." );
+#      if ( $num > 4 ) {
+#        warning( "not storing" );
+#        next TAG;
+#      }
+#    }
+
+    if ( $ditag->dbID ) {
+      $sth2->bind_param( 1,  $ditag->dbID,                      SQL_INTEGER );
+      $sth2->bind_param( 2,  $ditag->ditag_id,                  SQL_INTEGER );
+      $sth2->bind_param( 3, ($ditag->slice->get_seq_region_id), SQL_INTEGER );
+      $sth2->bind_param( 4,  $ditag->start,                     SQL_INTEGER );
+      $sth2->bind_param( 5,  $ditag->end,                       SQL_INTEGER );
+      $sth2->bind_param( 6,  $ditag->strand,                    SQL_VARCHAR );
+      $sth2->bind_param( 7,  $ditag->analysis->dbID,            SQL_INTEGER );
+      $sth2->bind_param( 8,  $ditag->hit_start,                 SQL_INTEGER );
+      $sth2->bind_param( 9,  $ditag->hit_end,                   SQL_INTEGER );
+      $sth2->bind_param( 10, $ditag->hit_strand,                SQL_VARCHAR );
+      $sth2->bind_param( 11, $ditag->cigar_line,                SQL_VARCHAR );
+      $sth2->bind_param( 12, $ditag->ditag_side,                SQL_VARCHAR );
+      $sth2->bind_param( 13, $ditag->ditag_pair_id,             SQL_VARCHAR );
+      $sth2->execute();
+    }
+    else{
+      $sth1->bind_param( 1,  $ditag->ditag_id,                  SQL_INTEGER );
+      $sth1->bind_param( 2, ($ditag->slice->get_seq_region_id), SQL_INTEGER );
+      $sth1->bind_param( 3,  $ditag->start,                     SQL_INTEGER );
+      $sth1->bind_param( 4,  $ditag->end,                       SQL_INTEGER );
+      $sth1->bind_param( 5,  $ditag->strand,                    SQL_VARCHAR );
+      $sth1->bind_param( 6,  $ditag->analysis->dbID,            SQL_INTEGER );
+      $sth1->bind_param( 7,  $ditag->hit_start,                 SQL_INTEGER );
+      $sth1->bind_param( 8,  $ditag->hit_end,                   SQL_INTEGER );
+      $sth1->bind_param( 9,  $ditag->hit_strand,                SQL_VARCHAR );
+      $sth1->bind_param( 10, $ditag->cigar_line,                SQL_VARCHAR );
+      $sth1->bind_param( 11, $ditag->ditag_side,                SQL_VARCHAR );
+      $sth1->bind_param( 12, $ditag->ditag_pair_id,             SQL_VARCHAR );
+      $sth1->execute();
+      my $dbID = $sth1->{'mysql_insertid'};
+      $ditag->dbID($dbID);
+      $ditag->adaptor($self);
+    }
+
+  }
+}
+
+
+=head2 batch_store
+
+  Arg [1]    : (Array ref of) Bio::EnsEMBL::Map::DitagFeature
+  Example    : $ditagfeature_adaptor->batch_store(\@ditag_features);
+  Description: Stores a list of ditagFeatures in this database.
+               DitagFeatures are expected to have no dbID yet.
+               They are inserted in one combined INSERT for better performance.
+  Returntype : none
+  Exceptions : thrown if not all data needed for storing is given for the
+               ditag features
+  Caller     : general
+
+=cut
+
+sub batch_store {
+  my ( $self, $ditags ) = @_;
+
+  my %tag_ids = ();
+  my @good_ditags;
+  my ($sql, $sqladd);
+  my $inserts = 0;
+
+  if ( ref $ditags eq 'ARRAY' ) {
+    if ( scalar(@$ditags) == 0 ) {
+      throw( "Must call store with ditagFeature or list ref of ditagsFeature" );
+    }
+  } elsif ($ditags) {
+    my @ditags;
+    push @ditags, $ditags;
+    $ditags = \@ditags;
+  } else {
+    throw( "Must call store with ditagFeature or list ref of ditagsFeature." );
+  }
+
+  my $db = $self->db() or throw "Couldn t get database connection.";
+
+  #check whether it s a DitagFeature object and is not stored already
+  foreach my $ditag (@$ditags) {
+
+    if ( !ref $ditag || !$ditag->isa("Bio::EnsEMBL::Map::DitagFeature") ) {
+      throw(   "Object must be an Ensembl DitagFeature, "
+             . "not a " . ref($ditag) );
+    }
+    if ( $ditag->is_stored($db) ) {
+      warning(   "DitagFeature " . $ditag->dbID
+                 . " is already stored in this database." );
+      next;
+    }
+    $tag_ids{$ditag->ditag_id} = $ditag;
+    push(@good_ditags, $ditag);
+  }
+  $ditags = undef;
+
+#  #check if more than 1 tag with this ditag id exists
+#  $sql = "SELECT COUNT(*), ditag_id FROM ditag_feature ". 
+#         "WHERE ditag_id IN (".(join(", ", keys %tag_ids)).") group by ditag_id";
+#  my $sth2 = $db->prepare($sql);
+#  $sth2->execute();
+#  while (my ($num, $ditag_id) = $sth2->fetchrow_array()){
+#    if ( ($num) and ($num > 1) ) {
+#      warning( "There are already at least 2 DitagFeatures relating to Ditag ".
+#                 $ditag_id." stored in this database." );
+#      if ( $num > 4 ) {
+#        warning( "not storing" );
+#        next;
+#      }
+#    }
+#    $ditag->ditag_id
+#    push(@good_ditags, $tag_ids{$ditag_id});
+#  }
+
+  #create batch INSERT
+  $sql = "INSERT INTO ditag_feature ( ditag_id, seq_region_id, seq_region_start, ".
+         "seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, ".
+         "hit_strand, cigar_line, ditag_side, ditag_pair_id ) VALUES ";
+  foreach my $ditag (@good_ditags) {
+    $sqladd = "";
+     if($inserts){ $sqladd = ", " }
+     $sqladd .= "(". $ditag->ditag_id.", ".($ditag->slice->get_seq_region_id).", ". $ditag->start.", ".
+                $ditag->end.", '".$ditag->strand."', ".$ditag->analysis->dbID.", ".$ditag->hit_start.
+                ", ".$ditag->hit_end.", '".$ditag->hit_strand."', '".$ditag->cigar_line."', '".
+                $ditag->ditag_side."', ".$ditag->ditag_pair_id.")";
+    $sql .= $sqladd;
+    $inserts++;
+  }
+
+  #STORE
+  if($inserts){
+    eval{
+      $db->dbc->do($sql);
+    };
+    if($@){
+      warning("Problem inserting ditag batch!".$@);
+    }
+  }
+  else{
+    warn "Nothing stored!";
+  }
+
+}
+
+
+=head2 list_dbIDs
+
+  Args       : None
+  Example    : my @feature_ids = @{$dfa->list_dbIDs()};
+  Description: Gets an array of internal IDs for all DitagFeature objects in
+               the current database.
+  Returntype : List of ints
+  Exceptions : None
+
+=cut
+
+sub list_dbIDs {
+	my $self = shift;
+	
+	return $self->_list_dbIDs('ditag_feature');
+}
+
+1;
