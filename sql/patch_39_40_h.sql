@@ -8,5 +8,5 @@
 ALTER TABLE oligo_feature CHANGE COLUMN analysis_id analysis_id INT(10) UNSIGNED NOT NULL;
 
 # patch identifier
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_a.sql|oligo_feature_analysis_id_type');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_h.sql|oligo_feature_analysis_id_type');
 
