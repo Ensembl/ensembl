@@ -2637,6 +2637,34 @@ sub get_all_ExternalFeatures {
 }
 
 
+=head2 get_all_DitagFeatures
+
+  Arg [1]    : (optional) string ditag type
+  Example    : @dna_dna_align_feats = @{$slice->get_all_DitagFeatures};
+  Description: Retrieves the DitagFeatures of a specific type which overlap
+               this slice with. If type is not defined, all features are
+               retrieved.
+  Returntype : listref of Bio::EnsEMBL::DitagFeatures
+  Exceptions : warning if slice does not have attached adaptor
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_DitagFeatures {
+   my ($self, $type) = @_;
+
+   if(!$self->adaptor()) {
+     warning('Cannot get DitagFeatures without attached adaptor');
+     return [];
+   }
+
+   my $db;
+   my $dfa = $db->get_DitagFeatureAdaptor();
+
+   return $dfa->fetch_all_by_Slice($self, $type);
+}
+
 
 
 
