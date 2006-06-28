@@ -867,6 +867,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_d.sql|stab
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_e.sql|is_current_not_null');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_f.sql|remove_all_latest');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_g.sql|add_ditag_tables');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_h.sql|oligo_feature_analysis_id_type');
 
 ################################################################################
 #
