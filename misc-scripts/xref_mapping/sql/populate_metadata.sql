@@ -33,6 +33,7 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7165,180454
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (13616,13616, 'monodelphis_domestica', 'mono,opossum,possum,monodelphis,monodelphisdomestica');
 
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9544, 9544,  'macaca_mulatta',        'rmacaque, rhesus, rhesus macaque, macaque');
+INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7159, 7159,  'aedes_aegypti',        'aedes,aedesaegypti,aaegypti');
 
 
 ################################################################################
@@ -779,6 +780,26 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 # --------------------------------------------------------------------------------
 
+
+###### Aedes 
+
+# Uniprot
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1,7159,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz',now(),now(),'UniProtParser');
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2,7159,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz',now(),now(),'UniProtParser');
+
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7159, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+
+# Interpro
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300,7159,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz',now(),now(),'InterproParser');
+
+# Unigene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (6,7159,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Aedes_aegypti/Aae.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Aedes_aegypti/Aae.data.gz',now(),now(),'UniGeneParser');
+
+# GO
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 7159,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
+
+# --------------------------------------------------------------------------------
 
 
 #### Cow
