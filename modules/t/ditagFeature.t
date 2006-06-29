@@ -62,7 +62,7 @@ ok($feature && $feature->isa('Bio::EnsEMBL::Map::DitagFeature'));
 # hit_strand, cigar_line, start, end, strand,
 # dbID, sequence, slice, ditag_pair_id
 
-my $ditagFeatures = $dfa->fetch_by_ditagID($ditag_id);
+my $ditagFeatures = $dfa->fetch_all_by_ditagID($ditag_id);
 my $ditagFeature  = $ditagFeatures->[0];
 
 ok(defined $ditagFeature && $ditagFeature->isa('Bio::EnsEMBL::Map::DitagFeature'));

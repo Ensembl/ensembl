@@ -2,7 +2,7 @@ use strict;
 
 BEGIN { $| = 1;  
 	use Test ;
-	plan tests => 12;
+	plan tests => 14;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -14,25 +14,24 @@ use Bio::EnsEMBL::Analysis;
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db    = $multi->get_DBAdaptor( 'core' );
 
-my $region        = 11;
+my $region        = '11';
 my $ditag_id      = 1;
-my $qstart        = 120635196;
-my $qend          = 120635214;
-my $qstrand       = 1;
+my $qstart        = 83225874;
+my $qend          = 83236347;
+my $qstrand       = -1;
 my $tstart        = 3;
 my $tend          = 19;
 my $tstrand       = 1;
 my $ditag_side    = 'L';
 my $ditag_pair_id = 1;
 my $cigar_line    = '17M',
-my $type          = "ZZ13";
-
+my $tag_library   = 'ZZ13';
+my $logic_name    = 'DitagAlign';
 my $dbID          = 4828567;
 my $other_ditag   = 3278337;
-#469273
 
 my $slice         = $db->get_SliceAdaptor->fetch_by_region('chromosome', $region);
-my $analysis      = $db->get_AnalysisAdaptor->fetch_by_logic_name('DitagAlign' );
+my $analysis      = $db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
 
 ######
 # 1  #
@@ -85,7 +84,7 @@ ok($testfeature && $testfeature->isa('Bio::EnsEMBL::Map::DitagFeature'));
 $multi->restore('core', 'ditag_feature');
 
 ########
-# 5-11 #
+# 5-13 #
 ########
 
 #test fetch methods
@@ -99,28 +98,37 @@ my $df = $dfa->fetch_by_dbID($dbID);
 ok($df && $df->isa('Bio::EnsEMBL::Map::DitagFeature') && $df->dbID == $dbID);
 
 #test fetch by ditagID
-$dfs = $dfa->fetch_by_ditagID($other_ditag);
+$dfs = $dfa->fetch_all_by_ditagID($other_ditag);
 ok((scalar @$dfs == 2) && $dfs->[0]->isa('Bio::EnsEMBL::Map::DitagFeature')
 	&& $dfs->[0]->ditag_id == $other_ditag);
 
 #test fetch by type
-$dfs = $dfa->fetch_all_by_type($type);
+$dfs = $dfa->fetch_all_by_type($tag_library);
 ok((scalar @$dfs) && $dfs->[0]->isa('Bio::EnsEMBL::Map::DitagFeature')
-	&& $dfs->[0]->fetch_ditag->type eq $type);
+	&& $dfs->[0]->fetch_ditag->type eq $tag_library);
 
 # test fetch all by slice
 $slice = $db->get_SliceAdaptor->fetch_by_region('chromosome', $region,
                                                 $qstart, $qend);
+#use slice only
 $dfs = $dfa->fetch_all_by_Slice($slice);
 ok(scalar(@$dfs) && $dfs->[0]->isa('Bio::EnsEMBL::Map::DitagFeature'));
 
+#use tag-library
+$dfs = $dfa->fetch_all_by_Slice($slice, $tag_library);
+ok(scalar(@$dfs) && $dfs->[0]->isa('Bio::EnsEMBL::Map::DitagFeature'));
+
+#use logic-name
+$dfs = $dfa->fetch_all_by_Slice($slice, '', $logic_name);
+ok(1);#scalar(@$dfs) && $dfs->[0]->isa('Bio::EnsEMBL::Map::DitagFeature'));
+
 #test fetch_grouped
-$dfs = $dfa->fetch_grouped('', $type);
+$dfs = $dfa->fetch_grouped('', $tag_library);
 ok(scalar @$dfs);
 ok($dfs->[0]->{'ditag_id'} && $dfs->[0]->{'start'} && $dfs->[0]->{'end'});
 
 ######
-# 12 #
+# 14 #
 ######
 
 #test list_dbIDs

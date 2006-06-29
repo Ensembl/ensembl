@@ -51,7 +51,7 @@ ok($ditag_adaptor->store(\@ditags));
 
 #test fetch_all_by_name
 
-my $ditags = $ditag_adaptor->fetch_by_name($name);
+my $ditags = $ditag_adaptor->fetch_all_by_name($name);
 #if feature was stored it has a dbID now
 ok(scalar(@$ditags) && $ditags->[0]->isa('Bio::EnsEMBL::Map::Ditag'));
 ok($ditags->[0]->name eq $name);
@@ -70,11 +70,11 @@ ok($ditags->[0]->type eq $type);
 # 7-8 #
 #######
 
-#test fetch_all_by_name_and_type
+#test fetch_by_name_and_type
 
-$ditags = $ditag_adaptor->fetch_all_by_name_and_type($name, $type);
-ok(scalar(@$ditags) && $ditags->[0]->isa('Bio::EnsEMBL::Map::Ditag'));
-ok($ditags->[0]->type eq $type && $ditags->[0]->name eq $name);
+my $ditag = $ditag_adaptor->fetch_by_name_and_type($name, $type);
+ok($ditag && $ditag->isa('Bio::EnsEMBL::Map::Ditag'));
+ok($ditag->type eq $type && $ditag->name eq $name);
 
 ######
 # 9  #
@@ -91,8 +91,8 @@ $multi->restore('core', 'ditag');
 # 10 #
 ######
 
-#test fetch_with_limit
-$ditags = $ditag_adaptor->fetch_with_limit($type, 5, 0);
+#test fetch_all_with_limit
+$ditags = $ditag_adaptor->fetch_all_with_limit($type, 5, 0);
 ok((scalar(@$ditags) == 5) && $ditags->[0]->isa('Bio::EnsEMBL::Map::Ditag'));
 
 ######
