@@ -189,7 +189,7 @@ sub get_ditagFeatures {
   my $self = shift;
 
   return $self->adaptor->db->get_adaptor("ditagFeature")
-          ->fetch_by_ditagID($self->dbID);
+          ->fetch_all_by_ditagID($self->dbID);
 }
 
 1;

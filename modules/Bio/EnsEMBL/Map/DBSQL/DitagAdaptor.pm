@@ -35,7 +35,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
-=head2 fetch_by_name
+=head2 fetch_all_by_name
 
   Arg [1]    : ditag name
   Example    : $tag = $ditag_adaptor->fetch_by_name("U3");
@@ -45,7 +45,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 =cut
 
-sub fetch_by_name {
+sub fetch_all_by_name {
   my ($self, $tagname) = @_;
 
   if(!$tagname){
@@ -67,7 +67,7 @@ sub fetch_by_name {
   Arg [1]    : ditag type
   Example    : @all_tags = @{$ditag_adaptor->fetch_by_dbID(1003)};
   Description: Retrieve ditags with a certain id from the database
-  Returntype : listref of Bio::EnsEMBL::Map::Ditag
+  Returntype : Bio::EnsEMBL::Map::Ditag
   Caller     : general
 
 =cut
@@ -84,7 +84,7 @@ sub fetch_by_dbID {
   $sth->execute($tagid);
   my $result = $self->_fetch($sth);
 
-  return $result;
+  return $result->[0];
 }
 
 
@@ -114,19 +114,19 @@ sub fetch_all_by_type {
 }
 
 
-=head2 fetch_all_by_name_and_type
+=head2 fetch_by_name_and_type
 
   Arg [1]    : ditag name
   Arg [2]    : ditag type
   Example    : $tag = $ditag_adaptor->fetch_by_name_and_type("U3", "SME005");
   Description: Retrieves ditags from the database using name/type combination
                which should be non-ambiguous
-  Returntype : listref of Bio::EnsEMBL::Map::Ditag
+  Returntype : Bio::EnsEMBL::Map::Ditag
   Caller     : general
 
 =cut
 
-sub fetch_all_by_name_and_type {
+sub fetch_by_name_and_type {
   my ($self, $tagname, $tagtype) = @_;
 
   if(!$tagname or !$tagtype){
@@ -138,7 +138,7 @@ sub fetch_all_by_name_and_type {
   $sth->execute($tagname, $tagtype);
   my $result = $self->_fetch($sth);
 
-  return $result;
+  return $result->[0];
 }
 
 
@@ -164,7 +164,7 @@ sub fetch_all {
 }
 
 
-=head2 fetch_with_limit
+=head2 fetch_all_with_limit
 
   Arg [1]    : ditag type
   Arg [2]    : row limit
@@ -174,7 +174,7 @@ sub fetch_all {
 
 =cut
 
-sub fetch_with_limit {
+sub fetch_all_with_limit {
   my ($self, $tagtype, $limit, $offset) = @_;
 
   my @ditags = ();
