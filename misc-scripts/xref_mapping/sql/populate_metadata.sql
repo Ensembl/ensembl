@@ -748,7 +748,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 # --------------------------------------------------------------------------------
 
-###### Aedes - to complete .... 
+###### Aedes 
 
 # Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1,7159,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz',now(),now(),'UniProtParser');
@@ -761,7 +761,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300,7159,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz',now(),now(),'InterproParser');
 
 # Unigene
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (6,7159,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Anopheles_gambiae/Aga.seq.uniq.gz  ftp://ftp.ncbi.nih.gov/repository/UniGene/Anopheles_gambiae/Aga.data.gz',now(),now(),'UniGeneParser');
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (6,7159,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Aedes_aegypti/Aae.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Aedes_aegypti/Aae.data.gz',now(),now(),'UniGeneParser');
 
 # GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 7159,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
