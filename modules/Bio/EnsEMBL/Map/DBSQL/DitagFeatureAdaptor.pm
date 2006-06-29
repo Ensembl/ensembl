@@ -92,7 +92,7 @@ sub fetch_by_dbID {
 }
 
 
-=head2 fetch_by_ditagID
+=head2 fetch_all_by_ditagID
 
   Arg [1]    : ditag dbID
   Example    : @my_tags = @{$ditagfeature_adaptor->fetch_by_ditag_id($my_id)};
@@ -102,7 +102,7 @@ sub fetch_by_dbID {
 
 =cut
 
-sub fetch_by_ditagID {
+sub fetch_all_by_ditagID {
   my ($self, $ditag_id) = @_;
 
 print "\nID=$ditag_id\n";
@@ -153,43 +153,78 @@ sub fetch_all_by_type {
 =head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice
-  Arg [2]    : (optional) ditag type
+  Arg [2]    : (optional) ditag type (specific library)
+  Arg [3]    : (optional) analysis logic_name
   Example    : $tag = $ditagfeature_adaptor->fetch_all_by_Slice($slice, "SME005");
-  Description: Retrieves ditagFeatures from the database for a specific region
-               and (optional) ditag type.
+  Description: Retrieves ditagFeatures from the database overlapping a specific region
+               and (optional) of a specific ditag type or analysis.
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeatures
   Caller     : general
 
 =cut
 
 sub fetch_all_by_Slice {
-  my ($self, $slice, $tagtype) = @_;
+  my ($self, $slice, $tagtype, $logic_name) = @_;
+
+  my @result;
+  my $moresql;
 
   if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
     throw("Bio::EnsEMBL::Slice argument expected.");
   }
 
-  my $sql = "SELECT df.ditag_feature_id, df.ditag_id, df.seq_region_id, 
-             df.seq_region_start, df.seq_region_end, df.seq_region_strand, 
-             df.analysis_id, df.hit_start, df.hit_end, df.hit_strand, 
-             df.cigar_line, df.ditag_side, ditag_pair_id 
-             FROM   ditag_feature df, ditag d 
-             WHERE  df.ditag_id=d.ditag_id AND df.seq_region_id = ? 
-             AND df.seq_region_start >= ? AND df.seq_region_end <= ? ";
+  #get affected ditag_feature_ids
+  my $sql = "SELECT df.ditag_feature_id ".
+            "FROM ditag_feature df ";
   if($tagtype){
-    $sql .= " and d.type = ? ";
-  }
-  $sql .= "ORDER BY ditag_pair_id";
-  my $sth = $self->prepare($sql);
-  if($tagtype){
-    $sth->execute($slice->get_seq_region_id, $slice->start, $slice->end, $tagtype);
+    $sql .= ", ditag d ".
+            "WHERE df.ditag_id=d.ditag_id ".
+            "AND d.type = \"".$tagtype."\" AND ";
   }
   else{
-    $sth->execute($slice->get_seq_region_id, $slice->start, $slice->end);
+    $sql .= "WHERE ";
   }
-  my $result = $self->_fetch($sth);
+  if($logic_name){
+    my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+    if(!$analysis) {
+      return undef;
+    }
+    $sql .= "df.analysis_id = ".$analysis->dbID()." AND ";
+  }
+  $sql .= "df.seq_region_id = ".$slice->get_seq_region_id.
+          " AND df.seq_region_start <= ".$slice->end.
+	  " AND df.seq_region_end   >= ".$slice->start;
 
-  return $result;
+  my $sth = $self->prepare($sql);
+  $sth->execute();
+  my @id_list = map {$_->[0]} @{$sth->fetchall_arrayref([0],undef)};
+
+  #fetch ditagFeatures for these ids
+  # splitting large queries into smaller batches
+  my $max_size = 500;
+  my $ids_to_fetch = "";
+
+  while(@id_list) {
+    my @ids;
+    if(@id_list > $max_size) {
+      @ids = splice(@id_list, 0, $max_size);
+    } else {
+      @ids = splice(@id_list, 0);
+    }
+    $ids_to_fetch = join(', ', @ids);
+
+    my $sth = $self->prepare("SELECT ditag_feature_id, ditag_id, seq_region_id, seq_region_start, 
+                              seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
+                              hit_strand, cigar_line, ditag_side, ditag_pair_id 
+                              FROM   ditag_feature
+                              WHERE  ditag_feature_id IN(".$ids_to_fetch.")" );
+    $sth->execute();
+
+    my $result = $self->_fetch($sth);
+    push(@result, @$result);
+  }
+
+  return \@result;
 }
 
 
@@ -202,6 +237,8 @@ sub fetch_all_by_Slice {
   Description: Retrieves Features from the database in their start-end groups;
                The start will be the lower seq_region_start, the end the higher seq_region_end.
                In context this should refer to potential transcript start and end locations.
+               This is a convinience method for analysing the ditag mappings, in general
+               fetch_grouped_ditagFeatures should be used to fetch proper objects.
   Returntype : listref of hashes similar to DitagFeatures:
                  %grouped_tag( -slice         => $slice,
                                -start         => $seqstart,
