@@ -139,4 +139,4 @@
 58	initial_met	Initial methionine	Set first amino acid to methionine
 
 # label frameshifts modelled as short (1,2,4,5 bp) introns
-59	Frameshift  Frameshift	Frameshift modelled as intron
+59	Frameshift	Frameshift	Frameshift modelled as intron
