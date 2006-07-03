@@ -265,7 +265,8 @@ sub project_go_terms {
       #print $dbEntry->display_id() . " " . $et . " " . $projections_by_evidence_type{$et} . "\n";
     }
 
-    # add linkage_type for projection to IEA (in the absence of a specific one for projections)
+    # Change linkage_type to IEA (in the absence of a specific one for projections)
+    $dbEntry->flush_linkage_types();
     $dbEntry->add_linkage_type("IEA");
 
     my $txt = "from $from_latin_species translation " . $from_translation->stable_id();
