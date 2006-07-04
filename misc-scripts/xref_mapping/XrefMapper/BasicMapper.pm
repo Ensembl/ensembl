@@ -114,15 +114,22 @@ sub build_list_and_map {
   my $i = 0;
   foreach my $method (@{$self->method()}){
     my @dna=();
-    push @dna, $method;
-    push @dna, $self->xref->dir."/xref_".$i."_dna.fasta";
-    push @dna, $self->core->dna_file();
-    push @list, \@dna;
+    my $q_dna_file = $self->xref->dir."/xref_".$i."_dna.fasta";
+    if (-e $q_dna_file and -s $q_dna_file) {
+      push @dna, $method;
+      push @dna, $q_dna_file,
+      push @dna, $self->core->dna_file();
+      push @list, \@dna;
+    }
+
     my @pep=();
-    push @pep, $method;
-    push @pep, $self->xref->dir."/xref_".$i."_peptide.fasta";
-    push @pep, $self->core->protein_file();
-    push @list, \@pep;
+    my $q_pep_file =  $self->xref->dir."/xref_".$i."_peptide.fasta";
+    if (-e $q_pep_file and -s $q_pep_file) {
+      push @pep, $method;
+      push @pep, $self->xref->dir."/xref_".$i."_peptide.fasta";
+      push @pep, $self->core->protein_file();
+      push @list, \@pep;
+    }
     $i++;
   }
 
@@ -745,7 +752,6 @@ sub run_mapping {
 
   } # foreach method
 
-
   if (!defined($self->use_existing_mappings)) {
     # submit depend job to wait for all mapping jobs
     foreach my $method( @running_methods ){
@@ -811,6 +817,7 @@ sub submit_depend_job {
 
     if (($reader = open(BSUB_READER, '-|'))) {
       while (<BSUB_READER>) {
+        #print "YES:$_";
 	if (/^Job <(\d+)> is submitted/) {
 	  $jobid = $1;
 	  print "LSF job ID for depend job: $jobid\n"
@@ -1214,26 +1221,7 @@ PSQL
   }
   $sth->finish;
 
-  $sth = $self->core->dbc->prepare("select analysis_id ".
-				      "from analysis where logic_name = ?");
-  $sth->execute("XrefExonerateDNA");
-  my $xref_DNA_analysis;
-  $sth->bind_columns(\$xref_DNA_analysis);
-  $sth->fetch;
-  if(!defined($xref_DNA_analysis)){
-    die("Could not find analysis id for XrefExonerateDNA\n");
-  }
-  $sth->finish;
-
-
-  $sth->execute('XrefExonerateProtein');
-  my $xref_PROT_analysis;
-  $sth->bind_columns(\$xref_PROT_analysis);
-  $sth->fetch;
-  if(!defined($xref_PROT_analysis)){
-    die("Could not find analysis id for XrefExonerateProtein\n");
-  }
-  $sth->finish;
+  my ($xref_DNA_analysis, $xref_PROT_analysis);
 
   $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".$description_missed."'");  
   $sth->execute();
@@ -1297,9 +1285,15 @@ PSQL
 	  print  UNMAPPED_OBJECT $max_unmapped_object_id."\txref\t";
 
 	  if($ensembl_type  =~ /Translation/){
+            if (not defined $xref_PROT_analysis) {
+              $xref_PROT_analysis = $self->get_analysis_id($ensembl_type);
+            }
 	    print UNMAPPED_OBJECT $xref_PROT_analysis."\t";
 	  }
 	  elsif($ensembl_type  =~ /Transcript/){
+            if (not defined $xref_DNA_analysis) {
+              $xref_DNA_analysis = $self->get_analysis_id($ensembl_type);
+            }
 	    print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
 	  }
 	  else{
@@ -1314,9 +1308,15 @@ PSQL
 	  $max_unmapped_object_id++;
 	  print  UNMAPPED_OBJECT $max_unmapped_object_id."\txref\t";
 	  if($source_2_seqtype{$source} =~ /peptide/){
+            if (not defined $xref_PROT_analysis) {
+              $xref_PROT_analysis = $self->get_analysis_id("translation");
+            }
 	    print UNMAPPED_OBJECT $xref_PROT_analysis."\t";
 	  }
 	  elsif($source_2_seqtype{$source} =~ /dna/){
+            if (not defined $xref_DNA_analysis) {
+              $xref_DNA_analysis = $self->get_analysis_id("transcript");
+            }
 	    print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
 	  }
 	  print UNMAPPED_OBJECT $external_db_id."\t".$accession."\t";
