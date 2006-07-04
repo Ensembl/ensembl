@@ -33,7 +33,13 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7165,180454
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (13616,13616, 'monodelphis_domestica', 'mono,opossum,possum,monodelphis,monodelphisdomestica');
 
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9544, 9544,  'macaca_mulatta',        'rmacaque, rhesus, rhesus macaque, macaque');
+INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9785, 9785,  'loxodonta_africana',    'elephant,lafricana,loxodontaafricana');
+INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9361, 9361,  'dasypus_novemcinctus',  'armadillo,dnovemcinctus,dasypusnovemcinctus');
+INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9986, 9986,  'oryctolagus_cuniculus', 'rabbit,ocuniculus,oryctolaguscuniculus');
+INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9371, 9371,  'echinops_telfairi',     'tenrec,etelfairi,echinopstelfairi');
+INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9685, 9685,  'felis_catus',           'cat,fcatus,feliscatus,moggy,tiddles');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7159, 7159,  'aedes_aegypti',        'aedes,aedesaegypti,aaegypti');
+
 
 
 ################################################################################
@@ -1378,4 +1384,84 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
 (1300, 9544,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
 
-################################################################################
+##------------------------------------------------------------------------------
+##### elephant
+
+## Uniprot
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (1, 9785, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (2, 9785, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9785, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+
+##       GO
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9785,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
+
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9785,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+
+##------------------------------------------------------------------------------
+##### armadillo
+
+## Uniprot
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (1, 9361, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (2, 9361, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9361, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+
+##       GO
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9361,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
+
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9361,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+
+##------------------------------------------------------------------------------
+##### rabbit
+
+## Uniprot
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (1, 9986, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (2, 9986, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9986, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+
+##       GO
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9986,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
+
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9986,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+
+##------------------------------------------------------------------------------
+##### tenrec
+
+## Uniprot
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (1, 9371, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (2, 9371, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9371, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+
+##       GO
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9371,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
+
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9371,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+
+##------------------------------------------------------------------------------
+##### cat
+
+## Uniprot
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (1, 9685, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
+ (2, 9685, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9685, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+
+##       GO
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9685,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
+
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9685,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+
+##------------------------------------------------------------------------------
