@@ -245,7 +245,7 @@ sub type_variation {
       my $new_rf_end  = $rf->end+$g_slice->start-1;
 
       if ($var->end >= $new_rf_start and $var->start <= $new_rf_end) {
- 	$var->regulatory_region('REGULATORY_REGION');
+ 	$var->type('REGULATORY_REGION');
 	last;
       }
     }
@@ -316,16 +316,16 @@ sub type_variation {
     $var->type('INTRONIC');
 
     if ($splice_site_2) {
-      $var->splice_site('ESSENTIAL_SPLICE_SITE');
+      $var->type('ESSENTIAL_SPLICE_SITE');
     }
     elsif ($splice_site_3 or $splice_site_8) {
-      $var->splice_site('SPLICE_SITE');
+      $var->type('SPLICE_SITE');
     }
     return [$var];
   }
 
   if ($splice_site_3) {
-    $var->splice_site('SPLICE_SITE');
+    $var->type('SPLICE_SITE');
   }
   
   $var->cdna_start( $c->start() );
