@@ -10,7 +10,7 @@ use Bio::EnsEMBL::Attribute;
 
 use Getopt::Long;
 
-my ($host, $port, $user, $pass, $dbpattern, $nostore, $nodelete, $locations);
+my ($host, $port, $user, $pass, $dbpattern, $nostore, $nodelete, $print);
 
 GetOptions('host=s'      => \$host,
            'user=s'      => \$user,
@@ -19,7 +19,7 @@ GetOptions('host=s'      => \$host,
            'dbpattern=s' => \$dbpattern,
 	   'nostore'     => \$nostore,
 	   'nodelete'    => \$nodelete,
-	   'locations'   => \$locations,
+	   'print'       => \$print,
            'help'        => sub { usage(); exit(0); });
 
 $port ||= 3306;
@@ -47,6 +47,7 @@ for my $dbname ( @dbnames ) {
 
   my $attribute_adaptor = $db_adaptor->get_AttributeAdaptor();
   my $transcript_adaptor = $db_adaptor->get_TranscriptAdaptor();
+  my $gene_adaptor = $db_adaptor->get_GeneAdaptor();
 
   if (!$nodelete) {
 
@@ -61,59 +62,48 @@ for my $dbname ( @dbnames ) {
   print STDERR "Finding frameshifts in $dbname, creating transcript attributes ...\n";
   print STDERR "Attributes will not be stored in database\n" if ($nostore);
 
-  my $sth = $db_adaptor->dbc()->prepare
-    (qq{SELECT t.transcript_id, g.gene_id, g.biotype,
-	MIN(IF(e1.seq_region_strand = 1,
-	       e2.seq_region_start - e1.seq_region_end - 1,
-	       e1.seq_region_start - e2.seq_region_end - 1)) AS intron_length,
-	       ts.stable_id, e1.seq_region_end, e2.seq_region_start, e1.seq_region_strand, s.name
-	FROM exon e1, exon e2, exon_transcript et1, exon_transcript et2,
-	transcript t, gene g, transcript_stable_id ts, seq_region s
-	WHERE et1.exon_id = e1.exon_id
-	AND et2.exon_id = e2.exon_id
-	AND et1.transcript_id = et2.transcript_id
-	AND et1.rank = et2.rank - 1
-	AND et1.transcript_id = t.transcript_id
-	AND t.gene_id = g.gene_id
-	AND t.transcript_id = ts.transcript_id
-        AND s.seq_region_id=g.seq_region_id
-	GROUP BY t.transcript_id
-	HAVING intron_length IN (1,2,4,5) ORDER BY t.transcript_id, t.seq_region_start, t.seq_region_end} );
+  my $count = 0;
 
-  $sth->execute();
+  # get all transcripts for each gene, then look at each of their introns in turn
+  foreach my $gene (@{$gene_adaptor->fetch_all()}) {
 
-  my ($transcript_id, $gene_id, $biotype, $intron_length, $stable_id, $start, $end, $strand, $count, $seq_region_name);
-  $sth->bind_columns(\$transcript_id, \$gene_id, \$biotype, \$intron_length, \$stable_id, \$start, \$end, \$strand, \$seq_region_name);
+    my $gene_has_short_introns = undef;
 
-  my $last_gene_id = -1;
-  my $intron_number;
+    foreach my $transcript (@{$gene->get_all_Transcripts()}) {
 
-  while ($sth->fetch()) {
+      my $intron_number = 1;
 
-    if ($gene_id == $last_gene_id) {
-      $intron_number++;
-    } else {
-      $intron_number = 1;
-    }
+      foreach my $intron (@{$transcript->get_all_Introns()}) {
 
-    my $attribute = Bio::EnsEMBL::Attribute->new(-CODE => 'Frameshift',
-						 -NAME => 'Frameshift',
-						 -DESCRIPTION => 'Frameshift modelled as intron',
-						 -VALUE => $intron_number);
+	# only interested in the short ones
+	if ($intron->length() < 6 && $intron->length() != 3) {
 
-    my @attribs = ($attribute);
+	  print "Transcript " . $transcript->stable_id() . " intron $intron_number length " . $intron->length() . "\n"  if ($print);
 
-    my $transcript = $transcript_adaptor->fetch_by_dbID($transcript_id);
+	  my $attribute = Bio::EnsEMBL::Attribute->new(-CODE => 'Frameshift',
+	  						  -NAME => 'Frameshift',
+	  						  -DESCRIPTION => 'Frameshift modelled as intron',
+	  						  -VALUE => $intron_number);
+	
+	  my @attribs = ($attribute);
 
-    $attribute_adaptor->store_on_Transcript($transcript->dbID, \@attribs) if (!$nostore);
+	  $attribute_adaptor->store_on_Transcript($transcript->dbID, \@attribs) if (!$nostore);
 
-    print join("\t", $stable_id, $start, $end, $strand, $intron_number, $seq_region_name, "\n") if ($locations);
+	  $gene_has_short_introns = 1;
 
-    $biotypes{$biotype}++;
-    $count++;
-    $last_gene_id = $gene_id;
+	  $count++;
 
-  }
+	}
+
+	$intron_number++;
+
+      } # foreach intron
+
+    } # foreach transcript
+
+    $biotypes{$gene->biotype()}++ if ($gene_has_short_introns);
+
+  } # foreach gene
 
   if ($count) {
 
@@ -121,7 +111,7 @@ for my $dbname ( @dbnames ) {
     print "Attributes not stored in database\n" if ($nostore);
 
     print "Biotypes of affected genes:\n";
-    foreach $biotype (keys %biotypes) {
+    foreach my $biotype (keys %biotypes) {
       print $biotype . "\t" . $biotypes{$biotype} . "\n";
     }
 
@@ -162,7 +152,7 @@ sub usage {
 
   [--nodelete]  Don't delete any existing "Frameshift" attributes before creating new ones.
 
-  [--locations] Print the start, end and strand of the introns.
+  [--print]     Print transcript stable ID, intron number and length.
 
   [--help]      This text.
 
