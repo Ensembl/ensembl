@@ -81,9 +81,9 @@ for my $dbname ( @dbnames ) {
 	  print "Transcript " . $transcript->stable_id() . " intron $intron_number length " . $intron->length() . "\n"  if ($print);
 
 	  my $attribute = Bio::EnsEMBL::Attribute->new(-CODE => 'Frameshift',
-	  						  -NAME => 'Frameshift',
-	  						  -DESCRIPTION => 'Frameshift modelled as intron',
-	  						  -VALUE => $intron_number);
+						       -NAME => 'Frameshift',
+						       -DESCRIPTION => 'Frameshift modelled as intron',
+						       -VALUE => $intron_number);
 	
 	  my @attribs = ($attribute);
 
