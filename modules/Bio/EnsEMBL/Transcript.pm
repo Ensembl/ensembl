@@ -1110,7 +1110,7 @@ sub get_all_Exons {
 
   Arg [1]    : none
   Example    : my @introns = @{$transcript->get_all_Introns()};
-  Description: Returns an listref of the introns in this transcipr in order.
+  Description: Returns an listref of the introns in this transcript in order.
                i.e. the first intron in the listref is the 5prime most exon in 
                the transcript.
   Returntype : a list reference to Bio::EnsEMBL::Intron objects
