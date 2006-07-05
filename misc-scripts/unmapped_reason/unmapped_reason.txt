@@ -10,3 +10,6 @@
 11	No output from Exonerate	Exonerate returned no hits using standard parameters plus options --maxintron 400000 and --softmasktarget FALSE
 12	GSS sequence	This cDNA has been excluded from the analysis because it is in the GSS (Genome Survey Sequence) division of GenBank
 13	See kill list	This cDNA has been excluded from the analysis - see ensembl-pipeline/scripts/GeneBuild/cDNA_kill_list.txt for further details
+14	Failed to match at thresholds	Unable to match at the thresholds of 99% for the query or 99% for the target
+15	Failed to match at thresholds	Unable to match at the thresholds of 100% for the query or 100% for the target
+16	Failed to match at thresholds	Unable to match at the thresholds of 55% for the query or 55% for the target
