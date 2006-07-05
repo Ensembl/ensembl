@@ -136,3 +136,4 @@
 4700	Medaka	1	XREF	1	0	1	Medaka Genome Project
 4800	ENST	1	XREF	1	0	1	Ensembl transcripts
 5000	Ens_Mm_gene	1	XREF	1	0	40	Ensembl Mouse Gene
+7159	AedesGenBank	1	PRED	1	0	30      Aedes GenBank      
