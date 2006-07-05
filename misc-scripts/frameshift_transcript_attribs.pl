@@ -57,23 +57,22 @@ for my $dbname ( @dbnames ) {
 
   }
 
-  my %biotypes = ();
-
   print STDERR "Finding frameshifts in $dbname, creating transcript attributes ...\n";
   print STDERR "Attributes will not be stored in database\n" if ($nostore);
 
   my $count = 0;
 
-  # get all transcripts for each gene, then look at each of their introns in turn
-  foreach my $gene (@{$gene_adaptor->fetch_all()}) {
+  # get all transcripts then look at each of their introns in turn
 
-    my $gene_has_short_introns = undef;
+  my @transcripts = @{$transcript_adaptor->fetch_all()};
 
-    foreach my $transcript (@{$gene->get_all_Transcripts()}) {
+  foreach my $transcript (@transcripts) {
 
-      my $intron_number = 1;
+    #print "Transcript " . $trans_no++ . " of " . scalar(@transcripts) . "\n";
 
-      foreach my $intron (@{$transcript->get_all_Introns()}) {
+    my $intron_number = 1;
+
+    foreach my $intron (@{$transcript->get_all_Introns()}) {
 
 	# only interested in the short ones
 	if ($intron->length() < 6 && $intron->length() != 3) {
@@ -89,8 +88,6 @@ for my $dbname ( @dbnames ) {
 
 	  $attribute_adaptor->store_on_Transcript($transcript->dbID, \@attribs) if (!$nostore);
 
-	  $gene_has_short_introns = 1;
-
 	  $count++;
 
 	}
@@ -101,21 +98,10 @@ for my $dbname ( @dbnames ) {
 
     } # foreach transcript
 
-    $biotypes{$gene->biotype()}++ if ($gene_has_short_introns);
-
-  } # foreach gene
-
   if ($count) {
 
     print "$count short intron attributes\n";
     print "Attributes not stored in database\n" if ($nostore);
-
-    print "Biotypes of affected genes:\n";
-    foreach my $biotype (keys %biotypes) {
-      print $biotype . "\t" . $biotypes{$biotype} . "\n";
-    }
-
-    print "\n";
 
   } else {
 
