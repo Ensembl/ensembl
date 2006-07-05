@@ -124,6 +124,9 @@ INSERT INTO source VALUES (2852, "Celera_Pep", 1, 'Y', 40);
 INSERT INTO source VALUES (2854, "Celera_Trans", 1, 'Y', 40);
 INSERT INTO source VALUES (2856, "Anopheles_symbol", 1, 'Y', 40);
 
+# aedes aegypti
+INSERT INTO source (source_id,name,release,download,ordered) VALUES ('7159', 'AedesGenBank','1','Y','30') ;
+
 # Uniprot alternative splice
 INSERT INTO source VALUES (3000, "Uniprot/Varsplic", 1, 'Y',20);
 
@@ -802,6 +805,9 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 # Unigene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (6,7159,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Aedes_aegypti/Aae.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Aedes_aegypti/Aae.data.gz',now(),now(),'UniGeneParser');
+
+# Aedes GenBank
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (7159, 7159,'LOCAL:AedesGenBank/Aedes_proteinID.fa', now(), now(), "AedesGenBankParser");
 
 # GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 7159,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
