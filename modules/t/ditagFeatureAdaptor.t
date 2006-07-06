@@ -2,7 +2,7 @@ use strict;
 
 BEGIN { $| = 1;  
 	use Test ;
-	plan tests => 14;
+	plan tests => 12;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -84,7 +84,7 @@ ok($testfeature && $testfeature->isa('Bio::EnsEMBL::Map::DitagFeature'));
 $multi->restore('core', 'ditag_feature');
 
 ########
-# 5-13 #
+# 5-11 #
 ########
 
 #test fetch methods
@@ -120,15 +120,10 @@ ok(scalar(@$dfs) && $dfs->[0]->isa('Bio::EnsEMBL::Map::DitagFeature'));
 
 #use logic-name
 $dfs = $dfa->fetch_all_by_Slice($slice, '', $logic_name);
-ok(1);#scalar(@$dfs) && $dfs->[0]->isa('Bio::EnsEMBL::Map::DitagFeature'));
-
-#test fetch_grouped
-$dfs = $dfa->fetch_grouped('', $tag_library);
-ok(scalar @$dfs);
-ok($dfs->[0]->{'ditag_id'} && $dfs->[0]->{'start'} && $dfs->[0]->{'end'});
+ok(scalar(@$dfs) && $dfs->[0]->isa('Bio::EnsEMBL::Map::DitagFeature'));
 
 ######
-# 14 #
+# 12 #
 ######
 
 #test list_dbIDs
